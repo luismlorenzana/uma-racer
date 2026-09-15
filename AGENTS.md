@@ -36,6 +36,7 @@ Requirements: Node 22+, pnpm 10 (`corepack enable`).
     pnpm build          # production builds (web includes the PWA service worker)
     pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, local JSON save
     pnpm sim:balance    # headless race balance table
+    pnpm data:import    # GameTora datasets → private, gitignored content packs
 
 Run `pnpm lint && pnpm test && pnpm build` before opening a PR. CI runs the same.
 

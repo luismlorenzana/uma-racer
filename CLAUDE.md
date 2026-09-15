@@ -29,7 +29,7 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 | `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync`, `/api/content/*` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PixiJS 8 scenes + PWA |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`) |
-| `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private packs), not built yet |
+| `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private packs; data importer built, assets later) |
 
 ## Commands
 
@@ -40,6 +40,7 @@ pnpm lint           # type-check every package
 pnpm test           # domain + race + api tests
 pnpm build          # production builds (web includes the PWA service worker)
 pnpm sim:balance    # race balance table
+pnpm data:import    # GameTora datasets → private, gitignored content packs
 ```
 
 ## Production operations
