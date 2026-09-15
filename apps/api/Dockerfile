@@ -1,0 +1,29 @@
+# Build from the repo root:  docker build -f apps/api/Dockerfile -t racer-api .
+# Multi-stage: install + build in the pnpm workspace, then ship a self-contained image (same approach as uma-planner).
+
+FROM node:22-slim AS builder
+RUN corepack enable
+WORKDIR /repo
+
+# Workspace manifests first (better layer caching). All package.json files are needed
+# for a valid workspace against the frozen lockfile, even though only the api is built.
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/domain/package.json packages/domain/package.json
+COPY packages/race/package.json packages/race/package.json
+
+RUN pnpm install --filter @racer/api... --frozen-lockfile
+
+COPY apps/api apps/api
+RUN pnpm --filter @racer/api build
+# Standalone deploy dir (package files + pruned prod node_modules).
+RUN pnpm --filter @racer/api --prod deploy --legacy /out
+
+FROM node:22-slim AS runtime
+ENV NODE_ENV=production
+ENV PORT=8080
+WORKDIR /app
+COPY --from=builder /out ./
+EXPOSE 8080
+CMD ["node", "dist/main.js"]

@@ -1,0 +1,30 @@
+{
+  "name": "uma-racer",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Personal Uma Musume-inspired racing RPG — monorepo (web + api + domain + race engine).",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "web": "pnpm --filter @racer/web dev",
+    "api": "pnpm --filter @racer/api start:dev",
+    "sim:balance": "pnpm dlx tsx scripts/sim/strategy-balance.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.13"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "@nestjs/core",
+      "protobufjs",
+      "@firebase/util"
+    ]
+  }
+}

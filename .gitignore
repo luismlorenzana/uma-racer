@@ -1,0 +1,31 @@
+node_modules
+dist
+dist-ssr
+build
+*.local
+.DS_Store
+.vite
+.turbo
+*.tsbuildinfo
+
+# env
+.env
+.env.*
+!.env.example
+# public client config (Firebase apiKey/authDomain/projectId are public; kept for reproducible builds)
+!apps/web/.env.production
+
+# ORIGINAL-GAME CONTENT — never commit (see docs/technical/infrastructure.md#privacy-of-game-content)
+content/
+scripts/assets/.cache/
+scripts/data/.cache/
+
+# local dev artifacts / firebase tooling
+apps/api/.data/
+firebase-debug.log
+*.log
+.firebase/
+dev-dist/
+
+# claude local-only settings
+.claude/settings.local.json

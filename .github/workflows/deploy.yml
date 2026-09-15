@@ -1,0 +1,140 @@
+name: Verify and deploy production
+
+# Adapted from uma-planner's proven workflow. The deploy job stays off until the GCP bootstrap is done and the
+# repository variable DEPLOY_ENABLED is set to "true" (docs/technical/infrastructure.md#ci-cd-adapted-from-uma-planner).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uma-racer-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GCP_PROJECT_ID: uma-racer
+  GCP_REGION: us-central1
+  CLOUD_RUN_SERVICE: racer-api
+  API_IMAGE: us-central1-docker.pkg.dev/uma-racer/racer/api:${{ github.sha }}
+  DEPLOY_SERVICE_ACCOUNT: github-deployer@uma-racer.iam.gserviceaccount.com
+  RUNTIME_SERVICE_ACCOUNT: racer-api-runtime@uma-racer.iam.gserviceaccount.com
+  CONTENT_BUCKET: uma-racer-content
+  HOSTING_URL: https://uma-racer.web.app
+
+jobs:
+  verify:
+    name: Test and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check packages
+        run: pnpm lint
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build production artifacts
+        run: pnpm build
+
+  deploy:
+    name: Deploy API and web
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: uma-racer-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - id: auth
+        name: Authenticate to Google Cloud with GitHub OIDC
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t "${API_IMAGE}" .
+
+      - name: Push API image
+        run: docker push "${API_IMAGE}"
+
+      - id: deploy-api
+        name: Deploy API to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          region: ${{ env.GCP_REGION }}
+          service: ${{ env.CLOUD_RUN_SERVICE }}
+          image: ${{ env.API_IMAGE }}
+          # App-level auth (Firebase ID token + owner allowlist) guards every route, as in uma-planner.
+          flags: >-
+            --allow-unauthenticated
+            --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }}
+            --min-instances=0
+            --max-instances=1
+            --memory=512Mi
+            --cpu=1
+          env_vars: |
+            PERSISTENCE=firestore
+            CONTENT_SOURCE=gcs
+            CONTENT_BUCKET=${{ env.CONTENT_BUCKET }}
+            ALLOWED_ORIGIN=${{ env.HOSTING_URL }}
+            ALLOWED_EMAIL=${{ vars.ALLOWED_EMAIL }}
+
+      - name: Verify API readiness and auth guard
+        run: test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --retry 10 --retry-delay 3 "${{ steps.deploy-api.outputs.url }}/api/save")" = "401"
+
+      - name: Build web application
+        env:
+          VITE_API_BASE_URL: ${{ steps.deploy-api.outputs.url }}
+        run: pnpm --filter @racer/web build
+
+      - name: Deploy web to Firebase Hosting
+        run: pnpm dlx firebase-tools@15.22.4 deploy --only hosting --project="${GCP_PROJECT_ID}" --non-interactive
+
+      - name: Verify hosted application
+        run: curl --fail --show-error --silent --retry 10 --retry-delay 3 "${HOSTING_URL}/" > /dev/null

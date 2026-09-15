@@ -1,0 +1,32 @@
+{
+  "name": "@racer/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Uma Racer backend (NestJS on Cloud Run): auth guard, save sync, private content delivery.",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "dev": "nest start --watch",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.22.0",
+    "@nestjs/common": "^11.2.4",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.2.4",
+    "@nestjs/platform-express": "^11.2.4",
+    "firebase-admin": "^13.10.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.2",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

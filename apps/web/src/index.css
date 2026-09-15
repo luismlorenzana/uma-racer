@@ -1,0 +1,102 @@
+@import 'tailwindcss';
+
+/* "Racecourse Pop" design tokens (docs/design/ux.md#visual-direction-racecourse-pop) */
+@theme {
+  --font-display: 'M PLUS Rounded 1c', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+
+  --color-sky-top: #7fd3ff;
+  --color-sky: #2fa8f5;
+  --color-sky-deep: #1b7fd1;
+  --color-turf: #4cb85a;
+  --color-turf-deep: #2f8f3f;
+  --color-cream: #fff8ec;
+  --color-panel: #ffffff;
+  --color-ink: #23324a;
+  --color-ink-soft: #5d6b82;
+  --color-gold: #ffc42e;
+  --color-gold-deep: #d99a0b;
+
+  --color-stat-speed: #2f8cff;
+  --color-stat-stamina: #ff5a5f;
+  --color-stat-power: #ff9f1c;
+  --color-stat-guts: #ff6fb5;
+  --color-stat-wit: #2ec27e;
+
+  --color-tier-bronze: #c7803e;
+  --color-tier-silver: #aab4c3;
+  --color-tier-gold: #f2b807;
+  --color-tier-platinum: #56c2e6;
+
+  --radius-panel: 1.25rem;
+  --shadow-panel: 0 6px 0 rgb(35 50 74 / 0.08), 0 12px 24px rgb(35 50 74 / 0.12);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    /* No rubber-band scrolling or pull-to-refresh behind game scenes. */
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-display);
+    color: var(--color-ink);
+    background: linear-gradient(180deg, var(--color-sky-top) 0%, #bfe6ff 45%, var(--color-cream) 100%);
+    background-attachment: fixed;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  button,
+  a,
+  [role='button'] {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* prevents iOS focus zoom */
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .game-surface {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+  }
+  .text-outline {
+    text-shadow:
+      0 2px 0 rgb(0 0 0 / 0.18),
+      0 0 1px rgb(0 0 0 / 0.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

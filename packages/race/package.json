@@ -1,0 +1,23 @@
+{
+  "name": "@racer/race",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic race engine: seeded, fixed 1/15 s tick, full-race timeline output (docs/research/race-mechanics.md).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@racer/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
