@@ -11,22 +11,22 @@ and ordered by their **JP release date**. A scenario sets:
 
 ## Timeline and tiers
 
-Draft baseline caps rise by 100 per tier up to 1200 (the original game's old cap), then by 200 per tier, continuing past 2000 for scenarios after #11.
+Baseline caps follow the **original game's ladder** ✅: its **1200** launch cap at tier 1, rising **80 per scenario** to its current **2000** cap at tier 11, and continuing at +80 after that. As in the original, the part of a stat **above 1200 counts about half** in races and gains half from training.
 
-| # | Global name | JP / alt name | JP release | Global release | Uma Levels | Draft baseline stat cap |
+| # | Global name | JP / alt name | JP release | Global release | Uma Levels | Baseline stat cap |
 |---|---|---|---|---|---|---|
-| 1 | URA Finale | URA Finals | 2021-02-24 | 2025-06-26 | 1–10 | 600 |
-| 2 | Unity Cup | Aoharu Cup | 2021-08-30 | 2025-11-06 | 11–20 | 700 |
-| 3 | Trackblazer | Make a New Track (Climax) | 2022-02-24 | 2026-03-12 | 21–30 | 800 |
-| 4 | Our Grand Concert | Grand Live | 2022-08-24 | 2026-07-22 | 31–40 | 900 |
-| 5 | Grand Masters | Grand Masters | 2023-02-24 ⚠️ | — | 41–50 | 1000 |
-| 6 | Project L'Arc | Project L'Arc | 2023-08-24 ⚠️ | — | 51–60 | 1100 |
-| 7 | U.A.F. Ready GO! | U.A.F. Ready GO! | 2024-02-24 ⚠️ | — | 61–70 | 1200 |
-| 8 | Great Food Festival | Daihoushokusai | 2024-06-26 | — | 71–80 | 1400 |
-| 9 | Run! Mecha Umamusume | Mecha Umamusume | 2024-10-29 | — | 81–90 | 1600 |
-| 10 | The Twinkle Legends | The Twinkle Legends | 2025-02-24 ⚠️ | — | 91–100 | 1800 |
+| 1 | URA Finale | URA Finals | 2021-02-24 | 2025-06-26 | 1–10 | 1200 |
+| 2 | Unity Cup | Aoharu Cup | 2021-08-30 | 2025-11-06 | 11–20 | 1280 |
+| 3 | Trackblazer | Make a New Track (Climax) | 2022-02-24 | 2026-03-12 | 21–30 | 1360 |
+| 4 | Our Grand Concert | Grand Live | 2022-08-24 | 2026-07-22 | 31–40 | 1440 |
+| 5 | Grand Masters | Grand Masters | 2023-02-24 ⚠️ | — | 41–50 | 1520 |
+| 6 | Project L'Arc | Project L'Arc | 2023-08-24 ⚠️ | — | 51–60 | 1600 |
+| 7 | U.A.F. Ready GO! | U.A.F. Ready GO! | 2024-02-24 ⚠️ | — | 61–70 | 1680 |
+| 8 | Great Food Festival | Daihoushokusai | 2024-06-26 | — | 71–80 | 1760 |
+| 9 | Run! Mecha Umamusume | Mecha Umamusume | 2024-10-29 | — | 81–90 | 1840 |
+| 10 | The Twinkle Legends | The Twinkle Legends | 2025-02-24 ⚠️ | — | 91–100 | 1920 |
 | 11 | Design Your Island | Welcome to the Wild / Mujintou | 2025-06-26/27 ⚠️ | — | 101–110 | 2000 |
-| 12+ | *Every later JP scenario is included* | *List to research* | — | — | 111+ | +200 each |
+| 12+ | *Every later JP scenario is included* | *List to research* | — | — | 111+ | +80 each |
 
 ⚠️ = taken from search summaries, not the source page itself. Verify these before building the data files.
 Rows without ⚠️ were confirmed on GameTora or Game8.

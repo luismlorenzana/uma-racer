@@ -12,16 +12,16 @@ export interface ScenarioDef {
 }
 
 export const SCENARIOS: readonly ScenarioDef[] = [
-  { tier: 1, id: 'ura-finale', name: 'URA Finale', jpName: 'URA Finals', jpRelease: '2021-02-24', baselineStatCap: 600 },
-  { tier: 2, id: 'unity-cup', name: 'Unity Cup', jpName: 'Aoharu Cup', jpRelease: '2021-08-30', baselineStatCap: 700 },
-  { tier: 3, id: 'trackblazer', name: 'Trackblazer', jpName: 'Make a New Track', jpRelease: '2022-02-24', baselineStatCap: 800 },
-  { tier: 4, id: 'grand-concert', name: 'Our Grand Concert', jpName: 'Grand Live', jpRelease: '2022-08-24', baselineStatCap: 900 },
-  { tier: 5, id: 'grand-masters', name: 'Grand Masters', jpName: 'Grand Masters', jpRelease: '2023-02-24', baselineStatCap: 1000 },
-  { tier: 6, id: 'project-larc', name: "Project L'Arc", jpName: "Project L'Arc", jpRelease: '2023-08-24', baselineStatCap: 1100 },
-  { tier: 7, id: 'uaf', name: 'U.A.F. Ready GO!', jpName: 'U.A.F. Ready GO!', jpRelease: '2024-02-24', baselineStatCap: 1200 },
-  { tier: 8, id: 'great-food-festival', name: 'Great Food Festival', jpName: 'Daihoushokusai', jpRelease: '2024-06-26', baselineStatCap: 1400 },
-  { tier: 9, id: 'mecha-umamusume', name: 'Run! Mecha Umamusume', jpName: 'Mecha Umamusume', jpRelease: '2024-10-29', baselineStatCap: 1600 },
-  { tier: 10, id: 'twinkle-legends', name: 'The Twinkle Legends', jpName: 'The Twinkle Legends', jpRelease: '2025-02-24', baselineStatCap: 1800 },
+  { tier: 1, id: 'ura-finale', name: 'URA Finale', jpName: 'URA Finals', jpRelease: '2021-02-24', baselineStatCap: 1200 },
+  { tier: 2, id: 'unity-cup', name: 'Unity Cup', jpName: 'Aoharu Cup', jpRelease: '2021-08-30', baselineStatCap: 1280 },
+  { tier: 3, id: 'trackblazer', name: 'Trackblazer', jpName: 'Make a New Track', jpRelease: '2022-02-24', baselineStatCap: 1360 },
+  { tier: 4, id: 'grand-concert', name: 'Our Grand Concert', jpName: 'Grand Live', jpRelease: '2022-08-24', baselineStatCap: 1440 },
+  { tier: 5, id: 'grand-masters', name: 'Grand Masters', jpName: 'Grand Masters', jpRelease: '2023-02-24', baselineStatCap: 1520 },
+  { tier: 6, id: 'project-larc', name: "Project L'Arc", jpName: "Project L'Arc", jpRelease: '2023-08-24', baselineStatCap: 1600 },
+  { tier: 7, id: 'uaf', name: 'U.A.F. Ready GO!', jpName: 'U.A.F. Ready GO!', jpRelease: '2024-02-24', baselineStatCap: 1680 },
+  { tier: 8, id: 'great-food-festival', name: 'Great Food Festival', jpName: 'Daihoushokusai', jpRelease: '2024-06-26', baselineStatCap: 1760 },
+  { tier: 9, id: 'mecha-umamusume', name: 'Run! Mecha Umamusume', jpName: 'Mecha Umamusume', jpRelease: '2024-10-29', baselineStatCap: 1840 },
+  { tier: 10, id: 'twinkle-legends', name: 'The Twinkle Legends', jpName: 'The Twinkle Legends', jpRelease: '2025-02-24', baselineStatCap: 1920 },
   { tier: 11, id: 'design-your-island', name: 'Design Your Island', jpName: 'Mujintou', jpRelease: '2025-06-26', baselineStatCap: 2000 },
 ]
 
@@ -31,13 +31,16 @@ export function scenarioForTier(tier: number): ScenarioDef | undefined {
   return SCENARIOS[tier - 1]
 }
 
-/** Baseline stat cap (the Training Level 10 cap). Scenarios after #11 keep rising by 200 each. */
+/**
+ * Baseline stat cap (the Training Level 10 cap): the original game's 1200 launch cap at tier 1, rising 80 per scenario
+ * to its current 2000 cap at tier 11, and continuing at +80 after that (docs/design/scenarios.md#timeline-and-tiers).
+ */
 export function baselineStatCap(tier: number): number {
-  const known = scenarioForTier(tier)
-  if (known) return known.baselineStatCap
-  const last = SCENARIOS[SCENARIOS.length - 1]!
-  return last.baselineStatCap + 200 * (tier - last.tier)
+  return scenarioForTier(tier)?.baselineStatCap ?? 1200 + 80 * (tier - 1)
 }
+
+/** Above this, stats count about half in races and training gains are halved — as in the original game. */
+export const STAT_SOFT_CAP = 1200
 
 /** Baseline SP cap (loadout capacity at Training Level 10). */
 export const baselineSpCap = (tier: number): number => 300 + 200 * (tier - 1)

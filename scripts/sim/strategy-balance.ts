@@ -3,7 +3,7 @@
 //
 //   pnpm sim:balance            (200 races per row)
 //   pnpm sim:balance -- 1000    (more races per row)
-import { npcRaceStats, mapStats, distanceCategory, STRATEGIES, type RaceGrade } from '../../packages/domain/src/index'
+import { npcRaceStats, distanceCategory, STRATEGIES, type RaceGrade } from '../../packages/domain/src/index'
 import { simulateRace } from '../../packages/race/src/index'
 
 const RACES_PER_ROW = Number(process.argv[2] ?? 200)
@@ -14,16 +14,17 @@ const ROWS: [tier: number, distance: number][] = [
   [1, 1600],
   [1, 2400],
   [1, 3200],
-  [5, 2400],
+  [6, 2400],
   [11, 3200],
 ]
-const SCALES = [1, 1.5, 2]
+/** Uma Level 1 (field Form 80%) and 10 (field Form 89%). */
+const LEVELS = [1, 10]
 
 console.log(`${RACES_PER_ROW} races per row · ${FIELD} runners · ${GRADE} · strategies rotate by gate\n`)
-console.log('tier  dist   scale  stamina  hp-empty  maxed  wins front/pace/late/end   win time')
+console.log('tier  dist  level  stamina  hp-empty  maxed  wins front/pace/late/end   win time')
 for (const [tier, distance] of ROWS) {
-  for (const scale of SCALES) {
-    const stats = mapStats(npcRaceStats(tier, GRADE, distanceCategory(distance), 1), (v) => v * scale)
+  for (const level of LEVELS) {
+    const stats = npcRaceStats(tier, GRADE, distanceCategory(distance), level)
     const runners = Array.from({ length: FIELD }, (_, gate) => ({
       id: `n${gate}`,
       label: `${gate + 1}`,
@@ -45,7 +46,7 @@ for (const [tier, distance] of ROWS) {
     }
     const pct = (n: number) => `${Math.round((n / (RACES_PER_ROW * FIELD)) * 100)}%`.padStart(5)
     console.log(
-      `${String(tier).padStart(4)}  ${String(distance).padStart(4)}  ${scale.toFixed(1).padStart(5)}  ${String(Math.round(stats.stamina)).padStart(7)}  ${pct(empty).padStart(8)}  ${pct(maxed)}  ${[wins.front, wins.pace, wins.late, wins.end].map((w) => String(w).padStart(4)).join(' / ')}   ${(winTime / RACES_PER_ROW).toFixed(1)}s`,
+      `${String(tier).padStart(4)}  ${String(distance).padStart(4)}  ${String(level).padStart(5)}  ${String(Math.round(stats.stamina)).padStart(7)}  ${pct(empty).padStart(8)}  ${pct(maxed)}  ${[wins.front, wins.pace, wins.late, wins.end].map((w) => String(w).padStart(4)).join(' / ')}   ${(winTime / RACES_PER_ROW).toFixed(1)}s`,
     )
   }
 }

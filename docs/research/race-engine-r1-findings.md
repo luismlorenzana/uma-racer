@@ -36,19 +36,25 @@ Performance: about **0.8 ms per 12-runner race** on the dev Mac. That's plenty f
 3. **Long races need more than stats.** Even at 2× scale, 3200 m fields run out of HP. The original game relies on recovery skills there.
 4. **The engine itself behaves plausibly**: deterministic, sensible finish times (1200 m ≈ 57 s, 2400 m ≈ 118–123 s), and stronger stats win reliably (see tests).
 
-## Recommendation (for the owner, morning of 2026-09-15)
+## Resolution (2026-09-15): the stat caps were wrong
 
-Keep the design's readable stat caps, and add **one race stat scale** in `@racer/domain`, applied together with Race Form
-just before the engine:
+The 600 → 2000 caps were invented draft numbers, about half the scale the original formulas expect. Instead of a multiplier,
+the caps now follow the **original game's own ladder** (D76): **1200** at tier 1, +80 per scenario to **2000**, and the
+original's rule that the part above 1200 counts half in races and gains half from training.
 
-```
-engineStat = trainedStat × raceStatScale × form        raceStatScale ≈ 1.75 (tune with pnpm sim:balance)
-```
+Re-run with the new caps (`pnpm sim:balance`, G1 fields at Uma Level 1 and 10):
 
-- It maps our 600 → 2000 cap ladder onto the magnitudes the original formulas were tuned for, without touching the design
-  docs' numbers or the relative Race Form edge.
-- **Strategy balance is not solved by scaling.** It comes with R3 position keeping, and with basic recovery skills pulled
-  forward into R2.5 (already planned). Re-run this table after each of those milestones.
+| Tier | Distance | Level | Stamina | HP ran out | Max spurt | Wins front / pace / late / end |
+|---|---|---|---|---|---|---|
+| 1 | 1200 | 1 | 672 | 0% | 100% | 0 / 83 / 53 / 64 |
+| 1 | 1600 | 1 | 768 | 0% | 100% | 0 / 65 / 39 / 96 |
+| 1 | 2400 | 1 | 864 | 25% | 100% | 0 / 9 / 21 / 170 |
+| 1 | 2400 | 10 | 961 | 0% | 100% | 0 / 5 / 22 / 173 |
+| 1 | 3200 | 1 | 960 | **99%** | 0% | 0 / 0 / 174 / 26 |
+| 6 | 2400 | 1 | 1152 | 0% | 100% | 0 / 8 / 17 / 175 |
+| 11 | 3200 | 1 | 1600 | 25% | 100% | 0 / 0 / 10 / 190 |
 
-Alternative considered: raise every baseline cap about 1.75× in the design docs. Same effect, but it would rewrite many numbers
-the owner already approved.
+- **Sprint, Mile, and Medium now finish at full spurt from tier 1.** No multiplier needed.
+- **Long races still run out of HP at tier 1.** This matches the original game, where Long builds lean on recovery skills.
+  Revisit after R2.5 (basic skills).
+- **Strategy balance is still off** (Front Runners never win). That needs position keeping (R3) and skills, not caps.

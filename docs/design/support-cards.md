@@ -71,7 +71,7 @@ effectValue = baseValue[effect]
 |---|---|---|
 | Training Bonus | +5% | Training gains |
 | Friendship Bonus | +15% | Friendship training multiplier |
-| Stat Bonus (card type's stat) | +3 | Flat facility gain |
+| Stat Bonus (card type's stat) | +6 | Flat facility gain |
 | Skill Point Bonus | +2 | Flat SP gain when present |
 | Specialty Priority | +15 (added to the 35% base) | Deal chance at its own facility |
 | Hint Frequency | +20% | Skill hint chance |

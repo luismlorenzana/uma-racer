@@ -29,7 +29,7 @@ import {
 import { createRng, type Rng } from './rng'
 import type { RaceEvent, RaceInput, RaceRunnerInput, RaceTimeline, RunnerResult } from './types'
 
-/** ⚠️ Stats above 1200 count at half value (to verify, see research doc). */
+/** Stats above 1200 count at half value, as in the original game (confirmed, see research doc). */
 export const effectiveStat = (value: number): number => (value <= 1200 ? value : 1200 + (value - 1200) / 2)
 
 export const baseSpeedFor = (distance: number): number => 20 - (distance - 2000) / 1000

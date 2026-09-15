@@ -116,8 +116,8 @@ Winning a whole set within one scenario is a separate scenario goal (see [Scenar
 
 | Badge | Criterion | B / S / G / P / R |
 |---|---|---|
-| Speed / Stamina / Power / Guts / Wit Peak | Highest value of that stat | 400 / 600 / 800 / 1200 / 2000 |
-| Balanced | Lowest of the five stats | 300 / 500 / 700 / 1000 / 1500 |
+| Speed / Stamina / Power / Guts / Wit Peak | Highest value of that stat | 600 / 900 / 1200 / 1600 / 2000 |
+| Balanced | Lowest of the five stats | 500 / 800 / 1100 / 1500 / 1900 |
 | Capped | Any stat at the scenario's baseline cap (the TL10 cap) | one-off per scenario |
 | Perfect Form | All five stats at the scenario's baseline cap | one-off per scenario |
 

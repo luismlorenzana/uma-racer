@@ -99,8 +99,8 @@ gradeFactor = Debut/Maiden 0.80 · Pre-OP/OP 0.88 · G3 0.94 · G2 0.97 · G1 1.
 NPCs have no stat variation from each other. Races still vary through the simulation's own randomness (start delay,
 Wit section randomness, skill activation).
 
-> *Example:* a scenario 1 G1 Medium race at Uma Level 1 (k = 0). NPC Speed = 600 × 1.00 × 1.00 × 0.80 = **480**, Stamina **432**.
-> A fully trained Uma (600 in every stat) races at 600 × 0.80 = **480**, an even fight on stats. At k = 9 she races at 588 against the field's 534 Speed.
+> *Example:* a scenario 1 G1 Medium race at Uma Level 1 (k = 0). NPC Speed = 1200 × 1.00 × 1.00 × 0.80 = **960**, Stamina **864**.
+> A fully trained Uma (1200 in every stat) races at 1200 × 0.80 = **960**, an even fight on stats. At k = 9 she races at 1176 against the field's 1068 Speed.
 
 ### Baseline enemy kit
 

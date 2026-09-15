@@ -31,7 +31,7 @@ export type CardEffect =
 export const CARD_EFFECT_BASE: Record<CardEffect, number> = {
   trainingBonus: 0.05,
   friendshipBonus: 0.15,
-  statBonus: 3,
+  statBonus: 6,
   skillPointBonus: 2,
   specialtyPriority: 15,
   hintFrequency: 0.2,

@@ -214,10 +214,11 @@ Accel       += (160 × Guts)^0.59  × 0.0001
 
 A runner cannot enter a duel again after leaving it.
 
-## Stat processing ⚠️
+## Stat processing
 
-- Mood multiplies stats: ×(1 + 0.02 × mood), with mood ranging from −2 (Awful) to +2 (Great).
-- Stats above 1200 count at half value (JP cap 2000).
+- Mood multiplies stats: ×(1 + 0.02 × mood), with mood ranging from −2 (Awful) to +2 (Great) ⚠️.
+- **The stat cap was raised from 1200 to 2000. The part above 1200 counts about half in races, and training gains past 1200 are halved** ✅
+  ([Game8 — Stat Cap Increase](https://game8.co/games/Umamusume-Pretty-Derby/archives/607279)).
 - Ground condition applies flat stat penalties (for example Power −50 on some conditions). Table to research.
 
 ## Research backlog

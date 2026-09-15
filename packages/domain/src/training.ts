@@ -1,5 +1,5 @@
 // Training Level (1–10, resets each scenario) and stat gains (docs/design/training.md).
-import { baselineSpCap, baselineStatCap } from './scenarios'
+import { baselineSpCap, baselineStatCap, STAT_SOFT_CAP } from './scenarios'
 import type { GainKey, StatKey, Stats } from './types'
 
 export const MAX_TRAINING_LEVEL = 10
@@ -23,11 +23,11 @@ export type Facility = StatKey
 export type CardType = StatKey | 'friend' | 'group'
 
 export const FACILITY_BASE_GAINS: Record<Facility, Partial<Record<GainKey, number>>> = {
-  speed: { speed: 30, power: 12, sp: 6 },
-  stamina: { stamina: 27, guts: 12, sp: 6 },
-  power: { power: 27, stamina: 12, sp: 6 },
-  guts: { guts: 24, speed: 9, power: 9, sp: 6 },
-  wit: { wit: 27, speed: 6, sp: 12 },
+  speed: { speed: 60, power: 24, sp: 6 },
+  stamina: { stamina: 54, guts: 24, sp: 6 },
+  power: { power: 54, stamina: 24, sp: 6 },
+  guts: { guts: 48, speed: 18, power: 18, sp: 6 },
+  wit: { wit: 54, speed: 12, sp: 12 },
 }
 
 /** Effect values of a card present at the chosen facility, already scaled by era/LB/level. */
@@ -66,10 +66,15 @@ export function trainingGains(
   return gains
 }
 
-/** Caps only limit gains — a value already above the cap is kept, never reduced. */
-export function applyCappedGain(current: number, gain: number, cap: number): number {
-  if (current >= cap) return current
-  return Math.min(cap, current + gain)
+/**
+ * Caps only limit gains — a value already above the cap is kept, never reduced. The part of a gain above
+ * STAT_SOFT_CAP (1200) counts half, as in the original game. Skill points have no soft cap: pass `softCap: false`.
+ */
+export function applyCappedGain(current: number, gain: number, cap: number, softCap = true): number {
+  if (current >= cap || gain <= 0) return current
+  if (!softCap) return Math.min(cap, current + gain)
+  const full = Math.max(0, Math.min(gain, STAT_SOFT_CAP - current))
+  return Math.min(cap, current + full + Math.floor((gain - full) / 2))
 }
 
 export function trainingExpForTurn(friendship: boolean): number {

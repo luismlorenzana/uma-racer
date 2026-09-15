@@ -93,7 +93,7 @@ scenario starts as a fair fight and ends with your Uma about 10% ahead. Details 
 
 - Caps = the scenario's baseline cap × the Training Level multiplier (80% at TL1 → 100% at TL10). Baselines are in [Scenarios](scenarios.md), the curve in [Training](training.md#training-level-and-caps).
 - Training can never push a stat or SP past the current cap, but **caps never reduce a stat**. A stat carried over above a new scenario's early cap simply waits until Training Level raises the cap past it.
-- In the original game, stats above 1200 count at half value in races. Verify before copying (see [Race Mechanics](../research/race-mechanics.md)).
+- As in the original game ✅, the part of a stat above 1200 counts about half in races and gains half from training.
 
 ## Aptitudes
 

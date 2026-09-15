@@ -33,8 +33,8 @@ Baseline caps per scenario are in [Scenarios](scenarios.md#timeline-and-tiers). 
 | TL | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | capMult | 80.0% | 82.2% | 84.4% | 86.7% | 88.9% | 91.1% | 93.3% | 95.6% | 97.8% | 100% |
-| Tier 1 stat cap (baseline 600) | 480 | 493 | 507 | 520 | 533 | 547 | 560 | 573 | 587 | 600 |
-| Tier 2 stat cap (baseline 700) | 560 | 576 | 591 | 607 | 622 | 638 | 653 | 669 | 684 | 700 |
+| Tier 1 stat cap (baseline 1200) | 960 | 987 | 1013 | 1040 | 1067 | 1093 | 1120 | 1147 | 1173 | 1200 |
+| Tier 2 stat cap (baseline 1280) | 1024 | 1052 | 1081 | 1109 | 1138 | 1166 | 1195 | 1223 | 1252 | 1280 |
 
 The cap reaches **100% of the baseline at TL10** ✅.
 
@@ -51,8 +51,10 @@ TL10 is the maximum. Training at TL10 still raises stats up to the full caps, gi
 
 Trained stats are permanent, but TL resets. So a stat maxed in the previous scenario can sit **above** the new scenario's TL1 cap:
 
-> A tier 1 Uma with Speed 600 promotes. Tier 2 at TL1 caps at 560, so Speed **stays 600** (stats never go down),
-> but Speed training gives no Speed until TL4 (cap 607). Her other, lower stats keep growing meanwhile.
+> A tier 1 Uma with Speed 1200 promotes. Tier 2 at TL1 caps at 1024, so Speed **stays 1200** (stats never go down),
+> but Speed training gives no Speed until TL8 (cap 1223). Her other, lower stats keep growing meanwhile.
+> With the +80 per-scenario ladder, early Training Levels of a new scenario mostly rebuild skills and card EXP, and
+> stats resume growing near the end of the tier.
 
 Caps only limit **gains**. They never reduce a stat. **Trained stats carry over between scenarios** ✅. Only Training Level and the skill library reset.
 You keep training only when you need better stats or skills, or your cards have improved.
@@ -92,11 +94,11 @@ or when your cards have improved.
 
 | Facility | Speed | Stamina | Power | Guts | Wit | SP |
 |---|---|---|---|---|---|---|
-| Speed | **30** | – | 12 | – | – | 6 |
-| Stamina | – | **27** | – | 12 | – | 6 |
-| Power | – | 12 | **27** | – | – | 6 |
-| Guts | 9 | – | 9 | **24** | – | 6 |
-| Wit | 6 | – | – | – | **27** | 12 |
+| Speed | **60** | – | 24 | – | – | 6 |
+| Stamina | – | **54** | – | 24 | – | 6 |
+| Power | – | 24 | **54** | – | – | 6 |
+| Guts | 18 | – | 18 | **48** | – | 6 |
+| Wit | 12 | – | – | – | **54** | 12 |
 
 ## Gain formula
 
@@ -109,7 +111,8 @@ gain(s) = ( base[f][s] + Σ bonus[s] of present cards )          ← Stat Bonus,
           × Π (1 + friendshipBonus) of present cards whose type == f   ← "friendship training"
           × (1 + 0.05 × presentCardCount)                              ← crowd bonus
 
-new(s) = current(s) ≥ cap(s) ? current(s) : min(cap(s), current(s) + round(gain(s)))
+new(s) = current(s) ≥ cap(s) ? current(s)
+       : min(cap(s), current(s) + gainBelow1200 + ⌊gainAbove1200 / 2⌋)     ← original game's soft cap (not for SP)
 ```
 
 - There is no per-tier gain scaling: stats carry over, so later scenarios only add +100–200 per stat, and their stats mostly follow the Training Level cap curve. Newer cards (era multiplier) still speed things up.
@@ -120,14 +123,14 @@ new(s) = current(s) ≥ cap(s) ? current(s) : min(cap(s), current(s) + round(gai
 ### Worked example (draft numbers)
 
 Tier 2 Uma with Speed growth +20%, choosing **Speed**. Present cards:
-an SSR Speed card (era 2, LB2) with training +10%, friendship +25%, Speed bonus +3, SP bonus +2,
+an SSR Speed card (era 2, LB2) with training +10%, friendship +25%, Speed bonus +6, SP bonus +2,
 and an SSR Power card (era 1, LB0) with training +5%.
 
 ```
 common = 1.15 (training) × 1.25 (friendship) × 1.10 (crowd) ≈ 1.581
 
-Speed = (30 + 3) × 1.20 (growth) × 1.581 ≈ 62.6  → +63
-Power = (12 + 0) × 1.581                  ≈ 19.0  → +19
+Speed = (60 + 6) × 1.20 (growth) × 1.581 ≈ 125.2 → +125
+Power = (24 + 0) × 1.581                  ≈ 37.9  → +38
 SP    = (6 + 2)  × 1.581                  ≈ 12.6  → +13
 Training EXP = 36 × 1.5 (friendship training) = 54 · Card EXP: see below
 ```
@@ -154,9 +157,10 @@ The library refreshes each scenario, so hint rates need tuning: a good deck shou
 
 ## Pacing check (validate with a simulation script later)
 
-- **Tier 1 is the heaviest:** about +2,500 stat points from 5★ base stats (about 100 each) to the 600 caps. A good deck (about 90 points per training)
-  reaches the caps around TL10 (25–30 trainings). A weaker deck needs 10–20 extra tickets to top off.
-- **Later scenarios** add only +100–200 per stat, so stats track the rising TL cap, and training time goes mostly to skills and card EXP.
+- **Tier 1 is the heaviest:** about +5,500 stat points from 5★ base stats (about 100 each) to the 1200 caps. A good deck (about 180 points
+  per training) reaches the caps around TL10 (25–30 trainings). A weaker deck needs 10–20 extra tickets to top off.
+- **Later scenarios** add only +80 per stat (at half training value above 1200), so stats track the end of the TL cap curve, and training
+  time goes mostly to skills and card EXP.
 - Tickets are the single currency, so training competes with Uma promotions and card limit breaks for them.
 
 ## Later additions (not MVP)

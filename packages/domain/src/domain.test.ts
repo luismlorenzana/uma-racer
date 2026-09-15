@@ -27,11 +27,11 @@ import {
 } from './index'
 
 describe('scenarios', () => {
-  it('uses the baseline caps from the timeline and keeps rising after #11', () => {
-    expect(baselineStatCap(1)).toBe(600)
-    expect(baselineStatCap(7)).toBe(1200)
+  it('uses the original 1200 → 2000 cap ladder and keeps rising after #11', () => {
+    expect(baselineStatCap(1)).toBe(1200)
+    expect(baselineStatCap(6)).toBe(1600)
     expect(baselineStatCap(11)).toBe(2000)
-    expect(baselineStatCap(12)).toBe(2200)
+    expect(baselineStatCap(12)).toBe(2080)
     expect(baselineSpCap(1)).toBe(300)
     expect(baselineSpCap(11)).toBe(2300)
   })
@@ -64,9 +64,9 @@ describe('training', () => {
   it('scales caps from 80% at TL1 to 100% at TL10', () => {
     expect(capMult(1)).toBeCloseTo(0.8)
     expect(capMult(10)).toBeCloseTo(1)
-    expect(statCap(1, 1)).toBe(480)
-    expect(statCap(1, 10)).toBe(600)
-    expect(statCap(2, 4)).toBe(607)
+    expect(statCap(1, 1)).toBe(960)
+    expect(statCap(1, 10)).toBe(1200)
+    expect(statCap(2, 8)).toBe(1223)
     expect(spCap(1, 10)).toBe(300)
   })
 
@@ -78,15 +78,21 @@ describe('training', () => {
 
   it('matches the worked example in training.md', () => {
     const gains = trainingGains('speed', { speed: 0.2 }, [
-      { type: 'speed', trainingBonus: 0.1, friendshipBonus: 0.25, flatBonus: { speed: 3, sp: 2 } },
+      { type: 'speed', trainingBonus: 0.1, friendshipBonus: 0.25, flatBonus: { speed: 6, sp: 2 } },
       { type: 'power', trainingBonus: 0.05, friendshipBonus: 0.2, flatBonus: {} },
     ])
-    expect(gains).toEqual({ speed: 63, power: 19, sp: 13 })
+    expect(gains).toEqual({ speed: 125, power: 38, sp: 13 })
   })
 
   it('never reduces a stat that already sits above the cap', () => {
-    expect(applyCappedGain(600, 50, 560)).toBe(600)
-    expect(applyCappedGain(540, 50, 560)).toBe(560)
+    expect(applyCappedGain(1200, 50, 1024)).toBe(1200)
+    expect(applyCappedGain(1000, 50, 1024)).toBe(1024)
+  })
+
+  it('halves the part of a gain above 1200, except for skill points', () => {
+    expect(applyCappedGain(1190, 30, 1280)).toBe(1210)
+    expect(applyCappedGain(1250, 40, 1280)).toBe(1270)
+    expect(applyCappedGain(1190, 30, 1280, false)).toBe(1220)
   })
 })
 
@@ -101,8 +107,8 @@ describe('race form', () => {
 
   it('builds identical generic NPC stats (racing.md example)', () => {
     const npc = npcRaceStats(1, 'g1', 'medium', 1)
-    expect(npc.speed).toBeCloseTo(480)
-    expect(npc.stamina).toBeCloseTo(432)
+    expect(npc.speed).toBeCloseTo(960)
+    expect(npc.stamina).toBeCloseTo(864)
   })
 })
 
