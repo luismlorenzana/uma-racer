@@ -53,39 +53,41 @@ Blaze is needed for Cloud Run and Artifact Registry. It's pay-as-you-go, but the
 
 ## Part 3 — Register the web app and turn on Hosting (3 min)
 
-1. Click **Project Overview** (top of the left sidebar).
-2. Under "Get started by adding Firebase to your app", click the **Web** icon — it looks like `</>`.
-3. **App nickname**: type `uma-racer-web`.
-4. **Tick "Also set up Firebase Hosting for this app"**. The site dropdown should show your PROJECT_ID; leave it as is.
+Uma Racer uses **Firebase Hosting** (the classic static-site product), **not App Hosting**. App Hosting is for server-rendered
+Next.js and Angular apps that build from GitHub on Cloud Run. Uma Racer is a static Vite app deployed by GitHub Actions.
+Direct links are used below because the console's left menu gets regrouped from time to time. Replace `PROJECT_ID` in each link.
+
+### 3a — Register the web app
+
+1. If the "Plan change completed successfully" dialog from Part 2 is still open, click **Done**. You can skip the spend caps
+   ("Go to budgets"); Part 5 sets up a budget alert.
+2. Open **https://console.firebase.google.com/project/PROJECT_ID/settings/general**
+   (or click the **gear icon** next to **Project Overview** → **Project settings** → **General** tab).
+3. Scroll to **Your apps**. Click the **Web** platform icon `</>` (if the project already has apps, click **Add app** first).
+4. On **Add Firebase to your web app**:
+   - **App nickname**: `uma-racer-web`
+   - **Tick "Also set up Firebase Hosting for this app"** and leave the site as the default (your PROJECT_ID).
 5. Click **Register app**.
-6. The **Add Firebase SDK** step shows code containing:
+6. The **Add Firebase SDK** step shows a `firebaseConfig` block. Copy the **apiKey** value into your note. (It's a public
+   client value, not a secret.) Click **Next**.
+7. On **Install Firebase CLI**, click **Next** without running anything. On **Deploy to Firebase Hosting**, click **Continue to console**.
 
-   ```js
-   const firebaseConfig = {
-     apiKey: "AIza....",
-     authDomain: "uma-racer.firebaseapp.com",
-     projectId: "uma-racer",
-     ...
-   }
-   ```
+**Need the apiKey again later?** Same Project settings → General page → **Your apps** → `uma-racer-web` → **SDK setup and configuration** → **Config**.
 
-   Copy the **apiKey** value into your note. (These values are public by design; they're not secrets.)
-7. Click **Next** on the remaining steps ("Install Firebase CLI", "Deploy to Firebase Hosting") without running anything,
-   then click **Continue to console**. GitHub Actions does the deploying.
+### 3b — Confirm classic Hosting is on
 
-**Didn't see the Hosting checkbox?** Left sidebar → **Hosting** (not "App Hosting") → **Get started** → click **Next**
-through every step → **Continue to console**.
+1. Open **https://console.firebase.google.com/project/PROJECT_ID/hosting**. This is classic Hosting. Don't use `/apphosting`.
+2. If you see **Get started**, click it, click **Next** through the steps without running any commands, then **Continue to console**.
+3. You should now see the Hosting dashboard with your site's domains. It may say it's waiting for a first release, which is expected.
 
-**Need the apiKey again later?** Click the **gear icon** next to Project Overview → **Project settings** → **General**
-tab → scroll to **Your apps** → `uma-racer-web` → **SDK setup and configuration** → **Config**.
-
-✅ **Checkpoint:** Project settings → General → Your apps lists `uma-racer-web`.
+✅ **Checkpoint:** Project settings lists the `uma-racer-web` app, and the Hosting page shows `PROJECT_ID.web.app` and `PROJECT_ID.firebaseapp.com`.
 
 ---
 
 ## Part 4 — Turn on Google sign-in (2 min)
 
-1. Left sidebar → **Security** → **Authentication**. (On some consoles it's under **Build**. Or search "Authentication".)
+1. Open **https://console.firebase.google.com/project/PROJECT_ID/authentication** (in the left menu it sits under **Security** on
+   newer consoles, or **Build** on older ones).
 2. Click **Get started**.
 3. Open the **Sign-in method** tab. Under **Additional providers**, click **Google**.
 4. Switch **Enable** on.
