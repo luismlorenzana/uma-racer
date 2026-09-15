@@ -8,7 +8,8 @@ adjusted through balance simulation and playtesting.
 
 ## Needs you (owner actions, not design questions)
 
-- **Set up Google Cloud and Firebase** by following the click-by-click [GCP Setup Guide](technical/gcp-setup-guide.md), then send Claude the values it asks for at the end.
+- ✅ Google Cloud and Firebase are set up and deploys are enabled (2026-09-15).
+- **On your iPhone:** install the Home Screen app and sign in once. See [GCP Setup Guide — Part 7](technical/gcp-setup-guide.md#part-7--install-on-your-iphone-after-claude-confirms-the-deploy).
 
 ## Not questions, but still to come
 

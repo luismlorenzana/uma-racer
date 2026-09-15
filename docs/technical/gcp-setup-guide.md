@@ -1,5 +1,9 @@
 # Google Cloud & Firebase Setup — click by click
 
+> ✅ **Completed 2026-09-15** for project `uma-racer`: the owner did Parts 1–4, and Claude ran Part 5 and the rest from a local
+> gcloud session (account selected through `CLOUDSDK_ACTIVE_CONFIG_NAME`, so no saved gcloud configuration changed).
+> This guide stays as the reference for re-creating the project.
+
 This takes about **30 minutes**, once. After it, every push to `main` deploys Uma Racer automatically.
 The GitHub side is already done (repo, CI, workflow). **Claude does everything after Part 6.**
 

@@ -20,7 +20,8 @@ RUNTIME_SA_ID="racer-api-runtime"
 DEPLOY_SA="${DEPLOY_SA_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 RUNTIME_SA="${RUNTIME_SA_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 
-gcloud config set project "${PROJECT_ID}"
+# Scope every gcloud call to this project without rewriting the caller's saved gcloud configuration.
+export CLOUDSDK_CORE_PROJECT="${PROJECT_ID}"
 PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
 POOL_NAME="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}"
 PROVIDER_NAME="${POOL_NAME}/providers/${PROVIDER_ID}"
