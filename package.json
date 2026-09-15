@@ -15,6 +15,7 @@
     "web": "pnpm --filter @racer/web dev",
     "api": "pnpm --filter @racer/api start:dev",
     "data:import": "pnpm --filter @racer/data-pipeline run import",
+    "assets:import": "pnpm --filter @racer/asset-pipeline run import",
     "sim:balance": "pnpm dlx tsx scripts/sim/strategy-balance.ts"
   },
   "devDependencies": {
@@ -25,7 +26,8 @@
       "esbuild",
       "@nestjs/core",
       "protobufjs",
-      "@firebase/util"
+      "@firebase/util",
+      "sharp"
     ]
   }
 }

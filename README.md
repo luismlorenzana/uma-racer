@@ -5,7 +5,9 @@ Umas are permanent RPG characters. They level up by winning races, train through
 SSR support cards, learn skills and inherit from their parents, and collect a lot of badges and flair,
 while the stable itself grows into a collection.
 
-> **Status:** pre-production. Design and technical docs are complete, the monorepo is scaffolded with a playable race preview, and CI runs on GitHub. Next: the GCP setup ([guide](docs/technical/gcp-setup-guide.md)), then the first deploy.
+> **Status:** pre-production. The app and API deploy, the deterministic race preview runs, and Milestone 1's private data,
+> WebP atlas, and authenticated/offline content pipelines are built. Next: publish a generated private content version,
+> then build the first playable Stable → Training → Race loop.
 
 ## Ground rules
 
@@ -33,6 +35,7 @@ pnpm test           # domain rules, race engine, API sync
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
 pnpm data:import    # GameTora datasets → private, gitignored content packs
+pnpm assets:import  # image sources in those packs → private WebP atlases
 ```
 
 ## Repository layout
@@ -42,7 +45,7 @@ apps/web        React 19 + Vite 7 + Tailwind 4 + Motion + PixiJS 8 — mobile-fi
 apps/api        NestJS 11 on Cloud Run — auth guard, save sync, private content
 packages/domain game rules as pure, tested formulas
 packages/race   deterministic race engine
-scripts/        balance sims; data and asset pipelines (planned)
+scripts/        balance sims; private data and WebP atlas pipelines
 infra/          GCP bootstrap + GitHub Actions docs
 docs/           design, technical, research
 ```

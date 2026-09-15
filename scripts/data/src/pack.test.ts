@@ -18,6 +18,16 @@ describe('writeContentPacks', () => {
     tempDirs.push(contentDir)
     await import('node:fs/promises').then(({ mkdir }) => mkdir(resolve(contentDir, 'data')))
     await writeFile(resolve(contentDir, 'data/umas.stale000.json'), '{}', 'utf8')
+    await writeFile(
+      resolve(contentDir, 'manifest.json'),
+      JSON.stringify({
+        version: 'old',
+        generatedAt: '2000-01-01T00:00:00.000Z',
+        source: {},
+        files: [{ path: 'atlases/uma-icons.abcd1234.json', bytes: 2, sha256: 'a'.repeat(64) }],
+      }),
+      'utf8',
+    )
 
     const generatedAt = '2099-04-05T06:07:08.000Z'
     const manifest = await writeContentPacks({
@@ -49,6 +59,11 @@ describe('writeContentPacks', () => {
       source: { 'character-cards': 'v1', characters: 'v2' },
     })
     expect(manifest.files.map((file) => file.path)).toEqual([...manifest.files.map((file) => file.path)].sort())
+    expect(manifest.files).toContainEqual({
+      path: 'atlases/uma-icons.abcd1234.json',
+      bytes: 2,
+      sha256: 'a'.repeat(64),
+    })
     expect(JSON.parse(await readFile(resolve(contentDir, 'manifest.json'), 'utf8')) as ContentManifest).toEqual(manifest)
   })
 })
