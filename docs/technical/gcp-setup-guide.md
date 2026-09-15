@@ -86,7 +86,7 @@ Direct links are used below because the console's left menu gets regrouped from 
 
 ## Part 4 — Turn on Google sign-in (2 min)
 
-1. Open **https://console.firebase.google.com/project/PROJECT_ID/authentication** (in the left menu it sits under **Security** on
+1. Open **https://console.firebase.google.com/project/PROJECT_ID/authentication/providers** (in the left menu it sits under **Security** on
    newer consoles, or **Build** on older ones).
 2. Click **Get started**.
 3. Open the **Sign-in method** tab. Under **Additional providers**, click **Google**.
@@ -107,8 +107,9 @@ Direct links are used below because the console's left menu gets regrouped from 
 Safari's privacy rules break Google sign-in inside a Home Screen app unless the sign-in page is served from the app's own
 domain. That needs one extra redirect address on Google's side.
 
-1. Open **https://console.cloud.google.com/apis/credentials** and make sure the top bar shows your project (use the project picker if not).
-2. Under **OAuth 2.0 Client IDs**, click **Web client (auto created by Google Service)**.
+1. Open **https://console.cloud.google.com/auth/clients?project=PROJECT_ID** (Google Auth Platform → **Clients**). The older
+   **https://console.cloud.google.com/apis/credentials?project=PROJECT_ID** page lists the same clients under **OAuth 2.0 Client IDs**.
+2. Click **Web client (auto created by Google Service)**. It only exists after Part 4, when Google sign-in is enabled.
 3. Scroll to **Authorized redirect URIs** → click **+ Add URI** → type (replace `PROJECT_ID`):
 
    ```text
