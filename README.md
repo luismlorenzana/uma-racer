@@ -82,4 +82,5 @@ docs/           design, technical, research
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
+| [Tasks](docs/tasks/) | Delegable task specs (see [AGENTS.md](AGENTS.md)) |
 | [Open Questions](docs/open-questions.md) | Currently none. New questions land here before they're resolved |

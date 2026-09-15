@@ -4,6 +4,8 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 
 ## Start here
 
+- `AGENTS.md` is the shared guide for all agents, including delegated ChatGPT tasks (branch + PR, no pushes to `main`). This file adds Claude-specific production notes.
+
 - `README.md` → documentation map. **The design docs are the source of truth.** Read the relevant doc before changing a system.
 - `docs/decisions.md` is append-only: to reverse a decision, add a new entry that supersedes it.
 - `docs/open-questions.md` holds anything that needs the owner. The owner prefers **no open questions**: decide with a
