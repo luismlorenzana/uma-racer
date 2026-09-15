@@ -6,6 +6,10 @@ name: Verify and deploy production
 on:
   push:
     branches: [main]
+    # Docs-only changes don't need a test run or a production deploy.
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   pull_request:
   workflow_dispatch:
 

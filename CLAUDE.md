@@ -14,7 +14,8 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 
 - **Original-game content never goes in git or on a public host**: data packs and images live in the gitignored `content/`
   folder locally, and in the private GCS bucket in production, served only through the authenticated API.
-- **Don't create remotes, GCP resources, or commits** unless the owner asks. Bootstrap steps are owner actions (`infra/github-actions/README.md`).
+- **Claude manages infra and deploys end to end** (the owner handed this over on 2026-09-15). Commit and push to `main` in
+  conventional-commit style; every push to `main` verifies and deploys.
 - The architecture and deploy pipeline are reused from the sibling repo `../uma-planner`. Check how it solves something before inventing a new pattern.
 
 ## Layout
@@ -38,6 +39,28 @@ pnpm test           # domain + race + api tests
 pnpm build          # production builds (web includes the PWA service worker)
 pnpm sim:balance    # race balance table
 ```
+
+## Production operations
+
+| Thing | Value |
+|---|---|
+| Site | https://uma-racer.web.app (Firebase Hosting, classic, not App Hosting) |
+| API | Cloud Run `racer-api` (us-central1), `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
+| GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
+| Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
+
+- **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
+  command with environment variables only:
+
+  ```bash
+  CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer gcloud run services describe racer-api --region=us-central1
+  ```
+
+  Never run `gcloud config set …`.
+- Watch deploys with `gh run watch <id> -R luismlorenzana/uma-racer --exit-status`. Then verify: `/api/health` returns 200,
+  `/api/save` returns 401 without a token, and the Hosting shell is `no-cache`.
+- The installed PWA picks up a new deploy on the **next** app open (service worker `autoUpdate`).
+- Never type credentials into sign-in pages. Sign-in checks stop at Google's account chooser.
 
 ## Conventions
 
