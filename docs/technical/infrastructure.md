@@ -34,8 +34,9 @@ Content packs plus atlases are an estimated 15–30 MB, downloaded once per cont
 2. **deploy** (only on `main`, and only once the repository variable `DEPLOY_ENABLED` is `true`):
    - Authenticate with **GitHub OIDC → Workload Identity Federation**. No keys, no secrets.
    - Build the API image and push it to Artifact Registry tagged with the commit SHA, then deploy to Cloud Run.
-   - Smoke check: `GET /api/save` must return `401` without a token, which proves the auth guard is on.
-   - Build the web app and deploy it to Firebase Hosting, then smoke check the hosted URL.
+   - Smoke checks: `GET /api/health` answers, and `GET /api/save` returns `401` without a token, which proves the auth guard is on.
+     (Not `/healthz`: Cloud Run's front end reserves some paths ending in "z".)
+   - Build the web app and deploy it to Firebase Hosting, then smoke check the hosted URL and that the app shell is `no-cache`.
 3. Deployments are serialized (`concurrency`) and never cancelled midway.
 
 The `DEPLOY_ENABLED` gate keeps CI green before the GCP bootstrap exists.

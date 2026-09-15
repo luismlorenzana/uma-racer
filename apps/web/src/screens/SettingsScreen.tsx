@@ -19,7 +19,16 @@ export function SettingsScreen() {
   const auth = useAuth()
   const persistent = useGame((s) => s.persistent)
   const reduced = useReducedMotion()
-  const manifest = useQuery({ queryKey: ['content-manifest'], queryFn: contentApi.manifest })
+  // Signed-out requests would only ever 401, so don't make them; label the state honestly instead.
+  const signedIn = !auth.authRequired || auth.user !== null
+  const manifest = useQuery({ queryKey: ['content-manifest'], queryFn: contentApi.manifest, enabled: signedIn })
+  const contentLabel = !signedIn
+    ? 'Sign in first'
+    : manifest.isError
+      ? 'API offline'
+      : manifest.data
+        ? (manifest.data.version ?? 'Not imported')
+        : '…'
   const standalone =
     typeof window !== 'undefined' &&
     (window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true)
@@ -32,7 +41,7 @@ export function SettingsScreen() {
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />
         <Row
           label="Content packs"
-          value={manifest.isError ? 'API offline' : manifest.data?.version ?? (manifest.isLoading ? '…' : 'Not imported')}
+          value={contentLabel}
         />
         <Row label="Home Screen app" value={standalone ? 'Yes' : 'No (Safari tab)'} />
         <Row label="Reduced motion" value={reduced ? 'On' : 'Off'} />

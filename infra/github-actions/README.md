@@ -46,7 +46,8 @@ Identity changes can take up to five minutes to propagate.
 1. Install from the frozen pnpm lockfile, then lint/type-check, test, and build everything.
 2. Authenticate with GitHub OIDC and short-lived Google credentials.
 3. Build an immutable API image tagged with the commit SHA, push it, and deploy it to Cloud Run with the production env vars.
-4. Smoke check: `GET /api/save` without a token must return `401`, which proves the auth guard is on.
-5. Build the web app with `VITE_API_BASE_URL` set to the deployed API URL, deploy it to Firebase Hosting, and smoke check it.
+4. Smoke checks: `GET /api/health` must answer, and `GET /api/save` without a token must return `401`, which proves the auth guard is on.
+5. Build the web app with `VITE_API_BASE_URL` set to the deployed API URL, deploy it to Firebase Hosting, and smoke check it, including that
+   the app shell is served `no-cache`.
 
 Production deployments are serialized and never cancelled midway. A failed verification job blocks all production changes.
