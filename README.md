@@ -32,6 +32,7 @@ pnpm lint           # type-check all packages
 pnpm test           # domain rules, race engine, API sync
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
+pnpm data:import    # GameTora datasets → private, gitignored content packs
 ```
 
 ## Repository layout
