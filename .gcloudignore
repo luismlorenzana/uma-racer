@@ -4,7 +4,7 @@
 **/dist
 **/.turbo
 *.log
-content
+/content
 scripts/assets/.cache
 scripts/data/.cache
 apps/api/.data

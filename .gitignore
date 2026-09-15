@@ -16,7 +16,7 @@ build
 !apps/web/.env.production
 
 # ORIGINAL-GAME CONTENT — never commit (see docs/technical/infrastructure.md#privacy-of-game-content)
-content/
+/content/
 scripts/assets/.cache/
 scripts/data/.cache/
 
