@@ -106,3 +106,33 @@ export interface ContentManifest {
   source: Record<string, string>
   files: ContentManifestFile[]
 }
+
+export interface ContentPack<T> {
+  version: string
+  items: T[]
+}
+
+export type ContentAtlasKind = 'uma-icons' | 'card-icons'
+
+export interface ContentAtlasPage {
+  path: string
+  width: number
+  height: number
+}
+
+export interface ContentAtlasFrame {
+  page: number
+  x: number
+  y: number
+  width: 128
+  height: 128
+}
+
+export interface ContentAtlas {
+  schemaVersion: 1
+  kind: ContentAtlasKind
+  frameWidth: 128
+  frameHeight: 128
+  pages: ContentAtlasPage[]
+  frames: Record<string, ContentAtlasFrame>
+}

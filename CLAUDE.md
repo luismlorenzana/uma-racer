@@ -29,7 +29,7 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 | `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync`, `/api/content/*` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PixiJS 8 scenes + PWA |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`) |
-| `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private packs; data importer built, assets later) |
+| `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private data packs and WebP icon atlases) |
 
 ## Commands
 
@@ -41,6 +41,7 @@ pnpm test           # domain + race + api tests
 pnpm build          # production builds (web includes the PWA service worker)
 pnpm sim:balance    # race balance table
 pnpm data:import    # GameTora datasets → private, gitignored content packs
+pnpm assets:import  # T001 image sources → private WebP atlases; run after data:import
 ```
 
 ## Production operations
@@ -63,6 +64,18 @@ pnpm data:import    # GameTora datasets → private, gitignored content packs
 - Watch deploys with `gh run watch <id> -R luismlorenzana/uma-racer --exit-status`. Then verify: `/api/health` returns 200,
   `/api/save` returns 401 without a token, and the Hosting shell is `no-cache`.
 - The installed PWA picks up a new deploy on the **next** app open (service worker `autoUpdate`).
+- Publish content-addressed files before the manifest, so clients never see a manifest whose files are missing. Run the
+  two importers first, then upload with the owner's existing ADC session without changing the active gcloud account:
+
+  ```bash
+  pnpm data:import
+  pnpm assets:import
+  CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer gcloud storage rsync content/data gs://uma-racer-content/data
+  CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer gcloud storage rsync content/atlases gs://uma-racer-content/atlases
+  CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer gcloud storage cp content/manifest.json gs://uma-racer-content/manifest.json
+  ```
+
+  Old hashed objects are harmless and may be cleaned separately; never delete the currently published manifest's files.
 - Never type credentials into sign-in pages. Sign-in checks stop at Google's account chooser.
 
 ## Conventions

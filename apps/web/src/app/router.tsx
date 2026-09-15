@@ -1,15 +1,14 @@
 import { createBrowserRouter } from 'react-router'
 import { AppShell } from './AppShell'
 import { HomeScreen } from '../screens/HomeScreen'
-import { RaceSelectScreen } from '../screens/RaceSelectScreen'
 import { PlaceholderScreen } from '../screens/PlaceholderScreen'
-import { SettingsScreen } from '../screens/SettingsScreen'
 
 // Tab screens live inside the shell (top bar + bottom tabs). Full-screen scenes (race, training, reveals) sit
 // outside it and are code-split so PixiJS only loads when a scene opens.
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
+    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Uma Racer" />,
     children: [
       { index: true, element: <HomeScreen /> },
       {
@@ -22,7 +21,10 @@ export const router = createBrowserRouter([
           />
         ),
       },
-      { path: 'race', element: <RaceSelectScreen /> },
+      {
+        path: 'race',
+        lazy: async () => ({ Component: (await import('../screens/RaceSelectScreen')).RaceSelectScreen }),
+      },
       {
         path: 'cards',
         element: (
@@ -43,7 +45,10 @@ export const router = createBrowserRouter([
           />
         ),
       },
-      { path: 'settings', element: <SettingsScreen /> },
+      {
+        path: 'settings',
+        lazy: async () => ({ Component: (await import('../screens/SettingsScreen')).SettingsScreen }),
+      },
     ],
   },
   {

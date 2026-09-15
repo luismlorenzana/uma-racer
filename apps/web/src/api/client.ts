@@ -8,7 +8,7 @@ export function setTokenProvider(fn: () => Promise<string | null>) {
   tokenProvider = fn
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function requestResponse(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await tokenProvider()
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -19,17 +19,20 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   })
   if (!res.ok) throw new Error(`API ${res.status}: ${await res.text().catch(() => res.statusText)}`)
-  return res.json() as Promise<T>
+  return res
 }
 
-export interface ContentManifest {
-  version: string | null
-  files: { path: string; bytes: number; sha256: string }[]
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return (await requestResponse(path, init)).json() as Promise<T>
 }
 
 export const contentApi = {
-  manifest: () => request<ContentManifest>('/api/content/manifest'),
-  fileUrl: (path: string) => `${BASE}/api/content/files/${path}`,
+  manifest: () => request<unknown>('/api/content/manifest'),
+  file: async (path: string) => {
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+    const response = await requestResponse(`/api/content/files/${encodedPath}`)
+    return { bytes: await response.arrayBuffer(), contentType: response.headers.get('content-type') ?? '' }
+  },
 }
 
 export interface SyncUpsert {

@@ -29,7 +29,7 @@ packages/
   race/       deterministic race engine: seeded RNG, fixed 1/15 s tick, timeline output. Unit-tested
 scripts/
   data/       GameTora importers → normalized content packs (run locally, never committed)
-  assets/     image pipeline: fetch → resize → WebP → sprite atlases → upload to the private bucket
+  assets/     image pipeline: fetch → resize → WebP → sprite atlases; production ops upload the ignored output
 infra/        GCP bootstrap and GitHub Actions docs
 docs/         design, technical, research
 ```
@@ -96,6 +96,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.
+- Protected files are fetched with the Firebase bearer token and verified against their manifest SHA-256 before use. Image
+  pages become local Blob URLs for DOM/Pixi consumers; the last known-good manifest selects service-worker-cached files offline.
 - In local dev the API serves the same files from a gitignored `content/` folder (`CONTENT_SOURCE=local`), mirroring uma-planner's local repository pattern.
 
 ### 4. Auth

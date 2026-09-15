@@ -31,7 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     setTokenProvider(async () => {
       const auth = await loadAuth()
-      return auth.currentUser ? auth.currentUser.getIdToken() : null
+      // A cached content response is still usable offline even if Firebase cannot refresh an expired token.
+      return auth.currentUser ? auth.currentUser.getIdToken().catch(() => null) : null
     })
     void Promise.all([loadAuth(), import('firebase/auth')]).then(([auth, { onAuthStateChanged }]) => {
       if (cancelled) return
