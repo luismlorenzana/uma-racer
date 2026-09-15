@@ -16,15 +16,16 @@ concurrency:
   group: uma-racer-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# GCP names come from repository variables (set after the bootstrap), defaulting to the `uma-racer` project ID.
 env:
-  GCP_PROJECT_ID: uma-racer
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'uma-racer' }}
   GCP_REGION: us-central1
   CLOUD_RUN_SERVICE: racer-api
-  API_IMAGE: us-central1-docker.pkg.dev/uma-racer/racer/api:${{ github.sha }}
-  DEPLOY_SERVICE_ACCOUNT: github-deployer@uma-racer.iam.gserviceaccount.com
-  RUNTIME_SERVICE_ACCOUNT: racer-api-runtime@uma-racer.iam.gserviceaccount.com
-  CONTENT_BUCKET: uma-racer-content
-  HOSTING_URL: https://uma-racer.web.app
+  API_IMAGE: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID || 'uma-racer' }}/racer/api:${{ github.sha }}
+  DEPLOY_SERVICE_ACCOUNT: github-deployer@${{ vars.GCP_PROJECT_ID || 'uma-racer' }}.iam.gserviceaccount.com
+  RUNTIME_SERVICE_ACCOUNT: racer-api-runtime@${{ vars.GCP_PROJECT_ID || 'uma-racer' }}.iam.gserviceaccount.com
+  CONTENT_BUCKET: ${{ vars.CONTENT_BUCKET || format('{0}-content', vars.GCP_PROJECT_ID || 'uma-racer') }}
+  HOSTING_URL: https://${{ vars.GCP_PROJECT_ID || 'uma-racer' }}.web.app
 
 jobs:
   verify:

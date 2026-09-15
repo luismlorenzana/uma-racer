@@ -42,15 +42,11 @@ The `DEPLOY_ENABLED` gate keeps CI green before the GCP bootstrap exists.
 
 ## One-time bootstrap (run by the owner)
 
-These steps need the owner's Google and GitHub accounts, so they are **not automated from this repo**. The full commands
-are in [`infra/github-actions/README.md`](../../infra/github-actions/README.md):
-
-1. Create the private GitHub repo `luismlorenzana/uma-racer` and push `main`. CI verification starts, and deploys stay off.
-2. Firebase console: create the project `uma-racer`, upgrade it to Blaze, add a Web app, and enable Google sign-in.
-3. Cloud Shell: run `infra/github-actions/bootstrap.sh`. It creates Firestore, Artifact Registry with a cleanup policy,
-   the private bucket, service accounts, WIF, and a budget.
-4. Set the repository variables `WIF_PROVIDER` and `ALLOWED_EMAIL`, and fill in `apps/web/.env.production`.
-5. Set `DEPLOY_ENABLED=true` and push. The workflow deploys Cloud Run with its env vars and Hosting with the API URL.
+The GitHub repo `luismlorenzana/uma-racer` (private) is live, and CI verifies every push. The Google side needs the owner's
+account: follow the **click-by-click [GCP Setup Guide](gcp-setup-guide.md)** (Firebase project → Blaze → web app + Hosting →
+Google sign-in → Cloud Shell bootstrap), then send Claude the values from its Part 6. Claude sets the repository variables
+(`GCP_PROJECT_ID`, `WIF_PROVIDER`, `CONTENT_BUCKET`, `ALLOWED_EMAIL`, `DEPLOY_ENABLED`), fills in `apps/web/.env.production`, and
+runs the first deploy.
 
 ## Privacy of game content
 

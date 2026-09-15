@@ -16,7 +16,11 @@ The workflow is bound to:
 
 ## One-time setup (owner)
 
-1. **GitHub:** create the private repo `luismlorenzana/uma-racer` and push `main`. CI verification runs right away,
+> **Follow the click-by-click [GCP Setup Guide](../../docs/technical/gcp-setup-guide.md).** The steps below are the short version.
+> GCP names come from repository variables (`GCP_PROJECT_ID`, `CONTENT_BUCKET`), defaulting to `uma-racer`, so a different
+> project ID only needs a variable, not a code change.
+
+1. **GitHub:** create the private repo `luismlorenzana/uma-racer` and push `main` (✅ done). CI verification runs right away,
    and deploys stay off until step 6.
 2. **Firebase console:** create the project `uma-racer`, upgrade it to **Blaze** (same billing account as uma-planner),
    add a **Web app**, and enable **Authentication → Google**. Add `uma-racer.web.app` under Authentication → Settings →
@@ -24,15 +28,13 @@ The workflow is bound to:
 3. **Cloud Shell** (not a local terminal, as with uma-planner):
 
    ```bash
-   git clone git@github.com:luismlorenzana/uma-racer.git
-   cd uma-racer
-   ALLOWED_EMAIL=you@example.com BILLING_ACCOUNT=XXXXXX-XXXXXX-XXXXXX bash infra/github-actions/bootstrap.sh
+   bash ~/bootstrap.sh    # after uploading infra/github-actions/bootstrap.sh via Cloud Shell ⋮ → Upload
    ```
 
    It enables the APIs and creates Firestore, the Artifact Registry repo with a cleanup policy, the private content bucket,
    the runtime and deployer service accounts, the WIF provider restricted to `main`, and (optionally) a $5 budget with alerts.
-4. **GitHub repository variables** (Settings → Secrets and variables → Actions → Variables): `WIF_PROVIDER` and
-   `ALLOWED_EMAIL`, both printed at the end of the bootstrap.
+4. **GitHub repository variables** (Settings → Secrets and variables → Actions → Variables): `GCP_PROJECT_ID`,
+   `WIF_PROVIDER`, `CONTENT_BUCKET` (printed at the end of the bootstrap) and `ALLOWED_EMAIL`.
 5. **`apps/web/.env.production`:** fill in the public Firebase web config. Set `VITE_FIREBASE_AUTH_DOMAIN=uma-racer.web.app`
    so sign-in works inside the iOS Home Screen app. Commit it.
 6. Set **`DEPLOY_ENABLED=true`** and push to `main`, or run the workflow manually.

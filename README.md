@@ -5,7 +5,7 @@ Umas are permanent RPG characters. They level up by winning races, train through
 SSR support cards, learn skills and inherit from their parents, and collect a lot of badges and flair,
 while the stable itself grows into a collection.
 
-> **Status:** pre-production. The game design baseline and technical design are complete, and the monorepo is scaffolded. Next: the race engine (R1) and the GCP bootstrap.
+> **Status:** pre-production. Design and technical docs are complete, the monorepo is scaffolded with a playable race preview, and CI runs on GitHub. Next: the GCP setup ([guide](docs/technical/gcp-setup-guide.md)), then the first deploy.
 
 ## Ground rules
 
@@ -70,6 +70,7 @@ docs/           design, technical, research
 |---|---|
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, one-time bootstrap, content privacy, environments |
+| [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
 | [UX & Visual Design](docs/design/ux.md) | Mobile-first iPhone UX, navigation, screen inventory, feedback catalog, visual style |
 
 ### Research and tracking

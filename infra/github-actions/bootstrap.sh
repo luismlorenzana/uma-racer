@@ -2,18 +2,17 @@
 set -euo pipefail
 
 # One-time GCP setup for uma-racer, adapted from uma-planner's bootstrap.
-# Run from Google Cloud Shell while signed in as the project owner, AFTER creating the Firebase project `uma-racer`
-# on the Blaze plan (see infra/github-actions/README.md). Creates no long-lived keys and needs no GitHub secrets.
+# Run from Google Cloud Shell while signed in as the project owner, AFTER creating the Firebase project on the
+# Blaze plan (docs/technical/gcp-setup-guide.md). Creates no long-lived keys and needs no GitHub secrets. Safe to re-run.
 #
-#   ALLOWED_EMAIL=you@example.com BILLING_ACCOUNT=XXXXXX-XXXXXX-XXXXXX bash infra/github-actions/bootstrap.sh
-#
-# BILLING_ACCOUNT is optional; when set, a $5 budget with alerts at $1 and $5 is created.
+#   bash bootstrap.sh                                   # project ID uma-racer
+#   PROJECT_ID=uma-racer-1a2b3 bash bootstrap.sh        # if Firebase gave the project a different ID
 
-PROJECT_ID="uma-racer"
+PROJECT_ID="${PROJECT_ID:-uma-racer}"
 REGION="us-central1"
 REPOSITORY="luismlorenzana/uma-racer"
 AR_REPO="racer"
-CONTENT_BUCKET="uma-racer-content"
+CONTENT_BUCKET="${CONTENT_BUCKET:-${PROJECT_ID}-content}"
 POOL_ID="github-actions"
 PROVIDER_ID="uma-racer"
 DEPLOY_SA_ID="github-deployer"
@@ -111,15 +110,27 @@ fi
 gcloud iam service-accounts add-iam-policy-binding "${DEPLOY_SA}" --role="roles/iam.workloadIdentityUser" \
   --member="principalSet://iam.googleapis.com/${POOL_NAME}/attribute.repository/${REPOSITORY}"
 
-# --- Optional budget alert ---------------------------------------------------------------------------------------
-if [[ -n "${BILLING_ACCOUNT:-}" ]]; then
-  gcloud billing budgets create --billing-account="${BILLING_ACCOUNT}" --display-name="uma-racer" \
-    --budget-amount=5USD --threshold-rule=percent=0.2 --threshold-rule=percent=1.0 \
-    --filter-projects="projects/${PROJECT_ID}"
+# --- Budget alert: $5 budget, emails at $1 and $5 (billing account detected from the project) ------------------------
+BILLING_ACCOUNT="$(gcloud billing projects describe "${PROJECT_ID}" --format='value(billingAccountName)' | sed 's#billingAccounts/##')"
+if [[ -n "${BILLING_ACCOUNT}" ]]; then
+  if gcloud billing budgets list --billing-account="${BILLING_ACCOUNT}" --format='value(displayName)' 2>/dev/null | grep -qx "${PROJECT_ID}"; then
+    echo "Budget ${PROJECT_ID} already exists."
+  else
+    gcloud billing budgets create --billing-account="${BILLING_ACCOUNT}" --display-name="${PROJECT_ID}" \
+      --budget-amount=5USD --threshold-rule=percent=0.2 --threshold-rule=percent=1.0 \
+      --filter-projects="projects/${PROJECT_ID}" \
+      || echo "⚠️  Could not create the budget (needs Billing Account Administrator). Create it in the console instead."
+  fi
+else
+  echo "⚠️  No billing account linked — upgrade the Firebase project to Blaze first, then re-run."
 fi
 
 echo
-echo "Bootstrap complete. Set these GitHub repository variables (Settings → Secrets and variables → Actions → Variables):"
-echo "  WIF_PROVIDER   = ${PROVIDER_NAME}"
-echo "  ALLOWED_EMAIL  = ${ALLOWED_EMAIL:-<your Google account email>}"
-echo "  DEPLOY_ENABLED = true   (after apps/web/.env.production is filled in)"
+echo "================================================================================"
+echo " Bootstrap complete. Copy everything between the lines and send it to Claude."
+echo "--------------------------------------------------------------------------------"
+echo " GCP_PROJECT_ID = ${PROJECT_ID}"
+echo " PROJECT_NUMBER = ${PROJECT_NUMBER}"
+echo " WIF_PROVIDER   = ${PROVIDER_NAME}"
+echo " CONTENT_BUCKET = ${CONTENT_BUCKET}"
+echo "================================================================================"

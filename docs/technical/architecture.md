@@ -102,7 +102,9 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 - Firebase Auth with Google sign-in, and an API `AuthGuard` that verifies the ID token and the `ALLOWED_EMAIL` allowlist (copied from uma-planner).
 - **iOS Home Screen apps:** set `authDomain` to the Hosting domain (`uma-racer.web.app`) so the `/__/auth/handler` is same-origin.
-  That avoids Safari's storage partitioning breaking redirect sign-in inside a standalone web app.
+  That avoids Safari's storage partitioning breaking redirect sign-in inside a standalone web app. It also needs
+  `https://uma-racer.web.app/__/auth/handler` in the Google OAuth client's authorized redirect URIs, and the service worker must not
+  handle `/__/` navigations (denylisted in `vite.config.ts`).
 - Sign-in happens once and the session persists. Local play keeps working offline even when the token has expired, and sync resumes after refresh.
 
 ## Firestore data model (saves)

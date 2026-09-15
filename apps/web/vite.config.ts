@@ -28,7 +28,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // /__/ is Firebase Hosting's reserved space (auth handler for redirect sign-in) — never answer it with the app shell.
+        navigateFallbackDenylist: [/^\/api\//, /^\/__\//],
         // Private content packs are content-hashed: cache forever on the device once downloaded.
         runtimeCaching: [
           {
