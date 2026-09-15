@@ -13,8 +13,8 @@ async function bootstrap() {
   // Sync batches carry whole entities; keep headroom above Express's 100 kB default.
   app.useBodyParser('json', { limit: '5mb' })
 
-  // API routes live under /api; /healthz stays at the root for Cloud Run probes.
-  app.setGlobalPrefix('api', { exclude: ['healthz'] })
+  // Every route lives under /api, including /api/health.
+  app.setGlobalPrefix('api')
 
   const port = Number(config.get('PORT') ?? 8080)
   await app.listen(port, '0.0.0.0')
