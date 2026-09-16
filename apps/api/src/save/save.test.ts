@@ -53,10 +53,33 @@ describe('parseSyncRequest', () => {
   })
 
   it('accepts a valid batch', () => {
+    const profile = {
+      schemaVersion: 1,
+      tickets: 50,
+      cardCoupons: 3,
+      umaCoupons: 0,
+      umaShards: 0,
+      lastDailyGrant: '2026-01-01',
+      featuredUmaId: null,
+      starterSeedContentVersion: 'synthetic-v1',
+      createdAt: 1,
+    }
     const parsed = parseSyncRequest({
-      upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { tickets: 120 } }],
-      appends: [{ kind: 'ledger', id: 'l1', data: { delta: 50 }, createdAt: 1 }],
+      upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: profile }],
+      appends: [
+        {
+          kind: 'ledger',
+          id: 'l1',
+          data: { resource: 'tickets', delta: 50, reason: 'daily-grant', localDay: '2026-01-01', createdAt: 1 },
+          createdAt: 1,
+        },
+      ],
     })
     expect(typeof parsed).toBe('object')
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, copiedName: 'Synthetic' } }] })).toMatch(/invalid profile data/)
+    expect(parseSyncRequest({ upserts: [
+      { kind: 'profile', id: 'main', baseVersion: 3, data: profile },
+      { kind: 'profile', id: 'main', baseVersion: 3, data: profile },
+    ] })).toMatch(/duplicate/)
   })
 })

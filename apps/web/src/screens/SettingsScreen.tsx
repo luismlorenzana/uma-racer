@@ -17,6 +17,10 @@ function Row({ label, value }: { label: string; value: string }) {
 export function SettingsScreen() {
   const auth = useAuth()
   const persistent = useGame((s) => s.persistent)
+  const gameStatus = useGame((s) => s.status)
+  const sync = useGame((s) => s.sync)
+  const orphanedUmas = useGame((s) => s.orphanedUmaIds.length)
+  const orphanedCards = useGame((s) => s.orphanedCardIds.length)
   const reduced = useReducedMotion()
   const content = useContent()
   const contentLabel =
@@ -43,6 +47,11 @@ export function SettingsScreen() {
       <Panel>
         <Row label="Signed in as" value={auth.user?.email ?? auth.user?.name ?? '—'} />
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />
+        <Row label="Save state" value={gameStatus} />
+        <Row label="Cloud sync" value={`${sync.status}${sync.pending ? ` · ${sync.pending} pending` : ''}`} />
+        <Row label="Last synced" value={sync.lastSuccessAt ? new Date(sync.lastSuccessAt).toLocaleString() : '—'} />
+        {(orphanedUmas > 0 || orphanedCards > 0) && <Row label="Missing references" value={`${orphanedUmas} Umas · ${orphanedCards} cards`} />}
+        {sync.error && <p className="border-t border-sky-100 pt-2 text-xs font-bold text-red-700">{sync.error}</p>}
         <Row label="Content packs" value={contentLabel} />
         <div className="border-t border-sky-100 pt-2 text-right text-xs font-bold text-ink-soft">{contentCounts}</div>
         <Row label="Home Screen app" value={standalone ? 'Yes' : 'No (Safari tab)'} />

@@ -4,9 +4,9 @@ import { CountUp } from '../ui/CountUp'
 import { Pill } from '../ui/Pill'
 
 export function TopBar() {
-  const tickets = useGame((s) => s.profile.tickets)
-  const cardCoupons = useGame((s) => s.profile.cardCoupons)
-  const umaCoupons = useGame((s) => s.profile.umaCoupons)
+  const tickets = useGame((s) => s.profile?.tickets ?? 0)
+  const cardCoupons = useGame((s) => s.profile?.cardCoupons ?? 0)
+  const umaCoupons = useGame((s) => s.profile?.umaCoupons ?? 0)
 
   return (
     <header className="pt-safe sticky top-0 z-20 px-4">

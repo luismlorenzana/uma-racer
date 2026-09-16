@@ -1,13 +1,10 @@
-// Save sync contract between the local-first client and the server (docs/technical/architecture.md#1-local-first-game-state).
+// API-side validation for the @racer/domain save wire contract (docs/tasks/T003-stable-save-foundation.md).
+// This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
 
-/** Mutable, versioned entities. */
 export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-
-/** Append-only records — never conflict, idempotent by id. */
 export const LOG_KINDS = ['raceResults', 'ledger'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
-
 export const MAX_SYNC_OPERATIONS = 400
 
 export interface EntityRecord {
@@ -29,7 +26,6 @@ export interface LogRecord {
 export interface EntityUpsert {
   kind: EntityKind
   id: string
-  /** Version the client last saw; 0 for a new entity. */
   baseVersion: number
   data: Record<string, unknown>
   deleted?: boolean
@@ -49,7 +45,6 @@ export interface SyncRequest {
 
 export interface SyncResponse {
   applied: { kind: EntityKind; id: string; version: number }[]
-  /** Server copies for stale upserts; the client adopts them. */
   conflicts: EntityRecord[]
   appended: number
   serverTime: number
@@ -61,39 +56,160 @@ export interface SaveSnapshot {
   serverTime: number
 }
 
-const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
-const isId = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_.:-]{1,120}$/.test(v)
+const ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const STATS = ['speed', 'stamina', 'power', 'guts', 'wit'] as const
+const GRADES = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G'] as const
+const SKILL_ORIGINS = ['own-unique', 'awakening', 'card', 'inherited'] as const
+const LEDGER_RESOURCES = ['tickets', 'card-coupons', 'uma-coupons', 'uma-shards'] as const
+const LEDGER_REASONS = ['daily-grant', 'initial-grant', 'uma-level', 'card-level', 'uma-promotion', 'card-limit-break'] as const
+const PROFILE_FIELDS = ['schemaVersion', 'tickets', 'cardCoupons', 'umaCoupons', 'umaShards', 'lastDailyGrant', 'featuredUmaId', 'starterSeedContentVersion', 'createdAt'] as const
+const UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds', 'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario'] as const
+const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
+const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
+const LEDGER_FIELDS = ['resource', 'delta', 'reason', 'localDay', 'createdAt'] as const
 
-/** Shape-checks an untrusted sync body. Returns an error message, or the parsed request. */
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+const isId = (value: unknown): value is string => typeof value === 'string' && ID_PATTERN.test(value)
+const isNonNegativeInt = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
+const isPositiveInt = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0
+
+function isLocalDay(value: unknown): value is string {
+  if (typeof value !== 'string' || !DAY_PATTERN.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year!, month! - 1, day))
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month! - 1 && date.getUTCDate() === day
+}
+
+function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  const expected = [...keys].sort()
+  const actual = Object.keys(value).sort()
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index])
+}
+
+function parseStats(value: unknown): Record<(typeof STATS)[number], number> | null {
+  if (!isRecord(value) || !exactKeys(value, STATS) || STATS.some((key) => !isNonNegativeInt(value[key]))) return null
+  return Object.fromEntries(STATS.map((key) => [key, value[key] as number])) as Record<(typeof STATS)[number], number>
+}
+
+function parseAptitudes(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !isRecord(value.surface) || !isRecord(value.distance) || !isRecord(value.strategy)) return null
+  const groups = [
+    [value.surface, ['turf', 'dirt']],
+    [value.distance, ['sprint', 'mile', 'medium', 'long']],
+    [value.strategy, ['front', 'pace', 'late', 'end']],
+  ] as const
+  for (const [group, keys] of groups) {
+    if (!exactKeys(group, keys) || keys.some((key) => !GRADES.includes(group[key] as (typeof GRADES)[number]))) return null
+  }
+  return value
+}
+
+function parseUniqueIds(value: unknown, max = Number.POSITIVE_INFINITY): string[] | null {
+  if (!Array.isArray(value) || value.length > max || value.some((item) => !isId(item))) return null
+  return new Set(value).size === value.length ? [...value] as string[] : null
+}
+
+function parseProfile(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || value.schemaVersion !== 1) return null
+  if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
+  if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
+  if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
+  if (value.starterSeedContentVersion !== null && !isId(value.starterSeedContentVersion)) return null
+  if (!isNonNegativeInt(value.createdAt)) return null
+  return value
+}
+
+function parseUma(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, UMA_FIELDS) || !isId(value.templateId) || !isPositiveInt(value.level) || value.level > 110 || !isNonNegativeInt(value.exp)) return null
+  const expToNext = 100 + 25 * (value.level - 1)
+  const expLimit = expToNext + (value.level % 10 === 0 ? 100 + 25 * value.level : -1)
+  if (value.exp > expLimit) return null
+  if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > 10 || !isNonNegativeInt(value.trainingExp)) return null
+  if ((value.trainingLevel === 10 && value.trainingExp !== 0) || (value.trainingLevel < 10 && value.trainingExp >= 100)) return null
+  if (!parseStats(value.stats) || !parseAptitudes(value.aptitudes) || !isNonNegativeInt(value.skillPoints) || !isNonNegativeInt(value.trainingsThisScenario)) return null
+  const deck = parseUniqueIds(value.deckCardIds, 6)
+  const loadout = parseUniqueIds(value.loadoutSkillIds)
+  if (!deck || !loadout || !Array.isArray(value.skillLibrary)) return null
+  const skills = value.skillLibrary
+  if (skills.some((skill) => !isRecord(skill) || !exactKeys(skill, SKILL_FIELDS) || !isId(skill.skillId) || !SKILL_ORIGINS.includes(skill.origin as (typeof SKILL_ORIGINS)[number]) || (skill.sourceId !== null && !isId(skill.sourceId)))) return null
+  const skillIds = skills.map((skill) => (skill as Record<string, unknown>).skillId as string)
+  if (new Set(skillIds).size !== skillIds.length) return null
+  const paid = new Set(skills.filter((skill) => (skill as Record<string, unknown>).origin !== 'own-unique').map((skill) => (skill as Record<string, unknown>).skillId))
+  if (loadout.some((id) => !paid.has(id))) return null
+  return value
+}
+
+function parseCard(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, CARD_FIELDS) || !isId(value.templateId) || !isPositiveInt(value.level) || value.level > 25 || !isNonNegativeInt(value.exp)) return null
+  if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > 4 || value.level > 5 * (value.limitBreak + 1)) return null
+  const expToNext = 40 + 15 * (value.level - 1)
+  if (value.exp > expToNext || (value.level < 5 * (value.limitBreak + 1) && value.exp === expToNext)) return null
+  if (typeof value.maxCouponGranted !== 'boolean') return null
+  return value
+}
+
+function parseLedger(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, LEDGER_FIELDS)) return null
+  if (!LEDGER_RESOURCES.includes(value.resource as (typeof LEDGER_RESOURCES)[number])) return null
+  if (!LEDGER_REASONS.includes(value.reason as (typeof LEDGER_REASONS)[number])) return null
+  if (!Number.isSafeInteger(value.delta) || value.delta === 0 || !isNonNegativeInt(value.createdAt)) return null
+  if (value.localDay !== null && !isLocalDay(value.localDay)) return null
+  return value
+}
+
+function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
+  if (kind === 'profile') return parseProfile(value)
+  if (kind === 'umas') return parseUma(value)
+  if (kind === 'cards') return parseCard(value)
+  return isRecord(value) ? value : null
+}
+
+function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
+  return kind === 'ledger' ? parseLedger(value) : isRecord(value) ? value : null
+}
+
+/** Shape-check an untrusted sync body before it reaches either repository implementation. */
 export function parseSyncRequest(body: unknown): SyncRequest | string {
-  if (!isObject(body)) return 'body must be an object'
+  if (!isRecord(body)) return 'body must be an object'
   const upserts = body.upserts ?? []
   const appends = body.appends ?? []
   if (!Array.isArray(upserts) || !Array.isArray(appends)) return 'upserts and appends must be arrays'
   if (upserts.length + appends.length > MAX_SYNC_OPERATIONS) return `at most ${MAX_SYNC_OPERATIONS} operations per sync`
 
-  for (const u of upserts) {
-    if (!isObject(u)) return 'upsert must be an object'
-    if (!ENTITY_KINDS.includes(u.kind as EntityKind)) return `unknown entity kind ${String(u.kind)}`
-    if (!isId(u.id)) return 'invalid entity id'
-    if (!Number.isInteger(u.baseVersion) || (u.baseVersion as number) < 0) return 'invalid baseVersion'
-    if (!isObject(u.data)) return 'upsert data must be an object'
+  const parsedUpserts: EntityUpsert[] = []
+  for (const value of upserts) {
+    if (!isRecord(value)) return 'upsert must be an object'
+    if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
+    const kind = value.kind as EntityKind
+    if (!isId(value.id)) return 'invalid entity id'
+    if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
+    const data = parseEntityData(kind, value.data)
+    if (!data) return `invalid ${kind} data`
+    if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id)) return `${kind} id does not match data`
+    if (value.deleted !== undefined && typeof value.deleted !== 'boolean') return 'invalid deleted flag'
+    parsedUpserts.push({ kind, id: value.id, baseVersion: value.baseVersion, data, deleted: value.deleted as boolean | undefined })
   }
-  for (const a of appends) {
-    if (!isObject(a)) return 'append must be an object'
-    if (!LOG_KINDS.includes(a.kind as LogKind)) return `unknown log kind ${String(a.kind)}`
-    if (!isId(a.id)) return 'invalid log id'
-    if (!isObject(a.data)) return 'append data must be an object'
-    if (typeof a.createdAt !== 'number') return 'append createdAt must be a number'
+
+  const parsedAppends: LogAppend[] = []
+  for (const value of appends) {
+    if (!isRecord(value)) return 'append must be an object'
+    if (!LOG_KINDS.includes(value.kind as LogKind)) return `unknown log kind ${String(value.kind)}`
+    const kind = value.kind as LogKind
+    if (!isId(value.id)) return 'invalid log id'
+    const data = parseLogData(kind, value.data)
+    if (!data) return `invalid ${kind} data`
+    if (!isNonNegativeInt(value.createdAt)) return 'append createdAt must be a number'
+    parsedAppends.push({ kind, id: value.id, data, createdAt: value.createdAt })
   }
-  return { upserts: upserts as EntityUpsert[], appends: appends as LogAppend[] }
+  const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)
+  const logKeys = parsedAppends.map((item) => `${item.kind}/${item.id}`)
+  if (new Set(entityKeys).size !== entityKeys.length || new Set(logKeys).size !== logKeys.length) return 'duplicate operation id'
+  return { upserts: parsedUpserts, appends: parsedAppends }
 }
 
-/**
- * Pure optimistic-concurrency step shared by every repository: an upsert applies only when its baseVersion
- * matches the stored version. An entity the server doesn't have is always accepted (first sync or a restored
- * device). Returns the records to write and the conflicts to send back.
- */
+/** Apply version-matched mutable entities and return authoritative server copies for stale writes. */
 export function resolveUpserts(
   existing: Map<string, EntityRecord>,
   upserts: EntityUpsert[],
@@ -101,20 +217,20 @@ export function resolveUpserts(
 ): { writes: EntityRecord[]; conflicts: EntityRecord[] } {
   const writes: EntityRecord[] = []
   const conflicts: EntityRecord[] = []
-  for (const u of upserts) {
-    const key = `${u.kind}/${u.id}`
+  for (const upsert of upserts) {
+    const key = `${upsert.kind}/${upsert.id}`
     const current = existing.get(key)
     const currentVersion = current?.version ?? 0
-    if (current && u.baseVersion !== currentVersion) {
+    if (current && upsert.baseVersion !== currentVersion) {
       conflicts.push(current)
       continue
     }
     const record: EntityRecord = {
-      kind: u.kind,
-      id: u.id,
+      kind: upsert.kind,
+      id: upsert.id,
       version: currentVersion + 1,
-      data: u.data,
-      deleted: u.deleted ?? false,
+      data: upsert.data,
+      deleted: upsert.deleted ?? false,
       updatedAt: now,
     }
     existing.set(key, record)

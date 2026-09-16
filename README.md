@@ -5,9 +5,9 @@ Umas are permanent RPG characters. They level up by winning races, train through
 SSR support cards, learn skills and inherit from their parents, and collect a lot of badges and flair,
 while the stable itself grows into a collection.
 
-> **Status:** pre-production. The app and API deploy, the deterministic race preview runs, and Milestone 1's private data,
-> WebP atlas, and authenticated/offline content pipelines are built. Next: publish a generated private content version,
-> then build the first playable Stable → Training → Race loop.
+> **Status:** pre-production. Milestone 1's private content pipeline is built, and the app now has a typed local-first save,
+> cloud reconciliation, the real 25-Uma launch Stable, Uma profiles, and a persisted featured-Uma Home hero. The deterministic
+> race preview still runs separately. Next: T004's saved-Uma Training loop, followed by progression races and rewards.
 
 ## Ground rules
 
@@ -31,7 +31,7 @@ Race engine preview: **Race tab → pick a race → Start race**.
 
 ```bash
 pnpm lint           # type-check all packages
-pnpm test           # domain rules, race engine, API sync
+pnpm test           # domain rules, race engine, API sync, save persistence and web view models
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
 pnpm data:import    # GameTora datasets → private, gitignored content packs

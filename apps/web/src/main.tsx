@@ -10,15 +10,13 @@ import { RouterProvider } from 'react-router'
 import { router } from './app/router'
 import { AuthProvider } from './auth/AuthProvider'
 import { ContentProvider } from './content/ContentProvider'
-import { bootGame } from './game/store'
+import { GameProvider } from './game/GameProvider'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: Infinity, retry: 1, refetchOnWindowFocus: false },
   },
 })
-
-void bootGame()
 
 // Animation features load in a separate chunk; `strict` forbids the heavier `motion.*` components.
 const loadMotionFeatures = () => import('./ui/motionFeatures').then((mod) => mod.default)
@@ -28,9 +26,11 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ContentProvider>
-          <LazyMotion features={loadMotionFeatures} strict>
-            <RouterProvider router={router} />
-          </LazyMotion>
+          <GameProvider>
+            <LazyMotion features={loadMotionFeatures} strict>
+              <RouterProvider router={router} />
+            </LazyMotion>
+          </GameProvider>
         </ContentProvider>
       </AuthProvider>
     </QueryClientProvider>

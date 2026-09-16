@@ -72,12 +72,20 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
+- Save v1 stores only mutable profile, Uma, card, and ledger state. Static names, art, release metadata, and card/skill
+  definitions remain in the private content registry and are joined by stable ids at render time.
+- A coordinator waits for auth and a verified content version, migrates and parses IndexedDB, then publishes ready state.
+  A non-empty local save opens immediately. Only a semantically empty database tries a full cloud bootstrap before
+  deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
 - Every action (a training turn, a race, a promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
-  client adopts it. Append-only records (race results, ledger) never conflict.
+  client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
+  rebased onto the returned server version. Append-only records (race results, ledger) are idempotent by id.
+- Every IndexedDB/network shape is parsed before adoption. A corrupt or newer-schema save becomes an explicit recoverable
+  error rather than being reset. If IndexedDB itself is unavailable, play can continue in clearly labeled memory-only mode.
 - The client is trusted. It's a personal game, so there's no server-side validation of game rules beyond shape checks.
 
 ### 2. Deterministic simulation, then playback
@@ -91,8 +99,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 - Game data (Umas, SSR cards, skills, races) comes from GameTora's versioned JSON datasets, the same importer approach as
   uma-planner, and is normalized into **content packs** (`umas.json`, `cards.json`, `skills.json`, `races.json`).
-- Images are fetched once by a local pipeline script, resized to the sizes the UI needs (@3x for iPhone), encoded as WebP,
-  and packed into **sprite atlases** for the race scene.
+- Images are fetched once by a local pipeline script, normalized without crop into 128×128 WebP frames, and packed into
+  deterministic **sprite atlases** used by DOM UI and later race scenes.
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.
@@ -112,13 +120,17 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 ## Firestore data model (saves)
 
 ```text
-players/{uid}/profile/main            tickets, coupons, shards, settings, schemaVersion, version
-players/{uid}/umas/{umaId}            level, exp, trainingLevel, stats, deck, library, loadout, parents, snapshot, goals, version
-players/{uid}/cards/{cardId}          level, exp, lb, maxed, version
+players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
+players/{uid}/umas/{umaId}            templateId, levels/EXP, stats, aptitudes, deck ids, current library/loadout, version
+players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: umaId, raceId, seed, field, placements, rewards, createdAt
 players/{uid}/badges/{scope}          earned tiers with dates and race refs, pins, showcase groups, saved views
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 ```
+
+The profile's current save-v1 fields are currencies, local daily-grant date, featured Uma id, one-time starter-content
+marker, creation time, and schema version. Settings, parents, snapshots, goals, history, badges, and titles are intentionally
+added only by their owning tasks through explicit schema migrations; they are not placeholder blobs in save v1.
 
 Entity docs stay far below Firestore's 1 MiB limit, and daily writes stay well inside the free tier (see [Infrastructure](infrastructure.md)).
 
@@ -129,7 +141,7 @@ apps/web/src/
   app/          shell, router, bottom tab bar, providers
   auth/         Firebase auth provider (from uma-planner)
   api/          fetch client with token provider (from uma-planner), sync client
-  game/         Zustand store, Dexie schema, outbox, actions calling @racer/domain
+  game/         Zustand store, Dexie schema/migrations, save coordinator, persistence, outbox sync, content/save joins
   content/      manifest + pack loading, asset URLs
   scenes/       PixiJS scenes (race, training effects), lazy-loaded
   ui/           game UI kit: GameButton, Panel, Pill, Meter, BottomSheet, Toast, fx
@@ -138,7 +150,8 @@ apps/web/src/
 
 - **Routes are code-split**. PixiJS loads only with the Race or Training screens.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
-- **TanStack Query** is only for network data (content manifest, sync status), as in uma-planner.
+- **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
+  Zustand, never a query cache.
 
 ## Testing
 
@@ -147,6 +160,6 @@ apps/web/src/
 | `@racer/domain` | Vitest | Formulas match the design docs (caps, Race Form, costs, EXP curves) |
 | `@racer/race` | Vitest | Determinism (same seed gives the same result), phase boundaries, HP drain, sanity ranges (finish times per distance) |
 | API | Vitest | Sync conflict handling, auth guard |
-| Web | Type-check + build, manual on iPhone and in the iOS Simulator | Feel, performance, layout at 390×844 |
+| Web | Vitest + fake IndexedDB, type-check + build, manual on iPhone | Migrations, boot/sync safety, joins/filters/atlas math, feel and 390×844 layout |
 
 CI runs lint, type-check, tests, and builds on every push, as uma-planner's workflow does.
