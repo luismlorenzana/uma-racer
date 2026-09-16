@@ -70,7 +70,7 @@ describe('parseSyncRequest', () => {
         {
           kind: 'ledger',
           id: 'l1',
-          data: { resource: 'tickets', delta: 50, reason: 'daily-grant', localDay: '2026-01-01', createdAt: 1 },
+          data: { resource: 'tickets', delta: -1, reason: 'training', localDay: '2026-01-01', createdAt: 1 },
           createdAt: 1,
         },
       ],

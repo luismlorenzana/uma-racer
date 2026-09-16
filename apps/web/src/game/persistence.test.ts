@@ -43,7 +43,7 @@ function uma(id: string): UmaTemplate {
     baseStats: { speed: 101, stamina: 102, power: 103, guts: 104, wit: 105 },
     growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
     aptitudes,
-    uniqueSkillId: `skill-${id}`,
+    uniqueSkillId: null,
     awakeningSkillIds: [],
     realHorseSex: null,
     signatureRaces: [],

@@ -2,11 +2,14 @@
 
 import {
   MAX_SYNC_OPERATIONS,
+  assertTrainingContent,
   assertSaveContent,
   createInitialSave,
   parseSyncResponseOrThrow,
   type EntityKind,
+  type Facility,
   type LogKind,
+  type TrainingTurnResult,
   type SyncRequest,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -26,8 +29,9 @@ import {
   stateFromSnapshot,
   updateEntityVersion,
 } from './persistence'
-import { adoptGameState, clearGameState, localDay, replaceProfile, setGameLifecycle, setSyncState, useGame } from './store'
+import { adoptGameState, clearGameState, localDay, replaceProfile, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
 import { acknowledgedSequences } from './sync'
+import { ensureMemoryTrainingDeck, ensurePersistentTrainingDeck, persistTraining, resolveMemoryTraining } from './training'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -36,6 +40,7 @@ export class GameRuntime {
   private timer: ReturnType<typeof setTimeout> | null = null
   private content: LoadedContent | null = null
   private flushing = false
+  private trainingLocks = new Set<string>()
   private onlineHandler = () => void this.flush()
   private visibilityHandler = () => {
     if (document.visibilityState === 'hidden') void this.flush()
@@ -50,6 +55,7 @@ export class GameRuntime {
     const now = Date.now()
     try {
       assertSaveContent(content.umas.items, content.cards.items)
+      assertTrainingContent(content.umas.items, content.cards.items, content.skills.items)
     } catch (error) {
       setGameLifecycle('error', error instanceof Error ? error.message : String(error))
       return
@@ -156,6 +162,55 @@ export class GameRuntime {
     replaceProfile(profile)
     await this.refreshPending()
     this.schedule()
+  }
+
+  async ensureTrainingDeck(id: string): Promise<void> {
+    const generation = this.generation
+    const content = this.content
+    const state = useGame.getState()
+    const uma = state.umas[id]
+    if (!content || state.status !== 'ready' || !uma) throw new Error('Training Uma must be owned')
+    const next = state.persistent
+      ? await ensurePersistentTrainingDeck(content, id, Date.now())
+      : ensureMemoryTrainingDeck(content, uma, state.cards)
+    if (generation !== this.generation) return
+    replaceUma(next)
+    if (state.persistent) {
+      await this.refreshPending()
+      this.schedule()
+    }
+  }
+
+  async trainUma(id: string, facility: Facility, today = localDay(), now = Date.now()): Promise<TrainingTurnResult> {
+    if (this.trainingLocks.has(id)) throw new Error('Training is already resolving for this Uma')
+    this.trainingLocks.add(id)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      const uma = state.umas[id]
+      if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Training Uma must be owned')
+      const mutation = state.persistent
+        ? await persistTraining(content, id, facility, today, now)
+        : resolveMemoryTraining({
+          content,
+          profile: state.profile,
+          uma,
+          cardsById: state.cards,
+          facility,
+          today,
+          now,
+        })
+      if (generation !== this.generation) return mutation.result
+      replaceTrainingState(mutation.profile, mutation.uma, mutation.cards)
+      if (state.persistent) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation.result
+    } finally {
+      this.trainingLocks.delete(id)
+    }
   }
 
   private async refreshPending(): Promise<void> {

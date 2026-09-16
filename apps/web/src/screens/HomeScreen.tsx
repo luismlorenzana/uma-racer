@@ -1,7 +1,7 @@
 import { TICKET_STORAGE_CAP } from '@racer/domain'
 import { m } from 'motion/react'
 import { useEffect, useMemo } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma } from '../game/actions'
 import { useGame } from '../game/store'
@@ -13,6 +13,7 @@ import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
 
 export function HomeScreen() {
+  const navigate = useNavigate()
   const contentState = useContent()
   const status = useGame((state) => state.status)
   const error = useGame((state) => state.error)
@@ -65,8 +66,8 @@ export function HomeScreen() {
           <p className="mt-1 text-sm font-extrabold text-sky-deep">{featured.scenario?.name ?? `Tier ${featured.tier}`} · Training Level {featured.save.trainingLevel}</p>
         </Link>
         <div className="grid grid-cols-2 gap-3 border-t-2 border-white bg-white/60 p-4">
-          <GameButton variant="secondary" size="lg" disabled>Train · T004</GameButton>
-          <GameButton variant="go" size="lg" disabled>Race · locked</GameButton>
+          <GameButton variant="secondary" size="lg" onClick={() => navigate(`/training/${encodeURIComponent(featured.save.templateId)}`)}>Train</GameButton>
+          <GameButton variant="go" size="lg" disabled>Race · T005</GameButton>
         </div>
         <p className="px-4 pb-4 text-center text-xs font-bold text-ink-soft">Train once to unlock saved-Uma races.</p>
       </Panel>

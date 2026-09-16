@@ -17,15 +17,20 @@ export const levelWithinLimitBreakMult = (level: number): number => 1 + 0.02 * (
 
 export const CARD_TRAINING_EXP = { equipped: 5, present: 15, friendship: 25 } as const
 
-export type CardEffect =
-  | 'trainingBonus'
-  | 'friendshipBonus'
-  | 'statBonus'
-  | 'skillPointBonus'
-  | 'specialtyPriority'
-  | 'hintFrequency'
-  | 'raceBonus'
-  | 'initialStats'
+export const CARD_EFFECTS = [
+  'trainingBonus',
+  'friendshipBonus',
+  'statBonus',
+  'skillPointBonus',
+  'specialtyPriority',
+  'hintFrequency',
+  'raceBonus',
+  'initialStats',
+] as const
+export type CardEffect = (typeof CARD_EFFECTS)[number]
+
+/** Four slots in tier 1, five in tier 2, and the full six from tier 3 onward. */
+export const deckSlotCount = (tier: number): number => (tier <= 1 ? 4 : tier === 2 ? 5 : 6)
 
 /** Base values for an era-1, LB0, level-1 card. */
 export const CARD_EFFECT_BASE: Record<CardEffect, number> = {

@@ -79,6 +79,11 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
 - Every action (a training turn, a race, a promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
+- A saved-Uma Training turn derives its card deal and hint rolls from a stable seed (profile creation time, Uma id, tier,
+  and completed-turn count). An empty deck is deterministically auto-filled once from owned eligible stat cards. A chosen
+  facility then spends one ticket and writes the profile, Uma, changed cards, append-only spend/reward ledger rows, and
+  coalesced outbox work in one Dexie transaction; Zustand publishes only after that transaction commits. Memory-only mode
+  runs the same pure mutation but keeps its existing explicit non-persistent warning.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
@@ -143,12 +148,12 @@ apps/web/src/
   api/          fetch client with token provider (from uma-planner), sync client
   game/         Zustand store, Dexie schema/migrations, save coordinator, persistence, outbox sync, content/save joins
   content/      manifest + pack loading, asset URLs
-  scenes/       PixiJS scenes (race, training effects), lazy-loaded
+  scenes/       PixiJS race scenes, lazy-loaded
   ui/           game UI kit: GameButton, Panel, Pill, Meter, BottomSheet, Toast, fx
   screens/      Home, Stable, UmaProfile, Training, RaceSelect, PreRace, Race, Results, Cards, Badges, Settings
 ```
 
-- **Routes are code-split**. PixiJS loads only with the Race or Training screens.
+- **Routes are code-split**. PixiJS loads only with Race scenes; Training uses route-split DOM and Motion feedback.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.

@@ -50,6 +50,10 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    path: 'training/:umaId',
+    lazy: async () => ({ Component: (await import('../screens/training/TrainingScreen')).TrainingScreen }),
+  },
+  {
     path: 'race/run',
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
   },

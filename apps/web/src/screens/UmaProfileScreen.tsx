@@ -1,5 +1,5 @@
 import { DISTANCE_CATEGORIES, SCENARIOS, STATS, STRATEGIES, SURFACES, type Grade, type StatKey } from '@racer/domain'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma } from '../game/actions'
 import { useGame } from '../game/store'
@@ -46,6 +46,7 @@ function AptitudeRow({ label, entries }: { label: string; entries: readonly [str
 }
 
 export function UmaProfileScreen() {
+  const navigate = useNavigate()
   const { umaId = '' } = useParams()
   const contentState = useContent()
   const status = useGame((state) => state.status)
@@ -161,8 +162,8 @@ export function UmaProfileScreen() {
       <div className="sticky bottom-24 z-10 rounded-[1.5rem] border-2 border-white bg-white/95 p-3 shadow-[var(--shadow-panel)] backdrop-blur">
         <p className="mb-3 text-center text-sm font-extrabold">Train once to unlock races in this scenario.</p>
         <div className="grid grid-cols-3 gap-2">
-          <GameButton variant="secondary" disabled>Train · T004</GameButton>
-          <GameButton variant="go" disabled>Race · locked</GameButton>
+          <GameButton variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(save.templateId)}`)}>Train</GameButton>
+          <GameButton variant="go" disabled>Race · T005</GameButton>
           <GameButton variant="secondary" disabled>Promote · locked</GameButton>
         </div>
         <p className="mt-2 text-center text-xs text-ink-soft">Race and promotion arrive with their full progression flows.</p>

@@ -77,6 +77,21 @@ export function replaceProfile(profile: PlayerProfile): void {
   useGame.setState({ profile })
 }
 
+export function replaceUma(uma: UmaSave): void {
+  useGame.setState((state) => ({ umas: { ...state.umas, [uma.templateId]: uma } }))
+}
+
+export function replaceTrainingState(profile: PlayerProfile, uma: UmaSave, cards: readonly CardSave[]): void {
+  useGame.setState((state) => ({
+    profile,
+    umas: { ...state.umas, [uma.templateId]: uma },
+    cards: cards.reduce<Record<string, CardSave>>(
+      (next, card) => ({ ...next, [card.templateId]: card }),
+      state.cards as Record<string, CardSave>,
+    ),
+  }))
+}
+
 export function setSyncState(sync: Partial<SyncState>): void {
   useGame.setState((state) => ({ sync: { ...state.sync, ...sync } }))
 }
