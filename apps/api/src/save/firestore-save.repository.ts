@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { isDeepStrictEqual } from 'node:util'
 import type { SaveRepository } from './save.repository'
 import {
   ENTITY_KINDS,
@@ -60,8 +61,13 @@ export class FirestoreSaveRepository implements SaveRepository {
 
       let appended = 0
       request.appends.forEach((a, i) => {
-        if (logDocs[i]?.exists) return
         const record: LogRecord = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
+        if (logDocs[i]?.exists) {
+          if (!isDeepStrictEqual(logDocs[i]!.data(), record)) {
+            throw new Error(`Append log id collision: ${a.kind}/${a.id}`)
+          }
+          return
+        }
         tx.set(logRefs[i]!, record)
         appended++
       })

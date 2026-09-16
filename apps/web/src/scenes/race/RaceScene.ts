@@ -36,6 +36,7 @@ const RAIL = 0xffffff
 const INK = 0x23324a
 const STRIPE_METERS = 10
 const HUD_INTERVAL_MS = 100
+const visualUnit = (value: number) => (Math.imul(value ^ (value >>> 16), 0x45d9f3b) >>> 0) / 4294967296
 
 export class RaceScene {
   private readonly app = new Application()
@@ -54,7 +55,12 @@ export class RaceScene {
   private readonly runnerLayer = new Container()
   private readonly markerLabels: Text[] = []
   private readonly tokens: Token[] = []
-  private readonly streaks = Array.from({ length: 10 }, (_, i) => ({ x: Math.random(), y: (i + 0.5) / 10, len: 0.15 + Math.random() * 0.2 }))
+  private readonly streaks = Array.from({ length: 10 }, (_, index) => ({
+    x: visualUnit(index + 1),
+    y: (index + 0.5) / 10,
+    len: 0.15 + visualUnit(index + 101) * 0.2,
+    cycle: 0,
+  }))
 
   constructor(
     private readonly timeline: RaceTimeline,
@@ -206,11 +212,12 @@ export class RaceScene {
     const phase = phaseAt(lead, course)
     this.effects.clear()
     if (phase >= 3 && this.elapsed < this.duration) {
-      for (const streak of this.streaks) {
+      for (const [index, streak] of this.streaks.entries()) {
         streak.x -= dt * this.speed * 1.6
         if (streak.x + streak.len < 0) {
-          streak.x = 1 + Math.random() * 0.3
-          streak.y = Math.random()
+          streak.cycle += 1
+          streak.x = 1 + visualUnit(index + streak.cycle * 31) * 0.3
+          streak.y = visualUnit(index + streak.cycle * 67)
         }
         const y = lanesTop + streak.y * laneHeight * laneCount
         this.effects

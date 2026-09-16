@@ -68,6 +68,13 @@ const UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp'
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
 const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
 const LEDGER_FIELDS = ['resource', 'delta', 'reason', 'localDay', 'createdAt'] as const
+const STRATEGIES = ['front', 'pace', 'late', 'end'] as const
+const RACE_RESULT_FIELDS = [
+  'contentVersion', 'umaId', 'raceId', 'sequence', 'seed', 'strategy', 'startLevel', 'startExp', 'startStats',
+  'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward', 'field', 'createdAt',
+] as const
+const RACE_RUNNER_FIELDS = ['umaId', 'isPlayer', 'strategy', 'gate', 'stats', 'aptitude', 'placement', 'finishTime', 'marginLengths'] as const
+const RACE_APTITUDE_FIELDS = ['distance', 'surface', 'strategy'] as const
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -159,6 +166,59 @@ function parseLedger(value: unknown): Record<string, unknown> | null {
   return value
 }
 
+function parseRaceStats(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, STATS)) return null
+  if (STATS.some((key) => typeof value[key] !== 'number' || !Number.isFinite(value[key]) || (value[key] as number) < 0)) return null
+  return value
+}
+
+function parseRaceAptitude(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, RACE_APTITUDE_FIELDS)) return null
+  return RACE_APTITUDE_FIELDS.every((key) => GRADES.includes(value[key] as (typeof GRADES)[number])) ? value : null
+}
+
+function parseRaceResult(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, RACE_RESULT_FIELDS) || !Array.isArray(value.field)) return null
+  const fieldSize = value.field.length
+  if (
+    !isId(value.contentVersion) || !isId(value.umaId) || !isId(value.raceId) ||
+    !isNonNegativeInt(value.sequence) || !isNonNegativeInt(value.seed) ||
+    !STRATEGIES.includes(value.strategy as (typeof STRATEGIES)[number]) ||
+    !isPositiveInt(value.startLevel) || value.startLevel > 110 || !isNonNegativeInt(value.startExp) ||
+    !parseRaceStats(value.startStats) || typeof value.raceBonus !== 'number' || !Number.isFinite(value.raceBonus) || value.raceBonus < 0 ||
+    !isPositiveInt(value.playerPlacement) || value.playerPlacement > fieldSize || !isNonNegativeInt(value.expGained) ||
+    !Array.isArray(value.levelsGained) || value.levelsGained.some((level) => !isPositiveInt(level) || level > 110) ||
+    !isNonNegativeInt(value.ticketReward) || value.ticketReward !== value.levelsGained.length * 5 ||
+    !isNonNegativeInt(value.shardReward) || value.shardReward > 1 || fieldSize < 8 || fieldSize > 18 ||
+    !isNonNegativeInt(value.createdAt)
+  ) return null
+  const runners = value.field as unknown[]
+  for (const runner of runners) {
+    if (!isRecord(runner) || !exactKeys(runner, RACE_RUNNER_FIELDS)) return null
+    if (
+      !isId(runner.umaId) || typeof runner.isPlayer !== 'boolean' ||
+      !STRATEGIES.includes(runner.strategy as (typeof STRATEGIES)[number]) ||
+      !isNonNegativeInt(runner.gate) || runner.gate >= fieldSize || !parseRaceStats(runner.stats) ||
+      !parseRaceAptitude(runner.aptitude) || !isPositiveInt(runner.placement) || runner.placement > fieldSize ||
+      typeof runner.finishTime !== 'number' || !Number.isFinite(runner.finishTime) || runner.finishTime < 0 ||
+      typeof runner.marginLengths !== 'number' || !Number.isFinite(runner.marginLengths) || runner.marginLengths < 0
+    ) return null
+  }
+  const typed = runners as Record<string, unknown>[]
+  const players = typed.filter((runner) => runner.isPlayer)
+  const levels = value.levelsGained as number[]
+  if (
+    players.length !== 1 || players[0]!.umaId !== value.umaId || players[0]!.placement !== value.playerPlacement ||
+    players[0]!.strategy !== value.strategy ||
+    new Set(typed.map((runner) => runner.gate)).size !== fieldSize ||
+    new Set(typed.map((runner) => runner.placement)).size !== fieldSize ||
+    new Set(typed.map((runner) => runner.umaId)).size !== fieldSize ||
+    new Set(levels).size !== levels.length || levels.some((level, index) => index > 0 && level <= levels[index - 1]!) ||
+    (value.shardReward === 1 && (levels.at(-1) ?? -1) % 10 !== 0)
+  ) return null
+  return value
+}
+
 function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
   if (kind === 'profile') return parseProfile(value)
   if (kind === 'umas') return parseUma(value)
@@ -167,7 +227,7 @@ function parseEntityData(kind: EntityKind, value: unknown): Record<string, unkno
 }
 
 function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
-  return kind === 'ledger' ? parseLedger(value) : isRecord(value) ? value : null
+  return kind === 'ledger' ? parseLedger(value) : parseRaceResult(value)
 }
 
 /** Shape-check an untrusted sync body before it reaches either repository implementation. */
@@ -201,6 +261,9 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     const data = parseLogData(kind, value.data)
     if (!data) return `invalid ${kind} data`
     if (!isNonNegativeInt(value.createdAt)) return 'append createdAt must be a number'
+    if (kind === 'raceResults' && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) {
+      return 'raceResults id or timestamp does not match data'
+    }
     parsedAppends.push({ kind, id: value.id, data, createdAt: value.createdAt })
   }
   const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)

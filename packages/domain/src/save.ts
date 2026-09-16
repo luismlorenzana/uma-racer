@@ -4,6 +4,7 @@ import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK, cardExpToNext, cardLevelCap } from './
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
+import { parseRaceResultRecord } from './progression-race'
 import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL, MAX_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type Stats } from './types'
@@ -445,6 +446,7 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
 
 export function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
   if (kind === 'ledger') return parseLedgerEntry(value) as unknown as Record<string, unknown> | null
+  if (kind === 'raceResults') return parseRaceResultRecord(value) as unknown as Record<string, unknown> | null
   return parseGenericData(value)
 }
 
@@ -480,6 +482,9 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     const data = parseLogData(kind, value.data)
     if (!data) return `invalid ${kind} data`
     if (!isTimestamp(value.createdAt)) return 'append createdAt must be a number'
+    if (kind === 'raceResults' && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) {
+      return 'raceResults id or timestamp does not match data'
+    }
     parsedAppends.push({ kind, id: value.id, data, createdAt: value.createdAt })
   }
   const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)
@@ -504,6 +509,7 @@ function parseLogRecord(value: unknown): LogRecord | null {
   if (!isObject(value) || !LOG_KINDS.includes(value.kind as LogKind) || !isId(value.id) || !isTimestamp(value.createdAt)) return null
   const kind = value.kind as LogKind
   const data = parseLogData(kind, value.data)
+  if (kind === 'raceResults' && data && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) return null
   return data ? { kind, id: value.id, data, createdAt: value.createdAt } : null
 }
 

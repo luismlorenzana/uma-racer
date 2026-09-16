@@ -2,6 +2,7 @@
 
 import {
   MAX_SYNC_OPERATIONS,
+  assertProgressionRaceContent,
   assertTrainingContent,
   assertSaveContent,
   createInitialSave,
@@ -11,6 +12,8 @@ import {
   type LogKind,
   type TrainingTurnResult,
   type SyncRequest,
+  type RaceResultRecord,
+  type Strategy,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
@@ -29,9 +32,17 @@ import {
   stateFromSnapshot,
   updateEntityVersion,
 } from './persistence'
-import { adoptGameState, clearGameState, localDay, replaceProfile, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
+import { adoptGameState, clearGameState, localDay, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
 import { acknowledgedSequences } from './sync'
 import { ensureMemoryTrainingDeck, ensurePersistentTrainingDeck, persistTraining, resolveMemoryTraining } from './training'
+import {
+  completeMemoryRace,
+  completePersistentRace,
+  prepareMemoryRace,
+  preparePersistentRace,
+  readRaceHistory,
+  type PreparedRace,
+} from './racing'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -41,6 +52,8 @@ export class GameRuntime {
   private content: LoadedContent | null = null
   private flushing = false
   private trainingLocks = new Set<string>()
+  private raceLocks = new Set<string>()
+  private memoryRaceHistory: RaceResultRecord[] = []
   private onlineHandler = () => void this.flush()
   private visibilityHandler = () => {
     if (document.visibilityState === 'hidden') void this.flush()
@@ -56,6 +69,7 @@ export class GameRuntime {
     try {
       assertSaveContent(content.umas.items, content.cards.items)
       assertTrainingContent(content.umas.items, content.cards.items, content.skills.items)
+      assertProgressionRaceContent(content.races.items)
     } catch (error) {
       setGameLifecycle('error', error instanceof Error ? error.message : String(error))
       return
@@ -128,6 +142,7 @@ export class GameRuntime {
   stop(clear = true): void {
     this.generation += 1
     this.content = null
+    this.memoryRaceHistory = []
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
     if (typeof window !== 'undefined') window.removeEventListener('online', this.onlineHandler)
@@ -211,6 +226,48 @@ export class GameRuntime {
     } finally {
       this.trainingLocks.delete(id)
     }
+  }
+
+  async prepareRace(umaId: string, raceId: string, strategy: Strategy, sequence?: number) {
+    const content = this.content
+    const state = useGame.getState()
+    const uma = state.umas[umaId]
+    if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Race Uma must be owned')
+    return state.persistent
+      ? preparePersistentRace(content, umaId, raceId, strategy, sequence)
+      : prepareMemoryRace(content, state.profile, uma, state.cards, this.memoryRaceHistory, raceId, strategy, sequence)
+  }
+
+  async completeRace(attempt: PreparedRace, today = localDay(), now = Date.now()) {
+    if (this.raceLocks.has(attempt.umaId)) throw new Error('A race is already resolving for this Uma')
+    this.raceLocks.add(attempt.umaId)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      const uma = state.umas[attempt.umaId]
+      if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Race Uma must be owned')
+      const completion = state.persistent
+        ? await completePersistentRace(content, attempt, today, now)
+        : completeMemoryRace(content, state.profile, uma, state.cards, this.memoryRaceHistory, attempt, today, now)
+      if (generation !== this.generation) return completion
+      if (!state.persistent && !completion.alreadyRecorded) this.memoryRaceHistory.push(completion.record)
+      replaceRaceState(completion.profile, completion.uma)
+      if (state.persistent) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return completion
+    } finally {
+      this.raceLocks.delete(attempt.umaId)
+    }
+  }
+
+  async listRaceHistory(limit = 20): Promise<RaceResultRecord[]> {
+    if (!Number.isSafeInteger(limit) || limit < 0) throw new Error('Invalid race history limit')
+    return useGame.getState().persistent
+      ? readRaceHistory(limit)
+      : [...this.memoryRaceHistory].sort((left, right) => right.createdAt - left.createdAt).slice(0, limit)
   }
 
   private async refreshPending(): Promise<void> {

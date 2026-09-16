@@ -2,6 +2,7 @@ import {
   EXP_TO_NEXT_TRAINING_LEVEL,
   MAX_TRAINING_LEVEL,
   STATS,
+  isGateLevel,
   type Facility,
   type GainKey,
   type StatKey,
@@ -9,7 +10,7 @@ import {
 } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { ensureTrainingDeck, trainUma } from '../../game/actions'
 import { useGame } from '../../game/store'
@@ -96,6 +97,7 @@ function ResultPanel({ result, skillNames }: { result: TrainingTurnResult; skill
 }
 
 export function TrainingScreen() {
+  const navigate = useNavigate()
   const { umaId = '' } = useParams()
   const reducedMotion = useReducedMotion()
   const contentState = useContent()
@@ -265,10 +267,10 @@ export function TrainingScreen() {
 
         <div className="grid grid-cols-2 gap-2 pb-3">
           <GameButton variant="secondary" disabled>{busy ? 'Saving…' : 'Choose a facility'}</GameButton>
-          <GameButton variant="go" disabled>Race · T005</GameButton>
+          <GameButton variant="go" disabled={model.uma.trainingsThisScenario < 1 || isGateLevel(model.uma.level) || busy} onClick={() => navigate(`/race?uma=${encodeURIComponent(model.uma.templateId)}`)}>Race</GameButton>
         </div>
         <p className="-mt-2 pb-3 text-center text-[11px] font-bold text-ink-soft">
-          {model.uma.trainingsThisScenario > 0 ? 'Opening Training complete — saved-Uma races arrive in T005.' : 'Train once to unlock this Uma’s future saved race flow.'}
+          {model.uma.trainingsThisScenario > 0 ? 'Opening Training complete — progression races are unlocked.' : 'Train once to unlock this Uma’s race flow.'}
         </p>
       </main>
     </div>

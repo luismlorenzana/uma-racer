@@ -1,4 +1,4 @@
-import { TICKET_STORAGE_CAP } from '@racer/domain'
+import { TICKET_STORAGE_CAP, isGateLevel } from '@racer/domain'
 import { m } from 'motion/react'
 import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
@@ -46,6 +46,7 @@ export function HomeScreen() {
   if (status === 'error') return <ScreenState title="Save needs attention" detail={error ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Uma Racer…" detail="Loading private content and your local save." />
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
+  const raceUnlocked = featured.save.trainingsThisScenario >= 1 && !isGateLevel(featured.save.level)
 
   return (
     <div className="flex flex-col gap-4 pt-2">
@@ -67,9 +68,11 @@ export function HomeScreen() {
         </Link>
         <div className="grid grid-cols-2 gap-3 border-t-2 border-white bg-white/60 p-4">
           <GameButton variant="secondary" size="lg" onClick={() => navigate(`/training/${encodeURIComponent(featured.save.templateId)}`)}>Train</GameButton>
-          <GameButton variant="go" size="lg" disabled>Race · T005</GameButton>
+          <GameButton variant="go" size="lg" disabled={!raceUnlocked} onClick={() => navigate(`/race?uma=${encodeURIComponent(featured.save.templateId)}`)}>Race</GameButton>
         </div>
-        <p className="px-4 pb-4 text-center text-xs font-bold text-ink-soft">Train once to unlock saved-Uma races.</p>
+        <p className="px-4 pb-4 text-center text-xs font-bold text-ink-soft">
+          {isGateLevel(featured.save.level) ? 'Ready to promote before racing again.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock saved-Uma races.'}
+        </p>
       </Panel>
 
       <Panel>
@@ -82,8 +85,8 @@ export function HomeScreen() {
       </Panel>
 
       <Panel className="bg-gradient-to-br from-[#fff4d6] to-white">
-        <p className="font-extrabold">🏁 Race engine preview</p>
-        <p className="mt-1 text-sm text-ink-soft">The Race tab still hosts the deterministic engine preview. Progression races using this Uma arrive in T005.</p>
+        <p className="font-extrabold">🏁 Progression races</p>
+        <p className="mt-1 text-sm text-ink-soft">Race with saved stats, earn Uma EXP and tickets, and climb toward the next scenario gate.</p>
       </Panel>
     </div>
   )

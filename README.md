@@ -6,8 +6,8 @@ SSR support cards, learn skills and inherit from their parents, and collect a lo
 while the stable itself grows into a collection.
 
 > **Status:** pre-production. Milestone 1's private content pipeline is built, and Milestone 2 now has a typed local-first
-> save, the real 25-Uma launch Stable, Uma profiles, a persisted featured-Uma Home hero, and the first playable saved-Uma
-> Training loop. The deterministic race preview still runs separately. Next: T005's progression races and rewards.
+> save, the real 25-Uma launch Stable, Uma profiles, a persisted featured-Uma Home hero, and a complete first playable
+> Train → Race loop with Uma EXP, levels, ticket rewards, gate shards, and synced race history. Next: Milestone 3 race depth.
 
 ## Ground rules
 
@@ -25,8 +25,8 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone) + api :8080
 ```
 
-Race engine preview: **Race tab → pick a race → Start race**.
 Saved-Uma Training: **Home or Stable → Uma profile → Train**.
+Progression racing: **Train once → Race → pick a content race, Uma, and strategy → Start race**.
 
 ## Verification
 

@@ -14,3 +14,23 @@ export async function trainUma(id: string, facility: import('@racer/domain').Fac
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.trainUma(id, facility)
 }
+
+export async function prepareRace(
+  umaId: string,
+  raceId: string,
+  strategy: import('@racer/domain').Strategy,
+  sequence?: number,
+) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.prepareRace(umaId, raceId, strategy, sequence)
+}
+
+export async function completeRace(attempt: import('./racing').PreparedRace) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.completeRace(attempt)
+}
+
+export async function listRaceHistory(limit = 20) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.listRaceHistory(limit)
+}

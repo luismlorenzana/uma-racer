@@ -1,6 +1,7 @@
 export * from './types'
 export * from './scenarios'
 export * from './progression'
+export * from './progression-race'
 export * from './training'
 export * from './training-turn'
 export * from './raceForm'
