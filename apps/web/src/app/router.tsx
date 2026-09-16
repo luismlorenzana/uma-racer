@@ -51,10 +51,12 @@ export const router = createBrowserRouter([
   },
   {
     path: 'training/:umaId',
+    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Training" />,
     lazy: async () => ({ Component: (await import('../screens/training/TrainingScreen')).TrainingScreen }),
   },
   {
     path: 'race/run',
+    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
   },
 ])

@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import type { SaveRepository } from './save.repository'
 import { resolveUpserts, type EntityRecord, type LogRecord, type SaveSnapshot, type SyncRequest, type SyncResponse } from './save.types'
 
@@ -58,7 +59,12 @@ export class LocalSaveRepository implements SaveRepository {
       let appended = 0
       for (const a of request.appends) {
         const key = `${a.kind}/${a.id}`
-        if (user.logs[key]) continue
+        const current = user.logs[key]
+        if (current) {
+          const incoming: LogRecord = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
+          if (!isDeepStrictEqual(current, incoming)) throw new Error(`Append log id collision: ${key}`)
+          continue
+        }
         user.logs[key] = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
         appended++
       }

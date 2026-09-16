@@ -20,6 +20,9 @@ import {
   levelsIntoScenario,
   npcRaceStats,
   raceExp,
+  progressionFieldSize,
+  GATE_SHARD_REWARD,
+  UMA_LEVEL_TICKET_REWARD,
   spCap,
   statCap,
   tierOfLevel,
@@ -129,6 +132,10 @@ describe('progression and economy', () => {
     expect(raceExp('g1', 2)).toBe(38)
     expect(raceExp('g1', 4)).toBe(0)
     expect(raceExp('op', 1, 0.1)).toBe(66)
+    expect(UMA_LEVEL_TICKET_REWARD).toBe(5)
+    expect(GATE_SHARD_REWARD).toBe(1)
+    expect(progressionFieldSize({ fieldSize: 5 })).toBe(8)
+    expect(progressionFieldSize({ fieldSize: 18 })).toBe(18)
   })
 
   it('prices promotions and limit breaks in tickets', () => {

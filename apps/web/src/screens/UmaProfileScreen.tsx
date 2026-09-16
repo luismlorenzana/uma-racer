@@ -1,4 +1,4 @@
-import { DISTANCE_CATEGORIES, SCENARIOS, STATS, STRATEGIES, SURFACES, type Grade, type StatKey } from '@racer/domain'
+import { DISTANCE_CATEGORIES, SCENARIOS, STATS, STRATEGIES, SURFACES, isGateLevel, type Grade, type StatKey } from '@racer/domain'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma } from '../game/actions'
@@ -69,6 +69,7 @@ export function UmaProfileScreen() {
   }
   const uma = joined.value
   const featured = profile.featuredUmaId === save.templateId
+  const raceUnlocked = save.trainingsThisScenario >= 1 && !isGateLevel(save.level)
 
   return (
     <div className="flex flex-col gap-4 pt-2">
@@ -160,13 +161,15 @@ export function UmaProfileScreen() {
       </div>
 
       <div className="sticky bottom-24 z-10 rounded-[1.5rem] border-2 border-white bg-white/95 p-3 shadow-[var(--shadow-panel)] backdrop-blur">
-        <p className="mb-3 text-center text-sm font-extrabold">Train once to unlock races in this scenario.</p>
+        <p className="mb-3 text-center text-sm font-extrabold">
+          {isGateLevel(save.level) ? 'Ready to promote before racing again.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock races in this scenario.'}
+        </p>
         <div className="grid grid-cols-3 gap-2">
           <GameButton variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(save.templateId)}`)}>Train</GameButton>
-          <GameButton variant="go" disabled>Race · T005</GameButton>
+          <GameButton variant="go" disabled={!raceUnlocked} onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}>Race</GameButton>
           <GameButton variant="secondary" disabled>Promote · locked</GameButton>
         </div>
-        <p className="mt-2 text-center text-xs text-ink-soft">Race and promotion arrive with their full progression flows.</p>
+        <p className="mt-2 text-center text-xs text-ink-soft">Races grant Uma EXP; promotion remains locked for a later milestone.</p>
       </div>
     </div>
   )

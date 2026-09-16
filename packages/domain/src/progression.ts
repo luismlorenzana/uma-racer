@@ -15,6 +15,8 @@ export const WIN_EXP: Record<RaceGrade, number> = {
 
 /** 2nd and 3rd place earn this share of the win EXP. */
 export const PLACED_EXP_SHARE = 0.25
+export const UMA_LEVEL_TICKET_REWARD = 5
+export const GATE_SHARD_REWARD = 1
 
 /** Uma EXP for a finish. `raceBonus` is the summed card Race Bonus (0.03 = +3%). */
 export function raceExp(grade: RaceGrade, placement: number, raceBonus = 0): number {

@@ -41,6 +41,7 @@ describe('LocalSaveRepository sync', () => {
     expect((await repo.sync('u1', { upserts: [], appends: [append] })).appended).toBe(0)
     expect((await repo.load('u1')).logs).toHaveLength(1)
     expect((await repo.load('u2')).logs).toHaveLength(0)
+    await expect(repo.sync('u1', { upserts: [], appends: [{ ...append, data: { placement: 2 } }] })).rejects.toThrow(/id collision/)
   })
 })
 
@@ -81,5 +82,41 @@ describe('parseSyncRequest', () => {
       { kind: 'profile', id: 'main', baseVersion: 3, data: profile },
       { kind: 'profile', id: 'main', baseVersion: 3, data: profile },
     ] })).toMatch(/duplicate/)
+  })
+
+  it('strictly validates progression race result appends', () => {
+    const data = {
+      contentVersion: 'abc123def456',
+      umaId: 'u1',
+      raceId: 'r1',
+      sequence: 0,
+      seed: 123,
+      strategy: 'pace',
+      startLevel: 1,
+      startExp: 0,
+      startStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
+      raceBonus: 0.03,
+      playerPlacement: 1,
+      expGained: 155,
+      levelsGained: [2],
+      ticketReward: 5,
+      shardReward: 0,
+      field: Array.from({ length: 8 }, (_, index) => ({
+        umaId: index === 0 ? 'u1' : `u${index + 1}`,
+        isPlayer: index === 0,
+        strategy: 'pace',
+        gate: index,
+        stats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
+        aptitude: { distance: 'A', surface: 'A', strategy: 'A' },
+        placement: index + 1,
+        finishTime: 100 + index,
+        marginLengths: index === 0 ? 0 : 1,
+      })),
+      createdAt: 1,
+    }
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data, createdAt: 1 }] })).toMatchObject({
+      appends: [{ kind: 'raceResults', id: 'race:u1:0' }],
+    })
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...data, ticketReward: 10 }, createdAt: 1 }] })).toMatch(/invalid raceResults data/)
   })
 })

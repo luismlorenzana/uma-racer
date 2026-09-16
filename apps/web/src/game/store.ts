@@ -92,6 +92,13 @@ export function replaceTrainingState(profile: PlayerProfile, uma: UmaSave, cards
   }))
 }
 
+export function replaceRaceState(profile: PlayerProfile, uma: UmaSave): void {
+  useGame.setState((state) => ({
+    profile,
+    umas: { ...state.umas, [uma.templateId]: uma },
+  }))
+}
+
 export function setSyncState(sync: Partial<SyncState>): void {
   useGame.setState((state) => ({ sync: { ...state.sync, ...sync } }))
 }
