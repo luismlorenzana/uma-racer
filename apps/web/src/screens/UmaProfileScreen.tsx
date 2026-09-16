@@ -1,7 +1,20 @@
-import { DISTANCE_CATEGORIES, SCENARIOS, STATS, STRATEGIES, SURFACES, isGateLevel, type Grade, type StatKey } from '@racer/domain'
+import {
+  DISTANCE_CATEGORIES,
+  SCENARIOS,
+  STATS,
+  STRATEGIES,
+  SURFACES,
+  compileRaceSkill,
+  isGateLevel,
+  raceSkillSupported,
+  summarizeSkillLoadout,
+  type Grade,
+  type StatKey,
+} from '@racer/domain'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { setFeaturedUma } from '../game/actions'
+import { setFeaturedUma, setUmaLoadout } from '../game/actions'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -54,6 +67,7 @@ export function UmaProfileScreen() {
   const profile = useGame((state) => state.profile)
   const save = useGame((state) => state.umas[umaId])
   const pushToast = useGame((state) => state.pushToast)
+  const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to view this Uma" detail="Profiles are part of your private save." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -70,6 +84,22 @@ export function UmaProfileScreen() {
   const uma = joined.value
   const featured = profile.featuredUmaId === save.templateId
   const raceUnlocked = save.trainingsThisScenario >= 1 && !isGateLevel(save.level)
+  const loadout = summarizeSkillLoadout(save, uma.template, contentState.content.skills.byId)
+
+  const toggleSkill = async (skillId: string) => {
+    if (savingSkillId) return
+    const next = save.loadoutSkillIds.includes(skillId)
+      ? save.loadoutSkillIds.filter((id) => id !== skillId)
+      : [...save.loadoutSkillIds, skillId]
+    setSavingSkillId(skillId)
+    try {
+      await setUmaLoadout(save.templateId, next)
+    } catch (reason) {
+      pushToast(reason instanceof Error ? reason.message : 'Could not update skill loadout')
+    } finally {
+      setSavingSkillId(null)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4 pt-2">
@@ -129,6 +159,55 @@ export function UmaProfileScreen() {
             <span>{save.skillPoints} / {uma.currentSpCap}</span>
           </div>
         </div>
+      </Panel>
+
+      <Panel>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-extrabold">Race skills</h2>
+            <p className="text-xs font-bold text-ink-soft">Own unique is free · tap supported skills to equip</p>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-sm font-extrabold ${loadout.valid ? 'bg-violet-100 text-violet-700' : 'bg-red-100 text-danger'}`}>
+            {loadout.cost} / {loadout.cap} SP
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2">
+          {save.skillLibrary.map((unlock) => {
+            const skill = contentState.content.skills.byId.get(unlock.skillId)
+            if (!skill) return <div key={unlock.skillId} className="rounded-xl bg-red-50 p-3 text-sm font-bold text-danger">Missing skill {unlock.skillId}</div>
+            const own = unlock.origin === 'own-unique'
+            const supported = raceSkillSupported(compileRaceSkill(skill))
+            const equipped = own || save.loadoutSkillIds.includes(skill.id)
+            return (
+              <button
+                key={skill.id}
+                type="button"
+                aria-pressed={equipped}
+                disabled={own || (!supported && !equipped) || savingSkillId !== null}
+                onClick={() => void toggleSkill(skill.id)}
+                className={`flex min-h-14 items-center gap-3 rounded-xl border-2 px-3 py-2 text-left ${equipped ? 'border-violet-400 bg-violet-50' : 'border-slate-100 bg-white'} disabled:opacity-70`}
+              >
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-extrabold ${equipped ? 'bg-violet-500 text-white' : 'bg-slate-100'}`}>
+                  {equipped ? '✓' : '+'}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-extrabold">{skill.name}</span>
+                  <span className="block text-xs font-bold text-ink-soft">
+                    {own
+                      ? supported
+                        ? 'Own unique · always equipped'
+                        : 'Own unique · waits for later race-depth mechanics'
+                      : supported
+                        ? `${skill.costSp ?? '—'} SP · ${skill.kind}`
+                        : 'Needs later race-depth mechanics'}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+          {save.skillLibrary.length === 0 && <p className="text-sm text-ink-soft">Train with support cards to discover skills.</p>}
+        </div>
+        {!loadout.valid && <p className="mt-3 rounded-xl bg-red-50 p-2 text-sm font-bold text-danger">{loadout.errors[0]}</p>}
       </Panel>
 
       <Panel className="flex flex-col gap-4">

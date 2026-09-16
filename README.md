@@ -7,7 +7,8 @@ while the stable itself grows into a collection.
 
 > **Status:** pre-production. Milestone 1's private content pipeline is built, and Milestone 2 now has a typed local-first
 > save, the real 25-Uma launch Stable, Uma profiles, a persisted featured-Uma Home hero, and a complete first playable
-> Train → Race loop with Uma EXP, levels, ticket rewards, gate shards, and synced race history. Next: Milestone 3 race depth.
+> Train → Race loop with Uma EXP, levels, ticket rewards, gate shards, and synced race history. Milestone 3 now has basic
+> compiled race skills, SP loadouts, deterministic activation/recovery, and versioned replay. Next: position keeping and pack racing.
 
 ## Ground rules
 
@@ -85,6 +86,7 @@ docs/           design, technical, research
 | [Race Mechanics Research](docs/research/race-mechanics.md) | Community-documented formulas from the original race simulation |
 | [Game-like Web Tech](docs/research/game-web-tech.md) | Rendering, frame rate, animation, PWA on iOS, performance playbook |
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
+| [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
 | [Tasks](docs/tasks/) | Delegable task specs (see [AGENTS.md](AGENTS.md)) |

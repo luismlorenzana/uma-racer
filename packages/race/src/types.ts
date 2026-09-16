@@ -1,9 +1,11 @@
-import type { Grade, Stats, Strategy, Surface } from '@racer/domain'
+import type { CompiledRaceSkill, Grade, RaceSkillEffectKind, Stats, Strategy, Surface } from '@racer/domain'
 
 export interface RaceCourse {
   /** Meters. */
   distance: number
   surface: Surface
+  /** Imported source season code used by simple skill conditions. */
+  season?: number
 }
 
 export interface RaceRunnerInput {
@@ -15,6 +17,8 @@ export interface RaceRunnerInput {
   aptitude: { distance: Grade; surface: Grade; strategy: Grade }
   /** 0-based gate, also used as the lane until pack mechanics (R3) exist. */
   gate: number
+  /** Immutable, content-compiled R2.5 skills. Missing means the legacy skillless input. */
+  skills?: readonly CompiledRaceSkill[]
 }
 
 export interface RaceInput {
@@ -23,7 +27,7 @@ export interface RaceInput {
   seed: number
 }
 
-export type RaceEventType = 'late-start' | 'start-dash-end' | 'phase' | 'spurt' | 'hp-empty' | 'finish'
+export type RaceEventType = 'late-start' | 'start-dash-end' | 'phase' | 'spurt' | 'hp-empty' | 'skill-activated' | 'finish'
 
 export interface RaceEvent {
   tick: number
@@ -31,6 +35,10 @@ export interface RaceEvent {
   runner: number
   type: RaceEventType
   value?: number
+  skillId?: string
+  skillGroup?: number
+  skillEffects?: readonly RaceSkillEffectKind[]
+  skillExpiresTick?: number
 }
 
 export interface RunnerResult {

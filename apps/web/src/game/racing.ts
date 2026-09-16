@@ -2,6 +2,7 @@
 
 import {
   bestStrategy,
+  compileRaceSkill,
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   equippedRaceBonus,
@@ -17,20 +18,25 @@ import {
   progressionFieldSize,
   raceAttemptId,
   raceAttemptSeed,
+  raceSkillSupported,
   resolveRaceExperience,
+  selectBaselineRaceSkills,
+  summarizeSkillLoadout,
   tierOfLevel,
   yourForm,
   type CardSave,
+  type CompiledRaceSkill,
   type LedgerEntry,
   type PlayerProfile,
   type RaceResultRecord,
   type RaceResultRunner,
   type RaceTemplate,
+  type SkillTemplate,
   type Strategy,
   type UmaSave,
   type UmaTemplate,
 } from '@racer/domain'
-import { createRng, simulateRace, type RaceInput, type RaceTimeline } from '@racer/race'
+import { createRng, simulateRace, simulateRaceV1, type RaceInput, type RaceTimeline } from '@racer/race'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
 import { queueInTransaction } from './persistence'
@@ -41,6 +47,7 @@ export interface PreparedRaceRunner {
 }
 
 export interface PreparedRace {
+  engineVersion: 1 | 2
   id: string
   contentVersion: string
   umaId: string
@@ -68,6 +75,9 @@ export interface RaceCompletion {
   timeline: RaceTimeline
   alreadyRecorded: boolean
 }
+
+export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
+  attempt.engineVersion === 1 ? simulateRaceV1(attempt.input) : simulateRace(attempt.input)
 
 interface BuildRaceInput {
   content: LoadedContent
@@ -126,6 +136,26 @@ function equippedCards(
   })
 }
 
+function compiledSupported(template: SkillTemplate | undefined): CompiledRaceSkill[] {
+  if (!template) return []
+  const compiled = compileRaceSkill(template)
+  return raceSkillSupported(compiled) ? [compiled] : []
+}
+
+function baselineNpcSkills(content: LoadedContent): CompiledRaceSkill[] {
+  return selectBaselineRaceSkills(content.skills.items)
+}
+
+function playerRaceSkills(content: LoadedContent, uma: UmaSave, template: UmaTemplate): CompiledRaceSkill[] {
+  const summary = summarizeSkillLoadout(uma, template, content.skills.byId)
+  if (!summary.valid) throw new Error(summary.errors[0])
+  const own = template.uniqueSkillId ? compiledSupported(content.skills.byId.get(template.uniqueSkillId)) : []
+  const equipped = summary.skills.map((skill) => compileRaceSkill(skill))
+  const unsupported = equipped.find((skill) => !raceSkillSupported(skill))
+  if (unsupported) throw new Error(`Equipped skill ${unsupported.id} is not supported by the basic race engine`)
+  return [...own, ...equipped]
+}
+
 export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const { content, profile, uma, raceId, strategy, sequence } = input
   if (uma.trainingsThisScenario < 1) throw new Error('Complete one Training turn to unlock races for this Uma')
@@ -144,6 +174,8 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const rng = createRng(seed ^ 0x5bd1e995)
   const playerGate = Math.floor(rng.next() * fieldSize)
   const raceBonus = equippedRaceBonus(tierOfLevel(uma.level), equippedCards(content, uma, input.cardsById))
+  const playerSkills = playerRaceSkills(content, uma, template)
+  const baselineSkills = baselineNpcSkills(content)
   const npcStats = npcRaceStats(tierOfLevel(uma.level), race.grade, race.distanceCategory, uma.level)
   let rivalIndex = 0
   const runners = Array.from({ length: fieldSize }, (_, gate) => {
@@ -162,6 +194,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
             strategy: uma.aptitudes.strategy[strategy],
           },
           gate,
+          skills: playerSkills,
         },
       }
     }
@@ -177,10 +210,12 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
         strategy: rivalStrategy,
         aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
         gate,
+        skills: [...compiledSupported(content.skills.byId.get(rival.uniqueSkillId ?? '')), ...baselineSkills],
       },
     }
   })
   return {
+    engineVersion: 2,
     id: raceAttemptId(uma.templateId, sequence),
     contentVersion: content.manifest.version,
     umaId: uma.templateId,
@@ -194,7 +229,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     raceBonus,
     playerIndex: playerGate,
     input: {
-      course: { distance: race.distance, surface: race.surface },
+      course: { distance: race.distance, surface: race.surface, season: race.season },
       runners: runners.map((runner) => runner.engine),
       seed,
     },
@@ -230,6 +265,7 @@ function resultRecord(
       placement: result.placement,
       finishTime: result.finishTime,
       marginLengths: result.marginLengths,
+      skills: [...(runner.skills ?? [])],
     }
   }).sort((left, right) => left.placement - right.placement)
   return {
@@ -237,6 +273,8 @@ function resultRecord(
     ticketReward: progress.ticketReward,
     shardReward: progress.shardReward,
     record: {
+      engineVersion: 2,
+      course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
       contentVersion: attempt.contentVersion,
       umaId: attempt.umaId,
       raceId: attempt.raceId,
@@ -349,7 +387,7 @@ export function completeMemoryRace(
   const existing = history.find((record) => record.umaId === attempt.umaId && record.sequence === attempt.sequence)
   if (existing) {
     if (existing.raceId !== attempt.raceId || existing.seed !== attempt.seed) throw new Error('Race result id collision')
-    return { profile, uma, record: existing, timeline: simulateRace(attempt.input), alreadyRecorded: true }
+    return { profile, uma, record: existing, timeline: simulatePreparedRace(attempt), alreadyRecorded: true }
   }
   const current = buildPreparedRace({
     content,
@@ -362,7 +400,7 @@ export function completeMemoryRace(
   })
   if (!sameAttempt(current, attempt)) throw new Error('Race attempt is stale; prepare a new race')
   const race = content.races.byId.get(attempt.raceId)!
-  const timeline = simulateRace(attempt.input)
+  const timeline = simulatePreparedRace(attempt)
   const result = resultRecord(attempt, race, uma, timeline, now)
   return {
     profile: {
@@ -394,7 +432,7 @@ export async function completePersistentRace(
         profile: saved.profile,
         uma: saved.uma,
         record,
-        timeline: simulateRace(attempt.input),
+        timeline: simulatePreparedRace(attempt),
         alreadyRecorded: true,
       }
     }
@@ -412,7 +450,7 @@ export async function completePersistentRace(
     })
     if (!sameAttempt(current, attempt)) throw new Error('Race attempt is stale; prepare a new race')
     const race = content.races.byId.get(attempt.raceId)!
-    const timeline = simulateRace(attempt.input)
+    const timeline = simulatePreparedRace(attempt)
     const resolved = resultRecord(attempt, race, uma, timeline, now)
     const levelIds = resolved.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
     const gate = resolved.record.shardReward ? resolved.record.levelsGained.at(-1) : undefined
@@ -474,6 +512,7 @@ export function preparedRaceFromRecord(content: LoadedContent, record: RaceResul
   const playerIndex = byGate.findIndex((runner) => runner.isPlayer)
   if (playerIndex < 0) throw new Error('Race history is missing the player')
   return {
+    engineVersion: record.engineVersion ?? 1,
     id: raceAttemptId(record.umaId, record.sequence),
     contentVersion: record.contentVersion,
     umaId: record.umaId,
@@ -487,7 +526,7 @@ export function preparedRaceFromRecord(content: LoadedContent, record: RaceResul
     raceBonus: record.raceBonus,
     playerIndex,
     input: {
-      course: { distance: race.distance, surface: race.surface },
+      course: record.course ? { ...record.course } : { distance: race.distance, surface: race.surface },
       runners: byGate.map((runner) => ({
         id: runner.umaId,
         label: String(runner.gate + 1),
@@ -495,6 +534,7 @@ export function preparedRaceFromRecord(content: LoadedContent, record: RaceResul
         strategy: runner.strategy,
         aptitude: { ...runner.aptitude },
         gate: runner.gate,
+        ...(runner.skills ? { skills: [...runner.skills] } : {}),
       })),
       seed: record.seed,
     },

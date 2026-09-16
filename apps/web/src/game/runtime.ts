@@ -3,10 +3,12 @@
 import {
   MAX_SYNC_OPERATIONS,
   assertProgressionRaceContent,
+  assertRaceSkillContent,
   assertTrainingContent,
   assertSaveContent,
   createInitialSave,
   parseSyncResponseOrThrow,
+  replaceSkillLoadout as resolveSkillLoadout,
   type EntityKind,
   type Facility,
   type LogKind,
@@ -69,6 +71,7 @@ export class GameRuntime {
     try {
       assertSaveContent(content.umas.items, content.cards.items)
       assertTrainingContent(content.umas.items, content.cards.items, content.skills.items)
+      assertRaceSkillContent(content.skills.items)
       assertProgressionRaceContent(content.races.items)
     } catch (error) {
       setGameLifecycle('error', error instanceof Error ? error.message : String(error))
@@ -175,6 +178,31 @@ export class GameRuntime {
       await queueInTransaction('profile', 'main', 'upsert', now)
     })
     replaceProfile(profile)
+    await this.refreshPending()
+    this.schedule()
+  }
+
+  async setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {
+    const generation = this.generation
+    const content = this.content
+    const state = useGame.getState()
+    const uma = state.umas[id]
+    const template = content?.umas.byId.get(id)
+    if (!content || state.status !== 'ready' || !uma || !template) throw new Error('Loadout Uma must be owned')
+    const next = resolveSkillLoadout(uma, template, content.skills.byId, skillIds)
+    if (!state.persistent) {
+      replaceUma(next)
+      return
+    }
+    const now = Date.now()
+    await db.transaction('rw', db.umas, db.outbox, async () => {
+      const row = await db.umas.get(id)
+      if (!row) throw new Error('Local Uma is missing')
+      await db.umas.put({ ...row, data: next })
+      await queueInTransaction('umas', id, 'upsert', now)
+    })
+    if (generation !== this.generation) return
+    replaceUma(next)
     await this.refreshPending()
     this.schedule()
   }

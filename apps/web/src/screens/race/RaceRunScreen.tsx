@@ -1,11 +1,11 @@
 import { STRATEGIES, expToNextUmaLevel, isGateLevel, type RaceResultRecord, type Strategy } from '@racer/domain'
-import { formatMargin, simulateRace, type RaceTimeline } from '@racer/race'
-import { AnimatePresence, m } from 'motion/react'
+import { formatMargin, type RaceTimeline } from '@racer/race'
+import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { completeRace, prepareRace } from '../../game/actions'
-import { preparedRaceFromRecord, type PreparedRace } from '../../game/racing'
+import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
 import { GameButton } from '../../ui/GameButton'
@@ -45,6 +45,7 @@ function FullScreenMessage({
 /** Full-screen saved-Uma race and atomic results flow (docs/tasks/T005-progression-races-and-rewards.md). */
 export function RaceRunScreen() {
   const navigate = useNavigate()
+  const reducedMotion = useReducedMotion()
   const [params] = useSearchParams()
   const queryUmaId = params.get('uma') ?? ''
   const contentState = useContent()
@@ -99,13 +100,13 @@ export function RaceRunScreen() {
       if (preparation.status === 'completed') {
         const replay = preparedRaceFromRecord(contentState.content, preparation.record)
         setAttempt(replay)
-        setTimeline(simulateRace(replay.input))
+        setTimeline(simulatePreparedRace(replay))
         setRecord(preparation.record)
         recordRef.current = preparation.record
         setShowResults(true)
       } else {
         setAttempt(preparation.attempt)
-        setTimeline(simulateRace(preparation.attempt.input))
+        setTimeline(simulatePreparedRace(preparation.attempt))
       }
     }).catch((reason: unknown) => {
       if (!cancelled) setLoadError(reason instanceof Error ? reason.message : 'Could not prepare race')
@@ -257,6 +258,21 @@ export function RaceRunScreen() {
       </div>
 
       <div ref={hostRef} className="relative min-h-0 flex-1" />
+
+      <AnimatePresence mode="wait">
+        {hud?.latestSkill && hud.seconds - hud.latestSkill.tick / timeline.tickRate < 2.2 && (
+          <m.div
+            key={`${hud.latestSkill.runner}:${hud.latestSkill.skillId}:${hud.latestSkill.tick}`}
+            className={`pointer-events-none absolute top-28 left-1/2 z-20 w-[min(86vw,22rem)] -translate-x-1/2 rounded-2xl border-2 px-4 py-2 text-center shadow-[var(--shadow-panel)] ${hud.latestSkill.runner === attempt.playerIndex ? 'border-gold bg-gold text-white text-outline' : 'border-white bg-white/95 text-ink'}`}
+            initial={reducedMotion ? false : { y: 10, scale: 0.9, opacity: 0 }}
+            animate={reducedMotion ? { opacity: 1 } : { y: 0, scale: 1, opacity: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: -8, opacity: 0 }}
+          >
+            <p className="text-xs font-extrabold uppercase">{hud.latestSkill.runner === attempt.playerIndex ? 'Your skill' : content.umas.byId.get(attempt.runners[hud.latestSkill.runner]?.templateId ?? '')?.name ?? 'Rival skill'}</p>
+            <p className="truncate text-lg font-extrabold">{content.skills.byId.get(hud.latestSkill.skillId)?.name ?? hud.latestSkill.skillId}</p>
+          </m.div>
+        )}
+      </AnimatePresence>
 
       <div className="pb-safe px-3">
         <div className="mb-2 rounded-2xl border-2 border-white bg-white/90 p-3 shadow-[var(--shadow-panel)]">

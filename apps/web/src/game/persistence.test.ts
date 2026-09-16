@@ -5,6 +5,7 @@ import {
   createInitialSave,
   createUmaSave,
   type ContentAtlas,
+  type SkillTemplate,
   type SupportCardTemplate,
   type UmaTemplate,
 } from '@racer/domain'
@@ -14,7 +15,7 @@ import { saveApi } from '../api/client'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { GameRuntime } from './runtime'
-import { clearGameState, localDay, useGame } from './store'
+import { clearGameState, localDay, replaceUma, useGame } from './store'
 import {
   adoptServerSnapshot,
   applyOwedDailyGrant,
@@ -79,6 +80,18 @@ function card(): SupportCardTemplate {
   }
 }
 
+const paidSkill: SkillTemplate = {
+  id: 'skill-paid-1',
+  kind: 'white',
+  name: 'Synthetic Speed Skill',
+  description: 'Synthetic fixture.',
+  costSp: 90,
+  iconId: null,
+  activation: 0,
+  conditions: [{ precondition: null, condition: 'phase>=1', baseTime: 10_000, cooldown: 0, effects: [{ type: 27, value: 1_500 }] }],
+  inheritedSkillId: null,
+}
+
 function content(): LoadedContent {
   const umas = Array.from({ length: 25 }, (_, index) => uma(`u${String(index).padStart(2, '0')}`))
   const cards = [card()]
@@ -95,7 +108,7 @@ function content(): LoadedContent {
     origin: 'network',
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: cards, byId: new Map(cards.map((item) => [item.id, item])) },
-    skills: { items: [], byId: new Map() },
+    skills: { items: [paidSkill], byId: new Map([[paidSkill.id, paidSkill]]) },
     races: { items: [], byId: new Map() },
     courses: { items: [], byId: new Map() },
     atlases: {
@@ -296,6 +309,28 @@ describe('game bootstrap coordinator', () => {
     expect(window.removeEventListener).toHaveBeenCalledWith('online', expect.any(Function))
     expect(useGame.getState().profile).toBeNull()
     expect((await readLocalSnapshot())?.umas).toHaveLength(25)
+  })
+
+  it('persists a legal skill loadout and coalesces Uma outbox work before publishing it', async () => {
+    const loaded = content()
+    vi.spyOn(saveApi, 'load').mockResolvedValue({ entities: [], logs: [], serverTime: 1 })
+    await runtime.start(loaded)
+    const current = useGame.getState().umas.u00!
+    const next = {
+      ...current,
+      skillPoints: 100,
+      skillLibrary: [{ skillId: paidSkill.id, origin: 'card' as const, sourceId: 'card-1' }],
+    }
+    const row = await db.umas.get('u00')
+    await db.umas.put({ ...row!, data: next })
+    replaceUma(next)
+
+    await runtime.setUmaLoadout('u00', [paidSkill.id])
+
+    expect(useGame.getState().umas.u00?.loadoutSkillIds).toEqual([paidSkill.id])
+    expect((await db.umas.get('u00'))?.data.loadoutSkillIds).toEqual([paidSkill.id])
+    expect(await db.outbox.where('[kind+id]').equals(['umas', 'u00']).count()).toBe(1)
+    await expect(runtime.setUmaLoadout('u00', [paidSkill.id, paidSkill.id])).rejects.toThrow(/duplicate/)
   })
 
   it('rebases a mutation queued during a stale request without acknowledging or overwriting it', async () => {

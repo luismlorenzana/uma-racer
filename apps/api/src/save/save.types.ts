@@ -73,6 +73,7 @@ const RACE_RESULT_FIELDS = [
   'contentVersion', 'umaId', 'raceId', 'sequence', 'seed', 'strategy', 'startLevel', 'startExp', 'startStats',
   'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward', 'field', 'createdAt',
 ] as const
+const RACE_COURSE_FIELDS = ['distance', 'surface', 'season'] as const
 const RACE_RUNNER_FIELDS = ['umaId', 'isPlayer', 'strategy', 'gate', 'stats', 'aptitude', 'placement', 'finishTime', 'marginLengths'] as const
 const RACE_APTITUDE_FIELDS = ['distance', 'surface', 'strategy'] as const
 
@@ -177,8 +178,48 @@ function parseRaceAptitude(value: unknown): Record<string, unknown> | null {
   return RACE_APTITUDE_FIELDS.every((key) => GRADES.includes(value[key] as (typeof GRADES)[number])) ? value : null
 }
 
+function parseRaceCondition(value: unknown): boolean {
+  return Array.isArray(value) && value.length > 0 && value.length <= 16 && value.every((group) =>
+    Array.isArray(group) && group.length > 0 && group.length <= 16 && group.every((atom) =>
+      isRecord(atom) && exactKeys(atom, ['variable', 'operator', 'value']) &&
+      typeof atom.variable === 'string' && /^[a-zA-Z0-9_]+$/.test(atom.variable) &&
+      ['<=', '>=', '==', '!=', '<', '>'].includes(String(atom.operator)) &&
+      typeof atom.value === 'number' && Number.isFinite(atom.value),
+    ),
+  )
+}
+
+function parseCompiledSkill(value: unknown): boolean {
+  if (!isRecord(value) || !exactKeys(value, ['id', 'activation', 'groups', 'inherited'])) return false
+  if (!isId(value.id) || !['guaranteed', 'wit'].includes(String(value.activation)) ||
+      typeof value.inherited !== 'boolean' || !Array.isArray(value.groups) || value.groups.length === 0 || value.groups.length > 16) return false
+  return value.groups.every((group) => {
+    if (!isRecord(group) || !exactKeys(group, [
+      'precondition', 'condition', 'duration', 'cooldown', 'effects', 'unsupportedVariables', 'unsupportedEffects',
+    ])) return false
+    return (group.precondition === null || parseRaceCondition(group.precondition)) && parseRaceCondition(group.condition) &&
+      typeof group.duration === 'number' && Number.isFinite(group.duration) && group.duration >= -1 &&
+      typeof group.cooldown === 'number' && Number.isFinite(group.cooldown) && group.cooldown >= 0 &&
+      Array.isArray(group.effects) && group.effects.every((effect) =>
+        isRecord(effect) && exactKeys(effect, ['kind', 'amount']) &&
+        ['recovery', 'current-speed', 'target-speed', 'acceleration'].includes(String(effect.kind)) &&
+        typeof effect.amount === 'number' && Number.isFinite(effect.amount),
+      ) && Array.isArray(group.unsupportedVariables) &&
+      group.unsupportedVariables.every((item) => typeof item === 'string' && /^[a-zA-Z0-9_]+$/.test(item)) &&
+      Array.isArray(group.unsupportedEffects) && group.unsupportedEffects.every(Number.isSafeInteger)
+  })
+}
+
 function parseRaceResult(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, RACE_RESULT_FIELDS) || !Array.isArray(value.field)) return null
+  if (!isRecord(value)) return null
+  const engineV2 = Object.hasOwn(value, 'engineVersion')
+  if (!exactKeys(value, [...RACE_RESULT_FIELDS, ...(engineV2 ? ['engineVersion', 'course'] : [])]) ||
+      (engineV2 && value.engineVersion !== 2) || !Array.isArray(value.field)) return null
+  if (engineV2 && (
+    !isRecord(value.course) || !exactKeys(value.course, RACE_COURSE_FIELDS) ||
+    !isPositiveInt(value.course.distance) || !['turf', 'dirt'].includes(String(value.course.surface)) ||
+    !isNonNegativeInt(value.course.season)
+  )) return null
   const fieldSize = value.field.length
   if (
     !isId(value.contentVersion) || !isId(value.umaId) || !isId(value.raceId) ||
@@ -194,14 +235,16 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
   ) return null
   const runners = value.field as unknown[]
   for (const runner of runners) {
-    if (!isRecord(runner) || !exactKeys(runner, RACE_RUNNER_FIELDS)) return null
+    if (!isRecord(runner) || !exactKeys(runner, [...RACE_RUNNER_FIELDS, ...(engineV2 ? ['skills'] : [])])) return null
     if (
       !isId(runner.umaId) || typeof runner.isPlayer !== 'boolean' ||
       !STRATEGIES.includes(runner.strategy as (typeof STRATEGIES)[number]) ||
       !isNonNegativeInt(runner.gate) || runner.gate >= fieldSize || !parseRaceStats(runner.stats) ||
       !parseRaceAptitude(runner.aptitude) || !isPositiveInt(runner.placement) || runner.placement > fieldSize ||
       typeof runner.finishTime !== 'number' || !Number.isFinite(runner.finishTime) || runner.finishTime < 0 ||
-      typeof runner.marginLengths !== 'number' || !Number.isFinite(runner.marginLengths) || runner.marginLengths < 0
+      typeof runner.marginLengths !== 'number' || !Number.isFinite(runner.marginLengths) || runner.marginLengths < 0 ||
+      (engineV2 && (!Array.isArray(runner.skills) || runner.skills.some((skill) => !parseCompiledSkill(skill)) ||
+        new Set(runner.skills.map((skill) => (skill as Record<string, unknown>).id)).size !== runner.skills.length))
     ) return null
   }
   const typed = runners as Record<string, unknown>[]

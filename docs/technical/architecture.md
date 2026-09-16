@@ -86,7 +86,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   runs the same pure mutation but keeps its existing explicit non-persistent warning.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
-  engine. At the finish, one Dexie transaction revalidates and re-simulates the attempt, updates Uma EXP/levels and profile
+  engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
+  engine never evaluates source strings. At the finish, one Dexie transaction revalidates and re-simulates the attempt, updates Uma EXP/levels and profile
   rewards, then appends the typed race result plus deterministic level-ticket/gate-shard ledger ids and outbox work. A
   matching retry reads the existing result and pays nothing twice; abandoning before the finish writes nothing.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
@@ -104,6 +105,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - The renderer **plays the timeline back** and interpolates between ticks at the display's refresh rate (60 Hz, or 120 Hz where Safari allows).
 - This gives free **skip** (jump to results), **replay** (store `seed` + inputs, re-simulate), and **headless batch balance runs** in Node or a Web Worker.
 - Randomness only comes from a seeded PRNG passed in with the input. No `Math.random` inside the engine.
+- Legacy T005 results have no `engineVersion` and replay through the frozen skillless engine-v1 path. Engine-v2 results
+  snapshot their course and every runner's compiled skill list; replay does not recompile mutable catalog data.
 
 ### 3. Content: reference data and images
 
@@ -133,7 +136,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
 players/{uid}/umas/{umaId}            templateId, levels/EXP, stats, aptitudes, deck ids, current library/loadout, version
 players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
-players/{uid}/raceResults/{id}        append-only: umaId, raceId, seed, field, placements, rewards, createdAt
+players/{uid}/raceResults/{id}        append-only: engine/course, umaId, raceId, seed, compiled field, placements, rewards, createdAt
 players/{uid}/badges/{scope}          earned tiers with dates and race refs, pins, showcase groups, saved views
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 ```
@@ -143,7 +146,8 @@ marker, creation time, and schema version. Settings, parents, snapshots, goals, 
 added only by their owning tasks through explicit schema migrations; they are not placeholder blobs in save v1.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
-Uma entity. Static race/Uma names and art are joined from the current private content registry at render time.
+Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic
+course facts, runner stats/aptitudes, and compiled skills are snapshotted for replay.
 
 Entity docs stay far below Firestore's 1 MiB limit, and daily writes stay well inside the free tier (see [Infrastructure](infrastructure.md)).
 

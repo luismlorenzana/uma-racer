@@ -85,6 +85,7 @@ function template(raw: RawRecord, forcedKind?: SkillKind, fallback?: RawRecord):
     description: toGlobalTerms(description),
     costSp: numberValue(raw.cost),
     iconId: numberValue(raw.iconid),
+    activation: numberValue(raw.activation),
     conditions: conditionGroups(raw),
     inheritedSkillId: gene ? id(gene.id) : null,
   }

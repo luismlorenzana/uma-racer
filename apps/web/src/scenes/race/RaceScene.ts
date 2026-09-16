@@ -21,6 +21,7 @@ export interface RaceHudState {
   /** Per runner, distance share 0–1, for the progress rail. */
   shares: number[]
   finished: boolean
+  latestSkill: { runner: number; skillId: string; tick: number } | null
 }
 
 interface Token {
@@ -232,6 +233,14 @@ export class RaceScene {
     const finished = this.elapsed >= this.duration
     if (this.hudTimer >= HUD_INTERVAL_MS || finished) {
       this.hudTimer = 0
+      const currentTick = Math.floor(this.elapsed * this.timeline.tickRate)
+      let latestSkill: RaceHudState['latestSkill'] = null
+      for (let index = this.timeline.events.length - 1; index >= 0; index -= 1) {
+        const event = this.timeline.events[index]!
+        if (event.tick > currentTick || event.type !== 'skill-activated' || !event.skillId) continue
+        latestSkill = { runner: event.runner, skillId: event.skillId, tick: event.tick }
+        break
+      }
       this.onHud({
         seconds: this.elapsed,
         duration: this.duration,
@@ -241,6 +250,7 @@ export class RaceScene {
         playerPosition: position,
         shares: this.frames.map((f) => f.distance / course),
         finished,
+        latestSkill,
       })
     }
     if (finished && !this.finishedNotified) {

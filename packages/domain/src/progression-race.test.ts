@@ -171,6 +171,13 @@ describe('race result parsing', () => {
   it('accepts the exact append-only record and rejects inconsistent rewards/fields', () => {
     const valid = record()
     expect(parseRaceResultRecord(valid)).toEqual(valid)
+    const v2 = {
+      ...valid,
+      engineVersion: 2 as const,
+      course: { distance: 2_000, surface: 'turf' as const, season: 1 },
+      field: valid.field.map((runner) => ({ ...runner, skills: [] })),
+    }
+    expect(parseRaceResultRecord(v2)).toEqual(v2)
     expect(parseRaceResultRecord({ ...valid, ticketReward: 10 })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, extra: true })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, field: valid.field.map((runner) => ({ ...runner, isPlayer: false })) })).toBeNull()

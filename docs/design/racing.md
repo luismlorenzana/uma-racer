@@ -104,10 +104,28 @@ Wit section randomness, skill activation).
 
 ### Baseline enemy kit
 
-- A fixed set of **4 strategy-neutral white skills**: one HP recovery, one mid-race speed, one final-straight speed, one acceleration.
-  The exact skills are chosen once the skill data lands.
+- A fixed set of **4 strategy- and course-neutral white skills**: one HP recovery, one mid-race speed, one late-race speed,
+  and one acceleration. A shared selector chooses them deterministically by skill id from supported candidates; the private
+  importer validates the selection and race preparation repeats it, so no original-game ids enter git and every client using
+  the same content version gets the same kit.
 - Plus the NPC's **own unique skill**, at full strength.
 - The kit doesn't grow per scenario. Difficulty scales through scenario caps, grade, and Race Form.
+
+### Basic race skills (R2.5)
+
+- Source values, durations, and cooldown metadata use a fixed-point scale of 10,000. Inherited unique magnitudes are ×0.5.
+- Conditions are compiled into bounded OR-of-AND numeric comparisons; raw source expressions are never evaluated at runtime.
+- `phase_random`, `phase_firsthalf_random`, and `phase_laterhalf_random` choose one seeded distance point in the requested
+  whole/first-half/later-half phase. Other conditions in that group are checked at that point.
+- A skill's condition groups are priority alternatives and the first matching group resolves the skill once per race.
+  T006 retains cooldown metadata for replay and future R5 multi-activation rules, but does not repeat a resolved skill.
+- Activation rolls and random trigger points use stable per-runner/per-skill streams derived from the race seed, keeping
+  base start, section, and spurt randomness unchanged when a loadout changes.
+- Wit-checked skills use `max(1 − 90 / effectiveWit, 0.20)`. Guaranteed source skills do not roll.
+- Recovery restores the source fraction of max HP; current-speed effects apply immediately; target-speed and acceleration
+  effects add for their source duration and expire on a tick boundary.
+- Unsupported variables or effects stay visible in the library but cannot be equipped into a race loadout. T007 adds the
+  pack and course variables required by the remaining launch uniques.
 
 ### Difficulty target
 

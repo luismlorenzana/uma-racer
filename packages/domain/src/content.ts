@@ -63,6 +63,8 @@ export interface SkillTemplate {
   description: string
   costSp: number | null
   iconId: number | null
+  /** 0/null = guaranteed when its condition is met; 1 = seeded Wit activation check. */
+  activation?: number | null
   conditions: SkillCondition[]
   inheritedSkillId: string | null
 }

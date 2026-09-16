@@ -1,10 +1,14 @@
 import {
   STRATEGIES,
+  compileRaceSkill,
   equippedRaceBonus,
   fieldForm,
   isGateLevel,
   raceExp,
   progressionFieldSize,
+  raceSkillCompatibleWithCourse,
+  raceSkillSupported,
+  summarizeSkillLoadout,
   tierOfLevel,
   yourForm,
   type RaceGrade,
@@ -17,7 +21,7 @@ import { m } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { listRaceHistory, prepareRace } from '../game/actions'
+import { listRaceHistory, prepareRace, setUmaLoadout } from '../game/actions'
 import type { PreparedRace } from '../game/racing'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -61,6 +65,7 @@ export function RaceSelectScreen() {
   const [startError, setStartError] = useState<string | null>(null)
   const [preview, setPreview] = useState<PreparedRace | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
+  const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
 
   const ownedIds = useMemo(() => Object.keys(owned).sort((left, right) => left.localeCompare(right)), [owned])
   const requestedUma = params.get('uma')
@@ -70,6 +75,7 @@ export function RaceSelectScreen() {
       ? profile.featuredUmaId
       : ownedIds[0] ?? null
   const selectedUma = selectedUmaId ? owned[selectedUmaId] : undefined
+  const loadoutKey = selectedUma?.loadoutSkillIds.join('|') ?? ''
 
   useEffect(() => {
     if (status !== 'ready') return
@@ -102,7 +108,7 @@ export function RaceSelectScreen() {
       if (!cancelled) setPreviewError(reason instanceof Error ? reason.message : 'Could not build field preview')
     })
     return () => { cancelled = true }
-  }, [contentState, picked, selectedUmaId, status, strategy])
+  }, [contentState, loadoutKey, picked, selectedUmaId, status, strategy])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to race" detail="Progression races use your private Stable and content." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -142,7 +148,10 @@ export function RaceSelectScreen() {
   } catch (reason) {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }
-  const lockReason = picked ? raceLockReason(selectedUma, picked, opponentCharacters) ?? deckError : null
+  const skillLoadout = summarizeSkillLoadout(selectedUma, umaTemplate, content.skills.byId)
+  const lockReason = picked
+    ? raceLockReason(selectedUma, picked, opponentCharacters) ?? deckError ?? (skillLoadout.valid ? null : skillLoadout.errors[0]!)
+    : null
 
   const chooseUma = (id: string) => {
     const next = new URLSearchParams(params)
@@ -162,6 +171,22 @@ export function RaceSelectScreen() {
     } catch (reason) {
       setStartError(reason instanceof Error ? reason.message : 'Could not prepare race')
       setStarting(false)
+    }
+  }
+
+  const toggleSkill = async (skillId: string) => {
+    if (savingSkillId) return
+    const next = selectedUma.loadoutSkillIds.includes(skillId)
+      ? selectedUma.loadoutSkillIds.filter((id) => id !== skillId)
+      : [...selectedUma.loadoutSkillIds, skillId]
+    setSavingSkillId(skillId)
+    setStartError(null)
+    try {
+      await setUmaLoadout(selectedUmaId, next)
+    } catch (reason) {
+      setStartError(reason instanceof Error ? reason.message : 'Could not update skill loadout')
+    } finally {
+      setSavingSkillId(null)
     }
   }
 
@@ -251,6 +276,39 @@ export function RaceSelectScreen() {
                   <p className="text-xl font-extrabold text-sky-deep">{grade}</p>
                 </div>
               ))}
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="font-extrabold">Race skills</p>
+                <span className="text-xs font-extrabold text-violet-700">{skillLoadout.cost} / {skillLoadout.cap} SP</span>
+              </div>
+              <div className="grid gap-2">
+                {selectedUma.skillLibrary.map((unlock) => {
+                  const skill = content.skills.byId.get(unlock.skillId)
+                  if (!skill) return null
+                  const own = unlock.origin === 'own-unique'
+                  const compiled = compileRaceSkill(skill)
+                  const supported = raceSkillSupported(compiled)
+                  const compatible = supported && raceSkillCompatibleWithCourse(compiled, picked)
+                  const equipped = own || selectedUma.loadoutSkillIds.includes(skill.id)
+                  return (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      aria-pressed={equipped}
+                      disabled={own || (!supported && !equipped) || savingSkillId !== null || starting}
+                      onClick={() => void toggleSkill(skill.id)}
+                      className={`flex min-h-11 items-center justify-between rounded-xl border-2 px-3 text-left text-sm font-bold ${equipped ? 'border-violet-400 bg-violet-50' : 'border-white bg-white'} disabled:opacity-65`}
+                    >
+                      <span className="truncate">{equipped ? '✓ ' : ''}{skill.name}</span>
+                      <span className="shrink-0 text-xs text-ink-soft">
+                        {own ? (compatible ? 'Unique' : supported ? 'Unique · wrong course' : 'Unique · later') :
+                          supported ? `${skill.costSp ?? '—'} SP${compatible ? '' : ' · wrong course'}` : 'Later'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <div>
               <p className="mb-2 font-extrabold">Field preview</p>
