@@ -81,6 +81,10 @@ or when your cards have improved.
 
 ## A training turn
 
+Deals and hint rolls use a seeded deterministic turn derived from the save, Uma, scenario, and committed turn count. A
+reload before choosing a facility therefore shows the same deal; committing a turn advances to the next one. This keeps
+the local-first action replayable and prevents refreshes from rerolling a more favorable layout.
+
 1. **Deal:** each equipped card is placed at one of the five facilities, or sits out.
    - It goes to its own type's facility with probability `specialtyPriority` (draft base 35%, raised by card effects).
    - Otherwise it goes to a random facility (draft: 70%) or sits out (30%).

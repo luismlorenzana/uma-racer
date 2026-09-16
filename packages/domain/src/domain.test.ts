@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   addTrainingExp,
   applyCappedGain,
+  BASE_HINT_CHANCE,
+  BASE_SPECIALTY_CHANCE,
   baselineSpCap,
   baselineStatCap,
   capMult,
@@ -10,6 +12,7 @@ import {
   cardLevelCap,
   cardLimitBreakCost,
   distanceCategory,
+  deckSlotCount,
   eraOf,
   fieldForm,
   grantDailyTickets,
@@ -22,6 +25,7 @@ import {
   tierOfLevel,
   trainingExpForTurn,
   trainingGains,
+  RANDOM_FACILITY_CHANCE,
   umaPromotionCost,
   yourForm,
 } from './index'
@@ -74,6 +78,13 @@ describe('training', () => {
     let state = { trainingLevel: 1, exp: 0 }
     for (let i = 0; i < 25; i++) state = addTrainingExp(state.trainingLevel, state.exp, trainingExpForTurn(false))
     expect(state.trainingLevel).toBe(10)
+  })
+
+  it('pins the Training deal chances and early deck slots', () => {
+    expect(BASE_SPECIALTY_CHANCE).toBe(0.35)
+    expect(RANDOM_FACILITY_CHANCE).toBe(0.7)
+    expect(BASE_HINT_CHANCE).toBe(0.2)
+    expect([1, 2, 3, 11].map(deckSlotCount)).toEqual([4, 5, 6, 6])
   })
 
   it('matches the worked example in training.md', () => {

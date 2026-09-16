@@ -5,9 +5,9 @@ Umas are permanent RPG characters. They level up by winning races, train through
 SSR support cards, learn skills and inherit from their parents, and collect a lot of badges and flair,
 while the stable itself grows into a collection.
 
-> **Status:** pre-production. Milestone 1's private content pipeline is built, and the app now has a typed local-first save,
-> cloud reconciliation, the real 25-Uma launch Stable, Uma profiles, and a persisted featured-Uma Home hero. The deterministic
-> race preview still runs separately. Next: T004's saved-Uma Training loop, followed by progression races and rewards.
+> **Status:** pre-production. Milestone 1's private content pipeline is built, and Milestone 2 now has a typed local-first
+> save, the real 25-Uma launch Stable, Uma profiles, a persisted featured-Uma Home hero, and the first playable saved-Uma
+> Training loop. The deterministic race preview still runs separately. Next: T005's progression races and rewards.
 
 ## Ground rules
 
@@ -26,6 +26,7 @@ pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone)
 ```
 
 Race engine preview: **Race tab → pick a race → Start race**.
+Saved-Uma Training: **Home or Stable → Uma profile → Train**.
 
 ## Verification
 

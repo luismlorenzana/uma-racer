@@ -60,6 +60,7 @@ export type LedgerResource = (typeof LEDGER_RESOURCES)[number]
 export const LEDGER_REASONS = [
   'daily-grant',
   'initial-grant',
+  'training',
   'uma-level',
   'card-level',
   'uma-promotion',
