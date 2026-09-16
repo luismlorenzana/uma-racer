@@ -29,6 +29,8 @@ import {
   trainingExpForTurn,
   trainingGains,
   RANDOM_FACILITY_CHANCE,
+  SKILL_ACTIVATION_MIN,
+  SKILL_ACTIVATION_WIT_DIVISOR,
   umaPromotionCost,
   yourForm,
 } from './index'
@@ -123,6 +125,13 @@ describe('race form', () => {
     const npc = npcRaceStats(1, 'g1', 'medium', 1)
     expect(npc.speed).toBeCloseTo(960)
     expect(npc.stamina).toBeCloseTo(864)
+  })
+})
+
+describe('race skills', () => {
+  it('pins the researched Wit activation curve', () => {
+    expect(SKILL_ACTIVATION_MIN).toBe(0.2)
+    expect(SKILL_ACTIVATION_WIT_DIVISOR).toBe(90)
   })
 })
 

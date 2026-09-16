@@ -3,10 +3,19 @@
 //
 //   pnpm sim:balance            (200 races per row)
 //   pnpm sim:balance -- 1000    (more races per row)
-import { npcRaceStats, distanceCategory, STRATEGIES, type RaceGrade } from '../../packages/domain/src/index'
+import {
+  npcRaceStats,
+  distanceCategory,
+  parseRaceCondition,
+  STRATEGIES,
+  type CompiledRaceSkill,
+  type RaceGrade,
+} from '../../packages/domain/src/index'
 import { simulateRace } from '../../packages/race/src/index'
 
-const RACES_PER_ROW = Number(process.argv[2] ?? 200)
+const racesArgument = process.argv.slice(2).find((value) => /^\d+$/.test(value))
+const RACES_PER_ROW = Number(racesArgument ?? 200)
+if (!Number.isSafeInteger(RACES_PER_ROW) || RACES_PER_ROW < 1) throw new Error('Race count must be a positive integer')
 const FIELD = 12
 const GRADE: RaceGrade = 'g1'
 const ROWS: [tier: number, distance: number][] = [
@@ -50,3 +59,47 @@ for (const [tier, distance] of ROWS) {
     )
   }
 }
+
+const syntheticRecovery: CompiledRaceSkill = {
+  id: 'synthetic-balance-recovery',
+  activation: 'guaranteed',
+  inherited: false,
+  groups: [{
+    precondition: null,
+    condition: parseRaceCondition('hp_per<=70')!,
+    duration: 0,
+    cooldown: 0,
+    effects: [{ kind: 'recovery', amount: 0.055 }],
+    unsupportedVariables: [],
+    unsupportedEffects: [],
+  }],
+}
+
+const recoveryStats = npcRaceStats(1, GRADE, 'long', 1)
+const recoveryRunners = (withRecovery: boolean) => Array.from({ length: FIELD }, (_, gate) => ({
+  id: `recovery-${gate}`,
+  label: `${gate + 1}`,
+  stats: recoveryStats,
+  strategy: STRATEGIES[gate % 4]!,
+  aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
+  gate,
+  skills: withRecovery ? [syntheticRecovery] : [],
+}))
+const recoveryRow = (withRecovery: boolean) => {
+  let hpEmpty = 0
+  let finishTime = 0
+  const runners = recoveryRunners(withRecovery)
+  for (let seed = 1; seed <= RACES_PER_ROW; seed += 1) {
+    const timeline = simulateRace({ course: { distance: 3_200, surface: 'turf' }, seed, runners })
+    hpEmpty += timeline.events.filter((event) => event.type === 'hp-empty').length
+    finishTime += timeline.results.reduce((sum, result) => sum + result.finishTime, 0)
+  }
+  return {
+    hpEmpty: hpEmpty / (RACES_PER_ROW * FIELD),
+    finishTime: finishTime / (RACES_PER_ROW * FIELD),
+  }
+}
+const withoutRecovery = recoveryRow(false)
+const withRecovery = recoveryRow(true)
+console.log('\nSynthetic Long recovery check (tier 1, 3200m, +5.5% max HP once at ≤70%):')
+console.log(`HP empty ${(withoutRecovery.hpEmpty * 100).toFixed(1)}% → ${(withRecovery.hpEmpty * 100).toFixed(1)}% · average finish ${withoutRecovery.finishTime.toFixed(1)}s → ${withRecovery.finishTime.toFixed(1)}s`)

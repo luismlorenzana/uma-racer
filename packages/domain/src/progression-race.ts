@@ -4,6 +4,7 @@ import { CARD_EFFECTS, cardEffectValue, deckSlotCount } from './cards'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
 import { applyForm, yourForm } from './raceForm'
+import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
 import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import type { CardSave, UmaSave } from './save'
 import {
@@ -54,9 +55,21 @@ export interface RaceResultRunner {
   placement: number
   finishTime: number
   marginLengths: number
+  /** Present on engine-v2 records; absent on legacy T005 results. */
+  skills?: CompiledRaceSkill[]
+}
+
+export interface RaceResultCourse {
+  distance: number
+  surface: Surface
+  season: number
 }
 
 export interface RaceResultRecord {
+  /** Absent means legacy skillless engine v1. */
+  engineVersion?: 2
+  /** Present on engine-v2 records so replay does not depend on mutable content metadata. */
+  course?: RaceResultCourse
   contentVersion: string
   umaId: string
   raceId: string
@@ -259,16 +272,22 @@ export function resolveRaceExperience(
 }
 
 function parseRunner(value: unknown, fieldSize: number): RaceResultRunner | null {
-  if (!isRecord(value) || !hasExactKeys(value, [
+  if (!isRecord(value)) return null
+  const hasSkills = Object.hasOwn(value, 'skills')
+  if (!hasExactKeys(value, [
     'umaId', 'isPlayer', 'strategy', 'gate', 'stats', 'aptitude', 'placement', 'finishTime', 'marginLengths',
+    ...(hasSkills ? ['skills'] : []),
   ])) return null
   const stats = parseStats(value.stats)
   const aptitude = parseAptitude(value.aptitude)
+  const skills = hasSkills && Array.isArray(value.skills) ? value.skills.map(parseCompiledRaceSkill) : []
   if (
     !isId(value.umaId) || typeof value.isPlayer !== 'boolean' || !STRATEGIES.includes(value.strategy as Strategy) ||
     !isNonNegativeInt(value.gate) || value.gate >= fieldSize || !stats || !aptitude ||
     !isPositiveInt(value.placement) || value.placement > fieldSize ||
-    !isFiniteNonNegative(value.finishTime) || !isFiniteNonNegative(value.marginLengths)
+    !isFiniteNonNegative(value.finishTime) || !isFiniteNonNegative(value.marginLengths) ||
+    (hasSkills && (!Array.isArray(value.skills) || skills.some((skill) => skill === null) ||
+      new Set(skills.map((skill) => skill!.id)).size !== skills.length))
   ) return null
   return {
     umaId: value.umaId,
@@ -280,11 +299,15 @@ function parseRunner(value: unknown, fieldSize: number): RaceResultRunner | null
     placement: value.placement,
     finishTime: value.finishTime,
     marginLengths: value.marginLengths,
+    ...(hasSkills ? { skills: skills as CompiledRaceSkill[] } : {}),
   }
 }
 
 export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
+  const hasEngineVersion = isRecord(value) && Object.hasOwn(value, 'engineVersion')
   const keys = [
+    ...(hasEngineVersion ? ['engineVersion'] : []),
+    ...(hasEngineVersion ? ['course'] : []),
     'contentVersion', 'umaId', 'raceId', 'sequence', 'seed', 'strategy', 'startLevel', 'startExp', 'startStats',
     'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward', 'field', 'createdAt',
   ] as const
@@ -292,7 +315,13 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const fieldSize = value.field.length
   const startStats = parseStats(value.startStats)
   const runners = value.field.map((runner) => parseRunner(runner, fieldSize))
+  const course = hasEngineVersion && isRecord(value.course) && hasExactKeys(value.course, ['distance', 'surface', 'season']) &&
+    isPositiveInt(value.course.distance) && SURFACES.includes(value.course.surface as Surface) && isNonNegativeInt(value.course.season)
+    ? { distance: value.course.distance, surface: value.course.surface as Surface, season: value.course.season }
+    : null
   if (
+    (hasEngineVersion && value.engineVersion !== 2) ||
+    (hasEngineVersion && !course) ||
     !isId(value.contentVersion) || !isId(value.umaId) || !isId(value.raceId) ||
     !isNonNegativeInt(value.sequence) || !isNonNegativeInt(value.seed) || !STRATEGIES.includes(value.strategy as Strategy) ||
     !isPositiveInt(value.startLevel) || value.startLevel > MAX_UMA_LEVEL || !isNonNegativeInt(value.startExp) || !startStats ||
@@ -311,12 +340,16 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     new Set(field.map((runner) => runner.placement)).size !== fieldSize ||
     new Set(field.map((runner) => runner.umaId)).size !== fieldSize ||
     new Set(levels).size !== levels.length || levels.some((level, index) => index > 0 && level <= levels[index - 1]!) ||
+    (hasEngineVersion && field.some((runner) => runner.skills === undefined)) ||
+    (!hasEngineVersion && field.some((runner) => runner.skills !== undefined)) ||
     player?.umaId !== value.umaId || player?.strategy !== value.strategy ||
     player?.placement !== value.playerPlacement ||
     (value.shardReward === 1 && !isGateLevel(levels.at(-1) ?? -1)) ||
     value.ticketReward !== value.levelsGained.length * UMA_LEVEL_TICKET_REWARD
   ) return null
   return {
+    ...(hasEngineVersion ? { engineVersion: 2 as const } : {}),
+    ...(hasEngineVersion ? { course: course! } : {}),
     contentVersion: value.contentVersion,
     umaId: value.umaId,
     raceId: value.raceId,

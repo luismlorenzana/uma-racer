@@ -5,6 +5,11 @@ export async function setFeaturedUma(id: string): Promise<void> {
   await gameRuntime.setFeaturedUma(id)
 }
 
+export async function setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {
+  const { gameRuntime } = await import('./runtime')
+  await gameRuntime.setUmaLoadout(id, skillIds)
+}
+
 export async function ensureTrainingDeck(id: string): Promise<void> {
   const { gameRuntime } = await import('./runtime')
   await gameRuntime.ensureTrainingDeck(id)

@@ -24,6 +24,7 @@ describe('normalizeSkills', () => {
         effects: [{ type: 4, value: 50 }],
       },
     ])
+    expect(unique.activation).toBe(1)
     expect(result.items.find((skill) => skill.id === '7391')).toMatchObject({
       kind: 'inherited-unique',
       name: 'Localized Gene',

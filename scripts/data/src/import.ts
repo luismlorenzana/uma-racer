@@ -1,5 +1,6 @@
 // CLI orchestration for the private content data pipeline (docs/tasks/T001-content-data-packs.md).
 
+import { selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
 import { DATASET_NAMES, loadGameToraData } from './gametora'
 import { normalizeCards } from './normalize/cards'
 import { normalizeCourses } from './normalize/courses'
@@ -18,12 +19,16 @@ async function main(): Promise<void> {
   const skills = normalizeSkills(datasets.skills)
   const races = normalizeRaces(datasets.races)
   const courses = normalizeCourses(datasets.racetracks)
+  const skillCoverage = summarizeRaceSkillCoverage(skills.items)
+  const baselineSkills = selectBaselineRaceSkills(skills.items)
 
   const umaStarters = umas.items.filter((item) => item.starter).length
   const cardStarters = cards.items.filter((item) => item.starter).length
   console.log(`Umas: ${umas.items.length} (${umaStarters} starters)`)
   console.log(`SSR cards: ${cards.items.length} (${cardStarters} starters)`)
   console.log(`Skills: ${skills.items.length}`)
+  console.log(`Race-skill coverage: ${skillCoverage.supported}/${skillCoverage.total}`)
+  console.log(`Baseline NPC skill kit: ${baselineSkills.length}/4`)
   console.log(`Races: ${races.items.length}`)
   console.log(`Courses: ${courses.items.length}`)
 

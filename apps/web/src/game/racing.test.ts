@@ -7,6 +7,7 @@ import {
   parseRaceResultRecord,
   type ContentAtlas,
   type RaceTemplate,
+  type SkillTemplate,
   type SupportCardTemplate,
   type UmaTemplate,
 } from '@racer/domain'
@@ -17,7 +18,9 @@ import {
   buildPreparedRace,
   completeMemoryRace,
   completePersistentRace,
+  preparedRaceFromRecord,
   preparePersistentRace,
+  simulatePreparedRace,
 } from './racing'
 
 const aptitudes = {
@@ -95,6 +98,29 @@ const atlas: ContentAtlas = {
   frames: { synthetic: { page: 0, x: 0, y: 0, width: 128, height: 128 } },
 }
 
+const baselineSkills: SkillTemplate[] = [
+  ['synthetic-recovery', 9],
+  ['synthetic-speed-a', 27],
+  ['synthetic-speed-b', 27],
+  ['synthetic-acceleration', 31],
+].map(([id, type]) => ({
+  id: String(id),
+  kind: 'white',
+  name: String(id),
+  description: 'Synthetic race skill.',
+  costSp: 100,
+  iconId: null,
+  activation: 0,
+  inheritedSkillId: null,
+  conditions: [{
+    precondition: null,
+    condition: id === 'synthetic-speed-b' ? 'phase_random==2' : 'phase_random==1',
+    baseTime: 20_000,
+    cooldown: null,
+    effects: [{ type: Number(type), value: 1_000 }],
+  }],
+}))
+
 function content(umaCount = 10): LoadedContent {
   const umas = Array.from({ length: umaCount }, (_, index) => uma(`u${index + 1}`))
   // Alternate outfit must not create another opponent character.
@@ -104,7 +130,7 @@ function content(umaCount = 10): LoadedContent {
     origin: 'network',
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: [card], byId: new Map([[card.id, card]]) },
-    skills: { items: [], byId: new Map() },
+    skills: { items: baselineSkills, byId: new Map(baselineSkills.map((item) => [item.id, item])) },
     races: { items: [race], byId: new Map([[race.id, race]]) },
     courses: { items: [], byId: new Map() },
     atlases: {
@@ -152,6 +178,18 @@ describe('progression race field', () => {
     expect(completion.record).toMatchObject({ umaId: 'u1', raceId: 'r1', sequence: 0, expGained: 155 })
     expect(parseRaceResultRecord(completion.record)).toEqual(completion.record)
     expect(completion.profile.tickets).toBe(5)
+    const replay = preparedRaceFromRecord(loaded, completion.record)
+    expect(replay.input.course).toEqual({ distance: 2_000, surface: 'turf', season: 1 })
+    expect(simulatePreparedRace(replay).results).toEqual(completion.timeline.results)
+
+    const { engineVersion: _engineVersion, course: _course, ...legacyBody } = completion.record
+    const legacy = {
+      ...legacyBody,
+      field: legacyBody.field.map(({ skills: _skills, ...runner }) => runner),
+    }
+    const legacyReplay = preparedRaceFromRecord(loaded, legacy)
+    expect(legacyReplay.engineVersion).toBe(1)
+    expect(simulatePreparedRace(legacyReplay).events.some((event) => event.type === 'skill-activated')).toBe(false)
   })
 })
 

@@ -129,6 +129,7 @@ export const syntheticSkills = [
     desc_en: 'Runner and Front Runner; Leader and Pace Chaser; Betweener; Chaser and End Closer.',
     cost: 0,
     iconid: 5,
+    activation: 1,
     condition_groups: rootConditions,
     gene_version: {
       id: 7391,

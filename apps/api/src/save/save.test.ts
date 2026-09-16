@@ -117,6 +117,15 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data, createdAt: 1 }] })).toMatchObject({
       appends: [{ kind: 'raceResults', id: 'race:u1:0' }],
     })
+    const v2 = {
+      ...data,
+      engineVersion: 2,
+      course: { distance: 2_000, surface: 'turf', season: 1 },
+      field: data.field.map((runner) => ({ ...runner, skills: [] })),
+    }
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: v2, createdAt: 1 }] })).toMatchObject({
+      appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { engineVersion: 2 } }],
+    })
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...data, ticketReward: 10 }, createdAt: 1 }] })).toMatch(/invalid raceResults data/)
   })
 })

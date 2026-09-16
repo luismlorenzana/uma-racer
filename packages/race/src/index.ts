@@ -1,5 +1,6 @@
 export * from './types'
 export * from './constants'
+export { assertRaceInput } from './validation'
 export { createRng, type Rng } from './rng'
-export { simulateRace, formatMargin, phaseAt, sectionAt, baseSpeedFor, effectiveStat } from './engine'
+export { simulateRace, simulateRaceV1, formatMargin, phaseAt, sectionAt, baseSpeedFor, effectiveStat, skillActivationChance } from './engine'
 export { sampleTimeline, timelineDuration, type RunnerFrame } from './playback'
