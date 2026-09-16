@@ -1,52 +1,70 @@
-import Dexie, { type EntityTable } from 'dexie'
+import { SAVE_SCHEMA_VERSION, type CardSave, type EntityKind, type LedgerEntry, type LogKind, type PlayerProfile, type UmaSave } from '@racer/domain'
+import Dexie, { type EntityTable, type Transaction } from 'dexie'
 
-// Local-first save (docs/technical/architecture.md#1-local-first-game-state). The Zustand store hydrates from
-// here at boot; every mutation writes back and queues an outbox entry for background sync.
+// Typed local-first save (docs/tasks/T003-stable-save-foundation.md). Every mutation persists its entity and
+// outbox marker in one transaction before Zustand publishes it.
 
-export interface ProfileRow {
-  id: 'main'
-  tickets: number
-  cardCoupons: number
-  umaCoupons: number
-  umaShards: number
-  /** Local date (YYYY-MM-DD) of the last daily ticket grant. */
-  lastDailyGrant: string | null
-  /** Server version for optimistic sync (0 = never synced). */
-  version: number
-}
-
-export interface EntityRow {
+export interface VersionedRow<T> {
   id: string
-  data: Record<string, unknown>
+  data: T
   version: number
 }
 
-export interface LogRow {
+export interface LogRow<T = Record<string, unknown>> {
   id: string
   createdAt: number
-  data: Record<string, unknown>
+  data: T
 }
 
 export interface OutboxRow {
   seq?: number
-  kind: 'profile' | 'umas' | 'cards' | 'badges' | 'raceResults' | 'ledger'
+  kind: EntityKind | LogKind
   id: string
   op: 'upsert' | 'append'
   queuedAt: number
 }
 
+interface LegacyProfileRow {
+  id: 'main'
+  tickets: number
+  cardCoupons: number
+  umaCoupons: number
+  umaShards: number
+  lastDailyGrant: string | null
+  version: number
+}
+
+function migrateLegacyProfile(row: LegacyProfileRow | VersionedRow<PlayerProfile>): VersionedRow<PlayerProfile> {
+  if ('data' in row) return row
+  return {
+    id: 'main',
+    version: row.version,
+    data: {
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      tickets: row.tickets,
+      cardCoupons: row.cardCoupons,
+      umaCoupons: row.umaCoupons,
+      umaShards: row.umaShards,
+      lastDailyGrant: row.lastDailyGrant,
+      featuredUmaId: null,
+      starterSeedContentVersion: null,
+      createdAt: 0,
+    },
+  }
+}
+
 class RacerDb extends Dexie {
-  profile!: EntityTable<ProfileRow, 'id'>
-  umas!: EntityTable<EntityRow, 'id'>
-  cards!: EntityTable<EntityRow, 'id'>
-  badges!: EntityTable<EntityRow, 'id'>
+  profile!: EntityTable<VersionedRow<PlayerProfile>, 'id'>
+  umas!: EntityTable<VersionedRow<UmaSave>, 'id'>
+  cards!: EntityTable<VersionedRow<CardSave>, 'id'>
+  badges!: EntityTable<VersionedRow<Record<string, unknown>>, 'id'>
   raceResults!: EntityTable<LogRow, 'id'>
-  ledger!: EntityTable<LogRow, 'id'>
+  ledger!: EntityTable<LogRow<LedgerEntry>, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
 
   constructor() {
     super('uma-racer')
-    this.version(1).stores({
+    const stores = {
       profile: 'id',
       umas: 'id',
       cards: 'id',
@@ -54,6 +72,12 @@ class RacerDb extends Dexie {
       raceResults: 'id, createdAt',
       ledger: 'id, createdAt',
       outbox: '++seq, [kind+id]',
+    }
+    this.version(1).stores(stores)
+    this.version(2).stores(stores).upgrade(async (tx: Transaction) => {
+      const table = tx.table('profile')
+      const legacy = (await table.get('main')) as LegacyProfileRow | VersionedRow<PlayerProfile> | undefined
+      if (legacy) await table.put(migrateLegacyProfile(legacy))
     })
   }
 }

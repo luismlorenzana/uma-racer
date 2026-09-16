@@ -13,13 +13,11 @@ export const router = createBrowserRouter([
       { index: true, element: <HomeScreen /> },
       {
         path: 'stable',
-        element: (
-          <PlaceholderScreen
-            title="Stable"
-            emoji="🐴"
-            lines={['All 25 launch trainees', 'Level, tier crest, prestige frame', 'Long-press to peek']}
-          />
-        ),
+        lazy: async () => ({ Component: (await import('../screens/StableScreen')).StableScreen }),
+      },
+      {
+        path: 'stable/:umaId',
+        lazy: async () => ({ Component: (await import('../screens/UmaProfileScreen')).UmaProfileScreen }),
       },
       {
         path: 'race',

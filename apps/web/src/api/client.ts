@@ -1,5 +1,7 @@
 // Fetch client with a pluggable token provider (same pattern as uma-planner's api/client.ts).
 
+import type { SyncRequest } from '@racer/domain'
+
 // Base URL: empty in dev (relative /api, proxied by Vite) or the Cloud Run URL in prod.
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -35,27 +37,7 @@ export const contentApi = {
   },
 }
 
-export interface SyncUpsert {
-  kind: 'profile' | 'umas' | 'cards' | 'badges'
-  id: string
-  baseVersion: number
-  data: Record<string, unknown>
-  deleted?: boolean
-}
-export interface SyncAppend {
-  kind: 'raceResults' | 'ledger'
-  id: string
-  data: Record<string, unknown>
-  createdAt: number
-}
-
 export const saveApi = {
-  load: () => request<{ entities: unknown[]; logs: unknown[]; serverTime: number }>('/api/save'),
-  sync: (body: { upserts: SyncUpsert[]; appends: SyncAppend[] }) =>
-    request<{
-      applied: { kind: string; id: string; version: number }[]
-      conflicts: unknown[]
-      appended: number
-      serverTime: number
-    }>('/api/sync', { method: 'POST', body: JSON.stringify(body) }),
+  load: () => request<unknown>('/api/save'),
+  sync: (body: SyncRequest) => request<unknown>('/api/sync', { method: 'POST', body: JSON.stringify(body) }),
 }

@@ -1,0 +1,234 @@
+// Local-first save bootstrap and background sync (docs/tasks/T003-stable-save-foundation.md).
+
+import {
+  MAX_SYNC_OPERATIONS,
+  assertSaveContent,
+  createInitialSave,
+  parseSyncResponseOrThrow,
+  type EntityKind,
+  type LogKind,
+  type SyncRequest,
+} from '@racer/domain'
+import type { LoadedContent } from '../content/runtime'
+import { saveApi } from '../api/client'
+import { db } from './db'
+import {
+  adoptServerSnapshot,
+  applyOwedDailyGrant,
+  completeStarterSeed,
+  entityRow,
+  isDatabaseSemanticallyEmpty,
+  logRow,
+  persistInitial,
+  putConflict,
+  queueInTransaction,
+  readLocalSnapshot,
+  stateFromSnapshot,
+  updateEntityVersion,
+} from './persistence'
+import { adoptGameState, clearGameState, localDay, replaceProfile, setGameLifecycle, setSyncState, useGame } from './store'
+import { acknowledgedSequences } from './sync'
+
+const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
+
+export class GameRuntime {
+  private generation = 0
+  private timer: ReturnType<typeof setTimeout> | null = null
+  private content: LoadedContent | null = null
+  private flushing = false
+  private onlineHandler = () => void this.flush()
+  private visibilityHandler = () => {
+    if (document.visibilityState === 'hidden') void this.flush()
+  }
+
+  async start(content: LoadedContent): Promise<void> {
+    this.stop(false)
+    const generation = this.generation
+    this.content = content
+    setGameLifecycle('booting')
+    const today = localDay()
+    const now = Date.now()
+    try {
+      assertSaveContent(content.umas.items, content.cards.items)
+    } catch (error) {
+      setGameLifecycle('error', error instanceof Error ? error.message : String(error))
+      return
+    }
+    try {
+      await db.open()
+    } catch (error) {
+      if (generation !== this.generation) return
+      if (error instanceof Error && error.name === 'VersionError') {
+        setGameLifecycle('error', 'App update required for this local save database')
+        return
+      }
+      try {
+        const initial = createInitialSave(content.umas.items, content.cards.items, content.manifest.version, today, now)
+        adoptGameState({
+          profile: initial.profile,
+          umas: Object.fromEntries(initial.umas.map((item) => [item.templateId, item])),
+          cards: Object.fromEntries(initial.cards.map((item) => [item.templateId, item])),
+          persistent: false,
+        })
+        setSyncState({
+          status: 'error',
+          error: `Local storage unavailable: ${error instanceof Error ? error.message : String(error)}`,
+        })
+      } catch (fallbackError) {
+        setGameLifecycle('error', fallbackError instanceof Error ? fallbackError.message : String(fallbackError))
+      }
+      return
+    }
+
+    try {
+      let local = await readLocalSnapshot()
+      if (!local) {
+        if (!(await isDatabaseSemanticallyEmpty())) throw new Error('Local save is incomplete: profile/main is missing')
+        let raw: unknown
+        let loadedFromServer = false
+        try {
+          raw = await saveApi.load()
+          loadedFromServer = true
+        } catch {
+          // First-run play may seed offline. The outbox reconciles when connectivity returns.
+        }
+        if (loadedFromServer) {
+          const result = await adoptServerSnapshot(raw)
+          if (result === 'adopted') local = await readLocalSnapshot()
+        }
+        if (!local) {
+          await persistInitial(content, today, now)
+          local = await readLocalSnapshot()
+        }
+      }
+      if (generation !== this.generation) return
+      await completeStarterSeed(content, now)
+      const granted = await applyOwedDailyGrant(today, now)
+      local = await readLocalSnapshot()
+      if (!local) throw new Error('Save initialization did not produce a profile')
+      if (generation !== this.generation) return
+      adoptGameState(stateFromSnapshot(local, content, true))
+      if (granted > 0) useGame.getState().pushToast(`+${granted} 🎫 Daily tickets`)
+      window.addEventListener('online', this.onlineHandler)
+      document.addEventListener('visibilitychange', this.visibilityHandler)
+      await this.refreshPending()
+      this.schedule(0)
+    } catch (error) {
+      if (generation !== this.generation) return
+      setGameLifecycle('error', error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  stop(clear = true): void {
+    this.generation += 1
+    this.content = null
+    if (this.timer) clearTimeout(this.timer)
+    this.timer = null
+    if (typeof window !== 'undefined') window.removeEventListener('online', this.onlineHandler)
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.visibilityHandler)
+    if (clear) clearGameState()
+  }
+
+  schedule(delay = 750): void {
+    const state = useGame.getState()
+    if (!state.persistent || state.sync.pending === 0 || this.timer) return
+    this.timer = setTimeout(() => {
+      this.timer = null
+      void this.flush()
+    }, delay)
+  }
+
+  async setFeaturedUma(id: string): Promise<void> {
+    const state = useGame.getState()
+    if (state.status !== 'ready' || !state.profile || !state.umas[id]) throw new Error('Featured Uma must be owned')
+    const profile = { ...state.profile, featuredUmaId: id }
+    if (!state.persistent) {
+      replaceProfile(profile)
+      return
+    }
+    const now = Date.now()
+    await db.transaction('rw', db.profile, db.outbox, async () => {
+      const row = await db.profile.get('main')
+      if (!row) throw new Error('Local profile is missing')
+      await db.profile.put({ ...row, data: profile })
+      await queueInTransaction('profile', 'main', 'upsert', now)
+    })
+    replaceProfile(profile)
+    await this.refreshPending()
+    this.schedule()
+  }
+
+  private async refreshPending(): Promise<void> {
+    const pending = await db.outbox.count()
+    const online = typeof navigator === 'undefined' || navigator.onLine
+    setSyncState({ status: pending === 0 ? 'idle' : online ? 'pending' : 'offline', pending, error: null })
+  }
+
+  async flush(): Promise<void> {
+    if (this.flushing || !this.content || !useGame.getState().persistent) return
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const pending = await db.outbox.count().catch(() => useGame.getState().sync.pending)
+      setSyncState({ status: pending > 0 ? 'offline' : 'idle', pending })
+      return
+    }
+    this.flushing = true
+    const generation = this.generation
+    try {
+      const batch = await db.outbox.orderBy('seq').limit(MAX_SYNC_OPERATIONS).toArray()
+      if (batch.length === 0) {
+        setSyncState({ status: 'idle', pending: 0, error: null })
+        return
+      }
+      setSyncState({ status: 'syncing', error: null })
+      const request: SyncRequest = { upserts: [], appends: [] }
+      for (const item of batch) {
+        if (
+          !Number.isSafeInteger(item.seq) ||
+          !Number.isSafeInteger(item.queuedAt) ||
+          item.queuedAt < 0 ||
+          (item.op === 'upsert' && !['profile', 'umas', 'cards', 'badges'].includes(item.kind)) ||
+          (item.op === 'append' && !['raceResults', 'ledger'].includes(item.kind))
+        ) {
+          throw new Error('Outbox row is malformed')
+        }
+        if (item.op === 'upsert') {
+          const row = await entityRow(item.kind as EntityKind, item.id)
+          if (!row) throw new Error(`Outbox entity is missing: ${item.kind}/${item.id}`)
+          request.upserts.push({ kind: item.kind as EntityKind, id: item.id, baseVersion: row.version, data: toRecord(row.data) })
+        } else {
+          const row = await logRow(item.kind as LogKind, item.id)
+          if (!row) throw new Error(`Outbox log is missing: ${item.kind}/${item.id}`)
+          request.appends.push({ kind: item.kind as LogKind, id: item.id, data: toRecord(row.data), createdAt: row.createdAt })
+        }
+      }
+      const response = parseSyncResponseOrThrow(await saveApi.sync(request))
+      if (generation !== this.generation) return
+      const acknowledged = acknowledgedSequences(batch, request, response)
+      const sentSequence = new Map(batch.map((item) => [`${item.kind}/${item.id}`, item.seq]))
+
+      await db.transaction('rw', db.profile, db.umas, db.cards, db.badges, db.outbox, async () => {
+        for (const applied of response.applied) await updateEntityVersion(applied.kind, applied.id, applied.version)
+        for (const conflict of response.conflicts) {
+          const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
+          const originalSequence = sentSequence.get(`${conflict.kind}/${conflict.id}`)
+          if (current?.seq !== originalSequence) await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
+          else await putConflict(conflict)
+        }
+        await db.outbox.bulkDelete(acknowledged)
+      })
+      if (generation !== this.generation) return
+      const local = await readLocalSnapshot()
+      if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
+      const pending = await db.outbox.count()
+      setSyncState({ status: pending ? 'pending' : 'idle', pending, lastSuccessAt: Date.now(), error: null })
+      if (pending) this.schedule(0)
+    } catch (error) {
+      const pending = await db.outbox.count().catch(() => useGame.getState().sync.pending)
+      setSyncState({ status: typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'error', pending, error: error instanceof Error ? error.message : String(error) })
+    } finally {
+      this.flushing = false
+    }
+  }
+}
+
+export const gameRuntime = new GameRuntime()
