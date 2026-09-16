@@ -32,6 +32,9 @@ These are two separate rules:
 - **6 slots**, following the original game's 5 cards plus 1 borrowed friend card.
 - Slots unlock gradually in early tiers: tier 1 has 4 slots, tier 2 has 5, tier 3 and later have 6.
 - No duplicate card, and no two cards of the same character, on one Uma.
+- Until the Cards milestone adds the deck editor, opening Training with an empty deck auto-fills those unlocked slots from
+  owned, era-eligible stat cards. The temporary auto-fill is deterministic and type-balanced, prioritizing the Uma's growth
+  rates. It never rewrites a nonempty deck. Friend/Group cards remain inactive during this MVP bridge.
 
 ## Leveling and limit breaks
 
