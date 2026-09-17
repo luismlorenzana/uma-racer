@@ -101,8 +101,9 @@ decisions, and T006.
   completion, course boundaries, and deterministic RNG/event ordering.
 - Property-style seed matrices assert finite state, monotonic distance, unique finish order, legal lanes, and completion.
 - Replay/persistence tests cover the new compact lane timeline inputs without changing rewards or idempotency.
-- A skillless 18-runner 3200 m precompute stays below 250 ms on the local development machine and 750 ms on the shared,
-  concurrently loaded CI runner; skillless runners must not allocate unused R3 skill context.
+- A skillless 18-runner 3200 m precompute stays below 250 ms on the local development machine; the wall-clock assertion
+  is not applied on contended shared CI, where identical runs varied by nearly 2x. Skillless runners must not allocate
+  unused R3 skill context.
 - Run lint/test/build, expanded simulations, and 390×844 playback inspection with 8- and 18-runner fields.
 
 ## Acceptance
