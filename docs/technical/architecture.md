@@ -92,6 +92,11 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   ticket cost and +2 level reward are appended under deterministic ids, profile/card outbox rows are coalesced, and Zustand
   publishes only after commit. Training's transition to card level 25 similarly appends one `card-max-coupon:<cardId>` row,
   increments the profile Coupon balance, and sets the card's paid flag in its existing transaction.
+- Collection acquisition uses the same boundary. Shard exchange transactionally derives its next numbered prefix and
+  writes the profile plus separate `-5 shards`/`+1 Uma Coupon` ledger rows. A Card or Uma redemption re-reads the profile,
+  target entity, private content, and target-keyed ledger row; it then writes the profile, a version-0 canonical entity,
+  one coupon spend, and all outbox work atomically. Matching entity+ledger retries return success, ownership without that
+  ledger is already-owned, and same-id mismatches are corruption. Zustand publishes only after commit.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
@@ -184,8 +189,11 @@ apps/web/src/
 ```
 
 - **Routes are code-split**. PixiJS loads only with Race scenes; Training uses route-split DOM and Motion feedback.
-- The Cards album/detail route is also split. It joins the full private catalog to account-wide card saves and calls the
+- The Cards album/detail and Card Select routes are also split. They join the full private catalog to account-wide card saves and call the
   same generated effect projection used by Training and progression racing, so displayed LB values cannot drift from play.
+- Stable joins the complete private Uma catalog for honest outfit-level completion and silhouettes. The full-screen
+  collection reveal is separately split and resolves safe kind/id params back to an already-owned entity; it has no
+  mutation path, so back, reload, and direct navigation cannot spend a second coupon.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.

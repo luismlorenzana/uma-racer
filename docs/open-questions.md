@@ -18,6 +18,9 @@ adjusted through balance simulation and playtesting.
 - **Milestone 4 Deck device feel:** edit a tier-1 Uma deck on the installed app, exercise reorder/remove/filters/Auto fill,
   then open Training and Race Select. Desktop emulation verifies validation and layout, but not physical drag-free thumb
   ergonomics or the complete offline/reconnect flow on iOS.
+- **Milestone 4 Collection device feel:** inspect Stable All/Owned/Unowned, exchange five shards, redeem one Card and one
+  Uma Coupon, and reload each reveal on the installed app. Desktop emulation verifies the 390×844 layout, atomic local
+  state, and direct-route behavior, but not physical safe areas, reduced-motion preference, or iOS offline/reconnect feel.
 
 ## Not questions, but still to come
 

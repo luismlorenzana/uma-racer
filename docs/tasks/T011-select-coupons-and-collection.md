@@ -123,3 +123,14 @@ With complete private content and `pnpm dev`:
 - Trainer achievements, badge collection, titles, showcase pins, aggregate records (Milestone 6).
 - Scenario promotion, inheritance, parent snapshots, Initial Stats application, goals, awakening, Friend/Group gameplay,
   card events/bond, deck presets, sound, haptics, or new original-game assets.
+
+## Implementation result
+
+Implemented on `feat/select-coupons-collection`. Pure domain mutations now own exact five-shard exchange, target-keyed Card
+and Uma Coupon spends, canonical constructors, strict ids, ledger descriptors, and honest known-content counts. The web
+runtime executes them inside atomic Dexie transactions with separate locks, version-0 entity insertion, deterministic
+append ids, outbox queueing, idempotent matching retries, corruption detection, and the same rules in memory-only mode.
+
+Cards adds a lazy era/type redemption catalog and exact review; Stable joins the full private Uma outfit catalog with
+completion, All/Owned/Unowned and aptitude filters, silhouettes, shard exchange, and Uma review. Both commit before a
+safe-area Motion reveal whose safe kind/id route only reconstructs already-owned local state, so refresh cannot repay.

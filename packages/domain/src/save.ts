@@ -67,6 +67,9 @@ export const LEDGER_REASONS = [
   'uma-promotion',
   'card-limit-break',
   'card-max',
+  'uma-shard-exchange',
+  'card-coupon-redeem',
+  'uma-coupon-redeem',
 ] as const
 export type LedgerReason = (typeof LEDGER_REASONS)[number]
 

@@ -44,3 +44,18 @@ export async function promoteSupportCard(id: string) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.promoteCard(id)
 }
+
+export async function exchangeUmaShards() {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.exchangeUmaShards()
+}
+
+export async function redeemCardCoupon(id: string) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.redeemCardCoupon(id)
+}
+
+export async function redeemUmaCoupon(id: string) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.redeemUmaCoupon(id)
+}

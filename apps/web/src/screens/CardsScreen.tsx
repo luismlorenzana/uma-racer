@@ -1,6 +1,7 @@
 import { CARD_EFFECTS, MAX_LIMIT_BREAK, cardExpToNext, scenarioForTier, type CardEffect, type SupportCardType } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { promoteSupportCard } from '../game/actions'
 import { buildCardAlbum, type CardAlbumFilters, type CardAlbumItem, type CardTypeFilter } from '../game/cards-view'
@@ -75,7 +76,7 @@ function CardDetail({ item, busy, error, celebration, onPromote }: {
       </div>
 
       {!usable && <div className="mt-3 rounded-xl bg-amber-50 p-3 text-sm font-bold">Friend/Group gameplay arrives after the MVP. This card can be collected but not equipped yet.</div>}
-      {!item.owned && <div className="mt-3 rounded-xl bg-slate-100 p-3 text-sm font-bold">Unowned. Card Select redemption arrives in T011.</div>}
+      {!item.owned && <div className="mt-3 rounded-xl bg-slate-100 p-3 text-sm font-bold">Unowned. Use a Card Select Coupon from the album to add it to your collection.</div>}
 
       {save && (
         <>
@@ -122,11 +123,17 @@ export function CardsScreen() {
   const profile = useGame((state) => state.profile)
   const cards = useGame((state) => state.cards)
   const pushToast = useGame((state) => state.pushToast)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<CardAlbumFilters>({ ownership: 'all', type: 'all' })
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [celebration, setCelebration] = useState(0)
+
+  useEffect(() => {
+    const requested = searchParams.get('card')
+    if (requested) setSelectedId(requested)
+  }, [searchParams])
 
   const album = useMemo(() => contentState.status === 'ready' && profile
     ? buildCardAlbum(contentState.content, cards, profile.tickets, filters)
@@ -168,7 +175,10 @@ export function CardsScreen() {
           <div><p className="text-xs font-extrabold tracking-wide text-violet-700 uppercase">SSR collection</p><h1 className="text-2xl font-extrabold">Support Cards</h1></div>
           <div className="text-right text-sm font-extrabold"><p>{album.owned} / {album.total} owned</p><p className="text-gold-deep">{album.maxed} maxed</p></div>
         </div>
-        <p className="mt-2 text-sm font-bold text-ink-soft">{profile.cardCoupons} Card Select Coupon{profile.cardCoupons === 1 ? '' : 's'} · redemption arrives in T011</p>
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white/80 p-3">
+          <p className="text-sm font-extrabold">{profile.cardCoupons} Card Select Coupon{profile.cardCoupons === 1 ? '' : 's'}</p>
+          <Link to="/cards/redeem" className="flex min-h-11 items-center rounded-xl bg-violet-600 px-4 text-sm font-extrabold text-white">Redeem</Link>
+        </div>
         {!persistent && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-extrabold">Memory only — progression works for this session but cannot persist or sync.</p>}
         {album.orphanedIds.length > 0 && <p className="mt-2 rounded-xl bg-red-50 p-2 text-xs font-bold text-danger">{album.orphanedIds.length} owned card reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
       </Panel>
@@ -198,7 +208,7 @@ export function CardsScreen() {
         </section>
       ))}
 
-      <BottomSheet open={selected !== null} onClose={() => { if (!busy) { setSelectedId(null); setError(null) } }}>
+      <BottomSheet open={selected !== null} onClose={() => { if (!busy) { setSelectedId(null); setError(null); setSearchParams({}, { replace: true }) } }}>
         {selected && <CardDetail item={selected} busy={busy} error={error} celebration={celebration} onPromote={promote} />}
       </BottomSheet>
     </div>

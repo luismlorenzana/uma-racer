@@ -49,6 +49,10 @@ Notes:
 - A Card Select Coupon picks any unowned card, and an Uma Select Coupon picks any unowned Uma, including later eras. Era gating only controls equipping cards, not owning them.
 - Newly obtained Umas start at level 1, tier 1.
 
+The implemented exchange is an explicit local-first action: five shard units and one coupon unit are separate append-only
+ledger rows. Card and Uma redemptions are keyed by target id, so a retry after a committed acquisition reconstructs the
+owned result without spending again. An entity that predates the matching redemption row is simply already owned.
+
 ### Pacing
 
 - **One Uma** taken from level 1 to 50 earns 5 shards, which is **1 Uma coupon**. Taking her to 100 earns a second.
@@ -68,6 +72,10 @@ Notes:
 - Every SSR card, grouped by **era** and then by **type**.
 - Owned cards show LB pips and level. Maxed cards get a special border. Unowned cards are silhouettes.
 - Completion counters for each era and each type.
+
+The current albums join every private content template to entity-presence ownership. Orphaned saves are reported but do
+not inflate known-content completion. Card selection can filter era and type; Stable can switch All/Owned/Unowned and use
+tier and aptitude filters. A successful selection commits before opening a read-only reveal route.
 
 ## Trainer achievements (account-wide)
 
