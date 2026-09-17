@@ -5,6 +5,7 @@ export interface RunnerFrame {
   distance: number
   speed: number
   hp: number
+  lane: number
 }
 
 /** Samples every runner at `seconds` since the gate opened, writing into `out` to avoid per-frame allocations. */
@@ -17,10 +18,13 @@ export function sampleTimeline(timeline: RaceTimeline, seconds: number, out: Run
   for (let r = 0; r < n; r++) {
     const a = t0 * n + r
     const b = t1 * n + r
-    const frame = out[r] ?? (out[r] = { distance: 0, speed: 0, hp: 1 })
+    const frame = out[r] ?? (out[r] = { distance: 0, speed: 0, hp: 1, lane: 0 })
     frame.distance = timeline.distance[a]! + (timeline.distance[b]! - timeline.distance[a]!) * alpha
     frame.speed = timeline.speed[a]! + (timeline.speed[b]! - timeline.speed[a]!) * alpha
     frame.hp = timeline.hp[a]! + (timeline.hp[b]! - timeline.hp[a]!) * alpha
+    frame.lane = timeline.lane
+      ? timeline.lane[a]! + (timeline.lane[b]! - timeline.lane[a]!) * alpha
+      : 0
   }
   out.length = n
   return out

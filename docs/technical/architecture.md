@@ -87,7 +87,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
-  engine never evaluates source strings. At the finish, one Dexie transaction revalidates and re-simulates the attempt, updates Uma EXP/levels and profile
+  engine never evaluates source strings. Engine v3 also joins, validates, clips, and snapshots the selected private course's
+  corner/straight geometry before simulation. At the finish, one Dexie transaction revalidates and re-simulates the attempt, updates Uma EXP/levels and profile
   rewards, then appends the typed race result plus deterministic level-ticket/gate-shard ledger ids and outbox work. A
   matching retry reads the existing result and pays nothing twice; abandoning before the finish writes nothing.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
@@ -106,7 +107,12 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - This gives free **skip** (jump to results), **replay** (store `seed` + inputs, re-simulate), and **headless batch balance runs** in Node or a Web Worker.
 - Randomness only comes from a seeded PRNG passed in with the input. No `Math.random` inside the engine.
 - Legacy T005 results have no `engineVersion` and replay through the frozen skillless engine-v1 path. Engine-v2 results
-  snapshot their course and every runner's compiled skill list; replay does not recompile mutable catalog data.
+  snapshot their course and every runner's compiled skill list. Engine-v3 additionally snapshots bounded course geometry
+  and simulates pack state with a separate per-runner RNG stream. Replays dispatch to explicit v1/v2/v3 entry points and do
+  not recompile mutable catalog data.
+- A v3 timeline adds a compact `Float32Array` of continuous lane samples plus typed mode/block/overtake/lane events. Pixi
+  interpolates distance and lane into pooled runner tokens without allocating per animation frame; the renderer keeps gate
+  identity separate from simulated lateral position.
 
 ### 3. Content: reference data and images
 

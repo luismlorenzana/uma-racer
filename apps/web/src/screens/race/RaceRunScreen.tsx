@@ -255,6 +255,14 @@ export function RaceRunScreen() {
           </m.span>
           <span className="font-extrabold tabular-nums">{Math.round(remaining)}m left</span>
         </div>
+        {hud?.latestPack && hud.seconds - hud.latestPack.tick / timeline.tickRate < 1.6 && (
+          <m.div
+            key={`${hud.latestPack.kind}:${hud.latestPack.tick}`}
+            initial={reducedMotion ? false : { y: -4, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mx-auto mt-1 w-fit rounded-full border border-white/80 bg-ink/70 px-3 py-0.5 text-xs font-extrabold text-white"
+          >{hud.latestPack.kind}</m.div>
+        )}
       </div>
 
       <div ref={hostRef} className="relative min-h-0 flex-1" />

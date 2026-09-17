@@ -1,6 +1,6 @@
 // CLI orchestration for the private content data pipeline (docs/tasks/T001-content-data-packs.md).
 
-import { selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
+import { assertRaceCourseContent, selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
 import { DATASET_NAMES, loadGameToraData } from './gametora'
 import { normalizeCards } from './normalize/cards'
 import { normalizeCourses } from './normalize/courses'
@@ -21,6 +21,7 @@ async function main(): Promise<void> {
   const courses = normalizeCourses(datasets.racetracks)
   const skillCoverage = summarizeRaceSkillCoverage(skills.items)
   const baselineSkills = selectBaselineRaceSkills(skills.items)
+  assertRaceCourseContent(races.items, courses.items)
 
   const umaStarters = umas.items.filter((item) => item.starter).length
   const cardStarters = cards.items.filter((item) => item.starter).length

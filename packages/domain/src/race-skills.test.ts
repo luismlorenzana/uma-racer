@@ -79,12 +79,12 @@ describe('race skill compiler', () => {
 
     const inherited = compileRaceSkill({ ...skill('s2', 'inherited-unique', 200), conditions: [{
       precondition: null,
-      condition: 'blocked_front==1',
+      condition: 'slope==1',
       baseTime: -1,
       cooldown: null,
       effects: [{ type: 31, value: 4_000 }, { type: 999, value: 1 }],
     }] })
-    expect(inherited.groups[0]).toMatchObject({ duration: -1, unsupportedVariables: ['blocked_front'], unsupportedEffects: [999] })
+    expect(inherited.groups[0]).toMatchObject({ duration: -1, unsupportedVariables: ['slope'], unsupportedEffects: [999] })
     expect(inherited.groups[0]!.effects).toEqual([{ kind: 'acceleration', amount: 0.2 }])
     expect(raceSkillSupported(inherited)).toBe(false)
     const sprintOnly = compileRaceSkill({
@@ -93,6 +93,12 @@ describe('race skill compiler', () => {
     })
     expect(raceSkillCompatibleWithCourse(sprintOnly, { distance: 1_200, surface: 'turf' })).toBe(true)
     expect(raceSkillCompatibleWithCourse(sprintOnly, { distance: 3_200, surface: 'turf' })).toBe(false)
+    const naturalSpeed = compileRaceSkill({
+      ...skill('natural-speed'),
+      conditions: [{ ...skill('natural-speed').conditions[0]!, effects: [{ type: 22, value: 2_500 }] }],
+    })
+    expect(naturalSpeed.groups[0]!.effects).toEqual([{ kind: 'current-speed-natural', amount: 0.25 }])
+    expect(raceSkillSupported(naturalSpeed)).toBe(true)
   })
 
   it('supports bounded random phase points and rejects malformed variants', () => {
@@ -156,7 +162,7 @@ describe('skill loadouts', () => {
     expect(() => replaceSkillLoadout({ ...save, skillPoints: 80 }, uma, skills, ['paid-1'])).toThrow(/costs 90 SP/)
     expect(() => replaceSkillLoadout(save, uma, skills, ['unique-1'])).toThrow(/automatically/)
     expect(() => replaceSkillLoadout(save, uma, skills, ['missing'])).toThrow(/not available/)
-    const unsupported = { ...skill('later'), conditions: [{ ...skill('later').conditions[0]!, condition: 'blocked_front==1' }] }
+    const unsupported = { ...skill('later'), conditions: [{ ...skill('later').conditions[0]!, condition: 'slope==1' }] }
     const withUnsupported = new Map(skills).set(unsupported.id, unsupported)
     expect(() => replaceSkillLoadout({
       ...save,

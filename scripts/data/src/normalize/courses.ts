@@ -1,6 +1,6 @@
 // Pure course-layout normalization for later race-engine milestones R3/R4.
 
-import type { CourseTemplate } from '@racer/domain'
+import type { CourseCorner, CourseStraight, CourseTemplate } from '@racer/domain'
 import { id, number as numberValue, records, type NormalizeResult } from './shared'
 import { VENUES_BY_TRACK_ID } from './races'
 
@@ -21,6 +21,33 @@ export function normalizeCourses(value: unknown): NormalizeResult<CourseTemplate
         warnings.push(`Course ${courseId ?? '<missing id>'} on track ${trackId} has invalid required fields and was skipped`)
         continue
       }
+      const corners: CourseCorner[] = []
+      let invalidLayout = false
+      for (const segment of records(course.corners)) {
+        const start = numberValue(segment.start)
+        const end = numberValue(segment.end)
+        const number = numberValue(segment.number)
+        if (start === null || end === null || number === null) {
+          invalidLayout = true
+          break
+        }
+        corners.push({ start, end, number })
+      }
+      const straights: CourseStraight[] = []
+      for (const segment of records(course.straights)) {
+        const start = numberValue(segment.start)
+        const end = numberValue(segment.end)
+        const frontType = numberValue(segment.frontType)
+        if (start === null || end === null || frontType === null) {
+          invalidLayout = true
+          break
+        }
+        straights.push({ start, end, frontType })
+      }
+      if (invalidLayout) {
+        warnings.push(`Course ${courseId} on track ${trackId} has malformed geometry and was skipped`)
+        continue
+      }
       if (seen.has(courseId)) continue
       seen.add(courseId)
       items.push({
@@ -29,8 +56,8 @@ export function normalizeCourses(value: unknown): NormalizeResult<CourseTemplate
         distance,
         terrain,
         turn,
-        corners: course.corners ?? [],
-        straights: course.straights ?? [],
+        corners,
+        straights,
         slopes: course.slopes ?? [],
       })
     }

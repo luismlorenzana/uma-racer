@@ -20,12 +20,34 @@ export function assertRaceInput(value: unknown): asserts value is RaceInput {
     throw new Error('Invalid race seed')
   }
   if (!isRecord(value.course)) throw new Error('Invalid race course')
-  const courseKeys = Object.hasOwn(value.course, 'season') ? ['distance', 'surface', 'season'] : ['distance', 'surface']
+  const courseKeys = [
+    'distance',
+    'surface',
+    ...(Object.hasOwn(value.course, 'season') ? ['season'] : []),
+    ...(Object.hasOwn(value.course, 'layout') ? ['layout'] : []),
+  ]
   if (
     !exactKeys(value.course, courseKeys) || !finiteNonNegative(value.course.distance) || value.course.distance <= 0 ||
     !SURFACES.includes(value.course.surface as (typeof SURFACES)[number]) ||
     (Object.hasOwn(value.course, 'season') && (!Number.isSafeInteger(value.course.season) || (value.course.season as number) < 0))
   ) throw new Error('Invalid race course')
+  if (Object.hasOwn(value.course, 'layout')) {
+    const layout = value.course.layout
+    if (!isRecord(layout) || !exactKeys(layout, ['corners', 'straights']) ||
+      !Array.isArray(layout.corners) || !Array.isArray(layout.straights)) throw new Error('Invalid race course layout')
+    const distance = value.course.distance as number
+    const validSegments = (segments: unknown[], corner: boolean) => segments.every((segment, index) => {
+      if (!isRecord(segment) || !exactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end'])) return false
+      if (!finiteNonNegative(segment.start) || !finiteNonNegative(segment.end) || segment.end <= segment.start || segment.end > distance) return false
+      if (index > 0) {
+        const previous = segments[index - 1]
+        if (!isRecord(previous) || (previous.end as number) > segment.start) return false
+      }
+      return !corner || (Number.isSafeInteger(segment.number) && (segment.number as number) >= 1 && (segment.number as number) <= 32)
+    })
+    if (!validSegments(layout.corners, true) || !validSegments(layout.straights, false) ||
+      (layout.corners.length === 0 && layout.straights.length === 0)) throw new Error('Invalid race course layout')
+  }
   if (!Array.isArray(value.runners) || value.runners.length < 1 || value.runners.length > 18) {
     throw new Error('Invalid race field size')
   }

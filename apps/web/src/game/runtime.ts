@@ -3,6 +3,7 @@
 import {
   MAX_SYNC_OPERATIONS,
   assertProgressionRaceContent,
+  assertRaceCourseContent,
   assertRaceSkillContent,
   assertTrainingContent,
   assertSaveContent,
@@ -73,6 +74,7 @@ export class GameRuntime {
       assertTrainingContent(content.umas.items, content.cards.items, content.skills.items)
       assertRaceSkillContent(content.skills.items)
       assertProgressionRaceContent(content.races.items)
+      assertRaceCourseContent(content.races.items, content.courses.items)
     } catch (error) {
       setGameLifecycle('error', error instanceof Error ? error.message : String(error))
       return

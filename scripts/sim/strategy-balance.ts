@@ -1,5 +1,6 @@
 // Headless balance run: identical baseline enemy fields across tiers, distances, and stat scales.
-// Reports HP exhaustion, maxed spurts, and win share by strategy. Findings: docs/research/race-engine-r1-findings.md
+// Reports HP exhaustion, strategy viability, position-mode time, blocking, overtakes, and skill use.
+// Findings: docs/research/race-engine-r3-findings.md
 //
 //   pnpm sim:balance            (200 races per row)
 //   pnpm sim:balance -- 1000    (more races per row)
@@ -29,37 +30,6 @@ const ROWS: [tier: number, distance: number][] = [
 /** Uma Level 1 (field Form 80%) and 10 (field Form 89%). */
 const LEVELS = [1, 10]
 
-console.log(`${RACES_PER_ROW} races per row · ${FIELD} runners · ${GRADE} · strategies rotate by gate\n`)
-console.log('tier  dist  level  stamina  hp-empty  maxed  wins front/pace/late/end   win time')
-for (const [tier, distance] of ROWS) {
-  for (const level of LEVELS) {
-    const stats = npcRaceStats(tier, GRADE, distanceCategory(distance), level)
-    const runners = Array.from({ length: FIELD }, (_, gate) => ({
-      id: `n${gate}`,
-      label: `${gate + 1}`,
-      stats,
-      strategy: STRATEGIES[gate % 4]!,
-      aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
-      gate,
-    }))
-    const wins = { front: 0, pace: 0, late: 0, end: 0 }
-    let empty = 0
-    let maxed = 0
-    let winTime = 0
-    for (let seed = 1; seed <= RACES_PER_ROW; seed++) {
-      const t = simulateRace({ course: { distance, surface: 'turf' }, seed, runners })
-      wins[runners[t.results[0]!.runner]!.strategy]++
-      empty += t.events.filter((e) => e.type === 'hp-empty').length
-      maxed += t.results.filter((r) => r.spurtMaxed).length
-      winTime += t.results[0]!.finishTime
-    }
-    const pct = (n: number) => `${Math.round((n / (RACES_PER_ROW * FIELD)) * 100)}%`.padStart(5)
-    console.log(
-      `${String(tier).padStart(4)}  ${String(distance).padStart(4)}  ${String(level).padStart(5)}  ${String(Math.round(stats.stamina)).padStart(7)}  ${pct(empty).padStart(8)}  ${pct(maxed)}  ${[wins.front, wins.pace, wins.late, wins.end].map((w) => String(w).padStart(4)).join(' / ')}   ${(winTime / RACES_PER_ROW).toFixed(1)}s`,
-    )
-  }
-}
-
 const syntheticRecovery: CompiledRaceSkill = {
   id: 'synthetic-balance-recovery',
   activation: 'guaranteed',
@@ -73,6 +43,55 @@ const syntheticRecovery: CompiledRaceSkill = {
     unsupportedVariables: [],
     unsupportedEffects: [],
   }],
+}
+
+console.log(`${RACES_PER_ROW} races per row · ${FIELD} runners · ${GRADE} · strategies rotate by gate\n`)
+console.log('tier dist level stamina hp-empty maxed wins F/P/L/E             mode% blocked  pass% skills  win time')
+for (const [tier, distance] of ROWS) {
+  for (const level of LEVELS) {
+    const stats = npcRaceStats(tier, GRADE, distanceCategory(distance), level)
+    const runners = Array.from({ length: FIELD }, (_, gate) => ({
+      id: `n${gate}`,
+      label: `${gate + 1}`,
+      stats,
+      strategy: STRATEGIES[gate % 4]!,
+      aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
+      gate,
+      skills: [syntheticRecovery],
+    }))
+    const wins = { front: 0, pace: 0, late: 0, end: 0 }
+    let empty = 0
+    let maxed = 0
+    let winTime = 0
+    let modeTime = 0
+    let blockedTime = 0
+    let overtakeAttempts = 0
+    let overtakeSuccesses = 0
+    let skillUses = 0
+    let runnerTime = 0
+    for (let seed = 1; seed <= RACES_PER_ROW; seed++) {
+      const t = simulateRace({ course: { distance, surface: 'turf' }, seed, runners })
+      wins[runners[t.results[0]!.runner]!.strategy]++
+      empty += t.events.filter((e) => e.type === 'hp-empty').length
+      maxed += t.results.filter((r) => r.spurtMaxed).length
+      winTime += t.results[0]!.finishTime
+      skillUses += t.events.filter((event) => event.type === 'skill-activated').length
+      for (const result of t.results) {
+        runnerTime += result.finishTime
+        if (!result.pack) continue
+        modeTime += Object.entries(result.pack.modeSeconds)
+          .filter(([mode]) => mode !== 'normal')
+          .reduce((sum, [, seconds]) => sum + seconds, 0)
+        blockedTime += result.pack.blockedSeconds
+        overtakeAttempts += result.pack.overtakeAttempts
+        overtakeSuccesses += result.pack.overtakeSuccesses
+      }
+    }
+    const pct = (n: number) => `${Math.round((n / (RACES_PER_ROW * FIELD)) * 100)}%`.padStart(5)
+    console.log(
+      `${String(tier).padStart(4)} ${String(distance).padStart(4)} ${String(level).padStart(5)} ${String(Math.round(stats.stamina)).padStart(7)} ${pct(empty).padStart(8)} ${pct(maxed)} ${[wins.front, wins.pace, wins.late, wins.end].map((w) => String(w).padStart(4)).join('/')} ${(100 * modeTime / runnerTime).toFixed(1).padStart(6)}% ${(blockedTime / (RACES_PER_ROW * FIELD)).toFixed(1).padStart(7)}s ${(100 * overtakeSuccesses / Math.max(1, overtakeAttempts)).toFixed(0).padStart(5)}% ${(skillUses / (RACES_PER_ROW * FIELD)).toFixed(1).padStart(6)} ${(winTime / RACES_PER_ROW).toFixed(1).padStart(8)}s`,
+    )
+  }
 }
 
 const recoveryStats = npcRaceStats(1, GRADE, 'long', 1)

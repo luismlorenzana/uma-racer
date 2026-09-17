@@ -178,6 +178,16 @@ describe('race result parsing', () => {
       field: valid.field.map((runner) => ({ ...runner, skills: [] })),
     }
     expect(parseRaceResultRecord(v2)).toEqual(v2)
+    const v3 = {
+      ...v2,
+      engineVersion: 3 as const,
+      course: {
+        ...v2.course,
+        layout: { corners: [{ start: 1_200, end: 1_600, number: 2 }], straights: [{ start: 0, end: 1_200 }, { start: 1_600, end: 2_000 }] },
+      },
+    }
+    expect(parseRaceResultRecord(v3)).toEqual(v3)
+    expect(parseRaceResultRecord({ ...v3, course: { ...v3.course, layout: { corners: [], straights: [] } } })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, ticketReward: 10 })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, extra: true })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, field: valid.field.map((runner) => ({ ...runner, isPlayer: false })) })).toBeNull()

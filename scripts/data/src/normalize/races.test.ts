@@ -36,11 +36,11 @@ describe('normalizeCourses', () => {
       {
         id: '8201',
         trackId: '10006',
-        distance: 1400,
+        distance: 1,
         terrain: 1,
         turn: 1,
-        corners: [{ start: 400, end: 600 }],
-        straights: [{ start: 0, end: 400 }],
+        corners: [{ start: 400, end: 600, number: 1 }],
+        straights: [{ start: 0, end: 400, frontType: 1 }],
         slopes: [{ start: 900, slope: 1 }],
       },
     ])

@@ -195,13 +195,10 @@ Blocked if lane gap < (1.0 − 0.6 × DistanceGap²) × 0.75 × LaneWidth
 Blocked speed cap = (0.988 + 0.012 × DistanceGap²) × BlockerSpeed
 ```
 
-## Position keeping (sections 1–10) ⚠️
+## Position keeping (sections 1–10) ✅
 
-Only described conceptually here. It needs its own research pass before race engine milestone R3.
-
-- **Front Runners:** *Speed Up* mode (pull away from the second runner) and *Overtake* mode (retake the lead).
-- **Others:** *Pace Up* (too far behind the leader for their strategy) and *Pace Down* (too close).
-- Modes are checked on a timer, and Wit affects the chance of entering them.
+The R3 research pass is recorded in [Race Engine R3 Findings](race-engine-r3-findings.md), including exact thresholds,
+timers, lane formulas, source confidence, and the explicit pacemaker/course-width approximations used by Uma Racer.
 
 ## Dueling (final straight) ✅
 
@@ -224,7 +221,7 @@ A runner cannot enter a duel again after leaving it.
 ## Research backlog
 
 - [ ] Verify the HP section (max HP, consumption, strategy coefficients).
-- [ ] Position keeping: exact thresholds, timers, and coefficients.
+- [x] Position keeping: exact thresholds, timers, and coefficients. See the R3 findings.
 - [ ] Spot struggle (early competition between Front Runners).
 - [ ] Rushed (kakari): chance, duration, and effects.
 - [ ] Course data: sections, corners, straights, and slopes for each JRA course.
