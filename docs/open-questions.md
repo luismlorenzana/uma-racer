@@ -10,6 +10,8 @@ adjusted through balance simulation and playtesting.
 
 - ✅ Google Cloud and Firebase are set up and deploys are enabled (2026-09-15).
 - **On your iPhone:** install the Home Screen app and sign in once. See [GCP Setup Guide — Part 7](technical/gcp-setup-guide.md#part-7--install-on-your-iphone-after-claude-confirms-the-deploy).
+- **Milestone 3 device feel:** run one race from the installed Home Screen app in portrait and landscape, including Skip and
+  a result CTA. Desktop emulation verifies layout/behavior, but not safe-area feel, 120 Hz pacing, or physical touch targets.
 
 ## Not questions, but still to come
 

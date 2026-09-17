@@ -187,8 +187,8 @@ Validate with headless batch simulation.
 | 2nd–3rd | 25% of win EXP |
 | Other | 0 |
 
-See [Uma Progression](uma-progression.md#uma-level-and-exp) for `winExp`. Every result goes into the Uma's
-`raceHistory` and is checked by the goal, badge, and achievement engines.
+See [Uma Progression](uma-progression.md#uma-level-and-exp) for `winExp`. Every result goes into the typed append-only
+`raceResults` collection and will be checked by the later goal, badge, and achievement engines.
 
 ## Presentation: straight-line real-time view
 
@@ -196,10 +196,18 @@ See [Uma Progression](uma-progression.md#uma-level-and-exp) for `winExp`. Every 
 - **Icons** (character icons) are the runners, with a gate number and the player's Uma highlighted.
 - A **progress rail** shows every runner's position along the whole distance at a glance.
 - **Phase banner:** Opening → Middle → Final Leg → **Last Spurt**, with course labels such as "Final corner" and "Final straight".
-- **Stamina bar** for the player's Uma. **Skill activation popups**. Callouts for late start, dueling, spurt, blocked.
-- **Finish:** a photo-finish freeze when the margin is within a nose or head. Margins are shown in lengths.
+- Before timeline second zero, the renderer shows a 2.4-second field → staged gates → Ready → Go sequence. The engine's
+  seeded start delays begin only when the gate opens. Reduced motion keeps the same text in a shortened 0.6-second sequence.
+- **Stamina bar** for the player's Uma. A deterministic single-slot queue shows player skills, late start, last spurt, and
+  pack state ahead of grouped rival activations, so simultaneous events never cover each other.
+- **Finish:** Nose/Head margins (runner-up gap greater than zero and below 0.15 lengths) slow the final 0.8 timeline seconds
+  to 0.4× and hold the finish frame for 0.65 seconds. Skip and reduced motion go directly to the same computed result.
+- Results show the full field, rewards, EXP/levels, before→after player/field Form, and player activation effects. Save
+  errors keep navigation locked behind Retry; after commit the actions are Races, Train, and Race again (disabled at a gate).
+- Presentation state is never saved and never changes a simulation result. Replay derives it again from the immutable
+  timeline; legacy results without skills, lanes, or layout retain readable fallbacks.
 
-## Engine principles *(tentative until the technical design is written)*
+## Engine principles
 
 - **Simulation is separate from rendering.** A pure, deterministic sim steps at a fixed tick (the original game reportedly uses 1/15 s).
 - **Seeded RNG:** the same seed and the same inputs replay the same race.

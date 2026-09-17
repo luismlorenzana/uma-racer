@@ -1,124 +1,404 @@
-// Headless balance run: identical baseline enemy fields across tiers, distances, and stat scales.
-// Reports HP exhaustion, strategy viability, position-mode time, blocking, overtakes, and skill use.
-// Findings: docs/research/race-engine-r3-findings.md
+// Synthetic race-engine balance harness (docs/tasks/T008-race-presentation-and-balance.md).
+// No imported ids, source rows, or original-game data belong in this file.
 //
-//   pnpm sim:balance            (200 races per row)
-//   pnpm sim:balance -- 1000    (more races per row)
+//   pnpm sim:balance                 quick 2,400-race strategy regression
+//   pnpm sim:balance -- 1000         custom quick seeds per row
+//   pnpm sim:balance -- --final      Milestone 3 multi-dimensional closure matrix
 import {
-  npcRaceStats,
+  applyForm,
+  baselineStatCap,
   distanceCategory,
+  npcRaceStats,
   parseRaceCondition,
   STRATEGIES,
+  yourForm,
   type CompiledRaceSkill,
   type RaceGrade,
+  type RaceSkillEffectKind,
+  type Stats,
+  type Strategy,
 } from '../../packages/domain/src/index'
-import { simulateRace } from '../../packages/race/src/index'
+import { simulateRace, type RaceTimeline } from '../../packages/race/src/index'
 
-const racesArgument = process.argv.slice(2).find((value) => /^\d+$/.test(value))
-const RACES_PER_ROW = Number(racesArgument ?? 200)
+const args = process.argv.slice(2)
+const finalMode = args.includes('--final')
+const targetOnly = args.includes('--target-only')
+const racesArgument = args.find((value) => /^\d+$/.test(value))
+const RACES_PER_ROW = Number(racesArgument ?? (finalMode ? 40 : 200))
+const playerStepArgument = args.find((value) => value.startsWith('--player-step='))?.split('=')[1]
+const PLAYER_STEP = playerStepArgument === undefined ? null : Number(playerStepArgument)
 if (!Number.isSafeInteger(RACES_PER_ROW) || RACES_PER_ROW < 1) throw new Error('Race count must be a positive integer')
-const FIELD = 12
-const GRADE: RaceGrade = 'g1'
-const ROWS: [tier: number, distance: number][] = [
-  [1, 1200],
-  [1, 1600],
-  [1, 2400],
-  [1, 3200],
-  [6, 2400],
-  [11, 3200],
-]
-/** Uma Level 1 (field Form 80%) and 10 (field Form 89%). */
-const LEVELS = [1, 10]
 
-const syntheticRecovery: CompiledRaceSkill = {
-  id: 'synthetic-balance-recovery',
-  activation: 'guaranteed',
+const makeSkill = (
+  id: string,
+  condition: string,
+  kind: RaceSkillEffectKind,
+  amount: number,
+  duration: number,
+  activation: 'guaranteed' | 'wit' = 'wit',
+): CompiledRaceSkill => ({
+  id,
+  activation,
   inherited: false,
   groups: [{
     precondition: null,
-    condition: parseRaceCondition('hp_per<=70')!,
-    duration: 0,
+    condition: parseRaceCondition(condition)!,
+    duration,
     cooldown: 0,
-    effects: [{ kind: 'recovery', amount: 0.055 }],
+    effects: [{ kind, amount }],
     unsupportedVariables: [],
     unsupportedEffects: [],
   }],
+})
+
+const recovery = makeSkill('synthetic-recovery', 'hp_per<=70', 'recovery', 0.055, 0, 'guaranteed')
+const baselineKit: readonly CompiledRaceSkill[] = [
+  recovery,
+  makeSkill('synthetic-middle-speed', 'phase_random==1', 'target-speed', 0.15, 3),
+  makeSkill('synthetic-late-speed', 'phase_random==2', 'target-speed', 0.15, 3),
+  makeSkill('synthetic-acceleration', 'phase_random==2', 'acceleration', 0.2, 3),
+]
+const goodKit: readonly CompiledRaceSkill[] = [
+  ...baselineKit,
+  makeSkill('synthetic-unique', 'phase_laterhalf_random==2', 'current-speed-natural', 0.25, 3, 'guaranteed'),
+]
+/** Representative trained loadout: the NPC kit/unique plus four supported card-learned skills. */
+const playerGoodKit: readonly CompiledRaceSkill[] = [
+  ...goodKit,
+  makeSkill('synthetic-card-middle', 'phase_laterhalf_random==1', 'target-speed', 0.35, 3),
+  makeSkill('synthetic-card-current', 'phase_random==2', 'current-speed', 0.25, 3),
+  makeSkill('synthetic-card-late', 'phase_laterhalf_random==2', 'target-speed', 0.35, 3),
+  makeSkill('synthetic-card-acceleration', 'is_lastspurt==1', 'acceleration', 0.3, 3),
+]
+const targetKit = args.includes('--base-loadout') ? goodKit : playerGoodKit
+const skillVariants = { none: [] as readonly CompiledRaceSkill[], recovery: [recovery], baseline: goodKit }
+type SkillVariant = keyof typeof skillVariants
+type PlayerBuild = 'under' | 'field' | 'full'
+
+interface Metrics {
+  races: number
+  runners: number
+  wins: Record<Strategy, number>
+  playerWins: number
+  playerRaces: number
+  hpEmpty: number
+  maxed: number
+  skills: number
+  modeSeconds: number
+  blockedSeconds: number
+  overtakeAttempts: number
+  overtakeSuccesses: number
+  finishSeconds: number
+  runnerSeconds: number
+  runtimeMs: number
 }
 
-console.log(`${RACES_PER_ROW} races per row · ${FIELD} runners · ${GRADE} · strategies rotate by gate\n`)
-console.log('tier dist level stamina hp-empty maxed wins F/P/L/E             mode% blocked  pass% skills  win time')
-for (const [tier, distance] of ROWS) {
-  for (const level of LEVELS) {
-    const stats = npcRaceStats(tier, GRADE, distanceCategory(distance), level)
-    const runners = Array.from({ length: FIELD }, (_, gate) => ({
-      id: `n${gate}`,
-      label: `${gate + 1}`,
-      stats,
-      strategy: STRATEGIES[gate % 4]!,
+const metrics = (): Metrics => ({
+  races: 0,
+  runners: 0,
+  wins: { front: 0, pace: 0, late: 0, end: 0 },
+  playerWins: 0,
+  playerRaces: 0,
+  hpEmpty: 0,
+  maxed: 0,
+  skills: 0,
+  modeSeconds: 0,
+  blockedSeconds: 0,
+  overtakeAttempts: 0,
+  overtakeSuccesses: 0,
+  finishSeconds: 0,
+  runnerSeconds: 0,
+  runtimeMs: 0,
+})
+
+function collect(target: Metrics, timeline: RaceTimeline, runners: readonly { strategy: Strategy }[], runtimeMs: number, playerIndex?: number) {
+  target.races += 1
+  target.runners += runners.length
+  target.runtimeMs += runtimeMs
+  target.wins[runners[timeline.results[0]!.runner]!.strategy] += 1
+  target.hpEmpty += timeline.events.filter((event) => event.type === 'hp-empty').length
+  target.skills += timeline.events.filter((event) => event.type === 'skill-activated').length
+  target.maxed += timeline.results.filter((result) => result.spurtMaxed).length
+  target.finishSeconds += timeline.results.reduce((sum, result) => sum + result.finishTime, 0)
+  for (const result of timeline.results) {
+    target.runnerSeconds += result.finishTime
+    if (!result.pack) continue
+    target.modeSeconds += Object.entries(result.pack.modeSeconds)
+      .filter(([mode]) => mode !== 'normal')
+      .reduce((sum, [, seconds]) => sum + seconds, 0)
+    target.blockedSeconds += result.pack.blockedSeconds
+    target.overtakeAttempts += result.pack.overtakeAttempts
+    target.overtakeSuccesses += result.pack.overtakeSuccesses
+  }
+  if (playerIndex !== undefined) {
+    target.playerRaces += 1
+    if (timeline.results[0]!.runner === playerIndex) target.playerWins += 1
+  }
+}
+
+function simulateMeasured(input: Parameters<typeof simulateRace>[0]): { timeline: RaceTimeline; runtimeMs: number } {
+  const started = performance.now()
+  const timeline = simulateRace(input)
+  return { timeline, runtimeMs: performance.now() - started }
+}
+
+const percent = (numerator: number, denominator: number) => denominator ? 100 * numerator / denominator : 0
+const levelAt = (tier: number, k: number) => (tier - 1) * 10 + k + 1
+const allStats = (value: number): Stats => ({ speed: value, stamina: value, power: value, guts: value, wit: value })
+
+function printMetrics(label: string, value: Metrics) {
+  const wins = STRATEGIES.map((strategy) => `${strategy[0]!.toUpperCase()} ${percent(value.wins[strategy], value.races).toFixed(1)}%`).join(' · ')
+  console.log(`${label}: ${value.races.toLocaleString()} races · ${wins}`)
+  console.log(`  HP empty ${percent(value.hpEmpty, value.runners).toFixed(1)}% · max spurt ${percent(value.maxed, value.runners).toFixed(1)}% · activations ${(value.skills / value.runners).toFixed(2)}/runner`)
+  console.log(`  non-normal ${percent(value.modeSeconds, value.runnerSeconds).toFixed(1)}% · blocked ${(value.blockedSeconds / value.runners).toFixed(1)}s/runner · overtake ${percent(value.overtakeSuccesses, value.overtakeAttempts).toFixed(1)}% (${value.overtakeSuccesses}/${value.overtakeAttempts})`)
+  console.log(`  finish ${(value.finishSeconds / value.runners).toFixed(1)}s · engine ${(value.runtimeMs / value.races).toFixed(2)}ms/race (${(value.runtimeMs / 1_000).toFixed(1)}s measured)`)
+}
+
+function mixedRunners(tier: number, grade: RaceGrade, distance: number, level: number, field: number, skills: readonly CompiledRaceSkill[]) {
+  const stats = npcRaceStats(tier, grade, distanceCategory(distance), level)
+  return Array.from({ length: field }, (_, gate) => ({
+    id: `synthetic-${gate}`,
+    label: `${gate + 1}`,
+    stats,
+    strategy: STRATEGIES[gate % STRATEGIES.length]!,
+    aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
+    gate,
+    skills,
+  }))
+}
+
+function runQuick() {
+  const rows: [tier: number, distance: number][] = [[1, 1200], [1, 1600], [1, 2400], [1, 3200], [6, 2400], [11, 3200]]
+  const overall = metrics()
+  let worstRow = 0
+  let rowsWithAllStrategies = 0
+  console.log(`Quick R3 regression · ${RACES_PER_ROW} seeds/row · 12 runners · G1 · recovery kit`)
+  console.log('tier dist k  wins Front/Pace/Late/End  hp-empty max-spurt blocked pass finish runtime')
+  rows.forEach(([tier, distance]) => [0, 9].forEach((k) => {
+    const row = metrics()
+    const runners = mixedRunners(tier, 'g1', distance, levelAt(tier, k), 12, [recovery])
+    for (let seed = 1; seed <= RACES_PER_ROW; seed += 1) {
+      const result = simulateMeasured({ course: { distance, surface: 'turf' }, seed, runners })
+      collect(row, result.timeline, runners, result.runtimeMs)
+      collect(overall, result.timeline, runners, result.runtimeMs)
+    }
+    const rowShares = STRATEGIES.map((strategy) => percent(row.wins[strategy], row.races))
+    worstRow = Math.max(worstRow, ...rowShares)
+    if (rowShares.every((share) => share > 0)) rowsWithAllStrategies += 1
+    console.log(`${String(tier).padStart(4)} ${String(distance).padStart(4)} ${String(k).padStart(2)}  ${STRATEGIES.map((strategy) => String(row.wins[strategy]).padStart(4)).join('/')}  ${percent(row.hpEmpty, row.runners).toFixed(1).padStart(7)}% ${percent(row.maxed, row.runners).toFixed(1).padStart(8)}% ${(row.blockedSeconds / row.runners).toFixed(1).padStart(6)}s ${percent(row.overtakeSuccesses, row.overtakeAttempts).toFixed(0).padStart(4)}% ${(row.finishSeconds / row.runners).toFixed(1).padStart(6)}s ${(row.runtimeMs / row.races).toFixed(2).padStart(6)}ms`)
+  }))
+  printMetrics('Aggregate', overall)
+  console.log(`  worst strategy row ${worstRow.toFixed(1)}% · all strategies won ${rowsWithAllStrategies}/${rows.length * 2} rows`)
+
+  const compareRecovery = (withRecovery: boolean) => {
+    const row = metrics()
+    const runners = mixedRunners(1, 'g1', 3_200, 1, 12, withRecovery ? [recovery] : [])
+    for (let seed = 1; seed <= RACES_PER_ROW; seed += 1) {
+      const result = simulateMeasured({ course: { distance: 3_200, surface: 'turf' }, seed, runners })
+      collect(row, result.timeline, runners, result.runtimeMs)
+    }
+    return row
+  }
+  const without = compareRecovery(false)
+  const withSkill = compareRecovery(true)
+  console.log(`Long recovery: HP empty ${percent(without.hpEmpty, without.runners).toFixed(1)}% → ${percent(withSkill.hpEmpty, withSkill.runners).toFixed(1)}% · finish ${(without.finishSeconds / without.runners).toFixed(1)}s → ${(withSkill.finishSeconds / withSkill.runners).toFixed(1)}s`)
+}
+
+function playerStats(tier: number, grade: RaceGrade, distance: number, level: number, build: PlayerBuild): Stats {
+  if (build === 'field') return npcRaceStats(tier, grade, distanceCategory(distance), level)
+  const cap = baselineStatCap(tier) * (build === 'under' ? 0.7 : 1)
+  const form = PLAYER_STEP === null ? yourForm(level) : 0.8 + PLAYER_STEP * ((level - 1) % 10)
+  return applyForm(allStats(cap), form)
+}
+
+function playerRunners(input: {
+  tier: number; grade: RaceGrade; distance: number; level: number; field: number; build: PlayerBuild
+  playerStrategy: Strategy; playerSkills: readonly CompiledRaceSkill[]; seed: number
+}) {
+  const npcStats = npcRaceStats(input.tier, input.grade, distanceCategory(input.distance), input.level)
+  const playerGate = input.seed % input.field
+  return {
+    playerIndex: playerGate,
+    runners: Array.from({ length: input.field }, (_, gate) => ({
+      id: gate === playerGate ? 'synthetic-player' : `synthetic-rival-${gate}`,
+      label: gate === playerGate ? 'Player' : `${gate + 1}`,
+      stats: gate === playerGate ? playerStats(input.tier, input.grade, input.distance, input.level, input.build) : npcStats,
+      strategy: gate === playerGate ? input.playerStrategy : STRATEGIES[gate % STRATEGIES.length]!,
       aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
       gate,
-      skills: [syntheticRecovery],
-    }))
-    const wins = { front: 0, pace: 0, late: 0, end: 0 }
-    let empty = 0
-    let maxed = 0
-    let winTime = 0
-    let modeTime = 0
-    let blockedTime = 0
-    let overtakeAttempts = 0
-    let overtakeSuccesses = 0
-    let skillUses = 0
-    let runnerTime = 0
-    for (let seed = 1; seed <= RACES_PER_ROW; seed++) {
-      const t = simulateRace({ course: { distance, surface: 'turf' }, seed, runners })
-      wins[runners[t.results[0]!.runner]!.strategy]++
-      empty += t.events.filter((e) => e.type === 'hp-empty').length
-      maxed += t.results.filter((r) => r.spurtMaxed).length
-      winTime += t.results[0]!.finishTime
-      skillUses += t.events.filter((event) => event.type === 'skill-activated').length
-      for (const result of t.results) {
-        runnerTime += result.finishTime
-        if (!result.pack) continue
-        modeTime += Object.entries(result.pack.modeSeconds)
-          .filter(([mode]) => mode !== 'normal')
-          .reduce((sum, [, seconds]) => sum + seconds, 0)
-        blockedTime += result.pack.blockedSeconds
-        overtakeAttempts += result.pack.overtakeAttempts
-        overtakeSuccesses += result.pack.overtakeSuccesses
-      }
-    }
-    const pct = (n: number) => `${Math.round((n / (RACES_PER_ROW * FIELD)) * 100)}%`.padStart(5)
-    console.log(
-      `${String(tier).padStart(4)} ${String(distance).padStart(4)} ${String(level).padStart(5)} ${String(Math.round(stats.stamina)).padStart(7)} ${pct(empty).padStart(8)} ${pct(maxed)} ${[wins.front, wins.pace, wins.late, wins.end].map((w) => String(w).padStart(4)).join('/')} ${(100 * modeTime / runnerTime).toFixed(1).padStart(6)}% ${(blockedTime / (RACES_PER_ROW * FIELD)).toFixed(1).padStart(7)}s ${(100 * overtakeSuccesses / Math.max(1, overtakeAttempts)).toFixed(0).padStart(5)}% ${(skillUses / (RACES_PER_ROW * FIELD)).toFixed(1).padStart(6)} ${(winTime / RACES_PER_ROW).toFixed(1).padStart(8)}s`,
-    )
+      skills: gate === playerGate ? input.playerSkills : goodKit,
+    })),
   }
 }
 
-const recoveryStats = npcRaceStats(1, GRADE, 'long', 1)
-const recoveryRunners = (withRecovery: boolean) => Array.from({ length: FIELD }, (_, gate) => ({
-  id: `recovery-${gate}`,
-  label: `${gate + 1}`,
-  stats: recoveryStats,
-  strategy: STRATEGIES[gate % 4]!,
-  aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
-  gate,
-  skills: withRecovery ? [syntheticRecovery] : [],
-}))
-const recoveryRow = (withRecovery: boolean) => {
-  let hpEmpty = 0
-  let finishTime = 0
-  const runners = recoveryRunners(withRecovery)
-  for (let seed = 1; seed <= RACES_PER_ROW; seed += 1) {
-    const timeline = simulateRace({ course: { distance: 3_200, surface: 'turf' }, seed, runners })
-    hpEmpty += timeline.events.filter((event) => event.type === 'hp-empty').length
-    finishTime += timeline.results.reduce((sum, result) => sum + result.finishTime, 0)
-  }
-  return {
-    hpEmpty: hpEmpty / (RACES_PER_ROW * FIELD),
-    finishTime: finishTime / (RACES_PER_ROW * FIELD),
+function runPlayerTarget() {
+  const distances = [1_200, 1_600, 2_400, 3_200]
+  const fields = [12]
+  for (const k of [0, 9]) {
+    const value = metrics()
+    for (const [distanceIndex, distance] of distances.entries()) for (const [strategyIndex, playerStrategy] of STRATEGIES.entries()) {
+      const row = distanceIndex * 4 + strategyIndex
+      const field = fields[row % fields.length]!
+      const rowMetrics = metrics()
+      for (let sample = 1; sample <= RACES_PER_ROW; sample += 1) {
+        const seed = 5_000_000 + k * 100_000 + row * 1_000 + sample
+        const setup = playerRunners({ tier: 1, grade: 'g1', distance, level: levelAt(1, k), field, build: 'full', playerStrategy, playerSkills: targetKit, seed })
+        const result = simulateMeasured({ course: { distance, surface: 'turf' }, seed, runners: setup.runners })
+        collect(value, result.timeline, setup.runners, result.runtimeMs, setup.playerIndex)
+        collect(rowMetrics, result.timeline, setup.runners, result.runtimeMs, setup.playerIndex)
+      }
+      console.log(`  k=${k} ${distance}m ${playerStrategy} f${field}: ${percent(rowMetrics.playerWins, rowMetrics.playerRaces).toFixed(1)}%`)
+    }
+    console.log(`Player target k=${k}: ${percent(value.playerWins, value.playerRaces).toFixed(1)}% (${value.playerWins}/${value.playerRaces})`)
   }
 }
-const withoutRecovery = recoveryRow(false)
-const withRecovery = recoveryRow(true)
-console.log('\nSynthetic Long recovery check (tier 1, 3200m, +5.5% max HP once at ≤70%):')
-console.log(`HP empty ${(withoutRecovery.hpEmpty * 100).toFixed(1)}% → ${(withRecovery.hpEmpty * 100).toFixed(1)}% · average finish ${withoutRecovery.finishTime.toFixed(1)}s → ${withRecovery.finishTime.toFixed(1)}s`)
+
+function runFinal() {
+  console.log(`Milestone 3 final matrix · ${RACES_PER_ROW} seeds/row · synthetic fixtures only`)
+  const mixed = metrics()
+  let mixedRows = 0
+  let worstRowShare = 0
+  let zeroWinRows = 0
+  let worstRow = ''
+  const zeroRows: string[] = []
+  const distances = [1_200, 1_600, 2_400, 3_200]
+  const fields = [8, 12, 18]
+  const grades: RaceGrade[] = ['g3', 'g1']
+  const variants: SkillVariant[] = ['none', 'recovery', 'baseline']
+  for (const [tierIndex, tier] of [1, 6, 11].entries()) {
+    for (const [distanceIndex, distance] of distances.entries()) {
+      for (const [kIndex, k] of [0, 3, 6, 9].entries()) {
+        const rowIndex = tierIndex * 16 + distanceIndex * 4 + kIndex
+        const grade = grades[rowIndex % grades.length]!
+        const field = fields[rowIndex % fields.length]!
+        const variant = variants[rowIndex % variants.length]!
+        const runners = mixedRunners(tier, grade, distance, levelAt(tier, k), field, skillVariants[variant])
+        const row = metrics()
+        for (let sample = 1; sample <= RACES_PER_ROW; sample += 1) {
+          const seed = 1_000_000 + rowIndex * 10_000 + sample
+          const result = simulateMeasured({ course: { distance, surface: 'turf' }, seed, runners })
+          collect(row, result.timeline, runners, result.runtimeMs)
+          collect(mixed, result.timeline, runners, result.runtimeMs)
+        }
+        const shares = STRATEGIES.map((strategy) => percent(row.wins[strategy], row.races))
+        shares.forEach((share, strategyIndex) => {
+          const label = `T${tier} ${grade.toUpperCase()} ${distance}m k${k} f${field} ${variant} ${STRATEGIES[strategyIndex]}`
+          if (share > worstRowShare) {
+            worstRowShare = share
+            worstRow = label
+          }
+          if (share === 0) zeroRows.push(label)
+        })
+        zeroWinRows += shares.filter((share) => share === 0).length
+        mixedRows += 1
+      }
+    }
+  }
+  printMetrics('Mixed-strategy matrix', mixed)
+  console.log('  48 rows · tiers 1/6/11 · G3/G1 · 1200/1600/2400/3200m · k 0/3/6/9 · fields 8/12/18 · none/recovery/baseline skills')
+  console.log(`  sensitivity extreme ${worstRowShare.toFixed(1)}% (${worstRow}) · zero-win cells ${zeroWinRows}/${mixedRows * STRATEGIES.length}${zeroRows.length ? ` · ${zeroRows.join('; ')}` : ''}`)
+
+  const guard = metrics()
+  let guardWorst = 0
+  let guardZeroRows = 0
+  const guardSeeds = 200
+  const guardRows: [number, number][] = [[1, 1_200], [1, 1_600], [1, 2_400], [1, 3_200], [6, 2_400], [11, 3_200]]
+  for (const [tier, distance] of guardRows) for (const k of [0, 9]) {
+    const row = metrics()
+    const runners = mixedRunners(tier, 'g1', distance, levelAt(tier, k), 12, [recovery])
+    for (let seed = 1; seed <= guardSeeds; seed += 1) {
+      const result = simulateMeasured({ course: { distance, surface: 'turf' }, seed, runners })
+      collect(row, result.timeline, runners, result.runtimeMs)
+      collect(guard, result.timeline, runners, result.runtimeMs)
+    }
+    const shares = STRATEGIES.map((strategy) => percent(row.wins[strategy], row.races))
+    guardWorst = Math.max(guardWorst, ...shares)
+    if (shares.some((share) => share === 0)) guardZeroRows += 1
+  }
+  printMetrics('Standard strategy guard', guard)
+  console.log(`  ${guard.races.toLocaleString()} races · worst row ${guardWorst.toFixed(1)}% · zero-win rows ${guardZeroRows}/${guardRows.length * 2}`)
+
+  const player = metrics()
+  const targetK0 = metrics()
+  const targetK9 = metrics()
+  let targetRow = 0
+  for (const [distanceIndex, distance] of distances.entries()) {
+    for (const [kIndex, k] of [0, 9].entries()) {
+      for (const [strategyIndex, playerStrategy] of STRATEGIES.entries()) {
+        const row = distanceIndex * 8 + kIndex * 4 + strategyIndex
+        const field = 12
+        for (let sample = 1; sample <= RACES_PER_ROW; sample += 1) {
+          const seed = 2_000_000 + row * 10_000 + sample
+          const setup = playerRunners({ tier: 1, grade: 'g1', distance, level: levelAt(1, k), field, build: 'full', playerStrategy, playerSkills: targetKit, seed })
+          const result = simulateMeasured({ course: { distance, surface: 'turf' }, seed, runners: setup.runners })
+          collect(player, result.timeline, setup.runners, result.runtimeMs, setup.playerIndex)
+          collect(k === 0 ? targetK0 : targetK9, result.timeline, setup.runners, result.runtimeMs, setup.playerIndex)
+        }
+        targetRow += 1
+      }
+    }
+  }
+
+  const comparison = metrics()
+  const comparisonByBuild: Record<PlayerBuild, Metrics> = { under: metrics(), field: metrics(), full: metrics() }
+  const comparisonBySkill: Record<SkillVariant, Metrics> = { none: metrics(), recovery: metrics(), baseline: metrics() }
+  const builds: PlayerBuild[] = ['under', 'field', 'full']
+  for (const [tierIndex, tier] of [1, 6, 11].entries()) {
+    for (const [gradeIndex, grade] of grades.entries()) {
+      for (const [distanceIndex, distance] of distances.entries()) {
+        for (const [kIndex, k] of [3, 6].entries()) {
+          const row = tierIndex * 32 + gradeIndex * 16 + distanceIndex * 4 + kIndex
+          const variant = variants[Math.floor(row / 3) % variants.length]!
+          const field = fields[(row + 2) % fields.length]!
+          const playerStrategy = STRATEGIES[row % STRATEGIES.length]!
+          for (const [buildIndex, build] of builds.entries()) {
+            for (let sample = 1; sample <= Math.max(8, Math.floor(RACES_PER_ROW / 5)); sample += 1) {
+              const seed = 3_000_000 + row * 10_000 + buildIndex * 1_000 + sample
+              const setup = playerRunners({ tier, grade, distance, level: levelAt(tier, k), field, build, playerStrategy, playerSkills: skillVariants[variant], seed })
+              const result = simulateMeasured({ course: { distance, surface: 'turf' }, seed, runners: setup.runners })
+              collect(comparison, result.timeline, setup.runners, result.runtimeMs, setup.playerIndex)
+              collect(comparisonByBuild[build], result.timeline, setup.runners, result.runtimeMs, setup.playerIndex)
+              collect(comparisonBySkill[variant], result.timeline, setup.runners, result.runtimeMs, setup.playerIndex)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  printMetrics('Representative player target rows', player)
+  console.log(`  fully-trained G1 + representative card loadout: k=0 ${percent(targetK0.playerWins, targetK0.playerRaces).toFixed(1)}% (${targetK0.playerWins}/${targetK0.playerRaces}) · k=9 ${percent(targetK9.playerWins, targetK9.playerRaces).toFixed(1)}% (${targetK9.playerWins}/${targetK9.playerRaces})`)
+  console.log(`  ${targetRow} rows across all strategies/distances in standard 12-runner fields`)
+  console.log('Representative build comparison (paired coverage of tier/grade/distance/Form/skill/field):')
+  for (const build of builds) {
+    const value = comparisonByBuild[build]
+    console.log(`  ${build.padEnd(5)} ${percent(value.playerWins, value.playerRaces).toFixed(1)}% wins (${value.playerWins}/${value.playerRaces})`)
+  }
+  console.log('Player skill comparison:')
+  for (const variant of variants) {
+    const value = comparisonBySkill[variant]
+    console.log(`  ${variant.padEnd(8)} ${percent(value.playerWins, value.playerRaces).toFixed(1)}% wins (${value.playerWins}/${value.playerRaces})`)
+  }
+  printMetrics('Player comparison matrix', comparison)
+
+  const recoveryRows = (withRecovery: boolean) => {
+    const resultMetrics = metrics()
+    for (const field of fields) for (let sample = 1; sample <= RACES_PER_ROW; sample += 1) {
+      const runners = mixedRunners(1, 'g1', 3_200, 1, field, withRecovery ? [recovery] : [])
+      const result = simulateMeasured({ course: { distance: 3_200, surface: 'turf' }, seed: 4_000_000 + field * 10_000 + sample, runners })
+      collect(resultMetrics, result.timeline, runners, result.runtimeMs)
+    }
+    return resultMetrics
+  }
+  const noRecovery = recoveryRows(false)
+  const yesRecovery = recoveryRows(true)
+  console.log(`Long recovery isolation: HP empty ${percent(noRecovery.hpEmpty, noRecovery.runners).toFixed(1)}% → ${percent(yesRecovery.hpEmpty, yesRecovery.runners).toFixed(1)}% · finish ${(noRecovery.finishSeconds / noRecovery.runners).toFixed(1)}s → ${(yesRecovery.finishSeconds / yesRecovery.runners).toFixed(1)}s`)
+  const totalRaces = mixed.races + guard.races + player.races + comparison.races + noRecovery.races + yesRecovery.races
+  const totalRuntime = mixed.runtimeMs + guard.runtimeMs + player.runtimeMs + comparison.runtimeMs + noRecovery.runtimeMs + yesRecovery.runtimeMs
+  console.log(`\nTotal: ${totalRaces.toLocaleString()} deterministic races · ${(totalRuntime / 1_000).toFixed(1)}s measured engine runtime`)
+  console.log(`Strategy targets: aggregate ${STRATEGIES.every((strategy) => percent(guard.wins[strategy], guard.races) >= 15 && percent(guard.wins[strategy], guard.races) <= 35) ? 'PASS' : 'REVIEW'} · row ≤60% ${guardWorst <= 60 ? 'PASS' : 'REVIEW'} · representative row wins ${guardZeroRows === 0 ? 'PASS' : 'REVIEW'}`)
+}
+
+if (targetOnly) runPlayerTarget()
+else if (finalMode) runFinal()
+else runQuick()
