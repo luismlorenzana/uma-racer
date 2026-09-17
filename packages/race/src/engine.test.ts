@@ -61,8 +61,8 @@ const compiledSkill = (
 
 describe('simulateRace', () => {
   it('is deterministic for a seed', () => {
-    const a = simulateRace(fullField(42))
-    const b = simulateRace(fullField(42))
+    const a = simulateRace(fullField(42, 1_200))
+    const b = simulateRace(fullField(42, 1_200))
     expect(a.results).toEqual(b.results)
     expect(Array.from(a.distance)).toEqual(Array.from(b.distance))
   })
