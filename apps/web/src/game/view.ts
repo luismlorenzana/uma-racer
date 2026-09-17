@@ -4,6 +4,8 @@ import {
   baselineStatCap,
   expToNextUmaLevel,
   isGateLevel,
+  LEVELS_PER_SCENARIO,
+  SCENARIOS,
   scenarioForTier,
   spCap,
   statCap,
@@ -48,6 +50,7 @@ export function joinUma(save: UmaSave, content: LoadedContent): UmaJoinResult {
   if (!template) return { status: 'missing-content', templateId: save.templateId }
   const tier = tierOfLevel(save.level)
   const expToNext = expToNextUmaLevel(save.level)
+  const finalLevel = save.level >= SCENARIOS.length * LEVELS_PER_SCENARIO
   return {
     status: 'ready',
     value: {
@@ -60,7 +63,7 @@ export function joinUma(save: UmaSave, content: LoadedContent): UmaJoinResult {
       baselineStatCap: baselineStatCap(tier),
       currentSpCap: spCap(tier, save.trainingLevel),
       expToNext,
-      readyToPromote: isGateLevel(save.level) && save.exp >= expToNext,
+      readyToPromote: isGateLevel(save.level) && !finalLevel,
     },
   }
 }

@@ -31,7 +31,7 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 ## Skills
 
 - [x] Skill list: kind (unique / gold / white), trigger conditions, effect type and magnitude, duration.
-- [ ] Gold ↔ white skill relationships.
+- [x] Gold → white skill relationships normalized from ordered source `versions`; missing counterparts remain explicit importer diagnostics.
 - [x] Inherited unique skill strength compared to the original unique.
 - [x] Typical SP costs, to calibrate draft costs.
 

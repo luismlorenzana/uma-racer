@@ -72,8 +72,10 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v1 stores only mutable profile, Uma, card, and ledger state. Static names, art, release metadata, and card/skill
-  definitions remain in the private content registry and are joined by stable ids at render time.
+- Save v2 stores mutable profile/Uma/card state plus finite parent snapshots, skill history, selected current parents, and
+  typed scenario-journey slots. Static names, art, release metadata, and card/skill definitions remain in the private
+  content registry and are joined by stable ids at render time. Dexie v3 and cloud adoption migrate v1 one way, preserve
+  entity versions, and queue only the upgraded profile/Uma rows; the API accepts rollout reads but rejects v1-over-v2.
 - A coordinator waits for auth and a verified content version, migrates and parses IndexedDB, then publishes ready state.
   A non-empty local save opens immediately. Only a semantically empty database tries a full cloud bootstrap before
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
@@ -97,6 +99,11 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   target entity, private content, and target-keyed ledger row; it then writes the profile, a version-0 canonical entity,
   one coupon spend, and all outbox work atomically. Matching entity+ledger retries return success, ownership without that
   ledger is already-owned, and same-id mismatches are corruption. Zustand publishes only after commit.
+- Scenario promotion uses the same generated card projection shown in the Card UI. Its transaction re-reads and parses the
+  profile, gated Uma, complete equipped deck, relevant content, and deterministic ledgers; it freezes the pre-refresh
+  snapshot, spends tickets, applies promotion/Initial Stats, advances overflow, refreshes awakening skills/history, resets
+  training, writes ledgers/outbox, and only then publishes Zustand. A race reaching the current global maximum freezes the
+  final snapshot inside the existing result transaction. Memory-only mode runs the same pure result with an explicit warning.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
@@ -157,16 +164,17 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ```text
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            templateId, levels/EXP, stats, aptitudes, deck ids, current library/loadout, version
+players/{uid}/umas/{umaId}            save v2: progression, deck/library/history, parents/snapshot, journeys, version
 players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, umaId, raceId, seed, compiled field, placements, rewards, createdAt
 players/{uid}/badges/{scope}          earned tiers with dates and race refs, pins, showcase groups, saved views
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 ```
 
-The profile's current save-v1 fields are currencies, local daily-grant date, featured Uma id, one-time starter-content
-marker, creation time, and schema version. Settings, parents, snapshots, goals, history, badges, and titles are intentionally
-added only by their owning tasks through explicit schema migrations; they are not placeholder blobs in save v1.
+The profile is save v2 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
+creation time, and schema version. Every Uma row is also explicitly v2. Parent/snapshot/history and typed journey fields
+are present now; pre-goal state is `goalPlanVersion: 0` plus an empty journey list, never an untyped placeholder. Badges,
+titles, and settings remain owned by their later tasks.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic
@@ -194,6 +202,8 @@ apps/web/src/
 - Stable joins the complete private Uma catalog for honest outfit-level completion and silhouettes. The full-screen
   collection reveal is separately split and resolves safe kind/id params back to an already-owned entity; it has no
   mutation path, so back, reload, and direct navigation cannot spend a second coupon.
+- Scenario Start is separately split. Its review is pure and write-free; the confirmation calls the same promotion result
+  used by persistence, and the success route reconstructs from committed save facts rather than keeping a second game state.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.

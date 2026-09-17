@@ -14,6 +14,7 @@ describe('normalizeSkills', () => {
       'inherited-unique',
     ])
     const unique = result.items.find((skill) => skill.id === '7305')!
+    expect(result.items.find((skill) => skill.id === '7302')?.normalSkillId).toBe('7301')
     expect(unique.inheritedSkillId).toBe('7391')
     expect(unique.conditions).toEqual([
       {
@@ -30,6 +31,7 @@ describe('normalizeSkills', () => {
       name: 'Localized Gene',
       description: 'A Front Runner inheritance.',
       inheritedSkillId: null,
+      normalSkillId: null,
     })
     expect(result.items.some((skill) => skill.id === '7306')).toBe(false)
   })

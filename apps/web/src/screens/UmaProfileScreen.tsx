@@ -248,27 +248,33 @@ export function UmaProfileScreen() {
             </div>
           ))}
         </div>
+        <p className="mt-3 text-xs font-bold text-ink-soft">Goals arrive in T014; no historical goal results are inferred.</p>
       </Panel>
 
       <div className="grid grid-cols-2 gap-3">
-        {['Goals & Honors', 'Badges & Record', 'Lineage'].map((label) => (
+        {['Goals & Honors', 'Badges & Record'].map((label) => (
           <Panel key={label} className="p-3 text-center opacity-65">
             <p className="text-sm font-extrabold">{label}</p>
             <p className="mt-1 text-xs text-ink-soft">Coming in a later milestone</p>
           </Panel>
         ))}
+        <Panel className="col-span-2 p-3">
+          <p className="text-sm font-extrabold">Lineage</p>
+          {save.parentSnapshot ? <p className="mt-1 text-xs text-ink-soft">Latest Tier {save.parentSnapshot.completedTier} snapshot · {save.parentSnapshot.inheritableWhiteSkillIds.length} inheritable white skill{save.parentSnapshot.inheritableWhiteSkillIds.length === 1 ? '' : 's'} · {save.parentSnapshot.parents.length} parent{save.parentSnapshot.parents.length === 1 ? '' : 's'}.</p> : <p className="mt-1 text-xs text-ink-soft">Complete this Uma’s current scenario to create her first snapshot.</p>}
+          <p className="mt-2 text-xs font-bold text-violet-700">Parent selection arrives in T013.</p>
+        </Panel>
       </div>
 
       <div className="sticky bottom-24 z-10 rounded-[1.5rem] border-2 border-white bg-white/95 p-3 shadow-[var(--shadow-panel)] backdrop-blur">
         <p className="mb-3 text-center text-sm font-extrabold">
-          {isGateLevel(save.level) ? 'Ready to promote before racing again.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock races in this scenario.'}
+          {uma.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock races in this scenario.'}
         </p>
         <div className="grid grid-cols-3 gap-2">
-          <GameButton variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(save.templateId)}`)}>Train</GameButton>
-          <GameButton variant="go" disabled={!raceUnlocked} onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}>Race</GameButton>
-          <GameButton variant="secondary" disabled>Promote · locked</GameButton>
+          <GameButton variant="secondary" disabled={isGateLevel(save.level) && !uma.readyToPromote} onClick={() => navigate(uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/training/${encodeURIComponent(save.templateId)}`)}>{uma.readyToPromote ? 'Promote' : 'Train'}</GameButton>
+          <GameButton variant="go" disabled={!raceUnlocked && !uma.readyToPromote} onClick={() => navigate(uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/race?uma=${encodeURIComponent(save.templateId)}`)}>{uma.readyToPromote ? 'Promote' : 'Race'}</GameButton>
+          <GameButton variant="primary" disabled={!uma.readyToPromote} onClick={() => navigate(`/scenario/${encodeURIComponent(save.templateId)}/start`)}>{uma.readyToPromote ? 'Next tier' : isGateLevel(save.level) ? 'Complete' : 'At gate'}</GameButton>
         </div>
-        <p className="mt-2 text-center text-xs text-ink-soft">Races grant Uma EXP; promotion remains locked for a later milestone.</p>
+        <p className="mt-2 text-center text-xs text-ink-soft">Promotion spends tickets atomically and starts at Training Level 1.</p>
       </div>
     </div>
   )

@@ -118,7 +118,7 @@ const rootConditions = [
 
 export const syntheticSkills = [
   { id: 7301, rarity: 1, enname: 'White Prototype', desc_en: 'Helps a Runner.', cost: 90, iconid: 1 },
-  { id: 7302, rarity: 2, enname: 'Gold Prototype', desc_en: 'Helps a Leader.', cost: 250, iconid: 2 },
+  { id: 7302, rarity: 2, enname: 'Gold Prototype', desc_en: 'Helps a Leader.', cost: 250, iconid: 2, versions: [9999, 7301] },
   { id: 7303, rarity: 3, enname: 'Upgraded Unique', desc_en: 'Helps a Betweener.', cost: 0, iconid: 3 },
   { id: 7304, rarity: 4, enname: 'Inherited Prototype', desc_en: 'Helps a Chaser.', cost: 200, iconid: 4 },
   {

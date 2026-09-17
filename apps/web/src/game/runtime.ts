@@ -60,8 +60,26 @@ import {
   type UmaRedemptionMutation,
 } from './collection'
 import { replaceUmaCollectionState } from './store'
+import { promoteMemoryUma, promotePersistentUma } from './promotion'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
+
+function legacyConflictKeys(value: unknown): Set<string> {
+  const keys = new Set<string>()
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return keys
+  const conflicts = (value as Record<string, unknown>).conflicts
+  if (!Array.isArray(conflicts)) return keys
+  for (const conflict of conflicts) {
+    if (typeof conflict !== 'object' || conflict === null || Array.isArray(conflict)) continue
+    const record = conflict as Record<string, unknown>
+    if ((record.kind !== 'profile' && record.kind !== 'umas') || typeof record.id !== 'string' || typeof record.data !== 'object' || record.data === null) continue
+    const data = record.data as Record<string, unknown>
+    if (record.kind === 'profile' ? data.schemaVersion === 1 : !Object.hasOwn(data, 'schemaVersion')) {
+      keys.add(`${record.kind}/${record.id}`)
+    }
+  }
+  return keys
+}
 
 export class GameRuntime {
   private generation = 0
@@ -70,6 +88,7 @@ export class GameRuntime {
   private flushing = false
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
+  private promotionLocks = new Set<string>()
   private cardLocks = new Set<string>()
   private deckLocks = new Set<string>()
   private cardRedemptionLocks = new Set<string>()
@@ -324,6 +343,30 @@ export class GameRuntime {
     }
   }
 
+  async promoteUma(id: string, now = Date.now()) {
+    if (this.promotionLocks.has(id)) throw new Error('This Uma is already being promoted')
+    this.promotionLocks.add(id)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      const uma = state.umas[id]
+      if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Promotion Uma must be owned')
+      const mutation = state.persistent
+        ? await promotePersistentUma(content, id, now)
+        : promoteMemoryUma(content, state.profile, uma, state.cards, now)
+      if (generation !== this.generation) return mutation
+      replaceUmaCollectionState(mutation.profile, mutation.uma)
+      if (state.persistent && !mutation.alreadyPromoted) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation
+    } finally {
+      this.promotionLocks.delete(id)
+    }
+  }
+
   async listRaceHistory(limit = 20): Promise<RaceResultRecord[]> {
     if (!Number.isSafeInteger(limit) || limit < 0) throw new Error('Invalid race history limit')
     return useGame.getState().persistent
@@ -489,7 +532,9 @@ export class GameRuntime {
           request.appends.push({ kind: item.kind as LogKind, id: item.id, data: toRecord(row.data), createdAt: row.createdAt })
         }
       }
-      const response = parseSyncResponseOrThrow(await saveApi.sync(request))
+      const rawResponse = await saveApi.sync(request)
+      const migratedConflicts = legacyConflictKeys(rawResponse)
+      const response = parseSyncResponseOrThrow(rawResponse)
       if (generation !== this.generation) return
       const acknowledged = acknowledgedSequences(batch, request, response)
       const sentSequence = new Map(batch.map((item) => [`${item.kind}/${item.id}`, item.seq]))
@@ -500,7 +545,7 @@ export class GameRuntime {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
           const originalSequence = sentSequence.get(`${conflict.kind}/${conflict.id}`)
           if (current?.seq !== originalSequence) await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
-          else await putConflict(conflict)
+          else await putConflict(conflict, migratedConflicts.has(`${conflict.kind}/${conflict.id}`), response.serverTime)
         }
         await db.outbox.bulkDelete(acknowledged)
       })

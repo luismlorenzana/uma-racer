@@ -316,7 +316,7 @@ export function assertRaceSkillContent(skills: readonly SkillTemplate[]): void {
   for (const skill of skills) {
     if (
       !isRecord(skill) || !exactKeys(skill, [
-        'id', 'kind', 'name', 'description', 'costSp', 'iconId', 'activation', 'conditions', 'inheritedSkillId',
+        'id', 'kind', 'name', 'description', 'costSp', 'iconId', 'activation', 'conditions', 'inheritedSkillId', 'normalSkillId',
       ]) || typeof skill.id !== 'string' || !/^[A-Za-z0-9_.:-]{1,120}$/.test(skill.id) || ids.has(skill.id) ||
       !['white', 'gold', 'unique-upgraded', 'inherited-unique', 'unique'].includes(String(skill.kind)) ||
       typeof skill.name !== 'string' || skill.name.length === 0 || typeof skill.description !== 'string' ||
@@ -324,6 +324,7 @@ export function assertRaceSkillContent(skills: readonly SkillTemplate[]): void {
       (skill.iconId !== null && (!Number.isSafeInteger(skill.iconId) || skill.iconId < 0)) ||
       ![undefined, null, 0, 1].includes(skill.activation) ||
       (skill.inheritedSkillId !== null && (typeof skill.inheritedSkillId !== 'string' || !/^[A-Za-z0-9_.:-]{1,120}$/.test(skill.inheritedSkillId))) ||
+      (skill.normalSkillId !== null && (typeof skill.normalSkillId !== 'string' || !/^[A-Za-z0-9_.:-]{1,120}$/.test(skill.normalSkillId))) ||
       !Array.isArray(skill.conditions) || skill.conditions.length < 1 || skill.conditions.length > 16
     ) throw new Error(`Skill ${String(skill.id)} has invalid race data`)
     for (const group of skill.conditions) {

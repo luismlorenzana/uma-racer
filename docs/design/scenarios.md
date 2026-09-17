@@ -65,8 +65,10 @@ added in release order:
 
 ## Scenario completion
 
-Reaching the gate level grants **1 Uma Shard** (see [Collection](collection.md)). Completing a scenario means reaching its
-gate level with full EXP and promoting. Promotion triggers an **inheritance event** and generates the next scenario's **goals**. It awards:
+Reaching the gate level grants **1 Uma Shard** (see [Collection](collection.md)) and completes that tier immediately; no
+second EXP bar is required. Promotion atomically freezes the completed snapshot, spends `25 × tier` tickets, applies the
+stat/card starting bonuses, refreshes skills, resets Training Level, and starts the next tier. Parent inheritance and goals
+join that same Scenario Start commit. It awards:
 
 - The **Graduate** badge for that scenario, with scenario-specific art.
 - The **Honors** badge if every scenario goal was completed.

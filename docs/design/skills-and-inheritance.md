@@ -119,8 +119,13 @@ When picking parents, the **parent list** shows one entry per Uma with a snapsho
 completed, her 2 parents' icons (the child's future grandparents), the snapshot's age, and how many **new** uniques
 and whites she would give *this* child.
 
-*Edge case: at the last available scenario there is no promotion. The snapshot is taken when she reaches max level
-with full EXP, and again if a new scenario is added and she promotes.*
+*Edge case: at the last available scenario there is no promotion. The snapshot is taken atomically with the race that
+first reaches max level, and is replaced if a later app version adds a scenario and she eventually promotes.*
+
+Only direct card-origin whites pass into `inheritableWhiteSkillIds`; a direct card-origin gold contributes its normalized
+white counterpart. Inherited and awakening skills never pass as self-learned whites. The own unique contributes its
+normalized inherited-unique counterpart when one exists. Missing referenced content blocks the snapshot instead of
+silently shrinking it.
 
 ### Eligibility
 

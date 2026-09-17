@@ -73,11 +73,13 @@ scenario starts as a fair fight and ends with your Uma about 10% ahead. Details 
 ## Gate levels and promotion
 
 1. **Reaching** a gate level (10, 20, 30…) grants **1 Uma Shard**, once per Uma per gate (see [Collection](collection.md)).
-2. EXP fills to the maximum. Extra EXP is **banked, up to one level's worth**, and applied after promotion.
-3. The Uma card shows **"Ready to promote"**. Promotion costs **training tickets** (see [Economy](economy.md)).
+2. The Uma is **ready immediately on reaching the gate**; a second full EXP bar is not required. Later race EXP at the
+   gate is **banked, up to one following level's requirement**, and applied after promotion.
+3. The Uma card shows **"Ready to promote"**. Promotion costs **25 × the completed tier** training tickets (see [Economy](economy.md)).
 4. On promotion, her **parent snapshot is saved**: her inheritable skills plus the parents she trained with in the completed scenario, frozen.
 5. After promotion:
-   - Level becomes gate + 1 (for example 10 → 11).
+   - Level becomes gate + 1 (for example 10 → 11). A completely full overflow bank immediately earns the normal next
+     level (11 → 12 in this example) and its +5 ticket reward; the purchased gate transition itself pays no level reward.
    - **Training Level resets to 1.** Caps become the new scenario's baseline × 80%, rising with Training Level.
    - The card era expands: the new scenario's cards become equippable.
    - **Skill library refresh:** cleared back to her own unique (plus any unlocked awakening skills).
@@ -88,6 +90,11 @@ scenario starts as a fair fight and ends with your Uma about 10% ahead. Details 
    - **Opening training:** 1 training turn in the new scenario unlocks racing (see [Training](training.md#opening-training)).
    - The Uma earns the **"<Scenario> Graduate"** badge.
    - A **promotion bonus**: +10 to each stat (not limited by caps).
+   - Every equipped card applies its generated **Initial Stats** value once to its own stat type, rounded per card before
+     summing and not limited by the new TL1 cap.
+
+The completed-tier snapshot is captured from the pre-refresh library. At the latest available maximum level, the finishing
+race captures the final snapshot in the same transaction without a promotion cost, stat bonus, or Training Level reset.
 
 ## Stats and caps
 

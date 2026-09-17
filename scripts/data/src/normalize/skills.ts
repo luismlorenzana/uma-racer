@@ -88,7 +88,20 @@ function template(raw: RawRecord, forcedKind?: SkillKind, fallback?: RawRecord):
     activation: numberValue(raw.activation),
     conditions: conditionGroups(raw),
     inheritedSkillId: gene ? id(gene.id) : null,
+    normalSkillId: null,
   }
+}
+
+function versionIds(raw: RawRecord): string[] {
+  if (!Array.isArray(raw.versions)) return []
+  return raw.versions.flatMap((version) => {
+    if (isRecord(version)) {
+      const value = id(version.id ?? version.skill_id)
+      return value ? [value] : []
+    }
+    const value = id(version)
+    return value ? [value] : []
+  })
 }
 
 export function normalizeSkills(value: unknown): NormalizeResult<SkillTemplate> {
@@ -103,6 +116,15 @@ export function normalizeSkills(value: unknown): NormalizeResult<SkillTemplate> 
       continue
     }
     if (!itemsById.has(item.id)) itemsById.set(item.id, item)
+  }
+
+  for (const raw of sourceRows) {
+    const skillId = id(raw.id)
+    const item = skillId ? itemsById.get(skillId) : undefined
+    if (!item || item.kind !== 'gold') continue
+    const normalSkillId = versionIds(raw).find((versionId) => itemsById.get(versionId)?.kind === 'white') ?? null
+    itemsById.set(item.id, { ...item, normalSkillId })
+    if (normalSkillId === null) warnings.push(`Gold skill ${item.id} has no retained white counterpart`)
   }
 
   for (const raw of sourceRows) {

@@ -32,7 +32,7 @@ function UmaTile({ item, onUnowned }: { item: UmaAlbumItem; onUnowned: () => voi
   </>
   const className = `block min-w-0 overflow-hidden rounded-[1.25rem] border-2 bg-white/95 text-left shadow-[var(--shadow-panel)] ${item.owned ? 'border-white' : 'border-violet-200'}`
   return item.owned
-    ? <Link to={`/stable/${encodeURIComponent(item.template.id)}`} className={className}>{body}</Link>
+    ? <Link to={item.view?.readyToPromote ? `/scenario/${encodeURIComponent(item.template.id)}/start` : `/stable/${encodeURIComponent(item.template.id)}`} className={className}>{body}</Link>
     : <button type="button" onClick={onUnowned} className={className}>{body}</button>
 }
 

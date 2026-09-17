@@ -226,3 +226,10 @@ With complete private local content and `pnpm dev`:
 - Badge rows, Graduate/Perfect/Speedrun/Honors awards, titles, trophy shelves, trainer achievements, and flair aggregation
   (Milestone 6). T012 stores only the source facts those systems will later evaluate.
 - Scenario-specific training modifiers, Friend/Group gameplay, presets, sound, haptics, or new original-game assets.
+
+## Implementation status
+
+Implemented on the T012 feature branch. Save v2 and Dexie v3 migrate local/cloud v1 state one way; strict domain/API
+parsers cover the finite snapshot/history/journey contracts. Promotion, final-tier completion, importer normalization,
+atomic persistence, runtime locking, gate CTA routing, and the lazy zero-parent Scenario Start review/success flow use one
+shared pure result. Synthetic domain, importer, API, IndexedDB, race-integration, and view tests cover the shipped path.

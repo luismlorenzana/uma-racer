@@ -100,4 +100,5 @@ effectValue = baseValue[effect]
 Race Bonus contributes only from LB1 onward. At LB4, the generated MVP signature maps only source tuple **effect identity**
 to one of the eight effects above. Each distinct supported identity adds **25% of the card's normal generated level-25
 value** for that effect. Original tuple values and conditions are never copied or evaluated; unsupported identities remain
-inactive and are labeled as such. Initial Stats is displayed now but is applied only when scenario promotion is implemented.
+inactive and are labeled as such. Initial Stats is applied once at scenario promotion: project the equipped card at its
+current level/LB, round each card independently, and add it to that card type's stat without applying the TL1 cap.

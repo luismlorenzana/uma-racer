@@ -35,6 +35,11 @@ export async function completeRace(attempt: import('./racing').PreparedRace) {
   return gameRuntime.completeRace(attempt)
 }
 
+export async function promoteUma(id: string) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.promoteUma(id)
+}
+
 export async function listRaceHistory(limit = 20) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.listRaceHistory(limit)
