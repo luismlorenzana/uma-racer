@@ -113,6 +113,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - A v3 timeline adds a compact `Float32Array` of continuous lane samples plus typed mode/block/overtake/lane events. Pixi
   interpolates distance and lane into pooled runner tokens without allocating per animation frame; the renderer keeps gate
   identity separate from simulated lateral position.
+- Race presentation has a second, renderer-only clock. A pure controller holds timeline time at zero during the gate
+  pre-roll, applies optional close-finish slowdown/hold, and makes seek/skip/reduced-motion behavior testable without Pixi.
+  A second pure projection serializes timeline events into one cue slot and derives course labels and result activation
+  summaries. Neither clock nor cue state is persisted, included in the engine version, or consulted by reward completion.
 
 ### 3. Content: reference data and images
 

@@ -7,9 +7,10 @@ while the stable itself grows into a collection.
 
 > **Status:** pre-production. Milestone 1's private content pipeline is built, and Milestone 2 now has a typed local-first
 > save, the real 25-Uma launch Stable, Uma profiles, a persisted featured-Uma Home hero, and a complete first playable
-> Train → Race loop with Uma EXP, levels, ticket rewards, gate shards, and synced race history. Milestone 3 now has basic
-> compiled race skills, SP loadouts, deterministic activation/recovery, versioned replay, course geometry, position keeping,
-> continuous lanes, blocking, and overtaking. Next: the final Race Depth presentation and balance pass.
+> Train → Race loop with Uma EXP, levels, ticket rewards, gate shards, and synced race history. Milestone 3 Race Depth is
+> implemented: compiled skills and recovery, versioned replay, course geometry, position keeping, continuous lanes,
+> blocking/overtaking, staged starts, deterministic event presentation, photo finishes, and complete results feedback.
+> Next: Milestone 4 Cards & Collection.
 
 ## Ground rules
 
@@ -37,6 +38,7 @@ pnpm lint           # type-check all packages
 pnpm test           # domain rules, race engine, API sync, save persistence and web view models
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
+pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm data:import    # GameTora datasets → private, gitignored content packs
 pnpm assets:import  # image sources in those packs → private WebP atlases
 ```
@@ -89,6 +91,7 @@ docs/           design, technical, research
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Race Engine R3 Findings](docs/research/race-engine-r3-findings.md) | Pack formulas, explicit approximations, launch-unique coverage, and balance results |
+| [Milestone 3 Balance Closure](docs/research/race-engine-r3-final-balance.md) | Final strategy/player/recovery matrix and remaining calibration caveat |
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
 | [Tasks](docs/tasks/) | Delegable task specs (see [AGENTS.md](AGENTS.md)) |

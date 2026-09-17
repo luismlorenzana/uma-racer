@@ -137,19 +137,21 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 ```
 
 - **Parallax** rails and distance markers. Dust particles at speed.
-- **Skill activations**: a burst plus a name popup over the icon.
-- **Last spurt**: speed lines, a slight zoom, and a music intensity bump.
-- **Finish**: a photo-finish freeze and slow-motion when the margin is tiny.
+- **Start gate**: field card → staged gates → Ready → Go before simulation time begins. Reduced motion shows a short text-only equivalent.
+- **Skill activations**: one serialized name/effect card; player events win collisions and simultaneous rivals are grouped.
+- **Last spurt**: speed lines and a slight transform-only zoom. Music remains a later polish task.
+- **Finish**: Nose/Head margins get a brief renderer-only slowdown and photo-finish hold. Skip reveals the identical result.
 - Landscape is allowed on this screen only, for a wider view.
 
 ### Results
 
 1. The placement number **stamps** in ("1st!", with confetti if a win).
 2. The finishing order slides in, with margins.
-3. The Uma EXP bar fills. On a level-up: burst, "+5 🎫" flies to the counter, and the Race Form edge updates.
-4. Goal completion gets **its own fanfare** (bigger than badges).
-5. New badges and titles appear in a **swipeable reveal carousel**, each with a pin toggle.
-6. CTAs: **Race again** · **Train**.
+3. The Uma EXP bar fills. On a level-up: burst, the ticket reward moves in, and before→after player/field Race Form updates.
+4. Activated player skills are grouped by id with counts and recovery/speed/acceleration labels; missing content falls back to the id.
+5. Goal completion and badge/title reveals plug in during their owning milestones.
+6. CTAs: **Races** · **Train** · **Race again**. Until the atomic save succeeds only Retry save is available; Race again
+   becomes Promote first at a scenario gate.
 
 ### Cards
 

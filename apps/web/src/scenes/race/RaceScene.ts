@@ -1,5 +1,15 @@
+import type { RaceCourseLayout } from '@racer/domain'
 import { COURSE_WIDTH, phaseAt, sampleTimeline, timelineDuration, type RaceTimeline, type RunnerFrame } from '@racer/race'
 import { Application, Container, Graphics, Text } from 'pixi.js'
+import {
+  RacePlaybackClock,
+  activeRaceCue,
+  buildRaceCues,
+  coursePositionLabel,
+  isPhotoFinish,
+  type RaceCue,
+  type RacePresentationStage,
+} from './presentation'
 
 // Plays a pre-simulated race timeline back at the display's refresh rate (docs/technical/architecture.md#2-deterministic-simulation-then-playback).
 // Horizontal straight track, lanes stacked vertically for portrait phones, camera that follows and zooms with the pack.
@@ -21,8 +31,9 @@ export interface RaceHudState {
   /** Per runner, distance share 0–1, for the progress rail. */
   shares: number[]
   finished: boolean
-  latestSkill: { runner: number; skillId: string; tick: number } | null
-  latestPack: { kind: 'Blocked' | 'Overtaking' | 'Pace up' | 'Pace down' | 'Holding lead'; tick: number } | null
+  stage: RacePresentationStage
+  courseLabel: string | null
+  activeCue: RaceCue | null
 }
 
 interface Token {
@@ -49,6 +60,8 @@ export class RaceScene {
   private finishedNotified = false
   private hudTimer = 0
   private readonly duration: number
+  private readonly clock: RacePlaybackClock
+  private readonly cues: RaceCue[]
   private readonly frames: RunnerFrame[] = []
   private readonly camera = { center: 0, span: 70 }
 
@@ -70,8 +83,12 @@ export class RaceScene {
     private readonly playerIndex: number,
     private readonly onHud: (state: RaceHudState) => void,
     private readonly onFinish: () => void,
+    private readonly reducedMotion = false,
+    private readonly layout?: RaceCourseLayout,
   ) {
     this.duration = timelineDuration(timeline)
+    this.clock = new RacePlaybackClock(this.duration, isPhotoFinish(timeline), reducedMotion)
+    this.cues = buildRaceCues(timeline, playerIndex)
   }
 
   async mount(host: HTMLElement): Promise<void> {
@@ -93,6 +110,7 @@ export class RaceScene {
     this.buildTokens()
     sampleTimeline(this.timeline, 0, this.frames)
     this.camera.center = this.frames[this.playerIndex]?.distance ?? 0
+    if (this.reducedMotion) this.camera.span = 45
     this.app.ticker.add((ticker) => this.update(ticker.deltaMS))
     document.addEventListener('visibilitychange', this.onVisibility)
   }
@@ -102,12 +120,12 @@ export class RaceScene {
   }
 
   skipToEnd() {
-    this.elapsed = this.duration
+    this.elapsed = this.clock.skip().simSeconds
   }
 
   /** Jumps playback to `seconds` (replays, scrubbing, and dev tooling). */
   seek(seconds: number) {
-    this.elapsed = Math.max(0, Math.min(this.duration, seconds))
+    this.elapsed = this.clock.seek(seconds).simSeconds
   }
 
   destroy() {
@@ -147,7 +165,8 @@ export class RaceScene {
 
   private update(deltaMs: number) {
     const dt = Math.min(deltaMs, 100) / 1000
-    this.elapsed = Math.min(this.duration, this.elapsed + dt * this.speed)
+    const playback = this.clock.advance(dt, this.speed)
+    this.elapsed = playback.simSeconds
     sampleTimeline(this.timeline, this.elapsed, this.frames)
 
     const width = this.app.screen.width
@@ -162,8 +181,11 @@ export class RaceScene {
       lead = Math.max(lead, f.distance)
       tail = Math.min(tail, f.distance)
     }
-    const targetSpan = Math.min(160, Math.max(45, lead - tail + 30))
-    let targetCenter = (lead + tail) / 2
+    const staged = playback.stage !== 'running' && playback.stage !== 'photo' && playback.stage !== 'finished'
+    const targetSpan = staged
+      ? this.reducedMotion ? 45 : playback.stage === 'field' ? 90 : playback.stage === 'staged' ? 62 : 45
+      : Math.min(160, Math.max(45, lead - tail + 30))
+    let targetCenter = staged ? 5 : (lead + tail) / 2
     const half = targetSpan / 2 - 6
     if (player.distance < targetCenter - half) targetCenter = player.distance + half
     if (player.distance > targetCenter + half) targetCenter = player.distance - half
@@ -196,7 +218,7 @@ export class RaceScene {
       const lane = this.timeline.lane ? frame.lane : runner.lane * (COURSE_WIDTH / 18)
       const y = lanesTop + radius + (lane / COURSE_WIDTH) * Math.max(0, laneHeight * laneCount - radius * 2)
       // A small stride bob while running gives the flat tokens some life.
-      const running = frame.speed > 0.5 && frame.distance < course
+      const running = playback.stage === 'running' && frame.speed > 0.5 && frame.distance < course
       const bob = running ? Math.sin(this.elapsed * 14 + i) * 1.5 : 0
       token.root.position.set(toX(frame.distance), y + bob)
       token.body.clear()
@@ -214,7 +236,7 @@ export class RaceScene {
     // Last-spurt speed streaks
     const phase = phaseAt(lead, course)
     this.effects.clear()
-    if (phase >= 3 && this.elapsed < this.duration) {
+    if (!this.reducedMotion && playback.stage === 'running' && phase >= 3 && this.elapsed < this.duration) {
       for (const [index, streak] of this.streaks.entries()) {
         streak.x -= dt * this.speed * 1.6
         if (streak.x + streak.len < 0) {
@@ -232,40 +254,22 @@ export class RaceScene {
 
     // HUD at ~10 Hz — React only re-renders the overlay this often.
     this.hudTimer += deltaMs
-    const finished = this.elapsed >= this.duration
+    const finished = playback.done
     if (this.hudTimer >= HUD_INTERVAL_MS || finished) {
       this.hudTimer = 0
-      const currentTick = Math.floor(this.elapsed * this.timeline.tickRate)
-      let latestSkill: RaceHudState['latestSkill'] = null
-      let latestPack: RaceHudState['latestPack'] = null
-      for (let index = this.timeline.events.length - 1; index >= 0; index -= 1) {
-        const event = this.timeline.events[index]!
-        if (event.tick > currentTick) continue
-        if (!latestSkill && event.type === 'skill-activated' && event.skillId) {
-          latestSkill = { runner: event.runner, skillId: event.skillId, tick: event.tick }
-        }
-        if (!latestPack && event.runner === this.playerIndex) {
-          if (event.type === 'blocked' && event.value === 1) latestPack = { kind: 'Blocked', tick: event.tick }
-          else if (event.type === 'overtake' && event.value === 1) latestPack = { kind: 'Overtaking', tick: event.tick }
-          else if (event.type === 'position-mode' && event.positionMode && event.positionMode !== 'normal') {
-            const kind = event.positionMode === 'pace-down' ? 'Pace down'
-              : event.positionMode === 'front-speed-up' ? 'Holding lead' : 'Pace up'
-            latestPack = { kind, tick: event.tick }
-          }
-        }
-        if (latestSkill && latestPack) break
-      }
+      const finalPlacement = this.timeline.results.find((result) => result.runner === this.playerIndex)?.placement
       this.onHud({
         seconds: this.elapsed,
         duration: this.duration,
         phase,
         playerDistance: player.distance,
         playerHp: player.hp,
-        playerPosition: position,
+        playerPosition: this.elapsed >= this.duration ? finalPlacement ?? position : position,
         shares: this.frames.map((f) => f.distance / course),
         finished,
-        latestSkill,
-        latestPack,
+        stage: playback.stage,
+        courseLabel: coursePositionLabel(this.layout, player.distance),
+        activeCue: playback.stage === 'running' ? activeRaceCue(this.cues, this.elapsed) : null,
       })
     }
     if (finished && !this.finishedNotified) {

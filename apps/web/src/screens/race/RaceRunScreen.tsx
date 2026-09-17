@@ -1,4 +1,4 @@
-import { STRATEGIES, expToNextUmaLevel, isGateLevel, type RaceResultRecord, type Strategy } from '@racer/domain'
+import { STRATEGIES, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
 import { formatMargin, type RaceTimeline } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -8,6 +8,7 @@ import { completeRace, prepareRace } from '../../game/actions'
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
+import { summarizePlayerActivations, type RaceCue } from '../../scenes/race/presentation'
 import { GameButton } from '../../ui/GameButton'
 import { Meter } from '../../ui/Meter'
 import { GRADE_LABEL, STRATEGY_LABEL } from './labels'
@@ -21,6 +22,32 @@ const ordinal = (value: number) => {
   return `${value}${suffix[(mod - 20) % 10] ?? suffix[mod] ?? 'th'}`
 }
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(1).padStart(4, '0')}`
+const CONFETTI = Array.from({ length: 14 }, (_, index) => ({
+  left: 7 + (index * 37) % 88,
+  x: ((index * 29) % 70) - 35,
+  y: 65 + (index * 23) % 90,
+  color: ['#ffc42e', '#ff5a5f', '#2fa8f5', '#8e6cef', '#2ec27e'][index % 5]!,
+}))
+
+const effectLabel = (effects: readonly RaceSkillEffectKind[]) => {
+  const labels: string[] = []
+  if (effects.includes('recovery')) labels.push('Stamina recovery')
+  if (effects.some((effect) => effect === 'current-speed' || effect === 'current-speed-natural' || effect === 'target-speed')) labels.push('Speed boost')
+  if (effects.includes('acceleration')) labels.push('Acceleration')
+  return labels.join(' · ') || 'Activated'
+}
+
+function cueText(cue: RaceCue, skillName: string | null, rivalName: string): { eyebrow: string; title: string } {
+  if (cue.kind === 'skill') return {
+    eyebrow: cue.isPlayer ? 'Your skill' : rivalName,
+    title: `${skillName ?? cue.skillId ?? 'Skill'}${cue.additionalCount ? ` · +${cue.additionalCount} rival skill${cue.additionalCount === 1 ? '' : 's'}` : ''}`,
+  }
+  if (cue.kind === 'late-start') return cue.isPlayer
+    ? { eyebrow: 'Start', title: 'Slow start!' }
+    : { eyebrow: 'Field start', title: `${cue.additionalCount + 1} rivals started late` }
+  if (cue.kind === 'spurt') return { eyebrow: 'Final drive', title: 'Last spurt!' }
+  return { eyebrow: 'Pack', title: cue.packKind ?? 'Pack change' }
+}
 
 function FullScreenMessage({
   title,
@@ -143,15 +170,24 @@ export function RaceRunScreen() {
         finishingRef.current = false
       }).finally(() => setCommitting(false))
     }
-    const scene = new RaceScene(timeline, runners, attempt.playerIndex, setHud, finish)
+    const scene = new RaceScene(
+      timeline,
+      runners,
+      attempt.playerIndex,
+      setHud,
+      finish,
+      Boolean(reducedMotion),
+      attempt.input.course.layout,
+    )
     sceneRef.current = scene
+    if (recordRef.current) scene.seek(Number.POSITIVE_INFINITY)
     if (import.meta.env.DEV) (window as unknown as { __raceScene?: RaceScene }).__raceScene = scene
     void scene.mount(host)
     return () => {
       scene.destroy()
       sceneRef.current = null
     }
-  }, [attempt, timeline])
+  }, [attempt, reducedMotion, timeline])
 
   useEffect(() => {
     sceneRef.current?.setSpeed(speed)
@@ -193,6 +229,17 @@ export function RaceRunScreen() {
     marginLengths: result.marginLengths,
   }))
   const umaExpTarget = savedUma ? expToNextUmaLevel(savedUma.level + (isGateLevel(savedUma.level) ? 1 : 0)) : 1
+  const activeCue = hud?.activeCue ?? null
+  const activeCueRunner = activeCue ? attempt.runners[activeCue.runner] : undefined
+  const activeCueText = activeCue ? cueText(
+    activeCue,
+    activeCue.skillId ? content.skills.byId.get(activeCue.skillId)?.name ?? null : null,
+    content.umas.byId.get(activeCueRunner?.templateId ?? '')?.name ?? 'Rival skill',
+  ) : null
+  const activationSummary = summarizePlayerActivations(timeline, attempt.playerIndex)
+  const resultLevel = record ? record.startLevel + record.levelsGained.length : attempt.startLevel
+  const startForms = { player: yourForm(record?.startLevel ?? attempt.startLevel), field: fieldForm(record?.startLevel ?? attempt.startLevel) }
+  const resultForms = { player: yourForm(resultLevel), field: fieldForm(resultLevel) }
 
   const retryCommit = () => {
     if (committing || record) return
@@ -250,34 +297,57 @@ export function RaceRunScreen() {
           </div>
         </div>
         <div className="flex items-center justify-between rounded-2xl border-2 border-white/80 bg-ink/35 px-3 py-1.5 text-white">
-          <m.span key={hud?.phase ?? 0} initial={{ x: -12, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className={`font-extrabold ${hud?.phase === 3 ? 'text-gold' : ''}`}>
-            {PHASES[hud?.phase ?? 0]}
-          </m.span>
+          <div className="min-w-0">
+            <m.p key={hud?.phase ?? 0} initial={reducedMotion ? false : { x: -12, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className={`font-extrabold ${hud?.phase === 3 ? 'text-gold' : ''}`}>
+              {PHASES[hud?.phase ?? 0]}
+            </m.p>
+            {hud?.courseLabel && <p className="text-[10px] font-bold text-white/80">{hud.courseLabel}</p>}
+          </div>
           <span className="font-extrabold tabular-nums">{Math.round(remaining)}m left</span>
         </div>
-        {hud?.latestPack && hud.seconds - hud.latestPack.tick / timeline.tickRate < 1.6 && (
-          <m.div
-            key={`${hud.latestPack.kind}:${hud.latestPack.tick}`}
-            initial={reducedMotion ? false : { y: -4, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="mx-auto mt-1 w-fit rounded-full border border-white/80 bg-ink/70 px-3 py-0.5 text-xs font-extrabold text-white"
-          >{hud.latestPack.kind}</m.div>
-        )}
       </div>
 
-      <div ref={hostRef} className="relative min-h-0 flex-1" />
+      <m.div
+        ref={hostRef}
+        className="relative min-h-0 flex-1"
+        animate={!reducedMotion && hud?.phase === 3 && hud.stage === 'running' ? { scale: 1.015, opacity: 1 } : { scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      />
 
       <AnimatePresence mode="wait">
-        {hud?.latestSkill && hud.seconds - hud.latestSkill.tick / timeline.tickRate < 2.2 && (
+        {hud && ['field', 'staged', 'ready', 'go'].includes(hud.stage) && (
           <m.div
-            key={`${hud.latestSkill.runner}:${hud.latestSkill.skillId}:${hud.latestSkill.tick}`}
-            className={`pointer-events-none absolute top-28 left-1/2 z-20 w-[min(86vw,22rem)] -translate-x-1/2 rounded-2xl border-2 px-4 py-2 text-center shadow-[var(--shadow-panel)] ${hud.latestSkill.runner === attempt.playerIndex ? 'border-gold bg-gold text-white text-outline' : 'border-white bg-white/95 text-ink'}`}
+            key={hud.stage}
+            className="pointer-events-none absolute inset-x-5 top-[28%] z-20 rounded-[1.5rem] border-2 border-white bg-ink/80 px-5 py-4 text-center text-white shadow-[var(--shadow-panel)]"
+            initial={reducedMotion ? false : { scale: 0.92, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { scale: 1.04, opacity: 0 }}
+          >
+            <p className="text-xs font-extrabold uppercase tracking-widest text-gold">
+              {hud.stage === 'field' ? `${attempt.input.runners.length} runners` : hud.stage === 'staged' ? 'At the gates' : hud.stage === 'ready' ? 'Ready' : 'Start'}
+            </p>
+            <p className="mt-1 text-2xl font-extrabold text-outline">{hud.stage === 'field' ? race.name : hud.stage === 'staged' ? 'Runners set' : hud.stage === 'ready' ? 'Ready…' : 'GO!'}</p>
+          </m.div>
+        )}
+        {hud?.stage === 'photo' && (
+          <m.div key="photo" className="pointer-events-none absolute inset-x-5 top-[28%] z-20 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <span className="inline-block rounded-full border-2 border-white bg-gold px-5 py-2 text-xl font-extrabold text-white text-outline shadow-[var(--shadow-panel)]">Photo finish!</span>
+          </m.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {activeCue && activeCueText && (
+          <m.div
+            key={`${activeCue.kind}:${activeCue.runner}:${activeCue.tick}`}
+            className={`pointer-events-none absolute top-32 left-1/2 z-20 w-[min(86vw,22rem)] -translate-x-1/2 rounded-2xl border-2 px-4 py-2 text-center shadow-[var(--shadow-panel)] ${activeCue.isPlayer ? 'border-gold bg-gold text-white text-outline' : 'border-white bg-white/95 text-ink'}`}
             initial={reducedMotion ? false : { y: 10, scale: 0.9, opacity: 0 }}
             animate={reducedMotion ? { opacity: 1 } : { y: 0, scale: 1, opacity: 1 }}
             exit={reducedMotion ? { opacity: 0 } : { y: -8, opacity: 0 }}
           >
-            <p className="text-xs font-extrabold uppercase">{hud.latestSkill.runner === attempt.playerIndex ? 'Your skill' : content.umas.byId.get(attempt.runners[hud.latestSkill.runner]?.templateId ?? '')?.name ?? 'Rival skill'}</p>
-            <p className="truncate text-lg font-extrabold">{content.skills.byId.get(hud.latestSkill.skillId)?.name ?? hud.latestSkill.skillId}</p>
+            <p className="text-xs font-extrabold uppercase">{activeCueText.eyebrow}</p>
+            <p className="truncate text-lg font-extrabold">{activeCueText.title}</p>
+            {activeCue.kind === 'skill' && activeCue.skillEffects && <p className="text-xs font-bold opacity-85">{effectLabel(activeCue.skillEffects)}</p>}
           </m.div>
         )}
       </AnimatePresence>
@@ -306,13 +376,29 @@ export function RaceRunScreen() {
 
       <AnimatePresence>
         {showResults && (
-          <m.div className="fixed inset-0 z-40 flex items-end bg-ink/45" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <m.div className="pb-safe w-full rounded-t-[1.75rem] border-t-2 border-white bg-cream px-4 pt-4" initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 34 }}>
+          <m.div className="fixed inset-0 z-40 flex items-end bg-ink/45" initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={reducedMotion ? { duration: 0 } : undefined}>
+            <m.div
+              className="pb-safe relative max-h-dvh w-full overflow-y-auto rounded-t-[1.75rem] border-t-2 border-white bg-cream px-4 pt-4"
+              initial={reducedMotion ? false : { y: '100%' }}
+              animate={{ y: 0 }}
+              transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 34 }}
+            >
+              {playerTimelineResult.placement === 1 && !reducedMotion && CONFETTI.map((piece, index) => (
+                <m.i
+                  key={index}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-12 z-10 h-3 w-2 rounded-sm"
+                  style={{ left: `${piece.left}%`, backgroundColor: piece.color }}
+                  initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
+                  animate={{ x: piece.x, y: piece.y, rotate: 240 + index * 31, opacity: 0 }}
+                  transition={{ duration: 1.1 + (index % 3) * 0.15, delay: index * 0.025 }}
+                />
+              ))}
               <m.p
                 className={`text-center text-6xl font-extrabold text-outline ${playerTimelineResult.placement === 1 ? 'text-gold' : 'text-sky-deep'}`}
-                initial={{ scale: 2.2, rotate: -10, opacity: 0 }}
+                initial={reducedMotion ? false : { scale: 2.2, rotate: -10, opacity: 0 }}
                 animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 12, delay: 0.1 }}
+                transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 12, delay: 0.1 }}
               >
                 {playerTimelineResult.placement === 1 ? '1st!' : ordinal(playerTimelineResult.placement)}
               </m.p>
@@ -322,9 +408,9 @@ export function RaceRunScreen() {
               {record && (
                 <div className="mt-3">
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-xl bg-white p-2"><p className="text-xs text-ink-soft">Uma EXP</p><p className="font-extrabold text-sky-deep">+{record.expGained}</p></div>
-                    <div className="rounded-xl bg-white p-2"><p className="text-xs text-ink-soft">Tickets</p><p className="font-extrabold text-gold">+{record.ticketReward}</p></div>
-                    <div className="rounded-xl bg-white p-2"><p className="text-xs text-ink-soft">Uma Shard</p><p className="font-extrabold text-violet-600">+{record.shardReward}</p></div>
+                    <m.div className="rounded-xl bg-white p-2" initial={reducedMotion ? false : { y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }}><p className="text-xs text-ink-soft">Uma EXP</p><p className="font-extrabold text-sky-deep">+{record.expGained}</p></m.div>
+                    <m.div className="rounded-xl bg-white p-2" initial={reducedMotion ? false : { y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: reducedMotion ? 0 : 0.12 }}><p className="text-xs text-ink-soft">Tickets</p><p className="font-extrabold text-gold">+{record.ticketReward}</p></m.div>
+                    <m.div className="rounded-xl bg-white p-2" initial={reducedMotion ? false : { y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: reducedMotion ? 0 : 0.24 }}><p className="text-xs text-ink-soft">Uma Shard</p><p className="font-extrabold text-violet-600">+{record.shardReward}</p></m.div>
                   </div>
                   {savedUma && (
                     <div className="mt-2 rounded-xl bg-white px-3 py-2">
@@ -334,6 +420,27 @@ export function RaceRunScreen() {
                   )}
                   {record.levelsGained.length > 0 && <p className="mt-2 text-center text-sm font-extrabold">Reached Uma Lv {record.levelsGained.join(', ')}</p>}
                   {record.shardReward > 0 && <p className="mt-2 text-center rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">Ready to promote</p>}
+                  <div className="mt-2 rounded-xl bg-white px-3 py-2">
+                    <p className="text-xs font-extrabold text-ink-soft">RACE FORM</p>
+                    <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-extrabold">
+                      <span>You {Math.round(startForms.player * 100)}% · Field {Math.round(startForms.field * 100)}%</span>
+                      <span aria-hidden="true">→</span>
+                      <span className="text-sky-deep">You {Math.round(resultForms.player * 100)}% · Field {Math.round(resultForms.field * 100)}%</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 rounded-xl bg-white px-3 py-2">
+                    <p className="text-xs font-extrabold text-ink-soft">YOUR ACTIVATIONS</p>
+                    {activationSummary.length === 0 ? <p className="mt-1 text-sm font-bold text-ink-soft">No player skills activated.</p> : (
+                      <ul className="mt-1 space-y-1">
+                        {activationSummary.map((activation) => (
+                          <li key={activation.skillId} className="flex items-start justify-between gap-3 text-sm">
+                            <span className="min-w-0"><strong className="block truncate">{content.skills.byId.get(activation.skillId)?.name ?? activation.skillId}</strong><span className="text-xs text-ink-soft">{effectLabel(activation.effects)}</span></span>
+                            <span className="shrink-0 font-extrabold text-sky-deep">×{activation.count}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               )}
               {commitError && (
@@ -347,7 +454,7 @@ export function RaceRunScreen() {
                 {orderedField.map((result, index) => {
                   const name = content.umas.byId.get(result.umaId)?.name ?? result.umaId
                   return (
-                    <m.li key={`${result.gate}:${result.umaId}`} initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 + index * 0.025 }} className={`flex items-center gap-3 border-b border-ink/5 px-3 py-2 ${result.isPlayer ? 'bg-gold/20' : ''}`}>
+                    <m.li key={`${result.gate}:${result.umaId}`} initial={reducedMotion ? false : { x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: reducedMotion ? 0 : 0.2 + index * 0.025 }} className={`flex items-center gap-3 border-b border-ink/5 px-3 py-2 ${result.isPlayer ? 'bg-gold/20' : ''}`}>
                       <span className="w-8 font-extrabold tabular-nums">{result.placement}</span>
                       <span className="min-w-0 flex-1 truncate font-extrabold">{result.isPlayer ? '★ ' : ''}{name}<span className="ml-2 text-xs text-ink-soft">{STRATEGY_LABEL[result.strategy]}</span></span>
                       <span className="text-sm text-ink-soft">{formatMargin(result.marginLengths)}</span>
@@ -355,8 +462,9 @@ export function RaceRunScreen() {
                   )
                 })}
               </ol>
-              <div className="mt-3 grid grid-cols-2 gap-3 pb-4">
-                <GameButton variant="secondary" disabled={committing} onClick={() => navigate(`/race?uma=${encodeURIComponent(attempt.umaId)}`)}>Races</GameButton>
+              <div className="mt-3 grid grid-cols-3 gap-2 pb-4">
+                <GameButton variant="secondary" disabled={!record || committing} onClick={() => navigate(`/race?uma=${encodeURIComponent(attempt.umaId)}`)}>Races</GameButton>
+                <GameButton variant="secondary" disabled={!record || committing} onClick={() => navigate(`/training/${encodeURIComponent(attempt.umaId)}`)}>Train</GameButton>
                 <GameButton variant="go" disabled={!record || againBusy || record.shardReward > 0} onClick={() => void raceAgain()}>
                   {record?.shardReward ? 'Promote first' : againBusy ? 'Preparing…' : 'Race again'}
                 </GameButton>
