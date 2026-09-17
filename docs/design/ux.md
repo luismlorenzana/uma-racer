@@ -160,6 +160,10 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 - **Limit break animation**: the card lifts, glows, the LB pip ignites, and effect numbers tick up.
 - **Card Select Coupon** redemption: a selection grid, then a **flip reveal** with a shine sweep.
 
+The implemented album also exposes owned/maxed completion, type and ownership filters, explicit Friend/Group unavailability,
+missing-content preservation, and the one-time max-card Coupon state. Limit-break errors remain in the detail sheet so the
+player can retry without losing context.
+
 ### Badges
 
 The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mobile-first:

@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 import {
   createCardSave,
   createUmaSave,
+  cardExpToNext,
   type CardEffect,
   type ContentAtlas,
   type SupportCardTemplate,
@@ -233,6 +234,32 @@ describe('Training persistence', () => {
     expect(result.profile.tickets).toBe(2)
     expect(result.uma.trainingsThisScenario).toBe(1)
     expect(result.ledgerIds[0]).toBe('training:uma-00:1:0')
+  })
+
+  it('grants one Card Select Coupon when Training first reaches level 25', async () => {
+    const loaded = content()
+    await seed(loaded)
+    const umaRow = await db.umas.get('uma-00')
+    const cardRow = await db.cards.get('card-speed')
+    await db.umas.put({ ...umaRow!, data: { ...umaRow!.data, deckCardIds: ['card-speed'] } })
+    await db.cards.put({
+      ...cardRow!,
+      data: { ...cardRow!.data, level: 24, exp: cardExpToNext(24) - 5, limitBreak: 4, maxCouponGranted: false },
+    })
+    await db.outbox.clear()
+
+    const first = await persistTraining(loaded, 'uma-00', 'power', '2000-01-02', 300)
+    expect(first.result).toMatchObject({ cardCouponReward: 1, newlyMaxedCardIds: ['card-speed'] })
+    expect(first.profile.cardCoupons).toBe(4)
+    expect(first.cards[0]).toMatchObject({ level: 25, maxCouponGranted: true })
+    expect(await db.ledger.get('card-max-coupon:card-speed')).toMatchObject({
+      data: { resource: 'card-coupons', delta: 1, reason: 'card-max' },
+    })
+
+    const second = await persistTraining(loaded, 'uma-00', 'power', '2000-01-02', 301)
+    expect(second.result.cardCouponReward).toBe(0)
+    expect(second.profile.cardCoupons).toBe(4)
+    expect(await db.ledger.where('id').equals('card-max-coupon:card-speed').count()).toBe(1)
   })
 })
 

@@ -10,7 +10,8 @@ while the stable itself grows into a collection.
 > Train → Race loop with Uma EXP, levels, ticket rewards, gate shards, and synced race history. Milestone 3 Race Depth is
 > implemented: compiled skills and recovery, versioned replay, course geometry, position keeping, continuous lanes,
 > blocking/overtaking, staged starts, deterministic event presentation, photo finishes, and complete results feedback.
-> Next: Milestone 4 Cards & Collection.
+> Milestone 4 Cards & Collection is underway: the complete private SSR album, generated effect/LB display, atomic card
+> promotion, and one-time max-card Coupon awards are implemented. Next: T010 manual per-Uma support decks.
 
 ## Ground rules
 

@@ -36,6 +36,7 @@ import {
   updateEntityVersion,
 } from './persistence'
 import { adoptGameState, clearGameState, localDay, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
+import { replaceCardState } from './store'
 import { acknowledgedSequences } from './sync'
 import { ensureMemoryTrainingDeck, ensurePersistentTrainingDeck, persistTraining, resolveMemoryTraining } from './training'
 import {
@@ -46,6 +47,7 @@ import {
   readRaceHistory,
   type PreparedRace,
 } from './racing'
+import { promoteMemoryCard, promotePersistentCard } from './cards'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -56,6 +58,7 @@ export class GameRuntime {
   private flushing = false
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
+  private cardLocks = new Set<string>()
   private memoryRaceHistory: RaceResultRecord[] = []
   private onlineHandler = () => void this.flush()
   private visibilityHandler = () => {
@@ -298,6 +301,30 @@ export class GameRuntime {
     return useGame.getState().persistent
       ? readRaceHistory(limit)
       : [...this.memoryRaceHistory].sort((left, right) => right.createdAt - left.createdAt).slice(0, limit)
+  }
+
+  async promoteCard(cardId: string, today = localDay(), now = Date.now()) {
+    if (this.cardLocks.has(cardId)) throw new Error('This card is already being promoted')
+    this.cardLocks.add(cardId)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      const card = state.cards[cardId]
+      if (!content || state.status !== 'ready' || !state.profile || !card) throw new Error('Support card must be owned')
+      const mutation = state.persistent
+        ? await promotePersistentCard(content, cardId, today, now)
+        : promoteMemoryCard(content, state.profile, card, today, now)
+      if (generation !== this.generation) return mutation
+      replaceCardState(mutation.profile, mutation.card)
+      if (state.persistent) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation
+    } finally {
+      this.cardLocks.delete(cardId)
+    }
   }
 
   private async refreshPending(): Promise<void> {

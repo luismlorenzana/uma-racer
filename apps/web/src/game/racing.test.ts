@@ -157,7 +157,7 @@ function state() {
   return {
     profile: createPlayerProfile('abc123def456', 42),
     player,
-    cards: { c1: createCardSave(card) },
+    cards: { c1: { ...createCardSave(card), level: 6, limitBreak: 1 } },
   }
 }
 
@@ -169,7 +169,7 @@ describe('progression race field', () => {
     const second = buildPreparedRace({ content: loaded, profile, uma: player, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
     expect(second).toEqual(first)
     expect(first.input.runners[first.playerIndex]).toMatchObject({ id: 'u1', strategy: 'pace' })
-    expect(first.raceBonus).toBeCloseTo(0.03)
+    expect(first.raceBonus).toBeCloseTo(0.033)
     const characters = first.runners.map((runner) => loaded.umas.byId.get(runner.templateId)!.charaId)
     expect(new Set(characters).size).toBe(characters.length)
   })

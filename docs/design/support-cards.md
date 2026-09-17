@@ -49,6 +49,8 @@ Cards level through **use** (see [Training — Card EXP](training.md#card-exp-fr
 | LB4 (MLB) | 21–25 | **Level 25 = maxed**, which earns a **Card Select Coupon** 🎟️ |
 
 - At an LB level cap, EXP stops at the maximum until the card is promoted with **training tickets** (cost in [Economy](economy.md)).
+- Promotion consumes the filled cap bar, advances into the next band (**5→6**, **10→11**, **15→16**, **20→21**),
+  resets EXP to zero, and grants the normal +2 tickets for that new card level.
 - Each promotion unlocks that LB's stats.
 - **Every card level-up earns +2 training tickets**, and maxing a card earns a Card Select Coupon.
 
@@ -89,3 +91,8 @@ effectValue = baseValue[effect]
 | LB2 | Specialty Priority +50% |
 | LB3 | Initial Stats doubled, and a gold skill added to `hintSkills` |
 | LB4 | **Unique effect**: a signature bonus, seeded from the card's original unique effect |
+
+Race Bonus contributes only from LB1 onward. At LB4, the generated MVP signature maps only source tuple **effect identity**
+to one of the eight effects above. Each distinct supported identity adds **25% of the card's normal generated level-25
+value** for that effect. Original tuple values and conditions are never copied or evaluated; unsupported identities remain
+inactive and are labeled as such. Initial Stats is displayed now but is applied only when scenario promotion is implemented.

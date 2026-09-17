@@ -124,3 +124,10 @@ With complete private local content and `pnpm dev`:
 - Card Select Coupon redemption, acquiring unowned cards, Uma albums/coupons, or reveals (T011).
 - Friend/Group gameplay, card bond/events, original numeric card effects, scenario promotion/Initial Stats application,
   presets, badges/achievements, sound, haptics, or new visual assets.
+
+## Implementation result
+
+Implemented in the T009 feature branch. The domain now owns promotion and one shared generated-effect projection; Training
+and racing consume that projection, and level-25 Training grants the exactly-once Coupon in the same transaction. The lazy
+Cards route replaces the placeholder with completion, filters, managed private art/silhouettes, current/next LB effects,
+promotion locks, atomic local-first promotion, max state, missing references, and reduced-motion-compatible feedback.

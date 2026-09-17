@@ -84,6 +84,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   facility then spends one ticket and writes the profile, Uma, changed cards, append-only spend/reward ledger rows, and
   coalesced outbox work in one Dexie transaction; Zustand publishes only after that transaction commits. Memory-only mode
   runs the same pure mutation but keeps its existing explicit non-persistent warning.
+- Card promotion is another local-first transaction: a filled-cap card and current profile are re-parsed, the documented
+  ticket cost and +2 level reward are appended under deterministic ids, profile/card outbox rows are coalesced, and Zustand
+  publishes only after commit. Training's transition to card level 25 similarly appends one `card-max-coupon:<cardId>` row,
+  increments the profile Coupon balance, and sets the card's paid flag in its existing transaction.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
@@ -176,6 +180,8 @@ apps/web/src/
 ```
 
 - **Routes are code-split**. PixiJS loads only with Race scenes; Training uses route-split DOM and Motion feedback.
+- The Cards album/detail route is also split. It joins the full private catalog to account-wide card saves and calls the
+  same generated effect projection used by Training and progression racing, so displayed LB values cannot drift from play.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.

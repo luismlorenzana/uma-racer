@@ -159,6 +159,9 @@ The library refreshes each scenario, so hint rates need tuning: a good deck shou
 | Present at the chosen facility | 15 |
 | Friendship training (present, and the card type matches the facility) | 25 |
 
+When Training first moves an LB4 card to level 25, the same atomic turn grants its one-time Card Select Coupon and marks
+that card as paid. Reloading, retrying, or continuing to train a maxed card cannot grant the coupon again.
+
 ## Pacing check (validate with a simulation script later)
 
 - **Tier 1 is the heaviest:** about +5,500 stat points from 5★ base stats (about 100 each) to the 1200 caps. A good deck (about 180 points

@@ -39,3 +39,8 @@ export async function listRaceHistory(limit = 20) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.listRaceHistory(limit)
 }
+
+export async function promoteSupportCard(id: string) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.promoteCard(id)
+}

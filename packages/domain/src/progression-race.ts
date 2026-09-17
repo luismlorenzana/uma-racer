@@ -1,6 +1,6 @@
 // Saved-Uma progression races and rewards (docs/tasks/T005-progression-races-and-rewards.md).
 
-import { CARD_EFFECTS, cardEffectValue, deckSlotCount } from './cards'
+import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue } from './cards'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
@@ -231,12 +231,7 @@ export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[])
     }
     ids.add(template.id)
     characters.add(template.charaId)
-    total += cardEffectValue('raceBonus', {
-      era: template.era,
-      limitBreak: save.limitBreak,
-      level: save.level,
-      profileWeight: template.effectProfile.raceBonus,
-    })
+    total += projectedCardEffectValue('raceBonus', template, save)
   }
   return total
 }

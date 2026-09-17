@@ -25,13 +25,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'cards',
-        element: (
-          <PlaceholderScreen
-            title="Cards"
-            emoji="🃏"
-            lines={['SSR album by era', 'Limit breaks with tickets', 'Card Select Coupon reveals']}
-          />
-        ),
+        lazy: async () => ({ Component: (await import('../screens/CardsScreen')).CardsScreen }),
       },
       {
         path: 'badges',

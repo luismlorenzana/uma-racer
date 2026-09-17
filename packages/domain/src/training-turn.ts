@@ -3,10 +3,10 @@
 import {
   CARD_EFFECTS,
   CARD_TRAINING_EXP,
-  cardEffectValue,
   cardExpToNext,
   cardLevelCap,
   deckSlotCount,
+  projectedCardEffectValue,
 } from './cards'
 import type { CardSave, UmaSave } from './save'
 import { SAVE_ID_PATTERN } from './save'
@@ -84,6 +84,8 @@ export interface TrainingTurnResult {
   hintResults: TrainingHintResult[]
   hintSpGained: number
   ticketReward: number
+  cardCouponReward: number
+  newlyMaxedCardIds: string[]
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -148,24 +150,21 @@ export function assertTrainingContent(
 
 export function trainingCardEffects(card: TrainingCardInput): TrainingCardEffects {
   if (!isStatCard(card.template)) throw new Error(`Card ${card.template.id} cannot be used in MVP Training`)
-  const profile = card.template.effectProfile
-  const options = { era: card.template.era, limitBreak: card.save.limitBreak, level: card.save.level }
-  const specialtyAddition = cardEffectValue('specialtyPriority', {
-    ...options,
-    profileWeight: profile.specialtyPriority,
-  }) * (card.save.limitBreak >= 2 ? 1.5 : 1)
+  const state = { limitBreak: card.save.limitBreak, level: card.save.level }
+  const effect = (key: (typeof CARD_EFFECTS)[number]) => projectedCardEffectValue(key, card.template, state)
+  const specialtyAddition = effect('specialtyPriority')
   return {
     present: {
       type: card.template.type,
-      trainingBonus: cardEffectValue('trainingBonus', { ...options, profileWeight: profile.trainingBonus }),
-      friendshipBonus: cardEffectValue('friendshipBonus', { ...options, profileWeight: profile.friendshipBonus }),
+      trainingBonus: effect('trainingBonus'),
+      friendshipBonus: effect('friendshipBonus'),
       flatBonus: {
-        [card.template.type]: cardEffectValue('statBonus', { ...options, profileWeight: profile.statBonus }),
-        sp: cardEffectValue('skillPointBonus', { ...options, profileWeight: profile.skillPointBonus }),
+        [card.template.type]: effect('statBonus'),
+        sp: effect('skillPointBonus'),
       },
     },
     specialtyChance: Math.min(1, BASE_SPECIALTY_CHANCE + specialtyAddition / 100),
-    hintFrequency: cardEffectValue('hintFrequency', { ...options, profileWeight: profile.hintFrequency }),
+    hintFrequency: effect('hintFrequency'),
   }
 }
 
@@ -389,6 +388,7 @@ export function resolveTrainingTurn(input: {
   }
 
   const placementByCard = new Map(deal.placements.map((entry) => [entry.cardId, entry.placement]))
+  const newlyMaxedCardIds: string[] = []
   const cardResults = cards.map((card): CardTrainingResult => {
     const placement = placementByCard.get(card.template.id)
     if (!placement) throw new Error(`Training deal is missing card ${card.template.id}`)
@@ -397,7 +397,12 @@ export function resolveTrainingTurn(input: {
         ? CARD_TRAINING_EXP.friendship
         : CARD_TRAINING_EXP.present
       : CARD_TRAINING_EXP.equipped
-    return { ...addCardTrainingExp(card.save, gained), placement }
+    const result = addCardTrainingExp(card.save, gained)
+    if (result.levelsGained.includes(25) && !card.save.maxCouponGranted) {
+      newlyMaxedCardIds.push(card.template.id)
+      result.card = { ...result.card, maxCouponGranted: true }
+    }
+    return { ...result, placement }
   })
   const ticketReward = cardResults.reduce((sum, result) => sum + result.levelsGained.length * 2, 0)
   const trainingExpGained = trainingExpForTurn(preview.friendship)
@@ -419,5 +424,7 @@ export function resolveTrainingTurn(input: {
     hintResults,
     hintSpGained,
     ticketReward,
+    cardCouponReward: newlyMaxedCardIds.length,
+    newlyMaxedCardIds,
   }
 }
