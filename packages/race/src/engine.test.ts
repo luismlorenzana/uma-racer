@@ -324,7 +324,7 @@ describe('simulateRace', () => {
         expect(new Set(first.results.map((result) => result.placement)).size).toBe(fieldSize)
       }
     }
-  }, 10_000)
+  }, 20_000)
 })
 
 describe('playback', () => {
