@@ -3,6 +3,7 @@
 import {
   bestStrategy,
   compileRaceSkill,
+  compileRaceCourseLayout,
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   equippedRaceBonus,
@@ -36,7 +37,7 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from '@racer/domain'
-import { createRng, simulateRace, simulateRaceV1, type RaceInput, type RaceTimeline } from '@racer/race'
+import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, type RaceInput, type RaceTimeline } from '@racer/race'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
 import { queueInTransaction } from './persistence'
@@ -47,7 +48,7 @@ export interface PreparedRaceRunner {
 }
 
 export interface PreparedRace {
-  engineVersion: 1 | 2
+  engineVersion: 1 | 2 | 3
   id: string
   contentVersion: string
   umaId: string
@@ -77,7 +78,7 @@ export interface RaceCompletion {
 }
 
 export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
-  attempt.engineVersion === 1 ? simulateRaceV1(attempt.input) : simulateRace(attempt.input)
+  attempt.engineVersion === 1 ? simulateRaceV1(attempt.input) : attempt.engineVersion === 2 ? simulateRaceV2(attempt.input) : simulateRace(attempt.input)
 
 interface BuildRaceInput {
   content: LoadedContent
@@ -164,6 +165,9 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   if (!template) throw new Error(`Race content is missing Uma ${uma.templateId}`)
   const race = content.races.byId.get(raceId)
   if (!race) throw new Error(`Race content is missing race ${raceId}`)
+  const course = content.courses.byId.get(race.courseId)
+  if (!course) throw new Error(`Race content is missing course ${race.courseId}`)
+  const layout = compileRaceCourseLayout(course, race.distance, race.direction)
   const seed = raceAttemptSeed(profile.createdAt, content.manifest.version, uma.templateId, race.id, strategy, sequence)
   const fieldSize = progressionFieldSize(race)
   const opponents = shuffled(uniqueOpponentPool(template, content.umas.items), seed ^ 0x9e3779b9)
@@ -215,7 +219,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     }
   })
   return {
-    engineVersion: 2,
+    engineVersion: 3,
     id: raceAttemptId(uma.templateId, sequence),
     contentVersion: content.manifest.version,
     umaId: uma.templateId,
@@ -229,7 +233,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     raceBonus,
     playerIndex: playerGate,
     input: {
-      course: { distance: race.distance, surface: race.surface, season: race.season },
+      course: { distance: race.distance, surface: race.surface, season: race.season, layout },
       runners: runners.map((runner) => runner.engine),
       seed,
     },
@@ -273,7 +277,7 @@ function resultRecord(
     ticketReward: progress.ticketReward,
     shardReward: progress.shardReward,
     record: {
-      engineVersion: 2,
+      engineVersion: 3,
       course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
       contentVersion: attempt.contentVersion,
       umaId: attempt.umaId,

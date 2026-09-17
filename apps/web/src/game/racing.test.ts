@@ -6,6 +6,7 @@ import {
   expToNextUmaLevel,
   parseRaceResultRecord,
   type ContentAtlas,
+  type CourseTemplate,
   type RaceTemplate,
   type SkillTemplate,
   type SupportCardTemplate,
@@ -89,6 +90,17 @@ const race: RaceTemplate = {
   fieldSize: 8,
 }
 
+const course: CourseTemplate = {
+  id: 'course-1',
+  trackId: 'track-1',
+  distance: 3,
+  terrain: 1,
+  turn: 1,
+  corners: [{ start: 700, end: 1_050, number: 1 }, { start: 1_350, end: 1_650, number: 2 }],
+  straights: [{ start: 0, end: 700, frontType: 1 }, { start: 1_050, end: 1_350, frontType: 2 }, { start: 1_650, end: 2_000, frontType: 1 }],
+  slopes: [],
+}
+
 const atlas: ContentAtlas = {
   schemaVersion: 1,
   kind: 'uma-icons',
@@ -132,7 +144,7 @@ function content(umaCount = 10): LoadedContent {
     cards: { items: [card], byId: new Map([[card.id, card]]) },
     skills: { items: baselineSkills, byId: new Map(baselineSkills.map((item) => [item.id, item])) },
     races: { items: [race], byId: new Map([[race.id, race]]) },
-    courses: { items: [], byId: new Map() },
+    courses: { items: [course], byId: new Map([[course.id, course]]) },
     atlases: {
       'uma-icons': { descriptor: atlas, pageUrls: ['blob:synthetic'] },
       'card-icons': { descriptor: { ...atlas, kind: 'card-icons' }, pageUrls: ['blob:synthetic'] },
@@ -179,7 +191,10 @@ describe('progression race field', () => {
     expect(parseRaceResultRecord(completion.record)).toEqual(completion.record)
     expect(completion.profile.tickets).toBe(5)
     const replay = preparedRaceFromRecord(loaded, completion.record)
-    expect(replay.input.course).toEqual({ distance: 2_000, surface: 'turf', season: 1 })
+    expect(replay.input.course).toEqual({ distance: 2_000, surface: 'turf', season: 1, layout: {
+      corners: course.corners.map(({ start, end, number }) => ({ start, end, number })),
+      straights: course.straights.map(({ start, end }) => ({ start, end })),
+    } })
     expect(simulatePreparedRace(replay).results).toEqual(completion.timeline.results)
 
     const { engineVersion: _engineVersion, course: _course, ...legacyBody } = completion.record

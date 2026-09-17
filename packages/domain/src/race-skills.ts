@@ -19,7 +19,7 @@ export interface RaceConditionAtom {
 /** OR groups containing AND comparisons. */
 export type RaceCondition = RaceConditionAtom[][]
 
-export type RaceSkillEffectKind = 'recovery' | 'current-speed' | 'target-speed' | 'acceleration'
+export type RaceSkillEffectKind = 'recovery' | 'current-speed' | 'current-speed-natural' | 'target-speed' | 'acceleration'
 
 export interface RaceSkillEffect {
   kind: RaceSkillEffectKind
@@ -96,7 +96,7 @@ export function parseCompiledRaceSkill(value: unknown): CompiledRaceSkill | null
     for (const effect of raw.effects) {
       if (!isRecord(effect) || !exactKeys(effect, ['kind', 'amount'])) return null
       if (
-        !['recovery', 'current-speed', 'target-speed', 'acceleration'].includes(String(effect.kind)) ||
+        !['recovery', 'current-speed', 'current-speed-natural', 'target-speed', 'acceleration'].includes(String(effect.kind)) ||
         typeof effect.amount !== 'number' || !Number.isFinite(effect.amount)
       ) return null
       effects.push({ kind: effect.kind as RaceSkillEffectKind, amount: effect.amount })
@@ -150,6 +150,25 @@ export const BASIC_RACE_VARIABLES = new Set([
   'time',
 ])
 
+/** Dynamic pack/course facts needed by every launch unique in engine R3. */
+export const PACK_RACE_VARIABLES = new Set([
+  'bashin_diff_behind',
+  'bashin_diff_infront',
+  'blocked_front',
+  'blocked_side_continuetime',
+  'change_order_onetime',
+  'change_order_up_end_after',
+  'corner',
+  'distance_diff_rate',
+  'is_finalcorner',
+  'is_finalcorner_laterhalf',
+  'is_overtake',
+  'near_count',
+  'temptation_count',
+])
+
+export const RACE_VARIABLES = new Set([...BASIC_RACE_VARIABLES, ...PACK_RACE_VARIABLES])
+
 export const RANDOM_PHASE_VARIABLES = new Set([
   'phase_random',
   'phase_firsthalf_random',
@@ -159,6 +178,7 @@ export const RANDOM_PHASE_VARIABLES = new Set([
 const EFFECT_KIND: Readonly<Record<number, RaceSkillEffectKind>> = {
   9: 'recovery',
   21: 'current-speed',
+  22: 'current-speed-natural',
   27: 'target-speed',
   31: 'acceleration',
   37: 'target-speed',
@@ -219,7 +239,7 @@ export function evaluateRaceCondition(condition: RaceCondition | null, context: 
 
 export function compileRaceSkill(
   template: SkillTemplate,
-  supportedVariables: ReadonlySet<string> = BASIC_RACE_VARIABLES,
+  supportedVariables: ReadonlySet<string> = RACE_VARIABLES,
 ): CompiledRaceSkill {
   const inherited = template.kind === 'inherited-unique'
   const magnitude = inherited ? 0.5 : 1

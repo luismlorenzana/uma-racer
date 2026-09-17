@@ -122,10 +122,56 @@ Wit section randomness, skill activation).
 - Activation rolls and random trigger points use stable per-runner/per-skill streams derived from the race seed, keeping
   base start, section, and spurt randomness unchanged when a loadout changes.
 - Wit-checked skills use `max(1 − 90 / effectiveWit, 0.20)`. Guaranteed source skills do not roll.
-- Recovery restores the source fraction of max HP; current-speed effects apply immediately; target-speed and acceleration
-  effects add for their source duration and expire on a tick boundary.
+- Recovery restores the source fraction of max HP. Engine v3 scales source duration by `courseDistance / 1000`.
+  Current-speed effects modify actual distance speed immediately for that duration; type 22 carries the same amount into
+  current speed on expiry so it decelerates naturally. Target-speed and acceleration effects expire on a tick boundary.
 - Unsupported variables or effects stay visible in the library but cannot be equipped into a race loadout. T007 adds the
   pack and course variables required by the remaining launch uniques.
+
+### Pack racing (R3)
+
+Engine v3 uses continuous lateral position measured from the inner rail. The standard course width is **11.25 m** and one
+horse lane is `11.25 / 18 = 0.625 m`; lane values are clamped to `[0, 11.25]`. Imported corner and straight ranges are
+sorted, clipped to the selected race distance, and snapshotted into the result. A course whose source geometry is empty is
+rejected unless its race direction is explicitly `straight`, in which case `[0, distance)` is the straight fallback.
+
+Position keeping runs through sections **1–10**. Normal mode checks every **2 s**; leaving a mode starts a **1 s** cooldown
+before the next normal interval. A mode also ends after one section of travel. A separate seeded RNG stream per runner makes
+these checks stable without changing start, section, spurt, or skill randomness.
+
+| Mode | Entry / exit | Target-speed coefficient |
+|---|---|---:|
+| Front Speed Up | Leading by less than **4.5 m**, or **12.5 m** when the only Front Runner; Wit chance `20 × log10(0.1 × Wit)%`; exits over that lead | 1.04 |
+| Front Overtake | Not first among Front Runners; same Wit chance; exits **10 m** ahead of the next Front Runner | 1.05 |
+| Pace Up | Non-front gap from the pacemaker exceeds the strategy maximum; Wit chance `15 × log10(0.1 × Wit)%`; exits at a seeded point between thresholds | 1.04 |
+| Pace Down | Gap is below the minimum and no positive speed effect is active; exits at a seeded point between thresholds or on a speed effect | 0.915 opening, 0.945 middle |
+| Pace Up EX | A strategy expected to be farther back is ahead; highest priority; exits when that inversion ends | 2.0 |
+
+For non-front strategies, `courseFactor = 0.0008 × (distance − 1000) + 1`. Pace thresholds are `3 m` / `5 × factor`,
+Late `6.5 × factor` / `7 × factor`, and End `7.5 × factor` / `8 × factor`. The engine uses the overall leader as the
+pacemaker because the post-1.5-anniversary selection algorithm is still unknown; that approximation is replay-versioned.
+Pace Down uses `−0.5 m/s²` deceleration and **0.6× HP consumption**.
+
+Lane target speed is `0.02 × (0.3 + 0.001 × Power)`, with the documented early lane-distance and late order modifiers;
+lateral acceleration is **0.03 m/s²** and speed is capped at **0.6 m/s**. An overtake target must be visible and 1–20 m
+ahead, catchable within 15 seconds at current relative speed, and slower in target speed; the closest front blocker is always
+eligible. Passing candidates are one horse lane inside/outside the target and use stable inner-first/index tie breaks.
+
+Front blocking requires `0 < gap < 2 m` and lane gap at most `(1 − 0.6 × gap / 2) × 0.75 horseLane`; speed is capped at
+`(0.988 + 0.012 × gap / 2) × blockerSpeed`. Side blocking uses `|distance gap| < 1.05 m` and `< 2 horse lanes`.
+Overlaps use `< 0.4 m` longitudinal and `< 0.4 horse lane` lateral gaps; the outer runner is moved out by 0.4 horse lane.
+Nearby skill counts use `< 3 m` and `< 3 horse lanes`.
+
+Launch-unique pack facts use these units: `bashin_diff_*` is the closest ahead/behind gap in 2.5 m lengths (999 when none),
+`distance_diff_rate` is the runner's percentage between leader and tail (0 for a tied field), `change_order_onetime` is the
+signed placement delta for the current tick, and `change_order_up_end_after` is cumulative places gained from phase 2.
+`blocked_side_continuetime` is current continuous seconds, `is_overtake` means a live overtake target, and `near_count` uses
+the nearby footprint above. `is_finalcorner` stays true from the final corner's start through the finish; its later-half flag
+is true only within the second half of that corner. `temptation_count` is zero until R4 adds rushed behavior.
+
+The mixed-strategy balance target is **15–35% aggregate win share per strategy** over the standard tier/distance/Form matrix,
+with no strategy above 60% in a row and every strategy recording representative wins. This is a harness target, not a hidden
+per-strategy stat bonus; the G1 player targets below remain the player-facing acceptance criteria.
 
 ### Difficulty target
 

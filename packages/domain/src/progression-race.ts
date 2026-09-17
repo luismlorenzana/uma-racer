@@ -2,6 +2,7 @@
 
 import { CARD_EFFECTS, cardEffectValue, deckSlotCount } from './cards'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
+import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
 import { applyForm, yourForm } from './raceForm'
 import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
@@ -55,7 +56,7 @@ export interface RaceResultRunner {
   placement: number
   finishTime: number
   marginLengths: number
-  /** Present on engine-v2 records; absent on legacy T005 results. */
+  /** Present on engine-v2/v3 records; absent on legacy T005 results. */
   skills?: CompiledRaceSkill[]
 }
 
@@ -63,12 +64,14 @@ export interface RaceResultCourse {
   distance: number
   surface: Surface
   season: number
+  /** Present on engine-v3 records. */
+  layout?: RaceCourseLayout
 }
 
 export interface RaceResultRecord {
   /** Absent means legacy skillless engine v1. */
-  engineVersion?: 2
-  /** Present on engine-v2 records so replay does not depend on mutable content metadata. */
+  engineVersion?: 2 | 3
+  /** Present on engine-v2/v3 records so replay does not depend on mutable content metadata. */
   course?: RaceResultCourse
   contentVersion: string
   umaId: string
@@ -113,6 +116,25 @@ function parseAptitude(value: unknown): RaceResultAptitude | null {
   if (!isRecord(value) || !hasExactKeys(value, ['distance', 'surface', 'strategy'])) return null
   if (![value.distance, value.surface, value.strategy].every((item) => GRADES.includes(item as Grade))) return null
   return value as unknown as RaceResultAptitude
+}
+
+function parseCourseLayout(value: unknown, distance: number): RaceCourseLayout | null {
+  if (!isRecord(value) || !hasExactKeys(value, ['corners', 'straights']) ||
+    !Array.isArray(value.corners) || !Array.isArray(value.straights)) return null
+  const parseSegments = (segments: unknown[], corner: boolean) => segments.map((segment, index) => {
+    if (!isRecord(segment) || !hasExactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end']) ||
+      !isFiniteNonNegative(segment.start) || !isFiniteNonNegative(segment.end) || segment.end <= segment.start ||
+      segment.end > distance || (index > 0 && ((segments[index - 1] as Record<string, unknown>).end as number) > segment.start) ||
+      (corner && (!isPositiveInt(segment.number) || segment.number > 32))) return null
+    return corner
+      ? { start: segment.start, end: segment.end, number: segment.number as number }
+      : { start: segment.start, end: segment.end }
+  })
+  const corners = parseSegments(value.corners, true)
+  const straights = parseSegments(value.straights, false)
+  if (corners.some((segment) => segment === null) || straights.some((segment) => segment === null) ||
+    (corners.length === 0 && straights.length === 0)) return null
+  return { corners: corners as RaceCourseLayout['corners'], straights: straights as RaceCourseLayout['straights'] }
 }
 
 /** Validate every private race field consumed by T005 before it reaches setup or simulation. */
@@ -315,12 +337,23 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const fieldSize = value.field.length
   const startStats = parseStats(value.startStats)
   const runners = value.field.map((runner) => parseRunner(runner, fieldSize))
-  const course = hasEngineVersion && isRecord(value.course) && hasExactKeys(value.course, ['distance', 'surface', 'season']) &&
-    isPositiveInt(value.course.distance) && SURFACES.includes(value.course.surface as Surface) && isNonNegativeInt(value.course.season)
-    ? { distance: value.course.distance, surface: value.course.surface as Surface, season: value.course.season }
+  const version = hasEngineVersion && (value.engineVersion === 2 || value.engineVersion === 3) ? value.engineVersion : null
+  const courseKeys = version === 3 ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
+  const courseLayout = version === 3 && isRecord(value.course) && isPositiveInt(value.course.distance)
+    ? parseCourseLayout(value.course.layout, value.course.distance)
+    : null
+  const course = hasEngineVersion && isRecord(value.course) && hasExactKeys(value.course, courseKeys) &&
+    isPositiveInt(value.course.distance) && SURFACES.includes(value.course.surface as Surface) && isNonNegativeInt(value.course.season) &&
+    (version !== 3 || courseLayout)
+    ? {
+      distance: value.course.distance,
+      surface: value.course.surface as Surface,
+      season: value.course.season,
+      ...(version === 3 ? { layout: courseLayout! } : {}),
+    }
     : null
   if (
-    (hasEngineVersion && value.engineVersion !== 2) ||
+    (hasEngineVersion && !version) ||
     (hasEngineVersion && !course) ||
     !isId(value.contentVersion) || !isId(value.umaId) || !isId(value.raceId) ||
     !isNonNegativeInt(value.sequence) || !isNonNegativeInt(value.seed) || !STRATEGIES.includes(value.strategy as Strategy) ||
@@ -348,7 +381,7 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     value.ticketReward !== value.levelsGained.length * UMA_LEVEL_TICKET_REWARD
   ) return null
   return {
-    ...(hasEngineVersion ? { engineVersion: 2 as const } : {}),
+    ...(hasEngineVersion ? { engineVersion: version! } : {}),
     ...(hasEngineVersion ? { course: course! } : {}),
     contentVersion: value.contentVersion,
     umaId: value.umaId,

@@ -1,4 +1,4 @@
-import { phaseAt, sampleTimeline, timelineDuration, type RaceTimeline, type RunnerFrame } from '@racer/race'
+import { COURSE_WIDTH, phaseAt, sampleTimeline, timelineDuration, type RaceTimeline, type RunnerFrame } from '@racer/race'
 import { Application, Container, Graphics, Text } from 'pixi.js'
 
 // Plays a pre-simulated race timeline back at the display's refresh rate (docs/technical/architecture.md#2-deterministic-simulation-then-playback).
@@ -22,6 +22,7 @@ export interface RaceHudState {
   shares: number[]
   finished: boolean
   latestSkill: { runner: number; skillId: string; tick: number } | null
+  latestPack: { kind: 'Blocked' | 'Overtaking' | 'Pace up' | 'Pace down' | 'Holding lead'; tick: number } | null
 }
 
 interface Token {
@@ -176,7 +177,7 @@ export class RaceScene {
     const toX = (meters: number) => (meters - left) * pxPerMeter
 
     // Lanes
-    const laneCount = this.runners.length
+    const laneCount = 18
     // Top margin leaves room for the remaining-distance labels above the rail.
     const trackTop = 36
     const trackHeight = height - trackTop - 18
@@ -192,7 +193,8 @@ export class RaceScene {
     this.runners.forEach((runner, i) => {
       const token = this.tokens[i]!
       const frame = this.frames[i]!
-      const y = lanesTop + laneHeight * (runner.lane + 0.5)
+      const lane = this.timeline.lane ? frame.lane : runner.lane * (COURSE_WIDTH / 18)
+      const y = lanesTop + radius + (lane / COURSE_WIDTH) * Math.max(0, laneHeight * laneCount - radius * 2)
       // A small stride bob while running gives the flat tokens some life.
       const running = frame.speed > 0.5 && frame.distance < course
       const bob = running ? Math.sin(this.elapsed * 14 + i) * 1.5 : 0
@@ -235,11 +237,23 @@ export class RaceScene {
       this.hudTimer = 0
       const currentTick = Math.floor(this.elapsed * this.timeline.tickRate)
       let latestSkill: RaceHudState['latestSkill'] = null
+      let latestPack: RaceHudState['latestPack'] = null
       for (let index = this.timeline.events.length - 1; index >= 0; index -= 1) {
         const event = this.timeline.events[index]!
-        if (event.tick > currentTick || event.type !== 'skill-activated' || !event.skillId) continue
-        latestSkill = { runner: event.runner, skillId: event.skillId, tick: event.tick }
-        break
+        if (event.tick > currentTick) continue
+        if (!latestSkill && event.type === 'skill-activated' && event.skillId) {
+          latestSkill = { runner: event.runner, skillId: event.skillId, tick: event.tick }
+        }
+        if (!latestPack && event.runner === this.playerIndex) {
+          if (event.type === 'blocked' && event.value === 1) latestPack = { kind: 'Blocked', tick: event.tick }
+          else if (event.type === 'overtake' && event.value === 1) latestPack = { kind: 'Overtaking', tick: event.tick }
+          else if (event.type === 'position-mode' && event.positionMode && event.positionMode !== 'normal') {
+            const kind = event.positionMode === 'pace-down' ? 'Pace down'
+              : event.positionMode === 'front-speed-up' ? 'Holding lead' : 'Pace up'
+            latestPack = { kind, tick: event.tick }
+          }
+        }
+        if (latestSkill && latestPack) break
       }
       this.onHud({
         seconds: this.elapsed,
@@ -251,6 +265,7 @@ export class RaceScene {
         shares: this.frames.map((f) => f.distance / course),
         finished,
         latestSkill,
+        latestPack,
       })
     }
     if (finished && !this.finishedNotified) {

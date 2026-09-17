@@ -1,7 +1,7 @@
 // Race engine milestone R1 (docs/design/racing.md#race-engine-milestones):
 // phases/sections, strategy target speeds, accel/decel, start delay + start dash, HP drain with the late-race guts
-// modifier, minimum speed, Wit section randomness, the final-leg spurt decision, and basic R2.5 skills.
-// Not yet modelled: lanes/blocking/position keeping (R3), dueling/slopes/rushed (R4), and advanced skills (R5).
+// modifier, minimum speed, Wit section randomness, the final-leg spurt decision, R2.5 skills, and the R3 pack.
+// Not yet modelled: dueling/slopes/rushed (R4) and advanced skills (R5).
 import {
   ACCEL_COEF,
   BASE_ACCEL,
@@ -38,6 +38,15 @@ import {
   type Strategy,
 } from '@racer/domain'
 import { createRng, type Rng } from './rng'
+import {
+  createPackState,
+  nearCount,
+  resolveOverlaps,
+  updatePackRunner,
+  type PackDecision,
+  type PackRunnerSnapshot,
+  type PackState,
+} from './pack'
 import type { RaceEvent, RaceInput, RaceRunnerInput, RaceTimeline, RunnerResult } from './types'
 import { assertRaceInput } from './validation'
 
@@ -81,6 +90,8 @@ interface RunnerState {
   lastPhase: number
   skills: SkillRuntime[]
   activeEffects: ActiveEffect[]
+  pack: PackState | null
+  packRng: Rng
 }
 
 interface SkillRuntime {
@@ -103,10 +114,12 @@ interface RandomPhaseTrigger {
 }
 
 interface ActiveEffect {
-  kind: Exclude<RaceSkillEffectKind, 'recovery' | 'current-speed'>
+  kind: Exclude<RaceSkillEffectKind, 'recovery'>
   amount: number
   untilTick: number
 }
+
+type RulesVersion = 1 | 2 | 3
 
 const hpPerSecond = (v: number, baseSpeed: number, lateRace: boolean, gutsMod: number): number =>
   ((20 * (v - baseSpeed + 12) ** 2) / 144) * (lateRace ? gutsMod : 1)
@@ -131,7 +144,7 @@ function randomPhaseTriggers(condition: RaceCondition | null, rng: Rng): RandomP
   }))
 }
 
-function initRunner(input: RaceRunnerInput, distance: number, rng: Rng, raceSeed: number, skillsEnabled: boolean): RunnerState {
+function initRunner(input: RaceRunnerInput, distance: number, rng: Rng, raceSeed: number, rulesVersion: RulesVersion): RunnerState {
   const guts = Math.max(1, effectiveStat(input.stats.guts))
   const stamina = effectiveStat(input.stats.stamina)
   const baseSpeed = baseSpeedFor(distance)
@@ -158,7 +171,7 @@ function initRunner(input: RaceRunnerInput, distance: number, rng: Rng, raceSeed
     minSpeed: 0.85 * baseSpeed + Math.sqrt(200 * guts) * 0.001,
     gutsMod: 1 + 200 / Math.sqrt(600 * guts),
     lastPhase: 0,
-    skills: skillsEnabled ? (input.skills ?? []).filter(raceSkillSupported).map((skill, skillIndex) => {
+    skills: rulesVersion >= 2 ? (input.skills ?? []).filter(raceSkillSupported).map((skill, skillIndex) => {
       const skillRng = createRng((raceSeed ^ Math.imul(input.gate + 1, 0x9e3779b9) ^ Math.imul(skillIndex + 1, 0x85ebca6b)) >>> 0)
       return {
         skill,
@@ -174,6 +187,8 @@ function initRunner(input: RaceRunnerInput, distance: number, rng: Rng, raceSeed
       }
     }) : [],
     activeEffects: [],
+    pack: rulesVersion >= 3 ? createPackState(input.gate) : null,
+    packRng: createRng((raceSeed ^ Math.imul(input.gate + 1, 0x27d4eb2d) ^ 0x165667b1) >>> 0),
   }
 }
 
@@ -201,21 +216,31 @@ function decideSpurt(r: RunnerState, distance: number, rng: Rng): void {
   r.spurtMaxed = false
 }
 
-function activeModifier(r: RunnerState, kind: ActiveEffect['kind'], tick: number): number {
-  r.activeEffects = r.activeEffects.filter((effect) => effect.untilTick > tick)
+function activeModifier(r: RunnerState, kind: ActiveEffect['kind']): number {
   return r.activeEffects.filter((effect) => effect.kind === kind).reduce((sum, effect) => sum + effect.amount, 0)
 }
 
-function targetSpeed(r: RunnerState, phase: number, distance: number, tick: number): number {
+function expireActiveEffects(r: RunnerState, tick: number, rulesVersion: RulesVersion): void {
+  const expired = r.activeEffects.filter((effect) => effect.untilTick <= tick)
+  if (rulesVersion >= 3) {
+    for (const effect of expired) if (effect.kind === 'current-speed-natural') r.v = Math.max(0, r.v + effect.amount)
+  }
+  r.activeEffects = r.activeEffects.filter((effect) => effect.untilTick > tick)
+}
+
+function targetSpeed(r: RunnerState, phase: number, distance: number, positionCoefficient = 1): number {
   const baseSpeed = baseSpeedFor(distance)
   if (r.hpEmpty) return r.minSpeed
-  const target =
+  const baseTarget =
     phase >= 2 && r.spurt !== null
       ? r.spurt
       : baseSpeed * SPEED_COEF[r.input.strategy][Math.min(phase, 2) as 0 | 1 | 2] + baseSpeed * r.sectionRandom
-  const modified = target + activeModifier(r, 'target-speed', tick)
+  const modified = baseTarget * positionCoefficient + activeModifier(r, 'target-speed')
   return r.startDash ? modified : Math.max(modified, r.minSpeed)
 }
+
+const actualSpeed = (r: RunnerState): number =>
+  Math.max(0, r.v + activeModifier(r, 'current-speed') + activeModifier(r, 'current-speed-natural'))
 
 const strategyNumber = (strategy: Strategy): number => ({ front: 1, pace: 2, late: 3, end: 4 })[strategy]
 const distanceType = (distance: number): number => distance <= 1400 ? 1 : distance <= 1800 ? 2 : distance <= 2400 ? 3 : 4
@@ -230,30 +255,56 @@ function skillContext(
   order: number,
   runnerCount: number,
   time: number,
+  field: readonly PackRunnerSnapshot[] | null,
+  runnerIndex: number,
 ): Record<string, number> {
   const { distance } = course
   const phase = phaseAt(r.d, distance)
   const share = r.d / distance
   const phaseShare = phase === 0 ? share * 6 : phase === 1 ? (share - 1 / 6) * 2 : phase === 2 ? (share - 2 / 3) * 6 : (share - 5 / 6) * 6
+  const layout = course.layout ?? { corners: [], straights: [{ start: 0, end: distance }] }
+  const corner = layout.corners.find((segment) => r.d >= segment.start && r.d < segment.end)
+  const finalCorner = layout.corners.at(-1)
+  const finalCornerStarted = finalCorner ? r.d >= finalCorner.start : false
+  const pack = r.pack
+  const self = field?.find((snapshot) => snapshot.index === runnerIndex)
+  const sorted = field ? [...field].sort((left, right) => right.distance - left.distance || left.index - right.index) : []
+  const leader = sorted[0]
+  const tail = sorted.at(-1)
+  const ahead = self ? sorted.filter((other) => other.distance > self.distance).at(-1) : undefined
+  const behind = self ? sorted.find((other) => other.distance < self.distance) : undefined
+  const spread = leader && tail ? leader.distance - tail.distance : 0
   return {
     always: 1,
+    bashin_diff_behind: self && behind ? (self.distance - behind.distance) / METERS_PER_LENGTH : 999,
+    bashin_diff_infront: self && ahead ? (ahead.distance - self.distance) / METERS_PER_LENGTH : 999,
     base_guts: r.guts,
     base_power: r.power,
     base_speed: r.speedStat,
     base_stamina: r.stamina,
     base_wiz: r.wit,
     course_distance: distance,
+    corner: corner?.number ?? 0,
+    distance_diff_rate: self && leader && spread > 0 ? ((leader.distance - self.distance) / spread) * 100 : 0,
     distance_rate: share * 100,
     distance_type: distanceType(distance),
     furlong: Math.floor(r.d / 200),
     ground_type: course.surface === 'turf' ? 1 : 2,
     hp_per: (r.hp / r.maxHp) * 100,
+    blocked_front: pack?.frontBlocker === null || pack === null ? 0 : 1,
+    blocked_side_continuetime: (pack?.blockedSideTicks ?? 0) / TICK_RATE,
+    change_order_onetime: pack?.orderDelta ?? 0,
+    change_order_up_end_after: pack?.passesAfterFinalLeg ?? 0,
     is_badstart: r.startDelay >= LATE_START_THRESHOLD ? 1 : 0,
     is_goodstart: r.startDelay < LATE_START_THRESHOLD ? 1 : 0,
+    is_finalcorner: finalCornerStarted ? 1 : 0,
+    is_finalcorner_laterhalf: finalCorner && r.d >= (finalCorner.start + finalCorner.end) / 2 && r.d < finalCorner.end ? 1 : 0,
     is_lastspurt: phase === 3 ? 1 : 0,
+    is_overtake: pack?.overtakeTarget === null || pack === null ? 0 : 1,
     lastspurt: r.spurt === null ? 0 : r.spurtMaxed ? 2 : 1,
     order,
     order_rate: (order / runnerCount) * 100,
+    near_count: self && field ? nearCount(self, field) : 0,
     phase,
     phase_firsthalf: phaseShare < 0.5 ? 1 : 0,
     phase_laterhalf: phaseShare >= 0.5 ? 1 : 0,
@@ -261,6 +312,7 @@ function skillContext(
     remain_distance: Math.max(0, distance - r.d),
     running_style: strategyNumber(r.input.strategy),
     season: course.season ?? 0,
+    temptation_count: 0,
     time,
   }
 }
@@ -271,6 +323,8 @@ function activateSkills(
   tick: number,
   context: Readonly<Record<string, number>>,
   events: RaceEvent[],
+  rulesVersion: RulesVersion,
+  courseDistance: number,
 ): void {
   for (const runtime of r.skills) {
     if (runtime.resolved) continue
@@ -287,14 +341,15 @@ function activateSkills(
       if (!matches) continue
       runtime.resolved = true
       if (runtime.skill.activation === 'wit' && runtime.rng.next() >= skillActivationChance(r.wit)) break
-      const untilTick = group.duration === -1
+      const duration = rulesVersion >= 3 && group.duration >= 0 ? group.duration * courseDistance / 1_000 : group.duration
+      const untilTick = duration === -1
         ? Number.MAX_SAFE_INTEGER
-        : tick + Math.max(1, Math.round(group.duration * TICK_RATE))
+        : tick + Math.max(1, Math.round(duration * TICK_RATE))
       for (const effect of group.effects) {
         if (effect.kind === 'recovery') {
           r.hp = Math.min(r.maxHp, r.hp + r.maxHp * effect.amount)
           if (r.hp > 0) r.hpEmpty = false
-        } else if (effect.kind === 'current-speed') {
+        } else if (effect.kind === 'current-speed' && rulesVersion < 3) {
           r.v = Math.max(0, r.v + effect.amount)
         } else {
           r.activeEffects.push({ kind: effect.kind, amount: effect.amount, untilTick })
@@ -315,11 +370,11 @@ function activateSkills(
   }
 }
 
-function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeline {
+function simulateRaceRules(input: RaceInput, rulesVersion: RulesVersion): RaceTimeline {
   assertRaceInput(input)
   const { distance } = input.course
   const rng = createRng(input.seed)
-  const runners = input.runners.map((runner) => initRunner(runner, distance, rng, input.seed, skillsEnabled))
+  const runners = input.runners.map((runner) => initRunner(runner, distance, rng, input.seed, rulesVersion))
   const count = runners.length
   const baseSpeed = baseSpeedFor(distance)
   const events: RaceEvent[] = []
@@ -327,11 +382,13 @@ function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeli
   const distances: number[] = []
   const speeds: number[] = []
   const hps: number[] = []
+  const lanes: number[] = []
   const record = () => {
     for (const r of runners) {
       distances.push(r.d)
-      speeds.push(r.finishTime === null && r.d > 0 ? r.v : 0)
+      speeds.push(r.finishTime === null && r.d > 0 ? (rulesVersion >= 3 ? actualSpeed(r) : r.v) : 0)
       hps.push(Math.max(0, r.hp / r.maxHp))
+      if (rulesVersion >= 3) lanes.push(r.pack!.lane)
     }
   }
 
@@ -350,6 +407,61 @@ function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeli
       .map((runner, index) => ({ index, distance: runner.d }))
       .sort((left, right) => right.distance - left.distance || left.index - right.index)
     const places = new Map(order.map((item, index) => [item.index, index + 1]))
+    runners.forEach((runner) => expireActiveEffects(runner, tick, rulesVersion))
+    const snapshots: PackRunnerSnapshot[] | null = rulesVersion >= 3
+      ? runners.map((runner, index) => {
+        const phase = phaseAt(runner.d, distance)
+        return {
+          index,
+          distance: runner.d,
+          speed: actualSpeed(runner),
+          targetSpeed: targetSpeed(runner, phase, distance),
+          power: runner.power,
+          wit: runner.wit,
+          strategy: runner.input.strategy,
+          lane: runner.pack!.lane,
+          hpEmpty: runner.hpEmpty,
+          hasSpeedEffect: activeModifier(runner, 'target-speed') > 0 || activeModifier(runner, 'current-speed') > 0 ||
+            activeModifier(runner, 'current-speed-natural') > 0,
+        }
+      })
+      : null
+    const packDecisions: (PackDecision | null)[] = runners.map(() => null)
+    if (snapshots) {
+      const orderedIndexes = order.map((entry) => entry.index)
+      runners.forEach((runner, index) => {
+        if (runner.finishTime !== null || time + TICK_SECONDS <= runner.startDelay) return
+        const state = runner.pack!
+        const decision = updatePackRunner(
+          state,
+          snapshots[index]!,
+          snapshots,
+          orderedIndexes,
+          sectionAt(runner.d, distance),
+          phaseAt(runner.d, distance),
+          distance,
+          tick,
+          runner.packRng,
+        )
+        packDecisions[index] = decision
+        if (decision.modeChanged) events.push({ tick, runner: index, type: 'position-mode', positionMode: state.mode })
+        if (decision.blockChanged) events.push({
+          tick,
+          runner: index,
+          type: 'blocked',
+          value: decision.frontBlocker === null ? 0 : 1,
+          targetRunner: decision.frontBlocker ?? undefined,
+        })
+        if (decision.overtakeChanged || decision.overtakeCompleted) events.push({
+          tick,
+          runner: index,
+          type: 'overtake',
+          value: decision.overtakeCompleted ? 2 : decision.overtakeTarget === null ? 0 : 1,
+          targetRunner: decision.overtakeTarget ?? undefined,
+        })
+        if (decision.laneChanged) events.push({ tick, runner: index, type: 'lane-change', value: state.targetLane })
+      })
+    }
     runners.forEach((r, i) => {
       if (r.finishTime !== null) return
       // The gate opens at `startDelay`; only the remainder of this tick counts as running time.
@@ -369,9 +481,22 @@ function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeli
         events.push({ tick, runner: i, type: 'spurt', value: r.spurt ?? 0 })
       }
 
-      if (skillsEnabled) activateSkills(r, i, tick, skillContext(r, input.course, places.get(i)!, count, time), events)
+      // Most synthetic/baseline fields are skillless. Avoid building the comparatively rich R3 context when there is
+      // nothing to activate; this keeps precomputation inside the existing full-field performance budget.
+      if (rulesVersion >= 2 && r.skills.length > 0) {
+        activateSkills(
+          r,
+          i,
+          tick,
+          skillContext(r, input.course, places.get(i)!, count, time, snapshots, i),
+          events,
+          rulesVersion,
+          distance,
+        )
+      }
 
-      const target = targetSpeed(r, phase, distance, tick)
+      const decision = packDecisions[i]
+      const target = targetSpeed(r, phase, distance, decision?.positionCoefficient ?? 1)
       if (r.v < target) {
         const p = Math.min(phase, 2) as 0 | 1 | 2
         let accel =
@@ -380,7 +505,7 @@ function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeli
           ACCEL_COEF[r.input.strategy][p] *
           SURFACE_APT_ACCEL[r.input.aptitude.surface] *
           DISTANCE_APT_ACCEL[r.input.aptitude.distance]
-        accel += activeModifier(r, 'acceleration', tick)
+        accel += activeModifier(r, 'acceleration')
         if (r.startDash) accel += START_DASH_ACCEL
         r.v = Math.min(target, r.v + accel * dt)
       } else if (r.v > target) {
@@ -392,9 +517,16 @@ function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeli
         events.push({ tick, runner: i, type: 'start-dash-end' })
       }
 
+      if (decision?.speedCap !== null && decision?.speedCap !== undefined && actualSpeed(r) > decision.speedCap) {
+        const currentModifier = activeModifier(r, 'current-speed') + activeModifier(r, 'current-speed-natural')
+        r.v = Math.max(0, decision.speedCap - currentModifier)
+      }
+
       const before = r.d
-      r.d += r.v * dt
-      r.hp -= hpPerSecond(r.v, baseSpeed, phase >= 2, r.gutsMod) * dt
+      const traveledSpeed = rulesVersion >= 3 ? actualSpeed(r) : r.v
+      r.d += traveledSpeed * dt
+      const packHpModifier = r.pack?.mode === 'pace-down' ? 0.6 : 1
+      r.hp -= hpPerSecond(r.v, baseSpeed, phase >= 2, r.gutsMod) * packHpModifier * dt
       if (!r.hpEmpty && r.hp <= 0) {
         r.hp = 0
         r.hpEmpty = true
@@ -407,11 +539,12 @@ function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeli
       }
       r.lastPhase = nowPhase
       if (r.d >= distance) {
-        r.finishTime = runStart + (distance - before) / Math.max(r.v, 0.001)
+        r.finishTime = runStart + (distance - before) / Math.max(traveledSpeed, 0.001)
         r.d = distance
         events.push({ tick, runner: i, type: 'finish', value: r.finishTime })
       }
     })
+    if (snapshots) resolveOverlaps(runners.map((runner) => runner.pack!), snapshots)
     record()
   }
 
@@ -423,16 +556,20 @@ function simulateRaceRules(input: RaceInput, skillsEnabled: boolean): RaceTimeli
     distance: Float32Array.from(distances),
     speed: Float32Array.from(speeds),
     hp: Float32Array.from(hps),
+    ...(rulesVersion >= 3 ? { lane: Float32Array.from(lanes) } : {}),
     events,
     results: rankRunners(runners),
   }
 }
 
-/** Current race rules. New mechanics belong here and must not mutate the legacy replay path. */
-export const simulateRace = (input: RaceInput): RaceTimeline => simulateRaceRules(input, true)
+/** Current engine-v3 race rules. */
+export const simulateRace = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 3)
+
+/** Frozen T006 skill rules for append-only engine-v2 result replay. */
+export const simulateRaceV2 = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 2)
 
 /** Frozen T005 skillless rules for append-only engine-v1 result replay. */
-export const simulateRaceV1 = (input: RaceInput): RaceTimeline => simulateRaceRules(input, false)
+export const simulateRaceV1 = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 1)
 
 function rankRunners(runners: RunnerState[]): RunnerResult[] {
   const order = runners
@@ -450,6 +587,7 @@ function rankRunners(runners: RunnerState[]): RunnerResult[] {
       startDelay: r.startDelay,
       spurtSpeed: r.spurt ?? 0,
       spurtMaxed: r.spurtMaxed,
+      ...(r.pack ? { pack: r.pack.metrics } : {}),
     }
   })
 }

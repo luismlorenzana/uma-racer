@@ -88,12 +88,25 @@ export interface RaceTemplate {
 export interface CourseTemplate {
   id: string
   trackId: string
+  /** Imported distance-category code, not the course length in meters. */
   distance: number
   terrain: number
   turn: number
-  corners: unknown
-  straights: unknown
+  corners: CourseCorner[]
+  straights: CourseStraight[]
   slopes: unknown
+}
+
+export interface CourseCorner {
+  start: number
+  end: number
+  number: number
+}
+
+export interface CourseStraight {
+  start: number
+  end: number
+  frontType: number
 }
 
 export interface ContentManifestFile {
