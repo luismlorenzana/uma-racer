@@ -67,6 +67,8 @@ export interface SkillTemplate {
   activation?: number | null
   conditions: SkillCondition[]
   inheritedSkillId: string | null
+  /** Normal white counterpart used when a directly learned gold skill becomes inheritable. */
+  normalSkillId: string | null
 }
 
 export type RaceDirection = 'right' | 'left' | 'straight'

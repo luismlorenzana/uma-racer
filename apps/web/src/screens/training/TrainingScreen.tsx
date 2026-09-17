@@ -1,6 +1,8 @@
 import {
   EXP_TO_NEXT_TRAINING_LEVEL,
   MAX_TRAINING_LEVEL,
+  LEVELS_PER_SCENARIO,
+  SCENARIOS,
   STATS,
   isGateLevel,
   type Facility,
@@ -128,6 +130,10 @@ export function TrainingScreen() {
   if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Training…" detail="Loading private content and your local save." />
   if (!uma) return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
+  if (isGateLevel(uma.level)) {
+    const final = uma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO
+    return <ScreenState title={final ? 'Latest scenario complete' : 'Start the next scenario'} detail={final ? 'This Uma has completed every currently available scenario.' : 'Review the snapshot and promotion before the next Opening Training.'} action={{ label: final ? 'Back to profile' : 'Promote', to: final ? `/stable/${encodeURIComponent(umaId)}` : `/scenario/${encodeURIComponent(umaId)}/start` }} />
+  }
   if (view?.status === 'empty-deck') return <ScreenState title="Build a support deck first" detail="Training uses the ordered cards you choose on this Uma's profile." action={{ label: 'Edit deck', to: `/stable/${encodeURIComponent(umaId)}/deck` }} />
   if (!view || view.status === 'error') {
     return <ScreenState title="Training needs attention" detail={error ?? (view?.status === 'error' ? view.message : 'Training could not be prepared.')} action={{ label: 'Back to profile', to: `/stable/${encodeURIComponent(umaId)}` }} />

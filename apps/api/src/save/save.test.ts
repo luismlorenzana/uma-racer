@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LocalSaveRepository } from './local-save.repository'
-import { MAX_SYNC_OPERATIONS, parseSyncRequest } from './save.types'
+import { MAX_SYNC_OPERATIONS, parseSyncRequest, resolveUpserts, type EntityRecord } from './save.types'
 
 describe('LocalSaveRepository sync', () => {
   let dir: string
@@ -88,6 +88,30 @@ describe('parseSyncRequest', () => {
       data: { resource: 'card-coupons', delta: -1, reason: 'card-coupon-redeem', localDay: '2026-01-01', createdAt: 2 },
       createdAt: 2,
     }] })).toMatchObject({ appends: [{ kind: 'ledger', id: 'card-coupon-redeem:synthetic-card' }] })
+  })
+
+  it('accepts v2 profiles and never lets a v1 write replace v2', () => {
+    const v2 = {
+      schemaVersion: 2,
+      tickets: 50,
+      cardCoupons: 3,
+      umaCoupons: 0,
+      umaShards: 0,
+      lastDailyGrant: null,
+      featuredUmaId: null,
+      starterSeedContentVersion: 'synthetic-v2',
+      createdAt: 1,
+    }
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 4, data: v2 }] })).toMatchObject({
+      upserts: [{ kind: 'profile', id: 'main', data: { schemaVersion: 2 } }],
+    })
+    const current: EntityRecord = { kind: 'profile', id: 'main', version: 4, data: v2, deleted: false, updatedAt: 1 }
+    const legacy = { ...v2, schemaVersion: 1 }
+    const resolved = resolveUpserts(new Map([['profile/main', current]]), [
+      { kind: 'profile', id: 'main', baseVersion: 4, data: legacy },
+    ], 2)
+    expect(resolved.writes).toEqual([])
+    expect(resolved.conflicts).toEqual([current])
   })
 
   it('strictly validates progression race result appends', () => {

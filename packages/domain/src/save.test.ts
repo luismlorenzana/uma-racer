@@ -5,6 +5,8 @@ import {
   createInitialSave,
   createPlayerProfile,
   createUmaSave,
+  migratePlayerProfileV1,
+  migrateUmaSaveV1,
   parseCardSave,
   parsePlayerProfile,
   parsePlayerProfileOrThrow,
@@ -131,8 +133,31 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, trainingLevel: 11 })).toBeNull()
     expect(parseUmaSave({ ...save, deckCardIds: ['c1', 'c1'] })).toBeNull()
     expect(parseCardSave({ templateId: 'c1', level: 6, exp: 0, limitBreak: 0, maxCouponGranted: false })).toBeNull()
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 2 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 2 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 3 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 3 })).toThrow(/App update required/)
+  })
+
+  it('migrates v1 profiles and Umas losslessly into explicit v2 defaults', () => {
+    const profileV1 = { ...createPlayerProfile('v1', 1), schemaVersion: 1 as const, tickets: 77 }
+    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 2 })
+    const current = createUmaSave(uma('u1'))
+    const { schemaVersion: _schemaVersion, scenarioStarted: _scenarioStarted, skillHistory: _skillHistory,
+      currentParents: _currentParents, parentSnapshot: _parentSnapshot, goalPlanVersion: _goalPlanVersion,
+      scenarioJourneys: _scenarioJourneys, ...legacy } = current
+    const migrated = migrateUmaSaveV1({ ...legacy, level: 20 })
+    expect(migrated).toMatchObject({
+      schemaVersion: 2, level: 20, scenarioStarted: true, currentParents: [], parentSnapshot: null,
+      goalPlanVersion: 0, scenarioJourneys: [],
+      skillHistory: [{ skillId: 'skill-u1', origin: 'own-unique', sourceId: 'u1', tier: 2 }],
+    })
+    expect(parseUmaSave(migrated)).toEqual(migrated)
+  })
+
+  it('strictly rejects duplicate histories, recursive parents, and malformed journeys', () => {
+    const save = createUmaSave(uma('u1'))
+    expect(parseUmaSave({ ...save, skillHistory: [...save.skillHistory, ...save.skillHistory] })).toBeNull()
+    expect(parseUmaSave({ ...save, currentParents: [{ umaId: 'p1' }] })).toBeNull()
+    expect(parseUmaSave({ ...save, scenarioJourneys: [{ tier: 1, tracking: 'tracked', state: 'active', completedAt: null, goals: [] }] })).toBeNull()
   })
 
   it('validates typed sync requests and snapshots', () => {
@@ -160,7 +185,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 2 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 3 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)

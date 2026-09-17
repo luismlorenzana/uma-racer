@@ -124,6 +124,7 @@ const baselineSkills: SkillTemplate[] = [
   iconId: null,
   activation: 0,
   inheritedSkillId: null,
+  normalSkillId: null,
   conditions: [{
     precondition: null,
     condition: id === 'synthetic-speed-b' ? 'phase_random==2' : 'phase_random==1',
@@ -292,5 +293,23 @@ describe('persistent progression race', () => {
       'raceResults/race:u1:0',
       'umas/u1',
     ])
+  })
+
+  it('captures the final-tier snapshot in the max-level race transaction', async () => {
+    const loaded = content()
+    const row = await db.umas.get('u1')
+    await db.umas.put({
+      ...row!,
+      data: { ...row!.data, level: 109, exp: expToNextUmaLevel(109) - 1 },
+    })
+    const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'pace')
+    if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
+    const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)
+    expect(completion.uma).toMatchObject({
+      level: 110,
+      parentSnapshot: { umaId: 'u1', charaId: 'chara-u1', completedTier: 11, takenAt: 100, parents: [] },
+    })
+    const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 200)
+    expect(retry.uma.parentSnapshot?.takenAt).toBe(100)
   })
 })

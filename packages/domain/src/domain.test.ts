@@ -60,6 +60,8 @@ import {
   VISIBLE_DISTANCE,
   umaPromotionCost,
   yourForm,
+  OVERFLOW_BANK_LEVELS,
+  PROMOTION_BONUS_PER_STAT,
 } from './index'
 
 describe('scenarios', () => {
@@ -238,6 +240,8 @@ describe('progression and economy', () => {
   it('prices promotions and limit breaks in tickets', () => {
     expect(umaPromotionCost(1)).toBe(25)
     expect(umaPromotionCost(10)).toBe(250)
+    expect(PROMOTION_BONUS_PER_STAT).toBe(10)
+    expect(OVERFLOW_BANK_LEVELS).toBe(1)
     expect([1, 2, 3, 4].map(cardLimitBreakCost).reduce((a, b) => a + b)).toBe(200)
   })
 

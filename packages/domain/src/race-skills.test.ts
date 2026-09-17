@@ -50,6 +50,7 @@ function skill(id: string, kind: SkillTemplate['kind'] = 'white', costSp: number
     iconId: null,
     activation: 0,
     inheritedSkillId: null,
+    normalSkillId: null,
     conditions: [{
       precondition: 'phase>=1',
       condition: 'distance_rate>=50&order_rate<=50@remain_distance<=200',

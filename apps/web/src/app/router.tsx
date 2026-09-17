@@ -57,6 +57,11 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/training/TrainingScreen')).TrainingScreen }),
   },
   {
+    path: 'scenario/:umaId/start',
+    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Scenario Start" />,
+    lazy: async () => ({ Component: (await import('../screens/ScenarioStartScreen')).ScenarioStartScreen }),
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),

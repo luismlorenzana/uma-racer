@@ -5,11 +5,12 @@ import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
 import { parseRaceResultRecord } from './progression-race'
-import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel } from './scenarios'
+import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL, MAX_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type Stats } from './types'
 
-export const SAVE_SCHEMA_VERSION = 1 as const
+export const SAVE_SCHEMA_VERSION = 2 as const
+export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -33,7 +34,48 @@ export interface SkillUnlock {
   sourceId: string | null
 }
 
+export interface SkillHistoryEntry extends SkillUnlock {
+  tier: number
+}
+
+export interface FrozenParent {
+  umaId: string
+  charaId: string
+  completedTier: number
+  takenAt: number
+  inheritedUniqueSkillId: string | null
+  inheritableWhiteSkillIds: string[]
+  aptitudes: Aptitudes
+}
+
+export interface ParentSnapshot extends FrozenParent {
+  parents: FrozenParent[]
+}
+
+export type GoalSlot = 'aptitude' | 'identity' | 'challenge'
+export type GoalStatus = 'active' | 'completed' | 'missed'
+
+export interface ScenarioGoal {
+  id: string
+  slot: GoalSlot
+  raceId: string
+  kind: 'win' | 'win-by-margin'
+  minimumMarginLengths: number
+  status: GoalStatus
+  completedRaceResultId: string | null
+  completedAt: number | null
+}
+
+export interface ScenarioJourney {
+  tier: number
+  tracking: 'tracked' | 'legacy-untracked'
+  state: 'active' | 'completed'
+  completedAt: number | null
+  goals: ScenarioGoal[]
+}
+
 export interface UmaSave {
+  schemaVersion: typeof SAVE_SCHEMA_VERSION
   templateId: string
   level: number
   exp: number
@@ -46,7 +88,20 @@ export interface UmaSave {
   skillLibrary: SkillUnlock[]
   loadoutSkillIds: string[]
   trainingsThisScenario: number
+  scenarioStarted: boolean
+  skillHistory: SkillHistoryEntry[]
+  currentParents: FrozenParent[]
+  parentSnapshot: ParentSnapshot | null
+  goalPlanVersion: number
+  scenarioJourneys: ScenarioJourney[]
 }
+
+export interface LegacyPlayerProfileV1 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION
+}
+
+export interface LegacyUmaSaveV1 extends Omit<UmaSave,
+  'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys'> {}
 
 export interface CardSave {
   templateId: string
@@ -228,16 +283,21 @@ export function assertSaveContent(umas: readonly UmaTemplate[], cards: readonly 
   for (const template of cards) assertSaveCardTemplate(template)
 }
 
-export function parsePlayerProfile(value: unknown): PlayerProfile | null {
-  if (!isObject(value)) return null
-  if (value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
+const PROFILE_KEYS = [
+  'schemaVersion', 'tickets', 'cardCoupons', 'umaCoupons', 'umaShards', 'lastDailyGrant', 'featuredUmaId',
+  'starterSeedContentVersion', 'createdAt',
+] as const
+
+function parsePlayerProfileVersion<T extends 1 | 2>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+  if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
+  if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
   if (value.starterSeedContentVersion !== null && !isId(value.starterSeedContentVersion)) return null
   if (!isTimestamp(value.createdAt)) return null
   return {
-    schemaVersion: SAVE_SCHEMA_VERSION,
+    schemaVersion,
     tickets: value.tickets as number,
     cardCoupons: value.cardCoupons as number,
     umaCoupons: value.umaCoupons as number,
@@ -247,6 +307,20 @@ export function parsePlayerProfile(value: unknown): PlayerProfile | null {
     starterSeedContentVersion: value.starterSeedContentVersion as string | null,
     createdAt: value.createdAt as number,
   }
+}
+
+export function parsePlayerProfile(value: unknown): PlayerProfile | null {
+  return parsePlayerProfileVersion(value, SAVE_SCHEMA_VERSION)
+}
+
+export function parseLegacyPlayerProfileV1(value: unknown): LegacyPlayerProfileV1 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION)
+}
+
+export function migratePlayerProfileV1(value: LegacyPlayerProfileV1): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV1(value)
+  if (!parsed) throw new Error('Legacy player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
 /** Parse a profile at a storage/network boundary without treating an unknown schema as corrupt data. */
@@ -260,17 +334,134 @@ export function parsePlayerProfileOrThrow(value: unknown): PlayerProfile {
 }
 
 function parseSkillUnlock(value: unknown): SkillUnlock | null {
-  if (!isObject(value) || !isId(value.skillId)) return null
+  if (!isObject(value) || !exactKeys(value, ['skillId', 'origin', 'sourceId']) || !isId(value.skillId)) return null
   if (!['own-unique', 'awakening', 'card', 'inherited'].includes(String(value.origin))) return null
   if (value.sourceId !== null && !isId(value.sourceId)) return null
   return { skillId: value.skillId, origin: value.origin as SkillOrigin, sourceId: value.sourceId as string | null }
 }
 
-export function parseUmaSave(value: unknown): UmaSave | null {
-  if (!isObject(value) || !isId(value.templateId)) return null
+function parseSkillHistoryEntry(value: unknown): SkillHistoryEntry | null {
+  if (!isObject(value) || !exactKeys(value, ['skillId', 'origin', 'sourceId', 'tier'])) return null
+  const unlock = parseSkillUnlock({ skillId: value.skillId, origin: value.origin, sourceId: value.sourceId })
+  if (!unlock || !isPositiveInt(value.tier) || value.tier > SCENARIOS.length) return null
+  return { ...unlock, tier: value.tier }
+}
+
+function parseFrozenParent(value: unknown): FrozenParent | null {
+  if (!isObject(value) || !exactKeys(value, [
+    'umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes',
+  ])) return null
+  const aptitudes = parseAptitudes(value.aptitudes)
+  const whiteIds = parseUniqueIds(value.inheritableWhiteSkillIds)
+  if (
+    !isId(value.umaId) || !isId(value.charaId) || !isPositiveInt(value.completedTier) ||
+    value.completedTier > SCENARIOS.length || !isTimestamp(value.takenAt) ||
+    (value.inheritedUniqueSkillId !== null && !isId(value.inheritedUniqueSkillId)) || !whiteIds || !aptitudes
+  ) return null
+  return {
+    umaId: value.umaId,
+    charaId: value.charaId,
+    completedTier: value.completedTier,
+    takenAt: value.takenAt,
+    inheritedUniqueSkillId: value.inheritedUniqueSkillId as string | null,
+    inheritableWhiteSkillIds: whiteIds,
+    aptitudes,
+  }
+}
+
+function parseFrozenParents(value: unknown): FrozenParent[] | null {
+  if (!Array.isArray(value) || value.length > 2) return null
+  const parents = value.map(parseFrozenParent)
+  if (parents.some((parent) => parent === null)) return null
+  const valid = parents as FrozenParent[]
+  if (new Set(valid.map((parent) => parent.umaId)).size !== valid.length) return null
+  if (new Set(valid.map((parent) => parent.charaId)).size !== valid.length) return null
+  return valid
+}
+
+function parseParentSnapshot(value: unknown): ParentSnapshot | null {
+  if (!isObject(value) || !exactKeys(value, [
+    'umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes', 'parents',
+  ])) return null
+  const parent = parseFrozenParent({
+    umaId: value.umaId,
+    charaId: value.charaId,
+    completedTier: value.completedTier,
+    takenAt: value.takenAt,
+    inheritedUniqueSkillId: value.inheritedUniqueSkillId,
+    inheritableWhiteSkillIds: value.inheritableWhiteSkillIds,
+    aptitudes: value.aptitudes,
+  })
+  const parents = parseFrozenParents(value.parents)
+  return parent && parents ? { ...parent, parents } : null
+}
+
+const GOAL_SLOTS: readonly GoalSlot[] = ['aptitude', 'identity', 'challenge']
+
+function parseScenarioGoal(value: unknown, tier: number): ScenarioGoal | null {
+  if (!isObject(value) || !exactKeys(value, [
+    'id', 'slot', 'raceId', 'kind', 'minimumMarginLengths', 'status', 'completedRaceResultId', 'completedAt',
+  ])) return null
+  if (!GOAL_SLOTS.includes(value.slot as GoalSlot) || !isId(value.raceId)) return null
+  if (!['win', 'win-by-margin'].includes(String(value.kind))) return null
+  if (typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0) return null
+  if (value.kind === 'win' && value.minimumMarginLengths !== 0) return null
+  if (value.kind === 'win-by-margin' && value.minimumMarginLengths <= 0) return null
+  if (!['active', 'completed', 'missed'].includes(String(value.status))) return null
+  if (value.id !== `goal:${tier}:${String(value.slot)}`) return null
+  const completed = value.status === 'completed'
+  if (completed !== (isId(value.completedRaceResultId) && isTimestamp(value.completedAt))) return null
+  if (!completed && (value.completedRaceResultId !== null || value.completedAt !== null)) return null
+  return {
+    id: value.id,
+    slot: value.slot as GoalSlot,
+    raceId: value.raceId,
+    kind: value.kind as ScenarioGoal['kind'],
+    minimumMarginLengths: value.minimumMarginLengths,
+    status: value.status as GoalStatus,
+    completedRaceResultId: value.completedRaceResultId as string | null,
+    completedAt: value.completedAt as number | null,
+  }
+}
+
+function parseScenarioJourney(value: unknown): ScenarioJourney | null {
+  if (!isObject(value) || !exactKeys(value, ['tier', 'tracking', 'state', 'completedAt', 'goals'])) return null
+  if (!isPositiveInt(value.tier) || value.tier > SCENARIOS.length) return null
+  if (!['tracked', 'legacy-untracked'].includes(String(value.tracking)) || !['active', 'completed'].includes(String(value.state))) return null
+  if (value.state === 'active' ? value.completedAt !== null : !isTimestamp(value.completedAt)) return null
+  if (!Array.isArray(value.goals)) return null
+  const goals = value.goals.map((goal) => parseScenarioGoal(goal, value.tier as number))
+  if (goals.some((goal) => goal === null)) return null
+  const validGoals = goals as ScenarioGoal[]
+  if (value.tracking === 'legacy-untracked' && validGoals.length !== 0) return null
+  if (value.tracking === 'tracked') {
+    if (validGoals.length !== GOAL_SLOTS.length) return null
+    if (new Set(validGoals.map((goal) => goal.slot)).size !== GOAL_SLOTS.length) return null
+  }
+  if (value.state === 'completed' && validGoals.some((goal) => goal.status === 'active')) return null
+  return {
+    tier: value.tier,
+    tracking: value.tracking as ScenarioJourney['tracking'],
+    state: value.state as ScenarioJourney['state'],
+    completedAt: value.completedAt as number | null,
+    goals: validGoals,
+  }
+}
+
+const LEGACY_UMA_KEYS = [
+  'templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds',
+  'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario',
+] as const
+const UMA_V2_KEYS = [
+  'schemaVersion', ...LEGACY_UMA_KEYS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot',
+  'goalPlanVersion', 'scenarioJourneys',
+] as const
+
+function parseUmaCore(value: Record<string, unknown>): LegacyUmaSaveV1 | null {
+  if (!isId(value.templateId)) return null
   if (!isPositiveInt(value.level) || value.level > SCENARIOS.length * LEVELS_PER_SCENARIO || !isNonNegativeInt(value.exp)) return null
-  const expLimit = expToNextUmaLevel(value.level) + (isGateLevel(value.level) ? expToNextUmaLevel(value.level + 1) : -1)
-  if (value.exp > expLimit) return null
+  const maxLevel = SCENARIOS.length * LEVELS_PER_SCENARIO
+  if (value.level === maxLevel ? value.exp !== 0 : isGateLevel(value.level) ? value.exp > expToNextUmaLevel(value.level + 1) : value.exp >= expToNextUmaLevel(value.level)) return null
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL || !isNonNegativeInt(value.trainingExp)) return null
   if (
     (value.trainingLevel === MAX_TRAINING_LEVEL && value.trainingExp !== 0) ||
@@ -301,6 +492,59 @@ export function parseUmaSave(value: unknown): UmaSave | null {
     skillLibrary: skills,
     loadoutSkillIds,
     trainingsThisScenario: value.trainingsThisScenario,
+  }
+}
+
+export function parseLegacyUmaSaveV1(value: unknown): LegacyUmaSaveV1 | null {
+  return isObject(value) && exactKeys(value, LEGACY_UMA_KEYS) ? parseUmaCore(value) : null
+}
+
+export function migrateUmaSaveV1(value: LegacyUmaSaveV1): UmaSave {
+  const parsed = parseLegacyUmaSaveV1(value)
+  if (!parsed) throw new Error('Legacy Uma save is malformed')
+  const tier = tierOfLevel(parsed.level)
+  return {
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    ...parsed,
+    scenarioStarted: true,
+    skillHistory: parsed.skillLibrary.map((unlock) => ({ ...unlock, tier })),
+    currentParents: [],
+    parentSnapshot: null,
+    goalPlanVersion: 0,
+    scenarioJourneys: [],
+  }
+}
+
+export function parseUmaSave(value: unknown): UmaSave | null {
+  if (!isObject(value) || !exactKeys(value, UMA_V2_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
+  const legacyShape = Object.fromEntries(LEGACY_UMA_KEYS.map((key) => [key, value[key]]))
+  const base = parseUmaCore(legacyShape)
+  if (!base || typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion)) return null
+  if (!Array.isArray(value.skillHistory) || !Array.isArray(value.scenarioJourneys)) return null
+  const skillHistory = value.skillHistory.map(parseSkillHistoryEntry)
+  if (skillHistory.some((entry) => entry === null)) return null
+  const history = skillHistory as SkillHistoryEntry[]
+  if (new Set(history.map((entry) => `${entry.tier}:${entry.skillId}`)).size !== history.length) return null
+  if (base.skillLibrary.some((unlock) => !history.some((entry) => entry.skillId === unlock.skillId))) return null
+  const currentParents = parseFrozenParents(value.currentParents)
+  if (!currentParents) return null
+  const parentSnapshot = value.parentSnapshot === null ? null : parseParentSnapshot(value.parentSnapshot)
+  if (value.parentSnapshot !== null && !parentSnapshot) return null
+  if (parentSnapshot && parentSnapshot.umaId !== base.templateId) return null
+  const scenarioJourneys = value.scenarioJourneys.map(parseScenarioJourney)
+  if (scenarioJourneys.some((journey) => journey === null)) return null
+  const journeys = scenarioJourneys as ScenarioJourney[]
+  if (new Set(journeys.map((journey) => journey.tier)).size !== journeys.length) return null
+  if (journeys.filter((journey) => journey.state === 'active').length > 1) return null
+  return {
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    ...base,
+    scenarioStarted: value.scenarioStarted,
+    skillHistory: history,
+    currentParents,
+    parentSnapshot,
+    goalPlanVersion: value.goalPlanVersion,
+    scenarioJourneys: journeys,
   }
 }
 
@@ -351,7 +595,11 @@ export function createPlayerProfile(contentVersion: string, now: number): Player
 
 export function createUmaSave(template: UmaTemplate): UmaSave {
   assertSaveUmaTemplate(template)
+  const skillLibrary: SkillUnlock[] = template.uniqueSkillId
+    ? [{ skillId: template.uniqueSkillId, origin: 'own-unique', sourceId: template.id }]
+    : []
   return {
+    schemaVersion: SAVE_SCHEMA_VERSION,
     templateId: template.id,
     level: 1,
     exp: 0,
@@ -365,11 +613,15 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
       strategy: { ...template.aptitudes.strategy },
     },
     deckCardIds: [],
-    skillLibrary: template.uniqueSkillId
-      ? [{ skillId: template.uniqueSkillId, origin: 'own-unique', sourceId: template.id }]
-      : [],
+    skillLibrary,
     loadoutSkillIds: [],
     trainingsThisScenario: 0,
+    scenarioStarted: true,
+    skillHistory: skillLibrary.map((unlock) => ({ ...unlock, tier: 1 })),
+    currentParents: [],
+    parentSnapshot: null,
+    goalPlanVersion: 0,
+    scenarioJourneys: [],
   }
 }
 
@@ -441,6 +693,22 @@ function parseGenericData(value: unknown): Record<string, unknown> | null {
   return isObject(value) ? value : null
 }
 
+function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
+  if (kind === 'profile') {
+    const current = parsePlayerProfile(value)
+    if (current) return current as unknown as Record<string, unknown>
+    const legacy = parseLegacyPlayerProfileV1(value)
+    return legacy ? migratePlayerProfileV1(legacy) as unknown as Record<string, unknown> : null
+  }
+  if (kind === 'umas') {
+    const current = parseUmaSave(value)
+    if (current) return current as unknown as Record<string, unknown>
+    const legacy = parseLegacyUmaSaveV1(value)
+    return legacy ? migrateUmaSaveV1(legacy) as unknown as Record<string, unknown> : null
+  }
+  return parseEntityData(kind, value)
+}
+
 export function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
   if (kind === 'profile') return parsePlayerProfile(value) as unknown as Record<string, unknown> | null
   if (kind === 'umas') return parseUmaSave(value) as unknown as Record<string, unknown> | null
@@ -503,7 +771,7 @@ function parseEntityRecord(value: unknown): EntityRecord | null {
   if (!isObject(value) || !ENTITY_KINDS.includes(value.kind as EntityKind) || !isId(value.id)) return null
   const kind = value.kind as EntityKind
   if (!isPositiveInt(value.version) || typeof value.deleted !== 'boolean' || !isTimestamp(value.updatedAt)) return null
-  const data = parseEntityData(kind, value.data)
+  const data = parseStoredEntityData(kind, value.data)
   if (!data) return null
   if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id)) return null
   return { kind, id: value.id, version: value.version, data, deleted: value.deleted, updatedAt: value.updatedAt }
@@ -532,13 +800,35 @@ function assertSupportedProfileRecords(records: unknown): void {
   if (!Array.isArray(records)) return
   for (const record of records) {
     if (isObject(record) && record.kind === 'profile' && isObject(record.data)) {
-      parsePlayerProfileOrThrow(record.data)
+      if (!parseLegacyPlayerProfileV1(record.data)) parsePlayerProfileOrThrow(record.data)
+    }
+    if (isObject(record) && record.kind === 'umas' && isObject(record.data) && 'schemaVersion' in record.data) {
+      if (record.data.schemaVersion !== SAVE_SCHEMA_VERSION) {
+        throw new Error(`App update required for save schema ${String(record.data.schemaVersion)}`)
+      }
     }
   }
 }
 
+function assertSnapshotSchemaIsConsistent(records: unknown): void {
+  if (!Array.isArray(records)) return
+  const active = records.filter((record): record is Record<string, unknown> => isObject(record) && record.deleted !== true)
+  const profile = active.find((record) => record.kind === 'profile')
+  if (!profile || !isObject(profile.data)) return
+  const schema = profile.data.schemaVersion
+  if (schema !== LEGACY_SAVE_SCHEMA_VERSION && schema !== SAVE_SCHEMA_VERSION) return
+  for (const record of active) {
+    if (record.kind !== 'umas' || !isObject(record.data)) continue
+    const umaSchema = Object.hasOwn(record.data, 'schemaVersion') ? record.data.schemaVersion : LEGACY_SAVE_SCHEMA_VERSION
+    if (umaSchema !== schema) throw new Error('Server save mixes incompatible schema versions')
+  }
+}
+
 export function parseSaveSnapshotOrThrow(value: unknown): SaveSnapshot {
-  if (isObject(value)) assertSupportedProfileRecords(value.entities)
+  if (isObject(value)) {
+    assertSupportedProfileRecords(value.entities)
+    assertSnapshotSchemaIsConsistent(value.entities)
+  }
   const snapshot = parseSaveSnapshot(value)
   if (!snapshot) throw new Error('Server save response is malformed')
   return snapshot

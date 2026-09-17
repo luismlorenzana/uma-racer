@@ -54,7 +54,7 @@ const effectProfile = (weight: number): Record<CardEffect, number> => Object.fro
 const types = ['speed', 'power', 'stamina', 'wit', 'guts', 'speed'] as const
 const skillTemplates: SkillTemplate[] = types.map((_, index) => ({
   id: `synthetic-hint-${index + 1}`, kind: 'white', name: `Synthetic Hint ${index + 1}`, description: '',
-  costSp: 100, iconId: null, conditions: [], inheritedSkillId: null,
+  costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null,
 }))
 const skills = new Map(skillTemplates.map((skill) => [skill.id, skill]))
 

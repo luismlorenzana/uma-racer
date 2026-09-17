@@ -206,7 +206,7 @@ describe('Training persistence', () => {
     const result = resolveMemoryTraining({
       content: loaded,
       profile: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         tickets: 3,
         cardCoupons: 0,
         umaCoupons: 0,

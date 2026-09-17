@@ -67,9 +67,15 @@ const LEDGER_REASONS = [
   'uma-shard-exchange', 'card-coupon-redeem', 'uma-coupon-redeem',
 ] as const
 const PROFILE_FIELDS = ['schemaVersion', 'tickets', 'cardCoupons', 'umaCoupons', 'umaShards', 'lastDailyGrant', 'featuredUmaId', 'starterSeedContentVersion', 'createdAt'] as const
-const UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds', 'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario'] as const
+const LEGACY_UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds', 'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario'] as const
+const UMA_FIELDS = ['schemaVersion', ...LEGACY_UMA_FIELDS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot', 'goalPlanVersion', 'scenarioJourneys'] as const
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
 const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
+const SKILL_HISTORY_FIELDS = [...SKILL_FIELDS, 'tier'] as const
+const PARENT_FIELDS = ['umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes'] as const
+const SNAPSHOT_FIELDS = [...PARENT_FIELDS, 'parents'] as const
+const JOURNEY_FIELDS = ['tier', 'tracking', 'state', 'completedAt', 'goals'] as const
+const GOAL_FIELDS = ['id', 'slot', 'raceId', 'kind', 'minimumMarginLengths', 'status', 'completedRaceResultId', 'completedAt'] as const
 const LEDGER_FIELDS = ['resource', 'delta', 'reason', 'localDay', 'createdAt'] as const
 const STRATEGIES = ['front', 'pace', 'late', 'end'] as const
 const RACE_RESULT_FIELDS = [
@@ -124,7 +130,7 @@ function parseUniqueIds(value: unknown, max = Number.POSITIVE_INFINITY): string[
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || value.schemaVersion !== 1) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || (value.schemaVersion !== 1 && value.schemaVersion !== 2)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -133,23 +139,89 @@ function parseProfile(value: unknown): Record<string, unknown> | null {
   return value
 }
 
-function parseUma(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, UMA_FIELDS) || !isId(value.templateId) || !isPositiveInt(value.level) || value.level > 110 || !isNonNegativeInt(value.exp)) return null
-  const expToNext = 100 + 25 * (value.level - 1)
-  const expLimit = expToNext + (value.level % 10 === 0 ? 100 + 25 * value.level : -1)
-  if (value.exp > expLimit) return null
-  if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > 10 || !isNonNegativeInt(value.trainingExp)) return null
-  if ((value.trainingLevel === 10 && value.trainingExp !== 0) || (value.trainingLevel < 10 && value.trainingExp >= 100)) return null
-  if (!parseStats(value.stats) || !parseAptitudes(value.aptitudes) || !isNonNegativeInt(value.skillPoints) || !isNonNegativeInt(value.trainingsThisScenario)) return null
+function parseSkill(value: unknown): value is Record<string, unknown> {
+  return isRecord(value) && exactKeys(value, SKILL_FIELDS) && isId(value.skillId) &&
+    SKILL_ORIGINS.includes(value.origin as (typeof SKILL_ORIGINS)[number]) && (value.sourceId === null || isId(value.sourceId))
+}
+
+function parseUmaBase(value: Record<string, unknown>): boolean {
+  if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > 110 || !isNonNegativeInt(value.exp)) return false
+  const expLimit = value.level === 110 ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
+  if (value.exp > expLimit) return false
+  if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > 10 || !isNonNegativeInt(value.trainingExp)) return false
+  if ((value.trainingLevel === 10 && value.trainingExp !== 0) || (value.trainingLevel < 10 && value.trainingExp >= 100)) return false
+  if (!parseStats(value.stats) || !parseAptitudes(value.aptitudes) || !isNonNegativeInt(value.skillPoints) || !isNonNegativeInt(value.trainingsThisScenario)) return false
   const deck = parseUniqueIds(value.deckCardIds, 6)
   const loadout = parseUniqueIds(value.loadoutSkillIds)
-  if (!deck || !loadout || !Array.isArray(value.skillLibrary)) return null
+  if (!deck || !loadout || !Array.isArray(value.skillLibrary)) return false
   const skills = value.skillLibrary
-  if (skills.some((skill) => !isRecord(skill) || !exactKeys(skill, SKILL_FIELDS) || !isId(skill.skillId) || !SKILL_ORIGINS.includes(skill.origin as (typeof SKILL_ORIGINS)[number]) || (skill.sourceId !== null && !isId(skill.sourceId)))) return null
+  if (skills.some((skill) => !parseSkill(skill))) return false
   const skillIds = skills.map((skill) => (skill as Record<string, unknown>).skillId as string)
-  if (new Set(skillIds).size !== skillIds.length) return null
+  if (new Set(skillIds).size !== skillIds.length) return false
   const paid = new Set(skills.filter((skill) => (skill as Record<string, unknown>).origin !== 'own-unique').map((skill) => (skill as Record<string, unknown>).skillId))
-  if (loadout.some((id) => !paid.has(id))) return null
+  return !loadout.some((id) => !paid.has(id))
+}
+
+function parseParent(value: unknown): value is Record<string, unknown> {
+  return isRecord(value) && exactKeys(value, PARENT_FIELDS) && isId(value.umaId) && isId(value.charaId) &&
+    isPositiveInt(value.completedTier) && value.completedTier <= 11 && isNonNegativeInt(value.takenAt) &&
+    (value.inheritedUniqueSkillId === null || isId(value.inheritedUniqueSkillId)) &&
+    parseUniqueIds(value.inheritableWhiteSkillIds) !== null && parseAptitudes(value.aptitudes) !== null
+}
+
+function parseParents(value: unknown): value is Record<string, unknown>[] {
+  if (!Array.isArray(value) || value.length > 2 || value.some((parent) => !parseParent(parent))) return false
+  const parents = value as Record<string, unknown>[]
+  return new Set(parents.map((parent) => parent.umaId)).size === parents.length &&
+    new Set(parents.map((parent) => parent.charaId)).size === parents.length
+}
+
+function parseSnapshot(value: unknown, templateId: string): boolean {
+  if (!isRecord(value) || !exactKeys(value, SNAPSHOT_FIELDS)) return false
+  const { parents, ...parent } = value
+  return parseParent(parent) && parent.umaId === templateId && parseParents(parents)
+}
+
+function parseGoal(value: unknown, tier: number): boolean {
+  if (!isRecord(value) || !exactKeys(value, GOAL_FIELDS) || !['aptitude', 'identity', 'challenge'].includes(String(value.slot)) ||
+    value.id !== `goal:${tier}:${String(value.slot)}` || !isId(value.raceId) || !['win', 'win-by-margin'].includes(String(value.kind)) ||
+    typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0 ||
+    (value.kind === 'win' && value.minimumMarginLengths !== 0) || (value.kind === 'win-by-margin' && value.minimumMarginLengths <= 0) ||
+    !['active', 'completed', 'missed'].includes(String(value.status))) return false
+  const completed = value.status === 'completed'
+  return completed
+    ? isId(value.completedRaceResultId) && isNonNegativeInt(value.completedAt)
+    : value.completedRaceResultId === null && value.completedAt === null
+}
+
+function parseJourney(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value) || !exactKeys(value, JOURNEY_FIELDS) || !isPositiveInt(value.tier) || value.tier > 11 ||
+    !['tracked', 'legacy-untracked'].includes(String(value.tracking)) || !['active', 'completed'].includes(String(value.state)) ||
+    (value.state === 'active' ? value.completedAt !== null : !isNonNegativeInt(value.completedAt)) || !Array.isArray(value.goals)) return false
+  if (value.tracking === 'legacy-untracked') return value.goals.length === 0
+  if (value.goals.length !== 3 || value.goals.some((goal) => !parseGoal(goal, value.tier as number))) return false
+  const goals = value.goals as Record<string, unknown>[]
+  return new Set(goals.map((goal) => goal.slot)).size === 3 &&
+    (value.state !== 'completed' || goals.every((goal) => goal.status !== 'active'))
+}
+
+function parseUma(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) return null
+  if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
+  if (!exactKeys(value, UMA_FIELDS) || value.schemaVersion !== 2 || !parseUmaBase(value)) return null
+  if (typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || !Array.isArray(value.skillHistory) ||
+    !Array.isArray(value.scenarioJourneys) || !parseParents(value.currentParents) ||
+    (value.parentSnapshot !== null && !parseSnapshot(value.parentSnapshot, value.templateId as string))) return null
+  const history = value.skillHistory
+  if (history.some((entry) => !isRecord(entry) || !exactKeys(entry, SKILL_HISTORY_FIELDS) ||
+    !parseSkill({ skillId: entry.skillId, origin: entry.origin, sourceId: entry.sourceId }) || !isPositiveInt(entry.tier) || entry.tier > 11)) return null
+  const historyRows = history as Record<string, unknown>[]
+  if (new Set(historyRows.map((entry) => `${String(entry.tier)}:${String(entry.skillId)}`)).size !== historyRows.length) return null
+  const library = value.skillLibrary as Record<string, unknown>[]
+  if (library.some((unlock) => !historyRows.some((entry) => entry.skillId === unlock.skillId))) return null
+  if (value.scenarioJourneys.some((journey) => !parseJourney(journey))) return null
+  const journeys = value.scenarioJourneys as Record<string, unknown>[]
+  if (new Set(journeys.map((journey) => journey.tier)).size !== journeys.length || journeys.filter((journey) => journey.state === 'active').length > 1) return null
   return value
 }
 
@@ -345,6 +417,16 @@ export function resolveUpserts(
     const key = `${upsert.kind}/${upsert.id}`
     const current = existing.get(key)
     const currentVersion = current?.version ?? 0
+    const currentSchema = current && (current.kind === 'profile' || current.kind === 'umas')
+      ? (current.kind === 'profile' ? current.data.schemaVersion : (current.data.schemaVersion ?? 1))
+      : null
+    const incomingSchema = upsert.kind === 'profile' || upsert.kind === 'umas'
+      ? (upsert.kind === 'profile' ? upsert.data.schemaVersion : (upsert.data.schemaVersion ?? 1))
+      : null
+    if (current && currentSchema === 2 && incomingSchema === 1) {
+      conflicts.push(current)
+      continue
+    }
     if (current && upsert.baseVersion !== currentVersion) {
       conflicts.push(current)
       continue

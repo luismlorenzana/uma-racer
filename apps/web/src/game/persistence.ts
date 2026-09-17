@@ -93,6 +93,19 @@ export async function persistInitial(content: LoadedContent, today: string, now:
 
 export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adopted'> {
   const snapshot = parseSaveSnapshotOrThrow(raw)
+  const legacyKeys = new Set<string>()
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw) && Array.isArray((raw as Record<string, unknown>).entities)) {
+    for (const record of (raw as Record<string, unknown>).entities as unknown[]) {
+      if (typeof record !== 'object' || record === null || Array.isArray(record)) continue
+      const row = record as Record<string, unknown>
+      if ((row.kind === 'profile' || row.kind === 'umas') && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null) {
+        const data = row.data as Record<string, unknown>
+        if (row.kind === 'profile' ? data.schemaVersion === 1 : !Object.hasOwn(data, 'schemaVersion')) {
+          legacyKeys.add(`${row.kind}/${row.id}`)
+        }
+      }
+    }
+  }
   const profileRecords = snapshot.entities.filter((record) => record.kind === 'profile' && !record.deleted)
   if (profileRecords.length === 0) {
     if (snapshot.entities.some((record) => !record.deleted) || snapshot.logs.length > 0) {
@@ -117,6 +130,10 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       } else {
         await db.raceResults.put({ id: record.id, data: record.data, createdAt: record.createdAt })
       }
+    }
+    for (const key of legacyKeys) {
+      const separator = key.indexOf('/')
+      await queueInTransaction(key.slice(0, separator) as EntityKind, key.slice(separator + 1), 'upsert', snapshot.serverTime)
     }
   })
   return 'adopted'
@@ -211,7 +228,7 @@ export async function logRow(kind: LogKind, id: string): Promise<LogRow<object> 
   return { id: row.id, createdAt: row.createdAt, data }
 }
 
-export async function putConflict(record: EntityRecord): Promise<void> {
+export async function putConflict(record: EntityRecord, queueMigrated = false, now = Date.now()): Promise<void> {
   if (record.deleted) {
     if (record.kind === 'profile') await db.profile.delete(record.id)
     if (record.kind === 'umas') await db.umas.delete(record.id)
@@ -223,6 +240,9 @@ export async function putConflict(record: EntityRecord): Promise<void> {
   if (record.kind === 'umas') await db.umas.put({ id: record.id, data: parseUmaSave(record.data)!, version: record.version })
   if (record.kind === 'cards') await db.cards.put({ id: record.id, data: parseCardSave(record.data)!, version: record.version })
   if (record.kind === 'badges') await db.badges.put({ id: record.id, data: record.data, version: record.version })
+  if (queueMigrated && (record.kind === 'profile' || record.kind === 'umas')) {
+    await queueInTransaction(record.kind, record.id, 'upsert', now)
+  }
 }
 
 export async function updateEntityVersion(kind: EntityKind, id: string, version: number): Promise<void> {

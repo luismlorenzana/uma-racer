@@ -1,4 +1,4 @@
-import { STRATEGIES, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
+import { LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
 import { formatMargin, type RaceTimeline } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -419,7 +419,7 @@ export function RaceRunScreen() {
                     </div>
                   )}
                   {record.levelsGained.length > 0 && <p className="mt-2 text-center text-sm font-extrabold">Reached Uma Lv {record.levelsGained.join(', ')}</p>}
-                  {record.shardReward > 0 && <p className="mt-2 text-center rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">Ready to promote</p>}
+                  {record.shardReward > 0 && <p className="mt-2 text-center rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">{savedUma && savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO ? 'Latest scenario complete' : 'Ready to promote'}</p>}
                   <div className="mt-2 rounded-xl bg-white px-3 py-2">
                     <p className="text-xs font-extrabold text-ink-soft">RACE FORM</p>
                     <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-extrabold">
@@ -463,10 +463,10 @@ export function RaceRunScreen() {
                 })}
               </ol>
               <div className="mt-3 grid grid-cols-3 gap-2 pb-4">
-                <GameButton variant="secondary" disabled={!record || committing} onClick={() => navigate(`/race?uma=${encodeURIComponent(attempt.umaId)}`)}>Races</GameButton>
-                <GameButton variant="secondary" disabled={!record || committing} onClick={() => navigate(`/training/${encodeURIComponent(attempt.umaId)}`)}>Train</GameButton>
-                <GameButton variant="go" disabled={!record || againBusy || record.shardReward > 0} onClick={() => void raceAgain()}>
-                  {record?.shardReward ? 'Promote first' : againBusy ? 'Preparing…' : 'Race again'}
+                <GameButton variant="secondary" disabled={!record || committing} onClick={() => navigate(savedUma && isGateLevel(savedUma.level) && savedUma.level < SCENARIOS.length * LEVELS_PER_SCENARIO ? `/scenario/${encodeURIComponent(attempt.umaId)}/start` : `/race?uma=${encodeURIComponent(attempt.umaId)}`)}>{savedUma && isGateLevel(savedUma.level) && savedUma.level < SCENARIOS.length * LEVELS_PER_SCENARIO ? 'Promote' : 'Races'}</GameButton>
+                <GameButton variant="secondary" disabled={!record || committing || Boolean(savedUma && savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO)} onClick={() => navigate(savedUma && isGateLevel(savedUma.level) ? `/scenario/${encodeURIComponent(attempt.umaId)}/start` : `/training/${encodeURIComponent(attempt.umaId)}`)}>{savedUma && isGateLevel(savedUma.level) ? 'Promote' : 'Train'}</GameButton>
+                <GameButton variant="go" disabled={!record || againBusy || Boolean(savedUma && isGateLevel(savedUma.level))} onClick={() => void raceAgain()}>
+                  {savedUma && isGateLevel(savedUma.level) ? (savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO ? 'Complete' : 'Promote first') : againBusy ? 'Preparing…' : 'Race again'}
                 </GameButton>
               </div>
             </m.div>

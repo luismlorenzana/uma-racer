@@ -67,11 +67,11 @@ export function HomeScreen() {
           <p className="mt-1 text-sm font-extrabold text-sky-deep">{featured.scenario?.name ?? `Tier ${featured.tier}`} · Training Level {featured.save.trainingLevel}</p>
         </Link>
         <div className="grid grid-cols-2 gap-3 border-t-2 border-white bg-white/60 p-4">
-          <GameButton variant="secondary" size="lg" onClick={() => navigate(`/training/${encodeURIComponent(featured.save.templateId)}`)}>Train</GameButton>
-          <GameButton variant="go" size="lg" disabled={!raceUnlocked} onClick={() => navigate(`/race?uma=${encodeURIComponent(featured.save.templateId)}`)}>Race</GameButton>
+          <GameButton variant={featured.readyToPromote ? 'primary' : 'secondary'} size="lg" disabled={isGateLevel(featured.save.level) && !featured.readyToPromote} onClick={() => navigate(featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/training/${encodeURIComponent(featured.save.templateId)}`)}>{featured.readyToPromote ? 'Promote' : isGateLevel(featured.save.level) ? 'Complete' : 'Train'}</GameButton>
+          <GameButton variant="go" size="lg" disabled={!raceUnlocked && !featured.readyToPromote} onClick={() => navigate(featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}>{featured.readyToPromote ? 'Next scenario' : 'Race'}</GameButton>
         </div>
         <p className="px-4 pb-4 text-center text-xs font-bold text-ink-soft">
-          {isGateLevel(featured.save.level) ? 'Ready to promote before racing again.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock saved-Uma races.'}
+          {featured.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(featured.save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock saved-Uma races.'}
         </p>
       </Panel>
 

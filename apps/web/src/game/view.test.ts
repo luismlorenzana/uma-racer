@@ -1,6 +1,5 @@
 import {
   createUmaSave,
-  expToNextUmaLevel,
   type ContentAtlas,
   type SupportCardTemplate,
   type UmaTemplate,
@@ -69,12 +68,14 @@ function loaded(umas: UmaTemplate[]): LoadedContent {
 describe('Uma view models', () => {
   it('derives scenario caps, readiness, and the managed atlas frame', () => {
     const content = loaded([template('u1', 'Synthetic One')])
-    const save = { ...createUmaSave(content.umas.items[0]!), level: 10, exp: expToNextUmaLevel(10) }
+    const save = { ...createUmaSave(content.umas.items[0]!), level: 10, exp: 0 }
     const joined = joinUma(save, content)
     expect(joined.status).toBe('ready')
     if (joined.status !== 'ready') return
     expect(joined.value).toMatchObject({ tier: 1, currentStatCap: 960, baselineStatCap: 1200, currentSpCap: 240, readyToPromote: true })
     expect(joined.value.asset?.url).toBe('blob:synthetic-umas')
+    const max = joinUma({ ...save, level: 110 }, content)
+    expect(max.status === 'ready' && max.value.readyToPromote).toBe(false)
   })
 
   it('reports missing content instead of throwing', () => {

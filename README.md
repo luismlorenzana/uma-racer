@@ -12,7 +12,9 @@ while the stable itself grows into a collection.
 > blocking/overtaking, staged starts, deterministic event presentation, photo finishes, and complete results feedback.
 > Milestone 4 Cards & Collection is complete: full private Card and Uma albums, generated effect/LB display, atomic card
 > promotion, manual per-Uma support decks, Select Coupon redemption, shard exchange, and reload-safe collection reveals are
-> implemented. Next: Milestone 5 scenarios, promotion, inheritance, skill refresh, and scenario goals.
+> implemented. Milestone 5 is underway: save v2, frozen parent snapshots, awakening/skill refresh, final-tier completion,
+> and the full offline-capable zero-parent scenario-promotion flow are implemented. Next: parent/grandparent inheritance
+> and scenario goals/Journey tracking.
 
 ## Ground rules
 
@@ -32,6 +34,7 @@ pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone)
 
 Saved-Uma Training: **Home or Stable → Uma profile → Train**.
 Progression racing: **Train once → Race → pick a content race, Uma, and strategy → Start race**.
+Scenario promotion: **Reach a non-final gate → Promote → review the frozen snapshot and starting gains → Opening Training**.
 
 ## Verification
 

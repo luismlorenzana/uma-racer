@@ -73,7 +73,7 @@ function input(template: SupportCardTemplate, save: CardSave = createCardSave(te
 }
 
 function skill(id: string, kind: SkillTemplate['kind'] = 'white'): SkillTemplate {
-  return { id, kind, name: `Synthetic ${id}`, description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null }
+  return { id, kind, name: `Synthetic ${id}`, description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null }
 }
 
 const unique = skill('skill-unique', 'unique')

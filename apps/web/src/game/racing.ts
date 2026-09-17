@@ -4,12 +4,14 @@ import {
   bestStrategy,
   compileRaceSkill,
   compileRaceCourseLayout,
+  completeFinalScenario,
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   equippedRaceBonus,
   fieldForm,
   isGateLevel,
   isLocalDay,
+  LEVELS_PER_SCENARIO,
   npcRaceStats,
   parseCardSave,
   parsePlayerProfileOrThrow,
@@ -23,6 +25,7 @@ import {
   resolveRaceExperience,
   selectBaselineRaceSkills,
   summarizeSkillLoadout,
+  SCENARIOS,
   supportDeckIssueMessage,
   tierOfLevel,
   validateSupportDeck,
@@ -304,6 +307,13 @@ function resultRecord(
   }
 }
 
+function captureFinalSnapshot(content: LoadedContent, uma: UmaSave, now: number): UmaSave {
+  if (uma.level !== SCENARIOS.length * LEVELS_PER_SCENARIO) return uma
+  const template = content.umas.byId.get(uma.templateId)
+  if (!template) throw new Error(`Race content is missing Uma ${uma.templateId}`)
+  return completeFinalScenario({ uma, umaTemplate: template, skills: content.skills.byId, now })
+}
+
 function parseHistoryRow(row: LogRow): RaceResultRecord {
   const result = parseRaceResultRecord(row.data)
   if (!result || row.id !== raceAttemptId(result.umaId, result.sequence) || row.createdAt !== result.createdAt) {
@@ -410,13 +420,14 @@ export function completeMemoryRace(
   const race = content.races.byId.get(attempt.raceId)!
   const timeline = simulatePreparedRace(attempt)
   const result = resultRecord(attempt, race, uma, timeline, now)
+  const completedUma = captureFinalSnapshot(content, result.uma, now)
   return {
     profile: {
       ...profile,
       tickets: profile.tickets + result.ticketReward,
       umaShards: profile.umaShards + result.shardReward,
     },
-    uma: result.uma,
+    uma: completedUma,
     record: result.record,
     timeline,
     alreadyRecorded: false,
@@ -460,6 +471,7 @@ export async function completePersistentRace(
     const race = content.races.byId.get(attempt.raceId)!
     const timeline = simulatePreparedRace(attempt)
     const resolved = resultRecord(attempt, race, uma, timeline, now)
+    const completedUma = captureFinalSnapshot(content, resolved.uma, now)
     const levelIds = resolved.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
     const gate = resolved.record.shardReward ? resolved.record.levelsGained.at(-1) : undefined
     const shardId = gate === undefined ? null : `uma-gate-shard:${attempt.umaId}:${gate}`
@@ -474,7 +486,7 @@ export async function completePersistentRace(
     const umaRow = await db.umas.get(attempt.umaId)
     if (!profileRow || !umaRow) throw new Error('Local race save disappeared')
     await db.profile.put({ ...profileRow, data: nextProfile })
-    await db.umas.put({ ...umaRow, data: resolved.uma })
+    await db.umas.put({ ...umaRow, data: completedUma })
     await db.raceResults.add({
       id: attempt.id,
       data: resolved.record as unknown as Record<string, unknown>,
@@ -500,7 +512,7 @@ export async function completePersistentRace(
     }
     return {
       profile: nextProfile,
-      uma: resolved.uma,
+      uma: completedUma,
       record: resolved.record,
       timeline,
       alreadyRecorded: false,

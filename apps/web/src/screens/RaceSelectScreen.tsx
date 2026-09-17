@@ -1,5 +1,6 @@
 import {
   STRATEGIES,
+  SCENARIOS,
   compileRaceSkill,
   equippedRaceBonus,
   fieldForm,
@@ -154,6 +155,7 @@ export function RaceSelectScreen() {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }
   const skillLoadout = summarizeSkillLoadout(selectedUma, umaTemplate, content.skills.byId)
+  const promotionRequired = isGateLevel(selectedUma.level) && selectedUma.level < SCENARIOS.length * 10
   const lockReason = picked
     ? raceLockReason(selectedUma, picked, opponentCharacters) ?? deckError ?? (skillLoadout.valid ? null : skillLoadout.errors[0]!)
     : null
@@ -213,6 +215,11 @@ export function RaceSelectScreen() {
       </div>
 
       {!persistent && <Panel className="border-amber-300 bg-amber-50 py-3 text-sm font-bold">Memory only — race progress will not survive a reload or sync.</Panel>}
+      {isGateLevel(selectedUma.level) && <Panel className="border-gold bg-amber-50 text-center">
+        <p className="font-extrabold">{selectedUma.level >= SCENARIOS.length * 10 ? 'Latest scenario complete' : 'Promotion required'}</p>
+        <p className="mt-1 text-sm text-ink-soft">{selectedUma.level >= SCENARIOS.length * 10 ? 'No later scenario is available yet.' : 'Start the next scenario before preparing another race.'}</p>
+        {selectedUma.level < SCENARIOS.length * 10 && <GameButton className="mt-3" onClick={() => navigate(`/scenario/${encodeURIComponent(selectedUmaId)}/start`)}>Review promotion</GameButton>}
+      </Panel>}
 
       {sortedRaces.map((race, index) => (
         <m.button
@@ -354,8 +361,8 @@ export function RaceSelectScreen() {
               </div>
             </div>
             {(lockReason || startError) && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-danger">{startError ?? lockReason}</p>}
-            <GameButton variant="go" size="lg" disabled={Boolean(lockReason) || Boolean(previewError) || !preview || starting} onClick={() => void start()}>
-              {starting ? 'Preparing…' : 'Start race'}
+            <GameButton variant="go" size="lg" disabled={!promotionRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => promotionRequired ? navigate(`/scenario/${encodeURIComponent(selectedUmaId)}/start`) : void start()}>
+              {promotionRequired ? 'Review promotion' : starting ? 'Preparing…' : 'Start race'}
             </GameButton>
           </div>
         )}
