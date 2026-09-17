@@ -481,7 +481,9 @@ function simulateRaceRules(input: RaceInput, rulesVersion: RulesVersion): RaceTi
         events.push({ tick, runner: i, type: 'spurt', value: r.spurt ?? 0 })
       }
 
-      if (rulesVersion >= 2) {
+      // Most synthetic/baseline fields are skillless. Avoid building the comparatively rich R3 context when there is
+      // nothing to activate; this keeps precomputation inside the existing full-field performance budget.
+      if (rulesVersion >= 2 && r.skills.length > 0) {
         activateSkills(
           r,
           i,
