@@ -9,9 +9,10 @@ import {
   scenarioForTier,
   spCap,
   statCap,
+  supportDeckIssueMessage,
   tierOfLevel,
-  trainingDeckError,
   trainingTurnSeed,
+  validateSupportDeck,
   type CardSave,
   type Facility,
   type PlayerProfile,
@@ -64,17 +65,16 @@ export function buildTrainingView(
   const template = content.umas.byId.get(uma.templateId)
   if (!template) return { status: 'error', message: `Training content is missing Uma ${uma.templateId}` }
   if (uma.deckCardIds.length === 0) return { status: 'empty-deck' }
-  const cards: TrainingCardInput[] = []
-  for (const id of uma.deckCardIds) {
-    const save = cardsById[id]
-    if (!save) return { status: 'error', message: `Training deck card is not owned: ${id}` }
-    const cardTemplate = content.cards.byId.get(id)
-    if (!cardTemplate) return { status: 'error', message: `Training content is missing card ${id}` }
-    cards.push({ save, template: cardTemplate })
-  }
   const tier = tierOfLevel(uma.level)
-  const deckError = trainingDeckError(tier, cards)
-  if (deckError) return { status: 'error', message: deckError }
+  const validation = validateSupportDeck({
+    tier,
+    orderedCardIds: uma.deckCardIds,
+    ownedCards: Object.values(cardsById),
+    templates: content.cards.byId,
+  })
+  const issue = validation.issues[0]
+  if (issue) return { status: 'error', message: supportDeckIssueMessage(issue) }
+  const cards: TrainingCardInput[] = validation.cards
   const seed = trainingTurnSeed(profile.createdAt, uma.templateId, tier, uma.trainingsThisScenario)
   const deal = dealTrainingCards(cards, seed)
   const preview = previewTrainingFacilities(uma, template, cards, deal)

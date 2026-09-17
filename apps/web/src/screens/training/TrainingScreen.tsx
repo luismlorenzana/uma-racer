@@ -9,10 +9,10 @@ import {
   type TrainingTurnResult,
 } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
-import { ensureTrainingDeck, trainUma } from '../../game/actions'
+import { trainUma } from '../../game/actions'
 import { useGame } from '../../game/store'
 import { buildTrainingView, type TrainingCardView } from '../../game/training-view'
 import { AtlasSprite } from '../../ui/AtlasSprite'
@@ -68,7 +68,7 @@ function GainText({ gains }: { gains: Partial<Record<GainKey, number>> }) {
   )
 }
 
-function ResultPanel({ result, skillNames }: { result: TrainingTurnResult; skillNames: ReadonlyMap<string, string> }) {
+function ResultPanel({ result, skillNames, cardNames }: { result: TrainingTurnResult; skillNames: ReadonlyMap<string, string>; cardNames: ReadonlyMap<string, string> }) {
   const reducedMotion = useReducedMotion()
   const leveledCards = result.cards.filter((card) => card.levelsGained.length > 0)
   return (
@@ -89,10 +89,13 @@ function ResultPanel({ result, skillNames }: { result: TrainingTurnResult; skill
           </span>
         ))}
       </div>
-      <p className="mt-1 text-center text-[11px] font-bold text-ink-soft">
-        Cards +{result.cards.map((card) => card.expGained).join(' / ')} EXP
-        {leveledCards.length > 0 ? ` · ${leveledCards.length} leveled up` : ''}
-      </p>
+      <div className="mt-1 grid gap-0.5 text-[11px] font-bold text-ink-soft">
+        {result.cards.map((card) => <p key={card.card.templateId} className="text-center">
+          {cardNames.get(card.card.templateId) ?? card.card.templateId}: +{card.expGained} EXP
+          {card.levelsGained.length > 0 ? ` · Lv ${card.card.level}` : ''}
+        </p>)}
+        {leveledCards.length > 0 && <p className="text-center">{leveledCards.length} card{leveledCards.length === 1 ? '' : 's'} leveled up</p>}
+      </div>
     </m.section>
   )
 }
@@ -108,24 +111,9 @@ export function TrainingScreen() {
   const profile = useGame((state) => state.profile)
   const uma = useGame((state) => state.umas[umaId])
   const cards = useGame((state) => state.cards)
-  const [preparing, setPreparing] = useState(false)
-  const [prepareAttempt, setPrepareAttempt] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<TrainingTurnResult | null>(null)
-
-  useEffect(() => {
-    if (contentState.status !== 'ready' || status !== 'ready' || !uma || uma.deckCardIds.length > 0) return
-    setPreparing(true)
-    setError(null)
-    void ensureTrainingDeck(uma.templateId)
-      .catch((reason: unknown) => {
-        setError(reason instanceof Error ? reason.message : 'Could not prepare Training')
-      })
-      .finally(() => {
-        setPreparing(false)
-      })
-  }, [contentState.status, prepareAttempt, status, uma?.deckCardIds.length, uma?.templateId])
 
   const view = useMemo(() => {
     if (contentState.status !== 'ready' || !profile || !uma) return null
@@ -140,22 +128,7 @@ export function TrainingScreen() {
   if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Training…" detail="Loading private content and your local save." />
   if (!uma) return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
-  if (preparing) return <ScreenState title="Preparing Training…" detail="Equipping a stable starter deck for this Uma." />
-  if (view?.status === 'empty-deck' && error) {
-    return (
-      <div className="flex h-dvh items-center justify-center px-6">
-        <div className="w-full max-w-sm rounded-3xl border-2 border-white bg-white/95 p-5 text-center shadow-[var(--shadow-panel)]">
-          <h1 className="text-xl font-extrabold">Training could not be prepared</h1>
-          <p className="mt-2 text-sm text-ink-soft">{error}</p>
-          <div className="mt-4 grid gap-3">
-            <GameButton onClick={() => { setError(null); setPrepareAttempt((attempt) => attempt + 1) }}>Retry</GameButton>
-            <Link to={`/stable/${encodeURIComponent(umaId)}`} className="flex min-h-11 items-center justify-center font-extrabold text-sky-deep">Back to profile</Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-  if (view?.status === 'empty-deck') return <ScreenState title="Preparing Training…" detail="Equipping a stable starter deck for this Uma." />
+  if (view?.status === 'empty-deck') return <ScreenState title="Build a support deck first" detail="Training uses the ordered cards you choose on this Uma's profile." action={{ label: 'Edit deck', to: `/stable/${encodeURIComponent(umaId)}/deck` }} />
   if (!view || view.status === 'error') {
     return <ScreenState title="Training needs attention" detail={error ?? (view?.status === 'error' ? view.message : 'Training could not be prepared.')} action={{ label: 'Back to profile', to: `/stable/${encodeURIComponent(umaId)}` }} />
   }
@@ -163,6 +136,7 @@ export function TrainingScreen() {
   const model = view.value
   const noTickets = profile.tickets < 1
   const skillNames = new Map(contentState.content.skills.items.map((skill) => [skill.id, skill.name]))
+  const cardNames = new Map(contentState.content.cards.items.map((card) => [card.id, `${card.charName} · ${card.title}`]))
   const choose = (facility: Facility) => {
     if (busy || noTickets) return
     setBusy(true)
@@ -263,7 +237,7 @@ export function TrainingScreen() {
           </div>
         </section>
 
-        {result && <ResultPanel result={result} skillNames={skillNames} />}
+        {result && <ResultPanel result={result} skillNames={skillNames} cardNames={cardNames} />}
         {noTickets && <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs font-extrabold">No Training Tickets. The next local-day grant restores up to 50.</div>}
 
         <div className="grid grid-cols-2 gap-2 pb-3">

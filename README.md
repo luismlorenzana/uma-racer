@@ -11,7 +11,8 @@ while the stable itself grows into a collection.
 > implemented: compiled skills and recovery, versioned replay, course geometry, position keeping, continuous lanes,
 > blocking/overtaking, staged starts, deterministic event presentation, photo finishes, and complete results feedback.
 > Milestone 4 Cards & Collection is underway: the complete private SSR album, generated effect/LB display, atomic card
-> promotion, and one-time max-card Coupon awards are implemented. Next: T010 manual per-Uma support decks.
+> promotion, one-time max-card Coupon awards, and manual per-Uma support decks are implemented. Next: T011 Select Coupons
+> and the complete Uma/card collection loop.
 
 ## Ground rules
 
@@ -40,6 +41,7 @@ pnpm test           # domain rules, race engine, API sync, save persistence and 
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
+pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs
 pnpm assets:import  # image sources in those packs → private WebP atlases
 ```
@@ -93,6 +95,7 @@ docs/           design, technical, research
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Race Engine R3 Findings](docs/research/race-engine-r3-findings.md) | Pack formulas, explicit approximations, launch-unique coverage, and balance results |
 | [Milestone 3 Balance Closure](docs/research/race-engine-r3-final-balance.md) | Final strategy/player/recovery matrix and remaining calibration caveat |
+| [Support Deck Balance Follow-up](docs/research/support-deck-balance.md) | Weak/mid/mature deck Training results and the T008 G1 follow-up |
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
 | [Tasks](docs/tasks/) | Delegable task specs (see [AGENTS.md](AGENTS.md)) |

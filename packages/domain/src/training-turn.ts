@@ -10,6 +10,11 @@ import {
 } from './cards'
 import type { CardSave, UmaSave } from './save'
 import { SAVE_ID_PATTERN } from './save'
+import {
+  supportDeckIssueMessage,
+  validateEquippedSupportDeck,
+  type SupportDeckCard,
+} from './support-deck'
 import { tierOfLevel } from './scenarios'
 import {
   addTrainingExp,
@@ -32,10 +37,7 @@ export const RANDOM_FACILITY_CHANCE = 0.7
 export const BASE_HINT_CHANCE = 0.2
 export const KNOWN_HINT_SP = 10
 
-export interface TrainingCardInput {
-  save: CardSave
-  template: SupportCardTemplate
-}
+export type TrainingCardInput = SupportDeckCard
 
 export interface TrainingCardEffects {
   present: PresentCard
@@ -169,20 +171,8 @@ export function trainingCardEffects(card: TrainingCardInput): TrainingCardEffect
 }
 
 export function trainingDeckError(tier: number, cards: readonly TrainingCardInput[]): string | null {
-  if (cards.length === 0) return 'Training needs at least one equipped support card'
-  if (cards.length > deckSlotCount(tier)) return `Tier ${tier} has only ${deckSlotCount(tier)} deck slots`
-  const ids = new Set<string>()
-  const characters = new Set<string>()
-  for (const card of cards) {
-    if (card.save.templateId !== card.template.id) return `Card save/content id mismatch: ${card.save.templateId}`
-    if (ids.has(card.template.id)) return `Duplicate support card: ${card.template.id}`
-    if (characters.has(card.template.charaId)) return `Duplicate support character: ${card.template.charaId}`
-    if (card.template.era > tier) return `Card ${card.template.id} is locked until tier ${card.template.era}`
-    if (!isStatCard(card.template)) return `Card ${card.template.id} cannot be equipped in MVP Training`
-    ids.add(card.template.id)
-    characters.add(card.template.charaId)
-  }
-  return null
+  const issue = validateEquippedSupportDeck(tier, cards).issues[0]
+  return issue ? supportDeckIssueMessage(issue) : null
 }
 
 export function autoTrainingDeck(

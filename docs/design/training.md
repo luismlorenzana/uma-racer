@@ -79,6 +79,11 @@ The skill library refreshes each scenario (see [Skill library](skills-and-inheri
 after a single training turn in that scenario**. Beyond that, training is optional: train more when you need better stats or skills,
 or when your cards have improved.
 
+Training requires a nonempty, valid support deck saved on that Uma. Opening Training never auto-equips or rewrites cards;
+an empty deck shows an Edit Deck action. The same ordered-deck validator drives the editor, Training, and progression-race
+Race Bonus, so eligibility and displayed effects cannot disagree. Training results name each equipped card's EXP and new
+level so the consequence of a manual deck choice is visible.
+
 ## A training turn
 
 Deals and hint rolls use a seeded deterministic turn derived from the save, Uma, scenario, and committed turn count. A
@@ -162,13 +167,17 @@ The library refreshes each scenario, so hint rates need tuning: a good deck shou
 When Training first moves an LB4 card to level 25, the same atomic turn grants its one-time Card Select Coupon and marks
 that card as paid. Reloading, retrying, or continuing to train a maxed card cannot grant the coupon again.
 
-## Pacing check (validate with a simulation script later)
+## Pacing check
 
 - **Tier 1 is the heaviest:** about +5,500 stat points from 5★ base stats (about 100 each) to the 1200 caps. A good deck (about 180 points
   per training) reaches the caps around TL10 (25–30 trainings). A weaker deck needs 10–20 extra tickets to top off.
 - **Later scenarios** add only +80 per stat (at half training value above 1200), so stats track the end of the TL cap curve, and training
   time goes mostly to skills and card EXP.
 - Tickets are the single currency, so training competes with Uma promotions and card limit breaks for them.
+
+The synthetic T010 harness (`pnpm sim:cards -- 300`) measures six-card weak/mid/mature decks at 17 optimized turns to
+TL10, with average applied gains of 135.5 / 164.6 / 212.3 and learned hints of 4/6 / 3/6 / 5/6 for the fixed seeds.
+See the [support-deck balance follow-up](../research/support-deck-balance.md). These are regression fixtures, not copied data.
 
 ## Later additions (not MVP)
 

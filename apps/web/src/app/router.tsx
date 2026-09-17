@@ -20,6 +20,10 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('../screens/UmaProfileScreen')).UmaProfileScreen }),
       },
       {
+        path: 'stable/:umaId/deck',
+        lazy: async () => ({ Component: (await import('../screens/DeckEditorScreen')).DeckEditorScreen }),
+      },
+      {
         path: 'race',
         lazy: async () => ({ Component: (await import('../screens/RaceSelectScreen')).RaceSelectScreen }),
       },

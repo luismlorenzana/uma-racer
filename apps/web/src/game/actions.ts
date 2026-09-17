@@ -10,9 +10,9 @@ export async function setUmaLoadout(id: string, skillIds: readonly string[]): Pr
   await gameRuntime.setUmaLoadout(id, skillIds)
 }
 
-export async function ensureTrainingDeck(id: string): Promise<void> {
+export async function setUmaDeck(id: string, orderedCardIds: readonly string[]): Promise<void> {
   const { gameRuntime } = await import('./runtime')
-  await gameRuntime.ensureTrainingDeck(id)
+  await gameRuntime.setUmaDeck(id, orderedCardIds)
 }
 
 export async function trainUma(id: string, facility: import('@racer/domain').Facility) {
