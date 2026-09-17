@@ -29,12 +29,17 @@ These are two separate rules:
 
 ## Deck
 
-- **6 slots**, following the original game's 5 cards plus 1 borrowed friend card.
+- **6 ordered slots**, following the original game's 5 cards plus 1 borrowed friend card.
 - Slots unlock gradually in early tiers: tier 1 has 4 slots, tier 2 has 5, tier 3 and later have 6.
+- A saved deck may use any nonzero number of its unlocked slots. Order is persisted and is the deterministic input order
+  for Training deals.
 - No duplicate card, and no two cards of the same character, on one Uma.
-- Until the Cards milestone adds the deck editor, opening Training with an empty deck auto-fills those unlocked slots from
-  owned, era-eligible stat cards. The temporary auto-fill is deterministic and type-balanced, prioritizing the Uma's growth
-  rates. It never rewrites a nonempty deck. Friend/Group cards remain inactive during this MVP bridge.
+- The Uma Profile links to the deck editor. It shows owned candidates, later-era locks, Friend/Group unavailability, missing
+  content repair states, generated effects, hint count, and summed Race Bonus. Reorder/remove and all slot actions use
+  44-point touch targets.
+- **Auto fill is explicit** and only changes the unsaved draft. It deterministically chooses a type-balanced set of owned,
+  era-eligible stat cards, prioritizing the Uma's growth rates and never duplicating a character. Opening Training with an
+  empty deck does not mutate the save; it links back to this editor. Friend/Group cards remain visible but inactive.
 
 ## Leveling and limit breaks
 

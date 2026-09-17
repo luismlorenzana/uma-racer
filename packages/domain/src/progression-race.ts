@@ -1,6 +1,6 @@
 // Saved-Uma progression races and rewards (docs/tasks/T005-progression-races-and-rewards.md).
 
-import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue } from './cards'
+import { CARD_EFFECTS, projectedCardEffectValue } from './cards'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
@@ -8,6 +8,7 @@ import { applyForm, yourForm } from './raceForm'
 import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
 import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import type { CardSave, UmaSave } from './save'
+import { supportDeckIssueMessage, validateEquippedSupportDeck } from './support-deck'
 import {
   DISTANCE_CATEGORIES,
   GRADES,
@@ -209,19 +210,11 @@ export function bestStrategy(template: UmaTemplate): Strategy {
 
 /** Generated Race Bonus from the currently equipped and usable stat-card deck. */
 export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[]): number {
-  if (!Number.isSafeInteger(tier) || tier < 1) throw new Error('Invalid race tier')
-  if (cards.length === 0) throw new Error('Progression racing needs an equipped support-card deck')
-  if (cards.length > deckSlotCount(tier)) throw new Error(`Tier ${tier} has only ${deckSlotCount(tier)} deck slots`)
-  const ids = new Set<string>()
-  const characters = new Set<string>()
+  const validation = validateEquippedSupportDeck(tier, cards)
+  const issue = validation.issues[0]
+  if (issue) throw new Error(supportDeckIssueMessage(issue))
   let total = 0
   for (const { save, template } of cards) {
-    if (save.templateId !== template.id || ids.has(template.id) || characters.has(template.charaId)) {
-      throw new Error(`Invalid equipped race card: ${template.id}`)
-    }
-    if (!STATS.includes(template.type as (typeof STATS)[number]) || template.era > tier) {
-      throw new Error(`Card ${template.id} cannot be used for this progression race`)
-    }
     if (
       !Number.isSafeInteger(template.era) || template.era < 1 ||
       !isRecord(template.effectProfile) || !hasExactKeys(template.effectProfile, CARD_EFFECTS) ||
@@ -229,8 +222,6 @@ export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[])
     ) {
       throw new Error(`Card ${template.id} has invalid race effect data`)
     }
-    ids.add(template.id)
-    characters.add(template.charaId)
     total += projectedCardEffectValue('raceBonus', template, save)
   }
   return total

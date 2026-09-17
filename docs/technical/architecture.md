@@ -77,10 +77,14 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - A coordinator waits for auth and a verified content version, migrates and parses IndexedDB, then publishes ready state.
   A non-empty local save opens immediately. Only a semantically empty database tries a full cloud bootstrap before
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
-- Every action (a training turn, a race, a promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
+- Every action (a deck edit, training turn, race, or promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
+- A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
+  duplicate ids, and duplicate characters. The editor, Training, and racing use that same result. Saving re-reads the Uma
+  and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
+  order as a write-free no-op. Explicit Auto fill remains a pure draft helper; opening Training never mutates an empty deck.
 - A saved-Uma Training turn derives its card deal and hint rolls from a stable seed (profile creation time, Uma id, tier,
-  and completed-turn count). An empty deck is deterministically auto-filled once from owned eligible stat cards. A chosen
+  and completed-turn count). A chosen
   facility then spends one ticket and writes the profile, Uma, changed cards, append-only spend/reward ledger rows, and
   coalesced outbox work in one Dexie transaction; Zustand publishes only after that transaction commits. Memory-only mode
   runs the same pure mutation but keeps its existing explicit non-persistent warning.

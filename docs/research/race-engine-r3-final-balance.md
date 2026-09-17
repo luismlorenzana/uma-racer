@@ -66,3 +66,11 @@ and lane timeline allocation for full fields; the dedicated local single-race pe
 
 No engine, Form, HP, recovery, or opponent constants changed in T008. This is recorded in D89 rather than presenting a
 synthetic-loadout limitation as a gameplay correction.
+
+## Milestone 4 follow-up
+
+T010 revisited the player target with the actual generated card-effect model and a deliberately sensible medium/Pace
+mature skill loadout. The 300-seed rows measured **30.3% at k=0 and 27.7% at k=9**, so the curve still does not approach
+35%→65% and is not monotonic in this narrower matchup. Weak/mid/mature Training gains and full method are recorded in the
+[support-deck balance follow-up](support-deck-balance.md). No hidden bonus or pinned Form change was added; scenario
+promotion, inheritance, and complete player loadout calibration remain the appropriate later tuning point.

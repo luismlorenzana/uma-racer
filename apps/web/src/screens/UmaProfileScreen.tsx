@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma, setUmaLoadout } from '../game/actions'
+import { buildDeckView, formatDeckEffect } from '../game/deck-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -66,6 +67,7 @@ export function UmaProfileScreen() {
   const error = useGame((state) => state.error)
   const profile = useGame((state) => state.profile)
   const save = useGame((state) => state.umas[umaId])
+  const cards = useGame((state) => state.cards)
   const pushToast = useGame((state) => state.pushToast)
   const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
 
@@ -85,6 +87,7 @@ export function UmaProfileScreen() {
   const featured = profile.featuredUmaId === save.templateId
   const raceUnlocked = save.trainingsThisScenario >= 1 && !isGateLevel(save.level)
   const loadout = summarizeSkillLoadout(save, uma.template, contentState.content.skills.byId)
+  const deck = buildDeckView(save, cards, contentState.content)
 
   const toggleSkill = async (skillId: string) => {
     if (savingSkillId) return
@@ -164,6 +167,23 @@ export function UmaProfileScreen() {
       <Panel>
         <div className="flex items-center justify-between gap-3">
           <div>
+            <h2 className="text-lg font-extrabold">Support deck</h2>
+            <p className="text-xs font-bold text-ink-soft">{save.deckCardIds.length} / {deck.slotCount} cards · Race Bonus {formatDeckEffect('raceBonus', deck.raceBonus)} · {deck.hintSkillCount} hints</p>
+          </div>
+          <Link to={`/stable/${encodeURIComponent(save.templateId)}/deck`} className="flex min-h-11 items-center rounded-xl bg-violet-600 px-4 text-sm font-extrabold text-white">Edit</Link>
+        </div>
+        {save.deckCardIds.length > 0 ? <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {deck.slots.filter((slot) => slot.card).map((slot) => <div key={slot.index} className="w-20 shrink-0">
+            <AtlasSprite asset={slot.card!.asset} decorative className="rounded-xl bg-slate-100" fallback={<div className="flex h-full items-center justify-center">?</div>} />
+            <p className="mt-1 truncate text-center text-[10px] font-extrabold">{slot.card!.template?.charName ?? 'Missing'}</p>
+          </div>)}
+        </div> : <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-900">Choose at least one owned stat card before Training or racing.</p>}
+        {deck.validationErrors.length > 0 && <p className="mt-3 rounded-xl bg-red-50 p-2 text-sm font-bold text-danger">{deck.validationErrors[0]}</p>}
+      </Panel>
+
+      <Panel>
+        <div className="flex items-center justify-between gap-3">
+          <div>
             <h2 className="text-lg font-extrabold">Race skills</h2>
             <p className="text-xs font-bold text-ink-soft">Own unique is free · tap supported skills to equip</p>
           </div>
@@ -231,7 +251,7 @@ export function UmaProfileScreen() {
       </Panel>
 
       <div className="grid grid-cols-2 gap-3">
-        {['Goals & Honors', 'Badges & Record', 'Lineage', 'Deck & Loadout'].map((label) => (
+        {['Goals & Honors', 'Badges & Record', 'Lineage'].map((label) => (
           <Panel key={label} className="p-3 text-center opacity-65">
             <p className="text-sm font-extrabold">{label}</p>
             <p className="mt-1 text-xs text-ink-soft">Coming in a later milestone</p>

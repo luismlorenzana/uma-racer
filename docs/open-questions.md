@@ -15,6 +15,9 @@ adjusted through balance simulation and playtesting.
 - **Milestone 4 Cards device feel:** scroll the complete Cards album, change both filter rows, open/close a long detail
   sheet, and perform one real limit break from the installed Home Screen app. Desktop emulation verifies the 390×844
   layout and behavior, but not physical safe-area/scroll/touch feel.
+- **Milestone 4 Deck device feel:** edit a tier-1 Uma deck on the installed app, exercise reorder/remove/filters/Auto fill,
+  then open Training and Race Select. Desktop emulation verifies validation and layout, but not physical drag-free thumb
+  ergonomics or the complete offline/reconnect flow on iOS.
 
 ## Not questions, but still to come
 

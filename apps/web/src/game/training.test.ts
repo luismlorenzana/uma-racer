@@ -13,15 +13,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveApi } from '../api/client'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
+import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
 import { persistInitial, readLocalSnapshot } from './persistence'
 import { GameRuntime } from './runtime'
 import { clearGameState, useGame } from './store'
-import {
-  ensureMemoryTrainingDeck,
-  ensurePersistentTrainingDeck,
-  persistTraining,
-  resolveMemoryTraining,
-} from './training'
+import { persistTraining, resolveMemoryTraining } from './training'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -122,22 +118,12 @@ describe('Training persistence', () => {
   beforeEach(resetDatabase)
   afterEach(resetDatabase)
 
-  it('persists a deterministic full auto-deck once', async () => {
-    const loaded = content()
-    await seed(loaded)
-    const first = await ensurePersistentTrainingDeck(loaded, 'uma-00', 101)
-    expect(first.deckCardIds).toEqual(['card-power', 'card-speed', 'card-stamina', 'card-guts'])
-    const second = await ensurePersistentTrainingDeck(loaded, 'uma-00', 102)
-    expect(second.deckCardIds).toEqual(first.deckCardIds)
-    expect((await db.umas.get('uma-00'))?.data.deckCardIds).toEqual(first.deckCardIds)
-    expect(await db.outbox.where('[kind+id]').equals(['umas', 'uma-00']).count()).toBe(1)
-  })
-
   it('atomically spends, updates Uma/cards, rewards levels, appends ledgers, and coalesces entities', async () => {
     const loaded = content()
     await seed(loaded)
-    const deck = await ensurePersistentTrainingDeck(loaded, 'uma-00', 101)
-    for (const id of deck.deckCardIds) {
+    const deckCardIds = ['card-power', 'card-speed', 'card-stamina', 'card-guts']
+    await setPersistentUmaDeck(loaded, 'uma-00', deckCardIds, 101)
+    for (const id of deckCardIds) {
       const row = await db.cards.get(id)
       await db.cards.put({ ...row!, data: { ...row!.data, exp: 35 } })
     }
@@ -211,7 +197,12 @@ describe('Training persistence', () => {
     const loaded = content()
     const template = loaded.umas.items[0]!
     const cardsById = Object.fromEntries(loaded.cards.items.map((item) => [item.id, createCardSave(item)]))
-    const umaSave = ensureMemoryTrainingDeck(loaded, createUmaSave(template), cardsById)
+    const umaSave = setMemoryUmaDeck(
+      loaded,
+      createUmaSave(template),
+      cardsById,
+      ['card-power', 'card-speed', 'card-stamina', 'card-guts'],
+    ).uma
     const result = resolveMemoryTraining({
       content: loaded,
       profile: {
@@ -286,7 +277,7 @@ describe('Training runtime lock', () => {
     const loaded = content()
     vi.spyOn(saveApi, 'load').mockRejectedValue(new Error('synthetic offline'))
     await runtime.start(loaded)
-    await runtime.ensureTrainingDeck('uma-00')
+    await runtime.setUmaDeck('uma-00', ['card-power', 'card-speed', 'card-stamina', 'card-guts'], 101)
 
     const first = runtime.trainUma('uma-00', 'speed', '2000-01-02', 200)
     const second = runtime.trainUma('uma-00', 'power', '2000-01-02', 201)

@@ -66,6 +66,17 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 - **Hero header**: portrait, name, active title, level, Scenario Journey strip.
 - **Swipeable tabs**: Overview (stat radar plus stat bars showing the current cap and the scenario baseline) · Skills (loadout editor with an **SP capacity meter** that fills as skills are equipped) · Deck (6 slots, era locks) · Lineage (interactive family tree) · Badges (showcase) · Record.
 - A sticky bottom action bar: **Train** · **Race** · **Promote** (when ready).
+- The implemented Overview includes a live support-deck summary with selected private card art, used/unlocked slots,
+  generated Race Bonus and hint count. **Edit** opens a lazy nested screen and preserves the profile back path.
+
+### Support Deck Editor
+
+- Six ordered rows show unlocked and future locked slots. Selected cards show private atlas art, type, era, level/LB, and
+  ≥44 pt move/remove controls.
+- Owned candidates have type and era filters. Later-scenario, duplicate-character, Friend/Group, selected, and missing
+  references remain visible with a specific disabled reason rather than silently disappearing.
+- Auto fill changes only the draft. Save revalidates current ownership/content and commits atomically; back/cancel writes
+  nothing. The summary exposes generated effects, unique hint count, and Race Bonus before the player saves.
 
 ### Scenario Start (inheritance flow)
 
@@ -104,6 +115,8 @@ The core loop, built for repeated one-thumb taps.
 - **Hints**: a "💡 New skill!" chip pops out of the card icon and slides into a skill tray.
 - **Training Level up**: a burst on the TL badge, and cap markers on the stat bars slide right.
 - Right after resolving, the next deal starts, so the loop stays fast. A "Race now" button is always one tap away.
+- An empty deck opens a clear Edit Deck CTA instead of silently choosing cards. Result feedback names every card and its
+  earned EXP/level change.
 
 ### Race Select
 

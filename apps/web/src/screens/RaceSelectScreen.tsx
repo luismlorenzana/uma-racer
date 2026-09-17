@@ -9,7 +9,9 @@ import {
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
   summarizeSkillLoadout,
+  supportDeckIssueMessage,
   tierOfLevel,
+  validateSupportDeck,
   yourForm,
   type RaceGrade,
   type RaceResultRecord,
@@ -139,12 +141,15 @@ export function RaceSelectScreen() {
   let raceBonus = 0
   let deckError: string | null = null
   try {
-    raceBonus = equippedRaceBonus(tierOfLevel(selectedUma.level), selectedUma.deckCardIds.map((id) => {
-      const save = cards[id]
-      const template = content.cards.byId.get(id)
-      if (!save || !template) throw new Error(`Race deck reference is missing: ${id}`)
-      return { save, template }
-    }))
+    const deck = validateSupportDeck({
+      tier: tierOfLevel(selectedUma.level),
+      orderedCardIds: selectedUma.deckCardIds,
+      ownedCards: Object.values(cards),
+      templates: content.cards.byId,
+    })
+    const issue = deck.issues[0]
+    if (issue) throw new Error(supportDeckIssueMessage(issue))
+    raceBonus = equippedRaceBonus(tierOfLevel(selectedUma.level), deck.cards)
   } catch (reason) {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }

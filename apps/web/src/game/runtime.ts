@@ -38,7 +38,7 @@ import {
 import { adoptGameState, clearGameState, localDay, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
 import { replaceCardState } from './store'
 import { acknowledgedSequences } from './sync'
-import { ensureMemoryTrainingDeck, ensurePersistentTrainingDeck, persistTraining, resolveMemoryTraining } from './training'
+import { persistTraining, resolveMemoryTraining } from './training'
 import {
   completeMemoryRace,
   completePersistentRace,
@@ -48,6 +48,7 @@ import {
   type PreparedRace,
 } from './racing'
 import { promoteMemoryCard, promotePersistentCard } from './cards'
+import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -59,6 +60,7 @@ export class GameRuntime {
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
   private cardLocks = new Set<string>()
+  private deckLocks = new Set<string>()
   private memoryRaceHistory: RaceResultRecord[] = []
   private onlineHandler = () => void this.flush()
   private visibilityHandler = () => {
@@ -212,20 +214,26 @@ export class GameRuntime {
     this.schedule()
   }
 
-  async ensureTrainingDeck(id: string): Promise<void> {
-    const generation = this.generation
-    const content = this.content
-    const state = useGame.getState()
-    const uma = state.umas[id]
-    if (!content || state.status !== 'ready' || !uma) throw new Error('Training Uma must be owned')
-    const next = state.persistent
-      ? await ensurePersistentTrainingDeck(content, id, Date.now())
-      : ensureMemoryTrainingDeck(content, uma, state.cards)
-    if (generation !== this.generation) return
-    replaceUma(next)
-    if (state.persistent) {
-      await this.refreshPending()
-      this.schedule()
+  async setUmaDeck(id: string, orderedCardIds: readonly string[], now = Date.now()): Promise<void> {
+    if (this.deckLocks.has(id)) throw new Error('This deck is already being saved')
+    this.deckLocks.add(id)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      const uma = state.umas[id]
+      if (!content || state.status !== 'ready' || !uma) throw new Error('Deck Uma must be owned')
+      const mutation = state.persistent
+        ? await setPersistentUmaDeck(content, id, orderedCardIds, now)
+        : setMemoryUmaDeck(content, uma, state.cards, orderedCardIds)
+      if (generation !== this.generation) return
+      replaceUma(mutation.uma)
+      if (state.persistent && mutation.changed) {
+        await this.refreshPending()
+        this.schedule()
+      }
+    } finally {
+      this.deckLocks.delete(id)
     }
   }
 

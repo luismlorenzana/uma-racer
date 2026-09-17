@@ -120,3 +120,15 @@ With complete private content and `pnpm dev`:
 - Acquiring cards, spending Card Select Coupons, Uma albums/coupons, and reveal fanfares (T011).
 - Friend/Group gameplay, borrowed cards, deck presets/copying, card bond/events, scenario promotion/Initial Stats, badges,
   trainer achievements, sound, haptics, or new visual assets.
+
+## Implementation result
+
+Implemented on `feat/manual-support-decks`. A structured domain validator now owns identity, slots, ownership, content,
+era, stat-card, and character rules for the editor, Training, and racing. The local-first mutation re-reads all selected
+rows, coalesces one Uma outbox entity, treats exact order as a no-op, and publishes after commit with a per-Uma runtime
+lock; memory-only mode uses the same pure validation.
+
+The Profile summary and lazy editor expose six ordered slots, current locks, private art, move/remove, filters, disabled
+reasons, effects/hints/Race Bonus, and explicit deterministic Auto fill. Training's auto-write bridge is removed, empty
+decks link to the editor, and result feedback names each card. Synthetic balance evidence is recorded in
+[Support Deck Balance Follow-up](../research/support-deck-balance.md); the G1 aspiration remains open without hidden tuning.

@@ -23,7 +23,9 @@ import {
   resolveRaceExperience,
   selectBaselineRaceSkills,
   summarizeSkillLoadout,
+  supportDeckIssueMessage,
   tierOfLevel,
+  validateSupportDeck,
   yourForm,
   type CardSave,
   type CompiledRaceSkill,
@@ -128,13 +130,15 @@ function equippedCards(
   uma: UmaSave,
   cardsById: Readonly<Record<string, CardSave>>,
 ) {
-  return uma.deckCardIds.map((id) => {
-    const save = cardsById[id]
-    if (!save) throw new Error(`Race deck card is not owned: ${id}`)
-    const template = content.cards.byId.get(id)
-    if (!template) throw new Error(`Race content is missing card ${id}`)
-    return { save, template }
+  const validation = validateSupportDeck({
+    tier: tierOfLevel(uma.level),
+    orderedCardIds: uma.deckCardIds,
+    ownedCards: Object.values(cardsById),
+    templates: content.cards.byId,
   })
+  const issue = validation.issues[0]
+  if (issue) throw new Error(supportDeckIssueMessage(issue))
+  return validation.cards
 }
 
 function compiledSupported(template: SkillTemplate | undefined): CompiledRaceSkill[] {

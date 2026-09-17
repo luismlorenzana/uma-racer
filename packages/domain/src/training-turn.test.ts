@@ -92,6 +92,7 @@ describe('Training decks and content', () => {
     ]
     expect(autoTrainingDeck(uma(), 1, cards)).toEqual(['power-a', 'speed-a', 'stamina-a', 'guts-a'])
     expect(autoTrainingDeck(uma(), 1, [...cards].reverse())).toEqual(['power-a', 'speed-a', 'stamina-a', 'guts-a'])
+    expect(autoTrainingDeck(uma(), 1, [input(card('future-only', 'speed', { era: 2 })), input(card('friend-only', 'friend'))])).toEqual([])
     expect(trainingDeckError(1, cards.slice(0, 1))).toBeNull()
     expect(trainingDeckError(1, [])).toMatch(/at least one/)
     expect(trainingDeckError(1, [input(card('a', 'speed', { charaId: 'same' })), input(card('b', 'power', { charaId: 'same' }))])).toMatch(/character/)

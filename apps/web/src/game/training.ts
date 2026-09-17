@@ -1,17 +1,16 @@
 // Atomic saved-Uma Training mutations (docs/tasks/T004-saved-uma-training-loop.md).
 
 import {
-  autoTrainingDeck,
   dealTrainingCards,
-  deckSlotCount,
   isLocalDay,
   parseCardSave,
   parsePlayerProfileOrThrow,
   parseUmaSave,
   resolveTrainingTurn,
+  supportDeckIssueMessage,
   tierOfLevel,
-  trainingDeckError,
   trainingTurnSeed,
+  validateSupportDeck,
   type CardSave,
   type Facility,
   type LedgerEntry,
@@ -57,13 +56,15 @@ function trainingCards(
   uma: UmaSave,
   cardsById: Readonly<Record<string, CardSave>>,
 ): TrainingCardInput[] {
-  return uma.deckCardIds.map((id) => {
-    const save = cardsById[id]
-    if (!save) throw new Error(`Training deck card is not owned: ${id}`)
-    const template = content.cards.byId.get(id)
-    if (!template) throw new Error(`Training content is missing card ${id}`)
-    return { save, template }
+  const validation = validateSupportDeck({
+    tier: tierOfLevel(uma.level),
+    orderedCardIds: uma.deckCardIds,
+    ownedCards: Object.values(cardsById),
+    templates: content.cards.byId,
   })
+  const issue = validation.issues[0]
+  if (issue) throw new Error(supportDeckIssueMessage(issue))
+  return validation.cards
 }
 
 function parsedCardRow(id: string, value: unknown): CardSave {
@@ -78,30 +79,6 @@ function parsedUmaRow(id: string, value: unknown): UmaSave {
   return uma
 }
 
-export function ensureMemoryTrainingDeck(
-  content: LoadedContent,
-  uma: UmaSave,
-  cardsById: Readonly<Record<string, CardSave>>,
-): UmaSave {
-  const template = requireUmaTemplate(content, uma)
-  const tier = tierOfLevel(uma.level)
-  if (uma.deckCardIds.length > 0) {
-    const error = trainingDeckError(tier, trainingCards(content, uma, cardsById))
-    if (error) throw new Error(error)
-    return uma
-  }
-  const owned = Object.values(cardsById).map((save): TrainingCardInput => {
-    const cardTemplate = content.cards.byId.get(save.templateId)
-    if (!cardTemplate) throw new Error(`Training content is missing card ${save.templateId}`)
-    return { save, template: cardTemplate }
-  })
-  const deckCardIds = autoTrainingDeck(template, tier, owned)
-  if (deckCardIds.length !== deckSlotCount(tier)) {
-    throw new Error(`Training needs ${deckSlotCount(tier)} eligible support cards at tier ${tier}`)
-  }
-  return { ...uma, deckCardIds }
-}
-
 export function resolveMemoryTraining(input: TrainingStateInput): TrainingMutationResult {
   if (!isLocalDay(input.today)) throw new Error(`Invalid local day: ${input.today}`)
   if (!Number.isSafeInteger(input.now) || input.now < 0) throw new Error('Invalid Training timestamp')
@@ -109,8 +86,6 @@ export function resolveMemoryTraining(input: TrainingStateInput): TrainingMutati
   const template = requireUmaTemplate(input.content, input.uma)
   const cards = trainingCards(input.content, input.uma, input.cardsById)
   const tier = tierOfLevel(input.uma.level)
-  const error = trainingDeckError(tier, cards)
-  if (error) throw new Error(error)
   const deal = dealTrainingCards(
     cards,
     trainingTurnSeed(input.profile.createdAt, input.uma.templateId, tier, input.uma.trainingsThisScenario),
@@ -156,35 +131,6 @@ export function resolveMemoryTraining(input: TrainingStateInput): TrainingMutati
     result: adjusted,
     ledgerIds: [trainingLedgerId, ...newCardLevelIds, ...cardMaxIds],
   }
-}
-
-export async function ensurePersistentTrainingDeck(
-  content: LoadedContent,
-  umaId: string,
-  now: number,
-): Promise<UmaSave> {
-  if (!Number.isSafeInteger(now) || now < 0) throw new Error('Invalid Training timestamp')
-  return db.transaction('rw', db.umas, db.cards, db.outbox, async () => {
-    const row = await db.umas.get(umaId)
-    if (!row) throw new Error('Training Uma is not owned')
-    const uma = parsedUmaRow(umaId, row.data)
-    if (uma.deckCardIds.length > 0) {
-      const rows = await db.cards.bulkGet(uma.deckCardIds)
-      const cardsById = Object.fromEntries(uma.deckCardIds.map((id, index) => {
-        const cardRow = rows[index]
-        if (!cardRow) throw new Error(`Training deck card is not owned: ${id}`)
-        return [id, parsedCardRow(id, cardRow.data)]
-      }))
-      ensureMemoryTrainingDeck(content, uma, cardsById)
-      return uma
-    }
-    const rows = await db.cards.toArray()
-    const cardsById = Object.fromEntries(rows.map((cardRow) => [cardRow.id, parsedCardRow(cardRow.id, cardRow.data)]))
-    const next = ensureMemoryTrainingDeck(content, uma, cardsById)
-    await db.umas.put({ ...row, data: next })
-    await queueInTransaction('umas', umaId, 'upsert', now)
-    return next
-  })
 }
 
 export async function persistTraining(
