@@ -99,6 +99,13 @@ export function replaceCardState(profile: PlayerProfile, card: CardSave): void {
   }))
 }
 
+export function replaceUmaCollectionState(profile: PlayerProfile, uma: UmaSave): void {
+  useGame.setState((state) => ({
+    profile,
+    umas: { ...state.umas, [uma.templateId]: uma },
+  }))
+}
+
 export function replaceRaceState(profile: PlayerProfile, uma: UmaSave): void {
   useGame.setState((state) => ({
     profile,

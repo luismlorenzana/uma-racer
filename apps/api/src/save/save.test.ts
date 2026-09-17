@@ -82,6 +82,12 @@ describe('parseSyncRequest', () => {
       { kind: 'profile', id: 'main', baseVersion: 3, data: profile },
       { kind: 'profile', id: 'main', baseVersion: 3, data: profile },
     ] })).toMatch(/duplicate/)
+    expect(parseSyncRequest({ appends: [{
+      kind: 'ledger',
+      id: 'card-coupon-redeem:synthetic-card',
+      data: { resource: 'card-coupons', delta: -1, reason: 'card-coupon-redeem', localDay: '2026-01-01', createdAt: 2 },
+      createdAt: 2,
+    }] })).toMatchObject({ appends: [{ kind: 'ledger', id: 'card-coupon-redeem:synthetic-card' }] })
   })
 
   it('strictly validates progression race result appends', () => {

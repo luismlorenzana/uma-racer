@@ -24,6 +24,7 @@ import {
   progressionFieldSize,
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
+  UMA_SHARDS_PER_COUPON,
   spCap,
   statCap,
   tierOfLevel,
@@ -62,6 +63,10 @@ import {
 } from './index'
 
 describe('scenarios', () => {
+  it('pins the Uma shard exchange rate', () => {
+    expect(UMA_SHARDS_PER_COUPON).toBe(5)
+  })
+
   it('uses the original 1200 → 2000 cap ladder and keeps rising after #11', () => {
     expect(baselineStatCap(1)).toBe(1200)
     expect(baselineStatCap(6)).toBe(1600)

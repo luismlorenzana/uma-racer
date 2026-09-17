@@ -64,3 +64,5 @@ Revisit these numbers once a balance simulation exists.
 - A "day" uses the device's local date. Anti-cheat isn't needed for a personal game.
 - **Dev mode:** grant tickets, coupons, and shards; set levels; skip days. For testing and balance work.
 - All earning and spending goes into a **ledger**, so it can be audited and rebalanced later.
+- Shard exchange writes `-5 uma-shards` and `+1 uma-coupons` as distinct rows under one numbered exchange prefix. Coupon
+  redemption writes one `-1` row keyed by the selected Card or Uma id; reloads and retries never append another spend.

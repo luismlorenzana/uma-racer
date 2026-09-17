@@ -57,9 +57,12 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 
 ### Stable
 
-- A grid of Uma tiles: portrait, level badge, scenario crest, prestige frame, ready-to-promote glow.
-- Filter chips (tier, distance, surface, strategy, ready to promote). Sorting is in a sheet.
-- **Long-press peek**: stats, goals, and pinned badges without leaving the grid.
+- A complete All/Owned/Unowned grid: owned tiles show portrait, levels, tier, and ready state; unowned outfits use labeled
+  silhouettes and open a Select Coupon review. Owned tiles navigate directly to Profile.
+- Completion, shard progress, coupon balance, and the explicit five-shard Exchange action sit above filter chips for tier,
+  distance, surface, strategy, and ready state. Sorting remains in a sheet.
+- Exchange uses a short Motion counter response, with an instant reduced-motion equivalent. Missing content and memory-only
+  persistence remain visible rather than silently changing counts.
 
 ### Uma Profile
 
@@ -176,6 +179,11 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 The implemented album also exposes owned/maxed completion, type and ownership filters, explicit Friend/Group unavailability,
 missing-content preservation, and the one-time max-card Coupon state. Limit-break errors remain in the detail sheet so the
 player can retry without losing context.
+
+The implemented Select grid reuses deterministic private-catalog ordering, adds era/type filters, and keeps future-era and
+Friend/Group ownership distinct from equip eligibility. Card and Uma review sheets show the exact one-coupon cost before
+the local commit. The full-screen reveal carries only kind/id, reconstructs art and identity from committed save/content,
+and is read-only on refresh or direct navigation.
 
 ### Badges
 

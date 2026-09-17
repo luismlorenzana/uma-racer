@@ -49,6 +49,17 @@ import {
 } from './racing'
 import { promoteMemoryCard, promotePersistentCard } from './cards'
 import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
+import {
+  exchangeMemoryUmaShards,
+  exchangePersistentUmaShards,
+  redeemMemoryCard,
+  redeemMemoryUma,
+  redeemPersistentCard,
+  redeemPersistentUma,
+  type CardRedemptionMutation,
+  type UmaRedemptionMutation,
+} from './collection'
+import { replaceUmaCollectionState } from './store'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -61,6 +72,12 @@ export class GameRuntime {
   private raceLocks = new Set<string>()
   private cardLocks = new Set<string>()
   private deckLocks = new Set<string>()
+  private cardRedemptionLocks = new Set<string>()
+  private umaRedemptionLocks = new Set<string>()
+  private exchangeLocked = false
+  private memoryCardRedemptions = new Set<string>()
+  private memoryUmaRedemptions = new Set<string>()
+  private memoryExchangeSequence = 0
   private memoryRaceHistory: RaceResultRecord[] = []
   private onlineHandler = () => void this.flush()
   private visibilityHandler = () => {
@@ -153,6 +170,9 @@ export class GameRuntime {
     this.generation += 1
     this.content = null
     this.memoryRaceHistory = []
+    this.memoryCardRedemptions.clear()
+    this.memoryUmaRedemptions.clear()
+    this.memoryExchangeSequence = 0
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
     if (typeof window !== 'undefined') window.removeEventListener('online', this.onlineHandler)
@@ -332,6 +352,97 @@ export class GameRuntime {
       return mutation
     } finally {
       this.cardLocks.delete(cardId)
+    }
+  }
+
+  async exchangeUmaShards(today = localDay(), now = Date.now()) {
+    if (this.exchangeLocked) throw new Error('Uma Shards are already being exchanged')
+    this.exchangeLocked = true
+    try {
+      const generation = this.generation
+      const state = useGame.getState()
+      if (state.status !== 'ready' || !state.profile) throw new Error('Collection save is not ready')
+      const mutation = state.persistent
+        ? await exchangePersistentUmaShards(today, now)
+        : exchangeMemoryUmaShards(state.profile, this.memoryExchangeSequence + 1, today, now)
+      if (generation !== this.generation) return mutation
+      if (!state.persistent) this.memoryExchangeSequence = mutation.sequence
+      replaceProfile(mutation.profile)
+      if (state.persistent) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation
+    } finally {
+      this.exchangeLocked = false
+    }
+  }
+
+  async redeemCardCoupon(cardId: string, today = localDay(), now = Date.now()): Promise<CardRedemptionMutation> {
+    if (this.cardRedemptionLocks.has(cardId)) throw new Error('This Card Coupon is already being redeemed')
+    this.cardRedemptionLocks.add(cardId)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      if (!content || state.status !== 'ready' || !state.profile) throw new Error('Collection save is not ready')
+      let mutation: CardRedemptionMutation
+      if (!state.persistent && this.memoryCardRedemptions.has(cardId) && state.cards[cardId]) {
+        mutation = {
+          profile: state.profile,
+          card: state.cards[cardId],
+          ledgerId: `card-coupon-redeem:${cardId}`,
+          alreadyRedeemed: true,
+        }
+      } else {
+        mutation = state.persistent
+          ? await redeemPersistentCard(content, cardId, today, now)
+          : redeemMemoryCard(content, state.profile, state.cards, cardId, today, now)
+      }
+      if (generation !== this.generation) return mutation
+      if (!state.persistent) this.memoryCardRedemptions.add(cardId)
+      replaceCardState(mutation.profile, mutation.card)
+      if (state.persistent) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation
+    } finally {
+      this.cardRedemptionLocks.delete(cardId)
+    }
+  }
+
+  async redeemUmaCoupon(umaId: string, today = localDay(), now = Date.now()): Promise<UmaRedemptionMutation> {
+    if (this.umaRedemptionLocks.has(umaId)) throw new Error('This Uma Coupon is already being redeemed')
+    this.umaRedemptionLocks.add(umaId)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      if (!content || state.status !== 'ready' || !state.profile) throw new Error('Collection save is not ready')
+      let mutation: UmaRedemptionMutation
+      if (!state.persistent && this.memoryUmaRedemptions.has(umaId) && state.umas[umaId]) {
+        mutation = {
+          profile: state.profile,
+          uma: state.umas[umaId],
+          ledgerId: `uma-coupon-redeem:${umaId}`,
+          alreadyRedeemed: true,
+        }
+      } else {
+        mutation = state.persistent
+          ? await redeemPersistentUma(content, umaId, today, now)
+          : redeemMemoryUma(content, state.profile, state.umas, umaId, today, now)
+      }
+      if (generation !== this.generation) return mutation
+      if (!state.persistent) this.memoryUmaRedemptions.add(umaId)
+      replaceUmaCollectionState(mutation.profile, mutation.uma)
+      if (state.persistent) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation
+    } finally {
+      this.umaRedemptionLocks.delete(umaId)
     }
   }
 
