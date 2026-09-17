@@ -1,4 +1,4 @@
-import { AnimatePresence, m, useDragControls } from 'motion/react'
+import { AnimatePresence, m, useDragControls, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 
 /**
@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
  */
 export function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
   const dragControls = useDragControls()
+  const reducedMotion = useReducedMotion()
 
   return (
     <AnimatePresence>
@@ -22,10 +23,10 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
           <m.div
             role="dialog"
             className="pb-safe fixed inset-x-0 bottom-0 z-50 rounded-t-[1.75rem] border-t-2 border-white bg-cream px-4 shadow-[0_-10px_30px_rgb(0_0_0/0.18)]"
-            initial={{ y: '100%' }}
+            initial={reducedMotion ? false : { y: '100%' }}
             animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: '100%' }}
+            transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 38 }}
             drag="y"
             dragControls={dragControls}
             dragListener={false}

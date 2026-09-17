@@ -11,6 +11,7 @@ import {
   cardEffectValue,
   cardLevelCap,
   cardLimitBreakCost,
+  CARD_UNIQUE_BONUS_MULTIPLIER,
   distanceCategory,
   deckSlotCount,
   eraOf,
@@ -115,6 +116,7 @@ describe('training', () => {
     expect(RANDOM_FACILITY_CHANCE).toBe(0.7)
     expect(BASE_HINT_CHANCE).toBe(0.2)
     expect([1, 2, 3, 11].map(deckSlotCount)).toEqual([4, 5, 6, 6])
+    expect(CARD_UNIQUE_BONUS_MULTIPLIER).toBe(0.25)
   })
 
   it('matches the worked example in training.md', () => {

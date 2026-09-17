@@ -82,6 +82,7 @@ function ResultPanel({ result, skillNames }: { result: TrainingTurnResult; skill
         <span className="rounded-full bg-sky/10 px-2 py-1">+{result.trainingExpGained} Training EXP</span>
         {result.trainingLevelsGained > 0 && <span className="rounded-full bg-gold/20 px-2 py-1">Training Level +{result.trainingLevelsGained}</span>}
         {result.ticketReward > 0 && <span className="rounded-full bg-gold/20 px-2 py-1">+{result.ticketReward} tickets</span>}
+        {result.cardCouponReward > 0 && <span className="rounded-full bg-violet-100 px-2 py-1">+{result.cardCouponReward} Card Coupon</span>}
         {result.hintResults.map((hint) => (
           <span key={hint.cardId} className="rounded-full bg-violet-100 px-2 py-1">
             {hint.learnedSkillId ? `Hint: ${skillNames.get(hint.learnedSkillId) ?? hint.learnedSkillId}` : `Known hint +${hint.fallbackSp} SP`}

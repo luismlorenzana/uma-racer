@@ -43,6 +43,7 @@ interface TrainingStateInput {
   today: string
   now: number
   rewardedCardLevels?: ReadonlySet<string>
+  rewardedCardMaxes?: ReadonlySet<string>
 }
 
 function requireUmaTemplate(content: LoadedContent, uma: UmaSave) {
@@ -128,14 +129,32 @@ export function resolveMemoryTraining(input: TrainingStateInput): TrainingMutati
   )
   const newCardLevelIds = cardLevelIds.filter((id) => !input.rewardedCardLevels?.has(id))
   const ticketReward = newCardLevelIds.length * 2
-  const adjusted = ticketReward === result.ticketReward ? result : { ...result, ticketReward }
+  const newlyMaxedCardIds = result.newlyMaxedCardIds.filter((id) => !input.rewardedCardMaxes?.has(id))
+  const cardCouponReward = newlyMaxedCardIds.length
+  const adjustedCards = result.cards.map((card) =>
+    card.card.level === 25 && (card.card.maxCouponGranted || input.rewardedCardMaxes?.has(card.card.templateId))
+      ? { ...card, card: { ...card.card, maxCouponGranted: true } }
+      : card,
+  )
+  const adjusted = {
+    ...result,
+    cards: adjustedCards,
+    ticketReward,
+    cardCouponReward,
+    newlyMaxedCardIds,
+  }
+  const cardMaxIds = newlyMaxedCardIds.map((id) => `card-max-coupon:${id}`)
   return {
-    profile: { ...input.profile, tickets: input.profile.tickets - 1 + ticketReward },
+    profile: {
+      ...input.profile,
+      tickets: input.profile.tickets - 1 + ticketReward,
+      cardCoupons: input.profile.cardCoupons + cardCouponReward,
+    },
     uma: adjusted.uma,
     cards: adjusted.cards.map((card) => card.card),
     deal,
     result: adjusted,
-    ledgerIds: [trainingLedgerId, ...newCardLevelIds],
+    ledgerIds: [trainingLedgerId, ...newCardLevelIds, ...cardMaxIds],
   }
 }
 
@@ -199,6 +218,11 @@ export async function persistTraining(
     const rewardedCardLevels = new Set(
       possibleRewardIds.filter((_, index) => existingRewards[index] !== undefined),
     )
+    const possibleCardMaxIds = uma.deckCardIds.map((cardId) => `card-max-coupon:${cardId}`)
+    const existingCardMaxes = await db.ledger.bulkGet(possibleCardMaxIds)
+    const rewardedCardMaxes = new Set(
+      uma.deckCardIds.filter((_, index) => existingCardMaxes[index] !== undefined),
+    )
     const mutation = resolveMemoryTraining({
       content,
       profile,
@@ -208,6 +232,7 @@ export async function persistTraining(
       today,
       now,
       rewardedCardLevels,
+      rewardedCardMaxes,
     })
 
     await db.profile.put({ ...profileRow, data: mutation.profile })
@@ -226,7 +251,9 @@ export async function persistTraining(
       id,
       data: id === trainingLedgerId
         ? { resource: 'tickets', delta: -1, reason: 'training', localDay: today, createdAt: now }
-        : { resource: 'tickets', delta: 2, reason: 'card-level', localDay: today, createdAt: now },
+        : id.startsWith('card-max-coupon:')
+          ? { resource: 'card-coupons', delta: 1, reason: 'card-max', localDay: today, createdAt: now }
+          : { resource: 'tickets', delta: 2, reason: 'card-level', localDay: today, createdAt: now },
     }))
     for (const entry of ledger) {
       await db.ledger.add({ id: entry.id, data: entry.data, createdAt: now })

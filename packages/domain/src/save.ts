@@ -66,6 +66,7 @@ export const LEDGER_REASONS = [
   'card-level',
   'uma-promotion',
   'card-limit-break',
+  'card-max',
 ] as const
 export type LedgerReason = (typeof LEDGER_REASONS)[number]
 
