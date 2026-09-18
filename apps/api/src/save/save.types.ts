@@ -176,10 +176,17 @@ function parseParents(value: unknown): value is Record<string, unknown>[] {
     new Set(parents.map((parent) => parent.charaId)).size === parents.length
 }
 
-function parseSnapshot(value: unknown, templateId: string): boolean {
+function parseSnapshot(value: unknown, templateId?: string): boolean {
   if (!isRecord(value) || !exactKeys(value, SNAPSHOT_FIELDS)) return false
   const { parents, ...parent } = value
-  return parseParent(parent) && parent.umaId === templateId && parseParents(parents)
+  return parseParent(parent) && (templateId === undefined || parent.umaId === templateId) && parseParents(parents)
+}
+
+function parseSnapshots(value: unknown): value is Record<string, unknown>[] {
+  if (!Array.isArray(value) || value.length > 2 || value.some((snapshot) => !parseSnapshot(snapshot))) return false
+  const snapshots = value as Record<string, unknown>[]
+  return new Set(snapshots.map((snapshot) => snapshot.umaId)).size === snapshots.length &&
+    new Set(snapshots.map((snapshot) => snapshot.charaId)).size === snapshots.length
 }
 
 function parseGoal(value: unknown, tier: number): boolean {
@@ -210,7 +217,7 @@ function parseUma(value: unknown): Record<string, unknown> | null {
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
   if (!exactKeys(value, UMA_FIELDS) || value.schemaVersion !== 2 || !parseUmaBase(value)) return null
   if (typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || !Array.isArray(value.skillHistory) ||
-    !Array.isArray(value.scenarioJourneys) || !parseParents(value.currentParents) ||
+    !Array.isArray(value.scenarioJourneys) || !parseSnapshots(value.currentParents) ||
     (value.parentSnapshot !== null && !parseSnapshot(value.parentSnapshot, value.templateId as string))) return null
   const history = value.skillHistory
   if (history.some((entry) => !isRecord(entry) || !exactKeys(entry, SKILL_HISTORY_FIELDS) ||

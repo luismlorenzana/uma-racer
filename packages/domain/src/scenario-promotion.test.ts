@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import { createCardSave, createPlayerProfile, createUmaSave } from './save'
+import { parentFingerprint } from './inheritance'
 import { expToNextUmaLevel, PROMOTION_BONUS_PER_STAT } from './progression'
 import { buildParentSnapshot, completeFinalScenario, promoteScenario, promotionReadiness } from './scenario-promotion'
 
@@ -19,6 +20,10 @@ const template: UmaTemplate = {
   realHorseSex: null, signatureRaces: [], imageSource: 'https://invalid.test/synthetic.png',
 }
 
+const parentTemplate: UmaTemplate = {
+  ...template, id: 'uma-parent', charaId: 'chara-parent', name: 'Synthetic Parent', uniqueSkillId: 'unique-parent', awakeningSkillIds: [],
+}
+
 function skill(id: string, kind: SkillTemplate['kind'], options: Partial<SkillTemplate> = {}): SkillTemplate {
   return {
     id, kind, name: `Synthetic ${id}`, description: '', costSp: kind === 'unique' ? null : 100,
@@ -29,6 +34,8 @@ function skill(id: string, kind: SkillTemplate['kind'], options: Partial<SkillTe
 const skillRows = [
   skill('unique-a', 'unique', { inheritedSkillId: 'unique-a-gene' }),
   skill('unique-a-gene', 'inherited-unique'),
+  skill('unique-parent', 'unique', { inheritedSkillId: 'unique-parent-gene' }),
+  skill('unique-parent-gene', 'inherited-unique'),
   skill('white-a', 'white'),
   skill('white-b', 'white'),
   skill('gold-a', 'gold', { normalSkillId: 'white-b' }),
@@ -56,6 +63,7 @@ function readyUma(exp = 0) {
   ]
   return {
     ...base,
+    scenarioStarted: true,
     level: 10,
     exp,
     trainingLevel: 7,
@@ -121,6 +129,24 @@ describe('scenario promotion', () => {
     expect(full.uma).toMatchObject({ level: 12, exp: 0 })
     expect(full.profile.tickets).toBe(80)
     expect(full.ledger.map((entry) => entry.id)).toEqual(['uma-promotion:uma-a:1', 'uma-level-tickets:uma-a:12'])
+  })
+
+  it('starts the promoted tier with an exact selected frozen parent', () => {
+    const profile = { ...createPlayerProfile('content-v1', 1), tickets: 100 }
+    const snapshot = {
+      umaId: parentTemplate.id, charaId: parentTemplate.charaId, completedTier: 1, takenAt: 9,
+      inheritedUniqueSkillId: 'unique-parent-gene', inheritableWhiteSkillIds: ['white-a'], aptitudes, parents: [],
+    }
+    const parent = { ...createUmaSave(parentTemplate), scenarioStarted: true, parentSnapshot: snapshot }
+    const result = promoteScenario({
+      profile, uma: readyUma(), umaTemplate: template, skills,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], now: 456,
+      ownedUmas: [readyUma(), parent], umaTemplates: new Map([[template.id, template], [parentTemplate.id, parentTemplate]]),
+      selection: { parents: [parentFingerprint(snapshot)], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [null] },
+    })
+    expect(result.uma.currentParents).toEqual([snapshot])
+    expect(result.uma.skillLibrary).toContainEqual({ skillId: 'unique-parent-gene', origin: 'inherited', sourceId: parentTemplate.id })
+    expect(result.snapshot.parents).toEqual([])
   })
 
   it('reports gate/final/ticket readiness and rejects stale decks', () => {

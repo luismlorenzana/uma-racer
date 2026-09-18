@@ -7,6 +7,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { EMPTY_UMA_FILTERS, filterAndSortUmas, joinUma } from './view'
+import { buildLineageView } from './lineage-view'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -66,9 +67,27 @@ function loaded(umas: UmaTemplate[]): LoadedContent {
 }
 
 describe('Uma view models', () => {
+  it('builds a finite frozen lineage with missing-content fallbacks', () => {
+    const childTemplate = template('child', 'Synthetic Child')
+    const parentTemplate = template('parent', 'Synthetic Parent')
+    const content = loaded([childTemplate, parentTemplate])
+    const parent = {
+      umaId: 'parent', charaId: 'chara-parent', completedTier: 2, takenAt: 20, inheritedUniqueSkillId: 'gene-parent',
+      inheritableWhiteSkillIds: ['white-parent'], aptitudes, parents: [{
+        umaId: 'missing-grand', charaId: 'chara-grand', completedTier: 1, takenAt: 10, inheritedUniqueSkillId: null,
+        inheritableWhiteSkillIds: [], aptitudes,
+      }],
+    }
+    const save = { ...createUmaSave(childTemplate), currentParents: [parent], parentSnapshot: { ...parent, umaId: 'child', charaId: 'chara-child' } }
+    const view = buildLineageView(save, content)
+    expect(view.activeParents[0]).toMatchObject({ name: 'Synthetic Parent', completedTier: 2, whiteCount: 1 })
+    expect(view.activeParents[0]?.grandparents[0]).toMatchObject({ name: 'Missing content · missing-grand', missingContent: true, grandparents: [] })
+    expect(view.latestSnapshot).toMatchObject({ name: 'Synthetic Child', grandparents: [{ umaId: 'missing-grand' }] })
+  })
+
   it('derives scenario caps, readiness, and the managed atlas frame', () => {
     const content = loaded([template('u1', 'Synthetic One')])
-    const save = { ...createUmaSave(content.umas.items[0]!), level: 10, exp: 0 }
+    const save = { ...createUmaSave(content.umas.items[0]!), scenarioStarted: true, level: 10, exp: 0 }
     const joined = joinUma(save, content)
     expect(joined.status).toBe('ready')
     if (joined.status !== 'ready') return

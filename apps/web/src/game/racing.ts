@@ -166,6 +166,7 @@ function playerRaceSkills(content: LoadedContent, uma: UmaSave, template: UmaTem
 
 export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const { content, profile, uma, raceId, strategy, sequence } = input
+  if (!uma.scenarioStarted) throw new Error('Finish scenario setup before racing')
   if (uma.trainingsThisScenario < 1) throw new Error('Complete one Training turn to unlock races for this Uma')
   if (isGateLevel(uma.level)) throw new Error('Promote this Uma before entering another race')
   const template = content.umas.byId.get(uma.templateId)

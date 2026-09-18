@@ -131,7 +131,7 @@ describe('deterministic Training deal and preview', () => {
 
   it('previews the exact capped gains for every facility', () => {
     const template = uma({ speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })
-    const save = createUmaSave(template)
+    const save = { ...createUmaSave(template), scenarioStarted: true }
     const cards = [input(card('speed-card', 'speed')), input(card('power-card', 'power'))]
     const deal: TrainingDeal = {
       seed: 1,
@@ -176,7 +176,7 @@ describe('deterministic Training deal and preview', () => {
 describe('Training resolution', () => {
   it('applies gains, friendship EXP, every card EXP bucket, levels, rewards, and opening unlock', () => {
     const template = uma({ speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })
-    const save = createUmaSave(template)
+    const save = { ...createUmaSave(template), scenarioStarted: true }
     const nearLevel = (template: SupportCardTemplate): CardSave => ({ ...createCardSave(template), exp: 35 })
     const templates = [card('speed-card', 'speed'), card('power-card', 'power'), card('stamina-card', 'stamina')]
     const cards = templates.map((template) => input(template, nearLevel(template)))
@@ -223,7 +223,7 @@ describe('Training resolution', () => {
     const deal: TrainingDeal = { seed: 9, placements: [{ cardId: hintCard.id, placement: 'speed' }] }
     const skills = new Map([unique, white, gold].map((entry) => [entry.id, entry]))
     const learned = resolveTrainingTurn({
-      uma: createUmaSave(template),
+      uma: { ...createUmaSave(template), scenarioStarted: true },
       template,
       cards: [input(hintCard)],
       skills,
@@ -236,6 +236,7 @@ describe('Training resolution', () => {
 
     const knownUma = {
       ...createUmaSave(template),
+      scenarioStarted: true,
       skillPoints: 224,
       skillLibrary: [
         ...createUmaSave(template).skillLibrary,
@@ -249,7 +250,7 @@ describe('Training resolution', () => {
     const lb3 = input(hintCard, { ...createCardSave(hintCard), level: 16, limitBreak: 3 })
     const goldOnly = { ...hintCard, hintSkillIds: [gold.id] }
     const goldResult = resolveTrainingTurn({
-      uma: createUmaSave(template),
+      uma: { ...createUmaSave(template), scenarioStarted: true },
       template,
       cards: [{ ...lb3, template: goldOnly }],
       skills,

@@ -84,6 +84,9 @@ an empty deck shows an Edit Deck action. The same ordered-deck validator drives 
 Race Bonus, so eligibility and displayed effects cannot disagree. Training results name each equipped card's EXP and new
 level so the consequence of a manual deck choice is visible.
 
+A newly acquired Uma must confirm Scenario Start first. Until `scenarioStarted` is true, Training and racing reject before
+writing anything; deck editing remains available so the player can prepare the tier-1 run.
+
 ## A training turn
 
 Deals and hint rolls use a seeded deterministic turn derived from the save, Uma, scenario, and committed turn count. A

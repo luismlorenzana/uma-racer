@@ -82,6 +82,7 @@ function parsedUmaRow(id: string, value: unknown): UmaSave {
 export function resolveMemoryTraining(input: TrainingStateInput): TrainingMutationResult {
   if (!isLocalDay(input.today)) throw new Error(`Invalid local day: ${input.today}`)
   if (!Number.isSafeInteger(input.now) || input.now < 0) throw new Error('Invalid Training timestamp')
+  if (!input.uma.scenarioStarted) throw new Error('Finish scenario setup before Training')
   if (input.profile.tickets < 1) throw new Error('You need a Training Ticket')
   const template = requireUmaTemplate(input.content, input.uma)
   const cards = trainingCards(input.content, input.uma, input.cardsById)

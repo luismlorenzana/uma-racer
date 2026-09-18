@@ -4,6 +4,12 @@ import { projectedCardEffectValue } from './cards'
 import type { SkillTemplate, UmaTemplate } from './content'
 import { umaPromotionCost } from './economy'
 import { expToNextUmaLevel, PROMOTION_BONUS_PER_STAT, UMA_LEVEL_TICKET_REWARD } from './progression'
+import {
+  EMPTY_SCENARIO_START_SELECTION,
+  resolveScenarioInheritance,
+  type ScenarioInheritanceResult,
+  type ScenarioStartSelection,
+} from './inheritance'
 import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
 import {
   SAVE_ID_PATTERN,
@@ -43,6 +49,7 @@ export interface ScenarioPromotionResult {
   awakeningSkillId: string | null
   overflowLevel: number | null
   ledger: PromotionLedgerDescriptor[]
+  inheritance: ScenarioInheritanceResult
 }
 
 export interface ScenarioPromotionInput {
@@ -52,6 +59,24 @@ export interface ScenarioPromotionInput {
   skills: ReadonlyMap<string, SkillTemplate>
   cards: readonly SupportDeckCard[]
   now: number
+  ownedUmas?: readonly UmaSave[]
+  umaTemplates?: ReadonlyMap<string, UmaTemplate>
+  selection?: ScenarioStartSelection
+}
+
+export interface NewUmaScenarioStartInput {
+  uma: UmaSave
+  umaTemplate: UmaTemplate
+  skills: ReadonlyMap<string, SkillTemplate>
+  ownedUmas: readonly UmaSave[]
+  umaTemplates: ReadonlyMap<string, UmaTemplate>
+  selection: ScenarioStartSelection
+}
+
+export interface NewUmaScenarioStartResult {
+  uma: UmaSave
+  tier: 1
+  inheritance: ScenarioInheritanceResult
 }
 
 export interface PromotionReadiness {
@@ -184,6 +209,56 @@ function refreshedSkills(input: ScenarioPromotionInput, fromTier: number): { lib
   return { library, awakeningSkillId: fromTier <= 4 ? (input.umaTemplate.awakeningSkillIds[fromTier - 1] ?? null) : null }
 }
 
+function appendScenarioHistory(history: readonly SkillHistoryEntry[], library: readonly SkillUnlock[], tier: number): SkillHistoryEntry[] {
+  const next = history.map((entry) => ({ ...entry }))
+  for (const unlock of library) {
+    if (!next.some((entry) => entry.tier === tier && entry.skillId === unlock.skillId)) next.push({ ...unlock, tier })
+  }
+  return next
+}
+
+/** Start a newly acquired tier-1 Uma without applying any promotion rewards. */
+export function startNewUmaScenario(input: NewUmaScenarioStartInput): NewUmaScenarioStartResult {
+  const parsedUma = parseUmaSave(input.uma)
+  if (!parsedUma) throw new Error('Uma save is malformed')
+  if (parsedUma.scenarioStarted) throw new Error('This Uma already has an active scenario')
+  if (parsedUma.level !== 1 || parsedUma.parentSnapshot !== null || parsedUma.currentParents.length !== 0) {
+    throw new Error('Pending scenario setup is only valid for a new tier-1 Uma')
+  }
+  const helperInput: ScenarioPromotionInput = {
+    profile: { schemaVersion: 2, tickets: 0, cardCoupons: 0, umaCoupons: 0, umaShards: 0, lastDailyGrant: null, featuredUmaId: null, starterSeedContentVersion: null, createdAt: 0 },
+    uma: parsedUma,
+    umaTemplate: input.umaTemplate,
+    skills: input.skills,
+    cards: [],
+    now: 0,
+  }
+  assertTemplate(helperInput)
+  const permanent = refreshedSkills(helperInput, 0).library
+  const inheritance = resolveScenarioInheritance({
+    child: parsedUma,
+    childTemplate: input.umaTemplate,
+    ownedUmas: input.ownedUmas,
+    umaTemplates: input.umaTemplates,
+    skills: input.skills,
+    permanentLibrary: permanent,
+    selection: input.selection,
+  })
+  return {
+    tier: 1,
+    inheritance,
+    uma: {
+      ...parsedUma,
+      scenarioStarted: true,
+      skillLibrary: inheritance.skillLibrary,
+      loadoutSkillIds: parsedUma.loadoutSkillIds.filter((id) => inheritance.skillLibrary.some((unlock) => unlock.skillId === id && unlock.origin !== 'own-unique')),
+      aptitudes: inheritance.aptitudes,
+      currentParents: inheritance.currentParents,
+      skillHistory: appendScenarioHistory(parsedUma.skillHistory, inheritance.skillLibrary, 1),
+    },
+  }
+}
+
 /** Validate and calculate the complete, deterministic T012 promotion commit. */
 export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotionResult {
   assertTimestamp(input.now)
@@ -193,7 +268,6 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
   if (!parsedUma) throw new Error('Uma save is malformed')
   const readiness = promotionReadiness(parsedProfile, parsedUma)
   if (!readiness.ready || readiness.cost === null || readiness.toTier === null) throw new Error(readiness.reason ?? 'Uma is not ready to promote')
-  if (parsedUma.currentParents.length !== 0) throw new Error('T012 promotion only supports starting without parents')
   assertTemplate({ ...input, profile: parsedProfile, uma: parsedUma })
 
   if (input.cards.length !== parsedUma.deckCardIds.length || input.cards.some((card, index) => card.save.templateId !== parsedUma.deckCardIds[index])) {
@@ -216,13 +290,17 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
   for (const bonus of cardBonuses) stats[bonus.stat] += bonus.amount
 
   const refresh = refreshedSkills({ ...input, profile: parsedProfile, uma: parsedUma }, readiness.fromTier)
-  const loadoutSkillIds = parsedUma.loadoutSkillIds.filter((id) => refresh.library.some((unlock) => unlock.skillId === id && unlock.origin !== 'own-unique'))
-  const skillHistory: SkillHistoryEntry[] = parsedUma.skillHistory.map((entry) => ({ ...entry }))
-  for (const unlock of refresh.library) {
-    if (!skillHistory.some((entry) => entry.tier === readiness.toTier && entry.skillId === unlock.skillId)) {
-      skillHistory.push({ ...unlock, tier: readiness.toTier })
-    }
-  }
+  const inheritance = resolveScenarioInheritance({
+    child: parsedUma,
+    childTemplate: input.umaTemplate,
+    ownedUmas: input.ownedUmas ?? [parsedUma],
+    umaTemplates: input.umaTemplates ?? new Map([[input.umaTemplate.id, input.umaTemplate]]),
+    skills: input.skills,
+    permanentLibrary: refresh.library,
+    selection: input.selection ?? EMPTY_SCENARIO_START_SELECTION,
+  })
+  const loadoutSkillIds = parsedUma.loadoutSkillIds.filter((id) => inheritance.skillLibrary.some((unlock) => unlock.skillId === id && unlock.origin !== 'own-unique'))
+  const skillHistory = appendScenarioHistory(parsedUma.skillHistory, inheritance.skillLibrary, readiness.toTier)
 
   let level = parsedUma.level + 1
   let exp = parsedUma.exp
@@ -256,12 +334,13 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
       trainingLevel: 1,
       trainingExp: 0,
       stats,
-      skillLibrary: refresh.library,
+      aptitudes: inheritance.aptitudes,
+      skillLibrary: inheritance.skillLibrary,
       loadoutSkillIds,
       trainingsThisScenario: 0,
       scenarioStarted: true,
       skillHistory,
-      currentParents: [],
+      currentParents: inheritance.currentParents,
       parentSnapshot: snapshot,
     },
     fromTier: readiness.fromTier,
@@ -273,6 +352,7 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
     awakeningSkillId: refresh.awakeningSkillId,
     overflowLevel,
     ledger,
+    inheritance,
   }
 }
 

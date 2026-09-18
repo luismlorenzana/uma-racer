@@ -16,6 +16,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma, setUmaLoadout } from '../game/actions'
 import { buildDeckView, formatDeckEffect } from '../game/deck-view'
+import { buildLineageView } from '../game/lineage-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -85,9 +86,11 @@ export function UmaProfileScreen() {
   }
   const uma = joined.value
   const featured = profile.featuredUmaId === save.templateId
-  const raceUnlocked = save.trainingsThisScenario >= 1 && !isGateLevel(save.level)
+  const setupPending = !save.scenarioStarted
+  const raceUnlocked = save.scenarioStarted && save.trainingsThisScenario >= 1 && !isGateLevel(save.level)
   const loadout = summarizeSkillLoadout(save, uma.template, contentState.content.skills.byId)
   const deck = buildDeckView(save, cards, contentState.content)
+  const lineage = buildLineageView(save, contentState.content)
 
   const toggleSkill = async (skillId: string) => {
     if (savingSkillId) return
@@ -135,6 +138,8 @@ export function UmaProfileScreen() {
           {uma.readyToPromote && <p className="mt-2 inline-flex rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">Ready to promote</p>}
         </div>
       </Panel>
+
+      {setupPending && <Panel className="border-violet-300 bg-violet-50"><h2 className="font-extrabold">Scenario setup required</h2><p className="mt-1 text-sm text-ink-soft">Choose optional frozen parents before this new Uma can Train or race.</p><GameButton className="mt-3" variant="go" onClick={() => navigate(`/scenario/${encodeURIComponent(save.templateId)}/start`)}>Start scenario</GameButton></Panel>}
 
       <Panel>
         <div className="flex items-center justify-between">
@@ -260,19 +265,19 @@ export function UmaProfileScreen() {
         ))}
         <Panel className="col-span-2 p-3">
           <p className="text-sm font-extrabold">Lineage</p>
-          {save.parentSnapshot ? <p className="mt-1 text-xs text-ink-soft">Latest Tier {save.parentSnapshot.completedTier} snapshot · {save.parentSnapshot.inheritableWhiteSkillIds.length} inheritable white skill{save.parentSnapshot.inheritableWhiteSkillIds.length === 1 ? '' : 's'} · {save.parentSnapshot.parents.length} parent{save.parentSnapshot.parents.length === 1 ? '' : 's'}.</p> : <p className="mt-1 text-xs text-ink-soft">Complete this Uma’s current scenario to create her first snapshot.</p>}
-          <p className="mt-2 text-xs font-bold text-violet-700">Parent selection arrives in T013.</p>
+          {lineage.activeParents.length > 0 ? <div className="mt-2 grid grid-cols-2 gap-2">{lineage.activeParents.map((parent) => <div key={parent.umaId} className="rounded-xl bg-violet-50 p-2"><p className="text-xs font-extrabold">{parent.name} · T{parent.completedTier}</p><p className="text-[11px] text-ink-soft">{parent.uniqueCount} unique · {parent.whiteCount} whites</p>{parent.grandparents.map((grandparent) => <p key={grandparent.umaId} className="mt-1 border-l-2 border-violet-300 pl-2 text-[10px] font-bold">↳ {grandparent.name} · T{grandparent.completedTier}</p>)}</div>)}</div> : <p className="mt-1 text-xs text-ink-soft">No parents in the active scenario.</p>}
+          {lineage.latestSnapshot ? <p className="mt-3 text-xs font-bold text-violet-700">Latest self snapshot: Tier {lineage.latestSnapshot.completedTier} · {lineage.latestSnapshot.whiteCount} inheritable whites · {lineage.latestSnapshot.grandparents.length} frozen parents.</p> : <p className="mt-3 text-xs font-bold text-violet-700">Complete a scenario to become an available parent.</p>}
         </Panel>
       </div>
 
       <div className="sticky bottom-24 z-10 rounded-[1.5rem] border-2 border-white bg-white/95 p-3 shadow-[var(--shadow-panel)] backdrop-blur">
         <p className="mb-3 text-center text-sm font-extrabold">
-          {uma.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock races in this scenario.'}
+          {setupPending ? 'Choose lineage before Training or racing.' : uma.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock races in this scenario.'}
         </p>
         <div className="grid grid-cols-3 gap-2">
-          <GameButton variant="secondary" disabled={isGateLevel(save.level) && !uma.readyToPromote} onClick={() => navigate(uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/training/${encodeURIComponent(save.templateId)}`)}>{uma.readyToPromote ? 'Promote' : 'Train'}</GameButton>
-          <GameButton variant="go" disabled={!raceUnlocked && !uma.readyToPromote} onClick={() => navigate(uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/race?uma=${encodeURIComponent(save.templateId)}`)}>{uma.readyToPromote ? 'Promote' : 'Race'}</GameButton>
-          <GameButton variant="primary" disabled={!uma.readyToPromote} onClick={() => navigate(`/scenario/${encodeURIComponent(save.templateId)}/start`)}>{uma.readyToPromote ? 'Next tier' : isGateLevel(save.level) ? 'Complete' : 'At gate'}</GameButton>
+          <GameButton variant="secondary" disabled={!setupPending && isGateLevel(save.level) && !uma.readyToPromote} onClick={() => navigate(setupPending || uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/training/${encodeURIComponent(save.templateId)}`)}>{setupPending ? 'Set up' : uma.readyToPromote ? 'Promote' : 'Train'}</GameButton>
+          <GameButton variant="go" disabled={!setupPending && !raceUnlocked && !uma.readyToPromote} onClick={() => navigate(setupPending || uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/race?uma=${encodeURIComponent(save.templateId)}`)}>{setupPending ? 'Start' : uma.readyToPromote ? 'Promote' : 'Race'}</GameButton>
+          <GameButton variant="primary" disabled={!setupPending && !uma.readyToPromote} onClick={() => navigate(`/scenario/${encodeURIComponent(save.templateId)}/start`)}>{setupPending ? 'Lineage' : uma.readyToPromote ? 'Next tier' : isGateLevel(save.level) ? 'Complete' : 'At gate'}</GameButton>
         </div>
         <p className="mt-2 text-center text-xs text-ink-soft">Promotion spends tickets atomically and starts at Training Level 1.</p>
       </div>

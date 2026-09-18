@@ -99,11 +99,13 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   target entity, private content, and target-keyed ledger row; it then writes the profile, a version-0 canonical entity,
   one coupon spend, and all outbox work atomically. Matching entity+ledger retries return success, ownership without that
   ledger is already-owned, and same-id mismatches are corruption. Zustand publishes only after commit.
-- Scenario promotion uses the same generated card projection shown in the Card UI. Its transaction re-reads and parses the
-  profile, gated Uma, complete equipped deck, relevant content, and deterministic ledgers; it freezes the pre-refresh
-  snapshot, spends tickets, applies promotion/Initial Stats, advances overflow, refreshes awakening skills/history, resets
-  training, writes ledgers/outbox, and only then publishes Zustand. A race reaching the current global maximum freezes the
-  final snapshot inside the existing result transaction. Memory-only mode runs the same pure result with an explicit warning.
+- Scenario Start re-reads the child and every chosen frozen parent snapshot inside one transaction. Its pure resolver checks
+  snapshot fingerprints and character identity, applies permanent→parent→grandparent collision precedence and sequential
+  pink sparks, then persists exact selected snapshots as the active finite lineage. A pending tier-1 Uma writes only its Uma
+  entity/outbox; promotion additionally re-reads the profile/deck, freezes the pre-refresh snapshot, spends deterministic
+  ledgers, applies promotion/Initial Stats and overflow, refreshes awakening/history, and resets training. Zustand publishes
+  only after commit. A race reaching the current global maximum freezes the final snapshot inside the existing result
+  transaction. Memory-only mode runs the same pure resolver with an explicit warning.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
