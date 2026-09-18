@@ -40,7 +40,7 @@ function uma(growthRates = { speed: 0.1, stamina: 0, power: 0.2, guts: 0, wit: 0
     uniqueSkillId: 'skill-unique',
     awakeningSkillIds: [],
     realHorseSex: null,
-    signatureRaces: [],
+    signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
 }

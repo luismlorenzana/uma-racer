@@ -14,7 +14,7 @@
 | `aptitudes` | Surface: Turf/Dirt. Distance: Sprint/Mile/Medium/Long. Strategy: Front/Pace/Late/End. Graded S–G |
 | `uniqueSkill` | Innate unique skill, which is also the source of the inherited version (see [Skills & Inheritance](skills-and-inheritance.md)) |
 | `realHorseSex` | Male / Female. Drives identity goals such as Triple Crown or Triple Tiara (see [Scenario Goals](scenario-goals.md)) |
-| `signatureRaces` | The real horse's famous wins, used as goal seeds |
+| `signatureRaceFamilyIds` | Ordered, distinct career-objective race families used as private Identity-goal seeds |
 | `starter` | Whether the Uma is part of the starting roster: the 25 launch trainees (see [Collection](collection.md)) |
 | `icon`, `portrait` | Local asset references only |
 
@@ -33,8 +33,8 @@
 | `trainingsThisScenario` | Training turns done in the current scenario. Racing unlocks at 1 |
 | `currentParents` | The 0–2 parent snapshots picked for the scenario in progress |
 | `parentSnapshot` | Her latest fully frozen snapshot (her inheritable skills plus the parents she trained with), saved at scenario completion. It is what she passes on when picked as a parent (see [Skills & Inheritance](skills-and-inheritance.md#parent-snapshots)) |
-| `goals` | Scenario goals and their status for every tier reached |
-| `raceHistory` | Full result log for every race. It drives badges and can be replayed later to grant new badges retroactively |
+| `goalPlanVersion`, `scenarioJourneys` | Versioned frozen goals and completed/missed/legacy-untracked facts for every reached tier |
+| `raceHistory` | Append-only result log for every race; new rows snapshot exact `completedGoalIds` and can drive later badges retroactively |
 | `badges`, `titles`, `pinnedBadges`, `activeTitle` | See [Badges](badges.md) |
 
 ## Uma Level and EXP
@@ -95,6 +95,8 @@ scenario starts as a fair fight and ends with your Uma about 10% ahead. Details 
 
 The completed-tier snapshot is captured from the pre-refresh library. At the latest available maximum level, the finishing
 race captures the final snapshot in the same transaction without a promotion cost, stat bonus, or Training Level reset.
+Promotion/final completion closes the current Journey in that same commit, preserving completed goals and marking only
+still-active goals missed. The next Journey is generated after inherited pink sparks apply.
 Newly acquired Umas are saved in a pending tier-1 setup state. Confirming Scenario Start may add frozen inheritance and
 pink-spark upgrades, but does not change their level, stats, Training Level, deck, tickets, or parent snapshot. Existing
 v1 saves migrated into v2 remain active and are never interrupted by this rule.

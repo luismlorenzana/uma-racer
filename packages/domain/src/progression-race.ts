@@ -89,6 +89,8 @@ export interface RaceResultRecord {
   levelsGained: number[]
   ticketReward: number
   shardReward: number
+  /** Snapshotted by T014; legacy records omit it. New records include an empty array when no goal completed. */
+  completedGoalIds?: string[]
   field: RaceResultRunner[]
   createdAt: number
 }
@@ -146,6 +148,7 @@ export function assertProgressionRaceContent(races: readonly RaceTemplate[]): vo
     ids.add(race.id)
     if (
       typeof race.name !== 'string' || race.name.length === 0 ||
+      !/^\d+$/.test(race.familyId) ||
       typeof race.venue !== 'string' || race.venue.length === 0 ||
       !isId(race.courseId) ||
       !RACE_GRADES.includes(race.grade) ||
@@ -313,11 +316,14 @@ function parseRunner(value: unknown, fieldSize: number): RaceResultRunner | null
 
 export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const hasEngineVersion = isRecord(value) && Object.hasOwn(value, 'engineVersion')
+  const hasCompletedGoalIds = isRecord(value) && Object.hasOwn(value, 'completedGoalIds')
   const keys = [
     ...(hasEngineVersion ? ['engineVersion'] : []),
     ...(hasEngineVersion ? ['course'] : []),
     'contentVersion', 'umaId', 'raceId', 'sequence', 'seed', 'strategy', 'startLevel', 'startExp', 'startStats',
-    'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward', 'field', 'createdAt',
+    'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward',
+    ...(hasCompletedGoalIds ? ['completedGoalIds'] : []),
+    'field', 'createdAt',
   ] as const
   if (!isRecord(value) || !hasExactKeys(value, keys) || !Array.isArray(value.field)) return null
   const fieldSize = value.field.length
@@ -348,6 +354,8 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     !isNonNegativeInt(value.expGained) || !Array.isArray(value.levelsGained) ||
     value.levelsGained.some((level) => !isPositiveInt(level) || level > MAX_UMA_LEVEL) ||
     !isNonNegativeInt(value.ticketReward) || !isNonNegativeInt(value.shardReward) || value.shardReward > 1 ||
+    (hasCompletedGoalIds && (!Array.isArray(value.completedGoalIds) || value.completedGoalIds.some((id) => !isId(id)) ||
+      new Set(value.completedGoalIds).size !== value.completedGoalIds.length)) ||
     fieldSize < 8 || fieldSize > 18 || runners.some((runner) => runner === null) || !isNonNegativeInt(value.createdAt)
   ) return null
   const field = runners as RaceResultRunner[]
@@ -384,6 +392,7 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     levelsGained: [...value.levelsGained] as number[],
     ticketReward: value.ticketReward,
     shardReward: value.shardReward,
+    ...(hasCompletedGoalIds ? { completedGoalIds: [...value.completedGoalIds as string[]] } : {}),
     field,
     createdAt: value.createdAt,
   }

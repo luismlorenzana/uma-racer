@@ -55,6 +55,9 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 - **Goal tracker** card for the featured Uma (3 pips), and a **recent flair** strip (latest badges).
 - A swipe on the portrait switches the featured Uma.
 
+The implemented goal tracker handles pending setup, active/completed/missed goals, legacy-untracked saves, final completion,
+and missing target content. Each available active target links directly into Race Select.
+
 ### Stable
 
 - A complete All/Owned/Unowned grid: owned tiles show portrait, levels, tier, and ready state; unowned outfits use labeled
@@ -71,6 +74,10 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 - A sticky bottom action bar: **Train** · **Race** · **Promote** (when ready).
 - The implemented Overview includes a live support-deck summary with selected private card art, used/unlocked slots,
   generated Race Bonus and hint count. **Edit** opens a lazy nested screen and preserves the profile back path.
+
+The implemented Journey renders one medallion per reached tier with three labeled state pips, a derived Honors crest for
+3/3, and a distinct Not tracked mark for migrated history. Goal details link to current target races or the exact committed
+result replay; missing private content falls back to its safe id.
 
 ### Support Deck Editor
 
@@ -95,6 +102,9 @@ Brand-new Umas enter this route before Training/racing and start tier 1 free, wi
 3. **Grandparent picks**: tap to pick 2 uniques, and whites against a "3 / 5 picks" counter. Ineligible ones show greyed with their reason.
 4. **Pink sparks**: choose an aptitude upgrade per parent. The letter grade flips up.
 5. **Confirm**: a scenario title card sweeps in ("Grand Masters"), and the Training Level bar resets to TL1.
+
+Confirmation also freezes the new tier's three deterministic goals after pink sparks apply. Promotion closes the previous
+Journey first, and any generation/content error aborts the entire commit before tickets or snapshots change.
 
 Profile Lineage renders only the active scenario's frozen `currentParents` and the latest completed self snapshot. Its tree
 stops at grandparents, shows missing private content explicitly, and never follows live Uma state or recursive references.
@@ -135,11 +145,15 @@ The core loop, built for repeated one-thumb taps.
 - **Goal races are pinned** with a 🎯 ribbon. Filter chips: grade, distance, surface, goals only.
 - Tap → Pre-race.
 
+Multiple goals for one target share one race card with ordered ribbons. A direct Home/Journey goal link selects that exact
+race when available; missing/retired targets remain explicit instead of silently substituting another race.
+
 ### Pre-race
 
 - **Field preview**: a row of NPC icons.
 - **Form matchup meter**: "You 92% ⟷ Field 86%".
 - **Strategy** segmented control, with aptitude letters. **Loadout** summary chip (tap to edit in a sheet).
+- Every active goal at stake is shown with its exact win rule, including the 5-length Challenge threshold.
 - A big **Start** button at the bottom.
 
 ### Race (PixiJS scene)
@@ -173,7 +187,9 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 2. The finishing order slides in, with margins.
 3. The Uma EXP bar fills. On a level-up: burst, the ticket reward moves in, and before→after player/field Race Form updates.
 4. Activated player skills are grouped by id with counts and recovery/speed/acceleration labels; missing content falls back to the id.
-5. Goal completion and badge/title reveals plug in during their owning milestones.
+5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. Skip/reduced motion reveals
+   the same facts immediately; reload shows a summary without replaying the earn animation. Badge/title entities plug in
+   during Milestone 6.
 6. CTAs: **Races** · **Train** · **Race again**. Until the atomic save succeeds only Retry save is available; Race again
    becomes Promote first at a scenario gate.
 

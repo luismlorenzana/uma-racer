@@ -29,7 +29,8 @@ Read first: `AGENTS.md`, `docs/technical/architecture.md` §3, `docs/design/uma-
 
 - Manifest: `https://gametora.com/data/manifests/umamusume.json`, a map of dataset name → version string.
 - Dataset URL: `https://gametora.com/data/umamusume/<name>.<manifest[name]>.json`
-- Datasets used: `character-cards`, `characters`, `support-cards`, `skills`, `races`, `racetracks`.
+- Datasets used: `character-cards`, `characters`, `support-cards`, `skills`, `races`, `racetracks`, and (added by T014)
+  `ura-objectives`.
 
 ## Mapping rules
 
@@ -49,7 +50,7 @@ Read first: `AGENTS.md`, `docs/technical/architecture.md` §3, `docs/design/uma-
 | `uniqueSkillId` | `skills_unique[0]` as string, or `null` |
 | `awakeningSkillIds` | `(skills_awakening_en ?? skills_awakening)` → strings |
 | `realHorseSex` | `characters[char_id].sex`: `1` → `'male'`, `2` → `'female'`, else `null` |
-| `signatureRaces` | `[]` (filled by a later task) |
+| `signatureRaceFamilyIds` | T014 joins character-level `ura-objectives`, preserves ordered distinct retained race-family ids, and shares them across outfits |
 | `imageSource` | `https://gametora.com/images/umamusume/characters/thumb/chara_stand_${char_id}_${card_id}.png` |
 
 ### Support cards — `support-cards`, **SSR only** (`rarity === 3`)
@@ -101,7 +102,7 @@ domain formula (`cardEffectValue`); the profile only says which effects a card h
 
 | Template field | Rule |
 |---|---|
-| `id`, `name` | `String(id)`, `name_en`. Dedupe by id |
+| `id`, `familyId`, `name` | `String(id)`, `String(race_id)`, `name_en`. Dedupe by id; T014 uses the safe decimal family id for objective joins |
 | `grade` | `100` → `'g1'`, `200` → `'g2'`, `300` → `'g3'`, `400` → `'op'`, `700` → `'pre-op'`; others skipped with a warning |
 | `surface` | `terrain`: `1` → `'turf'`, `2` → `'dirt'` |
 | `distance`, `distanceCategory` | `distance`; `distanceCategory(distance)` from `@racer/domain` |

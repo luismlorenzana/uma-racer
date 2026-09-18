@@ -13,8 +13,10 @@ pnpm data:import -- --refresh   # ignore cached datasets and download fresh copi
 pnpm assets:import              # next: download image sources and build private atlases
 ```
 
-The manifest is always fetched. Dataset JSON is reused from `scripts/data/.cache/` unless `--refresh` is present. The six
-source datasets are `character-cards`, `characters`, `support-cards`, `skills`, `races`, and `racetracks`.
+The manifest is always fetched. Dataset JSON is reused from `scripts/data/.cache/` unless `--refresh` is present. The seven
+source datasets are `character-cards`, `characters`, `support-cards`, `skills`, `races`, `racetracks`, and `ura-objectives`.
+The objective import keeps only ordered, distinct race-family references for characters with retained gameplay races. It
+prints aggregate coverage/unresolved counts and does not copy objective text, conditions, turns, fans, or nested source rows.
 
 ## Output
 

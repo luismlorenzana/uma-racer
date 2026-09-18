@@ -1,85 +1,76 @@
 # Scenario Goals
 
-Each Uma gets **target achievements for every scenario**, shaped by her aptitudes and the real horse's
-identity. Goals give each scenario a story: a Long runner chases the Arima Kinen, a filly chases the Triple Tiara.
-Goals are **optional, but prominently displayed** as badges and profile flair.
+Each started scenario freezes three optional race targets shaped by the Uma's post-inheritance aptitudes and normalized
+career-objective families. They give the tier a story without gating Training, racing, or promotion. Targets are concrete
+private `RaceTemplate.id` values: content updates never silently reroll an active or historical Journey.
 
-> Race names are real JRA/NAR races. Distances should be verified when the race catalog is built.
+## Three slots
 
-## Goal slots per scenario
-
-| Slot | Source | Example |
+| Slot | Selection | Rule |
 |---|---|---|
-| 1. **Aptitude goal** | Her best distance or surface aptitude | Long A → win the Arima Kinen |
-| 2. **Identity goal** | Real-horse sex, or a signature race of the real horse | Male → Satsuki Sho, the first leg of the Triple Crown |
-| 3. **Challenge goal** | A stretch objective | Win a Mile race with B aptitude or lower · win by 5+ lengths |
+| **Aptitude** | Lowest combined saved surface + distance aptitude score | Win the selected race |
+| **Identity** | A normalized career-objective family with both relevant aptitudes B or better; aptitude fallback when none fits | Win the selected race |
+| **Challenge** | A third lowest-score aptitude target | Win by at least **5 lengths** |
 
-## Goal pools
+The data importer joins GameTora `ura-objectives` rows to every outfit of a character. It stores only ordered, distinct,
+safe decimal race-family ids in `UmaTemplate.signatureRaceFamilyIds`; `RaceTemplate.familyId` connects those families to
+retained gameplay races. Objective names, conditions, turn numbers, fan requirements, and source rows stay out of packs.
 
-### By aptitude (distance or surface at A or higher)
+## Version-1 selection
 
-| Aptitude | Signature targets |
+Aptitude score is the sum of the saved surface- and distance-grade indices (`S = 0` through `G = 7`); lower is better.
+Within an equally scored set, candidates are sorted by race id and rotated by a stable hash of Uma id, tier, and slot.
+The generator uses no engine RNG, wall clock, or input iteration order. Identity first considers source-family races whose
+surface and distance are both B or better, then uses the ordinary aptitude pool. Each slot excludes earlier targets, so a
+normal catalog always yields three distinct races.
+
+### Escalation across tiers
+
+| Tier | Requested grade |
 |---|---|
-| Sprint | Takamatsunomiya Kinen (1200) · Sprinters Stakes (1200) |
-| Mile | Yasuda Kinen (1600) · Mile Championship (1600) · NHK Mile Cup (1600) |
-| Medium | **Triple Crown races** · Japan Cup (2400) · Takarazuka Kinen (2200) · Tenno Sho Autumn (2000) · Osaka Hai (2000) |
-| Long | **Arima Kinen (2500)** · Tenno Sho Spring (3200) · Kikuka Sho (3000) · other Long races |
-| Dirt | February Stakes (1600) · Champions Cup (1800) · Tokyo Daishoten (2000) |
+| 1 | Aptitude: Pre-OP. Identity and Challenge: OP |
+| 2 | G3 |
+| 3 | G2 |
+| 4+ | G1 |
 
-### By real-horse identity
+Every race remains open from scenario 1. When a requested bucket is empty after exclusions, selection visits weaker grades
+nearest-first, then stronger grades nearest-first. Scenario Start fails before writes only when the complete catalog cannot
+supply three distinct valid targets; its error reports aggregate counts, not private names or ids.
 
-| Identity | Targets |
-|---|---|
-| Male | **Triple Crown:** Satsuki Sho (2000) → Tokyo Yushun (2400) → Kikuka Sho (3000) · Asahi Hai Futurity Stakes |
-| Female | **Triple Tiara:** Oka Sho (1600) → Yushun Himba (2400) → Shuka Sho (2000) · Victoria Mile · Queen Elizabeth II Cup · Hanshin Juvenile Fillies |
-| Signature | The real horse's famous wins, seeded per Uma (for example a Japan Cup winner gets the Japan Cup) |
+`SCENARIO_GOAL_VERSION = 1` freezes this algorithm. A later algorithm needs an explicit migration and must not reroll v1
+plans in place.
 
-**Aptitude check:** an identity goal is only assigned when the Uma has **B or better** at that race's distance and
-surface. Otherwise the next option in the pool is used, so a male Sprinter isn't pushed into Kikuka Sho.
+## Authoritative completion
 
-## Escalation across tiers
+Completion counts only a committed progression result from the exact Uma, active tier, and frozen target race. All goals
+require first place. Challenge reads the ordered second-place runner's stored `marginLengths` only after confirming the
+player won; exactly 5.0 passes. Preview, abandoned playback, another tier, another Uma, or a later family alias cannot count.
 
-| Tier | Goal difficulty |
-|---|---|
-| 1 | Win a Debut/Maiden race · win an OP race in her best category |
-| 2 | G3 wins in her category |
-| 3 | G2 wins in her category |
-| 4–6 | **G1 wins.** Series goals are spread across tiers (for example tier 4 Satsuki Sho, tier 5 Tokyo Yushun, tier 6 Kikuka Sho) |
-| 7+ | **Titles** (Triple Crown within one scenario, Autumn Triple Crown), repeat G1 wins, high-margin wins, off-aptitude G1 wins |
+New race results always snapshot `completedGoalIds` (including `[]`); legacy results may omit it. Goal evaluation occurs
+inside the existing atomic race transaction after deterministic re-simulation and before the result is appended. A matching
+retry returns the stored ids without awarding or animating again, while a same-id mismatch is corruption.
 
-Every race is open from scenario 1 (see [Racing](racing.md#all-races-open-from-scenario-1)). The escalation only shapes the *goals*, so early goals stay achievable while higher-grade fields are still tough.
+## Lifecycle and migration
 
-## Optional, but very visible
+- New Umas have no active Journey until free Scenario Start. Promotion closes the old Journey and generates the next from
+  post-pink-spark aptitudes in the same transaction.
+- Promotion/final completion preserves completed goals, marks remaining active goals missed, and closes the Journey.
+  Completed and missed facts never reopen.
+- The one-time v0→v1 bootstrap labels earlier tiers `legacy-untracked`, generates the current unfinished tier, and replays
+  only that Uma's strictly parsed current-tier race history. A previously completed final tier is also legacy-untracked.
+  Migration invents no wins, misses, or rewards.
+- Missing or retired target content shows its safe id and leaves the frozen goal honestly unavailable until restored.
 
-Goals **never block promotion**. What they give instead is **prominent flair**: a completed goal should feel like a
-bigger moment than an ordinary badge, and a missed one should stay visible.
-
-### Where goals show up
+## Presentation
 
 | Place | What it shows |
 |---|---|
-| **Uma profile: Scenario Journey strip** | One medallion per scenario tier, each with **3 goal pips** (filled when completed, hollow when missed). The **Honors crest** replaces the medallion when all 3 are done |
-| **Race picker** | Races that count toward an active goal are pinned to the top with a **goal ribbon** |
-| **Pre-race screen** | A "🎯 Goal race" banner showing which goal is at stake |
-| **Results screen** | A dedicated **goal-complete fanfare**, bigger than badge popups |
-| **Trophy case** | A **Goal Ribbons** shelf: every completed goal becomes a named ribbon, for example *"Arima Kinen · Grand Masters goal"* |
-| **Flair timeline** | Goal completions are highlighted entries |
-| **Uma Album** | Honors crest count on each Uma's tile |
+| **Home** | Active three-goal tracker, rules, state pips, and direct target-race actions |
+| **Uma Profile Journey** | One medallion per reached tier; completed, missed, and active pips; distinct Not tracked state; race/result links |
+| **Race Select** | Exact active target races pinned above normal ordering, deduplicated ribbons, and Goals-only filtering |
+| **Pre-race** | Every active goal at stake, including the 5-length Challenge rule |
+| **Results** | Serialized Goal Ribbon reveals after ordinary rewards; reload shows the same completed summary without re-earning |
 
-### Timing
-
-- A goal counts **only within its own scenario**. After promotion, unfinished goals are marked **missed**: the hollow pip stays on the Journey strip as honest history.
-
-## Rewards
-
-| Completion | Reward |
-|---|---|
-| Each goal | **Goal Ribbon** badge |
-| All goals in a scenario | **"[Scenario] Honors"** badge and crest |
-| Identity series completed (Triple Crown / Triple Tiara) | The matching **title** (see [Badges](badges.md)) |
-| Many goals across scenarios | **Destiny** tiered badge. On the account: **Stable Goals** and **Honors Collector** achievements (see [Collection](collection.md)) |
-
-## Data needed
-
-- `realHorseSex` and `signatureRaces` for every Uma template.
-- A race catalog with grade, distance, surface, venue, and series membership.
+Goals pay no tickets, coupons, shards, stats, or SP. Completing all three derives an Honors crest for Journey/results.
+Persisted Goal Ribbon/Honors badges, titles, trophy shelves, Album rollups, and account achievements belong to Milestone 6;
+they will evaluate these durable Journey and result facts rather than changing goal completion.

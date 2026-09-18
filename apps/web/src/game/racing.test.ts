@@ -11,6 +11,7 @@ import {
   type SkillTemplate,
   type SupportCardTemplate,
   type UmaTemplate,
+  type UmaSave,
 } from '@racer/domain'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
@@ -45,7 +46,7 @@ function uma(id: string, charaId = `chara-${id}`): UmaTemplate {
     uniqueSkillId: null,
     awakeningSkillIds: [],
     realHorseSex: null,
-    signatureRaces: [],
+    signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
 }
@@ -78,6 +79,7 @@ const card: SupportCardTemplate = {
 
 const race: RaceTemplate = {
   id: 'r1',
+  familyId: '101',
   name: 'Synthetic Cup',
   grade: 'g1',
   surface: 'turf',
@@ -154,11 +156,26 @@ function content(umaCount = 10): LoadedContent {
 }
 
 function state() {
-  const player = { ...createUmaSave(uma('u1')), scenarioStarted: true, trainingsThisScenario: 1, deckCardIds: ['c1'], stats: { speed: 4_000, stamina: 4_000, power: 4_000, guts: 4_000, wit: 4_000 } }
+  const player = { ...createUmaSave(uma('u1')), goalPlanVersion: 0, scenarioStarted: true, trainingsThisScenario: 1, deckCardIds: ['c1'], stats: { speed: 4_000, stamina: 4_000, power: 4_000, guts: 4_000, wit: 4_000 } }
   return {
     profile: createPlayerProfile('abc123def456', 42),
     player,
     cards: { c1: { ...createCardSave(card), level: 6, limitBreak: 1 } },
+  }
+}
+
+function withGoalJourney(player: UmaSave, tier: number): UmaSave {
+  return {
+    ...player,
+    goalPlanVersion: 1,
+    scenarioJourneys: [{
+      tier, tracking: 'tracked' as const, state: 'active' as const, completedAt: null,
+      goals: [
+        { id: `goal:${tier}:aptitude`, slot: 'aptitude' as const, raceId: 'r1', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+        { id: `goal:${tier}:identity`, slot: 'identity' as const, raceId: 'r2', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+        { id: `goal:${tier}:challenge`, slot: 'challenge' as const, raceId: 'r3', kind: 'win-by-margin' as const, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+      ],
+    }],
   }
 }
 
@@ -207,6 +224,16 @@ describe('progression race field', () => {
     expect(legacyReplay.engineVersion).toBe(1)
     expect(simulatePreparedRace(legacyReplay).events.some((event) => event.type === 'skill-activated')).toBe(false)
   })
+
+  it('snapshots authoritative goal completion ids in the same memory result', () => {
+    const loaded = content()
+    const { profile, player, cards } = state()
+    const tracked = withGoalJourney(player, 1)
+    const attempt = buildPreparedRace({ content: loaded, profile, uma: tracked, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
+    const completion = completeMemoryRace(loaded, profile, tracked, cards, [], attempt, '2026-09-16', 100)
+    expect(completion.record.completedGoalIds).toEqual(['goal:1:aptitude'])
+    expect(completion.uma.scenarioJourneys[0]?.goals[0]).toMatchObject({ status: 'completed', completedRaceResultId: 'race:u1:0' })
+  })
 })
 
 describe('persistent progression race', () => {
@@ -245,9 +272,17 @@ describe('persistent progression race', () => {
 
     const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 101)
     expect(retry.alreadyRecorded).toBe(true)
+    expect(retry.record.completedGoalIds).toEqual([])
     expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 5 })
     expect(await db.raceResults.count()).toBe(1)
     expect(await db.ledger.count()).toBe(1)
+
+    await expect(completePersistentRace(
+      loaded,
+      { ...preparation.attempt, contentVersion: 'changed-content' },
+      '2026-09-16',
+      102,
+    )).rejects.toThrow(/collision/)
   })
 
   it('rejects a stale attempt with no partial result or reward writes', async () => {
@@ -300,7 +335,7 @@ describe('persistent progression race', () => {
     const row = await db.umas.get('u1')
     await db.umas.put({
       ...row!,
-      data: { ...row!.data, level: 109, exp: expToNextUmaLevel(109) - 1 },
+      data: { ...withGoalJourney(row!.data, 11), level: 109, exp: expToNextUmaLevel(109) - 1 },
     })
     const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'pace')
     if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
@@ -309,6 +344,9 @@ describe('persistent progression race', () => {
       level: 110,
       parentSnapshot: { umaId: 'u1', charaId: 'chara-u1', completedTier: 11, takenAt: 100, parents: [] },
     })
+    expect(completion.record.completedGoalIds).toEqual(['goal:11:aptitude'])
+    expect(completion.uma.scenarioJourneys[0]).toMatchObject({ state: 'completed', completedAt: 100 })
+    expect(completion.uma.scenarioJourneys[0]?.goals.map((goal) => goal.status)).toEqual(['completed', 'missed', 'missed'])
     const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 200)
     expect(retry.uma.parentSnapshot?.takenAt).toBe(100)
   })

@@ -5,6 +5,7 @@ import {
   createInitialSave,
   createUmaSave,
   type ContentAtlas,
+  type RaceTemplate,
   type SkillTemplate,
   type SupportCardTemplate,
   type UmaTemplate,
@@ -19,6 +20,7 @@ import { clearGameState, localDay, replaceUma, useGame } from './store'
 import {
   adoptServerSnapshot,
   applyOwedDailyGrant,
+  bootstrapGoalPlans,
   completeStarterSeed,
   isDatabaseSemanticallyEmpty,
   persistInitial,
@@ -47,7 +49,7 @@ function uma(id: string): UmaTemplate {
     uniqueSkillId: null,
     awakeningSkillIds: [],
     realHorseSex: null,
-    signatureRaces: [],
+    signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
 }
@@ -93,6 +95,14 @@ const paidSkill: SkillTemplate = {
   normalSkillId: null,
 }
 
+const goalRaces: RaceTemplate[] = [
+  ['goal-g2', 'g2', '101'], ['goal-g3', 'g3', '102'], ['goal-op', 'op', '103'],
+].map(([id, grade, familyId], index) => ({
+  id: id!, familyId: familyId!, name: `Synthetic Goal ${index + 1}`, grade: grade as RaceTemplate['grade'], surface: 'turf',
+  distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium', direction: 'left', venue: 'Synthetic',
+  courseId: `goal-course-${index + 1}`, season: 1, fieldSize: 8,
+}))
+
 function content(): LoadedContent {
   const umas = Array.from({ length: 25 }, (_, index) => uma(`u${String(index).padStart(2, '0')}`))
   const cards = [card()]
@@ -128,6 +138,25 @@ async function resetDatabase(): Promise<void> {
 
 describe('save persistence', () => {
   beforeEach(resetDatabase)
+
+  it('bootstraps all pre-goal Umas atomically, queues once, and is idempotent', async () => {
+    const loaded = content()
+    const goalContent: LoadedContent = {
+      ...loaded,
+      races: { items: goalRaces, byId: new Map(goalRaces.map((race) => [race.id, race])) },
+    }
+    const old = { ...createUmaSave(loaded.umas.items[0]!), scenarioStarted: true, goalPlanVersion: 0, level: 21 }
+    await db.open()
+    await db.umas.put({ id: old.templateId, data: old, version: 7 })
+    expect(await bootstrapGoalPlans(goalContent, 100)).toBe(1)
+    const saved = await db.umas.get(old.templateId)
+    expect(saved).toMatchObject({ version: 7, data: { goalPlanVersion: 1 } })
+    expect(saved?.data.scenarioJourneys.slice(0, 2).map((journey) => journey.tracking)).toEqual(['legacy-untracked', 'legacy-untracked'])
+    expect(saved?.data.scenarioJourneys[2]).toMatchObject({ tier: 3, tracking: 'tracked', state: 'active' })
+    expect(await db.outbox.where('[kind+id]').equals(['umas', old.templateId]).count()).toBe(1)
+    expect(await bootstrapGoalPlans(goalContent, 101)).toBe(0)
+    expect(await db.outbox.where('[kind+id]').equals(['umas', old.templateId]).count()).toBe(1)
+  })
   afterEach(resetDatabase)
 
   it('initializes profile, roster, ledger, and coalesced outbox atomically', async () => {

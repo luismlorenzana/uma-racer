@@ -44,7 +44,7 @@ const umaTemplate: UmaTemplate = {
   jpRelease: '2000-01-01', globalRelease: null, starter: true,
   baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
   growthRates: { speed: 0.2, stamina: 0, power: 0.1, guts: 0, wit: 0 }, aptitudes,
-  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaces: [],
+  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
   imageSource: 'https://example.invalid/synthetic.png',
 }
 

@@ -21,6 +21,10 @@ adjusted through balance simulation and playtesting.
 - **Milestone 4 Collection device feel:** inspect Stable All/Owned/Unowned, exchange five shards, redeem one Card and one
   Uma Coupon, and reload each reveal on the installed app. Desktop emulation verifies the 390×844 layout, atomic local
   state, and direct-route behavior, but not physical safe areas, reduced-motion preference, or iOS offline/reconnect feel.
+- **Milestone 5 Scenario/Journey device feel:** start and promote one Uma, inspect the Home tracker and Profile Journey,
+  follow a target into Race Select/pre-race, and complete a goal through Results on the installed app. Also check one missed
+  Journey and reduced motion. Desktop validation covers rules and persistence, but not physical safe-area, scrolling,
+  animation timing, or offline/reconnect feel on iOS.
 
 ## Not questions, but still to come
 

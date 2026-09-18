@@ -23,7 +23,7 @@ const umaTemplate: UmaTemplate = {
   jpRelease: '2000-01-01', globalRelease: null, starter: false,
   baseStats: { speed: 101, stamina: 102, power: 103, guts: 104, wit: 105 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, aptitudes,
-  uniqueSkillId: 'skill-synthetic', awakeningSkillIds: [], realHorseSex: null, signatureRaces: [],
+  uniqueSkillId: 'skill-synthetic', awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
   imageSource: 'https://example.invalid/synthetic.png',
 }
 const cardTemplate: SupportCardTemplate = {

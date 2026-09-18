@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { syntheticCharacterCards, syntheticCharacters } from '../__fixtures__/synthetic'
+import { syntheticCharacterCards, syntheticCharacters, syntheticObjectives, syntheticRaces } from '../__fixtures__/synthetic'
+import { normalizeObjectiveFamilies } from './objectives'
+import { normalizeRaces } from './races'
 import { normalizeUmas } from './umas'
 
 describe('normalizeUmas', () => {
@@ -23,6 +25,28 @@ describe('normalizeUmas', () => {
       realHorseSex: 'male',
     })
     expect(result.items[1]).toMatchObject({ starter: false, realHorseSex: 'female' })
+  })
+
+  it('shares ordered, distinct retained objective families across outfits', () => {
+    const races = normalizeRaces(syntheticRaces).items
+    const objectives = normalizeObjectiveFamilies(syntheticObjectives, syntheticRaces, races)
+    const cards = [syntheticCharacterCards[0]!, { ...syntheticCharacterCards[0]!, card_id: 9003 }]
+    const result = normalizeUmas(cards, syntheticCharacters, objectives.byCharacterId)
+    expect(result.items.map((item) => item.signatureRaceFamilyIds)).toEqual([['8801', '8802'], ['8801', '8802']])
+    expect(objectives.counts).toEqual({
+      rows: 2,
+      malformedRows: 0,
+      characters: 2,
+      resolvedReferences: 3,
+      unresolvedReferences: 2,
+    })
+  })
+
+  it('reports malformed objective rows only as aggregate diagnostics', () => {
+    const races = normalizeRaces(syntheticRaces).items
+    const result = normalizeObjectiveFamilies([{ char_id: 901, objectives: 'bad' }], syntheticRaces, races)
+    expect(result.byCharacterId.size).toBe(0)
+    expect(result.warnings).toEqual(['Objective metadata skipped 1 malformed row(s)'])
   })
 
   it('skips invalid aptitude grades with a warning', () => {

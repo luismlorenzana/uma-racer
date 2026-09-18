@@ -25,6 +25,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { listRaceHistory, prepareRace, setUmaLoadout } from '../game/actions'
+import { buildGoalRaceCatalog, goalsAtStake } from '../game/goals-view'
 import type { PreparedRace } from '../game/racing'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -70,6 +71,7 @@ export function RaceSelectScreen() {
   const [preview, setPreview] = useState<PreparedRace | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
+  const [goalsOnly, setGoalsOnly] = useState(false)
 
   const ownedIds = useMemo(() => Object.keys(owned).sort((left, right) => left.localeCompare(right)), [owned])
   const requestedUma = params.get('uma')
@@ -80,6 +82,13 @@ export function RaceSelectScreen() {
       : ownedIds[0] ?? null
   const selectedUma = selectedUmaId ? owned[selectedUmaId] : undefined
   const loadoutKey = selectedUma?.loadoutSkillIds.join('|') ?? ''
+  const requestedGoalRace = params.get('goal')
+
+  useEffect(() => {
+    if (contentState.status !== 'ready' || !requestedGoalRace) return
+    const target = contentState.content.races.byId.get(requestedGoalRace)
+    if (target) setPicked(target)
+  }, [contentState, requestedGoalRace])
 
   useEffect(() => {
     if (status !== 'ready') return
@@ -133,6 +142,8 @@ export function RaceSelectScreen() {
     left.name.localeCompare(right.name) ||
     left.id.localeCompare(right.id),
   )
+  const raceViews = buildGoalRaceCatalog(sortedRaces, selectedUma, content, goalsOnly)
+  const pickedGoals = picked ? goalsAtStake(selectedUma, picked.id, content) : []
   const opponentCharacters = new Set(content.umas.items.filter((item) => item.charaId !== umaTemplate.charaId).map((item) => item.charaId)).size
   const selectedAsset = (() => {
     const frame = content.atlases['uma-icons'].descriptor.frames[selectedUmaId]
@@ -223,7 +234,11 @@ export function RaceSelectScreen() {
         {selectedUma.level < SCENARIOS.length * 10 && <GameButton className="mt-3" onClick={() => navigate(`/scenario/${encodeURIComponent(selectedUmaId)}/start`)}>Review promotion</GameButton>}
       </Panel>}
 
-      {sortedRaces.map((race, index) => (
+      <button type="button" aria-pressed={goalsOnly} onClick={() => setGoalsOnly((value) => !value)} className={`min-h-11 rounded-xl border-2 px-4 text-sm font-extrabold ${goalsOnly ? 'border-gold bg-gold text-white text-outline' : 'border-white bg-white'}`}>
+        🎯 Goals only{goalsOnly ? ` · ${raceViews.length}` : ''}
+      </button>
+
+      {raceViews.map(({ race, goals }, index) => (
         <m.button
           key={race.id}
           type="button"
@@ -238,6 +253,7 @@ export function RaceSelectScreen() {
             {GRADE_LABEL[race.grade]}
           </span>
           <span className="min-w-0 flex-1">
+            {goals.length > 0 && <span className="mb-1 inline-flex rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold text-white text-outline">🎯 {goals.map((goal) => goal.label).join(' + ')} goal</span>}
             <span className="block truncate text-lg font-extrabold">{race.name}</span>
             <span className="block text-sm text-ink-soft">{race.venue} · {race.surface === 'turf' ? 'Turf' : 'Dirt'} {race.distance}m · {progressionFieldSize(race)} runners</span>
             <span className="block text-xs font-bold text-sky-deep">Win EXP {raceExp(race.grade, 1, raceBonus)}</span>
@@ -245,6 +261,7 @@ export function RaceSelectScreen() {
           <span className="text-2xl" aria-hidden>›</span>
         </m.button>
       ))}
+      {goalsOnly && raceViews.length === 0 && <Panel className="text-center text-sm font-bold text-ink-soft">No available active goal races. Missing targets remain visible on Home and Journey.</Panel>}
 
       <Panel>
         <h2 className="font-extrabold">Recent results</h2>
@@ -269,6 +286,10 @@ export function RaceSelectScreen() {
               <p className="text-2xl font-extrabold">{picked.name}</p>
               <p className="text-sm text-ink-soft">{picked.venue} · {picked.surface === 'turf' ? 'Turf' : 'Dirt'} {picked.distance}m · {progressionFieldSize(picked)} runners</p>
             </div>
+            {pickedGoals.length > 0 && <div className="rounded-2xl border-2 border-gold bg-amber-50 p-3">
+              <p className="font-extrabold text-amber-900">🎯 Goal race</p>
+              {pickedGoals.map((goal) => <p key={goal.id} className="mt-1 text-sm font-bold"><span className="text-amber-900">{goal.label}:</span> {goal.rule}</p>)}
+            </div>}
             <div className="flex items-center gap-3 rounded-2xl bg-sky-50 p-3">
               <div className="w-16 shrink-0">
                 <AtlasSprite asset={selectedAsset} alt={`${umaTemplate.name} icon`} className="rounded-xl bg-white" fallback={<div className="flex h-full items-center justify-center text-3xl">🐴</div>} />

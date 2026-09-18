@@ -3,6 +3,7 @@
 import {
   MAX_SYNC_OPERATIONS,
   assertProgressionRaceContent,
+  assertScenarioGoalContent,
   assertRaceCourseContent,
   assertRaceSkillContent,
   assertTrainingContent,
@@ -25,6 +26,7 @@ import { db } from './db'
 import {
   adoptServerSnapshot,
   applyOwedDailyGrant,
+  bootstrapGoalPlans,
   completeStarterSeed,
   entityRow,
   isDatabaseSemanticallyEmpty,
@@ -116,6 +118,7 @@ export class GameRuntime {
       assertTrainingContent(content.umas.items, content.cards.items, content.skills.items)
       assertRaceSkillContent(content.skills.items)
       assertProgressionRaceContent(content.races.items)
+      assertScenarioGoalContent(content.umas.items, content.races.items)
       assertRaceCourseContent(content.races.items, content.courses.items)
     } catch (error) {
       setGameLifecycle('error', error instanceof Error ? error.message : String(error))
@@ -170,6 +173,7 @@ export class GameRuntime {
       }
       if (generation !== this.generation) return
       await completeStarterSeed(content, now)
+      await bootstrapGoalPlans(content, now)
       const granted = await applyOwedDailyGrant(today, now)
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')

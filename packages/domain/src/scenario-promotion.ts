@@ -1,7 +1,7 @@
 // Scenario completion, parent snapshots, and promotion (docs/tasks/T012-scenario-promotion-and-save-v2.md).
 
 import { projectedCardEffectValue } from './cards'
-import type { SkillTemplate, UmaTemplate } from './content'
+import type { RaceTemplate, SkillTemplate, UmaTemplate } from './content'
 import { umaPromotionCost } from './economy'
 import { expToNextUmaLevel, PROMOTION_BONUS_PER_STAT, UMA_LEVEL_TICKET_REWARD } from './progression'
 import {
@@ -11,6 +11,7 @@ import {
   type ScenarioStartSelection,
 } from './inheritance'
 import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
+import { closeScenarioJourney, generateScenarioJourney, SCENARIO_GOAL_VERSION } from './scenario-goals'
 import {
   SAVE_ID_PATTERN,
   parsePlayerProfile,
@@ -58,6 +59,7 @@ export interface ScenarioPromotionInput {
   umaTemplate: UmaTemplate
   skills: ReadonlyMap<string, SkillTemplate>
   cards: readonly SupportDeckCard[]
+  races: readonly RaceTemplate[]
   now: number
   ownedUmas?: readonly UmaSave[]
   umaTemplates?: ReadonlyMap<string, UmaTemplate>
@@ -68,6 +70,7 @@ export interface NewUmaScenarioStartInput {
   uma: UmaSave
   umaTemplate: UmaTemplate
   skills: ReadonlyMap<string, SkillTemplate>
+  races: readonly RaceTemplate[]
   ownedUmas: readonly UmaSave[]
   umaTemplates: ReadonlyMap<string, UmaTemplate>
   selection: ScenarioStartSelection
@@ -231,6 +234,7 @@ export function startNewUmaScenario(input: NewUmaScenarioStartInput): NewUmaScen
     umaTemplate: input.umaTemplate,
     skills: input.skills,
     cards: [],
+    races: input.races,
     now: 0,
   }
   assertTemplate(helperInput)
@@ -244,10 +248,7 @@ export function startNewUmaScenario(input: NewUmaScenarioStartInput): NewUmaScen
     permanentLibrary: permanent,
     selection: input.selection,
   })
-  return {
-    tier: 1,
-    inheritance,
-    uma: {
+  const started: UmaSave = {
       ...parsedUma,
       scenarioStarted: true,
       skillLibrary: inheritance.skillLibrary,
@@ -255,7 +256,12 @@ export function startNewUmaScenario(input: NewUmaScenarioStartInput): NewUmaScen
       aptitudes: inheritance.aptitudes,
       currentParents: inheritance.currentParents,
       skillHistory: appendScenarioHistory(parsedUma.skillHistory, inheritance.skillLibrary, 1),
-    },
+  }
+  const journey = generateScenarioJourney({ uma: started, umaTemplate: input.umaTemplate, races: input.races })
+  return {
+    tier: 1,
+    inheritance,
+    uma: { ...started, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [journey] },
   }
 }
 
@@ -325,24 +331,30 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
     })
   }
 
+  const closedJourneys = parsedUma.scenarioJourneys.map((journey) =>
+    journey.state === 'active' && journey.tier === readiness.fromTier ? closeScenarioJourney(journey, input.now) : journey)
+  const promoted: UmaSave = {
+    ...parsedUma,
+    level,
+    exp,
+    trainingLevel: 1,
+    trainingExp: 0,
+    stats,
+    aptitudes: inheritance.aptitudes,
+    skillLibrary: inheritance.skillLibrary,
+    loadoutSkillIds,
+    trainingsThisScenario: 0,
+    scenarioStarted: true,
+    skillHistory,
+    currentParents: inheritance.currentParents,
+    parentSnapshot: snapshot,
+    goalPlanVersion: 0,
+    scenarioJourneys: closedJourneys,
+  }
+  const journey = generateScenarioJourney({ uma: promoted, umaTemplate: input.umaTemplate, races: input.races })
   return {
     profile,
-    uma: {
-      ...parsedUma,
-      level,
-      exp,
-      trainingLevel: 1,
-      trainingExp: 0,
-      stats,
-      aptitudes: inheritance.aptitudes,
-      skillLibrary: inheritance.skillLibrary,
-      loadoutSkillIds,
-      trainingsThisScenario: 0,
-      scenarioStarted: true,
-      skillHistory,
-      currentParents: inheritance.currentParents,
-      parentSnapshot: snapshot,
-    },
+    uma: { ...promoted, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [...closedJourneys, journey] },
     fromTier: readiness.fromTier,
     toTier: readiness.toTier,
     cost: readiness.cost,
@@ -368,5 +380,7 @@ export function completeFinalScenario(input: {
   if (!parsed) throw new Error('Uma save is malformed')
   if (parsed.level !== SCENARIOS.length * LEVELS_PER_SCENARIO) throw new Error('Uma has not reached the latest scenario maximum')
   if (parsed.parentSnapshot?.completedTier === SCENARIOS.length) return parsed
-  return { ...parsed, parentSnapshot: buildParentSnapshot({ ...input, uma: parsed }) }
+  const scenarioJourneys = parsed.scenarioJourneys.map((journey) =>
+    journey.state === 'active' && journey.tier === SCENARIOS.length ? closeScenarioJourney(journey, input.now) : journey)
+  return { ...parsed, scenarioJourneys, parentSnapshot: buildParentSnapshot({ ...input, uma: parsed }) }
 }

@@ -22,6 +22,8 @@ import {
   npcRaceStats,
   raceExp,
   progressionFieldSize,
+  CHALLENGE_MARGIN_LENGTHS,
+  scenarioGoalRequestedGrade,
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   UMA_SHARDS_PER_COUPON,
@@ -254,6 +256,12 @@ describe('progression and economy', () => {
     expect(PROMOTION_BONUS_PER_STAT).toBe(10)
     expect(OVERFLOW_BANK_LEVELS).toBe(1)
     expect([1, 2, 3, 4].map(cardLimitBreakCost).reduce((a, b) => a + b)).toBe(200)
+  })
+
+  it('pins scenario-goal grade escalation and the Challenge margin', () => {
+    expect([1, 2, 3, 4].map((tier) => scenarioGoalRequestedGrade(tier, 'aptitude'))).toEqual(['pre-op', 'g3', 'g2', 'g1'])
+    expect(scenarioGoalRequestedGrade(1, 'identity')).toBe('op')
+    expect(CHALLENGE_MARGIN_LENGTHS).toBe(5)
   })
 
   it('caps only the daily grant', () => {

@@ -17,7 +17,8 @@ export interface UmaTemplate {
   uniqueSkillId: string | null
   awakeningSkillIds: string[]
   realHorseSex: 'male' | 'female' | null
-  signatureRaces: string[]
+  /** Ordered, distinct source race-family ids from this character's career objectives. */
+  signatureRaceFamilyIds: string[]
   imageSource: string
 }
 
@@ -75,6 +76,8 @@ export type RaceDirection = 'right' | 'left' | 'straight'
 
 export interface RaceTemplate {
   id: string
+  /** Stable source race-family id shared by calendar variants of the same race. */
+  familyId: string
   name: string
   grade: RaceGrade
   surface: Surface

@@ -38,7 +38,8 @@ export function normalizeRaces(value: unknown): NormalizeResult<RaceTemplate> {
 
   for (const raw of records(value)) {
     const raceId = id(raw.id)
-    if (!raceId || seen.has(raceId)) continue
+    const familyId = id(raw.race_id)
+    if (!raceId || !familyId || !/^\d+$/.test(familyId) || seen.has(raceId)) continue
     const gradeCode = numberValue(raw.grade)
     const grade = gradeCode === null ? undefined : GRADES[gradeCode]
     if (!grade) {
@@ -67,6 +68,7 @@ export function normalizeRaces(value: unknown): NormalizeResult<RaceTemplate> {
     seen.add(raceId)
     items.push({
       id: raceId,
+      familyId,
       name,
       grade,
       surface,

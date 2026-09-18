@@ -415,8 +415,7 @@ function parseScenarioGoal(value: unknown, tier: number): ScenarioGoal | null {
   if (!GOAL_SLOTS.includes(value.slot as GoalSlot) || !isId(value.raceId)) return null
   if (!['win', 'win-by-margin'].includes(String(value.kind))) return null
   if (typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0) return null
-  if (value.kind === 'win' && value.minimumMarginLengths !== 0) return null
-  if (value.kind === 'win-by-margin' && value.minimumMarginLengths <= 0) return null
+  if (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.kind !== 'win' || value.minimumMarginLengths !== 0) return null
   if (!['active', 'completed', 'missed'].includes(String(value.status))) return null
   if (value.id !== `goal:${tier}:${String(value.slot)}`) return null
   const completed = value.status === 'completed'
@@ -434,19 +433,23 @@ function parseScenarioGoal(value: unknown, tier: number): ScenarioGoal | null {
   }
 }
 
-function parseScenarioJourney(value: unknown): ScenarioJourney | null {
+export function parseScenarioJourney(value: unknown): ScenarioJourney | null {
   if (!isObject(value) || !exactKeys(value, ['tier', 'tracking', 'state', 'completedAt', 'goals'])) return null
   if (!isPositiveInt(value.tier) || value.tier > SCENARIOS.length) return null
   if (!['tracked', 'legacy-untracked'].includes(String(value.tracking)) || !['active', 'completed'].includes(String(value.state))) return null
-  if (value.state === 'active' ? value.completedAt !== null : !isTimestamp(value.completedAt)) return null
+  if (value.state === 'active' && value.completedAt !== null) return null
+  if (value.state === 'completed' && value.tracking === 'tracked' && !isTimestamp(value.completedAt)) return null
+  if (value.state === 'completed' && value.tracking === 'legacy-untracked' && value.completedAt !== null && !isTimestamp(value.completedAt)) return null
   if (!Array.isArray(value.goals)) return null
   const goals = value.goals.map((goal) => parseScenarioGoal(goal, value.tier as number))
   if (goals.some((goal) => goal === null)) return null
   const validGoals = goals as ScenarioGoal[]
   if (value.tracking === 'legacy-untracked' && validGoals.length !== 0) return null
+  if (value.tracking === 'legacy-untracked' && value.state !== 'completed') return null
   if (value.tracking === 'tracked') {
     if (validGoals.length !== GOAL_SLOTS.length) return null
     if (new Set(validGoals.map((goal) => goal.slot)).size !== GOAL_SLOTS.length) return null
+    if (new Set(validGoals.map((goal) => goal.raceId)).size !== GOAL_SLOTS.length) return null
   }
   if (value.state === 'completed' && validGoals.some((goal) => goal.status === 'active')) return null
   return {
@@ -529,7 +532,7 @@ export function parseUmaSave(value: unknown): UmaSave | null {
   if (!isObject(value) || !exactKeys(value, UMA_V2_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
   const legacyShape = Object.fromEntries(LEGACY_UMA_KEYS.map((key) => [key, value[key]]))
   const base = parseUmaCore(legacyShape)
-  if (!base || typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion)) return null
+  if (!base || typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 1) return null
   if (!Array.isArray(value.skillHistory) || !Array.isArray(value.scenarioJourneys)) return null
   const skillHistory = value.skillHistory.map(parseSkillHistoryEntry)
   if (skillHistory.some((entry) => entry === null)) return null
@@ -546,6 +549,15 @@ export function parseUmaSave(value: unknown): UmaSave | null {
   const journeys = scenarioJourneys as ScenarioJourney[]
   if (new Set(journeys.map((journey) => journey.tier)).size !== journeys.length) return null
   if (journeys.filter((journey) => journey.state === 'active').length > 1) return null
+  const currentTier = tierOfLevel(base.level)
+  if (journeys.some((journey) => journey.tier > currentTier)) return null
+  if (value.goalPlanVersion === 1) {
+    const active = journeys.filter((journey) => journey.state === 'active')
+    const finalComplete = base.level === SCENARIOS.length * LEVELS_PER_SCENARIO && parentSnapshot?.completedTier === SCENARIOS.length
+    if (!value.scenarioStarted || finalComplete) {
+      if (active.length !== 0) return null
+    } else if (active.length !== 1 || active[0]!.tier !== currentTier || active[0]!.tracking !== 'tracked') return null
+  }
   return {
     schemaVersion: SAVE_SCHEMA_VERSION,
     ...base,
@@ -630,7 +642,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
     skillHistory: skillLibrary.map((unlock) => ({ ...unlock, tier: 1 })),
     currentParents: [],
     parentSnapshot: null,
-    goalPlanVersion: 0,
+    goalPlanVersion: 1,
     scenarioJourneys: [],
   }
 }

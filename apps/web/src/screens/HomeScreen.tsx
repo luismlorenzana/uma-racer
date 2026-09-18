@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma } from '../game/actions'
+import { buildHomeGoalState } from '../game/goals-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -48,6 +49,7 @@ export function HomeScreen() {
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
   const setupPending = !featured.save.scenarioStarted
   const raceUnlocked = featured.save.scenarioStarted && featured.save.trainingsThisScenario >= 1 && !isGateLevel(featured.save.level)
+  const goals = buildHomeGoalState(featured.save, contentState.content)
 
   return (
     <div className="flex flex-col gap-4 pt-2">
@@ -74,6 +76,33 @@ export function HomeScreen() {
         <p className="px-4 pb-4 text-center text-xs font-bold text-ink-soft">
           {setupPending ? 'Choose lineage before Training or racing.' : featured.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(featured.save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock saved-Uma races.'}
         </p>
+      </Panel>
+
+      <Panel className="bg-gradient-to-br from-[#fff4d6] to-white">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-extrabold">🎯 Scenario goals</p>
+            <p className="text-xs font-bold text-ink-soft">{goals.kind === 'active' ? `${goals.completed} / 3 complete · Tier ${goals.tier}` : goals.detail}</p>
+          </div>
+          {goals.kind === 'active' && <div className="flex gap-1" aria-label={`${goals.completed} of 3 goals complete`}>
+            {goals.goals.map((goal) => <span key={goal.id} className={`h-3 w-3 rounded-full border-2 ${goal.status === 'completed' ? 'border-gold bg-gold' : 'border-gold bg-white'}`} />)}
+          </div>}
+        </div>
+        {goals.kind === 'active' && <div className="mt-3 grid gap-2">
+          {goals.goals.map((goal) => (
+            <button
+              key={goal.id}
+              type="button"
+              disabled={goal.status !== 'active' || goal.race === null || !raceUnlocked}
+              onClick={() => navigate(`/race?uma=${encodeURIComponent(featured.save.templateId)}&goal=${encodeURIComponent(goal.raceId)}`)}
+              className="flex min-h-11 items-center gap-3 rounded-xl bg-white px-3 py-2 text-left disabled:opacity-60"
+            >
+              <span aria-hidden>{goal.status === 'completed' ? '✓' : goal.race ? '○' : '!'}</span>
+              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{goal.label} · {goal.raceName}</span><span className="block text-xs font-bold text-ink-soft">{goal.rule}{goal.race ? '' : ' · Target content missing'}</span></span>
+              {goal.status === 'active' && goal.race && raceUnlocked && <span aria-hidden>›</span>}
+            </button>
+          ))}
+        </div>}
       </Panel>
 
       <Panel>

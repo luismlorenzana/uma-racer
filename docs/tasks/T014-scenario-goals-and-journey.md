@@ -198,3 +198,12 @@ With refreshed private content and `pnpm dev`:
 - Scenario-specific training modifiers, affinity, probabilistic inheritance, blue sparks, race-calendar deadlines/fans,
   mandatory career failure, original objective rewards, or source objective conditions other than normalized race identity.
 - Sound, haptics, new goal/badge art, real icons replacing emoji, or other Milestone 7 polish.
+
+## Implementation status
+
+Implemented on the T014 feature branch. The private importer now reduces `ura-objectives` to ordered race-family references;
+the domain owns deterministic goal-plan v1 generation, evaluation, closure, Honors derivation, and honest legacy bootstrap.
+Scenario Start/promotion and progression results commit Journey changes atomically, with exact completion ids preserved for
+retry/reload. Home, Profile Journey, Race Select, pre-race, and Results consume pure projections with missing-content and
+legacy states. Synthetic domain, importer, API, IndexedDB, race, and view-model tests cover the shipped path; original-game
+data remains only in ignored cache/content directories.

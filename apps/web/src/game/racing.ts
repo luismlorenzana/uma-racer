@@ -8,6 +8,7 @@ import {
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   equippedRaceBonus,
+  evaluateScenarioGoals,
   fieldForm,
   isGateLevel,
   isLocalDay,
@@ -253,6 +254,21 @@ function sameAttempt(left: PreparedRace, right: PreparedRace): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
+function recordMatchesAttempt(record: RaceResultRecord, attempt: PreparedRace): boolean {
+  return record.engineVersion === attempt.engineVersion &&
+    record.contentVersion === attempt.contentVersion &&
+    record.umaId === attempt.umaId &&
+    record.raceId === attempt.raceId &&
+    record.sequence === attempt.sequence &&
+    record.seed === attempt.seed &&
+    record.strategy === attempt.strategy &&
+    record.startLevel === attempt.startLevel &&
+    record.startExp === attempt.startExp &&
+    record.raceBonus === attempt.raceBonus &&
+    JSON.stringify(record.startStats) === JSON.stringify(attempt.startStats) &&
+    JSON.stringify(record.course) === JSON.stringify(attempt.input.course)
+}
+
 function resultRecord(
   attempt: PreparedRace,
   race: RaceTemplate,
@@ -302,9 +318,31 @@ function resultRecord(
       levelsGained: progress.levelsGained,
       ticketReward: progress.ticketReward,
       shardReward: progress.shardReward,
+      completedGoalIds: [],
       field,
       createdAt,
     },
+  }
+}
+
+function applyScenarioGoalCompletion(
+  umaBeforeRace: UmaSave,
+  progressedUma: UmaSave,
+  race: RaceTemplate,
+  resultId: string,
+  record: RaceResultRecord,
+  now: number,
+): { uma: UmaSave; record: RaceResultRecord } {
+  const tier = tierOfLevel(record.startLevel)
+  const active = umaBeforeRace.scenarioJourneys.find((journey) => journey.state === 'active' && journey.tier === tier)
+  if (!active) return { uma: progressedUma, record }
+  const evaluated = evaluateScenarioGoals({ journey: active, uma: umaBeforeRace, race, resultId, result: record, completedAt: now })
+  return {
+    uma: {
+      ...progressedUma,
+      scenarioJourneys: progressedUma.scenarioJourneys.map((journey) => journey.tier === active.tier ? evaluated.journey : journey),
+    },
+    record: { ...record, completedGoalIds: evaluated.newlyCompletedIds },
   }
 }
 
@@ -405,7 +443,7 @@ export function completeMemoryRace(
   if (!isLocalDay(today) || !Number.isSafeInteger(now) || now < 0) throw new Error('Invalid race completion time')
   const existing = history.find((record) => record.umaId === attempt.umaId && record.sequence === attempt.sequence)
   if (existing) {
-    if (existing.raceId !== attempt.raceId || existing.seed !== attempt.seed) throw new Error('Race result id collision')
+    if (!recordMatchesAttempt(existing, attempt)) throw new Error('Race result id collision')
     return { profile, uma, record: existing, timeline: simulatePreparedRace(attempt), alreadyRecorded: true }
   }
   const current = buildPreparedRace({
@@ -421,7 +459,8 @@ export function completeMemoryRace(
   const race = content.races.byId.get(attempt.raceId)!
   const timeline = simulatePreparedRace(attempt)
   const result = resultRecord(attempt, race, uma, timeline, now)
-  const completedUma = captureFinalSnapshot(content, result.uma, now)
+  const goalResult = applyScenarioGoalCompletion(uma, result.uma, race, attempt.id, result.record, now)
+  const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
   return {
     profile: {
       ...profile,
@@ -429,7 +468,7 @@ export function completeMemoryRace(
       umaShards: profile.umaShards + result.shardReward,
     },
     uma: completedUma,
-    record: result.record,
+    record: goalResult.record,
     timeline,
     alreadyRecorded: false,
   }
@@ -446,7 +485,7 @@ export async function completePersistentRace(
     const existingRow = await db.raceResults.get(attempt.id)
     if (existingRow) {
       const record = parseHistoryRow(existingRow)
-      if (record.raceId !== attempt.raceId || record.seed !== attempt.seed) throw new Error('Race result id collision')
+      if (!recordMatchesAttempt(record, attempt)) throw new Error('Race result id collision')
       const saved = await savedRaceInputs(content, attempt.umaId)
       return {
         profile: saved.profile,
@@ -472,9 +511,10 @@ export async function completePersistentRace(
     const race = content.races.byId.get(attempt.raceId)!
     const timeline = simulatePreparedRace(attempt)
     const resolved = resultRecord(attempt, race, uma, timeline, now)
-    const completedUma = captureFinalSnapshot(content, resolved.uma, now)
-    const levelIds = resolved.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
-    const gate = resolved.record.shardReward ? resolved.record.levelsGained.at(-1) : undefined
+    const goalResult = applyScenarioGoalCompletion(uma, resolved.uma, race, attempt.id, resolved.record, now)
+    const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
+    const levelIds = goalResult.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
+    const gate = goalResult.record.shardReward ? goalResult.record.levelsGained.at(-1) : undefined
     const shardId = gate === undefined ? null : `uma-gate-shard:${attempt.umaId}:${gate}`
     const existingRewards = await db.ledger.bulkGet(shardId ? [...levelIds, shardId] : levelIds)
     if (existingRewards.some((entry) => entry !== undefined)) throw new Error('Race reward was already recorded')
@@ -490,7 +530,7 @@ export async function completePersistentRace(
     await db.umas.put({ ...umaRow, data: completedUma })
     await db.raceResults.add({
       id: attempt.id,
-      data: resolved.record as unknown as Record<string, unknown>,
+      data: goalResult.record as unknown as Record<string, unknown>,
       createdAt: now,
     })
     await queueInTransaction('profile', 'main', 'upsert', now)
@@ -514,7 +554,7 @@ export async function completePersistentRace(
     return {
       profile: nextProfile,
       uma: completedUma,
-      record: resolved.record,
+      record: goalResult.record,
       timeline,
       alreadyRecorded: false,
     }

@@ -13,6 +13,7 @@ export const DATASET_NAMES = [
   'skills',
   'races',
   'racetracks',
+  'ura-objectives',
 ] as const
 
 export type DatasetName = (typeof DATASET_NAMES)[number]

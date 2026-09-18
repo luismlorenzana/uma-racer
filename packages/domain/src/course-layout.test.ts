@@ -35,7 +35,7 @@ describe('race course layout', () => {
 
   it('validates race-to-course joins without consulting private content at runtime', () => {
     const race = {
-      id: 'synthetic-race', name: 'Synthetic Race', grade: 'g1', surface: 'turf', distance: 2_000,
+      id: 'synthetic-race', familyId: '101', name: 'Synthetic Race', grade: 'g1', surface: 'turf', distance: 2_000,
       distanceCategory: 'medium', direction: 'left', venue: 'Synthetic', courseId: 'synthetic-course', season: 1, fieldSize: 8,
     } satisfies RaceTemplate
     expect(() => assertRaceCourseContent([race], [course()])).not.toThrow()

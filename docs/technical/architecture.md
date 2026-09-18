@@ -106,13 +106,18 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   ledgers, applies promotion/Initial Stats and overflow, refreshes awakening/history, and resets training. Zustand publishes
   only after commit. A race reaching the current global maximum freezes the final snapshot inside the existing result
   transaction. Memory-only mode runs the same pure resolver with an explicit warning.
+- Goal-plan v1 is another content-ready coordination step. Every pre-T014 Uma is upgraded in one Dexie transaction after
+  its full race history is strictly parsed: earlier tiers become `legacy-untracked`, the current unfinished tier freezes
+  three deterministic targets, and only current-tier results are replayed. New Scenario Starts generate post-inheritance
+  targets atomically; promotion/final completion closes the previous Journey without inventing rewards or history.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
   engine never evaluates source strings. Engine v3 also joins, validates, clips, and snapshots the selected private course's
   corner/straight geometry before simulation. At the finish, one Dexie transaction revalidates and re-simulates the attempt, updates Uma EXP/levels and profile
   rewards, then appends the typed race result plus deterministic level-ticket/gate-shard ledger ids and outbox work. A
-  matching retry reads the existing result and pays nothing twice; abandoning before the finish writes nothing.
+  goal evaluation updates the active Journey and snapshots exact `completedGoalIds` on the result in that same transaction.
+  A matching retry reads the existing result and pays/animates nothing twice; abandoning before the finish writes nothing.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
@@ -142,8 +147,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ### 3. Content: reference data and images
 
-- Game data (Umas, SSR cards, skills, races) comes from GameTora's versioned JSON datasets, the same importer approach as
-  uma-planner, and is normalized into **content packs** (`umas.json`, `cards.json`, `skills.json`, `races.json`).
+- Game data (Umas, SSR cards, skills, races, courses, and career-objective references) comes from GameTora's versioned JSON
+  datasets, the same importer approach as uma-planner, and is normalized into content packs. Objective rows are reduced to
+  ordered race-family ids only; names, conditions, turns, fans, nested rows, and source ids unrelated to the join are not
+  copied into the packs.
 - Images are fetched once by a local pipeline script, normalized without crop into 128×128 WebP frames, and packed into
   deterministic **sprite atlases** used by DOM UI and later race scenes.
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
@@ -168,19 +175,19 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
 players/{uid}/umas/{umaId}            save v2: progression, deck/library/history, parents/snapshot, journeys, version
 players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
-players/{uid}/raceResults/{id}        append-only: engine/course, umaId, raceId, seed, compiled field, placements, rewards, createdAt
+players/{uid}/raceResults/{id}        append-only: engine/course, attempt, field, placements, rewards, completedGoalIds, createdAt
 players/{uid}/badges/{scope}          earned tiers with dates and race refs, pins, showcase groups, saved views
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 ```
 
 The profile is save v2 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
-creation time, and schema version. Every Uma row is also explicitly v2. Parent/snapshot/history and typed journey fields
-are present now; pre-goal state is `goalPlanVersion: 0` plus an empty journey list, never an untyped placeholder. Badges,
-titles, and settings remain owned by their later tasks.
+creation time, and schema version. Every Uma row is also explicitly v2. Parent/snapshot/history and strict version-1
+Journey fields are present; pending setup has no active Journey, active scenarios have exactly one for the current tier,
+and final completion has none. Badges, titles, and settings remain owned by their later tasks.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic
-course facts, runner stats/aptitudes, and compiled skills are snapshotted for replay.
+course facts, runner stats/aptitudes, compiled skills, and newly completed goal ids are snapshotted for replay/result truth.
 
 Entity docs stay far below Firestore's 1 MiB limit, and daily writes stay well inside the free tier (see [Infrastructure](infrastructure.md)).
 
@@ -206,6 +213,8 @@ apps/web/src/
   mutation path, so back, reload, and direct navigation cannot spend a second coupon.
 - Scenario Start is separately split. Its review is pure and write-free; the confirmation calls the same promotion result
   used by persistence, and the success route reconstructs from committed save facts rather than keeping a second game state.
+- Goal and Journey projections remain small pure DOM view models. Home, Profile, Race Select, pre-race, and Results join
+  persisted ids to private content with safe fallbacks; goal state never enters Pixi or changes simulation inputs.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.

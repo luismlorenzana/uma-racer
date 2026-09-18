@@ -1,6 +1,5 @@
 import {
   DISTANCE_CATEGORIES,
-  SCENARIOS,
   STATS,
   STRATEGIES,
   SURFACES,
@@ -10,13 +9,15 @@ import {
   summarizeSkillLoadout,
   type Grade,
   type StatKey,
+  type RaceResultRecord,
 } from '@racer/domain'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { setFeaturedUma, setUmaLoadout } from '../game/actions'
+import { listRaceHistory, setFeaturedUma, setUmaLoadout } from '../game/actions'
 import { buildDeckView, formatDeckEffect } from '../game/deck-view'
 import { buildLineageView } from '../game/lineage-view'
+import { buildJourneyView } from '../game/goals-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -71,6 +72,15 @@ export function UmaProfileScreen() {
   const cards = useGame((state) => state.cards)
   const pushToast = useGame((state) => state.pushToast)
   const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
+  const [selectedJourneyTier, setSelectedJourneyTier] = useState<number | null>(null)
+  const [raceHistory, setRaceHistory] = useState<RaceResultRecord[]>([])
+
+  useEffect(() => {
+    if (status !== 'ready' || !save) return
+    let cancelled = false
+    void listRaceHistory(10_000).then((records) => { if (!cancelled) setRaceHistory(records) }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [save, status])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to view this Uma" detail="Profiles are part of your private save." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -91,6 +101,8 @@ export function UmaProfileScreen() {
   const loadout = summarizeSkillLoadout(save, uma.template, contentState.content.skills.byId)
   const deck = buildDeckView(save, cards, contentState.content)
   const lineage = buildLineageView(save, contentState.content)
+  const journey = buildJourneyView(save, contentState.content)
+  const selectedJourney = journey.find((item) => item.tier === selectedJourneyTier) ?? null
 
   const toggleSkill = async (skillId: string) => {
     if (savingSkillId) return
@@ -245,24 +257,39 @@ export function UmaProfileScreen() {
       <Panel>
         <h2 className="text-lg font-extrabold">Journey</h2>
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          {Array.from({ length: uma.tier }, (_, index) => index + 1).map((tier) => (
-            <div key={tier} className={`min-w-28 rounded-2xl border-2 p-3 ${tier === uma.tier ? 'border-sky bg-sky/10' : 'border-turf/30 bg-turf/5'}`}>
-              <p className="text-xs font-extrabold text-ink-soft">Tier {tier}</p>
-              <p className="mt-1 text-sm font-extrabold">{SCENARIOS[tier - 1]?.name ?? 'Future scenario'}</p>
-              <p className="mt-2 text-xs font-bold">{tier === uma.tier ? 'Current' : 'Completed'}</p>
-            </div>
+          {journey.map((item) => (
+            <button key={item.tier} type="button" onClick={() => setSelectedJourneyTier(item.tier)} className={`min-h-28 min-w-32 rounded-2xl border-2 p-3 text-left ${item.tier === uma.tier ? 'border-sky bg-sky/10' : 'border-turf/30 bg-turf/5'}`}>
+              <p className="text-xs font-extrabold text-ink-soft">Tier {item.tier}</p>
+              <p className="mt-1 text-sm font-extrabold">{item.name}</p>
+              {item.tracking === 'legacy-untracked' ? <p className="mt-2 text-xs font-bold text-ink-soft">— Not tracked</p> : item.tracking === 'missing' ? <p className="mt-2 text-xs font-bold text-danger">Plan unavailable</p> : (
+                <div className="mt-2 flex items-center gap-1" aria-label={`${item.completed} completed, ${item.missed} missed, ${item.active} active`}>
+                  {item.honors ? <span className="rounded-full bg-gold px-2 py-1 text-xs font-extrabold text-white text-outline">Honors</span> : item.goals.map((goal) => <span key={goal.id} className={`h-3 w-3 rounded-full border-2 ${goal.status === 'completed' ? 'border-gold bg-gold' : goal.status === 'missed' ? 'border-slate-400 bg-slate-200' : 'border-sky bg-white'}`} />)}
+                </div>
+              )}
+            </button>
           ))}
         </div>
-        <p className="mt-3 text-xs font-bold text-ink-soft">Goals arrive in T014; no historical goal results are inferred.</p>
+        {selectedJourney && <div className="mt-3 rounded-2xl bg-white p-3">
+          <div className="flex items-center justify-between gap-2"><p className="font-extrabold">{selectedJourney.name}</p><button type="button" className="min-h-11 px-2 text-sm font-extrabold text-sky-deep" onClick={() => setSelectedJourneyTier(null)}>Close</button></div>
+          {selectedJourney.tracking === 'legacy-untracked' ? <p className="text-sm text-ink-soft">Not tracked — this completed tier predates goal plans, so no wins or misses were invented.</p> : selectedJourney.goals.length === 0 ? <p className="text-sm text-danger">Goal plan unavailable.</p> : <div className="grid gap-2">
+            {selectedJourney.goals.map((goal) => {
+              const result = goal.completedRaceResultId ? raceHistory.find((record) => `race:${record.umaId}:${record.sequence}` === goal.completedRaceResultId) : undefined
+              const destination = result
+                ? `/race/run?uma=${encodeURIComponent(result.umaId)}&race=${encodeURIComponent(result.raceId)}&strategy=${result.strategy}&sequence=${result.sequence}`
+                : `/race?uma=${encodeURIComponent(save.templateId)}&goal=${encodeURIComponent(goal.raceId)}`
+              return <Link key={goal.id} to={destination} className="flex min-h-11 items-center gap-2 rounded-xl bg-sky-50 px-3 py-2">
+                <span>{goal.status === 'completed' ? '●' : goal.status === 'missed' ? '○' : '◉'}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{goal.label} · {goal.raceName}</span><span className="block text-xs text-ink-soft">{goal.rule} · {goal.status}{goal.race ? '' : ' · target missing'}{result ? ' · View result' : ''}</span></span>
+              </Link>
+            })}
+          </div>}
+        </div>}
       </Panel>
 
       <div className="grid grid-cols-2 gap-3">
-        {['Goals & Honors', 'Badges & Record'].map((label) => (
-          <Panel key={label} className="p-3 text-center opacity-65">
-            <p className="text-sm font-extrabold">{label}</p>
-            <p className="mt-1 text-xs text-ink-soft">Coming in a later milestone</p>
-          </Panel>
-        ))}
+        <Panel className="col-span-2 p-3 text-center opacity-65">
+          <p className="text-sm font-extrabold">Badges & Record</p>
+          <p className="mt-1 text-xs text-ink-soft">Coming in a later milestone</p>
+        </Panel>
         <Panel className="col-span-2 p-3">
           <p className="text-sm font-extrabold">Lineage</p>
           {lineage.activeParents.length > 0 ? <div className="mt-2 grid grid-cols-2 gap-2">{lineage.activeParents.map((parent) => <div key={parent.umaId} className="rounded-xl bg-violet-50 p-2"><p className="text-xs font-extrabold">{parent.name} · T{parent.completedTier}</p><p className="text-[11px] text-ink-soft">{parent.uniqueCount} unique · {parent.whiteCount} whites</p>{parent.grandparents.map((grandparent) => <p key={grandparent.umaId} className="mt-1 border-l-2 border-violet-300 pl-2 text-[10px] font-bold">↳ {grandparent.name} · T{grandparent.completedTier}</p>)}</div>)}</div> : <p className="mt-1 text-xs text-ink-soft">No parents in the active scenario.</p>}

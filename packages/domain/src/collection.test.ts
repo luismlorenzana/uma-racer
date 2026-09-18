@@ -34,7 +34,7 @@ const uma = (id: string): UmaTemplate => ({
   uniqueSkillId: `skill-${id}`,
   awakeningSkillIds: [],
   realHorseSex: null,
-  signatureRaces: [],
+    signatureRaceFamilyIds: [],
   imageSource: 'https://example.invalid/synthetic.png',
 })
 
