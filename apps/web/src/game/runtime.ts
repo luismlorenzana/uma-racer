@@ -8,8 +8,13 @@ import {
   assertRaceSkillContent,
   assertTrainingContent,
   assertSaveContent,
+  applyRaceBadgeFacts,
+  applyTrainingBadgeFacts,
+  badgeStateId,
+  createUmaBadgeState,
   createInitialSave,
   parseSyncResponseOrThrow,
+  SCENARIOS,
   replaceSkillLoadout as resolveSkillLoadout,
   type EntityKind,
   type Facility,
@@ -38,7 +43,7 @@ import {
   stateFromSnapshot,
   updateEntityVersion,
 } from './persistence'
-import { adoptGameState, clearGameState, localDay, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
+import { adoptGameState, clearGameState, localDay, replaceBadgeState, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
 import { replaceCardState } from './store'
 import { acknowledgedSequences } from './sync'
 import { persistTraining, resolveMemoryTraining } from './training'
@@ -64,6 +69,7 @@ import {
 } from './collection'
 import { replaceUmaCollectionState } from './store'
 import { startMemoryScenario, startPersistentScenario } from './promotion'
+import { bootstrapBadgeFacts, updateMemoryScenarioBadgeFacts } from './badges'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -138,6 +144,8 @@ export class GameRuntime {
           profile: initial.profile,
           umas: Object.fromEntries(initial.umas.map((item) => [item.templateId, item])),
           cards: Object.fromEntries(initial.cards.map((item) => [item.templateId, item])),
+          badges: Object.fromEntries(initial.umas.map((item) => [badgeStateId(item.templateId), createUmaBadgeState(item, now)])),
+          flairEvents: [],
           persistent: false,
         })
         setSyncState({
@@ -174,6 +182,7 @@ export class GameRuntime {
       if (generation !== this.generation) return
       await completeStarterSeed(content, now)
       await bootstrapGoalPlans(content, now)
+      await bootstrapBadgeFacts(content, now)
       const granted = await applyOwedDailyGrant(today, now)
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
@@ -303,7 +312,21 @@ export class GameRuntime {
         })
       if (generation !== this.generation) return mutation.result
       replaceTrainingState(mutation.profile, mutation.uma, mutation.cards)
+      if (!state.persistent) {
+        const id = badgeStateId(uma.templateId)
+        const prior = state.badges[id]
+        if (!prior || prior.scope !== 'uma') throw new Error('Memory badge state is missing')
+        const next = applyTrainingBadgeFacts({
+          state: prior,
+          before: uma,
+          after: mutation.uma,
+          friendship: mutation.result.preview.friendship,
+          presentCardCount: mutation.result.preview.presentCardIds.length,
+        })
+        replaceBadgeState({ ...state.badges, [id]: next })
+      }
       if (state.persistent) {
+        await this.refreshBadges()
         await this.refreshPending()
         this.schedule()
       }
@@ -338,7 +361,29 @@ export class GameRuntime {
       if (generation !== this.generation) return completion
       if (!state.persistent && !completion.alreadyRecorded) this.memoryRaceHistory.push(completion.record)
       replaceRaceState(completion.profile, completion.uma)
+      if (!state.persistent && !completion.alreadyRecorded) {
+        const id = badgeStateId(uma.templateId)
+        const prior = state.badges[id]
+        if (!prior || prior.scope !== 'uma') throw new Error('Memory badge state is missing')
+        const next = applyRaceBadgeFacts(prior, attempt.id, completion.record, completion.record.accomplishmentFacts ?? null)
+        let badges = { ...state.badges, [id]: next }
+        const completedFinalTier = completion.uma.parentSnapshot?.completedTier === SCENARIOS.length &&
+          uma.parentSnapshot?.completedTier !== SCENARIOS.length
+        if (completedFinalTier) {
+          badges = updateMemoryScenarioBadgeFacts({
+            content,
+            before: completion.uma,
+            after: completion.uma,
+            completedTier: SCENARIOS.length,
+            badges,
+            umas: { ...state.umas, [completion.uma.templateId]: completion.uma },
+            now,
+          })
+        }
+        replaceBadgeState(badges)
+      }
       if (state.persistent) {
+        await this.refreshBadges()
         await this.refreshPending()
         this.schedule()
       }
@@ -362,7 +407,19 @@ export class GameRuntime {
         : startMemoryScenario(content, state.profile, uma, Object.values(state.umas), state.cards, selection, now)
       if (generation !== this.generation) return mutation
       replaceUmaCollectionState(mutation.profile, mutation.uma)
+      if (!state.persistent && !mutation.alreadyStarted) {
+        replaceBadgeState(updateMemoryScenarioBadgeFacts({
+          content,
+          before: uma,
+          after: mutation.uma,
+          completedTier: mutation.result && 'fromTier' in mutation.result ? mutation.result.fromTier : null,
+          badges: state.badges,
+          umas: { ...state.umas, [mutation.uma.templateId]: mutation.uma },
+          now,
+        }))
+      }
       if (state.persistent && !mutation.alreadyStarted) {
+        await this.refreshBadges()
         await this.refreshPending()
         this.schedule()
       }
@@ -474,11 +531,14 @@ export class GameRuntime {
       if (!content || state.status !== 'ready' || !state.profile) throw new Error('Collection save is not ready')
       let mutation: UmaRedemptionMutation
       if (!state.persistent && this.memoryUmaRedemptions.has(umaId) && state.umas[umaId]) {
+        const badgeState = state.badges[badgeStateId(umaId)]
+        if (!badgeState || badgeState.scope !== 'uma' || badgeState.umaId !== umaId) throw new Error('Memory badge state is missing')
         mutation = {
           profile: state.profile,
           uma: state.umas[umaId],
           ledgerId: `uma-coupon-redeem:${umaId}`,
           alreadyRedeemed: true,
+          badgeState,
         }
       } else {
         mutation = state.persistent
@@ -488,7 +548,9 @@ export class GameRuntime {
       if (generation !== this.generation) return mutation
       if (!state.persistent) this.memoryUmaRedemptions.add(umaId)
       replaceUmaCollectionState(mutation.profile, mutation.uma)
+      if (!state.persistent) replaceBadgeState({ ...state.badges, [badgeStateId(umaId)]: mutation.badgeState })
       if (state.persistent) {
+        await this.refreshBadges()
         await this.refreshPending()
         this.schedule()
       }
@@ -502,6 +564,15 @@ export class GameRuntime {
     const pending = await db.outbox.count()
     const online = typeof navigator === 'undefined' || navigator.onLine
     setSyncState({ status: pending === 0 ? 'idle' : online ? 'pending' : 'offline', pending, error: null })
+  }
+
+  private async refreshBadges(): Promise<void> {
+    const snapshot = await readLocalSnapshot()
+    if (!snapshot) return
+    replaceBadgeState(
+      Object.fromEntries(snapshot.badges.map((row) => [row.id, row.data])),
+      snapshot.flairEvents.map((row) => ({ id: row.id, ...row.data })),
+    )
   }
 
   async flush(): Promise<void> {
@@ -527,7 +598,7 @@ export class GameRuntime {
           !Number.isSafeInteger(item.queuedAt) ||
           item.queuedAt < 0 ||
           (item.op === 'upsert' && !['profile', 'umas', 'cards', 'badges'].includes(item.kind)) ||
-          (item.op === 'append' && !['raceResults', 'ledger'].includes(item.kind))
+          (item.op === 'append' && !['raceResults', 'ledger', 'flairEvents'].includes(item.kind))
         ) {
           throw new Error('Outbox row is malformed')
         }

@@ -33,7 +33,8 @@ function race(id: string, familyId: string, grade: RaceTemplate['grade'], distan
   const distanceCategory = distance <= 1400 ? 'sprint' : distance <= 1800 ? 'mile' : distance <= 2400 ? 'medium' : 'long'
   return {
     id, familyId, name: `Synthetic ${id}`, grade, surface, distance, distanceCategory,
-    direction: 'left', venue: 'Synthetic', courseId: `course-${id}`, season: 1, fieldSize: 8,
+    direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [],
+    courseId: `course-${id}`, season: 1, fieldSize: 8,
   }
 }
 

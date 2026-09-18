@@ -17,9 +17,11 @@ import {
   type ScenarioPromotionResult,
   type ScenarioStartSelection,
   type UmaSave,
+  type UmaBadgeStateV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
+import { updateScenarioBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
 
 export interface ScenarioStartMutation {
@@ -29,6 +31,7 @@ export interface ScenarioStartMutation {
   alreadyStarted: boolean
   /** Compatibility for T012 callers while the route moves to startScenario. */
   alreadyPromoted: boolean
+  badgeStates?: Record<string, UmaBadgeStateV1>
 }
 
 export interface ScenarioPromotionMutation extends Omit<ScenarioStartMutation, 'result'> {
@@ -111,7 +114,7 @@ export async function startPersistentScenario(
   selection: ScenarioStartSelection,
   now: number,
 ): Promise<ScenarioStartMutation> {
-  return db.transaction('rw', [db.profile, db.umas, db.cards, db.ledger, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.ledger, db.outbox], async () => {
     const profileRow = await db.profile.get('main')
     const umaRows = await db.umas.toArray()
     const umaRow = umaRows.find((row) => row.id === umaId)
@@ -169,7 +172,15 @@ export async function startPersistentScenario(
     }
     await db.umas.put({ ...umaRow, data: mutation.uma })
     await queueInTransaction('umas', umaId, 'upsert', now)
-    return mutation
+    const completedTier = mutation.result && 'fromTier' in mutation.result ? mutation.result.fromTier : null
+    const badgeStates = await updateScenarioBadgeFacts({
+      content,
+      before: uma,
+      after: mutation.uma,
+      completedTier,
+      now,
+    })
+    return { ...mutation, badgeStates }
   })
 }
 

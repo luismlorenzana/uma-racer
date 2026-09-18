@@ -4,8 +4,11 @@ import {
   parseLegacyPlayerProfileV1,
   parseLegacyUmaSaveV1,
   parsePlayerProfile,
+  parseBadgeState,
   parseUmaSave,
   type CardSave,
+  type BadgeStateV1,
+  type FlairEventV1,
   type EntityKind,
   type LedgerEntry,
   type LogKind,
@@ -70,9 +73,10 @@ class RacerDb extends Dexie {
   profile!: EntityTable<VersionedRow<PlayerProfile>, 'id'>
   umas!: EntityTable<VersionedRow<UmaSave>, 'id'>
   cards!: EntityTable<VersionedRow<CardSave>, 'id'>
-  badges!: EntityTable<VersionedRow<Record<string, unknown>>, 'id'>
+  badges!: EntityTable<VersionedRow<BadgeStateV1>, 'id'>
   raceResults!: EntityTable<LogRow, 'id'>
   ledger!: EntityTable<LogRow<LedgerEntry>, 'id'>
+  flairEvents!: EntityTable<LogRow<FlairEventV1>, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
 
   constructor() {
@@ -84,6 +88,7 @@ class RacerDb extends Dexie {
       badges: 'id',
       raceResults: 'id, createdAt',
       ledger: 'id, createdAt',
+      flairEvents: 'id, createdAt',
       outbox: '++seq, [kind+id]',
     }
     this.version(1).stores(stores)
@@ -119,6 +124,15 @@ class RacerDb extends Dexie {
         if (migrated.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
         await umaTable.put({ ...row, data: migrated })
         await queue('umas', row.id)
+      }
+    })
+    this.version(4).stores(stores).upgrade(async (tx: Transaction) => {
+      const badges = await tx.table('badges').toArray() as VersionedRow<unknown>[]
+      for (const row of badges) {
+        const parsed = parseBadgeState(row.data)
+        if (!parsed || (parsed.scope === 'uma' ? row.id !== `uma:${parsed.umaId}` : row.id !== 'trainer')) {
+          throw new Error(`Local badge ${row.id} cannot be migrated`)
+        }
       }
     })
   }

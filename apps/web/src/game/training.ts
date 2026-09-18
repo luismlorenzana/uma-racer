@@ -18,10 +18,12 @@ import {
   type TrainingCardInput,
   type TrainingDeal,
   type TrainingTurnResult,
+  type UmaBadgeStateV1,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
+import { updateTrainingBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
 
 export interface TrainingMutationResult {
@@ -31,6 +33,7 @@ export interface TrainingMutationResult {
   deal: TrainingDeal
   result: TrainingTurnResult
   ledgerIds: string[]
+  badgeState?: UmaBadgeStateV1
 }
 
 interface TrainingStateInput {
@@ -141,7 +144,7 @@ export async function persistTraining(
   today: string,
   now: number,
 ): Promise<TrainingMutationResult> {
-  return db.transaction('rw', db.profile, db.umas, db.cards, db.ledger, db.outbox, async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.ledger, db.outbox], async () => {
     const profileRow = await db.profile.get('main')
     const umaRow = await db.umas.get(umaId)
     if (!profileRow) throw new Error('Local profile is missing')
@@ -206,6 +209,13 @@ export async function persistTraining(
       await db.ledger.add({ id: entry.id, data: entry.data, createdAt: now })
       await queueInTransaction('ledger', entry.id, 'append', now)
     }
-    return mutation
+    const badgeState = await updateTrainingBadgeFacts({
+      before: uma,
+      after: mutation.uma,
+      friendship: mutation.result.preview.friendship,
+      presentCardCount: mutation.result.preview.presentCardIds.length,
+      now,
+    })
+    return { ...mutation, badgeState }
   })
 }

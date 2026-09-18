@@ -59,7 +59,7 @@ const races: RaceTemplate[] = [
 ].map(([id, grade, familyId], index) => ({
   id: id!, familyId: familyId!, name: `Synthetic Race ${index + 1}`, grade: grade as RaceTemplate['grade'],
   surface: 'turf', distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium',
-  direction: 'left', venue: 'Synthetic', courseId: 'course-goals', season: 1, fieldSize: 8,
+  direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [], courseId: 'course-goals', season: 1, fieldSize: 8,
 }))
 
 function content(): LoadedContent {
@@ -109,7 +109,7 @@ describe('scenario promotion persistence', () => {
     expect(first).toMatchObject({ alreadyPromoted: false, profile: { tickets: 75 }, uma: { level: 11, trainingLevel: 1 } })
     expect(await db.ledger.get('uma-promotion:uma-promo:1')).toMatchObject({ data: { delta: -25, reason: 'uma-promotion' } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual([
-      'ledger/uma-promotion:uma-promo:1', 'profile/main', 'umas/uma-promo',
+      'badges/uma:uma-promo', 'ledger/uma-promotion:uma-promo:1', 'profile/main', 'umas/uma-promo',
     ])
     expect((await db.profile.get('main'))?.version).toBe(7)
     expect((await db.umas.get(uma.templateId))?.version).toBe(5)
@@ -159,7 +159,11 @@ describe('scenario promotion persistence', () => {
     expect(first.uma.skillLibrary).toContainEqual({ skillId: 'gene-parent', origin: 'inherited', sourceId: parentTemplate.id })
     expect(first.uma.currentParents).toEqual([snapshot])
     expect(await db.ledger.count()).toBe(0)
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)).toEqual([`umas/${child.templateId}`])
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)).toEqual([
+      `umas/${child.templateId}`,
+      `badges/uma:${child.templateId}`,
+      `badges/uma:${parent.templateId}`,
+    ])
     const retry = await startPersistentScenario(loaded, child.templateId, selection, 31)
     expect(retry).toMatchObject({ alreadyStarted: true, alreadyPromoted: false, profile: { tickets: 100 } })
     expect(await db.ledger.count()).toBe(0)

@@ -111,8 +111,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   three deterministic targets, and only current-tier results are replayed. New Scenario Starts generate post-inheritance
   targets atomically; promotion/final completion closes the previous Journey without inventing rewards or history.
 - Milestone 6 keeps core profile/Uma save v2 and versions the already-reserved `badges` collection independently. T015
-  creates one bounded fact/award/preference state per owned Uma, and T017 may create a preference-only `trainer` shell;
-  T018 fills that shell with reconciled account aggregates. Training, races, Scenario Start, promotion, and completion
+  creates one bounded fact/award/preference state per owned Uma and defines a preference-valid `trainer` shell. T017 may
+  initialize that shell; T018 fills it with reconciled account aggregates. Training, races, Scenario Start, promotion, and completion
   update every affected badge entity in their existing transaction. Historical race/goal/stat/skill facts are replayed
   where exact, while lost Training/lineage history is labeled as a lower bound rather than fabricated.
 - New race rows snapshot bounded accomplishment metadata from the authoritative content/input/timeline without changing

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SupportCardTemplate, UmaTemplate } from './content'
+import { createUmaBadgeState } from './badges'
 import {
   applyDailyGrants,
   createInitialSave,
@@ -189,5 +190,36 @@ describe('save parsing', () => {
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
+  })
+
+  it('strictly validates independent badge entities and flair logs', () => {
+    const state = createUmaBadgeState(createUmaSave(uma('u1')), 10)
+    const event = {
+      version: 1,
+      scope: 'uma',
+      umaId: 'u1',
+      kind: 'badge-tier',
+      awardKey: 'synthetic-award',
+      stage: 'bronze',
+      earnedAt: 20,
+      source: { kind: 'migration', id: null, tier: null },
+      retroactive: true,
+    }
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'uma:u1', baseVersion: 0, data: state }],
+      appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: event, createdAt: 20 }],
+    })).toMatchObject({
+      upserts: [{ kind: 'badges', id: 'uma:u1' }],
+      appends: [{ kind: 'flairEvents', id: 'flair:synthetic' }],
+    })
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'uma:wrong', baseVersion: 0, data: state }],
+    })).toMatch(/does not match/)
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'uma:u1', baseVersion: 0, data: { ...state, facts: { ...state.facts, wins: 2, starts: 1 } } }],
+    })).toMatch(/invalid badges data/)
+    expect(parseSyncRequest({
+      appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: event, createdAt: 21 }],
+    })).toMatch(/timestamp/)
   })
 })
