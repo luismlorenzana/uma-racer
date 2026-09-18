@@ -14,7 +14,9 @@ while the stable itself grows into a collection.
 > promotion, manual per-Uma support decks, Select Coupon redemption, shard exchange, and reload-safe collection reveals are
 > implemented. Milestone 5 Scenarios & Inheritance is complete: save v2, frozen parents and grandparents, pink sparks,
 > awakening/skill refresh, atomic Scenario Start, deterministic private-content-backed goals, authoritative race completion,
-> honest legacy migration, and full Journey tracking are implemented. Next: Milestone 6 badges, titles, achievements, and flair.
+> honest legacy migration, and full Journey tracking are implemented. [Milestone 6](docs/tasks/M006-badges-and-flair.md)
+> is fully specified as T015–T018:
+> accomplishment facts, per-Uma badges/titles/trophies, the Badge page/showcases, and Trainer achievements/profile are next.
 
 ## Ground rules
 

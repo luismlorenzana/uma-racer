@@ -110,6 +110,15 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   its full race history is strictly parsed: earlier tiers become `legacy-untracked`, the current unfinished tier freezes
   three deterministic targets, and only current-tier results are replayed. New Scenario Starts generate post-inheritance
   targets atomically; promotion/final completion closes the previous Journey without inventing rewards or history.
+- Milestone 6 keeps core profile/Uma save v2 and versions the already-reserved `badges` collection independently. T015
+  creates one bounded fact/award/preference state per owned Uma, and T017 may create a preference-only `trainer` shell;
+  T018 fills that shell with reconciled account aggregates. Training, races, Scenario Start, promotion, and completion
+  update every affected badge entity in their existing transaction. Historical race/goal/stat/skill facts are replayed
+  where exact, while lost Training/lineage history is labeled as a lower bound rather than fabricated.
+- New race rows snapshot bounded accomplishment metadata from the authoritative content/input/timeline without changing
+  engine replay versions. Per-Uma and Trainer awards create deterministic append-only `flairEvents`; immediate action
+  results store exact new event ids so retry/reload cannot replay fanfare. Stable scope remains a live aggregation instead
+  of another persisted copy. A content-ready reconciliation repairs badge/Trainer aggregate drift before ready state.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
@@ -176,18 +185,22 @@ players/{uid}/profile/main            currencies, daily date, featuredUmaId, sta
 players/{uid}/umas/{umaId}            save v2: progression, deck/library/history, parents/snapshot, journeys, version
 players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, attempt, field, placements, rewards, completedGoalIds, createdAt
-players/{uid}/badges/{scope}          earned tiers with dates and race refs, pins, showcase groups, saved views
+players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
+players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
+players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 ```
 
 The profile is save v2 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
 creation time, and schema version. Every Uma row is also explicitly v2. Parent/snapshot/history and strict version-1
 Journey fields are present; pending setup has no active Journey, active scenarios have exactly one for the current tier,
-and final completion has none. Badges, titles, and settings remain owned by their later tasks.
+and final completion has none. Badge-state v1 is independently migratable and cannot force a progression save reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic
-course facts, runner stats/aptitudes, compiled skills, and newly completed goal ids are snapshotted for replay/result truth.
+course facts, runner stats/aptitudes, compiled skills, newly completed goal ids, bounded accomplishment facts, and fresh
+flair event ids are snapshotted for replay/result truth. Flair events are a separate append-only audit/timeline log; badge
+entities hold current bounded progress and preferences, not a copy of every event.
 
 Entity docs stay far below Firestore's 1 MiB limit, and daily writes stay well inside the free tier (see [Infrastructure](infrastructure.md)).
 
@@ -215,6 +228,9 @@ apps/web/src/
   used by persistence, and the success route reconstructs from committed save facts rather than keeping a second game state.
 - Goal and Journey projections remain small pure DOM view models. Home, Profile, Race Select, pre-race, and Results join
   persisted ids to private content with safe fallbacks; goal state never enters Pixi or changes simulation inputs.
+- Badge/catalog/evaluator and Trainer aggregation stay pure in `@racer/domain`. Web view models join current private labels,
+  apply filters/sorts/search, and window the lazy Badge route. Preference commands re-read and replace only title/showcase/
+  saved-view fields so stale UI cannot overwrite newly earned facts. Profile/Home/Results consume the same projections.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.

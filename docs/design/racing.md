@@ -190,6 +190,18 @@ Validate with headless batch simulation.
 See [Uma Progression](uma-progression.md#uma-level-and-exp) for `winExp`. Every result goes into the typed append-only
 `raceResults` collection and will be checked by the later goal, badge, and achievement engines.
 
+### Milestone 6 accomplishment facts
+
+T015 extends new results with bounded award facts derived inside authoritative completion: normalized family/grade/venue/
+course/surface/distance/series metadata, player start delay, first-final-spurt placement, strict section-checkpoint lead,
+and inherited-unique activation. These facts are private-id metadata, not renderer state, and do not change engine v1/v2/v3
+simulation or replay. Legacy results remain valid and use their frozen replay path when detailed retroactive facts are
+needed; missing content/replay dependencies are labeled untracked rather than guessed.
+
+T016 evaluates facts only after the race result/ordinary rewards/T014 goals are determined, then commits the badge entity,
+append-only flair events, and exact new event ids in that same transaction. Course records compare exact stored course ids
+and finish times. Race retries return stored ids and never reevaluate or replay fanfare.
+
 ## Presentation: straight-line real-time view
 
 - The track is drawn as a **horizontal straight**. Runners move left to right in lanes, and the camera follows the pack.

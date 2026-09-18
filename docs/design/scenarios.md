@@ -76,3 +76,8 @@ The resulting facts later support:
 - The **Honors** badge if every scenario goal was completed (the crest is derived now; the persisted badge arrives in Milestone 6).
 - A **Perfect** variant if all five stats reach the scenario's baseline cap (the Training Level 10 cap) before promotion.
 - A **Speedrun** variant if she promoted within 15 races of entering the tier.
+
+T015 makes these future facts durable. Immediately before promotion reset/bonuses—or during atomic final completion—it
+captures the completed tier's stats, Training Level/counters, equipped card ids/eras, race count, Journey summary, and
+frozen lineage. Cap checks use `>=` because permanent stats may already exceed the tier baseline. Graduate/Speedrun can be
+reconstructed from existing Journey/race history; old Perfect/Capped/deck facts that were never stored remain untracked.

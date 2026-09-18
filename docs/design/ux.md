@@ -52,7 +52,8 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 - **Featured Uma** portrait, large, with a gentle idle "breathing" motion. Level ring, Training Level bar, active title.
 - **Two big CTAs** in the thumb zone: **Train** and **Race**.
 - On open, the **daily ticket grant** flies "+50 🎫" into the counter.
-- **Goal tracker** card for the featured Uma (3 pips), and a **recent flair** strip (latest badges).
+- **Goal tracker** card for the featured Uma (3 pips), and a **recent flair** strip. T016 adds the featured Uma's latest
+  three events; T018 expands it with a compact Stable-wide feed.
 - A swipe on the portrait switches the featured Uma.
 
 The implemented goal tracker handles pending setup, active/completed/missed goals, legacy-untracked saves, final completion,
@@ -70,7 +71,7 @@ and missing target content. Each available active target links directly into Rac
 ### Uma Profile
 
 - **Hero header**: portrait, name, active title, level, Scenario Journey strip.
-- **Swipeable tabs**: Overview (stat radar plus stat bars showing the current cap and the scenario baseline) · Skills (loadout editor with an **SP capacity meter** that fills as skills are equipped) · Deck (6 slots, era locks) · Lineage (interactive family tree) · Badges (showcase) · Record.
+- **Swipeable tabs**: Overview (stat radar plus stat bars showing the current cap and the scenario baseline) · Skills (loadout editor with an **SP capacity meter** that fills as skills are equipped) · Deck (6 slots, era locks) · Lineage (interactive family tree) · Badges (active title, Prestige frame, first 12 grouped showcase pins, recent flair) · Record.
 - A sticky bottom action bar: **Train** · **Race** · **Promote** (when ready).
 - The implemented Overview includes a live support-deck summary with selected private card art, used/unlocked slots,
   generated Race Bonus and hint count. **Edit** opens a lazy nested screen and preserves the profile back path.
@@ -187,9 +188,11 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 2. The finishing order slides in, with margins.
 3. The Uma EXP bar fills. On a level-up: burst, the ticket reward moves in, and before→after player/field Race Form updates.
 4. Activated player skills are grouped by id with counts and recovery/speed/acceleration labels; missing content falls back to the id.
-5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. Skip/reduced motion reveals
-   the same facts immediately; reload shows a summary without replaying the earn animation. Badge/title entities plug in
-   during Milestone 6.
+5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. T016 then serializes persisted
+   flair in this order: goal-derived badge events, ordinary badge tiers/one-offs, first G1 trophy, race-set/repeat title,
+   and Trainer achievements. Multiple newly crossed tiers for one definition collapse visually to the highest one while
+   detail retains every stage. Skip/reduced motion reveals the same facts immediately; reload shows “Earned in this race”
+   summaries from stored event ids without replaying them as new.
 6. CTAs: **Races** · **Train** · **Race again**. Until the atomic save succeeds only Retry save is available; Race again
    becomes Promote first at a scenario gate.
 
@@ -213,10 +216,19 @@ and is read-only on refresh or direct navigation.
 
 The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mobile-first:
 
-- A scope switch at the top (Uma / Stable / Trainer) and a **search field**.
-- **Filter sheet** with tag groups. Active filters show as removable chips.
-- A **virtualized grid** of badge tiles. **Pin mode** enables multi-select and drag-to-reorder in the showcase.
-- Tapping a badge opens a **detail sheet** with its tier ladder, dates, and race links.
+- A scope switch at the top (**Uma / Stable / Trainer**) and a search field. T017 enables Uma/Stable; T018 enables Trainer.
+- Uma scope keeps the chosen owned Uma in the URL. Stable is a live per-Uma aggregation; Trainer is persisted account
+  achievements/records, never a duplicate copy of Stable awards.
+- **Filter sheet** with typed tag groups, removable chips, deterministic sorting, and up to 20 named saved views per scope.
+- A windowed grid of badge tiles. Hidden unearned definitions do not leak names/text; locked visible definitions are
+  silhouettes, and exact/since-tracking/untracked provenance is always explicit.
+- Tapping a tile opens a detail sheet with criterion, tier ladder, progress/provenance, dates, Prestige contribution, and
+  race/Journey/migration links. Uma scope also has a G1 trophy wall and paged flair timeline.
+- **Pin mode** enables multi-select and ordered showcase groups. Pointer drag is optional enhancement; ≥44 pt Move up/down
+  and group controls provide the complete accessible/iPhone fallback. The Profile flattens groups and shows the first 12.
+- Active-title selection lives here. The first earned title becomes active only when none is selected; later titles never
+  silently replace the player's choice.
+- Tiles use generated semantic glyphs plus tier shape, color, and text. Bespoke art, sound, and haptics stay in Milestone 7.
 
 ### Settings
 

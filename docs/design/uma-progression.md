@@ -34,8 +34,8 @@
 | `currentParents` | The 0–2 parent snapshots picked for the scenario in progress |
 | `parentSnapshot` | Her latest fully frozen snapshot (her inheritable skills plus the parents she trained with), saved at scenario completion. It is what she passes on when picked as a parent (see [Skills & Inheritance](skills-and-inheritance.md#parent-snapshots)) |
 | `goalPlanVersion`, `scenarioJourneys` | Versioned frozen goals and completed/missed/legacy-untracked facts for every reached tier |
-| `raceHistory` | Append-only result log for every race; new rows snapshot exact `completedGoalIds` and can drive later badges retroactively |
-| `badges`, `titles`, `pinnedBadges`, `activeTitle` | See [Badges](badges.md) |
+| `raceHistory` | Separate append-only result log for every race; T014 snapshots exact `completedGoalIds`, and T015/T016 add bounded accomplishment facts plus fresh flair-event ids |
+| Badge/title/showcase state | Separate versioned `badges/uma:<umaId>` entity; not embedded in the progression save. See [Badges](badges.md) |
 
 ## Uma Level and EXP
 

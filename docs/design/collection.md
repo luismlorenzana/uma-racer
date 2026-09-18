@@ -3,7 +3,8 @@
 Collection is a **core pillar**, alongside racing. There are three collections, each with visible
 completion: **Umas**, **SSR support cards**, and **badges and achievements**.
 
-> All numbers are **draft values for tuning**.
+> Progression/economy numbers remain tuning values unless pinned elsewhere. Milestone 6 freezes the Trainer-achievement
+> thresholds below as catalog-v1 rules; later changes require a catalog migration, decision entry, and pinning test.
 
 ## Starting the game
 
@@ -79,8 +80,9 @@ tier and aptitude filters. A successful selection commits before opening a read-
 
 ## Trainer achievements (account-wide)
 
-These use the same tier ladder as badges: Bronze → Silver → Gold → Platinum → Rainbow.
-Thresholds below are drafts.
+These use the same tier ladder as badges: Bronze → Silver → Gold → Platinum → Rainbow. They are pure flair and pay no
+currency. T018 implements the exact catalog-v1 thresholds below from authoritative collection entities, ledgers, per-Uma
+badge state, and race/Journey facts.
 
 ### Collection
 
@@ -110,6 +112,18 @@ Thresholds below are drafts.
 | Honors Collector | Scenario Honors earned by all Umas | 1 / 10 / 30 / 100 / 300 |
 | Family Tree | Distinct Umas that have served as a parent | 2 / 5 / 10 / 25 / 50 |
 
+Counting rules are exact:
+
+- `all` freezes the applicable private-catalog denominator and catalog version when earned; later content never revokes it.
+- Coupon Clipper counts successful Card/Uma coupon redemption ledger rows, not shard exchanges or coupon grants.
+- Stat Badges counts earned stat/balanced badge stages. Badge Hoarder counts all per-Uma badge stages, one-offs, Goal
+  Ribbons, and Honors, excluding titles and trophies.
+- Title Holders counts distinct title keys across the Stable. Its `all` denominator freezes the eight enabled race-set
+  titles plus the Two-Time and Three-Time title for every retained G1 family in that private catalog version.
+- Heirs counts completed Scenario Starts with one or two direct parents. Family Tree counts distinct Umas with at least one
+  evidenced direct-parent use. Stable Goals/Honors count only tracked T014 facts, never legacy-untracked tiers.
+- Orphaned saves are visible diagnostics but do not inflate current-content collection denominators.
+
 ### Records
 
 Single-value bests, shown on the trainer profile:
@@ -120,12 +134,17 @@ Single-value bests, shown on the trainer profile:
 
 ## Trainer profile
 
-- Trainer name and **showcase**: pinned Umas plus unlimited pinned badges and achievements, managed on the [Badge page](badges.md#badge-page).
+- Trainer display name (stored with badge preferences, default `Trainer`) and **showcase**: unlimited ordered pinned Umas
+  plus grouped earned achievements/per-Uma flair, managed on the [Badge page](badges.md#badge-page).
 - Collection meters: Umas x/y, cards x/y, maxed cards x/y, badges earned.
 - Records panel.
 
 ## Engine notes
 
-- Trainer achievements are **computed from the same event log and race histories** as per-Uma badges,
-  so they're retroactive too.
+- Trainer achievements are **computed from the same collection, ledger, badge-state, Journey, and race facts** as per-Uma
+  flair. T018 maintains atomic incremental aggregates and also reconciles them deterministically at content-ready boot.
+- Trainer state is a separate versioned `badges/trainer` entity. Stable scope remains a live aggregation and is not copied
+  into another award collection.
+- Every earned tier has one append-only Trainer flair event. Bootstrap collapses retroactive presentation into one archive
+  summary rather than replaying a wall of fanfare.
 - Coupons and shards go through the same **ledger** as tickets (see [Economy](economy.md)).

@@ -25,6 +25,10 @@ adjusted through balance simulation and playtesting.
   follow a target into Race Select/pre-race, and complete a goal through Results on the installed app. Also check one missed
   Journey and reduced motion. Desktop validation covers rules and persistence, but not physical safe-area, scrolling,
   animation timing, or offline/reconnect feel on iOS.
+- **Milestone 6 Badge-page device feel (after T017/T018):** scroll/filter all three scopes, open a long detail/timeline,
+  pin/reorder several awards with touch and accessible controls, change an active title, inspect Profile's first 12 pins,
+  and test reduced motion plus offline/reconnect. Desktop validation can prove the 390×844 layout and persistence, but not
+  physical drag/scroll ergonomics, standalone safe areas, or long-list feel on the owner's iPhone.
 
 ## Not questions, but still to come
 

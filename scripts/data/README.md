@@ -18,6 +18,10 @@ source datasets are `character-cards`, `characters`, `support-cards`, `skills`, 
 The objective import keeps only ordered, distinct race-family references for characters with retained gameplay races. It
 prints aggregate coverage/unresolved counts and does not copy objective text, conditions, turns, fans, or nested source rows.
 
+T015 will add an optional private input at `content/overrides/flair.json` for semantic race-series tags and the main-venue
+set used by titles/Grand Tour. The file and generated packs remain ignored. Missing input produces an aggregate warning;
+the importer never commits or prints live mappings, and synthetic tests use invented references only.
+
 ## Output
 
 ```text
