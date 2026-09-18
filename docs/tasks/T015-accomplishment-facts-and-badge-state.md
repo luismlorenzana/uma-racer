@@ -181,4 +181,5 @@ T003–T005, T008, and T012–T014.
 
 ## Implementation status
 
-Definition complete; implementation has not started.
+Implemented. Badge-state v1, strict sync/Dexie plumbing, private flair metadata, race accomplishment snapshots/replay,
+evidence-based bootstrap, and atomic Training/race/Scenario/collection fact capture are covered by synthetic tests.

@@ -18,9 +18,11 @@ source datasets are `character-cards`, `characters`, `support-cards`, `skills`, 
 The objective import keeps only ordered, distinct race-family references for characters with retained gameplay races. It
 prints aggregate coverage/unresolved counts and does not copy objective text, conditions, turns, fans, or nested source rows.
 
-T015 will add an optional private input at `content/overrides/flair.json` for semantic race-series tags and the main-venue
-set used by titles/Grand Tour. The file and generated packs remain ignored. Missing input produces an aggregate warning;
-the importer never commits or prints live mappings, and synthetic tests use invented references only.
+The optional private input `content/overrides/flair.json` supplies semantic race-series tags and the main-venue set used by
+titles/Grand Tour. It has version `1`, a `series` array of unique `{ familyId, tags }` rows, and exactly 10 unique
+`mainVenueKeys`. Tags must use the catalog-v1 semantic enum documented in `docs/design/badges.md`; every reference must
+resolve to a retained normalized race. The file and generated packs remain ignored. Missing input produces an aggregate
+warning and empty tags; the importer prints only aggregate coverage and synthetic tests use invented references.
 
 ## Output
 

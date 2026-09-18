@@ -1,6 +1,7 @@
 // Typed local-first save vocabulary and initialization (docs/tasks/T003-stable-save-foundation.md).
 
 import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK, cardExpToNext, cardLevelCap } from './cards'
+import { badgeStateId, parseBadgeState, parseFlairEvent } from './badges'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
@@ -145,7 +146,7 @@ export interface InitialSave {
 
 export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -735,13 +736,19 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
   if (kind === 'profile') return parsePlayerProfile(value) as unknown as Record<string, unknown> | null
   if (kind === 'umas') return parseUmaSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'cards') return parseCardSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'badges') return parseBadgeState(value) as unknown as Record<string, unknown> | null
   return parseGenericData(value)
 }
 
 export function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
   if (kind === 'ledger') return parseLedgerEntry(value) as unknown as Record<string, unknown> | null
   if (kind === 'raceResults') return parseRaceResultRecord(value) as unknown as Record<string, unknown> | null
+  if (kind === 'flairEvents') return parseFlairEvent(value) as unknown as Record<string, unknown> | null
   return parseGenericData(value)
+}
+
+function badgeIdMatchesData(id: string, data: Record<string, unknown>): boolean {
+  return data.scope === 'trainer' ? id === 'trainer' : data.scope === 'uma' && typeof data.umaId === 'string' && id === badgeStateId(data.umaId)
 }
 
 export function parseSyncRequest(body: unknown): SyncRequest | string {
@@ -760,7 +767,8 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
     if (!data) return `invalid ${kind} data`
-    if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id)) {
+    if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+      (kind === 'badges' && !badgeIdMatchesData(value.id, data))) {
       return `${kind} id does not match data`
     }
     if (value.deleted !== undefined && typeof value.deleted !== 'boolean') return 'invalid deleted flag'
@@ -779,6 +787,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (kind === 'raceResults' && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) {
       return 'raceResults id or timestamp does not match data'
     }
+    if (kind === 'flairEvents' && value.createdAt !== data.earnedAt) return 'flairEvents timestamp does not match data'
     parsedAppends.push({ kind, id: value.id, data, createdAt: value.createdAt })
   }
   const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)
@@ -795,7 +804,8 @@ function parseEntityRecord(value: unknown): EntityRecord | null {
   if (!isPositiveInt(value.version) || typeof value.deleted !== 'boolean' || !isTimestamp(value.updatedAt)) return null
   const data = parseStoredEntityData(kind, value.data)
   if (!data) return null
-  if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id)) return null
+  if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+    (kind === 'badges' && !badgeIdMatchesData(value.id, data))) return null
   return { kind, id: value.id, version: value.version, data, deleted: value.deleted, updatedAt: value.updatedAt }
 }
 
@@ -804,6 +814,7 @@ function parseLogRecord(value: unknown): LogRecord | null {
   const kind = value.kind as LogKind
   const data = parseLogData(kind, value.data)
   if (kind === 'raceResults' && data && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) return null
+  if (kind === 'flairEvents' && data && value.createdAt !== data.earnedAt) return null
   return data ? { kind, id: value.id, data, createdAt: value.createdAt } : null
 }
 

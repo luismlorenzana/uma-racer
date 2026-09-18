@@ -46,7 +46,9 @@ import {
 import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, type RaceInput, type RaceTimeline } from '@racer/race'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
+import { updateRaceBadgeFacts, updateScenarioBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
+import { accomplishmentFactsFromTimeline } from './race-facts'
 
 export interface PreparedRaceRunner {
   templateId: string
@@ -269,7 +271,24 @@ function recordMatchesAttempt(record: RaceResultRecord, attempt: PreparedRace): 
     JSON.stringify(record.course) === JSON.stringify(attempt.input.course)
 }
 
+function factsForAttempt(content: LoadedContent, attempt: PreparedRace, race: RaceTemplate, timeline: RaceTimeline) {
+  const playerInput = attempt.input.runners[attempt.playerIndex]!
+  const inheritedUniqueSkillIds = new Set(
+    (playerInput.skills ?? [])
+      .filter((skill) => skill.inherited && content.skills.byId.get(skill.id)?.kind === 'inherited-unique')
+      .map((skill) => skill.id),
+  )
+  return accomplishmentFactsFromTimeline({
+    race,
+    timeline,
+    playerIndex: attempt.playerIndex,
+    gates: attempt.input.runners.map((runner) => runner.gate),
+    inheritedUniqueSkillIds,
+  })
+}
+
 function resultRecord(
+  content: LoadedContent,
   attempt: PreparedRace,
   race: RaceTemplate,
   uma: UmaSave,
@@ -279,6 +298,7 @@ function resultRecord(
   const playerResult = timeline.results.find((result) => result.runner === attempt.playerIndex)
   if (!playerResult) throw new Error('Race result is missing the player')
   const progress = resolveRaceExperience(uma, race.grade, playerResult.placement, attempt.raceBonus)
+  const accomplishmentFacts = factsForAttempt(content, attempt, race, timeline)
   const field: RaceResultRunner[] = timeline.results.map((result) => {
     const runner = attempt.input.runners[result.runner]
     const display = attempt.runners[result.runner]
@@ -319,6 +339,7 @@ function resultRecord(
       ticketReward: progress.ticketReward,
       shardReward: progress.shardReward,
       completedGoalIds: [],
+      accomplishmentFacts,
       field,
       createdAt,
     },
@@ -444,7 +465,12 @@ export function completeMemoryRace(
   const existing = history.find((record) => record.umaId === attempt.umaId && record.sequence === attempt.sequence)
   if (existing) {
     if (!recordMatchesAttempt(existing, attempt)) throw new Error('Race result id collision')
-    return { profile, uma, record: existing, timeline: simulatePreparedRace(attempt), alreadyRecorded: true }
+    const timeline = simulatePreparedRace(attempt)
+    const race = content.races.byId.get(attempt.raceId)
+    if (!race || !existing.accomplishmentFacts || JSON.stringify(existing.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
+      throw new Error('Race result accomplishment facts are corrupt')
+    }
+    return { profile, uma, record: existing, timeline, alreadyRecorded: true }
   }
   const current = buildPreparedRace({
     content,
@@ -458,7 +484,7 @@ export function completeMemoryRace(
   if (!sameAttempt(current, attempt)) throw new Error('Race attempt is stale; prepare a new race')
   const race = content.races.byId.get(attempt.raceId)!
   const timeline = simulatePreparedRace(attempt)
-  const result = resultRecord(attempt, race, uma, timeline, now)
+  const result = resultRecord(content, attempt, race, uma, timeline, now)
   const goalResult = applyScenarioGoalCompletion(uma, result.uma, race, attempt.id, result.record, now)
   const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
   return {
@@ -481,17 +507,22 @@ export async function completePersistentRace(
   now: number,
 ): Promise<RaceCompletion> {
   if (!isLocalDay(today) || !Number.isSafeInteger(now) || now < 0) throw new Error('Invalid race completion time')
-  return db.transaction('rw', [db.profile, db.umas, db.cards, db.raceResults, db.ledger, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.outbox], async () => {
     const existingRow = await db.raceResults.get(attempt.id)
     if (existingRow) {
       const record = parseHistoryRow(existingRow)
       if (!recordMatchesAttempt(record, attempt)) throw new Error('Race result id collision')
       const saved = await savedRaceInputs(content, attempt.umaId)
+      const timeline = simulatePreparedRace(attempt)
+      const race = content.races.byId.get(attempt.raceId)
+      if (!race || !record.accomplishmentFacts || JSON.stringify(record.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
+        throw new Error('Race result accomplishment facts are corrupt')
+      }
       return {
         profile: saved.profile,
         uma: saved.uma,
         record,
-        timeline: simulatePreparedRace(attempt),
+        timeline,
         alreadyRecorded: true,
       }
     }
@@ -510,7 +541,7 @@ export async function completePersistentRace(
     if (!sameAttempt(current, attempt)) throw new Error('Race attempt is stale; prepare a new race')
     const race = content.races.byId.get(attempt.raceId)!
     const timeline = simulatePreparedRace(attempt)
-    const resolved = resultRecord(attempt, race, uma, timeline, now)
+    const resolved = resultRecord(content, attempt, race, uma, timeline, now)
     const goalResult = applyScenarioGoalCompletion(uma, resolved.uma, race, attempt.id, resolved.record, now)
     const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
     const levelIds = goalResult.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
@@ -528,6 +559,19 @@ export async function completePersistentRace(
     if (!profileRow || !umaRow) throw new Error('Local race save disappeared')
     await db.profile.put({ ...profileRow, data: nextProfile })
     await db.umas.put({ ...umaRow, data: completedUma })
+    await updateRaceBadgeFacts({
+      umaBefore: uma,
+      umaAfter: completedUma,
+      resultId: attempt.id,
+      record: goalResult.record,
+      facts: goalResult.record.accomplishmentFacts!,
+      now,
+    })
+    const completedFinalTier = completedUma.parentSnapshot?.completedTier === SCENARIOS.length &&
+      uma.parentSnapshot?.completedTier !== SCENARIOS.length
+    if (completedFinalTier) {
+      await updateScenarioBadgeFacts({ content, before: completedUma, after: completedUma, completedTier: SCENARIOS.length, now })
+    }
     await db.raceResults.add({
       id: attempt.id,
       data: goalResult.record as unknown as Record<string, unknown>,

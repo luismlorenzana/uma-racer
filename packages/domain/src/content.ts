@@ -1,6 +1,7 @@
 // Static content-pack contracts produced by scripts/data (docs/technical/architecture.md §3).
 
 import type { CardEffect } from './cards'
+import type { FlairSeriesTag } from './badges'
 import type { Aptitudes, DistanceCategory, RaceGrade, StatKey, Stats, Surface } from './types'
 
 export interface UmaTemplate {
@@ -85,6 +86,12 @@ export interface RaceTemplate {
   distanceCategory: DistanceCategory
   direction: RaceDirection
   venue: string
+  /** Stable private-pack identity used by venue accomplishments. */
+  venueKey: string
+  /** Semantic venue classifications supplied by the ignored flair override. */
+  venueTags: ('jra-main')[]
+  /** Semantic race-set classifications supplied by the ignored flair override. */
+  series: FlairSeriesTag[]
   courseId: string
   season: number
   fieldSize: number

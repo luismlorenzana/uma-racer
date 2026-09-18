@@ -66,7 +66,54 @@ import {
   PROMOTION_BONUS_PER_STAT,
   compileRaceSkill,
   grandparentWhitePickCap,
+  BADGE_THRESHOLDS,
+  BADGE_TIER_POINTS,
+  BADGE_ONE_OFF_POINTS,
+  GOAL_RIBBON_POINTS,
+  HONORS_POINTS,
+  TITLE_POINTS,
+  PRESTIGE_FRAME_THRESHOLDS,
+  FLAIR_SERIES_REQUIRED_FAMILIES,
 } from './index'
+
+describe('flair', () => {
+  it('pins catalog-v1 thresholds, points, frames, and private series cardinalities', () => {
+    expect(BADGE_THRESHOLDS).toEqual({
+      mastery: [1, 10, 25, 50, 100],
+      gradeChampion: [1, 5, 10, 20, 40],
+      g1Champion: [1, 3, 7, 15, 30],
+      starts: [10, 50, 100, 250, 500],
+      unbeaten: [3, 5, 8, 12, 20],
+      specialist: [1, 5, 10, 20, 40],
+      breadth: [1, 3, 5, 10, 20],
+      venue: [1, 3, 7, 15, 30],
+      backField: [1, 5, 15, 30, 60],
+      statPeak: [600, 900, 1_200, 1_600, 2_000],
+      balanced: [500, 800, 1_100, 1_500, 1_900],
+      level: [10, 25, 50, 75, 100],
+      diligent: [50, 250, 1_000, 3_000, 10_000],
+      friendship: [10, 50, 200, 500, 1_000],
+      lifetimeSkills: [5, 15, 30, 60, 100],
+      scenarioSkills: [5, 10, 15, 20, 25],
+      destiny: [3, 10, 25, 50, 100],
+      legacy: [1, 5, 10, 25, 50],
+      dynasty: [1, 3, 5, 10, 20],
+    })
+    expect(BADGE_TIER_POINTS).toEqual([1, 2, 4, 8, 16])
+    expect([BADGE_ONE_OFF_POINTS, GOAL_RIBBON_POINTS, HONORS_POINTS, TITLE_POINTS]).toEqual([4, 1, 4, 10])
+    expect(PRESTIGE_FRAME_THRESHOLDS).toEqual([0, 5, 15, 40, 80, 160, 300])
+    expect(FLAIR_SERIES_REQUIRED_FAMILIES).toEqual({
+      'triple-crown': 3,
+      'triple-tiara': 3,
+      'spring-triple-crown': 3,
+      'autumn-triple-crown': 3,
+      'grand-prix': 2,
+      'sprint-crown': 2,
+      'mile-crown': 2,
+      'dirt-crown': 2,
+    })
+  })
+})
 
 describe('scenarios', () => {
   it('pins inherited unique strength and the grandparent half-pool rule', () => {

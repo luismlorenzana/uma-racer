@@ -1,6 +1,7 @@
 // Saved-Uma progression races and rewards (docs/tasks/T005-progression-races-and-rewards.md).
 
 import { CARD_EFFECTS, projectedCardEffectValue } from './cards'
+import { FLAIR_SERIES_TAGS, type FlairSeriesTag } from './badges'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
@@ -69,6 +70,23 @@ export interface RaceResultCourse {
   layout?: RaceCourseLayout
 }
 
+export interface RaceAccomplishmentFactsV1 {
+  version: 1
+  familyId: string
+  grade: RaceGrade
+  venueKey: string
+  venueTags: ('jra-main')[]
+  courseId: string
+  surface: Surface
+  distance: number
+  distanceCategory: (typeof DISTANCE_CATEGORIES)[number]
+  series: FlairSeriesTag[]
+  playerStartDelay: number
+  playerFinalSpurtPlacement: number | null
+  ledEverySectionCheckpoint: boolean
+  inheritedUniqueActivated: boolean
+}
+
 export interface RaceResultRecord {
   /** Absent means legacy skillless engine v1. */
   engineVersion?: 2 | 3
@@ -91,6 +109,10 @@ export interface RaceResultRecord {
   shardReward: number
   /** Snapshotted by T014; legacy records omit it. New records include an empty array when no goal completed. */
   completedGoalIds?: string[]
+  /** Snapshotted by T015; legacy records omit it and remain valid. */
+  accomplishmentFacts?: RaceAccomplishmentFactsV1
+  /** Snapshotted by T016; legacy/T015 records may omit it. */
+  earnedFlairEventIds?: string[]
   field: RaceResultRunner[]
   createdAt: number
 }
@@ -109,6 +131,8 @@ const isNonNegativeInt = (value: unknown): value is number => Number.isSafeInteg
 const isPositiveInt = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0
 const isFiniteNonNegative = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0
+const isSortedUniqueStrings = (value: readonly string[]): boolean =>
+  value.every((entry, index) => index === 0 || value[index - 1]!.localeCompare(entry) < 0)
 
 function parseStats(value: unknown): Stats | null {
   if (!isRecord(value) || !hasExactKeys(value, STATS) || STATS.some((key) => !isFiniteNonNegative(value[key]))) return null
@@ -150,6 +174,10 @@ export function assertProgressionRaceContent(races: readonly RaceTemplate[]): vo
       typeof race.name !== 'string' || race.name.length === 0 ||
       !/^\d+$/.test(race.familyId) ||
       typeof race.venue !== 'string' || race.venue.length === 0 ||
+      !isId(race.venueKey) || !Array.isArray(race.venueTags) ||
+      race.venueTags.some((tag) => tag !== 'jra-main') || new Set(race.venueTags).size !== race.venueTags.length ||
+      !Array.isArray(race.series) || race.series.some((tag) => !FLAIR_SERIES_TAGS.includes(tag)) ||
+      !isSortedUniqueStrings(race.series) ||
       !isId(race.courseId) ||
       !RACE_GRADES.includes(race.grade) ||
       !SURFACES.includes(race.surface) ||
@@ -162,6 +190,51 @@ export function assertProgressionRaceContent(races: readonly RaceTemplate[]): vo
     ) {
       throw new Error(`Race ${race.id} has invalid progression-race data`)
     }
+  }
+}
+
+export function parseRaceAccomplishmentFacts(
+  value: unknown,
+  record?: Pick<RaceResultRecord, 'raceId' | 'playerPlacement' | 'field' | 'course'>,
+): RaceAccomplishmentFactsV1 | null {
+  if (!isRecord(value) || !hasExactKeys(value, [
+    'version', 'familyId', 'grade', 'venueKey', 'venueTags', 'courseId', 'surface', 'distance', 'distanceCategory',
+    'series', 'playerStartDelay', 'playerFinalSpurtPlacement', 'ledEverySectionCheckpoint', 'inheritedUniqueActivated',
+  ])) return null
+  if (
+    value.version !== 1 || !isId(value.familyId) || !RACE_GRADES.includes(value.grade as RaceGrade) || !isId(value.venueKey) ||
+    !Array.isArray(value.venueTags) || value.venueTags.some((tag) => tag !== 'jra-main') ||
+    new Set(value.venueTags).size !== value.venueTags.length || !isId(value.courseId) ||
+    !SURFACES.includes(value.surface as Surface) || !isPositiveInt(value.distance) ||
+    !DISTANCE_CATEGORIES.includes(value.distanceCategory as RaceAccomplishmentFactsV1['distanceCategory']) ||
+    distanceCategory(value.distance) !== value.distanceCategory || !Array.isArray(value.series) ||
+    value.series.some((tag) => !FLAIR_SERIES_TAGS.includes(tag as FlairSeriesTag)) ||
+    !isSortedUniqueStrings(value.series as string[]) ||
+    !isFiniteNonNegative(value.playerStartDelay) ||
+    (value.playerFinalSpurtPlacement !== null && !isPositiveInt(value.playerFinalSpurtPlacement)) ||
+    typeof value.ledEverySectionCheckpoint !== 'boolean' || typeof value.inheritedUniqueActivated !== 'boolean'
+  ) return null
+  if (record) {
+    const player = record.field.find((runner) => runner.isPlayer)
+    if (!player || (value.playerFinalSpurtPlacement !== null && value.playerFinalSpurtPlacement > record.field.length) ||
+      (value.ledEverySectionCheckpoint && record.playerPlacement !== 1) ||
+      (record.course && (value.distance !== record.course.distance || value.surface !== record.course.surface))) return null
+  }
+  return {
+    version: 1,
+    familyId: value.familyId,
+    grade: value.grade as RaceGrade,
+    venueKey: value.venueKey,
+    venueTags: [...value.venueTags] as ('jra-main')[],
+    courseId: value.courseId,
+    surface: value.surface as Surface,
+    distance: value.distance,
+    distanceCategory: value.distanceCategory as RaceAccomplishmentFactsV1['distanceCategory'],
+    series: [...value.series] as FlairSeriesTag[],
+    playerStartDelay: value.playerStartDelay,
+    playerFinalSpurtPlacement: value.playerFinalSpurtPlacement as number | null,
+    ledEverySectionCheckpoint: value.ledEverySectionCheckpoint,
+    inheritedUniqueActivated: value.inheritedUniqueActivated,
   }
 }
 
@@ -317,12 +390,16 @@ function parseRunner(value: unknown, fieldSize: number): RaceResultRunner | null
 export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const hasEngineVersion = isRecord(value) && Object.hasOwn(value, 'engineVersion')
   const hasCompletedGoalIds = isRecord(value) && Object.hasOwn(value, 'completedGoalIds')
+  const hasAccomplishmentFacts = isRecord(value) && Object.hasOwn(value, 'accomplishmentFacts')
+  const hasEarnedFlairEventIds = isRecord(value) && Object.hasOwn(value, 'earnedFlairEventIds')
   const keys = [
     ...(hasEngineVersion ? ['engineVersion'] : []),
     ...(hasEngineVersion ? ['course'] : []),
     'contentVersion', 'umaId', 'raceId', 'sequence', 'seed', 'strategy', 'startLevel', 'startExp', 'startStats',
     'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward',
     ...(hasCompletedGoalIds ? ['completedGoalIds'] : []),
+    ...(hasAccomplishmentFacts ? ['accomplishmentFacts'] : []),
+    ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
     'field', 'createdAt',
   ] as const
   if (!isRecord(value) || !hasExactKeys(value, keys) || !Array.isArray(value.field)) return null
@@ -361,6 +438,14 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const field = runners as RaceResultRunner[]
   const levels = value.levelsGained as number[]
   const player = field.find((runner) => runner.isPlayer)
+  const accomplishmentFacts = hasAccomplishmentFacts
+    ? parseRaceAccomplishmentFacts(value.accomplishmentFacts, {
+      raceId: value.raceId as string,
+      playerPlacement: value.playerPlacement as number,
+      field,
+      ...(course ? { course } : {}),
+    })
+    : null
   if (
     field.filter((runner) => runner.isPlayer).length !== 1 ||
     new Set(field.map((runner) => runner.gate)).size !== fieldSize ||
@@ -369,6 +454,9 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     new Set(levels).size !== levels.length || levels.some((level, index) => index > 0 && level <= levels[index - 1]!) ||
     (hasEngineVersion && field.some((runner) => runner.skills === undefined)) ||
     (!hasEngineVersion && field.some((runner) => runner.skills !== undefined)) ||
+    (hasAccomplishmentFacts && !accomplishmentFacts) ||
+    (hasEarnedFlairEventIds && (!Array.isArray(value.earnedFlairEventIds) ||
+      value.earnedFlairEventIds.some((id) => !isId(id)) || new Set(value.earnedFlairEventIds).size !== value.earnedFlairEventIds.length)) ||
     player?.umaId !== value.umaId || player?.strategy !== value.strategy ||
     player?.placement !== value.playerPlacement ||
     (value.shardReward === 1 && !isGateLevel(levels.at(-1) ?? -1)) ||
@@ -393,6 +481,8 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     ticketReward: value.ticketReward,
     shardReward: value.shardReward,
     ...(hasCompletedGoalIds ? { completedGoalIds: [...value.completedGoalIds as string[]] } : {}),
+    ...(hasAccomplishmentFacts ? { accomplishmentFacts: accomplishmentFacts! } : {}),
+    ...(hasEarnedFlairEventIds ? { earnedFlairEventIds: [...value.earnedFlairEventIds as string[]] } : {}),
     field,
     createdAt: value.createdAt,
   }

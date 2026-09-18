@@ -90,6 +90,48 @@ describe('parseSyncRequest', () => {
     }] })).toMatchObject({ appends: [{ kind: 'ledger', id: 'card-coupon-redeem:synthetic-card' }] })
   })
 
+  it('strictly validates the reserved badge and flair sync shapes', () => {
+    const trainer = {
+      version: 1,
+      scope: 'trainer',
+      catalogVersion: 1,
+      evaluatorVersion: 0,
+      trackingStartedAt: 1,
+      sourceWatermarks: { contributors: 0, ledgerEntries: 0, contentVersion: null },
+      aggregates: [],
+      records: [],
+      awards: { achievements: [] },
+      preferences: {
+        activeTitleId: null,
+        showcaseGroups: [{ id: 'default', name: null, awardRefs: [] }],
+        savedViews: [],
+        displayName: 'Trainer',
+        pinnedUmaIds: [],
+      },
+    }
+    const flair = {
+      version: 1,
+      scope: 'trainer',
+      umaId: null,
+      kind: 'trainer-achievement',
+      awardKey: 'synthetic-achievement',
+      stage: 'bronze',
+      earnedAt: 5,
+      source: { kind: 'migration', id: null, tier: null },
+      retroactive: true,
+    }
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: trainer }],
+      appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: flair, createdAt: 5 }],
+    })).toMatchObject({ upserts: [{ id: 'trainer' }], appends: [{ id: 'flair:synthetic' }] })
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: { ...trainer, aggregates: [{ key: 'wins', count: -1 }] } }],
+    })).toMatch(/invalid badges data/)
+    expect(parseSyncRequest({
+      appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: flair, createdAt: 6 }],
+    })).toMatch(/timestamp/)
+  })
+
   it('accepts v2 profiles and never lets a v1 write replace v2', () => {
     const v2 = {
       schemaVersion: 2,
@@ -175,5 +217,27 @@ describe('parseSyncRequest', () => {
       kind: 'raceResults', id: 'race:u1:0', data: { ...withGoals, completedGoalIds: ['goal:1:aptitude', 'goal:1:aptitude'] }, createdAt: 1,
     }] })).toMatch(/invalid raceResults data/)
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...data, ticketReward: 10 }, createdAt: 1 }] })).toMatch(/invalid raceResults data/)
+    const accomplishmentFacts = {
+      version: 1,
+      familyId: 'synthetic-family',
+      grade: 'g1',
+      venueKey: 'synthetic-venue',
+      venueTags: ['jra-main'],
+      courseId: 'synthetic-course',
+      surface: 'turf',
+      distance: 2_000,
+      distanceCategory: 'medium',
+      series: ['spring-triple-crown', 'triple-crown'],
+      playerStartDelay: 0.03,
+      playerFinalSpurtPlacement: 2,
+      ledEverySectionCheckpoint: true,
+      inheritedUniqueActivated: false,
+    }
+    expect(parseSyncRequest({ appends: [{
+      kind: 'raceResults', id: 'race:u1:0', data: { ...v3, accomplishmentFacts }, createdAt: 1,
+    }] })).toMatchObject({ appends: [{ data: { accomplishmentFacts } }] })
+    expect(parseSyncRequest({ appends: [{
+      kind: 'raceResults', id: 'race:u1:0', data: { ...v3, accomplishmentFacts: { ...accomplishmentFacts, distanceCategory: 'long' } }, createdAt: 1,
+    }] })).toMatch(/invalid raceResults data/)
   })
 })

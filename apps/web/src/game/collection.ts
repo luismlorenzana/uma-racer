@@ -2,8 +2,11 @@
 
 import {
   SAVE_ID_PATTERN,
+  badgeStateId,
+  createUmaBadgeState,
   exchangeUmaShards,
   nextUmaShardExchangeSequence,
+  parseBadgeState,
   parseCardSave,
   parseLedgerEntry,
   parsePlayerProfileOrThrow,
@@ -14,6 +17,7 @@ import {
   type LedgerEntry,
   type PlayerProfile,
   type UmaSave,
+  type UmaBadgeStateV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
@@ -37,6 +41,7 @@ export interface UmaRedemptionMutation {
   uma: UmaSave
   ledgerId: string
   alreadyRedeemed: boolean
+  badgeState: UmaBadgeStateV1
 }
 
 function assertSafeTarget(id: string, kind: string): void {
@@ -91,7 +96,13 @@ export function redeemMemoryUma(
   const template = content.umas.byId.get(umaId)
   if (!template) throw new Error('Uma content is missing')
   const mutation = redeemUmaSelectCoupon(profile, template, umasById[umaId] !== undefined, today, now)
-  return { profile: mutation.profile, uma: mutation.uma, ledgerId: mutation.ledger[0].id, alreadyRedeemed: false }
+  return {
+    profile: mutation.profile,
+    uma: mutation.uma,
+    ledgerId: mutation.ledger[0].id,
+    alreadyRedeemed: false,
+    badgeState: createUmaBadgeState(mutation.uma, now),
+  }
 }
 
 export async function exchangePersistentUmaShards(today: string, now: number): Promise<ShardExchangeMutation> {
@@ -161,7 +172,7 @@ export async function redeemPersistentUma(
   const template = content.umas.byId.get(umaId)
   if (!template) throw new Error('Uma content is missing')
   const ledgerId = `uma-coupon-redeem:${umaId}`
-  return db.transaction('rw', db.profile, db.umas, db.ledger, db.outbox, async () => {
+  return db.transaction('rw', db.profile, db.umas, db.badges, db.ledger, db.outbox, async () => {
     const [profileRow, umaRow, ledgerRow] = await Promise.all([
       db.profile.get('main'), db.umas.get(umaId), db.ledger.get(ledgerId),
     ])
@@ -171,7 +182,10 @@ export async function redeemPersistentUma(
       const uma = parseUmaSave(umaRow.data)
       if (!uma || uma.templateId !== umaId) throw new Error(`Invalid local Uma save: ${umaId}`)
       assertMatchingLedger(ledgerRow, { resource: 'uma-coupons', delta: -1, reason: 'uma-coupon-redeem' })
-      return { profile, uma, ledgerId, alreadyRedeemed: true }
+      const badgeRow = await db.badges.get(badgeStateId(umaId))
+      const badgeState = badgeRow ? parseBadgeState(badgeRow.data) : null
+      if (!badgeState || badgeState.scope !== 'uma' || badgeState.umaId !== umaId) throw new Error('Uma redemption badge state is missing')
+      return { profile, uma, ledgerId, alreadyRedeemed: true, badgeState }
     }
     if (ledgerRow) throw new Error('Uma redemption record exists without its Uma')
     if (umaRow) throw new Error('Uma outfit is already owned')
@@ -179,10 +193,13 @@ export async function redeemPersistentUma(
     const entry = mutation.ledger[0]
     await db.profile.put({ ...profileRow, data: mutation.profile })
     await db.umas.add({ id: umaId, data: mutation.uma, version: 0 })
+    const badgeState = createUmaBadgeState(mutation.uma, now)
+    await db.badges.add({ id: badgeStateId(umaId), data: badgeState, version: 0 })
     await db.ledger.add({ id: entry.id, data: entry.data, createdAt: entry.data.createdAt })
     await queueInTransaction('profile', 'main', 'upsert', now)
     await queueInTransaction('umas', umaId, 'upsert', now)
+    await queueInTransaction('badges', badgeStateId(umaId), 'upsert', now)
     await queueInTransaction('ledger', entry.id, 'append', now)
-    return { profile: mutation.profile, uma: mutation.uma, ledgerId, alreadyRedeemed: false }
+    return { profile: mutation.profile, uma: mutation.uma, ledgerId, alreadyRedeemed: false, badgeState }
   })
 }

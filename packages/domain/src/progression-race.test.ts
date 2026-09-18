@@ -78,6 +78,9 @@ const race: RaceTemplate = {
   distanceCategory: 'medium',
   direction: 'left',
   venue: 'Test Track',
+  venueKey: 'test-track',
+  venueTags: [],
+  series: [],
   courseId: 'course-1',
   season: 1,
   fieldSize: 8,
@@ -195,5 +198,42 @@ describe('race result parsing', () => {
     expect(parseRaceResultRecord({ ...valid, ticketReward: 10 })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, extra: true })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, field: valid.field.map((runner) => ({ ...runner, isPlayer: false })) })).toBeNull()
+  })
+
+  it('accepts strict v1 accomplishment facts while preserving legacy omission', () => {
+    const valid = record()
+    const accomplishmentFacts = {
+      version: 1 as const,
+      familyId: 'synthetic-family',
+      grade: 'g1' as const,
+      venueKey: 'synthetic-venue',
+      venueTags: ['jra-main'] as const,
+      courseId: 'synthetic-course',
+      surface: 'turf' as const,
+      distance: 2_000,
+      distanceCategory: 'medium' as const,
+      series: ['spring-triple-crown', 'triple-crown'] as const,
+      playerStartDelay: 0.04,
+      playerFinalSpurtPlacement: 3,
+      ledEverySectionCheckpoint: true,
+      inheritedUniqueActivated: false,
+    }
+    const current = {
+      ...valid,
+      engineVersion: 3 as const,
+      course: {
+        distance: 2_000,
+        surface: 'turf' as const,
+        season: 1,
+        layout: { corners: [{ start: 1_200, end: 1_600, number: 2 }], straights: [{ start: 0, end: 1_200 }, { start: 1_600, end: 2_000 }] },
+      },
+      field: valid.field.map((runner) => ({ ...runner, skills: [] })),
+      accomplishmentFacts,
+    }
+    expect(parseRaceResultRecord(current)).toEqual(current)
+    expect(parseRaceResultRecord({ ...current, accomplishmentFacts: { ...accomplishmentFacts, extra: true } })).toBeNull()
+    expect(parseRaceResultRecord({ ...current, accomplishmentFacts: { ...accomplishmentFacts, distanceCategory: 'long' } })).toBeNull()
+    expect(parseRaceResultRecord({ ...current, accomplishmentFacts: { ...accomplishmentFacts, ledEverySectionCheckpoint: true }, playerPlacement: 2 })).toBeNull()
+    expect(parseRaceResultRecord({ ...current, accomplishmentFacts: { ...accomplishmentFacts, series: ['triple-crown', 'spring-triple-crown'] } })).toBeNull()
   })
 })

@@ -1,21 +1,33 @@
 // CLI orchestration for the private content data pipeline (docs/tasks/T001-content-data-packs.md).
 
 import { assertRaceCourseContent, selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { DATASET_NAMES, loadGameToraData } from './gametora'
 import { normalizeCards } from './normalize/cards'
 import { normalizeCourses } from './normalize/courses'
+import { applyFlairOverride } from './normalize/flair'
 import { normalizeObjectiveFamilies } from './normalize/objectives'
 import { normalizeRaces } from './normalize/races'
 import { normalizeSkills } from './normalize/skills'
 import { normalizeUmas } from './normalize/umas'
-import { writeContentPacks } from './pack'
+import { DEFAULT_CONTENT_DIR, writeContentPacks } from './pack'
 
 async function main(): Promise<void> {
   const refresh = process.argv.includes('--refresh')
   const { manifest, datasets } = await loadGameToraData({ refresh })
   const source = Object.fromEntries(DATASET_NAMES.map((name) => [name, manifest[name]!]))
 
-  const races = normalizeRaces(datasets.races)
+  const normalizedRaces = normalizeRaces(datasets.races)
+  let flairRaw: unknown | null = null
+  try {
+    flairRaw = JSON.parse(await readFile(resolve(DEFAULT_CONTENT_DIR, 'overrides/flair.json'), 'utf8')) as unknown
+  } catch (error) {
+    const code = error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : null
+    if (code !== 'ENOENT') throw error
+  }
+  const flair = applyFlairOverride(normalizedRaces.items, flairRaw)
+  const races = { items: flair.items, warnings: [...normalizedRaces.warnings, ...flair.warnings] }
   const objectives = normalizeObjectiveFamilies(datasets['ura-objectives'], datasets.races, races.items)
   const umas = normalizeUmas(datasets['character-cards'], datasets.characters, objectives.byCharacterId)
   const cards = normalizeCards(datasets['support-cards'])
@@ -35,6 +47,7 @@ async function main(): Promise<void> {
   console.log(`Race-skill coverage: ${skillCoverage.supported}/${skillCoverage.total}`)
   console.log(`Baseline NPC skill kit: ${baselineSkills.length}/4`)
   console.log(`Races: ${races.items.length}`)
+  console.log(`Flair coverage: ${flair.coverage.taggedFamilies} families · ${flair.coverage.taggedSeries} series · ${flair.coverage.mainVenues} main venues`)
   console.log(`Objectives: ${objectives.counts.rows} rows · ${objectives.counts.characters} characters · ${objectiveOutfits} outfits · ${objectives.counts.resolvedReferences} resolved · ${objectives.counts.unresolvedReferences} unresolved`)
   console.log(`Courses: ${courses.items.length}`)
 

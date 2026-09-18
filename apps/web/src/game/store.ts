@@ -1,4 +1,4 @@
-import type { CardSave, PlayerProfile, UmaSave } from '@racer/domain'
+import type { BadgeStateV1, CardSave, FlairEventV1, PlayerProfile, UmaSave } from '@racer/domain'
 import { create } from 'zustand'
 
 export type GameStatus = 'booting' | 'signed-out' | 'waiting-content' | 'ready' | 'error'
@@ -23,6 +23,8 @@ interface GameState {
   profile: PlayerProfile | null
   umas: Readonly<Record<string, UmaSave>>
   cards: Readonly<Record<string, CardSave>>
+  badges: Readonly<Record<string, BadgeStateV1>>
+  flairEvents: readonly (FlairEventV1 & { id: string })[]
   orphanedUmaIds: readonly string[]
   orphanedCardIds: readonly string[]
   sync: SyncState
@@ -41,6 +43,8 @@ export const useGame = create<GameState>()((set) => ({
   profile: null,
   umas: {},
   cards: {},
+  badges: {},
+  flairEvents: [],
   orphanedUmaIds: [],
   orphanedCardIds: [],
   sync: EMPTY_SYNC,
@@ -57,6 +61,8 @@ export function adoptGameState(input: {
   profile: PlayerProfile
   umas: Record<string, UmaSave>
   cards: Record<string, CardSave>
+  badges?: Record<string, BadgeStateV1>
+  flairEvents?: (FlairEventV1 & { id: string })[]
   persistent: boolean
   orphanedUmaIds?: string[]
   orphanedCardIds?: string[]
@@ -67,6 +73,8 @@ export function adoptGameState(input: {
     profile: input.profile,
     umas: input.umas,
     cards: input.cards,
+    badges: input.badges ?? {},
+    flairEvents: input.flairEvents ?? [],
     persistent: input.persistent,
     orphanedUmaIds: input.orphanedUmaIds ?? [],
     orphanedCardIds: input.orphanedCardIds ?? [],
@@ -113,6 +121,10 @@ export function replaceRaceState(profile: PlayerProfile, uma: UmaSave): void {
   }))
 }
 
+export function replaceBadgeState(badges: Record<string, BadgeStateV1>, flairEvents?: readonly (FlairEventV1 & { id: string })[]): void {
+  useGame.setState({ badges, ...(flairEvents ? { flairEvents: [...flairEvents] } : {}) })
+}
+
 export function setSyncState(sync: Partial<SyncState>): void {
   useGame.setState((state) => ({ sync: { ...state.sync, ...sync } }))
 }
@@ -124,6 +136,8 @@ export function clearGameState(status: GameStatus = 'signed-out'): void {
     profile: null,
     umas: {},
     cards: {},
+    badges: {},
+    flairEvents: [],
     orphanedUmaIds: [],
     orphanedCardIds: [],
     sync: EMPTY_SYNC,
@@ -138,4 +152,5 @@ export const selectOwnedUmaCount = (state: GameState) => Object.keys(state.umas)
 export const selectOwnedCardCount = (state: GameState) => Object.keys(state.cards).length
 export const selectUma = (id: string) => (state: GameState) => state.umas[id]
 export const selectCard = (id: string) => (state: GameState) => state.cards[id]
+export const selectBadgeState = (id: string) => (state: GameState) => state.badges[id]
 export const selectSync = (state: GameState) => state.sync

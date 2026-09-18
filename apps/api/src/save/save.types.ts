@@ -3,7 +3,7 @@
 
 export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -86,6 +86,18 @@ const RACE_COURSE_FIELDS = ['distance', 'surface', 'season'] as const
 const RACE_COURSE_V3_FIELDS = ['distance', 'surface', 'season', 'layout'] as const
 const RACE_RUNNER_FIELDS = ['umaId', 'isPlayer', 'strategy', 'gate', 'stats', 'aptitude', 'placement', 'finishTime', 'marginLengths'] as const
 const RACE_APTITUDE_FIELDS = ['distance', 'surface', 'strategy'] as const
+const RACE_FACT_FIELDS = [
+  'version', 'familyId', 'grade', 'venueKey', 'venueTags', 'courseId', 'surface', 'distance', 'distanceCategory',
+  'series', 'playerStartDelay', 'playerFinalSpurtPlacement', 'ledEverySectionCheckpoint', 'inheritedUniqueActivated',
+] as const
+const RACE_GRADES = ['debut', 'maiden', 'pre-op', 'op', 'g3', 'g2', 'g1'] as const
+const DISTANCES = ['sprint', 'mile', 'medium', 'long'] as const
+const FLAIR_SERIES = [
+  'triple-crown', 'triple-tiara', 'spring-triple-crown', 'autumn-triple-crown',
+  'grand-prix', 'sprint-crown', 'mile-crown', 'dirt-crown',
+] as const
+const FLAIR_KINDS = ['badge-tier', 'one-off', 'goal-ribbon', 'honors', 'title', 'trophy-earned', 'trainer-achievement'] as const
+const BADGE_TIERS = ['bronze', 'silver', 'gold', 'platinum', 'rainbow', 'one-off'] as const
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -127,6 +139,250 @@ function parseAptitudes(value: unknown): Record<string, unknown> | null {
 function parseUniqueIds(value: unknown, max = Number.POSITIVE_INFINITY): string[] | null {
   if (!Array.isArray(value) || value.length > max || value.some((item) => !isId(item))) return null
   return new Set(value).size === value.length ? [...value] as string[] : null
+}
+
+function jsonIsBounded(value: unknown, depth = 0): boolean {
+  if (depth > 12) return false
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return typeof value !== 'string' || value.length <= 240
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (Array.isArray(value)) return value.length <= 10_000 && value.every((item) => jsonIsBounded(item, depth + 1))
+  if (!isRecord(value) || Object.keys(value).length > 80) return false
+  return Object.entries(value).every(([key, item]) => ID_PATTERN.test(key) && jsonIsBounded(item, depth + 1))
+}
+
+function parseSortedIds(value: unknown, max = 10_000): string[] | null {
+  const ids = parseUniqueIds(value, max)
+  return ids && ids.every((id, index) => index === 0 || ids[index - 1]!.localeCompare(id) < 0) ? ids : null
+}
+
+function parseCounts(value: unknown, max = 10_000): boolean {
+  if (!Array.isArray(value) || value.length > max) return false
+  return value.every((entry, index) => isRecord(entry) && exactKeys(entry, ['key', 'count']) && isId(entry.key) &&
+    isNonNegativeInt(entry.count) && (index === 0 || isRecord(value[index - 1]) &&
+      String((value[index - 1] as Record<string, unknown>).key).localeCompare(entry.key) < 0))
+}
+
+function parseTierList(value: unknown): boolean {
+  return Array.isArray(value) && value.length <= 11 && value.every((tier, index) =>
+    isPositiveInt(tier) && tier <= 11 && (index === 0 || (value[index - 1] as number) < tier))
+}
+
+function parseBadgeSource(value: unknown): boolean {
+  return isRecord(value) && exactKeys(value, ['kind', 'id', 'tier']) &&
+    ['race', 'training', 'scenario', 'goal', 'migration', 'collection'].includes(String(value.kind)) &&
+    (value.id === null || isId(value.id)) && (value.tier === null || (isPositiveInt(value.tier) && value.tier <= 11))
+}
+
+function parseAwardStage(value: unknown): boolean {
+  return isRecord(value) && exactKeys(value, ['awardKey', 'stage', 'earnedAt', 'history', 'source', 'frozenKeys']) &&
+    isId(value.awardKey) && BADGE_TIERS.includes(value.stage as (typeof BADGE_TIERS)[number]) &&
+    isNonNegativeInt(value.earnedAt) && ['exact', 'since-tracking'].includes(String(value.history)) &&
+    parseBadgeSource(value.source) && parseSortedIds(value.frozenKeys, 500) !== null
+}
+
+function parseAwardTitle(value: unknown): boolean {
+  return isRecord(value) && exactKeys(value, ['awardKey', 'earnedAt', 'history', 'source', 'frozenKeys']) &&
+    isId(value.awardKey) && isNonNegativeInt(value.earnedAt) && ['exact', 'since-tracking'].includes(String(value.history)) &&
+    parseBadgeSource(value.source) && parseSortedIds(value.frozenKeys, 500) !== null
+}
+
+function parseBadgePreferences(value: unknown, trainer: boolean): boolean {
+  const keys = trainer
+    ? ['activeTitleId', 'showcaseGroups', 'savedViews', 'displayName', 'pinnedUmaIds']
+    : ['activeTitleId', 'showcaseGroups', 'savedViews']
+  if (!isRecord(value) || !exactKeys(value, keys) || (value.activeTitleId !== null && !isId(value.activeTitleId)) ||
+    !Array.isArray(value.showcaseGroups) || value.showcaseGroups.length < 1 || value.showcaseGroups.length > 21 ||
+    !Array.isArray(value.savedViews) || value.savedViews.length > 20) return false
+  const refs = new Set<string>()
+  const groupIds = new Set<string>()
+  for (const [index, group] of value.showcaseGroups.entries()) {
+    if (!isRecord(group) || !exactKeys(group, ['id', 'name', 'awardRefs']) || !isId(group.id) || groupIds.has(group.id) ||
+      (index === 0 ? group.id !== 'default' || group.name !== null : typeof group.name !== 'string' || group.name.trim().length < 1 || group.name.trim().length > 40)) return false
+    const awardRefs = parseUniqueIds(group.awardRefs)
+    if (!awardRefs || awardRefs.some((ref) => refs.has(ref))) return false
+    awardRefs.forEach((ref) => refs.add(ref))
+    groupIds.add(group.id)
+  }
+  const viewIds = new Set<string>()
+  const names = new Set<string>()
+  for (const view of value.savedViews) {
+    if (!isRecord(view) || !exactKeys(view, ['id', 'name', 'filters', 'sort']) || !isId(view.id) || viewIds.has(view.id) ||
+      typeof view.name !== 'string' || view.name.trim().length < 1 || view.name.trim().length > 40 ||
+      !['recent', 'tier', 'closest', 'rarest', 'alphabetical', 'category'].includes(String(view.sort)) || !parseCounts(view.filters, 30)) return false
+    const name = view.name.trim().toLocaleLowerCase()
+    if (names.has(name)) return false
+    names.add(name)
+    viewIds.add(view.id)
+  }
+  return !trainer || (typeof value.displayName === 'string' && value.displayName.trim().length > 0 &&
+    [...value.displayName.trim()].length <= 32 && parseUniqueIds(value.pinnedUmaIds) !== null)
+}
+
+const RACE_FEAT_FIELDS = [
+  'wireToWireWins', 'greatComebackWins', 'backFieldWins', 'dominantWins', 'bigMarginWins', 'photoFinishWins',
+  'lightningStartWins', 'slowStartWins', 'inheritedUniqueWins', 'impossibleGroundWins', 'unorthodoxWins',
+  'ironHorseWins', 'blinkOfAnEyeWins',
+] as const
+
+function parseUmaBadgeFacts(value: unknown): boolean {
+  const fields = [
+    'starts', 'wins', 'seconds', 'thirds', 'currentWinStreak', 'longestWinStreak', 'gradeWins', 'surfaceWins',
+    'distanceWins', 'strategyWins', 'venueWins', 'familyWins', 'lowAptitudeSurfaceWins', 'lowAptitudeDistanceWins',
+    'courseBests', 'raceFeats', 'statPeaks', 'balancedPeak', 'levelPeak', 'distinctSkillIds', 'lifetimeTrainingTurns',
+    'friendshipTrainings', 'fullHouseCount', 'trainingByTier', 'fullyTrainedTiers', 'maxSkillsByTier', 'goals',
+    'honorsTiers', 'completedScenarioTiers', 'raceStartsByTier', 'completions', 'parentedScenarioStarts',
+    'legacyEvidence', 'dynastyEvidence',
+  ]
+  if (!isRecord(value) || !exactKeys(value, fields)) return false
+  const counters = ['starts', 'wins', 'seconds', 'thirds', 'currentWinStreak', 'longestWinStreak', 'balancedPeak',
+    'levelPeak', 'lifetimeTrainingTurns', 'friendshipTrainings', 'fullHouseCount']
+  if (counters.some((key) => !isNonNegativeInt(value[key])) || (value.wins as number) > (value.starts as number) ||
+    (value.seconds as number) + (value.thirds as number) > (value.starts as number) ||
+    (value.currentWinStreak as number) > (value.longestWinStreak as number) ||
+    (value.friendshipTrainings as number) > (value.lifetimeTrainingTurns as number) ||
+    (value.fullHouseCount as number) > (value.lifetimeTrainingTurns as number) || !parseStats(value.statPeaks) ||
+    parseSortedIds(value.distinctSkillIds) === null || !parseTierList(value.fullyTrainedTiers) ||
+    !parseTierList(value.honorsTiers) || !parseTierList(value.completedScenarioTiers)) return false
+  const counts = ['gradeWins', 'surfaceWins', 'distanceWins', 'strategyWins', 'venueWins', 'lowAptitudeSurfaceWins',
+    'lowAptitudeDistanceWins', 'maxSkillsByTier', 'raceStartsByTier']
+  if (counts.some((key) => !parseCounts(value[key]))) return false
+  const gradeWins = value.gradeWins as { key: string }[]
+  const surfaceWins = value.surfaceWins as { key: string }[]
+  const distanceWins = value.distanceWins as { key: string }[]
+  const strategyWins = value.strategyWins as { key: string }[]
+  const tierCounts = [...value.maxSkillsByTier as { key: string }[], ...value.raceStartsByTier as { key: string }[]]
+  if (gradeWins.some((entry) => !RACE_GRADES.includes(entry.key as (typeof RACE_GRADES)[number])) ||
+    surfaceWins.some((entry) => !['turf', 'dirt'].includes(entry.key)) ||
+    distanceWins.some((entry) => !DISTANCES.includes(entry.key as (typeof DISTANCES)[number])) ||
+    strategyWins.some((entry) => !STRATEGIES.includes(entry.key as (typeof STRATEGIES)[number])) ||
+    tierCounts.some((entry) => !isPositiveInt(Number(entry.key)) || Number(entry.key) > 11 || String(Number(entry.key)) !== entry.key)) return false
+  if (!isRecord(value.raceFeats) || !exactKeys(value.raceFeats, RACE_FEAT_FIELDS) ||
+    RACE_FEAT_FIELDS.some((key) => !isNonNegativeInt((value.raceFeats as Record<string, unknown>)[key]))) return false
+  const familyWins = value.familyWins
+  if (!Array.isArray(familyWins) || familyWins.some((entry, index) => !isRecord(entry) ||
+    !exactKeys(entry, ['key', 'count', 'grade', 'series']) || !isId(entry.key) || !isNonNegativeInt(entry.count) ||
+    !RACE_GRADES.includes(entry.grade as (typeof RACE_GRADES)[number]) || !Array.isArray(entry.series) ||
+    entry.series.some((tag) => !FLAIR_SERIES.includes(tag as (typeof FLAIR_SERIES)[number])) ||
+    (entry.series as unknown[]).some((tag, tagIndex, tags) => tagIndex > 0 && String(tags[tagIndex - 1]).localeCompare(String(tag)) >= 0) ||
+    (index > 0 && isRecord(familyWins[index - 1]) &&
+      String((familyWins[index - 1] as Record<string, unknown>).key).localeCompare(entry.key) >= 0))) return false
+  const courseBests = value.courseBests
+  if (!Array.isArray(courseBests) || courseBests.length > 10_000 || courseBests.some((entry) =>
+    !isRecord(entry) || !exactKeys(entry, ['courseId', 'finishTime', 'resultId', 'achievedAt']) || !isId(entry.courseId) ||
+    typeof entry.finishTime !== 'number' || !Number.isFinite(entry.finishTime) || entry.finishTime < 0 ||
+    !isId(entry.resultId) || !isNonNegativeInt(entry.achievedAt)) ||
+    courseBests.some((entry, index) => index > 0 && isRecord(entry) && isRecord(courseBests[index - 1]) &&
+      String((courseBests[index - 1] as Record<string, unknown>).courseId).localeCompare(String(entry.courseId)) >= 0)) return false
+  const trainingByTier = value.trainingByTier
+  if (!Array.isArray(trainingByTier) || trainingByTier.length > 11 || trainingByTier.some((entry, index) =>
+    !isRecord(entry) || !exactKeys(entry, ['tier', 'turns', 'friendshipTrainings', 'fullHouseCount', 'reachedTl10']) ||
+    !isPositiveInt(entry.tier) || entry.tier > 11 || !isNonNegativeInt(entry.turns) || !isNonNegativeInt(entry.friendshipTrainings) ||
+    entry.friendshipTrainings > entry.turns || !isNonNegativeInt(entry.fullHouseCount) || entry.fullHouseCount > entry.turns ||
+    typeof entry.reachedTl10 !== 'boolean' ||
+    (index > 0 && isRecord(trainingByTier[index - 1]) && ((trainingByTier[index - 1] as Record<string, unknown>).tier as number) >= entry.tier))) return false
+  const evidence = ['parentedScenarioStarts', 'legacyEvidence', 'dynastyEvidence']
+  if (evidence.some((key) => !Array.isArray(value[key]) || (value[key] as unknown[]).length > 10_000 ||
+    (value[key] as unknown[]).some((entry, index, rows) => !isRecord(entry) || !exactKeys(entry, ['key', 'relatedUmaId', 'tier', 'createdAt']) ||
+      !isId(entry.key) || !isId(entry.relatedUmaId) || !isPositiveInt(entry.tier) || entry.tier > 11 || !isNonNegativeInt(entry.createdAt) ||
+      (index > 0 && isRecord(rows[index - 1]) && String((rows[index - 1] as Record<string, unknown>).key).localeCompare(entry.key) >= 0)))) return false
+  const goals = value.goals
+  if (!Array.isArray(goals) || goals.length > 33 || goals.some((entry) => !isRecord(entry) ||
+    !exactKeys(entry, ['goalId', 'resultId', 'tier', 'completedAt']) || !isId(entry.goalId) || !isId(entry.resultId) ||
+    !isPositiveInt(entry.tier) || entry.tier > 11 || !isNonNegativeInt(entry.completedAt)) ||
+    goals.some((entry, index) => index > 0 && isRecord(entry) && isRecord(goals[index - 1]) &&
+      String((goals[index - 1] as Record<string, unknown>).goalId).localeCompare(String(entry.goalId)) >= 0)) return false
+  const completions = value.completions
+  return Array.isArray(completions) && completions.length <= 11 && completions.every((entry, index) =>
+    isRecord(entry) && exactKeys(entry, ['tier', 'completedAt', 'trainingLevel', 'stats', 'deckCardIds', 'deckEras',
+      'trainingTurns', 'friendshipTrainings', 'raceStarts', 'completedGoalIds', 'honors', 'parentUmaIds', 'grandparentUmaIds']) &&
+    isPositiveInt(entry.tier) && entry.tier <= 11 && isNonNegativeInt(entry.completedAt) && isPositiveInt(entry.trainingLevel) &&
+    entry.trainingLevel <= 10 && parseStats(entry.stats) !== null && parseUniqueIds(entry.deckCardIds, 6) !== null &&
+    Array.isArray(entry.deckEras) && entry.deckEras.length === (entry.deckCardIds as unknown[]).length && entry.deckEras.every(isPositiveInt) &&
+    isNonNegativeInt(entry.trainingTurns) &&
+    isNonNegativeInt(entry.friendshipTrainings) && isNonNegativeInt(entry.raceStarts) && parseUniqueIds(entry.completedGoalIds, 3) !== null &&
+    typeof entry.honors === 'boolean' && parseUniqueIds(entry.parentUmaIds, 2) !== null && parseUniqueIds(entry.grandparentUmaIds, 4) !== null &&
+    (index === 0 || isRecord(completions[index - 1]) && ((completions[index - 1] as Record<string, unknown>).tier as number) < entry.tier))
+}
+
+function parseBadge(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || value.version !== 1 || !jsonIsBounded(value)) return null
+  if (value.scope === 'uma') {
+    const keys = ['version', 'scope', 'umaId', 'catalogVersion', 'evaluatorVersion', 'trackingStartedAt', 'sourceWatermarks', 'history', 'facts', 'awards', 'preferences']
+    const sourceWatermarks = value.sourceWatermarks
+    if (!exactKeys(value, keys) || !isId(value.umaId) || !isPositiveInt(value.catalogVersion) ||
+      !isNonNegativeInt(value.evaluatorVersion) || !isNonNegativeInt(value.trackingStartedAt) ||
+      !isRecord(sourceWatermarks) || !exactKeys(sourceWatermarks, ['raceSequence', 'trainingTurns', 'scenarioCompletions', 'lineageEvidence']) ||
+      !Number.isSafeInteger(sourceWatermarks.raceSequence) || (sourceWatermarks.raceSequence as number) < -1 ||
+      !isNonNegativeInt(sourceWatermarks.trainingTurns) || !isNonNegativeInt(sourceWatermarks.scenarioCompletions) ||
+      !isNonNegativeInt(sourceWatermarks.lineageEvidence) || !isRecord(value.history) ||
+      !exactKeys(value.history, ['race', 'training', 'scenario-completion', 'lineage', 'diagnostics']) ||
+      !['exact', 'since-tracking', 'untracked'].includes(String(value.history.race)) ||
+      !['exact', 'since-tracking', 'untracked'].includes(String(value.history.training)) ||
+      !['exact', 'since-tracking', 'untracked'].includes(String(value.history['scenario-completion'])) ||
+      !['exact', 'since-tracking', 'untracked'].includes(String(value.history.lineage)) ||
+      parseSortedIds(value.history.diagnostics, 200) === null || !parseUmaBadgeFacts(value.facts) ||
+      !isRecord(value.awards) || !exactKeys(value.awards, ['badges', 'titles', 'trophies']) ||
+      !Array.isArray(value.awards.badges) || value.awards.badges.some((entry) => !parseAwardStage(entry)) ||
+      !Array.isArray(value.awards.titles) || value.awards.titles.some((entry) => !parseAwardTitle(entry)) ||
+      !Array.isArray(value.awards.trophies) || value.awards.trophies.some((entry) => !isRecord(entry) ||
+        !exactKeys(entry, ['familyId', 'count', 'firstEarnedAt', 'lastEarnedAt', 'firstResultId', 'lastResultId']) ||
+        !isId(entry.familyId) || !isPositiveInt(entry.count) || !isNonNegativeInt(entry.firstEarnedAt) ||
+        !isNonNegativeInt(entry.lastEarnedAt) || entry.lastEarnedAt < entry.firstEarnedAt ||
+        !isId(entry.firstResultId) || !isId(entry.lastResultId)) || !parseBadgePreferences(value.preferences, false)) return null
+    const facts = value.facts as Record<string, unknown>
+    const lineageCount = ['parentedScenarioStarts', 'legacyEvidence', 'dynastyEvidence']
+      .reduce((sum, key) => sum + (facts[key] as unknown[]).length, 0)
+    if ((sourceWatermarks.raceSequence as number) + 1 !== facts.starts ||
+      sourceWatermarks.trainingTurns !== facts.lifetimeTrainingTurns ||
+      sourceWatermarks.scenarioCompletions !== (facts.completedScenarioTiers as unknown[]).length ||
+      sourceWatermarks.lineageEvidence !== lineageCount) return null
+    return value
+  }
+  if (value.scope === 'trainer') {
+    const keys = ['version', 'scope', 'catalogVersion', 'evaluatorVersion', 'trackingStartedAt', 'sourceWatermarks', 'aggregates', 'records', 'awards', 'preferences']
+    if (!exactKeys(value, keys) || !isPositiveInt(value.catalogVersion) || !isNonNegativeInt(value.evaluatorVersion) ||
+      !isNonNegativeInt(value.trackingStartedAt) || !isRecord(value.sourceWatermarks) ||
+      !exactKeys(value.sourceWatermarks, ['contributors', 'ledgerEntries', 'contentVersion']) ||
+      !isNonNegativeInt(value.sourceWatermarks.contributors) || !isNonNegativeInt(value.sourceWatermarks.ledgerEntries) ||
+      (value.sourceWatermarks.contentVersion !== null && !isId(value.sourceWatermarks.contentVersion)) ||
+      !parseCounts(value.aggregates) || !parseCounts(value.records) || !isRecord(value.awards) ||
+      !exactKeys(value.awards, ['achievements']) || !Array.isArray(value.awards.achievements) ||
+      value.awards.achievements.some((entry) => !parseAwardStage(entry)) || !parseBadgePreferences(value.preferences, true)) return null
+    return value
+  }
+  return null
+}
+
+function parseFlair(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, ['version', 'scope', 'umaId', 'kind', 'awardKey', 'stage', 'earnedAt', 'source', 'retroactive']) ||
+    value.version !== 1 || !['uma', 'trainer'].includes(String(value.scope)) ||
+    (value.scope === 'uma' ? !isId(value.umaId) : value.umaId !== null) ||
+    !FLAIR_KINDS.includes(value.kind as (typeof FLAIR_KINDS)[number]) ||
+    (value.scope === 'trainer' ? value.kind !== 'trainer-achievement' : value.kind === 'trainer-achievement') || !isId(value.awardKey) ||
+    !BADGE_TIERS.includes(value.stage as (typeof BADGE_TIERS)[number]) || !isNonNegativeInt(value.earnedAt) ||
+    typeof value.retroactive !== 'boolean' || !isRecord(value.source) ||
+    !exactKeys(value.source, ['kind', 'id', 'tier']) || !['race', 'training', 'scenario', 'goal', 'migration', 'collection'].includes(String(value.source.kind)) ||
+    (value.source.id !== null && !isId(value.source.id)) ||
+    (value.source.tier !== null && (!isPositiveInt(value.source.tier) || value.source.tier > 11))) return null
+  return value
+}
+
+function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: number, course: unknown): boolean {
+  if (!isRecord(value) || !exactKeys(value, RACE_FACT_FIELDS)) return false
+  const series = value.series
+  if (value.version !== 1 || !isId(value.familyId) ||
+    !RACE_GRADES.includes(value.grade as (typeof RACE_GRADES)[number]) || !isId(value.venueKey) ||
+    !Array.isArray(value.venueTags) || value.venueTags.some((tag) => tag !== 'jra-main') || new Set(value.venueTags).size !== value.venueTags.length ||
+    !isId(value.courseId) || !['turf', 'dirt'].includes(String(value.surface)) || !isPositiveInt(value.distance) ||
+    !DISTANCES.includes(value.distanceCategory as (typeof DISTANCES)[number]) ||
+    (value.distance <= 1_400 ? 'sprint' : value.distance <= 1_800 ? 'mile' : value.distance <= 2_400 ? 'medium' : 'long') !== value.distanceCategory ||
+    !Array.isArray(series) || series.some((tag) => !FLAIR_SERIES.includes(tag as (typeof FLAIR_SERIES)[number])) ||
+    series.some((tag, index) => index > 0 && String(series[index - 1]).localeCompare(String(tag)) >= 0) ||
+    typeof value.playerStartDelay !== 'number' || !Number.isFinite(value.playerStartDelay) || value.playerStartDelay < 0 ||
+    (value.playerFinalSpurtPlacement !== null && (!isPositiveInt(value.playerFinalSpurtPlacement) || value.playerFinalSpurtPlacement > fieldSize)) ||
+    typeof value.ledEverySectionCheckpoint !== 'boolean' || (value.ledEverySectionCheckpoint && playerPlacement !== 1) ||
+    typeof value.inheritedUniqueActivated !== 'boolean') return false
+  return !isRecord(course) || (course.distance === value.distance && course.surface === value.surface)
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
@@ -323,10 +579,14 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   const versioned = Object.hasOwn(value, 'engineVersion')
   const hasCompletedGoalIds = Object.hasOwn(value, 'completedGoalIds')
+  const hasAccomplishmentFacts = Object.hasOwn(value, 'accomplishmentFacts')
+  const hasEarnedFlairEventIds = Object.hasOwn(value, 'earnedFlairEventIds')
   const version = value.engineVersion
   if (!exactKeys(value, [
     ...RACE_RESULT_FIELDS,
     ...(hasCompletedGoalIds ? ['completedGoalIds'] : []),
+    ...(hasAccomplishmentFacts ? ['accomplishmentFacts'] : []),
+    ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
     ...(versioned ? ['engineVersion', 'course'] : []),
   ]) ||
       (versioned && version !== 2 && version !== 3) || !Array.isArray(value.field)) return null
@@ -347,6 +607,7 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     !isNonNegativeInt(value.ticketReward) || value.ticketReward !== value.levelsGained.length * 5 ||
     !isNonNegativeInt(value.shardReward) || value.shardReward > 1 || fieldSize < 8 || fieldSize > 18 ||
     (hasCompletedGoalIds && parseUniqueIds(value.completedGoalIds) === null) ||
+    (hasEarnedFlairEventIds && parseUniqueIds(value.earnedFlairEventIds) === null) ||
     !isNonNegativeInt(value.createdAt)
   ) return null
   const runners = value.field as unknown[]
@@ -375,6 +636,7 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     new Set(levels).size !== levels.length || levels.some((level, index) => index > 0 && level <= levels[index - 1]!) ||
     (value.shardReward === 1 && (levels.at(-1) ?? -1) % 10 !== 0)
   ) return null
+  if (hasAccomplishmentFacts && !parseRaceFacts(value.accomplishmentFacts, fieldSize, value.playerPlacement as number, value.course)) return null
   return value
 }
 
@@ -382,11 +644,13 @@ function parseEntityData(kind: EntityKind, value: unknown): Record<string, unkno
   if (kind === 'profile') return parseProfile(value)
   if (kind === 'umas') return parseUma(value)
   if (kind === 'cards') return parseCard(value)
-  return isRecord(value) ? value : null
+  return parseBadge(value)
 }
 
 function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
-  return kind === 'ledger' ? parseLedger(value) : parseRaceResult(value)
+  if (kind === 'ledger') return parseLedger(value)
+  if (kind === 'raceResults') return parseRaceResult(value)
+  return parseFlair(value)
 }
 
 /** Shape-check an untrusted sync body before it reaches either repository implementation. */
@@ -406,7 +670,8 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
     if (!data) return `invalid ${kind} data`
-    if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id)) return `${kind} id does not match data`
+    if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+      (kind === 'badges' && (data.scope === 'trainer' ? value.id !== 'trainer' : value.id !== `uma:${String(data.umaId)}`))) return `${kind} id does not match data`
     if (value.deleted !== undefined && typeof value.deleted !== 'boolean') return 'invalid deleted flag'
     parsedUpserts.push({ kind, id: value.id, baseVersion: value.baseVersion, data, deleted: value.deleted as boolean | undefined })
   }
@@ -423,6 +688,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (kind === 'raceResults' && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) {
       return 'raceResults id or timestamp does not match data'
     }
+    if (kind === 'flairEvents' && value.createdAt !== data.earnedAt) return 'flairEvents timestamp does not match data'
     parsedAppends.push({ kind, id: value.id, data, createdAt: value.createdAt })
   }
   const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)

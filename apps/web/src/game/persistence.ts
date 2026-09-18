@@ -7,6 +7,8 @@ import {
   createInitialSave,
   createUmaSave,
   parseCardSave,
+  parseBadgeState,
+  parseFlairEvent,
   parseEntityData,
   parseLedgerEntry,
   parseLogData,
@@ -15,6 +17,8 @@ import {
   parseSaveSnapshotOrThrow,
   parseUmaSave,
   type CardSave,
+  type BadgeStateV1,
+  type FlairEventV1,
   type EntityKind,
   type EntityRecord,
   type LedgerEntry,
@@ -31,6 +35,8 @@ export interface LocalSnapshot {
   profile: VersionedRow<PlayerProfile>
   umas: VersionedRow<UmaSave>[]
   cards: VersionedRow<CardSave>[]
+  badges: VersionedRow<BadgeStateV1>[]
+  flairEvents: LogRow<FlairEventV1>[]
 }
 
 export async function queueInTransaction(
@@ -53,6 +59,8 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
 
   const umaRows = await db.umas.toArray()
   const cardRows = await db.cards.toArray()
+  const badgeRows = await db.badges.toArray()
+  const flairRows = await db.flairEvents.toArray()
   const umas = umaRows.map((row) => {
     const data = parseUmaSave(row.data)
     if (!data || data.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
@@ -63,9 +71,22 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
     if (!data || data.templateId !== row.id) throw new Error(`Invalid local card save: ${row.id}`)
     return { ...row, data }
   })
+  const badges = badgeRows.map((row) => {
+    const data = parseBadgeState(row.data)
+    if (!data || (data.scope === 'uma' ? row.id !== `uma:${data.umaId}` : row.id !== 'trainer')) {
+      throw new Error(`Invalid local badge state: ${row.id}`)
+    }
+    return { ...row, data }
+  })
+  const flairEvents = flairRows.map((row) => {
+    const data = parseFlairEvent(row.data)
+    if (!data || data.earnedAt !== row.createdAt) throw new Error(`Invalid local flair event: ${row.id}`)
+    return { ...row, data }
+  })
   if (umaRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local Uma row version is invalid')
   if (cardRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local card row version is invalid')
-  return { profile: { ...profileRow, data: profile }, umas, cards }
+  if (badgeRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local badge row version is invalid')
+  return { profile: { ...profileRow, data: profile }, umas, cards, badges, flairEvents }
 }
 
 export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
@@ -76,6 +97,7 @@ export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
     db.badges.count(),
     db.raceResults.count(),
     db.ledger.count(),
+    db.flairEvents.count(),
     db.outbox.count(),
   ])
   return counts.every((count) => count === 0)
@@ -119,20 +141,22 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
   }
   if (profileRecords.length !== 1 || profileRecords[0]!.id !== 'main') throw new Error('Server save has duplicate profiles')
 
-  await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.outbox], async () => {
-    await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.outbox.clear()])
+  await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
+    await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.outbox.clear()])
     for (const record of snapshot.entities) {
       if (record.deleted) continue
       if (record.kind === 'profile') await db.profile.put({ id: record.id, data: parsePlayerProfileOrThrow(record.data), version: record.version })
       if (record.kind === 'umas') await db.umas.put({ id: record.id, data: parseUmaSave(record.data)!, version: record.version })
       if (record.kind === 'cards') await db.cards.put({ id: record.id, data: parseCardSave(record.data)!, version: record.version })
-      if (record.kind === 'badges') await db.badges.put({ id: record.id, data: record.data, version: record.version })
+      if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
     }
     for (const record of snapshot.logs) {
       if (record.kind === 'ledger') {
         await db.ledger.put({ id: record.id, data: parseLedgerEntry(record.data)!, createdAt: record.createdAt })
-      } else {
+      } else if (record.kind === 'raceResults') {
         await db.raceResults.put({ id: record.id, data: record.data, createdAt: record.createdAt })
+      } else {
+        await db.flairEvents.put({ id: record.id, data: parseFlairEvent(record.data)!, createdAt: record.createdAt })
       }
     }
     for (const key of legacyKeys) {
@@ -222,10 +246,13 @@ export async function applyOwedDailyGrant(today: string, now: number): Promise<n
 export function stateFromSnapshot(snapshot: LocalSnapshot, content: LoadedContent, persistent: boolean) {
   const umas = Object.fromEntries(snapshot.umas.map((row) => [row.id, row.data]))
   const cards = Object.fromEntries(snapshot.cards.map((row) => [row.id, row.data]))
+  const badges = Object.fromEntries(snapshot.badges.map((row) => [row.id, row.data]))
   return {
     profile: snapshot.profile.data,
     umas,
     cards,
+    badges,
+    flairEvents: snapshot.flairEvents.map((row) => ({ id: row.id, ...row.data })),
     persistent,
     orphanedUmaIds: snapshot.umas.filter((row) => !content.umas.byId.has(row.id)).map((row) => row.id),
     orphanedCardIds: snapshot.cards.filter((row) => !content.cards.byId.has(row.id)).map((row) => row.id),
@@ -252,7 +279,7 @@ export async function entityRow(kind: EntityKind, id: string): Promise<Versioned
 }
 
 export async function logRow(kind: LogKind, id: string): Promise<LogRow<object> | null> {
-  const row = kind === 'ledger' ? await db.ledger.get(id) : await db.raceResults.get(id)
+  const row = kind === 'ledger' ? await db.ledger.get(id) : kind === 'raceResults' ? await db.raceResults.get(id) : await db.flairEvents.get(id)
   if (!row) return null
   if (row.id !== id || !Number.isSafeInteger(row.createdAt) || row.createdAt < 0) {
     throw new Error(`Invalid local ${kind} row metadata: ${id}`)
@@ -273,7 +300,7 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
   if (record.kind === 'profile') await db.profile.put({ id: record.id, data: parsePlayerProfileOrThrow(record.data), version: record.version })
   if (record.kind === 'umas') await db.umas.put({ id: record.id, data: parseUmaSave(record.data)!, version: record.version })
   if (record.kind === 'cards') await db.cards.put({ id: record.id, data: parseCardSave(record.data)!, version: record.version })
-  if (record.kind === 'badges') await db.badges.put({ id: record.id, data: record.data, version: record.version })
+  if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
   if (queueMigrated && (record.kind === 'profile' || record.kind === 'umas')) {
     await queueInTransaction(record.kind, record.id, 'upsert', now)
   }

@@ -96,7 +96,7 @@ function content(): LoadedContent {
   ].map(([id, grade, familyId], index) => ({
     id: id!, familyId: familyId!, name: `Synthetic Race ${index + 1}`, grade: grade as RaceTemplate['grade'],
     surface: 'turf', distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium',
-    direction: 'left', venue: 'Synthetic', courseId: 'course-goals', season: 1, fieldSize: 8,
+    direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [], courseId: 'course-goals', season: 1, fieldSize: 8,
   }))
   const course: CourseTemplate = {
     id: 'course-goals', trackId: 'track-goals', distance: 3, terrain: 1, turn: 1,
@@ -163,7 +163,8 @@ describe('Training persistence', () => {
     expect(await db.ledger.get('training:uma-00:1:0')).toMatchObject({
       data: { delta: -1, reason: 'training', localDay: '2000-01-02', createdAt: 200 },
     })
-    expect(await db.outbox.count()).toBe(11)
+    expect(await db.outbox.count()).toBe(12)
+    expect(await db.outbox.where('[kind+id]').equals(['badges', 'uma:uma-00']).count()).toBe(1)
     for (const id of mutation.ledgerIds) {
       expect(await db.outbox.where('[kind+id]').equals(['ledger', id]).count()).toBe(1)
     }

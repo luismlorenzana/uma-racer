@@ -87,6 +87,9 @@ const race: RaceTemplate = {
   distanceCategory: 'medium',
   direction: 'left',
   venue: 'Test Track',
+  venueKey: 'test-track',
+  venueTags: [],
+  series: [],
   courseId: 'course-1',
   season: 1,
   fieldSize: 8,
@@ -264,6 +267,7 @@ describe('persistent progression race', () => {
     expect(await db.raceResults.count()).toBe(1)
     expect((await db.ledger.toArray()).map((row) => row.id)).toEqual(['uma-level-tickets:u1:2'])
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual([
+      'badges/uma:u1',
       'ledger/uma-level-tickets:u1:2',
       'profile/main',
       'raceResults/race:u1:0',
@@ -322,6 +326,7 @@ describe('persistent progression race', () => {
       'uma-level-tickets:u1:10',
     ])
     expect((await db.outbox.toArray()).map((entry) => `${entry.kind}/${entry.id}`).sort()).toEqual([
+      'badges/uma:u1',
       'ledger/uma-gate-shard:u1:10',
       'ledger/uma-level-tickets:u1:10',
       'profile/main',
