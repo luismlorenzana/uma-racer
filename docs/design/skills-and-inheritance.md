@@ -61,6 +61,11 @@ Stats, SP, level, card levels, and records **don't** reset. Only the skill libra
 Each skill in the library records its **origin** (`own-unique`, `card`, `inherited`, `awakening`), because only some origins pass down.
 Every skill an Uma ever learns is also recorded in a **lifetime skill log** for badges and history.
 
+Milestone 6 derives Skill Collector/Full Kit from this durable log. T015 also records idempotent lineage evidence: a chosen
+direct parent's Legacy count advances when Scenario Start commits, and a grandparent's Dynasty count advances only when
+the descendant completes that scenario. Pre-T015 uses visible finite snapshots as a truthful lower bound and never invents
+lost parent selections.
+
 ### Link to parent snapshots
 
 A snapshot is saved when a scenario is completed, so a parent passes on **the card skills from her last completed scenario**.

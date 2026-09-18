@@ -1,243 +1,339 @@
-# Badges & Achievements
+# Badges, Titles & Achievements
 
-A **core pillar**. Every Uma should end up with a trophy case that tells her story: where she
-won, how she won, what she mastered, and how far she has come.
+Badges are a **core pillar**. Every Uma gets a trophy case that tells her story: where she won, how she won, what she
+mastered, and how far she has come. Milestone 6 implements this pillar without adding currency rewards or original-game
+data to git.
 
 ## Concepts
 
 | Concept | Description |
 |---|---|
-| **Badge** | A per-Uma accomplishment with **tiers**, for example "Mile Master" Bronze → Rainbow |
-| **One-off badge** | A single-tier feat, for example "Photo Finish" |
-| **Title** | A named honor for a special feat (for example **"Triple Crown"**). One active title shows under the Uma's name |
-| **Trainer achievement** | Account-wide: collection and aggregates of every Uma's badges and races. See [Collection](collection.md#trainer-achievements-account-wide) |
-| **Hidden badge** | Criteria not shown until earned |
+| **Badge** | A per-Uma accomplishment. Most have Bronze → Rainbow tiers; some are one-off feats |
+| **Goal Ribbon / Honors** | Persisted badge forms of T014's exact completed-goal and 3/3 Journey facts |
+| **Title** | A named race-set honor. One earned title may be active under the Uma's name |
+| **G1 trophy** | One trophy per distinct G1 race family, with a lifetime win count |
+| **Flair event** | Append-only evidence that a badge tier, title, trophy, or achievement was first earned |
+| **Trainer achievement** | Account-wide accomplishment derived from collection and all Umas; see [Collection](collection.md#trainer-achievements-account-wide) |
+| **Hidden badge** | Definition and progress are concealed until its first tier or one-off award is earned |
 
 ### Tier ladder
 
-| Tier | Color | Prestige points |
-|---|---|---|
-| Bronze | 🟫 | 1 |
-| Silver | ⬜ | 2 |
-| Gold | 🟨 | 4 |
-| Platinum | 🟦 | 8 |
-| Rainbow | 🌈 | 16 |
+| Tier | Color | Shape | Prestige points |
+|---|---|---|---:|
+| Bronze | Bronze | Circle | 1 |
+| Silver | Silver | Square | 2 |
+| Gold | Gold | Diamond | 4 |
+| Platinum | Blue-white | Hexagon | 8 |
+| Rainbow | Rainbow | Star | 16 |
 
-Badges are pure flair and don't pay currency ✅.
+Only the highest earned tier of a tiered badge contributes Prestige. Ordinary one-off badges contribute 4 points,
+Goal Ribbons contribute 1, Honors/Perfect/Speedrun contribute 4, and titles contribute 10. G1 trophies and Trainer
+achievements do not contribute to an Uma's Prestige. Badges are pure flair and never pay tickets, coupons, shards, stats,
+EXP, or SP.
 
-## Badge catalog (first pass)
+## Milestone 6 implementation contract
 
-Thresholds are drafts. `B/S/G/P/R` = Bronze / Silver / Gold / Platinum / Rainbow.
+Milestone 6 is delivered in four ordered tasks:
+
+1. **T015 — Accomplishment facts and badge-state foundation:** versioned badge entities, private race-series tags, exact
+   race fact snapshots, bounded counters, honest legacy baselines, strict sync parsing, and atomic fact capture.
+2. **T016 — Per-Uma badges, titles, trophies, and award flow:** the catalog/evaluator, retroactive awards, deterministic
+   flair events, Results/Home/Profile feedback, and Prestige.
+3. **T017 — Badge page, showcases, and flair timeline:** Uma/Stable scopes, search/filter/sort, trophy wall, detail,
+   active titles, pins/groups, saved views, and accessible reorder.
+4. **T018 — Trainer achievements and profile:** account aggregates, records, Trainer scope, pinned Umas, Trainer showcase,
+   and milestone closure.
+
+The core profile and Uma remain save v2. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
+`badges` entity collection. This keeps badge rollout isolated from progression migration and lets an individual Uma's
+flair sync independently.
+
+## Catalog v1
+
+Catalog definitions are checked-in game rules made only from semantic ids, generated labels, criteria, thresholds, tags,
+visibility, and point values. They contain no private race, Uma, or card ids. Definitions are evaluated by shared generic
+criterion handlers rather than one function per badge.
+
+These reusable tier scales are fixed for catalog v1:
+
+| Scale | Bronze / Silver / Gold / Platinum / Rainbow |
+|---|---|
+| Lifetime wins / surface / distance / strategy mastery | 1 / 10 / 25 / 50 / 100 |
+| G3 or G2 wins | 1 / 5 / 10 / 20 / 40 |
+| G1 wins | 1 / 3 / 7 / 15 / 30 |
+| Starts | 10 / 50 / 100 / 250 / 500 |
+| Specialist challenge | 1 / 5 / 10 / 20 / 40 |
+| Breadth (minimum count across required buckets) | 1 / 3 / 5 / 10 / 20 |
+| Venue wins | 1 / 3 / 7 / 15 / 30 |
+| Back-field wins | 1 / 5 / 15 / 30 / 60 |
+| Friendship trainings | 10 / 50 / 200 / 500 / 1,000 |
+| Distinct lifetime skills | 5 / 15 / 30 / 60 / 100 |
+| Skills in one scenario | 5 / 10 / 15 / 20 / 25 |
+| Parent uses | 1 / 5 / 10 / 25 / 50 |
+
+T015 must expose these values as domain constants and add them to the pinning test before implementation is merged.
 
 ### 1. Victories
 
-| Badge | Criterion | B / S / G / P / R |
+| Definition | Criterion | Tiers |
 |---|---|---|
-| Winner | Total wins | 1 / 10 / 25 / 50 / 100 |
-| G3 Champion | G3 wins | 1 / 5 / 10 / 20 / 40 |
-| G2 Champion | G2 wins | 1 / 5 / 10 / 20 / 40 |
-| G1 Champion | G1 wins | 1 / 3 / 7 / 15 / 30 |
-| Unbeaten | Consecutive wins | 3 / 5 / 8 / 12 / 20 |
-| Seasoned | Total starts | 10 / 50 / 100 / 250 / 500 |
+| Winner | Total wins | Lifetime wins |
+| G3 Champion | G3 wins | G3/G2 wins |
+| G2 Champion | G2 wins | G3/G2 wins |
+| G1 Champion | G1 wins | G1 wins |
+| Unbeaten | Longest consecutive-win streak; any non-win breaks the streak | 3 / 5 / 8 / 12 / 20 |
+| Seasoned | Total starts | Starts |
 
-### 2. Surface mastery, split by aptitude
+Race order is `(sequence, result id)` within one Uma. A corrupt duplicate/gap blocks bootstrap rather than inventing a
+streak. A result counts as a win only when its authoritative player placement is first.
 
-One badge line per surface, with **variants by the Uma's aptitude on that surface**, so winning
-where she is weak is flair of its own.
+### 2. Surface and distance
 
-| Badge | Criterion |
-|---|---|
-| Turf Master / Dirt Master | Wins on that surface (tiered) |
-| Against the Grain · Turf / Dirt | Wins on that surface with aptitude **B or lower** (tiered) |
-| Impossible Ground | A win on a surface with aptitude **E or lower** (one-off) |
-| Dual Surface | Wins on both Turf and Dirt (tiered by the lower of the two counts) |
-
-### 3. Distance mastery, split by aptitude
-
-| Badge | Criterion |
-|---|---|
-| Sprint / Mile / Medium / Long Master | Wins at that distance (tiered) |
-| Stretching Out · Sprint / Mile / Medium / Long | Wins at that distance with aptitude **B or lower** (tiered) |
-| All-Rounder | Wins at all four distances (tiered by the lowest count) |
-| Iron Horse | Wins at 3000 m or longer |
-| Blink of an Eye | Wins at 1200 m or shorter |
-
-### 4. Strategy mastery
-
-| Badge | Criterion |
-|---|---|
-| Front Runner / Pace Chaser / Late Surger / End Closer | Wins with that strategy (tiered) |
-| Chameleon | Wins with all four strategies (tiered by the lowest count) |
-| Unorthodox | A win with a strategy whose aptitude is **C or lower** |
-
-### 5. Venues
-
-| Badge | Criterion |
-|---|---|
-| Tokyo / Nakayama / Kyoto / Hanshin / Chukyo / Sapporo / Hakodate / Fukushima / Niigata / Kokura Regular | Wins at that racecourse (tiered) |
-| Grand Tour | At least one win at all 10 JRA racecourses |
-
-### 6. Race-set titles
-
-Titles are the most prestigious flair and show under the Uma's name.
-
-| Title | Required wins |
-|---|---|
-| Triple Crown | Satsuki Sho · Tokyo Yushun (Japanese Derby) · Kikuka Sho |
-| Triple Tiara | Oka Sho · Yushun Himba (Japanese Oaks) · Shuka Sho |
-| Spring Triple Crown | Osaka Hai · Tenno Sho (Spring) · Takarazuka Kinen |
-| Autumn Triple Crown | Tenno Sho (Autumn) · Japan Cup · Arima Kinen |
-| Grand Prix Queen | Takarazuka Kinen · Arima Kinen |
-| Sprint Queen | Takamatsunomiya Kinen · Sprinters Stakes |
-| Mile Queen | Yasuda Kinen · Mile Championship |
-| Dirt Queen | February Stakes · Champions Cup |
-| Two-Time / Three-Time [Race] | Winning the same G1 two or three times |
-
-Titles can be earned **anytime**. A race set doesn't have to be won within one scenario (unlike the original game's Classic-year limits).
-Winning a whole set within one scenario is a separate scenario goal (see [Scenario Goals](scenario-goals.md)).
-
-### 7. Race feats (how she won)
-
-| Badge | Criterion |
-|---|---|
-| Wire to Wire | Led at every section checkpoint and won |
-| Great Comeback | Won from last place at the start of the last spurt |
-| From the Back | Won from 10th or worse at the start of the last spurt (tiered by count) |
-| Dominant | Won by 5+ lengths |
-| Big Margin | Won by 10+ lengths |
-| Photo Finish | Won by a nose |
-| Lightning Start | Start delay under 10 ms, and won |
-| Slow Start, Fast Finish | Late start (delay of 80 ms or more), and still won |
-| Upset | Won with the lowest pre-race rating in the field |
-| Duelist | Won a duel on the final straight (after race engine R4) |
-| Course Record | Set the in-game record time for that course |
-
-### 8. Stats
-
-| Badge | Criterion | B / S / G / P / R |
+| Definition | Criterion | Tiers |
 |---|---|---|
-| Speed / Stamina / Power / Guts / Wit Peak | Highest value of that stat | 600 / 900 / 1200 / 1600 / 2000 |
-| Balanced | Lowest of the five stats | 500 / 800 / 1100 / 1500 / 1900 |
-| Capped | Any stat at the scenario's baseline cap (the TL10 cap) | one-off per scenario |
-| Perfect Form | All five stats at the scenario's baseline cap | one-off per scenario |
+| Turf Master / Dirt Master | Wins on that surface | Lifetime mastery |
+| Against the Grain · Turf / Dirt | Wins there when the saved pre-race aptitude was B or lower | Specialist challenge |
+| Impossible Ground | Win there with pre-race aptitude E or lower | Hidden one-off |
+| Dual Surface | Minimum of Turf and Dirt wins | Breadth |
+| Sprint / Mile / Medium / Long Master | Wins in that distance category | Lifetime mastery |
+| Stretching Out · [distance] | Wins there when the saved pre-race aptitude was B or lower | Specialist challenge |
+| All-Rounder | Minimum wins across all four distance categories | Breadth |
+| Iron Horse | Win at 3,000 m or longer | One-off |
+| Blink of an Eye | Win at 1,200 m or shorter | One-off |
 
-### 9. Scenarios and levels
+The aptitude context is the player's snapshotted race aptitude, never the current improved aptitude. Exact distance comes
+from immutable accomplishment facts on new results and the versioned race/content join for legacy results.
 
-| Badge | Criterion |
+### 3. Strategy and venue
+
+| Definition | Criterion | Tiers |
+|---|---|---|
+| Front Runner / Pace Chaser / Late Surger / End Closer | Wins with that strategy | Lifetime mastery |
+| Chameleon | Minimum wins across all four strategies | Breadth |
+| Unorthodox | Win using a saved strategy aptitude of C or lower | Hidden one-off |
+| [Venue] Regular | Wins at that normalized venue | Venue wins |
+| Grand Tour | At least one win at all 10 venues tagged `jra-main` in the current private catalog | One-off |
+
+Venue badges are dynamic definitions keyed by a normalized private-content venue key; display names are private-content
+joins. The checked-in catalog never lists source venue ids/names. The private override must resolve exactly 10 distinct
+main venue keys. Grand Tour uses the set captured by the catalog version
+that awards it and is never revoked if later content adds another venue.
+
+### 4. Titles and G1 trophies
+
+Private race content supplies semantic `series` tags such as `triple-crown`; the ignored mapping from source race-family ids
+to those tags never enters git. Catalog v1 awards:
+
+| Title | Required distinct family wins | Required family count |
+|---|---|---:|
+| Triple Crown | Every family tagged `triple-crown` | 3 |
+| Triple Tiara | Every family tagged `triple-tiara` | 3 |
+| Spring Triple Crown | Every family tagged `spring-triple-crown` | 3 |
+| Autumn Triple Crown | Every family tagged `autumn-triple-crown` | 3 |
+| Grand Prix Queen | Every family tagged `grand-prix` | 2 |
+| Sprint Queen | Every family tagged `sprint-crown` | 2 |
+| Mile Queen | Every family tagged `mile-crown` | 2 |
+| Dirt Queen | Every family tagged `dirt-crown` | 2 |
+| Two-Time / Three-Time [Race] | Two or three wins in the same G1 family |
+
+Titles can be earned across any number of scenarios and are permanent. A family must be won at least once for each set;
+calendar variants sharing the family do not create duplicates. Repeat titles use the current private race name with a safe
+family-id fallback. Every distinct G1 family win also creates or increments its trophy, but only the first win emits a
+`trophy-earned` flair event.
+
+The importer reads an owner-maintained, gitignored `content/overrides/flair.json` containing race-family series tags and
+the main-venue set. It validates every reference and reports aggregate coverage only. Missing or malformed coverage
+disables the affected title/Grand Tour criterion with an explicit content diagnostic; it never substitutes by name.
+
+### 5. Race feats
+
+| Definition | Criterion | Tiers |
+|---|---|---|
+| Wire to Wire | Won while strictly first at every completed section checkpoint | Hidden one-off |
+| Great Comeback | Won from last place when the player's final spurt began | Hidden one-off |
+| From the Back | Won from 10th or worse when the player's final spurt began | Back-field wins |
+| Dominant | Won by at least 5.0 lengths | One-off |
+| Big Margin | Won by at least 10.0 lengths | Hidden one-off |
+| Photo Finish | Won with a positive runner-up margin below 0.15 lengths | One-off |
+| Lightning Start | Start delay below 0.010 seconds and won | Hidden one-off |
+| Slow Start, Fast Finish | Start delay at least 0.080 seconds and won | Hidden one-off |
+| Course Record | Finished strictly faster than every earlier player result on that course id | One-off per course |
+| Heir | Won a race in which an inherited unique skill activated | One-off |
+
+At a tied record time, only the earlier result is the record setter. Wire to Wire samples the authoritative 24-section
+placement projection after the gate; a tie for first fails. Last-spurt placement is sampled on the player's first
+`last-spurt` event and is unavailable if the engine emits none. New race rows snapshot these bounded facts. Legacy rows are
+re-simulated only through their frozen engine-version path; a missing replay/content dependency is marked untracked rather
+than guessed.
+
+`Duelist` waits for race-engine R4. `Upset` waits for a documented per-runner pre-race rating; Race Form percentages are not
+a field ranking and must not be repurposed. Neither appears as an earnable/locked catalog-v1 tile.
+
+### 6. Stats, levels, and scenarios
+
+| Definition | Criterion | Tiers |
+|---|---|---|
+| Speed / Stamina / Power / Guts / Wit Peak | Highest saved value | 600 / 900 / 1,200 / 1,600 / 2,000 |
+| Balanced | Highest saved minimum of the five stats | 500 / 800 / 1,100 / 1,500 / 1,900 |
+| [Scenario] Capped | At scenario completion, at least one stat is at or above that scenario's TL10 cap | One-off per scenario |
+| [Scenario] Perfect Form | At scenario completion, all five stats are at or above that cap | One-off per scenario |
+| Level milestones | Highest Uma level | 10 / 25 / 50 / 75 / 100 |
+| [Scenario] Graduate | Completed that scenario | One-off per scenario |
+| [Scenario] Speedrun | Completed/promoted from that scenario in 15 or fewer race starts in the tier | One-off per scenario |
+| Living Legend | Completed every scenario present in the awarding catalog version | One-off |
+
+`>=` is intentional for cap badges because permanent stats may already exceed a new scenario's current cap. Promotion and
+final completion snapshot the pre-promotion tier, stat values, TL, deck, training counters, race count, and completion time
+before applying the next scenario's bonuses. Graduate and Speedrun are retroactive from Journey/race history; old Capped/
+Perfect facts that cannot be reconstructed remain untracked.
+
+### 7. Training, skills, goals, and lineage
+
+| Definition | Criterion | Tiers |
+|---|---|---|
+| Diligent | Lifetime training turns | 50 / 250 / 1,000 / 3,000 / 10,000 |
+| Friendship Power | Lifetime friendship trainings | Friendship trainings |
+| [Scenario] Fully Trained | Reached TL10 during that scenario | One-off per scenario |
+| Era Loyalist | Completed a scenario using only cards whose era equals that scenario tier | One-off per scenario |
+| Full House | Trained with all six equipped cards present at one facility | Hidden one-off |
+| Skill Collector | Distinct skills ever learned, from skill history | Distinct lifetime skills |
+| Full Kit | Highest distinct skills unlocked within one scenario | Skills in one scenario |
+| Goal Ribbon | One named ribbon per exact completed T014 goal | One point each |
+| [Scenario] Honors | Completed all three tracked goals in that scenario | Four points each |
+| Destiny | Exact completed goals across tracked Journeys | 3 / 10 / 25 / 50 / 100 |
+| Perfect Journey | Honors in every completed, tracked scenario, with at least three completed scenarios | One-off |
+| Legacy | Times this Uma's frozen snapshot was committed as a direct parent | Parent uses |
+| Dynasty | A grandchild completed a scenario with this Uma in the frozen grandparent chain | 1 / 3 / 5 / 10 / 20 |
+
+Era Loyalist requires a nonempty deck and every equipped card to match the completed tier; mixed/later/unknown content
+fails. Full House is possible only when six slots are unlocked. A Goal Ribbon uses the stored goal id and result id, joins
+its target privately for display, and falls back safely when content is missing. Legacy increments on Scenario Start, while
+Dynasty increments when the descendant closes the scenario—not when lineage is merely selected.
+
+## Durable facts and honest history
+
+### Race facts
+
+New `RaceResultRecord`s carry optional versioned `accomplishmentFacts`; legacy rows omit it. Version 1 snapshots only the
+bounded facts required above:
+
+- race family, grade, venue key/tags, course id, surface, exact distance, distance category, and semantic series tags;
+- player start delay, first-final-spurt placement, whether the player strictly led every section checkpoint, and whether an
+  inherited unique activated.
+
+These facts are derived from the authoritative template, saved race input, and deterministic timeline inside the existing
+completion transaction. They do not change simulation or replay versions. Parsers reject invented UI-supplied facts,
+unknown fact versions, duplicate tags, unsafe ids, invalid ranges, or facts inconsistent with the stored player result.
+
+### Bounded Uma facts
+
+Each per-Uma badge entity stores bounded aggregate facts rather than an unbounded copy of gameplay history: counters by
+grade/surface/distance/strategy/venue/family, current/longest streak, best stats/minimum stat, distinct skill ids, training
+counters, scenario-completion facts, goal/Honors totals, parent-use counts, and evaluation watermarks. Race history remains
+the source log and flair events remain their own append-only log.
+
+Training updates lifetime turns, friendship turns, Full House, TL10, and skill facts in the same transaction as the turn.
+Scenario Start increments selected parents' Legacy facts in the same transaction as the child. Promotion/final completion
+captures the completed scenario and updates every known grandparent's Dynasty fact atomically with the child when those
+entities exist locally; missing/orphaned ancestors remain explicit and may be reconciled during bootstrap.
+
+### Retroactivity grades
+
+Every definition has one history grade shown in detail/progress UI:
+
+| Grade | Meaning |
 |---|---|
-| [Scenario] Graduate | Completed that scenario (a unique badge per scenario, 11+ in total) |
-| [Scenario] Perfect | Completed that scenario with Perfect Form |
-| Level milestones | Levels 10 / 25 / 50 / 75 / 100 |
-| Living Legend | Completed every scenario that is currently available |
+| **Exact** | All relevant history can be reconstructed from race results, journeys, skill history, or current state |
+| **Since tracking** | Pre-T015 facts were not durably stored; progress is a truthful lower bound starting from migration |
+| **Untracked** | A required legacy replay/content dependency is missing; no progress or award is guessed |
 
-### 10. Training and cards (per Uma)
+Bootstrap strictly parses complete local race history before publishing ready state. Existing race, goal, level, current
+stat, and skill-history awards are retroactive and exact where their dependencies resolve. Current-scenario training turns
+form the lower-bound seed for Diligent; current TL10 may award Fully Trained for the active tier. Prior friendship/Full
+House/deck-at-completion/parent-use/Dynasty facts are not invented. A lower bound that already crosses a threshold may
+award it, but the UI labels the underlying progress “at least”.
 
-| Badge | Criterion |
-|---|---|
-| Diligent | Training turns done (tiered: 50 / 250 / 1,000 / 3,000 / 10,000) |
-| Fully Trained | Reached Training Level 10 in a scenario (one-off per scenario) |
-| Friendship Power | Friendship trainings (tiered) |
-| Era Loyalist | Completed a scenario using only cards from that scenario's era |
-| Full House | Trained with 6 cards present at one facility |
+## Award and event semantics
 
-### 11. Goals, skills, and lineage
-
-| Badge | Criterion |
-|---|---|
-| Goal Ribbon | One named ribbon per completed scenario goal, for example *"Arima Kinen · Grand Masters goal"* (see [Scenario Goals](scenario-goals.md)) |
-| [Scenario] Honors | Completed all 3 goals in that scenario. Also shown as a crest on the Scenario Journey strip |
-| Destiny | Scenario goals completed (tiered: 3 / 10 / 25 / 50 / 100) |
-| Perfect Journey | Honors in every scenario completed so far (at least 3 scenarios) |
-| Skill Collector | Distinct skills ever learned, from the lifetime skill log (tiered) |
-| Full Kit | Skills unlocked within a single scenario (tiered) |
-| Heir | Won a race where an inherited unique skill activated |
-| Legacy | Served as a parent in inheritance events (tiered) |
-| Dynasty | Is the grandparent of an Uma that completed a scenario |
+- Evaluation is pure and deterministic: `(catalog, previous state, facts, triggering source) → next state + new events`.
+- Badge tiers and titles are monotonic. Earned flair is never revoked by later catalog/content changes.
+- Crossing multiple tiers at once records every tier internally but presents one highest-tier fanfare for that definition;
+  detail retains each tier's first-earned event.
+- A deterministic flair-event id contains scope, award key, and tier/title/trophy stage. Retries match existing payloads;
+  same-id mismatches are corruption.
+- New race/training/promotion/start commits update facts, awards, badge entities, flair logs, and existing game writes in one
+  Dexie transaction before Zustand publishes. No badge may appear without its triggering gameplay commit or vice versa.
+- Retroactive bootstrap writes all affected badge entities/flair events/outbox rows in one transaction. Source timestamps
+  are used when known; otherwise the migration time is stored with `retroactive: true`.
+- Results snapshot exact newly earned flair-event ids, including an empty array, so reload/retry cannot replay fanfare or
+  re-evaluate a mutable catalog. Legacy results omit the field.
 
 ## Displaying flair
 
-### Uma profile card
+### Uma profile and Home
 
-- Name, **active title**, level, scenario-tier crest.
-- **Scenario Journey strip:** one medallion per scenario with 3 goal pips, and an Honors crest when all goals are done (see [Scenario Goals](scenario-goals.md#optional-but-very-visible)).
-- **Frame** that changes with the Uma's **Prestige** (see below).
-- **Pinned badges:** the first 12 pins from her showcase (see [Badge page](#badge-page)). The full showcase lives on the Badge page.
-- **Career record** in the JRA style: `starts: 1st-2nd-3rd-other`, for example `24: 15-4-2-3`.
-- **Stat radar** with grade letters, reusing the original game's stat rank letters (thresholds to research).
+- Name, active title, level, scenario-tier crest, and Prestige frame.
+- Existing Scenario Journey medallions remain derived from Journey facts; persisted Goal Ribbons/Honors link back to them.
+- The first 12 flattened showcase pins appear on the Badges tab, with a link to the full page.
+- Career record remains `starts: 1st-2nd-3rd-other`.
+- Home shows the latest three visible flair events for the featured Uma; hidden badge names reveal only when earned.
 
 ### Badge page
 
-A **big, dedicated Badge page** ✅ is the home of all flair. It is part collection album and part showcase editor.
-
-**Scopes (a switch at the top)**
+The route is lazy and mobile-first. Its top switch has **Uma / Stable / Trainer** scopes:
 
 | Scope | Shows |
 |---|---|
-| **Uma** | One Uma's badges, titles, goal ribbons, and G1 trophies |
-| **Stable** | Every badge across all Umas, one tile per badge, with which Umas hold it and at what tier |
-| **Trainer** | Account-wide trainer achievements (see [Collection](collection.md#trainer-achievements-account-wide)) |
+| Uma | One Uma's badges, titles, Goal Ribbons, G1 trophies, progress, and timeline |
+| Stable | Definitions aggregated across every owned Uma, with holder/tier/rarity drill-down |
+| Trainer | Account achievements, records, and trainer showcase from T018 |
 
-**Pinning and the showcase**
+All scopes support search and applicable tag filters. Uma and Stable support category, tier/type, surface, distance,
+strategy, aptitude context, venue, grade, scenario, status, and date. Stable additionally supports Uma and rarity. Sorts are
+most recent, tier, closest next tier, rarest (Stable), alphabetical, and category. Hidden unearned definitions are excluded
+from search/counts; other locked definitions use silhouettes.
 
-- **No small pin limit** ✅: pin as many badges as you like to an Uma's showcase, and to the trainer showcase.
-- Drag to reorder. The Uma profile card shows the first 12 pins, and the Badge page shows them all.
-- **Multi-select mode:** select many badges, then pin, unpin, or move them in bulk.
-- **Showcase groups:** named sections inside a showcase (for example "Long specialist", "Triple Crown run", "Dirt oddities").
-- **Active title** is picked from the same page.
+A tile shows a generated semantic glyph, tier shape/color/label, current progress, and pin state. No original-game badge
+art is committed or hosted publicly. Detail shows criterion, ladder, exact/since-tracking status, tier dates and source
+links, safe missing-content fallbacks, and related timeline events. The G1 trophy wall groups family trophies and counts.
 
-**Classification**
+### Showcase, titles, and saved views
 
-Each badge definition carries tags, so the page can group any of these ways:
+- Pins are unlimited in storage. An award may appear at most once across a scope's groups.
+- Every showcase has an unnamed default group followed by at most 20 named groups; names are 1–40 trimmed characters.
+- Group and pin order are explicit arrays. Drag handles are enhanced input; ≥44 pt Move up/down controls provide the full
+  accessible operation and are the required iPhone fallback.
+- Multi-select can pin, unpin, or move many visible items. Filtering never silently changes hidden selections.
+- The Uma profile displays the first 12 awards after flattening groups in order. Trainer showcase has the same grouping
+  rules and may pin achievements or qualified per-Uma awards.
+- Active title must be currently earned by that Uma. Removing content never clears an already earned safe title id.
+- Each scope may store at most 20 named saved views. Names are 1–40 characters; filters/sort use strict catalog enums.
+- Trainer profile may pin any number of owned Umas in an explicit, duplicate-free order.
 
-| Dimension | Values |
-|---|---|
-| Category | Victories · Surface · Distance · Strategy · Venue · Titles · Race feats · Stats · Scenarios · Training · Goals & lineage |
-| Tier | Bronze → Rainbow, one-off, title |
-| Surface / Distance / Strategy | Turf, Dirt · Sprint, Mile, Medium, Long · Front, Pace, Late, End |
-| Aptitude context | Earned at S/A · at B or lower · at E or lower |
-| Venue · Grade | Racecourses · Debut … G1 |
-| Scenario | The scenario it was earned in, or scenario-specific badges |
-| Status | Earned · in progress · locked · hidden |
-| Rarity (stable scope) | How many of your Umas hold it |
+### Flair timeline and Prestige
 
-**Filtering, sorting, search**
+The timeline merges append-only flair events in `(earnedAt, id)` order and can filter by kind. Entries link to their race,
+scenario Journey, Uma, or migration explanation. Deleting or reordering a showcase never edits history.
 
-- **Filters:** any combination of the dimensions above, plus Uma (in stable scope), pinned or unpinned, and date earned.
-- **Sort:** most recent · tier · closest to the next tier (progress %) · rarest · alphabetical · category.
-- **Search** by badge name or race name.
-- **Saved views:** store filter-and-sort combinations (for example "Unfinished distance badges").
+`prestige = sum(highest badge tier/one-off points) + 10 × titles earned`.
 
-**Tiles and detail**
+| Frame | Minimum Prestige |
+|---|---:|
+| Plain | 0 |
+| Bronze | 5 |
+| Silver | 15 |
+| Gold | 40 |
+| Platinum | 80 |
+| Rainbow | 160 |
+| Legend | 300 |
 
-- A tile shows the badge art, tier color, progress bar toward the next tier, and a pin toggle.
-- Locked badges are silhouettes. Hidden badges show "???".
-- **Detail view:** criterion, tier thresholds, date and race for each tier earned, and a link to the flair timeline entry.
-- **G1 trophy wall:** a dedicated section with one trophy per distinct G1 won, and the win count.
+Frames are derived, not independently persisted. Thresholds, catalog scales, one-off points, and title points are pinned
+in `packages/domain/src/domain.test.ts` when T015 lands.
 
-### Flair timeline
+## Explicitly deferred
 
-Each badge records **when** it was earned and **which race** triggered it, so every Uma gets a
-scrollable story: *"2026-10-03 — Won the Japan Cup from 12th place → Great Comeback, Autumn Triple Crown."*
-
-### Prestige
-
-`prestige = Σ badge tier points` (B 1, S 2, G 4, P 8, R 16, titles 10). Prestige ranks change the
-profile frame (Plain → Bronze → Silver → Gold → Platinum → Rainbow → Legend).
-
-## Engine design notes
-
-- **Data-driven definitions:** each badge is data made of a criterion type, filters, and tier thresholds. It is not hand-written code:
-
-  ```yaml
-  id: against-the-grain-dirt
-  criterion: count_wins
-  filters: { surface: dirt, surfaceAptitude: { lte: B } }
-  tiers: [1, 5, 15, 30, 60]
-  tags: { category: surface, surface: dirt, aptitudeContext: b-or-lower }
-  ```
-
-- **Tags drive the Badge page:** classification, filters, and saved views all read `tags`, so new badges show up in the right places without UI changes.
-
-- **Evaluated on events:** `race_finished`, `training_done`, `promoted`, `stat_changed`.
-- **Retroactive:** the full race history is stored, so new badges added later can be computed from
-  past races and granted with a "retroactively earned" note.
+- `Duelist`, rushed/spot-struggle feats, and other R4-dependent badges.
+- `Upset` until a per-runner rating formula is designed and pinned.
+- Sound, haptics, bespoke badge art, and replacing existing emoji/icons (Milestone 7).
+- Social/global rarity, public profiles, sharing, leaderboards, or server-authoritative anti-cheat.
+- Currency or progression rewards from flair.

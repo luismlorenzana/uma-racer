@@ -40,7 +40,9 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 
 - [x] Race catalog: name, grade, venue, surface, distance, and direction.
 - [x] Stable race-family ids for matching career objectives to concrete gameplay race variants.
-- [ ] Race series classifications for goals and titles.
+- [ ] Race series and main-venue classifications for titles/Grand Tour. T015 will read semantic tags from the
+      owner-maintained, gitignored `content/overrides/flair.json`, validate them against retained families/venues, and emit
+      only aggregate coverage. No live identifiers or mapping file may enter git.
 - [x] Course layouts: corners, straights, and slopes per course (for later race engine milestones).
 
 ## Scenarios

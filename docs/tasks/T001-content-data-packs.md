@@ -110,6 +110,10 @@ domain formula (`cardEffectValue`); the profile only says which effects a card h
 | `venue` | `track`: 10001 Sapporo, 10002 Hakodate, 10003 Niigata, 10004 Fukushima, 10005 Nakayama, 10006 Tokyo, 10007 Chukyo, 10008 Kyoto, 10009 Hanshin, 10010 Kokura, 10101 Ohi, 10103 Kawasaki, 10104 Funabashi, 10105 Morioka, 10201 Longchamp. **Skip other tracks** (overseas) |
 | `courseId`, `season`, `fieldSize` | `String(course_id)`, `season`, `Math.min(entries, 18)` |
 
+T015 will add a normalized safe `venueKey`, semantic `venueTags`, and semantic race-family `series` tags. Series/main-venue
+membership comes only from gitignored `content/overrides/flair.json`; the checked-in importer contains no live mapping and
+tests use invented families/venues.
+
 **Courses** (`racetracks[].courses[]`, only for kept venues): `{ id: String(course.id), trackId: String(track.id), distance,
 terrain, turn, corners, straights, slopes }`. Keep nested arrays as `unknown` (used by race engine milestones R3/R4).
 

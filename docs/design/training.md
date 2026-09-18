@@ -170,6 +170,11 @@ The library refreshes each scenario, so hint rates need tuning: a good deck shou
 When Training first moves an LB4 card to level 25, the same atomic turn grants its one-time Card Select Coupon and marks
 that card as paid. Reloading, retrying, or continuing to train a maxed card cannot grant the coupon again.
 
+Milestone 6 captures badge facts in that same transaction: lifetime and friendship-turn counters, six-card Full House,
+first TL10 per scenario, stat peaks, and distinct/current-scenario skills. Pre-T015 history is deliberately a lower bound:
+the current scenario's `trainingsThisScenario` and current TL are evidence, but prior friendship, Full House, and TL10 facts
+are never invented. T016 award events commit with the Training result or not at all.
+
 ## Pacing check
 
 - **Tier 1 is the heaviest:** about +5,500 stat points from 5★ base stats (about 100 each) to the 1200 caps. A good deck (about 180 points
