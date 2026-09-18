@@ -112,6 +112,8 @@ async function resetDatabase(): Promise<void> {
 async function seed(loaded: LoadedContent): Promise<void> {
   await db.open()
   await persistInitial(loaded, '2000-01-02', 100)
+  const row = await db.umas.get('uma-00')
+  await db.umas.put({ ...row!, data: { ...row!.data, scenarioStarted: true } })
 }
 
 describe('Training persistence', () => {
@@ -199,7 +201,7 @@ describe('Training persistence', () => {
     const cardsById = Object.fromEntries(loaded.cards.items.map((item) => [item.id, createCardSave(item)]))
     const umaSave = setMemoryUmaDeck(
       loaded,
-      createUmaSave(template),
+      { ...createUmaSave(template), scenarioStarted: true },
       cardsById,
       ['card-power', 'card-speed', 'card-stamina', 'card-guts'],
     ).uma
@@ -277,6 +279,7 @@ describe('Training runtime lock', () => {
     const loaded = content()
     vi.spyOn(saveApi, 'load').mockRejectedValue(new Error('synthetic offline'))
     await runtime.start(loaded)
+    await runtime.startScenario('uma-00', { parents: [], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [] }, 100)
     await runtime.setUmaDeck('uma-00', ['card-power', 'card-speed', 'card-stamina', 'card-guts'], 101)
 
     const first = runtime.trainUma('uma-00', 'speed', '2000-01-02', 200)

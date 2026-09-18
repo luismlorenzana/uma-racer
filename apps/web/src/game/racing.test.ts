@@ -154,7 +154,7 @@ function content(umaCount = 10): LoadedContent {
 }
 
 function state() {
-  const player = { ...createUmaSave(uma('u1')), trainingsThisScenario: 1, deckCardIds: ['c1'], stats: { speed: 4_000, stamina: 4_000, power: 4_000, guts: 4_000, wit: 4_000 } }
+  const player = { ...createUmaSave(uma('u1')), scenarioStarted: true, trainingsThisScenario: 1, deckCardIds: ['c1'], stats: { speed: 4_000, stamina: 4_000, power: 4_000, guts: 4_000, wit: 4_000 } }
   return {
     profile: createPlayerProfile('abc123def456', 42),
     player,

@@ -130,6 +130,7 @@ export function TrainingScreen() {
   if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Training…" detail="Loading private content and your local save." />
   if (!uma) return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
+  if (!uma.scenarioStarted) return <ScreenState title="Finish scenario setup" detail="Choose optional frozen parents before this Uma can Train." action={{ label: 'Choose lineage', to: `/scenario/${encodeURIComponent(umaId)}/start` }} />
   if (isGateLevel(uma.level)) {
     const final = uma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO
     return <ScreenState title={final ? 'Latest scenario complete' : 'Start the next scenario'} detail={final ? 'This Uma has completed every currently available scenario.' : 'Review the snapshot and promotion before the next Opening Training.'} action={{ label: final ? 'Back to profile' : 'Promote', to: final ? `/stable/${encodeURIComponent(umaId)}` : `/scenario/${encodeURIComponent(umaId)}/start` }} />

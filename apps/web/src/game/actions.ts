@@ -40,6 +40,11 @@ export async function promoteUma(id: string) {
   return gameRuntime.promoteUma(id)
 }
 
+export async function startScenario(id: string, selection: import('@racer/domain').ScenarioStartSelection) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.startScenario(id, selection)
+}
+
 export async function listRaceHistory(limit = 20) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.listRaceHistory(limit)

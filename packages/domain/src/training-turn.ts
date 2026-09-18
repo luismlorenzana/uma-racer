@@ -333,6 +333,7 @@ export function resolveTrainingTurn(input: {
   facility: Facility
 }): TrainingTurnResult {
   const { uma, template, cards, skills, deal, facility } = input
+  if (!uma.scenarioStarted) throw new Error('Finish scenario setup before Training')
   const previews = previewTrainingFacilities(uma, template, cards, deal)
   const preview = previews[facility]
   const stats: Stats = { ...uma.stats }

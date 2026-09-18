@@ -62,9 +62,20 @@ import {
   yourForm,
   OVERFLOW_BANK_LEVELS,
   PROMOTION_BONUS_PER_STAT,
+  compileRaceSkill,
+  grandparentWhitePickCap,
 } from './index'
 
 describe('scenarios', () => {
+  it('pins inherited unique strength and the grandparent half-pool rule', () => {
+    const inherited = compileRaceSkill({
+      id: 'synthetic-gene', kind: 'inherited-unique', name: 'Synthetic', description: '', costSp: 100, iconId: null,
+      inheritedSkillId: null, normalSkillId: null, conditions: [{ precondition: null, condition: 'always==1', baseTime: 10_000, cooldown: 0, effects: [{ type: 22, value: 10_000 }] }],
+    })
+    expect(inherited.groups[0]?.effects[0]?.amount).toBe(0.5)
+    expect(grandparentWhitePickCap(5)).toBe(3)
+  })
+
   it('pins the Uma shard exchange rate', () => {
     expect(UMA_SHARDS_PER_COUPON).toBe(5)
   })

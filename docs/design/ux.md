@@ -85,16 +85,19 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 
 A full-screen stepper, one decision per step:
 
-The implemented zero-parent baseline first reviews the completed snapshot, ticket cost/balance, overflow, +10-per-stat and
-per-card Initial Stats gains, awakening, skill refresh, TL reset, new cap/era, and an explicit **Start without parents**
-choice. Back is a write-free draft; confirmation is one local-first commit followed by a scenario title card and Opening
-Training CTA. Reload after success reconstructs completion from the save and ledger. The remaining steps expand this route:
+The implemented flow reviews the completed snapshot (for promotion), ticket cost/balance, overflow, +10-per-stat and
+per-card Initial Stats gains, awakening, skill refresh, TL reset, new cap/era, and an explicit zero-parent path. Back is a
+write-free draft; confirmation is one local-first commit followed by a scenario title card and Opening Training CTA.
+Brand-new Umas enter this route before Training/racing and start tier 1 free, without promotion bonuses. The five steps are:
 
 1. **Pick parents**: a carousel of parent snapshots (portrait, grandparent mini-icons, a "+N new skills for her" count). Skip is allowed.
 2. **Inherited automatically**: skill chips **fly from the parents into the library**.
 3. **Grandparent picks**: tap to pick 2 uniques, and whites against a "3 / 5 picks" counter. Ineligible ones show greyed with their reason.
 4. **Pink sparks**: choose an aptitude upgrade per parent. The letter grade flips up.
 5. **Confirm**: a scenario title card sweeps in ("Grand Masters"), and the Training Level bar resets to TL1.
+
+Profile Lineage renders only the active scenario's frozen `currentParents` and the latest completed self snapshot. Its tree
+stops at grandparents, shows missing private content explicitly, and never follows live Uma state or recursive references.
 
 ### Training
 

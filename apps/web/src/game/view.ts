@@ -63,7 +63,7 @@ export function joinUma(save: UmaSave, content: LoadedContent): UmaJoinResult {
       baselineStatCap: baselineStatCap(tier),
       currentSpCap: spCap(tier, save.trainingLevel),
       expToNext,
-      readyToPromote: isGateLevel(save.level) && !finalLevel,
+      readyToPromote: save.scenarioStarted && isGateLevel(save.level) && !finalLevel,
     },
   }
 }

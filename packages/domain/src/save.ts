@@ -90,7 +90,7 @@ export interface UmaSave {
   trainingsThisScenario: number
   scenarioStarted: boolean
   skillHistory: SkillHistoryEntry[]
-  currentParents: FrozenParent[]
+  currentParents: ParentSnapshot[]
   parentSnapshot: ParentSnapshot | null
   goalPlanVersion: number
   scenarioJourneys: ScenarioJourney[]
@@ -379,6 +379,16 @@ function parseFrozenParents(value: unknown): FrozenParent[] | null {
   return valid
 }
 
+function parseParentSnapshots(value: unknown): ParentSnapshot[] | null {
+  if (!Array.isArray(value) || value.length > 2) return null
+  const parents = value.map(parseParentSnapshot)
+  if (parents.some((parent) => parent === null)) return null
+  const valid = parents as ParentSnapshot[]
+  if (new Set(valid.map((parent) => parent.umaId)).size !== valid.length) return null
+  if (new Set(valid.map((parent) => parent.charaId)).size !== valid.length) return null
+  return valid
+}
+
 function parseParentSnapshot(value: unknown): ParentSnapshot | null {
   if (!isObject(value) || !exactKeys(value, [
     'umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes', 'parents',
@@ -526,7 +536,7 @@ export function parseUmaSave(value: unknown): UmaSave | null {
   const history = skillHistory as SkillHistoryEntry[]
   if (new Set(history.map((entry) => `${entry.tier}:${entry.skillId}`)).size !== history.length) return null
   if (base.skillLibrary.some((unlock) => !history.some((entry) => entry.skillId === unlock.skillId))) return null
-  const currentParents = parseFrozenParents(value.currentParents)
+  const currentParents = parseParentSnapshots(value.currentParents)
   if (!currentParents) return null
   const parentSnapshot = value.parentSnapshot === null ? null : parseParentSnapshot(value.parentSnapshot)
   if (value.parentSnapshot !== null && !parentSnapshot) return null
@@ -616,7 +626,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
     skillLibrary,
     loadoutSkillIds: [],
     trainingsThisScenario: 0,
-    scenarioStarted: true,
+    scenarioStarted: false,
     skillHistory: skillLibrary.map((unlock) => ({ ...unlock, tier: 1 })),
     currentParents: [],
     parentSnapshot: null,

@@ -4,6 +4,7 @@ import {
   createCardSave,
   createPlayerProfile,
   createUmaSave,
+  parentFingerprint,
   type ContentAtlas,
   type SkillTemplate,
   type SupportCardTemplate,
@@ -12,7 +13,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
-import { promoteMemoryUma, promotePersistentUma } from './promotion'
+import { promoteMemoryUma, promotePersistentUma, startPersistentScenario } from './promotion'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -29,6 +30,11 @@ const umaTemplate: UmaTemplate = {
   signatureRaces: [], imageSource: 'https://invalid.test/synthetic.png',
 }
 
+const parentTemplate: UmaTemplate = {
+  ...umaTemplate,
+  id: 'uma-parent', charaId: 'chara-parent', name: 'Synthetic Parent', uniqueSkillId: 'unique-parent', awakeningSkillIds: [],
+}
+
 const cardTemplate: SupportCardTemplate = {
   id: 'card-promo', charaId: 'support-promo', charName: 'Synthetic Support', title: 'Starting Line',
   type: 'speed', jpRelease: '2000-01-01', era: 1, obtain: 'free', starter: true,
@@ -42,6 +48,9 @@ const skills: SkillTemplate[] = [
   { id: 'unique-promo', kind: 'unique', name: 'Synthetic Unique', description: '', costSp: null, iconId: null, conditions: [], inheritedSkillId: 'gene-promo', normalSkillId: null },
   { id: 'gene-promo', kind: 'inherited-unique', name: 'Synthetic Gene', description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null },
   { id: 'awake-promo', kind: 'white', name: 'Synthetic Awakening', description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null },
+  { id: 'unique-parent', kind: 'unique', name: 'Synthetic Parent Unique', description: '', costSp: null, iconId: null, conditions: [], inheritedSkillId: 'gene-parent', normalSkillId: null },
+  { id: 'gene-parent', kind: 'inherited-unique', name: 'Synthetic Parent Gene', description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null },
+  { id: 'white-parent', kind: 'white', name: 'Synthetic Parent White', description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null },
 ]
 
 function content(): LoadedContent {
@@ -52,7 +61,7 @@ function content(): LoadedContent {
   })
   return {
     manifest: { version: 'synthetic-v2', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] }, origin: 'network',
-    umas: { items: [umaTemplate], byId: new Map([[umaTemplate.id, umaTemplate]]) },
+    umas: { items: [umaTemplate, parentTemplate], byId: new Map([[umaTemplate.id, umaTemplate], [parentTemplate.id, parentTemplate]]) },
     cards: { items: [cardTemplate], byId: new Map([[cardTemplate.id, cardTemplate]]) },
     skills: { items: skills, byId: new Map(skills.map((skill) => [skill.id, skill])) },
     races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },
@@ -65,7 +74,7 @@ function content(): LoadedContent {
 
 function readyUma() {
   const uma = createUmaSave(umaTemplate)
-  return { ...uma, level: 10, deckCardIds: [cardTemplate.id], trainingsThisScenario: 20 }
+  return { ...uma, scenarioStarted: true, level: 10, deckCardIds: [cardTemplate.id], trainingsThisScenario: 20 }
 }
 
 async function resetDatabase() {
@@ -119,5 +128,52 @@ describe('scenario promotion persistence', () => {
     expect(await db.ledger.count()).toBe(0)
     expect(await db.outbox.count()).toBe(0)
   })
-})
 
+  it('starts a fresh Uma with a frozen parent for free and treats an exact retry as success', async () => {
+    const loaded = content()
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), tickets: 100 }
+    const child = createUmaSave(umaTemplate)
+    const snapshot = {
+      umaId: parentTemplate.id, charaId: parentTemplate.charaId, completedTier: 1, takenAt: 20,
+      inheritedUniqueSkillId: 'gene-parent', inheritableWhiteSkillIds: ['white-parent'], aptitudes, parents: [],
+    }
+    const parent = { ...createUmaSave(parentTemplate), scenarioStarted: true, parentSnapshot: snapshot }
+    const selection = {
+      parents: [parentFingerprint(snapshot)], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [null],
+    }
+    await db.open()
+    await db.profile.put({ id: 'main', data: profile, version: 0 })
+    await db.umas.bulkPut([{ id: child.templateId, data: child, version: 0 }, { id: parent.templateId, data: parent, version: 0 }])
+
+    const first = await startPersistentScenario(loaded, child.templateId, selection, 30)
+    expect(first).toMatchObject({ alreadyStarted: false, profile: { tickets: 100 }, uma: { scenarioStarted: true } })
+    expect(first.uma.skillLibrary).toContainEqual({ skillId: 'gene-parent', origin: 'inherited', sourceId: parentTemplate.id })
+    expect(first.uma.currentParents).toEqual([snapshot])
+    expect(await db.ledger.count()).toBe(0)
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)).toEqual([`umas/${child.templateId}`])
+    const retry = await startPersistentScenario(loaded, child.templateId, selection, 31)
+    expect(retry).toMatchObject({ alreadyStarted: true, alreadyPromoted: false, profile: { tickets: 100 } })
+    expect(await db.ledger.count()).toBe(0)
+  })
+
+  it('rejects a refreshed parent fingerprint without any child or profile write', async () => {
+    const loaded = content()
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), tickets: 100 }
+    const child = createUmaSave(umaTemplate)
+    const snapshot = {
+      umaId: parentTemplate.id, charaId: parentTemplate.charaId, completedTier: 2, takenAt: 40,
+      inheritedUniqueSkillId: 'gene-parent', inheritableWhiteSkillIds: [], aptitudes, parents: [],
+    }
+    const parent = { ...createUmaSave(parentTemplate), scenarioStarted: true, parentSnapshot: snapshot }
+    await db.open()
+    await db.profile.put({ id: 'main', data: profile, version: 0 })
+    await db.umas.bulkPut([{ id: child.templateId, data: child, version: 0 }, { id: parent.templateId, data: parent, version: 0 }])
+    const stale = { ...parentFingerprint(snapshot), takenAt: 39 }
+    await expect(startPersistentScenario(loaded, child.templateId, {
+      parents: [stale], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [null],
+    }, 50)).rejects.toThrow(/stale/)
+    expect((await db.profile.get('main'))?.data).toEqual(profile)
+    expect((await db.umas.get(child.templateId))?.data).toEqual(child)
+    expect(await db.outbox.count()).toBe(0)
+  })
+})

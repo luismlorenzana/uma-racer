@@ -46,7 +46,8 @@ export function HomeScreen() {
   if (status === 'error') return <ScreenState title="Save needs attention" detail={error ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Uma Racer…" detail="Loading private content and your local save." />
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
-  const raceUnlocked = featured.save.trainingsThisScenario >= 1 && !isGateLevel(featured.save.level)
+  const setupPending = !featured.save.scenarioStarted
+  const raceUnlocked = featured.save.scenarioStarted && featured.save.trainingsThisScenario >= 1 && !isGateLevel(featured.save.level)
 
   return (
     <div className="flex flex-col gap-4 pt-2">
@@ -67,11 +68,11 @@ export function HomeScreen() {
           <p className="mt-1 text-sm font-extrabold text-sky-deep">{featured.scenario?.name ?? `Tier ${featured.tier}`} · Training Level {featured.save.trainingLevel}</p>
         </Link>
         <div className="grid grid-cols-2 gap-3 border-t-2 border-white bg-white/60 p-4">
-          <GameButton variant={featured.readyToPromote ? 'primary' : 'secondary'} size="lg" disabled={isGateLevel(featured.save.level) && !featured.readyToPromote} onClick={() => navigate(featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/training/${encodeURIComponent(featured.save.templateId)}`)}>{featured.readyToPromote ? 'Promote' : isGateLevel(featured.save.level) ? 'Complete' : 'Train'}</GameButton>
-          <GameButton variant="go" size="lg" disabled={!raceUnlocked && !featured.readyToPromote} onClick={() => navigate(featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}>{featured.readyToPromote ? 'Next scenario' : 'Race'}</GameButton>
+          <GameButton variant={setupPending || featured.readyToPromote ? 'primary' : 'secondary'} size="lg" disabled={!setupPending && isGateLevel(featured.save.level) && !featured.readyToPromote} onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/training/${encodeURIComponent(featured.save.templateId)}`)}>{setupPending ? 'Set up' : featured.readyToPromote ? 'Promote' : isGateLevel(featured.save.level) ? 'Complete' : 'Train'}</GameButton>
+          <GameButton variant="go" size="lg" disabled={!setupPending && !raceUnlocked && !featured.readyToPromote} onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}>{setupPending ? 'Start scenario' : featured.readyToPromote ? 'Next scenario' : 'Race'}</GameButton>
         </div>
         <p className="px-4 pb-4 text-center text-xs font-bold text-ink-soft">
-          {featured.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(featured.save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock saved-Uma races.'}
+          {setupPending ? 'Choose lineage before Training or racing.' : featured.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(featured.save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock saved-Uma races.'}
         </p>
       </Panel>
 

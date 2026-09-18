@@ -171,3 +171,12 @@ With several locally completed synthetic/private Umas and `pnpm dev`:
   parents, and more than two generations.
 - Badge/title/trophy creation, Graduate/Perfect/Speedrun awards, collection aggregates, and retroactive flair (Milestone 6).
 - Scenario modifiers, Friend/Group card gameplay, sound, haptics, or new original-game assets.
+
+## Implementation status
+
+Implemented on the T013 feature branch. The pure domain projection and resolver cover frozen candidate diagnostics,
+character-level eligibility, stale fingerprints, closest/duplicate grandparent handling, deterministic library precedence,
+capped picks, and sequential pink sparks. Fresh Umas now wait for a free setup; gate and free starts share one atomic
+local-first runtime action, exact selected snapshots persist as active lineage, and Training/racing remain write-locked
+until confirmation. The lazy five-step Scenario Start and finite Profile Lineage surfaces use private content joins with
+missing-content fallbacks. Synthetic domain, API, IndexedDB, routing, and view-model tests cover the shipped path.

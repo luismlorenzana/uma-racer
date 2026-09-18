@@ -17,6 +17,7 @@ import {
   type SyncRequest,
   type RaceResultRecord,
   type Strategy,
+  type ScenarioStartSelection,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
@@ -60,7 +61,7 @@ import {
   type UmaRedemptionMutation,
 } from './collection'
 import { replaceUmaCollectionState } from './store'
-import { promoteMemoryUma, promotePersistentUma } from './promotion'
+import { startMemoryScenario, startPersistentScenario } from './promotion'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -343,21 +344,21 @@ export class GameRuntime {
     }
   }
 
-  async promoteUma(id: string, now = Date.now()) {
-    if (this.promotionLocks.has(id)) throw new Error('This Uma is already being promoted')
+  async startScenario(id: string, selection: ScenarioStartSelection, now = Date.now()) {
+    if (this.promotionLocks.has(id)) throw new Error('This Uma is already starting a scenario')
     this.promotionLocks.add(id)
     try {
       const generation = this.generation
       const content = this.content
       const state = useGame.getState()
       const uma = state.umas[id]
-      if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Promotion Uma must be owned')
+      if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Scenario Uma must be owned')
       const mutation = state.persistent
-        ? await promotePersistentUma(content, id, now)
-        : promoteMemoryUma(content, state.profile, uma, state.cards, now)
+        ? await startPersistentScenario(content, id, selection, now)
+        : startMemoryScenario(content, state.profile, uma, Object.values(state.umas), state.cards, selection, now)
       if (generation !== this.generation) return mutation
       replaceUmaCollectionState(mutation.profile, mutation.uma)
-      if (state.persistent && !mutation.alreadyPromoted) {
+      if (state.persistent && !mutation.alreadyStarted) {
         await this.refreshPending()
         this.schedule()
       }
@@ -365,6 +366,10 @@ export class GameRuntime {
     } finally {
       this.promotionLocks.delete(id)
     }
+  }
+
+  async promoteUma(id: string, now = Date.now()) {
+    return this.startScenario(id, { parents: [], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [] }, now)
   }
 
   async listRaceHistory(limit = 20): Promise<RaceResultRecord[]> {

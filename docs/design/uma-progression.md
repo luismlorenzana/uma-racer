@@ -95,6 +95,9 @@ scenario starts as a fair fight and ends with your Uma about 10% ahead. Details 
 
 The completed-tier snapshot is captured from the pre-refresh library. At the latest available maximum level, the finishing
 race captures the final snapshot in the same transaction without a promotion cost, stat bonus, or Training Level reset.
+Newly acquired Umas are saved in a pending tier-1 setup state. Confirming Scenario Start may add frozen inheritance and
+pink-spark upgrades, but does not change their level, stats, Training Level, deck, tickets, or parent snapshot. Existing
+v1 saves migrated into v2 remain active and are never interrupted by this rule.
 
 ## Stats and caps
 

@@ -43,6 +43,7 @@ const ordinal = (value: number) => {
 }
 
 function raceLockReason(save: UmaSave, race: RaceTemplate, opponentCharacters: number): string | null {
+  if (!save.scenarioStarted) return 'Finish scenario setup before racing.'
   if (save.trainingsThisScenario < 1) return 'Complete one Training turn with this Uma first.'
   if (isGateLevel(save.level)) return 'This Uma is ready to promote and cannot race again yet.'
   const fieldSize = progressionFieldSize(race)
@@ -125,6 +126,7 @@ export function RaceSelectScreen() {
   const content = contentState.content
   const umaTemplate = content.umas.byId.get(selectedUmaId)
   if (!umaTemplate) return <ScreenState title="Content reference missing" detail={`The save is preserving ${selectedUmaId} until its template is restored.`} />
+  if (!selectedUma.scenarioStarted) return <ScreenState title="Finish scenario setup" detail="Choose optional frozen parents before this Uma can race." action={{ label: 'Choose lineage', to: `/scenario/${encodeURIComponent(selectedUmaId)}/start` }} />
   const sortedRaces = [...content.races.items].sort((left, right) =>
     GRADE_ORDER[left.grade] - GRADE_ORDER[right.grade] ||
     left.distance - right.distance ||
