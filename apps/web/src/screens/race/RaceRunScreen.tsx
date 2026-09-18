@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { completeRace, prepareRace } from '../../game/actions'
+import { buildResultGoalView } from '../../game/goals-view'
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
@@ -93,6 +94,7 @@ export function RaceRunScreen() {
   const [speed, setSpeed] = useState(1)
   const [showResults, setShowResults] = useState(false)
   const [againBusy, setAgainBusy] = useState(false)
+  const [freshGoalCommit, setFreshGoalCommit] = useState(false)
 
   const umaId = queryUmaId
   const raceId = params.get('race') ?? ''
@@ -121,6 +123,7 @@ export function RaceRunScreen() {
     setCommitError(null)
     setShowResults(false)
     setAgainBusy(false)
+    setFreshGoalCommit(false)
     finishingRef.current = false
     void prepareRace(umaId, raceId, strategy, sequence).then((preparation) => {
       if (cancelled || contentState.status !== 'ready') return
@@ -163,6 +166,7 @@ export function RaceRunScreen() {
       void completeRace(attempt).then((completion) => {
         recordRef.current = completion.record
         setRecord(completion.record)
+        setFreshGoalCommit(!completion.alreadyRecorded)
         setShowResults(true)
       }).catch((reason: unknown) => {
         setCommitError(reason instanceof Error ? reason.message : 'Could not save race result')
@@ -240,6 +244,7 @@ export function RaceRunScreen() {
   const resultLevel = record ? record.startLevel + record.levelsGained.length : attempt.startLevel
   const startForms = { player: yourForm(record?.startLevel ?? attempt.startLevel), field: fieldForm(record?.startLevel ?? attempt.startLevel) }
   const resultForms = { player: yourForm(resultLevel), field: fieldForm(resultLevel) }
+  const goalResult = record && savedUma ? buildResultGoalView(record, savedUma, content, freshGoalCommit) : null
 
   const retryCommit = () => {
     if (committing || record) return
@@ -249,6 +254,7 @@ export function RaceRunScreen() {
     void completeRace(attempt).then((completion) => {
       recordRef.current = completion.record
       setRecord(completion.record)
+      setFreshGoalCommit(!completion.alreadyRecorded)
     }).catch((reason: unknown) => {
       setCommitError(reason instanceof Error ? reason.message : 'Could not save race result')
       finishingRef.current = false
@@ -420,6 +426,23 @@ export function RaceRunScreen() {
                   )}
                   {record.levelsGained.length > 0 && <p className="mt-2 text-center text-sm font-extrabold">Reached Uma Lv {record.levelsGained.join(', ')}</p>}
                   {record.shardReward > 0 && <p className="mt-2 text-center rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">{savedUma && savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO ? 'Latest scenario complete' : 'Ready to promote'}</p>}
+                  {goalResult && goalResult.completions.length > 0 && <div className="mt-3 grid gap-2">
+                    {goalResult.completions.map((goal, index) => (
+                      <m.div
+                        key={goal.id}
+                        className="rounded-2xl border-2 border-gold bg-gradient-to-r from-amber-50 to-white px-4 py-3 text-center"
+                        initial={!goalResult.animate || reducedMotion ? false : { scaleX: 0.25, opacity: 0 }}
+                        animate={{ scaleX: 1, opacity: 1 }}
+                        transition={!goalResult.animate || reducedMotion ? { duration: 0 } : { delay: 0.35 + index * 0.3, type: 'spring', stiffness: 320, damping: 22 }}
+                      >
+                        <p className="text-xs font-extrabold uppercase tracking-widest text-amber-800">Goal complete · {goal.label}</p>
+                        <p className="mt-1 text-lg font-extrabold">🎗️ {goal.raceName}</p>
+                        <p className="text-xs font-bold text-ink-soft">{goal.rule} · {goalResult.completed} / 3 complete</p>
+                      </m.div>
+                    ))}
+                    {goalResult.honors && <m.p initial={!goalResult.animate || reducedMotion ? false : { scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-full bg-gold px-4 py-2 text-center font-extrabold text-white text-outline">🏵 Scenario Honors · 3 / 3</m.p>}
+                    {!goalResult.animate && <p className="text-center text-xs font-bold text-ink-soft">Recorded goal summary</p>}
+                  </div>}
                   <div className="mt-2 rounded-xl bg-white px-3 py-2">
                     <p className="text-xs font-extrabold text-ink-soft">RACE FORM</p>
                     <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-extrabold">

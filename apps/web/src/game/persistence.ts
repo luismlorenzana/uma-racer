@@ -2,6 +2,7 @@
 
 import {
   applyDailyGrants,
+  bootstrapScenarioGoals,
   createCardSave,
   createInitialSave,
   createUmaSave,
@@ -10,6 +11,7 @@ import {
   parseLedgerEntry,
   parseLogData,
   parsePlayerProfileOrThrow,
+  parseRaceResultRecord,
   parseSaveSnapshotOrThrow,
   parseUmaSave,
   type CardSave,
@@ -18,6 +20,8 @@ import {
   type LedgerEntry,
   type LogKind,
   type PlayerProfile,
+  raceAttemptId,
+  SCENARIO_GOAL_VERSION,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -165,6 +169,36 @@ export async function completeStarterSeed(content: LoadedContent, now: number): 
     await queueInTransaction('profile', 'main', 'upsert', now)
     for (const data of addedUmas) await queueInTransaction('umas', data.templateId, 'upsert', now)
     for (const data of addedCards) await queueInTransaction('cards', data.templateId, 'upsert', now)
+  })
+}
+
+/** Upgrade every pre-T014 Uma and its current-tier history in one all-or-nothing local transaction. */
+export async function bootstrapGoalPlans(content: LoadedContent, now: number): Promise<number> {
+  if (!Number.isSafeInteger(now) || now < 0) throw new Error('Goal bootstrap time is invalid')
+  return db.transaction('rw', [db.umas, db.raceResults, db.outbox], async () => {
+    const umaRows = await db.umas.toArray()
+    const affected = umaRows.filter((row) => {
+      const uma = parseUmaSave(row.data)
+      if (!uma || uma.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
+      return uma.goalPlanVersion !== SCENARIO_GOAL_VERSION
+    })
+    if (affected.length === 0) return 0
+    const histories = (await db.raceResults.toArray()).map((row) => {
+      const record = parseRaceResultRecord(row.data)
+      if (!record || row.id !== raceAttemptId(record.umaId, record.sequence) || row.createdAt !== record.createdAt) {
+        throw new Error(`Invalid local race result: ${row.id}`)
+      }
+      return record
+    })
+    for (const row of affected) {
+      const uma = parseUmaSave(row.data)!
+      const template = content.umas.byId.get(row.id)
+      if (!template) throw new Error(`Goal bootstrap content is missing Uma ${row.id}`)
+      const next = bootstrapScenarioGoals({ uma, umaTemplate: template, races: content.races.items, raceHistory: histories })
+      await db.umas.put({ ...row, data: next })
+      await queueInTransaction('umas', row.id, 'upsert', now)
+    }
+    return affected.length
   })
 }
 

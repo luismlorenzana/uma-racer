@@ -13,7 +13,7 @@ const uma = (id: string, name: string, dirt: 'A' | 'G' = 'G'): UmaTemplate => ({
   starter: false, baseStats: { speed: 101, stamina: 102, power: 103, guts: 104, wit: 105 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes: { ...aptitudes, surface: { turf: 'A', dirt } }, uniqueSkillId: `skill-${id}`,
-  awakeningSkillIds: [], realHorseSex: null, signatureRaces: [], imageSource: 'https://example.invalid/synthetic.png',
+  awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://example.invalid/synthetic.png',
 })
 const card = (id: string, era: number, type: SupportCardTemplate['type']): SupportCardTemplate => ({
   id, charaId: `runner-${id}`, charName: `Synthetic ${id}`, title: 'Practice Notes', type,

@@ -37,7 +37,7 @@ function uma(id: string, starter = true): UmaTemplate {
     uniqueSkillId: `skill-${id}`,
     awakeningSkillIds: [],
     realHorseSex: null,
-    signatureRaces: [],
+    signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
 }

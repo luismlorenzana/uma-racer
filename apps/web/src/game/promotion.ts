@@ -73,7 +73,7 @@ export function startMemoryScenario(
   if (!umaTemplate) throw new Error(`Scenario content is missing Uma ${uma.templateId}`)
   if (!uma.scenarioStarted) {
     const result = startNewUmaScenario({
-      uma, umaTemplate, skills: content.skills.byId, ownedUmas, umaTemplates: content.umas.byId, selection,
+      uma, umaTemplate, skills: content.skills.byId, races: content.races.items, ownedUmas, umaTemplates: content.umas.byId, selection,
     })
     return { profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false }
   }
@@ -83,6 +83,7 @@ export function startMemoryScenario(
     umaTemplate,
     skills: content.skills.byId,
     cards: resolveCards(content, uma, cardsById),
+    races: content.races.items,
     now,
     ownedUmas,
     umaTemplates: content.umas.byId,

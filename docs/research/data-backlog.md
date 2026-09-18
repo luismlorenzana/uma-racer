@@ -18,7 +18,8 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 - [x] Aptitudes (surface, distance, strategy).
 - [x] Unique skill, and awakening (potential) skills.
 - [x] `realHorseSex` for every Uma.
-- [ ] `signatureRaces`: the real horse's famous wins (the original game's career goals are a good seed).
+- [x] Ordered `signatureRaceFamilyIds` are normalized from GameTora `ura-objectives` career-race references and joined to
+      retained gameplay race families. Objective names/conditions and raw rows remain private and are not copied into packs.
 
 ## Support cards (SSR only)
 
@@ -38,6 +39,7 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 ## Races and courses
 
 - [x] Race catalog: name, grade, venue, surface, distance, and direction.
+- [x] Stable race-family ids for matching career objectives to concrete gameplay race variants.
 - [ ] Race series classifications for goals and titles.
 - [x] Course layouts: corners, straights, and slopes per course (for later race engine milestones).
 

@@ -30,7 +30,7 @@ function template(id: string, name: string, turf: 'A' | 'G' = 'A'): UmaTemplate 
     uniqueSkillId: `skill-${id}`,
     awakeningSkillIds: [],
     realHorseSex: null,
-    signatureRaces: [],
+    signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
 }

@@ -37,7 +37,7 @@ function content(): LoadedContent {
     uniqueSkillId: null,
     awakeningSkillIds: [],
     realHorseSex: null,
-    signatureRaces: [],
+    signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
   const cards: SupportCardTemplate[] = ['speed', 'stamina', 'power', 'guts'].map((type) => ({

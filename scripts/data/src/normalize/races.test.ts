@@ -9,6 +9,7 @@ describe('normalizeRaces', () => {
     expect(result.items).toHaveLength(5)
     expect(result.items[0]).toEqual({
       id: '8101',
+      familyId: '8801',
       name: 'Synthetic Sprint Cup',
       grade: 'g1',
       surface: 'turf',

@@ -52,7 +52,11 @@ function horseSex(character: RawRecord | undefined): UmaTemplate['realHorseSex']
   return null
 }
 
-export function normalizeUmas(characterCards: unknown, characters: unknown): NormalizeResult<UmaTemplate> {
+export function normalizeUmas(
+  characterCards: unknown,
+  characters: unknown,
+  signatureFamilies: ReadonlyMap<string, readonly string[]> = new Map(),
+): NormalizeResult<UmaTemplate> {
   const warnings: string[] = []
   const charactersById = new Map(records(characters).map((row) => [id(row.char_id), row]))
   const items: UmaTemplate[] = []
@@ -86,7 +90,7 @@ export function normalizeUmas(characterCards: unknown, characters: unknown): Nor
       uniqueSkillId: uniqueSkills[0] ?? null,
       awakeningSkillIds: ids(row.skills_awakening_en ?? row.skills_awakening),
       realHorseSex: horseSex(charactersById.get(charaId)),
-      signatureRaces: [],
+      signatureRaceFamilyIds: [...(signatureFamilies.get(charaId) ?? [])],
       imageSource: `https://gametora.com/images/umamusume/characters/thumb/chara_stand_${charaId}_${umaId}.png`,
     })
   }

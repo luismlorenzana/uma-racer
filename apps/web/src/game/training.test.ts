@@ -6,6 +6,8 @@ import {
   cardExpToNext,
   type CardEffect,
   type ContentAtlas,
+  type CourseTemplate,
+  type RaceTemplate,
   type SupportCardTemplate,
   type UmaTemplate,
 } from '@racer/domain'
@@ -51,7 +53,7 @@ function uma(id: string): UmaTemplate {
     uniqueSkillId: null,
     awakeningSkillIds: [],
     realHorseSex: null,
-    signatureRaces: [],
+    signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
 }
@@ -89,14 +91,25 @@ function atlas(kind: ContentAtlas['kind'], ids: readonly string[]): ContentAtlas
 function content(): LoadedContent {
   const umas = Array.from({ length: 25 }, (_, index) => uma(`uma-${String(index).padStart(2, '0')}`))
   const cards = (['speed', 'stamina', 'power', 'guts', 'wit'] as const).map(card)
+  const races: RaceTemplate[] = [
+    ['race-a', 'pre-op', '101'], ['race-b', 'op', '102'], ['race-c', 'g1', '103'],
+  ].map(([id, grade, familyId], index) => ({
+    id: id!, familyId: familyId!, name: `Synthetic Race ${index + 1}`, grade: grade as RaceTemplate['grade'],
+    surface: 'turf', distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium',
+    direction: 'left', venue: 'Synthetic', courseId: 'course-goals', season: 1, fieldSize: 8,
+  }))
+  const course: CourseTemplate = {
+    id: 'course-goals', trackId: 'track-goals', distance: 3, terrain: 1, turn: 1,
+    corners: [], straights: [{ start: 0, end: 2400, frontType: 1 }], slopes: [],
+  }
   return {
     manifest: { version: 'synthetic-v1', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] },
     origin: 'network',
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: cards, byId: new Map(cards.map((item) => [item.id, item])) },
     skills: { items: [], byId: new Map() },
-    races: { items: [], byId: new Map() },
-    courses: { items: [], byId: new Map() },
+    races: { items: races, byId: new Map(races.map((race) => [race.id, race])) },
+    courses: { items: [course], byId: new Map([[course.id, course]]) },
     atlases: {
       'uma-icons': { descriptor: atlas('uma-icons', umas.map((item) => item.id)), pageUrls: ['blob:synthetic-umas'] },
       'card-icons': { descriptor: atlas('card-icons', cards.map((item) => item.id)), pageUrls: ['blob:synthetic-cards'] },
@@ -113,7 +126,7 @@ async function seed(loaded: LoadedContent): Promise<void> {
   await db.open()
   await persistInitial(loaded, '2000-01-02', 100)
   const row = await db.umas.get('uma-00')
-  await db.umas.put({ ...row!, data: { ...row!.data, scenarioStarted: true } })
+  await db.umas.put({ ...row!, data: { ...row!.data, goalPlanVersion: 0, scenarioStarted: true } })
 }
 
 describe('Training persistence', () => {
@@ -201,7 +214,7 @@ describe('Training persistence', () => {
     const cardsById = Object.fromEntries(loaded.cards.items.map((item) => [item.id, createCardSave(item)]))
     const umaSave = setMemoryUmaDeck(
       loaded,
-      { ...createUmaSave(template), scenarioStarted: true },
+      { ...createUmaSave(template), goalPlanVersion: 0, scenarioStarted: true },
       cardsById,
       ['card-power', 'card-speed', 'card-stamina', 'card-guts'],
     ).uma

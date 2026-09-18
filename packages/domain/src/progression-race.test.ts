@@ -38,7 +38,7 @@ const uma = (id = 'u1'): UmaTemplate => ({
   uniqueSkillId: null,
   awakeningSkillIds: [],
   realHorseSex: null,
-  signatureRaces: [],
+  signatureRaceFamilyIds: [],
   imageSource: 'https://invalid.test/synthetic.png',
 })
 
@@ -70,6 +70,7 @@ const card = (): SupportCardTemplate => ({
 
 const race: RaceTemplate = {
   id: 'r1',
+  familyId: '101',
   name: 'Synthetic Cup',
   grade: 'g1',
   surface: 'turf',
@@ -187,6 +188,9 @@ describe('race result parsing', () => {
       },
     }
     expect(parseRaceResultRecord(v3)).toEqual(v3)
+    const withGoals = { ...v3, completedGoalIds: ['goal:1:aptitude', 'goal:1:challenge'] }
+    expect(parseRaceResultRecord(withGoals)).toEqual(withGoals)
+    expect(parseRaceResultRecord({ ...withGoals, completedGoalIds: ['goal:1:aptitude', 'goal:1:aptitude'] })).toBeNull()
     expect(parseRaceResultRecord({ ...v3, course: { ...v3.course, layout: { corners: [], straights: [] } } })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, ticketReward: 10 })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, extra: true })).toBeNull()

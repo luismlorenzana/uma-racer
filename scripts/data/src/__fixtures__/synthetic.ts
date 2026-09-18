@@ -160,6 +160,7 @@ export const syntheticSkills = [
 export const syntheticRaces = [
   {
     id: 8101,
+    race_id: 8801,
     name_en: 'Synthetic Sprint Cup',
     grade: 100,
     terrain: 1,
@@ -172,6 +173,7 @@ export const syntheticRaces = [
   },
   {
     id: 8101,
+    race_id: 8801,
     name_en: 'Duplicate Synthetic Sprint Cup',
     grade: 100,
     terrain: 1,
@@ -184,6 +186,7 @@ export const syntheticRaces = [
   },
   {
     id: 8102,
+    race_id: 8802,
     name_en: 'Synthetic Dirt Mile',
     grade: 200,
     terrain: 2,
@@ -196,6 +199,7 @@ export const syntheticRaces = [
   },
   {
     id: 8103,
+    race_id: 8803,
     name_en: 'Synthetic Straight Stakes',
     grade: 300,
     terrain: 1,
@@ -208,6 +212,7 @@ export const syntheticRaces = [
   },
   {
     id: 8104,
+    race_id: 8804,
     name_en: 'Synthetic Open',
     grade: 400,
     terrain: 1,
@@ -220,6 +225,7 @@ export const syntheticRaces = [
   },
   {
     id: 8105,
+    race_id: 8805,
     name_en: 'Synthetic Pre-Open',
     grade: 700,
     terrain: 2,
@@ -230,8 +236,22 @@ export const syntheticRaces = [
     season: 1,
     entries: 10,
   },
-  { id: 8198, name_en: 'Unknown Grade', grade: 999, track: 10006 },
-  { id: 8199, name_en: 'Unknown Venue', grade: 100, track: 19999 },
+  { id: 8198, race_id: 8898, name_en: 'Unknown Grade', grade: 999, track: 10006 },
+  { id: 8199, race_id: 8899, name_en: 'Unknown Venue', grade: 100, track: 19999 },
+]
+
+export const syntheticObjectives = [
+  {
+    char_id: 901,
+    obj_id: 9901,
+    objectives: [
+      { order: 1 },
+      { order: 5, races: null },
+      { order: 20, races: [{ id: 8802 }, { id: 8898 }] },
+      { order: 10, races: [{ id: 8801 }, { id: 8802 }] },
+    ],
+  },
+  { char_id: 902, obj_id: 9902, objectives: [{ order: 10, races: [{ id: 8899 }] }] },
 ]
 
 export const syntheticRacetracks = [

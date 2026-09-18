@@ -6,6 +6,7 @@ import {
   createUmaSave,
   parentFingerprint,
   type ContentAtlas,
+  type RaceTemplate,
   type SkillTemplate,
   type SupportCardTemplate,
   type UmaTemplate,
@@ -27,7 +28,7 @@ const umaTemplate: UmaTemplate = {
   baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, aptitudes,
   uniqueSkillId: 'unique-promo', awakeningSkillIds: ['awake-promo'], realHorseSex: null,
-  signatureRaces: [], imageSource: 'https://invalid.test/synthetic.png',
+  signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/synthetic.png',
 }
 
 const parentTemplate: UmaTemplate = {
@@ -53,6 +54,14 @@ const skills: SkillTemplate[] = [
   { id: 'white-parent', kind: 'white', name: 'Synthetic Parent White', description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null },
 ]
 
+const races: RaceTemplate[] = [
+  ['race-a', 'pre-op', '101'], ['race-b', 'op', '102'], ['race-c', 'g1', '103'],
+].map(([id, grade, familyId], index) => ({
+  id: id!, familyId: familyId!, name: `Synthetic Race ${index + 1}`, grade: grade as RaceTemplate['grade'],
+  surface: 'turf', distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium',
+  direction: 'left', venue: 'Synthetic', courseId: 'course-goals', season: 1, fieldSize: 8,
+}))
+
 function content(): LoadedContent {
   const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({
     schemaVersion: 1, kind, frameWidth: 128, frameHeight: 128,
@@ -64,7 +73,7 @@ function content(): LoadedContent {
     umas: { items: [umaTemplate, parentTemplate], byId: new Map([[umaTemplate.id, umaTemplate], [parentTemplate.id, parentTemplate]]) },
     cards: { items: [cardTemplate], byId: new Map([[cardTemplate.id, cardTemplate]]) },
     skills: { items: skills, byId: new Map(skills.map((skill) => [skill.id, skill])) },
-    races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },
+    races: { items: races, byId: new Map(races.map((race) => [race.id, race])) }, courses: { items: [], byId: new Map() },
     atlases: {
       'uma-icons': { descriptor: atlas('uma-icons'), pageUrls: ['blob:synthetic'] },
       'card-icons': { descriptor: atlas('card-icons'), pageUrls: ['blob:synthetic'] },
@@ -74,7 +83,7 @@ function content(): LoadedContent {
 
 function readyUma() {
   const uma = createUmaSave(umaTemplate)
-  return { ...uma, scenarioStarted: true, level: 10, deckCardIds: [cardTemplate.id], trainingsThisScenario: 20 }
+  return { ...uma, goalPlanVersion: 0, scenarioStarted: true, level: 10, deckCardIds: [cardTemplate.id], trainingsThisScenario: 20 }
 }
 
 async function resetDatabase() {
@@ -137,7 +146,7 @@ describe('scenario promotion persistence', () => {
       umaId: parentTemplate.id, charaId: parentTemplate.charaId, completedTier: 1, takenAt: 20,
       inheritedUniqueSkillId: 'gene-parent', inheritableWhiteSkillIds: ['white-parent'], aptitudes, parents: [],
     }
-    const parent = { ...createUmaSave(parentTemplate), scenarioStarted: true, parentSnapshot: snapshot }
+    const parent = { ...createUmaSave(parentTemplate), goalPlanVersion: 0, scenarioStarted: true, parentSnapshot: snapshot }
     const selection = {
       parents: [parentFingerprint(snapshot)], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [null],
     }
@@ -164,7 +173,7 @@ describe('scenario promotion persistence', () => {
       umaId: parentTemplate.id, charaId: parentTemplate.charaId, completedTier: 2, takenAt: 40,
       inheritedUniqueSkillId: 'gene-parent', inheritableWhiteSkillIds: [], aptitudes, parents: [],
     }
-    const parent = { ...createUmaSave(parentTemplate), scenarioStarted: true, parentSnapshot: snapshot }
+    const parent = { ...createUmaSave(parentTemplate), goalPlanVersion: 0, scenarioStarted: true, parentSnapshot: snapshot }
     await db.open()
     await db.profile.put({ id: 'main', data: profile, version: 0 })
     await db.umas.bulkPut([{ id: child.templateId, data: child, version: 0 }, { id: parent.templateId, data: parent, version: 0 }])

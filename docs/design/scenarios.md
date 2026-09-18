@@ -67,10 +67,12 @@ added in release order:
 
 Reaching the gate level grants **1 Uma Shard** (see [Collection](collection.md)) and completes that tier immediately; no
 second EXP bar is required. Promotion atomically freezes the completed snapshot, spends `25 × tier` tickets, applies the
-stat/card starting bonuses, refreshes skills, resets Training Level, and starts the next tier. Parent inheritance and goals
-join that same Scenario Start commit. It awards:
+stat/card starting bonuses, refreshes skills, resets Training Level, and starts the next tier. Parent inheritance and
+deterministic goals join that same Scenario Start commit. Before promotion, the prior Journey is closed and unfinished
+targets become honest misses; final-tier completion does the same before freezing its snapshot. Goals never gate completion.
+The resulting facts later support:
 
 - The **Graduate** badge for that scenario, with scenario-specific art.
-- The **Honors** badge if every scenario goal was completed.
+- The **Honors** badge if every scenario goal was completed (the crest is derived now; the persisted badge arrives in Milestone 6).
 - A **Perfect** variant if all five stats reach the scenario's baseline cap (the Training Level 10 cap) before promotion.
 - A **Speedrun** variant if she promoted within 15 races of entering the tier.

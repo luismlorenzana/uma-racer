@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SkillTemplate, UmaTemplate } from './content'
+import type { RaceTemplate, SkillTemplate, UmaTemplate } from './content'
 import {
   grandparentWhitePickCap,
   parentFingerprint,
@@ -23,7 +23,7 @@ function template(id: string, charaId = `chara-${id}`): UmaTemplate {
     id, charaId, name: `Synthetic ${id}`, outfit: null, jpRelease: '2000-01-01', globalRelease: null, starter: true,
     baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
     growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, aptitudes,
-    uniqueSkillId: `unique-${id}`, awakeningSkillIds: [], realHorseSex: null, signatureRaces: [], imageSource: 'https://invalid.test/synthetic.png',
+    uniqueSkillId: `unique-${id}`, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/synthetic.png',
   }
 }
 
@@ -39,6 +39,13 @@ const skillRows = [
   ...['white-a', 'white-b', 'white-c', 'white-d', 'white-e'].map((id) => skill(id, 'white')),
 ]
 const skills = new Map(skillRows.map((item) => [item.id, item]))
+const races: RaceTemplate[] = [
+  ['race-a', 'pre-op', '101'], ['race-b', 'op', '102'], ['race-c', 'g1', '103'],
+].map(([id, grade, familyId], index) => ({
+  id: id!, familyId: familyId!, name: `Synthetic Race ${index + 1}`, grade: grade as RaceTemplate['grade'],
+  surface: 'turf', distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium',
+  direction: 'left', venue: 'Synthetic', courseId: `course-${index + 1}`, season: 1, fieldSize: 8,
+}))
 
 function frozen(id: string, options: Partial<ParentSnapshot> = {}): ParentSnapshot {
   return {
@@ -141,7 +148,7 @@ describe('scenario inheritance', () => {
   it('starts a new Uma for free without promotion changes', () => {
     const child = createUmaSave(umaTemplates.get('child')!)
     const result = startNewUmaScenario({
-      uma: child, umaTemplate: umaTemplates.get('child')!, skills, ownedUmas: [child], umaTemplates,
+      uma: child, umaTemplate: umaTemplates.get('child')!, skills, races, ownedUmas: [child], umaTemplates,
       selection: { parents: [], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [] },
     })
     expect(result.uma).toMatchObject({ scenarioStarted: true, level: 1, stats: child.stats, trainingLevel: 1, currentParents: [] })

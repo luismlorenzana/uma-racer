@@ -36,7 +36,7 @@ const uma: UmaTemplate = {
   uniqueSkillId: 'unique-1',
   awakeningSkillIds: [],
   realHorseSex: null,
-  signatureRaces: [],
+  signatureRaceFamilyIds: [],
   imageSource: 'https://invalid.test/synthetic.png',
 }
 

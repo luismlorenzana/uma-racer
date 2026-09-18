@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
+import type { RaceTemplate, SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import { createCardSave, createPlayerProfile, createUmaSave } from './save'
 import { parentFingerprint } from './inheritance'
 import { expToNextUmaLevel, PROMOTION_BONUS_PER_STAT } from './progression'
@@ -17,7 +17,7 @@ const template: UmaTemplate = {
   baseStats: { speed: 100, stamina: 101, power: 102, guts: 103, wit: 104 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, aptitudes,
   uniqueSkillId: 'unique-a', awakeningSkillIds: ['awake-1', 'awake-2', 'awake-3', 'awake-4'],
-  realHorseSex: null, signatureRaces: [], imageSource: 'https://invalid.test/synthetic.png',
+  realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/synthetic.png',
 }
 
 const parentTemplate: UmaTemplate = {
@@ -54,6 +54,14 @@ const cardTemplate: SupportCardTemplate = {
   uniqueEffect: null, imageSource: 'https://invalid.test/synthetic.png',
 }
 
+const races: RaceTemplate[] = [
+  ['race-a', 'pre-op', '101'], ['race-b', 'op', '102'], ['race-c', 'g1', '103'],
+].map(([id, grade, familyId], index) => ({
+  id: id!, familyId: familyId!, name: `Synthetic Race ${index + 1}`, grade: grade as RaceTemplate['grade'],
+  surface: 'turf', distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium',
+  direction: 'left', venue: 'Synthetic', courseId: `course-${index + 1}`, season: 1, fieldSize: 8,
+}))
+
 function readyUma(exp = 0) {
   const base = createUmaSave(template)
   const added = [
@@ -63,6 +71,7 @@ function readyUma(exp = 0) {
   ]
   return {
     ...base,
+    goalPlanVersion: 0,
     scenarioStarted: true,
     level: 10,
     exp,
@@ -103,7 +112,7 @@ describe('scenario promotion', () => {
     const profile = { ...createPlayerProfile('content-v1', 1), tickets: 100 }
     const result = promoteScenario({
       profile, uma: readyUma(), umaTemplate: template, skills,
-      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], now: 456,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], races, now: 456,
     })
     expect(result).toMatchObject({ fromTier: 1, toTier: 2, cost: 25, awakeningSkillId: 'awake-1', overflowLevel: null })
     expect(result.profile.tickets).toBe(75)
@@ -123,7 +132,7 @@ describe('scenario promotion', () => {
 
   it('carries partial overflow and converts a full bank into one rewarded level', () => {
     const profile = { ...createPlayerProfile('content-v1', 1), tickets: 100 }
-    const input = { profile, umaTemplate: template, skills, cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], now: 2 }
+    const input = { profile, umaTemplate: template, skills, cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], races, now: 2 }
     expect(promoteScenario({ ...input, uma: readyUma(17) }).uma).toMatchObject({ level: 11, exp: 17 })
     const full = promoteScenario({ ...input, uma: readyUma(expToNextUmaLevel(11)) })
     expect(full.uma).toMatchObject({ level: 12, exp: 0 })
@@ -140,7 +149,7 @@ describe('scenario promotion', () => {
     const parent = { ...createUmaSave(parentTemplate), scenarioStarted: true, parentSnapshot: snapshot }
     const result = promoteScenario({
       profile, uma: readyUma(), umaTemplate: template, skills,
-      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], now: 456,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], races, now: 456,
       ownedUmas: [readyUma(), parent], umaTemplates: new Map([[template.id, template], [parentTemplate.id, parentTemplate]]),
       selection: { parents: [parentFingerprint(snapshot)], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [null] },
     })
@@ -149,11 +158,33 @@ describe('scenario promotion', () => {
     expect(result.snapshot.parents).toEqual([])
   })
 
+  it('closes old goals as missed and atomically starts a fresh tracked Journey', () => {
+    const current = {
+      ...readyUma(),
+      goalPlanVersion: 1,
+      scenarioJourneys: [{
+        tier: 1, tracking: 'tracked' as const, state: 'active' as const, completedAt: null,
+        goals: [
+          { id: 'goal:1:aptitude', slot: 'aptitude' as const, raceId: 'race-a', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+          { id: 'goal:1:identity', slot: 'identity' as const, raceId: 'race-b', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+          { id: 'goal:1:challenge', slot: 'challenge' as const, raceId: 'race-c', kind: 'win-by-margin' as const, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+        ],
+      }],
+    }
+    const result = promoteScenario({
+      profile: { ...createPlayerProfile('content-v1', 1), tickets: 100 }, uma: current, umaTemplate: template, skills, races,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], now: 456,
+    })
+    expect(result.uma.scenarioJourneys[0]).toMatchObject({ tier: 1, state: 'completed', completedAt: 456 })
+    expect(result.uma.scenarioJourneys[0]?.goals.map((goal) => goal.status)).toEqual(['missed', 'missed', 'missed'])
+    expect(result.uma.scenarioJourneys[1]).toMatchObject({ tier: 2, tracking: 'tracked', state: 'active' })
+  })
+
   it('reports gate/final/ticket readiness and rejects stale decks', () => {
     const profile = { ...createPlayerProfile('content-v1', 1), tickets: 24 }
     expect(promotionReadiness(profile, readyUma())).toMatchObject({ ready: false, final: false, cost: 25 })
     expect(promotionReadiness({ ...profile, tickets: 25 }, readyUma())).toMatchObject({ ready: true, toTier: 2 })
-    expect(() => promoteScenario({ profile: { ...profile, tickets: 25 }, uma: readyUma(), umaTemplate: template, skills, cards: [], now: 1 })).toThrow(/stale/)
+    expect(() => promoteScenario({ profile: { ...profile, tickets: 25 }, uma: readyUma(), umaTemplate: template, skills, cards: [], races, now: 1 })).toThrow(/stale/)
   })
 })
 

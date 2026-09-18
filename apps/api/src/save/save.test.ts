@@ -167,6 +167,13 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: v3, createdAt: 1 }] })).toMatchObject({
       appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { engineVersion: 3 } }],
     })
+    const withGoals = { ...v3, completedGoalIds: ['goal:1:aptitude', 'goal:1:challenge'] }
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: withGoals, createdAt: 1 }] })).toMatchObject({
+      appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { completedGoalIds: withGoals.completedGoalIds } }],
+    })
+    expect(parseSyncRequest({ appends: [{
+      kind: 'raceResults', id: 'race:u1:0', data: { ...withGoals, completedGoalIds: ['goal:1:aptitude', 'goal:1:aptitude'] }, createdAt: 1,
+    }] })).toMatch(/invalid raceResults data/)
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...data, ticketReward: 10 }, createdAt: 1 }] })).toMatch(/invalid raceResults data/)
   })
 })
