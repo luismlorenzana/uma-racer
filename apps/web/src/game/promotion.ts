@@ -22,6 +22,7 @@ import {
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { updateScenarioBadgeFacts } from './badges'
+import { reconcileTrainerInTransaction } from './trainer'
 import { queueInTransaction } from './persistence'
 
 export interface ScenarioStartMutation {
@@ -115,7 +116,7 @@ export async function startPersistentScenario(
   selection: ScenarioStartSelection,
   now: number,
 ): Promise<ScenarioStartMutation> {
-  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
     const profileRow = await db.profile.get('main')
     const umaRows = await db.umas.toArray()
     const umaRow = umaRows.find((row) => row.id === umaId)
@@ -181,7 +182,8 @@ export async function startPersistentScenario(
       completedTier,
       now,
     })
-    return { ...mutation, badgeStates: flair.states, earnedFlairEventIds: flair.events.map((event) => event.id) }
+    const trainer = await reconcileTrainerInTransaction(content, now, false, `scenario:${umaId}:${now}`)
+    return { ...mutation, badgeStates: { ...flair.states, trainer: trainer.state }, earnedFlairEventIds: [...flair.events, ...trainer.events].map((event) => event.id) }
   })
 }
 

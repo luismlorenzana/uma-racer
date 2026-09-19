@@ -26,6 +26,7 @@ import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
 import { appendFlairEvents } from './badges'
 import { queueInTransaction } from './persistence'
+import { reconcileTrainerInTransaction } from './trainer'
 
 export interface ShardExchangeMutation {
   profile: PlayerProfile
@@ -152,7 +153,7 @@ export async function redeemPersistentCard(
   const template = content.cards.byId.get(cardId)
   if (!template) throw new Error('Card content is missing')
   const ledgerId = `card-coupon-redeem:${cardId}`
-  return db.transaction('rw', db.profile, db.cards, db.ledger, db.outbox, async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
     const [profileRow, cardRow, ledgerRow] = await Promise.all([
       db.profile.get('main'), db.cards.get(cardId), db.ledger.get(ledgerId),
     ])
@@ -174,6 +175,7 @@ export async function redeemPersistentCard(
     await queueInTransaction('profile', 'main', 'upsert', now)
     await queueInTransaction('cards', cardId, 'upsert', now)
     await queueInTransaction('ledger', entry.id, 'append', now)
+    await reconcileTrainerInTransaction(content, now, false, ledgerId)
     return { profile: mutation.profile, card: mutation.card, ledgerId, alreadyRedeemed: false }
   })
 }
@@ -188,7 +190,7 @@ export async function redeemPersistentUma(
   const template = content.umas.byId.get(umaId)
   if (!template) throw new Error('Uma content is missing')
   const ledgerId = `uma-coupon-redeem:${umaId}`
-  return db.transaction('rw', [db.profile, db.umas, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
     const [profileRow, umaRow, ledgerRow] = await Promise.all([
       db.profile.get('main'), db.umas.get(umaId), db.ledger.get(ledgerId),
     ])
@@ -218,6 +220,7 @@ export async function redeemPersistentUma(
     await queueInTransaction('badges', badgeStateId(umaId), 'upsert', now)
     await appendFlairEvents(flair.events, now)
     await queueInTransaction('ledger', entry.id, 'append', now)
-    return { profile: mutation.profile, uma: mutation.uma, ledgerId, alreadyRedeemed: false, badgeState, flairEvents: flair.events }
+    const trainer = await reconcileTrainerInTransaction(content, now, false, ledgerId)
+    return { profile: mutation.profile, uma: mutation.uma, ledgerId, alreadyRedeemed: false, badgeState, flairEvents: [...flair.events, ...trainer.events] }
   })
 }

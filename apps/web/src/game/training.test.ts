@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveApi } from '../api/client'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
+import { bootstrapBadgeFacts } from './badges'
 import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
 import { persistInitial, readLocalSnapshot } from './persistence'
 import { GameRuntime } from './runtime'
@@ -125,6 +126,7 @@ async function resetDatabase(): Promise<void> {
 async function seed(loaded: LoadedContent): Promise<void> {
   await db.open()
   await persistInitial(loaded, '2000-01-02', 100)
+  await bootstrapBadgeFacts(loaded, 100)
   const row = await db.umas.get('uma-00')
   await db.umas.put({ ...row!, data: { ...row!.data, goalPlanVersion: 0, scenarioStarted: true } })
 }
@@ -158,7 +160,9 @@ describe('Training persistence', () => {
       'card-level-tickets:card-stamina:2',
       'card-level-tickets:card-guts:2',
     ])
-    expect(mutation.earnedFlairEventIds).toEqual(['flair:uma:uma-00:badge:stat:speed:bronze'])
+    expect(mutation.earnedFlairEventIds[0]).toBe('flair:uma:uma-00:badge:stat:speed:bronze')
+    expect(mutation.earnedFlairEventIds.slice(1).every((id) => id.startsWith('flair:trainer:'))).toBe(true)
+    expect(mutation.earnedFlairEventIds).toHaveLength(9)
 
     const snapshot = await readLocalSnapshot()
     expect(snapshot?.profile.data.tickets).toBe(57)
@@ -166,8 +170,9 @@ describe('Training persistence', () => {
     expect(await db.ledger.get('training:uma-00:1:0')).toMatchObject({
       data: { delta: -1, reason: 'training', localDay: '2000-01-02', createdAt: 200 },
     })
-    expect(await db.outbox.count()).toBe(13)
+    expect(await db.outbox.count()).toBe(22)
     expect(await db.outbox.where('[kind+id]').equals(['badges', 'uma:uma-00']).count()).toBe(1)
+    expect(await db.outbox.where('[kind+id]').equals(['badges', 'trainer']).count()).toBe(1)
     expect(await db.flairEvents.get(mutation.earnedFlairEventIds[0]!)).toMatchObject({ data: { source: { kind: 'training' } } })
     for (const id of mutation.ledgerIds) {
       expect(await db.outbox.where('[kind+id]').equals(['ledger', id]).count()).toBe(1)

@@ -112,8 +112,10 @@ describe('scenario promotion persistence', () => {
     expect(firstOutbox).toEqual(expect.arrayContaining([
       'badges/uma:uma-promo', 'ledger/uma-promotion:uma-promo:1', 'profile/main', 'umas/uma-promo',
     ]))
-    expect(first.earnedFlairEventIds).toHaveLength(4)
-    expect(firstOutbox.filter((id) => id.startsWith('flairEvents/'))).toHaveLength(4)
+    expect(first.earnedFlairEventIds.filter((id) => id.startsWith('flair:uma:'))).toHaveLength(4)
+    expect(first.earnedFlairEventIds.filter((id) => id.startsWith('flair:trainer:'))).toHaveLength(3)
+    expect(firstOutbox.filter((id) => id.startsWith('flairEvents/'))).toHaveLength(7)
+    expect(firstOutbox).toContain('badges/trainer')
     expect((await db.profile.get('main'))?.version).toBe(7)
     expect((await db.umas.get(uma.templateId))?.version).toBe(5)
 
@@ -168,7 +170,10 @@ describe('scenario promotion persistence', () => {
       `badges/uma:${parent.templateId}`,
       'flairEvents/flair:uma:uma-parent:badge:legacy:bronze',
     ]))
-    expect(first.earnedFlairEventIds).toEqual(['flair:uma:uma-parent:badge:legacy:bronze'])
+    expect(first.earnedFlairEventIds).toEqual([
+      'flair:uma:uma-parent:badge:legacy:bronze',
+      'flair:trainer:stable:trainer:stable-master:rainbow',
+    ])
     const retry = await startPersistentScenario(loaded, child.templateId, selection, 31)
     expect(retry).toMatchObject({ alreadyStarted: true, alreadyPromoted: false, profile: { tickets: 100 } })
     expect(await db.ledger.count()).toBe(0)

@@ -48,6 +48,7 @@ import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, type RaceInput
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
 import { updateRaceBadgeFacts, updateScenarioBadgeFacts } from './badges'
+import { reconcileTrainerInTransaction } from './trainer'
 import { queueInTransaction } from './persistence'
 import { accomplishmentFactsFromTimeline } from './race-facts'
 
@@ -613,10 +614,16 @@ export async function completePersistentRace(
       await db.ledger.add({ id: entry.id, data: entry.data, createdAt: now })
       await queueInTransaction('ledger', entry.id, 'append', now)
     }
+    const trainer = await reconcileTrainerInTransaction(content, now, false, attempt.id)
+    const committedRecord: RaceResultRecord = {
+      ...finalRecord,
+      earnedFlairEventIds: [...(finalRecord.earnedFlairEventIds ?? []), ...trainer.events.map((event) => event.id)],
+    }
+    await db.raceResults.put({ id: attempt.id, data: committedRecord as unknown as Record<string, unknown>, createdAt: now })
     return {
       profile: nextProfile,
       uma: completedUma,
-      record: finalRecord,
+      record: committedRecord,
       timeline,
       alreadyRecorded: false,
     }

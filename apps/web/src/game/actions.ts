@@ -70,7 +70,7 @@ export async function redeemUmaCoupon(id: string) {
   return gameRuntime.redeemUmaCoupon(id)
 }
 
-export async function saveBadgePreferences(id: string, preferences: import('@racer/domain').BadgePreferences) {
+export async function saveBadgePreferences(id: string, preferences: import('@racer/domain').BadgePreferences | import('@racer/domain').TrainerBadgePreferences) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.saveBadgePreferences(id, preferences)
 }

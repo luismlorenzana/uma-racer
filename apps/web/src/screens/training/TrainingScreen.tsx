@@ -16,7 +16,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { trainUma } from '../../game/actions'
-import { buildFlairFanfare } from '../../game/flair-view'
+import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../game/flair-view'
 import { useGame } from '../../game/store'
 import { buildTrainingView, type TrainingCardView } from '../../game/training-view'
 import { AtlasSprite } from '../../ui/AtlasSprite'
@@ -134,6 +134,13 @@ export function TrainingScreen() {
       ? buildFlairFanfare(contentState.content, state, flairEvents, result.earnedFlairEventIds)
       : []
   }, [badges, contentState, flairEvents, result, uma])
+  const trainerEarnedFlair = useMemo(() => {
+    if (!result || contentState.status !== 'ready') return []
+    const state = badges.trainer
+    return state?.scope === 'trainer'
+      ? buildTrainerFlairFanfare(contentState.content, state, flairEvents, result.earnedFlairEventIds)
+      : []
+  }, [badges, contentState, flairEvents, result])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to train" detail="Training changes your private saved Stable." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -259,6 +266,7 @@ export function TrainingScreen() {
 
         {result && <ResultPanel result={result} skillNames={skillNames} cardNames={cardNames} />}
         {earnedFlair.length > 0 && <FlairCards title="Flair earned" items={earnedFlair} animate={!reducedMotion} />}
+        {trainerEarnedFlair.length > 0 && <FlairCards title="Trainer achievements" items={trainerEarnedFlair} animate={!reducedMotion} />}
         {noTickets && <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs font-extrabold">No Training Tickets. The next local-day grant restores up to 50.</div>}
 
         <div className="grid grid-cols-2 gap-2 pb-3">

@@ -3,6 +3,7 @@
 import {
   BADGE_TIERS,
   BADGE_FILTER_CATEGORIES,
+  isTrainerSavedBadgeView,
   parseBadgeState,
   type BadgePreferences,
   type BadgeSort,
@@ -29,6 +30,24 @@ export interface BadgeFilter {
 }
 
 export type StableBadgeRarity = 'common' | 'uncommon' | 'rare' | 'elite'
+export type TrainerBadgePreferences = TrainerBadgeStateV1['preferences']
+
+export function trainerUmaAwardRef(umaId: string, awardKey: string): string {
+  const ref = `uma-ref:${umaId.length}:${umaId}:${awardKey}`
+  if (!/^[A-Za-z0-9_.:-]{1,120}$/.test(ref)) throw new Error('Trainer Uma award reference is too long or unsafe')
+  return ref
+}
+
+export function parseTrainerUmaAwardRef(ref: string): { umaId: string; awardKey: string } | null {
+  const match = /^uma-ref:(\d+):/.exec(ref)
+  if (!match) return null
+  const length = Number(match[1])
+  const start = match[0].length
+  if (!Number.isSafeInteger(length) || length < 1 || ref[start + length] !== ':') return null
+  const umaId = ref.slice(start, start + length)
+  const awardKey = ref.slice(start + length + 1)
+  return /^[A-Za-z0-9_.:-]{1,120}$/.test(umaId) && /^[A-Za-z0-9_.:-]{1,120}$/.test(awardKey) ? { umaId, awardKey } : null
+}
 
 /** Local-roster rarity is structural: universal, majority/half, minority, or unique/unheld. */
 export function stableBadgeRarity(holderCount: number, ownedUmaCount: number): StableBadgeRarity {
@@ -142,16 +161,21 @@ function normalizePreferences(
     })
     return { id: group.id, name, awardRefs }
   })
-  if (desired.savedViews.length > 20) throw new Error('Saved view limit reached')
+  if (state.scope === 'trainer') {
+    const trainerViews = desired.savedViews.filter(isTrainerSavedBadgeView)
+    if (trainerViews.length > 20 || desired.savedViews.length - trainerViews.length > 20) throw new Error('Saved view limit reached')
+  } else if (desired.savedViews.length > 20) throw new Error('Saved view limit reached')
   const viewNames = new Set<string>()
   const viewIds = new Set<string>()
   const savedViews = desired.savedViews.map((view): SavedBadgeView => {
     const name = view.name.trim()
     const normalized = name.toLocaleLowerCase()
-    if (!name || name.length > 40 || viewNames.has(normalized) || viewIds.has(view.id) || !isStrictSavedBadgeView(view)) {
+    const viewScope = state.scope === 'trainer' && isTrainerSavedBadgeView(view) ? 'trainer' : 'stable'
+    const scopedName = `${viewScope}:${normalized}`
+    if (!name || name.length > 40 || viewNames.has(scopedName) || viewIds.has(view.id) || !isStrictSavedBadgeView(view)) {
       throw new Error('Saved views must have unique names, ids, and valid filters')
     }
-    viewNames.add(normalized)
+    viewNames.add(scopedName)
     viewIds.add(view.id)
     return { ...view, name, filters: [...view.filters] }
   })
@@ -175,7 +199,10 @@ export function replaceBadgePreferences<T extends BadgeStateV1>(
 
 export function rebaseBadgePreferences(server: BadgeStateV1, local: BadgeStateV1): BadgeStateV1 {
   if (server.scope !== local.scope || (server.scope === 'uma' && local.scope === 'uma' && server.umaId !== local.umaId)) return server
-  const allowed = new Set(awardRefsForState(server))
+  const allowed = new Set([
+    ...awardRefsForState(server),
+    ...(server.scope === 'trainer' ? flattenShowcase(local.preferences.showcaseGroups).filter((ref) => parseTrainerUmaAwardRef(ref) !== null) : []),
+  ])
   const showcaseGroups = local.preferences.showcaseGroups.map((group) => ({
     ...group,
     awardRefs: group.awardRefs.filter((ref) => allowed.has(ref)),
@@ -188,6 +215,9 @@ export function rebaseBadgePreferences(server: BadgeStateV1, local: BadgeStateV1
     activeTitleId,
     showcaseGroups,
     savedViews: local.preferences.savedViews,
+  }
+  if (server.scope === 'trainer' && local.scope === 'trainer') {
+    return replaceTrainerPreferences(server, { ...local.preferences, ...desired }, allowed)
   }
   return replaceBadgePreferences(server, desired, allowed)
 }
@@ -245,9 +275,27 @@ export function replaceUmaPreferences(
 
 export function replaceTrainerPreferences(
   state: TrainerBadgeStateV1,
-  preferences: BadgePreferences,
+  preferences: BadgePreferences | TrainerBadgePreferences,
+  allowedAwardRefs: ReadonlySet<string> = new Set(awardRefsForState(state)),
+  ownedUmaIds?: ReadonlySet<string>,
 ): TrainerBadgeStateV1 {
-  return replaceBadgePreferences(state, preferences, new Set())
+  const trainerPreferences: TrainerBadgePreferences = 'displayName' in preferences
+    ? preferences
+    : { ...preferences, displayName: state.preferences.displayName, pinnedUmaIds: state.preferences.pinnedUmaIds }
+  const base = replaceBadgePreferences(state, trainerPreferences, allowedAwardRefs)
+  const displayName = trainerPreferences.displayName.normalize('NFC').trim()
+  if (!displayName || [...displayName].length > 32) throw new Error('Trainer display name must be 1–32 characters')
+  const allowedUmaIds = ownedUmaIds ?? new Set(trainerPreferences.pinnedUmaIds)
+  if (new Set(trainerPreferences.pinnedUmaIds).size !== trainerPreferences.pinnedUmaIds.length || trainerPreferences.pinnedUmaIds.some((id) => !allowedUmaIds.has(id))) {
+    throw new Error('Pinned Umas must be distinct and owned')
+  }
+  const candidate: TrainerBadgeStateV1 = {
+    ...base,
+    preferences: { ...base.preferences, displayName, pinnedUmaIds: [...trainerPreferences.pinnedUmaIds] },
+  }
+  const parsed = parseBadgeState(candidate)
+  if (!parsed || parsed.scope !== 'trainer') throw new Error('Trainer preferences produced invalid state')
+  return parsed
 }
 
 export function badgeSortIsValid(sort: string): sort is BadgeSort {

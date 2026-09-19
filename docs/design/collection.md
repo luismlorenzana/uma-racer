@@ -145,8 +145,8 @@ Single-value bests, shown on the trainer profile:
   flair. T018 maintains atomic incremental aggregates and also reconciles them deterministically at content-ready boot.
 - Trainer state is a separate versioned `badges/trainer` entity. Stable scope remains a live aggregation and is not copied
   into another award collection.
-- T017 initializes that trainer entity as a preference-only shell for Stable saved views and syncs it on new devices.
-  It contains no placeholder achievements; T018 is the only task allowed to populate aggregates, records, and awards.
+- T017 initializes that trainer entity as a preference-only shell; T018 upgrades it through authoritative reconciliation
+  from current entities and append-only logs. New devices adopt it through the ordinary badge-entity sync path.
 - Every earned tier has one append-only Trainer flair event. Bootstrap collapses retroactive presentation into one archive
   summary rather than replaying a wall of fanfare.
 - Coupons and shards go through the same **ledger** as tickets (see [Economy](economy.md)).

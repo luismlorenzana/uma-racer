@@ -6,6 +6,7 @@ import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma } from '../game/actions'
 import { buildHomeGoalState } from '../game/goals-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
+import { buildStableRecentFlair } from '../game/trainer-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -41,6 +42,9 @@ export function HomeScreen() {
     const state = badges[badgeStateId(featured.save.templateId)]
     return state?.scope === 'uma' ? buildUmaFlairSummary(contentState.content, state, flairEvents) : null
   }, [badges, contentState, featured, flairEvents])
+  const stableRecent = useMemo(() => contentState.status === 'ready'
+    ? buildStableRecentFlair(contentState.content, badges, owned, flairEvents, 3) : [],
+  [badges, contentState, flairEvents, owned])
 
   useEffect(() => {
     if (status !== 'ready' || !profile || !featured || profile.featuredUmaId === featured.save.templateId) return
@@ -124,6 +128,12 @@ export function HomeScreen() {
           ? <FlairCards items={flairSummary.recent} />
           : <p className="rounded-xl bg-slate-50 p-3 text-sm font-bold text-ink-soft">Race, Train, and complete Journeys to begin this Uma’s archive.</p>}
       </Panel>}
+
+      <Panel>
+        <div className="mb-2 flex items-center justify-between gap-3"><div><p className="font-extrabold">🏅 Stable flair</p><p className="text-xs font-bold text-ink-soft">Newest across every Uma and Trainer achievement</p></div><Link to="/trainer" className="flex min-h-11 items-center rounded-xl bg-violet-50 px-3 text-xs font-extrabold text-violet-700">Trainer profile</Link></div>
+        <div className="grid gap-2">{stableRecent.map((item) => <Link key={item.id} to={item.to} className="flex min-h-11 items-center justify-between gap-3 rounded-xl bg-white px-3 py-2"><span className="min-w-0"><span className="block truncate text-sm font-extrabold">{item.label}</span><span className="block text-xs text-ink-soft">{item.ownerLabel}</span></span><span className="shrink-0 text-xs font-extrabold text-violet-700">{item.stage}</span></Link>)}</div>
+        {stableRecent.length === 0 && <p className="rounded-xl bg-slate-50 p-3 text-sm font-bold text-ink-soft">Stable-wide flair appears after the first award.</p>}
+      </Panel>
 
       <Panel>
         <div className="flex items-center justify-between">

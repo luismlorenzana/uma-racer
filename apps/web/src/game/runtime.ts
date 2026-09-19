@@ -24,7 +24,9 @@ import {
   type Strategy,
   type ScenarioStartSelection,
   type BadgePreferences,
+  type TrainerBadgePreferences,
   type FlairEventKind,
+  type LedgerEntry,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
@@ -86,6 +88,7 @@ import {
   replaceMemoryBadgePreferences,
   type FlairTimelineCursor,
 } from './badge-preferences'
+import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAwardRefs } from './trainer'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -162,15 +165,28 @@ export class GameRuntime {
           createUmaBadgeState(item, now),
           { source: { kind: 'migration', id: null, tier: null }, earnedAt: now, retroactive: true },
         ))
+        const umaBadges = evaluations.map((evaluation) => evaluation.state)
+        const trainer = reconcileTrainerMemory({
+          content,
+          state: createTrainerBadgeState(now),
+          umas: initial.umas,
+          cards: initial.cards,
+          badges: umaBadges,
+          ledger: initial.ledger,
+          raceResults: [],
+          now,
+          retroactive: true,
+          sourceId: 'migration:trainer',
+        })
         adoptGameState({
           profile: initial.profile,
           umas: Object.fromEntries(initial.umas.map((item) => [item.templateId, item])),
           cards: Object.fromEntries(initial.cards.map((item) => [item.templateId, item])),
           badges: Object.fromEntries([
             ...evaluations.map((evaluation) => [badgeStateId(evaluation.state.umaId), evaluation.state] as const),
-            ['trainer', createTrainerBadgeState(now)] as const,
+            ['trainer', trainer.state] as const,
           ]),
-          flairEvents: evaluations.flatMap((evaluation) => evaluation.events.map((event) => ({ id: event.id, ...event.data }))),
+          flairEvents: [...evaluations.flatMap((evaluation) => evaluation.events), ...trainer.events].map((event) => ({ id: event.id, ...event.data })),
           persistent: false,
         })
         setSyncState({
@@ -211,12 +227,14 @@ export class GameRuntime {
       const archivedAwards = await bootstrapUmaFlair(content, now)
       await bootstrapTrainerBadgeState(now)
       const granted = await applyOwedDailyGrant(today, now)
+      const trainerArchive = await reconcileTrainerPersistent(content, now, true, 'migration:trainer')
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
       if (generation !== this.generation) return
       adoptGameState(stateFromSnapshot(local, content, true))
       if (granted > 0) useGame.getState().pushToast(`+${granted} 🎫 Daily tickets`)
       if (archivedAwards > 0) useGame.getState().pushToast(`Flair archive updated · ${archivedAwards} awards`)
+      if (trainerArchive.events.length > 0) useGame.getState().pushToast(`Trainer archive updated · ${trainerArchive.events.length} achievements`)
       window.addEventListener('online', this.onlineHandler)
       document.addEventListener('visibilitychange', this.visibilityHandler)
       await this.refreshPending()
@@ -271,7 +289,7 @@ export class GameRuntime {
     this.schedule()
   }
 
-  async saveBadgePreferences(id: string, preferences: BadgePreferences, now = Date.now()) {
+  async saveBadgePreferences(id: string, preferences: BadgePreferences | TrainerBadgePreferences, now = Date.now()) {
     if (this.badgePreferenceLocks.has(id)) throw new Error('Badge preferences are already being saved')
     this.badgePreferenceLocks.add(id)
     try {
@@ -281,7 +299,12 @@ export class GameRuntime {
       if (state.status !== 'ready' || !current) throw new Error('Badge state is not ready')
       const mutation = state.persistent
         ? await persistBadgePreferences(id, preferences, now)
-        : replaceMemoryBadgePreferences(current, preferences)
+        : replaceMemoryBadgePreferences(
+            current,
+            preferences,
+            current.scope === 'trainer' ? trainerAllowedAwardRefs(Object.values(state.badges)) : undefined,
+            current.scope === 'trainer' ? new Set(Object.keys(state.umas)) : undefined,
+          )
       if (generation !== this.generation) return mutation
       if (mutation.changed) replaceBadgeState({ ...state.badges, [id]: mutation.state } as Record<string, typeof mutation.state>)
       if (state.persistent && mutation.changed) {
@@ -305,6 +328,37 @@ export class GameRuntime {
     return state.persistent
       ? readFlairTimelinePage(umaId, before, kind, limit)
       : pageMemoryFlairTimeline(state.flairEvents, umaId, before, kind, limit)
+  }
+
+  private reconcileMemoryTrainer(now: number, sourceId: string): string[] {
+    const content = this.content
+    const state = useGame.getState()
+    const trainer = state.badges.trainer
+    if (!content || state.status !== 'ready' || state.persistent || !trainer || trainer.scope !== 'trainer') return []
+    const ledger: { id: string; data: LedgerEntry }[] = [
+      ...[...this.memoryCardRedemptions].sort().map((id) => ({
+        id: `card-coupon-redeem:${id}`,
+        data: { resource: 'card-coupons' as const, delta: -1, reason: 'card-coupon-redeem' as const, localDay: null, createdAt: now },
+      })),
+      ...[...this.memoryUmaRedemptions].sort().map((id) => ({
+        id: `uma-coupon-redeem:${id}`,
+        data: { resource: 'uma-coupons' as const, delta: -1, reason: 'uma-coupon-redeem' as const, localDay: null, createdAt: now },
+      })),
+    ]
+    const result = reconcileTrainerMemory({
+      content,
+      state: trainer,
+      umas: Object.values(state.umas),
+      cards: Object.values(state.cards),
+      badges: Object.values(state.badges),
+      ledger,
+      raceResults: this.memoryRaceHistory,
+      now,
+      retroactive: false,
+      sourceId,
+    })
+    if (result.changed || result.events.length > 0) mergeBadgeAndFlairState({ ...state.badges, trainer: result.state }, result.events)
+    return result.events.map((event) => event.id)
   }
 
   async setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {
@@ -394,6 +448,9 @@ export class GameRuntime {
         mutation.earnedFlairEventIds = flair.events.map((event) => event.id)
         actionResult.earnedFlairEventIds = mutation.earnedFlairEventIds
         mergeBadgeAndFlairState({ ...state.badges, [id]: flair.state }, flair.events)
+        const trainerIds = this.reconcileMemoryTrainer(now, mutation.ledgerIds[0] ?? `training:${id}:${now}`)
+        mutation.earnedFlairEventIds.push(...trainerIds)
+        actionResult.earnedFlairEventIds = [...mutation.earnedFlairEventIds]
       }
       if (state.persistent) {
         await this.refreshBadges()
@@ -465,6 +522,11 @@ export class GameRuntime {
         completion.record = { ...completion.record, earnedFlairEventIds: events.map((event) => event.id) }
         this.memoryRaceHistory.push(completion.record)
         mergeBadgeAndFlairState(badges, events)
+        const trainerIds = this.reconcileMemoryTrainer(now, attempt.id)
+        if (trainerIds.length > 0) {
+          completion.record = { ...completion.record, earnedFlairEventIds: [...(completion.record.earnedFlairEventIds ?? []), ...trainerIds] }
+          this.memoryRaceHistory[this.memoryRaceHistory.length - 1] = completion.record
+        }
       }
       if (state.persistent) {
         await this.refreshBadges()
@@ -504,6 +566,7 @@ export class GameRuntime {
         mutation.badgeStates = flair.states
         mutation.earnedFlairEventIds = flair.events.map((event) => event.id)
         mergeBadgeAndFlairState(flair.states, flair.events)
+        mutation.earnedFlairEventIds.push(...this.reconcileMemoryTrainer(now, `scenario:${id}:${now}`))
       }
       if (state.persistent && !mutation.alreadyStarted) {
         await this.refreshBadges()
@@ -541,7 +604,9 @@ export class GameRuntime {
         : promoteMemoryCard(content, state.profile, card, today, now)
       if (generation !== this.generation) return mutation
       replaceCardState(mutation.profile, mutation.card)
+      if (!state.persistent) this.reconcileMemoryTrainer(now, `card-limit-break:${cardId}:${mutation.card.limitBreak}`)
       if (state.persistent) {
+        await this.refreshBadges()
         await this.refreshPending()
         this.schedule()
       }
@@ -598,7 +663,9 @@ export class GameRuntime {
       if (generation !== this.generation) return mutation
       if (!state.persistent) this.memoryCardRedemptions.add(cardId)
       replaceCardState(mutation.profile, mutation.card)
+      if (!state.persistent && !mutation.alreadyRedeemed) this.reconcileMemoryTrainer(now, mutation.ledgerId)
       if (state.persistent) {
+        await this.refreshBadges()
         await this.refreshPending()
         this.schedule()
       }
@@ -637,6 +704,7 @@ export class GameRuntime {
       if (!state.persistent) this.memoryUmaRedemptions.add(umaId)
       replaceUmaCollectionState(mutation.profile, mutation.uma)
       if (!state.persistent) mergeBadgeAndFlairState({ ...state.badges, [badgeStateId(umaId)]: mutation.badgeState }, mutation.flairEvents)
+      if (!state.persistent && !mutation.alreadyRedeemed) this.reconcileMemoryTrainer(now, mutation.ledgerId)
       if (state.persistent) {
         await this.refreshBadges()
         await this.refreshPending()

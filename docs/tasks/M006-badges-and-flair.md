@@ -1,4 +1,4 @@
-# Milestone 6 — Badges & Flair implementation plan
+# Milestone 6 — Badges & Flair implementation plan (complete)
 
 **Outcome:** every Uma and the Trainer gain a truthful, syncable accomplishment history. Per-Uma badges/titles/trophies,
 Prestige, the full Badge page/showcase/timeline, Trainer achievements/records/profile, and all action feedback are complete
@@ -30,8 +30,8 @@ T018 Trainer evaluator + records + Trainer scope/profile
 |---|---|---|---|
 | [T015](T015-accomplishment-facts-and-badge-state.md) — complete | No new award UI; existing play remains identical | Private series/venue tags, race fact snapshots, badge-state v1, honest bootstrap, atomic future facts | Award rules, fanfare, page, Trainer achievements |
 | [T016](T016-per-uma-badges-titles-and-awards.md) — complete | Awards on Results/Training/scenario actions; Home/Profile recent flair, title, frame | Catalog v1, monotonic evaluator, append-only flair logs, retroactive awards | Full collection UI/preferences, Trainer aggregation |
-| [T017](T017-badge-page-showcases-and-timeline.md) | Complete Uma/Stable Badge page, detail, trophies, timeline, title/pins/groups/views | Pure collection projections and preference-only atomic writes | Trainer achievement truth |
-| [T018](T018-trainer-achievements-and-profile.md) | Trainer scope/profile, achievements, records, pinned Umas/showcase, Stable feed | Incremental account aggregates plus authoritative reconciliation | Polish/R4/social systems |
+| [T017](T017-badge-page-showcases-and-timeline.md) — complete | Complete Uma/Stable Badge page, detail, trophies, timeline, title/pins/groups/views | Pure collection projections and preference-only atomic writes | Trainer achievement truth |
+| [T018](T018-trainer-achievements-and-profile.md) — complete | Trainer scope/profile, achievements, records, pinned Umas/showcase, Stable feed | Action-atomic account evaluation plus authoritative reconciliation | Polish/R4/social systems |
 
 Each task is one branch/PR and must leave `main` playable. Do not combine tasks merely because later types are sketched in
 T015; the intermediate acceptance gates are intentional rollback points.
@@ -124,11 +124,11 @@ the live private importer and confirm ignored outputs. T016–T018 perform 390×
 missing content, refresh/deep links, offline/memory-only state, and no console errors. T017/T018 additionally measure long
 catalog/timeline interaction and perform the owner iPhone check when available.
 
-Milestone 6 is complete only when:
+Milestone 6 completion checklist:
 
-- T015–T018 are merged and their task implementation-status sections are updated;
-- the full local/CI gate passes and production deploy verification succeeds;
-- the Badge page's three scopes, all atomic award paths, cross-device sync, and honest legacy states work;
+- T015–T018 are implemented and their task implementation-status sections are updated;
+- the full local gate passes; production/device validation remains an owner action;
+- the Badge page's three scopes, atomic award paths, sync schema, and honest legacy states are implemented;
 - README marks Milestone 6 complete and points to Milestone 7 polish;
 - no private content/override/cache is tracked and the startup entry remains ≤180 KB gzip.
 

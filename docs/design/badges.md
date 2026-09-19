@@ -44,10 +44,10 @@ Milestone 6 is delivered in four ordered tasks:
 4. **T018 — Trainer achievements and profile:** account aggregates, records, Trainer scope, pinned Umas, Trainer showcase,
    and milestone closure.
 
-T015–T017 are implemented. Every owned Uma now has durable facts plus catalog-v1 awards/events, retroactive migration,
-Prestige/frame projection, the full lazy Uma/Stable collection page, atomic preferences, trophy wall, bounded timeline,
-and a 12-pin Profile showcase. T018's Trainer aggregation/profile remains intentionally absent; its preference-only
-trainer entity already syncs Stable saved views without inventing achievements.
+T015–T018 are implemented. Every owned Uma now has durable facts plus catalog-v1 awards/events, retroactive migration,
+Prestige/frame projection, the full lazy three-scope collection page, atomic preferences, trophy wall, bounded timeline,
+and a 12-pin Profile showcase. The Trainer entity now also stores reconciled account aggregates, monotonic achievements,
+stable records, display name, pinned Umas, and a mixed Trainer/per-Uma showcase.
 
 The core profile and Uma remain save v2. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
 `badges` entity collection. This keeps badge rollout isolated from progression migration and lets an individual Uma's
@@ -291,7 +291,7 @@ The route is lazy and mobile-first. Its top switch has **Uma / Stable / Trainer*
 |---|---|
 | Uma | One Uma's badges, titles, Goal Ribbons, G1 trophies, progress, and timeline |
 | Stable | Definitions aggregated across every owned Uma, with holder/tier/rarity drill-down |
-| Trainer | Account achievements, records, and trainer showcase from T018 |
+| Trainer | Account achievements, records, progress, and Trainer showcase |
 
 All scopes support search and applicable tag filters. Uma and Stable support category, tier/type, surface, distance,
 strategy, aptitude context, venue, grade, scenario, status, and date. Stable additionally supports Uma and rarity. Sorts are

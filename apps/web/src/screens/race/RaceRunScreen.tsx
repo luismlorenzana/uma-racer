@@ -6,7 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { completeRace, prepareRace } from '../../game/actions'
 import { buildResultGoalView } from '../../game/goals-view'
-import { buildFlairFanfare } from '../../game/flair-view'
+import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../game/flair-view'
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
@@ -253,6 +253,10 @@ export function RaceRunScreen() {
   const earnedFlair = record?.earnedFlairEventIds && badgeState?.scope === 'uma'
     ? buildFlairFanfare(content, badgeState, flairEvents, record.earnedFlairEventIds)
     : []
+  const trainerState = badges.trainer
+  const trainerEarnedFlair = record?.earnedFlairEventIds && trainerState?.scope === 'trainer'
+    ? buildTrainerFlairFanfare(content, trainerState, flairEvents, record.earnedFlairEventIds)
+    : []
 
   const retryCommit = () => {
     if (committing || record) return
@@ -452,6 +456,7 @@ export function RaceRunScreen() {
                     {!goalResult.animate && <p className="text-center text-xs font-bold text-ink-soft">Recorded goal summary</p>}
                   </div>}
                   {earnedFlair.length > 0 && <div className="mt-3"><FlairCards title={freshGoalCommit ? 'Flair earned' : 'Earned in this race'} items={earnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}
+                  {trainerEarnedFlair.length > 0 && <div className="mt-3"><FlairCards title="Trainer achievements" items={trainerEarnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}
                   <div className="mt-2 rounded-xl bg-white px-3 py-2">
                     <p className="text-xs font-extrabold text-ink-soft">RACE FORM</p>
                     <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-extrabold">

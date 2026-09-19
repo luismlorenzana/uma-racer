@@ -192,4 +192,10 @@ Read first: `AGENTS.md`, `docs/design/badges.md`, `docs/design/collection.md`, `
 
 ## Implementation status
 
-Definition complete; implementation has not started.
+Implemented on 2026-09-19. Catalog-v1 Trainer definitions, strict aggregates/records, deterministic reconciliation,
+action-atomic Trainer evaluation, exact flair ids, conflict-safe preferences, Trainer Badge scope, profile/pinned Umas,
+mixed showcase, records, and Stable recent flair are complete. Synthetic domain/web/API coverage includes boundaries,
+ledger exclusions, frozen all evidence, ordering/idempotency, action rollback, strict records, preferences, and profile
+projections. The full repository gate and 390×844 shell/deep-route smoke are recorded in the implementing PR; an existing
+local private save/content mismatch prevented data-backed screen mounting. Physical iPhone, standalone safe-area, full
+Trainer interaction, and live cross-device checks remain in `docs/open-questions.md`.

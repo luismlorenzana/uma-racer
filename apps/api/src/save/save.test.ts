@@ -125,6 +125,16 @@ describe('parseSyncRequest', () => {
       appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: flair, createdAt: 5 }],
     })).toMatchObject({ upserts: [{ id: 'trainer' }], appends: [{ id: 'flair:synthetic' }] })
     expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: { ...trainer, records: [{
+        kind: 'highest-stat', value: 999, umaId: 'synthetic-uma', sourceId: null, achievedAt: 4, stat: 'speed',
+      }] } }],
+    })).toMatchObject({ upserts: [{ id: 'trainer' }] })
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: { ...trainer, records: [{
+        kind: 'most-wins', value: 5, umaId: 'synthetic-uma', sourceId: null, achievedAt: 4, stat: 'speed',
+      }] } }],
+    })).toMatch(/invalid badges data/)
+    expect(parseSyncRequest({
       upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: { ...trainer, aggregates: [{ key: 'wins', count: -1 }] } }],
     })).toMatch(/invalid badges data/)
     expect(parseSyncRequest({
@@ -133,6 +143,21 @@ describe('parseSyncRequest', () => {
         preferences: { ...trainer.preferences, savedViews: [{
           id: 'invalid-view', name: 'Invalid', filters: [{ key: 'status:anything', count: 1 }], sort: 'recent',
         }] },
+      } }],
+    })).toMatch(/invalid badges data/)
+    const scopedViews = [
+      ...Array.from({ length: 20 }, (_, index) => ({ id: `view-${index}`, name: `View ${index}`, filters: [], sort: 'recent' })),
+      ...Array.from({ length: 20 }, (_, index) => ({ id: `trainer-view-${index}`, name: `View ${index}`, filters: [], sort: 'recent' })),
+    ]
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: {
+        ...trainer, preferences: { ...trainer.preferences, savedViews: scopedViews },
+      } }],
+    })).toMatchObject({ upserts: [{ id: 'trainer' }] })
+    expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: {
+        ...trainer,
+        preferences: { ...trainer.preferences, savedViews: [...scopedViews, { id: 'trainer-view-overflow', name: 'Overflow', filters: [], sort: 'recent' }] },
       } }],
     })).toMatch(/invalid badges data/)
     expect(parseSyncRequest({

@@ -70,7 +70,9 @@ describe('card promotion persistence', () => {
     expect(await db.ledger.get('card-level-tickets:card-synthetic:6')).toMatchObject({
       data: { resource: 'tickets', delta: 2, reason: 'card-level' },
     })
-    expect(await db.outbox.count()).toBe(4)
+    expect(await db.outbox.count()).toBe(8)
+    expect(await db.badges.get('trainer')).toMatchObject({ data: { scope: 'trainer' } })
+    expect((await db.flairEvents.toArray()).every((row) => row.data.scope === 'trainer')).toBe(true)
     await expect(promotePersistentCard(content, template.id, '2000-01-02', 51)).rejects.toThrow('Fill the level 10 EXP bar')
     expect((await db.profile.get('main'))?.data.tickets).toBe(82)
     expect(await db.ledger.count()).toBe(2)
@@ -89,5 +91,15 @@ describe('card promotion persistence', () => {
       profile: { tickets: 82 },
       card: { level: 6, limitBreak: 1 },
     })
+  })
+
+  it('rolls back the card action when Trainer reconciliation cannot parse its state', async () => {
+    await seed()
+    await db.badges.put({ id: 'trainer', version: 2, data: { scope: 'trainer', corrupt: true } as never })
+    await expect(promotePersistentCard(content, template.id, '2000-01-02', 50)).rejects.toThrow(/Trainer badge state/)
+    expect((await db.profile.get('main'))?.data.tickets).toBe(100)
+    expect((await db.cards.get(template.id))?.data).toMatchObject({ level: 5, exp: 100, limitBreak: 0 })
+    expect(await db.ledger.count()).toBe(0)
+    expect(await db.outbox.count()).toBe(0)
   })
 })

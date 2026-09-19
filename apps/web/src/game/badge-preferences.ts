@@ -6,13 +6,16 @@ import {
   createTrainerBadgeState,
   parseBadgeState,
   replaceBadgePreferences,
+  replaceTrainerPreferences,
   type BadgePreferences,
   type BadgeStateV1,
   type FlairEventKind,
   type FlairEventV1,
+  type TrainerBadgePreferences,
 } from '@racer/domain'
 import { db } from './db'
 import { queueInTransaction } from './persistence'
+import { trainerAllowedAwardRefs } from './trainer'
 
 export interface BadgePreferenceMutation {
   state: BadgeStateV1
@@ -46,15 +49,19 @@ export async function bootstrapTrainerBadgeState(now: number): Promise<boolean> 
 
 export function replaceMemoryBadgePreferences(
   state: BadgeStateV1,
-  desired: BadgePreferences,
+  desired: BadgePreferences | TrainerBadgePreferences,
+  allowedAwardRefs = new Set(awardRefsForState(state)),
+  ownedUmaIds?: ReadonlySet<string>,
 ): BadgePreferenceMutation {
-  const next = replaceBadgePreferences(state, desired, new Set(awardRefsForState(state)))
+  const next = state.scope === 'trainer'
+    ? replaceTrainerPreferences(state, desired, allowedAwardRefs, ownedUmaIds)
+    : replaceBadgePreferences(state, desired, allowedAwardRefs)
   return { state: next, changed: JSON.stringify(next.preferences) !== JSON.stringify(state.preferences) }
 }
 
 export async function persistBadgePreferences(
   id: string,
-  desired: BadgePreferences,
+  desired: BadgePreferences | TrainerBadgePreferences,
   now: number,
 ): Promise<BadgePreferenceMutation> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Badge preference time is invalid')
@@ -66,7 +73,16 @@ export async function persistBadgePreferences(
       throw new Error('Badge state is invalid')
     }
     if (current.scope === 'uma' && !(await db.umas.get(current.umaId))) throw new Error('Badge Uma is not owned')
-    const mutation = replaceMemoryBadgePreferences(current, desired)
+    const states = current.scope === 'trainer'
+      ? (await db.badges.toArray()).map((entry) => parseBadgeState(entry.data)).filter((entry): entry is BadgeStateV1 => entry !== null)
+      : [current]
+    const allowedAwardRefs = current.scope === 'trainer' ? trainerAllowedAwardRefs(states) : new Set(awardRefsForState(current))
+    const mutation = replaceMemoryBadgePreferences(
+      current,
+      desired,
+      allowedAwardRefs,
+      current.scope === 'trainer' ? new Set((await db.umas.toArray()).map((entry) => entry.id)) : undefined,
+    )
     if (!mutation.changed) return mutation
     await db.badges.put({ ...row, data: mutation.state })
     await queueInTransaction('badges', id, 'upsert', now)

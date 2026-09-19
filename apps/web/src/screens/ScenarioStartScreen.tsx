@@ -24,7 +24,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { startScenario } from '../game/actions'
-import { buildFlairFanfare } from '../game/flair-view'
+import { buildFlairFanfare, buildTrainerFlairFanfare } from '../game/flair-view'
 import { startMemoryScenario } from '../game/promotion'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -127,6 +127,10 @@ export function ScenarioStartScreen() {
     const earnedFlair = badge?.scope === 'uma'
       ? buildFlairFanfare(contentState.content, badge, flairEvents, earnedFlairEventIds)
       : []
+    const trainer = badges.trainer
+    const trainerEarnedFlair = trainer?.scope === 'trainer'
+      ? buildTrainerFlairFanfare(contentState.content, trainer, flairEvents, earnedFlairEventIds)
+      : []
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-gradient-to-b from-violet-950 via-sky-deep to-sky px-4 pt-safe pb-safe text-white">
         <m.div initial={reducedMotion ? false : { opacity: 0, scale: 0.86, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-md rounded-[2rem] border-2 border-white/60 bg-white/15 p-5 text-center shadow-2xl backdrop-blur">
@@ -140,6 +144,7 @@ export function ScenarioStartScreen() {
             <div className="rounded-xl bg-white/15 p-2">{uma.skillLibrary.length} skills ready</div>
           </div>
           {earnedFlair.length > 0 && <div className="mt-4 text-left text-ink"><FlairCards title="Flair earned" items={earnedFlair} animate={!reducedMotion} /></div>}
+          {trainerEarnedFlair.length > 0 && <div className="mt-4 text-left text-ink"><FlairCards title="Trainer achievements" items={trainerEarnedFlair} animate={!reducedMotion} /></div>}
           <GameButton className="mt-5" variant="go" onClick={() => navigate(`/training/${encodeURIComponent(umaId)}`, { replace: true })}>Opening Training</GameButton>
           {!persistent && <p className="mt-3 text-xs font-bold text-amber-100">Memory only — this start lasts for this session.</p>}
         </m.div>

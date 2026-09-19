@@ -1,10 +1,13 @@
 import 'fake-indexeddb/auto'
 
 import {
+  createTrainerBadgeState,
   createUmaBadgeState,
   createUmaSave,
   encodeBadgeFilters,
   replaceUmaPreferences,
+  replaceTrainerPreferences,
+  trainerUmaAwardRef,
   type EntityRecord,
   type UmaBadgeStateV1,
   type UmaTemplate,
@@ -119,5 +122,21 @@ describe('Badge preference persistence', () => {
     expect(result.changed).toBe(true)
     expect(state.preferences.showcaseGroups[0]?.awardRefs).toEqual([])
     expect(result.state.preferences.showcaseGroups[0]?.awardRefs).toEqual(['badge:winner'])
+  })
+
+  it('normalizes Trainer names and validates owned pins plus mixed showcase references', () => {
+    const state = createTrainerBadgeState(1)
+    const mixedRef = trainerUmaAwardRef(template.id, 'badge:winner')
+    const preferences = {
+      ...state.preferences,
+      displayName: '  Cafe\u0301  ',
+      pinnedUmaIds: [template.id],
+      showcaseGroups: [{ id: 'default', name: null, awardRefs: [mixedRef] }],
+    }
+    const result = replaceTrainerPreferences(state, preferences, new Set([mixedRef]), new Set([template.id]))
+    expect(result.preferences).toMatchObject({ displayName: 'Café', pinnedUmaIds: [template.id] })
+    expect(() => replaceTrainerPreferences(state, { ...preferences, pinnedUmaIds: [template.id, template.id] }, new Set([mixedRef]), new Set([template.id]))).toThrow(/distinct/)
+    expect(() => replaceTrainerPreferences(state, { ...preferences, pinnedUmaIds: ['not-owned'] }, new Set([mixedRef]), new Set([template.id]))).toThrow(/owned/)
+    expect(() => replaceTrainerPreferences(state, { ...preferences, showcaseGroups: [{ id: 'default', name: null, awardRefs: ['uma-ref:bad'] }] }, new Set([mixedRef]), new Set([template.id]))).toThrow(/not earned/)
   })
 })

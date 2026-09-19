@@ -74,6 +74,7 @@ import {
   TITLE_POINTS,
   PRESTIGE_FRAME_THRESHOLDS,
   FLAIR_SERIES_REQUIRED_FAMILIES,
+  TRAINER_ACHIEVEMENT_THRESHOLDS,
 } from './index'
 
 describe('flair', () => {
@@ -111,6 +112,24 @@ describe('flair', () => {
       'sprint-crown': 2,
       'mile-crown': 2,
       'dirt-crown': 2,
+    })
+    expect(TRAINER_ACHIEVEMENT_THRESHOLDS).toEqual({
+      stableMaster: [30, 40, 60, 90],
+      cardCollector: [10, 25, 50, 100],
+      maxedOut: [1, 5, 15, 40, 100],
+      couponClipper: [1, 5, 15, 40, 100],
+      stableWins: [10, 100, 500, 1_500, 5_000],
+      stableG1s: [1, 10, 50, 150, 500],
+      statBadges: [5, 25, 75, 200, 500],
+      badgeHoarder: [25, 150, 500, 1_500, 5_000],
+      titleHolders: [1, 5, 10, 20],
+      graduations: [5, 25, 75, 200, 500],
+      veteranStable: [1, 3, 10, 25, 50],
+      legendaryStable: [1, 3, 5, 10, 25],
+      heirs: [5, 25, 100, 250, 1_000],
+      stableGoals: [5, 25, 100, 300, 1_000],
+      honorsCollector: [1, 10, 30, 100, 300],
+      familyTree: [2, 5, 10, 25, 50],
     })
   })
 })

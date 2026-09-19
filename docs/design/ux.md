@@ -53,7 +53,8 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 - **Two big CTAs** in the thumb zone: **Train** and **Race**.
 - On open, the **daily ticket grant** flies "+50 🎫" into the counter.
 - **Goal tracker** card for the featured Uma (3 pips), followed by the implemented **recent flair** card with the latest
-  three collapsed visible awards, Prestige, frame, and a Profile link. T018 expands it with a compact Stable-wide feed.
+  three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
+  recent-flair feed.
 - A swipe on the portrait switches the featured Uma.
 
 The implemented goal tracker handles pending setup, active/completed/missed goals, legacy-untracked saves, final completion,
@@ -220,7 +221,7 @@ and is read-only on refresh or direct navigation.
 
 The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mobile-first:
 
-- A scope switch at the top (**Uma / Stable / Trainer**) and a search field. T017 enables Uma/Stable; T018 enables Trainer.
+- A scope switch at the top (**Uma / Stable / Trainer**) and a search field. All three scopes are implemented.
 - Uma scope keeps the chosen owned Uma in the URL. Stable is a live per-Uma aggregation; Trainer is persisted account
   achievements/records, never a duplicate copy of Stable awards.
 - **Filter sheet** with typed tag groups, removable chips, deterministic sorting, and up to 20 named saved views per scope.
