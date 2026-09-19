@@ -1,4 +1,4 @@
-// Catalog-v1 award evaluation and Prestige projection (docs/tasks/T016-per-uma-badges-titles-and-awards.md).
+// Catalog-v1 award evaluation and Prestige projection (docs/design/badges.md#catalog-v1).
 
 import {
   BADGE_CATALOG_VERSION,

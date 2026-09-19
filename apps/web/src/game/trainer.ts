@@ -1,4 +1,4 @@
-// Local-first Trainer aggregation and reconciliation (docs/tasks/T018-trainer-achievements-and-profile.md).
+// Local-first Trainer aggregation and reconciliation (docs/design/collection.md#trainer-achievements-account-wide).
 
 import {
   createTrainerBadgeState,

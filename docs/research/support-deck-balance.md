@@ -1,6 +1,6 @@
 # Support Deck and Training balance follow-up
 
-Date: 2026-09-17. Task: [T010](../tasks/T010-manual-support-decks.md). Every checked-in id, template, effect weight,
+Date: 2026-09-17. Task: T010 (spec archived in git history). Every checked-in id, template, effect weight,
 skill, stat, and seed is invented. The harness does not read `/content`, private packs, or original-game data.
 
 ## Method

@@ -1,4 +1,4 @@
-// Local-first badge facts, award evaluation, and flair log persistence (docs/tasks/T016-per-uma-badges-titles-and-awards.md).
+// Local-first badge facts, award evaluation, and flair log persistence (docs/design/badges.md#catalog-v1).
 
 import {
   applyDynastyFact,

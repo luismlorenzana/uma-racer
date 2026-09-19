@@ -1,4 +1,4 @@
-// Finite frozen lineage projection for the profile (docs/tasks/T013-parents-grandparents-and-inheritance.md).
+// Finite frozen lineage projection for the profile (docs/design/skills-and-inheritance.md#inheritance).
 
 import type { ParentSnapshot, UmaSave } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'

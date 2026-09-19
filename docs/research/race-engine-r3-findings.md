@@ -1,6 +1,6 @@
 # Race engine R3 findings
 
-Research and validation for [T007](../tasks/T007-pack-racing.md). No private source rows, names, or ids are recorded here.
+Research and validation for T007 (spec archived in git history). No private source rows, names, or ids are recorded here.
 
 ## Sources and confidence
 

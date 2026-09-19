@@ -1,4 +1,4 @@
-// Card album/content joins (docs/tasks/T009-support-card-album-and-progression.md).
+// Card album/content joins (docs/design/support-cards.md).
 
 import {
   MAX_LIMIT_BREAK,

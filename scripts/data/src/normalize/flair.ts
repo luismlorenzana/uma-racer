@@ -1,4 +1,4 @@
-// Private badge/title classification overlay (docs/tasks/T015-accomplishment-facts-and-badge-state.md).
+// Private badge/title classification overlay (docs/design/badges.md#durable-facts-and-honest-history).
 
 import {
   FLAIR_SERIES_REQUIRED_FAMILIES,

@@ -1,4 +1,4 @@
-// Atomic saved-Uma Training mutations (docs/tasks/T004-saved-uma-training-loop.md).
+// Atomic saved-Uma Training mutations (docs/design/training.md).
 
 import {
   dealTrainingCards,

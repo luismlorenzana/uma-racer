@@ -192,7 +192,7 @@ See [Uma Progression](uma-progression.md#uma-level-and-exp) for `winExp`. Every 
 
 ### Milestone 6 accomplishment facts
 
-New T015-era results include bounded award facts derived inside authoritative completion: normalized family/grade/venue/
+New results (badge-state v1) include bounded award facts derived inside authoritative completion: normalized family/grade/venue/
 course/surface/distance/series metadata, player start delay, first-final-spurt placement, strict section-checkpoint lead,
 and inherited-unique activation. These facts are private-id metadata, not renderer state, and do not change engine v1/v2/v3
 simulation or replay. Legacy results remain valid and use their frozen replay path when detailed retroactive facts are

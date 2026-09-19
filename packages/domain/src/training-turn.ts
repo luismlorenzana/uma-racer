@@ -1,4 +1,4 @@
-// Deterministic saved-Uma Training turns (docs/tasks/T004-saved-uma-training-loop.md).
+// Deterministic saved-Uma Training turns (docs/design/training.md).
 
 import {
   CARD_EFFECTS,

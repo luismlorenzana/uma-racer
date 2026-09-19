@@ -1,4 +1,4 @@
-// Atomic support-card promotion (docs/tasks/T009-support-card-album-and-progression.md).
+// Atomic support-card promotion (docs/design/support-cards.md).
 
 import {
   isLocalDay,

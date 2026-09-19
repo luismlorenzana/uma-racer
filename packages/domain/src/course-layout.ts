@@ -1,4 +1,4 @@
-// Bounded private-course geometry for race engine R3 (docs/tasks/T007-pack-racing.md).
+// Bounded private-course geometry for race engine R3 (docs/design/racing.md#pack-racing-r3).
 
 import type { CourseTemplate, RaceDirection, RaceTemplate } from './content'
 

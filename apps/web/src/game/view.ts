@@ -1,4 +1,4 @@
-// Save/content joins and Stable derivations (docs/tasks/T003-stable-save-foundation.md).
+// Save/content joins and Stable derivations (docs/technical/architecture.md).
 
 import {
   baselineStatCap,

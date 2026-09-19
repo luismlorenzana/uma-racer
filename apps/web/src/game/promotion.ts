@@ -1,4 +1,4 @@
-// Atomic local-first scenario start (docs/tasks/T013-parents-grandparents-and-inheritance.md).
+// Atomic local-first scenario start (docs/design/skills-and-inheritance.md#inheritance).
 
 import {
   EMPTY_SCENARIO_START_SELECTION,
@@ -97,7 +97,7 @@ export function startMemoryScenario(
   return { profile: result.profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false, earnedFlairEventIds: [] }
 }
 
-/** T012-compatible zero-parent promotion helper. */
+/** Zero-parent promotion helper, kept for saves made before lineage. */
 export function promoteMemoryUma(
   content: LoadedContent,
   profile: PlayerProfile,
@@ -187,7 +187,7 @@ export async function startPersistentScenario(
   })
 }
 
-/** T012-compatible zero-parent promotion helper. */
+/** Zero-parent promotion helper, kept for saves made before lineage. */
 export async function promotePersistentUma(content: LoadedContent, umaId: string, now: number): Promise<ScenarioPromotionMutation> {
   const mutation = await startPersistentScenario(content, umaId, EMPTY_SCENARIO_START_SELECTION, now)
   if (mutation.result && !('fromTier' in mutation.result)) throw new Error('A pending new Uma requires Scenario Start')

@@ -1,4 +1,4 @@
-// Runtime boundary for deterministic race inputs (docs/tasks/T006-basic-race-skills.md).
+// Runtime boundary for deterministic race inputs (docs/design/racing.md#basic-race-skills-r25).
 
 import { GRADES, STATS, STRATEGIES, SURFACES, parseCompiledRaceSkill } from '@racer/domain'
 import type { RaceInput } from './types'

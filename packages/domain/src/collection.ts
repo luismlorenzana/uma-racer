@@ -1,4 +1,4 @@
-// Coupon and collection rules (docs/design/collection.md; docs/tasks/T011-select-coupons-and-collection.md).
+// Coupon and collection rules (docs/design/collection.md).
 
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK } from './cards'

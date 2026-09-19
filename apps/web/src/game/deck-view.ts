@@ -1,4 +1,4 @@
-// Pure mobile support-deck projection (docs/tasks/T010-manual-support-decks.md).
+// Pure mobile support-deck projection (docs/design/support-cards.md#deck).
 
 import {
   CARD_EFFECTS,

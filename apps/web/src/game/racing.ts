@@ -1,4 +1,4 @@
-// Local-first progression race preparation and persistence (docs/tasks/T005-progression-races-and-rewards.md).
+// Local-first progression race preparation and persistence (docs/design/racing.md).
 
 import {
   bestStrategy,

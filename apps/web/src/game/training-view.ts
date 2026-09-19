@@ -1,4 +1,4 @@
-// Training save/content joins and deterministic screen derivations (docs/tasks/T004-saved-uma-training-loop.md).
+// Training save/content joins and deterministic screen derivations (docs/design/training.md).
 
 import {
   EXP_TO_NEXT_TRAINING_LEVEL,

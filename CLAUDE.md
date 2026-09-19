@@ -5,6 +5,8 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 ## Start here
 
 - `AGENTS.md` is the shared guide for all agents, including delegated ChatGPT tasks (branch + PR, no pushes to `main`). This file adds Claude-specific production notes.
+- `docs/tasks/README.md` is the current plan. A task spec is deleted once its work merges (D104), so that folder only ever
+  holds work that is still ahead.
 
 - `README.md` → documentation map. **The design docs are the source of truth.** Read the relevant doc before changing a system.
 - `docs/decisions.md` is append-only: to reverse a decision, add a new entry that supersedes it.
@@ -64,6 +66,9 @@ pnpm assets:import  # T001 image sources → private WebP atlases; run after dat
 - Watch deploys with `gh run watch <id> -R luismlorenzana/uma-racer --exit-status`. Then verify: `/api/health` returns 200,
   `/api/save` returns 401 without a token, and the Hosting shell is `no-cache`.
 - The installed PWA picks up a new deploy on the **next** app open (service worker `autoUpdate`).
+- **`content/overrides/flair.json` is Claude's to author and keep current** (D107): it maps race-series legs and the ten
+  main venues, and without it every race-set title and Grand Tour is unearnable. It is private and gitignored; re-run the
+  import after editing it.
 - Publish content-addressed files before the manifest, so clients never see a manifest whose files are missing. Run the
   two importers first, then upload with the owner's existing ADC session without changing the active gcloud account:
 

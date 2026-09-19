@@ -1,4 +1,4 @@
-// Shared support-deck validation (docs/tasks/T010-manual-support-decks.md).
+// Shared support-deck validation (docs/design/support-cards.md#deck).
 
 import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue, type CardEffect } from './cards'
 import type { SupportCardTemplate } from './content'

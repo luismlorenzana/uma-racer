@@ -1,4 +1,4 @@
-// Synthetic support-deck/Training balance harness (docs/tasks/T010-manual-support-decks.md).
+// Synthetic support-deck/Training balance harness (docs/design/support-cards.md#deck).
 // Every id and number below is invented; this script never reads private or original-game content.
 import {
   CARD_EFFECTS,

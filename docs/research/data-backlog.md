@@ -12,7 +12,7 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 
 - [x] Roster list (per outfit) with JP release dates.
 - [x] **25 launch trainees** confirmed from GameTora `character-cards`: exactly 25 cards released 2021-02-24 (9 three-star, 8 two-star, 8 one-star). T.M. Opera O was not at launch.
-- [x] Real-horse sex is available as `characters.sex` (1 = male, 2 = female). Import tracked in [T001](../tasks/T001-content-data-packs.md).
+- [x] Real-horse sex is available as `characters.sex` (1 = male, 2 = female), imported as `realHorseSex`. It drives goals from [T020](../tasks/T020-scenario-goals-v2.md).
 - [x] **5★ base stats** for every Uma, and stat growth rates.
 - [x] Unique skill level and effect at 5★ (the baseline for the inherited ×0.5 version).
 - [x] Aptitudes (surface, distance, strategy).
@@ -41,7 +41,9 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 - [x] Race catalog: name, grade, venue, surface, distance, and direction.
 - [x] Stable race-family ids for matching career objectives to concrete gameplay race variants.
 - [x] Private race-series/main-venue override contract, validation, normalized tags, and aggregate-only diagnostics.
-- [ ] Populate and maintain the owner-only `content/overrides/flair.json` mapping. No live identifier or mapping may enter git.
+- [ ] Populate and maintain `content/overrides/flair.json` (Claude's, D107): series **legs** with their alias families plus the ten `jra-main` venues. Tracked by [T019](../tasks/T019-race-series-and-titles.md). No live identifier or mapping may enter git.
+- [x] JP scenario list verified against the public GameTora `scenarios` dataset on 2026-09-19: 14 released scenarios, all
+      dates confirmed. Tiers 12–14 are added by [T021](../tasks/T021-jp-scenarios-12-14.md).
 - [x] Course layouts: corners, straights, and slopes per course (for later race engine milestones).
 
 ## Scenarios

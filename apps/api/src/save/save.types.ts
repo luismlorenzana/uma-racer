@@ -1,4 +1,4 @@
-// API-side validation for the @racer/domain save wire contract (docs/tasks/T003-stable-save-foundation.md).
+// API-side validation for the @racer/domain save wire contract (docs/technical/architecture.md).
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
 
 export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges'] as const

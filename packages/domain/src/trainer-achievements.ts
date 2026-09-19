@@ -1,4 +1,4 @@
-// Trainer achievement catalog and deterministic reconciliation (docs/tasks/T018-trainer-achievements-and-profile.md).
+// Trainer achievement catalog and deterministic reconciliation (docs/design/collection.md#trainer-achievements-account-wide).
 
 import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK } from './cards'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'

@@ -1,4 +1,4 @@
-// Deterministic 128 px atlas layout from docs/tasks/T002-content-assets-runtime.md.
+// Deterministic 128 px atlas layout from scripts/assets/README.md.
 
 import type { ContentAtlasFrame } from '@racer/domain'
 

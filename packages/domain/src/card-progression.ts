@@ -1,4 +1,4 @@
-// Support-card promotion rules (docs/tasks/T009-support-card-album-and-progression.md).
+// Support-card promotion rules (docs/design/support-cards.md).
 
 import { cardExpToNext, cardLevelCap, MAX_LIMIT_BREAK } from './cards'
 import { cardLimitBreakCost, TICKETS_PER_CARD_LEVEL_UP } from './economy'

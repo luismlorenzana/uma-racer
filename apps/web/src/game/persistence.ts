@@ -1,4 +1,4 @@
-// Typed IndexedDB reads and atomic save mutations (docs/tasks/T003-stable-save-foundation.md).
+// Typed IndexedDB reads and atomic save mutations (docs/technical/architecture.md).
 
 import {
   applyDailyGrants,

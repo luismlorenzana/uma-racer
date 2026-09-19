@@ -30,9 +30,14 @@ adjusted through balance simulation and playtesting.
   recent-flair surfaces, and test reduced motion plus offline/reconnect. Desktop validation covers the 390×844 layout and
   persistence, but not physical drag/scroll ergonomics, standalone safe areas, or long-list feel on the owner's iPhone.
 
+These device checks now belong to **T033** in [Milestone 9](tasks/M009-presentation-polish.md), which closes them as one
+acceptance pass rather than leaving six separate reminders open.
+
 ## Not questions, but still to come
 
 - **Data research:** facts to gather from the original game, tracked in the [data backlog](research/data-backlog.md).
+- **Playability notes:** the owner is playing the current build; their notes become T023 in
+  [Milestone 7](tasks/M007-align-and-stabilize.md).
 
 ## Process
 

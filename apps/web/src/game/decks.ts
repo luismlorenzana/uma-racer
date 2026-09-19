@@ -1,4 +1,4 @@
-// Atomic per-Uma support decks (docs/tasks/T010-manual-support-decks.md).
+// Atomic per-Uma support decks (docs/design/support-cards.md#deck).
 
 import {
   parseCardSave,

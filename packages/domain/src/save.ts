@@ -1,4 +1,4 @@
-// Typed local-first save vocabulary and initialization (docs/tasks/T003-stable-save-foundation.md).
+// Typed local-first save vocabulary and initialization (docs/technical/architecture.md).
 
 import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK, cardExpToNext, cardLevelCap } from './cards'
 import { badgeStateId, parseBadgeState, parseFlairEvent } from './badges'

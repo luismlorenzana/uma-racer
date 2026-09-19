@@ -1,4 +1,4 @@
-// Atomic local-first collection mutations (docs/tasks/T011-select-coupons-and-collection.md).
+// Atomic local-first collection mutations (docs/design/collection.md).
 
 import {
   SAVE_ID_PATTERN,

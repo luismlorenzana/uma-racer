@@ -1,4 +1,4 @@
-// Badge preference rules for T017 (docs/tasks/T017-badge-page-showcases-and-timeline.md).
+// Badge preference rules for T017 (docs/design/badges.md#badge-page).
 
 import {
   BADGE_TIERS,

@@ -1,4 +1,4 @@
-// Scenario completion, parent snapshots, and promotion (docs/tasks/T012-scenario-promotion-and-save-v2.md).
+// Scenario completion, parent snapshots, and promotion (docs/design/scenarios.md#scenario-completion).
 
 import { projectedCardEffectValue } from './cards'
 import type { RaceTemplate, SkillTemplate, UmaTemplate } from './content'

@@ -1,4 +1,4 @@
-// Local-first save bootstrap and background sync (docs/tasks/T003-stable-save-foundation.md).
+// Local-first save bootstrap and background sync (docs/technical/architecture.md).
 
 import {
   MAX_SYNC_OPERATIONS,

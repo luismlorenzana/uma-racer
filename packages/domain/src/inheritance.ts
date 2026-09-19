@@ -1,4 +1,4 @@
-// Frozen parent selection and scenario-start inheritance (docs/tasks/T013-parents-grandparents-and-inheritance.md).
+// Frozen parent selection and scenario-start inheritance (docs/design/skills-and-inheritance.md#inheritance).
 
 import type { SkillTemplate, UmaTemplate } from './content'
 import {

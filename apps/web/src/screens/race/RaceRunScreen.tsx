@@ -72,7 +72,7 @@ function FullScreenMessage({
   )
 }
 
-/** Full-screen saved-Uma race and atomic results flow (docs/tasks/T005-progression-races-and-rewards.md). */
+/** Full-screen saved-Uma race and atomic results flow (docs/design/racing.md). */
 export function RaceRunScreen() {
   const navigate = useNavigate()
   const reducedMotion = useReducedMotion()

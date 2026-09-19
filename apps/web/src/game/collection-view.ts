@@ -1,4 +1,4 @@
-// Pure collection album, selection, and reveal projections (docs/tasks/T011-select-coupons-and-collection.md).
+// Pure collection album, selection, and reveal projections (docs/design/collection.md).
 
 import {
   SAVE_ID_PATTERN,

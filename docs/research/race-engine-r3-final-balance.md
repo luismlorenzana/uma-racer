@@ -1,6 +1,6 @@
 # Race Engine R3 — Milestone 3 balance closure
 
-Date: 2026-09-16. Task: [T008](../tasks/T008-race-presentation-and-balance.md). All checked-in inputs are invented,
+Date: 2026-09-16. Task: T008 (spec archived in git history). All checked-in inputs are invented,
 shape-correct fixtures. No private content rows, original-game ids, or extracted values appear in the harness or this report.
 
 ## Method

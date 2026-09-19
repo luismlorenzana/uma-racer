@@ -129,19 +129,24 @@ that awards it and is never revoked if later content adds another venue.
 Private race content supplies semantic `series` tags such as `triple-crown`; the ignored mapping from source race-family ids
 to those tags never enters git. Catalog v1 awards:
 
-| Title | Required distinct family wins | Required family count |
+| Title | Required | Legs |
 |---|---|---:|
-| Triple Crown | Every family tagged `triple-crown` | 3 |
-| Triple Tiara | Every family tagged `triple-tiara` | 3 |
-| Spring Triple Crown | Every family tagged `spring-triple-crown` | 3 |
-| Autumn Triple Crown | Every family tagged `autumn-triple-crown` | 3 |
-| Grand Prix Queen | Every family tagged `grand-prix` | 2 |
-| Sprint Queen | Every family tagged `sprint-crown` | 2 |
-| Mile Queen | Every family tagged `mile-crown` | 2 |
-| Dirt Queen | Every family tagged `dirt-crown` | 2 |
-| Two-Time / Three-Time [Race] | Two or three wins in the same G1 family |
+| Triple Crown | Satsuki Sho · Tokyo Yushun · Kikuka Sho | 3 |
+| Triple Tiara | Oka Sho · Japanese Oaks · Shuka Sho | 3 |
+| Spring Triple Crown | Osaka Hai · Tenno Sho (Spring) · Takarazuka Kinen | 3 |
+| Autumn Triple Crown | Tenno Sho (Autumn) · Japan Cup · Arima Kinen | 3 |
+| Grand Prix Queen | Takarazuka Kinen · Arima Kinen | 2 |
+| Sprint Queen | Takamatsunomiya Kinen · Sprinters Stakes | 2 |
+| Mile Queen | Yasuda Kinen · Mile Championship | 2 |
+| Dirt Queen | February Stakes · Champions Cup | 2 |
+| Two-Time / Three-Time [Race] | Two or three wins in the same G1 family | — |
 
-Titles can be earned across any number of scenarios and are permanent. A family must be won at least once for each set;
+> ⚠️ **Every race-set title and Grand Tour is currently unearnable**: the private series override was never written, so
+> published content carries no series tags. [T019](../tasks/T019-race-series-and-titles.md) writes it, changes a series
+> from a family list into **legs** (one leg is satisfied by any alias family, since the catalog holds alternate-venue and
+> scenario variants of the same race), and awards the titles retroactively. Only the repeat titles work today.
+
+Titles can be earned across any number of scenarios and are permanent. A leg must be won at least once for each set;
 calendar variants sharing the family do not create duplicates. Repeat titles use the current private race name with a safe
 family-id fallback. Every distinct G1 family win also creates or increments its trophy, but only the first win emits a
 `trophy-earned` flair event.

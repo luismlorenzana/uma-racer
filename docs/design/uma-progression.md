@@ -13,7 +13,7 @@
 | `growthRates` | Percentage bonus to training gains per stat (for example Speed +10%, Wit +20%) |
 | `aptitudes` | Surface: Turf/Dirt. Distance: Sprint/Mile/Medium/Long. Strategy: Front/Pace/Late/End. Graded S–G |
 | `uniqueSkill` | Innate unique skill, which is also the source of the inherited version (see [Skills & Inheritance](skills-and-inheritance.md)) |
-| `realHorseSex` | Male / Female. Drives identity goals such as Triple Crown or Triple Tiara (see [Scenario Goals](scenario-goals.md)) |
+| `realHorseSex` | Male / Female. Drives the classic-series identity goals — Triple Crown or Triple Tiara — and the Stable filter. Imported today; used from [T020](../tasks/T020-scenario-goals-v2.md) (see [Scenario Goals](scenario-goals.md#identity-career-first-then-sex)) |
 | `signatureRaceFamilyIds` | Ordered, distinct career-objective race families used as private Identity-goal seeds |
 | `starter` | Whether the Uma is part of the starting roster: the 25 launch trainees (see [Collection](collection.md)) |
 | `icon`, `portrait` | Local asset references only |

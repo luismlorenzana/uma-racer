@@ -1,4 +1,4 @@
-// CLI orchestration for the private content data pipeline (docs/tasks/T001-content-data-packs.md).
+// CLI orchestration for the private content data pipeline (scripts/data/README.md).
 
 import { assertRaceCourseContent, selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
 import { readFile } from 'node:fs/promises'

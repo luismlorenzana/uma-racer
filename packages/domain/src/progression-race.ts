@@ -1,4 +1,4 @@
-// Saved-Uma progression races and rewards (docs/tasks/T005-progression-races-and-rewards.md).
+// Saved-Uma progression races and rewards (docs/design/racing.md).
 
 import { CARD_EFFECTS, projectedCardEffectValue } from './cards'
 import { FLAIR_SERIES_TAGS, type FlairSeriesTag } from './badges'

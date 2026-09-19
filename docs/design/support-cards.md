@@ -11,7 +11,7 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 | Field | Notes |
 |---|---|
 | `id`, `character`, `title` | Taken from the original game's data |
-| `type` | Speed, Stamina, Power, Guts, Wit. Friend and Group cards come after the MVP |
+| `type` | Speed, Stamina, Power, Guts, Wit. The 11 Friend and 5 Group SSRs are ownable now and become equippable in [Milestone 8](../tasks/M008-scenario-identity.md) |
 | `jpReleaseDate` | Decides the **era** (see [Scenarios](scenarios.md#era-windows)) |
 | `obtain` | `event` / `free` / `gacha` in the original game. `event` and `free` cards make up the **starter set** |
 | `effectProfile` | *Which* effects the card has and their relative weights. Values are generated (below) |

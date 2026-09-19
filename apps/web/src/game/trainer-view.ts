@@ -1,4 +1,4 @@
-// Pure Trainer achievement/profile projections (docs/tasks/T018-trainer-achievements-and-profile.md).
+// Pure Trainer achievement/profile projections (docs/design/collection.md#trainer-achievements-account-wide).
 
 import {
   BADGE_TIERS,

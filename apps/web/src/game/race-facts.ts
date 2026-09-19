@@ -1,4 +1,4 @@
-// Authoritative and legacy race-accomplishment projection (docs/tasks/T015-accomplishment-facts-and-badge-state.md).
+// Authoritative and legacy race-accomplishment projection (docs/design/badges.md#durable-facts-and-honest-history).
 
 import {
   parseRaceAccomplishmentFacts,

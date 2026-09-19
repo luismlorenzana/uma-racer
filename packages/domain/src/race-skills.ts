@@ -1,4 +1,4 @@
-// Safe R2.5 race-skill compiler and loadout rules (docs/tasks/T006-basic-race-skills.md).
+// Safe R2.5 race-skill compiler and loadout rules (docs/design/racing.md#basic-race-skills-r25).
 
 import type { SkillTemplate, UmaTemplate } from './content'
 import type { UmaSave } from './save'

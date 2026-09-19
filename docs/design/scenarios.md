@@ -19,17 +19,22 @@ Baseline caps follow the **original game's ladder** ✅: its **1200** launch cap
 | 2 | Unity Cup | Aoharu Cup | 2021-08-30 | 2025-11-06 | 11–20 | 1280 |
 | 3 | Trackblazer | Make a New Track (Climax) | 2022-02-24 | 2026-03-12 | 21–30 | 1360 |
 | 4 | Our Grand Concert | Grand Live | 2022-08-24 | 2026-07-22 | 31–40 | 1440 |
-| 5 | Grand Masters | Grand Masters | 2023-02-24 ⚠️ | — | 41–50 | 1520 |
-| 6 | Project L'Arc | Project L'Arc | 2023-08-24 ⚠️ | — | 51–60 | 1600 |
-| 7 | U.A.F. Ready GO! | U.A.F. Ready GO! | 2024-02-24 ⚠️ | — | 61–70 | 1680 |
+| 5 | Grand Masters | Grand Masters | 2023-02-24 | — | 41–50 | 1520 |
+| 6 | Project L'Arc | Project L'Arc | 2023-08-24 | — | 51–60 | 1600 |
+| 7 | U.A.F. Ready GO! | U.A.F. Ready GO! | 2024-02-24 | — | 61–70 | 1680 |
 | 8 | Great Food Festival | Daihoushokusai | 2024-06-26 | — | 71–80 | 1760 |
 | 9 | Run! Mecha Umamusume | Mecha Umamusume | 2024-10-29 | — | 81–90 | 1840 |
-| 10 | The Twinkle Legends | The Twinkle Legends | 2025-02-24 ⚠️ | — | 91–100 | 1920 |
-| 11 | Design Your Island | Welcome to the Wild / Mujintou | 2025-06-26/27 ⚠️ | — | 101–110 | 2000 |
-| 12+ | *Every later JP scenario is included* | *List to research* | — | — | 111+ | +80 each |
+| 10 | The Twinkle Legends | The Twinkle Legends | 2025-02-24 | — | 91–100 | 1920 |
+| 11 | Design Your Island | Welcome to the Wild / Mujintou | 2025-06-27 | — | 101–110 | 2000 |
+| 12 | Yukoma Hot Springs | ごくらく♪ゆこま温泉郷 | 2025-10-29 | — | 111–120 | 2080 |
+| 13 | Beyond Dreams | Beyond Dreams 共に前へ、共に光を | 2026-02-24 | — | 121–130 | 2160 |
+| 14 | Tracen Diner | らっしゃい！トレセン軒！ | 2026-06-29 | — | 131–140 | 2240 |
+| 15+ | *Every later JP scenario is included* | *Checked against the source each import* | — | — | 141+ | +80 each |
 
-⚠️ = taken from search summaries, not the source page itself. Verify these before building the data files.
-Rows without ⚠️ were confirmed on GameTora or Game8.
+✅ Every date above was verified against the public GameTora scenario dataset on 2026-09-19.
+**Tiers 12–14 are planned, not shipped:** the live ladder still stops at #11, so the Uma level cap is 110 and 43 newer
+cards sit in era 11. [T021](../tasks/T021-jp-scenarios-12-14.md) adds them. The original game raised its own hard cap to
+2500 with Beyond Dreams; ladder A keeps +80 per scenario here, because our caps are tied to the 1200 soft cap (D108).
 
 Global release names follow the English version. Global has released only through #4 so far, so
 **eras use JP dates** ✅.
@@ -44,16 +49,18 @@ era(card) = max { s.index : s.jpRelease ≤ card.jpRelease }
 
 An Uma in tier `T` may equip any card with `era ≤ T`.
 
-## Scenario modifiers (stretch, after MVP)
+## Scenario modifiers
 
-In the MVP, all scenarios train the same way apart from caps and era. After the MVP, **every scenario gets its modifier**,
-added in release order:
+Today every scenario trains the same way apart from caps and era. **Every scenario gets its own modifier** in
+[Milestone 8](../tasks/M008-scenario-identity.md), added in release order. Modifiers are a training-side twist bound by
+D109: tier-local resources that reset at promotion and never become currency, no cap or Race Form changes, any aptitude
+grant capped at A, and every tier completable while ignoring its modifier.
 
 | # | Scenario | Modifier idea |
 |---|---|---|
 | 1 | URA Finale | None, the baseline and tutorial tier |
 | 2 | Unity Cup | **Team Spirit:** when 3+ cards are present at one facility, a spirit burst adds bonus gains to every stat |
-| 3 | Trackblazer | **Shop:** races pay scenario coins, spent on one-shot training items |
+| 3 | Trackblazer | **Climax:** race wins pay one-shot training items that expire at promotion (no second currency) |
 | 4 | Grand Concert | **Performances:** training builds "hype" notes, and full sets unlock bonus stats |
 | 5 | Grand Masters | **Goddess fragments:** collect fragments from training, and a full set triggers a big burst |
 | 6 | Project L'Arc | **Overseas expedition:** the chance to raise an aptitude grade |
@@ -62,6 +69,9 @@ added in release order:
 | 9 | Mecha Umamusume | **Research:** gear upgrades act as permanent facility research levels |
 | 10 | Twinkle Legends | **Legends:** pick a legend's buff path for the tier |
 | 11 | Design Your Island | **Construction:** development points build new facilities during the tier |
+| 12 | Yukoma Hot Springs | **Soak:** relaxation builds up, and a full bath makes the next training free and doubled |
+| 13 | Beyond Dreams | **Shared light:** training fills a gauge that bursts into the two lowest stats |
+| 14 | Tracen Diner | **Orders:** training collects orders, and a served set buffs the next three turns |
 
 ## Scenario completion
 

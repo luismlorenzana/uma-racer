@@ -1,4 +1,4 @@
-// Atomic local-first Badge preference commands (docs/tasks/T017-badge-page-showcases-and-timeline.md).
+// Atomic local-first Badge preference commands (docs/design/badges.md#badge-page).
 
 import {
   awardRefsForState,

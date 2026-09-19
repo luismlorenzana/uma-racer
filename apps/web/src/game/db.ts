@@ -17,7 +17,7 @@ import {
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Transaction } from 'dexie'
 
-// Typed local-first save (docs/tasks/T003-stable-save-foundation.md). Every mutation persists its entity and
+// Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
 // outbox marker in one transaction before Zustand publishes it.
 
 export interface VersionedRow<T> {

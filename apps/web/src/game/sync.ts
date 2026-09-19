@@ -1,4 +1,4 @@
-// Pure sync-response checks (docs/tasks/T003-stable-save-foundation.md).
+// Pure sync-response checks (docs/technical/architecture.md).
 
 import type { EntityKind, SyncRequest, SyncResponse } from '@racer/domain'
 import type { OutboxRow } from './db'

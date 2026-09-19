@@ -10,7 +10,7 @@ completion: **Umas**, **SSR support cards**, and **badges and achievements**.
 
 | What | Starter set |
 |---|---|
-| Cards | Every SSR card that was **free or an event reward** in the original game (`obtain: event/free`). The full list is still to research ([data backlog](../research/data-backlog.md)) |
+| Cards | Every SSR card that was **free or an event reward** in the original game (`obtain: event/free`): **94 of the 312 SSRs** ✅ |
 | Umas | **The full original launch roster: all 25 trainees** ✅ (see below) |
 | Coupons | **3 Card Select Coupons** to start, so the tier-1 deck isn't thin if few free cards come from era 1 |
 
@@ -27,7 +27,7 @@ Every trainee from the original game's February 2021 launch, in their launch out
 | 2★ (8) | Gold Ship · Vodka · Daiwa Scarlet · Grass Wonder · El Condor Pasa · Air Groove · Mayano Top Gun · Super Creek |
 | 1★ (8) | Mejiro Ryan · Agnes Tachyon · Winning Ticket · Sakura Bakushin O · Haru Urara · Matikanefukukitaru · Nice Nature · King Halo |
 
-⚠️ This list is from a single source. Verify it against the original game's data (for example, whether T.M. Opera O was also at launch).
+✅ Verified against the original data on 2026-09-19: exactly 25 outfits carry the 2021-02-24 launch date, so T.M. Opera O was not among them.
 
 Notes:
 
@@ -65,7 +65,7 @@ owned result without spending again. An entity that predates the matching redemp
 ### Uma Album
 
 - A grid of every Uma. Owned Umas show their icon, level, tier crest, and prestige frame. Unowned Umas are silhouettes.
-- Filters: owned, tier, aptitudes, real-horse sex.
+- Filters: owned, tier, aptitudes, real-horse sex. *(The sex filter arrives with [T020](../tasks/T020-scenario-goals-v2.md).)*
 - Tapping an Uma opens her profile (see [Badges — Displaying flair](badges.md#displaying-flair)).
 
 ### Card Album

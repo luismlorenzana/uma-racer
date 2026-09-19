@@ -10,7 +10,7 @@ the Claude session that runs production; when the two differ, **this file govern
 2. The design doc for the system you're touching (`docs/design/*`). **The docs are the source of truth.** Code follows docs.
 3. `docs/decisions.md` — what's decided (append-only log). `docs/open-questions.md` — what needs the owner.
 4. `docs/technical/architecture.md` — how the pieces fit together.
-5. Your task spec, if you were given one (`docs/tasks/*`).
+5. Your task spec, if you were given one (`docs/tasks/*`), and `docs/tasks/README.md` for where it sits in the plan.
 
 ## Hard rules
 
@@ -24,6 +24,8 @@ the Claude session that runs production; when the two differ, **this file govern
 - **Don't change design numbers** (caps, costs, curves, coefficients) without updating the matching design doc, the pinning
   test in `packages/domain/src/domain.test.ts`, and adding a `docs/decisions.md` entry. Never edit old decision rows; append new ones.
 - **Don't add dependencies casually.** Prefer what's already in the workspace. If you add one, justify it in the PR.
+- **Finish a task by deleting its spec.** When your work merges, the design docs must carry the resulting rules and your
+  task spec is removed in the same PR (D104). Git history keeps it. Never reuse a task number.
 - **Never commit secrets.** (Firebase *web* config in `apps/web/.env.production` is public by design, and is still off-limits for edits.)
 
 ## Setup and commands
@@ -37,7 +39,7 @@ Requirements: Node 22+, pnpm 10 (`corepack enable`).
     pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, local JSON save
     pnpm sim:balance    # headless race balance table
     pnpm data:import    # GameTora datasets → private, gitignored content packs
-    pnpm assets:import  # pack T001 image sources → private WebP atlases (run data import first)
+    pnpm assets:import  # pack image sources → private WebP atlases (run data import first)
 
 Run `pnpm lint && pnpm test && pnpm build` before opening a PR. CI runs the same.
 

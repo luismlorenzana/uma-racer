@@ -5,19 +5,17 @@ Umas are permanent RPG characters. They level up by winning races, train through
 SSR support cards, learn skills and inherit from their parents, and collect a lot of badges and flair,
 while the stable itself grows into a collection.
 
-> **Status:** pre-production. Milestone 1's private content pipeline is built, and Milestone 2 now has a typed local-first
-> save, the real 25-Uma launch Stable, Uma profiles, a persisted featured-Uma Home hero, and a complete first playable
-> Train → Race loop with Uma EXP, levels, ticket rewards, gate shards, and synced race history. Milestone 3 Race Depth is
-> implemented: compiled skills and recovery, versioned replay, course geometry, position keeping, continuous lanes,
-> blocking/overtaking, staged starts, deterministic event presentation, photo finishes, and complete results feedback.
-> Milestone 4 Cards & Collection is complete: full private Card and Uma albums, generated effect/LB display, atomic card
-> promotion, manual per-Uma support decks, Select Coupon redemption, shard exchange, and reload-safe collection reveals are
-> implemented. Milestone 5 Scenarios & Inheritance is complete: save v2, frozen parents and grandparents, pink sparks,
-> awakening/skill refresh, atomic Scenario Start, deterministic private-content-backed goals, authoritative race completion,
-> honest legacy migration, and full Journey tracking are implemented. [Milestone 6](docs/tasks/M006-badges-and-flair.md)
-> is complete: independently versioned facts, the per-Uma and Trainer catalogs/evaluators, retroactive append-only flair,
-> Prestige, all three Badge scopes, showcases, stable records, pinned Umas, and the Trainer profile are implemented.
-> Milestone 7 polish—sound, real icons, richer celebration effects, and physical-device tuning—is next.
+> **Status:** playable and deployed. Milestones 1–6 are complete: the private content pipeline, a typed local-first save
+> with the real 25-Uma launch Stable, the Train → Race loop, race depth (compiled skills, course geometry, position
+> keeping, lanes, staged starts, photo finishes), Card and Uma albums with decks, coupons and shards, save v2 with frozen
+> lineage, pink sparks, Scenario Start and deterministic goals, and the full badge pillar with per-Uma flair, Prestige,
+> showcases, and Trainer achievements.
+>
+> A full alignment review on 2026-09-19 compared the build against the original design. Next comes
+> [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): earnable race-set titles, goals that follow
+> the real horse's career and sex, the three missing JP scenarios, and dependable releases. Then
+> [Milestone 8](docs/tasks/M008-scenario-identity.md) gives each scenario its own modifier and turns on Friend/Group
+> cards, and [Milestone 9](docs/tasks/M009-presentation-polish.md) is presentation polish.
 
 ## Ground rules
 
@@ -105,5 +103,5 @@ docs/           design, technical, research
 | [Support Deck Balance Follow-up](docs/research/support-deck-balance.md) | Weak/mid/mature deck Training results and the T008 G1 follow-up |
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
-| [Tasks](docs/tasks/) | Delegable task specs (see [AGENTS.md](AGENTS.md)) |
+| [Tasks](docs/tasks/README.md) | The current milestone plan and its delegable task specs (see [AGENTS.md](AGENTS.md)) |
 | [Open Questions](docs/open-questions.md) | Currently none. New questions land here before they're resolved |
