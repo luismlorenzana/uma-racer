@@ -138,7 +138,7 @@ export function UmaProfileScreen() {
 
   return (
     <div className="flex flex-col gap-4 pt-2">
-      <Link to="/stable" className="flex min-h-11 items-center gap-1 px-1 font-extrabold text-white text-outline">← Stable</Link>
+      <Link to="/stable" className="flex min-h-11 items-center gap-1 px-1 font-semibold text-ink-soft">← Stable</Link>
 
       <Panel className={`overflow-hidden bg-gradient-to-b from-white to-sky-50 p-0 ${flairSummary?.frame.borderClass ?? ''}`}>
         <div className="relative p-4 pb-3">

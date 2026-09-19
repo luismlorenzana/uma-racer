@@ -1,12 +1,16 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 
-export function Panel({ children, className = '', ...rest }: { children: ReactNode } & HTMLAttributes<HTMLDivElement>) {
+/** Ordinary content surface: white, hairline, one radius (docs/design/visual-system.md#surfaces). */
+export function Panel({
+  label,
+  children,
+  className = '',
+  ...rest
+}: { label?: string; children: ReactNode } & HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      {...rest}
-      className={`rounded-[var(--radius-panel)] border-2 border-white bg-panel/95 p-4 shadow-[var(--shadow-panel)] ${className}`}
-    >
+    <section {...rest} className={`rounded-md border border-hairline bg-panel p-4 shadow-1 ${className}`}>
+      {label && <p className="text-micro mb-2">{label}</p>}
       {children}
-    </div>
+    </section>
   )
 }

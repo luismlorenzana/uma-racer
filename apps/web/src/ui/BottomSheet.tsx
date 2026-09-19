@@ -14,7 +14,7 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
       {open && (
         <>
           <m.div
-            className="fixed inset-0 z-40 bg-ink/40"
+            className="fixed inset-0 z-40 bg-ink/45"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -22,7 +22,7 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
           />
           <m.div
             role="dialog"
-            className="pb-safe fixed inset-x-0 bottom-0 z-50 rounded-t-[1.75rem] border-t-2 border-white bg-cream px-4 shadow-[0_-10px_30px_rgb(0_0_0/0.18)]"
+            className="pb-safe fixed inset-x-0 bottom-0 z-50 rounded-t-lg border-t border-hairline bg-panel px-4 shadow-3"
             initial={reducedMotion ? false : { y: '100%' }}
             animate={{ y: 0 }}
             exit={reducedMotion ? { opacity: 0 } : { y: '100%' }}

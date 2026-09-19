@@ -53,12 +53,14 @@ Two faces, both OFL and self-hosted, latin subset only:
 |---|---|---|
 | Display: headings, numerals, buttons | **Outfit** 600/700, tabular numerals | 44 hero · 32 display · 24 display-sm · 20 title |
 | UI: body, labels, rows, chips | **Inter** 400/500/600 | 17 title-sm · 15 body · 13 body-sm · 12 label · 11 micro |
-| Wordmark only | M PLUS Rounded 1c | the logo, nowhere else |
+| Wordmark only | a drawn mark, arriving with the icon set (T032) | the logo, nowhere else |
 
 - `micro` is uppercase with `0.06em` tracking, used for section labels — the small-caps texture that makes a game UI
   read as designed rather than as a form.
-- **Key numerals get the embossed treatment** copied from Umamusume: a subtle vertical gradient fill, a 1 px darker
-  stroke, and an inner shadow. Big stat values, race placements, level numbers and reward counts only. Never body text.
+- **Key numerals get the embossed treatment** borrowed from Umamusume: a light top shadow and a soft dark drop, applied
+  with the `.numeral` utility. Big stat values, race placements, level numbers and reward counts only, never body text.
+  Over dark surfaces add `.numeral-on-dark`. (Emboss comes from shadows rather than `background-clip: text`, so a glyph
+  can never vanish on an unexpected background.)
 - Line height 1.2 for display, 1.45 for body. One weight step between a row's primary and secondary text.
 
 ## Shape and depth
@@ -100,7 +102,9 @@ Two faces, both OFL and self-hosted, latin subset only:
 
 - Portraits are cover-cropped and **top-anchored** so faces never get cut, over `--surface-scrim`, with a 1 px inner
   light border.
-- Home hero: full-bleed portrait behind the top third, with the scrim carrying the name, level and scenario.
+- **The art source is 128 px** (private atlases), so nothing stretches it across the viewport. The Home hero pairs a
+  crisp 112 px portrait with a heavily blurred copy of the same art as the backdrop; blur hides the upscale and the
+  scrim keeps text legible. Higher-resolution art needs a documented private source (Milestone 11, T038).
 - Reveals and results put art at full width; the panel is a frame, not a container.
 - Missing or retired content shows a labelled placeholder with the same silhouette, never a broken-image grey box.
 

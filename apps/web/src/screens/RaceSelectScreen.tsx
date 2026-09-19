@@ -214,7 +214,7 @@ export function RaceSelectScreen() {
     <div className="flex flex-col gap-3 pt-2">
       <div className="flex items-end justify-between gap-3 px-1">
         <div>
-          <h1 className="text-2xl font-extrabold text-white text-outline">Choose a race</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-ink">Choose a race</h1>
           <p className="text-sm font-bold text-ink-soft">{sortedRaces.length} races · no ticket cost</p>
         </div>
         <select

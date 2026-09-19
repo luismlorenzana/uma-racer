@@ -9,10 +9,13 @@ import { buildUmaFlairSummary } from '../game/flair-view'
 import { buildStableRecentFlair } from '../game/trainer-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
-import { AtlasSprite } from '../ui/AtlasSprite'
-import { GameButton } from '../ui/GameButton'
+import { AtlasSprite, atlasImageStyle } from '../ui/AtlasSprite'
+import { Button } from '../ui/Button'
+import { Crest } from '../ui/Crest'
 import { Meter } from '../ui/Meter'
+import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
+import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { FlairCards } from '../ui/FlairCards'
 
@@ -61,93 +64,193 @@ export function HomeScreen() {
   if (status === 'error') return <ScreenState title="Save needs attention" detail={error ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Uma Racer…" detail="Loading private content and your local save." />
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
+
   const setupPending = !featured.save.scenarioStarted
-  const raceUnlocked = featured.save.scenarioStarted && featured.save.trainingsThisScenario >= 1 && !isGateLevel(featured.save.level)
+  const atGate = isGateLevel(featured.save.level)
+  const raceUnlocked = featured.save.scenarioStarted && featured.save.trainingsThisScenario >= 1 && !atGate
   const goals = buildHomeGoalState(featured.save, contentState.content)
+  const umaHref = `/stable/${encodeURIComponent(featured.save.templateId)}`
+  const trainLabel = setupPending ? 'Set up' : featured.readyToPromote ? 'Promote' : atGate ? 'Complete' : 'Train'
+  const raceLabel = setupPending ? 'Start scenario' : featured.readyToPromote ? 'Next scenario' : 'Race'
+  const statusLine = setupPending
+    ? 'Choose lineage before Training or racing.'
+    : featured.readyToPromote ? 'Ready to promote before racing again.'
+    : atGate ? 'Latest scenario complete.'
+    : raceUnlocked ? 'Progression races are open.'
+    : 'Train once to unlock saved-Uma races.'
 
   return (
-    <div className="flex flex-col gap-4 pt-2">
-      {!persistent && <Panel className="border-amber-300 bg-amber-50 py-3 text-sm font-bold">Memory only — progress cannot persist or sync in this browser.</Panel>}
+    <div className="flex flex-col gap-3 pt-1">
+      {!persistent && (
+        <Panel className="border-warning/40 bg-warning/10 py-3 text-sm">
+          Memory only — progress cannot persist or sync in this browser.
+        </Panel>
+      )}
 
-      <Panel className={`relative overflow-hidden bg-gradient-to-b from-white to-[#e8f6ff] p-0 ${flairSummary ? flairSummary.frame.borderClass : ''}`}>
-        <Link to={`/stable/${encodeURIComponent(featured.save.templateId)}`} className="flex min-h-11 flex-col items-center px-4 pt-6 pb-5">
-          <m.div
-            className={`relative w-44 max-w-[55vw] rounded-full border-4 bg-gradient-to-b from-sky-top to-sky shadow-[var(--shadow-panel)] ${flairSummary ? flairSummary.frame.borderClass : 'border-white'}`}
-            animate={{ scale: [1, 1.025, 1] }}
-            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <AtlasSprite asset={featured.asset} alt={`${featured.template.name} icon`} className="rounded-full" fallback={<div className="flex h-full items-center justify-center text-7xl">🐴</div>} />
-            <span className="absolute -right-1 bottom-3 rounded-full border-2 border-white bg-gold px-2.5 py-0.5 text-sm font-extrabold text-white text-outline">Lv {featured.save.level}</span>
-          </m.div>
-          <p className="mt-4 text-xl font-extrabold">{featured.template.name}</p>
-          <p className="text-sm text-ink-soft">{featured.template.outfit ?? 'Standard outfit'}</p>
-          <p className="mt-1 text-sm font-extrabold text-sky-deep">{featured.scenario?.name ?? `Tier ${featured.tier}`} · Training Level {featured.save.trainingLevel}</p>
-        </Link>
-        <div className="grid grid-cols-2 gap-3 border-t-2 border-white bg-white/60 p-4">
-          <GameButton variant={setupPending || featured.readyToPromote ? 'primary' : 'secondary'} size="lg" disabled={!setupPending && isGateLevel(featured.save.level) && !featured.readyToPromote} onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/training/${encodeURIComponent(featured.save.templateId)}`)}>{setupPending ? 'Set up' : featured.readyToPromote ? 'Promote' : isGateLevel(featured.save.level) ? 'Complete' : 'Train'}</GameButton>
-          <GameButton variant="go" size="lg" disabled={!setupPending && !raceUnlocked && !featured.readyToPromote} onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}>{setupPending ? 'Start scenario' : featured.readyToPromote ? 'Next scenario' : 'Race'}</GameButton>
+      {/* Hero: the portrait is the screen. A blurred copy of the same art fills behind it, so a
+          128 px source never has to stretch across the viewport. */}
+      <section className="relative isolate overflow-hidden rounded-md border border-hairline bg-stage shadow-2">
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-60 blur-2xl" aria-hidden>
+          {featured.asset && (
+            <div className="relative h-full w-full scale-125">
+              <img src={featured.asset.url} alt="" aria-hidden draggable={false} style={atlasImageStyle(featured.asset)} />
+            </div>
+          )}
         </div>
-        <p className="px-4 pb-4 text-center text-xs font-bold text-ink-soft">
-          {setupPending ? 'Choose lineage before Training or racing.' : featured.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(featured.save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock saved-Uma races.'}
-        </p>
-      </Panel>
+        <div className="art-scrim pointer-events-none absolute inset-0 -z-10" aria-hidden />
 
-      <Panel className="bg-gradient-to-br from-[#fff4d6] to-white">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="font-extrabold">🎯 Scenario goals</p>
-            <p className="text-xs font-bold text-ink-soft">{goals.kind === 'active' ? `${goals.completed} / 3 complete · Tier ${goals.tier}` : goals.detail}</p>
+        <Link to={umaHref} className="flex items-end gap-3 p-4 pb-3">
+          <div className="chamfer-tr relative h-28 w-28 shrink-0 overflow-hidden rounded-md border border-white/25 shadow-2">
+            <AtlasSprite
+              asset={featured.asset}
+              alt={`${featured.template.name} portrait`}
+              className="h-full w-full"
+              fallback={<Placeholder label={featured.template.name} />}
+            />
           </div>
-          {goals.kind === 'active' && <div className="flex gap-1" aria-label={`${goals.completed} of 3 goals complete`}>
-            {goals.goals.map((goal) => <span key={goal.id} className={`h-3 w-3 rounded-full border-2 ${goal.status === 'completed' ? 'border-gold bg-gold' : 'border-gold bg-white'}`} />)}
-          </div>}
+          <div className="min-w-0 flex-1 pb-1 text-ink-on-dark">
+            <p className="text-micro text-ink-on-dark-soft">{featured.scenario?.name ?? `Tier ${featured.tier}`}</p>
+            <p className="font-display truncate text-2xl font-bold tracking-tight">{featured.template.name}</p>
+            <p className="truncate text-[13px] text-ink-on-dark-soft">{featured.template.outfit ?? 'Standard outfit'}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Crest tone="accent">Lv <Numeral>{featured.save.level}</Numeral></Crest>
+              <Crest className="numeral-on-dark">TL {featured.save.trainingLevel}</Crest>
+              {flairSummary && flairSummary.frame.label !== 'Plain' && <Crest>{flairSummary.frame.label}</Crest>}
+            </div>
+          </div>
+        </Link>
+
+        <div className="grid grid-cols-2 gap-2 border-t border-white/10 bg-stage/60 p-3 backdrop-blur-sm">
+          <Button
+            variant="secondary"
+            size="lg"
+            disabled={!setupPending && atGate && !featured.readyToPromote}
+            onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/training/${encodeURIComponent(featured.save.templateId)}`)}
+          >
+            {trainLabel}
+          </Button>
+          <Button
+            size="lg"
+            disabled={!setupPending && !raceUnlocked && !featured.readyToPromote}
+            onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}
+          >
+            {raceLabel}
+          </Button>
+          <p className="col-span-2 text-center text-[12px] text-ink-on-dark-soft">{statusLine}</p>
         </div>
-        {goals.kind === 'active' && <div className="mt-3 grid gap-2">
-          {goals.goals.map((goal) => (
-            <button
-              key={goal.id}
-              type="button"
-              disabled={goal.status !== 'active' || goal.race === null || !raceUnlocked}
-              onClick={() => navigate(`/race?uma=${encodeURIComponent(featured.save.templateId)}&goal=${encodeURIComponent(goal.raceId)}`)}
-              className="flex min-h-11 items-center gap-3 rounded-xl bg-white px-3 py-2 text-left disabled:opacity-60"
+      </section>
+
+      <Panel label="Scenario goals">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[13px] text-ink-soft">
+            {goals.kind === 'active' ? `${goals.completed} of 3 complete · Tier ${goals.tier}` : goals.detail}
+          </p>
+          {goals.kind === 'active' && (
+            <div className="flex gap-1" aria-label={`${goals.completed} of 3 goals complete`}>
+              {goals.goals.map((goal) => (
+                <span
+                  key={goal.id}
+                  className={`h-2.5 w-2.5 rounded-full border ${goal.status === 'completed' ? 'border-accent bg-accent' : 'border-hairline-strong bg-sunken'}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        {goals.kind === 'active' && (
+          <div className="mt-2 divide-y divide-[var(--color-hairline)]">
+            {goals.goals.map((goal) => (
+              <button
+                key={goal.id}
+                type="button"
+                disabled={goal.status !== 'active' || goal.race === null || !raceUnlocked}
+                onClick={() => navigate(`/race?uma=${encodeURIComponent(featured.save.templateId)}&goal=${encodeURIComponent(goal.raceId)}`)}
+                className="flex min-h-12 w-full items-center gap-3 py-2 text-left disabled:opacity-55"
+              >
+                <span
+                  aria-hidden
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${
+                    goal.status === 'completed' ? 'bg-accent text-ink' : 'border border-hairline-strong text-ink-faint'
+                  }`}
+                >
+                  {goal.status === 'completed' ? '✓' : goal.race ? '' : '!'}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14px] font-semibold">{goal.label} · {goal.raceName}</span>
+                  <span className="block truncate text-[12px] text-ink-soft">{goal.rule}{goal.race ? '' : ' · target content missing'}</span>
+                </span>
+                {goal.status === 'active' && goal.race && raceUnlocked && <span aria-hidden className="text-ink-faint">›</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </Panel>
+
+      <Panel label="Training tickets">
+        <div className="flex items-baseline justify-between">
+          <p className="font-display text-xl font-bold">
+            <Numeral>{profile.tickets}</Numeral>
+            <span className="text-[13px] font-medium text-ink-faint"> / {TICKET_STORAGE_CAP}</span>
+          </p>
+          <p className="text-[12px] text-ink-soft">+50 each local day</p>
+        </div>
+        <div className="mt-2">
+          <Meter value={profile.tickets / TICKET_STORAGE_CAP} color="var(--color-accent)" height={6} />
+        </div>
+      </Panel>
+
+      {flairSummary && (
+        <Panel label="Recent flair">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-[13px] text-ink-soft">
+              {flairSummary.frame.label} frame · <Numeral>{flairSummary.prestige}</Numeral> Prestige
+            </p>
+            <Link
+              to={`/badges?uma=${encodeURIComponent(featured.save.templateId)}`}
+              className="flex min-h-11 items-center text-[13px] font-semibold text-accent-strong"
             >
-              <span aria-hidden>{goal.status === 'completed' ? '✓' : goal.race ? '○' : '!'}</span>
-              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{goal.label} · {goal.raceName}</span><span className="block text-xs font-bold text-ink-soft">{goal.rule}{goal.race ? '' : ' · Target content missing'}</span></span>
-              {goal.status === 'active' && goal.race && raceUnlocked && <span aria-hidden>›</span>}
-            </button>
-          ))}
-        </div>}
-      </Panel>
+              All badges ›
+            </Link>
+          </div>
+          {flairSummary.recent.length > 0 ? (
+            <FlairCards items={flairSummary.recent} />
+          ) : (
+            <p className="rounded-sm bg-sunken p-3 text-[13px] text-ink-soft">
+              Race, Train, and complete Journeys to begin this Uma’s archive.
+            </p>
+          )}
+        </Panel>
+      )}
 
-      {flairSummary && <Panel>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div><p className="font-extrabold">✦ Recent flair</p><p className="text-xs font-bold text-ink-soft">{flairSummary.frame.label} frame · {flairSummary.prestige} Prestige</p></div>
-          <Link to={`/badges?uma=${encodeURIComponent(featured.save.templateId)}`} className="flex min-h-11 items-center rounded-xl bg-sky-50 px-3 text-xs font-extrabold text-sky-deep">View all Badges</Link>
+      <Panel label="Stable flair">
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <p className="text-[13px] text-ink-soft">Newest across every Uma and Trainer achievement</p>
+          <Link to="/trainer" className="flex min-h-11 items-center text-[13px] font-semibold text-accent-strong">Trainer ›</Link>
         </div>
-        {flairSummary.recent.length > 0
-          ? <FlairCards items={flairSummary.recent} />
-          : <p className="rounded-xl bg-slate-50 p-3 text-sm font-bold text-ink-soft">Race, Train, and complete Journeys to begin this Uma’s archive.</p>}
-      </Panel>}
-
-      <Panel>
-        <div className="mb-2 flex items-center justify-between gap-3"><div><p className="font-extrabold">🏅 Stable flair</p><p className="text-xs font-bold text-ink-soft">Newest across every Uma and Trainer achievement</p></div><Link to="/trainer" className="flex min-h-11 items-center rounded-xl bg-violet-50 px-3 text-xs font-extrabold text-violet-700">Trainer profile</Link></div>
-        <div className="grid gap-2">{stableRecent.map((item) => <Link key={item.id} to={item.to} className="flex min-h-11 items-center justify-between gap-3 rounded-xl bg-white px-3 py-2"><span className="min-w-0"><span className="block truncate text-sm font-extrabold">{item.label}</span><span className="block text-xs text-ink-soft">{item.ownerLabel}</span></span><span className="shrink-0 text-xs font-extrabold text-violet-700">{item.stage}</span></Link>)}</div>
-        {stableRecent.length === 0 && <p className="rounded-xl bg-slate-50 p-3 text-sm font-bold text-ink-soft">Stable-wide flair appears after the first award.</p>}
+        {stableRecent.length > 0 ? (
+          <div className="divide-y divide-[var(--color-hairline)]">
+            {stableRecent.map((item) => (
+              <Link key={item.id} to={item.to} className="flex min-h-12 items-center justify-between gap-3 py-2">
+                <span className="min-w-0">
+                  <span className="block truncate text-[14px] font-semibold">{item.label}</span>
+                  <span className="block truncate text-[12px] text-ink-soft">{item.ownerLabel}</span>
+                </span>
+                <span className="text-micro shrink-0 text-accent-strong">{item.stage}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-sm bg-sunken p-3 text-[13px] text-ink-soft">Stable-wide flair appears after the first award.</p>
+        )}
       </Panel>
 
-      <Panel>
-        <div className="flex items-center justify-between">
-          <p className="font-extrabold">🎫 Training tickets</p>
-          <p className="text-sm font-extrabold text-ink-soft">{profile.tickets} / {TICKET_STORAGE_CAP}</p>
-        </div>
-        <div className="mt-2"><Meter value={profile.tickets / TICKET_STORAGE_CAP} color="linear-gradient(90deg,#ffd65a,#f2b807)" height={12} /></div>
-        <p className="mt-2 text-xs text-ink-soft">+50 every local day · grants accrue to the 500 daily-storage cap</p>
-      </Panel>
-
-      <Panel className="bg-gradient-to-br from-[#fff4d6] to-white">
-        <p className="font-extrabold">🏁 Progression races</p>
-        <p className="mt-1 text-sm text-ink-soft">Race with saved stats, earn Uma EXP and tickets, and climb toward the next scenario gate.</p>
-      </Panel>
+      <m.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18, ease: [0.2, 0, 0, 1], delay: 0.08 }}
+        className="px-1 pb-2 text-center text-[12px] text-ink-faint"
+      >
+        Race with saved stats, earn EXP and tickets, climb toward the next gate.
+      </m.p>
     </div>
   )
 }

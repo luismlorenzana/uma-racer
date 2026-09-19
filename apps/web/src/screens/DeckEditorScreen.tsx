@@ -102,7 +102,7 @@ export function DeckEditorScreen() {
 
   return (
     <div className="flex flex-col gap-4 pt-2 pb-8">
-      <Link to={`/stable/${encodeURIComponent(uma.templateId)}`} className="flex min-h-11 items-center gap-1 px-1 font-extrabold text-white text-outline">← {umaTemplate.name}</Link>
+      <Link to={`/stable/${encodeURIComponent(uma.templateId)}`} className="flex min-h-11 items-center gap-1 px-1 font-semibold text-ink-soft">← {umaTemplate.name}</Link>
 
       <Panel className="bg-gradient-to-br from-violet-50 to-white">
         <div className="flex items-end justify-between gap-3">
@@ -148,7 +148,7 @@ export function DeckEditorScreen() {
       {model.validationErrors.length > 0 && <div className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-900">{model.validationErrors.map((message) => <p key={message}>{message}</p>)}</div>}
 
       <section>
-        <h2 className="text-lg font-extrabold text-white text-outline">Owned cards</h2>
+        <h2 className="font-display text-lg font-bold text-ink">Owned cards</h2>
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
           {TYPES.map((value) => <button key={value} type="button" onClick={() => setType(value)} className={`min-h-11 shrink-0 rounded-full px-3 text-xs font-extrabold ${type === value ? 'bg-violet-600 text-white' : 'bg-white'}`}>{value === 'all' ? 'All types' : TYPE_LABEL[value]}</button>)}
         </div>

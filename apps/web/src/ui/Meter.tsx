@@ -1,14 +1,15 @@
 import { m } from 'motion/react'
 
 /**
- * Stat / progress bar. `spring` (default) fills with a slight overshoot for discrete changes like stat gains;
- * `linear` tracks continuously updating values (race HUD) without spring oscillation. `marker` draws a cap line (0–1).
+ * Stat / progress bar in a sunken track. `spring` (default) fills with a slight overshoot for discrete changes like
+ * stat gains; `linear` tracks continuously updating values (race HUD) without oscillation. `marker` draws a cap tick
+ * (0–1), used for the 1200 soft cap (docs/design/visual-system.md#components).
  */
 export function Meter({
   value,
   color,
   marker,
-  height = 10,
+  height = 6,
   motion = 'spring',
 }: {
   value: number
@@ -19,14 +20,14 @@ export function Meter({
 }) {
   const clamped = Math.max(0, Math.min(1, value))
   return (
-    <div className="relative w-full overflow-hidden rounded-full bg-ink/10" style={{ height }}>
+    <div className="relative w-full overflow-hidden rounded-full bg-sunken" style={{ height }}>
       {motion === 'spring' ? (
         <m.div
           className="h-full rounded-full"
           style={{ background: color, transformOrigin: 'left' }}
           initial={false}
           animate={{ scaleX: clamped }}
-          transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 22 }}
         />
       ) : (
         // Compositor-driven CSS transition: smooth at any frame rate, never overshoots.
@@ -36,7 +37,7 @@ export function Meter({
         />
       )}
       {marker !== undefined && (
-        <div className="absolute top-0 h-full w-0.5 bg-ink/50" style={{ left: `${Math.min(1, marker) * 100}%` }} />
+        <div className="absolute top-0 h-full w-px bg-ink/35" style={{ left: `${Math.min(1, marker) * 100}%` }} />
       )}
     </div>
   )
