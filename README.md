@@ -11,9 +11,10 @@ while the stable itself grows into a collection.
 > lineage, pink sparks, Scenario Start and deterministic goals, and the full badge pillar with per-Uma flair, Prestige,
 > showcases, and Trainer achievements.
 >
-> A full alignment review on 2026-09-19 compared the build against the original design. Next comes
-> [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): earnable race-set titles, goals that follow
-> the real horse's career and sex, the three missing JP scenarios, and dependable releases. Then
+> A full alignment review on 2026-09-19 compared the build against the original design. Work is underway on
+> [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): race-series leg support and retroactive
+> title evaluation are implemented (private coverage publication is pending), followed by goals that follow the real
+> horse's career and sex, the three missing JP scenarios, and dependable releases. Then
 > [Milestone 8](docs/tasks/M008-scenario-identity.md) gives each scenario its own modifier and turns on Friend/Group
 > cards, and [Milestone 9](docs/tasks/M009-presentation-polish.md) is presentation polish.
 

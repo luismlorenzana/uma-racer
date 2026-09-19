@@ -8,13 +8,14 @@ import {
   BADGE_TIER_POINTS,
   BADGE_TIERS,
   FLAIR_EVENT_VERSION,
-  FLAIR_SERIES_REQUIRED_FAMILIES,
+  FLAIR_SERIES_REQUIRED_LEGS,
   FLAIR_SERIES_TAGS,
   GOAL_RIBBON_POINTS,
   HONORS_POINTS,
   PRESTIGE_FRAME_THRESHOLDS,
   TITLE_POINTS,
   countFact,
+  parseFlairSeriesLegId,
   parseBadgeState,
   parseFlairEvent,
   type BadgeTier,
@@ -48,7 +49,7 @@ export type FlairCriterion =
   | { kind: 'goal'; goalId: string }
   | { kind: 'destiny' }
   | { kind: 'perfect-journey' }
-  | { kind: 'series'; tag: FlairSeriesTag; familyIds: string[] }
+  | { kind: 'series'; tag: FlairSeriesTag; legs: { key: string; familyIds: string[] }[] }
   | { kind: 'family-wins'; familyId: string }
   | { kind: 'course-record'; courseId: string; resultId: string; achievedAt: number }
 
@@ -147,6 +148,31 @@ const sorted = (values: Iterable<string>): string[] => [...new Set(values)].sort
 const raceDetailHistory = (state: UmaBadgeStateV1): HistoryGrade =>
   state.history.diagnostics.some((code) => code.startsWith('race-facts-unavailable:')) ? 'untracked' : state.history.race
 
+export interface FlairContentCoverage {
+  coveredSeries: number
+  totalSeries: number
+  coveredLegs: number
+  mainVenues: number
+}
+
+export function flairContentCoverage(races: readonly RaceTemplate[]): FlairContentCoverage {
+  const legsByTag = new Map<FlairSeriesTag, Set<string>>(FLAIR_SERIES_TAGS.map((tag) => [tag, new Set<string>()]))
+  const mainVenues = new Set<string>()
+  for (const race of races) {
+    if (race.venueTags.includes('jra-main')) mainVenues.add(race.venueKey)
+    for (const legId of race.seriesLegs) {
+      const leg = parseFlairSeriesLegId(legId)
+      if (leg) legsByTag.get(leg.tag)!.add(legId)
+    }
+  }
+  return {
+    coveredSeries: FLAIR_SERIES_TAGS.filter((tag) => legsByTag.get(tag)!.size === FLAIR_SERIES_REQUIRED_LEGS[tag]).length,
+    totalSeries: FLAIR_SERIES_TAGS.length,
+    coveredLegs: [...legsByTag.values()].reduce((sum, legs) => sum + legs.size, 0),
+    mainVenues: mainVenues.size,
+  }
+}
+
 function definition(input: Omit<FlairDefinition, 'thresholds' | 'points' | 'hidden' | 'enabled' | 'history' | 'tags' | 'frozenKeys'> & Partial<Pick<FlairDefinition, 'thresholds' | 'points' | 'hidden' | 'enabled' | 'history' | 'tags' | 'frozenKeys'>>): FlairDefinition {
   return {
     thresholds: [],
@@ -241,13 +267,22 @@ export function buildUmaFlairCatalog(input: {
   const definitions = fixedDefinitions(state)
   const detailHistory = raceDetailHistory(state)
   const venues = new Map<string, string>()
-  const familyRows = new Map<string, { grade: RaceTemplate['grade']; name: string; series: Set<FlairSeriesTag> }>()
+  const familyRows = new Map<string, { grade: RaceTemplate['grade']; name: string }>()
+  const seriesLegs = new Map<FlairSeriesTag, Map<string, Set<string>>>(
+    FLAIR_SERIES_TAGS.map((tag) => [tag, new Map<string, Set<string>>()]),
+  )
   for (const race of [...input.races].sort((left, right) => left.id.localeCompare(right.id))) {
     if (!venues.has(race.venueKey)) venues.set(race.venueKey, race.venue)
-    const family = familyRows.get(race.familyId) ?? { grade: race.grade, name: race.name, series: new Set<FlairSeriesTag>() }
-    race.series.forEach((tag) => family.series.add(tag))
+    const family = familyRows.get(race.familyId) ?? { grade: race.grade, name: race.name }
     if (race.grade === 'g1') family.grade = 'g1'
     familyRows.set(race.familyId, family)
+    for (const legId of race.seriesLegs) {
+      const leg = parseFlairSeriesLegId(legId)
+      if (!leg) continue
+      const families = seriesLegs.get(leg.tag)!.get(legId) ?? new Set<string>()
+      families.add(race.familyId)
+      seriesLegs.get(leg.tag)!.set(legId, families)
+    }
   }
   for (const venueKey of sorted(new Set([...venues.keys(), ...state.facts.venueWins.map((row) => row.key)]))) {
     definitions.push(definition({
@@ -271,11 +306,13 @@ export function buildUmaFlairCatalog(input: {
     history: detailHistory, tags: ['race', 'venue'], frozenKeys: mainVenueKeys,
   }))
   for (const tag of FLAIR_SERIES_TAGS) {
-    const familyIds = sorted([...familyRows].filter(([, family]) => family.series.has(tag)).map(([id]) => id))
+    const legs = [...seriesLegs.get(tag)!]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, familyIds]) => ({ key, familyIds: sorted(familyIds) }))
     definitions.push(definition({
-      awardKey: `title:${tag}`, kind: 'title', label: titleLabels[tag], description: `Win every family in the ${titleLabels[tag]} set.`,
-      category: 'title', criterion: { kind: 'series', tag, familyIds }, enabled: familyIds.length === FLAIR_SERIES_REQUIRED_FAMILIES[tag],
-      history: detailHistory, tags: ['title', 'race', tag], frozenKeys: familyIds,
+      awardKey: `title:${tag}`, kind: 'title', label: titleLabels[tag], description: `Win every leg in the ${titleLabels[tag]} set.`,
+      category: 'title', criterion: { kind: 'series', tag, legs }, enabled: legs.length === FLAIR_SERIES_REQUIRED_LEGS[tag],
+      history: detailHistory, tags: ['title', 'race', tag], frozenKeys: legs.map((leg) => leg.key),
     }))
   }
   const knownFamilyIds = sorted(new Set([...familyRows.keys(), ...state.facts.familyWins.map((row) => row.key)]))
@@ -365,7 +402,8 @@ function criterionValue(state: UmaBadgeStateV1, criterion: FlairCriterion): numb
   if (criterion.kind === 'goal') return facts.goals.some((goal) => goal.goalId === criterion.goalId) ? 1 : 0
   if (criterion.kind === 'destiny') return facts.goals.length
   if (criterion.kind === 'perfect-journey') return facts.completions.length >= 3 && facts.completions.every((entry) => entry.honors) ? 1 : 0
-  if (criterion.kind === 'series') return criterion.familyIds.length > 0 && criterion.familyIds.every((id) => countFact(facts.familyWins, id) > 0) ? 1 : 0
+  if (criterion.kind === 'series') return criterion.legs.length > 0 && criterion.legs.every((leg) =>
+    leg.familyIds.some((familyId) => countFact(facts.familyWins, familyId) > 0)) ? 1 : 0
   if (criterion.kind === 'family-wins') return countFact(facts.familyWins, criterion.familyId)
   return facts.courseBests.some((entry) => entry.courseId === criterion.courseId) ? 1 : 0
 }
@@ -496,7 +534,14 @@ export function projectFlairProgress(definition: FlairDefinition, state: UmaBadg
   const trophyEarned = trophyFamilyId !== null && state.awards.trophies.some((entry) => entry.familyId === trophyFamilyId)
   const value = definition.history === 'untracked' ? null : criterionValue(state, definition.criterion)
   const highestStage = titleEarned || trophyEarned ? 'one-off' : earned.at(-1)?.stage ?? null
-  if (!definition.enabled) return { awardKey: definition.awardKey, value, nextThreshold: null, percentage: null, highestStage, status: 'disabled', history: definition.history, progressLabel: 'Unavailable in current content' }
+  if (!definition.enabled) {
+    const progressLabel = definition.criterion.kind === 'series'
+      ? 'Race-series coverage is not published'
+      : definition.awardKey === 'badge:grand-tour'
+        ? 'Main-venue coverage is not published'
+        : 'Unavailable in current content'
+    return { awardKey: definition.awardKey, value, nextThreshold: null, percentage: null, highestStage, status: 'disabled', history: definition.history, progressLabel }
+  }
   if (definition.hidden && !highestStage) return { awardKey: definition.awardKey, value: null, nextThreshold: null, percentage: null, highestStage: null, status: 'hidden', history: definition.history, progressLabel: 'Hidden' }
   if (definition.history === 'untracked') return { awardKey: definition.awardKey, value: null, nextThreshold: null, percentage: null, highestStage, status: 'untracked', history: definition.history, progressLabel: 'History unavailable' }
   const thresholds = definition.kind === 'tiered' ? definition.thresholds : [definition.thresholds[0] ?? 1]

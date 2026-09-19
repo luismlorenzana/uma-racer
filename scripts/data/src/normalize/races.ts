@@ -79,6 +79,7 @@ export function normalizeRaces(value: unknown): NormalizeResult<RaceTemplate> {
       venueKey: trackId!,
       venueTags: [],
       series: [],
+      seriesLegs: [],
       courseId,
       season,
       fieldSize: Math.min(entries, 18),

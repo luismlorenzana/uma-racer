@@ -107,7 +107,7 @@ const goalRaces: RaceTemplate[] = [
 ].map(([id, grade, familyId], index) => ({
   id: id!, familyId: familyId!, name: `Synthetic Goal ${index + 1}`, grade: grade as RaceTemplate['grade'], surface: 'turf',
   distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium', direction: 'left', venue: 'Synthetic',
-  venueKey: 'synthetic-venue', venueTags: [], series: [],
+  venueKey: 'synthetic-venue', venueTags: [], series: [], seriesLegs: [],
   courseId: `goal-course-${index + 1}`, season: 1, fieldSize: 8,
 }))
 
@@ -240,8 +240,39 @@ describe('save persistence', () => {
     expect(await db.flairEvents.toArray()).toEqual([expect.objectContaining({ data: expect.objectContaining({ retroactive: true, source: { kind: 'migration', id: null, tier: null } }) })])
     await expect(bootstrapUmaFlair(loaded, 26)).resolves.toBe(0)
 
+    if (!awarded || awarded.data.scope !== 'uma') throw new Error('Expected an awarded Uma badge state')
+    await db.badges.put({
+      ...awarded,
+      data: {
+        ...awarded.data,
+        facts: {
+          ...awarded.data.facts,
+          familyWins: goalRaces.map((race) => ({ key: race.familyId, count: 1, grade: race.grade, series: ['triple-crown' as const] })),
+        },
+      },
+    })
+    const coveredRaces = goalRaces.map((race, index) => ({
+      ...race,
+      series: ['triple-crown' as const],
+      seriesLegs: [`triple-crown:leg-${index + 1}`],
+    }))
+    const coveredContent: LoadedContent = {
+      ...loaded,
+      manifest: { ...loaded.manifest, version: 'expanded-content-v2' },
+      races: { items: coveredRaces, byId: new Map(coveredRaces.map((race) => [race.id, race])) },
+    }
+    await expect(bootstrapUmaFlair(coveredContent, 27)).resolves.toBe(1)
+    const retroAwarded = await db.badges.get('uma:u00')
+    expect(retroAwarded?.data).toMatchObject({
+      awards: { titles: [expect.objectContaining({ awardKey: 'title:triple-crown' })] },
+    })
+    expect((await db.flairEvents.toArray()).filter((row) => row.data.awardKey === 'title:triple-crown')).toEqual([
+      expect.objectContaining({ data: expect.objectContaining({ retroactive: true, source: { kind: 'migration', id: null, tier: null } }) }),
+    ])
+    await expect(bootstrapUmaFlair(coveredContent, 28)).resolves.toBe(0)
+
     await expect(bootstrapBadgeFacts(loaded, 30)).resolves.toBe(0)
-    expect(await db.badges.get('uma:u00')).toEqual(awarded)
+    expect(await db.badges.get('uma:u00')).toEqual(retroAwarded)
     expect(await db.outbox.where('kind').equals('badges').count()).toBe(25)
   })
 

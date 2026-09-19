@@ -92,6 +92,8 @@ export interface RaceTemplate {
   venueTags: ('jra-main')[]
   /** Semantic race-set classifications supplied by the ignored flair override. */
   series: FlairSeriesTag[]
+  /** Stable semantic series-leg identities (`<tag>:<leg-key>`) supplied by the ignored flair override. */
+  seriesLegs: string[]
   courseId: string
   season: number
   fieldSize: number

@@ -141,6 +141,7 @@ describe('ContentRuntime', () => {
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
     expect(result.content.umas.byId.has('uma-x')).toBe(true)
+    expect(result.content.races.items[0]?.seriesLegs).toEqual([])
     expect(result.content.origin).toBe('network')
     expect(getContentAsset(result.content, 'uma-icons', 'uma-x')).toMatchObject({
       url: 'blob:synthetic-1',

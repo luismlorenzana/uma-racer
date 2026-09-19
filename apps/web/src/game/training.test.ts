@@ -97,7 +97,7 @@ function content(): LoadedContent {
   ].map(([id, grade, familyId], index) => ({
     id: id!, familyId: familyId!, name: `Synthetic Race ${index + 1}`, grade: grade as RaceTemplate['grade'],
     surface: 'turf', distance: 1600 + index * 200, distanceCategory: index < 2 ? 'mile' : 'medium',
-    direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [], courseId: 'course-goals', season: 1, fieldSize: 8,
+    direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [], seriesLegs: [], courseId: 'course-goals', season: 1, fieldSize: 8,
   }))
   const course: CourseTemplate = {
     id: 'course-goals', trackId: 'track-goals', distance: 3, terrain: 1, turn: 1,

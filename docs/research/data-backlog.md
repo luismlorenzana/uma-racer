@@ -40,8 +40,8 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 
 - [x] Race catalog: name, grade, venue, surface, distance, and direction.
 - [x] Stable race-family ids for matching career objectives to concrete gameplay race variants.
-- [x] Private race-series/main-venue override contract, validation, normalized tags, and aggregate-only diagnostics.
-- [ ] Populate and maintain `content/overrides/flair.json` (Claude's, D107): series **legs** with their alias families plus the ten `jra-main` venues. Tracked by [T019](../tasks/T019-race-series-and-titles.md). No live identifier or mapping may enter git.
+- [x] Private race-series/main-venue override v2 contract, leg-alias validation, normalized `seriesLegs`, and aggregate-only diagnostics.
+- [ ] Populate, publish, and maintain `content/overrides/flair.json` (Claude's, D107): series **legs** with their alias families plus the ten `jra-main` venues. This is the private production follow-through after T019; no live identifier or mapping may enter git.
 - [x] JP scenario list verified against the public GameTora `scenarios` dataset on 2026-09-19: 14 released scenarios, all
       dates confirmed. Tiers 12–14 are added by [T021](../tasks/T021-jp-scenarios-12-14.md).
 - [x] Course layouts: corners, straights, and slopes per course (for later race engine milestones).

@@ -10,6 +10,7 @@ import {
   badgeStateId,
   decodeBadgeFilters,
   encodeBadgeFilters,
+  flairContentCoverage,
   isTrainerSavedBadgeView,
   moveItem,
   moveShowcaseRefs,
@@ -178,6 +179,8 @@ export function BadgesScreen() {
     ? buildTrainerBadgeCollection(contentState.content, trainerState, owned, raceHistory) : null,
   [contentState, owned, raceHistory, trainerState])
   const collection = route.scope === 'stable' ? stableCollection : route.scope === 'trainer' ? trainerCollection : umaCollection
+  const coverage = useMemo(() => contentState.status === 'ready'
+    ? flairContentCoverage(contentState.content.races.items) : null, [contentState])
   const visible = useMemo(() => collection ? sortBadgeItems(filterBadgeItems(collection.items, route.query, route.filters), route.sort) : [], [collection, route.filters, route.query, route.sort])
   const detail = route.detail && collection ? collection.items.find((item) => item.awardKey === route.detail) ?? null : null
   const preferenceState = route.scope === 'uma' ? umaState : trainerState
@@ -299,6 +302,7 @@ export function BadgesScreen() {
       {route.scope === 'uma' && selectedJoin?.status === 'ready' && <button type="button" onClick={() => setPickerOpen(true)} className="mt-3 flex min-h-14 w-full items-center gap-3 rounded-2xl bg-white p-2 text-left shadow-sm"><AtlasSprite asset={selectedJoin.value.asset} decorative className={`h-12 w-12 shrink-0 rounded-xl border-2 ${umaCollection?.frame.borderClass ?? 'border-white'}`} fallback={<div className="flex h-full items-center justify-center">🐴</div>} /><span className="min-w-0 flex-1"><span className="block truncate font-extrabold">{selectedJoin.value.template.name}</span><span className="block text-xs font-bold text-ink-soft">Uma Lv {selectedJoin.value.save.level} · {umaCollection?.activeTitle ? collection.items.find((item) => item.awardKey === umaCollection.activeTitle)?.label ?? umaCollection.activeTitle : 'No active title'}</span></span><span aria-hidden>⌄</span></button>}
       {route.scope === 'stable' && stableCollection && <p className="mt-3 rounded-xl bg-white p-3 text-sm font-bold">{stableCollection.ownedUmaCount} known Umas · {stableCollection.completionPercent}% Stable completion</p>}
       {route.scope === 'trainer' && trainerCollection && <Link to="/trainer" className="mt-3 flex min-h-11 items-center justify-between rounded-xl bg-white px-3 text-sm font-extrabold"><span>{trainerCollection.displayName} · {trainerCollection.earnedCount} achievements</span><span>Profile →</span></Link>}
+      {coverage && <p className={`mt-2 rounded-xl p-2 text-xs font-bold ${coverage.coveredSeries === 0 ? 'bg-amber-50 text-amber-900' : 'bg-white text-ink-soft'}`}>{coverage.coveredSeries === 0 ? 'Race-series coverage is not published yet; set titles are temporarily unavailable.' : `Race-series coverage · ${coverage.coveredSeries}/${coverage.totalSeries} series · ${coverage.mainVenues}/10 main venues`}</p>}
       {!persistent && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-extrabold">Memory only — edits last for this session and cannot sync.</p>}
       {route.unavailable.length > 0 && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-bold">Some filters are unavailable: {route.unavailable.join(', ')}</p>}
     </Panel>

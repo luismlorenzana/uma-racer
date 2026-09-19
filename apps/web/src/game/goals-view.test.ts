@@ -12,7 +12,7 @@ const template: UmaTemplate = {
 }
 const races: RaceTemplate[] = ['a', 'b', 'c'].map((id, index) => ({
   id: `race-${id}`, familyId: String(100 + index), name: `Synthetic Race ${id.toUpperCase()}`, grade: 'op', surface: 'turf',
-  distance: 1600, distanceCategory: 'mile', direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [],
+  distance: 1600, distanceCategory: 'mile', direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [], seriesLegs: [],
   courseId: `course-${id}`, season: 1, fieldSize: 8,
 }))
 const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({
