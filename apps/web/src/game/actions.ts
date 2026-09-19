@@ -69,3 +69,18 @@ export async function redeemUmaCoupon(id: string) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.redeemUmaCoupon(id)
 }
+
+export async function saveBadgePreferences(id: string, preferences: import('@racer/domain').BadgePreferences) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.saveBadgePreferences(id, preferences)
+}
+
+export async function listFlairTimeline(
+  umaId: string,
+  before: import('./badge-preferences').FlairTimelineCursor | null = null,
+  kind: import('@racer/domain').FlairEventKind | null = null,
+  limit = 30,
+) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.listFlairTimeline(umaId, before, kind, limit)
+}

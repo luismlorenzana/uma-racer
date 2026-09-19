@@ -80,9 +80,9 @@ The implemented Journey renders one medallion per reached tier with three labele
 3/3, and a distinct Not tracked mark for migrated history. Goal details link to current target races or the exact committed
 result replay; missing private content falls back to its safe id.
 
-T016's implemented compact Flair archive sits alongside the existing Profile content: active-title default, derived
-Prestige/frame, distinct badge/title/trophy counts, and the latest three awards. The 12-pin showcase and title picker remain
-T017 work and are not simulated by this compact surface.
+The implemented Profile Badge showcase uses the same projection as the Badge destination: active title, derived
+Prestige/frame, distinct badge/title/trophy counts, the first 12 flattened pins, recent flair, and a direct “View all
+Badges” link. An empty showcase links to pin mode and never auto-pins an award.
 
 ### Support Deck Editor
 

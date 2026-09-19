@@ -1,4 +1,4 @@
-import { DISTANCE_CATEGORIES, STRATEGIES, SURFACES, UMA_SHARDS_PER_COUPON, tierOfLevel } from '@racer/domain'
+import { DISTANCE_CATEGORIES, STRATEGIES, SURFACES, UMA_SHARDS_PER_COUPON, badgeStateId, tierOfLevel } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
@@ -7,6 +7,8 @@ import { exchangeUmaShards, redeemUmaCoupon } from '../game/actions'
 import { EMPTY_UMA_ALBUM_FILTERS, buildUmaAlbum, type UmaAlbumFilters, type UmaAlbumItem } from '../game/collection-view'
 import type { UmaSort } from '../game/view'
 import { useGame } from '../game/store'
+import { buildUmaFlairSummary } from '../game/flair-view'
+import type { BadgeFrameStyle } from '../game/badge-frame'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
 import { GameButton } from '../ui/GameButton'
@@ -17,10 +19,10 @@ const FILTER_LABELS = { tier: 'Tier', surface: 'Surface', distance: 'Distance', 
 type FilterKind = keyof typeof FILTER_LABELS
 const titleCase = (value: string) => `${value[0]!.toUpperCase()}${value.slice(1)}`
 
-function UmaTile({ item, onUnowned }: { item: UmaAlbumItem; onUnowned: () => void }) {
+function UmaTile({ item, onUnowned, frame }: { item: UmaAlbumItem; onUnowned: () => void; frame: BadgeFrameStyle | null }) {
   const body = <>
     <div className="relative bg-gradient-to-b from-sky-100 to-white p-2">
-      <AtlasSprite asset={item.asset} alt={item.owned ? `${item.template.name} icon` : `${item.template.name} silhouette`} className={`w-full rounded-xl bg-sky-50 ${item.owned ? '' : 'brightness-0 opacity-35'}`} fallback={<div className="flex h-full items-center justify-center text-4xl">🐴</div>} />
+      <AtlasSprite asset={item.asset} alt={item.owned ? `${item.template.name} icon` : `${item.template.name} silhouette`} className={`w-full rounded-xl border-2 bg-sky-50 ${item.owned ? frame?.borderClass ?? 'border-white' : 'border-white brightness-0 opacity-35'}`} fallback={<div className="flex h-full items-center justify-center text-4xl">🐴</div>} />
       <span className="absolute top-3 left-3 rounded-full bg-ink/75 px-2 py-0.5 text-xs font-extrabold text-white">{item.owned ? `T${item.view?.tier ?? 1}` : 'New'}</span>
       {item.view?.readyToPromote && <span className="absolute right-2 bottom-2 rounded-full bg-gold px-2 py-1 text-[11px] font-extrabold text-white text-outline">Ready!</span>}
     </div>
@@ -30,7 +32,7 @@ function UmaTile({ item, onUnowned }: { item: UmaAlbumItem; onUnowned: () => voi
       {item.save ? <div className="mt-2 flex items-center justify-between text-xs font-extrabold"><span>Uma Lv {item.save.level}</span><span>TL {item.save.trainingLevel}</span></div> : <p className="mt-2 text-xs font-extrabold text-violet-700">Unowned outfit</p>}
     </div>
   </>
-  const className = `block min-w-0 overflow-hidden rounded-[1.25rem] border-2 bg-white/95 text-left shadow-[var(--shadow-panel)] ${item.owned ? 'border-white' : 'border-violet-200'}`
+  const className = `block min-w-0 overflow-hidden rounded-[1.25rem] border-2 bg-white/95 text-left shadow-[var(--shadow-panel)] ${item.owned ? frame?.borderClass ?? 'border-white' : 'border-violet-200'}`
   return item.owned
     ? <Link to={item.view?.readyToPromote ? `/scenario/${encodeURIComponent(item.template.id)}/start` : `/stable/${encodeURIComponent(item.template.id)}`} className={className}>{body}</Link>
     : <button type="button" onClick={onUnowned} className={className}>{body}</button>
@@ -47,6 +49,8 @@ export function StableScreen() {
   const persistent = useGame((state) => state.persistent)
   const profile = useGame((state) => state.profile)
   const owned = useGame((state) => state.umas)
+  const badges = useGame((state) => state.badges)
+  const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
   const sync = useGame((state) => state.sync)
   const navigate = useNavigate()
@@ -63,6 +67,15 @@ export function StableScreen() {
   const album = useMemo(() => contentState.status === 'ready' && profile
     ? buildUmaAlbum(contentState.content, owned, profile, filters, sort) : null,
   [contentState, filters, owned, profile, sort])
+  const frames = useMemo(() => {
+    if (contentState.status !== 'ready') return new Map<string, BadgeFrameStyle>()
+    return new Map(Object.values(owned).flatMap((save) => {
+      const state = badges[badgeStateId(save.templateId)]
+      return state?.scope === 'uma'
+        ? [[save.templateId, buildUmaFlairSummary(contentState.content, state, flairEvents).frame] as const]
+        : []
+    }))
+  }, [badges, contentState, flairEvents, owned])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to open your Stable" detail="Your private roster stays behind your account." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish a private content version before creating a save." />
@@ -119,7 +132,7 @@ export function StableScreen() {
     <div className="flex gap-2 overflow-x-auto pb-1">{(['all', 'owned', 'unowned'] as const).map((ownership) => <button key={ownership} type="button" onClick={() => setFilters((value) => ({ ...value, ownership }))} className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-extrabold ${filters.ownership === ownership ? 'bg-violet-600 text-white' : 'bg-white'}`}>{titleCase(ownership)}</button>)}</div>
     <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Stable filters">{(Object.keys(FILTER_LABELS) as FilterKind[]).map((kind) => <button key={kind} type="button" className={`min-h-11 shrink-0 rounded-full border-2 px-3 text-sm font-extrabold ${activeLabel(kind).startsWith('All') ? 'border-white bg-white/85' : 'border-sky bg-sky text-white text-outline'}`} onClick={() => kind === 'ready' ? setFilters((current) => ({ ...current, ready: !current.ready })) : setFilterSheet(kind)}>{FILTER_LABELS[kind]}: {activeLabel(kind)}</button>)}</div>
 
-    {album.items.length ? <div className="grid grid-cols-2 gap-3">{album.items.map((item) => <UmaTile key={item.template.id} item={item} onUnowned={() => { setSelected(item); setError(null) }} />)}</div> : <Panel className="text-center"><p className="font-extrabold">No Uma outfits match these filters.</p><button type="button" className="mt-3 min-h-11 rounded-2xl bg-sky px-5 font-extrabold text-white" onClick={() => setFilters(EMPTY_UMA_ALBUM_FILTERS)}>Reset filters</button></Panel>}
+    {album.items.length ? <div className="grid grid-cols-2 gap-3">{album.items.map((item) => <UmaTile key={item.template.id} item={item} frame={frames.get(item.template.id) ?? null} onUnowned={() => { setSelected(item); setError(null) }} />)}</div> : <Panel className="text-center"><p className="font-extrabold">No Uma outfits match these filters.</p><button type="button" className="mt-3 min-h-11 rounded-2xl bg-sky px-5 font-extrabold text-white" onClick={() => setFilters(EMPTY_UMA_ALBUM_FILTERS)}>Reset filters</button></Panel>}
 
     <BottomSheet open={filterSheet !== null} onClose={() => setFilterSheet(null)}>{filterSheet && <div><h2 className="mb-3 text-xl font-extrabold">{FILTER_LABELS[filterSheet]}</h2>{filterSheet !== 'ready' && <div className="grid gap-2"><OptionButton selected={filters[filterSheet] === null} label="All" onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: null })); setFilterSheet(null) }} />{options.map((option) => <OptionButton key={String(option.value)} selected={filters[filterSheet] === option.value} label={option.label} onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: option.value })); setFilterSheet(null) }} />)}</div>}</div>}</BottomSheet>
     <BottomSheet open={sortOpen} onClose={() => setSortOpen(false)}><h2 className="mb-3 text-xl font-extrabold">Sort Stable</h2><div className="grid gap-2">{([['name', 'Name'], ['uma-level', 'Uma Level'], ['training-level', 'Training Level']] as const).map(([value, label]) => <OptionButton key={value} selected={sort === value} label={label} onClick={() => { setSort(value); setSortOpen(false) }} />)}</div></BottomSheet>

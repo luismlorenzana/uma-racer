@@ -164,4 +164,7 @@ Profile/Badges, `docs/technical/architecture.md`, `docs/decisions.md`, T002, T00
 
 ## Implementation status
 
-Definition complete; implementation has not started.
+Implemented on 2026-09-18. The shipped slice includes the lazy Uma/Stable route, pure privacy-safe projections, typed URL
+state, full detail/trophy/timeline views, active titles, unlimited pins and bounded groups/saved views, accessible and
+pointer reorder paths, atomic local-first writes, preference-aware sync conflict rebase, trainer preference bootstrap,
+Profile/Home/Stable/reveal frame integration, and synthetic tests. Trainer awards remain deferred to T018 as specified.

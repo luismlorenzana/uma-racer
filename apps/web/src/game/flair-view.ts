@@ -6,12 +6,12 @@ import {
   buildUmaFlairCatalog,
   orderFlairEventsForFanfare,
   prestigeForState,
-  prestigeFrame,
   type FlairEventRecord,
   type FlairEventV1,
   type UmaBadgeStateV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
+import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
 
 export interface FlairEventView {
   id: string
@@ -29,7 +29,7 @@ export interface FlairEventView {
 
 export interface UmaFlairSummary {
   prestige: number
-  frame: ReturnType<typeof prestigeFrame>
+  frame: BadgeFrameStyle
   activeTitle: string | null
   badgeCount: number
   titleCount: number
@@ -133,7 +133,7 @@ export function buildUmaFlairSummary(
       titleCase(state.preferences.activeTitleId.replace(/^title:/, ''))
   return {
     prestige,
-    frame: prestigeFrame(prestige),
+    frame: badgeFrameStyle(prestige),
     activeTitle,
     badgeCount: new Set(state.awards.badges.map((entry) => entry.awardKey)).size,
     titleCount: state.awards.titles.length,

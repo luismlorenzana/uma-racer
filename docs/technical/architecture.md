@@ -115,7 +115,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   evaluates the complete per-Uma catalog after each fact transition and during one content-ready retroactive migration;
   every changed badge state and append-only event commits inside the triggering Training/race/scenario/collection
   transaction. Lost Training/lineage history stays a labeled lower bound, and unresolved detailed race/completion history
-  stays untracked instead of being fabricated. T017 initializes collection preferences/UI; T018 fills the trainer shell.
+  stays untracked instead of being fabricated. T017 now initializes the preference-only trainer shell, lazy Uma/Stable
+  collection UI, paged timeline reads, and conflict rebase; T018 fills the trainer shell with account facts and awards.
 - New race rows snapshot bounded accomplishment metadata from the authoritative content/input/timeline without changing
   engine replay versions, plus exact `earnedFlairEventIds` (including `[]`). Deterministic per-Uma `flairEvents` are
   idempotent by scope+Uma+award+stage; retry validates and returns stored ids, while reload renders a summary without fresh
@@ -231,7 +232,10 @@ apps/web/src/
   persisted ids to private content with safe fallbacks; goal state never enters Pixi or changes simulation inputs.
 - Badge/catalog/evaluator and Trainer aggregation stay pure in `@racer/domain`. Web view models join current private labels,
   apply filters/sorts/search, and window the lazy Badge route. Preference commands re-read and replace only title/showcase/
-  saved-view fields so stale UI cannot overwrite newly earned facts. Profile/Home/Results consume the same projections.
+  saved-view fields so stale UI cannot overwrite newly earned facts. A sync conflict adopts the server's newer award facts,
+  filters local references against those facts, and queues still-valid local preferences on top. Timeline pages walk the
+  `createdAt` IndexedDB cursor and filter one Uma without materializing other Umas' logs. Profile/Home/Stable/reveal surfaces
+  consume the same pure Prestige-frame projection.
 - **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.

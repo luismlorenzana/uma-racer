@@ -98,6 +98,10 @@ const FLAIR_SERIES = [
 ] as const
 const FLAIR_KINDS = ['badge-tier', 'one-off', 'goal-ribbon', 'honors', 'title', 'trophy-earned', 'trainer-achievement'] as const
 const BADGE_TIERS = ['bronze', 'silver', 'gold', 'platinum', 'rainbow', 'one-off'] as const
+const BADGE_FILTER_CATEGORIES = [
+  'victories', 'surface', 'distance', 'strategy', 'venue', 'race-feat', 'stats', 'scenario', 'training', 'skills',
+  'goals', 'lineage', 'title', 'trophy',
+] as const
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -195,11 +199,17 @@ function parseBadgePreferences(value: unknown, trainer: boolean): boolean {
     !Array.isArray(value.savedViews) || value.savedViews.length > 20) return false
   const refs = new Set<string>()
   const groupIds = new Set<string>()
+  const groupNames = new Set<string>()
   for (const [index, group] of value.showcaseGroups.entries()) {
     if (!isRecord(group) || !exactKeys(group, ['id', 'name', 'awardRefs']) || !isId(group.id) || groupIds.has(group.id) ||
       (index === 0 ? group.id !== 'default' || group.name !== null : typeof group.name !== 'string' || group.name.trim().length < 1 || group.name.trim().length > 40)) return false
     const awardRefs = parseUniqueIds(group.awardRefs)
     if (!awardRefs || awardRefs.some((ref) => refs.has(ref))) return false
+    if (index > 0) {
+      const name = (group.name as string).trim().toLocaleLowerCase()
+      if (groupNames.has(name)) return false
+      groupNames.add(name)
+    }
     awardRefs.forEach((ref) => refs.add(ref))
     groupIds.add(group.id)
   }
@@ -208,7 +218,7 @@ function parseBadgePreferences(value: unknown, trainer: boolean): boolean {
   for (const view of value.savedViews) {
     if (!isRecord(view) || !exactKeys(view, ['id', 'name', 'filters', 'sort']) || !isId(view.id) || viewIds.has(view.id) ||
       typeof view.name !== 'string' || view.name.trim().length < 1 || view.name.trim().length > 40 ||
-      !['recent', 'tier', 'closest', 'rarest', 'alphabetical', 'category'].includes(String(view.sort)) || !parseCounts(view.filters, 30)) return false
+      !['recent', 'tier', 'closest', 'rarest', 'alphabetical', 'category'].includes(String(view.sort)) || !parseSavedViewFilters(view.filters)) return false
     const name = view.name.trim().toLocaleLowerCase()
     if (names.has(name)) return false
     names.add(name)
@@ -216,6 +226,41 @@ function parseBadgePreferences(value: unknown, trainer: boolean): boolean {
   }
   return !trainer || (typeof value.displayName === 'string' && value.displayName.trim().length > 0 &&
     [...value.displayName.trim()].length <= 32 && parseUniqueIds(value.pinnedUmaIds) !== null)
+}
+
+function parseSavedViewFilters(value: unknown): boolean {
+  if (!parseCounts(value, 30)) return false
+  const rows = value as { key: string; count: number }[]
+  const kinds = new Set<string>()
+  const enums: Record<string, readonly string[]> = {
+    category: BADGE_FILTER_CATEGORIES,
+    type: [...BADGE_TIERS, 'title', 'trophy', 'goal-ribbon', 'honors'],
+    surface: ['turf', 'dirt'], distance: DISTANCES, strategy: STRATEGIES,
+    aptitude: ['challenge', 'impossible', 'unorthodox'], grade: RACE_GRADES,
+    status: ['earned', 'locked', 'progress', 'complete', 'untracked'], pinned: ['yes', 'no'],
+    rarity: ['common', 'uncommon', 'rare', 'elite'],
+  }
+  for (const row of rows) {
+    if (row.key === 'earned-after') {
+      if (kinds.has(row.key)) return false
+      kinds.add(row.key)
+      continue
+    }
+    if (row.count !== 1) return false
+    const separator = row.key.indexOf(':')
+    if (separator <= 0) return false
+    const kind = row.key.slice(0, separator)
+    const filterValue = row.key.slice(separator + 1)
+    if (kinds.has(kind)) return false
+    kinds.add(kind)
+    if (kind === 'scenario') {
+      const tier = Number(filterValue)
+      if (!isPositiveInt(tier) || tier > 11 || String(tier) !== filterValue) return false
+    } else if (kind === 'venue' || kind === 'uma') {
+      if (!isId(filterValue)) return false
+    } else if (!enums[kind]?.includes(filterValue)) return false
+  }
+  return true
 }
 
 const RACE_FEAT_FIELDS = [

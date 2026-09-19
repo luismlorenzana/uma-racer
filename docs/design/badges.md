@@ -44,9 +44,10 @@ Milestone 6 is delivered in four ordered tasks:
 4. **T018 — Trainer achievements and profile:** account aggregates, records, Trainer scope, pinned Umas, Trainer showcase,
    and milestone closure.
 
-T015 and T016 are implemented. Every owned Uma now has durable facts plus catalog-v1 awards/events, retroactive migration,
-Prestige/frame projection, and compact action/Home/Profile feedback. T017's full collection page and preferences and
-T018's Trainer aggregation remain intentionally absent.
+T015–T017 are implemented. Every owned Uma now has durable facts plus catalog-v1 awards/events, retroactive migration,
+Prestige/frame projection, the full lazy Uma/Stable collection page, atomic preferences, trophy wall, bounded timeline,
+and a 12-pin Profile showcase. T018's Trainer aggregation/profile remains intentionally absent; its preference-only
+trainer entity already syncs Stable saved views without inventing achievements.
 
 The core profile and Uma remain save v2. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
 `badges` entity collection. This keeps badge rollout isolated from progression migration and lets an individual Uma's
@@ -296,6 +297,10 @@ All scopes support search and applicable tag filters. Uma and Stable support cat
 strategy, aptitude context, venue, grade, scenario, status, and date. Stable additionally supports Uma and rarity. Sorts are
 most recent, tier, closest next tier, rarest (Stable), alphabetical, and category. Hidden unearned definitions are excluded
 from search/counts; other locked definitions use silhouettes.
+
+Stable rarity is private and local to the current known roster, never global telemetry: universal holders are Common;
+partial majority/half are Uncommon; a minority held by more than one Uma is Rare; unique or still-unheld definitions are
+Elite. Orphaned Umas are reported and excluded from both the holder numerator and known denominator.
 
 A tile shows a generated semantic glyph, tier shape/color/label, current progress, and pin state. No original-game badge
 art is committed or hosted publicly. Detail shows criterion, ladder, exact/since-tracking status, tier dates and source
