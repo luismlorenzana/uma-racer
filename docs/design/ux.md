@@ -14,17 +14,12 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 5. **One-handed loops.** Training and racing can repeat with a thumb, without menus in between.
 6. **Offline is normal.** No spinners for game actions. Sync status stays a quiet indicator.
 
-## Visual direction: "Racecourse Pop"
+## Visual direction
 
-| Element | Direction |
-|---|---|
-| Palette | Sky blue and turf green as the base, warm cream panels, a vivid accent per stat (Speed blue, Stamina red, Power orange, Guts pink, Wit green). Badge tier colors (bronze → rainbow) are reserved for flair |
-| Surfaces | Rounded panels (16–20 px radius), soft gradients, thick light inner borders, gentle drop shadows. Looks like a game UI, not a web form |
-| Buttons | Chunky, with a darker **bottom edge that compresses on press** (3D feel) and gradient faces. Primary is gold/green, secondary is white |
-| Type | **M PLUS Rounded 1c** (OFL, self-hosted), heavy weights for headings and numbers, tabular numerals for counters |
-| Iconography | Original UI icons (SVG). Character and card art come only from the private content packs |
-| Motion language | Springy (slight overshoot), quick in (150–250 ms), confident out. Sparkles and shine sweeps for rare or earned things |
-| Theme | One vibrant light theme (a game look). A dimmer night variant is later polish |
+The skin is specified in **[Visual System — "Paddock"](visual-system.md)**: surfaces, colour, type, shape, components,
+iconography, art treatment, motion and density. It replaces the earlier "Racecourse Pop" direction (D111), which read as
+a children's web game rather than a modern mobile game. This page keeps navigation, the screen inventory and the
+feedback catalogue.
 
 ## Navigation
 

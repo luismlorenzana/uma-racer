@@ -5,7 +5,7 @@ app says which build and which content it is running. Today the content publish 
 in [CLAUDE.md](../../CLAUDE.md), and an installed PWA can sit on an old shell with no signal at all.
 
 This task condenses the release-readiness half of the earlier Milestone 7 polish draft. The presentation half moved to
-[Milestone 9](M009-presentation-polish.md).
+[Milestone 9](M009-look-and-feel.md) and [Milestone 11](M011-game-feel-and-device.md).
 
 ## Fixed choices
 
