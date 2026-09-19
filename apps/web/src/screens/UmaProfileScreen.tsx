@@ -3,6 +3,7 @@ import {
   STATS,
   STRATEGIES,
   SURFACES,
+  badgeStateId,
   compileRaceSkill,
   isGateLevel,
   raceSkillSupported,
@@ -11,19 +12,21 @@ import {
   type StatKey,
   type RaceResultRecord,
 } from '@racer/domain'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { listRaceHistory, setFeaturedUma, setUmaLoadout } from '../game/actions'
 import { buildDeckView, formatDeckEffect } from '../game/deck-view'
 import { buildLineageView } from '../game/lineage-view'
 import { buildJourneyView } from '../game/goals-view'
+import { buildUmaFlairSummary } from '../game/flair-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { GameButton } from '../ui/GameButton'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
+import { FlairCards } from '../ui/FlairCards'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 const statLabel = (stat: StatKey) => (stat === 'wit' ? 'Wit' : titleCase(stat))
@@ -70,10 +73,18 @@ export function UmaProfileScreen() {
   const profile = useGame((state) => state.profile)
   const save = useGame((state) => state.umas[umaId])
   const cards = useGame((state) => state.cards)
+  const badges = useGame((state) => state.badges)
+  const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
   const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
   const [selectedJourneyTier, setSelectedJourneyTier] = useState<number | null>(null)
   const [raceHistory, setRaceHistory] = useState<RaceResultRecord[]>([])
+
+  const flairSummary = useMemo(() => {
+    if (contentState.status !== 'ready' || !save) return null
+    const state = badges[badgeStateId(save.templateId)]
+    return state?.scope === 'uma' ? buildUmaFlairSummary(contentState.content, state, flairEvents) : null
+  }, [badges, contentState, flairEvents, save])
 
   useEffect(() => {
     if (status !== 'ready' || !save) return
@@ -144,12 +155,26 @@ export function UmaProfileScreen() {
         </div>
         <div className="border-t-2 border-white bg-white/70 px-4 py-4 text-center">
           <h1 className="text-2xl font-extrabold">{uma.template.name}</h1>
+          {flairSummary?.activeTitle && <p className="mt-1 text-sm font-extrabold text-violet-700">{flairSummary.activeTitle}</p>}
           <p className="text-sm text-ink-soft">{uma.template.outfit ?? 'Standard outfit'}</p>
           <p className="mt-2 font-extrabold text-sky-deep">Uma Lv {save.level} · Training Lv {save.trainingLevel}</p>
           <p className="text-sm font-bold">Tier {uma.tier} · {uma.scenario?.name ?? 'Future scenario'}</p>
           {uma.readyToPromote && <p className="mt-2 inline-flex rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">Ready to promote</p>}
         </div>
       </Panel>
+
+      {flairSummary && <Panel className="bg-gradient-to-br from-white to-violet-50">
+        <div className="flex items-center justify-between gap-3">
+          <div><h2 className="text-lg font-extrabold">Flair archive</h2><p className="text-xs font-bold text-ink-soft">Full Badge page arrives in the next milestone task.</p></div>
+          <div className="rounded-2xl border-2 border-violet-200 bg-white px-3 py-2 text-center"><p className="text-lg font-extrabold text-violet-700">{flairSummary.prestige}</p><p className="text-[10px] font-extrabold text-ink-soft">{flairSummary.frame.label} · Prestige</p></div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-extrabold">
+          <div className="rounded-xl bg-white p-2"><span className="block text-lg text-sky-deep">{flairSummary.badgeCount}</span>Badges</div>
+          <div className="rounded-xl bg-white p-2"><span className="block text-lg text-violet-700">{flairSummary.titleCount}</span>Titles</div>
+          <div className="rounded-xl bg-white p-2"><span className="block text-lg text-gold-deep">{flairSummary.trophyCount}</span>Trophies</div>
+        </div>
+        {flairSummary.recent.length > 0 && <div className="mt-3"><FlairCards title="Recent awards" items={flairSummary.recent} /></div>}
+      </Panel>}
 
       {setupPending && <Panel className="border-violet-300 bg-violet-50"><h2 className="font-extrabold">Scenario setup required</h2><p className="mt-1 text-sm text-ink-soft">Choose optional frozen parents before this new Uma can Train or race.</p><GameButton className="mt-3" variant="go" onClick={() => navigate(`/scenario/${encodeURIComponent(save.templateId)}/start`)}>Start scenario</GameButton></Panel>}
 

@@ -52,8 +52,8 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 - **Featured Uma** portrait, large, with a gentle idle "breathing" motion. Level ring, Training Level bar, active title.
 - **Two big CTAs** in the thumb zone: **Train** and **Race**.
 - On open, the **daily ticket grant** flies "+50 🎫" into the counter.
-- **Goal tracker** card for the featured Uma (3 pips), and a **recent flair** strip. T016 adds the featured Uma's latest
-  three events; T018 expands it with a compact Stable-wide feed.
+- **Goal tracker** card for the featured Uma (3 pips), followed by the implemented **recent flair** card with the latest
+  three collapsed visible awards, Prestige, frame, and a Profile link. T018 expands it with a compact Stable-wide feed.
 - A swipe on the portrait switches the featured Uma.
 
 The implemented goal tracker handles pending setup, active/completed/missed goals, legacy-untracked saves, final completion,
@@ -79,6 +79,10 @@ and missing target content. Each available active target links directly into Rac
 The implemented Journey renders one medallion per reached tier with three labeled state pips, a derived Honors crest for
 3/3, and a distinct Not tracked mark for migrated history. Goal details link to current target races or the exact committed
 result replay; missing private content falls back to its safe id.
+
+T016's implemented compact Flair archive sits alongside the existing Profile content: active-title default, derived
+Prestige/frame, distinct badge/title/trophy counts, and the latest three awards. The 12-pin showcase and title picker remain
+T017 work and are not simulated by this compact surface.
 
 ### Support Deck Editor
 
@@ -188,7 +192,7 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 2. The finishing order slides in, with margins.
 3. The Uma EXP bar fills. On a level-up: burst, the ticket reward moves in, and before→after player/field Race Form updates.
 4. Activated player skills are grouped by id with counts and recovery/speed/acceleration labels; missing content falls back to the id.
-5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. T016 then serializes persisted
+5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. The implemented T016 flow then serializes persisted
    flair in this order: goal-derived badge events, ordinary badge tiers/one-offs, first G1 trophy, race-set/repeat title,
    and Trainer achievements. Multiple newly crossed tiers for one definition collapse visually to the highest one while
    detail retains every stage. Skip/reduced motion reveals the same facts immediately; reload shows “Earned in this race”

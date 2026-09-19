@@ -182,4 +182,11 @@ Read first: `AGENTS.md`, `docs/design/badges.md`, `docs/design/collection.md`, `
 
 ## Implementation status
 
-Definition complete; implementation has not started.
+Implemented. Catalog v1 now generates every non-deferred fixed and runtime-backed per-Uma definition, and its pure
+evaluator records monotonic tiers, one-offs, Goal Ribbons, Honors, titles, trophies, active-title default, progress, and
+derived Prestige/frame. Content-ready migration awards only exact/lower-bound evidence in one Dexie transaction and emits
+one archive summary; unavailable detailed history remains untracked. Training, race, Scenario Start/promotion/final
+completion, lineage, and new-Uma creation persist strict badge state plus deterministic append-only flair atomically;
+new race rows snapshot exact event ids and retries validate them. Results, Training, scenario completion, Home, and Uma
+Profile expose compact/reload-safe feedback with reduced-motion and missing-content fallbacks. The full Badge page,
+showcase/title controls, Stable scope, Trainer achievements, and Trainer profile remain T017/T018.

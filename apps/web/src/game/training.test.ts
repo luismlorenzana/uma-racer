@@ -142,6 +142,8 @@ describe('Training persistence', () => {
       const row = await db.cards.get(id)
       await db.cards.put({ ...row!, data: { ...row!.data, exp: 35 } })
     }
+    const umaRow = await db.umas.get('uma-00')
+    await db.umas.put({ ...umaRow!, data: { ...umaRow!.data, stats: { ...umaRow!.data.stats, speed: 599 } } })
     await db.outbox.clear()
 
     const mutation = await persistTraining(loaded, 'uma-00', 'speed', '2000-01-02', 200)
@@ -156,6 +158,7 @@ describe('Training persistence', () => {
       'card-level-tickets:card-stamina:2',
       'card-level-tickets:card-guts:2',
     ])
+    expect(mutation.earnedFlairEventIds).toEqual(['flair:uma:uma-00:badge:stat:speed:bronze'])
 
     const snapshot = await readLocalSnapshot()
     expect(snapshot?.profile.data.tickets).toBe(57)
@@ -163,8 +166,9 @@ describe('Training persistence', () => {
     expect(await db.ledger.get('training:uma-00:1:0')).toMatchObject({
       data: { delta: -1, reason: 'training', localDay: '2000-01-02', createdAt: 200 },
     })
-    expect(await db.outbox.count()).toBe(12)
+    expect(await db.outbox.count()).toBe(13)
     expect(await db.outbox.where('[kind+id]').equals(['badges', 'uma:uma-00']).count()).toBe(1)
+    expect(await db.flairEvents.get(mutation.earnedFlairEventIds[0]!)).toMatchObject({ data: { source: { kind: 'training' } } })
     for (const id of mutation.ledgerIds) {
       expect(await db.outbox.where('[kind+id]').equals(['ledger', id]).count()).toBe(1)
     }

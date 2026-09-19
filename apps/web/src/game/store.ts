@@ -1,4 +1,4 @@
-import type { BadgeStateV1, CardSave, FlairEventV1, PlayerProfile, UmaSave } from '@racer/domain'
+import type { BadgeStateV1, CardSave, FlairEventRecord, FlairEventV1, PlayerProfile, UmaSave } from '@racer/domain'
 import { create } from 'zustand'
 
 export type GameStatus = 'booting' | 'signed-out' | 'waiting-content' | 'ready' | 'error'
@@ -123,6 +123,22 @@ export function replaceRaceState(profile: PlayerProfile, uma: UmaSave): void {
 
 export function replaceBadgeState(badges: Record<string, BadgeStateV1>, flairEvents?: readonly (FlairEventV1 & { id: string })[]): void {
   useGame.setState({ badges, ...(flairEvents ? { flairEvents: [...flairEvents] } : {}) })
+}
+
+export function mergeBadgeAndFlairState(badges: Record<string, BadgeStateV1>, events: readonly FlairEventRecord[]): void {
+  useGame.setState((state) => {
+    const merged = new Map(state.flairEvents.map((event) => [event.id, event]))
+    for (const event of events) {
+      const row = { id: event.id, ...event.data }
+      const existing = merged.get(event.id)
+      if (existing && JSON.stringify(existing) !== JSON.stringify(row)) throw new Error(`Memory flair event id collision: ${event.id}`)
+      merged.set(event.id, row)
+    }
+    return {
+      badges,
+      flairEvents: [...merged.values()].sort((left, right) => left.earnedAt - right.earnedAt || left.id.localeCompare(right.id)),
+    }
+  })
 }
 
 export function setSyncState(sync: Partial<SyncState>): void {

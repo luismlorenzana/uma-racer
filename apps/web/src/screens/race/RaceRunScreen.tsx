@@ -1,4 +1,4 @@
-import { LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
+import { LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, badgeStateId, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
 import { formatMargin, type RaceTimeline } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -6,11 +6,13 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { completeRace, prepareRace } from '../../game/actions'
 import { buildResultGoalView } from '../../game/goals-view'
+import { buildFlairFanfare } from '../../game/flair-view'
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
 import { summarizePlayerActivations, type RaceCue } from '../../scenes/race/presentation'
 import { GameButton } from '../../ui/GameButton'
+import { FlairCards } from '../../ui/FlairCards'
 import { Meter } from '../../ui/Meter'
 import { GRADE_LABEL, STRATEGY_LABEL } from './labels'
 
@@ -80,6 +82,8 @@ export function RaceRunScreen() {
   const gameStatus = useGame((state) => state.status)
   const gameError = useGame((state) => state.error)
   const savedUma = useGame((state) => state.umas[queryUmaId])
+  const badges = useGame((state) => state.badges)
+  const flairEvents = useGame((state) => state.flairEvents)
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<RaceScene | null>(null)
   const recordRef = useRef<RaceResultRecord | null>(null)
@@ -245,6 +249,10 @@ export function RaceRunScreen() {
   const startForms = { player: yourForm(record?.startLevel ?? attempt.startLevel), field: fieldForm(record?.startLevel ?? attempt.startLevel) }
   const resultForms = { player: yourForm(resultLevel), field: fieldForm(resultLevel) }
   const goalResult = record && savedUma ? buildResultGoalView(record, savedUma, content, freshGoalCommit) : null
+  const badgeState = badges[badgeStateId(attempt.umaId)]
+  const earnedFlair = record?.earnedFlairEventIds && badgeState?.scope === 'uma'
+    ? buildFlairFanfare(content, badgeState, flairEvents, record.earnedFlairEventIds)
+    : []
 
   const retryCommit = () => {
     if (committing || record) return
@@ -443,6 +451,7 @@ export function RaceRunScreen() {
                     {goalResult.honors && <m.p initial={!goalResult.animate || reducedMotion ? false : { scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-full bg-gold px-4 py-2 text-center font-extrabold text-white text-outline">🏵 Scenario Honors · 3 / 3</m.p>}
                     {!goalResult.animate && <p className="text-center text-xs font-bold text-ink-soft">Recorded goal summary</p>}
                   </div>}
+                  {earnedFlair.length > 0 && <div className="mt-3"><FlairCards title={freshGoalCommit ? 'Flair earned' : 'Earned in this race'} items={earnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}
                   <div className="mt-2 rounded-xl bg-white px-3 py-2">
                     <p className="text-xs font-extrabold text-ink-soft">RACE FORM</p>
                     <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-extrabold">

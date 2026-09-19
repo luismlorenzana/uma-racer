@@ -3,7 +3,9 @@
 import {
   SAVE_ID_PATTERN,
   badgeStateId,
+  buildUmaFlairCatalog,
   createUmaBadgeState,
+  evaluateUmaFlair,
   exchangeUmaShards,
   nextUmaShardExchangeSequence,
   parseBadgeState,
@@ -14,6 +16,7 @@ import {
   redeemCardSelectCoupon,
   redeemUmaSelectCoupon,
   type CardSave,
+  type FlairEventRecord,
   type LedgerEntry,
   type PlayerProfile,
   type UmaSave,
@@ -21,6 +24,7 @@ import {
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
+import { appendFlairEvents } from './badges'
 import { queueInTransaction } from './persistence'
 
 export interface ShardExchangeMutation {
@@ -42,6 +46,16 @@ export interface UmaRedemptionMutation {
   ledgerId: string
   alreadyRedeemed: boolean
   badgeState: UmaBadgeStateV1
+  flairEvents: FlairEventRecord[]
+}
+
+function initializedBadgeState(content: LoadedContent, uma: UmaSave, now: number, sourceId: string) {
+  const state = createUmaBadgeState(uma, now)
+  return evaluateUmaFlair(
+    buildUmaFlairCatalog({ state, races: content.races.items }),
+    state,
+    { source: { kind: 'collection', id: sourceId, tier: null }, earnedAt: now, retroactive: false },
+  )
 }
 
 function assertSafeTarget(id: string, kind: string): void {
@@ -96,12 +110,14 @@ export function redeemMemoryUma(
   const template = content.umas.byId.get(umaId)
   if (!template) throw new Error('Uma content is missing')
   const mutation = redeemUmaSelectCoupon(profile, template, umasById[umaId] !== undefined, today, now)
+  const badge = initializedBadgeState(content, mutation.uma, now, mutation.ledger[0].id)
   return {
     profile: mutation.profile,
     uma: mutation.uma,
     ledgerId: mutation.ledger[0].id,
     alreadyRedeemed: false,
-    badgeState: createUmaBadgeState(mutation.uma, now),
+    badgeState: badge.state,
+    flairEvents: badge.events,
   }
 }
 
@@ -172,7 +188,7 @@ export async function redeemPersistentUma(
   const template = content.umas.byId.get(umaId)
   if (!template) throw new Error('Uma content is missing')
   const ledgerId = `uma-coupon-redeem:${umaId}`
-  return db.transaction('rw', db.profile, db.umas, db.badges, db.ledger, db.outbox, async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
     const [profileRow, umaRow, ledgerRow] = await Promise.all([
       db.profile.get('main'), db.umas.get(umaId), db.ledger.get(ledgerId),
     ])
@@ -185,7 +201,7 @@ export async function redeemPersistentUma(
       const badgeRow = await db.badges.get(badgeStateId(umaId))
       const badgeState = badgeRow ? parseBadgeState(badgeRow.data) : null
       if (!badgeState || badgeState.scope !== 'uma' || badgeState.umaId !== umaId) throw new Error('Uma redemption badge state is missing')
-      return { profile, uma, ledgerId, alreadyRedeemed: true, badgeState }
+      return { profile, uma, ledgerId, alreadyRedeemed: true, badgeState, flairEvents: [] }
     }
     if (ledgerRow) throw new Error('Uma redemption record exists without its Uma')
     if (umaRow) throw new Error('Uma outfit is already owned')
@@ -193,13 +209,15 @@ export async function redeemPersistentUma(
     const entry = mutation.ledger[0]
     await db.profile.put({ ...profileRow, data: mutation.profile })
     await db.umas.add({ id: umaId, data: mutation.uma, version: 0 })
-    const badgeState = createUmaBadgeState(mutation.uma, now)
+    const flair = initializedBadgeState(content, mutation.uma, now, entry.id)
+    const badgeState = flair.state
     await db.badges.add({ id: badgeStateId(umaId), data: badgeState, version: 0 })
     await db.ledger.add({ id: entry.id, data: entry.data, createdAt: entry.data.createdAt })
     await queueInTransaction('profile', 'main', 'upsert', now)
     await queueInTransaction('umas', umaId, 'upsert', now)
     await queueInTransaction('badges', badgeStateId(umaId), 'upsert', now)
+    await appendFlairEvents(flair.events, now)
     await queueInTransaction('ledger', entry.id, 'append', now)
-    return { profile: mutation.profile, uma: mutation.uma, ledgerId, alreadyRedeemed: false, badgeState }
+    return { profile: mutation.profile, uma: mutation.uma, ledgerId, alreadyRedeemed: false, badgeState, flairEvents: flair.events }
   })
 }

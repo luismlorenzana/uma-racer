@@ -266,16 +266,20 @@ describe('persistent progression race', () => {
     expect((await db.umas.get('u1'))?.data).toMatchObject({ level: 2, exp: 55 })
     expect(await db.raceResults.count()).toBe(1)
     expect((await db.ledger.toArray()).map((row) => row.id)).toEqual(['uma-level-tickets:u1:2'])
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual([
+    const outbox = (await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)
+    expect(outbox).toEqual(expect.arrayContaining([
       'badges/uma:u1',
       'ledger/uma-level-tickets:u1:2',
       'profile/main',
       'raceResults/race:u1:0',
       'umas/u1',
-    ])
+    ]))
+    expect(completion.record.earnedFlairEventIds).toHaveLength(await db.flairEvents.count())
+    expect(outbox.filter((id) => id.startsWith('flairEvents/'))).toHaveLength(completion.record.earnedFlairEventIds?.length ?? 0)
 
     const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 101)
     expect(retry.alreadyRecorded).toBe(true)
+    expect(retry.record.earnedFlairEventIds).toEqual(completion.record.earnedFlairEventIds)
     expect(retry.record.completedGoalIds).toEqual([])
     expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 5 })
     expect(await db.raceResults.count()).toBe(1)
@@ -325,14 +329,15 @@ describe('persistent progression race', () => {
       'uma-gate-shard:u1:10',
       'uma-level-tickets:u1:10',
     ])
-    expect((await db.outbox.toArray()).map((entry) => `${entry.kind}/${entry.id}`).sort()).toEqual([
+    expect((await db.outbox.toArray()).map((entry) => `${entry.kind}/${entry.id}`)).toEqual(expect.arrayContaining([
       'badges/uma:u1',
       'ledger/uma-gate-shard:u1:10',
       'ledger/uma-level-tickets:u1:10',
       'profile/main',
       'raceResults/race:u1:0',
       'umas/u1',
-    ])
+    ]))
+    expect(completion.record.earnedFlairEventIds).toHaveLength(await db.flairEvents.count())
   })
 
   it('captures the final-tier snapshot in the max-level race transaction', async () => {

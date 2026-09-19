@@ -5,18 +5,21 @@ import {
   createInitialSave,
   createUmaBadgeState,
   createUmaSave,
+  buildUmaFlairCatalog,
+  evaluateUmaFlair,
   type ContentAtlas,
   type RaceTemplate,
   type SkillTemplate,
   type SupportCardTemplate,
   type UmaTemplate,
+  type UmaSave,
 } from '@racer/domain'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveApi } from '../api/client'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
-import { bootstrapBadgeFacts } from './badges'
+import { bootstrapBadgeFacts, bootstrapUmaFlair } from './badges'
 import { GameRuntime } from './runtime'
 import { clearGameState, localDay, replaceUma, useGame } from './store'
 import {
@@ -134,6 +137,15 @@ function content(): LoadedContent {
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
+function currentBadgeState(loaded: LoadedContent, uma: UmaSave) {
+  const state = createUmaBadgeState(uma, 1)
+  return evaluateUmaFlair(
+    buildUmaFlairCatalog({ state, races: loaded.races.items }),
+    state,
+    { source: { kind: 'migration', id: null, tier: null }, earnedAt: 1, retroactive: true },
+  ).state
+}
+
 async function resetDatabase(): Promise<void> {
   db.close()
   await db.delete()
@@ -197,8 +209,19 @@ describe('save persistence', () => {
     const first = await db.badges.get('uma:u00')
     expect(first?.data).toMatchObject({ scope: 'uma', umaId: 'u00', history: { training: 'since-tracking', lineage: 'since-tracking' } })
 
+    if (!first || first.data.scope !== 'uma') throw new Error('Expected an Uma badge state')
+    await db.badges.put({ ...first, data: {
+      ...first.data,
+      facts: { ...first.data.facts, statPeaks: { ...first.data.facts.statPeaks, speed: 600 } },
+    } })
+    await expect(bootstrapUmaFlair(loaded, 25)).resolves.toBe(1)
+    const awarded = await db.badges.get('uma:u00')
+    expect(awarded?.data).toMatchObject({ evaluatorVersion: 1, awards: { badges: [{ awardKey: 'badge:stat:speed', stage: 'bronze' }] } })
+    expect(await db.flairEvents.toArray()).toEqual([expect.objectContaining({ data: expect.objectContaining({ retroactive: true, source: { kind: 'migration', id: null, tier: null } }) })])
+    await expect(bootstrapUmaFlair(loaded, 26)).resolves.toBe(0)
+
     await expect(bootstrapBadgeFacts(loaded, 30)).resolves.toBe(0)
-    expect(await db.badges.get('uma:u00')).toEqual(first)
+    expect(await db.badges.get('uma:u00')).toEqual(awarded)
     expect(await db.outbox.where('kind').equals('badges').count()).toBe(25)
   })
 
@@ -372,7 +395,7 @@ describe('game bootstrap coordinator', () => {
       { kind: 'profile' as const, id: 'main', data: toRecord({ ...initial.profile, tickets: 325 }), version: 3, deleted: false, updatedAt: 2 },
       ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, data: toRecord(data), version: 1, deleted: false, updatedAt: 2 })),
       ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, data: toRecord(data), version: 1, deleted: false, updatedAt: 2 })),
-      ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, data: toRecord(createUmaBadgeState(data, 1)), version: 1, deleted: false, updatedAt: 2 })),
+      ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, data: toRecord(currentBadgeState(loaded, data)), version: 1, deleted: false, updatedAt: 2 })),
     ]
     vi.spyOn(saveApi, 'load').mockResolvedValue({ entities, logs: [], serverTime: 2 })
 
@@ -431,7 +454,7 @@ describe('game bootstrap coordinator', () => {
         { kind: 'profile', id: 'main', version: 3, data: toRecord(serverProfile), deleted: false, updatedAt: 2 },
         ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
-        ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(createUmaBadgeState(data, 1)), deleted: false, updatedAt: 2 })),
+        ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(currentBadgeState(loaded, data)), deleted: false, updatedAt: 2 })),
       ],
       logs: [],
       serverTime: 2,
@@ -468,7 +491,7 @@ describe('game bootstrap coordinator', () => {
         { kind: 'profile', id: 'main', version: 3, data: toRecord(serverProfile), deleted: false, updatedAt: 2 },
         ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
-        ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(createUmaBadgeState(data, 1)), deleted: false, updatedAt: 2 })),
+        ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(currentBadgeState(loaded, data)), deleted: false, updatedAt: 2 })),
       ],
       logs: [],
       serverTime: 2,
