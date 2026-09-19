@@ -216,7 +216,7 @@ function strictCourseRecords(
   return records
 }
 
-/** Advance every pre-T016 Uma through catalog v1 in one event-idempotent transaction. */
+/** Reconcile every Uma against the current catalog in one event-idempotent transaction. */
 export async function bootstrapUmaFlair(content: LoadedContent, now: number): Promise<number> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Flair bootstrap time is invalid')
   return db.transaction('rw', [db.badges, db.raceResults, db.flairEvents, db.outbox], async () => {
@@ -229,7 +229,6 @@ export async function bootstrapUmaFlair(content: LoadedContent, now: number): Pr
         if (parsed?.scope === 'trainer') continue
         throw new Error(`Invalid local badge state: ${row.id}`)
       }
-      if (parsed.evaluatorVersion >= 1) continue
       const courseRecords = strictCourseRecords(content, histories, parsed.umaId)
       const evaluation = evaluateUmaBadgeState(
         content,
@@ -238,6 +237,7 @@ export async function bootstrapUmaFlair(content: LoadedContent, now: number): Pr
         new Set(courseRecords.keys()),
         courseRecords,
       )
+      if (JSON.stringify(evaluation.state) === JSON.stringify(parsed) && evaluation.events.length === 0) continue
       await persistEvaluation(row.id, row.version, evaluation, now)
       awardCount += evaluation.events.length
     }

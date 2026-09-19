@@ -1,4 +1,5 @@
 import { useReducedMotion } from 'motion/react'
+import { flairContentCoverage } from '@racer/domain'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useContent } from '../content/ContentProvider'
@@ -38,6 +39,7 @@ export function SettingsScreen() {
     content.status === 'ready'
       ? `${content.content.umas.items.length} Umas · ${content.content.cards.items.length} cards · ${content.content.skills.items.length} skills · ${content.content.races.items.length} races · ${content.content.courses.items.length} courses · 2 atlases`
       : '—'
+  const coverage = content.status === 'ready' ? flairContentCoverage(content.content.races.items) : null
   const standalone =
     typeof window !== 'undefined' &&
     (window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true)
@@ -54,6 +56,7 @@ export function SettingsScreen() {
         {(orphanedUmas > 0 || orphanedCards > 0) && <Row label="Missing references" value={`${orphanedUmas} Umas · ${orphanedCards} cards`} />}
         {sync.error && <p className="border-t border-sky-100 pt-2 text-xs font-bold text-red-700">{sync.error}</p>}
         <Row label="Content packs" value={contentLabel} />
+        {coverage && <Row label="Flair coverage" value={`${coverage.coveredSeries}/${coverage.totalSeries} series · ${coverage.mainVenues}/10 venues`} />}
         <div className="border-t border-sky-100 pt-2 text-right text-xs font-bold text-ink-soft">{contentCounts}</div>
         <Row label="Home Screen app" value={standalone ? 'Yes' : 'No (Safari tab)'} />
         <Row label="Reduced motion" value={reduced ? 'On' : 'Off'} />

@@ -16,8 +16,8 @@ always single races, so "win the Triple Crown this scenario" was unreachable. D1
 - `SCENARIO_GOAL_VERSION = 2`. v1 plans are never rerolled in place unless the whole active plan is untouched.
 - Selection stays pure and deterministic: no engine RNG, wall clock, or input iteration order.
 - Goals still pay nothing and still gate nothing.
-- Series legs come from the private series tags published by [T019](T019-race-series-and-titles.md). With no published
-  coverage, series goals degrade to single-race identity goals and nothing errors.
+- Series legs come from the private mappings defined by [Badges](../design/badges.md#4-titles-and-g1-trophies). With no
+  published coverage, series goals degrade to single-race identity goals and nothing errors.
 - Aptitude and Challenge keep their current rules, plus the famous-race tie-break.
 
 ## Implementation contract

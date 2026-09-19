@@ -6,6 +6,7 @@ import {
   createUmaBadgeState,
   createUmaSave,
   evaluateUmaFlair,
+  flairContentCoverage,
   flairEventId,
   orderFlairEventsForFanfare,
   parseBadgeState,
@@ -54,7 +55,8 @@ function race(index: number): RaceTemplate {
     venue: `Synthetic Venue ${index}`,
     venueKey: `synthetic-venue-${index}`,
     venueTags: ['jra-main'],
-    series: index < 3 ? ['triple-crown'] : [],
+    series: index < 4 ? ['triple-crown'] : [],
+    seriesLegs: index < 3 ? [`triple-crown:leg-${index + 1}`] : index === 3 ? ['triple-crown:leg-1'] : [],
     courseId: `synthetic-course-${index}`,
     season: 1,
     fieldSize: 12,
@@ -157,7 +159,11 @@ describe('Uma flair catalog v1', () => {
     expect(keys).toContain('ribbon:goal:synthetic-uma:1:0')
     expect(keys.some((key) => key.includes('duelist') || key.includes('upset'))).toBe(false)
     expect(catalog.mainVenueKeys).toHaveLength(10)
-    expect(catalog.definitions.find((entry) => entry.awardKey === 'title:triple-crown')).toMatchObject({ enabled: true })
+    expect(catalog.definitions.find((entry) => entry.awardKey === 'title:triple-crown')).toMatchObject({
+      enabled: true,
+      frozenKeys: ['triple-crown:leg-1', 'triple-crown:leg-2', 'triple-crown:leg-3'],
+    })
+    expect(flairContentCoverage(races)).toEqual({ coveredSeries: 1, totalSeries: 8, coveredLegs: 3, mainVenues: 10 })
   })
 
   it('disables incomplete private sets and marks unreconstructable completed snapshots untracked', () => {
@@ -168,8 +174,13 @@ describe('Uma flair catalog v1', () => {
       facts: { ...state.facts, completions: [] },
     }
     const catalog = buildUmaFlairCatalog({ state: withoutSnapshot, races: races.slice(0, 2) })
-    expect(catalog.definitions.find((entry) => entry.awardKey === 'badge:grand-tour')?.enabled).toBe(false)
-    expect(catalog.definitions.find((entry) => entry.awardKey === 'title:triple-crown')?.enabled).toBe(false)
+    const grandTour = catalog.definitions.find((entry) => entry.awardKey === 'badge:grand-tour')!
+    const tripleCrown = catalog.definitions.find((entry) => entry.awardKey === 'title:triple-crown')!
+    expect(grandTour.enabled).toBe(false)
+    expect(tripleCrown.enabled).toBe(false)
+    expect(projectFlairProgress(grandTour, withoutSnapshot).progressLabel).toBe('Main-venue coverage is not published')
+    expect(projectFlairProgress(tripleCrown, withoutSnapshot).progressLabel).toBe('Race-series coverage is not published')
+    expect(catalog.definitions.find((entry) => entry.awardKey === 'badge:winner')?.enabled).toBe(true)
     expect(catalog.definitions.find((entry) => entry.awardKey === 'badge:scenario:1:capped')?.history).toBe('untracked')
     expect(catalog.definitions.find((entry) => entry.awardKey === 'badge:scenario:1:speedrun')?.history).toBe('untracked')
     expect(catalog.definitions.find((entry) => entry.awardKey === 'badge:scenario:1:graduate')?.history).toBe('since-tracking')
@@ -177,6 +188,45 @@ describe('Uma flair catalog v1', () => {
 })
 
 describe('Uma flair evaluator', () => {
+  it('accepts either family alias for a leg, requires every leg, and awards the title only once', () => {
+    const state = accomplishedState()
+    const aliasState: UmaBadgeStateV1 = {
+      ...state,
+      facts: {
+        ...state.facts,
+        familyWins: [
+          { key: 'synthetic-family-1', count: 1, grade: 'g1', series: ['triple-crown'] },
+          { key: 'synthetic-family-2', count: 1, grade: 'g1', series: ['triple-crown'] },
+          { key: 'synthetic-family-3', count: 1, grade: 'g1', series: ['triple-crown'] },
+        ],
+      },
+    }
+    const first = evaluateUmaFlair(
+      buildUmaFlairCatalog({ state: aliasState, races }),
+      aliasState,
+      { source: { kind: 'migration', id: null, tier: null }, earnedAt: 1_000, retroactive: true },
+    )
+    expect(first.events.filter((event) => event.data.awardKey === 'title:triple-crown')).toHaveLength(1)
+
+    const retry = evaluateUmaFlair(
+      buildUmaFlairCatalog({ state: first.state, races }),
+      first.state,
+      { source: { kind: 'migration', id: null, tier: null }, earnedAt: 2_000, retroactive: true },
+    )
+    expect(retry.events.filter((event) => event.data.awardKey === 'title:triple-crown')).toHaveLength(0)
+
+    const missingLeg: UmaBadgeStateV1 = {
+      ...aliasState,
+      facts: { ...aliasState.facts, familyWins: aliasState.facts.familyWins.filter((row) => row.key !== 'synthetic-family-2') },
+    }
+    const incomplete = evaluateUmaFlair(
+      buildUmaFlairCatalog({ state: missingLeg, races }),
+      missingLeg,
+      { source: { kind: 'migration', id: null, tier: null }, earnedAt: 1_000, retroactive: true },
+    )
+    expect(incomplete.events.some((event) => event.data.awardKey === 'title:triple-crown')).toBe(false)
+  })
+
   it('awards crossed stages, one-offs, ribbons, Honors, titles, and first trophies exactly once', () => {
     const state = accomplishedState()
     expect(parseBadgeState(state)).toEqual(state)

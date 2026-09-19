@@ -58,8 +58,8 @@ fixed order so a long-lived Uma collects titles rather than repeating one:
 | 11 | Sprint Crown · 12 Mile Crown · 13 Dirt Crown, then the rotation repeats |
 
 The rotation skips a set whose legs are not all B or better, and falls back to the best-scoring set when none qualifies.
-Series legs are the private series tags from [T019](../tasks/T019-race-series-and-titles.md); without published coverage
-the Identity slot stays a single race. Completing a set naturally earns the matching [title](badges.md#4-titles-and-g1-trophies).
+Series legs are the private semantic mappings defined by [Badges](badges.md#4-titles-and-g1-trophies); without published
+coverage the Identity slot stays a single race. Completing a set naturally earns the matching title.
 
 ## Aptitude and Challenge
 

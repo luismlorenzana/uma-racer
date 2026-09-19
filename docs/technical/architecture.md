@@ -112,12 +112,16 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   targets atomically; promotion/final completion closes the previous Journey without inventing rewards or history.
 - Milestone 6 keeps core profile/Uma save v2 and versions the already-reserved `badges` collection independently. T015
   creates one bounded fact/award/preference state per owned Uma and defines a preference-valid `trainer` shell. T016 now
-  evaluates the complete per-Uma catalog after each fact transition and during one content-ready retroactive migration;
+  evaluates the complete per-Uma catalog after each fact transition and during content-ready retroactive reconciliation;
   every changed badge state and append-only event commits inside the triggering Training/race/scenario/collection
   transaction. Lost Training/lineage history stays a labeled lower bound, and unresolved detailed race/completion history
   stays untracked instead of being fabricated. T017 initializes the trainer shell, lazy Uma/Stable collection UI, paged
   timeline reads, and conflict rebase. T018 now authoritatively reconciles that shell from collection, ledger, race,
   Journey, level, and per-Uma award facts and exposes the lazy Trainer scope/profile.
+- The private flair overlay is version 2 and maps semantic series legs to one or more race-family aliases, plus exactly 10
+  main venues. Normalized races carry sorted `series` and `<tag>:<leg-key>` `seriesLegs` arrays. On every content-ready
+  startup the app joins current legs to stored family/venue wins and performs a write-free no-op unless new monotonic flair
+  is earned; deterministic retroactive events then feed the existing single archive-summary toast.
 - New race rows snapshot bounded accomplishment metadata from the authoritative content/input/timeline without changing
   engine replay versions, plus exact `earnedFlairEventIds` (including `[]`). Deterministic per-Uma `flairEvents` are
   idempotent by scope+Uma+award+stage; retry validates and returns stored ids, while reload renders a summary without fresh
@@ -164,6 +168,9 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   datasets, the same importer approach as uma-planner, and is normalized into content packs. Objective rows are reduced to
   ordered race-family ids only; names, conditions, turns, fans, nested rows, and source ids unrelated to the join are not
   copied into the packs.
+- Claude maintains the gitignored flair overlay used to stamp semantic race-series legs and the 10 main venues. Import
+  validation resolves every private family/venue reference, while checked-in docs, logs, and tests contain only semantic
+  tags, aggregate coverage, and synthetic fixtures.
 - Images are fetched once by a local pipeline script, normalized without crop into 128×128 WebP frames, and packed into
   deterministic **sprite atlases** used by DOM UI and later race scenes.
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.

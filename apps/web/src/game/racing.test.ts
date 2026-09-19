@@ -90,6 +90,7 @@ const race: RaceTemplate = {
   venueKey: 'test-track',
   venueTags: [],
   series: [],
+  seriesLegs: [],
   courseId: 'course-1',
   season: 1,
   fieldSize: 8,

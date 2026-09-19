@@ -34,7 +34,7 @@ const uma = (id: string, name: string): UmaTemplate => ({
 const race: RaceTemplate = {
   id: 'synthetic-race', familyId: 'synthetic-family', name: 'Synthetic Grand Prix', grade: 'g1', surface: 'turf',
   distance: 2_000, distanceCategory: 'medium', direction: 'right', venue: 'Synthetic Park', venueKey: 'synthetic-park',
-  venueTags: ['jra-main'], series: [], courseId: 'synthetic-course', season: 1, fieldSize: 12,
+  venueTags: ['jra-main'], series: [], seriesLegs: [], courseId: 'synthetic-course', season: 1, fieldSize: 12,
 }
 const result = (sequence: number): RaceResultRecord => ({
   contentVersion: 'synthetic', umaId: 'alpha', raceId: race.id, sequence, seed: sequence, strategy: 'pace',

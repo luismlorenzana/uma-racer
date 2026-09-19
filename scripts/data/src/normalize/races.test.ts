@@ -20,6 +20,7 @@ describe('normalizeRaces', () => {
       venueKey: '10006',
       venueTags: [],
       series: [],
+      seriesLegs: [],
       courseId: '8201',
       season: 1,
       fieldSize: 18,

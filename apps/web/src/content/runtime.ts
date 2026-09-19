@@ -221,7 +221,12 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const umas = parseContentPack<UmaTemplate>(umaJson, 'uma')
   const cards = parseContentPack<SupportCardTemplate>(cardJson, 'card')
   const skills = parseContentPack<SkillTemplate>(skillJson, 'skill')
-  const races = parseContentPack<RaceTemplate>(raceJson, 'race')
+  const races = parseContentPack<RaceTemplate>(raceJson, 'race').map((race) => {
+    const seriesLegs = (race as RaceTemplate & { seriesLegs?: unknown }).seriesLegs
+    // The only published pre-T019 pack has zero series coverage and predates this field. Keep that pack loadable until
+    // Claude publishes the private v2 override; all newly generated packs contain a strict array.
+    return { ...race, seriesLegs: seriesLegs === undefined ? [] : seriesLegs } as RaceTemplate
+  })
   const courses = parseContentPack<CourseTemplate>(courseJson, 'course')
   const umaAtlas = parseContentAtlas(umaAtlasJson, 'uma-icons')
   const cardAtlas = parseContentAtlas(cardAtlasJson, 'card-icons')

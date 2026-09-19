@@ -11,6 +11,7 @@ import {
   type EarnedBadgeStage,
   type EarnedTitle,
   type RaceResultRecord,
+  type RaceTemplate,
   type SupportCardTemplate,
   type UmaBadgeStateV1,
   type UmaSave,
@@ -114,6 +115,30 @@ describe('Trainer achievement reconciliation', () => {
     expect(catalog.definitions.map((row) => row.awardKey)).toContain('trainer:stable-master')
     expect(catalog.definitions.map((row) => row.awardKey)).toContain('trainer:era-complete:1')
     expect(catalog.definitions.filter((row) => row.label.endsWith('Complete'))).toHaveLength(3)
+  })
+
+  it('counts one covered series title in the catalog even when a leg has family aliases', () => {
+    const races: RaceTemplate[] = Array.from({ length: 4 }, (_, index) => ({
+      id: `synthetic-race-${index}`,
+      familyId: `synthetic-family-${index}`,
+      name: `Synthetic Race ${index}`,
+      grade: 'g1',
+      surface: 'turf',
+      distance: 2_000,
+      distanceCategory: 'medium',
+      direction: 'left',
+      venue: 'Synthetic Venue',
+      venueKey: 'synthetic-venue',
+      venueTags: [],
+      series: ['triple-crown'],
+      seriesLegs: [`triple-crown:leg-${index < 3 ? index + 1 : 1}`],
+      courseId: `synthetic-course-${index}`,
+      season: 1,
+      fieldSize: 8,
+    }))
+    const catalog = buildTrainerAchievementCatalog({ ...baseInput, races })
+    expect(catalog.titleDenominatorKeys.filter((key) => key === 'title:triple-crown')).toHaveLength(1)
+    expect(catalog.titleDenominatorKeys).not.toContain('title:triple-tiara')
   })
 
   it('reconciles every aggregate family, stable records, and deterministic Trainer events', () => {

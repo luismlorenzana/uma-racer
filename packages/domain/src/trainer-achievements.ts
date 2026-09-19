@@ -5,7 +5,7 @@ import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import {
   BADGE_TIERS,
   FLAIR_EVENT_VERSION,
-  FLAIR_SERIES_REQUIRED_FAMILIES,
+  FLAIR_SERIES_REQUIRED_LEGS,
   FLAIR_SERIES_TAGS,
   countFact,
   parseBadgeState,
@@ -14,6 +14,7 @@ import {
   type CountFact,
   type EarnedBadgeStage,
   type FlairEventV1,
+  type FlairSeriesTag,
   type TrainerBadgeStateV1,
   type TrainerRecord,
   type UmaBadgeStateV1,
@@ -145,17 +146,21 @@ function isCouponRedemption(row: TrainerLedgerRow): boolean {
 }
 
 function titleDenominator(races: readonly RaceTemplate[]): string[] {
-  const families = new Map<string, { g1: boolean; tags: Set<string> }>()
+  const families = new Map<string, { g1: boolean }>()
+  const seriesLegs = new Map(FLAIR_SERIES_TAGS.map((tag) => [tag, new Set<string>()]))
   for (const race of [...races].sort((left, right) => left.id.localeCompare(right.id))) {
-    const current = families.get(race.familyId) ?? { g1: false, tags: new Set<string>() }
+    const current = families.get(race.familyId) ?? { g1: false }
     current.g1 ||= race.grade === 'g1'
-    race.series.forEach((tag) => current.tags.add(tag))
+    for (const legId of race.seriesLegs) {
+      const separator = legId.indexOf(':')
+      const tag = legId.slice(0, separator) as FlairSeriesTag
+      if (seriesLegs.has(tag)) seriesLegs.get(tag)!.add(legId)
+    }
     families.set(race.familyId, current)
   }
   const keys: string[] = []
   for (const tag of FLAIR_SERIES_TAGS) {
-    const tagged = [...families].filter(([, family]) => family.tags.has(tag)).map(([id]) => id)
-    if (tagged.length === FLAIR_SERIES_REQUIRED_FAMILIES[tag]) keys.push(`title:${tag}`)
+    if (seriesLegs.get(tag)!.size === FLAIR_SERIES_REQUIRED_LEGS[tag]) keys.push(`title:${tag}`)
   }
   for (const [familyId, family] of [...families].sort(([left], [right]) => left.localeCompare(right))) {
     if (!family.g1) continue

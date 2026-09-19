@@ -73,7 +73,7 @@ import {
   HONORS_POINTS,
   TITLE_POINTS,
   PRESTIGE_FRAME_THRESHOLDS,
-  FLAIR_SERIES_REQUIRED_FAMILIES,
+  FLAIR_SERIES_REQUIRED_LEGS,
   TRAINER_ACHIEVEMENT_THRESHOLDS,
 } from './index'
 
@@ -103,7 +103,7 @@ describe('flair', () => {
     expect(BADGE_TIER_POINTS).toEqual([1, 2, 4, 8, 16])
     expect([BADGE_ONE_OFF_POINTS, GOAL_RIBBON_POINTS, HONORS_POINTS, TITLE_POINTS]).toEqual([4, 1, 4, 10])
     expect(PRESTIGE_FRAME_THRESHOLDS).toEqual([0, 5, 15, 40, 80, 160, 300])
-    expect(FLAIR_SERIES_REQUIRED_FAMILIES).toEqual({
+    expect(FLAIR_SERIES_REQUIRED_LEGS).toEqual({
       'triple-crown': 3,
       'triple-tiara': 3,
       'spring-triple-crown': 3,

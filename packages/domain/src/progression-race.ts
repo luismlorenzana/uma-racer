@@ -1,7 +1,7 @@
 // Saved-Uma progression races and rewards (docs/design/racing.md).
 
 import { CARD_EFFECTS, projectedCardEffectValue } from './cards'
-import { FLAIR_SERIES_TAGS, type FlairSeriesTag } from './badges'
+import { FLAIR_SERIES_TAGS, parseFlairSeriesLegId, type FlairSeriesTag } from './badges'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
@@ -178,6 +178,12 @@ export function assertProgressionRaceContent(races: readonly RaceTemplate[]): vo
       race.venueTags.some((tag) => tag !== 'jra-main') || new Set(race.venueTags).size !== race.venueTags.length ||
       !Array.isArray(race.series) || race.series.some((tag) => !FLAIR_SERIES_TAGS.includes(tag)) ||
       !isSortedUniqueStrings(race.series) ||
+      !Array.isArray(race.seriesLegs) || !isSortedUniqueStrings(race.seriesLegs) ||
+      race.seriesLegs.some((leg) => {
+        const parsed = parseFlairSeriesLegId(leg)
+        return parsed === null || !race.series.includes(parsed.tag)
+      }) ||
+      race.series.some((tag) => !race.seriesLegs.some((leg) => parseFlairSeriesLegId(leg)?.tag === tag)) ||
       !isId(race.courseId) ||
       !RACE_GRADES.includes(race.grade) ||
       !SURFACES.includes(race.surface) ||

@@ -126,8 +126,8 @@ that awards it and is never revoked if later content adds another venue.
 
 ### 4. Titles and G1 trophies
 
-Private race content supplies semantic `series` tags such as `triple-crown`; the ignored mapping from source race-family ids
-to those tags never enters git. Catalog v1 awards:
+Private race content supplies semantic `series` tags such as `triple-crown` plus stable `seriesLegs` values shaped as
+`<tag>:<leg-key>`; the ignored mapping from source race-family ids to those legs never enters git. Catalog v1 awards:
 
 | Title | Required | Legs |
 |---|---|---:|
@@ -141,19 +141,18 @@ to those tags never enters git. Catalog v1 awards:
 | Dirt Queen | February Stakes · Champions Cup | 2 |
 | Two-Time / Three-Time [Race] | Two or three wins in the same G1 family | — |
 
-> ⚠️ **Every race-set title and Grand Tour is currently unearnable**: the private series override was never written, so
-> published content carries no series tags. [T019](../tasks/T019-race-series-and-titles.md) writes it, changes a series
-> from a family list into **legs** (one leg is satisfied by any alias family, since the catalog holds alternate-venue and
-> scenario variants of the same race), and awards the titles retroactively. Only the repeat titles work today.
+Titles can be earned across any number of scenarios and are permanent. A leg is satisfied by a win in any of its family
+aliases, so alternate-venue and scenario variants receive the same credit; every leg in the set must be satisfied once.
+The evaluator joins stored family-win facts to the current content's legs, then freezes stable leg ids into the earned
+title. Repeat titles use the current private race name with a safe family-id fallback. Every distinct G1 family win also
+creates or increments its trophy, but only the first win emits a `trophy-earned` flair event.
 
-Titles can be earned across any number of scenarios and are permanent. A leg must be won at least once for each set;
-calendar variants sharing the family do not create duplicates. Repeat titles use the current private race name with a safe
-family-id fallback. Every distinct G1 family win also creates or increments its trophy, but only the first win emits a
-`trophy-earned` flair event.
-
-The importer reads an owner-maintained, gitignored `content/overrides/flair.json` containing race-family series tags and
-the main-venue set. It validates every reference and reports aggregate coverage only. Missing or malformed coverage
-disables the affected title/Grand Tour criterion with an explicit content diagnostic; it never substitutes by name.
+The importer reads a Claude-maintained, gitignored version-2 `content/overrides/flair.json` containing tag → leg → family
+alias mappings and the main-venue set. It validates stable kebab-case leg keys, fixed leg counts, duplicate placement,
+exactly 10 distinct retained main venues, and every private reference, while reporting aggregate coverage only. A missing
+override produces zero coverage and disables only the affected title/Grand Tour criteria; malformed coverage fails import
+instead of guessing by name. Badge and Settings diagnostics distinguish unpublished coverage from covered-but-unearned
+awards.
 
 ### 5. Race feats
 
@@ -257,8 +256,10 @@ Every definition has one history grade shown in detail/progress UI:
 | **Since tracking** | Pre-T015 facts were not durably stored; progress is a truthful lower bound starting from migration |
 | **Untracked** | A required legacy replay/content dependency is missing; no progress or award is guessed |
 
-Bootstrap strictly parses complete local race history before publishing ready state. Existing race, goal, level, current
-stat, and skill-history awards are retroactive and exact where their dependencies resolve. Current-scenario training turns
+Bootstrap strictly parses complete local race history before publishing ready state, then re-evaluates every Uma against
+the current content catalog. Existing race, goal, level, current stat, and skill-history awards are retroactive and exact
+where their dependencies resolve; publishing series/main-venue coverage therefore awards qualifying titles and Grand Tour
+from stored family/venue wins without changing badge-state schema. Current-scenario training turns
 form the lower-bound seed for Diligent; current TL10 may award Fully Trained for the active tier. Prior friendship/Full
 House/deck-at-completion/parent-use/Dynasty facts are not invented. A lower bound that already crosses a threshold may
 award it, but the UI labels the underlying progress “at least”.
@@ -348,6 +349,6 @@ in `packages/domain/src/domain.test.ts` when T015 lands.
 
 - `Duelist`, rushed/spot-struggle feats, and other R4-dependent badges.
 - `Upset` until a per-runner rating formula is designed and pinned.
-- Sound, haptics, bespoke badge art, and replacing existing emoji/icons (Milestone 7).
+- Sound, haptics, bespoke badge art, and replacing existing emoji/icons (Milestone 9).
 - Social/global rarity, public profiles, sharing, leaderboards, or server-authoritative anti-cheat.
 - Currency or progression rewards from flair.
