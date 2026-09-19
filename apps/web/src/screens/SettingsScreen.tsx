@@ -1,4 +1,5 @@
 import { useReducedMotion } from 'motion/react'
+import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useContent } from '../content/ContentProvider'
 import { useGame } from '../game/store'
@@ -57,6 +58,7 @@ export function SettingsScreen() {
         <Row label="Home Screen app" value={standalone ? 'Yes' : 'No (Safari tab)'} />
         <Row label="Reduced motion" value={reduced ? 'On' : 'Off'} />
       </Panel>
+      {gameStatus === 'ready' && <Link to="/trainer" className="flex min-h-11 items-center justify-center rounded-xl bg-white px-4 font-extrabold text-violet-700 shadow-sm">Open Trainer profile</Link>}
       {auth.authRequired && (
         <GameButton variant="secondary" onClick={() => (auth.user ? auth.signOut() : auth.signIn())}>
           {auth.user ? 'Sign out' : 'Sign in with Google'}

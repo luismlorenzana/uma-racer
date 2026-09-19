@@ -100,7 +100,10 @@ const FLAIR_KINDS = ['badge-tier', 'one-off', 'goal-ribbon', 'honors', 'title', 
 const BADGE_TIERS = ['bronze', 'silver', 'gold', 'platinum', 'rainbow', 'one-off'] as const
 const BADGE_FILTER_CATEGORIES = [
   'victories', 'surface', 'distance', 'strategy', 'venue', 'race-feat', 'stats', 'scenario', 'training', 'skills',
-  'goals', 'lineage', 'title', 'trophy',
+  'goals', 'lineage', 'title', 'trophy', 'collection', 'stable', 'journey',
+] as const
+const TRAINER_RECORD_KINDS = [
+  'highest-stat', 'most-wins', 'most-g1-wins', 'most-badge-stages', 'biggest-winning-margin', 'longest-win-streak',
 ] as const
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -196,7 +199,7 @@ function parseBadgePreferences(value: unknown, trainer: boolean): boolean {
     : ['activeTitleId', 'showcaseGroups', 'savedViews']
   if (!isRecord(value) || !exactKeys(value, keys) || (value.activeTitleId !== null && !isId(value.activeTitleId)) ||
     !Array.isArray(value.showcaseGroups) || value.showcaseGroups.length < 1 || value.showcaseGroups.length > 21 ||
-    !Array.isArray(value.savedViews) || value.savedViews.length > 20) return false
+    !Array.isArray(value.savedViews) || value.savedViews.length > (trainer ? 40 : 20)) return false
   const refs = new Set<string>()
   const groupIds = new Set<string>()
   const groupNames = new Set<string>()
@@ -215,15 +218,22 @@ function parseBadgePreferences(value: unknown, trainer: boolean): boolean {
   }
   const viewIds = new Set<string>()
   const names = new Set<string>()
+  let stableViewCount = 0
+  let trainerViewCount = 0
   for (const view of value.savedViews) {
     if (!isRecord(view) || !exactKeys(view, ['id', 'name', 'filters', 'sort']) || !isId(view.id) || viewIds.has(view.id) ||
       typeof view.name !== 'string' || view.name.trim().length < 1 || view.name.trim().length > 40 ||
       !['recent', 'tier', 'closest', 'rarest', 'alphabetical', 'category'].includes(String(view.sort)) || !parseSavedViewFilters(view.filters)) return false
     const name = view.name.trim().toLocaleLowerCase()
-    if (names.has(name)) return false
-    names.add(name)
+    const viewScope = trainer && (view.id as string).startsWith('trainer-view-') ? 'trainer' : 'stable'
+    const scopedName = `${viewScope}:${name}`
+    if (names.has(scopedName)) return false
+    names.add(scopedName)
     viewIds.add(view.id)
+    if (viewScope === 'trainer') trainerViewCount += 1
+    else stableViewCount += 1
   }
+  if (stableViewCount > 20 || trainerViewCount > 20) return false
   return !trainer || (typeof value.displayName === 'string' && value.displayName.trim().length > 0 &&
     [...value.displayName.trim()].length <= 32 && parseUniqueIds(value.pinnedUmaIds) !== null)
 }
@@ -390,12 +400,22 @@ function parseBadge(value: unknown): Record<string, unknown> | null {
       !exactKeys(value.sourceWatermarks, ['contributors', 'ledgerEntries', 'contentVersion']) ||
       !isNonNegativeInt(value.sourceWatermarks.contributors) || !isNonNegativeInt(value.sourceWatermarks.ledgerEntries) ||
       (value.sourceWatermarks.contentVersion !== null && !isId(value.sourceWatermarks.contentVersion)) ||
-      !parseCounts(value.aggregates) || !parseCounts(value.records) || !isRecord(value.awards) ||
+      !parseCounts(value.aggregates) || !parseTrainerRecords(value.records) || !isRecord(value.awards) ||
       !exactKeys(value.awards, ['achievements']) || !Array.isArray(value.awards.achievements) ||
       value.awards.achievements.some((entry) => !parseAwardStage(entry)) || !parseBadgePreferences(value.preferences, true)) return null
     return value
   }
   return null
+}
+
+function parseTrainerRecords(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length > TRAINER_RECORD_KINDS.length) return false
+  return value.every((entry, index) => isRecord(entry) && exactKeys(entry, ['kind', 'value', 'umaId', 'sourceId', 'achievedAt', 'stat']) &&
+    TRAINER_RECORD_KINDS.includes(entry.kind as (typeof TRAINER_RECORD_KINDS)[number]) &&
+    typeof entry.value === 'number' && Number.isFinite(entry.value) && entry.value >= 0 && isId(entry.umaId) &&
+    (entry.sourceId === null || isId(entry.sourceId)) && isNonNegativeInt(entry.achievedAt) &&
+    (entry.kind === 'highest-stat' ? STATS.includes(entry.stat as (typeof STATS)[number]) : entry.stat === null) &&
+    (index === 0 || isRecord(value[index - 1]) && String((value[index - 1] as Record<string, unknown>).kind).localeCompare(String(entry.kind)) < 0))
 }
 
 function parseFlair(value: unknown): Record<string, unknown> | null {

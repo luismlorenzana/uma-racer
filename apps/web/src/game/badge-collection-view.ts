@@ -423,6 +423,12 @@ export function parseBadgeRoute(search: string, validUmaIds: ReadonlySet<string>
     if (incompatible.length > 0) unavailable.push(...incompatible.map((filter) => `${filter.kind}:${filter.value}`))
     filters = filters.filter((filter) => filter.kind !== 'uma' && filter.kind !== 'rarity')
   }
+  if (scope === 'trainer') {
+    const allowed = new Set<BadgeFilter['kind']>(['category', 'type', 'status', 'pinned', 'earned-after'])
+    const incompatible = filters.filter((filter) => !allowed.has(filter.kind))
+    if (incompatible.length > 0) unavailable.push(...incompatible.map((filter) => `${filter.kind}:${filter.value}`))
+    filters = filters.filter((filter) => allowed.has(filter.kind))
+  }
   const timelineValue = params.get('timeline')
   const kinds: FlairEventV1['kind'][] = ['badge-tier', 'one-off', 'goal-ribbon', 'honors', 'title', 'trophy-earned', 'trainer-achievement']
   const timelineKind = timelineValue && kinds.includes(timelineValue as FlairEventV1['kind']) ? timelineValue as FlairEventV1['kind'] : null

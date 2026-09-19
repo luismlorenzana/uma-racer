@@ -12,6 +12,7 @@ import {
   rebaseBadgePreferences,
   removeShowcaseGroup,
   stableBadgeRarity,
+  TRAINER_SAVED_VIEW_ID_PREFIX,
   replaceTrainerPreferences,
   replaceUmaPreferences,
   type UmaTemplate,
@@ -142,5 +143,20 @@ describe('badge preference mutations', () => {
     expect(next.awards.achievements).toEqual([])
     expect(next.preferences.savedViews[0]?.name).toBe('Rare')
     expect(next.preferences.displayName).toBe('Trainer')
+  })
+
+  it('keeps up to twenty Stable and Trainer saved views in separate namespaces', () => {
+    const state = createTrainerBadgeState(10)
+    const makeView = (id: string, name: string) => ({ id, name, filters: [], sort: 'recent' as const })
+    const savedViews = [
+      ...Array.from({ length: 20 }, (_, index) => makeView(`view-${index}`, `View ${index}`)),
+      ...Array.from({ length: 20 }, (_, index) => makeView(`${TRAINER_SAVED_VIEW_ID_PREFIX}${index}`, `View ${index}`)),
+    ]
+    const next = replaceTrainerPreferences(state, { ...state.preferences, savedViews })
+    expect(parseBadgeState(next)?.preferences.savedViews).toHaveLength(40)
+    expect(() => replaceTrainerPreferences(state, {
+      ...state.preferences,
+      savedViews: [...savedViews, makeView(`${TRAINER_SAVED_VIEW_ID_PREFIX}overflow`, 'Overflow')],
+    })).toThrow(/limit/)
   })
 })

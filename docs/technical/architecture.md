@@ -115,12 +115,14 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   evaluates the complete per-Uma catalog after each fact transition and during one content-ready retroactive migration;
   every changed badge state and append-only event commits inside the triggering Training/race/scenario/collection
   transaction. Lost Training/lineage history stays a labeled lower bound, and unresolved detailed race/completion history
-  stays untracked instead of being fabricated. T017 now initializes the preference-only trainer shell, lazy Uma/Stable
-  collection UI, paged timeline reads, and conflict rebase; T018 fills the trainer shell with account facts and awards.
+  stays untracked instead of being fabricated. T017 initializes the trainer shell, lazy Uma/Stable collection UI, paged
+  timeline reads, and conflict rebase. T018 now authoritatively reconciles that shell from collection, ledger, race,
+  Journey, level, and per-Uma award facts and exposes the lazy Trainer scope/profile.
 - New race rows snapshot bounded accomplishment metadata from the authoritative content/input/timeline without changing
   engine replay versions, plus exact `earnedFlairEventIds` (including `[]`). Deterministic per-Uma `flairEvents` are
   idempotent by scope+Uma+award+stage; retry validates and returns stored ids, while reload renders a summary without fresh
-  fanfare. Stable scope remains a live aggregation instead of another persisted copy. T018 adds Trainer reconciliation.
+  fanfare. Stable scope remains a live aggregation instead of another persisted copy. Trainer reconciliation replaces
+  current aggregates/records while preserving monotonic awards and preferences, and is a write-free no-op when unchanged.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
@@ -230,7 +232,9 @@ apps/web/src/
   used by persistence, and the success route reconstructs from committed save facts rather than keeping a second game state.
 - Goal and Journey projections remain small pure DOM view models. Home, Profile, Race Select, pre-race, and Results join
   persisted ids to private content with safe fallbacks; goal state never enters Pixi or changes simulation inputs.
-- Badge/catalog/evaluator and Trainer aggregation stay pure in `@racer/domain`. Web view models join current private labels,
+- Badge/catalog/evaluator and Trainer aggregation stay pure in `@racer/domain`. Each affected local action runs the same
+  deterministic Trainer reconciliation inside its existing Dexie transaction, so action-time updates and boot repair
+  cannot drift. Web view models join current private labels,
   apply filters/sorts/search, and window the lazy Badge route. Preference commands re-read and replace only title/showcase/
   saved-view fields so stale UI cannot overwrite newly earned facts. A sync conflict adopts the server's newer award facts,
   filters local references against those facts, and queues still-valid local preferences on top. Timeline pages walk the

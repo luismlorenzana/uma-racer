@@ -8,6 +8,7 @@ import {
   createUmaSave,
   buildUmaFlairCatalog,
   evaluateUmaFlair,
+  reconcileTrainerState,
   type ContentAtlas,
   type RaceTemplate,
   type SkillTemplate,
@@ -145,6 +146,24 @@ function currentBadgeState(loaded: LoadedContent, uma: UmaSave) {
     state,
     { source: { kind: 'migration', id: null, tier: null }, earnedAt: 1, retroactive: true },
   ).state
+}
+
+function currentTrainerState(loaded: LoadedContent, initial: ReturnType<typeof createInitialSave>) {
+  const contributors = initial.umas.map((uma) => currentBadgeState(loaded, uma))
+  return reconcileTrainerState({
+    state: createTrainerBadgeState(1),
+    contentVersion: loaded.manifest.version,
+    umas: loaded.umas.items,
+    cards: loaded.cards.items,
+    races: loaded.races.items,
+    ownedUmas: initial.umas,
+    ownedCards: initial.cards,
+    contributors,
+    ledger: [],
+    raceResults: [],
+    now: 1,
+    retroactive: true,
+  }).state
 }
 
 async function resetDatabase(): Promise<void> {
@@ -397,7 +416,7 @@ describe('game bootstrap coordinator', () => {
       ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, data: toRecord(data), version: 1, deleted: false, updatedAt: 2 })),
       ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, data: toRecord(data), version: 1, deleted: false, updatedAt: 2 })),
       ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, data: toRecord(currentBadgeState(loaded, data)), version: 1, deleted: false, updatedAt: 2 })),
-      { kind: 'badges' as const, id: 'trainer', data: toRecord(createTrainerBadgeState(1)), version: 1, deleted: false, updatedAt: 2 },
+      { kind: 'badges' as const, id: 'trainer', data: toRecord(currentTrainerState(loaded, initial)), version: 1, deleted: false, updatedAt: 2 },
     ]
     vi.spyOn(saveApi, 'load').mockResolvedValue({ entities, logs: [], serverTime: 2 })
 
@@ -457,7 +476,7 @@ describe('game bootstrap coordinator', () => {
         ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(currentBadgeState(loaded, data)), deleted: false, updatedAt: 2 })),
-        { kind: 'badges' as const, id: 'trainer', version: 1, data: toRecord(createTrainerBadgeState(1)), deleted: false, updatedAt: 2 },
+        { kind: 'badges' as const, id: 'trainer', version: 1, data: toRecord(currentTrainerState(loaded, initial)), deleted: false, updatedAt: 2 },
       ],
       logs: [],
       serverTime: 2,
@@ -495,7 +514,7 @@ describe('game bootstrap coordinator', () => {
         ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(currentBadgeState(loaded, data)), deleted: false, updatedAt: 2 })),
-        { kind: 'badges' as const, id: 'trainer', version: 1, data: toRecord(createTrainerBadgeState(1)), deleted: false, updatedAt: 2 },
+        { kind: 'badges' as const, id: 'trainer', version: 1, data: toRecord(currentTrainerState(loaded, initial)), deleted: false, updatedAt: 2 },
       ],
       logs: [],
       serverTime: 2,

@@ -82,7 +82,11 @@ describe('collection persistence', () => {
     expect(await db.ledger.get(`card-coupon-redeem:${cardTemplate.id}`)).toMatchObject({
       data: { resource: 'card-coupons', delta: -1, reason: 'card-coupon-redeem' },
     })
-    expect(await db.outbox.count()).toBe(3)
+    expect(await db.outbox.count()).toBe(8)
+    expect(await db.badges.get('trainer')).toMatchObject({ data: { aggregates: expect.arrayContaining([
+      { key: 'coupon-redemptions', count: 1 },
+    ]) } })
+    expect(await db.flairEvents.count()).toBe(4)
   })
 
   it('redeems an Uma exactly once with canonical state and leaves featured Uma unchanged', async () => {

@@ -13,6 +13,7 @@ import {
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { queueInTransaction } from './persistence'
+import { reconcileTrainerInTransaction } from './trainer'
 
 export interface CardPromotionMutation {
   profile: PlayerProfile
@@ -55,7 +56,7 @@ export async function promotePersistentCard(
   today: string,
   now: number,
 ): Promise<CardPromotionMutation> {
-  return db.transaction('rw', db.profile, db.cards, db.ledger, db.outbox, async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
     const profileRow = await db.profile.get('main')
     const cardRow = await db.cards.get(cardId)
     if (!profileRow) throw new Error('Local profile is missing')
@@ -85,6 +86,7 @@ export async function promotePersistentCard(
       await db.ledger.add({ id: entry.id, data: entry.data, createdAt: now })
       await queueInTransaction('ledger', entry.id, 'append', now)
     }
+    await reconcileTrainerInTransaction(content, now, false, mutation.ledgerIds[0])
     return mutation
   })
 }

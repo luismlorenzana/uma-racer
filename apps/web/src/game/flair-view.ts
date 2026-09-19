@@ -4,11 +4,13 @@ import {
   BADGE_TIER_POINTS,
   BADGE_TIERS,
   buildUmaFlairCatalog,
+  buildTrainerAchievementCatalog,
   orderFlairEventsForFanfare,
   prestigeForState,
   type FlairEventRecord,
   type FlairEventV1,
   type UmaBadgeStateV1,
+  type TrainerBadgeStateV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
@@ -115,6 +117,37 @@ export function buildFlairFanfare(
   const ids = new Set(eventIds)
   const selected = eventRows(events).filter((event) => ids.has(event.id))
   return viewRows(content, state, orderFlairEventsForFanfare(selected), selected)
+}
+
+export function buildTrainerFlairFanfare(
+  content: LoadedContent,
+  state: TrainerBadgeStateV1,
+  events: readonly (FlairEventV1 & { id: string })[],
+  eventIds: readonly string[],
+): FlairEventView[] {
+  const ids = new Set(eventIds)
+  const definitions = new Map(buildTrainerAchievementCatalog({
+    umas: content.umas.items,
+    cards: content.cards.items,
+    races: content.races.items,
+  }).definitions.map((definition) => [definition.awardKey, definition]))
+  return orderFlairEventsForFanfare(eventRows(events).filter((event) =>
+    ids.has(event.id) && event.data.scope === 'trainer')).map((event) => {
+    const definition = definitions.get(event.data.awardKey)
+    return {
+      id: event.id,
+      awardKey: event.data.awardKey,
+      label: definition?.label ?? titleCase(event.data.awardKey.replace(/^trainer:/, '')),
+      description: definition?.description ?? 'Stored Trainer achievement',
+      kind: event.data.kind,
+      kindLabel: kindLabels[event.data.kind],
+      stage: event.data.stage,
+      stageLabel: stageLabel(event.data.stage),
+      earnedAt: event.data.earnedAt,
+      prestigeDelta: 0,
+      retroactive: event.data.retroactive,
+    }
+  })
 }
 
 export function buildUmaFlairSummary(

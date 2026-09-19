@@ -41,6 +41,10 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('../screens/BadgesScreen')).BadgesScreen }),
       },
       {
+        path: 'trainer',
+        lazy: async () => ({ Component: (await import('../screens/TrainerProfileScreen')).TrainerProfileScreen }),
+      },
+      {
         path: 'settings',
         lazy: async () => ({ Component: (await import('../screens/SettingsScreen')).SettingsScreen }),
       },

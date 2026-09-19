@@ -27,7 +27,7 @@ export type BadgeTier = (typeof BADGE_TIERS)[number]
 
 export const BADGE_FILTER_CATEGORIES = [
   'victories', 'surface', 'distance', 'strategy', 'venue', 'race-feat', 'stats', 'scenario', 'training', 'skills',
-  'goals', 'lineage', 'title', 'trophy',
+  'goals', 'lineage', 'title', 'trophy', 'collection', 'stable', 'journey',
 ] as const
 
 export const BADGE_TIER_POINTS = [1, 2, 4, 8, 16] as const
@@ -248,6 +248,16 @@ export interface SavedBadgeView {
   sort: BadgeSort
 }
 
+export const TRAINER_SAVED_VIEW_ID_PREFIX = 'trainer-view-'
+
+export function isTrainerSavedBadgeViewId(id: string): boolean {
+  return id.startsWith(TRAINER_SAVED_VIEW_ID_PREFIX)
+}
+
+export function isTrainerSavedBadgeView(view: Pick<SavedBadgeView, 'id'>): boolean {
+  return isTrainerSavedBadgeViewId(view.id)
+}
+
 export interface BadgePreferences {
   activeTitleId: string | null
   showcaseGroups: ShowcaseGroup[]
@@ -268,6 +278,20 @@ export interface UmaBadgeStateV1 {
   preferences: BadgePreferences
 }
 
+export const TRAINER_RECORD_KINDS = [
+  'highest-stat', 'most-wins', 'most-g1-wins', 'most-badge-stages', 'biggest-winning-margin', 'longest-win-streak',
+] as const
+export type TrainerRecordKind = (typeof TRAINER_RECORD_KINDS)[number]
+
+export interface TrainerRecord {
+  kind: TrainerRecordKind
+  value: number
+  umaId: string
+  sourceId: string | null
+  achievedAt: number
+  stat: StatKey | null
+}
+
 export interface TrainerBadgeStateV1 {
   version: typeof BADGE_STATE_VERSION
   scope: 'trainer'
@@ -276,7 +300,7 @@ export interface TrainerBadgeStateV1 {
   trackingStartedAt: number
   sourceWatermarks: { contributors: number; ledgerEntries: number; contentVersion: string | null }
   aggregates: CountFact[]
-  records: CountFact[]
+  records: TrainerRecord[]
   awards: { achievements: EarnedBadgeStage[] }
   preferences: BadgePreferences & { displayName: string; pinnedUmaIds: string[] }
 }
@@ -745,7 +769,7 @@ function validPreferences(value: unknown, trainer = false): boolean {
     : ['activeTitleId', 'showcaseGroups', 'savedViews']
   if (!isRecord(value) || !exactKeys(value, keys) || (value.activeTitleId !== null && !isId(value.activeTitleId)) ||
     !Array.isArray(value.showcaseGroups) || value.showcaseGroups.length < 1 || value.showcaseGroups.length > 21 ||
-    !Array.isArray(value.savedViews) || value.savedViews.length > 20) return false
+    !Array.isArray(value.savedViews) || value.savedViews.length > (trainer ? 40 : 20)) return false
   const awardRefs = new Set<string>()
   const groupIds = new Set<string>()
   const groupNames = new Set<string>()
@@ -764,15 +788,22 @@ function validPreferences(value: unknown, trainer = false): boolean {
   }
   const normalizedNames = new Set<string>()
   const viewIds = new Set<string>()
+  let stableViewCount = 0
+  let trainerViewCount = 0
   for (const view of value.savedViews) {
     if (!isRecord(view) || !exactKeys(view, ['id', 'name', 'filters', 'sort']) || !isId(view.id) || viewIds.has(view.id) ||
       typeof view.name !== 'string' || view.name.trim().length < 1 || view.name.trim().length > 40 ||
       !['recent', 'tier', 'closest', 'rarest', 'alphabetical', 'category'].includes(view.sort as string) || !validSavedViewFilters(view.filters)) return false
     const name = view.name.trim().toLocaleLowerCase()
-    if (normalizedNames.has(name)) return false
-    normalizedNames.add(name)
+    const viewScope = trainer && isTrainerSavedBadgeViewId(view.id as string) ? 'trainer' : 'stable'
+    const scopedName = `${viewScope}:${name}`
+    if (normalizedNames.has(scopedName)) return false
+    normalizedNames.add(scopedName)
     viewIds.add(view.id)
+    if (viewScope === 'trainer') trainerViewCount += 1
+    else stableViewCount += 1
   }
+  if (stableViewCount > 20 || trainerViewCount > 20) return false
   if (trainer) {
     if (typeof value.displayName !== 'string' || value.displayName.trim().length < 1 || [...value.displayName.trim()].length > 32) return false
     if (!parseIds(value.pinnedUmaIds)) return false
@@ -917,12 +948,25 @@ function validateTrainerBadgeState(value: TrainerBadgeStateV1): boolean {
     'version', 'scope', 'catalogVersion', 'evaluatorVersion', 'trackingStartedAt', 'sourceWatermarks', 'aggregates',
     'records', 'awards', 'preferences',
   ]) || !isPositiveInt(value.catalogVersion) || !isNonNegativeInt(value.evaluatorVersion) || !isNonNegativeInt(value.trackingStartedAt) ||
-    !parseCounts(value.aggregates) || !parseCounts(value.records) || !validPreferences(value.preferences, true)) return false
+    !parseCounts(value.aggregates) || !validTrainerRecords(value.records) || !validPreferences(value.preferences, true)) return false
   if (!isRecord(value.sourceWatermarks) || !exactKeys(value.sourceWatermarks, ['contributors', 'ledgerEntries', 'contentVersion']) ||
     !isNonNegativeInt(value.sourceWatermarks.contributors) || !isNonNegativeInt(value.sourceWatermarks.ledgerEntries) ||
     (value.sourceWatermarks.contentVersion !== null && !isId(value.sourceWatermarks.contentVersion))) return false
-  return isRecord(value.awards) && exactKeys(value.awards, ['achievements']) && Array.isArray(value.awards.achievements) &&
-    value.awards.achievements.every((entry) => validStage(entry))
+  if (!isRecord(value.awards) || !exactKeys(value.awards, ['achievements']) || !Array.isArray(value.awards.achievements) ||
+    !value.awards.achievements.every((entry) => validStage(entry))) return false
+  const stageOrder = (stage: BadgeTier | 'one-off') => stage === 'one-off' ? BADGE_TIERS.length : BADGE_TIERS.indexOf(stage)
+  return value.awards.achievements.every((entry, index, rows) => index === 0 ||
+    rows[index - 1]!.awardKey.localeCompare(entry.awardKey) < 0 ||
+    (rows[index - 1]!.awardKey === entry.awardKey && stageOrder(rows[index - 1]!.stage) < stageOrder(entry.stage)))
+}
+
+function validTrainerRecords(value: unknown): value is TrainerRecord[] {
+  if (!Array.isArray(value) || value.length > TRAINER_RECORD_KINDS.length) return false
+  return value.every((entry, index) => isRecord(entry) && exactKeys(entry, ['kind', 'value', 'umaId', 'sourceId', 'achievedAt', 'stat']) &&
+    TRAINER_RECORD_KINDS.includes(entry.kind as TrainerRecordKind) && isFiniteNonNegative(entry.value) && isId(entry.umaId) &&
+    (entry.sourceId === null || isId(entry.sourceId)) && isNonNegativeInt(entry.achievedAt) &&
+    (entry.kind === 'highest-stat' ? STATS.includes(entry.stat as StatKey) : entry.stat === null) &&
+    (index === 0 || (value[index - 1] as TrainerRecord).kind.localeCompare(entry.kind as string) < 0))
 }
 
 export function parseFlairEvent(value: unknown): FlairEventV1 | null {
