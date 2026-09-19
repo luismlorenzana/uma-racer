@@ -5,7 +5,7 @@ import { Panel } from '../ui/Panel'
 export function PlaceholderScreen({ title, emoji, lines }: { title: string; emoji: string; lines: string[] }) {
   return (
     <div className="flex flex-col gap-4 pt-2">
-      <h1 className="px-1 text-2xl font-extrabold text-white text-outline">{title}</h1>
+      <h1 className="font-display px-1 text-2xl font-bold tracking-tight text-ink">{title}</h1>
       <Panel className="flex flex-col items-center py-8 text-center">
         <m.span
           className="text-7xl"

@@ -9,37 +9,75 @@ import type { UmaSort } from '../game/view'
 import { useGame } from '../game/store'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import type { BadgeFrameStyle } from '../game/badge-frame'
+import { ArtTile } from '../ui/ArtTile'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
-import { GameButton } from '../ui/GameButton'
+import { Button } from '../ui/Button'
+import { Chip } from '../ui/Chip'
+import { Crest } from '../ui/Crest'
+import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
+import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
+import { SegmentedControl } from '../ui/SegmentedControl'
 
 const FILTER_LABELS = { tier: 'Tier', surface: 'Surface', distance: 'Distance', strategy: 'Strategy', ready: 'Ready' } as const
 type FilterKind = keyof typeof FILTER_LABELS
 const titleCase = (value: string) => `${value[0]!.toUpperCase()}${value.slice(1)}`
 
 function UmaTile({ item, onUnowned, frame }: { item: UmaAlbumItem; onUnowned: () => void; frame: BadgeFrameStyle | null }) {
-  const body = <>
-    <div className="relative bg-gradient-to-b from-sky-100 to-white p-2">
-      <AtlasSprite asset={item.asset} alt={item.owned ? `${item.template.name} icon` : `${item.template.name} silhouette`} className={`w-full rounded-xl border-2 bg-sky-50 ${item.owned ? frame?.borderClass ?? 'border-white' : 'border-white brightness-0 opacity-35'}`} fallback={<div className="flex h-full items-center justify-center text-4xl">🐴</div>} />
-      <span className="absolute top-3 left-3 rounded-full bg-ink/75 px-2 py-0.5 text-xs font-extrabold text-white">{item.owned ? `T${item.view?.tier ?? 1}` : 'New'}</span>
-      {item.view?.readyToPromote && <span className="absolute right-2 bottom-2 rounded-full bg-gold px-2 py-1 text-[11px] font-extrabold text-white text-outline">Ready!</span>}
-    </div>
-    <div className="p-3">
-      <p className="truncate font-extrabold">{item.template.name}</p>
-      <p className="truncate text-xs text-ink-soft">{item.template.outfit ?? 'Standard outfit'}</p>
-      {item.save ? <div className="mt-2 flex items-center justify-between text-xs font-extrabold"><span>Uma Lv {item.save.level}</span><span>TL {item.save.trainingLevel}</span></div> : <p className="mt-2 text-xs font-extrabold text-violet-700">Unowned outfit</p>}
-    </div>
-  </>
-  const className = `block min-w-0 overflow-hidden rounded-[1.25rem] border-2 bg-white/95 text-left shadow-[var(--shadow-panel)] ${item.owned ? frame?.borderClass ?? 'border-white' : 'border-violet-200'}`
-  return item.owned
-    ? <Link to={item.view?.readyToPromote ? `/scenario/${encodeURIComponent(item.template.id)}/start` : `/stable/${encodeURIComponent(item.template.id)}`} className={className}>{body}</Link>
-    : <button type="button" onClick={onUnowned} className={className}>{body}</button>
+  const body = (
+    <>
+      <ArtTile
+        asset={item.asset}
+        alt={item.owned ? `${item.template.name} portrait` : `${item.template.name}, not owned`}
+        dimmed={!item.owned}
+        chamfer={item.view?.readyToPromote ?? false}
+        overlay={item.owned ? <Crest>T{item.view?.tier ?? 1}</Crest> : <Crest tone="neutral">Locked</Crest>}
+        corner={item.view?.readyToPromote ? <Crest tone="accent">Ready</Crest> : null}
+        footer={
+          <>
+            <p className="font-display truncate text-[15px] font-semibold">{item.template.name}</p>
+            <p className="truncate text-[11px] text-ink-on-dark-soft">{item.template.outfit ?? 'Standard outfit'}</p>
+          </>
+        }
+        className={frame && item.owned ? frame.borderClass : ''}
+      />
+      {item.save ? (
+        <div className="flex items-center justify-between px-0.5 pt-1.5 text-[12px] text-ink-soft">
+          <span>Lv <Numeral className="text-ink">{item.save.level}</Numeral></span>
+          <span>TL {item.save.trainingLevel}</span>
+        </div>
+      ) : (
+        <p className="px-0.5 pt-1.5 text-[12px] text-ink-faint">Unowned outfit</p>
+      )}
+    </>
+  )
+  return item.owned ? (
+    <Link
+      to={item.view?.readyToPromote ? `/scenario/${encodeURIComponent(item.template.id)}/start` : `/stable/${encodeURIComponent(item.template.id)}`}
+      className="block min-w-0 text-left"
+    >
+      {body}
+    </Link>
+  ) : (
+    <button type="button" onClick={onUnowned} className="block min-w-0 text-left">
+      {body}
+    </button>
+  )
 }
 
 function OptionButton({ selected, label, onClick }: { selected: boolean; label: string; onClick: () => void }) {
-  return <button type="button" className={`min-h-12 rounded-2xl border-2 px-4 text-left font-extrabold ${selected ? 'border-sky bg-sky text-white text-outline' : 'border-white bg-white text-ink shadow-sm'}`} onClick={onClick}>{label}</button>
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      className={`min-h-12 rounded-sm px-4 text-left text-[15px] font-semibold ${selected ? 'border border-accent bg-accent-wash text-accent-strong' : 'border border-hairline bg-panel text-ink'}`}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  )
 }
 
 export function StableScreen() {
@@ -114,33 +152,68 @@ export function StableScreen() {
       .finally(() => setRedeemBusy(false))
   }
 
-  return <div className="flex flex-col gap-3 pt-2">
-    <Panel className="bg-gradient-to-br from-sky-50 to-white">
-      <div className="flex items-end justify-between gap-3"><div><h1 className="text-2xl font-extrabold">Stable</h1><p className="text-sm font-bold text-ink-soft">{album.owned} / {album.total} outfits owned</p></div><button type="button" className="min-h-11 rounded-2xl bg-white px-4 text-sm font-extrabold shadow-sm" onClick={() => setSortOpen(true)}>Sort ↕</button></div>
-      <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl bg-violet-50 p-3">
-        <div><p className="text-sm font-extrabold">💎 {album.shardBalance} / {UMA_SHARDS_PER_COUPON} Uma Shards</p><m.p key={exchangePulse} initial={reducedMotion || exchangePulse === 0 ? false : { scale: 1.2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-xs font-bold text-violet-700">🎟️ {album.couponBalance} Uma Select Coupon{album.couponBalance === 1 ? '' : 's'}</m.p></div>
-        <button type="button" disabled={exchangeBusy || album.shardBalance < UMA_SHARDS_PER_COUPON} onClick={doExchange} className="min-h-11 rounded-xl bg-violet-600 px-4 text-sm font-extrabold text-white disabled:opacity-45">{exchangeBusy ? 'Exchanging…' : 'Exchange'}</button>
+  return <div className="flex flex-col gap-3 pt-1">
+    <Panel>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Stable</h1>
+          <p className="text-[13px] text-ink-soft"><Numeral className="text-ink">{album.owned}</Numeral> / {album.total} outfits owned</p>
+        </div>
+        <Button variant="secondary" size="sm" onClick={() => setSortOpen(true)}>Sort</Button>
       </div>
-      {exchangePulse > 0 && <m.div key={exchangePulse} initial={reducedMotion ? false : { x: -18, scale: 0.85, opacity: 0 }} animate={{ x: 0, scale: 1, opacity: 1 }} className="mt-2 rounded-xl bg-white/80 p-2 text-center text-sm font-extrabold text-violet-700">💎 × 5 → 🎟️ + 1</m.div>}
-      {!persistent && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-extrabold">Memory only — acquisitions work for this session but cannot persist or sync.</p>}
-      {persistent && sync.status === 'offline' && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-extrabold">Offline — collection changes commit locally and will sync after reconnecting.</p>}
-      {persistent && (sync.status === 'pending' || sync.status === 'syncing') && <p className="mt-2 rounded-xl bg-sky-50 p-2 text-xs font-extrabold text-sky-deep">Local changes are saved · cloud sync {sync.status === 'syncing' ? 'in progress' : 'pending'}.</p>}
-      {album.orphanedIds.length > 0 && <p className="mt-2 rounded-xl bg-red-50 p-2 text-xs font-bold text-danger">{album.orphanedIds.length} owned Uma reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
-      {error && <p role="alert" className="mt-2 rounded-xl bg-red-50 p-2 text-xs font-bold text-danger">{error}</p>}
+      <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm bg-sunken p-3">
+        <div>
+          <p className="text-[13px] font-semibold"><Numeral>{album.shardBalance}</Numeral> / {UMA_SHARDS_PER_COUPON} Uma Shards</p>
+          <m.p key={exchangePulse} initial={reducedMotion || exchangePulse === 0 ? false : { scale: 1.15, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-[12px] text-ink-soft">
+            {album.couponBalance} Uma Select Coupon{album.couponBalance === 1 ? '' : 's'}
+          </m.p>
+        </div>
+        <Button size="sm" disabled={exchangeBusy || album.shardBalance < UMA_SHARDS_PER_COUPON} onClick={doExchange}>{exchangeBusy ? 'Exchanging…' : 'Exchange'}</Button>
+      </div>
+      {!persistent && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — acquisitions work for this session but cannot persist or sync.</p>}
+      {persistent && sync.status === 'offline' && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Offline — collection changes commit locally and will sync after reconnecting.</p>}
+      {persistent && (sync.status === 'pending' || sync.status === 'syncing') && <p className="mt-2 rounded-sm bg-info/10 p-2 text-[12px] font-semibold text-info">Local changes are saved · cloud sync {sync.status === 'syncing' ? 'in progress' : 'pending'}.</p>}
+      {album.orphanedIds.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{album.orphanedIds.length} owned Uma reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
+      {error && <p role="alert" className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{error}</p>}
     </Panel>
 
-    <div className="flex gap-2 overflow-x-auto pb-1">{(['all', 'owned', 'unowned'] as const).map((ownership) => <button key={ownership} type="button" onClick={() => setFilters((value) => ({ ...value, ownership }))} className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-extrabold ${filters.ownership === ownership ? 'bg-violet-600 text-white' : 'bg-white'}`}>{titleCase(ownership)}</button>)}</div>
-    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Stable filters">{(Object.keys(FILTER_LABELS) as FilterKind[]).map((kind) => <button key={kind} type="button" className={`min-h-11 shrink-0 rounded-full border-2 px-3 text-sm font-extrabold ${activeLabel(kind).startsWith('All') ? 'border-white bg-white/85' : 'border-sky bg-sky text-white text-outline'}`} onClick={() => kind === 'ready' ? setFilters((current) => ({ ...current, ready: !current.ready })) : setFilterSheet(kind)}>{FILTER_LABELS[kind]}: {activeLabel(kind)}</button>)}</div>
+    <SegmentedControl
+      label="Ownership"
+      value={filters.ownership}
+      onChange={(ownership) => setFilters((value) => ({ ...value, ownership }))}
+      options={[{ value: 'all', label: 'All' }, { value: 'owned', label: 'Owned' }, { value: 'unowned', label: 'Unowned' }] as const}
+    />
 
-    {album.items.length ? <div className="grid grid-cols-2 gap-3">{album.items.map((item) => <UmaTile key={item.template.id} item={item} frame={frames.get(item.template.id) ?? null} onUnowned={() => { setSelected(item); setError(null) }} />)}</div> : <Panel className="text-center"><p className="font-extrabold">No Uma outfits match these filters.</p><button type="button" className="mt-3 min-h-11 rounded-2xl bg-sky px-5 font-extrabold text-white" onClick={() => setFilters(EMPTY_UMA_ALBUM_FILTERS)}>Reset filters</button></Panel>}
+    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Stable filters">
+      {(Object.keys(FILTER_LABELS) as FilterKind[]).map((kind) => (
+        <Chip
+          key={kind}
+          selected={!activeLabel(kind).startsWith('All')}
+          onClick={() => kind === 'ready' ? setFilters((current) => ({ ...current, ready: !current.ready })) : setFilterSheet(kind)}
+        >
+          {FILTER_LABELS[kind]}: {activeLabel(kind)}
+        </Chip>
+      ))}
+    </div>
 
-    <BottomSheet open={filterSheet !== null} onClose={() => setFilterSheet(null)}>{filterSheet && <div><h2 className="mb-3 text-xl font-extrabold">{FILTER_LABELS[filterSheet]}</h2>{filterSheet !== 'ready' && <div className="grid gap-2"><OptionButton selected={filters[filterSheet] === null} label="All" onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: null })); setFilterSheet(null) }} />{options.map((option) => <OptionButton key={String(option.value)} selected={filters[filterSheet] === option.value} label={option.label} onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: option.value })); setFilterSheet(null) }} />)}</div>}</div>}</BottomSheet>
-    <BottomSheet open={sortOpen} onClose={() => setSortOpen(false)}><h2 className="mb-3 text-xl font-extrabold">Sort Stable</h2><div className="grid gap-2">{([['name', 'Name'], ['uma-level', 'Uma Level'], ['training-level', 'Training Level']] as const).map(([value, label]) => <OptionButton key={value} selected={sort === value} label={label} onClick={() => { setSort(value); setSortOpen(false) }} />)}</div></BottomSheet>
+    {album.items.length ? (
+      <div className="grid grid-cols-2 gap-3">
+        {album.items.map((item) => <UmaTile key={item.template.id} item={item} frame={frames.get(item.template.id) ?? null} onUnowned={() => { setSelected(item); setError(null) }} />)}
+      </div>
+    ) : (
+      <Panel className="text-center">
+        <p className="font-display font-semibold">No Uma outfits match these filters.</p>
+        <Button className="mt-3" onClick={() => setFilters(EMPTY_UMA_ALBUM_FILTERS)}>Reset filters</Button>
+      </Panel>
+    )}
+
+    <BottomSheet open={filterSheet !== null} onClose={() => setFilterSheet(null)}>{filterSheet && <div><h2 className="font-display mb-3 text-xl font-bold">{FILTER_LABELS[filterSheet]}</h2>{filterSheet !== 'ready' && <div className="grid gap-2"><OptionButton selected={filters[filterSheet] === null} label="All" onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: null })); setFilterSheet(null) }} />{options.map((option) => <OptionButton key={String(option.value)} selected={filters[filterSheet] === option.value} label={option.label} onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: option.value })); setFilterSheet(null) }} />)}</div>}</div>}</BottomSheet>
+    <BottomSheet open={sortOpen} onClose={() => setSortOpen(false)}><h2 className="font-display mb-3 text-xl font-bold">Sort Stable</h2><div className="grid gap-2">{([['name', 'Name'], ['uma-level', 'Uma Level'], ['training-level', 'Training Level']] as const).map(([value, label]) => <OptionButton key={value} selected={sort === value} label={label} onClick={() => { setSort(value); setSortOpen(false) }} />)}</div></BottomSheet>
     <BottomSheet open={selected !== null} onClose={() => { if (!redeemBusy) { setSelected(null); setError(null) } }}>{selected && <div>
-      <div className="flex gap-3"><AtlasSprite asset={selected.asset} alt={`${selected.template.name} icon`} className="h-24 w-24 shrink-0 rounded-2xl bg-sky-50" fallback={<div className="flex h-full items-center justify-center text-4xl">🐴</div>} /><div><p className="text-xs font-extrabold text-violet-700">Unowned Uma outfit</p><h2 className="text-xl font-extrabold">{selected.template.name}</h2><p className="text-sm font-bold text-ink-soft">{selected.template.outfit ?? 'Standard outfit'}</p></div></div>
-      {selected.redemptionLock ? <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-bold">{selected.redemptionLock}</p> : <div className="my-4 flex items-center justify-between rounded-2xl bg-violet-50 p-3 font-extrabold"><span>Uma Select Coupon</span><span>1 → {Math.max(0, profile.umaCoupons - 1)}</span></div>}
-      {error && <p role="alert" className="mb-3 rounded-xl bg-red-50 p-3 text-sm font-bold text-danger">{error}</p>}
-      <GameButton disabled={redeemBusy || selected.redemptionLock !== null} onClick={doRedeem}>{redeemBusy ? 'Adding to Stable…' : selected.redemptionLock ? 'Coupon unavailable' : 'Redeem 1 Coupon'}</GameButton>
+      <div className="flex gap-3"><AtlasSprite asset={selected.asset} alt={`${selected.template.name} portrait`} className="h-24 w-24 shrink-0 overflow-hidden rounded-md border border-hairline bg-sunken" fallback={<Placeholder label={selected.template.name} />} /><div><p className="text-micro">Unowned Uma outfit</p><h2 className="font-display text-xl font-bold">{selected.template.name}</h2><p className="text-[13px] text-ink-soft">{selected.template.outfit ?? 'Standard outfit'}</p></div></div>
+      {selected.redemptionLock ? <p className="mt-4 rounded-sm bg-warning/10 p-3 text-[13px] font-semibold">{selected.redemptionLock}</p> : <div className="my-4 flex items-center justify-between rounded-sm bg-sunken p-3 text-[14px] font-semibold"><span>Uma Select Coupon</span><span><Numeral>1</Numeral> → <Numeral>{Math.max(0, profile.umaCoupons - 1)}</Numeral></span></div>}
+      {error && <p role="alert" className="mb-3 rounded-sm bg-danger/10 p-3 text-[13px] font-semibold text-danger">{error}</p>}
+      <Button className="w-full" disabled={redeemBusy || selected.redemptionLock !== null} onClick={doRedeem}>{redeemBusy ? 'Adding to Stable…' : selected.redemptionLock ? 'Coupon unavailable' : 'Redeem 1 Coupon'}</Button>
     </div>}</BottomSheet>
   </div>
 }

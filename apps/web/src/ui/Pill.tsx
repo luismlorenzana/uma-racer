@@ -1,16 +1,16 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 
-/** Currency / counter pill for the top bar. */
+/** Currency / counter pill for the top bar: icon, then a display numeral. */
 export function Pill({ icon, children, ...rest }: { icon: ReactNode; children: ReactNode } & HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       {...rest}
-      className="flex h-8 items-center gap-1 rounded-full border-2 border-white bg-white/85 pr-2.5 pl-1 text-sm font-extrabold text-ink shadow-[0_3px_0_rgb(35_50_74/0.12)]"
+      className="flex h-8 items-center gap-1.5 rounded-full border border-hairline bg-panel/90 pr-2.5 pl-1.5 text-[13px] text-ink shadow-1 backdrop-blur"
     >
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cream text-sm" aria-hidden>
+      <span className="flex h-5 w-5 items-center justify-center text-[13px]" aria-hidden>
         {icon}
       </span>
-      {children}
+      <span className="font-display font-semibold">{children}</span>
     </span>
   )
 }

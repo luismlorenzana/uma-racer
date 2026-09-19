@@ -11,9 +11,10 @@ export function TopBar() {
   return (
     <header className="pt-safe sticky top-0 z-20 px-4">
       <div className="flex items-center justify-between py-2">
-        <Link to="/settings" className="text-lg font-extrabold tracking-tight text-white text-outline">
+        <Link to="/settings" className="font-display text-[17px] font-bold tracking-tight text-ink">
           Uma Racer
         </Link>
+        {/* TODO(T032): currency icons come from the original set. */}
         <div className="flex items-center gap-1.5">
           <Pill icon="🎫" data-testid="tickets">
             <CountUp value={tickets} />

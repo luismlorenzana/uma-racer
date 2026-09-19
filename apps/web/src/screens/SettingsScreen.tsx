@@ -44,7 +44,7 @@ export function SettingsScreen() {
 
   return (
     <div className="flex flex-col gap-4 pt-2">
-      <h1 className="px-1 text-2xl font-extrabold text-white text-outline">Settings</h1>
+      <h1 className="font-display px-1 text-2xl font-bold tracking-tight text-ink">Settings</h1>
       <Panel>
         <Row label="Signed in as" value={auth.user?.email ?? auth.user?.name ?? '—'} />
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />

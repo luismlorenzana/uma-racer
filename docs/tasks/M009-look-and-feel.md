@@ -25,12 +25,12 @@ T030 visual system foundation      (Claude authors: tokens, primitives, two refe
 
 | Task | Result | Must not absorb |
 |---|---|---|
-| T030 | Tokens, fonts, and the primitive components exist, with Home and Stable rebuilt as the reference | Screen-by-screen rollout, icons, audio |
+| T030 ✅ | Tokens, fonts, primitives, shell, Home and Stable — the reference the rollout copies | Screen-by-screen rollout, icons, audio |
 | [T031](T031-visual-rollout.md) | Every remaining screen uses the new system; no legacy token or slab button survives | New features, layout redesigns not in the visual system, gameplay changes |
 | [T032](T032-icon-set.md) | One original icon set replaces every emoji, with illustrated tab and currency icons | Bespoke badge art (Milestone 11), character art |
 
-T030 is authored by Claude because it is taste-driven and needs visual iteration in the browser at 390×844. T031 and
-T032 are ordinary delegable work once the reference exists.
+T030 was authored by Claude because it is taste-driven and needs visual iteration in the browser at 390×844; it landed
+on 2026-09-19 and also covered the shell. T031 and T032 are ordinary delegable work now that the reference exists.
 
 ## Definition of done
 

@@ -1,5 +1,3 @@
-import '@fontsource/m-plus-rounded-1c/latin-500.css'
-import '@fontsource/m-plus-rounded-1c/latin-800.css'
 import './index.css'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

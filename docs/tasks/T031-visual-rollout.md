@@ -19,13 +19,14 @@ reference. Read [Visual System](../design/visual-system.md) and copy how those t
 
 Work in this order, one commit per group, all in one PR:
 
-1. **Shell:** TopBar, TabBar, AppShell, ScreenState (loading, empty, error, offline).
-2. **Race:** Race Select, pre-race, `RaceRunScreen` HUD and results (the Pixi scene itself is untouched; only DOM chrome).
-3. **Training:** facility cards, gains preview, meters, bench, Training Level bar.
-4. **Cards:** album, card detail sheet, deck editor, redemption and reveal routes.
-5. **Scenario:** Scenario Start, inheritance pickers, Journey medallions, promotion summary.
-6. **Badges and Trainer:** collection page, detail, timeline, showcase editors, trainer profile.
-7. **Settings** and any remaining placeholder route.
+1. **Race:** Race Select, pre-race, `RaceRunScreen` HUD and results (the Pixi scene itself is untouched; only DOM chrome).
+2. **Training:** facility cards, gains preview, meters, bench, Training Level bar.
+3. **Cards:** album, card detail sheet, deck editor, redemption and reveal routes.
+4. **Scenario:** Scenario Start, inheritance pickers, Journey medallions, promotion summary.
+5. **Badges and Trainer:** collection page, detail, timeline, showcase editors, trainer profile.
+6. **Settings** and any remaining placeholder route.
+
+T030 already did the shell (TopBar, TabBar, AppShell, ScreenState), Home and Stable; use them as the reference.
 
 For each screen: replace surfaces with the three defined levels, apply the type ladder (micro labels, display numerals,
 body text), swap slab buttons for the new button set, desaturate stat colours to the tokens, apply art-first treatment
@@ -39,12 +40,17 @@ where portraits or card art appear, and apply the standard motion durations.
   everything else does not.
 - **Reduced motion** keeps every state change and drops movement, on every screen touched.
 - **Missing content** renders the labelled placeholder from the visual system, never a grey box or a broken image.
-- Delete dead styles as you go: when the last consumer of a legacy token or component variant is gone, remove it.
+- Delete dead styles as you go. Two things must be gone by the end of this task: the deprecated `Racecourse Pop` alias
+  block in `index.css` (`--color-sky*`, `--color-cream`, `--color-gold*`, `--color-turf-deep`), and the `GameButton`
+  compatibility shim.
 
 ## Tests and verification
 
 - Existing tests must keep passing; update only assertions that name a class or a label you deliberately changed.
-- Add render tests only where a component gained real logic (density, placeholder fallback).
+- The web package has no DOM test environment yet. Add `jsdom` and `@testing-library/react` as dev dependencies —
+  justified in the PR — and cover the primitives: every `Button` variant and disabled state, `Chip` selected state,
+  `SegmentedControl` selection, `ArtTile` dimmed/placeholder fallback, and `Placeholder`'s accessible name.
+- Keep `apps/web/src/ui/tokens.test.ts` passing; extend it when you remove the alias block.
 - Verify in the browser at 390×844 for every screen in the list, in both densities and with reduced motion on, and
   attach before/after screenshots of at least Race Select, Training, Cards, Badges and Results to the PR.
 - Record the startup bundle size before and after; it must stay at or below 180 KB gzip.
