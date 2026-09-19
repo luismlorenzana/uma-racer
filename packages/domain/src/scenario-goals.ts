@@ -17,7 +17,7 @@ import {
   type ScenarioJourney,
   type UmaSave,
 } from './save'
-import { SCENARIOS, scenarioForTier, tierOfLevel } from './scenarios'
+import { isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
 import { GRADES, RACE_GRADES, type RaceGrade } from './types'
 
 export const SCENARIO_GOAL_VERSION = 2 as const
@@ -418,13 +418,13 @@ export function bootstrapScenarioGoals(input: BootstrapScenarioGoalsInput): UmaS
   if (!parsed.scenarioStarted) return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [] }
 
   const currentTier = tierOfLevel(parsed.level)
-  const finalComplete = currentTier === SCENARIOS.length && parsed.parentSnapshot?.completedTier === currentTier
-  const completedThrough = finalComplete ? currentTier : currentTier - 1
+  const completedGate = isGateLevel(parsed.level) && parsed.parentSnapshot?.completedTier === currentTier
+  const completedThrough = completedGate ? currentTier : currentTier - 1
   const byTier = new Map(parsed.scenarioJourneys.map((journey) => [journey.tier, journey]))
   for (let tier = 1; tier <= completedThrough; tier += 1) {
     if (!byTier.has(tier)) byTier.set(tier, { tier, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] })
   }
-  if (finalComplete) return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [...byTier.values()].sort((a, b) => a.tier - b.tier) }
+  if (completedGate) return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [...byTier.values()].sort((a, b) => a.tier - b.tier) }
 
   const provisional: UmaSave = {
     ...parsed,

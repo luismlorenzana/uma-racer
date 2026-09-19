@@ -31,10 +31,11 @@ Baseline caps follow the **original game's ladder** ✅: its **1200** launch cap
 | 14 | Tracen Diner | らっしゃい！トレセン軒！ | 2026-06-29 | — | 131–140 | 2240 |
 | 15+ | *Every later JP scenario is included* | *Checked against the source each import* | — | — | 141+ | +80 each |
 
-✅ Every date above was verified against the public GameTora scenario dataset on 2026-09-19.
-**Tiers 12–14 are planned, not shipped:** the live ladder still stops at #11, so the Uma level cap is 110 and 43 newer
-cards sit in era 11. [T021](../tasks/T021-jp-scenarios-12-14.md) adds them. The original game raised its own hard cap to
-2500 with Beyond Dreams; ladder A keeps +80 per scenario here, because our caps are tied to the 1200 soft cap (D108).
+✅ Every date above was verified against the public GameTora scenario dataset on 2026-09-19. Tiers 12–14 are live, so the
+Uma level cap is 140 and cards released after Design Your Island fall into their correct eras. The original game raised
+its own hard cap to 2500 with Beyond Dreams; ladder A keeps +80 per scenario here, because our caps are tied to the 1200
+soft cap (D108). Each private content import compares the released source-scenario count with this ladder and emits an
+aggregate-only warning if the source has moved ahead.
 
 Global release names follow the English version. Global has released only through #4 so far, so
 **eras use JP dates** ✅.

@@ -164,6 +164,16 @@ describe('Uma race progression', () => {
     expect(banked.shardReward).toBe(0)
   })
 
+  it('treats level 110 as an ordinary gate and stops EXP permanently at level 140', () => {
+    const at109 = { ...createUmaSave(uma()), level: 109, exp: expToNextUmaLevel(109) - 1 }
+    const gate = addUmaRaceExp(at109, 10_000)
+    expect(gate).toMatchObject({ uma: { level: 110, exp: expToNextUmaLevel(111) }, reachedGate: 110, shardReward: 1 })
+    const at139 = { ...createUmaSave(uma()), level: 139, exp: expToNextUmaLevel(139) - 1 }
+    const maximum = addUmaRaceExp(at139, 10_000)
+    expect(maximum).toMatchObject({ uma: { level: 140, exp: 0 }, reachedGate: 140, shardReward: 1 })
+    expect(addUmaRaceExp({ ...maximum.uma, exp: 99 }, 500).uma).toMatchObject({ level: 140, exp: 0 })
+  })
+
   it('uses grade, placement, and Race Bonus for the awarded EXP', () => {
     const save = createUmaSave(uma())
     expect(resolveRaceExperience(save, 'g1', 1, 0.1).expGained).toBe(165)

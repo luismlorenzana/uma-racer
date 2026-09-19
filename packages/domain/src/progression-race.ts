@@ -7,7 +7,7 @@ import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
 import { applyForm, yourForm } from './raceForm'
 import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
-import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
+import { MAX_UMA_LEVEL, isGateLevel, tierOfLevel } from './scenarios'
 import type { CardSave, UmaSave } from './save'
 import { supportDeckIssueMessage, validateEquippedSupportDeck } from './support-deck'
 import {
@@ -26,8 +26,6 @@ import {
 } from './types'
 
 const ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
-const MAX_UMA_LEVEL = SCENARIOS.length * LEVELS_PER_SCENARIO
-
 export interface RaceCardInput {
   save: CardSave
   template: SupportCardTemplate

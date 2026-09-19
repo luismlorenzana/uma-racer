@@ -51,7 +51,7 @@ export function supportDeckIssueMessage(issue: SupportDeckIssue): string {
     case 'missing-content': return `Support card ${issue.displayId} is missing from current content`
     case 'save-content-mismatch': return `Support card ${issue.displayId} has mismatched save data`
     case 'duplicate-character': return `Another card already represents character ${issue.characterId ?? issue.displayId}`
-    case 'later-era': return `Support card ${issue.displayId} is locked until tier ${issue.requiredTier ?? '?'}`
+    case 'later-era': return `Support card ${issue.displayId} is Era locked until tier ${issue.requiredTier ?? '?'}`
     case 'unsupported-type': return `Support card ${issue.displayId} cannot be used in MVP: Friend/Group is not yet equipable`
   }
 }

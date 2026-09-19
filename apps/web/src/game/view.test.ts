@@ -93,7 +93,9 @@ describe('Uma view models', () => {
     if (joined.status !== 'ready') return
     expect(joined.value).toMatchObject({ tier: 1, currentStatCap: 960, baselineStatCap: 1200, currentSpCap: 240, readyToPromote: true })
     expect(joined.value.asset?.url).toBe('blob:synthetic-umas')
-    const max = joinUma({ ...save, level: 110 }, content)
+    const oldMaximum = joinUma({ ...save, level: 110 }, content)
+    expect(oldMaximum.status === 'ready' && oldMaximum.value.readyToPromote).toBe(true)
+    const max = joinUma({ ...save, level: 140 }, content)
     expect(max.status === 'ready' && max.value.readyToPromote).toBe(false)
   })
 

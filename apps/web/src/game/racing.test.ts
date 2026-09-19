@@ -204,6 +204,22 @@ describe('progression race field', () => {
     expect(() => buildPreparedRace({ content: content(4), profile, uma: player, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).toThrow(/distinct opponent/)
   })
 
+  it('refuses a saved card whose refreshed era is later than the racing Uma tier', () => {
+    const loaded = content()
+    const moved = { ...card, era: 12 }
+    const refreshed = { ...loaded, cards: { items: [moved], byId: new Map([[moved.id, moved]]) } }
+    const { profile, player } = state()
+    expect(() => buildPreparedRace({
+      content: refreshed,
+      profile,
+      uma: { ...player, level: 101 },
+      cardsById: { [moved.id]: createCardSave(moved) },
+      raceId: 'r1',
+      strategy: 'pace',
+      sequence: 0,
+    })).toThrow(`Support card ${moved.id} is Era locked until tier 12`)
+  })
+
   it('resolves a memory-only result from the exact prepared attempt', () => {
     const loaded = content()
     const { profile, player, cards } = state()
@@ -341,21 +357,27 @@ describe('persistent progression race', () => {
     expect(completion.record.earnedFlairEventIds).toHaveLength(await db.flairEvents.count())
   })
 
-  it('captures the final-tier snapshot in the max-level race transaction', async () => {
+  it('captures the tier-14 snapshot in the max-level race transaction', async () => {
     const loaded = content()
     const row = await db.umas.get('u1')
     await db.umas.put({
       ...row!,
-      data: { ...withGoalJourney(row!.data, 11), level: 109, exp: expToNextUmaLevel(109) - 1 },
+      data: {
+        ...withGoalJourney(row!.data, 14),
+        level: 139,
+        exp: expToNextUmaLevel(139) - 1,
+        stats: { speed: 100_000, stamina: 100_000, power: 100_000, guts: 100_000, wit: 100_000 },
+      },
     })
     const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'pace')
     if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
     const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)
     expect(completion.uma).toMatchObject({
-      level: 110,
-      parentSnapshot: { umaId: 'u1', charaId: 'chara-u1', completedTier: 11, takenAt: 100, parents: [] },
+      level: 140,
+      parentSnapshot: { umaId: 'u1', charaId: 'chara-u1', completedTier: 14, takenAt: 100, parents: [] },
     })
-    expect(completion.record.completedGoalIds).toEqual(['goal:11:aptitude'])
+    expect(completion.record.playerPlacement).toBe(1)
+    expect(completion.record.completedGoalIds).toEqual(['goal:14:aptitude'])
     expect(completion.uma.scenarioJourneys[0]).toMatchObject({ state: 'completed', completedAt: 100 })
     expect(completion.uma.scenarioJourneys[0]?.goals.map((goal) => goal.status)).toEqual(['completed', 'missed', 'missed'])
     const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 200)

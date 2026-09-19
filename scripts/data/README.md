@@ -13,10 +13,13 @@ pnpm data:import -- --refresh   # ignore cached datasets and download fresh copi
 pnpm assets:import              # next: download image sources and build private atlases
 ```
 
-The manifest is always fetched. Dataset JSON is reused from `scripts/data/.cache/` unless `--refresh` is present. The seven
-source datasets are `character-cards`, `characters`, `support-cards`, `skills`, `races`, `racetracks`, and `ura-objectives`.
+The manifest is always fetched. Dataset JSON is reused from `scripts/data/.cache/` unless `--refresh` is present. The eight
+source datasets are `character-cards`, `characters`, `support-cards`, `skills`, `races`, `racetracks`, `scenarios`, and
+`ura-objectives`.
 The objective import keeps only ordered, distinct race-family references for characters with retained gameplay races. It
 prints aggregate coverage/unresolved counts and does not copy objective text, conditions, turns, fans, or nested source rows.
+The scenario dataset is never packed: the importer reads only its JP start timestamps and warns with aggregate counts and
+dates when released source scenarios outnumber the modeled ladder.
 
 The optional, Claude-maintained private input `content/overrides/flair.json` supplies semantic race-series legs and the
 main-venue set used by titles/Grand Tour. Version 2 contains `series` rows shaped as

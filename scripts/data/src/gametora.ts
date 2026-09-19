@@ -13,6 +13,7 @@ export const DATASET_NAMES = [
   'skills',
   'races',
   'racetracks',
+  'scenarios',
   'ura-objectives',
 ] as const
 

@@ -187,14 +187,51 @@ describe('scenario promotion', () => {
     expect(promotionReadiness({ ...profile, tickets: 25 }, readyUma())).toMatchObject({ ready: true, toTier: 2 })
     expect(() => promoteScenario({ profile: { ...profile, tickets: 25 }, uma: readyUma(), umaTemplate: template, skills, cards: [], races, now: 1 })).toThrow(/stale/)
   })
+
+  it('reopens the former level-110 maximum without replacing its frozen tier-11 snapshot', () => {
+    const snapshot = {
+      umaId: template.id, charaId: template.charaId, completedTier: 11, takenAt: 77,
+      inheritedUniqueSkillId: 'unique-a-gene', inheritableWhiteSkillIds: ['white-a'], aptitudes, parents: [],
+    }
+    const completedJourney = {
+      tier: 11, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: null, goals: [],
+    }
+    const formerMaximum = {
+      ...readyUma(), level: 110, goalPlanVersion: 2, parentSnapshot: snapshot, scenarioJourneys: [completedJourney],
+    }
+    const profile = { ...createPlayerProfile('content-v1', 1), tickets: 1_000 }
+    expect(promotionReadiness(profile, formerMaximum)).toMatchObject({ ready: true, final: false, fromTier: 11, toTier: 12, cost: 275 })
+    const result = promoteScenario({
+      profile, uma: formerMaximum, umaTemplate: template, skills,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }], races, now: 999,
+    })
+    expect(result.snapshot).toEqual(snapshot)
+    expect(result.uma.parentSnapshot).toEqual(snapshot)
+    expect(result.uma.scenarioJourneys[0]).toEqual(completedJourney)
+    expect(result.uma.scenarioJourneys[1]).toMatchObject({ tier: 12, state: 'active' })
+    expect(result.uma.level).toBe(111)
+  })
+
+  it('promotes at gates 110, 120, and 130 while treating 140 as final', () => {
+    const profile = { ...createPlayerProfile('content-v1', 1), tickets: 10_000 }
+    for (const level of [110, 120, 130]) {
+      expect(promotionReadiness(profile, { ...readyUma(), level })).toMatchObject({
+        ready: true,
+        final: false,
+        fromTier: level / 10,
+        toTier: level / 10 + 1,
+      })
+    }
+    expect(promotionReadiness(profile, { ...readyUma(), level: 140 })).toMatchObject({ ready: false, final: true })
+  })
 })
 
 describe('final scenario completion', () => {
   it('captures once without changing progression state', () => {
-    const max = { ...readyUma(), level: 110, exp: 0 }
+    const max = { ...readyUma(), level: 140, exp: 0 }
     const first = completeFinalScenario({ uma: max, umaTemplate: template, skills, now: 10 })
     const replay = completeFinalScenario({ uma: first, umaTemplate: template, skills, now: 99 })
-    expect(first.parentSnapshot).toMatchObject({ completedTier: 11, takenAt: 10 })
+    expect(first.parentSnapshot).toMatchObject({ completedTier: 14, takenAt: 10 })
     expect(replay).toEqual(first)
   })
 })

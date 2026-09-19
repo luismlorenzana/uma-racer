@@ -13,7 +13,7 @@ import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
 import { parseRaceResultRecord } from './progression-race'
-import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
+import { MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL, MAX_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type Stats } from './types'
 
@@ -611,8 +611,8 @@ const UMA_VERSIONED_KEYS = [
 
 function parseUmaCore(value: Record<string, unknown>): LegacyUmaSaveV1 | null {
   if (!isId(value.templateId)) return null
-  if (!isPositiveInt(value.level) || value.level > SCENARIOS.length * LEVELS_PER_SCENARIO || !isNonNegativeInt(value.exp)) return null
-  const maxLevel = SCENARIOS.length * LEVELS_PER_SCENARIO
+  if (!isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
+  const maxLevel = MAX_UMA_LEVEL
   if (value.level === maxLevel ? value.exp !== 0 : isGateLevel(value.level) ? value.exp > expToNextUmaLevel(value.level + 1) : value.exp >= expToNextUmaLevel(value.level)) return null
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL || !isNonNegativeInt(value.trainingExp)) return null
   if (
@@ -697,8 +697,8 @@ function parseVersionedUmaSave<J extends ScenarioJourney | LegacyScenarioJourney
   if (journeys.some((journey) => journey.tier > currentTier)) return null
   if (value.goalPlanVersion > 0) {
     const active = journeys.filter((journey) => journey.state === 'active')
-    const finalComplete = base.level === SCENARIOS.length * LEVELS_PER_SCENARIO && parentSnapshot?.completedTier === SCENARIOS.length
-    if (!value.scenarioStarted || finalComplete) {
+    const completedGate = isGateLevel(base.level) && parentSnapshot?.completedTier === currentTier
+    if (!value.scenarioStarted || completedGate) {
       if (active.length !== 0) return null
     } else if (active.length !== 1 || active[0]!.tier !== currentTier || active[0]!.tracking !== 'tracked') return null
   }

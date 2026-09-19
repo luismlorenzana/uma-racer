@@ -313,13 +313,13 @@ describe('goal bootstrap', () => {
     expect(bootstrapScenarioGoals({ uma: { ...pending, goalPlanVersion: 0 }, umaTemplate: template, races, raceHistory: [] }))
       .toMatchObject({ goalPlanVersion: 2, scenarioJourneys: [] })
     const snapshot: ParentSnapshot = {
-      umaId: template.id, charaId: template.charaId, completedTier: 11, takenAt: 1,
+      umaId: template.id, charaId: template.charaId, completedTier: 14, takenAt: 1,
       inheritedUniqueSkillId: null, inheritableWhiteSkillIds: [], aptitudes: template.aptitudes, parents: [],
     }
     const final = bootstrapScenarioGoals({
-      uma: { ...started(110), parentSnapshot: snapshot }, umaTemplate: template, races, raceHistory: [],
+      uma: { ...started(140), parentSnapshot: snapshot }, umaTemplate: template, races, raceHistory: [],
     })
-    expect(final.scenarioJourneys).toHaveLength(11)
+    expect(final.scenarioJourneys).toHaveLength(14)
     expect(final.scenarioJourneys.every((journey) => journey.tracking === 'legacy-untracked' && journey.completedAt === null)).toBe(true)
   })
 })

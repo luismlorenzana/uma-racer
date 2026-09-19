@@ -10,7 +10,7 @@ import {
   type ScenarioInheritanceResult,
   type ScenarioStartSelection,
 } from './inheritance'
-import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
+import { MAX_UMA_LEVEL, SCENARIOS, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
 import { closeScenarioJourney, generateScenarioJourney, SCENARIO_GOAL_VERSION } from './scenario-goals'
 import {
   SAVE_ID_PATTERN,
@@ -189,7 +189,7 @@ export function buildParentSnapshot(input: {
 
 export function promotionReadiness(profile: PlayerProfile, uma: UmaSave): PromotionReadiness {
   const fromTier = tierOfLevel(uma.level)
-  const final = uma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO
+  const final = uma.level >= MAX_UMA_LEVEL
   const cost = !final && isGateLevel(uma.level) ? umaPromotionCost(fromTier) : null
   if (!parsePlayerProfile(profile)) return { ready: false, final, fromTier, toTier: null, cost, reason: 'Player profile is malformed' }
   if (!parseUmaSave(uma)) return { ready: false, final, fromTier, toTier: null, cost, reason: 'Uma save is malformed' }
@@ -284,7 +284,9 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
   const issue = deck.issues[0]
   if (issue) throw new Error(supportDeckIssueMessage(issue))
 
-  const snapshot = buildParentSnapshot({ uma: parsedUma, umaTemplate: input.umaTemplate, skills: input.skills, now: input.now })
+  const snapshot = parsedUma.parentSnapshot?.completedTier === readiness.fromTier
+    ? parsedUma.parentSnapshot
+    : buildParentSnapshot({ uma: parsedUma, umaTemplate: input.umaTemplate, skills: input.skills, now: input.now })
   const cardBonuses: PromotionCardBonus[] = deck.cards.map(({ save, template }) => {
     if (!STATS.includes(template.type as StatKey)) throw new Error(`Card ${template.id} has an unsupported Initial Stats type`)
     const projected = projectedCardEffectValue('initialStats', template, save)
@@ -379,7 +381,7 @@ export function completeFinalScenario(input: {
   assertTimestamp(input.now)
   const parsed = parseUmaSave(input.uma)
   if (!parsed) throw new Error('Uma save is malformed')
-  if (parsed.level !== SCENARIOS.length * LEVELS_PER_SCENARIO) throw new Error('Uma has not reached the latest scenario maximum')
+  if (parsed.level !== MAX_UMA_LEVEL) throw new Error('Uma has not reached the latest scenario maximum')
   if (parsed.parentSnapshot?.completedTier === SCENARIOS.length) return parsed
   const scenarioJourneys = parsed.scenarioJourneys.map((journey) =>
     journey.state === 'active' && journey.tier === SCENARIOS.length ? closeScenarioJourney(journey, input.now) : journey)
