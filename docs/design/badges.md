@@ -154,6 +154,8 @@ override produces zero coverage and disables only the affected title/Grand Tour 
 instead of guessing by name. Badge and Settings diagnostics distinguish unpublished coverage from covered-but-unearned
 awards.
 
+**Published coverage (2026-09-19):** all 8 series across 30 race families, plus the 10 `jra-main` venues, so every title and Grand Tour is earnable in production.
+
 ### 5. Race feats
 
 | Definition | Criterion | Tiers |
