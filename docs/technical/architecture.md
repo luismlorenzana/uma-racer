@@ -111,14 +111,15 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   three deterministic targets, and only current-tier results are replayed. New Scenario Starts generate post-inheritance
   targets atomically; promotion/final completion closes the previous Journey without inventing rewards or history.
 - Milestone 6 keeps core profile/Uma save v2 and versions the already-reserved `badges` collection independently. T015
-  creates one bounded fact/award/preference state per owned Uma and defines a preference-valid `trainer` shell. T017 may
-  initialize that shell; T018 fills it with reconciled account aggregates. Training, races, Scenario Start, promotion, and completion
-  update every affected badge entity in their existing transaction. Historical race/goal/stat/skill facts are replayed
-  where exact, while lost Training/lineage history is labeled as a lower bound rather than fabricated.
+  creates one bounded fact/award/preference state per owned Uma and defines a preference-valid `trainer` shell. T016 now
+  evaluates the complete per-Uma catalog after each fact transition and during one content-ready retroactive migration;
+  every changed badge state and append-only event commits inside the triggering Training/race/scenario/collection
+  transaction. Lost Training/lineage history stays a labeled lower bound, and unresolved detailed race/completion history
+  stays untracked instead of being fabricated. T017 initializes collection preferences/UI; T018 fills the trainer shell.
 - New race rows snapshot bounded accomplishment metadata from the authoritative content/input/timeline without changing
-  engine replay versions. Per-Uma and Trainer awards create deterministic append-only `flairEvents`; immediate action
-  results store exact new event ids so retry/reload cannot replay fanfare. Stable scope remains a live aggregation instead
-  of another persisted copy. A content-ready reconciliation repairs badge/Trainer aggregate drift before ready state.
+  engine replay versions, plus exact `earnedFlairEventIds` (including `[]`). Deterministic per-Uma `flairEvents` are
+  idempotent by scope+Uma+award+stage; retry validates and returns stored ids, while reload renders a summary without fresh
+  fanfare. Stable scope remains a live aggregation instead of another persisted copy. T018 adds Trainer reconciliation.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
   field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
@@ -184,7 +185,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
 players/{uid}/umas/{umaId}            save v2: progression, deck/library/history, parents/snapshot, journeys, version
 players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
-players/{uid}/raceResults/{id}        append-only: engine/course, attempt, field, placements, rewards, completedGoalIds, createdAt
+players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements

@@ -16,6 +16,7 @@ import {
   npcRaceStats,
   parseCardSave,
   parsePlayerProfileOrThrow,
+  parseFlairEvent,
   parseRaceResultRecord,
   parseUmaSave,
   playerRaceStats,
@@ -390,6 +391,18 @@ function validateUmaSequence(history: readonly RaceResultRecord[], umaId: string
   return results
 }
 
+async function validateStoredFlairEvents(record: RaceResultRecord): Promise<void> {
+  if (record.earnedFlairEventIds === undefined) return
+  const rows = await db.flairEvents.bulkGet(record.earnedFlairEventIds)
+  rows.forEach((row, index) => {
+    const id = record.earnedFlairEventIds![index]!
+    const parsed = row ? parseFlairEvent(row.data) : null
+    if (!row || !parsed || row.id !== id || row.createdAt !== parsed.earnedAt) {
+      throw new Error(`Race result flair reference is corrupt: ${id}`)
+    }
+  })
+}
+
 export async function readRaceHistory(limit = 20): Promise<RaceResultRecord[]> {
   const rows = await db.raceResults.orderBy('createdAt').reverse().toArray()
   return rows.map(parseHistoryRow).slice(0, limit)
@@ -507,7 +520,7 @@ export async function completePersistentRace(
   now: number,
 ): Promise<RaceCompletion> {
   if (!isLocalDay(today) || !Number.isSafeInteger(now) || now < 0) throw new Error('Invalid race completion time')
-  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
     const existingRow = await db.raceResults.get(attempt.id)
     if (existingRow) {
       const record = parseHistoryRow(existingRow)
@@ -518,6 +531,7 @@ export async function completePersistentRace(
       if (!race || !record.accomplishmentFacts || JSON.stringify(record.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
         throw new Error('Race result accomplishment facts are corrupt')
       }
+      await validateStoredFlairEvents(record)
       return {
         profile: saved.profile,
         uma: saved.uma,
@@ -559,7 +573,8 @@ export async function completePersistentRace(
     if (!profileRow || !umaRow) throw new Error('Local race save disappeared')
     await db.profile.put({ ...profileRow, data: nextProfile })
     await db.umas.put({ ...umaRow, data: completedUma })
-    await updateRaceBadgeFacts({
+    const raceFlair = await updateRaceBadgeFacts({
+      content,
       umaBefore: uma,
       umaAfter: completedUma,
       resultId: attempt.id,
@@ -567,14 +582,17 @@ export async function completePersistentRace(
       facts: goalResult.record.accomplishmentFacts!,
       now,
     })
+    const earnedFlairEventIds = raceFlair.events.map((event) => event.id)
     const completedFinalTier = completedUma.parentSnapshot?.completedTier === SCENARIOS.length &&
       uma.parentSnapshot?.completedTier !== SCENARIOS.length
     if (completedFinalTier) {
-      await updateScenarioBadgeFacts({ content, before: completedUma, after: completedUma, completedTier: SCENARIOS.length, now })
+      const scenarioFlair = await updateScenarioBadgeFacts({ content, before: completedUma, after: completedUma, completedTier: SCENARIOS.length, now })
+      earnedFlairEventIds.push(...scenarioFlair.events.map((event) => event.id))
     }
+    const finalRecord: RaceResultRecord = { ...goalResult.record, earnedFlairEventIds }
     await db.raceResults.add({
       id: attempt.id,
-      data: goalResult.record as unknown as Record<string, unknown>,
+      data: finalRecord as unknown as Record<string, unknown>,
       createdAt: now,
     })
     await queueInTransaction('profile', 'main', 'upsert', now)
@@ -598,7 +616,7 @@ export async function completePersistentRace(
     return {
       profile: nextProfile,
       uma: completedUma,
-      record: goalResult.record,
+      record: finalRecord,
       timeline,
       alreadyRecorded: false,
     }

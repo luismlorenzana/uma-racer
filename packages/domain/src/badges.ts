@@ -852,6 +852,13 @@ function validateUmaBadgeState(value: UmaBadgeStateV1): boolean {
       !exactKeys(entry, ['familyId', 'count', 'firstEarnedAt', 'lastEarnedAt', 'firstResultId', 'lastResultId']) || !isId(entry.familyId) ||
       !isPositiveInt(entry.count) || !isNonNegativeInt(entry.firstEarnedAt) || !isNonNegativeInt(entry.lastEarnedAt) ||
       entry.lastEarnedAt < entry.firstEarnedAt || !isId(entry.firstResultId) || !isId(entry.lastResultId))) return false
+  const stageOrder = (stage: BadgeTier | 'one-off') => stage === 'one-off' ? BADGE_TIERS.length : BADGE_TIERS.indexOf(stage)
+  if (awards.badges.some((entry, index) => index > 0 && (
+    awards.badges[index - 1]!.awardKey.localeCompare(entry.awardKey) > 0 ||
+    (awards.badges[index - 1]!.awardKey === entry.awardKey && stageOrder(awards.badges[index - 1]!.stage) >= stageOrder(entry.stage))
+  )) || awards.titles.some((entry, index) => index > 0 && awards.titles[index - 1]!.awardKey.localeCompare(entry.awardKey) >= 0) ||
+    awards.trophies.some((entry, index) => index > 0 && awards.trophies[index - 1]!.familyId.localeCompare(entry.familyId) >= 0) ||
+    (value.preferences.activeTitleId !== null && !awards.titles.some((entry) => entry.awardKey === value.preferences.activeTitleId))) return false
   return true
 }
 

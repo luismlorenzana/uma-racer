@@ -108,9 +108,12 @@ describe('scenario promotion persistence', () => {
     const first = await promotePersistentUma(loaded, uma.templateId, 50)
     expect(first).toMatchObject({ alreadyPromoted: false, profile: { tickets: 75 }, uma: { level: 11, trainingLevel: 1 } })
     expect(await db.ledger.get('uma-promotion:uma-promo:1')).toMatchObject({ data: { delta: -25, reason: 'uma-promotion' } })
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual([
+    const firstOutbox = (await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)
+    expect(firstOutbox).toEqual(expect.arrayContaining([
       'badges/uma:uma-promo', 'ledger/uma-promotion:uma-promo:1', 'profile/main', 'umas/uma-promo',
-    ])
+    ]))
+    expect(first.earnedFlairEventIds).toHaveLength(4)
+    expect(firstOutbox.filter((id) => id.startsWith('flairEvents/'))).toHaveLength(4)
     expect((await db.profile.get('main'))?.version).toBe(7)
     expect((await db.umas.get(uma.templateId))?.version).toBe(5)
 
@@ -159,11 +162,13 @@ describe('scenario promotion persistence', () => {
     expect(first.uma.skillLibrary).toContainEqual({ skillId: 'gene-parent', origin: 'inherited', sourceId: parentTemplate.id })
     expect(first.uma.currentParents).toEqual([snapshot])
     expect(await db.ledger.count()).toBe(0)
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)).toEqual([
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)).toEqual(expect.arrayContaining([
       `umas/${child.templateId}`,
       `badges/uma:${child.templateId}`,
       `badges/uma:${parent.templateId}`,
-    ])
+      'flairEvents/flair:uma:uma-parent:badge:legacy:bronze',
+    ]))
+    expect(first.earnedFlairEventIds).toEqual(['flair:uma:uma-parent:badge:legacy:bronze'])
     const retry = await startPersistentScenario(loaded, child.templateId, selection, 31)
     expect(retry).toMatchObject({ alreadyStarted: true, alreadyPromoted: false, profile: { tickets: 100 } })
     expect(await db.ledger.count()).toBe(0)

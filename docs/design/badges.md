@@ -44,6 +44,10 @@ Milestone 6 is delivered in four ordered tasks:
 4. **T018 — Trainer achievements and profile:** account aggregates, records, Trainer scope, pinned Umas, Trainer showcase,
    and milestone closure.
 
+T015 and T016 are implemented. Every owned Uma now has durable facts plus catalog-v1 awards/events, retroactive migration,
+Prestige/frame projection, and compact action/Home/Profile feedback. T017's full collection page and preferences and
+T018's Trainer aggregation remain intentionally absent.
+
 The core profile and Uma remain save v2. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
 `badges` entity collection. This keeps badge rollout isolated from progression migration and lets an individual Uma's
 flair sync independently.

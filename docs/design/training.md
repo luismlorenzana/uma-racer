@@ -173,7 +173,9 @@ that card as paid. Reloading, retrying, or continuing to train a maxed card cann
 T015 captures badge facts in that same transaction: lifetime and friendship-turn counters, six-card Full House,
 first TL10 per scenario, stat peaks, and distinct/current-scenario skills. Pre-T015 history is deliberately a lower bound:
 the current scenario's `trainingsThisScenario` and current TL are evidence, but prior friendship, Full House, and TL10 facts
-are never invented. T016 award events commit with the Training result or not at all.
+are never invented. T016 now evaluates the updated facts before commit, writes the badge entity and deterministic flair
+events in the same transaction as the turn, and returns exact fresh event ids for compact post-gain feedback. Flair never
+delays the next deterministic deal and changes no Training gain or reward.
 
 ## Pacing check
 

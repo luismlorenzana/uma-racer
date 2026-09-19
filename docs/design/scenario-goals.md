@@ -72,6 +72,7 @@ retry returns the stored ids without awarding or animating again, while a same-i
 | **Results** | Serialized Goal Ribbon reveals after ordinary rewards; reload shows the same completed summary without re-earning |
 
 Goals pay no tickets, coupons, shards, stats, or SP. Completing all three derives an Honors crest for Journey/results.
-T016 persists one Goal Ribbon badge per exact completed goal and one scenario Honors badge for a tracked 3/3 Journey; it
-uses the existing goal/result ids and never re-evaluates or changes goal completion. T018 aggregates only tracked goal and
+T016 persists one Goal Ribbon badge per exact completed goal and one scenario Honors badge for a tracked 3/3 Journey. The
+implemented evaluator uses existing goal/result ids, links the Ribbon event to its exact completion time, and never
+re-evaluates or changes goal completion. T018 aggregates only tracked goal and
 Honors facts, so legacy-untracked tiers never become fictional Stable progress.

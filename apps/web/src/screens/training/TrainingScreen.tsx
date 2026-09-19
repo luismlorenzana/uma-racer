@@ -4,6 +4,7 @@ import {
   LEVELS_PER_SCENARIO,
   SCENARIOS,
   STATS,
+  badgeStateId,
   isGateLevel,
   type Facility,
   type GainKey,
@@ -15,12 +16,14 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { trainUma } from '../../game/actions'
+import { buildFlairFanfare } from '../../game/flair-view'
 import { useGame } from '../../game/store'
 import { buildTrainingView, type TrainingCardView } from '../../game/training-view'
 import { AtlasSprite } from '../../ui/AtlasSprite'
 import { GameButton } from '../../ui/GameButton'
 import { Meter } from '../../ui/Meter'
 import { ScreenState } from '../../ui/ScreenState'
+import { FlairCards } from '../../ui/FlairCards'
 
 const STAT_LABEL: Record<StatKey, string> = {
   speed: 'Speed',
@@ -113,14 +116,24 @@ export function TrainingScreen() {
   const profile = useGame((state) => state.profile)
   const uma = useGame((state) => state.umas[umaId])
   const cards = useGame((state) => state.cards)
+  const badges = useGame((state) => state.badges)
+  const flairEvents = useGame((state) => state.flairEvents)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<TrainingTurnResult | null>(null)
+  const [result, setResult] = useState<Awaited<ReturnType<typeof trainUma>> | null>(null)
 
   const view = useMemo(() => {
     if (contentState.status !== 'ready' || !profile || !uma) return null
     return buildTrainingView(profile, uma, cards, contentState.content)
   }, [cards, contentState, profile, uma])
+
+  const earnedFlair = useMemo(() => {
+    if (!result || contentState.status !== 'ready' || !uma) return []
+    const state = badges[badgeStateId(uma.templateId)]
+    return state?.scope === 'uma'
+      ? buildFlairFanfare(contentState.content, state, flairEvents, result.earnedFlairEventIds)
+      : []
+  }, [badges, contentState, flairEvents, result, uma])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to train" detail="Training changes your private saved Stable." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -245,6 +258,7 @@ export function TrainingScreen() {
         </section>
 
         {result && <ResultPanel result={result} skillNames={skillNames} cardNames={cardNames} />}
+        {earnedFlair.length > 0 && <FlairCards title="Flair earned" items={earnedFlair} animate={!reducedMotion} />}
         {noTickets && <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs font-extrabold">No Training Tickets. The next local-day grant restores up to 50.</div>}
 
         <div className="grid grid-cols-2 gap-2 pb-3">

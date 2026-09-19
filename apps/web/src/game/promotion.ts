@@ -16,8 +16,8 @@ import {
   type PlayerProfile,
   type ScenarioPromotionResult,
   type ScenarioStartSelection,
+  type BadgeStateV1,
   type UmaSave,
-  type UmaBadgeStateV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
@@ -31,7 +31,8 @@ export interface ScenarioStartMutation {
   alreadyStarted: boolean
   /** Compatibility for T012 callers while the route moves to startScenario. */
   alreadyPromoted: boolean
-  badgeStates?: Record<string, UmaBadgeStateV1>
+  badgeStates?: Record<string, BadgeStateV1>
+  earnedFlairEventIds: string[]
 }
 
 export interface ScenarioPromotionMutation extends Omit<ScenarioStartMutation, 'result'> {
@@ -78,7 +79,7 @@ export function startMemoryScenario(
     const result = startNewUmaScenario({
       uma, umaTemplate, skills: content.skills.byId, races: content.races.items, ownedUmas, umaTemplates: content.umas.byId, selection,
     })
-    return { profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false }
+    return { profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false, earnedFlairEventIds: [] }
   }
   const result = promoteScenario({
     profile,
@@ -92,7 +93,7 @@ export function startMemoryScenario(
     umaTemplates: content.umas.byId,
     selection,
   })
-  return { profile: result.profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false }
+  return { profile: result.profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false, earnedFlairEventIds: [] }
 }
 
 /** T012-compatible zero-parent promotion helper. */
@@ -114,7 +115,7 @@ export async function startPersistentScenario(
   selection: ScenarioStartSelection,
   now: number,
 ): Promise<ScenarioStartMutation> {
-  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.ledger, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
     const profileRow = await db.profile.get('main')
     const umaRows = await db.umas.toArray()
     const umaRow = umaRows.find((row) => row.id === umaId)
@@ -130,7 +131,7 @@ export async function startPersistentScenario(
 
     if (uma.scenarioStarted && uma.level === 1 && uma.trainingsThisScenario === 0 && uma.parentSnapshot === null) {
       if (selectionMatchesActive(uma, selection)) {
-        return { profile, uma, result: null, alreadyStarted: true, alreadyPromoted: false }
+        return { profile, uma, result: null, alreadyStarted: true, alreadyPromoted: false, earnedFlairEventIds: [] }
       }
       throw new Error('This Uma already started tier 1 with a different selection')
     }
@@ -144,7 +145,7 @@ export async function startPersistentScenario(
       const matchingPostState = uma.parentSnapshot?.completedTier === previousTier && selectionMatchesActive(uma, selection) &&
         uma.trainingLevel === 1 && uma.trainingExp === 0 && uma.trainingsThisScenario === 0
       if (parsed && parsed.reason === 'uma-promotion' && parsed.delta === -25 * previousTier && matchingPostState) {
-        return { profile, uma, result: null, alreadyStarted: true, alreadyPromoted: true }
+        return { profile, uma, result: null, alreadyStarted: true, alreadyPromoted: true, earnedFlairEventIds: [] }
       }
       if (prior) throw new Error('Scenario promotion ledger or selection is corrupt')
     }
@@ -173,14 +174,14 @@ export async function startPersistentScenario(
     await db.umas.put({ ...umaRow, data: mutation.uma })
     await queueInTransaction('umas', umaId, 'upsert', now)
     const completedTier = mutation.result && 'fromTier' in mutation.result ? mutation.result.fromTier : null
-    const badgeStates = await updateScenarioBadgeFacts({
+    const flair = await updateScenarioBadgeFacts({
       content,
       before: uma,
       after: mutation.uma,
       completedTier,
       now,
     })
-    return { ...mutation, badgeStates }
+    return { ...mutation, badgeStates: flair.states, earnedFlairEventIds: flair.events.map((event) => event.id) }
   })
 }
 

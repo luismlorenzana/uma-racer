@@ -1,6 +1,5 @@
 import { createBrowserRouter } from 'react-router'
 import { AppShell } from './AppShell'
-import { HomeScreen } from '../screens/HomeScreen'
 import { PlaceholderScreen } from '../screens/PlaceholderScreen'
 
 // Tab screens live inside the shell (top bar + bottom tabs). Full-screen scenes (race, training, reveals) sit
@@ -10,7 +9,10 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Uma Racer" />,
     children: [
-      { index: true, element: <HomeScreen /> },
+      {
+        index: true,
+        lazy: async () => ({ Component: (await import('../screens/HomeScreen')).HomeScreen }),
+      },
       {
         path: 'stable',
         lazy: async () => ({ Component: (await import('../screens/StableScreen')).StableScreen }),

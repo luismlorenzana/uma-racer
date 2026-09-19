@@ -70,14 +70,17 @@ second EXP bar is required. Promotion atomically freezes the completed snapshot,
 stat/card starting bonuses, refreshes skills, resets Training Level, and starts the next tier. Parent inheritance and
 deterministic goals join that same Scenario Start commit. Before promotion, the prior Journey is closed and unfinished
 targets become honest misses; final-tier completion does the same before freezing its snapshot. Goals never gate completion.
-The resulting facts later support:
+The resulting facts now award:
 
 - The **Graduate** badge for that scenario, with scenario-specific art.
-- The **Honors** badge if every scenario goal was completed (the crest is derived now; the persisted badge arrives in Milestone 6).
+- The persisted **Honors** badge if every tracked scenario goal was completed.
 - A **Perfect** variant if all five stats reach the scenario's baseline cap (the Training Level 10 cap) before promotion.
 - A **Speedrun** variant if she promoted within 15 races of entering the tier.
 
-T015 makes these future facts durable. Immediately before promotion reset/bonuses—or during atomic final completion—it
+T015 makes these facts durable. Immediately before promotion reset/bonuses—or during atomic final completion—it
 captures the completed tier's stats, Training Level/counters, equipped card ids/eras, race count, Journey summary, and
 frozen lineage. Cap checks use `>=` because permanent stats may already exceed the tier baseline. Graduate/Speedrun can be
 reconstructed from existing Journey/race history; old Perfect/Capped/deck facts that were never stored remain untracked.
+T016 evaluates the snapshot immediately and atomically appends Graduate, Capped, Perfect Form, Speedrun, Era Loyalist,
+Fully Trained, Honors, Legacy, and Dynasty flair for every affected local Uma. Scenario Start/completion returns exact new
+event ids for one post-commit summary; Back or an idempotent retry cannot earn them twice.

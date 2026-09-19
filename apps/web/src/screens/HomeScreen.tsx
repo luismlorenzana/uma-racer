@@ -1,10 +1,11 @@
-import { TICKET_STORAGE_CAP, isGateLevel } from '@racer/domain'
+import { TICKET_STORAGE_CAP, badgeStateId, isGateLevel } from '@racer/domain'
 import { m } from 'motion/react'
 import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setFeaturedUma } from '../game/actions'
 import { buildHomeGoalState } from '../game/goals-view'
+import { buildUmaFlairSummary } from '../game/flair-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -12,6 +13,7 @@ import { GameButton } from '../ui/GameButton'
 import { Meter } from '../ui/Meter'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
+import { FlairCards } from '../ui/FlairCards'
 
 export function HomeScreen() {
   const navigate = useNavigate()
@@ -21,6 +23,8 @@ export function HomeScreen() {
   const profile = useGame((state) => state.profile)
   const owned = useGame((state) => state.umas)
   const persistent = useGame((state) => state.persistent)
+  const badges = useGame((state) => state.badges)
+  const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
 
   const featured = useMemo(() => {
@@ -31,6 +35,12 @@ export function HomeScreen() {
       .sort((left, right) => left.save.templateId.localeCompare(right.save.templateId))
     return valid.find((uma) => uma.save.templateId === profile?.featuredUmaId) ?? valid[0] ?? null
   }, [contentState, owned, profile?.featuredUmaId])
+
+  const flairSummary = useMemo(() => {
+    if (contentState.status !== 'ready' || !featured) return null
+    const state = badges[badgeStateId(featured.save.templateId)]
+    return state?.scope === 'uma' ? buildUmaFlairSummary(contentState.content, state, flairEvents) : null
+  }, [badges, contentState, featured, flairEvents])
 
   useEffect(() => {
     if (status !== 'ready' || !profile || !featured || profile.featuredUmaId === featured.save.templateId) return
@@ -104,6 +114,16 @@ export function HomeScreen() {
           ))}
         </div>}
       </Panel>
+
+      {flairSummary && <Panel>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div><p className="font-extrabold">✦ Recent flair</p><p className="text-xs font-bold text-ink-soft">{flairSummary.frame.label} frame · {flairSummary.prestige} Prestige</p></div>
+          <Link to={`/stable/${encodeURIComponent(featured.save.templateId)}`} className="flex min-h-11 items-center rounded-xl bg-sky-50 px-3 text-xs font-extrabold text-sky-deep">View profile</Link>
+        </div>
+        {flairSummary.recent.length > 0
+          ? <FlairCards items={flairSummary.recent} />
+          : <p className="rounded-xl bg-slate-50 p-3 text-sm font-bold text-ink-soft">Race, Train, and complete Journeys to begin this Uma’s archive.</p>}
+      </Panel>}
 
       <Panel>
         <div className="flex items-center justify-between">

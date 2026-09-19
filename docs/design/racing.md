@@ -199,8 +199,9 @@ simulation or replay. Legacy results remain valid and use their frozen replay pa
 needed; missing content/replay dependencies are labeled untracked rather than guessed.
 
 T016 evaluates facts only after the race result/ordinary rewards/T014 goals are determined, then commits the badge entity,
-append-only flair events, and exact new event ids in that same transaction. Course records compare exact stored course ids
-and finish times. Race retries return stored ids and never reevaluate or replay fanfare.
+append-only flair events, and exact new event ids in that same transaction. This is implemented for persistent and
+memory-only play. The first finish on a course establishes its baseline; only a strictly lower later time earns Course
+Record, so ties and slower finishes do not. Race retries validate and return stored ids without reevaluation or fanfare.
 
 ## Presentation: straight-line real-time view
 

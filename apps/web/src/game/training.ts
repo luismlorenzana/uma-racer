@@ -33,6 +33,7 @@ export interface TrainingMutationResult {
   deal: TrainingDeal
   result: TrainingTurnResult
   ledgerIds: string[]
+  earnedFlairEventIds: string[]
   badgeState?: UmaBadgeStateV1
 }
 
@@ -134,6 +135,7 @@ export function resolveMemoryTraining(input: TrainingStateInput): TrainingMutati
     deal,
     result: adjusted,
     ledgerIds: [trainingLedgerId, ...newCardLevelIds, ...cardMaxIds],
+    earnedFlairEventIds: [],
   }
 }
 
@@ -144,7 +146,7 @@ export async function persistTraining(
   today: string,
   now: number,
 ): Promise<TrainingMutationResult> {
-  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.ledger, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
     const profileRow = await db.profile.get('main')
     const umaRow = await db.umas.get(umaId)
     if (!profileRow) throw new Error('Local profile is missing')
@@ -209,13 +211,14 @@ export async function persistTraining(
       await db.ledger.add({ id: entry.id, data: entry.data, createdAt: now })
       await queueInTransaction('ledger', entry.id, 'append', now)
     }
-    const badgeState = await updateTrainingBadgeFacts({
+    const flair = await updateTrainingBadgeFacts({
+      content,
       before: uma,
       after: mutation.uma,
       friendship: mutation.result.preview.friendship,
       presentCardCount: mutation.result.preview.presentCardIds.length,
       now,
     })
-    return { ...mutation, badgeState }
+    return { ...mutation, badgeState: flair.state, earnedFlairEventIds: flair.events.map((event) => event.id) }
   })
 }

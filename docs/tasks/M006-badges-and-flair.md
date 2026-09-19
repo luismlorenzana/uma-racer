@@ -28,8 +28,8 @@ T018 Trainer evaluator + records + Trainer scope/profile
 
 | Task | User-visible result | Architectural result | Must not absorb |
 |---|---|---|---|
-| [T015](T015-accomplishment-facts-and-badge-state.md) | No new award UI; existing play remains identical | Private series/venue tags, race fact snapshots, badge-state v1, honest bootstrap, atomic future facts | Award rules, fanfare, page, Trainer achievements |
-| [T016](T016-per-uma-badges-titles-and-awards.md) | Awards on Results/Training/scenario actions; Home/Profile recent flair, title, frame | Catalog v1, monotonic evaluator, append-only flair logs, retroactive awards | Full collection UI/preferences, Trainer aggregation |
+| [T015](T015-accomplishment-facts-and-badge-state.md) — complete | No new award UI; existing play remains identical | Private series/venue tags, race fact snapshots, badge-state v1, honest bootstrap, atomic future facts | Award rules, fanfare, page, Trainer achievements |
+| [T016](T016-per-uma-badges-titles-and-awards.md) — complete | Awards on Results/Training/scenario actions; Home/Profile recent flair, title, frame | Catalog v1, monotonic evaluator, append-only flair logs, retroactive awards | Full collection UI/preferences, Trainer aggregation |
 | [T017](T017-badge-page-showcases-and-timeline.md) | Complete Uma/Stable Badge page, detail, trophies, timeline, title/pins/groups/views | Pure collection projections and preference-only atomic writes | Trainer achievement truth |
 | [T018](T018-trainer-achievements-and-profile.md) | Trainer scope/profile, achievements, records, pinned Umas/showcase, Stable feed | Incremental account aggregates plus authoritative reconciliation | Polish/R4/social systems |
 
