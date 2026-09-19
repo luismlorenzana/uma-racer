@@ -15,7 +15,10 @@ while the stable itself grows into a collection.
 > [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): earnable race-set titles, goals that follow
 > the real horse's career and sex, the three missing JP scenarios, and dependable releases. Then
 > [Milestone 8](docs/tasks/M008-scenario-identity.md) gives each scenario its own modifier and turns on Friend/Group
-> cards, and [Milestone 9](docs/tasks/M009-presentation-polish.md) is presentation polish.
+> cards, [Milestone 9](docs/tasks/M009-look-and-feel.md) replaces the skin with the
+> [Paddock visual system](docs/design/visual-system.md), [Milestone 10](docs/tasks/M010-collection-depth.md) gives the
+> albums real browsing depth, and [Milestone 11](docs/tasks/M011-game-feel-and-device.md) covers audio, celebration and
+> device readiness.
 
 ## Ground rules
 
@@ -88,6 +91,7 @@ docs/           design, technical, research
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, one-time bootstrap, content privacy, environments |
 | [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
+| [Visual System "Paddock"](docs/design/visual-system.md) | Surfaces, colour, type, shape, components, icons, art treatment, motion, density |
 | [UX & Visual Design](docs/design/ux.md) | Mobile-first iPhone UX, navigation, screen inventory, feedback catalog, visual style |
 
 ### Research and tracking
@@ -95,6 +99,7 @@ docs/           design, technical, research
 | Doc | What it covers |
 |---|---|
 | [Race Mechanics Research](docs/research/race-mechanics.md) | Community-documented formulas from the original race simulation |
+| [Game UI Reference](docs/research/game-ui-reference.md) | What Umamusume and HoYoverse interfaces do, why the old skin failed, and album browsing patterns |
 | [Game-like Web Tech](docs/research/game-web-tech.md) | Rendering, frame rate, animation, PWA on iOS, performance playbook |
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |

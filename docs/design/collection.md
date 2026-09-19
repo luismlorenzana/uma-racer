@@ -62,21 +62,80 @@ owned result without spending again. An entity that predates the matching redemp
 
 ## Albums
 
-### Uma Album
+267 Uma outfits and 312 cards is a lot to walk through on a phone, and collection is a core pillar, so browsing gets the
+same care as the game systems. Both albums share one chrome, one filter engine, and one set of habits. The look is
+specified in [Visual System](visual-system.md); the patterns below follow the faceted-tray research in
+[Game UI Reference](../research/game-ui-reference.md).
 
-- A grid of every Uma. Owned Umas show their icon, level, tier crest, and prestige frame. Unowned Umas are silhouettes.
-- Filters: owned, tier, aptitudes, real-horse sex. *(The sex filter arrives with [T020](../tasks/T020-scenario-goals-v2.md).)*
-- Tapping an Uma opens her profile (see [Badges — Displaying flair](badges.md#displaying-flair)).
+### Shared browsing chrome
 
-### Card Album
+```text
+┌──────────────────────────────┐
+│ Stable            25 / 267   │  ← title + completion
+│ [ All | Owned | Unowned ]    │  ← segmented primary split, always visible
+│ 🔍 search   ⇅ Sort   ⚙ Filter•3│  ← sticky bar (search expands in place)
+│ ‹ Turf ×  Long ×  A+ ×  ⌫ ›  │  ← active-filter chips, horizontally scrollable
+│ 48 results                   │
+│ ▓▓▓  ▓▓▓                     │  ← results grid (art-first tiles)
+└──────────────────────────────┘
+```
 
-- Every SSR card, grouped by **era** and then by **type**.
-- Owned cards show LB pips and level. Maxed cards get a special border. Unowned cards are silhouettes.
-- Completion counters for each era and each type.
+- The **sticky bar** stays pinned while the grid scrolls: search, a Sort button showing the current key and direction,
+  and a Filter button badged with the number of active facets.
+- **Sort and Filter are different controls** and look different. Sort opens a short menu with a direction toggle; Filter
+  opens a bottom-sheet tray.
+- **Every active filter is a chip** outside the tray, removable with one tap, with a clear-all at the end. The result
+  count sits directly above the grid.
+- The tray groups facets into collapsible sections, each option showing the **count it would return**. An option that
+  would return zero is disabled and labelled, never a dead end. The tray has Clear all and Apply, and shows the pending
+  result count on the Apply button.
+- **Saved views** (up to 20 per album) store a filter set, sort, and density under a name, reusing the Badge page's
+  saved-view behaviour. "Reset to default" is always one tap away.
+- **Density toggle:** Comfortable (2-up) or Compact (3-up), remembered per device.
+- **Grouping** is optional and off by default: group by era, tier, or type inserts sticky headers with per-group counts
+  that collapse.
+- Long lists are virtualized, keep scroll position when you come back from a detail, and expose a jump rail (A–Z, or era
+  for cards) on the right edge.
+- Filter, sort, density, grouping and search terms persist per album on the device, and survive reload.
 
-The current albums join every private content template to entity-presence ownership. Orphaned saves are reported but do
-not inflate known-content completion. Card selection can filter era and type; Stable can switch All/Owned/Unowned and use
-tier and aptitude filters. A successful selection commits before opening a read-only reveal route.
+### Default sorts
+
+Defaults are opinionated, so the album is useful before anyone touches a control:
+
+| Album | Default order |
+|---|---|
+| **Stable (Umas)** | Owned before unowned → **release date, newest first** → **Uma level, highest first** → name |
+| **Cards** | Owned before unowned → **era/release, newest first** → **card level, highest first** → name |
+
+The ownership split is a segmented control rather than a hidden filter, because "what do I have" is the question the
+album answers most often. Switching to Unowned keeps the rest of the sort intact.
+
+### Uma album (Stable)
+
+| Sorts | Filters |
+|---|---|
+| Release date · Uma level · name · scenario tier · Training Level · total stats · prestige · badges earned · recently trained · best aptitude for a chosen surface/distance | Ownership · tier · surface aptitude · distance aptitude · strategy aptitude · minimum aptitude grade · real-horse sex · level range · launch-roster (starter) · has parent snapshot · active Journey state · holds a title · has unspent shards toward her next gate · ready to train (deck valid and tickets available) |
+
+- Tiles are **art first**: portrait, name, level, tier crest, and at most two state chips (for example *Gate ready*,
+  *Goal active*). Unowned Umas are desaturated art behind a lock, not empty silhouette boxes.
+- Tapping a tile opens her profile. **Swiping** left/right in the profile moves through the filtered order, so a filtered
+  album becomes a browsing session.
+- The shard/coupon strip stays above the chrome, since redemption is the album's other job.
+
+### Card album
+
+| Sorts | Filters |
+|---|---|
+| Era/release · card level · limit break · type · character name · card name · effect strength for a chosen effect · recently used | Ownership · type (including Friend/Group) · era · limit break (0–4) · level range · maxed · equippable now (era ≤ a chosen tier) · currently equipped (and by whom) · starter/free · has a hint skill matching a search term · effect kind (friendship, training, race bonus, SP, initial stats) |
+
+- Tiles show card art, a type dot, LB pips, and level over the scrim; maxed cards get an accent frame.
+- Detail opens as a bottom sheet with effect values at the current level and at the next limit break, hint skills, the
+  Umas currently using it, and the limit-break action.
+- Completion counters per era and per type stay visible in the tray's section headers.
+
+Both albums join private content templates to entity-presence ownership. Orphaned saves are reported as a diagnostic but
+never inflate completion counts. Card selection (coupon redemption) reuses the same chrome with ownership forced to
+Unowned, and a successful selection commits before opening the read-only reveal route.
 
 ## Trainer achievements (account-wide)
 

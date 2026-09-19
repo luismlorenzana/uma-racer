@@ -30,7 +30,7 @@ adjusted through balance simulation and playtesting.
   recent-flair surfaces, and test reduced motion plus offline/reconnect. Desktop validation covers the 390×844 layout and
   persistence, but not physical drag/scroll ergonomics, standalone safe areas, or long-list feel on the owner's iPhone.
 
-These device checks now belong to **T033** in [Milestone 9](tasks/M009-presentation-polish.md), which closes them as one
+These device checks now belong to **T037** in [Milestone 11](tasks/M011-game-feel-and-device.md), which closes them as one
 acceptance pass rather than leaving six separate reminders open.
 
 ## Not questions, but still to come
