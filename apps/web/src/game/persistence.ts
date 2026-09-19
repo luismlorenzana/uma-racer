@@ -14,6 +14,7 @@ import {
   parseLogData,
   parsePlayerProfileOrThrow,
   parseRaceResultRecord,
+  rebaseBadgePreferences,
   parseSaveSnapshotOrThrow,
   parseUmaSave,
   type CardSave,
@@ -300,7 +301,17 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
   if (record.kind === 'profile') await db.profile.put({ id: record.id, data: parsePlayerProfileOrThrow(record.data), version: record.version })
   if (record.kind === 'umas') await db.umas.put({ id: record.id, data: parseUmaSave(record.data)!, version: record.version })
   if (record.kind === 'cards') await db.cards.put({ id: record.id, data: parseCardSave(record.data)!, version: record.version })
-  if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
+  if (record.kind === 'badges') {
+    const server = parseBadgeState(record.data)
+    if (!server) throw new Error(`Invalid server badge conflict: ${record.id}`)
+    const localRow = await db.badges.get(record.id)
+    const local = localRow ? parseBadgeState(localRow.data) : null
+    const rebased = local ? rebaseBadgePreferences(server, local) : server
+    await db.badges.put({ id: record.id, data: rebased, version: record.version })
+    if (JSON.stringify(rebased.preferences) !== JSON.stringify(server.preferences)) {
+      await queueInTransaction('badges', record.id, 'upsert', now)
+    }
+  }
   if (queueMigrated && (record.kind === 'profile' || record.kind === 'umas')) {
     await queueInTransaction(record.kind, record.id, 'upsert', now)
   }

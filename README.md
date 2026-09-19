@@ -15,9 +15,10 @@ while the stable itself grows into a collection.
 > implemented. Milestone 5 Scenarios & Inheritance is complete: save v2, frozen parents and grandparents, pink sparks,
 > awakening/skill refresh, atomic Scenario Start, deterministic private-content-backed goals, authoritative race completion,
 > honest legacy migration, and full Journey tracking are implemented. [Milestone 6](docs/tasks/M006-badges-and-flair.md)
-> is fully specified as T015–T018. T015's independently versioned facts and T016's complete per-Uma catalog/evaluator,
-> retroactive awards, append-only flair events, Prestige, and compact Results/Training/Home/Profile feedback are
-> implemented; the full Badge page/showcases (T017) and Trainer scope (T018) follow.
+> is fully specified as T015–T018. T015–T017 are implemented: independently versioned facts, the complete per-Uma
+> catalog/evaluator, retroactive append-only flair, Prestige, and the lazy Uma/Stable Badge destination with strict
+> search/filter/sort, details, trophies, timeline, titles, showcases, and saved views. Trainer aggregation/profile (T018)
+> is the remaining Milestone 6 task.
 
 ## Ground rules
 

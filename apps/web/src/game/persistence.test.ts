@@ -4,6 +4,7 @@ import {
   createPlayerProfile,
   createInitialSave,
   createUmaBadgeState,
+  createTrainerBadgeState,
   createUmaSave,
   buildUmaFlairCatalog,
   evaluateUmaFlair,
@@ -396,6 +397,7 @@ describe('game bootstrap coordinator', () => {
       ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, data: toRecord(data), version: 1, deleted: false, updatedAt: 2 })),
       ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, data: toRecord(data), version: 1, deleted: false, updatedAt: 2 })),
       ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, data: toRecord(currentBadgeState(loaded, data)), version: 1, deleted: false, updatedAt: 2 })),
+      { kind: 'badges' as const, id: 'trainer', data: toRecord(createTrainerBadgeState(1)), version: 1, deleted: false, updatedAt: 2 },
     ]
     vi.spyOn(saveApi, 'load').mockResolvedValue({ entities, logs: [], serverTime: 2 })
 
@@ -455,6 +457,7 @@ describe('game bootstrap coordinator', () => {
         ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(currentBadgeState(loaded, data)), deleted: false, updatedAt: 2 })),
+        { kind: 'badges' as const, id: 'trainer', version: 1, data: toRecord(createTrainerBadgeState(1)), deleted: false, updatedAt: 2 },
       ],
       logs: [],
       serverTime: 2,
@@ -492,6 +495,7 @@ describe('game bootstrap coordinator', () => {
         ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
         ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(currentBadgeState(loaded, data)), deleted: false, updatedAt: 2 })),
+        { kind: 'badges' as const, id: 'trainer', version: 1, data: toRecord(createTrainerBadgeState(1)), deleted: false, updatedAt: 2 },
       ],
       logs: [],
       serverTime: 2,

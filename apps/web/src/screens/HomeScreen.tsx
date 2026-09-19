@@ -65,10 +65,10 @@ export function HomeScreen() {
     <div className="flex flex-col gap-4 pt-2">
       {!persistent && <Panel className="border-amber-300 bg-amber-50 py-3 text-sm font-bold">Memory only — progress cannot persist or sync in this browser.</Panel>}
 
-      <Panel className="relative overflow-hidden bg-gradient-to-b from-white to-[#e8f6ff] p-0">
+      <Panel className={`relative overflow-hidden bg-gradient-to-b from-white to-[#e8f6ff] p-0 ${flairSummary ? flairSummary.frame.borderClass : ''}`}>
         <Link to={`/stable/${encodeURIComponent(featured.save.templateId)}`} className="flex min-h-11 flex-col items-center px-4 pt-6 pb-5">
           <m.div
-            className="relative w-44 max-w-[55vw] rounded-full border-4 border-white bg-gradient-to-b from-sky-top to-sky shadow-[var(--shadow-panel)]"
+            className={`relative w-44 max-w-[55vw] rounded-full border-4 bg-gradient-to-b from-sky-top to-sky shadow-[var(--shadow-panel)] ${flairSummary ? flairSummary.frame.borderClass : 'border-white'}`}
             animate={{ scale: [1, 1.025, 1] }}
             transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
           >
@@ -118,7 +118,7 @@ export function HomeScreen() {
       {flairSummary && <Panel>
         <div className="mb-3 flex items-center justify-between gap-3">
           <div><p className="font-extrabold">✦ Recent flair</p><p className="text-xs font-bold text-ink-soft">{flairSummary.frame.label} frame · {flairSummary.prestige} Prestige</p></div>
-          <Link to={`/stable/${encodeURIComponent(featured.save.templateId)}`} className="flex min-h-11 items-center rounded-xl bg-sky-50 px-3 text-xs font-extrabold text-sky-deep">View profile</Link>
+          <Link to={`/badges?uma=${encodeURIComponent(featured.save.templateId)}`} className="flex min-h-11 items-center rounded-xl bg-sky-50 px-3 text-xs font-extrabold text-sky-deep">View all Badges</Link>
         </div>
         {flairSummary.recent.length > 0
           ? <FlairCards items={flairSummary.recent} />

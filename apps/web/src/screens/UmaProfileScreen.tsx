@@ -20,6 +20,7 @@ import { buildDeckView, formatDeckEffect } from '../game/deck-view'
 import { buildLineageView } from '../game/lineage-view'
 import { buildJourneyView } from '../game/goals-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
+import { buildUmaBadgeCollection } from '../game/badge-collection-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -85,6 +86,11 @@ export function UmaProfileScreen() {
     const state = badges[badgeStateId(save.templateId)]
     return state?.scope === 'uma' ? buildUmaFlairSummary(contentState.content, state, flairEvents) : null
   }, [badges, contentState, flairEvents, save])
+  const badgeCollection = useMemo(() => {
+    if (contentState.status !== 'ready' || !save) return null
+    const state = badges[badgeStateId(save.templateId)]
+    return state?.scope === 'uma' ? buildUmaBadgeCollection(contentState.content, state, flairEvents, raceHistory) : null
+  }, [badges, contentState, flairEvents, raceHistory, save])
 
   useEffect(() => {
     if (status !== 'ready' || !save) return
@@ -134,10 +140,10 @@ export function UmaProfileScreen() {
     <div className="flex flex-col gap-4 pt-2">
       <Link to="/stable" className="flex min-h-11 items-center gap-1 px-1 font-extrabold text-white text-outline">← Stable</Link>
 
-      <Panel className="overflow-hidden bg-gradient-to-b from-white to-sky-50 p-0">
+      <Panel className={`overflow-hidden bg-gradient-to-b from-white to-sky-50 p-0 ${flairSummary?.frame.borderClass ?? ''}`}>
         <div className="relative p-4 pb-3">
           <div className="mx-auto w-48 max-w-[65vw]">
-            <AtlasSprite asset={uma.asset} alt={`${uma.template.name} icon`} className="rounded-[2rem] border-4 border-white bg-sky-100 shadow-[var(--shadow-panel)]" fallback={<div className="flex h-full items-center justify-center text-7xl">🐴</div>} />
+            <AtlasSprite asset={uma.asset} alt={`${uma.template.name} icon`} className={`rounded-[2rem] border-4 bg-sky-100 shadow-[var(--shadow-panel)] ${flairSummary?.frame.borderClass ?? 'border-white'}`} fallback={<div className="flex h-full items-center justify-center text-7xl">🐴</div>} />
           </div>
           <button
             type="button"
@@ -163,9 +169,9 @@ export function UmaProfileScreen() {
         </div>
       </Panel>
 
-      {flairSummary && <Panel className="bg-gradient-to-br from-white to-violet-50">
+      {flairSummary && badgeCollection && <Panel className="bg-gradient-to-br from-white to-violet-50">
         <div className="flex items-center justify-between gap-3">
-          <div><h2 className="text-lg font-extrabold">Flair archive</h2><p className="text-xs font-bold text-ink-soft">Full Badge page arrives in the next milestone task.</p></div>
+          <div><h2 className="text-lg font-extrabold">Badge showcase</h2><p className="text-xs font-bold text-ink-soft">{flairSummary.activeTitle ?? 'No active title selected'}</p></div>
           <div className="rounded-2xl border-2 border-violet-200 bg-white px-3 py-2 text-center"><p className="text-lg font-extrabold text-violet-700">{flairSummary.prestige}</p><p className="text-[10px] font-extrabold text-ink-soft">{flairSummary.frame.label} · Prestige</p></div>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-extrabold">
@@ -173,7 +179,9 @@ export function UmaProfileScreen() {
           <div className="rounded-xl bg-white p-2"><span className="block text-lg text-violet-700">{flairSummary.titleCount}</span>Titles</div>
           <div className="rounded-xl bg-white p-2"><span className="block text-lg text-gold-deep">{flairSummary.trophyCount}</span>Trophies</div>
         </div>
-        {flairSummary.recent.length > 0 && <div className="mt-3"><FlairCards title="Recent awards" items={flairSummary.recent} /></div>}
+        {badgeCollection.pinnedRefs.length > 0 ? <div className="mt-3 grid grid-cols-3 gap-2">{badgeCollection.pinnedRefs.slice(0, 12).map((ref) => { const item = badgeCollection.items.find((candidate) => candidate.awardKey === ref); return <Link key={ref} to={`/badges?uma=${encodeURIComponent(save.templateId)}&detail=${encodeURIComponent(ref)}`} className="flex min-h-16 flex-col justify-center rounded-xl border-2 border-violet-100 bg-white p-2 text-center"><span aria-hidden>{item?.kind === 'title' ? '♕' : item?.kind === 'trophy' ? '♜' : '✦'}</span><span className="line-clamp-2 text-[10px] font-extrabold">{item?.label ?? ref}</span></Link> })}</div> : <Link to={`/badges?uma=${encodeURIComponent(save.templateId)}`} className="mt-3 flex min-h-14 items-center justify-center rounded-xl border-2 border-dashed border-violet-300 bg-white text-sm font-extrabold text-violet-700">Open pin mode to build a showcase</Link>}
+        {flairSummary.recent.length > 0 && <div className="mt-3"><FlairCards title="Recent timeline" items={flairSummary.recent} /></div>}
+        <Link to={`/badges?uma=${encodeURIComponent(save.templateId)}`} className="mt-3 flex min-h-11 items-center justify-center rounded-xl bg-violet-600 px-4 font-extrabold text-white">View all Badges</Link>
       </Panel>}
 
       {setupPending && <Panel className="border-violet-300 bg-violet-50"><h2 className="font-extrabold">Scenario setup required</h2><p className="mt-1 text-sm text-ink-soft">Choose optional frozen parents before this new Uma can Train or race.</p><GameButton className="mt-3" variant="go" onClick={() => navigate(`/scenario/${encodeURIComponent(save.templateId)}/start`)}>Start scenario</GameButton></Panel>}
@@ -311,10 +319,6 @@ export function UmaProfileScreen() {
       </Panel>
 
       <div className="grid grid-cols-2 gap-3">
-        <Panel className="col-span-2 p-3 text-center opacity-65">
-          <p className="text-sm font-extrabold">Badges & Record</p>
-          <p className="mt-1 text-xs text-ink-soft">Coming in a later milestone</p>
-        </Panel>
         <Panel className="col-span-2 p-3">
           <p className="text-sm font-extrabold">Lineage</p>
           {lineage.activeParents.length > 0 ? <div className="mt-2 grid grid-cols-2 gap-2">{lineage.activeParents.map((parent) => <div key={parent.umaId} className="rounded-xl bg-violet-50 p-2"><p className="text-xs font-extrabold">{parent.name} · T{parent.completedTier}</p><p className="text-[11px] text-ink-soft">{parent.uniqueCount} unique · {parent.whiteCount} whites</p>{parent.grandparents.map((grandparent) => <p key={grandparent.umaId} className="mt-1 border-l-2 border-violet-300 pl-2 text-[10px] font-bold">↳ {grandparent.name} · T{grandparent.completedTier}</p>)}</div>)}</div> : <p className="mt-1 text-xs text-ink-soft">No parents in the active scenario.</p>}

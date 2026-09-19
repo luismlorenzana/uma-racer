@@ -9,6 +9,7 @@ import {
   assertTrainingContent,
   assertSaveContent,
   badgeStateId,
+  createTrainerBadgeState,
   createUmaBadgeState,
   createInitialSave,
   parseSyncResponseOrThrow,
@@ -22,6 +23,8 @@ import {
   type RaceResultRecord,
   type Strategy,
   type ScenarioStartSelection,
+  type BadgePreferences,
+  type FlairEventKind,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
@@ -75,6 +78,14 @@ import {
   updateMemoryScenarioBadgeFacts,
   updateMemoryTrainingBadgeFacts,
 } from './badges'
+import {
+  bootstrapTrainerBadgeState,
+  pageMemoryFlairTimeline,
+  persistBadgePreferences,
+  readFlairTimelinePage,
+  replaceMemoryBadgePreferences,
+  type FlairTimelineCursor,
+} from './badge-preferences'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -107,6 +118,7 @@ export class GameRuntime {
   private deckLocks = new Set<string>()
   private cardRedemptionLocks = new Set<string>()
   private umaRedemptionLocks = new Set<string>()
+  private badgePreferenceLocks = new Set<string>()
   private exchangeLocked = false
   private memoryCardRedemptions = new Set<string>()
   private memoryUmaRedemptions = new Set<string>()
@@ -154,7 +166,10 @@ export class GameRuntime {
           profile: initial.profile,
           umas: Object.fromEntries(initial.umas.map((item) => [item.templateId, item])),
           cards: Object.fromEntries(initial.cards.map((item) => [item.templateId, item])),
-          badges: Object.fromEntries(evaluations.map((evaluation) => [badgeStateId(evaluation.state.umaId), evaluation.state])),
+          badges: Object.fromEntries([
+            ...evaluations.map((evaluation) => [badgeStateId(evaluation.state.umaId), evaluation.state] as const),
+            ['trainer', createTrainerBadgeState(now)] as const,
+          ]),
           flairEvents: evaluations.flatMap((evaluation) => evaluation.events.map((event) => ({ id: event.id, ...event.data }))),
           persistent: false,
         })
@@ -194,6 +209,7 @@ export class GameRuntime {
       await bootstrapGoalPlans(content, now)
       await bootstrapBadgeFacts(content, now)
       const archivedAwards = await bootstrapUmaFlair(content, now)
+      await bootstrapTrainerBadgeState(now)
       const granted = await applyOwedDailyGrant(today, now)
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
@@ -217,6 +233,7 @@ export class GameRuntime {
     this.memoryRaceHistory = []
     this.memoryCardRedemptions.clear()
     this.memoryUmaRedemptions.clear()
+    this.badgePreferenceLocks.clear()
     this.memoryExchangeSequence = 0
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
@@ -252,6 +269,42 @@ export class GameRuntime {
     replaceProfile(profile)
     await this.refreshPending()
     this.schedule()
+  }
+
+  async saveBadgePreferences(id: string, preferences: BadgePreferences, now = Date.now()) {
+    if (this.badgePreferenceLocks.has(id)) throw new Error('Badge preferences are already being saved')
+    this.badgePreferenceLocks.add(id)
+    try {
+      const generation = this.generation
+      const state = useGame.getState()
+      const current = state.badges[id]
+      if (state.status !== 'ready' || !current) throw new Error('Badge state is not ready')
+      const mutation = state.persistent
+        ? await persistBadgePreferences(id, preferences, now)
+        : replaceMemoryBadgePreferences(current, preferences)
+      if (generation !== this.generation) return mutation
+      if (mutation.changed) replaceBadgeState({ ...state.badges, [id]: mutation.state } as Record<string, typeof mutation.state>)
+      if (state.persistent && mutation.changed) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation
+    } finally {
+      this.badgePreferenceLocks.delete(id)
+    }
+  }
+
+  async listFlairTimeline(
+    umaId: string,
+    before: FlairTimelineCursor | null = null,
+    kind: FlairEventKind | null = null,
+    limit = 30,
+  ) {
+    const state = useGame.getState()
+    if (state.status !== 'ready' || !state.umas[umaId]) throw new Error('Timeline Uma must be owned')
+    return state.persistent
+      ? readFlairTimelinePage(umaId, before, kind, limit)
+      : pageMemoryFlairTimeline(state.flairEvents, umaId, before, kind, limit)
   }
 
   async setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {
@@ -659,8 +712,12 @@ export class GameRuntime {
         for (const conflict of response.conflicts) {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
           const originalSequence = sentSequence.get(`${conflict.kind}/${conflict.id}`)
-          if (current?.seq !== originalSequence) await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
-          else await putConflict(conflict, migratedConflicts.has(`${conflict.kind}/${conflict.id}`), response.serverTime)
+          if (current?.seq !== originalSequence && conflict.kind !== 'badges') {
+            await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
+          } else {
+            // Badge conflicts always adopt the server's newer award facts and reapply only still-valid local preferences.
+            await putConflict(conflict, migratedConflicts.has(`${conflict.kind}/${conflict.id}`), response.serverTime)
+          }
         }
         await db.outbox.bulkDelete(acknowledged)
       })

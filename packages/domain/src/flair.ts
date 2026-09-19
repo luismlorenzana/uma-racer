@@ -2,6 +2,7 @@
 
 import {
   BADGE_CATALOG_VERSION,
+  BADGE_FILTER_CATEGORIES,
   BADGE_ONE_OFF_POINTS,
   BADGE_THRESHOLDS,
   BADGE_TIER_POINTS,
@@ -32,10 +33,7 @@ import { DISTANCE_CATEGORIES, STATS, STRATEGIES, SURFACES, type StatKey } from '
 
 export const UMA_FLAIR_EVALUATOR_VERSION = 1 as const
 
-export const FLAIR_CATEGORIES = [
-  'victories', 'surface', 'distance', 'strategy', 'venue', 'race-feat', 'stats', 'scenario', 'training', 'skills',
-  'goals', 'lineage', 'title', 'trophy',
-] as const
+export const FLAIR_CATEGORIES = BADGE_FILTER_CATEGORIES
 export type FlairCategory = (typeof FLAIR_CATEGORIES)[number]
 export type FlairDefinitionKind = 'tiered' | 'one-off' | 'goal-ribbon' | 'honors' | 'title' | 'trophy'
 
@@ -129,7 +127,7 @@ function hashText(value: string): string {
   return (hash >>> 0).toString(16).padStart(8, '0')
 }
 
-function dynamicKey(prefix: string, value: string): string {
+export function flairDynamicKey(prefix: string, value: string): string {
   const direct = `${prefix}:${value}`
   return direct.length <= 120 ? direct : `${prefix}:${hashText(value)}`
 }
@@ -253,7 +251,7 @@ export function buildUmaFlairCatalog(input: {
   }
   for (const venueKey of sorted(new Set([...venues.keys(), ...state.facts.venueWins.map((row) => row.key)]))) {
     definitions.push(definition({
-      awardKey: dynamicKey('badge:venue', venueKey),
+      awardKey: flairDynamicKey('badge:venue', venueKey),
       kind: 'tiered',
       label: `${venues.get(venueKey) ?? `Venue ${venueKey}`} Regular`,
       description: 'Win at this venue.',
@@ -287,9 +285,9 @@ export function buildUmaFlairCatalog(input: {
     if (current?.grade !== 'g1' && stored?.grade !== 'g1') continue
     const name = current?.name ?? `Race ${familyId}`
     definitions.push(
-      definition({ awardKey: dynamicKey('trophy', familyId), kind: 'trophy', label: `${name} Trophy`, description: 'Win this G1 family.', category: 'trophy', criterion: { kind: 'family-wins', familyId }, history: detailHistory, tags: ['trophy', 'g1'], frozenKeys: [familyId] }),
-      definition({ awardKey: dynamicKey('title:two-time', familyId), kind: 'title', label: `Two-Time ${name}`, description: 'Win this G1 family twice.', category: 'title', criterion: { kind: 'family-wins', familyId }, thresholds: [2], history: detailHistory, tags: ['title', 'g1'], frozenKeys: [familyId] }),
-      definition({ awardKey: dynamicKey('title:three-time', familyId), kind: 'title', label: `Three-Time ${name}`, description: 'Win this G1 family three times.', category: 'title', criterion: { kind: 'family-wins', familyId }, thresholds: [3], history: detailHistory, tags: ['title', 'g1'], frozenKeys: [familyId] }),
+      definition({ awardKey: flairDynamicKey('trophy', familyId), kind: 'trophy', label: `${name} Trophy`, description: 'Win this G1 family.', category: 'trophy', criterion: { kind: 'family-wins', familyId }, history: detailHistory, tags: ['trophy', 'g1'], frozenKeys: [familyId] }),
+      definition({ awardKey: flairDynamicKey('title:two-time', familyId), kind: 'title', label: `Two-Time ${name}`, description: 'Win this G1 family twice.', category: 'title', criterion: { kind: 'family-wins', familyId }, thresholds: [2], history: detailHistory, tags: ['title', 'g1'], frozenKeys: [familyId] }),
+      definition({ awardKey: flairDynamicKey('title:three-time', familyId), kind: 'title', label: `Three-Time ${name}`, description: 'Win this G1 family three times.', category: 'title', criterion: { kind: 'family-wins', familyId }, thresholds: [3], history: detailHistory, tags: ['title', 'g1'], frozenKeys: [familyId] }),
     )
   }
   const earnedCourseIds = state.awards.badges
@@ -299,7 +297,7 @@ export function buildUmaFlairCatalog(input: {
   for (const best of state.facts.courseBests) {
     if (!courseRecordIds.has(best.courseId)) continue
     const source = input.courseRecordSources?.get(best.courseId)
-    definitions.push(definition({ awardKey: dynamicKey('badge:course-record', best.courseId), kind: 'one-off', label: 'Course Record', description: 'Set a strictly faster player time on this course.', category: 'race-feat', criterion: { kind: 'course-record', courseId: best.courseId, resultId: source?.resultId ?? best.resultId, achievedAt: source?.achievedAt ?? best.achievedAt }, history: detailHistory, tags: ['race', 'record'], frozenKeys: [best.courseId] }))
+    definitions.push(definition({ awardKey: flairDynamicKey('badge:course-record', best.courseId), kind: 'one-off', label: 'Course Record', description: 'Set a strictly faster player time on this course.', category: 'race-feat', criterion: { kind: 'course-record', courseId: best.courseId, resultId: source?.resultId ?? best.resultId, achievedAt: source?.achievedAt ?? best.achievedAt }, history: detailHistory, tags: ['race', 'record'], frozenKeys: [best.courseId] }))
   }
   for (let tier = 1; tier <= SCENARIOS.length; tier += 1) {
     const scenario = SCENARIOS[tier - 1]!
@@ -325,7 +323,7 @@ export function buildUmaFlairCatalog(input: {
   const scenarioTiers = Array.from({ length: SCENARIOS.length }, (_, index) => index + 1)
   definitions.push(definition({ awardKey: 'badge:living-legend', kind: 'one-off', label: 'Living Legend', description: 'Complete every scenario in this catalog.', category: 'scenario', criterion: { kind: 'all-scenarios', tiers: scenarioTiers }, history: state.history['scenario-completion'], tags: ['scenario'], frozenKeys: sorted(scenarioTiers.map(String)) }))
   for (const goal of state.facts.goals) definitions.push(definition({
-    awardKey: dynamicKey('ribbon', goal.goalId), kind: 'goal-ribbon', label: `Goal Ribbon · Tier ${goal.tier}`, description: 'Complete this tracked Journey goal.',
+    awardKey: flairDynamicKey('ribbon', goal.goalId), kind: 'goal-ribbon', label: `Goal Ribbon · Tier ${goal.tier}`, description: 'Complete this tracked Journey goal.',
     category: 'goals', criterion: { kind: 'goal', goalId: goal.goalId }, history: 'exact', tags: ['goals', `tier:${goal.tier}`], frozenKeys: [goal.goalId],
   }))
   definitions.sort((left, right) => left.awardKey.localeCompare(right.awardKey))

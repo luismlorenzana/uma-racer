@@ -128,6 +128,14 @@ describe('parseSyncRequest', () => {
       upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: { ...trainer, aggregates: [{ key: 'wins', count: -1 }] } }],
     })).toMatch(/invalid badges data/)
     expect(parseSyncRequest({
+      upserts: [{ kind: 'badges', id: 'trainer', baseVersion: 0, data: {
+        ...trainer,
+        preferences: { ...trainer.preferences, savedViews: [{
+          id: 'invalid-view', name: 'Invalid', filters: [{ key: 'status:anything', count: 1 }], sort: 'recent',
+        }] },
+      } }],
+    })).toMatch(/invalid badges data/)
+    expect(parseSyncRequest({
       appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: flair, createdAt: 6 }],
     })).toMatch(/timestamp/)
   })
