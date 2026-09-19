@@ -31,7 +31,7 @@ where a scenario stops being only a name, a cap, and a card era.
 ## Sequence
 
 ```text
-T019 race series legs and earnable titles     (Claude — private content)
+T019 race series legs and earnable titles     (code delegable; Claude publishes the private file)
         │
         ▼
 T020 scenario goals v2: career and sex identity   (delegable)
@@ -44,8 +44,9 @@ T022 release, content publish, and update readiness   (delegable, independent)
 T023 playability pass                              (defined from owner notes)
 ```
 
-T019 comes first because T020's series goals and the title badges both read the same private series tags. T022 does not
-depend on the others and may land in parallel.
+T019 comes first because T020's series goals and the title badges both read the same private series tags. Its code is
+ordinary delegable work; only the private override file and the publish step are Claude's, and they happen after the code
+merges. T022 does not depend on the others and may land in parallel.
 
 | Task | User-visible result | Must not absorb |
 |---|---|---|

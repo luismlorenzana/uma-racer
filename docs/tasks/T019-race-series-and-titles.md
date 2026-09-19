@@ -25,7 +25,8 @@ variant would refuse credit for the others.
 - Leg counts per tag are unchanged: 3 for the four Triple Crown/Tiara sets, 2 for the four Queen sets.
 - The override stays **private and gitignored**. No family id, venue id, or other original-game identifier enters git.
   Real race names (Satsuki Sho, Arima Kinen) are public JRA facts and may appear in docs and in the catalog's labels.
-- Claude owns and publishes the override file (D107). It is not an owner action.
+- Claude owns and publishes the override file (D107). It is not an owner action, and a delegated agent never needs the
+  private content or cloud credentials to finish the code.
 - Titles stay pure flair, monotonic, and never revoked (D98).
 
 ## Implementation contract
@@ -80,6 +81,10 @@ variant would refuse credit for the others.
   earned", and Settings reports the number of covered series and main venues alongside the content version.
 
 ## Deliverables
+
+Deliverables 1–3 are ordinary delegable code work. Deliverable 4 needs the private content and the production bucket, so
+Claude runs it after the code merges; the PR for 1–3 ships with coverage still at zero and everything degrading exactly
+as it does today.
 
 1. Override parsing, validation, and the `seriesLegs` stamp in `scripts/data`, with synthetic fixtures.
 2. `FLAIR_SERIES_REQUIRED_LEGS`, the leg-based title criterion, and the content join in `packages/domain`.
