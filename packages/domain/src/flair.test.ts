@@ -156,6 +156,11 @@ describe('Uma flair catalog v1', () => {
     expect(keys).toContain('title:three-time:synthetic-family-0')
     expect(keys).toContain('badge:course-record:synthetic-course-0')
     expect(keys).toContain(`badge:scenario:${SCENARIOS.length}:graduate`)
+    for (const tier of [12, 13, 14]) {
+      expect(['capped', 'perfect', 'graduate', 'speedrun', 'fully-trained', 'era-loyalist'].every((suffix) =>
+        keys.includes(`badge:scenario:${tier}:${suffix}`))).toBe(true)
+    }
+    expect(catalog.scenarioTiers).toEqual(Array.from({ length: 14 }, (_, index) => index + 1))
     expect(keys).toContain('ribbon:goal:synthetic-uma:1:0')
     expect(keys.some((key) => key.includes('duelist') || key.includes('upset'))).toBe(false)
     expect(catalog.mainVenueKeys).toHaveLength(10)

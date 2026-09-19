@@ -70,7 +70,7 @@ describe('deck view model', () => {
     expect(model.hintSkillCount).toBe(2)
     expect(Object.fromEntries(model.candidates.map((item) => [item.id, item.disabledReason]))).toMatchObject({
       speed: 'Already selected', power: 'Already selected', duplicate: 'Duplicate character',
-      future: 'Later scenario · Tier 2', friend: 'Friend/Group unavailable',
+      future: 'Era locked · Tier 2', friend: 'Friend/Group unavailable',
     })
   })
 
@@ -88,5 +88,21 @@ describe('deck view model', () => {
     expect(unowned.slots[0]?.card).toMatchObject({ id: 'speed', save: null })
     expect(buildDeckView(createUmaSave(umaTemplate), cards, content, [], { type: 'speed', era: 'current' }).candidates.map((item) => item.id)).toEqual(['speed'])
     expect(buildDeckView(createUmaSave(umaTemplate), cards, content, [], { type: 'all', era: 'later' }).candidates.map((item) => item.id)).toEqual(['future'])
+  })
+
+  it('keeps a saved newly locked card visible and removable after a content-era refresh', () => {
+    const { content } = fixture()
+    const moved = card('moved', 'speed', { era: 12 })
+    const refreshed = {
+      ...content,
+      cards: { items: [...content.cards.items, moved], byId: new Map([...content.cards.byId, [moved.id, moved]]) },
+    }
+    const save = createCardSave(moved)
+    const uma = { ...createUmaSave(umaTemplate), level: 101, deckCardIds: [moved.id] }
+    const first = buildDeckView(uma, { [moved.id]: save }, refreshed)
+    const reloaded = buildDeckView(structuredClone(uma), { [moved.id]: structuredClone(save) }, refreshed)
+    expect(first.slots[0]?.card?.id).toBe(moved.id)
+    expect(first.validationErrors).toEqual([`Support card ${moved.id} is Era locked until tier 12`])
+    expect(reloaded).toEqual(first)
   })
 })

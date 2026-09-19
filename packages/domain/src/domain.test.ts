@@ -7,6 +7,8 @@ import {
   BASE_SPECIALTY_CHANCE,
   baselineSpCap,
   baselineStatCap,
+  MAX_UMA_LEVEL,
+  SCENARIOS,
   capMult,
   cardEffectValue,
   cardLevelCap,
@@ -149,13 +151,21 @@ describe('scenarios', () => {
     expect(UMA_SHARDS_PER_COUPON).toBe(5)
   })
 
-  it('uses the original 1200 → 2000 cap ladder and keeps rising after #11', () => {
+  it('pins all 14 JP scenarios, the +80 cap ladder, and the tier-14 SP cap', () => {
+    expect(SCENARIOS.map((scenario) => [scenario.tier, scenario.jpRelease])).toEqual([
+      [1, '2021-02-24'], [2, '2021-08-30'], [3, '2022-02-24'], [4, '2022-08-24'],
+      [5, '2023-02-24'], [6, '2023-08-24'], [7, '2024-02-24'], [8, '2024-06-26'],
+      [9, '2024-10-29'], [10, '2025-02-24'], [11, '2025-06-27'], [12, '2025-10-29'],
+      [13, '2026-02-24'], [14, '2026-06-29'],
+    ])
+    expect(MAX_UMA_LEVEL).toBe(140)
     expect(baselineStatCap(1)).toBe(1200)
     expect(baselineStatCap(6)).toBe(1600)
     expect(baselineStatCap(11)).toBe(2000)
-    expect(baselineStatCap(12)).toBe(2080)
+    expect([12, 13, 14].map(baselineStatCap)).toEqual([2080, 2160, 2240])
+    expect([12, 13, 14].map((tier) => statCap(tier, 1))).toEqual([1664, 1728, 1792])
     expect(baselineSpCap(1)).toBe(300)
-    expect(baselineSpCap(11)).toBe(2300)
+    expect(baselineSpCap(14)).toBe(2900)
   })
 
   it('maps Uma Levels to tiers and gates', () => {
@@ -171,7 +181,11 @@ describe('scenarios', () => {
     expect(eraOf('2021-02-24')).toBe(1)
     expect(eraOf('2021-08-29')).toBe(1)
     expect(eraOf('2023-03-01')).toBe(5)
-    expect(eraOf('2026-01-01')).toBe(11)
+    expect([
+      '2025-10-28', '2025-10-29',
+      '2026-02-23', '2026-02-24',
+      '2026-06-28', '2026-06-29',
+    ].map(eraOf)).toEqual([11, 12, 12, 13, 13, 14])
   })
 
   it('categorizes distances', () => {

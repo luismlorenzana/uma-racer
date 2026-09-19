@@ -1,9 +1,15 @@
 import 'fake-indexeddb/auto'
 
 import {
+  applyScenarioCompletionFact,
+  badgeStateId,
+  buildUmaFlairCatalog,
   createCardSave,
   createPlayerProfile,
+  createUmaBadgeState,
   createUmaSave,
+  evaluateUmaFlair,
+  flairSourceId,
   parentFingerprint,
   type ContentAtlas,
   type RaceTemplate,
@@ -141,6 +147,57 @@ describe('scenario promotion persistence', () => {
     expect((await db.umas.get(uma.templateId))?.data.level).toBe(10)
     expect(await db.ledger.count()).toBe(0)
     expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('promotes a formerly final level-110 save without replacing its snapshot or re-awarding Graduate flair', async () => {
+    const loaded = content()
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), tickets: 1_000 }
+    const snapshot = {
+      umaId: umaTemplate.id, charaId: umaTemplate.charaId, completedTier: 11, takenAt: 70,
+      inheritedUniqueSkillId: 'gene-promo', inheritableWhiteSkillIds: [], aptitudes, parents: [],
+    }
+    const completedJourney = {
+      tier: 11, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: null, goals: [],
+    }
+    const formerMaximum = {
+      ...readyUma(), level: 110, parentSnapshot: snapshot, goalPlanVersion: 2, scenarioJourneys: [completedJourney],
+    }
+    let badge = createUmaBadgeState(formerMaximum, 70)
+    badge = applyScenarioCompletionFact(badge, {
+      tier: 11,
+      completedAt: 70,
+      trainingLevel: formerMaximum.trainingLevel,
+      stats: formerMaximum.stats,
+      deckCardIds: [...formerMaximum.deckCardIds],
+      deckEras: [1],
+      trainingTurns: formerMaximum.trainingsThisScenario,
+      friendshipTrainings: 0,
+      raceStarts: 0,
+      completedGoalIds: [],
+      honors: false,
+      parentUmaIds: [],
+      grandparentUmaIds: [],
+    })
+    const awarded = evaluateUmaFlair(buildUmaFlairCatalog({ state: badge, races: loaded.races.items }), badge, {
+      source: { kind: 'scenario', id: flairSourceId('scenario', umaTemplate.id, '11'), tier: 11 },
+      earnedAt: 70,
+      retroactive: false,
+    })
+    const graduateId = awarded.events.find((event) => event.data.awardKey === 'badge:scenario:11:graduate')?.id
+    expect(graduateId).toBeTruthy()
+
+    await db.open()
+    await db.profile.put({ id: 'main', data: profile, version: 0 })
+    await db.umas.put({ id: formerMaximum.templateId, data: formerMaximum, version: 0 })
+    await db.cards.put({ id: cardTemplate.id, data: createCardSave(cardTemplate), version: 0 })
+    await db.badges.put({ id: badgeStateId(formerMaximum.templateId), data: awarded.state, version: 3 })
+    await db.flairEvents.bulkPut(awarded.events.map((event) => ({ id: event.id, data: event.data, createdAt: event.data.earnedAt })))
+
+    const result = await promotePersistentUma(loaded, formerMaximum.templateId, 99)
+    expect(result.uma).toMatchObject({ level: 111, parentSnapshot: snapshot })
+    expect(result.uma.scenarioJourneys[0]).toEqual(completedJourney)
+    expect(result.earnedFlairEventIds).not.toContain(graduateId)
+    expect((await db.flairEvents.toArray()).filter((row) => row.data.awardKey === 'badge:scenario:11:graduate')).toHaveLength(1)
   })
 
   it('starts a fresh Uma with a frozen parent for free and treats an exact retry as success', async () => {

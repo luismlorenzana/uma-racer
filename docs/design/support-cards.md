@@ -69,7 +69,7 @@ cardExpToNext(level) = 40 + 15 × (level − 1)
 
 ```
 effectValue = baseValue[effect]
-            × eraMult(era)                1 + 0.08 × (era − 1)    → era 11 = 1.80×
+            × eraMult(era)                1 + 0.08 × (era − 1)    → era 14 = 2.04×
             × lbMult[lb]                  LB0 1.00 · LB1 1.10 · LB2 1.20 · LB3 1.32 · LB4 1.50
             × (1 + 0.02 × levelWithinLB)  0–4 levels into the current LB
             × profileWeight[effect]       from the card's effectProfile

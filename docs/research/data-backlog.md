@@ -43,10 +43,10 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 - [x] Private race-series/main-venue override v2 contract, leg-alias validation, normalized `seriesLegs`, and aggregate-only diagnostics.
 - [x] `content/overrides/flair.json` is authored and published (Claude's, D107): 8 series as legs with their alias families, across 30 race families, plus the 10 `jra-main` venues. Re-check it whenever new races are retained. No live identifier or mapping enters git.
 - [x] JP scenario list verified against the public GameTora `scenarios` dataset on 2026-09-19: 14 released scenarios, all
-      dates confirmed. Tiers 12–14 are added by [T021](../tasks/T021-jp-scenarios-12-14.md).
+      dates confirmed. Tiers 12–14 are live, and each import warns from aggregate counts/dates when the source moves ahead.
 - [x] Course layouts: corners, straights, and slopes per course (for later race engine milestones).
 
 ## Scenarios
 
-- [ ] Verify the ⚠️ release dates in [Scenarios](../design/scenarios.md).
-- [ ] Scenarios released in JP after Design Your Island (late 2025 onward).
+- [x] Every released JP scenario through Tracen Diner is modeled; all release dates are verified.
+- [x] Aggregate importer coverage warns when a later released source scenario is not yet modeled.

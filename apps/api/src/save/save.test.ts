@@ -213,6 +213,21 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: uma }] })).toMatchObject({
       upserts: [{ kind: 'umas', data: { schemaVersion: 3 } }],
     })
+    const formerMaximum = {
+      ...uma,
+      level: 110,
+      parentSnapshot: {
+        umaId: 'synthetic-uma', charaId: 'synthetic-character', completedTier: 11, takenAt: 2,
+        inheritedUniqueSkillId: null, inheritableWhiteSkillIds: [], aptitudes: uma.aptitudes, parents: [],
+      },
+      scenarioJourneys: [{ tier: 11, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] }],
+    }
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: formerMaximum }] }))
+      .toMatchObject({ upserts: [{ kind: 'umas', data: { level: 110 } }] })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, level: 140, exp: 0, goalPlanVersion: 0, scenarioJourneys: [] } }] }))
+      .toMatchObject({ upserts: [{ kind: 'umas', data: { level: 140 } }] })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, level: 141 } }] }))
+      .toMatch(/invalid umas data/)
     expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, scenarioJourneys: [{ ...uma.scenarioJourneys[0], goals: [single('aptitude', 'series-a'), identity, single('challenge', 'single-c')] }] } }] })).toMatch(/invalid umas data/)
     const current: EntityRecord = { kind: 'umas', id: 'synthetic-uma', version: 4, data: uma, deleted: false, updatedAt: 1 }
     const resolved = resolveUpserts(new Map([['umas/synthetic-uma', current]]), [

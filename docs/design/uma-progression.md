@@ -42,7 +42,7 @@
 An Uma has **two levels**: the permanent **Uma Level** (covered here) and the per-scenario **Training Level**
 (see [Training](training.md#two-levels-uma-level-vs-training-level)).
 
-- Uma Levels run from 1 up to `10 × number of scenarios` (110 with the 11 scenarios known so far).
+- Uma Levels run from 1 up to `10 × number of scenarios` (140 with the 14 currently modeled scenarios).
 - **Only racing gives Uma EXP.** 2nd and 3rd place give 25% of win EXP.
 - Uma Level decides the scenario gates and the **Race Form** nerf (below).
 - **Every Uma Level-up earns +5 training tickets.**

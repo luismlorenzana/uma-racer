@@ -1,6 +1,6 @@
 // CLI orchestration for the private content data pipeline (scripts/data/README.md).
 
-import { assertRaceCourseContent, selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
+import { SCENARIOS, assertRaceCourseContent, selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { DATASET_NAMES, loadGameToraData } from './gametora'
@@ -12,6 +12,7 @@ import { normalizeRaces } from './normalize/races'
 import { normalizeSkills } from './normalize/skills'
 import { normalizeUmas } from './normalize/umas'
 import { DEFAULT_CONTENT_DIR, writeContentPacks } from './pack'
+import { scenarioCoverageWarning } from './scenario-coverage'
 
 async function main(): Promise<void> {
   const refresh = process.argv.includes('--refresh')
@@ -35,6 +36,7 @@ async function main(): Promise<void> {
   const courses = normalizeCourses(datasets.racetracks)
   const skillCoverage = summarizeRaceSkillCoverage(skills.items)
   const baselineSkills = selectBaselineRaceSkills(skills.items)
+  const scenarioWarning = scenarioCoverageWarning(datasets.scenarios, SCENARIOS.map((scenario) => scenario.jpRelease))
   assertRaceCourseContent(races.items, courses.items)
 
   const umaStarters = umas.items.filter((item) => item.starter).length
@@ -52,6 +54,7 @@ async function main(): Promise<void> {
   console.log(`Courses: ${courses.items.length}`)
 
   const warnings = [...umas.warnings, ...objectives.warnings, ...cards.warnings, ...skills.warnings, ...races.warnings, ...courses.warnings]
+  if (scenarioWarning) warnings.unshift(scenarioWarning)
   if (umaStarters !== 25) warnings.unshift(`Expected exactly 25 launch Umas, found ${umaStarters}`)
   if (missingLaunchObjectives > 0) warnings.unshift(`Objective metadata is missing for ${missingLaunchObjectives} launch outfit(s)`)
   for (const warning of warnings) console.warn(`Warning: ${warning}`)

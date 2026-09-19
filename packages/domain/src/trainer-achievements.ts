@@ -22,7 +22,7 @@ import {
 import { flairDynamicKey, flairEventId, type FlairEventRecord } from './flair'
 import type { RaceResultRecord } from './progression-race'
 import type { CardSave, LedgerEntry, UmaSave } from './save'
-import { LEVELS_PER_SCENARIO, SCENARIOS } from './scenarios'
+import { MAX_UMA_LEVEL } from './scenarios'
 import { STATS, type StatKey } from './types'
 
 export const TRAINER_ACHIEVEMENT_CATALOG_VERSION = 1 as const
@@ -106,7 +106,6 @@ export interface TrainerAchievementProgress {
   frozenAllKeys: string[]
 }
 
-const MAX_UMA_LEVEL = SCENARIOS.length * LEVELS_PER_SCENARIO
 const NORMAL_STAGES = BADGE_TIERS.slice(0, 4)
 
 function sortedUnique(values: readonly string[]): string[] {

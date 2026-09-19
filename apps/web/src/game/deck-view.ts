@@ -103,7 +103,7 @@ export function buildDeckView(
       if (!view.template) disabledReason = 'Missing current content'
       else if (selectedIds.has(view.id)) disabledReason = 'Already selected'
       else if (!STATS.includes(view.template.type as (typeof STATS)[number])) disabledReason = 'Friend/Group unavailable'
-      else if (view.template.era > tier) disabledReason = `Later scenario · Tier ${view.template.era}`
+      else if (view.template.era > tier) disabledReason = `Era locked · Tier ${view.template.era}`
       else if (selectedCharacters.has(view.template.charaId)) disabledReason = 'Duplicate character'
       else if (orderedCardIds.length >= slotCount) disabledReason = 'All unlocked slots filled'
       return { ...view, save, disabledReason }

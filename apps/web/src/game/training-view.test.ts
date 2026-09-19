@@ -110,4 +110,14 @@ describe('Training view model', () => {
       message: expect.stringMatching(/missing Uma/),
     })
   })
+
+  it('refuses a saved card whose refreshed era is later than the Uma tier', () => {
+    const loaded = content()
+    const moved = { ...loaded.cards.items[0]!, era: 12 }
+    const refreshed = { ...loaded, cards: { items: [moved], byId: new Map([[moved.id, moved]]) } }
+    const cardSave = createCardSave(moved)
+    const uma = { ...createUmaSave(loaded.umas.items[0]!), level: 101, deckCardIds: [moved.id] }
+    expect(buildTrainingView(createPlayerProfile(loaded.manifest.version, 100), uma, { [moved.id]: cardSave }, refreshed))
+      .toEqual({ status: 'error', message: `Support card ${moved.id} is Era locked until tier 12` })
+  })
 })
