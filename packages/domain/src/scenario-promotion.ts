@@ -14,6 +14,7 @@ import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, scenarioForTier, tierOfLev
 import { closeScenarioJourney, generateScenarioJourney, SCENARIO_GOAL_VERSION } from './scenario-goals'
 import {
   SAVE_ID_PATTERN,
+  SAVE_SCHEMA_VERSION,
   parsePlayerProfile,
   parseUmaSave,
   type FrozenParent,
@@ -229,7 +230,7 @@ export function startNewUmaScenario(input: NewUmaScenarioStartInput): NewUmaScen
     throw new Error('Pending scenario setup is only valid for a new tier-1 Uma')
   }
   const helperInput: ScenarioPromotionInput = {
-    profile: { schemaVersion: 2, tickets: 0, cardCoupons: 0, umaCoupons: 0, umaShards: 0, lastDailyGrant: null, featuredUmaId: null, starterSeedContentVersion: null, createdAt: 0 },
+    profile: { schemaVersion: SAVE_SCHEMA_VERSION, tickets: 0, cardCoupons: 0, umaCoupons: 0, umaShards: 0, lastDailyGrant: null, featuredUmaId: null, starterSeedContentVersion: null, createdAt: 0 },
     uma: parsedUma,
     umaTemplate: input.umaTemplate,
     skills: input.skills,

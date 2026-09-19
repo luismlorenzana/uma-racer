@@ -7,7 +7,9 @@ import {
   createPlayerProfile,
   createUmaSave,
   migratePlayerProfileV1,
+  migratePlayerProfileV2,
   migrateUmaSaveV1,
+  migrateUmaSaveV2,
   parseCardSave,
   parsePlayerProfile,
   parsePlayerProfileOrThrow,
@@ -134,24 +136,49 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, trainingLevel: 11 })).toBeNull()
     expect(parseUmaSave({ ...save, deckCardIds: ['c1', 'c1'] })).toBeNull()
     expect(parseCardSave({ templateId: 'c1', level: 6, exp: 0, limitBreak: 0, maxCouponGranted: false })).toBeNull()
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 3 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 3 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 4 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 4 })).toThrow(/App update required/)
   })
 
-  it('migrates v1 profiles and Umas losslessly into explicit v2 defaults', () => {
+  it('migrates v1 profiles and Umas into current defaults and preserves every v2 goal fact', () => {
     const profileV1 = { ...createPlayerProfile('v1', 1), schemaVersion: 1 as const, tickets: 77 }
-    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 2 })
+    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 3 })
+    const profileV2 = { ...profileV1, schemaVersion: 2 as const }
+    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: 3 })
     const current = createUmaSave(uma('u1'))
     const { schemaVersion: _schemaVersion, scenarioStarted: _scenarioStarted, skillHistory: _skillHistory,
       currentParents: _currentParents, parentSnapshot: _parentSnapshot, goalPlanVersion: _goalPlanVersion,
       scenarioJourneys: _scenarioJourneys, ...legacy } = current
     const migrated = migrateUmaSaveV1({ ...legacy, level: 20 })
     expect(migrated).toMatchObject({
-      schemaVersion: 2, level: 20, scenarioStarted: true, currentParents: [], parentSnapshot: null,
+      schemaVersion: 3, level: 20, scenarioStarted: true, currentParents: [], parentSnapshot: null,
       goalPlanVersion: 0, scenarioJourneys: [],
       skillHistory: [{ skillId: 'skill-u1', origin: 'own-unique', sourceId: 'u1', tier: 2 }],
     })
     expect(parseUmaSave(migrated)).toEqual(migrated)
+
+    const goal = {
+      id: 'goal:1:aptitude', slot: 'aptitude' as const, raceId: 'synthetic-race', kind: 'win' as const,
+      minimumMarginLengths: 0, status: 'completed' as const, completedRaceResultId: 'race:u1:4', completedAt: 22,
+    }
+    const legacyV2 = {
+      ...current,
+      schemaVersion: 2 as const,
+      scenarioStarted: true,
+      goalPlanVersion: 1,
+      scenarioJourneys: [{
+        tier: 1, tracking: 'tracked' as const, state: 'active' as const, completedAt: null,
+        goals: [
+          goal,
+          { ...goal, id: 'goal:1:identity', slot: 'identity' as const, raceId: 'synthetic-race-2', status: 'active' as const, completedRaceResultId: null, completedAt: null },
+          { ...goal, id: 'goal:1:challenge', slot: 'challenge' as const, raceId: 'synthetic-race-3', kind: 'win-by-margin' as const, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+        ],
+      }],
+    }
+    const migratedV2 = migrateUmaSaveV2(legacyV2)
+    expect(migratedV2).toMatchObject({ schemaVersion: 3, goalPlanVersion: 1 })
+    expect(migratedV2.scenarioJourneys[0]?.goals).toEqual(legacyV2.scenarioJourneys[0]?.goals.map((item) => ({ ...item, series: null })))
+    expect(parseUmaSave(migratedV2)).toEqual(migratedV2)
   })
 
   it('strictly rejects duplicate histories, recursive parents, and malformed journeys', () => {
@@ -159,6 +186,31 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, skillHistory: [...save.skillHistory, ...save.skillHistory] })).toBeNull()
     expect(parseUmaSave({ ...save, currentParents: [{ umaId: 'p1' }] })).toBeNull()
     expect(parseUmaSave({ ...save, scenarioJourneys: [{ tier: 1, tracking: 'tracked', state: 'active', completedAt: null, goals: [] }] })).toBeNull()
+  })
+
+  it('strictly validates single and series goal shapes and distinct frozen targets', () => {
+    const base = { ...createUmaSave(uma('u1')), scenarioStarted: true, goalPlanVersion: 2 }
+    const single = (slot: 'aptitude' | 'challenge', raceId: string) => ({
+      id: `goal:1:${slot}`, slot, raceId, kind: slot === 'challenge' ? 'win-by-margin' as const : 'win' as const,
+      series: null, minimumMarginLengths: slot === 'challenge' ? 5 : 0, status: 'active' as const,
+      completedRaceResultId: null, completedAt: null,
+    })
+    const identity = {
+      id: 'goal:1:identity', slot: 'identity' as const, raceId: null, kind: 'win-series' as const,
+      series: { tag: 'grand-prix' as const, legs: [
+        { key: 'first-leg', raceId: 'series-a', status: 'completed' as const, completedRaceResultId: 'race:u1:1', completedAt: 10 },
+        { key: 'second-leg', raceId: 'series-b', status: 'active' as const, completedRaceResultId: null, completedAt: null },
+      ] },
+      minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null,
+    }
+    const journey = { tier: 1, tracking: 'tracked' as const, state: 'active' as const, completedAt: null, goals: [single('aptitude', 'single-a'), identity, single('challenge', 'single-c')] }
+    expect(parseUmaSave({ ...base, scenarioJourneys: [journey] })).not.toBeNull()
+    expect(parseUmaSave({ ...base, scenarioJourneys: [{ ...journey, goals: [{ ...journey.goals[0], series: identity.series }, identity, journey.goals[2]] }] })).toBeNull()
+    expect(parseUmaSave({ ...base, scenarioJourneys: [{ ...journey, goals: [journey.goals[0], { ...identity, raceId: 'series-a' }, journey.goals[2]] }] })).toBeNull()
+    expect(parseUmaSave({ ...base, scenarioJourneys: [{ ...journey, goals: [journey.goals[0], { ...identity, series: { ...identity.series, legs: [identity.series.legs[0]!] } }, journey.goals[2]] }] })).toBeNull()
+    expect(parseUmaSave({ ...base, scenarioJourneys: [{ ...journey, goals: [journey.goals[0], { ...identity, series: { ...identity.series, legs: [identity.series.legs[0]!, { ...identity.series.legs[1]!, key: 'first-leg' }] } }, journey.goals[2]] }] })).toBeNull()
+    expect(parseUmaSave({ ...base, scenarioJourneys: [{ ...journey, goals: [journey.goals[0], { ...identity, series: { ...identity.series, legs: [identity.series.legs[0]!, { ...identity.series.legs[1]!, raceId: 'series-a' }] } }, journey.goals[2]] }] })).toBeNull()
+    expect(parseUmaSave({ ...base, scenarioJourneys: [{ ...journey, goals: [single('aptitude', 'series-a'), identity, journey.goals[2]] }] })).toBeNull()
   })
 
   it('validates typed sync requests and snapshots', () => {
@@ -186,7 +238,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 3 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 4 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)

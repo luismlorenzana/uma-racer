@@ -1,7 +1,14 @@
 // Typed local-first save vocabulary and initialization (docs/technical/architecture.md).
 
 import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK, cardExpToNext, cardLevelCap } from './cards'
-import { badgeStateId, parseBadgeState, parseFlairEvent } from './badges'
+import {
+  badgeStateId,
+  FLAIR_SERIES_LEG_KEY_PATTERN,
+  FLAIR_SERIES_TAGS,
+  parseBadgeState,
+  parseFlairEvent,
+  type FlairSeriesTag,
+} from './badges'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
@@ -10,8 +17,9 @@ import { LEVELS_PER_SCENARIO, SCENARIOS, isGateLevel, tierOfLevel } from './scen
 import { EXP_TO_NEXT_TRAINING_LEVEL, MAX_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type Stats } from './types'
 
-export const SAVE_SCHEMA_VERSION = 2 as const
+export const SAVE_SCHEMA_VERSION = 3 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -56,11 +64,25 @@ export interface ParentSnapshot extends FrozenParent {
 export type GoalSlot = 'aptitude' | 'identity' | 'challenge'
 export type GoalStatus = 'active' | 'completed' | 'missed'
 
+export interface ScenarioGoalLeg {
+  key: string
+  raceId: string
+  status: GoalStatus
+  completedRaceResultId: string | null
+  completedAt: number | null
+}
+
+export interface ScenarioGoalSeries {
+  tag: FlairSeriesTag
+  legs: ScenarioGoalLeg[]
+}
+
 export interface ScenarioGoal {
   id: string
   slot: GoalSlot
-  raceId: string
-  kind: 'win' | 'win-by-margin'
+  raceId: string | null
+  kind: 'win' | 'win-by-margin' | 'win-series'
+  series: ScenarioGoalSeries | null
   minimumMarginLengths: number
   status: GoalStatus
   completedRaceResultId: string | null
@@ -99,6 +121,24 @@ export interface UmaSave {
 
 export interface LegacyPlayerProfileV1 extends Omit<PlayerProfile, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION
+}
+
+export interface LegacyPlayerProfileV2 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V2
+}
+
+export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
+  raceId: string
+  kind: 'win' | 'win-by-margin'
+}
+
+export interface LegacyScenarioJourneyV2 extends Omit<ScenarioJourney, 'goals'> {
+  goals: LegacyScenarioGoalV2[]
+}
+
+export interface LegacyUmaSaveV2 extends Omit<UmaSave, 'schemaVersion' | 'scenarioJourneys'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V2
+  scenarioJourneys: LegacyScenarioJourneyV2[]
 }
 
 export interface LegacyUmaSaveV1 extends Omit<UmaSave,
@@ -289,7 +329,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -318,9 +358,19 @@ export function parseLegacyPlayerProfileV1(value: unknown): LegacyPlayerProfileV
   return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION)
 }
 
+export function parseLegacyPlayerProfileV2(value: unknown): LegacyPlayerProfileV2 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V2)
+}
+
 export function migratePlayerProfileV1(value: LegacyPlayerProfileV1): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV1(value)
   if (!parsed) throw new Error('Legacy player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
+export function migratePlayerProfileV2(value: LegacyPlayerProfileV2): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV2(value)
+  if (!parsed) throw new Error('Legacy v2 player profile is malformed')
   return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
@@ -409,24 +459,86 @@ function parseParentSnapshot(value: unknown): ParentSnapshot | null {
 
 const GOAL_SLOTS: readonly GoalSlot[] = ['aptitude', 'identity', 'challenge']
 
+function hasValidGoalEvidence(value: Record<string, unknown>): boolean {
+  const completed = value.status === 'completed'
+  return completed
+    ? isId(value.completedRaceResultId) && isTimestamp(value.completedAt)
+    : value.completedRaceResultId === null && value.completedAt === null
+}
+
+function parseScenarioGoalLeg(value: unknown): ScenarioGoalLeg | null {
+  if (!isObject(value) || !exactKeys(value, ['key', 'raceId', 'status', 'completedRaceResultId', 'completedAt'])) return null
+  if (typeof value.key !== 'string' || value.key.length > 40 || !FLAIR_SERIES_LEG_KEY_PATTERN.test(value.key) || !isId(value.raceId)) return null
+  if (!['active', 'completed', 'missed'].includes(String(value.status)) || !hasValidGoalEvidence(value)) return null
+  return {
+    key: value.key,
+    raceId: value.raceId,
+    status: value.status as GoalStatus,
+    completedRaceResultId: value.completedRaceResultId as string | null,
+    completedAt: value.completedAt as number | null,
+  }
+}
+
+function parseScenarioGoalSeries(value: unknown): ScenarioGoalSeries | null {
+  if (!isObject(value) || !exactKeys(value, ['tag', 'legs']) || !FLAIR_SERIES_TAGS.includes(value.tag as FlairSeriesTag)) return null
+  if (!Array.isArray(value.legs) || value.legs.length < 2 || value.legs.length > 3) return null
+  const legs = value.legs.map(parseScenarioGoalLeg)
+  if (legs.some((leg) => leg === null)) return null
+  const valid = legs as ScenarioGoalLeg[]
+  if (new Set(valid.map((leg) => leg.key)).size !== valid.length || new Set(valid.map((leg) => leg.raceId)).size !== valid.length) return null
+  return { tag: value.tag as FlairSeriesTag, legs: valid }
+}
+
 function parseScenarioGoal(value: unknown, tier: number): ScenarioGoal | null {
+  if (!isObject(value) || !exactKeys(value, [
+    'id', 'slot', 'raceId', 'kind', 'series', 'minimumMarginLengths', 'status', 'completedRaceResultId', 'completedAt',
+  ])) return null
+  if (!GOAL_SLOTS.includes(value.slot as GoalSlot) || !['win', 'win-by-margin', 'win-series'].includes(String(value.kind))) return null
+  if (typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0) return null
+  if (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.minimumMarginLengths !== 0) return null
+  if (value.kind === 'win-series' && value.slot !== 'identity') return null
+  if (!['active', 'completed', 'missed'].includes(String(value.status))) return null
+  if (value.id !== `goal:${tier}:${String(value.slot)}`) return null
+  if (!hasValidGoalEvidence(value)) return null
+  const series = value.kind === 'win-series' ? parseScenarioGoalSeries(value.series) : null
+  if (value.kind === 'win-series') {
+    if (value.raceId !== null || !series) return null
+    const active = series.legs.filter((leg) => leg.status === 'active').length
+    const missed = series.legs.filter((leg) => leg.status === 'missed').length
+    if (value.status === 'active' && (active === 0 || missed > 0)) return null
+    if (value.status === 'completed' && (active > 0 || missed > 0 || !series.legs.some((leg) =>
+      leg.completedRaceResultId === value.completedRaceResultId && leg.completedAt === value.completedAt))) return null
+    if (value.status === 'missed' && (active > 0 || missed === 0)) return null
+  } else {
+    if (!isId(value.raceId) || value.series !== null) return null
+    if (value.slot === 'challenge' ? value.kind !== 'win-by-margin' : value.kind !== 'win') return null
+  }
+  return {
+    id: value.id,
+    slot: value.slot as GoalSlot,
+    raceId: value.raceId as string | null,
+    kind: value.kind as ScenarioGoal['kind'],
+    series,
+    minimumMarginLengths: value.minimumMarginLengths,
+    status: value.status as GoalStatus,
+    completedRaceResultId: value.completedRaceResultId as string | null,
+    completedAt: value.completedAt as number | null,
+  }
+}
+
+function parseLegacyScenarioGoalV2(value: unknown, tier: number): LegacyScenarioGoalV2 | null {
   if (!isObject(value) || !exactKeys(value, [
     'id', 'slot', 'raceId', 'kind', 'minimumMarginLengths', 'status', 'completedRaceResultId', 'completedAt',
   ])) return null
-  if (!GOAL_SLOTS.includes(value.slot as GoalSlot) || !isId(value.raceId)) return null
-  if (!['win', 'win-by-margin'].includes(String(value.kind))) return null
+  if (!GOAL_SLOTS.includes(value.slot as GoalSlot) || !isId(value.raceId) || !['win', 'win-by-margin'].includes(String(value.kind))) return null
   if (typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0) return null
   if (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.kind !== 'win' || value.minimumMarginLengths !== 0) return null
-  if (!['active', 'completed', 'missed'].includes(String(value.status))) return null
-  if (value.id !== `goal:${tier}:${String(value.slot)}`) return null
-  const completed = value.status === 'completed'
-  if (completed !== (isId(value.completedRaceResultId) && isTimestamp(value.completedAt))) return null
-  if (!completed && (value.completedRaceResultId !== null || value.completedAt !== null)) return null
+  if (!['active', 'completed', 'missed'].includes(String(value.status)) || value.id !== `goal:${tier}:${String(value.slot)}` || !hasValidGoalEvidence(value)) return null
   return {
     id: value.id,
     slot: value.slot as GoalSlot,
     raceId: value.raceId,
-    kind: value.kind as ScenarioGoal['kind'],
+    kind: value.kind as LegacyScenarioGoalV2['kind'],
     minimumMarginLengths: value.minimumMarginLengths,
     status: value.status as GoalStatus,
     completedRaceResultId: value.completedRaceResultId as string | null,
@@ -450,8 +562,10 @@ export function parseScenarioJourney(value: unknown): ScenarioJourney | null {
   if (value.tracking === 'tracked') {
     if (validGoals.length !== GOAL_SLOTS.length) return null
     if (new Set(validGoals.map((goal) => goal.slot)).size !== GOAL_SLOTS.length) return null
-    if (new Set(validGoals.map((goal) => goal.raceId)).size !== GOAL_SLOTS.length) return null
+    const raceIds = validGoals.flatMap((goal) => goal.series?.legs.map((leg) => leg.raceId) ?? (goal.raceId ? [goal.raceId] : []))
+    if (new Set(raceIds).size !== raceIds.length) return null
   }
+  if (value.state === 'active' && validGoals.some((goal) => goal.status === 'missed')) return null
   if (value.state === 'completed' && validGoals.some((goal) => goal.status === 'active')) return null
   return {
     tier: value.tier,
@@ -462,11 +576,35 @@ export function parseScenarioJourney(value: unknown): ScenarioJourney | null {
   }
 }
 
+function parseLegacyScenarioJourneyV2(value: unknown): LegacyScenarioJourneyV2 | null {
+  if (!isObject(value) || !exactKeys(value, ['tier', 'tracking', 'state', 'completedAt', 'goals'])) return null
+  if (!isPositiveInt(value.tier) || value.tier > SCENARIOS.length) return null
+  if (!['tracked', 'legacy-untracked'].includes(String(value.tracking)) || !['active', 'completed'].includes(String(value.state))) return null
+  if (value.state === 'active' && value.completedAt !== null) return null
+  if (value.state === 'completed' && value.tracking === 'tracked' && !isTimestamp(value.completedAt)) return null
+  if (value.state === 'completed' && value.tracking === 'legacy-untracked' && value.completedAt !== null && !isTimestamp(value.completedAt)) return null
+  if (!Array.isArray(value.goals)) return null
+  const goals = value.goals.map((goal) => parseLegacyScenarioGoalV2(goal, value.tier as number))
+  if (goals.some((goal) => goal === null)) return null
+  const valid = goals as LegacyScenarioGoalV2[]
+  if (value.tracking === 'legacy-untracked' && (valid.length !== 0 || value.state !== 'completed')) return null
+  if (value.tracking === 'tracked' && (valid.length !== GOAL_SLOTS.length || new Set(valid.map((goal) => goal.slot)).size !== GOAL_SLOTS.length || new Set(valid.map((goal) => goal.raceId)).size !== GOAL_SLOTS.length)) return null
+  if (value.state === 'active' && valid.some((goal) => goal.status === 'missed')) return null
+  if (value.state === 'completed' && valid.some((goal) => goal.status === 'active')) return null
+  return {
+    tier: value.tier,
+    tracking: value.tracking as ScenarioJourney['tracking'],
+    state: value.state as ScenarioJourney['state'],
+    completedAt: value.completedAt as number | null,
+    goals: valid,
+  }
+}
+
 const LEGACY_UMA_KEYS = [
   'templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds',
   'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario',
 ] as const
-const UMA_V2_KEYS = [
+const UMA_VERSIONED_KEYS = [
   'schemaVersion', ...LEGACY_UMA_KEYS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot',
   'goalPlanVersion', 'scenarioJourneys',
 ] as const
@@ -529,11 +667,16 @@ export function migrateUmaSaveV1(value: LegacyUmaSaveV1): UmaSave {
   }
 }
 
-export function parseUmaSave(value: unknown): UmaSave | null {
-  if (!isObject(value) || !exactKeys(value, UMA_V2_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
+function parseVersionedUmaSave<J extends ScenarioJourney | LegacyScenarioJourneyV2>(
+  value: unknown,
+  schemaVersion: 2 | 3,
+  goalPlanVersion: 1 | 2,
+  journeyParser: (value: unknown) => J | null,
+): (Omit<UmaSave, 'schemaVersion' | 'scenarioJourneys'> & { schemaVersion: 2 | 3; scenarioJourneys: J[] }) | null {
+  if (!isObject(value) || !exactKeys(value, UMA_VERSIONED_KEYS) || value.schemaVersion !== schemaVersion) return null
   const legacyShape = Object.fromEntries(LEGACY_UMA_KEYS.map((key) => [key, value[key]]))
   const base = parseUmaCore(legacyShape)
-  if (!base || typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 1) return null
+  if (!base || typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > goalPlanVersion) return null
   if (!Array.isArray(value.skillHistory) || !Array.isArray(value.scenarioJourneys)) return null
   const skillHistory = value.skillHistory.map(parseSkillHistoryEntry)
   if (skillHistory.some((entry) => entry === null)) return null
@@ -545,14 +688,14 @@ export function parseUmaSave(value: unknown): UmaSave | null {
   const parentSnapshot = value.parentSnapshot === null ? null : parseParentSnapshot(value.parentSnapshot)
   if (value.parentSnapshot !== null && !parentSnapshot) return null
   if (parentSnapshot && parentSnapshot.umaId !== base.templateId) return null
-  const scenarioJourneys = value.scenarioJourneys.map(parseScenarioJourney)
+  const scenarioJourneys = value.scenarioJourneys.map(journeyParser)
   if (scenarioJourneys.some((journey) => journey === null)) return null
-  const journeys = scenarioJourneys as ScenarioJourney[]
+  const journeys = scenarioJourneys as J[]
   if (new Set(journeys.map((journey) => journey.tier)).size !== journeys.length) return null
   if (journeys.filter((journey) => journey.state === 'active').length > 1) return null
   const currentTier = tierOfLevel(base.level)
   if (journeys.some((journey) => journey.tier > currentTier)) return null
-  if (value.goalPlanVersion === 1) {
+  if (value.goalPlanVersion > 0) {
     const active = journeys.filter((journey) => journey.state === 'active')
     const finalComplete = base.level === SCENARIOS.length * LEVELS_PER_SCENARIO && parentSnapshot?.completedTier === SCENARIOS.length
     if (!value.scenarioStarted || finalComplete) {
@@ -560,7 +703,7 @@ export function parseUmaSave(value: unknown): UmaSave | null {
     } else if (active.length !== 1 || active[0]!.tier !== currentTier || active[0]!.tracking !== 'tracked') return null
   }
   return {
-    schemaVersion: SAVE_SCHEMA_VERSION,
+    schemaVersion,
     ...base,
     scenarioStarted: value.scenarioStarted,
     skillHistory: history,
@@ -569,6 +712,27 @@ export function parseUmaSave(value: unknown): UmaSave | null {
     goalPlanVersion: value.goalPlanVersion,
     scenarioJourneys: journeys,
   }
+}
+
+export function parseLegacyUmaSaveV2(value: unknown): LegacyUmaSaveV2 | null {
+  return parseVersionedUmaSave(value, LEGACY_SAVE_SCHEMA_VERSION_V2, 1, parseLegacyScenarioJourneyV2) as LegacyUmaSaveV2 | null
+}
+
+export function migrateUmaSaveV2(value: LegacyUmaSaveV2): UmaSave {
+  const parsed = parseLegacyUmaSaveV2(value)
+  if (!parsed) throw new Error('Legacy v2 Uma save is malformed')
+  return {
+    ...parsed,
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    scenarioJourneys: parsed.scenarioJourneys.map((journey) => ({
+      ...journey,
+      goals: journey.goals.map((goal): ScenarioGoal => ({ ...goal, series: null })),
+    })),
+  }
+}
+
+export function parseUmaSave(value: unknown): UmaSave | null {
+  return parseVersionedUmaSave(value, SAVE_SCHEMA_VERSION, 2, parseScenarioJourney) as UmaSave | null
 }
 
 export function parseCardSave(value: unknown): CardSave | null {
@@ -643,7 +807,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
     skillHistory: skillLibrary.map((unlock) => ({ ...unlock, tier: 1 })),
     currentParents: [],
     parentSnapshot: null,
-    goalPlanVersion: 1,
+    goalPlanVersion: 2,
     scenarioJourneys: [],
   }
 }
@@ -720,12 +884,16 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
   if (kind === 'profile') {
     const current = parsePlayerProfile(value)
     if (current) return current as unknown as Record<string, unknown>
+    const legacyV2 = parseLegacyPlayerProfileV2(value)
+    if (legacyV2) return migratePlayerProfileV2(legacyV2) as unknown as Record<string, unknown>
     const legacy = parseLegacyPlayerProfileV1(value)
     return legacy ? migratePlayerProfileV1(legacy) as unknown as Record<string, unknown> : null
   }
   if (kind === 'umas') {
     const current = parseUmaSave(value)
     if (current) return current as unknown as Record<string, unknown>
+    const legacyV2 = parseLegacyUmaSaveV2(value)
+    if (legacyV2) return migrateUmaSaveV2(legacyV2) as unknown as Record<string, unknown>
     const legacy = parseLegacyUmaSaveV1(value)
     return legacy ? migrateUmaSaveV1(legacy) as unknown as Record<string, unknown> : null
   }
@@ -833,10 +1001,10 @@ function assertSupportedProfileRecords(records: unknown): void {
   if (!Array.isArray(records)) return
   for (const record of records) {
     if (isObject(record) && record.kind === 'profile' && isObject(record.data)) {
-      if (!parseLegacyPlayerProfileV1(record.data)) parsePlayerProfileOrThrow(record.data)
+      if (!parseLegacyPlayerProfileV1(record.data) && !parseLegacyPlayerProfileV2(record.data)) parsePlayerProfileOrThrow(record.data)
     }
     if (isObject(record) && record.kind === 'umas' && isObject(record.data) && 'schemaVersion' in record.data) {
-      if (record.data.schemaVersion !== SAVE_SCHEMA_VERSION) {
+      if (record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V2 && record.data.schemaVersion !== SAVE_SCHEMA_VERSION) {
         throw new Error(`App update required for save schema ${String(record.data.schemaVersion)}`)
       }
     }
@@ -849,7 +1017,7 @@ function assertSnapshotSchemaIsConsistent(records: unknown): void {
   const profile = active.find((record) => record.kind === 'profile')
   if (!profile || !isObject(profile.data)) return
   const schema = profile.data.schemaVersion
-  if (schema !== LEGACY_SAVE_SCHEMA_VERSION && schema !== SAVE_SCHEMA_VERSION) return
+  if (schema !== LEGACY_SAVE_SCHEMA_VERSION && schema !== LEGACY_SAVE_SCHEMA_VERSION_V2 && schema !== SAVE_SCHEMA_VERSION) return
   for (const record of active) {
     if (record.kind !== 'umas' || !isObject(record.data)) continue
     const umaSchema = Object.hasOwn(record.data, 'schemaVersion') ? record.data.schemaVersion : LEGACY_SAVE_SCHEMA_VERSION

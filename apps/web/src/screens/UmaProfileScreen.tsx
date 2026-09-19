@@ -296,7 +296,7 @@ export function UmaProfileScreen() {
               <p className="mt-1 text-sm font-extrabold">{item.name}</p>
               {item.tracking === 'legacy-untracked' ? <p className="mt-2 text-xs font-bold text-ink-soft">— Not tracked</p> : item.tracking === 'missing' ? <p className="mt-2 text-xs font-bold text-danger">Plan unavailable</p> : (
                 <div className="mt-2 flex items-center gap-1" aria-label={`${item.completed} completed, ${item.missed} missed, ${item.active} active`}>
-                  {item.honors ? <span className="rounded-full bg-gold px-2 py-1 text-xs font-extrabold text-white text-outline">Honors</span> : item.goals.map((goal) => <span key={goal.id} className={`h-3 w-3 rounded-full border-2 ${goal.status === 'completed' ? 'border-gold bg-gold' : goal.status === 'missed' ? 'border-slate-400 bg-slate-200' : 'border-sky bg-white'}`} />)}
+                  {item.honors ? <span className="rounded-full bg-gold px-2 py-1 text-xs font-extrabold text-white text-outline">Honors</span> : item.goals.flatMap((goal) => goal.pips.length > 0 ? goal.pips.map((pip) => ({ key: `${goal.id}:${pip.key}`, status: pip.status })) : [{ key: goal.id, status: goal.status }]).map((pip) => <span key={pip.key} className={`h-3 w-3 rounded-full border-2 ${pip.status === 'completed' ? 'border-gold bg-gold' : pip.status === 'missed' ? 'border-slate-400 bg-slate-200' : 'border-sky bg-white'}`} />)}
                 </div>
               )}
             </button>
@@ -309,9 +309,9 @@ export function UmaProfileScreen() {
               const result = goal.completedRaceResultId ? raceHistory.find((record) => `race:${record.umaId}:${record.sequence}` === goal.completedRaceResultId) : undefined
               const destination = result
                 ? `/race/run?uma=${encodeURIComponent(result.umaId)}&race=${encodeURIComponent(result.raceId)}&strategy=${result.strategy}&sequence=${result.sequence}`
-                : `/race?uma=${encodeURIComponent(save.templateId)}&goal=${encodeURIComponent(goal.raceId)}`
+                : `/race?uma=${encodeURIComponent(save.templateId)}${goal.raceId ? `&goal=${encodeURIComponent(goal.raceId)}` : ''}`
               return <Link key={goal.id} to={destination} className="flex min-h-11 items-center gap-2 rounded-xl bg-sky-50 px-3 py-2">
-                <span>{goal.status === 'completed' ? '●' : goal.status === 'missed' ? '○' : '◉'}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{goal.label} · {goal.raceName}</span><span className="block text-xs text-ink-soft">{goal.rule} · {goal.status}{goal.race ? '' : ' · target missing'}{result ? ' · View result' : ''}</span></span>
+                <span>{goal.status === 'completed' ? '●' : goal.status === 'missed' ? '○' : '◉'}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{goal.label} · {goal.raceName}</span><span className="block text-xs text-ink-soft">{goal.rule} · {goal.status}{goal.race ? '' : ' · target missing'}{result ? ' · View result' : ''}</span>{goal.pips.length > 0 && <span className="mt-1 flex flex-wrap gap-1">{goal.pips.map((pip) => <span key={pip.key} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pip.status === 'completed' ? 'bg-gold text-white' : pip.status === 'missed' ? 'bg-slate-200 text-ink-soft' : 'bg-white text-sky-deep'}`}>{pip.raceName}</span>)}</span>}</span>
               </Link>
             })}
           </div>}

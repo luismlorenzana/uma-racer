@@ -1,8 +1,12 @@
 import {
   migratePlayerProfileV1,
+  migratePlayerProfileV2,
   migrateUmaSaveV1,
+  migrateUmaSaveV2,
   parseLegacyPlayerProfileV1,
+  parseLegacyPlayerProfileV2,
   parseLegacyUmaSaveV1,
+  parseLegacyUmaSaveV2,
   parsePlayerProfile,
   parseBadgeState,
   parseUmaSave,
@@ -133,6 +137,35 @@ class RacerDb extends Dexie {
         if (!parsed || (parsed.scope === 'uma' ? row.id !== `uma:${parsed.umaId}` : row.id !== 'trainer')) {
           throw new Error(`Local badge ${row.id} cannot be migrated`)
         }
+      }
+    })
+    this.version(5).stores(stores).upgrade(async (tx: Transaction) => {
+      const profileTable = tx.table('profile')
+      const umaTable = tx.table('umas')
+      const outboxTable = tx.table('outbox')
+      const queuedAt = Date.now()
+      const queue = async (kind: EntityKind, id: string) => {
+        await outboxTable.where('[kind+id]').equals([kind, id]).delete()
+        await outboxTable.add({ kind, id, op: 'upsert', queuedAt })
+      }
+
+      const profileRow = await profileTable.get('main') as VersionedRow<unknown> | undefined
+      if (profileRow && !parsePlayerProfile(profileRow.data)) {
+        const legacy = parseLegacyPlayerProfileV2(profileRow.data)
+        if (!legacy) throw new Error('Local v2 player profile cannot be migrated')
+        await profileTable.put({ ...profileRow, data: migratePlayerProfileV2(legacy) })
+        await queue('profile', 'main')
+      }
+
+      const umaRows = await umaTable.toArray() as VersionedRow<unknown>[]
+      for (const row of umaRows) {
+        if (parseUmaSave(row.data)) continue
+        const legacy = parseLegacyUmaSaveV2(row.data)
+        if (!legacy) throw new Error(`Local v2 Uma ${row.id} cannot be migrated`)
+        const migrated = migrateUmaSaveV2(legacy)
+        if (migrated.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
+        await umaTable.put({ ...row, data: migrated })
+        await queue('umas', row.id)
       }
     })
   }

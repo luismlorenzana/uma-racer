@@ -189,6 +189,39 @@ describe('parseSyncRequest', () => {
     expect(resolved.conflicts).toEqual([current])
   })
 
+  it('accepts v3 series goals, rejects malformed goal shapes, and prevents a v2 downgrade', () => {
+    const single = (slot: 'aptitude' | 'challenge', raceId: string) => ({
+      id: `goal:1:${slot}`, slot, raceId, kind: slot === 'challenge' ? 'win-by-margin' : 'win', series: null,
+      minimumMarginLengths: slot === 'challenge' ? 5 : 0, status: 'active', completedRaceResultId: null, completedAt: null,
+    })
+    const identity = {
+      id: 'goal:1:identity', slot: 'identity', raceId: null, kind: 'win-series', minimumMarginLengths: 0,
+      series: { tag: 'grand-prix', legs: [
+        { key: 'first-leg', raceId: 'series-a', status: 'completed', completedRaceResultId: 'race:synthetic-uma:0', completedAt: 2 },
+        { key: 'second-leg', raceId: 'series-b', status: 'active', completedRaceResultId: null, completedAt: null },
+      ] },
+      status: 'active', completedRaceResultId: null, completedAt: null,
+    }
+    const uma = {
+      schemaVersion: 3, templateId: 'synthetic-uma', level: 1, exp: 0, trainingLevel: 1, trainingExp: 0,
+      stats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 }, skillPoints: 0,
+      aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'B', mile: 'A', medium: 'A', long: 'C' }, strategy: { front: 'D', pace: 'A', late: 'B', end: 'C' } },
+      deckCardIds: [], skillLibrary: [], loadoutSkillIds: [], trainingsThisScenario: 0, scenarioStarted: true,
+      skillHistory: [], currentParents: [], parentSnapshot: null, goalPlanVersion: 2,
+      scenarioJourneys: [{ tier: 1, tracking: 'tracked', state: 'active', completedAt: null, goals: [single('aptitude', 'single-a'), identity, single('challenge', 'single-c')] }],
+    }
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: uma }] })).toMatchObject({
+      upserts: [{ kind: 'umas', data: { schemaVersion: 3 } }],
+    })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, scenarioJourneys: [{ ...uma.scenarioJourneys[0], goals: [single('aptitude', 'series-a'), identity, single('challenge', 'single-c')] }] } }] })).toMatch(/invalid umas data/)
+    const current: EntityRecord = { kind: 'umas', id: 'synthetic-uma', version: 4, data: uma, deleted: false, updatedAt: 1 }
+    const resolved = resolveUpserts(new Map([['umas/synthetic-uma', current]]), [
+      { kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, schemaVersion: 2 } },
+    ], 2)
+    expect(resolved.writes).toEqual([])
+    expect(resolved.conflicts).toEqual([current])
+  })
+
   it('strictly validates progression race result appends', () => {
     const data = {
       contentVersion: 'abc123def456',

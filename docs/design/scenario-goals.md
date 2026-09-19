@@ -4,8 +4,8 @@ Each started scenario freezes three optional race targets for that Uma. They giv
 Training, racing, or promotion. Targets are concrete private `RaceTemplate.id` values: content updates never silently
 reroll an active or historical Journey.
 
-> **Status:** goal plan **v1** is live. Plan **v2** on this page — career-and-sex identity and series goals — is
-> specified in [T020](../tasks/T020-scenario-goals-v2.md) and decided in D106.
+> **Status:** goal plan **v2** is live: career-and-sex identity, frozen series legs, save v3 migration, and the Stable
+> real-horse-sex filter are implemented as decided in D106.
 
 ## Three slots
 

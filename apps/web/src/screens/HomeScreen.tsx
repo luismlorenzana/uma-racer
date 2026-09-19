@@ -147,10 +147,12 @@ export function HomeScreen() {
           </p>
           {goals.kind === 'active' && (
             <div className="flex gap-1" aria-label={`${goals.completed} of 3 goals complete`}>
-              {goals.goals.map((goal) => (
+              {goals.goals.flatMap((goal) => goal.pips.length > 0
+                ? goal.pips.map((pip) => ({ key: `${goal.id}:${pip.key}`, status: pip.status }))
+                : [{ key: goal.id, status: goal.status }]).map((pip) => (
                 <span
-                  key={goal.id}
-                  className={`h-2.5 w-2.5 rounded-full border ${goal.status === 'completed' ? 'border-accent bg-accent' : 'border-hairline-strong bg-sunken'}`}
+                  key={pip.key}
+                  className={`h-2.5 w-2.5 rounded-full border ${pip.status === 'completed' ? 'border-accent bg-accent' : pip.status === 'missed' ? 'border-hairline-strong bg-hairline' : 'border-hairline-strong bg-sunken'}`}
                 />
               ))}
             </div>
@@ -163,7 +165,9 @@ export function HomeScreen() {
                 key={goal.id}
                 type="button"
                 disabled={goal.status !== 'active' || goal.race === null || !raceUnlocked}
-                onClick={() => navigate(`/race?uma=${encodeURIComponent(featured.save.templateId)}&goal=${encodeURIComponent(goal.raceId)}`)}
+                onClick={() => {
+                  if (goal.raceId) navigate(`/race?uma=${encodeURIComponent(featured.save.templateId)}&goal=${encodeURIComponent(goal.raceId)}`)
+                }}
                 className="flex min-h-12 w-full items-center gap-3 py-2 text-left disabled:opacity-55"
               >
                 <span
@@ -177,6 +181,17 @@ export function HomeScreen() {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px] font-semibold">{goal.label} · {goal.raceName}</span>
                   <span className="block truncate text-[12px] text-ink-soft">{goal.rule}{goal.race ? '' : ' · target content missing'}</span>
+                  {goal.pips.length > 0 && (
+                    <span className="mt-1 flex gap-1" aria-label={`${goal.pips.filter((pip) => pip.status === 'completed').length} of ${goal.pips.length} series legs complete`}>
+                      {goal.pips.map((pip) => (
+                        <span
+                          key={pip.key}
+                          title={pip.raceName}
+                          className={`h-2.5 w-2.5 rounded-full ${pip.status === 'completed' ? 'bg-accent' : pip.status === 'missed' ? 'bg-hairline' : 'border border-hairline-strong bg-sunken'}`}
+                        />
+                      ))}
+                    </span>
+                  )}
                 </span>
                 {goal.status === 'active' && goal.race && raceUnlocked && <span aria-hidden className="text-ink-faint">›</span>}
               </button>
@@ -220,7 +235,6 @@ export function HomeScreen() {
           )}
         </Panel>
       )}
-
       <Panel label="Stable flair">
         <div className="mb-1 flex items-center justify-between gap-3">
           <p className="text-[13px] text-ink-soft">Newest across every Uma and Trainer achievement</p>

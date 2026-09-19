@@ -21,7 +21,7 @@ import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 
-const FILTER_LABELS = { tier: 'Tier', surface: 'Surface', distance: 'Distance', strategy: 'Strategy', ready: 'Ready' } as const
+const FILTER_LABELS = { tier: 'Tier', surface: 'Surface', distance: 'Distance', strategy: 'Strategy', sex: 'Sex', ready: 'Ready' } as const
 type FilterKind = keyof typeof FILTER_LABELS
 const titleCase = (value: string) => `${value[0]!.toUpperCase()}${value.slice(1)}`
 
@@ -130,7 +130,8 @@ export function StableScreen() {
   const options = filterSheet === 'tier' ? tiers.map((value) => ({ value, label: `Tier ${value}` }))
     : filterSheet === 'surface' ? SURFACES.map((value) => ({ value, label: titleCase(value) }))
       : filterSheet === 'distance' ? DISTANCE_CATEGORIES.map((value) => ({ value, label: titleCase(value) }))
-        : filterSheet === 'strategy' ? STRATEGIES.map((value) => ({ value, label: titleCase(value) })) : []
+        : filterSheet === 'strategy' ? STRATEGIES.map((value) => ({ value, label: titleCase(value) }))
+          : filterSheet === 'sex' ? ([['female', 'Female'], ['male', 'Male'], ['unknown', 'Unknown']] as const).map(([value, label]) => ({ value, label })) : []
   const doExchange = () => {
     if (exchangeBusy || profile.umaShards < UMA_SHARDS_PER_COUPON) return
     setExchangeBusy(true)

@@ -16,7 +16,7 @@ contains them.
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M007 — Align and stabilize](M007-align-and-stabilize.md) | T020 · T021 · T022 · T023; T019 code complete, private publish pending | In progress |
+| [M007 — Align and stabilize](M007-align-and-stabilize.md) | T021 · T022 · T023; T019 code complete/private publish pending and T020 complete | In progress |
 | [M008 — Scenario identity and deck depth](M008-scenario-identity.md) | T024 – T029 | Outlined |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T033 · T034 | Specified |

@@ -75,7 +75,11 @@ const SKILL_HISTORY_FIELDS = [...SKILL_FIELDS, 'tier'] as const
 const PARENT_FIELDS = ['umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes'] as const
 const SNAPSHOT_FIELDS = [...PARENT_FIELDS, 'parents'] as const
 const JOURNEY_FIELDS = ['tier', 'tracking', 'state', 'completedAt', 'goals'] as const
-const GOAL_FIELDS = ['id', 'slot', 'raceId', 'kind', 'minimumMarginLengths', 'status', 'completedRaceResultId', 'completedAt'] as const
+const LEGACY_GOAL_FIELDS = ['id', 'slot', 'raceId', 'kind', 'minimumMarginLengths', 'status', 'completedRaceResultId', 'completedAt'] as const
+const GOAL_FIELDS = [...LEGACY_GOAL_FIELDS, 'series'] as const
+const GOAL_SERIES_FIELDS = ['tag', 'legs'] as const
+const GOAL_LEG_FIELDS = ['key', 'raceId', 'status', 'completedRaceResultId', 'completedAt'] as const
+const SERIES_LEG_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const LEDGER_FIELDS = ['resource', 'delta', 'reason', 'localDay', 'createdAt'] as const
 const STRATEGIES = ['front', 'pace', 'late', 'end'] as const
 const RACE_RESULT_FIELDS = [
@@ -451,7 +455,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || (value.schemaVersion !== 1 && value.schemaVersion !== 2)) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -510,19 +514,42 @@ function parseSnapshots(value: unknown): value is Record<string, unknown>[] {
     new Set(snapshots.map((snapshot) => snapshot.charaId)).size === snapshots.length
 }
 
-function parseGoal(value: unknown, tier: number): boolean {
-  if (!isRecord(value) || !exactKeys(value, GOAL_FIELDS) || !['aptitude', 'identity', 'challenge'].includes(String(value.slot)) ||
-    value.id !== `goal:${tier}:${String(value.slot)}` || !isId(value.raceId) || !['win', 'win-by-margin'].includes(String(value.kind)) ||
-    typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0 ||
-    (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.kind !== 'win' || value.minimumMarginLengths !== 0) ||
-    !['active', 'completed', 'missed'].includes(String(value.status))) return false
-  const completed = value.status === 'completed'
-  return completed
+function hasGoalEvidence(value: Record<string, unknown>): boolean {
+  return value.status === 'completed'
     ? isId(value.completedRaceResultId) && isNonNegativeInt(value.completedAt)
     : value.completedRaceResultId === null && value.completedAt === null
 }
 
-function parseJourney(value: unknown): value is Record<string, unknown> {
+function parseGoalLeg(value: unknown): boolean {
+  return isRecord(value) && exactKeys(value, GOAL_LEG_FIELDS) && typeof value.key === 'string' && value.key.length <= 40 &&
+    SERIES_LEG_KEY_PATTERN.test(value.key) && isId(value.raceId) && ['active', 'completed', 'missed'].includes(String(value.status)) &&
+    hasGoalEvidence(value)
+}
+
+function parseGoal(value: unknown, tier: number, legacy: boolean): boolean {
+  const fields = legacy ? LEGACY_GOAL_FIELDS : GOAL_FIELDS
+  if (!isRecord(value) || !exactKeys(value, fields) || !['aptitude', 'identity', 'challenge'].includes(String(value.slot)) ||
+    value.id !== `goal:${tier}:${String(value.slot)}` || !['win', 'win-by-margin', ...(legacy ? [] : ['win-series'])].includes(String(value.kind)) ||
+    typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0 ||
+    (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.minimumMarginLengths !== 0) ||
+    !['active', 'completed', 'missed'].includes(String(value.status)) || !hasGoalEvidence(value)) return false
+  if (legacy) return isId(value.raceId) && value.kind === (value.slot === 'challenge' ? 'win-by-margin' : 'win')
+  if (value.kind !== 'win-series') {
+    return isId(value.raceId) && value.series === null && value.kind === (value.slot === 'challenge' ? 'win-by-margin' : 'win')
+  }
+  if (value.slot !== 'identity' || value.raceId !== null || !isRecord(value.series) || !exactKeys(value.series, GOAL_SERIES_FIELDS) ||
+    !FLAIR_SERIES.includes(value.series.tag as (typeof FLAIR_SERIES)[number]) || !Array.isArray(value.series.legs) ||
+    value.series.legs.length < 2 || value.series.legs.length > 3 || value.series.legs.some((leg) => !parseGoalLeg(leg))) return false
+  const legs = value.series.legs as Record<string, unknown>[]
+  if (new Set(legs.map((leg) => leg.key)).size !== legs.length || new Set(legs.map((leg) => leg.raceId)).size !== legs.length) return false
+  const active = legs.filter((leg) => leg.status === 'active').length
+  const missed = legs.filter((leg) => leg.status === 'missed').length
+  if (value.status === 'active') return active > 0 && missed === 0
+  if (value.status === 'missed') return active === 0 && missed > 0
+  return active === 0 && missed === 0 && legs.some((leg) => leg.completedRaceResultId === value.completedRaceResultId && leg.completedAt === value.completedAt)
+}
+
+function parseJourney(value: unknown, legacy: boolean): value is Record<string, unknown> {
   if (!isRecord(value) || !exactKeys(value, JOURNEY_FIELDS) || !isPositiveInt(value.tier) || value.tier > 11 ||
     !['tracked', 'legacy-untracked'].includes(String(value.tracking)) || !['active', 'completed'].includes(String(value.state)) ||
     (value.state === 'active' && value.completedAt !== null) ||
@@ -530,17 +557,22 @@ function parseJourney(value: unknown): value is Record<string, unknown> {
     (value.state === 'completed' && value.tracking === 'legacy-untracked' && value.completedAt !== null && !isNonNegativeInt(value.completedAt)) ||
     !Array.isArray(value.goals)) return false
   if (value.tracking === 'legacy-untracked') return value.state === 'completed' && value.goals.length === 0
-  if (value.goals.length !== 3 || value.goals.some((goal) => !parseGoal(goal, value.tier as number))) return false
+  if (value.goals.length !== 3 || value.goals.some((goal) => !parseGoal(goal, value.tier as number, legacy))) return false
   const goals = value.goals as Record<string, unknown>[]
-  return new Set(goals.map((goal) => goal.slot)).size === 3 && new Set(goals.map((goal) => goal.raceId)).size === 3 &&
+  const raceIds = goals.flatMap((goal) => isRecord(goal.series) && Array.isArray(goal.series.legs)
+    ? (goal.series.legs as Record<string, unknown>[]).map((leg) => leg.raceId)
+    : [goal.raceId])
+  return new Set(goals.map((goal) => goal.slot)).size === 3 && new Set(raceIds).size === raceIds.length &&
+    (value.state !== 'active' || goals.every((goal) => goal.status !== 'missed')) &&
     (value.state !== 'completed' || goals.every((goal) => goal.status !== 'active'))
 }
 
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if (!exactKeys(value, UMA_FIELDS) || value.schemaVersion !== 2 || !parseUmaBase(value)) return null
-  if (typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 1 || !Array.isArray(value.skillHistory) ||
+  if (!exactKeys(value, UMA_FIELDS) || (value.schemaVersion !== 2 && value.schemaVersion !== 3) || !parseUmaBase(value)) return null
+  const current = value.schemaVersion === 3
+  if (typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > (current ? 2 : 1) || !Array.isArray(value.skillHistory) ||
     !Array.isArray(value.scenarioJourneys) || !parseSnapshots(value.currentParents) ||
     (value.parentSnapshot !== null && !parseSnapshot(value.parentSnapshot, value.templateId as string))) return null
   const history = value.skillHistory
@@ -550,12 +582,12 @@ function parseUma(value: unknown): Record<string, unknown> | null {
   if (new Set(historyRows.map((entry) => `${String(entry.tier)}:${String(entry.skillId)}`)).size !== historyRows.length) return null
   const library = value.skillLibrary as Record<string, unknown>[]
   if (library.some((unlock) => !historyRows.some((entry) => entry.skillId === unlock.skillId))) return null
-  if (value.scenarioJourneys.some((journey) => !parseJourney(journey))) return null
+  if (value.scenarioJourneys.some((journey) => !parseJourney(journey, !current))) return null
   const journeys = value.scenarioJourneys as Record<string, unknown>[]
   if (new Set(journeys.map((journey) => journey.tier)).size !== journeys.length || journeys.filter((journey) => journey.state === 'active').length > 1) return null
   const currentTier = Math.ceil((value.level as number) / 10)
   if (journeys.some((journey) => (journey.tier as number) > currentTier)) return null
-  if (value.goalPlanVersion === 1) {
+  if ((value.goalPlanVersion as number) > 0) {
     const active = journeys.filter((journey) => journey.state === 'active')
     const snapshot = value.parentSnapshot as Record<string, unknown> | null
     const finalComplete = value.level === 110 && snapshot?.completedTier === 11
@@ -780,7 +812,7 @@ export function resolveUpserts(
     const incomingSchema = upsert.kind === 'profile' || upsert.kind === 'umas'
       ? (upsert.kind === 'profile' ? upsert.data.schemaVersion : (upsert.data.schemaVersion ?? 1))
       : null
-    if (current && currentSchema === 2 && incomingSchema === 1) {
+    if (current && typeof currentSchema === 'number' && typeof incomingSchema === 'number' && currentSchema > incomingSchema) {
       conflicts.push(current)
       continue
     }
