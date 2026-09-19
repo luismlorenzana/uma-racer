@@ -49,7 +49,7 @@ Prestige/frame projection, the full lazy three-scope collection page, atomic pre
 and a 12-pin Profile showcase. The Trainer entity now also stores reconciled account aggregates, monotonic achievements,
 stable records, display name, pinned Umas, and a mixed Trainer/per-Uma showcase.
 
-The core profile and Uma remain save v2. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
+The core profile and Uma use save v3. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
 `badges` entity collection. This keeps badge rollout isolated from progression migration and lets an individual Uma's
 flair sync independently.
 

@@ -34,7 +34,7 @@ where a scenario stops being only a name, a cap, and a card era.
 T019 race series legs and earnable titles     (code delegable; Claude publishes the private file)
         │
         ▼
-T020 scenario goals v2: career and sex identity   (delegable)
+T020 scenario goals v2: career and sex identity   (complete)
         │
         ▼
 T021 JP scenarios 12–14                            (delegable)
@@ -51,7 +51,7 @@ not depend on the others and may land in parallel.
 | Task | User-visible result | Must not absorb |
 |---|---|---|
 | T019 (implementation complete; private publish pending) | Triple Crown, Triple Tiara, Spring/Autumn Triple Crown, the four Queen titles, and Grand Tour become earnable, including retroactively | New badge criteria, original ids in git |
-| [T020](T020-scenario-goals-v2.md) | A filly chases the Triple Tiara and a colt the Triple Crown, following the real horse's career | Rerolling goals that already have progress, new rewards |
+| T020 (complete) | A filly chases the Triple Tiara and a colt the Triple Crown, following the real horse's career | Rerolling goals that already have progress, new rewards |
 | [T021](T021-jp-scenarios-12-14.md) | Three more scenarios, levels to 140, correct card eras | Scenario modifiers (M8), cap-ladder changes |
 | [T022](T022-release-and-update-readiness.md) | One command publishes content; the app shows its build and offers Restart when an update is ready | Gameplay, infrastructure changes, destructive cache or save resets |
 | T023 | The owner's top playability complaints are fixed | Rebalancing by feel, without evidence |

@@ -127,7 +127,8 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       const row = record as Record<string, unknown>
       if ((row.kind === 'profile' || row.kind === 'umas') && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null) {
         const data = row.data as Record<string, unknown>
-        if (row.kind === 'profile' ? data.schemaVersion === 1 : !Object.hasOwn(data, 'schemaVersion')) {
+        if (row.kind === 'profile' ? data.schemaVersion === 1 || data.schemaVersion === 2 :
+          !Object.hasOwn(data, 'schemaVersion') || data.schemaVersion === 2) {
           legacyKeys.add(`${row.kind}/${row.id}`)
         }
       }
@@ -200,7 +201,7 @@ export async function completeStarterSeed(content: LoadedContent, now: number): 
 /** Upgrade every pre-T014 Uma and its current-tier history in one all-or-nothing local transaction. */
 export async function bootstrapGoalPlans(content: LoadedContent, now: number): Promise<number> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Goal bootstrap time is invalid')
-  return db.transaction('rw', [db.umas, db.raceResults, db.outbox], async () => {
+  const affectedCount = await db.transaction('rw', [db.umas, db.raceResults, db.outbox], async () => {
     const umaRows = await db.umas.toArray()
     const affected = umaRows.filter((row) => {
       const uma = parseUmaSave(row.data)
@@ -225,6 +226,8 @@ export async function bootstrapGoalPlans(content: LoadedContent, now: number): P
     }
     return affected.length
   })
+  if (affectedCount > 0) console.info(`[scenario-goals] upgraded ${affectedCount} local Uma plan${affectedCount === 1 ? '' : 's'} to v${SCENARIO_GOAL_VERSION}`)
+  return affectedCount
 }
 
 export async function applyOwedDailyGrant(today: string, now: number): Promise<number> {

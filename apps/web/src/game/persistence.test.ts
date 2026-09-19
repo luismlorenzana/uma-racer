@@ -185,7 +185,7 @@ describe('save persistence', () => {
     await db.umas.put({ id: old.templateId, data: old, version: 7 })
     expect(await bootstrapGoalPlans(goalContent, 100)).toBe(1)
     const saved = await db.umas.get(old.templateId)
-    expect(saved).toMatchObject({ version: 7, data: { goalPlanVersion: 1 } })
+    expect(saved).toMatchObject({ version: 7, data: { goalPlanVersion: 2 } })
     expect(saved?.data.scenarioJourneys.slice(0, 2).map((journey) => journey.tracking)).toEqual(['legacy-untracked', 'legacy-untracked'])
     expect(saved?.data.scenarioJourneys[2]).toMatchObject({ tier: 3, tracking: 'tracked', state: 'active' })
     expect(await db.outbox.where('[kind+id]').equals(['umas', old.templateId]).count()).toBe(1)
@@ -291,11 +291,11 @@ describe('save persistence', () => {
 
   it('reports an unsupported local profile schema without replacing it', async () => {
     await db.open()
-    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 3 }
+    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 4 }
     await db.table('profile').put({ id: 'main', data: unsupported, version: 7 })
 
     await expect(readLocalSnapshot()).rejects.toThrow(/App update required/)
-    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 3 } })
+    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 4 } })
   })
 
   it('parses a cloud snapshot before replacing any local rows', async () => {
@@ -360,8 +360,8 @@ describe('save persistence', () => {
 
     await db.open()
     const migrated = await readLocalSnapshot()
-    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 2, tickets: 225, cardCoupons: 7, starterSeedContentVersion: null } })
-    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 2, scenarioStarted: true, currentParents: [], goalPlanVersion: 0 })
+    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 3, tickets: 225, cardCoupons: 7, starterSeedContentVersion: null } })
+    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 3, scenarioStarted: true, currentParents: [], goalPlanVersion: 0 })
     expect(await db.outbox.where('kind').equals('profile').count()).toBe(1)
     expect(await db.outbox.where('[kind+id]').equals(['umas', existing.templateId]).count()).toBe(1)
     await completeStarterSeed(loaded, 30)
@@ -371,6 +371,28 @@ describe('save persistence', () => {
     expect(completed?.umas).toHaveLength(25)
     expect(completed?.umas.find((row) => row.id === existing.templateId)).toMatchObject({ version: 3, data: { stats: { speed: 777 } } })
     expect(await db.badges.count()).toBe(1)
+  })
+
+  it('migrates local save v2 rows to v3 and queues their preserved versions', async () => {
+    const loaded = content()
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 2 as const }
+    const umaV3 = createUmaSave(loaded.umas.items[0]!)
+    const umaV2 = { ...umaV3, schemaVersion: 2 as const, goalPlanVersion: 1 }
+    const previous = new Dexie('uma-racer')
+    previous.version(4).stores({
+      profile: 'id', umas: 'id', cards: 'id', badges: 'id', raceResults: 'id, createdAt', ledger: 'id, createdAt',
+      flairEvents: 'id, createdAt', outbox: '++seq, [kind+id]',
+    })
+    await previous.open()
+    await previous.table('profile').put({ id: 'main', data: profile, version: 8 })
+    await previous.table('umas').put({ id: umaV2.templateId, data: umaV2, version: 6 })
+    previous.close()
+
+    await db.open()
+    const snapshot = await readLocalSnapshot()
+    expect(snapshot?.profile).toMatchObject({ version: 8, data: { schemaVersion: 3 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 6, data: { schemaVersion: 3, goalPlanVersion: 1 } })
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${umaV2.templateId}`])
   })
 
   it('migrates a consistent v1 cloud snapshot and queues preserved-version replacements', async () => {
@@ -390,8 +412,8 @@ describe('save persistence', () => {
       serverTime: 21,
     })).resolves.toBe('adopted')
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 2, tickets: 88 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 2, scenarioStarted: true } })
+    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 3, tickets: 88 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 3, scenarioStarted: true } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${legacyUma.templateId}`])
     await expect(adoptServerSnapshot({
       entities: [

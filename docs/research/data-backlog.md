@@ -12,7 +12,7 @@ Candidate sources: [GameTora](https://gametora.com/umamusume) (support, characte
 
 - [x] Roster list (per outfit) with JP release dates.
 - [x] **25 launch trainees** confirmed from GameTora `character-cards`: exactly 25 cards released 2021-02-24 (9 three-star, 8 two-star, 8 one-star). T.M. Opera O was not at launch.
-- [x] Real-horse sex is available as `characters.sex` (1 = male, 2 = female), imported as `realHorseSex`. It drives goals from [T020](../tasks/T020-scenario-goals-v2.md).
+- [x] Real-horse sex is available as `characters.sex` (1 = male, 2 = female), imported as `realHorseSex`. It drives classic-series goals and the Stable filter.
 - [x] **5★ base stats** for every Uma, and stat growth rates.
 - [x] Unique skill level and effect at 5★ (the baseline for the inherited ×0.5 version).
 - [x] Aptitudes (surface, distance, strategy).

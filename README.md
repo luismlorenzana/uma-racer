@@ -7,14 +7,14 @@ while the stable itself grows into a collection.
 
 > **Status:** playable and deployed. Milestones 1–6 are complete: the private content pipeline, a typed local-first save
 > with the real 25-Uma launch Stable, the Train → Race loop, race depth (compiled skills, course geometry, position
-> keeping, lanes, staged starts, photo finishes), Card and Uma albums with decks, coupons and shards, save v2 with frozen
+> keeping, lanes, staged starts, photo finishes), Card and Uma albums with decks, coupons and shards, save v3 with frozen
 > lineage, pink sparks, Scenario Start and deterministic goals, and the full badge pillar with per-Uma flair, Prestige,
 > showcases, and Trainer achievements.
 >
 > A full alignment review on 2026-09-19 compared the build against the original design. Work is underway on
 > [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): race-series leg support and retroactive
-> title evaluation are implemented (private coverage publication is pending), followed by goals that follow the real
-> horse's career and sex, the three missing JP scenarios, and dependable releases. Then
+> title evaluation are implemented (private coverage publication is pending), and scenario goals now follow the real
+> horse's career and sex, including full race sets from tier 7. The three missing JP scenarios and dependable releases follow. Then
 > [Milestone 8](docs/tasks/M008-scenario-identity.md) gives each scenario its own modifier and turns on Friend/Group
 > cards, [Milestone 9](docs/tasks/M009-look-and-feel.md) replaces the skin with the
 > [Paddock visual system](docs/design/visual-system.md), [Milestone 10](docs/tasks/M010-collection-depth.md) gives the

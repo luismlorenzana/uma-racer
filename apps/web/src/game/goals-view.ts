@@ -1,6 +1,6 @@
 // Pure Home, Race, Results, and Journey projections for T014 scenario goals.
 
-import { SCENARIOS, scenarioJourneySummary, tierOfLevel, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
+import { SCENARIOS, SCENARIO_SERIES_LABELS, scenarioJourneySummary, tierOfLevel, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 
 const SLOT_ORDER = { aptitude: 0, identity: 1, challenge: 2 } as const
@@ -10,26 +10,38 @@ export interface GoalView {
   id: string
   slot: ScenarioGoal['slot']
   label: string
-  raceId: string
+  raceId: string | null
   raceName: string
   race: RaceTemplate | null
   rule: string
   status: ScenarioGoal['status']
   completedRaceResultId: string | null
+  pips: { key: string; status: ScenarioGoal['status']; raceId: string; raceName: string; missing: boolean }[]
+  seriesName: string | null
 }
 
-export function goalView(goal: ScenarioGoal, content: LoadedContent): GoalView {
-  const race = content.races.byId.get(goal.raceId) ?? null
+export function goalView(goal: ScenarioGoal, content: LoadedContent, targetRaceId?: string): GoalView {
+  const pips = goal.series?.legs.map((leg) => {
+    const target = content.races.byId.get(leg.raceId)
+    return { key: leg.key, status: leg.status, raceId: leg.raceId, raceName: target?.name ?? leg.raceId, missing: target === undefined }
+  }) ?? []
+  const selectedRaceId = targetRaceId ?? goal.raceId ?? goal.series?.legs.find((leg) => leg.status === 'active')?.raceId ?? goal.series?.legs[0]?.raceId ?? null
+  const race = selectedRaceId ? content.races.byId.get(selectedRaceId) ?? null : null
+  const seriesName = goal.series ? SCENARIO_SERIES_LABELS[goal.series.tag] : null
+  const completedLegs = pips.filter((pip) => pip.status === 'completed').length
   return {
     id: goal.id,
     slot: goal.slot,
     label: SLOT_LABEL[goal.slot],
-    raceId: goal.raceId,
-    raceName: race?.name ?? goal.raceId,
+    raceId: selectedRaceId,
+    raceName: seriesName ?? race?.name ?? selectedRaceId ?? 'Missing target',
     race,
-    rule: goal.kind === 'win-by-margin' ? `Win by ${goal.minimumMarginLengths}+ lengths` : 'Finish 1st',
+    rule: goal.kind === 'win-by-margin' ? `Win by ${goal.minimumMarginLengths}+ lengths`
+      : goal.series ? `${race?.name ?? 'Series leg'} · ${completedLegs} / ${pips.length} legs won` : 'Finish 1st',
     status: goal.status,
     completedRaceResultId: goal.completedRaceResultId,
+    pips,
+    seriesName,
   }
 }
 
@@ -53,7 +65,7 @@ export function buildHomeGoalState(uma: UmaSave, content: LoadedContent): HomeGo
     return {
       kind: 'active', tier: journey.tier, goals,
       completed: goals.filter((goal) => goal.status === 'completed').length,
-      missingTargets: goals.filter((goal) => goal.race === null).length,
+      missingTargets: goals.reduce((sum, goal) => sum + (goal.pips.length > 0 ? goal.pips.filter((pip) => pip.missing).length : Number(goal.race === null)), 0),
     }
   }
   const current = uma.scenarioJourneys.find((item) => item.tier === tierOfLevel(uma.level))
@@ -104,9 +116,12 @@ export function buildGoalRaceCatalog(
   const activeGoals = journey?.tracking === 'tracked' ? journey.goals.filter((goal) => goal.status === 'active') : []
   const goalsByRace = new Map<string, GoalView[]>()
   for (const goal of activeGoals) {
-    const entries = goalsByRace.get(goal.raceId) ?? []
-    entries.push(goalView(goal, content))
-    goalsByRace.set(goal.raceId, entries)
+    const targets = goal.series?.legs.filter((leg) => leg.status === 'active').map((leg) => leg.raceId) ?? (goal.raceId ? [goal.raceId] : [])
+    for (const raceId of targets) {
+      const entries = goalsByRace.get(raceId) ?? []
+      if (!entries.some((entry) => entry.id === goal.id)) entries.push(goalView(goal, content, raceId))
+      goalsByRace.set(raceId, entries)
+    }
   }
   return races
     .filter((race) => !goalsOnly || goalsByRace.has(race.id))
@@ -116,9 +131,9 @@ export function buildGoalRaceCatalog(
 
 export function goalsAtStake(uma: UmaSave, raceId: string, content: LoadedContent): GoalView[] {
   return (activeJourney(uma)?.goals ?? [])
-    .filter((goal) => goal.status === 'active' && goal.raceId === raceId)
+    .filter((goal) => goal.status === 'active' && (goal.raceId === raceId || goal.series?.legs.some((leg) => leg.status === 'active' && leg.raceId === raceId)))
     .sort((left, right) => SLOT_ORDER[left.slot] - SLOT_ORDER[right.slot])
-    .map((goal) => goalView(goal, content))
+    .map((goal) => goalView(goal, content, raceId))
 }
 
 export function buildResultGoalView(

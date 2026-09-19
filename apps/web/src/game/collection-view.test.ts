@@ -8,12 +8,12 @@ const aptitudes = {
   distance: { sprint: 'B', mile: 'A', medium: 'A', long: 'C' },
   strategy: { front: 'D', pace: 'A', late: 'B', end: 'C' },
 } as const
-const uma = (id: string, name: string, dirt: 'A' | 'G' = 'G'): UmaTemplate => ({
+const uma = (id: string, name: string, dirt: 'A' | 'G' = 'G', realHorseSex: UmaTemplate['realHorseSex'] = null): UmaTemplate => ({
   id, charaId: `runner-${id}`, name, outfit: 'Practice Outfit', jpRelease: '2000-01-01', globalRelease: null,
   starter: false, baseStats: { speed: 101, stamina: 102, power: 103, guts: 104, wit: 105 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes: { ...aptitudes, surface: { turf: 'A', dirt } }, uniqueSkillId: `skill-${id}`,
-  awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://example.invalid/synthetic.png',
+  awakeningSkillIds: [], realHorseSex, signatureRaceFamilyIds: [], imageSource: 'https://example.invalid/synthetic.png',
 })
 const card = (id: string, era: number, type: SupportCardTemplate['type']): SupportCardTemplate => ({
   id, charaId: `runner-${id}`, charName: `Synthetic ${id}`, title: 'Practice Notes', type,
@@ -62,12 +62,22 @@ describe('collection projections', () => {
       u2: { ...u2, aptitudes: { ...u2.aptitudes, surface: { ...u2.aptitudes.surface, dirt: 'A' as const } } },
       orphan: createUmaSave(uma('orphan', 'Missing')),
     }
-    const all = buildUmaAlbum(content, owned, profile, { ownership: 'all', tier: null, surface: null, distance: null, strategy: null, ready: false })
+    const all = buildUmaAlbum(content, owned, profile, { ownership: 'all', tier: null, surface: null, distance: null, strategy: null, sex: null, ready: false })
     expect(all).toMatchObject({ owned: 1, total: 2, orphanedIds: ['orphan'], couponBalance: 1, shardBalance: 4 })
     expect(all.items.map((item) => item.template.id)).toEqual(['u1', 'u2'])
     expect(all.items[0]).toMatchObject({ owned: false, redemptionLock: null })
-    const dirt = buildUmaAlbum(content, owned, profile, { ownership: 'all', tier: null, surface: 'dirt', distance: null, strategy: null, ready: false })
+    const dirt = buildUmaAlbum(content, owned, profile, { ownership: 'all', tier: null, surface: 'dirt', distance: null, strategy: null, sex: null, ready: false })
     expect(dirt.items.map((item) => item.template.id)).toEqual(['u2'])
+  })
+
+  it('filters male, female, and unknown real-horse records explicitly', () => {
+    const umas = [uma('female', 'Alpha', 'G', 'female'), uma('male', 'Beta', 'G', 'male'), uma('unknown', 'Gamma')]
+    const content = loaded(umas, [])
+    const profile = createPlayerProfile('synthetic', 1)
+    const base = { ownership: 'all' as const, tier: null, surface: null, distance: null, strategy: null, ready: false }
+    expect(buildUmaAlbum(content, {}, profile, { ...base, sex: 'female' }).items.map((item) => item.template.id)).toEqual(['female'])
+    expect(buildUmaAlbum(content, {}, profile, { ...base, sex: 'male' }).items.map((item) => item.template.id)).toEqual(['male'])
+    expect(buildUmaAlbum(content, {}, profile, { ...base, sex: 'unknown' }).items.map((item) => item.template.id)).toEqual(['unknown'])
   })
 
   it('reconstructs reveals only from safe routes with matching owned entities and content', () => {

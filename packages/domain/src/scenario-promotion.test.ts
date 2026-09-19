@@ -166,9 +166,9 @@ describe('scenario promotion', () => {
       scenarioJourneys: [{
         tier: 1, tracking: 'tracked' as const, state: 'active' as const, completedAt: null,
         goals: [
-          { id: 'goal:1:aptitude', slot: 'aptitude' as const, raceId: 'race-a', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
-          { id: 'goal:1:identity', slot: 'identity' as const, raceId: 'race-b', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
-          { id: 'goal:1:challenge', slot: 'challenge' as const, raceId: 'race-c', kind: 'win-by-margin' as const, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+          { id: 'goal:1:aptitude', slot: 'aptitude' as const, raceId: 'race-a', kind: 'win' as const, series: null, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+          { id: 'goal:1:identity', slot: 'identity' as const, raceId: 'race-b', kind: 'win' as const, series: null, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+          { id: 'goal:1:challenge', slot: 'challenge' as const, raceId: 'race-c', kind: 'win-by-margin' as const, series: null, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
         ],
       }],
     }

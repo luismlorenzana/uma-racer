@@ -175,9 +175,9 @@ function withGoalJourney(player: UmaSave, tier: number): UmaSave {
     scenarioJourneys: [{
       tier, tracking: 'tracked' as const, state: 'active' as const, completedAt: null,
       goals: [
-        { id: `goal:${tier}:aptitude`, slot: 'aptitude' as const, raceId: 'r1', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
-        { id: `goal:${tier}:identity`, slot: 'identity' as const, raceId: 'r2', kind: 'win' as const, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
-        { id: `goal:${tier}:challenge`, slot: 'challenge' as const, raceId: 'r3', kind: 'win-by-margin' as const, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+        { id: `goal:${tier}:aptitude`, slot: 'aptitude' as const, raceId: 'r1', kind: 'win' as const, series: null, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+        { id: `goal:${tier}:identity`, slot: 'identity' as const, raceId: 'r2', kind: 'win' as const, series: null, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
+        { id: `goal:${tier}:challenge`, slot: 'challenge' as const, raceId: 'r3', kind: 'win-by-margin' as const, series: null, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
       ],
     }],
   }

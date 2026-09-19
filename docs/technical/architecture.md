@@ -72,10 +72,11 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v2 stores mutable profile/Uma/card state plus finite parent snapshots, skill history, selected current parents, and
-  typed scenario-journey slots. Static names, art, release metadata, and card/skill definitions remain in the private
-  content registry and are joined by stable ids at render time. Dexie v3 and cloud adoption migrate v1 one way, preserve
-  entity versions, and queue only the upgraded profile/Uma rows; the API accepts rollout reads but rejects v1-over-v2.
+- Save v3 stores mutable profile/Uma/card state plus finite parent snapshots, skill history, selected current parents, and
+  typed scenario-journey slots with frozen series legs. Static names, art, release metadata, and card/skill definitions
+  remain in the private content registry and are joined by stable ids at render time. Dexie v5 and cloud adoption migrate
+  v1/v2 one way, preserve entity versions, and queue only upgraded profile/Uma rows; the API accepts rollout reads but
+  rejects an older schema over a newer one.
 - A coordinator waits for auth and a verified content version, migrates and parses IndexedDB, then publishes ready state.
   A non-empty local save opens immediately. Only a semantically empty database tries a full cloud bootstrap before
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
@@ -106,11 +107,12 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   ledgers, applies promotion/Initial Stats and overflow, refreshes awakening/history, and resets training. Zustand publishes
   only after commit. A race reaching the current global maximum freezes the final snapshot inside the existing result
   transaction. Memory-only mode runs the same pure resolver with an explicit warning.
-- Goal-plan v1 is another content-ready coordination step. Every pre-T014 Uma is upgraded in one Dexie transaction after
+- Goal-plan v2 is another content-ready coordination step. Every pre-T014 Uma is upgraded in one Dexie transaction after
   its full race history is strictly parsed: earlier tiers become `legacy-untracked`, the current unfinished tier freezes
   three deterministic targets, and only current-tier results are replayed. New Scenario Starts generate post-inheritance
-  targets atomically; promotion/final completion closes the previous Journey without inventing rewards or history.
-- Milestone 6 keeps core profile/Uma save v2 and versions the already-reserved `badges` collection independently. T015
+  targets atomically; the v1→v2 pass regenerates only untouched active plans. Promotion/final completion closes the
+  previous Journey without inventing rewards or history.
+- Milestone 6 introduced the independently versioned `badges` collection; core profile/Uma state is now save v3. T015
   creates one bounded fact/award/preference state per owned Uma and defines a preference-valid `trainer` shell. T016 now
   evaluates the complete per-Uma catalog after each fact transition and during content-ready retroactive reconciliation;
   every changed badge state and append-only event commits inside the triggering Training/race/scenario/collection
@@ -193,7 +195,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ```text
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v2: progression, deck/library/history, parents/snapshot, journeys, version
+players/{uid}/umas/{umaId}            save v3: progression, deck/library/history, parents/snapshot, journeys, version
 players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
@@ -202,10 +204,11 @@ players/{uid}/ledger/{id}             append-only ticket, coupon, and shard move
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 ```
 
-The profile is save v2 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
-creation time, and schema version. Every Uma row is also explicitly v2. Parent/snapshot/history and strict version-1
-Journey fields are present; pending setup has no active Journey, active scenarios have exactly one for the current tier,
-and final completion has none. Badge-state v1 is independently migratable and cannot force a progression save reset.
+The profile is save v3 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
+creation time, and schema version. Every Uma row is also explicitly v3. Parent/snapshot/history and strict Journey goal
+fields are present, including per-leg evidence for series goals; pending setup has no active Journey, active scenarios
+have exactly one for the current tier, and final completion has none. Badge-state v1 is independently migratable and
+cannot force a progression save reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic

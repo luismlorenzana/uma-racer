@@ -10,7 +10,7 @@ const template: UmaTemplate = {
   aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'B', mile: 'A', medium: 'B', long: 'C' }, strategy: { front: 'C', pace: 'A', late: 'B', end: 'D' } },
   uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/synthetic.png',
 }
-const races: RaceTemplate[] = ['a', 'b', 'c'].map((id, index) => ({
+const races: RaceTemplate[] = ['a', 'b', 'c', 'd'].map((id, index) => ({
   id: `race-${id}`, familyId: String(100 + index), name: `Synthetic Race ${id.toUpperCase()}`, grade: 'op', surface: 'turf',
   distance: 1600, distanceCategory: 'mile', direction: 'left', venue: 'Synthetic', venueKey: 'synthetic-venue', venueTags: [], series: [], seriesLegs: [],
   courseId: `course-${id}`, season: 1, fieldSize: 8,
@@ -29,9 +29,9 @@ const content: LoadedContent = {
 const journey: ScenarioJourney = {
   tier: 1, tracking: 'tracked', state: 'active', completedAt: null,
   goals: [
-    { id: 'goal:1:aptitude', slot: 'aptitude', raceId: 'race-a', kind: 'win', minimumMarginLengths: 0, status: 'completed', completedRaceResultId: 'race:uma-goals:0', completedAt: 10 },
-    { id: 'goal:1:identity', slot: 'identity', raceId: 'race-b', kind: 'win', minimumMarginLengths: 0, status: 'active', completedRaceResultId: null, completedAt: null },
-    { id: 'goal:1:challenge', slot: 'challenge', raceId: 'missing-race', kind: 'win-by-margin', minimumMarginLengths: 5, status: 'active', completedRaceResultId: null, completedAt: null },
+    { id: 'goal:1:aptitude', slot: 'aptitude', raceId: 'race-a', kind: 'win', series: null, minimumMarginLengths: 0, status: 'completed', completedRaceResultId: 'race:uma-goals:0', completedAt: 10 },
+    { id: 'goal:1:identity', slot: 'identity', raceId: 'race-b', kind: 'win', series: null, minimumMarginLengths: 0, status: 'active', completedRaceResultId: null, completedAt: null },
+    { id: 'goal:1:challenge', slot: 'challenge', raceId: 'missing-race', kind: 'win-by-margin', series: null, minimumMarginLengths: 5, status: 'active', completedRaceResultId: null, completedAt: null },
   ],
 }
 const uma = { ...createUmaSave(template), scenarioStarted: true, goalPlanVersion: 1, scenarioJourneys: [journey] }
@@ -56,6 +56,29 @@ describe('goal view projections', () => {
     expect(catalog.map((item) => item.race.id)).toEqual(['race-b', 'race-a', 'race-c'])
     expect(buildGoalRaceCatalog(races, uma, content, true).map((item) => item.race.id)).toEqual(['race-b'])
     expect(goalsAtStake(uma, 'race-b', content)).toMatchObject([{ slot: 'identity', rule: 'Finish 1st' }])
+  })
+
+  it('pins every unwon series leg and names the set with one pip per leg', () => {
+    const seriesJourney: ScenarioJourney = {
+      ...journey,
+      goals: [journey.goals[0]!, {
+        id: 'goal:1:identity', slot: 'identity', raceId: null, kind: 'win-series', minimumMarginLengths: 0,
+        series: { tag: 'triple-crown', legs: [
+          { key: 'first-leg', raceId: 'race-b', status: 'completed', completedRaceResultId: 'race:uma-goals:1', completedAt: 11 },
+          { key: 'second-leg', raceId: 'race-c', status: 'active', completedRaceResultId: null, completedAt: null },
+          { key: 'third-leg', raceId: 'race-d', status: 'active', completedRaceResultId: null, completedAt: null },
+        ] },
+        status: 'active', completedRaceResultId: null, completedAt: null,
+      }, journey.goals[2]!],
+    }
+    const seriesUma = { ...uma, goalPlanVersion: 2, scenarioJourneys: [seriesJourney] }
+    const home = buildHomeGoalState(seriesUma, content)
+    expect(home.kind).toBe('active')
+    expect(home.kind === 'active' ? home.goals[1] : null).toMatchObject({
+      raceName: 'Triple Crown', pips: [{ status: 'completed' }, { status: 'active' }, { status: 'active' }],
+    })
+    expect(buildGoalRaceCatalog(races, seriesUma, content, true).map((item) => item.race.id)).toEqual(['race-c', 'race-d'])
+    expect(goalsAtStake(seriesUma, 'race-d', content)).toMatchObject([{ seriesName: 'Triple Crown', rule: 'Synthetic Race D · 1 / 3 legs won' }])
   })
 
   it('orders multi-goal result facts and animates only the fresh commit', () => {

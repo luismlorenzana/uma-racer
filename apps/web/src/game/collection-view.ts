@@ -52,11 +52,12 @@ export interface UmaAlbumFilters {
   surface: Surface | null
   distance: DistanceCategory | null
   strategy: Strategy | null
+  sex: UmaTemplate['realHorseSex'] | 'unknown'
   ready: boolean
 }
 
 export const EMPTY_UMA_ALBUM_FILTERS: UmaAlbumFilters = {
-  ownership: 'owned', tier: null, surface: null, distance: null, strategy: null, ready: false,
+  ownership: 'owned', tier: null, surface: null, distance: null, strategy: null, sex: null, ready: false,
 }
 
 export interface UmaAlbumItem {
@@ -98,6 +99,7 @@ export function buildUmaAlbum(
     if (filters.surface && !strong(aptitudes.surface[filters.surface])) return false
     if (filters.distance && !strong(aptitudes.distance[filters.distance])) return false
     if (filters.strategy && !strong(aptitudes.strategy[filters.strategy])) return false
+    if (filters.sex !== null && (item.template.realHorseSex ?? 'unknown') !== filters.sex) return false
     return !filters.ready || item.view?.readyToPromote === true
   }).sort((left, right) => {
     const id = left.template.id.localeCompare(right.template.id)
