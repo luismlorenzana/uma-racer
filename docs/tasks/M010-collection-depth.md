@@ -19,7 +19,7 @@ engine serves the Stable, the Cards album, coupon redemption, and later the deck
 T033 album engine + Stable       ✅ landed 2026-09-19
         │
         ▼
-T034 Cards album + deck editor   (delegable)
+T034 Cards album + deck editor   ✅ landed 2026-09-19
         │
         ▼
 T035 Race Select                 (delegable)
@@ -28,7 +28,7 @@ T035 Race Select                 (delegable)
 | Task | Result | Must not absorb |
 |---|---|---|
 | T033 ✅ | The shared chrome, facet engine, saved views, density, virtualization, and the Stable using all of it | Card-specific facets, gameplay changes, new rewards |
-| [T034](T034-cards-album.md) | The Cards album, card detail, redemption **and the deck editor** on the same engine | New card mechanics, Friend/Group gameplay (M8) |
+| T034 ✅ | The Cards album, card detail, redemption **and the deck editor** on the same engine | New card mechanics, Friend/Group gameplay (M8) |
 | [T035](T035-race-select-browsing.md) | Race Select — the third long list — with aptitude fit, series filters and pinned goal targets | Race rules, rewards, the Pixi scene |
 
 All three depend on Milestone 9's visual system for tiles and controls. If Milestone 9 has not landed, build against the
