@@ -13,13 +13,15 @@ import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
 import { parseRaceResultRecord } from './progression-race'
+import { SCENARIO_MODIFIER_VERSION, parseScenarioModifierState, type ScenarioModifierState } from './scenario-modifiers'
 import { MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL, MAX_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type Stats } from './types'
 
-export const SAVE_SCHEMA_VERSION = 3 as const
+export const SAVE_SCHEMA_VERSION = 4 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -117,6 +119,7 @@ export interface UmaSave {
   parentSnapshot: ParentSnapshot | null
   goalPlanVersion: number
   scenarioJourneys: ScenarioJourney[]
+  scenarioModifier: ScenarioModifierState | null
 }
 
 export interface LegacyPlayerProfileV1 extends Omit<PlayerProfile, 'schemaVersion'> {
@@ -125,6 +128,10 @@ export interface LegacyPlayerProfileV1 extends Omit<PlayerProfile, 'schemaVersio
 
 export interface LegacyPlayerProfileV2 extends Omit<PlayerProfile, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V2
+}
+
+export interface LegacyPlayerProfileV3 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V3
 }
 
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
@@ -136,13 +143,17 @@ export interface LegacyScenarioJourneyV2 extends Omit<ScenarioJourney, 'goals'> 
   goals: LegacyScenarioGoalV2[]
 }
 
-export interface LegacyUmaSaveV2 extends Omit<UmaSave, 'schemaVersion' | 'scenarioJourneys'> {
+export interface LegacyUmaSaveV3 extends Omit<UmaSave, 'schemaVersion' | 'scenarioModifier'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V3
+}
+
+export interface LegacyUmaSaveV2 extends Omit<LegacyUmaSaveV3, 'schemaVersion' | 'scenarioJourneys'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V2
   scenarioJourneys: LegacyScenarioJourneyV2[]
 }
 
 export interface LegacyUmaSaveV1 extends Omit<UmaSave,
-  'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys'> {}
+  'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys' | 'scenarioModifier'> {}
 
 export interface CardSave {
   templateId: string
@@ -329,7 +340,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2 | 3>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -362,6 +373,10 @@ export function parseLegacyPlayerProfileV2(value: unknown): LegacyPlayerProfileV
   return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V2)
 }
 
+export function parseLegacyPlayerProfileV3(value: unknown): LegacyPlayerProfileV3 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V3)
+}
+
 export function migratePlayerProfileV1(value: LegacyPlayerProfileV1): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV1(value)
   if (!parsed) throw new Error('Legacy player profile is malformed')
@@ -371,6 +386,12 @@ export function migratePlayerProfileV1(value: LegacyPlayerProfileV1): PlayerProf
 export function migratePlayerProfileV2(value: LegacyPlayerProfileV2): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV2(value)
   if (!parsed) throw new Error('Legacy v2 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
+export function migratePlayerProfileV3(value: LegacyPlayerProfileV3): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV3(value)
+  if (!parsed) throw new Error('Legacy v3 player profile is malformed')
   return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
@@ -606,6 +627,10 @@ const LEGACY_UMA_KEYS = [
 ] as const
 const UMA_VERSIONED_KEYS = [
   'schemaVersion', ...LEGACY_UMA_KEYS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot',
+  'goalPlanVersion', 'scenarioJourneys', 'scenarioModifier',
+] as const
+const LEGACY_UMA_VERSIONED_KEYS = [
+  'schemaVersion', ...LEGACY_UMA_KEYS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot',
   'goalPlanVersion', 'scenarioJourneys',
 ] as const
 
@@ -664,16 +689,17 @@ export function migrateUmaSaveV1(value: LegacyUmaSaveV1): UmaSave {
     parentSnapshot: null,
     goalPlanVersion: 0,
     scenarioJourneys: [],
+    scenarioModifier: null,
   }
 }
 
 function parseVersionedUmaSave<J extends ScenarioJourney | LegacyScenarioJourneyV2>(
   value: unknown,
-  schemaVersion: 2 | 3,
+  schemaVersion: 2 | 3 | 4,
   goalPlanVersion: 1 | 2,
   journeyParser: (value: unknown) => J | null,
-): (Omit<UmaSave, 'schemaVersion' | 'scenarioJourneys'> & { schemaVersion: 2 | 3; scenarioJourneys: J[] }) | null {
-  if (!isObject(value) || !exactKeys(value, UMA_VERSIONED_KEYS) || value.schemaVersion !== schemaVersion) return null
+): (Omit<UmaSave, 'schemaVersion' | 'scenarioJourneys' | 'scenarioModifier'> & { schemaVersion: 2 | 3 | 4; scenarioJourneys: J[] }) | null {
+  if (!isObject(value) || !exactKeys(value, LEGACY_UMA_VERSIONED_KEYS) || value.schemaVersion !== schemaVersion) return null
   const legacyShape = Object.fromEntries(LEGACY_UMA_KEYS.map((key) => [key, value[key]]))
   const base = parseUmaCore(legacyShape)
   if (!base || typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > goalPlanVersion) return null
@@ -724,6 +750,7 @@ export function migrateUmaSaveV2(value: LegacyUmaSaveV2): UmaSave {
   return {
     ...parsed,
     schemaVersion: SAVE_SCHEMA_VERSION,
+    scenarioModifier: null,
     scenarioJourneys: parsed.scenarioJourneys.map((journey) => ({
       ...journey,
       goals: journey.goals.map((goal): ScenarioGoal => ({ ...goal, series: null })),
@@ -731,8 +758,40 @@ export function migrateUmaSaveV2(value: LegacyUmaSaveV2): UmaSave {
   }
 }
 
+export function parseLegacyUmaSaveV3(value: unknown): LegacyUmaSaveV3 | null {
+  return parseVersionedUmaSave(value, LEGACY_SAVE_SCHEMA_VERSION_V3, 2, parseScenarioJourney) as LegacyUmaSaveV3 | null
+}
+
+export function migrateUmaSaveV3(value: LegacyUmaSaveV3): UmaSave {
+  const parsed = parseLegacyUmaSaveV3(value)
+  if (!parsed) throw new Error('Legacy v3 Uma save is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION, scenarioModifier: null }
+}
+
 export function parseUmaSave(value: unknown): UmaSave | null {
-  return parseVersionedUmaSave(value, SAVE_SCHEMA_VERSION, 2, parseScenarioJourney) as UmaSave | null
+  if (!isObject(value) || !exactKeys(value, UMA_VERSIONED_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
+  const { scenarioModifier: rawModifier, ...legacyShape } = value
+  const base = parseVersionedUmaSave(legacyShape, SAVE_SCHEMA_VERSION, 2, parseScenarioJourney)
+  if (!base) return null
+  const scenarioModifier = rawModifier === null ? null : parseScenarioModifierState(rawModifier)
+  if (rawModifier !== null && !scenarioModifier) return null
+  const currentTier = tierOfLevel(base.level)
+  if (scenarioModifier && (!base.scenarioStarted || scenarioModifier.tier !== currentTier)) return null
+  return { ...base, schemaVersion: SAVE_SCHEMA_VERSION, scenarioModifier }
+}
+
+/** Parse a current Uma at a storage/network boundary while distinguishing unsupported nested state. */
+export function parseUmaSaveOrThrow(value: unknown): UmaSave {
+  if (isObject(value) && 'schemaVersion' in value && value.schemaVersion !== SAVE_SCHEMA_VERSION) {
+    throw new Error(`App update required for save schema ${String(value.schemaVersion)}`)
+  }
+  if (isObject(value) && isObject(value.scenarioModifier) && 'version' in value.scenarioModifier &&
+    value.scenarioModifier.version !== SCENARIO_MODIFIER_VERSION) {
+    throw new Error(`App update required for scenario modifier version ${String(value.scenarioModifier.version)}`)
+  }
+  const uma = parseUmaSave(value)
+  if (!uma) throw new Error('Uma save is malformed')
+  return uma
 }
 
 export function parseCardSave(value: unknown): CardSave | null {
@@ -809,6 +868,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
     parentSnapshot: null,
     goalPlanVersion: 2,
     scenarioJourneys: [],
+    scenarioModifier: null,
   }
 }
 
@@ -884,6 +944,8 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
   if (kind === 'profile') {
     const current = parsePlayerProfile(value)
     if (current) return current as unknown as Record<string, unknown>
+    const legacyV3 = parseLegacyPlayerProfileV3(value)
+    if (legacyV3) return migratePlayerProfileV3(legacyV3) as unknown as Record<string, unknown>
     const legacyV2 = parseLegacyPlayerProfileV2(value)
     if (legacyV2) return migratePlayerProfileV2(legacyV2) as unknown as Record<string, unknown>
     const legacy = parseLegacyPlayerProfileV1(value)
@@ -892,6 +954,8 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
   if (kind === 'umas') {
     const current = parseUmaSave(value)
     if (current) return current as unknown as Record<string, unknown>
+    const legacyV3 = parseLegacyUmaSaveV3(value)
+    if (legacyV3) return migrateUmaSaveV3(legacyV3) as unknown as Record<string, unknown>
     const legacyV2 = parseLegacyUmaSaveV2(value)
     if (legacyV2) return migrateUmaSaveV2(legacyV2) as unknown as Record<string, unknown>
     const legacy = parseLegacyUmaSaveV1(value)
@@ -1001,11 +1065,15 @@ function assertSupportedProfileRecords(records: unknown): void {
   if (!Array.isArray(records)) return
   for (const record of records) {
     if (isObject(record) && record.kind === 'profile' && isObject(record.data)) {
-      if (!parseLegacyPlayerProfileV1(record.data) && !parseLegacyPlayerProfileV2(record.data)) parsePlayerProfileOrThrow(record.data)
+      if (!parseLegacyPlayerProfileV1(record.data) && !parseLegacyPlayerProfileV2(record.data) && !parseLegacyPlayerProfileV3(record.data)) parsePlayerProfileOrThrow(record.data)
     }
     if (isObject(record) && record.kind === 'umas' && isObject(record.data) && 'schemaVersion' in record.data) {
-      if (record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V2 && record.data.schemaVersion !== SAVE_SCHEMA_VERSION) {
+      if (record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V2 && record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V3 && record.data.schemaVersion !== SAVE_SCHEMA_VERSION) {
         throw new Error(`App update required for save schema ${String(record.data.schemaVersion)}`)
+      }
+      if (record.data.schemaVersion === SAVE_SCHEMA_VERSION && isObject(record.data.scenarioModifier) &&
+        record.data.scenarioModifier.version !== SCENARIO_MODIFIER_VERSION) {
+        throw new Error(`App update required for scenario modifier version ${String(record.data.scenarioModifier.version)}`)
       }
     }
   }
@@ -1017,7 +1085,7 @@ function assertSnapshotSchemaIsConsistent(records: unknown): void {
   const profile = active.find((record) => record.kind === 'profile')
   if (!profile || !isObject(profile.data)) return
   const schema = profile.data.schemaVersion
-  if (schema !== LEGACY_SAVE_SCHEMA_VERSION && schema !== LEGACY_SAVE_SCHEMA_VERSION_V2 && schema !== SAVE_SCHEMA_VERSION) return
+  if (schema !== LEGACY_SAVE_SCHEMA_VERSION && schema !== LEGACY_SAVE_SCHEMA_VERSION_V2 && schema !== LEGACY_SAVE_SCHEMA_VERSION_V3 && schema !== SAVE_SCHEMA_VERSION) return
   for (const record of active) {
     if (record.kind !== 'umas' || !isObject(record.data)) continue
     const umaSchema = Object.hasOwn(record.data, 'schemaVersion') ? record.data.schemaVersion : LEGACY_SAVE_SCHEMA_VERSION

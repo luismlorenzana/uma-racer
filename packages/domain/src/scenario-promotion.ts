@@ -12,6 +12,7 @@ import {
 } from './inheritance'
 import { MAX_UMA_LEVEL, SCENARIOS, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
 import { closeScenarioJourney, generateScenarioJourney, SCENARIO_GOAL_VERSION } from './scenario-goals'
+import { createScenarioModifierState } from './scenario-modifiers'
 import {
   SAVE_ID_PATTERN,
   SAVE_SCHEMA_VERSION,
@@ -257,6 +258,7 @@ export function startNewUmaScenario(input: NewUmaScenarioStartInput): NewUmaScen
       aptitudes: inheritance.aptitudes,
       currentParents: inheritance.currentParents,
       skillHistory: appendScenarioHistory(parsedUma.skillHistory, inheritance.skillLibrary, 1),
+      scenarioModifier: null,
   }
   const journey = generateScenarioJourney({ uma: started, umaTemplate: input.umaTemplate, races: input.races })
   return {
@@ -360,6 +362,7 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
     parentSnapshot: snapshot,
     goalPlanVersion: 0,
     scenarioJourneys: closedJourneys,
+    scenarioModifier: createScenarioModifierState(readiness.toTier),
   }
   const journey = generateScenarioJourney({ uma: promoted, umaTemplate: input.umaTemplate, races: input.races })
   return {

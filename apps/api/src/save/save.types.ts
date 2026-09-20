@@ -71,6 +71,7 @@ const LEDGER_REASONS = [
 const PROFILE_FIELDS = ['schemaVersion', 'tickets', 'cardCoupons', 'umaCoupons', 'umaShards', 'lastDailyGrant', 'featuredUmaId', 'starterSeedContentVersion', 'createdAt'] as const
 const LEGACY_UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds', 'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario'] as const
 const UMA_FIELDS = ['schemaVersion', ...LEGACY_UMA_FIELDS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot', 'goalPlanVersion', 'scenarioJourneys'] as const
+const CURRENT_UMA_FIELDS = [...UMA_FIELDS, 'scenarioModifier'] as const
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
 const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
 const SKILL_HISTORY_FIELDS = [...SKILL_FIELDS, 'tier'] as const
@@ -457,13 +458,23 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3].includes(value.schemaVersion as number)) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
   if (value.starterSeedContentVersion !== null && !isId(value.starterSeedContentVersion)) return null
   if (!isNonNegativeInt(value.createdAt)) return null
   return value
+}
+
+function parseScenarioModifier(value: unknown, tier: number): boolean {
+  if (!isRecord(value) || value.version !== 1 || value.tier !== tier) return false
+  if (value.kind === 'team-spirit') {
+    return tier === 2 && exactKeys(value, ['version', 'tier', 'kind', 'bursts']) && isNonNegativeInt(value.bursts)
+  }
+  return value.kind === 'climax' && tier === 3 && exactKeys(value, ['version', 'tier', 'kind', 'earned', 'stock', 'used']) &&
+    isNonNegativeInt(value.earned) && isNonNegativeInt(value.stock) && isNonNegativeInt(value.used) &&
+    value.stock + value.used === value.earned
 }
 
 function parseSkill(value: unknown): value is Record<string, unknown> {
@@ -572,8 +583,10 @@ function parseJourney(value: unknown, legacy: boolean): value is Record<string, 
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if (!exactKeys(value, UMA_FIELDS) || (value.schemaVersion !== 2 && value.schemaVersion !== 3) || !parseUmaBase(value)) return null
-  const current = value.schemaVersion === 3
+  const schemaVersion = value.schemaVersion
+  const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
+  if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null
+  const current = schemaVersion === 3 || schemaVersion === 4
   if (typeof value.scenarioStarted !== 'boolean' || !isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > (current ? 2 : 1) || !Array.isArray(value.skillHistory) ||
     !Array.isArray(value.scenarioJourneys) || !parseSnapshots(value.currentParents) ||
     (value.parentSnapshot !== null && !parseSnapshot(value.parentSnapshot, value.templateId as string))) return null
@@ -588,6 +601,9 @@ function parseUma(value: unknown): Record<string, unknown> | null {
   const journeys = value.scenarioJourneys as Record<string, unknown>[]
   if (new Set(journeys.map((journey) => journey.tier)).size !== journeys.length || journeys.filter((journey) => journey.state === 'active').length > 1) return null
   const currentTier = Math.ceil((value.level as number) / 10)
+  if (schemaVersion === 4 && value.scenarioModifier !== null) {
+    if (!value.scenarioStarted || !parseScenarioModifier(value.scenarioModifier, currentTier)) return null
+  }
   if (journeys.some((journey) => (journey.tier as number) > currentTier)) return null
   if ((value.goalPlanVersion as number) > 0) {
     const active = journeys.filter((journey) => journey.state === 'active')

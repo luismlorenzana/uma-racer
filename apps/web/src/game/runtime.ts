@@ -410,7 +410,7 @@ export class GameRuntime {
     }
   }
 
-  async trainUma(id: string, facility: Facility, today = localDay(), now = Date.now()): Promise<TrainingTurnResult & { earnedFlairEventIds: string[] }> {
+  async trainUma(id: string, facility: Facility, today = localDay(), now = Date.now(), useClimaxItem = false): Promise<TrainingTurnResult & { earnedFlairEventIds: string[] }> {
     if (this.trainingLocks.has(id)) throw new Error('Training is already resolving for this Uma')
     this.trainingLocks.add(id)
     try {
@@ -420,7 +420,7 @@ export class GameRuntime {
       const uma = state.umas[id]
       if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Training Uma must be owned')
       const mutation = state.persistent
-        ? await persistTraining(content, id, facility, today, now)
+        ? await persistTraining(content, id, facility, today, now, useClimaxItem)
         : resolveMemoryTraining({
           content,
           profile: state.profile,
@@ -429,6 +429,7 @@ export class GameRuntime {
           facility,
           today,
           now,
+          useClimaxItem,
         })
       const actionResult = { ...mutation.result, earnedFlairEventIds: mutation.earnedFlairEventIds }
       if (generation !== this.generation) return actionResult

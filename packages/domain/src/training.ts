@@ -44,8 +44,8 @@ export interface PresentCard {
 export const isFriendshipTraining = (facility: Facility, cards: readonly PresentCard[]): boolean =>
   cards.some((c) => c.type === facility)
 
-/** Gains for one training turn, rounded. Caps are applied separately by `applyGains`. */
-export function trainingGains(
+/** Unrounded gains for one training turn. Scenario modifiers apply before the ordinary rounding step. */
+export function trainingRawGains(
   facility: Facility,
   umaGrowth: Partial<Stats>,
   presentCards: readonly PresentCard[],
@@ -68,9 +68,26 @@ export function trainingGains(
     const value = base[key] ?? 0
     const flat = presentCards.reduce((sum, c) => sum + (c.flatBonus[key] ?? 0), 0)
     const growth = key === 'sp' ? 0 : (umaGrowth[key] ?? 0)
-    gains[key] = Math.round((value + flat) * (1 + growth) * training * friendship * crowd)
+    gains[key] = (value + flat) * (1 + growth) * training * friendship * crowd
   }
   return gains
+}
+
+export function roundTrainingGains(
+  gains: Partial<Record<GainKey, number>>,
+): Partial<Record<GainKey, number>> {
+  return Object.fromEntries(
+    Object.entries(gains).map(([key, value]) => [key, Math.round(value!)]),
+  ) as Partial<Record<GainKey, number>>
+}
+
+/** Gains for one ordinary training turn, rounded. Caps are applied separately by `applyCappedGain`. */
+export function trainingGains(
+  facility: Facility,
+  umaGrowth: Partial<Stats>,
+  presentCards: readonly PresentCard[],
+): Partial<Record<GainKey, number>> {
+  return roundTrainingGains(trainingRawGains(facility, umaGrowth, presentCards))
 }
 
 /**

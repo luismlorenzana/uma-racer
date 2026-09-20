@@ -43,6 +43,7 @@ import {
   type SkillTemplate,
   type Strategy,
   type UmaSave,
+  awardClimaxItem,
   type UmaTemplate,
 } from '@racer/domain'
 import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, type RaceInput, type RaceTimeline } from '@racer/race'
@@ -86,6 +87,7 @@ export interface RaceCompletion {
   record: RaceResultRecord
   timeline: RaceTimeline
   alreadyRecorded: boolean
+  scenarioModifierReward: number
 }
 
 export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
@@ -499,7 +501,7 @@ export function completeMemoryRace(
     if (!race || !existing.accomplishmentFacts || JSON.stringify(existing.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
       throw new Error('Race result accomplishment facts are corrupt')
     }
-    return { profile, uma, record: existing, timeline, alreadyRecorded: true }
+    return { profile, uma, record: existing, timeline, alreadyRecorded: true, scenarioModifierReward: 0 }
   }
   const current = buildPreparedRace({
     content,
@@ -515,7 +517,12 @@ export function completeMemoryRace(
   const timeline = simulatePreparedRace(attempt)
   const result = resultRecord(content, attempt, race, uma, timeline, now)
   const goalResult = applyScenarioGoalCompletion(uma, result.uma, race, attempt.id, result.record, now)
-  const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
+  const modifier = awardClimaxItem({
+    state: goalResult.uma.scenarioModifier,
+    won: result.record.playerPlacement === 1,
+    closesTier: isGateLevel(goalResult.uma.level),
+  })
+  const completedUma = captureFinalSnapshot(content, { ...goalResult.uma, scenarioModifier: modifier.state }, now)
   return {
     profile: {
       ...profile,
@@ -526,6 +533,7 @@ export function completeMemoryRace(
     record: goalResult.record,
     timeline,
     alreadyRecorded: false,
+    scenarioModifierReward: modifier.awarded,
   }
 }
 
@@ -554,6 +562,7 @@ export async function completePersistentRace(
         record,
         timeline,
         alreadyRecorded: true,
+        scenarioModifierReward: 0,
       }
     }
 
@@ -573,7 +582,12 @@ export async function completePersistentRace(
     const timeline = simulatePreparedRace(attempt)
     const resolved = resultRecord(content, attempt, race, uma, timeline, now)
     const goalResult = applyScenarioGoalCompletion(uma, resolved.uma, race, attempt.id, resolved.record, now)
-    const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
+    const modifier = awardClimaxItem({
+      state: goalResult.uma.scenarioModifier,
+      won: resolved.record.playerPlacement === 1,
+      closesTier: isGateLevel(goalResult.uma.level),
+    })
+    const completedUma = captureFinalSnapshot(content, { ...goalResult.uma, scenarioModifier: modifier.state }, now)
     const levelIds = goalResult.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
     const gate = goalResult.record.shardReward ? goalResult.record.levelsGained.at(-1) : undefined
     const shardId = gate === undefined ? null : `uma-gate-shard:${attempt.umaId}:${gate}`
@@ -641,6 +655,7 @@ export async function completePersistentRace(
       record: committedRecord,
       timeline,
       alreadyRecorded: false,
+      scenarioModifierReward: modifier.awarded,
     }
   })
 }

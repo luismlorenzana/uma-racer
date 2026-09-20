@@ -2,6 +2,7 @@
 
 import { SCENARIOS, SCENARIO_SERIES_LABELS, scenarioJourneySummary, tierOfLevel, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
+import { buildScenarioModifierView, type ScenarioModifierView } from './scenario-modifier-view'
 
 const SLOT_ORDER = { aptitude: 0, identity: 1, challenge: 2 } as const
 const SLOT_LABEL = { aptitude: 'Aptitude', identity: 'Identity', challenge: 'Challenge' } as const
@@ -84,6 +85,7 @@ export interface JourneyMedallionView {
   missed: number
   active: number
   honors: boolean
+  modifier: ScenarioModifierView | null
 }
 
 export function buildJourneyView(uma: UmaSave, content: LoadedContent): JourneyMedallionView[] {
@@ -92,11 +94,13 @@ export function buildJourneyView(uma: UmaSave, content: LoadedContent): JourneyM
     if (!journey) return {
       tier, name: SCENARIOS[tier - 1]?.name ?? `Tier ${tier}`, tracking: 'missing' as const, state: 'missing' as const,
       goals: [], completed: 0, missed: 0, active: 0, honors: false,
+      modifier: buildScenarioModifierView(tier, uma.scenarioModifier, false),
     }
     const summary = scenarioJourneySummary(journey)
     return {
       tier, name: SCENARIOS[tier - 1]?.name ?? `Tier ${tier}`, tracking: journey.tracking, state: journey.state,
       goals: journey.goals.map((goal) => goalView(goal, content)), ...summary,
+      modifier: buildScenarioModifierView(tier, uma.scenarioModifier, journey.state === 'active'),
     }
   })
 }

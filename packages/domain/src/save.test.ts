@@ -8,8 +8,10 @@ import {
   createUmaSave,
   migratePlayerProfileV1,
   migratePlayerProfileV2,
+  migratePlayerProfileV3,
   migrateUmaSaveV1,
   migrateUmaSaveV2,
+  migrateUmaSaveV3,
   parseCardSave,
   parsePlayerProfile,
   parsePlayerProfileOrThrow,
@@ -17,6 +19,7 @@ import {
   parseSaveSnapshotOrThrow,
   parseSyncRequest,
   parseUmaSave,
+  parseUmaSaveOrThrow,
 } from './save'
 
 const aptitudes = {
@@ -136,23 +139,26 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, trainingLevel: 11 })).toBeNull()
     expect(parseUmaSave({ ...save, deckCardIds: ['c1', 'c1'] })).toBeNull()
     expect(parseCardSave({ templateId: 'c1', level: 6, exp: 0, limitBreak: 0, maxCouponGranted: false })).toBeNull()
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 4 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 4 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 5 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 5 })).toThrow(/App update required/)
   })
 
   it('migrates v1 profiles and Umas into current defaults and preserves every v2 goal fact', () => {
     const profileV1 = { ...createPlayerProfile('v1', 1), schemaVersion: 1 as const, tickets: 77 }
-    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 3 })
+    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 4 })
     const profileV2 = { ...profileV1, schemaVersion: 2 as const }
-    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: 3 })
+    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: 4 })
+    const profileV3 = { ...profileV1, schemaVersion: 3 as const }
+    expect(migratePlayerProfileV3(profileV3)).toEqual({ ...profileV3, schemaVersion: 4 })
     const current = createUmaSave(uma('u1'))
     const { schemaVersion: _schemaVersion, scenarioStarted: _scenarioStarted, skillHistory: _skillHistory,
       currentParents: _currentParents, parentSnapshot: _parentSnapshot, goalPlanVersion: _goalPlanVersion,
-      scenarioJourneys: _scenarioJourneys, ...legacy } = current
+      scenarioJourneys: _scenarioJourneys, scenarioModifier: _scenarioModifier, ...legacy } = current
     const migrated = migrateUmaSaveV1({ ...legacy, level: 20 })
     expect(migrated).toMatchObject({
-      schemaVersion: 3, level: 20, scenarioStarted: true, currentParents: [], parentSnapshot: null,
+      schemaVersion: 4, level: 20, scenarioStarted: true, currentParents: [], parentSnapshot: null,
       goalPlanVersion: 0, scenarioJourneys: [],
+      scenarioModifier: null,
       skillHistory: [{ skillId: 'skill-u1', origin: 'own-unique', sourceId: 'u1', tier: 2 }],
     })
     expect(parseUmaSave(migrated)).toEqual(migrated)
@@ -161,8 +167,9 @@ describe('save parsing', () => {
       id: 'goal:1:aptitude', slot: 'aptitude' as const, raceId: 'synthetic-race', kind: 'win' as const,
       minimumMarginLengths: 0, status: 'completed' as const, completedRaceResultId: 'race:u1:4', completedAt: 22,
     }
+    const { scenarioModifier: _currentModifier, ...preModifier } = current
     const legacyV2 = {
-      ...current,
+      ...preModifier,
       schemaVersion: 2 as const,
       scenarioStarted: true,
       goalPlanVersion: 1,
@@ -176,9 +183,14 @@ describe('save parsing', () => {
       }],
     }
     const migratedV2 = migrateUmaSaveV2(legacyV2)
-    expect(migratedV2).toMatchObject({ schemaVersion: 3, goalPlanVersion: 1 })
+    expect(migratedV2).toMatchObject({ schemaVersion: 4, goalPlanVersion: 1, scenarioModifier: null })
     expect(migratedV2.scenarioJourneys[0]?.goals).toEqual(legacyV2.scenarioJourneys[0]?.goals.map((item) => ({ ...item, series: null })))
     expect(parseUmaSave(migratedV2)).toEqual(migratedV2)
+
+    const legacyV3 = { ...preModifier, schemaVersion: 3 as const }
+    const migratedV3 = migrateUmaSaveV3(legacyV3)
+    expect(migratedV3).toEqual({ ...legacyV3, schemaVersion: 4, scenarioModifier: null })
+    expect(parseUmaSave(migratedV3)).toEqual(migratedV3)
   })
 
   it('strictly rejects duplicate histories, recursive parents, and malformed journeys', () => {
@@ -186,6 +198,23 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, skillHistory: [...save.skillHistory, ...save.skillHistory] })).toBeNull()
     expect(parseUmaSave({ ...save, currentParents: [{ umaId: 'p1' }] })).toBeNull()
     expect(parseUmaSave({ ...save, scenarioJourneys: [{ tier: 1, tracking: 'tracked', state: 'active', completedAt: null, goals: [] }] })).toBeNull()
+  })
+
+  it('accepts only the modifier state for the active tier and rejects future or malformed state', () => {
+    const base = { ...createUmaSave(uma('u1')), level: 11, scenarioStarted: true, goalPlanVersion: 0 }
+    const spirit = { version: 1 as const, tier: 2 as const, kind: 'team-spirit' as const, bursts: 3 }
+    expect(parseUmaSave({ ...base, scenarioModifier: spirit })).toMatchObject({ scenarioModifier: spirit })
+    expect(parseUmaSave({ ...base, scenarioModifier: { ...spirit, version: 2 } })).toBeNull()
+    expect(() => parseUmaSaveOrThrow({ ...base, scenarioModifier: { ...spirit, version: 2 } })).toThrow(/App update required/)
+    expect(parseUmaSave({ ...base, scenarioModifier: { ...spirit, tier: 3 } })).toBeNull()
+    expect(parseUmaSave({ ...base, scenarioModifier: { ...spirit, bursts: -1 } })).toBeNull()
+    expect(parseUmaSave({ ...base, scenarioModifier: { ...spirit, extra: true } })).toBeNull()
+
+    const climaxBase = { ...base, level: 21 }
+    const climax = { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 4, stock: 2, used: 2 }
+    expect(parseUmaSave({ ...climaxBase, scenarioModifier: climax })).toMatchObject({ scenarioModifier: climax })
+    expect(parseUmaSave({ ...climaxBase, scenarioModifier: { ...climax, used: 1 } })).toBeNull()
+    expect(parseUmaSave({ ...climaxBase, scenarioStarted: false, scenarioModifier: climax })).toBeNull()
   })
 
   it('strictly validates single and series goal shapes and distinct frozen targets', () => {
@@ -238,10 +267,22 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 4 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 5 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
+    const currentUma = { ...createUmaSave(uma('u1')), level: 11, scenarioStarted: true, goalPlanVersion: 0 }
+    expect(() => parseSaveSnapshotOrThrow({
+      entities: [
+        duplicate,
+        {
+          kind: 'umas', id: currentUma.templateId, version: 1, deleted: false, updatedAt: 1,
+          data: { ...currentUma, scenarioModifier: { version: 2, tier: 2, kind: 'team-spirit', bursts: 0 } },
+        },
+      ],
+      logs: [],
+      serverTime: 1,
+    })).toThrow(/scenario modifier version 2/)
   })
 
   it('strictly validates independent badge entities and flair logs', () => {

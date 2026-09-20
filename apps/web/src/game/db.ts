@@ -1,15 +1,20 @@
 import {
   migratePlayerProfileV1,
   migratePlayerProfileV2,
+  migratePlayerProfileV3,
   migrateUmaSaveV1,
   migrateUmaSaveV2,
+  migrateUmaSaveV3,
   parseLegacyPlayerProfileV1,
   parseLegacyPlayerProfileV2,
+  parseLegacyPlayerProfileV3,
   parseLegacyUmaSaveV1,
   parseLegacyUmaSaveV2,
+  parseLegacyUmaSaveV3,
   parsePlayerProfile,
   parseBadgeState,
   parseUmaSave,
+  parseUmaSaveOrThrow,
   type CardSave,
   type BadgeStateV1,
   type FlairEventV1,
@@ -174,6 +179,38 @@ class RacerDb extends Dexie {
     })
     // Additive: album preferences are device-local, so there is nothing to migrate.
     this.version(6).stores(storesWithAlbumPrefs)
+    this.version(7).stores(storesWithAlbumPrefs).upgrade(async (tx: Transaction) => {
+      const profileTable = tx.table('profile')
+      const umaTable = tx.table('umas')
+      const outboxTable = tx.table('outbox')
+      const queuedAt = Date.now()
+      const queue = async (kind: EntityKind, id: string) => {
+        await outboxTable.where('[kind+id]').equals([kind, id]).delete()
+        await outboxTable.add({ kind, id, op: 'upsert', queuedAt })
+      }
+
+      const profileRow = await profileTable.get('main') as VersionedRow<unknown> | undefined
+      if (profileRow && !parsePlayerProfile(profileRow.data)) {
+        const legacy = parseLegacyPlayerProfileV3(profileRow.data)
+        if (!legacy) throw new Error('Local v3 player profile cannot be migrated')
+        await profileTable.put({ ...profileRow, data: migratePlayerProfileV3(legacy) })
+        await queue('profile', 'main')
+      }
+
+      const umaRows = await umaTable.toArray() as VersionedRow<unknown>[]
+      for (const row of umaRows) {
+        if (parseUmaSave(row.data)) continue
+        if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data && row.data.schemaVersion === 4) {
+          parseUmaSaveOrThrow(row.data)
+        }
+        const legacy = parseLegacyUmaSaveV3(row.data)
+        if (!legacy) throw new Error(`Local v3 Uma ${row.id} cannot be migrated`)
+        const migrated = migrateUmaSaveV3(legacy)
+        if (migrated.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
+        await umaTable.put({ ...row, data: migrated })
+        await queue('umas', row.id)
+      }
+    })
   }
 }
 

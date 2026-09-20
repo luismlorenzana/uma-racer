@@ -52,6 +52,25 @@ describe('goal view projections', () => {
     expect(buildJourneyView({ ...uma, scenarioJourneys: [{ tier: 1, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] }] }, content)[0]?.tracking).toBe('legacy-untracked')
   })
 
+  it('retains static completed modifier identity and shows active or legacy tier progress', () => {
+    const tierTwo = { tier: 2, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: null, goals: [] }
+    const tierThree = {
+      ...journey,
+      tier: 3,
+      goals: journey.goals.map((goal) => ({ ...goal, id: goal.id.replace('goal:1:', 'goal:3:') })),
+    }
+    const active = {
+      ...uma,
+      level: 21,
+      scenarioJourneys: [{ tier: 1, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: null, goals: [] }, tierTwo, tierThree],
+      scenarioModifier: { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 3, stock: 2, used: 1 },
+    }
+    const projected = buildJourneyView(active, content)
+    expect(projected[1]?.modifier).toMatchObject({ kind: 'team-spirit', detail: 'Tier-local progress expired at promotion.' })
+    expect(projected[2]?.modifier).toMatchObject({ kind: 'climax', detail: '2 stocked · 1 used · expires at promotion.' })
+    expect(buildJourneyView({ ...active, scenarioModifier: null }, content)[2]?.modifier).toMatchObject({ legacyUnavailable: true })
+  })
+
   it('pins, filters, and deduplicates active goal races and exposes pre-race stakes', () => {
     const catalog = buildGoalRaceCatalog([races[0]!, races[2]!, races[1]!], uma, content)
     expect(catalog.map((item) => item.race.id)).toEqual(['race-b', 'race-a', 'race-c'])

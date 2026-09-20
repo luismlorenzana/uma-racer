@@ -17,6 +17,7 @@ import {
   rebaseBadgePreferences,
   parseSaveSnapshotOrThrow,
   parseUmaSave,
+  parseUmaSaveOrThrow,
   type CardSave,
   type BadgeStateV1,
   type FlairEventV1,
@@ -63,8 +64,8 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   const badgeRows = await db.badges.toArray()
   const flairRows = await db.flairEvents.toArray()
   const umas = umaRows.map((row) => {
-    const data = parseUmaSave(row.data)
-    if (!data || data.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
+    const data = parseUmaSaveOrThrow(row.data)
+    if (data.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
     return { ...row, data }
   })
   const cards = cardRows.map((row) => {
@@ -127,8 +128,8 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       const row = record as Record<string, unknown>
       if ((row.kind === 'profile' || row.kind === 'umas') && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null) {
         const data = row.data as Record<string, unknown>
-        if (row.kind === 'profile' ? data.schemaVersion === 1 || data.schemaVersion === 2 :
-          !Object.hasOwn(data, 'schemaVersion') || data.schemaVersion === 2) {
+        if (row.kind === 'profile' ? data.schemaVersion === 1 || data.schemaVersion === 2 || data.schemaVersion === 3 :
+          !Object.hasOwn(data, 'schemaVersion') || data.schemaVersion === 2 || data.schemaVersion === 3) {
           legacyKeys.add(`${row.kind}/${row.id}`)
         }
       }

@@ -7,7 +7,9 @@ import {
   applyForm,
   baselineStatCap,
   createCardSave,
+  createScenarioModifierState,
   createUmaSave,
+  deckSlotCount,
   dealTrainingCards,
   npcRaceStats,
   parseRaceCondition,
@@ -120,6 +122,62 @@ function runTraining(build: Build, shape: DeckShape = 'stat') {
   }
 }
 
+type ModifierCase = 'tier2-baseline' | 'tier2-organic' | 'tier2-forced' | 'tier3-baseline' | 'tier3-climax'
+
+function runScenarioTraining(scenarioCase: ModifierCase) {
+  const tier = scenarioCase.startsWith('tier2') ? 2 : 3
+  const templates = types.slice(0, deckSlotCount(tier)).map((type, index) => ({
+    ...template(index, buildState.mature.weight, type),
+    era: tier,
+  }))
+  let cards: TrainingCardInput[] = templates.map((item) => ({
+    template: item,
+    save: { ...createCardSave(item), level: buildState.mature.level, limitBreak: buildState.mature.limitBreak },
+  }))
+  const modifier = scenarioCase === 'tier2-organic' || scenarioCase === 'tier2-forced'
+    ? createScenarioModifierState(2)
+    : scenarioCase === 'tier3-climax'
+      ? { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 4, stock: 4, used: 0 }
+      : null
+  let uma = {
+    ...createUmaSave(umaTemplate),
+    level: (tier - 1) * 10 + 1,
+    scenarioStarted: true,
+    scenarioModifier: modifier,
+  }
+  const startingStats = { ...uma.stats }
+  let turns = 0
+  let totalApplied = 0
+  let modifierTriggers = 0
+  while (uma.trainingLevel < MAX_TRAINING_LEVEL && turns < 25) {
+    const seed = trainingTurnSeed(20_000, uma.templateId, tier, uma.trainingsThisScenario)
+    const naturalDeal = dealTrainingCards(cards, seed)
+    const deal = scenarioCase === 'tier2-forced'
+      ? { seed, placements: naturalDeal.placements.map((entry) => ({ ...entry, placement: 'speed' as const })) }
+      : naturalDeal
+    const useClimaxItem = scenarioCase === 'tier3-climax' && uma.scenarioModifier?.kind === 'climax' && uma.scenarioModifier.stock > 0
+    const previews = previewTrainingFacilities(uma, umaTemplate, cards, deal, useClimaxItem)
+    const greedyFacility = STATS.reduce((best, candidate) => {
+      const total = (value: Facility) => Object.values(previews[value].appliedGains).reduce((sum, gain) => sum + (gain ?? 0), 0)
+      return total(candidate) > total(best) ? candidate : best
+    }, STATS[0])
+    const facility: Facility = scenarioCase === 'tier2-forced' ? 'speed' : greedyFacility
+    const result = resolveTrainingTurn({ uma, template: umaTemplate, cards, skills, deal, facility, useClimaxItem })
+    if (result.scenarioModifier?.triggered) modifierTriggers += 1
+    totalApplied += Object.values(result.preview.appliedGains).reduce((sum, gain) => sum + (gain ?? 0), 0)
+    uma = result.uma
+    cards = result.cards.map((card, index) => ({ save: card.card, template: templates[index]! }))
+    turns += 1
+  }
+  return {
+    turns,
+    reachedTl10: uma.trainingLevel === MAX_TRAINING_LEVEL,
+    averageGain: totalApplied / turns,
+    statGain: STATS.reduce((sum, stat) => sum + uma.stats[stat] - startingStats[stat], 0),
+    modifierTriggers,
+  }
+}
+
 const makeSkill = (
   id: string,
   condition: string,
@@ -167,7 +225,7 @@ function g1WinRate(k: 0 | 9): number {
   return 100 * wins / RACE_SAMPLES
 }
 
-console.log(`Milestone 4 support-deck balance · synthetic fixtures only · ${RACE_SAMPLES} G1 seeds/row`)
+console.log(`Support-deck and scenario-modifier balance · synthetic fixtures only · ${RACE_SAMPLES} G1 seeds/row`)
 console.log('deck/build     TL10 turns  avg applied gain  stat gain  learned/available hints  Race Bonus')
 for (const shape of ['stat', 'friend', 'group'] as const) {
   for (const build of ['weak', 'mid', 'mature'] as const) {
@@ -175,6 +233,11 @@ for (const shape of ['stat', 'friend', 'group'] as const) {
     const label = `${shape}/${build}`
     console.log(`${label.padEnd(14)} ${String(result.turns).padStart(10)}  ${result.averageGain.toFixed(1).padStart(16)}  ${String(result.statGain).padStart(9)}  ${`${result.learnedHints}/${result.availableHints}`.padStart(23)}  ${(result.raceBonus * 100).toFixed(1).padStart(9)}%`)
   }
+}
+console.log('scenario case       TL10 turns  avg applied gain  stat gain  bursts/items used')
+for (const scenarioCase of ['tier2-baseline', 'tier2-organic', 'tier2-forced', 'tier3-baseline', 'tier3-climax'] as const) {
+  const result = runScenarioTraining(scenarioCase)
+  console.log(`${scenarioCase.padEnd(19)} ${String(result.reachedTl10 ? result.turns : '>25').padStart(10)}  ${result.averageGain.toFixed(1).padStart(16)}  ${String(result.statGain).padStart(9)}  ${String(result.modifierTriggers).padStart(17)}`)
 }
 const k0 = g1WinRate(0)
 const k9 = g1WinRate(9)

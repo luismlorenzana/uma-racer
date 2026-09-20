@@ -88,6 +88,8 @@ function ResultPanel({ result, skillNames, cardNames }: { result: TrainingTurnRe
         {result.trainingLevelsGained > 0 && <span className="rounded-full bg-gold/20 px-2 py-1">Training Level +{result.trainingLevelsGained}</span>}
         {result.ticketReward > 0 && <span className="rounded-full bg-gold/20 px-2 py-1">+{result.ticketReward} tickets</span>}
         {result.cardCouponReward > 0 && <span className="rounded-full bg-violet-100 px-2 py-1">+{result.cardCouponReward} Card Coupon</span>}
+        {result.scenarioModifier?.kind === 'team-spirit' && result.scenarioModifier.triggered && <span className="rounded-full bg-violet-100 px-2 py-1">Team Spirit · +{result.scenarioModifier.bonusGains.speed} all stats</span>}
+        {result.scenarioModifier?.kind === 'climax' && result.scenarioModifier.itemConsumed && <span className="rounded-full bg-violet-100 px-2 py-1">Climax item used · ×{result.scenarioModifier.multiplier.toFixed(2)} gains</span>}
         {result.hintResults.map((hint) => (
           <span key={hint.cardId} className="rounded-full bg-violet-100 px-2 py-1">
             {hint.learnedSkillId ? `Hint: ${skillNames.get(hint.learnedSkillId) ?? hint.learnedSkillId}` : `Known hint +${hint.fallbackSp} SP`}
@@ -121,11 +123,12 @@ export function TrainingScreen() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<Awaited<ReturnType<typeof trainUma>> | null>(null)
+  const [useClimaxItem, setUseClimaxItem] = useState(false)
 
   const view = useMemo(() => {
     if (contentState.status !== 'ready' || !profile || !uma) return null
-    return buildTrainingView(profile, uma, cards, contentState.content)
-  }, [cards, contentState, profile, uma])
+    return buildTrainingView(profile, uma, cards, contentState.content, useClimaxItem)
+  }, [cards, contentState, profile, uma, useClimaxItem])
 
   const earnedFlair = useMemo(() => {
     if (!result || contentState.status !== 'ready' || !uma) return []
@@ -169,8 +172,8 @@ export function TrainingScreen() {
     setBusy(true)
     setError(null)
     setResult(null)
-    void trainUma(umaId, facility)
-      .then(setResult)
+    void trainUma(umaId, facility, useClimaxItem)
+      .then((next) => { setResult(next); setUseClimaxItem(false) })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Training could not be saved'))
       .finally(() => setBusy(false))
   }
@@ -232,6 +235,28 @@ export function TrainingScreen() {
           </div>
         </section>
 
+        {model.modifier && (
+          <section className={`rounded-2xl border-2 px-3 py-2 shadow-sm ${model.modifier.legacyUnavailable ? 'border-amber-300 bg-amber-50' : 'border-violet-200 bg-violet-50'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-xs font-extrabold tracking-wide text-violet-700 uppercase">Scenario modifier</p><h2 className="font-extrabold">{model.modifier.name}</h2></div>
+              {model.uma.scenarioModifier?.kind === 'climax' && <span className="rounded-full bg-violet-700 px-2 py-1 text-xs font-extrabold text-white">{model.uma.scenarioModifier.stock} stocked</span>}
+            </div>
+            <p className="mt-1 text-xs font-bold text-ink-soft">{model.modifier.rule}</p>
+            <p className="mt-1 text-xs text-ink-soft">{model.modifier.detail}</p>
+            {model.uma.scenarioModifier?.kind === 'climax' && (
+              <button
+                type="button"
+                disabled={busy || model.uma.scenarioModifier.stock < 1}
+                aria-pressed={useClimaxItem}
+                onClick={() => setUseClimaxItem((value) => !value)}
+                className={`mt-2 min-h-11 w-full rounded-xl px-3 text-sm font-extrabold disabled:opacity-50 ${useClimaxItem ? 'bg-violet-700 text-white' : 'border-2 border-violet-300 bg-white text-violet-800'}`}
+              >
+                {model.uma.scenarioModifier.stock < 1 ? 'Win a race to earn an item' : useClimaxItem ? 'Use item on this Training' : 'Save items · Tap to use one'}
+              </button>
+            )}
+          </section>
+        )}
+
         <section aria-label="Training facilities">
           <div className="grid grid-cols-5 gap-1.5">
             {STATS.map((facility) => {
@@ -247,6 +272,8 @@ export function TrainingScreen() {
                 >
                   <span className="text-[10px] leading-3 font-extrabold">{STAT_LABEL[facility]}</span>
                   {facilityView.friendship && <span className="mt-0.5 rounded-full bg-gold px-1 text-[8px] font-extrabold text-white">FRIEND</span>}
+                  {facilityView.scenarioModifier?.kind === 'team-spirit' && facilityView.scenarioModifier.triggered && <span className="mt-0.5 rounded-full bg-violet-700 px-1 text-[8px] font-extrabold text-white">SPIRIT</span>}
+                  {facilityView.scenarioModifier?.kind === 'climax' && facilityView.scenarioModifier.triggered && <span className="mt-0.5 rounded-full bg-violet-700 px-1 text-[8px] font-extrabold text-white">×{facilityView.scenarioModifier.multiplier.toFixed(2)}</span>}
                   <div className="mt-1 flex min-h-16 flex-col items-center gap-0.5">
                     {facilityView.cards.map((card) => <CardIcon key={card.save.templateId} card={card} friendship={card.template.type === facility} />)}
                   </div>

@@ -285,7 +285,9 @@ function seriesGoal(tier: number, selected: SeriesCandidate): ScenarioGoal {
 
 /** Freeze three distinct goal targets from post-inheritance aptitudes and private content. */
 export function generateScenarioJourney(input: GenerateScenarioJourneyInput): ScenarioJourney {
-  const uma = input.uma.scenarioStarted ? parseUmaSave({ ...input.uma, scenarioStarted: false }) : null
+  const uma = input.uma.scenarioStarted
+    ? parseUmaSave({ ...input.uma, scenarioStarted: false, scenarioModifier: null })
+    : null
   if (!uma || input.uma.templateId !== input.umaTemplate.id) throw new Error('Scenario goal Uma is malformed or has not started')
   const tier = tierOfLevel(uma.level)
   if (!scenarioForTier(tier)) throw new Error('Scenario goal tier is unknown')
