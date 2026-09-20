@@ -14,7 +14,8 @@ while the stable itself grows into a collection.
 > A full alignment review on 2026-09-19 compared the build against the original design. Work is underway on
 > [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): race-series leg support and retroactive
 > title evaluation are implemented and published, scenario goals now follow the real horse's career and sex, including
-> full race sets from tier 7, and the JP scenario ladder now runs through tier 14 and Uma level 140. Dependable releases follow. Then
+> full race sets from tier 7, the JP scenario ladder now runs through tier 14 and Uma level 140, and releases now expose
+> code/content versions with a verified publisher and safe app restart. The owner playability pass follows. Then
 > [Milestone 8](docs/tasks/M008-scenario-identity.md) gives each scenario its own modifier and turns on Friend/Group
 > cards, [Milestone 9](docs/tasks/M009-look-and-feel.md) replaces the skin with the
 > [Paddock visual system](docs/design/visual-system.md), [Milestone 10](docs/tasks/M010-collection-depth.md) gives the

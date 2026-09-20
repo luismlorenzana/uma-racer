@@ -13,6 +13,7 @@ import type {
   UmaTemplate,
 } from '@racer/domain'
 import { contentApi } from '../api/client'
+import { ContentFallbackError } from './errors'
 import { findRequiredFile, parseContentAtlas, parseContentManifest, parseContentPack } from './parse'
 
 const LAST_MANIFEST_KEY = 'uma-racer:last-content-manifest'
@@ -365,7 +366,7 @@ export class ContentRuntime {
           generation,
         )
       } catch (fallbackError) {
-        throw new Error(`Content unavailable: ${String(networkError)}; cached version failed: ${String(fallbackError)}`)
+        throw new ContentFallbackError(networkError, fallbackError)
       }
     }
     throw networkError instanceof Error ? networkError : new Error('Content unavailable')

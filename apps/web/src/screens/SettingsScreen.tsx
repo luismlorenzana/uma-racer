@@ -1,6 +1,8 @@
 import { useReducedMotion } from 'motion/react'
 import { flairContentCoverage } from '@racer/domain'
 import { Link } from 'react-router'
+import { APP_BUILD_ID } from '../app/build'
+import { useAppUpdate } from '../app/UpdateNotice'
 import { useAuth } from '../auth/AuthProvider'
 import { useContent } from '../content/ContentProvider'
 import { useGame } from '../game/store'
@@ -25,6 +27,7 @@ export function SettingsScreen() {
   const orphanedCards = useGame((s) => s.orphanedCardIds.length)
   const reduced = useReducedMotion()
   const content = useContent()
+  const update = useAppUpdate()
   const contentLabel =
     content.status === 'signed-out'
       ? 'Sign in first'
@@ -33,7 +36,7 @@ export function SettingsScreen() {
         : content.status === 'empty'
           ? 'Not imported'
           : content.status === 'ready'
-            ? `${content.content.manifest.version}${content.content.origin === 'offline-cache' ? ' · offline' : ''}`
+            ? `${content.content.manifest.version} · ${content.content.origin === 'offline-cache' ? 'offline' : 'network'}`
             : '…'
   const contentCounts =
     content.status === 'ready'
@@ -43,11 +46,27 @@ export function SettingsScreen() {
   const standalone =
     typeof window !== 'undefined' &&
     (window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true)
+  const updateLabel = update.status === 'current'
+    ? 'Current'
+    : update.activeActions > 0
+      ? 'Ready · waiting for save'
+      : update.status === 'ready'
+        ? 'Ready · restart available'
+        : 'Restarting'
+  const diagnostic = content.status === 'loading' ? null : content.diagnostic
+  const runDiagnosticAction = async () => {
+    if (!diagnostic?.action) return
+    if (diagnostic.action.kind === 'retry' && 'retry' in content) await content.retry()
+    else if (diagnostic.action.kind === 'sign-in') await auth.signIn()
+    else if (diagnostic.action.kind === 'sign-out') await auth.signOut()
+  }
 
   return (
     <div className="flex flex-col gap-4 pt-2">
       <h1 className="font-display px-1 text-2xl font-bold tracking-tight text-ink">Settings</h1>
       <Panel>
+        <Row label="App build" value={APP_BUILD_ID} />
+        <Row label="App update" value={updateLabel} />
         <Row label="Signed in as" value={auth.user?.email ?? auth.user?.name ?? '—'} />
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />
         <Row label="Save state" value={gameStatus} />
@@ -56,6 +75,17 @@ export function SettingsScreen() {
         {(orphanedUmas > 0 || orphanedCards > 0) && <Row label="Missing references" value={`${orphanedUmas} Umas · ${orphanedCards} cards`} />}
         {sync.error && <p className="border-t border-sky-100 pt-2 text-xs font-bold text-red-700">{sync.error}</p>}
         <Row label="Content packs" value={contentLabel} />
+        {diagnostic && diagnostic.code !== 'ready' && (
+          <div className="border-t border-sky-100 pt-2 text-xs">
+            <p className="font-bold">{diagnostic.title}</p>
+            <p className="mt-1 text-ink-soft">{diagnostic.message}</p>
+            {diagnostic.action && (
+              <button type="button" onClick={() => void runDiagnosticAction()} className="mt-2 min-h-11 rounded-sm border border-line px-3 font-bold">
+                {diagnostic.action.label}
+              </button>
+            )}
+          </div>
+        )}
         {coverage && <Row label="Flair coverage" value={`${coverage.coveredSeries}/${coverage.totalSeries} series · ${coverage.mainVenues}/10 venues`} />}
         <div className="border-t border-sky-100 pt-2 text-right text-xs font-bold text-ink-soft">{contentCounts}</div>
         <Row label="Home Screen app" value={standalone ? 'Yes' : 'No (Safari tab)'} />

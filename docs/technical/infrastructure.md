@@ -67,3 +67,59 @@ runs the first deploy.
 | Saves | `PERSISTENCE=local` → `apps/api/.data/save.json` | `PERSISTENCE=firestore` |
 | Content | `CONTENT_SOURCE=local` → `content/` | `CONTENT_SOURCE=gcs` → private bucket |
 | iPhone testing | `vite --host` over LAN, Safari Web Inspector over USB, iOS Simulator | Home Screen web app |
+
+## Release runbook
+
+Code, private content, and the installed Home Screen app update independently. Settings shows the current **app build id**,
+the active **content version and origin**, and whether an app restart is ready. A release is complete only after all three
+states have been checked.
+
+### 1. Deploy code
+
+Merge the green feature PR to `main`. The deploy workflow verifies the monorepo, deploys Cloud Run and Hosting, and performs
+the unauthenticated health/auth-guard smoke checks. Watch it to completion without changing local gcloud configuration:
+
+```bash
+gh run watch <run-id> -R luismlorenzana/uma-racer --exit-status
+```
+
+If the release contains only code, skip the publish step. Open the hosted app while signed in and confirm Settings shows the
+new 12-character build id.
+
+### 2. Build and publish private content when it changed
+
+Generate the private, gitignored output first. Keep `content/overrides/flair.json` in place when rebuilding the data pack.
+
+```bash
+pnpm data:import
+pnpm assets:import
+pnpm content:publish -- --dry-run
+pnpm content:publish
+```
+
+`content:publish` re-hashes every local manifest file and refuses missing, altered, or malformed output. It checks the private
+bucket, uploads only missing or size-mismatched content-addressed objects, and uploads `manifest.json` last. Old hashed objects
+are deliberately retained. Both modes print the local version, remote version before and after, uploaded/already-present
+counts, total bytes, and elapsed time.
+
+The command always invokes gcloud with `CLOUDSDK_ACTIVE_CONFIG_NAME=default` and `CLOUDSDK_CORE_PROJECT=uma-racer` in its child
+environment. It never runs `gcloud config set` and never changes the owner's active work account. `--bucket`, `--project`, and
+`--content-dir` are available for recovery/testing; production defaults to `uma-racer-content`, `uma-racer`, and root
+`content/`.
+
+After a real publish, open the hosted app while signed in. Confirm Settings reports the published content version with network
+origin, then fetch `/api/content/manifest` through that same authenticated session. A null version means the bucket is empty;
+403 means the signed-in account is not allow-listed; a missing object, integrity failure, or network-only failure each receives
+a distinct diagnostic. A complete verified offline fallback remains a success state. None of these recovery paths clear,
+replace, or reseed the local save.
+
+### 3. Restart the installed app
+
+Reopen the Home Screen app. A waiting service worker—or a worker that took control in another tab—shows **Update ready** with a
+**Restart** action instead of reloading silently. If Training, race completion, redemption, promotion, or Scenario Start is
+committing, the restart waits for that promise to settle before activation/reload. Tap Restart and confirm Settings shows both
+the new build id and intended content version. The content runtime keeps the last complete version active until a replacement
+fully verifies, so both an old shell seeing new content and a new shell falling back to old cached content remain usable.
+
+If publishing fails, leave the existing manifest in place, fix credentials/network/local output, rerun `--dry-run`, and retry.
+Never delete IndexedDB, the service-worker content cache, old bucket objects, or the owner's save as release recovery.

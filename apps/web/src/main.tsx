@@ -6,6 +6,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 import { router } from './app/router'
+import { registerAppUpdates } from './app/register-updates'
+import { UpdateNotice } from './app/UpdateNotice'
 import { AuthProvider } from './auth/AuthProvider'
 import { ContentProvider } from './content/ContentProvider'
 import { GameProvider } from './game/GameProvider'
@@ -19,6 +21,8 @@ const queryClient = new QueryClient({
 // Animation features load in a separate chunk; `strict` forbids the heavier `motion.*` components.
 const loadMotionFeatures = () => import('./ui/motionFeatures').then((mod) => mod.default)
 
+registerAppUpdates()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -27,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
           <GameProvider>
             <LazyMotion features={loadMotionFeatures} strict>
               <RouterProvider router={router} />
+              <UpdateNotice />
             </LazyMotion>
           </GameProvider>
         </ContentProvider>

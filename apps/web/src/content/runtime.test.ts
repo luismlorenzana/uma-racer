@@ -161,7 +161,7 @@ describe('ContentRuntime', () => {
     expect(store.value).toBeNull()
   })
 
-  it('loads the last known-good manifest through the offline byte cache', async () => {
+  it('lets a new shell recover with the last known-good manifest through the offline byte cache', async () => {
     const data = fixture()
     const store = new MemoryStore()
     store.value = JSON.stringify(data.manifest)
@@ -177,6 +177,26 @@ describe('ContentRuntime', () => {
 
     expect(result.status).toBe('ready')
     if (result.status === 'ready') expect(result.content.origin).toBe('offline-cache')
+  })
+
+  it('keeps an old active shell working when a new network version is incomplete', async () => {
+    let current = fixture('a')
+    const old = current
+    const store = new MemoryStore()
+    const runtime = new ContentRuntime(transport(() => current), store, urlFactory().urls)
+    const first = await runtime.load()
+    expect(first.status).toBe('ready')
+    current = fixture('b')
+    const missing = current.manifest.files.find((file) => file.path.startsWith('data/umas.'))!
+    current.responses.delete(missing.path)
+
+    const recovered = await runtime.load()
+
+    expect(recovered.status).toBe('ready')
+    if (recovered.status === 'ready') {
+      expect(recovered.content.manifest.version).toBe(old.manifest.version)
+      expect(recovered.content.origin).toBe('offline-cache')
+    }
   })
 
   it('keeps the active version until a replacement is complete, then revokes its URLs', async () => {

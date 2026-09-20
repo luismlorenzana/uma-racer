@@ -87,6 +87,9 @@ importers:
       react-router:
         specifier: ^7.18.3
         version: 7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      workbox-window:
+        specifier: ^7.4.0
+        version: 7.4.1
       zustand:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
