@@ -10,12 +10,14 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { setUmaDeck } from '../game/actions'
-import { buildDeckView, deckEffectRows, formatDeckEffect, type DeckEraFilter, type DeckTypeFilter } from '../game/deck-view'
+import { buildDeckView, deckEffectRows, formatDeckEffect, type DeckTypeFilter } from '../game/deck-view'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
+import { Button } from '../ui/Button'
 import { GameButton } from '../ui/GameButton'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
+import { CardPickerSheet } from '../ui/album/CardPickerSheet'
 
 const TYPES: readonly DeckTypeFilter[] = ['all', 'speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'group']
 const TYPE_LABEL: Record<SupportCardType, string> = {
@@ -38,15 +40,14 @@ export function DeckEditorScreen() {
   const cards = useGame((state) => state.cards)
   const pushToast = useGame((state) => state.pushToast)
   const [draft, setDraft] = useState<string[] | null>(null)
-  const [type, setType] = useState<DeckTypeFilter>('all')
-  const [era, setEra] = useState<DeckEraFilter>('all')
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const ids = draft ?? uma?.deckCardIds ?? []
   const model = useMemo(() => contentState.status === 'ready' && uma
-    ? buildDeckView(uma, cards, contentState.content, ids, { type, era })
-    : null, [cards, contentState, era, ids, type, uma])
+    ? buildDeckView(uma, cards, contentState.content, ids, { type: 'all', era: 'all' })
+    : null, [cards, contentState, ids, uma])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to edit decks" detail="Support decks are part of your private save." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish private content before editing support decks." />
@@ -148,26 +149,33 @@ export function DeckEditorScreen() {
       {model.validationErrors.length > 0 && <div className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-900">{model.validationErrors.map((message) => <p key={message}>{message}</p>)}</div>}
 
       <section>
-        <h2 className="font-display text-lg font-bold text-ink">Owned cards</h2>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {TYPES.map((value) => <button key={value} type="button" onClick={() => setType(value)} className={`min-h-11 shrink-0 rounded-full px-3 text-xs font-extrabold ${type === value ? 'bg-violet-600 text-white' : 'bg-white'}`}>{value === 'all' ? 'All types' : TYPE_LABEL[value]}</button>)}
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-lg font-bold text-ink">Cards</h2>
+          <Button
+            size="sm"
+            disabled={busy || ids.length >= model.slotCount}
+            onClick={() => setPickerOpen(true)}
+          >
+            {ids.length >= model.slotCount ? 'Deck full' : 'Add card'}
+          </Button>
         </div>
-        <div className="mt-2 flex gap-2">
-          {(['all', 'current', 'later'] as const).map((value) => <button key={value} type="button" onClick={() => setEra(value)} className={`min-h-11 rounded-full px-4 text-xs font-extrabold ${era === value ? 'bg-sky-deep text-white' : 'bg-white'}`}>{value === 'all' ? 'All eras' : value === 'current' ? 'Eligible now' : 'Later'}</button>)}
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {model.candidates.map((candidate) => (
-            <button key={candidate.id} type="button" disabled={busy || candidate.disabledReason !== null} onClick={() => setIds([...ids, candidate.id])} className="min-h-24 overflow-hidden rounded-2xl border-2 border-white bg-white text-left shadow-sm [content-visibility:auto] disabled:opacity-55">
-              <div className="flex gap-2 p-2">
-                <AtlasSprite asset={candidate.asset} decorative className="h-14 w-14 shrink-0 rounded-xl bg-slate-100" fallback={<div className="flex h-full items-center justify-center">?</div>} />
-                <div className="min-w-0"><p className="line-clamp-2 text-xs font-extrabold">{candidate.template ? `${candidate.template.charName} · ${candidate.template.title}` : candidate.id}</p><p className="mt-1 text-[10px] font-bold text-ink-soft">{candidate.template ? `${TYPE_LABEL[candidate.template.type]} · Lv ${candidate.save.level} · LB${candidate.save.limitBreak}` : 'Missing content'}</p></div>
-              </div>
-              <p className={`min-h-8 px-2 pb-2 text-[10px] font-extrabold ${candidate.disabledReason ? 'text-ink-soft' : 'text-turf-deep'}`}>{candidate.disabledReason ?? '+ Add to deck'}</p>
-            </button>
-          ))}
-        </div>
-        {model.candidates.length === 0 && <Panel className="mt-3 text-center text-sm font-bold text-ink-soft">No owned cards match these filters.</Panel>}
+        <p className="mt-1 text-[13px] text-ink-soft">
+          The picker is the card album: search, filter by type, limit break or effect, and sort — with owned,
+          era-eligible cards already applied.
+        </p>
       </section>
+
+      <CardPickerSheet
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        content={contentState.content}
+        cards={cards}
+        umas={useGame.getState().umas}
+        tickets={useGame.getState().profile?.tickets ?? 0}
+        tier={model.tier}
+        excludeIds={ids}
+        onPick={(entry) => { setIds([...ids, entry.id]); setPickerOpen(false) }}
+      />
     </div>
   )
 }
