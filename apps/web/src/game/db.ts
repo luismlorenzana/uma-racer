@@ -20,6 +20,7 @@ import {
   type UmaSave,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Transaction } from 'dexie'
+import type { AlbumPrefs } from './album/prefs'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
 // outbox marker in one transaction before Zustand publishes it.
@@ -82,6 +83,8 @@ class RacerDb extends Dexie {
   ledger!: EntityTable<LogRow<LedgerEntry>, 'id'>
   flairEvents!: EntityTable<LogRow<FlairEventV1>, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
+  /** Device-local album preferences (D112). Never synced, never part of the save. */
+  albumPrefs!: EntityTable<AlbumPrefs, 'id'>
 
   constructor() {
     super('uma-racer')
@@ -95,6 +98,7 @@ class RacerDb extends Dexie {
       flairEvents: 'id, createdAt',
       outbox: '++seq, [kind+id]',
     }
+    const storesWithAlbumPrefs = { ...stores, albumPrefs: 'id' }
     this.version(1).stores(stores)
     this.version(2).stores(stores).upgrade(async (tx: Transaction) => {
       const table = tx.table('profile')
@@ -168,6 +172,8 @@ class RacerDb extends Dexie {
         await queue('umas', row.id)
       }
     })
+    // Additive: album preferences are device-local, so there is nothing to migrate.
+    this.version(6).stores(storesWithAlbumPrefs)
   }
 }
 

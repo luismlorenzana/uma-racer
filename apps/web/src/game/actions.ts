@@ -55,6 +55,11 @@ export async function startScenario(id: string, selection: import('@racer/domain
   })
 }
 
+export async function listLatestRaceTimes() {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.listLatestRaceTimes()
+}
+
 export async function listRaceHistory(limit = 20) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.listRaceHistory(limit)

@@ -55,6 +55,7 @@ import {
   completePersistentRace,
   prepareMemoryRace,
   preparePersistentRace,
+  readLatestRaceTimes,
   readRaceHistory,
   type PreparedRace,
 } from './racing'
@@ -581,6 +582,15 @@ export class GameRuntime {
 
   async promoteUma(id: string, now = Date.now()) {
     return this.startScenario(id, { parents: [], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [] }, now)
+  }
+
+  async listLatestRaceTimes(): Promise<Record<string, number>> {
+    if (!useGame.getState().persistent) {
+      const latest: Record<string, number> = {}
+      for (const record of this.memoryRaceHistory) latest[record.umaId] = Math.max(latest[record.umaId] ?? 0, record.createdAt)
+      return latest
+    }
+    return readLatestRaceTimes()
   }
 
   async listRaceHistory(limit = 20): Promise<RaceResultRecord[]> {
