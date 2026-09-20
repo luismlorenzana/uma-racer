@@ -1,5 +1,7 @@
 // Lazy gameplay mutations keep persistence/sync code out of the startup bundle.
 
+import { criticalGameplayAction } from '../app/update-lifecycle'
+
 export async function setFeaturedUma(id: string): Promise<void> {
   const { gameRuntime } = await import('./runtime')
   await gameRuntime.setFeaturedUma(id)
@@ -16,8 +18,10 @@ export async function setUmaDeck(id: string, orderedCardIds: readonly string[]):
 }
 
 export async function trainUma(id: string, facility: import('@racer/domain').Facility) {
-  const { gameRuntime } = await import('./runtime')
-  return gameRuntime.trainUma(id, facility)
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.trainUma(id, facility)
+  })
 }
 
 export async function prepareRace(
@@ -31,18 +35,24 @@ export async function prepareRace(
 }
 
 export async function completeRace(attempt: import('./racing').PreparedRace) {
-  const { gameRuntime } = await import('./runtime')
-  return gameRuntime.completeRace(attempt)
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.completeRace(attempt)
+  })
 }
 
 export async function promoteUma(id: string) {
-  const { gameRuntime } = await import('./runtime')
-  return gameRuntime.promoteUma(id)
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.promoteUma(id)
+  })
 }
 
 export async function startScenario(id: string, selection: import('@racer/domain').ScenarioStartSelection) {
-  const { gameRuntime } = await import('./runtime')
-  return gameRuntime.startScenario(id, selection)
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.startScenario(id, selection)
+  })
 }
 
 export async function listRaceHistory(limit = 20) {
@@ -51,8 +61,10 @@ export async function listRaceHistory(limit = 20) {
 }
 
 export async function promoteSupportCard(id: string) {
-  const { gameRuntime } = await import('./runtime')
-  return gameRuntime.promoteCard(id)
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.promoteCard(id)
+  })
 }
 
 export async function exchangeUmaShards() {
@@ -61,13 +73,17 @@ export async function exchangeUmaShards() {
 }
 
 export async function redeemCardCoupon(id: string) {
-  const { gameRuntime } = await import('./runtime')
-  return gameRuntime.redeemCardCoupon(id)
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.redeemCardCoupon(id)
+  })
 }
 
 export async function redeemUmaCoupon(id: string) {
-  const { gameRuntime } = await import('./runtime')
-  return gameRuntime.redeemUmaCoupon(id)
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.redeemUmaCoupon(id)
+  })
 }
 
 export async function saveBadgePreferences(id: string, preferences: import('@racer/domain').BadgePreferences | import('@racer/domain').TrainerBadgePreferences) {

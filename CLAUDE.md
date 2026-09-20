@@ -65,22 +65,23 @@ pnpm assets:import  # T001 image sources → private WebP atlases; run after dat
   Never run `gcloud config set …`.
 - Watch deploys with `gh run watch <id> -R luismlorenzana/uma-racer --exit-status`. Then verify: `/api/health` returns 200,
   `/api/save` returns 401 without a token, and the Hosting shell is `no-cache`.
-- The installed PWA picks up a new deploy on the **next** app open (service worker `autoUpdate`).
+- The installed PWA prompts **Update ready — Restart** and defers restart across gameplay commits. Settings shows the
+  deployed build id and private content version; follow the complete
+  [release runbook](docs/technical/infrastructure.md#release-runbook).
 - **`content/overrides/flair.json` is Claude's to author and keep current** (D107): it maps race-series legs and the ten
   main venues, and without it every race-set title and Grand Tour is unearnable. It is private and gitignored; re-run the
   import after editing it.
-- Publish content-addressed files before the manifest, so clients never see a manifest whose files are missing. Run the
-  two importers first, then upload with the owner's existing ADC session without changing the active gcloud account:
+- Publish content-addressed files before the manifest by using the verified command. Run both importers first; the publisher
+  scopes every gcloud child process to the owner's default uma-racer configuration without changing the active account:
 
   ```bash
   pnpm data:import
   pnpm assets:import
-  CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer gcloud storage rsync content/data gs://uma-racer-content/data
-  CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer gcloud storage rsync content/atlases gs://uma-racer-content/atlases
-  CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer gcloud storage cp content/manifest.json gs://uma-racer-content/manifest.json
+  pnpm content:publish -- --dry-run
+  pnpm content:publish
   ```
 
-  Old hashed objects are harmless and may be cleaned separately; never delete the currently published manifest's files.
+  Old hashed objects are retained. Never delete the currently published manifest's files or use cache/save deletion as recovery.
 - Never type credentials into sign-in pages. Sign-in checks stop at Google's account chooser.
 
 ## Conventions

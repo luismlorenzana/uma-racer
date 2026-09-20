@@ -10,6 +10,17 @@ export function setTokenProvider(fn: () => Promise<string | null>) {
   tokenProvider = fn
 }
 
+export class ApiError extends Error {
+  constructor(
+    readonly path: string,
+    readonly status: number,
+    detail: string,
+  ) {
+    super(`API ${status}: ${detail}`)
+    this.name = 'ApiError'
+  }
+}
+
 async function requestResponse(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await tokenProvider()
   const res = await fetch(`${BASE}${path}`, {
@@ -20,7 +31,7 @@ async function requestResponse(path: string, init: RequestInit = {}): Promise<Re
       ...init.headers,
     },
   })
-  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text().catch(() => res.statusText)}`)
+  if (!res.ok) throw new ApiError(path, res.status, await res.text().catch(() => res.statusText))
   return res
 }
 

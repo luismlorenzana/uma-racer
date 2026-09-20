@@ -144,6 +144,11 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   rebased onto the returned server version. Append-only records (race results, ledger) are idempotent by id.
 - Every IndexedDB/network shape is parsed before adoption. A corrupt or newer-schema save becomes an explicit recoverable
   error rather than being reset. If IndexedDB itself is unavailable, play can continue in clearly labeled memory-only mode.
+- App-shell and private-content releases remain independently visible. The build commit is injected into Settings, content
+  keeps its manifest version/origin, and a waiting or newly controlling service worker offers an explicit restart. That
+  restart is deferred while Training, race completion, redemption, promotion, or Scenario Start is committing. Content
+  diagnostics distinguish auth, publication, missing-object, integrity, network, and verified-offline states without ever
+  clearing the local save.
 - The client is trusted. It's a personal game, so there's no server-side validation of game rules beyond shape checks.
 
 ### 2. Deterministic simulation, then playback

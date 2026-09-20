@@ -56,3 +56,17 @@ on a public host. Unit tests use only small invented records in `src/__fixtures_
 pnpm --filter @racer/data-pipeline lint
 pnpm --filter @racer/data-pipeline test
 ```
+
+## Publish the private output
+
+After both importers finish, preview and publish the complete manifest with:
+
+```bash
+pnpm content:publish -- --dry-run
+pnpm content:publish
+```
+
+The publisher verifies every byte and SHA-256 locally, checks the private bucket, uploads addressed files before the
+manifest, and leaves older objects alone. It pins its gcloud child environment to the owner's `default` configuration and
+the `uma-racer` project without changing the active gcloud configuration. See the
+[release runbook](../../docs/technical/infrastructure.md#release-runbook) for smoke checks and recovery.

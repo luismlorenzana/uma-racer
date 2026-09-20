@@ -1,6 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import { useAuth } from '../auth/AuthProvider'
+import {
+  diagnoseContentError,
+  diagnoseLoadedContent,
+  EMPTY_BUCKET_CONTENT,
+  SIGNED_OUT_CONTENT,
+  type ContentDiagnostic,
+} from './diagnostics'
 import type { LoadedContent } from './runtime'
 
 let runtimePromise: Promise<typeof import('./runtime')> | undefined
@@ -11,11 +18,11 @@ function loadRuntime() {
 }
 
 export type ContentState =
-  | { status: 'signed-out' }
+  | { status: 'signed-out'; diagnostic: ContentDiagnostic }
   | { status: 'loading' }
-  | { status: 'empty' }
-  | { status: 'error'; error: Error }
-  | { status: 'ready'; content: LoadedContent }
+  | { status: 'empty'; diagnostic: ContentDiagnostic; retry: () => Promise<void> }
+  | { status: 'error'; error: Error; diagnostic: ContentDiagnostic; retry: () => Promise<void> }
+  | { status: 'ready'; content: LoadedContent; diagnostic: ContentDiagnostic; retry: () => Promise<void> }
 
 const ContentContext = createContext<ContentState | null>(null)
 
@@ -38,13 +45,17 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     }
   }, [queryClient, signedIn])
 
+  const retry = useCallback(async () => {
+    await query.refetch()
+  }, [query])
+
   const value = useMemo<ContentState>(() => {
-    if (auth.ready && !signedIn) return { status: 'signed-out' }
-    if (query.isError) return { status: 'error', error: query.error }
+    if (auth.ready && !signedIn) return { status: 'signed-out', diagnostic: SIGNED_OUT_CONTENT }
+    if (query.isError) return { status: 'error', error: query.error, diagnostic: diagnoseContentError(query.error), retry }
     if (!query.data) return { status: 'loading' }
-    if (query.data.status === 'empty') return { status: 'empty' }
-    return { status: 'ready', content: query.data.content }
-  }, [auth.ready, query.data, query.error, query.isError, signedIn])
+    if (query.data.status === 'empty') return { status: 'empty', diagnostic: EMPTY_BUCKET_CONTENT, retry }
+    return { status: 'ready', content: query.data.content, diagnostic: diagnoseLoadedContent(query.data.content), retry }
+  }, [auth.ready, query.data, query.error, query.isError, retry, signedIn])
 
   return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>
 }
