@@ -17,7 +17,7 @@ contains them.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M008 — Scenario identity and deck depth](M008-scenario-identity.md) | T024 – T029 | Outlined |
+| [M008 — Scenario identity and deck depth](M008-scenario-identity.md) | T024 specified; T025 – T029 outlined | In progress |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |

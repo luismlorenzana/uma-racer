@@ -62,7 +62,7 @@ Numbers are provisional; each task gets a full spec when it becomes next.
 
 | Task | Scope |
 |---|---|
-| T024 | Friend and Group cards: effects, deck rules, album/badge follow-through |
+| T024 | Friend and Group cards: effects, deck rules, album/badge follow-through ([specified](T024-friend-and-group-cards.md)) |
 | T025 | Modifier framework (save shape, Scenario Start/promotion lifecycle, Training UI surface) + Unity Cup + Trackblazer |
 | T026 | Grand Concert · Grand Masters · Project L'Arc |
 | T027 | U.A.F. · Great Food Festival · Mecha Umamusume |

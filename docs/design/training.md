@@ -96,7 +96,8 @@ the local-first action replayable and prevents refreshes from rerolling a more f
 1. **Deal:** each equipped card is placed at one of the five facilities, or sits out.
    - It goes to its own type's facility with probability `specialtyPriority` (draft base 35%, raised by card effects).
    - Otherwise it goes to a random facility (draft: 70%) or sits out (30%).
-   - Friend/Group cards pick a random facility.
+   - Friend/Group cards have no specialty and pick one of the five facilities uniformly. They never sit out; stable card
+     order and the turn seed still make the deal deterministic.
 2. **Choose:** the player picks one facility. The expected gains are shown before confirming. **Costs 1 ticket.**
 3. **Resolve:** stat and SP gains are applied and clamped to the caps. Present cards roll for **skill hints**.
    The Uma gains **Training EXP**, and all equipped cards gain **card EXP**.
@@ -131,6 +132,10 @@ new(s) = current(s) ≥ cap(s) ? current(s)
 - `umaGrowth` comes from the Uma template.
 - **Card level decides how much each equipped card contributes** ✅: card effect values scale with LB and level
   (see [Support Cards](support-cards.md#effect-values-generated-not-copied)).
+- A present Friend/Group card spreads one fifth of its generated Stat Bonus to each of the five stats, including stats the
+  facility does not normally raise. It contributes ordinary Training/SP/Hint/Race bonuses but no specialty or friendship
+  multiplier. Because it always attends one facility, its card EXP is always the present-card amount and never the
+  friendship amount.
 
 ### Worked example (draft numbers)
 
