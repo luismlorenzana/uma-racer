@@ -65,7 +65,7 @@ Numbers are provisional; each task gets a full spec when it becomes next.
 | T024 | Friend and Group cards: effects, deck rules, album/badge follow-through (complete) |
 | T025 | Modifier framework (save shape, Scenario Start/promotion lifecycle, Training UI surface) + Unity Cup + Trackblazer (complete) |
 | T026 | Grand Concert · Grand Masters · Project L'Arc (complete) |
-| T027 | U.A.F. · Great Food Festival · Mecha Umamusume |
+| T027 | U.A.F. · Great Food Festival · Mecha Umamusume (specified) |
 | T028 | Twinkle Legends · Design Your Island · Yukoma Hot Springs |
 | T029 | Beyond Dreams · Tracen Diner |
 
