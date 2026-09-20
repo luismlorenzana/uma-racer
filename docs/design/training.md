@@ -143,11 +143,15 @@ new(s) = current(s) ≥ cap(s) ? current(s)
 
 Modifiers consume the ordinary deterministic deal and gain projection; they do not reroll cards or enter card-effect
 math. Unity Cup adds its fixed +10 to every stat after the ordinary raw gain is calculated. Trackblazer multiplies each
-ordinary raw stat/SP gain by 1.20 only when one stocked item is explicitly armed. The result then follows the existing
-rounding, >1200 half-gain, and cap path. Modifier-only gains can create a stat entry absent from the facility's base row.
+ordinary raw stat/SP gain by 1.20 only when one stocked item is explicitly armed. Grand Concert adds its completing
+Performance's +20 to all five stats, while Grand Masters multiplies the eighth-fragment turn's ordinary raw stat/SP gains
+by 1.50. The result then follows the existing rounding, >1200 half-gain, and cap path. Modifier-only gains can create a
+stat entry absent from the facility's base row.
 
-Neither modifier changes Training EXP, card EXP, hint rolls, friendship, placement, stat/SP caps, Race Form, or ticket
-cost. See [Scenarios](scenarios.md#scenario-modifiers) for lifecycle and exact trigger/reward rules.
+Project L'Arc does not change Training gains. Each committed turn fills one of five expedition stamps; a separate atomic
+completion from Training may raise one chosen below-A aptitude by one grade, capped at A. A ready expedition never blocks
+ordinary Training. No modifier changes Training EXP, card EXP, hint rolls, friendship, placement, stat/SP caps, Race Form,
+or ticket cost. See [Scenarios](scenarios.md#scenario-modifiers) for lifecycle and exact trigger/reward rules.
 
 ### Worked example (draft numbers)
 
