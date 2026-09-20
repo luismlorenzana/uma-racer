@@ -110,28 +110,66 @@ Defaults are opinionated, so the album is useful before anyone touches a control
 The ownership split is a segmented control rather than a hidden filter, because "what do I have" is the question the
 album answers most often. Switching to Unowned keeps the rest of the sort intact.
 
+### What every tile has to answer
+
+A collection is browsed to **decide** something — who to train next, which card to slot — so a tile carries decision
+data, not just a name:
+
+- Uma tiles: portrait, name, level, tier crest, a compact aptitude line (surface / distance / strategy grades), and at
+  most two state chips (*Gate ready*, *Goal active*).
+- Card tiles: card art, type dot, LB pips, level, and the card's **headline effect**.
+- The **secondary line follows the active sort**. Sorting by release shows the date, by total stats shows the total, by
+  limit break shows the LB. Sorting by something you cannot see is a dead end.
+- Unowned entries are desaturated art behind a lock, never empty silhouette boxes.
+- **NEW markers:** an entry acquired since you last looked at it carries a NEW treatment until it is opened. The seen
+  set is device-local, like the other album preferences, so this needs no save field.
+
+### Shared behaviours
+
+- **Quick filter presets** sit as a one-tap row above the grid — *Trainable now*, *Ready to promote*, *Maxed*,
+  *Equippable at my tier*, *Unowned* — distinct from saved views, which are yours to name.
+- **Compare** through multi-select: two or three Umas side by side on stats and aptitudes, or cards on their effect
+  values at the current level and at the next limit break. This is what makes three hundred entries usable.
+- **Long-press quick actions** on a tile: Train · Race · Set featured · Deck for an Uma; Limit break · Where equipped
+  for a card. No round trip through the detail screen for a one-tap job.
+- **Empty states name the way out**: "No results — remove *Dirt* to see 12".
+- Group headers carry completion counts that link to the matching badge, so *[Era] Complete* is one tap from the group
+  it describes.
+- A sort that takes a parameter ("best aptitude for…") exposes its parameter as a chip beside the sort control.
+
 ### Uma album (Stable)
 
 | Sorts | Filters |
 |---|---|
-| Release date · Uma level · name · scenario tier · Training Level · total stats · prestige · badges earned · recently trained · best aptitude for a chosen surface/distance | Ownership · tier · surface aptitude · distance aptitude · strategy aptitude · minimum aptitude grade · real-horse sex · level range · launch-roster (starter) · has parent snapshot · active Journey state · holds a title · has unspent shards toward her next gate · ready to train (deck valid and tickets available) |
+| Release date · Uma level · name · scenario tier · Training Level · total stats · prestige · badges earned · recently raced · best aptitude for a chosen surface/distance | Ownership · tier · surface aptitude · distance aptitude · strategy aptitude · minimum aptitude grade · real-horse sex · level range · launch-roster (starter) · has parent snapshot · active Journey state · holds a title · has unspent shards toward her next gate · ready to train (deck valid and tickets available) |
 
-- Tiles are **art first**: portrait, name, level, tier crest, and at most two state chips (for example *Gate ready*,
-  *Goal active*). Unowned Umas are desaturated art behind a lock, not empty silhouette boxes.
-- Tapping a tile opens her profile. **Swiping** left/right in the profile moves through the filtered order, so a filtered
-  album becomes a browsing session.
-- The shard/coupon strip stays above the chrome, since redemption is the album's other job.
+**Outfits versus characters.** The catalogue is 267 outfits across 134 characters, so the album offers two modes:
+
+- **By outfit** (default): every outfit is its own tile, as today.
+- **By character:** one tile per character showing her best-owned outfit with a `×N` count, expanding to her outfits.
+  Ownership then means "owned in any outfit", which is the question a Uma Select Coupon actually asks.
+
+Tapping a tile opens her profile, and **swiping** left/right there moves through the filtered order, so a filtered album
+becomes a browsing session. The shard and coupon strip stays above the chrome, since redemption is the album's other job.
 
 ### Card album
 
 | Sorts | Filters |
 |---|---|
-| Era/release · card level · limit break · type · character name · card name · effect strength for a chosen effect · recently used | Ownership · type (including Friend/Group) · era · limit break (0–4) · level range · maxed · equippable now (era ≤ a chosen tier) · currently equipped (and by whom) · starter/free · has a hint skill matching a search term · effect kind (friendship, training, race bonus, SP, initial stats) |
+| Era/release · card level · limit break · type · character name · card name · effect strength for a chosen effect | Ownership · type (including Friend/Group) · era · limit break (0–4) · level range · maxed · equippable now (era ≤ a chosen tier) · currently equipped (and by whom) · starter/free · has a hint skill matching a search term · effect kind (friendship, training, race bonus, SP, initial stats) |
 
-- Tiles show card art, a type dot, LB pips, and level over the scrim; maxed cards get an accent frame.
 - Detail opens as a bottom sheet with effect values at the current level and at the next limit break, hint skills, the
   Umas currently using it, and the limit-break action.
 - Completion counters per era and per type stay visible in the tray's section headers.
+- **The deck editor uses this album.** Picking a card for a deck is the same browsing problem, with ownership and
+  era-eligibility pre-applied; it must not keep a weaker parallel picker.
+
+### What the save cannot answer yet
+
+`UmaSave` and `CardSave` carry no timestamps, and ledger rows record resource, delta, reason and time but never which
+Uma or card they belong to. So **"recently trained" and "recently used" are not sortable** and are deliberately absent.
+"Recently raced" works, because race history stores per-Uma rows with times. Adding the other two means adding fields
+and a migration, which is not worth a sort (D114).
 
 Both albums join private content templates to entity-presence ownership. Orphaned saves are reported as a diagnostic but
 never inflate completion counts. Card selection (coupon redemption) reuses the same chrome with ownership forced to

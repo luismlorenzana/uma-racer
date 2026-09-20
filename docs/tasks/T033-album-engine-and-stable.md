@@ -17,6 +17,7 @@ are, and [Visual System](../design/visual-system.md) for how the controls look.
   excluded, so counts never collapse to zero as you pick within one group.
 - **No new dependency.** The virtualizer is ours, roughly a hundred lines, and tested.
 - Ownership is a segmented control, never a hidden filter.
+- Album state stays device-local, including the **seen set** behind NEW markers, so nothing here needs a save migration.
 
 ## Implementation contract
 
@@ -45,15 +46,35 @@ pending result count), `SortMenu`, `FilterChips`, `DensityToggle`, `SavedViewsMe
 - Everything is keyboard and VoiceOver reachable: the tray is a focus-trapped dialog that restores focus on close, and
   every control has a name and a state.
 
+### Shared list behaviours
+
+- **Tiles carry decision data** and their **secondary line follows the active sort** (release → date, total stats →
+  total, level → level). A sort whose value is invisible on the tile is a bug.
+- **NEW markers:** entries whose ids are not in the device-local seen set get the NEW treatment until opened. Seeding on
+  a fresh device marks everything already present as seen, so a first launch is not a wall of NEW.
+- **Quick filter presets** as a one-tap row: Trainable now · Ready to promote · Maxed · Equippable at my tier · Unowned.
+  Presets set the query; they are not saved views and never overwrite one.
+- **Multi-select → Compare** for two or three entries: a sheet with one column per entry, rows for the comparable
+  fields, and differences emphasised. Multi-select never acts on items hidden by the current filter.
+- **Long-press quick actions** on a tile: Train · Race · Set featured · Deck for an Uma. Every action has an accessible
+  equivalent reachable without a long press.
+- **Empty states name the single filter to drop** when removing exactly one facet would return results.
+- Group headers carry completion counts that link to the matching badge definition.
+- A parameterised sort ("best aptitude for…") exposes its parameter as a chip beside the sort control.
+
 ### Stable adoption
 
 - Default order exactly as documented: owned before unowned → release date newest → Uma level highest → name.
-- Sorts: release date · level · name · tier · Training Level · total stats · prestige · badges earned · recently trained
-  · best aptitude for a chosen surface or distance.
+- Sorts: release date · level · name · tier · Training Level · total stats · prestige · badges earned · recently raced ·
+  best aptitude for a chosen surface or distance. **"Recently trained" is not implementable** — no save timestamps and no
+  per-entity ledger rows — so it is deliberately absent (D114); "recently raced" comes from race history.
 - Facets: ownership · tier · surface / distance / strategy aptitude · minimum aptitude grade · real-horse sex · level
   range · launch roster · has parent snapshot · Journey state · holds a title · ready to train.
-- Tiles are art-first per the visual system: portrait, name, level, tier crest, at most two state chips; unowned is
-  desaturated art with a lock.
+- Tiles are art-first per the visual system: portrait, name, level, tier crest, a compact aptitude line, at most two
+  state chips; unowned is desaturated art with a lock.
+- **Two grouping modes for 267 outfits over 134 characters:** by outfit (default) and **by character** — one tile per
+  character showing her best-owned outfit with a `×N` count, expanding to her outfits, where ownership means "owned in
+  any outfit". The mode is part of the saved query.
 - The Uma profile gains **swipe between results in the filtered order**, with the order handed over by the route rather
   than recomputed, and the album restores its scroll position on back.
 - The shard and coupon strip stays above the chrome.
@@ -67,7 +88,11 @@ pending result count), `SortMenu`, `FilterChips`, `DensityToggle`, `SavedViewsMe
   throwing.
 - `VirtualGrid`: window maths at both densities, the small-list fallback, and scroll restoration.
 - Stable: default order on a synthetic roster, a filter combination that yields zero results shows the empty state with
-  Clear all, and the profile swipe order matches the filtered order.
+  Clear all plus the single-facet suggestion when one exists, and the profile swipe order matches the filtered order.
+- Character mode: outfits collapse to one tile per character with the right count and best-owned representative, and
+  ownership means owned in any outfit.
+- NEW markers: unseen ids are marked, opening clears them, and a fresh device seeds everything as seen.
+- Presets produce exactly their documented query; Compare renders two and three columns and ignores hidden selections.
 
 ## Acceptance
 

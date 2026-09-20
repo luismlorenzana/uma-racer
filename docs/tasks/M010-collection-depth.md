@@ -16,23 +16,30 @@ engine serves the Stable, the Cards album, coupon redemption, and later the deck
 ## Sequence
 
 ```text
-T033 album engine + Stable    (delegable)
+T033 album engine + Stable       (delegable)
         │
         ▼
-T034 Cards album + card detail  (delegable)
+T034 Cards album + deck editor   (delegable)
+        │
+        ▼
+T035 Race Select                 (delegable)
 ```
 
 | Task | Result | Must not absorb |
 |---|---|---|
 | [T033](T033-album-engine-and-stable.md) | The shared chrome, facet engine, saved views, density, virtualization, and the Stable using all of it | Card-specific facets, gameplay changes, new rewards |
-| [T034](T034-cards-album.md) | The Cards album and card detail on the same engine, plus redemption reusing the chrome | New card mechanics, Friend/Group gameplay (M8) |
+| [T034](T034-cards-album.md) | The Cards album, card detail, redemption **and the deck editor** on the same engine | New card mechanics, Friend/Group gameplay (M8) |
+| [T035](T035-race-select-browsing.md) | Race Select — the third long list — with aptitude fit, series filters and pinned goal targets | Race rules, rewards, the Pixi scene |
 
-Both depend on Milestone 9's visual system for tiles and controls. If Milestone 9 has not landed, build against the
+All three depend on Milestone 9's visual system for tiles and controls. If Milestone 9 has not landed, build against the
 tokens and accept a second cosmetic pass.
 
 ## Definition of done
 
-- Both albums open on their documented default order without anyone touching a control.
+- Both albums and Race Select open on a sensible default order without anyone touching a control.
+- Tiles carry the data the sort is about, entries can be compared, and quick actions work without a detour.
+- The Stable can be browsed by character as well as by outfit, and the deck editor uses the album rather than its own
+  weaker picker.
 - Every documented facet works, shows counts, never offers a zero-result dead end, and appears as a removable chip.
 - Saved views, density and grouping persist per device and survive reload.
 - Scrolling the full unfiltered album stays smooth on the owner's iPhone, and returning from a detail restores position.
