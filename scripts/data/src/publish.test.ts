@@ -12,9 +12,12 @@ async function fixture(): Promise<{ contentDir: string; manifest: ContentManifes
   const contentDir = await mkdtemp(resolve(tmpdir(), 'uma-racer-publish-'))
   temporaryDirectories.push(contentDir)
   await mkdir(resolve(contentDir, 'data'))
+  await mkdir(resolve(contentDir, 'art/uma'), { recursive: true })
   const entries = [
     ['data/alpha.1234abcd.json', '{"synthetic":1}'],
     ['data/beta.5678abcd.json', '{"synthetic":2}'],
+    // Per-entry art publishes through the same path as packs and atlases.
+    ['art/uma/synthetic-1.9abcdef0.webp', 'synthetic-art'],
   ] as const
   const files = []
   for (const [path, value] of entries) {
@@ -84,6 +87,7 @@ describe('content publishing', () => {
     storage.objects.set(manifest.files[0]!.path, manifest.files[0]!.bytes)
     const result = await publishContent({ contentDir, storage })
     expect(result.alreadyPresentPaths).toEqual([manifest.files[0]!.path])
-    expect(storage.calls).toEqual([manifest.files[1]!.path, 'manifest.json'])
+    // Everything else uploads in manifest order, with the manifest itself last.
+    expect(storage.calls).toEqual([...manifest.files.slice(1).map((file) => file.path), 'manifest.json'])
   })
 })

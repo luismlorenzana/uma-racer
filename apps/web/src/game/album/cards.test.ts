@@ -56,6 +56,7 @@ function loaded(cards: SupportCardTemplate[], umas: UmaTemplate[]): LoadedConten
       'uma-icons': { descriptor: atlas('uma-icons', umas.map((item) => item.id)), pageUrls: ['blob:uma'] },
       'card-icons': { descriptor: atlas('card-icons', cards.map((item) => item.id)), pageUrls: ['blob:card'] },
     },
+    art: { has: () => false, load: async () => null },
   }
 }
 

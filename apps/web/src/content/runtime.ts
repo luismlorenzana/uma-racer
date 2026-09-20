@@ -53,6 +53,21 @@ export interface LoadedContent {
   races: ContentRegistry<RaceTemplate>
   courses: ContentRegistry<CourseTemplate>
   atlases: Record<ContentAtlasKind, LoadedAtlas>
+  art: ArtLoader
+}
+
+/** One private art family: large per-entry images fetched on demand, never atlased. */
+export type ArtKind = 'uma' | 'card'
+
+export interface ArtLoader {
+  /** True when the published manifest carries art for this entry. */
+  has: (kind: ArtKind, id: string) => boolean
+  /**
+   * Object URL for the entry's art, verified against the manifest hash. Resolves to `null` when the
+   * manifest has no such file; rejects when the fetch or verification fails, so callers can fall back
+   * to the icon atlas.
+   */
+  load: (kind: ArtKind, id: string) => Promise<string | null>
 }
 
 export interface ContentAsset {
@@ -177,6 +192,68 @@ const PACK_FILES = {
   courses: /^data\/courses\.[a-f0-9]{8}\.json$/,
 } as const
 
+const ART_FILE = /^art\/(uma|card)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
+/** Object URLs held for recently viewed art; older ones are revoked so memory stays bounded. */
+const ART_CACHE_LIMIT = 24
+
+function artIndex(manifest: ContentManifest): Map<string, ContentManifestFile> {
+  const index = new Map<string, ContentManifestFile>()
+  for (const file of manifest.files) {
+    const match = ART_FILE.exec(file.path)
+    if (match) index.set(`${match[1]}:${match[2]}`, file)
+  }
+  return index
+}
+
+function createArtLoader(
+  transport: ContentTransport,
+  manifest: ContentManifest,
+  urls: ObjectUrlFactory,
+  track: (url: string) => void,
+): ArtLoader {
+  const index = artIndex(manifest)
+  const cache = new Map<string, string>()
+  const pending = new Map<string, Promise<string | null>>()
+
+  const fetchArt = async (key: string, file: ContentManifestFile): Promise<string | null> => {
+    const result = await transport.file(file.path)
+    requireContentType(result.contentType, 'webp', file.path)
+    if (result.bytes.byteLength !== file.bytes) throw new Error(`Content byte length mismatch: ${file.path}`)
+    const digest = hex(await globalThis.crypto.subtle.digest('SHA-256', result.bytes))
+    if (digest !== file.sha256) throw new Error(`Content hash mismatch: ${file.path}`)
+    const url = urls.create(new Blob([result.bytes], { type: 'image/webp' }))
+    track(url)
+    cache.set(key, url)
+    while (cache.size > ART_CACHE_LIMIT) {
+      const [oldestKey, oldestUrl] = cache.entries().next().value as [string, string]
+      cache.delete(oldestKey)
+      urls.revoke(oldestUrl)
+    }
+    return url
+  }
+
+  return {
+    has: (kind, id) => index.has(`${kind}:${id}`),
+    load: async (kind, id) => {
+      const key = `${kind}:${id}`
+      const cached = cache.get(key)
+      if (cached) {
+        // Refresh recency so the entry survives eviction while it is on screen.
+        cache.delete(key)
+        cache.set(key, cached)
+        return cached
+      }
+      const file = index.get(key)
+      if (!file) return null
+      const inFlight = pending.get(key)
+      if (inFlight) return inFlight
+      const request = fetchArt(key, file).finally(() => pending.delete(key))
+      pending.set(key, request)
+      return request
+    },
+  }
+}
+
 const ATLAS_FILES: Record<ContentAtlasKind, RegExp> = {
   'uma-icons': /^atlases\/uma-icons\.[a-f0-9]{8}\.json$/,
   'card-icons': /^atlases\/card-icons\.[a-f0-9]{8}\.json$/,
@@ -268,6 +345,7 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       races: registry(races),
       courses: registry(courses),
       atlases: { 'uma-icons': umaIcons, 'card-icons': cardIcons },
+      art: createArtLoader(transport, manifest, urls, (url) => createdUrls.push(url)),
     }
   } catch (error) {
     for (const url of createdUrls) urls.revoke(url)

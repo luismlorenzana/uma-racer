@@ -22,9 +22,9 @@ describe('downloadImages', () => {
     const second = await downloadImages(sources, { cacheDir, kind: 'uma-icons', fetcher })
     const third = await downloadImages(sources, { cacheDir, kind: 'uma-icons', fetcher, refresh: true })
 
-    expect(first[0]).toMatchObject({ id: 'synthetic-1', cacheHit: false })
-    expect(second[0]).toMatchObject({ id: 'synthetic-1', cacheHit: true })
-    expect(third[0]).toMatchObject({ id: 'synthetic-1', cacheHit: false })
+    expect(first.images[0]).toMatchObject({ id: 'synthetic-1', cacheHit: false })
+    expect(second.images[0]).toMatchObject({ id: 'synthetic-1', cacheHit: true })
+    expect(third.images[0]).toMatchObject({ id: 'synthetic-1', cacheHit: false })
     expect(fetcher).toHaveBeenCalledTimes(2)
   })
 
@@ -46,5 +46,25 @@ describe('downloadImages', () => {
         fetcher: textFetcher,
       }),
     ).rejects.toThrow('Unsafe asset id')
+  })
+
+  it('skips a missing optional source instead of failing the whole family', async () => {
+    const cacheDir = await mkdtemp(join(tmpdir(), 'uma-racer-assets-cache-'))
+    tempDirs.push(cacheDir)
+    const fetcher = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).endsWith('missing.svg')
+        ? new Response('gone', { status: 404 })
+        : new Response(SVG, { headers: { 'content-type': 'image/svg+xml' } }))
+
+    const result = await downloadImages(
+      [
+        { id: 'present', url: 'https://example.test/one.svg' },
+        { id: 'absent', url: 'https://example.test/missing.svg' },
+      ],
+      { cacheDir, kind: 'card-art', fetcher: fetcher as unknown as typeof fetch, optional: true },
+    )
+
+    expect(result.images.map((image) => image.id)).toEqual(['present'])
+    expect(result.failures.map((failure) => failure.id)).toEqual(['absent'])
   })
 })

@@ -63,6 +63,7 @@ function loaded(umas: UmaTemplate[]): LoadedContent {
         pageUrls: ['blob:synthetic-cards'],
       },
     },
+    art: { has: () => false, load: async () => null },
   }
 }
 

@@ -93,3 +93,57 @@ export async function writeAtlases(options: WriteAtlasesOptions): Promise<Conten
   )
   return manifest
 }
+
+export interface ArtFileFamily {
+  /** Manifest directory, e.g. `art/uma`. */
+  dir: string
+  images: readonly { id: string; bytes: Buffer }[]
+}
+
+export interface WriteArtOptions {
+  contentDir: string
+  families: readonly ArtFileFamily[]
+  generatedAt?: string
+}
+
+/**
+ * Writes one content-addressed WebP per entry and merges them into the manifest, replacing whatever
+ * the same directories held before. Art is fetched per item at runtime, so it is never atlased.
+ */
+export async function writeArtFiles(options: WriteArtOptions): Promise<ContentManifest> {
+  const previous = await readManifest(options.contentDir)
+  const dirs = new Set(options.families.map((family) => family.dir))
+  const files: ContentManifestFile[] = previous.files.filter((file) => ![...dirs].some((dir) => file.path.startsWith(`${dir}/`)))
+
+  for (const family of options.families) {
+    const target = resolve(options.contentDir, family.dir)
+    await mkdir(target, { recursive: true })
+    const keepNames = new Set<string>()
+    for (const image of family.images) {
+      if (!/^[A-Za-z0-9_-]+$/.test(image.id)) throw new Error(`Unsafe art id: ${image.id}`)
+      const digest = sha256(image.bytes)
+      const name = `${image.id}.${digest.slice(0, 8)}.webp`
+      await writeFile(resolve(target, name), image.bytes)
+      keepNames.add(name)
+      files.push({ path: posix.join(family.dir, name), bytes: image.bytes.length, sha256: digest })
+    }
+    const existing = await readdir(target)
+    await Promise.all(existing
+      .filter((name) => !keepNames.has(name))
+      .map((name) => unlink(resolve(target, name))))
+  }
+
+  files.sort((left, right) => left.path.localeCompare(right.path))
+  const version = sha256(files.map((file) => file.sha256).sort().join('')).slice(0, 12)
+  const manifest: ContentManifest = {
+    version,
+    generatedAt: options.generatedAt ?? new Date().toISOString(),
+    source: previous.source,
+    files,
+  }
+  const manifestPath = resolve(options.contentDir, 'manifest.json')
+  const temporaryManifest = `${manifestPath}.${process.pid}.tmp`
+  await writeFile(temporaryManifest, JSON.stringify(manifest), 'utf8')
+  await rename(temporaryManifest, manifestPath)
+  return manifest
+}

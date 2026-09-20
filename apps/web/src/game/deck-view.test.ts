@@ -54,6 +54,7 @@ function fixture() {
       'uma-icons': { descriptor: atlas('uma-icons', [umaTemplate.id]), pageUrls: ['blob:uma'] },
       'card-icons': { descriptor: atlas('card-icons', templates.map((item) => item.id)), pageUrls: ['blob:cards'] },
     },
+    art: { has: () => false, load: async () => null },
   }
   return { content, templates }
 }
