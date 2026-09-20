@@ -200,7 +200,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ```text
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v3: progression, deck/library/history, parents/snapshot, journeys, version
+players/{uid}/umas/{umaId}            save v4: progression, deck/library/history, parents/snapshot, journeys, modifier, version
 players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
@@ -209,11 +209,12 @@ players/{uid}/ledger/{id}             append-only ticket, coupon, and shard move
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 ```
 
-The profile is save v3 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
-creation time, and schema version. Every Uma row is also explicitly v3. Parent/snapshot/history and strict Journey goal
+The profile is save v4 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
+creation time, and schema version. Every Uma row is also explicitly v4. Parent/snapshot/history and strict Journey goal
 fields are present, including per-leg evidence for series goals; pending setup has no active Journey, active scenarios
-have exactly one for the current tier, and final completion has none. Badge-state v1 is independently migratable and
-cannot force a progression save reset.
+have exactly one for the current tier, and final completion has none. The nullable `scenarioModifier` is a separately
+versioned strict union initialized/replaced by Scenario Start; v3 rows migrate to null without inventing active-tier
+progress. Badge-state v1 is independently migratable and cannot force a progression save reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic
@@ -245,6 +246,8 @@ apps/web/src/
   mutation path, so back, reload, and direct navigation cannot spend a second coupon.
 - Scenario Start is separately split. Its review is pure and write-free; the confirmation calls the same promotion result
   used by persistence, and the success route reconstructs from committed save facts rather than keeping a second game state.
+- Scenario-modifier projections are pure domain functions shared by Training previews/commits and race-win rewards. The
+  one modifier field is written inside the existing Uma transaction; no resource becomes a ledger row or race-engine input.
 - Goal and Journey projections remain small pure DOM view models. Home, Profile, Race Select, pre-race, and Results join
   persisted ids to private content with safe fallbacks; goal state never enters Pixi or changes simulation inputs.
 - Badge/catalog/evaluator and Trainer aggregation stay pure in `@racer/domain`. Each affected local action runs the same

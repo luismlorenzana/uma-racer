@@ -99,9 +99,11 @@ the local-first action replayable and prevents refreshes from rerolling a more f
    - Friend/Group cards have no specialty and pick one of the five facilities uniformly. They never sit out; stable card
      order and the turn seed still make the deal deterministic.
 2. **Choose:** the player picks one facility. The expected gains are shown before confirming. **Costs 1 ticket.**
-3. **Resolve:** stat and SP gains are applied and clamped to the caps. Present cards roll for **skill hints**.
+3. **Modifier:** the active scenario may add or multiply previewed raw gains. Modifier state is deterministic, tier-local,
+   optional/skippable, and committed atomically with the turn; it never changes caps or account currency.
+4. **Resolve:** stat and SP gains are applied and clamped to the caps. Present cards roll for **skill hints**.
    The Uma gains **Training EXP**, and all equipped cards gain **card EXP**.
-4. *(MVP simplification)* No energy, failure chance, or mood during training.
+5. *(MVP simplification)* No energy, failure chance, or mood during training.
 
 ## Facility base gains
 
@@ -136,6 +138,16 @@ new(s) = current(s) ≥ cap(s) ? current(s)
   facility does not normally raise. It contributes ordinary Training/SP/Hint/Race bonuses but no specialty or friendship
   multiplier. Because it always attends one facility, its card EXP is always the present-card amount and never the
   friendship amount.
+
+### Scenario modifier order
+
+Modifiers consume the ordinary deterministic deal and gain projection; they do not reroll cards or enter card-effect
+math. Unity Cup adds its fixed +10 to every stat after the ordinary raw gain is calculated. Trackblazer multiplies each
+ordinary raw stat/SP gain by 1.20 only when one stocked item is explicitly armed. The result then follows the existing
+rounding, >1200 half-gain, and cap path. Modifier-only gains can create a stat entry absent from the facility's base row.
+
+Neither modifier changes Training EXP, card EXP, hint rolls, friendship, placement, stat/SP caps, Race Form, or ticket
+cost. See [Scenarios](scenarios.md#scenario-modifiers) for lifecycle and exact trigger/reward rules.
 
 ### Worked example (draft numbers)
 
@@ -198,4 +210,4 @@ See the [support-deck balance follow-up](../research/support-deck-balance.md). T
 
 - Energy, mood, and failure chance.
 - Random events (character events per card).
-- Scenario modifiers (see [Scenarios](scenarios.md)).
+- Scenario modifiers beyond the tiers already implemented in [Scenarios](scenarios.md).
