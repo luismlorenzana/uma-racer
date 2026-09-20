@@ -7,7 +7,7 @@ and ordered by their **JP release date**. A scenario sets:
 - **Baseline SP cap**, the skill loadout capacity: `300 + 200 × (T − 1)`, following the same Training Level curve (see [Skills & Inheritance](skills-and-inheritance.md)).
 - **Scenario goals** for each Uma (see [Scenario Goals](scenario-goals.md)).
 - **Card era**, which support cards (and possibly Umas) are available.
-- *(Stretch)* A **scenario modifier**: a light training twist themed on the original scenario.
+- A **scenario modifier**: a light, tier-local training twist themed on the original scenario.
 
 ## Timeline and tiers
 
@@ -52,16 +52,16 @@ An Uma in tier `T` may equip any card with `era ≤ T`.
 
 ## Scenario modifiers
 
-Today every scenario trains the same way apart from caps and era. **Every scenario gets its own modifier** in
-[Milestone 8](../tasks/M008-scenario-identity.md), added in release order. Modifiers are a training-side twist bound by
-D109: tier-local resources that reset at promotion and never become currency, no cap or Race Form changes, any aptitude
-grant capped at A, and every tier completable while ignoring its modifier.
+Every scenario gets its own modifier in [Milestone 8](../tasks/M008-scenario-identity.md), added in release order.
+Modifiers are a training-side twist bound by D109: tier-local resources reset at promotion and never become currency,
+caps and Race Form never change, any aptitude grant is capped at A, and every tier remains completable while ignoring its
+modifier.
 
 | # | Scenario | Modifier idea |
 |---|---|---|
 | 1 | URA Finale | None, the baseline and tutorial tier |
-| 2 | Unity Cup | **Team Spirit:** when 3+ cards are present at one facility, a spirit burst adds bonus gains to every stat |
-| 3 | Trackblazer | **Climax:** race wins pay one-shot training items that expire at promotion (no second currency) |
+| 2 | Unity Cup | **Team Spirit:** 3+ cards at one facility trigger a Spirit Burst: +10 raw gain to all five stats |
+| 3 | Trackblazer | **Climax:** eligible race wins grant one opt-in item that multiplies one training's raw stat/SP gains by 1.20 |
 | 4 | Grand Concert | **Performances:** training builds "hype" notes, and full sets unlock bonus stats |
 | 5 | Grand Masters | **Goddess fragments:** collect fragments from training, and a full set triggers a big burst |
 | 6 | Project L'Arc | **Overseas expedition:** the chance to raise an aptitude grade |
@@ -73,6 +73,34 @@ grant capped at A, and every tier completable while ignoring its modifier.
 | 12 | Yukoma Hot Springs | **Soak:** relaxation builds up, and a full bath makes the next training free and doubled |
 | 13 | Beyond Dreams | **Shared light:** training fills a gauge that bursts into the two lowest stats |
 | 14 | Tracen Diner | **Orders:** training collects orders, and a served set buffs the next three turns |
+
+### Modifier state and lifecycle
+
+Progression save v4 adds one nullable, versioned `scenarioModifier` field to each Uma. Non-null state is a strict union
+whose tier and kind match the active scenario. Scenario Start initializes the destination tier inside its existing atomic
+commit; promotion replaces the old state, so tier-local counters and resources never carry forward. Tier 1 and modifiers
+not implemented yet use `null`.
+
+An older active save migrates with null state rather than invented progress. Training and racing stay available, while the
+UI says that legacy run has no modifier until its next Scenario Start. Unknown future modifier versions are rejected as an
+app-version mismatch, not treated as corrupt zero state. Journey keeps the scenario's static modifier identity after
+promotion, but does not archive resources or counters.
+
+### Unity Cup — Team Spirit
+
+The deterministic card deal is unchanged. A facility with at least **3 present cards** is marked for a Spirit Burst.
+Choosing it adds **10 raw gain to each of Speed, Stamina, Power, Guts, and Wit** after ordinary card/growth calculation and
+before rounding, the 1200 soft cap, and scenario/TL caps. SP, hints, Training EXP, card EXP, friendship, and placement are
+unchanged. Friend and Group cards count when present. State stores only how many bursts were committed.
+
+### Trackblazer — Climax
+
+A first-place progression-race finish grants **1 Climax item** unless that result closes the tier. It is not account
+currency, has no inventory cap, and expires at promotion. On Training, the player may explicitly arm one item; the chosen
+facility's ordinary raw stat and SP gains are multiplied by **1.20** before rounding, the soft cap, and caps, then exactly
+one item is consumed in the same commit. The deal, Training/card EXP, hints, Race Bonus, Uma EXP, Race Form, and race
+simulation remain unchanged. Losses, replays, gate-closing wins, previews, failed writes, and unarmed turns award or spend
+nothing.
 
 ## Scenario completion
 
