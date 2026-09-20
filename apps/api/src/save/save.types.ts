@@ -472,9 +472,27 @@ function parseScenarioModifier(value: unknown, tier: number): boolean {
   if (value.kind === 'team-spirit') {
     return tier === 2 && exactKeys(value, ['version', 'tier', 'kind', 'bursts']) && isNonNegativeInt(value.bursts)
   }
-  return value.kind === 'climax' && tier === 3 && exactKeys(value, ['version', 'tier', 'kind', 'earned', 'stock', 'used']) &&
-    isNonNegativeInt(value.earned) && isNonNegativeInt(value.stock) && isNonNegativeInt(value.used) &&
-    value.stock + value.used === value.earned
+  if (value.kind === 'climax') {
+    return tier === 3 && exactKeys(value, ['version', 'tier', 'kind', 'earned', 'stock', 'used']) &&
+      isNonNegativeInt(value.earned) && isNonNegativeInt(value.stock) && isNonNegativeInt(value.used) &&
+      value.stock + value.used === value.earned
+  }
+  if (value.kind === 'performances') {
+    if (!Array.isArray(value.notes)) return false
+    const notes = value.notes
+    return tier === 4 && exactKeys(value, ['version', 'tier', 'kind', 'notes', 'performances']) &&
+      notes.length < STATS.length && notes.every((note, index) =>
+        STATS.includes(note as (typeof STATS)[number]) &&
+        (index === 0 || STATS.indexOf(notes[index - 1] as (typeof STATS)[number]) < STATS.indexOf(note as (typeof STATS)[number]))) &&
+      isNonNegativeInt(value.performances)
+  }
+  if (value.kind === 'goddess-fragments') {
+    return tier === 5 && exactKeys(value, ['version', 'tier', 'kind', 'fragments', 'bursts']) &&
+      isNonNegativeInt(value.fragments) && value.fragments < 8 && isNonNegativeInt(value.bursts)
+  }
+  return value.kind === 'expedition' && tier === 6 && exactKeys(value, ['version', 'tier', 'kind', 'stamps', 'completed', 'upgraded']) &&
+    isNonNegativeInt(value.stamps) && value.stamps <= 5 && isNonNegativeInt(value.completed) &&
+    isNonNegativeInt(value.upgraded) && value.upgraded <= value.completed
 }
 
 function parseSkill(value: unknown): value is Record<string, unknown> {

@@ -1,6 +1,7 @@
 // Atomic saved-Uma Training mutations (docs/design/training.md).
 
 import {
+  completeExpedition,
   dealTrainingCards,
   isLocalDay,
   parseCardSave,
@@ -12,6 +13,8 @@ import {
   trainingTurnSeed,
   validateSupportDeck,
   type CardSave,
+  type AptitudeCategory,
+  type ExpeditionCompletionResult,
   type Facility,
   type LedgerEntry,
   type PlayerProfile,
@@ -36,6 +39,11 @@ export interface TrainingMutationResult {
   ledgerIds: string[]
   earnedFlairEventIds: string[]
   badgeState?: UmaBadgeStateV1
+}
+
+export interface ExpeditionMutationResult {
+  uma: UmaSave
+  completion: ExpeditionCompletionResult
 }
 
 interface TrainingStateInput {
@@ -226,5 +234,33 @@ export async function persistTraining(
     })
     const trainer = await reconcileTrainerInTransaction(content, now, false, trainingLedgerId)
     return { ...mutation, badgeState: flair.state, earnedFlairEventIds: [...flair.events, ...trainer.events].map((event) => event.id) }
+  })
+}
+
+export function resolveMemoryExpeditionCompletion(
+  uma: UmaSave,
+  category: AptitudeCategory | null,
+): ExpeditionMutationResult {
+  if (!uma.scenarioStarted || tierOfLevel(uma.level) !== 6) throw new Error('Project L\'Arc must be active')
+  const completion = completeExpedition({ state: uma.scenarioModifier, aptitudes: uma.aptitudes, category })
+  return {
+    uma: { ...uma, aptitudes: completion.aptitudes, scenarioModifier: completion.state },
+    completion,
+  }
+}
+
+export async function persistExpeditionCompletion(
+  umaId: string,
+  category: AptitudeCategory | null,
+  now: number,
+): Promise<ExpeditionMutationResult> {
+  if (!Number.isSafeInteger(now) || now < 0) throw new Error('Invalid Expedition timestamp')
+  return db.transaction('rw', [db.umas, db.outbox], async () => {
+    const row = await db.umas.get(umaId)
+    if (!row) throw new Error('Expedition Uma is not owned')
+    const mutation = resolveMemoryExpeditionCompletion(parsedUmaRow(umaId, row.data), category)
+    await db.umas.put({ ...row, data: mutation.uma })
+    await queueInTransaction('umas', umaId, 'upsert', now)
+    return mutation
   })
 }

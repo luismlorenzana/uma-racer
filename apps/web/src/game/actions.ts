@@ -24,6 +24,13 @@ export async function trainUma(id: string, facility: import('@racer/domain').Fac
   })
 }
 
+export async function completeExpedition(id: string, category: import('@racer/domain').AptitudeCategory | null) {
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.completeExpedition(id, category)
+  })
+}
+
 export async function prepareRace(
   umaId: string,
   raceId: string,

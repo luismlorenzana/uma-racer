@@ -13,7 +13,12 @@ import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
 import { parseRaceResultRecord } from './progression-race'
-import { SCENARIO_MODIFIER_VERSION, parseScenarioModifierState, type ScenarioModifierState } from './scenario-modifiers'
+import {
+  SCENARIO_MODIFIER_KINDS,
+  SCENARIO_MODIFIER_VERSION,
+  parseScenarioModifierState,
+  type ScenarioModifierState,
+} from './scenario-modifiers'
 import { MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL, MAX_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type Stats } from './types'
@@ -788,6 +793,10 @@ export function parseUmaSaveOrThrow(value: unknown): UmaSave {
   if (isObject(value) && isObject(value.scenarioModifier) && 'version' in value.scenarioModifier &&
     value.scenarioModifier.version !== SCENARIO_MODIFIER_VERSION) {
     throw new Error(`App update required for scenario modifier version ${String(value.scenarioModifier.version)}`)
+  }
+  if (isObject(value) && isObject(value.scenarioModifier) && 'kind' in value.scenarioModifier &&
+    !SCENARIO_MODIFIER_KINDS.includes(value.scenarioModifier.kind as (typeof SCENARIO_MODIFIER_KINDS)[number])) {
+    throw new Error(`App update required for scenario modifier ${String(value.scenarioModifier.kind)}`)
   }
   const uma = parseUmaSave(value)
   if (!uma) throw new Error('Uma save is malformed')

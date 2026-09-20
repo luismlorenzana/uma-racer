@@ -227,6 +227,15 @@ describe('parseSyncRequest', () => {
       .toMatch(/invalid umas data/)
     expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...current, scenarioModifier: { version: 1, tier: 3, kind: 'climax', earned: 2, stock: 2, used: 1 } } }] }))
       .toMatch(/invalid umas data/)
+    const modifierFor = (level: number, scenarioModifier: Record<string, unknown>) => ({ ...current, level, scenarioModifier })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: modifierFor(31, { version: 1, tier: 4, kind: 'performances', notes: ['speed', 'power'], performances: 2 }) }] }))
+      .toMatchObject({ upserts: [{ data: { scenarioModifier: { kind: 'performances' } } }] })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: modifierFor(41, { version: 1, tier: 5, kind: 'goddess-fragments', fragments: 7, bursts: 1 }) }] }))
+      .toMatchObject({ upserts: [{ data: { scenarioModifier: { kind: 'goddess-fragments' } } }] })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: modifierFor(51, { version: 1, tier: 6, kind: 'expedition', stamps: 5, completed: 2, upgraded: 1 }) }] }))
+      .toMatchObject({ upserts: [{ data: { scenarioModifier: { kind: 'expedition' } } }] })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: modifierFor(31, { version: 1, tier: 4, kind: 'performances', notes: ['power', 'speed'], performances: 2 }) }] }))
+      .toMatch(/invalid umas data/)
     const formerMaximum = {
       ...uma,
       level: 110,

@@ -163,7 +163,7 @@ describe('scenario promotion', () => {
       level: 30,
       scenarioModifier: { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 5, stock: 3, used: 2 },
     }
-    const intoUnimplemented = promoteScenario({
+    const intoConcert = promoteScenario({
       profile: intoTrackblazer.profile,
       uma: tierThree,
       umaTemplate: template,
@@ -171,6 +171,45 @@ describe('scenario promotion', () => {
       cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }],
       races,
       now: 501,
+    })
+    expect(intoConcert.uma.scenarioModifier).toEqual({
+      version: 1, tier: 4, kind: 'performances', notes: [], performances: 0,
+    })
+
+    const intoMasters = promoteScenario({
+      profile: intoConcert.profile,
+      uma: { ...intoConcert.uma, level: 40, scenarioModifier: { version: 1, tier: 4, kind: 'performances', notes: ['speed'], performances: 3 } },
+      umaTemplate: template,
+      skills,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }],
+      races,
+      now: 502,
+    })
+    expect(intoMasters.uma.scenarioModifier).toEqual({
+      version: 1, tier: 5, kind: 'goddess-fragments', fragments: 0, bursts: 0,
+    })
+
+    const intoLArc = promoteScenario({
+      profile: intoMasters.profile,
+      uma: { ...intoMasters.uma, level: 50, scenarioModifier: { version: 1, tier: 5, kind: 'goddess-fragments', fragments: 7, bursts: 2 } },
+      umaTemplate: template,
+      skills,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }],
+      races,
+      now: 503,
+    })
+    expect(intoLArc.uma.scenarioModifier).toEqual({
+      version: 1, tier: 6, kind: 'expedition', stamps: 0, completed: 0, upgraded: 0,
+    })
+
+    const intoUnimplemented = promoteScenario({
+      profile: intoLArc.profile,
+      uma: { ...intoLArc.uma, level: 60, scenarioModifier: { version: 1, tier: 6, kind: 'expedition', stamps: 5, completed: 2, upgraded: 2 } },
+      umaTemplate: template,
+      skills,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }],
+      races,
+      now: 504,
     })
     expect(intoUnimplemented.uma.scenarioModifier).toBeNull()
   })

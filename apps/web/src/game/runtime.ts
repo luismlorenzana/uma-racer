@@ -16,6 +16,7 @@ import {
   SCENARIOS,
   replaceSkillLoadout as resolveSkillLoadout,
   type EntityKind,
+  type AptitudeCategory,
   type Facility,
   type LogKind,
   type TrainingTurnResult,
@@ -49,7 +50,12 @@ import {
 import { adoptGameState, clearGameState, localDay, mergeBadgeAndFlairState, replaceBadgeState, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
 import { replaceCardState } from './store'
 import { acknowledgedSequences } from './sync'
-import { persistTraining, resolveMemoryTraining } from './training'
+import {
+  persistExpeditionCompletion,
+  persistTraining,
+  resolveMemoryExpeditionCompletion,
+  resolveMemoryTraining,
+} from './training'
 import {
   completeMemoryRace,
   completePersistentRace,
@@ -460,6 +466,29 @@ export class GameRuntime {
         this.schedule()
       }
       return actionResult
+    } finally {
+      this.trainingLocks.delete(id)
+    }
+  }
+
+  async completeExpedition(id: string, category: AptitudeCategory | null, now = Date.now()) {
+    if (this.trainingLocks.has(id)) throw new Error('Training is already resolving for this Uma')
+    this.trainingLocks.add(id)
+    try {
+      const generation = this.generation
+      const state = useGame.getState()
+      const uma = state.umas[id]
+      if (state.status !== 'ready' || !uma) throw new Error('Expedition Uma must be owned')
+      const mutation = state.persistent
+        ? await persistExpeditionCompletion(id, category, now)
+        : resolveMemoryExpeditionCompletion(uma, category)
+      if (generation !== this.generation) return mutation.completion
+      replaceUma(mutation.uma)
+      if (state.persistent) {
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation.completion
     } finally {
       this.trainingLocks.delete(id)
     }

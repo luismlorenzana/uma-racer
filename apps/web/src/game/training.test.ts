@@ -21,7 +21,12 @@ import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
 import { persistInitial, readLocalSnapshot } from './persistence'
 import { GameRuntime } from './runtime'
 import { clearGameState, useGame } from './store'
-import { persistTraining, resolveMemoryTraining } from './training'
+import {
+  persistExpeditionCompletion,
+  persistTraining,
+  resolveMemoryExpeditionCompletion,
+  resolveMemoryTraining,
+} from './training'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -367,6 +372,85 @@ describe('Training persistence', () => {
     expect(armed.result.preview.scenarioModifier).toMatchObject({ kind: 'climax', triggered: true })
     expect(armed.uma.scenarioModifier).toEqual({ version: 1, tier: 3, kind: 'climax', earned: 1, stock: 0, used: 1 })
     expect(ordinary.uma.scenarioModifier).toEqual(equipped.scenarioModifier)
+  })
+
+  it('persists Concert completion, Masters cadence, and L Arc stamps through ordinary Training', async () => {
+    const loaded = content()
+    await seed(loaded)
+    const deckCardIds = ['card-power', 'card-speed', 'card-stamina', 'card-guts']
+    await setPersistentUmaDeck(loaded, 'uma-00', deckCardIds, 101)
+    let row = await db.umas.get('uma-00')
+    await db.umas.put({
+      ...row!,
+      data: {
+        ...row!.data,
+        level: 31,
+        trainingsThisScenario: 0,
+        scenarioModifier: { version: 1, tier: 4, kind: 'performances', notes: ['speed', 'stamina', 'power', 'guts'], performances: 0 },
+      },
+    })
+    const concert = await persistTraining(loaded, 'uma-00', 'wit', '2000-01-02', 200)
+    expect(concert.result.scenarioModifier).toMatchObject({ kind: 'performances', note: 'wit', completed: true })
+    expect(concert.uma.scenarioModifier).toEqual({ version: 1, tier: 4, kind: 'performances', notes: [], performances: 1 })
+
+    row = await db.umas.get('uma-00')
+    await db.umas.put({
+      ...row!,
+      data: {
+        ...row!.data,
+        level: 41,
+        trainingsThisScenario: 0,
+        scenarioModifier: { version: 1, tier: 5, kind: 'goddess-fragments', fragments: 7, bursts: 0 },
+      },
+    })
+    const masters = await persistTraining(loaded, 'uma-00', 'speed', '2000-01-02', 201)
+    expect(masters.result.scenarioModifier).toMatchObject({ kind: 'goddess-fragments', burst: true, fragmentCount: 0 })
+    expect(masters.uma.scenarioModifier).toEqual({ version: 1, tier: 5, kind: 'goddess-fragments', fragments: 0, bursts: 1 })
+
+    row = await db.umas.get('uma-00')
+    await db.umas.put({
+      ...row!,
+      data: {
+        ...row!.data,
+        level: 51,
+        trainingsThisScenario: 0,
+        scenarioModifier: { version: 1, tier: 6, kind: 'expedition', stamps: 4, completed: 0, upgraded: 0 },
+      },
+    })
+    const lArc = await persistTraining(loaded, 'uma-00', 'power', '2000-01-02', 202)
+    expect(lArc.result.scenarioModifier).toMatchObject({ kind: 'expedition', stampGranted: true, stampCount: 5, ready: true })
+    expect(lArc.uma.scenarioModifier).toMatchObject({ stamps: 5 })
+  })
+
+  it('completes a ready Expedition atomically with memory parity and rejects a retry', async () => {
+    const loaded = content()
+    await seed(loaded)
+    const row = await db.umas.get('uma-00')
+    const ready = {
+      ...row!.data,
+      level: 51,
+      scenarioModifier: { version: 1 as const, tier: 6 as const, kind: 'expedition' as const, stamps: 5, completed: 0, upgraded: 0 },
+    }
+    await db.umas.put({ ...row!, data: ready })
+    await db.outbox.clear()
+    const profileBefore = await db.profile.get('main')
+    const ledgersBefore = await db.ledger.count()
+
+    const memory = resolveMemoryExpeditionCompletion(ready, 'distance:sprint')
+    const persisted = await persistExpeditionCompletion('uma-00', 'distance:sprint', 300)
+    expect(persisted).toEqual(memory)
+    expect(persisted.completion).toMatchObject({ category: 'distance:sprint', before: 'B', after: 'A' })
+    expect(persisted.uma).toMatchObject({
+      aptitudes: { distance: { sprint: 'A' } },
+      scenarioModifier: { kind: 'expedition', stamps: 0, completed: 1, upgraded: 1 },
+    })
+    expect(await db.profile.get('main')).toEqual(profileBefore)
+    expect(await db.ledger.count()).toBe(ledgersBefore)
+    expect(await db.outbox.where('[kind+id]').equals(['umas', 'uma-00']).count()).toBe(1)
+
+    const after = await db.umas.get('uma-00')
+    await expect(persistExpeditionCompletion('uma-00', 'distance:sprint', 301)).rejects.toThrow(/not ready/)
+    expect(await db.umas.get('uma-00')).toEqual(after)
   })
 })
 

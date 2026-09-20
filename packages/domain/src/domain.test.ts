@@ -84,6 +84,11 @@ import {
   TEAM_SPIRIT_STAT_BONUS,
   CLIMAX_ITEMS_PER_WIN,
   CLIMAX_TRAINING_MULTIPLIER,
+  PERFORMANCE_NOTE_COUNT,
+  PERFORMANCE_STAT_BONUS,
+  GODDESS_FRAGMENT_THRESHOLD,
+  GODDESS_BURST_MULTIPLIER,
+  EXPEDITION_STAMP_THRESHOLD,
 } from './index'
 
 describe('flair', () => {
@@ -157,11 +162,14 @@ describe('scenarios', () => {
     expect(UMA_SHARDS_PER_COUPON).toBe(5)
   })
 
-  it('pins scenario modifier v1 and the Unity Cup and Trackblazer values', () => {
+  it('pins scenario modifier v1 and the implemented tier values', () => {
     expect(SCENARIO_MODIFIER_VERSION).toBe(1)
     expect([TEAM_SPIRIT_CARD_THRESHOLD, TEAM_SPIRIT_STAT_BONUS]).toEqual([3, 10])
     expect(CLIMAX_ITEMS_PER_WIN).toBe(1)
     expect(CLIMAX_TRAINING_MULTIPLIER).toBe(1.2)
+    expect([PERFORMANCE_NOTE_COUNT, PERFORMANCE_STAT_BONUS]).toEqual([5, 20])
+    expect([GODDESS_FRAGMENT_THRESHOLD, GODDESS_BURST_MULTIPLIER]).toEqual([8, 1.5])
+    expect(EXPEDITION_STAMP_THRESHOLD).toBe(5)
   })
 
   it('pins all 14 JP scenarios, the +80 cap ladder, and the tier-14 SP cap', () => {

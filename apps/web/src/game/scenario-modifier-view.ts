@@ -1,6 +1,12 @@
 // Pure scenario-modifier copy/progress projection (docs/design/scenarios.md#scenario-modifiers).
 
-import { scenarioModifierDefinition, type ScenarioModifierState } from '@racer/domain'
+import {
+  EXPEDITION_STAMP_THRESHOLD,
+  GODDESS_FRAGMENT_THRESHOLD,
+  PERFORMANCE_NOTE_COUNT,
+  scenarioModifierDefinition,
+  type ScenarioModifierState,
+} from '@racer/domain'
 
 export interface ScenarioModifierView {
   kind: ScenarioModifierState['kind']
@@ -31,21 +37,41 @@ export function buildScenarioModifierView(
     detail: 'Legacy run · modifier becomes available at the next Scenario Start.',
     legacyUnavailable: true,
   }
-  return state.kind === 'team-spirit'
-    ? {
+  if (state.kind === 'team-spirit') return {
       kind: state.kind,
       name: definition.name,
       rule: definition.shortRule,
       detail: `${state.bursts} Spirit Burst${state.bursts === 1 ? '' : 's'} triggered this tier.`,
       legacyUnavailable: false,
     }
-    : {
+  if (state.kind === 'climax') return {
       kind: state.kind,
       name: definition.name,
       rule: definition.shortRule,
       detail: `${state.stock} stocked · ${state.used} used · expires at promotion.`,
       legacyUnavailable: false,
     }
+  if (state.kind === 'performances') return {
+    kind: state.kind,
+    name: definition.name,
+    rule: definition.shortRule,
+    detail: `${state.notes.length}/${PERFORMANCE_NOTE_COUNT} notes · ${state.performances} Performance${state.performances === 1 ? '' : 's'} completed.`,
+    legacyUnavailable: false,
+  }
+  if (state.kind === 'goddess-fragments') return {
+    kind: state.kind,
+    name: definition.name,
+    rule: definition.shortRule,
+    detail: `${state.fragments}/${GODDESS_FRAGMENT_THRESHOLD} fragments · ${state.bursts} Goddess Burst${state.bursts === 1 ? '' : 's'}.`,
+    legacyUnavailable: false,
+  }
+  return {
+    kind: state.kind,
+    name: definition.name,
+    rule: definition.shortRule,
+    detail: `${state.stamps}/${EXPEDITION_STAMP_THRESHOLD} stamps · ${state.completed} completed · ${state.upgraded} aptitude upgrade${state.upgraded === 1 ? '' : 's'}.`,
+    legacyUnavailable: false,
+  }
 }
 
 export const climaxRewardLabel = (amount: number): string | null =>

@@ -146,7 +146,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   error rather than being reset. If IndexedDB itself is unavailable, play can continue in clearly labeled memory-only mode.
 - App-shell and private-content releases remain independently visible. The build commit is injected into Settings, content
   keeps its manifest version/origin, and a waiting or newly controlling service worker offers an explicit restart. That
-  restart is deferred while Training, race completion, redemption, promotion, or Scenario Start is committing. Content
+  restart is deferred while Training, Expedition completion, race completion, redemption, promotion, or Scenario Start is committing. Content
   diagnostics distinguish auth, publication, missing-object, integrity, network, and verified-offline states without ever
   clearing the local save.
 - The client is trusted. It's a personal game, so there's no server-side validation of game rules beyond shape checks.
@@ -247,7 +247,10 @@ apps/web/src/
 - Scenario Start is separately split. Its review is pure and write-free; the confirmation calls the same promotion result
   used by persistence, and the success route reconstructs from committed save facts rather than keeping a second game state.
 - Scenario-modifier projections are pure domain functions shared by Training previews/commits and race-win rewards. The
-  one modifier field is written inside the existing Uma transaction; no resource becomes a ledger row or race-engine input.
+  one modifier field is written inside the existing Uma transaction; no resource becomes a ledger row. Project L'Arc's
+  ready-expedition action re-reads and updates only the Uma plus its coalesced outbox row, raises an ordinary visible
+  aptitude at most to A, and shares Training's same-Uma lock and update-restart boundary. Other modifier state never enters
+  race input construction.
 - Goal and Journey projections remain small pure DOM view models. Home, Profile, Race Select, pre-race, and Results join
   persisted ids to private content with safe fallbacks; goal state never enters Pixi or changes simulation inputs.
 - Badge/catalog/evaluator and Trainer aggregation stay pure in `@racer/domain`. Each affected local action runs the same

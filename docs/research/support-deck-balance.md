@@ -79,3 +79,33 @@ pinned TL10 curve; four Climax uses add 112 total stats across the run without c
 quick-regression rows: tier-1 1,200 m wins **11/79/72/38** at k=0 and **17/76/67/40** at k=9; 1,600 m wins
 **16/72/58/54** at k=0 and **19/73/56/52** at k=9 for Front/Pace/Late/End. HP-empty stayed 0% and max-spurt 100% in all
 four rows. This is expected: modifier state and gains never enter race input construction or the engine.
+
+## T026 scenario-modifier regression — 2026-09-20
+
+T026 adds tier-4 coverage, tier-5 cadence, and tier-6 aptitude controls to the same mature synthetic harness. Grand Concert
+organic play follows the greedy facility choice; its forced row rotates through all five facilities to establish a bounded
+three-Performance case. Grand Masters receives fragments on the documented eight-turn cadence. Project L'Arc claims each
+ready five-stamp expedition against the first eligible invented aptitude; as expected, that changes aptitudes but not the
+Training-gain row.
+
+| Scenario case | Turns to TL10 | Average applied gain | Total stat gain | Modifier events |
+|---|---:|---:|---:|---:|
+| Tier 4 baseline | 17 | 212.7 | 3,210 | 0 |
+| Tier 4 organic Performances | 17 | 217.5 | 3,247 | 1 |
+| Tier 4 forced five-facility rotation | 18 | 215.1 | 3,456 | 3 |
+| Tier 5 baseline | 17 | 230.2 | 3,407 | 0 |
+| Tier 5 Goddess Fragments | 17 | 240.3 | 3,570 | 2 |
+| Tier 6 baseline | 17 | 244.6 | 3,638 | 0 |
+| Tier 6 Expedition | 17 | 244.6 | 3,638 | 3 |
+
+All ordinary/organic rows retain the 17-turn Training-Level curve and every row remains below the 25-turn bound. The forced
+Concert rotation takes one extra turn because it deliberately picks low-value facilities to finish sets; its +246 total
+stat difference is the bounded reward for doing so. Masters adds 163 stats through two predictable bursts. L'Arc completes
+three aptitude upgrades without leaking into stat/SP gains. All nine T024 deck rows and five T025 rows remain unchanged,
+and the separate 300-seed G1 control remains **30.3% at k=0 / 27.7% at k=9**.
+
+The full `pnpm sim:balance` matrix also remained deterministic: its original quick rows stayed **11/79/72/38** and
+**17/76/67/40** at 1,200 m, then **16/72/58/54** and **19/73/56/52** at 1,600 m for k=0/k=9. Across all 2,400 simulated
+races, every strategy won in all 12 rows, HP-empty was 6.0%, max-spurt was 92.9%, and the worst strategy row was 56.5%.
+The long-recovery control stayed **54.6% → 51.8% HP empty** and **167.3 s → 164.5 s finish**. Tier-6 Expedition aptitude
+changes are ordinary saved race inputs after the player claims them; none of the three modifiers changes race-engine code.

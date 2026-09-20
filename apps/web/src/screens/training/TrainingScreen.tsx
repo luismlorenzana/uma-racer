@@ -1,11 +1,17 @@
 import {
   EXP_TO_NEXT_TRAINING_LEVEL,
+  EXPEDITION_STAMP_THRESHOLD,
+  GODDESS_FRAGMENT_THRESHOLD,
+  GRADES,
   MAX_TRAINING_LEVEL,
   LEVELS_PER_SCENARIO,
   SCENARIOS,
   STATS,
   badgeStateId,
+  expeditionAptitudeOptions,
   isGateLevel,
+  type AptitudeCategory,
+  type Aptitudes,
   type Facility,
   type GainKey,
   type StatKey,
@@ -15,7 +21,7 @@ import { m, useReducedMotion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
-import { trainUma } from '../../game/actions'
+import { completeExpedition as completeExpeditionAction, trainUma } from '../../game/actions'
 import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../game/flair-view'
 import { useGame } from '../../game/store'
 import { buildTrainingView, type TrainingCardView } from '../../game/training-view'
@@ -55,6 +61,18 @@ const FACILITY_TONE: Record<StatKey, string> = {
   wit: 'from-emerald-50 to-emerald-100 border-emerald-300',
 }
 
+function aptitudeGrade(aptitudes: Aptitudes, category: AptitudeCategory) {
+  const [group, key] = category.split(':') as [keyof Aptitudes, string]
+  if (group === 'surface') return aptitudes.surface[key as keyof Aptitudes['surface']]
+  if (group === 'distance') return aptitudes.distance[key as keyof Aptitudes['distance']]
+  return aptitudes.strategy[key as keyof Aptitudes['strategy']]
+}
+
+function aptitudeLabel(category: AptitudeCategory): string {
+  const [group, key] = category.split(':')
+  return `${group![0]!.toUpperCase()}${group!.slice(1)} · ${key![0]!.toUpperCase()}${key!.slice(1)}`
+}
+
 function CardIcon({ card, friendship = false }: { card: TrainingCardView; friendship?: boolean }) {
   return (
     <div className={`relative h-8 w-8 shrink-0 rounded-lg border-2 bg-white shadow-sm ${friendship ? 'border-gold ring-2 ring-gold/35' : 'border-white'}`}>
@@ -90,6 +108,9 @@ function ResultPanel({ result, skillNames, cardNames }: { result: TrainingTurnRe
         {result.cardCouponReward > 0 && <span className="rounded-full bg-violet-100 px-2 py-1">+{result.cardCouponReward} Card Coupon</span>}
         {result.scenarioModifier?.kind === 'team-spirit' && result.scenarioModifier.triggered && <span className="rounded-full bg-violet-100 px-2 py-1">Team Spirit · +{result.scenarioModifier.bonusGains.speed} all stats</span>}
         {result.scenarioModifier?.kind === 'climax' && result.scenarioModifier.itemConsumed && <span className="rounded-full bg-violet-100 px-2 py-1">Climax item used · ×{result.scenarioModifier.multiplier.toFixed(2)} gains</span>}
+        {result.scenarioModifier?.kind === 'performances' && <span className="rounded-full bg-violet-100 px-2 py-1">{result.scenarioModifier.completed ? `Performance complete · +${result.scenarioModifier.bonusGains.speed} all stats` : result.scenarioModifier.collected ? `${STAT_LABEL[result.scenarioModifier.note]} note collected` : `${STAT_LABEL[result.scenarioModifier.note]} note already held`}</span>}
+        {result.scenarioModifier?.kind === 'goddess-fragments' && <span className="rounded-full bg-violet-100 px-2 py-1">{result.scenarioModifier.burst ? `Goddess Burst · ×${result.scenarioModifier.multiplier.toFixed(2)} gains` : `Fragment ${result.scenarioModifier.fragmentCount}/${GODDESS_FRAGMENT_THRESHOLD}`}</span>}
+        {result.scenarioModifier?.kind === 'expedition' && <span className="rounded-full bg-violet-100 px-2 py-1">{result.scenarioModifier.stampGranted ? `Expedition stamp ${result.scenarioModifier.stampCount}/${EXPEDITION_STAMP_THRESHOLD}` : 'Expedition ready · stamps held'}</span>}
         {result.hintResults.map((hint) => (
           <span key={hint.cardId} className="rounded-full bg-violet-100 px-2 py-1">
             {hint.learnedSkillId ? `Hint: ${skillNames.get(hint.learnedSkillId) ?? hint.learnedSkillId}` : `Known hint +${hint.fallbackSp} SP`}
@@ -124,6 +145,8 @@ export function TrainingScreen() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<Awaited<ReturnType<typeof trainUma>> | null>(null)
   const [useClimaxItem, setUseClimaxItem] = useState(false)
+  const [expeditionTarget, setExpeditionTarget] = useState<AptitudeCategory | null>(null)
+  const [expeditionResult, setExpeditionResult] = useState<Awaited<ReturnType<typeof completeExpeditionAction>> | null>(null)
 
   const view = useMemo(() => {
     if (contentState.status !== 'ready' || !profile || !uma) return null
@@ -167,14 +190,29 @@ export function TrainingScreen() {
   const noTickets = profile.tickets < 1
   const skillNames = new Map(contentState.content.skills.items.map((skill) => [skill.id, skill.name]))
   const cardNames = new Map(contentState.content.cards.items.map((card) => [card.id, `${card.charName} · ${card.title}`]))
+  const expeditionState = model.uma.scenarioModifier?.kind === 'expedition' ? model.uma.scenarioModifier : null
+  const expeditionOptions = expeditionState ? expeditionAptitudeOptions(model.uma.aptitudes) : []
+  const validExpeditionTarget = expeditionTarget !== null && expeditionOptions.includes(expeditionTarget)
   const choose = (facility: Facility) => {
     if (busy || noTickets) return
     setBusy(true)
     setError(null)
     setResult(null)
+    setExpeditionResult(null)
     void trainUma(umaId, facility, useClimaxItem)
       .then((next) => { setResult(next); setUseClimaxItem(false) })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Training could not be saved'))
+      .finally(() => setBusy(false))
+  }
+  const finishExpedition = () => {
+    if (busy || model.uma.scenarioModifier?.kind !== 'expedition' || model.uma.scenarioModifier.stamps < EXPEDITION_STAMP_THRESHOLD) return
+    if (expeditionOptions.length > 0 && !validExpeditionTarget) return
+    setBusy(true)
+    setError(null)
+    setExpeditionResult(null)
+    void completeExpeditionAction(umaId, expeditionOptions.length === 0 ? null : expeditionTarget)
+      .then((next) => { setExpeditionResult(next); setExpeditionTarget(null) })
+      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Expedition could not be completed'))
       .finally(() => setBusy(false))
   }
 
@@ -240,6 +278,9 @@ export function TrainingScreen() {
             <div className="flex items-start justify-between gap-3">
               <div><p className="text-xs font-extrabold tracking-wide text-violet-700 uppercase">Scenario modifier</p><h2 className="font-extrabold">{model.modifier.name}</h2></div>
               {model.uma.scenarioModifier?.kind === 'climax' && <span className="rounded-full bg-violet-700 px-2 py-1 text-xs font-extrabold text-white">{model.uma.scenarioModifier.stock} stocked</span>}
+              {model.uma.scenarioModifier?.kind === 'performances' && <span className="rounded-full bg-violet-700 px-2 py-1 text-xs font-extrabold text-white">{model.uma.scenarioModifier.notes.length}/5 notes</span>}
+              {model.uma.scenarioModifier?.kind === 'goddess-fragments' && <span className="rounded-full bg-violet-700 px-2 py-1 text-xs font-extrabold text-white">{model.uma.scenarioModifier.fragments}/8 fragments</span>}
+              {model.uma.scenarioModifier?.kind === 'expedition' && <span className="rounded-full bg-violet-700 px-2 py-1 text-xs font-extrabold text-white">{model.uma.scenarioModifier.stamps}/5 stamps</span>}
             </div>
             <p className="mt-1 text-xs font-bold text-ink-soft">{model.modifier.rule}</p>
             <p className="mt-1 text-xs text-ink-soft">{model.modifier.detail}</p>
@@ -253,6 +294,45 @@ export function TrainingScreen() {
               >
                 {model.uma.scenarioModifier.stock < 1 ? 'Win a race to earn an item' : useClimaxItem ? 'Use item on this Training' : 'Save items · Tap to use one'}
               </button>
+            )}
+            {expeditionState && (
+              <div className="mt-2">
+                <div className="grid grid-cols-5 gap-1" aria-label={`${expeditionState.stamps} of ${EXPEDITION_STAMP_THRESHOLD} expedition stamps`}>
+                  {Array.from({ length: EXPEDITION_STAMP_THRESHOLD }, (_, index) => <span key={index} className={`h-2 rounded-full ${index < expeditionState.stamps ? 'bg-violet-600' : 'bg-violet-200'}`} />)}
+                </div>
+                {expeditionState.stamps === EXPEDITION_STAMP_THRESHOLD && (
+                  <>
+                    {expeditionOptions.length > 0 && (
+                      <select
+                        aria-label="Expedition aptitude"
+                        value={expeditionTarget ?? ''}
+                        onChange={(event) => setExpeditionTarget((event.target.value || null) as AptitudeCategory | null)}
+                        disabled={busy}
+                        className="mt-2 min-h-11 w-full rounded-xl border-2 border-violet-300 bg-white px-3 text-sm font-bold"
+                      >
+                        <option value="">Choose an aptitude</option>
+                        {(['surface', 'distance', 'strategy'] as const).map((group) => (
+                          <optgroup key={group} label={`${group.charAt(0).toUpperCase()}${group.slice(1)}`}>
+                            {expeditionOptions.filter((category) => category.startsWith(`${group}:`)).map((category) => {
+                              const before = aptitudeGrade(model.uma.aptitudes, category)
+                              const after = GRADES[Math.max(GRADES.indexOf('A'), GRADES.indexOf(before) - 1)]!
+                              return <option key={category} value={category}>{aptitudeLabel(category)} · {before}→{after}</option>
+                            })}
+                          </optgroup>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      type="button"
+                      disabled={busy || (expeditionOptions.length > 0 && !validExpeditionTarget)}
+                      onClick={finishExpedition}
+                      className="mt-2 min-h-11 w-full rounded-xl bg-violet-700 px-3 text-sm font-extrabold text-white disabled:opacity-50"
+                    >
+                      {busy ? 'Completing…' : expeditionOptions.length === 0 ? 'Complete · Aptitudes capped' : 'Complete Expedition'}
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </section>
         )}
@@ -274,6 +354,9 @@ export function TrainingScreen() {
                   {facilityView.friendship && <span className="mt-0.5 rounded-full bg-gold px-1 text-[8px] font-extrabold text-white">FRIEND</span>}
                   {facilityView.scenarioModifier?.kind === 'team-spirit' && facilityView.scenarioModifier.triggered && <span className="mt-0.5 rounded-full bg-violet-700 px-1 text-[8px] font-extrabold text-white">SPIRIT</span>}
                   {facilityView.scenarioModifier?.kind === 'climax' && facilityView.scenarioModifier.triggered && <span className="mt-0.5 rounded-full bg-violet-700 px-1 text-[8px] font-extrabold text-white">×{facilityView.scenarioModifier.multiplier.toFixed(2)}</span>}
+                  {facilityView.scenarioModifier?.kind === 'performances' && <span className="mt-0.5 rounded-full bg-violet-700 px-1 text-[8px] font-extrabold text-white">{facilityView.scenarioModifier.completed ? 'PERFORM' : facilityView.scenarioModifier.collected ? 'NOTE' : 'HELD'}</span>}
+                  {facilityView.scenarioModifier?.kind === 'goddess-fragments' && <span className="mt-0.5 rounded-full bg-violet-700 px-1 text-[8px] font-extrabold text-white">{facilityView.scenarioModifier.burst ? `×${facilityView.scenarioModifier.multiplier.toFixed(2)}` : `${facilityView.scenarioModifier.fragmentCount}/8`}</span>}
+                  {facilityView.scenarioModifier?.kind === 'expedition' && <span className="mt-0.5 rounded-full bg-violet-700 px-1 text-[8px] font-extrabold text-white">{facilityView.scenarioModifier.stampGranted ? `${facilityView.scenarioModifier.stampCount}/5` : 'READY'}</span>}
                   <div className="mt-1 flex min-h-16 flex-col items-center gap-0.5">
                     {facilityView.cards.map((card) => <CardIcon key={card.save.templateId} card={card} friendship={card.template.type === facility} />)}
                   </div>
@@ -292,6 +375,7 @@ export function TrainingScreen() {
         </section>
 
         {result && <ResultPanel result={result} skillNames={skillNames} cardNames={cardNames} />}
+        {expeditionResult && <div aria-live="polite" className="rounded-2xl border-2 border-violet-200 bg-violet-50 px-3 py-2 text-center text-sm font-extrabold">{expeditionResult.category ? `${aptitudeLabel(expeditionResult.category)} improved ${expeditionResult.before}→${expeditionResult.after}` : 'Expedition completed · all aptitudes were already capped'}</div>}
         {earnedFlair.length > 0 && <FlairCards title="Flair earned" items={earnedFlair} animate={!reducedMotion} />}
         {trainerEarnedFlair.length > 0 && <FlairCards title="Trainer achievements" items={trainerEarnedFlair} animate={!reducedMotion} />}
         {noTickets && <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs font-extrabold">No Training Tickets. The next local-day grant restores up to 50.</div>}

@@ -14,6 +14,15 @@ describe('scenario modifier view projection', () => {
       detail: '1 stocked · 3 used · expires at promotion.',
       legacyUnavailable: false,
     })
+    expect(buildScenarioModifierView(4, { version: 1, tier: 4, kind: 'performances', notes: ['speed', 'power'], performances: 1 }, true)).toMatchObject({
+      name: 'Performances', detail: '2/5 notes · 1 Performance completed.',
+    })
+    expect(buildScenarioModifierView(5, { version: 1, tier: 5, kind: 'goddess-fragments', fragments: 7, bursts: 2 }, true)).toMatchObject({
+      name: 'Goddess Fragments', detail: '7/8 fragments · 2 Goddess Bursts.',
+    })
+    expect(buildScenarioModifierView(6, { version: 1, tier: 6, kind: 'expedition', stamps: 5, completed: 2, upgraded: 2 }, true)).toMatchObject({
+      name: 'Expedition', detail: '5/5 stamps · 2 completed · 2 aptitude upgrades.',
+    })
     expect(buildScenarioModifierView(2, null, true)).toMatchObject({ legacyUnavailable: true, detail: expect.stringMatching(/Legacy run/) })
     expect(buildScenarioModifierView(2, null, false)).toMatchObject({ legacyUnavailable: false, detail: 'Tier-local progress expired at promotion.' })
   })
