@@ -1,19 +1,35 @@
-import { DISTANCE_CATEGORIES, STRATEGIES, SURFACES, UMA_SHARDS_PER_COUPON, badgeStateId, tierOfLevel } from '@racer/domain'
+import { DISTANCE_CATEGORIES, STATS, SURFACES, UMA_SHARDS_PER_COUPON, badgeStateId } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { exchangeUmaShards, redeemUmaCoupon } from '../game/actions'
-import { EMPTY_UMA_ALBUM_FILTERS, buildUmaAlbum, type UmaAlbumFilters, type UmaAlbumItem } from '../game/collection-view'
-import type { UmaSort } from '../game/view'
+import { exchangeUmaShards, listLatestRaceTimes, redeemUmaCoupon } from '../game/actions'
+import { addSavedView, loadAlbumPrefs, markSeen, removeSavedView, saveAlbumPrefs, type AlbumPrefs } from '../game/album/prefs'
+import { emptyStateHint, runAlbumQuery, type AlbumQuery } from '../game/album/query'
+import {
+  STABLE_ALBUM_ID,
+  STABLE_DEFAULT_QUERY,
+  STABLE_FACETS,
+  STABLE_MODES,
+  STABLE_PRESETS,
+  STABLE_SORTS,
+  STABLE_TIE_BREAK,
+  buildStableAlbum,
+  sortValueLabel,
+  type StableEntry,
+  type StableMode,
+  type UmaFlairFacts,
+} from '../game/album/stable'
 import { useGame } from '../game/store'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import type { BadgeFrameStyle } from '../game/badge-frame'
+import { AlbumChrome } from '../ui/album/AlbumChrome'
+import { CompareSheet } from '../ui/album/CompareSheet'
+import { VirtualGrid } from '../ui/album/VirtualGrid'
 import { ArtTile } from '../ui/ArtTile'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
-import { Chip } from '../ui/Chip'
 import { Crest } from '../ui/Crest'
 import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
@@ -21,62 +37,101 @@ import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 
-const FILTER_LABELS = { tier: 'Tier', surface: 'Surface', distance: 'Distance', strategy: 'Strategy', sex: 'Sex', ready: 'Ready' } as const
-type FilterKind = keyof typeof FILTER_LABELS
+const MAX_COMPARE = 3
 const titleCase = (value: string) => `${value[0]!.toUpperCase()}${value.slice(1)}`
 
-function UmaTile({ item, onUnowned, frame }: { item: UmaAlbumItem; onUnowned: () => void; frame: BadgeFrameStyle | null }) {
-  const body = (
-    <>
-      <ArtTile
-        asset={item.asset}
-        alt={item.owned ? `${item.template.name} portrait` : `${item.template.name}, not owned`}
-        dimmed={!item.owned}
-        chamfer={item.view?.readyToPromote ?? false}
-        overlay={item.owned ? <Crest>T{item.view?.tier ?? 1}</Crest> : <Crest tone="neutral">Locked</Crest>}
-        corner={item.view?.readyToPromote ? <Crest tone="accent">Ready</Crest> : null}
-        footer={
-          <>
-            <p className="font-display truncate text-[15px] font-semibold">{item.template.name}</p>
-            <p className="truncate text-[11px] text-ink-on-dark-soft">{item.template.outfit ?? 'Standard outfit'}</p>
-          </>
-        }
-        className={frame && item.owned ? frame.borderClass : ''}
-      />
-      {item.save ? (
-        <div className="flex items-center justify-between px-0.5 pt-1.5 text-[12px] text-ink-soft">
-          <span>Lv <Numeral className="text-ink">{item.save.level}</Numeral></span>
-          <span>TL {item.save.trainingLevel}</span>
-        </div>
-      ) : (
-        <p className="px-0.5 pt-1.5 text-[12px] text-ink-faint">Unowned outfit</p>
-      )}
-    </>
-  )
-  return item.owned ? (
-    <Link
-      to={item.view?.readyToPromote ? `/scenario/${encodeURIComponent(item.template.id)}/start` : `/stable/${encodeURIComponent(item.template.id)}`}
-      className="block min-w-0 text-left"
-    >
-      {body}
-    </Link>
-  ) : (
-    <button type="button" onClick={onUnowned} className="block min-w-0 text-left">
-      {body}
-    </button>
-  )
+/** The compact aptitude line: her best surface, best distance and best strategy. */
+function aptitudeLine(entry: StableEntry): string {
+  const best = (values: Record<string, string>): string => {
+    const order = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G']
+    const [key, grade] = Object.entries(values)
+      .sort(([, left], [, right]) => order.indexOf(left) - order.indexOf(right))[0]!
+    return `${titleCase(key).slice(0, 4)} ${grade}`
+  }
+  return [best(entry.aptitudes.surface), best(entry.aptitudes.distance), best(entry.aptitudes.strategy)].join(' · ')
 }
 
-function OptionButton({ selected, label, onClick }: { selected: boolean; label: string; onClick: () => void }) {
+function UmaTile({
+  entry,
+  frame,
+  sortLabel,
+  selecting,
+  selected,
+  onOpen,
+  onToggleSelect,
+  onActions,
+}: {
+  entry: StableEntry
+  frame: BadgeFrameStyle | null
+  sortLabel: string | null
+  selecting: boolean
+  selected: boolean
+  onOpen: () => void
+  onToggleSelect: () => void
+  onActions: () => void
+}) {
+  const press = useRef<number | null>(null)
+  const startPress = () => {
+    press.current = window.setTimeout(() => { press.current = null; onActions() }, 450)
+  }
+  const endPress = () => {
+    if (press.current !== null) window.clearTimeout(press.current)
+    press.current = null
+  }
+
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      className={`min-h-12 rounded-sm px-4 text-left text-[15px] font-semibold ${selected ? 'border border-accent bg-accent-wash text-accent-strong' : 'border border-hairline bg-panel text-ink'}`}
-      onClick={onClick}
-    >
-      {label}
-    </button>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={selecting ? onToggleSelect : onOpen}
+        onPointerDown={startPress}
+        onPointerUp={endPress}
+        onPointerLeave={endPress}
+        className="block w-full min-w-0 text-left"
+      >
+        <ArtTile
+          asset={entry.asset}
+          alt={entry.owned ? `${entry.template.name} portrait` : `${entry.template.name}, not owned`}
+          dimmed={!entry.owned}
+          chamfer={entry.view?.readyToPromote ?? false}
+          overlay={
+            <>
+              {entry.owned ? <Crest>T{entry.view?.tier ?? 1}</Crest> : <Crest>Locked</Crest>}
+              {entry.isNew && <Crest tone="accent">NEW</Crest>}
+              {entry.outfitCount > 1 && <Crest>×{entry.outfitCount}</Crest>}
+            </>
+          }
+          corner={
+            selecting
+              ? <Crest tone={selected ? 'accent' : 'neutral'}>{selected ? '✓' : ''}</Crest>
+              : entry.view?.readyToPromote ? <Crest tone="accent">Ready</Crest> : null
+          }
+          footer={
+            <>
+              <p className="font-display truncate text-[15px] font-semibold">{entry.template.name}</p>
+              <p className="truncate text-[11px] text-ink-on-dark-soft">{entry.template.outfit ?? 'Standard outfit'}</p>
+            </>
+          }
+          className={frame && entry.owned ? frame.borderClass : ''}
+        />
+        <div className="flex items-center justify-between gap-2 px-0.5 pt-1.5 pr-8 text-[12px] text-ink-soft">
+          <span className="truncate">
+            {entry.save ? <>Lv <Numeral className="text-ink">{entry.save.level}</Numeral></> : 'Unowned'}
+          </span>
+          <span className="truncate text-right text-[11px] text-ink-faint">{sortLabel ?? aptitudeLine(entry)}</span>
+        </div>
+      </button>
+      {!selecting && (
+        <button
+          type="button"
+          aria-label={`Actions for ${entry.template.name}`}
+          onClick={onActions}
+          className="absolute right-0 bottom-0 flex h-9 w-9 items-center justify-center text-ink-faint"
+        >
+          <span aria-hidden>⋯</span>
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -93,18 +148,69 @@ export function StableScreen() {
   const sync = useGame((state) => state.sync)
   const navigate = useNavigate()
   const reducedMotion = useReducedMotion()
-  const [filters, setFilters] = useState<UmaAlbumFilters>(EMPTY_UMA_ALBUM_FILTERS)
-  const [sort, setSort] = useState<UmaSort>('name')
-  const [filterSheet, setFilterSheet] = useState<FilterKind | null>(null)
-  const [sortOpen, setSortOpen] = useState(false)
-  const [selected, setSelected] = useState<UmaAlbumItem | null>(null)
+
+  const [prefs, setPrefs] = useState<AlbumPrefs>({ id: STABLE_ALBUM_ID, query: STABLE_DEFAULT_QUERY, views: [], seen: [] })
+  const [parameter, setParameter] = useState<string | null>(null)
+  const [lastRacedAt, setLastRacedAt] = useState<Record<string, number>>({})
+  const [selecting, setSelecting] = useState(false)
+  const [selection, setSelection] = useState<readonly string[]>([])
+  const [compareOpen, setCompareOpen] = useState(false)
+  const [actionsFor, setActionsFor] = useState<StableEntry | null>(null)
+  const [redeemFor, setRedeemFor] = useState<StableEntry | null>(null)
   const [exchangeBusy, setExchangeBusy] = useState(false)
   const [redeemBusy, setRedeemBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [exchangePulse, setExchangePulse] = useState(0)
-  const album = useMemo(() => contentState.status === 'ready' && profile
-    ? buildUmaAlbum(contentState.content, owned, profile, filters, sort) : null,
-  [contentState, filters, owned, profile, sort])
+  const [needsSeed, setNeedsSeed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void loadAlbumPrefs(STABLE_ALBUM_ID, STABLE_DEFAULT_QUERY, STABLE_FACETS, STABLE_SORTS, [...STABLE_MODES])
+      .then(({ fresh, ...loaded }) => {
+        if (cancelled) return
+        setPrefs(loaded)
+        setNeedsSeed(fresh)
+      })
+    void listLatestRaceTimes().then((times) => { if (!cancelled) setLastRacedAt(times) }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [])
+
+  // A device that has never opened the album marks what is already here as seen, so NEW means new
+  // to you. This waits for the save, which loads after preferences do.
+  useEffect(() => {
+    if (!needsSeed || status !== 'ready') return
+    setNeedsSeed(false)
+    setPrefs((current) => {
+      const next = { ...current, seen: markSeen(current.seen, Object.keys(owned)) }
+      void saveAlbumPrefs(next)
+      return next
+    })
+  }, [needsSeed, owned, status])
+
+  const updatePrefs = useCallback((next: AlbumPrefs) => {
+    setPrefs(next)
+    void saveAlbumPrefs(next)
+  }, [])
+  const setQuery = useCallback((query: AlbumQuery) => {
+    setPrefs((current) => {
+      const next = { ...current, query }
+      void saveAlbumPrefs(next)
+      return next
+    })
+  }, [])
+
+  const flair = useMemo(() => {
+    if (contentState.status !== 'ready') return {} as Record<string, UmaFlairFacts>
+    const facts: Record<string, UmaFlairFacts> = {}
+    for (const save of Object.values(owned)) {
+      const state = badges[badgeStateId(save.templateId)]
+      if (state?.scope !== 'uma') continue
+      const summary = buildUmaFlairSummary(contentState.content, state, flairEvents)
+      facts[save.templateId] = { prestige: summary.prestige, badgeCount: summary.badgeCount, activeTitle: summary.activeTitle }
+    }
+    return facts
+  }, [badges, contentState, flairEvents, owned])
+
   const frames = useMemo(() => {
     if (contentState.status !== 'ready') return new Map<string, BadgeFrameStyle>()
     return new Map(Object.values(owned).flatMap((save) => {
@@ -115,23 +221,50 @@ export function StableScreen() {
     }))
   }, [badges, contentState, flairEvents, owned])
 
+  const mode = (prefs.query.mode ?? 'outfit') as StableMode
+  const album = useMemo(() => contentState.status === 'ready' && profile
+    ? buildStableAlbum({ content: contentState.content, saves: owned, profile, lastRacedAt, flair, seen: prefs.seen, mode })
+    : null,
+  [contentState, flair, lastRacedAt, mode, owned, prefs.seen, profile])
+
+  // "Best aptitude for…" sorts by the chosen parameter key, so the parameter is part of the sort.
+  const effectiveQuery = useMemo(() => (
+    prefs.query.sort === 'bestAptitude' && parameter ? { ...prefs.query, sort: parameter } : prefs.query
+  ), [parameter, prefs.query])
+
+  const result = useMemo(() => album
+    ? runAlbumQuery(album.rows, STABLE_FACETS, effectiveQuery, STABLE_TIE_BREAK)
+    : null,
+  [album, effectiveQuery])
+
+  const countFor = useCallback((draft: AlbumQuery) => album
+    ? runAlbumQuery(album.rows, STABLE_FACETS, draft).total
+    : 0,
+  [album])
+
+  const openEntry = useCallback((entry: StableEntry) => {
+    if (entry.isNew) updatePrefs({ ...prefs, seen: markSeen(prefs.seen, [entry.id]) })
+    if (!entry.owned) { setRedeemFor(entry); setError(null); return }
+    const order = result?.rows.map((row) => row.id) ?? []
+    navigate(
+      entry.view?.readyToPromote
+        ? `/scenario/${encodeURIComponent(entry.template.id)}/start`
+        : `/stable/${encodeURIComponent(entry.template.id)}`,
+      { state: { albumOrder: order } },
+    )
+  }, [navigate, prefs, result, updatePrefs])
+
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to open your Stable" detail="Your private roster stays behind your account." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish a private content version before creating a save." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
   if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
-  if (contentState.status !== 'ready' || status !== 'ready' || !profile || !album) return <ScreenState title="Opening your Stable…" detail="Loading private content and your local save." />
+  if (contentState.status !== 'ready' || status !== 'ready' || !profile || !album || !result) return <ScreenState title="Opening your Stable…" detail="Loading private content and your local save." />
 
-  const tiers = [...new Set(contentState.content.umas.items.map((template) => owned[template.id] ? tierOfLevel(owned[template.id]!.level) : 1))].sort((a, b) => a - b)
-  const activeLabel = (kind: FilterKind): string => {
-    if (kind === 'ready') return filters.ready ? 'Ready only' : 'All readiness'
-    const value = filters[kind]
-    return value === null ? 'All' : kind === 'tier' ? `Tier ${value}` : titleCase(String(value))
-  }
-  const options = filterSheet === 'tier' ? tiers.map((value) => ({ value, label: `Tier ${value}` }))
-    : filterSheet === 'surface' ? SURFACES.map((value) => ({ value, label: titleCase(value) }))
-      : filterSheet === 'distance' ? DISTANCE_CATEGORIES.map((value) => ({ value, label: titleCase(value) }))
-        : filterSheet === 'strategy' ? STRATEGIES.map((value) => ({ value, label: titleCase(value) }))
-          : filterSheet === 'sex' ? ([['female', 'Female'], ['male', 'Male'], ['unknown', 'Unknown']] as const).map(([value, label]) => ({ value, label })) : []
+  const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
+  const compareEntries = selection.flatMap((id) => album.entries.get(id) ?? [])
+  const columns = prefs.query.density === 'compact' ? 3 : 2
+  const orphaned = Object.keys(owned).filter((id) => !contentState.content.umas.byId.has(id))
+
   const doExchange = () => {
     if (exchangeBusy || profile.umaShards < UMA_SHARDS_PER_COUPON) return
     setExchangeBusy(true)
@@ -142,79 +275,214 @@ export function StableScreen() {
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Could not exchange shards'))
       .finally(() => setExchangeBusy(false))
   }
+
   const doRedeem = () => {
-    if (!selected || redeemBusy || selected.redemptionLock) return
+    if (!redeemFor || redeemBusy || redeemFor.redemptionLock) return
     setRedeemBusy(true)
     setError(null)
-    void redeemUmaCoupon(selected.template.id).then((result) => {
-      pushToast(result.alreadyRedeemed ? 'Uma already redeemed' : 'New Uma acquired')
-      navigate(`/collection/reveal/uma/${encodeURIComponent(selected.template.id)}`, { replace: true })
+    void redeemUmaCoupon(redeemFor.template.id).then((outcome) => {
+      pushToast(outcome.alreadyRedeemed ? 'Uma already redeemed' : 'New Uma acquired')
+      navigate(`/collection/reveal/uma/${encodeURIComponent(redeemFor.template.id)}`, { replace: true })
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Could not redeem this coupon'))
       .finally(() => setRedeemBusy(false))
   }
 
-  return <div className="flex flex-col gap-3 pt-1">
-    <Panel>
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Stable</h1>
-          <p className="text-[13px] text-ink-soft"><Numeral className="text-ink">{album.owned}</Numeral> / {album.total} outfits owned</p>
+  const toggleSelect = (id: string) => {
+    setSelection((current) => current.includes(id)
+      ? current.filter((entry) => entry !== id)
+      : current.length >= MAX_COMPARE ? current : [...current, id])
+  }
+
+  return (
+    <div className="flex flex-col gap-3 pt-1">
+      <Panel>
+        <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm bg-sunken p-3">
+          <div>
+            <p className="text-[13px] font-semibold">
+              <Numeral>{profile.umaShards}</Numeral> / {UMA_SHARDS_PER_COUPON} Uma Shards
+            </p>
+            <m.p
+              key={exchangePulse}
+              initial={reducedMotion || exchangePulse === 0 ? false : { scale: 1.15, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-[12px] text-ink-soft"
+            >
+              {profile.umaCoupons} Uma Select Coupon{profile.umaCoupons === 1 ? '' : 's'}
+            </m.p>
+          </div>
+          <Button size="sm" disabled={exchangeBusy || profile.umaShards < UMA_SHARDS_PER_COUPON} onClick={doExchange}>
+            {exchangeBusy ? 'Exchanging…' : 'Exchange'}
+          </Button>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setSortOpen(true)}>Sort</Button>
-      </div>
-      <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm bg-sunken p-3">
-        <div>
-          <p className="text-[13px] font-semibold"><Numeral>{album.shardBalance}</Numeral> / {UMA_SHARDS_PER_COUPON} Uma Shards</p>
-          <m.p key={exchangePulse} initial={reducedMotion || exchangePulse === 0 ? false : { scale: 1.15, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-[12px] text-ink-soft">
-            {album.couponBalance} Uma Select Coupon{album.couponBalance === 1 ? '' : 's'}
-          </m.p>
-        </div>
-        <Button size="sm" disabled={exchangeBusy || album.shardBalance < UMA_SHARDS_PER_COUPON} onClick={doExchange}>{exchangeBusy ? 'Exchanging…' : 'Exchange'}</Button>
-      </div>
-      {!persistent && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — acquisitions work for this session but cannot persist or sync.</p>}
-      {persistent && sync.status === 'offline' && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Offline — collection changes commit locally and will sync after reconnecting.</p>}
-      {persistent && (sync.status === 'pending' || sync.status === 'syncing') && <p className="mt-2 rounded-sm bg-info/10 p-2 text-[12px] font-semibold text-info">Local changes are saved · cloud sync {sync.status === 'syncing' ? 'in progress' : 'pending'}.</p>}
-      {album.orphanedIds.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{album.orphanedIds.length} owned Uma reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
-      {error && <p role="alert" className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{error}</p>}
-    </Panel>
-
-    <SegmentedControl
-      label="Ownership"
-      value={filters.ownership}
-      onChange={(ownership) => setFilters((value) => ({ ...value, ownership }))}
-      options={[{ value: 'all', label: 'All' }, { value: 'owned', label: 'Owned' }, { value: 'unowned', label: 'Unowned' }] as const}
-    />
-
-    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Stable filters">
-      {(Object.keys(FILTER_LABELS) as FilterKind[]).map((kind) => (
-        <Chip
-          key={kind}
-          selected={!activeLabel(kind).startsWith('All')}
-          onClick={() => kind === 'ready' ? setFilters((current) => ({ ...current, ready: !current.ready })) : setFilterSheet(kind)}
-        >
-          {FILTER_LABELS[kind]}: {activeLabel(kind)}
-        </Chip>
-      ))}
-    </div>
-
-    {album.items.length ? (
-      <div className="grid grid-cols-2 gap-3">
-        {album.items.map((item) => <UmaTile key={item.template.id} item={item} frame={frames.get(item.template.id) ?? null} onUnowned={() => { setSelected(item); setError(null) }} />)}
-      </div>
-    ) : (
-      <Panel className="text-center">
-        <p className="font-display font-semibold">No Uma outfits match these filters.</p>
-        <Button className="mt-3" onClick={() => setFilters(EMPTY_UMA_ALBUM_FILTERS)}>Reset filters</Button>
+        {!persistent && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — acquisitions work for this session but cannot persist or sync.</p>}
+        {persistent && sync.status === 'offline' && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Offline — collection changes commit locally and will sync after reconnecting.</p>}
+        {orphaned.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{orphaned.length} owned Uma reference{orphaned.length === 1 ? '' : 's'} need restored content.</p>}
+        {error && <p role="alert" className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{error}</p>}
       </Panel>
-    )}
 
-    <BottomSheet open={filterSheet !== null} onClose={() => setFilterSheet(null)}>{filterSheet && <div><h2 className="font-display mb-3 text-xl font-bold">{FILTER_LABELS[filterSheet]}</h2>{filterSheet !== 'ready' && <div className="grid gap-2"><OptionButton selected={filters[filterSheet] === null} label="All" onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: null })); setFilterSheet(null) }} />{options.map((option) => <OptionButton key={String(option.value)} selected={filters[filterSheet] === option.value} label={option.label} onClick={() => { setFilters((current) => ({ ...current, [filterSheet]: option.value })); setFilterSheet(null) }} />)}</div>}</div>}</BottomSheet>
-    <BottomSheet open={sortOpen} onClose={() => setSortOpen(false)}><h2 className="font-display mb-3 text-xl font-bold">Sort Stable</h2><div className="grid gap-2">{([['name', 'Name'], ['uma-level', 'Uma Level'], ['training-level', 'Training Level']] as const).map(([value, label]) => <OptionButton key={value} selected={sort === value} label={label} onClick={() => { setSort(value); setSortOpen(false) }} />)}</div></BottomSheet>
-    <BottomSheet open={selected !== null} onClose={() => { if (!redeemBusy) { setSelected(null); setError(null) } }}>{selected && <div>
-      <div className="flex gap-3"><AtlasSprite asset={selected.asset} alt={`${selected.template.name} portrait`} className="h-24 w-24 shrink-0 overflow-hidden rounded-md border border-hairline bg-sunken" fallback={<Placeholder label={selected.template.name} />} /><div><p className="text-micro">Unowned Uma outfit</p><h2 className="font-display text-xl font-bold">{selected.template.name}</h2><p className="text-[13px] text-ink-soft">{selected.template.outfit ?? 'Standard outfit'}</p></div></div>
-      {selected.redemptionLock ? <p className="mt-4 rounded-sm bg-warning/10 p-3 text-[13px] font-semibold">{selected.redemptionLock}</p> : <div className="my-4 flex items-center justify-between rounded-sm bg-sunken p-3 text-[14px] font-semibold"><span>Uma Select Coupon</span><span><Numeral>1</Numeral> → <Numeral>{Math.max(0, profile.umaCoupons - 1)}</Numeral></span></div>}
-      {error && <p role="alert" className="mb-3 rounded-sm bg-danger/10 p-3 text-[13px] font-semibold text-danger">{error}</p>}
-      <Button className="w-full" disabled={redeemBusy || selected.redemptionLock !== null} onClick={doRedeem}>{redeemBusy ? 'Adding to Stable…' : selected.redemptionLock ? 'Coupon unavailable' : 'Redeem 1 Coupon'}</Button>
-    </div>}</BottomSheet>
-  </div>
+      <AlbumChrome
+        title="Stable"
+        completion={<><Numeral className="text-ink">{album.owned}</Numeral> / {album.total} {mode === 'character' ? 'characters' : 'outfits'} owned</>}
+        segment={
+          <div className="flex flex-col gap-2">
+            <SegmentedControl
+              label="Ownership"
+              value={(prefs.query.filters.ownership as string[] | undefined)?.[0] ?? 'all'}
+              onChange={(value) => setQuery({
+                ...prefs.query,
+                filters: value === 'all'
+                  ? Object.fromEntries(Object.entries(prefs.query.filters).filter(([key]) => key !== 'ownership'))
+                  : { ...prefs.query.filters, ownership: [value] },
+              })}
+              options={[{ value: 'all', label: 'All' }, { value: 'owned', label: 'Owned' }, { value: 'unowned', label: 'Unowned' }] as const}
+            />
+            <SegmentedControl
+              label="Grouping"
+              value={mode}
+              onChange={(value) => { setSelection([]); setQuery({ ...prefs.query, mode: value }) }}
+              options={[{ value: 'outfit', label: 'Outfits' }, { value: 'character', label: 'Characters' }] as const}
+            />
+          </div>
+        }
+        facets={STABLE_FACETS}
+        sorts={STABLE_SORTS}
+        presets={STABLE_PRESETS}
+        query={prefs.query}
+        counts={result.counts}
+        total={result.total}
+        parameter={parameter}
+        views={prefs.views}
+        emptyHint={emptyStateHint(album.rows, STABLE_FACETS, effectiveQuery)}
+        hiddenFilterKeys={['ownership']}
+        countFor={countFor}
+        onQueryChange={setQuery}
+        onParameterChange={setParameter}
+        onSaveView={(name) => {
+          try {
+            updatePrefs({ ...prefs, views: addSavedView(prefs.views, name, prefs.query) })
+          } catch (reason) {
+            pushToast(reason instanceof Error ? reason.message : 'Could not save this view')
+          }
+        }}
+        onDeleteView={(name) => updatePrefs({ ...prefs, views: removeSavedView(prefs.views, name) })}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            aria-pressed={selecting}
+            onClick={() => { setSelecting((value) => !value); setSelection([]) }}
+            className="min-h-11 text-[13px] font-semibold text-accent-strong"
+          >
+            {selecting ? 'Done' : 'Compare'}
+          </button>
+          {selecting && (
+            <Button
+              size="sm"
+              disabled={selection.length < 2}
+              onClick={() => setCompareOpen(true)}
+            >
+              Compare {selection.length}/{MAX_COMPARE}
+            </Button>
+          )}
+        </div>
+
+        <VirtualGrid
+          items={entries}
+          columns={columns}
+          rowHeight={prefs.query.density === 'compact' ? 160 : 230}
+          keyOf={(entry) => entry.id}
+          renderItem={(entry) => (
+            <UmaTile
+              entry={entry}
+              frame={frames.get(entry.id) ?? null}
+              sortLabel={sortValueLabel(entry, prefs.query.sort, parameter)}
+              selecting={selecting}
+              selected={selection.includes(entry.id)}
+              onOpen={() => openEntry(entry)}
+              onToggleSelect={() => toggleSelect(entry.id)}
+              onActions={() => setActionsFor(entry)}
+            />
+          )}
+        />
+      </AlbumChrome>
+
+      <CompareSheet
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
+        title="Compare"
+        columns={compareEntries.map((entry) => ({ id: entry.id, label: entry.template.name, detail: entry.template.outfit ?? undefined }))}
+        rows={[
+          { label: 'Level', values: compareEntries.map((entry) => entry.save?.level ?? null), best: 'high' },
+          { label: 'Training Lv', values: compareEntries.map((entry) => entry.save?.trainingLevel ?? null), best: 'high' },
+          ...STATS.map((stat) => ({
+            label: titleCase(stat),
+            values: compareEntries.map((entry) => entry.save?.stats[stat] ?? null),
+            best: 'high' as const,
+          })),
+          { label: 'Total', values: compareEntries.map((entry) => (entry.save ? entry.statTotal : null)), best: 'high' },
+          ...SURFACES.map((surface) => ({
+            label: titleCase(surface),
+            values: compareEntries.map((entry) => entry.aptitudes.surface[surface]),
+          })),
+          ...DISTANCE_CATEGORIES.map((distance) => ({
+            label: titleCase(distance),
+            values: compareEntries.map((entry) => entry.aptitudes.distance[distance]),
+          })),
+          { label: 'Prestige', values: compareEntries.map((entry) => entry.prestige), best: 'high' },
+        ]}
+      />
+
+      <BottomSheet open={actionsFor !== null} onClose={() => setActionsFor(null)}>
+        {actionsFor && (
+          <div className="grid gap-1.5 pb-2">
+            <h2 className="font-display mb-1 text-xl font-bold">{actionsFor.template.name}</h2>
+            {actionsFor.owned ? (
+              <>
+                <Button variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(actionsFor.id)}`)}>Train</Button>
+                <Button variant="secondary" onClick={() => navigate(`/race?uma=${encodeURIComponent(actionsFor.id)}`)}>Race</Button>
+                <Button variant="secondary" onClick={() => navigate(`/stable/${encodeURIComponent(actionsFor.id)}/deck`)}>Edit deck</Button>
+                <Button variant="secondary" onClick={() => { setActionsFor(null); openEntry(actionsFor) }}>Open profile</Button>
+              </>
+            ) : (
+              <Button onClick={() => { setActionsFor(null); setRedeemFor(actionsFor) }}>Redeem with a coupon</Button>
+            )}
+          </div>
+        )}
+      </BottomSheet>
+
+      <BottomSheet open={redeemFor !== null} onClose={() => { if (!redeemBusy) { setRedeemFor(null); setError(null) } }}>
+        {redeemFor && (
+          <div>
+            <div className="flex gap-3">
+              <AtlasSprite
+                asset={redeemFor.asset}
+                alt={`${redeemFor.template.name} portrait`}
+                className="h-24 w-24 shrink-0 overflow-hidden rounded-md border border-hairline bg-sunken"
+                fallback={<Placeholder label={redeemFor.template.name} />}
+              />
+              <div>
+                <p className="text-micro">Unowned Uma outfit</p>
+                <h2 className="font-display text-xl font-bold">{redeemFor.template.name}</h2>
+                <p className="text-[13px] text-ink-soft">{redeemFor.template.outfit ?? 'Standard outfit'}</p>
+              </div>
+            </div>
+            {redeemFor.redemptionLock
+              ? <p className="mt-4 rounded-sm bg-warning/10 p-3 text-[13px] font-semibold">{redeemFor.redemptionLock}</p>
+              : <div className="my-4 flex items-center justify-between rounded-sm bg-sunken p-3 text-[14px] font-semibold">
+                  <span>Uma Select Coupon</span>
+                  <span><Numeral>1</Numeral> → <Numeral>{Math.max(0, profile.umaCoupons - 1)}</Numeral></span>
+                </div>}
+            {error && <p role="alert" className="mb-3 rounded-sm bg-danger/10 p-3 text-[13px] font-semibold text-danger">{error}</p>}
+            <Button className="w-full" disabled={redeemBusy || redeemFor.redemptionLock !== null} onClick={doRedeem}>
+              {redeemBusy ? 'Adding to Stable…' : redeemFor.redemptionLock ? 'Coupon unavailable' : 'Redeem 1 Coupon'}
+            </Button>
+          </div>
+        )}
+      </BottomSheet>
+
+      <p className="pb-2 text-center text-[12px] text-ink-faint">
+        <Link to="/cards" className="font-semibold text-accent-strong">Support cards</Link> · {album.total - album.owned} still to collect
+      </p>
+    </div>
+  )
 }

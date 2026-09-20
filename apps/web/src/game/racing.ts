@@ -1,6 +1,7 @@
 // Local-first progression race preparation and persistence (docs/design/racing.md).
 
 import {
+  SAVE_ID_PATTERN,
   bestStrategy,
   compileRaceSkill,
   compileRaceCourseLayout,
@@ -407,6 +408,20 @@ async function validateStoredFlairEvents(record: RaceResultRecord): Promise<void
 export async function readRaceHistory(limit = 20): Promise<RaceResultRecord[]> {
   const rows = await db.raceResults.orderBy('createdAt').reverse().toArray()
   return rows.map(parseHistoryRow).slice(0, limit)
+}
+
+/**
+ * Latest race time per Uma, for the album's "recently raced" sort. Reads ids and times only — the
+ * save itself stores no timestamps (D114).
+ */
+export async function readLatestRaceTimes(): Promise<Record<string, number>> {
+  const rows = await db.raceResults.orderBy('createdAt').toArray()
+  const latest: Record<string, number> = {}
+  for (const row of rows) {
+    const umaId = (row.data as { umaId?: unknown }).umaId
+    if (typeof umaId === 'string' && SAVE_ID_PATTERN.test(umaId)) latest[umaId] = row.createdAt
+  }
+  return latest
 }
 
 async function savedRaceInputs(content: LoadedContent, umaId: string) {

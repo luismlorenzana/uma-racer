@@ -94,8 +94,8 @@ specified in [Visual System](visual-system.md); the patterns below follow the fa
 - **Density toggle:** Comfortable (2-up) or Compact (3-up), remembered per device.
 - **Grouping** is optional and off by default: group by era, tier, or type inserts sticky headers with per-group counts
   that collapse.
-- Long lists are virtualized, keep scroll position when you come back from a detail, and expose a jump rail (A–Z, or era
-  for cards) on the right edge.
+- Long lists stay cheap through browser-native `content-visibility`: off-screen rows skip layout and paint, and scroll
+  position restores natively because nothing unmounts.
 - Filter, sort, density, grouping and search terms persist per album on the device, and survive reload.
 
 ### Default sorts
