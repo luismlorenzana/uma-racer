@@ -20,7 +20,7 @@ contains them.
 | [M008 — Scenario identity and deck depth](M008-scenario-identity.md) | T024 – T029 | Outlined |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T033 · T034 · T035 | Specified |
-| [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T035 – T038 | Outlined |
+| [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 
