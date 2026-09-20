@@ -37,7 +37,7 @@ export interface PresentCard {
   trainingBonus: number
   /** 0.25 = +25%; only applies when the card type matches the facility. */
   friendshipBonus: number
-  /** Flat additions: Stat Bonus for the card's stat, Skill Point Bonus as `sp`. */
+  /** Flat additions: targeted Stat Bonus, five-way broad support, and Skill Point Bonus as `sp`. */
   flatBonus: Partial<Record<GainKey, number>>
 }
 
@@ -58,7 +58,14 @@ export function trainingGains(
   const crowd = 1 + 0.05 * presentCards.length
 
   const gains: Partial<Record<GainKey, number>> = {}
-  for (const [key, value] of Object.entries(base) as [GainKey, number][]) {
+  const keys = new Set<GainKey>(Object.keys(base) as GainKey[])
+  for (const card of presentCards) {
+    if (card.type === 'friend' || card.type === 'group') {
+      for (const key of Object.keys(card.flatBonus) as GainKey[]) keys.add(key)
+    }
+  }
+  for (const key of keys) {
+    const value = base[key] ?? 0
     const flat = presentCards.reduce((sum, c) => sum + (c.flatBonus[key] ?? 0), 0)
     const growth = key === 'sp' ? 0 : (umaGrowth[key] ?? 0)
     gains[key] = Math.round((value + flat) * (1 + growth) * training * friendship * crowd)

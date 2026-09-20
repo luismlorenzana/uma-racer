@@ -188,6 +188,30 @@ describe('scenario promotion', () => {
     expect(() => promoteScenario({ profile: { ...profile, tickets: 25 }, uma: readyUma(), umaTemplate: template, skills, cards: [], races, now: 1 })).toThrow(/stale/)
   })
 
+  it('splits Friend/Group Initial Stats across all five stats at promotion', () => {
+    const broadTemplate: SupportCardTemplate = { ...cardTemplate, id: 'card-broad', charaId: 'support-broad', type: 'group' }
+    const broadUma = { ...readyUma(), deckCardIds: [broadTemplate.id] }
+    const result = promoteScenario({
+      profile: { ...createPlayerProfile('content-v1', 1), tickets: 100 },
+      uma: broadUma,
+      umaTemplate: template,
+      skills,
+      cards: [{ template: broadTemplate, save: createCardSave(broadTemplate) }],
+      races,
+      now: 457,
+    })
+    expect(result.cardBonuses).toEqual([
+      'speed', 'stamina', 'power', 'guts', 'wit',
+    ].map((stat) => ({ cardId: broadTemplate.id, stat, amount: 2 })))
+    expect(result.uma.stats).toEqual({
+      speed: 100 + PROMOTION_BONUS_PER_STAT + 2,
+      stamina: 101 + PROMOTION_BONUS_PER_STAT + 2,
+      power: 102 + PROMOTION_BONUS_PER_STAT + 2,
+      guts: 103 + PROMOTION_BONUS_PER_STAT + 2,
+      wit: 104 + PROMOTION_BONUS_PER_STAT + 2,
+    })
+  })
+
   it('reopens the former level-110 maximum without replacing its frozen tier-11 snapshot', () => {
     const snapshot = {
       umaId: template.id, charaId: template.charaId, completedTier: 11, takenAt: 77,

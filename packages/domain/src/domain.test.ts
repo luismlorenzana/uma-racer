@@ -14,6 +14,7 @@ import {
   cardLevelCap,
   cardLimitBreakCost,
   CARD_UNIQUE_BONUS_MULTIPLIER,
+  BROAD_CARD_STAT_DIVISOR,
   distanceCategory,
   deckSlotCount,
   eraOf,
@@ -218,6 +219,7 @@ describe('training', () => {
     expect(BASE_HINT_CHANCE).toBe(0.2)
     expect([1, 2, 3, 11].map(deckSlotCount)).toEqual([4, 5, 6, 6])
     expect(CARD_UNIQUE_BONUS_MULTIPLIER).toBe(0.25)
+    expect(BROAD_CARD_STAT_DIVISOR).toBe(5)
   })
 
   it('matches the worked example in training.md', () => {

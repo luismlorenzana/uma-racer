@@ -3,6 +3,7 @@ import {
   CARD_EFFECTS,
   CARD_UNIQUE_BONUS_MULTIPLIER,
   cardUniqueEffectKinds,
+  inactiveCardUniqueEffectCount,
   projectCardEffects,
   promoteCard,
   projectedCardEffectValue,
@@ -94,5 +95,23 @@ describe('generated card effects', () => {
     expect(training.signatureBonus / (training.value - training.signatureBonus)).toBeCloseTo(CARD_UNIQUE_BONUS_MULTIPLIER)
     expect(stat.signatureBonus).toBeGreaterThan(0)
     expect(hint.signatureBonus).toBe(0)
+  })
+
+  it('projects Friend/Group breadth while leaving specialty, friendship, and unknown signatures inactive', () => {
+    const support = template({
+      type: 'friend',
+      uniqueEffect: { level: 25, effects: [
+        { type: 3, value: 500 },
+        { type: 19, value: 500 },
+        { type: 999, value: 500 },
+      ] },
+    })
+    expect(sourceCardEffect(3, 'friend')).toBe('statBonus')
+    expect(sourceCardEffect(13, 'group')).toBe('initialStats')
+    expect(inactiveCardUniqueEffectCount(support)).toBe(2)
+    const rows = projectCardEffects(support, { level: 25, limitBreak: 4 })
+    expect(rows.find((row) => row.effect === 'statBonus')).toMatchObject({ inactiveReason: null, signatureBonus: expect.any(Number) })
+    expect(rows.find((row) => row.effect === 'specialtyPriority')).toMatchObject({ value: 0, signatureBonus: 0, inactiveReason: 'No specialty facility' })
+    expect(rows.find((row) => row.effect === 'friendshipBonus')).toMatchObject({ value: 0, inactiveReason: 'Cannot match a facility' })
   })
 })

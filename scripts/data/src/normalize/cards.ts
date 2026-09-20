@@ -2,8 +2,8 @@
 
 import {
   eraOf,
+  sourceCardEffect,
   type CardEffect,
-  type StatKey,
   type SupportCardObtain,
   type SupportCardTemplate,
   type SupportCardType,
@@ -22,9 +22,6 @@ const CARD_EFFECTS: readonly CardEffect[] = [
   'initialStats',
 ]
 
-const STAT_BONUS_IDS: Record<StatKey, number> = { speed: 3, stamina: 4, power: 5, guts: 6, wit: 7 }
-const INITIAL_STAT_IDS: Record<StatKey, number> = { speed: 9, stamina: 10, power: 11, guts: 12, wit: 13 }
-
 interface PreparedCard {
   raw: RawRecord
   id: string
@@ -33,6 +30,7 @@ interface PreparedCard {
   jpRelease: string
   obtain: SupportCardObtain
   effectValues: Partial<Record<CardEffect, number>>
+  inactiveEffectCount: number
 }
 
 function cardType(value: unknown): SupportCardType | null {
@@ -49,35 +47,28 @@ function obtain(value: unknown): SupportCardObtain {
   return 'unknown'
 }
 
-function mappedEffect(effectId: number, type: SupportCardType): CardEffect | null {
-  if (effectId === 1) return 'friendshipBonus'
-  if (effectId === 8) return 'trainingBonus'
-  if (effectId === 15) return 'raceBonus'
-  if (effectId === 18) return 'hintFrequency'
-  if (effectId === 19) return 'specialtyPriority'
-  if (effectId === 30) return 'skillPointBonus'
-  if (type !== 'friend' && type !== 'group') {
-    if (effectId === STAT_BONUS_IDS[type]) return 'statBonus'
-    if (effectId === INITIAL_STAT_IDS[type]) return 'initialStats'
-  }
-  return null
-}
-
-function effectValues(value: unknown, type: SupportCardType): Partial<Record<CardEffect, number>> {
+function effectValues(value: unknown, type: SupportCardType): {
+  values: Partial<Record<CardEffect, number>>
+  inactiveEffectCount: number
+} {
   const result: Partial<Record<CardEffect, number>> = {}
-  if (!Array.isArray(value)) return result
+  let inactiveEffectCount = 0
+  if (!Array.isArray(value)) return { values: result, inactiveEffectCount }
   for (const rawRow of value) {
     if (!Array.isArray(rawRow)) continue
     const effectId = numberValue(rawRow[0])
     if (effectId === null) continue
-    const effect = mappedEffect(effectId, type)
-    if (!effect) continue
     const values = rawRow.slice(1).map(numberValue).filter((entry): entry is number => entry !== null && entry !== -1)
     if (values.length === 0) continue
+    const effect = sourceCardEffect(effectId, type)
+    if (!effect) {
+      inactiveEffectCount += 1
+      continue
+    }
     const maximum = Math.max(...values)
     result[effect] = Math.max(result[effect] ?? Number.NEGATIVE_INFINITY, maximum)
   }
-  return result
+  return { values: result, inactiveEffectCount }
 }
 
 function median(values: number[]): number {
@@ -131,6 +122,7 @@ export function normalizeCards(value: unknown): NormalizeResult<SupportCardTempl
     if (mappedObtain === 'unknown') {
       warnings.push(`SSR card ${supportId} has unknown obtain method ${String(raw.obtained ?? raw.obtain ?? '<missing>')}`)
     }
+    const effects = effectValues(raw.effects, type)
     prepared.push({
       raw,
       id: supportId,
@@ -138,8 +130,15 @@ export function normalizeCards(value: unknown): NormalizeResult<SupportCardTempl
       type,
       jpRelease,
       obtain: mappedObtain,
-      effectValues: effectValues(raw.effects, type),
+      effectValues: effects.values,
+      inactiveEffectCount: effects.inactiveEffectCount,
     })
+  }
+
+  const inactiveEffectCount = prepared.reduce((total, card) => total + card.inactiveEffectCount, 0)
+  const cardsWithInactiveEffects = prepared.filter((card) => card.inactiveEffectCount > 0).length
+  if (inactiveEffectCount > 0) {
+    warnings.push(`${inactiveEffectCount} source effect row${inactiveEffectCount === 1 ? '' : 's'} across ${cardsWithInactiveEffects} SSR card${cardsWithInactiveEffects === 1 ? '' : 's'} ${inactiveEffectCount === 1 ? 'remains' : 'remain'} inactive`)
   }
 
   const medians: Partial<Record<CardEffect, number>> = {}

@@ -17,7 +17,7 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from './index'
-import { createUmaSave } from './save'
+import { createCardSave, createUmaSave } from './save'
 
 function umaTemplate(id: string): UmaTemplate {
   return {
@@ -115,6 +115,34 @@ describe('Trainer achievement reconciliation', () => {
     expect(catalog.definitions.map((row) => row.awardKey)).toContain('trainer:stable-master')
     expect(catalog.definitions.map((row) => row.awardKey)).toContain('trainer:era-complete:1')
     expect(catalog.definitions.filter((row) => row.label.endsWith('Complete'))).toHaveLength(3)
+  })
+
+  it('reconciles all seven type-complete denominators, including Friend and Group, exactly once', () => {
+    const allTypes = ['speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'group'] as const
+    const typeCards = allTypes.map((type) => cardTemplate(`card-${type}`, type))
+    const typeOwned = typeCards.map((card) => ({
+      ...createCardSave(card),
+      level: 1,
+    }))
+    const input = { ...baseInput, contentVersion: 'synthetic-types-v1', cards: typeCards, ownedCards: typeOwned }
+    const first = reconcileTrainerState({ ...input, state: createTrainerBadgeState(1) })
+    const typeAwards = first.state.awards.achievements
+      .filter((entry) => entry.awardKey.startsWith('trainer:type-complete:'))
+      .map((entry) => entry.awardKey)
+    expect(typeAwards).toEqual(allTypes.map((type) => `trainer:type-complete:${type}`).sort())
+
+    const retry = reconcileTrainerState({ ...input, state: first.state, now: 501 })
+    expect(retry.events).toEqual([])
+    const expanded = reconcileTrainerState({
+      ...input,
+      contentVersion: 'synthetic-types-v2',
+      cards: [...typeCards, cardTemplate('card-friend-later', 'friend')],
+      state: first.state,
+      now: 502,
+    })
+    expect(expanded.state.awards.achievements.map((entry) => entry.awardKey)).toEqual(expect.arrayContaining([
+      'trainer:type-complete:friend', 'trainer:type-complete:group',
+    ]))
   })
 
   it('counts one covered series title in the catalog even when a leg has family aliases', () => {

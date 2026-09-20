@@ -1,4 +1,14 @@
-import { CARD_EFFECTS, MAX_LIMIT_BREAK, scenarioForTier, tierOfLevel, type CardEffect } from '@racer/domain'
+import {
+  BROAD_CARD_STAT_DIVISOR,
+  CARD_EFFECTS,
+  MAX_LIMIT_BREAK,
+  inactiveCardUniqueEffectCount,
+  isBroadSupportCard,
+  scenarioForTier,
+  tierOfLevel,
+  type CardEffect,
+  type SupportCardTemplate,
+} from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
@@ -40,6 +50,11 @@ const PERCENT_EFFECTS = new Set<CardEffect>(['trainingBonus', 'friendshipBonus',
 const effectValue = (effect: CardEffect, value: number): string =>
   PERCENT_EFFECTS.has(effect) ? `${Math.round(value * 1000) / 10}%` : `+${Math.round(value * 10) / 10}`
 
+const cardEffectValue = (template: SupportCardTemplate, effect: CardEffect, value: number): string =>
+  isBroadSupportCard(template) && (effect === 'statBonus' || effect === 'initialStats')
+    ? `${effectValue(effect, value / BROAD_CARD_STAT_DIVISOR)} each`
+    : effectValue(effect, value)
+
 function LimitPips({ value }: { value: number }) {
   return (
     <span aria-label={`Limit break ${value}`} className="flex gap-0.5">
@@ -71,7 +86,7 @@ function CardTile({
   const startPress = () => { press.current = window.setTimeout(() => { press.current = null; onActions() }, 450) }
   const endPress = () => { if (press.current !== null) window.clearTimeout(press.current); press.current = null }
   const headline = entry.headline
-    ? `${EFFECT_LABELS[entry.headline.effect]} ${effectValue(entry.headline.effect, entry.headline.value)}`
+    ? `${EFFECT_LABELS[entry.headline.effect]} ${cardEffectValue(entry.template, entry.headline.effect, entry.headline.value)}`
     : 'No generated effects'
 
   return (
@@ -142,8 +157,9 @@ function CardDetail({
 }) {
   const reducedMotion = useReducedMotion()
   const save = entry.save
-  const next = new Map(entry.nextEffects?.map((row) => [row.effect, row.value]) ?? [])
-  const usable = entry.template.type !== 'friend' && entry.template.type !== 'group'
+  const next = new Map(entry.nextEffects?.map((row) => [row.effect, row]) ?? [])
+  const broad = isBroadSupportCard(entry.template)
+  const inactiveSignatureCount = inactiveCardUniqueEffectCount(entry.template)
 
   return (
     <div className="max-h-[76vh] overflow-y-auto pb-2">
@@ -184,7 +200,7 @@ function CardDetail({
         </div>
       </div>
 
-      {!usable && <p className="mt-3 rounded-sm bg-warning/10 p-3 text-[13px] font-semibold">Friend and Group cards are collectible now; equipping them arrives with Milestone 8.</p>}
+      {broad && <p className="mt-3 rounded-sm bg-accent-soft/35 p-3 text-[13px] font-semibold">Broad support · always attends one facility. Stat and Initial Stats bonuses are split across all five stats; Friendship and Specialty stay inactive.</p>}
       {!entry.owned && <p className="mt-3 rounded-sm bg-sunken p-3 text-[13px] font-semibold">Unowned. Use a Card Select Coupon to add it to your collection.</p>}
 
       {entry.equippedBy.length > 0 && (
@@ -217,18 +233,23 @@ function CardDetail({
           <div className="mt-4 grid gap-1.5">
             <p className="text-micro">Generated effects · now → next limit break</p>
             {entry.currentEffects.filter((row) => entry.template.effectProfile[row.effect] > 0).map((row) => {
-              const nextValue = next.get(row.effect)
+              const nextProjection = next.get(row.effect)
               return (
                 <div key={row.effect} className="flex min-h-11 items-center justify-between gap-2 border-b border-hairline py-1.5 text-[14px] last:border-b-0">
                   <span>{EFFECT_LABELS[row.effect]}{row.signatureBonus > 0 ? ' ★' : ''}</span>
                   <span className="text-right font-semibold">
-                    {row.value === 0 ? <span className="text-ink-faint">LB{row.unlockLimitBreak}</span> : effectValue(row.effect, row.value)}
-                    {nextValue !== undefined && nextValue > row.value && <span className="ml-1 text-[13px] text-success">→ {effectValue(row.effect, nextValue)}</span>}
+                    {row.inactiveReason
+                      ? <span className="text-ink-faint">Inactive · {row.inactiveReason}</span>
+                      : row.value === 0
+                        ? <span className="text-ink-faint">LB{row.unlockLimitBreak}</span>
+                        : cardEffectValue(entry.template, row.effect, row.value)}
+                    {!row.inactiveReason && nextProjection && nextProjection.value > row.value && <span className="ml-1 text-[13px] text-success">→ {cardEffectValue(entry.template, row.effect, nextProjection.value)}</span>}
                   </span>
                 </div>
               )
             })}
             {CARD_EFFECTS.every((effect) => entry.template.effectProfile[effect] === 0) && <p className="text-[13px] text-ink-soft">No generated MVP effects in this profile.</p>}
+            {inactiveSignatureCount > 0 && <p className="text-[13px] text-ink-soft">{inactiveSignatureCount} signature source effect {inactiveSignatureCount === 1 ? 'identity is' : 'identities are'} inactive rather than approximated.</p>}
           </div>
 
           {entry.hintSkillNames.length > 0 && (
@@ -483,10 +504,11 @@ export function CardsScreen() {
             values: compareEntries.map((entry) => {
               const current = entry.currentEffects.find((row) => row.effect === effect)
               const next = entry.nextEffects?.find((row) => row.effect === effect)
-              if (!current || current.value === 0) return next && next.value > 0 ? `— → ${effectValue(effect, next.value)}` : null
+              if (current?.inactiveReason) return `Inactive · ${current.inactiveReason}`
+              if (!current || current.value === 0) return next && next.value > 0 ? `— → ${cardEffectValue(entry.template, effect, next.value)}` : null
               return next && next.value > current.value
-                ? `${effectValue(effect, current.value)} → ${effectValue(effect, next.value)}`
-                : effectValue(effect, current.value)
+                ? `${cardEffectValue(entry.template, effect, current.value)} → ${cardEffectValue(entry.template, effect, next.value)}`
+                : cardEffectValue(entry.template, effect, current.value)
             }),
           })),
         ]}

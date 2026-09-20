@@ -92,12 +92,17 @@ describe('Training decks and content', () => {
     ]
     expect(autoTrainingDeck(uma(), 1, cards)).toEqual(['power-a', 'speed-a', 'stamina-a', 'guts-a'])
     expect(autoTrainingDeck(uma(), 1, [...cards].reverse())).toEqual(['power-a', 'speed-a', 'stamina-a', 'guts-a'])
-    expect(autoTrainingDeck(uma(), 1, [input(card('future-only', 'speed', { era: 2 })), input(card('friend-only', 'friend'))])).toEqual([])
+    expect(autoTrainingDeck(uma(), 1, [input(card('future-only', 'speed', { era: 2 })), input(card('friend-only', 'friend'))])).toEqual(['friend-only'])
+    expect(autoTrainingDeck(uma(), 3, [
+      ...cards.filter((entry) => ['speed-a', 'stamina-a', 'power-a', 'guts-a', 'wit-a'].includes(entry.template.id)),
+      input(card('friend-wildcard', 'friend')),
+      input(card('group-wildcard', 'group')),
+    ])).toEqual(['power-a', 'speed-a', 'stamina-a', 'guts-a', 'wit-a', 'friend-wildcard'])
     expect(trainingDeckError(1, cards.slice(0, 1))).toBeNull()
     expect(trainingDeckError(1, [])).toMatch(/at least one/)
     expect(trainingDeckError(1, [input(card('a', 'speed', { charaId: 'same' })), input(card('b', 'power', { charaId: 'same' }))])).toMatch(/character/)
     expect(trainingDeckError(1, [input(card('future', 'speed', { era: 2 }))])).toMatch(/locked/)
-    expect(trainingDeckError(1, [input(card('friend', 'friend'))])).toMatch(/MVP/)
+    expect(trainingDeckError(1, [input(card('friend', 'friend'))])).toBeNull()
   })
 
   it('validates Training-only content fields and cross references', () => {
@@ -127,6 +132,36 @@ describe('deterministic Training deal and preview', () => {
 
     const guaranteed = input(card('card-2', 'power', { profile: { specialtyPriority: 10 } }))
     expect(dealTrainingCards([guaranteed], 1).placements[0]!.placement).toBe('power')
+  })
+
+  it('places Friend/Group uniformly at facilities, spreads stats, and never creates friendship', () => {
+    const broad = input(card('broad-card', 'group', { profile: { statBonus: 1 } }))
+    const placements = new Set(
+      Array.from({ length: 500 }, (_, index) =>
+        dealTrainingCards([broad], trainingTurnSeed(5678, 'uma-1', 1, index)).placements[0]!.placement,
+      ),
+    )
+    expect([...placements].sort()).toEqual([...(['guts', 'power', 'speed', 'stamina', 'wit'] as const)].sort())
+
+    const template = uma({ speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })
+    const save = { ...createUmaSave(template), scenarioStarted: true }
+    const deal: TrainingDeal = { seed: 1, placements: [{ cardId: broad.template.id, placement: 'speed' }] }
+    const preview = previewTrainingFacilities(save, template, [broad], deal).speed
+    expect(preview).toMatchObject({
+      rawGains: { speed: 64, stamina: 1, power: 26, guts: 1, wit: 1, sp: 6 },
+      friendship: false,
+      friendshipCardIds: [],
+    })
+    const result = resolveTrainingTurn({
+      uma: save,
+      template,
+      cards: [broad],
+      skills: new Map([[unique.id, unique]]),
+      deal,
+      facility: 'speed',
+    })
+    expect(result.trainingExpGained).toBe(36)
+    expect(result.cards[0]).toMatchObject({ expGained: 15 })
   })
 
   it('previews the exact capped gains for every facility', () => {

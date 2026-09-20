@@ -42,13 +42,13 @@ function loaded(umas: UmaTemplate[], cards: SupportCardTemplate[]): LoadedConten
 
 describe('collection projections', () => {
   it('builds an unowned card selector with completion, filters, and honest future/Friend states', () => {
-    const cards = [card('c-owned', 1, 'speed'), card('c-future', 8, 'wit'), card('c-group', 2, 'group')]
+    const cards = [card('c-owned', 1, 'speed'), card('c-future', 8, 'wit'), card('c-group', 1, 'group')]
     const content = loaded([], cards)
     const profile = { ...createPlayerProfile('synthetic', 1), cardCoupons: 2 }
     const view = buildCardSelection(content, { 'c-owned': createCardSave(cards[0]!), orphan: createCardSave(card('orphan', 1, 'power')) }, profile)
     expect(view).toMatchObject({ owned: 1, total: 3, couponBalance: 2, orphanedIds: ['orphan'] })
     expect(view.items.map((item) => item.template.id)).toEqual(['c-group', 'c-future'])
-    expect(view.items.find((item) => item.template.id === 'c-group')?.acquisitionNote).toMatch(/Friend\/Group/)
+    expect(view.items.find((item) => item.template.id === 'c-group')?.acquisitionNote).toBeNull()
     expect(view.items.find((item) => item.template.id === 'c-future')?.acquisitionNote).toMatch(/tier 8/)
     expect(buildCardSelection(content, {}, profile, { era: 8, type: 'wit' }).items.map((item) => item.template.id)).toEqual(['c-future'])
   })

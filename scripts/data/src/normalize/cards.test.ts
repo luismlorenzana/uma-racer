@@ -18,7 +18,10 @@ describe('normalizeCards', () => {
     expect(result.items[1]).toMatchObject({ obtain: 'gacha', starter: false })
     expect(result.items[2]).toMatchObject({ type: 'wit', obtain: 'free', starter: true })
     expect(result.items[3]).toMatchObject({ obtain: 'unknown', starter: false })
-    expect(result.warnings).toEqual([expect.stringContaining('invented_method')])
+    expect(result.warnings).toEqual([
+      expect.stringContaining('invented_method'),
+      '2 source effect rows across 2 SSR cards remain inactive',
+    ])
   })
 
   it('uses unlocked maxima, medians, clamping, and type-matched stat effects', () => {
@@ -36,5 +39,33 @@ describe('normalizeCards', () => {
       raceBonus: 0,
       initialStats: 0,
     })
+  })
+
+  it('maps Friend/Group stat families into broad profiles and reports unsupported rows only in aggregate', () => {
+    const rows = [
+      {
+        support_id: 9201, char_id: 921, char_name: 'Synthetic Friend', title_en: 'Broad Practice', rarity: 3,
+        type: 'friend', release: '2021-02-24', obtained: 'promo', hints: { hint_skills: [] },
+        effects: [[3, 20], [11, 10], [19, 30], [999, 50]],
+      },
+      {
+        support_id: 9202, char_id: 922, char_name: 'Synthetic Group', title_en: 'Shared Practice', rarity: 3,
+        type: 'group', release: '2021-02-24', obtained: 'gacha', hints: { hint_skills: [] },
+        effects: [[7, 40], [13, 20], [8, 5]],
+      },
+    ]
+    const first = normalizeCards(rows)
+    const reversed = normalizeCards([...rows].reverse())
+    expect(first.items[0]).toMatchObject({
+      type: 'friend',
+      effectProfile: { statBonus: 0.67, initialStats: 0.67, specialtyPriority: 1 },
+    })
+    expect(first.items[1]).toMatchObject({
+      type: 'group',
+      effectProfile: { statBonus: 1.33, initialStats: 1.33, trainingBonus: 1 },
+    })
+    expect(first.warnings).toEqual(['1 source effect row across 1 SSR card remains inactive'])
+    expect(new Map(reversed.items.map((card) => [card.id, card.effectProfile])))
+      .toEqual(new Map(first.items.map((card) => [card.id, card.effectProfile])))
   })
 })

@@ -25,6 +25,7 @@ import {
   type Stats,
   type Strategy,
   type SupportCardTemplate,
+  type SupportCardType,
   type TrainingCardInput,
   type UmaTemplate,
 } from '../../packages/domain/src/index'
@@ -58,10 +59,10 @@ const skillTemplates: SkillTemplate[] = types.map((_, index) => ({
 }))
 const skills = new Map(skillTemplates.map((skill) => [skill.id, skill]))
 
-function template(index: number, weight: number): SupportCardTemplate {
+function template(index: number, weight: number, type: SupportCardType = types[index]!): SupportCardTemplate {
   return {
     id: `synthetic-card-${index + 1}`, charaId: `synthetic-card-character-${index + 1}`,
-    charName: `Synthetic Card ${index + 1}`, title: 'Practice Notes', type: types[index]!,
+    charName: `Synthetic Card ${index + 1}`, title: 'Practice Notes', type,
     jpRelease: '2000-01-01', era: 3, obtain: 'free', starter: false,
     hintSkillIds: [skillTemplates[index]!.id], eventSkillIds: [], effectProfile: effectProfile(weight),
     uniqueEffect: { level: 25, effects: [{ type: 8, value: 999 }] },
@@ -76,14 +77,20 @@ const buildState: Record<Build, { level: number; limitBreak: CardSave['limitBrea
   mature: { level: 25, limitBreak: 4, weight: 1 },
 }
 
-function runTraining(build: Build) {
+type DeckShape = 'stat' | 'friend' | 'group'
+
+function runTraining(build: Build, shape: DeckShape = 'stat') {
   const state = buildState[build]
-  const templates = types.map((_, index) => template(index, state.weight))
+  const templates = types.map((type, index) => template(
+    index,
+    state.weight,
+    index === types.length - 1 && shape !== 'stat' ? shape : type,
+  ))
   let cards: TrainingCardInput[] = templates.map((item) => ({
     template: item,
     save: { ...createCardSave(item), level: state.level, limitBreak: state.limitBreak },
   }))
-  let uma = { ...createUmaSave(umaTemplate), level: 21 }
+  let uma = { ...createUmaSave(umaTemplate), level: 21, scenarioStarted: true }
   const startingStats = { ...uma.stats }
   let turns = 0
   let totalApplied = 0
@@ -161,10 +168,13 @@ function g1WinRate(k: 0 | 9): number {
 }
 
 console.log(`Milestone 4 support-deck balance · synthetic fixtures only · ${RACE_SAMPLES} G1 seeds/row`)
-console.log('build   TL10 turns  avg applied gain  stat gain  learned/available hints  Race Bonus')
-for (const build of ['weak', 'mid', 'mature'] as const) {
-  const result = runTraining(build)
-  console.log(`${build.padEnd(7)} ${String(result.turns).padStart(10)}  ${result.averageGain.toFixed(1).padStart(16)}  ${String(result.statGain).padStart(9)}  ${`${result.learnedHints}/${result.availableHints}`.padStart(23)}  ${(result.raceBonus * 100).toFixed(1).padStart(9)}%`)
+console.log('deck/build     TL10 turns  avg applied gain  stat gain  learned/available hints  Race Bonus')
+for (const shape of ['stat', 'friend', 'group'] as const) {
+  for (const build of ['weak', 'mid', 'mature'] as const) {
+    const result = runTraining(build, shape)
+    const label = `${shape}/${build}`
+    console.log(`${label.padEnd(14)} ${String(result.turns).padStart(10)}  ${result.averageGain.toFixed(1).padStart(16)}  ${String(result.statGain).padStart(9)}  ${`${result.learnedHints}/${result.availableHints}`.padStart(23)}  ${(result.raceBonus * 100).toFixed(1).padStart(9)}%`)
+  }
 }
 const k0 = g1WinRate(0)
 const k9 = g1WinRate(9)

@@ -37,9 +37,7 @@ export function buildCardSelection(
     .filter((item) => filters.era === null || item.template.era === filters.era)
     .map((item) => ({
       ...item,
-      acquisitionNote: item.template.type === 'friend' || item.template.type === 'group'
-        ? 'Collectible now; Friend/Group gameplay is not active yet.'
-        : item.template.era > 1 ? `Collectible now; equipping waits until tier ${item.template.era}.` : null,
+      acquisitionNote: item.template.era > 1 ? `Collectible now; equipping waits until tier ${item.template.era}.` : null,
     }))
   return { items, ...counts, couponBalance: profile.cardCoupons }
 }
