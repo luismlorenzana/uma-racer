@@ -62,9 +62,9 @@ modifier.
 | 1 | URA Finale | None, the baseline and tutorial tier |
 | 2 | Unity Cup | **Team Spirit:** 3+ cards at one facility trigger a Spirit Burst: +10 raw gain to all five stats |
 | 3 | Trackblazer | **Climax:** eligible race wins grant one opt-in item that multiplies one training's raw stat/SP gains by 1.20 |
-| 4 | Grand Concert | **Performances:** training builds "hype" notes, and full sets unlock bonus stats |
-| 5 | Grand Masters | **Goddess fragments:** collect fragments from training, and a full set triggers a big burst |
-| 6 | Project L'Arc | **Overseas expedition:** the chance to raise an aptitude grade |
+| 4 | Grand Concert | **Performances:** collect all five facility notes; the completing training gets +20 raw gain to all stats |
+| 5 | Grand Masters | **Goddess fragments:** each training grants one; every eighth training gets a ×1.50 raw stat/SP burst |
+| 6 | Project L'Arc | **Expedition:** five training stamps fund one chosen aptitude upgrade, capped at A |
 | 7 | U.A.F. | **Sports genres:** facility colors level up, and matching colors give bonuses |
 | 8 | Great Food Festival | **Cooking:** training harvests ingredients, and dishes give temporary buffs |
 | 9 | Mecha Umamusume | **Research:** gear upgrades act as permanent facility research levels |
@@ -101,6 +101,33 @@ facility's ordinary raw stat and SP gains are multiplied by **1.20** before roun
 one item is consumed in the same commit. The deal, Training/card EXP, hints, Race Bonus, Uma EXP, Race Form, and race
 simulation remain unchanged. Losses, replays, gate-closing wins, previews, failed writes, and unarmed turns award or spend
 nothing.
+
+### Our Grand Concert — Performances
+
+Each committed training collects the note matching its chosen facility: Speed, Stamina, Power, Guts, or Wit. Notes are
+unique within the current set, so repeating a facility does not advance the set. A preview marks a new note, a repeated
+note, or the completing note without changing state. Collecting all **5 facility notes** completes one Performance on
+that same turn, clears the set, and adds **20 raw gain to each of the five stats** after ordinary card/growth calculation
+and before rounding, the 1200 soft cap, and scenario/TL caps. SP, Training/card EXP, hints, friendship, placement, and
+tickets are unchanged. State stores the currently held unique notes and completed-Performance count.
+
+### Grand Masters — Goddess Fragments
+
+Every committed training grants exactly **1 fragment**, regardless of facility, cards, or result caps. The training that
+collects the **eighth fragment** automatically triggers a Goddess Burst: its ordinary raw stat and SP gains are multiplied
+by **1.50** before rounding, the stat soft cap, and ordinary caps; the fragment gauge then resets to zero. Hint fallback SP,
+Training/card EXP, hints, friendship, placement, and tickets are unchanged. A burst still counts when caps reduce its
+applied gain to zero. State stores 0–7 held fragments and the committed burst count.
+
+### Project L'Arc — Expedition
+
+Every committed training adds **1 expedition stamp** until the gauge reaches **5**. A full gauge waits safely while
+ordinary Training continues. From the Training modifier panel, the player completes the ready expedition by choosing any
+surface, distance, or strategy aptitude below A; one atomic no-ticket action raises that grade by exactly one step, capped
+at A, clears the gauge, and records the completion. If every aptitude is already A or S, the only valid completion clears
+the gauge without changing an aptitude. The resulting aptitude is permanent and enters races only through the existing
+visible aptitude input; the tier-local gauge and counters still expire at promotion. State stores 0–5 stamps, completed
+expeditions, and successful aptitude upgrades.
 
 ## Scenario completion
 
