@@ -189,7 +189,7 @@ describe('parseSyncRequest', () => {
     expect(resolved.conflicts).toEqual([current])
   })
 
-  it('accepts v3 series goals, rejects malformed goal shapes, and prevents a v2 downgrade', () => {
+  it('accepts v3 series goals and strict v4 modifiers, rejects malformed shapes, and prevents a downgrade', () => {
     const single = (slot: 'aptitude' | 'challenge', raceId: string) => ({
       id: `goal:1:${slot}`, slot, raceId, kind: slot === 'challenge' ? 'win-by-margin' : 'win', series: null,
       minimumMarginLengths: slot === 'challenge' ? 5 : 0, status: 'active', completedRaceResultId: null, completedAt: null,
@@ -213,6 +213,20 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: uma }] })).toMatchObject({
       upserts: [{ kind: 'umas', data: { schemaVersion: 3 } }],
     })
+    const current = {
+      ...uma,
+      schemaVersion: 4,
+      level: 11,
+      goalPlanVersion: 0,
+      scenarioJourneys: [],
+      scenarioModifier: { version: 1, tier: 2, kind: 'team-spirit', bursts: 3 },
+    }
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: current }] }))
+      .toMatchObject({ upserts: [{ kind: 'umas', data: { schemaVersion: 4, scenarioModifier: { kind: 'team-spirit', bursts: 3 } } }] })
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...current, scenarioModifier: { ...current.scenarioModifier, version: 2 } } }] }))
+      .toMatch(/invalid umas data/)
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...current, scenarioModifier: { version: 1, tier: 3, kind: 'climax', earned: 2, stock: 2, used: 1 } } }] }))
+      .toMatch(/invalid umas data/)
     const formerMaximum = {
       ...uma,
       level: 110,
@@ -229,12 +243,12 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, level: 141 } }] }))
       .toMatch(/invalid umas data/)
     expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, scenarioJourneys: [{ ...uma.scenarioJourneys[0], goals: [single('aptitude', 'series-a'), identity, single('challenge', 'single-c')] }] } }] })).toMatch(/invalid umas data/)
-    const current: EntityRecord = { kind: 'umas', id: 'synthetic-uma', version: 4, data: uma, deleted: false, updatedAt: 1 }
-    const resolved = resolveUpserts(new Map([['umas/synthetic-uma', current]]), [
+    const currentRecord: EntityRecord = { kind: 'umas', id: 'synthetic-uma', version: 4, data: current, deleted: false, updatedAt: 1 }
+    const resolved = resolveUpserts(new Map([['umas/synthetic-uma', currentRecord]]), [
       { kind: 'umas', id: 'synthetic-uma', baseVersion: 4, data: { ...uma, schemaVersion: 2 } },
     ], 2)
     expect(resolved.writes).toEqual([])
-    expect(resolved.conflicts).toEqual([current])
+    expect(resolved.conflicts).toEqual([currentRecord])
   })
 
   it('strictly validates progression race result appends', () => {

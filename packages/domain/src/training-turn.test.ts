@@ -15,6 +15,7 @@ import {
 } from './training-turn'
 import { createCardSave, createUmaSave } from './save'
 import { CARD_EFFECTS, type CardEffect } from './cards'
+import { createScenarioModifierState } from './scenario-modifiers'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -205,6 +206,55 @@ describe('deterministic Training deal and preview', () => {
       facility: 'speed',
     })
     expect(maxTraining.uma).toMatchObject({ trainingLevel: 10, trainingExp: 0, trainingsThisScenario: 1 })
+  })
+
+  it('previews and commits Team Spirit and opt-in Climax gains through the same path', () => {
+    const template = uma({ speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })
+    const cards = [input(card('speed-card', 'speed')), input(card('power-card', 'power')), input(card('guts-card', 'guts'))]
+    const deal: TrainingDeal = { seed: 3, placements: cards.map((entry) => ({ cardId: entry.template.id, placement: 'speed' })) }
+    const teamUma = {
+      ...createUmaSave(template),
+      level: 11,
+      scenarioStarted: true,
+      scenarioModifier: createScenarioModifierState(2),
+    }
+    const ordinary = previewTrainingFacilities({ ...teamUma, scenarioModifier: null }, template, cards, deal).speed
+    const spirit = previewTrainingFacilities(teamUma, template, cards, deal).speed
+    for (const stat of ['speed', 'stamina', 'power', 'guts', 'wit'] as const) {
+      expect(spirit.rawGains[stat]).toBe((ordinary.rawGains[stat] ?? 0) + 10)
+    }
+    expect(spirit.rawGains.sp).toBe(ordinary.rawGains.sp)
+    expect(spirit.scenarioModifier).toMatchObject({ kind: 'team-spirit', triggered: true, presentCardCount: 3 })
+    const spiritResult = resolveTrainingTurn({ uma: teamUma, template, cards, skills: new Map([[unique.id, unique]]), deal, facility: 'speed' })
+    expect(spiritResult.uma.scenarioModifier).toMatchObject({ kind: 'team-spirit', bursts: 1 })
+
+    const climaxState = {
+      version: 1 as const,
+      tier: 3 as const,
+      kind: 'climax' as const,
+      earned: 1,
+      stock: 1,
+      used: 0,
+    }
+    const climaxUma = { ...createUmaSave(template), level: 21, scenarioStarted: true, scenarioModifier: climaxState }
+    const oneCard = cards.slice(0, 1)
+    const oneDeal: TrainingDeal = { seed: 4, placements: [{ cardId: 'speed-card', placement: 'speed' }] }
+    const saved = previewTrainingFacilities(climaxUma, template, oneCard, oneDeal).speed
+    const armed = previewTrainingFacilities(climaxUma, template, oneCard, oneDeal, true).speed
+    expect(armed.rawGains.speed).toBe(Math.round(saved.rawGains.speed! * 1.2))
+    expect(saved.rawGains.sp).toBe(6)
+    expect(armed.rawGains.sp).toBe(8)
+    const climaxResult = resolveTrainingTurn({
+      uma: climaxUma,
+      template,
+      cards: oneCard,
+      skills: new Map([[unique.id, unique]]),
+      deal: oneDeal,
+      facility: 'speed',
+      useClimaxItem: true,
+    })
+    expect(climaxResult.uma.scenarioModifier).toEqual({ version: 1, tier: 3, kind: 'climax', earned: 1, stock: 0, used: 1 })
+    expect(climaxResult.scenarioModifier).toMatchObject({ kind: 'climax', itemConsumed: true })
   })
 })
 

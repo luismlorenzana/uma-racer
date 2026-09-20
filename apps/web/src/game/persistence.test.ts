@@ -291,11 +291,28 @@ describe('save persistence', () => {
 
   it('reports an unsupported local profile schema without replacing it', async () => {
     await db.open()
-    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 4 }
+    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 5 }
     await db.table('profile').put({ id: 'main', data: unsupported, version: 7 })
 
     await expect(readLocalSnapshot()).rejects.toThrow(/App update required/)
-    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 4 } })
+    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 5 } })
+  })
+
+  it('reports an unsupported nested modifier version without replacing the Uma', async () => {
+    const loaded = content()
+    await db.open()
+    const current = {
+      ...createUmaSave(loaded.umas.items[0]!),
+      level: 11,
+      scenarioStarted: true,
+      goalPlanVersion: 0,
+      scenarioModifier: { version: 2, tier: 2, kind: 'team-spirit', bursts: 0 },
+    }
+    await db.profile.put({ id: 'main', data: createPlayerProfile(loaded.manifest.version, 1), version: 3 })
+    await db.table('umas').put({ id: current.templateId, data: current, version: 7 })
+
+    await expect(readLocalSnapshot()).rejects.toThrow(/scenario modifier version 2/)
+    expect(await db.table('umas').get(current.templateId)).toMatchObject({ version: 7, data: { scenarioModifier: { version: 2 } } })
   })
 
   it('parses a cloud snapshot before replacing any local rows', async () => {
@@ -339,7 +356,7 @@ describe('save persistence', () => {
     const current = createUmaSave(loaded.umas.items[0]!)
     const { schemaVersion: _schemaVersion, scenarioStarted: _scenarioStarted, skillHistory: _skillHistory,
       currentParents: _currentParents, parentSnapshot: _parentSnapshot, goalPlanVersion: _goalPlanVersion,
-      scenarioJourneys: _scenarioJourneys, ...legacyUma } = current
+      scenarioJourneys: _scenarioJourneys, scenarioModifier: _scenarioModifier, ...legacyUma } = current
     const existing = { ...legacyUma, stats: { ...legacyUma.stats, speed: 777 } }
     const legacy = new Dexie('uma-racer')
     legacy.version(1).stores({
@@ -360,8 +377,8 @@ describe('save persistence', () => {
 
     await db.open()
     const migrated = await readLocalSnapshot()
-    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 3, tickets: 225, cardCoupons: 7, starterSeedContentVersion: null } })
-    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 3, scenarioStarted: true, currentParents: [], goalPlanVersion: 0 })
+    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 4, tickets: 225, cardCoupons: 7, starterSeedContentVersion: null } })
+    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 4, scenarioStarted: true, currentParents: [], goalPlanVersion: 0, scenarioModifier: null })
     expect(await db.outbox.where('kind').equals('profile').count()).toBe(1)
     expect(await db.outbox.where('[kind+id]').equals(['umas', existing.templateId]).count()).toBe(1)
     await completeStarterSeed(loaded, 30)
@@ -373,11 +390,12 @@ describe('save persistence', () => {
     expect(await db.badges.count()).toBe(1)
   })
 
-  it('migrates local save v2 rows to v3 and queues their preserved versions', async () => {
+  it('migrates local save v2 rows to v4 and queues their preserved versions', async () => {
     const loaded = content()
     const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 2 as const }
-    const umaV3 = createUmaSave(loaded.umas.items[0]!)
-    const umaV2 = { ...umaV3, schemaVersion: 2 as const, goalPlanVersion: 1 }
+    const current = createUmaSave(loaded.umas.items[0]!)
+    const { scenarioModifier: _scenarioModifier, ...preModifier } = current
+    const umaV2 = { ...preModifier, schemaVersion: 2 as const, goalPlanVersion: 1 }
     const previous = new Dexie('uma-racer')
     previous.version(4).stores({
       profile: 'id', umas: 'id', cards: 'id', badges: 'id', raceResults: 'id, createdAt', ledger: 'id, createdAt',
@@ -390,9 +408,40 @@ describe('save persistence', () => {
 
     await db.open()
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 8, data: { schemaVersion: 3 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 6, data: { schemaVersion: 3, goalPlanVersion: 1 } })
+    expect(snapshot?.profile).toMatchObject({ version: 8, data: { schemaVersion: 4 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 6, data: { schemaVersion: 4, goalPlanVersion: 1, scenarioModifier: null } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${umaV2.templateId}`])
+  })
+
+  it('migrates local v3 rows to v4 once without inventing active modifier progress', async () => {
+    const loaded = content()
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 3 as const, tickets: 91 }
+    const current = {
+      ...createUmaSave(loaded.umas.items[0]!),
+      level: 21,
+      scenarioStarted: true,
+      goalPlanVersion: 0,
+    }
+    const { scenarioModifier: _scenarioModifier, ...umaV3 } = current
+    const previous = new Dexie('uma-racer')
+    previous.version(6).stores({
+      profile: 'id', umas: 'id', cards: 'id', badges: 'id', raceResults: 'id, createdAt', ledger: 'id, createdAt',
+      flairEvents: 'id, createdAt', outbox: '++seq, [kind+id]', albumPrefs: 'id',
+    })
+    await previous.open()
+    await previous.table('profile').put({ id: 'main', data: profile, version: 12 })
+    await previous.table('umas').put({ id: umaV3.templateId, data: { ...umaV3, schemaVersion: 3 }, version: 9 })
+    await previous.table('outbox').add({ kind: 'umas', id: umaV3.templateId, op: 'upsert', queuedAt: 1 })
+    previous.close()
+
+    await db.open()
+    const snapshot = await readLocalSnapshot()
+    expect(snapshot?.profile).toMatchObject({ version: 12, data: { schemaVersion: 4, tickets: 91 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 9, data: { schemaVersion: 4, level: 21, scenarioModifier: null } })
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${umaV3.templateId}`])
+    db.close()
+    await db.open()
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${umaV3.templateId}`])
   })
 
   it('migrates a consistent v1 cloud snapshot and queues preserved-version replacements', async () => {
@@ -402,7 +451,7 @@ describe('save persistence', () => {
     const current = createUmaSave(loaded.umas.items[0]!)
     const { schemaVersion: _schemaVersion, scenarioStarted: _scenarioStarted, skillHistory: _skillHistory,
       currentParents: _currentParents, parentSnapshot: _parentSnapshot, goalPlanVersion: _goalPlanVersion,
-      scenarioJourneys: _scenarioJourneys, ...legacyUma } = current
+      scenarioJourneys: _scenarioJourneys, scenarioModifier: _scenarioModifier, ...legacyUma } = current
     await expect(adoptServerSnapshot({
       entities: [
         { kind: 'profile', id: 'main', version: 7, data: profile, deleted: false, updatedAt: 20 },
@@ -412,8 +461,8 @@ describe('save persistence', () => {
       serverTime: 21,
     })).resolves.toBe('adopted')
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 3, tickets: 88 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 3, scenarioStarted: true } })
+    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 4, tickets: 88 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 4, scenarioStarted: true, scenarioModifier: null } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${legacyUma.templateId}`])
     await expect(adoptServerSnapshot({
       entities: [
@@ -423,6 +472,31 @@ describe('save persistence', () => {
       logs: [],
       serverTime: 21,
     })).rejects.toThrow(/mixes incompatible/)
+  })
+
+  it('migrates a consistent active-tier v3 cloud snapshot to null modifier state', async () => {
+    const loaded = content()
+    await db.open()
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 3 as const }
+    const current = {
+      ...createUmaSave(loaded.umas.items[0]!),
+      level: 11,
+      scenarioStarted: true,
+      goalPlanVersion: 0,
+    }
+    const { scenarioModifier: _scenarioModifier, ...umaV3 } = current
+    await expect(adoptServerSnapshot({
+      entities: [
+        { kind: 'profile', id: 'main', version: 10, data: profile, deleted: false, updatedAt: 20 },
+        { kind: 'umas', id: current.templateId, version: 8, data: { ...umaV3, schemaVersion: 3 }, deleted: false, updatedAt: 20 },
+      ],
+      logs: [],
+      serverTime: 21,
+    })).resolves.toBe('adopted')
+    const snapshot = await readLocalSnapshot()
+    expect(snapshot?.profile).toMatchObject({ version: 10, data: { schemaVersion: 4 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 8, data: { schemaVersion: 4, level: 11, scenarioModifier: null } })
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${current.templateId}`])
   })
 })
 

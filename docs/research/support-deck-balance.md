@@ -55,3 +55,27 @@ All nine decks reach TL10 within the documented 25 ordinary turns. Reliable atte
 the weak broad deck more total stat coverage but no friendship Training EXP, so it takes two more turns; mid and mature
 decks still finish in 17. The unchanged G1 control again measured **30.3% at k=0 and 27.7% at k=9** across 300 seeds, as
 expected because T024 changes neither race inputs nor the existing stat-deck projection.
+
+## T025 scenario-modifier regression — 2026-09-20
+
+T025 added five mature synthetic controls to the same harness. Tier-2 baseline and organic rows use the same deterministic
+five-card deals; the forced row is an explicit upper-bound fixture that places all five cards at Speed and selects that
+facility every turn. Tier-3 Climax begins with exactly four earned items and arms only those first four turns. No case runs
+past the ordinary 25-turn pacing bound, and all modifiers still use the normal caps.
+
+| Scenario case | Turns to TL10 | Average applied gain | Total stat gain | Bursts/items used |
+|---|---:|---:|---:|---:|
+| Tier 2 baseline | 17 | 175.1 | 2,655 | 0 |
+| Tier 2 organic Team Spirit | 17 | 175.1 | 2,655 | 0 |
+| Tier 2 forced Team Spirit | 17 | 191.4 | 2,814 | 17 |
+| Tier 3 baseline | 17 | 219.6 | 3,235 | 0 |
+| Tier 3 Climax (four items) | 17 | 227.4 | 3,347 | 4 |
+
+The fixed organic seed happened not to deal a three-card facility, so that row intentionally matches baseline and proves
+Team Spirit does not leak a passive gain. The forced row proves the +10 all-stat upper-bound path without shortening the
+pinned TL10 curve; four Climax uses add 112 total stats across the run without changing its 17-turn timing.
+
+`pnpm sim:balance` remained byte-for-byte on the pre-T025 race harness and produced the same deterministic 200-seed
+quick-regression rows: tier-1 1,200 m wins **11/79/72/38** at k=0 and **17/76/67/40** at k=9; 1,600 m wins
+**16/72/58/54** at k=0 and **19/73/56/52** at k=9 for Front/Pace/Late/End. HP-empty stayed 0% and max-spurt 100% in all
+four rows. This is expected: modifier state and gains never enter race input construction or the engine.

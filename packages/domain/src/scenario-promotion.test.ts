@@ -4,6 +4,7 @@ import { createCardSave, createPlayerProfile, createUmaSave } from './save'
 import { parentFingerprint } from './inheritance'
 import { expToNextUmaLevel, PROMOTION_BONUS_PER_STAT } from './progression'
 import { buildParentSnapshot, completeFinalScenario, promoteScenario, promotionReadiness } from './scenario-promotion'
+import { createScenarioModifierState } from './scenario-modifiers'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -128,7 +129,50 @@ describe('scenario promotion', () => {
     expect(result.uma.stats.speed).toBe(100 + PROMOTION_BONUS_PER_STAT + 11)
     expect(result.uma.stats.stamina).toBe(101 + PROMOTION_BONUS_PER_STAT)
     expect(result.uma.skillHistory).toContainEqual({ skillId: 'awake-1', origin: 'awakening', sourceId: 'uma-a', tier: 2 })
+    expect(result.uma.scenarioModifier).toEqual({ version: 1, tier: 2, kind: 'team-spirit', bursts: 0 })
     expect(result.ledger.map((entry) => [entry.id, entry.data.delta])).toEqual([['uma-promotion:uma-a:1', -25]])
+  })
+
+  it('replaces tier-local modifier state at each Scenario Start', () => {
+    const profile = { ...createPlayerProfile('content-v1', 1), tickets: 1_000 }
+    const tierTwo = {
+      ...readyUma(),
+      level: 20,
+      scenarioModifier: { ...createScenarioModifierState(2)!, bursts: 9 },
+    }
+    const intoTrackblazer = promoteScenario({
+      profile,
+      uma: tierTwo,
+      umaTemplate: template,
+      skills,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }],
+      races,
+      now: 500,
+    })
+    expect(intoTrackblazer.uma.scenarioModifier).toEqual({
+      version: 1,
+      tier: 3,
+      kind: 'climax',
+      earned: 0,
+      stock: 0,
+      used: 0,
+    })
+
+    const tierThree = {
+      ...intoTrackblazer.uma,
+      level: 30,
+      scenarioModifier: { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 5, stock: 3, used: 2 },
+    }
+    const intoUnimplemented = promoteScenario({
+      profile: intoTrackblazer.profile,
+      uma: tierThree,
+      umaTemplate: template,
+      skills,
+      cards: [{ template: cardTemplate, save: createCardSave(cardTemplate) }],
+      races,
+      now: 501,
+    })
+    expect(intoUnimplemented.uma.scenarioModifier).toBeNull()
   })
 
   it('carries partial overflow and converts a full bank into one rewarded level', () => {

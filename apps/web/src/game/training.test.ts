@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto'
 
 import {
   createCardSave,
+  createScenarioModifierState,
   createUmaSave,
   cardExpToNext,
   type CardEffect,
@@ -231,7 +232,7 @@ describe('Training persistence', () => {
     const result = resolveMemoryTraining({
       content: loaded,
       profile: {
-        schemaVersion: 3,
+        schemaVersion: 4,
         tickets: 3,
         cardCoupons: 0,
         umaCoupons: 0,
@@ -276,6 +277,95 @@ describe('Training persistence', () => {
     expect(second.result.cardCouponReward).toBe(0)
     expect(second.profile.cardCoupons).toBe(4)
     expect(await db.ledger.where('id').equals('card-max-coupon:card-speed').count()).toBe(1)
+  })
+
+  it('preserves saved Climax stock, consumes an armed item atomically, and rejects stale or empty use', async () => {
+    const loaded = content()
+    await seed(loaded)
+    const deckCardIds = ['card-power', 'card-speed', 'card-stamina', 'card-guts']
+    await setPersistentUmaDeck(loaded, 'uma-00', deckCardIds, 101)
+    const row = await db.umas.get('uma-00')
+    await db.umas.put({
+      ...row!,
+      data: {
+        ...row!.data,
+        level: 21,
+        scenarioModifier: { version: 1, tier: 3, kind: 'climax', earned: 2, stock: 2, used: 0 },
+      },
+    })
+    await db.outbox.clear()
+
+    const saved = await persistTraining(loaded, 'uma-00', 'speed', '2000-01-02', 200)
+    expect(saved.result.scenarioModifier).toMatchObject({ kind: 'climax', itemConsumed: false })
+    expect(saved.uma.scenarioModifier).toMatchObject({ stock: 2, used: 0 })
+    const armed = await persistTraining(loaded, 'uma-00', 'speed', '2000-01-02', 201, true)
+    expect(armed.result.scenarioModifier).toMatchObject({ kind: 'climax', triggered: true, itemConsumed: true })
+    expect(armed.uma.scenarioModifier).toEqual({ version: 1, tier: 3, kind: 'climax', earned: 2, stock: 1, used: 1 })
+    expect((await db.umas.get('uma-00'))?.data.scenarioModifier).toEqual(armed.uma.scenarioModifier)
+
+    const current = await db.umas.get('uma-00')
+    await db.umas.put({
+      ...current!,
+      data: { ...current!.data, scenarioModifier: createScenarioModifierState(3) },
+    })
+    const beforeEmptyUse = await db.umas.get('uma-00')
+    await expect(persistTraining(loaded, 'uma-00', 'speed', '2000-01-02', 202, true)).rejects.toThrow(/No Climax item/)
+    expect(await db.umas.get('uma-00')).toEqual(beforeEmptyUse)
+
+    await db.umas.put({
+      ...current!,
+      data: {
+        ...current!.data,
+        trainingsThisScenario: 0,
+        scenarioModifier: { version: 1, tier: 3, kind: 'climax', earned: 1, stock: 1, used: 0 },
+      },
+    })
+    await db.ledger.put({
+      id: 'training:uma-00:3:0',
+      data: { resource: 'tickets', delta: -1, reason: 'training', localDay: '2000-01-02', createdAt: 199 },
+      createdAt: 199,
+    })
+    await expect(persistTraining(loaded, 'uma-00', 'speed', '2000-01-02', 203, true)).rejects.toThrow(/already recorded/)
+    expect((await db.umas.get('uma-00'))?.data.scenarioModifier).toMatchObject({ stock: 1, used: 0 })
+  })
+
+  it('uses the same opt-in Climax projection and state transition in memory mode', () => {
+    const loaded = content()
+    const template = loaded.umas.items[0]!
+    const cardsById = Object.fromEntries(loaded.cards.items.map((item) => [item.id, createCardSave(item)]))
+    const equipped = setMemoryUmaDeck(
+      loaded,
+      {
+        ...createUmaSave(template),
+        level: 21,
+        goalPlanVersion: 0,
+        scenarioStarted: true,
+        scenarioModifier: { version: 1, tier: 3, kind: 'climax', earned: 1, stock: 1, used: 0 },
+      },
+      cardsById,
+      ['card-power', 'card-speed', 'card-stamina', 'card-guts'],
+    ).uma
+    const profile = {
+      schemaVersion: 4 as const,
+      tickets: 3,
+      cardCoupons: 0,
+      umaCoupons: 0,
+      umaShards: 0,
+      lastDailyGrant: null,
+      featuredUmaId: template.id,
+      starterSeedContentVersion: loaded.manifest.version,
+      createdAt: 100,
+    }
+    const ordinary = resolveMemoryTraining({
+      content: loaded, profile, uma: equipped, cardsById, facility: 'speed', today: '2000-01-02', now: 200,
+    })
+    const armed = resolveMemoryTraining({
+      content: loaded, profile, uma: equipped, cardsById, facility: 'speed', today: '2000-01-02', now: 200, useClimaxItem: true,
+    })
+    expect(armed.deal).toEqual(ordinary.deal)
+    expect(armed.result.preview.scenarioModifier).toMatchObject({ kind: 'climax', triggered: true })
+    expect(armed.uma.scenarioModifier).toEqual({ version: 1, tier: 3, kind: 'climax', earned: 1, stock: 0, used: 1 })
+    expect(ordinary.uma.scenarioModifier).toEqual(equipped.scenarioModifier)
   })
 })
 

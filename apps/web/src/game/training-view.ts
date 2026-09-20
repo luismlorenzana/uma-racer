@@ -23,6 +23,7 @@ import {
   type UmaTemplate,
 } from '@racer/domain'
 import { getContentAsset, type ContentAsset, type LoadedContent } from '../content/runtime'
+import { buildScenarioModifierView, type ScenarioModifierView } from './scenario-modifier-view'
 
 export interface TrainingCardView {
   save: CardSave
@@ -49,6 +50,7 @@ export interface TrainingViewModel {
   cards: TrainingCardView[]
   bench: TrainingCardView[]
   facilities: Record<Facility, TrainingFacilityView>
+  modifier: ScenarioModifierView | null
 }
 
 export type TrainingViewResult =
@@ -61,6 +63,7 @@ export function buildTrainingView(
   uma: UmaSave,
   cardsById: Readonly<Record<string, CardSave>>,
   content: LoadedContent,
+  useClimaxItem = false,
 ): TrainingViewResult {
   const template = content.umas.byId.get(uma.templateId)
   if (!template) return { status: 'error', message: `Training content is missing Uma ${uma.templateId}` }
@@ -77,7 +80,7 @@ export function buildTrainingView(
   const cards: TrainingCardInput[] = validation.cards
   const seed = trainingTurnSeed(profile.createdAt, uma.templateId, tier, uma.trainingsThisScenario)
   const deal = dealTrainingCards(cards, seed)
-  const preview = previewTrainingFacilities(uma, template, cards, deal)
+  const preview = previewTrainingFacilities(uma, template, cards, deal, useClimaxItem)
   const cardViews = cards.map((card, index): TrainingCardView => ({
     ...card,
     asset: getContentAsset(content, 'card-icons', card.template.id),
@@ -106,6 +109,7 @@ export function buildTrainingView(
       cards: cardViews,
       bench: cardViews.filter((card) => card.placement === 'out'),
       facilities,
+      modifier: buildScenarioModifierView(tier, uma.scenarioModifier, true),
     },
   }
 }

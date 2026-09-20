@@ -40,7 +40,7 @@ function content(): LoadedContent {
     signatureRaceFamilyIds: [],
     imageSource: 'https://invalid.test/synthetic.png',
   }
-  const cards: SupportCardTemplate[] = ['speed', 'stamina', 'power', 'guts'].map((type) => ({
+  const cards: SupportCardTemplate[] = ['speed', 'stamina', 'power', 'guts', 'friend', 'group'].map((type) => ({
     id: `card-${type}`,
     charaId: `card-chara-${type}`,
     charName: `Synthetic ${type}`,
@@ -83,7 +83,7 @@ describe('Training view model', () => {
   it('joins the reload-stable deal, exact previews, and managed atlas assets', () => {
     const loaded = content()
     const cardsById = Object.fromEntries(loaded.cards.items.map((card) => [card.id, createCardSave(card)]))
-    const uma = { ...createUmaSave(loaded.umas.items[0]!), deckCardIds: Object.keys(cardsById) }
+    const uma = { ...createUmaSave(loaded.umas.items[0]!), deckCardIds: Object.keys(cardsById).slice(0, 4) }
     const profile = { ...createPlayerProfile(loaded.manifest.version, 100), tickets: 3 }
     const first = buildTrainingView(profile, uma, cardsById, loaded)
     const second = buildTrainingView(profile, uma, cardsById, loaded)
@@ -119,5 +119,34 @@ describe('Training view model', () => {
     const uma = { ...createUmaSave(loaded.umas.items[0]!), level: 101, deckCardIds: [moved.id] }
     expect(buildTrainingView(createPlayerProfile(loaded.manifest.version, 100), uma, { [moved.id]: cardSave }, refreshed))
       .toEqual({ status: 'error', message: `Support card ${moved.id} is Era locked until tier 12` })
+  })
+
+  it('projects active Climax choices and honest legacy modifier state without changing the deal', () => {
+    const loaded = content()
+    const cardsById = Object.fromEntries(loaded.cards.items.map((card) => [card.id, createCardSave(card)]))
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 100), tickets: 3 }
+    const climax = {
+      ...createUmaSave(loaded.umas.items[0]!),
+      level: 21,
+      scenarioStarted: true,
+      deckCardIds: loaded.cards.items.map((card) => card.id),
+      scenarioModifier: { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 1, stock: 1, used: 0 },
+    }
+    const saved = buildTrainingView(profile, climax, cardsById, loaded)
+    const armed = buildTrainingView(profile, climax, cardsById, loaded, true)
+    expect(saved.status).toBe('ready')
+    expect(armed.status).toBe('ready')
+    if (saved.status !== 'ready' || armed.status !== 'ready') return
+    expect(armed.value.dealSeed).toBe(saved.value.dealSeed)
+    expect(armed.value.cards.map((card) => card.placement)).toEqual(saved.value.cards.map((card) => card.placement))
+    expect(saved.value.modifier).toMatchObject({ kind: 'climax', legacyUnavailable: false, detail: '1 stocked · 0 used · expires at promotion.' })
+    expect(armed.value.facilities.speed.scenarioModifier).toMatchObject({ kind: 'climax', triggered: true, itemConsumed: true })
+    expect(armed.value.facilities.speed.rawGains.speed).toBeGreaterThan(saved.value.facilities.speed.rawGains.speed!)
+
+    const legacy = buildTrainingView(profile, { ...climax, scenarioModifier: null }, cardsById, loaded)
+    expect(legacy).toMatchObject({
+      status: 'ready',
+      value: { modifier: { kind: 'climax', legacyUnavailable: true, detail: expect.stringMatching(/Legacy run/) } },
+    })
   })
 })

@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto'
 import {
   createCardSave,
   createPlayerProfile,
+  createScenarioModifierState,
   createUmaSave,
   expToNextUmaLevel,
   parseRaceResultRecord,
@@ -254,6 +255,43 @@ describe('progression race field', () => {
     expect(completion.record.completedGoalIds).toEqual(['goal:1:aptitude'])
     expect(completion.uma.scenarioJourneys[0]?.goals[0]).toMatchObject({ status: 'completed', completedRaceResultId: 'race:u1:0' })
   })
+
+  it('awards Climax items only for new non-gate wins and never for losses or replays', () => {
+    const loaded = content()
+    const { profile, player, cards } = state()
+    const trackblazer = {
+      ...player,
+      level: 21,
+      scenarioModifier: createScenarioModifierState(3),
+    }
+    const attempt = buildPreparedRace({ content: loaded, profile, uma: trackblazer, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
+    const won = completeMemoryRace(loaded, profile, trackblazer, cards, [], attempt, '2026-09-16', 100)
+    expect(won.record.playerPlacement).toBe(1)
+    expect(won.scenarioModifierReward).toBe(1)
+    expect(won.uma.scenarioModifier).toEqual({ version: 1, tier: 3, kind: 'climax', earned: 1, stock: 1, used: 0 })
+
+    const replay = completeMemoryRace(loaded, won.profile, won.uma, cards, [won.record], attempt, '2026-09-16', 101)
+    expect(replay).toMatchObject({ alreadyRecorded: true, scenarioModifierReward: 0 })
+    expect(replay.uma.scenarioModifier).toEqual(won.uma.scenarioModifier)
+
+    const underpowered = {
+      ...trackblazer,
+      stats: { speed: 1, stamina: 1, power: 1, guts: 1, wit: 1 },
+    }
+    const losingAttempt = buildPreparedRace({ content: loaded, profile, uma: underpowered, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
+    const lost = completeMemoryRace(loaded, profile, underpowered, cards, [], losingAttempt, '2026-09-16', 102)
+    expect(lost.record.playerPlacement).not.toBe(1)
+    expect(lost.scenarioModifierReward).toBe(0)
+    expect(lost.uma.scenarioModifier).toEqual(trackblazer.scenarioModifier)
+
+    const nearGate = { ...trackblazer, level: 29, exp: expToNextUmaLevel(29) - 1 }
+    const gateAttempt = buildPreparedRace({ content: loaded, profile, uma: nearGate, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
+    const gateWin = completeMemoryRace(loaded, profile, nearGate, cards, [], gateAttempt, '2026-09-16', 103)
+    expect(gateWin.record.playerPlacement).toBe(1)
+    expect(gateWin.uma.level).toBe(30)
+    expect(gateWin.scenarioModifierReward).toBe(0)
+    expect(gateWin.uma.scenarioModifier).toEqual(trackblazer.scenarioModifier)
+  })
 })
 
 describe('persistent progression race', () => {
@@ -355,6 +393,30 @@ describe('persistent progression race', () => {
       'umas/u1',
     ]))
     expect(completion.record.earnedFlairEventIds).toHaveLength(await db.flairEvents.count())
+  })
+
+  it('commits one Trackblazer item with the race and does not duplicate it on retry', async () => {
+    const loaded = content()
+    const row = await db.umas.get('u1')
+    await db.umas.put({
+      ...row!,
+      data: { ...row!.data, level: 21, scenarioModifier: createScenarioModifierState(3) },
+    })
+    const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'pace')
+    if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
+    const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)
+    expect(completion).toMatchObject({ scenarioModifierReward: 1, alreadyRecorded: false })
+    expect((await db.umas.get('u1'))?.data.scenarioModifier).toEqual({
+      version: 1,
+      tier: 3,
+      kind: 'climax',
+      earned: 1,
+      stock: 1,
+      used: 0,
+    })
+    const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 101)
+    expect(retry).toMatchObject({ scenarioModifierReward: 0, alreadyRecorded: true })
+    expect(retry.uma.scenarioModifier).toEqual(completion.uma.scenarioModifier)
   })
 
   it('captures the tier-14 snapshot in the max-level race transaction', async () => {

@@ -63,13 +63,13 @@ Numbers are provisional; each task gets a full spec when it becomes next.
 | Task | Scope |
 |---|---|
 | T024 | Friend and Group cards: effects, deck rules, album/badge follow-through (complete) |
-| T025 | Modifier framework (save shape, Scenario Start/promotion lifecycle, Training UI surface) + Unity Cup + Trackblazer (specified) |
+| T025 | Modifier framework (save shape, Scenario Start/promotion lifecycle, Training UI surface) + Unity Cup + Trackblazer (complete) |
 | T026 | Grand Concert · Grand Masters · Project L'Arc |
 | T027 | U.A.F. · Great Food Festival · Mecha Umamusume |
 | T028 | Twinkle Legends · Design Your Island · Yukoma Hot Springs |
 | T029 | Beyond Dreams · Tracen Diner |
 
-T024 landed independently. T025 must land before any other modifier task, and each modifier
+T024 and T025 landed independently. T025 is the foundation for every remaining modifier task, and each modifier
 task re-runs `pnpm sim:balance` plus the deck/training harness so a tier's twist does not quietly break the pacing target
 of about 25 trainings to TL10.
 

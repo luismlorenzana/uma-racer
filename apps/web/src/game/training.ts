@@ -46,6 +46,7 @@ interface TrainingStateInput {
   facility: Facility
   today: string
   now: number
+  useClimaxItem?: boolean
   rewardedCardLevels?: ReadonlySet<string>
   rewardedCardMaxes?: ReadonlySet<string>
 }
@@ -103,6 +104,7 @@ export function resolveMemoryTraining(input: TrainingStateInput): TrainingMutati
     skills: input.content.skills.byId,
     deal,
     facility: input.facility,
+    useClimaxItem: input.useClimaxItem,
   })
   const trainingLedgerId = `training:${input.uma.templateId}:${tier}:${input.uma.trainingsThisScenario}`
   const cardLevelIds = result.cards.flatMap((card) =>
@@ -146,6 +148,7 @@ export async function persistTraining(
   facility: Facility,
   today: string,
   now: number,
+  useClimaxItem = false,
 ): Promise<TrainingMutationResult> {
   return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
     const profileRow = await db.profile.get('main')
@@ -184,6 +187,7 @@ export async function persistTraining(
       facility,
       today,
       now,
+      useClimaxItem,
       rewardedCardLevels,
       rewardedCardMaxes,
     })

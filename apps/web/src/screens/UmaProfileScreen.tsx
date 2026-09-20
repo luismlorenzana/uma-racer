@@ -294,6 +294,7 @@ export function UmaProfileScreen() {
             <button key={item.tier} type="button" onClick={() => setSelectedJourneyTier(item.tier)} className={`min-h-28 min-w-32 rounded-2xl border-2 p-3 text-left ${item.tier === uma.tier ? 'border-sky bg-sky/10' : 'border-turf/30 bg-turf/5'}`}>
               <p className="text-xs font-extrabold text-ink-soft">Tier {item.tier}</p>
               <p className="mt-1 text-sm font-extrabold">{item.name}</p>
+              {item.modifier && <p className="mt-1 text-[10px] font-extrabold text-violet-700">{item.modifier.name}</p>}
               {item.tracking === 'legacy-untracked' ? <p className="mt-2 text-xs font-bold text-ink-soft">— Not tracked</p> : item.tracking === 'missing' ? <p className="mt-2 text-xs font-bold text-danger">Plan unavailable</p> : (
                 <div className="mt-2 flex items-center gap-1" aria-label={`${item.completed} completed, ${item.missed} missed, ${item.active} active`}>
                   {item.honors ? <span className="rounded-full bg-gold px-2 py-1 text-xs font-extrabold text-white text-outline">Honors</span> : item.goals.flatMap((goal) => goal.pips.length > 0 ? goal.pips.map((pip) => ({ key: `${goal.id}:${pip.key}`, status: pip.status })) : [{ key: goal.id, status: goal.status }]).map((pip) => <span key={pip.key} className={`h-3 w-3 rounded-full border-2 ${pip.status === 'completed' ? 'border-gold bg-gold' : pip.status === 'missed' ? 'border-slate-400 bg-slate-200' : 'border-sky bg-white'}`} />)}
@@ -304,6 +305,7 @@ export function UmaProfileScreen() {
         </div>
         {selectedJourney && <div className="mt-3 rounded-2xl bg-white p-3">
           <div className="flex items-center justify-between gap-2"><p className="font-extrabold">{selectedJourney.name}</p><button type="button" className="min-h-11 px-2 text-sm font-extrabold text-sky-deep" onClick={() => setSelectedJourneyTier(null)}>Close</button></div>
+          {selectedJourney.modifier && <div className={`mb-3 rounded-xl px-3 py-2 ${selectedJourney.modifier.legacyUnavailable ? 'bg-amber-50' : 'bg-violet-50'}`}><p className="text-xs font-extrabold text-violet-700">{selectedJourney.modifier.name}</p><p className="text-xs font-bold text-ink-soft">{selectedJourney.modifier.rule}</p><p className="mt-1 text-[11px] text-ink-soft">{selectedJourney.modifier.detail}</p></div>}
           {selectedJourney.tracking === 'legacy-untracked' ? <p className="text-sm text-ink-soft">Not tracked — this completed tier predates goal plans, so no wins or misses were invented.</p> : selectedJourney.goals.length === 0 ? <p className="text-sm text-danger">Goal plan unavailable.</p> : <div className="grid gap-2">
             {selectedJourney.goals.map((goal) => {
               const result = goal.completedRaceResultId ? raceHistory.find((record) => `race:${record.umaId}:${record.sequence}` === goal.completedRaceResultId) : undefined

@@ -26,6 +26,7 @@ import { useContent } from '../content/ContentProvider'
 import { startScenario } from '../game/actions'
 import { buildFlairFanfare, buildTrainerFlairFanfare } from '../game/flair-view'
 import { startMemoryScenario } from '../game/promotion'
+import { buildScenarioModifierView } from '../game/scenario-modifier-view'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { GameButton } from '../ui/GameButton'
@@ -123,6 +124,8 @@ export function ScenarioStartScreen() {
   if (completed || promotedOnReload) {
     const tier = completed ? ('fromTier' in completed ? completed.toTier : 1) : tierOfLevel(uma.level)
     const promotion = completed && 'fromTier' in completed ? completed : null
+    const startedUma = completed?.uma ?? uma
+    const modifier = buildScenarioModifierView(tier, startedUma.scenarioModifier, true)
     const badge = badges[badgeStateId(umaId)]
     const earnedFlair = badge?.scope === 'uma'
       ? buildFlairFanfare(contentState.content, badge, flairEvents, earnedFlairEventIds)
@@ -143,6 +146,7 @@ export function ScenarioStartScreen() {
             <div className="rounded-xl bg-white/15 p-2">Cap {baselineStatCap(tier)}</div>
             <div className="rounded-xl bg-white/15 p-2">{uma.skillLibrary.length} skills ready</div>
           </div>
+          {modifier && <div className="mt-3 rounded-xl bg-white/15 p-3 text-left"><p className="text-xs font-extrabold tracking-wide text-gold uppercase">{modifier.name}</p><p className="mt-1 text-sm font-bold">{modifier.rule}</p><p className="mt-1 text-xs text-white/75">Tier-local progress expires at promotion.</p></div>}
           {earnedFlair.length > 0 && <div className="mt-4 text-left text-ink"><FlairCards title="Flair earned" items={earnedFlair} animate={!reducedMotion} /></div>}
           {trainerEarnedFlair.length > 0 && <div className="mt-4 text-left text-ink"><FlairCards title="Trainer achievements" items={trainerEarnedFlair} animate={!reducedMotion} /></div>}
           <GameButton className="mt-5" variant="go" onClick={() => navigate(`/training/${encodeURIComponent(umaId)}`, { replace: true })}>Opening Training</GameButton>
@@ -157,6 +161,10 @@ export function ScenarioStartScreen() {
   if (!isPending && !atGate) return <ScreenState title={uma.level >= SCENARIOS.length * 10 ? 'Latest scenario complete' : 'Scenario already active'} detail={uma.level >= SCENARIOS.length * 10 ? 'This Uma has completed every available scenario.' : 'Finish the current scenario before starting another.'} action={{ label: 'Back to profile', to: `/stable/${encodeURIComponent(umaId)}` }} />
 
   const cost = isPending ? 0 : umaPromotionCost(tierOfLevel(uma.level))
+  const targetTier = isPending ? 1 : tierOfLevel(uma.level) + 1
+  const previewModifier = preview && !(preview instanceof Error)
+    ? buildScenarioModifierView(targetTier, preview.uma.scenarioModifier, true)
+    : null
   const affordable = profile.tickets >= cost
   const toggleParent = (fingerprint: ParentFingerprint) => {
     setError(null)
@@ -229,6 +237,7 @@ export function ScenarioStartScreen() {
           <Panel><p className="text-xs font-extrabold tracking-wider text-violet-700 uppercase">{isPending ? 'Free first scenario' : `Tier ${tierOfLevel(uma.level)} complete`}</p><h2 className="mt-1 text-xl font-extrabold">{isPending ? scenarioForTier(1)?.name : `${scenarioForTier(tierOfLevel(uma.level))?.name} → ${scenarioForTier(tierOfLevel(uma.level) + 1)?.name}`}</h2><p className="mt-2 text-sm font-bold text-ink-soft">{parents.length} parents · {grandUniques.length + grandWhites.length} grandparent picks · {pinkSparks.filter(Boolean).length} aptitude upgrades</p></Panel>
           <Panel><h3 className="font-extrabold">Refreshed library</h3>{preview && !(preview instanceof Error) && <div className="mt-2 flex flex-wrap gap-1">{preview.uma.skillLibrary.map((unlock) => <span key={unlock.skillId} className="rounded-full bg-sky-50 px-2 py-1 text-xs font-bold">{contentState.content.skills.byId.get(unlock.skillId)?.name ?? unlock.skillId}</span>)}</div>}<p className="mt-3 text-sm text-ink-soft">Training Level 1 · Opening Training required before racing · parents stay frozen for this scenario.</p></Panel>
           {!isPending && preview && !(preview instanceof Error) && 'fromTier' in preview && <Panel><h3 className="font-extrabold">Promotion gains</h3><p className="mt-1 text-sm text-ink-soft">+{PROMOTION_BONUS_PER_STAT} all stats, card Initial Stats, snapshot captured, and {preview.cost} tickets.</p></Panel>}
+          {previewModifier && <Panel><p className="text-xs font-extrabold tracking-wide text-violet-700 uppercase">Scenario modifier</p><h3 className="mt-1 font-extrabold">{previewModifier.name}</h3><p className="mt-1 text-sm font-bold text-ink-soft">{previewModifier.rule}</p><p className="mt-1 text-xs text-ink-soft">Tier-local progress and resources expire at promotion.</p></Panel>}
         </>}
 
         <Panel className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-20 mx-auto max-w-xl bg-white/95 backdrop-blur">

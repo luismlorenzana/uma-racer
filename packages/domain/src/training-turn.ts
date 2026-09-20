@@ -20,6 +20,7 @@ import {
   type SupportDeckCard,
 } from './support-deck'
 import { tierOfLevel } from './scenarios'
+import { projectScenarioTrainingModifier, type ScenarioTrainingModifierEffect } from './scenario-modifiers'
 import {
   addTrainingExp,
   applyCappedGain,
@@ -27,7 +28,8 @@ import {
   spCap,
   statCap,
   trainingExpForTurn,
-  trainingGains,
+  roundTrainingGains,
+  trainingRawGains,
   type Facility,
   type PresentCard,
 } from './training'
@@ -66,6 +68,7 @@ export interface TrainingFacilityPreview {
   presentCardIds: string[]
   friendshipCardIds: string[]
   friendship: boolean
+  scenarioModifier: ScenarioTrainingModifierEffect | null
 }
 
 export interface CardTrainingResult {
@@ -92,6 +95,7 @@ export interface TrainingTurnResult {
   ticketReward: number
   cardCouponReward: number
   newlyMaxedCardIds: string[]
+  scenarioModifier: ScenarioTrainingModifierEffect | null
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -291,6 +295,7 @@ export function previewTrainingFacilities(
   template: UmaTemplate,
   cards: readonly TrainingCardInput[],
   deal: TrainingDeal,
+  useClimaxItem = false,
 ): Record<Facility, TrainingFacilityPreview> {
   const tier = tierOfLevel(uma.level)
   const error = trainingDeckError(tier, cards)
@@ -299,7 +304,13 @@ export function previewTrainingFacilities(
     STATS.map((facility) => {
       const present = cardsAtFacility(cards, deal, facility)
       const effects = present.map((card) => trainingCardEffects(card).present)
-      const rawGains = trainingGains(facility, template.growthRates, effects)
+      const modifier = projectScenarioTrainingModifier({
+        state: uma.scenarioModifier,
+        rawGains: trainingRawGains(facility, template.growthRates, effects),
+        presentCardCount: present.length,
+        useClimaxItem,
+      })
+      const rawGains = roundTrainingGains(modifier.rawGains)
       const appliedGains: Partial<Record<GainKey, number>> = {}
       for (const [key, gain] of Object.entries(rawGains) as [GainKey, number][]) {
         const current = key === 'sp' ? uma.skillPoints : uma.stats[key]
@@ -316,6 +327,7 @@ export function previewTrainingFacilities(
         presentCardIds: present.map((card) => card.template.id),
         friendshipCardIds,
         friendship: isFriendshipTraining(facility, effects),
+        scenarioModifier: modifier.effect,
       }]
     }),
   ) as Record<Facility, TrainingFacilityPreview>
@@ -351,10 +363,11 @@ export function resolveTrainingTurn(input: {
   skills: ReadonlyMap<string, SkillTemplate>
   deal: TrainingDeal
   facility: Facility
+  useClimaxItem?: boolean
 }): TrainingTurnResult {
-  const { uma, template, cards, skills, deal, facility } = input
+  const { uma, template, cards, skills, deal, facility, useClimaxItem = false } = input
   if (!uma.scenarioStarted) throw new Error('Finish scenario setup before Training')
-  const previews = previewTrainingFacilities(uma, template, cards, deal)
+  const previews = previewTrainingFacilities(uma, template, cards, deal, useClimaxItem)
   const preview = previews[facility]
   const stats: Stats = { ...uma.stats }
   let skillPoints = uma.skillPoints
@@ -427,6 +440,12 @@ export function resolveTrainingTurn(input: {
       trainingExp: training.exp,
       skillLibrary: library,
       trainingsThisScenario: uma.trainingsThisScenario + 1,
+      scenarioModifier: projectScenarioTrainingModifier({
+        state: uma.scenarioModifier,
+        rawGains: {},
+        presentCardCount: preview.presentCardIds.length,
+        useClimaxItem,
+      }).nextState,
     },
     cards: cardResults,
     preview,
@@ -437,5 +456,6 @@ export function resolveTrainingTurn(input: {
     ticketReward,
     cardCouponReward: newlyMaxedCardIds.length,
     newlyMaxedCardIds,
+    scenarioModifier: preview.scenarioModifier,
   }
 }
