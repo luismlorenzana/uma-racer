@@ -150,4 +150,53 @@ describe('Training view model', () => {
       value: { modifier: { kind: 'climax', legacyUnavailable: true, detail: expect.stringMatching(/Legacy run/) } },
     })
   })
+
+  it('projects Concert notes, Masters bursts, and Expedition readiness', () => {
+    const loaded = content()
+    const cardsById = Object.fromEntries(loaded.cards.items.map((card) => [card.id, createCardSave(card)]))
+    const profile = { ...createPlayerProfile(loaded.manifest.version, 100), tickets: 3 }
+    const base = {
+      ...createUmaSave(loaded.umas.items[0]!),
+      scenarioStarted: true,
+      deckCardIds: loaded.cards.items.map((card) => card.id),
+    }
+    const concert = buildTrainingView(profile, {
+      ...base,
+      level: 31,
+      scenarioModifier: { version: 1, tier: 4, kind: 'performances', notes: ['speed', 'stamina', 'power', 'guts'], performances: 2 },
+    }, cardsById, loaded)
+    expect(concert).toMatchObject({
+      status: 'ready',
+      value: {
+        modifier: { kind: 'performances', detail: '4/5 notes · 2 Performances completed.' },
+        facilities: { wit: { scenarioModifier: { kind: 'performances', collected: true, completed: true } } },
+      },
+    })
+
+    const masters = buildTrainingView(profile, {
+      ...base,
+      level: 41,
+      scenarioModifier: { version: 1, tier: 5, kind: 'goddess-fragments', fragments: 7, bursts: 1 },
+    }, cardsById, loaded)
+    expect(masters).toMatchObject({
+      status: 'ready',
+      value: {
+        modifier: { kind: 'goddess-fragments', detail: '7/8 fragments · 1 Goddess Burst.' },
+        facilities: { speed: { scenarioModifier: { kind: 'goddess-fragments', burst: true, fragmentCount: 0 } } },
+      },
+    })
+
+    const expedition = buildTrainingView(profile, {
+      ...base,
+      level: 51,
+      scenarioModifier: { version: 1, tier: 6, kind: 'expedition', stamps: 4, completed: 1, upgraded: 1 },
+    }, cardsById, loaded)
+    expect(expedition).toMatchObject({
+      status: 'ready',
+      value: {
+        modifier: { kind: 'expedition', detail: '4/5 stamps · 1 completed · 1 aptitude upgrade.' },
+        facilities: { power: { scenarioModifier: { kind: 'expedition', stampCount: 5, ready: true } } },
+      },
+    })
+  })
 })

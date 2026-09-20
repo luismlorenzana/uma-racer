@@ -256,6 +256,51 @@ describe('deterministic Training deal and preview', () => {
     expect(climaxResult.uma.scenarioModifier).toEqual({ version: 1, tier: 3, kind: 'climax', earned: 1, stock: 0, used: 1 })
     expect(climaxResult.scenarioModifier).toMatchObject({ kind: 'climax', itemConsumed: true })
   })
+
+  it('previews and commits Concert, Masters, and L Arc progress through the same path', () => {
+    const template = uma({ speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })
+    const cards = [input(card('speed-card', 'speed'))]
+    const deal: TrainingDeal = { seed: 5, placements: [{ cardId: 'speed-card', placement: 'wit' }] }
+    const base = { ...createUmaSave(template), scenarioStarted: true }
+
+    const concertUma = {
+      ...base,
+      level: 31,
+      scenarioModifier: { version: 1 as const, tier: 4 as const, kind: 'performances' as const, notes: ['speed', 'stamina', 'power', 'guts'] as ('speed' | 'stamina' | 'power' | 'guts' | 'wit')[], performances: 0 },
+    }
+    const ordinary = previewTrainingFacilities({ ...concertUma, scenarioModifier: null }, template, cards, deal).wit
+    const concert = previewTrainingFacilities(concertUma, template, cards, deal).wit
+    for (const stat of ['speed', 'stamina', 'power', 'guts', 'wit'] as const) {
+      expect(concert.rawGains[stat]).toBe((ordinary.rawGains[stat] ?? 0) + 20)
+    }
+    expect(concert.rawGains.sp).toBe(ordinary.rawGains.sp)
+    const concertResult = resolveTrainingTurn({ uma: concertUma, template, cards, skills: new Map(), deal, facility: 'wit' })
+    expect(concertResult.uma.scenarioModifier).toEqual({ version: 1, tier: 4, kind: 'performances', notes: [], performances: 1 })
+
+    const mastersUma = {
+      ...base,
+      level: 41,
+      scenarioModifier: { version: 1 as const, tier: 5 as const, kind: 'goddess-fragments' as const, fragments: 7, bursts: 0 },
+    }
+    const plainMasters = previewTrainingFacilities({ ...mastersUma, scenarioModifier: null }, template, cards, deal).wit
+    const masters = previewTrainingFacilities(mastersUma, template, cards, deal).wit
+    expect(masters.rawGains.wit).toBeGreaterThan(plainMasters.rawGains.wit!)
+    expect(masters.rawGains.sp).toBeGreaterThan(plainMasters.rawGains.sp!)
+    expect(masters.scenarioModifier).toMatchObject({ kind: 'goddess-fragments', burst: true, multiplier: 1.5 })
+    const mastersResult = resolveTrainingTurn({ uma: mastersUma, template, cards, skills: new Map(), deal, facility: 'wit' })
+    expect(mastersResult.uma.scenarioModifier).toEqual({ version: 1, tier: 5, kind: 'goddess-fragments', fragments: 0, bursts: 1 })
+
+    const expeditionUma = {
+      ...base,
+      level: 51,
+      scenarioModifier: { version: 1 as const, tier: 6 as const, kind: 'expedition' as const, stamps: 4, completed: 0, upgraded: 0 },
+    }
+    const expedition = previewTrainingFacilities(expeditionUma, template, cards, deal).wit
+    expect(expedition.rawGains).toEqual(plainMasters.rawGains)
+    const expeditionResult = resolveTrainingTurn({ uma: expeditionUma, template, cards, skills: new Map(), deal, facility: 'wit' })
+    expect(expeditionResult.uma.scenarioModifier).toEqual({ version: 1, tier: 6, kind: 'expedition', stamps: 5, completed: 0, upgraded: 0 })
+    expect(expeditionResult.scenarioModifier).toMatchObject({ kind: 'expedition', stampGranted: true, ready: true })
+  })
 })
 
 describe('Training resolution', () => {

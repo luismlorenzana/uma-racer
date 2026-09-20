@@ -215,6 +215,15 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...climaxBase, scenarioModifier: climax })).toMatchObject({ scenarioModifier: climax })
     expect(parseUmaSave({ ...climaxBase, scenarioModifier: { ...climax, used: 1 } })).toBeNull()
     expect(parseUmaSave({ ...climaxBase, scenarioStarted: false, scenarioModifier: climax })).toBeNull()
+
+    const concert = { ...base, level: 31, scenarioModifier: { version: 1 as const, tier: 4 as const, kind: 'performances' as const, notes: ['speed', 'power'] as const, performances: 1 } }
+    expect(parseUmaSave(concert)).toMatchObject({ scenarioModifier: { kind: 'performances', notes: ['speed', 'power'] } })
+    expect(parseUmaSave({ ...concert, scenarioModifier: { ...concert.scenarioModifier, notes: ['power', 'speed'] } })).toBeNull()
+    const masters = { ...base, level: 41, scenarioModifier: { version: 1 as const, tier: 5 as const, kind: 'goddess-fragments' as const, fragments: 7, bursts: 2 } }
+    expect(parseUmaSave(masters)).toMatchObject({ scenarioModifier: { kind: 'goddess-fragments', fragments: 7 } })
+    const expedition = { ...base, level: 51, scenarioModifier: { version: 1 as const, tier: 6 as const, kind: 'expedition' as const, stamps: 5, completed: 2, upgraded: 1 } }
+    expect(parseUmaSave(expedition)).toMatchObject({ scenarioModifier: { kind: 'expedition', stamps: 5 } })
+    expect(() => parseUmaSaveOrThrow({ ...base, scenarioModifier: { version: 1, tier: 2, kind: 'future-loop' } })).toThrow(/App update required/)
   })
 
   it('strictly validates single and series goal shapes and distinct frozen targets', () => {

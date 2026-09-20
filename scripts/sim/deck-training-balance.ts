@@ -6,11 +6,13 @@ import {
   STATS,
   applyForm,
   baselineStatCap,
+  completeExpedition,
   createCardSave,
   createScenarioModifierState,
   createUmaSave,
   deckSlotCount,
   dealTrainingCards,
+  expeditionAptitudeOptions,
   npcRaceStats,
   parseRaceCondition,
   previewTrainingFacilities,
@@ -122,10 +124,15 @@ function runTraining(build: Build, shape: DeckShape = 'stat') {
   }
 }
 
-type ModifierCase = 'tier2-baseline' | 'tier2-organic' | 'tier2-forced' | 'tier3-baseline' | 'tier3-climax'
+type ModifierCase =
+  | 'tier2-baseline' | 'tier2-organic' | 'tier2-forced'
+  | 'tier3-baseline' | 'tier3-climax'
+  | 'tier4-baseline' | 'tier4-organic' | 'tier4-forced'
+  | 'tier5-baseline' | 'tier5-fragments'
+  | 'tier6-baseline' | 'tier6-expedition'
 
 function runScenarioTraining(scenarioCase: ModifierCase) {
-  const tier = scenarioCase.startsWith('tier2') ? 2 : 3
+  const tier = Number(scenarioCase.slice(4, 5))
   const templates = types.slice(0, deckSlotCount(tier)).map((type, index) => ({
     ...template(index, buildState.mature.weight, type),
     era: tier,
@@ -134,11 +141,14 @@ function runScenarioTraining(scenarioCase: ModifierCase) {
     template: item,
     save: { ...createCardSave(item), level: buildState.mature.level, limitBreak: buildState.mature.limitBreak },
   }))
-  const modifier = scenarioCase === 'tier2-organic' || scenarioCase === 'tier2-forced'
-    ? createScenarioModifierState(2)
-    : scenarioCase === 'tier3-climax'
-      ? { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 4, stock: 4, used: 0 }
-      : null
+  const modifier = (() => {
+    if (scenarioCase === 'tier2-organic' || scenarioCase === 'tier2-forced') return createScenarioModifierState(2)
+    if (scenarioCase === 'tier3-climax') return { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 4, stock: 4, used: 0 }
+    if (scenarioCase === 'tier4-organic' || scenarioCase === 'tier4-forced') return createScenarioModifierState(4)
+    if (scenarioCase === 'tier5-fragments') return createScenarioModifierState(5)
+    if (scenarioCase === 'tier6-expedition') return createScenarioModifierState(6)
+    return null
+  })()
   let uma = {
     ...createUmaSave(umaTemplate),
     level: (tier - 1) * 10 + 1,
@@ -161,11 +171,26 @@ function runScenarioTraining(scenarioCase: ModifierCase) {
       const total = (value: Facility) => Object.values(previews[value].appliedGains).reduce((sum, gain) => sum + (gain ?? 0), 0)
       return total(candidate) > total(best) ? candidate : best
     }, STATS[0])
-    const facility: Facility = scenarioCase === 'tier2-forced' ? 'speed' : greedyFacility
+    const facility: Facility = scenarioCase === 'tier2-forced'
+      ? 'speed'
+      : scenarioCase === 'tier4-forced'
+        ? STATS[turns % STATS.length]!
+        : greedyFacility
     const result = resolveTrainingTurn({ uma, template: umaTemplate, cards, skills, deal, facility, useClimaxItem })
-    if (result.scenarioModifier?.triggered) modifierTriggers += 1
+    if (
+      (result.scenarioModifier?.kind === 'team-spirit' && result.scenarioModifier.triggered) ||
+      (result.scenarioModifier?.kind === 'climax' && result.scenarioModifier.triggered) ||
+      (result.scenarioModifier?.kind === 'performances' && result.scenarioModifier.completed) ||
+      (result.scenarioModifier?.kind === 'goddess-fragments' && result.scenarioModifier.burst)
+    ) modifierTriggers += 1
     totalApplied += Object.values(result.preview.appliedGains).reduce((sum, gain) => sum + (gain ?? 0), 0)
     uma = result.uma
+    if (scenarioCase === 'tier6-expedition' && uma.scenarioModifier?.kind === 'expedition' && uma.scenarioModifier.stamps === 5) {
+      const category = expeditionAptitudeOptions(uma.aptitudes)[0] ?? null
+      const completion = completeExpedition({ state: uma.scenarioModifier, aptitudes: uma.aptitudes, category })
+      uma = { ...uma, aptitudes: completion.aptitudes, scenarioModifier: completion.state }
+      modifierTriggers += 1
+    }
     cards = result.cards.map((card, index) => ({ save: card.card, template: templates[index]! }))
     turns += 1
   }
@@ -234,8 +259,12 @@ for (const shape of ['stat', 'friend', 'group'] as const) {
     console.log(`${label.padEnd(14)} ${String(result.turns).padStart(10)}  ${result.averageGain.toFixed(1).padStart(16)}  ${String(result.statGain).padStart(9)}  ${`${result.learnedHints}/${result.availableHints}`.padStart(23)}  ${(result.raceBonus * 100).toFixed(1).padStart(9)}%`)
   }
 }
-console.log('scenario case       TL10 turns  avg applied gain  stat gain  bursts/items used')
-for (const scenarioCase of ['tier2-baseline', 'tier2-organic', 'tier2-forced', 'tier3-baseline', 'tier3-climax'] as const) {
+console.log('scenario case       TL10 turns  avg applied gain  stat gain    modifier events')
+for (const scenarioCase of [
+  'tier2-baseline', 'tier2-organic', 'tier2-forced', 'tier3-baseline', 'tier3-climax',
+  'tier4-baseline', 'tier4-organic', 'tier4-forced', 'tier5-baseline', 'tier5-fragments',
+  'tier6-baseline', 'tier6-expedition',
+] as const) {
   const result = runScenarioTraining(scenarioCase)
   console.log(`${scenarioCase.padEnd(19)} ${String(result.reachedTl10 ? result.turns : '>25').padStart(10)}  ${result.averageGain.toFixed(1).padStart(16)}  ${String(result.statGain).padStart(9)}  ${String(result.modifierTriggers).padStart(17)}`)
 }

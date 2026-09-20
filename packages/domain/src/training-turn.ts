@@ -309,6 +309,7 @@ export function previewTrainingFacilities(
         rawGains: trainingRawGains(facility, template.growthRates, effects),
         presentCardCount: present.length,
         useClimaxItem,
+        facility,
       })
       const rawGains = roundTrainingGains(modifier.rawGains)
       const appliedGains: Partial<Record<GainKey, number>> = {}
@@ -445,6 +446,7 @@ export function resolveTrainingTurn(input: {
         rawGains: {},
         presentCardCount: preview.presentCardIds.length,
         useClimaxItem,
+        facility,
       }).nextState,
     },
     cards: cardResults,
