@@ -74,7 +74,7 @@ describe('support deck validation', () => {
       templates,
     })
     expect(invalid.issues.map((issue) => issue.code)).toEqual([
-      'too-many', 'duplicate-character', 'later-era', 'unsupported-type', 'not-owned', 'missing-content',
+      'too-many', 'duplicate-character', 'later-era', 'not-owned', 'missing-content',
     ])
 
     const mismatched = validateSupportDeck({
@@ -88,8 +88,9 @@ describe('support deck validation', () => {
 
   it('uses the same validation and generated projection for equipped gameplay cards', () => {
     const first = card('first', { raceBonus: 3 })
-    const second = card('second', { type: 'power', raceBonus: 5 })
-    const equipped = [first, second].map((template) => ({
+    const second = card('second', { type: 'friend', raceBonus: 5 })
+    const third = card('third', { type: 'group', raceBonus: 4 })
+    const equipped = [first, second, third].map((template) => ({
       template,
       save: { ...createCardSave(template), limitBreak: 1 as const },
     }))

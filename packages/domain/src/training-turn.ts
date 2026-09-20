@@ -1,11 +1,15 @@
 // Deterministic saved-Uma Training turns (docs/design/training.md).
 
 import {
+  BROAD_CARD_STAT_DIVISOR,
+  CARD_EFFECT_BASE,
   CARD_EFFECTS,
   CARD_TRAINING_EXP,
   cardExpToNext,
   cardLevelCap,
   deckSlotCount,
+  isBroadSupportCard,
+  projectCardEffects,
   projectedCardEffectValue,
 } from './cards'
 import type { CardSave, UmaSave } from './save'
@@ -102,9 +106,6 @@ const hasExactKeys = (value: Record<string, unknown>, keys: readonly string[]): 
 const isFiniteNonNegative = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0
 
-const isStatCard = (template: SupportCardTemplate): template is SupportCardTemplate & { type: StatKey } =>
-  STATS.includes(template.type as StatKey)
-
 /** Validate every private-content field consumed by the T004 Training runtime. */
 export function assertTrainingContent(
   umas: readonly UmaTemplate[],
@@ -151,21 +152,22 @@ export function assertTrainingContent(
 }
 
 export function trainingCardEffects(card: TrainingCardInput): TrainingCardEffects {
-  if (!isStatCard(card.template)) throw new Error(`Card ${card.template.id} cannot be used in MVP Training`)
   const state = { limitBreak: card.save.limitBreak, level: card.save.level }
   const effect = (key: (typeof CARD_EFFECTS)[number]) => projectedCardEffectValue(key, card.template, state)
-  const specialtyAddition = effect('specialtyPriority')
+  const broad = isBroadSupportCard(card.template)
+  const statBonus = effect('statBonus')
+  const flatBonus: Partial<Record<GainKey, number>> = broad
+    ? Object.fromEntries(STATS.map((stat) => [stat, statBonus / BROAD_CARD_STAT_DIVISOR]))
+    : { [card.template.type]: statBonus }
+  flatBonus.sp = effect('skillPointBonus')
   return {
     present: {
       type: card.template.type,
       trainingBonus: effect('trainingBonus'),
       friendshipBonus: effect('friendshipBonus'),
-      flatBonus: {
-        [card.template.type]: effect('statBonus'),
-        sp: effect('skillPointBonus'),
-      },
+      flatBonus,
     },
-    specialtyChance: Math.min(1, BASE_SPECIALTY_CHANCE + specialtyAddition / 100),
+    specialtyChance: broad ? 0 : Math.min(1, BASE_SPECIALTY_CHANCE + effect('specialtyPriority') / 100),
     hintFrequency: effect('hintFrequency'),
   }
 }
@@ -183,25 +185,40 @@ export function autoTrainingDeck(
   const typeOrder = [...STATS].sort(
     (left, right) => uma.growthRates[right] - uma.growthRates[left] || STATS.indexOf(left) - STATS.indexOf(right),
   )
+  const eligible = owned.filter((card) =>
+    card.save.templateId === card.template.id && card.template.era <= tier,
+  )
+  const typeRank = (card: TrainingCardInput): number => {
+    const statRank = STATS.indexOf(card.template.type as StatKey)
+    return statRank >= 0 ? statRank : card.template.type === 'friend' ? STATS.length : STATS.length + 1
+  }
+  const strength = (card: TrainingCardInput): number => projectCardEffects(card.template, card.save)
+    .reduce((total, row) => total + row.value / CARD_EFFECT_BASE[row.effect], 0)
+  const compare = (left: TrainingCardInput, right: TrainingCardInput): number =>
+    strength(right) - strength(left) ||
+    new Set(right.template.hintSkillIds).size - new Set(left.template.hintSkillIds).size ||
+    typeRank(left) - typeRank(right) ||
+    left.template.id.localeCompare(right.template.id)
   const byType = new Map<StatKey, TrainingCardInput[]>(
     STATS.map((type) => [
       type,
-      owned
-        .filter((card) => card.save.templateId === card.template.id && card.template.type === type && card.template.era <= tier)
-        .sort((left, right) => left.template.id.localeCompare(right.template.id)),
+      eligible.filter((card) => card.template.type === type).sort(compare),
     ]),
   )
   const selected: string[] = []
   const characters = new Set<string>()
-  const maxRound = Math.max(0, ...[...byType.values()].map((cards) => cards.length))
-  for (let round = 0; round < maxRound && selected.length < deckSlotCount(tier); round += 1) {
-    for (const type of typeOrder) {
-      const card = byType.get(type)?.[round]
-      if (!card || characters.has(card.template.charaId)) continue
-      selected.push(card.template.id)
-      characters.add(card.template.charaId)
-      if (selected.length === deckSlotCount(tier)) break
-    }
+  const select = (card: TrainingCardInput | undefined): void => {
+    if (!card || selected.includes(card.template.id) || characters.has(card.template.charaId)) return
+    selected.push(card.template.id)
+    characters.add(card.template.charaId)
+  }
+  for (const type of typeOrder) {
+    select(byType.get(type)?.find((card) => !characters.has(card.template.charaId)))
+    if (selected.length === deckSlotCount(tier)) return selected
+  }
+  for (const card of [...eligible].sort(compare)) {
+    select(card)
+    if (selected.length === deckSlotCount(tier)) break
   }
   return selected
 }
@@ -240,6 +257,9 @@ export function dealTrainingCards(cards: readonly TrainingCardInput[], seed: num
   return {
     seed,
     placements: cards.map((card) => {
+      if (isBroadSupportCard(card.template)) {
+        return { cardId: card.template.id, placement: STATS[Math.floor(rng.next() * STATS.length)]! }
+      }
       const effects = trainingCardEffects(card)
       if (rng.next() < effects.specialtyChance) return { cardId: card.template.id, placement: card.template.type as Facility }
       if (rng.next() >= RANDOM_FACILITY_CHANCE) return { cardId: card.template.id, placement: 'out' }

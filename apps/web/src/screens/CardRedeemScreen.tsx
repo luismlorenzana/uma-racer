@@ -67,7 +67,7 @@ export function CardRedeemScreen() {
       <Panel className="bg-gradient-to-br from-violet-50 to-white">
         <Link to="/cards" className="inline-flex min-h-11 items-center text-sm font-extrabold text-violet-700">← Card album</Link>
         <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-extrabold tracking-wide text-violet-700 uppercase">Card Select</p><h1 className="text-2xl font-extrabold">Choose one SSR</h1></div><p className="text-right text-sm font-extrabold">{selection.couponBalance} coupon{selection.couponBalance === 1 ? '' : 's'}<br />{selection.owned}/{selection.total} owned</p></div>
-        <p className="mt-2 text-sm font-bold text-ink-soft">Any unowned card is eligible. Future-era cards remain locked for equipping, and Friend/Group gameplay stays unavailable.</p>
+        <p className="mt-2 text-sm font-bold text-ink-soft">Any unowned card is eligible. Future-era cards remain locked for equipping until an Uma reaches that tier.</p>
         {!persistent && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-extrabold">Memory only — acquisition will not survive reload or sync.</p>}
         {persistent && sync.status === 'offline' && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-extrabold">Offline — acquisition commits locally and will sync when the connection returns.</p>}
         {persistent && (sync.status === 'pending' || sync.status === 'syncing') && <p className="mt-2 rounded-xl bg-sky-50 p-2 text-xs font-extrabold text-sky-deep">Local changes are saved · cloud sync {sync.status === 'syncing' ? 'in progress' : 'pending'}.</p>}

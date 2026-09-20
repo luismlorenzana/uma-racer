@@ -84,8 +84,9 @@ Badges” link. An empty showcase links to pin mode and never auto-pins an award
 
 - Six ordered rows show unlocked and future locked slots. Selected cards show private atlas art, type, era, level/LB, and
   ≥44 pt move/remove controls.
-- Owned candidates have type and era filters. Later-scenario, duplicate-character, Friend/Group, selected, and missing
-  references remain visible with a specific disabled reason rather than silently disappearing.
+- Owned candidates have type and era filters. Later-scenario, duplicate-character, selected, and missing references remain
+  visible with a specific disabled reason rather than silently disappearing. Friend and Group are ordinary selectable
+  types and explain their broad/no-specialty behavior in card detail.
 - Auto fill changes only the draft. Save revalidates current ownership/content and commits atomically; back/cancel writes
   nothing. The summary exposes generated effects, unique hint count, and Race Bonus before the player saves.
 
@@ -203,12 +204,12 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 - **Limit break animation**: the card lifts, glows, the LB pip ignites, and effect numbers tick up.
 - **Card Select Coupon** redemption: a selection grid, then a **flip reveal** with a shine sweep.
 
-The implemented album also exposes owned/maxed completion, type and ownership filters, explicit Friend/Group unavailability,
-missing-content preservation, and the one-time max-card Coupon state. Limit-break errors remain in the detail sheet so the
-player can retry without losing context.
+The implemented album also exposes owned/maxed completion, type and ownership filters, Friend/Group broad and inactive
+effect explanations, missing-content preservation, and the one-time max-card Coupon state. Limit-break errors remain in
+the detail sheet so the player can retry without losing context.
 
-The implemented Select grid reuses deterministic private-catalog ordering, adds era/type filters, and keeps future-era and
-Friend/Group ownership distinct from equip eligibility. Card and Uma review sheets show the exact one-coupon cost before
+The implemented Select grid reuses deterministic private-catalog ordering, adds era/type filters, and keeps future-era
+ownership distinct from current-tier equip eligibility. Card and Uma review sheets show the exact one-coupon cost before
 the local commit. The full-screen reveal carries only kind/id, reconstructs art and identity from committed save/content,
 and is read-only on refresh or direct navigation.
 

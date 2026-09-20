@@ -32,3 +32,26 @@ manual deck building and a mature supported skill loadout alone do not close the
 monotonic. Recommendation: keep the pinned Form and race constants, then revisit the target after scenario promotion,
 inheritance, player skill refresh/cost selection, and representative stat allocation exist. No hidden player modifier was
 added.
+
+## T024 Friend/Group regression — 2026-09-20
+
+T024 fixed the stale harness fixture so the synthetic Uma explicitly starts her scenario, then added two wildcard shapes:
+the sixth stat card is replaced by an otherwise identical Friend or Group card. Both broad types use the same generated
+profile here, so identical rows are expected. The ordinary stat rows remain the T010 baseline exactly.
+
+| Deck / build | Turns to TL10 | Average applied gain | Total stat gain | Hints learned/available | Race Bonus |
+|---|---:|---:|---:|---:|---:|
+| Stat / weak | 17 | 135.5 | 2,122 | 4 / 6 | 0.0% |
+| Stat / mid | 17 | 164.6 | 2,529 | 3 / 6 | 20.6% |
+| Stat / mature | 17 | 212.3 | 3,162 | 5 / 6 | 33.8% |
+| Friend / weak | 19 | 129.1 | 2,247 | 5 / 6 | 0.0% |
+| Friend / mid | 17 | 161.9 | 2,503 | 4 / 6 | 20.6% |
+| Friend / mature | 17 | 210.0 | 3,137 | 6 / 6 | 33.8% |
+| Group / weak | 19 | 129.1 | 2,247 | 5 / 6 | 0.0% |
+| Group / mid | 17 | 161.9 | 2,503 | 4 / 6 | 20.6% |
+| Group / mature | 17 | 210.0 | 3,137 | 6 / 6 | 33.8% |
+
+All nine decks reach TL10 within the documented 25 ordinary turns. Reliable attendance plus a five-way stat split gives
+the weak broad deck more total stat coverage but no friendship Training EXP, so it takes two more turns; mid and mature
+decks still finish in 17. The unchanged G1 control again measured **30.3% at k=0 and 27.7% at k=9** across 300 seeds, as
+expected because T024 changes neither race inputs nor the existing stat-deck projection.

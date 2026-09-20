@@ -60,7 +60,7 @@ export function CardPickerSheet({
   const rows = useMemo(() => album.rows.filter((row) => {
     const entry = album.entries.get(row.id)
     if (!entry || !entry.owned || excludeIds.includes(row.id)) return false
-    return entry.template.era <= tier && entry.template.type !== 'friend' && entry.template.type !== 'group'
+    return entry.template.era <= tier
   }), [album, excludeIds, tier])
 
   const effectiveQuery = query.sort === 'effect' && parameter ? { ...query, sort: parameter } : query

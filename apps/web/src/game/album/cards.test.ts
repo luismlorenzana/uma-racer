@@ -119,6 +119,16 @@ describe('card album projection', () => {
     expect(cardSortValueLabel(entry, 'name', null)).toBeNull()
   })
 
+  it('keeps broad effects active while excluding inactive Friend specialty/friendship values', () => {
+    const entry = album(['c3']).entries.get('c3')!
+    const row = album(['c3']).rows.find((candidate) => candidate.id === 'c3')!
+    expect(row.facets.effectKind).toContain('statBonus')
+    expect(row.facets.effectKind).not.toContain('friendshipBonus')
+    expect(row.facets.effectKind).not.toContain('specialtyPriority')
+    expect(cardSortValueLabel(entry, 'effect', 'effect:statBonus')).toBe('Stat Bonus 1.3 each')
+    expect(cardSortValueLabel(entry, 'effect', 'effect:specialtyPriority')).toBeNull()
+  })
+
   it('builds an equippable-now preset around the roster tier', () => {
     const [equippable] = buildCardPresets(2)
     expect(equippable?.apply(CARD_DEFAULT_QUERY).filters).toEqual({ ownership: ['owned'], equippableAt: ['2'] })

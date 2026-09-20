@@ -109,7 +109,6 @@ describe('manual support deck persistence', () => {
       [['speed', 'speed'], /selected twice/],
       [['speed', 'same-character'], /Another card/],
       [['future'], /tier 2/],
-      [['friend'], /Friend\/Group/],
       [['missing'], /not owned/],
       [['speed', 'power', 'stamina', 'guts', 'wit'], /only 4/],
     ] as const) {
@@ -125,7 +124,10 @@ describe('manual support deck persistence', () => {
     const cards = Object.fromEntries(loaded.cards.items.map((item) => [item.id, createCardSave(item)]))
     const mutation = setMemoryUmaDeck(loaded, createUmaSave(template), cards, ['power', 'speed'])
     expect(mutation).toMatchObject({ changed: true, uma: { deckCardIds: ['power', 'speed'] } })
-    expect(() => setMemoryUmaDeck(loaded, mutation.uma, cards, ['friend'])).toThrow(/Friend\/Group/)
+    expect(setMemoryUmaDeck(loaded, mutation.uma, cards, ['friend'])).toMatchObject({
+      changed: true,
+      uma: { deckCardIds: ['friend'] },
+    })
   })
 })
 

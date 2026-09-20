@@ -20,6 +20,9 @@ The objective import keeps only ordered, distinct race-family references for cha
 prints aggregate coverage/unresolved counts and does not copy objective text, conditions, turns, fans, or nested source rows.
 The scenario dataset is never packed: the importer reads only its JP start timestamps and warns with aggregate counts and
 dates when released source scenarios outnumber the modeled ladder.
+Support-card effect identity mapping is shared with the domain projection. Friend/Group stat and initial-stat identities
+become generated broad profiles; unmapped source effect rows are reported only as aggregate inactive counts and are never
+approximated or copied into checked-in fixtures.
 
 The optional, Claude-maintained private input `content/overrides/flair.json` supplies semantic race-series legs and the
 main-venue set used by titles/Grand Tour. Version 2 contains `series` rows shaped as

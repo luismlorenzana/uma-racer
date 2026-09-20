@@ -1,6 +1,6 @@
 // Scenario completion, parent snapshots, and promotion (docs/design/scenarios.md#scenario-completion).
 
-import { projectedCardEffectValue } from './cards'
+import { BROAD_CARD_STAT_DIVISOR, isBroadSupportCard, projectedCardEffectValue } from './cards'
 import type { RaceTemplate, SkillTemplate, UmaTemplate } from './content'
 import { umaPromotionCost } from './economy'
 import { expToNextUmaLevel, PROMOTION_BONUS_PER_STAT, UMA_LEVEL_TICKET_REWARD } from './progression'
@@ -287,11 +287,18 @@ export function promoteScenario(input: ScenarioPromotionInput): ScenarioPromotio
   const snapshot = parsedUma.parentSnapshot?.completedTier === readiness.fromTier
     ? parsedUma.parentSnapshot
     : buildParentSnapshot({ uma: parsedUma, umaTemplate: input.umaTemplate, skills: input.skills, now: input.now })
-  const cardBonuses: PromotionCardBonus[] = deck.cards.map(({ save, template }) => {
-    if (!STATS.includes(template.type as StatKey)) throw new Error(`Card ${template.id} has an unsupported Initial Stats type`)
+  const cardBonuses: PromotionCardBonus[] = deck.cards.flatMap(({ save, template }) => {
     const projected = projectedCardEffectValue('initialStats', template, save)
     if (!Number.isFinite(projected) || projected < 0) throw new Error(`Card ${template.id} has invalid Initial Stats content`)
-    return { cardId: template.id, stat: template.type as StatKey, amount: Math.round(projected) }
+    if (isBroadSupportCard(template)) {
+      return STATS.map((stat) => ({
+        cardId: template.id,
+        stat,
+        amount: Math.round(projected / BROAD_CARD_STAT_DIVISOR),
+      }))
+    }
+    if (!STATS.includes(template.type as StatKey)) throw new Error(`Card ${template.id} has an unsupported Initial Stats type`)
+    return [{ cardId: template.id, stat: template.type as StatKey, amount: Math.round(projected) }]
   })
   const baseStatBonus = Object.fromEntries(STATS.map((stat) => [stat, PROMOTION_BONUS_PER_STAT])) as Stats
   const stats = { ...parsedUma.stats }

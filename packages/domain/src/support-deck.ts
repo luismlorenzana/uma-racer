@@ -4,7 +4,6 @@ import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue, type CardEffect 
 import type { SupportCardTemplate } from './content'
 import type { CardSave } from './save'
 import { SAVE_ID_PATTERN } from './save'
-import { STATS } from './types'
 
 export interface SupportDeckCard {
   save: CardSave
@@ -22,7 +21,6 @@ export type SupportDeckIssueCode =
   | 'save-content-mismatch'
   | 'duplicate-character'
   | 'later-era'
-  | 'unsupported-type'
 
 export interface SupportDeckIssue {
   code: SupportDeckIssueCode
@@ -52,7 +50,6 @@ export function supportDeckIssueMessage(issue: SupportDeckIssue): string {
     case 'save-content-mismatch': return `Support card ${issue.displayId} has mismatched save data`
     case 'duplicate-character': return `Another card already represents character ${issue.characterId ?? issue.displayId}`
     case 'later-era': return `Support card ${issue.displayId} is Era locked until tier ${issue.requiredTier ?? '?'}`
-    case 'unsupported-type': return `Support card ${issue.displayId} cannot be used in MVP: Friend/Group is not yet equipable`
   }
 }
 
@@ -112,9 +109,6 @@ export function validateSupportDeck(input: {
     if (save.templateId !== template.id) {
       issues.push({ code: 'save-content-mismatch', displayId: safeDisplayId(id) })
       continue
-    }
-    if (!STATS.includes(template.type as (typeof STATS)[number])) {
-      issues.push({ code: 'unsupported-type', displayId: safeDisplayId(id) })
     }
     if (template.era > input.tier) {
       issues.push({ code: 'later-era', displayId: safeDisplayId(id), requiredTier: template.era })

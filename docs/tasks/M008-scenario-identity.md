@@ -45,12 +45,12 @@ shape, and UI in its own task, and each must fit the invariants above.
 
 ## Friend and Group cards
 
-11 Friend and 5 Group SSRs exist in the content packs, 2 of them are starters, and all 16 are currently ownable,
-collectible, and unequippable. Milestone 8 turns them on:
+11 Friend and 5 Group SSRs exist in the content packs, 2 of them are starters. T024 made all 16 equippable and active:
 
 - They occupy an ordinary deck slot and follow the same era gating, levels, and limit breaks as stat cards.
 - They have **no specialty facility**, so they never trigger friendship training the way a matching stat card does.
-  Their value is breadth: bonuses that apply wherever they land, extra hints, or gains spread across stats.
+  They reliably attend one uniformly selected facility; their generated stat and initial-stat budgets split across all five
+  stats, trading specialization for breadth.
 - Values stay **generated from the source effect profile**, never copied (D54). Effect ids that the engine does not
   support stay explicitly inactive rather than silently approximated.
 - Deck validation, Auto fill, the album, Trainer achievements, and the "[Type] Complete" badges must all account for the
@@ -62,14 +62,14 @@ Numbers are provisional; each task gets a full spec when it becomes next.
 
 | Task | Scope |
 |---|---|
-| T024 | Friend and Group cards: effects, deck rules, album/badge follow-through ([specified](T024-friend-and-group-cards.md)) |
+| T024 | Friend and Group cards: effects, deck rules, album/badge follow-through (complete) |
 | T025 | Modifier framework (save shape, Scenario Start/promotion lifecycle, Training UI surface) + Unity Cup + Trackblazer |
 | T026 | Grand Concert · Grand Masters · Project L'Arc |
 | T027 | U.A.F. · Great Food Festival · Mecha Umamusume |
 | T028 | Twinkle Legends · Design Your Island · Yukoma Hot Springs |
 | T029 | Beyond Dreams · Tracen Diner |
 
-T024 is independent and may land first or in parallel. T025 must land before any other modifier task, and each modifier
+T024 landed independently. T025 must land before any other modifier task, and each modifier
 task re-runs `pnpm sim:balance` plus the deck/training harness so a tier's twist does not quietly break the pacing target
 of about 25 trainings to TL10.
 

@@ -70,7 +70,7 @@ describe('deck view model', () => {
     expect(model.hintSkillCount).toBe(2)
     expect(Object.fromEntries(model.candidates.map((item) => [item.id, item.disabledReason]))).toMatchObject({
       speed: 'Already selected', power: 'Already selected', duplicate: 'Duplicate character',
-      future: 'Era locked · Tier 2', friend: 'Friend/Group unavailable',
+      future: 'Era locked · Tier 2', friend: null,
     })
   })
 

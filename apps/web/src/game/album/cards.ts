@@ -2,9 +2,11 @@
 // (docs/design/collection.md#card-album).
 
 import {
+  BROAD_CARD_STAT_DIVISOR,
   CARD_EFFECTS,
   MAX_LIMIT_BREAK,
   SCENARIOS,
+  isBroadSupportCard,
   type CardEffect,
   type CardSave,
   type SupportCardTemplate,
@@ -218,7 +220,12 @@ export function cardSortValueLabel(entry: CardEntry, sort: string, parameter: st
   if (sort === 'effect' && parameter) {
     const effect = parameter.replace('effect:', '') as CardEffect
     const projection = entry.currentEffects.find((entryProjection) => entryProjection.effect === effect)
-    return projection && projection.value > 0 ? `${EFFECT_LABELS[effect]} ${projection.value}` : null
+    if (!projection || projection.value <= 0) return null
+    if (isBroadSupportCard(entry.template) && (effect === 'statBonus' || effect === 'initialStats')) {
+      const spread = Math.round((projection.value / BROAD_CARD_STAT_DIVISOR) * 10) / 10
+      return `${EFFECT_LABELS[effect]} ${spread} each`
+    }
+    return `${EFFECT_LABELS[effect]} ${projection.value}`
   }
   return null
 }

@@ -19,6 +19,7 @@ export const levelWithinLimitBreakMult = (level: number): number => 1 + 0.02 * (
 
 export const CARD_TRAINING_EXP = { equipped: 5, present: 15, friendship: 25 } as const
 export const CARD_UNIQUE_BONUS_MULTIPLIER = 0.25
+export const BROAD_CARD_STAT_DIVISOR = 5
 
 export const CARD_EFFECTS = [
   'trainingBonus',
@@ -57,8 +58,11 @@ export function cardEffectValue(
   )
 }
 
-const STAT_BONUS_IDS = { speed: 3, stamina: 4, power: 5, guts: 6, wit: 7 } as const
-const INITIAL_STAT_IDS = { speed: 9, stamina: 10, power: 11, guts: 12, wit: 13 } as const
+export const STAT_BONUS_SOURCE_IDS = { speed: 3, stamina: 4, power: 5, guts: 6, wit: 7 } as const
+export const INITIAL_STAT_SOURCE_IDS = { speed: 9, stamina: 10, power: 11, guts: 12, wit: 13 } as const
+
+export const isBroadSupportCard = (template: Pick<SupportCardTemplate, 'type'>): boolean =>
+  template.type === 'friend' || template.type === 'group'
 
 /** Map only source effect identity; original values and conditions never enter the generated rules. */
 export function sourceCardEffect(effectType: number, cardType: SupportCardTemplate['type']): CardEffect | null {
@@ -68,9 +72,13 @@ export function sourceCardEffect(effectType: number, cardType: SupportCardTempla
   if (effectType === 18) return 'hintFrequency'
   if (effectType === 19) return 'specialtyPriority'
   if (effectType === 30) return 'skillPointBonus'
-  if (cardType === 'friend' || cardType === 'group') return null
-  if (effectType === STAT_BONUS_IDS[cardType]) return 'statBonus'
-  if (effectType === INITIAL_STAT_IDS[cardType]) return 'initialStats'
+  if (cardType === 'friend' || cardType === 'group') {
+    if (Object.values(STAT_BONUS_SOURCE_IDS).some((sourceId) => sourceId === effectType)) return 'statBonus'
+    if (Object.values(INITIAL_STAT_SOURCE_IDS).some((sourceId) => sourceId === effectType)) return 'initialStats'
+    return null
+  }
+  if (effectType === STAT_BONUS_SOURCE_IDS[cardType]) return 'statBonus'
+  if (effectType === INITIAL_STAT_SOURCE_IDS[cardType]) return 'initialStats'
   return null
 }
 
@@ -88,6 +96,7 @@ export interface CardEffectProjection {
   signatureBonus: number
   unlockLimitBreak: number
   improvementLimitBreak: number | null
+  inactiveReason: string | null
 }
 
 const EFFECT_UNLOCK_LB: Record<CardEffect, number> = {
@@ -114,6 +123,13 @@ export function projectCardEffects(
   const uniqueKinds = state.limitBreak >= MAX_LIMIT_BREAK ? cardUniqueEffectKinds(template) : new Set<CardEffect>()
   return CARD_EFFECTS.map((effect) => {
     const unlockLimitBreak = EFFECT_UNLOCK_LB[effect]
+    const inactiveReason = isBroadSupportCard(template)
+      ? effect === 'specialtyPriority'
+        ? 'No specialty facility'
+        : effect === 'friendshipBonus'
+          ? 'Cannot match a facility'
+          : null
+      : null
     let value = state.limitBreak < unlockLimitBreak
       ? 0
       : cardEffectValue(effect, {
@@ -124,15 +140,30 @@ export function projectCardEffects(
       })
     if (effect === 'specialtyPriority' && state.limitBreak >= 2) value *= 1.5
     if (effect === 'initialStats' && state.limitBreak >= 3) value *= 2
-    const signatureBonus = uniqueKinds.has(effect) ? value * CARD_UNIQUE_BONUS_MULTIPLIER : 0
+    if (inactiveReason) value = 0
+    const signatureBonus = inactiveReason === null && uniqueKinds.has(effect) ? value * CARD_UNIQUE_BONUS_MULTIPLIER : 0
     return {
       effect,
       value: value + signatureBonus,
       signatureBonus,
       unlockLimitBreak,
       improvementLimitBreak: EFFECT_IMPROVEMENT_LB[effect] ?? null,
+      inactiveReason,
     }
   })
+}
+
+/** Count distinct preserved LB4 source identities that Uma Racer intentionally does not approximate. */
+export function inactiveCardUniqueEffectCount(template: SupportCardTemplate): number {
+  return new Set(
+    (template.uniqueEffect?.effects ?? [])
+      .map((effect) => effect.type)
+      .filter((effectType) => {
+        const effect = sourceCardEffect(effectType, template.type)
+        return effect === null || (isBroadSupportCard(template) &&
+          (effect === 'friendshipBonus' || effect === 'specialtyPriority'))
+      }),
+  ).size
 }
 
 export function projectedCardEffectValue(
