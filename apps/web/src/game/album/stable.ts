@@ -275,7 +275,7 @@ export const STABLE_DEFAULT_QUERY: AlbumQuery = {
   sort: 'release',
   direction: 'desc',
   group: null,
-  density: 'comfortable',
+  view: 'icons',
   mode: 'outfit',
 }
 

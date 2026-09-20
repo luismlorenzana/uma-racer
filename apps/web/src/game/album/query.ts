@@ -44,7 +44,13 @@ export interface SortDef {
 }
 
 export type SortDirection = 'asc' | 'desc'
-export type Density = 'comfortable' | 'compact'
+
+/**
+ * How the grid draws each entry. `icons` is the dense, image-only default the real game uses for
+ * hundreds of entries (docs/design/collection.md#view-modes).
+ */
+export const ALBUM_VIEWS = ['icons', 'cards', 'list'] as const
+export type AlbumView = (typeof ALBUM_VIEWS)[number]
 
 export interface AlbumQuery {
   search: string
@@ -53,7 +59,7 @@ export interface AlbumQuery {
   direction: SortDirection
   /** Facet key to group by, or null for a flat grid. */
   group: string | null
-  density: Density
+  view: AlbumView
   /** Album-specific view mode, e.g. the Stable's outfit/character split. */
   mode: string | null
 }

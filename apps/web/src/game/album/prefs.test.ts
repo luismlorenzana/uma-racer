@@ -22,19 +22,19 @@ const sorts: SortDef[] = [
 ]
 const fallback: AlbumQuery = {
   search: '', filters: { surface: ['turf'] }, sort: 'release', direction: 'desc',
-  group: null, density: 'comfortable', mode: 'outfit',
+  group: null, view: 'icons', mode: 'outfit',
 }
 
 describe('album preferences', () => {
   it('keeps a valid stored query', () => {
-    const stored = { search: 'gold', filters: { level: { min: 5, max: 20 }, starter: true }, sort: 'name', direction: 'asc', group: 'surface', density: 'compact', mode: 'character' }
+    const stored = { search: 'gold', filters: { level: { min: 5, max: 20 }, starter: true }, sort: 'name', direction: 'asc', group: 'surface', view: 'list', mode: 'character' }
     expect(sanitizeQuery(stored, fallback, facets, sorts, ['outfit', 'character'])).toEqual({
       search: 'gold',
       filters: { level: { min: 5, max: 20 }, starter: true },
       sort: 'name',
       direction: 'asc',
       group: 'surface',
-      density: 'compact',
+      view: 'list',
       mode: 'character',
     })
   })
@@ -43,11 +43,11 @@ describe('album preferences', () => {
     expect(sanitizeQuery(null, fallback, facets, sorts)).toBe(fallback)
     expect(sanitizeQuery('nonsense', fallback, facets, sorts)).toBe(fallback)
     const weird = sanitizeQuery(
-      { search: 42, filters: { ghost: ['x'], surface: ['dirt'], level: 'wide' }, sort: 'ghost', direction: 'sideways', group: 'ghost', density: 'huge', mode: 'ghost' },
+      { search: 42, filters: { ghost: ['x'], surface: ['dirt'], level: 'wide' }, sort: 'ghost', direction: 'sideways', group: 'ghost', view: 'huge', mode: 'ghost' },
       fallback, facets, sorts, ['outfit'],
     )
     // Unknown facets, options, sorts, groups, densities and modes are dropped, not kept.
-    expect(weird).toEqual({ search: '', filters: {}, sort: 'release', direction: 'desc', group: null, density: 'comfortable', mode: 'outfit' })
+    expect(weird).toEqual({ search: '', filters: {}, sort: 'release', direction: 'desc', group: null, view: 'icons', mode: 'outfit' })
   })
 
   it('drops selections that cannot narrow anything', () => {

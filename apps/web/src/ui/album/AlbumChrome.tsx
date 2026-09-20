@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react'
 import {
+  ALBUM_VIEWS,
   isActiveSelection,
   type AlbumQuery,
   type EmptyStateHint,
@@ -88,14 +89,22 @@ export function AlbumChrome({
           <h1 className="font-display text-2xl font-bold tracking-tight">{title}</h1>
           <p className="text-[13px] text-ink-soft">{completion}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onQueryChange({ ...query, density: query.density === 'compact' ? 'comfortable' : 'compact' })}
-          aria-label={query.density === 'compact' ? 'Switch to comfortable density' : 'Switch to compact density'}
-          className="flex h-11 w-11 items-center justify-center rounded-sm border border-hairline bg-panel text-ink-soft"
-        >
-          <span aria-hidden>{query.density === 'compact' ? '▤' : '▦'}</span>
-        </button>
+        <div role="group" aria-label="View" className="flex gap-1 rounded-sm bg-sunken p-1">
+          {ALBUM_VIEWS.map((view) => (
+            <button
+              key={view}
+              type="button"
+              aria-pressed={query.view === view}
+              aria-label={`${view === 'icons' ? 'Icon' : view === 'cards' ? 'Card' : 'List'} view`}
+              onClick={() => onQueryChange({ ...query, view })}
+              className={`flex h-9 w-9 items-center justify-center rounded-xs text-[13px] ${
+                query.view === view ? 'bg-panel text-ink shadow-1' : 'text-ink-faint'
+              }`}
+            >
+              <span aria-hidden>{view === 'icons' ? '▦' : view === 'cards' ? '▢' : '▤'}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {segment}
