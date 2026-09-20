@@ -11,7 +11,7 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 | Field | Notes |
 |---|---|
 | `id`, `character`, `title` | Taken from the original game's data |
-| `type` | Speed, Stamina, Power, Guts, Wit. The 11 Friend and 5 Group SSRs are ownable now and become equippable in [Milestone 8](../tasks/M008-scenario-identity.md) |
+| `type` | Speed, Stamina, Power, Guts, Wit, Friend, or Group. All seven types are equippable |
 | `jpReleaseDate` | Decides the **era** (see [Scenarios](scenarios.md#era-windows)) |
 | `obtain` | `event` / `free` / `gacha` in the original game. `event` and `free` cards make up the **starter set** |
 | `effectProfile` | *Which* effects the card has and their relative weights. Values are generated (below) |
@@ -34,12 +34,15 @@ These are two separate rules:
 - A saved deck may use any nonzero number of its unlocked slots. Order is persisted and is the deterministic input order
   for Training deals.
 - No duplicate card, and no two cards of the same character, on one Uma.
-- The Uma Profile links to the deck editor. It shows owned candidates, later-era locks, Friend/Group unavailability, missing
+- The Uma Profile links to the deck editor. It shows owned candidates, later-era locks, missing
   content repair states, generated effects, hint count, and summed Race Bonus. Reorder/remove and all slot actions use
   44-point touch targets.
 - **Auto fill is explicit** and only changes the unsaved draft. It deterministically chooses a type-balanced set of owned,
-  era-eligible stat cards, prioritizing the Uma's growth rates and never duplicating a character. Opening Training with an
-  empty deck does not mutate the save; it links back to this editor. Friend/Group cards remain visible but inactive.
+  era-eligible cards, prioritizing one card for each stat in Uma-growth order before filling remaining slots with the
+  strongest remaining card. Friend/Group cards are valid wildcard candidates in that second pass and fill missing stat
+  coverage when the eligible collection is thin. Projection strength, hint count, type order, and stable card id are the
+  deterministic tie-breaks; character duplication is never allowed. Opening Training with an empty deck does not mutate
+  the save; it links back to this editor.
 
 ## Leveling and limit breaks
 
@@ -102,3 +105,23 @@ to one of the eight effects above. Each distinct supported identity adds **25% o
 value** for that effect. Original tuple values and conditions are never copied or evaluated; unsupported identities remain
 inactive and are labeled as such. Initial Stats is applied once at scenario promotion: project the equipped card at its
 current level/LB, round each card independently, and add it to that card type's stat without applying the TL1 cap.
+
+### Friend and Group projection
+
+Friend and Group cards use the same era, level, limit-break, Race Bonus, hint, and signature formulas as stat cards, but
+they have no specialty facility and can never trigger friendship training. Their generated values are interpreted as
+broad support:
+
+- Training Bonus, Skill Point Bonus, Hint Frequency, and Race Bonus apply normally wherever the card appears.
+- Friendship Bonus remains visible in the generated profile but is inactive because the card cannot match a facility.
+- Specialty Priority is explicitly shown as inactive and contributes zero; it never changes placement odds.
+- A generated Stat Bonus is split evenly across all five stats on a training where the card is present. Fractions stay in
+  the gain calculation until the ordinary per-stat rounding step.
+- Generated Initial Stats are split evenly across all five stats at promotion, then each stat is rounded independently.
+- Source identities for any one of the five stat bonuses feed the broad Stat Bonus profile; the five initial-stat
+  identities do the same for broad Initial Stats. Unmapped source and signature identities are never approximated. The
+  importer reports aggregate inactive counts, and card detail labels inactive signature identities without exposing source
+  values.
+
+This keeps a Friend/Group card's generated budget comparable to one targeted stat card while trading specialization and
+friendship multipliers for breadth and reliable attendance.
