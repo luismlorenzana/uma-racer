@@ -191,7 +191,7 @@ export const CARD_DEFAULT_QUERY: AlbumQuery = {
   sort: 'era',
   direction: 'desc',
   group: null,
-  density: 'comfortable',
+  view: 'icons',
   mode: null,
 }
 

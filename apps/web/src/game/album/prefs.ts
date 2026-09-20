@@ -3,9 +3,10 @@
 
 import { db } from '../db'
 import {
+  ALBUM_VIEWS,
   isActiveSelection,
   type AlbumQuery,
-  type Density,
+  type AlbumView,
   type FacetDef,
   type FacetSelection,
   type SortDef,
@@ -73,7 +74,7 @@ export function sanitizeQuery(
   // A stored sort without a usable direction takes that sort's own default, not the fallback sort's.
   const storedDirection: SortDirection | null = raw.direction === 'asc' || raw.direction === 'desc' ? raw.direction : null
   const direction: SortDirection = storedDirection ?? sort?.defaultDirection ?? fallback.direction
-  const density: Density = raw.density === 'compact' || raw.density === 'comfortable' ? raw.density : fallback.density
+  const view: AlbumView = ALBUM_VIEWS.includes(raw.view as AlbumView) ? raw.view as AlbumView : fallback.view
   const group = typeof raw.group === 'string' && facets.some((facet) => facet.key === raw.group) ? raw.group : null
   const mode = typeof raw.mode === 'string' && modes.includes(raw.mode) ? raw.mode : fallback.mode
   return {
@@ -82,7 +83,7 @@ export function sanitizeQuery(
     sort: sort ? sort.key : fallback.sort,
     direction: sort ? direction : fallback.direction,
     group,
-    density,
+    view,
     mode,
   }
 }

@@ -15,7 +15,7 @@ import { Link, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { promoteSupportCard } from '../game/actions'
 import { addSavedView, loadAlbumPrefs, markSeen, removeSavedView, saveAlbumPrefs, type AlbumPrefs } from '../game/album/prefs'
-import { emptyStateHint, runAlbumQuery, type AlbumQuery } from '../game/album/query'
+import { emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumView } from '../game/album/query'
 import {
   CARDS_ALBUM_ID,
   CARD_DEFAULT_QUERY,
@@ -30,6 +30,7 @@ import {
 } from '../game/album/cards'
 import { useGame } from '../game/store'
 import { AlbumChrome } from '../ui/album/AlbumChrome'
+import { AlbumDetail } from '../ui/album/AlbumDetail'
 import { CompareSheet } from '../ui/album/CompareSheet'
 import { VirtualGrid } from '../ui/album/VirtualGrid'
 import { ArtTile } from '../ui/ArtTile'
@@ -67,17 +68,23 @@ function LimitPips({ value }: { value: number }) {
 
 function CardTile({
   entry,
+  view,
   sortLabel,
-  selecting,
   selected,
+  selecting,
+  picked,
+  onSelect,
   onOpen,
   onToggleSelect,
   onActions,
 }: {
   entry: CardEntry
+  view: AlbumView
   sortLabel: string | null
-  selecting: boolean
   selected: boolean
+  selecting: boolean
+  picked: boolean
+  onSelect: () => void
   onOpen: () => void
   onToggleSelect: () => void
   onActions: () => void
@@ -85,46 +92,91 @@ function CardTile({
   const press = useRef<number | null>(null)
   const startPress = () => { press.current = window.setTimeout(() => { press.current = null; onActions() }, 450) }
   const endPress = () => { if (press.current !== null) window.clearTimeout(press.current); press.current = null }
+  const activate = selecting ? onToggleSelect : selected ? onOpen : onSelect
+  const ring = selected && !selecting ? 'outline outline-2 outline-accent outline-offset-1' : ''
   const headline = entry.headline
-    ? `${EFFECT_LABELS[entry.headline.effect]} ${cardEffectValue(entry.template, entry.headline.effect, entry.headline.value)}`
+    ? `${EFFECT_LABELS[entry.headline.effect]} ${effectValue(entry.headline.effect, entry.headline.value)}`
     : 'No generated effects'
 
+  if (view === 'list') {
+    return (
+      <button
+        type="button"
+        onClick={activate}
+        onPointerDown={startPress}
+        onPointerUp={endPress}
+        onPointerLeave={endPress}
+        className={`flex w-full items-center gap-3 rounded-sm border border-hairline bg-panel p-2 text-left ${ring}`}
+      >
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xs bg-sunken">
+          <AtlasSprite
+            asset={entry.asset}
+            alt=""
+            decorative
+            className={`h-full w-full ${entry.owned ? '' : 'opacity-45 saturate-50'}`}
+            fallback={<Placeholder label={entry.template.charName} />}
+          />
+        </div>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[14px] font-semibold">{entry.template.charName}</span>
+            {entry.isNew && <Crest tone="accent">NEW</Crest>}
+          </span>
+          <span className="block truncate text-[11px] text-ink-faint">{headline}</span>
+        </span>
+        <span className="shrink-0 text-right text-[12px] text-ink-soft">
+          {entry.save ? <>Lv <Numeral className="text-ink">{entry.save.level}</Numeral></> : 'Unowned'}
+          <span className="block text-[11px] text-ink-faint">{sortLabel ?? `LB${entry.save?.limitBreak ?? 0}`}</span>
+        </span>
+      </button>
+    )
+  }
+
+  const icons = view === 'icons'
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={selecting ? onToggleSelect : onOpen}
+        onClick={activate}
         onPointerDown={startPress}
         onPointerUp={endPress}
         onPointerLeave={endPress}
-        className="block w-full min-w-0 text-left"
+        className={`block w-full min-w-0 rounded-md text-left ${ring}`}
+        aria-label={`${entry.template.charName} support card${entry.owned ? '' : ', not owned'}`}
       >
         <ArtTile
           asset={entry.asset}
           alt={entry.owned ? `${entry.template.charName} support card` : `${entry.template.charName} support card, not owned`}
           dimmed={!entry.owned}
-          chamfer={entry.maxed}
+          chamfer={!icons && entry.maxed}
           overlay={
-            <>
-              <Crest tone={entry.maxed ? 'accent' : 'neutral'}>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>
-              {entry.isNew && <Crest tone="accent">NEW</Crest>}
-              {entry.equippedBy.length > 0 && <Crest>In deck</Crest>}
-            </>
+            icons ? (
+              <>
+                {entry.isNew && <span aria-hidden className="h-2 w-2 rounded-full bg-accent shadow-1" />}
+                {entry.equippedBy.length > 0 && <span aria-hidden className="h-2 w-2 rounded-full bg-info shadow-1" />}
+              </>
+            ) : (
+              <>
+                <Crest tone={entry.maxed ? 'accent' : 'neutral'}>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>
+                {entry.isNew && <Crest tone="accent">NEW</Crest>}
+                {entry.equippedBy.length > 0 && <Crest>In deck</Crest>}
+              </>
+            )
           }
-          corner={selecting ? <Crest tone={selected ? 'accent' : 'neutral'}>{selected ? '✓' : ''}</Crest> : null}
-          footer={
+          corner={selecting ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? '✓' : ''}</Crest> : null}
+          footer={icons ? undefined : (
             <>
               <p className="font-display truncate text-[14px] font-semibold">{entry.template.charName}</p>
               {entry.save
                 ? <div className="flex items-center justify-between gap-2"><span className="text-[11px] text-ink-on-dark-soft">Lv {entry.save.level}</span><LimitPips value={entry.save.limitBreak} /></div>
                 : <p className="truncate text-[11px] text-ink-on-dark-soft">Unowned</p>}
             </>
-          }
+          )}
           className={entry.maxed ? 'border-accent' : ''}
         />
-        <p className="truncate px-0.5 pt-1.5 pr-8 text-[11px] text-ink-faint">{sortLabel ?? headline}</p>
+        {!icons && <p className="truncate px-0.5 pt-1.5 pr-8 text-[11px] text-ink-faint">{sortLabel ?? headline}</p>}
       </button>
-      {!selecting && (
+      {!selecting && !icons && (
         <button
           type="button"
           aria-label={`Actions for ${entry.template.charName}`}
@@ -289,6 +341,7 @@ export function CardsScreen() {
   const [needsSeed, setNeedsSeed] = useState(false)
   const [parameter, setParameter] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [selecting, setSelecting] = useState(false)
   const [selection, setSelection] = useState<readonly string[]>([])
   const [compareOpen, setCompareOpen] = useState(false)
@@ -369,7 +422,10 @@ export function CardsScreen() {
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
   const selected = selectedId ? album.entries.get(selectedId) ?? null : null
   const compareEntries = selection.flatMap((id) => album.entries.get(id) ?? [])
-  const columns = prefs.query.density === 'compact' ? 3 : 2
+  const view = prefs.query.view
+  const columns = view === 'icons' ? 5 : view === 'cards' ? 2 : 1
+  const rowHeight = view === 'icons' ? 80 : view === 'cards' ? 215 : 64
+  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? entries[0] ?? null
 
   const openEntry = (entry: CardEntry) => {
     if (entry.isNew) updatePrefs({ ...prefs, seen: markSeen(prefs.seen, [entry.id]) })
@@ -415,6 +471,59 @@ export function CardsScreen() {
         {!persistent && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — progression works for this session but cannot persist or sync.</p>}
         {album.orphanedIds.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{album.orphanedIds.length} owned card reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
       </Panel>
+
+      {detail && (
+        <AlbumDetail
+          content={contentState.content}
+          kind="card"
+          id={detail.id}
+          icon={detail.asset}
+          alt={`${detail.template.charName} support card`}
+          frame="art"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-micro">{detail.template.type} · {scenarioForTier(detail.template.era)?.name ?? `Era ${detail.template.era}`}</p>
+              <p className="font-display truncate text-xl font-bold">{detail.template.charName}</p>
+              <p className="truncate text-[12px] text-ink-soft">{detail.template.title || 'Support card'}</p>
+            </div>
+            {detail.isNew && <Crest tone="accent">NEW</Crest>}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {detail.save
+              ? <>
+                  <Crest>Lv {detail.save.level}</Crest>
+                  <span className="flex gap-0.5">
+                    {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
+                      <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < (detail.save?.limitBreak ?? 0) ? 'bg-accent' : 'bg-sunken'}`} />
+                    ))}
+                  </span>
+                  {detail.maxed && <Crest tone="accent">MAX</Crest>}
+                </>
+              : <Crest>Unowned</Crest>}
+          </div>
+
+          <div className="mt-2 grid gap-0.5">
+            {detail.currentEffects
+              .filter((row) => detail.template.effectProfile[row.effect] > 0 && row.value > 0)
+              .slice(0, 3)
+              .map((row) => (
+                <p key={row.effect} className="flex justify-between gap-2 text-[12px]">
+                  <span className="truncate text-ink-soft">{EFFECT_LABELS[row.effect]}</span>
+                  <span className="font-semibold">{effectValue(row.effect, row.value)}</span>
+                </p>
+              ))}
+          </div>
+
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>Details</Button>
+            {detail.owned && detail.promotionLock === null && (
+              <Button size="sm" onClick={() => openEntry(detail)}>Limit break</Button>
+            )}
+          </div>
+        </AlbumDetail>
+      )}
 
       <AlbumChrome
         title="Support Cards"
@@ -473,14 +582,17 @@ export function CardsScreen() {
         <VirtualGrid
           items={entries}
           columns={columns}
-          rowHeight={prefs.query.density === 'compact' ? 150 : 215}
+          rowHeight={rowHeight}
           keyOf={(entry) => entry.id}
           renderItem={(entry) => (
             <CardTile
               entry={entry}
+              view={view}
               sortLabel={cardSortValueLabel(entry, prefs.query.sort, parameter)}
+              selected={detail?.id === entry.id}
               selecting={selecting}
-              selected={selection.includes(entry.id)}
+              picked={selection.includes(entry.id)}
+              onSelect={() => setDetailId(entry.id)}
               onOpen={() => openEntry(entry)}
               onToggleSelect={() => toggleSelect(entry.id)}
               onActions={() => setActionsFor(entry)}

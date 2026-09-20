@@ -25,7 +25,7 @@ const rows: AlbumRow[] = [
 ]
 
 const query = (overrides: Partial<AlbumQuery> = {}): AlbumQuery => ({
-  search: '', filters: {}, sort: 'name', direction: 'asc', group: null, density: 'comfortable', mode: null, ...overrides,
+  search: '', filters: {}, sort: 'name', direction: 'asc', group: null, view: 'icons', mode: null, ...overrides,
 })
 
 describe('album query engine', () => {

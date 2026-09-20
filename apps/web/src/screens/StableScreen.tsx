@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { exchangeUmaShards, listLatestRaceTimes, redeemUmaCoupon } from '../game/actions'
 import { addSavedView, loadAlbumPrefs, markSeen, removeSavedView, saveAlbumPrefs, type AlbumPrefs } from '../game/album/prefs'
-import { emptyStateHint, runAlbumQuery, type AlbumQuery } from '../game/album/query'
+import { emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumView } from '../game/album/query'
 import {
   STABLE_ALBUM_ID,
   STABLE_DEFAULT_QUERY,
@@ -24,6 +24,7 @@ import { useGame } from '../game/store'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import type { BadgeFrameStyle } from '../game/badge-frame'
 import { AlbumChrome } from '../ui/album/AlbumChrome'
+import { AlbumDetail } from '../ui/album/AlbumDetail'
 import { CompareSheet } from '../ui/album/CompareSheet'
 import { VirtualGrid } from '../ui/album/VirtualGrid'
 import { ArtTile } from '../ui/ArtTile'
@@ -54,74 +55,125 @@ function aptitudeLine(entry: StableEntry): string {
 function UmaTile({
   entry,
   frame,
+  view,
   sortLabel,
-  selecting,
   selected,
+  selecting,
+  picked,
+  onSelect,
   onOpen,
   onToggleSelect,
   onActions,
 }: {
   entry: StableEntry
   frame: BadgeFrameStyle | null
+  view: AlbumView
   sortLabel: string | null
-  selecting: boolean
+  /** The entry currently shown in the detail area. */
   selected: boolean
+  selecting: boolean
+  picked: boolean
+  onSelect: () => void
   onOpen: () => void
   onToggleSelect: () => void
   onActions: () => void
 }) {
   const press = useRef<number | null>(null)
-  const startPress = () => {
-    press.current = window.setTimeout(() => { press.current = null; onActions() }, 450)
-  }
-  const endPress = () => {
-    if (press.current !== null) window.clearTimeout(press.current)
-    press.current = null
+  const startPress = () => { press.current = window.setTimeout(() => { press.current = null; onActions() }, 450) }
+  const endPress = () => { if (press.current !== null) window.clearTimeout(press.current); press.current = null }
+  // A tap selects; tapping the already-selected entry opens it, as the reserved detail area implies.
+  const activate = selecting ? onToggleSelect : selected ? onOpen : onSelect
+  const ring = selected && !selecting ? 'outline outline-2 outline-accent outline-offset-1' : ''
+
+  if (view === 'list') {
+    return (
+      <button
+        type="button"
+        onClick={activate}
+        onPointerDown={startPress}
+        onPointerUp={endPress}
+        onPointerLeave={endPress}
+        className={`flex w-full items-center gap-3 rounded-sm border border-hairline bg-panel p-2 text-left ${ring}`}
+      >
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xs bg-sunken">
+          <AtlasSprite
+            asset={entry.asset}
+            alt=""
+            decorative
+            className={`h-full w-full ${entry.owned ? '' : 'opacity-45 saturate-50'}`}
+            fallback={<Placeholder label={entry.template.name} />}
+          />
+        </div>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[14px] font-semibold">{entry.template.name}</span>
+            {entry.isNew && <Crest tone="accent">NEW</Crest>}
+            {entry.outfitCount > 1 && <span className="text-[11px] text-ink-faint">×{entry.outfitCount}</span>}
+          </span>
+          <span className="block truncate text-[11px] text-ink-faint">{aptitudeLine(entry)}</span>
+        </span>
+        <span className="shrink-0 text-right text-[12px] text-ink-soft">
+          {entry.save ? <>Lv <Numeral className="text-ink">{entry.save.level}</Numeral></> : 'Unowned'}
+          <span className="block text-[11px] text-ink-faint">{sortLabel ?? `TL ${entry.save?.trainingLevel ?? '—'}`}</span>
+        </span>
+      </button>
+    )
   }
 
+  const icons = view === 'icons'
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={selecting ? onToggleSelect : onOpen}
+        onClick={activate}
         onPointerDown={startPress}
         onPointerUp={endPress}
         onPointerLeave={endPress}
-        className="block w-full min-w-0 text-left"
+        className={`block w-full min-w-0 rounded-md text-left ${ring}`}
+        aria-label={`${entry.template.name}${entry.owned ? '' : ', not owned'}`}
       >
         <ArtTile
           asset={entry.asset}
           alt={entry.owned ? `${entry.template.name} portrait` : `${entry.template.name}, not owned`}
           dimmed={!entry.owned}
-          chamfer={entry.view?.readyToPromote ?? false}
+          chamfer={!icons && (entry.view?.readyToPromote ?? false)}
           overlay={
-            <>
-              {entry.owned ? <Crest>T{entry.view?.tier ?? 1}</Crest> : <Crest>Locked</Crest>}
-              {entry.isNew && <Crest tone="accent">NEW</Crest>}
-              {entry.outfitCount > 1 && <Crest>×{entry.outfitCount}</Crest>}
-            </>
+            icons ? (
+              <>
+                {entry.isNew && <span aria-hidden className="h-2 w-2 rounded-full bg-accent shadow-1" />}
+                {entry.view?.readyToPromote && <span aria-hidden className="h-2 w-2 rounded-full bg-success shadow-1" />}
+              </>
+            ) : (
+              <>
+                {entry.owned ? <Crest>T{entry.view?.tier ?? 1}</Crest> : <Crest>Locked</Crest>}
+                {entry.isNew && <Crest tone="accent">NEW</Crest>}
+                {entry.outfitCount > 1 && <Crest>×{entry.outfitCount}</Crest>}
+              </>
+            )
           }
           corner={
             selecting
-              ? <Crest tone={selected ? 'accent' : 'neutral'}>{selected ? '✓' : ''}</Crest>
-              : entry.view?.readyToPromote ? <Crest tone="accent">Ready</Crest> : null
+              ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? '✓' : ''}</Crest>
+              : !icons && entry.view?.readyToPromote ? <Crest tone="accent">Ready</Crest> : null
           }
-          footer={
+          footer={icons ? undefined : (
             <>
               <p className="font-display truncate text-[15px] font-semibold">{entry.template.name}</p>
               <p className="truncate text-[11px] text-ink-on-dark-soft">{entry.template.outfit ?? 'Standard outfit'}</p>
             </>
-          }
+          )}
           className={frame && entry.owned ? frame.borderClass : ''}
         />
-        <div className="flex items-center justify-between gap-2 px-0.5 pt-1.5 pr-8 text-[12px] text-ink-soft">
-          <span className="truncate">
-            {entry.save ? <>Lv <Numeral className="text-ink">{entry.save.level}</Numeral></> : 'Unowned'}
-          </span>
-          <span className="truncate text-right text-[11px] text-ink-faint">{sortLabel ?? aptitudeLine(entry)}</span>
-        </div>
+        {!icons && (
+          <div className="flex items-center justify-between gap-2 px-0.5 pt-1.5 pr-8 text-[12px] text-ink-soft">
+            <span className="truncate">
+              {entry.save ? <>Lv <Numeral className="text-ink">{entry.save.level}</Numeral></> : 'Unowned'}
+            </span>
+            <span className="truncate text-right text-[11px] text-ink-faint">{sortLabel ?? aptitudeLine(entry)}</span>
+          </div>
+        )}
       </button>
-      {!selecting && (
+      {!selecting && !icons && (
         <button
           type="button"
           aria-label={`Actions for ${entry.template.name}`}
@@ -152,6 +204,7 @@ export function StableScreen() {
   const [prefs, setPrefs] = useState<AlbumPrefs>({ id: STABLE_ALBUM_ID, query: STABLE_DEFAULT_QUERY, views: [], seen: [] })
   const [parameter, setParameter] = useState<string | null>(null)
   const [lastRacedAt, setLastRacedAt] = useState<Record<string, number>>({})
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [selecting, setSelecting] = useState(false)
   const [selection, setSelection] = useState<readonly string[]>([])
   const [compareOpen, setCompareOpen] = useState(false)
@@ -262,7 +315,11 @@ export function StableScreen() {
 
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
   const compareEntries = selection.flatMap((id) => album.entries.get(id) ?? [])
-  const columns = prefs.query.density === 'compact' ? 3 : 2
+  const view = prefs.query.view
+  const columns = view === 'icons' ? 5 : view === 'cards' ? 2 : 1
+  const rowHeight = view === 'icons' ? 80 : view === 'cards' ? 230 : 64
+  // The detail area always has something in it: the first result until the player picks.
+  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? entries[0] ?? null
   const orphaned = Object.keys(owned).filter((id) => !contentState.content.umas.byId.has(id))
 
   const doExchange = () => {
@@ -319,6 +376,61 @@ export function StableScreen() {
         {orphaned.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{orphaned.length} owned Uma reference{orphaned.length === 1 ? '' : 's'} need restored content.</p>}
         {error && <p role="alert" className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{error}</p>}
       </Panel>
+
+      {detail && (
+        <AlbumDetail
+          content={contentState.content}
+          kind="uma"
+          id={detail.id}
+          icon={detail.asset}
+          alt={`${detail.template.name} portrait`}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-micro">{detail.view?.scenario?.name ?? `Tier ${detail.view?.tier ?? 1}`}</p>
+              <p className="font-display truncate text-xl font-bold">{detail.template.name}</p>
+              <p className="truncate text-[12px] text-ink-soft">{detail.template.outfit ?? 'Standard outfit'}</p>
+            </div>
+            {detail.isNew && <Crest tone="accent">NEW</Crest>}
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-1">
+            {detail.save
+              ? <>
+                  <Crest>Lv {detail.save.level}</Crest>
+                  <Crest>TL {detail.save.trainingLevel}</Crest>
+                  {detail.activeTitle && <Crest tone="accent">{detail.activeTitle}</Crest>}
+                  {detail.outfitCount > 1 && <Crest>{detail.ownedOutfitCount}/{detail.outfitCount} outfits</Crest>}
+                </>
+              : <Crest>Unowned</Crest>}
+          </div>
+
+          {detail.save && (
+            <div className="mt-2 grid grid-cols-5 gap-1 text-center">
+              {STATS.map((stat) => (
+                <div key={stat}>
+                  <p className="text-[10px] text-ink-faint uppercase">{stat.slice(0, 3)}</p>
+                  <p className="font-display text-[13px] font-semibold">{detail.save?.stats[stat]}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="mt-2 text-[11px] text-ink-faint">{aptitudeLine(detail)}</p>
+
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>
+              {detail.owned ? 'Open' : 'Redeem'}
+            </Button>
+            {detail.owned && (
+              <Button size="sm" variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(detail.id)}`)}>Train</Button>
+            )}
+            {detail.owned && (
+              <Button size="sm" onClick={() => navigate(`/race?uma=${encodeURIComponent(detail.id)}`)}>Race</Button>
+            )}
+          </div>
+        </AlbumDetail>
+      )}
 
       <AlbumChrome
         title="Stable"
@@ -389,15 +501,18 @@ export function StableScreen() {
         <VirtualGrid
           items={entries}
           columns={columns}
-          rowHeight={prefs.query.density === 'compact' ? 160 : 230}
+          rowHeight={rowHeight}
           keyOf={(entry) => entry.id}
           renderItem={(entry) => (
             <UmaTile
               entry={entry}
               frame={frames.get(entry.id) ?? null}
+              view={view}
               sortLabel={sortValueLabel(entry, prefs.query.sort, parameter)}
+              selected={detail?.id === entry.id}
               selecting={selecting}
-              selected={selection.includes(entry.id)}
+              picked={selection.includes(entry.id)}
+              onSelect={() => setDetailId(entry.id)}
               onOpen={() => openEntry(entry)}
               onToggleSelect={() => toggleSelect(entry.id)}
               onActions={() => setActionsFor(entry)}

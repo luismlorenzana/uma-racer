@@ -49,7 +49,7 @@ export function CardPickerSheet({
     sort: 'level',
     direction: 'desc',
     group: null,
-    density: 'compact',
+    view: 'icons',
     mode: null,
   })
   const [parameter, setParameter] = useState<string | null>(null)
