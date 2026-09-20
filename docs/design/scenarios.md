@@ -65,9 +65,9 @@ modifier.
 | 4 | Grand Concert | **Performances:** collect all five facility notes; the completing training gets +20 raw gain to all stats |
 | 5 | Grand Masters | **Goddess fragments:** each training grants one; every eighth training gets a ×1.50 raw stat/SP burst |
 | 6 | Project L'Arc | **Expedition:** five training stamps fund one chosen aptitude upgrade, capped at A |
-| 7 | U.A.F. | **Sports genres:** facility colors level up, and matching colors give bonuses |
-| 8 | Great Food Festival | **Cooking:** training harvests ingredients, and dishes give temporary buffs |
-| 9 | Mecha Umamusume | **Research:** gear upgrades act as permanent facility research levels |
+| 7 | U.A.F. | **Sports genres:** rotating facility colors level up; matching the prior color pays up to ×1.25 |
+| 8 | Great Food Festival | **Cooking:** harvest three matching ingredients, then cook a three-turn ×1.20 dish |
+| 9 | Mecha Umamusume | **Research:** every three research points upgrade one facility, up to ×1.30 |
 | 10 | Twinkle Legends | **Legends:** pick a legend's buff path for the tier |
 | 11 | Design Your Island | **Construction:** development points build new facilities during the tier |
 | 12 | Yukoma Hot Springs | **Soak:** relaxation builds up, and a full bath makes the next training free and doubled |
@@ -128,6 +128,37 @@ at A, clears the gauge, and records the completion. If every aptitude is already
 the gauge without changing an aptitude. The resulting aptitude is permanent and enters races only through the existing
 visible aptitude input; the tier-local gauge and counters still expire at promotion. State stores 0–5 stamps, completed
 expeditions, and successful aptitude upgrades.
+
+### U.A.F. Ready GO! — Sports Genres
+
+The three Sports Genres are **Blue, Red, and Yellow**. On Training turn `n`, each facility's displayed genre is assigned
+without RNG as `genres[(n + facilityIndex) mod 3]`, using the canonical Speed→Stamina→Power→Guts→Wit facility
+order. Every committed training raises its displayed genre by **1 level**, capped at **5**, and makes that genre the one
+to match next turn. The first training has no match. Choosing a facility whose displayed genre matches the prior chosen
+genre multiplies its ordinary raw stat and SP gains by `1 + 0.05 × resultingGenreLevel`, up to **×1.25**, before
+rounding, the stat soft cap, and ordinary caps. The selected genre levels before its multiplier is calculated, so preview
+and commit show the same resulting level and reward. State stores the three bounded genre levels, the prior genre, and
+the committed match count.
+
+### Great Food Festival — Cooking
+
+Every committed training harvests **1 ingredient matching its chosen facility**, up to **3** of each ingredient. When no
+dish is active, a separate explicit no-ticket action may consume **3 matching ingredients** to cook that facility's dish.
+The next **3 committed trainings** multiply every ordinary raw stat and SP gain by **1.20** before rounding, the stat soft
+cap, and ordinary caps; each boosted turn decrements the remaining duration after applying the multiplier. Training keeps
+harvesting while a dish is active, but another dish cannot be cooked until the current one expires. A full ingredient
+stack simply stops harvesting that ingredient and never blocks Training. State stores five bounded ingredient counts,
+0–3 active dish turns, and the committed dish count.
+
+### Run! Mecha Umamusume — Research
+
+Every committed training grants **1 research point** until **3** are held. A ready gauge waits safely while Training
+continues. From the Training modifier panel, a separate explicit no-ticket action spends all 3 points to raise one chosen
+facility's research level by **1**, capped at **3**. When training a facility, its already-installed research level
+multiplies every ordinary raw stat and SP gain by `1 + 0.10 × level`, up to **×1.30**, before rounding, the stat soft
+cap, and ordinary caps; an upgrade affects subsequent trainings, never the turn that earned its last point. If every
+facility is level 3, the full gauge may remain harmlessly ready and no upgrade action is offered. State stores 0–3 research
+points and the five bounded facility levels; the sum of those levels is the completed-upgrade count.
 
 ## Scenario completion
 

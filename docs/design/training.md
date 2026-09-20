@@ -150,8 +150,19 @@ stat entry absent from the facility's base row.
 
 Project L'Arc does not change Training gains. Each committed turn fills one of five expedition stamps; a separate atomic
 completion from Training may raise one chosen below-A aptitude by one grade, capped at A. A ready expedition never blocks
-ordinary Training. No modifier changes Training EXP, card EXP, hint rolls, friendship, placement, stat/SP caps, Race Form,
-or ticket cost. See [Scenarios](scenarios.md#scenario-modifiers) for lifecycle and exact trigger/reward rules.
+ordinary Training.
+
+U.A.F. assigns each facility one of three deterministic rotating genres. The chosen genre levels before a same-color
+match multiplies the turn's ordinary raw stat/SP gains by 1.05–1.25. Great Food Festival harvests one facility ingredient
+after each committed turn; an explicit three-ingredient dish multiplies the next three ordinary raw stat/SP projections
+by 1.20. Mecha grants one research point after every committed turn; spending three outside Training raises one chosen
+facility level, and that already-installed level multiplies subsequent raw stat/SP gains there by 1.10–1.30.
+
+The U.A.F. genre assignment uses only the pre-turn `trainingsThisScenario` counter and canonical facility order. Food dish
+duration and Mecha research points advance only on committed turns; previews and failed writes never level, harvest,
+decrement, or grant points. Cooking and installing an upgrade are separate atomic no-ticket Uma actions and share the
+update-safe gameplay lock. No modifier changes Training EXP, card EXP, hint rolls, friendship, placement, stat/SP caps,
+Race Form, or ticket cost. See [Scenarios](scenarios.md#scenario-modifiers) for lifecycle and exact trigger/reward rules.
 
 ### Worked example (draft numbers)
 
