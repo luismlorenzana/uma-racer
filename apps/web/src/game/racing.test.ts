@@ -156,6 +156,7 @@ function content(umaCount = 10): LoadedContent {
       'uma-icons': { descriptor: atlas, pageUrls: ['blob:synthetic'] },
       'card-icons': { descriptor: { ...atlas, kind: 'card-icons' }, pageUrls: ['blob:synthetic'] },
     },
+    art: { has: () => false, load: async () => null },
   }
 }
 

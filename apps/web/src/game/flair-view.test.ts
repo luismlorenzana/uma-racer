@@ -27,6 +27,7 @@ const loadedContent = (): LoadedContent => ({
     'uma-icons': { descriptor: atlas('uma-icons'), pageUrls: [] },
     'card-icons': { descriptor: atlas('card-icons'), pageUrls: [] },
   },
+    art: { has: () => false, load: async () => null },
 })
 
 describe('compact flair projections', () => {

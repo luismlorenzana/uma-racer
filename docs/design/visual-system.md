@@ -102,9 +102,10 @@ Two faces, both OFL and self-hosted, latin subset only:
 
 - Portraits are cover-cropped and **top-anchored** so faces never get cut, over `--surface-scrim`, with a 1 px inner
   light border.
-- **The art source is 128 px** (private atlases), so nothing stretches it across the viewport. The Home hero pairs a
-  crisp 112 px portrait with a heavily blurred copy of the same art as the backdrop; blur hides the upscale and the
-  scrim keeps text legible. Higher-resolution art needs a documented private source (Milestone 11, T038).
+- **Three art tiers** (see [Collection](collection.md#art-tiers)): 128 px atlased icons for grids, 512 px transparent
+  portraits for Umas, and 450×600 illustrations for cards. The large tiers are per-entry files fetched on demand, so a
+  grid never waits on them and a screen shows the icon until the art arrives.
+- Full-body Uma art is not available from any documented source; the 512 px portrait is the ceiling.
 - Reveals and results put art at full width; the panel is a frame, not a container.
 - Missing or retired content shows a labelled placeholder with the same silhouette, never a broken-image grey box.
 

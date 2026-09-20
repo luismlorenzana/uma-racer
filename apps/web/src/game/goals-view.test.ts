@@ -24,6 +24,7 @@ const content: LoadedContent = {
   umas: { items: [template], byId: new Map([[template.id, template]]) }, cards: { items: [], byId: new Map() },
   skills: { items: [], byId: new Map() }, races: { items: races, byId: new Map(races.map((race) => [race.id, race])) },
   courses: { items: [], byId: new Map() },
+  art: { has: () => false, load: async () => null },
   atlases: { 'uma-icons': { descriptor: atlas('uma-icons'), pageUrls: ['blob:uma'] }, 'card-icons': { descriptor: atlas('card-icons'), pageUrls: ['blob:card'] } },
 }
 const journey: ScenarioJourney = {

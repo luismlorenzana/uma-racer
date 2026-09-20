@@ -79,6 +79,10 @@ function fixture(versionCharacter = 'a'): Fixture {
     add(`atlases/${kind}-0.${versionCharacter.repeat(8)}.webp`, webp, 'image/webp')
     add(`atlases/${kind}.${versionCharacter.repeat(8)}.json`, JSON.stringify(atlas(kind, id)), 'application/json')
   }
+  // Per-entry art: fetched on demand, so it is in the manifest but never loaded up front.
+  for (const [dir, id] of [['uma', 'uma-x'], ['card', 'card-x']] as const) {
+    add(`art/${dir}/${id}.${versionCharacter.repeat(8)}.webp`, syntheticWebp(512, 512), 'image/webp')
+  }
   files.sort((left, right) => left.path.localeCompare(right.path))
   const version = createHash('sha256')
     .update(files.map((file) => file.sha256).sort().join(''))
@@ -123,6 +127,38 @@ function transport(current: () => Fixture): ContentTransport {
     },
   }
 }
+
+describe('private art loader', () => {
+  it('serves art on demand, caches it, and reports what the manifest has', async () => {
+    const current = fixture()
+    const { urls } = urlFactory()
+    const runtime = new ContentRuntime(transport(() => current), new MemoryStore(), urls)
+    const content = await runtime.load()
+    if (content.status !== 'ready') throw new Error('expected ready content')
+
+    expect(content.content.art.has('uma', 'uma-x')).toBe(true)
+    expect(content.content.art.has('card', 'missing')).toBe(false)
+
+    const first = await content.content.art.load('uma', 'uma-x')
+    expect(first).toMatch(/^blob:synthetic-/)
+    // A second request reuses the same object URL rather than fetching again.
+    expect(await content.content.art.load('uma', 'uma-x')).toBe(first)
+    // Art the manifest does not carry resolves to null so callers fall back to the icon atlas.
+    expect(await content.content.art.load('card', 'missing')).toBeNull()
+  })
+
+  it('rejects art whose bytes do not match the manifest hash', async () => {
+    const current = fixture()
+    const path = current.manifest.files.find((file) => file.path.startsWith('art/uma/'))!.path
+    current.responses.set(path, { bytes: bytes(syntheticWebp(256, 256)), contentType: 'image/webp' })
+    const { urls } = urlFactory()
+    const runtime = new ContentRuntime(transport(() => current), new MemoryStore(), urls)
+    const content = await runtime.load()
+    if (content.status !== 'ready') throw new Error('expected ready content')
+
+    await expect(content.content.art.load('uma', 'uma-x')).rejects.toThrow(/mismatch/)
+  })
+})
 
 describe('ContentRuntime', () => {
   it('reads the declared dimensions from a WebP page header', () => {

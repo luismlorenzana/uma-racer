@@ -37,6 +37,7 @@ tokens and accept a second cosmetic pass.
 ## Definition of done
 
 - Both albums and Race Select open on a sensible default order without anyone touching a control.
+- Browsing matches the shape of the real game: dense image-only tiles, a reserved detail area, and view modes.
 - Tiles carry the data the sort is about, entries can be compared, and quick actions work without a detour.
 - The Stable can be browsed by character as well as by outfit, and the deck editor uses the album rather than its own
   weaker picker.

@@ -2,8 +2,6 @@
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import type { ContentAtlasKind } from '@racer/domain'
-
 export interface ImageSource {
   id: string
   url: string
@@ -17,10 +15,21 @@ export interface DownloadedImage {
 
 export interface DownloadOptions {
   cacheDir: string
-  kind: ContentAtlasKind
+  /** Cache sub-directory: an atlas kind, or an art family. */
+  kind: string
   refresh?: boolean
   concurrency?: number
   fetcher?: typeof fetch
+  /**
+   * Art families tolerate a source that simply does not exist: the entry is reported and skipped,
+   * and the app falls back to its icon. Icon atlases stay strict, because every entry needs a frame.
+   */
+  optional?: boolean
+}
+
+export interface DownloadFailure {
+  id: string
+  reason: string
 }
 
 function safeId(id: string): string {
@@ -51,10 +60,11 @@ async function fromNetwork(source: ImageSource, path: string, fetcher: typeof fe
 export async function downloadImages(
   sources: readonly ImageSource[],
   options: DownloadOptions,
-): Promise<DownloadedImage[]> {
+): Promise<{ images: DownloadedImage[]; failures: DownloadFailure[] }> {
   const targetDir = resolve(options.cacheDir, options.kind)
   await mkdir(targetDir, { recursive: true })
-  const results = new Array<DownloadedImage>(sources.length)
+  const results = new Array<DownloadedImage | undefined>(sources.length)
+  const failures: DownloadFailure[] = []
   const fetcher = options.fetcher ?? fetch
   let cursor = 0
 
@@ -72,11 +82,16 @@ export async function downloadImages(
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
         }
       }
-      results[index] = await fromNetwork(source, path, fetcher)
+      try {
+        results[index] = await fromNetwork(source, path, fetcher)
+      } catch (error) {
+        if (!options.optional) throw error
+        failures.push({ id: source.id, reason: error instanceof Error ? error.message : String(error) })
+      }
     }
   }
 
   const concurrency = Math.max(1, Math.min(options.concurrency ?? 8, sources.length || 1))
   await Promise.all(Array.from({ length: concurrency }, () => worker()))
-  return results
+  return { images: results.filter((image): image is DownloadedImage => image !== undefined), failures }
 }

@@ -7,7 +7,8 @@ import { resolve } from 'node:path'
 
 const VERSION_PATTERN = /^[a-f0-9]{12}$/
 const SHA_PATTERN = /^[a-f0-9]{64}$/
-const CONTENT_PATH_PATTERN = /^(?:data|atlases)\/[A-Za-z0-9][A-Za-z0-9._-]*$/
+// `art/<family>/<id>.<hash>.webp` is the per-entry art added alongside the packs and atlases.
+const CONTENT_PATH_PATTERN = /^(?:(?:data|atlases)\/[A-Za-z0-9][A-Za-z0-9._-]*|art\/[a-z][a-z-]*\/[A-Za-z0-9][A-Za-z0-9._-]*)$/
 
 export interface RemoteObjectState {
   bytes: number

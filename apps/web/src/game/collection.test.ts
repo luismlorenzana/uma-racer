@@ -41,6 +41,7 @@ const content: LoadedContent = {
     'uma-icons': { descriptor: { schemaVersion: 1, kind: 'uma-icons', frameWidth: 128, frameHeight: 128, pages: [], frames: {} }, pageUrls: [] },
     'card-icons': { descriptor: { schemaVersion: 1, kind: 'card-icons', frameWidth: 128, frameHeight: 128, pages: [], frames: {} }, pageUrls: [] },
   },
+    art: { has: () => false, load: async () => null },
 }
 
 async function resetDatabase(): Promise<void> {

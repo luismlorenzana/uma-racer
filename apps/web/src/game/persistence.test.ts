@@ -134,6 +134,7 @@ function content(): LoadedContent {
       'uma-icons': { descriptor: atlas('uma-icons', umas.map((item) => item.id)), pageUrls: ['blob:synthetic-umas'] },
       'card-icons': { descriptor: atlas('card-icons', cards.map((item) => item.id)), pageUrls: ['blob:synthetic-cards'] },
     },
+    art: { has: () => false, load: async () => null },
   }
 }
 

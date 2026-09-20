@@ -84,6 +84,7 @@ function content(): LoadedContent {
       'uma-icons': { descriptor: atlas('uma-icons'), pageUrls: ['blob:synthetic'] },
       'card-icons': { descriptor: atlas('card-icons'), pageUrls: ['blob:synthetic'] },
     },
+    art: { has: () => false, load: async () => null },
   }
 }
 

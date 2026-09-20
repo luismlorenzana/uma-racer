@@ -54,6 +54,7 @@ function content(umas: UmaTemplate[]): LoadedContent {
     manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network',
     umas: { items: umas, byId: new Map(umas.map((entry) => [entry.id, entry])) }, cards: { items: [], byId: new Map() },
     skills: { items: [], byId: new Map() }, races: { items: [race], byId: new Map([[race.id, race]]) },
+    art: { has: () => false, load: async () => null },
     courses: { items: [], byId: new Map() }, atlases: {
       'uma-icons': { descriptor: atlas('uma-icons'), pageUrls: [] }, 'card-icons': { descriptor: atlas('card-icons'), pageUrls: [] },
     },

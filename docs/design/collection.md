@@ -110,6 +110,52 @@ Defaults are opinionated, so the album is useful before anyone touches a control
 The ownership split is a segmented control rather than a hidden filter, because "what do I have" is the question the
 album answers most often. Switching to Unowned keeps the rest of the sort intact.
 
+### Layout: dense grid, reserved detail
+
+The real game browses hundreds of entries by making tiles **small and image-only**, five to a row, with a **reserved
+area at the top** that shows the selected entry large, with its details. We follow that:
+
+```text
+┌──────────────────────────────┐
+│  [ large art ]  Name         │  ← reserved detail area: selected entry
+│                 Level · caps │     large art, identity, key numbers
+│                 aptitudes    │
+├──────────────────────────────┤
+│ [ All | Owned | Unowned ]    │
+│ 🔍  ⇅ Sort   ⚙ Filter•3   ▦  │  ← sticky chrome, with the view switch
+│ ▣▣▣▣▣  ▣▣▣▣▣  ▣▣▣▣▣          │  ← 5-up icon grid, art only
+└──────────────────────────────┘
+```
+
+- Selecting a tile **fills the detail area** rather than opening a sheet, so browsing never leaves the grid. A second tap
+  (or the detail area's own action) opens the full screen or sheet.
+- The detail area is what the big art is for; the grid stays icon-sized so a phone screen holds twenty entries at once.
+
+### View modes
+
+The density toggle becomes a **view switch**, remembered per album like every other preference:
+
+| Mode | Tile | For |
+|---|---|---|
+| **Icons** | 5-up, art only, tiny state dots | Scanning a whole collection |
+| **Cards** | 2-up art with name and the sort's value | Browsing with context |
+| **List** | Full-width rows: art thumb, name, and several data columns | Comparing numbers |
+
+### Art tiers
+
+Three sizes, each used where it belongs:
+
+| Tier | Size | Source | Use |
+|---|---|---|---|
+| Icon | 128 px, atlased | Loaded with the content packs | Every grid tile |
+| Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Detail area, Home hero, reveals |
+| Card art | 450×600 full illustration | One file per card, fetched on demand | Detail area, reveals |
+
+Art is **never atlased and never precached**: 26 MB across 562 files would defeat both. Each file is content-addressed,
+fetched through the authenticated API on first use, verified against its manifest hash, and cached by the service worker.
+The icon shows immediately and the large art replaces it when it arrives, so nothing ever waits on a download. Entries
+whose source art does not exist — 18 of the newest cards today — keep their icon, with no error and no empty frame.
+
 ### What every tile has to answer
 
 A collection is browsed to **decide** something — who to train next, which card to slot — so a tile carries decision
