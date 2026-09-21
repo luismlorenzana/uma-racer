@@ -95,6 +95,6 @@ describe('support deck validation', () => {
       save: { ...createCardSave(template), limitBreak: 1 as const },
     }))
     expect(validateEquippedSupportDeck(1, equipped).valid).toBe(true)
-    expect(supportDeckEffectTotals(equipped).raceBonus).toBe(equippedRaceBonus(1, equipped))
+    expect(supportDeckEffectTotals(equipped, 1).raceBonus).toBe(equippedRaceBonus(1, equipped))
   })
 })

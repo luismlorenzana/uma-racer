@@ -15,7 +15,7 @@ export interface RunTicket {
 
 export type RunTarget =
   | { kind: 'spark-match'; umaId: string }
-  | { kind: 'bond-recall'; cardId: string }
+  | { kind: 'bond-recall'; cardId: string; tier: number }
 
 export type RunOutcome =
   | { kind: 'spark-match'; score: number; moves: number }
@@ -34,7 +34,7 @@ export interface RunReward {
 type RewardFactory = (ticket: RunTicket, target: RunTarget, outcome: RunOutcome) => RunReward
 
 const targetKey = (target: RunTarget): string =>
-  target.kind === 'spark-match' ? `spark-match:${target.umaId}` : `bond-recall:${target.cardId}`
+  target.kind === 'spark-match' ? `spark-match:${target.umaId}` : `bond-recall:${target.cardId}:${target.tier}`
 
 const validateOutcome = (ticket: RunTicket, target: RunTarget, outcome: RunOutcome): void => {
   if (target.kind !== outcome.kind) throw new Error(`Run ${ticket.runId} received the wrong minigame outcome`)

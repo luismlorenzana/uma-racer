@@ -23,7 +23,7 @@ export interface CardPromotionMutation {
   ledgerIds: [string, string]
 }
 
-function validateInput(content: LoadedContent, profile: PlayerProfile, card: CardSave, today: string, now: number) {
+function validateInput(content: LoadedContent, profile: PlayerProfile, card: CardSave, tier: number, today: string, now: number) {
   if (!content.cards.byId.has(card.templateId)) throw new Error(`Card content is missing ${card.templateId}`)
   if (!isLocalDay(today)) throw new Error(`Invalid local day: ${today}`)
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Invalid card promotion timestamp')
@@ -32,10 +32,10 @@ function validateInput(content: LoadedContent, profile: PlayerProfile, card: Car
   if (profile.tickets < BOND_RECALL_TICKET_COST) {
     throw new Error(`You need ${BOND_RECALL_TICKET_COST} Training Tickets to limit break this card`)
   }
-  const result = advanceCardLimitBreak(card)
+  const result = advanceCardLimitBreak(card, tier)
   const ledgerIds: [string, string] = [
-    `card-limit-break:${card.templateId}:${result.toLimitBreak}`,
-    `card-level-tickets:${card.templateId}:${result.toLevel}`,
+    `card-limit-break:${card.templateId}:${tier}:${result.toLimitBreak}`,
+    `card-level-tickets:${card.templateId}:${tier}:${result.toLevel}`,
   ]
   return { result, ledgerIds }
 }
@@ -44,10 +44,11 @@ export function promoteMemoryCard(
   content: LoadedContent,
   profile: PlayerProfile,
   card: CardSave,
+  tier: number,
   today: string,
   now: number,
 ): CardPromotionMutation {
-  const { result, ledgerIds } = validateInput(content, profile, card, today, now)
+  const { result, ledgerIds } = validateInput(content, profile, card, tier, today, now)
   return {
     profile: { ...profile, tickets: profile.tickets - BOND_RECALL_TICKET_COST + result.ticketReward },
     card: result.card,
@@ -59,6 +60,7 @@ export function promoteMemoryCard(
 export async function promotePersistentCard(
   content: LoadedContent,
   cardId: string,
+  tier: number,
   today: string,
   now: number,
 ): Promise<CardPromotionMutation> {
@@ -70,7 +72,7 @@ export async function promotePersistentCard(
     const profile = parsePlayerProfileOrThrow(profileRow.data)
     const card = parseCardSave(cardRow.data)
     if (!card || card.templateId !== cardId) throw new Error(`Invalid local card save: ${cardId}`)
-    const mutation = promoteMemoryCard(content, profile, card, today, now)
+    const mutation = promoteMemoryCard(content, profile, card, tier, today, now)
     const existing = await db.ledger.bulkGet(mutation.ledgerIds)
     if (existing.some(Boolean)) throw new Error('This card limit break was already recorded')
 

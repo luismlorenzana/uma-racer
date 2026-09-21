@@ -67,10 +67,11 @@ export async function listRaceHistory(limit = 20) {
   return gameRuntime.listRaceHistory(limit)
 }
 
-export async function promoteSupportCard(id: string) {
+/** Advances one limit break for a card in one scenario (D127). */
+export async function promoteSupportCard(id: string, tier: number) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.promoteCard(id)
+    return gameRuntime.promoteCard(id, tier)
   })
 }
 

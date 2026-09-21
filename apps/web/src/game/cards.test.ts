@@ -57,48 +57,48 @@ describe('card promotion persistence', () => {
 
   it('updates profile/card and appends exact ledger/outbox rows atomically', async () => {
     await seed()
-    const mutation = await promotePersistentCard(content, template.id, '2000-01-02', 50)
+    const mutation = await promotePersistentCard(content, template.id, 1, '2000-01-02', 50)
     expect(mutation).toMatchObject({
       profile: { tickets: 95 },
-      card: { limitBreak: 1 },
-      ledgerIds: ['card-limit-break:card-synthetic:1', 'card-level-tickets:card-synthetic:10'],
+      card: { limitBreaks: { '1': 1 } },
+      ledgerIds: ['card-limit-break:card-synthetic:1:1', 'card-level-tickets:card-synthetic:1:10'],
     })
     expect((await db.profile.get('main'))?.version).toBe(2)
     expect((await db.cards.get(template.id))?.version).toBe(3)
-    expect(await db.ledger.get('card-limit-break:card-synthetic:1')).toMatchObject({
+    expect(await db.ledger.get('card-limit-break:card-synthetic:1:1')).toMatchObject({
       data: { resource: 'tickets', delta: -10, reason: 'card-limit-break' },
     })
-    expect(await db.ledger.get('card-level-tickets:card-synthetic:10')).toMatchObject({
+    expect(await db.ledger.get('card-level-tickets:card-synthetic:1:10')).toMatchObject({
       data: { resource: 'tickets', delta: 5, reason: 'card-level' },
     })
     expect(await db.outbox.count()).toBe(8)
     expect(await db.badges.get('trainer')).toMatchObject({ data: { scope: 'trainer' } })
     expect((await db.flairEvents.toArray()).every((row) => row.data.scope === 'trainer')).toBe(true)
     // A second run advances again: there is no EXP bar left to gate it, only tickets and the board.
-    await promotePersistentCard(content, template.id, '2000-01-02', 51)
-    expect((await db.cards.get(template.id))?.data).toMatchObject({ limitBreak: 2 })
+    await promotePersistentCard(content, template.id, 1, '2000-01-02', 51)
+    expect((await db.cards.get(template.id))?.data).toMatchObject({ limitBreaks: { '1': 2 } })
     expect((await db.profile.get('main'))?.data.tickets).toBe(90)
     expect(await db.ledger.count()).toBe(4)
   })
 
   it('rolls back unaffordable promotion and matches memory-only rules', async () => {
     await seed(4)
-    await expect(promotePersistentCard(content, template.id, '2000-01-02', 50)).rejects.toThrow('need 10')
-    expect((await db.cards.get(template.id))?.data).toMatchObject({ limitBreak: 0 })
+    await expect(promotePersistentCard(content, template.id, 1, '2000-01-02', 50)).rejects.toThrow('need 10')
+    expect((await db.cards.get(template.id))?.data).toMatchObject({ limitBreaks: {} })
     expect(await db.ledger.count()).toBe(0)
     expect(await db.outbox.count()).toBe(0)
 
     const profile = { ...createPlayerProfile('synthetic', 1), tickets: 4 }
     const card = createCardSave(template)
-    expect(() => promoteMemoryCard(content, profile, card, '2000-01-02', 50)).toThrow(/need 10/i)
+    expect(() => promoteMemoryCard(content, profile, card, 1, '2000-01-02', 50)).toThrow(/need 10/i)
   })
 
   it('rolls back the card action when Trainer reconciliation cannot parse its state', async () => {
     await seed()
     await db.badges.put({ id: 'trainer', version: 2, data: { scope: 'trainer', corrupt: true } as never })
-    await expect(promotePersistentCard(content, template.id, '2000-01-02', 50)).rejects.toThrow(/Trainer badge state/)
+    await expect(promotePersistentCard(content, template.id, 1, '2000-01-02', 50)).rejects.toThrow(/Trainer badge state/)
     expect((await db.profile.get('main'))?.data.tickets).toBe(100)
-    expect((await db.cards.get(template.id))?.data).toMatchObject({ limitBreak: 0 })
+    expect((await db.cards.get(template.id))?.data).toMatchObject({ limitBreaks: {} })
     expect(await db.ledger.count()).toBe(0)
     expect(await db.outbox.count()).toBe(0)
   })

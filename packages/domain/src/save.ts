@@ -23,11 +23,12 @@ import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel }
 import { EXP_TO_NEXT_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type StatKey, type Stats } from './types'
 
-export const SAVE_SCHEMA_VERSION = 5 as const
+export const SAVE_SCHEMA_VERSION = 6 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V4 = 4 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V5 = 5 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -181,6 +182,10 @@ export interface LegacyPlayerProfileV4 extends Omit<PlayerProfile, 'schemaVersio
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V4
 }
 
+export interface LegacyPlayerProfileV5 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V5
+}
+
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
   raceId: string
   kind: 'win' | 'win-by-margin'
@@ -202,8 +207,18 @@ export interface LegacyUmaSaveV2 extends Omit<LegacyUmaSaveV3, 'schemaVersion' |
 export interface LegacyUmaSaveV1 extends Omit<LegacyUmaSaveV4,
   'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys' | 'scenarioModifier'> {}
 
-/** Cards advance one limit break per Bond Recall clear; level derives from it (D120). */
+/**
+ * Cards advance one limit break per Bond Recall clear, and a break belongs to the scenario it was earned in
+ * but is shared by every Uma (D127). An absent tier means LB0 there.
+ */
 export interface CardSave {
+  templateId: string
+  limitBreaks: Record<string, number>
+  maxCouponGranted: boolean
+}
+
+/** The v5 shape, retained only so a stored save can be migrated forward. */
+export interface LegacyCardSaveV5 {
   templateId: string
   limitBreak: number
   maxCouponGranted: boolean
@@ -386,7 +401,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -448,6 +463,16 @@ export function parseLegacyPlayerProfileV4(value: unknown): LegacyPlayerProfileV
 export function migratePlayerProfileV4(value: LegacyPlayerProfileV4): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV4(value)
   if (!parsed) throw new Error('Legacy v4 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
+export function parseLegacyPlayerProfileV5(value: unknown): LegacyPlayerProfileV5 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V5)
+}
+
+export function migratePlayerProfileV5(value: LegacyPlayerProfileV5): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV5(value)
+  if (!parsed) throw new Error('Legacy v5 player profile is malformed')
   return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
@@ -997,24 +1022,39 @@ export function parseUmaSaveOrThrow(value: unknown): UmaSave {
   return uma
 }
 
-export function parseCardSave(value: unknown): CardSave | null {
-  if (!isObject(value) || !isId(value.templateId)) return null
-  if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > MAX_LIMIT_BREAK) return null
-  if (typeof value.maxCouponGranted !== 'boolean') return null
-  return {
-    templateId: value.templateId,
-    limitBreak: value.limitBreak,
-    maxCouponGranted: value.maxCouponGranted,
+function parseLimitBreaks(value: unknown): Record<string, number> | null {
+  if (!isObject(value)) return null
+  const breaks: Record<string, number> = {}
+  for (const [tier, level] of Object.entries(value)) {
+    if (!/^[1-9][0-9]*$/.test(tier)) return null
+    const parsed = Number(tier)
+    if (parsed > MAX_SCENARIO_TIER) return null
+    if (!isNonNegativeInt(level) || (level as number) > MAX_LIMIT_BREAK) return null
+    // A zero is the default, so it is dropped rather than stored.
+    if ((level as number) > 0) breaks[tier] = level as number
   }
+  return breaks
 }
 
-/** A stored v4 card carried a level and EXP; both are now derived from the limit break. */
-export function migrateCardSaveV4(value: unknown): CardSave | null {
+export function parseCardSave(value: unknown): CardSave | null {
+  if (!isObject(value) || !isId(value.templateId)) return null
+  const limitBreaks = parseLimitBreaks(value.limitBreaks)
+  if (!limitBreaks) return null
+  if (typeof value.maxCouponGranted !== 'boolean') return null
+  return { templateId: value.templateId, limitBreaks, maxCouponGranted: value.maxCouponGranted }
+}
+
+/**
+ * v5 held one account-wide limit break with no scenario. It becomes tier 1's, because tier 1 is the only
+ * scenario every save has reached and spreading it across tiers would invent progress that was never earned.
+ */
+export function migrateCardSaveV5(value: unknown): CardSave | null {
   if (!isObject(value) || !isId(value.templateId)) return null
   if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > MAX_LIMIT_BREAK) return null
+  const limitBreak = value.limitBreak as number
   return {
     templateId: value.templateId,
-    limitBreak: value.limitBreak,
+    limitBreaks: limitBreak > 0 ? { '1': limitBreak } : {},
     maxCouponGranted: value.maxCouponGranted === true,
   }
 }
@@ -1081,7 +1121,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
 
 export function createCardSave(template: SupportCardTemplate): CardSave {
   assertSaveCardTemplate(template)
-  return { templateId: template.id, limitBreak: 0, maxCouponGranted: false }
+  return { templateId: template.id, limitBreaks: {}, maxCouponGranted: false }
 }
 
 function nextLocalDay(day: string): string {

@@ -1,6 +1,7 @@
 // Card album/content joins (docs/design/support-cards.md).
 
 import {
+  bestCardLimitBreak,
   MAX_LIMIT_BREAK,
   cardLevel,
   BOND_RECALL_TICKET_COST,
@@ -50,8 +51,8 @@ function albumItem(
   content: LoadedContent,
 ): CardAlbumItem {
   const owned = save !== undefined
-  const limitBreak = save?.limitBreak ?? 0
-  const state = { level: cardLevel({ limitBreak }), limitBreak }
+  const limitBreak = save ? bestCardLimitBreak(save) : 0
+  const state = { level: cardLevelCap(limitBreak), limitBreak }
   const maxed = limitBreak === MAX_LIMIT_BREAK
   let promotionLock: string | null = null
   let promotionCost: number | null = null
@@ -64,7 +65,7 @@ function albumItem(
     // A Bond Recall run is the limit break, so its ticket price is the whole cost (D120).
     promotionCost = BOND_RECALL_TICKET_COST
     nextEffects = projectCardEffects(template, {
-      level: cardLevel({ limitBreak: limitBreak + 1 }),
+      level: cardLevelCap(limitBreak + 1),
       limitBreak: limitBreak + 1,
     })
     if (tickets < promotionCost) promotionLock = `Need ${promotionCost} Training Tickets`

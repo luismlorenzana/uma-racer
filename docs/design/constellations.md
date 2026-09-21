@@ -136,6 +136,9 @@ lbPct  = LB0 60 · LB1 70 · LB2 80 · LB3 90 · LB4 100
 eraPct = max(40, 100 − 5 × (T − cardEra))
 ```
 
+A card's limit break is **also per scenario** (D127), so both halves of card quality are measured against the
+scenario a node belongs to.
+
 **Era is measured against the scenario, not in absolute terms.** A card from the scenario's own era is full
 value; every era it predates costs five points, floored at 40. So Kitasan Black's Speed card and a newer Speed
 card hand you the same kind of skills, and the newer one pays more stats — but a tier-1 card is never worthless,

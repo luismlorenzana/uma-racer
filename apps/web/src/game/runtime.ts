@@ -643,7 +643,7 @@ export class GameRuntime {
       : [...this.memoryRaceHistory].sort((left, right) => right.createdAt - left.createdAt).slice(0, limit)
   }
 
-  async promoteCard(cardId: string, today = localDay(), now = Date.now()) {
+  async promoteCard(cardId: string, tier: number, today = localDay(), now = Date.now()) {
     if (this.cardLocks.has(cardId)) throw new Error('This card is already being promoted')
     this.cardLocks.add(cardId)
     try {
@@ -653,11 +653,11 @@ export class GameRuntime {
       const card = state.cards[cardId]
       if (!content || state.status !== 'ready' || !state.profile || !card) throw new Error('Support card must be owned')
       const mutation = state.persistent
-        ? await promotePersistentCard(content, cardId, today, now)
-        : promoteMemoryCard(content, state.profile, card, today, now)
+        ? await promotePersistentCard(content, cardId, tier, today, now)
+        : promoteMemoryCard(content, state.profile, card, tier, today, now)
       if (generation !== this.generation) return mutation
       replaceCardState(mutation.profile, mutation.card)
-      if (!state.persistent) this.reconcileMemoryTrainer(now, `card-limit-break:${cardId}:${mutation.card.limitBreak}`)
+      if (!state.persistent) this.reconcileMemoryTrainer(now, `card-limit-break:${cardId}:${mutation.result.tier}:${mutation.result.toLimitBreak}`)
       if (state.persistent) {
         await this.refreshBadges()
         await this.refreshPending()

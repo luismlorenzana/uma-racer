@@ -1,4 +1,5 @@
 import {
+  cardLimitBreak,
   STATS,
   cardNodeValue,
   capProfile,
@@ -210,7 +211,7 @@ export function ConstellationScreen() {
                       <span className="text-micro">
                         {isScenario
                           ? 'Scenario card · pays skill points, not stats'
-                          : `${titleCase(card.type)} · LB${owned.limitBreak} · ${Math.round(cardNodeValue(run.tier, { template: card, limitBreak: owned.limitBreak }))} per node`}
+                          : `${titleCase(card.type)} · LB${cardLimitBreak(owned, run.tier)} · ${Math.round(cardNodeValue(run.tier, { template: card, limitBreak: cardLimitBreak(owned, run.tier) }))} per node`}
                       </span>
                     </span>
                   </button>

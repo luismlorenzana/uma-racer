@@ -2,6 +2,8 @@
 // (docs/design/collection.md#card-album).
 
 import {
+  bestCardLevel,
+  bestCardLimitBreak,
   activeScenario,
   cardLevel,
   BROAD_CARD_STAT_DIVISOR,
@@ -103,8 +105,8 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
         ownership: [entry.owned ? 'owned' : 'unowned'],
         type: [entry.template.type],
         era: [String(entry.template.era)],
-        limitBreak: entry.save ? [String(entry.save.limitBreak)] : [],
-        level: entry.save ? cardLevel(entry.save) : null,
+        limitBreak: entry.save ? [String(bestCardLimitBreak(entry.save))] : [],
+        level: entry.save ? bestCardLevel(entry.save) : null,
         maxed: entry.maxed,
         // Every tier this card may be equipped at, so "equippable at tier N" is a plain enum match.
         equippableAt: SCENARIOS.filter((scenario) => scenario.tier >= entry.template.era).map((scenario) => String(scenario.tier)),
@@ -116,8 +118,8 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
       },
       sorts: {
         era: entry.template.era,
-        level: entry.save ? cardLevel(entry.save) : null,
-        limitBreak: entry.save?.limitBreak ?? null,
+        level: entry.save ? bestCardLevel(entry.save) : null,
+        limitBreak: entry.save ? bestCardLimitBreak(entry.save) : null,
         type: CARD_TYPES.indexOf(entry.template.type),
         character: entry.template.charName.toLowerCase(),
         name: entry.template.title.toLowerCase(),
@@ -216,7 +218,7 @@ export function buildCardPresets(highestTier: number): AlbumPreset[] {
 /** The value the active sort is about, shown on the tile. */
 export function cardSortValueLabel(entry: CardEntry, sort: string, parameter: string | null): string | null {
   if (sort === 'era') return `Era ${entry.template.era}`
-  if (sort === 'limitBreak') return entry.save ? `LB${entry.save.limitBreak}` : null
+  if (sort === 'limitBreak') return entry.save ? `LB${bestCardLimitBreak(entry.save)}` : null
   if (sort === 'type') return titleCase(entry.template.type)
   if (sort === 'character') return entry.template.charName
   if (sort === 'effect' && parameter) {
