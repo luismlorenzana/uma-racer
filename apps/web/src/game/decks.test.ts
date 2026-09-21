@@ -112,7 +112,7 @@ describe('manual support deck persistence', () => {
       [['speed', 'same-character'], /Another card/],
       [['future'], /tier 2/],
       [['missing'], /not owned/],
-      [['speed', 'power', 'stamina', 'guts', 'wit'], /only 4/],
+      [['speed', 'power', 'stamina', 'guts', 'wit', 'friend', 'group'], /only 6/],
     ] as const) {
       await expect(setPersistentUmaDeck(loaded, 'uma-00', ids, 20)).rejects.toThrow(message)
       expect((await db.umas.get('uma-00'))?.data).toEqual(before)

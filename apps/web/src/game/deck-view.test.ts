@@ -66,7 +66,8 @@ describe('deck view model', () => {
     const cards = Object.fromEntries(templates.map((template) => [template.id, createCardSave(template)]))
     const uma = umaFixture(umaTemplate, { cardSetIds: ['speed', 'power'] })
     const model = buildDeckView(uma, cards, content)
-    expect(model.slots.map((slot) => slot.unlocked)).toEqual([true, true, true, true, false, false])
+    // Six slots at every tier now (D125).
+    expect(model.slots.map((slot) => slot.unlocked)).toEqual([true, true, true, true, true, true])
     expect(model.slots.slice(0, 2).map((slot) => slot.card?.id)).toEqual(['speed', 'power'])
     expect(model.raceBonus).toBe(0)
     expect(model.hintSkillCount).toBe(2)
