@@ -2,6 +2,8 @@
 // (docs/design/collection.md#card-album).
 
 import {
+  activeScenario,
+  cardLevel,
   BROAD_CARD_STAT_DIVISOR,
   CARD_EFFECTS,
   MAX_LIMIT_BREAK,
@@ -73,7 +75,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
   const seen = new Set(input.seen)
   const equippedBy = new Map<string, string[]>()
   for (const uma of Object.values(input.umas)) {
-    for (const cardId of uma.deckCardIds) {
+    for (const cardId of activeScenario(uma).cardSetIds) {
       equippedBy.set(cardId, [...(equippedBy.get(cardId) ?? []), uma.templateId])
     }
   }
@@ -102,7 +104,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
         type: [entry.template.type],
         era: [String(entry.template.era)],
         limitBreak: entry.save ? [String(entry.save.limitBreak)] : [],
-        level: entry.save?.level ?? null,
+        level: entry.save ? cardLevel(entry.save) : null,
         maxed: entry.maxed,
         // Every tier this card may be equipped at, so "equippable at tier N" is a plain enum match.
         equippableAt: SCENARIOS.filter((scenario) => scenario.tier >= entry.template.era).map((scenario) => String(scenario.tier)),
@@ -114,7 +116,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
       },
       sorts: {
         era: entry.template.era,
-        level: entry.save?.level ?? null,
+        level: entry.save ? cardLevel(entry.save) : null,
         limitBreak: entry.save?.limitBreak ?? null,
         type: CARD_TYPES.indexOf(entry.template.type),
         character: entry.template.charName.toLowerCase(),

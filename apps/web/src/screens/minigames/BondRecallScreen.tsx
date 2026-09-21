@@ -1,4 +1,4 @@
-import { MAX_LIMIT_BREAK } from '@racer/domain'
+import { activeScenario, MAX_LIMIT_BREAK } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
@@ -104,9 +104,10 @@ export function BondRecallScreen() {
   const ownedCardIds = useMemo(() => ownedEntries.map(([, save]) => save.templateId), [ownedEntries])
   const activeCardIds = useMemo(() => {
     const activeUma = Object.values(umas)
-      .filter((uma) => uma.scenarioStarted)
+      .filter((uma) => activeScenario(uma).started)
       .sort((left, right) => left.templateId.localeCompare(right.templateId))[0]
-    return activeUma?.deckCardIds.filter((id) => ownedCardIds.includes(id)) ?? []
+    if (!activeUma) return []
+    return activeScenario(activeUma).cardSetIds.filter((id) => ownedCardIds.includes(id))
   }, [ownedCardIds, umas])
   const boardCardIds = activeCardIds.length > 0 ? activeCardIds : ownedCardIds.slice(0, 6)
   const [ticket, setTicket] = useState<RunTicket | null>(null)

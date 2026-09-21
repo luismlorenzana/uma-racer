@@ -39,13 +39,19 @@ Almost everything a card used to do lived in the training turn, which no longer 
 | Property | Effect |
 |---|---|
 | **Type** | how a card node distributes its value ([table](constellations.md#what-a-card-node-pays)) |
-| **Limit break** | scales every node the card occupies: LB0 0.60 → LB4 1.00 |
+| **Limit break** | scales every node the card occupies: LB0 60% → LB4 100% |
+| **Era** | scales every node against the *scenario*: current era 100%, −5 points per era older, floor 40% |
 | **Tilt** | a small per-card shift of the primary/secondary split (below) |
 | **`hintSkills`** | which skills the card pays into the library, one per node it occupies |
 | **Race Bonus** | **Uma EXP from races** while the card is in the active set, from LB1 |
 
 Deleted with the training turn: Training Bonus, Friendship Bonus, Specialty Priority, Hint Frequency, Stat
 Bonus, and Initial Stats. There is no card EXP.
+
+**Era is what makes a newer card better** (D126). Two Speed cards of the same type hand you the same kind of
+skills and the same stat split; the newer one pays more per node. Because the penalty is measured against the
+scenario rather than in absolute terms, an old card fades as an Uma climbs tiers without ever becoming
+worthless, and the tree budget stays the ceiling at every tier.
 
 ### Tilt
 

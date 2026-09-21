@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 
+import { activeScenario } from '@racer/domain'
 import {
   CARD_EFFECTS,
   createCardSave,
@@ -88,8 +89,8 @@ describe('manual support deck persistence', () => {
     await persistInitial(loaded, '2000-01-02', 1)
     await db.outbox.clear()
     const first = await setPersistentUmaDeck(loaded, 'uma-00', ['power', 'speed', 'guts'], 10)
-    expect(first).toMatchObject({ changed: true, uma: { deckCardIds: ['power', 'speed', 'guts'] } })
-    expect((await db.umas.get('uma-00'))?.data.deckCardIds).toEqual(['power', 'speed', 'guts'])
+    expect(first).toMatchObject({ changed: true })
+    expect(activeScenario((await db.umas.get('uma-00'))!.data).cardSetIds).toEqual(['power', 'speed', 'guts'])
     expect(await db.outbox.where('[kind+id]').equals(['umas', 'uma-00']).count()).toBe(1)
 
     const noOp = await setPersistentUmaDeck(loaded, 'uma-00', ['power', 'speed', 'guts'], 11)
@@ -111,7 +112,7 @@ describe('manual support deck persistence', () => {
       [['speed', 'same-character'], /Another card/],
       [['future'], /tier 2/],
       [['missing'], /not owned/],
-      [['speed', 'power', 'stamina', 'guts', 'wit'], /only 4/],
+      [['speed', 'power', 'stamina', 'guts', 'wit', 'friend', 'group'], /only 6/],
     ] as const) {
       await expect(setPersistentUmaDeck(loaded, 'uma-00', ids, 20)).rejects.toThrow(message)
       expect((await db.umas.get('uma-00'))?.data).toEqual(before)
@@ -124,11 +125,10 @@ describe('manual support deck persistence', () => {
     const template = loaded.umas.items[0]!
     const cards = Object.fromEntries(loaded.cards.items.map((item) => [item.id, createCardSave(item)]))
     const mutation = setMemoryUmaDeck(loaded, createUmaSave(template), cards, ['power', 'speed'])
-    expect(mutation).toMatchObject({ changed: true, uma: { deckCardIds: ['power', 'speed'] } })
-    expect(setMemoryUmaDeck(loaded, mutation.uma, cards, ['friend'])).toMatchObject({
-      changed: true,
-      uma: { deckCardIds: ['friend'] },
-    })
+    expect(mutation).toMatchObject({ changed: true })
+    const second = setMemoryUmaDeck(loaded, mutation.uma, cards, ['friend'])
+    expect(second.changed).toBe(true)
+    expect(activeScenario(second.uma).cardSetIds).toEqual(['friend'])
   })
 })
 
@@ -159,7 +159,7 @@ describe('manual support deck runtime', () => {
     const second = runtime.setUmaDeck('uma-00', ['speed', 'guts'], 31)
     await expect(second).rejects.toThrow(/already being saved/)
     await expect(first).resolves.toBeUndefined()
-    expect(useGame.getState().umas['uma-00']?.deckCardIds).toEqual(['power', 'speed'])
-    expect((await db.umas.get('uma-00'))?.data.deckCardIds).toEqual(['power', 'speed'])
+    expect(activeScenario(useGame.getState().umas['uma-00']!).cardSetIds).toEqual(['power', 'speed'])
+    expect(activeScenario((await db.umas.get('uma-00'))!.data).cardSetIds).toEqual(['power', 'speed'])
   })
 })

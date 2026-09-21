@@ -39,9 +39,9 @@ function card(id: string, options: {
 }
 
 describe('support deck validation', () => {
-  it('reports identity and 4/5/6 slot rules before joining content', () => {
+  it('reports identity and six-slot rules before joining content', () => {
     expect(supportDeckIdentityIssues(1, [])).toMatchObject([{ code: 'empty' }])
-    expect(supportDeckIdentityIssues(1, ['a', 'b', 'c', 'd', 'e'])).toMatchObject([{ code: 'too-many', limit: 4 }])
+    expect(supportDeckIdentityIssues(1, ['a', 'b', 'c', 'd', 'e', 'f', 'g'])).toMatchObject([{ code: 'too-many', limit: 6 }])
     expect(supportDeckIdentityIssues(2, ['a', 'b', 'c', 'd', 'e'])).toEqual([])
     expect(supportDeckIdentityIssues(3, ['a', 'b', 'c', 'd', 'e', 'f'])).toEqual([])
     expect(supportDeckIdentityIssues(1, ['safe', 'safe'])).toMatchObject([{ code: 'duplicate-id', displayId: 'safe' }])
@@ -74,7 +74,7 @@ describe('support deck validation', () => {
       templates,
     })
     expect(invalid.issues.map((issue) => issue.code)).toEqual([
-      'too-many', 'duplicate-character', 'later-era', 'not-owned', 'missing-content',
+      'duplicate-character', 'later-era', 'not-owned', 'missing-content',
     ])
 
     const mismatched = validateSupportDeck({

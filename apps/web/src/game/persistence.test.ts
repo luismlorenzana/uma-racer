@@ -1,5 +1,8 @@
 import 'fake-indexeddb/auto'
 
+import { activeScenario, constellationTemplate } from '@racer/domain'
+import { badgeSubject } from './badges'
+import { umaFixture, withRun } from './__fixtures__/save'
 import {
   createPlayerProfile,
   createInitialSave,
@@ -61,10 +64,10 @@ function uma(id: string): UmaTemplate {
   }
 }
 
-function card(): SupportCardTemplate {
+function card(index = 1): SupportCardTemplate {
   return {
-    id: 'card-1',
-    charaId: 'card-chara-1',
+    id: `card-${index}`,
+    charaId: `card-chara-${index}`,
     charName: 'Synthetic Card Character',
     title: 'Synthetic Starter',
     type: 'speed',
@@ -72,7 +75,7 @@ function card(): SupportCardTemplate {
     era: 1,
     obtain: 'free',
     starter: true,
-    hintSkillIds: [],
+    hintSkillIds: ['skill-paid-1'],
     eventSkillIds: [],
     effectProfile: {
       trainingBonus: 1,
@@ -111,9 +114,9 @@ const goalRaces: RaceTemplate[] = [
   courseId: `goal-course-${index + 1}`, season: 1, fieldSize: 8,
 }))
 
-function content(): LoadedContent {
+function content(cardCount = 1): LoadedContent {
   const umas = Array.from({ length: 25 }, (_, index) => uma(`u${String(index).padStart(2, '0')}`))
-  const cards = [card()]
+  const cards = Array.from({ length: cardCount }, (_, index) => card(index + 1))
   const atlas = (kind: ContentAtlas['kind'], ids: string[]): ContentAtlas => ({
     schemaVersion: 1,
     kind,
@@ -141,7 +144,7 @@ function content(): LoadedContent {
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
 function currentBadgeState(loaded: LoadedContent, uma: UmaSave) {
-  const state = createUmaBadgeState(uma, 1)
+  const state = createUmaBadgeState(uma, badgeSubject(loaded, uma), 1)
   return evaluateUmaFlair(
     buildUmaFlairCatalog({ state, races: loaded.races.items }),
     state,
@@ -174,26 +177,6 @@ async function resetDatabase(): Promise<void> {
 
 describe('save persistence', () => {
   beforeEach(resetDatabase)
-
-  it('bootstraps all pre-goal Umas atomically, queues once, and is idempotent', async () => {
-    const loaded = content()
-    const goalContent: LoadedContent = {
-      ...loaded,
-      races: { items: goalRaces, byId: new Map(goalRaces.map((race) => [race.id, race])) },
-    }
-    const old = { ...createUmaSave(loaded.umas.items[0]!), scenarioStarted: true, goalPlanVersion: 0, level: 21 }
-    await db.open()
-    await db.umas.put({ id: old.templateId, data: old, version: 7 })
-    expect(await bootstrapGoalPlans(goalContent, 100)).toBe(1)
-    const saved = await db.umas.get(old.templateId)
-    expect(saved).toMatchObject({ version: 7, data: { goalPlanVersion: 2 } })
-    expect(saved?.data.scenarioJourneys.slice(0, 2).map((journey) => journey.tracking)).toEqual(['legacy-untracked', 'legacy-untracked'])
-    expect(saved?.data.scenarioJourneys[2]).toMatchObject({ tier: 3, tracking: 'tracked', state: 'active' })
-    expect(await db.outbox.where('[kind+id]').equals(['umas', old.templateId]).count()).toBe(1)
-    expect(await bootstrapGoalPlans(goalContent, 101)).toBe(0)
-    expect(await db.outbox.where('[kind+id]').equals(['umas', old.templateId]).count()).toBe(1)
-  })
-  afterEach(resetDatabase)
 
   it('initializes profile, roster, ledger, and coalesced outbox atomically', async () => {
     const loaded = content()
@@ -228,7 +211,7 @@ describe('save persistence', () => {
     expect(await db.badges.count()).toBe(25)
     expect(await db.outbox.where('kind').equals('badges').count()).toBe(25)
     const first = await db.badges.get('uma:u00')
-    expect(first?.data).toMatchObject({ scope: 'uma', umaId: 'u00', history: { training: 'since-tracking', lineage: 'since-tracking' } })
+    expect(first?.data).toMatchObject({ scope: 'uma', umaId: 'u00', history: { training: 'untracked', lineage: 'since-tracking' } })
 
     if (!first || first.data.scope !== 'uma') throw new Error('Expected an Uma badge state')
     await db.badges.put({ ...first, data: {
@@ -292,28 +275,11 @@ describe('save persistence', () => {
 
   it('reports an unsupported local profile schema without replacing it', async () => {
     await db.open()
-    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 5 }
+    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 6 }
     await db.table('profile').put({ id: 'main', data: unsupported, version: 7 })
 
     await expect(readLocalSnapshot()).rejects.toThrow(/App update required/)
-    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 5 } })
-  })
-
-  it('reports an unsupported nested modifier version without replacing the Uma', async () => {
-    const loaded = content()
-    await db.open()
-    const current = {
-      ...createUmaSave(loaded.umas.items[0]!),
-      level: 11,
-      scenarioStarted: true,
-      goalPlanVersion: 0,
-      scenarioModifier: { version: 2, tier: 2, kind: 'team-spirit', bursts: 0 },
-    }
-    await db.profile.put({ id: 'main', data: createPlayerProfile(loaded.manifest.version, 1), version: 3 })
-    await db.table('umas').put({ id: current.templateId, data: current, version: 7 })
-
-    await expect(readLocalSnapshot()).rejects.toThrow(/scenario modifier version 2/)
-    expect(await db.table('umas').get(current.templateId)).toMatchObject({ version: 7, data: { scenarioModifier: { version: 2 } } })
+    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 6 } })
   })
 
   it('parses a cloud snapshot before replacing any local rows', async () => {
@@ -355,10 +321,21 @@ describe('save persistence', () => {
   it('migrates the flat v1 profile and completes starters without overwriting an existing Uma', async () => {
     const loaded = content()
     const current = createUmaSave(loaded.umas.items[0]!)
-    const { schemaVersion: _schemaVersion, scenarioStarted: _scenarioStarted, skillHistory: _skillHistory,
-      currentParents: _currentParents, parentSnapshot: _parentSnapshot, goalPlanVersion: _goalPlanVersion,
-      scenarioJourneys: _scenarioJourneys, scenarioModifier: _scenarioModifier, ...legacyUma } = current
-    const existing = { ...legacyUma, stats: { ...legacyUma.stats, speed: 777 } }
+    const template = loaded.umas.items[0]!
+    const existing = {
+      templateId: current.templateId,
+      level: 1,
+      exp: 0,
+      trainingLevel: 1,
+      trainingExp: 0,
+      stats: { ...template.baseStats, speed: 777 },
+      skillPoints: 0,
+      aptitudes: template.aptitudes,
+      deckCardIds: [],
+      skillLibrary: [],
+      loadoutSkillIds: [],
+      trainingsThisScenario: 0,
+    }
     const legacy = new Dexie('uma-racer')
     legacy.version(1).stores({
       profile: 'id',
@@ -372,14 +349,14 @@ describe('save persistence', () => {
     await legacy.open()
     await legacy.table('profile').put({ id: 'main', tickets: 225, cardCoupons: 7, umaCoupons: 2, umaShards: 9, lastDailyGrant: '2000-01-01', version: 6 })
     await legacy.table('umas').put({ id: existing.templateId, data: existing, version: 3 })
-    await legacy.table('badges').put({ id: `uma:${current.templateId}`, data: createUmaBadgeState(current, 1), version: 1 })
+    await legacy.table('badges').put({ id: `uma:${current.templateId}`, data: createUmaBadgeState(current, badgeSubject(loaded, current), 1), version: 1 })
     await legacy.table('outbox').add({ kind: 'umas', id: existing.templateId, op: 'upsert', queuedAt: 1 })
     legacy.close()
 
     await db.open()
     const migrated = await readLocalSnapshot()
-    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 4, tickets: 225, cardCoupons: 7, starterSeedContentVersion: null } })
-    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 4, scenarioStarted: true, currentParents: [], goalPlanVersion: 0, scenarioModifier: null })
+    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 5, tickets: 225, cardCoupons: 7, starterSeedContentVersion: null } })
+    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 5, unlockedTier: 1, goalPlanVersion: 0 })
     expect(await db.outbox.where('kind').equals('profile').count()).toBe(1)
     expect(await db.outbox.where('[kind+id]').equals(['umas', existing.templateId]).count()).toBe(1)
     await completeStarterSeed(loaded, 30)
@@ -387,62 +364,9 @@ describe('save persistence', () => {
     const completed = await readLocalSnapshot()
     expect(completed?.profile.data.starterSeedContentVersion).toBe(loaded.manifest.version)
     expect(completed?.umas).toHaveLength(25)
-    expect(completed?.umas.find((row) => row.id === existing.templateId)).toMatchObject({ version: 3, data: { stats: { speed: 777 } } })
+    // The v5 migration discards stored stats rather than inventing a configuration that reproduces them.
+    expect(completed?.umas.find((row) => row.id === existing.templateId)).toMatchObject({ version: 3, data: { schemaVersion: 5 } })
     expect(await db.badges.count()).toBe(1)
-  })
-
-  it('migrates local save v2 rows to v4 and queues their preserved versions', async () => {
-    const loaded = content()
-    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 2 as const }
-    const current = createUmaSave(loaded.umas.items[0]!)
-    const { scenarioModifier: _scenarioModifier, ...preModifier } = current
-    const umaV2 = { ...preModifier, schemaVersion: 2 as const, goalPlanVersion: 1 }
-    const previous = new Dexie('uma-racer')
-    previous.version(4).stores({
-      profile: 'id', umas: 'id', cards: 'id', badges: 'id', raceResults: 'id, createdAt', ledger: 'id, createdAt',
-      flairEvents: 'id, createdAt', outbox: '++seq, [kind+id]',
-    })
-    await previous.open()
-    await previous.table('profile').put({ id: 'main', data: profile, version: 8 })
-    await previous.table('umas').put({ id: umaV2.templateId, data: umaV2, version: 6 })
-    previous.close()
-
-    await db.open()
-    const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 8, data: { schemaVersion: 4 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 6, data: { schemaVersion: 4, goalPlanVersion: 1, scenarioModifier: null } })
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${umaV2.templateId}`])
-  })
-
-  it('migrates local v3 rows to v4 once without inventing active modifier progress', async () => {
-    const loaded = content()
-    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 3 as const, tickets: 91 }
-    const current = {
-      ...createUmaSave(loaded.umas.items[0]!),
-      level: 21,
-      scenarioStarted: true,
-      goalPlanVersion: 0,
-    }
-    const { scenarioModifier: _scenarioModifier, ...umaV3 } = current
-    const previous = new Dexie('uma-racer')
-    previous.version(6).stores({
-      profile: 'id', umas: 'id', cards: 'id', badges: 'id', raceResults: 'id, createdAt', ledger: 'id, createdAt',
-      flairEvents: 'id, createdAt', outbox: '++seq, [kind+id]', albumPrefs: 'id',
-    })
-    await previous.open()
-    await previous.table('profile').put({ id: 'main', data: profile, version: 12 })
-    await previous.table('umas').put({ id: umaV3.templateId, data: { ...umaV3, schemaVersion: 3 }, version: 9 })
-    await previous.table('outbox').add({ kind: 'umas', id: umaV3.templateId, op: 'upsert', queuedAt: 1 })
-    previous.close()
-
-    await db.open()
-    const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 12, data: { schemaVersion: 4, tickets: 91 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 9, data: { schemaVersion: 4, level: 21, scenarioModifier: null } })
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${umaV3.templateId}`])
-    db.close()
-    await db.open()
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${umaV3.templateId}`])
   })
 
   it('migrates a consistent v1 cloud snapshot and queues preserved-version replacements', async () => {
@@ -450,9 +374,21 @@ describe('save persistence', () => {
     await db.open()
     const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 1 as const, tickets: 88 }
     const current = createUmaSave(loaded.umas.items[0]!)
-    const { schemaVersion: _schemaVersion, scenarioStarted: _scenarioStarted, skillHistory: _skillHistory,
-      currentParents: _currentParents, parentSnapshot: _parentSnapshot, goalPlanVersion: _goalPlanVersion,
-      scenarioJourneys: _scenarioJourneys, scenarioModifier: _scenarioModifier, ...legacyUma } = current
+    const template = loaded.umas.items[0]!
+    const legacyUma = {
+      templateId: current.templateId,
+      level: 1,
+      exp: 0,
+      trainingLevel: 1,
+      trainingExp: 0,
+      stats: { ...template.baseStats },
+      skillPoints: 0,
+      aptitudes: template.aptitudes,
+      deckCardIds: [],
+      skillLibrary: [],
+      loadoutSkillIds: [],
+      trainingsThisScenario: 0,
+    }
     await expect(adoptServerSnapshot({
       entities: [
         { kind: 'profile', id: 'main', version: 7, data: profile, deleted: false, updatedAt: 20 },
@@ -462,8 +398,8 @@ describe('save persistence', () => {
       serverTime: 21,
     })).resolves.toBe('adopted')
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 4, tickets: 88 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 4, scenarioStarted: true, scenarioModifier: null } })
+    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 5, tickets: 88 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 5, unlockedTier: 1 } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${legacyUma.templateId}`])
     await expect(adoptServerSnapshot({
       entities: [
@@ -475,30 +411,6 @@ describe('save persistence', () => {
     })).rejects.toThrow(/mixes incompatible/)
   })
 
-  it('migrates a consistent active-tier v3 cloud snapshot to null modifier state', async () => {
-    const loaded = content()
-    await db.open()
-    const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 3 as const }
-    const current = {
-      ...createUmaSave(loaded.umas.items[0]!),
-      level: 11,
-      scenarioStarted: true,
-      goalPlanVersion: 0,
-    }
-    const { scenarioModifier: _scenarioModifier, ...umaV3 } = current
-    await expect(adoptServerSnapshot({
-      entities: [
-        { kind: 'profile', id: 'main', version: 10, data: profile, deleted: false, updatedAt: 20 },
-        { kind: 'umas', id: current.templateId, version: 8, data: { ...umaV3, schemaVersion: 3 }, deleted: false, updatedAt: 20 },
-      ],
-      logs: [],
-      serverTime: 21,
-    })).resolves.toBe('adopted')
-    const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 10, data: { schemaVersion: 4 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 8, data: { schemaVersion: 4, level: 11, scenarioModifier: null } })
-    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${current.templateId}`])
-  })
 })
 
 describe('game bootstrap coordinator', () => {
@@ -572,23 +484,28 @@ describe('game bootstrap coordinator', () => {
   })
 
   it('persists a legal skill loadout and coalesces Uma outbox work before publishing it', async () => {
-    const loaded = content()
+    const loaded = content(6)
     vi.spyOn(saveApi, 'load').mockResolvedValue({ entities: [], logs: [], serverTime: 1 })
     await runtime.start(loaded)
     const current = useGame.getState().umas.u00!
-    const next = {
-      ...current,
-      skillPoints: 100,
-      skillLibrary: [{ skillId: paidSkill.id, origin: 'card' as const, sourceId: 'card-1' }],
-    }
+    // The sixth slot is the scenario card: it pays the skill points this loadout needs.
+    const cardSetIds = loaded.cards.items.map((item) => item.id)
+    const cardNodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'card')
+    const next = withRun(current, {
+      cardSetIds,
+      assignments: Object.fromEntries(cardNodes.slice(0, 4).map((node) => [
+        node.id,
+        { kind: 'card', cardId: cardSetIds[5]! },
+      ])),
+    })
     const row = await db.umas.get('u00')
     await db.umas.put({ ...row!, data: next })
     replaceUma(next)
 
     await runtime.setUmaLoadout('u00', [paidSkill.id])
 
-    expect(useGame.getState().umas.u00?.loadoutSkillIds).toEqual([paidSkill.id])
-    expect((await db.umas.get('u00'))?.data.loadoutSkillIds).toEqual([paidSkill.id])
+    expect(activeScenario(useGame.getState().umas.u00!).loadoutSkillIds).toEqual([paidSkill.id])
+    expect(activeScenario((await db.umas.get('u00'))!.data).loadoutSkillIds).toEqual([paidSkill.id])
     expect(await db.outbox.where('[kind+id]').equals(['umas', 'u00']).count()).toBe(1)
     await expect(runtime.setUmaLoadout('u00', [paidSkill.id, paidSkill.id])).rejects.toThrow(/duplicate/)
   })

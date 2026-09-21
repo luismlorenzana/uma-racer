@@ -1,3 +1,4 @@
+import { withRun } from '../__fixtures__/save'
 import {
   CARD_EFFECTS,
   createCardSave,
@@ -69,7 +70,7 @@ function album(ownedIds: readonly string[], deck: readonly string[] = []) {
   return buildCardAlbumRows({
     content,
     cards,
-    umas: { u1: { ...save, deckCardIds: [...deck] } },
+    umas: { u1: withRun(save, { cardSetIds: [...deck] }) },
     tickets: 0,
     seen: [],
   })
@@ -126,7 +127,7 @@ describe('card album projection', () => {
     expect(row.facets.effectKind).toContain('statBonus')
     expect(row.facets.effectKind).not.toContain('friendshipBonus')
     expect(row.facets.effectKind).not.toContain('specialtyPriority')
-    expect(cardSortValueLabel(entry, 'effect', 'effect:statBonus')).toBe('Stat Bonus 1.3 each')
+    expect(cardSortValueLabel(entry, 'effect', 'effect:statBonus')).toBe('Stat Bonus 1.4 each')
     expect(cardSortValueLabel(entry, 'effect', 'effect:specialtyPriority')).toBeNull()
   })
 

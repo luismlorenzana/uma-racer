@@ -1,5 +1,6 @@
 // SSR support cards: usage leveling, limit breaks, generated effect values (docs/design/support-cards.md).
 
+import { CARD_SET_SIZE } from './constellation'
 import type { SupportCardTemplate } from './content'
 
 export const CARD_MAX_LEVEL = 25
@@ -33,8 +34,8 @@ export const CARD_EFFECTS = [
 ] as const
 export type CardEffect = (typeof CARD_EFFECTS)[number]
 
-/** Four slots in tier 1, five in tier 2, and the full six from tier 3 onward. */
-export const deckSlotCount = (tier: number): number => (tier <= 1 ? 4 : tier === 2 ? 5 : 6)
+/** Six slots at every tier; the 4/5/6 ramp was ours to begin with and the original always has six (D125). */
+export const deckSlotCount = (_tier: number): number => CARD_SET_SIZE
 
 /** Base values for an era-1, LB0, level-1 card. */
 export const CARD_EFFECT_BASE: Record<CardEffect, number> = {

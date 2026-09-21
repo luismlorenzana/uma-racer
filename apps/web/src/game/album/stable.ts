@@ -2,6 +2,8 @@
 // (docs/design/collection.md#uma-album-stable).
 
 import {
+  activeScenario,
+  type CardSave,
   DISTANCE_CATEGORIES,
   GRADES,
   SCENARIOS,
@@ -47,6 +49,8 @@ export interface StableEntry {
 export interface StableAlbumInput {
   content: LoadedContent
   saves: Readonly<Record<string, UmaSave>>
+  /** Owned card saves: stats are derived from the constellation, so the album needs them (D121). */
+  cards: Readonly<Record<string, CardSave>>
   profile: PlayerProfile
   /** Latest race time per Uma id, for the "recently raced" sort. */
   lastRacedAt: Readonly<Record<string, number>>
@@ -76,16 +80,16 @@ const NO_FLAIR: UmaFlairFacts = { prestige: 0, badgeCount: 0, activeTitle: null 
 
 function journeyState(save: UmaSave | null): StableEntry['journeyState'] {
   if (!save) return 'none'
-  const journey = save.scenarioJourneys.find((entry) => entry.state === 'active')
-  if (journey) return journey.goals.every((goal) => goal.status === 'completed') ? 'complete' : 'active'
+  const journey = activeScenario(save).journey
+  if (journey?.state === 'active') return journey.goals.every((goal) => goal.status === 'completed') ? 'complete' : 'active'
   return 'none'
 }
 
 function entryFor(input: StableAlbumInput, template: UmaTemplate, seen: ReadonlySet<string>): StableEntry {
   const save = input.saves[template.id] ?? null
-  const joined = save ? joinUma(save, input.content) : null
+  const joined = save ? joinUma(save, input.content, input.cards) : null
   const view = joined?.status === 'ready' ? joined.value : null
-  const aptitudes = save?.aptitudes ?? template.aptitudes
+  const aptitudes = view?.derived.aptitudes ?? template.aptitudes
   const facts = input.flair[template.id] ?? NO_FLAIR
   return {
     id: template.id,
@@ -95,12 +99,12 @@ function entryFor(input: StableAlbumInput, template: UmaTemplate, seen: Readonly
     asset: getContentAsset(input.content, 'uma-icons', template.id),
     owned: save !== null,
     aptitudes,
-    statTotal: save ? STATS.reduce((sum, stat) => sum + save.stats[stat], 0) : 0,
+    statTotal: view ? STATS.reduce((sum, stat) => sum + view.derived.stats[stat], 0) : 0,
     prestige: facts.prestige,
     badgeCount: facts.badgeCount,
     activeTitle: facts.activeTitle,
     journeyState: journeyState(save),
-    readyToTrain: save !== null && save.scenarioStarted && save.deckCardIds.length > 0 && input.profile.tickets > 0,
+    readyToTrain: view !== null && view.run.started && input.profile.tickets > 0,
     isNew: save !== null && !seen.has(template.id),
     outfitCount: 1,
     ownedOutfitCount: save ? 1 : 0,
@@ -144,11 +148,11 @@ function rowFor(entry: StableEntry, lastRacedAt: Readonly<Record<string, number>
       era: [String(Math.min(SCENARIOS.length, Math.max(1, entry.view?.tier ?? 1)))],
       level: save?.level ?? null,
       starter: template.starter,
-      hasParents: save?.parentSnapshot !== null && save?.parentSnapshot !== undefined,
+      hasParents: (entry.view?.derived.lineage.length ?? 0) > 0,
       journey: [entry.journeyState],
       title: entry.activeTitle !== null,
       readyToTrain: entry.readyToTrain,
-      readyToPromote: entry.view?.readyToPromote === true,
+      readyToPromote: entry.view?.readyToAdvance === true,
       isNew: entry.isNew,
     },
     sorts: {
@@ -156,7 +160,7 @@ function rowFor(entry: StableEntry, lastRacedAt: Readonly<Record<string, number>
       level: save?.level ?? null,
       name: template.name.toLowerCase(),
       tier: save ? tierOfLevel(save.level) : null,
-      trainingLevel: save?.trainingLevel ?? null,
+      trainingLevel: entry.view?.derived.trainingLevel ?? null,
       statTotal: save ? entry.statTotal : null,
       prestige: entry.prestige || null,
       badges: entry.badgeCount || null,
@@ -321,7 +325,7 @@ export function sortValueLabel(entry: StableEntry, sort: string, parameter: stri
     case 'statTotal': return entry.save ? `${entry.statTotal} total` : null
     case 'prestige': return entry.prestige > 0 ? `${entry.prestige} Prestige` : null
     case 'badges': return entry.badgeCount > 0 ? `${entry.badgeCount} badges` : null
-    case 'trainingLevel': return entry.save ? `TL ${entry.save.trainingLevel}` : null
+    case 'trainingLevel': return entry.view ? `TL ${entry.view.derived.trainingLevel}` : null
     case 'tier': return entry.view ? `Tier ${entry.view.tier}` : null
     case 'raced': return null
     case 'bestAptitude': {

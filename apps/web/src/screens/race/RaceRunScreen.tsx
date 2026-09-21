@@ -8,7 +8,6 @@ import { completeRace, prepareRace } from '../../game/actions'
 import { buildResultGoalView } from '../../game/goals-view'
 import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../game/flair-view'
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
-import { climaxRewardLabel } from '../../game/scenario-modifier-view'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
 import { summarizePlayerActivations, type RaceCue } from '../../scenes/race/presentation'
@@ -100,7 +99,6 @@ export function RaceRunScreen() {
   const [showResults, setShowResults] = useState(false)
   const [againBusy, setAgainBusy] = useState(false)
   const [freshGoalCommit, setFreshGoalCommit] = useState(false)
-  const [scenarioModifierReward, setScenarioModifierReward] = useState(0)
 
   const umaId = queryUmaId
   const raceId = params.get('race') ?? ''
@@ -130,7 +128,6 @@ export function RaceRunScreen() {
     setShowResults(false)
     setAgainBusy(false)
     setFreshGoalCommit(false)
-    setScenarioModifierReward(0)
     finishingRef.current = false
     void prepareRace(umaId, raceId, strategy, sequence).then((preparation) => {
       if (cancelled || contentState.status !== 'ready') return
@@ -174,7 +171,6 @@ export function RaceRunScreen() {
         recordRef.current = completion.record
         setRecord(completion.record)
         setFreshGoalCommit(!completion.alreadyRecorded)
-        setScenarioModifierReward(completion.scenarioModifierReward)
         setShowResults(true)
       }).catch((reason: unknown) => {
         setCommitError(reason instanceof Error ? reason.message : 'Could not save race result')
@@ -261,7 +257,6 @@ export function RaceRunScreen() {
   const trainerEarnedFlair = record?.earnedFlairEventIds && trainerState?.scope === 'trainer'
     ? buildTrainerFlairFanfare(content, trainerState, flairEvents, record.earnedFlairEventIds)
     : []
-  const modifierRewardLabel = climaxRewardLabel(scenarioModifierReward)
 
   const retryCommit = () => {
     if (committing || record) return
@@ -272,7 +267,6 @@ export function RaceRunScreen() {
       recordRef.current = completion.record
       setRecord(completion.record)
       setFreshGoalCommit(!completion.alreadyRecorded)
-      setScenarioModifierReward(completion.scenarioModifierReward)
     }).catch((reason: unknown) => {
       setCommitError(reason instanceof Error ? reason.message : 'Could not save race result')
       finishingRef.current = false
@@ -443,7 +437,6 @@ export function RaceRunScreen() {
                     </div>
                   )}
                   {record.levelsGained.length > 0 && <p className="mt-2 text-center text-sm font-extrabold">Reached Uma Lv {record.levelsGained.join(', ')}</p>}
-                  {modifierRewardLabel && <p className="mt-2 rounded-full bg-violet-700 px-3 py-1 text-center text-sm font-extrabold text-white">{modifierRewardLabel}</p>}
                   {record.shardReward > 0 && <p className="mt-2 text-center rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">{savedUma && savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO ? 'Latest scenario complete' : 'Ready to promote'}</p>}
                   {goalResult && goalResult.completions.length > 0 && <div className="mt-3 grid gap-2">
                     {goalResult.completions.map((goal, index) => (

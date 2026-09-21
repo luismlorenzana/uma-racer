@@ -1,3 +1,4 @@
+import { emptySubject } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
 import { createUmaBadgeState, createUmaSave, evaluateUmaFlair, buildUmaFlairCatalog, type ContentAtlas, type RaceTemplate, type UmaTemplate } from '@racer/domain'
 import { buildFlairFanfare, buildUmaFlairSummary } from './flair-view'
@@ -33,7 +34,7 @@ const loadedContent = (): LoadedContent => ({
 describe('compact flair projections', () => {
   it('collapses crossed tiers, orders fanfare, and summarizes the latest visible awards', () => {
     const content = loadedContent()
-    const state = createUmaBadgeState(createUmaSave(template), 1)
+    const state = createUmaBadgeState(createUmaSave(template), emptySubject(), 1)
     const proven = {
       ...state,
       sourceWatermarks: { ...state.sourceWatermarks, raceSequence: 24 },
@@ -53,7 +54,7 @@ describe('compact flair projections', () => {
 
   it('uses safe labels when private dynamic content is missing', () => {
     const content = loadedContent()
-    const state = createUmaBadgeState(createUmaSave(template), 1)
+    const state = createUmaBadgeState(createUmaSave(template), emptySubject(), 1)
     const events = [{
       id: 'flair:uma:flair-uma:trophy:missing:one-off',
       version: 1 as const,

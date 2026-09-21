@@ -1,3 +1,4 @@
+import { subject } from './__fixtures__/subject'
 import { describe, expect, it } from 'vitest'
 import {
   applyDynastyFact,
@@ -5,7 +6,6 @@ import {
   applyParentedStartFact,
   applyRaceBadgeFacts,
   applyScenarioCompletionFact,
-  applyTrainingBadgeFacts,
   badgeStateId,
   createTrainerBadgeState,
   createUmaBadgeState,
@@ -94,8 +94,8 @@ function result(sequence = 0, placement = 1): RaceResultRecord {
 
 describe('badge state v1', () => {
   it('constructs strict Uma and Trainer states and rejects unknown versions or corrupt counters', () => {
-    const uma = { ...createUmaSave(template), level: 12, trainingsThisScenario: 4, trainingLevel: 10 }
-    const state = createUmaBadgeState(uma, 100)
+    const uma = { ...createUmaSave(template), level: 12 }
+    const state = createUmaBadgeState(uma, subject({ tier: 2, trainingLevel: 10 }), 100)
     expect(badgeStateId(template.id)).toBe('uma:synthetic-uma')
     expect(parseBadgeState(state)).toEqual(state)
     expect(parseBadgeState(createTrainerBadgeState(100))).toEqual(createTrainerBadgeState(100))
@@ -104,7 +104,7 @@ describe('badge state v1', () => {
   })
 
   it('aggregates ordered race facts once and resets a streak on a loss', () => {
-    const base = createUmaBadgeState(createUmaSave(template), 100)
+    const base = createUmaBadgeState(createUmaSave(template), subject(), 100)
     const won = applyRaceBadgeFacts(base, 'race:synthetic-uma:0', result(), facts)
     expect(won.facts).toMatchObject({ starts: 1, wins: 1, currentWinStreak: 1, longestWinStreak: 1, balancedPeak: 600 })
     expect(won.facts.gradeWins).toEqual([{ key: 'g1', count: 1 }])
@@ -132,26 +132,25 @@ describe('badge state v1', () => {
     expect(degraded.history).toMatchObject({ race: 'exact', diagnostics: ['race-facts-unavailable:race:synthetic-uma:0'] })
   })
 
-  it('records honest Training lower bounds and future turn evidence', () => {
-    const before = { ...createUmaSave(template), scenarioStarted: true, trainingsThisScenario: 4, trainingLevel: 9 }
-    const after = {
-      ...before,
-      trainingsThisScenario: 5,
+  it('reads stats, skills and full training from the derived constellation', () => {
+    const uma = createUmaSave(template)
+    const derived = subject({
       trainingLevel: 10,
-      stats: { ...before.stats, speed: 700 },
-      skillLibrary: [{ skillId: 'synthetic-skill', origin: 'card' as const, sourceId: 'synthetic-card' }],
-    }
-    const base = createUmaBadgeState(before, 100)
-    expect(base.history.training).toBe('since-tracking')
-    const next = applyTrainingBadgeFacts({ state: base, before, after, friendship: true, presentCardCount: 6 })
-    expect(next.facts).toMatchObject({ lifetimeTrainingTurns: 5, friendshipTrainings: 1, fullHouseCount: 1 })
-    expect(next.facts.fullyTrainedTiers).toEqual([1])
-    expect(next.facts.distinctSkillIds).toEqual(['synthetic-skill'])
-    expect(parseBadgeState(next)).toEqual(next)
+      stats: { speed: 700, stamina: 100, power: 100, guts: 100, wit: 100 },
+      library: [{ skillId: 'synthetic-skill' }],
+    })
+    const state = createUmaBadgeState(uma, derived, 100)
+    // Training turns no longer exist, so their history is explicitly untracked rather than a lower bound.
+    expect(state.history.training).toBe('untracked')
+    expect(state.facts.lifetimeTrainingTurns).toBe(0)
+    expect(state.facts.statPeaks.speed).toBe(700)
+    expect(state.facts.fullyTrainedTiers).toEqual([1])
+    expect(state.facts.distinctSkillIds).toEqual(['synthetic-skill'])
+    expect(parseBadgeState(state)).toEqual(state)
   })
 
   it('deduplicates lineage evidence and captures a bounded completion snapshot', () => {
-    let state = createUmaBadgeState(createUmaSave(template), 100)
+    let state = createUmaBadgeState(createUmaSave(template), subject(), 100)
     state = applyParentedStartFact(state, 1, ['synthetic-parent'], 110)
     state = applyParentedStartFact(state, 1, ['synthetic-parent'], 120)
     state = applyLegacyFact(state, 'synthetic-child', 1, 130)

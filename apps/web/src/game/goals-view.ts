@@ -1,8 +1,14 @@
 // Pure Home, Race, Results, and Journey projections for T014 scenario goals.
 
-import { SCENARIOS, SCENARIO_SERIES_LABELS, scenarioJourneySummary, tierOfLevel, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
+import { activeScenario, SCENARIOS, SCENARIO_SERIES_LABELS, scenarioJourneySummary, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
-import { buildScenarioModifierView, type ScenarioModifierView } from './scenario-modifier-view'
+
+/** Every journey an Uma has, in tier order. Journeys live on their scenario run now (D122). */
+const journeysOf = (uma: UmaSave): ScenarioJourney[] =>
+  uma.scenarios
+    .map((run) => run.journey)
+    .filter((journey): journey is ScenarioJourney => journey !== null)
+    .sort((left, right) => left.tier - right.tier)
 
 const SLOT_ORDER = { aptitude: 0, identity: 1, challenge: 2 } as const
 const SLOT_LABEL = { aptitude: 'Aptitude', identity: 'Identity', challenge: 'Challenge' } as const
@@ -47,8 +53,8 @@ export function goalView(goal: ScenarioGoal, content: LoadedContent, targetRaceI
 }
 
 export function activeJourney(uma: UmaSave): ScenarioJourney | null {
-  const tier = tierOfLevel(uma.level)
-  return uma.scenarioJourneys.find((journey) => journey.tier === tier && journey.state === 'active') ?? null
+  const journey = activeScenario(uma).journey
+  return journey?.state === 'active' ? journey : null
 }
 
 export type HomeGoalState =
@@ -59,7 +65,7 @@ export type HomeGoalState =
   | { kind: 'active'; tier: number; goals: GoalView[]; completed: number; missingTargets: number }
 
 export function buildHomeGoalState(uma: UmaSave, content: LoadedContent): HomeGoalState {
-  if (!uma.scenarioStarted) return { kind: 'pending', detail: 'Goals appear after Scenario Start.' }
+  if (!activeScenario(uma).started) return { kind: 'pending', detail: 'Goals appear once this scenario starts.' }
   const journey = activeJourney(uma)
   if (journey?.tracking === 'tracked') {
     const goals = journey.goals.map((goal) => goalView(goal, content))
@@ -69,9 +75,9 @@ export function buildHomeGoalState(uma: UmaSave, content: LoadedContent): HomeGo
       missingTargets: goals.reduce((sum, goal) => sum + (goal.pips.length > 0 ? goal.pips.filter((pip) => pip.missing).length : Number(goal.race === null)), 0),
     }
   }
-  const current = uma.scenarioJourneys.find((item) => item.tier === tierOfLevel(uma.level))
+  const current = activeScenario(uma).journey
   if (current?.tracking === 'legacy-untracked') return { kind: 'legacy-untracked', detail: 'This scenario predates goal tracking.' }
-  if (uma.parentSnapshot?.completedTier === tierOfLevel(uma.level)) return { kind: 'complete', detail: 'Latest scenario complete.' }
+  if (current?.state === 'completed') return { kind: 'complete', detail: 'Latest scenario complete.' }
   return { kind: 'none', detail: 'No active goal plan is available.' }
 }
 
@@ -85,22 +91,20 @@ export interface JourneyMedallionView {
   missed: number
   active: number
   honors: boolean
-  modifier: ScenarioModifierView | null
 }
 
 export function buildJourneyView(uma: UmaSave, content: LoadedContent): JourneyMedallionView[] {
-  return Array.from({ length: tierOfLevel(uma.level) }, (_, index) => index + 1).map((tier) => {
-    const journey = uma.scenarioJourneys.find((item) => item.tier === tier)
+  const byTier = new Map(journeysOf(uma).map((journey) => [journey.tier, journey]))
+  return Array.from({ length: uma.unlockedTier }, (_, index) => index + 1).map((tier) => {
+    const name = SCENARIOS[tier - 1]?.name ?? `Tier ${tier}`
+    const journey = byTier.get(tier)
     if (!journey) return {
-      tier, name: SCENARIOS[tier - 1]?.name ?? `Tier ${tier}`, tracking: 'missing' as const, state: 'missing' as const,
+      tier, name, tracking: 'missing' as const, state: 'missing' as const,
       goals: [], completed: 0, missed: 0, active: 0, honors: false,
-      modifier: buildScenarioModifierView(tier, uma.scenarioModifier, false),
     }
-    const summary = scenarioJourneySummary(journey)
     return {
-      tier, name: SCENARIOS[tier - 1]?.name ?? `Tier ${tier}`, tracking: journey.tracking, state: journey.state,
-      goals: journey.goals.map((goal) => goalView(goal, content)), ...summary,
-      modifier: buildScenarioModifierView(tier, uma.scenarioModifier, journey.state === 'active'),
+      tier, name, tracking: journey.tracking, state: journey.state,
+      goals: journey.goals.map((goal) => goalView(goal, content)), ...scenarioJourneySummary(journey),
     }
   })
 }
@@ -147,12 +151,12 @@ export function buildResultGoalView(
   freshCommit: boolean,
 ): { completions: GoalView[]; honors: boolean; animate: boolean; completed: number } {
   const ids = record.completedGoalIds ?? []
-  const allGoals = uma.scenarioJourneys.flatMap((journey) => journey.goals)
+  const allGoals = journeysOf(uma).flatMap((journey) => journey.goals)
   const completions = ids.map((id) => allGoals.find((goal) => goal.id === id))
     .filter((goal): goal is ScenarioGoal => goal !== undefined)
     .sort((left, right) => SLOT_ORDER[left.slot] - SLOT_ORDER[right.slot])
     .map((goal) => goalView(goal, content))
-  const journey = uma.scenarioJourneys.find((item) => item.goals.some((goal) => ids.includes(goal.id)))
+  const journey = journeysOf(uma).find((item) => item.goals.some((goal) => ids.includes(goal.id)))
   const summary = journey ? scenarioJourneySummary(journey) : { completed: 0, honors: false }
   return { completions, honors: summary.honors, completed: summary.completed, animate: freshCommit && completions.length > 0 }
 }

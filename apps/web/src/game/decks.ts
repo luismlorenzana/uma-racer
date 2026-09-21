@@ -1,6 +1,7 @@
 // Atomic per-Uma support decks (docs/design/support-cards.md#deck).
 
 import {
+  activeScenario,
   parseCardSave,
   parseUmaSave,
   supportDeckIdentityIssues,
@@ -13,6 +14,15 @@ import {
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { queueInTransaction } from './persistence'
+
+/** Card sets belong to the active scenario run now (D125). */
+function withCardSet(uma: UmaSave, orderedCardIds: readonly string[]): UmaSave {
+  return {
+    ...uma,
+    scenarios: uma.scenarios.map((run) =>
+      run.tier === uma.unlockedTier ? { ...run, cardSetIds: [...orderedCardIds] } : run),
+  }
+}
 
 export interface DeckMutationResult {
   uma: UmaSave
@@ -39,8 +49,8 @@ export function setMemoryUmaDeck(
     templates: content.cards.byId,
   })
   if (!validation.valid) throwFirstIssue(validation.issues)
-  if (sameOrder(uma.deckCardIds, orderedCardIds)) return { uma, changed: false }
-  return { uma: { ...uma, deckCardIds: [...orderedCardIds] }, changed: true }
+  if (sameOrder(activeScenario(uma).cardSetIds, orderedCardIds)) return { uma, changed: false }
+  return { uma: withCardSet(uma, orderedCardIds), changed: true }
 }
 
 export async function setPersistentUmaDeck(
@@ -76,8 +86,8 @@ export async function setPersistentUmaDeck(
       templates: content.cards.byId,
     })
     if (!validation.valid) throwFirstIssue(validation.issues)
-    if (sameOrder(uma.deckCardIds, orderedCardIds)) return { uma, changed: false }
-    const next = { ...uma, deckCardIds: [...orderedCardIds] }
+    if (sameOrder(activeScenario(uma).cardSetIds, orderedCardIds)) return { uma, changed: false }
+    const next = withCardSet(uma, orderedCardIds)
     await db.umas.put({ ...umaRow, data: next })
     await queueInTransaction('umas', umaId, 'upsert', now)
     return { uma: next, changed: true }

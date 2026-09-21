@@ -1,22 +1,17 @@
-// Atomic local-first scenario start (docs/design/skills-and-inheritance.md#inheritance).
+// Atomic local-first scenario start and advance (docs/design/uma-progression.md).
 
 import {
-  EMPTY_SCENARIO_START_SELECTION,
-  parentFingerprint,
-  parseCardSave,
-  parseLedgerEntry,
+  activeScenario,
+  advanceScenario,
+  deriveUma,
   parsePlayerProfileOrThrow,
   parseUmaSave,
-  promoteScenario,
-  sameParentFingerprint,
-  startNewUmaScenario,
-  tierOfLevel,
-  type CardSave,
-  type NewUmaScenarioStartResult,
-  type PlayerProfile,
-  type ScenarioPromotionResult,
-  type ScenarioStartSelection,
+  scenarioAdvanceReadiness,
+  startScenario,
   type BadgeStateV1,
+  type CardSave,
+  type PlayerProfile,
+  type ScenarioAdvanceResult,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -25,171 +20,157 @@ import { updateScenarioBadgeFacts } from './badges'
 import { reconcileTrainerInTransaction } from './trainer'
 import { queueInTransaction } from './persistence'
 
-export interface ScenarioStartMutation {
+export interface ScenarioMutation {
   profile: PlayerProfile
   uma: UmaSave
-  result: ScenarioPromotionResult | NewUmaScenarioStartResult | null
+  /** Null when the scenario was already started, which makes the action idempotent. */
+  result: ScenarioAdvanceResult | null
   alreadyStarted: boolean
-  /** Compatibility for T012 callers while the route moves to startScenario. */
-  alreadyPromoted: boolean
   badgeStates?: Record<string, BadgeStateV1>
   earnedFlairEventIds: string[]
 }
 
-export interface ScenarioPromotionMutation extends Omit<ScenarioStartMutation, 'result'> {
-  result: ScenarioPromotionResult | null
-}
-
-function resolveCards(content: LoadedContent, uma: UmaSave, cardsById: Readonly<Record<string, CardSave>>) {
-  return uma.deckCardIds.map((id) => {
-    const save = cardsById[id]
-    if (!save) throw new Error(`Promotion deck card is not owned: ${id}`)
-    const template = content.cards.byId.get(id)
-    if (!template) throw new Error(`Promotion deck card content is missing: ${id}`)
-    return { save, template }
-  })
-}
-
-function selectionMatchesActive(uma: UmaSave, selection: ScenarioStartSelection): boolean {
-  if (!uma.scenarioStarted || uma.currentParents.length !== selection.parents.length) return false
-  if (!uma.currentParents.every((snapshot, index) => {
-    const chosen = selection.parents[index]
-    return chosen ? sameParentFingerprint(parentFingerprint(snapshot), chosen) : false
-  })) return false
-  const inherited = new Set(uma.skillLibrary.filter((unlock) => unlock.origin === 'inherited').map((unlock) => unlock.skillId))
-  const expected = new Set([...selection.grandparentUniqueSkillIds, ...selection.grandparentWhiteSkillIds])
-  for (const parent of uma.currentParents) {
-    if (parent.inheritedUniqueSkillId) expected.add(parent.inheritedUniqueSkillId)
-    parent.inheritableWhiteSkillIds.forEach((id) => expected.add(id))
-  }
-  return inherited.size === expected.size && [...expected].every((id) => inherited.has(id))
+/** Aptitudes the new run's goals are frozen against, derived from its (empty) constellation. */
+function aptitudesFor(
+  content: LoadedContent,
+  uma: UmaSave,
+  cardsById: Readonly<Record<string, CardSave>>,
+) {
+  const template = content.umas.byId.get(uma.templateId)
+  if (!template) throw new Error(`Scenario Uma content is missing: ${uma.templateId}`)
+  return deriveUma({
+    uma,
+    umaTemplate: template,
+    cardSaves: new Map(Object.entries(cardsById)),
+    cardTemplates: content.cards.byId,
+    umaTemplates: content.umas.byId,
+  }).aptitudes
 }
 
 export function startMemoryScenario(
   content: LoadedContent,
   profile: PlayerProfile,
   uma: UmaSave,
-  ownedUmas: readonly UmaSave[],
   cardsById: Readonly<Record<string, CardSave>>,
-  selection: ScenarioStartSelection,
-  now: number,
-): ScenarioStartMutation {
-  const umaTemplate = content.umas.byId.get(uma.templateId)
-  if (!umaTemplate) throw new Error(`Scenario content is missing Uma ${uma.templateId}`)
-  if (!uma.scenarioStarted) {
-    const result = startNewUmaScenario({
-      uma, umaTemplate, skills: content.skills.byId, races: content.races.items, ownedUmas, umaTemplates: content.umas.byId, selection,
-    })
-    return { profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false, earnedFlairEventIds: [] }
+): ScenarioMutation {
+  const template = content.umas.byId.get(uma.templateId)
+  if (!template) throw new Error(`Scenario Uma content is missing: ${uma.templateId}`)
+  if (activeScenario(uma).started) {
+    return { profile, uma, result: null, alreadyStarted: true, earnedFlairEventIds: [] }
   }
-  const result = promoteScenario({
-    profile,
+  const started = startScenario({
     uma,
-    umaTemplate,
-    skills: content.skills.byId,
-    cards: resolveCards(content, uma, cardsById),
+    umaTemplate: template,
+    aptitudes: aptitudesFor(content, uma, cardsById),
     races: content.races.items,
-    now,
-    ownedUmas,
-    umaTemplates: content.umas.byId,
-    selection,
   })
-  return { profile: result.profile, uma: result.uma, result, alreadyStarted: false, alreadyPromoted: false, earnedFlairEventIds: [] }
+  return { profile, uma: started, result: null, alreadyStarted: false, earnedFlairEventIds: [] }
 }
 
-/** Zero-parent promotion helper, kept for saves made before lineage. */
-export function promoteMemoryUma(
+export function advanceMemoryUma(
   content: LoadedContent,
   profile: PlayerProfile,
   uma: UmaSave,
   cardsById: Readonly<Record<string, CardSave>>,
   now: number,
-): ScenarioPromotionMutation {
-  const mutation = startMemoryScenario(content, profile, uma, [uma], cardsById, EMPTY_SCENARIO_START_SELECTION, now)
-  if (mutation.result && !('fromTier' in mutation.result)) throw new Error('A pending new Uma requires Scenario Start')
-  return mutation as ScenarioPromotionMutation
+): ScenarioMutation {
+  const template = content.umas.byId.get(uma.templateId)
+  if (!template) throw new Error(`Scenario Uma content is missing: ${uma.templateId}`)
+  const result = advanceScenario({
+    profile,
+    uma,
+    umaTemplate: template,
+    // The next tier opens with nothing configured, so its goals see her base aptitudes.
+    aptitudes: aptitudesFor(content, uma, cardsById),
+    races: content.races.items,
+    now,
+  })
+  return {
+    profile: result.profile,
+    uma: result.uma,
+    result,
+    alreadyStarted: false,
+    earnedFlairEventIds: [],
+  }
 }
 
+async function readState(umaId: string) {
+  const profileRow = await db.profile.get('main')
+  const umaRow = await db.umas.get(umaId)
+  if (!profileRow) throw new Error('Local profile is missing')
+  if (!umaRow) throw new Error('Scenario Uma is not owned')
+  const uma = parseUmaSave(umaRow.data)
+  if (!uma || uma.templateId !== umaId) throw new Error(`Invalid local Uma save: ${umaId}`)
+  return { profileRow, umaRow, profile: parsePlayerProfileOrThrow(profileRow.data), uma }
+}
+
+async function ownedCards(): Promise<Record<string, CardSave>> {
+  const rows = await db.cards.toArray()
+  return Object.fromEntries(rows.map((row) => [row.id, row.data as CardSave]))
+}
+
+/** Confirms the active scenario's start, freezing its goals. Safe to call twice. */
 export async function startPersistentScenario(
   content: LoadedContent,
   umaId: string,
-  selection: ScenarioStartSelection,
   now: number,
-): Promise<ScenarioStartMutation> {
+): Promise<ScenarioMutation> {
   return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
-    const profileRow = await db.profile.get('main')
-    const umaRows = await db.umas.toArray()
-    const umaRow = umaRows.find((row) => row.id === umaId)
-    if (!profileRow) throw new Error('Local profile is missing')
-    if (!umaRow) throw new Error('Scenario Uma is not owned')
-    const profile = parsePlayerProfileOrThrow(profileRow.data)
-    const ownedUmas = umaRows.map((row) => {
-      const saved = parseUmaSave(row.data)
-      if (!saved || saved.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
-      return saved
-    })
-    const uma = ownedUmas.find((saved) => saved.templateId === umaId)!
+    const { umaRow, profile, uma } = await readState(umaId)
+    const mutation = startMemoryScenario(content, profile, uma, await ownedCards())
+    if (mutation.alreadyStarted) return mutation
 
-    if (uma.scenarioStarted && uma.level === 1 && uma.trainingsThisScenario === 0 && uma.parentSnapshot === null) {
-      if (selectionMatchesActive(uma, selection)) {
-        return { profile, uma, result: null, alreadyStarted: true, alreadyPromoted: false, earnedFlairEventIds: [] }
-      }
-      throw new Error('This Uma already started tier 1 with a different selection')
+    await db.umas.put({ ...umaRow, data: mutation.uma })
+    await queueInTransaction('umas', umaId, 'upsert', now)
+    const flair = await updateScenarioBadgeFacts({ content, before: uma, after: mutation.uma, completedTier: null, now })
+    const trainer = await reconcileTrainerInTransaction(content, now, false, `scenario:${umaId}:${now}`)
+    return {
+      ...mutation,
+      badgeStates: { ...flair.states, trainer: trainer.state },
+      earnedFlairEventIds: [...flair.events, ...trainer.events].map((event) => event.id),
     }
+  })
+}
 
-    const currentTier = tierOfLevel(uma.level)
-    const previousTier = currentTier - 1
-    if (previousTier > 0 && (uma.level % 10 === 1 || uma.level % 10 === 2)) {
-      const priorId = `uma-promotion:${umaId}:${previousTier}`
-      const prior = await db.ledger.get(priorId)
-      const parsed = prior ? parseLedgerEntry(prior.data) : null
-      const matchingPostState = uma.parentSnapshot?.completedTier === previousTier && selectionMatchesActive(uma, selection) &&
-        uma.trainingLevel === 1 && uma.trainingExp === 0 && uma.trainingsThisScenario === 0
-      if (parsed && parsed.reason === 'uma-promotion' && parsed.delta === -25 * previousTier && matchingPostState) {
-        return { profile, uma, result: null, alreadyStarted: true, alreadyPromoted: true, earnedFlairEventIds: [] }
-      }
-      if (prior) throw new Error('Scenario promotion ledger or selection is corrupt')
-    }
-    if (uma.scenarioStarted && uma.level % 10 !== 0) throw new Error('This Uma already has an active scenario')
+/** Unlocks the next scenario: spends tickets, opens a fresh run, and closes the old journey. */
+export async function advancePersistentUma(
+  content: LoadedContent,
+  umaId: string,
+  now: number,
+): Promise<ScenarioMutation> {
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
+    const { profileRow, umaRow, profile, uma } = await readState(umaId)
+    const readiness = scenarioAdvanceReadiness(profile, uma)
+    if (!readiness.ready) throw new Error(readiness.reason ?? 'This Uma cannot advance yet')
 
-    const cardRows = await db.cards.bulkGet(uma.deckCardIds)
-    const cardsById = Object.fromEntries(uma.deckCardIds.map((id, index) => {
-      const row = cardRows[index]
-      if (!row) throw new Error(`Promotion deck card is not owned: ${id}`)
-      const card = parseCardSave(row.data)
-      if (!card || card.templateId !== id) throw new Error(`Invalid local card save: ${id}`)
-      return [id, card]
-    }))
-    const mutation = startMemoryScenario(content, profile, uma, ownedUmas, cardsById, selection, now)
+    const mutation = advanceMemoryUma(content, profile, uma, await ownedCards(), now)
+    const result = mutation.result!
 
-    if (mutation.result && 'fromTier' in mutation.result) {
-      const ledgerRows = await db.ledger.bulkGet(mutation.result.ledger.map((entry) => entry.id))
-      if (ledgerRows.some((row) => row !== undefined)) throw new Error('This scenario promotion was already recorded')
-      await db.profile.put({ ...profileRow, data: mutation.profile })
-      await queueInTransaction('profile', 'main', 'upsert', now)
-      for (const entry of mutation.result.ledger) {
-        await db.ledger.add({ id: entry.id, data: entry.data, createdAt: entry.data.createdAt })
-        await queueInTransaction('ledger', entry.id, 'append', now)
-      }
+    // The ledger id is the idempotency key: a retry after a partial write cannot spend twice.
+    const ledgerRows = await db.ledger.bulkGet(result.ledger.map((entry) => entry.id))
+    if (ledgerRows.some((row) => row !== undefined)) throw new Error('This scenario advance was already recorded')
+
+    await db.profile.put({ ...profileRow, data: mutation.profile })
+    await queueInTransaction('profile', 'main', 'upsert', now)
+    for (const entry of result.ledger) {
+      await db.ledger.add({ id: entry.id, data: entry.data, createdAt: entry.data.createdAt })
+      await queueInTransaction('ledger', entry.id, 'append', now)
     }
     await db.umas.put({ ...umaRow, data: mutation.uma })
     await queueInTransaction('umas', umaId, 'upsert', now)
-    const completedTier = mutation.result && 'fromTier' in mutation.result ? mutation.result.fromTier : null
+
     const flair = await updateScenarioBadgeFacts({
       content,
       before: uma,
       after: mutation.uma,
-      completedTier,
+      completedTier: result.fromTier,
       now,
     })
     const trainer = await reconcileTrainerInTransaction(content, now, false, `scenario:${umaId}:${now}`)
-    return { ...mutation, badgeStates: { ...flair.states, trainer: trainer.state }, earnedFlairEventIds: [...flair.events, ...trainer.events].map((event) => event.id) }
+    return {
+      ...mutation,
+      badgeStates: { ...flair.states, trainer: trainer.state },
+      earnedFlairEventIds: [...flair.events, ...trainer.events].map((event) => event.id),
+    }
   })
-}
-
-/** Zero-parent promotion helper, kept for saves made before lineage. */
-export async function promotePersistentUma(content: LoadedContent, umaId: string, now: number): Promise<ScenarioPromotionMutation> {
-  const mutation = await startPersistentScenario(content, umaId, EMPTY_SCENARIO_START_SELECTION, now)
-  if (mutation.result && !('fromTier' in mutation.result)) throw new Error('A pending new Uma requires Scenario Start')
-  return mutation as ScenarioPromotionMutation
 }

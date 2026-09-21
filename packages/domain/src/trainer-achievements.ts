@@ -280,7 +280,7 @@ function aggregateFacts(input: TrainerReconcileInput, catalog: TrainerAchievemen
   setCount(facts, 'catalog-umas', input.umas.length)
   setCount(facts, 'owned-cards', cards.length)
   setCount(facts, 'catalog-cards', input.cards.length)
-  setCount(facts, 'maxed-cards', cards.filter((card) => card.limitBreak === MAX_LIMIT_BREAK && card.level === CARD_MAX_LEVEL).length)
+  setCount(facts, 'maxed-cards', cards.filter((card) => card.limitBreak === MAX_LIMIT_BREAK).length)
   setCount(facts, 'coupon-redemptions', input.ledger.filter(isCouponRedemption).length)
   setCount(facts, 'stable-wins', contributors.reduce((sum, state) => sum + state.facts.wins, 0))
   setCount(facts, 'stable-g1s', contributors.reduce((sum, state) => sum + countFact(state.facts.gradeWins, 'g1'), 0))

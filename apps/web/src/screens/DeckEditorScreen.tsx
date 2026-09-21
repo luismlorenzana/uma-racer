@@ -1,9 +1,11 @@
 import {
   STATS,
-  autoTrainingDeck,
+  activeScenario,
+  cardLevel,
+  autoCardSet,
   scenarioForTier,
   type SupportCardType,
-  type TrainingCardInput,
+  type SupportDeckCard,
 } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useMemo, useState } from 'react'
@@ -44,7 +46,7 @@ export function DeckEditorScreen() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const ids = draft ?? uma?.deckCardIds ?? []
+  const ids = draft ?? (uma ? activeScenario(uma).cardSetIds : [])
   const model = useMemo(() => contentState.status === 'ready' && uma
     ? buildDeckView(uma, cards, contentState.content, ids, { type: 'all', era: 'all' })
     : null, [cards, contentState, ids, uma])
@@ -59,7 +61,7 @@ export function DeckEditorScreen() {
   if (!umaTemplate) return <ScreenState title="Content reference missing" detail={`The save is preserving ${uma.templateId} until its template is restored.`} action={{ label: 'Back to Stable', to: '/stable' }} />
 
   const setIds = (next: string[]) => { setDraft(next); setError(null) }
-  const remove = (index: number) => setIds(ids.filter((_, itemIndex) => itemIndex !== index))
+  const remove = (index: number) => setIds(ids.filter((_: string, itemIndex: number) => itemIndex !== index))
   const move = (index: number, offset: -1 | 1) => {
     const destination = index + offset
     if (destination < 0 || destination >= ids.length) return
@@ -68,11 +70,11 @@ export function DeckEditorScreen() {
     setIds(next)
   }
   const autoFill = () => {
-    const owned = Object.values(cards).flatMap((save): TrainingCardInput[] => {
+    const owned = Object.values(cards).flatMap((save): SupportDeckCard[] => {
       const template = contentState.content.cards.byId.get(save.templateId)
       return template ? [{ save, template }] : []
     })
-    const next = autoTrainingDeck(umaTemplate, model.tier, owned)
+    const next = autoCardSet(umaTemplate, model.tier, owned)
     if (next.length === 0) {
       setError('No owned cards are eligible for this scenario')
       return
@@ -122,7 +124,7 @@ export function DeckEditorScreen() {
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky/10 text-sm font-extrabold">{slot.index + 1}</span>
               {!slot.unlocked ? <p className="font-extrabold">Locked until a later scenario</p> : slot.card ? <>
                 <AtlasSprite asset={slot.card.asset} decorative className="h-14 w-14 shrink-0 rounded-xl bg-slate-100" fallback={<div className="flex h-full items-center justify-center text-lg">?</div>} />
-                <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{slot.card.template ? `${slot.card.template.charName} · ${slot.card.template.title}` : `Missing ${slot.card.id}`}</p><p className="text-xs font-bold text-ink-soft">{slot.card.template && slot.card.save ? (slot.card.template.era > model.tier ? `Era locked · Tier ${slot.card.template.era}` : `${TYPE_LABEL[slot.card.template.type]} · Lv ${slot.card.save.level} · LB${slot.card.save.limitBreak} · Tier ${slot.card.template.era}`) : slot.card.template ? 'Not owned · repair required' : 'Missing content · repair required'}</p></div>
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{slot.card.template ? `${slot.card.template.charName} · ${slot.card.template.title}` : `Missing ${slot.card.id}`}</p><p className="text-xs font-bold text-ink-soft">{slot.card.template && slot.card.save ? (slot.card.template.era > model.tier ? `Era locked · Tier ${slot.card.template.era}` : `${TYPE_LABEL[slot.card.template.type]} · Lv ${cardLevel(slot.card.save)} · LB${slot.card.save.limitBreak} · Tier ${slot.card.template.era}`) : slot.card.template ? 'Not owned · repair required' : 'Missing content · repair required'}</p></div>
                 <div className="flex shrink-0 gap-1">
                   <button type="button" aria-label={`Move ${selectedId} earlier`} disabled={slot.index === 0 || busy} onClick={() => move(slot.index, -1)} className="min-h-11 min-w-11 rounded-xl bg-sky-50 font-extrabold disabled:opacity-35">↑</button>
                   <button type="button" aria-label={`Move ${selectedId} later`} disabled={slot.index === ids.length - 1 || busy} onClick={() => move(slot.index, 1)} className="min-h-11 min-w-11 rounded-xl bg-sky-50 font-extrabold disabled:opacity-35">↓</button>

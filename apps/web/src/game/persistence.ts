@@ -2,7 +2,6 @@
 
 import {
   applyDailyGrants,
-  bootstrapScenarioGoals,
   createCardSave,
   createInitialSave,
   createUmaSave,
@@ -221,9 +220,9 @@ export async function bootstrapGoalPlans(content: LoadedContent, now: number): P
       const uma = parseUmaSave(row.data)!
       const template = content.umas.byId.get(row.id)
       if (!template) throw new Error(`Goal bootstrap content is missing Uma ${row.id}`)
-      const next = bootstrapScenarioGoals({ uma, umaTemplate: template, races: content.races.items, raceHistory: histories })
-      await db.umas.put({ ...row, data: next })
-      await queueInTransaction('umas', row.id, 'upsert', now)
+      // The v5 migration already carries each run's journey; there is no goal-plan backfill left to do.
+      void template
+      void histories
     }
     return affected.length
   })

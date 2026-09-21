@@ -1,7 +1,10 @@
 // Shared support-deck validation (docs/design/support-cards.md#deck).
 
+import { STATS } from './types'
+import { cardLevel } from './card-progression'
+import { CARD_SET_SIZE, cardNodeValue } from './constellation'
 import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue, type CardEffect } from './cards'
-import type { SupportCardTemplate } from './content'
+import type { SupportCardTemplate, UmaTemplate } from './content'
 import type { CardSave } from './save'
 import { SAVE_ID_PATTERN } from './save'
 
@@ -143,6 +146,52 @@ export function validateEquippedSupportDeck(
 export function supportDeckEffectTotals(cards: readonly SupportDeckCard[]): Record<CardEffect, number> {
   return Object.fromEntries(CARD_EFFECTS.map((effect) => [
     effect,
-    cards.reduce((total, card) => total + projectedCardEffectValue(effect, card.template, card.save), 0),
+    cards.reduce((total, card) => total + projectedCardEffectValue(effect, card.template, {
+      limitBreak: card.save.limitBreak,
+      level: cardLevel(card.save),
+    }), 0),
   ])) as Record<CardEffect, number>
+}
+
+/**
+ * Deterministic auto-fill for a scenario's six-card set. Prefers one card per stat in the Uma's growth
+ * order, then fills the remaining slots with the strongest eligible cards. Ties break on era, then limit
+ * break, then card id, so the same collection always produces the same set.
+ */
+export function autoCardSet(
+  umaTemplate: Pick<UmaTemplate, 'growthRates'>,
+  tier: number,
+  owned: readonly SupportDeckCard[],
+): string[] {
+  const eligible = owned.filter((card) => card.template.era <= tier)
+  const strength = (card: SupportDeckCard) =>
+    cardNodeValue(tier, { template: card.template, limitBreak: card.save.limitBreak })
+  const ranked = [...eligible].sort((left, right) =>
+    strength(right) - strength(left) ||
+    right.template.era - left.template.era ||
+    right.save.limitBreak - left.save.limitBreak ||
+    left.template.id.localeCompare(right.template.id))
+
+  const picked: SupportDeckCard[] = []
+  const characters = new Set<string>()
+  const take = (card: SupportDeckCard): boolean => {
+    if (picked.length >= CARD_SET_SIZE || characters.has(card.template.charaId)) return false
+    picked.push(card)
+    characters.add(card.template.charaId)
+    return true
+  }
+
+  // First pass: cover each stat, strongest growth first, so her identity shapes the set.
+  const byGrowth = [...STATS].sort((left, right) =>
+    (umaTemplate.growthRates[right] ?? 0) - (umaTemplate.growthRates[left] ?? 0) || left.localeCompare(right))
+  for (const stat of byGrowth) {
+    const match = ranked.find((card) => card.template.type === stat && !picked.includes(card))
+    if (match) take(match)
+  }
+  // Second pass: fill whatever is left with the strongest remaining, wildcards included.
+  for (const card of ranked) {
+    if (picked.length >= CARD_SET_SIZE) break
+    if (!picked.includes(card)) take(card)
+  }
+  return picked.map((card) => card.template.id)
 }

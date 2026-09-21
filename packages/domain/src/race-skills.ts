@@ -1,7 +1,7 @@
 // Safe R2.5 race-skill compiler and loadout rules (docs/design/racing.md#basic-race-skills-r25).
 
 import type { SkillTemplate, UmaTemplate } from './content'
-import type { UmaSave } from './save'
+import type { SkillUnlock, UmaSave } from './save'
 
 export const RACE_SKILL_SCALE = 10_000
 export const SKILL_ACTIVATION_MIN = 0.2
@@ -424,14 +424,21 @@ export interface SkillLoadoutSummary {
   skills: SkillTemplate[]
 }
 
+/** The derived shape a loadout is checked against; `deriveUma` produces one. */
+export interface SkillLoadoutSource {
+  library: readonly SkillUnlock[]
+  skillPoints: number
+  loadoutSkillIds: readonly string[]
+}
+
 export function summarizeSkillLoadout(
-  uma: UmaSave,
+  source: SkillLoadoutSource,
   template: UmaTemplate,
   skillsById: ReadonlyMap<string, SkillTemplate>,
-  ids: readonly string[] = uma.loadoutSkillIds,
+  ids: readonly string[] = source.loadoutSkillIds,
 ): SkillLoadoutSummary {
   const errors: string[] = []
-  const library = new Map(uma.skillLibrary.map((skill) => [skill.skillId, skill]))
+  const library = new Map(source.library.map((skill) => [skill.skillId, skill]))
   if (new Set(ids).size !== ids.length) errors.push('The loadout contains a duplicate skill')
   const skills = ids.flatMap((id) => {
     const unlock = library.get(id)
@@ -455,17 +462,20 @@ export function summarizeSkillLoadout(
     return [skill]
   })
   const cost = skills.reduce((sum, skill) => sum + skill.costSp!, 0)
-  if (cost > uma.skillPoints) errors.push(`Loadout costs ${cost} SP but only ${uma.skillPoints} SP is available`)
-  return { valid: errors.length === 0, cost, cap: uma.skillPoints, errors, skills }
+  if (cost > source.skillPoints) {
+    errors.push(`Loadout costs ${cost} SP but only ${source.skillPoints} SP is available`)
+  }
+  return { valid: errors.length === 0, cost, cap: source.skillPoints, errors, skills }
 }
 
+/** Returns the validated loadout ids; the caller writes them onto the scenario they belong to. */
 export function replaceSkillLoadout(
-  uma: UmaSave,
+  source: SkillLoadoutSource,
   template: UmaTemplate,
   skillsById: ReadonlyMap<string, SkillTemplate>,
   ids: readonly string[],
-): UmaSave {
-  const summary = summarizeSkillLoadout(uma, template, skillsById, ids)
+): string[] {
+  const summary = summarizeSkillLoadout(source, template, skillsById, ids)
   if (!summary.valid) throw new Error(summary.errors[0])
-  return { ...uma, loadoutSkillIds: [...ids] }
+  return [...ids]
 }

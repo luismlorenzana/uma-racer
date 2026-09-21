@@ -55,12 +55,12 @@ describe('collection projections', () => {
   })
 
   it('projects owned and unowned Uma outfits with deterministic aptitude filtering and honest counts', () => {
-    const umas = [uma('u2', 'Beta'), uma('u1', 'Alpha')]
+    const umas = [uma('u2', 'Beta', 'A'), uma('u1', 'Alpha')]
     const content = loaded(umas, [])
     const profile = { ...createPlayerProfile('synthetic', 1), umaCoupons: 1, umaShards: 4 }
     const u2 = createUmaSave(umas[0]!)
     const owned = {
-      u2: { ...u2, aptitudes: { ...u2.aptitudes, surface: { ...u2.aptitudes.surface, dirt: 'A' as const } } },
+      u2,
       orphan: createUmaSave(uma('orphan', 'Missing')),
     }
     const all = buildUmaAlbum(content, owned, profile, { ownership: 'all', tier: null, surface: null, distance: null, strategy: null, sex: null, ready: false })

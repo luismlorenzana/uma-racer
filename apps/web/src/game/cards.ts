@@ -4,8 +4,9 @@ import {
   isLocalDay,
   parseCardSave,
   parsePlayerProfileOrThrow,
-  promoteCard,
-  type CardPromotionResult,
+  advanceCardLimitBreak,
+  BOND_RECALL_TICKET_COST,
+  type CardAdvanceResult,
   type CardSave,
   type LedgerEntry,
   type PlayerProfile,
@@ -18,7 +19,7 @@ import { reconcileTrainerInTransaction } from './trainer'
 export interface CardPromotionMutation {
   profile: PlayerProfile
   card: CardSave
-  result: CardPromotionResult
+  result: CardAdvanceResult
   ledgerIds: [string, string]
 }
 
@@ -26,10 +27,15 @@ function validateInput(content: LoadedContent, profile: PlayerProfile, card: Car
   if (!content.cards.byId.has(card.templateId)) throw new Error(`Card content is missing ${card.templateId}`)
   if (!isLocalDay(today)) throw new Error(`Invalid local day: ${today}`)
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Invalid card promotion timestamp')
-  const result = promoteCard(card, profile.tickets)
+  // Stands in for a Bond Recall run until the minigame lands: it charges the run's price and the clear
+  // is the limit break (D120).
+  if (profile.tickets < BOND_RECALL_TICKET_COST) {
+    throw new Error(`You need ${BOND_RECALL_TICKET_COST} Training Tickets to limit break this card`)
+  }
+  const result = advanceCardLimitBreak(card)
   const ledgerIds: [string, string] = [
     `card-limit-break:${card.templateId}:${result.toLimitBreak}`,
-    `card-level-tickets:${card.templateId}:${result.levelGained}`,
+    `card-level-tickets:${card.templateId}:${result.toLevel}`,
   ]
   return { result, ledgerIds }
 }
@@ -43,7 +49,7 @@ export function promoteMemoryCard(
 ): CardPromotionMutation {
   const { result, ledgerIds } = validateInput(content, profile, card, today, now)
   return {
-    profile: { ...profile, tickets: profile.tickets + result.ticketDelta },
+    profile: { ...profile, tickets: profile.tickets - BOND_RECALL_TICKET_COST + result.ticketReward },
     card: result.card,
     result,
     ledgerIds,
@@ -75,7 +81,7 @@ export async function promotePersistentCard(
     const entries: { id: string; data: LedgerEntry }[] = [
       {
         id: mutation.ledgerIds[0],
-        data: { resource: 'tickets', delta: -mutation.result.cost, reason: 'card-limit-break', localDay: today, createdAt: now },
+        data: { resource: 'tickets', delta: -BOND_RECALL_TICKET_COST, reason: 'card-limit-break', localDay: today, createdAt: now },
       },
       {
         id: mutation.ledgerIds[1],

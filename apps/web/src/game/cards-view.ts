@@ -2,9 +2,9 @@
 
 import {
   MAX_LIMIT_BREAK,
-  cardExpToNext,
+  cardLevel,
+  BOND_RECALL_TICKET_COST,
   cardLevelCap,
-  cardLimitBreakCost,
   projectCardEffects,
   type CardEffectProjection,
   type CardSave,
@@ -50,24 +50,24 @@ function albumItem(
   content: LoadedContent,
 ): CardAlbumItem {
   const owned = save !== undefined
-  const state = save ?? { level: 1, limitBreak: 0 }
-  const maxed = save?.level === 25 && save.limitBreak === MAX_LIMIT_BREAK
+  const limitBreak = save?.limitBreak ?? 0
+  const state = { level: cardLevel({ limitBreak }), limitBreak }
+  const maxed = limitBreak === MAX_LIMIT_BREAK
   let promotionLock: string | null = null
   let promotionCost: number | null = null
   let nextEffects: CardEffectProjection[] | null = null
   if (!save) {
     promotionLock = 'Unowned card'
-  } else if (save.limitBreak >= MAX_LIMIT_BREAK) {
+  } else if (maxed) {
     promotionLock = 'Maximum limit break reached'
   } else {
-    promotionCost = cardLimitBreakCost(save.limitBreak + 1)
-    nextEffects = projectCardEffects(template, { level: save.level + 1, limitBreak: save.limitBreak + 1 })
-    const cap = cardLevelCap(save.limitBreak)
-    if (save.level !== cap || save.exp !== cardExpToNext(save.level)) {
-      promotionLock = `Fill the level ${cap} EXP bar first`
-    } else if (tickets < promotionCost) {
-      promotionLock = `Need ${promotionCost} Training Tickets`
-    }
+    // A Bond Recall run is the limit break, so its ticket price is the whole cost (D120).
+    promotionCost = BOND_RECALL_TICKET_COST
+    nextEffects = projectCardEffects(template, {
+      level: cardLevel({ limitBreak: limitBreak + 1 }),
+      limitBreak: limitBreak + 1,
+    })
+    if (tickets < promotionCost) promotionLock = `Need ${promotionCost} Training Tickets`
   }
   return {
     template,
@@ -75,7 +75,7 @@ function albumItem(
     asset: getContentAsset(content, 'card-icons', template.id),
     owned,
     maxed,
-    expToNext: save ? cardExpToNext(save.level) : cardExpToNext(1),
+    expToNext: 0,
     currentEffects: projectCardEffects(template, state),
     nextEffects,
     promotionCost,

@@ -23,6 +23,7 @@ import {
   type UmaBadgeStateV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
+import { badgeSubject } from './badges'
 import { db, type LogRow } from './db'
 import { appendFlairEvents } from './badges'
 import { queueInTransaction } from './persistence'
@@ -51,7 +52,7 @@ export interface UmaRedemptionMutation {
 }
 
 function initializedBadgeState(content: LoadedContent, uma: UmaSave, now: number, sourceId: string) {
-  const state = createUmaBadgeState(uma, now)
+  const state = createUmaBadgeState(uma, badgeSubject(content, uma), now)
   return evaluateUmaFlair(
     buildUmaFlairCatalog({ state, races: content.races.items }),
     state,

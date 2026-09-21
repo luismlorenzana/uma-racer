@@ -65,19 +65,18 @@ export function HomeScreen() {
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Uma Racer…" detail="Loading private content and your local save." />
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
 
-  const setupPending = !featured.save.scenarioStarted
+  const setupPending = !featured.run.started
   const atGate = isGateLevel(featured.save.level)
-  const raceUnlocked = featured.save.scenarioStarted && featured.save.trainingsThisScenario >= 1 && !atGate
+  const raceUnlocked = featured.run.started && !atGate
   const goals = buildHomeGoalState(featured.save, contentState.content)
   const umaHref = `/stable/${encodeURIComponent(featured.save.templateId)}`
-  const trainLabel = setupPending ? 'Set up' : featured.readyToPromote ? 'Promote' : atGate ? 'Complete' : 'Train'
-  const raceLabel = setupPending ? 'Start scenario' : featured.readyToPromote ? 'Next scenario' : 'Race'
+  const trainLabel = setupPending ? 'Set up' : featured.readyToAdvance ? 'Next scenario' : 'Constellation'
+  const raceLabel = setupPending ? 'Start scenario' : featured.readyToAdvance ? 'Next scenario' : 'Race'
   const statusLine = setupPending
-    ? 'Choose lineage before Training or racing.'
-    : featured.readyToPromote ? 'Ready to promote before racing again.'
+    ? 'Start this scenario before racing.'
+    : featured.readyToAdvance ? 'Ready to unlock the next scenario.'
     : atGate ? 'Latest scenario complete.'
-    : raceUnlocked ? 'Progression races are open.'
-    : 'Train once to unlock saved-Uma races.'
+    : 'Progression races are open.'
 
   return (
     <div className="flex flex-col gap-3 pt-1">
@@ -114,7 +113,7 @@ export function HomeScreen() {
             <p className="truncate text-[13px] text-ink-on-dark-soft">{featured.template.outfit ?? 'Standard outfit'}</p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <Crest tone="accent">Lv <Numeral>{featured.save.level}</Numeral></Crest>
-              <Crest className="numeral-on-dark">TL {featured.save.trainingLevel}</Crest>
+              <Crest className="numeral-on-dark">TL {featured.derived.trainingLevel}</Crest>
               {flairSummary && flairSummary.frame.label !== 'Plain' && <Crest>{flairSummary.frame.label}</Crest>}
             </div>
           </div>
@@ -124,15 +123,15 @@ export function HomeScreen() {
           <Button
             variant="secondary"
             size="lg"
-            disabled={!setupPending && atGate && !featured.readyToPromote}
-            onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/training/${encodeURIComponent(featured.save.templateId)}`)}
+            disabled={!setupPending && atGate && !featured.readyToAdvance}
+            onClick={() => navigate(setupPending || featured.readyToAdvance ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/constellation/${encodeURIComponent(featured.save.templateId)}`)}
           >
             {trainLabel}
           </Button>
           <Button
             size="lg"
-            disabled={!setupPending && !raceUnlocked && !featured.readyToPromote}
-            onClick={() => navigate(setupPending || featured.readyToPromote ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}
+            disabled={!setupPending && !raceUnlocked && !featured.readyToAdvance}
+            onClick={() => navigate(setupPending || featured.readyToAdvance ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}
           >
             {raceLabel}
           </Button>

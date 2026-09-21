@@ -114,7 +114,7 @@ function UmaTile({
         </span>
         <span className="shrink-0 text-right text-[12px] text-ink-soft">
           {entry.save ? <>Lv <Numeral className="text-ink">{entry.save.level}</Numeral></> : 'Unowned'}
-          <span className="block text-[11px] text-ink-faint">{sortLabel ?? `TL ${entry.save?.trainingLevel ?? '—'}`}</span>
+          <span className="block text-[11px] text-ink-faint">{sortLabel ?? `TL ${entry.view?.derived.trainingLevel ?? '—'}`}</span>
         </span>
       </button>
     )
@@ -136,12 +136,12 @@ function UmaTile({
           asset={entry.asset}
           alt={entry.owned ? `${entry.template.name} portrait` : `${entry.template.name}, not owned`}
           dimmed={!entry.owned}
-          chamfer={!icons && (entry.view?.readyToPromote ?? false)}
+          chamfer={!icons && (entry.view?.readyToAdvance ?? false)}
           overlay={
             icons ? (
               <>
                 {entry.isNew && <span aria-hidden className="h-2 w-2 rounded-full bg-accent shadow-1" />}
-                {entry.view?.readyToPromote && <span aria-hidden className="h-2 w-2 rounded-full bg-success shadow-1" />}
+                {entry.view?.readyToAdvance && <span aria-hidden className="h-2 w-2 rounded-full bg-success shadow-1" />}
               </>
             ) : (
               <>
@@ -154,7 +154,7 @@ function UmaTile({
           corner={
             selecting
               ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? '✓' : ''}</Crest>
-              : !icons && entry.view?.readyToPromote ? <Crest tone="accent">Ready</Crest> : null
+              : !icons && entry.view?.readyToAdvance ? <Crest tone="accent">Ready</Crest> : null
           }
           footer={icons ? undefined : (
             <>
@@ -194,6 +194,7 @@ export function StableScreen() {
   const persistent = useGame((state) => state.persistent)
   const profile = useGame((state) => state.profile)
   const owned = useGame((state) => state.umas)
+  const cards = useGame((state) => state.cards)
   const badges = useGame((state) => state.badges)
   const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
@@ -276,9 +277,9 @@ export function StableScreen() {
 
   const mode = (prefs.query.mode ?? 'outfit') as StableMode
   const album = useMemo(() => contentState.status === 'ready' && profile
-    ? buildStableAlbum({ content: contentState.content, saves: owned, profile, lastRacedAt, flair, seen: prefs.seen, mode })
+    ? buildStableAlbum({ content: contentState.content, saves: owned, cards, profile, lastRacedAt, flair, seen: prefs.seen, mode })
     : null,
-  [contentState, flair, lastRacedAt, mode, owned, prefs.seen, profile])
+  [cards, contentState, flair, lastRacedAt, mode, owned, prefs.seen, profile])
 
   // "Best aptitude for…" sorts by the chosen parameter key, so the parameter is part of the sort.
   const effectiveQuery = useMemo(() => (
@@ -300,7 +301,7 @@ export function StableScreen() {
     if (!entry.owned) { setRedeemFor(entry); setError(null); return }
     const order = result?.rows.map((row) => row.id) ?? []
     navigate(
-      entry.view?.readyToPromote
+      entry.view?.readyToAdvance
         ? `/scenario/${encodeURIComponent(entry.template.id)}/start`
         : `/stable/${encodeURIComponent(entry.template.id)}`,
       { state: { albumOrder: order } },
@@ -398,7 +399,7 @@ export function StableScreen() {
             {detail.save
               ? <>
                   <Crest>Lv {detail.save.level}</Crest>
-                  <Crest>TL {detail.save.trainingLevel}</Crest>
+                  <Crest>TL {detail.view?.derived.trainingLevel ?? 1}</Crest>
                   {detail.activeTitle && <Crest tone="accent">{detail.activeTitle}</Crest>}
                   {detail.outfitCount > 1 && <Crest>{detail.ownedOutfitCount}/{detail.outfitCount} outfits</Crest>}
                 </>
@@ -410,7 +411,7 @@ export function StableScreen() {
               {STATS.map((stat) => (
                 <div key={stat}>
                   <p className="text-[10px] text-ink-faint uppercase">{stat.slice(0, 3)}</p>
-                  <p className="font-display text-[13px] font-semibold">{detail.save?.stats[stat]}</p>
+                  <p className="font-display text-[13px] font-semibold">{detail.view?.derived.stats[stat] ?? 0}</p>
                 </div>
               ))}
             </div>
@@ -528,10 +529,10 @@ export function StableScreen() {
         columns={compareEntries.map((entry) => ({ id: entry.id, label: entry.template.name, detail: entry.template.outfit ?? undefined }))}
         rows={[
           { label: 'Level', values: compareEntries.map((entry) => entry.save?.level ?? null), best: 'high' },
-          { label: 'Training Lv', values: compareEntries.map((entry) => entry.save?.trainingLevel ?? null), best: 'high' },
+          { label: 'Training Lv', values: compareEntries.map((entry) => entry.view?.derived.trainingLevel ?? null), best: 'high' },
           ...STATS.map((stat) => ({
             label: titleCase(stat),
-            values: compareEntries.map((entry) => entry.save?.stats[stat] ?? null),
+            values: compareEntries.map((entry) => entry.view?.derived.stats[stat] ?? null),
             best: 'high' as const,
           })),
           { label: 'Total', values: compareEntries.map((entry) => (entry.save ? entry.statTotal : null)), best: 'high' },

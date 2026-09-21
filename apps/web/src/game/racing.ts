@@ -5,7 +5,11 @@ import {
   bestStrategy,
   compileRaceSkill,
   compileRaceCourseLayout,
-  completeFinalScenario,
+  closeFinalScenario,
+  activeScenario,
+  deriveUma,
+  type DerivedUma,
+  type Stats,
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   equippedRaceBonus,
@@ -43,7 +47,6 @@ import {
   type SkillTemplate,
   type Strategy,
   type UmaSave,
-  awardClimaxItem,
   type UmaTemplate,
 } from '@racer/domain'
 import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, type RaceInput, type RaceTimeline } from '@racer/race'
@@ -70,7 +73,7 @@ export interface PreparedRace {
   strategy: Strategy
   startLevel: number
   startExp: number
-  startStats: UmaSave['stats']
+  startStats: Stats
   raceBonus: number
   playerIndex: number
   input: RaceInput
@@ -87,7 +90,6 @@ export interface RaceCompletion {
   record: RaceResultRecord
   timeline: RaceTimeline
   alreadyRecorded: boolean
-  scenarioModifierReward: number
 }
 
 export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
@@ -142,8 +144,8 @@ function equippedCards(
   cardsById: Readonly<Record<string, CardSave>>,
 ) {
   const validation = validateSupportDeck({
-    tier: tierOfLevel(uma.level),
-    orderedCardIds: uma.deckCardIds,
+    tier: uma.unlockedTier,
+    orderedCardIds: activeScenario(uma).cardSetIds,
     ownedCards: Object.values(cardsById),
     templates: content.cards.byId,
   })
@@ -162,8 +164,12 @@ function baselineNpcSkills(content: LoadedContent): CompiledRaceSkill[] {
   return selectBaselineRaceSkills(content.skills.items)
 }
 
-function playerRaceSkills(content: LoadedContent, uma: UmaSave, template: UmaTemplate): CompiledRaceSkill[] {
-  const summary = summarizeSkillLoadout(uma, template, content.skills.byId)
+function playerRaceSkills(
+  content: LoadedContent,
+  derived: DerivedUma,
+  template: UmaTemplate,
+): CompiledRaceSkill[] {
+  const summary = summarizeSkillLoadout(derived, template, content.skills.byId)
   if (!summary.valid) throw new Error(summary.errors[0])
   const own = template.uniqueSkillId ? compiledSupported(content.skills.byId.get(template.uniqueSkillId)) : []
   const equipped = summary.skills.map((skill) => compileRaceSkill(skill))
@@ -174,11 +180,20 @@ function playerRaceSkills(content: LoadedContent, uma: UmaSave, template: UmaTem
 
 export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const { content, profile, uma, raceId, strategy, sequence } = input
-  if (!uma.scenarioStarted) throw new Error('Finish scenario setup before racing')
-  if (uma.trainingsThisScenario < 1) throw new Error('Complete one Training turn to unlock races for this Uma')
-  if (isGateLevel(uma.level)) throw new Error('Promote this Uma before entering another race')
+  const run = activeScenario(uma)
+  if (!run.started) throw new Error('Start this scenario before racing')
+  if (run.trainingLevel < 1) throw new Error('Play one Spark Match run to unlock races for this Uma')
+  if (isGateLevel(uma.level)) throw new Error('Advance this Uma before entering another race')
   const template = content.umas.byId.get(uma.templateId)
   if (!template) throw new Error(`Race content is missing Uma ${uma.templateId}`)
+  // Stats, skills and aptitudes all come from the active constellation (D121).
+  const derived = deriveUma({
+    uma,
+    umaTemplate: template,
+    cardSaves: new Map(Object.entries(input.cardsById)),
+    cardTemplates: content.cards.byId,
+    umaTemplates: content.umas.byId,
+  })
   const race = content.races.byId.get(raceId)
   if (!race) throw new Error(`Race content is missing race ${raceId}`)
   const course = content.courses.byId.get(race.courseId)
@@ -194,9 +209,11 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const rng = createRng(seed ^ 0x5bd1e995)
   const playerGate = Math.floor(rng.next() * fieldSize)
   const raceBonus = equippedRaceBonus(tierOfLevel(uma.level), equippedCards(content, uma, input.cardsById))
-  const playerSkills = playerRaceSkills(content, uma, template)
+  const playerSkills = playerRaceSkills(content, derived, template)
   const baselineSkills = baselineNpcSkills(content)
-  const npcStats = npcRaceStats(tierOfLevel(uma.level), race.grade, race.distanceCategory, uma.level)
+  // The field's Form follows the same Training Level as the player's, so every scenario opens as a fair
+  // fight and ends with her about 10% ahead (docs/design/racing.md).
+  const npcStats = npcRaceStats(uma.unlockedTier, race.grade, race.distanceCategory, run.trainingLevel)
   let rivalIndex = 0
   const runners = Array.from({ length: fieldSize }, (_, gate) => {
     if (gate === playerGate) {
@@ -206,12 +223,12 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
         engine: {
           id: template.id,
           label: String(gate + 1),
-          stats: playerRaceStats(uma),
+          stats: playerRaceStats(derived.stats, run.trainingLevel),
           strategy,
           aptitude: {
-            distance: uma.aptitudes.distance[race.distanceCategory],
-            surface: uma.aptitudes.surface[race.surface],
-            strategy: uma.aptitudes.strategy[strategy],
+            distance: derived.aptitudes.distance[race.distanceCategory],
+            surface: derived.aptitudes.surface[race.surface],
+            strategy: derived.aptitudes.strategy[strategy],
           },
           gate,
           skills: playerSkills,
@@ -245,7 +262,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     strategy,
     startLevel: uma.level,
     startExp: uma.exp,
-    startStats: { ...uma.stats },
+    startStats: { ...derived.stats },
     raceBonus,
     playerIndex: playerGate,
     input: {
@@ -359,24 +376,24 @@ function applyScenarioGoalCompletion(
   record: RaceResultRecord,
   now: number,
 ): { uma: UmaSave; record: RaceResultRecord } {
-  const tier = tierOfLevel(record.startLevel)
-  const active = umaBeforeRace.scenarioJourneys.find((journey) => journey.state === 'active' && journey.tier === tier)
-  if (!active) return { uma: progressedUma, record }
+  const active = activeScenario(umaBeforeRace).journey
+  if (active?.state !== 'active') return { uma: progressedUma, record }
   const evaluated = evaluateScenarioGoals({ journey: active, uma: umaBeforeRace, race, resultId, result: record, completedAt: now })
   return {
     uma: {
       ...progressedUma,
-      scenarioJourneys: progressedUma.scenarioJourneys.map((journey) => journey.tier === active.tier ? evaluated.journey : journey),
+      scenarios: progressedUma.scenarios.map((run) =>
+        run.tier === active.tier ? { ...run, journey: evaluated.journey } : run),
     },
     record: { ...record, completedGoalIds: evaluated.newlyCompletedIds },
   }
 }
 
+/** At the highest tier there is nothing left to unlock, so the run's journey simply closes. */
 function captureFinalSnapshot(content: LoadedContent, uma: UmaSave, now: number): UmaSave {
   if (uma.level !== SCENARIOS.length * LEVELS_PER_SCENARIO) return uma
-  const template = content.umas.byId.get(uma.templateId)
-  if (!template) throw new Error(`Race content is missing Uma ${uma.templateId}`)
-  return completeFinalScenario({ uma, umaTemplate: template, skills: content.skills.byId, now })
+  if (!content.umas.byId.has(uma.templateId)) throw new Error(`Race content is missing Uma ${uma.templateId}`)
+  return closeFinalScenario(uma, now)
 }
 
 function parseHistoryRow(row: LogRow): RaceResultRecord {
@@ -433,10 +450,11 @@ async function savedRaceInputs(content: LoadedContent, umaId: string) {
   if (!umaRow) throw new Error('Race Uma is not owned')
   const profile = parsePlayerProfileOrThrow(profileRow.data)
   const uma = parsedUma(umaId, umaRow.data)
-  const rows = await db.cards.bulkGet(uma.deckCardIds)
-  const cardsById = Object.fromEntries(uma.deckCardIds.map((id, index) => {
+  const cardSetIds = activeScenario(uma).cardSetIds
+  const rows = await db.cards.bulkGet(cardSetIds)
+  const cardsById = Object.fromEntries(cardSetIds.map((id, index) => {
     const row = rows[index]
-    if (!row) throw new Error(`Race deck card is not owned: ${id}`)
+    if (!row) throw new Error(`Card set card is not owned: ${id}`)
     return [id, parsedCard(id, row.data)]
   }))
   return { profile, uma, cardsById }
@@ -501,7 +519,7 @@ export function completeMemoryRace(
     if (!race || !existing.accomplishmentFacts || JSON.stringify(existing.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
       throw new Error('Race result accomplishment facts are corrupt')
     }
-    return { profile, uma, record: existing, timeline, alreadyRecorded: true, scenarioModifierReward: 0 }
+    return { profile, uma, record: existing, timeline, alreadyRecorded: true }
   }
   const current = buildPreparedRace({
     content,
@@ -517,12 +535,7 @@ export function completeMemoryRace(
   const timeline = simulatePreparedRace(attempt)
   const result = resultRecord(content, attempt, race, uma, timeline, now)
   const goalResult = applyScenarioGoalCompletion(uma, result.uma, race, attempt.id, result.record, now)
-  const modifier = awardClimaxItem({
-    state: goalResult.uma.scenarioModifier,
-    won: result.record.playerPlacement === 1,
-    closesTier: isGateLevel(goalResult.uma.level),
-  })
-  const completedUma = captureFinalSnapshot(content, { ...goalResult.uma, scenarioModifier: modifier.state }, now)
+  const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
   return {
     profile: {
       ...profile,
@@ -533,7 +546,6 @@ export function completeMemoryRace(
     record: goalResult.record,
     timeline,
     alreadyRecorded: false,
-    scenarioModifierReward: modifier.awarded,
   }
 }
 
@@ -562,7 +574,6 @@ export async function completePersistentRace(
         record,
         timeline,
         alreadyRecorded: true,
-        scenarioModifierReward: 0,
       }
     }
 
@@ -582,12 +593,7 @@ export async function completePersistentRace(
     const timeline = simulatePreparedRace(attempt)
     const resolved = resultRecord(content, attempt, race, uma, timeline, now)
     const goalResult = applyScenarioGoalCompletion(uma, resolved.uma, race, attempt.id, resolved.record, now)
-    const modifier = awardClimaxItem({
-      state: goalResult.uma.scenarioModifier,
-      won: resolved.record.playerPlacement === 1,
-      closesTier: isGateLevel(goalResult.uma.level),
-    })
-    const completedUma = captureFinalSnapshot(content, { ...goalResult.uma, scenarioModifier: modifier.state }, now)
+    const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
     const levelIds = goalResult.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
     const gate = goalResult.record.shardReward ? goalResult.record.levelsGained.at(-1) : undefined
     const shardId = gate === undefined ? null : `uma-gate-shard:${attempt.umaId}:${gate}`
@@ -613,8 +619,11 @@ export async function completePersistentRace(
       now,
     })
     const earnedFlairEventIds = raceFlair.events.map((event) => event.id)
-    const completedFinalTier = completedUma.parentSnapshot?.completedTier === SCENARIOS.length &&
-      uma.parentSnapshot?.completedTier !== SCENARIOS.length
+    // The final tier closes exactly once: when this race is the one that closed its journey.
+    const finalJourneyState = (save: UmaSave) =>
+      save.scenarios.find((run) => run.tier === SCENARIOS.length)?.journey?.state ?? null
+    const completedFinalTier = finalJourneyState(completedUma) === 'completed' &&
+      finalJourneyState(uma) !== 'completed'
     if (completedFinalTier) {
       const scenarioFlair = await updateScenarioBadgeFacts({ content, before: completedUma, after: completedUma, completedTier: SCENARIOS.length, now })
       earnedFlairEventIds.push(...scenarioFlair.events.map((event) => event.id))
@@ -655,7 +664,6 @@ export async function completePersistentRace(
       record: committedRecord,
       timeline,
       alreadyRecorded: false,
-      scenarioModifierReward: modifier.awarded,
     }
   })
 }

@@ -7,6 +7,15 @@ export async function setFeaturedUma(id: string): Promise<void> {
   await gameRuntime.setFeaturedUma(id)
 }
 
+export async function setConstellationNode(
+  id: string,
+  nodeId: string,
+  assignment: import('@racer/domain').NodeAssignment | null,
+) {
+  const { gameRuntime } = await import('./runtime')
+  await gameRuntime.setConstellationNode(id, nodeId, assignment)
+}
+
 export async function setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {
   const { gameRuntime } = await import('./runtime')
   await gameRuntime.setUmaLoadout(id, skillIds)
@@ -15,20 +24,6 @@ export async function setUmaLoadout(id: string, skillIds: readonly string[]): Pr
 export async function setUmaDeck(id: string, orderedCardIds: readonly string[]): Promise<void> {
   const { gameRuntime } = await import('./runtime')
   await gameRuntime.setUmaDeck(id, orderedCardIds)
-}
-
-export async function trainUma(id: string, facility: import('@racer/domain').Facility, useClimaxItem = false) {
-  return criticalGameplayAction(async () => {
-    const { gameRuntime } = await import('./runtime')
-    return gameRuntime.trainUma(id, facility, undefined, undefined, useClimaxItem)
-  })
-}
-
-export async function completeExpedition(id: string, category: import('@racer/domain').AptitudeCategory | null) {
-  return criticalGameplayAction(async () => {
-    const { gameRuntime } = await import('./runtime')
-    return gameRuntime.completeExpedition(id, category)
-  })
 }
 
 export async function prepareRace(
@@ -48,17 +43,17 @@ export async function completeRace(attempt: import('./racing').PreparedRace) {
   })
 }
 
-export async function promoteUma(id: string) {
+export async function advanceUma(id: string) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.promoteUma(id)
+    return gameRuntime.advanceUma(id)
   })
 }
 
-export async function startScenario(id: string, selection: import('@racer/domain').ScenarioStartSelection) {
+export async function startScenario(id: string) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.startScenario(id, selection)
+    return gameRuntime.startScenario(id)
   })
 }
 

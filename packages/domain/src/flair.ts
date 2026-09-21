@@ -28,7 +28,7 @@ import {
   type UmaBadgeStateV1,
 } from './badges'
 import type { RaceTemplate } from './content'
-import { statCap } from './training'
+import { capProfile } from './constellation'
 import { SCENARIOS } from './scenarios'
 import { DISTANCE_CATEGORIES, STATS, STRATEGIES, SURFACES, type StatKey } from './types'
 
@@ -394,7 +394,7 @@ function criterionValue(state: UmaBadgeStateV1, criterion: FlairCriterion): numb
     const completion = facts.completions.find((entry) => entry.tier === criterion.tier)
     if (!completion) return 0
     if (criterion.rule === 'era-loyalist') return completion.deckEras.length > 0 && completion.deckEras.every((era) => era === criterion.tier) ? 1 : 0
-    const cap = statCap(criterion.tier, 10)
+    const cap = Math.min(...STATS.map((stat) => capProfile(criterion.tier)[stat]))
     const capped = STATS.map((stat) => completion.stats[stat] >= cap)
     return criterion.rule === 'capped' ? (capped.some(Boolean) ? 1 : 0) : (capped.every(Boolean) ? 1 : 0)
   }

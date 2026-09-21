@@ -1,6 +1,6 @@
 // Baseline enemy Uma: identical generic stats for every NPC in a race (docs/design/racing.md#opponents-the-baseline-enemy-uma).
 import { fieldForm } from './raceForm'
-import { baselineStatCap } from './scenarios'
+import { averageCap } from './constellation'
 import { mapStats, type DistanceCategory, type RaceGrade, type Stats } from './types'
 
 export const GRADE_FACTOR: Record<RaceGrade, number> = {
@@ -22,6 +22,6 @@ export const NPC_PROFILE: Record<DistanceCategory, Stats> = {
 
 /** Final race stats for every NPC in a race (Race Form already applied). */
 export function npcRaceStats(tier: number, grade: RaceGrade, distance: DistanceCategory, umaLevel: number): Stats {
-  const base = baselineStatCap(tier) * GRADE_FACTOR[grade] * fieldForm(umaLevel)
+  const base = averageCap(tier) * GRADE_FACTOR[grade] * fieldForm(umaLevel)
   return mapStats(NPC_PROFILE[distance], (weight) => base * weight)
 }

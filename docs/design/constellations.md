@@ -93,11 +93,17 @@ scenario's slot count is what grows. Per-scenario counts are in [Scenarios](scen
 
 ### The invariance rule
 
-> **A fully-filled constellation of max-limit-break cards pays exactly `treeBudget(T)` raw points, whatever is
-> in it.** Configuration decides *where* the points go, never *how many*.
+> **The total depends on which cards occupy how many nodes — never on *which* nodes they occupy, nor on how
+> the stats split.** Moving a card from one node to another cannot change your total, and neither can
+> choosing a Speed card over a Guts one.
 
-This is the point of the system: you re-slot for a Sprint race and re-slot back for a Long one, and you are
-trading, not growing. Two deliberate exceptions, both visible in the UI:
+That is what keeps re-slotting a trade rather than a grind: you build for a Sprint race, rebuild for a Long
+one, and you are redistributing, never farming. The ceiling is still `treeBudget(T)`, reached by a full tree
+of **current-era, max-limit-break** cards.
+
+What *can* change the total is **card quality** — era and limit break (D126, below). A better card is worth
+more on the same node, which is what makes the collection matter. Two further exceptions, both visible in the
+UI:
 
 1. **Growth rates still apply.** Raw points are scaled per stat by the Uma's `growthRates` from her template,
    so an Uma with Speed +20% gets more absolute Speed out of the same raw point. That is her identity, and it
@@ -121,22 +127,39 @@ the invariance rule holds regardless of which types you slot:
 A **stat node** puts 1.00 of its value into the stat you pick. Stat nodes are the release valve: they are how
 you find the 200 Stamina a Mile race wants without slotting a Stamina card you would otherwise never bring.
 
-Limit break is the only card scaling left. Era no longer changes value; it only gates eligibility.
+### Card quality: era and limit break
+
+A node pays `nodeValue(T) × lbPct × eraPct`, both percentages:
 
 ```
-lbMult = LB0 0.60 · LB1 0.70 · LB2 0.80 · LB3 0.90 · LB4 1.00
+lbPct  = LB0 60 · LB1 70 · LB2 80 · LB3 90 · LB4 100
+eraPct = max(40, 100 − 5 × (T − cardEra))
 ```
 
-So the invariance rule holds **at full limit break**, and an under-broken card visibly underpays. This is what
+**Era is measured against the scenario, not in absolute terms.** A card from the scenario's own era is full
+value; every era it predates costs five points, floored at 40. So Kitasan Black's Speed card and a newer Speed
+card hand you the same kind of skills, and the newer one pays more stats — but a tier-1 card is never worthless,
+and `treeBudget(T)` stays the real ceiling at every tier rather than drifting upward as eras pile up.
+
+| Card age in tier `T` | current | 1 era old | 3 | 6 | 12+ |
+|---|---|---|---|---|---|
+| Pays | 100% | 95% | 85% | 70% | 40% |
+
+This is also the pressure that keeps a collection alive: as an Uma climbs tiers, the cards that carried her
+fall behind, and the ones you pull matter again. An under-broken card underpays the same way, which is what
 makes the [card minigame](minigames.md#bond-recall--card-limit-breaks) worth playing.
 
 ### The scenario slot
 
-One of the six card-set slots is the scenario's **dedicated slot**. A card placed there pays
+The **sixth slot** is the scenario's dedicated slot. A card placed there pays
 `nodeValue × lbMult × 0.25` **Skill Points** on every node it occupies and **no stats at all**.
 
 Against tier 1's 300 SP cap, a max-broken card on four nodes yields 200 SP — a real loadout, bought by giving
 up a stat card. The trade is explicit and reversible.
+
+A set with fewer than six cards has **no scenario card and therefore no skill points**. Filling the sixth slot
+is what turns a collection of stats into a loadout, which is a legible goal rather than a hidden penalty: the
+slot is always in the same place, so adding a card never changes what the cards beside it do.
 
 *(Chosen because our content packs carry no scenario→card link, so a designated slot delivers the same choice
 without inventing data we do not have. D124.)*
@@ -144,9 +167,12 @@ without inventing data we do not have. D124.)*
 ### Applying the budget
 
 ```
-raw(s)     = Σ over assigned nodes of ( nodeValue × lbMult × share[type][s] )
+raw(s)     = Σ over assigned nodes of ( nodeValue × lbPct × eraPct × share[type][s] )
 derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthRates[s]) ) )
 ```
+
+Every factor is an integer percentage, so the engine accumulates exact integers and divides once. The
+invariance rule is therefore asserted as exact equality in tests, not within a tolerance.
 
 Caps clamp, never reduce. Because the tree budget is 60% of the cap budget, the clamp only bites on a
 deliberately lopsided build — which is correct: it tells you that stat is full and the points belong elsewhere.

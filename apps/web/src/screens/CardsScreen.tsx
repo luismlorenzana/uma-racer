@@ -1,4 +1,5 @@
 import {
+  cardLevel,
   BROAD_CARD_STAT_DIVISOR,
   CARD_EFFECTS,
   MAX_LIMIT_BREAK,
@@ -125,7 +126,7 @@ function CardTile({
           <span className="block truncate text-[11px] text-ink-faint">{headline}</span>
         </span>
         <span className="shrink-0 text-right text-[12px] text-ink-soft">
-          {entry.save ? <>Lv <Numeral className="text-ink">{entry.save.level}</Numeral></> : 'Unowned'}
+          {entry.save ? <>Lv <Numeral className="text-ink">{cardLevel(entry.save)}</Numeral></> : 'Unowned'}
           <span className="block text-[11px] text-ink-faint">{sortLabel ?? `LB${entry.save?.limitBreak ?? 0}`}</span>
         </span>
       </button>
@@ -168,7 +169,7 @@ function CardTile({
             <>
               <p className="font-display truncate text-[14px] font-semibold">{entry.template.charName}</p>
               {entry.save
-                ? <div className="flex items-center justify-between gap-2"><span className="text-[11px] text-ink-on-dark-soft">Lv {entry.save.level}</span><LimitPips value={entry.save.limitBreak} /></div>
+                ? <div className="flex items-center justify-between gap-2"><span className="text-[11px] text-ink-on-dark-soft">Lv {cardLevel(entry.save)}</span><LimitPips value={entry.save.limitBreak} /></div>
                 : <p className="truncate text-[11px] text-ink-on-dark-soft">Unowned</p>}
             </>
           )}
@@ -241,7 +242,7 @@ function CardDetail({
           <p className="text-[13px] text-ink-soft">{entry.template.title || 'Support card'}</p>
           {save && (
             <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold">
-              <span>Lv <Numeral>{save.level}</Numeral></span>
+              <span>Lv <Numeral>{cardLevel(save)}</Numeral></span>
               <span className="flex gap-0.5">
                 {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
                   <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < save.limitBreak ? 'bg-accent' : 'bg-sunken'}`} />
@@ -276,10 +277,10 @@ function CardDetail({
         <>
           <div className="mt-4">
             <div className="flex justify-between text-[12px] font-semibold">
-              <span>Card EXP</span>
-              <span>{entry.maxed ? 'MAX' : `${save.exp} / ${entry.expToNext}`}</span>
+              <span>Limit break</span>
+              <span>{entry.maxed ? 'MAX' : `${save.limitBreak} / ${MAX_LIMIT_BREAK}`}</span>
             </div>
-            <div className="mt-1"><Meter value={entry.maxed ? 1 : save.exp / entry.expToNext} color="var(--color-accent)" height={6} /></div>
+            <div className="mt-1"><Meter value={save.limitBreak / MAX_LIMIT_BREAK} color="var(--color-accent)" height={6} /></div>
           </div>
 
           <div className="mt-4 grid gap-1.5">
@@ -409,7 +410,7 @@ export function CardsScreen() {
     return Object.fromEntries(Object.keys(umas).map((id) => [id, contentState.content.umas.byId.get(id)?.name ?? id]))
   }, [contentState, umas])
 
-  const highestTier = useMemo(() => Math.max(1, ...Object.values(umas).map((save) => tierOfLevel(save.level))), [umas])
+  const highestTier = useMemo(() => Math.max(1, ...Object.values(umas).map((save) => save.unlockedTier)), [umas])
   const presets = useMemo(() => buildCardPresets(highestTier), [highestTier])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to view Cards" detail="Your private card collection is part of the saved Stable." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -447,7 +448,7 @@ export function CardsScreen() {
     void promoteSupportCard(selected.template.id)
       .then((mutation) => {
         setCelebration((value) => value + 1)
-        pushToast(`LB${mutation.result.toLimitBreak} · Card Lv ${mutation.result.levelGained}`)
+        pushToast(`LB${mutation.result.toLimitBreak} · Card Lv ${mutation.result.toLevel}`)
       })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Could not limit break this card'))
       .finally(() => setBusy(false))
@@ -493,7 +494,7 @@ export function CardsScreen() {
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {detail.save
               ? <>
-                  <Crest>Lv {detail.save.level}</Crest>
+                  <Crest>Lv {cardLevel(detail.save)}</Crest>
                   <span className="flex gap-0.5">
                     {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
                       <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < (detail.save?.limitBreak ?? 0) ? 'bg-accent' : 'bg-sunken'}`} />
@@ -609,7 +610,7 @@ export function CardsScreen() {
         rows={[
           { label: 'Type', values: compareEntries.map((entry) => entry.template.type) },
           { label: 'Era', values: compareEntries.map((entry) => entry.template.era), best: 'high' },
-          { label: 'Level', values: compareEntries.map((entry) => entry.save?.level ?? null), best: 'high' },
+          { label: 'Level', values: compareEntries.map((entry) => (entry.save ? cardLevel(entry.save) : null)), best: 'high' },
           { label: 'Limit break', values: compareEntries.map((entry) => entry.save?.limitBreak ?? null), best: 'high' },
           ...CARD_EFFECTS.map((effect) => ({
             label: EFFECT_LABELS[effect],

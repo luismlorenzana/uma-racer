@@ -2,21 +2,25 @@
 import { describe, expect, it } from 'vitest'
 import {
   addTrainingExp,
-  applyCappedGain,
-  BASE_HINT_CHANCE,
-  BASE_SPECIALTY_CHANCE,
+  APTITUDE_REFS,
+  LINEAGE_SLOT_COUNT,
+  lineageSteps,
+  upgradedGrade,
+  trainingExpToNext,
+  capProfile,
+  capBudget,
+  treeBudget,
+  nodeValue,
+  SPARK_MATCH_TICKET_COST,
+  BOND_RECALL_TICKET_COST,
+  TICKETS_PER_CARD_LIMIT_BREAK,
   baselineSpCap,
-  baselineStatCap,
+  averageCap,
   MAX_UMA_LEVEL,
   SCENARIOS,
-  capMult,
   cardEffectValue,
   cardLevelCap,
-  cardLimitBreakCost,
-  CARD_UNIQUE_BONUS_MULTIPLIER,
-  BROAD_CARD_STAT_DIVISOR,
   distanceCategory,
-  deckSlotCount,
   eraOf,
   fieldForm,
   grantDailyTickets,
@@ -31,12 +35,7 @@ import {
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   UMA_SHARDS_PER_COUPON,
-  spCap,
-  statCap,
   tierOfLevel,
-  trainingExpForTurn,
-  trainingGains,
-  RANDOM_FACILITY_CHANCE,
   SKILL_ACTIVATION_MIN,
   SKILL_ACTIVATION_WIT_DIVISOR,
   COURSE_WIDTH,
@@ -69,7 +68,6 @@ import {
   OVERFLOW_BANK_LEVELS,
   PROMOTION_BONUS_PER_STAT,
   compileRaceSkill,
-  grandparentWhitePickCap,
   BADGE_THRESHOLDS,
   BADGE_TIER_POINTS,
   BADGE_ONE_OFF_POINTS,
@@ -79,16 +77,6 @@ import {
   PRESTIGE_FRAME_THRESHOLDS,
   FLAIR_SERIES_REQUIRED_LEGS,
   TRAINER_ACHIEVEMENT_THRESHOLDS,
-  SCENARIO_MODIFIER_VERSION,
-  TEAM_SPIRIT_CARD_THRESHOLD,
-  TEAM_SPIRIT_STAT_BONUS,
-  CLIMAX_ITEMS_PER_WIN,
-  CLIMAX_TRAINING_MULTIPLIER,
-  PERFORMANCE_NOTE_COUNT,
-  PERFORMANCE_STAT_BONUS,
-  GODDESS_FRAGMENT_THRESHOLD,
-  GODDESS_BURST_MULTIPLIER,
-  EXPEDITION_STAMP_THRESHOLD,
 } from './index'
 
 describe('flair', () => {
@@ -155,21 +143,25 @@ describe('scenarios', () => {
       inheritedSkillId: null, normalSkillId: null, conditions: [{ precondition: null, condition: 'always==1', baseTime: 10_000, cooldown: 0, effects: [{ type: 22, value: 10_000 }] }],
     })
     expect(inherited.groups[0]?.effects[0]?.amount).toBe(0.5)
-    expect(grandparentWhitePickCap(5)).toBe(3)
   })
 
   it('pins the Uma shard exchange rate', () => {
     expect(UMA_SHARDS_PER_COUPON).toBe(5)
   })
 
-  it('pins scenario modifier v1 and the implemented tier values', () => {
-    expect(SCENARIO_MODIFIER_VERSION).toBe(1)
-    expect([TEAM_SPIRIT_CARD_THRESHOLD, TEAM_SPIRIT_STAT_BONUS]).toEqual([3, 10])
-    expect(CLIMAX_ITEMS_PER_WIN).toBe(1)
-    expect(CLIMAX_TRAINING_MULTIPLIER).toBe(1.2)
-    expect([PERFORMANCE_NOTE_COUNT, PERFORMANCE_STAT_BONUS]).toEqual([5, 20])
-    expect([GODDESS_FRAGMENT_THRESHOLD, GODDESS_BURST_MULTIPLIER]).toEqual([8, 1.5])
-    expect(EXPEDITION_STAMP_THRESHOLD).toBe(5)
+  it('pins the lineage aptitude rule: a perfect F reaches A, a G never does', () => {
+    const slots = Array.from({ length: LINEAGE_SLOT_COUNT }, (_, i) => ({
+      id: `p${i}`,
+      aptitudes: {
+        surface: { turf: 'A' as const, dirt: 'C' as const },
+        distance: { sprint: 'C' as const, mile: 'C' as const, medium: 'C' as const, long: 'A' as const },
+        strategy: { front: 'C' as const, pace: 'C' as const, late: 'C' as const, end: 'C' as const },
+      },
+    }))
+    const long = APTITUDE_REFS.find((ref) => ref.key === 'long')!
+    expect(lineageSteps(slots, long)).toBe(5)
+    expect(upgradedGrade('F', slots, long)).toBe('A')
+    expect(upgradedGrade('G', slots, long)).toBe('B')
   })
 
   it('pins all 14 JP scenarios, the +80 cap ladder, and the tier-14 SP cap', () => {
@@ -180,11 +172,8 @@ describe('scenarios', () => {
       [13, '2026-02-24'], [14, '2026-06-29'],
     ])
     expect(MAX_UMA_LEVEL).toBe(140)
-    expect(baselineStatCap(1)).toBe(1200)
-    expect(baselineStatCap(6)).toBe(1600)
-    expect(baselineStatCap(11)).toBe(2000)
-    expect([12, 13, 14].map(baselineStatCap)).toEqual([2080, 2160, 2240])
-    expect([12, 13, 14].map((tier) => statCap(tier, 1))).toEqual([1664, 1728, 1792])
+    expect(averageCap(1)).toBe(1400)
+    expect(averageCap(14)).toBe(1900)
     expect(baselineSpCap(1)).toBe(300)
     expect(baselineSpCap(14)).toBe(2900)
   })
@@ -217,48 +206,40 @@ describe('scenarios', () => {
   })
 })
 
-describe('training', () => {
-  it('scales caps from 80% at TL1 to 100% at TL10', () => {
-    expect(capMult(1)).toBeCloseTo(0.8)
-    expect(capMult(10)).toBeCloseTo(1)
-    expect(statCap(1, 1)).toBe(960)
-    expect(statCap(1, 10)).toBe(1200)
-    expect(statCap(2, 8)).toBe(1223)
-    expect(spCap(1, 10)).toBe(300)
+describe('training levels', () => {
+  it('pins the Spark Match target curve', () => {
+    expect(trainingExpToNext(1)).toBe(1000)
+    expect(trainingExpToNext(9)).toBe(3800)
+    expect([1, 2, 3].map(trainingExpToNext)).toEqual([1000, 1350, 1700])
   })
 
-  it('reaches TL10 in at most 25 trainings', () => {
-    let state = { trainingLevel: 1, exp: 0 }
-    for (let i = 0; i < 25; i++) state = addTrainingExp(state.trainingLevel, state.exp, trainingExpForTurn(false))
+  it('carries surplus over and can cross more than one level in a run', () => {
+    expect(addTrainingExp(1, 0, 1200)).toEqual({ trainingLevel: 2, trainingExp: 200, levelsGained: 1 })
+    expect(addTrainingExp(1, 0, 2400)).toEqual({ trainingLevel: 3, trainingExp: 50, levelsGained: 2 })
+  })
+
+  it('stops accumulating at the maximum', () => {
+    expect(addTrainingExp(10, 0, 99_999)).toEqual({ trainingLevel: 10, trainingExp: 0, levelsGained: 0 })
+  })
+
+  it('reaches TL10 in roughly ten good runs', () => {
+    let state = { trainingLevel: 1, trainingExp: 0, levelsGained: 0 }
+    let runs = 0
+    while (state.trainingLevel < 10 && runs < 40) {
+      state = addTrainingExp(state.trainingLevel, state.trainingExp, 2400)
+      runs += 1
+    }
     expect(state.trainingLevel).toBe(10)
+    expect(runs).toBeLessThanOrEqual(12)
   })
 
-  it('pins the Training deal chances and early deck slots', () => {
-    expect(BASE_SPECIALTY_CHANCE).toBe(0.35)
-    expect(RANDOM_FACILITY_CHANCE).toBe(0.7)
-    expect(BASE_HINT_CHANCE).toBe(0.2)
-    expect([1, 2, 3, 11].map(deckSlotCount)).toEqual([4, 5, 6, 6])
-    expect(CARD_UNIQUE_BONUS_MULTIPLIER).toBe(0.25)
-    expect(BROAD_CARD_STAT_DIVISOR).toBe(5)
-  })
-
-  it('matches the worked example in training.md', () => {
-    const gains = trainingGains('speed', { speed: 0.2 }, [
-      { type: 'speed', trainingBonus: 0.1, friendshipBonus: 0.25, flatBonus: { speed: 6, sp: 2 } },
-      { type: 'power', trainingBonus: 0.05, friendshipBonus: 0.2, flatBonus: {} },
-    ])
-    expect(gains).toEqual({ speed: 125, power: 38, sp: 13 })
-  })
-
-  it('never reduces a stat that already sits above the cap', () => {
-    expect(applyCappedGain(1200, 50, 1024)).toBe(1200)
-    expect(applyCappedGain(1000, 50, 1024)).toBe(1024)
-  })
-
-  it('halves the part of a gain above 1200, except for skill points', () => {
-    expect(applyCappedGain(1190, 30, 1280)).toBe(1210)
-    expect(applyCappedGain(1250, 40, 1280)).toBe(1270)
-    expect(applyCappedGain(1190, 30, 1280, false)).toBe(1220)
+  it('pins the cap profiles and tree budgets from docs/design/scenarios.md', () => {
+    expect(capProfile(2).wit).toBe(1800)
+    expect(capProfile(3).stamina).toBe(1900)
+    expect([1, 2, 3, 4].map(capBudget)).toEqual([7000, 7000, 7000, 7000])
+    expect(treeBudget(1)).toBe(4200)
+    expect([1, 2, 3, 4].map(nodeValue)).toEqual([200, 175, 210, 168])
+    expect(baselineSpCap(1)).toBe(300)
   })
 })
 
@@ -273,8 +254,8 @@ describe('race form', () => {
 
   it('builds identical generic NPC stats (racing.md example)', () => {
     const npc = npcRaceStats(1, 'g1', 'medium', 1)
-    expect(npc.speed).toBeCloseTo(960)
-    expect(npc.stamina).toBeCloseTo(864)
+    expect(npc.speed).toBeCloseTo(1120)
+    expect(npc.stamina).toBeCloseTo(1008)
   })
 })
 
@@ -353,12 +334,12 @@ describe('progression and economy', () => {
     expect(progressionFieldSize({ fieldSize: 18 })).toBe(18)
   })
 
-  it('prices promotions and limit breaks in tickets', () => {
+  it('prices scenario unlocks and minigame runs in tickets', () => {
     expect(umaPromotionCost(1)).toBe(25)
     expect(umaPromotionCost(10)).toBe(250)
-    expect(PROMOTION_BONUS_PER_STAT).toBe(10)
-    expect(OVERFLOW_BANK_LEVELS).toBe(1)
-    expect([1, 2, 3, 4].map(cardLimitBreakCost).reduce((a, b) => a + b)).toBe(200)
+    expect(SPARK_MATCH_TICKET_COST).toBe(5)
+    expect(BOND_RECALL_TICKET_COST).toBe(10)
+    expect(TICKETS_PER_CARD_LIMIT_BREAK).toBe(5)
   })
 
   it('pins scenario-goal grade escalation, series rotation, and the Challenge margin', () => {
