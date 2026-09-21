@@ -6,24 +6,21 @@ import {
   assertScenarioGoalContent,
   assertRaceCourseContent,
   assertRaceSkillContent,
-  assertTrainingContent,
   assertSaveContent,
   badgeStateId,
   createTrainerBadgeState,
   createUmaBadgeState,
   createInitialSave,
+  deriveUma,
+  type UmaSave,
   parseSyncResponseOrThrow,
   SCENARIOS,
   replaceSkillLoadout as resolveSkillLoadout,
   type EntityKind,
-  type AptitudeCategory,
-  type Facility,
   type LogKind,
-  type TrainingTurnResult,
   type SyncRequest,
   type RaceResultRecord,
   type Strategy,
-  type ScenarioStartSelection,
   type BadgePreferences,
   type TrainerBadgePreferences,
   type FlairEventKind,
@@ -51,12 +48,6 @@ import { adoptGameState, clearGameState, localDay, mergeBadgeAndFlairState, repl
 import { replaceCardState } from './store'
 import { acknowledgedSequences } from './sync'
 import {
-  persistExpeditionCompletion,
-  persistTraining,
-  resolveMemoryExpeditionCompletion,
-  resolveMemoryTraining,
-} from './training'
-import {
   completeMemoryRace,
   completePersistentRace,
   prepareMemoryRace,
@@ -78,14 +69,19 @@ import {
   type UmaRedemptionMutation,
 } from './collection'
 import { replaceUmaCollectionState } from './store'
-import { startMemoryScenario, startPersistentScenario } from './promotion'
+import {
+  advanceMemoryUma,
+  advancePersistentUma,
+  startMemoryScenario,
+  startPersistentScenario,
+} from './promotion'
 import {
   bootstrapBadgeFacts,
   bootstrapUmaFlair,
   evaluateUmaBadgeState,
   updateMemoryRaceBadgeFacts,
+  badgeSubject,
   updateMemoryScenarioBadgeFacts,
-  updateMemoryTrainingBadgeFacts,
 } from './badges'
 import {
   bootstrapTrainerBadgeState,
@@ -148,7 +144,6 @@ export class GameRuntime {
     const now = Date.now()
     try {
       assertSaveContent(content.umas.items, content.cards.items)
-      assertTrainingContent(content.umas.items, content.cards.items, content.skills.items)
       assertRaceSkillContent(content.skills.items)
       assertProgressionRaceContent(content.races.items)
       assertScenarioGoalContent(content.umas.items, content.races.items)
@@ -169,7 +164,7 @@ export class GameRuntime {
         const initial = createInitialSave(content.umas.items, content.cards.items, content.manifest.version, today, now)
         const evaluations = initial.umas.map((item) => evaluateUmaBadgeState(
           content,
-          createUmaBadgeState(item, now),
+          createUmaBadgeState(item, badgeSubject(content, item), now),
           { source: { kind: 'migration', id: null, tier: null }, earnedAt: now, retroactive: true },
         ))
         const umaBadges = evaluations.map((evaluation) => evaluation.state)
@@ -375,7 +370,19 @@ export class GameRuntime {
     const uma = state.umas[id]
     const template = content?.umas.byId.get(id)
     if (!content || state.status !== 'ready' || !uma || !template) throw new Error('Loadout Uma must be owned')
-    const next = resolveSkillLoadout(uma, template, content.skills.byId, skillIds)
+    const derived = deriveUma({
+      uma,
+      umaTemplate: template,
+      cardSaves: new Map(Object.entries(state.cards)),
+      cardTemplates: content.cards.byId,
+      umaTemplates: content.umas.byId,
+    })
+    const loadoutSkillIds = resolveSkillLoadout(derived, template, content.skills.byId, skillIds)
+    const next: UmaSave = {
+      ...uma,
+      scenarios: uma.scenarios.map((run) =>
+        run.tier === uma.unlockedTier ? { ...run, loadoutSkillIds } : run),
+    }
     if (!state.persistent) {
       replaceUma(next)
       return
@@ -413,84 +420,6 @@ export class GameRuntime {
       }
     } finally {
       this.deckLocks.delete(id)
-    }
-  }
-
-  async trainUma(id: string, facility: Facility, today = localDay(), now = Date.now(), useClimaxItem = false): Promise<TrainingTurnResult & { earnedFlairEventIds: string[] }> {
-    if (this.trainingLocks.has(id)) throw new Error('Training is already resolving for this Uma')
-    this.trainingLocks.add(id)
-    try {
-      const generation = this.generation
-      const content = this.content
-      const state = useGame.getState()
-      const uma = state.umas[id]
-      if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Training Uma must be owned')
-      const mutation = state.persistent
-        ? await persistTraining(content, id, facility, today, now, useClimaxItem)
-        : resolveMemoryTraining({
-          content,
-          profile: state.profile,
-          uma,
-          cardsById: state.cards,
-          facility,
-          today,
-          now,
-          useClimaxItem,
-        })
-      const actionResult = { ...mutation.result, earnedFlairEventIds: mutation.earnedFlairEventIds }
-      if (generation !== this.generation) return actionResult
-      replaceTrainingState(mutation.profile, mutation.uma, mutation.cards)
-      if (!state.persistent) {
-        const id = badgeStateId(uma.templateId)
-        const prior = state.badges[id]
-        if (!prior || prior.scope !== 'uma') throw new Error('Memory badge state is missing')
-        const flair = updateMemoryTrainingBadgeFacts({
-          content,
-          state: prior,
-          before: uma,
-          after: mutation.uma,
-          friendship: mutation.result.preview.friendship,
-          presentCardCount: mutation.result.preview.presentCardIds.length,
-          now,
-        })
-        mutation.earnedFlairEventIds = flair.events.map((event) => event.id)
-        actionResult.earnedFlairEventIds = mutation.earnedFlairEventIds
-        mergeBadgeAndFlairState({ ...state.badges, [id]: flair.state }, flair.events)
-        const trainerIds = this.reconcileMemoryTrainer(now, mutation.ledgerIds[0] ?? `training:${id}:${now}`)
-        mutation.earnedFlairEventIds.push(...trainerIds)
-        actionResult.earnedFlairEventIds = [...mutation.earnedFlairEventIds]
-      }
-      if (state.persistent) {
-        await this.refreshBadges()
-        await this.refreshPending()
-        this.schedule()
-      }
-      return actionResult
-    } finally {
-      this.trainingLocks.delete(id)
-    }
-  }
-
-  async completeExpedition(id: string, category: AptitudeCategory | null, now = Date.now()) {
-    if (this.trainingLocks.has(id)) throw new Error('Training is already resolving for this Uma')
-    this.trainingLocks.add(id)
-    try {
-      const generation = this.generation
-      const state = useGame.getState()
-      const uma = state.umas[id]
-      if (state.status !== 'ready' || !uma) throw new Error('Expedition Uma must be owned')
-      const mutation = state.persistent
-        ? await persistExpeditionCompletion(id, category, now)
-        : resolveMemoryExpeditionCompletion(uma, category)
-      if (generation !== this.generation) return mutation.completion
-      replaceUma(mutation.uma)
-      if (state.persistent) {
-        await this.refreshPending()
-        this.schedule()
-      }
-      return mutation.completion
-    } finally {
-      this.trainingLocks.delete(id)
     }
   }
 
@@ -535,8 +464,10 @@ export class GameRuntime {
         })
         let badges = { ...state.badges, [id]: raceFlair.state }
         const events = [...raceFlair.events]
-        const completedFinalTier = completion.uma.parentSnapshot?.completedTier === SCENARIOS.length &&
-          uma.parentSnapshot?.completedTier !== SCENARIOS.length
+        const finalJourneyState = (save: UmaSave) =>
+          save.scenarios.find((run) => run.tier === SCENARIOS.length)?.journey?.state ?? null
+        const completedFinalTier = finalJourneyState(completion.uma) === 'completed' &&
+          finalJourneyState(uma) !== 'completed'
         if (completedFinalTier) {
           const scenarioFlair = updateMemoryScenarioBadgeFacts({
             content,
@@ -570,7 +501,7 @@ export class GameRuntime {
     }
   }
 
-  async startScenario(id: string, selection: ScenarioStartSelection, now = Date.now()) {
+  async startScenario(id: string, now = Date.now()) {
     if (this.promotionLocks.has(id)) throw new Error('This Uma is already starting a scenario')
     this.promotionLocks.add(id)
     try {
@@ -580,8 +511,8 @@ export class GameRuntime {
       const uma = state.umas[id]
       if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Scenario Uma must be owned')
       const mutation = state.persistent
-        ? await startPersistentScenario(content, id, selection, now)
-        : startMemoryScenario(content, state.profile, uma, Object.values(state.umas), state.cards, selection, now)
+        ? await startPersistentScenario(content, id, now)
+        : startMemoryScenario(content, state.profile, uma, state.cards)
       if (generation !== this.generation) return mutation
       replaceUmaCollectionState(mutation.profile, mutation.uma)
       if (!state.persistent && !mutation.alreadyStarted) {
@@ -589,7 +520,7 @@ export class GameRuntime {
           content,
           before: uma,
           after: mutation.uma,
-          completedTier: mutation.result && 'fromTier' in mutation.result ? mutation.result.fromTier : null,
+          completedTier: mutation.result?.fromTier ?? null,
           badges: state.badges,
           umas: { ...state.umas, [mutation.uma.templateId]: mutation.uma },
           now,
@@ -610,8 +541,44 @@ export class GameRuntime {
     }
   }
 
-  async promoteUma(id: string, now = Date.now()) {
-    return this.startScenario(id, { parents: [], grandparentUniqueSkillIds: [], grandparentWhiteSkillIds: [], pinkSparks: [] }, now)
+  /** Unlocks the next scenario: spends tickets and opens a fresh run at Training Level 1. */
+  async advanceUma(id: string, now = Date.now()) {
+    if (this.promotionLocks.has(id)) throw new Error('This Uma is already advancing')
+    this.promotionLocks.add(id)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      const uma = state.umas[id]
+      if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Scenario Uma must be owned')
+      const mutation = state.persistent
+        ? await advancePersistentUma(content, id, now)
+        : advanceMemoryUma(content, state.profile, uma, state.cards, now)
+      if (generation !== this.generation) return mutation
+      replaceUmaCollectionState(mutation.profile, mutation.uma)
+      if (!state.persistent) {
+        const flair = updateMemoryScenarioBadgeFacts({
+          content,
+          before: uma,
+          after: mutation.uma,
+          completedTier: mutation.result?.fromTier ?? null,
+          badges: state.badges,
+          umas: { ...state.umas, [mutation.uma.templateId]: mutation.uma },
+          now,
+        })
+        mutation.badgeStates = flair.states
+        mutation.earnedFlairEventIds = flair.events.map((event) => event.id)
+        mergeBadgeAndFlairState(flair.states, flair.events)
+        mutation.earnedFlairEventIds.push(...this.reconcileMemoryTrainer(now, `scenario:${id}:${now}`))
+      } else {
+        await this.refreshBadges()
+        await this.refreshPending()
+        this.schedule()
+      }
+      return mutation
+    } finally {
+      this.promotionLocks.delete(id)
+    }
   }
 
   async listLatestRaceTimes(): Promise<Record<string, number>> {

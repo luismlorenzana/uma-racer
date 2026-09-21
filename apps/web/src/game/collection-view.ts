@@ -93,16 +93,16 @@ export function buildUmaAlbum(
   const items = all.filter((item) => {
     if (filters.ownership !== 'all' && (filters.ownership === 'owned') !== item.owned) return false
     if (filters.tier !== null && (item.view?.tier ?? 1) !== filters.tier) return false
-    const aptitudes = item.save?.aptitudes ?? item.template.aptitudes
+    const aptitudes = item.view?.derived.aptitudes ?? item.template.aptitudes
     if (filters.surface && !strong(aptitudes.surface[filters.surface])) return false
     if (filters.distance && !strong(aptitudes.distance[filters.distance])) return false
     if (filters.strategy && !strong(aptitudes.strategy[filters.strategy])) return false
     if (filters.sex !== null && (item.template.realHorseSex ?? 'unknown') !== filters.sex) return false
-    return !filters.ready || item.view?.readyToPromote === true
+    return !filters.ready || item.view?.readyToAdvance === true
   }).sort((left, right) => {
     const id = left.template.id.localeCompare(right.template.id)
     if (sort === 'uma-level') return (right.save?.level ?? 0) - (left.save?.level ?? 0) || id
-    if (sort === 'training-level') return (right.save?.trainingLevel ?? 0) - (left.save?.trainingLevel ?? 0) || id
+    if (sort === 'training-level') return (right.view?.derived.trainingLevel ?? 0) - (left.view?.derived.trainingLevel ?? 0) || id
     return left.template.name.localeCompare(right.template.name) || id
   })
   return { items, ...counts, couponBalance: profile.umaCoupons, shardBalance: profile.umaShards }

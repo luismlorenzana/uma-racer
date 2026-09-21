@@ -17,20 +17,6 @@ export async function setUmaDeck(id: string, orderedCardIds: readonly string[]):
   await gameRuntime.setUmaDeck(id, orderedCardIds)
 }
 
-export async function trainUma(id: string, facility: import('@racer/domain').Facility, useClimaxItem = false) {
-  return criticalGameplayAction(async () => {
-    const { gameRuntime } = await import('./runtime')
-    return gameRuntime.trainUma(id, facility, undefined, undefined, useClimaxItem)
-  })
-}
-
-export async function completeExpedition(id: string, category: import('@racer/domain').AptitudeCategory | null) {
-  return criticalGameplayAction(async () => {
-    const { gameRuntime } = await import('./runtime')
-    return gameRuntime.completeExpedition(id, category)
-  })
-}
-
 export async function prepareRace(
   umaId: string,
   raceId: string,
@@ -48,17 +34,17 @@ export async function completeRace(attempt: import('./racing').PreparedRace) {
   })
 }
 
-export async function promoteUma(id: string) {
+export async function advanceUma(id: string) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.promoteUma(id)
+    return gameRuntime.advanceUma(id)
   })
 }
 
-export async function startScenario(id: string, selection: import('@racer/domain').ScenarioStartSelection) {
+export async function startScenario(id: string) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.startScenario(id, selection)
+    return gameRuntime.startScenario(id)
   })
 }
 
