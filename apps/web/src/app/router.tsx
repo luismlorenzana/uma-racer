@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 import { AppShell } from './AppShell'
 
-// Tab screens live inside the shell (top bar + bottom tabs). Full-screen scenes (race, training, reveals) sit
+// Tab screens live inside the shell (top bar + bottom tabs). Full-screen scenes (race, constellation, reveals) sit
 // outside it and are code-split so PixiJS only loads when a scene opens.
 export const router = createBrowserRouter([
   {
@@ -51,14 +51,9 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: 'training/:umaId',
-    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Training" />,
-    lazy: async () => ({ Component: (await import('../screens/training/TrainingScreen')).TrainingScreen }),
-  },
-  {
-    path: 'scenario/:umaId/start',
-    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Scenario Start" />,
-    lazy: async () => ({ Component: (await import('../screens/ScenarioStartScreen')).ScenarioStartScreen }),
+    path: 'constellation/:umaId',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading constellation" />,
+    lazy: async () => ({ Component: (await import('../screens/ConstellationScreen')).ConstellationScreen }),
   },
   {
     path: 'race/run',

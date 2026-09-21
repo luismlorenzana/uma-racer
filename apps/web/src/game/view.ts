@@ -1,17 +1,20 @@
-// Save/content joins and Stable derivations (docs/technical/architecture.md).
-
 import {
-  baselineStatCap,
+  activeScenario,
+  capProfile,
+  deriveUma,
   expToNextUmaLevel,
   isGateLevel,
   LEVELS_PER_SCENARIO,
   SCENARIOS,
+  baselineSpCap,
   scenarioForTier,
-  spCap,
-  statCap,
   tierOfLevel,
+  type CardSave,
+  type DerivedUma,
   type DistanceCategory,
   type ScenarioDef,
+  type ScenarioTraining,
+  type Stats,
   type Strategy,
   type Surface,
   type UmaSave,
@@ -34,23 +37,41 @@ export interface UmaViewModel {
   asset: ContentAsset | null
   tier: number
   scenario: ScenarioDef | undefined
-  currentStatCap: number
-  baselineStatCap: number
-  currentSpCap: number
+  /** The active scenario's run. */
+  run: ScenarioTraining
+  /** Stats, skills and aptitudes, recomputed from the constellation (D121). */
+  derived: DerivedUma
+  /** Per-stat caps for this scenario. */
+  caps: Stats
+  spCap: number
   expToNext: number
-  readyToPromote: boolean
+  readyToAdvance: boolean
 }
 
 export type UmaJoinResult =
   | { status: 'ready'; value: UmaViewModel }
   | { status: 'missing-content'; templateId: string }
 
-export function joinUma(save: UmaSave, content: LoadedContent): UmaJoinResult {
+/**
+ * Joins a save to content and derives everything the UI reads. Card saves are needed because stats now come
+ * from the constellation, not from the save.
+ */
+export function joinUma(
+  save: UmaSave,
+  content: LoadedContent,
+  cardSaves: Readonly<Record<string, CardSave>> = {},
+): UmaJoinResult {
   const template = content.umas.byId.get(save.templateId)
   if (!template) return { status: 'missing-content', templateId: save.templateId }
-  const tier = tierOfLevel(save.level)
-  const expToNext = expToNextUmaLevel(save.level)
+  const tier = save.unlockedTier
   const finalLevel = save.level >= SCENARIOS.length * LEVELS_PER_SCENARIO
+  const derived = deriveUma({
+    uma: save,
+    umaTemplate: template,
+    cardSaves: new Map(Object.entries(cardSaves)),
+    cardTemplates: content.cards.byId,
+    umaTemplates: content.umas.byId,
+  })
   return {
     status: 'ready',
     value: {
@@ -59,11 +80,13 @@ export function joinUma(save: UmaSave, content: LoadedContent): UmaJoinResult {
       asset: umaAsset(content, save.templateId),
       tier,
       scenario: scenarioForTier(tier),
-      currentStatCap: statCap(tier, save.trainingLevel),
-      baselineStatCap: baselineStatCap(tier),
-      currentSpCap: spCap(tier, save.trainingLevel),
-      expToNext,
-      readyToPromote: save.scenarioStarted && isGateLevel(save.level) && !finalLevel,
+      run: activeScenario(save),
+      derived,
+      caps: capProfile(tier),
+      spCap: baselineSpCap(tier),
+      expToNext: expToNextUmaLevel(save.level),
+      readyToAdvance: activeScenario(save).started && isGateLevel(save.level)
+        && tierOfLevel(save.level) === tier && !finalLevel,
     },
   }
 }
@@ -95,15 +118,15 @@ export function filterAndSortUmas(
 ): UmaViewModel[] {
   const filtered = umas.filter((uma) => {
     if (filters.tier !== null && uma.tier !== filters.tier) return false
-    if (filters.surface && !highAptitude(uma.save.aptitudes.surface[filters.surface])) return false
-    if (filters.distance && !highAptitude(uma.save.aptitudes.distance[filters.distance])) return false
-    if (filters.strategy && !highAptitude(uma.save.aptitudes.strategy[filters.strategy])) return false
-    return !filters.ready || uma.readyToPromote
+    if (filters.surface && !highAptitude(uma.derived.aptitudes.surface[filters.surface])) return false
+    if (filters.distance && !highAptitude(uma.derived.aptitudes.distance[filters.distance])) return false
+    if (filters.strategy && !highAptitude(uma.derived.aptitudes.strategy[filters.strategy])) return false
+    return !filters.ready || uma.readyToAdvance
   })
   return [...filtered].sort((left, right) => {
     const idOrder = left.save.templateId.localeCompare(right.save.templateId)
     if (sort === 'uma-level') return right.save.level - left.save.level || idOrder
-    if (sort === 'training-level') return right.save.trainingLevel - left.save.trainingLevel || idOrder
+    if (sort === 'training-level') return right.derived.trainingLevel - left.derived.trainingLevel || idOrder
     return left.template.name.localeCompare(right.template.name) || idOrder
   })
 }
