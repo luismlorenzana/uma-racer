@@ -3,33 +3,35 @@ import {
   cardNodeValue,
   capProfile,
   constellationTemplate,
-  isNodeUnlocked,
+  explainAptitudes,
   lineageEligibility,
+  lineageUnlockLevel,
   nodeValue,
   unlockedNodeCount,
+  type Aptitudes,
   type ConstellationNode,
+  type ConstellationTemplate,
   type NodeAssignment,
   type StatKey,
+  type Stats,
+  type UmaTemplate,
 } from '@racer/domain'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
+import { getContentAsset, type LoadedContent } from '../content/runtime'
 import { setConstellationNode } from '../game/actions'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
+import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
+import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
 import { Crest } from '../ui/Crest'
-import { Meter } from '../ui/Meter'
 import { Numeral } from '../ui/Numeral'
-import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
-/**
- * The constellation, as a grouped list. M013 replaces this with the real graph on a dark stage; this version
- * exists so every node kind is assignable and the derived stats can be checked end to end.
- */
 export function ConstellationScreen() {
   const { umaId = '' } = useParams()
   const contentState = useContent()
@@ -39,6 +41,8 @@ export function ConstellationScreen() {
   const pushToast = useGame((state) => state.pushToast)
   const [openNode, setOpenNode] = useState<ConstellationNode | null>(null)
   const [busy, setBusy] = useState(false)
+  /** Stats as they were when this screen opened, so every delta reads against one stable reference. */
+  const baseline = useRef<Stats | null>(null)
 
   const save = umas[umaId]
   const joined = useMemo(
@@ -50,17 +54,31 @@ export function ConstellationScreen() {
     return <ScreenState title="Opening constellation…" detail="Loading private content and your local save." />
   }
   if (!save || !joined || joined.status !== 'ready') {
-    return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
+    return (
+      <ScreenState
+        title="Uma not found"
+        detail="This Uma is not owned in your Stable."
+        action={{ label: 'Back to Stable', to: '/stable' }}
+      />
+    )
   }
 
+  const content = contentState.content
   const uma = joined.value
   const { derived, run } = uma
   const template = constellationTemplate(run.tier)
   const caps = capProfile(run.tier)
-  const unlocked = unlockedNodeCount(run.tier, run.trainingLevel)
-  const cardNodes = template.nodes.filter((node) => node.kind === 'card')
-  const statNodes = template.nodes.filter((node) => node.kind === 'stat')
-  const lineageNodes = template.nodes.filter((node) => node.kind === 'parent' || node.kind === 'grandparent')
+  if (baseline.current === null) baseline.current = derived.stats
+
+  const cardTypes = Object.fromEntries(
+    run.cardSetIds.flatMap((id) => {
+      const card = content.cards.byId.get(id)
+      return card ? [[id, card.type] as const] : []
+    }),
+  )
+  const scenarioCardId = run.cardSetIds[template.scenarioSlot] ?? null
+  const aptitudes = explainAptitudes(uma.template.aptitudes, derived.lineage)
+  const moved = aptitudes.filter((row) => row.result !== row.base)
 
   const assign = async (nodeId: string, assignment: NodeAssignment | null) => {
     if (busy) return
@@ -75,149 +93,237 @@ export function ConstellationScreen() {
     }
   }
 
-  const label = (node: ConstellationNode): string => {
-    const assignment = run.assignments[node.id]
-    if (!assignment) return 'Empty'
-    if (assignment.kind === 'stat') return titleCase(assignment.stat)
-    if (assignment.kind === 'card') return contentState.content.cards.byId.get(assignment.cardId)?.charName ?? assignment.cardId
-    return contentState.content.umas.byId.get(assignment.templateId)?.name ?? assignment.templateId
-  }
-
-  const nodeButton = (node: ConstellationNode) => {
-    const open = isNodeUnlocked(template, node, run.trainingLevel)
-    const filled = run.assignments[node.id] !== undefined
-    return (
-      <button
-        key={node.id}
-        type="button"
-        disabled={!open || busy}
-        onClick={() => setOpenNode(node)}
-        className={`min-h-[44px] rounded-xl border px-2 py-1.5 text-left text-[11px] font-semibold transition-colors ${
-          !open
-            ? 'border-transparent bg-sunken text-ink-faint'
-            : filled
-              ? 'border-accent bg-panel text-ink'
-              : 'border-dashed border-ink-faint bg-panel text-ink-soft'
-        }`}
-      >
-        <span className="block truncate">{open ? label(node) : 'Locked'}</span>
-      </button>
-    )
-  }
+  const openCount = unlockedNodeCount(run.tier, run.trainingLevel)
+  const treeNodes = template.cardNodes + template.statNodes
 
   return (
-    <div className="flex min-h-dvh flex-col gap-3 bg-page px-4 pt-safe pb-24">
-      <header className="flex items-center justify-between pt-3">
-        <Link to={`/stable/${encodeURIComponent(save.templateId)}`} className="text-sm font-semibold text-ink-soft">← {uma.template.name}</Link>
+    <div className="flex h-dvh flex-col bg-page pt-safe">
+      <header className="flex items-center justify-between px-4 py-2">
+        <Link to={`/stable/${encodeURIComponent(save.templateId)}`} className="text-sm font-semibold text-ink-soft">
+          ← {uma.template.name}
+        </Link>
         <div className="flex gap-1">
           <Crest>{uma.scenario?.name ?? `Tier ${run.tier}`}</Crest>
           <Crest tone="accent">TL {run.trainingLevel}</Crest>
         </div>
       </header>
 
-      <Panel>
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold">Derived stats</h2>
-          <span className="text-micro">{derived.assignedNodes} / {unlocked} nodes filled</span>
-        </div>
-        <div className="mt-2 grid gap-1.5">
-          {STATS.map((stat) => (
-            <div key={stat}>
-              <div className="flex justify-between text-[11px] font-semibold">
-                <span>{titleCase(stat)}</span>
-                <span><Numeral>{derived.stats[stat]}</Numeral> / {caps[stat]}</span>
+      <div className="flex gap-1.5 px-3 pb-1">
+        {STATS.map((stat) => {
+          const value = derived.stats[stat]
+          const delta = value - (baseline.current?.[stat] ?? value)
+          return (
+            <div key={stat} className="min-w-0 flex-1 rounded-lg bg-panel px-1.5 py-1">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[9px] font-semibold uppercase text-ink-faint">{stat.slice(0, 3)}</span>
+                {delta !== 0 && (
+                  <span className={`text-[9px] font-bold ${delta > 0 ? 'text-go' : 'text-danger'}`}>
+                    {delta > 0 ? '+' : ''}{delta}
+                  </span>
+                )}
               </div>
-              <Meter value={derived.stats[stat] / caps[stat]} color="var(--color-accent)" height={5} />
+              <Numeral className="block text-[14px] leading-tight">{value}</Numeral>
+              <div className="mt-0.5 h-[3px] overflow-hidden rounded-full bg-sunken">
+                <div
+                  className="h-full rounded-full bg-accent transition-[width] duration-300"
+                  style={{ width: `${Math.min(100, (value / caps[stat]) * 100)}%` }}
+                />
+              </div>
             </div>
-          ))}
-          <div className="mt-1 flex justify-between text-[11px] font-semibold">
-            <span>Skill points</span>
-            <span><Numeral>{derived.skillPoints}</Numeral> / {uma.spCap}</span>
-          </div>
+          )
+        })}
+        <div className="min-w-0 flex-1 rounded-lg bg-sunken px-1.5 py-1">
+          <span className="text-[9px] font-semibold uppercase text-ink-faint">SP</span>
+          <Numeral className="block text-[14px] leading-tight">{derived.skillPoints}</Numeral>
+          <span className="text-[8px] text-ink-faint">of {uma.spCap}</span>
         </div>
-        <p className="mt-2 text-micro">
-          One node pays {nodeValue(run.tier)} raw points at full limit break. Changing nodes is free and instant.
-        </p>
-      </Panel>
+      </div>
 
-      <Panel>
+      <div className="min-h-0 flex-1 px-3">
+        <ConstellationGraph
+          template={template}
+          trainingLevel={run.trainingLevel}
+          assignments={run.assignments}
+          content={content}
+          cardTypes={cardTypes}
+          selectedId={openNode?.id ?? null}
+          onSelect={setOpenNode}
+        />
+      </div>
+
+      <section className="px-4 pb-safe pt-2">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold">Card nodes</h2>
-          <Link to={`/stable/${encodeURIComponent(save.templateId)}/deck`} className="text-[11px] font-semibold text-accent">Edit card set</Link>
+          <p className="text-[11px] font-semibold">
+            Aptitudes <span className="text-ink-faint">· {derived.assignedNodes}/{openCount} of {treeNodes} nodes</span>
+          </p>
+          <Link to={`/stable/${encodeURIComponent(save.templateId)}/deck`} className="text-[11px] font-semibold text-accent">
+            Card set
+          </Link>
         </div>
-        {run.cardSetIds.length === 0
-          ? <p className="mt-2 text-[11px] text-ink-soft">Pick a card set before filling these nodes.</p>
-          : <div className="mt-2 grid grid-cols-3 gap-1.5">{cardNodes.map(nodeButton)}</div>}
-      </Panel>
-
-      <Panel>
-        <h2 className="text-sm font-semibold">Stat nodes</h2>
-        <p className="text-micro">Free choice — where the Stamina a Mile race wants comes from.</p>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">{statNodes.map(nodeButton)}</div>
-      </Panel>
-
-      <Panel>
-        <h2 className="text-sm font-semibold">Lineage</h2>
-        <p className="text-micro">Opens at Training Level 9 and 10. Moves aptitudes and adds baseline skills.</p>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">{lineageNodes.map(nodeButton)}</div>
-      </Panel>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {moved.length > 0
+            ? moved.map((row) => (
+              <span key={`${row.category}-${row.key}`} className="rounded-full bg-panel px-2 py-0.5 text-[10px] font-semibold">
+                {titleCase(row.key)} {row.base}→<span className="text-accent">{row.result}</span>
+                <span className="text-ink-faint"> ·{row.steps} step{row.steps === 1 ? '' : 's'}</span>
+              </span>
+            ))
+            : <span className="text-[10px] text-ink-soft">Fill lineage slots to move an aptitude grade.</span>}
+        </div>
+      </section>
 
       <BottomSheet open={openNode !== null} onClose={() => setOpenNode(null)}>
         {openNode && (
           <div className="grid gap-1.5 px-4 pb-6">
-            <h3 className="text-sm font-semibold">Fill this node</h3>
-            <button type="button" className="min-h-[44px] rounded-xl bg-sunken text-left text-sm px-3" onClick={() => void assign(openNode.id, null)}>
+            <div className="flex items-baseline justify-between">
+              <h3 className="text-sm font-semibold">{titleCase(openNode.kind)} node</h3>
+              <span className="text-micro">{nodeValue(run.tier)} raw points</span>
+            </div>
+
+            <button
+              type="button"
+              disabled={busy}
+              className="min-h-[44px] rounded-xl bg-sunken px-3 text-left text-sm font-semibold"
+              onClick={() => void assign(openNode.id, null)}
+            >
               Leave empty
             </button>
 
-            {openNode.kind === 'card' && run.cardSetIds.map((cardId) => {
-              const card = contentState.content.cards.byId.get(cardId)
-              const owned = cards[cardId]
-              if (!card || !owned) return null
-              const scenarioSlot = run.cardSetIds[template.scenarioSlot] === cardId
-              return (
-                <button key={cardId} type="button" className="min-h-[44px] rounded-xl bg-panel px-3 py-2 text-left" onClick={() => void assign(openNode.id, { kind: 'card', cardId })}>
-                  <span className="block text-sm font-semibold">{card.charName}</span>
-                  <span className="text-micro">
-                    {scenarioSlot
-                      ? `Scenario slot · pays skill points`
-                      : `${titleCase(card.type)} · LB${owned.limitBreak} · ${Math.round(cardNodeValue(run.tier, { template: card, limitBreak: owned.limitBreak }))} per node`}
-                  </span>
-                </button>
-              )
-            })}
+            {openNode.kind === 'card' && (run.cardSetIds.length === 0
+              ? <p className="py-2 text-[11px] text-ink-soft">Pick a card set before filling card nodes.</p>
+              : run.cardSetIds.map((cardId) => {
+                const card = content.cards.byId.get(cardId)
+                const owned = cards[cardId]
+                if (!card || !owned) return null
+                const isScenario = cardId === scenarioCardId
+                return (
+                  <button
+                    key={cardId}
+                    type="button"
+                    disabled={busy}
+                    className="flex min-h-[44px] items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left"
+                    onClick={() => void assign(openNode.id, { kind: 'card', cardId })}
+                  >
+                    <AtlasSprite asset={getContentAsset(content, 'card-icons', cardId)} decorative className="h-7 w-7 rounded-md" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{card.charName}</span>
+                      <span className="text-micro">
+                        {isScenario
+                          ? 'Scenario card · pays skill points, not stats'
+                          : `${titleCase(card.type)} · LB${owned.limitBreak} · ${Math.round(cardNodeValue(run.tier, { template: card, limitBreak: owned.limitBreak }))} per node`}
+                      </span>
+                    </span>
+                  </button>
+                )
+              }))}
 
             {openNode.kind === 'stat' && STATS.map((stat: StatKey) => (
-              <button key={stat} type="button" className="min-h-[44px] rounded-xl bg-panel px-3 text-left text-sm font-semibold" onClick={() => void assign(openNode.id, { kind: 'stat', stat })}>
-                {titleCase(stat)} +{nodeValue(run.tier)}
+              <button
+                key={stat}
+                type="button"
+                disabled={busy}
+                className="min-h-[44px] rounded-xl bg-panel px-3 text-left text-sm font-semibold"
+                onClick={() => void assign(openNode.id, { kind: 'stat', stat })}
+              >
+                {titleCase(stat)} <span className="text-ink-soft">+{nodeValue(run.tier)}</span>
               </button>
             ))}
 
             {(openNode.kind === 'parent' || openNode.kind === 'grandparent') && (
-              <div className="max-h-[50dvh] overflow-y-auto">
-                {Object.keys(umas).map((id) => {
-                  const candidate = contentState.content.umas.byId.get(id)
-                  if (!candidate) return null
-                  const held = derived.lineage.filter((entry) => run.assignments[openNode.id]?.kind !== 'lineage' || entry.id !== id)
-                  const eligibility = lineageEligibility(candidate, uma.template, held)
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      disabled={!eligibility.eligible}
-                      className="min-h-[44px] w-full rounded-xl bg-panel px-3 py-2 text-left disabled:opacity-40"
-                      onClick={() => void assign(openNode.id, { kind: 'lineage', templateId: id })}
-                    >
-                      <span className="block text-sm font-semibold">{candidate.name}</span>
-                      <span className="text-micro">{eligibility.reason ?? `${candidate.awakeningSkillIds.length} baseline skills`}</span>
-                    </button>
-                  )
-                })}
-              </div>
+              <LineagePicker
+                busy={busy}
+                candidateIds={Object.keys(umas)}
+                content={content}
+                child={uma.template}
+                held={derived.lineage}
+                currentId={currentLineageId(run.assignments[openNode.id])}
+                onPick={(templateId) => void assign(openNode.id, { kind: 'lineage', templateId })}
+              />
             )}
+
+            <LockedNote node={openNode} template={template} trainingLevel={run.trainingLevel} />
           </div>
         )}
       </BottomSheet>
+    </div>
+  )
+}
+
+const currentLineageId = (assignment: NodeAssignment | undefined): string | null =>
+  assignment?.kind === 'lineage' ? assignment.templateId : null
+
+function LockedNote({
+  node,
+  template,
+  trainingLevel,
+}: {
+  node: ConstellationNode
+  template: ConstellationTemplate
+  trainingLevel: number
+}) {
+  const required = lineageUnlockLevel(template, node.id)
+  const open = required !== null
+    ? trainingLevel >= required
+    : node.order < unlockedNodeCount(template.tier, trainingLevel)
+  if (open) return null
+  return (
+    <p className="pt-1 text-[11px] text-ink-soft">
+      {required !== null
+        ? `Locked — opens at Training Level ${required}.`
+        : `Locked — Training Levels 1–8 open the tree, and ${unlockedNodeCount(template.tier, trainingLevel)} of ${template.cardNodes + template.statNodes} are open at TL ${trainingLevel}.`}
+    </p>
+  )
+}
+
+function LineagePicker({
+  busy,
+  candidateIds,
+  content,
+  child,
+  held,
+  currentId,
+  onPick,
+}: {
+  busy: boolean
+  candidateIds: readonly string[]
+  content: LoadedContent
+  child: UmaTemplate
+  held: readonly UmaTemplate[]
+  currentId: string | null
+  onPick: (templateId: string) => void
+}) {
+  const base: Aptitudes = child.aptitudes
+  return (
+    <div className="max-h-[44dvh] overflow-y-auto">
+      {candidateIds.map((id) => {
+        const candidate = content.umas.byId.get(id)
+        if (!candidate) return null
+        const others = held.filter((entry) => entry.id !== currentId)
+        const eligibility = lineageEligibility(candidate, child, others)
+        // What this pick would move, shown before committing to it.
+        const preview = explainAptitudes(base, [...others, candidate]).filter((row) => row.result !== row.base)
+        return (
+          <button
+            key={id}
+            type="button"
+            disabled={busy || !eligibility.eligible}
+            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left disabled:opacity-40"
+            onClick={() => onPick(id)}
+          >
+            <AtlasSprite asset={getContentAsset(content, 'uma-icons', id)} decorative className="h-7 w-7 rounded-full" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{candidate.name}</span>
+              <span className="text-micro">
+                {eligibility.reason
+                  ?? (preview.length > 0
+                    ? `Moves ${preview.slice(0, 3).map((row) => `${row.key} ${row.base}→${row.result}`).join(', ')}`
+                    : `${candidate.awakeningSkillIds.length} baseline skills`)}
+              </span>
+            </span>
+            {id === currentId && <span className="shrink-0 text-[10px] font-bold text-accent">In slot</span>}
+          </button>
+        )
+      })}
     </div>
   )
 }
