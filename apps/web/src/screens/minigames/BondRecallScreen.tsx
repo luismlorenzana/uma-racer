@@ -1,0 +1,299 @@
+import { activeScenario, MAX_LIMIT_BREAK } from '@racer/domain'
+import { m, useReducedMotion } from 'motion/react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useParams } from 'react-router'
+import { useContent } from '../../content/ContentProvider'
+import { getContentAsset, type LoadedContent } from '../../content/runtime'
+import { getMinigameHost, type RunReward, type RunTicket } from '../../game/minigame-host'
+import {
+  BOND_FLIP_BACK_MS,
+  bondMismatchesRemaining,
+  flipBondTile,
+  hideBondMismatch,
+  startBondRecall,
+  type BondRecallState,
+} from '../../game/minigames/bond-recall'
+import { useGame } from '../../game/store'
+import { AtlasSprite } from '../../ui/AtlasSprite'
+
+const delay = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
+const lbMultiplier = (limitBreak: number): number => 0.6 + Math.min(MAX_LIMIT_BREAK, Math.max(0, limitBreak)) * 0.1
+
+function useCardArt(content: LoadedContent | null, cardIds: readonly string[]): ReadonlyMap<string, string> {
+  const [art, setArt] = useState<ReadonlyMap<string, string>>(new Map())
+  const key = cardIds.join('\u0000')
+
+  useEffect(() => {
+    if (!content || key.length === 0) {
+      setArt(new Map())
+      return
+    }
+    let cancelled = false
+    const ids = [...new Set(cardIds)]
+    void Promise.all(ids.map(async (id) => {
+      if (!content.art.has('card', id)) return null
+      try {
+        const url = await content.art.load('card', id)
+        return url ? ([id, url] as const) : null
+      } catch {
+        return null
+      }
+    })).then((loaded) => {
+      if (!cancelled) setArt(new Map(loaded.filter((entry): entry is readonly [string, string] => entry !== null)))
+    })
+    return () => { cancelled = true }
+  }, [content, key])
+
+  return art
+}
+
+function LimitPips({ before, after }: { before: number; after: number }) {
+  const reducedMotion = useReducedMotion()
+  return (
+    <span className="flex gap-1" aria-label={`Limit break ${after}`}>
+      {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => {
+        const filled = index < after
+        const gained = index >= before && filled
+        return (
+          <m.span
+            key={index}
+            className={`h-2.5 w-7 rounded-xs ${filled ? 'bg-accent' : 'bg-sunken'}`}
+            initial={gained && !reducedMotion ? { opacity: 0, scale: 0.35 } : false}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: reducedMotion ? 0 : 0.24, delay: gained && !reducedMotion ? index * 0.06 : 0 }}
+          />
+        )
+      })}
+    </span>
+  )
+}
+
+function CardFace({
+  content,
+  cardId,
+  art,
+}: {
+  content: LoadedContent
+  cardId: string
+  art: string | null
+}) {
+  const template = content.cards.byId.get(cardId)
+  if (art) {
+    return <img src={art} alt="" aria-hidden draggable={false} className="h-full w-full object-cover object-top" />
+  }
+  return (
+    <AtlasSprite
+      asset={getContentAsset(content, 'card-icons', cardId)}
+      decorative
+      className="h-full w-full bg-stage-soft"
+      fallback={<span className="flex h-full items-center justify-center bg-stage-soft font-display text-lg font-black text-accent">{template?.charName.slice(0, 1) ?? '✦'}</span>}
+    />
+  )
+}
+
+export function BondRecallScreen() {
+  const { cardId = '' } = useParams()
+  const reducedMotion = useReducedMotion()
+  const contentState = useContent()
+  const gameStatus = useGame((state) => state.status)
+  const cards = useGame((state) => state.cards)
+  const umas = useGame((state) => state.umas)
+  const card = cards[cardId]
+  const template = contentState.status === 'ready' && card ? contentState.content.cards.byId.get(card.templateId) : undefined
+  const ownedEntries = useMemo(() => Object.entries(cards).sort(([left], [right]) => left.localeCompare(right)), [cards])
+  const ownedCardIds = useMemo(() => ownedEntries.map(([, save]) => save.templateId), [ownedEntries])
+  const activeCardIds = useMemo(() => {
+    const activeUma = Object.values(umas)
+      .filter((uma) => activeScenario(uma).started)
+      .sort((left, right) => left.templateId.localeCompare(right.templateId))[0]
+    if (!activeUma) return []
+    return activeScenario(activeUma).cardSetIds.filter((id) => ownedCardIds.includes(id))
+  }, [ownedCardIds, umas])
+  const boardCardIds = activeCardIds.length > 0 ? activeCardIds : ownedCardIds.slice(0, 6)
+  const [ticket, setTicket] = useState<RunTicket | null>(null)
+  const [run, setRun] = useState<BondRecallState | null>(null)
+  const [phase, setPhase] = useState<'ready' | 'reserving' | 'playing' | 'committing' | 'commit-error' | 'complete'>('ready')
+  const [reward, setReward] = useState<RunReward | null>(null)
+  const [message, setMessage] = useState('Find every matching pair before the mismatch counter reaches zero.')
+  const [error, setError] = useState<string | null>(null)
+  const animationId = useRef(0)
+  const committedRun = useRef<string | null>(null)
+  const faceIds = useMemo(() => run ? [...new Set(run.tiles.map((tile) => tile.cardId))] : boardCardIds, [boardCardIds, run])
+  const readyContent = contentState.status === 'ready' ? contentState.content : null
+  const art = useCardArt(readyContent, faceIds)
+
+  useEffect(() => () => { animationId.current += 1 }, [])
+
+  const finish = async (reserved: RunTicket, completed: BondRecallState) => {
+    if (committedRun.current === reserved.runId) return
+    committedRun.current = reserved.runId
+    setPhase('committing')
+    setMessage(completed.status === 'won' ? 'Every bond found. Saving the limit break…' : 'Run over. Saving the result…')
+    try {
+      const nextReward = await getMinigameHost().commitRun(reserved.runId, {
+        kind: 'bond-recall',
+        cleared: completed.status === 'won',
+        mismatches: completed.mismatches,
+      })
+      setReward(nextReward)
+      setPhase('complete')
+    } catch (reason) {
+      committedRun.current = null
+      setError(reason instanceof Error ? reason.message : 'Bond Recall result could not be saved')
+      setPhase('commit-error')
+      setMessage('The run is finished. Retry saving when ready.')
+    }
+  }
+
+  const start = async () => {
+    if (!card || card.limitBreak >= MAX_LIMIT_BREAK || phase !== 'ready') return
+    setPhase('reserving')
+    setError(null)
+    try {
+      const reserved = await getMinigameHost().beginRun('bond-recall', { kind: 'bond-recall', cardId })
+      const next = startBondRecall(reserved.seed, card.limitBreak, boardCardIds, ownedCardIds)
+      setTicket(reserved)
+      setRun(next)
+      setPhase('playing')
+      setMessage(`Run ${reserved.attemptIndex + 1} reserved · tap two cards to find a pair.`)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Bond Recall could not begin')
+      setPhase('ready')
+    }
+  }
+
+  const chooseTile = async (index: number) => {
+    if (phase !== 'playing' || !run || !ticket || run.status !== 'playing') return
+    const flip = flipBondTile(run, index)
+    if (!flip.accepted) return
+    setRun(flip.state)
+    if (flip.result === 'first') {
+      setMessage('Choose one more card.')
+      return
+    }
+    if (flip.result === 'match') {
+      setMessage(flip.state.status === 'won' ? 'All bonds recalled!' : `Match · ${flip.state.matched.length / 2} of ${flip.state.config.pairs} pairs found.`)
+      if (flip.state.status === 'won') await finish(ticket, flip.state)
+      return
+    }
+    const currentAnimation = ++animationId.current
+    setMessage(flip.state.status === 'lost'
+      ? 'No mismatches remain.'
+      : `Not a match · ${bondMismatchesRemaining(flip.state)} chances remain.`)
+    await delay(BOND_FLIP_BACK_MS)
+    if (currentAnimation !== animationId.current) return
+    if (flip.state.status === 'lost') {
+      await finish(ticket, flip.state)
+      return
+    }
+    setRun(hideBondMismatch(flip.state))
+  }
+
+  const retryCommit = () => {
+    if (run && ticket && (run.status === 'won' || run.status === 'lost')) void finish(ticket, run)
+  }
+
+  if (contentState.status !== 'ready' || gameStatus !== 'ready') {
+    const title = contentState.status === 'signed-out' || gameStatus === 'signed-out'
+      ? 'Sign in to play Bond Recall'
+      : contentState.status === 'empty'
+        ? 'Content is not imported'
+        : 'Preparing Bond Recall…'
+    return <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark"><div className="text-center"><h1 className="text-xl">{title}</h1><Link to="/cards" className="mt-4 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 font-display font-semibold text-ink">Back to Cards</Link></div></div>
+  }
+
+  if (!cardId) {
+    return (
+      <div className="min-h-dvh bg-page px-4 pt-safe pb-safe text-ink">
+        <header className="mx-auto flex min-h-16 max-w-md items-center gap-3 py-2"><Link to="/cards" className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline bg-panel text-xl" aria-label="Back to Cards">←</Link><div><p className="text-[10px] font-bold tracking-[0.16em] text-accent-strong uppercase">Bond Recall</p><h1 className="text-2xl">Choose a card</h1></div></header>
+        <main className="mx-auto grid max-w-md grid-cols-2 gap-3 py-3">
+          {ownedEntries.map(([saveId, save]) => {
+            const ownedTemplate = contentState.content.cards.byId.get(save.templateId)
+            if (!ownedTemplate) return null
+            return (
+              <Link key={saveId} to={`/minigames/bond-recall/${encodeURIComponent(saveId)}`} className="min-h-24 rounded-md border border-hairline bg-panel p-3 shadow-1">
+                <p className="line-clamp-2 font-display font-bold">{ownedTemplate.charName}</p><p className="mt-1 line-clamp-1 text-xs text-ink-soft">{ownedTemplate.title}</p><p className="mt-3 text-xs font-bold text-accent-strong">{save.limitBreak >= MAX_LIMIT_BREAK ? 'LB4 · Max' : `LB${save.limitBreak} → LB${save.limitBreak + 1}`}</p>
+              </Link>
+            )
+          })}
+        </main>
+      </div>
+    )
+  }
+
+  if (!card || !template) {
+    return <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark"><div className="text-center"><h1 className="text-xl">Owned card not found</h1><Link to="/minigames/bond-recall" className="mt-4 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 font-display font-semibold text-ink">Choose another card</Link></div></div>
+  }
+
+  if (card.limitBreak >= MAX_LIMIT_BREAK && phase === 'ready') {
+    return <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark"><div className="max-w-sm rounded-lg border border-hairline-dark bg-stage-soft p-5 text-center"><h1 className="text-2xl">Bond complete</h1><p className="mt-2 text-sm text-ink-on-dark-soft">{template.charName} is already at LB4.</p><Link to="/minigames/bond-recall" className="mt-5 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 font-display font-semibold text-ink">Choose another card</Link></div></div>
+  }
+
+  const running = phase === 'playing' || phase === 'committing' || phase === 'commit-error'
+  const before = reward?.limitBreakBefore ?? card.limitBreak
+  const after = reward?.limitBreakAfter ?? before
+  const advanced = after > before
+
+  return (
+    <div className={`flex h-dvh flex-col bg-stage text-ink-on-dark ${running ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+      <header className="pt-safe flex min-h-16 shrink-0 items-center gap-3 border-b border-hairline-dark bg-stage/95 px-3 py-2">
+        <Link to="/minigames/bond-recall" className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft text-xl" aria-label="Choose another card">←</Link>
+        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-sm"><CardFace content={contentState.content} cardId={template.id} art={art.get(template.id) ?? null} /></div>
+        <div className="min-w-0 flex-1"><p className="text-[10px] font-bold tracking-[0.16em] text-accent uppercase">Bond Recall</p><h1 className="truncate text-lg">{template.charName}</h1></div>
+        <div className="text-right"><p className="text-[10px] font-bold text-ink-on-dark-soft uppercase">Limit break</p><p className="font-display text-xl font-bold text-accent">LB{card.limitBreak}</p></div>
+      </header>
+
+      {phase === 'ready' || phase === 'reserving' ? (
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 pb-safe">
+          <div className="rounded-lg border border-hairline-dark bg-stage-soft p-4 shadow-3">
+            <p className="text-xs font-bold tracking-[0.14em] text-accent uppercase">{6 + 2 * card.limitBreak} pairs · no timer</p>
+            <h2 className="mt-1 text-3xl">Remember the bonds</h2>
+            <p className="mt-2 text-sm text-ink-on-dark-soft">Flip two cards. Matches stay; misses spend one chance. Clear every pair to take {template.charName} to LB{card.limitBreak + 1}.</p>
+            <div className="mt-4 flex items-center justify-between rounded-sm border border-hairline-dark p-3"><span className="text-sm font-semibold">Node multiplier</span><span className="font-display font-bold text-accent">{lbMultiplier(card.limitBreak).toFixed(2)} → {lbMultiplier(card.limitBreak + 1).toFixed(2)}</span></div>
+            {activeCardIds.length === 0 && <p className="mt-4 rounded-sm border border-warning/40 bg-warning/10 p-2 text-xs text-ink-on-dark-soft">No active scenario card set was found. This preview uses owned cards ordered by id.</p>}
+            {error && <p role="alert" className="mt-3 rounded-sm bg-danger/20 p-2 text-sm font-semibold text-red-200">{error}</p>}
+            <button type="button" disabled={phase === 'reserving'} onClick={() => void start()} className="mt-5 min-h-12 w-full rounded-sm bg-accent px-5 font-display text-lg font-bold text-ink shadow-2 disabled:opacity-50">{phase === 'reserving' ? 'Reserving run…' : 'Begin · 10 tickets'}</button>
+          </div>
+        </main>
+      ) : phase === 'complete' && reward && run ? (
+        <main className="mx-auto w-full max-w-md flex-1 px-4 py-5 pb-safe">
+          <div className="rounded-lg bg-panel p-5 text-ink shadow-3">
+            <p className={`text-xs font-bold tracking-[0.14em] uppercase ${advanced ? 'text-success' : 'text-danger'}`}>{advanced ? 'Bond strengthened' : 'Run ended'}</p>
+            <h2 className="mt-1 text-3xl">{advanced ? `LB${before} → LB${after}` : 'No limit break'}</h2>
+            <p className="mt-1 text-sm text-ink-soft">{reward.ticketsSpent} tickets spent · {run.mismatches} mismatches</p>
+            <section className="mt-5 rounded-sm bg-accent-wash p-4"><div className="flex items-center justify-between gap-3"><span className="font-display font-bold">LB{after}</span><LimitPips before={before} after={after} /></div></section>
+            <section className="mt-4 rounded-sm border border-hairline bg-page p-4">
+              <h3 className="text-lg">Constellation value</h3>
+              {advanced ? <><p className="mt-1 font-display text-2xl font-bold text-accent-strong">{lbMultiplier(before).toFixed(2)} → {lbMultiplier(after).toFixed(2)}</p><p className="mt-1 text-sm text-ink-soft">Every constellation node using this card now pays {Math.round(lbMultiplier(after) * 100)}% of its authored value, up {Math.round((lbMultiplier(after) - lbMultiplier(before)) * 100)} percentage points.</p></> : <p className="mt-1 text-sm text-ink-soft">The card stays at {Math.round(lbMultiplier(after) * 100)}% of each assigned node's value. Try again to strengthen it.</p>}
+            </section>
+            {reward.couponGranted && <p className="mt-4 rounded-sm border border-accent bg-accent-wash p-3 font-display font-bold text-accent-strong">LB4 reached · Card Select Coupon awarded</p>}
+            <div className="mt-5 grid grid-cols-2 gap-2"><Link to="/minigames/bond-recall" className="flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel px-3 text-center font-display font-semibold">Another card</Link><Link to="/cards" className="flex min-h-12 items-center justify-center rounded-sm bg-accent px-3 font-display font-semibold">Card album</Link></div>
+          </div>
+        </main>
+      ) : run ? (
+        <main className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col items-center px-4 pb-safe">
+          <div className="flex w-full shrink-0 items-center gap-3 py-2">
+            <div className="flex-1"><p className="text-[10px] font-bold tracking-[0.12em] text-ink-on-dark-soft uppercase">Pairs</p><p className="font-display text-lg font-bold">{run.matched.length / 2} / {run.config.pairs}</p></div>
+            <div className="text-right"><p className="text-[10px] font-bold tracking-[0.12em] text-ink-on-dark-soft uppercase">Mismatches left</p><p className={`font-display text-lg font-bold ${bondMismatchesRemaining(run) <= 2 ? 'text-red-300' : 'text-accent'}`}>{bondMismatchesRemaining(run)} / {run.config.mismatchLimit}</p></div>
+          </div>
+          <div className="grid w-full max-w-[358px] shrink gap-1.5 rounded-lg border border-hairline-dark bg-[#0b121a] p-1.5 shadow-3" style={{ gridTemplateColumns: `repeat(${run.config.columns}, minmax(0, 1fr))`, aspectRatio: `${run.config.columns} / ${run.config.rows}` }} aria-label="Bond Recall board">
+            {run.tiles.map((tile, index) => {
+              const faceUp = run.revealed.includes(index) || run.matched.includes(index)
+              const matched = run.matched.includes(index)
+              const tileTemplate = contentState.content.cards.byId.get(tile.cardId)
+              return (
+                <m.button key={tile.id} type="button" disabled={phase !== 'playing' || run.status !== 'playing' || faceUp} onClick={() => void chooseTile(index)} aria-label={`${faceUp ? tileTemplate?.charName ?? 'Card' : 'Hidden card'}, row ${Math.floor(index / run.config.columns) + 1}, column ${index % run.config.columns + 1}${matched ? ', matched' : ''}`} className="relative min-h-11 min-w-11 rounded-[0.7rem] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default" whileTap={reducedMotion ? undefined : { scale: 0.94 }}>
+                  <m.span className="absolute inset-0 block rounded-[0.7rem]" style={{ transformStyle: 'preserve-3d' }} animate={{ rotateY: faceUp ? 180 : 0, scale: matched ? 0.96 : 1, opacity: matched ? 0.82 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.24 }}>
+                    <span className="absolute inset-0 flex items-center justify-center rounded-[0.7rem] border-2 border-accent/45 bg-stage-soft shadow-2" style={{ backfaceVisibility: 'hidden' }}><span className="font-display text-2xl font-black text-accent">✦</span></span>
+                    <span className="absolute inset-0 overflow-hidden rounded-[0.7rem] border-2 border-accent bg-stage" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}><CardFace content={contentState.content} cardId={tile.cardId} art={art.get(tile.cardId) ?? null} /></span>
+                  </m.span>
+                </m.button>
+              )
+            })}
+          </div>
+          <div className="flex min-h-20 w-full flex-1 flex-col justify-center py-2 text-center"><p aria-live="polite" className="text-sm font-semibold">{message}</p>{phase === 'commit-error' && <div><p role="alert" className="mt-2 text-sm font-semibold text-red-200">{error}</p><button type="button" onClick={retryCommit} className="mt-2 min-h-11 rounded-sm bg-accent px-5 font-bold text-ink">Retry save</button></div>}</div>
+        </main>
+      ) : null}
+    </div>
+  )
+}

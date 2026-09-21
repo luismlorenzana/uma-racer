@@ -56,6 +56,16 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/ConstellationScreen')).ConstellationScreen }),
   },
   {
+    path: 'minigames/spark-match/:umaId',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Spark Match" />,
+    lazy: async () => ({ Component: (await import('../screens/minigames/SparkMatchScreen')).SparkMatchScreen }),
+  },
+  {
+    path: 'minigames/bond-recall/:cardId?',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Bond Recall" />,
+    lazy: async () => ({ Component: (await import('../screens/minigames/BondRecallScreen')).BondRecallScreen }),
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
