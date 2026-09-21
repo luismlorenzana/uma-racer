@@ -171,7 +171,7 @@ export function cardCollectionCounts(
     total: templates.length,
     maxed: templates.filter((template) => {
       const card = cardsById[template.id]
-      return card?.level === CARD_MAX_LEVEL && card.limitBreak === MAX_LIMIT_BREAK
+      return card?.limitBreak === MAX_LIMIT_BREAK
     }).length,
     eras: count(templates.map((template) => template.era)).sort((left, right) => left.key - right.key),
     types: count(templates.map((template) => template.type)),

@@ -135,12 +135,12 @@ describe('progression race content and setup rules', () => {
 
   it('uses generated equipped-card Race Bonus and applies player Form once', () => {
     const template = card()
-    const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), level: 6, limitBreak: 1 }, template }])
+    const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), limitBreak: 1 }, template }])
     expect(bonus).toBeCloseTo(0.033)
-    const save = { ...createUmaSave(uma()), level: 1, stats: { speed: 100, stamina: 200, power: 300, guts: 400, wit: 500 } }
-    expect(playerRaceStats(save)).toEqual({ speed: 80, stamina: 160, power: 240, guts: 320, wit: 400 })
+    expect(playerRaceStats({ speed: 100, stamina: 200, power: 300, guts: 400, wit: 500 }, 1))
+      .toEqual({ speed: 80, stamina: 160, power: 240, guts: 320, wit: 400 })
     expect(equippedRaceBonus(1, [{
-      save: { ...createCardSave(template), level: 6, limitBreak: 1 },
+      save: { ...createCardSave(template), limitBreak: 1 },
       template: { ...template, type: 'friend' },
     }])).toBeCloseTo(0.033)
   })

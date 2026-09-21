@@ -1,8 +1,9 @@
 // Badge facts and independently versioned save state (docs/design/badges.md).
 
+import { MAX_TRAINING_LEVEL } from './constellation'
 import type { RaceAccomplishmentFactsV1, RaceResultRecord } from './progression-race'
 import { SCENARIOS, tierOfLevel } from './scenarios'
-import type { UmaSave } from './save'
+import type { ScenarioJourney, UmaSave } from './save'
 import {
   DISTANCE_CATEGORIES,
   RACE_GRADES,
@@ -425,11 +426,24 @@ const emptyPreferences = (): BadgePreferences => ({
   savedViews: [],
 })
 
-export function createUmaBadgeState(uma: UmaSave, now: number): UmaBadgeStateV1 {
+/**
+ * The derived facts badges need. Declared structurally rather than imported, because `save` already imports
+ * this module and `derived` imports `save`.
+ */
+export interface BadgeSubject {
+  tier: number
+  trainingLevel: number
+  stats: Stats
+  library: readonly { skillId: string }[]
+}
+
+export function createUmaBadgeState(uma: UmaSave, subject: BadgeSubject, now: number): UmaBadgeStateV1 {
   if (!isNonNegativeInt(now)) throw new Error('Invalid badge tracking time')
-  const distinctSkillIds = [...new Set([...uma.skillHistory, ...uma.skillLibrary].map((entry) => entry.skillId))].sort()
-  const completedJourneys = uma.scenarioJourneys.filter((journey) => journey.state === 'completed' && journey.tracking === 'tracked')
-  const hasLegacyJourneys = uma.scenarioJourneys.some((journey) => journey.state === 'completed' && journey.tracking === 'legacy-untracked')
+  const journeys = uma.scenarios.map((run) => run.journey).filter((j): j is ScenarioJourney => j !== null)
+  const distinctSkillIds = [...new Set([...uma.skillHistory.map((entry) => entry.skillId),
+    ...subject.library.map((entry) => entry.skillId)])].sort()
+  const completedJourneys = journeys.filter((journey) => journey.state === 'completed' && journey.tracking === 'tracked')
+  const hasLegacyJourneys = journeys.some((journey) => journey.state === 'completed' && journey.tracking === 'legacy-untracked')
   const goals: GoalFact[] = completedJourneys.flatMap((journey) => journey.goals
     .filter((goal) => goal.status === 'completed' && goal.completedRaceResultId && goal.completedAt !== null)
     .map((goal) => ({
@@ -444,8 +458,8 @@ export function createUmaBadgeState(uma: UmaSave, now: number): UmaBadgeStateV1 
   const maxSkillsByTier = new Map<number, number>()
   for (const entry of uma.skillHistory) maxSkillsByTier.set(entry.tier, (maxSkillsByTier.get(entry.tier) ?? 0) + 1)
   const activeTier = tierOfLevel(uma.level)
-  maxSkillsByTier.set(activeTier, Math.max(maxSkillsByTier.get(activeTier) ?? 0, uma.skillLibrary.length))
-  const balancedPeak = Math.min(...STATS.map((key) => uma.stats[key]))
+  maxSkillsByTier.set(activeTier, Math.max(maxSkillsByTier.get(activeTier) ?? 0, subject.library.length))
+  const balancedPeak = Math.min(...STATS.map((key) => subject.stats[key]))
   return {
     version: BADGE_STATE_VERSION,
     scope: 'uma',
@@ -455,13 +469,13 @@ export function createUmaBadgeState(uma: UmaSave, now: number): UmaBadgeStateV1 
     trackingStartedAt: now,
     sourceWatermarks: {
       raceSequence: -1,
-      trainingTurns: uma.trainingsThisScenario,
+      trainingTurns: 0,
       scenarioCompletions: completedJourneys.length,
       lineageEvidence: 0,
     },
     history: {
       race: 'exact',
-      training: uma.trainingsThisScenario === 0 ? 'since-tracking' : 'since-tracking',
+      training: 'untracked',
       'scenario-completion': hasLegacyJourneys ? 'untracked' : completedJourneys.length > 0 ? 'exact' : 'since-tracking',
       lineage: 'since-tracking',
       diagnostics: hasLegacyJourneys ? ['scenario-history-unavailable'] : [],
@@ -483,21 +497,21 @@ export function createUmaBadgeState(uma: UmaSave, now: number): UmaBadgeStateV1 
       lowAptitudeDistanceWins: [],
       courseBests: [],
       raceFeats: emptyRaceFeats(),
-      statPeaks: { ...uma.stats },
+      statPeaks: { ...subject.stats },
       balancedPeak,
       levelPeak: uma.level,
       distinctSkillIds,
-      lifetimeTrainingTurns: uma.trainingsThisScenario,
+      lifetimeTrainingTurns: 0,
       friendshipTrainings: 0,
       fullHouseCount: 0,
       trainingByTier: [{
         tier: activeTier,
-        turns: uma.trainingsThisScenario,
+        turns: 0,
         friendshipTrainings: 0,
         fullHouseCount: 0,
-        reachedTl10: uma.trainingLevel === 10,
+        reachedTl10: subject.trainingLevel === MAX_TRAINING_LEVEL,
       }],
-      fullyTrainedTiers: uma.trainingLevel === 10 ? [activeTier] : [],
+      fullyTrainedTiers: subject.trainingLevel === MAX_TRAINING_LEVEL ? [activeTier] : [],
       maxSkillsByTier: [...maxSkillsByTier].map(([key, count]) => ({ key: String(key), count })).sort((a, b) => a.key.localeCompare(b.key)),
       goals,
       honorsTiers,
@@ -647,54 +661,6 @@ export function applyRaceBadgeFacts(
     },
   }
   return next
-}
-
-export function applyTrainingBadgeFacts(input: {
-  state: UmaBadgeStateV1
-  before: UmaSave
-  after: UmaSave
-  friendship: boolean
-  presentCardCount: number
-}): UmaBadgeStateV1 {
-  const { state, before, after } = input
-  if (state.umaId !== after.templateId || before.templateId !== after.templateId) throw new Error('Training badge facts do not match')
-  if (after.trainingsThisScenario !== before.trainingsThisScenario + 1) throw new Error('Training badge turn is invalid')
-  const tier = tierOfLevel(after.level)
-  const skills = [...new Set([...state.facts.distinctSkillIds, ...after.skillLibrary.map((entry) => entry.skillId)])].sort()
-  const maxSkillsByTier = [
-    ...state.facts.maxSkillsByTier.filter((entry) => entry.key !== String(tier)),
-    {
-      key: String(tier),
-      count: Math.max(after.skillLibrary.length, state.facts.maxSkillsByTier.find((row) => row.key === String(tier))?.count ?? 0),
-    },
-  ].sort((left, right) => left.key.localeCompare(right.key))
-  const statPeaks = Object.fromEntries(STATS.map((key) => [key, Math.max(state.facts.statPeaks[key], after.stats[key])])) as Stats
-  const priorTier = state.facts.trainingByTier.find((entry) => entry.tier === tier)
-  const trainingByTier = [...state.facts.trainingByTier.filter((entry) => entry.tier !== tier), {
-    tier,
-    turns: (priorTier?.turns ?? 0) + 1,
-    friendshipTrainings: (priorTier?.friendshipTrainings ?? 0) + (input.friendship ? 1 : 0),
-    fullHouseCount: (priorTier?.fullHouseCount ?? 0) + (input.presentCardCount === 6 ? 1 : 0),
-    reachedTl10: (priorTier?.reachedTl10 ?? false) || after.trainingLevel === 10,
-  }].sort((left, right) => left.tier - right.tier)
-  return {
-    ...state,
-    sourceWatermarks: { ...state.sourceWatermarks, trainingTurns: state.sourceWatermarks.trainingTurns + 1 },
-    facts: {
-      ...state.facts,
-      statPeaks,
-      balancedPeak: Math.max(state.facts.balancedPeak, Math.min(...STATS.map((key) => after.stats[key]))),
-      lifetimeTrainingTurns: state.facts.lifetimeTrainingTurns + 1,
-      friendshipTrainings: state.facts.friendshipTrainings + (input.friendship ? 1 : 0),
-      fullHouseCount: state.facts.fullHouseCount + (input.presentCardCount === 6 ? 1 : 0),
-      trainingByTier,
-      fullyTrainedTiers: after.trainingLevel === 10
-        ? [...new Set([...state.facts.fullyTrainedTiers, tier])].sort((a, b) => a - b)
-        : state.facts.fullyTrainedTiers,
-      distinctSkillIds: skills,
-      maxSkillsByTier,
-    },
-  }
 }
 
 export function applyParentedStartFact(state: UmaBadgeStateV1, tier: number, parentIds: readonly string[], now: number): UmaBadgeStateV1 {

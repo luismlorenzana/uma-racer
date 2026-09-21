@@ -70,6 +70,9 @@ export const capProfile = (tier: number): Stats => CAP_PROFILES[clampTier(tier) 
 export const capBudget = (tier: number): number =>
   STATS.reduce((sum, stat) => sum + capProfile(tier)[stat], 0)
 
+/** One scalar for "how strong is this tier", used to scale opponents. The cap profile's mean (D119). */
+export const averageCap = (tier: number): number => capBudget(tier) / STATS.length
+
 export const shapeDef = (tier: number): ShapeDef => CONSTELLATION_SHAPES[clampTier(tier) - 1]!
 
 /** Total raw points a fully-filled constellation of max-limit-break cards pays. */
@@ -367,7 +370,7 @@ export type NodeAssignment =
   | { kind: 'lineage'; templateId: string }
 
 export interface CardNodeState {
-  template: Pick<SupportCardTemplate, 'id' | 'type' | 'effectProfile' | 'hintSkills'>
+  template: Pick<SupportCardTemplate, 'id' | 'type' | 'effectProfile' | 'hintSkillIds'>
   limitBreak: number
 }
 
@@ -442,7 +445,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
 
       // Each node a card occupies pays the next skill from its hint list.
       const used = skillCursor.get(assignment.cardId) ?? 0
-      const skillId = card.template.hintSkills[used]
+      const skillId = card.template.hintSkillIds[used]
       skillCursor.set(assignment.cardId, used + 1)
       if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
     }

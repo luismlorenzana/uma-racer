@@ -1,6 +1,6 @@
 // Typed local-first save vocabulary and initialization (docs/technical/architecture.md).
 
-import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK, cardExpToNext, cardLevelCap } from './cards'
+import { MAX_LIMIT_BREAK } from './cards'
 import {
   badgeStateId,
   FLAIR_SERIES_LEG_KEY_PATTERN,
@@ -14,19 +14,20 @@ import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
 import { expToNextUmaLevel } from './progression'
 import { parseRaceResultRecord } from './progression-race'
 import {
-  SCENARIO_MODIFIER_KINDS,
-  SCENARIO_MODIFIER_VERSION,
-  parseScenarioModifierState,
-  type ScenarioModifierState,
-} from './scenario-modifiers'
-import { MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
-import { EXP_TO_NEXT_TRAINING_LEVEL, MAX_TRAINING_LEVEL } from './training'
-import { GRADES, STATS, type Aptitudes, type Grade, type Stats } from './types'
+  CARD_SET_SIZE,
+  MAX_TRAINING_LEVEL,
+  constellationTemplate,
+  type NodeAssignment,
+} from './constellation'
+import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
+import { EXP_TO_NEXT_TRAINING_LEVEL } from './training'
+import { GRADES, STATS, type Aptitudes, type Grade, type StatKey, type Stats } from './types'
 
-export const SAVE_SCHEMA_VERSION = 4 as const
+export const SAVE_SCHEMA_VERSION = 5 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V4 = 4 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -104,8 +105,45 @@ export interface ScenarioJourney {
   goals: ScenarioGoal[]
 }
 
+/**
+ * One persisted career run. Everything an Uma is inside a scenario lives here, and an Uma keeps one of
+ * these per unlocked tier (D121).
+ */
+export interface ScenarioTraining {
+  tier: number
+  /** 1–10, earned by Spark Match. Decides which constellation nodes are open. */
+  trainingLevel: number
+  trainingExp: number
+  /** Up to six owned, era-eligible cards. The sixth is the scenario's dedicated SP slot. */
+  cardSetIds: string[]
+  /** nodeId → what fills it. The current configuration, and the only one kept. */
+  assignments: Record<string, NodeAssignment>
+  loadoutSkillIds: string[]
+  journey: ScenarioJourney | null
+  /** False until the player confirms this scenario's start. */
+  started: boolean
+}
+
+/**
+ * Stats, skill points, aptitudes, the skill library and the loadout are **not** stored: they are derived
+ * from the active scenario's constellation on read (D121, docs/design/constellations.md).
+ */
 export interface UmaSave {
   schemaVersion: typeof SAVE_SCHEMA_VERSION
+  templateId: string
+  /** Permanent, earned by racing only. Unlocks scenarios; does not feed stats. */
+  level: number
+  exp: number
+  /** Highest unlocked scenario, and always the active one. */
+  unlockedTier: number
+  scenarios: ScenarioTraining[]
+  skillHistory: SkillHistoryEntry[]
+  goalPlanVersion: number
+}
+
+/** The v4 shape, retained only so a stored save can be migrated forward. */
+export interface LegacyUmaSaveV4 {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V4
   templateId: string
   level: number
   exp: number
@@ -124,7 +162,7 @@ export interface UmaSave {
   parentSnapshot: ParentSnapshot | null
   goalPlanVersion: number
   scenarioJourneys: ScenarioJourney[]
-  scenarioModifier: ScenarioModifierState | null
+  scenarioModifier: unknown
 }
 
 export interface LegacyPlayerProfileV1 extends Omit<PlayerProfile, 'schemaVersion'> {
@@ -139,6 +177,10 @@ export interface LegacyPlayerProfileV3 extends Omit<PlayerProfile, 'schemaVersio
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V3
 }
 
+export interface LegacyPlayerProfileV4 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V4
+}
+
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
   raceId: string
   kind: 'win' | 'win-by-margin'
@@ -148,7 +190,7 @@ export interface LegacyScenarioJourneyV2 extends Omit<ScenarioJourney, 'goals'> 
   goals: LegacyScenarioGoalV2[]
 }
 
-export interface LegacyUmaSaveV3 extends Omit<UmaSave, 'schemaVersion' | 'scenarioModifier'> {
+export interface LegacyUmaSaveV3 extends Omit<LegacyUmaSaveV4, 'schemaVersion' | 'scenarioModifier'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V3
 }
 
@@ -157,13 +199,12 @@ export interface LegacyUmaSaveV2 extends Omit<LegacyUmaSaveV3, 'schemaVersion' |
   scenarioJourneys: LegacyScenarioJourneyV2[]
 }
 
-export interface LegacyUmaSaveV1 extends Omit<UmaSave,
+export interface LegacyUmaSaveV1 extends Omit<LegacyUmaSaveV4,
   'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys' | 'scenarioModifier'> {}
 
+/** Cards advance one limit break per Bond Recall clear; level derives from it (D120). */
 export interface CardSave {
   templateId: string
-  level: number
-  exp: number
   limitBreak: number
   maxCouponGranted: boolean
 }
@@ -345,7 +386,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -397,6 +438,16 @@ export function migratePlayerProfileV2(value: LegacyPlayerProfileV2): PlayerProf
 export function migratePlayerProfileV3(value: LegacyPlayerProfileV3): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV3(value)
   if (!parsed) throw new Error('Legacy v3 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
+export function parseLegacyPlayerProfileV4(value: unknown): LegacyPlayerProfileV4 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V4)
+}
+
+export function migratePlayerProfileV4(value: LegacyPlayerProfileV4): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV4(value)
+  if (!parsed) throw new Error('Legacy v4 player profile is malformed')
   return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
@@ -630,9 +681,15 @@ const LEGACY_UMA_KEYS = [
   'templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds',
   'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario',
 ] as const
-const UMA_VERSIONED_KEYS = [
+const LEGACY_UMA_V4_KEYS = [
   'schemaVersion', ...LEGACY_UMA_KEYS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot',
   'goalPlanVersion', 'scenarioJourneys', 'scenarioModifier',
+] as const
+const UMA_VERSIONED_KEYS = [
+  'schemaVersion', 'templateId', 'level', 'exp', 'unlockedTier', 'scenarios', 'skillHistory', 'goalPlanVersion',
+] as const
+const SCENARIO_TRAINING_KEYS = [
+  'tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started',
 ] as const
 const LEGACY_UMA_VERSIONED_KEYS = [
   'schemaVersion', ...LEGACY_UMA_KEYS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot',
@@ -685,8 +742,8 @@ export function migrateUmaSaveV1(value: LegacyUmaSaveV1): UmaSave {
   const parsed = parseLegacyUmaSaveV1(value)
   if (!parsed) throw new Error('Legacy Uma save is malformed')
   const tier = tierOfLevel(parsed.level)
-  return {
-    schemaVersion: SAVE_SCHEMA_VERSION,
+  return migrateUmaSaveV4({
+    schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V4,
     ...parsed,
     scenarioStarted: true,
     skillHistory: parsed.skillLibrary.map((unlock) => ({ ...unlock, tier })),
@@ -695,7 +752,7 @@ export function migrateUmaSaveV1(value: LegacyUmaSaveV1): UmaSave {
     goalPlanVersion: 0,
     scenarioJourneys: [],
     scenarioModifier: null,
-  }
+  })
 }
 
 function parseVersionedUmaSave<J extends ScenarioJourney | LegacyScenarioJourneyV2>(
@@ -703,7 +760,7 @@ function parseVersionedUmaSave<J extends ScenarioJourney | LegacyScenarioJourney
   schemaVersion: 2 | 3 | 4,
   goalPlanVersion: 1 | 2,
   journeyParser: (value: unknown) => J | null,
-): (Omit<UmaSave, 'schemaVersion' | 'scenarioJourneys' | 'scenarioModifier'> & { schemaVersion: 2 | 3 | 4; scenarioJourneys: J[] }) | null {
+): (Omit<LegacyUmaSaveV4, 'schemaVersion' | 'scenarioJourneys' | 'scenarioModifier'> & { schemaVersion: 2 | 3 | 4; scenarioJourneys: J[] }) | null {
   if (!isObject(value) || !exactKeys(value, LEGACY_UMA_VERSIONED_KEYS) || value.schemaVersion !== schemaVersion) return null
   const legacyShape = Object.fromEntries(LEGACY_UMA_KEYS.map((key) => [key, value[key]]))
   const base = parseUmaCore(legacyShape)
@@ -752,15 +809,15 @@ export function parseLegacyUmaSaveV2(value: unknown): LegacyUmaSaveV2 | null {
 export function migrateUmaSaveV2(value: LegacyUmaSaveV2): UmaSave {
   const parsed = parseLegacyUmaSaveV2(value)
   if (!parsed) throw new Error('Legacy v2 Uma save is malformed')
-  return {
+  return migrateUmaSaveV4({
     ...parsed,
-    schemaVersion: SAVE_SCHEMA_VERSION,
+    schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V4,
     scenarioModifier: null,
     scenarioJourneys: parsed.scenarioJourneys.map((journey) => ({
       ...journey,
       goals: journey.goals.map((goal): ScenarioGoal => ({ ...goal, series: null })),
     })),
-  }
+  })
 }
 
 export function parseLegacyUmaSaveV3(value: unknown): LegacyUmaSaveV3 | null {
@@ -770,33 +827,170 @@ export function parseLegacyUmaSaveV3(value: unknown): LegacyUmaSaveV3 | null {
 export function migrateUmaSaveV3(value: LegacyUmaSaveV3): UmaSave {
   const parsed = parseLegacyUmaSaveV3(value)
   if (!parsed) throw new Error('Legacy v3 Uma save is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION, scenarioModifier: null }
+  return migrateUmaSaveV4({ ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V4, scenarioModifier: null })
+}
+
+export function parseLegacyUmaSaveV4(value: unknown): LegacyUmaSaveV4 | null {
+  if (!isObject(value) || !exactKeys(value, LEGACY_UMA_V4_KEYS) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V4) {
+    return null
+  }
+  const { scenarioModifier, ...legacyShape } = value
+  const base = parseVersionedUmaSave(legacyShape, LEGACY_SAVE_SCHEMA_VERSION_V4, 2, parseScenarioJourney)
+  if (!base) return null
+  // Modifier state is discarded by the migration, so its shape is never validated.
+  return { ...base, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V4, scenarioModifier: scenarioModifier ?? null }
+}
+
+/**
+ * v4 held one flat run. It becomes a single ScenarioTraining at her current tier.
+ *
+ * Assignments start empty and her stored stats are discarded: no configuration reproduces them, and
+ * inventing one would be a lie about how she was built. Parents and modifier state are dropped outright.
+ */
+export function migrateUmaSaveV4(value: LegacyUmaSaveV4): UmaSave {
+  const parsed = parseLegacyUmaSaveV4(value)
+  if (!parsed) throw new Error('Legacy v4 Uma save is malformed')
+  const tier = tierOfLevel(parsed.level)
+  const journey = parsed.scenarioJourneys.find((entry) => entry.tier === tier) ?? null
+  return {
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    templateId: parsed.templateId,
+    level: parsed.level,
+    exp: parsed.exp,
+    unlockedTier: tier,
+    scenarios: [{
+      tier,
+      trainingLevel: parsed.trainingLevel,
+      trainingExp: parsed.trainingExp,
+      cardSetIds: parsed.deckCardIds.slice(0, CARD_SET_SIZE),
+      assignments: {},
+      loadoutSkillIds: [],
+      journey,
+      started: parsed.scenarioStarted,
+    }],
+    skillHistory: parsed.skillHistory,
+    goalPlanVersion: parsed.goalPlanVersion,
+  }
+}
+
+function parseNodeAssignment(value: unknown): NodeAssignment | null {
+  if (!isObject(value)) return null
+  if (value.kind === 'card') {
+    return exactKeys(value, ['kind', 'cardId']) && isId(value.cardId)
+      ? { kind: 'card', cardId: value.cardId }
+      : null
+  }
+  if (value.kind === 'stat') {
+    return exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as StatKey)
+      ? { kind: 'stat', stat: value.stat as StatKey }
+      : null
+  }
+  if (value.kind === 'lineage') {
+    return exactKeys(value, ['kind', 'templateId']) && isId(value.templateId)
+      ? { kind: 'lineage', templateId: value.templateId }
+      : null
+  }
+  return null
+}
+
+function parseScenarioTraining(value: unknown, umaLevel: number): ScenarioTraining | null {
+  if (!isObject(value) || !exactKeys(value, SCENARIO_TRAINING_KEYS)) return null
+  if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > tierOfLevel(umaLevel)) return null
+  if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return null
+  if (!isNonNegativeInt(value.trainingExp)) return null
+  if (typeof value.started !== 'boolean') return null
+
+  const cardSetIds = parseUniqueIds(value.cardSetIds, CARD_SET_SIZE)
+  const loadoutSkillIds = parseUniqueIds(value.loadoutSkillIds)
+  if (!cardSetIds || !loadoutSkillIds) return null
+
+  if (!isObject(value.assignments)) return null
+  const template = constellationTemplate(value.tier)
+  const nodeIds = new Set(template.nodes.map((node) => node.id))
+  const assignments: Record<string, NodeAssignment> = {}
+  for (const [nodeId, raw] of Object.entries(value.assignments)) {
+    // An assignment naming a node this template does not have is dropped, not fatal: a template can be
+    // re-authored (T052) and a stale key must never lock the player out of her save.
+    if (!nodeIds.has(nodeId)) continue
+    const assignment = parseNodeAssignment(raw)
+    if (!assignment) return null
+    assignments[nodeId] = assignment
+  }
+
+  const journey = value.journey === null ? null : parseScenarioJourney(value.journey)
+  if (value.journey !== null && !journey) return null
+  if (journey && journey.tier !== value.tier) return null
+
+  return {
+    tier: value.tier,
+    trainingLevel: value.trainingLevel,
+    trainingExp: value.trainingExp,
+    cardSetIds,
+    assignments,
+    loadoutSkillIds,
+    journey,
+    started: value.started,
+  }
 }
 
 export function parseUmaSave(value: unknown): UmaSave | null {
-  if (!isObject(value) || !exactKeys(value, UMA_VERSIONED_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
-  const { scenarioModifier: rawModifier, ...legacyShape } = value
-  const base = parseVersionedUmaSave(legacyShape, SAVE_SCHEMA_VERSION, 2, parseScenarioJourney)
-  if (!base) return null
-  const scenarioModifier = rawModifier === null ? null : parseScenarioModifierState(rawModifier)
-  if (rawModifier !== null && !scenarioModifier) return null
-  const currentTier = tierOfLevel(base.level)
-  if (scenarioModifier && (!base.scenarioStarted || scenarioModifier.tier !== currentTier)) return null
-  return { ...base, schemaVersion: SAVE_SCHEMA_VERSION, scenarioModifier }
+  if (!isObject(value) || !exactKeys(value, UMA_VERSIONED_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) {
+    return null
+  }
+  if (!isId(value.templateId)) return null
+  if (!isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
+  if (value.level === MAX_UMA_LEVEL
+    ? value.exp !== 0
+    : isGateLevel(value.level)
+      ? value.exp > expToNextUmaLevel(value.level + 1)
+      : value.exp >= expToNextUmaLevel(value.level)) return null
+  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 2) return null
+
+  const currentTier = tierOfLevel(value.level)
+  if (!isPositiveInt(value.unlockedTier) || value.unlockedTier > currentTier) return null
+
+  if (!Array.isArray(value.scenarios) || value.scenarios.length === 0) return null
+  const scenarios = value.scenarios.map((entry) => parseScenarioTraining(entry, value.level as number))
+  if (scenarios.some((entry) => entry === null)) return null
+  const runs = scenarios as ScenarioTraining[]
+  if (new Set(runs.map((run) => run.tier)).size !== runs.length) return null
+  // The active scenario is always the highest unlocked, and it must exist.
+  if (!runs.some((run) => run.tier === value.unlockedTier)) return null
+  if (runs.some((run) => run.tier > (value.unlockedTier as number))) return null
+
+  if (!Array.isArray(value.skillHistory)) return null
+  const skillHistory = value.skillHistory.map(parseSkillHistoryEntry)
+  if (skillHistory.some((entry) => entry === null)) return null
+  const history = skillHistory as SkillHistoryEntry[]
+  if (new Set(history.map((entry) => `${entry.tier}:${entry.skillId}`)).size !== history.length) return null
+
+  return {
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    templateId: value.templateId,
+    level: value.level,
+    exp: value.exp,
+    unlockedTier: value.unlockedTier,
+    scenarios: runs,
+    skillHistory: history,
+    goalPlanVersion: value.goalPlanVersion,
+  }
+}
+
+/** The active scenario: always the highest unlocked (D121). */
+export function activeScenario(uma: UmaSave): ScenarioTraining {
+  const run = uma.scenarios.find((entry) => entry.tier === uma.unlockedTier)
+  if (!run) throw new Error(`Uma ${uma.templateId} has no scenario at tier ${uma.unlockedTier}`)
+  return run
+}
+
+export function scenarioAt(uma: UmaSave, tier: number): ScenarioTraining | null {
+  return uma.scenarios.find((entry) => entry.tier === tier) ?? null
 }
 
 /** Parse a current Uma at a storage/network boundary while distinguishing unsupported nested state. */
 export function parseUmaSaveOrThrow(value: unknown): UmaSave {
   if (isObject(value) && 'schemaVersion' in value && value.schemaVersion !== SAVE_SCHEMA_VERSION) {
     throw new Error(`App update required for save schema ${String(value.schemaVersion)}`)
-  }
-  if (isObject(value) && isObject(value.scenarioModifier) && 'version' in value.scenarioModifier &&
-    value.scenarioModifier.version !== SCENARIO_MODIFIER_VERSION) {
-    throw new Error(`App update required for scenario modifier version ${String(value.scenarioModifier.version)}`)
-  }
-  if (isObject(value) && isObject(value.scenarioModifier) && 'kind' in value.scenarioModifier &&
-    !SCENARIO_MODIFIER_KINDS.includes(value.scenarioModifier.kind as (typeof SCENARIO_MODIFIER_KINDS)[number])) {
-    throw new Error(`App update required for scenario modifier ${String(value.scenarioModifier.kind)}`)
   }
   const uma = parseUmaSave(value)
   if (!uma) throw new Error('Uma save is malformed')
@@ -805,16 +999,23 @@ export function parseUmaSaveOrThrow(value: unknown): UmaSave {
 
 export function parseCardSave(value: unknown): CardSave | null {
   if (!isObject(value) || !isId(value.templateId)) return null
-  if (!isPositiveInt(value.level) || value.level > CARD_MAX_LEVEL || !isNonNegativeInt(value.exp)) return null
-  if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > MAX_LIMIT_BREAK || value.level > cardLevelCap(value.limitBreak)) return null
-  if (value.exp > cardExpToNext(value.level) || (value.level < cardLevelCap(value.limitBreak) && value.exp === cardExpToNext(value.level))) return null
+  if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > MAX_LIMIT_BREAK) return null
   if (typeof value.maxCouponGranted !== 'boolean') return null
   return {
     templateId: value.templateId,
-    level: value.level,
-    exp: value.exp,
     limitBreak: value.limitBreak,
     maxCouponGranted: value.maxCouponGranted,
+  }
+}
+
+/** A stored v4 card carried a level and EXP; both are now derived from the limit break. */
+export function migrateCardSaveV4(value: unknown): CardSave | null {
+  if (!isObject(value) || !isId(value.templateId)) return null
+  if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > MAX_LIMIT_BREAK) return null
+  return {
+    templateId: value.templateId,
+    limitBreak: value.limitBreak,
+    maxCouponGranted: value.maxCouponGranted === true,
   }
 }
 
@@ -848,42 +1049,39 @@ export function createPlayerProfile(contentVersion: string, now: number): Player
   }
 }
 
+export function createScenarioTraining(tier: number): ScenarioTraining {
+  return {
+    tier,
+    trainingLevel: 1,
+    trainingExp: 0,
+    cardSetIds: [],
+    assignments: {},
+    loadoutSkillIds: [],
+    journey: null,
+    started: false,
+  }
+}
+
 export function createUmaSave(template: UmaTemplate): UmaSave {
   assertSaveUmaTemplate(template)
-  const skillLibrary: SkillUnlock[] = template.uniqueSkillId
-    ? [{ skillId: template.uniqueSkillId, origin: 'own-unique', sourceId: template.id }]
+  const skillHistory: SkillHistoryEntry[] = template.uniqueSkillId
+    ? [{ skillId: template.uniqueSkillId, origin: 'own-unique', sourceId: template.id, tier: 1 }]
     : []
   return {
     schemaVersion: SAVE_SCHEMA_VERSION,
     templateId: template.id,
     level: 1,
     exp: 0,
-    trainingLevel: 1,
-    trainingExp: 0,
-    stats: { ...template.baseStats },
-    skillPoints: 0,
-    aptitudes: {
-      surface: { ...template.aptitudes.surface },
-      distance: { ...template.aptitudes.distance },
-      strategy: { ...template.aptitudes.strategy },
-    },
-    deckCardIds: [],
-    skillLibrary,
-    loadoutSkillIds: [],
-    trainingsThisScenario: 0,
-    scenarioStarted: false,
-    skillHistory: skillLibrary.map((unlock) => ({ ...unlock, tier: 1 })),
-    currentParents: [],
-    parentSnapshot: null,
+    unlockedTier: 1,
+    scenarios: [createScenarioTraining(1)],
+    skillHistory,
     goalPlanVersion: 2,
-    scenarioJourneys: [],
-    scenarioModifier: null,
   }
 }
 
 export function createCardSave(template: SupportCardTemplate): CardSave {
   assertSaveCardTemplate(template)
-  return { templateId: template.id, level: 1, exp: 0, limitBreak: 0, maxCouponGranted: false }
+  return { templateId: template.id, limitBreak: 0, maxCouponGranted: false }
 }
 
 function nextLocalDay(day: string): string {
@@ -1079,10 +1277,6 @@ function assertSupportedProfileRecords(records: unknown): void {
     if (isObject(record) && record.kind === 'umas' && isObject(record.data) && 'schemaVersion' in record.data) {
       if (record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V2 && record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V3 && record.data.schemaVersion !== SAVE_SCHEMA_VERSION) {
         throw new Error(`App update required for save schema ${String(record.data.schemaVersion)}`)
-      }
-      if (record.data.schemaVersion === SAVE_SCHEMA_VERSION && isObject(record.data.scenarioModifier) &&
-        record.data.scenarioModifier.version !== SCENARIO_MODIFIER_VERSION) {
-        throw new Error(`App update required for scenario modifier version ${String(record.data.scenarioModifier.version)}`)
       }
     }
   }

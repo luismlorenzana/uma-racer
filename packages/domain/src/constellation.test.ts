@@ -32,7 +32,7 @@ const card = (id: string, type: CardNodeState['template']['type'], weights = {})
     id,
     type,
     effectProfile: { statBonus: 1, trainingBonus: 1, ...weights },
-    hintSkills: [`${id}-a`, `${id}-b`, `${id}-c`, `${id}-d`, `${id}-e`, `${id}-f`],
+    hintSkillIds: [`${id}-a`, `${id}-b`, `${id}-c`, `${id}-d`, `${id}-e`, `${id}-f`],
   } as CardNodeState['template'],
   limitBreak: 4,
 })

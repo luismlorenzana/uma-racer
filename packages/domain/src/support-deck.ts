@@ -1,5 +1,6 @@
 // Shared support-deck validation (docs/design/support-cards.md#deck).
 
+import { cardLevel } from './card-progression'
 import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue, type CardEffect } from './cards'
 import type { SupportCardTemplate } from './content'
 import type { CardSave } from './save'
@@ -143,6 +144,9 @@ export function validateEquippedSupportDeck(
 export function supportDeckEffectTotals(cards: readonly SupportDeckCard[]): Record<CardEffect, number> {
   return Object.fromEntries(CARD_EFFECTS.map((effect) => [
     effect,
-    cards.reduce((total, card) => total + projectedCardEffectValue(effect, card.template, card.save), 0),
+    cards.reduce((total, card) => total + projectedCardEffectValue(effect, card.template, {
+      limitBreak: card.save.limitBreak,
+      level: cardLevel(card.save),
+    }), 0),
   ])) as Record<CardEffect, number>
 }

@@ -150,24 +150,24 @@ describe('skill loadouts', () => {
   it('keeps the own unique implicit and enforces library membership and SP capacity', () => {
     const paid = skill('paid-1')
     const skills = new Map([['unique-1', skill('unique-1', 'unique', null)], ['paid-1', paid]])
-    const save = {
-      ...createUmaSave(uma),
+    const source = {
       skillPoints: 100,
-      skillLibrary: [
+      loadoutSkillIds: [] as string[],
+      library: [
         { skillId: 'unique-1', origin: 'own-unique' as const, sourceId: 'u1' },
         { skillId: 'paid-1', origin: 'card' as const, sourceId: 'card-1' },
       ],
     }
-    expect(summarizeSkillLoadout(save, uma, skills, ['paid-1'])).toMatchObject({ valid: true, cost: 90, cap: 100 })
-    expect(replaceSkillLoadout(save, uma, skills, ['paid-1']).loadoutSkillIds).toEqual(['paid-1'])
-    expect(() => replaceSkillLoadout({ ...save, skillPoints: 80 }, uma, skills, ['paid-1'])).toThrow(/costs 90 SP/)
-    expect(() => replaceSkillLoadout(save, uma, skills, ['unique-1'])).toThrow(/automatically/)
-    expect(() => replaceSkillLoadout(save, uma, skills, ['missing'])).toThrow(/not available/)
+    expect(summarizeSkillLoadout(source, uma, skills, ['paid-1'])).toMatchObject({ valid: true, cost: 90, cap: 100 })
+    expect(replaceSkillLoadout(source, uma, skills, ['paid-1'])).toEqual(['paid-1'])
+    expect(() => replaceSkillLoadout({ ...source, skillPoints: 80 }, uma, skills, ['paid-1'])).toThrow(/costs 90 SP/)
+    expect(() => replaceSkillLoadout(source, uma, skills, ['unique-1'])).toThrow(/automatically/)
+    expect(() => replaceSkillLoadout(source, uma, skills, ['missing'])).toThrow(/not available/)
     const unsupported = { ...skill('later'), conditions: [{ ...skill('later').conditions[0]!, condition: 'slope==1' }] }
     const withUnsupported = new Map(skills).set(unsupported.id, unsupported)
     expect(() => replaceSkillLoadout({
-      ...save,
-      skillLibrary: [...save.skillLibrary, { skillId: unsupported.id, origin: 'card' as const, sourceId: 'card-1' }],
+      ...source,
+      library: [...source.library, { skillId: unsupported.id, origin: 'card' as const, sourceId: 'card-1' }],
     }, uma, withUnsupported, [unsupported.id])).toThrow(/not available yet/)
   })
 })

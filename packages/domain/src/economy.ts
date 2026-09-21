@@ -4,12 +4,14 @@ export const DAILY_TICKETS = 50
 /** Only limits the daily grant; level-up tickets are always added. */
 export const TICKET_STORAGE_CAP = 500
 export const TICKETS_PER_UMA_LEVEL_UP = 5
-export const TICKETS_PER_CARD_LEVEL_UP = 2
-export const TRAINING_TICKET_COST = 1
+/** Each limit break earned from Bond Recall (docs/design/economy.md). */
+export const TICKETS_PER_CARD_LIMIT_BREAK = 5
+/** One Spark Match run raises a Training Level; one Bond Recall run limit breaks a card. */
+export const SPARK_MATCH_TICKET_COST = 5
+export const BOND_RECALL_TICKET_COST = 10
 
+/** Unlocking the next scenario. */
 export const umaPromotionCost = (fromTier: number): number => 25 * fromTier
-
-export const cardLimitBreakCost = (toLimitBreak: number): number => 20 * toLimitBreak
 
 /** Applies `days` of daily grants, stopping at the storage cap without ever removing tickets. */
 export function grantDailyTickets(current: number, days: number): number {

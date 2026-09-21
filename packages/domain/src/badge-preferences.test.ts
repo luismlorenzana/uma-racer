@@ -1,3 +1,4 @@
+import { subject } from './__fixtures__/subject'
 import { describe, expect, it } from 'vitest'
 import {
   createTrainerBadgeState,
@@ -33,7 +34,7 @@ const template: UmaTemplate = {
 }
 
 function awardedState() {
-  const state = createUmaBadgeState(createUmaSave(template), 1)
+  const state = createUmaBadgeState(createUmaSave(template), subject(), 1)
   return {
     ...state,
     awards: {

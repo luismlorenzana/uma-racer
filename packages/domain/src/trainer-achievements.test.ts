@@ -1,3 +1,4 @@
+import { subject } from './__fixtures__/subject'
 import { describe, expect, it } from 'vitest'
 import {
   BADGE_TIERS,
@@ -44,7 +45,7 @@ const award = (awardKey: string, stage: EarnedBadgeStage['stage'] = 'one-off'): 
 })
 
 function contributor(template: UmaTemplate, rich: boolean, trackingStartedAt: number): UmaBadgeStateV1 {
-  const base = createUmaBadgeState(createUmaSave(template), trackingStartedAt)
+  const base = createUmaBadgeState(createUmaSave(template), subject(), trackingStartedAt)
   if (!rich) {
     const candidate: UmaBadgeStateV1 = {
       ...base,

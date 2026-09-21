@@ -1,43 +1,45 @@
-// Support-card promotion rules (docs/design/support-cards.md).
+// Limit breaks, earned by clearing Bond Recall (docs/design/minigames.md).
 
-import { cardExpToNext, cardLevelCap, MAX_LIMIT_BREAK } from './cards'
-import { cardLimitBreakCost, TICKETS_PER_CARD_LEVEL_UP } from './economy'
+import { MAX_LIMIT_BREAK, cardLevelCap } from './cards'
+import { TICKETS_PER_CARD_LIMIT_BREAK } from './economy'
 import type { CardSave } from './save'
 
-export interface CardPromotionResult {
+export interface CardAdvanceResult {
   card: CardSave
   fromLimitBreak: number
   toLimitBreak: number
-  cost: number
-  levelGained: number
+  /** Derived, for the result screen. */
+  fromLevel: number
+  toLevel: number
   ticketReward: number
-  ticketDelta: number
+  /** True on the advance that first reaches LB4. */
+  couponGranted: boolean
 }
 
-const isNonNegativeInt = (value: number): boolean => Number.isSafeInteger(value) && value >= 0
+export const isCardMaxed = (card: CardSave): boolean => card.limitBreak >= MAX_LIMIT_BREAK
 
-export function promoteCard(card: CardSave, tickets: number): CardPromotionResult {
-  if (!isNonNegativeInt(tickets)) throw new Error('Invalid Training Ticket balance')
-  if (!Number.isSafeInteger(card.level) || card.level < 1 || !isNonNegativeInt(card.exp) ||
-      !isNonNegativeInt(card.limitBreak) || card.limitBreak > MAX_LIMIT_BREAK) {
+/**
+ * Advance one limit break. The Bond Recall run already charged its tickets, so this costs nothing further:
+ * clearing the board *is* the limit break (D120).
+ */
+export function advanceCardLimitBreak(card: CardSave): CardAdvanceResult {
+  if (!Number.isSafeInteger(card.limitBreak) || card.limitBreak < 0 || card.limitBreak > MAX_LIMIT_BREAK) {
     throw new Error('Card progression state is invalid')
   }
-  if (card.limitBreak >= MAX_LIMIT_BREAK) throw new Error('This card is already at maximum limit break')
-  const cap = cardLevelCap(card.limitBreak)
-  if (card.level !== cap || card.exp !== cardExpToNext(card.level)) {
-    throw new Error(`Fill the level ${cap} EXP bar before limit breaking`)
-  }
+  if (isCardMaxed(card)) throw new Error('This card is already at maximum limit break')
+
   const toLimitBreak = card.limitBreak + 1
-  const cost = cardLimitBreakCost(toLimitBreak)
-  if (tickets < cost) throw new Error(`You need ${cost} Training Tickets to limit break this card`)
-  const levelGained = card.level + 1
+  const couponGranted = toLimitBreak === MAX_LIMIT_BREAK && !card.maxCouponGranted
   return {
-    card: { ...card, level: levelGained, exp: 0, limitBreak: toLimitBreak },
+    card: { ...card, limitBreak: toLimitBreak, maxCouponGranted: card.maxCouponGranted || couponGranted },
     fromLimitBreak: card.limitBreak,
     toLimitBreak,
-    cost,
-    levelGained,
-    ticketReward: TICKETS_PER_CARD_LEVEL_UP,
-    ticketDelta: -cost + TICKETS_PER_CARD_LEVEL_UP,
+    fromLevel: cardLevelCap(card.limitBreak),
+    toLevel: cardLevelCap(toLimitBreak),
+    ticketReward: TICKETS_PER_CARD_LIMIT_BREAK,
+    couponGranted,
   }
 }
+
+/** A card's level is purely a display of its limit break now. */
+export const cardLevel = (card: Pick<CardSave, 'limitBreak'>): number => cardLevelCap(card.limitBreak)

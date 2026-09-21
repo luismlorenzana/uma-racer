@@ -1,3 +1,4 @@
+import { subject } from './__fixtures__/subject'
 import { describe, expect, it } from 'vitest'
 import {
   BADGE_TIERS,
@@ -13,7 +14,7 @@ import {
   prestigeForState,
   prestigeFrame,
   projectFlairProgress,
-  statCap,
+  capProfile,
   type FlairEventRecord,
   type RaceTemplate,
   type UmaBadgeStateV1,
@@ -66,8 +67,8 @@ function race(index: number): RaceTemplate {
 const races = Array.from({ length: 10 }, (_, index) => race(index))
 
 function accomplishedState(): UmaBadgeStateV1 {
-  const base = createUmaBadgeState(createUmaSave(umaTemplate), 10)
-  const cap = statCap(1, 10)
+  const base = createUmaBadgeState(createUmaSave(umaTemplate), subject(), 10)
+  const cap = Math.min(...Object.values(capProfile(1)))
   const lineage = (kind: 'legacy' | 'dynasty', count: number) => Array.from({ length: count }, (_, index) => ({
     key: `${kind}:synthetic-child-${index}:1`,
     relatedUmaId: `synthetic-child-${index}`,

@@ -18,7 +18,7 @@ import {
   type UmaSave,
 } from './save'
 import { isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
-import { GRADES, RACE_GRADES, type RaceGrade } from './types'
+import { GRADES, RACE_GRADES, type RaceGrade, type Aptitudes } from './types'
 
 export const SCENARIO_GOAL_VERSION = 2 as const
 export const CHALLENGE_MARGIN_LENGTHS = 5 as const
@@ -86,16 +86,32 @@ export function scenarioGoalGradeFallback(requested: RaceGrade): RaceGrade[] {
   return [requested, ...GRADE_STRENGTH.slice(0, index).reverse(), ...GRADE_STRENGTH.slice(index + 1)]
 }
 
-export function scenarioGoalAptitudeScore(uma: UmaSave, race: RaceTemplate): number {
+/** What goal selection reads. Aptitudes come from the constellation, so they are passed in (D121). */
+export interface GoalSubject {
+  templateId: string
+  level: number
+  aptitudes: Aptitudes
+  /** Journeys of every scenario this Uma has reached. */
+  journeys: readonly ScenarioJourney[]
+}
+
+export const goalSubject = (uma: UmaSave, aptitudes: Aptitudes): GoalSubject => ({
+  templateId: uma.templateId,
+  level: uma.level,
+  aptitudes,
+  journeys: uma.scenarios.map((run) => run.journey).filter((j): j is ScenarioJourney => j !== null),
+})
+
+export function scenarioGoalAptitudeScore(uma: GoalSubject, race: RaceTemplate): number {
   return GRADES.indexOf(uma.aptitudes.surface[race.surface]) + GRADES.indexOf(uma.aptitudes.distance[race.distanceCategory])
 }
 
-function hasIdentityAptitude(uma: UmaSave, race: RaceTemplate): boolean {
+function hasIdentityAptitude(uma: GoalSubject, race: RaceTemplate): boolean {
   return GRADES.indexOf(uma.aptitudes.surface[race.surface]) <= GRADES.indexOf('B') &&
     GRADES.indexOf(uma.aptitudes.distance[race.distanceCategory]) <= GRADES.indexOf('B')
 }
 
-function rotatedBest(uma: UmaSave, tier: number, slot: GoalSlot, candidates: readonly RaceTemplate[]): RaceTemplate | null {
+function rotatedBest(uma: GoalSubject, tier: number, slot: GoalSlot, candidates: readonly RaceTemplate[]): RaceTemplate | null {
   if (candidates.length === 0) return null
   const bestScore = Math.min(...candidates.map((race) => scenarioGoalAptitudeScore(uma, race)))
   const best = candidates.filter((race) => scenarioGoalAptitudeScore(uma, race) === bestScore)
@@ -105,7 +121,7 @@ function rotatedBest(uma: UmaSave, tier: number, slot: GoalSlot, candidates: rea
 }
 
 function selectAptitudeCandidate(
-  uma: UmaSave,
+  uma: GoalSubject,
   tier: number,
   slot: GoalSlot,
   races: readonly RaceTemplate[],
@@ -118,12 +134,12 @@ function selectAptitudeCandidate(
   return null
 }
 
-function earlierIdentityFacts(uma: UmaSave, tier: number, races: readonly RaceTemplate[]): {
+function earlierIdentityFacts(uma: GoalSubject, tier: number, races: readonly RaceTemplate[]): {
   families: ReadonlySet<string>
   legs: ReadonlySet<string>
 } {
   const racesById = new Map(races.map((race) => [race.id, race]))
-  const selected = uma.scenarioJourneys
+  const selected = uma.journeys
     .filter((journey) => journey.tracking === 'tracked' && journey.tier < tier)
     .flatMap((journey) => journey.goals.filter((goal) => goal.slot === 'identity'))
     .flatMap((goal) => goal.series?.legs.map((leg) => leg.raceId) ?? (goal.raceId ? [goal.raceId] : []))
@@ -145,7 +161,7 @@ function orderedLegKeys(tag: FlairSeriesTag, races: readonly RaceTemplate[]): st
 }
 
 function selectCareerOrClassic(
-  uma: UmaSave,
+  uma: GoalSubject,
   template: UmaTemplate,
   tier: number,
   races: readonly RaceTemplate[],
@@ -181,7 +197,7 @@ interface SeriesCandidate {
 
 function seriesCandidate(
   tag: FlairSeriesTag,
-  uma: UmaSave,
+  uma: GoalSubject,
   tier: number,
   races: readonly RaceTemplate[],
   excluded: ReadonlySet<string>,
@@ -207,7 +223,7 @@ function seriesCandidate(
 }
 
 function selectSeriesCandidate(
-  uma: UmaSave,
+  uma: GoalSubject,
   template: UmaTemplate,
   tier: number,
   races: readonly RaceTemplate[],
@@ -243,6 +259,8 @@ export function assertScenarioGoalContent(umas: readonly UmaTemplate[], races: r
 export interface GenerateScenarioJourneyInput {
   uma: UmaSave
   umaTemplate: UmaTemplate
+  /** Post-lineage aptitudes from the constellation the goals are being frozen against. */
+  aptitudes: Aptitudes
   races: readonly RaceTemplate[]
 }
 
@@ -285,10 +303,8 @@ function seriesGoal(tier: number, selected: SeriesCandidate): ScenarioGoal {
 
 /** Freeze three distinct goal targets from post-inheritance aptitudes and private content. */
 export function generateScenarioJourney(input: GenerateScenarioJourneyInput): ScenarioJourney {
-  const uma = input.uma.scenarioStarted
-    ? parseUmaSave({ ...input.uma, scenarioStarted: false, scenarioModifier: null })
-    : null
-  if (!uma || input.uma.templateId !== input.umaTemplate.id) throw new Error('Scenario goal Uma is malformed or has not started')
+  if (input.uma.templateId !== input.umaTemplate.id) throw new Error('Scenario goal Uma is malformed')
+  const uma = goalSubject(input.uma, input.aptitudes)
   const tier = tierOfLevel(uma.level)
   if (!scenarioForTier(tier)) throw new Error('Scenario goal tier is unknown')
   assertScenarioGoalContent([input.umaTemplate], input.races)
@@ -393,60 +409,4 @@ export function scenarioJourneySummary(journey: ScenarioJourney): { completed: n
   const missed = journey.goals.filter((goal) => goal.status === 'missed').length
   const active = journey.goals.filter((goal) => goal.status === 'active').length
   return { completed, missed, active, honors: journey.tracking === 'tracked' && completed === SCENARIO_GOAL_SLOTS.length }
-}
-
-export interface BootstrapScenarioGoalsInput {
-  uma: UmaSave
-  umaTemplate: UmaTemplate
-  races: readonly RaceTemplate[]
-  raceHistory: readonly RaceResultRecord[]
-}
-
-/** Honest one-time goal-plan bootstrap. Completed history is never invented or rerolled. */
-export function bootstrapScenarioGoals(input: BootstrapScenarioGoalsInput): UmaSave {
-  const parsed = parseUmaSave(input.uma)
-  if (!parsed || parsed.templateId !== input.umaTemplate.id) throw new Error('Goal bootstrap Uma is malformed')
-  if (parsed.goalPlanVersion === SCENARIO_GOAL_VERSION) return parsed
-  if (parsed.goalPlanVersion === 1) {
-    const active = parsed.scenarioJourneys.find((journey) => journey.state === 'active')
-    const untouched = active?.tracking === 'tracked' && active.goals.every((goal) => goal.status === 'active' &&
-      goal.completedRaceResultId === null && goal.completedAt === null)
-    if (!active || !untouched) return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION }
-    const provisional = { ...parsed, goalPlanVersion: 0, scenarioJourneys: parsed.scenarioJourneys.filter((journey) => journey !== active) }
-    const journey = generateScenarioJourney({ uma: provisional, umaTemplate: input.umaTemplate, races: input.races })
-    return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [...provisional.scenarioJourneys, journey].sort((a, b) => a.tier - b.tier) }
-  }
-  if (parsed.goalPlanVersion !== 0) throw new Error('Goal bootstrap version is unsupported')
-  if (!parsed.scenarioStarted) return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [] }
-
-  const currentTier = tierOfLevel(parsed.level)
-  const completedGate = isGateLevel(parsed.level) && parsed.parentSnapshot?.completedTier === currentTier
-  const completedThrough = completedGate ? currentTier : currentTier - 1
-  const byTier = new Map(parsed.scenarioJourneys.map((journey) => [journey.tier, journey]))
-  for (let tier = 1; tier <= completedThrough; tier += 1) {
-    if (!byTier.has(tier)) byTier.set(tier, { tier, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] })
-  }
-  if (completedGate) return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [...byTier.values()].sort((a, b) => a.tier - b.tier) }
-
-  const provisional: UmaSave = {
-    ...parsed,
-    scenarioJourneys: [...byTier.values()].filter((journey) => journey.tier !== currentTier).sort((a, b) => a.tier - b.tier),
-  }
-  let journey = generateScenarioJourney({ uma: provisional, umaTemplate: input.umaTemplate, races: input.races })
-  const currentResults = input.raceHistory
-    .filter((record) => record.umaId === parsed.templateId && tierOfLevel(record.startLevel) === currentTier)
-    .sort((left, right) => left.sequence - right.sequence)
-  for (const result of currentResults) {
-    const race = input.races.find((candidate) => candidate.id === result.raceId)
-    if (!race) continue
-    journey = evaluateScenarioGoals({
-      journey,
-      uma: { ...provisional, scenarioJourneys: [journey] },
-      race,
-      resultId: raceAttemptId(result.umaId, result.sequence),
-      result,
-      completedAt: result.createdAt,
-    }).journey
-  }
-  return { ...parsed, goalPlanVersion: SCENARIO_GOAL_VERSION, scenarioJourneys: [...provisional.scenarioJourneys, journey] }
 }
