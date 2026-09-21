@@ -39,7 +39,7 @@ function content(cards: SupportCardTemplate[]): LoadedContent {
 
 const save = (id: string, overrides: Partial<CardSave> = {}): CardSave => ({
   templateId: id,
-  limitBreak: 0,
+  limitBreaks: {},
   maxCouponGranted: false,
   ...overrides,
 })
@@ -49,7 +49,7 @@ describe('card album view', () => {
     const loaded = content([card('card-c', 'friend', 1), card('card-b', 'speed', 2), card('card-a', 'speed', 1)])
     const view = buildCardAlbum(loaded, {
       'card-a': save('card-a'),
-      'card-b': save('card-b', { limitBreak: 4, maxCouponGranted: true }),
+      'card-b': save('card-b', { limitBreaks: { '1': 4 }, maxCouponGranted: true }),
       orphan: save('orphan'),
     }, 500)
     expect(view.items.map((item) => item.template.id)).toEqual(['card-a', 'card-c', 'card-b'])
@@ -58,7 +58,7 @@ describe('card album view', () => {
 
   it('filters and explains promotion readiness without hiding future effects', () => {
     const loaded = content([card('card-a', 'speed', 1), card('card-b', 'wit', 2)])
-    const ready = save('card-a', { limitBreak: 3 })
+    const ready = save('card-a', { limitBreaks: { '1': 3 } })
     const view = buildCardAlbum(loaded, { 'card-a': ready }, 9, { ownership: 'owned', type: 'speed' })
     expect(view.items).toHaveLength(1)
     expect(view.items[0]).toMatchObject({ promotionCost: 10, promotionLock: 'Need 10 Training Tickets' })

@@ -1,5 +1,6 @@
 // Coupon and collection rules (docs/design/collection.md).
 
+import { bestCardLimitBreak } from './card-progression'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK } from './cards'
 import { UMA_SHARDS_PER_COUPON } from './economy'
@@ -171,7 +172,8 @@ export function cardCollectionCounts(
     total: templates.length,
     maxed: templates.filter((template) => {
       const card = cardsById[template.id]
-      return card?.limitBreak === MAX_LIMIT_BREAK
+      // "Maxed" is account-wide: broken to LB4 in any one scenario.
+      return card !== undefined && bestCardLimitBreak(card) === MAX_LIMIT_BREAK
     }).length,
     eras: count(templates.map((template) => template.era)).sort((left, right) => left.key - right.key),
     types: count(templates.map((template) => template.type)),

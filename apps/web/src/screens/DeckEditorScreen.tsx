@@ -1,4 +1,5 @@
 import {
+  cardLimitBreak,
   SCENARIO_SLOT_INDEX,
   STATS,
   activeScenario,
@@ -136,7 +137,7 @@ export function DeckEditorScreen() {
               </span>
               {!slot.unlocked ? <p className="font-extrabold">Locked until a later scenario</p> : slot.card ? <>
                 <AtlasSprite asset={slot.card.asset} decorative className="h-14 w-14 shrink-0 rounded-xl bg-slate-100" fallback={<div className="flex h-full items-center justify-center text-lg">?</div>} />
-                <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{slot.card.template ? `${slot.card.template.charName} · ${slot.card.template.title}` : `Missing ${slot.card.id}`}</p><p className="text-xs font-bold text-ink-soft">{slot.card.template && slot.card.save ? (slot.card.template.era > model.tier ? `Era locked · Tier ${slot.card.template.era}` : `${TYPE_LABEL[slot.card.template.type]} · Lv ${cardLevel(slot.card.save)} · LB${slot.card.save.limitBreak} · Tier ${slot.card.template.era}`) : slot.card.template ? 'Not owned · repair required' : 'Missing content · repair required'}</p></div>
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{slot.card.template ? `${slot.card.template.charName} · ${slot.card.template.title}` : `Missing ${slot.card.id}`}</p><p className="text-xs font-bold text-ink-soft">{slot.card.template && slot.card.save ? (slot.card.template.era > model.tier ? `Era locked · Tier ${slot.card.template.era}` : `${TYPE_LABEL[slot.card.template.type]} · Lv ${cardLevel(slot.card.save, model.tier)} · LB${cardLimitBreak(slot.card.save, model.tier)} · Tier ${slot.card.template.era}`) : slot.card.template ? 'Not owned · repair required' : 'Missing content · repair required'}</p></div>
                 <div className="flex shrink-0 gap-1">
                   <button type="button" aria-label={`Move ${selectedId} earlier`} disabled={slot.index === 0 || busy} onClick={() => move(slot.index, -1)} className="min-h-11 min-w-11 rounded-xl bg-sky-50 font-extrabold disabled:opacity-35">↑</button>
                   <button type="button" aria-label={`Move ${selectedId} later`} disabled={slot.index === ids.length - 1 || busy} onClick={() => move(slot.index, 1)} className="min-h-11 min-w-11 rounded-xl bg-sky-50 font-extrabold disabled:opacity-35">↓</button>

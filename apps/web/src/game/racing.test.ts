@@ -173,7 +173,7 @@ function state() {
   return {
     profile: createPlayerProfile('abc123def456', 42),
     player,
-    cards: { c1: { ...createCardSave(card), limitBreak: 1 } },
+    cards: { c1: { ...createCardSave(card), limitBreaks: { '1': 1 } } },
   }
 }
 

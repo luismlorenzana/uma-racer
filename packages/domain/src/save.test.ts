@@ -11,6 +11,7 @@ import {
   migratePlayerProfileV1,
   migratePlayerProfileV2,
   migratePlayerProfileV3,
+  migrateCardSaveV5,
   migrateUmaSaveV4,
   parseCardSave,
   parsePlayerProfile,
@@ -145,20 +146,28 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, unlockedTier: 2 })).toBeNull()
     expect(parseUmaSave({ ...save, scenarios: [] })).toBeNull()
     expect(parseUmaSave({ ...save, scenarios: [run, run] })).toBeNull()
-    expect(parseCardSave({ templateId: 'c1', limitBreak: 5, maxCouponGranted: false })).toBeNull()
-    expect(parseCardSave({ templateId: 'c1', limitBreak: 2, maxCouponGranted: false }))
-      .toEqual({ templateId: 'c1', limitBreak: 2, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 6 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 6 })).toThrow(/App update required/)
+    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '1': 5 }, maxCouponGranted: false })).toBeNull()
+    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '0': 2 }, maxCouponGranted: false })).toBeNull()
+    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '99': 2 }, maxCouponGranted: false })).toBeNull()
+    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '1': 2, '3': 4 }, maxCouponGranted: false }))
+      .toEqual({ templateId: 'c1', limitBreaks: { '1': 2, '3': 4 }, maxCouponGranted: false })
+    // A zero is the default, so it never needs storing.
+    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '2': 0 }, maxCouponGranted: false }))
+      .toEqual({ templateId: 'c1', limitBreaks: {}, maxCouponGranted: false })
+    // v5 held one break with no scenario; it becomes tier 1's.
+    expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
+      .toEqual({ templateId: 'c1', limitBreaks: { '1': 3 }, maxCouponGranted: false })
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 7 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 7 })).toThrow(/App update required/)
   })
 
   it('migrates v1 profiles and Umas into current defaults and preserves every v2 goal fact', () => {
     const profileV1 = { ...createPlayerProfile('v1', 1), schemaVersion: 1 as const, tickets: 77 }
-    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 5 })
+    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 6 })
     const profileV2 = { ...profileV1, schemaVersion: 2 as const }
-    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: 5 })
+    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: 6 })
     const profileV3 = { ...profileV1, schemaVersion: 3 as const }
-    expect(migratePlayerProfileV3(profileV3)).toEqual({ ...profileV3, schemaVersion: 5 })
+    expect(migratePlayerProfileV3(profileV3)).toEqual({ ...profileV3, schemaVersion: 6 })
     // v4 is the last shape with a flat run; v5 turns it into one ScenarioTraining at her current tier.
     const legacyV4 = {
       schemaVersion: 4 as const,
@@ -186,7 +195,7 @@ describe('save parsing', () => {
     }
 
     const migratedV4 = migrateUmaSaveV4(legacyV4)
-    expect(migratedV4).toMatchObject({ schemaVersion: 5, level: 12, unlockedTier: 2, goalPlanVersion: 0 })
+    expect(migratedV4).toMatchObject({ schemaVersion: 6, level: 12, unlockedTier: 2, goalPlanVersion: 0 })
     expect(migratedV4.scenarios).toEqual([{
       tier: 2,
       trainingLevel: 7,
@@ -280,7 +289,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 6 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 7 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)

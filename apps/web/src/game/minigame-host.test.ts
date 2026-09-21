@@ -49,7 +49,7 @@ describe('MinigameHostTestDouble', () => {
       couponGranted: false,
     }))
     const host = new MinigameHostTestDouble({ reward })
-    const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card' })
+    const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card', tier: 1 })
     const outcome = { kind: 'bond-recall' as const, cleared: true, mismatches: 4 }
     expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ limitBreakBefore: 0, limitBreakAfter: 1 })
     expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ limitBreakBefore: 0, limitBreakAfter: 1 })
@@ -59,7 +59,7 @@ describe('MinigameHostTestDouble', () => {
 
   it('spends the Bond Recall ticket without advancing after a loss', async () => {
     const host = new MinigameHostTestDouble()
-    const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card' })
+    const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card', tier: 1 })
     expect(await host.commitRun(ticket.runId, { kind: 'bond-recall', cleared: false, mismatches: 10 })).toEqual({
       ticketsSpent: 10,
       limitBreakBefore: 0,

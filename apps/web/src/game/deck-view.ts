@@ -122,7 +122,7 @@ export function buildDeckView(
         || left.template.title.localeCompare(right.template.title)
         || left.id.localeCompare(right.id)
     })
-  const effects = supportDeckEffectTotals(validation.cards)
+  const effects = supportDeckEffectTotals(validation.cards, tier)
   const hintSkillCount = new Set(validation.cards.flatMap((card) => card.template.hintSkillIds)).size
   return {
     tier,

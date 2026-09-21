@@ -72,8 +72,12 @@ missing from the pack the scenario falls back to the next available starter, and
 
 ## Bond Recall — card limit breaks
 
-Pick one owned card, then clear a grid of face-down tiles by matching pairs. A full clear advances that card
-**one limit break**.
+Pick one owned card **and one scenario**, then clear a grid of face-down tiles by matching pairs. A full
+clear advances that card **one limit break in that scenario** (D127).
+
+A card can be trained in any scenario its era allows that some Uma has unlocked. The entry point is the Cards
+album: a card's detail carries a **Bond by scenario** strip — one row per eligible scenario with its limit
+break and what one node pays there — and a row is the way into a run.
 
 ### Board
 

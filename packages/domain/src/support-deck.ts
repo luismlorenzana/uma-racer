@@ -1,7 +1,7 @@
 // Shared support-deck validation (docs/design/support-cards.md#deck).
 
 import { STATS } from './types'
-import { cardLevel } from './card-progression'
+import { cardLevel, cardLimitBreak } from './card-progression'
 import { CARD_SET_SIZE, cardNodeValue } from './constellation'
 import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue, type CardEffect } from './cards'
 import type { SupportCardTemplate, UmaTemplate } from './content'
@@ -143,12 +143,15 @@ export function validateEquippedSupportDeck(
   })
 }
 
-export function supportDeckEffectTotals(cards: readonly SupportDeckCard[]): Record<CardEffect, number> {
+export function supportDeckEffectTotals(
+  cards: readonly SupportDeckCard[],
+  tier: number,
+): Record<CardEffect, number> {
   return Object.fromEntries(CARD_EFFECTS.map((effect) => [
     effect,
     cards.reduce((total, card) => total + projectedCardEffectValue(effect, card.template, {
-      limitBreak: card.save.limitBreak,
-      level: cardLevel(card.save),
+      limitBreak: cardLimitBreak(card.save, tier),
+      level: cardLevel(card.save, tier),
     }), 0),
   ])) as Record<CardEffect, number>
 }
@@ -165,11 +168,11 @@ export function autoCardSet(
 ): string[] {
   const eligible = owned.filter((card) => card.template.era <= tier)
   const strength = (card: SupportDeckCard) =>
-    cardNodeValue(tier, { template: card.template, limitBreak: card.save.limitBreak })
+    cardNodeValue(tier, { template: card.template, limitBreak: cardLimitBreak(card.save, tier) })
   const ranked = [...eligible].sort((left, right) =>
     strength(right) - strength(left) ||
     right.template.era - left.template.era ||
-    right.save.limitBreak - left.save.limitBreak ||
+    cardLimitBreak(right.save, tier) - cardLimitBreak(left.save, tier) ||
     left.template.id.localeCompare(right.template.id))
 
   const picked: SupportDeckCard[] = []

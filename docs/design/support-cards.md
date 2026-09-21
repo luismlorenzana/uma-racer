@@ -25,7 +25,9 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 - A **card set** is per Uma, **per scenario** (D125): **six slots**, era-gated to that scenario's tier, drawn
   from owned cards. Six everywhere — the old 4/5/6 tier ramp is gone.
 - No duplicate card and no two cards of the same character in one set.
-- **Limit breaks are shared across all Umas** — one copy per card, so breaking a card improves it everywhere.
+- **Limit breaks belong to a scenario, and are shared by every Uma racing there** (D127). Breaking a card in
+  URA Finale improves it for every Uma in URA Finale; in Unity Cup that same card starts at LB0 again. So the
+  first Uma you take into a scenario pays for the card set, and every later one rides free.
 - One of the six slots is the scenario's **dedicated slot**, which pays Skill Points instead of stats
   ([Constellations](constellations.md#the-scenario-slot)).
 
@@ -73,8 +75,8 @@ value is breadth: one Friend card covers five stats where a Speed card covers tw
 
 ## Limit breaks
 
-A card advances **one limit break per [Bond Recall](minigames.md#bond-recall--card-limit-breaks) clear**. That
-is the only way. Its level is derived:
+A card advances **one limit break per [Bond Recall](minigames.md#bond-recall--card-limit-breaks) clear**, in
+the scenario that run named. That is the only way. Its level in that scenario is derived:
 
 | Limit break | LB0 | LB1 | LB2 | LB3 | LB4 (MLB) |
 |---|---|---|---|---|---|
@@ -83,7 +85,7 @@ is the only way. Its level is derived:
 
 - **LB1** activates Race Bonus.
 - **LB3** adds a gold skill to `hintSkills`, so a broken card pays better skills as well as more stats.
-- **LB4** maxes the card and earns a **Card Select Coupon** 🎟️, once.
+- **LB4** maxes the card and earns a **Card Select Coupon** 🎟️ — once per card ever, not once per scenario.
 - Each advance grants **+10 training tickets**.
 
 A card at LB0 pays 60% of a node, which is visible in the constellation as a dimmed node value. That gap is the

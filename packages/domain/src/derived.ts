@@ -1,5 +1,6 @@
 // The single read path: everything an Uma is, derived from her active constellation (D121).
 
+import { cardLimitBreak } from './card-progression'
 import {
   constellationTemplate,
   deriveStats,
@@ -57,7 +58,10 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
   for (const cardId of scenario.cardSetIds) {
     const save = input.cardSaves.get(cardId)
     const cardTemplate = input.cardTemplates.get(cardId)
-    if (save && cardTemplate) cards.set(cardId, { template: cardTemplate, limitBreak: save.limitBreak })
+    // A card's break belongs to the scenario being derived, not to the account (D127).
+    if (save && cardTemplate) {
+      cards.set(cardId, { template: cardTemplate, limitBreak: cardLimitBreak(save, scenario.tier) })
+    }
   }
 
   const derived: DerivedStats = deriveStats({

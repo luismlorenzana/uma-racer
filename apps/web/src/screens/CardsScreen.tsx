@@ -1,4 +1,8 @@
 import {
+  cardNodeValue,
+  cardLimitBreak,
+  bestCardLimitBreak,
+  bestCardLevel,
   cardLevel,
   BROAD_CARD_STAT_DIVISOR,
   CARD_EFFECTS,
@@ -126,8 +130,8 @@ function CardTile({
           <span className="block truncate text-[11px] text-ink-faint">{headline}</span>
         </span>
         <span className="shrink-0 text-right text-[12px] text-ink-soft">
-          {entry.save ? <>Lv <Numeral className="text-ink">{cardLevel(entry.save)}</Numeral></> : 'Unowned'}
-          <span className="block text-[11px] text-ink-faint">{sortLabel ?? `LB${entry.save?.limitBreak ?? 0}`}</span>
+          {entry.save ? <>Lv <Numeral className="text-ink">{bestCardLevel(entry.save)}</Numeral></> : 'Unowned'}
+          <span className="block text-[11px] text-ink-faint">{sortLabel ?? `LB${(entry.save ? bestCardLimitBreak(entry.save) : 0) ?? 0}`}</span>
         </span>
       </button>
     )
@@ -169,7 +173,7 @@ function CardTile({
             <>
               <p className="font-display truncate text-[14px] font-semibold">{entry.template.charName}</p>
               {entry.save
-                ? <div className="flex items-center justify-between gap-2"><span className="text-[11px] text-ink-on-dark-soft">Lv {cardLevel(entry.save)}</span><LimitPips value={entry.save.limitBreak} /></div>
+                ? <div className="flex items-center justify-between gap-2"><span className="text-[11px] text-ink-on-dark-soft">Lv {bestCardLevel(entry.save)}</span><LimitPips value={bestCardLimitBreak(entry.save)} /></div>
                 : <p className="truncate text-[11px] text-ink-on-dark-soft">Unowned</p>}
             </>
           )}
@@ -193,6 +197,7 @@ function CardTile({
 
 function CardDetail({
   entry,
+  trainableTiers,
   umaNames,
   busy,
   error,
@@ -201,6 +206,8 @@ function CardDetail({
   onStep,
 }: {
   entry: CardEntry
+  /** Scenarios this card is eligible for and some Uma has unlocked. */
+  trainableTiers: readonly number[]
   umaNames: Readonly<Record<string, string>>
   busy: boolean
   error: string | null
@@ -242,10 +249,10 @@ function CardDetail({
           <p className="text-[13px] text-ink-soft">{entry.template.title || 'Support card'}</p>
           {save && (
             <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold">
-              <span>Lv <Numeral>{cardLevel(save)}</Numeral></span>
+              <span>Lv <Numeral>{bestCardLevel(save)}</Numeral></span>
               <span className="flex gap-0.5">
                 {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
-                  <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < save.limitBreak ? 'bg-accent' : 'bg-sunken'}`} />
+                  <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < bestCardLimitBreak(save) ? 'bg-accent' : 'bg-sunken'}`} />
                 ))}
               </span>
             </div>
@@ -276,11 +283,35 @@ function CardDetail({
       {save && (
         <>
           <div className="mt-4">
-            <div className="flex justify-between text-[12px] font-semibold">
-              <span>Limit break</span>
-              <span>{entry.maxed ? 'MAX' : `${save.limitBreak} / ${MAX_LIMIT_BREAK}`}</span>
-            </div>
-            <div className="mt-1"><Meter value={save.limitBreak / MAX_LIMIT_BREAK} color="var(--color-accent)" height={6} /></div>
+            <p className="text-micro mb-1">Bond by scenario · a break is shared by every Uma racing there</p>
+            {trainableTiers.length === 0
+              ? <p className="rounded-sm bg-sunken p-3 text-[13px] font-semibold">This card arrives in a scenario none of your Umas has unlocked yet.</p>
+              : <div className="grid gap-1">
+                {trainableTiers.map((tier) => {
+                  const level = cardLimitBreak(save, tier)
+                  const maxed = level >= MAX_LIMIT_BREAK
+                  return (
+                    <Link
+                      key={tier}
+                      to={`/minigames/bond-recall/${encodeURIComponent(entry.template.id)}?tier=${tier}`}
+                      aria-disabled={maxed}
+                      className={`flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 ${maxed ? 'bg-sunken' : 'bg-panel'}`}
+                    >
+                      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+                        {scenarioForTier(tier)?.name ?? `Tier ${tier}`}
+                      </span>
+                      <span className="flex gap-0.5">
+                        {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
+                          <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < level ? 'bg-accent' : 'bg-sunken'}`} />
+                        ))}
+                      </span>
+                      <span className="w-16 shrink-0 text-right text-[11px] font-semibold text-ink-soft">
+                        {maxed ? 'MAX' : `${Math.round(cardNodeValue(tier, { template: entry.template, limitBreak: level }))}/node`}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>}
           </div>
 
           <div className="mt-4 grid gap-1.5">
@@ -411,6 +442,11 @@ export function CardsScreen() {
   }, [contentState, umas])
 
   const highestTier = useMemo(() => Math.max(1, ...Object.values(umas).map((save) => save.unlockedTier)), [umas])
+
+  const trainableTiersFor = useCallback(
+    (era: number) => Array.from({ length: highestTier }, (_, index) => index + 1).filter((tier) => tier >= era),
+    [highestTier],
+  )
   const presets = useMemo(() => buildCardPresets(highestTier), [highestTier])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to view Cards" detail="Your private card collection is part of the saved Stable." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -445,7 +481,7 @@ export function CardsScreen() {
     if (!selected?.save || busy) return
     setBusy(true)
     setError(null)
-    void promoteSupportCard(selected.template.id)
+    void promoteSupportCard(selected.template.id, Math.max(selected.template.era, 1))
       .then((mutation) => {
         setCelebration((value) => value + 1)
         pushToast(`LB${mutation.result.toLimitBreak} · Card Lv ${mutation.result.toLevel}`)
@@ -494,10 +530,10 @@ export function CardsScreen() {
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {detail.save
               ? <>
-                  <Crest>Lv {cardLevel(detail.save)}</Crest>
+                  <Crest>Lv {bestCardLevel(detail.save)}</Crest>
                   <span className="flex gap-0.5">
                     {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
-                      <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < (detail.save?.limitBreak ?? 0) ? 'bg-accent' : 'bg-sunken'}`} />
+                      <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < (detail.save ? bestCardLimitBreak(detail.save) : 0) ? 'bg-accent' : 'bg-sunken'}`} />
                     ))}
                   </span>
                   {detail.maxed && <Crest tone="accent">MAX</Crest>}
@@ -610,8 +646,8 @@ export function CardsScreen() {
         rows={[
           { label: 'Type', values: compareEntries.map((entry) => entry.template.type) },
           { label: 'Era', values: compareEntries.map((entry) => entry.template.era), best: 'high' },
-          { label: 'Level', values: compareEntries.map((entry) => (entry.save ? cardLevel(entry.save) : null)), best: 'high' },
-          { label: 'Limit break', values: compareEntries.map((entry) => entry.save?.limitBreak ?? null), best: 'high' },
+          { label: 'Level', values: compareEntries.map((entry) => (entry.save ? bestCardLevel(entry.save) : null)), best: 'high' },
+          { label: 'Limit break', values: compareEntries.map((entry) => entry.save ? bestCardLimitBreak(entry.save) : null), best: 'high' },
           ...CARD_EFFECTS.map((effect) => ({
             label: EFFECT_LABELS[effect],
             values: compareEntries.map((entry) => {
@@ -656,6 +692,7 @@ export function CardsScreen() {
         {selected && (
           <CardDetail
             entry={selected}
+            trainableTiers={trainableTiersFor(selected.template.era)}
             umaNames={umaNames}
             busy={busy}
             error={error}
