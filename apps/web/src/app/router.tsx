@@ -56,6 +56,11 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/training/TrainingScreen')).TrainingScreen }),
   },
   {
+    path: 'minigames/spark-match/:umaId',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Spark Match" />,
+    lazy: async () => ({ Component: (await import('../screens/minigames/SparkMatchScreen')).SparkMatchScreen }),
+  },
+  {
     path: 'scenario/:umaId/start',
     hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Scenario Start" />,
     lazy: async () => ({ Component: (await import('../screens/ScenarioStartScreen')).ScenarioStartScreen }),

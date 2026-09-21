@@ -9,7 +9,7 @@ Design: [Minigames](../design/minigames.md). Decision D120.
 
 | Task | Scope | Owner |
 |---|---|---|
-| T049 | Spark Match — the match-3 training minigame | ChatGPT |
+| T049 | Spark Match — the match-3 training minigame (complete) | ChatGPT |
 | T050 | Bond Recall — the match-2 card minigame | ChatGPT |
 
 ## The host port
