@@ -22,17 +22,14 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M012 — Constellation foundations](M012-constellation-foundations.md) | T042 · T043 · T044 · T045 | Next |
-| [M013 — The constellation screen](M013-constellation-screen.md) | T046 · T047 · T048 | Specified |
-| [M014 — Minigames](M014-minigames.md) | T049–T050 complete | Complete |
-| [M015 — Scenario identity](M015-scenario-identity.md) | T051 · T052 · T053 · T054 | Outlined |
+| [M013 — The constellation screen](M013-constellation-screen.md) | T046 · T047 · T048 | Next |
+| [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Outlined |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
 
-M012 and M014 are built **in parallel** against the `MinigameHost` port defined in
-[M014](M014-minigames.md#the-host-port), so the constellation engine and the minigames never touch the same
-files.
+M012 (the constellation engine, save v5, and the removal of the training turn) and M014 (Spark Match and Bond
+Recall) both landed on 2026-09-21; `c5436fc` is the last commit that contains their specs.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

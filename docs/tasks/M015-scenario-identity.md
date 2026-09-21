@@ -14,6 +14,20 @@ training-gain multipliers for a training loop that no longer exists (D120).
 | T052 | Constellation shapes for all 14 scenarios, authored as templates | Claude |
 | T053 | Scenario buffs, tiers 1–7 | TBD |
 | T054 | Scenario buffs, tiers 8–14 | TBD |
+| T055 | Scenario-linked race records: a `tier` on `RaceResultRecord` (D122) | TBD |
+| T056 | Training badge criteria for the minigame era | TBD |
+
+## Carried over from M012
+
+Two gaps M012 left open rather than papering over:
+
+- **Races are not yet tier-stamped** (T055). D122 says the Arima Kinen won in Trackblazer and the one won in
+  Our Grand Concert are separate accomplishments. Race results are a separate append-only log, so the fix is a
+  `tier` field on the record rather than nesting history inside `ScenarioTraining` — which would mean
+  restructuring the sync protocol for no gain.
+- **Training badges read zero** (T056). Lifetime turns, friendship trainings and Full House counted training
+  turns that no longer exist, so their history is explicitly `untracked` rather than silently zero. Spark Match
+  runs and constellation milestones are the obvious replacements.
 
 ## Crests and overlays (T051)
 
