@@ -161,14 +161,28 @@ whose source art does not exist — 18 of the newest cards today — keep their 
 A collection is browsed to **decide** something — who to train next, which card to slot — so a tile carries decision
 data, not just a name:
 
-- Uma tiles: portrait, name, level, tier crest, a compact aptitude line (surface / distance / strategy grades), and at
-  most two state chips (*Gate ready*, *Goal active*).
-- Card tiles: card art, type dot, LB pips, level, and the card's **headline effect**.
+- Uma tiles: portrait, name, level, active-scenario crest, a compact aptitude line (surface / distance / strategy
+  grades), and at most two state chips (*Gate ready*, *Goal active*).
+- Card tiles: card art, type dot, LB pips, and the card's **node share** — what one node of it pays.
 - The **secondary line follows the active sort**. Sorting by release shows the date, by total stats shows the total, by
   limit break shows the LB. Sorting by something you cannot see is a dead end.
 - Unowned entries are desaturated art behind a lock, never empty silhouette boxes.
 - **NEW markers:** an entry acquired since you last looked at it carries a NEW treatment until it is opened. The seen
   set is device-local, like the other album preferences, so this needs no save field.
+
+### Icon overlays
+
+The icons view is five-up and image-only, so the two things worth knowing at a glance are burned onto the icon
+itself rather than pushed into a caption:
+
+- **Scenario crest, top-left.** The Uma's **active scenario** — the highest she has unlocked (D121). Each
+  scenario has its own crest drawn from the original game's scenario art, imported like the other private
+  assets and atlased at icon size. An Uma who has not started a scenario shows no crest.
+- **Level, bottom-right.** Her permanent **Uma Level**, in the embossed numeral treatment, over a scrim so it
+  stays readable against bright art.
+
+Both sit inside the tile's padding so they never cover the face. They are the only overlays: state chips,
+names, and sort values belong to the cards and list views, where there is room for them.
 
 ### Shared behaviours
 

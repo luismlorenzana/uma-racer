@@ -1,44 +1,125 @@
 # Scenarios
 
-Every 10 Uma levels is one **scenario tier**, named after the original game's career scenarios
-and ordered by their **JP release date**. A scenario sets:
+Every 10 Uma levels unlocks one **scenario tier**, named after the original game's career scenarios and ordered
+by their **JP release date**. A scenario is a **complete career run** (D121): its own Training Level, its own
+six-card set, its own [constellation](constellations.md), its own goals, races and milestones.
 
-- **Baseline stat caps**: the most training can reach in this scenario, at Training Level 10. At TL1 the cap is 80% of the baseline (see [Training](training.md#training-level-and-caps)).
-- **Baseline SP cap**, the skill loadout capacity: `300 + 200 × (T − 1)`, following the same Training Level curve (see [Skills & Inheritance](skills-and-inheritance.md)).
+A scenario sets:
+
+- A **cap profile**: five per-stat caps, shaped to that scenario's character.
+- A **constellation template**: a shape, a slot count, and the node value that follows from it.
+- A **scenario buff**: the one declared way this scenario bends the rules.
 - **Scenario goals** for each Uma (see [Scenario Goals](scenario-goals.md)).
-- **Card era**, which support cards (and possibly Umas) are available.
-- A **scenario modifier**: a light, tier-local training twist themed on the original scenario.
+- A **card era**, deciding which support cards are eligible for its card set.
 
 ## Timeline and tiers
 
-Baseline caps follow the **original game's ladder** ✅: its **1200** launch cap at tier 1, rising **80 per scenario** to its current **2000** cap at tier 11, and continuing at +80 after that. As in the original, the part of a stat **above 1200 counts about half** in races and gains half from training.
+| # | Global name | JP / alt name | JP release | Global release | Uma Levels |
+|---|---|---|---|---|---|
+| 1 | URA Finale | URA Finals | 2021-02-24 | 2025-06-26 | 1–10 |
+| 2 | Unity Cup | Aoharu Cup | 2021-08-30 | 2025-11-06 | 11–20 |
+| 3 | Trackblazer | Make a New Track (Climax) | 2022-02-24 | 2026-03-12 | 21–30 |
+| 4 | Our Grand Concert | Grand Live | 2022-08-24 | 2026-07-22 | 31–40 |
+| 5 | Grand Masters | Grand Masters | 2023-02-24 | — | 41–50 |
+| 6 | Project L'Arc | Project L'Arc | 2023-08-24 | — | 51–60 |
+| 7 | U.A.F. Ready GO! | U.A.F. Ready GO! | 2024-02-24 | — | 61–70 |
+| 8 | Great Food Festival | Daihoushokusai | 2024-06-26 | — | 71–80 |
+| 9 | Run! Mecha Umamusume | Mecha Umamusume | 2024-10-29 | — | 81–90 |
+| 10 | The Twinkle Legends | The Twinkle Legends | 2025-02-24 | — | 91–100 |
+| 11 | Design Your Island | Welcome to the Wild / Mujintou | 2025-06-27 | — | 101–110 |
+| 12 | Yukoma Hot Springs | ごくらく♪ゆこま温泉郷 | 2025-10-29 | — | 111–120 |
+| 13 | Beyond Dreams | Beyond Dreams 共に前へ、共に光を | 2026-02-24 | — | 121–130 |
+| 14 | Tracen Diner | らっしゃい！トレセン軒！ | 2026-06-29 | — | 131–140 |
 
-| # | Global name | JP / alt name | JP release | Global release | Uma Levels | Baseline stat cap |
+✅ Every date was verified against the public GameTora scenario dataset on 2026-09-19. Global names follow the
+English version; Global has released only through #4, so **eras use JP dates** ✅.
+
+## Cap profiles
+
+Each scenario caps the five stats differently, and the five caps sum to that scenario's **cap budget**. This is
+how the original game does it, and it is why a scenario is an identity rather than a number: Trackblazer is
+where Stamina goes to 1900, Unity Cup is where Wit does.
+
+**Tiers 1–4 are the original game's real values**, verified 2026-09-20 against the public stat-cap tables
+(D119). Tiers 5–14 extend the idea on our own ladder, themed on each scenario's focus, with the budget rising
++250 per tier from tier 5 and no single stat above the game's 2000 ceiling.
+
+| # | Scenario | Speed | Stamina | Power | Guts | Wit | Cap budget |
+|---|---|---|---|---|---|---|---|
+| 1 | URA Finale | 1400 | 1400 | 1400 | 1400 | 1400 | 7000 |
+| 2 | Unity Cup | 1300 | 1300 | 1300 | 1300 | **1800** | 7000 |
+| 3 | Trackblazer | 1200 | **1900** | 1200 | 1200 | 1500 | 7000 |
+| 4 | Our Grand Concert | **1600** | 1300 | 1300 | **1500** | 1300 | 7000 |
+| 5 | Grand Masters | 1400 | 1300 | 1500 | 1250 | **1800** | 7250 |
+| 6 | Project L'Arc | 1400 | **1900** | 1400 | 1500 | 1300 | 7500 |
+| 7 | U.A.F. Ready GO! | 1600 | 1550 | 1600 | 1500 | 1500 | 7750 |
+| 8 | Great Food Festival | 1500 | 1700 | 1500 | **1900** | 1400 | 8000 |
+| 9 | Run! Mecha Umamusume | 1900 | 1500 | **1950** | 1500 | 1400 | 8250 |
+| 10 | The Twinkle Legends | **2000** | 1650 | 1700 | 1550 | 1600 | 8500 |
+| 11 | Design Your Island | 1750 | 1750 | 1750 | 1750 | 1750 | 8750 |
+| 12 | Yukoma Hot Springs | 1700 | 1900 | 1700 | **2000** | 1700 | 9000 |
+| 13 | Beyond Dreams | **2000** | 1750 | 1800 | 1700 | **2000** | 9250 |
+| 14 | Tracen Diner | 1850 | 1900 | **2000** | 1950 | 1800 | 9500 |
+
+As in the original game ✅, the part of a stat **above 1200 counts about half in races**. That halving lives in
+[Racing](racing.md) now, not in training gains.
+
+## Constellation shapes
+
+The **shape** is the silhouette the nodes are laid out in — the thing that makes a scenario's tree recognisable
+at a glance. The **slot count** is how finely that scenario's budget is divided, never how much it pays:
+
+```
+treeBudget(T) = round(0.60 × capBudget(T))
+nodeValue(T)  = treeBudget(T) / (cardNodes + statNodes)
+```
+
+| # | Scenario | Shape | Card | Stat | Total | Node value |
 |---|---|---|---|---|---|---|
-| 1 | URA Finale | URA Finals | 2021-02-24 | 2025-06-26 | 1–10 | 1200 |
-| 2 | Unity Cup | Aoharu Cup | 2021-08-30 | 2025-11-06 | 11–20 | 1280 |
-| 3 | Trackblazer | Make a New Track (Climax) | 2022-02-24 | 2026-03-12 | 21–30 | 1360 |
-| 4 | Our Grand Concert | Grand Live | 2022-08-24 | 2026-07-22 | 31–40 | 1440 |
-| 5 | Grand Masters | Grand Masters | 2023-02-24 | — | 41–50 | 1520 |
-| 6 | Project L'Arc | Project L'Arc | 2023-08-24 | — | 51–60 | 1600 |
-| 7 | U.A.F. Ready GO! | U.A.F. Ready GO! | 2024-02-24 | — | 61–70 | 1680 |
-| 8 | Great Food Festival | Daihoushokusai | 2024-06-26 | — | 71–80 | 1760 |
-| 9 | Run! Mecha Umamusume | Mecha Umamusume | 2024-10-29 | — | 81–90 | 1840 |
-| 10 | The Twinkle Legends | The Twinkle Legends | 2025-02-24 | — | 91–100 | 1920 |
-| 11 | Design Your Island | Welcome to the Wild / Mujintou | 2025-06-27 | — | 101–110 | 2000 |
-| 12 | Yukoma Hot Springs | ごくらく♪ゆこま温泉郷 | 2025-10-29 | — | 111–120 | 2080 |
-| 13 | Beyond Dreams | Beyond Dreams 共に前へ、共に光を | 2026-02-24 | — | 121–130 | 2160 |
-| 14 | Tracen Diner | らっしゃい！トレセン軒！ | 2026-06-29 | — | 131–140 | 2240 |
-| 15+ | *Every later JP scenario is included* | *Checked against the source each import* | — | — | 141+ | +80 each |
+| 1 | URA Finale | single trunk, short branches | 18 | 3 | 21 | 200 |
+| 2 | Unity Cup | three long branches | 20 | 4 | 24 | 175 |
+| 3 | Trackblazer | one long track with side spurs | 17 | 3 | 20 | 210 |
+| 4 | Our Grand Concert | five-arm star | 21 | 4 | 25 | 168 |
+| 5 | Grand Masters | twin arcs | 25 | 4 | 29 | 150 |
+| 6 | Project L'Arc | an arch | 26 | 4 | 30 | 150 |
+| 7 | U.A.F. Ready GO! | three coloured branches | 27 | 4 | 31 | 150 |
+| 8 | Great Food Festival | wide canopy | 27 | 5 | 32 | 150 |
+| 9 | Run! Mecha Umamusume | lattice spine | 28 | 5 | 33 | 150 |
+| 10 | The Twinkle Legends | seven-point crown | 29 | 5 | 34 | 150 |
+| 11 | Design Your Island | island ring | 30 | 5 | 35 | 150 |
+| 12 | Yukoma Hot Springs | spiral | 30 | 6 | 36 | 150 |
+| 13 | Beyond Dreams | twin trunks meeting | 31 | 6 | 37 | 150 |
+| 14 | Tracen Diner | counter with pendants | 32 | 6 | 38 | 150 |
 
-✅ Every date above was verified against the public GameTora scenario dataset on 2026-09-19. Tiers 12–14 are live, so the
-Uma level cap is 140 and cards released after Design Your Island fall into their correct eras. The original game raised
-its own hard cap to 2500 with Beyond Dreams; ladder A keeps +80 per scenario here, because our caps are tied to the 1200
-soft cap (D108). Each private content import compares the released source-scenario count with this ladder and emits an
-aggregate-only warning if the source has moved ahead.
+Early scenarios have few, chunky nodes, so each decision is heavy and legible. From tier 5 every node is worth
+exactly **150** and the scenario's slot count is the whole progression. Each tier also carries the fixed
+**2 parent + 4 grandparent** lineage nodes, which pay aptitudes and skills rather than stats.
 
-Global release names follow the English version. Global has released only through #4 so far, so
-**eras use JP dates** ✅.
+## Scenario buffs
+
+A buff is the **one declared way a scenario bends the rules**. Buffs are deterministic, always visible, never
+RNG, and never secret. They may change totals — that is the scenario's character — but the
+[invariance rule](constellations.md#the-invariance-rule) still holds for stat allocation *within* a scenario.
+
+| # | Scenario | Buff | Draft rule |
+|---|---|---|---|
+| 1 | URA Finale | **Foundation** | stat nodes pay ×1.25 |
+| 2 | Unity Cup | **Team Spirit** | +1% to every card node per distinct character in the card set |
+| 3 | Trackblazer | **Climax** | the first card node on each branch pays ×1.5 |
+| 4 | Our Grand Concert | **Performance** | if all five stat types appear in the set, every node pays +5% |
+| 5 | Grand Masters | **Fragments** | the deepest node on each branch pays ×2 |
+| 6 | Project L'Arc | **Expedition** | cards of era ≥ 6 pay ×1.10 |
+| 7 | U.A.F. Ready GO! | **Genres** | a branch whose cards share a colour pays +10% |
+| 8 | Great Food Festival | **Cooking** | a card on 3+ nodes pays +15% on all of them |
+| 9 | Run! Mecha Umamusume | **Research** | each stat node also pays 25% of its value to a second stat you pick |
+| 10 | The Twinkle Legends | **Legends** | one lineage slot may hold any Uma template, owned or not |
+| 11 | Design Your Island | **Construction** | you choose which two branches receive +3 nodes |
+| 12 | Yukoma Hot Springs | **Soak** | Spark Match targets are 25% lower |
+| 13 | Beyond Dreams | **Shared light** | the two lowest stats after allocation each gain +8% |
+| 14 | Tracen Diner | **Orders** | the scenario slot pays SP *and* 50% of its stats |
+
+Draft rules only. Each buff gets its exact numbers, state shape, and UI in its own task, and none may introduce
+RNG, a second currency, or a hidden race stat.
 
 ## Era windows
 
@@ -48,136 +129,17 @@ A card's era is the **latest scenario released on or before the card's JP releas
 era(card) = max { s.index : s.jpRelease ≤ card.jpRelease }
 ```
 
-An Uma in tier `T` may equip any card with `era ≤ T`.
+A scenario at tier `T` may take any owned card with `era ≤ T` into its card set.
 
-## Scenario modifiers
+## Scenario completion and unlocking
 
-Every scenario gets its own modifier in [Milestone 8](../tasks/M008-scenario-identity.md), added in release order.
-Modifiers are a training-side twist bound by D109: tier-local resources reset at promotion and never become currency,
-caps and Race Form never change, any aptitude grant is capped at A, and every tier remains completable while ignoring its
-modifier.
+Reaching the gate Uma Level (10, 20, 30…) grants **1 Uma Shard** and **unlocks the next scenario**. Unlocking
+costs `25 × tier` training tickets and is explicit: the player chooses when to move on.
 
-| # | Scenario | Modifier idea |
-|---|---|---|
-| 1 | URA Finale | None, the baseline and tutorial tier |
-| 2 | Unity Cup | **Team Spirit:** 3+ cards at one facility trigger a Spirit Burst: +10 raw gain to all five stats |
-| 3 | Trackblazer | **Climax:** eligible race wins grant one opt-in item that multiplies one training's raw stat/SP gains by 1.20 |
-| 4 | Grand Concert | **Performances:** collect all five facility notes; the completing training gets +20 raw gain to all stats |
-| 5 | Grand Masters | **Goddess fragments:** each training grants one; every eighth training gets a ×1.50 raw stat/SP burst |
-| 6 | Project L'Arc | **Expedition:** five training stamps fund one chosen aptitude upgrade, capped at A |
-| 7 | U.A.F. | **Sports genres:** rotating facility colors level up; matching the prior color pays up to ×1.25 |
-| 8 | Great Food Festival | **Cooking:** harvest three matching ingredients, then cook a three-turn ×1.20 dish |
-| 9 | Mecha Umamusume | **Research:** every three research points upgrade one facility, up to ×1.30 |
-| 10 | Twinkle Legends | **Legends:** pick a legend's buff path for the tier |
-| 11 | Design Your Island | **Construction:** development points build new facilities during the tier |
-| 12 | Yukoma Hot Springs | **Soak:** relaxation builds up, and a full bath makes the next training free and doubled |
-| 13 | Beyond Dreams | **Shared light:** training fills a gauge that bursts into the two lowest stats |
-| 14 | Tracen Diner | **Orders:** training collects orders, and a served set buffs the next three turns |
+On unlocking, the new scenario opens at Training Level 1 with the baseline nodes, an empty six-card set, fresh
+goals, and an empty race record. It **immediately becomes the active scenario** and drives races from then on
+(D121). The previous scenario's constellation, card set, races, and milestones are **kept and readable**, and
+stop affecting races.
 
-### Modifier state and lifecycle
-
-Progression save v4 adds one nullable, versioned `scenarioModifier` field to each Uma. Non-null state is a strict union
-whose tier and kind match the active scenario. Scenario Start initializes the destination tier inside its existing atomic
-commit; promotion replaces the old state, so tier-local counters and resources never carry forward. Tier 1 and modifiers
-not implemented yet use `null`.
-
-An older active save migrates with null state rather than invented progress. Training and racing stay available, while the
-UI says that legacy run has no modifier until its next Scenario Start. Unknown future modifier versions are rejected as an
-app-version mismatch, not treated as corrupt zero state. Journey keeps the scenario's static modifier identity after
-promotion, but does not archive resources or counters.
-
-### Unity Cup — Team Spirit
-
-The deterministic card deal is unchanged. A facility with at least **3 present cards** is marked for a Spirit Burst.
-Choosing it adds **10 raw gain to each of Speed, Stamina, Power, Guts, and Wit** after ordinary card/growth calculation and
-before rounding, the 1200 soft cap, and scenario/TL caps. SP, hints, Training EXP, card EXP, friendship, and placement are
-unchanged. Friend and Group cards count when present. State stores only how many bursts were committed.
-
-### Trackblazer — Climax
-
-A first-place progression-race finish grants **1 Climax item** unless that result closes the tier. It is not account
-currency, has no inventory cap, and expires at promotion. On Training, the player may explicitly arm one item; the chosen
-facility's ordinary raw stat and SP gains are multiplied by **1.20** before rounding, the soft cap, and caps, then exactly
-one item is consumed in the same commit. The deal, Training/card EXP, hints, Race Bonus, Uma EXP, Race Form, and race
-simulation remain unchanged. Losses, replays, gate-closing wins, previews, failed writes, and unarmed turns award or spend
-nothing.
-
-### Our Grand Concert — Performances
-
-Each committed training collects the note matching its chosen facility: Speed, Stamina, Power, Guts, or Wit. Notes are
-unique within the current set, so repeating a facility does not advance the set. A preview marks a new note, a repeated
-note, or the completing note without changing state. Collecting all **5 facility notes** completes one Performance on
-that same turn, clears the set, and adds **20 raw gain to each of the five stats** after ordinary card/growth calculation
-and before rounding, the 1200 soft cap, and scenario/TL caps. SP, Training/card EXP, hints, friendship, placement, and
-tickets are unchanged. State stores the currently held unique notes and completed-Performance count.
-
-### Grand Masters — Goddess Fragments
-
-Every committed training grants exactly **1 fragment**, regardless of facility, cards, or result caps. The training that
-collects the **eighth fragment** automatically triggers a Goddess Burst: its ordinary raw stat and SP gains are multiplied
-by **1.50** before rounding, the stat soft cap, and ordinary caps; the fragment gauge then resets to zero. Hint fallback SP,
-Training/card EXP, hints, friendship, placement, and tickets are unchanged. A burst still counts when caps reduce its
-applied gain to zero. State stores 0–7 held fragments and the committed burst count.
-
-### Project L'Arc — Expedition
-
-Every committed training adds **1 expedition stamp** until the gauge reaches **5**. A full gauge waits safely while
-ordinary Training continues. From the Training modifier panel, the player completes the ready expedition by choosing any
-surface, distance, or strategy aptitude below A; one atomic no-ticket action raises that grade by exactly one step, capped
-at A, clears the gauge, and records the completion. If every aptitude is already A or S, the only valid completion clears
-the gauge without changing an aptitude. The resulting aptitude is permanent and enters races only through the existing
-visible aptitude input; the tier-local gauge and counters still expire at promotion. State stores 0–5 stamps, completed
-expeditions, and successful aptitude upgrades.
-
-### U.A.F. Ready GO! — Sports Genres
-
-The three Sports Genres are **Blue, Red, and Yellow**. On Training turn `n`, each facility's displayed genre is assigned
-without RNG as `genres[(n + facilityIndex) mod 3]`, using the canonical Speed→Stamina→Power→Guts→Wit facility
-order. Every committed training raises its displayed genre by **1 level**, capped at **5**, and makes that genre the one
-to match next turn. The first training has no match. Choosing a facility whose displayed genre matches the prior chosen
-genre multiplies its ordinary raw stat and SP gains by `1 + 0.05 × resultingGenreLevel`, up to **×1.25**, before
-rounding, the stat soft cap, and ordinary caps. The selected genre levels before its multiplier is calculated, so preview
-and commit show the same resulting level and reward. State stores the three bounded genre levels, the prior genre, and
-the committed match count.
-
-### Great Food Festival — Cooking
-
-Every committed training harvests **1 ingredient matching its chosen facility**, up to **3** of each ingredient. When no
-dish is active, a separate explicit no-ticket action may consume **3 matching ingredients** to cook that facility's dish.
-The next **3 committed trainings** multiply every ordinary raw stat and SP gain by **1.20** before rounding, the stat soft
-cap, and ordinary caps; each boosted turn decrements the remaining duration after applying the multiplier. Training keeps
-harvesting while a dish is active, but another dish cannot be cooked until the current one expires. A full ingredient
-stack simply stops harvesting that ingredient and never blocks Training. State stores five bounded ingredient counts,
-0–3 active dish turns, and the committed dish count.
-
-### Run! Mecha Umamusume — Research
-
-Every committed training grants **1 research point** until **3** are held. A ready gauge waits safely while Training
-continues. From the Training modifier panel, a separate explicit no-ticket action spends all 3 points to raise one chosen
-facility's research level by **1**, capped at **3**. When training a facility, its already-installed research level
-multiplies every ordinary raw stat and SP gain by `1 + 0.10 × level`, up to **×1.30**, before rounding, the stat soft
-cap, and ordinary caps; an upgrade affects subsequent trainings, never the turn that earned its last point. If every
-facility is level 3, the full gauge may remain harmlessly ready and no upgrade action is offered. State stores 0–3 research
-points and the five bounded facility levels; the sum of those levels is the completed-upgrade count.
-
-## Scenario completion
-
-Reaching the gate level grants **1 Uma Shard** (see [Collection](collection.md)) and completes that tier immediately; no
-second EXP bar is required. Promotion atomically freezes the completed snapshot, spends `25 × tier` tickets, applies the
-stat/card starting bonuses, refreshes skills, resets Training Level, and starts the next tier. Parent inheritance and
-deterministic goals join that same Scenario Start commit. Before promotion, the prior Journey is closed and unfinished
-targets become honest misses; final-tier completion does the same before freezing its snapshot. Goals never gate completion.
-The resulting facts now award:
-
-- The **Graduate** badge for that scenario, with scenario-specific art.
-- The persisted **Honors** badge if every tracked scenario goal was completed.
-- A **Perfect** variant if all five stats reach the scenario's baseline cap (the Training Level 10 cap) before promotion.
-- A **Speedrun** variant if she promoted within 15 races of entering the tier.
-
-T015 makes these facts durable. Immediately before promotion reset/bonuses—or during atomic final completion—it
-captures the completed tier's stats, Training Level/counters, equipped card ids/eras, race count, Journey summary, and
-frozen lineage. Cap checks use `>=` because permanent stats may already exceed the tier baseline. Graduate/Speedrun can be
-reconstructed from existing Journey/race history; old Perfect/Capped/deck facts that were never stored remain untracked.
-T016 evaluates the snapshot immediately and atomically appends Graduate, Capped, Perfect Form, Speedrun, Era Loyalist,
-Fully Trained, Honors, Legacy, and Dynasty flair for every affected local Uma. Scenario Start/completion returns exact new
-event ids for one post-commit summary; Back or an idempotent retry cannot earn them twice.
+Because achievements are scenario-linked (D122), each scenario carries its own milestone set, and the same
+race won in two scenarios is two separate accomplishments. Badges earned in a completed scenario are permanent.

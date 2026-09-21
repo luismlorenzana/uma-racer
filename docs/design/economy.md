@@ -8,8 +8,8 @@
 
 | Item | Earned by | Spent on | Expires? |
 |---|---|---|---|
-| 🎫 **Training Tickets** | Daily grant · Uma Level-ups · card level-ups | Training · Uma promotions · card limit breaks | Never |
-| 🎟️ **Card Select Coupon** | Maxing a card (LB4 and level 25) | Any unowned SSR card | Never |
+| 🎫 **Training Tickets** | Daily grant · Uma Level-ups · card limit breaks | Minigame runs · unlocking the next scenario | Never |
+| 🎟️ **Card Select Coupon** | Maxing a card (LB4) | Any unowned SSR card | Never |
 | 💎 **Uma Shard** | An Uma reaching a gate level (10, 20, 30…) | 5 shards → 1 Uma Select Coupon | Never |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma | Never |
 
@@ -26,7 +26,7 @@ These are the **only** sources ✅:
 |---|---|
 | Daily grant | **+50 per day**, accruing while you're away |
 | Uma Level-up (from race EXP) | **+5** |
-| Card level-up (from training) | **+2** |
+| Card limit break (from Bond Recall) | **+5** |
 
 There are **no login streaks**, and badges, achievements, and goals don't pay tickets ✅.
 
@@ -37,25 +37,29 @@ added, even above 500, so nothing earned is ever lost.
 
 | Use | Cost |
 |---|---|
-| Training turn | **1** |
-| Uma promotion (next scenario) | **25 × fromTier** |
-| Card limit break | **20 × toLB** |
+| [Spark Match](minigames.md#spark-match--training-levels) run — raises Training Level | **5** |
+| [Bond Recall](minigames.md#bond-recall--card-limit-breaks) run — limit breaks a card | **10** |
+| Unlocking the next scenario | **25 × fromTier** |
+| **Reconfiguring a constellation** | **free, always** |
 
-| Uma promotion | 1 → 2 | 5 → 6 | 10 → 11 |
+| Unlock next scenario | 1 → 2 | 5 → 6 | 10 → 11 |
 |---|---|---|---|
 | Cost | 25 | 125 | 250 |
 
-| Card limit break | → LB1 | → LB2 | → LB3 | → LB4 | Total to max |
-|---|---|---|---|---|---|
-| Cost | 20 | 40 | 60 | 80 | **200** |
+Limit breaks no longer have a separate price: the Bond Recall run *is* the limit break, and a failed run costs
+its 10 tickets without advancing. Reconfiguring is free on purpose — charging for it would make players hoard
+one safe build, which is the opposite of what the [constellation](constellations.md) is for.
 
 ## Pacing sanity check
 
-- **One Uma through scenario 1:** about 30 trainings (−30), 10 Uma Level-ups (+50), about 15 card level-ups across her deck (+30), and promotion (−25)
-  come to a net **gain of about 25**. Early scenarios pay for themselves.
-- **Late scenarios:** a tier 10 → 11 promotion (250) costs about 5 days of the daily grant, minus what leveling earns back.
-- **Cards:** maxing a card costs 200 in limit breaks, and its 24 level-ups earn back 48, so about **3 days of daily tickets per Card Select Coupon**.
-- **The core choice:** training, Uma promotions, and card limit breaks all draw from the same tickets. That's intended.
+- **One Uma through scenario 1:** about 10 Spark Match runs to TL10 (−50), 10 Uma Level-ups (+50), and the
+  unlock to tier 2 (−25) come to a net **cost of about 25**. A day's grant covers one Uma's scenario.
+- **Late scenarios:** unlocking tier 10 → 11 costs 250, about 5 days of the daily grant, minus what racing
+  earns back.
+- **Cards:** maxing a card is 4 Bond Recall clears (−40) paying back 4 limit breaks (+20), so about
+  **20 tickets plus whatever you lose to failed runs** per Card Select Coupon. The real cost is the memory
+  game, not the tickets.
+- **The core choice:** minigame runs and scenario unlocks draw from the same tickets. That's intended.
 
 Revisit these numbers once a balance simulation exists.
 
