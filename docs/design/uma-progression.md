@@ -8,110 +8,103 @@
 
 | Field | Notes |
 |---|---|
-| `id`, `name`, `outfit` | **One template per outfit**, like the original game's trainee cards. Badges also roll up per character |
-| `baseStats` | Speed, Stamina, Power, Guts, Wit. **The original game's 5★ base stats, for every Uma** ✅, regardless of original rarity. Race Form nerfs are applied on top in races |
-| `growthRates` | Percentage bonus to training gains per stat (for example Speed +10%, Wit +20%) |
-| `aptitudes` | Surface: Turf/Dirt. Distance: Sprint/Mile/Medium/Long. Strategy: Front/Pace/Late/End. Graded S–G |
-| `uniqueSkill` | Innate unique skill, which is also the source of the inherited version (see [Skills & Inheritance](skills-and-inheritance.md)) |
-| `realHorseSex` | Male / Female. Drives the classic-series identity goals — Triple Crown or Triple Tiara — and the Stable filter (see [Scenario Goals](scenario-goals.md#identity-career-first-then-sex)) |
-| `signatureRaceFamilyIds` | Ordered, distinct career-objective race families used as private Identity-goal seeds |
-| `starter` | Whether the Uma is part of the starting roster: the 25 launch trainees (see [Collection](collection.md)) |
+| `id`, `name`, `outfit` | **One template per outfit**. Badges roll up per character |
+| `baseStats` | The original game's 5★ base stats, for every Uma ✅. The floor every constellation builds on |
+| `growthRates` | Percentage bonus per stat, applied to raw constellation points. An Uma's identity |
+| `aptitudes` | Surface · Distance · Strategy, graded S–G. The base that lineage improves |
+| `uniqueSkill` | Innate unique skill, free and always equipped |
+| `awakeningSkillIds` | Her four baseline golds and whites. What she pays when used as a **lineage slot** |
+| `realHorseSex` | Male / Female. Drives the classic-series identity goals and the Stable filter |
+| `signatureRaceFamilyIds` | Ordered career-objective race families, used as Identity-goal seeds |
+| `starter` | Part of the 25-trainee starting roster (see [Collection](collection.md)) |
 | `icon`, `portrait` | Local asset references only |
+
+Templates are now load-bearing in a second way: a lineage slot is a **reference to a template**, so every Uma
+you own is a usable parent the moment you own her (D123).
 
 ### Uma instance (persisted, belongs to the player)
 
 | Field | Notes |
 |---|---|
-| `level`, `exp` | **Uma Level**: permanent, earned from races only |
-| `scenarioTier` | Derived: `ceil(level / 10)` |
-| `trainingLevel`, `trainingExp` | **Training Level** 1–10: earned from training only, reset at each scenario start. Sets the stat and SP caps (see [Training](training.md#two-levels-uma-level-vs-training-level)) |
-| `stats`, `skillPoints` | Current values. Permanent, and gains are limited by the current caps |
-| `aptitudes` | Copied from the template. Raised only by parent pink sparks (see [Skills & Inheritance](skills-and-inheritance.md#pink-sparks-aptitude-upgrades)) |
-| `deck` | Equipped support cards (see [Support Cards](support-cards.md)) |
-| `skillLibrary`, `loadout` | Skills unlocked **in the current scenario** (with origin), and the equipped subset. The library is cleared to permanent skills at each scenario start |
-| `lifetimeSkills` | Every skill ever learned, with the scenario it was learned in. For badges and history |
-| `trainingsThisScenario` | Training turns done in the current scenario. Racing unlocks at 1 |
-| `currentParents` | The 0–2 parent snapshots picked for the scenario in progress |
-| `parentSnapshot` | Her latest fully frozen snapshot (her inheritable skills plus the parents she trained with), saved at scenario completion. It is what she passes on when picked as a parent (see [Skills & Inheritance](skills-and-inheritance.md#parent-snapshots)) |
-| `goalPlanVersion`, `scenarioJourneys` | Versioned frozen goals and completed/missed/legacy-untracked facts for every reached tier |
-| `raceHistory` | Separate append-only result log for every race; T014 snapshots exact `completedGoalIds`, and T015/T016 add bounded accomplishment facts plus fresh flair-event ids |
-| Badge/title/showcase state | Separate versioned `badges/uma:<umaId>` entity; not embedded in the progression save. See [Badges](badges.md) |
+| `level`, `exp` | **Uma Level**: permanent, earned from races only. Unlocks scenarios; does not feed stats |
+| `unlockedTier` | Highest scenario unlocked. The **active** scenario, and the only one that races (D121) |
+| `scenarios[]` | **One `ScenarioTraining` per unlocked tier** (below). The heart of the save |
+| `lifetimeSkills` | Every skill ever learned, with the scenario it was learned in. Badges and history |
+| Badge/title/showcase state | Separate versioned `badges/uma:<umaId>` entity. See [Badges](badges.md) |
+
+**Stats, skill points, aptitudes, the skill library and the loadout are no longer stored.** They are derived
+from the active `ScenarioTraining` whenever read ([Training](training.md#stats-are-derived)).
+
+### ScenarioTraining (one per unlocked scenario)
+
+| Field | Notes |
+|---|---|
+| `tier` | Which scenario this is |
+| `trainingLevel`, `trainingExp` | 1–10, earned by [Spark Match](minigames.md). Decides which nodes are open |
+| `cardSetIds` | Up to 6 owned, era-eligible cards; no duplicate character |
+| `assignments` | `nodeId → { card } | { stat } | { lineage }`. The current configuration, and the only one |
+| `loadoutSkillIds` | The equipped subset of the derived library |
+| `goals`, `journey` | This scenario's frozen goals and their outcomes |
+| `raceHistory` | This scenario's races. **Races are scenario-linked** (D122) |
+| `milestones` | This scenario's achievement facts |
+
+A completed scenario's entry is kept in full, readable, and frozen. It no longer affects races.
 
 ## Uma Level and EXP
 
-An Uma has **two levels**: the permanent **Uma Level** (covered here) and the per-scenario **Training Level**
-(see [Training](training.md#two-levels-uma-level-vs-training-level)).
-
-- Uma Levels run from 1 up to `10 × number of scenarios` (140 with the 14 currently modeled scenarios).
+- Uma Levels run 1 → `10 × scenarios` (140 today).
 - **Only racing gives Uma EXP.** 2nd and 3rd place give 25% of win EXP.
-- Uma Level decides the scenario gates and the **Race Form** nerf (below).
 - **Every Uma Level-up earns +5 training tickets.**
-- Draft EXP curve:
-
-  ```
-  expToNext(level) = 100 + 25 × (level − 1)
-  ```
-
-  | Level | EXP to next | Approx. G1 wins (150 EXP) |
-  |---|---|---|
-  | 1 | 100 | 1 |
-  | 10 | 325 | 3 |
-  | 50 | 1,325 | 9 |
-  | 100 | 2,575 | 18 |
-
-- Draft EXP per win by race grade (before card Race Bonus):
+- Draft curve: `expToNext(level) = 100 + 25 × (level − 1)`
+- Draft EXP per win by grade, before card Race Bonus:
 
   | Debut/Maiden | Pre-OP/OP | G3 | G2 | G1 |
   |---|---|---|---|---|
   | 40 | 60 | 80 | 110 | 150 |
 
-## Getting stronger in races: Race Form
+## Gate levels and unlocking the next scenario
 
-Your Uma's race-time stats are multiplied by a **Race Form** that grows faster than the field's. Every
-scenario starts as a fair fight and ends with your Uma about 10% ahead. Details are in [Racing — Race Form](racing.md#difficulty-race-form).
-
-## Gate levels and promotion
-
-1. **Reaching** a gate level (10, 20, 30…) grants **1 Uma Shard**, once per Uma per gate (see [Collection](collection.md)).
-2. The Uma is **ready immediately on reaching the gate**; a second full EXP bar is not required. Later race EXP at the
-   gate is **banked, up to one following level's requirement**, and applied after promotion.
-3. The Uma card shows **"Ready to promote"**. Promotion costs **25 × the completed tier** training tickets (see [Economy](economy.md)).
-4. On promotion, her **parent snapshot is saved**: her inheritable skills plus the parents she trained with in the completed scenario, frozen.
-5. After promotion:
-   - Level becomes gate + 1 (for example 10 → 11). A completely full overflow bank immediately earns the normal next
-     level (11 → 12 in this example) and its +5 ticket reward; the purchased gate transition itself pays no level reward.
-   - **Training Level resets to 1.** Caps become the new scenario's baseline × 80%, rising with Training Level.
-   - The card era expands: the new scenario's cards become equippable.
-   - **Skill library refresh:** cleared back to her own unique (plus any unlocked awakening skills).
-   - **Scenario start:** pick 0–2 parents from the parent snapshots. The parents' uniques and whites are inherited
-     automatically, and the player picks grandparent skills (see [Skills & Inheritance](skills-and-inheritance.md#scenario-start-flow)).
-     A brand-new Uma goes through the same scenario start for tier 1, usually without parents.
-   - **New scenario goals** are generated (see [Scenario Goals](scenario-goals.md)).
-   - **Opening training:** 1 training turn in the new scenario unlocks racing (see [Training](training.md#opening-training)).
+1. **Reaching** a gate level (10, 20, 30…) grants **1 Uma Shard**, once per Uma per gate.
+2. The card shows **"Ready to advance"**. Advancing costs **25 × the completed tier** tickets and is
+   **explicit** — the player chooses when.
+3. On advancing:
+   - Level becomes gate + 1. Banked overflow EXP applies immediately.
+   - A **new `ScenarioTraining`** is created at Training Level 1 with the baseline nodes open, an empty card
+     set, fresh goals, and an empty race record.
+   - It becomes the **active** scenario at once and drives every race from then on.
+   - The previous scenario's entry is frozen and kept.
    - The Uma earns the **"<Scenario> Graduate"** badge.
-   - A **promotion bonus**: +10 to each stat (not limited by caps).
-   - Every equipped card applies its generated **Initial Stats** value once to its own stat type, rounded per card before
-     summing and not limited by the new TL1 cap.
 
-The completed-tier snapshot is captured from the pre-refresh library. At the latest available maximum level, the finishing
-race captures the final snapshot in the same transaction without a promotion cost, stat bonus, or Training Level reset.
-Promotion/final completion closes the current Journey in that same commit, preserving completed goals and marking only
-still-active goals missed. The next Journey is generated after inherited pink sparks apply.
-Newly acquired Umas are saved in a pending tier-1 setup state. Confirming Scenario Start may add frozen inheritance and
-pink-spark upgrades, but does not change their level, stats, Training Level, deck, tickets, or parent snapshot. Existing
-v1 saves migrated into v2 remain active and are never interrupted by this rule.
+There is no promotion stat bonus and no Initial Stats grant: stats are derived, so the new scenario's tree is
+the only thing that pays them. **An Uma is temporarily weaker after advancing and rebuilds.** That is the
+design — a scenario is a career run, not a continuation
+([Constellations](constellations.md#a-scenario-is-a-career-run)).
+
+At the highest available tier there is nothing further to unlock; the Uma keeps racing and refining that
+scenario's constellation.
 
 ## Stats and caps
 
-- Caps = the scenario's baseline cap × the Training Level multiplier (80% at TL1 → 100% at TL10). Baselines are in [Scenarios](scenarios.md), the curve in [Training](training.md#training-level-and-caps).
-- Training can never push a stat or SP past the current cap, but **caps never reduce a stat**. A stat carried over above a new scenario's early cap simply waits until Training Level raises the cap past it.
-- As in the original game ✅, the part of a stat above 1200 counts about half in races and gains half from training.
+- Stats are **derived** from the active constellation, clamped by that scenario's
+  [cap profile](scenarios.md#cap-profiles).
+- A full constellation pays about 60% of the cap budget, so **no build reaches every cap**. Choosing where the
+  points go is the game.
+- As in the original game ✅, the part of a stat above 1200 counts about half **in races**. That halving lives
+  in [Racing](racing.md) and no longer touches training.
+
+## Getting stronger in races: Race Form
+
+Race Form is now driven by the **active scenario's Training Level**, not Uma Level: every scenario starts as a
+fair fight at TL1 and ends with your Uma about 10% ahead at TL10. Details in
+[Racing — Race Form](racing.md#difficulty-race-form).
 
 ## Aptitudes
 
 - They start from the template.
-- They improve **only through parent pink sparks**: +1 grade per parent per scenario, chosen from the parent's A/S aptitudes,
-  capped at A (see [Skills & Inheritance](skills-and-inheritance.md#pink-sparks-aptitude-upgrades)).
+- They improve **only through lineage nodes**, capped at A
+  ([Skills & Lineage](skills-and-inheritance.md#aptitude-upgrades)).
+- Because lineage is reconfigurable, aptitudes can move both ways as slots change. They are a property of the
+  current build, not a permanent award.
 
 ## Strategy (running style)
 

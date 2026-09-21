@@ -75,12 +75,14 @@ docs/           design, technical, research
 | Doc | What it covers |
 |---|---|
 | [Overview](docs/design/00-overview.md) | Vision, pillars, core loops, glossary, differences from the original game |
-| [Uma Progression](docs/design/uma-progression.md) | Permanent levels, EXP, caps, gate levels, promotion |
-| [Scenarios](docs/design/scenarios.md) | Scenarios as 10-level tiers, release timeline, eras, caps |
+| [Uma Progression](docs/design/uma-progression.md) | Permanent Uma Level, per-scenario training state, derived stats, unlocking the next scenario |
+| [Scenarios](docs/design/scenarios.md) | Scenarios as career runs: cap profiles, constellation shapes, buffs, eras |
 | [Scenario Goals](docs/design/scenario-goals.md) | Per-Uma targets based on aptitude and real-horse identity |
-| [Training](docs/design/training.md) | Uma Level vs. Training Level, caps, daily training tickets, gain formulas, skill hints |
-| [Support Cards](docs/design/support-cards.md) | SSR-only cards, era equip gating, usage-based leveling, limit breaks |
-| [Skills & Inheritance](docs/design/skills-and-inheritance.md) | SP cap, skill library and loadout, parents and inherited skills |
+| [Training](docs/design/training.md) | Uma Level vs. Training Level, derived stats, tickets. The entry point to the two below |
+| [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
+| [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; Bond Recall limit breaks cards |
+| [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, limit breaks |
+| [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, Race Form difficulty, baseline enemy Umas, straight-track view |
 | [Collection](docs/design/collection.md) | Starter sets, coupons and shards, albums, trainer achievements |
 | [Economy](docs/design/economy.md) | Training Tickets as the one currency, costs, coupons and shards, pacing |
