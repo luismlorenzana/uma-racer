@@ -11,8 +11,8 @@ export const NODE_UNLOCK_LEVELS = 8
 export const CARD_SET_SIZE = 6
 /** The sixth slot is the scenario's dedicated slot: it pays Skill Points, never stats (D124). */
 export const SCENARIO_SLOT_INDEX = 5
-/** Fraction of a node's value the scenario slot pays as SP. */
-export const SCENARIO_SLOT_SP_RATE = 0.25
+/** Percentage of a node's value the scenario slot pays as SP instead of stats. */
+export const SCENARIO_SLOT_SP_PCT = 25
 /** A full constellation pays this share of the scenario's cap budget, so no build reaches every cap. */
 export const TREE_BUDGET_SHARE = 0.6
 
@@ -112,6 +112,21 @@ export const LB_NODE_PCT = [60, 70, 80, 90, 100] as const
 
 export const lbNodePct = (limitBreak: number): number =>
   LB_NODE_PCT[Math.min(MAX_LIMIT_BREAK, Math.max(0, Math.trunc(limitBreak)))]!
+
+/** Percentage points a card loses for each scenario it predates. */
+export const ERA_PENALTY_PER_STEP = 5
+/** However old a card is, it never falls below this share of a node. */
+export const MIN_ERA_PCT = 40
+
+/**
+ * Percentage of a node's value a card pays for its age, relative to the scenario it is used in (D126).
+ *
+ * A card from the scenario's own era is full value; every era it predates costs 5 points, floored at 40.
+ * Keying this to the scenario rather than to an absolute era is what keeps `treeBudget` the real ceiling
+ * at every tier, while still making a newer card strictly better than an older one beside it.
+ */
+export const eraPct = (cardEra: number, tier: number): number =>
+  Math.max(MIN_ERA_PCT, 100 - ERA_PENALTY_PER_STEP * Math.max(0, Math.trunc(tier) - Math.trunc(cardEra)))
 
 export const MAX_CARD_TILT = 10
 
@@ -369,8 +384,16 @@ export type NodeAssignment =
   | { kind: 'stat'; stat: StatKey }
   | { kind: 'lineage'; templateId: string }
 
+/** What one node filled with this card pays, before the stat split. The Cards album shows this. */
+export function cardNodeValue(
+  tier: number,
+  card: { template: Pick<SupportCardTemplate, 'era'>; limitBreak: number },
+): number {
+  return (nodeValue(tier) * lbNodePct(card.limitBreak) * eraPct(card.template.era, tier)) / 10_000
+}
+
 export interface CardNodeState {
-  template: Pick<SupportCardTemplate, 'id' | 'type' | 'effectProfile' | 'hintSkillIds'>
+  template: Pick<SupportCardTemplate, 'id' | 'type' | 'era' | 'effectProfile' | 'hintSkillIds'>
   limitBreak: number
 }
 
@@ -397,7 +420,8 @@ export interface DerivedStats {
   filledNodes: number
 }
 
-const SCALE = 10_000
+/** Values accumulate as integers in units of 1/SCALE: three percentages, so 100³. */
+const SCALE = 1_000_000
 
 /**
  * Stats, SP and card skills from one configuration. Pure and total: an assignment naming a card that is not
@@ -425,7 +449,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
 
     if (node.kind === 'stat' && assignment.kind === 'stat') {
       assigned += 1
-      scaled[assignment.stat] += value * 100 * 100
+      scaled[assignment.stat] += value * 100 * 100 * 100
       continue
     }
 
@@ -434,13 +458,13 @@ export function deriveStats(input: DeriveInput): DerivedStats {
       const card = cards.get(assignment.cardId)
       if (!card) continue
       assigned += 1
-      const pct = lbNodePct(card.limitBreak)
+      const quality = lbNodePct(card.limitBreak) * eraPct(card.template.era, input.tier)
 
       if (assignment.cardId === scenarioCardId) {
-        scaledSp += value * pct * 100 * SCENARIO_SLOT_SP_RATE
+        scaledSp += value * quality * SCENARIO_SLOT_SP_PCT
       } else {
         const shares = cardShares(card.template)
-        for (const stat of STATS) scaled[stat] += value * pct * (shares[stat] ?? 0)
+        for (const stat of STATS) scaled[stat] += value * quality * (shares[stat] ?? 0)
       }
 
       // Each node a card occupies pays the next skill from its hint list.

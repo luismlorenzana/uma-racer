@@ -41,7 +41,7 @@ tree is what pays the stats.
 An Uma's stats are recomputed from her active constellation whenever they are read:
 
 ```
-raw(s)     = Σ over assigned nodes of ( nodeValue × lbMult × share[type][s] )
+raw(s)     = Σ over assigned nodes of ( nodeValue × lbPct × eraPct × share[type][s] )
 derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthRates[s]) ) )
 ```
 

@@ -8,7 +8,10 @@ import {
   capBudget,
   capProfile,
   cardShares,
+  cardNodeValue,
   cardTilt,
+  eraPct,
+  MIN_ERA_PCT,
   constellationTemplate,
   deriveStats,
   isNodeUnlocked,
@@ -27,10 +30,16 @@ import { STATS, type StatKey, type Stats } from './types'
 
 const TIERS = Array.from({ length: MAX_SCENARIO_TIER }, (_, index) => index + 1)
 
-const card = (id: string, type: CardNodeState['template']['type'], weights = {}): CardNodeState => ({
+const card = (
+  id: string,
+  type: CardNodeState['template']['type'],
+  weights = {},
+  era = 1,
+): CardNodeState => ({
   template: {
     id,
     type,
+    era,
     effectProfile: { statBonus: 1, trainingBonus: 1, ...weights },
     hintSkillIds: [`${id}-a`, `${id}-b`, `${id}-c`, `${id}-d`, `${id}-e`, `${id}-f`],
   } as CardNodeState['template'],
@@ -132,6 +141,50 @@ describe('card shares', () => {
   })
 })
 
+describe('card era', () => {
+  it('pays a current-era card in full and docks five points per era it predates', () => {
+    expect(eraPct(7, 7)).toBe(100)
+    expect(eraPct(6, 7)).toBe(95)
+    expect(eraPct(1, 7)).toBe(70)
+  })
+
+  it('floors an ancient card rather than letting it reach zero', () => {
+    expect(eraPct(1, 14)).toBe(MIN_ERA_PCT)
+    expect(eraPct(1, 99)).toBe(MIN_ERA_PCT)
+  })
+
+  it('never pays a card more than full value, even from a later era', () => {
+    expect(eraPct(9, 7)).toBe(100)
+  })
+
+  it('makes a newer card worth strictly more on the same node', () => {
+    const tier = 7
+    const template = constellationTemplate(tier)
+    const node = template.nodes.find((entry) => entry.kind === 'card')!
+    const totalFor = (era: number) => deriveStats({
+      tier,
+      trainingLevel: 10,
+      template,
+      assignments: { [node.id]: { kind: 'card', cardId: 'c' } },
+      cardSetIds: ['c'],
+      umaTemplate: uma,
+      cards: new Map([['c', card('c', 'speed', {}, era)]]),
+    }).rawTotal
+
+    const current = totalFor(7)
+    expect(current).toBe(nodeValue(tier))
+    expect(totalFor(6)).toBeCloseTo(current * 0.95, 6)
+    expect(totalFor(1)).toBeCloseTo(current * 0.7, 6)
+    expect(totalFor(6)).toBeGreaterThan(totalFor(5))
+  })
+
+  it('reports what one node of a card is worth', () => {
+    expect(cardNodeValue(7, card('c', 'speed', {}, 7))).toBe(nodeValue(7))
+    expect(cardNodeValue(7, { ...card('c', 'speed', {}, 7), limitBreak: 0 })).toBeCloseTo(nodeValue(7) * 0.6, 6)
+    expect(cardNodeValue(7, card('c', 'speed', {}, 1))).toBeCloseTo(nodeValue(7) * 0.7, 6)
+  })
+})
+
 describe('templates', () => {
   it('builds a structurally valid template for every scenario', () => {
     for (const tier of TIERS) expect(validateTemplate(constellationTemplate(tier))).toBeNull()
@@ -189,7 +242,7 @@ describe('the invariance rule', () => {
   const stats: StatKey[] = [...STATS]
   const types: CardNodeState['template']['type'][] = ['speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'group']
 
-  it('pays exactly treeBudget for any full configuration of max-broken cards', () => {
+  it('pays exactly treeBudget for any full configuration of current-era max-broken cards', () => {
     const random = rng(20260920)
     for (const tier of TIERS) {
       const template = constellationTemplate(tier)
@@ -202,7 +255,7 @@ describe('the invariance rule', () => {
             card(id, types[Math.floor(random() * types.length)]!, {
               statBonus: 1 + random() * 3,
               trainingBonus: 1 + random() * 3,
-            }),
+            }, tier),
           ]),
         )
         const assignments: Record<string, NodeAssignment> = {}
@@ -227,6 +280,32 @@ describe('the invariance rule', () => {
         expect(derived.assignedNodes).toBe(slotCount(tier))
       }
     }
+  })
+
+  it('moves a card between nodes without changing the total', () => {
+    const tier = 7
+    const template = constellationTemplate(tier)
+    const cardIds = ['a', 'b', 'c', 'd', 'e']
+    const cards = new Map(cardIds.map((id, i) => [
+      id,
+      { ...card(id, (['speed', 'stamina', 'power', 'guts', 'wit'] as const)[i]!, {}, 1 + i * 3), limitBreak: i % 5 },
+    ]))
+    const cardNodeIds = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id)
+    // A fixed multiset: each card occupies a fixed number of nodes, but which nodes changes.
+    const multiset = cardNodeIds.map((_, i) => cardIds[i % cardIds.length]!)
+    const input = { tier, trainingLevel: 10, template, cardSetIds: cardIds, umaTemplate: uma, cards }
+
+    const straight = deriveStats({
+      ...input,
+      assignments: Object.fromEntries(cardNodeIds.map((id, i) => [id, { kind: 'card', cardId: multiset[i]! }])),
+    })
+    const shuffled = [...multiset].reverse()
+    const reversed = deriveStats({
+      ...input,
+      assignments: Object.fromEntries(cardNodeIds.map((id, i) => [id, { kind: 'card', cardId: shuffled[i]! }])),
+    })
+    expect(reversed.rawTotal).toBe(straight.rawTotal)
+    expect(reversed.raw).toEqual(straight.raw)
   })
 
   it('underpays exactly by limit break', () => {
