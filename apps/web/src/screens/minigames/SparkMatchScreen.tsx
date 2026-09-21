@@ -242,12 +242,12 @@ export function SparkMatchScreen() {
               {reward.nodesUnlocked && reward.nodesUnlocked.length > 0 ? (
                 <div className="mt-2 grid gap-2">
                   {reward.nodesUnlocked.map((node, index) => (
-                    <Link key={`${node}:${index}`} to={`/training/${encodeURIComponent(umaId)}?node=${encodeURIComponent(node)}`} className="flex min-h-11 items-center justify-between rounded-sm border border-hairline bg-page px-3 font-semibold"><span>{node}</span><span aria-hidden>→</span></Link>
+                    <Link key={`${node}:${index}`} to={`/constellation/${encodeURIComponent(umaId)}`} className="flex min-h-11 items-center justify-between rounded-sm border border-hairline bg-page px-3 font-semibold"><span>{node}</span><span aria-hidden>→</span></Link>
                   ))}
                 </div>
               ) : <p className="mt-1 text-sm text-ink-soft">No node opened this run; every point still carried forward.</p>}
             </section>
-            <div className="mt-5 grid grid-cols-2 gap-2"><Link to={`/training/${encodeURIComponent(umaId)}`} className="flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel px-3 font-display font-semibold">Constellation</Link><Link to={`/stable/${encodeURIComponent(umaId)}`} className="flex min-h-12 items-center justify-center rounded-sm bg-accent px-3 font-display font-semibold">Uma profile</Link></div>
+            <div className="mt-5 grid grid-cols-2 gap-2"><Link to={`/constellation/${encodeURIComponent(umaId)}`} className="flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel px-3 font-display font-semibold">Constellation</Link><Link to={`/stable/${encodeURIComponent(umaId)}`} className="flex min-h-12 items-center justify-center rounded-sm bg-accent px-3 font-display font-semibold">Uma profile</Link></div>
           </div>
         </main>
       ) : run ? (

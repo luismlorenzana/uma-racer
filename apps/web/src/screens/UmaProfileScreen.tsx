@@ -1,5 +1,7 @@
 import {
   DISTANCE_CATEGORIES,
+  MAX_TRAINING_LEVEL,
+  SPARK_MATCH_TICKET_COST,
   STATS,
   STRATEGIES,
   SURFACES,
@@ -113,6 +115,7 @@ export function UmaProfileScreen() {
   const uma = joined.value
   const featured = profile.featuredUmaId === save.templateId
   const setupPending = !uma.run.started
+  const sparkAvailable = uma.run.started && uma.run.trainingLevel < MAX_TRAINING_LEVEL && profile.tickets >= SPARK_MATCH_TICKET_COST
   const raceUnlocked = uma.run.started && !isGateLevel(save.level)
   const loadout = summarizeSkillLoadout(uma.derived, uma.template, contentState.content.skills.byId)
   const deck = buildDeckView(save, cards, contentState.content)
@@ -334,6 +337,14 @@ export function UmaProfileScreen() {
         <p className="mb-3 text-center text-sm font-extrabold">
           {setupPending ? 'Start this scenario before racing.' : uma.readyToAdvance ? 'Ready to unlock the next scenario.' : isGateLevel(save.level) ? 'Latest scenario complete.' : 'Progression races are open.'}
         </p>
+        <GameButton
+          className="mb-2 w-full"
+          variant="secondary"
+          disabled={!sparkAvailable}
+          onClick={() => navigate(`/minigames/spark-match/${encodeURIComponent(save.templateId)}`)}
+        >
+          {uma.run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : `Spark Match · ${SPARK_MATCH_TICKET_COST} tickets`}
+        </GameButton>
         <div className="grid grid-cols-3 gap-2">
           <GameButton
             variant="secondary"

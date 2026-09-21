@@ -1,4 +1,6 @@
 import {
+  MAX_TRAINING_LEVEL,
+  SPARK_MATCH_TICKET_COST,
   cardLimitBreak,
   STATS,
   cardNodeValue,
@@ -39,6 +41,7 @@ export function ConstellationScreen() {
   const status = useGame((state) => state.status)
   const umas = useGame((state) => state.umas)
   const cards = useGame((state) => state.cards)
+  const profile = useGame((state) => state.profile)
   const pushToast = useGame((state) => state.pushToast)
   const [openNode, setOpenNode] = useState<ConstellationNode | null>(null)
   const [busy, setBusy] = useState(false)
@@ -96,6 +99,8 @@ export function ConstellationScreen() {
 
   const openCount = unlockedNodeCount(run.tier, run.trainingLevel)
   const treeNodes = template.cardNodes + template.statNodes
+  const canPlaySpark = run.started && run.trainingLevel < MAX_TRAINING_LEVEL &&
+    (profile?.tickets ?? 0) >= SPARK_MATCH_TICKET_COST
 
   return (
     <div className="flex h-dvh flex-col bg-page pt-safe">
@@ -153,6 +158,20 @@ export function ConstellationScreen() {
       </div>
 
       <section className="px-4 pb-safe pt-2">
+        {canPlaySpark ? (
+          <Link
+            to={`/minigames/spark-match/${encodeURIComponent(save.templateId)}`}
+            className="mb-2 flex min-h-11 items-center justify-between rounded-xl bg-accent px-4 text-sm font-bold text-ink shadow-2"
+          >
+            <span>Raise Training Level</span>
+            <span>{SPARK_MATCH_TICKET_COST} tickets →</span>
+          </Link>
+        ) : (
+          <div className="mb-2 flex min-h-11 items-center justify-between rounded-xl bg-sunken px-4 text-sm font-bold text-ink-faint" aria-disabled="true">
+            <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !run.started ? 'Start scenario first' : 'Raise Training Level'}</span>
+            <span>{SPARK_MATCH_TICKET_COST} tickets</span>
+          </div>
+        )}
         <div className="flex items-baseline justify-between">
           <p className="text-[11px] font-semibold">
             Aptitudes <span className="text-ink-faint">· {derived.assignedNodes}/{openCount} of {treeNodes} nodes</span>
