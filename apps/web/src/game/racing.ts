@@ -181,7 +181,7 @@ function playerRaceSkills(
 export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const { content, profile, uma, raceId, strategy, sequence } = input
   const run = activeScenario(uma)
-  if (!run.started) throw new Error('Finish scenario setup before racing')
+  if (!run.started) throw new Error('Start this scenario before racing')
   if (run.trainingLevel < 1) throw new Error('Play one Spark Match run to unlock races for this Uma')
   if (isGateLevel(uma.level)) throw new Error('Advance this Uma before entering another race')
   const template = content.umas.byId.get(uma.templateId)
@@ -211,7 +211,9 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const raceBonus = equippedRaceBonus(tierOfLevel(uma.level), equippedCards(content, uma, input.cardsById))
   const playerSkills = playerRaceSkills(content, derived, template)
   const baselineSkills = baselineNpcSkills(content)
-  const npcStats = npcRaceStats(tierOfLevel(uma.level), race.grade, race.distanceCategory, uma.level)
+  // The field's Form follows the same Training Level as the player's, so every scenario opens as a fair
+  // fight and ends with her about 10% ahead (docs/design/racing.md).
+  const npcStats = npcRaceStats(uma.unlockedTier, race.grade, race.distanceCategory, run.trainingLevel)
   let rivalIndex = 0
   const runners = Array.from({ length: fieldSize }, (_, gate) => {
     if (gate === playerGate) {

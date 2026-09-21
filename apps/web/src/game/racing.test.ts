@@ -1,8 +1,10 @@
 import 'fake-indexeddb/auto'
+import { umaFixture, withRun } from './__fixtures__/save'
 import {
+  constellationTemplate,
+  activeScenario,
   createCardSave,
   createPlayerProfile,
-  createScenarioModifierState,
   createUmaSave,
   expToNextUmaLevel,
   parseRaceResultRecord,
@@ -41,7 +43,7 @@ function uma(id: string, charaId = `chara-${id}`): UmaTemplate {
     jpRelease: '2000-01-01',
     globalRelease: null,
     starter: true,
-    baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
+    baseStats: { speed: 4_000, stamina: 4_000, power: 4_000, guts: 4_000, wit: 4_000 },
     growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
     aptitudes,
     uniqueSkillId: null,
@@ -162,11 +164,16 @@ function content(umaCount = 10): LoadedContent {
 }
 
 function state() {
-  const player = { ...createUmaSave(uma('u1')), goalPlanVersion: 0, scenarioStarted: true, trainingsThisScenario: 1, deckCardIds: ['c1'], stats: { speed: 4_000, stamina: 4_000, power: 4_000, guts: 4_000, wit: 4_000 } }
+  // Stats come from the constellation, so a strong racer is one with every node filled by a maxed card.
+  const template = constellationTemplate(1)
+  const assignments = Object.fromEntries(template.nodes
+    .filter((node) => node.kind === 'card')
+    .map((node) => [node.id, { kind: 'card', cardId: 'c1' } as const]))
+  const player = umaFixture(uma('u1'), { goalPlanVersion: 0, cardSetIds: ['c1'], assignments })
   return {
     profile: createPlayerProfile('abc123def456', 42),
     player,
-    cards: { c1: { ...createCardSave(card), level: 6, limitBreak: 1 } },
+    cards: { c1: { ...createCardSave(card), limitBreak: 1 } },
   }
 }
 
@@ -174,14 +181,16 @@ function withGoalJourney(player: UmaSave, tier: number): UmaSave {
   return {
     ...player,
     goalPlanVersion: 1,
-    scenarioJourneys: [{
+    // A journey belongs to its own run, so the run moves to that tier with it.
+    unlockedTier: tier,
+    scenarios: player.scenarios.map((run) => (run.tier === player.unlockedTier ? { ...run, tier, journey: {
       tier, tracking: 'tracked' as const, state: 'active' as const, completedAt: null,
       goals: [
         { id: `goal:${tier}:aptitude`, slot: 'aptitude' as const, raceId: 'r1', kind: 'win' as const, series: null, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
         { id: `goal:${tier}:identity`, slot: 'identity' as const, raceId: 'r2', kind: 'win' as const, series: null, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null },
         { id: `goal:${tier}:challenge`, slot: 'challenge' as const, raceId: 'r3', kind: 'win-by-margin' as const, series: null, minimumMarginLengths: 5, status: 'active' as const, completedRaceResultId: null, completedAt: null },
       ],
-    }],
+    } } : run)),
   }
 }
 
@@ -201,8 +210,8 @@ describe('progression race field', () => {
   it('rejects locked, gated, and undersized fields', () => {
     const loaded = content()
     const { profile, player, cards } = state()
-    expect(() => buildPreparedRace({ content: loaded, profile, uma: { ...player, trainingsThisScenario: 0 }, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).toThrow(/Training turn/)
-    expect(() => buildPreparedRace({ content: loaded, profile, uma: { ...player, level: 10 }, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).toThrow(/Promote/)
+    expect(() => buildPreparedRace({ content: loaded, profile, uma: withRun(player, { started: false }), cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).toThrow(/Start this scenario/)
+    expect(() => buildPreparedRace({ content: loaded, profile, uma: { ...player, level: 10 }, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).toThrow(/Advance this Uma/)
     expect(() => buildPreparedRace({ content: content(4), profile, uma: player, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).toThrow(/distinct opponent/)
   })
 
@@ -254,45 +263,9 @@ describe('progression race field', () => {
     const attempt = buildPreparedRace({ content: loaded, profile, uma: tracked, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
     const completion = completeMemoryRace(loaded, profile, tracked, cards, [], attempt, '2026-09-16', 100)
     expect(completion.record.completedGoalIds).toEqual(['goal:1:aptitude'])
-    expect(completion.uma.scenarioJourneys[0]?.goals[0]).toMatchObject({ status: 'completed', completedRaceResultId: 'race:u1:0' })
+    expect(activeScenario(completion.uma).journey?.goals[0]).toMatchObject({ status: 'completed', completedRaceResultId: 'race:u1:0' })
   })
 
-  it('awards Climax items only for new non-gate wins and never for losses or replays', () => {
-    const loaded = content()
-    const { profile, player, cards } = state()
-    const trackblazer = {
-      ...player,
-      level: 21,
-      scenarioModifier: createScenarioModifierState(3),
-    }
-    const attempt = buildPreparedRace({ content: loaded, profile, uma: trackblazer, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
-    const won = completeMemoryRace(loaded, profile, trackblazer, cards, [], attempt, '2026-09-16', 100)
-    expect(won.record.playerPlacement).toBe(1)
-    expect(won.scenarioModifierReward).toBe(1)
-    expect(won.uma.scenarioModifier).toEqual({ version: 1, tier: 3, kind: 'climax', earned: 1, stock: 1, used: 0 })
-
-    const replay = completeMemoryRace(loaded, won.profile, won.uma, cards, [won.record], attempt, '2026-09-16', 101)
-    expect(replay).toMatchObject({ alreadyRecorded: true, scenarioModifierReward: 0 })
-    expect(replay.uma.scenarioModifier).toEqual(won.uma.scenarioModifier)
-
-    const underpowered = {
-      ...trackblazer,
-      stats: { speed: 1, stamina: 1, power: 1, guts: 1, wit: 1 },
-    }
-    const losingAttempt = buildPreparedRace({ content: loaded, profile, uma: underpowered, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
-    const lost = completeMemoryRace(loaded, profile, underpowered, cards, [], losingAttempt, '2026-09-16', 102)
-    expect(lost.record.playerPlacement).not.toBe(1)
-    expect(lost.scenarioModifierReward).toBe(0)
-    expect(lost.uma.scenarioModifier).toEqual(trackblazer.scenarioModifier)
-
-    const nearGate = { ...trackblazer, level: 29, exp: expToNextUmaLevel(29) - 1 }
-    const gateAttempt = buildPreparedRace({ content: loaded, profile, uma: nearGate, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
-    const gateWin = completeMemoryRace(loaded, profile, nearGate, cards, [], gateAttempt, '2026-09-16', 103)
-    expect(gateWin.record.playerPlacement).toBe(1)
-    expect(gateWin.uma.level).toBe(30)
-    expect(gateWin.scenarioModifierReward).toBe(0)
-    expect(gateWin.uma.scenarioModifier).toEqual(trackblazer.scenarioModifier)
-  })
 })
 
 describe('persistent progression race', () => {
@@ -396,30 +369,6 @@ describe('persistent progression race', () => {
     expect(completion.record.earnedFlairEventIds).toHaveLength(await db.flairEvents.count())
   })
 
-  it('commits one Trackblazer item with the race and does not duplicate it on retry', async () => {
-    const loaded = content()
-    const row = await db.umas.get('u1')
-    await db.umas.put({
-      ...row!,
-      data: { ...row!.data, level: 21, scenarioModifier: createScenarioModifierState(3) },
-    })
-    const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'pace')
-    if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
-    const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)
-    expect(completion).toMatchObject({ scenarioModifierReward: 1, alreadyRecorded: false })
-    expect((await db.umas.get('u1'))?.data.scenarioModifier).toEqual({
-      version: 1,
-      tier: 3,
-      kind: 'climax',
-      earned: 1,
-      stock: 1,
-      used: 0,
-    })
-    const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 101)
-    expect(retry).toMatchObject({ scenarioModifierReward: 0, alreadyRecorded: true })
-    expect(retry.uma.scenarioModifier).toEqual(completion.uma.scenarioModifier)
-  })
-
   it('captures the tier-14 snapshot in the max-level race transaction', async () => {
     const loaded = content()
     const row = await db.umas.get('u1')
@@ -429,21 +378,20 @@ describe('persistent progression race', () => {
         ...withGoalJourney(row!.data, 14),
         level: 139,
         exp: expToNextUmaLevel(139) - 1,
-        stats: { speed: 100_000, stamina: 100_000, power: 100_000, guts: 100_000, wit: 100_000 },
       },
     })
     const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'pace')
     if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
     const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)
-    expect(completion.uma).toMatchObject({
-      level: 140,
-      parentSnapshot: { umaId: 'u1', charaId: 'chara-u1', completedTier: 14, takenAt: 100, parents: [] },
-    })
+    // There is no tier beyond 14 to unlock, so the final race just closes that run's journey.
+    expect(completion.uma).toMatchObject({ level: 140, unlockedTier: 14 })
+    expect(activeScenario(completion.uma).journey?.state).toBe('completed')
     expect(completion.record.playerPlacement).toBe(1)
     expect(completion.record.completedGoalIds).toEqual(['goal:14:aptitude'])
-    expect(completion.uma.scenarioJourneys[0]).toMatchObject({ state: 'completed', completedAt: 100 })
-    expect(completion.uma.scenarioJourneys[0]?.goals.map((goal) => goal.status)).toEqual(['completed', 'missed', 'missed'])
+    expect(activeScenario(completion.uma).journey).toMatchObject({ state: 'completed', completedAt: 100 })
+    expect(activeScenario(completion.uma).journey?.goals.map((goal) => goal.status)).toEqual(['completed', 'missed', 'missed'])
     const retry = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 200)
-    expect(retry.uma.parentSnapshot?.takenAt).toBe(100)
+    // Retrying the final race is idempotent: the journey stays closed at its original time.
+    expect(activeScenario(retry.uma).journey?.completedAt).toBe(100)
   })
 })

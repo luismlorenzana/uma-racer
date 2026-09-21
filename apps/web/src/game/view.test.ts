@@ -1,3 +1,4 @@
+import { umaFixture } from './__fixtures__/save'
 import {
   createUmaSave,
   type ContentAtlas,
@@ -7,7 +8,6 @@ import {
 import { describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { EMPTY_UMA_FILTERS, filterAndSortUmas, joinUma } from './view'
-import { buildLineageView } from './lineage-view'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -68,36 +68,19 @@ function loaded(umas: UmaTemplate[]): LoadedContent {
 }
 
 describe('Uma view models', () => {
-  it('builds a finite frozen lineage with missing-content fallbacks', () => {
-    const childTemplate = template('child', 'Synthetic Child')
-    const parentTemplate = template('parent', 'Synthetic Parent')
-    const content = loaded([childTemplate, parentTemplate])
-    const parent = {
-      umaId: 'parent', charaId: 'chara-parent', completedTier: 2, takenAt: 20, inheritedUniqueSkillId: 'gene-parent',
-      inheritableWhiteSkillIds: ['white-parent'], aptitudes, parents: [{
-        umaId: 'missing-grand', charaId: 'chara-grand', completedTier: 1, takenAt: 10, inheritedUniqueSkillId: null,
-        inheritableWhiteSkillIds: [], aptitudes,
-      }],
-    }
-    const save = { ...createUmaSave(childTemplate), currentParents: [parent], parentSnapshot: { ...parent, umaId: 'child', charaId: 'chara-child' } }
-    const view = buildLineageView(save, content)
-    expect(view.activeParents[0]).toMatchObject({ name: 'Synthetic Parent', completedTier: 2, whiteCount: 1 })
-    expect(view.activeParents[0]?.grandparents[0]).toMatchObject({ name: 'Missing content · missing-grand', missingContent: true, grandparents: [] })
-    expect(view.latestSnapshot).toMatchObject({ name: 'Synthetic Child', grandparents: [{ umaId: 'missing-grand' }] })
-  })
-
   it('derives scenario caps, readiness, and the managed atlas frame', () => {
     const content = loaded([template('u1', 'Synthetic One')])
-    const save = { ...createUmaSave(content.umas.items[0]!), scenarioStarted: true, level: 10, exp: 0 }
+    const save = umaFixture(content.umas.items[0]!, { level: 10, exp: 0, started: true })
     const joined = joinUma(save, content)
     expect(joined.status).toBe('ready')
     if (joined.status !== 'ready') return
-    expect(joined.value).toMatchObject({ tier: 1, currentStatCap: 960, baselineStatCap: 1200, currentSpCap: 240, readyToPromote: true })
+    expect(joined.value).toMatchObject({ tier: 1, spCap: 300, readyToAdvance: true })
+    expect(joined.value.caps).toEqual({ speed: 1400, stamina: 1400, power: 1400, guts: 1400, wit: 1400 })
     expect(joined.value.asset?.url).toBe('blob:synthetic-umas')
-    const oldMaximum = joinUma({ ...save, level: 110 }, content)
-    expect(oldMaximum.status === 'ready' && oldMaximum.value.readyToPromote).toBe(true)
-    const max = joinUma({ ...save, level: 140 }, content)
-    expect(max.status === 'ready' && max.value.readyToPromote).toBe(false)
+    const oldMaximum = joinUma({ ...save, level: 110, unlockedTier: 11, scenarios: [{ ...save.scenarios[0]!, tier: 11, started: true }] }, content)
+    expect(oldMaximum.status === 'ready' && oldMaximum.value.readyToAdvance).toBe(true)
+    const max = joinUma({ ...save, level: 140, unlockedTier: 14, scenarios: [{ ...save.scenarios[0]!, tier: 14, started: true }] }, content)
+    expect(max.status === 'ready' && max.value.readyToAdvance).toBe(false)
   })
 
   it('reports missing content instead of throwing', () => {
@@ -109,7 +92,7 @@ describe('Uma view models', () => {
     const templates = [template('u2', 'Beta', 'G'), template('u1', 'Alpha')]
     const content = loaded(templates)
     const views = templates.map((item, index) => {
-      const joined = joinUma({ ...createUmaSave(item), level: index + 1 }, content)
+      const joined = joinUma(umaFixture(item, { level: index + 1 }), content)
       if (joined.status !== 'ready') throw new Error('Synthetic join failed')
       return joined.value
     })

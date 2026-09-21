@@ -77,7 +77,7 @@ describe('collection persistence', () => {
     await seed()
     const first = await redeemPersistentCard(content, cardTemplate.id, '2000-01-02', 60)
     const retry = await redeemPersistentCard(content, cardTemplate.id, '2000-01-03', 70)
-    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { level: 1, limitBreak: 0 } })
+    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { limitBreak: 0 } })
     expect(retry).toMatchObject({ alreadyRedeemed: true, profile: { cardCoupons: 1 } })
     expect((await db.cards.get(cardTemplate.id))?.version).toBe(0)
     expect(await db.ledger.get(`card-coupon-redeem:${cardTemplate.id}`)).toMatchObject({
@@ -96,7 +96,7 @@ describe('collection persistence', () => {
     expect(mutation).toMatchObject({
       alreadyRedeemed: false,
       profile: { umaCoupons: 0, featuredUmaId: 'existing-uma' },
-      uma: { level: 1, trainingLevel: 1, deckCardIds: [], trainingsThisScenario: 0 },
+      uma: { level: 1, unlockedTier: 1 },
     })
     expect(mutation.uma).toEqual(createUmaSave(umaTemplate))
     expect((await db.umas.get(umaTemplate.id))?.version).toBe(0)

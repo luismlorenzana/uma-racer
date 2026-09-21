@@ -1,3 +1,4 @@
+import { umaFixture } from './__fixtures__/save'
 import {
   CARD_EFFECTS,
   createCardSave,
@@ -63,7 +64,7 @@ describe('deck view model', () => {
   it('projects slots, effects, hints, order, and explicit candidate disable reasons', () => {
     const { content, templates } = fixture()
     const cards = Object.fromEntries(templates.map((template) => [template.id, createCardSave(template)]))
-    const uma = { ...createUmaSave(umaTemplate), deckCardIds: ['speed', 'power'] }
+    const uma = umaFixture(umaTemplate, { cardSetIds: ['speed', 'power'] })
     const model = buildDeckView(uma, cards, content)
     expect(model.slots.map((slot) => slot.unlocked)).toEqual([true, true, true, true, false, false])
     expect(model.slots.slice(0, 2).map((slot) => slot.card?.id)).toEqual(['speed', 'power'])
@@ -79,12 +80,12 @@ describe('deck view model', () => {
     const { content, templates } = fixture()
     const retired = { ...createCardSave(card('retired', 'wit')), templateId: 'retired' }
     const cards = { ...Object.fromEntries(templates.map((template) => [template.id, createCardSave(template)])), retired }
-    const uma = { ...createUmaSave(umaTemplate), deckCardIds: ['retired'] }
+    const uma = umaFixture(umaTemplate, { cardSetIds: ['retired'] })
     const repair = buildDeckView(uma, cards, content)
     expect(repair.needsRepair).toBe(true)
     expect(repair.slots[0]?.card).toMatchObject({ id: 'retired', template: null, asset: null })
     expect(repair.validationErrors[0]).toMatch(/missing/)
-    const unowned = buildDeckView({ ...createUmaSave(umaTemplate), deckCardIds: ['speed'] }, { retired }, content)
+    const unowned = buildDeckView(umaFixture(umaTemplate, { cardSetIds: ['speed'] }), { retired }, content)
     expect(unowned.needsRepair).toBe(true)
     expect(unowned.slots[0]?.card).toMatchObject({ id: 'speed', save: null })
     expect(buildDeckView(createUmaSave(umaTemplate), cards, content, [], { type: 'speed', era: 'current' }).candidates.map((item) => item.id)).toEqual(['speed'])
@@ -99,7 +100,7 @@ describe('deck view model', () => {
       cards: { items: [...content.cards.items, moved], byId: new Map([...content.cards.byId, [moved.id, moved]]) },
     }
     const save = createCardSave(moved)
-    const uma = { ...createUmaSave(umaTemplate), level: 101, deckCardIds: [moved.id] }
+    const uma = umaFixture(umaTemplate, { level: 101, cardSetIds: [moved.id] })
     const first = buildDeckView(uma, { [moved.id]: save }, refreshed)
     const reloaded = buildDeckView(structuredClone(uma), { [moved.id]: structuredClone(save) }, refreshed)
     expect(first.slots[0]?.card?.id).toBe(moved.id)

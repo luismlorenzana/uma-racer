@@ -1,3 +1,5 @@
+import { withRun } from './__fixtures__/save'
+import { umaFixture } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
 import { createUmaSave, type ContentAtlas, type RaceResultRecord, type RaceTemplate, type ScenarioJourney, type UmaTemplate } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -35,40 +37,21 @@ const journey: ScenarioJourney = {
     { id: 'goal:1:challenge', slot: 'challenge', raceId: 'missing-race', kind: 'win-by-margin', series: null, minimumMarginLengths: 5, status: 'active', completedRaceResultId: null, completedAt: null },
   ],
 }
-const uma = { ...createUmaSave(template), scenarioStarted: true, goalPlanVersion: 1, scenarioJourneys: [journey] }
+const uma = umaFixture(template, { goalPlanVersion: 1, journey: journey, started: true })
 
 describe('goal view projections', () => {
   it('projects explicit Home states and missing private targets', () => {
     expect(buildHomeGoalState(createUmaSave(template), content)).toMatchObject({ kind: 'pending' })
     expect(buildHomeGoalState(uma, content)).toMatchObject({ kind: 'active', completed: 1, missingTargets: 1 })
-    expect(buildHomeGoalState({ ...uma, scenarioJourneys: [{ tier: 1, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] }] }, content))
+    expect(buildHomeGoalState(withRun(uma, { journey: { tier: 1, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] } }), content))
       .toMatchObject({ kind: 'legacy-untracked' })
   })
 
   it('derives Journey pips, Honors, and a distinct untracked mark', () => {
     expect(buildJourneyView(uma, content)[0]).toMatchObject({ completed: 1, active: 2, honors: false })
     const honors = { ...journey, state: 'completed' as const, completedAt: 20, goals: journey.goals.map((goal) => ({ ...goal, status: 'completed' as const, completedRaceResultId: 'race:uma-goals:0', completedAt: 10 })) }
-    expect(buildJourneyView({ ...uma, scenarioJourneys: [honors] }, content)[0]).toMatchObject({ completed: 3, honors: true })
-    expect(buildJourneyView({ ...uma, scenarioJourneys: [{ tier: 1, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] }] }, content)[0]?.tracking).toBe('legacy-untracked')
-  })
-
-  it('retains static completed modifier identity and shows active or legacy tier progress', () => {
-    const tierTwo = { tier: 2, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: null, goals: [] }
-    const tierThree = {
-      ...journey,
-      tier: 3,
-      goals: journey.goals.map((goal) => ({ ...goal, id: goal.id.replace('goal:1:', 'goal:3:') })),
-    }
-    const active = {
-      ...uma,
-      level: 21,
-      scenarioJourneys: [{ tier: 1, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: null, goals: [] }, tierTwo, tierThree],
-      scenarioModifier: { version: 1 as const, tier: 3 as const, kind: 'climax' as const, earned: 3, stock: 2, used: 1 },
-    }
-    const projected = buildJourneyView(active, content)
-    expect(projected[1]?.modifier).toMatchObject({ kind: 'team-spirit', detail: 'Tier-local progress expired at promotion.' })
-    expect(projected[2]?.modifier).toMatchObject({ kind: 'climax', detail: '2 stocked · 1 used · expires at promotion.' })
-    expect(buildJourneyView({ ...active, scenarioModifier: null }, content)[2]?.modifier).toMatchObject({ legacyUnavailable: true })
+    expect(buildJourneyView(withRun(uma, { journey: honors }), content)[0]).toMatchObject({ completed: 3, honors: true })
+    expect(buildJourneyView(withRun(uma, { journey: { tier: 1, tracking: 'legacy-untracked', state: 'completed', completedAt: null, goals: [] } }), content)[0]?.tracking).toBe('legacy-untracked')
   })
 
   it('pins, filters, and deduplicates active goal races and exposes pre-race stakes', () => {
@@ -91,7 +74,7 @@ describe('goal view projections', () => {
         status: 'active', completedRaceResultId: null, completedAt: null,
       }, journey.goals[2]!],
     }
-    const seriesUma = { ...uma, goalPlanVersion: 2, scenarioJourneys: [seriesJourney] }
+    const seriesUma = withRun({ ...uma, goalPlanVersion: 2 }, { journey: seriesJourney })
     const home = buildHomeGoalState(seriesUma, content)
     expect(home.kind).toBe('active')
     expect(home.kind === 'active' ? home.goals[1] : null).toMatchObject({
@@ -107,9 +90,9 @@ describe('goal view projections', () => {
       goals: journey.goals.map((goal) => ({ ...goal, status: 'completed', completedRaceResultId: 'race:uma-goals:0', completedAt: 10 })),
     }
     const record = { completedGoalIds: ['goal:1:challenge', 'goal:1:identity'] } as RaceResultRecord
-    expect(buildResultGoalView(record, { ...uma, scenarioJourneys: [completedJourney] }, content, true)).toMatchObject({
+    expect(buildResultGoalView(record, withRun(uma, { journey: completedJourney }), content, true)).toMatchObject({
       animate: true, completions: [{ slot: 'identity' }, { slot: 'challenge' }],
     })
-    expect(buildResultGoalView(record, { ...uma, scenarioJourneys: [completedJourney] }, content, false).animate).toBe(false)
+    expect(buildResultGoalView(record, withRun(uma, { journey: completedJourney }), content, false).animate).toBe(false)
   })
 })

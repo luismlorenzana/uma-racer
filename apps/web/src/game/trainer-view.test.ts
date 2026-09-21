@@ -1,3 +1,4 @@
+import { umaFixture, emptySubject } from './__fixtures__/save'
 import {
   CARD_EFFECTS,
   createCardSave,
@@ -51,7 +52,7 @@ const content: LoadedContent = {
 }
 
 function contributor(): UmaBadgeStateV1 {
-  const base = createUmaBadgeState(createUmaSave(uma), 1)
+  const base = createUmaBadgeState(createUmaSave(uma), emptySubject(), 1)
   return {
     ...base,
     sourceWatermarks: { ...base.sourceWatermarks, raceSequence: 9 },
@@ -87,7 +88,7 @@ function raceResult(): RaceResultRecord {
 
 describe('Trainer profile projections', () => {
   it('projects achievement filters, records, owned pins, mixed showcases, and stable recent flair', () => {
-    const save = { ...createUmaSave(uma), level: 50 }
+    const save = umaFixture(uma, { level: 50 })
     const orphan = { ...save, templateId: 'owned-missing-content', level: 12 }
     const badge = contributor()
     const reconciled = reconcileTrainerState({

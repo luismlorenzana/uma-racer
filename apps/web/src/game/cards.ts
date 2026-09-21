@@ -5,6 +5,7 @@ import {
   parseCardSave,
   parsePlayerProfileOrThrow,
   advanceCardLimitBreak,
+  BOND_RECALL_TICKET_COST,
   type CardAdvanceResult,
   type CardSave,
   type LedgerEntry,
@@ -26,7 +27,11 @@ function validateInput(content: LoadedContent, profile: PlayerProfile, card: Car
   if (!content.cards.byId.has(card.templateId)) throw new Error(`Card content is missing ${card.templateId}`)
   if (!isLocalDay(today)) throw new Error(`Invalid local day: ${today}`)
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Invalid card promotion timestamp')
-// A Bond Recall run charges its tickets up front; clearing the board is the limit break (D120).
+  // Stands in for a Bond Recall run until the minigame lands: it charges the run's price and the clear
+  // is the limit break (D120).
+  if (profile.tickets < BOND_RECALL_TICKET_COST) {
+    throw new Error(`You need ${BOND_RECALL_TICKET_COST} Training Tickets to limit break this card`)
+  }
   const result = advanceCardLimitBreak(card)
   const ledgerIds: [string, string] = [
     `card-limit-break:${card.templateId}:${result.toLimitBreak}`,
@@ -44,7 +49,7 @@ export function promoteMemoryCard(
 ): CardPromotionMutation {
   const { result, ledgerIds } = validateInput(content, profile, card, today, now)
   return {
-    profile: { ...profile, tickets: profile.tickets + result.ticketReward },
+    profile: { ...profile, tickets: profile.tickets - BOND_RECALL_TICKET_COST + result.ticketReward },
     card: result.card,
     result,
     ledgerIds,
@@ -74,6 +79,10 @@ export async function promotePersistentCard(
     await queueInTransaction('profile', 'main', 'upsert', now)
     await queueInTransaction('cards', cardId, 'upsert', now)
     const entries: { id: string; data: LedgerEntry }[] = [
+      {
+        id: mutation.ledgerIds[0],
+        data: { resource: 'tickets', delta: -BOND_RECALL_TICKET_COST, reason: 'card-limit-break', localDay: today, createdAt: now },
+      },
       {
         id: mutation.ledgerIds[1],
         data: { resource: 'tickets', delta: mutation.result.ticketReward, reason: 'card-level', localDay: today, createdAt: now },

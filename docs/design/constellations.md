@@ -151,11 +151,15 @@ makes the [card minigame](minigames.md#bond-recall--card-limit-breaks) worth pla
 
 ### The scenario slot
 
-One of the six card-set slots is the scenario's **dedicated slot**. A card placed there pays
+The **sixth slot** is the scenario's dedicated slot. A card placed there pays
 `nodeValue × lbMult × 0.25` **Skill Points** on every node it occupies and **no stats at all**.
 
 Against tier 1's 300 SP cap, a max-broken card on four nodes yields 200 SP — a real loadout, bought by giving
 up a stat card. The trade is explicit and reversible.
+
+A set with fewer than six cards has **no scenario card and therefore no skill points**. Filling the sixth slot
+is what turns a collection of stats into a loadout, which is a legible goal rather than a hidden penalty: the
+slot is always in the same place, so adding a card never changes what the cards beside it do.
 
 *(Chosen because our content packs carry no scenario→card link, so a designated slot delivers the same choice
 without inventing data we do not have. D124.)*

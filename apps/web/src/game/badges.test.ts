@@ -1,3 +1,4 @@
+import { emptySubject } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
 import { createUmaBadgeState, createUmaSave, type RaceAccomplishmentFactsV1, type RaceResultRecord, type UmaTemplate } from '@racer/domain'
 import { courseRecordIdsForResult } from './badges'
@@ -25,7 +26,7 @@ const record = (finishTime: number): RaceResultRecord => ({
 
 describe('course record evidence', () => {
   it('requires a strict improvement after a prior player finish', () => {
-    const base = createUmaBadgeState(createUmaSave(template), 1)
+    const base = createUmaBadgeState(createUmaSave(template), emptySubject(), 1)
     expect(courseRecordIdsForResult(base, facts, record(100))).toBeUndefined()
     const established = { ...base, facts: { ...base.facts, courseBests: [{ courseId: facts.courseId, finishTime: 100, resultId: 'race:record-uma:0', achievedAt: 5 }] } }
     expect(courseRecordIdsForResult(established, facts, record(100))).toBeUndefined()

@@ -1,3 +1,4 @@
+import { emptySubject } from './__fixtures__/save'
 import {
   createUmaBadgeState,
   createUmaSave,
@@ -62,7 +63,7 @@ function content(umas: UmaTemplate[]): LoadedContent {
 }
 
 function winningState(template: UmaTemplate, wins: number, at: number): { state: UmaBadgeStateV1; events: ReturnType<typeof eventRows> } {
-  const base = createUmaBadgeState(createUmaSave(template), 1)
+  const base = createUmaBadgeState(createUmaSave(template), emptySubject(), 1)
   const facts = { ...base, sourceWatermarks: { ...base.sourceWatermarks, raceSequence: wins - 1 }, facts: { ...base.facts, starts: wins, wins } }
   const evaluated = evaluateUmaFlair(buildUmaFlairCatalog({ state: facts, races: [race] }), facts, {
     source: { kind: 'race', id: `race:${template.id}:0`, tier: 1 }, earnedAt: at, retroactive: false,

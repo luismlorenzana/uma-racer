@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 
+import { emptySubject } from './__fixtures__/save'
 import {
   createTrainerBadgeState,
   createUmaBadgeState,
@@ -33,7 +34,7 @@ const template: UmaTemplate = {
 }
 
 function awardedState(): UmaBadgeStateV1 {
-  const state = createUmaBadgeState(createUmaSave(template), 1)
+  const state = createUmaBadgeState(createUmaSave(template), emptySubject(), 1)
   return { ...state, awards: { ...state.awards, badges: [{
     awardKey: 'badge:winner', stage: 'bronze', earnedAt: 2, history: 'exact',
     source: { kind: 'race', id: 'race:synthetic-preference-uma:0', tier: 1 }, frozenKeys: [],
