@@ -26,6 +26,7 @@ import {
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
+import type { RunOutcome, RunReward, RunTarget } from './minigame-host'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
 // outbox marker in one transaction before Zustand publishes it.
@@ -48,6 +49,21 @@ export interface OutboxRow {
   id: string
   op: 'upsert' | 'append'
   queuedAt: number
+}
+
+export interface MinigameRunRow {
+  id: string
+  targetKey: string
+  kind: RunTarget['kind']
+  target: RunTarget
+  tier: number
+  attemptIndex: number
+  seed: string
+  status: 'open' | 'completed'
+  outcome: RunOutcome | null
+  reward: RunReward | null
+  createdAt: number
+  completedAt: number | null
 }
 
 interface LegacyProfileRow {
@@ -90,6 +106,8 @@ class RacerDb extends Dexie {
   outbox!: EntityTable<OutboxRow, 'seq'>
   /** Device-local album preferences (D112). Never synced, never part of the save. */
   albumPrefs!: EntityTable<AlbumPrefs, 'id'>
+  /** Device-local in-flight/replay journal. Never synced and never part of the save (T058). */
+  minigameRuns!: EntityTable<MinigameRunRow, 'id'>
 
   constructor() {
     super('uma-racer')
@@ -104,6 +122,10 @@ class RacerDb extends Dexie {
       outbox: '++seq, [kind+id]',
     }
     const storesWithAlbumPrefs = { ...stores, albumPrefs: 'id' }
+    const storesWithMinigameRuns = {
+      ...storesWithAlbumPrefs,
+      minigameRuns: 'id, targetKey, [targetKey+status], [targetKey+attemptIndex]',
+    }
     this.version(1).stores(stores)
     this.version(2).stores(stores).upgrade(async (tx: Transaction) => {
       const table = tx.table('profile')
@@ -211,6 +233,8 @@ class RacerDb extends Dexie {
         await queue('umas', row.id)
       }
     })
+    // Additive: open minigame runs are device-local replay state, so there is nothing to migrate.
+    this.version(8).stores(storesWithMinigameRuns)
   }
 }
 

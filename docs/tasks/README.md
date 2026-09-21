@@ -22,7 +22,6 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [T058 — The real minigame host](T058-minigame-host.md) | Wiring Spark Match and Bond Recall to the save | **Next** |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Outlined |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
@@ -30,8 +29,7 @@ multipliers on a training turn that no longer exists.
 
 M012 (the constellation engine, save v5, and the removal of the training turn), M013 (the constellation
 screen) and M014 (Spark Match and Bond Recall) all landed on 2026-09-21; `ac1c157` is the last commit that
-contains their specs. M014 shipped both games against a test double, so [T058](T058-minigame-host.md) is what
-makes them actually change the save.
+contains their specs. T058 then connected both games to the save and was removed under D104.
 
 T057 was consumed by the per-scenario limit-break branch and is not reused.
 

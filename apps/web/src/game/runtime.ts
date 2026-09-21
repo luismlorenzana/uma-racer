@@ -98,6 +98,8 @@ import {
   type FlairTimelineCursor,
 } from './badge-preferences'
 import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAwardRefs } from './trainer'
+import { installMinigameHost } from './minigame-host'
+import { PersistentMinigameHost } from './minigame-runs'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -122,6 +124,7 @@ export class GameRuntime {
   private generation = 0
   private timer: ReturnType<typeof setTimeout> | null = null
   private content: LoadedContent | null = null
+  private uninstallMinigameHost: (() => void) | null = null
   private flushing = false
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
@@ -207,6 +210,23 @@ export class GameRuntime {
       return
     }
 
+    this.uninstallMinigameHost = installMinigameHost(new PersistentMinigameHost(content, {
+      publish: (mutation) => {
+        if (generation !== this.generation) return
+        if (mutation.card) replaceCardState(mutation.profile, mutation.card)
+        else {
+          replaceProfile(mutation.profile)
+          if (mutation.uma) replaceUma(mutation.uma)
+        }
+      },
+      afterMutation: async () => {
+        if (generation !== this.generation) return
+        await this.refreshBadges()
+        await this.refreshPending()
+        this.schedule()
+      },
+    }))
+
     try {
       let local = await readLocalSnapshot()
       if (!local) {
@@ -255,6 +275,8 @@ export class GameRuntime {
 
   stop(clear = true): void {
     this.generation += 1
+    this.uninstallMinigameHost?.()
+    this.uninstallMinigameHost = null
     this.content = null
     this.memoryRaceHistory = []
     this.memoryCardRedemptions.clear()

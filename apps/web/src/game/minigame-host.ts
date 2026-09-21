@@ -1,4 +1,4 @@
-// Port between the independently shipped minigames and save-v5 progression (docs/tasks/M014-minigames.md).
+// Port between the independently shipped minigames and save-v6 progression (docs/tasks/M014-minigames.md).
 
 export interface MinigameHost {
   /** Reserves a run: spends tickets, returns the deterministic seed. Rejects if tickets are short. */
@@ -36,7 +36,7 @@ type RewardFactory = (ticket: RunTicket, target: RunTarget, outcome: RunOutcome)
 const targetKey = (target: RunTarget): string =>
   target.kind === 'spark-match' ? `spark-match:${target.umaId}` : `bond-recall:${target.cardId}:${target.tier}`
 
-const validateOutcome = (ticket: RunTicket, target: RunTarget, outcome: RunOutcome): void => {
+export const validateMinigameOutcome = (ticket: RunTicket, target: RunTarget, outcome: RunOutcome): void => {
   if (target.kind !== outcome.kind) throw new Error(`Run ${ticket.runId} received the wrong minigame outcome`)
   if (outcome.kind === 'spark-match') {
     if (!Number.isSafeInteger(outcome.score) || outcome.score < 0 || outcome.moves !== 25) {
@@ -125,7 +125,7 @@ export class MinigameHostTestDouble implements MinigameHost {
     if (!target) throw new Error('Unknown or expired minigame run')
     const ticket = this.openByTarget.get(targetKey(target))
     if (!ticket || ticket.runId !== runId) throw new Error('Minigame run is no longer active')
-    validateOutcome(ticket, target, outcome)
+    validateMinigameOutcome(ticket, target, outcome)
     const reward = this.rewardFactory(ticket, target, outcome)
     const stored = { ...reward, nodesUnlocked: reward.nodesUnlocked ? [...reward.nodesUnlocked] : undefined }
     this.rewardsByRun.set(runId, stored)
@@ -134,14 +134,21 @@ export class MinigameHostTestDouble implements MinigameHost {
   }
 }
 
-const previewHost = new MinigameHostTestDouble()
-let installedHost: MinigameHost = previewHost
+const unavailableHost: MinigameHost = {
+  async beginRun() {
+    throw new Error('Minigame save host is not ready')
+  },
+  async commitRun() {
+    throw new Error('Minigame save host is not ready')
+  },
+}
+let installedHost: MinigameHost = unavailableHost
 
-/** Called by the save-v5 integration once its real local-first host is available. */
+/** Called by the save runtime once its real local-first host is available. */
 export function installMinigameHost(host: MinigameHost): () => void {
   installedHost = host
   return () => {
-    if (installedHost === host) installedHost = previewHost
+    if (installedHost === host) installedHost = unavailableHost
   }
 }
 

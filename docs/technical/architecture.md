@@ -72,29 +72,28 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v3 stores mutable profile/Uma/card state plus finite parent snapshots, skill history, selected current parents, and
-  typed scenario-journey slots with frozen series legs. Static names, art, release metadata, and card/skill definitions
-  remain in the private content registry and are joined by stable ids at render time. Dexie v5 and cloud adoption migrate
-  v1/v2 one way, preserve entity versions, and queue only upgraded profile/Uma rows; the API accepts rollout reads but
-  rejects an older schema over a newer one.
+- Save v6 stores mutable profile/Uma/card state, including one constellation per unlocked scenario, scenario-scoped card
+  limit breaks, skill history, and typed Journey slots with frozen series legs. Derived stats, node values, static names,
+  art, release metadata, and card/skill definitions stay outside the save and are joined from the private content registry.
+  Dexie and cloud adoption migrate older schemas one way, preserve entity versions, and queue only upgraded synced rows;
+  the API accepts rollout reads but rejects an older schema over a newer one.
 - A coordinator waits for auth and a verified content version, migrates and parses IndexedDB, then publishes ready state.
   A non-empty local save opens immediately. Only a semantically empty database tries a full cloud bootstrap before
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
-- Every action (a deck edit, training turn, race, or promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
+- Every action (a deck edit, minigame result, race, or promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
-  duplicate ids, and duplicate characters. The editor, Training, and racing use that same result. Saving re-reads the Uma
+  duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
-  order as a write-free no-op. Explicit Auto fill remains a pure draft helper; opening Training never mutates an empty deck.
-- A saved-Uma Training turn derives its card deal and hint rolls from a stable seed (profile creation time, Uma id, tier,
-  and completed-turn count). A chosen
-  facility then spends one ticket and writes the profile, Uma, changed cards, append-only spend/reward ledger rows, and
-  coalesced outbox work in one Dexie transaction; Zustand publishes only after that transaction commits. Memory-only mode
-  runs the same pure mutation but keeps its existing explicit non-persistent warning.
-- Card promotion is another local-first transaction: a filled-cap card and current profile are re-parsed, the documented
-  ticket cost and +2 level reward are appended under deterministic ids, profile/card outbox rows are coalesced, and Zustand
-  publishes only after commit. Training's transition to card level 25 similarly appends one `card-max-coupon:<cardId>` row,
-  increments the profile Coupon balance, and sets the card's paid flag in its existing transaction.
+  order as a write-free no-op. Explicit Auto fill remains a pure draft helper; opening a constellation never mutates an empty deck.
+- Minigame reservations are save-backed transactions. `beginRun` re-parses the target and profile, returns an existing open
+  target run without another charge, or atomically spends the documented tickets, appends its stable ledger id, and stores
+  a device-local run row. Its FNV-1a seed derives from profile creation time, content version, target, scenario, and attempt;
+  reloading reconstructs the same board. The Dexie v8 `minigameRuns` table is never synced and is not part of save v6.
+- `commitRun` is idempotent by run id. Spark Match applies score through `addTrainingExp` to the Uma's active scenario and
+  reports actual constellation nodes opened; Bond Recall applies a clear only to the named scenario's card limit break,
+  appends its +5 ticket reward and one-time LB4 coupon when earned, and treats a loss as a closed paid run. The profile,
+  affected Uma/card, ledger, Trainer reconciliation, and outbox work commit atomically before Zustand publishes.
 - Collection acquisition uses the same boundary. Shard exchange transactionally derives its next numbered prefix and
   writes the profile plus separate `-5 shards`/`+1 Uma Coupon` ledger rows. A Card or Uma redemption re-reads the profile,
   target entity, private content, and target-keyed ledger row; it then writes the profile, a version-0 canonical entity,
@@ -148,7 +147,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   keeps its manifest version/origin, and a waiting or newly controlling service worker offers an explicit restart. That
   restart is deferred while Training, Expedition completion, race completion, redemption, promotion, or Scenario Start is committing. Content
   diagnostics distinguish auth, publication, missing-object, integrity, network, and verified-offline states without ever
-  clearing the local save.
+  clearing the local save. Open minigame reservations also block silent rerolls by restoring their saved seed after reload.
 - The client is trusted. It's a personal game, so there's no server-side validation of game rules beyond shape checks.
 
 ### 2. Deterministic simulation, then playback
