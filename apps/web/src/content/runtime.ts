@@ -52,7 +52,11 @@ export interface LoadedContent {
   skills: ContentRegistry<SkillTemplate>
   races: ContentRegistry<RaceTemplate>
   courses: ContentRegistry<CourseTemplate>
-  atlases: Record<ContentAtlasKind, LoadedAtlas>
+  /**
+   * Crests are optional: a manifest published before T051 has no scenario atlas, and the Stable simply shows
+   * no crest rather than refusing to load.
+   */
+  atlases: Record<'uma-icons' | 'card-icons', LoadedAtlas> & Partial<Record<'scenario-icons', LoadedAtlas>>
   art: ArtLoader
 }
 
@@ -257,6 +261,7 @@ function createArtLoader(
 const ATLAS_FILES: Record<ContentAtlasKind, RegExp> = {
   'uma-icons': /^atlases\/uma-icons\.[a-f0-9]{8}\.json$/,
   'card-icons': /^atlases\/card-icons\.[a-f0-9]{8}\.json$/,
+  'scenario-icons': /^atlases\/scenario-icons\.[a-f0-9]{8}\.json$/,
 }
 
 function assertMatchingFrames(label: string, ids: readonly string[], atlas: ContentAtlas): void {
@@ -286,6 +291,7 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const courseFile = findRequiredFile(manifest, PACK_FILES.courses, 'courses pack')
   const umaAtlasFile = findRequiredFile(manifest, ATLAS_FILES['uma-icons'], 'uma-icons atlas')
   const cardAtlasFile = findRequiredFile(manifest, ATLAS_FILES['card-icons'], 'card-icons atlas')
+  const scenarioAtlasFile = manifest.files.find((file) => ATLAS_FILES['scenario-icons'].test(file.path)) ?? null
 
   const [umaJson, cardJson, skillJson, raceJson, courseJson, umaAtlasJson, cardAtlasJson] = await Promise.all([
     verifiedJson(transport, umaFile),
@@ -308,6 +314,9 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const courses = parseContentPack<CourseTemplate>(courseJson, 'course')
   const umaAtlas = parseContentAtlas(umaAtlasJson, 'uma-icons')
   const cardAtlas = parseContentAtlas(cardAtlasJson, 'card-icons')
+  const scenarioAtlas = scenarioAtlasFile
+    ? parseContentAtlas(await verifiedJson(transport, scenarioAtlasFile), 'scenario-icons')
+    : null
   assertMatchingFrames('Uma', umas.map((item) => item.id), umaAtlas)
   assertMatchingFrames('Card', cards.map((item) => item.id), cardAtlas)
 
@@ -335,7 +344,11 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       )
       return { descriptor: atlas, pageUrls }
     }
-    const [umaIcons, cardIcons] = await Promise.all([loadAtlasPages(umaAtlas), loadAtlasPages(cardAtlas)])
+    const [umaIcons, cardIcons, scenarioIcons] = await Promise.all([
+      loadAtlasPages(umaAtlas),
+      loadAtlasPages(cardAtlas),
+      scenarioAtlas ? loadAtlasPages(scenarioAtlas) : Promise.resolve(null),
+    ])
     return {
       manifest,
       origin,
@@ -344,7 +357,11 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       skills: registry(skills),
       races: registry(races),
       courses: registry(courses),
-      atlases: { 'uma-icons': umaIcons, 'card-icons': cardIcons },
+      atlases: {
+        'uma-icons': umaIcons,
+        'card-icons': cardIcons,
+        ...(scenarioIcons ? { 'scenario-icons': scenarioIcons } : {}),
+      },
       art: createArtLoader(transport, manifest, urls, (url) => createdUrls.push(url)),
     }
   } catch (error) {
@@ -366,8 +383,9 @@ function storedManifest(store: ManifestStore): ContentManifest | null {
 
 export function getContentAsset(content: LoadedContent, kind: ContentAtlasKind, id: string): ContentAsset | null {
   const atlas = content.atlases[kind]
-  const frame = atlas.descriptor.frames[id]
-  if (!frame) return null
+  // The scenario atlas is optional, so a missing atlas is a missing asset, not a crash.
+  const frame = atlas?.descriptor.frames[id]
+  if (!atlas || !frame) return null
   const page = atlas.descriptor.pages[frame.page]!
   return { url: atlas.pageUrls[frame.page]!, frame, pageWidth: page.width, pageHeight: page.height }
 }

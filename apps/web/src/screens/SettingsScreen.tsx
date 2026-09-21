@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { flairContentCoverage } from '@racer/domain'
 import { Link } from 'react-router'
@@ -7,6 +8,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useContent } from '../content/ContentProvider'
 import { useGame } from '../game/store'
 import { GameButton } from '../ui/GameButton'
+import { grantDevResources } from '../game/actions'
 import { Panel } from '../ui/Panel'
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -20,6 +22,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function SettingsScreen() {
   const auth = useAuth()
+  const [granting, setGranting] = useState(false)
   const persistent = useGame((s) => s.persistent)
   const gameStatus = useGame((s) => s.status)
   const sync = useGame((s) => s.sync)
@@ -64,6 +67,28 @@ export function SettingsScreen() {
   return (
     <div className="flex flex-col gap-4 pt-2">
       <h1 className="font-display px-1 text-2xl font-bold tracking-tight text-ink">Settings</h1>
+
+      <Panel>
+        <h2 className="text-sm font-semibold">Playtesting</h2>
+        <p className="mt-1 text-[12px] text-ink-soft">
+          Tops up the account so a loop can be exercised without waiting on the daily grant. Every grant is
+          recorded in the ledger as <code>dev-grant</code>, so balance work can filter it out — nothing in
+          ordinary play ever produces one.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <GameButton
+            variant="secondary"
+            disabled={granting || gameStatus !== 'ready'}
+            onClick={() => {
+              setGranting(true)
+              void grantDevResources({ tickets: 500, cardCoupons: 5, umaCoupons: 5, umaShards: 10 })
+                .finally(() => setGranting(false))
+            }}
+          >
+            {granting ? 'Granting…' : '+500 tickets · 5+5 coupons · 10 shards'}
+          </GameButton>
+        </div>
+      </Panel>
       <Panel>
         <Row label="App build" value={APP_BUILD_ID} />
         <Row label="App update" value={updateLabel} />

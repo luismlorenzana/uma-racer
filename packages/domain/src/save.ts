@@ -238,6 +238,8 @@ export const LEDGER_REASONS = [
   'uma-shard-exchange',
   'card-coupon-redeem',
   'uma-coupon-redeem',
+  /** Owner-only top-up for playtesting; never earned in play (docs/design/economy.md). */
+  'dev-grant',
 ] as const
 export type LedgerReason = (typeof LEDGER_REASONS)[number]
 
