@@ -75,6 +75,13 @@ export async function promoteSupportCard(id: string, tier: number) {
   })
 }
 
+export async function grantDevResources(grant: import('./collection').DevGrant) {
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.grantDevResources(grant)
+  })
+}
+
 export async function exchangeUmaShards() {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.exchangeUmaShards()

@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import type { ContentManifest, ContentManifestFile } from '@racer/domain'
+import { SCENARIOS, type ContentManifest, type ContentManifestFile } from '@racer/domain'
 import type { ImageSource } from './download'
 
 function sha256(bytes: Buffer): string {
@@ -37,9 +37,36 @@ async function verifiedPack(contentDir: string, file: ContentManifestFile): Prom
   return bytes
 }
 
+/**
+ * Scenario crests have no pack entry — scenarios are a domain constant, not imported content — so their
+ * sources come from a Claude-authored private override (D107), keyed by scenario id because GameTora's own
+ * numbering is not our tier order.
+ */
+async function readScenarioIcons(contentDir: string): Promise<ImageSource[]> {
+  let raw: string
+  try {
+    raw = await readFile(resolve(contentDir, 'overrides/scenario-icons.json'), 'utf8')
+  } catch {
+    // Absent is legal: the crest atlas is simply not built, and the app falls back to no crest.
+    return []
+  }
+  const parsed: unknown = JSON.parse(raw)
+  const icons = (parsed as { icons?: unknown } | null)?.icons
+  if (!icons || typeof icons !== 'object') throw new Error('scenario-icons.json must hold an "icons" object')
+  return Object.entries(icons as Record<string, unknown>).map(([id, url]) => {
+    if (!SCENARIOS.some((scenario) => scenario.id === id)) {
+      throw new Error(`scenario-icons.json names an unknown scenario: ${id}`)
+    }
+    if (typeof url !== 'string' || !/^https:\/\//.test(url)) {
+      throw new Error(`scenario-icons.json has an invalid source for ${id}`)
+    }
+    return { id, url }
+  })
+}
+
 export async function readAssetSources(
   contentDir: string,
-): Promise<{ manifest: ContentManifest; umas: ImageSource[]; cards: ImageSource[] }> {
+): Promise<{ manifest: ContentManifest; umas: ImageSource[]; cards: ImageSource[]; scenarios: ImageSource[] }> {
   let manifest: ContentManifest
   try {
     manifest = JSON.parse(await readFile(resolve(contentDir, 'manifest.json'), 'utf8')) as ContentManifest
@@ -52,5 +79,10 @@ export async function readAssetSources(
     verifiedPack(contentDir, umaFile),
     verifiedPack(contentDir, cardFile),
   ])
-  return { manifest, umas: parseSources(umaBytes, 'umas'), cards: parseSources(cardBytes, 'cards') }
+  return {
+    manifest,
+    umas: parseSources(umaBytes, 'umas'),
+    cards: parseSources(cardBytes, 'cards'),
+    scenarios: await readScenarioIcons(contentDir),
+  }
 }

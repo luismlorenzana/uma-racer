@@ -63,6 +63,8 @@ import {
 import { promoteMemoryCard, promotePersistentCard } from './cards'
 import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
 import {
+  type DevGrant,
+  grantPersistentDevResources,
   exchangeMemoryUmaShards,
   exchangePersistentUmaShards,
   redeemMemoryCard,
@@ -667,6 +669,30 @@ export class GameRuntime {
     } finally {
       this.cardLocks.delete(cardId)
     }
+  }
+
+  /** Owner-only playtest top-up (docs/design/economy.md). Never reachable from ordinary play. */
+  async grantDevResources(grant: DevGrant, today = localDay(), now = Date.now()) {
+    const generation = this.generation
+    const state = useGame.getState()
+    if (state.status !== 'ready' || !state.profile) throw new Error('Save is not ready')
+    if (!state.persistent) {
+      const next = {
+        ...state.profile,
+        tickets: state.profile.tickets + grant.tickets,
+        cardCoupons: state.profile.cardCoupons + grant.cardCoupons,
+        umaCoupons: state.profile.umaCoupons + grant.umaCoupons,
+        umaShards: state.profile.umaShards + grant.umaShards,
+      }
+      replaceProfile(next)
+      return { profile: next, ledgerIds: [] }
+    }
+    const mutation = await grantPersistentDevResources(grant, today, now)
+    if (generation !== this.generation) return mutation
+    replaceProfile(mutation.profile)
+    await this.refreshPending()
+    this.schedule()
+    return mutation
   }
 
   async exchangeUmaShards(today = localDay(), now = Date.now()) {

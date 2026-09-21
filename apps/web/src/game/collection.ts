@@ -225,3 +225,56 @@ export async function redeemPersistentUma(
     return { profile: mutation.profile, uma: mutation.uma, ledgerId, alreadyRedeemed: false, badgeState, flairEvents: [...flair.events, ...trainer.events] }
   })
 }
+
+export interface DevGrant {
+  tickets: number
+  cardCoupons: number
+  umaCoupons: number
+  umaShards: number
+}
+
+export interface DevGrantMutation {
+  profile: PlayerProfile
+  ledgerIds: string[]
+}
+
+/**
+ * Owner-only top-up for playtesting. It is deliberately not idempotent per amount — each press is its own
+ * ledger row keyed by timestamp — because the point is to be able to grant repeatedly while testing.
+ * Nothing in play ever produces a `dev-grant` row, so balance analysis can filter them out.
+ */
+export async function grantPersistentDevResources(grant: DevGrant, today: string, now: number): Promise<DevGrantMutation> {
+  return db.transaction('rw', db.profile, db.ledger, db.outbox, async () => {
+    const profileRow = await db.profile.get('main')
+    if (!profileRow) throw new Error('Local profile is missing')
+    const profile = parsePlayerProfileOrThrow(profileRow.data)
+    const next: PlayerProfile = {
+      ...profile,
+      tickets: profile.tickets + grant.tickets,
+      cardCoupons: profile.cardCoupons + grant.cardCoupons,
+      umaCoupons: profile.umaCoupons + grant.umaCoupons,
+      umaShards: profile.umaShards + grant.umaShards,
+    }
+    const rows: { id: string; data: LedgerEntry }[] = (
+      [
+        ['tickets', grant.tickets],
+        ['card-coupons', grant.cardCoupons],
+        ['uma-coupons', grant.umaCoupons],
+        ['uma-shards', grant.umaShards],
+      ] as const
+    )
+      .filter(([, delta]) => delta > 0)
+      .map(([resource, delta]) => ({
+        id: `dev-grant:${resource}:${now}`,
+        data: { resource, delta, reason: 'dev-grant' as const, localDay: today, createdAt: now },
+      }))
+
+    await db.profile.put({ ...profileRow, data: next })
+    await queueInTransaction('profile', 'main', 'upsert', now)
+    for (const entry of rows) {
+      await db.ledger.add({ id: entry.id, data: entry.data, createdAt: entry.data.createdAt })
+      await queueInTransaction('ledger', entry.id, 'append', now)
+    }
+    return { profile: next, ledgerIds: rows.map((entry) => entry.id) }
+  })
+}

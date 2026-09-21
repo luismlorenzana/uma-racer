@@ -48,10 +48,13 @@ async function main(): Promise<void> {
   const refresh = process.argv.includes('--refresh')
   const skipArt = process.argv.includes('--icons-only')
   const sources = await readAssetSources(contentDir)
-  const atlases = await Promise.all([
+  const atlasBuilds = [
     build('uma-icons', sources.umas, refresh),
     build('card-icons', sources.cards, refresh),
-  ])
+  ]
+  // The crest atlas is skipped entirely when no override is authored, rather than written empty.
+  if (sources.scenarios.length > 0) atlasBuilds.push(build('scenario-icons', sources.scenarios, refresh))
+  const atlases = await Promise.all(atlasBuilds)
   let manifest = await writeAtlases({ contentDir, atlases })
 
   if (!skipArt) {
