@@ -22,14 +22,14 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M013 — The constellation screen](M013-constellation-screen.md) | T046 · T047 · T048 | Next |
-| [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Outlined |
+| [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Next |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
 
-M012 (the constellation engine, save v5, and the removal of the training turn) and M014 (Spark Match and Bond
-Recall) both landed on 2026-09-21; `c5436fc` is the last commit that contains their specs.
+M012 (the constellation engine, save v5, and the removal of the training turn), M013 (the constellation
+screen) and M014 (Spark Match and Bond Recall) all landed on 2026-09-21; `ac1c157` is the last commit that
+contains their specs.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

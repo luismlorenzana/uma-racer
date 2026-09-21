@@ -1,4 +1,5 @@
 import {
+  SCENARIO_SLOT_INDEX,
   STATS,
   activeScenario,
   cardLevel,
@@ -109,19 +110,30 @@ export function DeckEditorScreen() {
 
       <Panel className="bg-gradient-to-br from-violet-50 to-white">
         <div className="flex items-end justify-between gap-3">
-          <div><p className="text-xs font-extrabold tracking-wide text-violet-700 uppercase">Tier {model.tier} · {scenarioForTier(model.tier)?.name ?? 'Future scenario'}</p><h1 className="text-2xl font-extrabold">Support Deck</h1></div>
+          <div><p className="text-xs font-extrabold tracking-wide text-violet-700 uppercase">Tier {model.tier} · {scenarioForTier(model.tier)?.name ?? 'Future scenario'}</p><h1 className="text-2xl font-extrabold">Card set</h1></div>
           <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-extrabold text-violet-700">{ids.length} / {model.slotCount}</span>
         </div>
-        <p className="mt-2 text-sm font-bold text-ink-soft">Order drives deterministic Training placement ties. Empty decks cannot be saved.</p>
+        <p className="mt-2 text-sm font-bold text-ink-soft">This scenario&rsquo;s six cards. They pay nothing until you place them on constellation nodes.</p>
         {!persistent && <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-extrabold">Memory only — this edit lasts for this session.</p>}
       </Panel>
 
       <section aria-label="Deck slots" className="grid gap-2">
+        <p className="col-span-full text-[11px] text-ink-soft">
+          Slot {SCENARIO_SLOT_INDEX + 1} is this scenario&rsquo;s card: on a constellation node it pays skill
+          points instead of stats.
+        </p>
         {model.slots.map((slot) => {
           const selectedId = ids[slot.index]
           return (
             <div key={slot.index} className={`flex min-h-20 items-center gap-2 rounded-2xl border-2 p-2 ${slot.unlocked ? 'border-white bg-white/95' : 'border-slate-200 bg-slate-100/80 text-ink-soft'}`}>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky/10 text-sm font-extrabold">{slot.index + 1}</span>
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${
+                  slot.index === SCENARIO_SLOT_INDEX ? 'bg-accent text-white' : 'bg-sky/10'
+                }`}
+                title={slot.index === SCENARIO_SLOT_INDEX ? 'Scenario slot — pays skill points, not stats' : undefined}
+              >
+                {slot.index + 1}
+              </span>
               {!slot.unlocked ? <p className="font-extrabold">Locked until a later scenario</p> : slot.card ? <>
                 <AtlasSprite asset={slot.card.asset} decorative className="h-14 w-14 shrink-0 rounded-xl bg-slate-100" fallback={<div className="flex h-full items-center justify-center text-lg">?</div>} />
                 <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{slot.card.template ? `${slot.card.template.charName} · ${slot.card.template.title}` : `Missing ${slot.card.id}`}</p><p className="text-xs font-bold text-ink-soft">{slot.card.template && slot.card.save ? (slot.card.template.era > model.tier ? `Era locked · Tier ${slot.card.template.era}` : `${TYPE_LABEL[slot.card.template.type]} · Lv ${cardLevel(slot.card.save)} · LB${slot.card.save.limitBreak} · Tier ${slot.card.template.era}`) : slot.card.template ? 'Not owned · repair required' : 'Missing content · repair required'}</p></div>

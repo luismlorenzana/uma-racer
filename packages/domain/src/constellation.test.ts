@@ -6,7 +6,10 @@ import {
   CARD_TYPE_SHARES,
   SCENARIO_SLOT_INDEX,
   capBudget,
+  TREE_BOX,
+  buildTemplate,
   capProfile,
+  constellationEdges,
   cardShares,
   cardNodeValue,
   cardTilt,
@@ -202,6 +205,51 @@ describe('templates', () => {
       nodes: template.nodes.map((node) => (node.kind === 'parent' ? { ...node, parentId: 'root' } : node)),
     }
     expect(validateTemplate(broken)).toMatch(/detached/)
+  })
+})
+
+describe('layout', () => {
+  const tree = (tier: number) =>
+    constellationTemplate(tier).nodes.filter((node) => node.kind === 'card' || node.kind === 'stat')
+
+  it('keeps every tree inside its box', () => {
+    for (const tier of TIERS) {
+      for (const node of tree(tier)) {
+        expect(node.x).toBeGreaterThanOrEqual(TREE_BOX.minX)
+        expect(node.x).toBeLessThanOrEqual(TREE_BOX.maxX)
+        expect(node.y).toBeGreaterThanOrEqual(TREE_BOX.minY)
+        expect(node.y).toBeLessThanOrEqual(TREE_BOX.maxY)
+      }
+    }
+  })
+
+  it('separates nodes enough to stay legible at tier 14, the densest tree', () => {
+    for (const tier of TIERS) {
+      const nodes = tree(tier)
+      const gaps = nodes.flatMap((a, i) => nodes.slice(i + 1).map((b) => Math.hypot(a.x - b.x, a.y - b.y)))
+      // 9 units is about 35 pt on a 390 pt canvas, so a 44 pt node reads without zooming.
+      expect(Math.min(...gaps)).toBeGreaterThan(9)
+    }
+  })
+
+  it('keeps lineage in its own band, clear of the tree', () => {
+    const template = constellationTemplate(7)
+    const lineage = template.nodes.filter((node) => node.kind === 'parent' || node.kind === 'grandparent')
+    expect(lineage).toHaveLength(6)
+    for (const node of lineage) expect(node.y).toBeGreaterThan(TREE_BOX.maxY)
+  })
+
+  it('is deterministic: the same tier always lays out identically', () => {
+    for (const tier of [1, 7, 14]) {
+      expect(buildTemplate(tier).nodes).toEqual(buildTemplate(tier).nodes)
+    }
+  })
+
+  it('draws an edge for every node that has a parent', () => {
+    const template = constellationTemplate(1)
+    const edges = constellationEdges(template)
+    expect(edges).toHaveLength(template.nodes.filter((node) => node.parentId !== null).length)
+    expect(edges.every((edge) => edge.from.id !== edge.to.id)).toBe(true)
   })
 })
 

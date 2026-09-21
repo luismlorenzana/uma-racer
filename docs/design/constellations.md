@@ -239,6 +239,26 @@ you change it back.
 Reconfiguration never costs tickets, never touches Training Level, never touches card levels, and cannot fail.
 The only thing that gates it is whether a node is unlocked.
 
+## The screen
+
+The constellation is the one screen that gets the dark **stage** surface, because that is what makes it read
+as a constellation rather than a form.
+
+- **Nodes** are circles on a 100×100 unit canvas that stretches to the screen's aspect, so a portrait phone
+  spreads the tree down its long axis instead of wasting it. Locked nodes are faint and unlabelled, unlocked
+  and empty ones are dashed outlines, and a filled node shows the card or Uma icon with its type colour on
+  the rim.
+- **Edges** are hairlines. An edge between two nodes holding the same card brightens to the accent, so a
+  stacked card reads as one line of the constellation rather than as repetition.
+- **A stat strip** above the graph carries the five derived stats and SP, each with a delta against the
+  configuration as it was when the screen opened.
+- **The aptitude line** below it names every grade lineage has moved, with the step count that produced it.
+- **Pan and pinch-zoom**, with a Fit control. The view refits when the host resizes.
+
+Node cells are 36 pt at fit. A 38-node tier-14 tree cannot show 44 pt cells on a 375 pt screen — 88 layout
+units of width leaves about 26 pt per cell — so fit is the overview and pinching in is how you work on a
+crowded tree.
+
 ## Templates
 
 A constellation template is **static content**, authored per scenario, not generated:
