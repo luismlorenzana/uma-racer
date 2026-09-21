@@ -15,9 +15,8 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { listRaceHistory, setFeaturedUma, setUmaLoadout } from '../game/actions'
+import { advanceUma, listRaceHistory, setFeaturedUma, setUmaLoadout, startScenario } from '../game/actions'
 import { buildDeckView, formatDeckEffect } from '../game/deck-view'
-import { buildLineageView } from '../game/lineage-view'
 import { buildJourneyView } from '../game/goals-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import { buildUmaBadgeCollection } from '../game/badge-collection-view'
@@ -107,25 +106,24 @@ export function UmaProfileScreen() {
   if (status === 'error') return <ScreenState title="Save needs attention" detail={error ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening profile…" detail="Loading private content and save data." />
   if (!save) return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
-  const joined = joinUma(save, contentState.content)
+  const joined = joinUma(save, contentState.content, cards)
   if (joined.status !== 'ready') {
     return <ScreenState title="Content reference missing" detail={`The save is preserving ${joined.templateId} until its template is restored.`} action={{ label: 'Back to Stable', to: '/stable' }} />
   }
   const uma = joined.value
   const featured = profile.featuredUmaId === save.templateId
-  const setupPending = !save.scenarioStarted
-  const raceUnlocked = save.scenarioStarted && save.trainingsThisScenario >= 1 && !isGateLevel(save.level)
-  const loadout = summarizeSkillLoadout(save, uma.template, contentState.content.skills.byId)
+  const setupPending = !uma.run.started
+  const raceUnlocked = uma.run.started && !isGateLevel(save.level)
+  const loadout = summarizeSkillLoadout(uma.derived, uma.template, contentState.content.skills.byId)
   const deck = buildDeckView(save, cards, contentState.content)
-  const lineage = buildLineageView(save, contentState.content)
   const journey = buildJourneyView(save, contentState.content)
   const selectedJourney = journey.find((item) => item.tier === selectedJourneyTier) ?? null
 
   const toggleSkill = async (skillId: string) => {
     if (savingSkillId) return
-    const next = save.loadoutSkillIds.includes(skillId)
-      ? save.loadoutSkillIds.filter((id) => id !== skillId)
-      : [...save.loadoutSkillIds, skillId]
+    const next = uma.derived.loadoutSkillIds.includes(skillId)
+      ? uma.derived.loadoutSkillIds.filter((id) => id !== skillId)
+      : [...uma.derived.loadoutSkillIds, skillId]
     setSavingSkillId(skillId)
     try {
       await setUmaLoadout(save.templateId, next)
@@ -163,9 +161,9 @@ export function UmaProfileScreen() {
           <h1 className="text-2xl font-extrabold">{uma.template.name}</h1>
           {flairSummary?.activeTitle && <p className="mt-1 text-sm font-extrabold text-violet-700">{flairSummary.activeTitle}</p>}
           <p className="text-sm text-ink-soft">{uma.template.outfit ?? 'Standard outfit'}</p>
-          <p className="mt-2 font-extrabold text-sky-deep">Uma Lv {save.level} · Training Lv {save.trainingLevel}</p>
+          <p className="mt-2 font-extrabold text-sky-deep">Uma Lv {save.level} · Training Lv {uma.derived.trainingLevel}</p>
           <p className="text-sm font-bold">Tier {uma.tier} · {uma.scenario?.name ?? 'Future scenario'}</p>
-          {uma.readyToPromote && <p className="mt-2 inline-flex rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">Ready to promote</p>}
+          {uma.readyToAdvance && <p className="mt-2 inline-flex rounded-full bg-gold px-3 py-1 text-sm font-extrabold text-white text-outline">Ready to promote</p>}
         </div>
       </Panel>
 
@@ -189,27 +187,27 @@ export function UmaProfileScreen() {
       <Panel>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-extrabold">Current stats</h2>
-          <span className="text-xs font-bold text-ink-soft">TL cap {uma.currentStatCap} · baseline {uma.baselineStatCap}</span>
+          <span className="text-xs font-bold text-ink-soft">Scenario caps</span>
         </div>
         <div className="mt-3 grid gap-2">
           {STATS.map((stat) => {
-            const value = save.stats[stat]
-            const over = value > uma.currentStatCap
+            const value = uma.derived.stats[stat]
+            const over = value > uma.caps[stat]
             return (
               <div key={stat}>
                 <div className="flex items-center justify-between text-sm font-extrabold">
                   <span>{statLabel(stat)}</span>
-                  <span>{value} / {uma.currentStatCap}{over ? ' carried' : ''}</span>
+                  <span>{value} / {uma.caps[stat]}{over ? ' carried' : ''}</span>
                 </div>
                 <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div className={`h-full rounded-full ${over ? 'bg-gold' : statTone[stat]}`} style={{ width: `${Math.min(100, (value / uma.currentStatCap) * 100)}%` }} />
+                  <div className={`h-full rounded-full ${over ? 'bg-gold' : statTone[stat]}`} style={{ width: `${Math.min(100, (value / uma.caps[stat]) * 100)}%` }} />
                 </div>
               </div>
             )
           })}
           <div className="mt-1 flex min-h-11 items-center justify-between rounded-xl bg-violet-50 px-3 font-extrabold">
             <span>Skill Points</span>
-            <span>{save.skillPoints} / {uma.currentSpCap}</span>
+            <span>{uma.derived.skillPoints} / {uma.spCap}</span>
           </div>
         </div>
       </Panel>
@@ -218,11 +216,11 @@ export function UmaProfileScreen() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-extrabold">Support deck</h2>
-            <p className="text-xs font-bold text-ink-soft">{save.deckCardIds.length} / {deck.slotCount} cards · Race Bonus {formatDeckEffect('raceBonus', deck.raceBonus)} · {deck.hintSkillCount} hints</p>
+            <p className="text-xs font-bold text-ink-soft">{uma.run.cardSetIds.length} / {deck.slotCount} cards · Race Bonus {formatDeckEffect('raceBonus', deck.raceBonus)} · {deck.hintSkillCount} hints</p>
           </div>
           <Link to={`/stable/${encodeURIComponent(save.templateId)}/deck`} className="flex min-h-11 items-center rounded-xl bg-violet-600 px-4 text-sm font-extrabold text-white">Edit</Link>
         </div>
-        {save.deckCardIds.length > 0 ? <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        {uma.run.cardSetIds.length > 0 ? <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {deck.slots.filter((slot) => slot.card).map((slot) => <div key={slot.index} className="w-20 shrink-0">
             <AtlasSprite asset={slot.card!.asset} decorative className="rounded-xl bg-slate-100" fallback={<div className="flex h-full items-center justify-center">?</div>} />
             <p className="mt-1 truncate text-center text-[10px] font-extrabold">{slot.card!.template?.charName ?? 'Missing'}</p>
@@ -242,12 +240,12 @@ export function UmaProfileScreen() {
           </span>
         </div>
         <div className="mt-3 grid gap-2">
-          {save.skillLibrary.map((unlock) => {
+          {uma.derived.library.map((unlock) => {
             const skill = contentState.content.skills.byId.get(unlock.skillId)
             if (!skill) return <div key={unlock.skillId} className="rounded-xl bg-red-50 p-3 text-sm font-bold text-danger">Missing skill {unlock.skillId}</div>
             const own = unlock.origin === 'own-unique'
             const supported = raceSkillSupported(compileRaceSkill(skill))
-            const equipped = own || save.loadoutSkillIds.includes(skill.id)
+            const equipped = own || uma.derived.loadoutSkillIds.includes(skill.id)
             return (
               <button
                 key={skill.id}
@@ -275,16 +273,16 @@ export function UmaProfileScreen() {
               </button>
             )
           })}
-          {save.skillLibrary.length === 0 && <p className="text-sm text-ink-soft">Train with support cards to discover skills.</p>}
+          {uma.derived.library.length === 0 && <p className="text-sm text-ink-soft">Train with support cards to discover skills.</p>}
         </div>
         {!loadout.valid && <p className="mt-3 rounded-xl bg-red-50 p-2 text-sm font-bold text-danger">{loadout.errors[0]}</p>}
       </Panel>
 
       <Panel className="flex flex-col gap-4">
         <h2 className="text-lg font-extrabold">Aptitudes</h2>
-        <AptitudeRow label="Surface" entries={SURFACES.map((key) => [titleCase(key), save.aptitudes.surface[key]])} />
-        <AptitudeRow label="Distance" entries={DISTANCE_CATEGORIES.map((key) => [titleCase(key), save.aptitudes.distance[key]])} />
-        <AptitudeRow label="Strategy" entries={STRATEGIES.map((key) => [titleCase(key), save.aptitudes.strategy[key]])} />
+        <AptitudeRow label="Surface" entries={SURFACES.map((key) => [titleCase(key), uma.derived.aptitudes.surface[key]])} />
+        <AptitudeRow label="Distance" entries={DISTANCE_CATEGORIES.map((key) => [titleCase(key), uma.derived.aptitudes.distance[key]])} />
+        <AptitudeRow label="Strategy" entries={STRATEGIES.map((key) => [titleCase(key), uma.derived.aptitudes.strategy[key]])} />
       </Panel>
 
       <Panel>
@@ -294,7 +292,6 @@ export function UmaProfileScreen() {
             <button key={item.tier} type="button" onClick={() => setSelectedJourneyTier(item.tier)} className={`min-h-28 min-w-32 rounded-2xl border-2 p-3 text-left ${item.tier === uma.tier ? 'border-sky bg-sky/10' : 'border-turf/30 bg-turf/5'}`}>
               <p className="text-xs font-extrabold text-ink-soft">Tier {item.tier}</p>
               <p className="mt-1 text-sm font-extrabold">{item.name}</p>
-              {item.modifier && <p className="mt-1 text-[10px] font-extrabold text-violet-700">{item.modifier.name}</p>}
               {item.tracking === 'legacy-untracked' ? <p className="mt-2 text-xs font-bold text-ink-soft">— Not tracked</p> : item.tracking === 'missing' ? <p className="mt-2 text-xs font-bold text-danger">Plan unavailable</p> : (
                 <div className="mt-2 flex items-center gap-1" aria-label={`${item.completed} completed, ${item.missed} missed, ${item.active} active`}>
                   {item.honors ? <span className="rounded-full bg-gold px-2 py-1 text-xs font-extrabold text-white text-outline">Honors</span> : item.goals.flatMap((goal) => goal.pips.length > 0 ? goal.pips.map((pip) => ({ key: `${goal.id}:${pip.key}`, status: pip.status })) : [{ key: goal.id, status: goal.status }]).map((pip) => <span key={pip.key} className={`h-3 w-3 rounded-full border-2 ${pip.status === 'completed' ? 'border-gold bg-gold' : pip.status === 'missed' ? 'border-slate-400 bg-slate-200' : 'border-sky bg-white'}`} />)}
@@ -305,7 +302,6 @@ export function UmaProfileScreen() {
         </div>
         {selectedJourney && <div className="mt-3 rounded-2xl bg-white p-3">
           <div className="flex items-center justify-between gap-2"><p className="font-extrabold">{selectedJourney.name}</p><button type="button" className="min-h-11 px-2 text-sm font-extrabold text-sky-deep" onClick={() => setSelectedJourneyTier(null)}>Close</button></div>
-          {selectedJourney.modifier && <div className={`mb-3 rounded-xl px-3 py-2 ${selectedJourney.modifier.legacyUnavailable ? 'bg-amber-50' : 'bg-violet-50'}`}><p className="text-xs font-extrabold text-violet-700">{selectedJourney.modifier.name}</p><p className="text-xs font-bold text-ink-soft">{selectedJourney.modifier.rule}</p><p className="mt-1 text-[11px] text-ink-soft">{selectedJourney.modifier.detail}</p></div>}
           {selectedJourney.tracking === 'legacy-untracked' ? <p className="text-sm text-ink-soft">Not tracked — this completed tier predates goal plans, so no wins or misses were invented.</p> : selectedJourney.goals.length === 0 ? <p className="text-sm text-danger">Goal plan unavailable.</p> : <div className="grid gap-2">
             {selectedJourney.goals.map((goal) => {
               const result = goal.completedRaceResultId ? raceHistory.find((record) => `race:${record.umaId}:${record.sequence}` === goal.completedRaceResultId) : undefined
@@ -323,21 +319,44 @@ export function UmaProfileScreen() {
       <div className="grid grid-cols-2 gap-3">
         <Panel className="col-span-2 p-3">
           <p className="text-sm font-extrabold">Lineage</p>
-          {lineage.activeParents.length > 0 ? <div className="mt-2 grid grid-cols-2 gap-2">{lineage.activeParents.map((parent) => <div key={parent.umaId} className="rounded-xl bg-violet-50 p-2"><p className="text-xs font-extrabold">{parent.name} · T{parent.completedTier}</p><p className="text-[11px] text-ink-soft">{parent.uniqueCount} unique · {parent.whiteCount} whites</p>{parent.grandparents.map((grandparent) => <p key={grandparent.umaId} className="mt-1 border-l-2 border-violet-300 pl-2 text-[10px] font-bold">↳ {grandparent.name} · T{grandparent.completedTier}</p>)}</div>)}</div> : <p className="mt-1 text-xs text-ink-soft">No parents in the active scenario.</p>}
-          {lineage.latestSnapshot ? <p className="mt-3 text-xs font-bold text-violet-700">Latest self snapshot: Tier {lineage.latestSnapshot.completedTier} · {lineage.latestSnapshot.whiteCount} inheritable whites · {lineage.latestSnapshot.grandparents.length} frozen parents.</p> : <p className="mt-3 text-xs font-bold text-violet-700">Complete a scenario to become an available parent.</p>}
+          {uma.derived.lineage.length > 0
+            ? <div className="mt-2 grid grid-cols-2 gap-2">{uma.derived.lineage.map((entry) => (
+              <div key={entry.id} className="rounded-xl bg-violet-50 p-2">
+                <p className="text-xs font-extrabold">{entry.name}</p>
+                <p className="text-[11px] text-ink-soft">{entry.awakeningSkillIds.length} baseline skills</p>
+              </div>
+            ))}</div>
+            : <p className="mt-1 text-xs text-ink-soft">Reach Training Level 9 to open the first lineage slot.</p>}
         </Panel>
       </div>
 
       <div className="sticky bottom-24 z-10 rounded-[1.5rem] border-2 border-white bg-white/95 p-3 shadow-[var(--shadow-panel)] backdrop-blur">
         <p className="mb-3 text-center text-sm font-extrabold">
-          {setupPending ? 'Choose lineage before Training or racing.' : uma.readyToPromote ? 'Ready to promote before racing again.' : isGateLevel(save.level) ? 'Latest scenario complete.' : raceUnlocked ? 'Progression races are open.' : 'Train once to unlock races in this scenario.'}
+          {setupPending ? 'Start this scenario before racing.' : uma.readyToAdvance ? 'Ready to unlock the next scenario.' : isGateLevel(save.level) ? 'Latest scenario complete.' : 'Progression races are open.'}
         </p>
         <div className="grid grid-cols-3 gap-2">
-          <GameButton variant="secondary" disabled={!setupPending && isGateLevel(save.level) && !uma.readyToPromote} onClick={() => navigate(setupPending || uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/training/${encodeURIComponent(save.templateId)}`)}>{setupPending ? 'Set up' : uma.readyToPromote ? 'Promote' : 'Train'}</GameButton>
-          <GameButton variant="go" disabled={!setupPending && !raceUnlocked && !uma.readyToPromote} onClick={() => navigate(setupPending || uma.readyToPromote ? `/scenario/${encodeURIComponent(save.templateId)}/start` : `/race?uma=${encodeURIComponent(save.templateId)}`)}>{setupPending ? 'Start' : uma.readyToPromote ? 'Promote' : 'Race'}</GameButton>
-          <GameButton variant="primary" disabled={!setupPending && !uma.readyToPromote} onClick={() => navigate(`/scenario/${encodeURIComponent(save.templateId)}/start`)}>{setupPending ? 'Lineage' : uma.readyToPromote ? 'Next tier' : isGateLevel(save.level) ? 'Complete' : 'At gate'}</GameButton>
+          <GameButton
+            variant="secondary"
+            onClick={() => navigate(`/constellation/${encodeURIComponent(save.templateId)}`)}
+          >
+            Constellation
+          </GameButton>
+          <GameButton
+            variant="go"
+            disabled={!raceUnlocked}
+            onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}
+          >
+            Race
+          </GameButton>
+          <GameButton
+            variant="primary"
+            disabled={!setupPending && !uma.readyToAdvance}
+            onClick={() => void (setupPending ? startScenario(save.templateId) : advanceUma(save.templateId))}
+          >
+            {setupPending ? 'Start' : uma.readyToAdvance ? 'Next scenario' : 'At gate'}
+          </GameButton>
         </div>
-        <p className="mt-2 text-center text-xs text-ink-soft">Promotion spends tickets atomically and starts at Training Level 1.</p>
+        <p className="mt-2 text-center text-xs text-ink-soft">Unlocking the next scenario spends tickets and opens a fresh constellation at Training Level 1.</p>
       </div>
     </div>
   )

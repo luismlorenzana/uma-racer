@@ -4,8 +4,8 @@ import {
   isLocalDay,
   parseCardSave,
   parsePlayerProfileOrThrow,
-  promoteCard,
-  type CardPromotionResult,
+  advanceCardLimitBreak,
+  type CardAdvanceResult,
   type CardSave,
   type LedgerEntry,
   type PlayerProfile,
@@ -18,7 +18,7 @@ import { reconcileTrainerInTransaction } from './trainer'
 export interface CardPromotionMutation {
   profile: PlayerProfile
   card: CardSave
-  result: CardPromotionResult
+  result: CardAdvanceResult
   ledgerIds: [string, string]
 }
 
@@ -26,10 +26,11 @@ function validateInput(content: LoadedContent, profile: PlayerProfile, card: Car
   if (!content.cards.byId.has(card.templateId)) throw new Error(`Card content is missing ${card.templateId}`)
   if (!isLocalDay(today)) throw new Error(`Invalid local day: ${today}`)
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Invalid card promotion timestamp')
-  const result = promoteCard(card, profile.tickets)
+// A Bond Recall run charges its tickets up front; clearing the board is the limit break (D120).
+  const result = advanceCardLimitBreak(card)
   const ledgerIds: [string, string] = [
     `card-limit-break:${card.templateId}:${result.toLimitBreak}`,
-    `card-level-tickets:${card.templateId}:${result.levelGained}`,
+    `card-level-tickets:${card.templateId}:${result.toLevel}`,
   ]
   return { result, ledgerIds }
 }
@@ -43,7 +44,7 @@ export function promoteMemoryCard(
 ): CardPromotionMutation {
   const { result, ledgerIds } = validateInput(content, profile, card, today, now)
   return {
-    profile: { ...profile, tickets: profile.tickets + result.ticketDelta },
+    profile: { ...profile, tickets: profile.tickets + result.ticketReward },
     card: result.card,
     result,
     ledgerIds,
@@ -73,10 +74,6 @@ export async function promotePersistentCard(
     await queueInTransaction('profile', 'main', 'upsert', now)
     await queueInTransaction('cards', cardId, 'upsert', now)
     const entries: { id: string; data: LedgerEntry }[] = [
-      {
-        id: mutation.ledgerIds[0],
-        data: { resource: 'tickets', delta: -mutation.result.cost, reason: 'card-limit-break', localDay: today, createdAt: now },
-      },
       {
         id: mutation.ledgerIds[1],
         data: { resource: 'tickets', delta: mutation.result.ticketReward, reason: 'card-level', localDay: today, createdAt: now },

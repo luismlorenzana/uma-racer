@@ -23,6 +23,7 @@ import {
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { appendFlairEvents } from './badges'
+import { badgeSubject } from './badges'
 import { db } from './db'
 import { queueInTransaction } from './persistence'
 
@@ -92,7 +93,8 @@ export async function reconcileTrainerInTransaction(
   const contributorIds = new Set(contributors.map((state) => state.umaId))
   for (const row of umaRows) {
     if (contributorIds.has(row.id)) continue
-    const state = createUmaBadgeState(parseUma(row.id, row.data), now)
+    const parsed = parseUma(row.id, row.data)
+    const state = createUmaBadgeState(parsed, badgeSubject(content, parsed), now)
     await db.badges.add({ id: `uma:${row.id}`, version: 0, data: state })
     await queueInTransaction('badges', `uma:${row.id}`, 'upsert', now)
     contributors.push(state)

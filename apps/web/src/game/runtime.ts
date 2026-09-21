@@ -12,6 +12,10 @@ import {
   createUmaBadgeState,
   createInitialSave,
   deriveUma,
+  activeScenario,
+  constellationTemplate,
+  isNodeUnlocked,
+  type NodeAssignment,
   type UmaSave,
   parseSyncResponseOrThrow,
   SCENARIOS,
@@ -361,6 +365,48 @@ export class GameRuntime {
     })
     if (result.changed || result.events.length > 0) mergeBadgeAndFlairState({ ...state.badges, trainer: result.state }, result.events)
     return result.events.map((event) => event.id)
+  }
+
+  /**
+   * Assigns or clears one constellation node. Free, instant and always reversible: reconfiguring is the
+   * point of the system, so it costs nothing and cannot fail on a locked or unknown node (D121).
+   */
+  async setConstellationNode(id: string, nodeId: string, assignment: NodeAssignment | null): Promise<void> {
+    const generation = this.generation
+    const state = useGame.getState()
+    const uma = state.umas[id]
+    if (state.status !== 'ready' || !uma) throw new Error('Constellation Uma must be owned')
+
+    const run = activeScenario(uma)
+    const node = constellationTemplate(run.tier).nodes.find((entry) => entry.id === nodeId)
+    if (!node || node.kind === 'root') throw new Error('Unknown constellation node')
+    if (!isNodeUnlocked(constellationTemplate(run.tier), node, run.trainingLevel)) {
+      throw new Error('That node is still locked')
+    }
+
+    const assignments = { ...run.assignments }
+    if (assignment) assignments[nodeId] = assignment
+    else delete assignments[nodeId]
+    const next: UmaSave = {
+      ...uma,
+      scenarios: uma.scenarios.map((entry) => (entry.tier === run.tier ? { ...entry, assignments } : entry)),
+    }
+
+    if (!state.persistent) {
+      replaceUma(next)
+      return
+    }
+    const now = Date.now()
+    await db.transaction('rw', db.umas, db.outbox, async () => {
+      const row = await db.umas.get(id)
+      if (!row) throw new Error('Local Uma is missing')
+      await db.umas.put({ ...row, data: next })
+      await queueInTransaction('umas', id, 'upsert', now)
+    })
+    if (generation !== this.generation) return
+    replaceUma(next)
+    await this.refreshPending()
+    this.schedule()
   }
 
   async setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {

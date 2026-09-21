@@ -1,3 +1,4 @@
+import { cardLevel } from '@racer/domain'
 import { useMemo, useState } from 'react'
 import type { CardSave, UmaSave } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
@@ -103,7 +104,7 @@ export function CardPickerSheet({
                   footer={
                     <>
                       <p className="font-display truncate text-[12px] font-semibold">{entry.template.charName}</p>
-                      <p className="truncate text-[10px] text-ink-on-dark-soft">Lv {entry.save?.level} · LB{entry.save?.limitBreak}</p>
+                      <p className="truncate text-[10px] text-ink-on-dark-soft">Lv {entry.save ? cardLevel(entry.save) : 1} · LB{entry.save?.limitBreak}</p>
                     </>
                   }
                 />

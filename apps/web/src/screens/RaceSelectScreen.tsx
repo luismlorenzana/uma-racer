@@ -1,4 +1,6 @@
 import {
+  activeScenario,
+  deriveUma,
   STRATEGIES,
   SCENARIOS,
   compileRaceSkill,
@@ -44,9 +46,8 @@ const ordinal = (value: number) => {
 }
 
 function raceLockReason(save: UmaSave, race: RaceTemplate, opponentCharacters: number): string | null {
-  if (!save.scenarioStarted) return 'Finish scenario setup before racing.'
-  if (save.trainingsThisScenario < 1) return 'Complete one Training turn with this Uma first.'
-  if (isGateLevel(save.level)) return 'This Uma is ready to promote and cannot race again yet.'
+  if (!activeScenario(save).started) return 'Start this scenario before racing.'
+  if (isGateLevel(save.level)) return 'This Uma is ready for the next scenario and cannot race again yet.'
   const fieldSize = progressionFieldSize(race)
   if (opponentCharacters < fieldSize - 1) return `This field needs ${fieldSize - 1} distinct opponents.`
   return null
@@ -81,7 +82,7 @@ export function RaceSelectScreen() {
       ? profile.featuredUmaId
       : ownedIds[0] ?? null
   const selectedUma = selectedUmaId ? owned[selectedUmaId] : undefined
-  const loadoutKey = selectedUma?.loadoutSkillIds.join('|') ?? ''
+  const loadoutKey = selectedUma ? activeScenario(selectedUma).loadoutSkillIds.join('|') : ''
   const requestedGoalRace = params.get('goal')
 
   useEffect(() => {
@@ -135,7 +136,7 @@ export function RaceSelectScreen() {
   const content = contentState.content
   const umaTemplate = content.umas.byId.get(selectedUmaId)
   if (!umaTemplate) return <ScreenState title="Content reference missing" detail={`The save is preserving ${selectedUmaId} until its template is restored.`} />
-  if (!selectedUma.scenarioStarted) return <ScreenState title="Finish scenario setup" detail="Choose optional frozen parents before this Uma can race." action={{ label: 'Choose lineage', to: `/scenario/${encodeURIComponent(selectedUmaId)}/start` }} />
+  if (!activeScenario(selectedUma).started) return <ScreenState title="Start this scenario" detail="Open her constellation to begin this scenario before racing." action={{ label: 'Open constellation', to: `/constellation/${encodeURIComponent(selectedUmaId)}` }} />
   const sortedRaces = [...content.races.items].sort((left, right) =>
     GRADE_ORDER[left.grade] - GRADE_ORDER[right.grade] ||
     left.distance - right.distance ||
@@ -156,19 +157,26 @@ export function RaceSelectScreen() {
   let deckError: string | null = null
   try {
     const deck = validateSupportDeck({
-      tier: tierOfLevel(selectedUma.level),
-      orderedCardIds: selectedUma.deckCardIds,
+      tier: selectedUma.unlockedTier,
+      orderedCardIds: activeScenario(selectedUma).cardSetIds,
       ownedCards: Object.values(cards),
       templates: content.cards.byId,
     })
     const issue = deck.issues[0]
     if (issue) throw new Error(supportDeckIssueMessage(issue))
-    raceBonus = equippedRaceBonus(tierOfLevel(selectedUma.level), deck.cards)
+    raceBonus = equippedRaceBonus(selectedUma.unlockedTier, deck.cards)
   } catch (reason) {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }
-  const skillLoadout = summarizeSkillLoadout(selectedUma, umaTemplate, content.skills.byId)
-  const promotionRequired = isGateLevel(selectedUma.level) && selectedUma.level < SCENARIOS.length * 10
+  const derivedUma = deriveUma({
+    uma: selectedUma,
+    umaTemplate,
+    cardSaves: new Map(Object.entries(cards)),
+    cardTemplates: content.cards.byId,
+    umaTemplates: content.umas.byId,
+  })
+  const skillLoadout = summarizeSkillLoadout(derivedUma, umaTemplate, content.skills.byId)
+  const advanceRequired = isGateLevel(selectedUma.level) && selectedUma.level < SCENARIOS.length * 10
   const lockReason = picked
     ? raceLockReason(selectedUma, picked, opponentCharacters) ?? deckError ?? (skillLoadout.valid ? null : skillLoadout.errors[0]!)
     : null
@@ -196,9 +204,9 @@ export function RaceSelectScreen() {
 
   const toggleSkill = async (skillId: string) => {
     if (savingSkillId) return
-    const next = selectedUma.loadoutSkillIds.includes(skillId)
-      ? selectedUma.loadoutSkillIds.filter((id) => id !== skillId)
-      : [...selectedUma.loadoutSkillIds, skillId]
+    const next = derivedUma.loadoutSkillIds.includes(skillId)
+      ? derivedUma.loadoutSkillIds.filter((id) => id !== skillId)
+      : [...derivedUma.loadoutSkillIds, skillId]
     setSavingSkillId(skillId)
     setStartError(null)
     try {
@@ -302,9 +310,9 @@ export function RaceSelectScreen() {
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
-                ['Surface', selectedUma.aptitudes.surface[picked.surface]],
-                ['Distance', selectedUma.aptitudes.distance[picked.distanceCategory]],
-                ['Strategy', selectedUma.aptitudes.strategy[strategy]],
+                ['Surface', derivedUma.aptitudes.surface[picked.surface]],
+                ['Distance', derivedUma.aptitudes.distance[picked.distanceCategory]],
+                ['Strategy', derivedUma.aptitudes.strategy[strategy]],
               ].map(([label, grade]) => (
                 <div key={label} className="rounded-xl bg-white p-2">
                   <p className="text-xs font-bold text-ink-soft">{label}</p>
@@ -318,14 +326,14 @@ export function RaceSelectScreen() {
                 <span className="text-xs font-extrabold text-violet-700">{skillLoadout.cost} / {skillLoadout.cap} SP</span>
               </div>
               <div className="grid gap-2">
-                {selectedUma.skillLibrary.map((unlock) => {
+                {derivedUma.library.map((unlock) => {
                   const skill = content.skills.byId.get(unlock.skillId)
                   if (!skill) return null
                   const own = unlock.origin === 'own-unique'
                   const compiled = compileRaceSkill(skill)
                   const supported = raceSkillSupported(compiled)
                   const compatible = supported && raceSkillCompatibleWithCourse(compiled, picked)
-                  const equipped = own || selectedUma.loadoutSkillIds.includes(skill.id)
+                  const equipped = own || derivedUma.loadoutSkillIds.includes(skill.id)
                   return (
                     <button
                       key={skill.id}
@@ -378,14 +386,14 @@ export function RaceSelectScreen() {
                     onClick={() => { setStrategy(value); setStartError(null) }}
                     className={`min-h-12 rounded-xl border-2 px-3 font-extrabold ${strategy === value ? 'border-sky bg-sky text-white text-outline' : 'border-white bg-white text-ink'}`}
                   >
-                    {STRATEGY_LABEL[value]} · {selectedUma.aptitudes.strategy[value]}
+                    {STRATEGY_LABEL[value]} · {derivedUma.aptitudes.strategy[value]}
                   </m.button>
                 ))}
               </div>
             </div>
             {(lockReason || startError) && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-danger">{startError ?? lockReason}</p>}
-            <GameButton variant="go" size="lg" disabled={!promotionRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => promotionRequired ? navigate(`/scenario/${encodeURIComponent(selectedUmaId)}/start`) : void start()}>
-              {promotionRequired ? 'Review promotion' : starting ? 'Preparing…' : 'Start race'}
+            <GameButton variant="go" size="lg" disabled={!advanceRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => advanceRequired ? navigate(`/scenario/${encodeURIComponent(selectedUmaId)}/start`) : void start()}>
+              {advanceRequired ? 'Review promotion' : starting ? 'Preparing…' : 'Start race'}
             </GameButton>
           </div>
         )}

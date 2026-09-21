@@ -90,7 +90,6 @@ export interface RaceCompletion {
   record: RaceResultRecord
   timeline: RaceTimeline
   alreadyRecorded: boolean
-  scenarioModifierReward: number
 }
 
 export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
@@ -518,7 +517,7 @@ export function completeMemoryRace(
     if (!race || !existing.accomplishmentFacts || JSON.stringify(existing.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
       throw new Error('Race result accomplishment facts are corrupt')
     }
-    return { profile, uma, record: existing, timeline, alreadyRecorded: true, scenarioModifierReward: 0 }
+    return { profile, uma, record: existing, timeline, alreadyRecorded: true }
   }
   const current = buildPreparedRace({
     content,
@@ -545,7 +544,6 @@ export function completeMemoryRace(
     record: goalResult.record,
     timeline,
     alreadyRecorded: false,
-    scenarioModifierReward: modifier.awarded,
   }
 }
 
@@ -574,7 +572,6 @@ export async function completePersistentRace(
         record,
         timeline,
         alreadyRecorded: true,
-        scenarioModifierReward: 0,
       }
     }
 
@@ -665,7 +662,6 @@ export async function completePersistentRace(
       record: committedRecord,
       timeline,
       alreadyRecorded: false,
-      scenarioModifierReward: modifier.awarded,
     }
   })
 }

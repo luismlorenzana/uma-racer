@@ -1,6 +1,7 @@
 // Pure mobile support-deck projection (docs/design/support-cards.md#deck).
 
 import {
+  activeScenario,
   CARD_EFFECTS,
   STATS,
   deckSlotCount,
@@ -64,10 +65,10 @@ export function buildDeckView(
   uma: UmaSave,
   cardsById: Readonly<Record<string, CardSave>>,
   content: LoadedContent,
-  orderedCardIds: readonly string[] = uma.deckCardIds,
+  orderedCardIds: readonly string[] = activeScenario(uma).cardSetIds,
   filters: DeckFilters = { type: 'all', era: 'all' },
 ): DeckViewModel {
-  const tier = tierOfLevel(uma.level)
+  const tier = uma.unlockedTier
   const slotCount = deckSlotCount(tier)
   const validation = validateSupportDeck({
     tier,
