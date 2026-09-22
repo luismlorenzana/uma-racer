@@ -1,4 +1,5 @@
-// SSR support cards: usage leveling, limit breaks, generated effect values (docs/design/support-cards.md).
+// SSR support cards: limit breaks (shown as bond), and the generated effect profile that still feeds tilt and Race
+// Bonus (docs/design/support-cards.md). The rest of the effect model died with the training turn (D125).
 
 import { CARD_SET_SIZE } from './constellation'
 import type { SupportCardTemplate } from './content'
@@ -6,8 +7,6 @@ import type { SupportCardTemplate } from './content'
 export const CARD_MAX_LEVEL = 25
 export const LEVELS_PER_LIMIT_BREAK = 5
 export const MAX_LIMIT_BREAK = 4
-
-export const cardExpToNext = (level: number): number => 40 + 15 * (level - 1)
 
 /** Highest level reachable at a limit break: LB0 → 5 … LB4 → 25. */
 export const cardLevelCap = (limitBreak: number): number => LEVELS_PER_LIMIT_BREAK * (limitBreak + 1)
@@ -18,9 +17,7 @@ export const LIMIT_BREAK_MULT = [1.0, 1.1, 1.2, 1.32, 1.5] as const
 
 export const levelWithinLimitBreakMult = (level: number): number => 1 + 0.02 * ((level - 1) % LEVELS_PER_LIMIT_BREAK)
 
-export const CARD_TRAINING_EXP = { equipped: 5, present: 15, friendship: 25 } as const
 export const CARD_UNIQUE_BONUS_MULTIPLIER = 0.25
-export const BROAD_CARD_STAT_DIVISOR = 5
 
 export const CARD_EFFECTS = [
   'trainingBonus',
@@ -152,19 +149,6 @@ export function projectCardEffects(
       inactiveReason,
     }
   })
-}
-
-/** Count distinct preserved LB4 source identities that Uma Racer intentionally does not approximate. */
-export function inactiveCardUniqueEffectCount(template: SupportCardTemplate): number {
-  return new Set(
-    (template.uniqueEffect?.effects ?? [])
-      .map((effect) => effect.type)
-      .filter((effectType) => {
-        const effect = sourceCardEffect(effectType, template.type)
-        return effect === null || (isBroadSupportCard(template) &&
-          (effect === 'friendshipBonus' || effect === 'specialtyPriority'))
-      }),
-  ).size
 }
 
 export function projectedCardEffectValue(

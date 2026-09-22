@@ -20,7 +20,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { advanceUma, listRaceHistory, setFeaturedUma, setUmaLoadout, startScenario } from '../game/actions'
 import { buildUmaBadgeCollection, type BadgeCollectionItem } from '../game/badge-collection-view'
-import { buildDeckView, formatDeckEffect } from '../game/deck-view'
+import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import { buildJourneyView } from '../game/goals-view'
 import { useGame } from '../game/store'
@@ -322,7 +322,7 @@ export function UmaProfileScreen() {
           <div className="min-w-0">
             <h3 className="text-[13px] font-semibold">Card set</h3>
             <p className="text-micro">
-              {uma.run.cardSetIds.length} / {deck.slotCount} · Race Bonus {formatDeckEffect('raceBonus', deck.raceBonus)}
+              {uma.run.cardSetIds.length} / {deck.slotCount} · Race Bonus {formatRaceBonus(deck.raceBonus)}
             </p>
           </div>
           <Link to={`/constellation/${encodeURIComponent(save.templateId)}/cards`} className="flex min-h-9 shrink-0 items-center rounded-md bg-sunken px-3 text-[12px] font-semibold">Manage · Bond</Link>

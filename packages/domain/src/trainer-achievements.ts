@@ -204,7 +204,7 @@ export function buildTrainerAchievementCatalog(input: {
   const definitions: TrainerAchievementDefinition[] = [
     fixedDefinition('trainer:stable-master', 'Stable Master', 'Own Umas across the current private catalog.', 'collection', 'owned-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.stableMaster, 'catalog-umas', umaIds),
     fixedDefinition('trainer:card-collector', 'Card Collector', 'Own SSR support cards across the current private catalog.', 'collection', 'owned-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.cardCollector, 'catalog-cards', cardIds),
-    fixedDefinition('trainer:maxed-out', 'Maxed Out', 'Raise support cards to LB4 and level 25.', 'collection', 'maxed-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.maxedOut),
+    fixedDefinition('trainer:maxed-out', 'Maxed Out', 'Take support cards to max bond in any scenario.', 'collection', 'maxed-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.maxedOut),
     fixedDefinition('trainer:coupon-clipper', 'Coupon Clipper', 'Redeem Card and Uma Select Coupons.', 'collection', 'coupon-redemptions', TRAINER_ACHIEVEMENT_THRESHOLDS.couponClipper),
     fixedDefinition('trainer:stable-wins', 'Stable Wins', 'Win races across the Stable.', 'stable', 'stable-wins', TRAINER_ACHIEVEMENT_THRESHOLDS.stableWins),
     fixedDefinition('trainer:stable-g1s', 'Stable G1s', 'Win G1 races across the Stable.', 'stable', 'stable-g1s', TRAINER_ACHIEVEMENT_THRESHOLDS.stableG1s),

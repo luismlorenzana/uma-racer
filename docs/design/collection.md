@@ -118,7 +118,7 @@ Defaults are opinionated, so the album is useful before anyone touches a control
 | Album | Default order |
 |---|---|
 | **Stable (Umas)** | Owned before unowned → **release date, newest first** → **Uma level, highest first** → name |
-| **Cards** | Owned before unowned → **era/release, newest first** → **card level, highest first** → name |
+| **Cards** | Collection: **era/release, newest first** → owned first → name. A scenario: **bond, highest first** → owned first → per-node pay → name |
 
 The ownership split is a segmented control rather than a hidden filter, because "what do I have" is the question the
 album answers most often. Switching to Unowned keeps the rest of the sort intact.
@@ -176,9 +176,9 @@ data, not just a name:
 
 - Uma tiles: portrait, name, level, active-scenario crest, a compact aptitude line (surface / distance / strategy
   grades), and at most two state chips (*Gate ready*, *Goal active*).
-- Card tiles: card art, type dot, LB pips, and the card's **node share** — what one node of it pays.
+- Card tiles: card art, and in a scenario lens its **bond pips** and what one node of it pays there.
 - The **secondary line follows the active sort**. Sorting by release shows the date, by total stats shows the total, by
-  limit break shows the LB. Sorting by something you cannot see is a dead end.
+  bond shows the bond. Sorting by something you cannot see is a dead end.
 - Unowned entries are desaturated art behind a lock, never empty silhouette boxes.
 - **NEW markers:** an entry acquired since you last looked at it carries a NEW treatment until it is opened. The seen
   set is device-local, like the other album preferences, so this needs no save field.
@@ -201,10 +201,10 @@ names, and sort values belong to the cards and list views, where there is room f
 
 - **Quick filter presets** sit as a one-tap row above the grid — *Trainable now*, *Ready to promote*, *Maxed*,
   *Equippable at my tier*, *Unowned* — distinct from saved views, which are yours to name.
-- **Compare** through multi-select: two or three Umas side by side on stats and aptitudes, or cards on their effect
-  values at the current level and at the next limit break. This is what makes three hundred entries usable.
-- **Long-press quick actions** on a tile: Train · Race · Set featured · Deck for an Uma; Limit break · Where equipped
-  for a card. No round trip through the detail screen for a one-tap job.
+- **Compare** through multi-select: two or three Umas side by side on stats and aptitudes, or cards on their split,
+  bond and per-node pay. This is what makes three hundred entries usable.
+- **Long-press quick actions** on a tile: Train · Race · Set featured · Card set for an Uma; Open · Unlock · Bond
+  (in a scenario lens) · Open the card set it sits in, for a card. No round trip through the detail screen for a one-tap job.
 - **Empty states name the way out**: "No results — remove *Dirt* to see 12".
 - Group headers carry completion counts that link to the matching badge, so *[Era] Complete* is one tap from the group
   it describes.
@@ -269,7 +269,7 @@ badge state, and race/Journey facts.
 |---|---|---|
 | Stable Master | Umas owned (25 at start) | 30 / 40 / 60 / 90 / all |
 | Card Collector | SSR cards owned | 10 / 25 / 50 / 100 / all |
-| Maxed Out | Cards at LB4 and level 25 | 1 / 5 / 15 / 40 / 100 |
+| Maxed Out | Cards at max bond in any scenario | 1 / 5 / 15 / 40 / 100 |
 | [Era] Complete | Own every card of that era | one-off per era |
 | [Type] Complete | Own every card of that type | one-off per type |
 | Coupon Clipper | Coupons redeemed | 1 / 5 / 15 / 40 / 100 |

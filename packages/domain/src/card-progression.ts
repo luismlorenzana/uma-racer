@@ -30,16 +30,9 @@ export const bestCardLimitBreak = (card: Pick<CardSave, 'limitBreaks'>): number 
 export const brokenTiers = (card: Pick<CardSave, 'limitBreaks'>): number[] =>
   Object.keys(card.limitBreaks).map(Number).sort((left, right) => left - right)
 
-/** Level implied by the best break this card holds anywhere — what the account-wide album shows. */
-export const bestCardLevel = (card: Pick<CardSave, 'limitBreaks'>): number =>
-  cardLevelCap(bestCardLimitBreak(card))
-
 export const isCardMaxedIn = (card: Pick<CardSave, 'limitBreaks'>, tier: number): boolean =>
   cardLimitBreak(card, tier) >= MAX_LIMIT_BREAK
 
-/** A card's level in one scenario is purely a display of its limit break there. */
-export const cardLevel = (card: Pick<CardSave, 'limitBreaks'>, tier: number): number =>
-  cardLevelCap(cardLimitBreak(card, tier))
 
 /**
  * Advance one limit break in one scenario. The Bond Recall run already charged its tickets, so this costs
@@ -54,7 +47,7 @@ export function advanceCardLimitBreak(card: CardSave, tier: number): CardAdvance
   if (!Number.isSafeInteger(from) || from < 0 || from > MAX_LIMIT_BREAK) {
     throw new Error('Card progression state is invalid')
   }
-  if (from >= MAX_LIMIT_BREAK) throw new Error('This card is already at maximum limit break in that scenario')
+  if (from >= MAX_LIMIT_BREAK) throw new Error('This card already has max bond in that scenario')
 
   const toLimitBreak = from + 1
   const couponGranted = toLimitBreak === MAX_LIMIT_BREAK && !card.maxCouponGranted

@@ -97,20 +97,14 @@ Tile faces are the **cards of the set the run was launched from** (else the firs
 scenario), then filler drawn deterministically from the player's other owned cards. Running out of mismatches ends the run without an advance — this one has
 real stakes, which is why it is the shorter game.
 
-### Card levels
+### Bond, not levels
 
-Card levels stop being earned separately. A card's level is **derived from its limit break**:
+Card levels and card EXP are deleted (D120, D130): a card has one number per scenario, its **bond** (the save's
+limit break), 0 to 4. Reaching max bond still grants the one-time **Card Select Coupon**, and each advance still
+grants its tickets.
 
-| LB | 0 | 1 | 2 | 3 | 4 |
-|---|---|---|---|---|---|
-| Level | 5 | 10 | 15 | 20 | **25 (max)** |
-
-Card EXP is deleted along with the training turns that used to grant it. Reaching LB4 still grants the
-one-time **Card Select Coupon**, and each advance still grants its level-up tickets.
-
-Limit break is what scales a card node's contribution
-([Constellations](constellations.md#what-a-card-node-pays)), so Bond Recall is the direct path from "I own
-this card" to "this card is worth slotting".
+Bond is what scales a card node's contribution ([Constellations](constellations.md#what-a-card-node-pays)), so Bond
+Recall is the direct path from "I own this card" to "this card is worth slotting".
 
 ### Cost
 

@@ -1,7 +1,7 @@
 // Saved-Uma progression races and rewards (docs/design/racing.md).
 
-import { CARD_EFFECTS, projectedCardEffectValue } from './cards'
-import { cardLevel, cardLimitBreak } from './card-progression'
+import { CARD_EFFECTS, cardRaceBonus } from './cards'
+import { cardLimitBreak } from './card-progression'
 import { FLAIR_SERIES_TAGS, parseFlairSeriesLegId, type FlairSeriesTag } from './badges'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
@@ -303,10 +303,7 @@ export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[])
     ) {
       throw new Error(`Card ${template.id} has invalid race effect data`)
     }
-    total += projectedCardEffectValue('raceBonus', template, {
-      limitBreak: cardLimitBreak(save, tier),
-      level: cardLevel(save, tier),
-    })
+    total += cardRaceBonus(template, cardLimitBreak(save, tier))
   }
   return total
 }

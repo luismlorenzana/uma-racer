@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { setUmaDeck } from '../game/actions'
 import { bondRecallHref } from '../game/bond-links'
-import { buildDeckView, formatDeckEffect } from '../game/deck-view'
+import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BondPips } from '../ui/BondPips'
@@ -111,7 +111,7 @@ export function CardSetScreen() {
             <span className="text-micro">skill points</span>
           </div>
           <div className="rounded-md bg-sunken px-1 py-1.5">
-            <span className="font-display block text-[15px] leading-none font-semibold">{formatDeckEffect('raceBonus', deck.raceBonus)}</span>
+            <span className="font-display block text-[15px] leading-none font-semibold">{formatRaceBonus(deck.raceBonus)}</span>
             <span className="text-micro">race bonus</span>
           </div>
         </div>

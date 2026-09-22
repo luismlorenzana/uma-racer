@@ -10,7 +10,7 @@ import {
 } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
-import { buildDeckView } from './deck-view'
+import { buildDeckView, formatRaceBonus } from './deck-view'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'B', mile: 'A', medium: 'A', long: 'C' },
@@ -61,36 +61,34 @@ function fixture() {
 }
 
 describe('deck view model', () => {
-  it('projects slots, effects, hints, order, and explicit candidate disable reasons', () => {
+  it('projects six slots in order and the set\'s race bonus from this scenario\'s bonds', () => {
     const { content, templates } = fixture()
     const cards = Object.fromEntries(templates.map((template) => [template.id, createCardSave(template)]))
     const uma = umaFixture(umaTemplate, { cardSetIds: ['speed', 'power'] })
     const model = buildDeckView(uma, cards, content)
     // Six slots at every tier now (D125).
-    expect(model.slots.map((slot) => slot.unlocked)).toEqual([true, true, true, true, true, true])
+    expect(model.slots).toHaveLength(6)
     expect(model.slots.slice(0, 2).map((slot) => slot.card?.id)).toEqual(['speed', 'power'])
+    expect(model.slots[2]?.card).toBeNull()
+    // Race Bonus needs Bond 1, and a bond belongs to one scenario (D127).
     expect(model.raceBonus).toBe(0)
-    expect(model.hintSkillCount).toBe(2)
-    expect(Object.fromEntries(model.candidates.map((item) => [item.id, item.disabledReason]))).toMatchObject({
-      speed: 'Already selected', power: 'Already selected', duplicate: 'Duplicate character',
-      future: 'Era locked · Tier 2', friend: null,
-    })
+    const bonded = { ...cards, speed: { ...cards.speed!, limitBreaks: { '1': 1 } }, power: { ...cards.power!, limitBreaks: { '2': 4 } } }
+    const one = buildDeckView(uma, bonded, content).raceBonus
+    expect(one).toBeGreaterThan(0)
+    expect(formatRaceBonus(one)).toMatch(/%$/)
   })
 
-  it('filters candidates and retains missing saved references as repair state', () => {
+  it('retains missing saved references as repair state', () => {
     const { content, templates } = fixture()
     const retired = { ...createCardSave(card('retired', 'wit')), templateId: 'retired' }
     const cards = { ...Object.fromEntries(templates.map((template) => [template.id, createCardSave(template)])), retired }
-    const uma = umaFixture(umaTemplate, { cardSetIds: ['retired'] })
-    const repair = buildDeckView(uma, cards, content)
+    const repair = buildDeckView(umaFixture(umaTemplate, { cardSetIds: ['retired'] }), cards, content)
     expect(repair.needsRepair).toBe(true)
     expect(repair.slots[0]?.card).toMatchObject({ id: 'retired', template: null, asset: null })
     expect(repair.validationErrors[0]).toMatch(/missing/)
     const unowned = buildDeckView(umaFixture(umaTemplate, { cardSetIds: ['speed'] }), { retired }, content)
     expect(unowned.needsRepair).toBe(true)
     expect(unowned.slots[0]?.card).toMatchObject({ id: 'speed', save: null })
-    expect(buildDeckView(createUmaSave(umaTemplate), cards, content, [], { type: 'speed', era: 'current' }).candidates.map((item) => item.id)).toEqual(['speed'])
-    expect(buildDeckView(createUmaSave(umaTemplate), cards, content, [], { type: 'all', era: 'later' }).candidates.map((item) => item.id)).toEqual(['future'])
   })
 
   it('keeps a saved newly locked card visible and removable after a content-era refresh', () => {

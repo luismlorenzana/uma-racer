@@ -26,7 +26,7 @@ These are the **only** sources ✅:
 |---|---|
 | Daily grant | **+50 per day**, accruing while you're away |
 | Uma Level-up (from race EXP) | **+5** |
-| Card limit break (from Bond Recall) | **+5** |
+| Card bond (from Bond Recall) | **+5** |
 
 There are **no login streaks**, and badges, achievements, and goals don't pay tickets ✅.
 
@@ -38,7 +38,7 @@ added, even above 500, so nothing earned is ever lost.
 | Use | Cost |
 |---|---|
 | [Spark Match](minigames.md#spark-match--training-levels) run — raises Training Level | **5** |
-| [Bond Recall](minigames.md#bond-recall--card-limit-breaks) run — limit breaks a card | **10** |
+| [Bond Recall](minigames.md#bond-recall--card-limit-breaks) run — bonds a card one step in one scenario | **10** |
 | Unlocking a card (D130) | **25 + 5 × era** — 30 to 95 |
 | Unlocking the next scenario | **25 × fromTier** |
 | **Reconfiguring a constellation** | **free, always** |

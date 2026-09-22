@@ -79,26 +79,30 @@ node's value.
 Friend and Group cards have no primary, so their tilt is always 0 and they always pay 0.20 to each stat. Their
 value is breadth: one Friend card covers five stats where a Speed card covers two.
 
-## Limit breaks
+## Bond (limit breaks)
 
-A card advances **one limit break per [Bond Recall](minigames.md#bond-recall--card-limit-breaks) clear**, in
-the scenario that run named. That is the only way. Its level in that scenario is derived:
+On screen a limit break is a **bond**, 0 to 4, and there is **no card level** (D130). A card advances **one bond
+per [Bond Recall](minigames.md#bond-recall--card-limit-breaks) clear**, in the scenario that run named. That is the
+only way.
 
-| Limit break | LB0 | LB1 | LB2 | LB3 | LB4 (MLB) |
+| Bond | 0 | 1 | 2 | 3 | 4 (Max) |
 |---|---|---|---|---|---|
-| Level | 5 | 10 | 15 | 20 | **25 = maxed** |
 | Node multiplier | 0.60 | 0.70 | 0.80 | 0.90 | **1.00** |
 
-- **LB1** activates Race Bonus.
-- **LB3** adds a gold skill to `hintSkills`, so a broken card pays better skills as well as more stats.
-- **LB4** maxes the card and earns a **Card Select Coupon** 🎟️ — once per card ever, not once per scenario.
+- **Bond 1** activates Race Bonus.
+- **Bond 3** is meant to add a gold skill to `hintSkills`, so a bonded card pays better skills as well as more
+  stats. *Not implemented yet*: today each node a card fills pays the next skill on its list, whatever its bond.
+- **Max bond** earns a **Card Select Coupon** 🎟️ — once per card ever, not once per scenario.
 - Each advance grants **+5 training tickets**.
 
-A card at LB0 pays 60% of a node, which is visible in the constellation as a dimmed node value. That gap is the
+A card at Bond 0 pays 60% of a node, which is visible in the constellation as a dimmed node value. That gap is the
 entire reason to play Bond Recall.
 
-## The card album
+## Where cards live on screen
 
-The Cards album is one of the two [collection](collection.md) surfaces and gets the same treatment as the
-Stable: dense icon grid, reserved detail area with the full 450×600 illustration, filters and sorts, and
-default sort owned → era newest → limit break highest.
+- **The Cards tab** browses by lens — the collection, or one scenario ([Collection](collection.md#card-album)).
+- **Each card's page** (`/cards/:id`) holds owning it, its bond in every reached scenario, and what it pays.
+- **The Training scene's Card set tab** is where a scenario's six are chosen and bonded
+  ([UX](ux.md#training-scene)).
+
+Every Bond button leads to Bond Recall, which returns to the screen it was launched from.

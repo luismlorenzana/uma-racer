@@ -53,7 +53,7 @@ function useCardArt(content: LoadedContent | null, cardIds: readonly string[]): 
 function LimitPips({ before, after }: { before: number; after: number }) {
   const reducedMotion = useReducedMotion()
   return (
-    <span className="flex gap-1" aria-label={`Limit break ${after}`}>
+    <span className="flex gap-1" aria-label={`Bond ${after}`}>
       {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => {
         const filled = index < after
         const gained = index >= before && filled
@@ -138,7 +138,7 @@ export function BondRecallScreen() {
     if (committedRun.current === reserved.runId) return
     committedRun.current = reserved.runId
     setPhase('committing')
-    setMessage(completed.status === 'won' ? 'Every bond found. Saving the limit break…' : 'Run over. Saving the result…')
+    setMessage(completed.status === 'won' ? 'Every bond found. Saving the bond…' : 'Run over. Saving the result…')
     try {
       const nextReward = await getMinigameHost().commitRun(reserved.runId, {
         kind: 'bond-recall',

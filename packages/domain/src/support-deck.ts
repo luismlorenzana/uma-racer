@@ -1,9 +1,9 @@
 // Shared support-deck validation (docs/design/support-cards.md#deck).
 
 import { STATS } from './types'
-import { cardLevel, cardLimitBreak } from './card-progression'
+import { cardLimitBreak } from './card-progression'
 import { CARD_SET_SIZE, cardNodeValue, type NodeAssignment } from './constellation'
-import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue, type CardEffect } from './cards'
+import { cardRaceBonus, deckSlotCount } from './cards'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import type { CardSave, ScenarioTraining } from './save'
 import { SAVE_ID_PATTERN } from './save'
@@ -143,17 +143,9 @@ export function validateEquippedSupportDeck(
   })
 }
 
-export function supportDeckEffectTotals(
-  cards: readonly SupportDeckCard[],
-  tier: number,
-): Record<CardEffect, number> {
-  return Object.fromEntries(CARD_EFFECTS.map((effect) => [
-    effect,
-    cards.reduce((total, card) => total + projectedCardEffectValue(effect, card.template, {
-      limitBreak: cardLimitBreak(card.save, tier),
-      level: cardLevel(card.save, tier),
-    }), 0),
-  ])) as Record<CardEffect, number>
+/** The share of race EXP a card set adds: each card's Race Bonus at its bond in this scenario (D125, D127). */
+export function cardSetRaceBonus(cards: readonly SupportDeckCard[], tier: number): number {
+  return cards.reduce((total, card) => total + cardRaceBonus(card.template, cardLimitBreak(card.save, tier)), 0)
 }
 
 /**

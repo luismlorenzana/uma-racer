@@ -6,7 +6,7 @@ import { equippedRaceBonus } from './progression-race'
 import type { ScenarioTraining } from './save'
 import {
   cardNodeCount,
-  supportDeckEffectTotals,
+  cardSetRaceBonus,
   supportDeckIdentityIssues,
   validateEquippedSupportDeck,
   validateSupportDeck,
@@ -98,7 +98,7 @@ describe('support deck validation', () => {
       save: { ...createCardSave(template), limitBreak: 1 as const },
     }))
     expect(validateEquippedSupportDeck(1, equipped).valid).toBe(true)
-    expect(supportDeckEffectTotals(equipped, 1).raceBonus).toBe(equippedRaceBonus(1, equipped))
+    expect(cardSetRaceBonus(equipped, 1)).toBe(equippedRaceBonus(1, equipped))
   })
 })
 

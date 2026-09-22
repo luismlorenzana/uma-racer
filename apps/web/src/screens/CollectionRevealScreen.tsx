@@ -6,6 +6,7 @@ import { resolveCollectionReveal } from '../game/collection-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
+import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 
 export function CollectionRevealScreen() {
@@ -32,18 +33,18 @@ export function CollectionRevealScreen() {
     : sync.status === 'offline' ? 'Saved locally · offline sync will retry'
       : sync.status === 'pending' || sync.status === 'syncing' ? 'Saved locally · cloud sync pending' : 'Saved locally · synced'
   return (
-    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-violet-950 via-sky-900 to-sky-200 px-6 pt-safe pb-safe text-center">
-      <m.div aria-hidden className="absolute h-72 w-72 rounded-full bg-gold/30 blur-3xl" initial={reducedMotion ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.65 }} />
+    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-stage px-6 pt-safe pb-safe text-center text-ink-on-dark">
+      <m.div aria-hidden className="absolute h-72 w-72 rounded-full bg-accent/25 blur-3xl" initial={reducedMotion ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.65 }} />
       <m.div className="relative w-full max-w-sm" style={{ transformStyle: 'preserve-3d' }} initial={reducedMotion ? false : { y: 40, opacity: 0, scale: 0.88, rotateY: 82 }} animate={{ y: 0, opacity: 1, scale: 1, rotateY: 0 }} transition={{ type: 'spring', stiffness: 150, damping: 18 }}>
-        <p className="text-sm font-extrabold tracking-[0.28em] text-gold uppercase">New {isCard ? 'SSR' : 'Uma'}</p>
-        <div className={`mx-auto mt-5 w-56 rounded-[2rem] border-4 bg-white/20 p-3 shadow-2xl backdrop-blur-sm ${frame?.borderClass ?? 'border-white/80'}`}>
-          <AtlasSprite asset={reveal.asset} alt={identity} className="w-full rounded-[1.4rem] bg-white/20" fallback={<div className="flex h-full items-center justify-center text-7xl">{isCard ? '🃏' : '🐴'}</div>} />
+        <p className="font-display text-[12px] font-semibold tracking-[0.28em] text-accent uppercase">New {isCard ? 'support card' : 'Uma'}</p>
+        <div className={`mx-auto mt-5 w-56 rounded-lg border-2 bg-stage-soft p-2 shadow-3 ${frame?.borderClass ?? 'border-accent'}`}>
+          <AtlasSprite asset={reveal.asset} alt={identity} className="w-full rounded-md bg-stage" fallback={<Placeholder label={identity} />} />
         </div>
-        <h1 className="mt-5 text-3xl font-black text-white text-outline">{identity}</h1>
-        <p className="mt-1 font-extrabold text-white/85">{subtitle}</p>
-        {frame && <p className="mt-1 text-sm font-extrabold text-gold">{frame.glyph} {frame.label} Prestige frame</p>}
-        <p className="mt-3 text-sm font-bold text-white/75">{persistenceLabel}</p>
-        <Link to={target} replace className="mt-7 flex min-h-12 w-full items-center justify-center rounded-2xl bg-gold px-5 text-lg font-black text-white text-outline shadow-lg">{isCard ? 'Open card' : 'Open profile'}</Link>
+        <h1 className="font-display mt-5 text-3xl font-bold">{identity}</h1>
+        <p className="mt-1 text-ink-on-dark-soft">{subtitle}</p>
+        {frame && <p className="mt-1 text-sm font-semibold text-accent">{frame.label} Prestige frame</p>}
+        <p className="mt-3 text-[12px] text-ink-on-dark-soft">{persistenceLabel}</p>
+        <Link to={target} replace className="font-display mt-7 flex min-h-12 w-full items-center justify-center rounded-sm bg-accent px-5 text-lg font-semibold text-ink shadow-2">{isCard ? 'Open card' : 'Open profile'}</Link>
       </m.div>
     </main>
   )
