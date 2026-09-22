@@ -1,7 +1,7 @@
 import { CARD_EFFECTS, createCardSave, createPlayerProfile, createUmaSave, type ContentAtlas, type SupportCardTemplate, type UmaTemplate } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
-import { buildCardSelection, buildUmaAlbum, resolveCollectionReveal } from './collection-view'
+import { buildUmaAlbum, resolveCollectionReveal } from './collection-view'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -42,18 +42,6 @@ function loaded(umas: UmaTemplate[], cards: SupportCardTemplate[]): LoadedConten
 }
 
 describe('collection projections', () => {
-  it('builds an unowned card selector with completion, filters, and honest future/Friend states', () => {
-    const cards = [card('c-owned', 1, 'speed'), card('c-future', 8, 'wit'), card('c-group', 1, 'group')]
-    const content = loaded([], cards)
-    const profile = { ...createPlayerProfile('synthetic', 1), cardCoupons: 2 }
-    const view = buildCardSelection(content, { 'c-owned': createCardSave(cards[0]!), orphan: createCardSave(card('orphan', 1, 'power')) }, profile)
-    expect(view).toMatchObject({ owned: 1, total: 3, couponBalance: 2, orphanedIds: ['orphan'] })
-    expect(view.items.map((item) => item.template.id)).toEqual(['c-group', 'c-future'])
-    expect(view.items.find((item) => item.template.id === 'c-group')?.acquisitionNote).toBeNull()
-    expect(view.items.find((item) => item.template.id === 'c-future')?.acquisitionNote).toMatch(/tier 8/)
-    expect(buildCardSelection(content, {}, profile, { era: 8, type: 'wit' }).items.map((item) => item.template.id)).toEqual(['c-future'])
-  })
-
   it('projects owned and unowned Uma outfits with deterministic aptitude filtering and honest counts', () => {
     const umas = [uma('u2', 'Beta', 'A'), uma('u1', 'Alpha')]
     const content = loaded(umas, [])

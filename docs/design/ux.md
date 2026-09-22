@@ -157,19 +157,15 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 
 ### Cards
 
-- **Album**: grouped by era, then type. Locked eras are dimmed with "Arrives in …". Owned cards show LB pips and a level bar.
-- **Card detail** sheet: effects at the current LB and the next one (diff highlighted), EXP bar, and a **Limit Break** button with its 🎫 cost.
-- **Limit break animation**: the card lifts, glows, the LB pip ignites, and effect numbers tick up.
-- **Card Select Coupon** redemption: a selection grid, then a **flip reveal** with a shine sweep.
-
-The implemented album also exposes owned/maxed completion, type and ownership filters, Friend/Group broad and inactive
-effect explanations, missing-content preservation, and the one-time max-card Coupon state. Limit-break errors remain in
-the detail sheet so the player can retry without losing context.
-
-The implemented Select grid reuses deterministic private-catalog ordering, adds era/type filters, and keeps future-era
-ownership distinct from current-tier equip eligibility. Card and Uma review sheets show the exact one-coupon cost before
-the local commit. The full-screen reveal carries only kind/id, reconstructs art and identity from committed save/content,
-and is read-only on refresh or direct navigation.
+- **Album**: a lens chip row — Collection, then each reached scenario — over the shared album chrome
+  ([Collection](collection.md#card-album)). In a scenario, tiles carry bond pips and the reserved detail area has a
+  **Bond** button, so a bond is one tap from the tab.
+- **Card page** (`/cards/:id`): the card and how to own it (tickets or a coupon), **Bond by scenario** with a Bond
+  button per reached scenario, then what it pays — its split, a Bond 0–Max per-node ladder, scenario-slot SP, Race
+  Bonus and its skills in node order — and every set it sits in.
+- **Unlock** hands to the full-screen collection reveal, which returns to the card's page.
+- A bond is raised only in Bond Recall, which always returns where it was launched: the album lens, the card page,
+  or the Training scene.
 
 ### Badges
 

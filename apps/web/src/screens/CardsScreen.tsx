@@ -1,38 +1,30 @@
-import {
-  cardNodeValue,
-  cardLimitBreak,
-  bestCardLimitBreak,
-  bestCardLevel,
-  cardLevel,
-  BROAD_CARD_STAT_DIVISOR,
-  CARD_EFFECTS,
-  MAX_LIMIT_BREAK,
-  inactiveCardUniqueEffectCount,
-  isBroadSupportCard,
-  scenarioForTier,
-  tierOfLevel,
-  type CardEffect,
-  type SupportCardTemplate,
-} from '@racer/domain'
-import { m, useReducedMotion } from 'motion/react'
+import { BOND_RECALL_TICKET_COST, MAX_LIMIT_BREAK, brokenTiers, scenarioForTier } from '@racer/domain'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { bondRecallHref } from '../game/bond-links'
+import { unlockCard } from '../game/actions'
 import { addSavedView, loadAlbumPrefs, markSeen, removeSavedView, saveAlbumPrefs, type AlbumPrefs } from '../game/album/prefs'
 import { emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumView } from '../game/album/query'
 import {
   CARDS_ALBUM_ID,
-  CARD_DEFAULT_QUERY,
-  CARD_FACETS,
-  CARD_SORTS,
+  CARDS_SCENARIO_ALBUM_ID,
+  CARD_COLLECTION_FACETS,
+  CARD_COLLECTION_QUERY,
+  CARD_COLLECTION_SORTS,
+  CARD_SCENARIO_FACETS,
+  CARD_SCENARIO_QUERY,
+  CARD_SCENARIO_SORTS,
   CARD_TIE_BREAK,
-  EFFECT_LABELS,
   buildCardAlbumRows,
   buildCardPresets,
+  cardFacets,
   cardSortValueLabel,
+  cardSorts,
+  cardSplitLabel,
   type CardEntry,
+  type CardLens,
 } from '../game/album/cards'
+import { bondRecallHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { AlbumChrome } from '../ui/album/AlbumChrome'
 import { AlbumDetail } from '../ui/album/AlbumDetail'
@@ -40,10 +32,11 @@ import { CompareSheet } from '../ui/album/CompareSheet'
 import { VirtualGrid } from '../ui/album/VirtualGrid'
 import { ArtTile } from '../ui/ArtTile'
 import { AtlasSprite } from '../ui/AtlasSprite'
+import { BondPips } from '../ui/BondPips'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
+import { Chip } from '../ui/Chip'
 import { Crest } from '../ui/Crest'
-import { Meter } from '../ui/Meter'
 import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
 import { Placeholder } from '../ui/Placeholder'
@@ -51,28 +44,20 @@ import { ScreenState } from '../ui/ScreenState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 
 const MAX_COMPARE = 3
-const PERCENT_EFFECTS = new Set<CardEffect>(['trainingBonus', 'friendshipBonus', 'hintFrequency', 'raceBonus'])
+const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
+const scenarioName = (tier: number) => scenarioForTier(tier)?.name ?? `Tier ${tier}`
+const emptyPrefs = (id: string, query: AlbumQuery): AlbumPrefs => ({ id, query, views: [], seen: [] })
 
-const effectValue = (effect: CardEffect, value: number): string =>
-  PERCENT_EFFECTS.has(effect) ? `${Math.round(value * 1000) / 10}%` : `+${Math.round(value * 10) / 10}`
-
-const cardEffectValue = (template: SupportCardTemplate, effect: CardEffect, value: number): string =>
-  isBroadSupportCard(template) && (effect === 'statBonus' || effect === 'initialStats')
-    ? `${effectValue(effect, value / BROAD_CARD_STAT_DIVISOR)} each`
-    : effectValue(effect, value)
-
-function LimitPips({ value }: { value: number }) {
-  return (
-    <span aria-label={`Limit break ${value}`} className="flex gap-0.5">
-      {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
-        <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < value ? 'bg-accent' : 'bg-white/35'}`} />
-      ))}
-    </span>
-  )
+/** What a tile says under or beside the art: bond and pay in a scenario, price when unowned. */
+function tileValue(entry: CardEntry, lens: CardLens): string {
+  if (!entry.owned) return `${entry.unlockCost} tickets`
+  if (lens === 'collection') return cardSplitLabel(entry.template)
+  return `${Math.round(entry.perNode ?? 0)} per node`
 }
 
 function CardTile({
   entry,
+  lens,
   view,
   sortLabel,
   selected,
@@ -84,6 +69,7 @@ function CardTile({
   onActions,
 }: {
   entry: CardEntry
+  lens: CardLens
   view: AlbumView
   sortLabel: string | null
   selected: boolean
@@ -99,9 +85,7 @@ function CardTile({
   const endPress = () => { if (press.current !== null) window.clearTimeout(press.current); press.current = null }
   const activate = selecting ? onToggleSelect : selected ? onOpen : onSelect
   const ring = selected && !selecting ? 'outline outline-2 outline-accent outline-offset-1' : ''
-  const headline = entry.headline
-    ? `${EFFECT_LABELS[entry.headline.effect]} ${effectValue(entry.headline.effect, entry.headline.value)}`
-    : 'No generated effects'
+  const showBond = lens !== 'collection' && entry.owned
 
   if (view === 'list') {
     return (
@@ -127,11 +111,11 @@ function CardTile({
             <span className="truncate text-[14px] font-semibold">{entry.template.charName}</span>
             {entry.isNew && <Crest tone="accent">NEW</Crest>}
           </span>
-          <span className="block truncate text-[11px] text-ink-faint">{headline}</span>
+          <span className="block truncate text-[11px] text-ink-faint">{titleCase(entry.template.type)} · {sortLabel ?? cardSplitLabel(entry.template)}</span>
         </span>
-        <span className="shrink-0 text-right text-[12px] text-ink-soft">
-          {entry.save ? <>Lv <Numeral className="text-ink">{bestCardLevel(entry.save)}</Numeral></> : 'Unowned'}
-          <span className="block text-[11px] text-ink-faint">{sortLabel ?? `LB${(entry.save ? bestCardLimitBreak(entry.save) : 0) ?? 0}`}</span>
+        <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-ink-soft">
+          {showBond && <BondPips value={entry.bond ?? 0} />}
+          {tileValue(entry, lens)}
         </span>
       </button>
     )
@@ -147,13 +131,13 @@ function CardTile({
         onPointerUp={endPress}
         onPointerLeave={endPress}
         className={`block w-full min-w-0 rounded-md text-left ${ring}`}
-        aria-label={`${entry.template.charName} support card${entry.owned ? '' : ', not owned'}`}
+        aria-label={`${entry.template.charName} support card${entry.owned ? '' : ', not owned'}${showBond ? `, bond ${entry.bond}` : ''}`}
       >
         <ArtTile
           asset={entry.asset}
           alt={entry.owned ? `${entry.template.charName} support card` : `${entry.template.charName} support card, not owned`}
           dimmed={!entry.owned}
-          chamfer={!icons && entry.maxed}
+          chamfer={!icons && entry.bond === MAX_LIMIT_BREAK}
           overlay={
             icons ? (
               <>
@@ -162,24 +146,27 @@ function CardTile({
               </>
             ) : (
               <>
-                <Crest tone={entry.maxed ? 'accent' : 'neutral'}>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>
+                <Crest tone={entry.bond === MAX_LIMIT_BREAK ? 'accent' : 'neutral'}>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>
                 {entry.isNew && <Crest tone="accent">NEW</Crest>}
-                {entry.equippedBy.length > 0 && <Crest>In deck</Crest>}
+                {entry.equippedBy.length > 0 && <Crest>In a set</Crest>}
               </>
             )
           }
           corner={selecting ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? '✓' : ''}</Crest> : null}
-          footer={icons ? undefined : (
-            <>
-              <p className="font-display truncate text-[14px] font-semibold">{entry.template.charName}</p>
-              {entry.save
-                ? <div className="flex items-center justify-between gap-2"><span className="text-[11px] text-ink-on-dark-soft">Lv {bestCardLevel(entry.save)}</span><LimitPips value={bestCardLimitBreak(entry.save)} /></div>
-                : <p className="truncate text-[11px] text-ink-on-dark-soft">Unowned</p>}
-            </>
-          )}
-          className={entry.maxed ? 'border-accent' : ''}
+          footer={icons
+            ? (showBond ? <BondPips value={entry.bond ?? 0} onDark /> : undefined)
+            : (
+              <>
+                <p className="font-display truncate text-[14px] font-semibold">{entry.template.charName}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-[11px] text-ink-on-dark-soft">{tileValue(entry, lens)}</span>
+                  {showBond && <BondPips value={entry.bond ?? 0} onDark />}
+                </div>
+              </>
+            )}
+          className={entry.bond === MAX_LIMIT_BREAK ? 'border-accent' : ''}
         />
-        {!icons && <p className="truncate px-0.5 pt-1.5 pr-8 text-[11px] text-ink-faint">{sortLabel ?? headline}</p>}
+        {!icons && <p className="truncate px-0.5 pt-1.5 pr-8 text-[11px] text-ink-faint">{sortLabel ?? entry.template.title}</p>}
       </button>
       {!selecting && !icons && (
         <button
@@ -195,6 +182,10 @@ function CardTile({
   )
 }
 
+/**
+ * The Cards tab, seen through a lens (M016): the **collection**, where cards are owned or bought, or **one
+ * scenario**, where each card has a bond and a price per node and can be bonded from here.
+ */
 export function CardsScreen() {
   const contentState = useContent()
   const status = useGame((state) => state.status)
@@ -204,121 +195,158 @@ export function CardsScreen() {
   const cards = useGame((state) => state.cards)
   const umas = useGame((state) => state.umas)
   const pushToast = useGame((state) => state.pushToast)
-  const [searchParams] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const [prefs, setPrefs] = useState<AlbumPrefs>({ id: CARDS_ALBUM_ID, query: CARD_DEFAULT_QUERY, views: [], seen: [] })
+  const [collectionPrefs, setCollectionPrefs] = useState<AlbumPrefs>(emptyPrefs(CARDS_ALBUM_ID, CARD_COLLECTION_QUERY))
+  const [scenarioPrefs, setScenarioPrefs] = useState<AlbumPrefs>(emptyPrefs(CARDS_SCENARIO_ALBUM_ID, CARD_SCENARIO_QUERY))
   const [needsSeed, setNeedsSeed] = useState(false)
-  const [parameter, setParameter] = useState<string | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [selecting, setSelecting] = useState(false)
   const [selection, setSelection] = useState<readonly string[]>([])
   const [compareOpen, setCompareOpen] = useState(false)
   const [actionsFor, setActionsFor] = useState<CardEntry | null>(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    void loadAlbumPrefs(CARDS_ALBUM_ID, CARD_DEFAULT_QUERY, CARD_FACETS, CARD_SORTS)
-      .then(({ fresh, ...loaded }) => {
-        if (cancelled) return
-        setPrefs(loaded)
-        setNeedsSeed(fresh)
-      })
+    void Promise.all([
+      loadAlbumPrefs(CARDS_ALBUM_ID, CARD_COLLECTION_QUERY, CARD_COLLECTION_FACETS, CARD_COLLECTION_SORTS),
+      loadAlbumPrefs(CARDS_SCENARIO_ALBUM_ID, CARD_SCENARIO_QUERY, CARD_SCENARIO_FACETS, CARD_SCENARIO_SORTS),
+    ]).then(([collection, scenario]) => {
+      if (cancelled) return
+      const { fresh, ...collectionRest } = collection
+      const { fresh: _scenarioFresh, ...scenarioRest } = scenario
+      setCollectionPrefs(collectionRest)
+      setScenarioPrefs(scenarioRest)
+      setNeedsSeed(fresh)
+    })
     return () => { cancelled = true }
   }, [])
 
+  // A first visit marks the starter collection as seen, so NEW means new since then.
   useEffect(() => {
     if (!needsSeed || status !== 'ready') return
     setNeedsSeed(false)
-    setPrefs((current) => {
+    setCollectionPrefs((current) => {
       const next = { ...current, seen: markSeen(current.seen, Object.keys(cards)) }
       void saveAlbumPrefs(next)
       return next
     })
   }, [cards, needsSeed, status])
 
-  // Old `?card=` links land on the card's own page (M016).
+  // Old `?card=` links land on the card's own page.
   useEffect(() => {
-    const requested = searchParams.get('card')
+    const requested = params.get('card')
     if (requested) navigate(`/cards/${encodeURIComponent(requested)}`, { replace: true })
-  }, [navigate, searchParams])
-
-  const updatePrefs = useCallback((next: AlbumPrefs) => {
-    setPrefs(next)
-    void saveAlbumPrefs(next)
-  }, [])
-  const setQuery = useCallback((query: AlbumQuery) => {
-    setPrefs((current) => {
-      const next = { ...current, query }
-      void saveAlbumPrefs(next)
-      return next
-    })
-  }, [])
-
-  const album = useMemo(() => contentState.status === 'ready' && profile
-    ? buildCardAlbumRows({ content: contentState.content, cards, umas, tickets: profile.tickets, seen: prefs.seen })
-    : null,
-  [cards, contentState, prefs.seen, profile, umas])
-
-  const effectiveQuery = useMemo(() => (
-    prefs.query.sort === 'effect' && parameter ? { ...prefs.query, sort: parameter } : prefs.query
-  ), [parameter, prefs.query])
-
-  const result = useMemo(() => album
-    ? runAlbumQuery(album.rows, CARD_FACETS, effectiveQuery, CARD_TIE_BREAK)
-    : null,
-  [album, effectiveQuery])
-
-  const countFor = useCallback((draft: AlbumQuery) => album ? runAlbumQuery(album.rows, CARD_FACETS, draft).total : 0, [album])
-
-  const umaNames = useMemo(() => {
-    if (contentState.status !== 'ready') return {} as Record<string, string>
-    return Object.fromEntries(Object.keys(umas).map((id) => [id, contentState.content.umas.byId.get(id)?.name ?? id]))
-  }, [contentState, umas])
+  }, [navigate, params])
 
   const highestTier = useMemo(() => Math.max(1, ...Object.values(umas).map((save) => save.unlockedTier)), [umas])
+  const featuredTier = profile?.featuredUmaId ? umas[profile.featuredUmaId]?.unlockedTier : undefined
+  const lensParam = params.get('lens')
+  const lens: CardLens = lensParam === 'collection'
+    ? 'collection'
+    : Number(lensParam) >= 1 && Number(lensParam) <= highestTier
+      ? Number(lensParam)
+      : Math.min(highestTier, featuredTier ?? highestTier)
 
-  const trainableTiersFor = useCallback(
-    (era: number) => Array.from({ length: highestTier }, (_, index) => index + 1).filter((tier) => tier >= era),
-    [highestTier],
-  )
-  const presets = useMemo(() => buildCardPresets(highestTier), [highestTier])
+  const prefs = lens === 'collection' ? collectionPrefs : scenarioPrefs
+  const facets = cardFacets(lens)
+  const sorts = cardSorts(lens)
+
+  const updatePrefs = useCallback((next: AlbumPrefs) => {
+    if (next.id === CARDS_ALBUM_ID) setCollectionPrefs(next)
+    else setScenarioPrefs(next)
+    void saveAlbumPrefs(next)
+  }, [])
+  const setQuery = (query: AlbumQuery) => updatePrefs({ ...prefs, query })
+  const setLens = (next: CardLens) => {
+    setDetailId(null)
+    setSelection([])
+    setParams((current) => {
+      const nextParams = new URLSearchParams(current)
+      nextParams.set('lens', String(next))
+      return nextParams
+    }, { replace: true })
+  }
+
+  const album = useMemo(() => contentState.status === 'ready'
+    ? buildCardAlbumRows({ content: contentState.content, cards, umas, seen: collectionPrefs.seen, lens })
+    : null,
+  [cards, collectionPrefs.seen, contentState, lens, umas])
+
+  const result = useMemo(() => album ? runAlbumQuery(album.rows, facets, prefs.query, CARD_TIE_BREAK) : null, [album, facets, prefs.query])
+  const countFor = useCallback((draft: AlbumQuery) => album ? runAlbumQuery(album.rows, facets, draft).total : 0, [album, facets])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to view Cards" detail="Your private card collection is part of the saved Stable." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish private content before opening the card album." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
   if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile || !album || !result) return <ScreenState title="Opening Cards…" detail="Loading your private SSR album." />
-  if (album.total === 0) return <ScreenState title="No support cards imported" detail="Run and publish the private content pipeline first." />
+  if (contentState.content.cards.items.length === 0) return <ScreenState title="No support cards imported" detail="Run and publish the private content pipeline first." />
 
+  const tickets = profile.tickets
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
+  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? entries[0] ?? null
   const compareEntries = selection.flatMap((id) => album.entries.get(id) ?? [])
   const view = prefs.query.view
   const columns = view === 'icons' ? 5 : view === 'cards' ? 2 : 1
   const rowHeight = view === 'icons' ? 80 : view === 'cards' ? 215 : 64
-  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? entries[0] ?? null
+  const lensTier = lens === 'collection' ? null : lens
+  const reachedTiers = Array.from({ length: highestTier }, (_, index) => highestTier - index)
 
   const openEntry = (entry: CardEntry) => {
-    if (entry.isNew) updatePrefs({ ...prefs, seen: markSeen(prefs.seen, [entry.id]) })
-    navigate(`/cards/${encodeURIComponent(entry.id)}`)
+    if (entry.isNew) updatePrefs({ ...collectionPrefs, seen: markSeen(collectionPrefs.seen, [entry.id]) })
+    navigate(`/cards/${encodeURIComponent(entry.id)}${lensTier ? `?tier=${lensTier}` : ''}`)
   }
-
+  const bondHref = (entry: CardEntry, tier: number) =>
+    bondRecallHref({ cardId: entry.id, tier, returnTo: `/cards?lens=${tier}` })
+  const unlock = (entry: CardEntry) => {
+    if (busy) return
+    setBusy(true)
+    void unlockCard(entry.id, 'tickets')
+      .then(() => navigate(`/collection/reveal/card/${encodeURIComponent(entry.id)}`))
+      .catch((reason: unknown) => pushToast(reason instanceof Error ? reason.message : 'Could not unlock this card'))
+      .finally(() => setBusy(false))
+  }
   const toggleSelect = (id: string) => {
     setSelection((current) => current.includes(id)
       ? current.filter((entry) => entry !== id)
       : current.length >= MAX_COMPARE ? current : [...current, id])
   }
 
+  const bondAction = (entry: CardEntry, size: 'sm' | 'md') => {
+    if (lensTier === null || !entry.owned || (entry.bond ?? 0) >= MAX_LIMIT_BREAK) return null
+    if (tickets < BOND_RECALL_TICKET_COST) return <Button size={size} disabled>Bond · need {BOND_RECALL_TICKET_COST}</Button>
+    return (
+      <Link
+        to={bondHref(entry, lensTier)}
+        className={`font-display inline-flex items-center justify-center rounded-sm bg-accent px-3 font-semibold text-ink shadow-1 ${size === 'sm' ? 'min-h-11 text-sm' : 'min-h-12 text-[15px]'}`}
+      >
+        Bond · {BOND_RECALL_TICKET_COST} tickets
+      </Link>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-3 pt-1">
-      <Panel>
-        <p className="rounded-sm bg-sunken p-3 text-[13px] font-semibold">
-          <Numeral>{profile.cardCoupons}</Numeral> Card Select Coupon{profile.cardCoupons === 1 ? '' : 's'}
-          <span className="block text-[11px] font-normal text-ink-soft">Unlock any card from its page, with tickets or a coupon.</span>
-        </p>
-        {!persistent && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — progression works for this session but cannot persist or sync.</p>}
-        {album.orphanedIds.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{album.orphanedIds.length} owned card reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
-      </Panel>
+      <div role="tablist" aria-label="Show cards for" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5">
+        <Chip role="tab" aria-selected={lens === 'collection'} selected={lens === 'collection'} onClick={() => setLens('collection')}>
+          Collection
+        </Chip>
+        {reachedTiers.map((tier) => (
+          <Chip key={tier} role="tab" aria-selected={lens === tier} selected={lens === tier} onClick={() => setLens(tier)}>
+            {scenarioName(tier)}
+          </Chip>
+        ))}
+      </div>
+
+      {(!persistent || album.orphanedIds.length > 0) && (
+        <Panel className="p-2">
+          {!persistent && <p className="rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — progression works for this session but cannot persist or sync.</p>}
+          {album.orphanedIds.length > 0 && <p className="mt-1 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{album.orphanedIds.length} owned card reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
+        </Panel>
+      )}
 
       {detail && (
         <AlbumDetail
@@ -331,49 +359,45 @@ export function CardsScreen() {
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-micro">{detail.template.type} · {scenarioForTier(detail.template.era)?.name ?? `Era ${detail.template.era}`}</p>
+              <p className="text-micro">{detail.template.type} · {scenarioName(detail.template.era)}</p>
               <p className="font-display truncate text-xl font-bold">{detail.template.charName}</p>
               <p className="truncate text-[12px] text-ink-soft">{detail.template.title || 'Support card'}</p>
             </div>
             {detail.isNew && <Crest tone="accent">NEW</Crest>}
           </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {detail.save
-              ? <>
-                  <Crest>Lv {bestCardLevel(detail.save)}</Crest>
-                  <span className="flex gap-0.5">
-                    {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
-                      <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < (detail.save ? bestCardLimitBreak(detail.save) : 0) ? 'bg-accent' : 'bg-sunken'}`} />
-                    ))}
-                  </span>
-                  {detail.maxed && <Crest tone="accent">MAX</Crest>}
-                </>
-              : <Crest>Unowned</Crest>}
-          </div>
-
-          <div className="mt-2 grid gap-0.5">
-            {detail.currentEffects
-              .filter((row) => detail.template.effectProfile[row.effect] > 0 && row.value > 0)
-              .slice(0, 3)
-              .map((row) => (
-                <p key={row.effect} className="flex justify-between gap-2 text-[12px]">
-                  <span className="truncate text-ink-soft">{EFFECT_LABELS[row.effect]}</span>
-                  <span className="font-semibold">{effectValue(row.effect, row.value)}</span>
-                </p>
-              ))}
-          </div>
-
-          <div className="mt-2 flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>Details</Button>
-            {detail.owned && <Button size="sm" onClick={() => openEntry(detail)}>Bond</Button>}
+          <p className="mt-1 text-[12px] text-ink-soft">{cardSplitLabel(detail.template)}</p>
+          {!detail.owned ? (
+            <p className="mt-2 text-[12px] font-semibold">Not owned · {detail.unlockCost} tickets to unlock</p>
+          ) : lensTier !== null ? (
+            <div className="mt-2">
+              <div className="flex items-center gap-2">
+                <BondPips value={detail.bond ?? 0} />
+                <span className="text-[12px] font-semibold">{detail.bond === MAX_LIMIT_BREAK ? 'Max bond' : `Bond ${detail.bond}`}</span>
+              </div>
+              <p className="text-[12px] text-ink-soft">{Math.round(detail.perNode ?? 0)} per node here</p>
+            </div>
+          ) : (
+            <p className="mt-2 text-[12px] text-ink-soft">
+              {detail.save && brokenTiers(detail.save).length > 0
+                ? `Bonded in ${brokenTiers(detail.save).length} scenario${brokenTiers(detail.save).length === 1 ? '' : 's'}`
+                : 'Not bonded in any scenario yet'}
+              {detail.equippedBy.length > 0 ? ` · in ${detail.equippedBy.length} active set${detail.equippedBy.length === 1 ? '' : 's'}` : ''}
+            </p>
+          )}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {!detail.owned
+              ? <Button size="sm" disabled={busy || tickets < detail.unlockCost} onClick={() => unlock(detail)}>Unlock · {detail.unlockCost}</Button>
+              : bondAction(detail, 'sm')}
+            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>Open</Button>
           </div>
         </AlbumDetail>
       )}
 
       <AlbumChrome
-        title="Support Cards"
-        completion={<><Numeral className="text-ink">{album.owned}</Numeral> / {album.total} owned · {album.maxed} maxed</>}
+        title={lensTier === null ? 'Support Cards' : `${scenarioName(lensTier)} cards`}
+        completion={lensTier === null
+          ? <><Numeral className="text-ink">{album.owned}</Numeral> / {album.total} owned</>
+          : <><Numeral className="text-ink">{album.owned}</Numeral> of {album.total} eligible owned · {album.bonded} bonded · {album.maxed} max</>}
         segment={
           <SegmentedControl
             label="Ownership"
@@ -384,22 +408,22 @@ export function CardsScreen() {
                 ? Object.fromEntries(Object.entries(prefs.query.filters).filter(([key]) => key !== 'ownership'))
                 : { ...prefs.query.filters, ownership: [value] },
             })}
-            options={[{ value: 'all', label: 'All' }, { value: 'owned', label: 'Owned' }, { value: 'unowned', label: 'Unowned' }] as const}
+            options={[{ value: 'all', label: 'All' }, { value: 'owned', label: 'Owned' }, { value: 'unowned', label: 'Not owned' }] as const}
           />
         }
-        facets={CARD_FACETS}
-        sorts={CARD_SORTS}
-        presets={presets}
+        facets={facets}
+        sorts={sorts}
+        presets={buildCardPresets(lens)}
         query={prefs.query}
         counts={result.counts}
         total={result.total}
-        parameter={parameter}
+        parameter={null}
         views={prefs.views}
-        emptyHint={emptyStateHint(album.rows, CARD_FACETS, effectiveQuery)}
+        emptyHint={emptyStateHint(album.rows, facets, prefs.query)}
         hiddenFilterKeys={['ownership']}
         countFor={countFor}
         onQueryChange={setQuery}
-        onParameterChange={setParameter}
+        onParameterChange={() => undefined}
         onSaveView={(name) => {
           try {
             updatePrefs({ ...prefs, views: addSavedView(prefs.views, name, prefs.query) })
@@ -433,8 +457,9 @@ export function CardsScreen() {
           renderItem={(entry) => (
             <CardTile
               entry={entry}
+              lens={lens}
               view={view}
-              sortLabel={cardSortValueLabel(entry, prefs.query.sort, parameter)}
+              sortLabel={cardSortValueLabel(entry, prefs.query.sort)}
               selected={detail?.id === entry.id}
               selecting={selecting}
               picked={selection.includes(entry.id)}
@@ -453,22 +478,15 @@ export function CardsScreen() {
         title="Compare cards"
         columns={compareEntries.map((entry) => ({ id: entry.id, label: entry.template.charName, detail: entry.template.title }))}
         rows={[
-          { label: 'Type', values: compareEntries.map((entry) => entry.template.type) },
+          { label: 'Type', values: compareEntries.map((entry) => titleCase(entry.template.type)) },
           { label: 'Era', values: compareEntries.map((entry) => entry.template.era), best: 'high' },
-          { label: 'Level', values: compareEntries.map((entry) => (entry.save ? bestCardLevel(entry.save) : null)), best: 'high' },
-          { label: 'Limit break', values: compareEntries.map((entry) => entry.save ? bestCardLimitBreak(entry.save) : null), best: 'high' },
-          ...CARD_EFFECTS.map((effect) => ({
-            label: EFFECT_LABELS[effect],
-            values: compareEntries.map((entry) => {
-              const current = entry.currentEffects.find((row) => row.effect === effect)
-              const next = entry.nextEffects?.find((row) => row.effect === effect)
-              if (current?.inactiveReason) return `Inactive · ${current.inactiveReason}`
-              if (!current || current.value === 0) return next && next.value > 0 ? `— → ${cardEffectValue(entry.template, effect, next.value)}` : null
-              return next && next.value > current.value
-                ? `${cardEffectValue(entry.template, effect, current.value)} → ${cardEffectValue(entry.template, effect, next.value)}`
-                : cardEffectValue(entry.template, effect, current.value)
-            }),
-          })),
+          { label: 'One node splits', values: compareEntries.map((entry) => cardSplitLabel(entry.template)) },
+          ...(lensTier === null ? [] : [
+            { label: 'Bond here', values: compareEntries.map((entry) => entry.bond), best: 'high' as const },
+            { label: 'Per node here', values: compareEntries.map((entry) => entry.owned ? Math.round(entry.perNode ?? 0) : null), best: 'high' as const },
+          ]),
+          { label: 'Skills', values: compareEntries.map((entry) => entry.hintSkillNames.length), best: 'high' },
+          { label: 'Unlock', values: compareEntries.map((entry) => entry.owned ? 'Owned' : `${entry.unlockCost} tickets`) },
         ]}
       />
 
@@ -476,19 +494,24 @@ export function CardsScreen() {
         {actionsFor && (
           <div className="grid gap-1.5 pb-2">
             <h2 className="font-display mb-1 text-xl font-bold">{actionsFor.template.charName}</h2>
-            <Button variant="secondary" onClick={() => { const entry = actionsFor; setActionsFor(null); openEntry(entry) }}>Open details</Button>
+            <Button variant="secondary" onClick={() => { const entry = actionsFor; setActionsFor(null); openEntry(entry) }}>Open card</Button>
+            {!actionsFor.owned && (
+              <Button disabled={busy || tickets < actionsFor.unlockCost} onClick={() => { const entry = actionsFor; setActionsFor(null); unlock(entry) }}>
+                Unlock · {actionsFor.unlockCost} tickets
+              </Button>
+            )}
+            {bondAction(actionsFor, 'md')}
             {actionsFor.equippedBy.length > 0 && (
               <Link
                 to={`/constellation/${encodeURIComponent(actionsFor.equippedBy[0]!)}/cards`}
                 className="font-display flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel text-[15px] font-semibold"
               >
-                Where it is equipped
+                Open {contentState.content.umas.byId.get(actionsFor.equippedBy[0]!)?.name ?? 'this Uma'}&rsquo;s card set
               </Link>
             )}
           </div>
         )}
       </BottomSheet>
-
     </div>
   )
 }

@@ -11,12 +11,15 @@ import { describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../../content/runtime'
 import { runAlbumQuery } from './query'
 import {
-  CARD_DEFAULT_QUERY,
-  CARD_FACETS,
+  CARD_COLLECTION_FACETS,
+  CARD_COLLECTION_QUERY,
+  CARD_SCENARIO_FACETS,
+  CARD_SCENARIO_QUERY,
   CARD_TIE_BREAK,
   buildCardAlbumRows,
   buildCardPresets,
   cardSortValueLabel,
+  type CardLens,
 } from './cards'
 
 const card = (id: string, era: number, type: SupportCardTemplate['type'], starter = false): SupportCardTemplate => ({
@@ -64,75 +67,86 @@ function loaded(cards: SupportCardTemplate[], umas: UmaTemplate[]): LoadedConten
 const templates = [card('c1', 1, 'speed', true), card('c2', 3, 'stamina'), card('c3', 2, 'friend')]
 const content = loaded(templates, [uma('u1')])
 
-function album(ownedIds: readonly string[], deck: readonly string[] = []) {
-  const cards = Object.fromEntries(ownedIds.map((id) => [id, createCardSave(templates.find((entry) => entry.id === id)!)]))
+function album(
+  lens: CardLens,
+  ownedIds: readonly string[],
+  options: { deck?: readonly string[]; breaks?: Record<string, Record<string, number>> } = {},
+) {
+  const cards = Object.fromEntries(ownedIds.map((id) => {
+    const save = createCardSave(templates.find((entry) => entry.id === id)!)
+    return [id, { ...save, limitBreaks: options.breaks?.[id] ?? {} }]
+  }))
   const save = createUmaSave(uma('u1'))
   return buildCardAlbumRows({
     content,
     cards,
-    umas: { u1: withRun(save, { cardSetIds: [...deck] }) },
-    tickets: 0,
+    umas: { u1: withRun(save, { cardSetIds: [...(options.deck ?? [])] }) },
     seen: [],
+    lens,
   })
 }
 
-describe('card album projection', () => {
-  it('opens on owned → newest era → highest level', () => {
-    const built = album(['c1', 'c2'])
-    const result = runAlbumQuery(built.rows, CARD_FACETS, CARD_DEFAULT_QUERY, CARD_TIE_BREAK)
-    expect(result.rows.map((row) => row.id)).toEqual(['c2', 'c1'])
-    expect(built.owned).toBe(2)
+describe('card album · collection lens', () => {
+  it('lists every card, newest era first, and knows nothing about bond', () => {
+    const built = album('collection', ['c1', 'c2'])
+    const result = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, CARD_COLLECTION_QUERY, CARD_TIE_BREAK)
+    expect(result.rows.map((row) => row.id)).toEqual(['c2', 'c3', 'c1'])
     expect(built.total).toBe(3)
+    expect(built.owned).toBe(2)
+    expect(built.entries.get('c1')?.bond).toBeNull()
+    expect(built.entries.get('c1')?.perNode).toBeNull()
   })
 
-  it('marks unowned cards and keeps them reachable', () => {
-    const built = album(['c1'])
-    const unowned = runAlbumQuery(built.rows, CARD_FACETS, { ...CARD_DEFAULT_QUERY, filters: { ownership: ['unowned'] } })
+  it('prices unowned cards by era', () => {
+    const built = album('collection', ['c1'])
+    expect(built.entries.get('c2')?.unlockCost).toBe(40)
+    const unowned = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, { ...CARD_COLLECTION_QUERY, filters: { ownership: ['unowned'] } })
     expect(unowned.rows.map((row) => row.id).sort()).toEqual(['c2', 'c3'])
   })
 
-  it('exposes era eligibility as a tier facet', () => {
-    const built = album(['c1', 'c2'])
-    const atTierTwo = runAlbumQuery(built.rows, CARD_FACETS, { ...CARD_DEFAULT_QUERY, filters: { equippableAt: ['2'] } })
-    // The era-3 card is not equippable at tier 2; the era-1 and era-2 cards are.
-    expect(atTierTwo.rows.map((row) => row.id).sort()).toEqual(['c1', 'c3'])
-  })
-
-  it('knows which decks hold a card', () => {
-    const built = album(['c1', 'c2'], ['c1'])
+  it('knows which active sets hold a card', () => {
+    const built = album('collection', ['c1', 'c2'], { deck: ['c1'] })
     expect(built.entries.get('c1')?.equippedBy).toEqual(['u1'])
     expect(built.entries.get('c2')?.equippedBy).toEqual([])
-    const equipped = runAlbumQuery(built.rows, CARD_FACETS, { ...CARD_DEFAULT_QUERY, filters: { equipped: true } })
-    expect(equipped.rows.map((row) => row.id)).toEqual(['c1'])
   })
 
   it('searches character names and hint skills', () => {
-    const built = album(['c1'])
-    const byHint = runAlbumQuery(built.rows, CARD_FACETS, { ...CARD_DEFAULT_QUERY, filters: {}, search: 'corner recovery' })
+    const built = album('collection', ['c1'])
+    const byHint = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, { ...CARD_COLLECTION_QUERY, search: 'corner recovery' })
     expect(byHint.rows.map((row) => row.id)).toContain('c1')
-    const byCharacter = runAlbumQuery(built.rows, CARD_FACETS, { ...CARD_DEFAULT_QUERY, filters: {}, search: 'synthetic c2' })
-    expect(byCharacter.rows.map((row) => row.id)).toEqual(['c2'])
+  })
+})
+
+describe('card album · scenario lens', () => {
+  it('holds only cards that era allows, most bonded first and unowned last', () => {
+    const built = album(2, ['c1', 'c3'], { breaks: { c3: { '2': 2 }, c1: { '1': 4 } } })
+    expect([...built.entries.keys()].sort()).toEqual(['c1', 'c3'])
+    const result = runAlbumQuery(built.rows, CARD_SCENARIO_FACETS, CARD_SCENARIO_QUERY, CARD_TIE_BREAK)
+    expect(result.rows.map((row) => row.id)).toEqual(['c3', 'c1'])
+    // c1 is max bond in tier 1, but a bond belongs to its scenario: in tier 2 it starts over.
+    expect(built.entries.get('c1')?.bond).toBe(0)
+    expect(built.entries.get('c3')?.bond).toBe(2)
+    expect(built.bonded).toBe(1)
+  })
+
+  it('pays per node at the scenario, by bond', () => {
+    const built = album(1, ['c1'], { breaks: { c1: { '1': 1 } } })
+    expect(built.entries.get('c1')?.perNode).toBe(140)
+    expect(built.entries.get('c1')?.unlockCost).toBe(30)
+  })
+
+  it('filters on what can still be bonded here', () => {
+    const built = album(1, ['c1'], { breaks: { c1: { '1': 4 } } })
+    const [bondable] = buildCardPresets(1)
+    const result = runAlbumQuery(built.rows, CARD_SCENARIO_FACETS, bondable!.apply(CARD_SCENARIO_QUERY))
+    expect(result.rows).toEqual([])
+    expect(built.maxed).toBe(1)
   })
 
   it('labels the value the active sort is about', () => {
-    const entry = album(['c2']).entries.get('c2')!
-    expect(cardSortValueLabel(entry, 'era', null)).toBe('Era 3')
-    expect(cardSortValueLabel(entry, 'limitBreak', null)).toBe('LB0')
-    expect(cardSortValueLabel(entry, 'name', null)).toBeNull()
-  })
-
-  it('keeps broad effects active while excluding inactive Friend specialty/friendship values', () => {
-    const entry = album(['c3']).entries.get('c3')!
-    const row = album(['c3']).rows.find((candidate) => candidate.id === 'c3')!
-    expect(row.facets.effectKind).toContain('statBonus')
-    expect(row.facets.effectKind).not.toContain('friendshipBonus')
-    expect(row.facets.effectKind).not.toContain('specialtyPriority')
-    expect(cardSortValueLabel(entry, 'effect', 'effect:statBonus')).toBe('Stat Bonus 1.4 each')
-    expect(cardSortValueLabel(entry, 'effect', 'effect:specialtyPriority')).toBeNull()
-  })
-
-  it('builds an equippable-now preset around the roster tier', () => {
-    const [equippable] = buildCardPresets(2)
-    expect(equippable?.apply(CARD_DEFAULT_QUERY).filters).toEqual({ ownership: ['owned'], equippableAt: ['2'] })
+    const entry = album(2, ['c3'], { breaks: { c3: { '2': 4 } } }).entries.get('c3')!
+    expect(cardSortValueLabel(entry, 'bond')).toBe('Max bond')
+    expect(cardSortValueLabel(entry, 'type')).toBe('Friend')
+    expect(cardSortValueLabel(entry, 'name')).toBeNull()
   })
 })

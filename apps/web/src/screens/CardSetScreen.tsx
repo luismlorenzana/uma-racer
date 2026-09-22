@@ -266,7 +266,6 @@ export function CardSetScreen() {
         content={content}
         cards={cards}
         umas={umas}
-        tickets={tickets}
         tier={tier}
         excludeIds={ids}
         onPick={(entry) => { if (pickFor !== null) place(pickFor, entry.id) }}

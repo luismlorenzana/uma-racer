@@ -1,26 +1,27 @@
-import { cardLimitBreak } from '@racer/domain'
 import { useMemo, useState } from 'react'
 import type { CardSave, UmaSave } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import {
-  CARD_FACETS,
-  CARD_SORTS,
+  CARD_SCENARIO_FACETS,
+  CARD_SCENARIO_QUERY,
+  CARD_SCENARIO_SORTS,
   CARD_TIE_BREAK,
-  EFFECT_LABELS,
   buildCardAlbumRows,
   cardSortValueLabel,
+  cardSplitLabel,
   type CardEntry,
 } from '../../game/album/cards'
 import { emptyStateHint, runAlbumQuery, type AlbumQuery } from '../../game/album/query'
-import { BottomSheet } from '../BottomSheet'
 import { ArtTile } from '../ArtTile'
+import { BondPips } from '../BondPips'
+import { BottomSheet } from '../BottomSheet'
 import { Crest } from '../Crest'
 import { AlbumChrome } from './AlbumChrome'
 import { VirtualGrid } from './VirtualGrid'
 
 /**
- * The deck editor picks cards through the album rather than a weaker parallel list
- * (docs/design/collection.md#card-album). Ownership and era eligibility are pre-applied.
+ * The card set picks cards through the album's scenario lens rather than a weaker parallel list
+ * (docs/design/collection.md#card-album): owned, era-eligible, and already ranked by bond in this scenario.
  */
 export function CardPickerSheet({
   open,
@@ -28,7 +29,6 @@ export function CardPickerSheet({
   content,
   cards,
   umas,
-  tickets,
   tier,
   excludeIds,
   onPick,
@@ -38,55 +38,38 @@ export function CardPickerSheet({
   content: LoadedContent
   cards: Readonly<Record<string, CardSave>>
   umas: Readonly<Record<string, UmaSave>>
-  tickets: number
-  /** Cards from later eras cannot be equipped at this tier. */
+  /** The scenario being filled: its era gate and its bonds. */
   tier: number
   excludeIds: readonly string[]
   onPick: (entry: CardEntry) => void
 }) {
-  const [query, setQuery] = useState<AlbumQuery>({
-    search: '',
-    filters: {},
-    sort: 'level',
-    direction: 'desc',
-    group: null,
-    view: 'icons',
-    mode: null,
-  })
-  const [parameter, setParameter] = useState<string | null>(null)
+  const [query, setQuery] = useState<AlbumQuery>(CARD_SCENARIO_QUERY)
 
-  const album = useMemo(() => buildCardAlbumRows({ content, cards, umas, tickets, seen: [] }), [cards, content, tickets, umas])
-  // Only owned, era-eligible, not-already-in-this-deck cards are pickable, so the facets never
-  // offer something the deck would reject.
-  const rows = useMemo(() => album.rows.filter((row) => {
-    const entry = album.entries.get(row.id)
-    if (!entry || !entry.owned || excludeIds.includes(row.id)) return false
-    return entry.template.era <= tier
-  }), [album, excludeIds, tier])
-
-  const effectiveQuery = query.sort === 'effect' && parameter ? { ...query, sort: parameter } : query
-  const result = runAlbumQuery(rows, CARD_FACETS, effectiveQuery, CARD_TIE_BREAK)
+  const album = useMemo(() => buildCardAlbumRows({ content, cards, umas, seen: [], lens: tier }), [cards, content, tier, umas])
+  // Only owned cards not already in this set are pickable, so the facets never offer something the set would reject.
+  const rows = useMemo(() => album.rows.filter((row) => album.entries.get(row.id)?.owned && !excludeIds.includes(row.id)), [album, excludeIds])
+  const facets = CARD_SCENARIO_FACETS.filter((facet) => facet.key !== 'ownership' && facet.key !== 'isNew')
+  const result = runAlbumQuery(rows, facets, query, CARD_TIE_BREAK)
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
-  const pickableFacets = CARD_FACETS.filter((facet) => !['ownership', 'equippableAt', 'isNew'].includes(facet.key))
 
   return (
     <BottomSheet open={open} onClose={onClose}>
       <div className="max-h-[74vh] overflow-y-auto pb-2">
         <AlbumChrome
           title="Add a card"
-          completion={<>{entries.length} eligible at tier {tier}</>}
-          facets={pickableFacets}
-          sorts={CARD_SORTS}
+          completion={<>{entries.length} owned card{entries.length === 1 ? '' : 's'} eligible here</>}
+          facets={facets}
+          sorts={CARD_SCENARIO_SORTS}
           presets={[]}
           query={query}
           counts={result.counts}
           total={result.total}
-          parameter={parameter}
+          parameter={null}
           views={[]}
-          emptyHint={emptyStateHint(rows, pickableFacets, effectiveQuery)}
-          countFor={(draft) => runAlbumQuery(rows, pickableFacets, draft).total}
+          emptyHint={emptyStateHint(rows, facets, query)}
+          countFor={(draft) => runAlbumQuery(rows, facets, draft).total}
           onQueryChange={setQuery}
-          onParameterChange={setParameter}
+          onParameterChange={() => undefined}
           onSaveView={() => undefined}
           onDeleteView={() => undefined}
         >
@@ -104,13 +87,12 @@ export function CardPickerSheet({
                   footer={
                     <>
                       <p className="font-display truncate text-[12px] font-semibold">{entry.template.charName}</p>
-                      <p className="truncate text-[10px] text-ink-on-dark-soft">Bond {entry.save ? cardLimitBreak(entry.save, tier) : 0}</p>
+                      <BondPips value={entry.bond ?? 0} onDark className="mt-0.5" />
                     </>
                   }
                 />
                 <p className="truncate px-0.5 pt-1 text-[10px] text-ink-faint">
-                  {cardSortValueLabel(entry, query.sort, parameter)
-                    ?? (entry.headline ? EFFECT_LABELS[entry.headline.effect] : 'No effects')}
+                  {cardSortValueLabel(entry, query.sort) ?? cardSplitLabel(entry.template)}
                 </p>
               </button>
             )}

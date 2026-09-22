@@ -227,15 +227,24 @@ becomes a browsing session. The shard and coupon strip stays above the chrome, s
 
 ### Card album
 
-| Sorts | Filters |
-|---|---|
-| Era/release · card level · limit break · type · character name · card name · effect strength for a chosen effect | Ownership · type (including Friend/Group) · era · limit break (0–4) · level range · maxed · equippable now (era ≤ a chosen tier) · currently equipped (and by whom) · starter/free · has a hint skill matching a search term · effect kind (friendship, training, race bonus, SP, initial stats) |
+The Cards tab is seen through a **lens** (D131), chosen from a chip row at the top: **Collection**, or one chip per
+scenario any Uma has reached. It opens on the featured Uma's active scenario and remembers the lens in the URL.
 
-- Detail opens as a bottom sheet with effect values at the current level and at the next limit break, hint skills, the
-  Umas currently using it, and the limit-break action.
-- Completion counters per era and per type stay visible in the tray's section headers.
-- **The deck editor uses this album.** Picking a card for a deck is the same browsing problem, with ownership and
-  era-eligibility pre-applied; it must not keep a weaker parallel picker.
+| Lens | Holds | Sorts | Filters | A tile shows |
+|---|---|---|---|---|
+| **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · era · in an active set · starter/free · new | art; unowned dimmed with its ticket price |
+| **A scenario** | only cards its era allows | bond (default) · pays per node · era · type · character · card name | ownership · type · bond 0–Max · can still bond · max bond · in a set here · era · new | art with that scenario's bond pips and per-node pay |
+
+Ties break owned first, then by per-node pay. The two lenses keep separate saved queries and views, since bond means
+nothing in the collection.
+
+- The reserved detail area above the grid acts on the lens: in a scenario it shows the card's bond there and a
+  **Bond** button straight into Bond Recall (returning to the same lens); an unowned card shows **Unlock** with its
+  price. **Open** goes to the card's page.
+- Compare shows type, era, how one node splits, bond and per-node pay in the lens scenario, skill count and price.
+- **The card set picker uses this album**, on the scenario lens of the set being filled, owned cards only, sorted by
+  bond; it must not keep a weaker parallel picker.
+- Hint skills are searchable text, so "Corner Recovery" finds every card that pays it.
 
 ### What the save cannot answer yet
 

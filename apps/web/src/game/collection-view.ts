@@ -14,33 +14,7 @@ import {
   type UmaTemplate,
 } from '@racer/domain'
 import { getContentAsset, type ContentAsset, type LoadedContent } from '../content/runtime'
-import { buildCardAlbum, type CardAlbumItem, type CardTypeFilter } from './cards-view'
 import { joinUma, type UmaSort, type UmaViewModel } from './view'
-
-export interface CardSelectionFilters {
-  era: number | null
-  type: CardTypeFilter
-}
-
-export interface CardSelectionItem extends CardAlbumItem {
-  acquisitionNote: string | null
-}
-
-export function buildCardSelection(
-  content: LoadedContent,
-  cardsById: Readonly<Record<string, CardSave>>,
-  profile: PlayerProfile,
-  filters: CardSelectionFilters = { era: null, type: 'all' },
-) {
-  const counts = cardCollectionCounts(content.cards.items, cardsById)
-  const items: CardSelectionItem[] = buildCardAlbum(content, cardsById, profile.tickets, { ownership: 'unowned', type: filters.type }).items
-    .filter((item) => filters.era === null || item.template.era === filters.era)
-    .map((item) => ({
-      ...item,
-      acquisitionNote: item.template.era > 1 ? `Collectible now; equipping waits until tier ${item.template.era}.` : null,
-    }))
-  return { items, ...counts, couponBalance: profile.cardCoupons }
-}
 
 export type UmaOwnershipFilter = 'all' | 'owned' | 'unowned'
 
