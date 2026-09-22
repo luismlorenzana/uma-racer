@@ -174,3 +174,10 @@ export function projectedCardEffectValue(
 ): number {
   return projectCardEffects(template, state).find((row) => row.effect === effect)!.value
 }
+
+/**
+ * What one card adds to race EXP at one limit break — the one generated effect that outlived the training turn
+ * (D125). Nothing below LB1.
+ */
+export const cardRaceBonus = (template: SupportCardTemplate, limitBreak: number): number =>
+  projectedCardEffectValue('raceBonus', template, { limitBreak, level: cardLevelCap(limitBreak) })

@@ -79,10 +79,11 @@ export async function exchangeUmaShards() {
   return gameRuntime.exchangeUmaShards()
 }
 
-export async function redeemCardCoupon(id: string) {
+/** Owns a card with a Card Select Coupon or with tickets (M016). */
+export async function unlockCard(id: string, method: 'coupon' | 'tickets') {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.redeemCardCoupon(id)
+    return gameRuntime.unlockCard(id, method)
   })
 }
 

@@ -226,7 +226,7 @@ export function CardSetScreen() {
           <div className="grid gap-1.5 px-4 pb-6">
             <h3 className="font-display mb-1 text-lg font-bold">{actingTemplate?.charName ?? acting}</h3>
             <Link
-              to={`/cards?card=${encodeURIComponent(acting)}`}
+              to={`/cards/${encodeURIComponent(acting)}?tier=${tier}`}
               className="font-display flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel text-[15px] font-semibold"
             >
               Open card

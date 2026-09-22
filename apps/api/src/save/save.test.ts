@@ -1,9 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LocalSaveRepository } from './local-save.repository'
-import { MAX_SYNC_OPERATIONS, parseSyncRequest, resolveUpserts, type EntityRecord } from './save.types'
+import { LEDGER_REASONS, LEDGER_RESOURCES, MAX_SYNC_OPERATIONS, parseSyncRequest, resolveUpserts, type EntityRecord } from './save.types'
 
 describe('LocalSaveRepository sync', () => {
   let dir: string
@@ -432,5 +433,27 @@ describe('save v6 over the wire', () => {
       .toMatch(/invalid cards data/)
     expect(parseSyncRequest({ upserts: [{ kind: 'cards', id: '30019', baseVersion: 2, data: { ...card, limitBreaks: { '0': 2 } } }] }))
       .toMatch(/invalid cards data/)
+  })
+})
+
+describe('ledger vocabulary', () => {
+  // The deploy cannot import the domain (D128), so the test reads its source: every reason the client can write must
+  // sync. dev-grant shipped without this check and 400ed every batch that held one.
+  const domainSave = readFileSync(resolve(__dirname, '../../../../packages/domain/src/save.ts'), 'utf8')
+  const domainList = (name: string): string[] => {
+    const body = domainSave.slice(domainSave.indexOf(`export const ${name} = [`)).split('] as const')[0]!
+    return [...body.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!).sort()
+  }
+
+  it('matches the domain exactly', () => {
+    expect(domainList('LEDGER_REASONS')).toContain('card-unlock')
+    expect([...LEDGER_REASONS].sort()).toEqual(domainList('LEDGER_REASONS'))
+    expect([...LEDGER_RESOURCES].sort()).toEqual(domainList('LEDGER_RESOURCES'))
+  })
+
+  it('accepts a ticket-bought card', () => {
+    const data = { resource: 'tickets', delta: -30, reason: 'card-unlock', localDay: '2026-09-22', createdAt: 1 }
+    expect(parseSyncRequest({ appends: [{ kind: 'ledger', id: 'card-unlock:30019', data, createdAt: 1 }] }))
+      .toMatchObject({ appends: [{ data }] })
   })
 })

@@ -25,7 +25,7 @@ export function CollectionRevealScreen() {
   const isCard = reveal.kind === 'card'
   const identity = isCard ? reveal.template.charName : reveal.template.name
   const subtitle = isCard ? reveal.template.title || 'SSR Support Card' : reveal.template.outfit ?? 'Standard outfit'
-  const target = isCard ? `/cards?card=${encodeURIComponent(reveal.id)}` : `/scenario/${encodeURIComponent(reveal.id)}/start`
+  const target = isCard ? `/cards/${encodeURIComponent(reveal.id)}` : `/stable/${encodeURIComponent(reveal.id)}`
   const badge = !isCard ? badges[badgeStateId(reveal.id)] : null
   const frame = badge?.scope === 'uma' ? buildUmaFlairSummary(contentState.content, badge, flairEvents).frame : null
   const persistenceLabel = !persistent ? 'Memory only · this item will not survive reload'
@@ -43,7 +43,7 @@ export function CollectionRevealScreen() {
         <p className="mt-1 font-extrabold text-white/85">{subtitle}</p>
         {frame && <p className="mt-1 text-sm font-extrabold text-gold">{frame.glyph} {frame.label} Prestige frame</p>}
         <p className="mt-3 text-sm font-bold text-white/75">{persistenceLabel}</p>
-        <Link to={target} replace className="mt-7 flex min-h-12 w-full items-center justify-center rounded-2xl bg-gold px-5 text-lg font-black text-white text-outline shadow-lg">{isCard ? 'Open Card Detail' : 'Choose Lineage'}</Link>
+        <Link to={target} replace className="mt-7 flex min-h-12 w-full items-center justify-center rounded-2xl bg-gold px-5 text-lg font-black text-white text-outline shadow-lg">{isCard ? 'Open card' : 'Open profile'}</Link>
       </m.div>
     </main>
   )

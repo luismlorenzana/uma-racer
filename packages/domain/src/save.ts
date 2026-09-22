@@ -238,6 +238,8 @@ export const LEDGER_REASONS = [
   'uma-shard-exchange',
   'card-coupon-redeem',
   'uma-coupon-redeem',
+  /** A card bought with tickets instead of a coupon (M016). */
+  'card-unlock',
   /** Owner-only top-up for playtesting; never earned in play (docs/design/economy.md). */
   'dev-grant',
 ] as const

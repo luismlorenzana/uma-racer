@@ -68,10 +68,10 @@ const MAX_CONSTELLATION_NODES = 128
 const STATS = ['speed', 'stamina', 'power', 'guts', 'wit'] as const
 const GRADES = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G'] as const
 const SKILL_ORIGINS = ['own-unique', 'awakening', 'card', 'inherited'] as const
-const LEDGER_RESOURCES = ['tickets', 'card-coupons', 'uma-coupons', 'uma-shards'] as const
-const LEDGER_REASONS = [
+export const LEDGER_RESOURCES = ['tickets', 'card-coupons', 'uma-coupons', 'uma-shards'] as const
+export const LEDGER_REASONS = [
   'daily-grant', 'initial-grant', 'training', 'uma-level', 'card-level', 'uma-promotion', 'card-limit-break', 'card-max',
-  'uma-shard-exchange', 'card-coupon-redeem', 'uma-coupon-redeem',
+  'uma-shard-exchange', 'card-coupon-redeem', 'uma-coupon-redeem', 'card-unlock', 'dev-grant',
 ] as const
 const PROFILE_FIELDS = ['schemaVersion', 'tickets', 'cardCoupons', 'umaCoupons', 'umaShards', 'lastDailyGrant', 'featuredUmaId', 'starterSeedContentVersion', 'createdAt'] as const
 const LEGACY_UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds', 'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario'] as const

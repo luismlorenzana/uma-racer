@@ -71,6 +71,7 @@ import {
   redeemPersistentCard,
   redeemPersistentUma,
   type CardRedemptionMutation,
+  type CardUnlockMethod,
   type UmaRedemptionMutation,
 } from './collection'
 import { replaceUmaCollectionState } from './store'
@@ -712,8 +713,14 @@ export class GameRuntime {
     }
   }
 
-  async redeemCardCoupon(cardId: string, today = localDay(), now = Date.now()): Promise<CardRedemptionMutation> {
-    if (this.cardRedemptionLocks.has(cardId)) throw new Error('This Card Coupon is already being redeemed')
+  /** Owns a card by coupon or by tickets (M016). A retry after a committed unlock returns the same result. */
+  async unlockCard(
+    cardId: string,
+    method: CardUnlockMethod,
+    today = localDay(),
+    now = Date.now(),
+  ): Promise<CardRedemptionMutation> {
+    if (this.cardRedemptionLocks.has(cardId)) throw new Error('This card is already being unlocked')
     this.cardRedemptionLocks.add(cardId)
     try {
       const generation = this.generation
@@ -721,7 +728,7 @@ export class GameRuntime {
       const state = useGame.getState()
       if (!content || state.status !== 'ready' || !state.profile) throw new Error('Collection save is not ready')
       let mutation: CardRedemptionMutation
-      if (!state.persistent && this.memoryCardRedemptions.has(cardId) && state.cards[cardId]) {
+      if (!state.persistent && method === 'coupon' && this.memoryCardRedemptions.has(cardId) && state.cards[cardId]) {
         mutation = {
           profile: state.profile,
           card: state.cards[cardId],
@@ -730,11 +737,12 @@ export class GameRuntime {
         }
       } else {
         mutation = state.persistent
-          ? await redeemPersistentCard(content, cardId, today, now)
-          : redeemMemoryCard(content, state.profile, state.cards, cardId, today, now)
+          ? await redeemPersistentCard(content, cardId, today, now, method)
+          : redeemMemoryCard(content, state.profile, state.cards, cardId, today, now, method)
       }
       if (generation !== this.generation) return mutation
-      if (!state.persistent) this.memoryCardRedemptions.add(cardId)
+      // Only coupon rows feed the memory trainer's Coupon Clipper count.
+      if (!state.persistent && method === 'coupon') this.memoryCardRedemptions.add(cardId)
       replaceCardState(mutation.profile, mutation.card)
       if (!state.persistent && !mutation.alreadyRedeemed) this.reconcileMemoryTrainer(now, mutation.ledgerId)
       if (state.persistent) {

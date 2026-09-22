@@ -20,8 +20,10 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 
 ## Ownership vs. the card set
 
-- **Owning** is account-wide. Cards come from the starter set or from Card Select Coupons
-  (see [Collection](collection.md)).
+- **Owning** is account-wide. Cards come from the starter set, from **tickets** (`25 + 5 × era`), or from a Card
+  Select Coupon, all on the card's own page (see [Collection](collection.md#unlocking-cards)).
+- **Power belongs to a scenario.** A card's bond (0–4) and the nodes it fills are per scenario; nothing about a card's
+  strength is account-wide. The UI calls a limit break a **bond** and shows no card level (D130).
 - A **card set** is per Uma, **per scenario** (D125): **six slots**, era-gated to that scenario's tier, drawn
   from owned cards. Six everywhere — the old 4/5/6 tier ramp is gone.
 - No duplicate card and no two cards of the same character in one set.
@@ -90,7 +92,7 @@ the scenario that run named. That is the only way. Its level in that scenario is
 - **LB1** activates Race Bonus.
 - **LB3** adds a gold skill to `hintSkills`, so a broken card pays better skills as well as more stats.
 - **LB4** maxes the card and earns a **Card Select Coupon** 🎟️ — once per card ever, not once per scenario.
-- Each advance grants **+10 training tickets**.
+- Each advance grants **+5 training tickets**.
 
 A card at LB0 pays 60% of a node, which is visible in the constellation as a dimmed node value. That gap is the
 entire reason to play Bond Recall.

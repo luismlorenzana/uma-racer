@@ -8,8 +8,8 @@
 
 | Item | Earned by | Spent on | Expires? |
 |---|---|---|---|
-| 🎫 **Training Tickets** | Daily grant · Uma Level-ups · card limit breaks | Minigame runs · unlocking the next scenario | Never |
-| 🎟️ **Card Select Coupon** | Maxing a card (LB4) | Any unowned SSR card | Never |
+| 🎫 **Training Tickets** | Daily grant · Uma Level-ups · card bonds | Minigame runs · unlocking cards · unlocking the next scenario | Never |
+| 🎟️ **Card Select Coupon** | A card's first max bond | A free unlock of any unowned SSR card | Never |
 | 💎 **Uma Shard** | An Uma reaching a gate level (10, 20, 30…) | 5 shards → 1 Uma Select Coupon | Never |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma | Never |
 
@@ -39,6 +39,7 @@ added, even above 500, so nothing earned is ever lost.
 |---|---|
 | [Spark Match](minigames.md#spark-match--training-levels) run — raises Training Level | **5** |
 | [Bond Recall](minigames.md#bond-recall--card-limit-breaks) run — limit breaks a card | **10** |
+| Unlocking a card (D130) | **25 + 5 × era** — 30 to 95 |
 | Unlocking the next scenario | **25 × fromTier** |
 | **Reconfiguring a constellation** | **free, always** |
 

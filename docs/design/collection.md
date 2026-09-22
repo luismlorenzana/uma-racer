@@ -38,15 +38,27 @@ Notes:
 - Since no Uma has completed a scenario at the start, everyone trains **without parents** at first.
 - Uma Select Coupons then unlock everyone released after launch.
 
+## Unlocking cards
+
+A card is unlocked on its own page (`/cards/:id`) in one of two ways (D130):
+
+| Way | Cost | Notes |
+|---|---|---|
+| **Tickets** | `25 + 5 × era`: 30 for a URA Finale-era card, 95 for the newest | Ledger reason `card-unlock`, keyed by card id |
+| **Card Select Coupon** | 1 coupon | A free unlock; keyed by card id as before |
+
+Unlocking hands straight to the collection reveal, then back to the card's page. The standalone Card Select screen
+is gone; `/cards/redeem` redirects to the album.
+
 ## Coupons and shards
 
 | Item | How it's earned | Redeems for | Rules |
 |---|---|---|---|
-| 🎟️ **Card Select Coupon** | A card reaches **LB4 and level 25** (once per card) | Any unowned SSR card in the game | Stackable · never expires |
+| 🎟️ **Card Select Coupon** | A card first reaches **max bond** in any scenario (once per card ever) | A free unlock of any unowned SSR card | Stackable · never expires |
 | 💎 **Uma Shard** | Any Uma **reaches** level 10, 20, 30 … (once per Uma per gate) | 5 shards make 1 Uma Select Coupon | Stackable · never expires |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma in the game | Stackable · never expires |
 
-- **The two paths are separate** ✅: leveling **cards** earns **Card** Select Coupons (more cards), and leveling **Umas** earns Uma Shards and then **Uma** Select Coupons (more Umas).
+- **The two paths are separate** ✅: bonding **cards** earns **Card** Select Coupons (more cards), and leveling **Umas** earns Uma Shards and then **Uma** Select Coupons (more Umas). Tickets can also buy cards outright.
 - A Card Select Coupon picks any unowned card, and an Uma Select Coupon picks any unowned Uma, including later eras. Era gating only controls equipping cards, not owning them.
 - Newly obtained Umas start at level 1, tier 1.
 
@@ -58,7 +70,8 @@ owned result without spending again. An entity that predates the matching redemp
 
 - **One Uma** taken from level 1 to 50 earns 5 shards, which is **1 Uma coupon**. Taking her to 100 earns a second.
 - **Across the stable**, it's 1 Uma coupon per 50 levels gained by all Umas combined, so leveling several Umas pays off too.
-- **Cards** compound: each maxed card funds the next one. The card rate is set by training (card EXP) and ticket-paid limit breaks.
+- **Cards** compound: a card's first max bond funds the next one, and tickets buy the rest. Every unowned card together
+  costs about 12,000 tickets; URA Finale's 37 unowned cards about 1,100.
 
 ## Albums
 

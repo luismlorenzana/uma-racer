@@ -10,6 +10,15 @@ export const TICKETS_PER_CARD_LIMIT_BREAK = 5
 export const SPARK_MATCH_TICKET_COST = 5
 export const BOND_RECALL_TICKET_COST = 10
 
+/**
+ * Unlocking a card with tickets (M016). Newer cards pay more per node in later scenarios (D126), so they cost more.
+ * Card Select Coupons remain a free unlock.
+ */
+export const CARD_UNLOCK_BASE_TICKETS = 25
+export const CARD_UNLOCK_TICKETS_PER_ERA = 5
+export const cardUnlockCost = (era: number): number =>
+  CARD_UNLOCK_BASE_TICKETS + CARD_UNLOCK_TICKETS_PER_ERA * Math.max(1, Math.trunc(era))
+
 /** Unlocking the next scenario. */
 export const umaPromotionCost = (fromTier: number): number => 25 * fromTier
 

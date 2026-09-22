@@ -16,7 +16,7 @@ import {
 } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { bondRecallHref } from '../game/bond-links'
 import { addSavedView, loadAlbumPrefs, markSeen, removeSavedView, saveAlbumPrefs, type AlbumPrefs } from '../game/album/prefs'
@@ -195,155 +195,6 @@ function CardTile({
   )
 }
 
-function CardDetail({
-  entry,
-  trainableTiers,
-  umaNames,
-  celebration,
-  onStep,
-}: {
-  entry: CardEntry
-  /** Scenarios this card is eligible for and some Uma has unlocked. */
-  trainableTiers: readonly number[]
-  umaNames: Readonly<Record<string, string>>
-  celebration: number
-  onStep: (delta: number) => void
-}) {
-  const reducedMotion = useReducedMotion()
-  const save = entry.save
-  const next = new Map(entry.nextEffects?.map((row) => [row.effect, row]) ?? [])
-  const broad = isBroadSupportCard(entry.template)
-  const inactiveSignatureCount = inactiveCardUniqueEffectCount(entry.template)
-
-  return (
-    <div className="max-h-[76vh] overflow-y-auto pb-2">
-      <div className="mb-2 flex items-center justify-between">
-        <button type="button" aria-label="Previous card" onClick={() => onStep(-1)} className="min-h-11 px-2 text-ink-soft">‹</button>
-        <p className="text-micro">{scenarioForTier(entry.template.era)?.name ?? `Era ${entry.template.era}`}</p>
-        <button type="button" aria-label="Next card" onClick={() => onStep(1)} className="min-h-11 px-2 text-ink-soft">›</button>
-      </div>
-
-      <div className="flex gap-3">
-        <m.div
-          key={celebration}
-          initial={reducedMotion || celebration === 0 ? false : { scale: 1.12, opacity: 0.7 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="w-24 shrink-0"
-        >
-          <AtlasSprite
-            asset={entry.asset}
-            alt={`${entry.template.charName} support card`}
-            className={`overflow-hidden rounded-md border border-hairline bg-sunken ${entry.owned ? '' : 'opacity-45 saturate-50'}`}
-            fallback={<Placeholder label={entry.template.charName} />}
-          />
-        </m.div>
-        <div className="min-w-0 flex-1">
-          <p className="text-micro">{entry.template.type} card</p>
-          <h2 className="font-display mt-0.5 text-lg leading-tight font-bold">{entry.template.charName}</h2>
-          <p className="text-[13px] text-ink-soft">{entry.template.title || 'Support card'}</p>
-          {save && (
-            <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold">
-              <span>Lv <Numeral>{bestCardLevel(save)}</Numeral></span>
-              <span className="flex gap-0.5">
-                {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
-                  <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < bestCardLimitBreak(save) ? 'bg-accent' : 'bg-sunken'}`} />
-                ))}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {broad && <p className="mt-3 rounded-sm bg-accent-soft/35 p-3 text-[13px] font-semibold">Broad support · always attends one facility. Stat and Initial Stats bonuses are split across all five stats; Friendship and Specialty stay inactive.</p>}
-      {!entry.owned && <p className="mt-3 rounded-sm bg-sunken p-3 text-[13px] font-semibold">Unowned. Use a Card Select Coupon to add it to your collection.</p>}
-
-      {entry.equippedBy.length > 0 && (
-        <div className="mt-3">
-          <p className="text-micro mb-1">In these decks</p>
-          <div className="flex flex-wrap gap-1.5">
-            {entry.equippedBy.map((umaId) => (
-              <Link
-                key={umaId}
-                to={`/constellation/${encodeURIComponent(umaId)}/cards`}
-                className="inline-flex min-h-8 items-center rounded-full border border-hairline-strong bg-panel px-3 text-[13px] font-semibold"
-              >
-                {umaNames[umaId] ?? umaId}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {save && (
-        <>
-          <div className="mt-4">
-            <p className="text-micro mb-1">Bond by scenario · a break is shared by every Uma racing there</p>
-            {trainableTiers.length === 0
-              ? <p className="rounded-sm bg-sunken p-3 text-[13px] font-semibold">This card arrives in a scenario none of your Umas has unlocked yet.</p>
-              : <div className="grid gap-1">
-                {trainableTiers.map((tier) => {
-                  const level = cardLimitBreak(save, tier)
-                  const maxed = level >= MAX_LIMIT_BREAK
-                  return (
-                    <Link
-                      key={tier}
-                      to={bondRecallHref({ cardId: entry.template.id, tier, returnTo: `/cards?card=${encodeURIComponent(entry.template.id)}` })}
-                      aria-disabled={maxed}
-                      className={`flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 ${maxed ? 'bg-sunken' : 'bg-panel'}`}
-                    >
-                      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
-                        {scenarioForTier(tier)?.name ?? `Tier ${tier}`}
-                      </span>
-                      <span className="flex gap-0.5">
-                        {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => (
-                          <span key={index} className={`h-1.5 w-2.5 rounded-xs ${index < level ? 'bg-accent' : 'bg-sunken'}`} />
-                        ))}
-                      </span>
-                      <span className="w-16 shrink-0 text-right text-[11px] font-semibold text-ink-soft">
-                        {maxed ? 'MAX' : `${Math.round(cardNodeValue(tier, { template: entry.template, limitBreak: level }))}/node`}
-                      </span>
-                    </Link>
-                  )
-                })}
-              </div>}
-          </div>
-
-          <div className="mt-4 grid gap-1.5">
-            <p className="text-micro">Generated effects · now → next limit break</p>
-            {entry.currentEffects.filter((row) => entry.template.effectProfile[row.effect] > 0).map((row) => {
-              const nextProjection = next.get(row.effect)
-              return (
-                <div key={row.effect} className="flex min-h-11 items-center justify-between gap-2 border-b border-hairline py-1.5 text-[14px] last:border-b-0">
-                  <span>{EFFECT_LABELS[row.effect]}{row.signatureBonus > 0 ? ' ★' : ''}</span>
-                  <span className="text-right font-semibold">
-                    {row.inactiveReason
-                      ? <span className="text-ink-faint">Inactive · {row.inactiveReason}</span>
-                      : row.value === 0
-                        ? <span className="text-ink-faint">LB{row.unlockLimitBreak}</span>
-                        : cardEffectValue(entry.template, row.effect, row.value)}
-                    {!row.inactiveReason && nextProjection && nextProjection.value > row.value && <span className="ml-1 text-[13px] text-success">→ {cardEffectValue(entry.template, row.effect, nextProjection.value)}</span>}
-                  </span>
-                </div>
-              )
-            })}
-            {CARD_EFFECTS.every((effect) => entry.template.effectProfile[effect] === 0) && <p className="text-[13px] text-ink-soft">No generated MVP effects in this profile.</p>}
-            {inactiveSignatureCount > 0 && <p className="text-[13px] text-ink-soft">{inactiveSignatureCount} signature source effect {inactiveSignatureCount === 1 ? 'identity is' : 'identities are'} inactive rather than approximated.</p>}
-          </div>
-
-          {entry.hintSkillNames.length > 0 && (
-            <div className="mt-3">
-              <p className="text-micro mb-1">Hint skills · gold hints unlock at LB3</p>
-              <p className="text-[13px] text-ink-soft">{entry.hintSkillNames.join(' · ')}</p>
-            </div>
-          )}
-
-          {save.maxCouponGranted && <p className="mt-4 text-center text-[12px] font-semibold text-accent-strong">Card Select Coupon earned</p>}
-        </>
-      )}
-    </div>
-  )
-}
-
 export function CardsScreen() {
   const contentState = useContent()
   const status = useGame((state) => state.status)
@@ -353,18 +204,17 @@ export function CardsScreen() {
   const cards = useGame((state) => state.cards)
   const umas = useGame((state) => state.umas)
   const pushToast = useGame((state) => state.pushToast)
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const [prefs, setPrefs] = useState<AlbumPrefs>({ id: CARDS_ALBUM_ID, query: CARD_DEFAULT_QUERY, views: [], seen: [] })
   const [needsSeed, setNeedsSeed] = useState(false)
   const [parameter, setParameter] = useState<string | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [selecting, setSelecting] = useState(false)
   const [selection, setSelection] = useState<readonly string[]>([])
   const [compareOpen, setCompareOpen] = useState(false)
   const [actionsFor, setActionsFor] = useState<CardEntry | null>(null)
-  const [celebration] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -387,10 +237,11 @@ export function CardsScreen() {
     })
   }, [cards, needsSeed, status])
 
+  // Old `?card=` links land on the card's own page (M016).
   useEffect(() => {
     const requested = searchParams.get('card')
-    if (requested) setSelectedId(requested)
-  }, [searchParams])
+    if (requested) navigate(`/cards/${encodeURIComponent(requested)}`, { replace: true })
+  }, [navigate, searchParams])
 
   const updatePrefs = useCallback((next: AlbumPrefs) => {
     setPrefs(next)
@@ -441,7 +292,6 @@ export function CardsScreen() {
   if (album.total === 0) return <ScreenState title="No support cards imported" detail="Run and publish the private content pipeline first." />
 
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
-  const selected = selectedId ? album.entries.get(selectedId) ?? null : null
   const compareEntries = selection.flatMap((id) => album.entries.get(id) ?? [])
   const view = prefs.query.view
   const columns = view === 'icons' ? 5 : view === 'cards' ? 2 : 1
@@ -450,14 +300,7 @@ export function CardsScreen() {
 
   const openEntry = (entry: CardEntry) => {
     if (entry.isNew) updatePrefs({ ...prefs, seen: markSeen(prefs.seen, [entry.id]) })
-    setSelectedId(entry.id)
-  }
-
-  const stepSelection = (delta: number) => {
-    if (!selectedId) return
-    const index = entries.findIndex((entry) => entry.id === selectedId)
-    const next = entries[index + delta]
-    if (next) setSelectedId(next.id)
+    navigate(`/cards/${encodeURIComponent(entry.id)}`)
   }
 
   const toggleSelect = (id: string) => {
@@ -469,12 +312,10 @@ export function CardsScreen() {
   return (
     <div className="flex flex-col gap-3 pt-1">
       <Panel>
-        <div className="flex items-center justify-between gap-3 rounded-sm bg-sunken p-3">
-          <p className="text-[13px] font-semibold">
-            <Numeral>{profile.cardCoupons}</Numeral> Card Select Coupon{profile.cardCoupons === 1 ? '' : 's'}
-          </p>
-          <Link to="/cards/redeem" className="font-display flex min-h-11 items-center rounded-sm bg-accent px-4 text-[14px] font-semibold text-ink">Redeem</Link>
-        </div>
+        <p className="rounded-sm bg-sunken p-3 text-[13px] font-semibold">
+          <Numeral>{profile.cardCoupons}</Numeral> Card Select Coupon{profile.cardCoupons === 1 ? '' : 's'}
+          <span className="block text-[11px] font-normal text-ink-soft">Unlock any card from its page, with tickets or a coupon.</span>
+        </p>
         {!persistent && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — progression works for this session but cannot persist or sync.</p>}
         {album.orphanedIds.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{album.orphanedIds.length} owned card reference{album.orphanedIds.length === 1 ? '' : 's'} need restored content.</p>}
       </Panel>
@@ -648,20 +489,6 @@ export function CardsScreen() {
         )}
       </BottomSheet>
 
-      <BottomSheet
-        open={selected !== null}
-        onClose={() => { setSelectedId(null); setSearchParams({}, { replace: true }) }}
-      >
-        {selected && (
-          <CardDetail
-            entry={selected}
-            trainableTiers={trainableTiersFor(selected.template.era)}
-            umaNames={umaNames}
-            celebration={celebration}
-            onStep={stepSelection}
-          />
-        )}
-      </BottomSheet>
     </div>
   )
 }

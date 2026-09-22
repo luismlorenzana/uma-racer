@@ -39,8 +39,13 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('../screens/CardsScreen')).CardsScreen }),
       },
       {
+        // Coupons are spent on a card's own page now (M016).
         path: 'cards/redeem',
-        lazy: async () => ({ Component: (await import('../screens/CardRedeemScreen')).CardRedeemScreen }),
+        element: <Navigate to="/cards" replace />,
+      },
+      {
+        path: 'cards/:cardId',
+        lazy: async () => ({ Component: (await import('../screens/CardPage')).CardPage }),
       },
       {
         path: 'badges',

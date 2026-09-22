@@ -3,7 +3,7 @@
 import { bestCardLimitBreak } from './card-progression'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK } from './cards'
-import { UMA_SHARDS_PER_COUPON } from './economy'
+import { UMA_SHARDS_PER_COUPON, cardUnlockCost } from './economy'
 import {
   SAVE_ID_PATTERN,
   createCardSave,
@@ -117,6 +117,31 @@ export function redeemCardSelectCoupon(
     ledger: [{
       id,
       data: { resource: 'card-coupons', delta: -1, reason: 'card-coupon-redeem', localDay: today, createdAt: now },
+    }],
+  }
+}
+
+/** Buys an unowned card with tickets (M016). One unlock per card, keyed by its id, so a retry cannot pay twice. */
+export function unlockCardWithTickets(
+  profile: PlayerProfile,
+  template: SupportCardTemplate,
+  alreadyOwned: boolean,
+  today: string,
+  now: number,
+): CardCouponRedemptionResult {
+  assertMutationInput(profile, today, now)
+  if (!SAVE_ID_PATTERN.test(template.id)) throw new Error('Card target id is unsafe')
+  if (alreadyOwned) throw new Error('Support card is already owned')
+  const cost = cardUnlockCost(template.era)
+  if (profile.tickets < cost) throw new Error(`Unlocking this card needs ${cost} tickets`)
+  const id = `card-unlock:${template.id}`
+  assertGeneratedId(id)
+  return {
+    profile: { ...profile, tickets: profile.tickets - cost },
+    card: createCardSave(template),
+    ledger: [{
+      id,
+      data: { resource: 'tickets', delta: -cost, reason: 'card-unlock', localDay: today, createdAt: now },
     }],
   }
 }
