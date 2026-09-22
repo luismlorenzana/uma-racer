@@ -24,10 +24,10 @@ At minimum, replacing what exists today:
 |---|---|
 | Navigation | Home · Stable · Race · Cards · Badges |
 | Currency | Training Ticket · Card Select Coupon · Uma Shard / Uma Select Coupon |
-| Stats and facilities | Speed · Stamina · Power · Guts · Wit · Skill Points |
+| Stats and training | Speed · Stamina · Power · Guts · Wit · Skill Points · constellation node · Spark Match · Bond Recall |
 | Race | Grade crest · surface (turf, dirt) · distance · strategy (front, pace, late, end) · gate · finish · trophy |
-| Progression | Level up · promotion gate · Training Level · scenario crest · goal target · ribbon · honors |
-| Collection | Owned · locked · limit break · maxed · era · deck slot · coupon |
+| Progression | Level up · scenario gate/advance · Training Level · scenario crest · goal target · ribbon · honors |
+| Collection | Owned · locked · bond · max bond · era · card-set slot · coupon |
 | System | Search · sort · filter · density · chevrons · close · check · warning · error · offline · sync · settings · retry |
 
 ## Contract
@@ -44,7 +44,7 @@ At minimum, replacing what exists today:
 
 - A snapshot test renders every icon at 24 px and asserts unique names and no stray `fill` values.
 - A guard test fails if an emoji character appears in `apps/web/src` outside test fixtures.
-- Verify the tab bar, currencies and the Training facility icons in the browser at 390×844, and attach a contact sheet of
+- Verify the tab bar, currencies and the Training-scene stat/minigame icons in the browser at 390×844, and attach a contact sheet of
   the whole set to the PR.
 
 ## Acceptance

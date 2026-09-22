@@ -116,8 +116,9 @@ replace, or reseed the local save.
 ### 3. Restart the installed app
 
 Reopen the Home Screen app. A waiting service worker—or a worker that took control in another tab—shows **Update ready** with a
-**Restart** action instead of reloading silently. If Training, race completion, redemption, promotion, or Scenario Start is
-committing, the restart waits for that promise to settle before activation/reload. Tap Restart and confirm Settings shows both
+**Restart** action instead of reloading silently. If a critical local save action such as race completion, collection
+unlock, or scenario start/advance is committing, the restart waits for that promise to settle
+before activation/reload. Tap Restart and confirm Settings shows both
 the new build id and intended content version. The content runtime keeps the last complete version active until a replacement
 fully verifies, so both an old shell seeing new content and a new shell falling back to old cached content remain usable.
 

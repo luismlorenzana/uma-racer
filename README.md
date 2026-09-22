@@ -2,25 +2,18 @@
 
 A personal, never-distributed, mobile-style game inspired by *Umamusume: Pretty Derby*.
 Umas are permanent RPG characters. They level up by winning races, train through scenario "eras" with
-SSR support cards, learn skills and inherit from their parents, and collect a lot of badges and flair,
+SSR support cards, build skills and lineage through constellations, and collect a lot of badges and flair,
 while the stable itself grows into a collection.
 
-> **Status:** playable and deployed. Milestones 1–6 are complete: the private content pipeline, a typed local-first save
-> with the real 25-Uma launch Stable, the Train → Race loop, race depth (compiled skills, course geometry, position
-> keeping, lanes, staged starts, photo finishes), Card and Uma albums with decks, coupons and shards, save v3 with frozen
-> lineage, pink sparks, Scenario Start and deterministic goals, and the full badge pillar with per-Uma flair, Prestige,
-> showcases, and Trainer achievements.
+> **Status:** playable and deployed. The private content pipeline, real 25-Uma launch Stable, deterministic race engine,
+> collection and badge pillars, and local-first cloud-synced save are live. The 2026-09-20 training redirection is also
+> live: save v6 holds one constellation per Uma per scenario, Spark Match raises Training Level, Bond Recall raises a
+> card's scenario-specific bond, and stats, skills and aptitudes are derived from the active constellation.
 >
-> A full alignment review on 2026-09-19 compared the build against the original design. Work is underway on
-> [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): race-series leg support and retroactive
-> title evaluation are implemented and published, scenario goals now follow the real horse's career and sex, including
-> full race sets from tier 7, the JP scenario ladder now runs through tier 14 and Uma level 140, and releases now expose
-> code/content versions with a verified publisher and safe app restart. Friend/Group cards are now active as reliable
-> broad supports; the owner playability pass and [Milestone 8](docs/tasks/M008-scenario-identity.md) scenario modifiers
-> follow. [Milestone 9](docs/tasks/M009-look-and-feel.md) replaces the skin with the
-> [Paddock visual system](docs/design/visual-system.md), [Milestone 10](docs/tasks/M010-collection-depth.md) gives the
-> albums real browsing depth, and [Milestone 11](docs/tasks/M011-game-feel-and-device.md) covers audio, celebration and
-> device readiness.
+> Current planned work is tracked in [Tasks](docs/tasks/README.md): the remaining owner playability pass,
+> [scenario identity](docs/tasks/M015-scenario-identity.md), the [Paddock visual rollout](docs/tasks/M009-look-and-feel.md),
+> [Race Select browsing](docs/tasks/M010-collection-depth.md), and
+> [game feel/device readiness](docs/tasks/M011-game-feel-and-device.md).
 
 ## Ground rules
 
@@ -38,10 +31,11 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone) + api :8080
 ```
 
-Saved-Uma Training: **Home or Stable → Uma profile → Train**.
-Progression racing: **Train once → Race → pick a content race, Uma, and strategy → Start race**.
-Scenario Start: **Acquire an Uma or reach a non-final gate → choose 0–2 frozen parents → review inheritance and pink sparks → Opening Training**.
-Scenario goals: **Home or Profile Journey → choose a target race → win its rule during the active tier → preserve the result on promotion**.
+Saved-Uma Training: **Home or Stable → Uma profile → Training → Spark Match or configure the constellation/card set**.
+Progression racing: **Start the active scenario → Race → pick a content race, Uma, and strategy → Start race**.
+Scenario progression: **Reach a gate level → unlock the next scenario → rebuild its Training Level, card set and constellation**.
+Lineage: **At Training Levels 9–10, fill the six lineage nodes with distinct owned Uma templates**.
+Scenario goals: **Home or Profile Journey → choose a target race → win its rule during the active tier → preserve the result on advancement**.
 
 ## Verification
 
@@ -51,7 +45,6 @@ pnpm test           # domain rules, race engine, API sync, save persistence and 
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
-pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs
 pnpm assets:import  # image sources in those packs → private WebP atlases
 ```
@@ -80,8 +73,8 @@ docs/           design, technical, research
 | [Scenario Goals](docs/design/scenario-goals.md) | Per-Uma targets based on aptitude and real-horse identity |
 | [Training](docs/design/training.md) | Uma Level vs. Training Level, derived stats, tickets. The entry point to the two below |
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
-| [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; Bond Recall limit breaks cards |
-| [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, limit breaks |
+| [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; Bond Recall raises card bond |
+| [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, bond |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, Race Form difficulty, baseline enemy Umas, straight-track view |
 | [Collection](docs/design/collection.md) | Starter sets, coupons and shards, albums, trainer achievements |
@@ -109,7 +102,7 @@ docs/           design, technical, research
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Race Engine R3 Findings](docs/research/race-engine-r3-findings.md) | Pack formulas, explicit approximations, launch-unique coverage, and balance results |
 | [Milestone 3 Balance Closure](docs/research/race-engine-r3-final-balance.md) | Final strategy/player/recovery matrix and remaining calibration caveat |
-| [Support Deck Balance Follow-up](docs/research/support-deck-balance.md) | Weak/mid/mature deck Training results and the T008 G1 follow-up |
+| [Historical Support Deck Balance](docs/research/support-deck-balance.md) | Pre-D120 training-turn measurements retained as research history |
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
 | [Tasks](docs/tasks/README.md) | The current milestone plan and its delegable task specs (see [AGENTS.md](AGENTS.md)) |

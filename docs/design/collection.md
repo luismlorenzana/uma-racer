@@ -12,7 +12,7 @@ completion: **Umas**, **SSR support cards**, and **badges and achievements**.
 |---|---|
 | Cards | Every SSR card that was **free or an event reward** in the original game (`obtain: event/free`): **94 of the 312 SSRs** ✅ |
 | Umas | **The full original launch roster: all 25 trainees** ✅ (see below) |
-| Coupons | **3 Card Select Coupons** to start, so the tier-1 deck isn't thin if few free cards come from era 1 |
+| Coupons | **3 Card Select Coupons** to start, so the tier-1 card set isn't thin if few free cards come from era 1 |
 
 Starter cards from later eras are **owned from day one** but stay era-locked for equipping until an Uma reaches that era.
 They show where the collection is heading.
@@ -35,7 +35,8 @@ Notes:
   aren't permanently weaker. Race Form nerfs apply on top in races.
 - The roster covers every surface, distance, and strategy: Sprint (Bakushin O), Dirt (Urara), Long (McQueen, Rice Shower), and more.
   The badge lines can all be pursued from day one.
-- Since no Uma has completed a scenario at the start, everyone trains **without parents** at first.
+- The launch roster is available to lineage immediately. A lineage slot may reference any owned Uma template except
+  the trainee herself, subject to the no-duplicate-character rule.
 - Uma Select Coupons then unlock everyone released after launch.
 
 ## Unlocking cards
@@ -203,7 +204,7 @@ names, and sort values belong to the cards and list views, where there is room f
   *Equippable at my tier*, *Unowned* — distinct from saved views, which are yours to name.
 - **Compare** through multi-select: two or three Umas side by side on stats and aptitudes, or cards on their split,
   bond and per-node pay. This is what makes three hundred entries usable.
-- **Long-press quick actions** on a tile: Train · Race · Set featured · Card set for an Uma; Open · Unlock · Bond
+- **Long-press quick actions** on a tile: Training · Race · Set featured · Card set for an Uma; Open · Unlock · Bond
   (in a scenario lens) · Open the card set it sits in, for a card. No round trip through the detail screen for a one-tap job.
 - **Empty states name the way out**: "No results — remove *Dirt* to see 12".
 - Group headers carry completion counts that link to the matching badge, so *[Era] Complete* is one tap from the group
@@ -214,7 +215,7 @@ names, and sort values belong to the cards and list views, where there is room f
 
 | Sorts | Filters |
 |---|---|
-| Release date · Uma level · name · scenario tier · Training Level · total stats · prestige · badges earned · recently raced · best aptitude for a chosen surface/distance | Ownership · tier · surface aptitude · distance aptitude · strategy aptitude · minimum aptitude grade · real-horse sex · level range · launch-roster (starter) · has parent snapshot · active Journey state · holds a title · has unspent shards toward her next gate · ready to train (deck valid and tickets available) |
+| Release date · Uma level · name · scenario tier · Training Level · total stats · prestige · badges earned · recently raced · best aptitude for a chosen surface/distance | Ownership · tier · surface aptitude · distance aptitude · strategy aptitude · minimum aptitude grade · real-horse sex · level range · launch-roster (starter) · has a filled lineage slot · active Journey state · holds a title · has unspent shards toward her next gate · ready for Spark Match (scenario started and tickets available) |
 
 **Outfits versus characters.** The catalogue is 267 outfits across 134 characters, so the album offers two modes:
 
@@ -249,13 +250,13 @@ nothing in the collection.
 ### What the save cannot answer yet
 
 `UmaSave` and `CardSave` carry no timestamps, and ledger rows record resource, delta, reason and time but never which
-Uma or card they belong to. So **"recently trained" and "recently used" are not sortable** and are deliberately absent.
+Uma or card they belong to. So **"recently configured" and "recently used" are not sortable** and are deliberately absent.
 "Recently raced" works, because race history stores per-Uma rows with times. Adding the other two means adding fields
 and a migration, which is not worth a sort (D114).
 
 Both albums join private content templates to entity-presence ownership. Orphaned saves are reported as a diagnostic but
-never inflate completion counts. Card selection (coupon redemption) reuses the same chrome with ownership forced to
-Unowned, and a successful selection commits before opening the read-only reveal route.
+never inflate completion counts. A card is unlocked from its own page with tickets or a coupon; the successful commit
+happens before the read-only reveal route opens.
 
 ## Trainer achievements (account-wide)
 
@@ -286,10 +287,10 @@ badge state, and race/Journey facts.
 | Graduations | Scenarios completed by all Umas | 5 / 25 / 75 / 200 / 500 |
 | Veteran Stable | Umas at level 50 or higher | 1 / 3 / 10 / 25 / 50 |
 | Legendary Stable | Umas at max level | 1 / 3 / 5 / 10 / 25 |
-| Heirs | Inheritance events run with at least 1 parent | 5 / 25 / 100 / 250 / 1,000 |
+| Heirs | Snapshot-inheritance criterion invalidated by D123; T056 must translate or retire it | 5 / 25 / 100 / 250 / 1,000 |
 | Stable Goals | Scenario goals completed by all Umas | 5 / 25 / 100 / 300 / 1,000 |
 | Honors Collector | Scenario Honors earned by all Umas | 1 / 10 / 30 / 100 / 300 |
-| Family Tree | Distinct Umas that have served as a parent | 2 / 5 / 10 / 25 / 50 |
+| Family Tree | Snapshot-parent criterion invalidated by D123; T056 must translate or retire it | 2 / 5 / 10 / 25 / 50 |
 
 Counting rules are exact:
 
@@ -299,8 +300,9 @@ Counting rules are exact:
   Ribbons, and Honors, excluding titles and trophies.
 - Title Holders counts distinct title keys across the Stable. Its `all` denominator freezes the eight enabled race-set
   titles plus the Two-Time and Three-Time title for every retained G1 family in that private catalog version.
-- Heirs counts completed Scenario Starts with one or two direct parents. Family Tree counts distinct Umas with at least one
-  evidenced direct-parent use. Stable Goals/Honors count only tracked T014 facts, never legacy-untracked tiers.
+- Heirs and Family Tree preserve already-earned catalog-v1 awards, but their snapshot-based triggers are not
+  authoritative after D123. T056 owns their translation to live constellation lineage or retirement alongside the
+  obsolete training-era criteria. Stable Goals/Honors count only tracked T014 facts, never legacy-untracked tiers.
 - Orphaned saves are visible diagnostics but do not inflate current-content collection denominators.
 
 ### Records

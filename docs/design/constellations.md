@@ -239,7 +239,7 @@ Every unlocked node is editable at any time, outside a race. There is exactly on
 scenario — the current one. There are no saved presets and no configuration history: you change it, you race,
 you change it back.
 
-Reconfiguration never costs tickets, never touches Training Level, never touches card levels, and cannot fail.
+Reconfiguration never costs tickets, never touches Training Level, never touches card bond, and cannot fail.
 The only thing that gates it is whether a node is unlocked.
 
 ## The screen

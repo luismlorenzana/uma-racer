@@ -80,43 +80,43 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - A coordinator waits for auth and a verified content version, migrates and parses IndexedDB, then publishes ready state.
   A non-empty local save opens immediately. Only a semantically empty database tries a full cloud bootstrap before
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
-- Every action (a deck edit, minigame result, race, or promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
+- Every action (a card-set/constellation edit, minigame result, race, or scenario advance) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
-- A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
-  duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
+- A focused domain validator resolves an ordered six-card set against scenario tier, ownership, current content, era,
+  duplicate ids, and duplicate characters. The Training scene, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
-  order as a write-free no-op. Explicit Auto fill remains a pure draft helper; opening a constellation never mutates an empty deck.
+  order as a write-free no-op. Explicit Fill empty slots preserves existing picks; opening Training never mutates an empty set.
 - Minigame reservations are save-backed transactions. `beginRun` re-parses the target and profile, returns an existing open
   target run without another charge, or atomically spends the documented tickets, appends its stable ledger id, and stores
   a device-local run row. Its FNV-1a seed derives from profile creation time, content version, target, scenario, and attempt;
-  reloading reconstructs the same board. The Dexie v8 `minigameRuns` table is never synced and is not part of save v6.
+  reloading reconstructs the same board. The `minigameRuns` table was introduced in Dexie v8 and remains device-local in
+  current Dexie v9; it is never synced and is not part of save v6.
 - `commitRun` is idempotent by run id. Spark Match applies score through `addTrainingExp` to the Uma's active scenario and
-  reports actual constellation nodes opened; Bond Recall applies a clear only to the named scenario's card limit break,
-  appends its +5 ticket reward and one-time LB4 coupon when earned, and treats a loss as a closed paid run. The profile,
+  reports actual constellation nodes opened; Bond Recall applies a clear only to the named scenario's card bond,
+  appends its +5 ticket reward and one-time max-bond coupon when earned, and treats a loss as a closed paid run. The profile,
   affected Uma/card, ledger, Trainer reconciliation, and outbox work commit atomically before Zustand publishes.
 - Collection acquisition uses the same boundary. Shard exchange transactionally derives its next numbered prefix and
-  writes the profile plus separate `-5 shards`/`+1 Uma Coupon` ledger rows. A Card or Uma redemption re-reads the profile,
-  target entity, private content, and target-keyed ledger row; it then writes the profile, a version-0 canonical entity,
-  one coupon spend, and all outbox work atomically. Matching entity+ledger retries return success, ownership without that
-  ledger is already-owned, and same-id mismatches are corruption. Zustand publishes only after commit.
-- Scenario Start re-reads the child and every chosen frozen parent snapshot inside one transaction. Its pure resolver checks
-  snapshot fingerprints and character identity, applies permanent→parent→grandparent collision precedence and sequential
-  pink sparks, then persists exact selected snapshots as the active finite lineage. A pending tier-1 Uma writes only its Uma
-  entity/outbox; promotion additionally re-reads the profile/deck, freezes the pre-refresh snapshot, spends deterministic
-  ledgers, applies promotion/Initial Stats and overflow, refreshes awakening/history, and resets training. Zustand publishes
-  only after commit. A race reaching the current global maximum freezes the final snapshot inside the existing result
-  transaction. Memory-only mode runs the same pure resolver with an explicit warning.
+  writes the profile plus separate `-5 shards`/`+1 Uma Coupon` ledger rows. Card unlock re-reads the profile, target card,
+  private content and target-keyed ledger row, then spends either `25 + 5 × era` tickets or one Card Select Coupon and
+  writes the canonical card plus outbox work atomically. Uma Coupon redemption follows the same idempotent pattern.
+  Matching entity+ledger retries return success, ownership without that ledger is already-owned, and same-id mismatches
+  are corruption. Zustand publishes only after commit.
+- Starting a scenario is a single idempotent Uma transaction: it derives the fresh constellation's base aptitudes,
+  freezes three goals and marks the run started. Advancing re-reads profile and Uma, closes the old Journey, spends the
+  deterministic ticket ledger, creates the next TL1 `ScenarioTraining` with an empty card set/assignments, freezes its
+  goals and publishes only after commit. Lineage is not part of either transaction; its six template references are
+  ordinary reversible constellation assignments (D123). Memory-only mode runs the same pure mutations with a warning.
 - Goal-plan v2 is another content-ready coordination step. Every pre-T014 Uma is upgraded in one Dexie transaction after
   its full race history is strictly parsed: earlier tiers become `legacy-untracked`, the current unfinished tier freezes
-  three deterministic targets, and only current-tier results are replayed. New Scenario Starts generate post-inheritance
-  targets atomically; the v1→v2 pass regenerates only untouched active plans. Promotion/final completion closes the
-  previous Journey without inventing rewards or history.
-- Milestone 6 introduced the independently versioned `badges` collection; core profile/Uma state is now save v3. T015
+  three deterministic targets, and only current-tier results are replayed. New scenario starts generate targets from the
+  fresh constellation's derived base aptitudes; the v1→v2 pass regenerates only untouched active plans.
+  Advancement/final completion closes the previous Journey without inventing rewards or history.
+- Milestone 6 introduced the independently versioned `badges` collection; core profile/Uma/card state is now save v6. T015
   creates one bounded fact/award/preference state per owned Uma and defines a preference-valid `trainer` shell. T016 now
   evaluates the complete per-Uma catalog after each fact transition and during content-ready retroactive reconciliation;
-  every changed badge state and append-only event commits inside the triggering Training/race/scenario/collection
-  transaction. Lost Training/lineage history stays a labeled lower bound, and unresolved detailed race/completion history
-  stays untracked instead of being fabricated. T017 initializes the trainer shell, lazy Uma/Stable collection UI, paged
+  every changed badge state and append-only event commits inside the triggering race/scenario/collection transaction.
+  Deleted turn-training and snapshot-lineage history stays a labeled lower bound, and unresolved detailed race/completion
+  history stays untracked instead of being fabricated. T017 initializes the trainer shell, lazy Uma/Stable collection UI, paged
   timeline reads, and conflict rebase. T018 now authoritatively reconciles that shell from collection, ledger, race,
   Journey, level, and per-Uma award facts and exposes the lazy Trainer scope/profile.
 - The private flair overlay is version 2 and maps semantic series legs to one or more race-family aliases, plus exactly 10
@@ -129,7 +129,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   fanfare. Stable scope remains a live aggregation instead of another persisted copy. Trainer reconciliation replaces
   current aggregates/records while preserving monotonic awards and preferences, and is a write-free no-op when unchanged.
 - A progression race uses an append-log sequence per Uma to derive a stable attempt id, seed, gates, and no-duplicate NPC
-  field from the private catalog. The saved Uma's current stats/aptitudes and equipped-card Race Bonus feed the client-side
+  field from the private catalog. The active constellation's derived stats/aptitudes and card-set Race Bonus feed the client-side
   engine. Supported source skills are compiled into bounded data-only condition/effect objects before simulation; the race
   engine never evaluates source strings. Engine v3 also joins, validates, clips, and snapshots the selected private course's
   corner/straight geometry before simulation. At the finish, one Dexie transaction revalidates and re-simulates the attempt, updates Uma EXP/levels and profile
@@ -145,7 +145,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   error rather than being reset. If IndexedDB itself is unavailable, play can continue in clearly labeled memory-only mode.
 - App-shell and private-content releases remain independently visible. The build commit is injected into Settings, content
   keeps its manifest version/origin, and a waiting or newly controlling service worker offers an explicit restart. That
-  restart is deferred while Training, Expedition completion, race completion, redemption, promotion, or Scenario Start is committing. Content
+  restart is deferred while a critical local save action—race completion, collection unlock, or scenario
+  start/advance—is committing. Content
   diagnostics distinguish auth, publication, missing-object, integrity, network, and verified-offline states without ever
   clearing the local save. Open minigame reservations also block silent rerolls by restoring their saved seed after reload.
 - The client is trusted. It's a personal game, so there's no server-side validation of game rules beyond shape checks.
@@ -199,8 +200,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ```text
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v4: progression, deck/library/history, parents/snapshot, journeys, modifier, version
-players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
+players/{uid}/umas/{umaId}            save v6: level/EXP, unlocked tier, per-scenario constellation/card set/Journey, skill history, version
+players/{uid}/cards/{cardId}          templateId, scenario-keyed limitBreaks (bond), maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
@@ -208,12 +209,12 @@ players/{uid}/ledger/{id}             append-only ticket, coupon, and shard move
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 ```
 
-The profile is save v4 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
-creation time, and schema version. Every Uma row is also explicitly v4. Parent/snapshot/history and strict Journey goal
-fields are present, including per-leg evidence for series goals; pending setup has no active Journey, active scenarios
-have exactly one for the current tier, and final completion has none. The nullable `scenarioModifier` is a separately
-versioned strict union initialized/replaced by Scenario Start; v3 rows migrate to null without inventing active-tier
-progress. Badge-state v1 is independently migratable and cannot force a progression save reset.
+The profile is save v6 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
+creation time, and schema version. Every Uma row is explicitly v6: permanent level/EXP plus one `ScenarioTraining` per
+unlocked tier. Each training state carries TL/EXP, card-set ids, constellation assignments, loadout ids, Journey and
+started state. Stats, SP, library and aptitudes are derived; snapshot parents and scenario modifiers are absent. Card
+rows keep ownership plus scenario-keyed bond values. Badge-state v1 is independently migratable and cannot force a
+progression save reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic
@@ -233,23 +234,21 @@ apps/web/src/
   game/         Zustand store, Dexie schema/migrations, save coordinator, persistence, outbox sync, content/save joins
   content/      manifest + pack loading, asset URLs
   scenes/       PixiJS race scenes, lazy-loaded
-  ui/           game UI kit: GameButton, Panel, Pill, Meter, BottomSheet, Toast, fx
-  screens/      Home, Stable, UmaProfile, Training, RaceSelect, PreRace, Race, Results, Cards, Badges, Settings
+  ui/           game UI kit: Button, GameButton, Panel, Meter, BottomSheet, Toast, album chrome, bond pips
+  screens/      Home, Stable, UmaProfile, Training scene, minigames, Race, Cards/Card page, Badges, Settings
 ```
 
-- **Routes are code-split**. PixiJS loads only with Race scenes; Training uses route-split DOM and Motion feedback.
-- The Cards album/detail and Card Select routes are also split. They join the full private catalog to account-wide card saves and call the
-  same generated effect projection used by Training and progression racing, so displayed LB values cannot drift from play.
+- **Routes are code-split**. PixiJS loads only with Race scenes; the Training scene and both minigames use route-split
+  DOM and Motion feedback.
+- The Cards album and per-card page are split. Collection owns/unlocks cards account-wide; scenario lenses join the same
+  card save to one scenario's bond and per-node value. Bond buttons route into Bond Recall with card, scenario and safe
+  return path, so displayed values and committed progression cannot drift.
 - Stable joins the complete private Uma catalog for honest outfit-level completion and silhouettes. The full-screen
   collection reveal is separately split and resolves safe kind/id params back to an already-owned entity; it has no
   mutation path, so back, reload, and direct navigation cannot spend a second coupon.
-- Scenario Start is separately split. Its review is pure and write-free; the confirmation calls the same promotion result
-  used by persistence, and the success route reconstructs from committed save facts rather than keeping a second game state.
-- Scenario-modifier projections are pure domain functions shared by Training previews/commits and race-win rewards. The
-  one modifier field is written inside the existing Uma transaction; no resource becomes a ledger row. Project L'Arc's
-  ready-expedition action re-reads and updates only the Uma plus its coalesced outbox row, raises an ordinary visible
-  aptitude at most to A, and shares Training's same-Uma lock and update-restart boundary. Other modifier state never enters
-  race input construction.
+- Scenario start and advance are profile actions backed by the same pure domain mutations used by persistent and
+  memory-only modes. There is no separate inheritance route: lineage references are edited on unlocked constellation
+  nodes, and the removed scenario-modifier state never enters race construction.
 - Goal and Journey projections remain small pure DOM view models. Home, Profile, Race Select, pre-race, and Results join
   persisted ids to private content with safe fallbacks; goal state never enters Pixi or changes simulation inputs.
 - Badge/catalog/evaluator and Trainer aggregation stay pure in `@racer/domain`. Each affected local action runs the same
@@ -260,7 +259,7 @@ apps/web/src/
   filters local references against those facts, and queues still-valid local preferences on top. Timeline pages walk the
   `createdAt` IndexedDB cursor and filter one Uma without materializing other Umas' logs. Profile/Home/Stable/reveal surfaces
   consume the same pure Prestige-frame projection.
-- **Game state goes in Zustand with selectors**, not React context, so a stat tick doesn't re-render the whole tree.
+- **Game state goes in Zustand with selectors**, not React context, so a derived-stat change doesn't re-render the whole tree.
 - **TanStack Query** is only for network-owned content loading. Save sync is local-first coordinator state reported through
   Zustand, never a query cache.
 

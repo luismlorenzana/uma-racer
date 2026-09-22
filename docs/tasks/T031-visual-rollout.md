@@ -20,9 +20,10 @@ reference. Read [Visual System](../design/visual-system.md) and copy how those t
 Work in this order, one commit per group, all in one PR:
 
 1. **Race:** Race Select, pre-race, `RaceRunScreen` HUD and results (the Pixi scene itself is untouched; only DOM chrome).
-2. **Training:** facility cards, gains preview, meters, bench, Training Level bar.
-3. **Cards:** album, card detail sheet, deck editor, redemption and reveal routes.
-4. **Scenario:** Scenario Start, inheritance pickers, Journey medallions, promotion summary.
+2. **Training and minigames:** Training-scene header/stat strip, constellation chrome and node sheets, card-set tab,
+   Spark Match, Bond Recall, Training Level and bond result summaries.
+3. **Cards:** Collection/scenario album lenses, card page, card-set picker, unlock and reveal routes.
+4. **Scenario:** profile start/advance actions, Journey medallions, scenario history and advancement feedback.
 5. **Badges and Trainer:** collection page, detail, timeline, showcase editors, trainer profile.
 6. **Settings** and any remaining placeholder route.
 
@@ -52,7 +53,8 @@ where portraits or card art appear, and apply the standard motion durations.
   `SegmentedControl` selection, `ArtTile` dimmed/placeholder fallback, and `Placeholder`'s accessible name.
 - Keep `apps/web/src/ui/tokens.test.ts` passing; extend it when you remove the alias block.
 - Verify in the browser at 390×844 for every screen in the list, in both densities and with reduced motion on, and
-  attach before/after screenshots of at least Race Select, Training, Cards, Badges and Results to the PR.
+  attach before/after screenshots of at least Race Select, the Training scene, one minigame, Cards, Badges and Results
+  to the PR.
 - Record the startup bundle size before and after; it must stay at or below 180 KB gzip.
 
 ## Acceptance

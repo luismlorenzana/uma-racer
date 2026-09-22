@@ -4,7 +4,7 @@ Each started scenario freezes three optional race targets for that Uma. They giv
 Training, racing, or promotion. Targets are concrete private `RaceTemplate.id` values: content updates never silently
 reroll an active or historical Journey.
 
-> **Status:** goal plan **v2** is live: career-and-sex identity, frozen series legs, save v3 migration, and the Stable
+> **Status:** goal plan **v2** is live: career-and-sex identity, frozen series legs, legacy save migration, and the Stable
 > real-horse-sex filter are implemented as decided in D106.
 
 ## Three slots
@@ -31,7 +31,7 @@ is still available, so an Uma re-runs her own career as she climbs:
 | Sakura Bakushin O | Keio Hai Junior Stakes | Spring Stakes | Aoi Stakes | Sprinters Stakes | Takamatsunomiya Kinen |
 
 A career family is skipped when it has no retained gameplay race, when an earlier tier already used it, or when the Uma's
-saved surface or distance aptitude for it is **worse than B** — a sprinter is never pushed into the Kikuka Sho.
+derived surface or distance aptitude for it is **worse than B** — a sprinter is never pushed into the Kikuka Sho.
 
 **2. Her sex.** When the career list is exhausted or nothing in it fits, identity falls back to the classic series of the
 real horse's sex (`realHorseSex`, imported from the original data):
@@ -63,10 +63,11 @@ coverage the Identity slot stays a single race. Completing a set naturally earns
 
 ## Aptitude and Challenge
 
-Aptitude score is the sum of the saved surface- and distance-grade indices (`S = 0` through `G = 7`); lower is better.
+Aptitude score is the sum of the derived surface- and distance-grade indices (`S = 0` through `G = 7`); lower is better.
 Among equally scored candidates at the requested grade, a race that carries any series tag — a famous race — wins the
 tie, so a Long specialist chases the Arima Kinen rather than an anonymous 2500 m. Remaining ties sort by race id and
-rotate by a stable hash of Uma id, tier, and slot. The generator uses no engine RNG, wall clock, or input iteration order.
+rotate by a stable hash of Uma id, tier, and slot. For a fresh scenario these grades come from its empty constellation,
+so they are the Uma template's base aptitudes. The generator uses no engine RNG, wall clock, or input iteration order.
 
 The Challenge slot takes a third target and demands a **5-length** win. Each slot excludes the races the earlier slots
 took, so a normal catalog always yields three distinct goals.
@@ -82,8 +83,8 @@ took, so a normal catalog always yields three distinct goals.
 
 Identity follows the career race's own grade instead, and series goals are G1 by nature. Every race remains open from
 scenario 1. When a requested bucket is empty after exclusions, selection visits weaker grades nearest-first, then stronger
-grades nearest-first. Scenario Start fails before writes only when the complete catalog cannot supply three distinct valid
-targets; its error reports aggregate counts, not private names or ids.
+grades nearest-first. Starting or advancing a scenario fails before writes only when the complete catalog cannot supply
+three distinct valid targets; its error reports aggregate counts, not private names or ids.
 
 `SCENARIO_GOAL_VERSION` freezes the algorithm. A later algorithm needs an explicit migration and must not reroll a plan
 that already has progress.
@@ -102,9 +103,9 @@ matching retry returns the stored ids without awarding or animating again, while
 
 ## Lifecycle and migration
 
-- New Umas have no active Journey until free Scenario Start. Promotion closes the old Journey and generates the next from
-  post-pink-spark aptitudes in the same transaction.
-- Promotion/final completion preserves completed goals, marks remaining active goals missed, and closes the Journey.
+- New Umas have no active Journey until their free scenario-start confirmation. Advancing closes the old Journey and
+  generates the next from the fresh scenario's derived base aptitudes in the same transaction.
+- Advancement/final completion preserves completed goals, marks remaining active goals missed, and closes the Journey.
   Completed and missed facts never reopen. A series goal with some legs won is one missed goal, and its won legs stay
   visible as history.
 - The one-time v0→v1 bootstrap labelled earlier tiers `legacy-untracked`, generated the current unfinished tier, and

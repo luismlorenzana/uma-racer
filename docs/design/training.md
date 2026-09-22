@@ -78,7 +78,8 @@ opposite of what the constellation is for.
 ## Opening a scenario
 
 A newly unlocked scenario starts at Training Level 1 with only the baseline nodes open and an empty six-card
-set. **One Spark Match run unlocks racing** in that scenario. Beyond that, play when you want more nodes.
+set. Confirming the scenario freezes its goals and unlocks racing immediately; Spark Match is then played when
+you want more nodes and a stronger Race Form.
 
 A valid six-card set is not required to race, but an empty constellation pays nothing, so an Uma with no cards
 slotted races on base stats alone.

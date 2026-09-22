@@ -11,7 +11,7 @@ sorts, deep facets, saved views, density, and art-first tiles. The patterns are 
 
 Collection was named a core pillar from the first conversation, and the albums today offer a handful of chips and a
 single sort. With three hundred entries each, that is a wall, not a collection. The work is also genuinely shared: one
-engine serves the Stable, the Cards album, coupon redemption, and later the deck editor.
+engine serves the Stable, the Cards album's collection/scenario lenses, and the card-set picker.
 
 ## Sequence
 
@@ -19,7 +19,7 @@ engine serves the Stable, the Cards album, coupon redemption, and later the deck
 T033 album engine + Stable       ✅ landed 2026-09-19
         │
         ▼
-T034 Cards album + deck editor   ✅ landed 2026-09-19
+T034 Cards album + picker foundation   ✅ landed 2026-09-19
         │
         ▼
 T035 Race Select                 (delegable)
@@ -28,7 +28,7 @@ T035 Race Select                 (delegable)
 | Task | Result | Must not absorb |
 |---|---|---|
 | T033 ✅ | The shared chrome, facet engine, saved views, density, virtualization, and the Stable using all of it | Card-specific facets, gameplay changes, new rewards |
-| T034 ✅ | The Cards album, card detail, redemption **and the deck editor** on the same engine | New card mechanics, Friend/Group gameplay (M8) |
+| T034 ✅ | The Cards album and card picker on the same engine; M016 later replaced detail/redemption with card pages and scenario lenses | New card mechanics |
 | [T035](T035-race-select-browsing.md) | Race Select — the third long list — with aptitude fit, series filters and pinned goal targets | Race rules, rewards, the Pixi scene |
 
 All three depend on Milestone 9's visual system for tiles and controls. If Milestone 9 has not landed, build against the
@@ -39,7 +39,7 @@ tokens and accept a second cosmetic pass.
 - Both albums and Race Select open on a sensible default order without anyone touching a control.
 - Browsing matches the shape of the real game: dense image-only tiles, a reserved detail area, and view modes.
 - Tiles carry the data the sort is about, entries can be compared, and quick actions work without a detour.
-- The Stable can be browsed by character as well as by outfit, and the deck editor uses the album rather than its own
+- The Stable can be browsed by character as well as by outfit, and the card-set picker uses the scenario lens rather than its own
   weaker picker.
 - Every documented facet works, shows counts, never offers a zero-result dead end, and appears as a removable chip.
 - Saved views, density and grouping persist per device and survive reload.

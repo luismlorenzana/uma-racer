@@ -10,7 +10,7 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 1. **Thumb first.** Primary actions sit in the bottom third. Nothing important needs a stretch to the top corners.
 2. **Visual before textual.** Icons, portraits, bars, colors, and motion carry the meaning, and numbers confirm it.
 3. **Every tap answers.** Instant press feedback, then a result animation. Waiting states are rare, because the game runs locally.
-4. **Big moments feel big.** Level-ups, promotions, limit breaks, coupon reveals, goal completions, and new badges each get a crafted fanfare.
+4. **Big moments feel big.** Level-ups, scenario advances, bond increases, coupon reveals, goal completions, and new badges each get a crafted fanfare.
 5. **One-handed loops.** Training and racing can repeat with a thumb, without menus in between.
 6. **Offline is normal.** No spinners for game actions. Sync status stays a quiet indicator.
 
@@ -35,8 +35,8 @@ feedback catalogue.
 ```
 
 - **Bottom tab bar** with 5 destinations. Race is the raised center button.
-- **Bottom sheets** (drag to dismiss) for pickers: strategy, card slot, parent picker, filters, confirmations.
-- **Full-screen scenes** hide the tab bar: Training, Race, Results, Scenario Start, and reveal fanfares.
+- **Bottom sheets** (drag to dismiss) for pickers: strategy, card slot, lineage slot, filters, confirmations.
+- **Full-screen scenes** hide the tab bar: Training, Spark Match, Bond Recall, Race, Results, and reveal fanfares.
 - **Swipe back** from the left edge on nested screens, consistent with iOS.
 - **Shared-element transitions**: an Uma tile morphs into the profile hero, and a card tile into its detail.
 
@@ -45,7 +45,7 @@ feedback catalogue.
 ### Home (lobby)
 
 - **Featured Uma** portrait, large, with a gentle idle "breathing" motion. Level ring, Training Level bar, active title.
-- **Two big CTAs** in the thumb zone: **Train** and **Race**.
+- **Two big CTAs** in the thumb zone: **Training** (or Start/Next scenario when required) and **Race**.
 - On open, the **daily ticket grant** flies "+50 🎫" into the counter.
 - **Goal tracker** card for the featured Uma (3 pips), followed by the implemented **recent flair** card with the latest
   three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
@@ -79,10 +79,11 @@ Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-2
 
 Nothing is sticky: an element pinned inside the scrolling shell parks over the content instead of the viewport.
 
-### Scenario Start
+### Scenario start and advance
 
-Superseded by D121 and D123: an Uma's scenario run starts with one confirmation, with no parent snapshots or
-inheritance picks. Lineage is set on the constellation's parent nodes instead.
+A new Uma starts her first scenario from the profile with one confirmation, which freezes its goals. At a gate level,
+**Unlock next** shows the ticket cost, closes the old Journey and opens the next scenario at TL1. Neither action contains
+an inheritance flow: lineage is configured later in the constellation's parent and grandparent nodes.
 
 ### Training scene
 
@@ -145,14 +146,15 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 
 1. The placement number **stamps** in ("1st!", with confetti if a win).
 2. The finishing order slides in, with margins.
-3. The Uma EXP bar fills. On a level-up: burst, the ticket reward moves in, and before→after player/field Race Form updates.
+3. The Uma EXP bar fills. On a level-up: burst and the ticket reward moves in. Race Form is shown from the active
+   Training Level, so an Uma Level increase does not change it.
 4. Activated player skills are grouped by id with counts and recovery/speed/acceleration labels; missing content falls back to the id.
 5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. The implemented T016 flow then serializes persisted
    flair in this order: goal-derived badge events, ordinary badge tiers/one-offs, first G1 trophy, race-set/repeat title,
    and Trainer achievements. Multiple newly crossed tiers for one definition collapse visually to the highest one while
    detail retains every stage. Skip/reduced motion reveals the same facts immediately; reload shows “Earned in this race”
    summaries from stored event ids without replaying them as new.
-6. CTAs: **Races** · **Train** · **Race again**. Until the atomic save succeeds only Retry save is available; Race again
+6. CTAs: **Races** · **Training** · **Race again**. Until the atomic save succeeds only Retry save is available; Race again
    becomes Promote first at a scenario gate.
 
 ### Cards
@@ -196,16 +198,15 @@ The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mo
 | Moment | Motion | Sound | Particles | Haptic (if available) |
 |---|---|---|---|---|
 | Any button press | Squash and spring | Soft tick | — | Light |
-| Training resolve | Gains fly to bars, bar fill | Rising "ding" per stat | Small sparkle | Light |
-| Friendship training | Rainbow sweep | Chord | Rainbow sparkles | Medium |
-| Skill hint | Chip pop and slide | Bell | — | Light |
-| Training Level up | Badge burst, cap markers slide | Jingle | Star burst | Medium |
+| Spark Match cascade | Tiles fall and settle; score rises | Rising match tones | Small sparkle | Light |
+| Training Level up | TL badge burst; newly opened nodes illuminate | Jingle | Star burst | Medium |
+| Bond Recall clear | Bond pip fills; per-node value ticks up | Power-up | Glow burst | Heavy |
 | Race start | Gate snap, camera push | Gate clank, crowd | Dust | Medium |
 | Win | Placement stamp | Fanfare | Confetti | Success pattern |
 | Uma Level up | Ring fill and burst | Level jingle | Stars | Medium |
 | Goal completed | Ribbon unfurl | Big fanfare | Gold confetti | Success pattern |
 | Badge or title earned | Shine sweep and flip-in | Sparkle | Tier-colored sparkles | Light |
-| Limit break / promotion | Lift, glow, ignite | Power-up | Glow burst | Heavy |
+| Scenario advance | Crest/title sweep into the new TL1 run | Power-up | Glow burst | Heavy |
 | Coupon reveal | Flip with anticipation shake | Drumroll → reveal | Burst | Heavy |
 
 Haptics are progressive enhancement only (see research). Motion plus sound must stand on their own.

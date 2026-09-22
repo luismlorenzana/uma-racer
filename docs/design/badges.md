@@ -49,7 +49,7 @@ Prestige/frame projection, the full lazy three-scope collection page, atomic pre
 and a 12-pin Profile showcase. The Trainer entity now also stores reconciled account aggregates, monotonic achievements,
 stable records, display name, pinned Umas, and a mixed Trainer/per-Uma showcase.
 
-The core profile and Uma use save v3. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
+The core profile and Uma use save v6. Badge state uses a separate `BADGE_STATE_VERSION = 1` in the already-reserved
 `badges` entity collection. This keeps badge rollout isolated from progression migration and lets an individual Uma's
 flair sync independently.
 
@@ -71,12 +71,13 @@ These reusable tier scales are fixed for catalog v1:
 | Breadth (minimum count across required buckets) | 1 / 3 / 5 / 10 / 20 |
 | Venue wins | 1 / 3 / 7 / 15 / 30 |
 | Back-field wins | 1 / 5 / 15 / 30 / 60 |
-| Friendship trainings | 10 / 50 / 200 / 500 / 1,000 |
+| Legacy friendship trainings (retired by D120) | 10 / 50 / 200 / 500 / 1,000 |
 | Distinct lifetime skills | 5 / 15 / 30 / 60 / 100 |
 | Skills in one scenario | 5 / 10 / 15 / 20 / 25 |
-| Parent uses | 1 / 5 / 10 / 25 / 50 |
+| Snapshot-parent uses (criterion invalidated by D123; T056 pending) | 1 / 5 / 10 / 25 / 50 |
 
-T015 must expose these values as domain constants and add them to the pinning test before implementation is merged.
+These catalog-v1 values remain domain constants covered by the pinning test. Retiring or replacing a criterion in T056
+does not rewrite already-earned stages.
 
 ### 1. Victories
 
@@ -169,7 +170,7 @@ awards.
 | Lightning Start | Start delay below 0.010 seconds and won | Hidden one-off |
 | Slow Start, Fast Finish | Start delay at least 0.080 seconds and won | Hidden one-off |
 | Course Record | Finished strictly faster than every earlier player result on that course id | One-off per course |
-| Heir | Won a race in which an inherited unique skill activated | One-off |
+| Heir | Legacy-only: won with an inherited unique before D123 removed inherited uniques | One-off |
 
 At a tied record time, only the earlier result is the record setter. Wire to Wire samples the authoritative 24-section
 placement projection after the gate; a tie for first fails. Last-spurt placement is sampled on the player's first
@@ -184,42 +185,44 @@ a field ranking and must not be repurposed. Neither appears as an earnable/locke
 
 | Definition | Criterion | Tiers |
 |---|---|---|
-| Speed / Stamina / Power / Guts / Wit Peak | Highest saved value | 600 / 900 / 1,200 / 1,600 / 2,000 |
-| Balanced | Highest saved minimum of the five stats | 500 / 800 / 1,100 / 1,500 / 1,900 |
-| [Scenario] Capped | At scenario completion, at least one stat is at or above that scenario's TL10 cap | One-off per scenario |
-| [Scenario] Perfect Form | At scenario completion, all five stats are at or above that cap | One-off per scenario |
+| Speed / Stamina / Power / Guts / Wit Peak | Highest derived value observed by badge reconciliation | 600 / 900 / 1,200 / 1,600 / 2,000 |
+| Balanced | Highest observed minimum of the five derived stats | 500 / 800 / 1,100 / 1,500 / 1,900 |
+| [Scenario] Capped | At scenario completion, at least one derived stat reaches that scenario's cap | One-off per scenario |
+| [Scenario] Perfect Form | At scenario completion, all five derived stats reach their caps | One-off per scenario |
 | Level milestones | Highest Uma level | 10 / 25 / 50 / 75 / 100 |
 | [Scenario] Graduate | Completed that scenario | One-off per scenario |
 | [Scenario] Speedrun | Completed/promoted from that scenario in 15 or fewer race starts in the tier | One-off per scenario |
 | Living Legend | Completed every scenario present in the awarding catalog version | One-off |
 
-`>=` is intentional for cap badges because permanent stats may already exceed a new scenario's current cap. Promotion and
-final completion snapshot the pre-promotion tier, stat values, TL, deck, training counters, race count, and completion time
-before applying the next scenario's bonuses. Graduate and Speedrun are retroactive from Journey/race history; old Capped/
+`>=` is intentional for cap badges so a clamped derived value counts exactly at the ceiling. Advancement and final
+completion snapshot the completed tier's derived stats, TL, card set, race count, and completion time before opening the
+next scenario. Graduate and Speedrun are retroactive from Journey/race history; old Capped/
 Perfect facts that cannot be reconstructed remain untracked.
 
 ### 7. Training, skills, goals, and lineage
 
 | Definition | Criterion | Tiers |
 |---|---|---|
-| Diligent | Lifetime training turns | 50 / 250 / 1,000 / 3,000 / 10,000 |
-| Friendship Power | Lifetime friendship trainings | Friendship trainings |
+| Diligent | Legacy training-turn counter; no new progress after D120 | 50 / 250 / 1,000 / 3,000 / 10,000 |
+| Friendship Power | Legacy friendship-training counter; no new progress after D120 | Friendship trainings |
 | [Scenario] Fully Trained | Reached TL10 during that scenario | One-off per scenario |
 | Era Loyalist | Completed a scenario using only cards whose era equals that scenario tier | One-off per scenario |
-| Full House | Trained with all six equipped cards present at one facility | Hidden one-off |
+| Full House | Legacy facility-training feat; no longer earnable after D120 | Hidden one-off |
 | Skill Collector | Distinct skills ever learned, from skill history | Distinct lifetime skills |
 | Full Kit | Highest distinct skills unlocked within one scenario | Skills in one scenario |
 | Goal Ribbon | One named ribbon per exact completed T014 goal | One point each |
 | [Scenario] Honors | Completed all three tracked goals in that scenario | Four points each |
 | Destiny | Exact completed goals across tracked Journeys | 3 / 10 / 25 / 50 / 100 |
 | Perfect Journey | Honors in every completed, tracked scenario, with at least three completed scenarios | One-off |
-| Legacy | Times this Uma's frozen snapshot was committed as a direct parent | Parent uses |
-| Dynasty | A grandchild completed a scenario with this Uma in the frozen grandparent chain | 1 / 3 / 5 / 10 / 20 |
+| Legacy | Pre-D123 snapshot-parent uses; T056 must translate this to constellation lineage or retire it | Parent uses |
+| Dynasty | Pre-D123 frozen-grandparent completions; T056 must translate or retire it | 1 / 3 / 5 / 10 / 20 |
 
-Era Loyalist requires a nonempty deck and every equipped card to match the completed tier; mixed/later/unknown content
-fails. Full House is possible only when six slots are unlocked. A Goal Ribbon uses the stored goal id and result id, joins
-its target privately for display, and falls back safely when content is missing. Legacy increments on Scenario Start, while
-Dynasty increments when the descendant closes the scenario—not when lineage is merely selected.
+Era Loyalist requires a nonempty card set and every equipped card to match the completed tier; mixed/later/unknown content
+fails. A Goal Ribbon uses the stored goal id and result id, joins its target privately for display, and falls back safely
+when content is missing. Diligent, Friendship Power and Full House preserve already-earned catalog-v1 awards but receive
+no new facts from the constellation model. Legacy and Dynasty also preserve existing awards, but their old snapshot-based
+trigger is no longer authoritative. T056 owns the translation or retirement of all five and must update the catalog,
+pinning tests and this document together.
 
 ## Durable facts and honest history
 
@@ -230,7 +233,7 @@ bounded facts required above:
 
 - race family, grade, venue key/tags, course id, surface, exact distance, distance category, and semantic series tags;
 - player start delay, first-final-spurt placement, whether the player strictly led every section checkpoint, and whether an
-  inherited unique activated.
+  legacy inherited unique activated (pre-D123 results only).
 
 These facts are derived from the authoritative template, saved race input, and deterministic timeline inside the existing
 completion transaction. They do not change simulation or replay versions. Parsers reject invented UI-supplied facts,
@@ -239,14 +242,14 @@ unknown fact versions, duplicate tags, unsafe ids, invalid ranges, or facts inco
 ### Bounded Uma facts
 
 Each per-Uma badge entity stores bounded aggregate facts rather than an unbounded copy of gameplay history: counters by
-grade/surface/distance/strategy/venue/family, current/longest streak, best stats/minimum stat, distinct skill ids, training
-counters, scenario-completion facts, goal/Honors totals, parent-use counts, and evaluation watermarks. Race history remains
-the source log and flair events remain their own append-only log.
+grade/surface/distance/strategy/venue/family, current/longest streak, best stats/minimum stat, distinct skill ids,
+scenario-completion facts, goal/Honors totals, legacy training/parent counters, and evaluation watermarks. Race history
+remains the source log and flair events remain their own append-only log.
 
-Training updates lifetime turns, friendship turns, Full House, TL10, and skill facts in the same transaction as the turn.
-Scenario Start increments selected parents' Legacy facts in the same transaction as the child. Promotion/final completion
-captures the completed scenario and updates every known grandparent's Dynasty fact atomically with the child when those
-entities exist locally; missing/orphaned ancestors remain explicit and may be reconciled during bootstrap.
+The save retains legacy training and snapshot-lineage counters so old awards remain explainable. Current scenario
+reconciliation can still observe TL10, derived stats, card-set eras, skills, goals and completion facts. New minigame
+criteria—and authoritative rules for converting live lineage assignments into facts—wait for T056 rather than
+fabricating continuity.
 
 ### Retroactivity grades
 
@@ -261,10 +264,9 @@ Every definition has one history grade shown in detail/progress UI:
 Bootstrap strictly parses complete local race history before publishing ready state, then re-evaluates every Uma against
 the current content catalog. Existing race, goal, level, current stat, and skill-history awards are retroactive and exact
 where their dependencies resolve; publishing series/main-venue coverage therefore awards qualifying titles and Grand Tour
-from stored family/venue wins without changing badge-state schema. Current-scenario training turns
-form the lower-bound seed for Diligent; current TL10 may award Fully Trained for the active tier. Prior friendship/Full
-House/deck-at-completion/parent-use/Dynasty facts are not invented. A lower bound that already crosses a threshold may
-award it, but the UI labels the underlying progress “at least”.
+from stored family/venue wins without changing badge-state schema. Current TL10 may award Fully Trained for the active
+tier. Historical training-turn, friendship, Full House, snapshot-parent and Dynasty facts are never invented. Existing
+lower bounds and already-earned awards remain visible with their provenance.
 
 ## Award and event semantics
 
@@ -274,7 +276,7 @@ award it, but the UI labels the underlying progress “at least”.
   detail retains each tier's first-earned event.
 - A deterministic flair-event id contains scope, award key, and tier/title/trophy stage. Retries match existing payloads;
   same-id mismatches are corruption.
-- New race/training/promotion/start commits update facts, awards, badge entities, flair logs, and existing game writes in one
+- New race/scenario/collection commits update applicable facts, awards, badge entities, flair logs, and existing game writes in one
   Dexie transaction before Zustand publishes. No badge may appear without its triggering gameplay commit or vice versa.
 - Retroactive bootstrap writes all affected badge entities/flair events/outbox rows in one transaction. Source timestamps
   are used when known; otherwise the migration time is stored with `retroactive: true`.
