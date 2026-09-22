@@ -6,8 +6,8 @@ import {
   parseUmaSave,
   supportDeckIdentityIssues,
   supportDeckIssueMessage,
-  tierOfLevel,
   validateSupportDeck,
+  withCardSet as withRunCardSet,
   type CardSave,
   type UmaSave,
 } from '@racer/domain'
@@ -15,12 +15,11 @@ import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { queueInTransaction } from './persistence'
 
-/** Card sets belong to the active scenario run now (D125). */
+/** Card sets belong to the active scenario run now (D125), which is always the highest unlocked (D121). */
 function withCardSet(uma: UmaSave, orderedCardIds: readonly string[]): UmaSave {
   return {
     ...uma,
-    scenarios: uma.scenarios.map((run) =>
-      run.tier === uma.unlockedTier ? { ...run, cardSetIds: [...orderedCardIds] } : run),
+    scenarios: uma.scenarios.map((run) => run.tier === uma.unlockedTier ? withRunCardSet(run, orderedCardIds) : run),
   }
 }
 
@@ -43,7 +42,7 @@ export function setMemoryUmaDeck(
   orderedCardIds: readonly string[],
 ): DeckMutationResult {
   const validation = validateSupportDeck({
-    tier: tierOfLevel(uma.level),
+    tier: uma.unlockedTier,
     orderedCardIds,
     ownedCards: Object.values(cardsById),
     templates: content.cards.byId,
@@ -68,7 +67,7 @@ export async function setPersistentUmaDeck(
     if (!umaRow) throw new Error('Deck Uma is not owned')
     const uma = parseUmaSave(umaRow.data)
     if (!uma || uma.templateId !== umaId) throw new Error(`Invalid local Uma save: ${umaId}`)
-    const tier = tierOfLevel(uma.level)
+    const tier = uma.unlockedTier
     const slotIssues = supportDeckIdentityIssues(tier, orderedCardIds)
     if (slotIssues.length > 0) throwFirstIssue(slotIssues)
     const rows = await db.cards.bulkGet([...orderedCardIds])

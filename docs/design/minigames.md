@@ -75,9 +75,10 @@ missing from the pack the scenario falls back to the next available starter, and
 Pick one owned card **and one scenario**, then clear a grid of face-down tiles by matching pairs. A full
 clear advances that card **one limit break in that scenario** (D127).
 
-A card can be trained in any scenario its era allows that some Uma has unlocked. The entry point is the Cards
-album: a card's detail carries a **Bond by scenario** strip — one row per eligible scenario with its limit
-break and what one node pays there — and a row is the way into a run.
+A card can be trained in any scenario its era allows that some Uma has unlocked. Every way in names the card, the
+scenario and where to return to (M016): a **Bond** button on each slot of the Training scene's Card set tab and
+beside each card in a constellation node's sheet, and the Cards album. A run with no card redirects to the album;
+there is no scenario-less picker. After a run, **Bond again** starts the next one and **Done** goes back.
 
 ### Board
 
@@ -92,8 +93,8 @@ pairs(lb) = 6 + 2 × lb          lb = the limit break you are leaving
 | LB2 → LB3 | 10 | 4 × 5 | 14 |
 | LB3 → LB4 | 12 | 4 × 6 | 16 |
 
-Tile faces are the **six cards of the active scenario's card set** first, then filler drawn deterministically
-from the player's other owned cards. Running out of mismatches ends the run without an advance — this one has
+Tile faces are the **cards of the set the run was launched from** (else the first set anyone holds in that
+scenario), then filler drawn deterministically from the player's other owned cards. Running out of mismatches ends the run without an advance — this one has
 real stakes, which is why it is the shorter game.
 
 ### Card levels

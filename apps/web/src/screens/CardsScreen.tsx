@@ -18,7 +18,7 @@ import { m, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { promoteSupportCard } from '../game/actions'
+import { bondRecallHref } from '../game/bond-links'
 import { addSavedView, loadAlbumPrefs, markSeen, removeSavedView, saveAlbumPrefs, type AlbumPrefs } from '../game/album/prefs'
 import { emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumView } from '../game/album/query'
 import {
@@ -199,20 +199,14 @@ function CardDetail({
   entry,
   trainableTiers,
   umaNames,
-  busy,
-  error,
   celebration,
-  onPromote,
   onStep,
 }: {
   entry: CardEntry
   /** Scenarios this card is eligible for and some Uma has unlocked. */
   trainableTiers: readonly number[]
   umaNames: Readonly<Record<string, string>>
-  busy: boolean
-  error: string | null
   celebration: number
-  onPromote: () => void
   onStep: (delta: number) => void
 }) {
   const reducedMotion = useReducedMotion()
@@ -270,7 +264,7 @@ function CardDetail({
             {entry.equippedBy.map((umaId) => (
               <Link
                 key={umaId}
-                to={`/stable/${encodeURIComponent(umaId)}/deck`}
+                to={`/constellation/${encodeURIComponent(umaId)}/cards`}
                 className="inline-flex min-h-8 items-center rounded-full border border-hairline-strong bg-panel px-3 text-[13px] font-semibold"
               >
                 {umaNames[umaId] ?? umaId}
@@ -293,7 +287,7 @@ function CardDetail({
                   return (
                     <Link
                       key={tier}
-                      to={`/minigames/bond-recall/${encodeURIComponent(entry.template.id)}?tier=${tier}`}
+                      to={bondRecallHref({ cardId: entry.template.id, tier, returnTo: `/cards?card=${encodeURIComponent(entry.template.id)}` })}
                       aria-disabled={maxed}
                       className={`flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 ${maxed ? 'bg-sunken' : 'bg-panel'}`}
                     >
@@ -343,15 +337,7 @@ function CardDetail({
             </div>
           )}
 
-          {error && <p role="alert" className="mt-3 rounded-sm bg-danger/10 p-3 text-[13px] font-semibold text-danger">{error}</p>}
-
-          <div className="mt-4 grid gap-2">
-            <Button className="w-full" disabled={busy || entry.promotionLock !== null} onClick={onPromote}>
-              {busy ? 'Limit breaking…' : entry.promotionCost ? `Limit Break · ${entry.promotionCost} tickets` : 'Maximum limit break'}
-            </Button>
-            {entry.promotionLock && <p className="text-center text-[12px] text-ink-soft">{entry.promotionLock}</p>}
-            {save.maxCouponGranted && <p className="text-center text-[12px] font-semibold text-accent-strong">Card Select Coupon earned</p>}
-          </div>
+          {save.maxCouponGranted && <p className="mt-4 text-center text-[12px] font-semibold text-accent-strong">Card Select Coupon earned</p>}
         </>
       )}
     </div>
@@ -378,9 +364,7 @@ export function CardsScreen() {
   const [selection, setSelection] = useState<readonly string[]>([])
   const [compareOpen, setCompareOpen] = useState(false)
   const [actionsFor, setActionsFor] = useState<CardEntry | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [celebration, setCelebration] = useState(0)
+  const [celebration] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -467,27 +451,13 @@ export function CardsScreen() {
   const openEntry = (entry: CardEntry) => {
     if (entry.isNew) updatePrefs({ ...prefs, seen: markSeen(prefs.seen, [entry.id]) })
     setSelectedId(entry.id)
-    setError(null)
   }
 
   const stepSelection = (delta: number) => {
     if (!selectedId) return
     const index = entries.findIndex((entry) => entry.id === selectedId)
     const next = entries[index + delta]
-    if (next) { setSelectedId(next.id); setError(null) }
-  }
-
-  const promote = () => {
-    if (!selected?.save || busy) return
-    setBusy(true)
-    setError(null)
-    void promoteSupportCard(selected.template.id, Math.max(selected.template.era, 1))
-      .then((mutation) => {
-        setCelebration((value) => value + 1)
-        pushToast(`LB${mutation.result.toLimitBreak} · Card Lv ${mutation.result.toLevel}`)
-      })
-      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Could not limit break this card'))
-      .finally(() => setBusy(false))
+    if (next) setSelectedId(next.id)
   }
 
   const toggleSelect = (id: string) => {
@@ -555,9 +525,7 @@ export function CardsScreen() {
 
           <div className="mt-2 flex gap-2">
             <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>Details</Button>
-            {detail.owned && detail.promotionLock === null && (
-              <Button size="sm" onClick={() => openEntry(detail)}>Limit break</Button>
-            )}
+            {detail.owned && <Button size="sm" onClick={() => openEntry(detail)}>Bond</Button>}
           </div>
         </AlbumDetail>
       )}
@@ -668,14 +636,9 @@ export function CardsScreen() {
           <div className="grid gap-1.5 pb-2">
             <h2 className="font-display mb-1 text-xl font-bold">{actionsFor.template.charName}</h2>
             <Button variant="secondary" onClick={() => { const entry = actionsFor; setActionsFor(null); openEntry(entry) }}>Open details</Button>
-            {actionsFor.owned && actionsFor.promotionLock === null && (
-              <Button onClick={() => { const entry = actionsFor; setActionsFor(null); openEntry(entry) }}>
-                Limit break · {actionsFor.promotionCost} tickets
-              </Button>
-            )}
             {actionsFor.equippedBy.length > 0 && (
               <Link
-                to={`/stable/${encodeURIComponent(actionsFor.equippedBy[0]!)}/deck`}
+                to={`/constellation/${encodeURIComponent(actionsFor.equippedBy[0]!)}/cards`}
                 className="font-display flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel text-[15px] font-semibold"
               >
                 Where it is equipped
@@ -687,17 +650,14 @@ export function CardsScreen() {
 
       <BottomSheet
         open={selected !== null}
-        onClose={() => { if (!busy) { setSelectedId(null); setError(null); setSearchParams({}, { replace: true }) } }}
+        onClose={() => { setSelectedId(null); setSearchParams({}, { replace: true }) }}
       >
         {selected && (
           <CardDetail
             entry={selected}
             trainableTiers={trainableTiersFor(selected.template.era)}
             umaNames={umaNames}
-            busy={busy}
-            error={error}
             celebration={celebration}
-            onPromote={promote}
             onStep={stepSelection}
           />
         )}

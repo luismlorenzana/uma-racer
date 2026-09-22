@@ -1,78 +1,47 @@
 import {
+  MAX_LIMIT_BREAK,
   MAX_TRAINING_LEVEL,
   SPARK_MATCH_TICKET_COST,
   cardLimitBreak,
   STATS,
   cardNodeValue,
-  capProfile,
   constellationTemplate,
   explainAptitudes,
   lineageEligibility,
   lineageUnlockLevel,
   nodeValue,
+  scenarioCardSpPerNode,
   unlockedNodeCount,
   type Aptitudes,
   type ConstellationNode,
   type ConstellationTemplate,
   type NodeAssignment,
   type StatKey,
-  type Stats,
   type UmaTemplate,
 } from '@racer/domain'
-import { useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
-import { useContent } from '../content/ContentProvider'
+import { useState } from 'react'
+import { Link } from 'react-router'
 import { getContentAsset, type LoadedContent } from '../content/runtime'
 import { setConstellationNode } from '../game/actions'
+import { bondRecallHref } from '../game/bond-links'
 import { useGame } from '../game/store'
-import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
+import { BondPips } from '../ui/BondPips'
 import { BottomSheet } from '../ui/BottomSheet'
 import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
-import { Crest } from '../ui/Crest'
-import { Numeral } from '../ui/Numeral'
-import { ScreenState } from '../ui/ScreenState'
+import { useTraining } from './TrainingScene'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
 export function ConstellationScreen() {
-  const { umaId = '' } = useParams()
-  const contentState = useContent()
-  const status = useGame((state) => state.status)
-  const umas = useGame((state) => state.umas)
-  const cards = useGame((state) => state.cards)
-  const profile = useGame((state) => state.profile)
+  const { content, save, uma, cards, umas, tickets } = useTraining()
   const pushToast = useGame((state) => state.pushToast)
   const [openNode, setOpenNode] = useState<ConstellationNode | null>(null)
   const [busy, setBusy] = useState(false)
-  /** Stats as they were when this screen opened, so every delta reads against one stable reference. */
-  const baseline = useRef<Stats | null>(null)
 
-  const save = umas[umaId]
-  const joined = useMemo(
-    () => (contentState.status === 'ready' && save ? joinUma(save, contentState.content, cards) : null),
-    [cards, contentState, save],
-  )
-
-  if (contentState.status !== 'ready' || status !== 'ready') {
-    return <ScreenState title="Opening constellation…" detail="Loading private content and your local save." />
-  }
-  if (!save || !joined || joined.status !== 'ready') {
-    return (
-      <ScreenState
-        title="Uma not found"
-        detail="This Uma is not owned in your Stable."
-        action={{ label: 'Back to Stable', to: '/stable' }}
-      />
-    )
-  }
-
-  const content = contentState.content
-  const uma = joined.value
   const { derived, run } = uma
   const template = constellationTemplate(run.tier)
-  const caps = capProfile(run.tier)
-  if (baseline.current === null) baseline.current = derived.stats
+  const here = `/constellation/${encodeURIComponent(save.templateId)}`
 
   const cardTypes = Object.fromEntries(
     run.cardSetIds.flatMap((id) => {
@@ -100,51 +69,10 @@ export function ConstellationScreen() {
   const openCount = unlockedNodeCount(run.tier, run.trainingLevel)
   const treeNodes = template.cardNodes + template.statNodes
   const canPlaySpark = run.started && run.trainingLevel < MAX_TRAINING_LEVEL &&
-    (profile?.tickets ?? 0) >= SPARK_MATCH_TICKET_COST
+    tickets >= SPARK_MATCH_TICKET_COST
 
   return (
-    <div className="flex h-dvh flex-col bg-page pt-safe">
-      <header className="flex items-center justify-between px-4 py-2">
-        <Link to={`/stable/${encodeURIComponent(save.templateId)}`} className="text-sm font-semibold text-ink-soft">
-          ← {uma.template.name}
-        </Link>
-        <div className="flex gap-1">
-          <Crest>{uma.scenario?.name ?? `Tier ${run.tier}`}</Crest>
-          <Crest tone="accent">TL {run.trainingLevel}</Crest>
-        </div>
-      </header>
-
-      <div className="flex gap-1.5 px-3 pb-1">
-        {STATS.map((stat) => {
-          const value = derived.stats[stat]
-          const delta = value - (baseline.current?.[stat] ?? value)
-          return (
-            <div key={stat} className="min-w-0 flex-1 rounded-lg bg-panel px-1.5 py-1">
-              <div className="flex items-baseline justify-between">
-                <span className="text-[9px] font-semibold uppercase text-ink-faint">{stat.slice(0, 3)}</span>
-                {delta !== 0 && (
-                  <span className={`text-[9px] font-bold ${delta > 0 ? 'text-go' : 'text-danger'}`}>
-                    {delta > 0 ? '+' : ''}{delta}
-                  </span>
-                )}
-              </div>
-              <Numeral className="block text-[14px] leading-tight">{value}</Numeral>
-              <div className="mt-0.5 h-[3px] overflow-hidden rounded-full bg-sunken">
-                <div
-                  className="h-full rounded-full bg-accent transition-[width] duration-300"
-                  style={{ width: `${Math.min(100, (value / caps[stat]) * 100)}%` }}
-                />
-              </div>
-            </div>
-          )
-        })}
-        <div className="min-w-0 flex-1 rounded-lg bg-sunken px-1.5 py-1">
-          <span className="text-[9px] font-semibold uppercase text-ink-faint">SP</span>
-          <Numeral className="block text-[14px] leading-tight">{derived.skillPoints}</Numeral>
-          <span className="text-[8px] text-ink-faint">of {uma.spCap}</span>
-        </div>
-      </div>
-
+    <>
       <div className="min-h-0 flex-1 px-3">
         <ConstellationGraph
           template={template}
@@ -176,9 +104,6 @@ export function ConstellationScreen() {
           <p className="text-[11px] font-semibold">
             Aptitudes <span className="text-ink-faint">· {derived.assignedNodes}/{openCount} of {treeNodes} nodes</span>
           </p>
-          <Link to={`/stable/${encodeURIComponent(save.templateId)}/deck`} className="text-[11px] font-semibold text-accent">
-            Card set
-          </Link>
         </div>
         <div className="mt-1 flex flex-wrap gap-1">
           {moved.length > 0
@@ -216,24 +141,38 @@ export function ConstellationScreen() {
                 const owned = cards[cardId]
                 if (!card || !owned) return null
                 const isScenario = cardId === scenarioCardId
+                const bond = cardLimitBreak(owned, run.tier)
+                const perNode = cardNodeValue(run.tier, { template: card, limitBreak: bond })
                 return (
-                  <button
-                    key={cardId}
-                    type="button"
-                    disabled={busy}
-                    className="flex min-h-[44px] items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left"
-                    onClick={() => void assign(openNode.id, { kind: 'card', cardId })}
-                  >
-                    <AtlasSprite asset={getContentAsset(content, 'card-icons', cardId)} decorative className="h-7 w-7 rounded-md" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">{card.charName}</span>
-                      <span className="text-micro">
-                        {isScenario
-                          ? 'Scenario card · pays skill points, not stats'
-                          : `${titleCase(card.type)} · LB${cardLimitBreak(owned, run.tier)} · ${Math.round(cardNodeValue(run.tier, { template: card, limitBreak: cardLimitBreak(owned, run.tier) }))} per node`}
+                  <div key={cardId} className="flex items-stretch gap-1.5">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left"
+                      onClick={() => void assign(openNode.id, { kind: 'card', cardId })}
+                    >
+                      <AtlasSprite asset={getContentAsset(content, 'card-icons', cardId)} decorative className="h-7 w-7 rounded-md" />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold">{card.charName}</span>
+                          <BondPips value={bond} />
+                        </span>
+                        <span className="text-micro">
+                          {isScenario
+                            ? `Scenario card · ${Math.round(scenarioCardSpPerNode(run.tier, { template: card, limitBreak: bond }))} SP per node`
+                            : `${titleCase(card.type)} · ${Math.round(perNode)} per node`}
+                        </span>
                       </span>
-                    </span>
-                  </button>
+                    </button>
+                    {bond < MAX_LIMIT_BREAK && (
+                      <Link
+                        to={bondRecallHref({ cardId, tier: run.tier, umaId: save.templateId, returnTo: here })}
+                        className="flex min-w-14 items-center justify-center rounded-xl bg-sunken px-2 text-[12px] font-semibold text-accent-strong"
+                      >
+                        Bond
+                      </Link>
+                    )}
+                  </div>
                 )
               }))}
 
@@ -265,7 +204,7 @@ export function ConstellationScreen() {
           </div>
         )}
       </BottomSheet>
-    </div>
+    </>
   )
 }
 

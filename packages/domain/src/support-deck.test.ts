@@ -3,11 +3,14 @@ import { CARD_EFFECTS, type CardEffect } from './cards'
 import type { SupportCardTemplate } from './content'
 import { createCardSave } from './save'
 import { equippedRaceBonus } from './progression-race'
+import type { ScenarioTraining } from './save'
 import {
+  cardNodeCount,
   supportDeckEffectTotals,
   supportDeckIdentityIssues,
   validateEquippedSupportDeck,
   validateSupportDeck,
+  withCardSet,
 } from './support-deck'
 
 const effects = (raceBonus = 0): Record<CardEffect, number> => Object.fromEntries(
@@ -96,5 +99,43 @@ describe('support deck validation', () => {
     }))
     expect(validateEquippedSupportDeck(1, equipped).valid).toBe(true)
     expect(supportDeckEffectTotals(equipped, 1).raceBonus).toBe(equippedRaceBonus(1, equipped))
+  })
+})
+
+describe('withCardSet', () => {
+  const run = (cardSetIds: string[], assignments: ScenarioTraining['assignments']): ScenarioTraining => ({
+    tier: 1, trainingLevel: 8, trainingExp: 0, cardSetIds, assignments, loadoutSkillIds: [], journey: null, started: true,
+  })
+  const base = run(['a', 'b', 'c'], {
+    n1: { kind: 'card', cardId: 'a' },
+    n2: { kind: 'card', cardId: 'a' },
+    n3: { kind: 'card', cardId: 'b' },
+    s1: { kind: 'stat', stat: 'speed' },
+  })
+
+  it('hands a replaced card\'s nodes to the card that took its slot', () => {
+    const next = withCardSet(base, ['x', 'b', 'c'])
+    expect(next.cardSetIds).toEqual(['x', 'b', 'c'])
+    expect(cardNodeCount(next, 'x')).toBe(2)
+    expect(cardNodeCount(next, 'a')).toBe(0)
+    expect(next.assignments.s1).toEqual({ kind: 'stat', stat: 'speed' })
+  })
+
+  it('empties the nodes of a card removed outright', () => {
+    const next = withCardSet(base, ['b', 'c'])
+    expect(cardNodeCount(next, 'a')).toBe(0)
+    expect(cardNodeCount(next, 'b')).toBe(1)
+    expect(Object.keys(next.assignments).sort()).toEqual(['n3', 's1'])
+  })
+
+  it('keeps every node when cards only change order', () => {
+    const next = withCardSet(base, ['c', 'a', 'b'])
+    expect(next.assignments).toEqual(base.assignments)
+  })
+
+  it('does not hand nodes to a card that was already in the set', () => {
+    // Slot 0 now holds b, which already had its own node: a's nodes must not merge into it.
+    const next = withCardSet(base, ['b', 'c'])
+    expect(cardNodeCount(next, 'b')).toBe(1)
   })
 })

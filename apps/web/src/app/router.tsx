@@ -1,5 +1,11 @@
-import { createBrowserRouter } from 'react-router'
+import { Navigate, createBrowserRouter, useParams } from 'react-router'
 import { AppShell } from './AppShell'
+
+/** The card set moved into the Training scene (M016); old links still land there. */
+function CardSetRedirect() {
+  const { umaId = '' } = useParams()
+  return <Navigate to={`/constellation/${encodeURIComponent(umaId)}/cards`} replace />
+}
 
 // Tab screens live inside the shell (top bar + bottom tabs). Full-screen scenes (race, constellation, reveals) sit
 // outside it and are code-split so PixiJS only loads when a scene opens.
@@ -22,7 +28,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'stable/:umaId/deck',
-        lazy: async () => ({ Component: (await import('../screens/DeckEditorScreen')).DeckEditorScreen }),
+        Component: CardSetRedirect,
       },
       {
         path: 'race',
@@ -51,9 +57,20 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    // The Training scene: Constellation and Card set as tabs under one header (M016).
     path: 'constellation/:umaId',
-    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading constellation" />,
-    lazy: async () => ({ Component: (await import('../screens/ConstellationScreen')).ConstellationScreen }),
+    hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading training" />,
+    lazy: async () => ({ Component: (await import('../screens/TrainingScene')).TrainingScene }),
+    children: [
+      {
+        index: true,
+        lazy: async () => ({ Component: (await import('../screens/ConstellationScreen')).ConstellationScreen }),
+      },
+      {
+        path: 'cards',
+        lazy: async () => ({ Component: (await import('../screens/CardSetScreen')).CardSetScreen }),
+      },
+    ],
   },
   {
     path: 'minigames/spark-match/:umaId',

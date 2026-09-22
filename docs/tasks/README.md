@@ -22,6 +22,7 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
+| [M016 — Cards by scenario](M016-cards-by-scenario.md) | Parts A – D | In progress |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Outlined |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |

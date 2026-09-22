@@ -34,6 +34,10 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 The card set decides what the scenario's **card nodes** may hold. Slotting a card into the set does nothing on
 its own — the card only pays once it occupies nodes.
 
+**Replacing a card in its slot hands its nodes to the replacement**, so trading up keeps the constellation
+filled; **removing a card empties its nodes** rather than leaving them assigned to a card the set no longer holds
+(D129). The card set is edited on the Training scene's Card set tab ([UX](ux.md#training-scene)).
+
 ## What a card is worth
 
 Almost everything a card used to do lived in the training turn, which no longer exists. What remains:

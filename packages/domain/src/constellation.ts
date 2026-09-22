@@ -490,6 +490,14 @@ export function cardNodeValue(
   return (nodeValue(tier) * lbNodePct(card.limitBreak) * eraPct(card.template.era, tier)) / 10_000
 }
 
+/** What one node filled with the scenario card pays, in skill points instead of stats (D124). */
+export function scenarioCardSpPerNode(
+  tier: number,
+  card: { template: Pick<SupportCardTemplate, 'era'>; limitBreak: number },
+): number {
+  return (cardNodeValue(tier, card) * SCENARIO_SLOT_SP_PCT) / 100
+}
+
 export interface CardNodeState {
   template: Pick<SupportCardTemplate, 'id' | 'type' | 'era' | 'effectProfile' | 'hintSkillIds'>
   limitBreak: number

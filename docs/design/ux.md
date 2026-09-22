@@ -66,80 +66,38 @@ and missing target content. Each available active target links directly into Rac
 
 ### Uma Profile
 
-- **Hero header**: portrait, name, active title, level, Scenario Journey strip.
-- **Swipeable tabs**: Overview (stat radar plus stat bars showing the current cap and the scenario baseline) · Skills (loadout editor with an **SP capacity meter** that fills as skills are equipped) · Deck (6 slots, era locks) · Lineage (interactive family tree) · Badges (active title, Prestige frame, first 12 grouped showcase pins, recent flair) · Record.
-- A sticky bottom action bar: **Train** · **Race** · **Promote** (when ready).
-- The implemented Overview includes a live support-deck summary with selected private card art, used/unlocked slots,
-  generated Race Bonus and hint count. **Edit** opens a lazy nested screen and preserves the profile back path.
+Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-21):
 
-The implemented Journey renders one medallion per reached tier with three labeled state pips, a derived Honors crest for
-3/3, and a distinct Not tracked mark for migrated history. Goal details link to current target races or the exact committed
-result replay; missing private content falls back to its safe id.
+1. **Identity** — portrait, name, outfit, Uma Level, Prestige, active title, the featured star, and the three
+   highest-tier badges earned.
+2. **This scenario** — scenario name and Training Level, one status line, and the actions inline (Constellation,
+   Race, Spark Match, Start or Unlock next when they apply); stats metered against this scenario's caps; the card
+   set with each card's bond pips and a **Manage · Bond** link; aptitudes; the scenario's goals, each linking to its
+   race or its result.
+3. **Archive** — collapsed rows for everything browsed rather than used: all badges, scenario history, lineage,
+   races run.
 
-The implemented Profile Badge showcase uses the same projection as the Badge destination: active title, derived
-Prestige/frame, distinct badge/title/trophy counts, the first 12 flattened pins, recent flair, and a direct “View all
-Badges” link. An empty showcase links to pin mode and never auto-pins an award.
+Nothing is sticky: an element pinned inside the scrolling shell parks over the content instead of the viewport.
 
-### Support Deck Editor
+### Scenario Start
 
-- Six ordered rows show unlocked and future locked slots. Selected cards show private atlas art, type, era, level/LB, and
-  ≥44 pt move/remove controls.
-- Owned candidates have type and era filters. Later-scenario, duplicate-character, selected, and missing references remain
-  visible with a specific disabled reason rather than silently disappearing. Friend and Group are ordinary selectable
-  types and explain their broad/no-specialty behavior in card detail.
-- Auto fill changes only the draft. Save revalidates current ownership/content and commits atomically; back/cancel writes
-  nothing. The summary exposes generated effects, unique hint count, and Race Bonus before the player saves.
+Superseded by D121 and D123: an Uma's scenario run starts with one confirmation, with no parent snapshots or
+inheritance picks. Lineage is set on the constellation's parent nodes instead.
 
-### Scenario Start (inheritance flow)
+### Training scene
 
-A full-screen stepper, one decision per step:
+A full-screen scene with one header — the Uma, scenario crest and TL — and a live stat strip whose deltas read
+against the moment the scene opened. Two tabs sit under it (M016):
 
-The implemented flow reviews the completed snapshot (for promotion), ticket cost/balance, overflow, +10-per-stat and
-per-card Initial Stats gains, awakening, skill refresh, TL reset, new cap/era, and an explicit zero-parent path. Back is a
-write-free draft; confirmation is one local-first commit followed by a scenario title card and Opening Training CTA.
-Brand-new Umas enter this route before Training/racing and start tier 1 free, without promotion bonuses. The five steps are:
+- **Constellation** — the tree, the node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
+  shows each card's bond and what one node of it pays, with a **Bond** link beside it.
+- **Card set** — the active scenario's six slots. Each shows the card, its type, its bond pips in this scenario,
+  what one node pays (SP per node for the scenario slot), how many nodes it fills, and a **Bond** button. Tapping a
+  card offers Open card, **Replace** (the new card takes over its nodes), Make it the scenario card, and Remove.
+  Edits save as they are made, like the constellation; empty slots open the album picker, and **Fill empty slots**
+  tops the set up without touching what is already there.
 
-1. **Pick parents**: a carousel of parent snapshots (portrait, grandparent mini-icons, a "+N new skills for her" count). Skip is allowed.
-2. **Inherited automatically**: skill chips **fly from the parents into the library**.
-3. **Grandparent picks**: tap to pick 2 uniques, and whites against a "3 / 5 picks" counter. Ineligible ones show greyed with their reason.
-4. **Pink sparks**: choose an aptitude upgrade per parent. The letter grade flips up.
-5. **Confirm**: a scenario title card sweeps in ("Grand Masters"), and the Training Level bar resets to TL1.
-
-Confirmation also freezes the new tier's three deterministic goals after pink sparks apply. Promotion closes the previous
-Journey first, and any generation/content error aborts the entire commit before tickets or snapshots change.
-
-Profile Lineage renders only the active scenario's frozen `currentParents` and the latest completed self snapshot. Its tree
-stops at grandparents, shows missing private content explicitly, and never follows live Uma state or recursive references.
-
-### Training
-
-The core loop, built for repeated one-thumb taps.
-
-```text
-┌──────────────────────────────┐
-│ TL 4 ▰▰▰▱▱▱  🎫 312          │
-│ [stat bars with cap markers] │
-│ SPD ███████░░ 507 / 520      │
-│ ...                          │
-│   💡 hint popups appear here │
-├──────────────────────────────┤
-│  +59   +19        +27  ...   │  ← floating gain previews
-│ ┌────┐┌────┐┌────┐┌────┐┌────┐
-│ │SPD ││STA ││POW ││GUT ││WIT │ ← 5 big facility tiles
-│ │🃏🃏 ││    ││🃏   ││    ││🃏  │   dealt card icons; rainbow edge = friendship
-│ └────┘└────┘└────┘└────┘└────┘
-└──────────────────────────────┘
-```
-
-- **Deal**: card icons drop onto facility tiles with a staggered bounce. Friendship tiles get an animated rainbow edge.
-- **Preview**: every facility shows its projected gains before choosing.
-- **Tap a facility to train**: press squash, the tile "launches", gains **fly into the stat bars**, bars fill with overshoot,
-  the Training EXP bar fills, card EXP pips tick, the ticket counter drops by 1.
-- **Hints**: a "💡 New skill!" chip pops out of the card icon and slides into a skill tray.
-- **Training Level up**: a burst on the TL badge, and cap markers on the stat bars slide right.
-- Right after resolving, the next deal starts, so the loop stays fast. A "Race now" button is always one tap away.
-- An empty deck opens a clear Edit Deck CTA instead of silently choosing cards. Result feedback names every card and its
-  earned EXP/level change.
+Every Bond Recall run launched here returns here.
 
 ### Race Select
 

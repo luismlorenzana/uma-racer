@@ -556,7 +556,7 @@ export function StableScreen() {
               <>
                 <Button variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(actionsFor.id)}`)}>Train</Button>
                 <Button variant="secondary" onClick={() => navigate(`/race?uma=${encodeURIComponent(actionsFor.id)}`)}>Race</Button>
-                <Button variant="secondary" onClick={() => navigate(`/stable/${encodeURIComponent(actionsFor.id)}/deck`)}>Edit deck</Button>
+                <Button variant="secondary" onClick={() => navigate(`/constellation/${encodeURIComponent(actionsFor.id)}/cards`)}>Card set</Button>
                 <Button variant="secondary" onClick={() => { setActionsFor(null); openEntry(actionsFor) }}>Open profile</Button>
               </>
             ) : (

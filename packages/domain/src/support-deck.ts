@@ -2,10 +2,10 @@
 
 import { STATS } from './types'
 import { cardLevel, cardLimitBreak } from './card-progression'
-import { CARD_SET_SIZE, cardNodeValue } from './constellation'
+import { CARD_SET_SIZE, cardNodeValue, type NodeAssignment } from './constellation'
 import { CARD_EFFECTS, deckSlotCount, projectedCardEffectValue, type CardEffect } from './cards'
 import type { SupportCardTemplate, UmaTemplate } from './content'
-import type { CardSave } from './save'
+import type { CardSave, ScenarioTraining } from './save'
 import { SAVE_ID_PATTERN } from './save'
 
 export interface SupportDeckCard {
@@ -198,3 +198,32 @@ export function autoCardSet(
   }
   return picked.map((card) => card.template.id)
 }
+
+/**
+ * A scenario run with a new card set. A card replaced in its slot hands its nodes to the card that replaced it, so
+ * trading up keeps the constellation filled; a card removed outright empties its nodes rather than leaving them
+ * assigned to a card the set no longer holds, which would pay nothing and still look filled.
+ */
+export function withCardSet(run: ScenarioTraining, orderedCardIds: readonly string[]): ScenarioTraining {
+  const next = new Set(orderedCardIds)
+  const previous = new Set(run.cardSetIds)
+  const handoff = new Map<string, string>()
+  run.cardSetIds.forEach((id, index) => {
+    const replacement = orderedCardIds[index]
+    if (!next.has(id) && replacement !== undefined && !previous.has(replacement)) handoff.set(id, replacement)
+  })
+  const assignments: Record<string, NodeAssignment> = {}
+  for (const [nodeId, assignment] of Object.entries(run.assignments)) {
+    if (assignment.kind !== 'card' || next.has(assignment.cardId)) {
+      assignments[nodeId] = assignment
+      continue
+    }
+    const replacement = handoff.get(assignment.cardId)
+    if (replacement) assignments[nodeId] = { kind: 'card', cardId: replacement }
+  }
+  return { ...run, cardSetIds: [...orderedCardIds], assignments }
+}
+
+/** How many of a run's nodes a card fills. */
+export const cardNodeCount = (run: Pick<ScenarioTraining, 'assignments'>, cardId: string): number =>
+  Object.values(run.assignments).filter((assignment) => assignment.kind === 'card' && assignment.cardId === cardId).length

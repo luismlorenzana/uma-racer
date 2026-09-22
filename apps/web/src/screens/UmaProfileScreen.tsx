@@ -6,6 +6,7 @@ import {
   STRATEGIES,
   SURFACES,
   badgeStateId,
+  cardLimitBreak,
   compileRaceSkill,
   isGateLevel,
   raceSkillSupported,
@@ -25,6 +26,7 @@ import { buildJourneyView } from '../game/goals-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
+import { BondPips } from '../ui/BondPips'
 import { Crest } from '../ui/Crest'
 import { GameButton } from '../ui/GameButton'
 import { Meter } from '../ui/Meter'
@@ -144,7 +146,6 @@ export function UmaProfileScreen() {
   const journey = buildJourneyView(save, contentState.content)
   const currentJourney = journey.find((item) => item.tier === uma.tier) ?? null
   const ownRaces = raceHistory.filter((record) => record.umaId === save.templateId)
-  const umaHref = `/stable/${encodeURIComponent(save.templateId)}`
 
   const statusLine = setupPending
     ? 'Start this scenario before racing.'
@@ -321,10 +322,10 @@ export function UmaProfileScreen() {
           <div className="min-w-0">
             <h3 className="text-[13px] font-semibold">Card set</h3>
             <p className="text-micro">
-              {uma.run.cardSetIds.length} / {deck.slotCount} · Race Bonus {formatDeckEffect('raceBonus', deck.raceBonus)} · {deck.hintSkillCount} hints
+              {uma.run.cardSetIds.length} / {deck.slotCount} · Race Bonus {formatDeckEffect('raceBonus', deck.raceBonus)}
             </p>
           </div>
-          <Link to={`${umaHref}/deck`} className="flex min-h-9 shrink-0 items-center rounded-md bg-sunken px-3 text-[12px] font-semibold">Edit</Link>
+          <Link to={`/constellation/${encodeURIComponent(save.templateId)}/cards`} className="flex min-h-9 shrink-0 items-center rounded-md bg-sunken px-3 text-[12px] font-semibold">Manage · Bond</Link>
         </div>
         {uma.run.cardSetIds.length > 0 ? (
           <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
@@ -332,6 +333,7 @@ export function UmaProfileScreen() {
               <div key={slot.index} className="w-14 shrink-0">
                 <AtlasSprite asset={slot.card!.asset} decorative className="rounded-md bg-sunken" fallback={<div className="flex h-full items-center justify-center text-ink-faint">?</div>} />
                 <p className="mt-0.5 truncate text-center text-[9px] font-semibold">{slot.card!.template?.charName ?? 'Missing'}</p>
+                {slot.card!.save && <BondPips value={cardLimitBreak(slot.card!.save, uma.tier)} className="mt-0.5 justify-center" />}
               </div>
             ))}
           </div>
