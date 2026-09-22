@@ -1,6 +1,10 @@
 // Typed IndexedDB reads and atomic save mutations (docs/technical/architecture.md).
 
 import {
+  parsePlayerProfile,
+  migrateCardSaveToCurrent,
+  migrateUmaSaveToCurrent,
+  migratePlayerProfileToCurrent,
   applyDailyGrants,
   createCardSave,
   createInitialSave,
@@ -147,9 +151,26 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
     await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.outbox.clear()])
     for (const record of snapshot.entities) {
       if (record.deleted) continue
-      if (record.kind === 'profile') await db.profile.put({ id: record.id, data: parsePlayerProfileOrThrow(record.data), version: record.version })
-      if (record.kind === 'umas') await db.umas.put({ id: record.id, data: parseUmaSave(record.data)!, version: record.version })
-      if (record.kind === 'cards') await db.cards.put({ id: record.id, data: parseCardSave(record.data)!, version: record.version })
+      // A server row can be any supported schema. Migrate on the way in, and re-queue whatever moved so the
+      // cloud copy catches up rather than staying on an old shape forever.
+      if (record.kind === 'profile') {
+        const profile = migratePlayerProfileToCurrent(record.data)
+        if (!profile) throw new Error('Server player profile cannot be migrated')
+        if (!parsePlayerProfile(record.data)) legacyKeys.add(`profile/${record.id}`)
+        await db.profile.put({ id: record.id, data: profile, version: record.version })
+      }
+      if (record.kind === 'umas') {
+        const uma = migrateUmaSaveToCurrent(record.data)
+        if (!uma) throw new Error(`Server Uma ${record.id} cannot be migrated`)
+        if (!parseUmaSave(record.data)) legacyKeys.add(`umas/${record.id}`)
+        await db.umas.put({ id: record.id, data: uma, version: record.version })
+      }
+      if (record.kind === 'cards') {
+        const card = migrateCardSaveToCurrent(record.data)
+        if (!card) throw new Error(`Server card ${record.id} cannot be migrated`)
+        if (!parseCardSave(record.data)) legacyKeys.add(`cards/${record.id}`)
+        await db.cards.put({ id: record.id, data: card, version: record.version })
+      }
       if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
     }
     for (const record of snapshot.logs) {

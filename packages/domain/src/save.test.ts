@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { createUmaBadgeState } from './badges'
 import {
+  createCardSave,
+  SAVE_SCHEMA_VERSION,
+  migratePlayerProfileToCurrent,
+  migrateCardSaveToCurrent,
+  migrateUmaSaveToCurrent,
   applyDailyGrants,
   createInitialSave,
   createPlayerProfile,
@@ -324,5 +329,61 @@ describe('save parsing', () => {
     expect(parseSyncRequest({
       appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: event, createdAt: 21 }],
     })).toMatch(/timestamp/)
+  })
+})
+
+describe('the migration chain', () => {
+  const template = uma('u1')
+
+  const v5Uma = () => {
+    const current = createUmaSave(template)
+    return { ...current, schemaVersion: 5 as const }
+  }
+  const v5Card = { templateId: 'c1', limitBreak: 3, maxCouponGranted: false }
+
+  it('reads a v5 Uma, which is what broke after the card schema bump', () => {
+    const migrated = migrateUmaSaveToCurrent(v5Uma())
+    expect(migrated).not.toBeNull()
+    expect(migrated!.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
+    expect(migrated!.unlockedTier).toBe(1)
+  })
+
+  it('reads a v5 card and puts its break on tier 1', () => {
+    expect(migrateCardSaveToCurrent(v5Card))
+      .toEqual({ templateId: 'c1', limitBreaks: { '1': 3 }, maxCouponGranted: false })
+  })
+
+  it('reads every supported profile schema', () => {
+    const current = createPlayerProfile('v1', 1)
+    for (const schemaVersion of [1, 2, 3, 4, 5] as const) {
+      const migrated = migratePlayerProfileToCurrent({ ...current, schemaVersion })
+      expect(migrated?.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
+    }
+    expect(migratePlayerProfileToCurrent(current)?.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
+  })
+
+  it('is idempotent on an already-current save', () => {
+    const current = createUmaSave(template)
+    expect(migrateUmaSaveToCurrent(current)).toEqual(current)
+    const cardSave = createCardSave(card('c1'))
+    expect(migrateCardSaveToCurrent(cardSave)).toEqual(cardSave)
+  })
+
+  it('returns null for something that is not a save, rather than inventing one', () => {
+    expect(migrateUmaSaveToCurrent({ nonsense: true })).toBeNull()
+    expect(migrateCardSaveToCurrent(null)).toBeNull()
+    expect(migratePlayerProfileToCurrent('nope')).toBeNull()
+  })
+
+  it('accepts a v5 cloud snapshot instead of demanding an app update', () => {
+    const profile = { ...createPlayerProfile('v1', 1), schemaVersion: 5 as const }
+    expect(() => parseSaveSnapshotOrThrow({
+      entities: [
+        { kind: 'profile', id: 'main', version: 1, data: profile, deleted: false, updatedAt: 1 },
+        { kind: 'umas', id: 'u1', version: 1, data: v5Uma(), deleted: false, updatedAt: 1 },
+      ],
+      logs: [],
+      serverTime: 1,
+    })).not.toThrow()
   })
 })

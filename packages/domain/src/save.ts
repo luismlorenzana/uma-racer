@@ -960,6 +960,23 @@ function parseScenarioTraining(value: unknown, umaLevel: number): ScenarioTraini
   }
 }
 
+export interface LegacyUmaSaveV5 extends Omit<UmaSave, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V5
+}
+
+/** v5 and v6 Umas have the same shape — only cards changed — so this is a stamp bump. */
+export function parseLegacyUmaSaveV5(value: unknown): LegacyUmaSaveV5 | null {
+  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V5) return null
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  return parsed ? { ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V5 } : null
+}
+
+export function migrateUmaSaveV5(value: LegacyUmaSaveV5): UmaSave {
+  const parsed = parseLegacyUmaSaveV5(value)
+  if (!parsed) throw new Error('Legacy v5 Uma save is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
 export function parseUmaSave(value: unknown): UmaSave | null {
   if (!isObject(value) || !exactKeys(value, UMA_VERSIONED_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) {
     return null
@@ -1036,6 +1053,49 @@ function parseLimitBreaks(value: unknown): Record<string, number> | null {
     if ((level as number) > 0) breaks[tier] = level as number
   }
   return breaks
+}
+
+/**
+ * Walks any supported stored Uma shape to the current one, or returns null if it is not a save at all.
+ *
+ * Every schema bump must extend this. Scattering version checks across the Dexie upgrade and the snapshot
+ * reader is what let v4 and v5 saves become unreadable: the shapes were migratable the whole time, but
+ * nothing called the migration.
+ */
+export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
+  const current = parseUmaSave(value)
+  if (current) return current
+  const v5 = parseLegacyUmaSaveV5(value)
+  if (v5) return migrateUmaSaveV5(v5)
+  const v4 = parseLegacyUmaSaveV4(value)
+  if (v4) return migrateUmaSaveV4(v4)
+  const v3 = parseLegacyUmaSaveV3(value)
+  if (v3) return migrateUmaSaveV3(v3)
+  const v2 = parseLegacyUmaSaveV2(value)
+  if (v2) return migrateUmaSaveV2(v2)
+  const v1 = parseLegacyUmaSaveV1(value)
+  return v1 ? migrateUmaSaveV1(v1) : null
+}
+
+/** Walks any supported stored card shape to the current one. */
+export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
+  return parseCardSave(value) ?? migrateCardSaveV5(value)
+}
+
+/** Walks any supported stored profile shape to the current one. */
+export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
+  const current = parsePlayerProfile(value)
+  if (current) return current
+  const v5 = parseLegacyPlayerProfileV5(value)
+  if (v5) return migratePlayerProfileV5(v5)
+  const v4 = parseLegacyPlayerProfileV4(value)
+  if (v4) return migratePlayerProfileV4(v4)
+  const v3 = parseLegacyPlayerProfileV3(value)
+  if (v3) return migratePlayerProfileV3(v3)
+  const v2 = parseLegacyPlayerProfileV2(value)
+  if (v2) return migratePlayerProfileV2(v2)
+  const v1 = parseLegacyPlayerProfileV1(value)
+  return v1 ? migratePlayerProfileV1(v1) : null
 }
 
 export function parseCardSave(value: unknown): CardSave | null {
@@ -1190,26 +1250,10 @@ function parseGenericData(value: unknown): Record<string, unknown> | null {
 }
 
 function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
-  if (kind === 'profile') {
-    const current = parsePlayerProfile(value)
-    if (current) return current as unknown as Record<string, unknown>
-    const legacyV3 = parseLegacyPlayerProfileV3(value)
-    if (legacyV3) return migratePlayerProfileV3(legacyV3) as unknown as Record<string, unknown>
-    const legacyV2 = parseLegacyPlayerProfileV2(value)
-    if (legacyV2) return migratePlayerProfileV2(legacyV2) as unknown as Record<string, unknown>
-    const legacy = parseLegacyPlayerProfileV1(value)
-    return legacy ? migratePlayerProfileV1(legacy) as unknown as Record<string, unknown> : null
-  }
-  if (kind === 'umas') {
-    const current = parseUmaSave(value)
-    if (current) return current as unknown as Record<string, unknown>
-    const legacyV3 = parseLegacyUmaSaveV3(value)
-    if (legacyV3) return migrateUmaSaveV3(legacyV3) as unknown as Record<string, unknown>
-    const legacyV2 = parseLegacyUmaSaveV2(value)
-    if (legacyV2) return migrateUmaSaveV2(legacyV2) as unknown as Record<string, unknown>
-    const legacy = parseLegacyUmaSaveV1(value)
-    return legacy ? migrateUmaSaveV1(legacy) as unknown as Record<string, unknown> : null
-  }
+  // One chain per entity, so a schema bump is taught in exactly one place.
+  if (kind === 'profile') return migratePlayerProfileToCurrent(value) as unknown as Record<string, unknown> | null
+  if (kind === 'umas') return migrateUmaSaveToCurrent(value) as unknown as Record<string, unknown> | null
+  if (kind === 'cards') return migrateCardSaveToCurrent(value) as unknown as Record<string, unknown> | null
   return parseEntityData(kind, value)
 }
 
@@ -1314,10 +1358,11 @@ function assertSupportedProfileRecords(records: unknown): void {
   if (!Array.isArray(records)) return
   for (const record of records) {
     if (isObject(record) && record.kind === 'profile' && isObject(record.data)) {
-      if (!parseLegacyPlayerProfileV1(record.data) && !parseLegacyPlayerProfileV2(record.data) && !parseLegacyPlayerProfileV3(record.data)) parsePlayerProfileOrThrow(record.data)
+      if (!migratePlayerProfileToCurrent(record.data)) parsePlayerProfileOrThrow(record.data)
     }
     if (isObject(record) && record.kind === 'umas' && isObject(record.data) && 'schemaVersion' in record.data) {
-      if (record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V2 && record.data.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V3 && record.data.schemaVersion !== SAVE_SCHEMA_VERSION) {
+      // Anything the migration chain can read is supported; only a genuinely future schema is not.
+      if (!migrateUmaSaveToCurrent(record.data)) {
         throw new Error(`App update required for save schema ${String(record.data.schemaVersion)}`)
       }
     }
