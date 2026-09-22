@@ -345,3 +345,92 @@ describe('parseSyncRequest', () => {
     }] })).toMatch(/invalid raceResults data/)
   })
 })
+
+describe('save v6 over the wire', () => {
+  // Copied out of a real IndexedDB save, so a shape drift between the client and this validator fails here
+  // rather than silently 400ing every sync (docs/decisions.md D121, D127).
+  const uma = {
+    schemaVersion: 6,
+    templateId: '100101',
+    level: 1,
+    exp: 0,
+    unlockedTier: 1,
+    scenarios: [{
+      tier: 1,
+      trainingLevel: 1,
+      trainingExp: 0,
+      cardSetIds: [],
+      assignments: {},
+      loadoutSkillIds: [],
+      journey: {
+        tier: 1,
+        tracking: 'tracked',
+        state: 'active',
+        completedAt: null,
+        goals: [
+          { id: 'goal:1:aptitude', slot: 'aptitude', raceId: '450701', kind: 'win', series: null, minimumMarginLengths: 0, status: 'active', completedRaceResultId: null, completedAt: null },
+          { id: 'goal:1:identity', slot: 'identity', raceId: '701301', kind: 'win', series: null, minimumMarginLengths: 0, status: 'active', completedRaceResultId: null, completedAt: null },
+          { id: 'goal:1:challenge', slot: 'challenge', raceId: '409401', kind: 'win-by-margin', series: null, minimumMarginLengths: 5, status: 'active', completedRaceResultId: null, completedAt: null },
+        ],
+      },
+      started: true,
+    }],
+    skillHistory: [{ skillId: '100011', origin: 'own-unique', sourceId: '100101', tier: 1 }],
+    goalPlanVersion: 2,
+  }
+  const card = { templateId: '30019', limitBreaks: {}, maxCouponGranted: false }
+  const profile = {
+    schemaVersion: 6, tickets: 349, cardCoupons: 2, umaCoupons: 0, umaShards: 0,
+    lastDailyGrant: '2026-09-21', featuredUmaId: '100901', starterSeedContentVersion: 'e191151b5660', createdAt: 0,
+  }
+
+  it('accepts the rows a v6 client pushes on a fresh save', () => {
+    expect(parseSyncRequest({ upserts: [
+      { kind: 'umas', id: '100101', baseVersion: 3, data: uma },
+      { kind: 'cards', id: '30019', baseVersion: 2, data: card },
+      { kind: 'profile', id: 'main', baseVersion: 16, data: profile },
+    ], appends: [] })).toMatchObject({ upserts: [{ kind: 'umas' }, { kind: 'cards' }, { kind: 'profile' }] })
+  })
+
+  it('accepts a second scenario with filled nodes and a per-scenario limit break', () => {
+    const trained = {
+      ...uma,
+      level: 12,
+      exp: 0,
+      unlockedTier: 2,
+      scenarios: [uma.scenarios[0]!, {
+        tier: 2,
+        trainingLevel: 6,
+        trainingExp: 120,
+        cardSetIds: ['30019', '30022'],
+        assignments: {
+          'card-1': { kind: 'card', cardId: '30019' },
+          'stat-1': { kind: 'stat', stat: 'speed' },
+          'parent-1': { kind: 'lineage', templateId: '100201' },
+        },
+        loadoutSkillIds: [],
+        journey: null,
+        started: true,
+      }],
+    }
+    expect(parseSyncRequest({ upserts: [
+      { kind: 'umas', id: '100101', baseVersion: 3, data: trained },
+      { kind: 'cards', id: '30019', baseVersion: 2, data: { ...card, limitBreaks: { '2': 3 } } },
+    ], appends: [] })).toMatchObject({ upserts: [{ kind: 'umas' }, { kind: 'cards' }] })
+  })
+
+  it('rejects a v6 row that contradicts the rules the client enforces', () => {
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: '100101', baseVersion: 3, data: { ...uma, unlockedTier: 9 } }] }))
+      .toMatch(/invalid umas data/)
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: '100101', baseVersion: 3, data: { ...uma, scenarios: [{ ...uma.scenarios[0]!, tier: 4 }] } }] }))
+      .toMatch(/invalid umas data/)
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: '100101', baseVersion: 3, data: { ...uma, scenarios: [{ ...uma.scenarios[0]!, assignments: { 'card-1': { kind: 'card' } } }] } }] }))
+      .toMatch(/invalid umas data/)
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: '100101', baseVersion: 3, data: { ...uma, scenarios: [{ ...uma.scenarios[0]!, cardSetIds: ['1', '2', '3', '4', '5', '6', '7'] }] } }] }))
+      .toMatch(/invalid umas data/)
+    expect(parseSyncRequest({ upserts: [{ kind: 'cards', id: '30019', baseVersion: 2, data: { ...card, limitBreaks: { '2': 9 } } }] }))
+      .toMatch(/invalid cards data/)
+    expect(parseSyncRequest({ upserts: [{ kind: 'cards', id: '30019', baseVersion: 2, data: { ...card, limitBreaks: { '0': 2 } } }] }))
+      .toMatch(/invalid cards data/)
+  })
+})

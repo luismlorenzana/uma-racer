@@ -60,6 +60,11 @@ const ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const MAX_SCENARIO_TIER = 14
 const MAX_UMA_LEVEL = MAX_SCENARIO_TIER * 10
+const MAX_TRAINING_LEVEL = 10
+const MAX_LIMIT_BREAK = 4
+const CARD_SET_SIZE = 6
+/** A ceiling on constellation size, not the authored node count: the templates are not in this deploy. */
+const MAX_CONSTELLATION_NODES = 128
 const STATS = ['speed', 'stamina', 'power', 'guts', 'wit'] as const
 const GRADES = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G'] as const
 const SKILL_ORIGINS = ['own-unique', 'awakening', 'card', 'inherited'] as const
@@ -72,7 +77,11 @@ const PROFILE_FIELDS = ['schemaVersion', 'tickets', 'cardCoupons', 'umaCoupons',
 const LEGACY_UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds', 'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario'] as const
 const UMA_FIELDS = ['schemaVersion', ...LEGACY_UMA_FIELDS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot', 'goalPlanVersion', 'scenarioJourneys'] as const
 const CURRENT_UMA_FIELDS = [...UMA_FIELDS, 'scenarioModifier'] as const
+const UMA_V6_FIELDS = ['schemaVersion', 'templateId', 'level', 'exp', 'unlockedTier', 'scenarios', 'skillHistory', 'goalPlanVersion'] as const
+const SCENARIO_TRAINING_FIELDS = ['tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started'] as const
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
+const CARD_V5_FIELDS = ['templateId', 'limitBreak', 'maxCouponGranted'] as const
+const CARD_V6_FIELDS = ['templateId', 'limitBreaks', 'maxCouponGranted'] as const
 const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
 const SKILL_HISTORY_FIELDS = [...SKILL_FIELDS, 'tier'] as const
 const PARENT_FIELDS = ['umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes'] as const
@@ -458,7 +467,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4].includes(value.schemaVersion as number)) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -598,9 +607,64 @@ function parseJourney(value: unknown, legacy: boolean): value is Record<string, 
     (value.state !== 'completed' || goals.every((goal) => goal.status !== 'active'))
 }
 
+/** One filled constellation node (D121). The node ids belong to the client's templates, so only the value is checked. */
+function parseNodeAssignment(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  if (value.kind === 'card') return exactKeys(value, ['kind', 'cardId']) && isId(value.cardId)
+  if (value.kind === 'stat') return exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
+  if (value.kind === 'lineage') return exactKeys(value, ['kind', 'templateId']) && isId(value.templateId)
+  return false
+}
+
+/**
+ * One persisted career run. `assignments` is only shape-checked: which node ids exist per tier comes from
+ * the authored constellation templates, which live in @racer/domain and are not shipped to this deploy.
+ */
+function parseScenarioTraining(value: unknown, umaLevel: number): boolean {
+  if (!isRecord(value) || !exactKeys(value, SCENARIO_TRAINING_FIELDS)) return false
+  if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > Math.ceil(umaLevel / 10)) return false
+  if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return false
+  if (!isNonNegativeInt(value.trainingExp) || typeof value.started !== 'boolean') return false
+  if (!parseUniqueIds(value.cardSetIds, CARD_SET_SIZE) || !parseUniqueIds(value.loadoutSkillIds)) return false
+  if (!isRecord(value.assignments)) return false
+  const nodeIds = Object.keys(value.assignments)
+  if (nodeIds.length > MAX_CONSTELLATION_NODES || nodeIds.some((nodeId) => !isId(nodeId))) return false
+  if (nodeIds.some((nodeId) => !parseNodeAssignment((value.assignments as Record<string, unknown>)[nodeId]))) return false
+  if (value.journey === null) return true
+  return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
+}
+
+/** v5 and v6 Umas share one shape: only the card entity changed between them. */
+function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
+  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6].includes(value.schemaVersion as number)) return null
+  if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
+  const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
+  if (value.exp > expLimit) return null
+  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 2) return null
+
+  const currentTier = Math.ceil((value.level as number) / 10)
+  if (!isPositiveInt(value.unlockedTier) || value.unlockedTier > currentTier) return null
+  if (!Array.isArray(value.scenarios) || value.scenarios.length === 0) return null
+  if (value.scenarios.some((run) => !parseScenarioTraining(run, value.level as number))) return null
+  const runs = value.scenarios as Record<string, unknown>[]
+  const tiers = runs.map((run) => run.tier as number)
+  if (new Set(tiers).size !== tiers.length) return null
+  // The active scenario is always the highest unlocked, and it must exist (D121).
+  if (!tiers.includes(value.unlockedTier as number) || tiers.some((tier) => tier > (value.unlockedTier as number))) return null
+
+  if (!Array.isArray(value.skillHistory)) return null
+  if (value.skillHistory.some((entry) => !isRecord(entry) || !exactKeys(entry, SKILL_HISTORY_FIELDS) ||
+    !parseSkill({ skillId: entry.skillId, origin: entry.origin, sourceId: entry.sourceId }) ||
+    !isPositiveInt(entry.tier) || entry.tier > MAX_SCENARIO_TIER)) return null
+  const history = value.skillHistory as Record<string, unknown>[]
+  if (new Set(history.map((entry) => `${String(entry.tier)}:${String(entry.skillId)}`)).size !== history.length) return null
+  return value
+}
+
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
+  if (value.schemaVersion === 5 || value.schemaVersion === 6) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null
@@ -634,7 +698,23 @@ function parseUma(value: unknown): Record<string, unknown> | null {
   return value
 }
 
+/** Limit breaks belong to a scenario and are shared across Umas (D127): tier string → break level. */
+function parseLimitBreaks(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return Object.entries(value).every(([tier, level]) =>
+    /^[1-9][0-9]*$/.test(tier) && Number(tier) <= MAX_SCENARIO_TIER &&
+    isNonNegativeInt(level) && (level as number) <= MAX_LIMIT_BREAK)
+}
+
 function parseCard(value: unknown): Record<string, unknown> | null {
+  if (isRecord(value) && exactKeys(value, CARD_V6_FIELDS)) {
+    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parseLimitBreaks(value.limitBreaks)) return null
+    return value
+  }
+  if (isRecord(value) && exactKeys(value, CARD_V5_FIELDS)) {
+    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean') return null
+    return isNonNegativeInt(value.limitBreak) && (value.limitBreak as number) <= MAX_LIMIT_BREAK ? value : null
+  }
   if (!isRecord(value) || !exactKeys(value, CARD_FIELDS) || !isId(value.templateId) || !isPositiveInt(value.level) || value.level > 25 || !isNonNegativeInt(value.exp)) return null
   if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > 4 || value.level > 5 * (value.limitBreak + 1)) return null
   const expToNext = 40 + 15 * (value.level - 1)
