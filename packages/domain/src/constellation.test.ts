@@ -4,7 +4,6 @@ import {
   CAP_PROFILES,
   CARD_SET_SIZE,
   CARD_TYPE_SHARES,
-  SCENARIO_SLOT_INDEX,
   capBudget,
   TREE_BOX,
   buildTemplate,
@@ -288,15 +287,15 @@ describe('unlock schedule', () => {
 
 describe('the invariance rule', () => {
   const stats: StatKey[] = [...STATS]
-  const types: CardNodeState['template']['type'][] = ['speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'group']
+  // Friend and Group cards pay skill points, not stats (D132), so the stat total is about the stat types.
+  const types: CardNodeState['template']['type'][] = ['speed', 'stamina', 'power', 'guts', 'wit']
 
   it('pays exactly treeBudget for any full configuration of current-era max-broken cards', () => {
     const random = rng(20260920)
     for (const tier of TIERS) {
       const template = constellationTemplate(tier)
       for (let run = 0; run < 40; run += 1) {
-        // The scenario slot is a declared exception, so keep it out of the set under test.
-        const cardIds = Array.from({ length: CARD_SET_SIZE - 1 }, (_, i) => `card${i}`)
+        const cardIds = Array.from({ length: CARD_SET_SIZE }, (_, i) => `card${i}`)
         const cards = new Map(
           cardIds.map((id, i) => [
             id,
@@ -382,36 +381,38 @@ describe('the invariance rule', () => {
     }
   })
 
-  it('pays the scenario slot in skill points instead of stats', () => {
+  it('pays Friend and Group cards in skill points, in any slot, and every stat card its stats', () => {
     const template = constellationTemplate(1)
-    const cardIds = ['a', 'b', 'c', 'd', 'e', 'scenario']
-    expect(cardIds[SCENARIO_SLOT_INDEX]).toBe('scenario')
+    // A Wit card in the sixth slot and a Friend card in the first: the slot no longer decides (D132).
+    const cardIds = ['friend', 'b', 'c', 'd', 'e', 'wit']
     const cards = new Map([
-      ['a', card('a', 'speed')],
-      ['scenario', card('scenario', 'wit')],
+      ['friend', card('friend', 'friend')],
+      ['wit', card('wit', 'wit')],
+      ['group', card('group', 'group')],
     ])
-    const cardNodeIds = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id)
-
-    const base: Record<string, NodeAssignment> = Object.fromEntries(
-      cardNodeIds.map((id) => [id, { kind: 'card', cardId: 'a' } as NodeAssignment]),
-    )
-    const withScenario: Record<string, NodeAssignment> = {
-      ...base,
-      [cardNodeIds[0]!]: { kind: 'card', cardId: 'scenario' },
-    }
+    const [first, second] = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id)
     const input = { tier: 1, trainingLevel: 10, template, cardSetIds: cardIds, umaTemplate: uma, cards }
 
-    const plain = deriveStats({ ...input, assignments: base })
-    const scenario = deriveStats({ ...input, assignments: withScenario })
+    const wit = deriveStats({ ...input, assignments: { [first!]: { kind: 'card', cardId: 'wit' } } })
+    expect(wit.skillPoints).toBe(0)
+    expect(wit.raw.wit).toBeGreaterThan(0)
+    expect(wit.rawTotal).toBe(nodeValue(1))
 
-    expect(plain.skillPoints).toBe(0)
-    expect(scenario.skillPoints).toBe(nodeValue(1) * 0.25)
-    expect(scenario.rawTotal).toBe(plain.rawTotal - nodeValue(1))
+    const friend = deriveStats({ ...input, assignments: { [first!]: { kind: 'card', cardId: 'friend' } } })
+    expect(friend.skillPoints).toBe(nodeValue(1) * 0.25)
+    expect(friend.rawTotal).toBe(0)
+
+    const both = deriveStats({
+      ...input,
+      cardSetIds: ['friend', 'group', 'c', 'd', 'e', 'wit'],
+      assignments: { [first!]: { kind: 'card', cardId: 'friend' }, [second!]: { kind: 'card', cardId: 'group' } },
+    })
+    expect(both.skillPoints).toBe(nodeValue(1) * 0.5)
   })
 
   it('clamps skill points to the scenario cap', () => {
     const template = constellationTemplate(1)
-    const cardIds = ['a', 'b', 'c', 'd', 'e', 'scenario']
+    const cardIds = ['scenario', 'b', 'c', 'd', 'e', 'f']
     const assignments = Object.fromEntries(
       template.nodes.filter((n) => n.kind === 'card').map((n) => [n.id, { kind: 'card', cardId: 'scenario' } as NodeAssignment]),
     )
@@ -422,7 +423,7 @@ describe('the invariance rule', () => {
       assignments,
       cardSetIds: cardIds,
       umaTemplate: uma,
-      cards: new Map([['scenario', card('scenario', 'wit')]]),
+      cards: new Map([['scenario', card('scenario', 'friend')]]),
     })
     expect(derived.skillPoints).toBe(300)
   })

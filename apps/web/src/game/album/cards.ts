@@ -9,7 +9,9 @@ import {
   cardLimitBreak,
   cardNodeValue,
   cardShares,
+  cardSpPerNode,
   cardUnlockCost,
+  paysSkillPoints,
   type CardSave,
   type SupportCardTemplate,
   type UmaSave,
@@ -38,8 +40,10 @@ export interface CardEntry {
   unlockCost: number
   /** Bond in the lens scenario; null in the collection lens or when unowned. */
   bond: number | null
-  /** What one node pays in the lens scenario at the current bond; null in the collection lens. */
+  /** What one node pays in the lens scenario at the current bond — SP for a skill-point card; null in the collection lens. */
   perNode: number | null
+  /** Friend and Group cards pay skill points instead of stats (D132). */
+  skillPoints: boolean
   /** Umas with this card in a set — in the lens scenario, or in their active scenario for the collection. */
   equippedBy: string[]
   hintSkillNames: string[]
@@ -67,8 +71,9 @@ export interface CardAlbum {
   orphanedIds: string[]
 }
 
-/** "Spe 70 · Pow 30": how one node of this card splits, tilt included. */
+/** "Spe 70 · Pow 30": how one node of this card splits, tilt included — or "Skill points" for a Friend or Group card. */
 export function cardSplitLabel(template: SupportCardTemplate): string {
+  if (paysSkillPoints(template)) return 'Skill points'
   const shares = cardShares(template)
   return STATS.filter((stat) => (shares[stat] ?? 0) > 0)
     .sort((left, right) => (shares[right] ?? 0) - (shares[left] ?? 0))
@@ -101,7 +106,8 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
       asset: getContentAsset(content, 'card-icons', template.id),
       unlockCost: cardUnlockCost(template.era),
       bond,
-      perNode: tier === null ? null : cardNodeValue(tier, { template, limitBreak: bond ?? 0 }),
+      perNode: tier === null ? null : (paysSkillPoints(template) ? cardSpPerNode : cardNodeValue)(tier, { template, limitBreak: bond ?? 0 }),
+      skillPoints: paysSkillPoints(template),
       equippedBy: equippedBy.get(template.id) ?? [],
       hintSkillNames: template.hintSkillIds.flatMap((id) => {
         const skill = content.skills.byId.get(id)
@@ -251,8 +257,14 @@ export function buildCardPresets(lens: CardLens): AlbumPreset[] {
 export function cardSortValueLabel(entry: CardEntry, sort: string): string | null {
   if (sort === 'era') return SCENARIOS.find((scenario) => scenario.tier === entry.template.era)?.name ?? `Era ${entry.template.era}`
   if (sort === 'bond') return entry.bond === null ? null : entry.bond === MAX_LIMIT_BREAK ? 'Max bond' : `Bond ${entry.bond}`
-  if (sort === 'perNode') return entry.owned && entry.perNode !== null ? `${Math.round(entry.perNode)} per node` : null
+  if (sort === 'perNode') return entry.owned ? cardPayLabel(entry) : null
   if (sort === 'type') return titleCase(entry.template.type)
   if (sort === 'character') return entry.template.charName
   return null
+}
+
+/** "140 per node", or "35 SP per node" for a skill-point card; null outside a scenario lens. */
+export function cardPayLabel(entry: Pick<CardEntry, 'perNode' | 'skillPoints'>): string | null {
+  if (entry.perNode === null) return null
+  return `${Math.round(entry.perNode)}${entry.skillPoints ? ' SP' : ''} per node`
 }

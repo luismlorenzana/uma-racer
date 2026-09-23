@@ -30,8 +30,8 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 - **Limit breaks belong to a scenario, and are shared by every Uma racing there** (D127). Breaking a card in
   URA Finale improves it for every Uma in URA Finale; in Unity Cup that same card starts at LB0 again. So the
   first Uma you take into a scenario pays for the card set, and every later one rides free.
-- One of the six slots is the scenario's **dedicated slot**, which pays Skill Points instead of stats
-  ([Constellations](constellations.md#the-scenario-slot)).
+- **Friend and Group cards pay Skill Points instead of stats**, in any slot; every other card pays its stats
+  ([Constellations](constellations.md#skill-point-cards), D132).
 
 The card set decides what the scenario's **card nodes** may hold. Slotting a card into the set does nothing on
 its own — the card only pays once it occupies nodes.
@@ -76,8 +76,8 @@ A Speed card at tilt +0.08 pays Speed 0.78 / Power 0.22 instead of 0.70 / 0.30.
 Tilt changes the *shape* of a card, never its size — a specialist and a generalist are both worth exactly one
 node's value.
 
-Friend and Group cards have no primary, so their tilt is always 0 and they always pay 0.20 to each stat. Their
-value is breadth: one Friend card covers five stats where a Speed card covers two.
+Friend and Group cards have no primary, so their tilt is always 0. They pay skill points rather than stats
+(D132); their value is the loadout they buy.
 
 ## Bond (limit breaks)
 

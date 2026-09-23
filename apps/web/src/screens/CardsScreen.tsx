@@ -20,6 +20,7 @@ import {
   cardFacets,
   cardSortValueLabel,
   cardSorts,
+  cardPayLabel,
   cardSplitLabel,
   type CardEntry,
   type CardLens,
@@ -52,7 +53,7 @@ const emptyPrefs = (id: string, query: AlbumQuery): AlbumPrefs => ({ id, query, 
 function tileValue(entry: CardEntry, lens: CardLens): string {
   if (!entry.owned) return `${entry.unlockCost} tickets`
   if (lens === 'collection') return cardSplitLabel(entry.template)
-  return `${Math.round(entry.perNode ?? 0)} per node`
+  return cardPayLabel(entry) ?? ''
 }
 
 function CardTile({
@@ -374,7 +375,7 @@ export function CardsScreen() {
                 <BondPips value={detail.bond ?? 0} />
                 <span className="text-[12px] font-semibold">{detail.bond === MAX_LIMIT_BREAK ? 'Max bond' : `Bond ${detail.bond}`}</span>
               </div>
-              <p className="text-[12px] text-ink-soft">{Math.round(detail.perNode ?? 0)} per node here</p>
+              <p className="text-[12px] text-ink-soft">{cardPayLabel(detail)} here</p>
             </div>
           ) : (
             <p className="mt-2 text-[12px] text-ink-soft">
@@ -483,7 +484,7 @@ export function CardsScreen() {
           { label: 'One node splits', values: compareEntries.map((entry) => cardSplitLabel(entry.template)) },
           ...(lensTier === null ? [] : [
             { label: 'Bond here', values: compareEntries.map((entry) => entry.bond), best: 'high' as const },
-            { label: 'Per node here', values: compareEntries.map((entry) => entry.owned ? Math.round(entry.perNode ?? 0) : null), best: 'high' as const },
+            { label: 'Pays per node here', values: compareEntries.map((entry) => entry.owned ? cardPayLabel(entry) : null) },
           ]),
           { label: 'Skills', values: compareEntries.map((entry) => entry.hintSkillNames.length), best: 'high' },
           { label: 'Unlock', values: compareEntries.map((entry) => entry.owned ? 'Owned' : `${entry.unlockCost} tickets`) },

@@ -31,6 +31,7 @@ import {
   raceSkillSupported,
   resolveRaceExperience,
   selectBaselineRaceSkills,
+  affordableLoadout,
   summarizeSkillLoadout,
   SCENARIOS,
   supportDeckIssueMessage,
@@ -169,10 +170,12 @@ function playerRaceSkills(
   derived: DerivedUma,
   template: UmaTemplate,
 ): CompiledRaceSkill[] {
-  const summary = summarizeSkillLoadout(derived, template, content.skills.byId)
-  if (!summary.valid) throw new Error(summary.errors[0])
+  // Structure still blocks a race (an unknown or unsupported skill); an SP overdraft does not — the skills past
+  // what this scenario now pays simply sit out (affordableLoadout).
+  const structure = summarizeSkillLoadout({ ...derived, skillPoints: Number.MAX_SAFE_INTEGER }, template, content.skills.byId)
+  if (!structure.valid) throw new Error(structure.errors[0])
   const own = template.uniqueSkillId ? compiledSupported(content.skills.byId.get(template.uniqueSkillId)) : []
-  const equipped = summary.skills.map((skill) => compileRaceSkill(skill))
+  const equipped = affordableLoadout(structure.skills, derived.skillPoints).map((skill) => compileRaceSkill(skill))
   const unsupported = equipped.find((skill) => !raceSkillSupported(skill))
   if (unsupported) throw new Error(`Equipped skill ${unsupported.id} is not supported by the basic race engine`)
   return [...own, ...equipped]

@@ -2,12 +2,12 @@ import {
   BOND_RECALL_TICKET_COST,
   CARD_SET_SIZE,
   MAX_LIMIT_BREAK,
-  SCENARIO_SLOT_INDEX,
   autoCardSet,
   cardLimitBreak,
   cardNodeCount,
   cardNodeValue,
-  scenarioCardSpPerNode,
+  cardSpPerNode,
+  paysSkillPoints,
   type SupportDeckCard,
 } from '@racer/domain'
 import { useState } from 'react'
@@ -125,7 +125,6 @@ export function CardSetScreen() {
       <div className="grid gap-1.5">
         {Array.from({ length: CARD_SET_SIZE }, (_, index) => {
           const cardId = ids[index]
-          const scenarioSlot = index === SCENARIO_SLOT_INDEX
           if (!cardId) {
             const next = index === ids.length
             return (
@@ -139,7 +138,7 @@ export function CardSetScreen() {
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-sunken text-lg text-ink-faint">+</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-semibold">{next ? 'Add a card' : 'Empty'}</span>
-                  <span className="text-micro block">{scenarioSlot ? 'Scenario slot · pays skill points, not stats' : `Slot ${index + 1}`}</span>
+                  <span className="text-micro block">Slot {index + 1}</span>
                 </span>
               </button>
             )
@@ -156,11 +155,12 @@ export function CardSetScreen() {
           }
           const bond = cardLimitBreak(owned, tier)
           const nodes = cardNodeCount(run, cardId)
-          const pays = scenarioSlot
-            ? `${Math.round(scenarioCardSpPerNode(tier, { template, limitBreak: bond }))} SP per node`
+          const skillPoints = paysSkillPoints(template)
+          const pays = skillPoints
+            ? `${Math.round(cardSpPerNode(tier, { template, limitBreak: bond }))} SP per node`
             : `${Math.round(cardNodeValue(tier, { template, limitBreak: bond }))} per node`
           return (
-            <div key={cardId} className={`flex items-stretch gap-1.5 rounded-lg border bg-panel p-1.5 ${scenarioSlot ? 'border-accent' : 'border-hairline'}`}>
+            <div key={cardId} className={`flex items-stretch gap-1.5 rounded-lg border bg-panel p-1.5 ${skillPoints ? 'border-accent' : 'border-hairline'}`}>
               <button
                 type="button"
                 onClick={() => setActionsFor(index)}
@@ -176,7 +176,7 @@ export function CardSetScreen() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
                     <span className="truncate text-[13px] font-semibold">{template.charName}</span>
-                    {scenarioSlot && <Crest tone="accent">Scenario</Crest>}
+                    {skillPoints && <Crest tone="accent">Skill points</Crest>}
                   </span>
                   <span className="mt-0.5 flex items-center gap-2">
                     <span className="text-micro">{titleCase(template.type)}</span>
@@ -218,7 +218,7 @@ export function CardSetScreen() {
         </Button>
       )}
       <p className="mt-2 mb-4 px-1 text-[11px] text-ink-faint">
-        Slot {SCENARIO_SLOT_INDEX + 1} is the scenario card. A set of fewer than {CARD_SET_SIZE} has none, and earns no skill points.
+        Friend and Group cards pay skill points instead of stats, in any slot. A set without one earns no skill points.
       </p>
 
       <BottomSheet open={acting !== null} onClose={() => setActionsFor(null)}>
@@ -234,20 +234,6 @@ export function CardSetScreen() {
             <Button variant="secondary" disabled={busy} onClick={() => { const index = actionsFor; setActionsFor(null); setPickFor(index) }}>
               Replace · keeps its nodes
             </Button>
-            {full && actionsFor !== SCENARIO_SLOT_INDEX && (
-              <Button
-                variant="secondary"
-                disabled={busy}
-                onClick={() => {
-                  const next = [...ids]
-                  ;[next[actionsFor], next[SCENARIO_SLOT_INDEX]] = [next[SCENARIO_SLOT_INDEX]!, next[actionsFor]!]
-                  setActionsFor(null)
-                  void commit(next, 'Scenario card changed')
-                }}
-              >
-                Make it the scenario card
-              </Button>
-            )}
             <Button
               variant="destructive"
               disabled={busy}
@@ -255,7 +241,6 @@ export function CardSetScreen() {
             >
               Remove
             </Button>
-            {full && <p className="text-[11px] text-ink-soft">Removing a card leaves the set short, so it has no scenario card until it is full again.</p>}
           </div>
         )}
       </BottomSheet>

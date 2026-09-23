@@ -39,12 +39,14 @@ SP is not spent and not earned per turn. It is a **capacity**:
 spCap(T) = 300 + 200 × (T − 1)        tier 1: 300 · tier 5: 1,100 · tier 14: 2,900
 ```
 
-SP itself is paid by the scenario's **dedicated slot**
-([Constellations](constellations.md#the-scenario-slot)) and is clamped to `spCap`. The equipped **loadout**
-must cost ≤ current SP. Swapping is free and instant outside races.
+SP itself is paid by **Friend and Group cards**
+([Constellations](constellations.md#skill-point-cards)) and is clamped to `spCap`. The equipped **loadout**
+must cost ≤ current SP. Swapping is free and instant outside races. If a reconfiguration takes SP away after skills
+were equipped, racing does not stop: the equipped skills race in equip order while they fit, and the rest sit out
+until the SP is back or they are unequipped (D132).
 
 So the loadout trade is direct and legible: a bigger library needs more slots spent on cards, and equipping
-more of it needs slots spent on the scenario card. That is the whole economy of skills.
+more of it needs nodes spent on a Friend or Group card. That is the whole economy of skills.
 
 ## Loadout
 

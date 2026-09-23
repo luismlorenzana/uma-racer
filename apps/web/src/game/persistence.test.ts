@@ -484,11 +484,14 @@ describe('game bootstrap coordinator', () => {
   })
 
   it('persists a legal skill loadout and coalesces Uma outbox work before publishing it', async () => {
-    const loaded = content(6)
+    const base = content(6)
+    // A Friend card pays the skill points this loadout needs (D132); the others are stat cards.
+    const friend: SupportCardTemplate = { ...base.cards.items[5]!, type: 'friend' }
+    const items = [...base.cards.items.slice(0, 5), friend]
+    const loaded: LoadedContent = { ...base, cards: { items, byId: new Map(items.map((item) => [item.id, item])) } }
     vi.spyOn(saveApi, 'load').mockResolvedValue({ entities: [], logs: [], serverTime: 1 })
     await runtime.start(loaded)
     const current = useGame.getState().umas.u00!
-    // The sixth slot is the scenario card: it pays the skill points this loadout needs.
     const cardSetIds = loaded.cards.items.map((item) => item.id)
     const cardNodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'card')
     const next = withRun(current, {

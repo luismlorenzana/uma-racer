@@ -5,6 +5,7 @@ import { createCardSave } from './save'
 import { equippedRaceBonus } from './progression-race'
 import type { ScenarioTraining } from './save'
 import {
+  autoCardSet,
   cardNodeCount,
   cardSetRaceBonus,
   supportDeckIdentityIssues,
@@ -137,5 +138,26 @@ describe('withCardSet', () => {
     // Slot 0 now holds b, which already had its own node: a's nodes must not merge into it.
     const next = withCardSet(base, ['b', 'c'])
     expect(cardNodeCount(next, 'b')).toBe(1)
+  })
+})
+
+describe('autoCardSet', () => {
+  const growth = { growthRates: { speed: 0.2, stamina: 0, power: 0.1, guts: 0, wit: 0 } }
+  const own = (templates: SupportCardTemplate[]) => templates.map((template) => ({ save: createCardSave(template), template }))
+
+  it('takes one Friend or Group card for skill points and fills the rest with stat cards', () => {
+    const set = autoCardSet(growth, 1, own([
+      card('spd', { type: 'speed' }), card('sta', { type: 'stamina' }), card('pow', { type: 'power' }),
+      card('gut', { type: 'guts' }), card('wit', { type: 'wit' }), card('spd2', { type: 'speed' }),
+      card('friend', { type: 'friend' }), card('group', { type: 'group' }),
+    ]))
+    expect(set).toHaveLength(6)
+    expect(set.filter((id) => id === 'friend' || id === 'group')).toHaveLength(1)
+    expect(set).toEqual(expect.arrayContaining(['spd', 'sta', 'pow', 'gut', 'wit']))
+  })
+
+  it('uses more skill-point cards only when no stat card is left', () => {
+    const set = autoCardSet(growth, 1, own([card('spd', { type: 'speed' }), card('friend', { type: 'friend' }), card('group', { type: 'group' })]))
+    expect([...set].sort()).toEqual(['friend', 'group', 'spd'])
   })
 })

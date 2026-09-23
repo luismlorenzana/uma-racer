@@ -445,7 +445,13 @@ export function UmaProfileScreen() {
             <p className="text-[12px] text-ink-soft">Slot cards onto constellation nodes to earn skills.</p>
           )}
         </div>
-        {!loadout.valid && <p className="mt-2 rounded-md bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">{loadout.errors[0]}</p>}
+        {!loadout.valid && (
+          <p className="mt-2 rounded-md bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">
+            {loadout.cost > loadout.cap
+              ? `Over budget: ${loadout.cost} SP equipped, ${loadout.cap} SP earned. Skills past the budget sit out races until a Friend or Group card pays for them, or you unequip some.`
+              : loadout.errors[0]}
+          </p>
+        )}
       </Collapsible>
 
       {/* ── Everything else ──────────────────────────────────────────── */}

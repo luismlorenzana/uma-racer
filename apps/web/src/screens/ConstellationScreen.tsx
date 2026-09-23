@@ -10,7 +10,8 @@ import {
   lineageEligibility,
   lineageUnlockLevel,
   nodeValue,
-  scenarioCardSpPerNode,
+  cardSpPerNode,
+  paysSkillPoints,
   unlockedNodeCount,
   type Aptitudes,
   type ConstellationNode,
@@ -49,7 +50,6 @@ export function ConstellationScreen() {
       return card ? [[id, card.type] as const] : []
     }),
   )
-  const scenarioCardId = run.cardSetIds[template.scenarioSlot] ?? null
   const aptitudes = explainAptitudes(uma.template.aptitudes, derived.lineage)
   const moved = aptitudes.filter((row) => row.result !== row.base)
 
@@ -140,7 +140,7 @@ export function ConstellationScreen() {
                 const card = content.cards.byId.get(cardId)
                 const owned = cards[cardId]
                 if (!card || !owned) return null
-                const isScenario = cardId === scenarioCardId
+                const skillPoints = paysSkillPoints(card)
                 const bond = cardLimitBreak(owned, run.tier)
                 const perNode = cardNodeValue(run.tier, { template: card, limitBreak: bond })
                 return (
@@ -158,8 +158,8 @@ export function ConstellationScreen() {
                           <BondPips value={bond} />
                         </span>
                         <span className="text-micro">
-                          {isScenario
-                            ? `Scenario card · ${Math.round(scenarioCardSpPerNode(run.tier, { template: card, limitBreak: bond }))} SP per node`
+                          {skillPoints
+                            ? `${titleCase(card.type)} · ${Math.round(cardSpPerNode(run.tier, { template: card, limitBreak: bond }))} SP per node`
                             : `${titleCase(card.type)} · ${Math.round(perNode)} per node`}
                         </span>
                       </span>

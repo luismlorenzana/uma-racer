@@ -108,7 +108,7 @@ UI:
 1. **Growth rates still apply.** Raw points are scaled per stat by the Uma's `growthRates` from her template,
    so an Uma with Speed +20% gets more absolute Speed out of the same raw point. That is her identity, and it
    is why two Umas with the same constellation are not the same Uma.
-2. **The scenario slot pays SP, not stats** (below).
+2. **Friend and Group cards pay SP, not stats** (below).
 
 ### What a card node pays
 
@@ -122,7 +122,7 @@ the invariance rule holds regardless of which types you slot:
 | Power | Power 0.70 · Stamina 0.30 |
 | Guts | Guts 0.60 · Speed 0.20 · Power 0.20 |
 | Wit | Wit 0.70 · Speed 0.30 |
-| Friend / Group | 0.20 to each of the five |
+| Friend / Group | **skill points instead** — see [Skill-point cards](#skill-point-cards) |
 
 A **stat node** puts 1.00 of its value into the stat you pick. Stat nodes are the release valve: they are how
 you find the 200 Stamina a Mile race wants without slotting a Stamina card you would otherwise never bring.
@@ -152,20 +152,21 @@ This is also the pressure that keeps a collection alive: as an Uma climbs tiers,
 fall behind, and the ones you pull matter again. An under-broken card underpays the same way, which is what
 makes the [card minigame](minigames.md#bond-recall--card-limit-breaks) worth playing.
 
-### The scenario slot
+### Skill-point cards
 
-The **sixth slot** is the scenario's dedicated slot. A card placed there pays
-`nodeValue × lbMult × 0.25` **Skill Points** on every node it occupies and **no stats at all**.
+**Friend and Group cards pay skill points instead of stats**, in whatever slot of the set they sit (D132). A node
+filled with one pays `nodeValue × lbMult × 0.25` **Skill Points** and **no stats at all**. Every other card pays
+its stats, whichever slot it is in.
+
+These are the original game's non-trainee cards — Tazuna Hayakawa, Riko Kashimoto, Light Hello, Yayoi Akikawa,
+Team Sirius and the rest — the ones its scenarios are built around, so they are the natural "scenario cards".
 
 Against tier 1's 300 SP cap, a max-broken card on four nodes yields 200 SP — a real loadout, bought by giving
-up a stat card. The trade is explicit and reversible.
+up a stat card. The trade is explicit and reversible. Two skill-point cards are allowed; SP past the cap is simply
+lost, which is its own limit. A set with none earns no skill points.
 
-A set with fewer than six cards has **no scenario card and therefore no skill points**. Filling the sixth slot
-is what turns a collection of stats into a loadout, which is a legible goal rather than a hidden penalty: the
-slot is always in the same place, so adding a card never changes what the cards beside it do.
-
-*(Chosen because our content packs carry no scenario→card link, so a designated slot delivers the same choice
-without inventing data we do not have. D124.)*
+*(Supersedes D124's sixth-slot rule: the owner slotted a Wit card sixth and got skill points and no Wit, while
+Tazuna paid a thin 20% to every stat. A card's type is visible on the card; a slot position was not.)*
 
 ### Applying the budget
 

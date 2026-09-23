@@ -8,7 +8,8 @@ import {
   cardRaceBonus,
   cardShares,
   cardUnlockCost,
-  scenarioCardSpPerNode,
+  cardSpPerNode,
+  paysSkillPoints,
   scenarioForTier,
   type StatKey,
 } from '@racer/domain'
@@ -86,6 +87,8 @@ export function CardPage() {
   // The scenario the numbers below are quoted in: the lens it was opened from, else the newest one it can reach.
   const referenceTier = lensTier && lensTier >= template.era ? lensTier : reached.at(-1)?.tier ?? template.era
   const shares = cardShares(template)
+  const skillPoints = paysSkillPoints(template)
+  const payPerNode = skillPoints ? cardSpPerNode : cardNodeValue
   const cost = cardUnlockCost(template.era)
   const raceBonus = cardRaceBonus(template, 1)
   const hintSkills = template.hintSkillIds.flatMap((id) => {
@@ -146,14 +149,20 @@ export function CardPage() {
             <h1 className="font-display mt-1.5 text-lg leading-tight font-bold">{template.charName}</h1>
             <p className="text-[12px] text-ink-soft">{template.title || 'Support card'}</p>
             <p className="text-micro mt-1.5">From {scenarioForTier(template.era)?.name ?? `tier ${template.era}`}</p>
-            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-sunken" aria-label="How one node splits">
-              {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => (
-                <span key={stat} style={{ width: `${shares[stat]}%`, background: STAT_TONE[stat] }} />
-              ))}
-            </div>
-            <p className="mt-1 text-[11px] text-ink-soft">
-              {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => `${titleCase(stat)} ${shares[stat]}`).join(' · ')}
-            </p>
+            {skillPoints ? (
+              <p className="mt-2 text-[12px] font-semibold text-accent-strong">Pays skill points, not stats, in any slot</p>
+            ) : (
+              <>
+                <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-sunken" aria-label="How one node splits">
+                  {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => (
+                    <span key={stat} style={{ width: `${shares[stat]}%`, background: STAT_TONE[stat] }} />
+                  ))}
+                </div>
+                <p className="mt-1 text-[11px] text-ink-soft">
+                  {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => `${titleCase(stat)} ${shares[stat]}`).join(' · ')}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -193,7 +202,7 @@ export function CardPage() {
                     <span className="block truncate text-[13px] font-semibold">{scenario.name}</span>
                     <span className="flex items-center gap-2">
                       <BondPips value={bond} />
-                      <span className="text-micro">{Math.round(cardNodeValue(scenario.tier, { template, limitBreak: bond }))} per node</span>
+                      <span className="text-micro">{Math.round(payPerNode(scenario.tier, { template, limitBreak: bond }))}{skillPoints ? ' SP' : ''} per node</span>
                     </span>
                   </span>
                   {!save ? null : maxed ? (
@@ -224,21 +233,22 @@ export function CardPage() {
       {/* ── What it pays ─────────────────────────────────────────────── */}
       <SectionHeading label="What it pays" hint={scenarioForTier(referenceTier)?.name} />
       <Panel className="p-3">
-        <p className="text-micro mb-1">One node it fills, by bond</p>
+        <p className="text-micro mb-1">One node it fills, by bond{skillPoints ? ' · skill points' : ''}</p>
         <div className="grid grid-cols-5 gap-1 text-center">
           {Array.from({ length: MAX_LIMIT_BREAK + 1 }, (_, bond) => {
             const current = save ? cardLimitBreak(save, referenceTier) === bond : false
             return (
               <div key={bond} className={`rounded-md px-1 py-1.5 ${current ? 'bg-accent-wash outline outline-1 outline-accent' : 'bg-sunken'}`}>
-                <Numeral className="block text-[14px] leading-none">{Math.round(cardNodeValue(referenceTier, { template, limitBreak: bond }))}</Numeral>
+                <Numeral className="block text-[14px] leading-none">{Math.round(payPerNode(referenceTier, { template, limitBreak: bond }))}</Numeral>
                 <span className="text-micro">{bond === MAX_LIMIT_BREAK ? 'Max' : `Bond ${bond}`}</span>
               </div>
             )
           })}
         </div>
         <p className="mt-2 text-[12px] text-ink-soft">
-          In slot 6 it is the scenario card and pays skill points instead:{' '}
-          {Math.round(scenarioCardSpPerNode(referenceTier, { template, limitBreak: save ? cardLimitBreak(save, referenceTier) : 0 }))} SP per node now.
+          {skillPoints
+            ? 'Friend and Group cards pay skill points instead of stats, whichever slot of the set they sit in.'
+            : `It pays its stats in any slot. Skill points come from Friend and Group cards.`}
         </p>
         {raceBonus > 0 && (
           <p className="mt-1 text-[12px] text-ink-soft">

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  affordableLoadout,
   assertRaceSkillContent,
   compileRaceSkill,
   createUmaSave,
@@ -169,5 +170,17 @@ describe('skill loadouts', () => {
       ...source,
       library: [...source.library, { skillId: unsupported.id, origin: 'card' as const, sourceId: 'card-1' }],
     }, uma, withUnsupported, [unsupported.id])).toThrow(/not available yet/)
+  })
+})
+
+describe('affordableLoadout', () => {
+  const skill = (id: string, costSp: number) => ({ id, costSp }) as Parameters<typeof affordableLoadout>[0][number]
+
+  it('keeps equipped skills in order while they fit, and stops at the first that does not', () => {
+    const skills = [skill('a', 100), skill('b', 150), skill('c', 50)]
+    expect(affordableLoadout(skills, 300).map((entry) => entry.id)).toEqual(['a', 'b', 'c'])
+    expect(affordableLoadout(skills, 260).map((entry) => entry.id)).toEqual(['a', 'b'])
+    expect(affordableLoadout(skills, 120).map((entry) => entry.id)).toEqual(['a'])
+    expect(affordableLoadout(skills, 0)).toEqual([])
   })
 })

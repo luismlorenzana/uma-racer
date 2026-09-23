@@ -9,10 +9,8 @@ export const MAX_TRAINING_LEVEL = 10
 /** Training Levels 1–8 open card and stat nodes; 9 and 10 open lineage (docs/design/constellations.md). */
 export const NODE_UNLOCK_LEVELS = 8
 export const CARD_SET_SIZE = 6
-/** The sixth slot is the scenario's dedicated slot: it pays Skill Points, never stats (D124). */
-export const SCENARIO_SLOT_INDEX = 5
-/** Percentage of a node's value the scenario slot pays as SP instead of stats. */
-export const SCENARIO_SLOT_SP_PCT = 25
+/** Percentage of a node's value a skill-point card pays as SP instead of stats (D132). */
+export const SP_CARD_PCT = 25
 /** A full constellation pays this share of the scenario's cap budget, so no build reaches every cap. */
 export const TREE_BUDGET_SHARE = 0.6
 
@@ -192,7 +190,6 @@ export interface ConstellationTemplate {
   shape: string
   cardNodes: number
   statNodes: number
-  scenarioSlot: number
   nodes: ConstellationNode[]
 }
 
@@ -345,7 +342,6 @@ export function buildTemplate(tier: number): ConstellationTemplate {
     shape: def.shape,
     cardNodes: def.cardNodes,
     statNodes: def.statNodes,
-    scenarioSlot: SCENARIO_SLOT_INDEX,
     nodes,
   }
 }
@@ -418,7 +414,6 @@ export function validateTemplate(template: ConstellationTemplate): string | null
   const orders = [...cards, ...stats].map((node) => node.order).sort((a, b) => a - b)
   if (orders.some((order, index) => order !== index)) return 'card and stat node order must be 0..N-1'
 
-  if (template.scenarioSlot < 0 || template.scenarioSlot >= CARD_SET_SIZE) return 'scenarioSlot out of range'
   return null
 }
 
@@ -490,12 +485,19 @@ export function cardNodeValue(
   return (nodeValue(tier) * lbNodePct(card.limitBreak) * eraPct(card.template.era, tier)) / 10_000
 }
 
-/** What one node filled with the scenario card pays, in skill points instead of stats (D124). */
-export function scenarioCardSpPerNode(
+/**
+ * Friend and Group cards — the non-trainee staff and teams the original game ties to its scenarios — pay skill
+ * points instead of stats, in whatever slot they sit; every other card pays its stats (D132, superseding D124).
+ */
+export const paysSkillPoints = (template: Pick<SupportCardTemplate, 'type'>): boolean =>
+  template.type === 'friend' || template.type === 'group'
+
+/** What one node filled with a skill-point card pays, in SP. */
+export function cardSpPerNode(
   tier: number,
   card: { template: Pick<SupportCardTemplate, 'era'>; limitBreak: number },
 ): number {
-  return (cardNodeValue(tier, card) * SCENARIO_SLOT_SP_PCT) / 100
+  return (cardNodeValue(tier, card) * SP_CARD_PCT) / 100
 }
 
 export interface CardNodeState {
@@ -536,7 +538,6 @@ const SCALE = 1_000_000
 export function deriveStats(input: DeriveInput): DerivedStats {
   const { template, assignments, cards, umaTemplate } = input
   const value = nodeValue(input.tier)
-  const scenarioCardId = input.cardSetIds[template.scenarioSlot] ?? null
   const inSet = new Set(input.cardSetIds)
 
   // Accumulate in integer units of 1/SCALE so a full tree of max-broken cards lands on treeBudget exactly.
@@ -566,8 +567,8 @@ export function deriveStats(input: DeriveInput): DerivedStats {
       assigned += 1
       const quality = lbNodePct(card.limitBreak) * eraPct(card.template.era, input.tier)
 
-      if (assignment.cardId === scenarioCardId) {
-        scaledSp += value * quality * SCENARIO_SLOT_SP_PCT
+      if (paysSkillPoints(card.template)) {
+        scaledSp += value * quality * SP_CARD_PCT
       } else {
         const shares = cardShares(card.template)
         for (const stat of STATS) scaled[stat] += value * quality * (shares[stat] ?? 0)

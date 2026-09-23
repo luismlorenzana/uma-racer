@@ -116,7 +116,7 @@ RNG, and never secret. They may change totals — that is the scenario's charact
 | 11 | Design Your Island | **Construction** | you choose which two branches receive +3 nodes |
 | 12 | Yukoma Hot Springs | **Soak** | Spark Match targets are 25% lower |
 | 13 | Beyond Dreams | **Shared light** | the two lowest stats after allocation each gain +8% |
-| 14 | Tracen Diner | **Orders** | the scenario slot pays SP *and* 50% of its stats |
+| 14 | Tracen Diner | **Orders** | Friend and Group cards pay SP *and* 50% of a node's value as stats |
 
 Draft rules only. Each buff gets its exact numbers, state shape, and UI in its own task, and none may introduce
 RNG, a second currency, or a hidden race stat.

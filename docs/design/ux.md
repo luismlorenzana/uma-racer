@@ -92,8 +92,8 @@ against the moment the scene opened. Two tabs sit under it (M016):
 - **Constellation** — the tree, the node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
   shows each card's bond and what one node of it pays, with a **Bond** link beside it.
 - **Card set** — the active scenario's six slots. Each shows the card, its type, its bond pips in this scenario,
-  what one node pays (SP per node for the scenario slot), how many nodes it fills, and a **Bond** button. Tapping a
-  card offers Open card, **Replace** (the new card takes over its nodes), Make it the scenario card, and Remove.
+  what one node pays (SP per node for a Friend or Group card, marked **Skill points**), how many nodes it fills, and
+  a **Bond** button. Tapping a card offers Open card, **Replace** (the new card takes over its nodes), and Remove.
   Edits save as they are made, like the constellation; empty slots open the album picker, and **Fill empty slots**
   tops the set up without touching what is already there.
 
@@ -161,7 +161,7 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
   ([Collection](collection.md#card-album)). In a scenario, tiles carry bond pips and the reserved detail area has a
   **Bond** button, so a bond is one tap from the tab.
 - **Card page** (`/cards/:id`): the card and how to own it (tickets or a coupon), **Bond by scenario** with a Bond
-  button per reached scenario, then what it pays — its split, a Bond 0–Max per-node ladder, scenario-slot SP, Race
+  button per reached scenario, then what it pays — its split, a Bond 0–Max per-node ladder (in SP for a Friend or Group card), Race
   Bonus and its skills in node order — and every set it sits in.
 - **Unlock** hands to the full-screen collection reveal, which returns to the card's page.
 - A bond is raised only in Bond Recall, which always returns where it was launched: the album lens, the card page,

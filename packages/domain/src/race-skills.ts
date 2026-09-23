@@ -468,6 +468,22 @@ export function summarizeSkillLoadout(
   return { valid: errors.length === 0, cost, cap: source.skillPoints, errors, skills }
 }
 
+/**
+ * The equipped skills that race when the loadout costs more than the Uma now earns — moving a Friend or Group card
+ * off its nodes can take SP away after skills were equipped. Kept in equip order, stopping at the first that no
+ * longer fits, so a reconfiguration never blocks a race; the profile shows the overdraft.
+ */
+export function affordableLoadout(skills: readonly SkillTemplate[], skillPoints: number): SkillTemplate[] {
+  const kept: SkillTemplate[] = []
+  let spent = 0
+  for (const skill of skills) {
+    spent += skill.costSp ?? 0
+    if (spent > skillPoints) break
+    kept.push(skill)
+  }
+  return kept
+}
+
 /** Returns the validated loadout ids; the caller writes them onto the scenario they belong to. */
 export function replaceSkillLoadout(
   source: SkillLoadoutSource,

@@ -2,7 +2,7 @@
 
 import { STATS } from './types'
 import { cardLimitBreak } from './card-progression'
-import { CARD_SET_SIZE, cardNodeValue, type NodeAssignment } from './constellation'
+import { CARD_SET_SIZE, cardNodeValue, paysSkillPoints, type NodeAssignment } from './constellation'
 import { cardRaceBonus, deckSlotCount } from './cards'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import type { CardSave, ScenarioTraining } from './save'
@@ -150,8 +150,9 @@ export function cardSetRaceBonus(cards: readonly SupportDeckCard[], tier: number
 
 /**
  * Deterministic auto-fill for a scenario's six-card set. Prefers one card per stat in the Uma's growth
- * order, then fills the remaining slots with the strongest eligible cards. Ties break on era, then limit
- * break, then card id, so the same collection always produces the same set.
+ * order, then one Friend or Group card for the set's skill points (D132), then the strongest remaining stat
+ * cards; further skill-point cards only if nothing else is left. Ties break on era, then limit break, then card
+ * id, so the same collection always produces the same set.
  */
 export function autoCardSet(
   umaTemplate: Pick<UmaTemplate, 'growthRates'>,
@@ -183,10 +184,17 @@ export function autoCardSet(
     const match = ranked.find((card) => card.template.type === stat && !picked.includes(card))
     if (match) take(match)
   }
-  // Second pass: fill whatever is left with the strongest remaining, wildcards included.
-  for (const card of ranked) {
-    if (picked.length >= CARD_SET_SIZE) break
-    if (!picked.includes(card)) take(card)
+  // Second pass: one skill-point card, so the set can afford a loadout.
+  if (!picked.some((card) => paysSkillPoints(card.template))) {
+    const skillPoints = ranked.find((card) => paysSkillPoints(card.template) && !picked.includes(card))
+    if (skillPoints) take(skillPoints)
+  }
+  // Third pass: the strongest remaining stat cards, then anything left.
+  for (const statCardsOnly of [true, false]) {
+    for (const card of ranked) {
+      if (picked.length >= CARD_SET_SIZE) break
+      if (!picked.includes(card) && (!statCardsOnly || !paysSkillPoints(card.template))) take(card)
+    }
   }
   return picked.map((card) => card.template.id)
 }

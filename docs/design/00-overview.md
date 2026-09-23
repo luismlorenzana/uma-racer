@@ -88,7 +88,7 @@ flowchart LR
 | **Promotion** | Spending training tickets to move an Uma to the next scenario. |
 | **Stat cap / SP cap** | The highest value training can raise stats or SP to: the scenario baseline × the Training Level multiplier. Caps never reduce a stat. |
 | **Era** | The scenario window in which a card was originally released. |
-| **Support card** | An SSR card placed in a scenario's card set; it pays stats (or, in slot 6, SP) and skills on the constellation nodes it fills. It has a type and an era. |
+| **Support card** | An SSR card placed in a scenario's card set; it pays stats (or, for a Friend or Group card, SP) and skills on the constellation nodes it fills. It has a type and an era. |
 | **Bond** | A card's power in one scenario, 0 to 4 — the save's limit break. Earned by Bond Recall, shared by every Uma in that scenario, and zero in each new one. There is no card level. |
 | **Card Select Coupon** | Earned the first time a card reaches max bond anywhere. A free unlock of any card. Stackable, never expires. |
 | **Uma Shard / Uma Select Coupon** | 1 shard each time an Uma reaches a gate level. 5 shards make a coupon that redeems for any Uma. |

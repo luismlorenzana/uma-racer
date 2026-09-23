@@ -207,6 +207,17 @@ describe('progression race field', () => {
     expect(new Set(characters).size).toBe(characters.length)
   })
 
+  it('races the affordable part of a loadout the scenario no longer pays SP for', () => {
+    const hinted: SupportCardTemplate = { ...card, hintSkillIds: ['synthetic-speed-a'] }
+    const loaded = { ...content(), cards: { items: [hinted], byId: new Map([[hinted.id, hinted]]) } }
+    const { profile, player, cards } = state()
+    // c1 is a Speed card, so it pays stats and no SP (D132), yet a 100 SP skill it taught is still equipped.
+    const overdrawn = withRun(player, { loadoutSkillIds: ['synthetic-speed-a'] })
+    const attempt = buildPreparedRace({ content: loaded, profile, uma: overdrawn, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
+    const skills = attempt.input.runners[attempt.playerIndex]!.skills?.map((skill) => skill.id) ?? []
+    expect(skills).not.toContain('synthetic-speed-a')
+  })
+
   it('rejects locked, gated, and undersized fields', () => {
     const loaded = content()
     const { profile, player, cards } = state()
