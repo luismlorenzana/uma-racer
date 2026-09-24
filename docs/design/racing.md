@@ -85,9 +85,14 @@ Races get a clear NPC feel, and **every Uma in the game** can show up as an enem
 ### Generic stats
 
 ```
-npcStat[s]  = baselineStatCap(T) × gradeFactor[grade] × profile[distance][s] × fieldForm
-gradeFactor = Debut/Maiden 0.80 · Pre-OP/OP 0.88 · G3 0.94 · G2 0.97 · G1 1.00
+npcStat[s]    = averageCap(T) × fieldStrength × gradeFactor[grade] × profile[distance][s] × fieldForm
+fieldStrength = 0.72
+gradeFactor   = Debut/Maiden 0.80 · Pre-OP/OP 0.88 · G3 0.94 · G2 0.97 · G1 1.00
 ```
+
+`fieldStrength` is calibrated (D136): the field used to be built on the whole average cap, which assumed a fully
+trained Uma at every cap, and after the constellation that made a trained Uma lose a G1 over 90% of the time. At
+0.72 it wins roughly half or more, below.
 
 | Distance | Speed | Stamina | Power | Guts | Wit |
 |---|---|---|---|---|---|
@@ -99,8 +104,8 @@ gradeFactor = Debut/Maiden 0.80 · Pre-OP/OP 0.88 · G3 0.94 · G2 0.97 · G1 1.
 NPCs have no stat variation from each other. Races still vary through the simulation's own randomness (start delay,
 Wit section randomness, skill activation).
 
-> *Example:* a scenario 1 G1 Medium race at Uma Level 1 (k = 0). NPC Speed = 1200 × 1.00 × 1.00 × 0.80 = **960**, Stamina **864**.
-> A fully trained Uma (1200 in every stat) races at 1200 × 0.80 = **960**, an even fight on stats. At k = 9 she races at 1176 against the field's 1068 Speed.
+> *Example:* a scenario 1 G1 Medium race. At Training Level 1 the field's Speed is 1400 × 0.72 × 1.00 × 1.00 × 0.80 =
+> **806** (Stamina 726); at TL10 it is **897**, against a fully trained Uma racing at 0.98 of her own stats.
 
 ### Baseline enemy kit
 
@@ -177,7 +182,29 @@ per-strategy stat bonus; the G1 player targets below remain the player-facing ac
 
 An under-trained Uma, or one racing off-aptitude, loses to the field. A fully trained Uma with a good deck and loadout
 should win a **G1** about **35% of the time at k = 0, rising to about 65% at k = 9**. Lower grades are easier.
-Validate with headless batch simulation.
+Validate with `pnpm sim:constellation`, which races the stamina ladder's builds (with the heals they call for) in
+12-runner G1 fields at TL10. Measured 2026-09-24, best strategy:
+
+| Tier | Sprint | Mile | Medium | Long |
+|---|---|---|---|---|
+| 1 | 64% | 64% | 49% | 54% |
+| 9 | 80% | 73% | 46% | 40% |
+| 14 | 53% | 46% | 46% | 38% |
+
+Before D136 the same builds won 0–8%. Medium and long sit a little under the band; `fieldStrength` is the knob.
+
+### Stamina contest (engine v4)
+
+Stamina above 1,200 turns into last-spurt speed once a runner reaches max spurt, as in the original game since its
+JP 2.5th anniversary (D135):
+
+```
+bonus [m/s] = √(stamina − 1200) × 0.0085 × distanceFactor × random(0.98–1.02)
+distanceFactor = ≤2,100 m 0 · 2,101–2,200 m 0.5 · 2,201–2,400 m 1.0 · 2,401–2,600 m 1.5 · 2,601 m+ 1.8
+```
+
+The stamina used is the race-start stat and is **not** halved above 1,200. It gives late scenarios' stronger
+stamina cards a use past the requirement. Races recorded under engine v3 replay under v3.
 
 ## Rewards
 

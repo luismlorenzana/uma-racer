@@ -167,6 +167,37 @@ At the start of phase 2:
 P(accept) = 15 + 0.05 × Wit   [%]
 ```
 
+## Stamina contest ✅
+
+Added to the original game at its JP 2.5th anniversary (2023-08-24). If race-start stamina — after mood and green
+skills, **not halved above 1,200** — exceeds 1,200 when a runner reaches max spurt, her target speed rises for the
+rest of the race:
+
+```
+bonus [m/s] = sqrt(stamina − 1200) × 0.0085 × distanceFactor × powerCoefficient(0.98–1.02)
+```
+
+| Distance | ≤2,100 m | 2,101–2,200 m | 2,201–2,400 m | 2,401–2,600 m | 2,601 m+ |
+|---|---|---|---|---|---|
+| Factor (after the 2024 balance update) | 0 | 0.5 | 1.0 | 1.5 (was 1.2) | 1.8 (was 1.5) |
+
+It consumes no stamina of its own. The power-referenced coefficient's formula is unknown; engine v4 draws it from
+the race seed. Sources: shimahokke's measurements (note.com) and Game8 JP, below.
+
+### Stamina needed in a field
+
+Measured with engine v4 in 12-runner G1 fields at tier 1 (Speed 1,372, Power 762, Guts 440), full spurt without
+running out in 90% of races, no heals:
+
+| Distance | 1,200 | 1,400 | 1,600 | 1,800 | 2,000 | 2,400 | 2,500 | 3,000 | 3,200 |
+|---|---|---|---|---|---|---|---|---|---|
+| Pace | 340 | 445 | 551 | 668 | 797 | 1,055 | 1,137 | 1,992 | 2,379 |
+| Late | 305 | 410 | 504 | 609 | 715 | 961 | 1,008 | 1,688 | 1,816 |
+
+Running alone needs about 30% less: the pack's position keeping is most of the difference. These agree with the
+original game's published chart (1,400 m ≈ 500–570, 1,800 m ≈ 720–800, 2,400 m ≈ 870–930 with one gold heal), which
+is why the constellation's stamina ladder is sized against field runs rather than solo ones.
+
 ## Wit effects
 
 ```
@@ -238,3 +269,6 @@ A runner cannot enter a duel again after leaving it.
 - [uma.guide — Track Features](https://uma.guide/guides/race-track-features)
 - [Umamusume Wiki — Game:Mechanics](https://umamusu.wiki/Game:Mechanics)
 - [Umamusume Reference Guide — How do races work?](https://www.umareference.com/guide/races/how-do-they-work)
+- [Umamusume Reference Guide — Required Stamina Chart](https://www.umareference.com/guide/stats/required-stamina-chart)
+- [しまほっけ — スタミナ勝負とバランス調整の影響 (note.com)](https://note.com/shimahokke_uma/n/n44aeb7f26243)
+- [Game8 JP — スタミナ勝負の効果と発動条件](https://game8.jp/umamusume/547536)

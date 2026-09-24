@@ -18,7 +18,7 @@
     "assets:import": "pnpm --filter @racer/asset-pipeline run import",
     "content:publish": "pnpm --filter @racer/data-pipeline run publish",
     "sim:balance": "pnpm dlx tsx scripts/sim/strategy-balance.ts",
-    "sim:cards": "pnpm dlx tsx scripts/sim/deck-training-balance.ts"
+    "sim:constellation": "pnpm dlx tsx scripts/sim/constellation-balance.ts"
   },
   "devDependencies": {
     "turbo": "^2.10.13"

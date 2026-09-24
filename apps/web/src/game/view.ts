@@ -6,7 +6,7 @@ import {
   isGateLevel,
   LEVELS_PER_SCENARIO,
   SCENARIOS,
-  baselineSpCap,
+  skillPointCap,
   scenarioForTier,
   tierOfLevel,
   type CardSave,
@@ -83,7 +83,7 @@ export function joinUma(
       run: activeScenario(save),
       derived,
       caps: capProfile(tier),
-      spCap: baselineSpCap(tier),
+      spCap: skillPointCap(tier),
       expToNext: expToNextUmaLevel(save.level),
       readyToAdvance: activeScenario(save).started && isGateLevel(save.level)
         && tierOfLevel(save.level) === tier && !finalLevel,

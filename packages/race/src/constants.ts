@@ -84,3 +84,21 @@ export {
   SOLO_FRONT_LEAD_METERS,
   VISIBLE_DISTANCE,
 } from '@racer/domain'
+
+/**
+ * Stamina contest (スタミナ勝負), added to the original game at its JP 2.5th anniversary (2023-08-24): stamina above
+ * 1,200 at the start of a race adds target speed once a runner reaches max spurt. The stamina used is the race-start
+ * value and is **not** halved above 1,200. Factors are the post-2024 values measured by the JP community
+ * (docs/research/race-mechanics.md#stamina-contest). Engine v4 (D135).
+ */
+export const STAMINA_CONTEST_THRESHOLD = 1200
+export const STAMINA_CONTEST_COEF = 0.0085
+export const STAMINA_CONTEST_RANDOM = [0.98, 1.02] as const
+/** [inclusive upper distance in meters, factor]; nothing at 2,100 m or shorter. */
+export const STAMINA_CONTEST_DISTANCE_FACTOR: readonly (readonly [number, number])[] = [
+  [2100, 0],
+  [2200, 0.5],
+  [2400, 1.0],
+  [2600, 1.5],
+  [Number.POSITIVE_INFINITY, 1.8],
+]

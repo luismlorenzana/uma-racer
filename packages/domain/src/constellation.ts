@@ -2,15 +2,25 @@
 
 import { MAX_LIMIT_BREAK } from './cards'
 import type { SupportCardTemplate, UmaTemplate } from './content'
-import { MAX_SCENARIO_TIER, SCENARIOS, baselineSpCap } from './scenarios'
+import { MAX_SCENARIO_TIER, SCENARIOS, baselineSkillPoints, skillPointCap } from './scenarios'
 import { STATS, type StatKey, type Stats, zeroStats } from './types'
 
 export const MAX_TRAINING_LEVEL = 10
 /** Training Levels 1–8 open card and stat nodes; 9 and 10 open lineage (docs/design/constellations.md). */
 export const NODE_UNLOCK_LEVELS = 8
 export const CARD_SET_SIZE = 6
-/** Percentage of a node's value a skill-point card pays as SP instead of stats (D132). */
-export const SP_CARD_PCT = 25
+/**
+ * Raw points a tier's stat nodes pay between them, however many there are (D134). Small on purpose: stat nodes are
+ * for tweaks — the stamina a mile needs, one more point of Speed — and cards carry the build.
+ */
+export const STAT_NODE_POOL = 240
+/**
+ * The floor every stat reaches per Training Level whatever the constellation holds: a career's generic training
+ * (D134). In the original game a stat nobody trained still finishes a career around 400–500; here it finishes at 500.
+ */
+export const UNTRAINED_FLOOR_PER_LEVEL = 50
+/** A max-bonded Friend or Group card on its fair share of nodes pays this share of the SP cap (D133). */
+export const SP_CARD_SHARE = 0.6
 /** A full constellation pays this share of the scenario's cap budget, so no build reaches every cap. */
 export const TREE_BUDGET_SHARE = 0.6
 
@@ -73,8 +83,6 @@ export const averageCap = (tier: number): number => capBudget(tier) / STATS.leng
 
 export const shapeDef = (tier: number): ShapeDef => CONSTELLATION_SHAPES[clampTier(tier) - 1]!
 
-/** Total raw points a fully-filled constellation of max-limit-break cards pays. */
-export const treeBudget = (tier: number): number => Math.round(TREE_BUDGET_SHARE * capBudget(tier))
 
 export const slotCount = (tier: number): number => {
   const def = shapeDef(tier)
@@ -82,10 +90,38 @@ export const slotCount = (tier: number): number => {
 }
 
 /**
- * Raw points one node pays at max limit break. An integer for every modelled tier, which is what lets the
- * invariance rule be asserted exactly rather than within a tolerance.
+ * Raw points one **card** node pays at max bond and current era: what is left of the tree's share of the cap budget
+ * once the stat-node pool is set aside, over the card nodes (D134). Rounded to an integer so the invariance rule can
+ * be asserted exactly rather than within a tolerance.
  */
-export const nodeValue = (tier: number): number => treeBudget(tier) / slotCount(tier)
+export const nodeValue = (tier: number): number =>
+  Math.round((TREE_BUDGET_SHARE * capBudget(tier) - STAT_NODE_POOL) / shapeDef(tier).cardNodes)
+
+/** Raw points one stat node pays: the pool shared over that tier's stat nodes. An integer at every tier. */
+export const statNodeValue = (tier: number): number => STAT_NODE_POOL / shapeDef(tier).statNodes
+
+/** Total raw points a fully-filled constellation of current-era, max-bond stat cards pays. */
+export const treeBudget = (tier: number): number => shapeDef(tier).cardNodes * nodeValue(tier) + STAT_NODE_POOL
+
+/** The nodes one card of six gets if the tree is shared out evenly, rounded up (D134). */
+export const cardFairShare = (tier: number): number => Math.ceil(shapeDef(tier).cardNodes / CARD_SET_SIZE)
+
+/**
+ * The most card nodes any one card may fill: its fair share plus one (D134). One Speed card cannot carry a Speed
+ * build, and the +1 leaves room to lean a set one node towards Speed or Wit for a given race.
+ */
+export const cardNodeCap = (tier: number): number => cardFairShare(tier) + 1
+
+/** SP one node of a max-bonded, current-era Friend or Group card pays (D133). An integer at every tier. */
+export const spNodeValue = (tier: number): number => Math.round((SP_CARD_SHARE * skillPointCap(tier)) / cardFairShare(tier))
+
+/**
+ * The untrained floor at a Training Level (D134): a stat starts from the higher of its base and this, and everything
+ * the constellation pays adds on top. It lifts what a build neglects — a sprinter's stamina — without inflating
+ * stats that are already trained.
+ */
+export const untrainedFloor = (trainingLevel: number): number =>
+  UNTRAINED_FLOOR_PER_LEVEL * Math.min(MAX_TRAINING_LEVEL, Math.max(0, Math.trunc(trainingLevel)))
 
 // --- Cards -------------------------------------------------------------------------------------
 
@@ -497,7 +533,7 @@ export function cardSpPerNode(
   tier: number,
   card: { template: Pick<SupportCardTemplate, 'era'>; limitBreak: number },
 ): number {
-  return (cardNodeValue(tier, card) * SP_CARD_PCT) / 100
+  return (spNodeValue(tier) * lbNodePct(card.limitBreak) * eraPct(card.template.era, tier)) / 10_000
 }
 
 export interface CardNodeState {
@@ -538,6 +574,10 @@ const SCALE = 1_000_000
 export function deriveStats(input: DeriveInput): DerivedStats {
   const { template, assignments, cards, umaTemplate } = input
   const value = nodeValue(input.tier)
+  const statValue = statNodeValue(input.tier)
+  const spValue = spNodeValue(input.tier)
+  const perCardCap = cardNodeCap(input.tier)
+  const cardNodesUsed = new Map<string, number>()
   const inSet = new Set(input.cardSetIds)
 
   // Accumulate in integer units of 1/SCALE so a full tree of max-broken cards lands on treeBudget exactly.
@@ -556,7 +596,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
 
     if (node.kind === 'stat' && assignment.kind === 'stat') {
       assigned += 1
-      scaled[assignment.stat] += value * 100 * 100 * 100
+      scaled[assignment.stat] += statValue * 100 * 100 * 100
       continue
     }
 
@@ -564,20 +604,24 @@ export function deriveStats(input: DeriveInput): DerivedStats {
       if (!inSet.has(assignment.cardId)) continue
       const card = cards.get(assignment.cardId)
       if (!card) continue
+      // Past its cap a card pays nothing (D134); nodes count in template order, so the earliest ones stay live.
+      const used = cardNodesUsed.get(assignment.cardId) ?? 0
+      if (used >= perCardCap) continue
+      cardNodesUsed.set(assignment.cardId, used + 1)
       assigned += 1
       const quality = lbNodePct(card.limitBreak) * eraPct(card.template.era, input.tier)
 
       if (paysSkillPoints(card.template)) {
-        scaledSp += value * quality * SP_CARD_PCT
+        scaledSp += spValue * quality
       } else {
         const shares = cardShares(card.template)
         for (const stat of STATS) scaled[stat] += value * quality * (shares[stat] ?? 0)
       }
 
       // Each node a card occupies pays the next skill from its hint list.
-      const used = skillCursor.get(assignment.cardId) ?? 0
-      const skillId = card.template.hintSkillIds[used]
-      skillCursor.set(assignment.cardId, used + 1)
+      const cursor = skillCursor.get(assignment.cardId) ?? 0
+      const skillId = card.template.hintSkillIds[cursor]
+      skillCursor.set(assignment.cardId, cursor + 1)
       if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
     }
   }
@@ -592,10 +636,14 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   }
   const rawTotal = scaledTotal / SCALE
 
+  // The untrained floor lifts the starting point, not the gains (D134); it is not part of the configuration, so
+  // `raw` and the invariance rule leave it out.
+  const floor = untrainedFloor(input.trainingLevel)
   const caps = capProfile(input.tier)
   const stats = zeroStats()
   for (const stat of STATS) {
-    const grown = umaTemplate.baseStats[stat] + raw[stat] * (1 + (umaTemplate.growthRates[stat] ?? 0))
+    const start = Math.max(umaTemplate.baseStats[stat], floor)
+    const grown = start + raw[stat] * (1 + (umaTemplate.growthRates[stat] ?? 0))
     stats[stat] = Math.min(caps[stat], Math.round(grown))
   }
 
@@ -603,7 +651,10 @@ export function deriveStats(input: DeriveInput): DerivedStats {
     stats,
     raw,
     rawTotal,
-    skillPoints: Math.min(baselineSpCap(input.tier), Math.round(scaledSp / SCALE)),
+    skillPoints: Math.min(
+      skillPointCap(input.tier),
+      baselineSkillPoints(input.tier, input.trainingLevel) + Math.round(scaledSp / 10_000),
+    ),
     cardSkillIds,
     assignedNodes: assigned,
     filledNodes: filled,

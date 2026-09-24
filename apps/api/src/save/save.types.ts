@@ -802,11 +802,11 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
     ...(versioned ? ['engineVersion', 'course'] : []),
   ]) ||
-      (versioned && version !== 2 && version !== 3) || !Array.isArray(value.field)) return null
+      (versioned && version !== 2 && version !== 3 && version !== 4) || !Array.isArray(value.field)) return null
   if (versioned && (
-    !isRecord(value.course) || !exactKeys(value.course, version === 3 ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
+    !isRecord(value.course) || !exactKeys(value.course, version === 3 || version === 4 ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
     !isPositiveInt(value.course.distance) || !['turf', 'dirt'].includes(String(value.course.surface)) ||
-    !isNonNegativeInt(value.course.season) || (version === 3 && !parseCourseLayout(value.course.layout, value.course.distance))
+    !isNonNegativeInt(value.course.season) || ((version === 3 || version === 4) && !parseCourseLayout(value.course.layout, value.course.distance))
   )) return null
   const fieldSize = value.field.length
   if (

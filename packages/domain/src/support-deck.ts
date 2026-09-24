@@ -2,7 +2,7 @@
 
 import { STATS } from './types'
 import { cardLimitBreak } from './card-progression'
-import { CARD_SET_SIZE, cardNodeValue, paysSkillPoints, type NodeAssignment } from './constellation'
+import { CARD_SET_SIZE, cardNodeCap, cardNodeValue, paysSkillPoints, type NodeAssignment } from './constellation'
 import { cardRaceBonus, deckSlotCount } from './cards'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import type { CardSave, ScenarioTraining } from './save'
@@ -227,3 +227,19 @@ export function withCardSet(run: ScenarioTraining, orderedCardIds: readonly stri
 /** How many of a run's nodes a card fills. */
 export const cardNodeCount = (run: Pick<ScenarioTraining, 'assignments'>, cardId: string): number =>
   Object.values(run.assignments).filter((assignment) => assignment.kind === 'card' && assignment.cardId === cardId).length
+
+/**
+ * Why a card cannot take this node, or null: no card may fill more than its fair share plus one (D134). Moving a
+ * card between nodes it already holds is always allowed.
+ */
+export function cardNodeCapIssue(
+  run: Pick<ScenarioTraining, 'tier' | 'assignments'>,
+  nodeId: string,
+  assignment: NodeAssignment | null,
+): string | null {
+  if (!assignment || assignment.kind !== 'card') return null
+  const cap = cardNodeCap(run.tier)
+  const elsewhere = Object.entries(run.assignments)
+    .filter(([id, held]) => id !== nodeId && held.kind === 'card' && held.cardId === assignment.cardId).length
+  return elsewhere >= cap ? `That card already fills its ${cap} nodes` : null
+}

@@ -6,6 +6,7 @@ import { equippedRaceBonus } from './progression-race'
 import type { ScenarioTraining } from './save'
 import {
   autoCardSet,
+  cardNodeCapIssue,
   cardNodeCount,
   cardSetRaceBonus,
   supportDeckIdentityIssues,
@@ -159,5 +160,22 @@ describe('autoCardSet', () => {
   it('uses more skill-point cards only when no stat card is left', () => {
     const set = autoCardSet(growth, 1, own([card('spd', { type: 'speed' }), card('friend', { type: 'friend' }), card('group', { type: 'group' })]))
     expect([...set].sort()).toEqual(['friend', 'group', 'spd'])
+  })
+})
+
+describe('cardNodeCapIssue', () => {
+  const run = (assignments: ScenarioTraining['assignments']) => ({ tier: 1, assignments })
+  // Tier 1 has 18 card nodes: a fair share of 3, so a cap of 4 (D134).
+  const four = { a: { kind: 'card', cardId: 'x' }, b: { kind: 'card', cardId: 'x' }, c: { kind: 'card', cardId: 'x' }, d: { kind: 'card', cardId: 'x' } } as const
+
+  it('refuses a fifth node for one card', () => {
+    expect(cardNodeCapIssue(run(four), 'e', { kind: 'card', cardId: 'x' })).toMatch(/already fills its 4 nodes/)
+  })
+
+  it('allows moving a card between nodes it holds, other cards, stats and clearing', () => {
+    expect(cardNodeCapIssue(run(four), 'a', { kind: 'card', cardId: 'x' })).toBeNull()
+    expect(cardNodeCapIssue(run(four), 'e', { kind: 'card', cardId: 'y' })).toBeNull()
+    expect(cardNodeCapIssue(run(four), 'e', { kind: 'stat', stat: 'speed' })).toBeNull()
+    expect(cardNodeCapIssue(run(four), 'e', null)).toBeNull()
   })
 })

@@ -11,6 +11,7 @@ import {
   simulateRace,
   simulateRaceV1,
   simulateRaceV2,
+  simulateRaceV3,
   type RaceInput,
   type RaceTimeline,
 } from '@racer/race'
@@ -73,11 +74,14 @@ export function projectLegacyAccomplishmentFacts(content: LoadedContent, record:
     const race = content.races.byId.get(record.raceId)
     if (!race) return null
     const replay = replayInput(content, record)
-    const timeline = record.engineVersion === 3
+    // Each record replays under the rules it was run with; v3 must not pick up v4's stamina contest.
+    const timeline = record.engineVersion === 4
       ? simulateRace(replay.input)
-      : record.engineVersion === 2
-        ? simulateRaceV2(replay.input)
-        : simulateRaceV1(replay.input)
+      : record.engineVersion === 3
+        ? simulateRaceV3(replay.input)
+        : record.engineVersion === 2
+          ? simulateRaceV2(replay.input)
+          : simulateRaceV1(replay.input)
     const player = replay.input.runners[replay.playerIndex]!
     const inheritedUniqueSkillIds = new Set(
       (player.skills ?? [])

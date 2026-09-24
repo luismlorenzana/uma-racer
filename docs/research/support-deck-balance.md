@@ -1,5 +1,8 @@
 # Support Deck and Training balance follow-up
 
+> **Superseded.** The training turn this measured was deleted (D120) and `sim:cards` with it. Constellation
+> balance is measured by `pnpm sim:constellation` (D134–D136). Kept as history.
+
 Date: 2026-09-17. Task: T010 (spec archived in git history). Every checked-in id, template, effect weight,
 skill, stat, and seed is invented. The harness does not read `/content`, private packs, or original-game data.
 

@@ -14,7 +14,7 @@ import {
   SPARK_MATCH_TICKET_COST,
   BOND_RECALL_TICKET_COST,
   TICKETS_PER_CARD_LIMIT_BREAK,
-  baselineSpCap,
+  skillPointCap,
   averageCap,
   MAX_UMA_LEVEL,
   SCENARIOS,
@@ -174,8 +174,10 @@ describe('scenarios', () => {
     expect(MAX_UMA_LEVEL).toBe(140)
     expect(averageCap(1)).toBe(1400)
     expect(averageCap(14)).toBe(1900)
-    expect(baselineSpCap(1)).toBe(300)
-    expect(baselineSpCap(14)).toBe(2900)
+    // D133: grounded at tiers 2–3 (Unity Cup ~2,000–2,500, Trackblazer ~2,800), drafted elsewhere.
+    expect(skillPointCap(1)).toBe(2000)
+    expect(skillPointCap(3)).toBe(2800)
+    expect(skillPointCap(14)).toBe(5000)
   })
 
   it('maps Uma Levels to tiers and gates', () => {
@@ -238,8 +240,9 @@ describe('training levels', () => {
     expect(capProfile(3).stamina).toBe(1900)
     expect([1, 2, 3, 4].map(capBudget)).toEqual([7000, 7000, 7000, 7000])
     expect(treeBudget(1)).toBe(4200)
-    expect([1, 2, 3, 4].map(nodeValue)).toEqual([200, 175, 210, 168])
-    expect(baselineSpCap(1)).toBe(300)
+    // D134: card nodes share what the 240-point stat pool leaves of the tree.
+    expect([1, 2, 3, 4].map(nodeValue)).toEqual([220, 198, 233, 189])
+    expect(skillPointCap(1)).toBe(2000)
   })
 })
 
@@ -253,9 +256,10 @@ describe('race form', () => {
   })
 
   it('builds identical generic NPC stats (racing.md example)', () => {
+    // D136: 1400 average cap × 0.72 field strength × G1 1.00 × profile × field Form 0.80.
     const npc = npcRaceStats(1, 'g1', 'medium', 1)
-    expect(npc.speed).toBeCloseTo(1120)
-    expect(npc.stamina).toBeCloseTo(1008)
+    expect(npc.speed).toBeCloseTo(806.4)
+    expect(npc.stamina).toBeCloseTo(725.76)
   })
 })
 

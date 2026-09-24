@@ -84,12 +84,41 @@ than a number.
 A **full constellation pays less than the cap budget**, so no configuration reaches every cap:
 
 ```
-treeBudget(T)  = round(0.60 × capBudget(T))
-nodeValue(T)   = treeBudget(T) / (cardNodes(T) + statNodes(T))
+statNodeValue(T) = 240 / statNodes(T)                                   the stat-node pool, fixed
+nodeValue(T)     = round((0.60 × capBudget(T) − 240) / cardNodes(T))    one card node
+treeBudget(T)    = cardNodes(T) × nodeValue(T) + 240                    ≈ 0.60 × capBudget(T)
 ```
 
-Tier 1 gives `4200 / 21 = 200` points per node. From tier 5 on every node is worth exactly **150**, and the
-scenario's slot count is what grows. Per-scenario counts are in [Scenarios](scenarios.md#constellation-shapes).
+**Stat nodes share a fixed 240-point pool** at every tier (D134): 80 a node at tier 1, down to 40 at tier 14.
+They are for tweaks — the stamina a mile needs, one more point of Speed — and cards carry the build. Card nodes
+share the rest: **220** at tier 1, 163–172 from tier 5. Per-scenario counts are in
+[Scenarios](scenarios.md#constellation-shapes).
+
+| Tier | 1 | 2 | 3 | 4 | 5–7 | 8–11 | 12 | 13–14 |
+|---|---|---|---|---|---|---|---|---|
+| Card node | 220 | 198 | 233 | 189 | 163–164 | 167–169 | 172 | 171 |
+| Stat node | 80 | 60 | 80 | 60 | 60 | 48 | 40 | 40 |
+| Per-card cap | 4 | 5 | 4 | 5 | 6 | 6 | 6 | 7 |
+
+### Per-card cap
+
+**No card may fill more than its fair share of the card nodes plus one** (D134):
+
+```
+fairShare(T) = ceil(cardNodes(T) / 6)        cardNodeCap(T) = fairShare(T) + 1
+```
+
+One Speed card cannot carry a Speed build — a high Speed stat needs two — and the +1 is the wiggle room: the same
+six cards can lean one node towards Speed, Wit or Stamina for a given race. The node sheet shows `held / cap` for
+each card and refuses a card that is full; a save that already holds more keeps only the first `cap` nodes in tree
+order, and the rest pay nothing.
+
+### The untrained floor
+
+**Every stat starts from the higher of its base and `50 × Training Level`**, and everything the constellation pays
+adds on top (D134): 500 at TL10. In the original game a stat nobody trained still finishes a career around
+400–500. The floor lifts what a build neglects — a sprinter's stamina, a stayer's power — without inflating the
+stats it trains, and it sits outside the tree, so the invariance rule is unchanged.
 
 ### The invariance rule
 
@@ -155,15 +184,24 @@ makes the [card minigame](minigames.md#bond-recall--card-limit-breaks) worth pla
 ### Skill-point cards
 
 **Friend and Group cards pay skill points instead of stats**, in whatever slot of the set they sit (D132). A node
-filled with one pays `nodeValue × lbMult × 0.25` **Skill Points** and **no stats at all**. Every other card pays
-its stats, whichever slot it is in.
+filled with one pays **Skill Points** and **no stats at all**; every other card pays its stats, whichever slot it
+is in:
+
+```
+spNodeValue(T)  = round(0.60 × spCap(T) / fairShare(T))        400 SP a node at tier 1, 500 at tier 14
+SP              = min( spCap(T), baselineSP(T, TL) + Σ SP nodes × lbPct × eraPct )
+baselineSP(T, TL) = 0.40 × spCap(T) × TL / 10                  800 at tier 1, TL10
+```
+
+So training alone earns 40% of the cap, and one max-bonded, current-era Friend or Group card on its fair share
+earns the other 60% (D133). Caps are in [Skills](skills-and-inheritance.md#skill-points-are-the-only-limit).
 
 These are the original game's non-trainee cards — Tazuna Hayakawa, Riko Kashimoto, Light Hello, Yayoi Akikawa,
 Team Sirius and the rest — the ones its scenarios are built around, so they are the natural "scenario cards".
 
-Against tier 1's 300 SP cap, a max-broken card on four nodes yields 200 SP — a real loadout, bought by giving
-up a stat card. The trade is explicit and reversible. Two skill-point cards are allowed; SP past the cap is simply
-lost, which is its own limit. A set with none earns no skill points.
+At tier 1 that is 2,000 SP — five or six golds with their white prerequisites — bought by giving up a stat card.
+The trade is explicit and reversible. Two skill-point cards are allowed; SP past the cap is simply lost, which is
+its own limit. A set with none still earns the 40% baseline.
 
 *(Supersedes D124's sixth-slot rule: the owner slotted a Wit card sixth and got skill points and no Wit, while
 Tazuna paid a thin 20% to every stat. A card's type is visible on the card; a slot position was not.)*
@@ -171,8 +209,8 @@ Tazuna paid a thin 20% to every stat. A card's type is visible on the card; a sl
 ### Applying the budget
 
 ```
-raw(s)     = Σ over assigned nodes of ( nodeValue × lbPct × eraPct × share[type][s] )
-derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthRates[s]) ) )
+raw(s)     = Σ card nodes ( nodeValue × lbPct × eraPct × share[type][s] ) + Σ stat nodes on s ( statNodeValue )
+derived(s) = min( capProfile(T)[s], round( max(baseStats[s], 50 × TL) + raw(s) × (1 + growthRates[s]) ) )
 ```
 
 Every factor is an integer percentage, so the engine accumulates exact integers and divides once. The
@@ -183,6 +221,25 @@ deliberately lopsided build — which is correct: it tells you that stat is full
 
 There is no 1200 soft-cap halving on gains any more. The halving stays where the original game puts it, in
 race performance ([Racing](racing.md)).
+
+## Balance targets: the stamina ladder
+
+Decks are chosen for a distance (D134). Measured with `pnpm sim:constellation` in 12-runner G1 fields — a pack burns
+about 40% more HP than a solo run, which is what the original game's own stamina charts assume — at TL10 with a full
+tree of max-bond current-era cards, median base stats and no growth, running pace and late:
+
+| Distance | Deck | Stamina it needs to supply | Holds at |
+|---|---|---|---|
+| Sprint (1,400 m) | 2 Speed · Guts or Power · 2 Wit · Friend, nothing into stamina | the untrained floor | every tier |
+| Mile (1,800 m) | the same, stat nodes into Stamina | floor + stat pool | every tier |
+| Medium (2,200 m) | 2 Speed · Stamina · 2 Wit · Friend | floor + one stamina card | every tier |
+| Medium (2,400 m) | the same, stamina card leaned one node | floor + stamina card at cap | every tier |
+| Long (2,500–3,200 m) | stamina card at cap, stat nodes into Stamina, 1–2 gold heals | everything | every tier |
+
+The sim fails its run if any of these stops holding. Soft checks say each step is also *needed* for the next: a
+sprint set cannot run 1,800 m, stat nodes alone cannot run 2,400 m, one stamina card alone cannot run 3,000 m.
+Those hold except where late scenarios' stronger cards make a step easier — the power creep that the stamina
+contest ([Racing](racing.md#stamina-contest-engine-v4)) turns into speed.
 
 ## Skills
 

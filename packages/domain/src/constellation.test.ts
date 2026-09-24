@@ -1,33 +1,40 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildTemplate,
   CAP_PROFILES,
+  capBudget,
+  capProfile,
   CARD_SET_SIZE,
   CARD_TYPE_SHARES,
-  capBudget,
-  TREE_BOX,
-  buildTemplate,
-  capProfile,
-  constellationEdges,
-  cardShares,
+  cardFairShare,
+  cardNodeCap,
+  type CardNodeState,
   cardNodeValue,
+  cardShares,
   cardTilt,
-  eraPct,
-  MIN_ERA_PCT,
+  constellationEdges,
   constellationTemplate,
   deriveStats,
+  eraPct,
   isNodeUnlocked,
   lbNodePct,
-  nodeValue,
+  MIN_ERA_PCT,
+  type NodeAssignment,
   nodesUnlockedBetween,
+  nodeValue,
+  shapeDef,
   slotCount,
+  spNodeValue,
+  untrainedFloor,
+  STAT_NODE_POOL,
+  statNodeValue,
+  TREE_BOX,
   treeBudget,
   unlockedNodeCount,
   validateTemplate,
-  type CardNodeState,
-  type NodeAssignment,
 } from './constellation'
-import { MAX_SCENARIO_TIER } from './scenarios'
+import { MAX_SCENARIO_TIER, baselineSkillPoints, skillPointCap } from './scenarios'
 import { STATS, type StatKey, type Stats } from './types'
 
 const TIERS = Array.from({ length: MAX_SCENARIO_TIER }, (_, index) => index + 1)
@@ -91,20 +98,32 @@ describe('cap profiles', () => {
 })
 
 describe('budgets', () => {
-  it('pays 60% of the cap budget, so no build reaches every cap', () => {
+  it('pays about 60% of the cap budget, so no build reaches every cap', () => {
     for (const tier of TIERS) {
-      expect(treeBudget(tier)).toBe(Math.round(0.6 * capBudget(tier)))
+      // Rounding the card node value moves the total by at most half a point per card node.
+      expect(Math.abs(treeBudget(tier) - 0.6 * capBudget(tier))).toBeLessThanOrEqual(shapeDef(tier).cardNodes / 2)
+      expect(treeBudget(tier)).toBe(shapeDef(tier).cardNodes * nodeValue(tier) + STAT_NODE_POOL)
       expect(treeBudget(tier)).toBeLessThan(capBudget(tier))
     }
   })
 
-  it('divides into an integer node value at every tier', () => {
-    for (const tier of TIERS) expect(Number.isInteger(nodeValue(tier))).toBe(true)
-    expect(nodeValue(1)).toBe(200)
-    expect(nodeValue(2)).toBe(175)
-    expect(nodeValue(3)).toBe(210)
-    expect(nodeValue(4)).toBe(168)
-    for (let tier = 5; tier <= MAX_SCENARIO_TIER; tier += 1) expect(nodeValue(tier)).toBe(150)
+  it('pays card and stat nodes integer values, stat nodes sharing a fixed 240-point pool (D134)', () => {
+    for (const tier of TIERS) {
+      expect(Number.isInteger(nodeValue(tier))).toBe(true)
+      expect(Number.isInteger(statNodeValue(tier))).toBe(true)
+      expect(statNodeValue(tier) * shapeDef(tier).statNodes).toBe(240)
+    }
+    expect(TIERS.map(nodeValue)).toEqual([220, 198, 233, 189, 164, 164, 163, 169, 168, 168, 167, 172, 171, 171])
+    expect(TIERS.map(statNodeValue)).toEqual([80, 60, 80, 60, 60, 60, 60, 48, 48, 48, 48, 40, 40, 40])
+  })
+
+  it('caps every card at its fair share of the card nodes plus one (D134)', () => {
+    expect(TIERS.map(cardFairShare)).toEqual([3, 4, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6])
+    for (const tier of TIERS) {
+      expect(cardNodeCap(tier)).toBe(cardFairShare(tier) + 1)
+      // Six cards at their fair share can always fill the tree, so the cap never strands a node.
+      expect(cardFairShare(tier) * CARD_SET_SIZE).toBeGreaterThanOrEqual(shapeDef(tier).cardNodes)
+    }
   })
 
   it('gives every scenario a distinct slot count', () => {
@@ -306,9 +325,14 @@ describe('the invariance rule', () => {
           ]),
         )
         const assignments: Record<string, NodeAssignment> = {}
+        const held = new Map<string, number>()
         for (const node of template.nodes) {
           if (node.kind === 'card') {
-            assignments[node.id] = { kind: 'card', cardId: cardIds[Math.floor(random() * cardIds.length)]! }
+            // Any card that still has room under its cap (D134).
+            const open = cardIds.filter((id) => (held.get(id) ?? 0) < cardNodeCap(tier))
+            const cardId = open[Math.floor(random() * open.length)]!
+            held.set(cardId, (held.get(cardId) ?? 0) + 1)
+            assignments[node.id] = { kind: 'card', cardId }
           } else if (node.kind === 'stat') {
             assignments[node.id] = { kind: 'stat', stat: stats[Math.floor(random() * stats.length)]! }
           }
@@ -357,9 +381,12 @@ describe('the invariance rule', () => {
 
   it('underpays exactly by limit break', () => {
     const template = constellationTemplate(1)
+    const cardIds = Array.from({ length: CARD_SET_SIZE }, (_, i) => `c${i}`)
     const assignments: Record<string, NodeAssignment> = {}
+    let next = 0
     for (const node of template.nodes) {
-      if (node.kind === 'card') assignments[node.id] = { kind: 'card', cardId: 'c' }
+      // Round-robin keeps every card inside its cap (D134).
+      if (node.kind === 'card') assignments[node.id] = { kind: 'card', cardId: cardIds[next++ % cardIds.length]! }
       if (node.kind === 'stat') assignments[node.id] = { kind: 'stat', stat: 'speed' }
     }
     const cardNodes = template.nodes.filter((node) => node.kind === 'card').length
@@ -371,14 +398,26 @@ describe('the invariance rule', () => {
         trainingLevel: 10,
         template,
         assignments,
-        cardSetIds: ['c'],
+        cardSetIds: cardIds,
         umaTemplate: uma,
-        cards: new Map([['c', { ...card('c', 'speed'), limitBreak }]]),
+        cards: new Map(cardIds.map((id) => [id, { ...card(id, 'speed'), limitBreak }])),
       })
       const expected =
-        (nodeValue(1) * cardNodes * lbNodePct(limitBreak)) / 100 + nodeValue(1) * statNodes
+        (nodeValue(1) * cardNodes * lbNodePct(limitBreak)) / 100 + statNodeValue(1) * statNodes
       expect(derived.rawTotal).toBeCloseTo(expected, 6)
     }
+  })
+
+  it('stops paying a card past its cap, counting nodes in template order (D134)', () => {
+    const template = constellationTemplate(1)
+    const cardNodeIds = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id)
+    const assignments = Object.fromEntries(cardNodeIds.slice(0, 6).map((id) => [id, { kind: 'card', cardId: 'c' } as NodeAssignment]))
+    const derived = deriveStats({
+      tier: 1, trainingLevel: 10, template, assignments, cardSetIds: ['c'], umaTemplate: uma,
+      cards: new Map([['c', card('c', 'speed')]]),
+    })
+    expect(derived.assignedNodes).toBe(cardNodeCap(1))
+    expect(derived.rawTotal).toBe(nodeValue(1) * cardNodeCap(1))
   })
 
   it('pays Friend and Group cards in skill points, in any slot, and every stat card its stats', () => {
@@ -393,13 +432,16 @@ describe('the invariance rule', () => {
     const [first, second] = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id)
     const input = { tier: 1, trainingLevel: 10, template, cardSetIds: cardIds, umaTemplate: uma, cards }
 
+    // Training alone pays 40% of the SP cap at TL10 (D133), whatever the set holds.
+    const baseline = baselineSkillPoints(1, 10)
+    expect(baseline).toBe(800)
     const wit = deriveStats({ ...input, assignments: { [first!]: { kind: 'card', cardId: 'wit' } } })
-    expect(wit.skillPoints).toBe(0)
+    expect(wit.skillPoints).toBe(baseline)
     expect(wit.raw.wit).toBeGreaterThan(0)
     expect(wit.rawTotal).toBe(nodeValue(1))
 
     const friend = deriveStats({ ...input, assignments: { [first!]: { kind: 'card', cardId: 'friend' } } })
-    expect(friend.skillPoints).toBe(nodeValue(1) * 0.25)
+    expect(friend.skillPoints).toBe(baseline + spNodeValue(1))
     expect(friend.rawTotal).toBe(0)
 
     const both = deriveStats({
@@ -407,7 +449,7 @@ describe('the invariance rule', () => {
       cardSetIds: ['friend', 'group', 'c', 'd', 'e', 'wit'],
       assignments: { [first!]: { kind: 'card', cardId: 'friend' }, [second!]: { kind: 'card', cardId: 'group' } },
     })
-    expect(both.skillPoints).toBe(nodeValue(1) * 0.5)
+    expect(both.skillPoints).toBe(baseline + 2 * spNodeValue(1))
   })
 
   it('clamps skill points to the scenario cap', () => {
@@ -425,7 +467,7 @@ describe('the invariance rule', () => {
       umaTemplate: uma,
       cards: new Map([['scenario', card('scenario', 'friend')]]),
     })
-    expect(derived.skillPoints).toBe(300)
+    expect(derived.skillPoints).toBe(skillPointCap(1))
   })
 })
 
@@ -446,10 +488,23 @@ describe('derivation', () => {
       },
       cards: new Map([['c', card('c', 'speed')]]),
     })
-    // 200 × 0.70 = 140 raw speed, ×1.2 growth = 168, + 100 base.
-    expect(derived.raw.speed).toBe(140)
-    expect(derived.stats.speed).toBe(268)
-    expect(derived.stats.power).toBe(160)
+    // 220 × 0.70 = 154 raw speed ×1.2 growth = 184.8, on top of the TL10 untrained floor of 500 (D134).
+    expect(derived.raw.speed).toBe(154)
+    expect(derived.stats.speed).toBe(685)
+    // 220 × 0.30 = 66 raw power, no growth, on the same floor.
+    expect(derived.stats.power).toBe(566)
+    // An untouched stat sits exactly on the floor.
+    expect(derived.stats.guts).toBe(untrainedFloor(10))
+  })
+
+  it('lifts only the starting point to the untrained floor, never above a higher base (D134)', () => {
+    expect(untrainedFloor(1)).toBe(50)
+    expect(untrainedFloor(10)).toBe(500)
+    const early = deriveStats({
+      tier: 1, trainingLevel: 1, template, assignments: {}, cardSetIds: [], umaTemplate: uma, cards: new Map(),
+    })
+    // At TL1 the floor (50) is under the base (100), so the base stands.
+    expect(early.stats.stamina).toBe(uma.baseStats.stamina)
   })
 
   it('never lets a stat exceed its cap', () => {

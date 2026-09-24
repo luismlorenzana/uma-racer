@@ -131,7 +131,7 @@ describe('card album · scenario lens', () => {
 
   it('pays per node at the scenario, by bond', () => {
     const built = album(1, ['c1'], { breaks: { c1: { '1': 1 } } })
-    expect(built.entries.get('c1')?.perNode).toBe(140)
+    expect(built.entries.get('c1')?.perNode).toBe(154)
     expect(built.entries.get('c1')?.unlockCost).toBe(30)
   })
 

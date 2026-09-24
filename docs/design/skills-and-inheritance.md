@@ -35,12 +35,16 @@ paying for, in the same way it removes the stats.
 
 SP is not spent and not earned per turn. It is a **capacity**:
 
-```
-spCap(T) = 300 + 200 × (T − 1)        tier 1: 300 · tier 5: 1,100 · tier 14: 2,900
-```
+| Tier | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `spCap` | 2,000 | 2,400 | 2,800 | 3,000 | 3,200 | 3,400 | 3,600 | 3,800 | 4,000 | 4,200 | 4,400 | 4,600 | 4,800 | 5,000 |
 
-SP itself is paid by **Friend and Group cards**
-([Constellations](constellations.md#skill-point-cards)) and is clamped to `spCap`. The equipped **loadout**
+Grounded where the original game is measured — Unity Cup careers finish around 2,000–2,500 SP and Trackblazer
+around 2,800 (Game8) — and a draft elsewhere (D133). A typical gold with its white prerequisite costs about 340 SP
+in our content, so tier 1 buys five or six.
+
+**Training alone earns 40% of the cap by TL10**, a tenth of that per Training Level; **Friend and Group cards pay
+the rest** ([Constellations](constellations.md#skill-point-cards)), and the total is clamped to `spCap`. The equipped **loadout**
 must cost ≤ current SP. Swapping is free and instant outside races. If a reconfiguration takes SP away after skills
 were equipped, racing does not stop: the equipped skills race in equip order while they fit, and the rest sit out
 until the SP is back or they are unequipped (D132).

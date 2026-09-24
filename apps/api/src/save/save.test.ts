@@ -314,6 +314,11 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: v3, createdAt: 1 }] })).toMatchObject({
       appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { engineVersion: 3 } }],
     })
+    // Engine v4 (the stamina contest, D135) records the same course shape as v3 and must sync.
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...v3, engineVersion: 4 }, createdAt: 1 }] })).toMatchObject({
+      appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { engineVersion: 4 } }],
+    })
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...v3, engineVersion: 5 }, createdAt: 1 }] })).toMatch(/invalid raceResults data/)
     const withGoals = { ...v3, completedGoalIds: ['goal:1:aptitude', 'goal:1:challenge'] }
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: withGoals, createdAt: 1 }] })).toMatchObject({
       appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { completedGoalIds: withGoals.completedGoalIds } }],

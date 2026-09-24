@@ -1,6 +1,7 @@
 // Local-first save bootstrap and background sync (docs/technical/architecture.md).
 
 import {
+  cardNodeCapIssue,
   MAX_SYNC_OPERATIONS,
   assertProgressionRaceContent,
   assertScenarioGoalContent,
@@ -406,6 +407,8 @@ export class GameRuntime {
     if (!isNodeUnlocked(constellationTemplate(run.tier), node, run.trainingLevel)) {
       throw new Error('That node is still locked')
     }
+    const capIssue = cardNodeCapIssue(run, nodeId, assignment)
+    if (capIssue) throw new Error(capIssue)
 
     const assignments = { ...run.assignments }
     if (assignment) assignments[nodeId] = assignment

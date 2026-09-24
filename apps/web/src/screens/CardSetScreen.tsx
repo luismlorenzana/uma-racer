@@ -4,6 +4,7 @@ import {
   MAX_LIMIT_BREAK,
   autoCardSet,
   cardLimitBreak,
+  cardNodeCap,
   cardNodeCount,
   cardNodeValue,
   cardSpPerNode,
@@ -46,6 +47,7 @@ export function CardSetScreen() {
   const canBond = tickets >= BOND_RECALL_TICKET_COST
   const cardNodes = ids.reduce((total, id) => total + cardNodeCount(run, id), 0)
   const full = ids.length >= CARD_SET_SIZE
+  const nodeCap = cardNodeCap(tier)
 
   const commit = async (next: string[], success: string | null) => {
     if (busy) return
@@ -183,7 +185,7 @@ export function CardSetScreen() {
                     <BondPips value={bond} />
                   </span>
                   <span className={`block text-[11px] ${nodes === 0 ? 'text-warning' : 'text-ink-soft'}`}>
-                    {pays} · {nodes === 0 ? 'on no nodes yet' : `on ${nodes} node${nodes === 1 ? '' : 's'}`}
+                    {pays} · {nodes === 0 ? `on no nodes yet · up to ${nodeCap}` : `on ${nodes} of ${nodeCap} nodes`}
                   </span>
                 </span>
               </button>
@@ -218,7 +220,7 @@ export function CardSetScreen() {
         </Button>
       )}
       <p className="mt-2 mb-4 px-1 text-[11px] text-ink-faint">
-        Friend and Group cards pay skill points instead of stats, in any slot. A set without one earns no skill points.
+        Friend and Group cards pay skill points instead of stats, in any slot. Training alone earns 40% of the cap by TL10; they pay the rest. No card can fill more than {nodeCap} nodes.
       </p>
 
       <BottomSheet open={acting !== null} onClose={() => setActionsFor(null)}>

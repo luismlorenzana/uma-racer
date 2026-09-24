@@ -7,7 +7,10 @@ import {
   simulateRace,
   simulateRaceV1,
   simulateRaceV2,
+  simulateRaceV3,
   skillActivationChance,
+  staminaContestBonus,
+  createRng,
   type RaceInput,
   type RaceRunnerInput,
 } from './index'
@@ -357,5 +360,38 @@ describe('helpers', () => {
     expect(formatMargin(1)).toBe('1 length')
     expect(formatMargin(2.75)).toBe('2 ¾ lengths')
     expect(formatMargin(12)).toBe('Big margin')
+  })
+})
+
+describe('stamina contest (engine v4, D135)', () => {
+  it('pays nothing at 1,200 stamina or under, or at 2,100 m or shorter', () => {
+    expect(staminaContestBonus(1200, 3000, createRng(1))).toBe(0)
+    expect(staminaContestBonus(1800, 2100, createRng(1))).toBe(0)
+  })
+
+  it('scales with √(stamina − 1200) and the distance factor, within the 0.98–1.02 random band', () => {
+    // √(1600 − 1200) × 0.0085 = 0.17 m/s before the distance factor.
+    for (const [distance, factor] of [[2200, 0.5], [2400, 1.0], [2500, 1.5], [3200, 1.8]] as const) {
+      const bonus = staminaContestBonus(1600, distance, createRng(7))
+      expect(bonus).toBeGreaterThanOrEqual(0.17 * factor * 0.98 - 1e-9)
+      expect(bonus).toBeLessThanOrEqual(0.17 * factor * 1.02 + 1e-9)
+    }
+  })
+
+  it('raises the max spurt of a high-stamina runner on a long course, and leaves v3 replays untouched', () => {
+    const input: RaceInput = {
+      course: { distance: 3000, surface: 'turf' },
+      seed: 11,
+      runners: [runner(0, stats(1000, { stamina: 1800, speed: 1300 }))],
+    }
+    const v4 = simulateRace(input).results[0]!
+    const v3 = simulateRaceV3(input).results[0]!
+    expect(v4.spurtMaxed).toBe(true)
+    expect(v3.spurtMaxed).toBe(true)
+    expect(v4.spurtSpeed).toBeGreaterThan(v3.spurtSpeed)
+    expect(v4.finishTime).toBeLessThan(v3.finishTime)
+    // Under the threshold the rules agree exactly.
+    const plain = { ...input, runners: [runner(0, stats(1000, { stamina: 1150, speed: 1300 }))] }
+    expect(simulateRace(plain).results[0]!.finishTime).toBe(simulateRaceV3(plain).results[0]!.finishTime)
   })
 })

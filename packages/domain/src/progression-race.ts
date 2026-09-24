@@ -88,7 +88,7 @@ export interface RaceAccomplishmentFactsV1 {
 
 export interface RaceResultRecord {
   /** Absent means legacy skillless engine v1. */
-  engineVersion?: 2 | 3
+  engineVersion?: 2 | 3 | 4
   /** Present on engine-v2/v3 records so replay does not depend on mutable content metadata. */
   course?: RaceResultCourse
   contentVersion: string
@@ -412,9 +412,11 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const fieldSize = value.field.length
   const startStats = parseStats(value.startStats)
   const runners = value.field.map((runner) => parseRunner(runner, fieldSize))
-  const version = hasEngineVersion && (value.engineVersion === 2 || value.engineVersion === 3) ? value.engineVersion : null
-  const courseKeys = version === 3 ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
-  const courseLayout = version === 3 && isRecord(value.course) && isPositiveInt(value.course.distance)
+  const version = hasEngineVersion && (value.engineVersion === 2 || value.engineVersion === 3 || value.engineVersion === 4) ? value.engineVersion : null
+  // Engine v4 (the stamina contest, D135) records the same course shape as v3.
+  const hasLayout = version === 3 || version === 4
+  const courseKeys = hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
+  const courseLayout = hasLayout && isRecord(value.course) && isPositiveInt(value.course.distance)
     ? parseCourseLayout(value.course.layout, value.course.distance)
     : null
   const course = hasEngineVersion && isRecord(value.course) && hasExactKeys(value.course, courseKeys) &&
@@ -424,7 +426,7 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
       distance: value.course.distance,
       surface: value.course.surface as Surface,
       season: value.course.season,
-      ...(version === 3 ? { layout: courseLayout! } : {}),
+      ...(hasLayout ? { layout: courseLayout! } : {}),
     }
     : null
   if (

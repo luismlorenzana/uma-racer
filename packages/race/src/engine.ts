@@ -3,6 +3,10 @@
 // modifier, minimum speed, Wit section randomness, the final-leg spurt decision, R2.5 skills, and the R3 pack.
 // Not yet modelled: dueling/slopes/rushed (R4) and advanced skills (R5).
 import {
+  STAMINA_CONTEST_COEF,
+  STAMINA_CONTEST_DISTANCE_FACTOR,
+  STAMINA_CONTEST_RANDOM,
+  STAMINA_CONTEST_THRESHOLD,
   ACCEL_COEF,
   BASE_ACCEL,
   DECEL,
@@ -119,7 +123,7 @@ interface ActiveEffect {
   untilTick: number
 }
 
-type RulesVersion = 1 | 2 | 3
+type RulesVersion = 1 | 2 | 3 | 4
 
 const hpPerSecond = (v: number, baseSpeed: number, lateRace: boolean, gutsMod: number): number =>
   ((20 * (v - baseSpeed + 12) ** 2) / 144) * (lateRace ? gutsMod : 1)
@@ -192,8 +196,16 @@ function initRunner(input: RaceRunnerInput, distance: number, rng: Rng, raceSeed
   }
 }
 
+/** Target speed the stamina contest adds on reaching max spurt; 0 below the threshold or at 2,100 m and under. */
+export function staminaContestBonus(stamina: number, distance: number, rng: Rng): number {
+  const factor = STAMINA_CONTEST_DISTANCE_FACTOR.find(([upTo]) => distance <= upTo)![1]
+  if (factor === 0 || stamina <= STAMINA_CONTEST_THRESHOLD) return 0
+  const [low, high] = STAMINA_CONTEST_RANDOM
+  return Math.sqrt(stamina - STAMINA_CONTEST_THRESHOLD) * STAMINA_CONTEST_COEF * factor * rng.range(low, high)
+}
+
 /** Picks the final-leg target speed: max spurt if HP allows, otherwise Wit-gated slower candidates. */
-function decideSpurt(r: RunnerState, distance: number, rng: Rng): void {
+function decideSpurt(r: RunnerState, distance: number, rng: Rng, rulesVersion: RulesVersion): void {
   const baseSpeed = baseSpeedFor(distance)
   const aptSpeed = DISTANCE_APT_SPEED[r.input.aptitude.distance]
   const speedTerm = Math.sqrt(500 * r.speedStat) * aptSpeed * 0.002
@@ -203,7 +215,8 @@ function decideSpurt(r: RunnerState, distance: number, rng: Rng): void {
   const hpNeeded = (v: number) => (hpPerSecond(v, baseSpeed, true, r.gutsMod) * remaining) / v
 
   if (r.hp >= hpNeeded(max)) {
-    r.spurt = max
+    // Engine v4: surplus stamina turns into last-spurt speed, from the raw race-start stat (D135).
+    r.spurt = max + (rulesVersion >= 4 ? staminaContestBonus(r.input.stats.stamina, distance, rng) : 0)
     r.spurtMaxed = true
     return
   }
@@ -477,7 +490,7 @@ function simulateRaceRules(input: RaceInput, rulesVersion: RulesVersion): RaceTi
         r.lastSection = section
       }
       if (phase >= 2 && r.spurt === null) {
-        decideSpurt(r, distance, rng)
+        decideSpurt(r, distance, rng, rulesVersion)
         events.push({ tick, runner: i, type: 'spurt', value: r.spurt ?? 0 })
       }
 
@@ -562,8 +575,11 @@ function simulateRaceRules(input: RaceInput, rulesVersion: RulesVersion): RaceTi
   }
 }
 
-/** Current engine-v3 race rules. */
-export const simulateRace = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 3)
+/** Current engine-v4 race rules: v3 plus the stamina contest (D135). */
+export const simulateRace = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 4)
+
+/** Engine v3, before the stamina contest: replays recorded under it must keep their exact outcome. */
+export const simulateRaceV3 = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 3)
 
 /** Frozen T006 skill rules for append-only engine-v2 result replay. */
 export const simulateRaceV2 = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 2)

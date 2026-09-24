@@ -42,8 +42,23 @@ export function scenarioForTier(tier: number): ScenarioDef | undefined {
 /** Above this, stats count about half in races and training gains are halved — as in the original game. */
 export const STAT_SOFT_CAP = 1200
 
-/** Baseline SP cap (loadout capacity at Training Level 10). */
-export const baselineSpCap = (tier: number): number => 300 + 200 * (tier - 1)
+/**
+ * Skill points a fully trained career can hold, per scenario (D133). Grounded where the original game is measured —
+ * Unity Cup careers finish around 2,000–2,500 SP and Trackblazer around 2,800 (Game8) — and a draft elsewhere: URA
+ * Finale is set just below Unity Cup, and tiers 4–14 climb 200 a scenario. A typical gold skill with its white
+ * prerequisite costs about 340 SP in our content, so tier 1 buys five or six.
+ */
+export const SKILL_POINT_CAPS = [2000, 2400, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000] as const
+
+export const skillPointCap = (tier: number): number =>
+  SKILL_POINT_CAPS[Math.min(SKILL_POINT_CAPS.length, Math.max(1, Math.trunc(tier))) - 1]!
+
+/** Share of the cap every career earns on its own, whatever the card set (D133). */
+export const BASELINE_SP_SHARE = 0.4
+
+/** Skill points earned by training alone: 40% of the cap at Training Level 10, a tenth of that per level. */
+export const baselineSkillPoints = (tier: number, trainingLevel: number): number =>
+  Math.round((skillPointCap(tier) * BASELINE_SP_SHARE * Math.min(10, Math.max(0, Math.trunc(trainingLevel)))) / 10)
 
 export const tierOfLevel = (umaLevel: number): number => Math.ceil(umaLevel / LEVELS_PER_SCENARIO)
 

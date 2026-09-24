@@ -10,6 +10,9 @@ import {
   lineageEligibility,
   lineageUnlockLevel,
   nodeValue,
+  statNodeValue,
+  cardNodeCap,
+  cardNodeCount,
   cardSpPerNode,
   paysSkillPoints,
   unlockedNodeCount,
@@ -43,6 +46,7 @@ export function ConstellationScreen() {
   const { derived, run } = uma
   const template = constellationTemplate(run.tier)
   const here = `/constellation/${encodeURIComponent(save.templateId)}`
+  const nodeCap = cardNodeCap(run.tier)
 
   const cardTypes = Object.fromEntries(
     run.cardSetIds.flatMap((id) => {
@@ -122,7 +126,9 @@ export function ConstellationScreen() {
           <div className="grid gap-1.5 px-4 pb-6">
             <div className="flex items-baseline justify-between">
               <h3 className="text-sm font-semibold">{titleCase(openNode.kind)} node</h3>
-              <span className="text-micro">{nodeValue(run.tier)} raw points</span>
+              <span className="text-micro">
+                {openNode.kind === 'stat' ? `${statNodeValue(run.tier)} raw points` : openNode.kind === 'card' ? `up to ${nodeValue(run.tier)} raw points` : 'baseline skills'}
+              </span>
             </div>
 
             <button
@@ -143,11 +149,14 @@ export function ConstellationScreen() {
                 const skillPoints = paysSkillPoints(card)
                 const bond = cardLimitBreak(owned, run.tier)
                 const perNode = cardNodeValue(run.tier, { template: card, limitBreak: bond })
+                const held = cardNodeCount(run, cardId)
+                const onThisNode = run.assignments[openNode.id]?.kind === 'card' && (run.assignments[openNode.id] as { cardId: string }).cardId === cardId
+                const full = !onThisNode && held >= nodeCap
                 return (
                   <div key={cardId} className="flex items-stretch gap-1.5">
                     <button
                       type="button"
-                      disabled={busy}
+                      disabled={busy || full}
                       className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left"
                       onClick={() => void assign(openNode.id, { kind: 'card', cardId })}
                     >
@@ -161,6 +170,7 @@ export function ConstellationScreen() {
                           {skillPoints
                             ? `${titleCase(card.type)} · ${Math.round(cardSpPerNode(run.tier, { template: card, limitBreak: bond }))} SP per node`
                             : `${titleCase(card.type)} · ${Math.round(perNode)} per node`}
+                          {` · ${held}/${nodeCap} nodes${full ? ' — full' : ''}`}
                         </span>
                       </span>
                     </button>
@@ -184,7 +194,7 @@ export function ConstellationScreen() {
                 className="min-h-[44px] rounded-xl bg-panel px-3 text-left text-sm font-semibold"
                 onClick={() => void assign(openNode.id, { kind: 'stat', stat })}
               >
-                {titleCase(stat)} <span className="text-ink-soft">+{nodeValue(run.tier)}</span>
+                {titleCase(stat)} <span className="text-ink-soft">+{statNodeValue(run.tier)}</span>
               </button>
             ))}
 

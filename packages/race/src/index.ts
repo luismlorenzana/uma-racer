@@ -2,7 +2,7 @@ export * from './types'
 export * from './constants'
 export { assertRaceInput } from './validation'
 export { createRng, type Rng } from './rng'
-export { simulateRace, simulateRaceV1, simulateRaceV2, formatMargin, phaseAt, sectionAt, baseSpeedFor, effectiveStat, skillActivationChance } from './engine'
+export { simulateRace, simulateRaceV1, simulateRaceV2, simulateRaceV3, staminaContestBonus, formatMargin, phaseAt, sectionAt, baseSpeedFor, effectiveStat, skillActivationChance } from './engine'
 export { extractTimelineAccomplishmentFacts, type TimelineAccomplishmentFacts } from './accomplishments'
 export {
   createPackState,
