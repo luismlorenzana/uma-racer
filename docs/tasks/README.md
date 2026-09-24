@@ -23,6 +23,7 @@ multipliers on a training turn that no longer exists.
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Outlined |
+| [T060 — The early stamina wall](T060-early-stamina-wall.md) | T060 | Specified · next balance change |
 | [T059 — Chibi and dress art](T059-chibi-and-dress-art.md) | T059 | Specified · waiting on source permission |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
@@ -36,6 +37,9 @@ T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 M016 (cards by scenario: the Training scene's Card set tab, card pages, ticket unlocks and the Cards tab lenses)
 landed on 2026-09-22 and was removed under D104; D129–D131 and the design docs carry it.
+
+M017 (career goals: stage-gated careers per scenario, goal plan v3, the Race tab's tracker and Next up) landed on
+2026-09-24 and was removed under D104; D137–D138 and [Scenario Careers](../design/scenario-goals.md) carry it.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

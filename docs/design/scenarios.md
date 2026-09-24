@@ -9,7 +9,7 @@ A scenario sets:
 - A **cap profile**: five per-stat caps, shaped to that scenario's character.
 - A **constellation template**: a shape, a slot count, and the node value that follows from it.
 - A **scenario buff**: the one declared way this scenario bends the rules.
-- **Scenario goals** for each Uma (see [Scenario Goals](scenario-goals.md)).
+- A **career** for each Uma: a G3, two G2s and a G1 set that gate her levels (see [Scenario Careers](scenario-goals.md)).
 - A **card era**, deciding which support cards are eligible for its card set.
 
 ## Timeline and tiers

@@ -1,12 +1,12 @@
 # Racing
 
-Racing is the **first system to be built** and the heart of the game. Races grant Uma EXP, complete
-scenario goals, feed badges, and are where stats, skills, and cards finally pay off. **Races can be lost.**
+Racing is the **first system to be built** and the heart of the game. Races grant Uma EXP, win
+[career goals](scenario-goals.md), feed badges, and are where stats, skills, and cards finally pay off. **Races can be lost.**
 
 ## Race loop (player's view)
 
 0. **Opening training first:** a scenario's races unlock after 1 training turn in that scenario (see [Training](training.md#opening-training)). Races cost no tickets.
-1. **Pick a race** from the calendar or catalog. It shows grade, venue, surface, distance, rewards, and any scenario goals it counts toward.
+1. **Pick a race** from the calendar or catalog. It shows grade, venue, surface, distance, rewards, and any career goal it counts toward.
 2. **Pick the Uma, strategy, and skill loadout.** Aptitudes are shown for the race's surface, distance, and each strategy,
    along with the **Race Form** matchup (see below).
 3. **Watch the race** in real time on a straight-line track. Speed controls are 1×, 2×, and skip.
@@ -87,9 +87,10 @@ Races get a clear NPC feel, and **every Uma in the game** can show up as an enem
 ```
 npcStat[s]    = averageCap(T) × fieldStrength × gradeFactor[grade] × profile[distance][s] × fieldForm
 fieldStrength = 0.72
-gradeFactor   = Debut/Maiden 0.80 · Pre-OP/OP 0.88 · G3 0.94 · G2 0.97 · G1 1.00
+gradeFactor   = Debut/Maiden 0.70 · Pre-OP/OP 0.78 · G3 0.85 · G2 0.92 · G1 1.00
 ```
 
+`gradeFactor` makes the grades a ladder for [careers](scenario-goals.md) (D138): a G3 field is 15% below a G1 field.
 `fieldStrength` is calibrated (D136): the field used to be built on the whole average cap, which assumed a fully
 trained Uma at every cap, and after the constellation that made a trained Uma lose a G1 over 90% of the time. At
 0.72 it wins roughly half or more, below.

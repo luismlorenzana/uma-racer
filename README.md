@@ -77,7 +77,7 @@ docs/           design, technical, research
 | [Overview](docs/design/00-overview.md) | Vision, pillars, core loops, glossary, differences from the original game |
 | [Uma Progression](docs/design/uma-progression.md) | Permanent Uma Level, per-scenario training state, derived stats, unlocking the next scenario |
 | [Scenarios](docs/design/scenarios.md) | Scenarios as career runs: cap profiles, constellation shapes, buffs, eras |
-| [Scenario Goals](docs/design/scenario-goals.md) | Per-Uma targets based on aptitude and real-horse identity |
+| [Scenario Careers](docs/design/scenario-goals.md) | Each scenario's career per Uma: a G3, two G2s, then a G1 set, gating her levels |
 | [Training](docs/design/training.md) | Uma Level vs. Training Level, derived stats, tickets. The entry point to the two below |
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
 | [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; Bond Recall limit breaks cards |

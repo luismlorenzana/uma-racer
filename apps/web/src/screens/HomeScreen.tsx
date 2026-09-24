@@ -1,4 +1,4 @@
-import { TICKET_STORAGE_CAP, badgeStateId, isGateLevel } from '@racer/domain'
+import { TICKET_STORAGE_CAP, badgeStateId, awaitingAdvance } from '@racer/domain'
 import { m } from 'motion/react'
 import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
@@ -66,7 +66,7 @@ export function HomeScreen() {
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
 
   const setupPending = !featured.run.started
-  const atGate = isGateLevel(featured.save.level)
+  const atGate = awaitingAdvance(featured.save)
   const raceUnlocked = featured.run.started && !atGate
   const goals = buildHomeGoalState(featured.save, contentState.content)
   const umaHref = `/stable/${encodeURIComponent(featured.save.templateId)}`
@@ -76,6 +76,7 @@ export function HomeScreen() {
     ? 'Start this scenario before racing.'
     : featured.readyToAdvance ? 'Ready to unlock the next scenario.'
     : atGate ? 'Latest scenario complete.'
+    : goals.kind === 'active' && goals.next ? `Next goal: ${goals.next.race?.name ?? goals.next.raceName}`
     : 'Progression races are open.'
 
   return (
@@ -124,14 +125,14 @@ export function HomeScreen() {
             variant="secondary"
             size="lg"
             disabled={!setupPending && atGate && !featured.readyToAdvance}
-            onClick={() => navigate(setupPending || featured.readyToAdvance ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/constellation/${encodeURIComponent(featured.save.templateId)}`)}
+            onClick={() => navigate(setupPending || featured.readyToAdvance ? `/stable/${encodeURIComponent(featured.save.templateId)}` : `/constellation/${encodeURIComponent(featured.save.templateId)}`)}
           >
             {trainLabel}
           </Button>
           <Button
             size="lg"
             disabled={!setupPending && !raceUnlocked && !featured.readyToAdvance}
-            onClick={() => navigate(setupPending || featured.readyToAdvance ? `/scenario/${encodeURIComponent(featured.save.templateId)}/start` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}
+            onClick={() => navigate(setupPending || featured.readyToAdvance ? `/stable/${encodeURIComponent(featured.save.templateId)}` : `/race?uma=${encodeURIComponent(featured.save.templateId)}`)}
           >
             {raceLabel}
           </Button>
@@ -139,13 +140,15 @@ export function HomeScreen() {
         </div>
       </section>
 
-      <Panel label="Scenario goals">
+      <Panel label={goals.kind === 'active' && goals.career ? 'Career' : 'Scenario goals'}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-[13px] text-ink-soft">
-            {goals.kind === 'active' ? `${goals.completed} of 3 complete · Tier ${goals.tier}` : goals.detail}
+            {goals.kind === 'active'
+              ? `${goals.stage ? `${goals.stage} · ` : ''}${goals.completed} of ${goals.goals.length} won · Tier ${goals.tier}`
+              : goals.detail}
           </p>
           {goals.kind === 'active' && (
-            <div className="flex gap-1" aria-label={`${goals.completed} of 3 goals complete`}>
+            <div className="flex gap-1" aria-label={`${goals.completed} of ${goals.goals.length} goals complete`}>
               {goals.goals.flatMap((goal) => goal.pips.length > 0
                 ? goal.pips.map((pip) => ({ key: `${goal.id}:${pip.key}`, status: pip.status }))
                 : [{ key: goal.id, status: goal.status }]).map((pip) => (

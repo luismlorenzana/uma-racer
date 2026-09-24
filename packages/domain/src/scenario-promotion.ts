@@ -3,7 +3,7 @@
 import { umaPromotionCost } from './economy'
 import type { RaceTemplate, UmaTemplate } from './content'
 import { createScenarioTraining, type LedgerEntry, type PlayerProfile, type ScenarioTraining, type UmaSave } from './save'
-import { closeScenarioJourney, generateScenarioJourney } from './scenario-goals'
+import { CAREER_STAGE_LABELS, careerStage, closeScenarioJourney, generateScenarioJourney } from './scenario-goals'
 import { MAX_SCENARIO_TIER, isGateLevel, tierOfLevel } from './scenarios'
 import type { Aptitudes } from './types'
 
@@ -64,6 +64,18 @@ export function scenarioAdvanceReadiness(profile: PlayerProfile, uma: UmaSave): 
       toTier: fromTier + 1,
       cost,
       reason: `Reach level ${fromTier * 10} to unlock the next scenario`,
+    }
+  }
+  // A career gates the advance on its goals (D137). Legacy v1–v2 journeys stay optional.
+  const stage = careerStage(uma.scenarios.find((entry) => entry.tier === fromTier)?.journey)
+  if (stage) {
+    return {
+      ready: false,
+      final: false,
+      fromTier,
+      toTier: fromTier + 1,
+      cost,
+      reason: stage === 'main' ? 'Win her main goals to unlock the next scenario' : `Win her ${CAREER_STAGE_LABELS[stage]} goal to unlock the next scenario`,
     }
   }
   if (profile.tickets < cost) {

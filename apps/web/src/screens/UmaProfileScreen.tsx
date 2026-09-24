@@ -8,14 +8,15 @@ import {
   badgeStateId,
   cardLimitBreak,
   compileRaceSkill,
-  isGateLevel,
+  awaitingAdvance,
+  isCareerStage,
   raceSkillSupported,
   summarizeSkillLoadout,
   type Grade,
   type RaceResultRecord,
   type StatKey,
 } from '@racer/domain'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { advanceUma, listRaceHistory, setFeaturedUma, setUmaLoadout, startScenario } from '../game/actions'
@@ -33,6 +34,7 @@ import { Meter } from '../ui/Meter'
 import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
+import { Collapsible, SectionHeading } from '../ui/Section'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 const statLabel = (stat: StatKey) => (stat === 'wit' ? 'Wit' : titleCase(stat))
@@ -51,29 +53,6 @@ const gradeTone = (grade: Grade): string =>
     : grade === 'B' || grade === 'C'
       ? 'bg-accent-wash text-ink'
       : 'bg-sunken text-ink-faint'
-
-/** A zone divider. The page has three, and they are the whole organising idea. */
-function SectionHeading({ label, hint }: { label: string; hint?: string }) {
-  return (
-    <div className="flex items-baseline justify-between px-1 pt-2">
-      <h2 className="font-display text-[13px] font-semibold tracking-tight text-ink">{label}</h2>
-      {hint !== undefined && <span className="text-micro">{hint}</span>}
-    </div>
-  )
-}
-
-/** Archive rows stay closed: they exist to be found, not to be scrolled past. */
-function Collapsible({ label, count, children }: { label: string; count?: number; children: ReactNode }) {
-  return (
-    <details className="group rounded-lg border border-hairline bg-panel">
-      <summary className="flex min-h-11 cursor-pointer items-center justify-between px-3 text-[13px] font-semibold [&::-webkit-details-marker]:hidden [&::marker]:content-['']">
-        <span>{label}{count !== undefined && <span className="text-ink-faint"> · {count}</span>}</span>
-        <span aria-hidden className="text-ink-faint transition-transform group-open:rotate-90">›</span>
-      </summary>
-      <div className="border-t border-hairline p-3">{children}</div>
-    </details>
-  )
-}
 
 export function UmaProfileScreen() {
   const navigate = useNavigate()
@@ -137,7 +116,7 @@ export function UmaProfileScreen() {
   const uma = joined.value
   const featured = profile.featuredUmaId === save.templateId
   const setupPending = !uma.run.started
-  const atGate = isGateLevel(save.level)
+  const atGate = awaitingAdvance(save)
   const sparkAvailable = uma.run.started && uma.derived.trainingLevel < MAX_TRAINING_LEVEL
   const sparkAffordable = profile.tickets >= SPARK_MATCH_TICKET_COST
   const raceUnlocked = uma.run.started && !atGate
@@ -372,7 +351,7 @@ export function UmaProfileScreen() {
       {currentJourney && currentJourney.goals.length > 0 && (
         <Panel className="p-3">
           <div className="flex items-baseline justify-between">
-            <h3 className="text-[13px] font-semibold">Goals</h3>
+            <h3 className="text-[13px] font-semibold">{currentJourney.goals.every((goal) => isCareerStage(goal.slot)) ? 'Career' : 'Goals'}</h3>
             <span className="text-micro">{currentJourney.completed} of {currentJourney.goals.length} done</span>
           </div>
           <div className="mt-2 grid gap-1.5">
@@ -386,7 +365,7 @@ export function UmaProfileScreen() {
               return (
                 <Link key={goal.id} to={destination} className="flex min-h-11 items-center gap-2 rounded-md bg-sunken px-2 py-1">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12px] font-semibold">{goal.raceName}</span>
+                    <span className="block truncate text-[12px] font-semibold">{goal.label} · {goal.raceName}</span>
                     <span className="text-micro block truncate">
                       {goal.rule}
                       {result ? ' · view result' : goal.race ? '' : ' · target missing'}

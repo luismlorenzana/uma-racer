@@ -566,10 +566,18 @@ function parseGoalLeg(value: unknown): boolean {
     hasGoalEvidence(value)
 }
 
+const LEGACY_GOAL_SLOTS = ['aptitude', 'identity', 'challenge'] as const
+/** Goal plan v3 career stages, in order, with each stage's goal count (mirrors @racer/domain save.ts, D137). */
+const CAREER_STAGE_COUNTS = [['maiden', 1, 1], ['trials', 2, 2], ['main', 1, 4]] as const
+const isCareerSlot = (slot: unknown): boolean => CAREER_STAGE_COUNTS.some(([stage]) => stage === slot)
+
 function parseGoal(value: unknown, tier: number, legacy: boolean): boolean {
   const fields = legacy ? LEGACY_GOAL_FIELDS : GOAL_FIELDS
-  if (!isRecord(value) || !exactKeys(value, fields) || !['aptitude', 'identity', 'challenge'].includes(String(value.slot)) ||
-    value.id !== `goal:${tier}:${String(value.slot)}` || !['win', 'win-by-margin', ...(legacy ? [] : ['win-series'])].includes(String(value.kind)) ||
+  const career = !legacy && isRecord(value) && isCareerSlot(value.slot)
+  if (!isRecord(value) || !exactKeys(value, fields) || (!LEGACY_GOAL_SLOTS.includes(value.slot as (typeof LEGACY_GOAL_SLOTS)[number]) && !career) ||
+    // A career goal's id carries its place in the stage, so the journey checks it.
+    (career ? typeof value.id !== 'string' || !value.id.startsWith(`goal:${tier}:`) : value.id !== `goal:${tier}:${String(value.slot)}`) ||
+    !['win', 'win-by-margin', ...(legacy ? [] : ['win-series'])].includes(String(value.kind)) ||
     typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0 ||
     (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.minimumMarginLengths !== 0) ||
     !['active', 'completed', 'missed'].includes(String(value.status)) || !hasGoalEvidence(value)) return false
@@ -577,7 +585,7 @@ function parseGoal(value: unknown, tier: number, legacy: boolean): boolean {
   if (value.kind !== 'win-series') {
     return isId(value.raceId) && value.series === null && value.kind === (value.slot === 'challenge' ? 'win-by-margin' : 'win')
   }
-  if (value.slot !== 'identity' || value.raceId !== null || !isRecord(value.series) || !exactKeys(value.series, GOAL_SERIES_FIELDS) ||
+  if ((value.slot !== 'identity' && value.slot !== 'main') || value.raceId !== null || !isRecord(value.series) || !exactKeys(value.series, GOAL_SERIES_FIELDS) ||
     !FLAIR_SERIES.includes(value.series.tag as (typeof FLAIR_SERIES)[number]) || !Array.isArray(value.series.legs) ||
     value.series.legs.length < 2 || value.series.legs.length > 3 || value.series.legs.some((leg) => !parseGoalLeg(leg))) return false
   const legs = value.series.legs as Record<string, unknown>[]
@@ -589,6 +597,22 @@ function parseGoal(value: unknown, tier: number, legacy: boolean): boolean {
   return active === 0 && missed === 0 && legs.some((leg) => leg.completedRaceResultId === value.completedRaceResultId && leg.completedAt === value.completedAt)
 }
 
+/** Stages in order with their counts, ids numbered within the stage, and at most one series goal. */
+function isCareerPlan(goals: readonly Record<string, unknown>[], tier: number): boolean {
+  let index = 0
+  for (const [stage, min, max] of CAREER_STAGE_COUNTS) {
+    const start = index
+    while (goals[index]?.slot === stage) index += 1
+    const count = index - start
+    if (count < min || count > max) return false
+    for (let position = 0; position < count; position += 1) {
+      if (goals[start + position]!.id !== (max === 1 ? `goal:${tier}:${stage}` : `goal:${tier}:${stage}:${position + 1}`)) return false
+    }
+  }
+  return index === goals.length && goals.filter((goal) => goal.kind === 'win-series').length <= 1 &&
+    goals.every((goal) => goal.kind !== 'win-by-margin')
+}
+
 function parseJourney(value: unknown, legacy: boolean): value is Record<string, unknown> {
   if (!isRecord(value) || !exactKeys(value, JOURNEY_FIELDS) || !isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER ||
     !['tracked', 'legacy-untracked'].includes(String(value.tracking)) || !['active', 'completed'].includes(String(value.state)) ||
@@ -597,12 +621,15 @@ function parseJourney(value: unknown, legacy: boolean): value is Record<string, 
     (value.state === 'completed' && value.tracking === 'legacy-untracked' && value.completedAt !== null && !isNonNegativeInt(value.completedAt)) ||
     !Array.isArray(value.goals)) return false
   if (value.tracking === 'legacy-untracked') return value.state === 'completed' && value.goals.length === 0
-  if (value.goals.length !== 3 || value.goals.some((goal) => !parseGoal(goal, value.tier as number, legacy))) return false
+  if (value.goals.some((goal) => !parseGoal(goal, value.tier as number, legacy))) return false
   const goals = value.goals as Record<string, unknown>[]
   const raceIds = goals.flatMap((goal) => isRecord(goal.series) && Array.isArray(goal.series.legs)
     ? (goal.series.legs as Record<string, unknown>[]).map((leg) => leg.raceId)
     : [goal.raceId])
-  return new Set(goals.map((goal) => goal.slot)).size === 3 && new Set(raceIds).size === raceIds.length &&
+  const shaped = goals.length > 0 && goals.every((goal) => isCareerSlot(goal.slot))
+    ? isCareerPlan(goals, value.tier as number)
+    : goals.length === 3 && new Set(goals.map((goal) => goal.slot)).size === 3 && goals.every((goal) => !isCareerSlot(goal.slot))
+  return shaped && new Set(raceIds).size === raceIds.length &&
     (value.state !== 'active' || goals.every((goal) => goal.status !== 'missed')) &&
     (value.state !== 'completed' || goals.every((goal) => goal.status !== 'active'))
 }
@@ -640,7 +667,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
   const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
   if (value.exp > expLimit) return null
-  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 2) return null
+  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 3) return null
 
   const currentTier = Math.ceil((value.level as number) / 10)
   if (!isPositiveInt(value.unlockedTier) || value.unlockedTier > currentTier) return null

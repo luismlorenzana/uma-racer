@@ -441,6 +441,58 @@ describe('save v6 over the wire', () => {
   })
 })
 
+describe('goal plan v3 careers over the wire', () => {
+  const goal = (id: string, slot: string, raceId: string | null, extra: Record<string, unknown> = {}) => ({
+    id, slot, raceId, kind: 'win', series: null, minimumMarginLengths: 0, status: 'active', completedRaceResultId: null, completedAt: null, ...extra,
+  })
+  const legs = [
+    { key: 'satsuki-sho', raceId: '101001', status: 'completed', completedRaceResultId: 'race:100101:4', completedAt: 40 },
+    { key: 'tokyo-yushun', raceId: '101002', status: 'active', completedRaceResultId: null, completedAt: null },
+    { key: 'kikuka-sho', raceId: '101003', status: 'active', completedRaceResultId: null, completedAt: null },
+  ]
+  const careerGoals = [
+    goal('goal:1:maiden', 'maiden', '300101', { status: 'completed', completedRaceResultId: 'race:100101:0', completedAt: 10 }),
+    goal('goal:1:trials:1', 'trials', '200101'),
+    goal('goal:1:trials:2', 'trials', '200102'),
+    goal('goal:1:main:1', 'main', null, { kind: 'win-series', series: { tag: 'triple-crown', legs } }),
+  ]
+  const uma = {
+    schemaVersion: 6,
+    templateId: '100101',
+    level: 3,
+    exp: 0,
+    unlockedTier: 1,
+    scenarios: [{
+      tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {}, loadoutSkillIds: [], started: true,
+      journey: { tier: 1, tracking: 'tracked', state: 'active', completedAt: null, goals: careerGoals },
+    }],
+    skillHistory: [],
+    goalPlanVersion: 3,
+  }
+  const push = (goals: unknown[], over: Record<string, unknown> = {}) => parseSyncRequest({ upserts: [{
+    kind: 'umas', id: '100101', baseVersion: 1,
+    data: { ...uma, ...over, scenarios: [{ ...uma.scenarios[0]!, journey: { ...uma.scenarios[0]!.journey, goals } }] },
+  }] })
+
+  it('accepts a career with a set among its main goals', () => {
+    expect(push(careerGoals)).toMatchObject({ upserts: [{ kind: 'umas' }] })
+    expect(push([...careerGoals, goal('goal:1:main:2', 'main', '101009')])).toMatchObject({ upserts: [{ kind: 'umas' }] })
+  })
+
+  it('rejects stages out of order, wrong counts or ids, and a mix with the legacy slots', () => {
+    const [maiden, trialA, trialB, main] = careerGoals
+    expect(push(careerGoals, { goalPlanVersion: 4 })).toMatch(/invalid umas data/)
+    expect(push([trialA, maiden, trialB, main])).toMatch(/invalid umas data/)
+    expect(push([maiden, trialA, main])).toMatch(/invalid umas data/)
+    expect(push([maiden, trialA, trialB])).toMatch(/invalid umas data/)
+    expect(push([maiden, { ...trialA, id: 'goal:1:trials:2' }, trialB, main])).toMatch(/invalid umas data/)
+    expect(push([maiden, trialA, trialB, main, { ...main, id: 'goal:1:main:2' }])).toMatch(/invalid umas data/)
+    expect(push([maiden, trialA, trialB, goal('goal:1:identity', 'identity', '101009')])).toMatch(/invalid umas data/)
+    expect(push([{ ...maiden, kind: 'win-series', raceId: null, series: { tag: 'triple-crown', legs } }, trialA, trialB, goal('goal:1:main:1', 'main', '101009')]))
+      .toMatch(/invalid umas data/)
+  })
+})
+
 describe('ledger vocabulary', () => {
   // The deploy cannot import the domain (D128), so the test reads its source: every reason the client can write must
   // sync. dev-grant shipped without this check and 400ed every batch that held one.

@@ -30,6 +30,7 @@ import { Panel } from '../ui/Panel'
 import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { useArt } from '../ui/album/useArt'
+import { SectionHeading } from '../ui/Section'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 const STAT_TONE: Record<StatKey, string> = {
@@ -40,15 +41,6 @@ const STAT_TONE: Record<StatKey, string> = {
   wit: 'var(--color-stat-wit)',
 }
 const percent = (value: number) => `${Math.round(value * 1000) / 10}%`
-
-function SectionHeading({ label, hint }: { label: string; hint?: string }) {
-  return (
-    <div className="flex items-baseline justify-between px-1 pt-2">
-      <h2 className="font-display text-[13px] font-semibold tracking-tight text-ink">{label}</h2>
-      {hint !== undefined && <span className="text-micro">{hint}</span>}
-    </div>
-  )
-}
 
 /**
  * One card: owning it at the top, its power in each scenario in the middle, and everything else below — the same

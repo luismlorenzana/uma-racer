@@ -356,7 +356,7 @@ export function scenarioCompletionFact(input: {
     friendshipTrainings: 0,
     raceStarts: input.badgeState.facts.starts - input.badgeState.facts.completions.reduce((sum, fact) => sum + fact.raceStarts, 0),
     completedGoalIds,
-    honors: completedGoalIds.length === 3,
+    honors: journey?.tracking === 'tracked' && journey.goals.length > 0 && completedGoalIds.length === journey.goals.length,
     parentUmaIds: lineage.parents,
     grandparentUmaIds: lineage.grandparents,
   }

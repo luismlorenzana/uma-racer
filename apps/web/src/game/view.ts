@@ -3,7 +3,7 @@ import {
   capProfile,
   deriveUma,
   expToNextUmaLevel,
-  isGateLevel,
+  awaitingAdvance,
   LEVELS_PER_SCENARIO,
   SCENARIOS,
   skillPointCap,
@@ -85,7 +85,7 @@ export function joinUma(
       caps: capProfile(tier),
       spCap: skillPointCap(tier),
       expToNext: expToNextUmaLevel(save.level),
-      readyToAdvance: activeScenario(save).started && isGateLevel(save.level)
+      readyToAdvance: activeScenario(save).started && awaitingAdvance(save)
         && tierOfLevel(save.level) === tier && !finalLevel,
     },
   }

@@ -302,7 +302,7 @@ export function StableScreen() {
     const order = result?.rows.map((row) => row.id) ?? []
     navigate(
       entry.view?.readyToAdvance
-        ? `/scenario/${encodeURIComponent(entry.template.id)}/start`
+        ? `/stable/${encodeURIComponent(entry.template.id)}`
         : `/stable/${encodeURIComponent(entry.template.id)}`,
       { state: { albumOrder: order } },
     )
@@ -424,7 +424,7 @@ export function StableScreen() {
               {detail.owned ? 'Open' : 'Redeem'}
             </Button>
             {detail.owned && (
-              <Button size="sm" variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(detail.id)}`)}>Train</Button>
+              <Button size="sm" variant="secondary" onClick={() => navigate(`/constellation/${encodeURIComponent(detail.id)}`)}>Train</Button>
             )}
             {detail.owned && (
               <Button size="sm" onClick={() => navigate(`/race?uma=${encodeURIComponent(detail.id)}`)}>Race</Button>
@@ -554,7 +554,7 @@ export function StableScreen() {
             <h2 className="font-display mb-1 text-xl font-bold">{actionsFor.template.name}</h2>
             {actionsFor.owned ? (
               <>
-                <Button variant="secondary" onClick={() => navigate(`/training/${encodeURIComponent(actionsFor.id)}`)}>Train</Button>
+                <Button variant="secondary" onClick={() => navigate(`/constellation/${encodeURIComponent(actionsFor.id)}`)}>Train</Button>
                 <Button variant="secondary" onClick={() => navigate(`/race?uma=${encodeURIComponent(actionsFor.id)}`)}>Race</Button>
                 <Button variant="secondary" onClick={() => navigate(`/constellation/${encodeURIComponent(actionsFor.id)}/cards`)}>Card set</Button>
                 <Button variant="secondary" onClick={() => { setActionsFor(null); openEntry(actionsFor) }}>Open profile</Button>

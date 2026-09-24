@@ -47,7 +47,7 @@ feedback catalogue.
 - **Featured Uma** portrait, large, with a gentle idle "breathing" motion. Level ring, Training Level bar, active title.
 - **Two big CTAs** in the thumb zone: **Train** and **Race**.
 - On open, the **daily ticket grant** flies "+50 🎫" into the counter.
-- **Goal tracker** card for the featured Uma (3 pips), followed by the implemented **recent flair** card with the latest
+- **Career** card for the featured Uma (a pip per goal race, her stage, and her next goal race under the Race button), followed by the implemented **recent flair** card with the latest
   three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
   recent-flair feed.
 - A swipe on the portrait switches the featured Uma.
@@ -101,8 +101,12 @@ Every Bond Recall run launched here returns here.
 
 ### Race Select
 
-- A list of **race cards**: grade ribbon, name, venue, distance and surface, and the selected Uma's aptitude letters (color-coded).
-- **Goal races are pinned** with a 🎯 ribbon. Filter chips: grade, distance, surface, goals only.
+- A **career tracker**: her three stages with levels and progress, the current stage's goal races, and what the stage
+  is holding ([Scenario Careers](scenario-goals.md#presentation)).
+- **Next up**: 5–10 race cards worth running now — the unwon goals up to her current stage, then races graded for her
+  stage in her profile, one per race family. Cards carry line-icon marks: a career goal, a G1 set leg with progress,
+  a first G1 win.
+- **Won this scenario**, **All races** and **Recent results** are collapsed below; every race stays runnable.
 - Tap → Pre-race.
 
 Multiple goals for one target share one race card with ordered ribbons. A direct Home/Journey goal link selects that exact
@@ -113,7 +117,7 @@ race when available; missing/retired targets remain explicit instead of silently
 - **Field preview**: a row of NPC icons.
 - **Form matchup meter**: "You 92% ⟷ Field 86%".
 - **Strategy** segmented control, with aptitude letters. **Loadout** summary chip (tap to edit in a sheet).
-- Every active goal at stake is shown with its exact win rule, including the 5-length Challenge threshold.
+- The race's marks, and every active goal at stake with its win rule.
 - A big **Start** button at the bottom.
 
 ### Race (PixiJS scene)

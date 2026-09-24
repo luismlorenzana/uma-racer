@@ -31,6 +31,8 @@ import {
   type PlayerProfile,
   raceAttemptId,
   SCENARIO_GOAL_VERSION,
+  deriveUma,
+  upgradeGoalPlan,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -219,10 +221,13 @@ export async function completeStarterSeed(content: LoadedContent, now: number): 
   })
 }
 
-/** Upgrade every pre-T014 Uma and its current-tier history in one all-or-nothing local transaction. */
+/**
+ * Upgrade every Uma to the current goal plan in one all-or-nothing local transaction. An untouched active journey
+ * becomes a career frozen against her current constellation; one with progress keeps its plan (D137).
+ */
 export async function bootstrapGoalPlans(content: LoadedContent, now: number): Promise<number> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Goal bootstrap time is invalid')
-  const affectedCount = await db.transaction('rw', [db.umas, db.raceResults, db.outbox], async () => {
+  const affectedCount = await db.transaction('rw', [db.umas, db.cards, db.outbox], async () => {
     const umaRows = await db.umas.toArray()
     const affected = umaRows.filter((row) => {
       const uma = parseUmaSave(row.data)
@@ -230,20 +235,21 @@ export async function bootstrapGoalPlans(content: LoadedContent, now: number): P
       return uma.goalPlanVersion !== SCENARIO_GOAL_VERSION
     })
     if (affected.length === 0) return 0
-    const histories = (await db.raceResults.toArray()).map((row) => {
-      const record = parseRaceResultRecord(row.data)
-      if (!record || row.id !== raceAttemptId(record.umaId, record.sequence) || row.createdAt !== record.createdAt) {
-        throw new Error(`Invalid local race result: ${row.id}`)
-      }
-      return record
-    })
+    const cardSaves = new Map((await db.cards.toArray()).map((row) => [row.id, row.data as CardSave]))
     for (const row of affected) {
       const uma = parseUmaSave(row.data)!
       const template = content.umas.byId.get(row.id)
       if (!template) throw new Error(`Goal bootstrap content is missing Uma ${row.id}`)
-      // The v5 migration already carries each run's journey; there is no goal-plan backfill left to do.
-      void template
-      void histories
+      const { aptitudes } = deriveUma({
+        uma,
+        umaTemplate: template,
+        cardSaves,
+        cardTemplates: content.cards.byId,
+        umaTemplates: content.umas.byId,
+      })
+      const upgraded = upgradeGoalPlan({ uma, umaTemplate: template, aptitudes, races: content.races.items })
+      await db.umas.put({ ...row, data: upgraded })
+      await queueInTransaction('umas', row.id, 'upsert', now)
     }
     return affected.length
   })

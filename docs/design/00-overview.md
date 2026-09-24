@@ -32,7 +32,7 @@ flowchart LR
     LevelUp --> Race
     Race -.->|"need better stats or skills"| Train
     LevelUp -->|"level 10, 20, 30…"| Gate{"Gate level<br/>+1 Uma Shard"}
-    Gate -->|"promote · 🎫"| Next["Next scenario<br/>Training Level → 1 · skills refresh<br/>inheritance · new goals · new card era"]
+    Gate -->|"promote · 🎫"| Next["Next scenario<br/>Training Level → 1 · skills refresh<br/>inheritance · new career · new card era"]
     Next --> Train
 ```
 
@@ -70,7 +70,7 @@ flowchart LR
 | Detailed training formulas with heavy RNG | **Simplified formulas**, where newer cards are straightforwardly stronger |
 | Skill points spent during a career | **SP capped per scenario**, and the Uma **fine-tunes a skill loadout** within it |
 | Sparks inherited from a finished career's legacy | **2 parents automatically pass** a weaker unique and their white skills. From the **4 grandparents** you pick 2 uniques and half of their whites. Lineups come from each Uma's latest **parent snapshot** |
-| Career goals are mandatory, and failing ends the run | **Optional scenario goals** based on aptitudes and the real horse's identity, shown prominently as ribbons, crests, and badges |
+| Career goals are mandatory, and failing ends the run | **A career per scenario** — a G3, two G2s, then a G1 set in her profile — that holds her Uma Level until each stage is won. Losing a goal race costs only the race: goals are retried, never failed |
 | Gacha for a starting roster | **All 25 original launch trainees** are available from the start |
 | Mostly flat difficulty inside a career | **Race Form**: each scenario starts as a fair fight, and your Uma pulls ahead as she levels |
 | Epithets and titles are a side feature | **Badges, titles, and collection are core pillars** |
@@ -99,7 +99,7 @@ flowchart LR
 | **Skill library** | Every skill an Uma has unlocked **in her current scenario** (own unique, card hints, inherited). Refreshed at each scenario start. |
 | **Opening training** | One training turn in a new scenario, which unlocks its races. |
 | **Loadout** | The skills currently equipped from the library. Total cost must be ≤ SP. |
-| **Scenario goals** | Optional per-Uma race targets for each scenario, based on aptitudes and the real horse's identity. Shown as goal pips, ribbons, and Honors crests. |
+| **Career** | Each scenario's per-Uma race plan in three stages — Maiden (a G3), Trials (two G2s), Main goals (a G1 set) — built from her best two distances and her real career. Maiden and Trials hold levels 2 and 5; the whole career gates the advance. Shown as a tracker, race-card icons, ribbons and Honors crests. |
 | **Race Form** | Race-time stat multipliers for your Uma and the field. Both reset each scenario. |
 | **Badge / Title** | Tiered per-Uma accomplishment, or a named honor (for example "Triple Crown"). |
 | **Trainer achievement** | Account-wide accomplishment covering collection and totals across all Umas. |

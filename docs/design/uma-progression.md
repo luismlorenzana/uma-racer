@@ -14,8 +14,8 @@
 | `aptitudes` | Surface · Distance · Strategy, graded S–G. The base that lineage improves |
 | `uniqueSkill` | Innate unique skill, free and always equipped |
 | `awakeningSkillIds` | Her four baseline golds and whites. What she pays when used as a **lineage slot** |
-| `realHorseSex` | Male / Female. Drives the classic-series identity goals and the Stable filter |
-| `signatureRaceFamilyIds` | Ordered career-objective race families, used as Identity-goal seeds |
+| `realHorseSex` | Male / Female. Decides the classic set in her [career](scenario-goals.md) and the Stable filter |
+| `signatureRaceFamilyIds` | Ordered career-objective race families. Her [career](scenario-goals.md#choosing-the-races) picks these first |
 | `starter` | Part of the 25-trainee starting roster (see [Collection](collection.md)) |
 | `icon`, `portrait` | Local asset references only |
 
@@ -44,7 +44,7 @@ from the active `ScenarioTraining` whenever read ([Training](training.md#stats-a
 | `cardSetIds` | Up to 6 owned, era-eligible cards; no duplicate character |
 | `assignments` | `nodeId → { card } | { stat } | { lineage }`. The current configuration, and the only one |
 | `loadoutSkillIds` | The equipped subset of the derived library |
-| `goals`, `journey` | This scenario's frozen goals and their outcomes |
+| `goals`, `journey` | This scenario's frozen [career](scenario-goals.md) and its outcomes |
 | `raceHistory` | This scenario's races. **Races are scenario-linked** (D122) |
 | `milestones` | This scenario's achievement facts |
 
@@ -55,6 +55,9 @@ A completed scenario's entry is kept in full, readable, and frozen. It no longer
 - Uma Levels run 1 → `10 × scenarios` (140 today).
 - **Only racing gives Uma EXP.** 2nd and 3rd place give 25% of win EXP.
 - **Every Uma Level-up earns +5 training tickets.**
+- **Her career holds levels 2 and 5 of each scenario** until its Maiden and Trials goals are won. A held Uma banks
+  EXP just short of the next level, and the race that wins the goal releases it
+  ([Scenario Careers](scenario-goals.md#three-stages)).
 - Draft curve: `expToNext(level) = 100 + 25 × (level − 1)`
 - Draft EXP per win by grade, before card Race Bonus:
 
@@ -65,12 +68,13 @@ A completed scenario's entry is kept in full, readable, and frozen. It no longer
 ## Gate levels and unlocking the next scenario
 
 1. **Reaching** a gate level (10, 20, 30…) grants **1 Uma Shard**, once per Uma per gate.
-2. The card shows **"Ready to advance"**. Advancing costs **25 × the completed tier** tickets and is
+2. At the gate she **keeps racing until her career is complete**; a career frozen before goal plan v3 does not gate.
+   Then the card shows **"Ready to advance"**. Advancing costs **25 × the completed tier** tickets and is
    **explicit** — the player chooses when.
 3. On advancing:
    - Level becomes gate + 1. Banked overflow EXP applies immediately.
    - A **new `ScenarioTraining`** is created at Training Level 1 with the baseline nodes open, an empty card
-     set, fresh goals, and an empty race record.
+     set, a fresh career, and an empty race record.
    - It becomes the **active** scenario at once and drives every race from then on.
    - The previous scenario's entry is frozen and kept.
    - The Uma earns the **"<Scenario> Graduate"** badge.
@@ -80,8 +84,8 @@ the only thing that pays them. **An Uma is temporarily weaker after advancing an
 design — a scenario is a career run, not a continuation
 ([Constellations](constellations.md#a-scenario-is-a-career-run)).
 
-At the highest available tier there is nothing further to unlock; the Uma keeps racing and refining that
-scenario's constellation.
+At the highest available tier there is nothing further to unlock: her last career closes on its final win, and she
+keeps racing and refining that scenario's constellation.
 
 ## Stats and caps
 

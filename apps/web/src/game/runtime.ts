@@ -59,6 +59,7 @@ import {
   preparePersistentRace,
   readLatestRaceTimes,
   readRaceHistory,
+  readUmaRaceHistory,
   type PreparedRace,
 } from './racing'
 import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
@@ -660,6 +661,12 @@ export class GameRuntime {
       return latest
     }
     return readLatestRaceTimes()
+  }
+
+  async listUmaRaceHistory(umaId: string): Promise<RaceResultRecord[]> {
+    return useGame.getState().persistent
+      ? readUmaRaceHistory(umaId)
+      : this.memoryRaceHistory.filter((record) => record.umaId === umaId).sort((left, right) => left.createdAt - right.createdAt)
   }
 
   async listRaceHistory(limit = 20): Promise<RaceResultRecord[]> {

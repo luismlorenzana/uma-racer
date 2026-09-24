@@ -3,13 +3,17 @@ import { fieldForm } from './raceForm'
 import { averageCap } from './constellation'
 import { mapStats, type DistanceCategory, type RaceGrade, type Stats } from './types'
 
+/**
+ * How much weaker than a G1 field each grade's field is (D138). A career climbs G3 → G2 → G1 (D137), so the grades
+ * have to be a ladder: a G3 field is 15% below a G1 field, a G2 field 8%.
+ */
 export const GRADE_FACTOR: Record<RaceGrade, number> = {
-  debut: 0.8,
-  maiden: 0.8,
-  'pre-op': 0.88,
-  op: 0.88,
-  g3: 0.94,
-  g2: 0.97,
+  debut: 0.7,
+  maiden: 0.7,
+  'pre-op': 0.78,
+  op: 0.78,
+  g3: 0.85,
+  g2: 0.92,
   g1: 1.0,
 }
 

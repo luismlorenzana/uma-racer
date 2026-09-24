@@ -11,6 +11,8 @@ and [Collection — Shared browsing chrome](../design/collection.md#shared-brows
 
 ## Fixed choices
 
+- **The Race tab's career tracker and Next up list stay on top** (M017, D137). This task turns the collapsed **All
+  races** section below them into the album; pinned goal targets are Next up's job.
 - **Goal targets keep their privileges.** Active goal races stay pinned above normal ordering with their ribbons, and
   Goals-only remains a one-tap preset. Filtering never hides a pinned goal target; it is shown with a note instead.
 - No change to race rules, rewards, fields, eligibility or the pre-race flow.

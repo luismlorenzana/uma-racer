@@ -194,6 +194,22 @@ function withGoalJourney(player: UmaSave, tier: number): UmaSave {
   }
 }
 
+function withCareer(player: UmaSave, maidenRaceId: string, level: number, exp: number): UmaSave {
+  const goal = (id: string, slot: 'maiden' | 'trials' | 'main', raceId: string) => ({
+    id, slot, raceId, kind: 'win' as const, series: null, minimumMarginLengths: 0, status: 'active' as const, completedRaceResultId: null, completedAt: null,
+  })
+  return {
+    ...player,
+    level,
+    exp,
+    goalPlanVersion: 3,
+    scenarios: player.scenarios.map((run) => ({ ...run, journey: {
+      tier: 1, tracking: 'tracked' as const, state: 'active' as const, completedAt: null,
+      goals: [goal('goal:1:maiden', 'maiden', maidenRaceId), goal('goal:1:trials:1', 'trials', 'r2'), goal('goal:1:trials:2', 'trials', 'r3'), goal('goal:1:main:1', 'main', 'r4')],
+    } })),
+  }
+}
+
 describe('progression race field', () => {
   it('is deterministic, uses the saved player, and never repeats a character', () => {
     const loaded = content()
@@ -265,6 +281,35 @@ describe('progression race field', () => {
     const legacyReplay = preparedRaceFromRecord(loaded, legacy)
     expect(legacyReplay.engineVersion).toBe(1)
     expect(simulatePreparedRace(legacyReplay).events.some((event) => event.type === 'skill-activated')).toBe(false)
+  })
+
+  it('holds level 2 until the maiden goal is won, and the winning race releases the bank', () => {
+    const loaded = content()
+    const { profile, player, cards } = state()
+    const bank = expToNextUmaLevel(2) - 1
+    // r1 is not her maiden race: the win's EXP stays banked just short of level 3.
+    const held = withCareer(player, 'r9', 2, bank)
+    const heldAttempt = buildPreparedRace({ content: loaded, profile, uma: held, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
+    const heldRun = completeMemoryRace(loaded, profile, held, cards, [], heldAttempt, '2026-09-16', 100)
+    expect(heldRun.uma).toMatchObject({ level: 2, exp: bank })
+    expect(heldRun.record).toMatchObject({ expGained: 155, levelsGained: [], completedGoalIds: [] })
+    // The same race as her maiden goal completes it in one commit: the bank and the win's EXP (124 + 155) carry
+    // her through levels 3 (125) and 4 (150).
+    const maiden = withCareer(player, 'r1', 2, bank)
+    const attempt = buildPreparedRace({ content: loaded, profile, uma: maiden, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
+    const won = completeMemoryRace(loaded, profile, maiden, cards, [], attempt, '2026-09-16', 100)
+    expect(won.record).toMatchObject({ completedGoalIds: ['goal:1:maiden'], levelsGained: [3, 4], ticketReward: 10 })
+    expect(won.uma).toMatchObject({ level: 4, exp: 4 })
+    expect(parseRaceResultRecord(won.record)).toEqual(won.record)
+  })
+
+  it('keeps an unfinished career racing at the gate level', () => {
+    const loaded = content()
+    const { profile, player, cards } = state()
+    const gate = withCareer(player, 'r9', 10, 0)
+    expect(() => buildPreparedRace({ content: loaded, profile, uma: gate, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).not.toThrow()
+    expect(() => buildPreparedRace({ content: loaded, profile, uma: withGoalJourney({ ...player, level: 10 }, 1), cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 }))
+      .toThrow(/Advance this Uma/)
   })
 
   it('snapshots authoritative goal completion ids in the same memory result', () => {

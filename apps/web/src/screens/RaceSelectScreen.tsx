@@ -5,39 +5,35 @@ import {
   SCENARIOS,
   compileRaceSkill,
   equippedRaceBonus,
-  fieldForm,
-  isGateLevel,
+  awaitingAdvance,
   raceExp,
   progressionFieldSize,
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
   summarizeSkillLoadout,
   supportDeckIssueMessage,
-  tierOfLevel,
   validateSupportDeck,
-  yourForm,
-  type RaceGrade,
   type RaceResultRecord,
   type RaceTemplate,
   type Strategy,
   type UmaSave,
 } from '@racer/domain'
-import { m } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { listRaceHistory, prepareRace, setUmaLoadout } from '../game/actions'
-import { buildGoalRaceCatalog, goalsAtStake } from '../game/goals-view'
+import { listRaceHistory, listUmaRaceHistory, prepareRace, setUmaLoadout } from '../game/actions'
+import { goalsAtStake } from '../game/goals-view'
+import { buildRacePlan, scenarioLevel, type CareerTracker, type PlannedRace, type RaceMark } from '../game/race-plan'
 import type { PreparedRace } from '../game/racing'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
-import { GameButton } from '../ui/GameButton'
+import { Button } from '../ui/Button'
 import { Panel } from '../ui/Panel'
+import { RaceMarkIcon } from '../ui/RaceMarkIcon'
 import { ScreenState } from '../ui/ScreenState'
-import { GRADE_LABEL, GRADE_STYLE, STRATEGY_LABEL } from './race/labels'
-
-const GRADE_ORDER: Record<RaceGrade, number> = { g1: 0, g2: 1, g3: 2, op: 3, 'pre-op': 4, maiden: 5, debut: 6 }
+import { Collapsible, SectionHeading } from '../ui/Section'
+import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
 
 const ordinal = (value: number) => {
   const suffix = ['th', 'st', 'nd', 'rd']
@@ -47,10 +43,105 @@ const ordinal = (value: number) => {
 
 function raceLockReason(save: UmaSave, race: RaceTemplate, opponentCharacters: number): string | null {
   if (!activeScenario(save).started) return 'Start this scenario before racing.'
-  if (isGateLevel(save.level)) return 'This Uma is ready for the next scenario and cannot race again yet.'
+  if (awaitingAdvance(save)) return 'This Uma is ready for the next scenario and cannot race again yet.'
   const fieldSize = progressionFieldSize(race)
   if (opponentCharacters < fieldSize - 1) return `This field needs ${fieldSize - 1} distinct opponents.`
   return null
+}
+
+const MARK_TONE: Record<RaceMark['kind'], string> = {
+  goal: 'bg-accent-wash text-accent-strong',
+  set: 'bg-sunken text-ink',
+  trophy: 'bg-sunken text-ink-soft',
+}
+const MARK_NAME: Record<RaceMark['kind'], string> = { goal: 'Career goal', set: 'G1 set leg', trophy: 'First G1 win' }
+
+function MarkChip({ mark }: { mark: RaceMark }) {
+  return (
+    <span className={`inline-flex min-h-5 items-center gap-1 rounded-xs px-1.5 text-[11px] font-semibold ${MARK_TONE[mark.kind]}`}>
+      <RaceMarkIcon kind={mark.kind} label={MARK_NAME[mark.kind]} />
+      {mark.kind === 'set' ? `${mark.label} ${mark.won}/${mark.total}` : mark.label}
+    </span>
+  )
+}
+
+function RaceCard({ entry, raceBonus, onPick }: { entry: PlannedRace; raceBonus: number; onPick: () => void }) {
+  const { race } = entry
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className="flex min-h-16 w-full min-w-0 items-center gap-3 rounded-md border border-hairline bg-panel px-3 py-2 text-left shadow-1 transition-transform active:scale-[0.98]"
+    >
+      <span className="font-display flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-sunken text-[13px] font-semibold text-ink">
+        {GRADE_LABEL[race.grade]}
+      </span>
+      <span className="min-w-0 flex-1">
+        {entry.marks.length > 0 && <span className="mb-1 flex flex-wrap gap-1">{entry.marks.map((mark) => <MarkChip key={`${mark.kind}:${mark.label}`} mark={mark} />)}</span>}
+        <span className="block truncate text-[15px] font-semibold text-ink">{race.name}</span>
+        <span className="block truncate text-[12px] text-ink-soft">
+          {race.venue} · {race.surface === 'turf' ? 'Turf' : 'Dirt'} {race.distance} m · {progressionFieldSize(race)} runners
+          {entry.raced > 0 ? ` · run ${entry.raced}×` : ''}
+        </span>
+      </span>
+      <span className="shrink-0 text-right">
+        <span className="font-display block text-[15px] font-semibold text-ink">+{raceExp(race.grade, 1, raceBonus)}</span>
+        <span className="text-micro block">EXP</span>
+      </span>
+    </button>
+  )
+}
+
+function holdNote(tracker: CareerTracker, level: number): string {
+  const current = tracker.stages.find((stage) => stage.state === 'current')
+  if (tracker.complete) return 'Every goal won. Advance to the next scenario from her profile.'
+  if (tracker.held) {
+    const left = current ? current.total - current.won : 0
+    return `Level ${scenarioLevel(level)} is held until she wins her ${current?.label ?? 'stage'} goal${left > 1 ? 's' : ''}. EXP keeps banking.`
+  }
+  if (tracker.holdLevel !== null) return `Levels stop at ${scenarioLevel(tracker.holdLevel)} until this stage is won.`
+  return 'Win her main goals to unlock the next scenario.'
+}
+
+function Tracker({ tracker, level, umaId }: { tracker: CareerTracker; level: number; umaId: string }) {
+  const current = tracker.stages.find((stage) => stage.state === 'current')
+  return (
+    <Panel className="p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="font-display text-[15px] font-semibold text-ink">
+          {tracker.complete ? 'Career complete' : current ? `${current.label} · ${current.won} of ${current.total}` : 'Career'}
+        </h2>
+        <span className="text-micro truncate">{tracker.profile}</span>
+      </div>
+      <ol className="mt-2 grid grid-cols-3 gap-1.5" aria-label={`${tracker.scenario} career`}>
+        {tracker.stages.map((stage) => (
+          <li
+            key={stage.stage}
+            aria-current={stage.state === 'current' ? 'step' : undefined}
+            className={`rounded-sm border px-2 py-1.5 ${stage.state === 'current' ? 'border-accent bg-accent-wash' : stage.state === 'done' ? 'border-hairline bg-sunken' : 'border-hairline bg-panel'}`}
+          >
+            <p className={`text-[12px] font-semibold ${stage.state === 'ahead' ? 'text-ink-faint' : 'text-ink'}`}>{stage.label}</p>
+            <p className="text-micro">{stage.levels} · {stage.won}/{stage.total}</p>
+          </li>
+        ))}
+      </ol>
+      {current && (
+        <ul className="mt-2 grid gap-1">
+          {current.races.map((entry) => (
+            <li key={entry.raceId} className="flex min-h-8 items-center gap-2 text-[13px]">
+              <RaceMarkIcon kind={entry.set ? 'set' : 'goal'} label={entry.won ? 'Won' : 'To win'} className={`h-4 w-4 shrink-0 ${entry.won ? 'text-accent-strong' : 'text-ink-faint'}`} />
+              <span className={`min-w-0 flex-1 truncate ${entry.won ? 'text-ink-soft line-through' : 'font-semibold text-ink'}`}>
+                {entry.race?.name ?? entry.raceId}{entry.set ? ` · ${entry.set}` : ''}
+              </span>
+              {entry.race && <span className="text-micro shrink-0">{GRADE_LABEL[entry.race.grade]}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-[12px] text-ink-soft">{holdNote(tracker, level)}</p>
+      {tracker.complete && <Link to={`/stable/${encodeURIComponent(umaId)}`} className="mt-1 inline-flex min-h-11 items-center text-[13px] font-semibold text-accent-strong">Open her profile ›</Link>}
+    </Panel>
+  )
 }
 
 export function RaceSelectScreen() {
@@ -66,13 +157,13 @@ export function RaceSelectScreen() {
   const [picked, setPicked] = useState<RaceTemplate | null>(null)
   const [strategy, setStrategy] = useState<Strategy>('pace')
   const [history, setHistory] = useState<RaceResultRecord[]>([])
+  const [umaHistory, setUmaHistory] = useState<RaceResultRecord[]>([])
   const [historyError, setHistoryError] = useState<string | null>(null)
   const [starting, setStarting] = useState(false)
   const [startError, setStartError] = useState<string | null>(null)
   const [preview, setPreview] = useState<PreparedRace | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
-  const [goalsOnly, setGoalsOnly] = useState(false)
 
   const ownedIds = useMemo(() => Object.keys(owned).sort((left, right) => left.localeCompare(right)), [owned])
   const requestedUma = params.get('uma')
@@ -91,19 +182,21 @@ export function RaceSelectScreen() {
     if (target) setPicked(target)
   }, [contentState, requestedGoalRace])
 
+  // Her own history drives Won this scenario and the repeat counts; it refreshes whenever a race moves her EXP.
   useEffect(() => {
     if (status !== 'ready') return
     let cancelled = false
-    void listRaceHistory(20).then((records) => {
+    void Promise.all([listRaceHistory(20), selectedUmaId ? listUmaRaceHistory(selectedUmaId) : Promise.resolve([])]).then(([recent, own]) => {
       if (!cancelled) {
-        setHistory(records)
+        setHistory(recent)
+        setUmaHistory(own)
         setHistoryError(null)
       }
     }).catch((reason: unknown) => {
       if (!cancelled) setHistoryError(reason instanceof Error ? reason.message : 'Could not read race history')
     })
     return () => { cancelled = true }
-  }, [profile?.tickets, profile?.umaShards, status])
+  }, [profile?.tickets, profile?.umaShards, selectedUmaId, selectedUma?.level, selectedUma?.exp, status])
 
   useEffect(() => {
     if (contentState.status !== 'ready' || status !== 'ready' || !picked || !selectedUmaId) {
@@ -136,15 +229,17 @@ export function RaceSelectScreen() {
   const content = contentState.content
   const umaTemplate = content.umas.byId.get(selectedUmaId)
   if (!umaTemplate) return <ScreenState title="Content reference missing" detail={`The save is preserving ${selectedUmaId} until its template is restored.`} />
-  if (!activeScenario(selectedUma).started) return <ScreenState title="Start this scenario" detail="Open her constellation to begin this scenario before racing." action={{ label: 'Open constellation', to: `/constellation/${encodeURIComponent(selectedUmaId)}` }} />
-  const sortedRaces = [...content.races.items].sort((left, right) =>
-    GRADE_ORDER[left.grade] - GRADE_ORDER[right.grade] ||
-    left.distance - right.distance ||
-    left.name.localeCompare(right.name) ||
-    left.id.localeCompare(right.id),
-  )
-  const raceViews = buildGoalRaceCatalog(sortedRaces, selectedUma, content, goalsOnly)
+  if (!activeScenario(selectedUma).started) return <ScreenState title="Start this scenario" detail="Start her scenario from her profile before racing." action={{ label: 'Open her profile', to: `/stable/${encodeURIComponent(selectedUmaId)}` }} />
+  const derivedUma = deriveUma({
+    uma: selectedUma,
+    umaTemplate,
+    cardSaves: new Map(Object.entries(cards)),
+    cardTemplates: content.cards.byId,
+    umaTemplates: content.umas.byId,
+  })
+  const plan = buildRacePlan({ uma: selectedUma, template: umaTemplate, aptitudes: derivedUma.aptitudes, races: content.races.items, history: umaHistory })
   const pickedGoals = picked ? goalsAtStake(selectedUma, picked.id, content) : []
+  const pickedEntry = picked ? plan.all.find((entry) => entry.race.id === picked.id) : undefined
   const opponentCharacters = new Set(content.umas.items.filter((item) => item.charaId !== umaTemplate.charaId).map((item) => item.charaId)).size
   const selectedAsset = (() => {
     const frame = content.atlases['uma-icons'].descriptor.frames[selectedUmaId]
@@ -168,15 +263,9 @@ export function RaceSelectScreen() {
   } catch (reason) {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }
-  const derivedUma = deriveUma({
-    uma: selectedUma,
-    umaTemplate,
-    cardSaves: new Map(Object.entries(cards)),
-    cardTemplates: content.cards.byId,
-    umaTemplates: content.umas.byId,
-  })
   const skillLoadout = summarizeSkillLoadout(derivedUma, umaTemplate, content.skills.byId)
-  const advanceRequired = isGateLevel(selectedUma.level) && selectedUma.level < SCENARIOS.length * 10
+  const finalTier = selectedUma.level >= SCENARIOS.length * 10
+  const advanceRequired = awaitingAdvance(selectedUma) && !finalTier
   const lockReason = picked
     ? raceLockReason(selectedUma, picked, opponentCharacters) ?? deckError ?? (skillLoadout.valid ? null : skillLoadout.errors[0]!)
     : null
@@ -185,6 +274,10 @@ export function RaceSelectScreen() {
     const next = new URLSearchParams(params)
     next.set('uma', id)
     setParams(next, { replace: true })
+    setStartError(null)
+  }
+  const pick = (race: RaceTemplate) => {
+    setPicked(race)
     setStartError(null)
   }
 
@@ -219,93 +312,91 @@ export function RaceSelectScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-2">
+    <div className="flex flex-col gap-3 pt-2 pb-4">
       <div className="flex items-end justify-between gap-3 px-1">
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink">Choose a race</h1>
-          <p className="text-sm font-bold text-ink-soft">{sortedRaces.length} races · no ticket cost</p>
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Races</h1>
+          <p className="truncate text-[13px] text-ink-soft">{SCENARIOS[selectedUma.unlockedTier - 1]?.name} · Lv {scenarioLevel(selectedUma.level)}/10</p>
         </div>
         <select
           aria-label="Racing Uma"
           value={selectedUmaId}
           onChange={(event) => chooseUma(event.target.value)}
-          className="min-h-11 max-w-44 rounded-2xl border-2 border-white bg-white/95 px-3 text-sm font-extrabold"
+          className="min-h-11 max-w-40 shrink-0 rounded-sm border border-hairline-strong bg-panel px-3 text-[13px] font-semibold text-ink"
         >
           {ownedIds.map((id) => <option key={id} value={id}>{content.umas.byId.get(id)?.name ?? id}</option>)}
         </select>
       </div>
 
-      {!persistent && <Panel className="border-amber-300 bg-amber-50 py-3 text-sm font-bold">Memory only — race progress will not survive a reload or sync.</Panel>}
-      {isGateLevel(selectedUma.level) && <Panel className="border-gold bg-amber-50 text-center">
-        <p className="font-extrabold">{selectedUma.level >= SCENARIOS.length * 10 ? 'Latest scenario complete' : 'Promotion required'}</p>
-        <p className="mt-1 text-sm text-ink-soft">{selectedUma.level >= SCENARIOS.length * 10 ? 'No later scenario is available yet.' : 'Start the next scenario before preparing another race.'}</p>
-        {selectedUma.level < SCENARIOS.length * 10 && <GameButton className="mt-3" onClick={() => navigate(`/scenario/${encodeURIComponent(selectedUmaId)}/start`)}>Review promotion</GameButton>}
-      </Panel>}
+      {!persistent && <Panel className="border-warning/40 py-3 text-[13px] font-semibold text-warning">Memory only — race progress will not survive a reload or sync.</Panel>}
+      {awaitingAdvance(selectedUma) && (
+        <Panel className="border-accent text-center">
+          <p className="font-display font-semibold">{finalTier ? 'Latest scenario complete' : 'Ready for the next scenario'}</p>
+          <p className="text-micro mt-1">{finalTier ? 'No later scenario is available yet.' : 'Advance her from her profile to race again.'}</p>
+          {!finalTier && <Button className="mt-3" onClick={() => navigate(`/stable/${encodeURIComponent(selectedUmaId)}`)}>Open her profile</Button>}
+        </Panel>
+      )}
 
-      <button type="button" aria-pressed={goalsOnly} onClick={() => setGoalsOnly((value) => !value)} className={`min-h-11 rounded-xl border-2 px-4 text-sm font-extrabold ${goalsOnly ? 'border-gold bg-gold text-white text-outline' : 'border-white bg-white'}`}>
-        🎯 Goals only{goalsOnly ? ` · ${raceViews.length}` : ''}
-      </button>
+      {plan.tracker && <Tracker tracker={plan.tracker} level={selectedUma.level} umaId={selectedUmaId} />}
 
-      {raceViews.map(({ race, goals }, index) => (
-        <m.button
-          key={race.id}
-          type="button"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: Math.min(index, 8) * 0.025 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => { setPicked(race); setStartError(null) }}
-          className="flex min-h-18 items-center gap-3 rounded-[var(--radius-panel)] border-2 border-white bg-white/95 p-3 text-left shadow-[var(--shadow-panel)]"
-        >
-          <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b text-sm font-extrabold text-white text-outline ${GRADE_STYLE[race.grade]}`}>
-            {GRADE_LABEL[race.grade]}
-          </span>
-          <span className="min-w-0 flex-1">
-            {goals.length > 0 && <span className="mb-1 inline-flex rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold text-white text-outline">🎯 {goals.map((goal) => goal.label).join(' + ')} goal</span>}
-            <span className="block truncate text-lg font-extrabold">{race.name}</span>
-            <span className="block text-sm text-ink-soft">{race.venue} · {race.surface === 'turf' ? 'Turf' : 'Dirt'} {race.distance}m · {progressionFieldSize(race)} runners</span>
-            <span className="block text-xs font-bold text-sky-deep">Win EXP {raceExp(race.grade, 1, raceBonus)}</span>
-          </span>
-          <span className="text-2xl" aria-hidden>›</span>
-        </m.button>
-      ))}
-      {goalsOnly && raceViews.length === 0 && <Panel className="text-center text-sm font-bold text-ink-soft">No available active goal races. Missing targets remain visible on Home and Journey.</Panel>}
+      <SectionHeading label="Next up" hint={`${plan.nextUp.length} races`} />
+      <div className="grid grid-cols-1 gap-2">
+        {plan.nextUp.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} onPick={() => pick(entry.race)} />)}
+        {plan.nextUp.length === 0 && <Panel className="text-center text-[13px] text-ink-soft">No race fits her right now. Every race is still open under All races.</Panel>}
+      </div>
 
-      <Panel>
-        <h2 className="font-extrabold">Recent results</h2>
-        {historyError && <p className="mt-2 text-sm font-bold text-danger">{historyError}</p>}
-        {!historyError && history.length === 0 && <p className="mt-2 text-sm text-ink-soft">No recorded races yet.</p>}
-        <div className="mt-2 grid gap-2">
+      <Collapsible label="Won this scenario" count={plan.won.length}>
+        <div className="grid grid-cols-1 gap-2">
+          {plan.won.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} onPick={() => pick(entry.race)} />)}
+          {plan.won.length === 0 && <p className="text-micro">No wins in this scenario yet.</p>}
+        </div>
+      </Collapsible>
+
+      <Collapsible label="All races" count={plan.all.length}>
+        <div className="grid grid-cols-1 gap-2">
+          {plan.all.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} onPick={() => pick(entry.race)} />)}
+        </div>
+      </Collapsible>
+
+      <Collapsible label="Recent results" count={history.length}>
+        {historyError && <p className="text-[13px] font-semibold text-danger">{historyError}</p>}
+        {!historyError && history.length === 0 && <p className="text-micro">No recorded races yet.</p>}
+        <div className="grid gap-1.5">
           {history.slice(0, 8).map((record) => (
-            <div key={`${record.umaId}:${record.sequence}`} className="flex min-h-11 items-center gap-3 rounded-xl bg-sky-50 px-3 py-2 text-sm">
-              <span className="w-10 font-extrabold">{ordinal(record.playerPlacement)}</span>
-              <span className="min-w-0 flex-1 truncate font-bold">{content.umas.byId.get(record.umaId)?.name ?? record.umaId} · {content.races.byId.get(record.raceId)?.name ?? record.raceId}</span>
-              <span className="text-right text-xs font-extrabold text-sky-deep">+{record.expGained} EXP{record.ticketReward ? ` · +${record.ticketReward} 🎫` : ''}</span>
+            <div key={`${record.umaId}:${record.sequence}`} className="flex min-h-11 items-center gap-3 rounded-sm bg-sunken px-3 py-2 text-[13px]">
+              <span className="font-display w-9 font-semibold">{ordinal(record.playerPlacement)}</span>
+              <span className="min-w-0 flex-1 truncate">{content.umas.byId.get(record.umaId)?.name ?? record.umaId} · {content.races.byId.get(record.raceId)?.name ?? record.raceId}</span>
+              <span className="text-micro shrink-0 text-right">+{record.expGained} EXP{record.ticketReward ? ` · +${record.ticketReward} tickets` : ''}</span>
             </div>
           ))}
         </div>
-      </Panel>
+      </Collapsible>
 
       <BottomSheet open={picked !== null} onClose={() => !starting && setPicked(null)}>
         {picked && (
           <div className="flex flex-col gap-4">
             <div>
-              <p className="text-xs font-extrabold tracking-wider text-ink-soft uppercase">{GRADE_LABEL[picked.grade]}</p>
-              <p className="text-2xl font-extrabold">{picked.name}</p>
-              <p className="text-sm text-ink-soft">{picked.venue} · {picked.surface === 'turf' ? 'Turf' : 'Dirt'} {picked.distance}m · {progressionFieldSize(picked)} runners</p>
+              <p className="text-micro">{GRADE_LABEL[picked.grade]}</p>
+              <p className="font-display text-2xl font-semibold text-ink">{picked.name}</p>
+              <p className="text-[13px] text-ink-soft">{picked.venue} · {picked.surface === 'turf' ? 'Turf' : 'Dirt'} {picked.distance} m · {progressionFieldSize(picked)} runners</p>
+              {pickedEntry && pickedEntry.marks.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">{pickedEntry.marks.map((mark) => <MarkChip key={`${mark.kind}:${mark.label}`} mark={mark} />)}</div>
+              )}
             </div>
-            {pickedGoals.length > 0 && <div className="rounded-2xl border-2 border-gold bg-amber-50 p-3">
-              <p className="font-extrabold text-amber-900">🎯 Goal race</p>
-              {pickedGoals.map((goal) => <p key={goal.id} className="mt-1 text-sm font-bold"><span className="text-amber-900">{goal.label}:</span> {goal.rule}</p>)}
-            </div>}
-            <div className="flex items-center gap-3 rounded-2xl bg-sky-50 p-3">
-              <div className="w-16 shrink-0">
-                <AtlasSprite asset={selectedAsset} alt={`${umaTemplate.name} icon`} className="rounded-xl bg-white" fallback={<div className="flex h-full items-center justify-center text-3xl">🐴</div>} />
+            {pickedGoals.length > 0 && (
+              <div className="rounded-md border border-accent bg-accent-wash p-3">
+                <p className="font-display text-[13px] font-semibold text-accent-strong">At stake</p>
+                {pickedGoals.map((goal) => <p key={goal.id} className="mt-1 text-[13px]"><span className="font-semibold">{goal.label}:</span> {goal.rule}</p>)}
+              </div>
+            )}
+            <div className="flex items-center gap-3 rounded-md bg-sunken p-3">
+              <div className="w-14 shrink-0">
+                <AtlasSprite asset={selectedAsset} alt={`${umaTemplate.name} icon`} className="rounded-sm bg-panel" fallback={<div className="h-full rounded-sm bg-panel" />} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-extrabold">{umaTemplate.name} · Lv {selectedUma.level}</p>
-                <p className="text-xs font-bold text-ink-soft">Form {Math.round(yourForm(selectedUma.level) * 100)}% vs field {Math.round(fieldForm(selectedUma.level) * 100)}%</p>
-                <p className="text-xs font-bold text-sky-deep">Race Bonus +{Math.round(raceBonus * 100)}% · 1st +{raceExp(picked.grade, 1, raceBonus)} EXP</p>
+                <p className="truncate font-semibold">{umaTemplate.name} · Lv {selectedUma.level}</p>
+                <p className="text-micro">Training Level {activeScenario(selectedUma).trainingLevel} · Race Bonus +{Math.round(raceBonus * 100)}%</p>
+                <p className="text-micro">1st place +{raceExp(picked.grade, 1, raceBonus)} EXP</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
@@ -314,18 +405,20 @@ export function RaceSelectScreen() {
                 ['Distance', derivedUma.aptitudes.distance[picked.distanceCategory]],
                 ['Strategy', derivedUma.aptitudes.strategy[strategy]],
               ].map(([label, grade]) => (
-                <div key={label} className="rounded-xl bg-white p-2">
-                  <p className="text-xs font-bold text-ink-soft">{label}</p>
-                  <p className="text-xl font-extrabold text-sky-deep">{grade}</p>
+                <div key={label} className="rounded-sm border border-hairline bg-panel p-2">
+                  <p className="text-micro">{label}</p>
+                  <p className="font-display text-xl font-semibold text-ink">{grade}</p>
                 </div>
               ))}
             </div>
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <p className="font-extrabold">Race skills</p>
-                <span className="text-xs font-extrabold text-violet-700">{skillLoadout.cost} / {skillLoadout.cap} SP</span>
+                <p className="font-display text-[13px] font-semibold">Race skills</p>
+                <span className={`rounded-xs px-2 py-0.5 text-[11px] font-semibold ${skillLoadout.valid ? 'bg-sunken text-ink' : 'bg-danger/10 text-danger'}`}>
+                  {skillLoadout.cost} / {skillLoadout.cap} SP
+                </span>
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-1.5">
                 {derivedUma.library.map((unlock) => {
                   const skill = content.skills.byId.get(unlock.skillId)
                   if (!skill) return null
@@ -341,10 +434,10 @@ export function RaceSelectScreen() {
                       aria-pressed={equipped}
                       disabled={own || (!supported && !equipped) || savingSkillId !== null || starting}
                       onClick={() => void toggleSkill(skill.id)}
-                      className={`flex min-h-11 items-center justify-between rounded-xl border-2 px-3 text-left text-sm font-bold ${equipped ? 'border-violet-400 bg-violet-50' : 'border-white bg-white'} disabled:opacity-65`}
+                      className={`flex min-h-11 items-center justify-between rounded-sm border px-3 text-left text-[13px] font-semibold ${equipped ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'} disabled:opacity-65`}
                     >
                       <span className="truncate">{equipped ? '✓ ' : ''}{skill.name}</span>
-                      <span className="shrink-0 text-xs text-ink-soft">
+                      <span className="text-micro shrink-0">
                         {own ? (compatible ? 'Unique' : supported ? 'Unique · wrong course' : 'Unique · later') :
                           supported ? `${skill.costSp ?? '—'} SP${compatible ? '' : ' · wrong course'}` : 'Later'}
                       </span>
@@ -354,9 +447,9 @@ export function RaceSelectScreen() {
               </div>
             </div>
             <div>
-              <p className="mb-2 font-extrabold">Field preview</p>
-              {!preview && !previewError && <p className="text-sm text-ink-soft">Building deterministic field…</p>}
-              {previewError && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-danger">{previewError}</p>}
+              <p className="font-display mb-2 text-[13px] font-semibold">Field</p>
+              {!preview && !previewError && <p className="text-micro">Building the field…</p>}
+              {previewError && <p className="rounded-sm bg-danger/10 px-3 py-2 text-[13px] font-semibold text-danger">{previewError}</p>}
               {preview && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {preview.runners.map((runner, gate) => {
@@ -366,9 +459,9 @@ export function RaceSelectScreen() {
                     const url = frame ? content.atlases['uma-icons'].pageUrls[frame.page] : undefined
                     const asset = frame && page && url ? { url, frame, pageWidth: page.width, pageHeight: page.height } : null
                     return (
-                      <div key={`${gate}:${runner.templateId}`} className={`w-16 shrink-0 rounded-xl border-2 p-1 text-center ${runner.isPlayer ? 'border-gold bg-gold/15' : 'border-white bg-white'}`}>
-                        <AtlasSprite asset={asset} alt={`${template?.name ?? runner.templateId} icon`} className="rounded-lg" fallback={<div className="flex h-full items-center justify-center">🐴</div>} />
-                        <p className="mt-1 truncate text-[9px] font-extrabold">{gate + 1}. {runner.isPlayer ? 'You' : template?.name ?? runner.templateId}</p>
+                      <div key={`${gate}:${runner.templateId}`} className={`w-14 shrink-0 rounded-sm border p-1 text-center ${runner.isPlayer ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`}>
+                        <AtlasSprite asset={asset} alt={`${template?.name ?? runner.templateId} icon`} className="rounded-xs" fallback={<div className="h-full rounded-xs bg-sunken" />} />
+                        <p className="mt-1 truncate text-[9px] font-semibold">{gate + 1}. {runner.isPlayer ? 'You' : template?.name ?? runner.templateId}</p>
                       </div>
                     )
                   })}
@@ -376,25 +469,25 @@ export function RaceSelectScreen() {
               )}
             </div>
             <div>
-              <p className="mb-2 font-extrabold">Strategy</p>
+              <p className="font-display mb-2 text-[13px] font-semibold">Strategy</p>
               <div className="grid grid-cols-2 gap-2">
                 {STRATEGIES.map((value) => (
-                  <m.button
+                  <button
                     key={value}
                     type="button"
-                    whileTap={{ scale: 0.96 }}
+                    aria-pressed={strategy === value}
                     onClick={() => { setStrategy(value); setStartError(null) }}
-                    className={`min-h-12 rounded-xl border-2 px-3 font-extrabold ${strategy === value ? 'border-sky bg-sky text-white text-outline' : 'border-white bg-white text-ink'}`}
+                    className={`min-h-12 rounded-sm border px-3 text-[14px] font-semibold transition-transform active:scale-[0.98] ${strategy === value ? 'border-accent bg-accent-wash text-accent-strong' : 'border-hairline bg-panel text-ink'}`}
                   >
                     {STRATEGY_LABEL[value]} · {derivedUma.aptitudes.strategy[value]}
-                  </m.button>
+                  </button>
                 ))}
               </div>
             </div>
-            {(lockReason || startError) && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-danger">{startError ?? lockReason}</p>}
-            <GameButton variant="go" size="lg" disabled={!advanceRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => advanceRequired ? navigate(`/scenario/${encodeURIComponent(selectedUmaId)}/start`) : void start()}>
-              {advanceRequired ? 'Review promotion' : starting ? 'Preparing…' : 'Start race'}
-            </GameButton>
+            {(lockReason || startError) && <p className="rounded-sm bg-danger/10 px-3 py-2 text-[13px] font-semibold text-danger">{startError ?? lockReason}</p>}
+            <Button size="lg" disabled={!advanceRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => advanceRequired ? navigate(`/stable/${encodeURIComponent(selectedUmaId)}`) : void start()}>
+              {advanceRequired ? 'Open her profile' : starting ? 'Preparing…' : 'Start race'}
+            </Button>
           </div>
         )}
       </BottomSheet>

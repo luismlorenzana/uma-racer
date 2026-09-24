@@ -29,9 +29,6 @@ import {
   npcRaceStats,
   raceExp,
   progressionFieldSize,
-  CHALLENGE_MARGIN_LENGTHS,
-  scenarioGoalRequestedGrade,
-  scenarioGoalSeriesRotation,
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   UMA_SHARDS_PER_COUPON,
@@ -344,16 +341,6 @@ describe('progression and economy', () => {
     expect(SPARK_MATCH_TICKET_COST).toBe(5)
     expect(BOND_RECALL_TICKET_COST).toBe(10)
     expect(TICKETS_PER_CARD_LIMIT_BREAK).toBe(5)
-  })
-
-  it('pins scenario-goal grade escalation, series rotation, and the Challenge margin', () => {
-    expect([1, 2, 3, 4].map((tier) => scenarioGoalRequestedGrade(tier, 'aptitude'))).toEqual(['pre-op', 'g3', 'g2', 'g1'])
-    expect(scenarioGoalRequestedGrade(1, 'identity')).toBe('op')
-    expect(scenarioGoalSeriesRotation('male')).toEqual([
-      'triple-crown', 'spring-triple-crown', 'autumn-triple-crown', 'grand-prix', 'sprint-crown', 'mile-crown', 'dirt-crown',
-    ])
-    expect(scenarioGoalSeriesRotation('female')[0]).toBe('triple-tiara')
-    expect(CHALLENGE_MARGIN_LENGTHS).toBe(5)
   })
 
   it('caps only the daily grant', () => {

@@ -453,7 +453,7 @@ export function createUmaBadgeState(uma: UmaSave, subject: BadgeSubject, now: nu
       completedAt: goal.completedAt!,
     }))).sort((left, right) => left.goalId.localeCompare(right.goalId))
   const honorsTiers = completedJourneys
-    .filter((journey) => journey.goals.length === 3 && journey.goals.every((goal) => goal.status === 'completed'))
+    .filter((journey) => journey.goals.length > 0 && journey.goals.every((goal) => goal.status === 'completed'))
     .map((journey) => journey.tier).sort((a, b) => a - b)
   const maxSkillsByTier = new Map<number, number>()
   for (const entry of uma.skillHistory) maxSkillsByTier.set(entry.tier, (maxSkillsByTier.get(entry.tier) ?? 0) + 1)

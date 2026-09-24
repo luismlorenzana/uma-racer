@@ -7,6 +7,18 @@ function CardSetRedirect() {
   return <Navigate to={`/constellation/${encodeURIComponent(umaId)}/cards`} replace />
 }
 
+/** Scenario start and advance live on the Uma profile now; the old scenario screen's links land there. */
+function ScenarioRedirect() {
+  const { umaId = '' } = useParams()
+  return <Navigate to={`/stable/${encodeURIComponent(umaId)}`} replace />
+}
+
+/** Training is the constellation (D120); the old turn screen's links land there. */
+function TrainingRedirect() {
+  const { umaId = '' } = useParams()
+  return <Navigate to={`/constellation/${encodeURIComponent(umaId)}`} replace />
+}
+
 // Tab screens live inside the shell (top bar + bottom tabs). Full-screen scenes (race, constellation, reveals) sit
 // outside it and are code-split so PixiJS only loads when a scene opens.
 export const router = createBrowserRouter([
@@ -29,6 +41,14 @@ export const router = createBrowserRouter([
       {
         path: 'stable/:umaId/deck',
         Component: CardSetRedirect,
+      },
+      {
+        path: 'scenario/:umaId/start',
+        Component: ScenarioRedirect,
+      },
+      {
+        path: 'training/:umaId',
+        Component: TrainingRedirect,
       },
       {
         path: 'race',

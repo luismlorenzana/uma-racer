@@ -1,6 +1,6 @@
 // Pure Home, Race, Results, and Journey projections for T014 scenario goals.
 
-import { activeScenario, SCENARIOS, SCENARIO_SERIES_LABELS, scenarioJourneySummary, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
+import { activeScenario, CAREER_STAGE_LABELS, careerStage, isCareerJourney, SCENARIOS, SCENARIO_SERIES_LABELS, scenarioJourneySummary, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 
 /** Every journey an Uma has, in tier order. Journeys live on their scenario run now (D122). */
@@ -10,8 +10,13 @@ const journeysOf = (uma: UmaSave): ScenarioJourney[] =>
     .filter((journey): journey is ScenarioJourney => journey !== null)
     .sort((left, right) => left.tier - right.tier)
 
-const SLOT_ORDER = { aptitude: 0, identity: 1, challenge: 2 } as const
-const SLOT_LABEL = { aptitude: 'Aptitude', identity: 'Identity', challenge: 'Challenge' } as const
+const SLOT_ORDER: Readonly<Record<ScenarioGoal['slot'], number>> = { maiden: 0, trials: 1, main: 2, aptitude: 0, identity: 1, challenge: 2 }
+const SLOT_LABEL: Readonly<Record<ScenarioGoal['slot'], string>> = {
+  ...CAREER_STAGE_LABELS,
+  aptitude: 'Aptitude',
+  identity: 'Identity',
+  challenge: 'Challenge',
+}
 
 export interface GoalView {
   id: string
@@ -62,15 +67,20 @@ export type HomeGoalState =
   | { kind: 'legacy-untracked'; detail: string }
   | { kind: 'complete'; detail: string }
   | { kind: 'none'; detail: string }
-  | { kind: 'active'; tier: number; goals: GoalView[]; completed: number; missingTargets: number }
+  | { kind: 'active'; tier: number; goals: GoalView[]; completed: number; missingTargets: number; career: boolean; stage: string | null; next: GoalView | null }
 
 export function buildHomeGoalState(uma: UmaSave, content: LoadedContent): HomeGoalState {
   if (!activeScenario(uma).started) return { kind: 'pending', detail: 'Goals appear once this scenario starts.' }
   const journey = activeJourney(uma)
   if (journey?.tracking === 'tracked') {
     const goals = journey.goals.map((goal) => goalView(goal, content))
+    const stage = careerStage(journey)
     return {
       kind: 'active', tier: journey.tier, goals,
+      career: isCareerJourney(journey),
+      stage: stage ? CAREER_STAGE_LABELS[stage] : null,
+      // Goals are stored in stage order, so the first unwon one is the race to run next.
+      next: goals.find((goal) => goal.status === 'active' && goal.race !== null) ?? null,
       completed: goals.filter((goal) => goal.status === 'completed').length,
       missingTargets: goals.reduce((sum, goal) => sum + (goal.pips.length > 0 ? goal.pips.filter((pip) => pip.missing).length : Number(goal.race === null)), 0),
     }

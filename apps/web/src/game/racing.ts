@@ -13,8 +13,12 @@ import {
   GATE_SHARD_REWARD,
   UMA_LEVEL_TICKET_REWARD,
   equippedRaceBonus,
+  careerComplete,
+  careerHoldLevel,
+  careerOpenAtGate,
   evaluateScenarioGoals,
   fieldForm,
+  isCareerJourney,
   isGateLevel,
   isLocalDay,
   LEVELS_PER_SCENARIO,
@@ -189,7 +193,8 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const run = activeScenario(uma)
   if (!run.started) throw new Error('Start this scenario before racing')
   if (run.trainingLevel < 1) throw new Error('Play one Spark Match run to unlock races for this Uma')
-  if (isGateLevel(uma.level)) throw new Error('Advance this Uma before entering another race')
+  // An unfinished career keeps racing at the gate level; anything else waits for the advance (D137).
+  if (isGateLevel(uma.level) && !careerOpenAtGate(run.journey)) throw new Error('Advance this Uma before entering another race')
   const template = content.umas.byId.get(uma.templateId)
   if (!template) throw new Error(`Race content is missing Uma ${uma.templateId}`)
   // Stats, skills and aptitudes all come from the active constellation (D121).
@@ -325,7 +330,6 @@ function resultRecord(
 ): { record: RaceResultRecord; uma: UmaSave; ticketReward: number; shardReward: number } {
   const playerResult = timeline.results.find((result) => result.runner === attempt.playerIndex)
   if (!playerResult) throw new Error('Race result is missing the player')
-  const progress = resolveRaceExperience(uma, race.grade, playerResult.placement, attempt.raceBonus)
   const accomplishmentFacts = factsForAttempt(content, attempt, race, timeline)
   const field: RaceResultRunner[] = timeline.results.map((result) => {
     const runner = attempt.input.runners[result.runner]
@@ -344,60 +348,75 @@ function resultRecord(
       skills: [...(runner.skills ?? [])],
     }
   }).sort((left, right) => left.placement - right.placement)
+  const unsettled: RaceResultRecord = {
+    engineVersion: 4,
+    course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
+    contentVersion: attempt.contentVersion,
+    umaId: attempt.umaId,
+    raceId: attempt.raceId,
+    sequence: attempt.sequence,
+    seed: attempt.seed,
+    strategy: attempt.strategy,
+    startLevel: attempt.startLevel,
+    startExp: attempt.startExp,
+    startStats: { ...attempt.startStats },
+    raceBonus: attempt.raceBonus,
+    playerPlacement: playerResult.placement,
+    expGained: 0,
+    levelsGained: [],
+    ticketReward: 0,
+    shardReward: 0,
+    completedGoalIds: [],
+    accomplishmentFacts,
+    field,
+    createdAt,
+  }
+  // Goals settle before EXP, so the race that wins a stage's goal also releases the level it was holding (D137).
+  const goals = settleScenarioGoals(uma, race, attempt.id, unsettled, createdAt)
+  const progress = resolveRaceExperience(goals.uma, race.grade, playerResult.placement, attempt.raceBonus,
+    careerHoldLevel(activeScenario(goals.uma).journey, uma.level))
   return {
     uma: progress.uma,
     ticketReward: progress.ticketReward,
     shardReward: progress.shardReward,
     record: {
-      engineVersion: 4,
-      course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
-      contentVersion: attempt.contentVersion,
-      umaId: attempt.umaId,
-      raceId: attempt.raceId,
-      sequence: attempt.sequence,
-      seed: attempt.seed,
-      strategy: attempt.strategy,
-      startLevel: attempt.startLevel,
-      startExp: attempt.startExp,
-      startStats: { ...attempt.startStats },
-      raceBonus: attempt.raceBonus,
-      playerPlacement: playerResult.placement,
+      ...unsettled,
       expGained: progress.expGained,
       levelsGained: progress.levelsGained,
       ticketReward: progress.ticketReward,
       shardReward: progress.shardReward,
-      completedGoalIds: [],
-      accomplishmentFacts,
-      field,
-      createdAt,
+      completedGoalIds: goals.completedGoalIds,
     },
   }
 }
 
-function applyScenarioGoalCompletion(
+/** Evaluate the active journey's goals against this result; the Uma's level and EXP are untouched here. */
+function settleScenarioGoals(
   umaBeforeRace: UmaSave,
-  progressedUma: UmaSave,
   race: RaceTemplate,
   resultId: string,
   record: RaceResultRecord,
   now: number,
-): { uma: UmaSave; record: RaceResultRecord } {
+): { uma: UmaSave; completedGoalIds: string[] } {
   const active = activeScenario(umaBeforeRace).journey
-  if (active?.state !== 'active') return { uma: progressedUma, record }
+  if (active?.state !== 'active') return { uma: umaBeforeRace, completedGoalIds: [] }
   const evaluated = evaluateScenarioGoals({ journey: active, uma: umaBeforeRace, race, resultId, result: record, completedAt: now })
   return {
     uma: {
-      ...progressedUma,
-      scenarios: progressedUma.scenarios.map((run) =>
+      ...umaBeforeRace,
+      scenarios: umaBeforeRace.scenarios.map((run) =>
         run.tier === active.tier ? { ...run, journey: evaluated.journey } : run),
     },
-    record: { ...record, completedGoalIds: evaluated.newlyCompletedIds },
+    completedGoalIds: evaluated.newlyCompletedIds,
   }
 }
 
 /** At the highest tier there is nothing left to unlock, so the run's journey simply closes. */
 function captureFinalSnapshot(content: LoadedContent, uma: UmaSave, now: number): UmaSave {
   if (uma.level !== SCENARIOS.length * LEVELS_PER_SCENARIO) return uma
+  // A final-tier career closes only once it is won; the gate keeps it racing until then.
+  const journey = activeScenario(uma).journey
+  if (isCareerJourney(journey) && !careerComplete(journey)) return uma
   if (!content.umas.byId.has(uma.templateId)) throw new Error(`Race content is missing Uma ${uma.templateId}`)
   return closeFinalScenario(uma, now)
 }
@@ -428,6 +447,12 @@ async function validateStoredFlairEvents(record: RaceResultRecord): Promise<void
       throw new Error(`Race result flair reference is corrupt: ${id}`)
     }
   })
+}
+
+/** Every result one Uma has, oldest first. The Race tab reads it for wins and repeat counts. */
+export async function readUmaRaceHistory(umaId: string): Promise<RaceResultRecord[]> {
+  const rows = await db.raceResults.orderBy('createdAt').toArray()
+  return rows.map(parseHistoryRow).filter((record) => record.umaId === umaId)
 }
 
 export async function readRaceHistory(limit = 20): Promise<RaceResultRecord[]> {
@@ -540,8 +565,7 @@ export function completeMemoryRace(
   const race = content.races.byId.get(attempt.raceId)!
   const timeline = simulatePreparedRace(attempt)
   const result = resultRecord(content, attempt, race, uma, timeline, now)
-  const goalResult = applyScenarioGoalCompletion(uma, result.uma, race, attempt.id, result.record, now)
-  const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
+  const completedUma = captureFinalSnapshot(content, result.uma, now)
   return {
     profile: {
       ...profile,
@@ -549,7 +573,7 @@ export function completeMemoryRace(
       umaShards: profile.umaShards + result.shardReward,
     },
     uma: completedUma,
-    record: goalResult.record,
+    record: result.record,
     timeline,
     alreadyRecorded: false,
   }
@@ -598,10 +622,9 @@ export async function completePersistentRace(
     const race = content.races.byId.get(attempt.raceId)!
     const timeline = simulatePreparedRace(attempt)
     const resolved = resultRecord(content, attempt, race, uma, timeline, now)
-    const goalResult = applyScenarioGoalCompletion(uma, resolved.uma, race, attempt.id, resolved.record, now)
-    const completedUma = captureFinalSnapshot(content, goalResult.uma, now)
-    const levelIds = goalResult.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
-    const gate = goalResult.record.shardReward ? goalResult.record.levelsGained.at(-1) : undefined
+    const completedUma = captureFinalSnapshot(content, resolved.uma, now)
+    const levelIds = resolved.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
+    const gate = resolved.record.shardReward ? resolved.record.levelsGained.at(-1) : undefined
     const shardId = gate === undefined ? null : `uma-gate-shard:${attempt.umaId}:${gate}`
     const existingRewards = await db.ledger.bulkGet(shardId ? [...levelIds, shardId] : levelIds)
     if (existingRewards.some((entry) => entry !== undefined)) throw new Error('Race reward was already recorded')
@@ -620,8 +643,8 @@ export async function completePersistentRace(
       umaBefore: uma,
       umaAfter: completedUma,
       resultId: attempt.id,
-      record: goalResult.record,
-      facts: goalResult.record.accomplishmentFacts!,
+      record: resolved.record,
+      facts: resolved.record.accomplishmentFacts!,
       now,
     })
     const earnedFlairEventIds = raceFlair.events.map((event) => event.id)
@@ -634,7 +657,7 @@ export async function completePersistentRace(
       const scenarioFlair = await updateScenarioBadgeFacts({ content, before: completedUma, after: completedUma, completedTier: SCENARIOS.length, now })
       earnedFlairEventIds.push(...scenarioFlair.events.map((event) => event.id))
     }
-    const finalRecord: RaceResultRecord = { ...goalResult.record, earnedFlairEventIds }
+    const finalRecord: RaceResultRecord = { ...resolved.record, earnedFlairEventIds }
     await db.raceResults.add({
       id: attempt.id,
       data: finalRecord as unknown as Record<string, unknown>,

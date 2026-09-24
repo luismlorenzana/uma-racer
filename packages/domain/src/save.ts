@@ -70,7 +70,14 @@ export interface ParentSnapshot extends FrozenParent {
   parents: FrozenParent[]
 }
 
-export type GoalSlot = 'aptitude' | 'identity' | 'challenge'
+/** The three optional targets of goal plans v1 and v2, kept only on journeys frozen before careers. */
+export type LegacyGoalSlot = 'aptitude' | 'identity' | 'challenge'
+/** Goal plan v3: a career's stages, in order (D137). */
+export const CAREER_STAGES = ['maiden', 'trials', 'main'] as const
+export type CareerStage = (typeof CAREER_STAGES)[number]
+export type GoalSlot = LegacyGoalSlot | CareerStage
+/** Goal plan v3 generates stage-gated careers (docs/design/scenario-goals.md). */
+export const SCENARIO_GOAL_VERSION = 3 as const
 export type GoalStatus = 'active' | 'completed' | 'missed'
 
 export interface ScenarioGoalLeg {
@@ -563,7 +570,15 @@ function parseParentSnapshot(value: unknown): ParentSnapshot | null {
   return parent && parents ? { ...parent, parents } : null
 }
 
-const GOAL_SLOTS: readonly GoalSlot[] = ['aptitude', 'identity', 'challenge']
+const LEGACY_GOAL_SLOTS: readonly LegacyGoalSlot[] = ['aptitude', 'identity', 'challenge']
+const GOAL_SLOTS: readonly GoalSlot[] = [...LEGACY_GOAL_SLOTS, ...CAREER_STAGES]
+const isCareerStage = (slot: GoalSlot): slot is CareerStage => (CAREER_STAGES as readonly string[]).includes(slot)
+/** Each career stage's goal count: one maiden race, two trials, and one to four main goals. */
+const CAREER_STAGE_COUNTS: Readonly<Record<CareerStage, { min: number; max: number }>> = {
+  maiden: { min: 1, max: 1 },
+  trials: { min: 2, max: 2 },
+  main: { min: 1, max: 4 },
+}
 
 function hasValidGoalEvidence(value: Record<string, unknown>): boolean {
   const completed = value.status === 'completed'
@@ -602,9 +617,11 @@ function parseScenarioGoal(value: unknown, tier: number): ScenarioGoal | null {
   if (!GOAL_SLOTS.includes(value.slot as GoalSlot) || !['win', 'win-by-margin', 'win-series'].includes(String(value.kind))) return null
   if (typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0) return null
   if (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.minimumMarginLengths !== 0) return null
-  if (value.kind === 'win-series' && value.slot !== 'identity') return null
+  if (value.kind === 'win-series' && value.slot !== 'identity' && value.slot !== 'main') return null
   if (!['active', 'completed', 'missed'].includes(String(value.status))) return null
-  if (value.id !== `goal:${tier}:${String(value.slot)}`) return null
+  // A career goal's id carries its place in the stage, so the journey checks it.
+  if (!isCareerStage(value.slot as GoalSlot) && value.id !== `goal:${tier}:${String(value.slot)}`) return null
+  if (typeof value.id !== 'string' || !value.id.startsWith(`goal:${tier}:`)) return null
   if (!hasValidGoalEvidence(value)) return null
   const series = value.kind === 'win-series' ? parseScenarioGoalSeries(value.series) : null
   if (value.kind === 'win-series') {
@@ -636,7 +653,7 @@ function parseLegacyScenarioGoalV2(value: unknown, tier: number): LegacyScenario
   if (!isObject(value) || !exactKeys(value, [
     'id', 'slot', 'raceId', 'kind', 'minimumMarginLengths', 'status', 'completedRaceResultId', 'completedAt',
   ])) return null
-  if (!GOAL_SLOTS.includes(value.slot as GoalSlot) || !isId(value.raceId) || !['win', 'win-by-margin'].includes(String(value.kind))) return null
+  if (!LEGACY_GOAL_SLOTS.includes(value.slot as LegacyGoalSlot) || !isId(value.raceId) || !['win', 'win-by-margin'].includes(String(value.kind))) return null
   if (typeof value.minimumMarginLengths !== 'number' || !Number.isFinite(value.minimumMarginLengths) || value.minimumMarginLengths < 0) return null
   if (value.slot === 'challenge' ? value.kind !== 'win-by-margin' || value.minimumMarginLengths !== 5 : value.kind !== 'win' || value.minimumMarginLengths !== 0) return null
   if (!['active', 'completed', 'missed'].includes(String(value.status)) || value.id !== `goal:${tier}:${String(value.slot)}` || !hasValidGoalEvidence(value)) return null
@@ -650,6 +667,29 @@ function parseLegacyScenarioGoalV2(value: unknown, tier: number): LegacyScenario
     completedRaceResultId: value.completedRaceResultId as string | null,
     completedAt: value.completedAt as number | null,
   }
+}
+
+/** Goal plans v1–v2: exactly the three legacy slots, each once. */
+function isLegacyGoalPlan(goals: readonly ScenarioGoal[]): boolean {
+  return goals.length === LEGACY_GOAL_SLOTS.length && goals.every((goal) => !isCareerStage(goal.slot)) &&
+    new Set(goals.map((goal) => goal.slot)).size === LEGACY_GOAL_SLOTS.length
+}
+
+/**
+ * Goal plan v3: stages in order, each with its documented count, ids numbered within the stage
+ * (`goal:3:maiden`, `goal:3:trials:1`, `goal:3:main:2`), and at most one series goal, among the main goals.
+ */
+function isCareerGoalPlan(goals: readonly ScenarioGoal[], tier: number): boolean {
+  let index = 0
+  for (const stage of CAREER_STAGES) {
+    const stageGoals: ScenarioGoal[] = []
+    while (goals[index]?.slot === stage) stageGoals.push(goals[index++]!)
+    const { min, max } = CAREER_STAGE_COUNTS[stage]
+    if (stageGoals.length < min || stageGoals.length > max) return false
+    if (stageGoals.some((goal, position) => goal.id !== (max === 1 ? `goal:${tier}:${stage}` : `goal:${tier}:${stage}:${position + 1}`))) return false
+  }
+  return index === goals.length && goals.filter((goal) => goal.kind === 'win-series').length <= 1 &&
+    goals.every((goal) => goal.kind !== 'win-by-margin')
 }
 
 export function parseScenarioJourney(value: unknown): ScenarioJourney | null {
@@ -666,8 +706,7 @@ export function parseScenarioJourney(value: unknown): ScenarioJourney | null {
   if (value.tracking === 'legacy-untracked' && validGoals.length !== 0) return null
   if (value.tracking === 'legacy-untracked' && value.state !== 'completed') return null
   if (value.tracking === 'tracked') {
-    if (validGoals.length !== GOAL_SLOTS.length) return null
-    if (new Set(validGoals.map((goal) => goal.slot)).size !== GOAL_SLOTS.length) return null
+    if (!validGoals.every((goal) => isCareerStage(goal.slot)) ? !isLegacyGoalPlan(validGoals) : !isCareerGoalPlan(validGoals, value.tier)) return null
     const raceIds = validGoals.flatMap((goal) => goal.series?.legs.map((leg) => leg.raceId) ?? (goal.raceId ? [goal.raceId] : []))
     if (new Set(raceIds).size !== raceIds.length) return null
   }
@@ -694,7 +733,7 @@ function parseLegacyScenarioJourneyV2(value: unknown): LegacyScenarioJourneyV2 |
   if (goals.some((goal) => goal === null)) return null
   const valid = goals as LegacyScenarioGoalV2[]
   if (value.tracking === 'legacy-untracked' && (valid.length !== 0 || value.state !== 'completed')) return null
-  if (value.tracking === 'tracked' && (valid.length !== GOAL_SLOTS.length || new Set(valid.map((goal) => goal.slot)).size !== GOAL_SLOTS.length || new Set(valid.map((goal) => goal.raceId)).size !== GOAL_SLOTS.length)) return null
+  if (value.tracking === 'tracked' && (valid.length !== LEGACY_GOAL_SLOTS.length || new Set(valid.map((goal) => goal.slot)).size !== LEGACY_GOAL_SLOTS.length || new Set(valid.map((goal) => goal.raceId)).size !== LEGACY_GOAL_SLOTS.length)) return null
   if (value.state === 'active' && valid.some((goal) => goal.status === 'missed')) return null
   if (value.state === 'completed' && valid.some((goal) => goal.status === 'active')) return null
   return {
@@ -990,7 +1029,7 @@ export function parseUmaSave(value: unknown): UmaSave | null {
     : isGateLevel(value.level)
       ? value.exp > expToNextUmaLevel(value.level + 1)
       : value.exp >= expToNextUmaLevel(value.level)) return null
-  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 2) return null
+  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > SCENARIO_GOAL_VERSION) return null
 
   const currentTier = tierOfLevel(value.level)
   if (!isPositiveInt(value.unlockedTier) || value.unlockedTier > currentTier) return null
@@ -1179,7 +1218,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
     unlockedTier: 1,
     scenarios: [createScenarioTraining(1)],
     skillHistory,
-    goalPlanVersion: 2,
+    goalPlanVersion: SCENARIO_GOAL_VERSION,
   }
 }
 

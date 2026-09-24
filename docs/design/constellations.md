@@ -115,6 +115,9 @@ order, and the rest pay nothing.
 
 ### The untrained floor
 
+> **Known limit (T060):** tuned for the TL10 ladder, the floor leaves stamina far behind speed below about TL6, where
+> no build wins 35% of any race. `pnpm sim:careers` measures it.
+
 **Every stat starts from the higher of its base and `50 × Training Level`**, and everything the constellation pays
 adds on top (D134): 500 at TL10. In the original game a stat nobody trained still finishes a career around
 400–500. The floor lifts what a build neglects — a sprinter's stamina, a stayer's power — without inflating the

@@ -6,25 +6,20 @@
 //   pnpm sim:constellation -- --ladder-only
 //
 // Exit code 1 when a hard ladder check fails, so the stamina ladder is a regression gate.
-import {
-  CARD_SET_SIZE,
-  applyForm,
-  constellationTemplate,
-  deriveStats,
-  npcRaceStats,
-  parseRaceCondition,
-  shapeDef,
-  yourForm,
-  type CardNodeState,
-  type CompiledRaceSkill,
-  type DistanceCategory,
-  type NodeAssignment,
-  type RaceSkillEffectKind,
-  type StatKey,
-  type Stats,
-  type Strategy,
-} from '../../packages/domain/src/index'
+import { npcRaceStats, type DistanceCategory, type Stats, type Strategy } from '../../packages/domain/src/index'
 import { simulateRace } from '../../packages/race/src/index'
+import {
+  FIELD_STRATEGIES,
+  NPC_KIT,
+  PLAYER_KIT,
+  SPRINT_GUTS,
+  SPRINT_POWER,
+  STAYER,
+  buildStats,
+  categoryOf,
+  fairShare,
+  goldRecovery,
+} from './harness'
 
 const args = process.argv.slice(2)
 const RACES = Number(args.find((value) => /^\d+$/.test(value)) ?? 200)
@@ -32,87 +27,6 @@ const LADDER_ONLY = args.includes('--ladder-only')
 const tiersArg = args.find((value) => value.startsWith('--tiers='))?.split('=')[1]
 const TIERS = tiersArg ? tiersArg.split(',').map(Number) : Array.from({ length: 14 }, (_, index) => index + 1)
 const LADDER_RACES = 30
-
-// --- Synthetic kit -------------------------------------------------------------------------------
-
-const skill = (id: string, condition: string, kind: RaceSkillEffectKind, amount: number, duration: number,
-  activation: 'guaranteed' | 'wit' = 'wit'): CompiledRaceSkill => ({
-  id,
-  activation,
-  inherited: false,
-  groups: [{
-    precondition: null,
-    condition: parseRaceCondition(condition)!,
-    duration,
-    cooldown: 0,
-    effects: [{ kind, amount }],
-    unsupportedVariables: [],
-    unsupportedEffects: [],
-  }],
-})
-/** A gold recovery: 5.5% of max HP, the original's gold-tier heal. */
-const goldRecovery = (id: string, at: number) => skill(id, `hp_per<=${at}`, 'recovery', 0.055, 0, 'guaranteed')
-/** The documented baseline enemy kit: one recovery, one mid-race speed, one late speed, one acceleration (whites). */
-const NPC_KIT = [
-  skill('npc-recovery', 'hp_per<=60', 'recovery', 0.015, 0, 'guaranteed'),
-  skill('npc-middle', 'phase_random==1', 'target-speed', 0.15, 3),
-  skill('npc-late', 'phase_random==2', 'target-speed', 0.15, 3),
-  skill('npc-acceleration', 'phase_random==2', 'acceleration', 0.2, 3),
-]
-/** What an SP budget in the thousands buys (D133): a few golds on top of the field's whites. */
-const PLAYER_KIT = [
-  ...NPC_KIT,
-  skill('gold-late-speed', 'phase_random==2', 'target-speed', 0.35, 3),
-  skill('gold-acceleration', 'phase_random==2', 'acceleration', 0.4, 3),
-]
-
-// --- Synthetic Uma and cards ---------------------------------------------------------------------
-
-type CardType = 'speed' | 'stamina' | 'power' | 'guts' | 'wit' | 'friend'
-/** Median base stats of the imported roster, zero growth: the typical Uma, not a favourable one. */
-const BASE: Stats = { speed: 110, stamina: Number(process.env.BASE_STAMINA ?? 105), power: 110, guts: Number(process.env.BASE_GUTS ?? 110), wit: 110 }
-const umaTemplate = { baseStats: BASE, growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 } }
-const flatProfile = { trainingBonus: 1, friendshipBonus: 1, statBonus: 1, skillPointBonus: 1, specialtyPriority: 1, hintFrequency: 1, raceBonus: 1, initialStats: 1 }
-
-const cardCap = (tier: number) => Math.ceil(shapeDef(tier).cardNodes / CARD_SET_SIZE) + 1
-const fairShare = (tier: number) => Math.ceil(shapeDef(tier).cardNodes / CARD_SET_SIZE)
-
-/**
- * Race stats for a six-card set at TL10, current era, max bond. The Friend card takes its fair share for SP, the
- * card at `leanIndex` takes `lean` nodes, and Speed then Wit fill what is left up to the per-card cap.
- */
-function buildStats(tier: number, deck: CardType[], leanIndex: number, lean: number, statNodesTo: StatKey): Stats {
-  const template = constellationTemplate(tier)
-  const ids = deck.map((type, index) => `${type}-${index}`)
-  const cards = new Map<string, CardNodeState>(ids.map((id, index) => [id, {
-    template: { id, type: deck[index]!, era: tier, effectProfile: flatProfile, hintSkillIds: [] },
-    limitBreak: 4,
-  }]))
-  const want = deck.map(() => 0)
-  let left = shapeDef(tier).cardNodes
-  const give = (index: number, count: number) => {
-    const granted = Math.min(count, cardCap(tier) - want[index]!, left)
-    want[index] = want[index]! + granted
-    left -= granted
-  }
-  give(deck.indexOf('friend'), fairShare(tier))
-  give(leanIndex, lean)
-  for (const type of ['speed', 'wit', 'guts', 'power', 'stamina'] as CardType[]) {
-    deck.forEach((card, index) => { if (card === type) give(index, cardCap(tier)) })
-  }
-  const queue = ids.flatMap((id, index) => Array.from({ length: want[index]! }, () => id))
-  const assignments: Record<string, NodeAssignment> = {}
-  for (const node of template.nodes) {
-    if (node.kind === 'card' && queue.length > 0) assignments[node.id] = { kind: 'card', cardId: queue.shift()! }
-    if (node.kind === 'stat') assignments[node.id] = { kind: 'stat', stat: statNodesTo }
-  }
-  const derived = deriveStats({ tier, trainingLevel: 10, template, assignments, cardSetIds: ids, umaTemplate, cards })
-  return applyForm(derived.stats, yourForm(10))
-}
-
-const SPRINT_GUTS: CardType[] = ['speed', 'speed', 'guts', 'wit', 'wit', 'friend']
-const SPRINT_POWER: CardType[] = ['speed', 'speed', 'power', 'wit', 'wit', 'friend']
-const STAYER: CardType[] = ['speed', 'speed', 'stamina', 'wit', 'wit', 'friend']
 
 const configs = (tier: number) => ({
   'sprint (guts)': buildStats(tier, SPRINT_GUTS, 2, fairShare(tier), 'speed'),
@@ -124,10 +38,6 @@ const configs = (tier: number) => ({
 })
 
 // --- Stamina ladder --------------------------------------------------------------------------------
-
-const categoryOf = (distance: number): DistanceCategory =>
-  distance <= 1400 ? 'sprint' : distance <= 1800 ? 'mile' : distance <= 2400 ? 'medium' : 'long'
-const FIELD_STRATEGIES: Strategy[] = ['front', 'pace', 'late', 'end']
 
 /**
  * Whether a build reaches a full spurt without running out of HP in at least 90% of 12-runner G1 races. Measured in

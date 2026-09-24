@@ -62,6 +62,11 @@ export async function listLatestRaceTimes() {
   return gameRuntime.listLatestRaceTimes()
 }
 
+export async function listUmaRaceHistory(umaId: string) {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.listUmaRaceHistory(umaId)
+}
+
 export async function listRaceHistory(limit = 20) {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.listRaceHistory(limit)

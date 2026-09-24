@@ -311,8 +311,12 @@ export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[])
 /** Race Form now follows the active scenario's Training Level: every scenario starts as a fair fight. */
 export const playerRaceStats = (stats: Stats, trainingLevel: number): Stats => applyForm(stats, yourForm(trainingLevel))
 
-/** Apply race EXP, stopping at the next gate and banking at most one following level there. */
-export function addUmaRaceExp(uma: UmaSave, expGained: number): UmaExperienceResult {
+/**
+ * Apply race EXP, stopping at the next gate and banking at most one following level there. A career hold
+ * (`holdLevel`, from careerHoldLevel) stops it earlier and banks just short of the next level, so the race that wins
+ * the stage's goal releases it (D137).
+ */
+export function addUmaRaceExp(uma: UmaSave, expGained: number, holdLevel: number | null = null): UmaExperienceResult {
   if (!isNonNegativeInt(expGained)) throw new Error('Race EXP must be a nonnegative integer')
   let level = uma.level
   let exp = uma.exp
@@ -323,6 +327,8 @@ export function addUmaRaceExp(uma: UmaSave, expGained: number): UmaExperienceRes
     exp = 0
   } else if (isGateLevel(level)) {
     exp = Math.min(expToNextUmaLevel(level + 1), exp + expGained)
+  } else if (holdLevel !== null && level >= holdLevel) {
+    exp = Math.min(expToNextUmaLevel(level) - 1, exp + expGained)
   } else {
     exp += expGained
     while (level < MAX_UMA_LEVEL && !isGateLevel(level)) {
@@ -334,6 +340,10 @@ export function addUmaRaceExp(uma: UmaSave, expGained: number): UmaExperienceRes
       if (isGateLevel(level)) {
         reachedGate = level
         exp = Math.min(expToNextUmaLevel(level + 1), exp)
+        break
+      }
+      if (level === holdLevel) {
+        exp = Math.min(expToNextUmaLevel(level) - 1, exp)
         break
       }
     }
@@ -355,10 +365,11 @@ export function resolveRaceExperience(
   grade: RaceGrade,
   placement: number,
   raceBonus: number,
+  holdLevel: number | null = null,
 ): UmaExperienceResult {
   if (!Number.isSafeInteger(placement) || placement < 1) throw new Error('Invalid race placement')
   if (!isFiniteNonNegative(raceBonus)) throw new Error('Invalid Race Bonus')
-  return addUmaRaceExp(uma, raceExp(grade, placement, raceBonus))
+  return addUmaRaceExp(uma, raceExp(grade, placement, raceBonus), holdLevel)
 }
 
 function parseRunner(value: unknown, fieldSize: number): RaceResultRunner | null {
