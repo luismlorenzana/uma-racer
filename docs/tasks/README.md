@@ -22,6 +22,8 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
+| [M019 — Stars and tickets](M019-stars-and-tickets.md) | T061 · T062, one release (save v7) | Specified · next |
+| [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · after M019 |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051, T053 – T056; T052 complete | Outlined |
 | [T059 — Chibi and dress art](T059-chibi-and-dress-art.md) | T059 | Specified · waiting on source permission |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |

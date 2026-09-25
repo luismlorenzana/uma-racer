@@ -1,8 +1,11 @@
 # Roguelite Card Minigame: Research and Options
 
 Prep for replacing Bond Recall (match-2) with an adventure-style roguelite built around one card being bonded and a
-run of randomized cards. **Nothing here is decided**; it sets out the options for the owner to choose from. Numbers are
-illustrative drafts.
+run of randomized cards. Numbers are illustrative drafts.
+
+> **Decided 2026-09-25:** option B, all or nothing, owned cards only (no guests or scouting), and Spark Match kept
+> separate (D146). The owner also re-scaled limit breaks to 0★–5★ (D147) and tickets to one per run (D148). The plan is
+> [M019](../tasks/M019-stars-and-tickets.md), then [M020](../tasks/M020-friendship-training.md).
 
 ## Why replace Bond Recall
 
