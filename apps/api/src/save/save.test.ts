@@ -42,7 +42,14 @@ describe('LocalSaveRepository sync', () => {
     expect((await repo.sync('u1', { upserts: [], appends: [append] })).appended).toBe(0)
     expect((await repo.load('u1')).logs).toHaveLength(1)
     expect((await repo.load('u2')).logs).toHaveLength(0)
-    await expect(repo.sync('u1', { upserts: [], appends: [{ ...append, data: { placement: 2 } }] })).rejects.toThrow(/id collision/)
+    // A later, different copy of the same log id is a second device recording the same event: the first write wins and
+    // the rest of the batch still lands, rather than failing the whole sync (D149).
+    const response = await repo.sync('u1', {
+      upserts: [{ kind: 'profile', id: 'main', baseVersion: 0, data: { placement: 0 } }],
+      appends: [{ ...append, data: { placement: 2 }, createdAt: 2 }],
+    })
+    expect(response).toMatchObject({ appended: 0, applied: [{ kind: 'profile', id: 'main', version: 1 }] })
+    expect((await repo.load('u1')).logs).toEqual([append])
   })
 })
 

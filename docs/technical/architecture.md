@@ -140,7 +140,9 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
-  rebased onto the returned server version. Append-only records (race results, ledger) are idempotent by id.
+  rebased onto the returned server version. Append-only records (race results, ledger) are idempotent by id, and **the first write wins**: a later copy of an id
+  with different contents (two devices claiming the same day's grant, say) is kept out with a warning rather than failing
+  the batch, which once froze sync for five days (D149).
 - Every IndexedDB/network shape is parsed before adoption. A corrupt or newer-schema save becomes an explicit recoverable
   error rather than being reset. If IndexedDB itself is unavailable, play can continue in clearly labeled memory-only mode.
 - App-shell and private-content releases remain independently visible. The build commit is injected into Settings, content

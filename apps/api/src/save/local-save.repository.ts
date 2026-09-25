@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
@@ -10,6 +11,7 @@ interface FileShape {
 
 // Local dev persistence: one JSON file, written atomically (tmp + rename), with calls serialized in-process.
 export class LocalSaveRepository implements SaveRepository {
+  private readonly logger = new Logger('SaveSync')
   private queue: Promise<unknown> = Promise.resolve()
 
   constructor(private readonly file: string) {}
@@ -61,8 +63,9 @@ export class LocalSaveRepository implements SaveRepository {
         const key = `${a.kind}/${a.id}`
         const current = user.logs[key]
         if (current) {
+          // The first write wins, as in Firestore (D149).
           const incoming: LogRecord = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
-          if (!isDeepStrictEqual(current, incoming)) throw new Error(`Append log id collision: ${key}`)
+          if (!isDeepStrictEqual(current, incoming)) this.logger.warn(`Kept the first copy of ${key}`)
           continue
         }
         user.logs[key] = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }

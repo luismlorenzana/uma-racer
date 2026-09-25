@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common'
 import * as admin from 'firebase-admin'
 import { isDeepStrictEqual } from 'node:util'
 import type { SaveRepository } from './save.repository'
@@ -16,6 +17,8 @@ import {
 // (docs/technical/architecture.md#firestore-data-model-saves). On Cloud Run, initializeApp() uses
 // Application Default Credentials automatically.
 export class FirestoreSaveRepository implements SaveRepository {
+  private readonly logger = new Logger('SaveSync')
+
   private get db(): admin.firestore.Firestore {
     if (admin.apps.length === 0) admin.initializeApp()
     return admin.firestore()
@@ -63,9 +66,9 @@ export class FirestoreSaveRepository implements SaveRepository {
       request.appends.forEach((a, i) => {
         const record: LogRecord = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
         if (logDocs[i]?.exists) {
-          if (!isDeepStrictEqual(logDocs[i]!.data(), record)) {
-            throw new Error(`Append log id collision: ${a.kind}/${a.id}`)
-          }
+          // A log id names one event, so the first write wins (D149). Two devices recording the same event, such as
+          // the same day's grant, differ only in when; failing the whole batch over that froze sync for five days.
+          if (!isDeepStrictEqual(logDocs[i]!.data(), record)) this.logger.warn(`Kept the first copy of ${a.kind}/${a.id}`)
           return
         }
         tx.set(logRefs[i]!, record)
