@@ -22,7 +22,7 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Outlined |
+| [M015 — Scenario identity](M015-scenario-identity.md) | T051, T053 – T056; T052 complete | Outlined |
 | [T059 — Chibi and dress art](T059-chibi-and-dress-art.md) | T059 | Specified · waiting on source permission |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
@@ -44,6 +44,9 @@ M018 (race engine v5: the verified spurt plan, hills, duels, gate and green skil
 the race drawn on its own course) and T060 (the early stamina wall, resolved by D139–D140) landed on 2026-09-24 and
 were removed under D104; D139–D141, [Racing](../design/racing.md#engine-v5-m018) and
 [Race Engine v5 Findings](../research/race-engine-v5-findings.md) carry them.
+
+T052 (the fourteen constellation silhouettes, drawn on a grid) landed on 2026-09-25 with the constellation's visual
+pass and was removed from M015 under D104; D143 and [Constellations](../design/constellations.md#silhouettes) carry it.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

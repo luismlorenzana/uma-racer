@@ -76,24 +76,27 @@ nodeValue(T)  = treeBudget(T) / (cardNodes + statNodes)
 
 | # | Scenario | Shape | Card | Stat | Total | Node value |
 |---|---|---|---|---|---|---|
-| 1 | URA Finale | single trunk, short branches | 18 | 3 | 21 | 200 |
-| 2 | Unity Cup | three long branches | 20 | 4 | 24 | 175 |
-| 3 | Trackblazer | one long track with side spurs | 17 | 3 | 20 | 210 |
-| 4 | Our Grand Concert | five-arm star | 21 | 4 | 25 | 168 |
-| 5 | Grand Masters | twin arcs | 25 | 4 | 29 | 150 |
-| 6 | Project L'Arc | an arch | 26 | 4 | 30 | 150 |
-| 7 | U.A.F. Ready GO! | three coloured branches | 27 | 4 | 31 | 150 |
-| 8 | Great Food Festival | wide canopy | 27 | 5 | 32 | 150 |
-| 9 | Run! Mecha Umamusume | lattice spine | 28 | 5 | 33 | 150 |
-| 10 | The Twinkle Legends | seven-point crown | 29 | 5 | 34 | 150 |
-| 11 | Design Your Island | island ring | 30 | 5 | 35 | 150 |
-| 12 | Yukoma Hot Springs | spiral | 30 | 6 | 36 | 150 |
-| 13 | Beyond Dreams | twin trunks meeting | 31 | 6 | 37 | 150 |
-| 14 | Tracen Diner | counter with pendants | 32 | 6 | 38 | 150 |
+| 1 | URA Finale | a single trunk, short branches alternating like a fern | 18 | 3 | 21 | 200 |
+| 2 | Unity Cup | three long branches from one stem | 20 | 4 | 24 | 175 |
+| 3 | Trackblazer | one long oval track, open at the foot, with side spurs | 17 | 3 | 20 | 210 |
+| 4 | Our Grand Concert | five-arm star around a central root | 21 | 4 | 25 | 168 |
+| 5 | Grand Masters | twin arcs hanging from one bar | 25 | 4 | 29 | 150 |
+| 6 | Project L'Arc | an arch: a heavy lintel on two legs, the root its keystone | 26 | 4 | 30 | 150 |
+| 7 | U.A.F. Ready GO! | three feathered branches, one per sport | 27 | 4 | 31 | 150 |
+| 8 | Great Food Festival | wide canopy on a short trunk, rooted below | 27 | 5 | 32 | 150 |
+| 9 | Run! Mecha Umamusume | a spine with ribs, their ends dropping like an open lattice | 28 | 5 | 33 | 150 |
+| 10 | The Twinkle Legends | seven-point crown on its band, rooted below | 29 | 5 | 34 | 150 |
+| 11 | Design Your Island | a central island, spokes out to a ring open at the foot | 30 | 5 | 35 | 150 |
+| 12 | Yukoma Hot Springs | a square spiral out from the root | 30 | 6 | 36 | 150 |
+| 13 | Beyond Dreams | twin trunks meeting at the root and touching at the foot | 31 | 6 | 37 | 150 |
+| 14 | Tracen Diner | a counter with pendants of alternating length | 32 | 6 | 38 | 150 |
 
 Early scenarios have few, chunky nodes, so each decision is heavy and legible. From tier 5 every node is worth
 exactly **150** and the scenario's slot count is the whole progression. Each tier also carries the fixed
 **2 parent + 4 grandparent** lineage nodes, which pay aptitudes and skills rather than stats.
+
+Each silhouette is drawn on a grid, which keeps every edge straight and uncrossed; see
+[Constellations](constellations.md#silhouettes) for the format and how nodes are numbered from it.
 
 ## Scenario buffs
 

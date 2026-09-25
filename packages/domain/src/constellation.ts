@@ -1,6 +1,7 @@
 // Per-scenario skill trees: budgets, node values, and derived stats (docs/design/constellations.md).
 
 import { MAX_LIMIT_BREAK } from './cards'
+import { SHAPE_ART, cellKey, parseShapeArt, type ShapeCell } from './constellation-shapes'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { MAX_SCENARIO_TIER, SCENARIOS, baselineSkillPoints, skillPointCap } from './scenarios'
 import { STATS, type StatKey, type Stats, zeroStats } from './types'
@@ -50,26 +51,24 @@ export interface ShapeDef {
   shape: string
   cardNodes: number
   statNodes: number
-  /** How many chains grow out of the root. Decides the silhouette. */
-  branches: number
 }
 
 /** Slot counts and silhouettes per scenario (docs/design/scenarios.md#constellation-shapes). */
 export const CONSTELLATION_SHAPES: readonly ShapeDef[] = [
-  { shape: 'single-trunk', cardNodes: 18, statNodes: 3, branches: 1 },
-  { shape: 'three-branch', cardNodes: 20, statNodes: 4, branches: 3 },
-  { shape: 'track-spurs', cardNodes: 17, statNodes: 3, branches: 2 },
-  { shape: 'five-arm-star', cardNodes: 21, statNodes: 4, branches: 5 },
-  { shape: 'twin-arcs', cardNodes: 25, statNodes: 4, branches: 2 },
-  { shape: 'arch', cardNodes: 26, statNodes: 4, branches: 2 },
-  { shape: 'three-colour', cardNodes: 27, statNodes: 4, branches: 3 },
-  { shape: 'canopy', cardNodes: 27, statNodes: 5, branches: 4 },
-  { shape: 'lattice-spine', cardNodes: 28, statNodes: 5, branches: 2 },
-  { shape: 'crown', cardNodes: 29, statNodes: 5, branches: 7 },
-  { shape: 'island-ring', cardNodes: 30, statNodes: 5, branches: 6 },
-  { shape: 'spiral', cardNodes: 30, statNodes: 6, branches: 1 },
-  { shape: 'twin-trunks', cardNodes: 31, statNodes: 6, branches: 2 },
-  { shape: 'counter', cardNodes: 32, statNodes: 6, branches: 5 },
+  { shape: 'single-trunk', cardNodes: 18, statNodes: 3 },
+  { shape: 'three-branch', cardNodes: 20, statNodes: 4 },
+  { shape: 'track-spurs', cardNodes: 17, statNodes: 3 },
+  { shape: 'five-arm-star', cardNodes: 21, statNodes: 4 },
+  { shape: 'twin-arcs', cardNodes: 25, statNodes: 4 },
+  { shape: 'arch', cardNodes: 26, statNodes: 4 },
+  { shape: 'three-colour', cardNodes: 27, statNodes: 4 },
+  { shape: 'canopy', cardNodes: 27, statNodes: 5 },
+  { shape: 'lattice-spine', cardNodes: 28, statNodes: 5 },
+  { shape: 'crown', cardNodes: 29, statNodes: 5 },
+  { shape: 'island-ring', cardNodes: 30, statNodes: 5 },
+  { shape: 'spiral', cardNodes: 30, statNodes: 6 },
+  { shape: 'twin-trunks', cardNodes: 31, statNodes: 6 },
+  { shape: 'counter', cardNodes: 32, statNodes: 6 },
 ]
 
 const clampTier = (tier: number): number => Math.min(MAX_SCENARIO_TIER, Math.max(1, Math.trunc(tier)))
@@ -224,131 +223,58 @@ export interface ConstellationTemplate {
 
 export const ROOT_NODE_ID = 'root'
 
-const clampToBox = (points: { x: number; y: number }[]): void => {
-  for (const point of points) {
-    point.x = Math.round(Math.min(TREE_BOX.maxX, Math.max(TREE_BOX.minX, point.x)) * 10) / 10
-    point.y = Math.round(Math.min(TREE_BOX.maxY, Math.max(TREE_BOX.minY, point.y)) * 10) / 10
-  }
-}
+/** The card tree's band; lineage sits below it, visually detached (D123). */
+export const TREE_BOX = { minX: 2, maxX: 98, minY: 2, maxY: 74 } as const
+export const LINEAGE_BAND = { parentY: 83, grandparentY: 94 } as const
 
-/** Fit the shape, then relax it until nothing overlaps, keeping everything inside the box. */
-function layoutTree(points: { x: number; y: number }[]): void {
-  fitToBox(points)
-  for (let cycle = 0; cycle < 12; cycle += 1) {
-    separate(points)
-    clampToBox(points)
-  }
-}
-
-/** Minimum gap between two nodes, in layout units. About 39 pt on a 390 pt-wide canvas. */
-export const MIN_NODE_GAP = 10
+const round1 = (value: number): number => Math.round(value * 10) / 10
 
 /**
- * Pushes overlapping nodes apart, deterministically and in place. This runs once at authoring time and its
- * output is the stored position — it is not a force simulation at render time, and the same template always
- * produces the same layout.
- */
-function separate(points: { x: number; y: number }[], passes = 60): void {
-  for (let pass = 0; pass < passes; pass += 1) {
-    let moved = false
-    for (let i = 0; i < points.length; i += 1) {
-      for (let j = i + 1; j < points.length; j += 1) {
-        const a = points[i]!
-        const b = points[j]!
-        let dx = b.x - a.x
-        let dy = b.y - a.y
-        let distance = Math.hypot(dx, dy)
-        if (distance >= MIN_NODE_GAP) continue
-        // Coincident points need a deterministic nudge before they have a direction to separate along.
-        if (distance === 0) {
-          dx = (i % 2 === 0 ? 1 : -1) * 0.01
-          dy = 0.01
-          distance = Math.hypot(dx, dy)
-        }
-        const push = ((MIN_NODE_GAP - distance) / distance) * 0.5
-        a.x -= dx * push
-        a.y -= dy * push
-        b.x += dx * push
-        b.y += dy * push
-        moved = true
-      }
-    }
-    if (!moved) break
-  }
-}
-
-/**
- * Placeholder layouts derived from each scenario's shape parameters, so the engine is testable and the game
- * runs. T052 replaces these with fourteen authored trees — a generator cannot make fourteen silhouettes that
- * are actually different, which is the whole point of the shapes.
- */
-/** The card tree occupies this band; lineage sits below it, visually detached (D123). */
-export const TREE_BOX = { minX: 6, maxX: 94, minY: 4, maxY: 72 } as const
-export const LINEAGE_BAND = { parentY: 82, grandparentY: 94 } as const
-
-/** Scales a set of points uniformly into `TREE_BOX`, so a shape is fitted but never distorted. */
-function fitToBox(points: { x: number; y: number }[]): void {
-  if (points.length === 0) return
-  const minX = Math.min(...points.map((p) => p.x))
-  const maxX = Math.max(...points.map((p) => p.x))
-  const minY = Math.min(...points.map((p) => p.y))
-  const maxY = Math.max(...points.map((p) => p.y))
-  const spanX = maxX - minX || 1
-  const spanY = maxY - minY || 1
-  const boxW = TREE_BOX.maxX - TREE_BOX.minX
-  const boxH = TREE_BOX.maxY - TREE_BOX.minY
-  const scale = Math.min(boxW / spanX, boxH / spanY)
-  // Centre whatever slack the uniform scale leaves over.
-  const padX = (boxW - spanX * scale) / 2
-  const padY = (boxH - spanY * scale) / 2
-  for (const point of points) {
-    point.x = Math.round((TREE_BOX.minX + padX + (point.x - minX) * scale) * 10) / 10
-    point.y = Math.round((TREE_BOX.minY + padY + (point.y - minY) * scale) * 10) / 10
-  }
-}
-
-/**
- * Placeholder layouts derived from each scenario's shape parameters, so the engine is testable and the game
- * runs. T052 replaces these with fourteen authored trees — a generator cannot make fourteen silhouettes that
- * are actually different, which is the whole point of the shapes.
+ * Builds a scenario's tree from its silhouette (`SHAPE_ART`). Each grid cell becomes a position in `TREE_BOX`, so a
+ * sparse shape spreads out and a dense one packs in. Nodes are numbered breadth-first from the root, nearer rows and
+ * then columns first: the number is the unlock order, so the tree opens outward, and the last nodes reached, the
+ * tips, are the stat nodes. Ids, kinds and order are therefore fixed by the counts alone, and a redrawn silhouette
+ * never moves a saved assignment to a different kind of node.
  */
 export function buildTemplate(tier: number): ConstellationTemplate {
   const t = clampTier(tier)
   const def = shapeDef(t)
   const scenario = SCENARIOS[t - 1]!
-  const nodes: ConstellationNode[] = []
-
+  const grid = parseShapeArt(SHAPE_ART[t - 1]!)
   const total = def.cardNodes + def.statNodes
-  const chains: string[][] = Array.from({ length: def.branches }, () => [])
-  for (let i = 0; i < total; i += 1) chains[i % def.branches]!.push(`n${i}`)
+  if (grid.cells.length !== total) throw new Error(`tier ${t} draws ${grid.cells.length} nodes, expected ${total}`)
+  const links = [...grid.links.values()].reduce((sum, neighbours) => sum + neighbours.length, 0) / 2
+  if (links !== total) throw new Error(`tier ${t} draws ${links} connectors for ${total} nodes; a tree needs one per node`)
 
-  // A single-branch scenario serpentines so it fills the box instead of drawing one tall line.
-  const serpentine = def.branches === 1
-  const spread = def.branches <= 1 ? 0 : Math.min(240, 300 / def.branches) 
-  for (const [branchIndex, chain] of chains.entries()) {
-    const angle = (-90 + (branchIndex - (def.branches - 1) / 2) * spread) * (Math.PI / 180)
-    for (const [depth, id] of chain.entries()) {
-      const radius = 9 + depth * 8
+  const pitchX = (TREE_BOX.maxX - TREE_BOX.minX) / grid.columns
+  const pitchY = (TREE_BOX.maxY - TREE_BOX.minY) / grid.rows
+  const place = (cell: ShapeCell) => ({
+    x: round1(TREE_BOX.minX + (cell.col + 0.5) * pitchX),
+    y: round1(TREE_BOX.minY + (cell.row + 0.5) * pitchY),
+  })
+
+  const ids = new Map<string, string>([[cellKey(grid.root), ROOT_NODE_ID]])
+  const nodes: ConstellationNode[] = [{ id: ROOT_NODE_ID, kind: 'root', parentId: null, ...place(grid.root), order: -1 }]
+  const queue: ShapeCell[] = [grid.root]
+  while (queue.length > 0) {
+    const cell = queue.shift()!
+    const neighbours = [...(grid.links.get(cellKey(cell)) ?? [])].sort((a, b) => a.row - b.row || a.col - b.col)
+    for (const next of neighbours) {
+      if (ids.has(cellKey(next))) continue
+      const order = nodes.length - 1
+      const id = `n${order}`
+      ids.set(cellKey(next), id)
       nodes.push({
         id,
-        kind: 'card',
-        parentId: depth === 0 ? ROOT_NODE_ID : chain[depth - 1]!,
-        x: serpentine ? (depth % 2 === 0 ? 34 : 66) + (depth % 4 < 2 ? 0 : 6) : 50 + Math.cos(angle) * radius,
-        y: serpentine ? 6 + depth * 5 : 50 + Math.sin(angle) * radius,
-        order: depth * def.branches + branchIndex,
+        kind: order < def.cardNodes ? 'card' : 'stat',
+        parentId: ids.get(cellKey(cell))!,
+        ...place(next),
+        order,
       })
+      queue.push(next)
     }
   }
-
-  // The deepest nodes become the stat nodes, so they unlock last and sit at the tips.
-  for (const node of nodes.filter((n) => n.kind === 'card').sort((a, b) => b.order - a.order).slice(0, def.statNodes)) {
-    node.kind = 'stat'
-  }
-
-  layoutTree(nodes)
-  // The root anchors the graph at the centre of the tree's own span.
-  const rootX = Math.round((Math.min(...nodes.map((n) => n.x)) + Math.max(...nodes.map((n) => n.x))) / 2 * 10) / 10
-  nodes.unshift({ id: ROOT_NODE_ID, kind: 'root', parentId: null, x: rootX, y: TREE_BOX.minY - 2, order: -1 })
+  if (nodes.length - 1 !== total) throw new Error(`tier ${t} is not one connected tree`)
 
   for (const [index, side] of ([-1, 1] as const).entries()) {
     const parentId = `parent${index}`
@@ -466,6 +392,17 @@ export function lineageUnlockLevel(template: ConstellationTemplate, nodeId: stri
   if (node.kind === 'parent') return node.id === 'parent0' ? 9 : 10
   if (node.kind === 'grandparent') return node.parentId === 'parent0' ? 9 : 10
   return null
+}
+
+/** The Training Level that opens a node: 1 to 8 by unlock order for card and stat nodes, 9 or 10 for lineage. */
+export function nodeUnlockLevel(template: ConstellationTemplate, node: ConstellationNode): number {
+  if (node.kind === 'root') return 1
+  const lineage = lineageUnlockLevel(template, node.id)
+  if (lineage !== null) return lineage
+  for (let level = 1; level < NODE_UNLOCK_LEVELS; level += 1) {
+    if (node.order < unlockedNodeCount(template.tier, level)) return level
+  }
+  return NODE_UNLOCK_LEVELS
 }
 
 export function isNodeUnlocked(

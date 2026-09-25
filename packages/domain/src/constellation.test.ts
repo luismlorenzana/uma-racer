@@ -22,6 +22,7 @@ import {
   MIN_ERA_PCT,
   type NodeAssignment,
   nodesUnlockedBetween,
+  nodeUnlockLevel,
   nodeValue,
   shapeDef,
   slotCount,
@@ -34,6 +35,7 @@ import {
   unlockedNodeCount,
   validateTemplate,
 } from './constellation'
+import { parseShapeArt } from './constellation-shapes'
 import { MAX_SCENARIO_TIER, baselineSkillPoints, skillPointCap } from './scenarios'
 import { STATS, type StatKey, type Stats } from './types'
 
@@ -241,13 +243,62 @@ describe('layout', () => {
     }
   })
 
-  it('separates nodes enough to stay legible at tier 14, the densest tree', () => {
+  // The graph's box on a 375 × 812 pt phone, the smallest the game supports; the canvas stretches to it.
+  const CANVAS = { width: 351, height: 525 }
+  const pt = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(((a.x - b.x) / 100) * CANVAS.width, ((a.y - b.y) / 100) * CANVAS.height)
+
+  it('keeps 40 pt between any two nodes on the smallest phone, so a tile never overlaps a neighbour', () => {
     for (const tier of TIERS) {
-      const nodes = tree(tier)
-      const gaps = nodes.flatMap((a, i) => nodes.slice(i + 1).map((b) => Math.hypot(a.x - b.x, a.y - b.y)))
-      // 9 units is about 35 pt on a 390 pt canvas, so a 44 pt node reads without zooming.
-      expect(Math.min(...gaps)).toBeGreaterThan(9)
+      const nodes = constellationTemplate(tier).nodes
+      const gaps = nodes.flatMap((a, i) => nodes.slice(i + 1).map((b) => pt(a, b)))
+      expect(Math.min(...gaps)).toBeGreaterThanOrEqual(40)
     }
+  })
+
+  it('never lets two edges cross', () => {
+    const cross = (p: { x: number; y: number }, q: { x: number; y: number }, r: { x: number; y: number }, s: { x: number; y: number }) => {
+      const turn = (a: typeof p, b: typeof p, c: typeof p) => Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+      return turn(p, q, r) * turn(p, q, s) < 0 && turn(r, s, p) * turn(r, s, q) < 0
+    }
+    for (const tier of TIERS) {
+      const edges = constellationEdges(constellationTemplate(tier))
+      for (const [i, a] of edges.entries()) {
+        for (const b of edges.slice(i + 1)) expect(cross(a.from, a.to, b.from, b.to)).toBe(false)
+      }
+    }
+  })
+
+  it('numbers nodes breadth-first, so a node opens only after the one it hangs from', () => {
+    for (const tier of TIERS) {
+      const template = constellationTemplate(tier)
+      const byId = new Map(template.nodes.map((node) => [node.id, node]))
+      for (const node of tree(tier)) {
+        const parent = byId.get(node.parentId!)!
+        if (parent.kind !== 'root') expect(parent.order).toBeLessThan(node.order)
+        // Stat nodes are the last reached, so a card node never hangs below one.
+        if (parent.kind === 'stat') expect(node.kind).toBe('stat')
+      }
+    }
+  })
+
+  it('keeps node ids, kinds and order fixed by the counts, so a redrawn shape never changes a saved assignment', () => {
+    for (const tier of TIERS) {
+      const { cardNodes, statNodes } = shapeDef(tier)
+      const nodes = tree(tier)
+      expect(nodes.map((node) => node.id)).toEqual(Array.from({ length: cardNodes + statNodes }, (_, i) => `n${i}`))
+      for (const node of nodes) {
+        expect(node.id).toBe(`n${node.order}`)
+        expect(node.kind).toBe(node.order < cardNodes ? 'card' : 'stat')
+      }
+    }
+  })
+
+  it('rejects a malformed drawing', () => {
+    expect(() => parseShapeArt('R-o\no')).toThrow()
+    expect(() => parseShapeArt('R-o-R')).toThrow(/one root/)
+    expect(() => parseShapeArt('R-o-  ')).toThrow(/runs into/)
+    expect(() => parseShapeArt(' R-o')).toThrow(/off the grid/)
   })
 
   it('keeps lineage in its own band, clear of the tree', () => {
@@ -272,6 +323,17 @@ describe('layout', () => {
 })
 
 describe('unlock schedule', () => {
+  it('names the Training Level that opens each node, agreeing with the unlock check', () => {
+    for (const tier of TIERS) {
+      const template = constellationTemplate(tier)
+      for (const node of template.nodes) {
+        const level = nodeUnlockLevel(template, node)
+        if (node.kind !== 'root') expect(isNodeUnlocked(template, node, level - 1)).toBe(level === 1)
+        expect(isNodeUnlocked(template, node, level)).toBe(true)
+      }
+    }
+  })
+
   it('opens every card and stat node by Training Level 8', () => {
     for (const tier of TIERS) {
       expect(unlockedNodeCount(tier, 8)).toBe(slotCount(tier))

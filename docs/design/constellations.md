@@ -306,22 +306,35 @@ The only thing that gates it is whether a node is unlocked.
 ## The screen
 
 The constellation is the one screen that gets the dark **stage** surface, because that is what makes it read
-as a constellation rather than a form.
+as a constellation rather than a form. The stage is a lit panel: a soft radial light behind the tree, an inner
+edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143).
 
-- **Nodes** are circles on a 100×100 unit canvas that stretches to the screen's aspect, so a portrait phone
-  spreads the tree down its long axis instead of wasting it. Locked nodes are faint and unlabelled, unlocked
-  and empty ones are dashed outlines, and a filled node shows the card or Uma icon with its type colour on
-  the rim.
-- **Edges** are hairlines. An edge between two nodes holding the same card brightens to the accent, so a
-  stacked card reads as one line of the constellation rather than as repetition.
+- **The root** sits where the silhouette puts it and carries the scenario's crest in a gold ring. Every path
+  starts there, so the tree visibly grows from the scenario.
+- **Nodes** are shaped by kind: card nodes are framed square tiles, stat nodes are gems (a tile turned 45°), and
+  lineage nodes are portrait rounds. Each has four states:
+
+  | State | Look |
+  |---|---|
+  | Locked | A dark recessed socket with a faint lock; lineage sockets name their Training Level |
+  | Opens next | A dashed gold socket naming the Training Level that opens it (`TL3`) |
+  | Open, empty | A lit frame with a **+**, gold on the tree and silver in lineage |
+  | Filled | The card icon, the stat's colour and label, or the Uma's bust, framed and glowing in the card type's, stat's or lineage colour |
+
+- **Paths** are drawn, not hairlines. A path into a locked node is a dark groove. An open path is a slate line
+  in a dark outline. A path whose two ends are both filled **lights up**: gold, glowing, and in the card's own
+  colour where both ends hold the same card, so a stacked card reads as one stroke of the constellation.
+  Lineage paths light silver.
 - **A stat strip** above the graph carries the five derived stats and SP, each with a delta against the
   configuration as it was when the screen opened.
 - **The aptitude line** below it names every grade lineage has moved, with the step count that produced it.
-- **Pan and pinch-zoom**, with a Fit control. The view refits when the host resizes.
+- **Pan and pinch-zoom.** A **Fit** control appears once the view has moved; at fit it would only cover a
+  corner node. The view refits when the host resizes.
 
-Node cells are 36 pt at fit. A 38-node tier-14 tree cannot show 44 pt cells on a 375 pt screen — 88 layout
-units of width leaves about 26 pt per cell — so fit is the overview and pinching in is how you work on a
-crowded tree.
+Tiles are sized from the tightest spacing between two nodes on the actual screen: 72% of it, between 26 and
+44 pt. Every silhouette keeps at least 40 pt between node centres on a 375 × 812 phone (whose graph box is
+351 × 525 pt), so tiles land at 30–35 pt at fit and never overlap. On a crowded tree, fit is the overview and
+pinching in is how you work.
 
 ## Templates
 
@@ -332,9 +345,34 @@ A constellation template is **static content**, authored per scenario, not gener
 | `tier`, `scenarioId` | which scenario this is the tree for |
 | `shape` | the constellation silhouette, e.g. `single-trunk`, `three-branch` |
 | `cardNodes`, `statNodes` | counts; the sum decides `nodeValue` |
-| `nodes[]` | id, kind, parent id, and layout position |
-| `scenarioSlot` | which of the six card-set slots is the dedicated SP slot |
+| `nodes[]` | id, kind, parent id, and layout position, built from the silhouette |
 | `buff` | the scenario's mechanic (see [Scenarios](scenarios.md#scenario-buffs)) |
 
-Templates are validated at import: the card/stat nodes must form one connected tree rooted at the root node,
-parent nodes must be detached and have exactly two grandparent children each, and the counts must match.
+### Silhouettes
+
+Each scenario's tree is **drawn on a grid** in `packages/domain/src/constellation-shapes.ts` (T052, D143):
+
+```
+      R          R  the root
+      |          o  a card or stat node
+o-o-o-o-o-o-o    -  |  join straight neighbours; a run may cross an empty position
+|     |     |    /  \  join diagonal neighbours
+o     o     o
+```
+
+Nodes sit on even columns and lines, connectors between them. So every edge is straight, and two edges can
+never cross: a crossing would need two connectors in one character. The grid is scaled into the tree's band
+(x 2–98, y 2–74 of the 100-unit canvas); lineage sits below it, parents at y 83 and grandparents at 94, with a
+labelled divider between.
+
+What each node *is* is not drawn. The template numbers the nodes **breadth-first from the root**, nearer rows
+and then columns first. That number is the unlock order, so the tree opens outward from the root, and the last
+`statNodes` numbers, the ends of the branches, are the stat nodes. Ids (`n0`…), kinds and order are therefore
+fixed by the counts alone: redrawing a silhouette moves nodes on screen but never turns a saved card node into a
+stat node or changes which nodes a Training Level opens.
+
+A template refuses to build if its drawing has the wrong node count, is not one tree, or has a connector that
+leads nowhere. `validateTemplate` then checks the structure: the card and stat nodes form one connected tree
+rooted at the root node, the parent nodes are detached with exactly two grandparent children each, and the counts
+match. The domain tests also pin 40 pt between nodes on a 375 pt phone, no crossing edges, and breadth-first
+order.
