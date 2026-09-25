@@ -11,7 +11,7 @@ export const PHOTO_SPEED = 0.4
 export const PHOTO_HOLD_SECONDS = 0.65
 
 export type RacePresentationStage = 'field' | 'staged' | 'ready' | 'go' | 'running' | 'photo' | 'finished'
-export type RaceCueKind = 'skill' | 'late-start' | 'spurt' | 'pack'
+export type RaceCueKind = 'skill' | 'late-start' | 'spurt' | 'pack' | 'duel'
 export type RacePackCue = 'Blocked' | 'Overtaking' | 'Pace up' | 'Pace down' | 'Holding lead'
 
 export interface RaceCue {
@@ -99,6 +99,15 @@ export function buildRaceCues(timeline: RaceTimeline, playerIndex: number): Race
       if (isPlayer) candidates.push(candidate)
       else if (rivalLate) rivalLate.additionalCount += 1
       else rivalLate = candidate
+      return
+    }
+
+    // Engine v5 duels: the cue names the rival, so it carries her index as its runner.
+    if (isPlayer && event.type === 'duel' && event.value === 1 && event.targetRunner !== undefined) {
+      candidates.push({
+        kind: 'duel', runner: event.targetRunner, tick: event.tick, additionalCount: 0, isPlayer: true,
+        priority: 1, sourceIndex,
+      })
       return
     }
 
@@ -248,10 +257,14 @@ export function coursePositionLabel(layout: RaceCourseLayout | undefined, distan
   const corners = layout.corners
   const straights = layout.straights
   const corner = corners.find((segment) => distance >= segment.start && distance < segment.end)
-  if (corner) return corner === corners[corners.length - 1] ? 'Final corner' : `Corner ${corner.number}`
   const straight = straights.find((segment) => distance >= segment.start && distance < segment.end)
-  if (straight && straight === straights[straights.length - 1]) return 'Final straight'
-  return straight ? 'Straight' : null
+  const place = corner
+    ? corner === corners[corners.length - 1] ? 'Final corner' : `Corner ${corner.number}`
+    : straight && straight === straights[straights.length - 1] ? 'Final straight' : straight ? 'Straight' : null
+  // Engine v5 hills (M018).
+  const slope = layout.slopes?.find((segment) => distance >= segment.start && distance < segment.end)
+  const hill = slope ? slope.slope > 0 ? 'Uphill' : 'Downhill' : null
+  return [place, hill].filter(Boolean).join(' · ') || null
 }
 
 export function summarizePlayerActivations(timeline: RaceTimeline, playerIndex: number): ActivationSummary[] {

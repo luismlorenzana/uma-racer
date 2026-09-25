@@ -8,6 +8,7 @@ import {
   simulateRaceV1,
   simulateRaceV2,
   simulateRaceV3,
+  simulateRaceV4,
   skillActivationChance,
   staminaContestBonus,
   createRng,
@@ -44,7 +45,7 @@ const fullField = (seed: number, distance = 2400): RaceInput => ({
 const compiledSkill = (
   id: string,
   condition: string,
-  kind: 'recovery' | 'target-speed' | 'current-speed' | 'current-speed-natural' | 'acceleration',
+  kind: CompiledRaceSkill['groups'][number]['effects'][number]['kind'],
   amount: number,
   duration = 2,
 ): CompiledRaceSkill => ({
@@ -128,7 +129,9 @@ describe('simulateRace', () => {
   })
 
   it('activates deterministic target-speed and recovery skills from engine context', () => {
-    const skilled = runner(0, stats(600, { stamina: 220 }))
+    // Enough stamina and Wit that the question is whether skills help: v5 re-plans the spurt after a final-leg heal,
+    // and Wit decides whether she takes the best plan, as in the original.
+    const skilled = runner(0, stats(600, { stamina: 700, wit: 2200 }))
     skilled.skills = [
       compiledSkill('synthetic-speed', 'distance_rate>=40', 'target-speed', 0.35, 3),
       compiledSkill('synthetic-recovery', 'hp_per<=70', 'recovery', 0.35, 0),
@@ -136,7 +139,7 @@ describe('simulateRace', () => {
     const input: RaceInput = {
       course: { distance: 3200, surface: 'turf' },
       seed: 91,
-      runners: [skilled, runner(1, stats(600, { stamina: 220 }))],
+      runners: [skilled, runner(1, stats(600, { stamina: 700, wit: 2200 }))],
     }
     const first = simulateRace(input)
     const second = simulateRace(input)
@@ -384,7 +387,7 @@ describe('stamina contest (engine v4, D135)', () => {
       seed: 11,
       runners: [runner(0, stats(1000, { stamina: 1800, speed: 1300 }))],
     }
-    const v4 = simulateRace(input).results[0]!
+    const v4 = simulateRaceV4(input).results[0]!
     const v3 = simulateRaceV3(input).results[0]!
     expect(v4.spurtMaxed).toBe(true)
     expect(v3.spurtMaxed).toBe(true)
@@ -392,6 +395,82 @@ describe('stamina contest (engine v4, D135)', () => {
     expect(v4.finishTime).toBeLessThan(v3.finishTime)
     // Under the threshold the rules agree exactly.
     const plain = { ...input, runners: [runner(0, stats(1000, { stamina: 1150, speed: 1300 }))] }
-    expect(simulateRace(plain).results[0]!.finishTime).toBe(simulateRaceV3(plain).results[0]!.finishTime)
+    expect(simulateRaceV4(plain).results[0]!.finishTime).toBe(simulateRaceV3(plain).results[0]!.finishTime)
+  })
+})
+
+const straightCourse = (distance: number, slopes: { start: number; end: number; slope: number }[] = []): RaceInput['course'] => ({
+  distance,
+  surface: 'turf',
+  layout: { corners: [], straights: [{ start: 0, end: distance }], slopes },
+  trackId: 10006,
+  rotation: 2,
+})
+
+describe('engine v5 (M018)', () => {
+  it('plans a spurt a short-of-HP runner can finish, and marks it where it begins', () => {
+    const input: RaceInput = { course: straightCourse(2400), seed: 5, runners: [runner(0, stats(900, { stamina: 250, wit: 2200 }))] }
+    const v5 = simulateRace(input)
+    const spurt = v5.events.find((event) => event.type === 'spurt')!
+    // She holds her final-leg pace past the leg's start, then spurts at the speed her HP can carry to the line.
+    expect(v5.distance[spurt.tick * v5.runnerCount]!).toBeGreaterThan(2400 * (2 / 3) + 10)
+    expect(v5.results[0]!.spurtMaxed).toBe(false)
+    // The plan leaves the last 60 m out, as the original does: HP may run dry there and nowhere earlier.
+    const empty = v5.events.find((event) => event.type === 'hp-empty')
+    if (empty) expect(v5.distance[empty.tick * v5.runnerCount]!).toBeGreaterThan(2400 - 90)
+    // Taking the fastest plan every time, v5 beats v4's hold-one-speed-from-the-leg-start choice.
+    expect(v5.results[0]!.finishTime).toBeLessThan(simulateRaceV4(input).results[0]!.finishTime)
+  })
+
+  it('applies green skills and gate skills at the gate', () => {
+    const plain = runner(0, stats(600))
+    const greens = { ...runner(0, stats(600)), skills: [
+      compiledSkill('synthetic-green', 'rotation==2', 'passive-stamina', 60, 0),
+      compiledSkill('synthetic-gate', 'always==1', 'start-delay', 0.4, 0),
+    ] }
+    const base = simulateRace({ course: straightCourse(2000), seed: 3, runners: [plain] })
+    const boosted = simulateRace({ course: straightCourse(2000), seed: 3, runners: [greens] })
+    const gate = boosted.events.filter((event) => event.type === 'skill-activated')
+    expect(gate.map((event) => [event.skillId, event.tick])).toEqual([['synthetic-green', 0], ['synthetic-gate', 0]])
+    expect(boosted.results[0]!.startDelay).toBeCloseTo(base.results[0]!.startDelay * 0.4, 10)
+    // A green whose course condition fails does nothing.
+    const wrongCourse = { ...greens, skills: [compiledSkill('synthetic-green', 'rotation==1', 'passive-stamina', 60, 0)] }
+    expect(simulateRace({ course: straightCourse(2000), seed: 3, runners: [wrongCourse] }).events
+      .some((event) => event.type === 'skill-activated')).toBe(false)
+  })
+
+  it('slows a climb by 200 / Power per percent, and times random-point skills on the course\'s own geometry', () => {
+    const flat = simulateRace({ course: straightCourse(2000), seed: 4, runners: [runner(0, stats(700))] })
+    const hill = simulateRace({ course: straightCourse(2000, [{ start: 400, end: 1000, slope: 20_000 }]), seed: 4, runners: [runner(0, stats(700))] })
+    expect(hill.results[0]!.finishTime).toBeGreaterThan(flat.results[0]!.finishTime + 0.3)
+
+    const climber = { ...runner(0, stats(700)), skills: [compiledSkill('synthetic-hill', 'up_slope_random==1', 'target-speed', 0.2, 2)] }
+    const timeline = simulateRace({ course: straightCourse(2000, [{ start: 400, end: 1000, slope: 20_000 }]), seed: 4, runners: [climber] })
+    const fired = timeline.events.find((event) => event.type === 'skill-activated')!
+    const at = timeline.distance[fired.tick * timeline.runnerCount]!
+    expect(at).toBeGreaterThanOrEqual(400)
+    expect(at).toBeLessThan(1000 + 25)
+    // No slope, no trigger.
+    expect(simulateRace({ course: straightCourse(2000), seed: 4, runners: [climber] }).events
+      .some((event) => event.type === 'skill-activated')).toBe(false)
+  })
+
+  it('starts a duel between evenly matched runners on the final straight', () => {
+    const input: RaceInput = {
+      course: straightCourse(1800),
+      seed: 12,
+      runners: [runner(0, stats(900)), runner(1, stats(900))],
+    }
+    const timeline = simulateRace(input)
+    const duels = timeline.events.filter((event) => event.type === 'duel' && event.value === 1)
+    expect(duels.length).toBeGreaterThan(0)
+    expect(duels.every((event) => event.targetRunner !== undefined && event.targetRunner !== event.runner)).toBe(true)
+    expect(simulateRaceV4(input).events.some((event) => event.type === 'duel')).toBe(false)
+  })
+
+  it('leaves engine-v4 replays exactly as they were', () => {
+    const input = fullField(21)
+    expect(simulateRaceV4(input)).toEqual(simulateRaceV4(input))
+    expect(simulateRaceV4(input).results).not.toEqual(simulateRace(input).results)
   })
 })

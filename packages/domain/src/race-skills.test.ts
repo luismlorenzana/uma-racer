@@ -10,6 +10,7 @@ import {
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
   replaceSkillLoadout,
+  skillAimsAtOthers,
   selectBaselineRaceSkills,
   summarizeSkillLoadout,
   summarizeRaceSkillCoverage,
@@ -81,12 +82,12 @@ describe('race skill compiler', () => {
 
     const inherited = compileRaceSkill({ ...skill('s2', 'inherited-unique', 200), conditions: [{
       precondition: null,
-      condition: 'slope==1',
+      condition: 'is_temptation==1',
       baseTime: -1,
       cooldown: null,
       effects: [{ type: 31, value: 4_000 }, { type: 999, value: 1 }],
     }] })
-    expect(inherited.groups[0]).toMatchObject({ duration: -1, unsupportedVariables: ['slope'], unsupportedEffects: [999] })
+    expect(inherited.groups[0]).toMatchObject({ duration: -1, unsupportedVariables: ['is_temptation'], unsupportedEffects: [999] })
     expect(inherited.groups[0]!.effects).toEqual([{ kind: 'acceleration', amount: 0.2 }])
     expect(raceSkillSupported(inherited)).toBe(false)
     const sprintOnly = compileRaceSkill({
@@ -101,6 +102,44 @@ describe('race skill compiler', () => {
     })
     expect(naturalSpeed.groups[0]!.effects).toEqual([{ kind: 'current-speed-natural', amount: 0.25 }])
     expect(raceSkillSupported(naturalSpeed)).toBe(true)
+  })
+
+  it('applies only a runner\'s own effects, and flags skills aimed wholly at others (D141)', () => {
+    const selfCost = compileRaceSkill({ ...skill('self-cost'), conditions: [{
+      ...skill('self-cost').conditions[0]!, effects: [{ type: 27, value: 5_500 }, { type: 9, value: -400 }],
+    }] })
+    expect(selfCost.groups[0]!.effects).toEqual([{ kind: 'target-speed', amount: 0.55 }, { kind: 'recovery', amount: -0.04 }])
+    const mixed = { ...skill('steal'), conditions: [{
+      ...skill('steal').conditions[0]!, effects: [{ type: 9, value: 300 }, { type: 9, value: -300, target: 18 }],
+    }] }
+    expect(compileRaceSkill(mixed).groups[0]!.effects).toEqual([{ kind: 'recovery', amount: 0.03 }])
+    expect(skillAimsAtOthers(mixed)).toBe(false)
+    const debuff = { ...skill('debuff'), conditions: [{
+      ...skill('debuff').conditions[0]!, effects: [{ type: 21, value: -1_500, target: 18 }],
+    }] }
+    expect(compileRaceSkill(debuff).groups[0]).toMatchObject({ effects: [], unsupportedEffects: [] })
+    expect(raceSkillSupported(compileRaceSkill(debuff))).toBe(false)
+    expect(skillAimsAtOthers(debuff)).toBe(true)
+    expect(() => assertRaceSkillContent([debuff])).not.toThrow()
+  })
+
+  it('compiles engine v5 gate and green skills and course conditions (M018)', () => {
+    const green = compileRaceSkill({ ...skill('green'), conditions: [{
+      precondition: null, condition: 'rotation==2&track_id==10006', baseTime: 0, cooldown: null, effects: [{ type: 2, value: 400_000 }],
+    }] })
+    expect(green.groups[0]!.effects).toEqual([{ kind: 'passive-stamina', amount: 40 }])
+    expect(raceSkillSupported(green)).toBe(true)
+    const gate = compileRaceSkill({ ...skill('gate', 'inherited-unique'), conditions: [{
+      precondition: null, condition: 'always==1', baseTime: 0, cooldown: null, effects: [{ type: 10, value: 4_000 }],
+    }] })
+    // A multiplier is not halved by inheritance.
+    expect(gate.groups[0]!.effects).toEqual([{ kind: 'start-delay', amount: 0.4 }])
+    for (const condition of ['all_corner_random==1', 'straight_random==1', 'is_last_straight==1', 'accumulatetime>=5', 'up_slope_random==1']) {
+      expect(raceSkillSupported(compileRaceSkill({ ...skill('c'), conditions: [{ ...skill('c').conditions[0]!, condition }] })), condition).toBe(true)
+    }
+    expect(compileRaceSkill({ ...skill('bad'), conditions: [{ ...skill('bad').conditions[0]!, condition: 'corner_random>=1' }] })
+      .groups[0]!.unsupportedVariables).toEqual(['corner_random'])
+    expect(parseCompiledRaceSkill(green)).toEqual(green)
   })
 
   it('supports bounded random phase points and rejects malformed variants', () => {
@@ -164,7 +203,7 @@ describe('skill loadouts', () => {
     expect(() => replaceSkillLoadout({ ...source, skillPoints: 80 }, uma, skills, ['paid-1'])).toThrow(/costs 90 SP/)
     expect(() => replaceSkillLoadout(source, uma, skills, ['unique-1'])).toThrow(/automatically/)
     expect(() => replaceSkillLoadout(source, uma, skills, ['missing'])).toThrow(/not available/)
-    const unsupported = { ...skill('later'), conditions: [{ ...skill('later').conditions[0]!, condition: 'slope==1' }] }
+    const unsupported = { ...skill('later'), conditions: [{ ...skill('later').conditions[0]!, condition: 'is_temptation==1' }] }
     const withUnsupported = new Map(skills).set(unsupported.id, unsupported)
     expect(() => replaceSkillLoadout({
       ...source,

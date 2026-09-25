@@ -26,7 +26,7 @@ import {
   shapeDef,
   slotCount,
   spNodeValue,
-  untrainedFloor,
+  CAREER_RACE_BONUS,
   STAT_NODE_POOL,
   statNodeValue,
   TREE_BOX,
@@ -488,23 +488,21 @@ describe('derivation', () => {
       },
       cards: new Map([['c', card('c', 'speed')]]),
     })
-    // 220 × 0.70 = 154 raw speed ×1.2 growth = 184.8, on top of the TL10 untrained floor of 500 (D134).
+    // 220 × 0.70 = 154 raw speed ×1.2 growth = 184.8, on top of base 100 + the career-race 400 (D139).
     expect(derived.raw.speed).toBe(154)
     expect(derived.stats.speed).toBe(685)
-    // 220 × 0.30 = 66 raw power, no growth, on the same floor.
+    // 220 × 0.30 = 66 raw power, no growth, on the same start.
     expect(derived.stats.power).toBe(566)
-    // An untouched stat sits exactly on the floor.
-    expect(derived.stats.guts).toBe(untrainedFloor(10))
+    // An untouched stat sits exactly on base + 400.
+    expect(derived.stats.guts).toBe(uma.baseStats.guts + CAREER_RACE_BONUS)
   })
 
-  it('lifts only the starting point to the untrained floor, never above a higher base (D134)', () => {
-    expect(untrainedFloor(1)).toBe(50)
-    expect(untrainedFloor(10)).toBe(500)
+  it('adds the career-race 400 to every stat at every Training Level (D139)', () => {
+    expect(CAREER_RACE_BONUS).toBe(400)
     const early = deriveStats({
       tier: 1, trainingLevel: 1, template, assignments: {}, cardSetIds: [], umaTemplate: uma, cards: new Map(),
     })
-    // At TL1 the floor (50) is under the base (100), so the base stands.
-    expect(early.stats.stamina).toBe(uma.baseStats.stamina)
+    expect(early.stats.stamina).toBe(uma.baseStats.stamina + 400)
   })
 
   it('never lets a stat exceed its cap', () => {

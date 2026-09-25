@@ -96,8 +96,9 @@ Winning a set inside one scenario is also how its title is earned, so a career n
 `pnpm sim:careers` generates a career for every Uma at every tier from the private pack. It fails if any career cannot
 be generated, if any race falls outside her profile or below B, or if a stage's race is not winnable by Training Level
 10 with the [constellation harness](constellations.md#balance-targets)'s builds. Today it produces 3,752 of 3,752
-careers, every one with three main-goal G1s, and none needing a relaxed pick. Every stage race reaches a 35% win rate
-by TL6–8; below TL6 nothing does, whatever the grade — the early stamina wall that T060 addresses.
+careers, every one with three main-goal G1s, and none needing a relaxed pick. Each stage's race is winnable at its
+own Training Level (D139–D140): the Maiden G3 50–85% at TL3, the Trials G2s 50–90% at TL6, the Main-goal G1s 55–85% at
+TL10, best case across strategies.
 
 The generator never fails a career over a thin catalog: an empty pool relaxes to her profile at any grade, then B or
 better anywhere, then anything of the stage's grade. Scenario Start fails before writes only when the catalog has no

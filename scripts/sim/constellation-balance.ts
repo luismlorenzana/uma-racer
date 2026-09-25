@@ -19,6 +19,7 @@ import {
   categoryOf,
   fairShare,
   goldRecovery,
+  typicalCourse,
 } from './harness'
 
 const args = process.argv.slice(2)
@@ -50,7 +51,7 @@ function fullSpurt(tier: number, stats: Stats, distance: number, strategy: Strat
   for (let race = 0; race < LADDER_RACES; race += 1) {
     const gate = race % 12
     const timeline = simulateRace({
-      course: { distance, surface: 'turf' },
+      course: typicalCourse(distance),
       seed: 31_337 + tier * 101 + race * 7919,
       runners: Array.from({ length: 12 }, (_, g) => g === gate
         ? { id: 'P', label: String(g + 1), stats, strategy, gate: g, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
@@ -116,7 +117,7 @@ if (!LADDER_ONLY) {
     for (let race = 0; race < RACES; race += 1) {
       const playerGate = race % 12
       const timeline = simulateRace({
-        course: { distance, surface: 'turf' },
+        course: typicalCourse(distance),
         seed: 1_000_003 * tier + race * 7919,
         runners: Array.from({ length: 12 }, (_, gate) => gate === playerGate
           ? { id: 'player', label: String(gate + 1), stats, strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: kit }

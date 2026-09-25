@@ -6,8 +6,11 @@ export interface RaceCourse {
   surface: Surface
   /** Imported source season code used by simple skill conditions. */
   season?: number
-  /** Immutable engine-v3 course geometry. Missing uses the documented whole-course straight fallback. */
+  /** Immutable engine-v3 course geometry (v5 adds slopes). Missing uses the documented whole-course straight fallback. */
   layout?: RaceCourseLayout
+  /** Engine v5 course facts for skill conditions: the imported track id and the original's rotation code. */
+  trackId?: number
+  rotation?: number
 }
 
 export interface RaceRunnerInput {
@@ -34,6 +37,8 @@ export type PositionMode = 'normal' | 'front-speed-up' | 'front-overtake' | 'pac
 export type RaceEventType =
   | 'late-start' | 'start-dash-end' | 'phase' | 'spurt' | 'hp-empty' | 'skill-activated' | 'finish'
   | 'position-mode' | 'blocked' | 'overtake' | 'lane-change'
+  /** Engine v5: a final-straight duel starts (value 1, `targetRunner` the rival) or ends (value 0). */
+  | 'duel'
 
 export interface RaceEvent {
   tick: number

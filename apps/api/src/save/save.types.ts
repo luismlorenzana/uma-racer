@@ -100,6 +100,12 @@ const RACE_RESULT_FIELDS = [
 ] as const
 const RACE_COURSE_FIELDS = ['distance', 'surface', 'season'] as const
 const RACE_COURSE_V3_FIELDS = ['distance', 'surface', 'season', 'layout'] as const
+const RACE_COURSE_V5_FIELDS = ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation'] as const
+/** Mirrors @racer/domain RACE_SKILL_EFFECT_KINDS (engine v5 adds gate and passive kinds, M018). */
+const RACE_SKILL_EFFECT_KINDS = [
+  'recovery', 'current-speed', 'current-speed-natural', 'target-speed', 'acceleration',
+  'passive-speed', 'passive-stamina', 'passive-power', 'passive-guts', 'passive-wit', 'start-delay',
+] as const
 const RACE_RUNNER_FIELDS = ['umaId', 'isPlayer', 'strategy', 'gate', 'stats', 'aptitude', 'placement', 'finishTime', 'marginLengths'] as const
 const RACE_APTITUDE_FIELDS = ['distance', 'surface', 'strategy'] as const
 const RACE_FACT_FIELDS = [
@@ -794,7 +800,7 @@ function parseCompiledSkill(value: unknown): boolean {
       typeof group.cooldown === 'number' && Number.isFinite(group.cooldown) && group.cooldown >= 0 &&
       Array.isArray(group.effects) && group.effects.every((effect) =>
         isRecord(effect) && exactKeys(effect, ['kind', 'amount']) &&
-        ['recovery', 'current-speed', 'current-speed-natural', 'target-speed', 'acceleration'].includes(String(effect.kind)) &&
+        RACE_SKILL_EFFECT_KINDS.includes(effect.kind as (typeof RACE_SKILL_EFFECT_KINDS)[number]) &&
         typeof effect.amount === 'number' && Number.isFinite(effect.amount),
       ) && Array.isArray(group.unsupportedVariables) &&
       group.unsupportedVariables.every((item) => typeof item === 'string' && /^[a-zA-Z0-9_]+$/.test(item)) &&
@@ -802,9 +808,16 @@ function parseCompiledSkill(value: unknown): boolean {
   })
 }
 
-function parseCourseLayout(value: unknown, distance: number): boolean {
-  if (!isRecord(value) || !exactKeys(value, ['corners', 'straights']) ||
-    !Array.isArray(value.corners) || !Array.isArray(value.straights)) return false
+function parseCourseLayout(value: unknown, distance: number, withSlopes = false): boolean {
+  if (!isRecord(value) || !exactKeys(value, withSlopes ? ['corners', 'straights', 'slopes'] : ['corners', 'straights']) ||
+    !Array.isArray(value.corners) || !Array.isArray(value.straights) || (withSlopes && !Array.isArray(value.slopes))) return false
+  const slopesValid = !withSlopes || (value.slopes as unknown[]).every((slope, index, all) =>
+    isRecord(slope) && exactKeys(slope, ['start', 'end', 'slope']) &&
+    typeof slope.start === 'number' && Number.isFinite(slope.start) && slope.start >= 0 &&
+    typeof slope.end === 'number' && Number.isFinite(slope.end) && slope.end > slope.start && slope.end <= distance &&
+    typeof slope.slope === 'number' && Number.isFinite(slope.slope) && slope.slope !== 0 && Math.abs(slope.slope) <= 100_000 &&
+    (index === 0 || ((all[index - 1] as Record<string, unknown>).end as number) <= slope.start))
+  if (!slopesValid) return false
   const valid = (segments: unknown[], corner: boolean) => segments.every((segment, index) => {
     if (!isRecord(segment) || !exactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end'])) return false
     if (typeof segment.start !== 'number' || !Number.isFinite(segment.start) || segment.start < 0 ||
@@ -829,11 +842,15 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
     ...(versioned ? ['engineVersion', 'course'] : []),
   ]) ||
-      (versioned && version !== 2 && version !== 3 && version !== 4) || !Array.isArray(value.field)) return null
+      (versioned && ![2, 3, 4, 5].includes(version as number)) || !Array.isArray(value.field)) return null
+  const hasLayout = version === 3 || version === 4 || version === 5
   if (versioned && (
-    !isRecord(value.course) || !exactKeys(value.course, version === 3 || version === 4 ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
+    !isRecord(value.course) ||
+    !exactKeys(value.course, version === 5 ? RACE_COURSE_V5_FIELDS : hasLayout ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
     !isPositiveInt(value.course.distance) || !['turf', 'dirt'].includes(String(value.course.surface)) ||
-    !isNonNegativeInt(value.course.season) || ((version === 3 || version === 4) && !parseCourseLayout(value.course.layout, value.course.distance))
+    !isNonNegativeInt(value.course.season) ||
+    (hasLayout && !parseCourseLayout(value.course.layout, value.course.distance, version === 5)) ||
+    (version === 5 && (!isNonNegativeInt(value.course.trackId) || !isNonNegativeInt(value.course.rotation)))
   )) return null
   const fieldSize = value.field.length
   if (

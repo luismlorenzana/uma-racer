@@ -19,7 +19,22 @@ export interface RaceConditionAtom {
 /** OR groups containing AND comparisons. */
 export type RaceCondition = RaceConditionAtom[][]
 
-export type RaceSkillEffectKind = 'recovery' | 'current-speed' | 'current-speed-natural' | 'target-speed' | 'acceleration'
+export type RaceSkillEffectKind =
+  | 'recovery' | 'current-speed' | 'current-speed-natural' | 'target-speed' | 'acceleration'
+  /** Engine v5 "green" skills: a flat stat gain applied at the gate (M018). */
+  | 'passive-speed' | 'passive-stamina' | 'passive-power' | 'passive-guts' | 'passive-wit'
+  /** Engine v5 gate skills: multiplies the start delay. */
+  | 'start-delay'
+
+export const RACE_SKILL_EFFECT_KINDS: readonly RaceSkillEffectKind[] = [
+  'recovery', 'current-speed', 'current-speed-natural', 'target-speed', 'acceleration',
+  'passive-speed', 'passive-stamina', 'passive-power', 'passive-guts', 'passive-wit', 'start-delay',
+]
+
+/** Effects resolved once at the gate rather than during the race. */
+export const GATE_EFFECT_KINDS: ReadonlySet<RaceSkillEffectKind> = new Set([
+  'passive-speed', 'passive-stamina', 'passive-power', 'passive-guts', 'passive-wit', 'start-delay',
+])
 
 export interface RaceSkillEffect {
   kind: RaceSkillEffectKind
@@ -96,7 +111,7 @@ export function parseCompiledRaceSkill(value: unknown): CompiledRaceSkill | null
     for (const effect of raw.effects) {
       if (!isRecord(effect) || !exactKeys(effect, ['kind', 'amount'])) return null
       if (
-        !['recovery', 'current-speed', 'current-speed-natural', 'target-speed', 'acceleration'].includes(String(effect.kind)) ||
+        !RACE_SKILL_EFFECT_KINDS.includes(effect.kind as RaceSkillEffectKind) ||
         typeof effect.amount !== 'number' || !Number.isFinite(effect.amount)
       ) return null
       effects.push({ kind: effect.kind as RaceSkillEffectKind, amount: effect.amount })
@@ -167,7 +182,64 @@ export const PACK_RACE_VARIABLES = new Set([
   'temptation_count',
 ])
 
-export const RACE_VARIABLES = new Set([...BASIC_RACE_VARIABLES, ...PACK_RACE_VARIABLES])
+/**
+ * Engine v5 conditions (M018): the race clock, course facts and simple counters. Ground condition, weather and mood
+ * are fixed at Good, sunny and normal until the game models them.
+ */
+export const COURSE_RACE_VARIABLES = new Set([
+  'accumulatetime',
+  'activate_count_all',
+  'activate_count_end_after',
+  'activate_count_heal',
+  'activate_count_later_half',
+  'activate_count_middle',
+  'activate_count_start',
+  'behind_near_lane_time',
+  'blocked_front_continuetime',
+  'compete_fight_count',
+  'corner_count',
+  'distance_diff_top',
+  'distance_diff_top_float',
+  'ground_condition',
+  'infront_near_lane_time',
+  'is_basis_distance',
+  'is_dirtgrade',
+  'is_last_straight',
+  'is_last_straight_onetime',
+  'motivation',
+  'overtake_target_time',
+  'rotation',
+  'running_style_count_nige_otherself',
+  'running_style_count_oikomi_otherself',
+  'running_style_count_sashi_otherself',
+  'running_style_count_same',
+  'running_style_count_same_rate',
+  'running_style_count_senko_otherself',
+  'slope',
+  'track_id',
+  'weather',
+])
+
+/** Random points on the course, drawn once per race from its snapshotted geometry (engine v5). */
+export const RANDOM_COURSE_VARIABLES = new Set([
+  'all_corner_random',
+  'corner_random',
+  'distance_rate_after_random',
+  'down_slope_random',
+  'is_finalcorner_random',
+  'phase_corner_random',
+  'phase_firstquarter_random',
+  'phase_straight_random',
+  'straight_random',
+  'up_slope_random',
+])
+
+export const RACE_VARIABLES = new Set([
+  ...BASIC_RACE_VARIABLES,
+  ...PACK_RACE_VARIABLES,
+  ...COURSE_RACE_VARIABLES,
+  ...RANDOM_COURSE_VARIABLES,
+])
 
 export const RANDOM_PHASE_VARIABLES = new Set([
   'phase_random',
@@ -176,7 +248,13 @@ export const RANDOM_PHASE_VARIABLES = new Set([
 ])
 
 const EFFECT_KIND: Readonly<Record<number, RaceSkillEffectKind>> = {
+  1: 'passive-speed',
+  2: 'passive-stamina',
+  3: 'passive-power',
+  4: 'passive-guts',
+  5: 'passive-wit',
   9: 'recovery',
+  10: 'start-delay',
   21: 'current-speed',
   22: 'current-speed-natural',
   27: 'target-speed',
@@ -219,6 +297,9 @@ function unsupportedConditionVariables(
       RANDOM_PHASE_VARIABLES.has(atom.variable) &&
       (atom.operator !== '==' || !Number.isInteger(atom.value) || atom.value < 0 || atom.value > 3)
     ) return [atom.variable]
+    if (RANDOM_COURSE_VARIABLES.has(atom.variable) && (atom.operator !== '==' || !Number.isInteger(atom.value) || atom.value < 0)) {
+      return [atom.variable]
+    }
     return []
   }))
 }
@@ -254,15 +335,18 @@ export function compileRaceSkill(
         ...unsupportedConditionVariables(precondition, supportedVariables),
         ...unsupportedConditionVariables(condition, supportedVariables),
       ])].sort()
-      const unsupportedEffects = [...new Set(group.effects.filter((effect) => !EFFECT_KIND[effect.type]).map((effect) => effect.type))].sort((a, b) => a - b)
+      // Only a runner's own effects apply; ones aimed at anyone else are dropped, not deferred (D141).
+      const own = group.effects.filter((effect) => effect.target === undefined)
+      const unsupportedEffects = [...new Set(own.filter((effect) => !EFFECT_KIND[effect.type]).map((effect) => effect.type))].sort((a, b) => a - b)
       return {
         precondition,
         condition,
         duration: group.baseTime === -1 ? -1 : Math.max(0, (group.baseTime ?? 0) / RACE_SKILL_SCALE),
         cooldown: Math.max(0, (group.cooldown ?? 0) / RACE_SKILL_SCALE),
-        effects: group.effects.flatMap((effect) => {
+        effects: own.flatMap((effect) => {
           const kind = EFFECT_KIND[effect.type]
-          return kind ? [{ kind, amount: (effect.value / RACE_SKILL_SCALE) * magnitude }] : []
+          // A gate multiplier is a ratio, not a magnitude, so inheriting a skill does not halve it.
+          return kind ? [{ kind, amount: (effect.value / RACE_SKILL_SCALE) * (kind === 'start-delay' ? 1 : magnitude) }] : []
         }),
         unsupportedVariables,
         unsupportedEffects,
@@ -270,6 +354,10 @@ export function compileRaceSkill(
     }),
   }
 }
+
+/** Every effect in the skill is aimed at someone else: in a one-Uma game it can never do anything (D141). */
+export const skillAimsAtOthers = (template: SkillTemplate): boolean =>
+  template.conditions.every((group) => group.effects.length > 0 && group.effects.every((effect) => effect.target !== undefined))
 
 export const raceSkillSupported = (skill: CompiledRaceSkill): boolean =>
   skill.groups.some((group) => group.effects.length > 0 && group.unsupportedVariables.length === 0 && group.unsupportedEffects.length === 0)
@@ -335,7 +423,8 @@ export function assertRaceSkillContent(skills: readonly SkillTemplate[]): void {
         (group.baseTime !== null && (typeof group.baseTime !== 'number' || !Number.isFinite(group.baseTime) || group.baseTime < -1)) ||
         (group.cooldown !== null && (typeof group.cooldown !== 'number' || !Number.isFinite(group.cooldown) || group.cooldown < 0)) ||
         !Array.isArray(group.effects) || group.effects.length < 1 || group.effects.length > 16 ||
-        group.effects.some((effect) => !isRecord(effect) || !exactKeys(effect, ['type', 'value']) ||
+        group.effects.some((effect) => !isRecord(effect) ||
+          !(exactKeys(effect, ['type', 'value']) || (exactKeys(effect, ['type', 'value', 'target']) && Number.isSafeInteger(effect.target))) ||
           !Number.isSafeInteger(effect.type) || typeof effect.value !== 'number' || !Number.isFinite(effect.value))
       ) throw new Error(`Skill ${skill.id} has an invalid race condition group`)
     }
@@ -456,7 +545,9 @@ export function summarizeSkillLoadout(
       return []
     }
     if (!raceSkillSupported(compileRaceSkill(skill))) {
-      errors.push(`Skill ${id} needs race mechanics that are not available yet`)
+      errors.push(skillAimsAtOthers(skill)
+        ? `Skill ${id} only affects other runners, so it does nothing in this game`
+        : `Skill ${id} needs race mechanics that are not available yet`)
       return []
     }
     return [skill]

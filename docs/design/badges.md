@@ -185,7 +185,7 @@ a field ranking and must not be repurposed. Neither appears as an earnable/locke
 | Definition | Criterion | Tiers |
 |---|---|---|
 | Speed / Stamina / Power / Guts / Wit Peak | Highest saved value | 600 / 900 / 1,200 / 1,600 / 2,000 |
-| Balanced | Highest saved minimum of the five stats | 500 / 800 / 1,100 / 1,500 / 1,900 |
+| Balanced | Highest saved minimum of the five stats | 600 / 800 / 1,100 / 1,500 / 1,900 |
 | [Scenario] Capped | At scenario completion, at least one stat is at or above that scenario's TL10 cap | One-off per scenario |
 | [Scenario] Perfect Form | At scenario completion, all five stats are at or above that cap | One-off per scenario |
 | Level milestones | Highest Uma level | 10 / 25 / 50 / 75 / 100 |

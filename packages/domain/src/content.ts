@@ -55,7 +55,11 @@ export interface SkillCondition {
   condition: string | null
   baseTime: number | null
   cooldown: number | null
-  effects: { type: number; value: number }[]
+  /**
+   * `target` is present only when an effect is aimed at someone other than its user — rivals, teammates or a named
+   * character — and none of those are ever applied (D141).
+   */
+  effects: { type: number; value: number; target?: number }[]
 }
 
 export interface SkillTemplate {

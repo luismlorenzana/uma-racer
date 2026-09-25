@@ -8,11 +8,12 @@
 //
 // Coverage reads the local, gitignored content pack and prints only counts and tallies. Win rates use the synthetic
 // builds and kits of the constellation harness (harness.ts). Exit code 1 when a career cannot be generated, a career leaves her
-// profile or her B-or-better aptitudes, or a stage's race cannot reach a 25% win rate by Training Level 10.
+// profile or her B-or-better aptitudes, or a stage's race is under a 25% win rate at its own Training Level (D140).
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   CAREER_STAGE_GRADES,
+  GRADE_TRAINING_LEVEL,
   GRADES,
   createScenarioTraining,
   createUmaSave,
@@ -27,7 +28,7 @@ import {
   type UmaTemplate,
 } from '../../packages/domain/src/index'
 import { simulateRace } from '../../packages/race/src/index'
-import { FIELD_STRATEGIES, NPC_KIT, PLAYER_KIT, SPRINT_GUTS, SPRINT_POWER, STAYER, buildStats, fairShare, goldRecovery } from './harness'
+import { FIELD_STRATEGIES, NPC_KIT, PLAYER_KIT, SPRINT_GUTS, SPRINT_POWER, STAYER, buildStats, fairShare, goldRecovery, typicalCourse } from './harness'
 
 const args = process.argv.slice(2)
 const RACES = Number(args.find((value) => /^\d+$/.test(value)) ?? 20)
@@ -106,12 +107,11 @@ for (const [key, count] of outside) {
 // --- Stage win rates ---------------------------------------------------------------------------------------------
 
 /**
- * For each stage, the lowest Training Level at which its grade of race reaches a 35% win rate, with her best of four
- * strategies and two sensible decks for the distance (a stamina card helps any distance while the untrained floor is
- * low). Below TL6 she carries only the field's whites; from TL6 she has the SP for the golds (D133). The hard check
- * is that every stage race reaches 25% by TL10: retries are free, so a career is finishable when that holds.
+ * Each stage's race at the Training Level its grade's field is built for (D140): the Maiden G3 at TL3, the Trials G2s
+ * at TL6, the Main-goal G1s at TL10. Her best of four strategies and two sensible decks for the distance; below TL6
+ * she carries only the field's whites, from TL6 the golds her SP buys (D133). A stage race under 25% fails the check:
+ * retries are free, so a career is finishable when that holds. The target is about 35–75%.
  */
-const SWEEP = [4, 6, 8, 10]
 const TARGET = 35
 const FLOOR = 25
 const DECKS: Record<DistanceCategory, { distance: number; golds: number; builds: ((tier: number, trainingLevel: number) => Stats)[] }> = {
@@ -132,7 +132,8 @@ const DECKS: Record<DistanceCategory, { distance: number; golds: number; builds:
   ] },
 }
 
-function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategory, trainingLevel: number): number {
+function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategory): number {
+  const trainingLevel = GRADE_TRAINING_LEVEL[CAREER_STAGE_GRADES[stage]]
   const { distance, golds, builds } = DECKS[category]
   const kit = trainingLevel >= 6 ? [...PLAYER_KIT, ...[goldRecovery('gold-a', 60), goldRecovery('gold-b', 40)].slice(0, golds)] : NPC_KIT
   const npc = npcRaceStats(tier, CAREER_STAGE_GRADES[stage], category, trainingLevel)
@@ -144,7 +145,7 @@ function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategor
       for (let race = 0; race < RACES; race += 1) {
         const playerGate = race % 12
         const timeline = simulateRace({
-          course: { distance, surface: 'turf' },
+          course: typicalCourse(distance),
           seed: 7_000_003 * tier + race * 7919,
           runners: Array.from({ length: 12 }, (_, gate) => gate === playerGate
             ? { id: 'player', label: String(gate + 1), stats, strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: kit }
@@ -159,24 +160,20 @@ function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategor
 }
 
 if (!COVERAGE_ONLY) {
-  console.log(`\nLowest Training Level with a ${TARGET}%+ win rate (best of 4 strategies and ${Object.values(DECKS)[0]!.builds.length} decks, ${RACES} races per cell, 12 runners)`)
-  console.log('      maiden G3        trials G2        main G1')
-  console.log('      spr mil med lng  spr mil med lng  spr mil med lng')
+  console.log(`\nStage win rates at the stage's Training Level (best of 4 strategies and the decks per distance, ${RACES} races per cell, 12 runners; floor ${FLOOR}%, target ${TARGET}%+)`)
+  console.log('      maiden G3 at TL3   trials G2 at TL6   main G1 at TL10')
+  console.log('      spr mil med lng    spr mil med lng    spr mil med lng')
   for (const tier of TIERS_SAMPLED) {
     const cells = (['maiden', 'trials', 'main'] as const).map((stage) =>
       (['sprint', 'mile', 'medium', 'long'] as const).map((category) => {
-        let reached: number | null = null
-        for (const trainingLevel of SWEEP) {
-          const rate = bestWinRate(tier, stage, category, trainingLevel)
-          if (rate >= TARGET) { reached = trainingLevel; break }
-          if (trainingLevel === 10 && rate < FLOOR) {
-            hardFailures += 1
-            console.error(`FAIL T${tier} ${stage} ${category}: ${rate}% at TL10`)
-          }
+        const rate = bestWinRate(tier, stage, category)
+        if (rate < FLOOR) {
+          hardFailures += 1
+          console.error(`FAIL T${tier} ${stage} ${category}: ${rate}%`)
         }
-        return reached === null ? '  –' : String(reached).padStart(3)
+        return String(rate).padStart(3)
       }).join(' '))
-    console.log(`T${String(tier).padStart(2)}   ${cells.join('  ')}`)
+    console.log(`T${String(tier).padStart(2)}   ${cells.join('    ')}`)
   }
 }
 

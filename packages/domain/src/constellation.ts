@@ -15,10 +15,11 @@ export const CARD_SET_SIZE = 6
  */
 export const STAT_NODE_POOL = 240
 /**
- * The floor every stat reaches per Training Level whatever the constellation holds: a career's generic training
- * (D134). In the original game a stat nobody trained still finishes a career around 400–500; here it finishes at 500.
+ * What every stat gains in a career race, as in the original game, where career ("single mode") races add 400 to all
+ * five stats (D139). It replaces the untrained floor of D134, which reached the same place only at Training Level 10
+ * and left a TL1–5 Uma unable to finish a race. Folded into derived stats, so the number shown is the number raced.
  */
-export const UNTRAINED_FLOOR_PER_LEVEL = 50
+export const CAREER_RACE_BONUS = 400
 /** A max-bonded Friend or Group card on its fair share of nodes pays this share of the SP cap (D133). */
 export const SP_CARD_SHARE = 0.6
 /** A full constellation pays this share of the scenario's cap budget, so no build reaches every cap. */
@@ -114,14 +115,6 @@ export const cardNodeCap = (tier: number): number => cardFairShare(tier) + 1
 
 /** SP one node of a max-bonded, current-era Friend or Group card pays (D133). An integer at every tier. */
 export const spNodeValue = (tier: number): number => Math.round((SP_CARD_SHARE * skillPointCap(tier)) / cardFairShare(tier))
-
-/**
- * The untrained floor at a Training Level (D134): a stat starts from the higher of its base and this, and everything
- * the constellation pays adds on top. It lifts what a build neglects — a sprinter's stamina — without inflating
- * stats that are already trained.
- */
-export const untrainedFloor = (trainingLevel: number): number =>
-  UNTRAINED_FLOOR_PER_LEVEL * Math.min(MAX_TRAINING_LEVEL, Math.max(0, Math.trunc(trainingLevel)))
 
 // --- Cards -------------------------------------------------------------------------------------
 
@@ -636,13 +629,12 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   }
   const rawTotal = scaledTotal / SCALE
 
-  // The untrained floor lifts the starting point, not the gains (D134); it is not part of the configuration, so
+  // The career-race bonus lifts the starting point, not the gains (D139); it is not part of the configuration, so
   // `raw` and the invariance rule leave it out.
-  const floor = untrainedFloor(input.trainingLevel)
   const caps = capProfile(input.tier)
   const stats = zeroStats()
   for (const stat of STATS) {
-    const start = Math.max(umaTemplate.baseStats[stat], floor)
+    const start = umaTemplate.baseStats[stat] + CAREER_RACE_BONUS
     const grown = start + raw[stat] * (1 + (umaTemplate.growthRates[stat] ?? 0))
     stats[stat] = Math.min(caps[stat], Math.round(grown))
   }

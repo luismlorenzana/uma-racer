@@ -120,3 +120,24 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
 export const categoryOf = (distance: number): DistanceCategory =>
   distance <= 1400 ? 'sprint' : distance <= 1800 ? 'mile' : distance <= 2400 ? 'medium' : 'long'
 export const FIELD_STRATEGIES: Strategy[] = ['front', 'pace', 'late', 'end']
+
+/**
+ * A typical course for the sims: the imported courses' median final straight (about 330 m) after a final corner,
+ * and no hills, so duels can happen as they do in real races while results stay comparable across distances.
+ */
+export function typicalCourse(distance: number): { distance: number; surface: 'turf'; layout: { corners: { start: number; end: number; number: number }[]; straights: { start: number; end: number }[]; slopes: [] }; trackId: number; rotation: number } {
+  const finalStraight = Math.min(330, distance / 3)
+  const finalCorner = Math.min(300, distance / 4)
+  const cornerEnd = distance - finalStraight
+  return {
+    distance,
+    surface: 'turf',
+    layout: {
+      corners: [{ start: cornerEnd - finalCorner, end: cornerEnd, number: 4 }],
+      straights: [{ start: 0, end: cornerEnd - finalCorner }, { start: cornerEnd, end: distance }],
+      slopes: [],
+    },
+    trackId: 0,
+    rotation: 2,
+  }
+}

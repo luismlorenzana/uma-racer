@@ -1,4 +1,4 @@
-import { LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
+import { COURSE_ROTATION, LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
 import { formatMargin, type RaceTimeline } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -37,6 +37,8 @@ const effectLabel = (effects: readonly RaceSkillEffectKind[]) => {
   if (effects.includes('recovery')) labels.push('Stamina recovery')
   if (effects.some((effect) => effect === 'current-speed' || effect === 'current-speed-natural' || effect === 'target-speed')) labels.push('Speed boost')
   if (effects.includes('acceleration')) labels.push('Acceleration')
+  if (effects.some((effect) => effect.startsWith('passive-'))) labels.push('Stat boost')
+  if (effects.includes('start-delay')) labels.push('Quick start')
   return labels.join(' · ') || 'Activated'
 }
 
@@ -49,6 +51,7 @@ function cueText(cue: RaceCue, skillName: string | null, rivalName: string): { e
     ? { eyebrow: 'Start', title: 'Slow start!' }
     : { eyebrow: 'Field start', title: `${cue.additionalCount + 1} rivals started late` }
   if (cue.kind === 'spurt') return { eyebrow: 'Final drive', title: 'Last spurt!' }
+  if (cue.kind === 'duel') return { eyebrow: 'Final straight', title: `Duel with ${rivalName}` }
   return { eyebrow: 'Pack', title: cue.packKind ?? 'Pack change' }
 }
 
@@ -186,6 +189,8 @@ export function RaceRunScreen() {
       finish,
       Boolean(reducedMotion),
       attempt.input.course.layout,
+      // Engine v5 records carry the course's rotation; older ones take it from the race.
+      attempt.input.course.rotation ?? (race ? COURSE_ROTATION[race.direction] : undefined),
     )
     sceneRef.current = scene
     if (recordRef.current) scene.seek(Number.POSITIVE_INFINITY)

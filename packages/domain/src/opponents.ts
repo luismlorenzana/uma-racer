@@ -1,20 +1,46 @@
 // Baseline enemy Uma: identical generic stats for every NPC in a race (docs/design/racing.md#opponents-the-baseline-enemy-uma).
 import { fieldForm } from './raceForm'
-import { averageCap } from './constellation'
+import {
+  CAREER_RACE_BONUS,
+  MAX_TRAINING_LEVEL,
+  averageCap,
+  constellationTemplate,
+  nodeValue,
+  statNodeValue,
+  unlockedNodeCount,
+} from './constellation'
 import { mapStats, type DistanceCategory, type RaceGrade, type Stats } from './types'
 
 /**
- * How much weaker than a G1 field each grade's field is (D138). A career climbs G3 → G2 → G1 (D137), so the grades
- * have to be a ladder: a G3 field is 15% below a G1 field, a G2 field 8%.
+ * The Training Level a grade's field is built at (D140): the level a career reaches that grade's stage (D137). A G3
+ * field is a typical TL3 Uma, a G2 field TL6, a G1 field fully trained. Supersedes D138's flat grade factors.
  */
-export const GRADE_FACTOR: Record<RaceGrade, number> = {
-  debut: 0.7,
-  maiden: 0.7,
-  'pre-op': 0.78,
-  op: 0.78,
-  g3: 0.85,
-  g2: 0.92,
-  g1: 1.0,
+export const GRADE_TRAINING_LEVEL: Record<RaceGrade, number> = {
+  debut: 1,
+  maiden: 1,
+  'pre-op': 2,
+  op: 2,
+  g3: 3,
+  g2: 6,
+  g1: 10,
+}
+
+/** Median base stat of the imported roster. */
+export const TYPICAL_BASE_STAT = 110
+
+/**
+ * The share of a full TL10 build a typical Uma holds at a Training Level: five stats at her base plus the career-race
+ * bonus, and every card and stat node open at that level, filled.
+ */
+export function fieldBuildShare(tier: number, trainingLevel: number): number {
+  const template = constellationTemplate(tier)
+  const held = (level: number) => {
+    const open = template.nodes.filter((node) => node.order < unlockedNodeCount(tier, level))
+    return 5 * (TYPICAL_BASE_STAT + CAREER_RACE_BONUS) +
+      open.filter((node) => node.kind === 'card').length * nodeValue(tier) +
+      open.filter((node) => node.kind === 'stat').length * statNodeValue(tier)
+  }
+  return held(trainingLevel) / held(MAX_TRAINING_LEVEL)
 }
 
 export const NPC_PROFILE: Record<DistanceCategory, Stats> = {
@@ -33,6 +59,6 @@ export const FIELD_STRENGTH = 0.72
 
 /** Final race stats for every NPC in a race (Race Form already applied). */
 export function npcRaceStats(tier: number, grade: RaceGrade, distance: DistanceCategory, trainingLevel: number): Stats {
-  const base = averageCap(tier) * FIELD_STRENGTH * GRADE_FACTOR[grade] * fieldForm(trainingLevel)
+  const base = averageCap(tier) * FIELD_STRENGTH * fieldBuildShare(tier, GRADE_TRAINING_LEVEL[grade]) * fieldForm(trainingLevel)
   return mapStats(NPC_PROFILE[distance], (weight) => base * weight)
 }

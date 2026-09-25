@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertRaceCourseContent, compileRaceCourseLayout, type CourseTemplate, type RaceTemplate } from './index'
+import { assertRaceCourseContent, compileRaceCourseLayout, compileRaceCourseSlopes, type CourseTemplate, type RaceTemplate } from './index'
 
 const course = (overrides: Partial<CourseTemplate> = {}): CourseTemplate => ({
   id: 'synthetic-course',
@@ -11,6 +11,20 @@ const course = (overrides: Partial<CourseTemplate> = {}): CourseTemplate => ({
   straights: [{ start: 0, end: 700, frontType: 1 }, { start: 1_100, end: 1_700, frontType: 2 }],
   slopes: [],
   ...overrides,
+})
+
+describe('race course slopes (engine v5)', () => {
+  it('clips hills to the race and sorts them, and rejects malformed rows', () => {
+    const hills = course({ slopes: [{ start: 1_500, end: 2_400, slope: 10_000 }, { start: 200, end: 600, slope: -20_000 }] })
+    expect(compileRaceCourseSlopes(hills, 2_000)).toEqual([
+      { start: 200, end: 600, slope: -20_000 },
+      { start: 1_500, end: 2_000, slope: 10_000 },
+    ])
+    expect(compileRaceCourseSlopes(hills, 400)).toEqual([{ start: 200, end: 400, slope: -20_000 }])
+    expect(() => compileRaceCourseSlopes(course({ slopes: [{ start: 500, end: 400, slope: 10_000 }] }), 2_000)).toThrow(/malformed slope/)
+    expect(() => compileRaceCourseSlopes(course({ slopes: [{ start: 0, end: 500, slope: 1 }, { start: 400, end: 900, slope: -1 }] }), 2_000))
+      .toThrow(/overlapping/)
+  })
 })
 
 describe('race course layout', () => {

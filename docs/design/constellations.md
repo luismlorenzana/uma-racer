@@ -113,15 +113,15 @@ six cards can lean one node towards Speed, Wit or Stamina for a given race. The 
 each card and refuses a card that is full; a save that already holds more keeps only the first `cap` nodes in tree
 order, and the rest pay nothing.
 
-### The untrained floor
+### The career-race bonus
 
-> **Known limit (T060):** tuned for the TL10 ladder, the floor leaves stamina far behind speed below about TL6, where
-> no build wins 35% of any race. `pnpm sim:careers` measures it.
+**Every stat starts at its base + 400**, and everything the constellation pays adds on top (D139). The original game
+adds 400 to every stat in career races; we fold it into derived stats, so the number on the profile is the number
+raced. It lifts what a build neglects — a sprinter's stamina, a stayer's power — without inflating the stats it
+trains, and it sits outside the tree, so the invariance rule is unchanged.
 
-**Every stat starts from the higher of its base and `50 × Training Level`**, and everything the constellation pays
-adds on top (D134): 500 at TL10. In the original game a stat nobody trained still finishes a career around
-400–500. The floor lifts what a build neglects — a sprinter's stamina, a stayer's power — without inflating the
-stats it trains, and it sits outside the tree, so the invariance rule is unchanged.
+It replaces D134's untrained floor of `50 × Training Level`, which reached the same place (500) only at TL10: below
+about TL6 it left stamina so far behind speed that no build could win a race.
 
 ### The invariance rule
 
@@ -233,10 +233,10 @@ tree of max-bond current-era cards, median base stats and no growth, running pac
 
 | Distance | Deck | Stamina it needs to supply | Holds at |
 |---|---|---|---|
-| Sprint (1,400 m) | 2 Speed · Guts or Power · 2 Wit · Friend, nothing into stamina | the untrained floor | every tier |
-| Mile (1,800 m) | the same, stat nodes into Stamina | floor + stat pool | every tier |
-| Medium (2,200 m) | 2 Speed · Stamina · 2 Wit · Friend | floor + one stamina card | every tier |
-| Medium (2,400 m) | the same, stamina card leaned one node | floor + stamina card at cap | every tier |
+| Sprint (1,400 m) | 2 Speed · Guts or Power · 2 Wit · Friend, nothing into stamina | base + 400 | every tier |
+| Mile (1,800 m) | the same, stat nodes into Stamina | base + 400 + stat pool | every tier |
+| Medium (2,200 m) | 2 Speed · Stamina · 2 Wit · Friend | base + 400 + one stamina card | every tier |
+| Medium (2,400 m) | the same, stamina card leaned one node | base + 400 + stamina card at cap | every tier |
 | Long (2,500–3,200 m) | stamina card at cap, stat nodes into Stamina, 1–2 gold heals | everything | every tier |
 
 The sim fails its run if any of these stops holding. Soft checks say each step is also *needed* for the next: a

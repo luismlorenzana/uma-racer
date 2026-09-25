@@ -65,8 +65,11 @@ export interface RaceResultCourse {
   distance: number
   surface: Surface
   season: number
-  /** Present on engine-v3 records. */
+  /** Present on engine-v3 records; v5 layouts also carry slopes. */
   layout?: RaceCourseLayout
+  /** Engine v5: the imported track id and the original's rotation code, for course-fact skill conditions. */
+  trackId?: number
+  rotation?: number
 }
 
 export interface RaceAccomplishmentFactsV1 {
@@ -88,7 +91,7 @@ export interface RaceAccomplishmentFactsV1 {
 
 export interface RaceResultRecord {
   /** Absent means legacy skillless engine v1. */
-  engineVersion?: 2 | 3 | 4
+  engineVersion?: 2 | 3 | 4 | 5
   /** Present on engine-v2/v3 records so replay does not depend on mutable content metadata. */
   course?: RaceResultCourse
   contentVersion: string
@@ -144,9 +147,9 @@ function parseAptitude(value: unknown): RaceResultAptitude | null {
   return value as unknown as RaceResultAptitude
 }
 
-function parseCourseLayout(value: unknown, distance: number): RaceCourseLayout | null {
-  if (!isRecord(value) || !hasExactKeys(value, ['corners', 'straights']) ||
-    !Array.isArray(value.corners) || !Array.isArray(value.straights)) return null
+function parseCourseLayout(value: unknown, distance: number, withSlopes = false): RaceCourseLayout | null {
+  if (!isRecord(value) || !hasExactKeys(value, withSlopes ? ['corners', 'straights', 'slopes'] : ['corners', 'straights']) ||
+    !Array.isArray(value.corners) || !Array.isArray(value.straights) || (withSlopes && !Array.isArray(value.slopes))) return null
   const parseSegments = (segments: unknown[], corner: boolean) => segments.map((segment, index) => {
     if (!isRecord(segment) || !hasExactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end']) ||
       !isFiniteNonNegative(segment.start) || !isFiniteNonNegative(segment.end) || segment.end <= segment.start ||
@@ -160,7 +163,16 @@ function parseCourseLayout(value: unknown, distance: number): RaceCourseLayout |
   const straights = parseSegments(value.straights, false)
   if (corners.some((segment) => segment === null) || straights.some((segment) => segment === null) ||
     (corners.length === 0 && straights.length === 0)) return null
-  return { corners: corners as RaceCourseLayout['corners'], straights: straights as RaceCourseLayout['straights'] }
+  const layout = { corners: corners as RaceCourseLayout['corners'], straights: straights as RaceCourseLayout['straights'] }
+  if (!withSlopes) return layout
+  const slopes = (value.slopes as unknown[]).map((slope, index, all) =>
+    isRecord(slope) && hasExactKeys(slope, ['start', 'end', 'slope']) && isFiniteNonNegative(slope.start) &&
+    isFiniteNonNegative(slope.end) && slope.end > slope.start && slope.end <= distance &&
+    typeof slope.slope === 'number' && Number.isFinite(slope.slope) && slope.slope !== 0 && Math.abs(slope.slope) <= 100_000 &&
+    (index === 0 || ((all[index - 1] as Record<string, unknown>).end as number) <= slope.start)
+      ? { start: slope.start, end: slope.end, slope: slope.slope }
+      : null)
+  return slopes.some((slope) => slope === null) ? null : { ...layout, slopes: slopes as NonNullable<RaceCourseLayout['slopes']> }
 }
 
 /** Validate every private race field consumed by T005 before it reaches setup or simulation. */
@@ -423,21 +435,26 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const fieldSize = value.field.length
   const startStats = parseStats(value.startStats)
   const runners = value.field.map((runner) => parseRunner(runner, fieldSize))
-  const version = hasEngineVersion && (value.engineVersion === 2 || value.engineVersion === 3 || value.engineVersion === 4) ? value.engineVersion : null
-  // Engine v4 (the stamina contest, D135) records the same course shape as v3.
-  const hasLayout = version === 3 || version === 4
-  const courseKeys = hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
+  const version = hasEngineVersion && [2, 3, 4, 5].includes(value.engineVersion as number) ? value.engineVersion as 2 | 3 | 4 | 5 : null
+  // Engine v4 (the stamina contest, D135) records the same course shape as v3; v5 adds slopes, track and rotation.
+  const hasLayout = version !== null && version >= 3
+  const v5 = version === 5
+  const courseKeys = v5
+    ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation']
+    : hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
   const courseLayout = hasLayout && isRecord(value.course) && isPositiveInt(value.course.distance)
-    ? parseCourseLayout(value.course.layout, value.course.distance)
+    ? parseCourseLayout(value.course.layout, value.course.distance, v5)
     : null
   const course = hasEngineVersion && isRecord(value.course) && hasExactKeys(value.course, courseKeys) &&
     isPositiveInt(value.course.distance) && SURFACES.includes(value.course.surface as Surface) && isNonNegativeInt(value.course.season) &&
-    (version !== 3 || courseLayout)
+    (!hasLayout || courseLayout) &&
+    (!v5 || (isNonNegativeInt(value.course.trackId) && isNonNegativeInt(value.course.rotation)))
     ? {
       distance: value.course.distance,
       surface: value.course.surface as Surface,
       season: value.course.season,
       ...(hasLayout ? { layout: courseLayout! } : {}),
+      ...(v5 ? { trackId: value.course.trackId as number, rotation: value.course.rotation as number } : {}),
     }
     : null
   if (

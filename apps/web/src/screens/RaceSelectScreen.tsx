@@ -10,6 +10,7 @@ import {
   progressionFieldSize,
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
+  skillAimsAtOthers,
   summarizeSkillLoadout,
   supportDeckIssueMessage,
   validateSupportDeck,
@@ -439,7 +440,7 @@ export function RaceSelectScreen() {
                       <span className="truncate">{equipped ? '✓ ' : ''}{skill.name}</span>
                       <span className="text-micro shrink-0">
                         {own ? (compatible ? 'Unique' : supported ? 'Unique · wrong course' : 'Unique · later') :
-                          supported ? `${skill.costSp ?? '—'} SP${compatible ? '' : ' · wrong course'}` : 'Later'}
+                          supported ? `${skill.costSp ?? '—'} SP${compatible ? '' : ' · wrong course'}` : skillAimsAtOthers(skill) ? 'Not in this game' : 'Later'}
                       </span>
                     </button>
                   )

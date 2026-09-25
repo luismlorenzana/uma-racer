@@ -25,16 +25,24 @@ export function assertRaceInput(value: unknown): asserts value is RaceInput {
     'surface',
     ...(Object.hasOwn(value.course, 'season') ? ['season'] : []),
     ...(Object.hasOwn(value.course, 'layout') ? ['layout'] : []),
+    ...(Object.hasOwn(value.course, 'trackId') ? ['trackId'] : []),
+    ...(Object.hasOwn(value.course, 'rotation') ? ['rotation'] : []),
   ]
+  const nonNegativeInt = (field: string) =>
+    !Object.hasOwn(value.course as object, field) ||
+    (Number.isSafeInteger((value.course as Record<string, unknown>)[field]) && ((value.course as Record<string, number>)[field]!) >= 0)
   if (
     !exactKeys(value.course, courseKeys) || !finiteNonNegative(value.course.distance) || value.course.distance <= 0 ||
     !SURFACES.includes(value.course.surface as (typeof SURFACES)[number]) ||
-    (Object.hasOwn(value.course, 'season') && (!Number.isSafeInteger(value.course.season) || (value.course.season as number) < 0))
+    !nonNegativeInt('season') || !nonNegativeInt('trackId') || !nonNegativeInt('rotation')
   ) throw new Error('Invalid race course')
   if (Object.hasOwn(value.course, 'layout')) {
     const layout = value.course.layout
-    if (!isRecord(layout) || !exactKeys(layout, ['corners', 'straights']) ||
-      !Array.isArray(layout.corners) || !Array.isArray(layout.straights)) throw new Error('Invalid race course layout')
+    const withSlopes = isRecord(layout) && Object.hasOwn(layout, 'slopes')
+    if (!isRecord(layout) || !exactKeys(layout, withSlopes ? ['corners', 'straights', 'slopes'] : ['corners', 'straights']) ||
+      !Array.isArray(layout.corners) || !Array.isArray(layout.straights) || (withSlopes && !Array.isArray(layout.slopes))) {
+      throw new Error('Invalid race course layout')
+    }
     const distance = value.course.distance as number
     const validSegments = (segments: unknown[], corner: boolean) => segments.every((segment, index) => {
       if (!isRecord(segment) || !exactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end'])) return false
@@ -47,6 +55,13 @@ export function assertRaceInput(value: unknown): asserts value is RaceInput {
     })
     if (!validSegments(layout.corners, true) || !validSegments(layout.straights, false) ||
       (layout.corners.length === 0 && layout.straights.length === 0)) throw new Error('Invalid race course layout')
+    if (withSlopes && !(layout.slopes as unknown[]).every((slope, index, all) =>
+      isRecord(slope) && exactKeys(slope, ['start', 'end', 'slope']) && finiteNonNegative(slope.start) &&
+      finiteNonNegative(slope.end) && slope.end > slope.start && slope.end <= distance &&
+      typeof slope.slope === 'number' && Number.isFinite(slope.slope) && slope.slope !== 0 && Math.abs(slope.slope) <= 100_000 &&
+      (index === 0 || ((all[index - 1] as Record<string, unknown>).end as number) <= slope.start))) {
+      throw new Error('Invalid race course slopes')
+    }
   }
   if (!Array.isArray(value.runners) || value.runners.length < 1 || value.runners.length > 18) {
     throw new Error('Invalid race field size')

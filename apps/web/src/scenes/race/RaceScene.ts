@@ -1,6 +1,7 @@
 import type { RaceCourseLayout } from '@racer/domain'
 import { COURSE_WIDTH, phaseAt, sampleTimeline, timelineDuration, type RaceTimeline, type RunnerFrame } from '@racer/race'
 import { Application, Container, Graphics, Text } from 'pixi.js'
+import { buildCoursePath, courseBounds, sampleCourse, type CoursePath } from './course-path'
 import {
   RacePlaybackClock,
   activeRaceCue,
@@ -12,7 +13,8 @@ import {
 } from './presentation'
 
 // Plays a pre-simulated race timeline back at the display's refresh rate (docs/technical/architecture.md#2-deterministic-simulation-then-playback).
-// Horizontal straight track, lanes stacked vertically for portrait phones, camera that follows and zooms with the pack.
+// The race runs on its own course (M018 part D): the snapshotted corners and straights laid out as a path, a follow
+// camera that turns with the pack so runners always travel left to right, and a minimap of the whole course.
 
 export interface SceneRunner {
   label: string
@@ -40,15 +42,24 @@ interface Token {
   root: Container
   body: Graphics
   label: Text
-  fontSize: number
 }
 
 const TURF_A = 0x4cb85a
 const TURF_B = 0x45ab52
+const OUTFIELD = 0x3c9a4c
 const RAIL = 0xffffff
 const INK = 0x23324a
+const PLAYER = 0xffc42e
+/** Lanes are drawn this many times their true width, so a pack stays readable on a phone. */
+const LANE_SCALE = 3.5
+const BAND = COURSE_WIDTH * LANE_SCALE
+/** Grass between each rail and the running lanes, in drawn meters. */
+const VERGE = 2
 const STRIPE_METERS = 10
+const SAMPLE_METERS = 4
+const TOKEN_RADIUS = 9
 const HUD_INTERVAL_MS = 100
+const MINIMAP = { width: 104, height: 70, margin: 10, padding: 8 }
 const visualUnit = (value: number) => (Math.imul(value ^ (value >>> 16), 0x45d9f3b) >>> 0) / 4294967296
 
 export class RaceScene {
@@ -63,11 +74,16 @@ export class RaceScene {
   private readonly clock: RacePlaybackClock
   private readonly cues: RaceCue[]
   private readonly frames: RunnerFrame[] = []
-  private readonly camera = { center: 0, span: 70 }
+  private readonly path: CoursePath
+  private readonly camera = { center: 0, span: 70, angle: 0 }
 
+  private readonly background = new Graphics()
+  private readonly world = new Container()
   private readonly track = new Graphics()
-  private readonly effects = new Graphics()
   private readonly runnerLayer = new Container()
+  private readonly markerLayer = new Container()
+  private readonly effects = new Graphics()
+  private readonly minimap = new Graphics()
   private readonly markerLabels: Text[] = []
   private readonly tokens: Token[] = []
   private readonly streaks = Array.from({ length: 10 }, (_, index) => ({
@@ -85,10 +101,12 @@ export class RaceScene {
     private readonly onFinish: () => void,
     private readonly reducedMotion = false,
     private readonly layout?: RaceCourseLayout,
+    rotation?: number,
   ) {
     this.duration = timelineDuration(timeline)
     this.clock = new RacePlaybackClock(this.duration, isPhotoFinish(timeline), reducedMotion)
     this.cues = buildRaceCues(timeline, playerIndex)
+    this.path = buildCoursePath(timeline.courseDistance, layout, rotation)
   }
 
   async mount(host: HTMLElement): Promise<void> {
@@ -106,10 +124,12 @@ export class RaceScene {
     }
     this.mounted = true
     host.appendChild(this.app.canvas)
-    this.app.stage.addChild(this.track, this.runnerLayer, this.effects)
+    this.world.addChild(this.track, this.markerLayer, this.runnerLayer)
+    this.app.stage.addChild(this.background, this.world, this.effects, this.minimap)
     this.buildTokens()
     sampleTimeline(this.timeline, 0, this.frames)
     this.camera.center = this.frames[this.playerIndex]?.distance ?? 0
+    this.camera.angle = sampleCourse(this.path, this.camera.center).heading
     if (this.reducedMotion) this.camera.span = 45
     this.app.ticker.add((ticker) => this.update(ticker.deltaMS))
     document.addEventListener('visibilitychange', this.onVisibility)
@@ -143,11 +163,13 @@ export class RaceScene {
     this.runners.forEach((runner) => {
       const root = new Container()
       const body = new Graphics()
+      if (runner.isPlayer) body.circle(0, 0, TOKEN_RADIUS + 4).fill({ color: PLAYER })
+      body.circle(0, 0, TOKEN_RADIUS).fill({ color: runner.color }).stroke({ width: 2.5, color: 0xffffff })
       const label = new Text({
         text: runner.isPlayer ? '★' : runner.label,
         style: {
           fontFamily: 'M PLUS Rounded 1c, system-ui, sans-serif',
-          fontSize: 12,
+          fontSize: Math.round(TOKEN_RADIUS * 0.95),
           fontWeight: '800',
           fill: 0xffffff,
           stroke: { color: INK, width: 3 },
@@ -156,11 +178,17 @@ export class RaceScene {
       label.anchor.set(0.5)
       root.addChild(body, label)
       this.runnerLayer.addChild(root)
-      this.tokens.push({ root, body, label, fontSize: 12 })
+      this.tokens.push({ root, body, label })
     })
     // Player drawn last so it's never hidden behind rivals.
     const player = this.tokens[this.playerIndex]
     if (player) this.runnerLayer.addChild(player.root)
+  }
+
+  /** A point on the course in Pixi world coordinates (meters, y down), `offset` drawn meters out from the inner rail. */
+  private point(distance: number, offset: number): [number, number] {
+    const at = sampleCourse(this.path, distance)
+    return [at.x + at.outX * offset, -(at.y + at.outY * offset)]
   }
 
   private update(deltaMs: number) {
@@ -190,24 +218,23 @@ export class RaceScene {
     if (player.distance < targetCenter - half) targetCenter = player.distance + half
     if (player.distance > targetCenter + half) targetCenter = player.distance - half
     // Snap on big jumps (seek/skip) instead of panning across the whole course.
-    const ease = Math.abs(targetCenter - this.camera.center) > this.camera.span * 2 ? 1 : 1 - Math.exp(-dt * 4)
+    const snap = Math.abs(targetCenter - this.camera.center) > this.camera.span * 2
+    const ease = snap ? 1 : 1 - Math.exp(-dt * 4)
     this.camera.span += (targetSpan - this.camera.span) * ease
     this.camera.center += (targetCenter - this.camera.center) * ease
+    // The view turns with the course a little behind the pack, so corners read as corners.
+    const targetAngle = sampleCourse(this.path, this.camera.center).heading
+    this.camera.angle += (targetAngle - this.camera.angle) * (snap ? 1 : 1 - Math.exp(-dt * 2.5))
 
     const pxPerMeter = width / this.camera.span
-    const left = this.camera.center - this.camera.span / 2
-    const toX = (meters: number) => (meters - left) * pxPerMeter
+    const [centerX, centerY] = this.point(this.camera.center, BAND / 2)
+    this.world.pivot.set(centerX, centerY)
+    this.world.position.set(width / 2, height * 0.46)
+    this.world.scale.set(pxPerMeter)
+    this.world.rotation = this.camera.angle
 
-    // Lanes
-    const laneCount = 18
-    // Top margin leaves room for the remaining-distance labels above the rail.
-    const trackTop = 36
-    const trackHeight = height - trackTop - 18
-    const laneHeight = Math.min(38, trackHeight / laneCount)
-    const lanesTop = trackTop + (trackHeight - laneHeight * laneCount) / 2
-    const radius = Math.max(8, Math.min(15, laneHeight * 0.42))
-
-    this.drawTrack(width, height, left, pxPerMeter, toX, course, lanesTop, laneHeight * laneCount)
+    this.background.clear().rect(0, 0, width, height).fill({ color: OUTFIELD })
+    this.drawTrack(course, pxPerMeter)
 
     // Runners
     const order = this.frames.map((f, i) => ({ d: f.distance, i })).sort((a, b) => b.d - a.d)
@@ -216,21 +243,15 @@ export class RaceScene {
       const token = this.tokens[i]!
       const frame = this.frames[i]!
       const lane = this.timeline.lane ? frame.lane : runner.lane * (COURSE_WIDTH / 18)
-      const y = lanesTop + radius + (lane / COURSE_WIDTH) * Math.max(0, laneHeight * laneCount - radius * 2)
       // A small stride bob while running gives the flat tokens some life.
       const running = playback.stage === 'running' && frame.speed > 0.5 && frame.distance < course
-      const bob = running ? Math.sin(this.elapsed * 14 + i) * 1.5 : 0
-      token.root.position.set(toX(frame.distance), y + bob)
-      token.body.clear()
-      if (runner.isPlayer) token.body.circle(0, 0, radius + 4).fill({ color: 0xffc42e })
-      token.body.circle(0, 0, radius).fill({ color: runner.color }).stroke({ width: 2.5, color: 0xffffff })
-      // Low-HP warning ring
-      if (frame.hp <= 0.001 && running) token.body.circle(0, 0, radius + 2).stroke({ width: 2, color: 0xff5a5f, alpha: 0.9 })
-      const fontSize = Math.round(radius * 0.95)
-      if (fontSize !== token.fontSize) {
-        token.fontSize = fontSize
-        token.label.style.fontSize = fontSize
-      }
+      const bob = running ? (Math.sin(this.elapsed * 14 + i) * 1.5) / pxPerMeter : 0
+      const [x, y] = this.point(frame.distance, VERGE + lane * LANE_SCALE)
+      token.root.position.set(x, y + bob)
+      // Tokens keep their screen size and stay upright while the world scales and turns.
+      token.root.scale.set(1 / pxPerMeter)
+      token.root.rotation = -this.camera.angle
+      token.body.alpha = frame.hp <= 0.001 && running ? 0.6 : 1
     })
 
     // Last-spurt speed streaks
@@ -244,13 +265,15 @@ export class RaceScene {
           streak.x = 1 + visualUnit(index + streak.cycle * 31) * 0.3
           streak.y = visualUnit(index + streak.cycle * 67)
         }
-        const y = lanesTop + streak.y * laneHeight * laneCount
+        const y = height * (0.25 + streak.y * 0.45)
         this.effects
           .moveTo(streak.x * width, y)
           .lineTo((streak.x + streak.len) * width, y)
           .stroke({ width: 2, color: 0xffffff, alpha: 0.35 })
       }
     }
+
+    this.drawMinimap(width, height)
 
     // HUD at ~10 Hz — React only re-renders the overlay this often.
     this.hudTimer += deltaMs
@@ -278,60 +301,104 @@ export class RaceScene {
     }
   }
 
-  private drawTrack(
-    width: number,
-    height: number,
-    left: number,
-    pxPerMeter: number,
-    toX: (m: number) => number,
-    course: number,
-    lanesTop: number,
-    lanesHeight: number,
-  ) {
+  /** The visible stretch of course, in world meters: mowing stripes, hills, rails, gate, finish and distance boards. */
+  private drawTrack(course: number, pxPerMeter: number) {
     const g = this.track
     g.clear()
-    // Turf stripes anchored to the world, so movement reads even when the camera tracks the pack.
-    const first = Math.floor(left / STRIPE_METERS)
-    const last = Math.ceil((left + width / pxPerMeter) / STRIPE_METERS)
-    for (let s = first; s <= last; s++) {
-      g.rect(toX(s * STRIPE_METERS), 0, STRIPE_METERS * pxPerMeter + 1, height).fill({ color: s % 2 === 0 ? TURF_A : TURF_B })
-    }
-    // Rails
-    g.rect(0, lanesTop - 8, width, 4).fill({ color: RAIL })
-    g.rect(0, lanesTop + lanesHeight + 4, width, 4).fill({ color: RAIL })
-    for (let s = first; s <= last; s++) {
-      const x = toX(s * STRIPE_METERS)
-      g.rect(x - 1.5, lanesTop - 14, 3, 10).fill({ color: RAIL })
-      g.rect(x - 1.5, lanesTop + lanesHeight + 4, 3, 10).fill({ color: RAIL })
+    const reach = this.camera.span * 0.9
+    const from = Math.max(-20, Math.floor((this.camera.center - reach) / SAMPLE_METERS) * SAMPLE_METERS)
+    const to = Math.min(course + 40, this.camera.center + reach)
+    const outer = BAND + VERGE * 2
+    const quad = (start: number, end: number, low: number, high: number) => {
+      const [ax, ay] = this.point(start, low)
+      const [bx, by] = this.point(end, low)
+      const [cx, cy] = this.point(end, high)
+      const [dx, dy] = this.point(start, high)
+      return [ax, ay, bx, by, cx, cy, dx, dy]
     }
 
-    // Start gate and finish line
-    if (toX(0) > -20 && toX(0) < width + 20) g.rect(toX(0) - 3, lanesTop - 6, 6, lanesHeight + 12).fill({ color: 0x9aa7b8 })
-    const finishX = toX(course)
-    if (finishX > -20 && finishX < width + 20) {
-      const square = 6
-      for (let row = 0; row * square < lanesHeight + 12; row++) {
-        for (let col = 0; col < 2; col++) {
-          g.rect(finishX - square + col * square, lanesTop - 6 + row * square, square, square).fill({
-            color: (row + col) % 2 === 0 ? 0xffffff : INK,
-          })
+    // Turf, striped across the course so movement reads even while the camera tracks the pack.
+    for (let d = from; d < to; d += SAMPLE_METERS) {
+      const stripe = Math.floor(d / STRIPE_METERS) % 2 === 0 ? TURF_A : TURF_B
+      g.poly(quad(d, d + SAMPLE_METERS + 0.2, 0, outer)).fill({ color: stripe })
+    }
+    // Hills: a climb shades darker, a descent lighter (engine v5).
+    for (const slope of this.layout?.slopes ?? []) {
+      const start = Math.max(from, slope.start)
+      const end = Math.min(to, slope.end)
+      for (let d = start; d < end; d += SAMPLE_METERS) {
+        g.poly(quad(d, Math.min(end, d + SAMPLE_METERS + 0.2), 0, outer))
+          .fill({ color: slope.slope > 0 ? 0x1f5a2b : 0xffffff, alpha: slope.slope > 0 ? 0.22 : 0.14 })
+      }
+    }
+    // Rails, with posts every 10 m.
+    const rail = (offset: number) => {
+      const [sx, sy] = this.point(from, offset)
+      g.moveTo(sx, sy)
+      for (let d = from + SAMPLE_METERS; d <= to; d += SAMPLE_METERS) g.lineTo(...this.point(d, offset))
+      g.stroke({ width: 3 / pxPerMeter, color: RAIL })
+    }
+    rail(0)
+    rail(outer)
+    for (let d = Math.ceil(from / STRIPE_METERS) * STRIPE_METERS; d <= to; d += STRIPE_METERS) {
+      g.moveTo(...this.point(d, 0)).lineTo(...this.point(d, -1.2)).stroke({ width: 2.5 / pxPerMeter, color: RAIL })
+    }
+
+    // Start gate and finish line.
+    if (from <= 1) g.poly(quad(-1, 0, 0, outer)).fill({ color: 0x9aa7b8 })
+    if (to >= course) {
+      const square = 1.2
+      for (let row = 0; row * square < outer; row += 1) {
+        for (let col = 0; col < 2; col += 1) {
+          g.poly(quad(course - square + col * square, course + col * square, row * square, Math.min(outer, (row + 1) * square)))
+            .fill({ color: (row + col) % 2 === 0 ? 0xffffff : INK })
         }
       }
     }
 
-    // Remaining-distance markers every 100 m (pooled labels)
+    // Remaining-distance boards every 100 m, outside the inner rail (pooled labels).
     let used = 0
-    const firstMarker = Math.max(1, Math.floor(left / 100))
-    const lastMarker = Math.min(Math.floor(course / 100) - 1, Math.ceil((left + width / pxPerMeter) / 100))
-    for (let m = firstMarker; m <= lastMarker; m++) {
-      const x = toX(m * 100)
-      g.rect(x - 2, lanesTop - 22, 4, 18).fill({ color: 0xff5a5f })
+    for (let m = Math.max(1, Math.ceil(from / 100)); m * 100 < Math.min(course, to); m += 1) {
+      const d = m * 100
+      g.moveTo(...this.point(d, -0.4)).lineTo(...this.point(d, -3)).stroke({ width: 4 / pxPerMeter, color: 0xff5a5f })
       const label = this.markerLabel(used++)
-      label.text = `${course - m * 100}`
-      label.position.set(x, lanesTop - 28)
+      label.text = `${course - d}`
+      const [lx, ly] = this.point(d, -5)
+      label.position.set(lx, ly)
+      label.scale.set(1 / pxPerMeter)
+      label.rotation = -this.camera.angle
       label.visible = true
     }
     for (let i = used; i < this.markerLabels.length; i++) this.markerLabels[i]!.visible = false
+  }
+
+  /** The whole course in the bottom-right corner, with every runner's position. */
+  private drawMinimap(width: number, height: number) {
+    const g = this.minimap
+    g.clear()
+    const box = { x: width - MINIMAP.width - MINIMAP.margin, y: height - MINIMAP.height - MINIMAP.margin }
+    g.roundRect(box.x, box.y, MINIMAP.width, MINIMAP.height, 10).fill({ color: INK, alpha: 0.45 })
+    const bounds = courseBounds(this.path)
+    const spanX = Math.max(1, bounds.maxX - bounds.minX)
+    const spanY = Math.max(1, bounds.maxY - bounds.minY)
+    const scale = Math.min((MINIMAP.width - MINIMAP.padding * 2) / spanX, (MINIMAP.height - MINIMAP.padding * 2) / spanY)
+    const offsetX = box.x + (MINIMAP.width - spanX * scale) / 2
+    const offsetY = box.y + (MINIMAP.height - spanY * scale) / 2
+    const map = (distance: number): [number, number] => {
+      const at = sampleCourse(this.path, distance)
+      return [offsetX + (at.x - bounds.minX) * scale, offsetY + (bounds.maxY - at.y) * scale]
+    }
+    const course = this.timeline.courseDistance
+    g.moveTo(...map(0))
+    for (let d = 10; d < course; d += 10) g.lineTo(...map(d))
+    g.lineTo(...map(course)).stroke({ width: 2, color: 0xffffff, alpha: 0.75 })
+    g.circle(...map(course), 2.5).fill({ color: 0xffffff })
+    this.frames.forEach((frame, index) => {
+      if (index === this.playerIndex) return
+      g.circle(...map(frame.distance), 2).fill({ color: 0xffffff, alpha: 0.85 })
+    })
+    const you = this.frames[this.playerIndex]
+    if (you) g.circle(...map(you.distance), 3.5).fill({ color: PLAYER }).stroke({ width: 1, color: INK })
   }
 
   private markerLabel(index: number): Text {
@@ -341,8 +408,8 @@ export class RaceScene {
         text: '',
         style: { fontFamily: 'M PLUS Rounded 1c, system-ui, sans-serif', fontSize: 11, fontWeight: '800', fill: 0xffffff, stroke: { color: INK, width: 3 } },
       })
-      label.anchor.set(0.5, 1)
-      this.app.stage.addChild(label)
+      label.anchor.set(0.5)
+      this.markerLayer.addChild(label)
       this.markerLabels.push(label)
     }
     return label

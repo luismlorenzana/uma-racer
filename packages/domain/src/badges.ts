@@ -49,7 +49,8 @@ export const BADGE_THRESHOLDS = {
   venue: [1, 3, 7, 15, 30],
   backField: [1, 5, 15, 30, 60],
   statPeak: [600, 900, 1_200, 1_600, 2_000],
-  balanced: [500, 800, 1_100, 1_500, 1_900],
+  // Every stat starts at base + 400 in a career (D139), so the first tier asks for some training in all five.
+  balanced: [600, 800, 1_100, 1_500, 1_900],
   level: [10, 25, 50, 75, 100],
   diligent: [50, 250, 1_000, 3_000, 10_000],
   friendship: [10, 50, 200, 500, 1_000],

@@ -10,6 +10,7 @@ import {
   compileRaceSkill,
   awaitingAdvance,
   isCareerStage,
+  skillAimsAtOthers,
   raceSkillSupported,
   summarizeSkillLoadout,
   type Grade,
@@ -414,7 +415,7 @@ export function UmaProfileScreen() {
                   <span className="text-micro block">
                     {own
                       ? supported ? 'Own unique · always equipped' : 'Own unique · waits for later race mechanics'
-                      : supported ? `${skill.costSp ?? '—'} SP · ${skill.kind}` : 'Needs later race mechanics'}
+                      : supported ? `${skill.costSp ?? '—'} SP · ${skill.kind}` : skillAimsAtOthers(skill) ? 'Only affects rivals · not in this game' : 'Needs later race mechanics'}
                   </span>
                 </span>
               </button>

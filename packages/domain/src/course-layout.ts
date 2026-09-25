@@ -18,9 +18,42 @@ export interface RaceCourseStraight {
   end: number
 }
 
+export interface RaceCourseSlope {
+  /** Meters from the start, inclusive. */
+  start: number
+  /** Meters from the start, exclusive. */
+  end: number
+  /** Signed grade in 1/10,000 of a percent: 10,000 is a 1% climb, −10,000 a 1% descent. */
+  slope: number
+}
+
 export interface RaceCourseLayout {
   corners: RaceCourseCorner[]
   straights: RaceCourseStraight[]
+  /** Engine v5 hills (M018). v3–v4 layouts have none. */
+  slopes?: RaceCourseSlope[]
+}
+
+/** How a course turns, as the original's `rotation` condition numbers it. */
+export const COURSE_ROTATION: Readonly<Record<RaceDirection, number>> = { right: 1, left: 2, straight: 4 }
+
+/** Imported hills, clipped to the race and sorted by start. Malformed rows fail closed. */
+export function compileRaceCourseSlopes(course: CourseTemplate, raceDistance: number): RaceCourseSlope[] {
+  if (course.slopes === undefined || course.slopes === null) return []
+  if (!Array.isArray(course.slopes)) throw new Error(`Course ${course.id} has malformed slopes`)
+  const slopes = course.slopes.map((row: unknown) => {
+    const value = row as Record<string, unknown>
+    if (typeof value !== 'object' || value === null || !finite(value.start) || !finite(value.end) || !finite(value.slope) ||
+      value.start < 0 || value.end <= value.start || value.slope === 0 || Math.abs(value.slope) > 100_000) {
+      throw new Error(`Course ${course.id} has a malformed slope`)
+    }
+    return { start: value.start, end: value.end, slope: value.slope }
+  }).sort((left, right) => left.start - right.start)
+  if (!sortedNonOverlapping(slopes)) throw new Error(`Course ${course.id} has overlapping slopes`)
+  return slopes.flatMap((slope) => {
+    const end = Math.min(raceDistance, slope.end)
+    return slope.start >= raceDistance || end <= slope.start ? [] : [{ ...slope, end }]
+  })
 }
 
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
@@ -85,5 +118,6 @@ export function assertRaceCourseContent(races: readonly RaceTemplate[], courses:
     const course = byId.get(race.courseId)
     if (!course) throw new Error(`Race ${race.id} references missing course ${race.courseId}`)
     compileRaceCourseLayout(course, race.distance, race.direction)
+    compileRaceCourseSlopes(course, race.distance)
   }
 }

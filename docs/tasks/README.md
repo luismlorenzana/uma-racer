@@ -23,7 +23,6 @@ multipliers on a training turn that no longer exists.
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051 – T056 | Outlined |
-| [T060 — The early stamina wall](T060-early-stamina-wall.md) | T060 | Specified · next balance change |
 | [T059 — Chibi and dress art](T059-chibi-and-dress-art.md) | T059 | Specified · waiting on source permission |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
@@ -40,6 +39,11 @@ landed on 2026-09-22 and was removed under D104; D129–D131 and the design docs
 
 M017 (career goals: stage-gated careers per scenario, goal plan v3, the Race tab's tracker and Next up) landed on
 2026-09-24 and was removed under D104; D137–D138 and [Scenario Careers](../design/scenario-goals.md) carry it.
+
+M018 (race engine v5: the verified spurt plan, hills, duels, gate and green skills, 41 more skill conditions, and
+the race drawn on its own course) and T060 (the early stamina wall, resolved by D139–D140) landed on 2026-09-24 and
+were removed under D104; D139–D141, [Racing](../design/racing.md#engine-v5-m018) and
+[Race Engine v5 Findings](../research/race-engine-v5-findings.md) carry them.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

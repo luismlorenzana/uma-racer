@@ -102,5 +102,14 @@ describe('race position presentation', () => {
     expect(coursePositionLabel(layout, 650)).toBe('Final corner')
     expect(coursePositionLabel(layout, 800)).toBe('Final straight')
     expect(coursePositionLabel(undefined, 800)).toBeNull()
+    const hilly = { ...layout, slopes: [{ start: 600, end: 700, slope: 15_000 }, { start: 750, end: 900, slope: -10_000 }] }
+    expect(coursePositionLabel(hilly, 650)).toBe('Final corner · Uphill')
+    expect(coursePositionLabel(hilly, 800)).toBe('Final straight · Downhill')
+  })
+
+  it('cues the player\'s duel and names her rival (engine v5)', () => {
+    const cues = buildRaceCues(timeline({ events: [{ tick: 40, runner: 0, type: 'duel', value: 1, targetRunner: 2 }] }), 0)
+    expect(cues).toEqual([expect.objectContaining({ kind: 'duel', runner: 2, isPlayer: true })])
+    expect(buildRaceCues(timeline({ events: [{ tick: 40, runner: 0, type: 'duel', value: 0 }] }), 0)).toEqual([])
   })
 })

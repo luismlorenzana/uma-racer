@@ -9,7 +9,7 @@ Racing is the **first system to be built** and the heart of the game. Races gran
 1. **Pick a race** from the calendar or catalog. It shows grade, venue, surface, distance, rewards, and any career goal it counts toward.
 2. **Pick the Uma, strategy, and skill loadout.** Aptitudes are shown for the race's surface, distance, and each strategy,
    along with the **Race Form** matchup (see below).
-3. **Watch the race** in real time on a straight-line track. Speed controls are 1×, 2×, and skip.
+3. **Watch the race** in real time on its own course. Speed controls are 1×, 2×, and skip.
 4. **Results:** finishing order, margins, time, EXP gained, goal and badge progress, and new badges or titles with fanfare.
 
 ## Race catalog
@@ -85,12 +85,16 @@ Races get a clear NPC feel, and **every Uma in the game** can show up as an enem
 ### Generic stats
 
 ```
-npcStat[s]    = averageCap(T) × fieldStrength × gradeFactor[grade] × profile[distance][s] × fieldForm
+npcStat[s]    = averageCap(T) × fieldStrength × buildShare(T, gradeTL[grade]) × profile[distance][s] × fieldForm
 fieldStrength = 0.72
-gradeFactor   = Debut/Maiden 0.70 · Pre-OP/OP 0.78 · G3 0.85 · G2 0.92 · G1 1.00
+gradeTL       = Debut/Maiden 1 · Pre-OP/OP 2 · G3 3 · G2 6 · G1 10
+buildShare    = what a typical Uma holds at that Training Level ÷ what she holds at TL10
+                (five stats at median base + 400, plus every node open at that level, filled)
 ```
 
-`gradeFactor` makes the grades a ladder for [careers](scenario-goals.md) (D138): a G3 field is 15% below a G1 field.
+A grade's field is built like a typical Uma at the Training Level her [career](scenario-goals.md) reaches that grade
+(D140): a G3 field is a TL3 Uma, a G2 field TL6, a G1 field fully trained. So each stage's race is winnable at its
+stage, easier after it and hard before it. Supersedes D138's flat grade factors.
 `fieldStrength` is calibrated (D136): the field used to be built on the whole average cap, which assumed a fully
 trained Uma at every cap, and after the constellation that made a trained Uma lose a G1 over 90% of the time. At
 0.72 it wins roughly half or more, below.
@@ -231,9 +235,15 @@ append-only flair events, and exact new event ids in that same transaction. This
 memory-only play. The first finish on a course establishes its baseline; only a strictly lower later time earns Course
 Record, so ties and slower finishes do not. Race retries validate and return stored ids without reevaluation or fanfare.
 
-## Presentation: straight-line real-time view
+## Presentation: the race on its own course
 
-- The track is drawn as a **horizontal straight**. Runners move left to right in lanes, and the camera follows the pack.
+- The race is drawn on **its own course**: the snapshotted corners and straights laid out as a path (each numbered
+  corner a quarter turn, in the course's direction), with mowing stripes, rails, the start gate, the finish line,
+  remaining-distance boards every 100 m, and hills shaded (a climb darker, a descent lighter). Lanes are drawn 3.5×
+  their true width so a pack reads on a phone.
+- The camera follows the pack and **turns with the course**, so runners always travel left to right and a corner
+  visibly bends ahead of them. A **minimap** in the corner shows the whole course and every runner.
+- Races recorded before engine v3 have no course snapshot and are drawn on a straight.
 - **Icons** (character icons) are the runners, with a gate number and the player's Uma highlighted.
 - A **progress rail** shows every runner's position along the whole distance at a glance.
 - **Phase banner:** Opening → Middle → Final Leg → **Last Spurt**, with course labels such as "Final corner" and "Final straight".
@@ -264,5 +274,23 @@ Based on [Race Mechanics Research](../research/race-mechanics.md):
 | R2: Variance | Wit section randomness, strategy/distance/surface aptitudes, mood, ground condition |
 | R2.5: Basic skills | Speed, acceleration, and recovery skills with simple triggers (phase, distance, position). Unique and inherited unique skills. *Moved up because skills are now core* |
 | R3: Pack | Lanes, position keeping, blocking, overtaking |
-| R4: Drama | Dueling, spot struggle, rushed (kakari), slopes |
-| R5: Full skills | Complex conditions, debuffs, gold skills interacting with their white versions |
+| R4: Drama (engine v5) | **Slopes and final-straight dueling** ✅. Spot struggle and rushing are out: in a one-Uma game they are randomness with no decision behind them (D141) |
+| R5: Full skills (engine v5) | Random course points, the race clock, course facts, counters, green and gate skills ✅. Debuffs and team effects are out (D141) |
+
+### Engine v5 (M018)
+
+Verified against uma-skill-tools and the torena-sim mechanics notes; see [Race Engine v5 Findings](../research/race-engine-v5-findings.md).
+
+- **Last spurt plan.** At the final leg she spurts at max speed if her HP holds it. Otherwise each slower speed is
+  paired with the latest point she can start it, holding her final-leg pace until then; the plans are tried fastest
+  finish first and Wit decides whether she takes each. A heal in the final leg before her spurt re-plans it.
+- **Hills.** Climbing costs `slope% × 200 / Power` m/s and uses base acceleration 0.0004. On a descent, each second
+  has a `Wit × 0.04%` chance of downhill mode: +`0.3 + slope%/10` m/s and HP drain ×0.4, ending at 20% a second.
+- **Duels** on the final straight: two runners within 3 m and a quarter of the course width for 2 s, one of them in
+  the top half, both above 15% HP and within 0.6 m/s of each other. Both gain `(200 × Guts)^0.708 × 0.0001` target
+  speed and `(160 × Guts)^0.59 × 0.0001` acceleration until below 5% HP or 5 m clear of every duelist.
+- **Gate skills.** Green skills add their stat before the gates open; Concentration-style skills scale the start delay.
+- **Only a runner's own effects apply** (D141): skills whose effects all target rivals or teammates read "Not in
+  this game" and cannot be equipped.
+- Ground condition, weather and mood read Good, sunny and normal until the game models them.
+- v1–v4 results replay under their own rules.

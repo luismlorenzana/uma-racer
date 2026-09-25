@@ -102,3 +102,33 @@ export const STAMINA_CONTEST_DISTANCE_FACTOR: readonly (readonly [number, number
   [2600, 1.5],
   [Number.POSITIVE_INFINITY, 1.8],
 ]
+
+// --- Engine v5 (M018) ------------------------------------------------------------------------------------------
+// Verified against uma-skill-tools and the torena-sim mechanics notes (docs/research/race-engine-v5-findings.md).
+
+/** Base acceleration while climbing. */
+export const UPHILL_BASE_ACCEL = 0.0004
+/** Deceleration while position keeping has her in Pace Down. */
+export const PACE_DOWN_DECEL = -0.5
+/** HP drain multipliers: Pace Down, and downhill accel mode. */
+export const PACE_DOWN_HP_MODIFIER = 0.6
+export const DOWNHILL_HP_MODIFIER = 0.4
+/** Each second on a descent: Wit × this chance of entering downhill accel mode; once in it, this chance of leaving. */
+export const DOWNHILL_ENTER_PER_WIT = 0.0004
+export const DOWNHILL_EXIT_CHANCE = 0.2
+/** Final-straight duels (競り合い). */
+export const DUEL_DISTANCE = 3
+export const DUEL_LANE_SHARE = 0.25
+export const DUEL_WINDOW_SECONDS = 2
+export const DUEL_SPEED_GAP = 0.6
+export const DUEL_MIN_HP = 0.15
+export const DUEL_EXIT_HP = 0.05
+export const DUEL_EXIT_DISTANCE = 5
+/** `is_last_straight_onetime` holds for the first 10 m of the final straight. */
+export const LAST_STRAIGHT_ONETIME_METERS = 10
+/** Local dirt venues the original tags as dirt-grade tracks. */
+export const DIRT_GRADE_TRACKS: readonly number[] = [10101, 10103, 10104, 10105]
+/** Conditions the game does not model yet read these fixed values: Good ground, sunny, normal mood. */
+export const FIXED_GROUND_CONDITION = 1
+export const FIXED_WEATHER = 1
+export const FIXED_MOTIVATION = 3

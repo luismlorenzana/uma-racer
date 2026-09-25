@@ -44,8 +44,12 @@ function conditionGroups(raw: RawRecord): SkillCondition[] {
     effects: Array.isArray(group.effects)
       ? group.effects
           .filter(isRecord)
-          .map((effect) => ({ type: numberValue(effect.type), value: numberValue(effect.value) }))
-          .filter((effect): effect is { type: number; value: number } => effect.type !== null && effect.value !== null)
+          .map((effect) => {
+            // The source names a target only when an effect is aimed at someone other than its user (D141).
+            const target = numberValue(effect.target)
+            return { type: numberValue(effect.type), value: numberValue(effect.value), ...(target === null ? {} : { target }) }
+          })
+          .filter((effect): effect is { type: number; value: number; target?: number } => effect.type !== null && effect.value !== null)
       : [],
   }))
 }

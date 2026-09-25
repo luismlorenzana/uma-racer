@@ -270,7 +270,8 @@ describe('progression race field', () => {
     expect(replay.input.course).toEqual({ distance: 2_000, surface: 'turf', season: 1, layout: {
       corners: course.corners.map(({ start, end, number }) => ({ start, end, number })),
       straights: course.straights.map(({ start, end }) => ({ start, end })),
-    } })
+      slopes: [],
+    }, trackId: 0, rotation: 2 })
     expect(simulatePreparedRace(replay).results).toEqual(completion.timeline.results)
 
     const { engineVersion: _engineVersion, course: _course, ...legacyBody } = completion.record
