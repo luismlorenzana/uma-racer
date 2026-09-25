@@ -322,11 +322,15 @@ describe('simulateRace', () => {
         const second = simulateRace(input)
         expect(Array.from(first.lane!)).toEqual(Array.from(second.lane!))
         expect(first.lane!.every((lane) => Number.isFinite(lane) && lane >= 0 && lane <= 11.25)).toBe(true)
+        // One assertion per race, not one per runner per tick: hundreds of thousands of expect() calls made this test
+        // take 14–20 s on CI against a 3 s simulation.
+        let backwards = 0
         for (let tick = 1; tick < first.ticks; tick += 1) {
           for (let index = 0; index < fieldSize; index += 1) {
-            expect(first.distance[tick * fieldSize + index]!).toBeGreaterThanOrEqual(first.distance[(tick - 1) * fieldSize + index]!)
+            if (first.distance[tick * fieldSize + index]! < first.distance[(tick - 1) * fieldSize + index]!) backwards += 1
           }
         }
+        expect(backwards).toBe(0)
         expect(new Set(first.results.map((result) => result.placement)).size).toBe(fieldSize)
       }
     }
