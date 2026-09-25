@@ -58,6 +58,27 @@ more of it needs nodes spent on a Friend or Group card. That is the whole econom
 - **Loadout presets**, for example "Long / Front" and "Mile / Late".
 - The pre-race screen shows which equipped skills can trigger on this course.
 
+The skill list shows each skill's **tags** and its description, and sorts the equipped skills first, then the ones she
+can equip, then those waiting on later race mechanics.
+
+### Skill tags
+
+Tags are read off a skill's Global conditions and effects (`skillTags`, the same reading uma-planner uses), so they
+need no authoring and track the data:
+
+| Tag | From | Shown as |
+|---|---|---|
+| Running style | `running_style==1–4` | Front · Pace · Late · End, or **Any style** when neither style nor distance is set |
+| Distance | `distance_type==1–4` | Sprint · Mile · Medium · Long |
+| Surface | `ground_type==1–2` | Turf · Dirt |
+| Phase | `phase`, its `_random` forms, and `phase>=` / `phase<=` ranges | Opening · Middle leg · Final leg · Last spurt |
+| Place | corner, straight, final corner, final straight, hills, a bad start | Corner · Final straight · Uphill … |
+| Effect | the effect ids the race engine reads | Speed · Acceleration · Recovery · Stats · Debuff … |
+
+Style, distance and surface tags are tinted where the Uma's aptitude is A or better, so a list reads as "fits her" at a
+glance. Names are the official Global names wherever the skill has shipped there (`name_en`); the community
+translation of the JP name is only a fallback, and descriptions use Global terms for the running styles.
+
 The library is scoped to the scenario. Unlocking the next scenario starts a fresh one, like everything else
 about a [career run](constellations.md#a-scenario-is-a-career-run). Every skill ever learned is still recorded
 in the **lifetime skill log** for badges and history.

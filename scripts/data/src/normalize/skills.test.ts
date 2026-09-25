@@ -36,6 +36,15 @@ describe('normalizeSkills', () => {
     expect(result.items.some((skill) => skill.id === '7306')).toBe(false)
   })
 
+  it('names a skill by its official Global name, and falls back to the community translation', () => {
+    const [shipped, jpOnly] = normalizeSkills([
+      { id: 7500, rarity: 2, enname: "It's Going to Be Me", name_en: 'Certain Victory', jpname: '絶対は、ボクだ', cost: 180, iconid: 1 },
+      { id: 7501, rarity: 1, enname: 'Burning Muscles!', jpname: '燃えろ筋肉！', cost: 120, iconid: 1 },
+    ]).items
+    expect(shipped?.name).toBe('Certain Victory')
+    expect(jpOnly?.name).toBe('Burning Muscles!')
+  })
+
   it('keeps the target of an effect aimed at someone else, and leaves self effects bare (D141)', () => {
     const [debuff] = normalizeSkills([{
       id: 7400, rarity: 1, enname: 'Synthetic Debuff', desc_en: 'Slows rivals.', cost: 100, iconid: 1,

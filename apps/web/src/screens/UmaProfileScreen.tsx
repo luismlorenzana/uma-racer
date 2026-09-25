@@ -11,6 +11,7 @@ import {
   awaitingAdvance,
   isCareerStage,
   skillAimsAtOthers,
+  skillTags,
   raceSkillSupported,
   summarizeSkillLoadout,
   type Grade,
@@ -27,6 +28,7 @@ import { buildUmaFlairSummary } from '../game/flair-view'
 import { buildJourneyView } from '../game/goals-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
+import { SkillChips } from '../ui/SkillChips'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { Stars } from '../ui/Stars'
 import { Crest } from '../ui/Crest'
@@ -389,7 +391,16 @@ export function UmaProfileScreen() {
           </span>
         </div>
         <div className="grid gap-1.5">
-          {uma.derived.library.map((unlock) => {
+          {/* Equipped first, then what she can equip, then what waits on later mechanics; the source order within each. */}
+          {[...uma.derived.library]
+            .map((unlock, index) => {
+              const skill = contentState.content.skills.byId.get(unlock.skillId)
+              const own = unlock.origin === 'own-unique'
+              const rank = !skill ? 3 : own ? 0 : uma.derived.loadoutSkillIds.includes(skill.id) ? 1 : raceSkillSupported(compileRaceSkill(skill)) ? 2 : 3
+              return { unlock, index, rank }
+            })
+            .sort((left, right) => left.rank - right.rank || left.index - right.index)
+            .map(({ unlock }) => {
             const skill = contentState.content.skills.byId.get(unlock.skillId)
             if (!skill) {
               return <div key={unlock.skillId} className="rounded-md bg-danger/10 p-2 text-[12px] font-semibold text-danger">Missing skill {unlock.skillId}</div>
@@ -404,16 +415,18 @@ export function UmaProfileScreen() {
                 aria-pressed={equipped}
                 disabled={own || (!supported && !equipped) || savingSkillId !== null}
                 onClick={() => void toggleSkill(skill.id)}
-                className={`flex min-h-11 items-center gap-2 rounded-md border px-2 py-1.5 text-left disabled:opacity-60 ${
+                className={`flex min-h-11 items-start gap-2 rounded-md border px-2 py-2 text-left disabled:opacity-60 ${
                   equipped ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'
                 }`}
               >
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${equipped ? 'bg-accent text-white' : 'bg-sunken text-ink-soft'}`}>
+                <span className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${equipped ? 'bg-accent text-white' : 'bg-sunken text-ink-soft'}`}>
                   {equipped ? '✓' : '+'}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-semibold">{skill.name}</span>
-                  <span className="text-micro block">
+                  <SkillChips tags={skillTags(skill)} aptitudes={uma.derived.aptitudes} />
+                  {skill.description && <span className="mt-1 line-clamp-2 block text-[11px] leading-snug text-ink-soft">{skill.description}</span>}
+                  <span className="text-micro mt-0.5 block">
                     {own
                       ? supported ? 'Own unique · always equipped' : 'Own unique · waits for later race mechanics'
                       : supported ? `${skill.costSp ?? '—'} SP · ${skill.kind}` : skillAimsAtOthers(skill) ? 'Only affects rivals · not in this game' : 'Needs later race mechanics'}

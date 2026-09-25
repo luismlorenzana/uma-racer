@@ -66,12 +66,14 @@ function template(raw: RawRecord, forcedKind?: SkillKind, fallback?: RawRecord):
   const skillId = id(raw.id)
   const rarity = numberValue(raw.rarity)
   const kind = forcedKind ?? (rarity === null ? undefined : KINDS[rarity])
+  // `name_en` is the official Global name where the skill has shipped there; `enname` is a community translation of
+  // the JP name, used only for skills Global does not have yet.
   const name =
-    clean(raw.enname) ||
     clean(raw.name_en) ||
+    clean(raw.enname) ||
     clean(raw.jpname) ||
-    clean(fallback?.enname) ||
     clean(fallback?.name_en) ||
+    clean(fallback?.enname) ||
     clean(fallback?.jpname)
   if (!skillId || !kind || !name) return null
   const description =
