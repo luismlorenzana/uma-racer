@@ -1,6 +1,7 @@
 import { m, useReducedMotion } from 'motion/react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { ArtKind, ContentAsset, LoadedContent } from '../../content/runtime'
+import { ArtViewer, ExpandMark } from '../ArtViewer'
 import { AtlasSprite } from '../AtlasSprite'
 import { Placeholder } from '../Placeholder'
 import { useArt } from './useArt'
@@ -32,6 +33,7 @@ export function AlbumDetail({
 }) {
   const art = useArt(content, kind, id)
   const reducedMotion = useReducedMotion()
+  const [viewing, setViewing] = useState(false)
 
   if (!id) {
     return (
@@ -64,9 +66,15 @@ export function AlbumDetail({
               className={`absolute inset-0 h-full w-full ${frame === 'art' ? 'object-cover' : 'object-contain object-top'}`}
             />
           )}
+          {art && (
+            <button type="button" onClick={() => setViewing(true)} aria-label={`View ${alt} full size`} className="absolute inset-0">
+              <ExpandMark className="absolute right-1 bottom-1 h-5 w-5" />
+            </button>
+          )}
         </div>
         <div className="min-w-0 flex-1">{children}</div>
       </div>
+      <ArtViewer src={viewing ? art : null} title={alt} onClose={() => setViewing(false)} />
     </section>
   )
 }

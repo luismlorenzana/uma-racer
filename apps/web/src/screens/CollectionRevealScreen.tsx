@@ -8,6 +8,7 @@ import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
+import { useArt } from '../ui/album/useArt'
 
 export function CollectionRevealScreen() {
   const { kind, id } = useParams()
@@ -20,6 +21,8 @@ export function CollectionRevealScreen() {
   const persistent = useGame((state) => state.persistent)
   const sync = useGame((state) => state.sync)
   const reducedMotion = useReducedMotion()
+  // The reveal shows the large art — the card's illustration, the Uma's portrait — over the icon it replaces.
+  const art = useArt(contentState.status === 'ready' ? contentState.content : null, kind === 'card' ? 'card' : 'uma', id ?? null)
   if (contentState.status !== 'ready' || status !== 'ready') return <ScreenState title="Opening your new collection item…" detail="Loading the committed local save." />
   const reveal = resolveCollectionReveal(contentState.content, cards, umas, kind, id)
   if (!reveal) return <ScreenState title="Collection item unavailable" detail="This result link is invalid, unowned, or missing private content." action={{ label: 'Open Stable', to: '/stable' }} />
@@ -38,7 +41,27 @@ export function CollectionRevealScreen() {
       <m.div className="relative w-full max-w-sm" style={{ transformStyle: 'preserve-3d' }} initial={reducedMotion ? false : { y: 40, opacity: 0, scale: 0.88, rotateY: 82 }} animate={{ y: 0, opacity: 1, scale: 1, rotateY: 0 }} transition={{ type: 'spring', stiffness: 150, damping: 18 }}>
         <p className="font-display text-[12px] font-semibold tracking-[0.28em] text-accent uppercase">New {isCard ? 'support card' : 'Uma'}</p>
         <div className={`mx-auto mt-5 w-56 rounded-lg border-2 bg-stage-soft p-2 shadow-3 ${frame?.borderClass ?? 'border-accent'}`}>
-          <AtlasSprite asset={reveal.asset} alt={identity} className="w-full rounded-md bg-stage" fallback={<Placeholder label={identity} />} />
+          <div className={`relative w-full overflow-hidden rounded-md ${isCard ? 'aspect-[3/4] bg-stage' : 'aspect-square bg-gradient-to-b from-stage-soft to-stage'}`}>
+            <AtlasSprite
+              asset={reveal.asset}
+              alt={art ? undefined : identity}
+              decorative={Boolean(art)}
+              className="absolute inset-x-0 top-1/2 w-full -translate-y-1/2"
+              fallback={<Placeholder label={identity} />}
+            />
+            {art && (
+              <m.img
+                key={art}
+                src={art}
+                alt={identity}
+                draggable={false}
+                initial={reducedMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.25 }}
+                className={`absolute inset-0 h-full w-full ${isCard ? 'object-cover' : 'object-contain object-top'}`}
+              />
+            )}
+          </div>
         </div>
         <h1 className="font-display mt-5 text-3xl font-bold">{identity}</h1>
         <p className="mt-1 text-ink-on-dark-soft">{subtitle}</p>

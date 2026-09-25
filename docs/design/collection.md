@@ -162,12 +162,17 @@ Four sizes, each used where it belongs:
 |---|---|---|---|
 | Icon | 128 px, atlased | Loaded with the content packs | Card grids, and any Uma list before her bust arrives |
 | Uma bust | 256 px square, head and shoulders | Cropped from her portrait at import, one file per Uma | Every list of Umas: Stable grid, the Race tab's picker, lineage picker, pre-race field, results (D142) |
-| Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Detail area, Home hero, reveals |
-| Card art | 450×600 full illustration | One file per card, fetched on demand | Detail area, reveals |
+| Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Stable detail area, the Uma reveal, the art viewer |
+| Card art | 450×600 full illustration, the source's own size | One file per card, fetched on demand | The card page's hero, the Cards tab detail area, the card reveal, Bond Recall faces, the art viewer (D144) |
 
 The bust is the original's Trainee Select tile: the portrait cropped to a square around her head. The importer finds the
 head from the portrait's own alpha, centres on it and takes the top 60% of the frame; `content/overrides/bust-crops.json`
 pins any Uma the automatic crop misreads, and `pnpm assets:bust-sheet` renders every bust onto review pages.
+
+Lists never use the large art; **detail surfaces do**. The card page opens on the illustration full width, cropped to
+4:5 from the top, with the card's name over its foot. Reveals show the illustration or the portrait instead of an
+enlarged icon. Wherever large art is shown on a detail surface, a tap opens the **art viewer**: the whole image, uncropped,
+on a dark stage over everything, closed by a tap, its close button or Escape.
 
 Art is **never atlased and never precached**: about 31 MB across 830 files would defeat both. Each file is content-addressed,
 fetched through the authenticated API on first use, verified against its manifest hash, and cached by the service worker.

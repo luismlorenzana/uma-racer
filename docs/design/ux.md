@@ -166,7 +166,8 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 - **Album**: a lens chip row — Collection, then each reached scenario — over the shared album chrome
   ([Collection](collection.md#card-album)). In a scenario, tiles carry bond pips and the reserved detail area has a
   **Bond** button, so a bond is one tap from the tab.
-- **Card page** (`/cards/:id`): the card and how to own it (tickets or a coupon), **Bond by scenario** with a Bond
+- **Card page** (`/cards/:id`): the card's illustration full width, with its name, type and ownership over its foot (a
+  tap opens the whole illustration), then how to own it (tickets or a coupon), **Bond by scenario** with a Bond
   button per reached scenario, then what it pays — its split, a Bond 0–Max per-node ladder (in SP for a Friend or Group card), Race
   Bonus and its skills in node order — and every set it sits in.
 - **Unlock** hands to the full-screen collection reveal, which returns to the card's page.

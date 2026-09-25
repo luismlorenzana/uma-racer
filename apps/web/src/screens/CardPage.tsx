@@ -17,10 +17,11 @@ import { m, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { getContentAsset } from '../content/runtime'
+import { getContentAsset, type ContentAsset } from '../content/runtime'
 import { unlockCard } from '../game/actions'
 import { bondRecallHref } from '../game/bond-links'
 import { useGame } from '../game/store'
+import { ArtViewer, ExpandMark } from '../ui/ArtViewer'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BondPips } from '../ui/BondPips'
 import { Button } from '../ui/Button'
@@ -58,6 +59,7 @@ export function CardPage() {
   const umas = useGame((state) => state.umas)
   const pushToast = useGame((state) => state.pushToast)
   const [busy, setBusy] = useState(false)
+  const [viewing, setViewing] = useState(false)
   const art = useArt(contentState.status === 'ready' ? contentState.content : null, 'card', cardId || null)
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
@@ -111,52 +113,35 @@ export function CardPage() {
       <Link to="/cards" className="flex min-h-11 items-center gap-1 px-1 text-sm font-semibold text-ink-soft">← Cards</Link>
 
       {/* ── The card ─────────────────────────────────────────────────── */}
+      <CardHero
+        hasArt={content.art.has('card', cardId)}
+        art={art}
+        icon={getContentAsset(content, 'card-icons', cardId)}
+        name={template.charName}
+        title={template.title || 'Support card'}
+        type={titleCase(template.type)}
+        owned={save !== null}
+        reducedMotion={reducedMotion ?? false}
+        onOpen={() => setViewing(true)}
+      />
+      <ArtViewer src={viewing ? art : null} title={template.charName} subtitle={template.title || undefined} onClose={() => setViewing(false)} />
+
       <Panel className="p-3">
-        <div className="flex gap-3">
-          <div className="relative h-40 w-30 shrink-0 overflow-hidden rounded-sm border border-hairline bg-sunken">
-            <AtlasSprite
-              asset={getContentAsset(content, 'card-icons', cardId)}
-              alt={`${template.charName} support card`}
-              className={`absolute inset-0 h-full w-full ${save ? '' : 'opacity-45 saturate-50'}`}
-              fallback={<Placeholder label={template.charName} />}
-            />
-            {art && (
-              <m.img
-                key={art}
-                src={art}
-                alt=""
-                aria-hidden
-                draggable={false}
-                initial={reducedMotion ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className={`absolute inset-0 h-full w-full object-cover ${save ? '' : 'opacity-45 saturate-50'}`}
-              />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap gap-1">
-              <Crest>{titleCase(template.type)}</Crest>
-              <Crest tone={save ? 'accent' : 'neutral'}>{save ? 'Owned' : 'Not owned'}</Crest>
+        <p className="text-micro">From {scenarioForTier(template.era)?.name ?? `tier ${template.era}`}</p>
+        {skillPoints ? (
+          <p className="mt-1 text-[12px] font-semibold text-accent-strong">Pays skill points, not stats, in any slot</p>
+        ) : (
+          <>
+            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-sunken" aria-label="How one node splits">
+              {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => (
+                <span key={stat} style={{ width: `${shares[stat]}%`, background: STAT_TONE[stat] }} />
+              ))}
             </div>
-            <h1 className="font-display mt-1.5 text-lg leading-tight font-bold">{template.charName}</h1>
-            <p className="text-[12px] text-ink-soft">{template.title || 'Support card'}</p>
-            <p className="text-micro mt-1.5">From {scenarioForTier(template.era)?.name ?? `tier ${template.era}`}</p>
-            {skillPoints ? (
-              <p className="mt-2 text-[12px] font-semibold text-accent-strong">Pays skill points, not stats, in any slot</p>
-            ) : (
-              <>
-                <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-sunken" aria-label="How one node splits">
-                  {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => (
-                    <span key={stat} style={{ width: `${shares[stat]}%`, background: STAT_TONE[stat] }} />
-                  ))}
-                </div>
-                <p className="mt-1 text-[11px] text-ink-soft">
-                  {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => `${titleCase(stat)} ${shares[stat]}`).join(' · ')}
-                </p>
-              </>
-            )}
-          </div>
-        </div>
+            <p className="mt-1 text-[11px] text-ink-soft">
+              {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => `${titleCase(stat)} ${shares[stat]}`).join(' · ')}
+            </p>
+          </>
+        )}
 
         {!save && (
           <div className="mt-3 grid gap-2">
@@ -293,6 +278,73 @@ export function CardPage() {
       {save?.maxCouponGranted && (
         <p className="px-1 pb-2 text-center text-[11px] font-semibold text-accent-strong">This card has earned its Card Select Coupon.</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * The card's illustration, full width at the top of its page (docs/design/ux.md#cards): the 450×600 art cropped to
+ * 4:5 from the top, with its name over a gradient at the foot. The icon shows blurred until the art arrives; a tap
+ * opens the whole illustration. A card with no published illustration gets a shorter frame around its icon.
+ */
+function CardHero({
+  hasArt,
+  art,
+  icon,
+  name,
+  title,
+  type,
+  owned,
+  reducedMotion,
+  onOpen,
+}: {
+  hasArt: boolean
+  art: string | null
+  icon: ContentAsset | null
+  name: string
+  title: string
+  type: string
+  owned: boolean
+  reducedMotion: boolean
+  onOpen: () => void
+}) {
+  const tone = owned ? '' : 'saturate-[.35] brightness-[.8]'
+  return (
+    <div className={`relative isolate w-full overflow-hidden rounded-lg border border-hairline bg-stage shadow-2 ${hasArt ? 'aspect-[4/5]' : 'aspect-[16/10]'}`}>
+      {hasArt ? (
+        <>
+          <AtlasSprite asset={icon} decorative className={`absolute inset-0 h-full w-full scale-110 blur-md ${tone}`} />
+          {art && (
+            <>
+              <m.img
+                key={art}
+                src={art}
+                alt={`${name} support card`}
+                draggable={false}
+                initial={reducedMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+                className={`absolute inset-0 h-full w-full object-cover object-top ${tone}`}
+              />
+              <button type="button" onClick={onOpen} aria-label={`View ${name}'s illustration`} className="absolute inset-0 z-10">
+                <ExpandMark className="absolute right-3 top-3" />
+              </button>
+            </>
+          )}
+        </>
+      ) : (
+        <div className="absolute inset-0 flex items-start justify-center bg-gradient-to-b from-stage-soft to-stage pt-5">
+          <AtlasSprite asset={icon} alt={`${name} support card`} className={`w-1/4 rounded-md ${tone}`} fallback={<Placeholder label={name} />} />
+        </div>
+      )}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-3 pt-12 pb-3 text-ink-on-dark">
+        <div className="flex flex-wrap gap-1">
+          <Crest>{type}</Crest>
+          <Crest tone={owned ? 'accent' : 'neutral'}>{owned ? 'Owned' : 'Not owned'}</Crest>
+        </div>
+        <h1 className="font-display mt-1.5 text-2xl leading-tight font-bold">{name}</h1>
+        <p className="text-[13px] text-ink-on-dark-soft">{title}</p>
+      </div>
     </div>
   )
 }
