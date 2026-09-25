@@ -1,9 +1,9 @@
-// Deterministic Bond Recall rules (docs/design/minigames.md#bond-recall--card-limit-breaks).
+// Deterministic Bond Recall rules (docs/design/minigames.md#bond-recall--card-stars).
 
 export const BOND_FLIP_BACK_MS = 700
 
 export interface BondRecallConfig {
-  limitBreak: number
+  stars: number
   pairs: number
   columns: number
   rows: number
@@ -35,11 +35,13 @@ export interface BondFlip {
   result: BondFlipResult
 }
 
+/** One board per star being earned, 1★ to 5★, growing with the card (T061). */
 const CONFIGS: readonly BondRecallConfig[] = [
-  { limitBreak: 0, pairs: 6, columns: 3, rows: 4, mismatchLimit: 10 },
-  { limitBreak: 1, pairs: 8, columns: 4, rows: 4, mismatchLimit: 12 },
-  { limitBreak: 2, pairs: 10, columns: 4, rows: 5, mismatchLimit: 14 },
-  { limitBreak: 3, pairs: 12, columns: 4, rows: 6, mismatchLimit: 16 },
+  { stars: 0, pairs: 6, columns: 3, rows: 4, mismatchLimit: 10 },
+  { stars: 1, pairs: 8, columns: 4, rows: 4, mismatchLimit: 12 },
+  { stars: 2, pairs: 9, columns: 3, rows: 6, mismatchLimit: 13 },
+  { stars: 3, pairs: 10, columns: 4, rows: 5, mismatchLimit: 14 },
+  { stars: 4, pairs: 12, columns: 4, rows: 6, mismatchLimit: 16 },
 ]
 
 function fnv1a(value: string): number {
@@ -72,11 +74,11 @@ function unique(ids: readonly string[]): string[] {
   return result
 }
 
-export function bondRecallConfig(limitBreak: number): BondRecallConfig {
-  if (!Number.isInteger(limitBreak) || limitBreak < 0 || limitBreak >= CONFIGS.length) {
-    throw new Error('Bond Recall requires a card from LB0 through LB3')
+export function bondRecallConfig(stars: number): BondRecallConfig {
+  if (!Number.isInteger(stars) || stars < 0 || stars >= CONFIGS.length) {
+    throw new Error('Bond Recall requires a card from 0★ through 4★')
   }
-  return { ...CONFIGS[limitBreak]! }
+  return { ...CONFIGS[stars]! }
 }
 
 /** Active-set order is meaningful; owned-card filler is stable by id. */
@@ -96,18 +98,18 @@ export function selectBondFaces(
 
 export function createBondLayout(
   seed: string,
-  limitBreak: number,
+  stars: number,
   activeCardIds: readonly string[],
   ownedCardIds: readonly string[],
 ): BondTile[] {
-  const config = bondRecallConfig(limitBreak)
+  const config = bondRecallConfig(stars)
   const faces = selectBondFaces(activeCardIds, ownedCardIds, config.pairs)
   const tiles = faces.flatMap((cardId, pairIndex) => [0, 1].map((copy) => ({
     id: `pair-${pairIndex}:${copy}`,
     pairId: `pair-${pairIndex}`,
     cardId,
   })))
-  const random = seededRandom(`bond-recall:${seed}:lb${limitBreak}`)
+  const random = seededRandom(`bond-recall:${seed}:lb${stars}`)
   for (let index = tiles.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(random() * (index + 1))
     const held = tiles[index]!
@@ -119,13 +121,13 @@ export function createBondLayout(
 
 export function startBondRecall(
   seed: string,
-  limitBreak: number,
+  stars: number,
   activeCardIds: readonly string[],
   ownedCardIds: readonly string[],
 ): BondRecallState {
   return {
-    config: bondRecallConfig(limitBreak),
-    tiles: createBondLayout(seed, limitBreak, activeCardIds, ownedCardIds),
+    config: bondRecallConfig(stars),
+    tiles: createBondLayout(seed, stars, activeCardIds, ownedCardIds),
     revealed: [],
     matched: [],
     mismatches: 0,

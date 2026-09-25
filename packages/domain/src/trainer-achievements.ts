@@ -1,7 +1,7 @@
 // Trainer achievement catalog and deterministic reconciliation (docs/design/collection.md#trainer-achievements-account-wide).
 
-import { bestCardLimitBreak } from './card-progression'
-import { CARD_MAX_LEVEL, MAX_LIMIT_BREAK } from './cards'
+import { bestCardStars } from './card-progression'
+import { MAX_STARS } from './cards'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import {
   BADGE_TIERS,
@@ -204,7 +204,7 @@ export function buildTrainerAchievementCatalog(input: {
   const definitions: TrainerAchievementDefinition[] = [
     fixedDefinition('trainer:stable-master', 'Stable Master', 'Own Umas across the current private catalog.', 'collection', 'owned-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.stableMaster, 'catalog-umas', umaIds),
     fixedDefinition('trainer:card-collector', 'Card Collector', 'Own SSR support cards across the current private catalog.', 'collection', 'owned-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.cardCollector, 'catalog-cards', cardIds),
-    fixedDefinition('trainer:maxed-out', 'Maxed Out', 'Take support cards to max bond in any scenario.', 'collection', 'maxed-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.maxedOut),
+    fixedDefinition('trainer:maxed-out', 'Maxed Out', 'Take support cards to 5★ in any scenario.', 'collection', 'maxed-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.maxedOut),
     fixedDefinition('trainer:coupon-clipper', 'Coupon Clipper', 'Redeem Card and Uma Select Coupons.', 'collection', 'coupon-redemptions', TRAINER_ACHIEVEMENT_THRESHOLDS.couponClipper),
     fixedDefinition('trainer:stable-wins', 'Stable Wins', 'Win races across the Stable.', 'stable', 'stable-wins', TRAINER_ACHIEVEMENT_THRESHOLDS.stableWins),
     fixedDefinition('trainer:stable-g1s', 'Stable G1s', 'Win G1 races across the Stable.', 'stable', 'stable-g1s', TRAINER_ACHIEVEMENT_THRESHOLDS.stableG1s),
@@ -281,7 +281,7 @@ function aggregateFacts(input: TrainerReconcileInput, catalog: TrainerAchievemen
   setCount(facts, 'catalog-umas', input.umas.length)
   setCount(facts, 'owned-cards', cards.length)
   setCount(facts, 'catalog-cards', input.cards.length)
-  setCount(facts, 'maxed-cards', cards.filter((card) => bestCardLimitBreak(card) === MAX_LIMIT_BREAK).length)
+  setCount(facts, 'maxed-cards', cards.filter((card) => bestCardStars(card) === MAX_STARS).length)
   setCount(facts, 'coupon-redemptions', input.ledger.filter(isCouponRedemption).length)
   setCount(facts, 'stable-wins', contributors.reduce((sum, state) => sum + state.facts.wins, 0))
   setCount(facts, 'stable-g1s', contributors.reduce((sum, state) => sum + countFact(state.facts.gradeWins, 'g1'), 0))

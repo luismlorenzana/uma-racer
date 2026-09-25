@@ -20,14 +20,15 @@ function mismatchIndices(state: BondRecallState): [number, number] {
 }
 
 describe('Bond Recall', () => {
-  it('pins all four board configurations', () => {
-    expect([0, 1, 2, 3].map(bondRecallConfig)).toEqual([
-      { limitBreak: 0, pairs: 6, columns: 3, rows: 4, mismatchLimit: 10 },
-      { limitBreak: 1, pairs: 8, columns: 4, rows: 4, mismatchLimit: 12 },
-      { limitBreak: 2, pairs: 10, columns: 4, rows: 5, mismatchLimit: 14 },
-      { limitBreak: 3, pairs: 12, columns: 4, rows: 6, mismatchLimit: 16 },
+  it('pins all five board configurations, one per star being earned', () => {
+    expect([0, 1, 2, 3, 4].map(bondRecallConfig)).toEqual([
+      { stars: 0, pairs: 6, columns: 3, rows: 4, mismatchLimit: 10 },
+      { stars: 1, pairs: 8, columns: 4, rows: 4, mismatchLimit: 12 },
+      { stars: 2, pairs: 9, columns: 3, rows: 6, mismatchLimit: 13 },
+      { stars: 3, pairs: 10, columns: 4, rows: 5, mismatchLimit: 14 },
+      { stars: 4, pairs: 12, columns: 4, rows: 6, mismatchLimit: 16 },
     ])
-    expect(() => bondRecallConfig(4)).toThrow(/LB0 through LB3/)
+    expect(() => bondRecallConfig(5)).toThrow(/0★ through 4★/)
   })
 
   it('prefers the active set, then owned ids, then repeats the full pool', () => {

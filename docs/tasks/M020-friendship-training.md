@@ -3,8 +3,8 @@
 **Outcome:** Bond Recall's memory grid is replaced by **Friendship Training**, a Balatro-style roguelite in which you
 train one card through a short season of weeks and races. A clear earns that card **one star in one scenario**.
 
-Decisions: D146 (the game and its rules of engagement), built on D147 (stars) and D148 (tickets), so it lands after
-[M019](M019-stars-and-tickets.md). Research: [Roguelite Card Minigame](../research/roguelite-card-minigame.md).
+Decisions: D146 (the game and its rules of engagement), built on D147 (stars) and D148 (tickets), which landed with
+M019. Research: [Roguelite Card Minigame](../research/roguelite-card-minigame.md).
 Owner: Claude. **All numbers below are tuning drafts**; the balance bot (T063) sets them.
 
 | Task | Scope |

@@ -61,7 +61,9 @@ const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const MAX_SCENARIO_TIER = 14
 const MAX_UMA_LEVEL = MAX_SCENARIO_TIER * 10
 const MAX_TRAINING_LEVEL = 10
-const MAX_LIMIT_BREAK = 4
+/** v5 and v6 cards held limit breaks up to 4; v7 cards hold 0★–5★ (D147). */
+const LEGACY_MAX_LIMIT_BREAK = 4
+const MAX_STARS = 5
 const CARD_SET_SIZE = 6
 /** A ceiling on constellation size, not the authored node count: the templates are not in this deploy. */
 const MAX_CONSTELLATION_NODES = 128
@@ -82,6 +84,7 @@ const SCENARIO_TRAINING_FIELDS = ['tier', 'trainingLevel', 'trainingExp', 'cardS
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V5_FIELDS = ['templateId', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V6_FIELDS = ['templateId', 'limitBreaks', 'maxCouponGranted'] as const
+const CARD_V7_FIELDS = ['templateId', 'stars', 'maxCouponGranted'] as const
 const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
 const SKILL_HISTORY_FIELDS = [...SKILL_FIELDS, 'tier'] as const
 const PARENT_FIELDS = ['umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes'] as const
@@ -473,7 +476,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6].includes(value.schemaVersion as number)) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -667,9 +670,9 @@ function parseScenarioTraining(value: unknown, umaLevel: number): boolean {
   return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
 }
 
-/** v5 and v6 Umas share one shape: only the card entity changed between them. */
+/** v5, v6 and v7 Umas share one shape: only cards (and v7's tickets) changed between them. */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6].includes(value.schemaVersion as number)) return null
+  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6, 7].includes(value.schemaVersion as number)) return null
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
   const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
   if (value.exp > expLimit) return null
@@ -697,7 +700,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if (value.schemaVersion === 5 || value.schemaVersion === 6) return parseUmaV6(value)
+  if (value.schemaVersion === 5 || value.schemaVersion === 6 || value.schemaVersion === 7) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null
@@ -731,22 +734,27 @@ function parseUma(value: unknown): Record<string, unknown> | null {
   return value
 }
 
-/** Limit breaks belong to a scenario and are shared across Umas (D127): tier string → break level. */
-function parseLimitBreaks(value: unknown): boolean {
+/** Stars (v7) and limit breaks (v6) belong to a scenario and are shared across Umas (D127): tier string → count. */
+function parsePerTier(value: unknown, max: number): boolean {
   if (!isRecord(value)) return false
   return Object.entries(value).every(([tier, level]) =>
     /^[1-9][0-9]*$/.test(tier) && Number(tier) <= MAX_SCENARIO_TIER &&
-    isNonNegativeInt(level) && (level as number) <= MAX_LIMIT_BREAK)
+    isNonNegativeInt(level) && (level as number) <= max)
 }
 
 function parseCard(value: unknown): Record<string, unknown> | null {
+  if (isRecord(value) && exactKeys(value, CARD_V7_FIELDS)) {
+    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parsePerTier(value.stars, MAX_STARS)) return null
+    return value
+  }
+  // Old clients still sync v6 and v5 cards until they update; the app migrates them on read.
   if (isRecord(value) && exactKeys(value, CARD_V6_FIELDS)) {
-    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parseLimitBreaks(value.limitBreaks)) return null
+    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parsePerTier(value.limitBreaks, LEGACY_MAX_LIMIT_BREAK)) return null
     return value
   }
   if (isRecord(value) && exactKeys(value, CARD_V5_FIELDS)) {
     if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean') return null
-    return isNonNegativeInt(value.limitBreak) && (value.limitBreak as number) <= MAX_LIMIT_BREAK ? value : null
+    return isNonNegativeInt(value.limitBreak) && (value.limitBreak as number) <= LEGACY_MAX_LIMIT_BREAK ? value : null
   }
   if (!isRecord(value) || !exactKeys(value, CARD_FIELDS) || !isId(value.templateId) || !isPositiveInt(value.level) || value.level > 25 || !isNonNegativeInt(value.exp)) return null
   if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > 4 || value.level > 5 * (value.limitBreak + 1)) return null
@@ -861,7 +869,8 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     !parseRaceStats(value.startStats) || typeof value.raceBonus !== 'number' || !Number.isFinite(value.raceBonus) || value.raceBonus < 0 ||
     !isPositiveInt(value.playerPlacement) || value.playerPlacement > fieldSize || !isNonNegativeInt(value.expGained) ||
     !Array.isArray(value.levelsGained) || value.levelsGained.some((level) => !isPositiveInt(level) || level > MAX_UMA_LEVEL) ||
-    !isNonNegativeInt(value.ticketReward) || value.ticketReward !== value.levelsGained.length * 5 ||
+    // Five tickets a level before save v7, one after (D148); a record keeps the reward of its day.
+    !isNonNegativeInt(value.ticketReward) || [1, 5].every((reward) => value.ticketReward !== (value.levelsGained as unknown[]).length * reward) ||
     !isNonNegativeInt(value.shardReward) || value.shardReward > 1 || fieldSize < 8 || fieldSize > 18 ||
     (hasCompletedGoalIds && parseUniqueIds(value.completedGoalIds) === null) ||
     (hasEarnedFlairEventIds && parseUniqueIds(value.earnedFlairEventIds) === null) ||

@@ -1,21 +1,13 @@
-// SSR support cards: limit breaks (shown as bond), and the generated effect profile that still feeds tilt and Race
-// Bonus (docs/design/support-cards.md). The rest of the effect model died with the training turn (D125).
+// SSR support cards: stars, and the generated effect profile that still feeds tilt and Race Bonus
+// (docs/design/support-cards.md). The rest of the effect model died with the training turn (D125).
 
-import { CARD_SET_SIZE } from './constellation'
+import { CARD_SET_SIZE, starNodePct } from './constellation'
 import type { SupportCardTemplate } from './content'
 
-export const CARD_MAX_LEVEL = 25
-export const LEVELS_PER_LIMIT_BREAK = 5
-export const MAX_LIMIT_BREAK = 4
-
-/** Highest level reachable at a limit break: LB0 → 5 … LB4 → 25. */
-export const cardLevelCap = (limitBreak: number): number => LEVELS_PER_LIMIT_BREAK * (limitBreak + 1)
+/** A card holds 0★–5★ in each scenario; 5★ is max, with every bonus at full strength (D147). */
+export const MAX_STARS = 5
 
 export const eraMult = (era: number): number => 1 + 0.08 * (era - 1)
-
-export const LIMIT_BREAK_MULT = [1.0, 1.1, 1.2, 1.32, 1.5] as const
-
-export const levelWithinLimitBreakMult = (level: number): number => 1 + 0.02 * ((level - 1) % LEVELS_PER_LIMIT_BREAK)
 
 export const CARD_UNIQUE_BONUS_MULTIPLIER = 0.25
 
@@ -33,28 +25,6 @@ export type CardEffect = (typeof CARD_EFFECTS)[number]
 
 /** Six slots at every tier; the 4/5/6 ramp was ours to begin with and the original always has six (D125). */
 export const deckSlotCount = (_tier: number): number => CARD_SET_SIZE
-
-/** Base values for an era-1, LB0, level-1 card. */
-export const CARD_EFFECT_BASE: Record<CardEffect, number> = {
-  trainingBonus: 0.05,
-  friendshipBonus: 0.15,
-  statBonus: 6,
-  skillPointBonus: 2,
-  specialtyPriority: 15,
-  hintFrequency: 0.2,
-  raceBonus: 0.03,
-  initialStats: 10,
-}
-
-export function cardEffectValue(
-  effect: CardEffect,
-  opts: { era: number; limitBreak: number; level: number; profileWeight?: number },
-): number {
-  const lb = LIMIT_BREAK_MULT[Math.min(MAX_LIMIT_BREAK, Math.max(0, opts.limitBreak))]!
-  return (
-    CARD_EFFECT_BASE[effect] * eraMult(opts.era) * lb * levelWithinLimitBreakMult(opts.level) * (opts.profileWeight ?? 1)
-  )
-}
 
 export const STAT_BONUS_SOURCE_IDS = { speed: 3, stamina: 4, power: 5, guts: 6, wit: 7 } as const
 export const INITIAL_STAT_SOURCE_IDS = { speed: 9, stamina: 10, power: 11, guts: 12, wit: 13 } as const
@@ -88,80 +58,22 @@ export function cardUniqueEffectKinds(template: SupportCardTemplate): ReadonlySe
   )
 }
 
-export interface CardEffectProjection {
-  effect: CardEffect
-  value: number
-  signatureBonus: number
-  unlockLimitBreak: number
-  improvementLimitBreak: number | null
-  inactiveReason: string | null
-}
-
-const EFFECT_UNLOCK_LB: Record<CardEffect, number> = {
-  trainingBonus: 0,
-  friendshipBonus: 0,
-  statBonus: 0,
-  skillPointBonus: 0,
-  specialtyPriority: 0,
-  hintFrequency: 0,
-  raceBonus: 1,
-  initialStats: 0,
-}
-
-const EFFECT_IMPROVEMENT_LB: Partial<Record<CardEffect, number>> = {
-  specialtyPriority: 2,
-  initialStats: 3,
-}
-
-/** One generated projection shared by Training, racing, and the Cards UI. */
-export function projectCardEffects(
-  template: SupportCardTemplate,
-  state: { limitBreak: number; level: number },
-): CardEffectProjection[] {
-  const uniqueKinds = state.limitBreak >= MAX_LIMIT_BREAK ? cardUniqueEffectKinds(template) : new Set<CardEffect>()
-  return CARD_EFFECTS.map((effect) => {
-    const unlockLimitBreak = EFFECT_UNLOCK_LB[effect]
-    const inactiveReason = isBroadSupportCard(template)
-      ? effect === 'specialtyPriority'
-        ? 'No specialty facility'
-        : effect === 'friendshipBonus'
-          ? 'Cannot match a facility'
-          : null
-      : null
-    let value = state.limitBreak < unlockLimitBreak
-      ? 0
-      : cardEffectValue(effect, {
-        era: template.era,
-        limitBreak: state.limitBreak,
-        level: state.level,
-        profileWeight: template.effectProfile[effect],
-      })
-    if (effect === 'specialtyPriority' && state.limitBreak >= 2) value *= 1.5
-    if (effect === 'initialStats' && state.limitBreak >= 3) value *= 2
-    if (inactiveReason) value = 0
-    const signatureBonus = inactiveReason === null && uniqueKinds.has(effect) ? value * CARD_UNIQUE_BONUS_MULTIPLIER : 0
-    return {
-      effect,
-      value: value + signatureBonus,
-      signatureBonus,
-      unlockLimitBreak,
-      improvementLimitBreak: EFFECT_IMPROVEMENT_LB[effect] ?? null,
-      inactiveReason,
-    }
-  })
-}
-
-export function projectedCardEffectValue(
-  effect: CardEffect,
-  template: SupportCardTemplate,
-  state: { limitBreak: number; level: number },
-): number {
-  return projectCardEffects(template, state).find((row) => row.effect === effect)!.value
-}
+/**
+ * Race Bonus at 5★ for an era-1 card whose profile weight is 1. It is the value the old model reached at max limit
+ * break and level 25 (0.03 × 1.5 × 1.08), so a maxed card races exactly as it did before stars (D147).
+ */
+const RACE_BONUS_AT_MAX = 0.03 * 1.5 * 1.08
 
 /**
- * What one card adds to race EXP at one limit break — the one generated effect that outlived the training turn
- * (D125). Nothing below LB1.
+ * What one card adds to race EXP at its stars in a scenario, the one generated effect that outlived the training turn
+ * (D125). Nothing at 0★; from 1★ it follows the same star curve as a card node (68% … 100%), so every limit break the
+ * v7 migration turned into stars keeps at least the Race Bonus it had. At 5★ the card's unique effect adds its bonus if
+ * Race Bonus is one of its kinds.
  */
-export const cardRaceBonus = (template: SupportCardTemplate, limitBreak: number): number =>
-  projectedCardEffectValue('raceBonus', template, { limitBreak, level: cardLevelCap(limitBreak) })
+export function cardRaceBonus(template: SupportCardTemplate, stars: number): number {
+  const held = Math.min(MAX_STARS, Math.max(0, Math.trunc(stars)))
+  if (held === 0) return 0
+  const full = RACE_BONUS_AT_MAX * eraMult(template.era) * (template.effectProfile.raceBonus ?? 0)
+  const signature = held === MAX_STARS && cardUniqueEffectKinds(template).has('raceBonus') ? CARD_UNIQUE_BONUS_MULTIPLIER : 0
+  return full * (starNodePct(held) / 100) * (1 + signature)
+}

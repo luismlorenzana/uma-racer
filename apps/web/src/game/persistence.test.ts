@@ -185,7 +185,7 @@ describe('save persistence', () => {
     await persistInitial(loaded, '2000-01-02', 10)
 
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile.data).toMatchObject({ tickets: 50, cardCoupons: 3, featuredUmaId: 'u00' })
+    expect(snapshot?.profile.data).toMatchObject({ tickets: 10, cardCoupons: 3, featuredUmaId: 'u00' })
     expect(snapshot?.umas).toHaveLength(25)
     expect(snapshot?.cards).toHaveLength(1)
     expect(await db.ledger.count()).toBe(2)
@@ -275,11 +275,11 @@ describe('save persistence', () => {
 
   it('reports an unsupported local profile schema without replacing it', async () => {
     await db.open()
-    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 7 }
+    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 8 }
     await db.table('profile').put({ id: 'main', data: unsupported, version: 7 })
 
     await expect(readLocalSnapshot()).rejects.toThrow(/App update required/)
-    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 7 } })
+    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 8 } })
   })
 
   it('parses a cloud snapshot before replacing any local rows', async () => {
@@ -355,8 +355,9 @@ describe('save persistence', () => {
 
     await db.open()
     const migrated = await readLocalSnapshot()
-    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 6, tickets: 225, cardCoupons: 7, starterSeedContentVersion: null } })
-    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 6, unlockedTier: 1, goalPlanVersion: 0 })
+    // 225 old tickets are 45 now (D148); the chain re-denominates exactly once.
+    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 7, tickets: 45, cardCoupons: 7, starterSeedContentVersion: null } })
+    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 7, unlockedTier: 1, goalPlanVersion: 0 })
     expect(await db.outbox.where('kind').equals('profile').count()).toBe(1)
     expect(await db.outbox.where('[kind+id]').equals(['umas', existing.templateId]).count()).toBe(1)
     await completeStarterSeed(loaded, 30)
@@ -365,7 +366,7 @@ describe('save persistence', () => {
     expect(completed?.profile.data.starterSeedContentVersion).toBe(loaded.manifest.version)
     expect(completed?.umas).toHaveLength(25)
     // The v5 migration discards stored stats rather than inventing a configuration that reproduces them.
-    expect(completed?.umas.find((row) => row.id === existing.templateId)).toMatchObject({ version: 3, data: { schemaVersion: 6 } })
+    expect(completed?.umas.find((row) => row.id === existing.templateId)).toMatchObject({ version: 3, data: { schemaVersion: 7 } })
     expect(await db.badges.count()).toBe(1)
   })
 
@@ -398,8 +399,8 @@ describe('save persistence', () => {
       serverTime: 21,
     })).resolves.toBe('adopted')
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 6, tickets: 88 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 6, unlockedTier: 1 } })
+    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 7, tickets: 18 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 7, unlockedTier: 1 } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${legacyUma.templateId}`])
     await expect(adoptServerSnapshot({
       entities: [
@@ -436,7 +437,7 @@ describe('game bootstrap coordinator', () => {
     const loaded = content()
     const load = vi.spyOn(saveApi, 'load').mockResolvedValueOnce({ entities: [], logs: [], serverTime: 1 })
     await runtime.start(loaded)
-    expect(useGame.getState()).toMatchObject({ status: 'ready', persistent: true, profile: { tickets: 50 } })
+    expect(useGame.getState()).toMatchObject({ status: 'ready', persistent: true, profile: { tickets: 10 } })
     expect(Object.keys(useGame.getState().umas)).toHaveLength(25)
     expect(load).toHaveBeenCalledTimes(1)
 

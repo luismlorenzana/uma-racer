@@ -26,8 +26,8 @@ export interface RunReward {
   trainingLevelBefore?: number
   trainingLevelAfter?: number
   nodesUnlocked?: string[]
-  limitBreakBefore?: number
-  limitBreakAfter?: number
+  starsBefore?: number
+  starsAfter?: number
   couponGranted?: boolean
 }
 
@@ -53,7 +53,7 @@ const sparkTargetExp = (level: number): number => 1_000 + 350 * (level - 1)
 
 const defaultReward: RewardFactory = (_ticket, target, outcome) => {
   if (target.kind === 'bond-recall' && outcome.kind === 'bond-recall') {
-    return { ticketsSpent: 10, limitBreakBefore: 0, limitBreakAfter: outcome.cleared ? 1 : 0, couponGranted: false }
+    return { ticketsSpent: 10, starsBefore: 0, starsAfter: outcome.cleared ? 1 : 0, couponGranted: false }
   }
   if (target.kind !== 'spark-match' || outcome.kind !== 'spark-match') throw new Error('Mismatched test-double run')
   let level = 1

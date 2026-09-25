@@ -1,68 +1,59 @@
-// Limit breaks, earned per scenario by clearing Bond Recall (docs/design/minigames.md).
+// Stars, earned per scenario one clear at a time (docs/design/support-cards.md, D147).
 
-import { MAX_LIMIT_BREAK, cardLevelCap } from './cards'
-import { TICKETS_PER_CARD_LIMIT_BREAK } from './economy'
+import { MAX_STARS } from './cards'
 import { MAX_SCENARIO_TIER } from './scenarios'
 import type { CardSave } from './save'
 
 export interface CardAdvanceResult {
   card: CardSave
   tier: number
-  fromLimitBreak: number
-  toLimitBreak: number
-  /** Derived, for the result screen. */
-  fromLevel: number
-  toLevel: number
-  ticketReward: number
-  /** True on the advance that first takes this card to LB4 in any scenario. */
+  fromStars: number
+  toStars: number
+  /** True on the advance that first takes this card to 5★ in any scenario. */
   couponGranted: boolean
 }
 
-/** A card's limit break in one scenario. Absent means it has never been broken there (D127). */
-export const cardLimitBreak = (card: Pick<CardSave, 'limitBreaks'>, tier: number): number =>
-  card.limitBreaks[String(Math.trunc(tier))] ?? 0
+/** A card's stars in one scenario. Absent means 0★ there (D127). */
+export const cardStars = (card: Pick<CardSave, 'stars'>, tier: number): number =>
+  card.stars[String(Math.trunc(tier))] ?? 0
 
-/** The best break this card holds in any scenario — what the album sorts and filters on. */
-export const bestCardLimitBreak = (card: Pick<CardSave, 'limitBreaks'>): number =>
-  Object.values(card.limitBreaks).reduce((best, value) => Math.max(best, value), 0)
+/** The most stars this card holds in any scenario. */
+export const bestCardStars = (card: Pick<CardSave, 'stars'>): number =>
+  Object.values(card.stars).reduce((best, value) => Math.max(best, value), 0)
 
-/** Scenarios where this card is broken at all, in tier order. */
-export const brokenTiers = (card: Pick<CardSave, 'limitBreaks'>): number[] =>
-  Object.keys(card.limitBreaks).map(Number).sort((left, right) => left - right)
+/** Scenarios where this card holds any stars, in tier order. */
+export const brokenTiers = (card: Pick<CardSave, 'stars'>): number[] =>
+  Object.keys(card.stars).map(Number).sort((left, right) => left - right)
 
-export const isCardMaxedIn = (card: Pick<CardSave, 'limitBreaks'>, tier: number): boolean =>
-  cardLimitBreak(card, tier) >= MAX_LIMIT_BREAK
+export const isCardMaxedIn = (card: Pick<CardSave, 'stars'>, tier: number): boolean =>
+  cardStars(card, tier) >= MAX_STARS
 
 
 /**
- * Advance one limit break in one scenario. The Bond Recall run already charged its tickets, so this costs
- * nothing further: clearing the board *is* the limit break (D120). The break is account-wide within that
- * scenario, so every Uma racing there gets it.
+ * Advance one star in one scenario. The card minigame's run already charged its ticket, so this costs nothing further:
+ * the clear *is* the star (D120, D147). Stars are account-wide within that scenario, so every Uma racing there gets them.
  */
-export function advanceCardLimitBreak(card: CardSave, tier: number): CardAdvanceResult {
+export function advanceCardStars(card: CardSave, tier: number): CardAdvanceResult {
   if (!Number.isSafeInteger(tier) || tier < 1 || tier > MAX_SCENARIO_TIER) {
-    throw new Error('Card limit breaks belong to a scenario')
+    throw new Error('Card stars belong to a scenario')
   }
-  const from = cardLimitBreak(card, tier)
-  if (!Number.isSafeInteger(from) || from < 0 || from > MAX_LIMIT_BREAK) {
+  const from = cardStars(card, tier)
+  if (!Number.isSafeInteger(from) || from < 0 || from > MAX_STARS) {
     throw new Error('Card progression state is invalid')
   }
-  if (from >= MAX_LIMIT_BREAK) throw new Error('This card already has max bond in that scenario')
+  if (from >= MAX_STARS) throw new Error('This card already has 5★ in that scenario')
 
-  const toLimitBreak = from + 1
-  const couponGranted = toLimitBreak === MAX_LIMIT_BREAK && !card.maxCouponGranted
+  const toStars = from + 1
+  const couponGranted = toStars === MAX_STARS && !card.maxCouponGranted
   return {
     card: {
       ...card,
-      limitBreaks: { ...card.limitBreaks, [String(tier)]: toLimitBreak },
+      stars: { ...card.stars, [String(tier)]: toStars },
       maxCouponGranted: card.maxCouponGranted || couponGranted,
     },
     tier,
-    fromLimitBreak: from,
-    toLimitBreak,
-    fromLevel: cardLevelCap(from),
-    toLevel: cardLevelCap(toLimitBreak),
-    ticketReward: TICKETS_PER_CARD_LIMIT_BREAK,
+    fromStars: from,
+    toStars,
     couponGranted,
   }
 }

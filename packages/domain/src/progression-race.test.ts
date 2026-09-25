@@ -135,24 +135,24 @@ describe('progression race content and setup rules', () => {
 
   it('uses generated equipped-card Race Bonus and applies player Form once', () => {
     const template = card()
-    const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), limitBreaks: { '1': 1 } }, template }])
-    expect(bonus).toBeCloseTo(0.033)
+    const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), stars: { '1': 1 } }, template }])
+    expect(bonus).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
     expect(playerRaceStats({ speed: 100, stamina: 200, power: 300, guts: 400, wit: 500 }, 1))
       .toEqual({ speed: 80, stamina: 160, power: 240, guts: 320, wit: 400 })
     expect(equippedRaceBonus(1, [{
-      save: { ...createCardSave(template), limitBreaks: { '1': 1 } },
+      save: { ...createCardSave(template), stars: { '1': 1 } },
       template: { ...template, type: 'friend' },
-    }])).toBeCloseTo(0.033)
+    }])).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
   })
 })
 
 describe('Uma race progression', () => {
-  it('carries remainder through multiple levels and pays five tickets each', () => {
+  it('carries remainder through multiple levels and pays one ticket each (D148)', () => {
     const save = { ...createUmaSave(uma()), exp: 90 }
     const result = addUmaRaceExp(save, 300)
     expect(result.uma).toMatchObject({ level: 4, exp: 15 })
     expect(result.levelsGained).toEqual([2, 3, 4])
-    expect(result.ticketReward).toBe(15)
+    expect(result.ticketReward).toBe(3)
   })
 
   it('stops at a gate, grants one shard, and caps banked overflow', () => {
@@ -160,7 +160,7 @@ describe('Uma race progression', () => {
     const result = addUmaRaceExp(save, 1_000)
     expect(result.uma).toMatchObject({ level: 10, exp: expToNextUmaLevel(11) })
     expect(result.levelsGained).toEqual([10])
-    expect(result).toMatchObject({ ticketReward: 5, reachedGate: 10, shardReward: 1 })
+    expect(result).toMatchObject({ ticketReward: 1, reachedGate: 10, shardReward: 1 })
     const banked = addUmaRaceExp(result.uma, 500)
     expect(banked.uma).toEqual(result.uma)
     expect(banked.levelsGained).toEqual([])

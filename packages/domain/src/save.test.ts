@@ -1,5 +1,6 @@
 import { subject } from './__fixtures__/subject'
-import { constellationTemplate } from './constellation'
+import { MAX_STARS } from './cards'
+import { constellationTemplate, starNodePct } from './constellation'
 import { describe, expect, it } from 'vitest'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { createUmaBadgeState } from './badges'
@@ -17,6 +18,7 @@ import {
   migratePlayerProfileV2,
   migratePlayerProfileV3,
   migrateCardSaveV5,
+  limitBreakToStars,
   migrateUmaSaveV4,
   parseCardSave,
   parsePlayerProfile,
@@ -90,7 +92,7 @@ describe('save initialization', () => {
     expect(result.umas).toHaveLength(25)
     expect(result.umas[0]?.templateId).toBe('u00')
     expect(result.cards.map((item) => item.templateId)).toEqual(['c1', 'c2'])
-    expect(result.profile).toMatchObject({ tickets: 50, cardCoupons: 3, featuredUmaId: 'u00', starterSeedContentVersion: 'abc123' })
+    expect(result.profile).toMatchObject({ tickets: 10, cardCoupons: 3, featuredUmaId: 'u00', starterSeedContentVersion: 'abc123' })
     expect(result.ledger.map((item) => item.id)).toEqual(['initial-card-coupons', 'daily-tickets:2026-03-08'])
 
     // A new Uma starts with one scenario at tier 1 and nothing configured in it.
@@ -119,13 +121,13 @@ describe('save initialization', () => {
 
 describe('daily grants', () => {
   it('handles missed calendar days, DST-shaped dates, and the cap', () => {
-    const profile = { ...createPlayerProfile('v1', 1), tickets: 430, lastDailyGrant: '2026-03-07' }
+    const profile = { ...createPlayerProfile('v1', 1), tickets: 36, lastDailyGrant: '2026-03-07' }
     const result = applyDailyGrants(profile, '2026-03-10', 2)
-    expect(result.profile.tickets).toBe(500)
+    expect(result.profile.tickets).toBe(50)
     expect(result.profile.lastDailyGrant).toBe('2026-03-10')
     expect(result.ledger.map((item) => [item.id, item.data.delta])).toEqual([
-      ['daily-tickets:2026-03-08', 50],
-      ['daily-tickets:2026-03-09', 20],
+      ['daily-tickets:2026-03-08', 10],
+      ['daily-tickets:2026-03-09', 4],
     ])
   })
 
@@ -151,28 +153,31 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, unlockedTier: 2 })).toBeNull()
     expect(parseUmaSave({ ...save, scenarios: [] })).toBeNull()
     expect(parseUmaSave({ ...save, scenarios: [run, run] })).toBeNull()
-    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '1': 5 }, maxCouponGranted: false })).toBeNull()
-    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '0': 2 }, maxCouponGranted: false })).toBeNull()
-    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '99': 2 }, maxCouponGranted: false })).toBeNull()
-    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '1': 2, '3': 4 }, maxCouponGranted: false }))
-      .toEqual({ templateId: 'c1', limitBreaks: { '1': 2, '3': 4 }, maxCouponGranted: false })
+    expect(parseCardSave({ templateId: 'c1', stars: { '1': 6 }, maxCouponGranted: false })).toBeNull()
+    // A v6 card, on the limit-break scale, is not a v7 card.
+    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '1': 2 }, maxCouponGranted: false })).toBeNull()
+    expect(parseCardSave({ templateId: 'c1', stars: { '0': 2 }, maxCouponGranted: false })).toBeNull()
+    expect(parseCardSave({ templateId: 'c1', stars: { '99': 2 }, maxCouponGranted: false })).toBeNull()
+    expect(parseCardSave({ templateId: 'c1', stars: { '1': 2, '3': 4 }, maxCouponGranted: false }))
+      .toEqual({ templateId: 'c1', stars: { '1': 2, '3': 4 }, maxCouponGranted: false })
     // A zero is the default, so it never needs storing.
-    expect(parseCardSave({ templateId: 'c1', limitBreaks: { '2': 0 }, maxCouponGranted: false }))
-      .toEqual({ templateId: 'c1', limitBreaks: {}, maxCouponGranted: false })
-    // v5 held one break with no scenario; it becomes tier 1's.
+    expect(parseCardSave({ templateId: 'c1', stars: { '2': 0 }, maxCouponGranted: false }))
+      .toEqual({ templateId: 'c1', stars: {}, maxCouponGranted: false })
+    // v5 held one break with no scenario; it becomes tier 1's, then stars (LB3 → 4★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
-      .toEqual({ templateId: 'c1', limitBreaks: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 7 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 7 })).toThrow(/App update required/)
+      .toEqual({ templateId: 'c1', stars: { '1': 4 }, maxCouponGranted: false })
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 8 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 8 })).toThrow(/App update required/)
   })
 
   it('migrates v1 profiles and Umas into current defaults and preserves every v2 goal fact', () => {
+    // Every older profile passes through v6 → v7 once, so its tickets are re-denominated exactly once (D148).
     const profileV1 = { ...createPlayerProfile('v1', 1), schemaVersion: 1 as const, tickets: 77 }
-    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 6 })
+    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: 7, tickets: 16 })
     const profileV2 = { ...profileV1, schemaVersion: 2 as const }
-    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: 6 })
+    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: 7, tickets: 16 })
     const profileV3 = { ...profileV1, schemaVersion: 3 as const }
-    expect(migratePlayerProfileV3(profileV3)).toEqual({ ...profileV3, schemaVersion: 6 })
+    expect(migratePlayerProfileV3(profileV3)).toEqual({ ...profileV3, schemaVersion: 7, tickets: 16 })
     // v4 is the last shape with a flat run; v5 turns it into one ScenarioTraining at her current tier.
     const legacyV4 = {
       schemaVersion: 4 as const,
@@ -200,7 +205,7 @@ describe('save parsing', () => {
     }
 
     const migratedV4 = migrateUmaSaveV4(legacyV4)
-    expect(migratedV4).toMatchObject({ schemaVersion: 6, level: 12, unlockedTier: 2, goalPlanVersion: 0 })
+    expect(migratedV4).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, level: 12, unlockedTier: 2, goalPlanVersion: 0 })
     expect(migratedV4.scenarios).toEqual([{
       tier: 2,
       trainingLevel: 7,
@@ -294,7 +299,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 7 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 8 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
@@ -348,9 +353,33 @@ describe('the migration chain', () => {
     expect(migrated!.unlockedTier).toBe(1)
   })
 
-  it('reads a v5 card and puts its break on tier 1', () => {
+  it('reads a v5 card and puts its break on tier 1, as stars', () => {
     expect(migrateCardSaveToCurrent(v5Card))
-      .toEqual({ templateId: 'c1', limitBreaks: { '1': 3 }, maxCouponGranted: false })
+      .toEqual({ templateId: 'c1', stars: { '1': 4 }, maxCouponGranted: false })
+  })
+
+  it('turns v6 limit breaks into stars at ceil(1.25 × LB), so no card loses value and max stays max (D147)', () => {
+    const v6 = { templateId: 'c1', limitBreaks: { '1': 1, '2': 2, '3': 3, '4': 4 }, maxCouponGranted: true }
+    expect(migrateCardSaveToCurrent(v6)).toEqual({ templateId: 'c1', stars: { '1': 2, '2': 3, '3': 4, '4': 5 }, maxCouponGranted: true })
+    for (const limitBreak of [0, 1, 2, 3, 4]) {
+      const stars = limitBreakToStars(limitBreak)
+      expect(starNodePct(stars)).toBeGreaterThanOrEqual(60 + 10 * limitBreak)
+    }
+    expect(limitBreakToStars(4)).toBe(MAX_STARS)
+    // A card above the old ceiling was never a valid v6 card.
+    expect(migrateCardSaveToCurrent({ ...v6, limitBreaks: { '1': 5 } })).toBeNull()
+    // Already stars: a second pass changes nothing.
+    const once = migrateCardSaveToCurrent(v6)!
+    expect(migrateCardSaveToCurrent(once)).toEqual(once)
+  })
+
+  it('re-denominates a v6 profile once and stamps v6 Umas as v7', () => {
+    const v6Profile = { ...createPlayerProfile('v1', 1), schemaVersion: 6 as const, tickets: 444 }
+    const migrated = migratePlayerProfileToCurrent(v6Profile)!
+    expect(migrated).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, tickets: 89 })
+    expect(migratePlayerProfileToCurrent(migrated)).toEqual(migrated)
+    const v6Uma = { ...v5Uma(), schemaVersion: 6 as const }
+    expect(migrateUmaSaveToCurrent(v6Uma)).toEqual({ ...v6Uma, schemaVersion: SAVE_SCHEMA_VERSION })
   })
 
   it('reads every supported profile schema', () => {

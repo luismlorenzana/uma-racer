@@ -81,11 +81,11 @@ export function SettingsScreen() {
             disabled={granting || gameStatus !== 'ready'}
             onClick={() => {
               setGranting(true)
-              void grantDevResources({ tickets: 500, cardCoupons: 5, umaCoupons: 5, umaShards: 10 })
+              void grantDevResources({ tickets: 50, cardCoupons: 5, umaCoupons: 5, umaShards: 10 })
                 .finally(() => setGranting(false))
             }}
           >
-            {granting ? 'Granting…' : '+500 tickets · 5+5 coupons · 10 shards'}
+            {granting ? 'Granting…' : '+50 tickets · 5+5 coupons · 10 shards'}
           </GameButton>
         </div>
       </Panel>

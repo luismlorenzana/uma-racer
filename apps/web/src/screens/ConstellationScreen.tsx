@@ -1,8 +1,8 @@
 import {
-  MAX_LIMIT_BREAK,
+  MAX_STARS,
   MAX_TRAINING_LEVEL,
   SPARK_MATCH_TICKET_COST,
-  cardLimitBreak,
+  cardStars,
   STATS,
   cardNodeValue,
   constellationTemplate,
@@ -31,10 +31,11 @@ import { bondRecallHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { UmaBust } from '../ui/UmaBust'
-import { BondPips } from '../ui/BondPips'
+import { Stars } from '../ui/Stars'
 import { BottomSheet } from '../ui/BottomSheet'
 import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
 import { useTraining } from './TrainingScene'
+import { formatTickets } from '../ui/tickets'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
@@ -97,12 +98,12 @@ export function ConstellationScreen() {
             className="mb-2 flex min-h-11 items-center justify-between rounded-xl bg-accent px-4 text-sm font-bold text-ink shadow-2"
           >
             <span>Raise Training Level</span>
-            <span>{SPARK_MATCH_TICKET_COST} tickets →</span>
+            <span>{formatTickets(SPARK_MATCH_TICKET_COST)} →</span>
           </Link>
         ) : (
           <div className="mb-2 flex min-h-11 items-center justify-between rounded-xl bg-sunken px-4 text-sm font-bold text-ink-faint" aria-disabled="true">
             <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !run.started ? 'Start scenario first' : 'Raise Training Level'}</span>
-            <span>{SPARK_MATCH_TICKET_COST} tickets</span>
+            <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
         )}
         <div className="flex items-baseline justify-between">
@@ -148,8 +149,8 @@ export function ConstellationScreen() {
                 const owned = cards[cardId]
                 if (!card || !owned) return null
                 const skillPoints = paysSkillPoints(card)
-                const bond = cardLimitBreak(owned, run.tier)
-                const perNode = cardNodeValue(run.tier, { template: card, limitBreak: bond })
+                const bond = cardStars(owned, run.tier)
+                const perNode = cardNodeValue(run.tier, { template: card, stars: bond })
                 const held = cardNodeCount(run, cardId)
                 const onThisNode = run.assignments[openNode.id]?.kind === 'card' && (run.assignments[openNode.id] as { cardId: string }).cardId === cardId
                 const full = !onThisNode && held >= nodeCap
@@ -165,17 +166,17 @@ export function ConstellationScreen() {
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-2">
                           <span className="truncate text-sm font-semibold">{card.charName}</span>
-                          <BondPips value={bond} />
+                          <Stars value={bond} />
                         </span>
                         <span className="text-micro">
                           {skillPoints
-                            ? `${titleCase(card.type)} · ${Math.round(cardSpPerNode(run.tier, { template: card, limitBreak: bond }))} SP per node`
+                            ? `${titleCase(card.type)} · ${Math.round(cardSpPerNode(run.tier, { template: card, stars: bond }))} SP per node`
                             : `${titleCase(card.type)} · ${Math.round(perNode)} per node`}
                           {` · ${held}/${nodeCap} nodes${full ? ' — full' : ''}`}
                         </span>
                       </span>
                     </button>
-                    {bond < MAX_LIMIT_BREAK && (
+                    {bond < MAX_STARS && (
                       <Link
                         to={bondRecallHref({ cardId, tier: run.tier, umaId: save.templateId, returnTo: here })}
                         className="flex min-w-14 items-center justify-center rounded-xl bg-sunken px-2 text-[12px] font-semibold text-accent-strong"

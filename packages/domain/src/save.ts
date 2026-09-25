@@ -1,6 +1,6 @@
 // Typed local-first save vocabulary and initialization (docs/technical/architecture.md).
 
-import { MAX_LIMIT_BREAK } from './cards'
+import { MAX_STARS } from './cards'
 import {
   badgeStateId,
   FLAIR_SERIES_LEG_KEY_PATTERN,
@@ -10,7 +10,7 @@ import {
   type FlairSeriesTag,
 } from './badges'
 import type { SupportCardTemplate, UmaTemplate } from './content'
-import { DAILY_TICKETS, TICKET_STORAGE_CAP } from './economy'
+import { DAILY_TICKETS, TICKET_STORAGE_CAP, redenominateTickets } from './economy'
 import { expToNextUmaLevel } from './progression'
 import { parseRaceResultRecord } from './progression-race'
 import {
@@ -23,12 +23,13 @@ import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel }
 import { EXP_TO_NEXT_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type StatKey, type Stats } from './types'
 
-export const SAVE_SCHEMA_VERSION = 6 as const
+export const SAVE_SCHEMA_VERSION = 7 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V4 = 4 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V5 = 5 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V6 = 6 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -193,6 +194,11 @@ export interface LegacyPlayerProfileV5 extends Omit<PlayerProfile, 'schemaVersio
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V5
 }
 
+/** v6 counted tickets at five times today's value (D148). */
+export interface LegacyPlayerProfileV6 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V6
+}
+
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
   raceId: string
   kind: 'win' | 'win-by-margin'
@@ -215,10 +221,18 @@ export interface LegacyUmaSaveV1 extends Omit<LegacyUmaSaveV4,
   'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys' | 'scenarioModifier'> {}
 
 /**
- * Cards advance one limit break per Bond Recall clear, and a break belongs to the scenario it was earned in
- * but is shared by every Uma (D127). An absent tier means LB0 there.
+ * Cards earn one star per clear of the card minigame, 0★–5★, and stars belong to the scenario they were earned in but
+ * are shared by every Uma (D127, D147). An absent tier means 0★ there. The field is `stars`, not v6's `limitBreaks`, so a
+ * v6 card, on the old 0–4 scale, can never be read as stars without its conversion.
  */
 export interface CardSave {
+  templateId: string
+  stars: Record<string, number>
+  maxCouponGranted: boolean
+}
+
+/** The v6 shape: per-scenario limit breaks, 0–4. */
+export interface LegacyCardSaveV6 {
   templateId: string
   limitBreaks: Record<string, number>
   maxCouponGranted: boolean
@@ -412,7 +426,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -452,19 +466,19 @@ export function parseLegacyPlayerProfileV3(value: unknown): LegacyPlayerProfileV
 export function migratePlayerProfileV1(value: LegacyPlayerProfileV1): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV1(value)
   if (!parsed) throw new Error('Legacy player profile is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return migratePlayerProfileV6({ ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V6 })
 }
 
 export function migratePlayerProfileV2(value: LegacyPlayerProfileV2): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV2(value)
   if (!parsed) throw new Error('Legacy v2 player profile is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return migratePlayerProfileV6({ ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V6 })
 }
 
 export function migratePlayerProfileV3(value: LegacyPlayerProfileV3): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV3(value)
   if (!parsed) throw new Error('Legacy v3 player profile is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return migratePlayerProfileV6({ ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V6 })
 }
 
 export function parseLegacyPlayerProfileV4(value: unknown): LegacyPlayerProfileV4 | null {
@@ -474,7 +488,7 @@ export function parseLegacyPlayerProfileV4(value: unknown): LegacyPlayerProfileV
 export function migratePlayerProfileV4(value: LegacyPlayerProfileV4): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV4(value)
   if (!parsed) throw new Error('Legacy v4 player profile is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return migratePlayerProfileV6({ ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V6 })
 }
 
 export function parseLegacyPlayerProfileV5(value: unknown): LegacyPlayerProfileV5 | null {
@@ -484,7 +498,18 @@ export function parseLegacyPlayerProfileV5(value: unknown): LegacyPlayerProfileV
 export function migratePlayerProfileV5(value: LegacyPlayerProfileV5): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV5(value)
   if (!parsed) throw new Error('Legacy v5 player profile is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return migratePlayerProfileV6({ ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V6 })
+}
+
+export function parseLegacyPlayerProfileV6(value: unknown): LegacyPlayerProfileV6 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V6)
+}
+
+/** One ticket became one run (D148): the balance is re-denominated once, here, and never again. */
+export function migratePlayerProfileV6(value: LegacyPlayerProfileV6): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV6(value)
+  if (!parsed) throw new Error('Legacy v6 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION, tickets: redenominateTickets(parsed.tickets) }
 }
 
 /** Parse a profile at a storage/network boundary without treating an unknown schema as corrupt data. */
@@ -1005,7 +1030,23 @@ export interface LegacyUmaSaveV5 extends Omit<UmaSave, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V5
 }
 
-/** v5 and v6 Umas have the same shape — only cards changed — so this is a stamp bump. */
+export interface LegacyUmaSaveV6 extends Omit<UmaSave, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V6
+}
+
+/** v5, v6 and v7 Umas share a shape (v6 changed cards, v7 cards and tickets), so these are stamp bumps. */
+export function parseLegacyUmaSaveV6(value: unknown): LegacyUmaSaveV6 | null {
+  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V6) return null
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  return parsed ? { ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V6 } : null
+}
+
+export function migrateUmaSaveV6(value: LegacyUmaSaveV6): UmaSave {
+  const parsed = parseLegacyUmaSaveV6(value)
+  if (!parsed) throw new Error('Legacy v6 Uma save is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
 export function parseLegacyUmaSaveV5(value: unknown): LegacyUmaSaveV5 | null {
   if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V5) return null
   const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
@@ -1082,14 +1123,18 @@ export function parseUmaSaveOrThrow(value: unknown): UmaSave {
   return uma
 }
 
-function parseLimitBreaks(value: unknown): Record<string, number> | null {
+/** The highest limit break v5 and v6 saves could hold, before stars (D147). */
+const LEGACY_MAX_LIMIT_BREAK = 4
+
+/** Per-scenario counts up to `max`, keyed by tier: v7 stars, or v6 limit breaks. */
+function parsePerTier(value: unknown, max: number): Record<string, number> | null {
   if (!isObject(value)) return null
   const breaks: Record<string, number> = {}
   for (const [tier, level] of Object.entries(value)) {
     if (!/^[1-9][0-9]*$/.test(tier)) return null
     const parsed = Number(tier)
     if (parsed > MAX_SCENARIO_TIER) return null
-    if (!isNonNegativeInt(level) || (level as number) > MAX_LIMIT_BREAK) return null
+    if (!isNonNegativeInt(level) || (level as number) > max) return null
     // A zero is the default, so it is dropped rather than stored.
     if ((level as number) > 0) breaks[tier] = level as number
   }
@@ -1106,6 +1151,8 @@ function parseLimitBreaks(value: unknown): Record<string, number> | null {
 export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
   const current = parseUmaSave(value)
   if (current) return current
+  const v6 = parseLegacyUmaSaveV6(value)
+  if (v6) return migrateUmaSaveV6(v6)
   const v5 = parseLegacyUmaSaveV5(value)
   if (v5) return migrateUmaSaveV5(v5)
   const v4 = parseLegacyUmaSaveV4(value)
@@ -1120,13 +1167,15 @@ export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
 
 /** Walks any supported stored card shape to the current one. */
 export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
-  return parseCardSave(value) ?? migrateCardSaveV5(value)
+  return parseCardSave(value) ?? migrateCardSaveV6(value) ?? migrateCardSaveV5(value)
 }
 
 /** Walks any supported stored profile shape to the current one. */
 export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
   const current = parsePlayerProfile(value)
   if (current) return current
+  const v6 = parseLegacyPlayerProfileV6(value)
+  if (v6) return migratePlayerProfileV6(v6)
   const v5 = parseLegacyPlayerProfileV5(value)
   if (v5) return migratePlayerProfileV5(v5)
   const v4 = parseLegacyPlayerProfileV4(value)
@@ -1140,11 +1189,25 @@ export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | n
 }
 
 export function parseCardSave(value: unknown): CardSave | null {
-  if (!isObject(value) || !isId(value.templateId)) return null
-  const limitBreaks = parseLimitBreaks(value.limitBreaks)
-  if (!limitBreaks) return null
+  if (!isObject(value) || !exactKeys(value, ['templateId', 'stars', 'maxCouponGranted']) || !isId(value.templateId)) return null
+  const stars = parsePerTier(value.stars, MAX_STARS)
+  if (!stars) return null
   if (typeof value.maxCouponGranted !== 'boolean') return null
-  return { templateId: value.templateId, limitBreaks, maxCouponGranted: value.maxCouponGranted }
+  return { templateId: value.templateId, stars, maxCouponGranted: value.maxCouponGranted }
+}
+
+/** A v6 limit break as stars: `ceil(1.25 × LB)`, so no card loses node value and LB4 stays max at 5★ (D147). */
+export const limitBreakToStars = (limitBreak: number): number => Math.ceil(limitBreak * 1.25)
+
+export function migrateCardSaveV6(value: unknown): CardSave | null {
+  if (!isObject(value) || !exactKeys(value, ['templateId', 'limitBreaks', 'maxCouponGranted']) || !isId(value.templateId)) return null
+  const limitBreaks = parsePerTier(value.limitBreaks, LEGACY_MAX_LIMIT_BREAK)
+  if (!limitBreaks || typeof value.maxCouponGranted !== 'boolean') return null
+  return {
+    templateId: value.templateId,
+    stars: Object.fromEntries(Object.entries(limitBreaks).map(([tier, limitBreak]) => [tier, limitBreakToStars(limitBreak)])),
+    maxCouponGranted: value.maxCouponGranted,
+  }
 }
 
 /**
@@ -1153,13 +1216,13 @@ export function parseCardSave(value: unknown): CardSave | null {
  */
 export function migrateCardSaveV5(value: unknown): CardSave | null {
   if (!isObject(value) || !isId(value.templateId)) return null
-  if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > MAX_LIMIT_BREAK) return null
+  if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > LEGACY_MAX_LIMIT_BREAK) return null
   const limitBreak = value.limitBreak as number
-  return {
+  return migrateCardSaveV6({
     templateId: value.templateId,
     limitBreaks: limitBreak > 0 ? { '1': limitBreak } : {},
     maxCouponGranted: value.maxCouponGranted === true,
-  }
+  })
 }
 
 export function parseLedgerEntry(value: unknown): LedgerEntry | null {
@@ -1224,7 +1287,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
 
 export function createCardSave(template: SupportCardTemplate): CardSave {
   assertSaveCardTemplate(template)
-  return { templateId: template.id, limitBreaks: {}, maxCouponGranted: false }
+  return { templateId: template.id, stars: {}, maxCouponGranted: false }
 }
 
 function nextLocalDay(day: string): string {

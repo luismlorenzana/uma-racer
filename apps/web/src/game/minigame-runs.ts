@@ -2,15 +2,14 @@
 
 import {
   BOND_RECALL_TICKET_COST,
-  MAX_LIMIT_BREAK,
+  MAX_STARS,
   MAX_SCENARIO_TIER,
   MAX_TRAINING_LEVEL,
   SPARK_MATCH_TICKET_COST,
-  TICKETS_PER_CARD_LIMIT_BREAK,
   activeScenario,
   addTrainingExp,
-  advanceCardLimitBreak,
-  cardLimitBreak,
+  advanceCardStars,
+  cardStars,
   constellationTemplate,
   nodesUnlockedBetween,
   parseCardSave,
@@ -156,8 +155,8 @@ export class PersistentMinigameHost implements MinigameHost {
     if (!Number.isSafeInteger(target.tier) || target.tier < 1 || target.tier > MAX_SCENARIO_TIER || template.era > target.tier) {
       throw new Error('This card is not available in that scenario')
     }
-    if (cardLimitBreak(card, target.tier) >= MAX_LIMIT_BREAK) {
-      throw new Error('This card is already at maximum limit break in that scenario')
+    if (cardStars(card, target.tier) >= MAX_STARS) {
+      throw new Error('This card already has 5★ in that scenario')
     }
     return { tier: target.tier, key: targetKey(target, target.tier) }
   }
@@ -269,31 +268,17 @@ export class PersistentMinigameHost implements MinigameHost {
           const cardRow = await db.cards.get(run.target.cardId)
           if (!cardRow) throw new Error('Bond Recall card is not owned')
           const card = parsedCard(run.target.cardId, cardRow.data)
-          const before = cardLimitBreak(card, run.tier)
+          const before = cardStars(card, run.tier)
           let nextCard = card
           let after = before
           let couponGranted = false
           if (outcome.cleared) {
-            const advance = advanceCardLimitBreak(card, run.tier)
-            if (advance.ticketReward !== TICKETS_PER_CARD_LIMIT_BREAK) throw new Error('Card reward constants disagree')
+            const advance = advanceCardStars(card, run.tier)
             nextCard = advance.card
-            after = advance.toLimitBreak
+            after = advance.toStars
             couponGranted = advance.couponGranted
-            profile = {
-              ...profile,
-              tickets: profile.tickets + advance.ticketReward,
-              cardCoupons: profile.cardCoupons + (advance.couponGranted ? 1 : 0),
-            }
-            const ticketId = `${id}:tickets`
-            const ticketLedger: LedgerEntry = {
-              resource: 'tickets',
-              delta: advance.ticketReward,
-              reason: 'card-level',
-              localDay: today,
-              createdAt: now,
-            }
-            await db.ledger.add({ id: ticketId, data: ticketLedger, createdAt: now })
-            await queueInTransaction('ledger', ticketId, 'append', now)
+            // A star pays no tickets: the run cost one, and the star is the reward (D148).
+            profile = { ...profile, cardCoupons: profile.cardCoupons + (advance.couponGranted ? 1 : 0) }
             if (advance.couponGranted) {
               const couponId = `${id}:coupon`
               const couponLedger: LedgerEntry = {
@@ -315,8 +300,8 @@ export class PersistentMinigameHost implements MinigameHost {
           }
           result = {
             ticketsSpent: BOND_RECALL_TICKET_COST,
-            limitBreakBefore: before,
-            limitBreakAfter: after,
+            starsBefore: before,
+            starsAfter: after,
             couponGranted,
           }
         } else {

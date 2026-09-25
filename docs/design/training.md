@@ -21,7 +21,7 @@ The two halves have their own docs:
 
 - **[Constellations](constellations.md)** — the per-scenario skill tree. What the nodes are, what they pay, the
   stat budget and its invariance rule, skills, aptitudes, and lineage.
-- **[Minigames](minigames.md)** — Spark Match raises Training Levels; Bond Recall limit breaks cards.
+- **[Minigames](minigames.md)** — Spark Match raises Training Levels; the card minigame earns a card's stars.
 
 ## Two levels: Uma Level vs. Training Level
 
@@ -66,10 +66,10 @@ Tickets remain the only currency and the only pacing lever ([Economy](economy.md
 
 | Rule | Value |
 |---|---|
-| Spark Match run | **5 tickets** |
-| Bond Recall run | **10 tickets** |
+| Spark Match run | **1 ticket** |
+| Card minigame run | **1 ticket** |
 | Reconfiguring the constellation | **free, always** |
-| Daily grant | **+50 per day**, stored up to **500** |
+| Daily grant | **+10 per day**, stored up to **50** (five days) |
 | Scope | account-wide, shared by all Umas |
 
 Reconfiguration is free on purpose. Charging for it would make players hoard one safe build, which is the

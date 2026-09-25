@@ -1,9 +1,9 @@
 import {
   BOND_RECALL_TICKET_COST,
-  MAX_LIMIT_BREAK,
+  MAX_STARS,
   SCENARIOS,
   STATS,
-  cardLimitBreak,
+  cardStars,
   cardNodeValue,
   cardRaceBonus,
   cardShares,
@@ -23,7 +23,7 @@ import { bondRecallHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { ArtViewer, ExpandMark } from '../ui/ArtViewer'
 import { AtlasSprite } from '../ui/AtlasSprite'
-import { BondPips } from '../ui/BondPips'
+import { Stars } from '../ui/Stars'
 import { Button } from '../ui/Button'
 import { Crest } from '../ui/Crest'
 import { Numeral } from '../ui/Numeral'
@@ -85,6 +85,7 @@ export function CardPage() {
   const payPerNode = skillPoints ? cardSpPerNode : cardNodeValue
   const cost = cardUnlockCost(template.era)
   const raceBonus = cardRaceBonus(template, 1)
+  const raceBonusMax = cardRaceBonus(template, MAX_STARS)
   const hintSkills = template.hintSkillIds.flatMap((id) => {
     const skill = content.skills.byId.get(id)
     return skill ? [skill.name] : []
@@ -170,16 +171,16 @@ export function CardPage() {
         ) : (
           <div className="grid gap-1">
             {[...reached].reverse().map((scenario) => {
-              const bond = save ? cardLimitBreak(save, scenario.tier) : 0
-              const maxed = bond >= MAX_LIMIT_BREAK
+              const bond = save ? cardStars(save, scenario.tier) : 0
+              const maxed = bond >= MAX_STARS
               const highlighted = scenario.tier === referenceTier
               return (
                 <div key={scenario.tier} className={`flex min-h-12 items-center gap-2 rounded-md px-2 ${highlighted ? 'bg-accent-wash' : 'bg-sunken'}`}>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] font-semibold">{scenario.name}</span>
                     <span className="flex items-center gap-2">
-                      <BondPips value={bond} />
-                      <span className="text-micro">{Math.round(payPerNode(scenario.tier, { template, limitBreak: bond }))}{skillPoints ? ' SP' : ''} per node</span>
+                      <Stars value={bond} />
+                      <span className="text-micro">{Math.round(payPerNode(scenario.tier, { template, stars: bond }))}{skillPoints ? ' SP' : ''} per node</span>
                     </span>
                   </span>
                   {!save ? null : maxed ? (
@@ -201,7 +202,7 @@ export function CardPage() {
         )}
         {later.length > 0 && (
           <p className="px-2 pt-2 pb-1 text-[11px] text-ink-faint">
-            {later.length} later scenario{later.length === 1 ? '' : 's'} open{later.length === 1 ? 's' : ''} as your Umas reach them — each starts at Bond 0.
+            {later.length} later scenario{later.length === 1 ? '' : 's'} open{later.length === 1 ? 's' : ''} as your Umas reach them — each starts at 0★.
           </p>
         )}
         {!save && reached.length > 0 && <p className="px-2 pt-2 pb-1 text-[11px] text-ink-soft">Unlock the card to bond it.</p>}
@@ -210,14 +211,14 @@ export function CardPage() {
       {/* ── What it pays ─────────────────────────────────────────────── */}
       <SectionHeading label="What it pays" hint={scenarioForTier(referenceTier)?.name} />
       <Panel className="p-3">
-        <p className="text-micro mb-1">One node it fills, by bond{skillPoints ? ' · skill points' : ''}</p>
-        <div className="grid grid-cols-5 gap-1 text-center">
-          {Array.from({ length: MAX_LIMIT_BREAK + 1 }, (_, bond) => {
-            const current = save ? cardLimitBreak(save, referenceTier) === bond : false
+        <p className="text-micro mb-1">One node it fills, by stars{skillPoints ? ' · skill points' : ''}</p>
+        <div className="grid grid-cols-3 gap-1 text-center">
+          {Array.from({ length: MAX_STARS + 1 }, (_, bond) => {
+            const current = save ? cardStars(save, referenceTier) === bond : false
             return (
               <div key={bond} className={`rounded-md px-1 py-1.5 ${current ? 'bg-accent-wash outline outline-1 outline-accent' : 'bg-sunken'}`}>
-                <Numeral className="block text-[14px] leading-none">{Math.round(payPerNode(referenceTier, { template, limitBreak: bond }))}</Numeral>
-                <span className="text-micro">{bond === MAX_LIMIT_BREAK ? 'Max' : `Bond ${bond}`}</span>
+                <Numeral className="block text-[14px] leading-none">{Math.round(payPerNode(referenceTier, { template, stars: bond }))}</Numeral>
+                <span className="text-micro">{bond === MAX_STARS ? `${bond}★ Max` : `${bond}★`}</span>
               </div>
             )
           })}
@@ -229,7 +230,7 @@ export function CardPage() {
         </p>
         {raceBonus > 0 && (
           <p className="mt-1 text-[12px] text-ink-soft">
-            From Bond 1 it adds {percent(raceBonus)} to race EXP while it is in the active set.
+            While it is in the active set it adds {percent(raceBonus)} to race EXP at 1★, rising to {percent(raceBonusMax)} at {MAX_STARS}★.
           </p>
         )}
         {hintSkills.length > 0 && (

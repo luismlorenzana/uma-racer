@@ -18,7 +18,8 @@ import {
   deriveStats,
   eraPct,
   isNodeUnlocked,
-  lbNodePct,
+  starNodePct,
+  STAR_NODE_PCT,
   MIN_ERA_PCT,
   type NodeAssignment,
   nodesUnlockedBetween,
@@ -35,6 +36,7 @@ import {
   unlockedNodeCount,
   validateTemplate,
 } from './constellation'
+import { MAX_STARS } from './cards'
 import { parseShapeArt } from './constellation-shapes'
 import { MAX_SCENARIO_TIER, baselineSkillPoints, skillPointCap } from './scenarios'
 import { STATS, type StatKey, type Stats } from './types'
@@ -54,7 +56,7 @@ const card = (
     effectProfile: { statBonus: 1, trainingBonus: 1, ...weights },
     hintSkillIds: [`${id}-a`, `${id}-b`, `${id}-c`, `${id}-d`, `${id}-e`, `${id}-f`],
   } as CardNodeState['template'],
-  limitBreak: 4,
+  stars: MAX_STARS,
 })
 
 const uma = {
@@ -164,6 +166,15 @@ describe('card shares', () => {
   })
 })
 
+describe('stars', () => {
+  it('pays 60% of a node at 0★, rising 8 points a star to 100% at 5★ (D147)', () => {
+    expect(STAR_NODE_PCT).toEqual([60, 68, 76, 84, 92, 100])
+    expect(starNodePct(MAX_STARS)).toBe(100)
+    expect(starNodePct(99)).toBe(100)
+    expect(starNodePct(-1)).toBe(60)
+  })
+})
+
 describe('card era', () => {
   it('pays a current-era card in full and docks five points per era it predates', () => {
     expect(eraPct(7, 7)).toBe(100)
@@ -203,7 +214,7 @@ describe('card era', () => {
 
   it('reports what one node of a card is worth', () => {
     expect(cardNodeValue(7, card('c', 'speed', {}, 7))).toBe(nodeValue(7))
-    expect(cardNodeValue(7, { ...card('c', 'speed', {}, 7), limitBreak: 0 })).toBeCloseTo(nodeValue(7) * 0.6, 6)
+    expect(cardNodeValue(7, { ...card('c', 'speed', {}, 7), stars: 0 })).toBeCloseTo(nodeValue(7) * 0.6, 6)
     expect(cardNodeValue(7, card('c', 'speed', {}, 1))).toBeCloseTo(nodeValue(7) * 0.7, 6)
   })
 })
@@ -421,7 +432,7 @@ describe('the invariance rule', () => {
     const cardIds = ['a', 'b', 'c', 'd', 'e']
     const cards = new Map(cardIds.map((id, i) => [
       id,
-      { ...card(id, (['speed', 'stamina', 'power', 'guts', 'wit'] as const)[i]!, {}, 1 + i * 3), limitBreak: i % 5 },
+      { ...card(id, (['speed', 'stamina', 'power', 'guts', 'wit'] as const)[i]!, {}, 1 + i * 3), stars: i % 5 },
     ]))
     const cardNodeIds = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id)
     // A fixed multiset: each card occupies a fixed number of nodes, but which nodes changes.
@@ -454,7 +465,7 @@ describe('the invariance rule', () => {
     const cardNodes = template.nodes.filter((node) => node.kind === 'card').length
     const statNodes = template.nodes.filter((node) => node.kind === 'stat').length
 
-    for (const limitBreak of [0, 1, 2, 3, 4]) {
+    for (let stars = 0; stars <= MAX_STARS; stars += 1) {
       const derived = deriveStats({
         tier: 1,
         trainingLevel: 10,
@@ -462,10 +473,10 @@ describe('the invariance rule', () => {
         assignments,
         cardSetIds: cardIds,
         umaTemplate: uma,
-        cards: new Map(cardIds.map((id) => [id, { ...card(id, 'speed'), limitBreak }])),
+        cards: new Map(cardIds.map((id) => [id, { ...card(id, 'speed'), stars }])),
       })
       const expected =
-        (nodeValue(1) * cardNodes * lbNodePct(limitBreak)) / 100 + statNodeValue(1) * statNodes
+        (nodeValue(1) * cardNodes * starNodePct(stars)) / 100 + statNodeValue(1) * statNodes
       expect(derived.rawTotal).toBeCloseTo(expected, 6)
     }
   })

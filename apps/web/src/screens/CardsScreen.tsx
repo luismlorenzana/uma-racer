@@ -1,4 +1,4 @@
-import { BOND_RECALL_TICKET_COST, MAX_LIMIT_BREAK, brokenTiers, scenarioForTier } from '@racer/domain'
+import { BOND_RECALL_TICKET_COST, MAX_STARS, brokenTiers, scenarioForTier } from '@racer/domain'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
@@ -33,7 +33,7 @@ import { CompareSheet } from '../ui/album/CompareSheet'
 import { VirtualGrid } from '../ui/album/VirtualGrid'
 import { ArtTile } from '../ui/ArtTile'
 import { AtlasSprite } from '../ui/AtlasSprite'
-import { BondPips } from '../ui/BondPips'
+import { Stars } from '../ui/Stars'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
@@ -43,6 +43,7 @@ import { Panel } from '../ui/Panel'
 import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { SegmentedControl } from '../ui/SegmentedControl'
+import { formatTickets } from '../ui/tickets'
 
 const MAX_COMPARE = 3
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
@@ -115,7 +116,7 @@ function CardTile({
           <span className="block truncate text-[11px] text-ink-faint">{titleCase(entry.template.type)} · {sortLabel ?? cardSplitLabel(entry.template)}</span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-ink-soft">
-          {showBond && <BondPips value={entry.bond ?? 0} />}
+          {showBond && <Stars value={entry.bond ?? 0} />}
           {tileValue(entry, lens)}
         </span>
       </button>
@@ -132,13 +133,13 @@ function CardTile({
         onPointerUp={endPress}
         onPointerLeave={endPress}
         className={`block w-full min-w-0 rounded-md text-left ${ring}`}
-        aria-label={`${entry.template.charName} support card${entry.owned ? '' : ', not owned'}${showBond ? `, bond ${entry.bond}` : ''}`}
+        aria-label={`${entry.template.charName} support card${entry.owned ? '' : ', not owned'}${showBond ? `, ${entry.bond}★` : ''}`}
       >
         <ArtTile
           asset={entry.asset}
           alt={entry.owned ? `${entry.template.charName} support card` : `${entry.template.charName} support card, not owned`}
           dimmed={!entry.owned}
-          chamfer={!icons && entry.bond === MAX_LIMIT_BREAK}
+          chamfer={!icons && entry.bond === MAX_STARS}
           overlay={
             icons ? (
               <>
@@ -147,7 +148,7 @@ function CardTile({
               </>
             ) : (
               <>
-                <Crest tone={entry.bond === MAX_LIMIT_BREAK ? 'accent' : 'neutral'}>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>
+                <Crest tone={entry.bond === MAX_STARS ? 'accent' : 'neutral'}>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>
                 {entry.isNew && <Crest tone="accent">NEW</Crest>}
                 {entry.equippedBy.length > 0 && <Crest>In a set</Crest>}
               </>
@@ -155,17 +156,17 @@ function CardTile({
           }
           corner={selecting ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? '✓' : ''}</Crest> : null}
           footer={icons
-            ? (showBond ? <BondPips value={entry.bond ?? 0} onDark /> : undefined)
+            ? (showBond ? <Stars value={entry.bond ?? 0} onDark /> : undefined)
             : (
               <>
                 <p className="font-display truncate text-[14px] font-semibold">{entry.template.charName}</p>
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-[11px] text-ink-on-dark-soft">{tileValue(entry, lens)}</span>
-                  {showBond && <BondPips value={entry.bond ?? 0} onDark />}
+                  {showBond && <Stars value={entry.bond ?? 0} onDark />}
                 </div>
               </>
             )}
-          className={entry.bond === MAX_LIMIT_BREAK ? 'border-accent' : ''}
+          className={entry.bond === MAX_STARS ? 'border-accent' : ''}
         />
         {!icons && <p className="truncate px-0.5 pt-1.5 pr-8 text-[11px] text-ink-faint">{sortLabel ?? entry.template.title}</p>}
       </button>
@@ -317,14 +318,14 @@ export function CardsScreen() {
   }
 
   const bondAction = (entry: CardEntry, size: 'sm' | 'md') => {
-    if (lensTier === null || !entry.owned || (entry.bond ?? 0) >= MAX_LIMIT_BREAK) return null
-    if (tickets < BOND_RECALL_TICKET_COST) return <Button size={size} disabled>Bond · need {BOND_RECALL_TICKET_COST}</Button>
+    if (lensTier === null || !entry.owned || (entry.bond ?? 0) >= MAX_STARS) return null
+    if (tickets < BOND_RECALL_TICKET_COST) return <Button size={size} disabled>Bond · need {formatTickets(BOND_RECALL_TICKET_COST)}</Button>
     return (
       <Link
         to={bondHref(entry, lensTier)}
         className={`font-display inline-flex items-center justify-center rounded-sm bg-accent px-3 font-semibold text-ink shadow-1 ${size === 'sm' ? 'min-h-11 text-sm' : 'min-h-12 text-[15px]'}`}
       >
-        Bond · {BOND_RECALL_TICKET_COST} tickets
+        Bond · {formatTickets(BOND_RECALL_TICKET_COST)}
       </Link>
     )
   }
@@ -372,15 +373,15 @@ export function CardsScreen() {
           ) : lensTier !== null ? (
             <div className="mt-2">
               <div className="flex items-center gap-2">
-                <BondPips value={detail.bond ?? 0} />
-                <span className="text-[12px] font-semibold">{detail.bond === MAX_LIMIT_BREAK ? 'Max bond' : `Bond ${detail.bond}`}</span>
+                <Stars value={detail.bond ?? 0} />
+                <span className="text-[12px] font-semibold">{detail.bond === MAX_STARS ? `${MAX_STARS}★ · Max` : `${detail.bond}★`}</span>
               </div>
               <p className="text-[12px] text-ink-soft">{cardPayLabel(detail)} here</p>
             </div>
           ) : (
             <p className="mt-2 text-[12px] text-ink-soft">
               {detail.save && brokenTiers(detail.save).length > 0
-                ? `Bonded in ${brokenTiers(detail.save).length} scenario${brokenTiers(detail.save).length === 1 ? '' : 's'}`
+                ? `Stars in ${brokenTiers(detail.save).length} scenario${brokenTiers(detail.save).length === 1 ? '' : 's'}`
                 : 'Not bonded in any scenario yet'}
               {detail.equippedBy.length > 0 ? ` · in ${detail.equippedBy.length} active set${detail.equippedBy.length === 1 ? '' : 's'}` : ''}
             </p>
@@ -483,7 +484,7 @@ export function CardsScreen() {
           { label: 'Era', values: compareEntries.map((entry) => entry.template.era), best: 'high' },
           { label: 'One node splits', values: compareEntries.map((entry) => cardSplitLabel(entry.template)) },
           ...(lensTier === null ? [] : [
-            { label: 'Bond here', values: compareEntries.map((entry) => entry.bond), best: 'high' as const },
+            { label: 'Stars here', values: compareEntries.map((entry) => entry.bond), best: 'high' as const },
             { label: 'Pays per node here', values: compareEntries.map((entry) => entry.owned ? cardPayLabel(entry) : null) },
           ]),
           { label: 'Skills', values: compareEntries.map((entry) => entry.hintSkillNames.length), best: 'high' },

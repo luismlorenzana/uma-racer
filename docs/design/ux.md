@@ -10,7 +10,7 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 1. **Thumb first.** Primary actions sit in the bottom third. Nothing important needs a stretch to the top corners.
 2. **Visual before textual.** Icons, portraits, bars, colors, and motion carry the meaning, and numbers confirm it.
 3. **Every tap answers.** Instant press feedback, then a result animation. Waiting states are rare, because the game runs locally.
-4. **Big moments feel big.** Level-ups, promotions, limit breaks, coupon reveals, goal completions, and new badges each get a crafted fanfare.
+4. **Big moments feel big.** Level-ups, promotions, stars earned, coupon reveals, goal completions, and new badges each get a crafted fanfare.
 5. **One-handed loops.** Training and racing can repeat with a thumb, without menus in between.
 6. **Offline is normal.** No spinners for game actions. Sync status stays a quiet indicator.
 
@@ -46,7 +46,7 @@ feedback catalogue.
 
 - **Featured Uma** portrait, large, with a gentle idle "breathing" motion. Level ring, Training Level bar, active title.
 - **Two big CTAs** in the thumb zone: **Train** and **Race**.
-- On open, the **daily ticket grant** flies "+50 🎫" into the counter.
+- On open, the **daily ticket grant** flies "+10 🎫" into the counter.
 - **Career** card for the featured Uma (a pip per goal race, her stage, and her next goal race under the Race button), followed by the implemented **recent flair** card with the latest
   three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
   recent-flair feed.
@@ -72,7 +72,7 @@ Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-2
    highest-tier badges earned.
 2. **This scenario** — scenario name and Training Level, one status line, and the actions inline (Constellation,
    Race, Spark Match, Start or Unlock next when they apply); stats metered against this scenario's caps; the card
-   set with each card's bond pips and a **Manage · Bond** link; aptitudes; the scenario's goals, each linking to its
+   set with each card's stars and a **Manage · Bond** link; aptitudes; the scenario's goals, each linking to its
    race or its result.
 3. **Archive** — collapsed rows for everything browsed rather than used: all badges, scenario history, lineage,
    races run.
@@ -91,7 +91,7 @@ against the moment the scene opened. Two tabs sit under it (M016):
 
 - **Constellation** — the tree, the node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
   shows each card's bond and what one node of it pays, with a **Bond** link beside it.
-- **Card set** — the active scenario's six slots. Each shows the card, its type, its bond pips in this scenario,
+- **Card set** — the active scenario's six slots. Each shows the card, its type, its stars in this scenario,
   what one node pays (SP per node for a Friend or Group card, marked **Skill points**), how many nodes it fills, and
   a **Bond** button. Tapping a card offers Open card, **Replace** (the new card takes over its nodes), and Remove.
   Edits save as they are made, like the constellation; empty slots open the album picker, and **Fill empty slots**
@@ -164,11 +164,11 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 ### Cards
 
 - **Album**: a lens chip row — Collection, then each reached scenario — over the shared album chrome
-  ([Collection](collection.md#card-album)). In a scenario, tiles carry bond pips and the reserved detail area has a
+  ([Collection](collection.md#card-album)). In a scenario, tiles carry stars and the reserved detail area has a
   **Bond** button, so a bond is one tap from the tab.
 - **Card page** (`/cards/:id`): the card's illustration full width, with its name, type and ownership over its foot (a
   tap opens the whole illustration), then how to own it (tickets or a coupon), **Bond by scenario** with a Bond
-  button per reached scenario, then what it pays — its split, a Bond 0–Max per-node ladder (in SP for a Friend or Group card), Race
+  button per reached scenario, then what it pays — its split, a 0★–5★ per-node ladder (in SP for a Friend or Group card), Race
   Bonus and its skills in node order — and every set it sits in.
 - **Unlock** hands to the full-screen collection reveal, which returns to the card's page.
 - A bond is raised only in Bond Recall, which always returns where it was launched: the album lens, the card page,
@@ -212,7 +212,7 @@ The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mo
 | Uma Level up | Ring fill and burst | Level jingle | Stars | Medium |
 | Goal completed | Ribbon unfurl | Big fanfare | Gold confetti | Success pattern |
 | Badge or title earned | Shine sweep and flip-in | Sparkle | Tier-colored sparkles | Light |
-| Limit break / promotion | Lift, glow, ignite | Power-up | Glow burst | Heavy |
+| Star earned / promotion | Lift, glow, ignite | Power-up | Glow burst | Heavy |
 | Coupon reveal | Flip with anticipation shake | Drumroll → reveal | Burst | Heavy |
 
 Haptics are progressive enhancement only (see research). Motion plus sound must stand on their own.

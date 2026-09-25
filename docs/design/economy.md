@@ -8,8 +8,8 @@
 
 | Item | Earned by | Spent on | Expires? |
 |---|---|---|---|
-| 🎫 **Training Tickets** | Daily grant · Uma Level-ups · card bonds | Minigame runs · unlocking cards · unlocking the next scenario | Never |
-| 🎟️ **Card Select Coupon** | A card's first max bond | A free unlock of any unowned SSR card | Never |
+| 🎫 **Training Tickets** | Daily grant · Uma Level-ups | Minigame runs · unlocking cards · unlocking the next scenario | Never |
+| 🎟️ **Card Select Coupon** | A card's first 5★ | A free unlock of any unowned SSR card | Never |
 | 💎 **Uma Shard** | An Uma reaching a gate level (10, 20, 30…) | 5 shards → 1 Uma Select Coupon | Never |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma | Never |
 
@@ -18,48 +18,57 @@ Card coupons never come from Umas, and Uma coupons never come from cards. Detail
 
 ## 🎫 Training Tickets
 
+**One ticket is one minigame run** (D148). A day is sized to max one card in one scenario and still train.
+
 ### Earning
 
 These are the **only** sources ✅:
 
 | Source | Amount |
 |---|---|
-| Daily grant | **+50 per day**, accruing while you're away |
-| Uma Level-up (from race EXP) | **+5** |
-| Card bond (from Bond Recall) | **+5** |
+| Daily grant | **+10 per day**, accruing while you're away |
+| Uma Level-up (from race EXP) | **+1** |
 
-There are **no login streaks**, and badges, achievements, and goals don't pay tickets ✅.
+A card's star pays nothing: its run already cost one ticket, and the star is the reward. There are **no login streaks**,
+and badges, achievements, and goals don't pay tickets ✅.
 
-**Storage cap (500):** the cap only stops the **daily grant** from accruing. Tickets earned by leveling Umas or cards are always
-added, even above 500, so nothing earned is ever lost.
+**Storage cap (50, five days):** the cap only stops the **daily grant** from accruing, so you can skip up to five days
+and spend them at once. Tickets earned by leveling Umas are always added, even above 50, so nothing earned is ever
+lost.
 
 ### Spending
 
 | Use | Cost |
 |---|---|
-| [Spark Match](minigames.md#spark-match--training-levels) run — raises Training Level | **5** |
-| [Bond Recall](minigames.md#bond-recall--card-limit-breaks) run — bonds a card one step in one scenario | **10** |
-| Unlocking a card (D130) | **25 + 5 × era** — 30 to 95 |
-| Unlocking the next scenario | **25 × fromTier** |
+| [Spark Match](minigames.md#spark-match--training-levels) run — raises Training Level | **1** |
+| The card minigame run ([Bond Recall](minigames.md#bond-recall--card-stars), then Friendship Training) — earns a star | **1** |
+| Unlocking a card (D130) | **5 + era** — 6 to 19 |
+| Unlocking the next scenario | **5 × fromTier** |
 | **Reconfiguring a constellation** | **free, always** |
 
 | Unlock next scenario | 1 → 2 | 5 → 6 | 10 → 11 |
 |---|---|---|---|
-| Cost | 25 | 125 | 250 |
+| Cost | 5 | 25 | 50 |
 
-Limit breaks no longer have a separate price: the Bond Recall run *is* the limit break, and a failed run costs
-its 10 tickets without advancing. Reconfiguring is free on purpose — charging for it would make players hoard
-one safe build, which is the opposite of what the [constellation](constellations.md) is for.
+A star has no separate price: the run *is* the star, and a lost run costs its ticket without advancing (D146).
+Reconfiguring is free on purpose — charging for it would make players hoard one safe build, which is the opposite of
+what the [constellation](constellations.md) is for.
+
+### Save v7 re-denomination
+
+Before save v7 a run cost 5 or 10 and a day granted 50. The v7 migration divides a balance by 5, rounding up, once, so
+card and scenario unlocks cost the same number of days as before. Past ledger entries keep their old amounts: the
+ledger is history, and the conversion is a change of unit rather than a transaction, so it writes no entry. Race
+records keep the ticket reward of their day, five a level before v7 and one after.
 
 ## Pacing sanity check
 
-- **One Uma through scenario 1:** about 10 Spark Match runs to TL10 (−50), 10 Uma Level-ups (+50), and the
-  unlock to tier 2 (−25) come to a net **cost of about 25**. A day's grant covers one Uma's scenario.
-- **Late scenarios:** unlocking tier 10 → 11 costs 250, about 5 days of the daily grant, minus what racing
-  earns back.
-- **Cards:** maxing a card is 4 Bond Recall clears (−40) paying back 4 limit breaks (+20), so about
-  **20 tickets plus whatever you lose to failed runs** per Card Select Coupon. The real cost is the memory
-  game, not the tickets.
+- **Maxing one card in one scenario** is five clears, 0★ → 5★. All-or-nothing means a lost run costs its ticket, so
+  budget **about six tickets**, and about 45 minutes once Friendship Training's runs grow from about 5 to 12 minutes.
+- **One Uma through a scenario's Training Levels** is about 10 Spark Match runs: 10 tickets, one day.
+- **A day's 10 tickets** max one card with four Spark Match runs to spare, or take one Uma through a scenario.
+- **Late scenarios:** unlocking tier 10 → 11 costs 50, five days of the daily grant, minus what racing earns back.
+- **Stars are per scenario** (D127), so a six-card set is about six days to max in one scenario.
 - **The core choice:** minigame runs and scenario unlocks draw from the same tickets. That's intended.
 
 Revisit these numbers once a balance simulation exists.

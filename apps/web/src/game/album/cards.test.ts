@@ -74,7 +74,7 @@ function album(
 ) {
   const cards = Object.fromEntries(ownedIds.map((id) => {
     const save = createCardSave(templates.find((entry) => entry.id === id)!)
-    return [id, { ...save, limitBreaks: options.breaks?.[id] ?? {} }]
+    return [id, { ...save, stars: options.breaks?.[id] ?? {} }]
   }))
   const save = createUmaSave(uma('u1'))
   return buildCardAlbumRows({
@@ -99,7 +99,7 @@ describe('card album · collection lens', () => {
 
   it('prices unowned cards by era', () => {
     const built = album('collection', ['c1'])
-    expect(built.entries.get('c2')?.unlockCost).toBe(40)
+    expect(built.entries.get('c2')?.unlockCost).toBe(8)
     const unowned = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, { ...CARD_COLLECTION_QUERY, filters: { ownership: ['unowned'] } })
     expect(unowned.rows.map((row) => row.id).sort()).toEqual(['c2', 'c3'])
   })
@@ -119,24 +119,25 @@ describe('card album · collection lens', () => {
 
 describe('card album · scenario lens', () => {
   it('holds only cards that era allows, most bonded first and unowned last', () => {
-    const built = album(2, ['c1', 'c3'], { breaks: { c3: { '2': 2 }, c1: { '1': 4 } } })
+    const built = album(2, ['c1', 'c3'], { breaks: { c3: { '2': 2 }, c1: { '1': 5 } } })
     expect([...built.entries.keys()].sort()).toEqual(['c1', 'c3'])
     const result = runAlbumQuery(built.rows, CARD_SCENARIO_FACETS, CARD_SCENARIO_QUERY, CARD_TIE_BREAK)
     expect(result.rows.map((row) => row.id)).toEqual(['c3', 'c1'])
-    // c1 is max bond in tier 1, but a bond belongs to its scenario: in tier 2 it starts over.
+    // c1 has 5★ in tier 1, but stars belong to their scenario: in tier 2 it starts over.
     expect(built.entries.get('c1')?.bond).toBe(0)
     expect(built.entries.get('c3')?.bond).toBe(2)
     expect(built.bonded).toBe(1)
   })
 
-  it('pays per node at the scenario, by bond', () => {
+  it('pays per node at the scenario, by stars', () => {
     const built = album(1, ['c1'], { breaks: { c1: { '1': 1 } } })
-    expect(built.entries.get('c1')?.perNode).toBe(154)
-    expect(built.entries.get('c1')?.unlockCost).toBe(30)
+    // 220 a node at 1★, which pays 68% (D147).
+    expect(built.entries.get('c1')?.perNode).toBeCloseTo(149.6)
+    expect(built.entries.get('c1')?.unlockCost).toBe(6)
   })
 
   it('filters on what can still be bonded here', () => {
-    const built = album(1, ['c1'], { breaks: { c1: { '1': 4 } } })
+    const built = album(1, ['c1'], { breaks: { c1: { '1': 5 } } })
     const [bondable] = buildCardPresets(1)
     const result = runAlbumQuery(built.rows, CARD_SCENARIO_FACETS, bondable!.apply(CARD_SCENARIO_QUERY))
     expect(result.rows).toEqual([])
@@ -144,8 +145,8 @@ describe('card album · scenario lens', () => {
   })
 
   it('labels the value the active sort is about', () => {
-    const entry = album(2, ['c3'], { breaks: { c3: { '2': 4 } } }).entries.get('c3')!
-    expect(cardSortValueLabel(entry, 'bond')).toBe('Max bond')
+    const entry = album(2, ['c3'], { breaks: { c3: { '2': 5 } } }).entries.get('c3')!
+    expect(cardSortValueLabel(entry, 'bond')).toBe('5★')
     expect(cardSortValueLabel(entry, 'type')).toBe('Friend')
     expect(cardSortValueLabel(entry, 'name')).toBeNull()
   })

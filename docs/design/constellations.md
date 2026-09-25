@@ -131,9 +131,9 @@ about TL6 it left stamina so far behind speed that no build could win a race.
 
 That is what keeps re-slotting a trade rather than a grind: you build for a Sprint race, rebuild for a Long
 one, and you are redistributing, never farming. The ceiling is still `treeBudget(T)`, reached by a full tree
-of **current-era, max-limit-break** cards.
+of **current-era, 5★** cards.
 
-What *can* change the total is **card quality** — era and limit break (D126, below). A better card is worth
+What *can* change the total is **card quality** — era and stars (D126, D147, below). A better card is worth
 more on the same node, which is what makes the collection matter. Two further exceptions, both visible in the
 UI:
 
@@ -144,7 +144,7 @@ UI:
 
 ### What a card node pays
 
-A card node distributes `nodeValue × lbMult(card)` across stats by the card's type. Every row sums to 1.0, so
+A card node distributes `nodeValue × starPct(card)` across stats by the card's type. Every row sums to 1.0, so
 the invariance rule holds regardless of which types you slot:
 
 | Card type | Distribution |
@@ -159,16 +159,16 @@ the invariance rule holds regardless of which types you slot:
 A **stat node** puts 1.00 of its value into the stat you pick. Stat nodes are the release valve: they are how
 you find the 200 Stamina a Mile race wants without slotting a Stamina card you would otherwise never bring.
 
-### Card quality: era and limit break
+### Card quality: era and stars
 
-A node pays `nodeValue(T) × lbPct × eraPct`, both percentages:
+A node pays `nodeValue(T) × starPct × eraPct`, both percentages:
 
 ```
-lbPct  = LB0 60 · LB1 70 · LB2 80 · LB3 90 · LB4 100
-eraPct = max(40, 100 − 5 × (T − cardEra))
+starPct = 0★ 60 · 1★ 68 · 2★ 76 · 3★ 84 · 4★ 92 · 5★ 100
+eraPct  = max(40, 100 − 5 × (T − cardEra))
 ```
 
-A card's limit break is **also per scenario** (D127), so both halves of card quality are measured against the
+A card's stars are **also per scenario** (D127, D147), so both halves of card quality are measured against the
 scenario a node belongs to.
 
 **Era is measured against the scenario, not in absolute terms.** A card from the scenario's own era is full
@@ -182,7 +182,7 @@ and `treeBudget(T)` stays the real ceiling at every tier rather than drifting up
 
 This is also the pressure that keeps a collection alive: as an Uma climbs tiers, the cards that carried her
 fall behind, and the ones you pull matter again. An under-broken card underpays the same way, which is what
-makes the [card minigame](minigames.md#bond-recall--card-limit-breaks) worth playing.
+makes the [card minigame](minigames.md#bond-recall--card-stars) worth playing.
 
 ### Skill-point cards
 
@@ -192,7 +192,7 @@ is in:
 
 ```
 spNodeValue(T)  = round(0.60 × spCap(T) / fairShare(T))        400 SP a node at tier 1, 500 at tier 14
-SP              = min( spCap(T), baselineSP(T, TL) + Σ SP nodes × lbPct × eraPct )
+SP              = min( spCap(T), baselineSP(T, TL) + Σ SP nodes × starPct × eraPct )
 baselineSP(T, TL) = 0.40 × spCap(T) × TL / 10                  800 at tier 1, TL10
 ```
 
@@ -212,7 +212,7 @@ Tazuna paid a thin 20% to every stat. A card's type is visible on the card; a sl
 ### Applying the budget
 
 ```
-raw(s)     = Σ card nodes ( nodeValue × lbPct × eraPct × share[type][s] ) + Σ stat nodes on s ( statNodeValue )
+raw(s)     = Σ card nodes ( nodeValue × starPct × eraPct × share[type][s] ) + Σ stat nodes on s ( statNodeValue )
 derived(s) = min( capProfile(T)[s], round( max(baseStats[s], 50 × TL) + raw(s) × (1 + growthRates[s]) ) )
 ```
 

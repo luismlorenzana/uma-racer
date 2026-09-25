@@ -6,7 +6,7 @@ import {
   STRATEGIES,
   SURFACES,
   badgeStateId,
-  cardLimitBreak,
+  cardStars,
   compileRaceSkill,
   awaitingAdvance,
   isCareerStage,
@@ -28,7 +28,7 @@ import { buildJourneyView } from '../game/goals-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
-import { BondPips } from '../ui/BondPips'
+import { Stars } from '../ui/Stars'
 import { Crest } from '../ui/Crest'
 import { GameButton } from '../ui/GameButton'
 import { Meter } from '../ui/Meter'
@@ -36,6 +36,7 @@ import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
 import { Collapsible, SectionHeading } from '../ui/Section'
+import { formatTickets } from '../ui/tickets'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 const statLabel = (stat: StatKey) => (stat === 'wit' ? 'Wit' : titleCase(stat))
@@ -263,8 +264,8 @@ export function UmaProfileScreen() {
               onClick={() => navigate(`/minigames/spark-match/${encodeURIComponent(save.templateId)}`)}
             >
               {sparkAffordable
-                ? `Spark Match · ${SPARK_MATCH_TICKET_COST} tickets`
-                : `Spark Match · need ${SPARK_MATCH_TICKET_COST} tickets`}
+                ? `Spark Match · ${formatTickets(SPARK_MATCH_TICKET_COST)}`
+                : `Spark Match · need ${formatTickets(SPARK_MATCH_TICKET_COST)}`}
             </GameButton>
           )}
           {uma.readyToAdvance && (
@@ -313,7 +314,7 @@ export function UmaProfileScreen() {
               <div key={slot.index} className="w-14 shrink-0">
                 <AtlasSprite asset={slot.card!.asset} decorative className="rounded-md bg-sunken" fallback={<div className="flex h-full items-center justify-center text-ink-faint">?</div>} />
                 <p className="mt-0.5 truncate text-center text-[9px] font-semibold">{slot.card!.template?.charName ?? 'Missing'}</p>
-                {slot.card!.save && <BondPips value={cardLimitBreak(slot.card!.save, uma.tier)} className="mt-0.5 justify-center" />}
+                {slot.card!.save && <Stars value={cardStars(slot.card!.save, uma.tier)} className="mt-0.5 justify-center" />}
               </div>
             ))}
           </div>

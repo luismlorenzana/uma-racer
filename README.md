@@ -80,8 +80,8 @@ docs/           design, technical, research
 | [Scenario Careers](docs/design/scenario-goals.md) | Each scenario's career per Uma: a G3, two G2s, then a G1 set, gating her levels |
 | [Training](docs/design/training.md) | Uma Level vs. Training Level, derived stats, tickets. The entry point to the two below |
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
-| [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; Bond Recall limit breaks cards |
-| [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, limit breaks |
+| [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; the card minigame earns a card's stars |
+| [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, Race Form difficulty, baseline enemy Umas, straight-track view |
 | [Collection](docs/design/collection.md) | Starter sets, coupons and shards, albums, trainer achievements |

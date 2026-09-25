@@ -13,7 +13,7 @@ import {
 } from '../../game/album/cards'
 import { emptyStateHint, runAlbumQuery, type AlbumQuery } from '../../game/album/query'
 import { ArtTile } from '../ArtTile'
-import { BondPips } from '../BondPips'
+import { Stars } from '../Stars'
 import { BottomSheet } from '../BottomSheet'
 import { Crest } from '../Crest'
 import { AlbumChrome } from './AlbumChrome'
@@ -87,7 +87,7 @@ export function CardPickerSheet({
                   footer={
                     <>
                       <p className="font-display truncate text-[12px] font-semibold">{entry.template.charName}</p>
-                      <BondPips value={entry.bond ?? 0} onDark className="mt-0.5" />
+                      <Stars value={entry.bond ?? 0} onDark className="mt-0.5" />
                     </>
                   }
                 />

@@ -15,7 +15,10 @@ export const WIN_EXP: Record<RaceGrade, number> = {
 
 /** 2nd and 3rd place earn this share of the win EXP. */
 export const PLACED_EXP_SHARE = 0.25
-export const UMA_LEVEL_TICKET_REWARD = 5
+/** Tickets for each Uma Level gained: one run (D148). */
+export const UMA_LEVEL_TICKET_REWARD = 1
+/** What a level paid before save v7; race records written then keep it, as the facts of their day. */
+export const LEGACY_UMA_LEVEL_TICKET_REWARD = 5
 export const GATE_SHARD_REWARD = 1
 
 /** Uma EXP for a finish. `raceBonus` is the summed card Race Bonus (0.03 = +3%). */

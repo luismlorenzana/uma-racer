@@ -1,3 +1,4 @@
+import { SPARK_MATCH_TICKET_COST } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
@@ -16,6 +17,7 @@ import {
 } from '../../game/minigames/spark-match'
 import { useGame } from '../../game/store'
 import { AtlasSprite } from '../../ui/AtlasSprite'
+import { formatTickets } from '../../ui/tickets'
 
 interface TileIdentity {
   id: string
@@ -217,13 +219,13 @@ export function SparkMatchScreen() {
           <div className="rounded-lg border border-hairline-dark bg-stage-soft p-4 shadow-3">
             <p className="text-xs font-bold tracking-[0.14em] text-accent uppercase">25 moves · no timer</p>
             <h2 className="mt-1 text-3xl">Line up the Stable</h2>
-            <p className="mt-2 text-sm text-ink-on-dark-soft">Tap one tile, then a neighbor. Matches score; trainee matches score double. A run costs 5 tickets when it begins.</p>
+            <p className="mt-2 text-sm text-ink-on-dark-soft">Tap one tile, then a neighbor. Matches score; trainee matches score double. A run costs {formatTickets(SPARK_MATCH_TICKET_COST)} when it begins.</p>
             <div className="mt-5 grid grid-cols-6 gap-2" aria-label="Spark Match tile cast">
               {cast.map((identity) => <div key={identity.id} className="min-w-0"><TileFace identity={identity} /><p className="mt-1 truncate text-center text-[9px] text-ink-on-dark-soft">{identity.id === trainee.id ? 'Trainee' : identity.label}</p></div>)}
             </div>
             <p className="mt-4 rounded-sm border border-warning/40 bg-warning/10 p-2 text-xs text-ink-on-dark-soft">Scenario tile casts are not published yet. This preview uses the first five starter Umas by id.</p>
             {error && <p role="alert" className="mt-3 rounded-sm bg-danger/20 p-2 text-sm font-semibold text-red-200">{error}</p>}
-            <button type="button" disabled={phase === 'reserving'} onClick={() => void start()} className="mt-5 min-h-12 w-full rounded-sm bg-accent px-5 font-display text-lg font-bold text-ink shadow-2 disabled:opacity-50">{phase === 'reserving' ? 'Reserving run…' : 'Begin · 5 tickets'}</button>
+            <button type="button" disabled={phase === 'reserving'} onClick={() => void start()} className="mt-5 min-h-12 w-full rounded-sm bg-accent px-5 font-display text-lg font-bold text-ink shadow-2 disabled:opacity-50">{phase === 'reserving' ? 'Reserving run…' : `Begin · ${formatTickets(SPARK_MATCH_TICKET_COST)}`}</button>
           </div>
         </main>
       ) : phase === 'complete' && reward && run ? (

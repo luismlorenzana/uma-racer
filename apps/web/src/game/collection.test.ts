@@ -77,7 +77,7 @@ describe('collection persistence', () => {
     await seed()
     const first = await redeemPersistentCard(content, cardTemplate.id, '2000-01-02', 60)
     const retry = await redeemPersistentCard(content, cardTemplate.id, '2000-01-03', 70)
-    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { limitBreaks: {} } })
+    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { stars: {} } })
     expect(retry).toMatchObject({ alreadyRedeemed: true, profile: { cardCoupons: 1 } })
     expect((await db.cards.get(cardTemplate.id))?.version).toBe(0)
     expect(await db.ledger.get(`card-coupon-redeem:${cardTemplate.id}`)).toMatchObject({

@@ -72,8 +72,8 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v6 stores mutable profile/Uma/card state, including one constellation per unlocked scenario, scenario-scoped card
-  limit breaks, skill history, and typed Journey slots with frozen series legs. Derived stats, node values, static names,
+- Save v7 stores mutable profile/Uma/card state, including one constellation per unlocked scenario, scenario-scoped card
+  stars (the field is `stars`, so a v6 `limitBreaks` card is never read without its conversion), skill history, and typed Journey slots with frozen series legs. Derived stats, node values, static names,
   art, release metadata, and card/skill definitions stay outside the save and are joined from the private content registry.
   Dexie and cloud adoption migrate older schemas one way, preserve entity versions, and queue only upgraded synced rows;
   the API accepts rollout reads but rejects an older schema over a newer one.
@@ -89,10 +89,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - Minigame reservations are save-backed transactions. `beginRun` re-parses the target and profile, returns an existing open
   target run without another charge, or atomically spends the documented tickets, appends its stable ledger id, and stores
   a device-local run row. Its FNV-1a seed derives from profile creation time, content version, target, scenario, and attempt;
-  reloading reconstructs the same board. The Dexie v8 `minigameRuns` table is never synced and is not part of save v6.
+  reloading reconstructs the same board. The Dexie v8 `minigameRuns` table is never synced and is not part of the save.
 - `commitRun` is idempotent by run id. Spark Match applies score through `addTrainingExp` to the Uma's active scenario and
-  reports actual constellation nodes opened; Bond Recall applies a clear only to the named scenario's card limit break,
-  appends its +5 ticket reward and one-time LB4 coupon when earned, and treats a loss as a closed paid run. The profile,
+  reports actual constellation nodes opened; Bond Recall applies a clear only to the named scenario's card stars, appends
+  the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss as a closed paid run. The profile,
   affected Uma/card, ledger, Trainer reconciliation, and outbox work commit atomically before Zustand publishes.
 - Collection acquisition uses the same boundary. Shard exchange transactionally derives its next numbered prefix and
   writes the profile plus separate `-5 shards`/`+1 Uma Coupon` ledger rows. A Card or Uma redemption re-reads the profile,

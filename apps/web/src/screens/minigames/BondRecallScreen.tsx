@@ -1,7 +1,11 @@
 import {
-  scenarioForTier,
+  BOND_RECALL_TICKET_COST,
   MAX_SCENARIO_TIER,
-  cardLimitBreak, cardNodeValue, MAX_LIMIT_BREAK } from '@racer/domain'
+  MAX_STARS,
+  cardNodeValue,
+  cardStars,
+  scenarioForTier,
+} from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
@@ -11,6 +15,7 @@ import { safeReturnPath } from '../../game/bond-links'
 import { getMinigameHost, type RunReward, type RunTicket } from '../../game/minigame-host'
 import {
   BOND_FLIP_BACK_MS,
+  bondRecallConfig,
   bondMismatchesRemaining,
   flipBondTile,
   hideBondMismatch,
@@ -18,6 +23,7 @@ import {
   type BondRecallState,
 } from '../../game/minigames/bond-recall'
 import { useGame } from '../../game/store'
+import { formatTickets } from '../../ui/tickets'
 import { BondBoard, CardArt } from './BondBoard'
 
 const delay = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
@@ -50,21 +56,26 @@ function useCardArt(content: LoadedContent | null, cardIds: readonly string[]): 
   return art
 }
 
-function LimitPips({ before, after }: { before: number; after: number }) {
+/** The card's stars after the run, the one just earned popping in. */
+function GainedStars({ before, after }: { before: number; after: number }) {
   const reducedMotion = useReducedMotion()
   return (
-    <span className="flex gap-1" aria-label={`Bond ${after}`}>
-      {Array.from({ length: MAX_LIMIT_BREAK }, (_, index) => {
+    <span className="flex gap-0.5" role="img" aria-label={`${after} of ${MAX_STARS} stars`}>
+      {Array.from({ length: MAX_STARS }, (_, index) => {
         const filled = index < after
         const gained = index >= before && filled
         return (
-          <m.span
+          <m.svg
             key={index}
-            className={`h-2.5 w-7 rounded-xs ${filled ? 'bg-accent' : 'bg-sunken'}`}
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className={`h-6 w-6 ${filled ? 'text-accent' : 'text-hairline-strong'}`}
             initial={gained && !reducedMotion ? { opacity: 0, scale: 0.35 } : false}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: reducedMotion ? 0 : 0.24, delay: gained && !reducedMotion ? index * 0.06 : 0 }}
-          />
+          >
+            <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" fill="currentColor" />
+          </m.svg>
         )
       })}
     </span>
@@ -115,7 +126,7 @@ export function BondRecallScreen() {
     if (committedRun.current === reserved.runId) return
     committedRun.current = reserved.runId
     setPhase('committing')
-    setMessage(completed.status === 'won' ? 'Every bond found. Saving the bond…' : 'Run over. Saving the result…')
+    setMessage(completed.status === 'won' ? 'Every pair found. Saving the star…' : 'Run over. Saving the result…')
     try {
       const nextReward = await getMinigameHost().commitRun(reserved.runId, {
         kind: 'bond-recall',
@@ -133,12 +144,12 @@ export function BondRecallScreen() {
   }
 
   const start = async () => {
-    if (!card || cardLimitBreak(card, tier) >= MAX_LIMIT_BREAK || phase !== 'ready') return
+    if (!card || cardStars(card, tier) >= MAX_STARS || phase !== 'ready') return
     setPhase('reserving')
     setError(null)
     try {
       const reserved = await getMinigameHost().beginRun('bond-recall', { kind: 'bond-recall', cardId, tier })
-      const next = startBondRecall(reserved.seed, cardLimitBreak(card, tier), boardCardIds, ownedCardIds)
+      const next = startBondRecall(reserved.seed, cardStars(card, tier), boardCardIds, ownedCardIds)
       setTicket(reserved)
       setRun(next)
       setPhase('playing')
@@ -207,15 +218,15 @@ export function BondRecallScreen() {
     return <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark"><div className="text-center"><h1 className="text-xl">Owned card not found</h1><Link to={returnTo} className="mt-4 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 font-display font-semibold text-ink">Back</Link></div></div>
   }
 
-  if (cardLimitBreak(card, tier) >= MAX_LIMIT_BREAK && phase === 'ready') {
-    return <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark"><div className="max-w-sm rounded-lg border border-hairline-dark bg-stage-soft p-5 text-center"><h1 className="text-2xl">Max bond</h1><p className="mt-2 text-sm text-ink-on-dark-soft">{template.charName} already has max bond in {scenarioForTier(tier)?.name ?? `Tier ${tier}`}.</p><Link to={returnTo} className="mt-5 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 font-display font-semibold text-ink">Back</Link></div></div>
+  if (cardStars(card, tier) >= MAX_STARS && phase === 'ready') {
+    return <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark"><div className="max-w-sm rounded-lg border border-hairline-dark bg-stage-soft p-5 text-center"><h1 className="text-2xl">{MAX_STARS}★ · Max</h1><p className="mt-2 text-sm text-ink-on-dark-soft">{template.charName} already has {MAX_STARS}★ in {scenarioForTier(tier)?.name ?? `Tier ${tier}`}.</p><Link to={returnTo} className="mt-5 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 font-display font-semibold text-ink">Back</Link></div></div>
   }
 
   const running = phase === 'playing' || phase === 'committing' || phase === 'commit-error'
-  const before = reward?.limitBreakBefore ?? cardLimitBreak(card, tier)
-  const after = reward?.limitBreakAfter ?? before
+  const before = reward?.starsBefore ?? cardStars(card, tier)
+  const after = reward?.starsAfter ?? before
   const advanced = after > before
-  const perNode = (limitBreak: number) => Math.round(cardNodeValue(tier, { template, limitBreak }))
+  const perNode = (stars: number) => Math.round(cardNodeValue(tier, { template, stars }))
 
   return (
     <div className={`flex h-dvh flex-col bg-stage text-ink-on-dark ${running ? 'overflow-hidden' : 'overflow-y-auto'}`}>
@@ -223,7 +234,7 @@ export function BondRecallScreen() {
         <Link to={returnTo} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft text-xl" aria-label="Back">←</Link>
         <div className="h-12 w-9 shrink-0 overflow-hidden rounded-[5px] shadow-2 ring-1 ring-accent/60"><CardArt content={contentState.content} cardId={template.id} art={art.get(template.id) ?? null} /></div>
         <div className="min-w-0 flex-1"><p className="text-[10px] font-bold tracking-[0.16em] text-accent uppercase">Bond Recall</p><h1 className="truncate text-lg">{template.charName}</h1></div>
-        <div className="text-right"><p className="text-[10px] font-bold text-ink-on-dark-soft uppercase">Bond</p><p className="font-display text-xl font-bold text-accent">{cardLimitBreak(card, tier)}</p></div>
+        <div className="text-right"><p className="text-[10px] font-bold text-ink-on-dark-soft uppercase">Bond</p><p className="font-display text-xl font-bold text-accent">{cardStars(card, tier)}</p></div>
       </header>
 
       {phase === 'ready' || phase === 'reserving' ? (
@@ -233,14 +244,14 @@ export function BondRecallScreen() {
           </div>
           <div className="rounded-lg border border-hairline-dark bg-stage-soft p-4 shadow-3">
             <p className="text-xs font-bold tracking-[0.14em] text-accent uppercase">
-              {scenarioForTier(tier)?.name ?? `Tier ${tier}`} · {6 + 2 * cardLimitBreak(card, tier)} pairs
+              {scenarioForTier(tier)?.name ?? `Tier ${tier}`} · {bondRecallConfig(cardStars(card, tier)).pairs} pairs
             </p>
             <h2 className="mt-1 text-3xl">Remember the bonds</h2>
-            <p className="mt-2 text-sm text-ink-on-dark-soft">Flip two cards. Matches stay; misses spend one chance. Clear every pair to take {template.charName} to Bond {cardLimitBreak(card, tier) + 1} in this scenario — every Uma racing here gets it.</p>
-            <div className="mt-4 flex items-center justify-between rounded-sm border border-hairline-dark p-3"><span className="text-sm font-semibold">Each node it fills</span><span className="font-display font-bold text-accent">{perNode(cardLimitBreak(card, tier))} → {perNode(cardLimitBreak(card, tier) + 1)}</span></div>
+            <p className="mt-2 text-sm text-ink-on-dark-soft">Flip two cards. Matches stay; misses spend one chance. Clear every pair to take {template.charName} to {cardStars(card, tier) + 1}★ in this scenario — every Uma racing here gets it.</p>
+            <div className="mt-4 flex items-center justify-between rounded-sm border border-hairline-dark p-3"><span className="text-sm font-semibold">Each node it fills</span><span className="font-display font-bold text-accent">{perNode(cardStars(card, tier))} → {perNode(cardStars(card, tier) + 1)}</span></div>
             {activeCardIds.length === 0 && <p className="mt-4 rounded-sm border border-warning/40 bg-warning/10 p-2 text-xs text-ink-on-dark-soft">No card set in this scenario yet, so the faces are your other cards.</p>}
             {error && <p role="alert" className="mt-3 rounded-sm bg-danger/20 p-2 text-sm font-semibold text-red-200">{error}</p>}
-            <button type="button" disabled={phase === 'reserving'} onClick={() => void start()} className="mt-5 min-h-12 w-full rounded-sm bg-accent px-5 font-display text-lg font-bold text-ink shadow-2 disabled:opacity-50">{phase === 'reserving' ? 'Reserving run…' : 'Begin · 10 tickets'}</button>
+            <button type="button" disabled={phase === 'reserving'} onClick={() => void start()} className="mt-5 min-h-12 w-full rounded-sm bg-accent px-5 font-display text-lg font-bold text-ink shadow-2 disabled:opacity-50">{phase === 'reserving' ? 'Reserving run…' : `Begin · ${formatTickets(BOND_RECALL_TICKET_COST)}`}</button>
           </div>
         </main>
       ) : phase === 'complete' && reward && run ? (
@@ -251,18 +262,18 @@ export function BondRecallScreen() {
                 <CardArt content={contentState.content} cardId={template.id} art={art.get(template.id) ?? null} />
               </div>
               <div className="min-w-0">
-                <p className={`text-xs font-bold tracking-[0.14em] uppercase ${advanced ? 'text-success' : 'text-danger'}`}>{advanced ? 'Bond strengthened' : 'Run ended'}</p>
-                <h2 className="mt-1 text-2xl leading-tight">{advanced ? `Bond ${before} → ${after}` : 'Bond unchanged'}</h2>
+                <p className={`text-xs font-bold tracking-[0.14em] uppercase ${advanced ? 'text-success' : 'text-danger'}`}>{advanced ? 'Star earned' : 'Run ended'}</p>
+                <h2 className="mt-1 text-2xl leading-tight">{advanced ? `${before}★ → ${after}★` : 'Stars unchanged'}</h2>
                 <p className="mt-1 text-sm text-ink-soft">{reward.ticketsSpent} tickets spent · {run.mismatches} mismatches</p>
               </div>
             </div>
-            <section className="mt-5 rounded-sm bg-accent-wash p-4"><div className="flex items-center justify-between gap-3"><span className="font-display font-bold">Bond {after}</span><LimitPips before={before} after={after} /></div></section>
+            <section className="mt-5 rounded-sm bg-accent-wash p-4"><div className="flex items-center justify-between gap-3"><span className="font-display font-bold">{after}★</span><GainedStars before={before} after={after} /></div></section>
             <section className="mt-4 rounded-sm border border-hairline bg-page p-4">
               <h3 className="text-lg">Constellation value</h3>
               {advanced ? <><p className="mt-1 font-display text-2xl font-bold text-accent-strong">{perNode(before)} → {perNode(after)} per node</p><p className="mt-1 text-sm text-ink-soft">Every node this card fills in {scenarioForTier(tier)?.name ?? `Tier ${tier}`} now pays more, for every Uma racing there.</p></> : <p className="mt-1 text-sm text-ink-soft">Each node it fills still pays {perNode(after)}. Try again to strengthen it.</p>}
             </section>
-            {reward.couponGranted && <p className="mt-4 rounded-sm border border-accent bg-accent-wash p-3 font-display font-bold text-accent-strong">Max bond · Card Select Coupon awarded</p>}
-            <div className="mt-5 grid grid-cols-2 gap-2">{after < MAX_LIMIT_BREAK ? <button type="button" onClick={again} className="flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel px-3 text-center font-display font-semibold">Bond again</button> : <span />}<Link to={returnTo} className="flex min-h-12 items-center justify-center rounded-sm bg-accent px-3 font-display font-semibold">Done</Link></div>
+            {reward.couponGranted && <p className="mt-4 rounded-sm border border-accent bg-accent-wash p-3 font-display font-bold text-accent-strong">{MAX_STARS}★ · Card Select Coupon awarded</p>}
+            <div className="mt-5 grid grid-cols-2 gap-2">{after < MAX_STARS ? <button type="button" onClick={again} className="flex min-h-12 items-center justify-center rounded-sm border border-hairline-strong bg-panel px-3 text-center font-display font-semibold">Bond again</button> : <span />}<Link to={returnTo} className="flex min-h-12 items-center justify-center rounded-sm bg-accent px-3 font-display font-semibold">Done</Link></div>
           </div>
         </main>
       ) : run ? (

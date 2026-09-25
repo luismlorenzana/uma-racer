@@ -117,7 +117,7 @@ Two faces, both OFL and self-hosted, latin subset only:
 - Lists stagger at 24 ms per item, capped at 8 items.
 - **Second layer:** on a major transition, one small element (a dot row, a rule, a chip) follows the main shape ~80 ms
   later. This is most of why HoYoverse menus feel expensive.
-- Springs are reserved for reward moments: level-ups, limit breaks, coupon reveals, badge tiers.
+- Springs are reserved for reward moments: level-ups, stars earned, coupon reveals, badge tiers.
 - Reduced motion keeps every state change, drops movement, and never changes timing of a commit.
 
 ## Density

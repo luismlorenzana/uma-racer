@@ -5,7 +5,7 @@ run of randomized cards. Numbers are illustrative drafts.
 
 > **Decided 2026-09-25:** option B, all or nothing, owned cards only (no guests or scouting), and Spark Match kept
 > separate (D146). The owner also re-scaled limit breaks to 0★–5★ (D147) and tickets to one per run (D148). The plan is
-> [M019](../tasks/M019-stars-and-tickets.md), then [M020](../tasks/M020-friendship-training.md).
+> M019 (stars and tickets, landed 2026-09-25), then [M020](../tasks/M020-friendship-training.md).
 
 ## Why replace Bond Recall
 

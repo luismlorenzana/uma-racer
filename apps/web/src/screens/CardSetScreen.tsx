@@ -1,9 +1,9 @@
 import {
   BOND_RECALL_TICKET_COST,
   CARD_SET_SIZE,
-  MAX_LIMIT_BREAK,
+  MAX_STARS,
   autoCardSet,
-  cardLimitBreak,
+  cardStars,
   cardNodeCap,
   cardNodeCount,
   cardNodeValue,
@@ -18,13 +18,14 @@ import { bondRecallHref } from '../game/bond-links'
 import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
-import { BondPips } from '../ui/BondPips'
+import { Stars } from '../ui/Stars'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
 import { Crest } from '../ui/Crest'
 import { Numeral } from '../ui/Numeral'
 import { CardPickerSheet } from '../ui/album/CardPickerSheet'
 import { useTraining } from './TrainingScene'
+import { formatTickets } from '../ui/tickets'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
@@ -120,7 +121,7 @@ export function CardSetScreen() {
       </section>
 
       <p className="mt-3 mb-1.5 flex items-baseline justify-between px-1 text-[11px] text-ink-soft">
-        <span>Bond Recall · {BOND_RECALL_TICKET_COST} tickets a run</span>
+        <span>Bond Recall · {formatTickets(BOND_RECALL_TICKET_COST)} a run</span>
         <span>You have <Numeral className="text-ink">{tickets}</Numeral></span>
       </p>
 
@@ -155,12 +156,12 @@ export function CardSetScreen() {
               </button>
             )
           }
-          const bond = cardLimitBreak(owned, tier)
+          const bond = cardStars(owned, tier)
           const nodes = cardNodeCount(run, cardId)
           const skillPoints = paysSkillPoints(template)
           const pays = skillPoints
-            ? `${Math.round(cardSpPerNode(tier, { template, limitBreak: bond }))} SP per node`
-            : `${Math.round(cardNodeValue(tier, { template, limitBreak: bond }))} per node`
+            ? `${Math.round(cardSpPerNode(tier, { template, stars: bond }))} SP per node`
+            : `${Math.round(cardNodeValue(tier, { template, stars: bond }))} per node`
           return (
             <div key={cardId} className={`flex items-stretch gap-1.5 rounded-lg border bg-panel p-1.5 ${skillPoints ? 'border-accent' : 'border-hairline'}`}>
               <button
@@ -182,14 +183,14 @@ export function CardSetScreen() {
                   </span>
                   <span className="mt-0.5 flex items-center gap-2">
                     <span className="text-micro">{titleCase(template.type)}</span>
-                    <BondPips value={bond} />
+                    <Stars value={bond} />
                   </span>
                   <span className={`block text-[11px] ${nodes === 0 ? 'text-warning' : 'text-ink-soft'}`}>
                     {pays} · {nodes === 0 ? `on no nodes yet · up to ${nodeCap}` : `on ${nodes} of ${nodeCap} nodes`}
                   </span>
                 </span>
               </button>
-              {bond >= MAX_LIMIT_BREAK ? (
+              {bond >= MAX_STARS ? (
                 <span className="flex w-16 shrink-0 items-center justify-center rounded-md bg-sunken text-[11px] font-semibold text-ink-faint">Max</span>
               ) : canBond ? (
                 <Link

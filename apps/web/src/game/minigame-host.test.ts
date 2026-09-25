@@ -44,15 +44,15 @@ describe('MinigameHostTestDouble', () => {
   it('advances Bond Recall once when its completed run is committed twice', async () => {
     const reward = vi.fn(() => ({
       ticketsSpent: 10,
-      limitBreakBefore: 0,
-      limitBreakAfter: 1,
+      starsBefore: 0,
+      starsAfter: 1,
       couponGranted: false,
     }))
     const host = new MinigameHostTestDouble({ reward })
     const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card', tier: 1 })
     const outcome = { kind: 'bond-recall' as const, cleared: true, mismatches: 4 }
-    expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ limitBreakBefore: 0, limitBreakAfter: 1 })
-    expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ limitBreakBefore: 0, limitBreakAfter: 1 })
+    expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ starsBefore: 0, starsAfter: 1 })
+    expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ starsBefore: 0, starsAfter: 1 })
     expect(reward).toHaveBeenCalledTimes(1)
     expect(host.commitCalls).toHaveLength(2)
   })
@@ -62,8 +62,8 @@ describe('MinigameHostTestDouble', () => {
     const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card', tier: 1 })
     expect(await host.commitRun(ticket.runId, { kind: 'bond-recall', cleared: false, mismatches: 10 })).toEqual({
       ticketsSpent: 10,
-      limitBreakBefore: 0,
-      limitBreakAfter: 0,
+      starsBefore: 0,
+      starsAfter: 0,
       couponGranted: false,
     })
   })

@@ -2,6 +2,7 @@
 // private or original-game content.
 import {
   CARD_SET_SIZE,
+  MAX_STARS,
   applyForm,
   constellationTemplate,
   deriveStats,
@@ -75,7 +76,7 @@ export interface BuildOptions {
 }
 
 /**
- * Race stats for a six-card set, current era, max bond. The card at `leanIndex` takes `lean` nodes, Speed then Wit
+ * Race stats for a six-card set, current era, 5★. The card at `leanIndex` takes `lean` nodes, Speed then Wit
  * fill what is left up to the per-card cap, and the Friend card takes its fair share first or last.
  */
 export function buildStats(tier: number, deck: CardType[], leanIndex: number, lean: number, statNodesTo: StatKey, options: BuildOptions = {}): Stats {
@@ -84,7 +85,7 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
   const ids = deck.map((type, index) => `${type}-${index}`)
   const cards = new Map<string, CardNodeState>(ids.map((id, index) => [id, {
     template: { id, type: deck[index]!, era: tier, effectProfile: flatProfile, hintSkillIds: [] },
-    limitBreak: 4,
+    stars: MAX_STARS,
   }]))
   const want = deck.map(() => 0)
   let left = shapeDef(tier).cardNodes

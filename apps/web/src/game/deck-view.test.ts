@@ -72,7 +72,7 @@ describe('deck view model', () => {
     expect(model.slots[2]?.card).toBeNull()
     // Race Bonus needs Bond 1, and a bond belongs to one scenario (D127).
     expect(model.raceBonus).toBe(0)
-    const bonded = { ...cards, speed: { ...cards.speed!, limitBreaks: { '1': 1 } }, power: { ...cards.power!, limitBreaks: { '2': 4 } } }
+    const bonded = { ...cards, speed: { ...cards.speed!, stars: { '1': 1 } }, power: { ...cards.power!, stars: { '2': 4 } } }
     const one = buildDeckView(uma, bonded, content).raceBonus
     expect(one).toBeGreaterThan(0)
     expect(formatRaceBonus(one)).toMatch(/%$/)

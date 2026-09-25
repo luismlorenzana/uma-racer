@@ -1,12 +1,12 @@
 // Card album projection on the shared engine (docs/design/collection.md#card-album), seen through one of two lenses
 // (M016): the **collection**, where a card is only owned or not, or **one scenario**, where it has a bond and a price
-// per node. A card's power is never account-wide, so nothing here reads a "best" limit break or a card level.
+// per node. A card's power is never account-wide, so nothing here reads its best stars anywhere or a card level.
 
 import {
-  MAX_LIMIT_BREAK,
+  MAX_STARS,
   SCENARIOS,
   STATS,
-  cardLimitBreak,
+  cardStars,
   cardNodeValue,
   cardShares,
   cardSpPerNode,
@@ -65,7 +65,7 @@ export interface CardAlbum {
   /** Cards in this lens: every card for the collection, only era-eligible ones for a scenario. */
   total: number
   owned: number
-  /** Scenario lens only: owned cards bonded at least once, and at max bond. */
+  /** Scenario lens only: owned cards with at least one star, and at 5★. */
   bonded: number
   maxed: number
   orphanedIds: string[]
@@ -97,7 +97,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
   const templates = content.cards.items.filter((template) => tier === null || template.era <= tier)
   const entries = templates.map((template): CardEntry => {
     const save = input.cards[template.id] ?? null
-    const bond = tier !== null && save ? cardLimitBreak(save, tier) : null
+    const bond = tier !== null && save ? cardStars(save, tier) : null
     return {
       id: template.id,
       template,
@@ -106,7 +106,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
       asset: getContentAsset(content, 'card-icons', template.id),
       unlockCost: cardUnlockCost(template.era),
       bond,
-      perNode: tier === null ? null : (paysSkillPoints(template) ? cardSpPerNode : cardNodeValue)(tier, { template, limitBreak: bond ?? 0 }),
+      perNode: tier === null ? null : (paysSkillPoints(template) ? cardSpPerNode : cardNodeValue)(tier, { template, stars: bond ?? 0 }),
       skillPoints: paysSkillPoints(template),
       equippedBy: equippedBy.get(template.id) ?? [],
       hintSkillNames: template.hintSkillIds.flatMap((id) => {
@@ -126,8 +126,8 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
       type: [entry.template.type],
       era: [String(entry.template.era)],
       bond: entry.bond === null ? [] : [String(entry.bond)],
-      bondable: entry.bond !== null && entry.bond < MAX_LIMIT_BREAK,
-      maxed: entry.bond === MAX_LIMIT_BREAK,
+      bondable: entry.bond !== null && entry.bond < MAX_STARS,
+      maxed: entry.bond === MAX_STARS,
       equipped: entry.equippedBy.length > 0,
       starter: entry.template.starter,
       isNew: entry.isNew,
@@ -150,7 +150,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
     total: entries.length,
     owned: entries.filter((entry) => entry.owned).length,
     bonded: entries.filter((entry) => (entry.bond ?? 0) > 0).length,
-    maxed: entries.filter((entry) => entry.bond === MAX_LIMIT_BREAK).length,
+    maxed: entries.filter((entry) => entry.bond === MAX_STARS).length,
     orphanedIds: Object.keys(input.cards).filter((id) => !content.cards.byId.has(id)).sort(),
   }
 }
@@ -181,14 +181,14 @@ export const CARD_SCENARIO_FACETS: FacetDef[] = [
   OWNERSHIP,
   TYPE,
   {
-    key: 'bond', label: 'Bond', kind: 'enum', group: 'This scenario',
-    options: Array.from({ length: MAX_LIMIT_BREAK + 1 }, (_, index) => ({
+    key: 'bond', label: 'Stars', kind: 'enum', group: 'This scenario',
+    options: Array.from({ length: MAX_STARS + 1 }, (_, index) => ({
       value: String(index),
-      label: index === MAX_LIMIT_BREAK ? 'Max' : `Bond ${index}`,
+      label: `${index}★`,
     })),
   },
   { key: 'bondable', label: 'Can still bond', kind: 'boolean', group: 'This scenario' },
-  { key: 'maxed', label: 'Max bond', kind: 'boolean', group: 'This scenario' },
+  { key: 'maxed', label: '5★', kind: 'boolean', group: 'This scenario' },
   { key: 'equipped', label: 'In a set here', kind: 'boolean', group: 'This scenario' },
   ERA,
   { key: 'isNew', label: 'New to you', kind: 'boolean', group: 'Collection' },
@@ -206,7 +206,7 @@ export const CARD_COLLECTION_SORTS: SortDef[] = [
 ]
 
 export const CARD_SCENARIO_SORTS: SortDef[] = [
-  { key: 'bond', label: 'Bond', defaultDirection: 'desc' },
+  { key: 'bond', label: 'Stars', defaultDirection: 'desc' },
   { key: 'perNode', label: 'Pays per node', defaultDirection: 'desc' },
   { key: 'era', label: 'Era / release', defaultDirection: 'desc' },
   ...COMMON_SORTS,
@@ -248,7 +248,7 @@ export function buildCardPresets(lens: CardLens): AlbumPreset[] {
   return [
     { key: 'bondable', label: 'Can still bond', apply: (query) => ({ ...query, filters: { bondable: true } }) },
     { key: 'here', label: 'In a set here', apply: (query) => ({ ...query, filters: { equipped: true } }) },
-    { key: 'maxed', label: 'Max bond', apply: (query) => ({ ...query, filters: { maxed: true } }) },
+    { key: 'maxed', label: '5★', apply: (query) => ({ ...query, filters: { maxed: true } }) },
     { key: 'unowned', label: 'Not owned', apply: (query) => ({ ...query, filters: { ownership: ['unowned'] } }) },
   ]
 }
@@ -256,7 +256,7 @@ export function buildCardPresets(lens: CardLens): AlbumPreset[] {
 /** The value the active sort is about, shown under a tile. */
 export function cardSortValueLabel(entry: CardEntry, sort: string): string | null {
   if (sort === 'era') return SCENARIOS.find((scenario) => scenario.tier === entry.template.era)?.name ?? `Era ${entry.template.era}`
-  if (sort === 'bond') return entry.bond === null ? null : entry.bond === MAX_LIMIT_BREAK ? 'Max bond' : `Bond ${entry.bond}`
+  if (sort === 'bond') return entry.bond === null ? null : `${entry.bond}★`
   if (sort === 'perNode') return entry.owned ? cardPayLabel(entry) : null
   if (sort === 'type') return titleCase(entry.template.type)
   if (sort === 'character') return entry.template.charName

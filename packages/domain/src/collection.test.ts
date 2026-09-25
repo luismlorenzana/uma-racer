@@ -92,21 +92,21 @@ describe('collection mutations', () => {
 })
 
 describe('unlocking a card with tickets', () => {
-  it('prices a card by its era: 30 in URA Finale up to 95 in the newest scenario', () => {
-    expect(cardUnlockCost(1)).toBe(30)
-    expect(cardUnlockCost(8)).toBe(65)
-    expect(cardUnlockCost(14)).toBe(95)
+  it('prices a card by its era: 6 in URA Finale up to 19 in the newest scenario (D148)', () => {
+    expect(cardUnlockCost(1)).toBe(6)
+    expect(cardUnlockCost(8)).toBe(13)
+    expect(cardUnlockCost(14)).toBe(19)
   })
 
   it('spends tickets once, under a ledger id keyed by the card', () => {
-    const profile = { ...createPlayerProfile('synthetic', 1), tickets: 100 }
+    const profile = { ...createPlayerProfile('synthetic', 1), tickets: 20 }
     const cardTemplate = card('card-new', 8, 'speed')
     expect(unlockCardWithTickets(profile, cardTemplate, false, '2000-01-02', 53)).toEqual({
-      profile: { ...profile, tickets: 35 },
+      profile: { ...profile, tickets: 7 },
       card: createCardSave(cardTemplate),
-      ledger: [{ id: 'card-unlock:card-new', data: { resource: 'tickets', delta: -65, reason: 'card-unlock', localDay: '2000-01-02', createdAt: 53 } }],
+      ledger: [{ id: 'card-unlock:card-new', data: { resource: 'tickets', delta: -13, reason: 'card-unlock', localDay: '2000-01-02', createdAt: 53 } }],
     })
-    expect(() => unlockCardWithTickets({ ...profile, tickets: 64 }, cardTemplate, false, '2000-01-02', 53)).toThrow('needs 65 tickets')
+    expect(() => unlockCardWithTickets({ ...profile, tickets: 12 }, cardTemplate, false, '2000-01-02', 53)).toThrow('needs 13 tickets')
     expect(() => unlockCardWithTickets(profile, cardTemplate, true, '2000-01-02', 53)).toThrow('already owned')
   })
 })
@@ -115,7 +115,7 @@ describe('collection counts', () => {
   it('counts known cards by era/type without inflating completion for orphans', () => {
     const cards = [card('c2', 2, 'friend'), card('c1', 1, 'speed'), card('c3', 2, 'speed')]
     const owned = {
-      c1: { ...createCardSave(cards[1]!), limitBreaks: { '1': 4 } },
+      c1: { ...createCardSave(cards[1]!), stars: { '1': 5 } },
       c2: createCardSave(cards[0]!),
       orphan: createCardSave(card('orphan')),
     }

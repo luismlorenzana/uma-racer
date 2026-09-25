@@ -3,13 +3,13 @@
 > All numbers are **draft values for tuning**. Names are provisional.
 
 Minigames are the **third pillar** of the game, beside Collection and Racing. They are the only way to raise a
-Training Level and the only way to limit break a card. There is no other training loop: no turns, no
+Training Level and the only way to earn a card's stars. There is no other training loop: no turns, no
 facilities, no energy, no per-turn RNG (D120).
 
 | Minigame | Raises | Board |
 |---|---|---|
 | **Spark Match** | Training Level 1 → 10 of the active scenario | match-3 |
-| **Bond Recall** | one card by one limit break | match-2 memory |
+| **Bond Recall** | one card by one star, until Friendship Training replaces it (M020) | match-2 memory |
 
 Both are **seeded and replay-stable**: the board comes from `(saveId, umaId, scenarioTier, attemptIndex)`, so
 reloading mid-run restores the same board and cannot reroll a friendlier one. Neither uses `Math.random`.
@@ -59,8 +59,8 @@ post-run summary names exactly which nodes opened.
 
 ### Cost
 
-**5 training tickets per run.** At the 50-per-day grant that is about one Uma taken to TL10 per day, which
-keeps tickets the pacing currency they have always been ([Economy](economy.md)).
+**1 training ticket per run** (D148). A day's 10 tickets take about one Uma to TL10, which keeps tickets the pacing
+currency they have always been ([Economy](economy.md)).
 
 ### Scenario tile sets
 
@@ -70,10 +70,10 @@ missing from the pack the scenario falls back to the next available starter, and
 
 ---
 
-## Bond Recall — card limit breaks
+## Bond Recall — card stars
 
 Pick one owned card **and one scenario**, then clear a grid of face-down tiles by matching pairs. A full
-clear advances that card **one limit break in that scenario** (D127).
+clear gives that card **one star in that scenario** (D127, D147).
 
 A card can be trained in any scenario its era allows that some Uma has unlocked. Every way in names the card, the
 scenario and where to return to (M016): a **Bond** button on each slot of the Training scene's Card set tab and
@@ -82,16 +82,15 @@ there is no scenario-less picker. After a run, **Bond again** starts the next on
 
 ### Board
 
-```
-pairs(lb) = 6 + 2 × lb          lb = the limit break you are leaving
-```
+One board per star being earned, growing with the card:
 
-| Leaving | Pairs | Grid | Mismatches allowed |
+| Earning | Pairs | Grid | Mismatches allowed |
 |---|---|---|---|
-| LB0 → LB1 | 6 | 3 × 4 | 10 |
-| LB1 → LB2 | 8 | 4 × 4 | 12 |
-| LB2 → LB3 | 10 | 4 × 5 | 14 |
-| LB3 → LB4 | 12 | 4 × 6 | 16 |
+| 1★ | 6 | 3 × 4 | 10 |
+| 2★ | 8 | 4 × 4 | 12 |
+| 3★ | 9 | 3 × 6 | 13 |
+| 4★ | 10 | 4 × 5 | 14 |
+| 5★ | 12 | 4 × 6 | 16 |
 
 Tile faces are the **cards of the set the run was launched from** (else the first set anyone holds in that
 scenario), then filler drawn deterministically from the player's other owned cards. Running out of mismatches ends the run without an advance — this one has
@@ -110,18 +109,17 @@ The board sits centred in that space, so it can never push the status line off s
 - The **card being bonded** leads the start screen as full art and sits beside the verdict on the result screen.
 - Cards with no published illustration show their icon and name on the face instead.
 
-### Bond, not levels
+### Stars, not levels
 
-Card levels and card EXP are deleted (D120, D130): a card has one number per scenario, its **bond** (the save's
-limit break), 0 to 4. Reaching max bond still grants the one-time **Card Select Coupon**, and each advance still
-grants its tickets.
+Card levels and card EXP are deleted (D120, D130): a card has one number per scenario, its **stars**, 0★ to 5★
+(D147). Reaching 5★ grants the one-time **Card Select Coupon**; a star pays no tickets (D148).
 
-Bond is what scales a card node's contribution ([Constellations](constellations.md#what-a-card-node-pays)), so Bond
-Recall is the direct path from "I own this card" to "this card is worth slotting".
+Stars are what scale a card node's contribution ([Constellations](constellations.md#what-a-card-node-pays)), so the
+card minigame is the direct path from "I own this card" to "this card is worth slotting".
 
 ### Cost
 
-**10 training tickets per run**, win or lose.
+**1 training ticket per run**, win or lose (D148).
 
 ---
 

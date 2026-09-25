@@ -173,6 +173,28 @@ describe('parseSyncRequest', () => {
     })).toMatch(/timestamp/)
   })
 
+  it('accepts save v7: profiles, star cards up to 5★, and still v6 limit-break cards from old clients (D147, D148)', () => {
+    const profile = {
+      schemaVersion: 7, tickets: 89, cardCoupons: 3, umaCoupons: 0, umaShards: 0, lastDailyGrant: '2026-01-01',
+      featuredUmaId: null, starterSeedContentVersion: 'synthetic-v1', createdAt: 1,
+    }
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: profile }] })).toMatchObject({
+      upserts: [{ kind: 'profile', data: { schemaVersion: 7 } }],
+    })
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 8 } }] }))
+      .toMatch(/invalid profile data/)
+    const card = (data: Record<string, unknown>) => parseSyncRequest({ upserts: [{ kind: 'cards', id: 'c1', baseVersion: 1, data: { templateId: 'c1', maxCouponGranted: false, ...data } }] })
+    expect(card({ stars: { '1': 5, '2': 3 } })).toMatchObject({ upserts: [{ kind: 'cards', data: { stars: { '1': 5 } } }] })
+    expect(card({ stars: { '1': 6 } })).toMatch(/invalid cards data/)
+    expect(card({ limitBreaks: { '1': 4 } })).toMatchObject({ upserts: [{ kind: 'cards' }] })
+    expect(card({ limitBreaks: { '1': 5 } })).toMatch(/invalid cards data/)
+    // A current profile never gives way to an older one.
+    const current = { kind: 'profile' as const, id: 'main', version: 4, data: profile, deleted: false, updatedAt: 1 }
+    const stale = resolveUpserts(new Map([['profile/main', current as EntityRecord]]), [{ kind: 'profile', id: 'main', baseVersion: 4, data: { ...profile, schemaVersion: 6, tickets: 444 } }], 2)
+    expect(stale.conflicts).toHaveLength(1)
+    expect(stale.writes).toHaveLength(0)
+  })
+
   it('accepts v2 profiles and never lets a v1 write replace v2', () => {
     const v2 = {
       schemaVersion: 2,
@@ -301,6 +323,11 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data, createdAt: 1 }] })).toMatchObject({
       appends: [{ kind: 'raceResults', id: 'race:u1:0' }],
     })
+    // A level paid five tickets before save v7 and one after (D148); a record keeps the reward of its day.
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...data, ticketReward: 1 }, createdAt: 1 }] }))
+      .toMatchObject({ appends: [{ kind: 'raceResults', id: 'race:u1:0' }] })
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...data, ticketReward: 3 }, createdAt: 1 }] }))
+      .toMatch(/invalid raceResults/)
     const v2 = {
       ...data,
       engineVersion: 2,

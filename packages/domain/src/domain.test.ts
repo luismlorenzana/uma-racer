@@ -13,13 +13,16 @@ import {
   nodeValue,
   SPARK_MATCH_TICKET_COST,
   BOND_RECALL_TICKET_COST,
-  TICKETS_PER_CARD_LIMIT_BREAK,
+  DAILY_TICKETS,
+  TICKET_STORAGE_CAP,
+  cardUnlockCost,
+  redenominateTickets,
+  MAX_STARS,
+  cardRaceBonus,
   skillPointCap,
   averageCap,
   MAX_UMA_LEVEL,
   SCENARIOS,
-  cardEffectValue,
-  cardLevelCap,
   distanceCategory,
   eraOf,
   fieldForm,
@@ -329,37 +332,57 @@ describe('progression and economy', () => {
     expect(raceExp('g1', 2)).toBe(38)
     expect(raceExp('g1', 4)).toBe(0)
     expect(raceExp('op', 1, 0.1)).toBe(66)
-    expect(UMA_LEVEL_TICKET_REWARD).toBe(5)
+    expect(UMA_LEVEL_TICKET_REWARD).toBe(1)
     expect(GATE_SHARD_REWARD).toBe(1)
     expect(progressionFieldSize({ fieldSize: 5 })).toBe(8)
     expect(progressionFieldSize({ fieldSize: 18 })).toBe(18)
   })
 
-  it('prices scenario unlocks and minigame runs in tickets', () => {
-    expect(umaPromotionCost(1)).toBe(25)
-    expect(umaPromotionCost(10)).toBe(250)
-    expect(SPARK_MATCH_TICKET_COST).toBe(5)
-    expect(BOND_RECALL_TICKET_COST).toBe(10)
-    expect(TICKETS_PER_CARD_LIMIT_BREAK).toBe(5)
+  it('prices every run at one ticket, and unlocks at a fifth of their old price (D148)', () => {
+    expect(SPARK_MATCH_TICKET_COST).toBe(1)
+    expect(BOND_RECALL_TICKET_COST).toBe(1)
+    expect(umaPromotionCost(1)).toBe(5)
+    expect(umaPromotionCost(10)).toBe(50)
+    expect(cardUnlockCost(1)).toBe(6)
+    expect(cardUnlockCost(14)).toBe(19)
   })
 
-  it('caps only the daily grant', () => {
-    expect(grantDailyTickets(480, 1)).toBe(500)
-    expect(grantDailyTickets(520, 3)).toBe(520)
-    expect(grantDailyTickets(0, 20)).toBe(500)
+  it('grants ten a day and banks five days, capping only the grant', () => {
+    expect(DAILY_TICKETS).toBe(10)
+    expect(TICKET_STORAGE_CAP).toBe(5 * DAILY_TICKETS)
+    expect(grantDailyTickets(45, 1)).toBe(50)
+    expect(grantDailyTickets(60, 3)).toBe(60)
+    expect(grantDailyTickets(0, 20)).toBe(50)
+  })
+
+  it('re-denominates a v6 balance to a fifth, rounding up so no run is lost', () => {
+    expect(redenominateTickets(0)).toBe(0)
+    expect(redenominateTickets(1)).toBe(1)
+    expect(redenominateTickets(444)).toBe(89)
+    expect(redenominateTickets(500)).toBe(100)
   })
 })
 
 describe('cards', () => {
-  it('levels 5 per limit break up to 25', () => {
-    expect(cardLevelCap(0)).toBe(5)
-    expect(cardLevelCap(4)).toBe(25)
+  const template = (era: number, uniqueRaceBonus = false) => ({
+    id: 'c', type: 'speed', era,
+    effectProfile: { raceBonus: 1 },
+    uniqueEffect: uniqueRaceBonus ? { level: 30, effects: [{ type: 15, value: 5 }] } : null,
+  }) as unknown as Parameters<typeof cardRaceBonus>[0]
+
+  it('holds 0★ to 5★ (D147)', () => {
+    expect(MAX_STARS).toBe(5)
   })
 
-  it('makes newer, higher-LB cards stronger', () => {
-    const base = cardEffectValue('trainingBonus', { era: 1, limitBreak: 0, level: 1 })
-    const late = cardEffectValue('trainingBonus', { era: 11, limitBreak: 4, level: 25 })
-    expect(base).toBeCloseTo(0.05)
-    expect(late).toBeCloseTo(0.05 * 1.8 * 1.5 * 1.08)
+  it('pays Race Bonus from 1★ on the node curve, reaching the old max-limit-break value at 5★', () => {
+    expect(cardRaceBonus(template(1), 0)).toBe(0)
+    expect(cardRaceBonus(template(1), 1)).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
+    expect(cardRaceBonus(template(1), 5)).toBeCloseTo(0.03 * 1.5 * 1.08)
+    expect(cardRaceBonus(template(11), 5)).toBeCloseTo(0.03 * 1.8 * 1.5 * 1.08)
+  })
+
+  it('adds the unique bonus at 5★ only', () => {
+    expect(cardRaceBonus(template(1, true), 4)).toBeCloseTo(cardRaceBonus(template(1), 4))
+    expect(cardRaceBonus(template(1, true), 5)).toBeCloseTo(cardRaceBonus(template(1), 5) * 1.25)
   })
 })

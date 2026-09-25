@@ -1,7 +1,7 @@
 // Shared support-deck validation (docs/design/support-cards.md#deck).
 
 import { STATS } from './types'
-import { cardLimitBreak } from './card-progression'
+import { cardStars } from './card-progression'
 import { CARD_SET_SIZE, cardNodeCap, cardNodeValue, paysSkillPoints, type NodeAssignment } from './constellation'
 import { cardRaceBonus, deckSlotCount } from './cards'
 import type { SupportCardTemplate, UmaTemplate } from './content'
@@ -143,15 +143,15 @@ export function validateEquippedSupportDeck(
   })
 }
 
-/** The share of race EXP a card set adds: each card's Race Bonus at its bond in this scenario (D125, D127). */
+/** The share of race EXP a card set adds: each card's Race Bonus at its stars in this scenario (D125, D127). */
 export function cardSetRaceBonus(cards: readonly SupportDeckCard[], tier: number): number {
-  return cards.reduce((total, card) => total + cardRaceBonus(card.template, cardLimitBreak(card.save, tier)), 0)
+  return cards.reduce((total, card) => total + cardRaceBonus(card.template, cardStars(card.save, tier)), 0)
 }
 
 /**
  * Deterministic auto-fill for a scenario's six-card set. Prefers one card per stat in the Uma's growth
  * order, then one Friend or Group card for the set's skill points (D132), then the strongest remaining stat
- * cards; further skill-point cards only if nothing else is left. Ties break on era, then limit break, then card
+ * cards; further skill-point cards only if nothing else is left. Ties break on era, then stars, then card
  * id, so the same collection always produces the same set.
  */
 export function autoCardSet(
@@ -161,11 +161,11 @@ export function autoCardSet(
 ): string[] {
   const eligible = owned.filter((card) => card.template.era <= tier)
   const strength = (card: SupportDeckCard) =>
-    cardNodeValue(tier, { template: card.template, limitBreak: cardLimitBreak(card.save, tier) })
+    cardNodeValue(tier, { template: card.template, stars: cardStars(card.save, tier) })
   const ranked = [...eligible].sort((left, right) =>
     strength(right) - strength(left) ||
     right.template.era - left.template.era ||
-    cardLimitBreak(right.save, tier) - cardLimitBreak(left.save, tier) ||
+    cardStars(right.save, tier) - cardStars(left.save, tier) ||
     left.template.id.localeCompare(right.template.id))
 
   const picked: SupportDeckCard[] = []

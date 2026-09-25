@@ -239,50 +239,56 @@ class RacerDb extends Dexie {
     })
     // Additive: open minigame runs are device-local replay state, so there is nothing to migrate.
     this.version(8).stores(storesWithMinigameRuns)
-    /**
-     * Walks every stored row forward with the domain's migration chain.
-     *
-     * The upgrades above each knew one hop, so a database already at version 7 never re-ran them and a
-     * save left at v4 or v5 simply stopped parsing. This one is version-agnostic: it asks the chain, which
-     * is the single place a schema bump has to be taught about.
-     */
-    this.version(9).stores(storesWithMinigameRuns).upgrade(async (tx: Transaction) => {
-      const queuedAt = Date.now()
-      const outboxTable = tx.table('outbox')
-      const queue = async (kind: EntityKind, id: string) => {
-        await outboxTable.where('[kind+id]').equals([kind, id]).delete()
-        await outboxTable.add({ kind, id, op: 'upsert', queuedAt })
-      }
+    // Each schema bump re-runs the same walk: bumping the Dexie version is how it knows to run again.
+    this.version(9).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
+    // Save v7 (D147, D148): stars and re-denominated tickets.
+    this.version(10).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
+  }
+}
 
-      const profileTable = tx.table('profile')
-      const profileRow = await profileTable.get('main') as VersionedRow<unknown> | undefined
-      if (profileRow && !parsePlayerProfile(profileRow.data)) {
-        const migrated = migratePlayerProfileToCurrent(profileRow.data)
-        if (!migrated) throw new Error('Local player profile cannot be migrated')
-        await profileTable.put({ ...profileRow, data: migrated })
-        await queue('profile', 'main')
-      }
+/**
+ * Walks every stored row forward with the domain's migration chain, re-queueing whatever moved so the cloud copy
+ * catches up.
+ *
+ * The upgrades above each knew one hop, so a database already at version 7 never re-ran them and a save left at v4 or
+ * v5 simply stopped parsing. This one is version-agnostic: it asks the chain, which is the single place a schema bump
+ * has to be taught about.
+ */
+async function walkRowsToCurrent(tx: Transaction): Promise<void> {
+  const queuedAt = Date.now()
+  const outboxTable = tx.table('outbox')
+  const queue = async (kind: EntityKind, id: string) => {
+    await outboxTable.where('[kind+id]').equals([kind, id]).delete()
+    await outboxTable.add({ kind, id, op: 'upsert', queuedAt })
+  }
 
-      const umaTable = tx.table('umas')
-      for (const row of await umaTable.toArray() as VersionedRow<unknown>[]) {
-        if (parseUmaSave(row.data)) continue
-        const migrated = migrateUmaSaveToCurrent(row.data)
-        if (!migrated) throw new Error(`Local Uma ${row.id} cannot be migrated`)
-        if (migrated.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
-        await umaTable.put({ ...row, data: migrated })
-        await queue('umas', row.id)
-      }
+  const profileTable = tx.table('profile')
+  const profileRow = await profileTable.get('main') as VersionedRow<unknown> | undefined
+  if (profileRow && !parsePlayerProfile(profileRow.data)) {
+    const migrated = migratePlayerProfileToCurrent(profileRow.data)
+    if (!migrated) throw new Error('Local player profile cannot be migrated')
+    await profileTable.put({ ...profileRow, data: migrated })
+    await queue('profile', 'main')
+  }
 
-      const cardTable = tx.table('cards')
-      for (const row of await cardTable.toArray() as VersionedRow<unknown>[]) {
-        if (parseCardSave(row.data)) continue
-        const migrated = migrateCardSaveToCurrent(row.data)
-        if (!migrated) throw new Error(`Local card ${row.id} cannot be migrated`)
-        if (migrated.templateId !== row.id) throw new Error(`Local card ${row.id} has mismatched data`)
-        await cardTable.put({ ...row, data: migrated })
-        await queue('cards', row.id)
-      }
-    })
+  const umaTable = tx.table('umas')
+  for (const row of await umaTable.toArray() as VersionedRow<unknown>[]) {
+    if (parseUmaSave(row.data)) continue
+    const migrated = migrateUmaSaveToCurrent(row.data)
+    if (!migrated) throw new Error(`Local Uma ${row.id} cannot be migrated`)
+    if (migrated.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
+    await umaTable.put({ ...row, data: migrated })
+    await queue('umas', row.id)
+  }
+
+  const cardTable = tx.table('cards')
+  for (const row of await cardTable.toArray() as VersionedRow<unknown>[]) {
+    if (parseCardSave(row.data)) continue
+    const migrated = migrateCardSaveToCurrent(row.data)
+    if (!migrated) throw new Error(`Local card ${row.id} cannot be migrated`)
+    if (migrated.templateId !== row.id) throw new Error(`Local card ${row.id} has mismatched data`)
+    await cardTable.put({ ...row, data: migrated })
+    await queue('cards', row.id)
   }
 }
 

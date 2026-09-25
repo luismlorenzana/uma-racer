@@ -22,8 +22,7 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M019 — Stars and tickets](M019-stars-and-tickets.md) | T061 · T062, one release (save v7) | Specified · next |
-| [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · after M019 |
+| [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · next |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051, T053 – T056; T052 complete | Outlined |
 | [T059 — Chibi and dress art](T059-chibi-and-dress-art.md) | T059 | Specified · waiting on source permission |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
@@ -49,6 +48,9 @@ were removed under D104; D139–D141, [Racing](../design/racing.md#engine-v5-m01
 
 T052 (the fourteen constellation silhouettes, drawn on a grid) landed on 2026-09-25 with the constellation's visual
 pass and was removed from M015 under D104; D143 and [Constellations](../design/constellations.md#silhouettes) carry it.
+
+M019 (stars and tickets: 0★–5★ per card per scenario, one ticket per run, save v7) landed on 2026-09-25 and was removed
+under D104; D147–D148, D150 and [Support Cards](../design/support-cards.md#stars) and [Economy](../design/economy.md) carry it.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

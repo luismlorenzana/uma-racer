@@ -173,7 +173,7 @@ function state() {
   return {
     profile: createPlayerProfile('abc123def456', 42),
     player,
-    cards: { c1: { ...createCardSave(card), limitBreaks: { '1': 1 } } },
+    cards: { c1: { ...createCardSave(card), stars: { '1': 1 } } },
   }
 }
 
@@ -265,7 +265,7 @@ describe('progression race field', () => {
     const completion = completeMemoryRace(loaded, profile, player, cards, [], attempt, '2026-09-16', 100)
     expect(completion.record).toMatchObject({ umaId: 'u1', raceId: 'r1', sequence: 0, expGained: 155 })
     expect(parseRaceResultRecord(completion.record)).toEqual(completion.record)
-    expect(completion.profile.tickets).toBe(5)
+    expect(completion.profile.tickets).toBe(1)
     const replay = preparedRaceFromRecord(loaded, completion.record)
     expect(replay.input.course).toEqual({ distance: 2_000, surface: 'turf', season: 1, layout: {
       corners: course.corners.map(({ start, end, number }) => ({ start, end, number })),
@@ -299,7 +299,7 @@ describe('progression race field', () => {
     const maiden = withCareer(player, 'r1', 2, bank)
     const attempt = buildPreparedRace({ content: loaded, profile, uma: maiden, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })
     const won = completeMemoryRace(loaded, profile, maiden, cards, [], attempt, '2026-09-16', 100)
-    expect(won.record).toMatchObject({ completedGoalIds: ['goal:1:maiden'], levelsGained: [3, 4], ticketReward: 10 })
+    expect(won.record).toMatchObject({ completedGoalIds: ['goal:1:maiden'], levelsGained: [3, 4], ticketReward: 2 })
     expect(won.uma).toMatchObject({ level: 4, exp: 4 })
     expect(parseRaceResultRecord(won.record)).toEqual(won.record)
   })
@@ -347,8 +347,8 @@ describe('persistent progression race', () => {
     expect(preparation.status).toBe('prepared')
     if (preparation.status !== 'prepared') return
     const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)
-    expect(completion.record).toMatchObject({ expGained: 155, levelsGained: [2], ticketReward: 5, shardReward: 0 })
-    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 5, umaShards: 0 })
+    expect(completion.record).toMatchObject({ expGained: 155, levelsGained: [2], ticketReward: 1, shardReward: 0 })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 1, umaShards: 0 })
     expect((await db.umas.get('u1'))?.data).toMatchObject({ level: 2, exp: 55 })
     expect(await db.raceResults.count()).toBe(1)
     expect((await db.ledger.toArray()).map((row) => row.id)).toEqual(['uma-level-tickets:u1:2'])
@@ -367,7 +367,7 @@ describe('persistent progression race', () => {
     expect(retry.alreadyRecorded).toBe(true)
     expect(retry.record.earnedFlairEventIds).toEqual(completion.record.earnedFlairEventIds)
     expect(retry.record.completedGoalIds).toEqual([])
-    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 5 })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 1 })
     expect(await db.raceResults.count()).toBe(1)
     expect(await db.ledger.count()).toBe(1)
 
@@ -406,10 +406,10 @@ describe('persistent progression race', () => {
     expect(completion.record).toMatchObject({
       playerPlacement: 1,
       levelsGained: [10],
-      ticketReward: 5,
+      ticketReward: 1,
       shardReward: 1,
     })
-    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 5, umaShards: 1 })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 1, umaShards: 1 })
     expect((await db.umas.get('u1'))?.data).toMatchObject({ level: 10, exp: 154 })
     expect((await db.ledger.toArray()).map((entry) => entry.id).sort()).toEqual([
       'uma-gate-shard:u1:10',

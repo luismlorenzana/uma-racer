@@ -22,13 +22,13 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 
 - **Owning** is account-wide. Cards come from the starter set, from **tickets** (`25 + 5 × era`), or from a Card
   Select Coupon, all on the card's own page (see [Collection](collection.md#unlocking-cards)).
-- **Power belongs to a scenario.** A card's bond (0–4) and the nodes it fills are per scenario; nothing about a card's
-  strength is account-wide. The UI calls a limit break a **bond** and shows no card level (D130).
+- **Power belongs to a scenario.** A card's stars (0★–5★) and the nodes it fills are per scenario; nothing about a
+  card's strength is account-wide. There is no card level (D130, D147).
 - A **card set** is per Uma, **per scenario** (D125): **six slots**, era-gated to that scenario's tier, drawn
   from owned cards. Six everywhere — the old 4/5/6 tier ramp is gone.
 - No duplicate card and no two cards of the same character in one set.
-- **Limit breaks belong to a scenario, and are shared by every Uma racing there** (D127). Breaking a card in
-  URA Finale improves it for every Uma in URA Finale; in Unity Cup that same card starts at LB0 again. So the
+- **Stars belong to a scenario, and are shared by every Uma racing there** (D127). Starring a card in URA
+  Finale improves it for every Uma in URA Finale; in Unity Cup that same card starts at 0★ again. So the
   first Uma you take into a scenario pays for the card set, and every later one rides free.
 - **Friend and Group cards pay Skill Points instead of stats**, in any slot; every other card pays its stats
   ([Constellations](constellations.md#skill-point-cards), D132).
@@ -47,11 +47,11 @@ Almost everything a card used to do lived in the training turn, which no longer 
 | Property | Effect |
 |---|---|
 | **Type** | how a card node distributes its value ([table](constellations.md#what-a-card-node-pays)) |
-| **Limit break** | scales every node the card occupies: LB0 60% → LB4 100% |
+| **Stars** | scale every node the card occupies: 0★ 60% → 5★ 100% |
 | **Era** | scales every node against the *scenario*: current era 100%, −5 points per era older, floor 40% |
 | **Tilt** | a small per-card shift of the primary/secondary split (below) |
 | **`hintSkills`** | which skills the card pays into the library, one per node it occupies |
-| **Race Bonus** | **Uma EXP from races** while the card is in the active set, from LB1 |
+| **Race Bonus** | **Uma EXP from races** while the card is in the active set, from 1★ |
 
 Deleted with the training turn: Training Bonus, Friendship Bonus, Specialty Priority, Hint Frequency, Stat
 Bonus, and Initial Stats. There is no card EXP.
@@ -79,29 +79,37 @@ node's value.
 Friend and Group cards have no primary, so their tilt is always 0. They pay skill points rather than stats
 (D132); their value is the loadout they buy.
 
-## Bond (limit breaks)
+## Stars
 
-On screen a limit break is a **bond**, 0 to 4, and there is **no card level** (D130). A card advances **one bond
-per [Bond Recall](minigames.md#bond-recall--card-limit-breaks) clear**, in the scenario that run named. That is the
-only way.
+A card holds **0★ to 5★ in each scenario**, and there is **no card level** (D130, D147). It earns **one star per clear**
+of the card minigame ([Bond Recall](minigames.md#bond-recall--card-stars) until Friendship Training replaces it), in
+the scenario that run named. That is the only way. **Bond** is the act of raising a card's stars: the button that
+launches the minigame, and what the minigame is about.
 
-| Bond | 0 | 1 | 2 | 3 | 4 (Max) |
-|---|---|---|---|---|---|
-| Node multiplier | 0.60 | 0.70 | 0.80 | 0.90 | **1.00** |
+| Stars | 0★ | 1★ | 2★ | 3★ | 4★ | 5★ (Max) |
+|---|---|---|---|---|---|---|
+| Node pay | 60% | 68% | 76% | 84% | 92% | **100%** |
+| Race Bonus | — | 68% | 76% | 84% | 92% | **100%** |
 
-- **Bond 1** activates Race Bonus.
-- **Bond 3** is meant to add a gold skill to `hintSkills`, so a bonded card pays better skills as well as more
-  stats. *Not implemented yet*: today each node a card fills pays the next skill on its list, whatever its bond.
-- **Max bond** earns a **Card Select Coupon** 🎟️ — once per card ever, not once per scenario.
-- Each advance grants **+5 training tickets**.
+- **Race Bonus** starts at 1★ and follows the node curve to its full value at 5★.
+- **5★** is max: full node value, full Race Bonus, and the card's unique-effect bonus.
+- **Max** earns a **Card Select Coupon** 🎟️ at a card's first 5★ — once per card ever, not once per scenario.
+- A star pays **no tickets**: its run cost one, and the star is the reward (D148).
 
-A card at Bond 0 pays 60% of a node, which is visible in the constellation as a dimmed node value. That gap is the
-entire reason to play Bond Recall.
+A card at 0★ pays 60% of a node, which is visible in the constellation as a dimmed node value. That gap is the entire
+reason to bond.
+
+### From limit breaks (save v7)
+
+Before save v7 a card held limit breaks 0–4. The migration turned each into `ceil(1.25 × LB)` stars — LB1 → 2★,
+LB2 → 3★, LB3 → 4★, LB4 → 5★ — so no card lost node value or Race Bonus, and every maxed card stayed maxed. The save
+field is now `stars`, so an old card can never be read as stars without its conversion. A gold skill at a star
+threshold, once planned for bond 3, was never built and is not part of stars.
 
 ## Where cards live on screen
 
 - **The Cards tab** browses by lens — the collection, or one scenario ([Collection](collection.md#card-album)).
-- **Each card's page** (`/cards/:id`) holds owning it, its bond in every reached scenario, and what it pays.
+- **Each card's page** (`/cards/:id`) holds owning it, its stars in every reached scenario, and what it pays.
 - **The Training scene's Card set tab** is where a scenario's six are chosen and bonded
   ([UX](ux.md#training-scene)).
 

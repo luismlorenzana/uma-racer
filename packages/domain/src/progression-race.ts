@@ -1,11 +1,11 @@
 // Saved-Uma progression races and rewards (docs/design/racing.md).
 
 import { CARD_EFFECTS, cardRaceBonus } from './cards'
-import { cardLimitBreak } from './card-progression'
+import { cardStars } from './card-progression'
 import { FLAIR_SERIES_TAGS, parseFlairSeriesLegId, type FlairSeriesTag } from './badges'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
-import { GATE_SHARD_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
+import { GATE_SHARD_REWARD, LEGACY_UMA_LEVEL_TICKET_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
 import { applyForm, yourForm } from './raceForm'
 import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
 import { MAX_UMA_LEVEL, isGateLevel, tierOfLevel } from './scenarios'
@@ -315,7 +315,7 @@ export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[])
     ) {
       throw new Error(`Card ${template.id} has invalid race effect data`)
     }
-    total += cardRaceBonus(template, cardLimitBreak(save, tier))
+    total += cardRaceBonus(template, cardStars(save, tier))
   }
   return total
 }
@@ -496,7 +496,8 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     player?.umaId !== value.umaId || player?.strategy !== value.strategy ||
     player?.placement !== value.playerPlacement ||
     (value.shardReward === 1 && !isGateLevel(levels.at(-1) ?? -1)) ||
-    value.ticketReward !== value.levelsGained.length * UMA_LEVEL_TICKET_REWARD
+    // A record keeps the reward of its day: five a level before save v7, one after (D148).
+    ![UMA_LEVEL_TICKET_REWARD, LEGACY_UMA_LEVEL_TICKET_REWARD].some((reward) => value.ticketReward === levels.length * reward)
   ) return null
   return {
     ...(hasEngineVersion ? { engineVersion: version! } : {}),

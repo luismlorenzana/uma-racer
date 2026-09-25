@@ -44,7 +44,7 @@ A card is unlocked on its own page (`/cards/:id`) in one of two ways (D130):
 
 | Way | Cost | Notes |
 |---|---|---|
-| **Tickets** | `25 + 5 × era`: 30 for a URA Finale-era card, 95 for the newest | Ledger reason `card-unlock`, keyed by card id |
+| **Tickets** | `5 + era`: 6 for a URA Finale-era card, 19 for the newest (D148) | Ledger reason `card-unlock`, keyed by card id |
 | **Card Select Coupon** | 1 coupon | A free unlock; keyed by card id as before |
 
 Unlocking hands straight to the collection reveal, then back to the card's page. The standalone Card Select screen
@@ -54,7 +54,7 @@ is gone; `/cards/redeem` redirects to the album.
 
 | Item | How it's earned | Redeems for | Rules |
 |---|---|---|---|
-| 🎟️ **Card Select Coupon** | A card first reaches **max bond** in any scenario (once per card ever) | A free unlock of any unowned SSR card | Stackable · never expires |
+| 🎟️ **Card Select Coupon** | A card first reaches **5★** in any scenario (once per card ever) | A free unlock of any unowned SSR card | Stackable · never expires |
 | 💎 **Uma Shard** | Any Uma **reaches** level 10, 20, 30 … (once per Uma per gate) | 5 shards make 1 Uma Select Coupon | Stackable · never expires |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma in the game | Stackable · never expires |
 
@@ -70,8 +70,8 @@ owned result without spending again. An entity that predates the matching redemp
 
 - **One Uma** taken from level 1 to 50 earns 5 shards, which is **1 Uma coupon**. Taking her to 100 earns a second.
 - **Across the stable**, it's 1 Uma coupon per 50 levels gained by all Umas combined, so leveling several Umas pays off too.
-- **Cards** compound: a card's first max bond funds the next one, and tickets buy the rest. Every unowned card together
-  costs about 12,000 tickets; URA Finale's 37 unowned cards about 1,100.
+- **Cards** compound: a card's first 5★ funds the next one, and tickets buy the rest. Every unowned card together
+  costs about 2,400 tickets; URA Finale's 37 unowned cards about 220.
 
 ## Albums
 
@@ -186,7 +186,7 @@ data, not just a name:
 
 - Uma tiles: portrait, name, level, active-scenario crest, a compact aptitude line (surface / distance / strategy
   grades), and at most two state chips (*Gate ready*, *Goal active*).
-- Card tiles: card art, and in a scenario lens its **bond pips** and what one node of it pays there.
+- Card tiles: card art, and in a scenario lens its **stars** and what one node of it pays there.
 - The **secondary line follows the active sort**. Sorting by release shows the date, by total stats shows the total, by
   bond shows the bond. Sorting by something you cannot see is a dead end.
 - Unowned entries are desaturated art behind a lock, never empty silhouette boxes.
@@ -243,7 +243,7 @@ scenario any Uma has reached. It opens on the featured Uma's active scenario and
 | Lens | Holds | Sorts | Filters | A tile shows |
 |---|---|---|---|---|
 | **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · era · in an active set · starter/free · new | art; unowned dimmed with its ticket price |
-| **A scenario** | only cards its era allows | bond (default) · pays per node · era · type · character · card name | ownership · type · bond 0–Max · can still bond · max bond · in a set here · era · new | art with that scenario's bond pips and per-node pay |
+| **A scenario** | only cards its era allows | stars (default) · pays per node · era · type · character · card name | ownership · type · bond 0–Max · can still bond · max bond · in a set here · era · new | art with that scenario's bond pips and per-node pay |
 
 Ties break owned first, then by per-node pay. The two lenses keep separate saved queries and views, since bond means
 nothing in the collection.
@@ -279,7 +279,7 @@ badge state, and race/Journey facts.
 |---|---|---|
 | Stable Master | Umas owned (25 at start) | 30 / 40 / 60 / 90 / all |
 | Card Collector | SSR cards owned | 10 / 25 / 50 / 100 / all |
-| Maxed Out | Cards at max bond in any scenario | 1 / 5 / 15 / 40 / 100 |
+| Maxed Out | Cards at 5★ in any scenario | 1 / 5 / 15 / 40 / 100 |
 | [Era] Complete | Own every card of that era | one-off per era |
 | [Type] Complete | Own every card of that type | one-off per type |
 | Coupon Clipper | Coupons redeemed | 1 / 5 / 15 / 40 / 100 |

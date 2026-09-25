@@ -1,6 +1,6 @@
 // Per-scenario skill trees: budgets, node values, and derived stats (docs/design/constellations.md).
 
-import { MAX_LIMIT_BREAK } from './cards'
+import { MAX_STARS } from './cards'
 import { SHAPE_ART, cellKey, parseShapeArt, type ShapeCell } from './constellation-shapes'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { MAX_SCENARIO_TIER, SCENARIOS, baselineSkillPoints, skillPointCap } from './scenarios'
@@ -90,7 +90,7 @@ export const slotCount = (tier: number): number => {
 }
 
 /**
- * Raw points one **card** node pays at max bond and current era: what is left of the tree's share of the cap budget
+ * Raw points one **card** node pays at 5★ and current era: what is left of the tree's share of the cap budget
  * once the stat-node pool is set aside, over the card nodes (D134). Rounded to an integer so the invariance rule can
  * be asserted exactly rather than within a tolerance.
  */
@@ -100,7 +100,7 @@ export const nodeValue = (tier: number): number =>
 /** Raw points one stat node pays: the pool shared over that tier's stat nodes. An integer at every tier. */
 export const statNodeValue = (tier: number): number => STAT_NODE_POOL / shapeDef(tier).statNodes
 
-/** Total raw points a fully-filled constellation of current-era, max-bond stat cards pays. */
+/** Total raw points a fully-filled constellation of current-era, 5★ stat cards pays. */
 export const treeBudget = (tier: number): number => shapeDef(tier).cardNodes * nodeValue(tier) + STAT_NODE_POOL
 
 /** The nodes one card of six gets if the tree is shared out evenly, rounded up (D134). */
@@ -133,11 +133,11 @@ export const CARD_TYPE_SHARES: Record<CardNodeType, Partial<Record<StatKey, numb
   group: { speed: 20, stamina: 20, power: 20, guts: 20, wit: 20 },
 }
 
-/** Percentage of a node's value a card pays, by limit break (D125). */
-export const LB_NODE_PCT = [60, 70, 80, 90, 100] as const
+/** Percentage of a node's value a card pays at 0★–5★: 60% rising 8 points a star to 100% (D147). */
+export const STAR_NODE_PCT = [60, 68, 76, 84, 92, 100] as const
 
-export const lbNodePct = (limitBreak: number): number =>
-  LB_NODE_PCT[Math.min(MAX_LIMIT_BREAK, Math.max(0, Math.trunc(limitBreak)))]!
+export const starNodePct = (stars: number): number =>
+  STAR_NODE_PCT[Math.min(MAX_STARS, Math.max(0, Math.trunc(stars)))]!
 
 /** Percentage points a card loses for each scenario it predates. */
 export const ERA_PENALTY_PER_STEP = 5
@@ -446,9 +446,9 @@ export type NodeAssignment =
 /** What one node filled with this card pays, before the stat split. The Cards album shows this. */
 export function cardNodeValue(
   tier: number,
-  card: { template: Pick<SupportCardTemplate, 'era'>; limitBreak: number },
+  card: { template: Pick<SupportCardTemplate, 'era'>; stars: number },
 ): number {
-  return (nodeValue(tier) * lbNodePct(card.limitBreak) * eraPct(card.template.era, tier)) / 10_000
+  return (nodeValue(tier) * starNodePct(card.stars) * eraPct(card.template.era, tier)) / 10_000
 }
 
 /**
@@ -461,14 +461,14 @@ export const paysSkillPoints = (template: Pick<SupportCardTemplate, 'type'>): bo
 /** What one node filled with a skill-point card pays, in SP. */
 export function cardSpPerNode(
   tier: number,
-  card: { template: Pick<SupportCardTemplate, 'era'>; limitBreak: number },
+  card: { template: Pick<SupportCardTemplate, 'era'>; stars: number },
 ): number {
-  return (spNodeValue(tier) * lbNodePct(card.limitBreak) * eraPct(card.template.era, tier)) / 10_000
+  return (spNodeValue(tier) * starNodePct(card.stars) * eraPct(card.template.era, tier)) / 10_000
 }
 
 export interface CardNodeState {
   template: Pick<SupportCardTemplate, 'id' | 'type' | 'era' | 'effectProfile' | 'hintSkillIds'>
-  limitBreak: number
+  stars: number
 }
 
 export interface DeriveInput {
@@ -539,7 +539,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
       if (used >= perCardCap) continue
       cardNodesUsed.set(assignment.cardId, used + 1)
       assigned += 1
-      const quality = lbNodePct(card.limitBreak) * eraPct(card.template.era, input.tier)
+      const quality = starNodePct(card.stars) * eraPct(card.template.era, input.tier)
 
       if (paysSkillPoints(card.template)) {
         scaledSp += spValue * quality

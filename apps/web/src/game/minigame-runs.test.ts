@@ -120,15 +120,15 @@ describe('persistent minigame host', () => {
   afterEach(resetDatabase)
 
   it('rejects every invalid reservation without writing anything', async () => {
-    await seed({ tickets: 4, future: true })
+    await seed({ tickets: 0, future: true })
     const current = host()
     const assertNoWrites = async () => {
-      expect((await db.profile.get('main'))?.data.tickets).toBe(4)
+      expect((await db.profile.get('main'))?.data.tickets).toBe(0)
       expect(await db.ledger.count()).toBe(0)
       expect(await db.outbox.count()).toBe(0)
       expect(await db.minigameRuns.count()).toBe(0)
     }
-    await expect(current.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })).rejects.toThrow(/need 5/i)
+    await expect(current.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })).rejects.toThrow(/need 1/i)
     await assertNoWrites()
     await expect(current.beginRun('spark-match', { kind: 'spark-match', umaId: 'uma-unowned' })).rejects.toThrow(/not owned/i)
     await assertNoWrites()
@@ -143,8 +143,8 @@ describe('persistent minigame host', () => {
     await expect(current.beginRun('bond-recall', { kind: 'bond-recall', cardId: futureCard.id, tier: 1 })).rejects.toThrow(/not available/i)
     await assertNoWrites()
     const saved = (await db.cards.get(card.id))!
-    await db.cards.put({ ...saved, data: { ...saved.data, limitBreaks: { '1': 4 } } })
-    await expect(current.beginRun('bond-recall', { kind: 'bond-recall', cardId: card.id, tier: 1 })).rejects.toThrow(/maximum/i)
+    await db.cards.put({ ...saved, data: { ...saved.data, stars: { '1': 5 } } })
+    await expect(current.beginRun('bond-recall', { kind: 'bond-recall', cardId: card.id, tier: 1 })).rejects.toThrow(/already has 5★/i)
     await assertNoWrites()
   })
 
@@ -155,7 +155,7 @@ describe('persistent minigame host', () => {
     const first = await current.beginRun('spark-match', target)
     const second = await current.beginRun('spark-match', target)
     expect(second).toEqual(first)
-    expect((await db.profile.get('main'))?.data.tickets).toBe(95)
+    expect((await db.profile.get('main'))?.data.tickets).toBe(99)
     expect(await db.ledger.count()).toBe(1)
     expect(await db.minigameRuns.count()).toBe(1)
     expect(first.seed).toBe(minigameAttemptSeed(profile.createdAt, content.manifest.version, target, 1, 0))
@@ -169,7 +169,7 @@ describe('persistent minigame host', () => {
     const afterReload = await host(3000).beginRun('spark-match', target)
     expect(afterReload).toEqual(beforeReload)
     expect(startSparkRun(afterReload.seed).board).toEqual(startSparkRun(beforeReload.seed).board)
-    expect((await db.profile.get('main'))?.data.tickets).toBe(95)
+    expect((await db.profile.get('main'))?.data.tickets).toBe(99)
   })
 
   it('applies a two-level Spark result once and reports the exact opened nodes', async () => {
@@ -181,29 +181,30 @@ describe('persistent minigame host', () => {
     const second = await current.commitRun(ticket.runId, outcome)
     const expectedNodes = nodesUnlockedBetween(constellationTemplate(1), 1, 3).map(minigameNodeLabel)
     expect(first).toEqual({
-      ticketsSpent: 5,
+      ticketsSpent: 1,
       trainingLevelBefore: 1,
       trainingLevelAfter: 3,
       nodesUnlocked: expectedNodes,
     })
     expect(second).toEqual(first)
     expect(activeScenario((await db.umas.get(umaTemplate.id))!.data)).toMatchObject({ trainingLevel: 3, trainingExp: 50 })
-    expect((await db.profile.get('main'))?.data.tickets).toBe(95)
+    expect((await db.profile.get('main'))?.data.tickets).toBe(99)
     expect(await db.ledger.count()).toBe(1)
     expect((await db.minigameRuns.get(ticket.runId))?.status).toBe('completed')
   })
 
   it('advances only the named Bond tier and grants each reward once', async () => {
-    await seed({ card: { ...createCardSave(card), limitBreaks: { '1': 2 } } })
+    await seed({ card: { ...createCardSave(card), stars: { '1': 2 } } })
     const current = host()
     const ticket = await current.beginRun('bond-recall', { kind: 'bond-recall', cardId: card.id, tier: 2 })
     const first = await current.commitRun(ticket.runId, { kind: 'bond-recall', cleared: true, mismatches: 1 })
     const second = await current.commitRun(ticket.runId, { kind: 'bond-recall', cleared: true, mismatches: 1 })
-    expect(first).toEqual({ ticketsSpent: 10, limitBreakBefore: 0, limitBreakAfter: 1, couponGranted: false })
+    expect(first).toEqual({ ticketsSpent: 1, starsBefore: 0, starsAfter: 1, couponGranted: false })
     expect(second).toEqual(first)
-    expect((await db.cards.get(card.id))?.data.limitBreaks).toEqual({ '1': 2, '2': 1 })
-    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 95, cardCoupons: 3 })
-    expect(await db.ledger.count()).toBe(2)
+    expect((await db.cards.get(card.id))?.data.stars).toEqual({ '1': 2, '2': 1 })
+    // A star pays no tickets (D148): one ledger row, the run's spend.
+    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 99, cardCoupons: 3 })
+    expect(await db.ledger.count()).toBe(1)
   })
 
   it('closes a lost Bond run without progression and increments the next attempt', async () => {
@@ -212,33 +213,33 @@ describe('persistent minigame host', () => {
     const target = { kind: 'bond-recall' as const, cardId: card.id, tier: 1 }
     const first = await current.beginRun('bond-recall', target)
     expect(await current.commitRun(first.runId, { kind: 'bond-recall', cleared: false, mismatches: 4 })).toEqual({
-      ticketsSpent: 10,
-      limitBreakBefore: 0,
-      limitBreakAfter: 0,
+      ticketsSpent: 1,
+      starsBefore: 0,
+      starsAfter: 0,
       couponGranted: false,
     })
     const next = await current.beginRun('bond-recall', target)
     expect(next.attemptIndex).toBe(1)
-    expect((await db.cards.get(card.id))?.data.limitBreaks).toEqual({})
-    expect((await db.profile.get('main'))?.data.tickets).toBe(80)
+    expect((await db.cards.get(card.id))?.data.stars).toEqual({})
+    expect((await db.profile.get('main'))?.data.tickets).toBe(98)
     expect(await db.ledger.count()).toBe(2)
   })
 
-  it('grants the LB4 coupon only once across scenarios', async () => {
-    await seed({ card: { ...createCardSave(card), limitBreaks: { '1': 3, '2': 3 } } })
+  it('grants the 5★ coupon only once across scenarios', async () => {
+    await seed({ card: { ...createCardSave(card), stars: { '1': 4, '2': 4 } } })
     const current = host()
     const first = await current.beginRun('bond-recall', { kind: 'bond-recall', cardId: card.id, tier: 1 })
     expect(await current.commitRun(first.runId, { kind: 'bond-recall', cleared: true, mismatches: 0 })).toMatchObject({
-      limitBreakAfter: 4,
+      starsAfter: 5,
       couponGranted: true,
     })
     const second = await current.beginRun('bond-recall', { kind: 'bond-recall', cardId: card.id, tier: 2 })
     expect(await current.commitRun(second.runId, { kind: 'bond-recall', cleared: true, mismatches: 0 })).toMatchObject({
-      limitBreakAfter: 4,
+      starsAfter: 5,
       couponGranted: false,
     })
-    expect((await db.cards.get(card.id))?.data).toMatchObject({ limitBreaks: { '1': 4, '2': 4 }, maxCouponGranted: true })
-    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 90, cardCoupons: 4 })
+    expect((await db.cards.get(card.id))?.data).toMatchObject({ stars: { '1': 5, '2': 5 }, maxCouponGranted: true })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 98, cardCoupons: 4 })
     expect((await db.ledger.toArray()).filter((row) => row.data.reason === 'card-max')).toHaveLength(1)
   })
 })
