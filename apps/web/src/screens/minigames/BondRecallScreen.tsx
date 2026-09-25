@@ -6,7 +6,7 @@ import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
-import { getContentAsset, type LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import { safeReturnPath } from '../../game/bond-links'
 import { getMinigameHost, type RunReward, type RunTicket } from '../../game/minigame-host'
 import {
@@ -18,7 +18,7 @@ import {
   type BondRecallState,
 } from '../../game/minigames/bond-recall'
 import { useGame } from '../../game/store'
-import { AtlasSprite } from '../../ui/AtlasSprite'
+import { BondBoard, CardArt } from './BondBoard'
 
 const delay = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
 
@@ -71,29 +71,6 @@ function LimitPips({ before, after }: { before: number; after: number }) {
   )
 }
 
-function CardFace({
-  content,
-  cardId,
-  art,
-}: {
-  content: LoadedContent
-  cardId: string
-  art: string | null
-}) {
-  const template = content.cards.byId.get(cardId)
-  if (art) {
-    return <img src={art} alt="" aria-hidden draggable={false} className="h-full w-full object-cover object-top" />
-  }
-  return (
-    <AtlasSprite
-      asset={getContentAsset(content, 'card-icons', cardId)}
-      decorative
-      className="h-full w-full bg-stage-soft"
-      fallback={<span className="flex h-full items-center justify-center bg-stage-soft font-display text-lg font-black text-accent">{template?.charName.slice(0, 1) ?? '✦'}</span>}
-    />
-  )
-}
-
 export function BondRecallScreen() {
   const { cardId = '' } = useParams()
   const [params] = useSearchParams()
@@ -102,7 +79,6 @@ export function BondRecallScreen() {
   // Every entry names where it came from, and every exit goes back there (M016).
   const umaParam = params.get('uma')
   const returnTo = safeReturnPath(params.get('return'), umaParam ? `/constellation/${encodeURIComponent(umaParam)}/cards` : '/cards')
-  const reducedMotion = useReducedMotion()
   const contentState = useContent()
   const gameStatus = useGame((state) => state.status)
   const cards = useGame((state) => state.cards)
@@ -128,7 +104,8 @@ export function BondRecallScreen() {
   const [error, setError] = useState<string | null>(null)
   const animationId = useRef(0)
   const committedRun = useRef<string | null>(null)
-  const faceIds = useMemo(() => run ? [...new Set(run.tiles.map((tile) => tile.cardId))] : boardCardIds, [boardCardIds, run])
+  // The card being bonded is shown whether or not it is one of the board's faces.
+  const faceIds = useMemo(() => [...new Set([cardId, ...(run ? run.tiles.map((tile) => tile.cardId) : boardCardIds)])], [boardCardIds, cardId, run])
   const readyContent = contentState.status === 'ready' ? contentState.content : null
   const art = useCardArt(readyContent, faceIds)
 
@@ -244,13 +221,16 @@ export function BondRecallScreen() {
     <div className={`flex h-dvh flex-col bg-stage text-ink-on-dark ${running ? 'overflow-hidden' : 'overflow-y-auto'}`}>
       <header className="pt-safe flex min-h-16 shrink-0 items-center gap-3 border-b border-hairline-dark bg-stage/95 px-3 py-2">
         <Link to={returnTo} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft text-xl" aria-label="Back">←</Link>
-        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-sm"><CardFace content={contentState.content} cardId={template.id} art={art.get(template.id) ?? null} /></div>
+        <div className="h-12 w-9 shrink-0 overflow-hidden rounded-[5px] shadow-2 ring-1 ring-accent/60"><CardArt content={contentState.content} cardId={template.id} art={art.get(template.id) ?? null} /></div>
         <div className="min-w-0 flex-1"><p className="text-[10px] font-bold tracking-[0.16em] text-accent uppercase">Bond Recall</p><h1 className="truncate text-lg">{template.charName}</h1></div>
         <div className="text-right"><p className="text-[10px] font-bold text-ink-on-dark-soft uppercase">Bond</p><p className="font-display text-xl font-bold text-accent">{cardLimitBreak(card, tier)}</p></div>
       </header>
 
       {phase === 'ready' || phase === 'reserving' ? (
-        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 pb-safe">
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-4 pb-safe">
+          <div className="mx-auto mb-4 aspect-[3/4] h-[min(28dvh,13rem)] shrink-0 overflow-hidden rounded-[10px] shadow-3 ring-2 ring-accent/70">
+            <CardArt content={contentState.content} cardId={template.id} art={art.get(template.id) ?? null} />
+          </div>
           <div className="rounded-lg border border-hairline-dark bg-stage-soft p-4 shadow-3">
             <p className="text-xs font-bold tracking-[0.14em] text-accent uppercase">
               {scenarioForTier(tier)?.name ?? `Tier ${tier}`} · {6 + 2 * cardLimitBreak(card, tier)} pairs
@@ -266,9 +246,16 @@ export function BondRecallScreen() {
       ) : phase === 'complete' && reward && run ? (
         <main className="mx-auto w-full max-w-md flex-1 px-4 py-5 pb-safe">
           <div className="rounded-lg bg-panel p-5 text-ink shadow-3">
-            <p className={`text-xs font-bold tracking-[0.14em] uppercase ${advanced ? 'text-success' : 'text-danger'}`}>{advanced ? 'Bond strengthened' : 'Run ended'}</p>
-            <h2 className="mt-1 text-3xl">{advanced ? `Bond ${before} → ${after}` : 'Bond unchanged'}</h2>
-            <p className="mt-1 text-sm text-ink-soft">{reward.ticketsSpent} tickets spent · {run.mismatches} mismatches</p>
+            <div className="flex items-center gap-4">
+              <div className="aspect-[3/4] w-20 shrink-0 overflow-hidden rounded-[8px] shadow-2 ring-1 ring-hairline-strong">
+                <CardArt content={contentState.content} cardId={template.id} art={art.get(template.id) ?? null} />
+              </div>
+              <div className="min-w-0">
+                <p className={`text-xs font-bold tracking-[0.14em] uppercase ${advanced ? 'text-success' : 'text-danger'}`}>{advanced ? 'Bond strengthened' : 'Run ended'}</p>
+                <h2 className="mt-1 text-2xl leading-tight">{advanced ? `Bond ${before} → ${after}` : 'Bond unchanged'}</h2>
+                <p className="mt-1 text-sm text-ink-soft">{reward.ticketsSpent} tickets spent · {run.mismatches} mismatches</p>
+              </div>
+            </div>
             <section className="mt-5 rounded-sm bg-accent-wash p-4"><div className="flex items-center justify-between gap-3"><span className="font-display font-bold">Bond {after}</span><LimitPips before={before} after={after} /></div></section>
             <section className="mt-4 rounded-sm border border-hairline bg-page p-4">
               <h3 className="text-lg">Constellation value</h3>
@@ -284,23 +271,14 @@ export function BondRecallScreen() {
             <div className="flex-1"><p className="text-[10px] font-bold tracking-[0.12em] text-ink-on-dark-soft uppercase">Pairs</p><p className="font-display text-lg font-bold">{run.matched.length / 2} / {run.config.pairs}</p></div>
             <div className="text-right"><p className="text-[10px] font-bold tracking-[0.12em] text-ink-on-dark-soft uppercase">Mismatches left</p><p className={`font-display text-lg font-bold ${bondMismatchesRemaining(run) <= 2 ? 'text-red-300' : 'text-accent'}`}>{bondMismatchesRemaining(run)} / {run.config.mismatchLimit}</p></div>
           </div>
-          <div className="grid w-full max-w-[358px] shrink gap-1.5 rounded-lg border border-hairline-dark bg-[#0b121a] p-1.5 shadow-3" style={{ gridTemplateColumns: `repeat(${run.config.columns}, minmax(0, 1fr))`, aspectRatio: `${run.config.columns} / ${run.config.rows}` }} aria-label="Bond Recall board">
-            {run.tiles.map((tile, index) => {
-              const faceUp = run.revealed.includes(index) || run.matched.includes(index)
-              const matched = run.matched.includes(index)
-              const tileTemplate = contentState.content.cards.byId.get(tile.cardId)
-              return (
-                <m.button key={tile.id} type="button" disabled={phase !== 'playing' || run.status !== 'playing' || faceUp} onClick={() => void chooseTile(index)} aria-label={`${faceUp ? tileTemplate?.charName ?? 'Card' : 'Hidden card'}, row ${Math.floor(index / run.config.columns) + 1}, column ${index % run.config.columns + 1}${matched ? ', matched' : ''}`} className="relative min-h-11 min-w-11 rounded-[0.7rem] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default" whileTap={reducedMotion ? undefined : { scale: 0.94 }}>
-                  {/* Never fade this element: opacity below 1 flattens preserve-3d, and a flattened flip shows only the back. */}
-                  <m.span className="absolute inset-0 block rounded-[0.7rem]" style={{ transformStyle: 'preserve-3d', WebkitTransformStyle: 'preserve-3d' }} animate={{ rotateY: faceUp ? 180 : 0, scale: matched ? 0.96 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.24 }}>
-                    <span className="absolute inset-0 flex items-center justify-center rounded-[0.7rem] border-2 border-accent/45 bg-stage-soft shadow-2" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}><span className="font-display text-2xl font-black text-accent">✦</span></span>
-                    <span className="absolute inset-0 overflow-hidden rounded-[0.7rem] border-2 border-accent bg-stage" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}><CardFace content={contentState.content} cardId={tile.cardId} art={art.get(tile.cardId) ?? null} />{matched && <span aria-hidden className="absolute inset-0 rounded-[0.6rem] ring-2 ring-inset ring-accent"><span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-ink shadow-1">✓</span></span>}</span>
-                  </m.span>
-                </m.button>
-              )
-            })}
-          </div>
-          <div className="flex min-h-20 w-full flex-1 flex-col justify-center py-2 text-center"><p aria-live="polite" className="text-sm font-semibold">{message}</p>{phase === 'commit-error' && <div><p role="alert" className="mt-2 text-sm font-semibold text-red-200">{error}</p><button type="button" onClick={retryCommit} className="mt-2 min-h-11 rounded-sm bg-accent px-5 font-bold text-ink">Retry save</button></div>}</div>
+          <BondBoard
+            content={contentState.content}
+            run={run}
+            art={art}
+            interactive={phase === 'playing' && run.status === 'playing'}
+            onChoose={(index) => void chooseTile(index)}
+          />
+          <div className="flex min-h-16 w-full shrink-0 flex-col justify-center py-2 text-center"><p aria-live="polite" className="text-sm font-semibold">{message}</p>{phase === 'commit-error' && <div><p role="alert" className="mt-2 text-sm font-semibold text-red-200">{error}</p><button type="button" onClick={retryCommit} className="mt-2 min-h-11 rounded-sm bg-accent px-5 font-bold text-ink">Retry save</button></div>}</div>
         </main>
       ) : null}
     </div>

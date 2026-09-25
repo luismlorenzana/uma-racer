@@ -97,6 +97,19 @@ Tile faces are the **cards of the set the run was launched from** (else the firs
 scenario), then filler drawn deterministically from the player's other owned cards. Running out of mismatches ends the run without an advance — this one has
 real stakes, which is why it is the shorter game.
 
+### Presentation
+
+Tiles are **cards**: the full illustration at its own 3:4 shape, never cropped, so a face is recognisable at a glance
+and tiles can stay small. The board measures the space it is given and uses the largest tile that fits, capped at
+88 pt wide, so a 4 × 6 board fits a 375 × 667 phone (54 × 72 pt tiles) and a 3 × 4 board never balloons (88 × 117 pt).
+The board sits centred in that space, so it can never push the status line off screen or squash its own rows.
+
+- **Backs** carry a gold inlay and a ✦ emblem on a lattice, on a felt-dark table; flips turn in 3D perspective.
+- **States:** a first pick gets a gold ring; a missed pair shows red rings until it turns back; matched cards glow gold
+  and carry a ✓.
+- The **card being bonded** leads the start screen as full art and sits beside the verdict on the result screen.
+- Cards with no published illustration show their icon and name on the face instead.
+
 ### Bond, not levels
 
 Card levels and card EXP are deleted (D120, D130): a card has one number per scenario, its **bond** (the save's
