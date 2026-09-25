@@ -97,8 +97,9 @@ Winning a set inside one scenario is also how its title is earned, so a career n
 be generated, if any race falls outside her profile or below B, or if a stage's race is not winnable by Training Level
 10 with the [constellation harness](constellations.md#balance-targets-the-stamina-ladder)'s builds. Today it produces 3,752 of 3,752
 careers, every one with three main-goal G1s, and none needing a relaxed pick. Every stage is raced at TL10, the way
-the owner plays (D152): a fully bonded set wins the Maiden G3 50–85%, the Trials G2s 45–78% and the Main-goal G1s
-45–65%, best case across strategies, and a new 0★ set 43–70% of its G3s and 8–33% of its G1s
+the owner plays (D152), against generated fields (D153): a fully bonded set wins the Maiden G3 75–95%, the Trials G2s
+58–93% and the Main-goal G1s 43–85%, best case across strategies, and a new 0★ set 58–83% of its G3s and 15–55% of its
+G1s
 ([Racing — difficulty target](racing.md#difficulty-target)).
 
 The generator never fails a career over a thin catalog: an empty pool relaxes to her profile at any grade, then B or

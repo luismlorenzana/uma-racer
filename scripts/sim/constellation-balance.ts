@@ -7,20 +7,19 @@
 //   pnpm sim:constellation -- --rates-only
 //
 // Exit code 1 when a hard ladder check fails, so the stamina ladder is a regression gate.
-import { npcRaceStats, type DistanceCategory, type Stats, type Strategy } from '../../packages/domain/src/index'
+import type { DistanceCategory, Stats, Strategy } from '../../packages/domain/src/index'
 import { simulateRace } from '../../packages/race/src/index'
 import {
   FIELD_STRATEGIES,
   LONG,
-  NPC_KIT,
   PLAYER_KIT,
   SPRINT_GUTS,
   STAYER,
   STAYER_POWER,
   buildStats,
-  categoryOf,
   fairShare,
   goldRecovery,
+  rivalRunners,
   typicalCourse,
 } from './harness'
 
@@ -46,22 +45,21 @@ const configs = (tier: number) => ({
 // --- Stamina ladder --------------------------------------------------------------------------------
 
 /**
- * Whether a build reaches a full spurt without running out of HP in at least 90% of 12-runner G1 races. Measured in
- * a field, not alone: position keeping in a pack burns roughly 40% more HP, which is what the original game's own
- * stamina charts assume.
+ * Whether a build reaches a full spurt without running out of HP in at least 90% of 12-runner G1 races, each against
+ * a freshly rolled field (D153). Measured in a field, not alone: position keeping in a pack burns roughly 40% more HP,
+ * which is what the original game's own stamina charts assume.
  */
 function fullSpurt(tier: number, stats: Stats, distance: number, strategy: Strategy, golds = 0): boolean {
-  const npc = npcRaceStats(tier, 'g1', categoryOf(distance))
   let good = 0
   for (let race = 0; race < LADDER_RACES; race += 1) {
     const gate = race % 12
+    const seed = 31_337 + tier * 101 + race * 7919
+    const player = { id: 'P', label: String(gate + 1), stats, strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
+      skills: [goldRecovery('gold-a', 60), goldRecovery('gold-b', 40)].slice(0, golds) }
     const timeline = simulateRace({
       course: typicalCourse(distance),
-      seed: 31_337 + tier * 101 + race * 7919,
-      runners: Array.from({ length: 12 }, (_, g) => g === gate
-        ? { id: 'P', label: String(g + 1), stats, strategy, gate: g, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
-            skills: [goldRecovery('gold-a', 60), goldRecovery('gold-b', 40)].slice(0, golds) }
-        : { id: `n${g}`, label: String(g + 1), stats: npc, strategy: FIELD_STRATEGIES[g % 4]!, gate: g, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: NPC_KIT }),
+      seed,
+      runners: [...rivalRunners(tier, 'g1', distance, 12, gate, seed), player].sort((left, right) => left.gate - right.gate),
     })
     const me = timeline.results.find((result) => result.id === 'P')!
     if (me.spurtMaxed && !timeline.events.some((event) => event.type === 'hp-empty' && event.runner === gate)) good += 1
@@ -117,16 +115,15 @@ if (!LADDER_ONLY) {
     const { distance, config, golds } = CATEGORY[category]
     const stats = configs(tier)[config]
     const kit = [...PLAYER_KIT, ...[goldRecovery('gold-a', 60), goldRecovery('gold-b', 40)].slice(0, golds)]
-    const npc = npcRaceStats(tier, 'g1', category)
     let wins = 0
     for (let race = 0; race < RACES; race += 1) {
       const playerGate = race % 12
+      const seed = 1_000_003 * tier + race * 7919
+      const player = { id: 'player', label: String(playerGate + 1), stats, strategy, gate: playerGate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: kit }
       const timeline = simulateRace({
         course: typicalCourse(distance),
-        seed: 1_000_003 * tier + race * 7919,
-        runners: Array.from({ length: 12 }, (_, gate) => gate === playerGate
-          ? { id: 'player', label: String(gate + 1), stats, strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: kit }
-          : { id: `npc-${gate}`, label: String(gate + 1), stats: npc, strategy: FIELD_STRATEGIES[gate % 4]!, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: NPC_KIT }),
+        seed,
+        runners: [...rivalRunners(tier, 'g1', distance, 12, playerGate, seed), player].sort((left, right) => left.gate - right.gate),
       })
       if (timeline.results[0]!.id === 'player') wins += 1
     }

@@ -57,37 +57,52 @@ race formulas read stats in proportion, so a percentage is the same gap on the t
 Uma stronger. An under-trained Uma is weaker because her tree is, not because of a multiplier. This replaces the
 Race Form of D24–D25.
 
-## Opponents: the baseline enemy Uma ✅
+## Opponents: generated rivals ✅
 
-Every NPC opponent uses **the same generic setup**. Only her identity (name, icon) and her **unique skill** differ.
-Races get a clear NPC feel, and **every Uma in the game** can show up as an enemy.
+Every race rolls a **fresh field** (D153): how many rivals run each style, which Umas run them, and every rival's
+stats. No two rivals share a build, so the field spreads out, and a race is never a rerun of the last one. **Every Uma
+in the game** can show up as a rival.
 
-### Field composition
+### Rolling a field
 
-- Drawn at random from **all Umas in the game**, owned or not.
-- No duplicate characters, and never the same character as your Uma.
-- Field size comes from the race (8–18).
+1. **Styles.** The rivals split across Front Runner, Pace Chaser, Late Surger and End Closer, **two to five of each**,
+   every valid split equally likely: one race has two fronts and five closers, the next four and four. An 8-runner
+   race's seven rivals have one to five of each, so every style still shows.
+2. **Stats.** Each rival starts from her **preset**, her 100% (below), and **every stat is rolled between 80% and
+   100%** of it. A lucky rival nears her preset; an unlucky one can come up short on Stamina and run dry before the
+   line, which is part of the race.
+3. **Who runs them.** Rivals are drawn at random from all Umas (no duplicate characters, never your Uma's), and each
+   style goes to the Uma with the best aptitude for it among those drawn, rarer styles first, so front runners are
+   Umas who front-run.
+4. **Gates** are shuffled, so styles land anywhere in the gate order.
+
+The roll uses the race's seed, so a replay shows the same field, and the race record keeps every rival's stats.
 
 ### Baseline enemy setup
 
 | Part | Setup |
 |---|---|
-| Stats | **Generic**, identical for every NPC in the race (below) |
+| Stats | Her style's preset for this scenario, distance and grade, each stat rolled 80–100% |
 | Aptitudes | **A** for the race's surface and distance, and in her strategy |
-| Strategy | Her template's best strategy, so her unique skill triggers sensibly |
+| Strategy | Rolled with the field (above) |
 | Skills | **Baseline enemy kit** (the same for all NPCs) **plus her own unique skill** |
 | Mood | Normal |
 
-### Generic stats
+### Presets
+
+A preset is a rival's 100%: a trained Uma of your tier, handicapped by the grade, and shaped by the distance, her
+running style and the scenario's caps. There is one for every scenario, distance and style, 224 in all.
 
 ```
-npcStat[s]  = trainedStat(T) × (1 − handicap[grade]) × profile[distance][s]
+preset[s]   = min(cap[s], trainedStat(T) × (1 − handicap[grade]) × shape[s] / mean(shape))
+shape[s]    = distance[s] × style[s] × √(cap[s] / averageCap(T))
 trainedStat = 110 + treeBudget(T) / 5      median base stat + a fifth of a full tree of 5★ current-era cards
 handicap    = Debut/Maiden 0.60 · Pre-OP/OP 0.55 · G3 0.50 · G2 0.40 · G1 0.30
 ```
 
-`trainedStat` is 950 in scenario 1 and about 1,259 in scenario 14. The profile shapes a rival's build for the
-distance without shrinking it: each row averages 1.
+`trainedStat` is 950 in scenario 1 and about 1,259 in scenario 14. The scenario term makes rivals lean the way its caps
+lean (Trackblazer's rivals carry more Stamina, Run! Mecha Umamusume's more Speed and Power), at the square root so no
+stat runs away. Each profile row averages 1, so it shapes a build rather than shrinking it.
 
 | Distance | Speed | Stamina | Power | Guts | Wit |
 |---|---|---|---|---|---|
@@ -96,13 +111,18 @@ distance without shrinking it: each row averages 1.
 | Medium | 1.12 | 1.01 | 1.01 | 0.90 | 0.96 |
 | Long | 1.06 | 1.11 | 0.94 | 0.94 | 0.95 |
 
-NPCs have no stat variation from each other. Races still vary through the simulation's own randomness (start delay,
-Wit section randomness, skill activation).
+| Style | Speed | Stamina | Power | Guts | Wit | Why |
+|---|---|---|---|---|---|---|
+| Front Runner | 1.05 | 1.00 | 0.90 | 1.00 | 1.05 | Holds the lead on Wit; burns the most HP per point of Stamina |
+| Pace Chaser | 1.05 | 1.00 | 1.00 | 0.95 | 1.00 | Balanced |
+| Late Surger | 1.05 | 0.95 | 1.10 | 0.95 | 0.95 | Power accelerates the late surge |
+| End Closer | 1.05 | 0.90 | 1.15 | 1.00 | 0.90 | Most Power for the spurt; the most HP from her Stamina |
 
-> *Example:* a scenario 1 Medium race. A G1 field has Speed 950 × 0.70 × 1.12 = **745** and Stamina **672**; a G3
-> field has Speed **532**.
+> *Example:* scenario 1, a G1 Medium race. Presets (Speed / Stamina / Power / Guts / Wit): Front Runner
+> 782 / 671 / 604 / 598 / 670, End Closer 780 / 603 / 771 / 597 / 573. A rolled End Closer lands anywhere from
+> 624 / 482 / 617 / 478 / 458 to her preset.
 
-Supersedes the calibrated field strength of D136, the career-stage fields of D140 and the field Form of D24.
+Supersedes the identical generic NPC of D24 and D136–D152: rivals no longer share stats or a strategy per gate.
 
 ### Baseline enemy kit
 
@@ -178,23 +198,23 @@ per-strategy stat bonus; the G1 player targets below remain the player-facing ac
 ### Difficulty target
 
 An under-trained Uma, or one racing off-aptitude, loses to the field. At Training Level 10 a **fully bonded** set
-should be favoured below G1 and make a **G1 about a coin flip**; a new set of 0★ cards should win G3s about half the
-time and G1s rarely, so stars are what turn a trained Uma into a G1 winner (D152). `pnpm sim:careers` measures it at
-TL10 with each distance's [ladder](constellations.md#balance-targets-the-stamina-ladder) decks, best of four
+should be favoured in every grade, with G1 the hardest; a new set of 0★ cards should win most G3s and only some G1s,
+so stars are what turn a trained Uma into a G1 winner (D152–D153). `pnpm sim:careers` measures it at TL10 with each
+distance's [ladder](constellations.md#balance-targets-the-stamina-ladder) decks against generated fields, best of four
 strategies, 12 runners. Measured 2026-09-25, sprint / mile / medium / long:
 
 | Tier | Set | G3 | G2 | G1 |
 |---|---|---|---|---|
-| 1 | 0★ | 58 · 63 · 70 · 45% | 28 · 43 · 60 · 53% | 8 · 15 · 18 · 20% |
-| 1 | 5★ | 83 · 75 · 78 · 60% | 68 · 73 · 65 · 55% | 53 · 58 · 58 · 45% |
-| 7 | 0★ | 50 · 63 · 63 · 55% | 33 · 48 · 33 · 38% | 18 · 33 · 20 · 13% |
-| 7 | 5★ | 80 · 80 · 85 · 60% | 78 · 73 · 75 · 50% | 65 · 65 · 65 · 53% |
-| 14 | 0★ | 55 · 65 · 60 · 43% | 40 · 38 · 38 · 35% | 18 · 13 · 13 · 18% |
-| 14 | 5★ | 73 · 80 · 78 · 50% | 68 · 75 · 70 · 45% | 55 · 55 · 63 · 45% |
+| 1 | 0★ | 70 · 73 · 78 · 63% | 35 · 50 · 75 · 48% | 15 · 28 · 55 · 43% |
+| 1 | 5★ | 93 · 90 · 88 · 75% | 83 · 85 · 85 · 68% | 70 · 80 · 75 · 50% |
+| 7 | 0★ | 65 · 75 · 83 · 73% | 50 · 68 · 70 · 60% | 23 · 30 · 48 · 43% |
+| 7 | 5★ | 90 · 93 · 95 · 85% | 88 · 80 · 93 · 73% | 68 · 85 · 83 · 63% |
+| 14 | 0★ | 58 · 63 · 73 · 60% | 45 · 40 · 60 · 43% | 35 · 35 · 33 · 30% |
+| 14 | 5★ | 88 · 85 · 83 · 75% | 83 · 73 · 78 · 58% | 68 · 68 · 73 · 43% |
 
-The ceiling is the engine's, not the handicap's: identical rivals pack together, a runner spends about 25 seconds of a
-race blocked, and a fully bonded Uma wins only 50–80% even against rivals at half her strength. Field variety and
-the race review, not bigger handicaps, are what will open these numbers up.
+Generated fields lifted every cell (rivals average 90% of their preset). The engine still rewards stats weakly: a
+runner spends about 25 seconds of a race blocked, and one at twice the field's stats wins by under a second. The
+turn-based engine ([M021](../tasks/M021-turn-based-races.md)) is where that is fixed, not the handicaps.
 
 ### Stamina contest (engine v4)
 

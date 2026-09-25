@@ -17,7 +17,6 @@ import {
   createScenarioTraining,
   createUmaSave,
   goalRaceIds,
-  npcRaceStats,
   planScenarioCareer,
   type CareerStage,
   type DistanceCategory,
@@ -27,7 +26,7 @@ import {
   type UmaTemplate,
 } from '../../packages/domain/src/index'
 import { simulateRace } from '../../packages/race/src/index'
-import { FIELD_STRATEGIES, LONG, NPC_KIT, PLAYER_KIT, STAYER, STAYER_POWER, buildStats, fairShare, goldRecovery, typicalCourse } from './harness'
+import { FIELD_STRATEGIES, LONG, PLAYER_KIT, STAYER, STAYER_POWER, buildStats, fairShare, goldRecovery, rivalRunners, typicalCourse } from './harness'
 
 const args = process.argv.slice(2)
 const RACES = Number(args.find((value) => /^\d+$/.test(value)) ?? 20)
@@ -134,7 +133,6 @@ const DECKS: Record<DistanceCategory, { distance: number; golds: number; builds:
 function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategory, stars: number): number {
   const { distance, golds, builds } = DECKS[category]
   const kit = [...PLAYER_KIT, ...[goldRecovery('gold-a', 60), goldRecovery('gold-b', 40)].slice(0, golds)]
-  const npc = npcRaceStats(tier, CAREER_STAGE_GRADES[stage], category)
   let best = 0
   for (const build of builds) {
     const stats = build(tier, stars)
@@ -142,12 +140,12 @@ function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategor
       let wins = 0
       for (let race = 0; race < RACES; race += 1) {
         const playerGate = race % 12
+        const seed = 7_000_003 * tier + race * 7919
+        const player = { id: 'player', label: String(playerGate + 1), stats, strategy, gate: playerGate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: kit }
         const timeline = simulateRace({
           course: typicalCourse(distance),
-          seed: 7_000_003 * tier + race * 7919,
-          runners: Array.from({ length: 12 }, (_, gate) => gate === playerGate
-            ? { id: 'player', label: String(gate + 1), stats, strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: kit }
-            : { id: `npc-${gate}`, label: String(gate + 1), stats: npc, strategy: FIELD_STRATEGIES[gate % 4]!, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: NPC_KIT }),
+          seed,
+          runners: [...rivalRunners(tier, CAREER_STAGE_GRADES[stage], distance, 12, playerGate, seed), player].sort((left, right) => left.gate - right.gate),
         })
         if (timeline.results[0]!.id === 'player') wins += 1
       }

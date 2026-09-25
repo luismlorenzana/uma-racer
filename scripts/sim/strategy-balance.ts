@@ -5,9 +5,9 @@
 //   pnpm sim:balance -- 1000         custom quick seeds per row
 //   pnpm sim:balance -- --final      Milestone 3 multi-dimensional closure matrix
 import {
-  baselineStatCap,
+  averageCap,
   distanceCategory,
-  npcRaceStats,
+  rivalPreset,
   parseRaceCondition,
   STRATEGIES,
   type CompiledRaceSkill,
@@ -149,12 +149,12 @@ function printMetrics(label: string, value: Metrics) {
   console.log(`  finish ${(value.finishSeconds / value.runners).toFixed(1)}s · engine ${(value.runtimeMs / value.races).toFixed(2)}ms/race (${(value.runtimeMs / 1_000).toFixed(1)}s measured)`)
 }
 
+// Each style on its own rival preset (D153), unrolled, so strategy shares compare the styles rather than luck.
 function mixedRunners(tier: number, grade: RaceGrade, distance: number, field: number, skills: readonly CompiledRaceSkill[]) {
-  const stats = npcRaceStats(tier, grade, distanceCategory(distance))
   return Array.from({ length: field }, (_, gate) => ({
     id: `synthetic-${gate}`,
     label: `${gate + 1}`,
-    stats,
+    stats: rivalPreset(tier, grade, distanceCategory(distance), STRATEGIES[gate % STRATEGIES.length]!),
     strategy: STRATEGIES[gate % STRATEGIES.length]!,
     aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
     gate,
@@ -200,22 +200,22 @@ function runQuick() {
 }
 
 function playerStats(tier: number, grade: RaceGrade, distance: number, build: PlayerBuild): Stats {
-  if (build === 'field') return npcRaceStats(tier, grade, distanceCategory(distance))
-  return allStats(baselineStatCap(tier) * (build === 'under' ? 0.7 : 1))
+  if (build === 'field') return rivalPreset(tier, grade, distanceCategory(distance), 'pace')
+  return allStats(averageCap(tier) * (build === 'under' ? 0.7 : 1))
 }
 
 function playerRunners(input: {
   tier: number; grade: RaceGrade; distance: number; field: number; build: PlayerBuild
   playerStrategy: Strategy; playerSkills: readonly CompiledRaceSkill[]; seed: number
 }) {
-  const npcStats = npcRaceStats(input.tier, input.grade, distanceCategory(input.distance))
+  const rivalStats = (strategy: Strategy) => rivalPreset(input.tier, input.grade, distanceCategory(input.distance), strategy)
   const playerGate = input.seed % input.field
   return {
     playerIndex: playerGate,
     runners: Array.from({ length: input.field }, (_, gate) => ({
       id: gate === playerGate ? 'synthetic-player' : `synthetic-rival-${gate}`,
       label: gate === playerGate ? 'Player' : `${gate + 1}`,
-      stats: gate === playerGate ? playerStats(input.tier, input.grade, input.distance, input.build) : npcStats,
+      stats: gate === playerGate ? playerStats(input.tier, input.grade, input.distance, input.build) : rivalStats(STRATEGIES[gate % STRATEGIES.length]!),
       strategy: gate === playerGate ? input.playerStrategy : STRATEGIES[gate % STRATEGIES.length]!,
       aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
       gate,

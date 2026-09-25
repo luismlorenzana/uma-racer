@@ -6,17 +6,20 @@ import {
   constellationTemplate,
   deriveStats,
   parseRaceCondition,
+  rollRivalField,
   shapeDef,
   unlockedNodeCount,
   type CardNodeState,
   type CompiledRaceSkill,
   type DistanceCategory,
   type NodeAssignment,
+  type RaceGrade,
   type RaceSkillEffectKind,
   type StatKey,
   type Stats,
   type Strategy,
 } from '../../packages/domain/src/index'
+import { createRng } from '../../packages/race/src/index'
 
 // --- Synthetic kit -------------------------------------------------------------------------------
 
@@ -121,6 +124,18 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
     if (node.kind === 'stat') assignments[node.id] = { kind: 'stat', stat: statNodesTo }
   }
   return deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards }).stats
+}
+
+/**
+ * A generated rival field (D153) for a race of `size` runners with the player at `playerGate`: the rivals' runners, in
+ * gate order around her, with the rival kit. Seeded per race, as the game seeds it from the attempt.
+ */
+export function rivalRunners(tier: number, grade: RaceGrade, distance: number, size: number, playerGate: number, seed: number) {
+  const slots = rollRivalField({ tier, grade, distance: categoryOf(distance), count: size - 1, rng: createRng(seed ^ 0x5bd1e995) })
+  return slots.map((slot, index) => {
+    const gate = index < playerGate ? index : index + 1
+    return { id: `rival-${gate}`, label: String(gate + 1), stats: slot.stats, strategy: slot.strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: NPC_KIT }
+  })
 }
 
 export const categoryOf = (distance: number): DistanceCategory =>

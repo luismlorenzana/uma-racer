@@ -30,7 +30,6 @@ import {
   grantDailyTickets,
   isGateLevel,
   levelsIntoScenario,
-  npcRaceStats,
   raceExp,
   progressionFieldSize,
   GATE_SHARD_REWARD,
@@ -264,14 +263,6 @@ describe('rivals (D152)', () => {
     }
   })
 
-  it('builds identical rival stats (racing.md example)', () => {
-    // 950 × (1 − 0.30) × the Medium profile.
-    const npc = npcRaceStats(1, 'g1', 'medium')
-    expect(npc.speed).toBeCloseTo(744.8)
-    expect(npc.stamina).toBeCloseTo(671.65)
-    // A percentage, so a grade is as soft at tier 14 as at tier 1.
-    expect(npcRaceStats(14, 'g3', 'medium').speed / trainedStat(14)).toBeCloseTo(npcRaceStats(1, 'g3', 'medium').speed / trainedStat(1))
-  })
 })
 
 describe('race skills', () => {

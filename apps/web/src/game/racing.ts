@@ -2,7 +2,6 @@
 
 import {
   SAVE_ID_PATTERN,
-  bestStrategy,
   compileRaceSkill,
   compileRaceCourseLayout,
   compileRaceCourseSlopes,
@@ -23,7 +22,8 @@ import {
   isGateLevel,
   isLocalDay,
   LEVELS_PER_SCENARIO,
-  npcRaceStats,
+  castRivals,
+  rollRivalField,
   parseCardSave,
   parsePlayerProfileOrThrow,
   parseFlairEvent,
@@ -217,14 +217,15 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   if (opponents.length < fieldSize - 1) {
     throw new Error(`${race.name} needs ${fieldSize - 1} distinct opponent characters`)
   }
-  const selected = opponents.slice(0, fieldSize - 1)
   const rng = createRng(seed ^ 0x5bd1e995)
   const playerGate = Math.floor(rng.next() * fieldSize)
   const raceBonus = equippedRaceBonus(tierOfLevel(uma.level), equippedCards(content, uma, input.cardsById))
   const playerSkills = playerRaceSkills(content, derived, template)
   const baselineSkills = baselineNpcSkills(content)
-  // Rivals are a trained Uma of this tier, handicapped by the race's grade (D152, docs/design/racing.md).
-  const npcStats = npcRaceStats(uma.unlockedTier, race.grade, race.distanceCategory)
+  // A fresh field every race: styles and stats rolled from the tier's presets, each style run by an Uma suited to it
+  // (D153, docs/design/racing.md#opponents-generated-rivals).
+  const slots = rollRivalField({ tier: uma.unlockedTier, grade: race.grade, distance: race.distanceCategory, count: fieldSize - 1, rng })
+  const cast = castRivals(opponents, slots)
   let rivalIndex = 0
   const runners = Array.from({ length: fieldSize }, (_, gate) => {
     if (gate === playerGate) {
@@ -246,16 +247,16 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
         },
       }
     }
-    const rival = selected[rivalIndex++]!
-    const rivalStrategy = bestStrategy(rival)
+    const slot = slots[rivalIndex]!
+    const rival = cast[rivalIndex++]!
     return {
       template: rival,
       display: { templateId: rival.id, isPlayer: false },
       engine: {
         id: rival.id,
         label: String(gate + 1),
-        stats: { ...npcStats },
-        strategy: rivalStrategy,
+        stats: slot.stats,
+        strategy: slot.strategy,
         aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
         gate,
         skills: [...compiledSupported(content.skills.byId.get(rival.uniqueSkillId ?? '')), ...baselineSkills],

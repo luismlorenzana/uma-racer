@@ -21,6 +21,7 @@ multipliers on a training turn that no longer exists.
 
 | Milestone | Tasks | State |
 |---|---|---|
+| [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · next |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051, T053 – T056; T052 complete | Outlined |

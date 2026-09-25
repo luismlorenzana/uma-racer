@@ -171,7 +171,9 @@ function state() {
     .map((node) => [node.id, { kind: 'card', cardId: 'c1' } as const]))
   const player = umaFixture(uma('u1'), { goalPlanVersion: 0, cardSetIds: ['c1'], assignments })
   return {
-    profile: createPlayerProfile('abc123def456', 42),
+    // The profile's creation time seeds every attempt. Rivals are rolled per race (D153) and the engine rewards stats
+    // weakly, so a seed where this Uma wins is pinned: the tests below are about what a win writes, not about balance.
+    profile: createPlayerProfile('abc123def456', 3),
     player,
     cards: { c1: { ...createCardSave(card), stars: { '1': 1 } } },
   }
@@ -437,7 +439,6 @@ describe('persistent progression race', () => {
         exp: expToNextUmaLevel(139) - 1,
       },
     })
-    // Tier-14 rivals race near her capped stats (D152), so she leads from the gate rather than fighting the pack.
     const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'front')
     if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
     const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)

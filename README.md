@@ -83,7 +83,7 @@ docs/           design, technical, research
 | [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; the card minigame earns a card's stars |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
-| [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, baseline enemy Umas, straight-track view |
+| [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
 | [Collection](docs/design/collection.md) | Starter sets, coupons and shards, albums, trainer achievements |
 | [Economy](docs/design/economy.md) | Training Tickets as the one currency, costs, coupons and shards, pacing |
 | [Badges & Achievements](docs/design/badges.md) | Badge taxonomy, tiers, titles, the Badge page (pins, classification, filters) |
