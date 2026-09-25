@@ -8,12 +8,11 @@
 //
 // Coverage reads the local, gitignored content pack and prints only counts and tallies. Win rates use the synthetic
 // builds and kits of the constellation harness (harness.ts). Exit code 1 when a career cannot be generated, a career leaves her
-// profile or her B-or-better aptitudes, or a stage's race is under a 25% win rate at its own Training Level (D140).
+// profile or her B-or-better aptitudes, or a fully trained, fully bonded Uma wins a stage's race under 25% of the time (D152).
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   CAREER_STAGE_GRADES,
-  GRADE_TRAINING_LEVEL,
   GRADES,
   createScenarioTraining,
   createUmaSave,
@@ -28,7 +27,7 @@ import {
   type UmaTemplate,
 } from '../../packages/domain/src/index'
 import { simulateRace } from '../../packages/race/src/index'
-import { FIELD_STRATEGIES, NPC_KIT, PLAYER_KIT, SPRINT_GUTS, SPRINT_POWER, STAYER, buildStats, fairShare, goldRecovery, typicalCourse } from './harness'
+import { FIELD_STRATEGIES, LONG, NPC_KIT, PLAYER_KIT, STAYER, STAYER_POWER, buildStats, fairShare, goldRecovery, typicalCourse } from './harness'
 
 const args = process.argv.slice(2)
 const RACES = Number(args.find((value) => /^\d+$/.test(value)) ?? 20)
@@ -107,39 +106,38 @@ for (const [key, count] of outside) {
 // --- Stage win rates ---------------------------------------------------------------------------------------------
 
 /**
- * Each stage's race at the Training Level its grade's field is built for (D140): the Maiden G3 at TL3, the Trials G2s
- * at TL6, the Main-goal G1s at TL10. Her best of four strategies and two sensible decks for the distance; below TL6
- * she carries only the field's whites, from TL6 the golds her SP buys (D133). A stage race under 25% fails the check:
- * retries are free, so a career is finishable when that holds. The target is about 35–75%.
+ * Each stage's race at TL10, the way the owner plays: train fully, then race (D152). Her best of four strategies and
+ * the decks for the distance, with the golds her SP buys, once with a new set (0★) and once fully bonded (5★). The
+ * fully bonded Uma must win every stage's race at least FLOOR% of the time; retries are free, so that is finishable.
  */
-const TARGET = 35
 const FLOOR = 25
-const DECKS: Record<DistanceCategory, { distance: number; golds: number; builds: ((tier: number, trainingLevel: number) => Stats)[] }> = {
+const STARS = [0, 5] as const
+// The stamina ladder's decks for each distance (constellations.md#balance-targets), with the Friend card last or first.
+const DECKS: Record<DistanceCategory, { distance: number; golds: number; builds: ((tier: number, stars: number) => Stats)[] }> = {
   sprint: { distance: 1400, golds: 0, builds: [
-    (tier, trainingLevel) => buildStats(tier, SPRINT_POWER, 2, fairShare(tier), 'speed', { trainingLevel, friend: 'last' }),
-    (tier, trainingLevel) => buildStats(tier, STAYER, 2, fairShare(tier), 'speed', { trainingLevel, friend: 'last' }),
+    (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'speed', { stars, friend: 'last' }),
+    (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'speed', { stars }),
   ] },
   mile: { distance: 1600, golds: 0, builds: [
-    (tier, trainingLevel) => buildStats(tier, SPRINT_GUTS, 2, fairShare(tier), 'stamina', { trainingLevel, friend: 'last' }),
-    (tier, trainingLevel) => buildStats(tier, STAYER, 2, fairShare(tier), 'stamina', { trainingLevel, friend: 'last' }),
+    (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'stamina', { stars, friend: 'last' }),
+    (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'stamina', { stars }),
   ] },
   medium: { distance: 2200, golds: 0, builds: [
-    (tier, trainingLevel) => buildStats(tier, STAYER, 2, fairShare(tier) + 1, 'speed', { trainingLevel, friend: 'last' }),
-    (tier, trainingLevel) => buildStats(tier, STAYER, 2, fairShare(tier) + 1, 'stamina', { trainingLevel, friend: 'last' }),
+    (tier, stars) => buildStats(tier, STAYER_POWER, 2, fairShare(tier) + 1, 'stamina', { stars, first: [3], friend: 'last' }),
+    (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier) + 1, 'stamina', { stars, friend: 'last' }),
   ] },
   long: { distance: 2500, golds: 1, builds: [
-    (tier, trainingLevel) => buildStats(tier, STAYER, 2, fairShare(tier) + 1, 'stamina', { trainingLevel, friend: 'last' }),
+    (tier, stars) => buildStats(tier, LONG, 2, fairShare(tier) + 1, 'stamina', { stars, first: [3], friend: 'last' }),
   ] },
 }
 
-function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategory): number {
-  const trainingLevel = GRADE_TRAINING_LEVEL[CAREER_STAGE_GRADES[stage]]
+function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategory, stars: number): number {
   const { distance, golds, builds } = DECKS[category]
-  const kit = trainingLevel >= 6 ? [...PLAYER_KIT, ...[goldRecovery('gold-a', 60), goldRecovery('gold-b', 40)].slice(0, golds)] : NPC_KIT
-  const npc = npcRaceStats(tier, CAREER_STAGE_GRADES[stage], category, trainingLevel)
+  const kit = [...PLAYER_KIT, ...[goldRecovery('gold-a', 60), goldRecovery('gold-b', 40)].slice(0, golds)]
+  const npc = npcRaceStats(tier, CAREER_STAGE_GRADES[stage], category)
   let best = 0
   for (const build of builds) {
-    const stats = build(tier, trainingLevel)
+    const stats = build(tier, stars)
     for (const strategy of FIELD_STRATEGIES) {
       let wins = 0
       for (let race = 0; race < RACES; race += 1) {
@@ -160,20 +158,22 @@ function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategor
 }
 
 if (!COVERAGE_ONLY) {
-  console.log(`\nStage win rates at the stage's Training Level (best of 4 strategies and the decks per distance, ${RACES} races per cell, 12 runners; floor ${FLOOR}%, target ${TARGET}%+)`)
-  console.log('      maiden G3 at TL3   trials G2 at TL6   main G1 at TL10')
-  console.log('      spr mil med lng    spr mil med lng    spr mil med lng')
+  console.log(`\nStage win rates at TL10 (best of 4 strategies and the decks per distance, ${RACES} races per cell, 12 runners; 5★ floor ${FLOOR}%)`)
+  console.log('            maiden G3          trials G2          main G1')
+  console.log('            spr mil med lng    spr mil med lng    spr mil med lng')
   for (const tier of TIERS_SAMPLED) {
-    const cells = (['maiden', 'trials', 'main'] as const).map((stage) =>
-      (['sprint', 'mile', 'medium', 'long'] as const).map((category) => {
-        const rate = bestWinRate(tier, stage, category)
-        if (rate < FLOOR) {
-          hardFailures += 1
-          console.error(`FAIL T${tier} ${stage} ${category}: ${rate}%`)
-        }
-        return String(rate).padStart(3)
-      }).join(' '))
-    console.log(`T${String(tier).padStart(2)}   ${cells.join('    ')}`)
+    for (const stars of STARS) {
+      const cells = (['maiden', 'trials', 'main'] as const).map((stage) =>
+        (['sprint', 'mile', 'medium', 'long'] as const).map((category) => {
+          const rate = bestWinRate(tier, stage, category, stars)
+          if (stars === 5 && rate < FLOOR) {
+            hardFailures += 1
+            console.error(`FAIL T${tier} ${stage} ${category} at 5★: ${rate}%`)
+          }
+          return String(rate).padStart(3)
+        }).join(' '))
+      console.log(`T${String(tier).padStart(2)} ${stars}★    ${cells.join('    ')}`)
+    }
   }
 }
 

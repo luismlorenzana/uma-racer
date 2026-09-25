@@ -32,7 +32,7 @@ Every trainee from the original game's February 2021 launch, in their launch out
 Notes:
 
 - **Star rarity doesn't exist in Uma Racer.** Every Uma uses her **5★ base stats** from the original game ✅, so 1★ launch Umas
-  aren't permanently weaker. Race Form nerfs apply on top in races.
+  aren't permanently weaker.
 - The roster covers every surface, distance, and strategy: Sprint (Bakushin O), Dirt (Urara), Long (McQueen, Rice Shower), and more.
   The badge lines can all be pursued from day one.
 - Since no Uma has completed a scenario at the start, everyone trains **without parents** at first.

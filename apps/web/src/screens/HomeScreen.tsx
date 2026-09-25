@@ -1,4 +1,4 @@
-import { TICKET_STORAGE_CAP, badgeStateId, awaitingAdvance } from '@racer/domain'
+import { DAILY_TICKETS, TICKET_STORAGE_CAP, badgeStateId, awaitingAdvance } from '@racer/domain'
 import { m } from 'motion/react'
 import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
@@ -208,7 +208,7 @@ export function HomeScreen() {
             <Numeral>{profile.tickets}</Numeral>
             <span className="text-[13px] font-medium text-ink-faint"> / {TICKET_STORAGE_CAP}</span>
           </p>
-          <p className="text-[12px] text-ink-soft">+50 each local day</p>
+          <p className="text-[12px] text-ink-soft">+{DAILY_TICKETS} each local day</p>
         </div>
         <div className="mt-2">
           <Meter value={profile.tickets / TICKET_STORAGE_CAP} color="var(--color-accent)" height={6} />

@@ -28,7 +28,7 @@ Umas who came before her, and proves herself in races that feed her progression 
 flowchart LR
     Tix([🎫 Training tickets]) --> Train
     Train["Train · 1 ticket per turn<br/>Training EXP → Training Level 1–10<br/>stats + SP rise toward caps<br/>card EXP · skill hints"] -->|"1 training unlocks racing"| Race
-    Race["Race<br/>Uma EXP only<br/>goals · badges"] --> LevelUp["Uma Level up<br/>Race Form improves"]
+    Race["Race<br/>Uma EXP only<br/>goals · badges"] --> LevelUp["Uma Level up<br/>tickets · next scenario"]
     LevelUp --> Race
     Race -.->|"need better stats or skills"| Train
     LevelUp -->|"level 10, 20, 30…"| Gate{"Gate level<br/>+1 Uma Shard"}
@@ -71,7 +71,7 @@ flowchart LR
 | Sparks inherited from a finished career's legacy | **2 parents automatically pass** a weaker unique and their white skills. From the **4 grandparents** you pick 2 uniques and half of their whites. Lineups come from each Uma's latest **parent snapshot** |
 | Career goals are mandatory, and failing ends the run | **A career per scenario** — a G3, two G2s, then a G1 set in her profile — that holds her Uma Level until each stage is won. Losing a goal race costs only the race: goals are retried, never failed |
 | Gacha for a starting roster | **All 25 original launch trainees** are available from the start |
-| Mostly flat difficulty inside a career | **Race Form**: each scenario starts as a fair fight, and your Uma pulls ahead as she levels |
+| Mostly flat difficulty inside a career | **The grade handicap**: rivals are a trained Uma made weaker by the race's grade, most at G3 and least at G1, so a fully trained Uma is favoured and a G1 is the real test |
 | Epithets and titles are a side feature | **Badges, titles, and collection are core pillars** |
 
 ## Glossary
@@ -79,7 +79,7 @@ flowchart LR
 | Term | Meaning |
 |---|---|
 | **Uma** | A playable character. It has static template data (base stats, growth rates, aptitudes, unique skill) and a persisted instance (level, stats, skills, record). |
-| **Uma Level** | Permanent level earned **only from racing**. Levels 1–10 are scenario 1, 11–20 are scenario 2, and so on. Sets Race Form. |
+| **Uma Level** | Permanent level earned **only from racing**. Levels 1–10 are scenario 1, 11–20 are scenario 2, and so on. |
 | **Training Level (TL)** | 1–10, earned **only from training**, and reset at each scenario start. Sets the stat and SP caps (80% of the scenario baseline at TL1, 100% at TL10). |
 | **Training Ticket** | **The only currency.** One ticket is one minigame run. Earned from the daily +10 (stored up to 50, five days) and Uma Level-ups. Spent on minigame runs, unlocking cards, and unlocking the next scenario. |
 | **Scenario / Tier** | A 10-level band named after an original career scenario. It sets stat and SP caps and which card era is available. |
@@ -99,7 +99,7 @@ flowchart LR
 | **Opening training** | One training turn in a new scenario, which unlocks its races. |
 | **Loadout** | The skills currently equipped from the library. Total cost must be ≤ SP. |
 | **Career** | Each scenario's per-Uma race plan in three stages — Maiden (a G3), Trials (two G2s), Main goals (a G1 set) — built from her best two distances and her real career. Maiden and Trials hold levels 2 and 5; the whole career gates the advance. Shown as a tracker, race-card icons, ribbons and Honors crests. |
-| **Race Form** | Race-time stat multipliers for your Uma and the field. Both reset each scenario. |
+| **Grade handicap** | How much weaker than a fully trained Uma a race's rivals are: 30% at G1, 40% at G2, 50% at G3, more below. Your Uma races with the stats on her profile. |
 | **Badge / Title** | Tiered per-Uma accomplishment, or a named honor (for example "Triple Crown"). |
 | **Trainer achievement** | Account-wide accomplishment covering collection and totals across all Umas. |
 | **Aptitude** | Letter grade (S–G) for surface (Turf/Dirt), distance (Sprint/Mile/Medium/Long), and strategy (Front/Pace/Late/End). |

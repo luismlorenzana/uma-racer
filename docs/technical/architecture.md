@@ -25,7 +25,7 @@ apps/
               + Motion (UI animation) + PixiJS 8 (race and effect scenes) + vite-plugin-pwa
   api/        NestJS 11 on Cloud Run: auth guard, save sync, content delivery, health
 packages/
-  domain/     game rules: types and pure formulas (levels, caps, Race Form, economy, badges). Unit-tested
+  domain/     game rules: types and pure formulas (levels, caps, rivals, economy, badges). Unit-tested
   race/       deterministic race engine: seeded RNG, fixed 1/15 s tick, timeline output. Unit-tested
 scripts/
   data/       GameTora importers → normalized content packs (run locally, never committed)
@@ -274,7 +274,7 @@ apps/web/src/
 
 | Layer | Tooling | Focus |
 |---|---|---|
-| `@racer/domain` | Vitest | Formulas match the design docs (caps, Race Form, costs, EXP curves) |
+| `@racer/domain` | Vitest | Formulas match the design docs (caps, rivals, costs, EXP curves) |
 | `@racer/race` | Vitest | Determinism (same seed gives the same result), phase boundaries, HP drain, sanity ranges (finish times per distance) |
 | API | Vitest | Sync conflict handling, auth guard |
 | Web | Vitest + fake IndexedDB, type-check + build, manual on iPhone | Migrations, boot/sync safety, joins/filters/atlas math, feel and 390×844 layout |

@@ -6,7 +6,6 @@ import { FLAIR_SERIES_TAGS, parseFlairSeriesLegId, type FlairSeriesTag } from '.
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, LEGACY_UMA_LEVEL_TICKET_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
-import { applyForm, yourForm } from './raceForm'
 import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
 import { MAX_UMA_LEVEL, isGateLevel, tierOfLevel } from './scenarios'
 import type { CardSave, UmaSave } from './save'
@@ -319,9 +318,6 @@ export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[])
   }
   return total
 }
-
-/** Race Form now follows the active scenario's Training Level: every scenario starts as a fair fight. */
-export const playerRaceStats = (stats: Stats, trainingLevel: number): Stats => applyForm(stats, yourForm(trainingLevel))
 
 /**
  * Apply race EXP, stopping at the next gate and banking at most one following level there. A career hold

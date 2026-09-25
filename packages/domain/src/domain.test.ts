@@ -25,7 +25,8 @@ import {
   SCENARIOS,
   distanceCategory,
   eraOf,
-  fieldForm,
+  GRADE_HANDICAP,
+  NPC_PROFILE,
   grantDailyTickets,
   isGateLevel,
   levelsIntoScenario,
@@ -64,7 +65,7 @@ import {
   SOLO_FRONT_LEAD_METERS,
   VISIBLE_DISTANCE,
   umaPromotionCost,
-  yourForm,
+  trainedStat,
   OVERFLOW_BANK_LEVELS,
   PROMOTION_BONUS_PER_STAT,
   compileRaceSkill,
@@ -92,7 +93,7 @@ describe('flair', () => {
       venue: [1, 3, 7, 15, 30],
       backField: [1, 5, 15, 30, 60],
       statPeak: [600, 900, 1_200, 1_600, 2_000],
-      balanced: [600, 800, 1_100, 1_500, 1_900],
+      balanced: [400, 600, 800, 1_000, 1_200],
       level: [10, 25, 50, 75, 100],
       diligent: [50, 250, 1_000, 3_000, 10_000],
       friendship: [10, 50, 200, 500, 1_000],
@@ -246,20 +247,30 @@ describe('training levels', () => {
   })
 })
 
-describe('race form', () => {
-  it('starts even and ends about 10% ahead, resetting each scenario', () => {
-    expect(yourForm(1)).toBeCloseTo(0.8)
-    expect(fieldForm(1)).toBeCloseTo(0.8)
-    expect(yourForm(10)).toBeCloseTo(0.98)
-    expect(fieldForm(10)).toBeCloseTo(0.89)
-    expect(yourForm(11)).toBeCloseTo(0.8)
+describe('rivals (D152)', () => {
+  it('builds on a typical fully trained Uma: median base plus a fifth of a full tree', () => {
+    // Tier 1: 18 card nodes × 220 + a 240 stat pool = 4,200 raw points, 840 a stat, on a base of 110.
+    expect(trainedStat(1)).toBe(950)
+    expect(trainedStat(14)).toBeGreaterThan(trainedStat(1))
   })
 
-  it('builds identical generic NPC stats (racing.md example)', () => {
-    // D136: 1400 average cap × 0.72 field strength × G1 1.00 × profile × field Form 0.80.
-    const npc = npcRaceStats(1, 'g1', 'medium', 1)
-    expect(npc.speed).toBeCloseTo(806.4)
-    expect(npc.stamina).toBeCloseTo(725.76)
+  it('handicaps G3 most, then G2, then G1, and the lower grades more still', () => {
+    expect(GRADE_HANDICAP).toEqual({ debut: 0.6, maiden: 0.6, 'pre-op': 0.55, op: 0.55, g3: 0.5, g2: 0.4, g1: 0.3 })
+  })
+
+  it('shapes a build by distance without shrinking it', () => {
+    for (const row of Object.values(NPC_PROFILE)) {
+      expect(Object.values(row).reduce((sum, weight) => sum + weight, 0)).toBeCloseTo(5)
+    }
+  })
+
+  it('builds identical rival stats (racing.md example)', () => {
+    // 950 × (1 − 0.30) × the Medium profile.
+    const npc = npcRaceStats(1, 'g1', 'medium')
+    expect(npc.speed).toBeCloseTo(744.8)
+    expect(npc.stamina).toBeCloseTo(671.65)
+    // A percentage, so a grade is as soft at tier 14 as at tier 1.
+    expect(npcRaceStats(14, 'g3', 'medium').speed / trainedStat(14)).toBeCloseTo(npcRaceStats(1, 'g3', 'medium').speed / trainedStat(1))
   })
 })
 

@@ -117,7 +117,6 @@ race when available; missing/retired targets remain explicit instead of silently
 ### Pre-race
 
 - **Field preview**: a row of the field's busts, in gate order.
-- **Form matchup meter**: "You 92% ⟷ Field 86%".
 - **Strategy** segmented control, with aptitude letters. **Loadout** summary chip (tap to edit in a sheet).
 - The race's marks, and every active goal at stake with its win rule.
 - A big **Start** button at the bottom.
@@ -151,7 +150,7 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 
 1. The placement number **stamps** in ("1st!", with confetti if a win).
 2. The finishing order slides in, with margins.
-3. The Uma EXP bar fills. On a level-up: burst, the ticket reward moves in, and before→after player/field Race Form updates.
+3. The Uma EXP bar fills. On a level-up: burst, and the ticket reward moves in.
 4. Activated player skills are grouped by id with counts and recovery/speed/acceleration labels; missing content falls back to the id.
 5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. The implemented T016 flow then serializes persisted
    flair in this order: goal-derived badge events, ordinary badge tiers/one-offs, first G1 trophy, race-set/repeat title,

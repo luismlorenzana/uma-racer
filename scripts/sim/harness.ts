@@ -3,13 +3,11 @@
 import {
   CARD_SET_SIZE,
   MAX_STARS,
-  applyForm,
   constellationTemplate,
   deriveStats,
   parseRaceCondition,
   shapeDef,
   unlockedNodeCount,
-  yourForm,
   type CardNodeState,
   type CompiledRaceSkill,
   type DistanceCategory,
@@ -67,17 +65,24 @@ export const cardCap = (tier: number) => fairShare(tier) + 1
 export const SPRINT_GUTS: CardType[] = ['speed', 'speed', 'guts', 'wit', 'wit', 'friend']
 export const SPRINT_POWER: CardType[] = ['speed', 'speed', 'power', 'wit', 'wit', 'friend']
 export const STAYER: CardType[] = ['speed', 'speed', 'stamina', 'wit', 'wit', 'friend']
+export const STAYER_POWER: CardType[] = ['speed', 'speed', 'stamina', 'power', 'wit', 'friend']
+export const LONG: CardType[] = ['speed', 'speed', 'stamina', 'stamina', 'wit', 'friend']
 
 export interface BuildOptions {
   /** Defaults to 10. Only the nodes open at this Training Level are filled, lowest order first. */
   trainingLevel?: number
   /** Nodes go to the Friend card first (its fair share, for SP) or last, when stats matter more than skills. */
   friend?: 'first' | 'last'
+  /** Every card's stars in this scenario. Defaults to 5, a fully bonded set. */
+  stars?: number
+  /** Cards (by deck index) filled to their cap right after the lean, before Speed and Wit. */
+  first?: number[]
 }
 
 /**
- * Race stats for a six-card set, current era, 5★. The card at `leanIndex` takes `lean` nodes, Speed then Wit
- * fill what is left up to the per-card cap, and the Friend card takes its fair share first or last.
+ * Race stats for a six-card set, current era, 5★ unless `stars` says otherwise. The card at `leanIndex` takes `lean`
+ * nodes, any `first` cards fill to their cap, Speed then Wit fill what is left up to the per-card cap, and the Friend
+ * card takes its fair share first or last.
  */
 export function buildStats(tier: number, deck: CardType[], leanIndex: number, lean: number, statNodesTo: StatKey, options: BuildOptions = {}): Stats {
   const trainingLevel = options.trainingLevel ?? 10
@@ -85,7 +90,7 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
   const ids = deck.map((type, index) => `${type}-${index}`)
   const cards = new Map<string, CardNodeState>(ids.map((id, index) => [id, {
     template: { id, type: deck[index]!, era: tier, effectProfile: flatProfile, hintSkillIds: [] },
-    stars: MAX_STARS,
+    stars: options.stars ?? MAX_STARS,
   }]))
   const want = deck.map(() => 0)
   let left = shapeDef(tier).cardNodes
@@ -96,6 +101,7 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
   }
   if (options.friend !== 'last') give(deck.indexOf('friend'), fairShare(tier))
   give(leanIndex, lean)
+  for (const index of options.first ?? []) give(index, cardCap(tier))
   for (const type of ['speed', 'wit', 'guts', 'power', 'stamina', 'friend'] as CardType[]) {
     deck.forEach((card, index) => { if (card === type) give(index, cardCap(tier)) })
   }
@@ -114,8 +120,7 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
     if (node.kind === 'card' && queue.length > 0) assignments[node.id] = { kind: 'card', cardId: queue.shift()! }
     if (node.kind === 'stat') assignments[node.id] = { kind: 'stat', stat: statNodesTo }
   }
-  const derived = deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards })
-  return applyForm(derived.stats, yourForm(trainingLevel))
+  return deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards }).stats
 }
 
 export const categoryOf = (distance: number): DistanceCategory =>

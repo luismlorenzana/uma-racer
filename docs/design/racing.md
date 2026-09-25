@@ -7,8 +7,7 @@ Racing is the **first system to be built** and the heart of the game. Races gran
 
 0. **Opening training first:** a scenario's races unlock after 1 training turn in that scenario (see [Training](training.md#opening-training)). Races cost no tickets.
 1. **Pick a race** from the calendar or catalog. It shows grade, venue, surface, distance, rewards, and any career goal it counts toward.
-2. **Pick the Uma, strategy, and skill loadout.** Aptitudes are shown for the race's surface, distance, and each strategy,
-   along with the **Race Form** matchup (see below).
+2. **Pick the Uma, strategy, and skill loadout.** Aptitudes are shown for the race's surface, distance, and each strategy.
 3. **Watch the race** in real time on its own course. Speed controls are 1×, 2×, and skip.
 4. **Results:** finishing order, margins, time, EXP gained, goal and badge progress, and new badges or titles with fanfare.
 
@@ -30,36 +29,33 @@ Based on real JRA races (plus a few NAR dirt G1s), so names, venues, and distanc
 ### All races open from scenario 1 ✅
 
 Every grade, **G1 included**, can be entered from scenario 1. Higher grades are harder because their fields are stronger
-(`gradeFactor` below), not because they are locked.
+(the grade handicap below), not because they are locked.
 
-## Difficulty: Race Form
+## Difficulty: the grade handicap
 
-**Goal:** races stay losable, but your Umas slowly get stronger than the field.
+**Goal:** a fully trained Uma is favoured in every race, and the grade decides by how much (D152).
 
-Both your Uma and the NPC field race with their stats multiplied by a **Form** value that depends on
-**how many Uma Levels (from racing, not Training Level) your Uma is into her current scenario**:
+Your Uma races with **the stats on her profile**: her base stats plus what her constellation pays. Nothing is added
+or multiplied at the gate. Rivals are built as **a typical fully trained Uma of your tier**, then handicapped by the
+race's grade:
 
-```
-k = (level − 1) mod 10                 → 0 at levels 1, 11, 21 … · 9 at levels 10, 20, 30 …
+| Grade | Handicap | Rivals race at |
+|---|---|---|
+| Debut, Maiden | 60% | 40% of a trained Uma |
+| Pre-OP, OP | 55% | 45% |
+| G3 | 50% | 50% |
+| G2 | 40% | 60% |
+| G1 | 30% | 70% |
 
-yourForm  = 0.80 + 0.02 × k            → starts at a 20% nerf, and each level removes 2%
-fieldForm = 0.80 + 0.01 × k            → starts at a 20% nerf, and each level removes 1%
+**A percentage, not a fixed amount.** Trained stats grow from about 950 a stat in scenario 1 to about 1,260 in
+scenario 14, so a fixed cut of, say, 300 would take a third of a scenario-1 rival and a quarter of a scenario-14 one,
+and the same grade would get harder as you climbed. A rival's stats are also uneven by distance, and a fixed cut
+bites hardest on her weakest stat (a sprinter's stamina), changing how she runs rather than how strong she is. The
+race formulas read stats in proportion, so a percentage is the same gap on the track at every tier.
 
-raceStat  = stat × form                (applied to the 5 stats before any race formula)
-```
-
-`stat` is the Uma's trained stat, which starts from her 5★ base stats (see [Uma Progression](uma-progression.md#uma-template-static-sourced-from-the-original-game)).
-
-| Levels into scenario (k) | Your Form | Field Form | Your edge |
-|---|---|---|---|
-| 0 (level 1, 11, 21…) | 80% | 80% | ±0% |
-| 3 | 86% | 83% | +3.6% |
-| 6 | 92% | 86% | +7.0% |
-| 9 (gate level) | 98% | 89% | +10.1% |
-
-**Form resets each scenario ✅.** Without a reset, your Uma would reach 100% at level 11 and the field at
-level 21, and after that the edge would disappear. With the reset, every tier opens as a fair fight at 80/80, and
-your Uma finishes it about 10% ahead. After promotion the opponents are built to the new, higher caps.
+**No Race Form.** Training Level is not a race modifier: it opens constellation nodes, and those are what make your
+Uma stronger. An under-trained Uma is weaker because her tree is, not because of a multiplier. This replaces the
+Race Form of D24–D25.
 
 ## Opponents: the baseline enemy Uma ✅
 
@@ -85,32 +81,28 @@ Races get a clear NPC feel, and **every Uma in the game** can show up as an enem
 ### Generic stats
 
 ```
-npcStat[s]    = averageCap(T) × fieldStrength × buildShare(T, gradeTL[grade]) × profile[distance][s] × fieldForm
-fieldStrength = 0.72
-gradeTL       = Debut/Maiden 1 · Pre-OP/OP 2 · G3 3 · G2 6 · G1 10
-buildShare    = what a typical Uma holds at that Training Level ÷ what she holds at TL10
-                (five stats at median base + 400, plus every node open at that level, filled)
+npcStat[s]  = trainedStat(T) × (1 − handicap[grade]) × profile[distance][s]
+trainedStat = 110 + treeBudget(T) / 5      median base stat + a fifth of a full tree of 5★ current-era cards
+handicap    = Debut/Maiden 0.60 · Pre-OP/OP 0.55 · G3 0.50 · G2 0.40 · G1 0.30
 ```
 
-A grade's field is built like a typical Uma at the Training Level her [career](scenario-goals.md) reaches that grade
-(D140): a G3 field is a TL3 Uma, a G2 field TL6, a G1 field fully trained. So each stage's race is winnable at its
-stage, easier after it and hard before it. Supersedes D138's flat grade factors.
-`fieldStrength` is calibrated (D136): the field used to be built on the whole average cap, which assumed a fully
-trained Uma at every cap, and after the constellation that made a trained Uma lose a G1 over 90% of the time. At
-0.72 it wins roughly half or more, below.
+`trainedStat` is 950 in scenario 1 and about 1,259 in scenario 14. The profile shapes a rival's build for the
+distance without shrinking it: each row averages 1.
 
 | Distance | Speed | Stamina | Power | Guts | Wit |
 |---|---|---|---|---|---|
-| Sprint | 1.00 | 0.70 | 1.00 | 0.80 | 0.85 |
-| Mile | 1.00 | 0.80 | 0.95 | 0.80 | 0.85 |
-| Medium | 1.00 | 0.90 | 0.90 | 0.80 | 0.85 |
-| Long | 0.95 | 1.00 | 0.85 | 0.85 | 0.85 |
+| Sprint | 1.15 | 0.80 | 1.15 | 0.92 | 0.98 |
+| Mile | 1.14 | 0.91 | 1.08 | 0.91 | 0.96 |
+| Medium | 1.12 | 1.01 | 1.01 | 0.90 | 0.96 |
+| Long | 1.06 | 1.11 | 0.94 | 0.94 | 0.95 |
 
 NPCs have no stat variation from each other. Races still vary through the simulation's own randomness (start delay,
 Wit section randomness, skill activation).
 
-> *Example:* a scenario 1 G1 Medium race. At Training Level 1 the field's Speed is 1400 × 0.72 × 1.00 × 1.00 × 0.80 =
-> **806** (Stamina 726); at TL10 it is **897**, against a fully trained Uma racing at 0.98 of her own stats.
+> *Example:* a scenario 1 Medium race. A G1 field has Speed 950 × 0.70 × 1.12 = **745** and Stamina **672**; a G3
+> field has Speed **532**.
+
+Supersedes the calibrated field strength of D136, the career-stage fields of D140 and the field Form of D24.
 
 ### Baseline enemy kit
 
@@ -119,7 +111,7 @@ Wit section randomness, skill activation).
   importer validates the selection and race preparation repeats it, so no original-game ids enter git and every client using
   the same content version gets the same kit.
 - Plus the NPC's **own unique skill**, at full strength.
-- The kit doesn't grow per scenario. Difficulty scales through scenario caps, grade, and Race Form.
+- The kit doesn't grow per scenario. Difficulty scales through scenario caps and the grade handicap.
 
 ### Basic race skills (R2.5)
 
@@ -179,24 +171,30 @@ signed placement delta for the current tick, and `change_order_up_end_after` is 
 the nearby footprint above. `is_finalcorner` stays true from the final corner's start through the finish; its later-half flag
 is true only within the second half of that corner. `temptation_count` is zero until R4 adds rushed behavior.
 
-The mixed-strategy balance target is **15–35% aggregate win share per strategy** over the standard tier/distance/Form matrix,
+The mixed-strategy balance target is **15–35% aggregate win share per strategy** over the standard tier/distance/grade matrix,
 with no strategy above 60% in a row and every strategy recording representative wins. This is a harness target, not a hidden
 per-strategy stat bonus; the G1 player targets below remain the player-facing acceptance criteria.
 
 ### Difficulty target
 
-An under-trained Uma, or one racing off-aptitude, loses to the field. A fully trained Uma with a good deck and loadout
-should win a **G1** about **35% of the time at k = 0, rising to about 65% at k = 9**. Lower grades are easier.
-Validate with `pnpm sim:constellation`, which races the stamina ladder's builds (with the heals they call for) in
-12-runner G1 fields at TL10. Measured 2026-09-24, best strategy:
+An under-trained Uma, or one racing off-aptitude, loses to the field. At Training Level 10 a **fully bonded** set
+should be favoured below G1 and make a **G1 about a coin flip**; a new set of 0★ cards should win G3s about half the
+time and G1s rarely, so stars are what turn a trained Uma into a G1 winner (D152). `pnpm sim:careers` measures it at
+TL10 with each distance's [ladder](constellations.md#balance-targets-the-stamina-ladder) decks, best of four
+strategies, 12 runners. Measured 2026-09-25, sprint / mile / medium / long:
 
-| Tier | Sprint | Mile | Medium | Long |
+| Tier | Set | G3 | G2 | G1 |
 |---|---|---|---|---|
-| 1 | 64% | 64% | 49% | 54% |
-| 9 | 80% | 73% | 46% | 40% |
-| 14 | 53% | 46% | 46% | 38% |
+| 1 | 0★ | 58 · 63 · 70 · 45% | 28 · 43 · 60 · 53% | 8 · 15 · 18 · 20% |
+| 1 | 5★ | 83 · 75 · 78 · 60% | 68 · 73 · 65 · 55% | 53 · 58 · 58 · 45% |
+| 7 | 0★ | 50 · 63 · 63 · 55% | 33 · 48 · 33 · 38% | 18 · 33 · 20 · 13% |
+| 7 | 5★ | 80 · 80 · 85 · 60% | 78 · 73 · 75 · 50% | 65 · 65 · 65 · 53% |
+| 14 | 0★ | 55 · 65 · 60 · 43% | 40 · 38 · 38 · 35% | 18 · 13 · 13 · 18% |
+| 14 | 5★ | 73 · 80 · 78 · 50% | 68 · 75 · 70 · 45% | 55 · 55 · 63 · 45% |
 
-Before D136 the same builds won 0–8%. Medium and long sit a little under the band; `fieldStrength` is the knob.
+The ceiling is the engine's, not the handicap's: identical rivals pack together, a runner spends about 25 seconds of a
+race blocked, and a fully bonded Uma wins only 50–80% even against rivals at half her strength. Field variety and
+the race review, not bigger handicaps, are what will open these numbers up.
 
 ### Stamina contest (engine v4)
 
@@ -253,7 +251,7 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
   pack state ahead of grouped rival activations, so simultaneous events never cover each other.
 - **Finish:** Nose/Head margins (runner-up gap greater than zero and below 0.15 lengths) slow the final 0.8 timeline seconds
   to 0.4× and hold the finish frame for 0.65 seconds. Skip and reduced motion go directly to the same computed result.
-- Results show the full field, rewards, EXP/levels, before→after player/field Form, and player activation effects. Save
+- Results show the full field, rewards, EXP/levels, and player activation effects. Save
   errors keep navigation locked behind Retry; after commit the actions are Races, Train, and Race again (disabled at a gate).
 - Presentation state is never saved and never changes a simulation result. Replay derives it again from the immutable
   timeline; legacy results without skills, lanes, or layout retain readable fallbacks.
@@ -262,7 +260,7 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
 
 - **Simulation is separate from rendering.** A pure, deterministic sim steps at a fixed tick (the original game reportedly uses 1/15 s).
 - **Seeded RNG:** the same seed and the same inputs replay the same race.
-- **Headless batch mode:** run thousands of races to tune Form, opponents, EXP, and badges.
+- **Headless batch mode:** run thousands of races to tune opponents, EXP, and badges.
 
 ## Race engine milestones
 
@@ -270,7 +268,7 @@ Based on [Race Mechanics Research](../research/race-mechanics.md):
 
 | Milestone | Mechanics |
 |---|---|
-| R1: Core | Phases and sections, base and target speed per strategy, accel/decel, start delay and start dash, HP and consumption, minimum speed, last-spurt calculation, **Race Form** |
+| R1: Core | Phases and sections, base and target speed per strategy, accel/decel, start delay and start dash, HP and consumption, minimum speed, last-spurt calculation |
 | R2: Variance | Wit section randomness, strategy/distance/surface aptitudes, mood, ground condition |
 | R2.5: Basic skills | Speed, acceleration, and recovery skills with simple triggers (phase, distance, position). Unique and inherited unique skills. *Moved up because skills are now core* |
 | R3: Pack | Lanes, position keeping, blocking, overtaking |

@@ -1,4 +1,4 @@
-import { COURSE_ROTATION, LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, fieldForm, isGateLevel, yourForm, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
+import { COURSE_ROTATION, LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, isGateLevel, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
 import { formatMargin, type RaceTimeline } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -255,9 +255,6 @@ export function RaceRunScreen() {
     content.umas.byId.get(activeCueRunner?.templateId ?? '')?.name ?? 'Rival skill',
   ) : null
   const activationSummary = summarizePlayerActivations(timeline, attempt.playerIndex)
-  const resultLevel = record ? record.startLevel + record.levelsGained.length : attempt.startLevel
-  const startForms = { player: yourForm(record?.startLevel ?? attempt.startLevel), field: fieldForm(record?.startLevel ?? attempt.startLevel) }
-  const resultForms = { player: yourForm(resultLevel), field: fieldForm(resultLevel) }
   const goalResult = record && savedUma ? buildResultGoalView(record, savedUma, content, freshGoalCommit) : null
   const badgeState = badges[badgeStateId(attempt.umaId)]
   const earnedFlair = record?.earnedFlairEventIds && badgeState?.scope === 'uma'
@@ -467,14 +464,6 @@ export function RaceRunScreen() {
                   </div>}
                   {earnedFlair.length > 0 && <div className="mt-3"><FlairCards title={freshGoalCommit ? 'Flair earned' : 'Earned in this race'} items={earnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}
                   {trainerEarnedFlair.length > 0 && <div className="mt-3"><FlairCards title="Trainer achievements" items={trainerEarnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}
-                  <div className="mt-2 rounded-xl bg-white px-3 py-2">
-                    <p className="text-xs font-extrabold text-ink-soft">RACE FORM</p>
-                    <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-extrabold">
-                      <span>You {Math.round(startForms.player * 100)}% · Field {Math.round(startForms.field * 100)}%</span>
-                      <span aria-hidden="true">→</span>
-                      <span className="text-sky-deep">You {Math.round(resultForms.player * 100)}% · Field {Math.round(resultForms.field * 100)}%</span>
-                    </div>
-                  </div>
                   <div className="mt-2 rounded-xl bg-white px-3 py-2">
                     <p className="text-xs font-extrabold text-ink-soft">YOUR ACTIVATIONS</p>
                     {activationSummary.length === 0 ? <p className="mt-1 text-sm font-bold text-ink-soft">No player skills activated.</p> : (

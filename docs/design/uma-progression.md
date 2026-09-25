@@ -96,11 +96,12 @@ keeps racing and refining that scenario's constellation.
 - As in the original game ✅, the part of a stat above 1200 counts about half **in races**. That halving lives
   in [Racing](racing.md) and no longer touches training.
 
-## Getting stronger in races: Race Form
+## Getting stronger in races
 
-Race Form is now driven by the **active scenario's Training Level**, not Uma Level: every scenario starts as a
-fair fight at TL1 and ends with your Uma about 10% ahead at TL10. Details in
-[Racing — Race Form](racing.md#difficulty-race-form).
+Your Uma races with **the stats on her profile**: her base stats and what her constellation pays, with nothing added
+or multiplied at the gate. Training Level makes her stronger by opening nodes, and stars by filling them. Rivals are
+a trained Uma of her tier made weaker by the race's grade (D152); details in
+[Racing — the grade handicap](racing.md#difficulty-the-grade-handicap).
 
 ## Aptitudes
 

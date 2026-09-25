@@ -28,7 +28,6 @@ import {
   shapeDef,
   slotCount,
   spNodeValue,
-  CAREER_RACE_BONUS,
   STAT_NODE_POOL,
   statNodeValue,
   TREE_BOX,
@@ -561,21 +560,20 @@ describe('derivation', () => {
       },
       cards: new Map([['c', card('c', 'speed')]]),
     })
-    // 220 × 0.70 = 154 raw speed ×1.2 growth = 184.8, on top of base 100 + the career-race 400 (D139).
+    // 220 × 0.70 = 154 raw speed ×1.2 growth = 184.8, on top of base 100.
     expect(derived.raw.speed).toBe(154)
-    expect(derived.stats.speed).toBe(685)
+    expect(derived.stats.speed).toBe(285)
     // 220 × 0.30 = 66 raw power, no growth, on the same start.
-    expect(derived.stats.power).toBe(566)
-    // An untouched stat sits exactly on base + 400.
-    expect(derived.stats.guts).toBe(uma.baseStats.guts + CAREER_RACE_BONUS)
+    expect(derived.stats.power).toBe(166)
+    // An untouched stat sits exactly on her base.
+    expect(derived.stats.guts).toBe(uma.baseStats.guts)
   })
 
-  it('adds the career-race 400 to every stat at every Training Level (D139)', () => {
-    expect(CAREER_RACE_BONUS).toBe(400)
+  it('starts every stat at her base, with no career-race bonus, at every Training Level (D152)', () => {
     const early = deriveStats({
       tier: 1, trainingLevel: 1, template, assignments: {}, cardSetIds: [], umaTemplate: uma, cards: new Map(),
     })
-    expect(early.stats.stamina).toBe(uma.baseStats.stamina + 400)
+    expect(early.stats).toEqual(uma.baseStats)
   })
 
   it('never lets a stat exceed its cap', () => {

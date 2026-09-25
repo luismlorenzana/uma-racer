@@ -15,12 +15,6 @@ export const CARD_SET_SIZE = 6
  * for tweaks — the stamina a mile needs, one more point of Speed — and cards carry the build.
  */
 export const STAT_NODE_POOL = 240
-/**
- * What every stat gains in a career race, as in the original game, where career ("single mode") races add 400 to all
- * five stats (D139). It replaces the untrained floor of D134, which reached the same place only at Training Level 10
- * and left a TL1–5 Uma unable to finish a race. Folded into derived stats, so the number shown is the number raced.
- */
-export const CAREER_RACE_BONUS = 400
 /** A max-bonded Friend or Group card on its fair share of nodes pays this share of the SP cap (D133). */
 export const SP_CARD_SHARE = 0.6
 /** A full constellation pays this share of the scenario's cap budget, so no build reaches every cap. */
@@ -566,13 +560,11 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   }
   const rawTotal = scaledTotal / SCALE
 
-  // The career-race bonus lifts the starting point, not the gains (D139); it is not part of the configuration, so
-  // `raw` and the invariance rule leave it out.
+  // Her base stats plus the tree's gains, grown by her growth rates: the number shown is the number raced (D152).
   const caps = capProfile(input.tier)
   const stats = zeroStats()
   for (const stat of STATS) {
-    const start = umaTemplate.baseStats[stat] + CAREER_RACE_BONUS
-    const grown = start + raw[stat] * (1 + (umaTemplate.growthRates[stat] ?? 0))
+    const grown = umaTemplate.baseStats[stat] + raw[stat] * (1 + (umaTemplate.growthRates[stat] ?? 0))
     stats[stat] = Math.min(caps[stat], Math.round(grown))
   }
 

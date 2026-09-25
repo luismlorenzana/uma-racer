@@ -177,7 +177,7 @@ placement projection after the gate; a tie for first fails. Last-spurt placement
 re-simulated only through their frozen engine-version path; a missing replay/content dependency is marked untracked rather
 than guessed.
 
-`Duelist` waits for race-engine R4. `Upset` waits for a documented per-runner pre-race rating; Race Form percentages are not
+`Duelist` waits for race-engine R4. `Upset` waits for a documented per-runner pre-race rating; grade handicaps are not
 a field ranking and must not be repurposed. Neither appears as an earnable/locked catalog-v1 tile.
 
 ### 6. Stats, levels, and scenarios
@@ -185,7 +185,7 @@ a field ranking and must not be repurposed. Neither appears as an earnable/locke
 | Definition | Criterion | Tiers |
 |---|---|---|
 | Speed / Stamina / Power / Guts / Wit Peak | Highest saved value | 600 / 900 / 1,200 / 1,600 / 2,000 |
-| Balanced | Highest saved minimum of the five stats | 600 / 800 / 1,100 / 1,500 / 1,900 |
+| Balanced | Highest saved minimum of the five stats | 400 / 600 / 800 / 1,000 / 1,200 |
 | [Scenario] Capped | At scenario completion, at least one stat is at or above that scenario's TL10 cap | One-off per scenario |
 | [Scenario] Perfect Form | At scenario completion, all five stats are at or above that cap | One-off per scenario |
 | Level milestones | Highest Uma level | 10 / 25 / 50 / 75 / 100 |

@@ -26,7 +26,7 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 
 | Path | What |
 |---|---|
-| `packages/domain` | Pure game rules (caps, Race Form, economy, cards, opponents). Vitest |
+| `packages/domain` | Pure game rules (caps, economy, cards, opponents). Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
 | `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync`, `/api/content/*` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PixiJS 8 scenes + PWA |

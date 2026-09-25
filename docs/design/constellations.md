@@ -113,15 +113,16 @@ six cards can lean one node towards Speed, Wit or Stamina for a given race. The 
 each card and refuses a card that is full; a save that already holds more keeps only the first `cap` nodes in tree
 order, and the rest pay nothing.
 
-### The career-race bonus
+### Stats start at base
 
-**Every stat starts at its base + 400**, and everything the constellation pays adds on top (D139). The original game
-adds 400 to every stat in career races; we fold it into derived stats, so the number on the profile is the number
-raced. It lifts what a build neglects — a sprinter's stamina, a stayer's power — without inflating the stats it
-trains, and it sits outside the tree, so the invariance rule is unchanged.
+**Every stat starts at the Uma's base stat** (about 110), and everything the constellation pays adds on top (D152).
+Nothing is added at the gate: the number on the profile is the number raced. A full tree of fully bonded cards
+averages about 950 a stat in scenario 1 and 1,260 in scenario 14, and a new set of 0★ cards about 60% of that.
 
-It replaces D134's untrained floor of `50 × Training Level`, which reached the same place (500) only at TL10: below
-about TL6 it left stamina so far behind speed that no build could win a race.
+The original game adds 400 to every stat in career races, and D139 folded that in. It is gone: it made every Uma
+read over 1,000 in every stat whatever her cards, and it hid what a build neglects. A stat left at base is a real
+weakness now. Low guts makes the last spurt burn HP much faster (the original's spurt rule), so every distance
+needs some stamina and guts from the tree ([the stamina ladder](#balance-targets-the-stamina-ladder)).
 
 ### The invariance rule
 
@@ -231,18 +232,22 @@ Decks are chosen for a distance (D134). Measured with `pnpm sim:constellation` i
 about 40% more HP than a solo run, which is what the original game's own stamina charts assume — at TL10 with a full
 tree of max-bond current-era cards, median base stats and no growth, running pace and late:
 
-| Distance | Deck | Stamina it needs to supply | Holds at |
-|---|---|---|---|
-| Sprint (1,400 m) | 2 Speed · Guts or Power · 2 Wit · Friend, nothing into stamina | base + 400 | every tier |
-| Mile (1,800 m) | the same, stat nodes into Stamina | base + 400 + stat pool | every tier |
-| Medium (2,200 m) | 2 Speed · Stamina · 2 Wit · Friend | base + 400 + one stamina card | every tier |
-| Medium (2,400 m) | the same, stamina card leaned one node | base + 400 + stamina card at cap | every tier |
-| Long (2,500–3,200 m) | stamina card at cap, stat nodes into Stamina, 1–2 gold heals | everything | every tier |
+Stats start at base (D152), so every rung pays for its stamina, and each adds one source:
 
-The sim fails its run if any of these stops holding. Soft checks say each step is also *needed* for the next: a
-sprint set cannot run 1,800 m, stat nodes alone cannot run 2,400 m, one stamina card alone cannot run 3,000 m.
-Those hold except where late scenarios' stronger cards make a step easier — the power creep that the stamina
-contest ([Racing](racing.md#stamina-contest-engine-v4)) turns into speed.
+| Distance | Deck | Stamina (tier 1 · 14) | Holds at |
+|---|---|---|---|
+| Sprint (1,400 m) | 2 Speed · Stamina · 2 Wit · Friend, stat nodes into Speed | 567 · 823 | every tier |
+| Mile (1,800 m) | the same, stat nodes into Stamina | 807 · 1,063 | every tier |
+| Medium (2,200–2,400 m) | 2 Speed · Stamina leaned one node · Power · Wit · Friend, stat nodes into Stamina | 1,225 · 1,542 | every tier |
+| Long (2,500–3,200 m) | 2 Speed · 2 Stamina · Wit · Friend, stat nodes into Stamina, 1–2 gold heals | 1,400 · 1,900 (both caps) | every tier |
+
+The sim fails its run if any of these stops holding. Soft checks ask whether each step is also *needed*. One holds
+at every tier: a set with no stamina card cannot run 1,400 m, however its stat nodes go. The rest are looser than the
+table: a Power card set runs 3,000 m with a gold heal at every tier, from tier 2 a lean alone runs 2,400 m, and from tier 2
+a sprint set runs 1,800 m except at tiers 3 and 4, whose Speed or Stamina caps are low. At tier 1 a lean alone falls
+short of 2,200 m at pace, which is why the Medium row carries a Power card.
+Later scenarios' stronger cards loosen it further, the power creep that the stamina contest
+([Racing](racing.md#stamina-contest-engine-v4)) turns into speed.
 
 ## Skills
 

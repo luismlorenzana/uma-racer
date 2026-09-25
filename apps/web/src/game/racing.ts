@@ -19,7 +19,6 @@ import {
   careerHoldLevel,
   careerOpenAtGate,
   evaluateScenarioGoals,
-  fieldForm,
   isCareerJourney,
   isGateLevel,
   isLocalDay,
@@ -30,7 +29,6 @@ import {
   parseFlairEvent,
   parseRaceResultRecord,
   parseUmaSave,
-  playerRaceStats,
   progressionFieldSize,
   raceAttemptId,
   raceAttemptSeed,
@@ -43,7 +41,6 @@ import {
   supportDeckIssueMessage,
   tierOfLevel,
   validateSupportDeck,
-  yourForm,
   type CardSave,
   type CompiledRaceSkill,
   type LedgerEntry,
@@ -226,9 +223,8 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const raceBonus = equippedRaceBonus(tierOfLevel(uma.level), equippedCards(content, uma, input.cardsById))
   const playerSkills = playerRaceSkills(content, derived, template)
   const baselineSkills = baselineNpcSkills(content)
-  // The field's Form follows the same Training Level as the player's, so every scenario opens as a fair
-  // fight and ends with her about 10% ahead (docs/design/racing.md).
-  const npcStats = npcRaceStats(uma.unlockedTier, race.grade, race.distanceCategory, run.trainingLevel)
+  // Rivals are a trained Uma of this tier, handicapped by the race's grade (D152, docs/design/racing.md).
+  const npcStats = npcRaceStats(uma.unlockedTier, race.grade, race.distanceCategory)
   let rivalIndex = 0
   const runners = Array.from({ length: fieldSize }, (_, gate) => {
     if (gate === playerGate) {
@@ -238,7 +234,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
         engine: {
           id: template.id,
           label: String(gate + 1),
-          stats: playerRaceStats(derived.stats, run.trainingLevel),
+          stats: { ...derived.stats },
           strategy,
           aptitude: {
             distance: derived.aptitudes.distance[race.distanceCategory],
@@ -707,10 +703,6 @@ export async function completePersistentRace(
       alreadyRecorded: false,
     }
   })
-}
-
-export function raceFormSummary(uma: UmaSave): { player: number; field: number } {
-  return { player: yourForm(uma.level), field: fieldForm(uma.level) }
 }
 
 /** Rebuild a read-only replay input from an append-only result without consulting mutable Uma state. */

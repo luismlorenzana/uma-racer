@@ -16,7 +16,7 @@ export interface RaceCourse {
 export interface RaceRunnerInput {
   id: string
   label: string
-  /** Final race stats — Race Form (and later mood) already applied by the caller. */
+  /** Final race stats — the trained stats, with any later race-time modifier (mood) already applied by the caller. */
   stats: Stats
   strategy: Strategy
   aptitude: { distance: Grade; surface: Grade; strategy: Grade }

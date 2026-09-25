@@ -29,8 +29,8 @@ The two halves have their own docs:
 |---|---|---|
 | Range | 1 → 10 × scenarios, **permanent** | **1–10, per scenario** |
 | Earned by | **Racing only** (Uma EXP) | **Spark Match only** |
-| Controls | Which scenarios are unlocked | **How many constellation nodes are open** · **Race Form** |
-| At level 1 of a scenario | — | the baseline node set only; race stats are at their fairest |
+| Controls | Which scenarios are unlocked | **How many constellation nodes are open** |
+| At level 1 of a scenario | — | the baseline node set only |
 
 Training Level no longer sets stat caps. Caps belong to the scenario
 ([cap profiles](scenarios.md#cap-profiles)); Training Level decides how much of the tree you can reach, and the

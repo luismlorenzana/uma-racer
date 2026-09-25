@@ -8,7 +8,6 @@ import {
   equippedRaceBonus,
   expToNextUmaLevel,
   parseRaceResultRecord,
-  playerRaceStats,
   raceAttemptId,
   raceAttemptSeed,
   resolveRaceExperience,
@@ -133,12 +132,10 @@ describe('progression race content and setup rules', () => {
     expect(bestStrategy(uma())).toBe('pace')
   })
 
-  it('uses generated equipped-card Race Bonus and applies player Form once', () => {
+  it('uses generated equipped-card Race Bonus', () => {
     const template = card()
     const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), stars: { '1': 1 } }, template }])
     expect(bonus).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
-    expect(playerRaceStats({ speed: 100, stamina: 200, power: 300, guts: 400, wit: 500 }, 1))
-      .toEqual({ speed: 80, stamina: 160, power: 240, guts: 320, wit: 400 })
     expect(equippedRaceBonus(1, [{
       save: { ...createCardSave(template), stars: { '1': 1 } },
       template: { ...template, type: 'friend' },

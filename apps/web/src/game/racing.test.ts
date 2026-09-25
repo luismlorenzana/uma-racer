@@ -437,7 +437,8 @@ describe('persistent progression race', () => {
         exp: expToNextUmaLevel(139) - 1,
       },
     })
-    const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'pace')
+    // Tier-14 rivals race near her capped stats (D152), so she leads from the gate rather than fighting the pack.
+    const preparation = await preparePersistentRace(loaded, 'u1', 'r1', 'front')
     if (preparation.status !== 'prepared') throw new Error('Expected a prepared race')
     const completion = await completePersistentRace(loaded, preparation.attempt, '2026-09-16', 100)
     // There is no tier beyond 14 to unlock, so the final race just closes that run's journey.
