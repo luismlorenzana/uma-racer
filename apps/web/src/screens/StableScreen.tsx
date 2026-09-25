@@ -3,6 +3,7 @@ import { m, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useContent } from '../content/ContentProvider'
+import { useArt } from '../ui/album/useArt'
 import { exchangeUmaShards, listLatestRaceTimes, redeemUmaCoupon } from '../game/actions'
 import { addSavedView, loadAlbumPrefs, markSeen, removeSavedView, saveAlbumPrefs, type AlbumPrefs } from '../game/album/prefs'
 import { emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumView } from '../game/album/query'
@@ -78,6 +79,9 @@ function UmaTile({
   onToggleSelect: () => void
   onActions: () => void
 }) {
+  const contentState = useContent()
+  // Busts are the list portrait, as in the original's Trainee Select; the icon shows until one arrives (M019).
+  const bust = useArt(contentState.status === 'ready' ? contentState.content : null, 'bust', entry.template.id)
   const press = useRef<number | null>(null)
   const startPress = () => { press.current = window.setTimeout(() => { press.current = null; onActions() }, 450) }
   const endPress = () => { if (press.current !== null) window.clearTimeout(press.current); press.current = null }
@@ -96,13 +100,17 @@ function UmaTile({
         className={`flex w-full items-center gap-3 rounded-sm border border-hairline bg-panel p-2 text-left ${ring}`}
       >
         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xs bg-sunken">
-          <AtlasSprite
-            asset={entry.asset}
-            alt=""
-            decorative
-            className={`h-full w-full ${entry.owned ? '' : 'opacity-45 saturate-50'}`}
-            fallback={<Placeholder label={entry.template.name} />}
-          />
+          {bust ? (
+            <img src={bust} alt="" draggable={false} className={`h-full w-full object-cover ${entry.owned ? '' : 'opacity-45 saturate-50'}`} />
+          ) : (
+            <AtlasSprite
+              asset={entry.asset}
+              alt=""
+              decorative
+              className={`h-full w-full ${entry.owned ? '' : 'opacity-45 saturate-50'}`}
+              fallback={<Placeholder label={entry.template.name} />}
+            />
+          )}
         </div>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
@@ -134,6 +142,7 @@ function UmaTile({
       >
         <ArtTile
           asset={entry.asset}
+          artUrl={bust}
           alt={entry.owned ? `${entry.template.name} portrait` : `${entry.template.name}, not owned`}
           dimmed={!entry.owned}
           chamfer={!icons && (entry.view?.readyToAdvance ?? false)}

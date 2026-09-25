@@ -101,6 +101,8 @@ Every Bond Recall run launched here returns here.
 
 ### Race Select
 
+- A **racing Uma strip** under the title: a horizontal row of her busts, the featured Uma first, then by level. Tapping
+  one switches every section below to her; the picked bust is outlined and scrolled into view.
 - A **career tracker**: her three stages with levels and progress, the current stage's goal races, and what the stage
   is holding ([Scenario Careers](scenario-goals.md#presentation)).
 - **Next up**: 5–10 race cards worth running now — the unwon goals up to her current stage, then races graded for her
@@ -114,7 +116,7 @@ race when available; missing/retired targets remain explicit instead of silently
 
 ### Pre-race
 
-- **Field preview**: a row of NPC icons.
+- **Field preview**: a row of the field's busts, in gate order.
 - **Form matchup meter**: "You 92% ⟷ Field 86%".
 - **Strategy** segmented control, with aptitude letters. **Loadout** summary chip (tap to edit in a sheet).
 - The race's marks, and every active goal at stake with its win rule.

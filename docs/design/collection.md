@@ -156,15 +156,20 @@ The density toggle becomes a **view switch**, remembered per album like every ot
 
 ### Art tiers
 
-Three sizes, each used where it belongs:
+Four sizes, each used where it belongs:
 
 | Tier | Size | Source | Use |
 |---|---|---|---|
-| Icon | 128 px, atlased | Loaded with the content packs | Every grid tile |
+| Icon | 128 px, atlased | Loaded with the content packs | Card grids, and any Uma list before her bust arrives |
+| Uma bust | 256 px square, head and shoulders | Cropped from her portrait at import, one file per Uma | Every list of Umas: Stable grid, the Race tab's picker, lineage picker, pre-race field, results (D142) |
 | Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Detail area, Home hero, reveals |
 | Card art | 450×600 full illustration | One file per card, fetched on demand | Detail area, reveals |
 
-Art is **never atlased and never precached**: 26 MB across 562 files would defeat both. Each file is content-addressed,
+The bust is the original's Trainee Select tile: the portrait cropped to a square around her head. The importer finds the
+head from the portrait's own alpha, centres on it and takes the top 60% of the frame; `content/overrides/bust-crops.json`
+pins any Uma the automatic crop misreads, and `pnpm assets:bust-sheet` renders every bust onto review pages.
+
+Art is **never atlased and never precached**: about 31 MB across 830 files would defeat both. Each file is content-addressed,
 fetched through the authenticated API on first use, verified against its manifest hash, and cached by the service worker.
 The icon shows immediately and the large art replaces it when it arrives, so nothing ever waits on a download. Entries
 whose source art does not exist — 18 of the newest cards today — keep their icon, with no error and no empty frame.

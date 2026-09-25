@@ -9,6 +9,7 @@ import { Placeholder } from './Placeholder'
  */
 export function ArtTile({
   asset,
+  artUrl = null,
   alt,
   dimmed = false,
   chamfer = false,
@@ -18,6 +19,8 @@ export function ArtTile({
   className = '',
 }: {
   asset: ContentAsset | null
+  /** Larger per-entry art, such as an Uma's bust, shown in place of the atlas icon once it has loaded. */
+  artUrl?: string | null
   alt: string
   dimmed?: boolean
   chamfer?: boolean
@@ -35,12 +38,21 @@ export function ArtTile({
         chamfer ? 'chamfer-tr' : ''
       } ${className}`}
     >
-      <AtlasSprite
-        asset={asset}
-        alt={alt}
-        className={`absolute inset-0 h-full w-full ${dimmed ? 'opacity-45 saturate-50' : ''}`}
-        fallback={<Placeholder label={alt} />}
-      />
+      {artUrl ? (
+        <img
+          src={artUrl}
+          alt={alt}
+          draggable={false}
+          className={`absolute inset-0 h-full w-full select-none bg-gradient-to-b from-panel to-sunken object-cover ${dimmed ? 'opacity-45 saturate-50' : ''}`}
+        />
+      ) : (
+        <AtlasSprite
+          asset={asset}
+          alt={alt}
+          className={`absolute inset-0 h-full w-full ${dimmed ? 'opacity-45 saturate-50' : ''}`}
+          fallback={<Placeholder label={alt} />}
+        />
+      )}
       {footer && <div className="art-scrim pointer-events-none absolute inset-x-0 bottom-0 h-1/2" aria-hidden />}
       {overlay && <div className="absolute top-1.5 left-1.5 flex flex-col items-start gap-1">{overlay}</div>}
       {corner && <div className="absolute top-1.5 right-1.5">{corner}</div>}

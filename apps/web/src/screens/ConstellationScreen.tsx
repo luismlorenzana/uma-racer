@@ -30,6 +30,7 @@ import { setConstellationNode } from '../game/actions'
 import { bondRecallHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
+import { UmaBust } from '../ui/UmaBust'
 import { BondPips } from '../ui/BondPips'
 import { BottomSheet } from '../ui/BottomSheet'
 import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
@@ -279,7 +280,7 @@ function LineagePicker({
             className="flex min-h-[44px] w-full items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left disabled:opacity-40"
             onClick={() => onPick(id)}
           >
-            <AtlasSprite asset={getContentAsset(content, 'uma-icons', id)} decorative className="h-7 w-7 rounded-full" />
+            <UmaBust content={content} umaId={id} className="h-10 w-10 shrink-0 rounded-sm border border-hairline bg-gradient-to-b from-panel to-sunken" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{candidate.name}</span>
               <span className="text-micro">

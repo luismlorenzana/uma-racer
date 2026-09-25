@@ -19,7 +19,7 @@ import {
   type Strategy,
   type UmaSave,
 } from '@racer/domain'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { listRaceHistory, listUmaRaceHistory, prepareRace, setUmaLoadout } from '../game/actions'
@@ -27,13 +27,13 @@ import { goalsAtStake } from '../game/goals-view'
 import { buildRacePlan, scenarioLevel, type CareerTracker, type PlannedRace, type RaceMark } from '../game/race-plan'
 import type { PreparedRace } from '../game/racing'
 import { useGame } from '../game/store'
-import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
 import { Panel } from '../ui/Panel'
 import { RaceMarkIcon } from '../ui/RaceMarkIcon'
 import { ScreenState } from '../ui/ScreenState'
 import { Collapsible, SectionHeading } from '../ui/Section'
+import { UmaBust } from '../ui/UmaBust'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
 
 const ordinal = (value: number) => {
@@ -167,6 +167,11 @@ export function RaceSelectScreen() {
   const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
 
   const ownedIds = useMemo(() => Object.keys(owned).sort((left, right) => left.localeCompare(right)), [owned])
+  // The picker leads with the featured Uma, then whoever is furthest along.
+  const pickerIds = useMemo(() => [...ownedIds].sort((left, right) =>
+    Number(right === profile?.featuredUmaId) - Number(left === profile?.featuredUmaId) ||
+    (owned[right]?.level ?? 0) - (owned[left]?.level ?? 0) || left.localeCompare(right)), [owned, ownedIds, profile?.featuredUmaId])
+  const pickedRef = useRef<HTMLButtonElement | null>(null)
   const requestedUma = params.get('uma')
   const selectedUmaId = requestedUma && owned[requestedUma]
     ? requestedUma
@@ -176,6 +181,10 @@ export function RaceSelectScreen() {
   const selectedUma = selectedUmaId ? owned[selectedUmaId] : undefined
   const loadoutKey = selectedUma ? activeScenario(selectedUma).loadoutSkillIds.join('|') : ''
   const requestedGoalRace = params.get('goal')
+
+  useEffect(() => {
+    pickedRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' })
+  }, [selectedUmaId, contentState.status])
 
   useEffect(() => {
     if (contentState.status !== 'ready' || !requestedGoalRace) return
@@ -242,13 +251,6 @@ export function RaceSelectScreen() {
   const pickedGoals = picked ? goalsAtStake(selectedUma, picked.id, content) : []
   const pickedEntry = picked ? plan.all.find((entry) => entry.race.id === picked.id) : undefined
   const opponentCharacters = new Set(content.umas.items.filter((item) => item.charaId !== umaTemplate.charaId).map((item) => item.charaId)).size
-  const selectedAsset = (() => {
-    const frame = content.atlases['uma-icons'].descriptor.frames[selectedUmaId]
-    if (!frame) return null
-    const page = content.atlases['uma-icons'].descriptor.pages[frame.page]
-    const url = content.atlases['uma-icons'].pageUrls[frame.page]
-    return page && url ? { url, frame, pageWidth: page.width, pageHeight: page.height } : null
-  })()
   let raceBonus = 0
   let deckError: string | null = null
   try {
@@ -314,19 +316,34 @@ export function RaceSelectScreen() {
 
   return (
     <div className="flex flex-col gap-3 pt-2 pb-4">
-      <div className="flex items-end justify-between gap-3 px-1">
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Races</h1>
-          <p className="truncate text-[13px] text-ink-soft">{SCENARIOS[selectedUma.unlockedTier - 1]?.name} · Lv {scenarioLevel(selectedUma.level)}/10</p>
-        </div>
-        <select
-          aria-label="Racing Uma"
-          value={selectedUmaId}
-          onChange={(event) => chooseUma(event.target.value)}
-          className="min-h-11 max-w-40 shrink-0 rounded-sm border border-hairline-strong bg-panel px-3 text-[13px] font-semibold text-ink"
-        >
-          {ownedIds.map((id) => <option key={id} value={id}>{content.umas.byId.get(id)?.name ?? id}</option>)}
-        </select>
+      <div className="min-w-0 px-1">
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Races</h1>
+        <p className="truncate text-[13px] text-ink-soft">{umaTemplate.name} · {SCENARIOS[selectedUma.unlockedTier - 1]?.name} · Lv {scenarioLevel(selectedUma.level)}/10</p>
+      </div>
+      <div role="radiogroup" aria-label="Racing Uma" className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+        {pickerIds.map((id) => {
+          const picked = id === selectedUmaId
+          return (
+            <button
+              key={id}
+              ref={picked ? pickedRef : undefined}
+              type="button"
+              role="radio"
+              aria-checked={picked}
+              onClick={() => chooseUma(id)}
+              className="w-16 shrink-0 text-center"
+            >
+              <UmaBust
+                content={content}
+                umaId={id}
+                className={`w-16 rounded-md border bg-gradient-to-b from-panel to-sunken ${picked ? 'border-accent outline outline-2 outline-accent' : 'border-hairline'}`}
+              />
+              <span className={`mt-1 block truncate text-[10px] font-semibold ${picked ? 'text-accent-strong' : 'text-ink-soft'}`}>
+                {content.umas.byId.get(id)?.name ?? id}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {!persistent && <Panel className="border-warning/40 py-3 text-[13px] font-semibold text-warning">Memory only — race progress will not survive a reload or sync.</Panel>}
@@ -392,7 +409,7 @@ export function RaceSelectScreen() {
             )}
             <div className="flex items-center gap-3 rounded-md bg-sunken p-3">
               <div className="w-14 shrink-0">
-                <AtlasSprite asset={selectedAsset} alt={`${umaTemplate.name} icon`} className="rounded-sm bg-panel" fallback={<div className="h-full rounded-sm bg-panel" />} />
+                <UmaBust content={content} umaId={selectedUmaId} alt={umaTemplate.name} className="rounded-sm bg-panel" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{umaTemplate.name} · Lv {selectedUma.level}</p>
@@ -455,13 +472,9 @@ export function RaceSelectScreen() {
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {preview.runners.map((runner, gate) => {
                     const template = content.umas.byId.get(runner.templateId)
-                    const frame = content.atlases['uma-icons'].descriptor.frames[runner.templateId]
-                    const page = frame ? content.atlases['uma-icons'].descriptor.pages[frame.page] : undefined
-                    const url = frame ? content.atlases['uma-icons'].pageUrls[frame.page] : undefined
-                    const asset = frame && page && url ? { url, frame, pageWidth: page.width, pageHeight: page.height } : null
                     return (
                       <div key={`${gate}:${runner.templateId}`} className={`w-14 shrink-0 rounded-sm border p-1 text-center ${runner.isPlayer ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`}>
-                        <AtlasSprite asset={asset} alt={`${template?.name ?? runner.templateId} icon`} className="rounded-xs" fallback={<div className="h-full rounded-xs bg-sunken" />} />
+                        <UmaBust content={content} umaId={runner.templateId} alt={template?.name ?? runner.templateId} className="rounded-xs" />
                         <p className="mt-1 truncate text-[9px] font-semibold">{gate + 1}. {runner.isPlayer ? 'You' : template?.name ?? runner.templateId}</p>
                       </div>
                     )

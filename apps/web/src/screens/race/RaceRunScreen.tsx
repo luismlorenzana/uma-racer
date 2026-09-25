@@ -14,6 +14,7 @@ import { summarizePlayerActivations, type RaceCue } from '../../scenes/race/pres
 import { GameButton } from '../../ui/GameButton'
 import { FlairCards } from '../../ui/FlairCards'
 import { Meter } from '../../ui/Meter'
+import { UmaBust } from '../../ui/UmaBust'
 import { GRADE_LABEL, STRATEGY_LABEL } from './labels'
 
 const PHASES = ['Opening', 'Middle leg', 'Final leg', 'Last spurt']
@@ -502,6 +503,7 @@ export function RaceRunScreen() {
                   return (
                     <m.li key={`${result.gate}:${result.umaId}`} initial={reducedMotion ? false : { x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: reducedMotion ? 0 : 0.2 + index * 0.025 }} className={`flex items-center gap-3 border-b border-ink/5 px-3 py-2 ${result.isPlayer ? 'bg-gold/20' : ''}`}>
                       <span className="w-8 font-extrabold tabular-nums">{result.placement}</span>
+                      <UmaBust content={content} umaId={result.umaId} className="h-9 w-9 shrink-0 rounded-sm bg-sunken" />
                       <span className="min-w-0 flex-1 truncate font-extrabold">{result.isPlayer ? '★ ' : ''}{name}<span className="ml-2 text-xs text-ink-soft">{STRATEGY_LABEL[result.strategy]}</span></span>
                       <span className="text-sm text-ink-soft">{formatMargin(result.marginLengths)}</span>
                     </m.li>

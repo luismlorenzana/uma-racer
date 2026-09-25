@@ -3,7 +3,8 @@
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ContentAtlasKind } from '@racer/domain'
-import { ART_FAMILIES, buildArtFamily, type ArtFamily } from './art'
+import { readFile } from 'node:fs/promises'
+import { ART_FAMILIES, buildArtFamily, type ArtFamily, type BustCrop } from './art'
 import { buildAtlas } from './atlas'
 import { downloadImages, type ImageSource } from './download'
 import { readAssetSources } from './read'
@@ -27,10 +28,31 @@ async function build(kind: ContentAtlasKind, sources: ImageSource[], refresh: bo
 
 const megabytes = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)} MB`
 
-async function buildArt(family: ArtFamily, icons: ImageSource[], refresh: boolean) {
+/** Optional private pins for busts the automatic crop misreads: `{ "<umaId>": { "cx": 0.5, "top": 0.02, "size": 0.6 } }`. */
+async function readBustCrops(): Promise<Record<string, Partial<BustCrop>>> {
+  let raw: string
+  try {
+    raw = await readFile(resolve(contentDir, 'overrides/bust-crops.json'), 'utf8')
+  } catch {
+    return {}
+  }
+  const parsed = JSON.parse(raw) as unknown
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('bust-crops.json must be an object')
+  for (const [id, crop] of Object.entries(parsed as Record<string, unknown>)) {
+    const values = crop as Record<string, unknown>
+    if (typeof crop !== 'object' || crop === null || Object.keys(values).some((key) => !['cx', 'top', 'size'].includes(key)) ||
+      Object.values(values).some((value) => typeof value !== 'number' || !(value >= 0 && value <= 1))) {
+      throw new Error(`bust-crops.json has an invalid crop for ${id}`)
+    }
+  }
+  return parsed as Record<string, Partial<BustCrop>>
+}
+
+async function buildArt(family: ArtFamily, icons: ImageSource[], refresh: boolean, bustCrops: Record<string, Partial<BustCrop>> = {}) {
   const built = await buildArtFamily(family, icons, {
     cacheDir,
     refresh,
+    bustCrops,
     onProgress: (done, total) => {
       if (done === total || done % 50 === 0) process.stdout.write(`\r${family}: encoded ${done}/${total}`)
     },
@@ -61,6 +83,8 @@ async function main(): Promise<void> {
     // Art is large and per-entry, so it is written as individual files the app fetches on demand.
     const families = [
       await buildArt('uma-portrait', sources.umas, refresh),
+      // Busts reuse the portrait sources just downloaded, so this pass is all cache hits.
+      await buildArt('uma-bust', sources.umas, false, await readBustCrops()),
       await buildArt('card-art', sources.cards, refresh),
     ]
     manifest = await writeArtFiles({ contentDir, families })
