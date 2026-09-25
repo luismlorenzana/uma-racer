@@ -90,7 +90,7 @@ export interface RaceAccomplishmentFactsV1 {
 
 export interface RaceResultRecord {
   /** Absent means legacy skillless engine v1. */
-  engineVersion?: 2 | 3 | 4 | 5
+  engineVersion?: 2 | 3 | 4 | 5 | 6
   /** Present on engine-v2/v3 records so replay does not depend on mutable content metadata. */
   course?: RaceResultCourse
   contentVersion: string
@@ -431,10 +431,11 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const fieldSize = value.field.length
   const startStats = parseStats(value.startStats)
   const runners = value.field.map((runner) => parseRunner(runner, fieldSize))
-  const version = hasEngineVersion && [2, 3, 4, 5].includes(value.engineVersion as number) ? value.engineVersion as 2 | 3 | 4 | 5 : null
-  // Engine v4 (the stamina contest, D135) records the same course shape as v3; v5 adds slopes, track and rotation.
+  const version = hasEngineVersion && [2, 3, 4, 5, 6].includes(value.engineVersion as number) ? value.engineVersion as 2 | 3 | 4 | 5 | 6 : null
+  // Engine v4 (the stamina contest, D135) records the same course shape as v3; v5 adds slopes, track and rotation, and
+  // v6 (turns, D154) records the same course as v5.
   const hasLayout = version !== null && version >= 3
-  const v5 = version === 5
+  const v5 = version !== null && version >= 5
   const courseKeys = v5
     ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation']
     : hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']

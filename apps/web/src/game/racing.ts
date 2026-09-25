@@ -53,7 +53,7 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from '@racer/domain'
-import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, simulateRaceV3, simulateRaceV4, type RaceInput, type RaceTimeline } from '@racer/race'
+import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, simulateRaceV3, simulateRaceV4, simulateRaceV5, type RaceInput, type RaceTimeline } from '@racer/race'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
 import { updateRaceBadgeFacts, updateScenarioBadgeFacts } from './badges'
@@ -67,7 +67,7 @@ export interface PreparedRaceRunner {
 }
 
 export interface PreparedRace {
-  engineVersion: 1 | 2 | 3 | 4 | 5
+  engineVersion: 1 | 2 | 3 | 4 | 5 | 6
   id: string
   contentVersion: string
   umaId: string
@@ -101,7 +101,8 @@ export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
     : attempt.engineVersion === 2 ? simulateRaceV2(attempt.input)
       : attempt.engineVersion === 3 ? simulateRaceV3(attempt.input)
         : attempt.engineVersion === 4 ? simulateRaceV4(attempt.input)
-          : simulateRace(attempt.input)
+          : attempt.engineVersion === 5 ? simulateRaceV5(attempt.input)
+            : simulateRace(attempt.input)
 
 interface BuildRaceInput {
   content: LoadedContent
@@ -264,7 +265,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     }
   })
   return {
-    engineVersion: 5,
+    engineVersion: 6,
     id: raceAttemptId(uma.templateId, sequence),
     contentVersion: content.manifest.version,
     umaId: uma.templateId,
@@ -358,7 +359,7 @@ function resultRecord(
     }
   }).sort((left, right) => left.placement - right.placement)
   const unsettled: RaceResultRecord = {
-    engineVersion: 5,
+    engineVersion: 6,
     course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
     contentVersion: attempt.contentVersion,
     umaId: attempt.umaId,

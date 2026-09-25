@@ -18,6 +18,13 @@ import { UmaBust } from '../../ui/UmaBust'
 import { GRADE_LABEL, STRATEGY_LABEL } from './labels'
 
 const PHASES = ['Opening', 'Middle leg', 'Final leg', 'Last spurt']
+/**
+ * Turn races (engine v6, M021) play two turns a second at 1×, so a 2,400 m race runs in about a minute; Slow plays a
+ * turn in 1.5 s. Older, time-based replays keep real time at 1×.
+ */
+const TURN_RACE_RATE = 2
+const TURN_SPEEDS = [{ value: 1 / 3, label: 'Slow' }, { value: 1, label: '1×' }, { value: 2, label: '2×' }] as const
+const TIME_SPEEDS = [{ value: 1, label: '1×' }, { value: 2, label: '2×' }] as const
 const RIVAL_COLORS = [0x5b8def, 0xef6f6c, 0x8e6cef, 0x3cb4a4, 0xf29e4c, 0x6c8ea4, 0xd96fb6, 0x7bbf4a]
 
 const ordinal = (value: number) => {
@@ -100,6 +107,7 @@ export function RaceRunScreen() {
   const [committing, setCommitting] = useState(false)
   const [hud, setHud] = useState<RaceHudState | null>(null)
   const [speed, setSpeed] = useState(1)
+  const [paused, setPaused] = useState(false)
   const [showResults, setShowResults] = useState(false)
   const [againBusy, setAgainBusy] = useState(false)
   const [freshGoalCommit, setFreshGoalCommit] = useState(false)
@@ -203,9 +211,17 @@ export function RaceRunScreen() {
     }
   }, [attempt, reducedMotion, timeline])
 
+  const turnRace = timeline?.tickRate === 1
   useEffect(() => {
-    sceneRef.current?.setSpeed(speed)
-  }, [speed, timeline])
+    sceneRef.current?.setSpeed(paused ? 0 : speed * (turnRace ? TURN_RACE_RATE : 1))
+  }, [paused, speed, timeline, turnRace])
+  // Step one turn (a second on older replays) while paused, landing on turn boundaries.
+  const step = (direction: -1 | 1) => {
+    const scene = sceneRef.current
+    if (!scene) return
+    const at = scene.position
+    scene.seek(direction > 0 ? Math.floor(at + 1e-6) + 1 : Math.max(0, Math.ceil(at - 1e-6) - 1))
+  }
 
   useEffect(() => {
     let lock: WakeLockSentinel | undefined
@@ -309,17 +325,7 @@ export function RaceRunScreen() {
             <p className="truncate text-lg leading-tight font-extrabold text-white text-outline">{race.name}</p>
             <p className="text-xs font-extrabold text-white/90 text-outline">{GRADE_LABEL[race.grade]} · {race.distance}m · {STRATEGY_LABEL[attempt.strategy]}</p>
           </div>
-          <div className="flex gap-1">
-            {[1, 2].map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setSpeed(value)}
-                className={`h-11 min-w-11 rounded-full border-2 border-white px-2 text-sm font-extrabold ${speed === value ? 'bg-sky text-white' : 'bg-white/85'}`}
-              >{value}×</button>
-            ))}
-            <button type="button" onClick={() => sceneRef.current?.skipToEnd()} className="h-11 min-w-11 rounded-full border-2 border-white bg-white/85 px-2 text-sm font-extrabold" aria-label="Skip">⏭</button>
-          </div>
+          <button type="button" onClick={() => sceneRef.current?.skipToEnd()} className="h-11 min-w-11 rounded-full border-2 border-white bg-white/85 px-2 text-sm font-extrabold" aria-label="Skip">⏭</button>
         </div>
         <div className="flex items-center justify-between rounded-2xl border-2 border-white/80 bg-ink/35 px-3 py-1.5 text-white">
           <div className="min-w-0">
@@ -328,13 +334,18 @@ export function RaceRunScreen() {
             </m.p>
             {hud?.courseLabel && <p className="text-[10px] font-bold text-white/80">{hud.courseLabel}</p>}
           </div>
-          <span className="font-extrabold tabular-nums">{Math.round(remaining)}m left</span>
+          <div className="text-right">
+            {hud?.turn != null && hud.turns != null && (
+              <p className="text-xs font-extrabold tabular-nums">Turn {hud.turn} / {hud.turns}</p>
+            )}
+            <p className="font-extrabold tabular-nums">{Math.round(remaining)}m left</p>
+          </div>
         </div>
       </div>
 
       <m.div
         ref={hostRef}
-        className="relative min-h-0 flex-1"
+        className="relative min-h-0 flex-1 overflow-hidden"
         animate={!reducedMotion && hud?.phase === 3 && hud.stage === 'running' ? { scale: 1.015, opacity: 1 } : { scale: 1, opacity: 1 }}
         transition={{ duration: 0.3 }}
       />
@@ -395,6 +406,46 @@ export function RaceRunScreen() {
               <Meter value={hud?.playerHp ?? 1} color={(hud?.playerHp ?? 1) < 0.2 ? '#ff5a5f' : 'linear-gradient(90deg,#2ec27e,#8be07a)'} height={12} motion="linear" />
             </div>
             <span className="w-16 text-right text-sm font-extrabold tabular-nums text-ink-soft">{formatTime(hud?.seconds ?? 0)}</span>
+          </div>
+          {/* Always laid out, so the course above never changes height mid-race (Pixi sizes to it once). */}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => step(-1)}
+                disabled={!paused || hud?.stage !== 'running'}
+                aria-label={turnRace ? 'Previous turn' : 'Back one second'}
+                className="h-11 w-11 rounded-full border-2 border-ink/10 bg-white text-lg font-extrabold disabled:opacity-35"
+              >‹</button>
+              <button
+                type="button"
+                onClick={() => setPaused((value) => !value)}
+                disabled={!hud || hud.finished}
+                aria-label={paused ? 'Play' : 'Pause'}
+                className={`h-11 w-11 rounded-full border-2 text-sm font-extrabold disabled:opacity-35 ${paused ? 'border-sky bg-sky text-white' : 'border-ink/10 bg-white'}`}
+              >{paused ? '▶' : '❚❚'}</button>
+              <button
+                type="button"
+                onClick={() => step(1)}
+                disabled={!paused || hud?.stage !== 'running'}
+                aria-label={turnRace ? 'Next turn' : 'Forward one second'}
+                className="h-11 w-11 rounded-full border-2 border-ink/10 bg-white text-lg font-extrabold disabled:opacity-35"
+              >›</button>
+            </div>
+            <div className="flex items-center gap-1" role="group" aria-label="Playback speed">
+              {(turnRace ? TURN_SPEEDS : TIME_SPEEDS).map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => {
+                    setSpeed(option.value)
+                    setPaused(false)
+                  }}
+                  aria-pressed={speed === option.value && !paused}
+                  className={`h-11 min-w-11 rounded-full border-2 px-2 text-sm font-extrabold ${speed === option.value && !paused ? 'border-sky bg-sky text-white' : 'border-ink/10 bg-white'}`}
+                >{option.label}</button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

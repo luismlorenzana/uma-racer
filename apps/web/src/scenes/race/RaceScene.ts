@@ -1,5 +1,5 @@
 import type { RaceCourseLayout } from '@racer/domain'
-import { COURSE_WIDTH, phaseAt, sampleTimeline, timelineDuration, type RaceTimeline, type RunnerFrame } from '@racer/race'
+import { COURSE_WIDTH, phaseAt, raceTurns, sampleTimeline, timelineDuration, turnPhase, type RaceTimeline, type RunnerFrame } from '@racer/race'
 import { Application, Container, Graphics, Text } from 'pixi.js'
 import { buildCoursePath, courseBounds, sampleCourse, type CoursePath } from './course-path'
 import {
@@ -27,6 +27,9 @@ export interface RaceHudState {
   seconds: number
   duration: number
   phase: number
+  /** Engine v6 races: the turn being run (1-based) and the course's turn count; null on older, time-based replays. */
+  turn: number | null
+  turns: number | null
   playerDistance: number
   playerHp: number
   playerPosition: number
@@ -137,6 +140,16 @@ export class RaceScene {
 
   setSpeed(multiplier: number) {
     this.speed = multiplier
+  }
+
+  /** Engine v6 timelines record one frame per one-second turn. */
+  get turnRace(): boolean {
+    return this.timeline.tickRate === 1
+  }
+
+  /** Sim seconds played so far: the current turn's position for step controls. */
+  get position(): number {
+    return this.elapsed
   }
 
   skipToEnd() {
@@ -254,8 +267,9 @@ export class RaceScene {
       token.body.alpha = frame.hp <= 0.001 && running ? 0.6 : 1
     })
 
-    // Last-spurt speed streaks
-    const phase = phaseAt(lead, course)
+    // Last-spurt speed streaks. A turn race's phase is the race's, from the turn (M021).
+    const turn = this.turnRace ? Math.max(1, Math.ceil(this.elapsed)) : null
+    const phase = turn !== null ? turnPhase(turn, raceTurns(course)) : phaseAt(lead, course)
     this.effects.clear()
     if (!this.reducedMotion && playback.stage === 'running' && phase >= 3 && this.elapsed < this.duration) {
       for (const [index, streak] of this.streaks.entries()) {
@@ -285,6 +299,8 @@ export class RaceScene {
         seconds: this.elapsed,
         duration: this.duration,
         phase,
+        turn,
+        turns: this.turnRace ? raceTurns(course) : null,
         playerDistance: player.distance,
         playerHp: player.hp,
         playerPosition: this.elapsed >= this.duration ? finalPlacement ?? position : position,

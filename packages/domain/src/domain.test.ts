@@ -254,7 +254,7 @@ describe('rivals (D152)', () => {
   })
 
   it('handicaps G3 most, then G2, then G1, and the lower grades more still', () => {
-    expect(GRADE_HANDICAP).toEqual({ debut: 0.6, maiden: 0.6, 'pre-op': 0.55, op: 0.55, g3: 0.5, g2: 0.4, g1: 0.3 })
+    expect(GRADE_HANDICAP).toEqual({ debut: 0.35, maiden: 0.35, 'pre-op': 0.3, op: 0.3, g3: 0.25, g2: 0.15, g1: 0.05 })
   })
 
   it('shapes a build by distance without shrinking it', () => {

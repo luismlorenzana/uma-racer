@@ -39,6 +39,8 @@ export type RaceEventType =
   | 'position-mode' | 'blocked' | 'overtake' | 'lane-change'
   /** Engine v5: a final-straight duel starts (value 1, `targetRunner` the rival) or ends (value 0). */
   | 'duel'
+  /** Engine v6: a runner's mood for the race, at the gate: −2 (Awful) to +2 (Great). */
+  | 'mood'
 
 export interface RaceEvent {
   tick: number

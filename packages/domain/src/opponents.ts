@@ -19,25 +19,30 @@ export const TYPICAL_BASE_STAT = 110
 export const trainedStat = (tier: number): number => TYPICAL_BASE_STAT + treeBudget(tier) / STATS.length
 
 /**
- * How much weaker than a fully trained Uma a grade's rivals race (D152). A share rather than a fixed amount, so a
- * grade is equally soft at every tier and in every stat of a build. G1 is the real test; each grade below is softer.
+ * How much weaker than a fully trained Uma a grade's rivals race (D152, retuned for engine v6 in D155). A share rather
+ * than a fixed amount, so a grade is equally soft at every tier and in every stat of a build. G1 is the real test;
+ * each grade below is softer.
  */
 export const GRADE_HANDICAP: Record<RaceGrade, number> = {
-  debut: 0.6,
-  maiden: 0.6,
-  'pre-op': 0.55,
-  op: 0.55,
-  g3: 0.5,
-  g2: 0.4,
-  g1: 0.3,
+  debut: 0.35,
+  maiden: 0.35,
+  'pre-op': 0.3,
+  op: 0.3,
+  g3: 0.25,
+  g2: 0.15,
+  g1: 0.05,
 }
 
-/** How a rival spreads her stats for a distance. Each row averages 1: it shapes the build rather than shrinking it. */
+/**
+ * How a rival spreads her stats for a distance, the way a trained Uma does (D155): Speed first, as every real build
+ * stacks it, and the Stamina the distance needs, so a good roll holds a full spurt and a poor one falls short. Each
+ * row averages 1: it shapes the build rather than shrinking it.
+ */
 export const NPC_PROFILE: Record<DistanceCategory, Stats> = {
-  sprint: { speed: 1.15, stamina: 0.8, power: 1.15, guts: 0.92, wit: 0.98 },
-  mile: { speed: 1.14, stamina: 0.91, power: 1.08, guts: 0.91, wit: 0.96 },
-  medium: { speed: 1.12, stamina: 1.01, power: 1.01, guts: 0.9, wit: 0.96 },
-  long: { speed: 1.06, stamina: 1.11, power: 0.94, guts: 0.94, wit: 0.95 },
+  sprint: { speed: 1.5, stamina: 0.65, power: 1.1, guts: 0.8, wit: 0.95 },
+  mile: { speed: 1.45, stamina: 0.8, power: 1.05, guts: 0.75, wit: 0.95 },
+  medium: { speed: 1.4, stamina: 1.0, power: 1.0, guts: 0.7, wit: 0.9 },
+  long: { speed: 1.3, stamina: 1.25, power: 0.9, guts: 0.75, wit: 0.8 },
 }
 
 /**

@@ -19,7 +19,10 @@ import {
   type Stats,
   type Strategy,
 } from '../../packages/domain/src/index'
-import { createRng } from '../../packages/race/src/index'
+import { V6_TUNING, createRng } from '../../packages/race/src/index'
+
+// Every sim can try an engine v6 tuning change without editing the engine: V6='{"speedCoef":0.006}' pnpm sim:…
+if (process.env.V6) Object.assign(V6_TUNING, JSON.parse(process.env.V6))
 
 // --- Synthetic kit -------------------------------------------------------------------------------
 

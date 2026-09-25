@@ -8,7 +8,8 @@ Racing is the **first system to be built** and the heart of the game. Races gran
 0. **Opening training first:** a scenario's races unlock after 1 training turn in that scenario (see [Training](training.md#opening-training)). Races cost no tickets.
 1. **Pick a race** from the calendar or catalog. It shows grade, venue, surface, distance, rewards, and any career goal it counts toward.
 2. **Pick the Uma, strategy, and skill loadout.** Aptitudes are shown for the race's surface, distance, and each strategy.
-3. **Watch the race** in real time on its own course. Speed controls are 1×, 2×, and skip.
+3. **Watch the race** turn by turn on its own course ([engine v6](#engine-v6-turns-m021)): 1× plays two one-second
+   turns a second, and Slow, 2×, pause, step one turn and skip are always at hand.
 4. **Results:** finishing order, margins, time, EXP gained, goal and badge progress, and new badges or titles with fanfare.
 
 ## Race catalog
@@ -33,7 +34,8 @@ Every grade, **G1 included**, can be entered from scenario 1. Higher grades are 
 
 ## Difficulty: the grade handicap
 
-**Goal:** a fully trained Uma is favoured in every race, and the grade decides by how much (D152).
+**Goal:** a fully trained Uma is favoured in every race, and the grade decides by how much (D152; retuned for the
+turn engine, where stats decide races, in D155).
 
 Your Uma races with **the stats on her profile**: her base stats plus what her constellation pays. Nothing is added
 or multiplied at the gate. Rivals are built as **a typical fully trained Uma of your tier**, then handicapped by the
@@ -41,11 +43,11 @@ race's grade:
 
 | Grade | Handicap | Rivals race at |
 |---|---|---|
-| Debut, Maiden | 60% | 40% of a trained Uma |
-| Pre-OP, OP | 55% | 45% |
-| G3 | 50% | 50% |
-| G2 | 40% | 60% |
-| G1 | 30% | 70% |
+| Debut, Maiden | 35% | 65% of a trained Uma |
+| Pre-OP, OP | 30% | 70% |
+| G3 | 25% | 75% |
+| G2 | 15% | 85% |
+| G1 | 5% | 95% |
 
 **A percentage, not a fixed amount.** Trained stats grow from about 950 a stat in scenario 1 to about 1,260 in
 scenario 14, so a fixed cut of, say, 300 would take a third of a scenario-1 rival and a quarter of a scenario-14 one,
@@ -86,7 +88,7 @@ The roll uses the race's seed, so a replay shows the same field, and the race re
 | Aptitudes | **A** for the race's surface and distance, and in her strategy |
 | Strategy | Rolled with the field (above) |
 | Skills | **Baseline enemy kit** (the same for all NPCs) **plus her own unique skill** |
-| Mood | Normal |
+| Mood | Rolled each race, like everyone's ([engine v6](#engine-v6-turns-m021)) |
 
 ### Presets
 
@@ -97,19 +99,23 @@ running style and the scenario's caps. There is one for every scenario, distance
 preset[s]   = min(cap[s], trainedStat(T) × (1 − handicap[grade]) × shape[s] / mean(shape))
 shape[s]    = distance[s] × style[s] × √(cap[s] / averageCap(T))
 trainedStat = 110 + treeBudget(T) / 5      median base stat + a fifth of a full tree of 5★ current-era cards
-handicap    = Debut/Maiden 0.60 · Pre-OP/OP 0.55 · G3 0.50 · G2 0.40 · G1 0.30
+handicap    = Debut/Maiden 0.35 · Pre-OP/OP 0.30 · G3 0.25 · G2 0.15 · G1 0.05
 ```
 
 `trainedStat` is 950 in scenario 1 and about 1,259 in scenario 14. The scenario term makes rivals lean the way its caps
 lean (Trackblazer's rivals carry more Stamina, Run! Mecha Umamusume's more Speed and Power), at the square root so no
 stat runs away. Each profile row averages 1, so it shapes a build rather than shrinking it.
 
+The distance profile is built the way a trained Uma is (D155): **Speed first**, as every real build stacks it, and
+the Stamina the distance needs, set so a good roll holds a full spurt and a poor one can fall short on the longer
+trips. Evenly spread rivals, as first drafted, lost every race to a Speed-stacked player once stats decided races.
+
 | Distance | Speed | Stamina | Power | Guts | Wit |
 |---|---|---|---|---|---|
-| Sprint | 1.15 | 0.80 | 1.15 | 0.92 | 0.98 |
-| Mile | 1.14 | 0.91 | 1.08 | 0.91 | 0.96 |
-| Medium | 1.12 | 1.01 | 1.01 | 0.90 | 0.96 |
-| Long | 1.06 | 1.11 | 0.94 | 0.94 | 0.95 |
+| Sprint | 1.50 | 0.65 | 1.10 | 0.80 | 0.95 |
+| Mile | 1.45 | 0.80 | 1.05 | 0.75 | 0.95 |
+| Medium | 1.40 | 1.00 | 1.00 | 0.70 | 0.90 |
+| Long | 1.30 | 1.25 | 0.90 | 0.75 | 0.80 |
 
 | Style | Speed | Stamina | Power | Guts | Wit | Why |
 |---|---|---|---|---|---|---|
@@ -119,8 +125,8 @@ stat runs away. Each profile row averages 1, so it shapes a build rather than sh
 | End Closer | 1.05 | 0.90 | 1.15 | 1.00 | 0.90 | Most Power for the spurt; the most HP from her Stamina |
 
 > *Example:* scenario 1, a G1 Medium race. Presets (Speed / Stamina / Power / Guts / Wit): Front Runner
-> 782 / 671 / 604 / 598 / 670, End Closer 780 / 603 / 771 / 597 / 573. A rolled End Closer lands anywhere from
-> 624 / 482 / 617 / 478 / 458 to her preset.
+> 1,323 / 900 / 810 / 630 / 850, End Closer 1,319 / 807 / 1,032 / 628 / 727; a G3 End Closer is
+> 1,041 / 637 / 814 / 496 / 574. A rolled rival lands anywhere from 80% of her preset to all of it, stat by stat.
 
 Supersedes the identical generic NPC of D24 and D136–D152: rivals no longer share stats or a strategy per gate.
 
@@ -150,7 +156,11 @@ Supersedes the identical generic NPC of D24 and D136–D152: rivals no longer sh
 - Unsupported variables or effects stay visible in the library but cannot be equipped into a race loadout. T007 adds the
   pack and course variables required by the remaining launch uniques.
 
-### Pack racing (R3)
+### Pack racing (R3, engines v3–v5)
+
+Engine v6 replaces this section's position keeping and blocking with [style bands and per-turn passing](#engine-v6-turns-m021);
+v3–v5 records still replay under it.
+
 
 Engine v3 uses continuous lateral position measured from the inner rail. The standard course width is **11.25 m** and one
 horse lane is `11.25 / 18 = 0.625 m`; lane values are clamped to `[0, 11.25]`. Imported corner and straight ranges are
@@ -198,23 +208,23 @@ per-strategy stat bonus; the G1 player targets below remain the player-facing ac
 ### Difficulty target
 
 An under-trained Uma, or one racing off-aptitude, loses to the field. At Training Level 10 a **fully bonded** set
-should be favoured in every grade, with G1 the hardest; a new set of 0★ cards should win most G3s and only some G1s,
-so stars are what turn a trained Uma into a G1 winner (D152–D153). `pnpm sim:careers` measures it at TL10 with each
-distance's [ladder](constellations.md#balance-targets-the-stamina-ladder) decks against generated fields, best of four
-strategies, 12 runners. Measured 2026-09-25, sprint / mile / medium / long:
+should be favoured in every grade, with G1 the hardest; a new set of 0★ cards should win G3s but not G1s, so stars
+are what turn a trained Uma into a G1 winner (D152–D155). `pnpm sim:careers` measures it on engine v6 at TL10 with
+each distance's [ladder](constellations.md#balance-targets-the-stamina-ladder) decks against generated fields, best of
+four strategies, 12 runners. Measured 2026-09-25, sprint / mile / medium / long:
 
 | Tier | Set | G3 | G2 | G1 |
 |---|---|---|---|---|
-| 1 | 0★ | 70 · 73 · 78 · 63% | 35 · 50 · 75 · 48% | 15 · 28 · 55 · 43% |
-| 1 | 5★ | 93 · 90 · 88 · 75% | 83 · 85 · 85 · 68% | 70 · 80 · 75 · 50% |
-| 7 | 0★ | 65 · 75 · 83 · 73% | 50 · 68 · 70 · 60% | 23 · 30 · 48 · 43% |
-| 7 | 5★ | 90 · 93 · 95 · 85% | 88 · 80 · 93 · 73% | 68 · 85 · 83 · 63% |
-| 14 | 0★ | 58 · 63 · 73 · 60% | 45 · 40 · 60 · 43% | 35 · 35 · 33 · 30% |
-| 14 | 5★ | 88 · 85 · 83 · 75% | 83 · 73 · 78 · 58% | 68 · 68 · 73 · 43% |
+| 1 | 0★ | 100 · 70 · 75 · 35% | 33 · 0 · 3 · 0% | 0 · 0 · 0 · 0% |
+| 1 | 5★ | 100 · 100 · 100 · 100% | 93 · 100 · 100 · 100% | 30 · 53 · 98 · 100% |
+| 7 | 0★ | 98 · 58 · 80 · 18% | 30 · 0 · 0 · 0% | 0 · 0 · 0 · 0% |
+| 7 | 5★ | 100 · 100 · 100 · 100% | 98 · 100 · 100 · 100% | 53 · 78 · 100 · 100% |
+| 14 | 0★ | 98 · 65 · 83 · 65% | 38 · 5 · 5 · 8% | 0 · 0 · 0 · 0% |
+| 14 | 5★ | 100 · 100 · 100 · 100% | 95 · 100 · 100 · 100% | 50 · 68 · 98 · 100% |
 
-Generated fields lifted every cell (rivals average 90% of their preset). The engine still rewards stats weakly: a
-runner spends about 25 seconds of a race blocked, and one at twice the field's stats wins by under a second. The
-turn-based engine ([M021](../tasks/M021-turn-based-races.md)) is where that is fixed, not the handicaps.
+Stats now decide races, so a set's stars decide its grade: a new set wins G3s, a bonded one G1s. G1 is a coin flip in
+sprints and nearly certain at medium and long distances, where the stamina ladder's decks outlast Speed-stacked
+rivals; evening that out by distance is part of T070 ([M021](../tasks/M021-turn-based-races.md)).
 
 ### Stamina contest (engine v4)
 
@@ -258,7 +268,10 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
 - The race is drawn on **its own course**: the snapshotted corners and straights laid out as a path (each numbered
   corner a quarter turn, in the course's direction), with mowing stripes, rails, the start gate, the finish line,
   remaining-distance boards every 100 m, and hills shaded (a climb darker, a descent lighter). Lanes are drawn 3.5×
-  their true width so a pack reads on a phone.
+  their true width so a pack reads on a phone: at true width a field's icons would sit on top of each other.
+- **Turn playback** (engine v6): the HUD shows "Turn 42 / 123" beside the race-wide phase; the bottom card holds
+  step back, pause/play and step forward (by one turn, while paused) and Slow, 1× and 2×; Skip stays in the header.
+  1× plays two turns a second, Slow a turn in 1.5 s. Older replays keep real time and step a second at a time.
 - The camera follows the pack and **turns with the course**, so runners always travel left to right and a corner
   visibly bends ahead of them. A **minimap** in the corner shows the whole course and every runner.
 - Races recorded before engine v3 have no course snapshot and are drawn on a straight.
@@ -278,7 +291,8 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
 
 ## Engine principles
 
-- **Simulation is separate from rendering.** A pure, deterministic sim steps at a fixed tick (the original game reportedly uses 1/15 s).
+- **Simulation is separate from rendering.** A pure, deterministic sim steps at a fixed tick: one-second turns in engine
+  v6 (M021); 1/15 s, as the original game reportedly uses, in v1–v5, which still replay their own records.
 - **Seeded RNG:** the same seed and the same inputs replay the same race.
 - **Headless batch mode:** run thousands of races to tune opponents, EXP, and badges.
 
@@ -294,6 +308,7 @@ Based on [Race Mechanics Research](../research/race-mechanics.md):
 | R3: Pack | Lanes, position keeping, blocking, overtaking |
 | R4: Drama (engine v5) | **Slopes and final-straight dueling** ✅. Spot struggle and rushing are out: in a one-Uma game they are randomness with no decision behind them (D141) |
 | R5: Full skills (engine v5) | Random course points, the race clock, course facts, counters, green and gate skills ✅. Debuffs and team effects are out (D141) |
+| Turns (engine v6, M021) | One-second turns, race-wide phases, per-turn passing, style bands, mood, and a Speed term that decides races ✅ |
 
 ### Engine v5 (M018)
 
@@ -312,3 +327,60 @@ Verified against uma-skill-tools and the torena-sim mechanics notes; see [Race E
   this game" and cannot be equipped.
 - Ground condition, weather and mood read Good, sunny and normal until the game models them.
 - v1–v4 results replay under their own rules.
+
+### Engine v6: turns (M021)
+
+A race is a fixed number of **one-second turns**, and everything happens on them (D154). v5's speed, acceleration,
+HP, spurt plan, hills, duels and skills carry over with a one-second step; the pack, the Speed term and a few rates
+are retuned so a race reads as a race and stats decide it (D155). v1–v5 results replay under their own rules.
+
+**The clock.** `turns = ⌈distance / baseSpeed⌉`: 58 turns at 1,200 m, 79 at 1,600 m, 100 at 2,000 m, 123 at 2,400 m,
+171 at 3,200 m. Phases start on fixed turns shared by the whole field: Opening at turn 1, Middle leg at `⌈T/6⌉ + 1`,
+Final leg at `⌈2T/3⌉ + 1`, Last spurt at `⌈5T/6⌉ + 1`. The turns split into 24 sections for Wit's section roll.
+
+**A turn**, for every runner from the same start-of-turn state: effects expire; skills check their conditions; on the
+first final-leg turn she plans her spurt; her target speed is set (style coefficient, Speed, spurt, section roll,
+skills, hills, duel, her style band); her speed moves toward it by one second of acceleration; she proposes a move of
+`(v + v′) / 2`; passing resolves; HP drains for the ground she covered; and a runner over the line finishes at the
+fraction of the turn where she crossed it.
+
+**Passing**, front to back by where each runner started the turn. A runner whose move would end within a length of
+one already placed in her lane swings out, up to three lanes, or one lane in, into the nearest free lane and keeps her
+move, and each runner she ends ahead of is an **overtake**. With no lane free she is **blocked**: she ends a length
+behind at that runner's speed. A runner with the way clear drifts a fifth of a lane toward the rail.
+
+**Style bands** replace position keeping. Through the opening and middle legs each style runs in a band of lengths
+behind the leader, set at 2,000 m and scaled with the course as the original scales position keeping
+(`0.0008 × (distance − 1000) + 1`): Front 0–2, Pace 2–5, Late 5–8, End 7–11. Ahead of her band she eases (target
+× 0.985); behind it she presses (× 1.015). From the final leg everyone races.
+
+**Mood**, the original's motivation, is rolled for every runner each race from its seed: Awful, Bad, Normal, Good or
+Great, equally likely, moving every stat by 2% a level. Skill conditions read it.
+
+**Tuning** (`V6_TUNING`, set with `pnpm sim:turns`):
+
+| Knob | Value | What it does |
+|---|---|---|
+| Speed term | `0.002 × √(500 × 600) + 0.005 × (√(500 × Speed) − √(500 × 600))`, from the middle leg | The original's term at Speed 600, with 2.5× its slope around it, so Speed counts from the middle leg and a better Uma pulls away |
+| Acceleration | × 2 | Runners reach a new target in a few turns, so their speed shows before the line |
+| HP rate | × 0.85 | Set so the stamina ladder's decks hold a full spurt at the new speeds |
+| Swing | 3 lanes | How far a blocked runner may move out in a turn |
+| Rail drift | 0.2 lane a turn | How fast a clear runner comes back to the rail |
+| Section roll | 0.65% of base speed | The original's |
+| Mood | 2% a level | The original's |
+
+Measured with `pnpm sim:turns` in generated 12-runner G1 fields at tier 1, 2026-09-25:
+
+| Distance | Turns | Winner → last | Spread, 60% in | Overtakes | Blocked a runner | Short of stamina | Wins F / P / L / E |
+|---|---|---|---|---|---|---|---|
+| 1,200 m | 58 | 0.5 s | 15 m | 55 | 0.6 s | 0% | 50 / 35 / 13 / 2% |
+| 1,600 m | 79 | 0.7 s | 19 m | 62 | 0.6 s | 0% | 40 / 37 / 18 / 5% |
+| 2,000 m | 100 | 0.9 s | 22 m | 72 | 0.7 s | 0% | 22 / 32 / 35 / 12% |
+| 2,400 m | 123 | 1.1 s | 26 m | 79 | 0.7 s | 4% | 25 / 18 / 40 / 17% |
+| 3,000 m | 158 | 1.6 s | 33 m | 83 | 0.6 s | 22% | 32 / 22 / 35 / 12% |
+
+Stats decide: at 2,000 m a runner at twice the field's average wins every race by about 2 s, at +20% she wins 88–92%,
+and at +10% 32–52%. At the field's average she almost never wins, since the luckiest rolls in a field of eleven beat
+her. v5, for comparison, blocked a runner 17–26 s a race, and a runner at twice the field won half her races. Front
+runners still lead sprints, as they do in the original, and the field still finishes within about a second at
+2,000 m, under M021's 2–6 s target: rivals of one grade share presets. Both are open in T070.

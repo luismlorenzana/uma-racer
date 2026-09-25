@@ -67,6 +67,7 @@ import {
   type Strategy,
 } from '@racer/domain'
 import { createRng, type Rng } from './rng'
+import { V6_TUNING, phaseTurns, raceTurns, v6SpeedTerm } from './turn-clock'
 import {
   createPackState,
   nearCount,
@@ -95,7 +96,7 @@ export function phaseAt(distanceCovered: number, courseDistance: number): 0 | 1 
 export const sectionAt = (distanceCovered: number, courseDistance: number): number =>
   Math.min(23, Math.floor(distanceCovered / (courseDistance / 24)))
 
-interface RunnerState {
+export interface RunnerState {
   input: RaceRunnerInput
   speedStat: number
   stamina: number
@@ -162,6 +163,8 @@ interface RandomPhaseTrigger {
   variable: string
   value: number
   distanceShare: number
+  /** Engine v6: a phase-random trigger fires on this turn rather than at a share of the distance. */
+  turn?: number
   consumed: boolean
 }
 
@@ -171,9 +174,9 @@ interface ActiveEffect {
   untilTick: number
 }
 
-type RulesVersion = 1 | 2 | 3 | 4 | 5
+export type RulesVersion = 1 | 2 | 3 | 4 | 5 | 6
 
-const hpPerSecond = (v: number, baseSpeed: number, lateRace: boolean, gutsMod: number): number =>
+export const hpPerSecond = (v: number, baseSpeed: number, lateRace: boolean, gutsMod: number): number =>
   ((20 * (v - baseSpeed + 12) ** 2) / 144) * (lateRace ? gutsMod : 1)
 
 const phaseBounds = (phase: number): readonly [number, number] => [
@@ -234,7 +237,7 @@ function samplePoint(spans: readonly Span[], rng: Rng): number {
   return spans.at(-1)![1]
 }
 
-function randomPhaseTriggers(condition: RaceCondition | null, rng: Rng, course: RaceCourse): RandomPhaseTrigger[] {
+function randomPhaseTriggers(condition: RaceCondition | null, rng: Rng, course: RaceCourse, turns?: number): RandomPhaseTrigger[] {
   const seen = new Set<string>()
   return (condition ?? []).flatMap((alternative) => alternative.flatMap((atom) => {
     const phaseRandom = RANDOM_PHASE_VARIABLES.has(atom.variable)
@@ -245,6 +248,16 @@ function randomPhaseTriggers(condition: RaceCondition | null, rng: Rng, course: 
     if (!phaseRandom) {
       const point = samplePoint(randomCourseSpans(atom.variable, atom.value, course), rng)
       return [{ variable: atom.variable, value: atom.value, distanceShare: point / course.distance, consumed: false }]
+    }
+    if (turns !== undefined) {
+      // Engine v6: a random turn inside the phase's turns (or the half the variable names).
+      if (!Number.isInteger(atom.value) || atom.value < 0 || atom.value > 3) return [{ variable: atom.variable, value: atom.value, distanceShare: Infinity, turn: Infinity, consumed: false }]
+      const [first, last] = phaseTurns(atom.value, turns)
+      const half = Math.floor((first + last) / 2)
+      const low = atom.variable === 'phase_laterhalf_random' ? half + 1 : first
+      const high = atom.variable === 'phase_firsthalf_random' ? half : last
+      const turn = low + Math.floor(rng.next() * (Math.max(low, high) - low + 1))
+      return [{ variable: atom.variable, value: atom.value, distanceShare: Infinity, turn, consumed: false }]
     }
     const [phaseStart, phaseEnd] = phaseBounds(atom.value)
     const middle = (phaseStart + phaseEnd) / 2
@@ -272,9 +285,10 @@ function runnerStats(stats: Stats, input: RaceRunnerInput, distance: number) {
   }
 }
 
-function initRunner(input: RaceRunnerInput, course: RaceCourse, rng: Rng, raceSeed: number, rulesVersion: RulesVersion): RunnerState {
+export function initRunner(input: RaceRunnerInput, course: RaceCourse, rng: Rng, raceSeed: number, rulesVersion: RulesVersion): RunnerState {
   const { distance } = course
   const derived = runnerStats(input.stats, input, distance)
+  const turns = rulesVersion >= 6 ? raceTurns(distance) : undefined
   return {
     input,
     speedStat: derived.speedStat,
@@ -306,8 +320,8 @@ function initRunner(input: RaceRunnerInput, course: RaceCourse, rng: Rng, raceSe
         groups: skill.groups.map((group) => ({
           armed: false,
           randomTriggers: [
-            ...randomPhaseTriggers(group.precondition, skillRng, course),
-            ...randomPhaseTriggers(group.condition, skillRng, course),
+            ...randomPhaseTriggers(group.precondition, skillRng, course, turns),
+            ...randomPhaseTriggers(group.condition, skillRng, course, turns),
           ],
         })),
       }
@@ -378,13 +392,15 @@ function decideSpurt(r: RunnerState, distance: number, rng: Rng, rulesVersion: R
  * start it and still finish on her HP, holding her final-leg pace until then; the pairs are tried fastest finish
  * first, and Wit decides whether she settles for each one.
  */
-function planSpurt(r: RunnerState, distance: number, rng: Rng): void {
+export function planSpurt(r: RunnerState, distance: number, rng: Rng, rulesVersion: RulesVersion = 5): void {
   const baseSpeed = baseSpeedFor(distance)
-  const speedTerm = Math.sqrt(500 * r.speedStat) * DISTANCE_APT_SPEED[r.input.aptitude.distance] * 0.002
+  const speedTerm = rulesVersion >= 6
+    ? v6SpeedTerm(r.speedStat, DISTANCE_APT_SPEED[r.input.aptitude.distance])
+    : Math.sqrt(500 * r.speedStat) * DISTANCE_APT_SPEED[r.input.aptitude.distance] * 0.002
   const legPace = baseSpeed * SPEED_COEF[r.input.strategy][2] + speedTerm
   const max = (legPace + 0.01 * baseSpeed) * 1.05 + speedTerm + (450 * r.guts) ** 0.597 * 0.0001
   const remaining = Math.max(0, distance - r.d - SPURT_BUFFER_METERS)
-  const drain = (v: number) => hpPerSecond(v, baseSpeed, true, r.gutsMod)
+  const drain = (v: number) => hpPerSecond(v, baseSpeed, true, r.gutsMod) * (rulesVersion >= 6 ? V6_TUNING.hpScale : 1)
   if (r.hp >= (drain(max) * remaining) / max) {
     r.spurt = max + staminaContestBonus(r.rawStamina, distance, rng)
     r.spurtStart = r.d
@@ -413,11 +429,11 @@ function planSpurt(r: RunnerState, distance: number, rng: Rng): void {
   r.spurtStart = Math.max(r.d, chosen.start)
 }
 
-function activeModifier(r: RunnerState, kind: ActiveEffect['kind']): number {
+export function activeModifier(r: RunnerState, kind: ActiveEffect['kind']): number {
   return r.activeEffects.filter((effect) => effect.kind === kind).reduce((sum, effect) => sum + effect.amount, 0)
 }
 
-function expireActiveEffects(r: RunnerState, tick: number, rulesVersion: RulesVersion): void {
+export function expireActiveEffects(r: RunnerState, tick: number, rulesVersion: RulesVersion): void {
   const expired = r.activeEffects.filter((effect) => effect.untilTick <= tick)
   if (rulesVersion >= 3) {
     for (const effect of expired) if (effect.kind === 'current-speed-natural') r.v = Math.max(0, r.v + effect.amount)
@@ -425,12 +441,15 @@ function expireActiveEffects(r: RunnerState, tick: number, rulesVersion: RulesVe
   r.activeEffects = r.activeEffects.filter((effect) => effect.untilTick > tick)
 }
 
-function targetSpeed(r: RunnerState, phase: number, distance: number, positionCoefficient = 1, rulesVersion: RulesVersion = 4): number {
+export function targetSpeed(r: RunnerState, phase: number, distance: number, positionCoefficient = 1, rulesVersion: RulesVersion = 4): number {
   const baseSpeed = baseSpeedFor(distance)
   if (r.hpEmpty) return r.minSpeed
   if (rulesVersion >= 5) {
     // Before her spurt point she holds the final-leg pace, which counts her Speed as the original does.
-    const speedTerm = phase >= 2 ? Math.sqrt(500 * r.speedStat) * DISTANCE_APT_SPEED[r.input.aptitude.distance] * 0.002 : 0
+    const v6 = rulesVersion >= 6
+    const aptitude = DISTANCE_APT_SPEED[r.input.aptitude.distance]
+    const speedTerm = phase < (v6 ? V6_TUNING.speedFromPhase : 2) ? 0
+      : v6 ? v6SpeedTerm(r.speedStat, aptitude) : Math.sqrt(500 * r.speedStat) * aptitude * 0.002
     const base = r.spurting && r.spurt !== null
       ? r.spurt
       : baseSpeed * SPEED_COEF[r.input.strategy][Math.min(phase, 2) as 0 | 1 | 2] + speedTerm + baseSpeed * r.sectionRandom
@@ -448,7 +467,7 @@ function targetSpeed(r: RunnerState, phase: number, distance: number, positionCo
   return r.startDash ? modified : Math.max(modified, r.minSpeed)
 }
 
-const actualSpeed = (r: RunnerState): number =>
+export const actualSpeed = (r: RunnerState): number =>
   Math.max(0, r.v + activeModifier(r, 'current-speed') + activeModifier(r, 'current-speed-natural'))
 
 const strategyNumber = (strategy: Strategy): number => ({ front: 1, pace: 2, late: 3, end: 4 })[strategy]
@@ -458,7 +477,7 @@ const distanceType = (distance: number): number => distance <= 1400 ? 1 : distan
 export const skillActivationChance = (wit: number): number =>
   Math.max(SKILL_ACTIVATION_MIN, Math.min(1, 1 - SKILL_ACTIVATION_WIT_DIVISOR / Math.max(1, wit)))
 
-function skillContext(
+export function skillContext(
   r: RunnerState,
   course: RaceInput['course'],
   order: number,
@@ -562,7 +581,7 @@ function skillContext(
   }
 }
 
-function activateSkills(
+export function activateSkills(
   r: RunnerState,
   runner: number,
   tick: number,
@@ -570,6 +589,8 @@ function activateSkills(
   events: RaceEvent[],
   rulesVersion: RulesVersion,
   courseDistance: number,
+  /** Engine v6: the turn and its race-wide phase. Durations then count whole turns. */
+  turn?: { turn: number; phase: number },
 ): void {
   for (const runtime of r.skills) {
     if (runtime.resolved) continue
@@ -579,7 +600,9 @@ function activateSkills(
       // Gate-only groups resolved (or failed) at the gate; they never fire mid-race.
       if (group.effects.every((effect) => GATE_EFFECT_KINDS.has(effect.kind))) continue
       const groupContext = { ...context }
-      const crossed = state.randomTriggers.filter((trigger) => !trigger.consumed && context.distance_rate! / 100 >= trigger.distanceShare)
+      const crossed = state.randomTriggers.filter((trigger) => !trigger.consumed && (trigger.turn !== undefined
+        ? turn !== undefined && turn.turn >= trigger.turn
+        : context.distance_rate! / 100 >= trigger.distanceShare))
       for (const trigger of state.randomTriggers) groupContext[trigger.variable] = -1
       for (const trigger of crossed) groupContext[trigger.variable] = trigger.value
       if (!state.armed && evaluateRaceCondition(group.precondition, groupContext)) state.armed = true
@@ -591,9 +614,9 @@ function activateSkills(
       const duration = rulesVersion >= 3 && group.duration >= 0 ? group.duration * courseDistance / 1_000 : group.duration
       const untilTick = duration === -1
         ? Number.MAX_SAFE_INTEGER
-        : tick + Math.max(1, Math.round(duration * TICK_RATE))
+        : tick + Math.max(1, Math.round(duration * (turn ? 1 : TICK_RATE)))
       if (rulesVersion >= 5) {
-        const phase = phaseAt(r.d, courseDistance)
+        const phase = turn ? turn.phase : phaseAt(r.d, courseDistance)
         r.activations.all += 1
         if (phase === 0) r.activations.start += 1
         else if (phase === 1) r.activations.middle += 1
@@ -607,7 +630,7 @@ function activateSkills(
           r.hp = Math.min(r.maxHp, r.hp + r.maxHp * effect.amount)
           if (r.hp > 0) r.hpEmpty = false
           // A heal in the final leg before her spurt point re-plans the spurt (engine v5).
-          if (rulesVersion >= 5 && r.spurt !== null && !r.spurting) planSpurt(r, courseDistance, runtime.rng)
+          if (rulesVersion >= 5 && r.spurt !== null && !r.spurting) planSpurt(r, courseDistance, runtime.rng, rulesVersion)
         } else if (effect.kind === 'current-speed' && rulesVersion < 3) {
           r.v = Math.max(0, r.v + effect.amount)
         } else {
@@ -633,7 +656,7 @@ function activateSkills(
  * Engine v5 gate: green skills add to her stats and gate skills scale her start delay, before the doors open. Their
  * conditions read the race as it stands at the gate.
  */
-function resolveGateSkills(r: RunnerState, runner: number, context: Readonly<Record<string, number>>, events: RaceEvent[], distance: number): void {
+export function resolveGateSkills(r: RunnerState, runner: number, context: Readonly<Record<string, number>>, events: RaceEvent[], distance: number): void {
   const gains: Stats = { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }
   const statFor: Partial<Record<RaceSkillEffectKind, keyof Stats>> = {
     'passive-speed': 'speed', 'passive-stamina': 'stamina', 'passive-power': 'power', 'passive-guts': 'guts', 'passive-wit': 'wit',
@@ -704,13 +727,14 @@ function updateHill(r: RunnerState, course: RaceCourse): void {
  * above 15% HP and within 0.6 m/s; it ends below 5% HP or once 5 m clear of every duelist. Former duelists never
  * duel again or become targets.
  */
-function updateFieldStateV5(
+export function updateFieldStateV5(
   runners: RunnerState[],
   snapshots: readonly PackRunnerSnapshot[],
   places: ReadonlyMap<number, number>,
   course: RaceCourse,
   tick: number,
   events: RaceEvent[],
+  ticksPerSecond: number = TICK_RATE,
 ): void {
   const lastStraight = course.layout?.straights.at(-1)
   const onLastStraight = (d: number) => lastStraight !== undefined && d >= lastStraight.start && d < lastStraight.end
@@ -757,7 +781,7 @@ function updateFieldStateV5(
       return
     }
     const rival = runners[candidate.index]!
-    if (tick - r.duelSince >= DUEL_WINDOW_SECONDS * TICK_RATE && onLastStraight(self.distance) &&
+    if (tick - r.duelSince >= DUEL_WINDOW_SECONDS * ticksPerSecond && onLastStraight(self.distance) &&
       (places.get(i)! <= count / 2 || places.get(candidate.index)! <= count / 2) &&
       hpShare(r) >= DUEL_MIN_HP && hpShare(rival) >= DUEL_MIN_HP && Math.abs(self.speed - candidate.speed) < DUEL_SPEED_GAP) {
       r.dueling = true
@@ -984,6 +1008,9 @@ function simulateRaceRules(input: RaceInput, rulesVersion: RulesVersion): RaceTi
 /** Engine v5 race rules (M018): v4 plus the spurt plan, hills, final-straight duels, gate and green skills. */
 export const simulateRace = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 5)
 
+/** Engine v5 by name, for replaying the races run under it once v6 is the current engine (M021). */
+export const simulateRaceV5 = simulateRace
+
 /** Engine v4, before v5's spurt plan, hills, duels and gate skills (M018): its replays keep their exact outcome. */
 export const simulateRaceV4 = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 4)
 
@@ -996,7 +1023,7 @@ export const simulateRaceV2 = (input: RaceInput): RaceTimeline => simulateRaceRu
 /** Frozen T005 skillless rules for append-only engine-v1 result replay. */
 export const simulateRaceV1 = (input: RaceInput): RaceTimeline => simulateRaceRules(input, 1)
 
-function rankRunners(runners: RunnerState[]): RunnerResult[] {
+export function rankRunners(runners: RunnerState[]): RunnerResult[] {
   const order = runners
     .map((r, i) => ({ r, i }))
     .sort((a, b) => (a.r.finishTime ?? Infinity) - (b.r.finishTime ?? Infinity) || b.r.d - a.r.d || a.i - b.i)

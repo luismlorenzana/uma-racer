@@ -850,15 +850,17 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
     ...(versioned ? ['engineVersion', 'course'] : []),
   ]) ||
-      (versioned && ![2, 3, 4, 5].includes(version as number)) || !Array.isArray(value.field)) return null
-  const hasLayout = version === 3 || version === 4 || version === 5
+      (versioned && ![2, 3, 4, 5, 6].includes(version as number)) || !Array.isArray(value.field)) return null
+  // Engine v6 (turns, D154) records the same course as v5.
+  const v5Course = version === 5 || version === 6
+  const hasLayout = version === 3 || version === 4 || v5Course
   if (versioned && (
     !isRecord(value.course) ||
-    !exactKeys(value.course, version === 5 ? RACE_COURSE_V5_FIELDS : hasLayout ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
+    !exactKeys(value.course, v5Course ? RACE_COURSE_V5_FIELDS : hasLayout ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
     !isPositiveInt(value.course.distance) || !['turf', 'dirt'].includes(String(value.course.surface)) ||
     !isNonNegativeInt(value.course.season) ||
-    (hasLayout && !parseCourseLayout(value.course.layout, value.course.distance, version === 5)) ||
-    (version === 5 && (!isNonNegativeInt(value.course.trackId) || !isNonNegativeInt(value.course.rotation)))
+    (hasLayout && !parseCourseLayout(value.course.layout, value.course.distance, v5Course)) ||
+    (v5Course && (!isNonNegativeInt(value.course.trackId) || !isNonNegativeInt(value.course.rotation)))
   )) return null
   const fieldSize = value.field.length
   if (

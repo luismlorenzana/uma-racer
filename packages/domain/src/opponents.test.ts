@@ -36,9 +36,9 @@ const mean = (stats: Stats) => STATS.reduce((sum, stat) => sum + stats[stat], 0)
 
 describe('rival presets (D153)', () => {
   it('average the handicapped trained Uma where no cap bites', () => {
-    // Tier 1's caps are even, so the scenario leans nowhere: 950 × (1 − 0.30) on average for a G1.
-    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy))).toBeCloseTo(665)
-    expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(trainedStat(1) * 0.5)
+    // Tier 1's caps are even, so the scenario leans nowhere: 950 × (1 − 0.05) on average for a G1.
+    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy))).toBeCloseTo(902.5)
+    expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(trainedStat(1) * 0.75)
   })
 
   it('shape each running style after what it needs', () => {

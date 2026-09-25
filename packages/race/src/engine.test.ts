@@ -4,7 +4,8 @@ import {
   formatMargin,
   phaseAt,
   sampleTimeline,
-  simulateRace,
+  // These tests pin engine v5, which every v5 record still replays on; v6 (turns) has turns.test.ts.
+  simulateRaceV5 as simulateRace,
   simulateRaceV1,
   simulateRaceV2,
   simulateRaceV3,
