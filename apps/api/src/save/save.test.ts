@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LocalSaveRepository } from './local-save.repository'
 import { LEDGER_REASONS, LEDGER_RESOURCES, MAX_SYNC_OPERATIONS, parseSyncRequest, resolveUpserts, type EntityRecord } from './save.types'
+import { fromStored, hasNestedArray, toStored } from './firestore-codec'
 
 describe('LocalSaveRepository sync', () => {
   let dir: string
@@ -546,5 +547,33 @@ describe('ledger vocabulary', () => {
     const data = { resource: 'tickets', delta: -30, reason: 'card-unlock', localDay: '2026-09-22', createdAt: 1 }
     expect(parseSyncRequest({ appends: [{ kind: 'ledger', id: 'card-unlock:30019', data, createdAt: 1 }] }))
       .toMatchObject({ appends: [{ data }] })
+  })
+})
+
+describe('Firestore codec', () => {
+  // A compiled skill condition, alternatives of clauses, is an array of arrays, which Firestore cannot store (D151).
+  const raceRecord = {
+    kind: 'raceResults' as const, id: 'race:u1:0', createdAt: 1,
+    data: { field: [{ umaId: 'u1', skills: [{ groups: [{ condition: [[{ variable: 'phase', op: '>=', value: 2 }]] }] }] }] },
+  }
+
+  it('finds an array directly inside another array, however deep', () => {
+    expect(hasNestedArray(raceRecord.data)).toBe(true)
+    expect(hasNestedArray({ a: [1, { b: [2, 3] }], c: { d: [] } })).toBe(false)
+    expect(hasNestedArray([[1]])).toBe(true)
+  })
+
+  it('stores such a record as JSON text and reads it back exactly', () => {
+    const stored = toStored(raceRecord)
+    expect(stored).not.toHaveProperty('data')
+    expect(typeof stored.dataJson).toBe('string')
+    expect(hasNestedArray(stored)).toBe(false)
+    expect(fromStored(stored)).toEqual(raceRecord)
+  })
+
+  it('leaves every other record, and documents written before, as they are', () => {
+    const ledger = { kind: 'ledger' as const, id: 'l1', createdAt: 1, data: { resource: 'tickets', delta: 10, reason: 'daily-grant', localDay: null, createdAt: 1 } }
+    expect(toStored(ledger)).toEqual(ledger)
+    expect(fromStored(ledger)).toEqual(ledger)
   })
 })

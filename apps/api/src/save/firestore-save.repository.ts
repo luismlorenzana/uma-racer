@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common'
 import * as admin from 'firebase-admin'
 import { isDeepStrictEqual } from 'node:util'
+import { fromStored, toStored } from './firestore-codec'
 import type { SaveRepository } from './save.repository'
 import {
   ENTITY_KINDS,
@@ -35,8 +36,8 @@ export class FirestoreSaveRepository implements SaveRepository {
       Promise.all(LOG_KINDS.map((kind) => player.collection(kind).get())),
     ])
     return {
-      entities: entitySnaps.flatMap((snap) => snap.docs.map((d) => d.data() as EntityRecord)),
-      logs: logSnaps.flatMap((snap) => snap.docs.map((d) => d.data() as LogRecord)),
+      entities: entitySnaps.flatMap((snap) => snap.docs.map((d) => fromStored<EntityRecord>(d.data()))),
+      logs: logSnaps.flatMap((snap) => snap.docs.map((d) => fromStored<LogRecord>(d.data()))),
       serverTime: Date.now(),
     }
   }
@@ -55,12 +56,12 @@ export class FirestoreSaveRepository implements SaveRepository {
       const existing = new Map<string, EntityRecord>()
       for (const doc of entityDocs) {
         if (doc.exists) {
-          const record = doc.data() as EntityRecord
+          const record = fromStored<EntityRecord>(doc.data()!)
           existing.set(`${record.kind}/${record.id}`, record)
         }
       }
       const { writes, conflicts } = resolveUpserts(existing, request.upserts, now)
-      for (const record of writes) tx.set(player.collection(record.kind).doc(record.id), record)
+      for (const record of writes) tx.set(player.collection(record.kind).doc(record.id), toStored(record))
 
       let appended = 0
       request.appends.forEach((a, i) => {
@@ -68,10 +69,10 @@ export class FirestoreSaveRepository implements SaveRepository {
         if (logDocs[i]?.exists) {
           // A log id names one event, so the first write wins (D149). Two devices recording the same event, such as
           // the same day's grant, differ only in when; failing the whole batch over that froze sync for five days.
-          if (!isDeepStrictEqual(logDocs[i]!.data(), record)) this.logger.warn(`Kept the first copy of ${a.kind}/${a.id}`)
+          if (!isDeepStrictEqual(fromStored<LogRecord>(logDocs[i]!.data()!), record)) this.logger.warn(`Kept the first copy of ${a.kind}/${a.id}`)
           return
         }
-        tx.set(logRefs[i]!, record)
+        tx.set(logRefs[i]!, toStored(record))
         appended++
       })
 

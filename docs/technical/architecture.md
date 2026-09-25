@@ -201,14 +201,18 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ```text
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v4: progression, deck/library/history, parents/snapshot, journeys, modifier, version
-players/{uid}/cards/{cardId}          templateId, level/EXP, limitBreak, maxCouponGranted, version
+players/{uid}/umas/{umaId}            save v7: level/EXP, unlocked tier, one training run per scenario, history, version
+players/{uid}/cards/{cardId}          save v7: templateId, stars per scenario, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 ```
+
+Firestore cannot store an array directly inside another array, and a race record's compiled skill conditions are one.
+A record whose data holds a nested array is written with its data as JSON text (`dataJson`) and decoded on every read;
+all other records keep `data` as a map (D151).
 
 The profile is save v4 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
 creation time, and schema version. Every Uma row is also explicitly v4. Parent/snapshot/history and strict Journey goal
