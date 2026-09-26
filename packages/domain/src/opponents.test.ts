@@ -3,6 +3,7 @@ import {
   CAP_PROFILES,
   DISTANCE_CATEGORIES,
   RACE_GRADES,
+  RIVAL_SKILL_RANGE,
   RIVAL_STAMINA_ROLL,
   RIVAL_STAT_FLOOR,
   SPREAD_STATS,
@@ -13,11 +14,14 @@ import {
   castRivals,
   fullSpurtStamina,
   rivalPreset,
+  parseRaceCondition,
   rollRivalField,
+  rollRivalSkills,
   rollRivalStats,
   rollStyleCounts,
   trainedStat,
   type Aptitudes,
+  type CompiledRaceSkill,
   type Stats,
   type Strategy,
   type UmaTemplate,
@@ -78,6 +82,41 @@ describe('rival presets (D153, D159)', () => {
         for (const stat of STATS) expect(preset[stat]).toBeLessThanOrEqual(capProfile(tier)[stat])
       }
     }
+  })
+})
+
+describe('rival skills (D163)', () => {
+  const white = (id: string, condition: string): CompiledRaceSkill => ({
+    id, activation: 'wit', inherited: false,
+    groups: [{ precondition: null, condition: parseRaceCondition(condition)!, duration: 3, cooldown: 0, effects: [{ kind: 'target-speed', amount: 0.15 }], unsupportedVariables: [], unsupportedEffects: [] }],
+  })
+  const pool = [
+    ...Array.from({ length: 10 }, (_, index) => white(`any-${index}`, 'phase_random==2')),
+    white('front-only', 'running_style==1'),
+    white('long-only', 'distance_type==4'),
+  ]
+  const course = { distance: 2000, surface: 'turf' as const }
+
+  it('rolls three to seven whites without repeats, five on average', () => {
+    let total = 0
+    for (let seed = 1; seed <= 400; seed += 1) {
+      const kit = rollRivalSkills(pool, { strategy: 'pace', course, rng: rng(seed) })
+      expect(kit.length).toBeGreaterThanOrEqual(RIVAL_SKILL_RANGE.min)
+      expect(kit.length).toBeLessThanOrEqual(RIVAL_SKILL_RANGE.max)
+      expect(new Set(kit.map((skill) => skill.id)).size).toBe(kit.length)
+      total += kit.length
+    }
+    expect(total / 400).toBeCloseTo(5, 0)
+  })
+
+  it('draws only skills that can fire for her style on this course', () => {
+    for (let seed = 1; seed <= 200; seed += 1) {
+      const ids = rollRivalSkills(pool, { strategy: 'pace', course, rng: rng(seed) }).map((skill) => skill.id)
+      expect(ids).not.toContain('front-only')
+      expect(ids).not.toContain('long-only')
+    }
+    const fronts = Array.from({ length: 200 }, (_, seed) => rollRivalSkills(pool, { strategy: 'front', course, rng: rng(seed + 1) }))
+    expect(fronts.some((kit) => kit.some((skill) => skill.id === 'front-only'))).toBe(true)
   })
 })
 

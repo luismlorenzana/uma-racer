@@ -1,6 +1,6 @@
 // CLI orchestration for the private content data pipeline (scripts/data/README.md).
 
-import { SCENARIOS, assertRaceCourseContent, selectBaselineRaceSkills, summarizeRaceSkillCoverage } from '@racer/domain'
+import { SCENARIOS, assertRaceCourseContent, selectRivalSkillPool, summarizeRaceSkillCoverage } from '@racer/domain'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { DATASET_NAMES, loadGameToraData } from './gametora'
@@ -35,7 +35,9 @@ async function main(): Promise<void> {
   const skills = normalizeSkills(datasets.skills)
   const courses = normalizeCourses(datasets.racetracks)
   const skillCoverage = summarizeRaceSkillCoverage(skills.items)
-  const baselineSkills = selectBaselineRaceSkills(skills.items)
+  // Rivals roll their whites from this pool (D163); an empty pool would leave every rival with only her unique.
+  const rivalPool = selectRivalSkillPool(skills.items)
+  if (rivalPool.length < 40) throw new Error(`The rival skill pool has only ${rivalPool.length} whites`)
   const scenarioWarning = scenarioCoverageWarning(datasets.scenarios, SCENARIOS.map((scenario) => scenario.jpRelease))
   assertRaceCourseContent(races.items, courses.items)
 
@@ -47,7 +49,7 @@ async function main(): Promise<void> {
   console.log(`SSR cards: ${cards.items.length} (${cardStarters} starters)`)
   console.log(`Skills: ${skills.items.length}`)
   console.log(`Race-skill coverage: ${skillCoverage.supported}/${skillCoverage.total}`)
-  console.log(`Baseline NPC skill kit: ${baselineSkills.length}/4`)
+  console.log(`Rival skill pool: ${rivalPool.length} whites`)
   console.log(`Races: ${races.items.length}`)
   console.log(`Flair coverage: ${flair.coverage.taggedFamilies} families · ${flair.coverage.taggedSeries} series · ${flair.coverage.mainVenues} main venues`)
   console.log(`Objectives: ${objectives.counts.rows} rows · ${objectives.counts.characters} characters · ${objectiveOutfits} outfits · ${objectives.counts.resolvedReferences} resolved · ${objectives.counts.unresolvedReferences} unresolved`)

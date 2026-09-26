@@ -88,6 +88,7 @@ import {
 import {
   bootstrapBadgeFacts,
   bootstrapUmaFlair,
+  updateTrainingBadgeFacts,
   evaluateUmaBadgeState,
   updateMemoryRaceBadgeFacts,
   badgeSubject,
@@ -421,14 +422,18 @@ export class GameRuntime {
       return
     }
     const now = Date.now()
-    await db.transaction('rw', db.umas, db.outbox, async () => {
+    const content = this.content
+    await db.transaction('rw', [db.umas, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
       const row = await db.umas.get(id)
       if (!row) throw new Error('Local Uma is missing')
       await db.umas.put({ ...row, data: next })
       await queueInTransaction('umas', id, 'upsert', now)
+      // Filling the last node of a tree is her Full House (T056).
+      if (content) await updateTrainingBadgeFacts({ content, uma: next, sourceId: `constellation:${id}:${run.tier}`, now })
     })
     if (generation !== this.generation) return
     replaceUma(next)
+    await this.refreshBadges()
     await this.refreshPending()
     this.schedule()
   }

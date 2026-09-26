@@ -35,7 +35,8 @@ import {
   raceAttemptSeed,
   raceSkillSupported,
   resolveRaceExperience,
-  selectBaselineRaceSkills,
+  rollRivalSkills,
+  selectRivalSkillPool,
   affordableLoadout,
   summarizeSkillLoadout,
   SCENARIOS,
@@ -171,8 +172,15 @@ function compiledSupported(template: SkillTemplate | undefined): CompiledRaceSki
   return raceSkillSupported(compiled) ? [compiled] : []
 }
 
-function baselineNpcSkills(content: LoadedContent): CompiledRaceSkill[] {
-  return selectBaselineRaceSkills(content.skills.items)
+// A content version's rival white pool, compiled once (D163).
+const rivalPools = new WeakMap<readonly SkillTemplate[], CompiledRaceSkill[]>()
+function rivalSkillPool(content: LoadedContent): CompiledRaceSkill[] {
+  let pool = rivalPools.get(content.skills.items)
+  if (!pool) {
+    pool = selectRivalSkillPool(content.skills.items)
+    rivalPools.set(content.skills.items, pool)
+  }
+  return pool
 }
 
 function playerRaceSkills(
@@ -225,7 +233,9 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const playerGate = Math.floor(rng.next() * fieldSize)
   const raceBonus = equippedRaceBonus(tierOfLevel(uma.level), equippedCards(content, uma, input.cardsById))
   const playerSkills = playerRaceSkills(content, derived, template)
-  const baselineSkills = baselineNpcSkills(content)
+  // Each rival rolls her own whites from the pool (D163), on a stream of their own so the field's other rolls stay put.
+  const skillRng = createRng((seed ^ 0x2545f491) >>> 0)
+  const pool = rivalSkillPool(content)
   // A fresh field every race: styles and stats rolled from the tier's presets, each style run by an Uma suited to it
   // (D153, docs/design/racing.md#opponents-generated-rivals).
   const slots = rollRivalField({ tier: uma.unlockedTier, grade: race.grade, distance: race.distanceCategory, meters: race.distance, count: fieldSize - 1, rng })
@@ -263,7 +273,10 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
         strategy: slot.strategy,
         aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
         gate,
-        skills: [...compiledSupported(content.skills.byId.get(rival.uniqueSkillId ?? '')).map(levelUniqueSkill), ...baselineSkills],
+        skills: [
+          ...compiledSupported(content.skills.byId.get(rival.uniqueSkillId ?? '')).map(levelUniqueSkill),
+          ...rollRivalSkills(pool, { strategy: slot.strategy, course: { distance: race.distance, surface: race.surface, season: race.season }, rng: skillRng }),
+        ],
       },
     }
   })

@@ -10,32 +10,13 @@ training-gain multipliers for a training loop that no longer exists (D120).
 
 | Task | Scope | Owner |
 |---|---|---|
-| T051 | Scenario crests: import, atlas, and the Stable icon overlays | Claude |
-| T053 | Scenario buffs, tiers 1–7 | TBD |
-| T054 | Scenario buffs, tiers 8–14 | TBD |
-| T055 | Scenario-linked race records: a `tier` on `RaceResultRecord` (D122) | TBD |
-| T056 | Training badge criteria for the minigame era | TBD |
+| T053 | Scenario buffs, tiers 1–7 | Claude |
+| T054 | Scenario buffs, tiers 8–14 | Claude |
 
-## Carried over from M012
-
-Two gaps M012 left open rather than papering over:
-
-- **Races are not yet tier-stamped** (T055). D122 says the Arima Kinen won in Trackblazer and the one won in
-  Our Grand Concert are separate accomplishments. Race results are a separate append-only log, so the fix is a
-  `tier` field on the record rather than nesting history inside `ScenarioTraining` — which would mean
-  restructuring the sync protocol for no gain.
-- **Training badges read zero** (T056). Lifetime turns, friendship trainings and Full House counted training
-  turns that no longer exist, so their history is explicitly `untracked` rather than silently zero. Spark Match
-  runs and constellation milestones are the obvious replacements.
-
-## Crests and overlays (T051)
-
-Each scenario needs an icon-sized crest, imported through the private asset pipeline like every other image
-and atlased at 128 px. The Stable's icons view then overlays the Uma's **active scenario** crest top-left and
-her **Uma Level** bottom-right ([Collection](../design/collection.md#icon-overlays)).
-
-This is the one place the owner asked for explicitly: at five-up, the icon is the whole tile, so these two
-facts have to live on the art.
+Landed on 2026-09-26 and removed under D104: **T051** (the crests were already imported and atlased; the Stable's
+icons view now overlays the active scenario's crest and the Uma Level, [Collection](../design/collection.md#icon-overlays)),
+**T055** (a race's scenario is the tier of its start level, since a promotion raises both together, so no new record
+field was needed, D164) and **T056** (training badges count Spark Match runs, TL10s and full constellations, D164).
 
 ## Buffs (T053, T054)
 

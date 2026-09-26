@@ -41,13 +41,14 @@ keeping and field mechanics, and rivals built like a real trained Uma. Targets i
 | Every stat moves a result | each of the five | yes: +300 of any one stat moves a runner up at 2,400 m |
 | A runner at twice the field's stats | wins 95%+ | wins 100%, by about 1 s |
 | +10% on every stat over the field's average | wins about 25–40% | 15–40% |
-| Winner to last, 2,000 m | 2–6 s | 0.9 s: **open** |
-| Each style's win share | 15–35% | 13–40%: **open** at 1,600 m (fronts and paces 73%) and 3,000 m |
+| Winner to last, 2,000 m | 2–6 s | 1.0 s: accepted for evenly matched fields; the spreading lever changes difficulty and waits on the owner |
+| Each style's win share | 15–35% | 10–40%; late surgers low in sprints and miles, end closers high from 2,000 m |
 | G1 at TL10, fully bonded | favoured | 95–100% |
 | G1 at TL10, a new 0★ set | underdog | 30–75%: easier than D152's aim; the handicaps are the owner's call |
 
-Next levers: more spread between rivals of a grade (their presets are shared), and the G1 handicap if G1 should be
-harder for a new set.
+Rivals now roll their own three to seven whites (D163), so fields differ in how many skills fire. Remaining levers, both
+the owner's call because they change difficulty: correlated stat rolls within the 80–100% rule (a wider field, a
+stronger top rival) and the G1 handicap.
 
 The stamina ladder (`pnpm sim:constellation`) passes every hard check on v7, and careers (`pnpm sim:careers`) are
 re-measured; their docs are updated.

@@ -2,6 +2,7 @@
 // running styles rolled per race, each rival on her style's preset for the scenario and distance, every stat rolled.
 import { STAT_NODE_POOL, averageCap, capProfile, cardFairShare, nodeValue, shapeDef, starNodePct } from './constellation'
 import type { UmaTemplate } from './content'
+import { raceSkillFitsRunner, type CompiledRaceSkill, type RaceSkillCourseFacts } from './race-skills'
 import { GRADES, STATS, STRATEGIES, mapStats, type DistanceCategory, type RaceGrade, type StatKey, type Stats, type Strategy } from './types'
 
 /** Uniform in [0, 1). The race's seeded RNG; the domain never uses Math.random. */
@@ -198,6 +199,33 @@ export function rollRivalField(input: {
     strategy,
     stats: rollRivalStats(rivalPreset(input.tier, input.grade, input.distance, strategy, input.meters), input.rng),
   }))
+}
+
+/**
+ * How many whites a rival carries beside her own unique (D163): rolled per rival, so one brings three and another
+ * seven. A random draw is weaker than the curated four every rival carried before (it includes passives and
+ * corner-only skills), so five on average matches that kit's strength (`pnpm sim:turns`): a field is as strong as it
+ * was, only less alike.
+ */
+export const RIVAL_SKILL_RANGE = { min: 3, max: 7 }
+
+/**
+ * A rival's whites for this race: a seeded draw, without repeats, from the pool (`selectRivalSkillPool`) of skills that
+ * can fire for her running style on this course. Deterministic from the race seed, and stored on the race record.
+ */
+export function rollRivalSkills(
+  pool: readonly CompiledRaceSkill[],
+  input: { strategy: Strategy; course: RaceSkillCourseFacts; rng: RivalRng },
+): CompiledRaceSkill[] {
+  const fits = pool.filter((skill) => raceSkillFitsRunner(skill, input.course, input.strategy))
+  const count = Math.min(fits.length,
+    RIVAL_SKILL_RANGE.min + Math.floor(input.rng.next() * (RIVAL_SKILL_RANGE.max - RIVAL_SKILL_RANGE.min + 1)))
+  const picked = [...fits]
+  for (let index = 0; index < count; index += 1) {
+    const other = index + Math.floor(input.rng.next() * (picked.length - index))
+    ;[picked[index], picked[other]] = [picked[other]!, picked[index]!]
+  }
+  return picked.slice(0, count)
 }
 
 /**

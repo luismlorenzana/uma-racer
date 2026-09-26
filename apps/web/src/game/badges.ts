@@ -6,7 +6,10 @@ import {
   applyParentedStartFact,
   applyRaceBadgeFacts,
   applyScenarioCompletionFact,
+  applyTrainingBadgeFacts,
   activeScenario,
+  MAX_TRAINING_LEVEL,
+  type TrainingBadgeSnapshot,
   constellationTemplate,
   deriveUma,
   type BadgeSubject,
@@ -155,10 +158,49 @@ async function persistEvaluation(
   await appendFlairEvents(evaluation.events, queuedAt)
 }
 
+/** An Uma's Spark Match runs per scenario, from the synced ledger's run ids, `spark-match:<uma>:<tier>:<attempt>`. */
+export async function sparkRunsByTier(umaId: string): Promise<Map<number, number>> {
+  const prefix = `spark-match:${umaId}:`
+  const runs = new Map<number, number>()
+  for (const id of await db.ledger.where('id').startsWith(prefix).primaryKeys()) {
+    const tier = Number(String(id).slice(prefix.length).split(':')[0])
+    if (Number.isSafeInteger(tier) && tier >= 1) runs.set(tier, (runs.get(tier) ?? 0) + 1)
+  }
+  return runs
+}
+
+/** What her save and her runs say about her training (T056): the runs, each TL10, and each constellation filled. */
+export function trainingSnapshot(uma: UmaSave, runsByTier: ReadonlyMap<number, number>): TrainingBadgeSnapshot {
+  const full = (run: UmaSave['scenarios'][number]) => constellationTemplate(run.tier).nodes
+    .filter((node) => node.kind === 'card' || node.kind === 'stat')
+    .every((node) => run.assignments[node.id] !== undefined)
+  return {
+    runsByTier,
+    fullyTrainedTiers: uma.scenarios.filter((run) => run.trainingLevel >= MAX_TRAINING_LEVEL).map((run) => run.tier),
+    fullTreeTiers: uma.scenarios.filter(full).map((run) => run.tier),
+  }
+}
+
+/**
+ * Brings an Uma's training facts up to date and awards what they earn (T056), inside the caller's transaction, which
+ * must cover badges, ledger, flair events and the outbox. Does nothing when nothing changed.
+ */
+export async function updateTrainingBadgeFacts(input: { content: LoadedContent; uma: UmaSave; sourceId: string; now: number }): Promise<void> {
+  const row = await readUmaBadgeState(input.uma, badgeSubject(input.content, input.uma), input.now)
+  const next = applyTrainingBadgeFacts(row.state, trainingSnapshot(input.uma, await sparkRunsByTier(input.uma.templateId)))
+  if (next === row.state && row.version > 0) return
+  const evaluation = evaluateUmaBadgeState(input.content, next, {
+    source: { kind: 'training', id: input.sourceId, tier: input.uma.unlockedTier },
+    earnedAt: input.now,
+    retroactive: false,
+  })
+  await persistEvaluation(row.id, row.version, evaluation, input.now)
+}
+
 /** Create every missing per-Uma state from authoritative local history in one resumable transaction. */
 export async function bootstrapBadgeFacts(content: LoadedContent, now: number): Promise<number> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Badge bootstrap time is invalid')
-  return db.transaction('rw', [db.umas, db.badges, db.raceResults, db.outbox], async () => {
+  return db.transaction('rw', [db.umas, db.badges, db.raceResults, db.ledger, db.outbox], async () => {
     const umaRows = await db.umas.toArray()
     const raceRows = await db.raceResults.toArray()
     const histories = raceRows.map(parseRaceRow)
@@ -199,6 +241,18 @@ export async function bootstrapBadgeFacts(content: LoadedContent, now: number): 
         parentEntry.dirty ||= parentNext !== parentEntry.state
         parentEntry.state = parentNext
       }
+    }
+
+    // Training facts come from the ledger and the saves, so every state with training to count, old or new, is brought
+    // up to date (T056); one with none is left alone rather than rewritten and synced for nothing.
+    for (const row of umaRows) {
+      const uma = parseUmaRow(row.id, row.data)
+      const entry = states.get(uma.templateId)!
+      const snapshot = trainingSnapshot(uma, await sparkRunsByTier(uma.templateId))
+      if (snapshot.runsByTier.size === 0 && snapshot.fullyTrainedTiers.length === 0 && snapshot.fullTreeTiers.length === 0) continue
+      const next = applyTrainingBadgeFacts(entry.state, snapshot)
+      entry.dirty ||= next !== entry.state
+      entry.state = next
     }
 
     let created = 0

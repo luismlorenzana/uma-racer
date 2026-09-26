@@ -24,7 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveApi } from '../api/client'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
-import { appendFlairEvents, bootstrapBadgeFacts, bootstrapUmaFlair } from './badges'
+import { appendFlairEvents, bootstrapBadgeFacts, bootstrapUmaFlair, sparkRunsByTier } from './badges'
 import { GameRuntime } from './runtime'
 import { clearGameState, localDay, replaceUma, useGame } from './store'
 import {
@@ -203,6 +203,24 @@ describe('save persistence', () => {
     expect(await db.ledger.count()).toBe(2)
   })
 
+  it('counts an Uma\'s Spark Match runs per scenario from the ledger, and backfills her training badges (T056)', async () => {
+    const loaded = content()
+    await db.open()
+    await persistInitial(loaded, '2000-01-02', 10)
+    const run = (id: string) => ({ id, data: { resource: 'tickets' as const, delta: -1, reason: 'training' as const, localDay: '2000-01-02', createdAt: 11 }, createdAt: 11 })
+    await db.ledger.bulkAdd([
+      run('spark-match:u00:1:0'), run('spark-match:u00:1:1'), run('spark-match:u00:2:0'),
+      run('spark-match:u001:1:0'), run('bond-recall:c1:1:0'),
+    ])
+    expect([...await sparkRunsByTier('u00')]).toEqual([[1, 2], [2, 1]])
+
+    await bootstrapBadgeFacts(loaded, 20)
+    const state = (await db.badges.get('uma:u00'))?.data
+    if (state?.scope !== 'uma') throw new Error('Expected an Uma badge state')
+    expect(state.facts.lifetimeTrainingTurns).toBe(3)
+    expect(state.history.training).toBe('exact')
+  })
+
   it('bootstraps one strict badge fact state per owned Uma exactly once', async () => {
     const loaded = content()
     await db.open()
@@ -213,7 +231,7 @@ describe('save persistence', () => {
     expect(await db.badges.count()).toBe(25)
     expect(await db.outbox.where('kind').equals('badges').count()).toBe(25)
     const first = await db.badges.get('uma:u00')
-    expect(first?.data).toMatchObject({ scope: 'uma', umaId: 'u00', history: { training: 'untracked', lineage: 'since-tracking' } })
+    expect(first?.data).toMatchObject({ scope: 'uma', umaId: 'u00', history: { training: 'exact', lineage: 'since-tracking' } })
 
     if (!first || first.data.scope !== 'uma') throw new Error('Expected an Uma badge state')
     await db.badges.put({ ...first, data: {

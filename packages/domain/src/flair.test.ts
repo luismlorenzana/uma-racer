@@ -327,7 +327,7 @@ describe('flair projections', () => {
     const hidden = catalog.definitions.find((entry) => entry.awardKey === 'badge:wire-to-wire')!
     expect(projectFlairProgress(hidden, state)).toMatchObject({ status: 'hidden', value: null, percentage: null })
     const diligent = catalog.definitions.find((entry) => entry.awardKey === 'badge:diligent')!
-    expect(projectFlairProgress(diligent, state)).toMatchObject({ status: 'progress', progressLabel: 'at least 50 / 250' })
+    expect(projectFlairProgress(diligent, state)).toMatchObject({ status: 'progress', progressLabel: 'at least 50 / 100' })
 
     const evaluated = evaluateUmaFlair(catalog, state, { source: { kind: 'migration', id: null, tier: null }, earnedAt: 1_000, retroactive: true })
     const winnerOnly = { ...catalog, definitions: catalog.definitions.filter((entry) => entry.awardKey === 'badge:winner') }

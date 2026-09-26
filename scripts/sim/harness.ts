@@ -7,6 +7,7 @@ import {
   deriveStats,
   parseRaceCondition,
   rollRivalField,
+  rollRivalSkills,
   shapeDef,
   unlockedNodeCount,
   type CardNodeState,
@@ -52,8 +53,29 @@ export const NPC_KIT = [
 ]
 /** A Lv5 unique of the common shape (D158): late-race speed for 5 s, guaranteed, as the original's uniques are. */
 export const unique = (id: string) => skill(id, 'phase_random==2', 'target-speed', 0.35 * 1.1, 5, 'guaranteed')
-/** Every rival races her own unique beside the shared whites. */
-export const RIVAL_KIT = [unique('npc-unique'), ...NPC_KIT]
+/**
+ * The rival white pool (D163), shaped like the real one (about 480 whites): mostly speed, then passives, acceleration,
+ * heals and straight-line speed, at the originals' typical white values, some tied to a running style.
+ */
+export const RIVAL_POOL: CompiledRaceSkill[] = [
+  ...['phase_random==0', 'phase_random==1', 'phase_random==1', 'phase_random==2', 'phase_random==2', 'phase_random==3',
+    'is_finalcorner==1', 'is_last_straight==1', 'corner_random==1', 'straight_random==1', 'phase==1&order_rate<=50',
+    'phase_random==2&order_rate>50'].map((condition, index) => skill(`w-speed-${index}`, condition, 'target-speed', 0.15, 2.4)),
+  ...['running_style==1&phase_random==1', 'running_style==2&phase_random==2', 'running_style==3&phase_random==2',
+    'running_style==4&phase_random==3'].map((condition, index) => skill(`w-style-${index}`, condition, 'target-speed', 0.15, 2.4)),
+  ...['phase==2', 'is_finalcorner==1', 'is_lastspurt==1', 'running_style==4&phase==2']
+    .map((condition, index) => skill(`w-accel-${index}`, condition, 'acceleration', 0.2, 2.4)),
+  ...['hp_per<=60', 'phase_random==1', 'corner_random==1'].map((condition, index) => skill(`w-heal-${index}`, condition, 'recovery', 0.015, 0, 'guaranteed')),
+  ...['straight_random==1', 'is_last_straight==1'].map((condition, index) => skill(`w-line-${index}`, condition, 'current-speed-natural', 0.15, 2.4)),
+  ...(['passive-speed', 'passive-stamina', 'passive-power', 'passive-guts', 'passive-wit'] as const)
+    .map((kind) => skill(`w-${kind}`, 'always==1', kind, 40, 0, 'guaranteed')),
+]
+
+/** A rival's kit: her own unique and her rolled whites (D163), from a stream of her own. */
+export function rivalKit(strategy: Strategy, distance: number, seed: number): CompiledRaceSkill[] {
+  const rng = createRng((seed ^ 0x2545f491) >>> 0)
+  return [unique('npc-unique'), ...rollRivalSkills(RIVAL_POOL, { strategy, course: { distance, surface: 'turf' }, rng })]
+}
 /** What an SP budget in the thousands buys (D133): a few golds on top of her own unique and the field's whites. */
 export const PLAYER_KIT = [
   unique('player-unique'),
@@ -142,7 +164,8 @@ export function rivalRunners(tier: number, grade: RaceGrade, distance: number, s
   const slots = rollRivalField({ tier, grade, distance: categoryOf(distance), meters: distance, count: size - 1, rng: createRng(seed ^ 0x5bd1e995) })
   return slots.map((slot, index) => {
     const gate = index < playerGate ? index : index + 1
-    return { id: `rival-${gate}`, label: String(gate + 1), stats: slot.stats, strategy: slot.strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: RIVAL_KIT }
+    return { id: `rival-${gate}`, label: String(gate + 1), stats: slot.stats, strategy: slot.strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
+      skills: rivalKit(slot.strategy, distance, seed * 131 + gate) }
   })
 }
 

@@ -15,6 +15,7 @@ export function ArtTile({
   chamfer = false,
   overlay,
   corner,
+  badge,
   footer,
   className = '',
 }: {
@@ -28,6 +29,8 @@ export function ArtTile({
   overlay?: ReactNode
   /** Top-right crest or badge. */
   corner?: ReactNode
+  /** Bottom-right mark, such as the icons view's level (T051). */
+  badge?: ReactNode
   /** Text over the scrim at the bottom. */
   footer?: ReactNode
   className?: string
@@ -56,6 +59,7 @@ export function ArtTile({
       {footer && <div className="art-scrim pointer-events-none absolute inset-x-0 bottom-0 h-1/2" aria-hidden />}
       {overlay && <div className="absolute top-1.5 left-1.5 flex flex-col items-start gap-1">{overlay}</div>}
       {corner && <div className="absolute top-1.5 right-1.5">{corner}</div>}
+      {badge && <div className="absolute right-1 bottom-1">{badge}</div>}
       {footer && <div className="absolute inset-x-0 bottom-0 p-2 text-ink-on-dark">{footer}</div>}
     </div>
   )

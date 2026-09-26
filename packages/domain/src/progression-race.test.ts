@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  raceScenarioTier,
   addUmaRaceExp,
   assertProgressionRaceContent,
   bestStrategy,
@@ -253,5 +254,11 @@ describe('race result parsing', () => {
     expect(parseRaceResultRecord({ ...current, accomplishmentFacts: { ...accomplishmentFacts, distanceCategory: 'long' } })).toBeNull()
     expect(parseRaceResultRecord({ ...current, accomplishmentFacts: { ...accomplishmentFacts, ledEverySectionCheckpoint: true }, playerPlacement: 2 })).toBeNull()
     expect(parseRaceResultRecord({ ...current, accomplishmentFacts: { ...accomplishmentFacts, series: ['triple-crown', 'spring-triple-crown'] } })).toBeNull()
+  })
+})
+
+describe('scenario-linked races (D122, T055)', () => {
+  it('names a race\'s scenario from its start level: a gate level is still its scenario, the next level the next one', () => {
+    expect([1, 9, 10, 11, 20, 21, 140].map((startLevel) => raceScenarioTier({ startLevel }))).toEqual([1, 1, 1, 2, 2, 3, 14])
   })
 })

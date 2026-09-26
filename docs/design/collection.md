@@ -218,8 +218,9 @@ itself rather than pushed into a caption:
 - **Level, bottom-right.** Her permanent **Uma Level**, in the embossed numeral treatment, over a scrim so it
   stays readable against bright art.
 
-Both sit inside the tile's padding so they never cover the face. They are the only overlays: state chips,
-names, and sort values belong to the cards and list views, where there is room for them.
+Both sit inside the tile's padding so they never cover the face. Beside them only two small dots, top-right, mark a new
+arrival and an Uma ready to advance; state chips, names, and sort values belong to the cards and list views, where there
+is room for them (T051).
 
 ### Shared behaviours
 

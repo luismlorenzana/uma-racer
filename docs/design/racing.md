@@ -87,7 +87,7 @@ The roll uses the race's seed, so a replay shows the same field, and the race re
 | Stats | Her style's preset for this scenario, distance and grade, each stat rolled 80–100% |
 | Aptitudes | **A** for the race's surface and distance, and in her strategy |
 | Strategy | Rolled with the field (above) |
-| Skills | **Baseline enemy kit** (the same for all NPCs) **plus her own unique skill, at Lv5** |
+| Skills | **Her own unique skill, at Lv5, and three to seven rolled whites** ([Rival skills](#rival-skills)) |
 | Mood | Rolled each race, like everyone's ([engine v6](#engine-v6-turns-m021)) |
 
 ### Presets
@@ -146,14 +146,19 @@ Chaser the least.
 Supersedes the identical generic NPC of D24 and D136–D152, and D153's Stamina weights: rivals no longer share stats or
 a strategy per gate, and their Stamina is what the race needs.
 
-### Baseline enemy kit
+### Rival skills
 
-- A fixed set of **4 strategy- and course-neutral white skills**: one HP recovery, one mid-race speed, one late-race speed,
-  and one acceleration. A shared selector chooses them deterministically by skill id from supported candidates; the private
-  importer validates the selection and race preparation repeats it, so no original-game ids enter git and every client using
-  the same content version gets the same kit.
-- Plus the NPC's **own unique skill, at Lv5** (a fully starred Uma's, as the player's own unique races, D158).
-- The kit doesn't grow per scenario. Difficulty scales through scenario caps and the grade handicap.
+- Her **own unique skill, at Lv5** (a fully starred Uma's, as the player's own unique races, D158).
+- **Three to seven whites, rolled per rival and per race** (D163), without repeats, from the pool of every learnable
+  white the engine supports that aims at herself and is not a malus (about 480), narrowed to the ones that can fire for
+  her running style on this course (300+). One rival brings three and her neighbour seven, so fields differ in how many
+  skills fire, the way real rosters do.
+- Five on average matches the strength of the curated four-white kit every rival carried before: a random draw
+  includes passives and corner-only skills, so it needs one more to be as strong (`pnpm sim:turns`, G1 and G2 win rates
+  of a real build unchanged within noise).
+- The draw uses the race seed on a stream of its own, so the field's other rolls do not move, and the race record keeps
+  every rival's skills, so a replay is exact. No original-game id enters git: the pool is built from the private pack.
+- The kit doesn't grow per scenario or grade. Difficulty scales through scenario caps and the grade handicap.
 
 ### Basic race skills (R2.5)
 
@@ -470,11 +475,18 @@ Measured with `pnpm sim:turns`, 2026-09-26:
 
 | Distance | Turns | Winner → last | Overtakes | Blocked a runner | Short of stamina | Wins F / P / L / E |
 |---|---|---|---|---|---|---|
-| 1,200 m | 58 | 0.6 s | 63 | 0.6 s | 38% | 25 / 40 / 15 / 20% |
-| 1,600 m | 79 | 0.7 s | 71 | 0.8 s | 24% | 35 / 38 / 15 / 13% |
-| 2,000 m | 100 | 0.9 s | 84 | 0.9 s | 22% | 20 / 33 / 20 / 28% |
-| 2,400 m | 123 | 1.0 s | 91 | 1.2 s | 20% | 18 / 25 / 25 / 33% |
-| 3,000 m | 158 | 2.2 s | 98 | 4.1 s | 78% | 13 / 20 / 38 / 30% |
+| 1,200 m | 58 | 0.6 s | 67 | 0.7 s | 49% | 23 / 38 / 10 / 30% |
+| 1,600 m | 79 | 0.8 s | 74 | 0.7 s | 36% | 20 / 35 / 13 / 33% |
+| 2,000 m | 100 | 1.0 s | 86 | 0.9 s | 33% | 28 / 20 / 15 / 38% |
+| 2,400 m | 123 | 1.2 s | 90 | 1.0 s | 28% | 13 / 28 / 20 / 40% |
+| 3,000 m | 158 | 2.4 s | 99 | 3.4 s | 86% | 13 / 18 / 35 / 35% |
+
+Measured 2026-09-26 with rolled rival kits (D163); rivals short of stamina rose with them, since a rolled kit carries a
+heal less often than the old fixed one did. **The finish spread stays about a second at 2,000 m**, and that is accepted
+(T070): rivals of one grade roll every stat independently between 80% and 100% of one preset, so their overall strength
+averages out near 90% and a G1 field finishes close together, as fields of evenly matched runners do. The lever that
+would spread it, rolling each rival's stats together so some are clearly stronger, would also make the strongest rival
+in every field stronger, which changes difficulty; it waits on the owner's call.
 
 At 3,000 m most scenario-1 rivals run short because none puts more than 40% of her build into Stamina. No one runs
 dry before the last 60 m: a runner short of a full spurt plans a slower one that her HP holds, as in the original.

@@ -12,7 +12,7 @@ import {
   raceSkillSupported,
   replaceSkillLoadout,
   skillAimsAtOthers,
-  selectBaselineRaceSkills,
+  selectRivalSkillPool,
   summarizeSkillLoadout,
   summarizeRaceSkillCoverage,
   type SkillTemplate,
@@ -154,7 +154,7 @@ describe('race skill compiler', () => {
     }).groups[0]!.unsupportedVariables).toEqual(['phase_random'])
   })
 
-  it('reports aggregate coverage and derives a fixed four-white NPC kit without private ids', () => {
+  it('reports aggregate coverage and a rival pool of supported whites without private ids (D163)', () => {
     const withEffect = (id: string, type: number): SkillTemplate => ({
       ...skill(id),
       conditions: [{
@@ -180,9 +180,9 @@ describe('race skill compiler', () => {
       byKind: { white: { total: 4, supported: 4 }, gold: { total: 1, supported: 0 } },
       unsupportedEffects: { '999': 1 },
     })
-    expect(selectBaselineRaceSkills(catalog).map((entry) => entry.id)).toEqual([
-      'recovery', 'speed-a', 'speed-b', 'accel',
-    ])
+    // Sorted by id; the gold and the unsupported skill are left out, and so is a malus.
+    const malus = { ...withEffect('slow', 27), conditions: [{ ...withEffect('slow', 27).conditions[0]!, effects: [{ type: 27, value: -1_000 }] }] }
+    expect(selectRivalSkillPool([...catalog, malus]).map((entry) => entry.id)).toEqual(['accel', 'recovery', 'speed-a', 'speed-b'])
     expect(() => assertRaceSkillContent([{ ...catalog[0]!, activation: 9 }])).toThrow(/invalid race data/)
   })
 })

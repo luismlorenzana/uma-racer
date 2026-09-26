@@ -1,7 +1,7 @@
 // Badge facts and independently versioned save state (docs/design/badges.md).
 
 import { MAX_TRAINING_LEVEL } from './constellation'
-import type { RaceAccomplishmentFactsV1, RaceResultRecord } from './progression-race'
+import { raceScenarioTier, type RaceAccomplishmentFactsV1, type RaceResultRecord } from './progression-race'
 import { SCENARIOS, tierOfLevel } from './scenarios'
 import type { ScenarioJourney, UmaSave } from './save'
 import {
@@ -53,8 +53,8 @@ export const BADGE_THRESHOLDS = {
   // the last needs an even, fully bonded tree in a late scenario.
   balanced: [400, 600, 800, 1_000, 1_200],
   level: [10, 25, 50, 75, 100],
-  diligent: [50, 250, 1_000, 3_000, 10_000],
-  friendship: [10, 50, 200, 500, 1_000],
+  // Spark Match runs (D164): about ten take a scenario to TL10, so the last stage is all fourteen trained.
+  diligent: [10, 25, 50, 100, 140],
   lifetimeSkills: [5, 15, 30, 60, 100],
   scenarioSkills: [5, 10, 15, 20, 25],
   destiny: [3, 10, 25, 50, 100],
@@ -477,7 +477,8 @@ export function createUmaBadgeState(uma: UmaSave, subject: BadgeSubject, now: nu
     },
     history: {
       race: 'exact',
-      training: 'untracked',
+      // Spark Match runs are in the synced ledger from the first one, so training history is complete (T056).
+      training: 'exact',
       'scenario-completion': hasLegacyJourneys ? 'untracked' : completedJourneys.length > 0 ? 'exact' : 'since-tracking',
       lineage: 'since-tracking',
       diagnostics: hasLegacyJourneys ? ['scenario-history-unavailable'] : [],
@@ -593,7 +594,7 @@ export function applyRaceBadgeFacts(
           tier: tierOfLevel(record.startLevel),
           completedAt: record.createdAt,
         }))].sort((left, right) => left.goalId.localeCompare(right.goalId)),
-      raceStartsByTier: incrementCount(state.facts.raceStartsByTier, String(tierOfLevel(record.startLevel))),
+      raceStartsByTier: incrementCount(state.facts.raceStartsByTier, String(raceScenarioTier(record))),
     },
   }
   if (!facts) return withFactDiagnostic(next, `race-facts-unavailable:${resultId}`)
@@ -694,6 +695,58 @@ export function applyDynastyFact(state: UmaBadgeStateV1, descendantUmaId: string
     sourceWatermarks: { ...state.sourceWatermarks, lineageEvidence: state.sourceWatermarks.lineageEvidence + 1 },
     facts: { ...state.facts, dynastyEvidence: [...state.facts.dynastyEvidence, evidence].sort((left, right) => left.key.localeCompare(right.key)) },
   }
+}
+
+/** What the minigame era can say about an Uma's training (T056): each scenario's runs, TL10s and full trees. */
+export interface TrainingBadgeSnapshot {
+  /** Spark Match runs per scenario tier, from the synced ledger. */
+  runsByTier: ReadonlyMap<number, number>
+  /** Scenario tiers she has taken to Training Level 10. */
+  fullyTrainedTiers: readonly number[]
+  /** Scenario tiers whose constellation has every card and stat node filled. */
+  fullTreeTiers: readonly number[]
+}
+
+/**
+ * The training facts of the minigame era (T056, D164). Spark Match runs stand where training turns stood, counted from
+ * the ledger, so the history is exact; Training Level 10 comes from the save; Full House is a scenario whose every card
+ * and stat node is filled. Friendship trainings stay as they were: the card minigame belongs to a card, not an Uma.
+ * Nothing already counted is taken back, and an unchanged state is returned as it came.
+ */
+export function applyTrainingBadgeFacts(state: UmaBadgeStateV1, snapshot: TrainingBadgeSnapshot): UmaBadgeStateV1 {
+  const tiers = [...new Set([
+    ...state.facts.trainingByTier.map((entry) => entry.tier),
+    ...snapshot.runsByTier.keys(),
+    ...snapshot.fullyTrainedTiers,
+    ...snapshot.fullTreeTiers,
+  ])].filter((tier) => tier >= 1 && tier <= SCENARIOS.length).sort((a, b) => a - b)
+  const trainingByTier = tiers.map((tier) => {
+    const before = state.facts.trainingByTier.find((entry) => entry.tier === tier)
+    const turns = Math.max(before?.turns ?? 0, snapshot.runsByTier.get(tier) ?? 0)
+    return {
+      tier,
+      turns,
+      friendshipTrainings: Math.min(turns, before?.friendshipTrainings ?? 0),
+      fullHouseCount: Math.min(turns, Math.max(before?.fullHouseCount ?? 0, snapshot.fullTreeTiers.includes(tier) ? 1 : 0)),
+      reachedTl10: (before?.reachedTl10 ?? false) || snapshot.fullyTrainedTiers.includes(tier),
+    }
+  })
+  const lifetimeTrainingTurns = Math.max(state.facts.lifetimeTrainingTurns, trainingByTier.reduce((sum, entry) => sum + entry.turns, 0))
+  const next: UmaBadgeStateV1 = {
+    ...state,
+    sourceWatermarks: { ...state.sourceWatermarks, trainingTurns: lifetimeTrainingTurns },
+    history: { ...state.history, training: 'exact' },
+    facts: {
+      ...state.facts,
+      lifetimeTrainingTurns,
+      friendshipTrainings: Math.min(lifetimeTrainingTurns, state.facts.friendshipTrainings),
+      fullHouseCount: Math.min(lifetimeTrainingTurns, Math.max(state.facts.fullHouseCount,
+        trainingByTier.reduce((sum, entry) => sum + entry.fullHouseCount, 0))),
+      trainingByTier,
+      fullyTrainedTiers: [...new Set([...state.facts.fullyTrainedTiers, ...snapshot.fullyTrainedTiers])].sort((a, b) => a - b),
+    },
+  }
+  return JSON.stringify(next) === JSON.stringify(state) ? state : next
 }
 
 export function applyScenarioCompletionFact(state: UmaBadgeStateV1, fact: ScenarioCompletionFact): UmaBadgeStateV1 {

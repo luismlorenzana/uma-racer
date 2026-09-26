@@ -202,11 +202,10 @@ Perfect facts that cannot be reconstructed remain untracked.
 
 | Definition | Criterion | Tiers |
 |---|---|---|
-| Diligent | Lifetime training turns | 50 / 250 / 1,000 / 3,000 / 10,000 |
-| Friendship Power | Lifetime friendship trainings | Friendship trainings |
-| [Scenario] Fully Trained | Reached TL10 during that scenario | One-off per scenario |
+| Diligent | Spark Match runs with this Uma (D164) | 10 / 25 / 50 / 100 / 140 |
+| [Scenario] Fully Trained | Reached TL10 in that scenario | One-off per scenario |
 | Era Loyalist | Completed a scenario using only cards whose era equals that scenario tier | One-off per scenario |
-| Full House | Trained with all six equipped cards present at one facility | Hidden one-off |
+| Full House | Filled every card and stat node of one constellation (D164) | Hidden one-off |
 | Skill Collector | Distinct skills ever learned, from skill history | Distinct lifetime skills |
 | Full Kit | Highest distinct skills unlocked within one scenario | Skills in one scenario |
 | Goal Ribbon | One named ribbon per exact completed T014 goal | One point each |
@@ -217,7 +216,7 @@ Perfect facts that cannot be reconstructed remain untracked.
 | Dynasty | A grandchild completed a scenario with this Uma in the frozen grandparent chain | 1 / 3 / 5 / 10 / 20 |
 
 Era Loyalist requires a nonempty deck and every equipped card to match the completed tier; mixed/later/unknown content
-fails. Full House is possible only when six slots are unlocked. A Goal Ribbon uses the stored goal id and result id, joins
+fails. A Goal Ribbon uses the stored goal id and result id, joins
 its target privately for display, and falls back safely when content is missing. Legacy increments on Scenario Start, while
 Dynasty increments when the descendant closes the scenario—not when lineage is merely selected.
 
@@ -243,7 +242,12 @@ grade/surface/distance/strategy/venue/family, current/longest streak, best stats
 counters, scenario-completion facts, goal/Honors totals, parent-use counts, and evaluation watermarks. Race history remains
 the source log and flair events remain their own append-only log.
 
-Training updates lifetime turns, friendship turns, Full House, TL10, and skill facts in the same transaction as the turn.
+**Training in the minigame era (T056, D164).** The facts that once counted training turns now count what replaced
+them: an Uma's Spark Match runs per scenario, read from the synced ledger (each run's id is `spark-match:<uma>:<tier>:
+<attempt>`, so the history is exact from the first run), her Training Level 10 in each scenario, and each constellation
+whose card and stat nodes are all filled. A Spark Match run and a constellation edit update them in the same
+transaction, and startup backfills them for every Uma with training to count. Friendship Power is retired: the card
+minigame's runs belong to a card, not an Uma, and Friendship Training (M020) will bring its own badges.
 Scenario Start increments selected parents' Legacy facts in the same transaction as the child. Promotion/final completion
 captures the completed scenario and updates every known grandparent's Dynasty fact atomically with the child when those
 entities exist locally; missing/orphaned ancestors remain explicit and may be reconciled during bootstrap.
@@ -261,9 +265,8 @@ Every definition has one history grade shown in detail/progress UI:
 Bootstrap strictly parses complete local race history before publishing ready state, then re-evaluates every Uma against
 the current content catalog. Existing race, goal, level, current stat, and skill-history awards are retroactive and exact
 where their dependencies resolve; publishing series/main-venue coverage therefore awards qualifying titles and Grand Tour
-from stored family/venue wins without changing badge-state schema. Current-scenario training turns
-form the lower-bound seed for Diligent; current TL10 may award Fully Trained for the active tier. Prior friendship/Full
-House/deck-at-completion/parent-use/Dynasty facts are not invented. A lower bound that already crosses a threshold may
+from stored family/venue wins without changing badge-state schema. Training facts are exact from the ledger and the
+saves (D164). Prior deck-at-completion/parent-use/Dynasty facts are not invented. A lower bound that already crosses a threshold may
 award it, but the UI labels the underlying progress “at least”.
 
 ## Award and event semantics

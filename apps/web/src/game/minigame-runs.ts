@@ -31,6 +31,7 @@ import {
   type RunTarget,
   type RunTicket,
 } from './minigame-host'
+import { updateTrainingBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
 import { reconcileTrainerInTransaction } from './trainer'
 
@@ -262,6 +263,8 @@ export class PersistentMinigameHost implements MinigameHost {
           }
           await db.umas.put({ ...umaRow, data: nextUma })
           await queueInTransaction('umas', nextUma.templateId, 'upsert', now)
+          // The run counts toward her training badges, and a TL10 is her scenario's Fully Trained (T056).
+          await updateTrainingBadgeFacts({ content: this.content, uma: nextUma, sourceId: id, now })
           mutation = { profile, uma: nextUma }
           reconcileTrainer = true
         } else if (run.kind === 'bond-recall' && run.target.kind === 'bond-recall' && outcome.kind === 'bond-recall') {

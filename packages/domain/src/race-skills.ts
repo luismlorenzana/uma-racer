@@ -2,6 +2,7 @@
 
 import type { SkillTemplate, UmaTemplate } from './content'
 import type { SkillUnlock, UmaSave } from './save'
+import type { Strategy } from './types'
 
 export const RACE_SKILL_SCALE = 10_000
 export const SKILL_ACTIVATION_MIN = 0.2
@@ -375,18 +376,45 @@ function conditionPossibleOnCourse(condition: RaceCondition | null, context: Rea
   ))
 }
 
-/** Static compatibility only; dynamic position/HP facts are intentionally treated as possible. */
-export function raceSkillCompatibleWithCourse(skill: CompiledRaceSkill, course: RaceSkillCourseFacts): boolean {
-  const context = {
-    course_distance: course.distance,
-    distance_type: course.distance <= 1_400 ? 1 : course.distance <= 1_800 ? 2 : course.distance <= 2_400 ? 3 : 4,
-    ground_type: course.surface === 'turf' ? 1 : 2,
-    season: course.season ?? 0,
-  }
-  return skill.groups.some((group) =>
+const courseContext = (course: RaceSkillCourseFacts): Record<string, number> => ({
+  course_distance: course.distance,
+  distance_type: course.distance <= 1_400 ? 1 : course.distance <= 1_800 ? 2 : course.distance <= 2_400 ? 3 : 4,
+  ground_type: course.surface === 'turf' ? 1 : 2,
+  season: course.season ?? 0,
+})
+
+const possibleWith = (skill: CompiledRaceSkill, context: Readonly<Record<string, number>>): boolean =>
+  skill.groups.some((group) =>
     group.effects.length > 0 && group.unsupportedVariables.length === 0 && group.unsupportedEffects.length === 0 &&
     conditionPossibleOnCourse(group.precondition, context) && conditionPossibleOnCourse(group.condition, context),
   )
+
+/** Static compatibility only; dynamic position/HP facts are intentionally treated as possible. */
+export function raceSkillCompatibleWithCourse(skill: CompiledRaceSkill, course: RaceSkillCourseFacts): boolean {
+  return possibleWith(skill, courseContext(course))
+}
+
+const RUNNING_STYLE: Record<Strategy, number> = { front: 1, pace: 2, late: 3, end: 4 }
+
+/** Whether a skill can fire for a runner of this style on this course: its course and style conditions can hold. */
+export function raceSkillFitsRunner(skill: CompiledRaceSkill, course: RaceSkillCourseFacts, strategy: Strategy): boolean {
+  return possibleWith(skill, { ...courseContext(course), running_style: RUNNING_STYLE[strategy] })
+}
+
+/** A malus: a negative stat, speed, acceleration or heal, or a slower start (the original's purple × skills). */
+const isMalus = (skill: CompiledRaceSkill): boolean => skill.groups.some((group) => group.effects.some((effect) =>
+  effect.kind === 'start-delay' ? effect.amount > 1 : effect.amount < 0))
+
+/**
+ * Every white a rival may carry (D163): learnable, supported by the engine, aimed at herself and never a malus. Sorted
+ * by id, so a content version always yields the same pool.
+ */
+export function selectRivalSkillPool(skills: readonly SkillTemplate[]): CompiledRaceSkill[] {
+  return skills
+    .filter((skill) => skill.kind === 'white' && Number.isSafeInteger(skill.costSp) && skill.costSp! > 0 && !skillAimsAtOthers(skill))
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((template) => compileRaceSkill(template))
+    .filter((compiled) => raceSkillSupported(compiled) && !isMalus(compiled))
 }
 
 export interface RaceSkillCoverage {
@@ -488,44 +516,6 @@ export function levelUniqueSkill(skill: CompiledRaceSkill): CompiledRaceSkill {
       effects: group.effects.map((effect) => ({ ...effect, amount: effect.amount * multiplier(effect.kind) })),
     })),
   }
-}
-
-/**
- * Selects the four shared NPC whites without embedding private ids in source control.
- * Stable id ordering makes the result fixed for a content version.
- */
-export function selectBaselineRaceSkills(skills: readonly SkillTemplate[]): CompiledRaceSkill[] {
-  const excludedVariables = new Set(['running_style', 'distance_type', 'ground_type', 'season', 'course_distance'])
-  const candidates = skills
-    .filter((skill) => skill.kind === 'white' && Number.isSafeInteger(skill.costSp) && skill.costSp! > 0)
-    .sort((left, right) => left.id.localeCompare(right.id))
-    .map((template) => ({ template, compiled: compileRaceSkill(template) }))
-    .filter(({ compiled }) => raceSkillSupported(compiled))
-    .filter(({ compiled }) => !compiled.groups.some((group) =>
-      [...raceConditionVariables(group.precondition), ...raceConditionVariables(group.condition)]
-        .some((variable) => excludedVariables.has(variable)),
-    ))
-  const chosen: CompiledRaceSkill[] = []
-  const hasEffect = (skill: CompiledRaceSkill, kind: RaceSkillEffectKind) =>
-    skill.groups.some((group) => group.effects.some((effect) => effect.kind === kind))
-  const hasPhase = (skill: CompiledRaceSkill, phases: ReadonlySet<number>) => skill.groups.some((group) =>
-    [group.precondition, group.condition].some((condition) => condition?.some((alternative) => alternative.some((atom) =>
-      (atom.variable === 'phase' || RANDOM_PHASE_VARIABLES.has(atom.variable)) &&
-      phases.has(atom.value) && ['==', '>='].includes(atom.operator),
-    ))),
-  )
-  const take = (label: string, predicate: (skill: CompiledRaceSkill) => boolean) => {
-    const match = candidates.find(({ compiled }) =>
-      !chosen.some((skill) => skill.id === compiled.id) && predicate(compiled),
-    )
-    if (!match) throw new Error(`Private content cannot supply the baseline NPC ${label} skill`)
-    chosen.push(match.compiled)
-  }
-  take('recovery', (skill) => hasEffect(skill, 'recovery'))
-  take('mid-race speed', (skill) => hasEffect(skill, 'target-speed') && hasPhase(skill, new Set([1])))
-  take('late-race speed', (skill) => hasEffect(skill, 'target-speed') && hasPhase(skill, new Set([2, 3])))
-  take('acceleration', (skill) => hasEffect(skill, 'acceleration'))
-  return chosen
 }
 
 export interface SkillLoadoutSummary {

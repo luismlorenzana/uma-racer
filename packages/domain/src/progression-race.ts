@@ -301,6 +301,13 @@ export function bestStrategy(template: UmaTemplate): Strategy {
 }
 
 /** Generated Race Bonus from the currently equipped and usable stat-card deck. */
+/**
+ * The scenario a race was run in (D122, T055). A promotion raises an Uma's level and her scenario in one step, so her
+ * scenario is always the tier of her level, and a record's start level names it exactly: no separate field is needed,
+ * and every record ever written already carries it.
+ */
+export const raceScenarioTier = (record: Pick<RaceResultRecord, 'startLevel'>): number => tierOfLevel(record.startLevel)
+
 export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[]): number {
   const validation = validateEquippedSupportDeck(tier, cards)
   const issue = validation.issues[0]

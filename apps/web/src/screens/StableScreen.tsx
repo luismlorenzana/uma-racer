@@ -29,6 +29,7 @@ import { AlbumDetail } from '../ui/album/AlbumDetail'
 import { CompareSheet } from '../ui/album/CompareSheet'
 import { VirtualGrid } from '../ui/album/VirtualGrid'
 import { ArtTile } from '../ui/ArtTile'
+import { getContentAsset } from '../content/runtime'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
@@ -83,6 +84,10 @@ function UmaTile({
   const contentState = useContent()
   // Busts are the list portrait, as in the original's Trainee Select; the icon shows until one arrives (M019).
   const bust = useArt(contentState.status === 'ready' ? contentState.content : null, 'bust', entry.template.id)
+  // The icons view burns her active scenario's crest onto the art once she has started it (T051).
+  const crest = contentState.status === 'ready' && entry.view?.run.started && entry.view.scenario
+    ? getContentAsset(contentState.content, 'scenario-icons', entry.view.scenario.id)
+    : null
   const press = useRef<number | null>(null)
   const startPress = () => { press.current = window.setTimeout(() => { press.current = null; onActions() }, 450) }
   const endPress = () => { if (press.current !== null) window.clearTimeout(press.current); press.current = null }
@@ -149,10 +154,7 @@ function UmaTile({
           chamfer={!icons && (entry.view?.readyToAdvance ?? false)}
           overlay={
             icons ? (
-              <>
-                {entry.isNew && <span aria-hidden className="h-2 w-2 rounded-full bg-accent shadow-1" />}
-                {entry.view?.readyToAdvance && <span aria-hidden className="h-2 w-2 rounded-full bg-success shadow-1" />}
-              </>
+              crest && <AtlasSprite asset={crest} alt={entry.view?.scenario?.name ?? 'Scenario'} className="h-5 w-5 drop-shadow-[0_1px_1px_rgb(0_0_0_/_0.5)]" />
             ) : (
               <>
                 {entry.owned ? <Crest>T{entry.view?.tier ?? 1}</Crest> : <Crest>Locked</Crest>}
@@ -164,8 +166,20 @@ function UmaTile({
           corner={
             selecting
               ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? '✓' : ''}</Crest>
-              : !icons && entry.view?.readyToAdvance ? <Crest tone="accent">Ready</Crest> : null
+              : icons ? (
+                (entry.isNew || entry.view?.readyToAdvance) && (
+                  <span className="flex gap-1">
+                    {entry.isNew && <span aria-hidden className="h-2 w-2 rounded-full bg-accent shadow-1" />}
+                    {entry.view?.readyToAdvance && <span aria-hidden className="h-2 w-2 rounded-full bg-success shadow-1" />}
+                  </span>
+                )
+              ) : entry.view?.readyToAdvance ? <Crest tone="accent">Ready</Crest> : null
           }
+          badge={icons && entry.save ? (
+            <span className="rounded-xs bg-stage/75 px-1 text-[11px] leading-4 text-ink-on-dark" aria-label={`Level ${entry.save.level}`}>
+              <Numeral>{entry.save.level}</Numeral>
+            </span>
+          ) : undefined}
           footer={icons ? undefined : (
             <>
               <p className="font-display truncate text-[15px] font-semibold">{entry.template.name}</p>
