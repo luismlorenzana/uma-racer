@@ -38,6 +38,14 @@ resolve.
 The trainee tile is what makes a run feel like *this* Uma's run, and it is the only tile whose identity
 changes between Umas.
 
+### Tiles
+
+Each tile is the character's **whole standing chibi** (T059) in a circle with a thick ring in its **kind's colour**:
+red, blue, green, purple and orange for the five cast tiles, and **yellow for the trainee**, beside her gold 2×
+marker. The ring and a faint tint of the same colour behind the chibi make a line of three read at a glance, before
+faces (D161). A selected tile gets a white ring and a hinted pair a white glow, so neither is mistaken for a tile
+colour. Until a chibi arrives, or for a character without one, her icon stands in.
+
 ### Levelling
 
 A run ends after **25 moves**. There is no timer: this is played one-handed on a phone. The run's score is

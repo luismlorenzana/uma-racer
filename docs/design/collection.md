@@ -165,7 +165,7 @@ Seven families, each used where it belongs:
 | Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Stable detail area, the Uma reveal, the art viewer |
 | Card art | 450×600 full illustration, the source's own size | One file per card, fetched on demand | The card page's hero, the Cards tab detail area, the card reveal, Bond Recall faces, the art viewer (D144) |
 | Race face | 128 px square, transparent | Cut from each character's summer-uniform stand at import, one file per character | The runner tokens in a race (D160) |
-| Chibi | 256 px, transparent, standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Imported, not placed yet |
+| Chibi | 256 px, transparent, standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Standing: Spark Match tiles (D161). Celebrating: not placed yet |
 | Outfit stand | 512 px, transparent: gym clothes, summer and winter uniforms, casual clothes | Four per character, from the owner's local copy (T059) | Imported, not placed yet |
 
 The bust is the original's Trainee Select tile: the portrait cropped to a square around her head. The importer finds the
@@ -178,9 +178,9 @@ its API and files. A file is named by the game's **dress id** while our Uma id i
 for 124 of 268 outfits, so each chibi is matched through GameTora's `costume` field (Kitasan Black's 106802 is dress
 106810), never by name or number. Stands and faces are per **character**: every outfit of an Uma shares them. The face
 is the same square of every stand (the figures share one frame), taken from the summer uniform, then the winter one,
-the gym clothes or the casual clothes. Coverage today: all 536 chibis, all 540 stands, all 135 faces. Candidates for the
-chibis and stands, not placed yet: the standing chibi on Stable tiles, race select and the Home lobby; the celebrating
-one on a win, a max bond or a scenario unlock; a stand as a seasonal look on the profile (a uniform by date, casual
+the gym clothes or the casual clothes. Coverage today: all 536 chibis, all 540 stands, all 135 faces. The standing chibi is
+Spark Match's tile (D161). Candidates not placed yet: the standing chibi on Stable tiles, race select and the Home
+lobby; the celebrating one on a win, a max bond or a scenario unlock; a stand as a seasonal look on the profile (a uniform by date, casual
 clothes off-season, gym clothes during a Spark Match).
 
 Lists never use the large art; **detail surfaces do**. The card page opens on the illustration full width, cropped to

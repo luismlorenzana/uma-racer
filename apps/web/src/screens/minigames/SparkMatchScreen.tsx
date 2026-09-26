@@ -16,7 +16,8 @@ import {
   type SparkTile,
 } from '../../game/minigames/spark-match'
 import { useGame } from '../../game/store'
-import { AtlasSprite } from '../../ui/AtlasSprite'
+import { useArtSet } from '../../ui/album/useArt'
+import { SPARK_TILE_COLOR_NAMES, SparkTileFace } from '../../ui/minigames/SparkTileFace'
 import { formatTickets } from '../../ui/tickets'
 
 interface TileIdentity {
@@ -26,17 +27,6 @@ interface TileIdentity {
 }
 
 const delay = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
-
-function TileFace({ identity }: { identity: TileIdentity }) {
-  return (
-    <AtlasSprite
-      asset={identity.asset}
-      decorative
-      className="h-full w-full rounded-[0.55rem] bg-stage-soft"
-      fallback={<span className="flex h-full items-center justify-center font-display text-lg font-bold text-ink-on-dark">{identity.label.slice(0, 1)}</span>}
-    />
-  )
-}
 
 export function SparkMatchScreen() {
   const { umaId = '' } = useParams()
@@ -80,6 +70,13 @@ export function SparkMatchScreen() {
   useEffect(() => {
     if (cast.length === 6) console.warn('Spark Match scenario tile set unavailable; using the first five starter Umas by id.')
   }, [cast])
+
+  // Tiles are the cast's standing chibis (T059, D161); each icon stands in until its chibi arrives.
+  const chibis = useArtSet(contentState.status === 'ready' ? contentState.content : null, 'chibi', cast.map((identity) => `${identity.id}-a`))
+  const face = (slot: number) => {
+    const identity = cast[slot]!
+    return <SparkTileFace slot={slot} chibi={chibis.get(`${identity.id}-a`) ?? null} asset={identity.asset} label={identity.label} />
+  }
 
   const start = async () => {
     if (!uma || phase !== 'ready') return
@@ -209,7 +206,7 @@ export function SparkMatchScreen() {
     <div className={`flex h-dvh flex-col bg-stage text-ink-on-dark ${running ? 'overflow-hidden' : 'overflow-y-auto'}`}>
       <header className="pt-safe flex min-h-16 shrink-0 items-center gap-3 border-b border-hairline-dark bg-stage/95 px-3 py-2">
         <Link to={`/stable/${encodeURIComponent(umaId)}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft text-xl" aria-label="Back to Uma profile">←</Link>
-        <div className="h-11 w-11 shrink-0"><TileFace identity={trainee} /></div>
+        <div className="h-11 w-11 shrink-0">{face(5)}</div>
         <div className="min-w-0 flex-1"><p className="text-[10px] font-bold tracking-[0.16em] text-accent uppercase">Spark Match</p><h1 className="truncate text-lg">{trainee.label}</h1></div>
         {run && <div className="text-right"><p className="text-[10px] font-bold text-ink-on-dark-soft uppercase">Score</p><p className="font-display text-xl font-bold text-accent">{run.score.toLocaleString()}</p></div>}
       </header>
@@ -221,7 +218,7 @@ export function SparkMatchScreen() {
             <h2 className="mt-1 text-3xl">Line up the Stable</h2>
             <p className="mt-2 text-sm text-ink-on-dark-soft">Tap one tile, then a neighbor. Matches score; trainee matches score double. A run costs {formatTickets(SPARK_MATCH_TICKET_COST)} when it begins.</p>
             <div className="mt-5 grid grid-cols-6 gap-2" aria-label="Spark Match tile cast">
-              {cast.map((identity) => <div key={identity.id} className="min-w-0"><TileFace identity={identity} /><p className="mt-1 truncate text-center text-[9px] text-ink-on-dark-soft">{identity.id === trainee.id ? 'Trainee' : identity.label}</p></div>)}
+              {cast.map((identity, slot) => <div key={identity.id} className="min-w-0">{face(slot)}<p className="mt-1 truncate text-center text-[9px] text-ink-on-dark-soft">{identity.id === trainee.id ? 'Trainee' : identity.label}</p></div>)}
             </div>
             <p className="mt-4 rounded-sm border border-warning/40 bg-warning/10 p-2 text-xs text-ink-on-dark-soft">Scenario tile casts are not published yet. This preview uses the first five starter Umas by id.</p>
             {error && <p role="alert" className="mt-3 rounded-sm bg-danger/20 p-2 text-sm font-semibold text-red-200">{error}</p>}
@@ -270,15 +267,15 @@ export function SparkMatchScreen() {
                   type="button"
                   disabled={phase !== 'playing' || animating}
                   onClick={() => void chooseTile(index)}
-                  aria-label={`${identity.label}, row ${Math.floor(index / SPARK_BOARD_WIDTH) + 1}, column ${index % SPARK_BOARD_WIDTH + 1}`}
+                  aria-label={`${identity.label} (${SPARK_TILE_COLOR_NAMES[tile]}), row ${Math.floor(index / SPARK_BOARD_WIDTH) + 1}, column ${index % SPARK_BOARD_WIDTH + 1}`}
                   aria-pressed={active}
-                  className={`relative aspect-square min-h-11 min-w-0 overflow-hidden rounded-[0.65rem] border-2 ${active ? 'z-10 border-accent shadow-[0_0_0_2px_rgb(211_154_43_/_0.35)]' : hinted ? 'border-info shadow-[0_0_12px_rgb(47_111_224_/_0.7)]' : 'border-transparent'}`}
+                  className={`relative aspect-square min-h-11 min-w-0 rounded-full p-px ${active ? 'z-10 bg-white shadow-[0_0_0_3px_rgb(255_255_255_/_0.9)]' : hinted ? 'bg-white/70 shadow-[0_0_14px_rgb(255_255_255_/_0.8)]' : ''}`}
                   animate={{ opacity: isClearing ? 0 : 1, scale: isClearing ? 0.7 : active ? 1.06 : 1 }}
                   whileTap={reducedMotion ? undefined : { scale: 0.94 }}
                   transition={{ duration: reducedMotion ? 0 : 0.14 }}
                 >
-                  <TileFace identity={identity} />
-                  {tile === 5 && <span className="absolute right-0.5 bottom-0.5 rounded-sm bg-accent px-1 text-[8px] font-black text-ink">2×</span>}
+                  {face(tile)}
+                  {tile === 5 && <span className="absolute right-0 bottom-0 rounded-sm bg-accent px-1 text-[8px] font-black text-ink">2×</span>}
                 </m.button>
               )
             })}
