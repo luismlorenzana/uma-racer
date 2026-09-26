@@ -10,7 +10,7 @@ const EMOJI = /[\p{Extended_Pictographic}\u{FE0F}]/u
 // guillemets once used as chevrons. The star stays as text in ratings like "3★". Spark Match and Bond Recall are exempt
 // until they are rebuilt: Spark Match by its rework, Bond Recall by Friendship Training (M020).
 const GLYPH = /[\u2300-\u23ff\u25a0-\u25ff\u2600-\u2604\u2606-\u27bf\u2b00-\u2bff\u219d\u21e5\u2039\u203a]/u
-const GLYPH_EXEMPT = ['screens/minigames/', 'ui/minigames/']
+const GLYPH_EXEMPT = ['screens/minigames/SparkMatchScreen.tsx', 'screens/minigames/BondRecallScreen.tsx', 'screens/minigames/BondBoard.tsx', 'ui/minigames/']
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {

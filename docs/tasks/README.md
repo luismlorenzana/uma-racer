@@ -24,7 +24,7 @@ multipliers on a training turn that no longer exists.
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
 | [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | [T071](T071-spark-rival-engine.md) · [T072](T072-spark-rival-content.md) · [T073](T073-spark-rival-runtime.md) · [T074](T074-spark-rival-polish.md) | Specified · next |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · after M022 |
+| [M020 — Friendship Training](M020-friendship-training.md) | T065; T063 and T064 complete (beta) | Awaiting the owner's play |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
 

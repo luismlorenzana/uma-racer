@@ -6,11 +6,9 @@ import {
   cardStars,
   scenarioForTier,
 } from '@racer/domain'
-import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
-import type { LoadedContent } from '../../content/runtime'
 import { safeReturnPath } from '../../game/bond-links'
 import { getMinigameHost, type RunReward, type RunTicket } from '../../game/minigame-host'
 import {
@@ -25,62 +23,10 @@ import {
 import { useGame } from '../../game/store'
 import { formatTickets } from '../../ui/tickets'
 import { BondBoard, CardArt } from './BondBoard'
+import { GainedStars } from './GainedStars'
+import { useCardArt } from './useCardArt'
 
 const delay = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
-
-function useCardArt(content: LoadedContent | null, cardIds: readonly string[]): ReadonlyMap<string, string> {
-  const [art, setArt] = useState<ReadonlyMap<string, string>>(new Map())
-  const key = cardIds.join('\u0000')
-
-  useEffect(() => {
-    if (!content || key.length === 0) {
-      setArt(new Map())
-      return
-    }
-    let cancelled = false
-    const ids = [...new Set(cardIds)]
-    void Promise.all(ids.map(async (id) => {
-      if (!content.art.has('card', id)) return null
-      try {
-        const url = await content.art.load('card', id)
-        return url ? ([id, url] as const) : null
-      } catch {
-        return null
-      }
-    })).then((loaded) => {
-      if (!cancelled) setArt(new Map(loaded.filter((entry): entry is readonly [string, string] => entry !== null)))
-    })
-    return () => { cancelled = true }
-  }, [content, key])
-
-  return art
-}
-
-/** The card's stars after the run, the one just earned popping in. */
-function GainedStars({ before, after }: { before: number; after: number }) {
-  const reducedMotion = useReducedMotion()
-  return (
-    <span className="flex gap-0.5" role="img" aria-label={`${after} of ${MAX_STARS} stars`}>
-      {Array.from({ length: MAX_STARS }, (_, index) => {
-        const filled = index < after
-        const gained = index >= before && filled
-        return (
-          <m.svg
-            key={index}
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className={`h-6 w-6 ${filled ? 'text-accent' : 'text-hairline-strong'}`}
-            initial={gained && !reducedMotion ? { opacity: 0, scale: 0.35 } : false}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: reducedMotion ? 0 : 0.24, delay: gained && !reducedMotion ? index * 0.06 : 0 }}
-          >
-            <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" fill="currentColor" />
-          </m.svg>
-        )
-      })}
-    </span>
-  )
-}
 
 export function BondRecallScreen() {
   const { cardId = '' } = useParams()

@@ -13,9 +13,13 @@ expected-action-count append port; it does not add a competing Dexie journal mig
 
 | Task | Scope |
 |---|---|
-| T063 | The game: engine, balance bot, screens, reachable as a beta beside Bond Recall |
-| T064 | Scenario twists: each scenario's run carries its buff's theme as a run rule |
+| T063 ✅ | The game: engine, balance bot, screens, reachable as a beta beside Bond Recall |
+| T064 ✅ | Scenario twists: each scenario's run carries its buff's theme as a run rule |
 | T065 | Cutover, once the owner has played it: every Bond link opens Friendship Training; Bond Recall is deleted |
+
+T063 and T064 landed on 2026-09-26 (D173): the engine, setup and bot are `packages/domain/src/friendship-*.ts`, the
+host keeps a run's setup and choices on its local row, and the screens are `apps/web/src/screens/minigames/friendship/`.
+What remains is T065, after the owner has played the beta.
 
 ## Fixed choices (D146)
 
@@ -197,6 +201,8 @@ A lazy DOM route, `/minigames/friendship-training/:cardId?tier&uma&return`, with
 - **Week choice:** three facility cards with target and payout.
 - **Training and races:** as laid out above, with the skills bar under the header.
 - **Reward, skill, shop and result** screens, the result celebrating the star.
+- **A sense of place** (D173): a season map across the top, and a scene where the main card's character trains at
+  the facility or runs the race, with the friendship hearts and each train's result rising above them.
 - Reachable from the card page as **Friendship Training (beta)** beside Bond until T065.
 
 ## Scenario twists (T064)

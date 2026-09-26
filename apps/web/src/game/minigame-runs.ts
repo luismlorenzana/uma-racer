@@ -2,6 +2,7 @@
 
 import {
   BOND_RECALL_TICKET_COST,
+  FRIENDSHIP_TRAINING_TICKET_COST,
   MAX_STARS,
   MAX_SCENARIO_TIER,
   MAX_TRAINING_LEVEL,
@@ -9,7 +10,9 @@ import {
   activeScenario,
   addTrainingExp,
   advanceCardStars,
+  buildFriendshipSetup,
   cardStars,
+  ftReplay,
   constellationTemplate,
   nodesUnlockedBetween,
   parseCardSave,
@@ -17,6 +20,7 @@ import {
   parseUmaSave,
   type CardSave,
   type ConstellationNode,
+  type FtAction,
   type LedgerEntry,
   type PlayerProfile,
   type UmaSave,
@@ -24,12 +28,15 @@ import {
 import type { LoadedContent } from '../content/runtime'
 import { db, type MinigameRunRow } from './db'
 import {
+  validateFriendshipOutcome,
   validateMinigameOutcome,
   type MinigameHost,
+  type MinigameKind,
   type RunOutcome,
   type RunReward,
   type RunTarget,
   type RunTicket,
+  type SavedRun,
 } from './minigame-host'
 import { updateTrainingBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
@@ -60,7 +67,13 @@ const asTicket = (run: MinigameRunRow): RunTicket => ({
 
 const targetKey = (target: RunTarget, tier: number): string => target.kind === 'spark-match'
   ? `spark-match:${target.umaId}:${tier}`
-  : `bond-recall:${target.cardId}:${tier}`
+  : `${target.kind}:${target.cardId}:${tier}`
+
+const TICKET_COST: Readonly<Record<MinigameKind, number>> = {
+  'spark-match': SPARK_MATCH_TICKET_COST,
+  'bond-recall': BOND_RECALL_TICKET_COST,
+  'friendship-training': FRIENDSHIP_TRAINING_TICKET_COST,
+}
 
 const runId = (target: RunTarget, tier: number, attemptIndex: number): string =>
   `${targetKey(target, tier)}:${attemptIndex}`
@@ -149,7 +162,7 @@ export class PersistentMinigameHost implements MinigameHost {
       return { tier: scenario.tier, key: targetKey(target, scenario.tier) }
     }
     const row = await db.cards.get(target.cardId)
-    if (!row) throw new Error('Bond Recall card is not owned')
+    if (!row) throw new Error('This card is not owned')
     const card = parsedCard(target.cardId, row.data)
     const template = this.content.cards.byId.get(target.cardId)
     if (!template) throw new Error(`Card content is missing ${target.cardId}`)
@@ -162,7 +175,63 @@ export class PersistentMinigameHost implements MinigameHost {
     return { tier: target.tier, key: targetKey(target, target.tier) }
   }
 
-  async beginRun(kind: RunTarget['kind'], target: RunTarget): Promise<RunTicket> {
+  /** The Friendship Training run's frozen setup: the deck from the named Uma's set, else the first set anyone holds there. */
+  private async friendshipSetup(target: Extract<RunTarget, { kind: 'friendship-training' }>, tier: number, seed: string) {
+    const mainCard = this.content.cards.byId.get(target.cardId)
+    if (!mainCard) throw new Error(`Card content is missing ${target.cardId}`)
+    const ownedRows = await db.cards.toArray()
+    const owned = ownedRows
+      .map((row) => parsedCard(row.id, row.data))
+      .flatMap((card) => {
+        const template = this.content.cards.byId.get(card.templateId)
+        return template ? [{ template, stars: cardStars(card, tier) }] : []
+      })
+    const main = owned.find((entry) => entry.template.id === target.cardId) ?? { template: mainCard, stars: 0 }
+    const umas = (await db.umas.toArray()).map((row) => parsedUma(row.id, row.data)).sort((left, right) => left.templateId.localeCompare(right.templateId))
+    const named = target.umaId ? umas.find((uma) => uma.templateId === target.umaId)?.scenarios.find((run) => run.tier === tier) : undefined
+    const any = umas.flatMap((uma) => uma.scenarios.filter((run) => run.tier === tier && run.cardSetIds.length > 0))[0]
+    const set = (named && named.cardSetIds.length > 0 ? named : any)?.cardSetIds ?? []
+    return buildFriendshipSetup({
+      seed: Number(seed),
+      tier,
+      mainStars: main.stars,
+      mainCard,
+      setCardIds: set,
+      owned,
+      skills: this.content.skills.items,
+      races: this.content.races.items,
+    })
+  }
+
+  async findOpenRun(target: RunTarget): Promise<RunTicket | null> {
+    let key: string
+    try {
+      key = (await this.validateTarget(target)).key
+    } catch {
+      return null
+    }
+    const open = await db.minigameRuns.where('[targetKey+status]').equals([key, 'open']).first()
+    return open ? asTicket(open) : null
+  }
+
+  async loadRun(id: string): Promise<SavedRun | null> {
+    const run = await db.minigameRuns.get(id)
+    if (!run || run.kind !== 'friendship-training' || !run.setup) return null
+    return { setup: run.setup, actions: [...(run.actions ?? [])] }
+  }
+
+  async saveProgress(id: string, actions: readonly FtAction[]): Promise<void> {
+    await db.transaction('rw', [db.minigameRuns], async () => {
+      const run = await db.minigameRuns.get(id)
+      if (!run || run.kind !== 'friendship-training' || !run.setup) throw new Error('Unknown Friendship Training run')
+      if (run.status !== 'open') throw new Error('This run is already finished')
+      // Only choices the run accepts are kept: an invalid list throws here and never reaches the row.
+      ftReplay(run.setup, actions)
+      await db.minigameRuns.put({ ...run, actions: [...actions] })
+    })
+  }
+
+  async beginRun(kind: MinigameKind, target: RunTarget): Promise<RunTicket> {
     if (kind !== target.kind) throw new Error('Minigame kind and target do not match')
     const now = this.now()
     const today = this.today()
@@ -175,7 +244,7 @@ export class PersistentMinigameHost implements MinigameHost {
       const open = await db.minigameRuns.where('[targetKey+status]').equals([valid.key, 'open']).first()
       if (open) return asTicket(open)
 
-      const cost = kind === 'spark-match' ? SPARK_MATCH_TICKET_COST : BOND_RECALL_TICKET_COST
+      const cost = TICKET_COST[kind]
       if (profile.tickets < cost) throw new Error(`You need ${cost} Training Tickets to begin this run`)
       const attemptIndex = await db.minigameRuns.where('targetKey').equals(valid.key).count()
       const id = runId(target, valid.tier, attemptIndex)
@@ -194,6 +263,9 @@ export class PersistentMinigameHost implements MinigameHost {
         reward: null,
         createdAt: now,
         completedAt: null,
+        ...(target.kind === 'friendship-training'
+          ? { setup: await this.friendshipSetup(target, valid.tier, seed), actions: [] }
+          : {}),
       }
       nextProfile = { ...profile, tickets: profile.tickets - cost }
       const ledger: LedgerEntry = {
@@ -267,9 +339,14 @@ export class PersistentMinigameHost implements MinigameHost {
           await updateTrainingBadgeFacts({ content: this.content, uma: nextUma, sourceId: id, now })
           mutation = { profile, uma: nextUma }
           reconcileTrainer = true
-        } else if (run.kind === 'bond-recall' && run.target.kind === 'bond-recall' && outcome.kind === 'bond-recall') {
+        } else if ((run.kind === 'bond-recall' && run.target.kind === 'bond-recall' && outcome.kind === 'bond-recall') ||
+          (run.kind === 'friendship-training' && run.target.kind === 'friendship-training' && outcome.kind === 'friendship-training')) {
+          if (outcome.kind === 'friendship-training') {
+            if (!run.setup) throw new Error('This Friendship Training run has no setup')
+            validateFriendshipOutcome(run.setup, outcome)
+          }
           const cardRow = await db.cards.get(run.target.cardId)
-          if (!cardRow) throw new Error('Bond Recall card is not owned')
+          if (!cardRow) throw new Error('This card is not owned')
           const card = parsedCard(run.target.cardId, cardRow.data)
           const before = cardStars(card, run.tier)
           let nextCard = card
@@ -302,7 +379,7 @@ export class PersistentMinigameHost implements MinigameHost {
             reconcileTrainer = true
           }
           result = {
-            ticketsSpent: BOND_RECALL_TICKET_COST,
+            ticketsSpent: TICKET_COST[run.kind],
             starsBefore: before,
             starsAfter: after,
             couponGranted,
@@ -313,6 +390,7 @@ export class PersistentMinigameHost implements MinigameHost {
 
         await db.minigameRuns.put({
           ...run,
+          ...(outcome.kind === 'friendship-training' ? { actions: [...outcome.actions] } : {}),
           status: 'completed',
           outcome: { ...outcome },
           reward: cloneReward(result),

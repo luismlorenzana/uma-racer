@@ -10,6 +10,7 @@ facilities, no energy, no per-turn RNG (D120).
 |---|---|---|
 | **Spark Match — Rival Circuit** | Training Level 1 → 10 of the active scenario | continuous-drag puzzle battle |
 | **Bond Recall** | one card by one star, until Friendship Training replaces it (M020) | match-2 memory |
+| **Friendship Training** (beta) | one card by one star, beside Bond Recall until the owner prefers it | a roguelite deck of support cards |
 
 Both are **seeded and replay-stable**. Spark Rival Circuit is a pure replay of its encounter, seed and persisted
 actions; Bond Recall's board comes from `(saveId, target, attemptIndex)`. Reloading mid-run restores the same state and
@@ -283,6 +284,28 @@ card minigame is the direct path from "I own this card" to "this card is worth s
 ### Cost
 
 **1 training ticket per run**, win or lose (D148).
+
+---
+
+## Friendship Training — card stars (beta)
+
+A Balatro-style run that trains one card through a season of weeks and races; a clear is one star in one scenario,
+for one ticket, all or nothing (D146). The rules, numbers and twists live in
+[M020](../tasks/M020-friendship-training.md) until the cutover (T065); D168 closed its lists and D173 its look.
+
+- **Where:** a **Train · beta** button beside Bond on each scenario row of a card's page.
+- **A run:** stages of two training weeks and a race. Pick a facility (easy, standard or hard), then play cards from
+  a hand of seven in formations (Friendship, Rainbow, Full team…) to reach the target. The main card bonds after
+  three trains and then counts as every type. Races favour two types by course and carry a rival rule; a won race
+  offers a skill, and the shop sells copies, removals, upgrades and skills for fans.
+- **Its look:** a season map across the top marks every week and race; a living scene shows the main card's
+  character (their standing chibi, celebrating once bonded) at a facility tinted by its stat or on a moving track,
+  with the friendship hearts beside them and each train's formation and score rising as it lands. The hand is two
+  rows of full-art cards in the thumb zone, about 80 × 107 pt, 72 × 96 at 375 × 667.
+- **Saving:** Begin freezes the setup on the local run row and every choice is appended, so a reload resumes exactly
+  (Resume on the start screen); the commit replays the choices before the star is granted. Give up is a loss.
+- **Balance:** `pnpm sim:training` holds the bot's clear rates near 90 / 85 / 80 / 75 / 70% for 1★–5★, and every
+  scenario twist within its band.
 
 ---
 

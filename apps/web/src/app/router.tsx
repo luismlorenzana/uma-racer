@@ -103,6 +103,11 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/minigames/SparkMatchScreen')).SparkMatchScreen }),
   },
   {
+    path: 'minigames/friendship-training/:cardId',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Friendship Training" />,
+    lazy: async () => ({ Component: (await import('../screens/minigames/friendship/FriendshipTrainingScreen')).FriendshipTrainingScreen }),
+  },
+  {
     path: 'minigames/bond-recall/:cardId?',
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Bond Recall" />,
     lazy: async () => ({ Component: (await import('../screens/minigames/BondRecallScreen')).BondRecallScreen }),

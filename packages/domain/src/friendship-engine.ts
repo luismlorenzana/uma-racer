@@ -436,6 +436,7 @@ function startEncounter(setup: FtSetup, state: FtState, offer: FtFacilityOffer |
     orderFilled: false,
   }
   const encounter = state.encounter
+  state.lastTrain = null
   const skills = ownedSkills(setup, state)
   const duel = ftRivalActive(setup, state, 'duel')
   encounter.target = race ? roundTarget(FT_RACE_TARGETS[state.stage]! * earningMult(setup) * (duel ? 1.25 : 1)) : offer.target

@@ -19,7 +19,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { getContentAsset, type ContentAsset } from '../content/runtime'
 import { unlockCard } from '../game/actions'
-import { bondRecallHref } from '../game/bond-links'
+import { bondRecallHref, friendshipTrainingHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { ArtViewer, ExpandMark } from '../ui/ArtViewer'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -187,12 +187,23 @@ export function CardPage() {
                   {!save ? null : maxed ? (
                     <span className="w-16 text-center text-[11px] font-semibold text-ink-faint">Max</span>
                   ) : profile.tickets >= BOND_RECALL_TICKET_COST ? (
-                    <Link
-                      to={bondRecallHref({ cardId, tier: scenario.tier, returnTo: here })}
-                      className="font-display flex min-h-10 w-16 items-center justify-center rounded-md border border-accent bg-panel text-[13px] font-semibold"
-                    >
-                      Bond
-                    </Link>
+                    <span className="flex gap-1">
+                      {/* Friendship Training runs beside Bond Recall until the owner prefers it (M020 T065). */}
+                      <Link
+                        to={friendshipTrainingHref({ cardId, tier: scenario.tier, returnTo: here })}
+                        className="font-display flex min-h-11 w-16 flex-col items-center justify-center rounded-md border border-hairline-strong bg-panel text-[13px] leading-tight font-semibold"
+                        aria-label={`Friendship Training in ${scenario.name} (beta)`}
+                      >
+                        Train
+                        <span className="text-[9px] font-semibold tracking-wide text-accent-strong uppercase">beta</span>
+                      </Link>
+                      <Link
+                        to={bondRecallHref({ cardId, tier: scenario.tier, returnTo: here })}
+                        className="font-display flex min-h-11 w-16 items-center justify-center rounded-md border border-accent bg-panel text-[13px] font-semibold"
+                      >
+                        Bond
+                      </Link>
+                    </span>
                   ) : (
                     <span className="w-16 text-center text-[10px] font-semibold text-ink-faint">need {BOND_RECALL_TICKET_COST}</span>
                   )}

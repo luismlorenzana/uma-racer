@@ -23,6 +23,8 @@ import {
   type BadgeStateV1,
   type FlairEventV1,
   type EntityKind,
+  type FtAction,
+  type FtSetup,
   type LedgerEntry,
   type LogKind,
   type PlayerProfile,
@@ -68,6 +70,9 @@ export interface MinigameRunRow {
   reward: RunReward | null
   createdAt: number
   completedAt: number | null
+  /** Friendship Training: the setup frozen at Begin and every choice since, so a reload resumes exactly (D168). */
+  setup?: FtSetup
+  actions?: FtAction[]
 }
 
 interface LegacyProfileRow {

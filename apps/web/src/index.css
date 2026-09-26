@@ -206,6 +206,30 @@
   }
 }
 
+/* Friendship Training's scene (M020): an idle bob, a quicker running bob, drifting sparks, a sliding rail, and the
+   season map's current node. Transform and opacity only; the reduced-motion rule below stills them. */
+@keyframes ft-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes ft-run {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes ft-drift {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { opacity: 0.85; }
+  100% { transform: translateY(-140px) scale(1); opacity: 0; }
+}
+@keyframes ft-rails {
+  from { transform: translateX(0); }
+  to { transform: translateX(-48px); }
+}
+@keyframes ft-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.3); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
