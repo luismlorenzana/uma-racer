@@ -59,7 +59,7 @@ fourteen scenario buffs) landed on 2026-09-26 and was removed under D104; D163â€
 
 M009 (look and feel: the Paddock tokens and primitives, every screen rolled onto them, and the original icon set with
 the drawn mark) landed on 2026-09-26 and was removed under D104; D166â€“D167 and
-[Visual System](../design/visual-system.md) carry it. Spark Match and Bond Recall keep their own look until M020.
+[Visual System](../design/visual-system.md) carry it. Spark Match keeps its own look until its rework, and Bond Recall until Friendship Training (M020) replaces it.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 
