@@ -77,16 +77,6 @@
   --shadow-2: 0 6px 16px -6px rgb(16 26 36 / 0.18);
   --shadow-3: 0 18px 40px -12px rgb(16 26 36 / 0.28);
 
-  /* Deprecated "Racecourse Pop" aliases, mapped onto Paddock tokens so screens T031 has not
-     reached yet stay coherent. T031 deletes this block with the last consumer. */
-  --color-sky: #2f6fe0;
-  --color-sky-top: #edf1f6;
-  --color-sky-deep: #2456b4;
-  --color-cream: #ffffff;
-  --color-gold: #d39a2b;
-  --color-gold-deep: #b87f18;
-  --color-turf-deep: #24603e;
-
   --duration-fast: 120ms;
   --duration-standard: 180ms;
   --duration-emphasised: 260ms;

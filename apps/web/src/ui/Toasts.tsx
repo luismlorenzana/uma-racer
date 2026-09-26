@@ -24,7 +24,7 @@ export function Toasts() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -20, opacity: 0, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 520, damping: 26 }}
-            className="rounded-full border-2 border-white bg-gradient-to-b from-[#ffd65a] to-gold-deep px-5 py-2 text-lg font-extrabold text-white text-outline shadow-[var(--shadow-panel)]"
+            className="rounded-full border border-hairline bg-gradient-to-b from-accent to-accent-strong px-5 py-2 text-lg font-semibold text-white text-outline shadow-2"
           >
             {toast.text}
           </m.div>

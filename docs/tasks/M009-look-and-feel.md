@@ -26,11 +26,15 @@ T030 visual system foundation      (Claude authors: tokens, primitives, two refe
 | Task | Result | Must not absorb |
 |---|---|---|
 | T030 ✅ | Tokens, fonts, primitives, shell, Home and Stable — the reference the rollout copies | Screen-by-screen rollout, icons, audio |
-| [T031](T031-visual-rollout.md) | Every remaining screen uses the new system; no legacy token or slab button survives | New features, layout redesigns not in the visual system, gameplay changes |
+| T031 ✅ | Every remaining screen uses the new system; no legacy token or slab button survives | New features, layout redesigns not in the visual system, gameplay changes |
 | [T032](T032-icon-set.md) | One original icon set replaces every emoji, with illustrated tab and currency icons | Bespoke badge art (Milestone 11), character art |
 
 T030 was authored by Claude because it is taste-driven and needs visual iteration in the browser at 390×844; it landed
-on 2026-09-19 and also covered the shell. T031 and T032 are ordinary delegable work now that the reference exists.
+on 2026-09-19 and also covered the shell. T031 landed on 2026-09-26 and was removed under D104: most screens had moved to
+the system as they were built, and the last of the old skin went from Badges, the Trainer profile, race results, toasts,
+flair cards and the loaders; the `GameButton` shim and the Racecourse Pop aliases are deleted, a test keeps them out,
+and jsdom tests cover the primitives. Spark Match and Bond Recall keep a few colours until their rebuilds (the Spark
+Match rework, M020).
 
 ## Definition of done
 

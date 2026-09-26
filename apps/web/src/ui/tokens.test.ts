@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
@@ -43,5 +44,24 @@ describe('paddock tokens', () => {
     // The old sky-blue page gradient is the single loudest "children's web game" tell.
     expect(css).not.toContain('#7fd3ff')
     expect(css).not.toContain('#bfe6ff')
+  })
+
+  it('has dropped the Racecourse Pop aliases, and no screen still reaches for them or the slab button (T031)', () => {
+    for (const alias of ['--color-sky', '--color-cream', '--color-gold:', '--color-gold-deep', '--color-turf-deep']) expect(css).not.toContain(alias)
+    const root = fileURLToPath(new URL('..', import.meta.url))
+    const files: string[] = []
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const path = join(dir, name)
+        if (statSync(path).isDirectory()) walk(path)
+        else if (/\.tsx?$/.test(name) && !/\.test\./.test(name)) files.push(path)
+      }
+    }
+    walk(root)
+    const offenders = files.filter((file) => {
+      const source = readFileSync(file, 'utf8')
+      return /\b(?:bg|text|border|from|to|via)-(?:sky|sky-top|sky-deep|cream|gold|gold-deep|turf-deep)\b/.test(source) || /\bGameButton\b/.test(source)
+    })
+    expect(offenders).toEqual([])
   })
 })

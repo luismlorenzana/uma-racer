@@ -14,7 +14,7 @@ const FRAME_CLASSES: [string, string, string][] = [
   ['border-slate-200', 'bg-white', '◇'],
   ['border-amber-600', 'bg-amber-50', '◆'],
   ['border-slate-400', 'bg-slate-50', '◆'],
-  ['border-gold', 'bg-amber-50', '✦'],
+  ['border-accent', 'bg-amber-50', '✦'],
   ['border-cyan-400', 'bg-cyan-50', '✦'],
   ['border-violet-400', 'bg-violet-50', '✧'],
   ['border-fuchsia-500', 'bg-fuchsia-50', '★'],

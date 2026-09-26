@@ -7,7 +7,7 @@ import { useAppUpdate } from '../app/UpdateNotice'
 import { useAuth } from '../auth/AuthProvider'
 import { useContent } from '../content/ContentProvider'
 import { useGame } from '../game/store'
-import { GameButton } from '../ui/GameButton'
+import { Button } from '../ui/Button'
 import { grantDevResources } from '../game/actions'
 import { Panel } from '../ui/Panel'
 
@@ -15,7 +15,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-1.5">
       <span className="text-ink-soft">{label}</span>
-      <span className="font-extrabold">{value}</span>
+      <span className="font-semibold">{value}</span>
     </div>
   )
 }
@@ -76,7 +76,7 @@ export function SettingsScreen() {
           ordinary play ever produces one.
         </p>
         <div className="mt-3 flex gap-2">
-          <GameButton
+          <Button
             variant="secondary"
             disabled={granting || gameStatus !== 'ready'}
             onClick={() => {
@@ -86,7 +86,7 @@ export function SettingsScreen() {
             }}
           >
             {granting ? 'Granting…' : '+50 tickets · 5+5 coupons · 10 shards'}
-          </GameButton>
+          </Button>
         </div>
       </Panel>
       <Panel>
@@ -98,10 +98,10 @@ export function SettingsScreen() {
         <Row label="Cloud sync" value={`${sync.status}${sync.pending ? ` · ${sync.pending} pending` : ''}`} />
         <Row label="Last synced" value={sync.lastSuccessAt ? new Date(sync.lastSuccessAt).toLocaleString() : '—'} />
         {(orphanedUmas > 0 || orphanedCards > 0) && <Row label="Missing references" value={`${orphanedUmas} Umas · ${orphanedCards} cards`} />}
-        {sync.error && <p className="border-t border-sky-100 pt-2 text-xs font-bold text-red-700">{sync.error}</p>}
+        {sync.error && <p className="border-t border-accent-100 pt-2 text-xs font-bold text-danger">{sync.error}</p>}
         <Row label="Content packs" value={contentLabel} />
         {diagnostic && diagnostic.code !== 'ready' && (
-          <div className="border-t border-sky-100 pt-2 text-xs">
+          <div className="border-t border-accent-100 pt-2 text-xs">
             <p className="font-bold">{diagnostic.title}</p>
             <p className="mt-1 text-ink-soft">{diagnostic.message}</p>
             {diagnostic.action && (
@@ -112,15 +112,15 @@ export function SettingsScreen() {
           </div>
         )}
         {coverage && <Row label="Flair coverage" value={`${coverage.coveredSeries}/${coverage.totalSeries} series · ${coverage.mainVenues}/10 venues`} />}
-        <div className="border-t border-sky-100 pt-2 text-right text-xs font-bold text-ink-soft">{contentCounts}</div>
+        <div className="border-t border-accent-100 pt-2 text-right text-xs font-bold text-ink-soft">{contentCounts}</div>
         <Row label="Home Screen app" value={standalone ? 'Yes' : 'No (Safari tab)'} />
         <Row label="Reduced motion" value={reduced ? 'On' : 'Off'} />
       </Panel>
-      {gameStatus === 'ready' && <Link to="/trainer" className="flex min-h-11 items-center justify-center rounded-xl bg-white px-4 font-extrabold text-violet-700 shadow-sm">Open Trainer profile</Link>}
+      {gameStatus === 'ready' && <Link to="/trainer" className="flex min-h-11 items-center justify-center rounded-sm bg-panel px-4 font-semibold text-accent-strong shadow-1">Open Trainer profile</Link>}
       {auth.authRequired && (
-        <GameButton variant="secondary" onClick={() => (auth.user ? auth.signOut() : auth.signIn())}>
+        <Button variant="secondary" onClick={() => (auth.user ? auth.signOut() : auth.signIn())}>
           {auth.user ? 'Sign out' : 'Sign in with Google'}
-        </GameButton>
+        </Button>
       )}
       <p className="px-1 text-center text-xs text-ink-soft">
         Tip: on iPhone, turn off Safari → Advanced → Feature Flags → “Prefer Page Rendering Updates near 60fps” for 120 Hz.

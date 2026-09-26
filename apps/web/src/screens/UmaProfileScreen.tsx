@@ -32,7 +32,7 @@ import { SkillChips } from '../ui/SkillChips'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { Stars } from '../ui/Stars'
 import { Crest } from '../ui/Crest'
-import { GameButton } from '../ui/GameButton'
+import { Button } from '../ui/Button'
 import { Meter } from '../ui/Meter'
 import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
@@ -246,22 +246,22 @@ export function UmaProfileScreen() {
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <GameButton variant="secondary" disabled={busy} onClick={() => navigate(`/constellation/${encodeURIComponent(save.templateId)}`)}>
+          <Button variant="secondary" disabled={busy} onClick={() => navigate(`/constellation/${encodeURIComponent(save.templateId)}`)}>
             Constellation
-          </GameButton>
-          <GameButton variant="go" disabled={!raceUnlocked || busy} onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}>
+          </Button>
+          <Button variant="primary" disabled={!raceUnlocked || busy} onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}>
             Race
-          </GameButton>
+          </Button>
         </div>
 
         <div className="mt-2 grid gap-2">
           {setupPending && (
-            <GameButton variant="primary" disabled={busy} onClick={() => void runAction(() => startScenario(save.templateId), 'Could not start this scenario')}>
+            <Button variant="primary" disabled={busy} onClick={() => void runAction(() => startScenario(save.templateId), 'Could not start this scenario')}>
               Start scenario
-            </GameButton>
+            </Button>
           )}
           {sparkAvailable && (
-            <GameButton
+            <Button
               variant="primary"
               disabled={!sparkAffordable || busy}
               onClick={() => navigate(`/minigames/spark-match/${encodeURIComponent(save.templateId)}`)}
@@ -269,12 +269,12 @@ export function UmaProfileScreen() {
               {sparkAffordable
                 ? `Spark Match · ${formatTickets(SPARK_MATCH_TICKET_COST)}`
                 : `Spark Match · need ${formatTickets(SPARK_MATCH_TICKET_COST)}`}
-            </GameButton>
+            </Button>
           )}
           {uma.readyToAdvance && (
-            <GameButton variant="primary" disabled={busy} onClick={() => void runAction(() => advanceUma(save.templateId), 'Could not unlock the next scenario')}>
+            <Button variant="primary" disabled={busy} onClick={() => void runAction(() => advanceUma(save.templateId), 'Could not unlock the next scenario')}>
               Unlock the next scenario
-            </GameButton>
+            </Button>
           )}
         </div>
       </Panel>

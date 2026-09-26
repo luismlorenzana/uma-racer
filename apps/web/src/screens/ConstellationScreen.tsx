@@ -106,13 +106,13 @@ export function ConstellationScreen() {
         {canPlaySpark ? (
           <Link
             to={`/minigames/spark-match/${encodeURIComponent(save.templateId)}`}
-            className="mb-2 flex min-h-11 items-center justify-between rounded-xl bg-accent px-4 text-sm font-bold text-ink shadow-2"
+            className="mb-2 flex min-h-11 items-center justify-between rounded-sm bg-accent px-4 text-sm font-bold text-ink shadow-2"
           >
             <span>Raise Training Level</span>
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)} →</span>
           </Link>
         ) : (
-          <div className="mb-2 flex min-h-11 items-center justify-between rounded-xl bg-sunken px-4 text-sm font-bold text-ink-faint" aria-disabled="true">
+          <div className="mb-2 flex min-h-11 items-center justify-between rounded-sm bg-sunken px-4 text-sm font-bold text-ink-faint" aria-disabled="true">
             <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !run.started ? 'Start scenario first' : 'Raise Training Level'}</span>
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
@@ -157,7 +157,7 @@ export function ConstellationScreen() {
             <button
               type="button"
               disabled={busy}
-              className="min-h-[44px] rounded-xl bg-sunken px-3 text-left text-sm font-semibold"
+              className="min-h-[44px] rounded-sm bg-sunken px-3 text-left text-sm font-semibold"
               onClick={() => void assign(openNode.id, null)}
             >
               Leave empty
@@ -180,7 +180,7 @@ export function ConstellationScreen() {
                     <button
                       type="button"
                       disabled={busy || full}
-                      className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left"
+                      className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-sm bg-panel px-3 py-2 text-left"
                       onClick={() => void assign(openNode.id, { kind: 'card', cardId })}
                     >
                       <AtlasSprite asset={getContentAsset(content, 'card-icons', cardId)} decorative className="h-7 w-7 rounded-md" />
@@ -200,7 +200,7 @@ export function ConstellationScreen() {
                     {bond < MAX_STARS && (
                       <Link
                         to={bondRecallHref({ cardId, tier: run.tier, umaId: save.templateId, returnTo: here })}
-                        className="flex min-w-14 items-center justify-center rounded-xl bg-sunken px-2 text-[12px] font-semibold text-accent-strong"
+                        className="flex min-w-14 items-center justify-center rounded-sm bg-sunken px-2 text-[12px] font-semibold text-accent-strong"
                       >
                         Bond
                       </Link>
@@ -214,7 +214,7 @@ export function ConstellationScreen() {
                 key={stat}
                 type="button"
                 disabled={busy}
-                className="min-h-[44px] rounded-xl bg-panel px-3 text-left text-sm font-semibold"
+                className="min-h-[44px] rounded-sm bg-panel px-3 text-left text-sm font-semibold"
                 onClick={() => void assign(openNode.id, { kind: 'stat', stat })}
               >
                 {titleCase(stat)} <span className="text-ink-soft">+{statPay}</span>
@@ -300,7 +300,7 @@ function LineagePicker({
             key={id}
             type="button"
             disabled={busy || !eligibility.eligible}
-            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl bg-panel px-3 py-2 text-left disabled:opacity-40"
+            className="flex min-h-[44px] w-full items-center gap-2 rounded-sm bg-panel px-3 py-2 text-left disabled:opacity-40"
             onClick={() => onPick(id)}
           >
             <UmaBust content={content} umaId={id} className="h-10 w-10 shrink-0 rounded-sm border border-hairline bg-gradient-to-b from-panel to-sunken" />

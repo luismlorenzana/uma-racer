@@ -24,7 +24,7 @@ function TrainingRedirect() {
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
-    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Uma Racer" />,
+    hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Uma Racer" />,
     children: [
       {
         index: true,
@@ -109,12 +109,12 @@ export const router = createBrowserRouter([
   },
   {
     path: 'race/run',
-    hydrateFallbackElement: <div className="h-dvh bg-sky-100" aria-label="Loading Race" />,
+    hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
   },
   {
     path: 'collection/reveal/:kind/:id',
-    hydrateFallbackElement: <div className="h-dvh bg-violet-950" aria-label="Loading collection reveal" />,
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading collection reveal" />,
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
 ])

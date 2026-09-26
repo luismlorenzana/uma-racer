@@ -16,7 +16,7 @@ export function PlaceholderScreen({ title, emoji, lines }: { title: string; emoj
         >
           {emoji}
         </m.span>
-        <p className="mt-4 text-lg font-extrabold">Coming soon</p>
+        <p className="mt-4 text-lg font-semibold">Coming soon</p>
         <ul className="mt-3 flex flex-col gap-1 text-sm text-ink-soft">
           {lines.map((line) => (
             <li key={line}>{line}</li>
