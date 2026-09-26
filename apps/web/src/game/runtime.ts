@@ -451,6 +451,7 @@ export class GameRuntime {
       cardSaves: new Map(Object.entries(state.cards)),
       cardTemplates: content.cards.byId,
       umaTemplates: content.umas.byId,
+      skillTemplates: content.skills.byId,
     })
     const loadoutSkillIds = resolveSkillLoadout(derived, template, content.skills.byId, skillIds)
     const next: UmaSave = {

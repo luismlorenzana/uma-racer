@@ -291,7 +291,8 @@ export function CardsScreen() {
 
   const tickets = profile.tickets
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
-  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? entries[0] ?? null
+  // A tapped tile opens its detail in a sheet, where the list is, instead of a panel above it (D176).
+  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? null
   const compareEntries = selection.flatMap((id) => album.entries.get(id) ?? [])
   const view = prefs.query.view
   const columns = view === 'icons' ? 5 : view === 'cards' ? 2 : 1
@@ -352,50 +353,6 @@ export function CardsScreen() {
         </Panel>
       )}
 
-      {detail && (
-        <AlbumDetail
-          content={contentState.content}
-          kind="card"
-          id={detail.id}
-          icon={detail.asset}
-          alt={`${detail.template.charName} support card`}
-          frame="art"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-micro">{detail.template.type} · {scenarioName(detail.template.era)}</p>
-              <p className="font-display truncate text-xl font-bold">{detail.template.charName}</p>
-              <p className="truncate text-[12px] text-ink-soft">{detail.template.title || 'Support card'}</p>
-            </div>
-            {detail.isNew && <Crest tone="accent">NEW</Crest>}
-          </div>
-          <p className="mt-1 text-[12px] text-ink-soft">{cardSplitLabel(detail.template)}</p>
-          {!detail.owned ? (
-            <p className="mt-2 text-[12px] font-semibold">Not owned · {detail.unlockCost} tickets to unlock</p>
-          ) : lensTier !== null ? (
-            <div className="mt-2">
-              <div className="flex items-center gap-2">
-                <Stars value={detail.bond ?? 0} />
-                <span className="text-[12px] font-semibold">{detail.bond === MAX_STARS ? `${MAX_STARS}★ · Max` : `${detail.bond}★`}</span>
-              </div>
-              <p className="text-[12px] text-ink-soft">{cardPayLabel(detail)} here</p>
-            </div>
-          ) : (
-            <p className="mt-2 text-[12px] text-ink-soft">
-              {detail.save && brokenTiers(detail.save).length > 0
-                ? `Stars in ${brokenTiers(detail.save).length} scenario${brokenTiers(detail.save).length === 1 ? '' : 's'}`
-                : 'Not bonded in any scenario yet'}
-              {detail.equippedBy.length > 0 ? ` · in ${detail.equippedBy.length} active set${detail.equippedBy.length === 1 ? '' : 's'}` : ''}
-            </p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-2">
-            {!detail.owned
-              ? <Button size="sm" disabled={busy || tickets < detail.unlockCost} onClick={() => unlock(detail)}>Unlock · {detail.unlockCost}</Button>
-              : bondAction(detail, 'sm')}
-            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>Open</Button>
-          </div>
-        </AlbumDetail>
-      )}
 
       <AlbumChrome
         title={lensTier === null ? 'Support Cards' : `${scenarioName(lensTier)} cards`}
@@ -404,6 +361,7 @@ export function CardsScreen() {
           : <><Numeral className="text-ink">{album.owned}</Numeral> of {album.total} eligible owned · {album.bonded} bonded · {album.maxed} max</>}
         segment={
           <SegmentedControl
+            size="sm"
             label="Ownership"
             value={(prefs.query.filters.ownership as string[] | undefined)?.[0] ?? 'all'}
             onChange={(value) => setQuery({
@@ -475,6 +433,53 @@ export function CardsScreen() {
           )}
         />
       </AlbumChrome>
+
+      <BottomSheet open={detail !== null} onClose={() => setDetailId(null)}>
+        {detail && (
+        <AlbumDetail
+          content={contentState.content}
+          kind="card"
+          id={detail.id}
+          icon={detail.asset}
+          alt={`${detail.template.charName} support card`}
+          frame="art"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-micro">{detail.template.type} · {scenarioName(detail.template.era)}</p>
+              <p className="font-display truncate text-xl font-bold">{detail.template.charName}</p>
+              <p className="truncate text-[12px] text-ink-soft">{detail.template.title || 'Support card'}</p>
+            </div>
+            {detail.isNew && <Crest tone="accent">NEW</Crest>}
+          </div>
+          <p className="mt-1 text-[12px] text-ink-soft">{cardSplitLabel(detail.template)}</p>
+          {!detail.owned ? (
+            <p className="mt-2 text-[12px] font-semibold">Not owned · {detail.unlockCost} tickets to unlock</p>
+          ) : lensTier !== null ? (
+            <div className="mt-2">
+              <div className="flex items-center gap-2">
+                <Stars value={detail.bond ?? 0} />
+                <span className="text-[12px] font-semibold">{detail.bond === MAX_STARS ? `${MAX_STARS}★ · Max` : `${detail.bond}★`}</span>
+              </div>
+              <p className="text-[12px] text-ink-soft">{cardPayLabel(detail)} here</p>
+            </div>
+          ) : (
+            <p className="mt-2 text-[12px] text-ink-soft">
+              {detail.save && brokenTiers(detail.save).length > 0
+                ? `Stars in ${brokenTiers(detail.save).length} scenario${brokenTiers(detail.save).length === 1 ? '' : 's'}`
+                : 'Not bonded in any scenario yet'}
+              {detail.equippedBy.length > 0 ? ` · in ${detail.equippedBy.length} active set${detail.equippedBy.length === 1 ? '' : 's'}` : ''}
+            </p>
+          )}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {!detail.owned
+              ? <Button size="sm" disabled={busy || tickets < detail.unlockCost} onClick={() => unlock(detail)}>Unlock · {detail.unlockCost}</Button>
+              : bondAction(detail, 'sm')}
+            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>Open</Button>
+          </div>
+        </AlbumDetail>
+        )}
+      </BottomSheet>
 
       <CompareSheet
         open={compareOpen}

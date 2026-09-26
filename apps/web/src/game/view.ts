@@ -71,6 +71,7 @@ export function joinUma(
     cardSaves: new Map(Object.entries(cardSaves)),
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
+    skillTemplates: content.skills.byId,
   })
   return {
     status: 'ready',

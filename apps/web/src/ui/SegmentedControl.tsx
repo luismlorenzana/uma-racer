@@ -1,19 +1,23 @@
 import { m } from 'motion/react'
 
-/** Sunken track, raised thumb. Two to four mutually exclusive options. */
+/** Sunken track, raised thumb. Two to four mutually exclusive options; `sm` fits a toolbar row. */
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
   label,
+  size = 'md',
+  className = '',
 }: {
   options: readonly { value: T; label: string }[]
   value: T
   onChange: (value: T) => void
   label: string
+  size?: 'md' | 'sm'
+  className?: string
 }) {
   return (
-    <div role="tablist" aria-label={label} className="flex gap-1 rounded-sm bg-sunken p-1">
+    <div role="tablist" aria-label={label} className={`flex gap-1 rounded-sm bg-sunken ${size === 'sm' ? 'p-0.5' : 'p-1'} ${className}`}>
       {options.map((option) => {
         const active = option.value === value
         return (
@@ -23,7 +27,7 @@ export function SegmentedControl<T extends string>({
             type="button"
             aria-selected={active}
             onClick={() => onChange(option.value)}
-            className="relative min-h-10 flex-1 rounded-xs text-[13px] font-semibold"
+            className={`relative flex-1 rounded-xs font-semibold ${size === 'sm' ? 'min-h-8 px-2 text-[12px]' : 'min-h-10 text-[13px]'}`}
           >
             {active && (
               <m.span

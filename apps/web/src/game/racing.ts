@@ -216,6 +216,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     cardSaves: new Map(Object.entries(input.cardsById)),
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
+    skillTemplates: content.skills.byId,
   })
   const race = content.races.byId.get(raceId)
   if (!race) throw new Error(`Race content is missing race ${raceId}`)

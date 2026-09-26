@@ -246,6 +246,7 @@ export async function bootstrapGoalPlans(content: LoadedContent, now: number): P
         cardSaves,
         cardTemplates: content.cards.byId,
         umaTemplates: content.umas.byId,
+        skillTemplates: content.skills.byId,
       })
       const upgraded = upgradeGoalPlan({ uma, umaTemplate: template, aptitudes, races: content.races.items })
       await db.umas.put({ ...row, data: upgraded })

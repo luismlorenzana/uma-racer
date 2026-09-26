@@ -345,7 +345,8 @@ export function StableScreen() {
   const columns = view === 'icons' ? 5 : view === 'cards' ? 2 : 1
   const rowHeight = view === 'icons' ? 80 : view === 'cards' ? 230 : 64
   // The detail area always has something in it: the first result until the player picks.
-  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? entries[0] ?? null
+  // A tapped tile opens its detail in a sheet, where the list is, instead of a panel above it (D176).
+  const detail = (detailId ? album.entries.get(detailId) : undefined) ?? null
   const orphaned = Object.keys(owned).filter((id) => !contentState.content.umas.byId.has(id))
 
   const doExchange = () => {
@@ -378,92 +379,36 @@ export function StableScreen() {
 
   return (
     <div className="flex flex-col gap-3 pt-1">
-      <Panel>
-        <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm bg-sunken p-3">
-          <div>
-            <p className="text-[13px] font-semibold">
-              <Numeral>{profile.umaShards}</Numeral> / {UMA_SHARDS_PER_COUPON} Uma Shards
-            </p>
-            <m.p
-              key={exchangePulse}
-              initial={reducedMotion || exchangePulse === 0 ? false : { scale: 1.15, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-[12px] text-ink-soft"
-            >
-              {profile.umaCoupons} Uma Select Coupon{profile.umaCoupons === 1 ? '' : 's'}
-            </m.p>
-          </div>
-          <Button size="sm" disabled={exchangeBusy || profile.umaShards < UMA_SHARDS_PER_COUPON} onClick={doExchange}>
-            {exchangeBusy ? 'Exchanging…' : 'Exchange'}
-          </Button>
-        </div>
-        {!persistent && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — acquisitions work for this session but cannot persist or sync.</p>}
-        {persistent && sync.status === 'offline' && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Offline — collection changes commit locally and will sync after reconnecting.</p>}
-        {orphaned.length > 0 && <p className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{orphaned.length} owned Uma reference{orphaned.length === 1 ? '' : 's'} need restored content.</p>}
-        {error && <p role="alert" className="mt-2 rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{error}</p>}
-      </Panel>
-
-      {detail && (
-        <AlbumDetail
-          content={contentState.content}
-          kind="uma"
-          id={detail.id}
-          icon={detail.asset}
-          alt={`${detail.template.name} portrait`}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-micro">{detail.view?.scenario?.name ?? `Tier ${detail.view?.tier ?? 1}`}</p>
-              <p className="font-display truncate text-xl font-bold">{detail.template.name}</p>
-              <p className="truncate text-[12px] text-ink-soft">{detail.template.outfit ?? 'Standard outfit'}</p>
-            </div>
-            {detail.isNew && <Crest tone="accent">NEW</Crest>}
-          </div>
-
-          <div className="mt-2 flex flex-wrap gap-1">
-            {detail.save
-              ? <>
-                  <Crest>Lv {detail.save.level}</Crest>
-                  <Crest>TL {detail.view?.derived.trainingLevel ?? 1}</Crest>
-                  {detail.activeTitle && <Crest tone="accent">{detail.activeTitle}</Crest>}
-                  {detail.outfitCount > 1 && <Crest>{detail.ownedOutfitCount}/{detail.outfitCount} outfits</Crest>}
-                </>
-              : <Crest>Unowned</Crest>}
-          </div>
-
-          {detail.save && (
-            <div className="mt-2 grid grid-cols-5 gap-1 text-center">
-              {STATS.map((stat) => (
-                <div key={stat}>
-                  <p className="text-[10px] text-ink-faint uppercase">{stat.slice(0, 3)}</p>
-                  <p className="font-display text-[13px] font-semibold">{detail.view?.derived.stats[stat] ?? 0}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <p className="mt-2 text-[11px] text-ink-faint">{aptitudeLine(detail)}</p>
-
-          <div className="mt-2 flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>
-              {detail.owned ? 'Open' : 'Redeem'}
-            </Button>
-            {detail.owned && (
-              <Button size="sm" variant="secondary" onClick={() => navigate(`/constellation/${encodeURIComponent(detail.id)}`)}>Train</Button>
-            )}
-            {detail.owned && (
-              <Button size="sm" onClick={() => navigate(`/race?uma=${encodeURIComponent(detail.id)}`)}>Race</Button>
-            )}
-          </div>
-        </AlbumDetail>
+      {(!persistent || (persistent && sync.status === 'offline') || orphaned.length > 0 || error) && (
+        <Panel className="p-2">
+          {!persistent && <p className="rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Memory only — acquisitions work for this session but cannot persist or sync.</p>}
+          {persistent && sync.status === 'offline' && <p className="rounded-sm bg-warning/10 p-2 text-[12px] font-semibold">Offline — collection changes commit locally and will sync after reconnecting.</p>}
+          {orphaned.length > 0 && <p className="rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{orphaned.length} owned Uma reference{orphaned.length === 1 ? '' : 's'} need restored content.</p>}
+          {error && <p role="alert" className="rounded-sm bg-danger/10 p-2 text-[12px] font-semibold text-danger">{error}</p>}
+        </Panel>
       )}
+
 
       <AlbumChrome
         title="Stable"
         completion={<><Numeral className="text-ink">{album.owned}</Numeral> / {album.total} {mode === 'character' ? 'characters' : 'outfits'} owned</>}
+        titleAccessory={
+          <span className="flex items-center gap-1.5">
+            <m.span key={exchangePulse} initial={reducedMotion || exchangePulse === 0 ? false : { scale: 1.15, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+              <Numeral className="text-ink">{profile.umaShards}</Numeral>/{UMA_SHARDS_PER_COUPON} shards
+            </m.span>
+            {profile.umaShards >= UMA_SHARDS_PER_COUPON && (
+              <button type="button" disabled={exchangeBusy} onClick={doExchange} className="min-h-8 rounded-full bg-accent px-2.5 text-[12px] font-semibold text-ink">
+                {exchangeBusy ? 'Exchanging…' : 'Exchange'}
+              </button>
+            )}
+          </span>
+        }
         segment={
-          <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
             <SegmentedControl
+              size="sm"
+              className="flex-[3]"
               label="Ownership"
               value={(prefs.query.filters.ownership as string[] | undefined)?.[0] ?? 'all'}
               onChange={(value) => setQuery({
@@ -475,6 +420,8 @@ export function StableScreen() {
               options={[{ value: 'all', label: 'All' }, { value: 'owned', label: 'Owned' }, { value: 'unowned', label: 'Unowned' }] as const}
             />
             <SegmentedControl
+              size="sm"
+              className="flex-[2]"
               label="Grouping"
               value={mode}
               onChange={(value) => { setSelection([]); setQuery({ ...prefs.query, mode: value }) }}
@@ -546,6 +493,63 @@ export function StableScreen() {
           )}
         />
       </AlbumChrome>
+
+      <BottomSheet open={detail !== null} onClose={() => setDetailId(null)}>
+        {detail && (
+        <AlbumDetail
+          content={contentState.content}
+          kind="uma"
+          id={detail.id}
+          icon={detail.asset}
+          alt={`${detail.template.name} portrait`}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-micro">{detail.view?.scenario?.name ?? `Tier ${detail.view?.tier ?? 1}`}</p>
+              <p className="font-display truncate text-xl font-bold">{detail.template.name}</p>
+              <p className="truncate text-[12px] text-ink-soft">{detail.template.outfit ?? 'Standard outfit'}</p>
+            </div>
+            {detail.isNew && <Crest tone="accent">NEW</Crest>}
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-1">
+            {detail.save
+              ? <>
+                  <Crest>Lv {detail.save.level}</Crest>
+                  <Crest>TL {detail.view?.derived.trainingLevel ?? 1}</Crest>
+                  {detail.activeTitle && <Crest tone="accent">{detail.activeTitle}</Crest>}
+                  {detail.outfitCount > 1 && <Crest>{detail.ownedOutfitCount}/{detail.outfitCount} outfits</Crest>}
+                </>
+              : <Crest>Unowned</Crest>}
+          </div>
+
+          {detail.save && (
+            <div className="mt-2 grid grid-cols-5 gap-1 text-center">
+              {STATS.map((stat) => (
+                <div key={stat}>
+                  <p className="text-[10px] text-ink-faint uppercase">{stat.slice(0, 3)}</p>
+                  <p className="font-display text-[13px] font-semibold">{detail.view?.derived.stats[stat] ?? 0}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="mt-2 text-[11px] text-ink-faint">{aptitudeLine(detail)}</p>
+
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>
+              {detail.owned ? 'Open' : 'Redeem'}
+            </Button>
+            {detail.owned && (
+              <Button size="sm" variant="secondary" onClick={() => navigate(`/constellation/${encodeURIComponent(detail.id)}`)}>Train</Button>
+            )}
+            {detail.owned && (
+              <Button size="sm" onClick={() => navigate(`/race?uma=${encodeURIComponent(detail.id)}`)}>Race</Button>
+            )}
+          </div>
+        </AlbumDetail>
+        )}
+      </BottomSheet>
 
       <CompareSheet
         open={compareOpen}

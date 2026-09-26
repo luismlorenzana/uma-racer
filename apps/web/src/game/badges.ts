@@ -56,6 +56,7 @@ export function badgeSubject(
     cardSaves: new Map(Object.entries(cardSaves)),
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
+    skillTemplates: content.skills.byId,
   })
   return { tier: derived.tier, trainingLevel: derived.trainingLevel, stats: derived.stats, library: derived.library }
 }

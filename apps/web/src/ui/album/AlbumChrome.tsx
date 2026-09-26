@@ -12,14 +12,15 @@ import type { SavedView } from '../../game/album/prefs'
 import { BottomSheet } from '../BottomSheet'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
-import { ArrowDownIcon, ArrowUpIcon, CloseIcon, ViewCardsIcon, ViewGridIcon, ViewListIcon } from '../icons'
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon, FilterIcon, ViewCardsIcon, ViewGridIcon, ViewListIcon } from '../icons'
 import { Numeral } from '../Numeral'
 import { FilterTray } from './FilterTray'
 import { SortSheet } from './SortSheet'
 
 /**
- * The browsing chrome every album shares: search, a Sort control, a badged Filter control, quick
- * presets, removable active-filter chips and the result count
+ * The browsing chrome every album shares, kept small so the list starts near the top (D176): a title line with the
+ * count, one sticky toolbar (search, Sort, a badged Filters button, and the album's segments), and removable chips
+ * for active filters. Quick picks and saved views live in the Filters sheet
  * (docs/design/collection.md#shared-browsing-chrome).
  */
 const VIEW_GLYPHS = { icons: ViewGridIcon, cards: ViewCardsIcon, list: ViewListIcon } as const
@@ -34,6 +35,7 @@ export function AlbumChrome({
   title,
   completion,
   segment,
+  titleAccessory,
   facets,
   sorts,
   presets,
@@ -53,8 +55,10 @@ export function AlbumChrome({
 }: {
   title: string
   completion: ReactNode
-  /** Ownership segment or another album-specific control, shown under the title. */
+  /** Ownership segment or another album-specific control, a compact row in the sticky toolbar. */
   segment?: ReactNode
+  /** Something small beside the count, such as the Stable's shard exchange. */
+  titleAccessory?: ReactNode
   facets: readonly FacetDef[]
   sorts: readonly SortDef[]
   presets: readonly AlbumPreset[]
@@ -92,13 +96,17 @@ export function AlbumChrome({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-end justify-between gap-3">
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight">{title}</h1>
-          <p className="text-[13px] text-ink-soft">{completion}</p>
+          <h1 className="font-display text-xl font-bold tracking-tight">{title}</h1>
+          <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-ink-soft">
+            <span>{completion}</span>
+            <span><Numeral className="text-ink">{total}</Numeral> shown</span>
+            {titleAccessory}
+          </p>
         </div>
-        <div role="group" aria-label="View" className="flex gap-1 rounded-sm bg-sunken p-1">
+        <div role="group" aria-label="View" className="flex shrink-0 gap-0.5 rounded-sm bg-sunken p-0.5">
           {ALBUM_VIEWS.map((view) => (
             <button
               key={view}
@@ -116,9 +124,8 @@ export function AlbumChrome({
         </div>
       </div>
 
-      {segment}
-
-      <div className="sticky top-0 z-10 -mx-4 bg-page/85 px-4 py-2 backdrop-blur">
+      {/* One sticky toolbar: everything else waits behind Filters. */}
+      <div className="sticky top-0 z-10 -mx-4 bg-page/90 px-4 py-2 backdrop-blur">
         <div className="flex items-center gap-2">
           <input
             type="search"
@@ -128,21 +135,17 @@ export function AlbumChrome({
             aria-label={`Search ${title}`}
             className="min-h-11 min-w-0 flex-1 rounded-sm border border-hairline bg-panel px-3 text-[15px]"
           />
-          <Button variant="secondary" size="sm" onClick={() => setSortOpen(true)}>
-            {sortLabel}
+          <Button variant="secondary" size="sm" onClick={() => setSortOpen(true)} aria-label={`Sort: ${sortLabel}`}>
             {query.direction === 'asc' ? <ArrowUpIcon size={16} title="ascending" /> : <ArrowDownIcon size={16} title="descending" />}
+            <span className="max-w-[5.75rem] truncate">{sortLabel}</span>
           </Button>
           <Button variant={activeCount > 0 ? 'primary' : 'secondary'} size="sm" onClick={() => setFilterOpen(true)}>
-            Filter{activeCount > 0 ? ` · ${activeCount}` : ''}
+            <FilterIcon size={16} />
+            {activeCount > 0 ? activeCount : 'Filters'}
           </Button>
         </div>
 
-        <div className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4">
-          {presets.map((preset) => (
-            <Chip key={preset.key} onClick={() => onQueryChange(preset.apply(query))}>{preset.label}</Chip>
-          ))}
-          <Chip onClick={() => setViewsOpen(true)}>Views{views.length > 0 ? ` · ${views.length}` : ''}</Chip>
-        </div>
+        {segment && <div className="mt-2">{segment}</div>}
 
         {activeFacets.length > 0 && (
           <div className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4" aria-label="Active filters">
@@ -156,10 +159,6 @@ export function AlbumChrome({
           </div>
         )}
       </div>
-
-      <p className="text-micro -mt-1">
-        <Numeral className="text-ink">{total}</Numeral> result{total === 1 ? '' : 's'}
-      </p>
 
       {total === 0 && (
         <div className="rounded-md border border-hairline bg-panel p-4 text-center">
@@ -187,6 +186,17 @@ export function AlbumChrome({
         hiddenKeys={hiddenFilterKeys}
         onPreview={preview}
         onApply={(draft) => { onQueryChange(draft); setFilterOpen(false) }}
+        header={
+          <div className="mt-1 mb-2 grid gap-1.5">
+            <p className="text-micro">Quick picks</p>
+            <div className="flex flex-wrap gap-1.5">
+              {presets.map((preset) => (
+                <Chip key={preset.key} onClick={() => { onQueryChange(preset.apply(query)); setFilterOpen(false) }}>{preset.label}</Chip>
+              ))}
+              <Chip onClick={() => { setFilterOpen(false); setViewsOpen(true) }}>Saved views{views.length > 0 ? ` · ${views.length}` : ''}</Chip>
+            </div>
+          </div>
+        }
       />
 
       <SortSheet

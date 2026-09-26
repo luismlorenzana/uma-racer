@@ -74,7 +74,7 @@ describe('race skill compiler', () => {
     expect(() => parseRaceCondition('distance_rate+50')).toThrow(/Unsupported/)
   })
 
-  it('converts fixed-point effects, records unsupported mechanics, and halves inherited uniques', () => {
+  it('converts fixed-point effects, records unsupported mechanics, and takes inherited uniques at their own values', () => {
     const compiled = compileRaceSkill(skill('s1'))
     expect(compiled.groups[0]).toMatchObject({ duration: 2, cooldown: 30, unsupportedVariables: [] })
     expect(compiled.groups[0]!.effects).toEqual([{ kind: 'target-speed', amount: 0.35 }])
@@ -89,7 +89,9 @@ describe('race skill compiler', () => {
       effects: [{ type: 31, value: 4_000 }, { type: 999, value: 1 }],
     }] })
     expect(inherited.groups[0]).toMatchObject({ duration: -1, unsupportedVariables: ['is_temptation'], unsupportedEffects: [999] })
-    expect(inherited.groups[0]!.effects).toEqual([{ kind: 'acceleration', amount: 0.2 }])
+    // The inherited record already carries the weaker values; compiling does not halve them again (D174).
+    expect(inherited.groups[0]!.effects).toEqual([{ kind: 'acceleration', amount: 0.4 }])
+    expect(inherited.inherited).toBe(true)
     expect(raceSkillSupported(inherited)).toBe(false)
     const sprintOnly = compileRaceSkill({
       ...skill('sprint-only'),
@@ -133,7 +135,6 @@ describe('race skill compiler', () => {
     const gate = compileRaceSkill({ ...skill('gate', 'inherited-unique'), conditions: [{
       precondition: null, condition: 'always==1', baseTime: 0, cooldown: null, effects: [{ type: 10, value: 4_000 }],
     }] })
-    // A multiplier is not halved by inheritance.
     expect(gate.groups[0]!.effects).toEqual([{ kind: 'start-delay', amount: 0.4 }])
     for (const condition of ['all_corner_random==1', 'straight_random==1', 'is_last_straight==1', 'accumulatetime>=5', 'up_slope_random==1']) {
       expect(raceSkillSupported(compileRaceSkill({ ...skill('c'), conditions: [{ ...skill('c').conditions[0]!, condition }] })), condition).toBe(true)

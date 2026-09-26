@@ -9,8 +9,8 @@ import {
   type ConstellationTemplate,
   type DerivedStats,
 } from './constellation'
-import type { SupportCardTemplate, UmaTemplate } from './content'
-import { lineageAptitudes, lineageSkillIds } from './lineage'
+import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
+import { lineageAptitudes, lineageInheritedUniques, lineageSkillIds } from './lineage'
 import { activeScenario, type CardSave, type ScenarioTraining, type SkillUnlock, type UmaSave } from './save'
 import type { Aptitudes, Stats } from './types'
 
@@ -44,6 +44,8 @@ export interface DeriveUmaInput {
   cardSaves: ReadonlyMap<string, CardSave>
   cardTemplates: ReadonlyMap<string, SupportCardTemplate>
   umaTemplates: ReadonlyMap<string, UmaTemplate>
+  /** Skill records, to find each lineage slot's inherited unique (D174). */
+  skillTemplates: ReadonlyMap<string, SkillTemplate>
 }
 
 /**
@@ -113,6 +115,8 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     const owner = lineage.find((entry) => entry.awakeningSkillIds.includes(skillId))
     add(skillId, 'inherited', owner?.id ?? null)
   }
+  // Every filled slot also passes its unique, in its inherited form (D174).
+  for (const { skillId, sourceId } of lineageInheritedUniques(lineage, input.skillTemplates)) add(skillId, 'inherited', sourceId)
 
   return {
     tier: scenario.tier,

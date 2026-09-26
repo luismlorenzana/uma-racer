@@ -11,10 +11,14 @@ nothing is frozen into a snapshot.
 | Kind | Source | Draft SP cost | Notes |
 |---|---|---|---|
 | **Unique** | The Uma's own template | Free, always equipped | Her signature skill |
+| **Inherited unique** | Lineage nodes | 200 (from the data) | A parent's or grandparent's unique, in its weaker inherited form |
 | **Gold (rare)** | Card nodes · lineage nodes | 250–350 | An upgraded white skill |
 | **White (normal)** | Card nodes · lineage nodes | 90–180 | The common pool |
 
-Inherited uniques are gone (D123): a lineage slot passes a template's **baseline golds and whites** only.
+A lineage slot passes a template's **baseline golds and whites** and its **unique in inherited form** (D174, which
+brings back what D123 removed). The inherited form is the original game's own record for it (`inheritedSkillId`),
+with its own values: Seiun Sky's *Angling and Scheming* gives +0.2 acceleration for 2.4 s where her own gives +0.4 for
+4 s. The engine takes those values as they are; it no longer halves them a second time.
 
 ## Where skills come from
 
@@ -24,7 +28,9 @@ Two deterministic sources, both recomputed from the constellation rather than st
    gold-first, then white, then by skill id. A card on four nodes pays four of its skills, so stacking a card
    is a skill decision as much as a stat one.
 2. **Lineage nodes.** Each filled parent or grandparent slot contributes that Uma template's four
-   `awakeningSkillIds` — her baseline golds and whites. All 268 templates carry exactly four.
+   `awakeningSkillIds` (her baseline golds and whites; all 268 templates carry exactly four) and her unique in its
+   inherited form. Choosing lineage is choosing skills: Seiun Sky lends any front runner her late-race corner
+   acceleration.
 
 Plus her **own unique**, which is permanent and free.
 
@@ -53,6 +59,14 @@ So the loadout trade is direct and legible: a bigger library needs more slots sp
 more of it needs nodes spent on a Friend or Group card. That is the whole economy of skills.
 
 ## Loadout
+
+Skills have their own page, `/stable/:umaId/skills` (D175): the whole library with room to scroll, grouped as her
+unique, inherited uniques, golds and whites, with search, filters (Equipped, Fits her, Inherited uniques, Gold,
+White), each skill's source ("Lineage · Seiun Sky (parent)", "Card · Kitasan Black"), and the SP budget pinned at the
+top. Skills that cannot work yet sit folded at the bottom. The profile shows only what she carries: her unique and the
+equipped inherited uniques and golds, with the whites behind "All equipped" and a **Manage skills** link. The pre-race
+sheet lists the equipped skills, greys the ones that cannot trigger on that course, and links to the same page with the
+race in hand.
 
 - Any subset of the library whose total cost is ≤ SP. The unique is free and always on.
 - **Loadout presets**, for example "Long / Front" and "Mile / Late".
@@ -99,7 +113,7 @@ templates never change, so nothing needs freezing and nothing can go stale (D123
 
 ### What lineage pays
 
-1. **Skills** — each filled slot's four `awakeningSkillIds`, into the library.
+1. **Skills** — each filled slot's four `awakeningSkillIds` and its inherited unique, into the library.
 2. **Aptitudes** — the only thing in the game that moves an aptitude grade.
 
 ### Aptitude upgrades

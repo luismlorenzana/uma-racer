@@ -44,6 +44,7 @@ function aptitudesFor(
     cardSaves: new Map(Object.entries(cardsById)),
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
+    skillTemplates: content.skills.byId,
   }).aptitudes
 }
 

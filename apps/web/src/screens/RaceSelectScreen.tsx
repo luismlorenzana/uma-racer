@@ -20,9 +20,9 @@ import {
   type UmaSave,
 } from '@racer/domain'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { listRaceHistory, listUmaRaceHistory, prepareRace, setUmaLoadout } from '../game/actions'
+import { listRaceHistory, listUmaRaceHistory, prepareRace } from '../game/actions'
 import { goalsAtStake } from '../game/goals-view'
 import { buildRacePlan, scenarioLevel, type CareerTracker, type PlannedRace, type RaceMark } from '../game/race-plan'
 import type { PreparedRace } from '../game/racing'
@@ -34,6 +34,7 @@ import { RaceMarkIcon } from '../ui/RaceMarkIcon'
 import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
+import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { UmaBust } from '../ui/UmaBust'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
@@ -149,6 +150,7 @@ function Tracker({ tracker, level, umaId }: { tracker: CareerTracker; level: num
 
 export function RaceSelectScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [params, setParams] = useSearchParams()
   const contentState = useContent()
   const status = useGame((state) => state.status)
@@ -166,7 +168,6 @@ export function RaceSelectScreen() {
   const [startError, setStartError] = useState<string | null>(null)
   const [preview, setPreview] = useState<PreparedRace | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
-  const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
 
   const ownedIds = useMemo(() => Object.keys(owned).sort((left, right) => left.localeCompare(right)), [owned])
   // The picker leads with the featured Uma, then whoever is furthest along.
@@ -248,6 +249,7 @@ export function RaceSelectScreen() {
     cardSaves: new Map(Object.entries(cards)),
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
+    skillTemplates: content.skills.byId,
   })
   const plan = buildRacePlan({ uma: selectedUma, template: umaTemplate, aptitudes: derivedUma.aptitudes, races: content.races.items, history: umaHistory })
   const pickedGoals = picked ? goalsAtStake(selectedUma, picked.id, content) : []
@@ -269,6 +271,11 @@ export function RaceSelectScreen() {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }
   const skillLoadout = summarizeSkillLoadout(derivedUma, umaTemplate, content.skills.byId)
+  const ownUnique = umaTemplate.uniqueSkillId ? content.skills.byId.get(umaTemplate.uniqueSkillId) : undefined
+  const raceSkills = [
+    ...(ownUnique ? [{ skill: ownUnique, own: true }] : []),
+    ...skillLoadout.skills.map((skill) => ({ skill, own: false })),
+  ].map((entry) => ({ ...entry, onCourse: picked ? raceSkillCompatibleWithCourse(compileRaceSkill(entry.skill), picked) : true }))
   const finalTier = selectedUma.level >= SCENARIOS.length * 10
   const advanceRequired = awaitingAdvance(selectedUma) && !finalTier
   const lockReason = picked
@@ -300,21 +307,6 @@ export function RaceSelectScreen() {
     }
   }
 
-  const toggleSkill = async (skillId: string) => {
-    if (savingSkillId) return
-    const next = derivedUma.loadoutSkillIds.includes(skillId)
-      ? derivedUma.loadoutSkillIds.filter((id) => id !== skillId)
-      : [...derivedUma.loadoutSkillIds, skillId]
-    setSavingSkillId(skillId)
-    setStartError(null)
-    try {
-      await setUmaLoadout(selectedUmaId, next)
-    } catch (reason) {
-      setStartError(reason instanceof Error ? reason.message : 'Could not update skill loadout')
-    } finally {
-      setSavingSkillId(null)
-    }
-  }
 
   return (
     <div className="flex flex-col gap-3 pt-2 pb-4">
@@ -438,33 +430,26 @@ export function RaceSelectScreen() {
                   {skillLoadout.cost} / {skillLoadout.cap} SP
                 </span>
               </div>
-              <div className="grid gap-1.5">
-                {derivedUma.library.map((unlock) => {
-                  const skill = content.skills.byId.get(unlock.skillId)
-                  if (!skill) return null
-                  const own = unlock.origin === 'own-unique'
-                  const compiled = compileRaceSkill(skill)
-                  const supported = raceSkillSupported(compiled)
-                  const compatible = supported && raceSkillCompatibleWithCourse(compiled, picked)
-                  const equipped = own || derivedUma.loadoutSkillIds.includes(skill.id)
-                  return (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      aria-pressed={equipped}
-                      disabled={own || (!supported && !equipped) || savingSkillId !== null || starting}
-                      onClick={() => void toggleSkill(skill.id)}
-                      className={`flex min-h-11 items-center justify-between rounded-sm border px-3 text-left text-[13px] font-semibold ${equipped ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'} disabled:opacity-65`}
-                    >
-                      <span className="truncate">{equipped && <CheckIcon size={16} className="mr-1 inline" title="Equipped" />}{skill.name}</span>
-                      <span className="text-micro shrink-0">
-                        {own ? (compatible ? 'Unique' : supported ? 'Unique · wrong course' : 'Unique · later') :
-                          supported ? `${skill.costSp ?? '—'} SP${compatible ? '' : ' · wrong course'}` : skillAimsAtOthers(skill) ? 'Not in this game' : 'Later'}
-                      </span>
-                    </button>
-                  )
-                })}
+              {/* What she carries into this race; choosing lives on the Skills page (D175). */}
+              <div className="grid gap-1">
+                {raceSkills.map(({ skill, own, onCourse }) => (
+                  <div key={skill.id} className={`flex min-h-9 items-center gap-2 rounded-sm px-2 ${onCourse ? 'bg-accent-wash' : 'bg-sunken'}`}>
+                    <span className={`min-w-0 flex-1 truncate text-[13px] font-semibold ${onCourse ? '' : 'text-ink-faint'}`}>{skill.name}</span>
+                    <SkillKindBadge kind={skill.kind} />
+                    <span className="text-micro w-20 shrink-0 text-right">{onCourse ? own ? 'free' : `${skill.costSp} SP` : 'won’t trigger'}</span>
+                  </div>
+                ))}
               </div>
+              {raceSkills.some((entry) => !entry.onCourse) && (
+                <p className="mt-1 text-[11px] text-ink-soft">Greyed skills can’t trigger on this course; they still cost SP.</p>
+              )}
+              <Link
+                to={`/stable/${encodeURIComponent(selectedUmaId)}/skills?race=${encodeURIComponent(picked.id)}&return=${encodeURIComponent(`${location.pathname}${location.search}`)}`}
+                className="font-display mt-2 flex min-h-11 items-center justify-between rounded-md border border-hairline bg-panel px-3 text-[14px] font-semibold"
+              >
+                <span>Edit skills <span className="text-[12px] font-normal text-ink-soft">· {derivedUma.library.length} in her library</span></span>
+                <ChevronRightIcon size={20} className="text-ink-faint" />
+              </Link>
             </div>
             <div>
               <p className="font-display mb-2 text-[13px] font-semibold">Field</p>

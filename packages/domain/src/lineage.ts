@@ -1,6 +1,6 @@
 // Lineage slots: baseline skills and aptitude upgrades from Uma templates (docs/design/skills-and-inheritance.md).
 
-import type { UmaTemplate } from './content'
+import type { SkillTemplate, UmaTemplate } from './content'
 import {
   DISTANCE_CATEGORIES,
   GRADES,
@@ -101,8 +101,8 @@ export function explainAptitudes(
 }
 
 /**
- * Baseline golds and whites a lineage slot pays into the library. Uniques are never inherited (D123).
- * Order is stable across slots and deduplicated.
+ * Baseline golds and whites a lineage slot pays into the library. Order is stable across slots and deduplicated.
+ * Each slot also passes its inherited unique (`lineageInheritedUniques`, D174).
  */
 export function lineageSkillIds(lineage: readonly Pick<UmaTemplate, 'awakeningSkillIds'>[]): string[] {
   const seen = new Set<string>()
@@ -115,6 +115,27 @@ export function lineageSkillIds(lineage: readonly Pick<UmaTemplate, 'awakeningSk
     }
   }
   return ids
+}
+
+/**
+ * The inherited unique each lineage slot passes on: its own unique, in the weaker form the original game inherits
+ * (the skill's `inheritedSkillId`, a separate record with its own values and SP cost). Parents and grandparents alike,
+ * so Seiun Sky in any slot lends a front runner her corner acceleration (D174). Slots whose unique has no inherited
+ * form in the data pass nothing.
+ */
+export function lineageInheritedUniques(
+  lineage: readonly Pick<UmaTemplate, 'id' | 'uniqueSkillId'>[],
+  skillsById: ReadonlyMap<string, Pick<SkillTemplate, 'kind' | 'inheritedSkillId'>>,
+): { skillId: string; sourceId: string }[] {
+  const seen = new Set<string>()
+  const result: { skillId: string; sourceId: string }[] = []
+  for (const entry of lineage) {
+    const inherited = entry.uniqueSkillId ? skillsById.get(entry.uniqueSkillId)?.inheritedSkillId : null
+    if (!inherited || seen.has(inherited) || skillsById.get(inherited)?.kind !== 'inherited-unique') continue
+    seen.add(inherited)
+    result.push({ skillId: inherited, sourceId: entry.id })
+  }
+  return result
 }
 
 export interface LineageEligibility {

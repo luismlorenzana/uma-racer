@@ -39,6 +39,10 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('../screens/UmaProfileScreen')).UmaProfileScreen }),
       },
       {
+        path: 'stable/:umaId/skills',
+        lazy: async () => ({ Component: (await import('../screens/UmaSkillsScreen')).UmaSkillsScreen }),
+      },
+      {
         path: 'stable/:umaId/deck',
         Component: CardSetRedirect,
       },

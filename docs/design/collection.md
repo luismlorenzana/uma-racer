@@ -84,14 +84,16 @@ specified in [Visual System](visual-system.md); the patterns below follow the fa
 
 ```text
 ┌──────────────────────────────┐
-│ Stable            25 / 267   │  ← title + completion
-│ [ All | Owned | Unowned ]    │  ← segmented primary split, always visible
-│ 🔍 search   ⇅ Sort   ⚙ Filter•3│  ← sticky bar (search expands in place)
-│ ‹ Turf ×  Long ×  A+ ×  ⌫ ›  │  ← active-filter chips, horizontally scrollable
-│ 48 results                   │
-│ ▓▓▓  ▓▓▓                     │  ← results grid (art-first tiles)
+│ Stable  25 / 267 · 48 shown ▦│  ← one title line: count, shown, view switch
+│ 🔍 search    ↓ Sort   ⚙ 3    │  ← sticky toolbar
+│ [All|Owned|Unowned][Outfits…]│  ←   with the album's compact segments
+│ ‹ Turf ×  Long ×  A+ ×  ⌫ ›  │  ← active-filter chips, only when there are some
+│ ▓▓▓  ▓▓▓                     │  ← results grid, a few rows below the top bar
 └──────────────────────────────┘
 ```
+
+The list starts near the top (D176): quick picks and saved views sit at the top of the Filters sheet, not in rows of
+their own, and the Stable's shard exchange is a note beside the count with an Exchange button only when one is due.
 
 - The **sticky bar** stays pinned while the grid scrolls: search, a Sort button showing the current key and direction,
   and a Filter button badged with the number of active facets.
@@ -123,10 +125,12 @@ Defaults are opinionated, so the album is useful before anyone touches a control
 The ownership split is a segmented control rather than a hidden filter, because "what do I have" is the question the
 album answers most often. Switching to Unowned keeps the rest of the sort intact.
 
-### Layout: dense grid, reserved detail
+### Layout: dense grid, detail in a sheet
 
 The real game browses hundreds of entries by making tiles **small and image-only**, five to a row, with a **reserved
-area at the top** that shows the selected entry large, with its details. We follow that:
+area at the top** that shows the selected entry large. We followed that until the owner found it pushed the list
+half a screen down; now a tapped tile opens its detail in a **sheet** at the bottom, in the thumb zone and beside the
+list (D176, superseding that part of D115). The diagram below is the old layout, kept for the record:
 
 ```text
 ┌──────────────────────────────┐

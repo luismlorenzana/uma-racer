@@ -323,8 +323,9 @@ export function compileRaceSkill(
   template: SkillTemplate,
   supportedVariables: ReadonlySet<string> = RACE_VARIABLES,
 ): CompiledRaceSkill {
+  // An inherited unique is its own record with its own, already weaker values (half the unique's effect, a shorter
+  // duration): it is not halved again (D174).
   const inherited = template.kind === 'inherited-unique'
-  const magnitude = inherited ? 0.5 : 1
   return {
     id: template.id,
     activation: template.activation === 1 ? 'wit' : 'guaranteed',
@@ -346,8 +347,7 @@ export function compileRaceSkill(
         cooldown: Math.max(0, (group.cooldown ?? 0) / RACE_SKILL_SCALE),
         effects: own.flatMap((effect) => {
           const kind = EFFECT_KIND[effect.type]
-          // A gate multiplier is a ratio, not a magnitude, so inheriting a skill does not halve it.
-          return kind ? [{ kind, amount: (effect.value / RACE_SKILL_SCALE) * (kind === 'start-delay' ? 1 : magnitude) }] : []
+          return kind ? [{ kind, amount: effect.value / RACE_SKILL_SCALE }] : []
         }),
         unsupportedVariables,
         unsupportedEffects,

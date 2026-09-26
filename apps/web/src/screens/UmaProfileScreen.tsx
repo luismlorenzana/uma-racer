@@ -7,12 +7,8 @@ import {
   SURFACES,
   badgeStateId,
   cardStars,
-  compileRaceSkill,
   awaitingAdvance,
   isCareerStage,
-  skillAimsAtOthers,
-  skillTags,
-  raceSkillSupported,
   summarizeSkillLoadout,
   type Grade,
   type RaceResultRecord,
@@ -21,14 +17,13 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { advanceUma, listRaceHistory, setFeaturedUma, setUmaLoadout, startScenario } from '../game/actions'
+import { advanceUma, listRaceHistory, setFeaturedUma, startScenario } from '../game/actions'
 import { buildUmaBadgeCollection, type BadgeCollectionItem } from '../game/badge-collection-view'
 import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import { buildJourneyView } from '../game/goals-view'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
-import { SkillChips } from '../ui/SkillChips'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { Stars } from '../ui/Stars'
 import { Crest } from '../ui/Crest'
@@ -39,7 +34,8 @@ import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
-import { CheckIcon, ChevronLeftIcon, PlusIcon } from '../ui/icons'
+import { SkillKindBadge } from '../ui/SkillKindBadge'
+import { ChevronLeftIcon, ChevronRightIcon } from '../ui/icons'
 import { formatTickets } from '../ui/tickets'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
@@ -72,7 +68,6 @@ export function UmaProfileScreen() {
   const badges = useGame((state) => state.badges)
   const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
-  const [savingSkillId, setSavingSkillId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [raceHistory, setRaceHistory] = useState<RaceResultRecord[]>([])
 
@@ -127,6 +122,14 @@ export function UmaProfileScreen() {
   const sparkAffordable = profile.tickets >= SPARK_MATCH_TICKET_COST
   const raceUnlocked = uma.run.started && !atGate
   const loadout = summarizeSkillLoadout(uma.derived, uma.template, contentState.content.skills.byId)
+  // The profile shows her unique and the equipped inherited uniques and golds; whites wait behind "All equipped".
+  const ownUnique = uma.template.uniqueSkillId ? contentState.content.skills.byId.get(uma.template.uniqueSkillId) : undefined
+  const equippedSkills = loadout.skills
+  const headline = [
+    ...(ownUnique ? [{ skill: ownUnique, own: true }] : []),
+    ...equippedSkills.filter((skill) => skill.kind === 'inherited-unique').map((skill) => ({ skill, own: false })),
+    ...equippedSkills.filter((skill) => skill.kind === 'gold').map((skill) => ({ skill, own: false })),
+  ]
   const deck = buildDeckView(save, cards, contentState.content)
   const journey = buildJourneyView(save, contentState.content)
   const currentJourney = journey.find((item) => item.tier === uma.tier) ?? null
@@ -139,21 +142,6 @@ export function UmaProfileScreen() {
       : atGate
         ? 'Latest scenario complete.'
         : 'Progression races are open.'
-
-  const toggleSkill = async (skillId: string) => {
-    if (savingSkillId) return
-    const next = uma.derived.loadoutSkillIds.includes(skillId)
-      ? uma.derived.loadoutSkillIds.filter((id) => id !== skillId)
-      : [...uma.derived.loadoutSkillIds, skillId]
-    setSavingSkillId(skillId)
-    try {
-      await setUmaLoadout(save.templateId, next)
-    } catch (reason) {
-      pushToast(reason instanceof Error ? reason.message : 'Could not update skill loadout')
-    } finally {
-      setSavingSkillId(null)
-    }
-  }
 
   const runAction = async (action: () => Promise<unknown>, failure: string) => {
     if (busy) return
@@ -385,70 +373,47 @@ export function UmaProfileScreen() {
         </Panel>
       )}
 
-      <Collapsible label="Race skills" count={uma.derived.library.length}>
-        <div className="mb-2 flex items-baseline justify-between">
-          <span className="text-micro">Own unique is free · tap to equip</span>
+      {/* Skills: what she carries, at a glance; the whole library lives on its own page (D175). */}
+      <Panel className="p-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="text-[13px] font-semibold">Skills</h3>
           <span className={`rounded-xs px-2 py-0.5 text-[11px] font-semibold ${loadout.valid ? 'bg-sunken text-ink' : 'bg-danger/10 text-danger'}`}>
             {loadout.cost} / {loadout.cap} SP
           </span>
         </div>
-        <div className="grid gap-1.5">
-          {/* Equipped first, then what she can equip, then what waits on later mechanics; the source order within each. */}
-          {[...uma.derived.library]
-            .map((unlock, index) => {
-              const skill = contentState.content.skills.byId.get(unlock.skillId)
-              const own = unlock.origin === 'own-unique'
-              const rank = !skill ? 3 : own ? 0 : uma.derived.loadoutSkillIds.includes(skill.id) ? 1 : raceSkillSupported(compileRaceSkill(skill)) ? 2 : 3
-              return { unlock, index, rank }
-            })
-            .sort((left, right) => left.rank - right.rank || left.index - right.index)
-            .map(({ unlock }) => {
-            const skill = contentState.content.skills.byId.get(unlock.skillId)
-            if (!skill) {
-              return <div key={unlock.skillId} className="rounded-md bg-danger/10 p-2 text-[12px] font-semibold text-danger">Missing skill {unlock.skillId}</div>
-            }
-            const own = unlock.origin === 'own-unique'
-            const supported = raceSkillSupported(compileRaceSkill(skill))
-            const equipped = own || uma.derived.loadoutSkillIds.includes(skill.id)
-            return (
-              <button
-                key={skill.id}
-                type="button"
-                aria-pressed={equipped}
-                disabled={own || (!supported && !equipped) || savingSkillId !== null}
-                onClick={() => void toggleSkill(skill.id)}
-                className={`flex min-h-11 items-start gap-2 rounded-md border px-2 py-2 text-left disabled:opacity-60 ${
-                  equipped ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'
-                }`}
-              >
-                <span className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${equipped ? 'bg-accent text-white' : 'bg-sunken text-ink-soft'}`}>
-                  {equipped ? <CheckIcon size={16} /> : <PlusIcon size={16} />}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold">{skill.name}</span>
-                  <SkillChips tags={skillTags(skill)} aptitudes={uma.derived.aptitudes} />
-                  {skill.description && <span className="mt-1 line-clamp-2 block text-[11px] leading-snug text-ink-soft">{skill.description}</span>}
-                  <span className="text-micro mt-0.5 block">
-                    {own
-                      ? supported ? 'Own unique · always equipped' : 'Own unique · waits for later race mechanics'
-                      : supported ? `${skill.costSp ?? '—'} SP · ${skill.kind}` : skillAimsAtOthers(skill) ? 'Only affects rivals · not in this game' : 'Needs later race mechanics'}
-                  </span>
-                </span>
-              </button>
-            )
-          })}
-          {uma.derived.library.length === 0 && (
-            <p className="text-[12px] text-ink-soft">Slot cards onto constellation nodes to earn skills.</p>
-          )}
+        <div className="mt-2 grid gap-1">
+          {headline.map(({ skill, own }) => (
+            <div key={skill.id} className="flex min-h-9 items-center gap-2 rounded-sm bg-sunken px-2">
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{skill.name}</span>
+              <SkillKindBadge kind={skill.kind} />
+              <span className="text-micro w-12 shrink-0 text-right">{own ? 'free' : `${skill.costSp} SP`}</span>
+            </div>
+          ))}
+          {headline.length === 0 && <p className="text-[12px] text-ink-soft">No skills yet. Slot cards onto her constellation to earn some.</p>}
         </div>
+        {equippedSkills.length > headline.filter((entry) => !entry.own).length && (
+          <Collapsible label="All equipped" count={equippedSkills.length}>
+            <div className="grid gap-1">
+              {equippedSkills.map((skill) => (
+                <div key={skill.id} className="flex min-h-9 items-center gap-2 rounded-sm bg-sunken px-2">
+                  <span className="min-w-0 flex-1 truncate text-[13px]">{skill.name}</span>
+                  <SkillKindBadge kind={skill.kind} />
+                  <span className="text-micro w-12 shrink-0 text-right">{skill.costSp} SP</span>
+                </div>
+              ))}
+            </div>
+          </Collapsible>
+        )}
         {!loadout.valid && (
           <p className="mt-2 rounded-md bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">
-            {loadout.cost > loadout.cap
-              ? `Over budget: ${loadout.cost} SP equipped, ${loadout.cap} SP earned. Skills past the budget sit out races until a Friend or Group card pays for them, or you unequip some.`
-              : loadout.errors[0]}
+            {loadout.cost > loadout.cap ? `Over budget: ${loadout.cost} SP equipped, ${loadout.cap} SP earned.` : loadout.errors[0]}
           </p>
         )}
-      </Collapsible>
+        <Link to={`/stable/${encodeURIComponent(save.templateId)}/skills`} className="font-display mt-2 flex min-h-11 items-center justify-between rounded-md border border-hairline bg-panel px-3 text-[14px] font-semibold">
+          <span>Manage skills <span className="text-[12px] font-normal text-ink-soft">· {uma.derived.library.length} in her library</span></span>
+          <ChevronRightIcon size={20} className="text-ink-faint" />
+        </Link>
+      </Panel>
 
       {/* ── Everything else ──────────────────────────────────────────── */}
       <SectionHeading label="Archive" hint="history and collections" />

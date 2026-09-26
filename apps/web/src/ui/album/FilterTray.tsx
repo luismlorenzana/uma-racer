@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   isActiveSelection,
   type AlbumQuery,
@@ -34,6 +34,7 @@ export function FilterTray({
   onPreview,
   onApply,
   hiddenKeys = [],
+  header,
 }: {
   open: boolean
   onClose: () => void
@@ -46,6 +47,8 @@ export function FilterTray({
   onApply: (draft: AlbumQuery) => void
   /** Facets driven by another control, such as the ownership segment. */
   hiddenKeys?: readonly string[]
+  /** One-tap shortcuts above the facets: quick picks and saved views. */
+  header?: ReactNode
 }) {
   const [draft, setDraft] = useState(query)
   const [openGroups, setOpenGroups] = useState<readonly string[]>([])
@@ -83,6 +86,8 @@ export function FilterTray({
           Clear all
         </button>
       </div>
+
+      {header}
 
       <div className="max-h-[52vh] overflow-y-auto pb-2">
         {groups.map((group) => {

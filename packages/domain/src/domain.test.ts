@@ -136,12 +136,12 @@ describe('flair', () => {
 })
 
 describe('scenarios', () => {
-  it('pins inherited unique strength and the grandparent half-pool rule', () => {
+  it('pins inherited unique strength: the inherited record races at its own values (D174)', () => {
     const inherited = compileRaceSkill({
       id: 'synthetic-gene', kind: 'inherited-unique', name: 'Synthetic', description: '', costSp: 100, iconId: null,
       inheritedSkillId: null, normalSkillId: null, conditions: [{ precondition: null, condition: 'always==1', baseTime: 10_000, cooldown: 0, effects: [{ type: 22, value: 10_000 }] }],
     })
-    expect(inherited.groups[0]?.effects[0]?.amount).toBe(0.5)
+    expect(inherited.groups[0]?.effects[0]?.amount).toBe(1)
   })
 
   it('pins the Uma shard exchange rate', () => {
