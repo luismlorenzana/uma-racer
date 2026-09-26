@@ -40,7 +40,7 @@ lost.
 
 | Use | Cost |
 |---|---|
-| [Spark Match](minigames.md#spark-match--training-levels) run — raises Training Level | **1** |
+| [Spark Match — Rival Circuit](minigames.md#spark-match--rival-circuit) run — raises Training Level | **1** |
 | The card minigame run ([Bond Recall](minigames.md#bond-recall--card-stars), then Friendship Training) — earns a star | **1** |
 | Unlocking a card (D130) | **5 + era** — 6 to 19 |
 | Unlocking the next scenario | **5 × fromTier** |
@@ -65,8 +65,10 @@ records keep the ticket reward of their day, five a level before v7 and one afte
 
 - **Maxing one card in one scenario** is five clears, 0★ → 5★. All-or-nothing means a lost run costs its ticket, so
   budget **about six tickets**, and about 45 minutes once Friendship Training's runs grow from about 5 to 12 minutes.
-- **One Uma through a scenario's Training Levels** is about 10 Spark Match runs: 10 tickets, one day.
-- **A day's 10 tickets** max one card with four Spark Match runs to spare, or take one Uma through a scenario.
+- **One Uma through a scenario's Training Levels** is about 10 competent Spark Rival Circuit clears: about 10 tickets,
+  one day. Losses retain partial EXP but make the route less ticket-efficient.
+- **A day's 10 tickets** max one card with four Spark Match runs to spare, or take one Uma through a scenario when its
+  Circuit clears are consistent.
 - **Late scenarios:** unlocking tier 10 → 11 costs 50, five days of the daily grant, minus what racing earns back.
 - **Stars are per scenario** (D127), so a six-card set is about six days to max in one scenario.
 - **The core choice:** minigame runs and scenario unlocks draw from the same tickets. That's intended.

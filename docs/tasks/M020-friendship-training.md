@@ -8,6 +8,9 @@ M019; D168 closes the spec's open lists (skill rules, rival rules, the hand, a r
 Research: [Roguelite Card Minigame](../research/roguelite-card-minigame.md). Owner: Claude. **All numbers below are
 tuning drafts**; the balance bot (T063) sets them.
 
+**Dependency:** M022 (T071–T074) lands first. Friendship Training reuses its versioned, device-local action journal and
+expected-action-count append port; it does not add a competing Dexie journal migration.
+
 | Task | Scope |
 |---|---|
 | T063 | The game: engine, balance bot, screens, reachable as a beta beside Bond Recall |
@@ -19,7 +22,8 @@ tuning drafts**; the balance bot (T063) sets them.
 - **Target and price:** a run names one card and one scenario, costs **1 ticket** (D148), and a clear gives that card
   **+1★ there**. There is no partial progress: a loss costs the ticket and nothing else.
 - **Owned cards only.** Runs never show unowned cards; unlocking stays tickets and coupons (D130).
-- **Spark Match is untouched** and stays the only way to raise a Training Level.
+- **Spark Match stays separate** and remains the only way to raise a Training Level. M022 replaces its adjacent-swap
+  rules with Rival Circuit before this milestone begins; Friendship Training does not share combat, rewards or UI with it.
 - **Length grows with the star being earned**, so early stars are quick and the fifth is a real run.
 - **Seeded and resumable:** the run is a pure function of its setup and the player's choices, so a reload resumes it
   exactly and cannot reroll a friendlier draw.
@@ -175,6 +179,8 @@ main card wears its gauge (three pips) and, once bonded, a gold ring. **Tap** se
 - **Give up** (behind a confirm) ends the run as a loss. The ticket stays spent.
 - **Runs are local.** The ticket and a cleared star sync; a run in progress stays on the device that began it.
 - **The commit replays** the setup and the saved choices, and grants the star only if the replay clears.
+- **Journal implementation:** use M022's generic local action-journal port and expected-action-count append. Do not add a
+  second Dexie migration or parallel journal service; Friendship Training's frozen setup remains part of its own row.
 
 ### Balance (`pnpm sim:training`)
 

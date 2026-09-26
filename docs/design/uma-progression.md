@@ -40,7 +40,7 @@ from the active `ScenarioTraining` whenever read ([Training](training.md#stats-a
 | Field | Notes |
 |---|---|
 | `tier` | Which scenario this is |
-| `trainingLevel`, `trainingExp` | 1–10, earned by [Spark Match](minigames.md). Decides which nodes are open |
+| `trainingLevel`, `trainingExp` | 1–10, earned by [Spark Rival Circuit](minigames.md#spark-match--rival-circuit). Decides which nodes are open |
 | `cardSetIds` | Up to 6 owned, era-eligible cards; no duplicate character |
 | `assignments` | `nodeId → { card } | { stat } | { lineage }`. The current configuration, and the only one |
 | `loadoutSkillIds` | The equipped subset of the derived library |
@@ -54,7 +54,7 @@ A completed scenario's entry is kept in full, readable, and frozen. It no longer
 
 - Uma Levels run 1 → `10 × scenarios` (140 today).
 - **Only racing gives Uma EXP.** 2nd and 3rd place give 25% of win EXP.
-- **Every Uma Level-up earns +5 training tickets.**
+- **Every Uma Level-up earns +1 training ticket** (D148).
 - **Her career holds levels 2 and 5 of each scenario** until its Maiden and Trials goals are won. A held Uma banks
   EXP just short of the next level, and the race that wins the goal releases it
   ([Scenario Careers](scenario-goals.md#three-stages)).
@@ -69,7 +69,7 @@ A completed scenario's entry is kept in full, readable, and frozen. It no longer
 
 1. **Reaching** a gate level (10, 20, 30…) grants **1 Uma Shard**, once per Uma per gate.
 2. At the gate she **keeps racing until her career is complete**; a career frozen before goal plan v3 does not gate.
-   Then the card shows **"Ready to advance"**. Advancing costs **25 × the completed tier** tickets and is
+   Then the card shows **"Ready to advance"**. Advancing costs **5 × the completed tier** tickets and is
    **explicit** — the player chooses when.
 3. On advancing:
    - Level becomes gate + 1. Banked overflow EXP applies immediately.
@@ -100,7 +100,7 @@ keeps racing and refining that scenario's constellation.
 
 Your Uma races with **the stats on her profile**: her base stats and what her constellation pays, with nothing added
 or multiplied at the gate. Training Level makes her stronger by opening nodes, and stars by filling them. Rivals are
-a trained Uma of her tier made weaker by the race's grade (D152); details in
+a typical trained Uma of her tier made weaker by the race's grade (D159); details in
 [Racing — the grade handicap](racing.md#difficulty-the-grade-handicap).
 
 ## Aptitudes

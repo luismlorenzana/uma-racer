@@ -43,7 +43,7 @@ flowchart LR
     subgraph iPhone["iPhone · Home Screen web app"]
         SW[Service worker<br/>app shell + content cache]
         UI[React UI<br/>Motion animations]
-        Scene[PixiJS scenes<br/>race playback · effects]
+        Scene[PixiJS scenes<br/>race playback · puzzle battles · effects]
         Store[Zustand game store]
         IDB[(IndexedDB · Dexie<br/>save + outbox)]
         Sim[@racer/race + @racer/domain<br/>run on device]
@@ -87,13 +87,16 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
   order as a write-free no-op. Explicit Auto fill remains a pure draft helper; opening a constellation never mutates an empty deck.
 - Minigame reservations are save-backed transactions. `beginRun` re-parses the target and profile, returns an existing open
-  target run without another charge, or atomically spends the documented tickets, appends its stable ledger id, and stores
-  a device-local run row. Its FNV-1a seed derives from profile creation time, content version, target, scenario, and attempt;
-  reloading reconstructs the same board. The Dexie v8 `minigameRuns` table is never synced and is not part of the save.
-- `commitRun` is idempotent by run id. Spark Match applies score through `addTrainingExp` to the Uma's active scenario and
-  reports actual constellation nodes opened; Bond Recall applies a clear only to the named scenario's card stars, appends
-  the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss as a closed paid run. The profile,
-  affected Uma/card, ledger, Trainer reconciliation, and outbox work commit atomically before Zustand publishes.
+  target run without another charge, or atomically spends the documented ticket, appends its stable ledger id, and stores
+  a device-local run row. Its FNV-1a seed derives from profile creation time, content version, target, scenario and attempt.
+  The versioned `minigameRuns` row also holds a bounded action journal for replay-driven games. It is never synced and is
+  not part of the cloud save. Appending an action checks the expected prior action count in the same Dexie transaction.
+- `commitRun` is idempotent by run id. Spark Rival Circuit loads the private encounter definition, replays the row's seed
+  and actions in its pure engine, derives Training EXP from that authoritative result, applies it through `addTrainingExp`
+  and reports actual constellation nodes opened. The screen cannot submit a score. Bond Recall applies a clear only to the
+  named scenario's card stars, appends the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss
+  as a closed paid run. The profile, affected Uma/card, ledger, Trainer reconciliation and outbox work commit atomically
+  before Zustand publishes.
 - Collection acquisition uses the same boundary. Shard exchange transactionally derives its next numbered prefix and
   writes the profile plus separate `-5 shards`/`+1 Uma Coupon` ledger rows. A Card or Uma redemption re-reads the profile,
   target entity, private content, and target-keyed ledger row; it then writes the profile, a version-0 canonical entity,
@@ -169,6 +172,13 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   pre-roll, applies optional close-finish slowdown/hold, and makes seek/skip/reduced-motion behavior testable without Pixi.
   A second pure projection serializes timeline events into one cue slot and derives course labels and result activation
   summaries. Neither clock nor cue state is persisted, included in the engine version, or consulted by reward completion.
+- Spark Rival Circuit uses the same simulation/playback boundary at turn scale. Its pure TypeScript reducer is
+  `replay(encounter, seed, actions)`: it validates each path, owns seeded fills/cascades/rival choices, and emits resolution
+  steps. The lazy PixiJS scene plays those steps while a React HUD shows Drive, Resolve, Spark and intent. Pointer sampling,
+  animation frames and wall time never enter the reducer; a renderer may drop frames without changing a result.
+- The puzzle canvas captures one Pointer Event stream directly and mutates renderer objects without a React render per
+  `pointermove`. A deterministic grid traversal fills skipped cells. Pixi sprites and effects are pooled, the ticker uses
+  elapsed milliseconds and pauses while hidden, and refresh rate affects presentation only.
 
 ### 3. Content: reference data and images
 
@@ -179,6 +189,11 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - Claude maintains the gitignored flair overlay used to stamp semantic race-series legs and the 10 main venues. Import
   validation resolves every private family/venue reference, while checked-in docs, logs, and tests contain only semantic
   tags, aggregate coverage, and synthetic fixtures.
+- Spark Rival Circuit follows the same private-overlay boundary. `content/overrides/spark-rivals.json` names each
+  scenario's eligible training rivals and bosses by private Uma template id plus a checked-in semantic behavior vocabulary;
+  import emits a hashed `spark-rivals` pack. Git contains its schema, aggregate coverage and synthetic fixtures only. A
+  deterministic catalogue fallback keeps an old content publication playable, but release validation still requires all
+  fourteen authored rosters.
 - Images are fetched once by a local pipeline script, normalized without crop into 128×128 WebP frames, and packed into
   deterministic **sprite atlases** used by DOM UI and later race scenes.
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
@@ -238,13 +253,13 @@ apps/web/src/
   api/          fetch client with token provider (from uma-planner), sync client
   game/         Zustand store, Dexie schema/migrations, save coordinator, persistence, outbox sync, content/save joins
   content/      manifest + pack loading, asset URLs
-  scenes/       PixiJS race scenes, lazy-loaded
+  scenes/       PixiJS race and Spark Rival Circuit scenes, lazy-loaded
   ui/           Paddock kit (visual-system.md): Button, Chip, SegmentedControl, Panel, Row, Pill, Meter, ArtTile, BottomSheet, Toasts;
                 icons/ holds the original icon set, one module per icon
   screens/      Home, Stable, UmaProfile, Training, RaceSelect, PreRace, Race, Results, Cards, Badges, Settings
 ```
 
-- **Routes are code-split**. PixiJS loads only with Race scenes; Training uses route-split DOM and Motion feedback.
+- **Routes are code-split**. PixiJS loads only with Race or Spark Rival Circuit scenes; Training uses route-split DOM and Motion feedback.
 - The Cards album/detail and Card Select routes are also split. They join the full private catalog to account-wide card saves and call the
   same generated effect projection used by Training and progression racing, so displayed LB values cannot drift from play.
 - Stable joins the complete private Uma catalog for honest outfit-level completion and silhouettes. The full-screen

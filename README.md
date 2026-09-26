@@ -11,16 +11,13 @@ while the stable itself grows into a collection.
 > lineage, pink sparks, Scenario Start and deterministic goals, and the full badge pillar with per-Uma flair, Prestige,
 > showcases, and Trainer achievements.
 >
-> A full alignment review on 2026-09-19 compared the build against the original design. Work is underway on
-> [Milestone 7 — Align and stabilize](docs/tasks/M007-align-and-stabilize.md): race-series leg support and retroactive
-> title evaluation are implemented and published, scenario goals now follow the real horse's career and sex, including
-> full race sets from tier 7, the JP scenario ladder now runs through tier 14 and Uma level 140, and releases now expose
-> code/content versions with a verified publisher and safe app restart. Friend/Group cards are now active as reliable
-> broad supports; the owner playability pass and [Milestone 8](docs/tasks/M008-scenario-identity.md) scenario modifiers
-> follow. Milestone 9 replaced the skin with the
-> [Paddock visual system](docs/design/visual-system.md) and an original icon set, [Milestone 10](docs/tasks/M010-collection-depth.md) gives the
-> albums real browsing depth, and [Milestone 11](docs/tasks/M011-game-feel-and-device.md) covers audio, celebration and
-> device readiness.
+> The 2026-09 training redirection is now the source of truth: Training Levels open a per-scenario constellation, cards
+> earn per-scenario stars, and races use the resulting derived build. Turn-based race engine work is tracked in
+> [M021](docs/tasks/M021-turn-based-races.md); the next minigame implementation is
+> [M022 — Spark Rival Circuit](docs/tasks/M022-spark-rival-circuit.md), replacing adjacent-swap Spark Match with a
+> deterministic three-wave continuous-drag puzzle battle. [M020 — Friendship Training](docs/tasks/M020-friendship-training.md)
+> follows it and reuses the same local action-journal foundation. The Paddock visual system and original icon set have
+> landed; remaining alignment, collection and device work stays indexed in [Tasks](docs/tasks/README.md).
 
 ## Ground rules
 
@@ -38,9 +35,9 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone) + api :8080
 ```
 
-Saved-Uma Training: **Home or Stable → Uma profile → Train**.
-Progression racing: **Train once → Race → pick a content race, Uma, and strategy → Start race**.
-Scenario Start: **Acquire an Uma or reach a non-final gate → choose 0–2 frozen parents → review inheritance and pink sparks → Opening Training**.
+Saved-Uma Training: **Home or Stable → Uma profile → Train → Spark Match or Constellation**.
+Progression racing: **Start a scenario → configure/train as desired → Race → pick a content race, Uma, and strategy**.
+Scenario Start: **Acquire an Uma or reach a non-final gate → start the new per-scenario constellation and career at TL1**.
 Scenario goals: **Home or Profile Journey → choose a target race → win its rule during the active tier → preserve the result on promotion**.
 
 ## Verification
@@ -80,7 +77,7 @@ docs/           design, technical, research
 | [Scenario Careers](docs/design/scenario-goals.md) | Each scenario's career per Uma: a G3, two G2s, then a G1 set, gating her levels |
 | [Training](docs/design/training.md) | Uma Level vs. Training Level, derived stats, tickets. The entry point to the two below |
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
-| [Minigames](docs/design/minigames.md) | Spark Match raises Training Levels; the card minigame earns a card's stars |
+| [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
@@ -105,6 +102,7 @@ docs/           design, technical, research
 | [Race Mechanics Research](docs/research/race-mechanics.md) | Community-documented formulas from the original race simulation |
 | [Game UI Reference](docs/research/game-ui-reference.md) | What Umamusume and HoYoverse interfaces do, why the old skin failed, and album browsing patterns |
 | [Game-like Web Tech](docs/research/game-web-tech.md) | Rendering, frame rate, animation, PWA on iOS, performance playbook |
+| [Spark Rival Circuit Research](docs/research/spark-rival-circuit.md) | Puzzle-battle adaptation, strategy advantage, deterministic touch architecture, and rejected scope |
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Race Engine R3 Findings](docs/research/race-engine-r3-findings.md) | Pack formulas, explicit approximations, launch-unique coverage, and balance results |

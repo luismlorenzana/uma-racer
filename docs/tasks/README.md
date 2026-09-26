@@ -22,8 +22,9 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
+| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | [T071](T071-spark-rival-engine.md) · [T072](T072-spark-rival-content.md) · [T073](T073-spark-rival-runtime.md) · [T074](T074-spark-rival-polish.md) | Specified · next |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · next |
+| [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · after M022 |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
 
@@ -60,6 +61,10 @@ fourteen scenario buffs) landed on 2026-09-26 and was removed under D104; D163�
 M009 (look and feel: the Paddock tokens and primitives, every screen rolled onto them, and the original icon set with
 the drawn mark) landed on 2026-09-26 and was removed under D104; D166–D167 and
 [Visual System](../design/visual-system.md) carry it. Spark Match keeps its own look until its rework, and Bond Recall until Friendship Training (M020) replaces it.
+
+M022 runs before M020. Spark Rival Circuit establishes and proves the generic local action journal that M020's longer
+Friendship Training runs need; implementing both journal migrations independently would create an avoidable save and merge
+conflict. T071–T074 are reserved for M022 and are never reused.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 
