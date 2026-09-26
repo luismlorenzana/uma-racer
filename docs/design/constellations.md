@@ -84,20 +84,21 @@ than a number.
 A **full constellation pays less than the cap budget**, so no configuration reaches every cap:
 
 ```
-statNodeValue(T) = 240 / statNodes(T)                                   the stat-node pool, fixed
+statNodeValue(T) = 240 / 6 = 40                                         the stat-node pool, fixed, over six nodes
 nodeValue(T)     = round((0.60 × capBudget(T) − 240) / cardNodes(T))    one card node
 treeBudget(T)    = cardNodes(T) × nodeValue(T) + 240                    ≈ 0.60 × capBudget(T)
 ```
 
-**Stat nodes share a fixed 240-point pool** at every tier (D134): 80 a node at tier 1, down to 40 at tier 14.
-They are for tweaks — the stamina a mile needs, one more point of Speed — and cards carry the build. Card nodes
+**Stat nodes share a fixed 240-point pool** at every tier (D134), and every tree has **six** of them (D162), so each
+pays 40 and a build can spread its tweaks over several stats. They are for tweaks — the stamina a mile needs, one
+more point of Speed — and cards carry the build. Card nodes
 share the rest: **220** at tier 1, 163–172 from tier 5. Per-scenario counts are in
 [Scenarios](scenarios.md#constellation-shapes).
 
 | Tier | 1 | 2 | 3 | 4 | 5–7 | 8–11 | 12 | 13–14 |
 |---|---|---|---|---|---|---|---|---|
 | Card node | 220 | 198 | 233 | 189 | 163–164 | 167–169 | 172 | 171 |
-| Stat node | 80 | 60 | 80 | 60 | 60 | 48 | 40 | 40 |
+| Stat node | 40 | 40 | 40 | 40 | 40 | 40 | 40 | 40 |
 | Per-card cap | 4 | 5 | 4 | 5 | 6 | 6 | 6 | 7 |
 
 ### Per-card cap
@@ -377,7 +378,8 @@ What each node *is* is not drawn. The template numbers the nodes **breadth-first
 and then columns first. That number is the unlock order, so the tree opens outward from the root, and the last
 `statNodes` numbers, the ends of the branches, are the stat nodes. Ids (`n0`…), kinds and order are therefore
 fixed by the counts alone: redrawing a silhouette moves nodes on screen but never turns a saved card node into a
-stat node or changes which nodes a Training Level opens.
+stat node. Adding stat nodes, as D162 did, appends new ids after every old one and only ever opens more nodes at a
+Training Level, never fewer.
 
 A template refuses to build if its drawing has the wrong node count, is not one tree, or has a connector that
 leads nowhere. `validateTemplate` then checks the structure: the card and stat nodes form one connected tree

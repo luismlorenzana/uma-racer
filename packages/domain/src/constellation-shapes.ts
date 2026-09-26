@@ -26,6 +26,8 @@ o-o-o
     o-o-o
     |
 o-o-o
+    |
+    o-o-o
 `,
   // 2 Unity Cup: three long branches from one stem, the outer two longest.
   String.raw`
@@ -44,6 +46,8 @@ o     o     o
 o     o     o
 |           |
 o           o
+|           |
+o           o
 `,
   // 3 Trackblazer: one long track round an oval, open at the bottom, with side spurs.
   String.raw`
@@ -51,17 +55,17 @@ o           o
       |
   o-o-o-o-o
   |       |
-  o       o
+  o       o-o
   |       |
 o-o       o
   |       |
   o       o-o
   |       |
-  o       o
+o-o       o
   |       |
   o-o   o-o
-    |
-    o
+    |   |
+    o   o
 `,
   // 4 Our Grand Concert: a five-arm star around a central root.
   String.raw`
@@ -79,8 +83,8 @@ o     o     o
      / \
     o   o
    /     \
-  o       o
- /         \
+o o       o o
+|/         \|
 o-o-o   o-o-o
 `,
   // 5 Grand Masters: twin arcs hanging from one bar.
@@ -88,10 +92,10 @@ o-o-o   o-o-o
 o-o-o-R-o-o-o
 |     |     |
 o     o     o
-|           |
-o           o
-|           |
-o   o   o   o
+|     |     |
+o     o     o
+|     |     |
+o   o o o   o
 |   |   |   |
 o   o   o   o
 |   |   |   |
@@ -116,6 +120,8 @@ o           o
 o           o
 |           |
 o           o
+|           |
+o           o
 `,
   // 7 U.A.F. Ready GO!: three feathered branches, one per sport.
   String.raw`
@@ -129,7 +135,7 @@ o   o-o-o   o
 |     |     |
 o-o   o   o-o
 |     |     |
-o     o     o
+o   o-o-o   o
 |     |     |
 o-o   o   o-o
 |     |     |
@@ -137,6 +143,8 @@ o     o     o
 `,
   // 8 Great Food Festival: a wide canopy on a short trunk, rooted at the bottom.
   String.raw`
+      o
+      |
     o o o
     | | |
   o o o o o
@@ -168,9 +176,13 @@ o-o-o-o-o-o-o
 o     o     o
       |
     o-o-o
+      |
+      o
 `,
   // 10 The Twinkle Legends: a seven-point crown on its band, rooted below.
   String.raw`
+      o
+      |
 o     o     o
 |     |     |
 o   o o o   o
@@ -202,8 +214,8 @@ o     o     o
 o-o   o   o-o
 |     |     |
 o     o     o
- \         /
-  o-o   o-o
+ \    |    /
+  o-o o o-o
 `,
   // 12 Yukoma Hot Springs: a square spiral out from the root.
   String.raw`

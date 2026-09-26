@@ -47,22 +47,25 @@ export interface ShapeDef {
   statNodes: number
 }
 
+/** Every tree has six stat nodes (D162), so any build can spread its tweaks over several stats. */
+export const STAT_NODES = 6
+
 /** Slot counts and silhouettes per scenario (docs/design/scenarios.md#constellation-shapes). */
 export const CONSTELLATION_SHAPES: readonly ShapeDef[] = [
-  { shape: 'single-trunk', cardNodes: 18, statNodes: 3 },
-  { shape: 'three-branch', cardNodes: 20, statNodes: 4 },
-  { shape: 'track-spurs', cardNodes: 17, statNodes: 3 },
-  { shape: 'five-arm-star', cardNodes: 21, statNodes: 4 },
-  { shape: 'twin-arcs', cardNodes: 25, statNodes: 4 },
-  { shape: 'arch', cardNodes: 26, statNodes: 4 },
-  { shape: 'three-colour', cardNodes: 27, statNodes: 4 },
-  { shape: 'canopy', cardNodes: 27, statNodes: 5 },
-  { shape: 'lattice-spine', cardNodes: 28, statNodes: 5 },
-  { shape: 'crown', cardNodes: 29, statNodes: 5 },
-  { shape: 'island-ring', cardNodes: 30, statNodes: 5 },
-  { shape: 'spiral', cardNodes: 30, statNodes: 6 },
-  { shape: 'twin-trunks', cardNodes: 31, statNodes: 6 },
-  { shape: 'counter', cardNodes: 32, statNodes: 6 },
+  { shape: 'single-trunk', cardNodes: 18, statNodes: STAT_NODES },
+  { shape: 'three-branch', cardNodes: 20, statNodes: STAT_NODES },
+  { shape: 'track-spurs', cardNodes: 17, statNodes: STAT_NODES },
+  { shape: 'five-arm-star', cardNodes: 21, statNodes: STAT_NODES },
+  { shape: 'twin-arcs', cardNodes: 25, statNodes: STAT_NODES },
+  { shape: 'arch', cardNodes: 26, statNodes: STAT_NODES },
+  { shape: 'three-colour', cardNodes: 27, statNodes: STAT_NODES },
+  { shape: 'canopy', cardNodes: 27, statNodes: STAT_NODES },
+  { shape: 'lattice-spine', cardNodes: 28, statNodes: STAT_NODES },
+  { shape: 'crown', cardNodes: 29, statNodes: STAT_NODES },
+  { shape: 'island-ring', cardNodes: 30, statNodes: STAT_NODES },
+  { shape: 'spiral', cardNodes: 30, statNodes: STAT_NODES },
+  { shape: 'twin-trunks', cardNodes: 31, statNodes: STAT_NODES },
+  { shape: 'counter', cardNodes: 32, statNodes: STAT_NODES },
 ]
 
 const clampTier = (tier: number): number => Math.min(MAX_SCENARIO_TIER, Math.max(1, Math.trunc(tier)))

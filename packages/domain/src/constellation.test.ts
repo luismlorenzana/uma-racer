@@ -27,6 +27,7 @@ import {
   nodeValue,
   shapeDef,
   slotCount,
+  STAT_NODES,
   spNodeValue,
   STAT_NODE_POOL,
   statNodeValue,
@@ -117,7 +118,8 @@ describe('budgets', () => {
       expect(statNodeValue(tier) * shapeDef(tier).statNodes).toBe(240)
     }
     expect(TIERS.map(nodeValue)).toEqual([220, 198, 233, 189, 164, 164, 163, 169, 168, 168, 167, 172, 171, 171])
-    expect(TIERS.map(statNodeValue)).toEqual([80, 60, 80, 60, 60, 60, 60, 48, 48, 48, 48, 40, 40, 40])
+    // Six stat nodes everywhere (D162): 40 raw points a node at every tier.
+    expect(TIERS.map(statNodeValue)).toEqual(TIERS.map(() => 40))
   })
 
   it('caps every card at its fair share of the card nodes plus one (D134)', () => {
@@ -129,8 +131,11 @@ describe('budgets', () => {
     }
   })
 
-  it('gives every scenario a distinct slot count', () => {
-    expect(new Set(TIERS.map(slotCount)).size).toBe(MAX_SCENARIO_TIER)
+  it('gives every tree six stat nodes, and its card nodes the rest of its slots (D162)', () => {
+    for (const tier of TIERS) {
+      expect(shapeDef(tier).statNodes).toBe(STAT_NODES)
+      expect(slotCount(tier)).toBe(shapeDef(tier).cardNodes + 6)
+    }
   })
 })
 
