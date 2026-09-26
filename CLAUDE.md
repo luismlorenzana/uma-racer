@@ -44,6 +44,7 @@ pnpm build          # production builds (web includes the PWA service worker)
 pnpm sim:balance    # race balance table
 pnpm data:import    # GameTora datasets → private, gitignored content packs
 pnpm assets:import  # T001 image sources → private WebP atlases; run after data:import
+                    # T059 chibis/stands/race faces: add `-- --source dir:~/Documents/uma-content` (owner's copy)
 ```
 
 ## Production operations

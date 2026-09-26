@@ -64,9 +64,26 @@ async function readScenarioIcons(contentDir: string): Promise<ImageSource[]> {
   })
 }
 
+/** Each Uma outfit's character, from the verified pack: T059's stands and faces are per character. */
+function parseCharas(bytes: Buffer): { id: string; charaId: string }[] {
+  const { items } = JSON.parse(bytes.toString('utf8')) as { items: { id?: unknown; charaId?: unknown }[] }
+  return items.map((item, index) => {
+    if (typeof item.id !== 'string' || typeof item.charaId !== 'string' || !/^\d{4}$/.test(item.charaId)) {
+      throw new Error(`Invalid Uma character id at index ${index}`)
+    }
+    return { id: item.id, charaId: item.charaId }
+  })
+}
+
 export async function readAssetSources(
   contentDir: string,
-): Promise<{ manifest: ContentManifest; umas: ImageSource[]; cards: ImageSource[]; scenarios: ImageSource[] }> {
+): Promise<{
+  manifest: ContentManifest
+  umas: ImageSource[]
+  umaCharas: { id: string; charaId: string }[]
+  cards: ImageSource[]
+  scenarios: ImageSource[]
+}> {
   let manifest: ContentManifest
   try {
     manifest = JSON.parse(await readFile(resolve(contentDir, 'manifest.json'), 'utf8')) as ContentManifest
@@ -82,6 +99,7 @@ export async function readAssetSources(
   return {
     manifest,
     umas: parseSources(umaBytes, 'umas'),
+    umaCharas: parseCharas(umaBytes),
     cards: parseSources(cardBytes, 'cards'),
     scenarios: await readScenarioIcons(contentDir),
   }

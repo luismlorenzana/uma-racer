@@ -156,7 +156,7 @@ The density toggle becomes a **view switch**, remembered per album like every ot
 
 ### Art tiers
 
-Four sizes, each used where it belongs:
+Seven families, each used where it belongs:
 
 | Tier | Size | Source | Use |
 |---|---|---|---|
@@ -164,17 +164,31 @@ Four sizes, each used where it belongs:
 | Uma bust | 256 px square, head and shoulders | Cropped from her portrait at import, one file per Uma | Every list of Umas: Stable grid, the Race tab's picker, lineage picker, pre-race field, results (D142) |
 | Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Stable detail area, the Uma reveal, the art viewer |
 | Card art | 450×600 full illustration, the source's own size | One file per card, fetched on demand | The card page's hero, the Cards tab detail area, the card reveal, Bond Recall faces, the art viewer (D144) |
+| Race face | 128 px square, transparent | Cut from each character's summer-uniform stand at import, one file per character | The runner tokens in a race (D160) |
+| Chibi | 256 px, transparent, standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Imported, not placed yet |
+| Outfit stand | 512 px, transparent: gym clothes, summer and winter uniforms, casual clothes | Four per character, from the owner's local copy (T059) | Imported, not placed yet |
 
 The bust is the original's Trainee Select tile: the portrait cropped to a square around her head. The importer finds the
 head from the portrait's own alpha, centres on it and takes the top 60% of the frame; `content/overrides/bust-crops.json`
 pins any Uma the automatic crop misreads, and `pnpm assets:bust-sheet` renders every bust onto review pages.
+
+**Race faces, chibis and outfit stands** (T059, D160) come from the original's files by their wiki names, read from
+the owner's own folder (`pnpm assets:import -- --source dir:<path>`), never fetched: the wiki's `robots.txt` disallows
+its API and files. A file is named by the game's **dress id** while our Uma id is its **card id**, and the two differ
+for 124 of 268 outfits, so each chibi is matched through GameTora's `costume` field (Kitasan Black's 106802 is dress
+106810), never by name or number. Stands and faces are per **character**: every outfit of an Uma shares them. The face
+is the same square of every stand (the figures share one frame), taken from the summer uniform, then the winter one,
+the gym clothes or the casual clothes. Coverage today: all 536 chibis, all 540 stands, all 135 faces. Candidates for the
+chibis and stands, not placed yet: the standing chibi on Stable tiles, race select and the Home lobby; the celebrating
+one on a win, a max bond or a scenario unlock; a stand as a seasonal look on the profile (a uniform by date, casual
+clothes off-season, gym clothes during a Spark Match).
 
 Lists never use the large art; **detail surfaces do**. The card page opens on the illustration full width, cropped to
 4:5 from the top, with the card's name over its foot. Reveals show the illustration or the portrait instead of an
 enlarged icon. Wherever large art is shown on a detail surface, a tap opens the **art viewer**: the whole image, uncropped,
 on a dark stage over everything, closed by a tap, its close button or Escape.
 
-Art is **never atlased and never precached**: about 31 MB across 830 files would defeat both. Each file is content-addressed,
+Art is **never atlased and never precached**: about 51 MB across 2,040 files would defeat both. Each file is content-addressed,
 fetched through the authenticated API on first use, verified against its manifest hash, and cached by the service worker.
 The icon shows immediately and the large art replaces it when it arrives, so nothing ever waits on a download. Entries
 whose source art does not exist — 18 of the newest cards today — keep their icon, with no error and no empty frame.

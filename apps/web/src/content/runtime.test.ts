@@ -80,7 +80,8 @@ function fixture(versionCharacter = 'a'): Fixture {
     add(`atlases/${kind}.${versionCharacter.repeat(8)}.json`, JSON.stringify(atlas(kind, id)), 'application/json')
   }
   // Per-entry art: fetched on demand, so it is in the manifest but never loaded up front.
-  for (const [dir, id] of [['uma', 'uma-x'], ['card', 'card-x']] as const) {
+  // T059: chibis per outfit, stands and race faces per character.
+  for (const [dir, id] of [['uma', 'uma-x'], ['card', 'card-x'], ['chibi', 'uma-x-a'], ['dress', '1001-summer'], ['face', '1001']] as const) {
     add(`art/${dir}/${id}.${versionCharacter.repeat(8)}.webp`, syntheticWebp(512, 512), 'image/webp')
   }
   files.sort((left, right) => left.path.localeCompare(right.path))
@@ -145,6 +146,18 @@ describe('private art loader', () => {
     expect(await content.content.art.load('uma', 'uma-x')).toBe(first)
     // Art the manifest does not carry resolves to null so callers fall back to the icon atlas.
     expect(await content.content.art.load('card', 'missing')).toBeNull()
+  })
+
+  it('resolves T059\'s chibi, outfit-stand and race-face art', async () => {
+    const current = fixture()
+    const { urls } = urlFactory()
+    const content = await new ContentRuntime(transport(() => current), new MemoryStore(), urls).load()
+    if (content.status !== 'ready') throw new Error('expected ready content')
+    expect(content.content.art.has('chibi', 'uma-x-a')).toBe(true)
+    expect(content.content.art.has('dress', '1001-summer')).toBe(true)
+    expect(await content.content.art.load('face', '1001')).toMatch(/^blob:synthetic-/)
+    // A character without a face keeps her numbered dot in the race.
+    expect(content.content.art.has('face', '1002')).toBe(false)
   })
 
   it('rejects art whose bytes do not match the manifest hash', async () => {

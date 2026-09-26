@@ -302,7 +302,10 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
 - The camera follows the pack and **turns with the course**, so runners always travel left to right and a corner
   visibly bends ahead of them. A **minimap** in the corner shows the whole course and every runner.
 - Races recorded before engine v3 have no course snapshot and are drawn on a straight.
-- **Icons** (character icons) are the runners, with a gate number and the player's Uma highlighted.
+- **Faces** are the runners (D160): each runner's face, cut from her character's school-uniform stand, in a ring of her
+  colour, with her gate number on a badge at her shoulder; the player's Uma has a gold ring and a ★ badge. A runner
+  whose face has not loaded, or has none, shows her numbered dot. Runners nearer the inner rail, the near side of the
+  view, are drawn in front, and the player always on top.
 - A **progress rail** shows every runner's position along the whole distance at a glance.
 - **Phase banner:** Opening → Middle → Final Leg → **Last Spurt**, with course labels such as "Final corner" and "Final straight".
 - Before timeline second zero, the renderer shows a 2.4-second field → staged gates → Ready → Go sequence. The engine's

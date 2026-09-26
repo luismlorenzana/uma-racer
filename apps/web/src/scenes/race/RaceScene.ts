@@ -1,6 +1,6 @@
 import type { RaceCourseLayout } from '@racer/domain'
 import { COURSE_WIDTH, phaseAt, raceTurns, sampleTimeline, timelineDuration, turnPhase, type RaceTimeline, type RunnerFrame } from '@racer/race'
-import { Application, Container, Graphics, Text } from 'pixi.js'
+import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import { buildCoursePath, courseBounds, sampleCourse, type CoursePath } from './course-path'
 import {
   RacePlaybackClock,
@@ -45,6 +45,8 @@ interface Token {
   root: Container
   body: Graphics
   label: Text
+  /** The runner's face once it has loaded (T059); until then, or without one, the numbered dot. */
+  face: Sprite | null
 }
 
 const TURF_A = 0x4cb85a
@@ -61,6 +63,12 @@ const VERGE = 2
 const STRIPE_METERS = 10
 const SAMPLE_METERS = 4
 const TOKEN_RADIUS = 9
+/** A face token: the face, her colour ring round it, and her gate number on a badge at her shoulder. */
+const FACE_RADIUS = 12
+const BADGE_RADIUS = 6.5
+const BADGE_OFFSET = FACE_RADIUS * 0.78
+/** Faces are drawn into a circle once, at this size, so the ticker never masks a sprite. */
+const FACE_TEXTURE = 96
 const HUD_INTERVAL_MS = 100
 const MINIMAP = { width: 104, height: 70, margin: 10, padding: 8 }
 const visualUnit = (value: number) => (Math.imul(value ^ (value >>> 16), 0x45d9f3b) >>> 0) / 4294967296
@@ -89,6 +97,8 @@ export class RaceScene {
   private readonly minimap = new Graphics()
   private readonly markerLabels: Text[] = []
   private readonly tokens: Token[] = []
+  private readonly faceTextures: Texture[] = []
+  private pendingFaces: readonly (Texture | null)[] | null = null
   private readonly streaks = Array.from({ length: 10 }, (_, index) => ({
     x: visualUnit(index + 1),
     y: (index + 0.5) / 10,
@@ -128,6 +138,8 @@ export class RaceScene {
     this.mounted = true
     host.appendChild(this.app.canvas)
     this.world.addChild(this.track, this.markerLayer, this.runnerLayer)
+    // Runners nearer the inner rail, the near side of the view, are drawn in front of those further out.
+    this.runnerLayer.sortableChildren = true
     this.app.stage.addChild(this.background, this.world, this.effects, this.minimap)
     this.buildTokens()
     sampleTimeline(this.timeline, 0, this.frames)
@@ -165,6 +177,69 @@ export class RaceScene {
     this.destroyed = true
     document.removeEventListener('visibilitychange', this.onVisibility)
     if (this.mounted) this.app.destroy({ removeView: true }, { children: true })
+    for (const texture of this.faceTextures) texture.destroy(true)
+    this.faceTextures.length = 0
+  }
+
+  /**
+   * Puts each runner's face on her token (T059), by runner index; a null keeps her numbered dot. The images are the
+   * art loader's verified object URLs. Safe to call before the scene has mounted or after it is gone.
+   */
+  async setFaces(urls: readonly (string | null)[]): Promise<void> {
+    const textures = await Promise.all(urls.map(async (url) => {
+      if (!url) return null
+      try {
+        const image = new Image()
+        image.src = url
+        await image.decode()
+        const canvas = document.createElement('canvas')
+        canvas.width = FACE_TEXTURE
+        canvas.height = FACE_TEXTURE
+        const context = canvas.getContext('2d')
+        if (!context) return null
+        context.beginPath()
+        context.arc(FACE_TEXTURE / 2, FACE_TEXTURE / 2, FACE_TEXTURE / 2, 0, Math.PI * 2)
+        context.clip()
+        context.drawImage(image, 0, 0, FACE_TEXTURE, FACE_TEXTURE)
+        return Texture.from(canvas)
+      } catch {
+        // A face that will not decode just leaves her number.
+        return null
+      }
+    }))
+    if (this.destroyed) {
+      for (const texture of textures) texture?.destroy(true)
+      return
+    }
+    this.faceTextures.push(...textures.filter((texture): texture is Texture => texture !== null))
+    if (this.tokens.length > 0) this.applyFaces(textures)
+    else this.pendingFaces = textures
+  }
+
+  private applyFaces(textures: readonly (Texture | null)[]) {
+    textures.forEach((texture, index) => {
+      const token = this.tokens[index]
+      const runner = this.runners[index]
+      if (!texture || !token || !runner || token.face) return
+      token.body.clear()
+      if (runner.isPlayer) token.body.circle(0, 0, FACE_RADIUS + 5).fill({ color: PLAYER })
+      token.body.circle(0, 0, FACE_RADIUS + 2).fill({ color: runner.color }).stroke({ width: 2, color: 0xffffff })
+      const face = new Sprite(texture)
+      face.anchor.set(0.5)
+      face.width = FACE_RADIUS * 2
+      face.height = FACE_RADIUS * 2
+      const badge = new Graphics()
+        .circle(BADGE_OFFSET, BADGE_OFFSET, BADGE_RADIUS)
+        .fill({ color: runner.isPlayer ? PLAYER : runner.color })
+        .stroke({ width: 1.5, color: 0xffffff })
+      // Ring, face, badge, then her number on the badge.
+      token.root.addChildAt(face, 1)
+      token.root.addChildAt(badge, 2)
+      token.face = face
+      token.label.style.fontSize = 8
+      token.label.style.stroke = { color: INK, width: 2 }
+      token.label.position.set(BADGE_OFFSET, BADGE_OFFSET)
+    })
   }
 
   private readonly onVisibility = () => {
@@ -191,11 +266,15 @@ export class RaceScene {
       label.anchor.set(0.5)
       root.addChild(body, label)
       this.runnerLayer.addChild(root)
-      this.tokens.push({ root, body, label })
+      this.tokens.push({ root, body, label, face: null })
     })
     // Player drawn last so it's never hidden behind rivals.
     const player = this.tokens[this.playerIndex]
     if (player) this.runnerLayer.addChild(player.root)
+    if (this.pendingFaces) {
+      this.applyFaces(this.pendingFaces)
+      this.pendingFaces = null
+    }
   }
 
   /** A point on the course in Pixi world coordinates (meters, y down), `offset` drawn meters out from the inner rail. */
@@ -261,10 +340,11 @@ export class RaceScene {
       const bob = running ? (Math.sin(this.elapsed * 14 + i) * 1.5) / pxPerMeter : 0
       const [x, y] = this.point(frame.distance, VERGE + lane * LANE_SCALE)
       token.root.position.set(x, y + bob)
+      token.root.zIndex = runner.isPlayer ? Number.MAX_SAFE_INTEGER : -lane
       // Tokens keep their screen size and stay upright while the world scales and turns.
       token.root.scale.set(1 / pxPerMeter)
       token.root.rotation = -this.camera.angle
-      token.body.alpha = frame.hp <= 0.001 && running ? 0.6 : 1
+      token.root.alpha = frame.hp <= 0.001 && running ? 0.6 : 1
     })
 
     // Last-spurt speed streaks. A turn race's phase is the race's, from the turn (M021).

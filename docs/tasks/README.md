@@ -25,7 +25,6 @@ multipliers on a training turn that no longer exists.
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · next |
 | [M015 — Scenario identity](M015-scenario-identity.md) | T051, T053 – T056; T052 complete | Outlined |
-| [T059 — Chibi and dress art](T059-chibi-and-dress-art.md) | T059 | Specified · waiting on source permission |
 | [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
@@ -52,6 +51,9 @@ pass and was removed from M015 under D104; D143 and [Constellations](../design/c
 
 M019 (stars and tickets: 0★–5★ per card per scenario, one ticket per run, save v7) landed on 2026-09-25 and was removed
 under D104; D147–D148, D150 and [Support Cards](../design/support-cards.md#stars) and [Economy](../design/economy.md) carry it.
+
+T059 (chibi and outfit-stand art, from the owner's local copy rather than the wiki) landed on 2026-09-26 with the race
+face tokens and was removed under D104; D160 and [Collection](../design/collection.md#art-tiers) carry it.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

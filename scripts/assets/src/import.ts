@@ -8,11 +8,13 @@ import { ART_FAMILIES, buildArtFamily, type ArtFamily, type BustCrop } from './a
 import { buildAtlas } from './atlas'
 import { downloadImages, type ImageSource } from './download'
 import { readAssetSources } from './read'
+import { buildWikiFamily, readCostumes, selectWikiArt, stageWikiFiles, stagedWikiFiles, WIKI_FAMILIES } from './wiki'
 import { writeArtFiles, writeAtlases } from './write'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const contentDir = resolve(repoRoot, 'content')
 const cacheDir = resolve(repoRoot, 'scripts/assets/.cache')
+const dataCacheDir = resolve(repoRoot, 'scripts/data/.cache')
 
 async function build(kind: ContentAtlasKind, sources: ImageSource[], refresh: boolean) {
   const { images } = await downloadImages(sources, { cacheDir, kind, refresh, concurrency: 8 })
@@ -66,10 +68,49 @@ async function buildArt(family: ArtFamily, icons: ImageSource[], refresh: boolea
   return { dir: built.config.dir, images: built.images }
 }
 
+/**
+ * T059's chibis, outfit stands and race faces, from the staged wiki files. `--source dir:<path>` stages the owner's
+ * folder first; without it, whatever was staged before is used, and with nothing staged the families are left as they
+ * are. `--dry-run` reports counts and gaps and writes nothing.
+ */
+async function buildWiki(umaCharas: { id: string; charaId: string }[], dryRun: boolean) {
+  const flag = process.argv.indexOf('--source')
+  const source = process.argv.find((arg) => arg.startsWith('--source='))?.slice('--source='.length) ??
+    (flag === -1 ? undefined : process.argv[flag + 1])
+  if (source !== undefined) {
+    if (!source.startsWith('dir:')) throw new Error('--source takes dir:<path> (the wiki API needs the wiki\'s permission, T059)')
+    const staged = await stageWikiFiles(resolve(source.slice(4).replace(/^~(?=\/)/, process.env.HOME ?? '~')), cacheDir)
+    console.log(`wiki: staged ${staged.copied} new files, ${staged.kept} already cached`)
+  }
+  const files = await stagedWikiFiles(cacheDir)
+  if (files.size === 0) {
+    console.log('wiki: nothing staged; chibi, dress and face art left as they are (pass --source dir:<path>)')
+    return null
+  }
+  const selection = selectWikiArt(files, umaCharas, await readCostumes(dataCacheDir))
+  console.log(`wiki: ${selection.chibi.length} chibis, ${selection.dress.length} outfit stands, ${selection.face.length} race faces`)
+  if (selection.missing.length > 0) console.warn(`  missing (the app falls back): ${selection.missing.join(', ')}`)
+  if (dryRun) return null
+  const families = []
+  for (const family of ['chibi', 'dress', 'face'] as const) {
+    const images = await buildWikiFamily(family, selection[family], cacheDir)
+    console.log(`${family}: ${images.length} images, ${megabytes(images.reduce((sum, image) => sum + image.bytes.length, 0))}`)
+    families.push({ dir: WIKI_FAMILIES[family].dir, images })
+  }
+  return families
+}
+
 async function main(): Promise<void> {
   const refresh = process.argv.includes('--refresh')
   const skipArt = process.argv.includes('--icons-only')
+  const dryRun = process.argv.includes('--dry-run')
   const sources = await readAssetSources(contentDir)
+  // `--wiki-only` rebuilds T059's art alone, without fetching every icon and portrait again.
+  if (process.argv.includes('--wiki-only') || dryRun) {
+    const families = await buildWiki(sources.umaCharas, dryRun)
+    if (families) console.log(`Manifest: ${(await writeArtFiles({ contentDir, families })).version}`)
+    return
+  }
   const atlasBuilds = [
     build('uma-icons', sources.umas, refresh),
     build('card-icons', sources.cards, refresh),
@@ -88,6 +129,8 @@ async function main(): Promise<void> {
       await buildArt('card-art', sources.cards, refresh),
     ]
     manifest = await writeArtFiles({ contentDir, families })
+    const wiki = await buildWiki(sources.umaCharas, false)
+    if (wiki) manifest = await writeArtFiles({ contentDir, families: wiki })
   }
 
   console.log(`Manifest: ${manifest.version} (${manifest.files.length} files)`)

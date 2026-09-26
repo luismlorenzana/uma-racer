@@ -60,9 +60,12 @@ export interface LoadedContent {
   art: ArtLoader
 }
 
-/** One private art family: large per-entry images fetched on demand, never atlased. */
-/** `bust` is the 256 px head-and-shoulders tile for Uma lists (`art/bust/<umaId>`). */
-export type ArtKind = 'uma' | 'card' | 'bust'
+/**
+ * One private art family: per-entry images fetched on demand, never atlased. `bust` is the 256 px head-and-shoulders
+ * tile for Uma lists (`art/bust/<umaId>`). T059 adds `chibi` (`<umaId>-a` standing, `-b` celebrating), `dress`
+ * (`<charaId>-gym|summer|winter|casual`) and `face` (`<charaId>`, the 128 px race token).
+ */
+export type ArtKind = 'uma' | 'card' | 'bust' | 'chibi' | 'dress' | 'face'
 
 export interface ArtLoader {
   /** True when the published manifest carries art for this entry. */
@@ -197,12 +200,12 @@ const PACK_FILES = {
   courses: /^data\/courses\.[a-f0-9]{8}\.json$/,
 } as const
 
-const ART_FILE = /^art\/(uma|card|bust)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
+const ART_FILE = /^art\/(uma|card|bust|chibi|dress|face)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
 /**
  * Object URLs held per kind for recently viewed art; older ones are revoked so memory stays bounded. Busts are small
  * (~18 KB) and fill whole grids, so a list keeps every one it shows; the large art keeps a short window.
  */
-const ART_CACHE_LIMIT: Record<ArtKind, number> = { uma: 24, card: 24, bust: 320 }
+const ART_CACHE_LIMIT: Record<ArtKind, number> = { uma: 24, card: 24, bust: 320, chibi: 64, dress: 24, face: 72 }
 
 function artIndex(manifest: ContentManifest): Map<string, ContentManifestFile> {
   const index = new Map<string, ContentManifestFile>()

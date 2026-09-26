@@ -100,6 +100,9 @@ export function RaceRunScreen() {
   const flairEvents = useGame((state) => state.flairEvents)
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<RaceScene | null>(null)
+  // The scene reads content for the runners' faces without being rebuilt when content refreshes mid-race.
+  const contentRef = useRef(contentState.status === 'ready' ? contentState.content : null)
+  contentRef.current = contentState.status === 'ready' ? contentState.content : null
   const recordRef = useRef<RaceResultRecord | null>(null)
   const finishingRef = useRef(false)
   const [attempt, setAttempt] = useState<PreparedRace | null>(null)
@@ -208,6 +211,14 @@ export function RaceRunScreen() {
     if (recordRef.current) scene.seek(Number.POSITIVE_INFINITY)
     if (import.meta.env.DEV) (window as unknown as { __raceScene?: RaceScene }).__raceScene = scene
     void scene.mount(host)
+    // Each runner's face (T059), by her character; the numbered dot stays until it arrives, or if there is none.
+    const content = contentRef.current
+    if (content) {
+      void Promise.all(attempt.runners.map((runner) => {
+        const chara = content.umas.byId.get(runner.templateId)?.charaId
+        return chara && content.art.has('face', chara) ? content.art.load('face', chara).catch(() => null) : Promise.resolve(null)
+      })).then((urls) => scene.setFaces(urls))
+    }
     return () => {
       scene.destroy()
       sceneRef.current = null

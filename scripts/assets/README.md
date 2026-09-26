@@ -14,6 +14,18 @@ pnpm assets:import
 pnpm assets:import -- --refresh   # download every source again instead of using the local cache
 ```
 
+T059's chibis, outfit stands and race faces come from the original's files by their wiki names, in a local folder
+the owner provides; nothing is fetched for them:
+
+```bash
+pnpm assets:import -- --dry-run --source dir:~/Documents/uma-content   # stage the folder, report counts and gaps
+pnpm assets:import -- --wiki-only                                       # build art/chibi, art/dress, art/face
+```
+
+`--source dir:<path>` copies the roster's files into `scripts/assets/.cache/wiki/`; every later run (including a full
+one) builds from that cache, so the folder is only needed again for new files. Chibis are matched to outfits through
+GameTora's `costume` field in `scripts/data/.cache/character-cards.json`, so run `pnpm data:import` first.
+
 The importer downloads at most eight images concurrently into `scripts/assets/.cache/`. Each source is contained on a
 transparent 128×128 frame, packed with 2 px padding, and encoded into deterministic WebP pages no larger than 4096×4096.
 The source icons are 128×128; the pipeline deliberately does not invent a larger portrait by upscaling them.
@@ -27,6 +39,9 @@ content/
   atlases/uma-icons.<hash8>.json
   atlases/card-icons-0.<hash8>.webp
   atlases/card-icons.<hash8>.json
+  art/uma/<umaId>.<hash8>.webp          art/bust/<umaId>…   art/card/<cardId>…
+  art/chibi/<umaId>-a|b.<hash8>.webp    art/dress/<charaId>-gym|summer|winter|casual…
+  art/face/<charaId>.<hash8>.webp
 ```
 
 More pages are produced automatically if a family grows beyond 961 frames. Atlas descriptors map template ids to their
