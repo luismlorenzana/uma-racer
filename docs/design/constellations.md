@@ -11,7 +11,7 @@ There is no turn-based training, no facility deal, no energy, and no per-turn RN
 ```
 Uma  ─ has ─►  one ScenarioTraining per unlocked scenario
                  │
-                 ├── trainingLevel 1–10        ← earned by the match-3 minigame
+                 ├── trainingLevel 1–10        ← earned by Spark Rival Circuit
                  ├── cardSetIds[6]             ← the cards this scenario may use
                  └── node assignments          ← what fills each unlocked slot
 

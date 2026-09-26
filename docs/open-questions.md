@@ -29,6 +29,10 @@ adjusted through balance simulation and playtesting.
   several awards and Umas with touch and accessible controls, edit the Trainer name/showcase, inspect records and both
   recent-flair surfaces, and test reduced motion plus offline/reconnect. Desktop validation covers the 390×844 layout and
   persistence, but not physical drag/scroll ergonomics, standalone safe areas, or long-list feel on the owner's iPhone.
+- **M022 Spark Rival Circuit touch proof and closure:** after T071, approve the synthetic continuous drag on the physical
+  iPhone before private-content/runtime work proceeds. At T074, play an authored three-wave run from the Home Screen app,
+  including fast/edge drags, background/resume, Spark Shift, loss, clear and opened-node links, in normal and reduced
+  motion. Browser emulation cannot prove finger occlusion, Safari pointer cancellation or sustained 60/120 Hz pacing.
 
 These device checks now belong to **T038** in [Milestone 11](tasks/M011-game-feel-and-device.md), which closes them as one
 acceptance pass rather than leaving six separate reminders open.

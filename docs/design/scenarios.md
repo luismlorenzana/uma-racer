@@ -147,7 +147,7 @@ A scenario at tier `T` may take any owned card with `era ≤ T` into its card se
 ## Scenario completion and unlocking
 
 Reaching the gate Uma Level (10, 20, 30…) grants **1 Uma Shard** and **unlocks the next scenario**. Unlocking
-costs `25 × tier` training tickets and is explicit: the player chooses when to move on.
+costs `5 × fromTier` training tickets (D148) and is explicit: the player chooses when to move on.
 
 On unlocking, the new scenario opens at Training Level 1 with the baseline nodes, an empty six-card set, fresh
 goals, and an empty race record. It **immediately becomes the active scenario** and drives races from then on

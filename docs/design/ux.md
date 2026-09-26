@@ -100,7 +100,35 @@ against the moment the scene opened. Two tabs sit under it (M016):
   Edits save as they are made, like the constellation; empty slots open the album picker, and **Fill empty slots**
   tops the set up without touching what is already there.
 
-Every Bond Recall run launched here returns here.
+Every card-minigame run launched here returns here.
+
+### Spark Match — Rival Circuit
+
+A no-scroll, portrait full-screen scene under `/minigames/spark-match/:umaId`. The tab bar is hidden. At 390 × 844 its
+zones are, top to bottom:
+
+1. **Run HUD:** Leave/pause, scenario, wave `1/3`, trainee Drive and Spark gauges. Leaving preserves the run for resume;
+   v1 has no manual forfeit or reroll.
+2. **Rival stage:** full rival art or bust, name and strategy glyph, Resolve, countdown and a plain-language next-intent
+   card. A phase or Guard status stays beside the gauge instead of appearing only as a toast.
+3. **Puzzle board:** a square-celled 6 × 5 PixiJS board. The held orb draws above the finger, its origin remains marked,
+   displaced orbs visibly slide, and a radial movement clock appears only after the first cell transition.
+4. **Thumb zone:** Spark Shift when charged, a one-line advantage-ring reminder until dismissed, and no critical control
+   in an iOS gesture corner. The bottom uses `pb-safe`.
+
+Before the first charged run, a three-panel, replayable tutorial demonstrates drag-through swapping, the strategy ring and
+visible enemy intent with synthetic board states; it never charges a ticket. The paid start screen names the three-wave
+structure, current TL/EXP, possible opened-node count, and **Begin · 1 ticket**.
+
+During resolution the path is no longer editable. Matches outline before clearing; attack trails use both strategy colour
+and glyph; Recovery travels to Drive; Spark travels to its gauge; the rival reacts only after engine-produced damage.
+Cascades are labelled in one stable counter. Reduced motion shortens travel to fades and scale changes but keeps match,
+damage, recovery and intent order legible.
+
+The result leads with **Circuit cleared**, **Drive depleted** or **Turn limit reached**. It then shows Training EXP, the
+before/after TL bar, every level crossed and every opened constellation node by real name. Each node opens the Training
+scene focused on it; **Done** returns to the caller and **Run again · 1 ticket** reserves a new attempt. A reload during a
+board returns to the exact wave, board, gauges and intent rather than to the start screen.
 
 ### Race Select
 
@@ -205,10 +233,12 @@ The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mo
 | Moment | Motion | Sound | Particles | Haptic (if available) |
 |---|---|---|---|---|
 | Any button press | Squash and spring | Soft tick | — | Light |
-| Training resolve | Gains fly to bars, bar fill | Rising "ding" per stat | Small sparkle | Light |
+| Spark drag enters a cell | Displaced orb slides home | Soft bead tick, rate-limited | — | — |
+| Spark match / cascade | Outline, clear, fall; combo counter settles | Rising match tones | Strategy glyph burst | Light on resolved turn |
+| Rival Pressure / wave clear | Gauge response / rival break | Hit / short victory sting | Bounded impact / sparkle | Medium |
+| Spark Shift | Spark orbs turn in one sweep | Charge release | Gold trail | Medium |
 | Friendship training | Rainbow sweep | Chord | Rainbow sparkles | Medium |
-| Skill hint | Chip pop and slide | Bell | — | Light |
-| Training Level up | Badge burst, cap markers slide | Jingle | Star burst | Medium |
+| Training Level up | Badge burst, opened-node list reveals | Jingle | Star burst | Medium |
 | Race start | Gate snap, camera push | Gate clank, crowd | Dust | Medium |
 | Win | Placement stamp | Fanfare | Confetti | Success pattern |
 | Uma Level up | Ring fill and burst | Level jingle | Stars | Medium |

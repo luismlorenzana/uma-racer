@@ -6,7 +6,7 @@ Training is **persisted and deliberate**, not a turn loop. You play a minigame t
 what fills them. Nothing is rolled, nothing is spent per turn, and every choice is reversible (D120).
 
 ```
-Play Spark Match ──► Training Level rises ──► constellation nodes unlock
+Play Spark Rival Circuit ──► Training Level rises ──► constellation nodes unlock
                                                       │
                           decide what fills them ◄─────┘
                                                       │
@@ -21,14 +21,15 @@ The two halves have their own docs:
 
 - **[Constellations](constellations.md)** — the per-scenario skill tree. What the nodes are, what they pay, the
   stat budget and its invariance rule, skills, aptitudes, and lineage.
-- **[Minigames](minigames.md)** — Spark Match raises Training Levels; the card minigame earns a card's stars.
+- **[Minigames](minigames.md)** — Spark Match's Rival Circuit raises Training Levels through a deterministic
+  continuous-drag puzzle battle; the card minigame earns a card's stars.
 
 ## Two levels: Uma Level vs. Training Level
 
 | | **Uma Level** | **Training Level (TL)** |
 |---|---|---|
 | Range | 1 → 10 × scenarios, **permanent** | **1–10, per scenario** |
-| Earned by | **Racing only** (Uma EXP) | **Spark Match only** |
+| Earned by | **Racing only** (Uma EXP) | **Spark Rival Circuit only** |
 | Controls | Which scenarios are unlocked | **How many constellation nodes are open** |
 | At level 1 of a scenario | — | the baseline node set only |
 
@@ -66,7 +67,7 @@ Tickets remain the only currency and the only pacing lever ([Economy](economy.md
 
 | Rule | Value |
 |---|---|
-| Spark Match run | **1 ticket** |
+| Spark Rival Circuit run | **1 ticket** |
 | Card minigame run | **1 ticket** |
 | Reconfiguring the constellation | **free, always** |
 | Daily grant | **+10 per day**, stored up to **50** (five days) |
@@ -77,8 +78,10 @@ opposite of what the constellation is for.
 
 ## Opening a scenario
 
-A newly unlocked scenario starts at Training Level 1 with only the baseline nodes open and an empty six-card
-set. **One Spark Match run unlocks racing** in that scenario. Beyond that, play when you want more nodes.
+A newly unlocked scenario starts at Training Level 1 with only the baseline nodes open and an empty six-card set. Scenario
+Start makes it available to train and race; Spark Match is how the player opens more nodes before racing. A loss still banks
+bounded Training EXP, but the battle never creates race facts or Uma EXP. At TL10 no new Spark run may begin for that Uma
+and scenario.
 
 A valid six-card set is not required to race, but an empty constellation pays nothing, so an Uma with no cards
 slotted races on base stats alone.
