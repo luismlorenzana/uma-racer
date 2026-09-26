@@ -72,9 +72,9 @@ hand fills to 7. Scoring an encounter's target ends it at once; every train left
 | Duo | two copies of one card | 10 | 2 |
 | Friendship | two on-type cards | 15 | 2 |
 | Trio | three copies of one card | 30 | 3 |
-| **Rainbow** | three or more on-type cards | 30 | 3, +1 per card past three |
+| **Rainbow** | three or more on-type cards | 30 | 3, +1 per card past three, up to 5 |
 | Full team | all five stat types | 40 | 4 |
-| Rainbow team | five on-type cards | 60 | 7 |
+| Rainbow team | five on-type cards | 60 | 6 |
 
 - **On-type** means the card's type is the facility's. Friend and Group cards count as any type, and so fill a gap in
   a Full team.
@@ -102,7 +102,7 @@ hand fills to 7. Scoring an encounter's target ends it at once; every train left
 
 ### Races
 
-The same play with **4 trains**, no facility choice, and a target about twice a week's. The course sets two
+The same play with **4 trains**, no facility choice, and its own target. The course sets two
 favoured types, which count as on-type:
 
 | Distance | Turf | Dirt |
@@ -207,9 +207,9 @@ places. Drafts, each with a sim row:
 | Scenario | Twist |
 |---|---|
 | URA Finale | **Foundation:** none, the base game |
-| Unity Cup | **Team Spirit:** a train with five different characters adds +3 mult |
+| Unity Cup | **Team Spirit:** a train with five different characters adds +1 mult |
 | Trackblazer | **Climax:** each race won adds +1 mult to every later train |
-| Our Grand Concert | **Performance:** each week's train earns its facility's note; with all five, the next train scores × 2 and the notes reset |
+| Our Grand Concert | **Performance:** each train earns a note for every stat type in it; with all five, the next train scores × 2 and the notes reset |
 | Grand Masters | **Fragments:** each train earns a fragment, two with a card at 4★ or more; at eight, the next train scores × 1.5 |
 | Project L'Arc | **Expedition:** winning a race takes its first favoured type with you: on-type for the rest of the run |
 | U.A.F. Ready GO! | **Genres:** the same facility in consecutive weeks adds +1 mult per week of the streak |
