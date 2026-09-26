@@ -1,8 +1,8 @@
 // Rival Umas, generated fresh for every race (docs/design/racing.md#opponents-generated-rivals, D152–D153): a mix of
 // running styles rolled per race, each rival on her style's preset for the scenario and distance, every stat rolled.
-import { averageCap, capProfile, treeBudget } from './constellation'
+import { STAT_NODE_POOL, averageCap, capProfile, cardFairShare, nodeValue, shapeDef, starNodePct } from './constellation'
 import type { UmaTemplate } from './content'
-import { GRADES, STATS, STRATEGIES, mapStats, type DistanceCategory, type RaceGrade, type Stats, type Strategy } from './types'
+import { GRADES, STATS, STRATEGIES, mapStats, type DistanceCategory, type RaceGrade, type StatKey, type Stats, type Strategy } from './types'
 
 /** Uniform in [0, 1). The race's seeded RNG; the domain never uses Math.random. */
 export interface RivalRng {
@@ -12,14 +12,21 @@ export interface RivalRng {
 /** Median base stat of the imported roster. */
 export const TYPICAL_BASE_STAT = 110
 
-/**
- * A typical fully trained Uma's average stat at a tier (D152): her base plus a fifth of a full tree of 5★ current-era
- * cards. Rivals are built on it, so they grow with the tier exactly as a trained Uma does.
- */
-export const trainedStat = (tier: number): number => TYPICAL_BASE_STAT + treeBudget(tier) / STATS.length
+/** A typical trained Uma's cards are 3★, so a node pays 84% of its value (D159). */
+export const TYPICAL_CARD_STARS = 3
 
 /**
- * How much weaker than a fully trained Uma a grade's rivals race (D152, retuned for engine v6 in D155). A share rather
+ * A typical trained Uma's average stat at a tier (D159, superseding D152's full tree of 5★ cards): her base plus a
+ * fifth of what a realistic set pays — six current-era cards at 3★, one of them a Friend card whose fair share of the
+ * nodes pays skill points instead of stats — and the stat nodes. 712 in scenario 1.
+ */
+export const trainedStat = (tier: number): number => {
+  const statCardNodes = shapeDef(tier).cardNodes - cardFairShare(tier)
+  return TYPICAL_BASE_STAT + ((statCardNodes * nodeValue(tier) * starNodePct(TYPICAL_CARD_STARS)) / 100 + STAT_NODE_POOL) / STATS.length
+}
+
+/**
+ * How much weaker than a trained Uma a grade's rivals race (D152, retuned for engine v6 in D155). A share rather
  * than a fixed amount, so a grade is equally soft at every tier and in every stat of a build. G1 is the real test;
  * each grade below is softer.
  */
@@ -33,43 +40,108 @@ export const GRADE_HANDICAP: Record<RaceGrade, number> = {
   g1: 0.05,
 }
 
+/** The four stats a rival spreads by weight; Stamina is set first, by what the distance needs (D159). */
+export type SpreadStat = Exclude<StatKey, 'stamina'>
+export const SPREAD_STATS: readonly SpreadStat[] = ['speed', 'power', 'guts', 'wit']
+
 /**
- * How a rival spreads her stats for a distance, the way a trained Uma does (D155): Speed first, as every real build
- * stacks it, and the Stamina the distance needs, so a good roll holds a full spurt and a poor one falls short. Each
- * row averages 1: it shapes the build rather than shrinking it.
+ * How a rival spreads what is left after Stamina, by distance, the way a trained Uma does (D155, D159): Speed first,
+ * as every real build stacks it, Power for the acceleration that decides sprints, and more Guts and Wit the longer the
+ * race. Each row averages 1: it shapes the build rather than shrinking it.
  */
-export const NPC_PROFILE: Record<DistanceCategory, Stats> = {
-  sprint: { speed: 1.5, stamina: 0.65, power: 1.1, guts: 0.8, wit: 0.95 },
-  mile: { speed: 1.45, stamina: 0.8, power: 1.05, guts: 0.75, wit: 0.95 },
-  medium: { speed: 1.4, stamina: 1.0, power: 1.0, guts: 0.7, wit: 0.9 },
-  long: { speed: 1.3, stamina: 1.25, power: 0.9, guts: 0.75, wit: 0.8 },
+export const NPC_PROFILE: Record<DistanceCategory, Record<SpreadStat, number>> = {
+  sprint: { speed: 1.5, power: 1.2, guts: 0.65, wit: 0.65 },
+  mile: { speed: 1.5, power: 1.1, guts: 0.65, wit: 0.75 },
+  medium: { speed: 1.45, power: 1.0, guts: 0.7, wit: 0.85 },
+  long: { speed: 1.4, power: 0.9, guts: 0.8, wit: 0.9 },
 }
 
 /**
- * How each running style spreads its stats (D153), after the original's needs: a front runner holds her lead on Wit
- * and burns more HP per point of Stamina, closers win on the Power that accelerates the last spurt, and an end closer
- * gets the most HP from her Stamina. Each row averages 1.
+ * How each running style spreads those four (D153, D159), after the original's needs: a front runner holds her lead on
+ * Wit and fights for it on Guts, and closers win on the Power that accelerates the last spurt. Each row averages 1.
+ * Each style's Stamina follows from its HP coefficient instead.
  */
-export const STYLE_PROFILE: Record<Strategy, Stats> = {
-  front: { speed: 1.05, stamina: 1.0, power: 0.9, guts: 1.0, wit: 1.05 },
-  pace: { speed: 1.05, stamina: 1.0, power: 1.0, guts: 0.95, wit: 1.0 },
-  late: { speed: 1.05, stamina: 0.95, power: 1.1, guts: 0.95, wit: 0.95 },
-  end: { speed: 1.05, stamina: 0.9, power: 1.15, guts: 1.0, wit: 0.9 },
+export const STYLE_PROFILE: Record<Strategy, Record<SpreadStat, number>> = {
+  front: { speed: 1.0, power: 0.9, guts: 1.0, wit: 1.1 },
+  pace: { speed: 1.0, power: 1.0, guts: 1.0, wit: 1.0 },
+  late: { speed: 1.0, power: 1.1, guts: 0.95, wit: 0.95 },
+  end: { speed: 1.0, power: 1.15, guts: 0.95, wit: 0.9 },
 }
 
+/** Each category's distance, when the caller has no race to name one: the rival builds for the category's longest. */
+export const RIVAL_REFERENCE_METERS: Record<DistanceCategory, number> = { sprint: 1400, mile: 1800, medium: 2400, long: 3200 }
+
+// The original's race numbers the Stamina estimate reads (mirrored from @racer/race, which checks this against its
+// engine): each style's HP coefficient, its speed coefficient by leg, and the last 60 m the spurt plan leaves out.
+const HP_COEF: Record<Strategy, number> = { front: 0.95, pace: 0.89, late: 1.0, end: 0.995 }
+const SPEED_COEF: Record<Strategy, readonly [number, number, number]> = {
+  front: [1.0, 0.98, 0.962],
+  pace: [0.978, 0.991, 0.975],
+  late: [0.938, 0.998, 0.994],
+  end: [0.931, 1.0, 1.0],
+}
+const SPURT_BUFFER_METERS = 60
 /**
- * A rival's target stats, her 100% (D153): a trained Uma of the tier, handicapped by grade, shaped by the distance,
- * her running style and the scenario's caps. A scenario that caps Stamina high breeds rivals who lean on Stamina, at
- * the square root of its lean so no stat runs away. Never above the scenario's cap.
+ * What position keeping and the competitions before the spurt add to the opening and middle legs' HP at 2,000 m
+ * (engine v7, measured by the sims): front runners fight for the lead, so theirs is the largest. It grows 4 points a
+ * kilometre, as the pushes add up over a longer race.
  */
-export function rivalPreset(tier: number, grade: RaceGrade, distance: DistanceCategory, strategy: Strategy): Stats {
+export const EARLY_HP_MARGIN: Record<Strategy, number> = { front: 1.06, pace: 1.0, late: 1.0, end: 1.0 }
+
+const effective = (value: number): number => (value <= 1200 ? value : 1200 + (value - 1200) / 2)
+
+/**
+ * The Stamina a runner needs to hold her maximum last spurt from the final leg to the line (engine v7's HP model): the
+ * opening and middle legs at her style's pace, then the final third at full spurt, which Guts makes cheaper and Speed
+ * dearer, with a margin for the field's pushes. The last 60 m are the spurt plan's buffer.
+ */
+export function fullSpurtStamina(distance: number, strategy: Strategy, speed: number, guts: number): number {
+  const base = 20 - (distance - 2000) / 1000
+  const drain = (v: number) => (20 * (v - base + 12) ** 2) / 144
+  const [opening, middle, final] = SPEED_COEF[strategy]
+  const early = (((distance / 6) * drain(base * opening)) / (base * opening) + ((distance / 2) * drain(base * middle)) / (base * middle)) *
+    (EARLY_HP_MARGIN[strategy] + (0.04 * (distance - 2000)) / 1000)
+  const term = Math.sqrt(500 * effective(speed)) * 0.002
+  const legPace = base * final + term
+  const max = (legPace + 0.01 * base) * 1.05 + term + (450 * effective(guts)) ** 0.597 * 0.0001
+  const gutsMod = 1 + 200 / Math.sqrt(600 * Math.max(1, effective(guts)))
+  const late = (((distance / 3 - SPURT_BUFFER_METERS) * drain(max)) / max) * gutsMod
+  return Math.max(0, (early + late - distance) / (0.8 * HP_COEF[strategy]))
+}
+
+/** A rival's Stamina covers a full spurt from this share of her roll up: half the field can hold one, half cannot. */
+export const RIVAL_STAMINA_ROLL = 0.9
+/** However long the race, no rival puts more than this share of her build into Stamina. */
+export const RIVAL_STAMINA_SHARE_MAX = 0.4
+
+/**
+ * A rival's target stats, her 100% (D153, D159): a trained Uma of the tier, handicapped by grade. She puts into Stamina
+ * what a full spurt at the race's distance needs from a 90% roll up, and spreads the rest by the distance, her running
+ * style and the scenario's caps. A scenario that caps a stat high breeds rivals who lean on it, at the square root of
+ * its lean so no stat runs away. Never above the scenario's cap.
+ */
+export function rivalPreset(
+  tier: number,
+  grade: RaceGrade,
+  distance: DistanceCategory,
+  strategy: Strategy,
+  meters: number = RIVAL_REFERENCE_METERS[distance],
+): Stats {
   const caps = capProfile(tier)
   const average = averageCap(tier)
-  const shape = mapStats(NPC_PROFILE[distance], (weight, stat) =>
-    weight * STYLE_PROFILE[strategy][stat] * Math.sqrt(caps[stat] / average))
-  const mean = STATS.reduce((sum, stat) => sum + shape[stat], 0) / STATS.length
-  const base = trainedStat(tier) * (1 - GRADE_HANDICAP[grade])
-  return mapStats(shape, (weight, stat) => Math.min(caps[stat], (base * weight) / mean))
+  const total = trainedStat(tier) * (1 - GRADE_HANDICAP[grade]) * STATS.length
+  const weight = (stat: SpreadStat) => NPC_PROFILE[distance][stat] * STYLE_PROFILE[strategy][stat] * Math.sqrt(caps[stat] / average)
+  const weights = SPREAD_STATS.reduce((sum, stat) => sum + weight(stat), 0)
+  const spread = (budget: number) => Object.fromEntries(SPREAD_STATS.map((stat) =>
+    [stat, Math.min(caps[stat], (budget * weight(stat)) / weights)])) as Record<SpreadStat, number>
+  // Stamina depends on the Speed and Guts it must carry, which depend on what Stamina leaves: settle it in a few passes.
+  let stamina = 0
+  for (let pass = 0; pass < 4; pass += 1) {
+    const rest = spread(total - stamina)
+    stamina = Math.min(caps.stamina, RIVAL_STAMINA_SHARE_MAX * total,
+      fullSpurtStamina(meters, strategy, rest.speed, rest.guts) / RIVAL_STAMINA_ROLL)
+  }
+  return { ...spread(total - stamina), stamina }
 }
 
 /** Each stat is rolled between 80% and 100% of the preset (D153): a lucky rival nears it, an unlucky one may run dry. */
@@ -111,6 +183,8 @@ export function rollRivalField(input: {
   tier: number
   grade: RaceGrade
   distance: DistanceCategory
+  /** The race's length: rivals carry the Stamina it needs (D159). Defaults to the category's longest. */
+  meters?: number
   count: number
   rng: RivalRng
 }): RivalSlot[] {
@@ -122,7 +196,7 @@ export function rollRivalField(input: {
   }
   return strategies.map((strategy) => ({
     strategy,
-    stats: rollRivalStats(rivalPreset(input.tier, input.grade, input.distance, strategy), input.rng),
+    stats: rollRivalStats(rivalPreset(input.tier, input.grade, input.distance, strategy, input.meters), input.rng),
   }))
 }
 

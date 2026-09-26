@@ -468,6 +468,29 @@ export function summarizeRaceSkillCoverage(skills: readonly SkillTemplate[]): Ra
 }
 
 /**
+ * The original's unique-skill level multipliers at Lv5, a fully starred Uma's own unique (D158): target speed ×1.10,
+ * acceleration ×1.08 and every other race effect ×1.08. Gate effects (stats, start delay) are left as they are.
+ */
+export const UNIQUE_SKILL_LEVEL_5: Readonly<Record<'target-speed' | 'acceleration' | 'other', number>> = {
+  'target-speed': 1.1,
+  acceleration: 1.08,
+  other: 1.08,
+}
+
+/** An Uma's own unique at Lv5 (engine v7, D158). Inherited uniques keep their own values. */
+export function levelUniqueSkill(skill: CompiledRaceSkill): CompiledRaceSkill {
+  const multiplier = (kind: RaceSkillEffectKind) => GATE_EFFECT_KINDS.has(kind) ? 1
+    : kind === 'target-speed' || kind === 'acceleration' ? UNIQUE_SKILL_LEVEL_5[kind] : UNIQUE_SKILL_LEVEL_5.other
+  return {
+    ...skill,
+    groups: skill.groups.map((group) => ({
+      ...group,
+      effects: group.effects.map((effect) => ({ ...effect, amount: effect.amount * multiplier(effect.kind) })),
+    })),
+  }
+}
+
+/**
  * Selects the four shared NPC whites without embedding private ids in source control.
  * Stable id ordering makes the result fixed for a content version.
  */

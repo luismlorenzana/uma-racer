@@ -241,12 +241,14 @@ Stats start at base (D152), so every rung pays for its stamina, and each adds on
 | Medium (2,200–2,400 m) | 2 Speed · Stamina leaned one node · Power · Wit · Friend, stat nodes into Stamina | 1,225 · 1,542 | every tier |
 | Long (2,500–3,200 m) | 2 Speed · 2 Stamina · Wit · Friend, stat nodes into Stamina, 1–2 gold heals | 1,400 · 1,900 (both caps) | every tier |
 
-The sim fails its run if any of these stops holding. Soft checks ask whether each step is also *needed*. One holds
-at every tier: a set with no stamina card cannot run 1,400 m, however its stat nodes go. The rest are looser than the
-table: a Power card set runs 3,000 m with a gold heal at every tier, a lean alone runs 2,400 m at about half the
-tiers, and a sprint set runs 1,800 m at tiers 13 and 14. At tier 1 a lean alone falls short of 2,200 m, which is why
-the Medium row carries a Power card. Measured on engine v6 (turns, D154–D155) against generated rival fields (D153);
-v6's HP rate is set so these decks still hold a full spurt at its faster speeds.
+"Holds" means a full spurt with HP lasting to within 60 m of the line, the stretch the original's spurt plan leaves out
+(D158). The sim fails its run if any of these stops holding. Soft checks ask whether each step is also *needed*. One
+holds at every tier: a set with no stamina card cannot run 1,400 m, however its stat nodes go. The rest are looser than
+the table: a Power card set runs 3,000 m with a gold heal at every tier but 1, 10 and 11, a lean alone runs 2,400 m
+at tiers 2, 13 and 14, and a sprint set runs 1,800 m at tiers 8, 12, 13 and 14. At tier 1 a lean alone falls short of
+2,200 m, which is why the Medium row carries a Power card. Measured 2026-09-26 on engine v7, at the original's HP
+rate (D158), against realistic generated rival fields (D159). v7's heals re-plan a spurt already under way, which is
+what lets the Long row's two gold heals carry 3,200 m at tier 1.
 Later scenarios' stronger cards loosen it further, the power creep that the stamina contest
 ([Racing](racing.md#stamina-contest-engine-v4)) turns into speed.
 

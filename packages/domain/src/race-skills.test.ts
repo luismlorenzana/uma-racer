@@ -5,6 +5,7 @@ import {
   compileRaceSkill,
   createUmaSave,
   evaluateRaceCondition,
+  levelUniqueSkill,
   parseCompiledRaceSkill,
   parseRaceCondition,
   raceSkillCompatibleWithCourse,
@@ -221,5 +222,29 @@ describe('affordableLoadout', () => {
     expect(affordableLoadout(skills, 260).map((entry) => entry.id)).toEqual(['a', 'b'])
     expect(affordableLoadout(skills, 120).map((entry) => entry.id)).toEqual(['a'])
     expect(affordableLoadout(skills, 0)).toEqual([])
+  })
+})
+
+describe('unique skill levels (D158)', () => {
+  it('races an Uma\'s own unique at Lv5: speed ×1.10, acceleration and the rest ×1.08, gate effects as they are', () => {
+    const unique = {
+      id: 'u', activation: 'guaranteed' as const, inherited: false,
+      groups: [{
+        precondition: null, condition: parseRaceCondition('phase==2')!, duration: 5, cooldown: 0,
+        effects: [
+          { kind: 'target-speed' as const, amount: 0.35 },
+          { kind: 'acceleration' as const, amount: 0.2 },
+          { kind: 'recovery' as const, amount: 0.035 },
+          { kind: 'passive-speed' as const, amount: 60 },
+        ],
+        unsupportedVariables: [], unsupportedEffects: [],
+      }],
+    }
+    const amounts = levelUniqueSkill(unique).groups[0]!.effects.map((effect) => effect.amount)
+    expect(amounts[0]).toBeCloseTo(0.385)
+    expect(amounts[1]).toBeCloseTo(0.216)
+    expect(amounts[2]).toBeCloseTo(0.0378)
+    expect(amounts[3]).toBe(60)
+    expect(unique.groups[0]!.effects[0]!.amount).toBe(0.35)
   })
 })

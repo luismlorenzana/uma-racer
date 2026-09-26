@@ -154,7 +154,7 @@ function mixedRunners(tier: number, grade: RaceGrade, distance: number, field: n
   return Array.from({ length: field }, (_, gate) => ({
     id: `synthetic-${gate}`,
     label: `${gate + 1}`,
-    stats: rivalPreset(tier, grade, distanceCategory(distance), STRATEGIES[gate % STRATEGIES.length]!),
+    stats: rivalPreset(tier, grade, distanceCategory(distance), STRATEGIES[gate % STRATEGIES.length]!, distance),
     strategy: STRATEGIES[gate % STRATEGIES.length]!,
     aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
     gate,
@@ -200,7 +200,7 @@ function runQuick() {
 }
 
 function playerStats(tier: number, grade: RaceGrade, distance: number, build: PlayerBuild): Stats {
-  if (build === 'field') return rivalPreset(tier, grade, distanceCategory(distance), 'pace')
+  if (build === 'field') return rivalPreset(tier, grade, distanceCategory(distance), 'pace', distance)
   return allStats(averageCap(tier) * (build === 'under' ? 0.7 : 1))
 }
 
@@ -208,7 +208,7 @@ function playerRunners(input: {
   tier: number; grade: RaceGrade; distance: number; field: number; build: PlayerBuild
   playerStrategy: Strategy; playerSkills: readonly CompiledRaceSkill[]; seed: number
 }) {
-  const rivalStats = (strategy: Strategy) => rivalPreset(input.tier, input.grade, distanceCategory(input.distance), strategy)
+  const rivalStats = (strategy: Strategy) => rivalPreset(input.tier, input.grade, distanceCategory(input.distance), strategy, input.distance)
   const playerGate = input.seed % input.field
   return {
     playerIndex: playerGate,

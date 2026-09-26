@@ -214,7 +214,7 @@ function setMode(state: PackState, mode: PositionMode, runner: PackRunnerSnapsho
   state.modeExitGap = exitGap
 }
 
-function modeCoefficient(mode: PositionMode, phase: number): number {
+export function modeCoefficient(mode: PositionMode, phase: number): number {
   if (mode === 'front-speed-up') return FRONT_SPEED_UP_COEF
   if (mode === 'front-overtake') return FRONT_OVERTAKE_COEF
   if (mode === 'pace-up') return PACE_UP_COEF

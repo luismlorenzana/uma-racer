@@ -60,7 +60,10 @@ function cueText(cue: RaceCue, skillName: string | null, rivalName: string): { e
     : { eyebrow: 'Field start', title: `${cue.additionalCount + 1} rivals started late` }
   if (cue.kind === 'spurt') return { eyebrow: 'Final drive', title: 'Last spurt!' }
   if (cue.kind === 'duel') return { eyebrow: 'Final straight', title: `Duel with ${rivalName}` }
-  return { eyebrow: 'Pack', title: cue.packKind ?? 'Pack change' }
+  const eyebrow = cue.packKind === 'Spot struggle' ? 'Early race'
+    : cue.packKind === 'Securing lead' || cue.packKind === 'Repositioning' || cue.packKind === 'Saving stamina' ? 'Before the spurt'
+      : 'Pack'
+  return { eyebrow, title: cue.packKind ?? 'Pack change' }
 }
 
 function FullScreenMessage({

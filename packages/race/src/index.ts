@@ -3,9 +3,10 @@ export * from './constants'
 export { assertRaceInput } from './validation'
 export { createRng, type Rng } from './rng'
 export { simulateRaceV1, simulateRaceV2, simulateRaceV3, simulateRaceV4, simulateRaceV5, staminaContestBonus, formatMargin, phaseAt, sectionAt, baseSpeedFor, effectiveStat, skillActivationChance } from './engine'
-/** The current engine: v6, one-second turns (M021). Records replay on the engine they ran with. */
-export { simulateRaceV6, simulateRaceV6 as simulateRace, PASS_GAP } from './turns'
-export { raceTurns, turnPhase, phaseTurns, phaseStartTurns, turnSection, V6_TUNING } from './turn-clock'
+/** The current engine: v7, one-second turns on the original's physics (D158). Records replay on the engine they ran with. */
+export { simulateRaceV6, simulateRaceV7, simulateRaceV7 as simulateRace, PASS_GAP } from './turns'
+export { raceTurns, turnPhase, phaseTurns, phaseStartTurns, turnSection, tuningFor, V6_TUNING, V7_TUNING, type TurnTuning } from './turn-clock'
+export { staminaKeepChance, swingLanes } from './turn-rules'
 export { extractTimelineAccomplishmentFacts, type TimelineAccomplishmentFacts } from './accomplishments'
 export {
   createPackState,

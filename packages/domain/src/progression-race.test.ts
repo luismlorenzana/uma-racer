@@ -202,6 +202,13 @@ describe('race result parsing', () => {
       },
     }
     expect(parseRaceResultRecord(v3)).toEqual(v3)
+    // Engines v5, v6 (turns) and v7 (D158) record slopes, the track and the rotation.
+    const v5Course = { ...v3.course, layout: { ...v3.course.layout, slopes: [] }, trackId: 10006, rotation: 1 }
+    for (const engineVersion of [5, 6, 7] as const) {
+      const turnRecord = { ...v3, engineVersion, course: v5Course }
+      expect(parseRaceResultRecord(turnRecord)).toEqual(turnRecord)
+    }
+    expect(parseRaceResultRecord({ ...v3, engineVersion: 8, course: v5Course })).toBeNull()
     const withGoals = { ...v3, completedGoalIds: ['goal:1:aptitude', 'goal:1:challenge'] }
     expect(parseRaceResultRecord(withGoals)).toEqual(withGoals)
     expect(parseRaceResultRecord({ ...withGoals, completedGoalIds: ['goal:1:aptitude', 'goal:1:aptitude'] })).toBeNull()

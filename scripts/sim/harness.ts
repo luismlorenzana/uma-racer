@@ -19,10 +19,10 @@ import {
   type Stats,
   type Strategy,
 } from '../../packages/domain/src/index'
-import { V6_TUNING, createRng } from '../../packages/race/src/index'
+import { V7_TUNING, createRng } from '../../packages/race/src/index'
 
-// Every sim can try an engine v6 tuning change without editing the engine: V6='{"speedCoef":0.006}' pnpm sim:…
-if (process.env.V6) Object.assign(V6_TUNING, JSON.parse(process.env.V6))
+// Every sim can try an engine v7 tuning change without editing the engine: V7='{"hpScale":0.9}' pnpm sim:…
+if (process.env.V7) Object.assign(V7_TUNING, JSON.parse(process.env.V7))
 
 // --- Synthetic kit -------------------------------------------------------------------------------
 
@@ -50,8 +50,13 @@ export const NPC_KIT = [
   skill('npc-late', 'phase_random==2', 'target-speed', 0.15, 3),
   skill('npc-acceleration', 'phase_random==2', 'acceleration', 0.2, 3),
 ]
-/** What an SP budget in the thousands buys (D133): a few golds on top of the field's whites. */
+/** A Lv5 unique of the common shape (D158): late-race speed for 5 s, guaranteed, as the original's uniques are. */
+export const unique = (id: string) => skill(id, 'phase_random==2', 'target-speed', 0.35 * 1.1, 5, 'guaranteed')
+/** Every rival races her own unique beside the shared whites. */
+export const RIVAL_KIT = [unique('npc-unique'), ...NPC_KIT]
+/** What an SP budget in the thousands buys (D133): a few golds on top of her own unique and the field's whites. */
 export const PLAYER_KIT = [
+  unique('player-unique'),
   ...NPC_KIT,
   skill('gold-late-speed', 'phase_random==2', 'target-speed', 0.35, 3),
   skill('gold-acceleration', 'phase_random==2', 'acceleration', 0.4, 3),
@@ -134,10 +139,10 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
  * gate order around her, with the rival kit. Seeded per race, as the game seeds it from the attempt.
  */
 export function rivalRunners(tier: number, grade: RaceGrade, distance: number, size: number, playerGate: number, seed: number) {
-  const slots = rollRivalField({ tier, grade, distance: categoryOf(distance), count: size - 1, rng: createRng(seed ^ 0x5bd1e995) })
+  const slots = rollRivalField({ tier, grade, distance: categoryOf(distance), meters: distance, count: size - 1, rng: createRng(seed ^ 0x5bd1e995) })
   return slots.map((slot, index) => {
     const gate = index < playerGate ? index : index + 1
-    return { id: `rival-${gate}`, label: String(gate + 1), stats: slot.stats, strategy: slot.strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: NPC_KIT }
+    return { id: `rival-${gate}`, label: String(gate + 1), stats: slot.stats, strategy: slot.strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const, skills: RIVAL_KIT }
   })
 }
 

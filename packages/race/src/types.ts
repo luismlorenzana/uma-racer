@@ -41,6 +41,12 @@ export type RaceEventType =
   | 'duel'
   /** Engine v6: a runner's mood for the race, at the gate: −2 (Awful) to +2 (Great). */
   | 'mood'
+  /** Engine v7: Spot Struggle among the front runners starts (value 1) or ends (value 0) for this runner. */
+  | 'spot-struggle'
+  /** Engine v7: a two-second push before the spurt — Secure Lead (value 1) or Repositioning (value 2). */
+  | 'compete'
+  /** Engine v7: she notices she is short of HP and sits the competitions out. */
+  | 'stamina-keep'
 
 export interface RaceEvent {
   tick: number

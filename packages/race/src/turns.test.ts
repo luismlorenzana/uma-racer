@@ -1,13 +1,27 @@
-import { parseRaceCondition, type CompiledRaceSkill, type Stats, type Strategy } from '@racer/domain'
+import {
+  fullSpurtStamina,
+  parseRaceCondition,
+  rivalPreset,
+  rollRivalField,
+  type CompiledRaceSkill,
+  type RaceSkillEffectKind,
+  type Stats,
+  type Strategy,
+} from '@racer/domain'
 import { describe, expect, it } from 'vitest'
 import { HORSE_LANE } from './constants'
 import {
   PASS_GAP,
+  createRng,
   phaseStartTurns,
   raceTurns,
   simulateRace,
   simulateRaceV6,
+  simulateRaceV7,
+  staminaKeepChance,
+  swingLanes,
   turnPhase,
+  turnSection,
   type RaceInput,
   type RaceRunnerInput,
 } from './index'
@@ -61,8 +75,8 @@ describe('the turn clock (M021)', () => {
 })
 
 describe('engine v6 (M021)', () => {
-  it('is the current engine, deterministic, and records one frame a turn', () => {
-    const a = simulateRace(field(42))
+  it('is deterministic and records one frame a turn', () => {
+    const a = simulateRaceV6(field(42))
     const b = simulateRaceV6(field(42))
     expect(a.results).toEqual(b.results)
     expect(Array.from(a.distance)).toEqual(Array.from(b.distance))
@@ -73,7 +87,7 @@ describe('engine v6 (M021)', () => {
   })
 
   it('times a finish inside its turn and ranks by it', () => {
-    const timeline = simulateRace(field(11))
+    const timeline = simulateRaceV6(field(11))
     const finishes = timeline.events.filter((event) => event.type === 'finish')
     for (const event of finishes) {
       expect(event.value!).toBeGreaterThan(event.tick - 1)
@@ -84,7 +98,7 @@ describe('engine v6 (M021)', () => {
   })
 
   it('records an overtake only when a runner ends a turn ahead of one she started it behind', () => {
-    const timeline = simulateRace(field(3))
+    const timeline = simulateRaceV6(field(3))
     const n = timeline.runnerCount
     const at = (tick: number, runner: number) => timeline.distance[tick * n + runner]!
     const overtakes = timeline.events.filter((event) => event.type === 'overtake')
@@ -103,7 +117,7 @@ describe('engine v6 (M021)', () => {
 
   it('holds a blocked runner a length behind the runner in her lane', () => {
     // Eighteen closely matched runners in one pack: someone is boxed in at some point.
-    const timeline = simulateRace({ ...field(5, 1600, 18), runners: Array.from({ length: 18 }, (_, i) => runner(i, stats(700), 'pace')) })
+    const timeline = simulateRaceV6({ ...field(5, 1600, 18), runners: Array.from({ length: 18 }, (_, i) => runner(i, stats(700), 'pace')) })
     const n = timeline.runnerCount
     const blocked = timeline.events.filter((event) => event.type === 'blocked' && event.value === 1)
     expect(blocked.length).toBeGreaterThan(0)
@@ -124,7 +138,7 @@ describe('engine v6 (M021)', () => {
         seed,
         runners: Array.from({ length: 12 }, (_, i) => runner(i, stats(i === seed % 12 ? 1400 : 700), STYLES[i % 4])),
       }
-      const timeline = simulateRace(input)
+      const timeline = simulateRaceV6(input)
       const winner = timeline.results[0]!
       if (winner.runner === seed % 12) wins += 1
       margin += timeline.results[1]!.finishTime - winner.finishTime
@@ -136,7 +150,7 @@ describe('engine v6 (M021)', () => {
   it('counts skill durations in whole turns and fires phase skills on their phase turns', () => {
     const skills = [skill('middle', 'phase==1', 0.3, 3), skill('late-random', 'phase_random==2', 0.3, 2)]
     const input: RaceInput = { ...field(9), runners: [runner(0, stats(700), 'pace', skills), ...field(9).runners.slice(1)] }
-    const events = simulateRace(input).events.filter((event) => event.type === 'skill-activated' && event.runner === 0)
+    const events = simulateRaceV6(input).events.filter((event) => event.type === 'skill-activated' && event.runner === 0)
     const middle = events.find((event) => event.skillId === 'middle')!
     // Three seconds on a 2,000 m course last 3 × 2,000 / 1,000 = 6 turns, from the middle leg's first turn.
     expect(middle.tick).toBe(18)
@@ -144,5 +158,143 @@ describe('engine v6 (M021)', () => {
     const late = events.find((event) => event.skillId === 'late-random')!
     expect(late.tick).toBeGreaterThanOrEqual(68)
     expect(late.tick).toBeLessThanOrEqual(84)
+  })
+})
+
+// A course with a final corner and a 330 m final straight, as the sims use.
+const course = (distance: number): RaceInput['course'] => ({
+  distance,
+  surface: 'turf',
+  layout: {
+    corners: [{ start: distance - 630, end: distance - 330, number: 4 }],
+    straights: [{ start: 0, end: distance - 630 }, { start: distance - 330, end: distance }],
+    slopes: [],
+  },
+})
+const guaranteed = (id: string, condition: string, kind: RaceSkillEffectKind, amount: number, duration: number): CompiledRaceSkill => ({
+  ...skill(id, condition, amount, duration),
+  groups: [{ ...skill(id, condition, amount, duration).groups[0]!, effects: [{ kind, amount }] }],
+})
+const even = (value: number) => stats(value)
+
+describe('engine v7 (D158)', () => {
+  it('is the current engine, deterministic, and records one frame a turn', () => {
+    const a = simulateRace(field(42))
+    const b = simulateRaceV7(field(42))
+    expect(a.results).toEqual(b.results)
+    expect(Array.from(a.distance)).toEqual(Array.from(b.distance))
+    expect(a.tickRate).toBe(1)
+    expect(a.ticks).toBe(Math.ceil(Math.max(...a.results.map((result) => result.finishTime))) + 1)
+  })
+
+  it('lets skills beat Speed: 1,000 Speed with procing skills beats 1,400 Speed without', () => {
+    // A Lv5 unique, a gold speed, a gold acceleration and two whites, all firing, against 400 more Speed.
+    const kit = [
+      guaranteed('unique', 'phase_random==2', 'target-speed', 0.35 * 1.1, 5),
+      guaranteed('gold-speed', 'is_finalcorner==1', 'target-speed', 0.35, 3),
+      guaranteed('gold-acceleration', 'phase==2', 'acceleration', 0.4, 3),
+      guaranteed('white-speed', 'phase==1', 'target-speed', 0.15, 3),
+      guaranteed('white-acceleration', 'is_lastspurt==1', 'acceleration', 0.2, 3),
+    ]
+    let wins = 0
+    let races = 0
+    let gap = 0
+    for (const style of STYLES) {
+      for (let seed = 1; seed <= 20; seed += 1) {
+        const runners = Array.from({ length: 12 }, (_, gate) =>
+          gate === 0 ? runner(0, { ...even(800), speed: 1400 }, style)
+            : gate === 1 ? runner(1, { ...even(800), speed: 1000 }, style, kit)
+              : runner(gate, even(800), STYLES[gate % 4]))
+        const results = simulateRace({ course: course(2000), seed, runners }).results
+        const fast = results.find((result) => result.runner === 0)!
+        const skilled = results.find((result) => result.runner === 1)!
+        if (skilled.placement < fast.placement) wins += 1
+        gap += fast.finishTime - skilled.finishTime
+        races += 1
+      }
+    }
+    expect(wins / races).toBeGreaterThanOrEqual(0.8)
+    expect(gap / races).toBeGreaterThan(0.2)
+    // On v6's amplified Speed term the same kit never came close.
+  })
+
+  it('makes every stat count: 300 more of any one finishes faster at 2,400 m', () => {
+    const time = (stat?: keyof Stats) => {
+      let total = 0
+      for (let seed = 1; seed <= 40; seed += 1) {
+        const runners = Array.from({ length: 12 }, (_, gate) =>
+          runner(gate, gate === 0 && stat ? { ...even(800), [stat]: 1100 } : even(800), gate === 0 ? 'pace' : STYLES[gate % 4]))
+        total += simulateRace({ course: course(2400), seed, runners }).results.find((result) => result.runner === 0)!.finishTime
+      }
+      return total / 40
+    }
+    const baseline = time()
+    for (const stat of ['speed', 'stamina', 'power', 'guts', 'wit'] as const) expect(time(stat)).toBeLessThan(baseline)
+  })
+
+  it('holds a full spurt on the Stamina the domain says the distance needs', () => {
+    const held = (share: number) => {
+      let maxed = 0
+      for (let seed = 1; seed <= 20; seed += 1) {
+        const others = rollRivalField({ tier: 1, grade: 'g1', distance: 'medium', meters: 2000, count: 11, rng: createRng(seed) })
+        const build = rivalPreset(1, 'g1', 'medium', 'pace', 2000)
+        const me = runner(11, { ...build, stamina: share * fullSpurtStamina(2000, 'pace', build.speed, build.guts) }, 'pace')
+        const runners = [...others.map((slot, gate) => runner(gate, slot.stats, slot.strategy)), me]
+        if (simulateRace({ course: course(2000), seed, runners }).results.find((result) => result.runner === 11)!.spurtMaxed) maxed += 1
+      }
+      return maxed / 20
+    }
+    expect(held(1.1)).toBeGreaterThanOrEqual(0.8)
+    expect(held(0.85)).toBeLessThanOrEqual(0.2)
+  })
+
+  it('runs a Spot Struggle among bunched front runners early, on Guts', () => {
+    let struggles = 0
+    for (let seed = 1; seed <= 10; seed += 1) {
+      const runners = Array.from({ length: 12 }, (_, gate) => runner(gate, even(800), gate < 4 ? 'front' : STYLES[gate % 4]))
+      const timeline = simulateRace({ course: course(2000), seed, runners })
+      const total = raceTurns(2000)
+      const starts = timeline.events.filter((event) => event.type === 'spot-struggle' && event.value === 1)
+      if (starts.length === 0) continue
+      struggles += 1
+      expect(starts.length).toBeGreaterThanOrEqual(2)
+      // Once a race, together, from 150 m until section 6; over by section 9; front runners only.
+      expect(new Set(starts.map((event) => event.tick)).size).toBe(1)
+      expect(turnSection(starts[0]!.tick, total)).toBeLessThanOrEqual(5)
+      for (const event of starts) expect(runners[event.runner]!.strategy).toBe('front')
+      const ends = timeline.events.filter((event) => event.type === 'spot-struggle' && event.value === 0)
+      expect(ends).toHaveLength(starts.length)
+      for (const event of ends) expect(turnSection(event.tick, total)).toBeLessThanOrEqual(8)
+    }
+    expect(struggles).toBeGreaterThan(5)
+  })
+
+  it('competes before the spurt only in sections 11–15, and never secures a lead as an end closer', () => {
+    const timeline = simulateRace({ ...field(8), course: course(2000) })
+    const total = raceTurns(2000)
+    const pushes = timeline.events.filter((event) => event.type === 'compete')
+    expect(pushes.length).toBeGreaterThan(0)
+    for (const event of pushes) {
+      expect(turnSection(event.tick, total)).toBeGreaterThanOrEqual(10)
+      expect(turnSection(event.tick, total)).toBeLessThanOrEqual(14)
+      if (event.value === 1) expect(field(8).runners[event.runner]!.strategy).not.toBe('end')
+    }
+  })
+
+  it('lets Power carry a blocked runner further out, and Wit notice a short HP', () => {
+    expect([300, 700, 1200].map((power) => swingLanes(power, 3))).toEqual([1, 2, 3])
+    expect(staminaKeepChance(1000)).toBeGreaterThan(staminaKeepChance(300))
+  })
+
+  it('fires a skill on the first 10 m of the final straight in the turn she enters it', () => {
+    const entry = [guaranteed('entry', 'is_last_straight_onetime==1', 'target-speed', 0.35, 3)]
+    for (let seed = 1; seed <= 5; seed += 1) {
+      const runners = [runner(0, even(800), 'pace', entry), ...field(seed).runners.slice(1)]
+      const timeline = simulateRace({ course: course(2000), seed, runners })
+      const fired = timeline.events.filter((event) => event.type === 'skill-activated' && event.skillId === 'entry')
+      expect(fired).toHaveLength(1)
+      const n = timeline.runnerCount
+      expect(timeline.distance[(fired[0]!.tick - 1) * n]!).toBeGreaterThanOrEqual(2000 - 330)
+    }
   })
 })

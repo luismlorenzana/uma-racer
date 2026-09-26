@@ -3,12 +3,15 @@ import {
   CAP_PROFILES,
   DISTANCE_CATEGORIES,
   RACE_GRADES,
+  RIVAL_STAMINA_ROLL,
   RIVAL_STAT_FLOOR,
+  SPREAD_STATS,
   STATS,
   STRATEGIES,
   STYLE_PROFILE,
   capProfile,
   castRivals,
+  fullSpurtStamina,
   rivalPreset,
   rollRivalField,
   rollRivalStats,
@@ -34,11 +37,25 @@ const rng = (seed: number) => {
 }
 const mean = (stats: Stats) => STATS.reduce((sum, stat) => sum + stats[stat], 0) / STATS.length
 
-describe('rival presets (D153)', () => {
+describe('rival presets (D153, D159)', () => {
   it('average the handicapped trained Uma where no cap bites', () => {
-    // Tier 1's caps are even, so the scenario leans nowhere: 950 × (1 − 0.05) on average for a G1.
-    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy))).toBeCloseTo(902.5)
+    // Tier 1's caps are even, so the scenario leans nowhere: 712.4 × (1 − 0.05) on average for a G1.
+    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(676.78)
     expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(trainedStat(1) * 0.75)
+  })
+
+  it('carry the Stamina a full spurt at the race distance needs, from a 90% roll up', () => {
+    for (const strategy of STRATEGIES) {
+      for (const meters of [1200, 1600, 2000, 2400]) {
+        const preset = rivalPreset(1, 'g1', 'medium', strategy, meters)
+        expect(preset.stamina * RIVAL_STAMINA_ROLL).toBeCloseTo(fullSpurtStamina(meters, strategy, preset.speed, preset.guts), 0)
+      }
+    }
+    const stamina = (meters: number) => rivalPreset(1, 'g1', 'medium', 'pace', meters).stamina
+    expect(stamina(2400)).toBeGreaterThan(stamina(2000) + 250)
+    // A marathon cannot take more than 40% of the build.
+    const marathon = rivalPreset(1, 'g1', 'long', 'pace', 3600)
+    expect(marathon.stamina).toBeCloseTo(0.4 * 5 * mean(marathon))
   })
 
   it('shape each running style after what it needs', () => {
@@ -46,14 +63,15 @@ describe('rival presets (D153)', () => {
     const end = rivalPreset(1, 'g1', 'mile', 'end')
     expect(end.power).toBeGreaterThan(front.power)
     expect(front.wit).toBeGreaterThan(end.wit)
-    for (const row of Object.values(STYLE_PROFILE)) expect(mean(row)).toBeCloseTo(1)
+    const spreadMean = (row: Record<string, number>) => Object.values(row).reduce((sum, weight) => sum + weight, 0) / SPREAD_STATS.length
+    for (const row of Object.values(STYLE_PROFILE)) expect(spreadMean(row)).toBeCloseTo(1)
   })
 
   it('lean the way the scenario caps lean, and never pass a cap', () => {
-    // Trackblazer (tier 3) caps Stamina at 1,900 and Speed at 1,200.
-    const share = (tier: number, stat: 'speed' | 'stamina') => rivalPreset(tier, 'g1', 'medium', 'pace')[stat] / mean(rivalPreset(tier, 'g1', 'medium', 'pace'))
-    expect(share(3, 'stamina')).toBeGreaterThan(share(1, 'stamina'))
+    // Trackblazer (tier 3) caps Speed at 1,200; Grand Masters (tier 5) caps Wit at 1,800.
+    const share = (tier: number, stat: 'speed' | 'wit') => rivalPreset(tier, 'g1', 'medium', 'pace', 2000)[stat] / mean(rivalPreset(tier, 'g1', 'medium', 'pace', 2000))
     expect(share(3, 'speed')).toBeLessThan(share(1, 'speed'))
+    expect(share(5, 'wit')).toBeGreaterThan(share(1, 'wit'))
     for (let tier = 1; tier <= CAP_PROFILES.length; tier += 1) {
       for (const grade of RACE_GRADES) for (const distance of DISTANCE_CATEGORIES) for (const strategy of STRATEGIES) {
         const preset = rivalPreset(tier, grade, distance, strategy)

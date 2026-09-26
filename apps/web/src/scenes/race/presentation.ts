@@ -12,7 +12,10 @@ export const PHOTO_HOLD_SECONDS = 0.65
 
 export type RacePresentationStage = 'field' | 'staged' | 'ready' | 'go' | 'running' | 'photo' | 'finished'
 export type RaceCueKind = 'skill' | 'late-start' | 'spurt' | 'pack' | 'duel'
-export type RacePackCue = 'Blocked' | 'Overtaking' | 'Pace up' | 'Pace down' | 'Holding lead'
+export type RacePackCue =
+  | 'Blocked' | 'Overtaking' | 'Pace up' | 'Pace down' | 'Holding lead'
+  /** Engine v7's field mechanics (D158). */
+  | 'Spot struggle' | 'Securing lead' | 'Repositioning' | 'Saving stamina'
 
 export interface RaceCue {
   kind: RaceCueKind
@@ -50,6 +53,9 @@ const cueDuration = (kind: RaceCueKind) => kind === 'skill' ? 1.7 : 1.25
 function packCue(event: RaceEvent): RacePackCue | null {
   if (event.type === 'blocked' && event.value === 1) return 'Blocked'
   if (event.type === 'overtake' && event.value === 1) return 'Overtaking'
+  if (event.type === 'spot-struggle' && event.value === 1) return 'Spot struggle'
+  if (event.type === 'compete') return event.value === 1 ? 'Securing lead' : 'Repositioning'
+  if (event.type === 'stamina-keep') return 'Saving stamina'
   if (event.type !== 'position-mode' || !event.positionMode || event.positionMode === 'normal') return null
   if (event.positionMode === 'pace-down') return 'Pace down'
   if (event.positionMode === 'front-speed-up') return 'Holding lead'
@@ -122,7 +128,9 @@ export function buildRaceCues(timeline: RaceTimeline, playerIndex: number): Race
     if (isPlayer) {
       const kind = packCue(event)
       const seconds = event.tick / timeline.tickRate
-      if (!kind || seconds - (lastPlayerPack.get(kind) ?? -Infinity) < 3) return
+      // Pushes before the spurt come every few seconds; one cue a stretch is enough.
+      const quiet = kind === 'Repositioning' || kind === 'Securing lead' ? 10 : 3
+      if (!kind || seconds - (lastPlayerPack.get(kind) ?? -Infinity) < quiet) return
       lastPlayerPack.set(kind, seconds)
       candidates.push({
         kind: 'pack', runner: event.runner, tick: event.tick, packKind: kind, additionalCount: 0, isPlayer: true,

@@ -132,3 +132,64 @@ export const DIRT_GRADE_TRACKS: readonly number[] = [10101, 10103, 10104, 10105]
 export const FIXED_GROUND_CONDITION = 1
 export const FIXED_WEATHER = 1
 export const FIXED_MOTIVATION = 3
+
+// --- Engine v7 (D158) ------------------------------------------------------------------------------------------
+// The original's field mechanics, from the torena-sim mechanics notes (docs/research/race-engine-v7-findings.md).
+// Sections are 0-based here: the original's section 1 is our 0.
+
+/** The original caps target speed here. */
+export const MAX_TARGET_SPEED = 30
+
+/** Spot Struggle (位置取り争い): front runners bunched at the front fight for the lead early on. */
+export const SPOT_STRUGGLE_UNLOCK_METERS = 150
+/** It can start up to the end of the original's section 6, and always ends when section 9 begins. */
+export const SPOT_STRUGGLE_LAST_START_SECTION = 5
+export const SPOT_STRUGGLE_END_SECTION = 8
+export const SPOT_STRUGGLE_DISTANCE = 3.75
+export const SPOT_STRUGGLE_LANE_SHARE = 0.165
+export const SPOT_STRUGGLE_EXIT_DISTANCE = 5
+export const SPOT_STRUGGLE_EXIT_LANE_SHARE = 0.416
+export const SPOT_STRUGGLE_HP_MODIFIER = 1.4
+
+/**
+ * Competing before the spurt (位置取り調整 Repositioning, リード確保 Secure Lead): the original's sections 11–15, a check
+ * every 2 s, a 2 s push, then a 1 s cooldown.
+ */
+export const COMPETE_FIRST_SECTION = 10
+export const COMPETE_LAST_SECTION = 14
+export const COMPETE_CHECK_SECONDS = 2
+export const COMPETE_SECONDS = 2
+export const COMPETE_COOLDOWN_SECONDS = 1
+/** [inclusive upper distance in meters, factor] on a competition's HP cost. */
+export const COMPETE_HP_DISTANCE_FACTOR: readonly (readonly [number, number])[] = [
+  [1400, 0.3],
+  [1800, 0.3],
+  [2100, 0.5],
+  [2200, 0.8],
+  [2400, 1.0],
+  [2600, 1.1],
+  [Number.POSITIVE_INFINITY, 1.2],
+]
+/** Repositioning: how far behind the leader counts as far (scaled like position keeping), and its coefficients. */
+export const REPOSITION_FAR_METERS: Record<Strategy, number> = { front: 0, pace: 2.5, late: 5, end: 10 }
+export const REPOSITION_SPEED_COEF: Record<Strategy, number> = { front: 0.8, pace: 1, late: 1, end: 1 }
+export const REPOSITION_HP_COEF: Record<Strategy, number> = { front: 1.2, pace: 1, late: 1, end: 1 }
+/** Added to the HP factor when she competes only because others are near. */
+export const REPOSITION_NEAR_HP = 0.5
+/** A front runner with no other front runner within this many meters pushes harder: Repositioning ×1.1, Secure Lead ×2. */
+export const SOLO_FRONT_METERS = 10
+export const REPOSITION_SOLO_FRONT = 1.1
+export const SECURE_LEAD_SOLO_FRONT = 2
+/** Secure Lead: a flat chance per check (the original's Wit scaling is unknown). End closers never try. */
+export const SECURE_LEAD_CHANCE = 0.2
+export const SECURE_LEAD_SPEED_COEF: Record<Strategy, number> = { front: 1, pace: 1, late: 0.8, end: 0 }
+export const SECURE_LEAD_HP_COEF: Record<Strategy, number> = { front: 1, pace: 0.8, late: 0.8, end: 0 }
+/** The lead each style wants over each later style, before the course term 0.0003 × (distance + 1,000) m. */
+export const SECURE_LEAD_MARGIN: Record<Strategy, Partial<Record<Strategy, number>>> = {
+  front: { pace: 4, late: 8, end: 8 },
+  pace: { late: 5, end: 6 },
+  late: { end: 3 },
+  end: {},
+}
+/** Stamina keep (持久力温存): the HP she wants in hand, as a multiple of what finishing at full spurt costs. */
+export const STAMINA_KEEP_MARGIN = [1.035, 1.04] as const

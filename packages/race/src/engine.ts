@@ -67,7 +67,7 @@ import {
   type Strategy,
 } from '@racer/domain'
 import { createRng, type Rng } from './rng'
-import { V6_TUNING, phaseTurns, raceTurns, v6SpeedTerm } from './turn-clock'
+import { phaseTurns, raceTurns, tuningFor, turnSpeedTerm } from './turn-clock'
 import {
   createPackState,
   nearCount,
@@ -174,7 +174,7 @@ interface ActiveEffect {
   untilTick: number
 }
 
-export type RulesVersion = 1 | 2 | 3 | 4 | 5 | 6
+export type RulesVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export const hpPerSecond = (v: number, baseSpeed: number, lateRace: boolean, gutsMod: number): number =>
   ((20 * (v - baseSpeed + 12) ** 2) / 144) * (lateRace ? gutsMod : 1)
@@ -386,6 +386,16 @@ function decideSpurt(r: RunnerState, distance: number, rng: Rng, rulesVersion: R
   r.spurtMaxed = false
 }
 
+/** Her final-leg pace and her maximum last-spurt speed (engine v5 and later). */
+export function spurtCeiling(r: RunnerState, distance: number, rulesVersion: RulesVersion): { legPace: number; max: number } {
+  const baseSpeed = baseSpeedFor(distance)
+  const speedTerm = rulesVersion >= 6
+    ? turnSpeedTerm(r.speedStat, DISTANCE_APT_SPEED[r.input.aptitude.distance], tuningFor(rulesVersion))
+    : Math.sqrt(500 * r.speedStat) * DISTANCE_APT_SPEED[r.input.aptitude.distance] * 0.002
+  const legPace = baseSpeed * SPEED_COEF[r.input.strategy][2] + speedTerm
+  return { legPace, max: (legPace + 0.01 * baseSpeed) * 1.05 + speedTerm + (450 * r.guts) ** 0.597 * 0.0001 }
+}
+
 /**
  * Engine v5's last-spurt plan (verified against uma-skill-tools' HP policy; our own implementation). If her HP holds
  * the maximum spurt from here, she spurts now. Otherwise every slower speed is paired with the latest point she can
@@ -394,13 +404,9 @@ function decideSpurt(r: RunnerState, distance: number, rng: Rng, rulesVersion: R
  */
 export function planSpurt(r: RunnerState, distance: number, rng: Rng, rulesVersion: RulesVersion = 5): void {
   const baseSpeed = baseSpeedFor(distance)
-  const speedTerm = rulesVersion >= 6
-    ? v6SpeedTerm(r.speedStat, DISTANCE_APT_SPEED[r.input.aptitude.distance])
-    : Math.sqrt(500 * r.speedStat) * DISTANCE_APT_SPEED[r.input.aptitude.distance] * 0.002
-  const legPace = baseSpeed * SPEED_COEF[r.input.strategy][2] + speedTerm
-  const max = (legPace + 0.01 * baseSpeed) * 1.05 + speedTerm + (450 * r.guts) ** 0.597 * 0.0001
+  const { legPace, max } = spurtCeiling(r, distance, rulesVersion)
   const remaining = Math.max(0, distance - r.d - SPURT_BUFFER_METERS)
-  const drain = (v: number) => hpPerSecond(v, baseSpeed, true, r.gutsMod) * (rulesVersion >= 6 ? V6_TUNING.hpScale : 1)
+  const drain = (v: number) => hpPerSecond(v, baseSpeed, true, r.gutsMod) * (rulesVersion >= 6 ? tuningFor(rulesVersion).hpScale : 1)
   if (r.hp >= (drain(max) * remaining) / max) {
     r.spurt = max + staminaContestBonus(r.rawStamina, distance, rng)
     r.spurtStart = r.d
@@ -446,10 +452,10 @@ export function targetSpeed(r: RunnerState, phase: number, distance: number, pos
   if (r.hpEmpty) return r.minSpeed
   if (rulesVersion >= 5) {
     // Before her spurt point she holds the final-leg pace, which counts her Speed as the original does.
-    const v6 = rulesVersion >= 6
+    const turnTuning = rulesVersion >= 6 ? tuningFor(rulesVersion) : null
     const aptitude = DISTANCE_APT_SPEED[r.input.aptitude.distance]
-    const speedTerm = phase < (v6 ? V6_TUNING.speedFromPhase : 2) ? 0
-      : v6 ? v6SpeedTerm(r.speedStat, aptitude) : Math.sqrt(500 * r.speedStat) * aptitude * 0.002
+    const speedTerm = phase < (turnTuning ? turnTuning.speedFromPhase : 2) ? 0
+      : turnTuning ? turnSpeedTerm(r.speedStat, aptitude, turnTuning) : Math.sqrt(500 * r.speedStat) * aptitude * 0.002
     const base = r.spurting && r.spurt !== null
       ? r.spurt
       : baseSpeed * SPEED_COEF[r.input.strategy][Math.min(phase, 2) as 0 | 1 | 2] + speedTerm + baseSpeed * r.sectionRandom
@@ -629,8 +635,14 @@ export function activateSkills(
         if (effect.kind === 'recovery') {
           r.hp = Math.min(r.maxHp, r.hp + r.maxHp * effect.amount)
           if (r.hp > 0) r.hpEmpty = false
-          // A heal in the final leg before her spurt point re-plans the spurt (engine v5).
-          if (rulesVersion >= 5 && r.spurt !== null && !r.spurting) planSpurt(r, courseDistance, runtime.rng, rulesVersion)
+          // A heal in the final leg before her spurt point re-plans the spurt (engine v5). From v7, as in the original, a
+          // heal during a spurt short of her maximum re-plans it too, and she holds the leg's pace until the new point.
+          if (rulesVersion >= 5 && r.spurt !== null && !r.spurting) {
+            planSpurt(r, courseDistance, runtime.rng, rulesVersion)
+          } else if (rulesVersion >= 7 && r.spurting && !r.spurtMaxed) {
+            planSpurt(r, courseDistance, runtime.rng, rulesVersion)
+            r.spurting = r.d >= r.spurtStart
+          }
         } else if (effect.kind === 'current-speed' && rulesVersion < 3) {
           r.v = Math.max(0, r.v + effect.amount)
         } else {

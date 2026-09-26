@@ -112,14 +112,17 @@ for (const [key, count] of outside) {
 const FLOOR = 25
 const STARS = [0, 5] as const
 // The stamina ladder's decks for each distance (constellations.md#balance-targets), with the Friend card last or first.
+// Sprints and miles also try a Power card (engine v7, D158): acceleration decides short races, as in the original.
 const DECKS: Record<DistanceCategory, { distance: number; golds: number; builds: ((tier: number, stars: number) => Stats)[] }> = {
   sprint: { distance: 1400, golds: 0, builds: [
     (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'speed', { stars, friend: 'last' }),
     (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'speed', { stars }),
+    (tier, stars) => buildStats(tier, STAYER_POWER, 2, fairShare(tier), 'speed', { stars, friend: 'last' }),
   ] },
   mile: { distance: 1600, golds: 0, builds: [
     (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'stamina', { stars, friend: 'last' }),
     (tier, stars) => buildStats(tier, STAYER, 2, fairShare(tier), 'stamina', { stars }),
+    (tier, stars) => buildStats(tier, STAYER_POWER, 2, fairShare(tier), 'stamina', { stars, friend: 'last' }),
   ] },
   medium: { distance: 2200, golds: 0, builds: [
     (tier, stars) => buildStats(tier, STAYER_POWER, 2, fairShare(tier) + 1, 'stamina', { stars, first: [3], friend: 'last' }),

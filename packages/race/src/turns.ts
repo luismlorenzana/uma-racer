@@ -1,6 +1,8 @@
-// Engine v6 (M021, D154): the race as a sequence of one-second turns. Speed, acceleration, HP, the spurt plan, hills,
-// duels and skills keep v5's rules with a one-second step; phases start on fixed turns for the whole field; position
-// keeping gives way to style bands; and passing resolves every turn, front to back, as overtake and blocked events.
+// Engines v6 and v7 (M021, D154, D158): the race as a sequence of one-second turns. Speed, acceleration, HP, the spurt
+// plan, hills, duels and skills keep v5's rules with a one-second step; phases start on fixed turns for the whole field;
+// and passing resolves every turn, front to back, as overtake and blocked events. v6 (frozen) keeps position with style
+// bands on its own tuning. v7 runs the original's physics and field mechanics: position keeping on Wit rolls, Spot
+// Struggle, the competitions before the spurt, and lane changes as fast as her Power (turn-rules.ts).
 import {
   ACCEL_COEF,
   BASE_ACCEL,
@@ -12,9 +14,14 @@ import {
   DOWNHILL_HP_MODIFIER,
   HORSE_LANE,
   HP_EMPTY_DECEL,
+  LAST_STRAIGHT_ONETIME_METERS,
   LATE_START_THRESHOLD,
   MAX_RACE_SECONDS,
+  MAX_TARGET_SPEED,
   METERS_PER_LENGTH,
+  PACE_DOWN_DECEL,
+  PACE_DOWN_HP_MODIFIER,
+  SPOT_STRUGGLE_HP_MODIFIER,
   START_DASH_ACCEL,
   START_DASH_UNTIL,
   SURFACE_APT_ACCEL,
@@ -39,7 +46,16 @@ import {
 import type { PackRunnerSnapshot } from './pack'
 import { createRng } from './rng'
 import { mapStats } from '@racer/domain'
-import { V6_TUNING, phaseTurns, raceTurns, turnPhase, turnSection } from './turn-clock'
+import { phaseStartTurns, phaseTurns, raceTurns, tuningFor, turnPhase, turnSection, type TurnTuning } from './turn-clock'
+import {
+  competeTurn,
+  createTurnRunnerState,
+  fieldBonus,
+  positionKeepTurn,
+  spotStruggleTurn,
+  swingLanes,
+  type TurnField,
+} from './turn-rules'
 import type { PositionMode, RaceCourse, RaceEvent, RaceInput, RaceTimeline } from './types'
 import { assertRaceInput } from './validation'
 
@@ -47,6 +63,8 @@ import { assertRaceInput } from './validation'
 export const PASS_GAP = METERS_PER_LENGTH
 /** Lanes are one horse wide. */
 export const LANE_STEP = HORSE_LANE
+/** Engine v7: how close ahead, in her lane, a slower runner makes her start round. */
+export const OVERTAKE_LOOKAHEAD = 2 * METERS_PER_LENGTH
 
 interface Move {
   index: number
@@ -77,33 +95,42 @@ function updateHillTurn(r: RunnerState, course: RaceCourse): void {
 }
 
 /**
- * Her style band's pull on her target speed this turn, and the matching v5 position mode for cues and metrics. Through
- * the opening and middle legs each style runs in a band of lengths behind the leader (V6_TUNING.bands, at 2,000 m):
- * ahead of it she eases, behind it she presses. From the final leg everyone races.
+ * Engine v6: her style band's pull on her target speed this turn, and the matching v5 position mode for cues and
+ * metrics. Through the opening and middle legs each style runs in a band of lengths behind the leader (the tuning's
+ * bands, at 2,000 m): ahead of it she eases, behind it she presses. From the final leg everyone races.
  */
-function bandPull(r: RunnerState, leaderDistance: number, phase: number, distance: number): { coefficient: number; mode: PositionMode } {
+function bandPull(r: RunnerState, leaderDistance: number, phase: number, distance: number, tuning: TurnTuning): { coefficient: number; mode: PositionMode } {
   if (phase >= 2 || r.hpEmpty) return { coefficient: 1, mode: 'normal' }
-  const [near, far] = V6_TUNING.bands[r.input.strategy]
+  const [near, far] = tuning.bands[r.input.strategy]
   // Bands are set for 2,000 m and scale with the course as the original's position keeping does.
   const scale = (0.0008 * (distance - 1000) + 1) / 1.8
   const behind = (leaderDistance - r.d) / METERS_PER_LENGTH / scale
-  if (behind < near) return { coefficient: V6_TUNING.ease, mode: 'pace-down' }
-  if (behind > far) return { coefficient: V6_TUNING.press, mode: 'pace-up' }
+  if (behind < near) return { coefficient: tuning.ease, mode: 'pace-down' }
+  if (behind > far) return { coefficient: tuning.press, mode: 'pace-up' }
   return { coefficient: 1, mode: 'normal' }
 }
 
-export function simulateRaceV6(input: RaceInput): RaceTimeline {
+/** Engine v6 (D154–D155), frozen: races run on it replay exactly. */
+export const simulateRaceV6 = (input: RaceInput): RaceTimeline => simulateTurns(input, 6)
+
+/** Engine v7 (D158): the original's physics and field mechanics on the turn clock. */
+export const simulateRaceV7 = (input: RaceInput): RaceTimeline => simulateTurns(input, 7)
+
+function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
   assertRaceInput(input)
   const { distance } = input.course
   const total = raceTurns(distance)
+  const tuning = tuningFor(version)
+  const v7 = version >= 7
+  const lastStraight = input.course.layout?.straights.at(-1)
   const rng = createRng(input.seed)
   // Mood (the original's motivation), from each runner's own stream so it never shifts the race's other rolls.
   const moods = input.runners.map((runner) =>
     Math.floor(createRng((input.seed ^ Math.imul(runner.gate + 1, 0x7feb352d) ^ 0x4c957f2d) >>> 0).next() * 5) - 2)
   const runners = input.runners.map((runner, index) => initRunner({
     ...runner,
-    stats: mapStats(runner.stats, (value) => value * (1 + V6_TUNING.moodStep * moods[index]!)),
-  }, input.course, rng, input.seed, 6))
+    stats: mapStats(runner.stats, (value) => value * (1 + tuning.moodStep * moods[index]!)),
+  }, input.course, rng, input.seed, version))
   const count = runners.length
   const baseSpeed = baseSpeedFor(distance)
   const events: RaceEvent[] = moods.map((mood, runner) => ({ tick: 0, runner, type: 'mood' as const, value: mood }))
@@ -129,6 +156,11 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
   })
   record()
 
+  // Engine v7's field state: each runner's position keeping and competitions, and the once-a-race Spot Struggle.
+  const turnStates = v7 ? runners.map(createTurnRunnerState) : []
+  const struggle = { started: false, expired: false }
+  const legTurn = phaseStartTurns(total)[2]
+
   let leaderPhase = 0
   for (let turn = 1; turn <= MAX_RACE_SECONDS && runners.some((r) => r.finishTime === null); turn += 1) {
     const time = turn - 1
@@ -143,12 +175,12 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
       .sort((left, right) => right.distance - left.distance || left.index - right.index)
     const places = new Map(order.map((item, index) => [item.index, index + 1]))
     const leaderDistance = order[0]!.distance
-    runners.forEach((runner) => expireActiveEffects(runner, turn, 6))
+    runners.forEach((runner) => expireActiveEffects(runner, turn, version))
     const snapshots: PackRunnerSnapshot[] = runners.map((runner, index) => ({
       index,
       distance: runner.d,
       speed: actualSpeed(runner),
-      targetSpeed: targetSpeed(runner, phase, distance, 1, 6),
+      targetSpeed: targetSpeed(runner, phase, distance, 1, version),
       power: runner.power,
       wit: runner.wit,
       strategy: runner.input.strategy,
@@ -166,6 +198,10 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
       if (phase >= 2 && pack.orderDelta < 0) pack.passesAfterFinalLeg += -pack.orderDelta
       pack.order = order
     })
+    const field: TurnField | null = v7
+      ? { snapshots, order: order.map((item) => item.index), strategies, distance, turn, section, phase, legTurn, hpScale: tuning.hpScale }
+      : null
+    if (field) spotStruggleTurn(runners, turnStates, field, events, struggle)
 
     // 1–8: every runner's speed, HP and proposed move for the turn, from the same start-of-turn state.
     const moves: Move[] = []
@@ -174,11 +210,11 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
       const dt = turn === 1 ? 1 - r.startDelay : 1
       if (section !== r.lastSection) {
         const max = (r.wit / 5500) * Math.log10(r.wit * 0.1)
-        r.sectionRandom = rng.range(max - V6_TUNING.sectionLuck, max) / 100
+        r.sectionRandom = rng.range(max - tuning.sectionLuck, max) / 100
         r.lastSection = section
       }
       updateHillTurn(r, input.course)
-      if (phase >= 2 && r.spurt === null) planSpurt(r, distance, rng, 6)
+      if (phase >= 2 && r.spurt === null) planSpurt(r, distance, rng, version)
       if (r.spurt !== null && !r.spurting && r.d >= r.spurtStart) {
         r.spurting = true
         events.push({ tick: turn, runner: i, type: 'spurt', value: r.spurt })
@@ -198,27 +234,43 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
           blocked_front_continuetime: r.blockedTicks,
           blocked_side_continuetime: r.pack!.blockedSideTicks,
           overtake_target_time: r.overtakeTicks,
+          // v7: the first 10 m of the final straight is shorter than a turn's run, so the window is the turn she enters it.
+          ...(v7 && lastStraight ? {
+            is_last_straight_onetime: r.d >= lastStraight.start &&
+              r.d < lastStraight.start + Math.max(LAST_STRAIGHT_ONETIME_METERS, actualSpeed(r)) ? 1 : 0,
+          } : {}),
         }
-        activateSkills(r, i, turn, context, events, 6, distance, { turn, phase })
+        const hpBefore = r.hp
+        activateSkills(r, i, turn, context, events, version, distance, { turn, phase })
+        // A heal resets stamina keep: she may compete again if her HP now covers the spurt.
+        if (v7 && r.hp > hpBefore) turnStates[i]!.staminaKeep = false
       }
-      const band = bandPull(r, leaderDistance, phase, distance)
+      let band: { coefficient: number; mode: PositionMode }
+      if (field) {
+        band = positionKeepTurn(r, i, turnStates[i]!, field)
+        competeTurn(r, i, turnStates[i]!, field, events)
+      } else {
+        band = bandPull(r, leaderDistance, phase, distance, tuning)
+      }
       if (band.mode !== r.pack!.mode) {
         r.pack!.mode = band.mode
         events.push({ tick: turn, runner: i, type: 'position-mode', positionMode: band.mode })
       }
       r.pack!.metrics.modeSeconds[band.mode] += dt
-      const target = targetSpeed(r, phase, distance, band.coefficient, 6)
+      let target = targetSpeed(r, phase, distance, band.coefficient, version)
+      if (v7 && !r.hpEmpty) target = Math.min(MAX_TARGET_SPEED, target + fieldBonus(turnStates[i]!))
       const before = actualSpeed(r)
       if (r.v < target) {
         const p = Math.min(phase, 2) as 0 | 1 | 2
         let accel = (r.slope > 0 ? UPHILL_BASE_ACCEL : BASE_ACCEL) * Math.sqrt(500 * r.power) * ACCEL_COEF[r.input.strategy][p] *
           SURFACE_APT_ACCEL[r.input.aptitude.surface] * DISTANCE_APT_ACCEL[r.input.aptitude.distance]
-        accel = accel * V6_TUNING.accelScale + activeModifier(r, 'acceleration')
+        accel = accel * tuning.accelScale + activeModifier(r, 'acceleration')
         if (r.dueling) accel += (160 * r.guts) ** 0.59 * 0.0001
         if (r.startDash) accel += START_DASH_ACCEL
         r.v = Math.min(target, r.v + accel * dt)
       } else if (r.v > target) {
-        r.v = Math.max(target, r.v + (r.hpEmpty ? HP_EMPTY_DECEL : DECEL[Math.min(phase, 2)]!) * dt)
+        const decel = r.hpEmpty ? HP_EMPTY_DECEL : v7 && band.mode === 'pace-down' ? PACE_DOWN_DECEL : DECEL[Math.min(phase, 2)]!
+        r.v = Math.max(target, r.v + decel * dt)
       }
       if (r.startDash && r.v >= START_DASH_UNTIL * baseSpeed) {
         r.startDash = false
@@ -233,6 +285,8 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
     const resolved: Move[] = []
     const occupied = (lane: number, at: number, self: number) => resolved.some((other) =>
       other.index !== self && Math.abs(other.lane - lane) < HORSE_LANE && Math.abs(other.to - at) < PASS_GAP)
+    const closing = (move: Move) => resolved.some((other) => Math.abs(other.lane - move.lane) < HORSE_LANE &&
+      other.to > move.to && other.to - move.to < OVERTAKE_LOOKAHEAD && other.speed < move.speed)
     for (const move of moves) {
       const r = runners[move.index]!
       const pack = r.pack!
@@ -240,9 +294,11 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
         .filter((other) => Math.abs(other.lane - move.lane) < HORSE_LANE && other.from >= move.from && other.to - move.to < PASS_GAP)
         .sort((left, right) => left.to - right.to || left.index - right.index)[0]
       if (blocker) {
-        // Out first, as far as the swing allows, then one lane in; the nearest free lane wins.
+        // Out first, as far as the swing allows (v7: as far as her Power carries her), then one lane in; the nearest
+        // free lane wins.
+        const swing = v7 ? swingLanes(r.power, tuning.swing) : tuning.swing
         const lanes = [
-          ...Array.from({ length: V6_TUNING.swing }, (_, step) => move.lane + (step + 1) * LANE_STEP),
+          ...Array.from({ length: swing }, (_, step) => move.lane + (step + 1) * LANE_STEP),
           move.lane - LANE_STEP,
         ].filter((lane) => lane >= 0 && lane <= COURSE_WIDTH)
         const free = lanes.find((lane) => !occupied(lane, move.to, move.index))
@@ -254,8 +310,16 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
           move.speed = Math.min(move.speed, blocker.speed)
           move.blockedBy = blocker.index
         }
-      } else if (move.lane > 0 && V6_TUNING.railDrift > 0) {
-        const inside = Math.max(0, move.lane - V6_TUNING.railDrift * LANE_STEP)
+      } else if (v7 && closing(move)) {
+        // v7: she steers round a slower runner she is closing on before she reaches her, as the original's overtake
+        // lane mode does, one lane a turn.
+        const out = move.lane + LANE_STEP
+        if (out <= COURSE_WIDTH && !occupied(out, move.to, move.index)) {
+          move.lane = out
+          events.push({ tick: turn, runner: move.index, type: 'lane-change', value: out })
+        }
+      } else if (move.lane > 0 && tuning.railDrift > 0) {
+        const inside = Math.max(0, move.lane - tuning.railDrift * LANE_STEP)
         if (!occupied(inside, move.to, move.index)) move.lane = inside
       }
       const wasBlocked = pack.frontBlocker !== null
@@ -294,7 +358,13 @@ export function simulateRaceV6(input: RaceInput): RaceTimeline {
       if (move.blockedBy !== null) r.v = Math.min(r.v, move.speed)
       r.pack!.lane = move.lane
       r.pack!.targetLane = move.lane
-      r.hp -= hpPerSecond(speed, baseSpeed, phase >= 2, r.gutsMod) * V6_TUNING.hpScale * (r.downhill ? DOWNHILL_HP_MODIFIER : 1) * dt
+      // v7: Pace Down saves HP and a Spot Struggle burns it, as in the original.
+      const fieldHp = v7
+        ? (r.pack!.mode === 'pace-down' ? PACE_DOWN_HP_MODIFIER : 1) * (turnStates[move.index]!.struggleUntil === null ? 1 : SPOT_STRUGGLE_HP_MODIFIER)
+        : 1
+      // v7: the turn she finishes costs HP only for the ground up to the line.
+      const toLine = v7 && move.to > distance ? (distance - move.from) / Math.max(covered, 0.001) : 1
+      r.hp -= hpPerSecond(speed, baseSpeed, phase >= 2, r.gutsMod) * tuning.hpScale * (r.downhill ? DOWNHILL_HP_MODIFIER : 1) * fieldHp * dt * toLine
       if (!r.hpEmpty && r.hp <= 0) {
         r.hp = 0
         r.hpEmpty = true

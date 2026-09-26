@@ -8,7 +8,7 @@
 //
 // Exit code 1 when a hard ladder check fails, so the stamina ladder is a regression gate.
 import type { DistanceCategory, Stats, Strategy } from '../../packages/domain/src/index'
-import { simulateRace } from '../../packages/race/src/index'
+import { SPURT_BUFFER_METERS, simulateRace } from '../../packages/race/src/index'
 import {
   FIELD_STRATEGIES,
   LONG,
@@ -45,9 +45,10 @@ const configs = (tier: number) => ({
 // --- Stamina ladder --------------------------------------------------------------------------------
 
 /**
- * Whether a build reaches a full spurt without running out of HP in at least 90% of 12-runner G1 races, each against
- * a freshly rolled field (D153). Measured in a field, not alone: position keeping in a pack burns roughly 40% more HP,
- * which is what the original game's own stamina charts assume.
+ * Whether a build reaches a full spurt in at least 90% of 12-runner G1 races, each against a freshly rolled field
+ * (D153), with HP lasting to within 60 m of the line: the stretch the original's spurt plan leaves out (engine v7,
+ * D158). Measured in a field, not alone: position keeping and the pushes before the spurt burn HP, which is what the
+ * original game's own stamina charts assume.
  */
 function fullSpurt(tier: number, stats: Stats, distance: number, strategy: Strategy, golds = 0): boolean {
   let good = 0
@@ -62,7 +63,9 @@ function fullSpurt(tier: number, stats: Stats, distance: number, strategy: Strat
       runners: [...rivalRunners(tier, 'g1', distance, 12, gate, seed), player].sort((left, right) => left.gate - right.gate),
     })
     const me = timeline.results.find((result) => result.id === 'P')!
-    if (me.spurtMaxed && !timeline.events.some((event) => event.type === 'hp-empty' && event.runner === gate)) good += 1
+    const dry = timeline.events.find((event) => event.type === 'hp-empty' && event.runner === gate)
+    const dryAt = dry ? timeline.distance[dry.tick * timeline.runnerCount + gate]! : Number.POSITIVE_INFINITY
+    if (me.spurtMaxed && dryAt >= distance - SPURT_BUFFER_METERS) good += 1
   }
   return good >= LADDER_RACES * 0.9
 }

@@ -247,9 +247,10 @@ describe('training levels', () => {
 })
 
 describe('rivals (D152)', () => {
-  it('builds on a typical fully trained Uma: median base plus a fifth of a full tree', () => {
-    // Tier 1: 18 card nodes × 220 + a 240 stat pool = 4,200 raw points, 840 a stat, on a base of 110.
-    expect(trainedStat(1)).toBe(950)
+  it('builds on a typical trained Uma: median base plus a fifth of a realistic set (D159)', () => {
+    // Tier 1: 15 of 18 card nodes pay stats (the Friend card's 3 pay SP), at 3★ 84% of 220, plus the 240 stat pool:
+    // 3,012 raw points, 602.4 a stat, on a base of 110.
+    expect(trainedStat(1)).toBeCloseTo(712.4)
     expect(trainedStat(14)).toBeGreaterThan(trainedStat(1))
   })
 
@@ -257,9 +258,9 @@ describe('rivals (D152)', () => {
     expect(GRADE_HANDICAP).toEqual({ debut: 0.35, maiden: 0.35, 'pre-op': 0.3, op: 0.3, g3: 0.25, g2: 0.15, g1: 0.05 })
   })
 
-  it('shapes a build by distance without shrinking it', () => {
+  it('shapes what Stamina leaves by distance without shrinking it', () => {
     for (const row of Object.values(NPC_PROFILE)) {
-      expect(Object.values(row).reduce((sum, weight) => sum + weight, 0)).toBeCloseTo(5)
+      expect(Object.values(row).reduce((sum, weight) => sum + weight, 0)).toBeCloseTo(4)
     }
   })
 

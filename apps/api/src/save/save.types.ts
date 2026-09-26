@@ -850,9 +850,9 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
     ...(versioned ? ['engineVersion', 'course'] : []),
   ]) ||
-      (versioned && ![2, 3, 4, 5, 6].includes(version as number)) || !Array.isArray(value.field)) return null
-  // Engine v6 (turns, D154) records the same course as v5.
-  const v5Course = version === 5 || version === 6
+      (versioned && ![2, 3, 4, 5, 6, 7].includes(version as number)) || !Array.isArray(value.field)) return null
+  // Engines v6 (turns, D154) and v7 (D158) record the same course as v5.
+  const v5Course = version === 5 || version === 6 || version === 7
   const hasLayout = version === 3 || version === 4 || v5Course
   if (versioned && (
     !isRecord(value.course) ||

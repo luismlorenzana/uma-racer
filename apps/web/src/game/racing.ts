@@ -3,6 +3,7 @@
 import {
   SAVE_ID_PATTERN,
   compileRaceSkill,
+  levelUniqueSkill,
   compileRaceCourseLayout,
   compileRaceCourseSlopes,
   COURSE_ROTATION,
@@ -53,7 +54,7 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from '@racer/domain'
-import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, simulateRaceV3, simulateRaceV4, simulateRaceV5, type RaceInput, type RaceTimeline } from '@racer/race'
+import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, simulateRaceV3, simulateRaceV4, simulateRaceV5, simulateRaceV6, type RaceInput, type RaceTimeline } from '@racer/race'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
 import { updateRaceBadgeFacts, updateScenarioBadgeFacts } from './badges'
@@ -67,7 +68,7 @@ export interface PreparedRaceRunner {
 }
 
 export interface PreparedRace {
-  engineVersion: 1 | 2 | 3 | 4 | 5 | 6
+  engineVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7
   id: string
   contentVersion: string
   umaId: string
@@ -102,7 +103,8 @@ export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
       : attempt.engineVersion === 3 ? simulateRaceV3(attempt.input)
         : attempt.engineVersion === 4 ? simulateRaceV4(attempt.input)
           : attempt.engineVersion === 5 ? simulateRaceV5(attempt.input)
-            : simulateRace(attempt.input)
+            : attempt.engineVersion === 6 ? simulateRaceV6(attempt.input)
+              : simulateRace(attempt.input)
 
 interface BuildRaceInput {
   content: LoadedContent
@@ -182,7 +184,8 @@ function playerRaceSkills(
   // what this scenario now pays simply sit out (affordableLoadout).
   const structure = summarizeSkillLoadout({ ...derived, skillPoints: Number.MAX_SAFE_INTEGER }, template, content.skills.byId)
   if (!structure.valid) throw new Error(structure.errors[0])
-  const own = template.uniqueSkillId ? compiledSupported(content.skills.byId.get(template.uniqueSkillId)) : []
+  // Her own unique races at Lv5, a fully starred Uma's (D158).
+  const own = template.uniqueSkillId ? compiledSupported(content.skills.byId.get(template.uniqueSkillId)).map(levelUniqueSkill) : []
   const equipped = affordableLoadout(structure.skills, derived.skillPoints).map((skill) => compileRaceSkill(skill))
   const unsupported = equipped.find((skill) => !raceSkillSupported(skill))
   if (unsupported) throw new Error(`Equipped skill ${unsupported.id} is not supported by the basic race engine`)
@@ -225,7 +228,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const baselineSkills = baselineNpcSkills(content)
   // A fresh field every race: styles and stats rolled from the tier's presets, each style run by an Uma suited to it
   // (D153, docs/design/racing.md#opponents-generated-rivals).
-  const slots = rollRivalField({ tier: uma.unlockedTier, grade: race.grade, distance: race.distanceCategory, count: fieldSize - 1, rng })
+  const slots = rollRivalField({ tier: uma.unlockedTier, grade: race.grade, distance: race.distanceCategory, meters: race.distance, count: fieldSize - 1, rng })
   const cast = castRivals(opponents, slots)
   let rivalIndex = 0
   const runners = Array.from({ length: fieldSize }, (_, gate) => {
@@ -260,12 +263,12 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
         strategy: slot.strategy,
         aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
         gate,
-        skills: [...compiledSupported(content.skills.byId.get(rival.uniqueSkillId ?? '')), ...baselineSkills],
+        skills: [...compiledSupported(content.skills.byId.get(rival.uniqueSkillId ?? '')).map(levelUniqueSkill), ...baselineSkills],
       },
     }
   })
   return {
-    engineVersion: 6,
+    engineVersion: 7,
     id: raceAttemptId(uma.templateId, sequence),
     contentVersion: content.manifest.version,
     umaId: uma.templateId,
@@ -359,7 +362,7 @@ function resultRecord(
     }
   }).sort((left, right) => left.placement - right.placement)
   const unsettled: RaceResultRecord = {
-    engineVersion: 6,
+    engineVersion: 7,
     course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
     contentVersion: attempt.contentVersion,
     umaId: attempt.umaId,

@@ -27,39 +27,76 @@ export function phaseTurns(phase: number, total: number): readonly [number, numb
 /** The section (0–23) a turn falls in: the turns split into the original's 24 sections. */
 export const turnSection = (turn: number, total: number): number => Math.max(0, Math.min(23, Math.floor(((turn - 1) * 24) / total)))
 
+/** How a turn engine is tuned: the numbers `pnpm sim:turns` sets. v6's are frozen; v7's are the current engine's. */
+export interface TurnTuning {
+  /** Lengths behind the leader each style runs in through the opening and middle legs, set at 2,000 m. */
+  bands: Record<'front' | 'pace' | 'late' | 'end', readonly [number, number]>
+  /** The band's pull on target speed: ahead of it she eases, behind it she presses. */
+  ease: number
+  press: number
+  /** The Speed term: the original's at `speedReference`, with `speedCoef` scaling the √(500 × Speed) gap from it. */
+  speedCoef: number
+  /** The first phase the Speed term counts in (the original: 2, the final leg). */
+  speedFromPhase: number
+  speedReference: number
+  /** Acceleration, as a share of the original's. */
+  accelScale: number
+  /** HP spent per second, as a share of the original's rate. */
+  hpScale: number
+  /** How many lanes a blocked runner may swing out in one turn (v7 scales it with Power, up to this). */
+  swing: number
+  /** Lanes an unblocked runner drifts toward the rail per turn when the way is clear. */
+  railDrift: number
+  /** Width, in % of base speed, of each section's Wit roll (the original's is 0.65). */
+  sectionLuck: number
+  /** The original's mood: each level from Awful (−2) to Great (+2) moves every stat by this much. */
+  moodStep: number
+}
+
 /**
- * Engine v6's tuning table (M021, T070): style bands in lengths behind the leader, the band's pull on target speed,
- * the Speed term (the original's at `speedReference`, with `speedCoef` scaling the √(500 × Speed) gap from it, counted
- * from `speedFromPhase`), acceleration and the HP rate. `pnpm sim:turns` may adjust it
- * between runs; the game treats it as constant.
+ * Engine v6 (M021, D155), frozen so its races replay exactly: a Speed term with 2.5× the original's slope from the
+ * middle leg, doubled acceleration and a lighter HP rate.
  */
-export const V6_TUNING = {
-  bands: { front: [0, 2], pace: [2, 5], late: [5, 8], end: [7, 11] } as Record<'front' | 'pace' | 'late' | 'end', readonly [number, number]>,
+export const V6_TUNING: Readonly<TurnTuning> = Object.freeze<TurnTuning>({
+  bands: { front: [0, 2], pace: [2, 5], late: [5, 8], end: [7, 11] },
   ease: 0.985,
   press: 1.015,
   speedCoef: 0.005,
   speedFromPhase: 1,
-  /** The Speed the term is anchored at: a runner here gets the original's term, and `speedCoef` scales the gap. */
   speedReference: 600,
-  /** Acceleration, as a share of the original's. */
   accelScale: 2,
-  /** HP spent per second, as a share of the original's rate. */
   hpScale: 0.85,
-  /** How many lanes a blocked runner may swing out in one turn to get around; she comes back in one at a time. */
   swing: 3,
-  /** Lanes an unblocked runner drifts toward the rail per turn when the way is clear. */
   railDrift: 0.2,
-  /** Width, in % of base speed, of each section's Wit roll (the original's is 0.65). */
   sectionLuck: 0.65,
-  /**
-   * The original's mood, rolled per runner per race: each level from Awful (−2) to Great (+2) is equally likely and
-   * moves every stat by `moodStep` a level. It is what lets a slightly weaker runner win on her day.
-   */
+  moodStep: 0.02,
+})
+
+/**
+ * Engine v7 (D158): the original's physics — Speed counts from the final leg on the original's slope, acceleration and
+ * HP at the original's rates — so every stat and every skill weighs what it does in the original. The sims may adjust
+ * it between runs (`V7='{…}' pnpm sim:turns`); the game treats it as constant.
+ */
+export const V7_TUNING: TurnTuning = {
+  bands: { front: [0, 2], pace: [2, 5], late: [5, 8], end: [7, 11] },
+  ease: 0.985,
+  press: 1.015,
+  speedCoef: 0.002,
+  speedFromPhase: 2,
+  speedReference: 600,
+  accelScale: 1,
+  hpScale: 1,
+  swing: 3,
+  railDrift: 0.2,
+  sectionLuck: 0.65,
   moodStep: 0.02,
 }
 
-/** Engine v6's Speed term for an effective Speed stat and a distance-aptitude multiplier. */
-export function v6SpeedTerm(speed: number, aptitude: number): number {
-  const anchor = Math.sqrt(500 * V6_TUNING.speedReference)
-  return (0.002 * anchor + V6_TUNING.speedCoef * (Math.sqrt(500 * speed) - anchor)) * aptitude
+/** The tuning a turn engine version runs on. */
+export const tuningFor = (rulesVersion: number): TurnTuning => rulesVersion >= 7 ? V7_TUNING : V6_TUNING
+
+/** A turn engine's Speed term for an effective Speed stat and a distance-aptitude multiplier. */
+export function turnSpeedTerm(speed: number, aptitude: number, tuning: TurnTuning): number {
+  const anchor = Math.sqrt(500 * tuning.speedReference)
+  return (0.002 * anchor + tuning.speedCoef * (Math.sqrt(500 * speed) - anchor)) * aptitude
 }
