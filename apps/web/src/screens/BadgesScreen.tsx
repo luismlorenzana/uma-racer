@@ -49,6 +49,7 @@ import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
+import { SaveErrorState } from '../ui/SaveErrorState'
 
 const SORT_OPTIONS: { value: BadgeSort; label: string }[] = [
   { value: 'recent', label: 'Most recent' }, { value: 'tier', label: 'Highest tier' },
@@ -212,7 +213,7 @@ export function BadgesScreen() {
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to view Badges" detail="Your private flair archive stays behind your account." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish private content before browsing Badges." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
-  if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
+  if (status === 'error') return <SaveErrorState detail={lifecycleError} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Badges…" detail="Loading private content and your flair archive." />
   if (ownedIds.length === 0 && route.scope !== 'trainer') return <ScreenState title="No owned Uma yet" detail="Add an Uma to your Stable before collecting flair." action={{ label: 'Open Stable', to: '/stable' }} />
   if (route.scope === 'uma' && (!umaId || !umaState)) return <ScreenState title="Badge state is missing" detail="This Uma is preserved, but its Badge entity could not be loaded. The page will not reseed it." action={{ label: 'Back to Stable', to: '/stable' }} />

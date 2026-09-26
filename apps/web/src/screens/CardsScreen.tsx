@@ -42,6 +42,7 @@ import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
 import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
+import { SaveErrorState } from '../ui/SaveErrorState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 import { formatTickets } from '../ui/tickets'
 
@@ -283,7 +284,7 @@ export function CardsScreen() {
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to view Cards" detail="Your private card collection is part of the saved Stable." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish private content before opening the card album." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
-  if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
+  if (status === 'error') return <SaveErrorState detail={lifecycleError} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile || !album || !result) return <ScreenState title="Opening Cards…" detail="Loading your private SSR album." />
   if (contentState.content.cards.items.length === 0) return <ScreenState title="No support cards imported" detail="Run and publish the private content pipeline first." />
 

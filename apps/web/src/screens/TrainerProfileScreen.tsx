@@ -21,6 +21,7 @@ import { useGame } from '../game/store'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
+import { SaveErrorState } from '../ui/SaveErrorState'
 
 const titleCase = (value: string) => value.split(/[-_:]/).filter(Boolean).map((part) => part[0]!.toLocaleUpperCase() + part.slice(1)).join(' ')
 const dateLabel = (value: number) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(value)
@@ -79,7 +80,7 @@ export function TrainerProfileScreen() {
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to view the Trainer profile" detail="Trainer achievements stay with your private save." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish private content before opening the Trainer profile." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
-  if (status === 'error') return <ScreenState title="Save needs attention" detail={error ?? 'The local save could not be opened.'} />
+  if (status === 'error') return <SaveErrorState detail={error} />
   if (contentState.status !== 'ready' || status !== 'ready' || !trainer || !collection) return <ScreenState title="Opening Trainer profile…" detail="Reconciling Stable achievements and records." />
 
   const save = async (preferences: TrainerBadgePreferences, message: string) => {

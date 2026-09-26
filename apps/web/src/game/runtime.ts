@@ -51,7 +51,7 @@ import {
   stateFromSnapshot,
   updateEntityVersion,
 } from './persistence'
-import { adoptGameState, clearGameState, localDay, mergeBadgeAndFlairState, replaceBadgeState, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
+import { adoptGameState, clearGameState, localDay, mergeBadgeAndFlairState, rememberLastSync, replaceBadgeState, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
 import { replaceCardState } from './store'
 import { acknowledgedSequences } from './sync'
 import {
@@ -888,7 +888,9 @@ export class GameRuntime {
       const local = await readLocalSnapshot()
       if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
       const pending = await db.outbox.count()
-      setSyncState({ status: pending ? 'pending' : 'idle', pending, lastSuccessAt: Date.now(), error: null })
+      const syncedAt = Date.now()
+      rememberLastSync(syncedAt)
+      setSyncState({ status: pending ? 'pending' : 'idle', pending, lastSuccessAt: syncedAt, error: null })
       if (pending) this.schedule(0)
     } catch (error) {
       const pending = await db.outbox.count().catch(() => useGame.getState().sync.pending)

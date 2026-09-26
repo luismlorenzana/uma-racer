@@ -37,6 +37,7 @@ import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
 import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
+import { SaveErrorState } from '../ui/SaveErrorState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 
 const MAX_COMPARE = 3
@@ -320,7 +321,7 @@ export function StableScreen() {
   if (contentState.status === 'signed-out' || status === 'signed-out') return <ScreenState title="Sign in to open your Stable" detail="Your private roster stays behind your account." action={{ label: 'Open Settings', to: '/settings' }} />
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish a private content version before creating a save." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
-  if (status === 'error') return <ScreenState title="Save needs attention" detail={lifecycleError ?? 'The local save could not be opened.'} />
+  if (status === 'error') return <SaveErrorState detail={lifecycleError} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile || !album || !result) return <ScreenState title="Opening your Stable…" detail="Loading private content and your local save." />
 
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])

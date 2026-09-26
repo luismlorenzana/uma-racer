@@ -37,6 +37,7 @@ import { Meter } from '../ui/Meter'
 import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
+import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { formatTickets } from '../ui/tickets'
 
@@ -108,7 +109,7 @@ export function UmaProfileScreen() {
   }
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish private content before opening profiles." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
-  if (status === 'error') return <ScreenState title="Save needs attention" detail={error ?? 'The local save could not be opened.'} />
+  if (status === 'error') return <SaveErrorState detail={error} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening profile…" detail="Loading private content and save data." />
   if (!save) return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
 

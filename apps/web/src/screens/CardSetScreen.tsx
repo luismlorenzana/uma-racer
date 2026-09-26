@@ -185,8 +185,12 @@ export function CardSetScreen() {
                     <span className="text-micro">{titleCase(template.type)}</span>
                     <Stars value={bond} />
                   </span>
-                  <span className={`block text-[11px] ${nodes === 0 ? 'text-warning' : 'text-ink-soft'}`}>
-                    {pays} · {nodes === 0 ? `on no nodes yet · up to ${nodeCap}` : `on ${nodes} of ${nodeCap} nodes`}
+                  <span className={`block text-[11px] ${nodes === 0 ? 'text-warning' : nodes > nodeCap ? 'font-semibold text-danger' : 'text-ink-soft'}`}>
+                    {pays} · {nodes === 0
+                      ? `on no nodes yet · up to ${nodeCap}`
+                      : nodes > nodeCap
+                        ? `on ${nodes} nodes · only ${nodeCap} pay, move ${nodes - nodeCap}`
+                        : `on ${nodes} of ${nodeCap} nodes`}
                   </span>
                 </span>
               </button>

@@ -33,7 +33,30 @@ interface GameState {
   dismissToast: (id: number) => void
 }
 
-const EMPTY_SYNC: SyncState = { status: 'idle', pending: 0, lastSuccessAt: null, error: null }
+/**
+ * When this device last synced, kept across reloads so Settings and the top bar can tell a long silence from a fresh
+ * start (D157). A per-device convenience: storage can be unavailable, and then it is simply unknown.
+ */
+const LAST_SYNC_KEY = 'uma-racer:last-sync'
+
+export function rememberedLastSync(): number | null {
+  try {
+    const value = Number(globalThis.localStorage?.getItem(LAST_SYNC_KEY))
+    return Number.isSafeInteger(value) && value > 0 ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function rememberLastSync(at: number): void {
+  try {
+    globalThis.localStorage?.setItem(LAST_SYNC_KEY, String(at))
+  } catch {
+    // Private mode or blocked storage: the time stays in memory for this session.
+  }
+}
+
+const emptySync = (): SyncState => ({ status: 'idle', pending: 0, lastSuccessAt: rememberedLastSync(), error: null })
 let toastSeq = 0
 
 export const useGame = create<GameState>()((set) => ({
@@ -47,7 +70,7 @@ export const useGame = create<GameState>()((set) => ({
   flairEvents: [],
   orphanedUmaIds: [],
   orphanedCardIds: [],
-  sync: EMPTY_SYNC,
+  sync: emptySync(),
   toasts: [],
   pushToast: (text) => set((state) => ({ toasts: [...state.toasts, { id: ++toastSeq, text }] })),
   dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
@@ -152,7 +175,7 @@ export function clearGameState(status: GameStatus = 'signed-out'): void {
     flairEvents: [],
     orphanedUmaIds: [],
     orphanedCardIds: [],
-    sync: EMPTY_SYNC,
+    sync: emptySync(),
   })
 }
 

@@ -17,6 +17,7 @@ import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
 import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
+import { SaveErrorState } from '../ui/SaveErrorState'
 import { FlairCards } from '../ui/FlairCards'
 
 export function HomeScreen() {
@@ -61,7 +62,7 @@ export function HomeScreen() {
   }
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish the private content packs to begin." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
-  if (status === 'error') return <ScreenState title="Save needs attention" detail={error ?? 'The local save could not be opened.'} />
+  if (status === 'error') return <SaveErrorState detail={error} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Uma Racer…" detail="Loading private content and your local save." />
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
 

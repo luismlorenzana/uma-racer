@@ -12,7 +12,10 @@ Tech constraints and performance budgets are in [Game-like Web Tech](../research
 3. **Every tap answers.** Instant press feedback, then a result animation. Waiting states are rare, because the game runs locally.
 4. **Big moments feel big.** Level-ups, promotions, stars earned, coupon reveals, goal completions, and new badges each get a crafted fanfare.
 5. **One-handed loops.** Training and racing can repeat with a thumb, without menus in between.
-6. **Offline is normal.** No spinners for game actions. Sync status stays a quiet indicator.
+6. **Offline is normal.** No spinners for game actions. Sync status stays a quiet indicator, except when it is
+   failing: a **⚠ Sync** chip in the top bar (red on an error, amber when changes have waited over a day) links to
+   Settings, which shows the error and when this device last synced (D157). A save that cannot open says why, offers
+   **Try again** and **Copy details**, and never offers to clear anything.
 
 ## Visual direction
 

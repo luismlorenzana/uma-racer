@@ -56,6 +56,12 @@ export function ConstellationScreen() {
       return card ? [[id, card.type] as const] : []
     }),
   )
+  // A card past its cap pays nothing on the extra nodes (D134); older saves can hold more, so say so plainly.
+  const overCap = run.cardSetIds.flatMap((id) => {
+    const extra = cardNodeCount(run, id) - nodeCap
+    const card = content.cards.byId.get(id)
+    return extra > 0 && card ? [{ name: card.charName, extra }] : []
+  })
   const aptitudes = explainAptitudes(uma.template.aptitudes, derived.lineage)
   const moved = aptitudes.filter((row) => row.result !== row.base)
 
@@ -105,6 +111,12 @@ export function ConstellationScreen() {
             <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !run.started ? 'Start scenario first' : 'Raise Training Level'}</span>
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
+        )}
+        {overCap.length > 0 && (
+          <p role="status" className="mb-2 rounded-md bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">
+            {overCap.map((row) => `${row.name} is on ${row.extra} node${row.extra === 1 ? '' : 's'} past its cap of ${nodeCap}`).join(' · ')}.
+            {' '}Those nodes pay nothing: move them to another card or a stat.
+          </p>
         )}
         <div className="flex items-baseline justify-between">
           <p className="text-[11px] font-semibold">

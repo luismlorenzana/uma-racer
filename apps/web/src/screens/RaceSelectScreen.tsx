@@ -32,6 +32,7 @@ import { Button } from '../ui/Button'
 import { Panel } from '../ui/Panel'
 import { RaceMarkIcon } from '../ui/RaceMarkIcon'
 import { ScreenState } from '../ui/ScreenState'
+import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { UmaBust } from '../ui/UmaBust'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
@@ -232,7 +233,7 @@ export function RaceSelectScreen() {
   }
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish private race content before racing." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
-  if (status === 'error') return <ScreenState title="Save needs attention" detail={saveError ?? 'The local save could not be opened.'} />
+  if (status === 'error') return <SaveErrorState detail={saveError} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Preparing races…" detail="Loading private content and your local save." />
   if (!selectedUma || !selectedUmaId) return <ScreenState title="No owned Uma" detail="Add an Uma to your Stable before entering a race." action={{ label: 'Open Stable', to: '/stable' }} />
 
