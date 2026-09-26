@@ -320,6 +320,19 @@ export async function logRow(kind: LogKind, id: string): Promise<LogRow<object> 
   return { id: row.id, createdAt: row.createdAt, data }
 }
 
+/**
+ * A server copy on an older save schema than this app writes, which the migration chain can still read (D156). The
+ * server keeps whatever shape its last successful sync wrote, so after a stretch of failed syncs it can hold a copy
+ * from before a save migration: a copy that cannot be newer than a current-schema local one.
+ */
+export function isLegacyServerRecord(record: EntityRecord): boolean {
+  if (record.deleted) return false
+  if (record.kind === 'profile') return !parsePlayerProfile(record.data) && migratePlayerProfileToCurrent(record.data) !== null
+  if (record.kind === 'umas') return !parseUmaSave(record.data) && migrateUmaSaveToCurrent(record.data) !== null
+  if (record.kind === 'cards') return !parseCardSave(record.data) && migrateCardSaveToCurrent(record.data) !== null
+  return false
+}
+
 export async function putConflict(record: EntityRecord, queueMigrated = false, now = Date.now()): Promise<void> {
   if (record.deleted) {
     if (record.kind === 'profile') await db.profile.delete(record.id)
@@ -328,9 +341,22 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
     if (record.kind === 'badges') await db.badges.delete(record.id)
     return
   }
-  if (record.kind === 'profile') await db.profile.put({ id: record.id, data: parsePlayerProfileOrThrow(record.data), version: record.version })
-  if (record.kind === 'umas') await db.umas.put({ id: record.id, data: parseUmaSave(record.data)!, version: record.version })
-  if (record.kind === 'cards') await db.cards.put({ id: record.id, data: parseCardSave(record.data)!, version: record.version })
+  // Migrate on the way in, as a first load does: a conflict can carry any supported schema, and a row that cannot be
+  // read is never written (D156).
+  if (record.kind === 'profile') {
+    const profile = migratePlayerProfileToCurrent(record.data) ?? parsePlayerProfileOrThrow(record.data)
+    await db.profile.put({ id: record.id, data: profile, version: record.version })
+  }
+  if (record.kind === 'umas') {
+    const uma = migrateUmaSaveToCurrent(record.data)
+    if (!uma) throw new Error(`Server Uma ${record.id} cannot be migrated`)
+    await db.umas.put({ id: record.id, data: uma, version: record.version })
+  }
+  if (record.kind === 'cards') {
+    const card = migrateCardSaveToCurrent(record.data)
+    if (!card) throw new Error(`Server card ${record.id} cannot be migrated`)
+    await db.cards.put({ id: record.id, data: card, version: record.version })
+  }
   if (record.kind === 'badges') {
     const server = parseBadgeState(record.data)
     if (!server) throw new Error(`Invalid server badge conflict: ${record.id}`)
@@ -342,7 +368,7 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
       await queueInTransaction('badges', record.id, 'upsert', now)
     }
   }
-  if (queueMigrated && (record.kind === 'profile' || record.kind === 'umas')) {
+  if (queueMigrated && (record.kind === 'profile' || record.kind === 'umas' || record.kind === 'cards')) {
     await queueInTransaction(record.kind, record.id, 'upsert', now)
   }
 }

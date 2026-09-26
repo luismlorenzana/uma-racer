@@ -1473,25 +1473,13 @@ function assertSupportedProfileRecords(records: unknown): void {
   }
 }
 
-function assertSnapshotSchemaIsConsistent(records: unknown): void {
-  if (!Array.isArray(records)) return
-  const active = records.filter((record): record is Record<string, unknown> => isObject(record) && record.deleted !== true)
-  const profile = active.find((record) => record.kind === 'profile')
-  if (!profile || !isObject(profile.data)) return
-  const schema = profile.data.schemaVersion
-  if (schema !== LEGACY_SAVE_SCHEMA_VERSION && schema !== LEGACY_SAVE_SCHEMA_VERSION_V2 && schema !== LEGACY_SAVE_SCHEMA_VERSION_V3 && schema !== SAVE_SCHEMA_VERSION) return
-  for (const record of active) {
-    if (record.kind !== 'umas' || !isObject(record.data)) continue
-    const umaSchema = Object.hasOwn(record.data, 'schemaVersion') ? record.data.schemaVersion : LEGACY_SAVE_SCHEMA_VERSION
-    if (umaSchema !== schema) throw new Error('Server save mixes incompatible schema versions')
-  }
-}
-
+/**
+ * A server save may mix schemas: each record is written by its own sync, so a failed upload can leave an old profile
+ * beside newer Umas. Every record migrates on its own chain and no migration reads another record, so a mix loads as
+ * one save (D156). Only a schema newer than this app is refused (assertSupportedProfileRecords).
+ */
 export function parseSaveSnapshotOrThrow(value: unknown): SaveSnapshot {
-  if (isObject(value)) {
-    assertSupportedProfileRecords(value.entities)
-    assertSnapshotSchemaIsConsistent(value.entities)
-  }
+  if (isObject(value)) assertSupportedProfileRecords(value.entities)
   const snapshot = parseSaveSnapshot(value)
   if (!snapshot) throw new Error('Server save response is malformed')
   return snapshot

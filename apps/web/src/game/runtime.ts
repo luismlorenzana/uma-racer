@@ -22,6 +22,7 @@ import {
   SCENARIOS,
   replaceSkillLoadout as resolveSkillLoadout,
   type EntityKind,
+  type EntityRecord,
   type LogKind,
   type SyncRequest,
   type RaceResultRecord,
@@ -41,6 +42,7 @@ import {
   completeStarterSeed,
   entityRow,
   isDatabaseSemanticallyEmpty,
+  isLegacyServerRecord,
   logRow,
   persistInitial,
   putConflict,
@@ -105,19 +107,14 @@ import { PersistentMinigameHost } from './minigame-runs'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
+/** Conflicts whose server copy predates the save schema this app writes (D156), read from the raw response. */
 function legacyConflictKeys(value: unknown): Set<string> {
   const keys = new Set<string>()
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return keys
-  const conflicts = (value as Record<string, unknown>).conflicts
+  const conflicts = typeof value === 'object' && value !== null ? (value as Record<string, unknown>).conflicts : null
   if (!Array.isArray(conflicts)) return keys
   for (const conflict of conflicts) {
-    if (typeof conflict !== 'object' || conflict === null || Array.isArray(conflict)) continue
-    const record = conflict as Record<string, unknown>
-    if ((record.kind !== 'profile' && record.kind !== 'umas') || typeof record.id !== 'string' || typeof record.data !== 'object' || record.data === null) continue
-    const data = record.data as Record<string, unknown>
-    if (record.kind === 'profile' ? data.schemaVersion === 1 : !Object.hasOwn(data, 'schemaVersion')) {
-      keys.add(`${record.kind}/${record.id}`)
-    }
+    const record = conflict as EntityRecord
+    if (typeof record === 'object' && record !== null && isLegacyServerRecord(record)) keys.add(`${record.kind}/${record.id}`)
   }
   return keys
 }
@@ -860,7 +857,8 @@ export class GameRuntime {
         }
       }
       const rawResponse = await saveApi.sync(request)
-      const migratedConflicts = legacyConflictKeys(rawResponse)
+      // Judged on the server's copy as sent: the response parser migrates conflicts to the current schema.
+      const legacyConflicts = legacyConflictKeys(rawResponse)
       const response = parseSyncResponseOrThrow(rawResponse)
       if (generation !== this.generation) return
       const acknowledged = acknowledgedSequences(batch, request, response)
@@ -871,11 +869,17 @@ export class GameRuntime {
         for (const conflict of response.conflicts) {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
           const originalSequence = sentSequence.get(`${conflict.kind}/${conflict.id}`)
+          const legacy = legacyConflicts.has(`${conflict.kind}/${conflict.id}`)
           if (current?.seq !== originalSequence && conflict.kind !== 'badges') {
             await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
+          } else if (legacy && await entityRow(conflict.kind, conflict.id)) {
+            // The server's copy predates the save schema this app writes, so ours is newer: keep it, take the server's
+            // version, and send it again. Adopting the old copy would roll the save back to before the migration (D156).
+            await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
+            await queueInTransaction(conflict.kind, conflict.id, 'upsert', response.serverTime)
           } else {
             // Badge conflicts always adopt the server's newer award facts and reapply only still-valid local preferences.
-            await putConflict(conflict, migratedConflicts.has(`${conflict.kind}/${conflict.id}`), response.serverTime)
+            await putConflict(conflict, legacy, response.serverTime)
           }
         }
         await db.outbox.bulkDelete(acknowledged)

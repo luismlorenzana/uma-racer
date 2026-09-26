@@ -128,12 +128,8 @@ export function replaceBadgeState(badges: Record<string, BadgeStateV1>, flairEve
 export function mergeBadgeAndFlairState(badges: Record<string, BadgeStateV1>, events: readonly FlairEventRecord[]): void {
   useGame.setState((state) => {
     const merged = new Map(state.flairEvents.map((event) => [event.id, event]))
-    for (const event of events) {
-      const row = { id: event.id, ...event.data }
-      const existing = merged.get(event.id)
-      if (existing && JSON.stringify(existing) !== JSON.stringify(row)) throw new Error(`Memory flair event id collision: ${event.id}`)
-      merged.set(event.id, row)
-    }
+    // The first copy of an award stands, as on disk (appendFlairEvents, D156).
+    for (const event of events) if (!merged.has(event.id)) merged.set(event.id, { id: event.id, ...event.data })
     return {
       badges,
       flairEvents: [...merged.values()].sort((left, right) => left.earnedAt - right.earnedAt || left.id.localeCompare(right.id)),

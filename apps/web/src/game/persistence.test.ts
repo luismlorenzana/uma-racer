@@ -24,7 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveApi } from '../api/client'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
-import { bootstrapBadgeFacts, bootstrapUmaFlair } from './badges'
+import { appendFlairEvents, bootstrapBadgeFacts, bootstrapUmaFlair } from './badges'
 import { GameRuntime } from './runtime'
 import { clearGameState, localDay, replaceUma, useGame } from './store'
 import {
@@ -33,7 +33,9 @@ import {
   bootstrapGoalPlans,
   completeStarterSeed,
   isDatabaseSemanticallyEmpty,
+  isLegacyServerRecord,
   persistInitial,
+  putConflict,
   queueInTransaction,
   readLocalSnapshot,
 } from './persistence'
@@ -370,7 +372,7 @@ describe('save persistence', () => {
     expect(await db.badges.count()).toBe(1)
   })
 
-  it('migrates a consistent v1 cloud snapshot and queues preserved-version replacements', async () => {
+  it('migrates a v1 cloud snapshot, mixed or not, and queues preserved-version replacements (D156)', async () => {
     const loaded = content()
     await db.open()
     const profile = { ...createPlayerProfile(loaded.manifest.version, 1), schemaVersion: 1 as const, tickets: 88 }
@@ -402,6 +404,7 @@ describe('save persistence', () => {
     expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 7, tickets: 18 } })
     expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 7, unlockedTier: 1 } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${legacyUma.templateId}`])
+    // An old profile beside a current Uma, as a failed profile upload leaves the cloud: each migrates on its own.
     await expect(adoptServerSnapshot({
       entities: [
         { kind: 'profile', id: 'main', version: 7, data: profile, deleted: false, updatedAt: 20 },
@@ -409,7 +412,11 @@ describe('save persistence', () => {
       ],
       logs: [],
       serverTime: 21,
-    })).rejects.toThrow(/mixes incompatible/)
+    })).resolves.toBe('adopted')
+    const mixed = await readLocalSnapshot()
+    expect(mixed?.profile.data).toMatchObject({ schemaVersion: 7, tickets: 18 })
+    expect(mixed?.umas[0]?.data).toEqual(current)
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)).toEqual(['profile/main'])
   })
 
 })
@@ -550,6 +557,73 @@ describe('game bootstrap coordinator', () => {
     expect(local?.profile).toMatchObject({ version: 4, data: { featuredUmaId: 'u02' } })
     expect(await db.outbox.where('[kind+id]').equals(['profile', 'main']).count()).toBe(1)
     expect(useGame.getState().profile?.featuredUmaId).toBe('u02')
+  })
+
+  it('keeps the local copy when the server conflict predates the save schema, and sends it again (D156)', async () => {
+    vi.stubGlobal('navigator', { onLine: true })
+    const loaded = content()
+    const initial = createInitialSave(loaded.umas.items, loaded.cards.items, loaded.manifest.version, localDay(), 1)
+    const serverProfile = { ...initial.profile, featuredUmaId: 'u00' }
+    vi.spyOn(saveApi, 'load').mockResolvedValue({
+      entities: [
+        { kind: 'profile', id: 'main', version: 3, data: toRecord(serverProfile), deleted: false, updatedAt: 2 },
+        ...initial.umas.map((data) => ({ kind: 'umas' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
+        ...initial.cards.map((data) => ({ kind: 'cards' as const, id: data.templateId, version: 1, data: toRecord(data), deleted: false, updatedAt: 2 })),
+        ...initial.umas.map((data) => ({ kind: 'badges' as const, id: `uma:${data.templateId}`, version: 1, data: toRecord(currentBadgeState(loaded, data)), deleted: false, updatedAt: 2 })),
+        { kind: 'badges' as const, id: 'trainer', version: 1, data: toRecord(currentTrainerState(loaded, initial)), deleted: false, updatedAt: 2 },
+      ],
+      logs: [],
+      serverTime: 2,
+    })
+    // The server still holds a schema-3 profile from before the save migrations, as production did after failed syncs.
+    const staleProfile = { ...toRecord(serverProfile), schemaVersion: 3, tickets: 300 }
+    const sync = vi.spyOn(saveApi, 'sync').mockResolvedValueOnce({
+      applied: [],
+      conflicts: [{ kind: 'profile', id: 'main', version: 4, data: staleProfile, deleted: false, updatedAt: 3 }],
+      appended: 0,
+      serverTime: 3,
+    })
+    await runtime.start(loaded)
+    await runtime.setFeaturedUma('u01')
+    await runtime.flush()
+
+    // Our copy stands on the server's version, queued to go again; nothing threw and nothing rolled back.
+    expect((await readLocalSnapshot())?.profile).toMatchObject({ version: 4, data: { featuredUmaId: 'u01', schemaVersion: 7 } })
+    expect(await db.outbox.where('[kind+id]').equals(['profile', 'main']).count()).toBe(1)
+    expect(useGame.getState().profile?.featuredUmaId).toBe('u01')
+
+    sync.mockResolvedValueOnce({ applied: [{ kind: 'profile', id: 'main', version: 5 }], conflicts: [], appended: 0, serverTime: 4 })
+    await runtime.flush()
+    const resent = sync.mock.calls.at(-1)![0]
+    expect(resent.upserts).toEqual([expect.objectContaining({ kind: 'profile', id: 'main', baseVersion: 4, data: expect.objectContaining({ featuredUmaId: 'u01' }) })])
+    expect((await readLocalSnapshot())?.profile.version).toBe(5)
+    expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('keeps the first copy of an award earned again from a restored badge state (D156)', async () => {
+    await db.open()
+    const first = {
+      id: 'flair:trainer:stable:trainer:badge-hoarder:bronze',
+      data: {
+        version: 1, scope: 'trainer', umaId: null, kind: 'trainer-achievement', awardKey: 'trainer:badge-hoarder', stage: 'bronze',
+        earnedAt: 10, source: { kind: 'migration', id: null, tier: null }, retroactive: true,
+      },
+    }
+    const again = { ...first, data: { ...first.data, earnedAt: 99 } }
+    await db.transaction('rw', db.flairEvents, db.outbox, () => appendFlairEvents([first as never], 10))
+    await db.transaction('rw', db.flairEvents, db.outbox, () => appendFlairEvents([again as never], 99))
+    expect((await db.flairEvents.get(first.id))?.createdAt).toBe(10)
+    expect(await db.flairEvents.count()).toBe(1)
+  })
+
+  it('migrates a legacy server conflict it adopts, instead of failing on it', async () => {
+    const legacy = { ...toRecord(createPlayerProfile('abc123def456', 1)), schemaVersion: 3, tickets: 300 }
+    const record = { kind: 'profile' as const, id: 'main', version: 7, data: legacy, deleted: false, updatedAt: 3 }
+    expect(isLegacyServerRecord(record)).toBe(true)
+    await db.open()
+    await db.transaction('rw', db.profile, db.umas, db.cards, db.badges, db.outbox, () => putConflict(record, true, 5))
+    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 7, tickets: 60 })
+    expect(await db.outbox.where('[kind+id]').equals(['profile', 'main']).count()).toBe(1)
   })
 
   it('adopts a server conflict when no newer local mutation exists', async () => {

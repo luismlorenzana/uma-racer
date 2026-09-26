@@ -115,17 +115,16 @@ export async function putUmaBadgeState(
   await queueInTransaction('badges', id, 'upsert', now)
 }
 
+/**
+ * Records newly earned flair. An event id names one award, so an id already recorded is that award earned before: the
+ * first copy stands and the repeat is dropped (D156), as the server treats every append-only log (D149). A repeat
+ * happens when a badge state is restored from an older copy and its awards are earned again with a later date.
+ */
 export async function appendFlairEvents(events: readonly FlairEventRecord[], queuedAt: number): Promise<void> {
   for (const event of events) {
     const parsed = parseFlairEvent(event.data)
     if (!parsed || parsed.earnedAt !== event.data.earnedAt) throw new Error(`Flair event is invalid: ${event.id}`)
-    const existing = await db.flairEvents.get(event.id)
-    if (existing) {
-      if (existing.createdAt !== parsed.earnedAt || JSON.stringify(existing.data) !== JSON.stringify(parsed)) {
-        throw new Error(`Flair event id collision: ${event.id}`)
-      }
-      continue
-    }
+    if (await db.flairEvents.get(event.id)) continue
     await db.flairEvents.add({ id: event.id, data: parsed, createdAt: parsed.earnedAt })
     await queueInTransaction('flairEvents', event.id, 'append', queuedAt)
   }
