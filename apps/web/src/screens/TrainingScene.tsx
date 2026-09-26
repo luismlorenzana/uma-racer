@@ -9,6 +9,7 @@ import { Crest } from '../ui/Crest'
 import { Numeral } from '../ui/Numeral'
 import { ScreenState } from '../ui/ScreenState'
 import { SegmentedControl } from '../ui/SegmentedControl'
+import { ChevronLeftIcon } from '../ui/icons'
 
 export interface TrainingContext {
   content: LoadedContent
@@ -63,8 +64,9 @@ export function TrainingScene() {
   return (
     <div className="flex h-dvh flex-col bg-page pt-safe">
       <header className="flex items-center justify-between gap-2 px-4 py-2">
-        <Link to={`/stable/${encodeURIComponent(save.templateId)}`} className="flex min-h-11 min-w-0 items-center text-sm font-semibold text-ink-soft">
-          <span className="truncate">← {uma.template.name}</span>
+        <Link to={`/stable/${encodeURIComponent(save.templateId)}`} className="flex min-h-11 min-w-0 items-center gap-1 text-sm font-semibold text-ink-soft">
+          <ChevronLeftIcon size={20} />
+          <span className="truncate">{uma.template.name}</span>
         </Link>
         <div className="flex shrink-0 gap-1">
           <Crest>{uma.scenario?.name ?? `Tier ${run.tier}`}</Crest>

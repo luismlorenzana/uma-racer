@@ -11,9 +11,11 @@ export interface SyncState {
   error: string | null
 }
 
+/** A reward toast; `icon` names the currency it grants, drawn from the icon set. */
 export interface Toast {
   id: number
   text: string
+  icon?: 'ticket'
 }
 
 interface GameState {
@@ -29,7 +31,7 @@ interface GameState {
   orphanedCardIds: readonly string[]
   sync: SyncState
   toasts: Toast[]
-  pushToast: (text: string) => void
+  pushToast: (text: string, icon?: Toast['icon']) => void
   dismissToast: (id: number) => void
 }
 
@@ -72,7 +74,7 @@ export const useGame = create<GameState>()((set) => ({
   orphanedCardIds: [],
   sync: emptySync(),
   toasts: [],
-  pushToast: (text) => set((state) => ({ toasts: [...state.toasts, { id: ++toastSeq, text }] })),
+  pushToast: (text, icon) => set((state) => ({ toasts: [...state.toasts, { id: ++toastSeq, text, ...(icon ? { icon } : {}) }] })),
   dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
 }))
 

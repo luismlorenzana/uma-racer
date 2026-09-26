@@ -40,6 +40,7 @@ import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { SegmentedControl } from '../ui/SegmentedControl'
+import { CheckIcon } from '../ui/icons'
 
 const MAX_COMPARE = 3
 const titleCase = (value: string) => `${value[0]!.toUpperCase()}${value.slice(1)}`
@@ -165,7 +166,7 @@ function UmaTile({
           }
           corner={
             selecting
-              ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? '✓' : ''}</Crest>
+              ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? <CheckIcon size={16} title="Picked" /> : <span className="h-4 w-4" />}</Crest>
               : icons ? (
                 (entry.isNew || entry.view?.readyToAdvance) && (
                   <span className="flex gap-1">

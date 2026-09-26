@@ -1,27 +1,30 @@
 // Shared visual projection for Prestige frames (docs/design/badges.md).
 
 import { prestigeFrame } from '@racer/domain'
+import { GemIcon, SparkIcon, StarIcon, type IconComponent, type IconVariant } from '../ui/icons'
 
 export interface BadgeFrameStyle {
   index: number
   label: ReturnType<typeof prestigeFrame>['label']
   borderClass: string
   backgroundClass: string
-  glyph: string
+  Glyph: IconComponent
+  glyphVariant: IconVariant
 }
 
-const FRAME_CLASSES: [string, string, string][] = [
-  ['border-slate-200', 'bg-white', '◇'],
-  ['border-amber-600', 'bg-amber-50', '◆'],
-  ['border-slate-400', 'bg-slate-50', '◆'],
-  ['border-accent', 'bg-amber-50', '✦'],
-  ['border-cyan-400', 'bg-cyan-50', '✦'],
-  ['border-violet-400', 'bg-violet-50', '✧'],
-  ['border-fuchsia-500', 'bg-fuchsia-50', '★'],
+// Plain, Bronze, Silver, Gold, Platinum, Rainbow, Legend: the tier metals ring the frame (docs/design/visual-system.md).
+const FRAME_STYLES: [string, string, IconComponent, IconVariant][] = [
+  ['border-hairline-strong', 'bg-panel', GemIcon, 'line'],
+  ['border-tier-bronze', 'bg-panel', GemIcon, 'solid'],
+  ['border-tier-silver', 'bg-panel', GemIcon, 'solid'],
+  ['border-tier-gold', 'bg-accent-wash', GemIcon, 'duotone'],
+  ['border-tier-platinum', 'bg-panel', SparkIcon, 'solid'],
+  ['border-accent', 'bg-gradient-to-br from-accent-wash via-panel to-page', SparkIcon, 'duotone'],
+  ['border-accent-strong', 'bg-accent-wash', StarIcon, 'duotone'],
 ]
 
 export function badgeFrameStyle(prestige: number): BadgeFrameStyle {
   const frame = prestigeFrame(prestige)
-  const classes = FRAME_CLASSES[frame.index]!
-  return { ...frame, borderClass: classes[0], backgroundClass: classes[1], glyph: classes[2] }
+  const [borderClass, backgroundClass, Glyph, glyphVariant] = FRAME_STYLES[frame.index]!
+  return { ...frame, borderClass, backgroundClass, Glyph, glyphVariant }
 }

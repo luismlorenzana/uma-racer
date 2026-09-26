@@ -12,6 +12,7 @@ import type { SavedView } from '../../game/album/prefs'
 import { BottomSheet } from '../BottomSheet'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon, ViewCardsIcon, ViewGridIcon, ViewListIcon } from '../icons'
 import { Numeral } from '../Numeral'
 import { FilterTray } from './FilterTray'
 import { SortSheet } from './SortSheet'
@@ -21,6 +22,14 @@ import { SortSheet } from './SortSheet'
  * presets, removable active-filter chips and the result count
  * (docs/design/collection.md#shared-browsing-chrome).
  */
+const VIEW_GLYPHS = { icons: ViewGridIcon, cards: ViewCardsIcon, list: ViewListIcon } as const
+
+/** The album view toggle's glyph: solid for the chosen view, line for the others. */
+function ViewGlyph({ view, active }: { view: keyof typeof VIEW_GLYPHS; active: boolean }) {
+  const Glyph = VIEW_GLYPHS[view]
+  return <Glyph size={20} variant={active ? 'solid' : 'line'} />
+}
+
 export function AlbumChrome({
   title,
   completion,
@@ -97,11 +106,11 @@ export function AlbumChrome({
               aria-pressed={query.view === view}
               aria-label={`${view === 'icons' ? 'Icon' : view === 'cards' ? 'Card' : 'List'} view`}
               onClick={() => onQueryChange({ ...query, view })}
-              className={`flex h-9 w-9 items-center justify-center rounded-xs text-[13px] ${
+              className={`flex h-9 w-9 items-center justify-center rounded-xs ${
                 query.view === view ? 'bg-panel text-ink shadow-1' : 'text-ink-faint'
               }`}
             >
-              <span aria-hidden>{view === 'icons' ? '▦' : view === 'cards' ? '▢' : '▤'}</span>
+              <ViewGlyph view={view} active={query.view === view} />
             </button>
           ))}
         </div>
@@ -120,7 +129,8 @@ export function AlbumChrome({
             className="min-h-11 min-w-0 flex-1 rounded-sm border border-hairline bg-panel px-3 text-[15px]"
           />
           <Button variant="secondary" size="sm" onClick={() => setSortOpen(true)}>
-            {sortLabel} {query.direction === 'asc' ? '↑' : '↓'}
+            {sortLabel}
+            {query.direction === 'asc' ? <ArrowUpIcon size={16} title="ascending" /> : <ArrowDownIcon size={16} title="descending" />}
           </Button>
           <Button variant={activeCount > 0 ? 'primary' : 'secondary'} size="sm" onClick={() => setFilterOpen(true)}>
             Filter{activeCount > 0 ? ` · ${activeCount}` : ''}
@@ -138,7 +148,8 @@ export function AlbumChrome({
           <div className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4" aria-label="Active filters">
             {activeFacets.map((facet) => (
               <Chip key={facet.key} selected onClick={() => removeFilter(facet.key)}>
-                {facet.label} <span aria-hidden>×</span>
+                {facet.label}
+                <CloseIcon size={16} />
               </Chip>
             ))}
             <Chip onClick={() => onQueryChange({ ...query, filters: {} })}>Clear all</Chip>
@@ -209,7 +220,7 @@ export function AlbumChrome({
                 onClick={() => onDeleteView(view.name)}
                 className="flex h-11 w-11 items-center justify-center rounded-sm text-ink-faint"
               >
-                <span aria-hidden>×</span>
+                <CloseIcon size={20} />
               </button>
             </div>
           ))}

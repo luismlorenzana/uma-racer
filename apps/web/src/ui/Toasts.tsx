@@ -1,6 +1,7 @@
 import { AnimatePresence, m } from 'motion/react'
 import { useEffect } from 'react'
 import { useGame } from '../game/store'
+import { TicketIcon } from './icons'
 
 /** Reward toasts that drop in under the top bar (e.g. the daily ticket grant). */
 export function Toasts() {
@@ -24,8 +25,9 @@ export function Toasts() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -20, opacity: 0, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 520, damping: 26 }}
-            className="rounded-full border border-hairline bg-gradient-to-b from-accent to-accent-strong px-5 py-2 text-lg font-semibold text-white text-outline shadow-2"
+            className="flex items-center gap-2 rounded-full border border-hairline bg-gradient-to-b from-accent to-accent-strong px-5 py-2 text-lg font-semibold text-white text-outline shadow-2"
           >
+            {toast.icon === 'ticket' && <TicketIcon size={24} variant="duotone" accent="var(--color-accent-strong)" />}
             {toast.text}
           </m.div>
         ))}

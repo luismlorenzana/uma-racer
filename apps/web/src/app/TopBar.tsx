@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { useGame } from '../game/store'
 import { CountUp } from '../ui/CountUp'
+import { CardCouponIcon, TicketIcon, UmaCouponIcon, WarningIcon } from '../ui/icons'
 import { Pill } from '../ui/Pill'
 
 /** Changes waiting this long since the last good sync are worth a look even without an error. */
@@ -18,10 +19,11 @@ export function TopBar() {
   return (
     <header className="pt-safe sticky top-0 z-20 px-4">
       <div className="flex items-center justify-between py-2">
-        <Link to="/settings" className="font-display whitespace-nowrap text-[17px] font-bold tracking-tight text-ink">
+        <Link to="/settings" className="font-display flex items-center gap-2 whitespace-nowrap text-[17px] font-bold tracking-tight text-ink">
+          {/* The drawn mark: the same file as the Home Screen icon (scripts/generate-icons.mjs). */}
+          <img src="/icons/icon.svg" alt="" width={24} height={24} className="shrink-0" />
           Uma Racer
         </Link>
-        {/* TODO(T032): currency icons come from the original set. */}
         <div className="flex items-center gap-1.5">
           {syncWarning && (
             <Link
@@ -30,14 +32,15 @@ export function TopBar() {
               aria-label={`${syncWarning}: open Settings for details`}
               title={syncWarning}
             >
-              ⚠ Sync
+              <WarningIcon size={16} className="mr-1" />
+              Sync
             </Link>
           )}
-          <Pill icon="🎫" data-testid="tickets">
+          <Pill icon={<TicketIcon size={20} variant="duotone" />} label="Training Tickets" data-testid="tickets">
             <CountUp value={tickets} />
           </Pill>
-          <Pill icon="🃏">{cardCoupons}</Pill>
-          <Pill icon="🐴">{umaCoupons}</Pill>
+          <Pill icon={<CardCouponIcon size={20} variant="duotone" />} label="Card Select Coupons">{cardCoupons}</Pill>
+          <Pill icon={<UmaCouponIcon size={20} variant="duotone" />} label="Uma Select Coupons">{umaCoupons}</Pill>
         </div>
       </div>
     </header>

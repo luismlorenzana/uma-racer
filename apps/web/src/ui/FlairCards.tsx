@@ -1,5 +1,6 @@
 import { m } from 'motion/react'
 import type { FlairEventView } from '../game/flair-view'
+import { BadgesIcon, SparkIcon, StarIcon, type IconComponent } from './icons'
 
 const tierTone: Record<FlairEventView['stage'], string> = {
   // Paddock tier tokens on a panel: the ring carries the tier, the text stays ink (docs/design/visual-system.md).
@@ -11,8 +12,10 @@ const tierTone: Record<FlairEventView['stage'], string> = {
   'one-off': 'border-accent bg-accent-wash text-ink',
 }
 
-const tierGlyph: Record<FlairEventView['stage'], string> = {
-  bronze: '●', silver: '■', gold: '◆', platinum: '⬡', rainbow: '★', 'one-off': '✦',
+// The medal takes its tier's metal; the card's stage label names the tier, so it never rests on colour alone.
+const tierGlyph: Record<FlairEventView['stage'], [IconComponent, string]> = {
+  bronze: [BadgesIcon, 'text-tier-bronze'], silver: [BadgesIcon, 'text-tier-silver'], gold: [BadgesIcon, 'text-tier-gold'],
+  platinum: [BadgesIcon, 'text-tier-platinum'], rainbow: [StarIcon, 'text-accent-strong'], 'one-off': [SparkIcon, 'text-accent-strong'],
 }
 
 export function FlairCards({
@@ -28,22 +31,23 @@ export function FlairCards({
   return (
     <section aria-label={title ?? 'Earned flair'} className="grid gap-2">
       {title && <p className="text-xs font-semibold tracking-widest text-ink-soft uppercase">{title}</p>}
-      {items.map((item, index) => (
-        <m.div
+      {items.map((item, index) => {
+        const [Glyph, tone] = tierGlyph[item.stage]
+        return <m.div
           key={item.id}
           className={`flex min-h-11 items-center gap-3 rounded-md border-2 px-3 py-2 shadow-1 ${tierTone[item.stage]}`}
           initial={animate ? { y: 10, opacity: 0 } : false}
           animate={{ y: 0, opacity: 1 }}
           transition={animate ? { delay: index * 0.12 } : { duration: 0 }}
         >
-          <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-panel/80 text-xl">{tierGlyph[item.stage]}</span>
+          <span aria-hidden className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-panel/80 ${tone}`}><Glyph size={24} variant="solid" /></span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold">{item.label}</span>
             <span className="block text-[11px] font-bold opacity-75">{item.kindLabel} · {item.stageLabel}</span>
           </span>
           {item.prestigeDelta > 0 && <span className="shrink-0 text-xs font-semibold">+{item.prestigeDelta} P</span>}
         </m.div>
-      ))}
+      })}
     </section>
   )
 }

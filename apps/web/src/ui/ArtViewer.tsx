@@ -1,6 +1,7 @@
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { CloseIcon } from './icons'
 
 /**
  * One piece of art at full size over a dark stage (docs/design/collection.md#art-tiers). Detail surfaces open it from
@@ -50,9 +51,9 @@ export function ArtViewer({
               type="button"
               aria-label="Close"
               onClick={onClose}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-panel/12 text-2xl leading-none text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-panel/12 text-white"
             >
-              ×
+              <CloseIcon size={24} />
             </button>
           </div>
           <m.img

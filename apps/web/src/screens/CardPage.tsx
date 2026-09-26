@@ -32,6 +32,7 @@ import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { useArt } from '../ui/album/useArt'
 import { SectionHeading } from '../ui/Section'
+import { ChevronLeftIcon, ChevronRightIcon } from '../ui/icons'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 const STAT_TONE: Record<StatKey, string> = {
@@ -111,7 +112,7 @@ export function CardPage() {
 
   return (
     <div className="flex flex-col gap-2 pt-1">
-      <Link to="/cards" className="flex min-h-11 items-center gap-1 px-1 text-sm font-semibold text-ink-soft">← Cards</Link>
+      <Link to="/cards" className="flex min-h-11 items-center gap-1 px-1 text-sm font-semibold text-ink-soft"><ChevronLeftIcon size={20} />Cards</Link>
 
       {/* ── The card ─────────────────────────────────────────────────── */}
       <CardHero
@@ -264,7 +265,7 @@ export function CardPage() {
                     className="flex min-h-11 items-center justify-between rounded-md bg-sunken px-2 text-[12px] font-semibold"
                   >
                     <span className="truncate">{label}</span>
-                    <span aria-hidden className="text-ink-faint">›</span>
+                    <ChevronRightIcon size={16} className="text-ink-faint" />
                   </Link>
                 ) : (
                   <p key={`${holder.umaId}:${holder.tier}`} className="flex min-h-11 items-center rounded-md px-2 text-[12px] text-ink-soft">

@@ -9,6 +9,7 @@ import {
 import { BottomSheet } from '../BottomSheet'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
+import { ChevronDownIcon, ChevronRightIcon } from '../icons'
 
 const asArray = (selection: FacetSelection | undefined): readonly string[] =>
   Array.isArray(selection) ? selection : []
@@ -101,7 +102,7 @@ export function FilterTray({
                   {group}
                   {groupActive > 0 && <span className="ml-1 text-accent-strong">· {groupActive}</span>}
                 </span>
-                <span aria-hidden className="text-ink-faint">{expanded ? '▾' : '▸'}</span>
+                {expanded ? <ChevronDownIcon size={20} className="text-ink-faint" /> : <ChevronRightIcon size={20} className="text-ink-faint" />}
               </button>
 
               {expanded && (

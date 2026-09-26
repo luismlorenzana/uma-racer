@@ -19,6 +19,7 @@ import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { FlairCards } from '../ui/FlairCards'
+import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 
 export function HomeScreen() {
   const navigate = useNavigate()
@@ -179,7 +180,7 @@ export function HomeScreen() {
                     goal.status === 'completed' ? 'bg-accent text-ink' : 'border border-hairline-strong text-ink-faint'
                   }`}
                 >
-                  {goal.status === 'completed' ? '✓' : goal.race ? '' : '!'}
+                  {goal.status === 'completed' ? <CheckIcon size={16} title="Complete" /> : goal.race ? '' : '!'}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px] font-semibold">{goal.label} · {goal.raceName}</span>
@@ -196,7 +197,7 @@ export function HomeScreen() {
                     </span>
                   )}
                 </span>
-                {goal.status === 'active' && goal.race && raceUnlocked && <span aria-hidden className="text-ink-faint">›</span>}
+                {goal.status === 'active' && goal.race && raceUnlocked && <ChevronRightIcon size={20} className="text-ink-faint" />}
               </button>
             ))}
           </div>
@@ -224,9 +225,10 @@ export function HomeScreen() {
             </p>
             <Link
               to={`/badges?uma=${encodeURIComponent(featured.save.templateId)}`}
-              className="flex min-h-11 items-center text-[13px] font-semibold text-accent-strong"
+              className="flex min-h-11 items-center gap-0.5 text-[13px] font-semibold text-accent-strong"
             >
-              All badges ›
+              All badges
+              <ChevronRightIcon size={16} />
             </Link>
           </div>
           {flairSummary.recent.length > 0 ? (
@@ -241,7 +243,7 @@ export function HomeScreen() {
       <Panel label="Stable flair">
         <div className="mb-1 flex items-center justify-between gap-3">
           <p className="text-[13px] text-ink-soft">Newest across every Uma and Trainer achievement</p>
-          <Link to="/trainer" className="flex min-h-11 items-center text-[13px] font-semibold text-accent-strong">Trainer ›</Link>
+          <Link to="/trainer" className="flex min-h-11 items-center gap-0.5 text-[13px] font-semibold text-accent-strong">Trainer<ChevronRightIcon size={16} /></Link>
         </div>
         {stableRecent.length > 0 ? (
           <div className="divide-y divide-[var(--color-hairline)]">

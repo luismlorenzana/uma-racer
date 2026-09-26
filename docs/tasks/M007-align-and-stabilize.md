@@ -13,7 +13,7 @@ closes the alignment gaps and makes releases dependable. It adds no new pillars.
 The original roadmap put Polish at #7. That order changed (D105): presentation polish is worth little while goals ignore
 a rule we agreed on, titles cannot be earned at all, and three scenarios are missing. The owner also reports that the
 game currently "leans a bit towards unplayable", so Milestone 7 reserves a task for the playability notes that follow
-their own playthrough, and presentation polish moves to [Milestone 9](M009-look-and-feel.md) and beyond.
+their own playthrough, and presentation polish moves to Milestone 9 (the [Paddock visual system](../design/visual-system.md)) and beyond.
 
 ## Findings this milestone closes
 

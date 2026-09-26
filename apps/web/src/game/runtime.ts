@@ -259,7 +259,7 @@ export class GameRuntime {
       if (!local) throw new Error('Save initialization did not produce a profile')
       if (generation !== this.generation) return
       adoptGameState(stateFromSnapshot(local, content, true))
-      if (granted > 0) useGame.getState().pushToast(`+${granted} 🎫 Daily tickets`)
+      if (granted > 0) useGame.getState().pushToast(`+${granted} Daily tickets`, 'ticket')
       if (archivedAwards > 0) useGame.getState().pushToast(`Flair archive updated · ${archivedAwards} awards`)
       if (trainerArchive.events.length > 0) useGame.getState().pushToast(`Trainer archive updated · ${trainerArchive.events.length} achievements`)
       window.addEventListener('online', this.onlineHandler)

@@ -24,7 +24,6 @@ multipliers on a training turn that no longer exists.
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M020 — Friendship Training](M020-friendship-training.md) | T063 · T064 · T065 | Specified · next |
-| [M009 — Look and feel](M009-look-and-feel.md) | T030 · T031 · T032 | Specified |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
 
@@ -57,6 +56,10 @@ face tokens and was removed under D104; D160 and [Collection](../design/collecti
 M015 (scenario identity: crests on the Stable's icons, scenario-linked races, minigame-era training badges and the
 fourteen scenario buffs) landed on 2026-09-26 and was removed under D104; D163–D165, [Scenarios](../design/scenarios.md#scenario-buffs),
 [Badges](../design/badges.md) and [Collection](../design/collection.md#icon-overlays) carry it.
+
+M009 (look and feel: the Paddock tokens and primitives, every screen rolled onto them, and the original icon set with
+the drawn mark) landed on 2026-09-26 and was removed under D104; D166–D167 and
+[Visual System](../design/visual-system.md) carry it. Spark Match and Bond Recall keep their own look until M020.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

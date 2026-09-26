@@ -1,6 +1,7 @@
 import type { AlbumQuery, FacetOption, SortDef, SortDirection } from '../../game/album/query'
 import { BottomSheet } from '../BottomSheet'
 import { Chip } from '../Chip'
+import { ArrowDownIcon, ArrowUpIcon } from '../icons'
 
 /** Sort is a separate control from Filter, and always exposes its direction (and any parameter). */
 export function SortSheet({
@@ -44,7 +45,7 @@ export function SortSheet({
               }`}
             >
               <span>{sort.label}</span>
-              {selected && <span aria-label={query.direction === 'asc' ? 'Ascending' : 'Descending'}>{query.direction === 'asc' ? '↑' : '↓'}</span>}
+              {selected && (query.direction === 'asc' ? <ArrowUpIcon size={20} title="Ascending" /> : <ArrowDownIcon size={20} title="Descending" />)}
             </button>
           )
         })}

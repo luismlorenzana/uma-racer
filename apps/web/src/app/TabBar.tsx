@@ -1,13 +1,13 @@
 import { m } from 'motion/react'
 import { NavLink } from 'react-router'
+import { BadgesIcon, CardsIcon, HomeIcon, RaceIcon, StableIcon } from '../ui/icons'
 
-// TODO(T032): replace the emoji with the original two-tone icon set.
 const TABS = [
-  { to: '/', label: 'Home', icon: '🏠' },
-  { to: '/stable', label: 'Stable', icon: '🐴' },
-  { to: '/race', label: 'Race', icon: '🏁', primary: true },
-  { to: '/cards', label: 'Cards', icon: '🃏' },
-  { to: '/badges', label: 'Badges', icon: '🏅' },
+  { to: '/', label: 'Home', Icon: HomeIcon },
+  { to: '/stable', label: 'Stable', Icon: StableIcon },
+  { to: '/race', label: 'Race', Icon: RaceIcon, primary: true },
+  { to: '/cards', label: 'Cards', Icon: CardsIcon },
+  { to: '/badges', label: 'Badges', Icon: BadgesIcon },
 ] as const
 
 /** Bottom tab bar in the thumb zone, with the Race tab raised in the centre (docs/design/visual-system.md#components). */
@@ -22,9 +22,10 @@ export function TabBar() {
                 <m.span
                   whileTap={{ scale: 0.94 }}
                   transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
-                  className="-mt-6 flex h-14 w-14 flex-col items-center justify-center rounded-full border border-accent-strong/30 bg-accent text-xl shadow-2"
+                  className="-mt-6 flex h-14 w-14 flex-col items-center justify-center rounded-full border border-accent-strong/30 bg-accent text-ink shadow-2"
                 >
-                  <span aria-hidden>{tab.icon}</span>
+                  {/* On the accent disc the flag's tone is the panel white, so the checks still read. */}
+                  <tab.Icon size={24} variant="duotone" accent="var(--color-panel)" />
                   <span className="font-display -mt-0.5 text-[10px] font-semibold text-ink">{tab.label}</span>
                 </m.span>
               ) : (
@@ -33,9 +34,8 @@ export function TabBar() {
                   transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
                   className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 px-2 py-1"
                 >
-                  <span aria-hidden className={`text-lg transition-opacity ${isActive ? 'opacity-100' : 'opacity-55'}`}>
-                    {tab.icon}
-                  </span>
+                  {/* Line at rest, the illustrated two-tone when active: the state is shape as well as colour. */}
+                  <tab.Icon size={24} variant={isActive ? 'duotone' : 'line'} className={isActive ? 'text-ink' : 'text-ink-faint'} />
                   <span className={`text-[11px] font-semibold ${isActive ? 'text-ink' : 'text-ink-faint'}`}>{tab.label}</span>
                   {isActive && (
                     <m.span

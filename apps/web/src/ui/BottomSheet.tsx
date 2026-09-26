@@ -1,5 +1,6 @@
 import { AnimatePresence, m, useDragControls, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
+import { CloseIcon } from './icons'
 
 /**
  * Bottom sheet for pickers and confirmations (docs/design/ux.md#navigation). Dragging starts only from the grab
@@ -49,9 +50,9 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
                 type="button"
                 aria-label="Close"
                 onClick={onClose}
-                className="absolute top-0 right-1 flex h-11 w-11 items-center justify-center rounded-full text-xl leading-none text-ink-soft"
+                className="absolute top-0 right-1 flex h-11 w-11 items-center justify-center rounded-full text-ink-soft"
               >
-                ×
+                <CloseIcon size={20} />
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>

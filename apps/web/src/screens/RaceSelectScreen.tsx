@@ -35,6 +35,7 @@ import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { UmaBust } from '../ui/UmaBust'
+import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
 
 const ordinal = (value: number) => {
@@ -141,7 +142,7 @@ function Tracker({ tracker, level, umaId }: { tracker: CareerTracker; level: num
         </ul>
       )}
       <p className="mt-2 text-[12px] text-ink-soft">{holdNote(tracker, level)}</p>
-      {tracker.complete && <Link to={`/stable/${encodeURIComponent(umaId)}`} className="mt-1 inline-flex min-h-11 items-center text-[13px] font-semibold text-accent-strong">Open her profile ›</Link>}
+      {tracker.complete && <Link to={`/stable/${encodeURIComponent(umaId)}`} className="mt-1 inline-flex min-h-11 items-center gap-0.5 text-[13px] font-semibold text-accent-strong">Open her profile<ChevronRightIcon size={16} /></Link>}
     </Panel>
   )
 }
@@ -455,7 +456,7 @@ export function RaceSelectScreen() {
                       onClick={() => void toggleSkill(skill.id)}
                       className={`flex min-h-11 items-center justify-between rounded-sm border px-3 text-left text-[13px] font-semibold ${equipped ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'} disabled:opacity-65`}
                     >
-                      <span className="truncate">{equipped ? '✓ ' : ''}{skill.name}</span>
+                      <span className="truncate">{equipped && <CheckIcon size={16} className="mr-1 inline" title="Equipped" />}{skill.name}</span>
                       <span className="text-micro shrink-0">
                         {own ? (compatible ? 'Unique' : supported ? 'Unique · wrong course' : 'Unique · later') :
                           supported ? `${skill.costSp ?? '—'} SP${compatible ? '' : ' · wrong course'}` : skillAimsAtOthers(skill) ? 'Not in this game' : 'Later'}

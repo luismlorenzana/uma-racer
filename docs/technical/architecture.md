@@ -239,7 +239,8 @@ apps/web/src/
   game/         Zustand store, Dexie schema/migrations, save coordinator, persistence, outbox sync, content/save joins
   content/      manifest + pack loading, asset URLs
   scenes/       PixiJS race scenes, lazy-loaded
-  ui/           Paddock kit (visual-system.md): Button, Chip, SegmentedControl, Panel, Row, Pill, Meter, ArtTile, BottomSheet, Toasts
+  ui/           Paddock kit (visual-system.md): Button, Chip, SegmentedControl, Panel, Row, Pill, Meter, ArtTile, BottomSheet, Toasts;
+                icons/ holds the original icon set, one module per icon
   screens/      Home, Stable, UmaProfile, Training, RaceSelect, PreRace, Race, Results, Cards, Badges, Settings
 ```
 

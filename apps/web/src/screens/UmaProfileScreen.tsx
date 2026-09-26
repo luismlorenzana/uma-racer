@@ -39,6 +39,7 @@ import { Panel } from '../ui/Panel'
 import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
+import { CheckIcon, ChevronLeftIcon, PlusIcon } from '../ui/icons'
 import { formatTickets } from '../ui/tickets'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
@@ -168,7 +169,7 @@ export function UmaProfileScreen() {
 
   return (
     <div className="flex flex-col gap-2 pt-1">
-      <Link to="/stable" className="flex min-h-11 items-center gap-1 px-1 text-sm font-semibold text-ink-soft">← Stable</Link>
+      <Link to="/stable" className="flex min-h-11 items-center gap-1 px-1 text-sm font-semibold text-ink-soft"><ChevronLeftIcon size={20} />Stable</Link>
 
       {/* ── Who she is ───────────────────────────────────────────────── */}
       <Panel className="p-3">
@@ -420,8 +421,8 @@ export function UmaProfileScreen() {
                   equipped ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'
                 }`}
               >
-                <span className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${equipped ? 'bg-accent text-white' : 'bg-sunken text-ink-soft'}`}>
-                  {equipped ? '✓' : '+'}
+                <span className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${equipped ? 'bg-accent text-white' : 'bg-sunken text-ink-soft'}`}>
+                  {equipped ? <CheckIcon size={16} /> : <PlusIcon size={16} />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-semibold">{skill.name}</span>

@@ -3,7 +3,7 @@
 **Outcome:** the game sounds and responds like a finished product on the owner's iPhone, and its performance and
 accessibility are measured rather than assumed.
 
-This is what remains of the original polish plan after the look ([Milestone 9](M009-look-and-feel.md)) and the collection
+This is what remains of the original polish plan after the look (Milestone 9, the [Paddock visual system](../design/visual-system.md)) and the collection
 ([Milestone 10](M010-collection-depth.md)) were pulled out as milestones of their own. It consumes committed facts and
 never becomes a second rules engine.
 

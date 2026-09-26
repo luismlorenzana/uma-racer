@@ -53,7 +53,7 @@ Two faces, both OFL and self-hosted, latin subset only:
 |---|---|---|
 | Display: headings, numerals, buttons | **Outfit** 600/700, tabular numerals | 44 hero · 32 display · 24 display-sm · 20 title |
 | UI: body, labels, rows, chips | **Inter** 400/500/600 | 17 title-sm · 15 body · 13 body-sm · 12 label · 11 micro |
-| Wordmark only | a drawn mark, arriving with the icon set (T032) | the logo, nowhere else |
+| Wordmark only | the drawn mark (a horseshoe holding a spark) beside the name set in Outfit | the logo, nowhere else |
 
 - `micro` is uppercase with `0.06em` tracking, used for section labels — the small-caps texture that makes a game UI
   read as designed rather than as a form.
@@ -97,6 +97,19 @@ Two faces, both OFL and self-hosted, latin subset only:
 - Line by default, solid for active states, and **illustrated two-tone versions for the five tab icons and the three
   currencies** — those are the ones that carry personality.
 - Every icon ships with an accessible name. **No emoji in the product** once the set lands.
+- The set lives in `apps/web/src/ui/icons/`: one module per icon, a typed `IconName` union, sizes 16 / 20 / 24 / 32 in
+  `currentColor`. Each drawing has three layers: the outline, the inner marks (knocked out of a solid silhouette), and
+  the tone that duotone paints in the accent (or `accent`, such as the panel white on the raised Race tab). An icon
+  is decorative unless it gets a `title`.
+- Tabs: line at rest, two-tone when active. Currencies are always two-tone. The race controls and the album's chosen
+  view use solid. Tier metals colour the flair medal; the stage label still names the tier.
+- Every definition is `/* @__PURE__ */`, so a screen ships only the icons it draws; the shell's icons add about 2 KB
+  gzip to startup. Tests pin the drawings and fail on any emoji, or on any symbol-font glyph standing in for an icon
+  (Spark Match and Bond Recall are exempt until M020). Typography stays: `·`, `—`, `…`, `→` in copy, `×` in counts,
+  `★` in ratings.
+- The mark is a gold horseshoe, open to the sky, holding a spark, on the stage. `apps/web/scripts/generate-icons.mjs`
+  draws the Home Screen PNGs and `icon.svg` (the favicon and the top bar logo) from the same numbers, inside the
+  maskable safe zone.
 
 ## Art treatment
 
@@ -129,6 +142,7 @@ Albums carry a **Comfortable / Compact** toggle: 2-up art tiles versus 3-up tile
 
 - Tokens live in `apps/web/src/index.css` under `@theme`; components read tokens, never raw hex.
 - Tailwind utilities are fine; one-off colours are not.
-- Animate transform and opacity only in the DOM; keep PixiJS, Firebase and fonts lazy; the startup bundle stays at or
-  below 180 KB gzip, and the two font families must fit inside that budget as latin-only woff2.
+- Animate transform and opacity only in the DOM; keep PixiJS, Firebase and fonts lazy; startup JS stays at or below
+  180 KB gzip. The two font families ship as latin-only woff2 with `font-display: swap`, precached, at no more than
+  96 KB together (D167).
 - Every screen is designed at 390×844 first, with 44 pt targets and safe-area padding.

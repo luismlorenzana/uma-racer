@@ -13,6 +13,7 @@ import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/rac
 import { summarizePlayerActivations, type RaceCue } from '../../scenes/race/presentation'
 import { Button } from '../../ui/Button'
 import { FlairCards } from '../../ui/FlairCards'
+import { ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon } from '../../ui/icons'
 import { Meter } from '../../ui/Meter'
 import { UmaBust } from '../../ui/UmaBust'
 import { GRADE_LABEL, STRATEGY_LABEL } from './labels'
@@ -332,14 +333,14 @@ export function RaceRunScreen() {
             type="button"
             onClick={() => navigate(`/race?uma=${encodeURIComponent(attempt.umaId)}`)}
             disabled={committing}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-hairline bg-panel/85 text-xl font-semibold disabled:opacity-50"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-hairline bg-panel/85 disabled:opacity-50"
             aria-label="Back"
-          >‹</button>
+          ><ChevronLeftIcon size={20} /></button>
           <div className="min-w-0 flex-1 text-center">
             <p className="truncate text-lg leading-tight font-semibold text-white text-outline">{race.name}</p>
             <p className="text-xs font-semibold text-white/90 text-outline">{GRADE_LABEL[race.grade]} · {race.distance}m · {STRATEGY_LABEL[attempt.strategy]}</p>
           </div>
-          <button type="button" onClick={() => sceneRef.current?.skipToEnd()} className="h-11 min-w-11 rounded-full border border-hairline bg-panel/85 px-2 text-sm font-semibold" aria-label="Skip">⏭</button>
+          <button type="button" onClick={() => sceneRef.current?.skipToEnd()} className="flex h-11 min-w-11 items-center justify-center rounded-full border border-hairline bg-panel/85 px-2" aria-label="Skip"><SkipIcon size={20} variant="solid" /></button>
         </div>
         <div className="flex items-center justify-between rounded-md border border-hairline/80 bg-ink/35 px-3 py-1.5 text-white">
           <div className="min-w-0">
@@ -429,22 +430,22 @@ export function RaceRunScreen() {
                 onClick={() => step(-1)}
                 disabled={!paused || hud?.stage !== 'running'}
                 aria-label={turnRace ? 'Previous turn' : 'Back one second'}
-                className="h-11 w-11 rounded-full border-2 border-hairline-strong bg-panel text-lg font-semibold disabled:opacity-35"
-              >‹</button>
+                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-hairline-strong bg-panel disabled:opacity-35"
+              ><ChevronLeftIcon size={20} /></button>
               <button
                 type="button"
                 onClick={() => setPaused((value) => !value)}
                 disabled={!hud || hud.finished}
                 aria-label={paused ? 'Play' : 'Pause'}
-                className={`h-11 w-11 rounded-full border-2 text-sm font-semibold disabled:opacity-35 ${paused ? 'border-accent bg-accent text-ink' : 'border-hairline-strong bg-panel'}`}
-              >{paused ? '▶' : '❚❚'}</button>
+                className={`flex h-11 w-11 items-center justify-center rounded-full border-2 disabled:opacity-35 ${paused ? 'border-accent bg-accent text-ink' : 'border-hairline-strong bg-panel'}`}
+              >{paused ? <PlayIcon size={20} variant="solid" /> : <PauseIcon size={20} variant="solid" />}</button>
               <button
                 type="button"
                 onClick={() => step(1)}
                 disabled={!paused || hud?.stage !== 'running'}
                 aria-label={turnRace ? 'Next turn' : 'Forward one second'}
-                className="h-11 w-11 rounded-full border-2 border-hairline-strong bg-panel text-lg font-semibold disabled:opacity-35"
-              >›</button>
+                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-hairline-strong bg-panel disabled:opacity-35"
+              ><ChevronRightIcon size={20} /></button>
             </div>
             <div className="flex items-center gap-1" role="group" aria-label="Playback speed">
               {(turnRace ? TURN_SPEEDS : TIME_SPEEDS).map((option) => (
@@ -520,11 +521,11 @@ export function RaceRunScreen() {
                         transition={!goalResult.animate || reducedMotion ? { duration: 0 } : { delay: 0.35 + index * 0.3, type: 'spring', stiffness: 320, damping: 22 }}
                       >
                         <p className="text-xs font-semibold uppercase tracking-widest text-accent-strong">Goal complete · {goal.label}</p>
-                        <p className="mt-1 text-lg font-semibold">🎗️ {goal.raceName}</p>
+                        <p className="mt-1 flex items-center justify-center gap-1.5 text-lg font-semibold"><RibbonIcon size={20} className="text-accent-strong" />{goal.raceName}</p>
                         <p className="text-xs font-bold text-ink-soft">{goal.rule} · {goalResult.completed} / 3 complete</p>
                       </m.div>
                     ))}
-                    {goalResult.honors && <m.p initial={!goalResult.animate || reducedMotion ? false : { scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="rounded-full bg-accent px-4 py-2 text-center font-semibold text-white text-outline">🏵 Scenario Honors · 3 / 3</m.p>}
+                    {goalResult.honors && <m.p initial={!goalResult.animate || reducedMotion ? false : { scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2 text-center font-semibold text-white text-outline"><HonorsIcon size={20} />Scenario Honors · 3 / 3</m.p>}
                     {!goalResult.animate && <p className="text-center text-xs font-bold text-ink-soft">Recorded goal summary</p>}
                   </div>}
                   {earnedFlair.length > 0 && <div className="mt-3"><FlairCards title={freshGoalCommit ? 'Flair earned' : 'Earned in this race'} items={earnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}

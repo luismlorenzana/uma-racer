@@ -17,8 +17,8 @@ while the stable itself grows into a collection.
 > full race sets from tier 7, the JP scenario ladder now runs through tier 14 and Uma level 140, and releases now expose
 > code/content versions with a verified publisher and safe app restart. Friend/Group cards are now active as reliable
 > broad supports; the owner playability pass and [Milestone 8](docs/tasks/M008-scenario-identity.md) scenario modifiers
-> follow. [Milestone 9](docs/tasks/M009-look-and-feel.md) replaces the skin with the
-> [Paddock visual system](docs/design/visual-system.md), [Milestone 10](docs/tasks/M010-collection-depth.md) gives the
+> follow. Milestone 9 replaced the skin with the
+> [Paddock visual system](docs/design/visual-system.md) and an original icon set, [Milestone 10](docs/tasks/M010-collection-depth.md) gives the
 > albums real browsing depth, and [Milestone 11](docs/tasks/M011-game-feel-and-device.md) covers audio, celebration and
 > device readiness.
 
