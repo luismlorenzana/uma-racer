@@ -32,6 +32,7 @@ export const ICON_NAMES = [
   'limit-break',
   'lineage',
   'locked',
+  'more',
   'move-to',
   'offline',
   'owned',

@@ -23,12 +23,13 @@ import { getMinigameHost, type RunReward, type RunTarget, type RunTicket } from 
 import { useGame } from '../../../game/store'
 import { BottomSheet } from '../../../ui/BottomSheet'
 import { Button } from '../../../ui/Button'
-import { CardsIcon, ChevronLeftIcon } from '../../../ui/icons'
+import { CardsIcon, ChevronLeftIcon, MoreIcon } from '../../../ui/icons'
 import { Stars } from '../../../ui/Stars'
 import { formatTickets } from '../../../ui/tickets'
 import { GainedStars } from '../GainedStars'
 import { useCardArt } from '../useCardArt'
 import { FtCard } from './FtCard'
+import { FtGuide, guideSeen, rememberGuideSeen, type GuidePageId } from './FtGuide'
 import { SeasonMap } from './FtScene'
 import { BuildView, DeckSheet, EncounterView, FacilityView, RewardView, ShopView, SkillBar, SkillView, runProgress, type ViewProps } from './FtViews'
 
@@ -39,6 +40,19 @@ interface Run {
   setup: FtSetup
   actions: FtAction[]
   state: FtState
+}
+
+/** The guide page that explains what the run is asking for right now. */
+const guidePageFor = (state: FtState): GuidePageId => {
+  switch (state.phase) {
+    case 'build':
+    case 'facility': return 'facility'
+    case 'encounter': return state.encounter?.kind === 'race' ? 'races' : 'train'
+    case 'reward': return 'points'
+    case 'skill':
+    case 'shop': return 'skills'
+    default: return 'goal'
+  }
 }
 
 const messageOf = (reason: unknown, fallback: string) => reason instanceof Error ? reason.message : fallback
@@ -68,6 +82,13 @@ export function FriendshipTrainingScreen() {
   const [error, setError] = useState<string | null>(null)
   const [confirmGiveUp, setConfirmGiveUp] = useState(false)
   const [deckOpen, setDeckOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  // The guide opens by itself on a device's first visit, then from the start screen and the run's menu.
+  const [guide, setGuide] = useState<{ open: boolean; startAt: GuidePageId }>(() => ({ open: !guideSeen(), startAt: 'goal' }))
+  const closeGuide = () => {
+    rememberGuideSeen()
+    setGuide((current) => ({ ...current, open: false }))
+  }
   const saves = useRef<Promise<void>>(Promise.resolve())
 
   const artIds = useMemo(() => run ? Object.keys(run.setup.cards) : template ? [template.id] : [], [run, template])
@@ -168,7 +189,9 @@ export function FriendshipTrainingScreen() {
             <button type="button" onClick={() => setDeckOpen(true)} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft" aria-label="Deck">
               <CardsIcon size={20} />
             </button>
-            <button type="button" onClick={() => setConfirmGiveUp(true)} className="min-h-11 rounded-sm px-2 text-[12px] font-semibold text-ink-on-dark-soft">Give up</button>
+            <button type="button" onClick={() => setMenuOpen(true)} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft" aria-label="Menu">
+              <MoreIcon size={20} />
+            </button>
           </>
         )}
       </header>
@@ -203,6 +226,7 @@ export function FriendshipTrainingScreen() {
                     {openRun ? 'Resume' : `Begin · ${formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)}`}
                   </Button>
                   {!openRun && tickets < FRIENDSHIP_TRAINING_TICKET_COST && <p className="text-center text-[12px] text-ink-on-dark-soft">You need {formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)}.</p>}
+                  <Button variant="tertiary" className="w-full text-ink-on-dark" onClick={() => setGuide({ open: true, startAt: 'goal' })}>How to play</Button>
                 </div>
               </>
             )}
@@ -256,6 +280,13 @@ export function FriendshipTrainingScreen() {
       {run && view && (
         <DeckSheet content={content} setup={run.setup} state={run.state} art={art} open={deckOpen} title="Your deck" onClose={() => setDeckOpen(false)} />
       )}
+      <BottomSheet open={menuOpen} onClose={() => setMenuOpen(false)}>
+        <div className="grid gap-2 pb-2">
+          <Button variant="secondary" className="w-full" onClick={() => { setMenuOpen(false); setGuide({ open: true, startAt: run ? guidePageFor(run.state) : 'goal' }) }}>How to play</Button>
+          <Button variant="destructive" className="w-full" onClick={() => { setMenuOpen(false); setConfirmGiveUp(true) }}>Give up this run</Button>
+        </div>
+      </BottomSheet>
+      <FtGuide open={guide.open} tier={tier} startAt={guide.startAt} onClose={closeGuide} />
       <BottomSheet open={confirmGiveUp} onClose={() => setConfirmGiveUp(false)}>
         <h2 className="text-lg font-semibold">Give up this run?</h2>
         <p className="mt-1 text-[14px] text-ink-soft">It ends as a loss: no star, and the ticket stays spent.</p>

@@ -302,6 +302,10 @@ for one ticket, all or nothing (D146). The rules, numbers and twists live in
   character (their standing chibi, celebrating once bonded) at a facility tinted by its stat or on a moving track,
   with the friendship hearts beside them and each train's formation and score rising as it lands. The hand is two
   rows of full-art cards in the thumb zone, about 80 × 107 pt, 72 × 96 at 375 × 667.
+- **How to play:** an illustrated eleven-page guide (the goal, the season map, facilities, the hand, formations, card
+  points and traits, the bond, races, skills and the shop, scenario twists, tips). It opens by itself on a device's
+  first visit, from **How to play** on the start screen, and from the run's menu at the page that fits the moment.
+  Every number in it is read from the rules module, so it changes with the balance.
 - **Saving:** Begin freezes the setup on the local run row and every choice is appended, so a reload resumes exactly
   (Resume on the start screen); the commit replays the choices before the star is granted. Give up is a loss.
 - **Balance:** `pnpm sim:training` holds the bot's clear rates near 90 / 85 / 80 / 75 / 70% for 1★–5★, and every

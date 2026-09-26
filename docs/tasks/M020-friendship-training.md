@@ -201,6 +201,8 @@ A lazy DOM route, `/minigames/friendship-training/:cardId?tier&uma&return`, with
 - **Week choice:** three facility cards with target and payout.
 - **Training and races:** as laid out above, with the skills bar under the header.
 - **Reward, skill, shop and result** screens, the result celebrating the star.
+- **How to play:** an illustrated guide, opened once by itself, then from the start screen and the run's menu (the
+  menu also holds Give up), at the page that fits the moment; its numbers come from the rules module.
 - **A sense of place** (D173): a season map across the top, and a scene where the main card's character trains at
   the facility or runs the race, with the friendship hearts and each train's result rising above them.
 - Reachable from the card page as **Friendship Training (beta)** beside Bond until T065.
