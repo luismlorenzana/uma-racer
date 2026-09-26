@@ -1,6 +1,7 @@
 // Per-scenario skill trees: budgets, node values, and derived stats (docs/design/constellations.md).
 
 import { MAX_STARS } from './cards'
+import { BUFF_VALUES, scenarioBuff } from './scenario-buffs'
 import { SHAPE_ART, cellKey, parseShapeArt, type ShapeCell } from './constellation-shapes'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { MAX_SCENARIO_TIER, SCENARIOS, baselineSkillPoints, skillPointCap } from './scenarios'
@@ -476,6 +477,10 @@ export interface DeriveInput {
   cardSetIds: readonly string[]
   umaTemplate: Pick<UmaTemplate, 'baseStats' | 'growthRates'>
   cards: ReadonlyMap<string, CardNodeState>
+  /** Career goals won in this scenario, for Trackblazer's Climax (D165). */
+  goalsWon?: number
+  /** The scenario's buff (D165); off only where a test checks the tree's own arithmetic. */
+  buffs?: boolean
 }
 
 export interface DerivedStats {
@@ -491,8 +496,8 @@ export interface DerivedStats {
   filledNodes: number
 }
 
-/** Values accumulate as integers in units of 1/SCALE: three percentages, so 100³. */
-const SCALE = 1_000_000
+/** Values accumulate as integers in units of 1/SCALE: four percentages (star, era, share, buff), so 100⁴. */
+const SCALE = 100_000_000
 
 /**
  * Stats, SP and card skills from one configuration. Pure and total: an assignment naming a card that is not
@@ -504,54 +509,92 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   const statValue = statNodeValue(input.tier)
   const spValue = spNodeValue(input.tier)
   const perCardCap = cardNodeCap(input.tier)
-  const cardNodesUsed = new Map<string, number>()
   const inSet = new Set(input.cardSetIds)
+  const buff = input.buffs === false ? null : scenarioBuff(input.tier).id
+
+  // First pass: which nodes pay, and how many live nodes each card fills. Past its cap a card pays nothing (D134);
+  // nodes count in template order, so the earliest ones stay live. Cooking and Construction read the final counts.
+  const live: { node: ConstellationNode; assignment: NodeAssignment }[] = []
+  const cardNodesUsed = new Map<string, number>()
+  let lineageFilled = 0
+  let filled = 0
+  for (const node of template.nodes) {
+    if (node.kind === 'root' || !isNodeUnlocked(template, node, input.trainingLevel)) continue
+    if (node.kind === 'card' || node.kind === 'stat') filled += 1
+    const assignment = assignments[node.id]
+    if (!assignment) continue
+    if ((node.kind === 'parent' || node.kind === 'grandparent') && assignment.kind === 'lineage') lineageFilled += 1
+    if (node.kind === 'stat' && assignment.kind === 'stat') live.push({ node, assignment })
+    if (node.kind === 'card' && assignment.kind === 'card' && inSet.has(assignment.cardId) && cards.has(assignment.cardId)) {
+      const used = cardNodesUsed.get(assignment.cardId) ?? 0
+      if (used >= perCardCap) continue
+      cardNodesUsed.set(assignment.cardId, used + 1)
+      live.push({ node, assignment })
+    }
+  }
+
+  // The scenario's buff on one card's nodes, in whole percent (D165).
+  const setTypes = input.cardSetIds.map((id) => cards.get(id)?.template.type).filter((type) => type !== undefined)
+  const setBonus = buff === 'team-spirit' ? lineageFilled * BUFF_VALUES.teamSpiritPerLineage
+    : buff === 'climax' ? Math.min(BUFF_VALUES.climaxGoals, input.goalsWon ?? 0) * BUFF_VALUES.climaxPerGoal
+      : buff === 'performance' && STATS.every((stat) => setTypes.includes(stat)) ? BUFF_VALUES.performance
+        : 0
+  const cardBuffPct = (cardId: string, card: CardNodeState): number => {
+    const type = card.template.type
+    const nodes = cardNodesUsed.get(cardId) ?? 0
+    let bonus = setBonus
+    if (buff === 'fragments' && card.stars >= BUFF_VALUES.fragmentsStars) bonus += BUFF_VALUES.fragments
+    if (buff === 'expedition' && card.template.era >= BUFF_VALUES.expeditionEra) bonus += BUFF_VALUES.expedition
+    if (buff === 'genres' && setTypes.filter((other) => other === type).length >= 2) bonus += BUFF_VALUES.genres
+    if (buff === 'cooking' && nodes === perCardCap) bonus += BUFF_VALUES.cooking
+    if (buff === 'research' && (type === 'speed' || type === 'power')) bonus += BUFF_VALUES.research
+    if (buff === 'construction' && nodes === cardFairShare(input.tier)) bonus += BUFF_VALUES.construction
+    if (buff === 'soak' && (type === 'stamina' || type === 'guts')) bonus += BUFF_VALUES.soak
+    return 100 + bonus
+  }
 
   // Accumulate in integer units of 1/SCALE so a full tree of max-broken cards lands on treeBudget exactly.
   const scaled: Record<StatKey, number> = { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }
   let scaledSp = 0
   const cardSkillIds: string[] = []
   const skillCursor = new Map<string, number>()
-  let assigned = 0
-  let filled = 0
+  const statPct = buff === 'foundation' ? BUFF_VALUES.foundationStatPct : 100
 
-  for (const node of template.nodes) {
-    if (node.kind === 'root' || !isNodeUnlocked(template, node, input.trainingLevel)) continue
-    if (node.kind === 'card' || node.kind === 'stat') filled += 1
-    const assignment = assignments[node.id]
-    if (!assignment) continue
-
-    if (node.kind === 'stat' && assignment.kind === 'stat') {
-      assigned += 1
-      scaled[assignment.stat] += statValue * 100 * 100 * 100
+  for (const { assignment } of live) {
+    if (assignment.kind === 'stat') {
+      scaled[assignment.stat] += statValue * 100 * 100 * 100 * statPct
       continue
     }
+    if (assignment.kind !== 'card') continue
+    const card = cards.get(assignment.cardId)!
+    const quality = starNodePct(card.stars) * eraPct(card.template.era, input.tier) * cardBuffPct(assignment.cardId, card)
 
-    if (node.kind === 'card' && assignment.kind === 'card') {
-      if (!inSet.has(assignment.cardId)) continue
-      const card = cards.get(assignment.cardId)
-      if (!card) continue
-      // Past its cap a card pays nothing (D134); nodes count in template order, so the earliest ones stay live.
-      const used = cardNodesUsed.get(assignment.cardId) ?? 0
-      if (used >= perCardCap) continue
-      cardNodesUsed.set(assignment.cardId, used + 1)
-      assigned += 1
-      const quality = starNodePct(card.stars) * eraPct(card.template.era, input.tier)
-
-      if (paysSkillPoints(card.template)) {
-        scaledSp += spValue * quality
-      } else {
+    if (paysSkillPoints(card.template)) {
+      scaledSp += spValue * quality
+      // Orders (tier 14): a Friend or Group card also pays half a node as stats, split as its type splits them.
+      if (buff === 'orders') {
         const shares = cardShares(card.template)
-        for (const stat of STATS) scaled[stat] += value * quality * (shares[stat] ?? 0)
+        for (const stat of STATS) scaled[stat] += (value * quality * (shares[stat] ?? 0) * BUFF_VALUES.ordersStatPct) / 100
       }
+    } else {
+      const shares = cardShares(card.template)
+      for (const stat of STATS) scaled[stat] += value * quality * (shares[stat] ?? 0)
+    }
 
-      // Each node a card occupies pays the next skill from its hint list.
-      const cursor = skillCursor.get(assignment.cardId) ?? 0
-      const skillId = card.template.hintSkillIds[cursor]
-      skillCursor.set(assignment.cardId, cursor + 1)
-      if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
+    // Each node a card occupies pays the next skill from its hint list.
+    const cursor = skillCursor.get(assignment.cardId) ?? 0
+    const skillId = card.template.hintSkillIds[cursor]
+    skillCursor.set(assignment.cardId, cursor + 1)
+    if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
+  }
+
+  // Shared Light (tier 13): the two lowest stats the tree pays each gain +8%.
+  if (buff === 'shared-light') {
+    for (const stat of [...STATS].sort((left, right) => scaled[left] - scaled[right]).slice(0, 2)) {
+      scaled[stat] = (scaled[stat] * (100 + BUFF_VALUES.sharedLight)) / 100
     }
   }
+  const assigned = live.length
 
   // Sum the integers, then divide once. Dividing per stat and adding the results loses the exactness at
   // tiers whose node value is not a dyadic fraction (tier 4's 168, for one).
@@ -577,7 +620,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
     rawTotal,
     skillPoints: Math.min(
       skillPointCap(input.tier),
-      baselineSkillPoints(input.tier, input.trainingLevel) + Math.round(scaledSp / 10_000),
+      baselineSkillPoints(input.tier, input.trainingLevel) + Math.round(scaledSp / 1_000_000),
     ),
     cardSkillIds,
     assignedNodes: assigned,

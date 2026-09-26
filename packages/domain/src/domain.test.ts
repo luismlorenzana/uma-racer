@@ -246,10 +246,10 @@ describe('training levels', () => {
 })
 
 describe('rivals (D152)', () => {
-  it('builds on a typical trained Uma: median base plus a fifth of a realistic set (D159)', () => {
+  it('builds on a typical trained Uma: median base plus a fifth of a realistic set (D159) and its typical buff (D165)', () => {
     // Tier 1: 15 of 18 card nodes pay stats (the Friend card's 3 pay SP), at 3★ 84% of 220, plus the 240 stat pool:
-    // 3,012 raw points, 602.4 a stat, on a base of 110.
-    expect(trainedStat(1)).toBeCloseTo(712.4)
+    // 3,012 raw points; Foundation's typical 4% makes 3,132.5, 626.5 a stat, on a base of 110.
+    expect(trainedStat(1)).toBeCloseTo(736.496)
     expect(trainedStat(14)).toBeGreaterThan(trainedStat(1))
   })
 

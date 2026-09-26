@@ -199,7 +199,7 @@ describe('card era', () => {
     const tier = 7
     const template = constellationTemplate(tier)
     const node = template.nodes.find((entry) => entry.kind === 'card')!
-    const totalFor = (era: number) => deriveStats({
+    const totalFor = (era: number) => deriveStats({ buffs: false,
       tier,
       trainingLevel: 10,
       template,
@@ -415,7 +415,7 @@ describe('the invariance rule', () => {
           }
         }
 
-        const derived = deriveStats({
+        const derived = deriveStats({ buffs: false,
           tier,
           trainingLevel: 10,
           template,
@@ -443,12 +443,12 @@ describe('the invariance rule', () => {
     const multiset = cardNodeIds.map((_, i) => cardIds[i % cardIds.length]!)
     const input = { tier, trainingLevel: 10, template, cardSetIds: cardIds, umaTemplate: uma, cards }
 
-    const straight = deriveStats({
+    const straight = deriveStats({ buffs: false,
       ...input,
       assignments: Object.fromEntries(cardNodeIds.map((id, i) => [id, { kind: 'card', cardId: multiset[i]! }])),
     })
     const shuffled = [...multiset].reverse()
-    const reversed = deriveStats({
+    const reversed = deriveStats({ buffs: false,
       ...input,
       assignments: Object.fromEntries(cardNodeIds.map((id, i) => [id, { kind: 'card', cardId: shuffled[i]! }])),
     })
@@ -470,7 +470,7 @@ describe('the invariance rule', () => {
     const statNodes = template.nodes.filter((node) => node.kind === 'stat').length
 
     for (let stars = 0; stars <= MAX_STARS; stars += 1) {
-      const derived = deriveStats({
+      const derived = deriveStats({ buffs: false,
         tier: 1,
         trainingLevel: 10,
         template,
@@ -489,7 +489,7 @@ describe('the invariance rule', () => {
     const template = constellationTemplate(1)
     const cardNodeIds = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id)
     const assignments = Object.fromEntries(cardNodeIds.slice(0, 6).map((id) => [id, { kind: 'card', cardId: 'c' } as NodeAssignment]))
-    const derived = deriveStats({
+    const derived = deriveStats({ buffs: false,
       tier: 1, trainingLevel: 10, template, assignments, cardSetIds: ['c'], umaTemplate: uma,
       cards: new Map([['c', card('c', 'speed')]]),
     })
@@ -512,16 +512,16 @@ describe('the invariance rule', () => {
     // Training alone pays 40% of the SP cap at TL10 (D133), whatever the set holds.
     const baseline = baselineSkillPoints(1, 10)
     expect(baseline).toBe(800)
-    const wit = deriveStats({ ...input, assignments: { [first!]: { kind: 'card', cardId: 'wit' } } })
+    const wit = deriveStats({ buffs: false, ...input, assignments: { [first!]: { kind: 'card', cardId: 'wit' } } })
     expect(wit.skillPoints).toBe(baseline)
     expect(wit.raw.wit).toBeGreaterThan(0)
     expect(wit.rawTotal).toBe(nodeValue(1))
 
-    const friend = deriveStats({ ...input, assignments: { [first!]: { kind: 'card', cardId: 'friend' } } })
+    const friend = deriveStats({ buffs: false, ...input, assignments: { [first!]: { kind: 'card', cardId: 'friend' } } })
     expect(friend.skillPoints).toBe(baseline + spNodeValue(1))
     expect(friend.rawTotal).toBe(0)
 
-    const both = deriveStats({
+    const both = deriveStats({ buffs: false,
       ...input,
       cardSetIds: ['friend', 'group', 'c', 'd', 'e', 'wit'],
       assignments: { [first!]: { kind: 'card', cardId: 'friend' }, [second!]: { kind: 'card', cardId: 'group' } },
@@ -535,7 +535,7 @@ describe('the invariance rule', () => {
     const assignments = Object.fromEntries(
       template.nodes.filter((n) => n.kind === 'card').map((n) => [n.id, { kind: 'card', cardId: 'scenario' } as NodeAssignment]),
     )
-    const derived = deriveStats({
+    const derived = deriveStats({ buffs: false,
       tier: 1,
       trainingLevel: 10,
       template,
@@ -553,7 +553,7 @@ describe('derivation', () => {
   const firstCardNode = template.nodes.find((node) => node.kind === 'card')!
 
   it('applies growth rates after the raw budget, and caps after growth', () => {
-    const derived = deriveStats({
+    const derived = deriveStats({ buffs: false,
       tier: 1,
       trainingLevel: 10,
       template,
@@ -575,7 +575,7 @@ describe('derivation', () => {
   })
 
   it('starts every stat at her base, with no career-race bonus, at every Training Level (D152)', () => {
-    const early = deriveStats({
+    const early = deriveStats({ buffs: false,
       tier: 1, trainingLevel: 1, template, assignments: {}, cardSetIds: [], umaTemplate: uma, cards: new Map(),
     })
     expect(early.stats).toEqual(uma.baseStats)
@@ -589,7 +589,7 @@ describe('derivation', () => {
           ? ({ kind: 'stat', stat: 'speed' } as NodeAssignment)
           : ({ kind: 'card', cardId: 'c' } as NodeAssignment)]),
     )
-    const derived = deriveStats({
+    const derived = deriveStats({ buffs: false,
       tier: 1,
       trainingLevel: 10,
       template,
@@ -605,12 +605,12 @@ describe('derivation', () => {
     const locked = template.nodes.filter((node) => node.kind === 'card').at(-1)!
     const cards = new Map([['c', card('c', 'speed')]])
 
-    expect(deriveStats({
+    expect(deriveStats({ buffs: false,
       tier: 1, trainingLevel: 1, template, cardSetIds: ['c'], umaTemplate: uma, cards,
       assignments: { [locked.id]: { kind: 'card', cardId: 'c' } },
     }).rawTotal).toBe(0)
 
-    expect(deriveStats({
+    expect(deriveStats({ buffs: false,
       tier: 1, trainingLevel: 10, template, cardSetIds: ['other'], umaTemplate: uma, cards,
       assignments: { [firstCardNode.id]: { kind: 'card', cardId: 'c' } },
     }).rawTotal).toBe(0)
@@ -618,7 +618,7 @@ describe('derivation', () => {
 
   it('pays one skill per node a card occupies, in hint order, deduplicated', () => {
     const cardNodeIds = template.nodes.filter((node) => node.kind === 'card').map((node) => node.id).slice(0, 3)
-    const derived = deriveStats({
+    const derived = deriveStats({ buffs: false,
       tier: 1,
       trainingLevel: 10,
       template,

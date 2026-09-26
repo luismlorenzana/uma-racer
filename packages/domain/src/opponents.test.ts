@@ -43,8 +43,8 @@ const mean = (stats: Stats) => STATS.reduce((sum, stat) => sum + stats[stat], 0)
 
 describe('rival presets (D153, D159)', () => {
   it('average the handicapped trained Uma where no cap bites', () => {
-    // Tier 1's caps are even, so the scenario leans nowhere: 712.4 × (1 − 0.05) on average for a G1.
-    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(676.78)
+    // Tier 1's caps are even, so the scenario leans nowhere: 736.5 × (1 − 0.05) on average for a G1.
+    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(699.6712)
     expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(trainedStat(1) * 0.75)
   })
 

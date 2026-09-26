@@ -3,6 +3,7 @@
 import { STAT_NODE_POOL, averageCap, capProfile, cardFairShare, nodeValue, shapeDef, starNodePct } from './constellation'
 import type { UmaTemplate } from './content'
 import { raceSkillFitsRunner, type CompiledRaceSkill, type RaceSkillCourseFacts } from './race-skills'
+import { scenarioBuff } from './scenario-buffs'
 import { GRADES, STATS, STRATEGIES, mapStats, type DistanceCategory, type RaceGrade, type StatKey, type Stats, type Strategy } from './types'
 
 /** Uniform in [0, 1). The race's seeded RNG; the domain never uses Math.random. */
@@ -19,11 +20,13 @@ export const TYPICAL_CARD_STARS = 3
 /**
  * A typical trained Uma's average stat at a tier (D159, superseding D152's full tree of 5★ cards): her base plus a
  * fifth of what a realistic set pays — six current-era cards at 3★, one of them a Friend card whose fair share of the
- * nodes pays skill points instead of stats — and the stat nodes. 712 in scenario 1.
+ * nodes pays skill points instead of stats — and the stat nodes, with what the scenario's buff typically adds (D165).
+ * 736 in scenario 1, where Foundation adds half again to the stat nodes.
  */
 export const trainedStat = (tier: number): number => {
   const statCardNodes = shapeDef(tier).cardNodes - cardFairShare(tier)
-  return TYPICAL_BASE_STAT + ((statCardNodes * nodeValue(tier) * starNodePct(TYPICAL_CARD_STARS)) / 100 + STAT_NODE_POOL) / STATS.length
+  const tree = (statCardNodes * nodeValue(tier) * starNodePct(TYPICAL_CARD_STARS)) / 100 + STAT_NODE_POOL
+  return TYPICAL_BASE_STAT + (tree * (1 + scenarioBuff(tier).typical)) / STATS.length
 }
 
 /**

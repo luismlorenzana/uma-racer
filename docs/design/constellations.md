@@ -143,6 +143,8 @@ UI:
    so an Uma with Speed +20% gets more absolute Speed out of the same raw point. That is her identity, and it
    is why two Umas with the same constellation are not the same Uma.
 2. **Friend and Group cards pay SP, not stats** (below).
+3. **Each scenario's buff** (D165, [Scenarios](scenarios.md#scenario-buffs)) may reward which cards you bring and how
+   many nodes each fills, but never which node a card sits on, so moving a card still never changes a total.
 
 ### What a card node pays
 

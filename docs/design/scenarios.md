@@ -100,29 +100,39 @@ Each silhouette is drawn on a grid, which keeps every edge straight and uncrosse
 
 ## Scenario buffs
 
-A buff is the **one declared way a scenario bends the rules**. Buffs are deterministic, always visible, never
-RNG, and never secret. They may change totals — that is the scenario's character — but the
-[invariance rule](constellations.md#the-invariance-rule) still holds for stat allocation *within* a scenario.
+A buff is the **one declared way a scenario bends the rules** (D165). Buffs are deterministic, always visible on the
+constellation, never random, never secret, and reach a race only through the stats and skill points the tree pays. They
+may reward **which cards you bring** and **how many nodes each fills**, but never **which node** a card sits on, so the
+placement half of the [invariance rule](constellations.md#the-invariance-rule) holds in every scenario: moving a card
+never changes a total.
 
-| # | Scenario | Buff | Draft rule |
-|---|---|---|---|
-| 1 | URA Finale | **Foundation** | stat nodes pay ×1.25 |
-| 2 | Unity Cup | **Team Spirit** | +1% to every card node per distinct character in the card set |
-| 3 | Trackblazer | **Climax** | the first card node on each branch pays ×1.5 |
-| 4 | Our Grand Concert | **Performance** | if all five stat types appear in the set, every node pays +5% |
-| 5 | Grand Masters | **Fragments** | the deepest node on each branch pays ×2 |
-| 6 | Project L'Arc | **Expedition** | cards of era ≥ 6 pay ×1.10 |
-| 7 | U.A.F. Ready GO! | **Genres** | a branch whose cards share a colour pays +10% |
-| 8 | Great Food Festival | **Cooking** | a card on 3+ nodes pays +15% on all of them |
-| 9 | Run! Mecha Umamusume | **Research** | each stat node also pays 25% of its value to a second stat you pick |
-| 10 | The Twinkle Legends | **Legends** | one lineage slot may hold any Uma template, owned or not |
-| 11 | Design Your Island | **Construction** | you choose which two branches receive +3 nodes |
-| 12 | Yukoma Hot Springs | **Soak** | Spark Match targets are 25% lower |
-| 13 | Beyond Dreams | **Shared light** | the two lowest stats after allocation each gain +8% |
-| 14 | Tracen Diner | **Orders** | Friend and Group cards pay SP *and* 50% of a node's value as stats |
+| # | Scenario | Buff | Rule | Typical |
+|---|---|---|---|---|
+| 1 | URA Finale | **Foundation** | Stat nodes pay ×1.5 (60 each) | 4.0% |
+| 2 | Unity Cup | **Team Spirit** | Each filled lineage slot adds +1% to every card node | 3.7% |
+| 3 | Trackblazer | **Climax** | Each career goal won in this scenario adds +2% to every card node, up to +8% | 3.7% |
+| 4 | Our Grand Concert | **Performance** | A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5% | 2.3% |
+| 5 | Grand Masters | **Fragments** | Cards at 4★ or higher pay +8% | 0% |
+| 6 | Project L'Arc | **Expedition** | Cards from era 6 or newer pay +5% | 4.6% |
+| 7 | U.A.F. Ready GO! | **Genres** | A card type with two or more cards in the set pays +6% on those cards | 2.2% |
+| 8 | Great Food Festival | **Cooking** | A card on its full node cap pays +10% on all its nodes | 2.0% |
+| 9 | Run! Mecha Umamusume | **Research** | Speed and Power cards pay +10% | 5.5% |
+| 10 | The Twinkle Legends | **Legends** | The first parent slot may hold any Uma, owned or not | 0% |
+| 11 | Design Your Island | **Construction** | A card on exactly its fair share of nodes pays +8% on all of them | 3.7% |
+| 12 | Yukoma Hot Springs | **Soak** | Stamina and Guts cards pay +10% | 2.8% |
+| 13 | Beyond Dreams | **Shared Light** | The two lowest stats the tree pays each gain +8% | 1.9% |
+| 14 | Tracen Diner | **Orders** | Friend and Group cards also pay a quarter of a node's value as stats, beside their SP | 5.4% |
 
-Draft rules only. Each buff gets its exact numbers, state shape, and UI in its own task, and none may introduce
-RNG, a second currency, or a hidden race stat.
+**Typical** is what a typical trained Uma of the scenario gains, as a share of her tree: six 3★ current-era cards with
+one Friend card, about four lineage slots filled, two career goals won. **Rivals carry it** (their `trainedStat`
+includes it), so a buff makes you stronger than the field only as far as your build leans into it, and the grade
+handicaps keep their meaning. Fragments and Legends have no typical value: a typical set is 3★, and a lineage choice
+pays aptitudes and skills, not stats.
+
+Five rules replace drafts that could not work (D165): Trackblazer, Grand Masters and U.A.F. paid by which node a card
+sat on; Design Your Island added nodes, which fixed node ids cannot take; Yukoma Hot Springs changed Spark Match,
+which is being rebuilt. Buffs are applied in `deriveStats` as a fourth whole percentage, so totals stay exact
+(`packages/domain/src/scenario-buffs.ts`).
 
 ## Era windows
 

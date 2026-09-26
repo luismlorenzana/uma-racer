@@ -22,6 +22,9 @@ import {
   type NodeAssignment,
   type StatKey,
   type UmaTemplate,
+  scenarioBuff,
+  buffedStatNodeValue,
+  lineageSlotTakesAnyUma,
 } from '@racer/domain'
 import { useState } from 'react'
 import { Link } from 'react-router'
@@ -79,6 +82,8 @@ export function ConstellationScreen() {
   }
 
   const openCount = unlockedNodeCount(run.tier, run.trainingLevel)
+  const buff = scenarioBuff(run.tier)
+  const statPay = buffedStatNodeValue(run.tier, statNodeValue(run.tier))
   const treeNodes = template.cardNodes + template.statNodes
   const canPlaySpark = run.started && run.trainingLevel < MAX_TRAINING_LEVEL &&
     tickets >= SPARK_MATCH_TICKET_COST
@@ -112,6 +117,10 @@ export function ConstellationScreen() {
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
         )}
+        {/* The scenario's buff is always on show (D165). */}
+        <p className="mb-2 rounded-md border border-accent/40 bg-accent-wash px-3 py-1.5 text-[12px]">
+          <span className="font-semibold">{buff.name}</span> <span className="text-ink-soft">· {buff.rule}</span>
+        </p>
         {overCap.length > 0 && (
           <p role="status" className="mb-2 rounded-md bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">
             {overCap.map((row) => `${row.name} is on ${row.extra} node${row.extra === 1 ? '' : 's'} past its cap of ${nodeCap}`).join(' · ')}.
@@ -141,7 +150,7 @@ export function ConstellationScreen() {
             <div className="flex items-baseline justify-between">
               <h3 className="text-sm font-semibold">{titleCase(openNode.kind)} node</h3>
               <span className="text-micro">
-                {openNode.kind === 'stat' ? `${statNodeValue(run.tier)} raw points` : openNode.kind === 'card' ? `up to ${nodeValue(run.tier)} raw points` : 'baseline skills'}
+                {openNode.kind === 'stat' ? `${statPay} raw points` : openNode.kind === 'card' ? `up to ${nodeValue(run.tier)} raw points` : 'baseline skills'}
               </span>
             </div>
 
@@ -208,14 +217,15 @@ export function ConstellationScreen() {
                 className="min-h-[44px] rounded-xl bg-panel px-3 text-left text-sm font-semibold"
                 onClick={() => void assign(openNode.id, { kind: 'stat', stat })}
               >
-                {titleCase(stat)} <span className="text-ink-soft">+{statNodeValue(run.tier)}</span>
+                {titleCase(stat)} <span className="text-ink-soft">+{statPay}</span>
               </button>
             ))}
 
             {(openNode.kind === 'parent' || openNode.kind === 'grandparent') && (
               <LineagePicker
                 busy={busy}
-                candidateIds={Object.keys(umas)}
+                // Legends (tier 10): the first parent slot takes any Uma, owned or not (D165).
+                candidateIds={lineageSlotTakesAnyUma(run.tier, openNode.id) ? content.umas.items.map((entry) => entry.id) : Object.keys(umas)}
                 content={content}
                 child={uma.template}
                 held={derived.lineage}
