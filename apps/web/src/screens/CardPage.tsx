@@ -95,7 +95,9 @@ export function CardPage() {
     .flatMap((uma) => uma.scenarios
       .filter((run) => run.cardSetIds.includes(cardId))
       .map((run) => ({ umaId: uma.templateId, tier: run.tier, active: run.tier === uma.unlockedTier })))
-    .sort((left, right) => right.tier - left.tier || left.umaId.localeCompare(right.umaId))
+    // Highest level first, as every Uma list is (D181), then her newest scenario.
+    .sort((left, right) => (umas[right.umaId]?.level ?? 0) - (umas[left.umaId]?.level ?? 0) || right.tier - left.tier ||
+      left.umaId.localeCompare(right.umaId))
 
   const unlock = async (method: 'coupon' | 'tickets') => {
     if (busy) return

@@ -292,11 +292,14 @@ export function buildStableBadgeCollection(
     const applicable = perUma.map((entry) => ({ entry, item: entry.view.items.find((item) => item.awardKey === awardKey) }))
       .filter((row): row is { entry: typeof perUma[number]; item: BadgeCollectionItem } => Boolean(row.item))
     if (applicable.length === 0) continue
+    // Holders list highest level first, as every Uma list does (D181), then the latest to earn it.
     const holders = applicable.filter((row) => row.item.tier !== null).map((row) => ({
       umaId: row.entry.save.templateId,
       name: content.umas.byId.get(row.entry.save.templateId)?.name ?? row.entry.save.templateId,
-      tier: row.item.tier, earnedAt: row.item.earnedAt,
-    })).sort((left, right) => (right.earnedAt ?? -1) - (left.earnedAt ?? -1) || left.name.localeCompare(right.name) || left.umaId.localeCompare(right.umaId))
+      tier: row.item.tier, earnedAt: row.item.earnedAt, level: row.entry.save.level,
+    })).sort((left, right) => right.level - left.level || (right.earnedAt ?? -1) - (left.earnedAt ?? -1) ||
+      left.name.localeCompare(right.name) || left.umaId.localeCompare(right.umaId))
+      .map(({ level: _level, ...holder }) => holder)
     const representative = [...applicable].sort((left, right) => right.item.tierIndex - left.item.tierIndex ||
       (right.item.earnedAt ?? -1) - (left.item.earnedAt ?? -1) || left.entry.save.templateId.localeCompare(right.entry.save.templateId))[0]!.item
     const holderCount = holders.length
@@ -389,11 +392,11 @@ export function buildTimelineItems(
   })).sort((left, right) => right.earnedAt - left.earnedAt || right.id.localeCompare(left.id))
 }
 
+/** The requested Uma, else the featured one, else the first in the caller's order (highest level first, D181). */
 export function resolveBadgeUmaId(requested: string | null, ownedIds: readonly string[], featuredUmaId: string | null): string | null {
-  const ids = [...new Set(ownedIds)].sort()
-  if (requested && ids.includes(requested)) return requested
-  if (featuredUmaId && ids.includes(featuredUmaId)) return featuredUmaId
-  return ids[0] ?? null
+  if (requested && ownedIds.includes(requested)) return requested
+  if (featuredUmaId && ownedIds.includes(featuredUmaId)) return featuredUmaId
+  return ownedIds[0] ?? null
 }
 
 export function parseBadgeRoute(search: string, validUmaIds: ReadonlySet<string>): BadgeRouteState {

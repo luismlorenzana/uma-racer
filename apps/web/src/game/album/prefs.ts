@@ -28,6 +28,11 @@ export interface AlbumPrefs {
   query: AlbumQuery
   views: SavedView[]
   seen: string[]
+  /**
+   * The album's defaults revision this row was saved under. When an album changes its default sort, a row from an
+   * older revision takes the new sort once, keeping its filters, view and saved views (D181).
+   */
+  rev?: number
 }
 
 export interface LoadedAlbumPrefs extends AlbumPrefs {
@@ -127,26 +132,34 @@ export function markSeen(seen: readonly string[], ids: readonly string[]): strin
   return next.length <= MAX_SEEN_IDS ? next : next.slice(next.length - MAX_SEEN_IDS)
 }
 
+/** A row saved under an older defaults revision takes the album's current default sort once, keeping the rest (D181). */
+export function reviseQuery(query: AlbumQuery, savedRev: number | undefined, rev: number, fallback: AlbumQuery): AlbumQuery {
+  return (savedRev ?? 1) < rev ? { ...query, sort: fallback.sort, direction: fallback.direction } : query
+}
+
 export async function loadAlbumPrefs(
   id: string,
   fallback: AlbumQuery,
   facets: readonly FacetDef[],
   sorts: readonly SortDef[],
   modes: readonly string[] = [],
+  rev = 1,
 ): Promise<LoadedAlbumPrefs> {
   try {
     const row = await db.albumPrefs.get(id)
-    if (!row) return { id, query: fallback, views: [], seen: [], fresh: true }
+    if (!row) return { id, query: fallback, views: [], seen: [], rev, fresh: true }
+    const query = sanitizeQuery(row.query, fallback, facets, sorts, modes)
     return {
       id,
       fresh: false,
-      query: sanitizeQuery(row.query, fallback, facets, sorts, modes),
+      rev,
+      query: reviseQuery(query, row.rev, rev, fallback),
       views: parseViews(row.views, facets, sorts, fallback, modes),
       seen: Array.isArray(row.seen) ? row.seen.filter((entry): entry is string => typeof entry === 'string') : [],
     }
   } catch {
     // Preferences are a convenience: a broken row must never block the album.
-    return { id, query: fallback, views: [], seen: [], fresh: true }
+    return { id, query: fallback, views: [], seen: [], rev, fresh: true }
   }
 }
 

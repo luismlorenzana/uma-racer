@@ -119,8 +119,14 @@ Defaults are opinionated, so the album is useful before anyone touches a control
 
 | Album | Default order |
 |---|---|
-| **Stable (Umas)** | Owned before unowned → **release date, newest first** → **Uma level, highest first** → name |
+| **Stable (Umas)** | **Uma level, highest first** → release date, newest first → name (D181). Unowned Umas have no level, so they follow every owned one |
 | **Cards** | Collection: **era/release, newest first** → owned first → name. A scenario: **bond, highest first** → owned first → per-node pay → name |
+
+**Every list of Umas starts with the highest Uma Level** (D181): the Stable, the Race strip, the Badges and Trainer
+pickers, lineage slots, a card's holders and an award's holders. Choosing an Uma anywhere uses one **Uma picker**: a
+sheet with the Stable's search, filters, sorts and three views over the Umas that place offers, opening on the level
+order unless the place leads with a sort of its own (a lineage slot also sorts by aptitude gain, and says what each
+pick would move). The Race strip shows the twelve highest and a **Browse** tile for the rest.
 
 The ownership split is a segmented control rather than a hidden filter, because "what do I have" is the question the
 album answers most often. Switching to Unowned keeps the rest of the sort intact.

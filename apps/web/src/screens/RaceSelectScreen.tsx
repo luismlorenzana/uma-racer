@@ -36,6 +36,8 @@ import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { UmaBust } from '../ui/UmaBust'
+import { UmaPickerSheet } from '../ui/album/UmaPickerSheet'
+import { umaIdsByLevel } from '../game/uma-order'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
 
@@ -148,6 +150,9 @@ function Tracker({ tracker, level, umaId }: { tracker: CareerTracker; level: num
   )
 }
 
+/** How many Umas the race strip shows before the rest are in the picker. */
+const STRIP_SIZE = 12
+
 export function RaceSelectScreen() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -169,11 +174,9 @@ export function RaceSelectScreen() {
   const [preview, setPreview] = useState<PreparedRace | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
 
-  const ownedIds = useMemo(() => Object.keys(owned).sort((left, right) => left.localeCompare(right)), [owned])
-  // The picker leads with the featured Uma, then whoever is furthest along.
-  const pickerIds = useMemo(() => [...ownedIds].sort((left, right) =>
-    Number(right === profile?.featuredUmaId) - Number(left === profile?.featuredUmaId) ||
-    (owned[right]?.level ?? 0) - (owned[left]?.level ?? 0) || left.localeCompare(right)), [owned, ownedIds, profile?.featuredUmaId])
+  // Highest level first, as every Uma list is (D181).
+  const ownedIds = useMemo(() => umaIdsByLevel(owned, contentState.status === 'ready' ? contentState.content : null), [contentState, owned])
+  const [umaPickerOpen, setUmaPickerOpen] = useState(false)
   const pickedRef = useRef<HTMLButtonElement | null>(null)
   const requestedUma = params.get('uma')
   const selectedUmaId = requestedUma && owned[requestedUma]
@@ -182,6 +185,11 @@ export function RaceSelectScreen() {
       ? profile.featuredUmaId
       : ownedIds[0] ?? null
   const selectedUma = selectedUmaId ? owned[selectedUmaId] : undefined
+  // The strip holds the leading few, and her if she is further down; the rest are one tap away in the picker.
+  const stripIds = useMemo(() => {
+    const leading = ownedIds.slice(0, STRIP_SIZE)
+    return selectedUmaId && !leading.includes(selectedUmaId) ? [...leading, selectedUmaId] : leading
+  }, [ownedIds, selectedUmaId])
   const loadoutKey = selectedUma ? activeScenario(selectedUma).loadoutSkillIds.join('|') : ''
   const requestedGoalRace = params.get('goal')
 
@@ -315,7 +323,7 @@ export function RaceSelectScreen() {
         <p className="truncate text-[13px] text-ink-soft">{umaTemplate.name} · {SCENARIOS[selectedUma.unlockedTier - 1]?.name} · Lv {scenarioLevel(selectedUma.level)}/10</p>
       </div>
       <div role="radiogroup" aria-label="Racing Uma" className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-        {pickerIds.map((id) => {
+        {stripIds.map((id) => {
           const picked = id === selectedUmaId
           return (
             <button
@@ -338,7 +346,23 @@ export function RaceSelectScreen() {
             </button>
           )
         })}
+        <button type="button" onClick={() => setUmaPickerOpen(true)} className="w-16 shrink-0 text-center">
+          <span className="flex aspect-square w-16 flex-col items-center justify-center rounded-md border border-dashed border-hairline-strong bg-panel text-[11px] font-semibold text-ink-soft">
+            <span className="font-display text-base text-ink">{ownedIds.length}</span>
+            All
+          </span>
+          <span className="mt-1 block truncate text-[10px] font-semibold text-ink-soft">Browse</span>
+        </button>
       </div>
+      <UmaPickerSheet
+        open={umaPickerOpen}
+        onClose={() => setUmaPickerOpen(false)}
+        title="Choose who races"
+        content={content}
+        selectedIds={selectedUmaId ? [selectedUmaId] : []}
+        selectedLabel="Racing"
+        onPick={chooseUma}
+      />
 
       {!persistent && <Panel className="border-warning/40 py-3 text-[13px] font-semibold text-warning">Memory only — race progress will not survive a reload or sync.</Panel>}
       {awaitingAdvance(selectedUma) && (
