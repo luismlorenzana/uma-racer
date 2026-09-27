@@ -1,7 +1,15 @@
 import { useReducedMotion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Strategy } from '@racer/domain'
+import { useContent } from '../../content/ContentProvider'
+import type { SparkOrb } from '../../game/minigames/spark-rival'
+import { useGame } from '../../game/store'
 import { SparkRivalProofScene, type SparkRivalProofHud } from '../../scenes/spark-rival/SparkRivalProofScene'
-import { SparkIcon } from '../../ui/icons'
+import { sparkProofCast } from '../../scenes/spark-rival/proof-cast'
+import { useArtSet } from '../../ui/album/useArt'
+import { QuestionIcon, SparkIcon } from '../../ui/icons'
+import { SPARK_ORB_COLORS, SPARK_STRATEGY_LABELS } from '../../ui/minigames/spark-rival-presentation'
+import { rememberSparkRivalGuideSeen, SparkRivalGuide, sparkRivalGuideSeen, type SparkRivalGuidePageId } from './SparkRivalGuide'
 
 const ratio = (value: number, maximum: number) => maximum <= 0 ? 0 : Math.max(0, Math.min(1, value / maximum))
 
@@ -21,11 +29,24 @@ function Gauge({ label, value, maximum, color }: { label: string; value: number;
 /** Synthetic, development-only interaction proof. Production Spark Match remains untouched until T073. */
 export function SparkRivalProofScreen() {
   const systemReducedMotion = useReducedMotion()
+  const contentState = useContent()
+  const featuredUmaId = useGame((state) => state.profile?.featuredUmaId ?? null)
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<SparkRivalProofScene | null>(null)
   const [hud, setHud] = useState<SparkRivalProofHud | null>(null)
   const [forceReducedMotion, setForceReducedMotion] = useState(false)
+  const [guide, setGuide] = useState<{ open: boolean; startAt: SparkRivalGuidePageId }>(() => ({ open: !sparkRivalGuideSeen(), startAt: 'circuit' }))
   const reducedMotion = Boolean(systemReducedMotion) || forceReducedMotion
+  const content = contentState.status === 'ready' ? contentState.content : null
+  const cast = useMemo(() => sparkProofCast(content?.umas.items ?? [], featuredUmaId), [content, featuredUmaId])
+  const artIds = useMemo(() => cast ? [...new Set([...Object.values(cast.orbs), ...Object.values(cast.rivals)])].map((id) => `${id}-a`) : [], [cast])
+  const chibis = useArtSet(content, 'chibi', artIds)
+  const orbArt = useMemo<Partial<Record<SparkOrb, string | null>>>(() => cast ? Object.fromEntries(
+    Object.entries(cast.orbs).map(([orb, id]) => [orb, chibis.get(`${id}-a`) ?? null]),
+  ) : {}, [cast, chibis])
+  const rivalArt = useMemo<Partial<Record<Strategy, string | null>>>(() => cast ? Object.fromEntries(
+    Object.entries(cast.rivals).map(([strategy, id]) => [strategy, chibis.get(`${id}-a`) ?? null]),
+  ) : {}, [cast, chibis])
 
   useEffect(() => {
     const host = hostRef.current
@@ -41,6 +62,12 @@ export function SparkRivalProofScreen() {
   }, []) // The Pixi application owns its lifecycle; options are forwarded separately.
 
   useEffect(() => sceneRef.current?.setReducedMotion(reducedMotion), [reducedMotion])
+  useEffect(() => { void sceneRef.current?.setArt(orbArt, rivalArt) }, [orbArt, rivalArt])
+
+  const closeGuide = () => {
+    rememberSparkRivalGuideSeen()
+    setGuide((current) => ({ ...current, open: false }))
+  }
 
   return (
     <main className="game-surface flex h-dvh w-full flex-col overflow-hidden bg-stage pt-safe pb-safe text-ink-on-dark">
@@ -50,6 +77,9 @@ export function SparkRivalProofScreen() {
           <p className="text-[9px] font-bold tracking-[0.16em] text-accent uppercase">Development touch proof · synthetic data</p>
           <h1 className="truncate text-lg">Spark Match · Rival Circuit</h1>
         </div>
+        <button type="button" onClick={() => setGuide({ open: true, startAt: 'circuit' })} aria-label="How to play Spark Rival" className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-hairline-dark bg-stage-soft text-accent">
+          <QuestionIcon size={20} />
+        </button>
         <div className="rounded-full border border-hairline-dark bg-stage-soft px-3 py-1 text-center">
           <p className="text-[9px] text-ink-on-dark-soft uppercase">Wave</p><p className="numeral numeral-on-dark text-lg">{hud?.wave ?? 1}/3</p>
         </div>
@@ -60,10 +90,10 @@ export function SparkRivalProofScreen() {
           <Gauge label="Rival Resolve" value={hud?.resolve ?? 0} maximum={hud?.maxResolve ?? 1} color="bg-danger" />
           <Gauge label="Drive" value={hud?.drive ?? 0} maximum={hud?.maxDrive ?? 100} color="bg-success" />
           <Gauge label="Spark Shift" value={hud?.sparkCharge ?? 0} maximum={hud?.sparkTarget ?? 9} color="bg-accent" />
-          <div className="flex items-end justify-between rounded-xs border border-hairline-dark bg-black/15 px-2 py-1 text-xs">
-            <span><b className="text-accent">Next</b> {hud?.intent ?? '—'}</span>
-            <span className="numeral text-base">{hud?.countdown ?? '—'}</span>
-          </div>
+          <button type="button" onClick={() => setGuide({ open: true, startAt: 'advantage' })} className="flex min-h-11 items-center justify-between rounded-xs border border-hairline-dark bg-black/15 px-2 py-1 text-left text-xs" style={hud ? { borderColor: SPARK_ORB_COLORS[hud.rivalStrategy] } : undefined}>
+            <span className="min-w-0 truncate"><b>{hud?.rivalLabel ?? 'Matchups'}</b>{hud && <span style={{ color: SPARK_ORB_COLORS[hud.rivalStrategy] }}> · {SPARK_STRATEGY_LABELS[hud.rivalStrategy].split(' ')[0]}</span>}<span className="block truncate text-[10px] text-ink-on-dark-soft">Next · {hud?.intent ?? '—'}</span></span>
+            <span className="numeral ml-2 text-base">{hud?.countdown ?? '—'}</span>
+          </button>
         </div>
         <div className="flex min-w-14 flex-col items-center justify-center rounded-sm border border-hairline-dark bg-black/20 px-2">
           <span className="text-[9px] text-ink-on-dark-soft uppercase">Move</span>
@@ -93,6 +123,7 @@ export function SparkRivalProofScreen() {
           </p>
         </div>
       </section>
+      <SparkRivalGuide open={guide.open} startAt={guide.startAt} onClose={closeGuide} />
     </main>
   )
 }

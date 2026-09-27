@@ -1,5 +1,5 @@
 // Development-only Pixi touch proof for Spark Rival Circuit (docs/tasks/T071-spark-rival-engine.md).
-import { SPARK_RIVAL_BOARD_HEIGHT, SPARK_RIVAL_BOARD_WIDTH, SPARK_RIVAL_MOVEMENT_MS } from '@racer/domain'
+import { SPARK_RIVAL_BOARD_HEIGHT, SPARK_RIVAL_BOARD_WIDTH, SPARK_RIVAL_MOVEMENT_MS, type Strategy } from '@racer/domain'
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import {
   applySparkPath,
@@ -18,26 +18,39 @@ import {
 } from '../../game/minigames/spark-rival'
 import { SparkDragController } from './controller'
 import { sparkCellAtPoint, type SparkBoardGeometry } from './pointer'
+import { SPARK_ORB_GLYPHS, SPARK_ORB_PIXI_COLORS } from '../../ui/minigames/spark-rival-presentation'
 
-const ORB_COLORS: Record<SparkOrb, number> = {
-  front: 0xe05d58,
-  pace: 0x4a86e8,
-  late: 0x9a68db,
-  end: 0x3ab28f,
-  spark: 0xf3b53f,
-  recovery: 0x58bf70,
-}
-const ORB_GLYPHS: Record<SparkOrb, string> = {
-  front: 'F', pace: 'P', late: 'L', end: 'E', spark: '', recovery: '+',
-}
 const INK = 0x101a24
 const EFFECT_POOL_SIZE = 24
 const FINGER_OFFSET = 18
+const ART_TEXTURE_SIZE = 256
+
+async function decodeChibiTexture(url: string): Promise<Texture | null> {
+  try {
+    const image = new Image()
+    image.src = url
+    await image.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = ART_TEXTURE_SIZE
+    canvas.height = ART_TEXTURE_SIZE
+    const context = canvas.getContext('2d')
+    if (!context) return null
+    const scale = Math.min(ART_TEXTURE_SIZE / image.naturalWidth, ART_TEXTURE_SIZE / image.naturalHeight)
+    const width = image.naturalWidth * scale
+    const height = image.naturalHeight * scale
+    context.drawImage(image, (ART_TEXTURE_SIZE - width) / 2, (ART_TEXTURE_SIZE - height) / 2, width, height)
+    return Texture.from(canvas)
+  } catch {
+    return null
+  }
+}
 
 interface OrbToken {
   root: Container
   body: Graphics
+  art: Sprite
   shine: Sprite
+  badge: Graphics
   glyph: Text
 }
 
@@ -65,6 +78,8 @@ export interface SparkRivalProofHud {
   sparkTarget: number
   countdown: number
   intent: string
+  rivalLabel: string
+  rivalStrategy: Strategy
   dragging: boolean
   movementRemainingMs: number | null
   inputLocked: boolean
@@ -93,6 +108,7 @@ export class SparkRivalProofScene {
   private readonly rivalLayer = new Container()
   private readonly rivalCard = new Graphics()
   private readonly rivalMark = new Graphics()
+  private readonly rivalArt = new Sprite(Texture.EMPTY)
   private readonly rivalGlyph = new Text({
     text: 'R',
     style: { fontFamily: 'Outfit, system-ui, sans-serif', fontSize: 36, fontWeight: '800', fill: 0xffffff },
@@ -121,10 +137,15 @@ export class SparkRivalProofScene {
   private lastWidth = 0
   private lastHeight = 0
   private rivalPulse = 0
+  private artVersion = 0
+  private orbTextures: Partial<Record<SparkOrb, Texture>> = {}
+  private rivalTextures: Partial<Record<Strategy, Texture>> = {}
+  private ownedArtTextures: Texture[] = []
 
   constructor(private readonly onHud: (hud: SparkRivalProofHud) => void) {
+    this.rivalArt.anchor.set(0.5)
     this.rivalGlyph.anchor.set(0.5)
-    this.rivalLayer.addChild(this.rivalCard, this.rivalMark, this.rivalGlyph)
+    this.rivalLayer.addChild(this.rivalCard, this.rivalMark, this.rivalArt, this.rivalGlyph)
   }
 
   async mount(host: HTMLElement): Promise<void> {
@@ -158,10 +179,40 @@ export class SparkRivalProofScene {
 
   destroy(): void {
     this.destroyed = true
+    this.artVersion += 1
     document.removeEventListener('visibilitychange', this.onVisibility)
     if (this.mounted) this.unbindPointerEvents()
     for (const waiter of this.waiters.splice(0)) waiter.resolve()
     if (this.mounted) this.app.destroy({ removeView: true }, { children: true })
+    for (const texture of this.ownedArtTextures) texture.destroy(true)
+    this.ownedArtTextures.length = 0
+  }
+
+  /** Private Chibis are decoded into owned Pixi textures; missing art leaves the glyph fallback. */
+  async setArt(
+    orbs: Partial<Record<SparkOrb, string | null>>,
+    rivals: Partial<Record<Strategy, string | null>>,
+  ): Promise<void> {
+    const version = ++this.artVersion
+    const urls = [...new Set([...Object.values(orbs), ...Object.values(rivals)].filter((url): url is string => Boolean(url)))]
+    const decoded = await Promise.all(urls.map(async (url) => [url, await decodeChibiTexture(url)] as const))
+    const textures = decoded.flatMap(([, texture]) => texture ? [texture] : [])
+    if (this.destroyed || version !== this.artVersion) {
+      for (const texture of textures) texture.destroy(true)
+      return
+    }
+    for (const texture of this.ownedArtTextures) texture.destroy(true)
+    this.ownedArtTextures = textures
+    const byUrl = new Map(decoded)
+    this.orbTextures = Object.fromEntries(Object.entries(orbs).flatMap(([orb, url]) => {
+      const texture = url ? byUrl.get(url) : null
+      return texture ? [[orb, texture]] : []
+    }))
+    this.rivalTextures = Object.fromEntries(Object.entries(rivals).flatMap(([strategy, url]) => {
+      const texture = url ? byUrl.get(url) : null
+      return texture ? [[strategy, texture]] : []
+    }))
+    if (this.tokens.length > 0) this.renderBoard(this.previewBoard, this.heldIndex)
   }
 
   setReducedMotion(value: boolean): void {
@@ -231,18 +282,22 @@ export class SparkRivalProofScene {
     for (let index = 0; index < 30; index += 1) {
       const root = new Container()
       const body = new Graphics()
+      const art = new Sprite(Texture.EMPTY)
+      art.anchor.set(0.5)
+      art.visible = false
       const shine = new Sprite(Texture.WHITE)
       shine.anchor.set(0.5)
       shine.rotation = Math.PI / 4
       shine.alpha = 0.22
+      const badge = new Graphics()
       const glyph = new Text({
         text: '',
         style: { fontFamily: 'Outfit, system-ui, sans-serif', fontSize: 24, fontWeight: '800', fill: 0xffffff, stroke: { color: INK, width: 3 } },
       })
       glyph.anchor.set(0.5)
-      root.addChild(body, shine, glyph)
+      root.addChild(body, art, badge, shine, glyph)
       this.boardLayer.addChild(root)
-      this.tokens.push({ root, body, shine, glyph })
+      this.tokens.push({ root, body, art, shine, badge, glyph })
       this.tokenTargets.push({ x: 0, y: 0 })
     }
     for (let index = 0; index < EFFECT_POOL_SIZE; index += 1) {
@@ -279,24 +334,20 @@ export class SparkRivalProofScene {
     const rivalX = width / 2
     const rivalY = Math.max(42, top / 2)
     this.rivalLayer.position.set(rivalX, rivalY)
-    this.rivalCard.clear().roundRect(-76, -29, 152, 58, 18)
+    this.rivalCard.clear().roundRect(-76, -35, 152, 70, 20)
       .fill({ color: 0x172838, alpha: 0.98 }).stroke({ width: 1.5, color: 0xffffff, alpha: 0.14 })
-    this.rivalMark.clear()
-      .poly([-36, 17, -52, -6, -38, -23, -20, -9]).fill({ color: 0xe05d58, alpha: 0.8 })
-      .poly([36, 17, 52, -6, 38, -23, 20, -9]).fill({ color: 0xe05d58, alpha: 0.8 })
-      .circle(0, 0, 24).fill({ color: 0xe05d58 }).stroke({ width: 3, color: 0xffffff, alpha: 0.8 })
+    this.rivalArt.width = 62
+    this.rivalArt.height = 62
     this.rivalGlyph.position.set(0, 1)
 
     for (let index = 0; index < this.tokens.length; index += 1) {
       const token = this.tokens[index]!
       const radius = cellSize * 0.4
-      token.body.clear().circle(0, 0, radius)
-        .fill({ color: 0xffffff }).stroke({ width: Math.max(2, cellSize * 0.045), color: 0xffffff, alpha: 0.78 })
-      token.shine.width = radius * 0.82
-      token.shine.height = radius * 0.82
-      token.glyph.style.fontSize = Math.max(18, Math.round(cellSize * 0.42))
+      token.art.width = radius * 1.75
+      token.art.height = radius * 1.75
       this.placeToken(index, true)
     }
+    this.renderBoard(this.previewBoard, this.heldIndex)
   }
 
   private placeToken(index: number, snap = false): void {
@@ -318,10 +369,38 @@ export class SparkRivalProofScene {
     for (let index = 0; index < this.tokens.length; index += 1) {
       const orb = board[index]!
       const token = this.tokens[index]!
-      token.body.tint = ORB_COLORS[orb]
+      const radius = this.geometry.cellSize * 0.4
+      const color = SPARK_ORB_PIXI_COLORS[orb]
+      const texture = this.orbTextures[orb]
+      const hasArt = texture !== undefined
+      token.body.clear().circle(0, 0, radius)
+        .fill({ color, alpha: 0.24 })
+        .stroke({ width: Math.max(3, this.geometry.cellSize * 0.055), color: index === heldIndex ? 0xffffff : color, alpha: 1 })
+      token.art.visible = hasArt
+      if (texture) token.art.texture = texture
+      token.art.width = radius * 1.75
+      token.art.height = radius * 1.75
+      token.badge.clear()
+      token.shine.visible = orb === 'spark'
       token.shine.tint = 0xffffff
-      token.shine.alpha = orb === 'spark' ? 0.9 : 0.22
-      token.glyph.text = ORB_GLYPHS[orb]
+      token.shine.alpha = 0.9
+      token.glyph.text = SPARK_ORB_GLYPHS[orb]
+      if (hasArt) {
+        const badgeX = radius * 0.58
+        const badgeY = radius * 0.58
+        token.badge.circle(badgeX, badgeY, radius * 0.27).fill({ color: INK, alpha: 0.92 }).stroke({ width: 1.2, color: 0xffffff, alpha: 0.82 })
+        token.glyph.position.set(badgeX, badgeY)
+        token.glyph.style.fontSize = Math.max(11, Math.round(this.geometry.cellSize * 0.2))
+        token.shine.position.set(badgeX, badgeY)
+        token.shine.width = radius * 0.25
+        token.shine.height = radius * 0.25
+      } else {
+        token.glyph.position.set(0, 0)
+        token.glyph.style.fontSize = Math.max(18, Math.round(this.geometry.cellSize * 0.42))
+        token.shine.position.set(0, 0)
+        token.shine.width = radius * 0.82
+        token.shine.height = radius * 0.82
+      }
       token.root.visible = true
       token.root.alpha = 1
       token.root.scale.set(index === heldIndex ? 1.12 : 1)
@@ -335,6 +414,18 @@ export class SparkRivalProofScene {
     }
     this.boardLayer.sortableChildren = true
     this.boardLayer.sortChildren()
+    this.renderRival()
+  }
+
+  private renderRival(): void {
+    const strategy = this.state.rival.strategy
+    const color = SPARK_ORB_PIXI_COLORS[strategy]
+    const texture = this.rivalTextures[strategy]
+    this.rivalMark.clear().circle(0, 0, 31).fill({ color, alpha: 0.24 }).stroke({ width: 4, color })
+    this.rivalArt.visible = texture !== undefined
+    if (texture) this.rivalArt.texture = texture
+    this.rivalGlyph.visible = texture === undefined
+    this.rivalGlyph.text = SPARK_ORB_GLYPHS[strategy]
   }
 
   private bindPointerEvents(): void {
@@ -482,7 +573,7 @@ export class SparkRivalProofScene {
       this.renderBoard(cascade.before)
       for (const group of cascade.groups) for (const index of group.indices) {
         this.tokens[index]!.root.alpha = 0.28
-        this.burst(index, ORB_COLORS[group.orb])
+        this.burst(index, SPARK_ORB_PIXI_COLORS[group.orb])
       }
       this.status = cascade.index === 0 ? `${resolution.combos} combo clear` : `Cascade ${cascade.index + 1}`
       this.emitHud()
@@ -608,6 +699,8 @@ export class SparkRivalProofScene {
       sparkTarget: this.state.sparkTarget,
       countdown: this.state.rival.countdown,
       intent,
+      rivalLabel: this.encounter.waves[this.state.waveIndex]!.label,
+      rivalStrategy: this.state.rival.strategy,
       dragging: active !== null,
       movementRemainingMs: elapsed,
       inputLocked: this.inputLocked,

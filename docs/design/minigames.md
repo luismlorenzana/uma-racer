@@ -215,6 +215,12 @@ with an empty action list. It is never charged again. Already completed rows rem
 
 The route is `/minigames/spark-match/:umaId` and remains lazy. Presentation is hybrid:
 
+- **Chibi faces** remain Spark Match's board identity (D179). Each of the six kinds is a whole standing Chibi in a thick
+  kind-coloured ring over a faint tint. The four strategies retain their letter glyph; Spark is gold and Recovery is
+  green with their own marks. The active trainee owns the Spark face; the other five faces are a deterministic,
+  display-only cast from the already loaded catalogue and never affect engine state, damage or replay. The encountered
+  rival's Chibi appears on the rival stage inside her current strategy ring. Private icons, then labelled silhouettes,
+  are the fallback while art is absent or loading.
 - **PixiJS 8** owns the 30 orb sprites, held orb, swaps, clear/fall/cascade sequence, pooled particles, attacks, rival
   reactions and damage/recovery numbers.
 - **React DOM** owns navigation, wave label, Drive/Resolve/Spark gauges, strategy and intent, tutorial, accessible live
@@ -227,6 +233,12 @@ steps already produced by the engine and temporarily locks input. Sprites and ef
 is capped to useful art density, the ticker pauses when hidden, and all movement uses elapsed milliseconds. The target is a
 stable 60 fps on the owner's iPhone, with 120 Hz presentation where Safari supplies it; game results never depend on refresh
 rate. Reduced motion shortens travel and removes nonessential particles without removing board-state feedback.
+
+Spark uses the same full-screen paged/swipe guide shell as Friendship Training. Its illustrated pages cover the circuit,
+continuous drag, matches/cascades, the complete advantage ring, Spark/Recovery, rival intent and saved Training EXP. It
+opens automatically once per device before any ticket can be spent, is always reachable from the unpaid start screen,
+and opens from the live run at a context-relevant page. A separate **Matchups** control opens the advantage page directly;
+the legend names `Pace → Front → End → Late → Pace`, advantage, resistance and neutral opposites in text.
 
 At 390 × 844 the entire run has no page scroll, the board remains square-celled, HUD and board avoid the safe areas, and
 every DOM control is at least 44 pt. Physical-device validation must cover finger occlusion, edge/system gestures, pointer

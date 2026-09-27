@@ -25,6 +25,19 @@ T071's engine, simulator and browser proof are implemented. The checked-in 390×
 synthetic. Its physical-iPhone acceptance is still open, so **T072 must not start until the owner approves drag
 acquisition, finger occlusion, edge gestures, cancellation and a 30-second frame-pacing pass on the device**.
 
+### Current integration truth
+
+T071 is deliberately a free development proof at `/dev/spark-rival-proof`. It computes deterministic Rival Circuit
+Training EXP but never calls `beginRun` or `commitRun`, spends no ticket and writes no save. The production Spark route is
+still the retired adjacent-swap screen: its existing host does atomically spend one ticket, apply that screen's submitted
+score through `addTrainingExp`, write the Uma/outbox/run, update training badges and return opened-node labels exactly once.
+That proves the old progression path, **not** the new engine's integration.
+
+Rival Circuit results are not fully integrated until T073 lands its encounter snapshot, action journal and authoritative
+replay commit. T073's tests and device acceptance must prove clear and both loss reasons, partial/zero EXP, multi-level
+crossing, TL10 clamp, real focusable node ids/labels, ticket/ledger accounting, transaction rollback and idempotent retry.
+Do not describe a T071 proof result as saved progress.
+
 ## Fixed product contract
 
 - The public feature stays **Spark Match**; the new ruleset is **Rival Circuit**.
@@ -34,6 +47,8 @@ acquisition, finger occlusion, edge gestures, cancellation and a 30-second frame
   begins on the first cell transition and allows **seven seconds**; planning before touch is unlimited.
 - The advantage ring is Pace → Front → End → Late → Pace. Advantage is 1.5×, resistance 0.67×, opposite is
   neutral. Strategy glyph and text always accompany colour.
+- Every board kind keeps a whole standing Chibi in a strong kind-coloured ring and faint tint, with its glyph/mark; the
+  encountered rival uses her Chibi in the current strategy ring. A direct Matchups control opens the text ring legend.
 - A run is two ordinary training rivals and a boss. Each exposes strategy, Resolve, countdown and next intent. A wave has
   at most **eight player turns**.
 - Spark matches charge Spark Shift; at full charge it converts all Spark orbs to the trainee's best strategy. Recovery
@@ -41,6 +56,8 @@ acquisition, finger occlusion, edge gestures, cancellation and a 30-second frame
 - A clear and a loss both commit once. A loss banks bounded Training EXP; a clear is substantially more efficient. The
   target remains about ten competent clears for the 21,600 EXP TL1→10 curve.
 - Results name every crossed level and real constellation node opened and link back to the constellation.
+- The full illustrated guide reuses Friendship Training's paged/swipe shell, auto-opens once before a paid run, remains
+  on the free start screen and is reachable contextually during battle.
 - Sparring never grants Uma EXP, race rewards, goals, race records, badges or milestones.
 - Rival identities live in the private content pipeline. Git contains schemas and small synthetic fixtures only.
 - No support-card combat layer, PAD-style team/helper, loot, evolution, continues, second energy currency or late-game

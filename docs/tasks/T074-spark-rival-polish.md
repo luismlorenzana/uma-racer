@@ -53,9 +53,11 @@ unbounded run. Check that every seeded encounter terminates within action/journa
 
 Use existing private Uma art through the content runtime and existing app visual tokens. No original image enters git.
 
-- Rival arrival: wave label, portrait/bust, strategy glyph and Resolve establish before the board enables.
-- Orbs: distinct silhouette/glyph plus colour, crisp at capped DPR, visible held/source states and no aliasing shimmer while
-  dragged. Recovery and Spark are unmistakable at a glance.
+- Rival arrival: wave label, encountered rival's standing Chibi in her strategy ring, name/glyph and Resolve establish
+  before the board enables; private icon then labelled silhouette are the loading/missing-art fallbacks.
+- Orbs: the whole standing Chibi is visible inside a thick kind-coloured ring over a faint tint, with a distinct glyph or
+  mark, crisp at capped DPR, visible held/source states and no aliasing shimmer while dragged. Recovery and Spark are
+  unmistakable at a glance.
 - Path: displaced orbs settle continuously; quick reversals and revisits do not snap or leave duplicate sprites.
 - Resolution: match outline → clear → fall/cascade → attack/recovery/charge → rival intent. One combo counter owns
   the whole turn and never races damage text.
@@ -93,7 +95,8 @@ service muted/fallback-safe and record asset production as M009/T036 work; do no
 - DOM controls and result links are keyboard/focus usable and at least 44 pt. Focus never falls behind the canvas.
 - One polite live region announces wave start, intent changes, turn outcome and terminal result without narrating every
   pointer cell. Damage bursts themselves are `aria-hidden`.
-- Tutorial and help expose the advantage ring in text. The spatial drag is honestly identified as a touch/pointer mechanic;
+- The shared paged guide is complete, opens once before payment, remains available from start/live screens, and direct
+  Matchups help exposes the advantage ring in text. The spatial drag is honestly identified as a touch/pointer mechanic;
   do not claim a false fully keyboard-playable board.
 - Dynamic text at the owner's iPhone accessibility sizes cannot obscure gauges or the board; allow the HUD/result to adapt
   while keeping the active run page scroll locked.

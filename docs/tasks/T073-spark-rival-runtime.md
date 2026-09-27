@@ -121,7 +121,9 @@ Replace the component behind the existing lazy route; no new main-nav entry or e
 ### Start and resume
 
 - Resolve Uma/scenario/TL and return path. Missing/not-owned/TL10 states have explicit CTAs back to Training.
-- A first-use, replayable three-panel tutorial runs on synthetic state and never calls `beginRun`.
+- A first-use, replayable full guide uses the same paged/swipe shell as Friendship Training, covers circuit/drag/matches/
+  matchup/Spark-and-Recovery/intent/rewards, runs on synthetic state and never calls `beginRun`. It remains on the free
+  start screen; live-run help opens at the page relevant to the current state, and Matchups opens the ring page directly.
 - Paid start names three waves, current TL/EXP, possible node progress and **Begin · 1 ticket**.
 - If `beginRun` returns an open run, load it and resume immediately at its exact action boundary. Leaving the scene pauses;
   it does not discard, commit, refund or reroll. There is no manual forfeit in v1 because terminal runs are bounded.
@@ -129,6 +131,9 @@ Replace the component behind the existing lazy route; no new main-nav entry or e
 ### Battle
 
 - Implement the four UX zones in `docs/design/ux.md`: React HUD, rival stage, 6 × 5 Pixi board, safe-area thumb zone.
+- Load the encountered rival's standing Chibi and the board's deterministic six-face display cast through the existing
+  private art runtime. Draw every face inside the kind/strategy ring with a glyph/mark; fall back to icon then a labelled
+  silhouette. Art identity is presentation-only and never enters a replay action or damage calculation.
 - Canvas pointer handling uses the T071 controller. During a drag only Pixi presentation objects and the timer overlay
   update. On release/timeout, call `appendSpark` with the displayed action count, then animate returned resolution steps.
 - Disable pointer/Shift during append and resolution. On append conflict/error, stop animation, reload the authoritative
@@ -167,7 +172,7 @@ below TL10.
   unavailable/runtime teardown behavior.
 - Host commit: clear, both loss reasons, zero/partial EXP, multiple TLs, TL10 clamp, real node ids/labels, stale claim/hash,
   nonterminal claim, active-scenario change, retry/idempotence and transaction rollback.
-- Screen: tutorial never charges; paid start once; resume skips start; pointer release/timeout/cancel; Shift; append conflict;
+- Screen: guide auto-opens once, every page and Matchups remain reachable, guide never charges; paid start once; resume skips start; pointer release/timeout/cancel; Shift; append conflict;
   background restore; terminal retry; node/return links; TL10; missing content fallback diagnostic; reduced motion.
 - No `Math.random`; fixed seed/actions state matches T071 fixtures through DB JSON round-trip.
 - Browser at 390 × 844 and 375 × 667: no page scroll, board not occluded, safe areas and 44 pt controls.
