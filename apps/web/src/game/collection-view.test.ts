@@ -29,7 +29,7 @@ function loaded(umas: UmaTemplate[], cards: SupportCardTemplate[]): LoadedConten
     frames: Object.fromEntries(ids.map((id, index) => [id, { page: 0, x: index * 128, y: 0, width: 128, height: 128 }])),
   })
   return {
-    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network',
+    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: cards, byId: new Map(cards.map((item) => [item.id, item])) },
     skills: { items: [], byId: new Map() }, races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },

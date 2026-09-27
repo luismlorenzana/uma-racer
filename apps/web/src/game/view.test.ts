@@ -51,6 +51,7 @@ function loaded(umas: UmaTemplate[]): LoadedContent {
   return {
     manifest: { version: 'abc123def456', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] },
     origin: 'network',
+    sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((uma) => [uma.id, uma])) },
     cards: { items: emptyCards, byId: new Map() },
     skills: { items: [], byId: new Map() },

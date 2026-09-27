@@ -1,6 +1,5 @@
 // Combat and reward formulas for Spark Rival Circuit (docs/design/minigames.md#turn-resolution, D172).
 import {
-  GRADES,
   SPARK_RIVAL_ADVANTAGE_MULTIPLIER,
   SPARK_RIVAL_APTITUDE_MULTIPLIERS,
   SPARK_RIVAL_CLEAR_BONUS,
@@ -15,6 +14,7 @@ import {
   SPARK_RIVAL_STYLE_ATTACK,
   SPARK_RIVAL_WAVE_EXP,
   STRATEGIES,
+  sparkRivalBestStrategy,
   type Grade,
   type Strategy,
 } from '@racer/domain'
@@ -50,7 +50,7 @@ export function sparkAptitudeMultiplier(grade: Grade): number {
 }
 
 export function bestSparkStrategy(aptitudes: Readonly<Record<Strategy, Grade>>): Strategy {
-  return STRATEGIES.reduce((best, strategy) => GRADES.indexOf(aptitudes[strategy]) < GRADES.indexOf(aptitudes[best]) ? strategy : best, 'front')
+  return sparkRivalBestStrategy(aptitudes)
 }
 
 export function sparkMatchShape(orbs: number): number {

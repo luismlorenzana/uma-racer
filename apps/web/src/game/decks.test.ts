@@ -62,7 +62,7 @@ function content(): LoadedContent {
     card('future', 'speed', { era: 2 }), card('friend', 'friend'),
   ]
   return {
-    manifest: { version: 'synthetic-decks', generatedAt: '', source: {}, files: [] }, origin: 'network',
+    manifest: { version: 'synthetic-decks', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: cards, byId: new Map(cards.map((item) => [item.id, item])) },
     skills: { items: [], byId: new Map() }, races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },

@@ -1,14 +1,16 @@
 // Verified, manifest-last private content publishing (docs/technical/infrastructure.md#release-runbook).
 
-import type { ContentManifest, ContentManifestFile } from '@racer/domain'
+import { parseSparkRivalContentPack, type ContentManifest, type ContentManifestFile } from '@racer/domain'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 const VERSION_PATTERN = /^[a-f0-9]{12}$/
 const SHA_PATTERN = /^[a-f0-9]{64}$/
+const OBJECT_CHECK_CONCURRENCY = 8
 // `art/<family>/<id>.<hash>.webp` is the per-entry art added alongside the packs and atlases.
 const CONTENT_PATH_PATTERN = /^(?:(?:data|atlases)\/[A-Za-z0-9][A-Za-z0-9._-]*|art\/[a-z][a-z-]*\/[A-Za-z0-9][A-Za-z0-9._-]*)$/
+const SPARK_RIVALS_PATH = /^data\/spark-rivals\.[a-f0-9]{8}\.json$/
 
 export interface RemoteObjectState {
   bytes: number
@@ -122,22 +124,53 @@ async function verifyFile(contentDir: string, file: ContentManifestFile): Promis
   return path
 }
 
+async function mapConcurrent<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  task: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length)
+  let cursor = 0
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor
+      cursor += 1
+      results[index] = await task(items[index]!)
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
 export async function publishContent(options: PublishContentOptions): Promise<PublishContentResult> {
   const startedAt = options.now?.() ?? Date.now()
   const { manifest, path: manifestPath } = await readManifest(options.contentDir)
   const localPaths = new Map<string, string>()
   for (const file of manifest.files) localPaths.set(file.path, await verifyFile(options.contentDir, file))
+  const sparkPacks = manifest.files.filter((file) => SPARK_RIVALS_PATH.test(file.path))
+  if (sparkPacks.length !== 1) throw new Error(`Production content must contain exactly one Spark rival pack; found ${sparkPacks.length}`)
+  try {
+    const sparkPath = localPaths.get(sparkPacks[0]!.path)!
+    parseSparkRivalContentPack(JSON.parse(await readFile(sparkPath, 'utf8')) as unknown)
+  } catch (error) {
+    throw new Error('Production Spark rival pack is invalid', { cause: error })
+  }
 
   const remoteVersionBefore = remoteVersion(await options.storage.readManifest())
   const uploadPaths: string[] = []
   const alreadyPresentPaths: string[] = []
   // One listing of the bucket instead of a lookup per file: about 2,000 files took over half an hour one by one.
   const listed = options.storage.listObjects ? await options.storage.listObjects() : null
-  for (const file of manifest.files) {
-    const bytes = listed ? listed.get(file.path) : (await options.storage.objectState(file.path))?.bytes
+  const objectStates = listed ? null : await mapConcurrent(
+    manifest.files,
+    OBJECT_CHECK_CONCURRENCY,
+    async (file) => options.storage.objectState(file.path),
+  )
+  manifest.files.forEach((file, index) => {
+    const bytes = listed?.get(file.path) ?? objectStates?.[index]?.bytes
     if (bytes === file.bytes) alreadyPresentPaths.push(file.path)
     else uploadPaths.push(file.path)
-  }
+  })
 
   if (!options.dryRun) {
     for (const path of uploadPaths) await options.storage.upload(localPaths.get(path)!, path)

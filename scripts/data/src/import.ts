@@ -10,9 +10,20 @@ import { applyFlairOverride } from './normalize/flair'
 import { normalizeObjectiveFamilies } from './normalize/objectives'
 import { normalizeRaces } from './normalize/races'
 import { normalizeSkills } from './normalize/skills'
+import { normalizeSparkRivals } from './normalize/spark-rivals'
 import { normalizeUmas } from './normalize/umas'
 import { DEFAULT_CONTENT_DIR, writeContentPacks } from './pack'
 import { scenarioCoverageWarning } from './scenario-coverage'
+
+async function readOptionalJson(path: string): Promise<unknown | null> {
+  try {
+    return JSON.parse(await readFile(path, 'utf8')) as unknown
+  } catch (error) {
+    const code = error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : null
+    if (code !== 'ENOENT') throw error
+    return null
+  }
+}
 
 async function main(): Promise<void> {
   const refresh = process.argv.includes('--refresh')
@@ -20,17 +31,15 @@ async function main(): Promise<void> {
   const source = Object.fromEntries(DATASET_NAMES.map((name) => [name, manifest[name]!]))
 
   const normalizedRaces = normalizeRaces(datasets.races)
-  let flairRaw: unknown | null = null
-  try {
-    flairRaw = JSON.parse(await readFile(resolve(DEFAULT_CONTENT_DIR, 'overrides/flair.json'), 'utf8')) as unknown
-  } catch (error) {
-    const code = error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : null
-    if (code !== 'ENOENT') throw error
-  }
+  const flairRaw = await readOptionalJson(resolve(DEFAULT_CONTENT_DIR, 'overrides/flair.json'))
   const flair = applyFlairOverride(normalizedRaces.items, flairRaw)
   const races = { items: flair.items, warnings: [...normalizedRaces.warnings, ...flair.warnings] }
   const objectives = normalizeObjectiveFamilies(datasets['ura-objectives'], datasets.races, races.items)
   const umas = normalizeUmas(datasets['character-cards'], datasets.characters, objectives.byCharacterId)
+  const sparkRivals = normalizeSparkRivals(
+    umas.items,
+    await readOptionalJson(resolve(DEFAULT_CONTENT_DIR, 'overrides/spark-rivals.json')),
+  )
   const cards = normalizeCards(datasets['support-cards'])
   const skills = normalizeSkills(datasets.skills)
   const courses = normalizeCourses(datasets.racetracks)
@@ -54,8 +63,16 @@ async function main(): Promise<void> {
   console.log(`Flair coverage: ${flair.coverage.taggedFamilies} families · ${flair.coverage.taggedSeries} series · ${flair.coverage.mainVenues} main venues`)
   console.log(`Objectives: ${objectives.counts.rows} rows · ${objectives.counts.characters} characters · ${objectiveOutfits} outfits · ${objectives.counts.resolvedReferences} resolved · ${objectives.counts.unresolvedReferences} unresolved`)
   console.log(`Courses: ${courses.items.length}`)
+  console.log(
+    `Spark rivals: ${sparkRivals.coverage.scenarios}/14 scenarios · ${sparkRivals.coverage.ordinaryCandidates} ordinary · ` +
+    `${sparkRivals.coverage.bossCandidates} bosses · ${sparkRivals.coverage.distinctCharacters} characters · ` +
+    `${sparkRivals.coverage.failures} failures`,
+  )
 
-  const warnings = [...umas.warnings, ...objectives.warnings, ...cards.warnings, ...skills.warnings, ...races.warnings, ...courses.warnings]
+  const warnings = [
+    ...umas.warnings, ...objectives.warnings, ...cards.warnings, ...skills.warnings,
+    ...races.warnings, ...courses.warnings, ...sparkRivals.warnings,
+  ]
   if (scenarioWarning) warnings.unshift(scenarioWarning)
   if (umaStarters !== 25) warnings.unshift(`Expected exactly 25 launch Umas, found ${umaStarters}`)
   if (missingLaunchObjectives > 0) warnings.unshift(`Objective metadata is missing for ${missingLaunchObjectives} launch outfit(s)`)
@@ -69,6 +86,9 @@ async function main(): Promise<void> {
       { name: 'skills', version: source.skills!, items: skills.items },
       { name: 'races', version: source.races!, items: races.items },
       { name: 'courses', version: source.racetracks!, items: courses.items },
+      ...(sparkRivals.items.length > 0
+        ? [{ name: 'spark-rivals', version: '1', items: sparkRivals.items }]
+        : []),
     ],
   })
   console.log(`Manifest: ${contentManifest.version} (${contentManifest.files.length} files)`)

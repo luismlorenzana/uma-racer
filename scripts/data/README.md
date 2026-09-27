@@ -32,6 +32,13 @@ may participate in more than one tag but only one leg within a tag. Every family
 normalized race pack. The file and generated packs remain ignored. Missing input produces an aggregate warning and empty
 coverage; malformed input fails the import. Logs expose aggregate coverage only, and tests use invented references.
 
+The optional private input `content/overrides/spark-rivals.json` supplies the fourteen Spark Rival Circuit rosters. Its
+version-1 shape is `{ version: 1, scenarios: [{ tier, ordinary, bosses }] }`; candidates contain only a private Uma
+`templateId` and one checked-in recipe id. Import validation resolves every identity, derives its canonical character and
+stable best strategy, enforces no-self/no-duplicate coverage, and logs aggregate counts only. Missing input is allowed for
+development and omits the optional pack so the app uses its deterministic catalogue fallback. A publication dry run or
+real publish refuses a manifest without a complete, valid `spark-rivals` pack.
+
 ## Output
 
 ```text
@@ -42,6 +49,7 @@ content/
   data/skills.<hash8>.json
   data/races.<hash8>.json
   data/courses.<hash8>.json
+  data/spark-rivals.<hash8>.json # optional during development; required to publish
   atlases/...                   # preserved when present; written by scripts/assets
 ```
 

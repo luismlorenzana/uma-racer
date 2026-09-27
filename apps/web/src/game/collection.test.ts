@@ -33,7 +33,7 @@ const cardTemplate: SupportCardTemplate = {
   uniqueEffect: null, imageSource: 'https://example.invalid/synthetic.png',
 }
 const content: LoadedContent = {
-  manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network',
+  manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
   umas: { items: [umaTemplate], byId: new Map([[umaTemplate.id, umaTemplate]]) },
   cards: { items: [cardTemplate], byId: new Map([[cardTemplate.id, cardTemplate]]) },
   skills: { items: [], byId: new Map() }, races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },

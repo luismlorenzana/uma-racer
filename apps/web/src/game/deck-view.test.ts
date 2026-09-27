@@ -47,7 +47,7 @@ function fixture() {
     card('friend', 'friend'),
   ]
   const content: LoadedContent = {
-    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network',
+    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
     umas: { items: [umaTemplate], byId: new Map([[umaTemplate.id, umaTemplate]]) },
     cards: { items: templates, byId: new Map(templates.map((item) => [item.id, item])) },
     skills: { items: [], byId: new Map() }, races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },
