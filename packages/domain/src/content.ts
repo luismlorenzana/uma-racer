@@ -145,7 +145,7 @@ export interface ContentPack<T> {
   items: T[]
 }
 
-export type ContentAtlasKind = 'uma-icons' | 'card-icons' | 'scenario-icons'
+export type ContentAtlasKind = 'uma-icons' | 'card-icons' | 'scenario-icons' | 'type-icons' | 'skill-icons'
 
 export interface ContentAtlasPage {
   path: string

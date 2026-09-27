@@ -615,6 +615,13 @@ describe('derivation', () => {
       cards: new Map([['c', card('c', 'speed')]]),
     })
     expect(derived.cardSkillIds).toEqual(['c-a', 'c-b', 'c-c'])
+    // Each node also pays the next of the card's golds while it has any, gold first (D182).
+    const withGolds = deriveStats({ buffs: false,
+      tier: 1, trainingLevel: 10, template, cardSetIds: ['c'], umaTemplate: uma,
+      assignments: Object.fromEntries(cardNodeIds.map((id) => [id, { kind: 'card', cardId: 'c' } as NodeAssignment])),
+      cards: new Map([['c', { ...card('c', 'speed'), goldSkillIds: ['g-1', 'g-2'] }]]),
+    })
+    expect(withGolds.cardSkillIds).toEqual(['g-1', 'c-a', 'g-2', 'c-b', 'c-c'])
   })
 
   it('is pure: the same input derives the same result', () => {

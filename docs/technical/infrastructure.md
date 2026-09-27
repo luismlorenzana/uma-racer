@@ -97,8 +97,9 @@ pnpm content:publish -- --dry-run
 pnpm content:publish
 ```
 
-`content:publish` re-hashes every local manifest file and refuses missing, altered, or malformed output. It checks the private
-bucket, uploads only missing or size-mismatched content-addressed objects, and uploads `manifest.json` last. Old hashed objects
+`content:publish` re-hashes every local manifest file and refuses missing, altered, or malformed output. It lists the private
+bucket once (D182; one lookup per file took over half an hour for ~2,000 files, a listing takes seconds), uploads only missing
+or size-mismatched content-addressed objects, and uploads `manifest.json` last. Old hashed objects
 are deliberately retained. Both modes print the local version, remote version before and after, uploaded/already-present
 counts, total bytes, and elapsed time.
 

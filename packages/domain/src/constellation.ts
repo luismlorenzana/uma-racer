@@ -432,6 +432,8 @@ export function cardSpPerNode(
 export interface CardNodeState {
   template: Pick<SupportCardTemplate, 'id' | 'type' | 'era' | 'effectProfile' | 'hintSkillIds'>
   stars: number
+  /** Its gold skills (`cardGoldSkillIds`); each node pays the next one as well as the next white (D182). */
+  goldSkillIds?: readonly string[]
 }
 
 export interface DeriveInput {
@@ -546,11 +548,12 @@ export function deriveStats(input: DeriveInput): DerivedStats {
       for (const stat of STATS) scaled[stat] += value * quality * (shares[stat] ?? 0)
     }
 
-    // Each node a card occupies pays the next skill from its hint list.
+    // Each node a card occupies pays the next of its golds while it has any (D182), and the next skill from its hints.
     const cursor = skillCursor.get(assignment.cardId) ?? 0
-    const skillId = card.template.hintSkillIds[cursor]
     skillCursor.set(assignment.cardId, cursor + 1)
-    if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
+    for (const skillId of [card.goldSkillIds?.[cursor], card.template.hintSkillIds[cursor]]) {
+      if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
+    }
   }
 
   // Shared Light (tier 13): the two lowest stats the tree pays each gain +8%.

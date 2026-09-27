@@ -16,10 +16,12 @@ const contentDir = resolve(repoRoot, 'content')
 const cacheDir = resolve(repoRoot, 'scripts/assets/.cache')
 const dataCacheDir = resolve(repoRoot, 'scripts/data/.cache')
 
-async function build(kind: ContentAtlasKind, sources: ImageSource[], refresh: boolean) {
-  const { images } = await downloadImages(sources, { cacheDir, kind, refresh, concurrency: 8 })
+async function build(kind: ContentAtlasKind, sources: readonly ImageSource[], refresh: boolean, optional = false) {
+  const { images, failures } = await downloadImages(sources, { cacheDir, kind, refresh, concurrency: 8, optional })
   const hits = images.filter((image) => image.cacheHit).length
   console.log(`${kind}: ${images.length} sources (${hits} cache hits, ${images.length - hits} downloads)`)
+  // An optional family skips what the source lacks; the app falls back to its own icon for those.
+  if (failures.length > 0) console.warn(`  skipped ${failures.length}: ${failures.map((failure) => failure.id).join(', ')}`)
   const atlas = await buildAtlas(images)
   for (let index = 0; index < atlas.pages.length; index += 1) {
     const page = atlas.pages[index]!
@@ -111,9 +113,21 @@ async function main(): Promise<void> {
     if (families) console.log(`Manifest: ${(await writeArtFiles({ contentDir, families })).version}`)
     return
   }
+  // D182's icon families: the original's card type icons (the app's stat icons) and its skill icons.
+  const iconBuilds = () => [build('type-icons', sources.types, refresh), build('skill-icons', sources.skills, refresh, true)]
+  // `--families=type-icons,skill-icons` rebuilds only those atlas families, leaving every other file as it is.
+  const only = process.argv.find((value) => value.startsWith('--families='))?.split('=')[1]?.split(',')
+  if (only) {
+    const builds = iconBuilds().filter((_, index) => only.includes(['type-icons', 'skill-icons'][index]!))
+    if (builds.length !== only.length) throw new Error('--families takes type-icons and/or skill-icons')
+    const manifest = await writeAtlases({ contentDir, atlases: await Promise.all(builds) })
+    console.log(`Manifest: ${manifest.version} (${manifest.files.length} files)`)
+    return
+  }
   const atlasBuilds = [
     build('uma-icons', sources.umas, refresh),
     build('card-icons', sources.cards, refresh),
+    ...iconBuilds(),
   ]
   // The crest atlas is skipped entirely when no override is authored, rather than written empty.
   if (sources.scenarios.length > 0) atlasBuilds.push(build('scenario-icons', sources.scenarios, refresh))

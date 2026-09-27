@@ -35,6 +35,7 @@ import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
+import { SkillIcon } from '../ui/SkillIcon'
 import { UmaBust } from '../ui/UmaBust'
 import { UmaPickerSheet } from '../ui/album/UmaPickerSheet'
 import { umaIdsByLevel } from '../game/uma-order'
@@ -458,6 +459,7 @@ export function RaceSelectScreen() {
               <div className="grid gap-1">
                 {raceSkills.map(({ skill, own, onCourse }) => (
                   <div key={skill.id} className={`flex min-h-9 items-center gap-2 rounded-sm px-2 ${onCourse ? 'bg-accent-wash' : 'bg-sunken'}`}>
+                    <SkillIcon skill={skill} size={24} className={onCourse ? '' : 'opacity-50'} />
                     <span className={`min-w-0 flex-1 truncate text-[13px] font-semibold ${onCourse ? '' : 'text-ink-faint'}`}>{skill.name}</span>
                     <SkillKindBadge kind={skill.kind} />
                     <span className="text-micro w-20 shrink-0 text-right">{onCourse ? own ? 'free' : `${skill.costSp} SP` : 'won’t trigger'}</span>

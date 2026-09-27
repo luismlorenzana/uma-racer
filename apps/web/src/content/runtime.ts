@@ -53,10 +53,10 @@ export interface LoadedContent {
   races: ContentRegistry<RaceTemplate>
   courses: ContentRegistry<CourseTemplate>
   /**
-   * Crests are optional: a manifest published before T051 has no scenario atlas, and the Stable simply shows
-   * no crest rather than refusing to load.
+   * Crests, type icons and skill icons are optional: a manifest published before T051 (crests) or D182 (icons) lacks
+   * them, and the app falls back to no crest and its own icons rather than refusing to load.
    */
-  atlases: Record<'uma-icons' | 'card-icons', LoadedAtlas> & Partial<Record<'scenario-icons', LoadedAtlas>>
+  atlases: Record<'uma-icons' | 'card-icons', LoadedAtlas> & Partial<Record<OptionalAtlasKind, LoadedAtlas>>
   art: ArtLoader
 }
 
@@ -270,7 +270,12 @@ const ATLAS_FILES: Record<ContentAtlasKind, RegExp> = {
   'uma-icons': /^atlases\/uma-icons\.[a-f0-9]{8}\.json$/,
   'card-icons': /^atlases\/card-icons\.[a-f0-9]{8}\.json$/,
   'scenario-icons': /^atlases\/scenario-icons\.[a-f0-9]{8}\.json$/,
+  'type-icons': /^atlases\/type-icons\.[a-f0-9]{8}\.json$/,
+  'skill-icons': /^atlases\/skill-icons\.[a-f0-9]{8}\.json$/,
 }
+
+const OPTIONAL_ATLASES = ['scenario-icons', 'type-icons', 'skill-icons'] as const
+type OptionalAtlasKind = (typeof OPTIONAL_ATLASES)[number]
 
 function assertMatchingFrames(label: string, ids: readonly string[], atlas: ContentAtlas): void {
   const expected = new Set(ids)
@@ -299,7 +304,10 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const courseFile = findRequiredFile(manifest, PACK_FILES.courses, 'courses pack')
   const umaAtlasFile = findRequiredFile(manifest, ATLAS_FILES['uma-icons'], 'uma-icons atlas')
   const cardAtlasFile = findRequiredFile(manifest, ATLAS_FILES['card-icons'], 'card-icons atlas')
-  const scenarioAtlasFile = manifest.files.find((file) => ATLAS_FILES['scenario-icons'].test(file.path)) ?? null
+  const optionalAtlasFiles = OPTIONAL_ATLASES.flatMap((kind) => {
+    const file = manifest.files.find((entry) => ATLAS_FILES[kind].test(entry.path))
+    return file ? [{ kind, file }] : []
+  })
 
   const [umaJson, cardJson, skillJson, raceJson, courseJson, umaAtlasJson, cardAtlasJson] = await Promise.all([
     verifiedJson(transport, umaFile),
@@ -322,9 +330,10 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const courses = parseContentPack<CourseTemplate>(courseJson, 'course')
   const umaAtlas = parseContentAtlas(umaAtlasJson, 'uma-icons')
   const cardAtlas = parseContentAtlas(cardAtlasJson, 'card-icons')
-  const scenarioAtlas = scenarioAtlasFile
-    ? parseContentAtlas(await verifiedJson(transport, scenarioAtlasFile), 'scenario-icons')
-    : null
+  const optionalAtlases = await Promise.all(optionalAtlasFiles.map(async ({ kind, file }) => ({
+    kind,
+    atlas: parseContentAtlas(await verifiedJson(transport, file), kind),
+  })))
   assertMatchingFrames('Uma', umas.map((item) => item.id), umaAtlas)
   assertMatchingFrames('Card', cards.map((item) => item.id), cardAtlas)
 
@@ -352,10 +361,10 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       )
       return { descriptor: atlas, pageUrls }
     }
-    const [umaIcons, cardIcons, scenarioIcons] = await Promise.all([
+    const [umaIcons, cardIcons, ...optionalIcons] = await Promise.all([
       loadAtlasPages(umaAtlas),
       loadAtlasPages(cardAtlas),
-      scenarioAtlas ? loadAtlasPages(scenarioAtlas) : Promise.resolve(null),
+      ...optionalAtlases.map(({ atlas }) => loadAtlasPages(atlas)),
     ])
     return {
       manifest,
@@ -368,7 +377,7 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       atlases: {
         'uma-icons': umaIcons,
         'card-icons': cardIcons,
-        ...(scenarioIcons ? { 'scenario-icons': scenarioIcons } : {}),
+        ...Object.fromEntries(optionalAtlases.map(({ kind }, index) => [kind, optionalIcons[index]!])),
       },
       art: createArtLoader(transport, manifest, urls, (url) => createdUrls.push(url)),
     }

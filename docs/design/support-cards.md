@@ -15,7 +15,7 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 | `jpReleaseDate` | Decides the **era** (see [Scenarios](scenarios.md#era-windows)) |
 | `obtain` | `event` / `free` / `gacha`. `event` and `free` make up the **starter set** |
 | `effectProfile` | Now feeds only **Race Bonus** |
-| `hintSkills` | The skills this card pays into the library through card nodes |
+| `hintSkills`, `eventSkills` | Its whites (hints) and golds (the golds among its events): each node it fills pays the next of each (D182) |
 | `icon`, `art` | Local asset references only |
 
 ## Ownership vs. the card set
@@ -49,7 +49,7 @@ Almost everything a card used to do lived in the training turn, which no longer 
 | **Type** | how a card node distributes its value ([table](constellations.md#what-a-card-node-pays)), the same for every card of the type (D180) |
 | **Stars** | scale every node the card occupies: 0★ 60% → 5★ 100% |
 | **Era** | scales every node against the *scenario*: current era 100%, −5 points per era older, floor 40% |
-| **`hintSkills`** | which skills the card pays into the library, one per node it occupies |
+| **Skills** | the next white (`hintSkills`) and the next gold (its event golds) for each node it occupies (D182) |
 | **Race Bonus** | **Uma EXP from races** while the card is in the active set, from 1★ |
 
 Deleted with the training turn: Training Bonus, Friendship Bonus, Specialty Priority, Hint Frequency, Stat
@@ -100,7 +100,13 @@ threshold, once planned for bond 3, was never built and is not part of stars.
 ## Where cards live on screen
 
 - **The Cards tab** browses by lens — the collection, or one scenario ([Collection](collection.md#card-album)).
-- **Each card's page** (`/cards/:id`) holds owning it, its stars in every reached scenario, and what it pays.
+- **Each card's page** (`/cards/:id`) holds owning it, its stars in every reached scenario, and what it pays. Its type
+  shows as the original's type icon on the illustration, its split with the stat icons, and a **Skills** list with the
+  original's skill icons: its golds first, highlighted, then its whites, each marked with the node that pays it; a tap
+  shows what the skill does and its base cost (D182).
+- **Card tiles** carry the original's type icon in the corner, as the original and GameTora mark cards, and the
+  original's stat icons stand for Speed, Stamina, Power, Guts and Wit on stat rows (the Uma profile, the Training
+  header), with our own glyphs until content has them.
 - **The Training scene's Card set tab** is where a scenario's six are chosen and bonded
   ([UX](ux.md#training-scene)).
 

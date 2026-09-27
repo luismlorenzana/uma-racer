@@ -6,12 +6,15 @@ import {
   cardStars,
   cardNodeValue,
   cardRaceBonus,
+  cardGoldSkillIds,
   cardShares,
   cardUnlockCost,
   cardSpPerNode,
   paysSkillPoints,
   scenarioForTier,
+  type SkillTemplate,
   type StatKey,
+  type SupportCardTemplate,
 } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
@@ -33,6 +36,9 @@ import { ScreenState } from '../ui/ScreenState'
 import { useArt } from '../ui/album/useArt'
 import { SectionHeading } from '../ui/Section'
 import { ChevronLeftIcon, ChevronRightIcon } from '../ui/icons'
+import { SkillIcon } from '../ui/SkillIcon'
+import { SkillKindBadge } from '../ui/SkillKindBadge'
+import { TypeIcon } from '../ui/TypeIcon'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 const STAT_TONE: Record<StatKey, string> = {
@@ -61,6 +67,7 @@ export function CardPage() {
   const pushToast = useGame((state) => state.pushToast)
   const [busy, setBusy] = useState(false)
   const [viewing, setViewing] = useState(false)
+  const [openSkill, setOpenSkill] = useState<string | null>(null)
   const art = useArt(contentState.status === 'ready' ? contentState.content : null, 'card', cardId || null)
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
@@ -87,10 +94,9 @@ export function CardPage() {
   const cost = cardUnlockCost(template.era)
   const raceBonus = cardRaceBonus(template, 1)
   const raceBonusMax = cardRaceBonus(template, MAX_STARS)
-  const hintSkills = template.hintSkillIds.flatMap((id) => {
-    const skill = content.skills.byId.get(id)
-    return skill ? [skill.name] : []
-  })
+  // Each node it fills pays the next of its golds and the next of its whites (D182).
+  const goldSkills = cardGoldSkillIds(template, content.skills.byId).flatMap((id) => content.skills.byId.get(id) ?? [])
+  const whiteSkills = template.hintSkillIds.flatMap((id) => content.skills.byId.get(id) ?? [])
   const holders = Object.values(umas)
     .flatMap((uma) => uma.scenarios
       .filter((run) => run.cardSetIds.includes(cardId))
@@ -123,7 +129,7 @@ export function CardPage() {
         icon={getContentAsset(content, 'card-icons', cardId)}
         name={template.charName}
         title={template.title || 'Support card'}
-        type={titleCase(template.type)}
+        type={template.type}
         owned={save !== null}
         reducedMotion={reducedMotion ?? false}
         onOpen={() => setViewing(true)}
@@ -141,8 +147,13 @@ export function CardPage() {
                 <span key={stat} style={{ width: `${shares[stat]}%`, background: STAT_TONE[stat] }} />
               ))}
             </div>
-            <p className="mt-1 text-[11px] text-ink-soft">
-              {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => `${titleCase(stat)} ${shares[stat]}`).join(' · ')}
+            <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-semibold">
+              {STATS.filter((stat) => (shares[stat] ?? 0) > 0).map((stat) => (
+                <span key={stat} className="inline-flex items-center gap-1">
+                  <TypeIcon type={stat} size={18} />
+                  {titleCase(stat)} <span className="text-ink-soft">{shares[stat]}</span>
+                </span>
+              ))}
             </p>
           </>
         )}
@@ -163,6 +174,33 @@ export function CardPage() {
           </div>
         )}
       </Panel>
+
+      {/* ── Skills ───────────────────────────────────────────────────── */}
+      {(goldSkills.length > 0 || whiteSkills.length > 0) && (
+        <>
+          <SectionHeading label="Skills" hint="paid node by node" />
+          <Panel className="grid gap-1 p-2">
+            {goldSkills.map((skill, index) => (
+              <CardSkill
+                key={skill.id}
+                skill={skill}
+                order={`Node ${index + 1}`}
+                open={openSkill === skill.id}
+                onToggle={() => setOpenSkill((current) => current === skill.id ? null : skill.id)}
+              />
+            ))}
+            {whiteSkills.map((skill, index) => (
+              <CardSkill
+                key={skill.id}
+                skill={skill}
+                order={`Node ${index + 1}`}
+                open={openSkill === skill.id}
+                onToggle={() => setOpenSkill((current) => current === skill.id ? null : skill.id)}
+              />
+            ))}
+          </Panel>
+        </>
+      )}
 
       {/* ── Bond by scenario ─────────────────────────────────────────── */}
       <SectionHeading label="Bond by scenario" hint="shared by every Uma there" />
@@ -237,19 +275,6 @@ export function CardPage() {
             While it is in the active set it adds {percent(raceBonus)} to race EXP at 1★, rising to {percent(raceBonusMax)} at {MAX_STARS}★.
           </p>
         )}
-        {hintSkills.length > 0 && (
-          <div className="mt-3">
-            <p className="text-micro mb-1">Skills · one per node it fills, in this order</p>
-            <ol className="grid gap-0.5">
-              {hintSkills.map((name, index) => (
-                <li key={name} className="flex gap-2 text-[12px]">
-                  <span className="w-4 shrink-0 text-right text-ink-faint">{index + 1}</span>
-                  <span className="truncate">{name}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
       </Panel>
 
       {/* ── In card sets ─────────────────────────────────────────────── */}
@@ -308,7 +333,7 @@ function CardHero({
   icon: ContentAsset | null
   name: string
   title: string
-  type: string
+  type: SupportCardTemplate['type']
   owned: boolean
   reducedMotion: boolean
   onOpen: () => void
@@ -342,14 +367,51 @@ function CardHero({
           <AtlasSprite asset={icon} alt={`${name} support card`} className={`w-1/4 rounded-md ${tone}`} fallback={<Placeholder label={name} />} />
         </div>
       )}
+      {/* Its type, as the original marks a card (D182). */}
+      <div className="pointer-events-none absolute top-3 left-3 z-20 drop-shadow-md">
+        <TypeIcon type={type} size={40} title={titleCase(type)} />
+      </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-3 pt-12 pb-3 text-ink-on-dark">
         <div className="flex flex-wrap gap-1">
-          <Crest>{type}</Crest>
+          <Crest>{titleCase(type)}</Crest>
           <Crest tone={owned ? 'accent' : 'neutral'}>{owned ? 'Owned' : 'Not owned'}</Crest>
         </div>
         <h1 className="font-display mt-1.5 text-2xl leading-tight font-bold">{name}</h1>
         <p className="text-[13px] text-ink-on-dark-soft">{title}</p>
       </div>
     </div>
+  )
+}
+
+/** One of the card's skills: its icon, name and kind, opening to what it does and its base cost (D182). */
+function CardSkill({
+  skill,
+  order,
+  open,
+  onToggle,
+}: {
+  skill: SkillTemplate
+  order: string
+  open: boolean
+  onToggle: () => void
+}) {
+  const gold = skill.kind === 'gold'
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={onToggle}
+      className={`w-full rounded-md px-2 py-1.5 text-left ${gold ? 'border border-accent/50 bg-accent-wash' : 'bg-sunken'}`}
+    >
+      <span className="flex items-center gap-2">
+        <SkillIcon skill={skill} size={gold ? 36 : 28} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-semibold">{skill.name}</span>
+          <span className="flex items-center gap-1.5"><SkillKindBadge kind={skill.kind} /><span className="text-micro">{order}</span></span>
+        </span>
+        {skill.costSp !== null && <span className="shrink-0 text-[11px] font-semibold text-ink-soft tabular-nums">{skill.costSp} SP</span>}
+      </span>
+      {open && <span className="mt-1.5 block text-[12px] leading-snug text-ink-soft">{skill.description || 'No description in this content pack.'}</span>}
+    </button>
   )
 }

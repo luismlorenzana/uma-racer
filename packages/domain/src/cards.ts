@@ -2,7 +2,7 @@
 // (docs/design/support-cards.md). The rest of the effect model died with the training turn (D125).
 
 import { CARD_SET_SIZE, starNodePct } from './constellation'
-import type { SupportCardTemplate } from './content'
+import type { SkillTemplate, SupportCardTemplate } from './content'
 
 /** A card holds 0★–5★ in each scenario; 5★ is max, with every bonus at full strength (D147). */
 export const MAX_STARS = 5
@@ -28,6 +28,18 @@ export const deckSlotCount = (_tier: number): number => CARD_SET_SIZE
 
 export const STAT_BONUS_SOURCE_IDS = { speed: 3, stamina: 4, power: 5, guts: 6, wit: 7 } as const
 export const INITIAL_STAT_SOURCE_IDS = { speed: 9, stamina: 10, power: 11, guts: 12, wit: 13 } as const
+
+/**
+ * A card's gold skills, in its events' order: in the original a card's gold comes from its event chain, never from its
+ * hints (every one of the 2,331 hint skills is white). Each node the card fills pays the next of them, on top of the
+ * next white hint (D182).
+ */
+export function cardGoldSkillIds(
+  template: Pick<SupportCardTemplate, 'eventSkillIds'>,
+  skills: ReadonlyMap<string, Pick<SkillTemplate, 'kind'>>,
+): string[] {
+  return template.eventSkillIds.filter((id) => skills.get(id)?.kind === 'gold')
+}
 
 export const isBroadSupportCard = (template: Pick<SupportCardTemplate, 'type'>): boolean =>
   template.type === 'friend' || template.type === 'group'
