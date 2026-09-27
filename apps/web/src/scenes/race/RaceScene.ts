@@ -4,10 +4,10 @@ import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js
 import { buildCoursePath, courseBounds, sampleCourse, type CoursePath } from './course-path'
 import {
   RacePlaybackClock,
-  activeRaceCue,
   buildRaceCues,
   coursePositionLabel,
   isPhotoFinish,
+  liveRaceCues,
   type RaceCue,
   type RacePresentationStage,
 } from './presentation'
@@ -38,7 +38,8 @@ export interface RaceHudState {
   finished: boolean
   stage: RacePresentationStage
   courseLabel: string | null
-  activeCue: RaceCue | null
+  /** The race feed's toasts at this moment, newest first (D178). */
+  cues: RaceCue[]
 }
 
 interface Token {
@@ -388,7 +389,7 @@ export class RaceScene {
         finished,
         stage: playback.stage,
         courseLabel: coursePositionLabel(this.layout, player.distance),
-        activeCue: playback.stage === 'running' ? activeRaceCue(this.cues, this.elapsed) : null,
+        cues: playback.stage === 'running' ? liveRaceCues(this.cues, this.elapsed) : [],
       })
     }
     if (finished && !this.finishedNotified) {

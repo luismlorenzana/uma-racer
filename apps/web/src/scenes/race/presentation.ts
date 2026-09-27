@@ -18,6 +18,8 @@ export type RacePackCue =
   | 'Spot struggle' | 'Securing lead' | 'Repositioning' | 'Saving stamina'
 
 export interface RaceCue {
+  /** Its place in the race's schedule, unique within it. */
+  id: number
   kind: RaceCueKind
   runner: number
   tick: number
@@ -26,12 +28,19 @@ export interface RaceCue {
   skillId?: string
   skillEffects?: readonly RaceSkillEffectKind[]
   packKind?: RacePackCue
-  /** Other events folded into this cue. Zero for an ungrouped cue. */
-  additionalCount: number
+  /** When each rival event of the same kind folded into this toast happened, in sim seconds; empty for most cues. */
+  folded: number[]
   isPlayer: boolean
 }
 
-interface CueCandidate extends Omit<RaceCue, 'startSeconds' | 'endSeconds'> {
+interface CueCandidate {
+  kind: RaceCueKind
+  runner: number
+  tick: number
+  skillId?: string
+  skillEffects?: readonly RaceSkillEffectKind[]
+  packKind?: RacePackCue
+  isPlayer: boolean
   priority: number
   sourceIndex: number
 }
@@ -48,7 +57,12 @@ export interface RacePlaybackSnapshot {
   done: boolean
 }
 
-const cueDuration = (kind: RaceCueKind) => kind === 'skill' ? 1.7 : 1.25
+/** Turn races (engine v6+) play two turns a second at 1×. */
+export const TURN_RACE_RATE = 2
+/** The race feed shows at most this many toasts at once, newest on top; rival activity shares one of them. */
+export const RACE_FEED_SLOTS = 3
+/** How long a toast stays, in seconds at 1×: a skill carries two names, so it stays a little longer. */
+const cueWallSeconds = (kind: RaceCueKind) => kind === 'skill' ? 2 : 1.6
 
 function packCue(event: RaceEvent): RacePackCue | null {
   if (event.type === 'blocked' && event.value === 1) return 'Blocked'
@@ -62,69 +76,38 @@ function packCue(event: RaceEvent): RacePackCue | null {
   return 'Pace up'
 }
 
-/** Creates a stable, serialized cue schedule; noisy rival/pack cues yield to player moments. */
+/**
+ * The race feed's schedule (D178): every cue shows at its own moment, never queued behind another, so a toast always
+ * matches what is on the course. Player moments always show; when the feed is full the rival toast, else the oldest,
+ * gives way. Rivals share one toast: another rival event of the same kind folds into it as "+N", and a different
+ * kind waits for nobody and is dropped.
+ */
 export function buildRaceCues(timeline: RaceTimeline, playerIndex: number): RaceCue[] {
   const candidates: CueCandidate[] = []
-  const rivalSkills = new Map<number, CueCandidate>()
-  let rivalLate: CueCandidate | null = null
   const lastPlayerPack = new Map<RacePackCue, number>()
 
   timeline.events.forEach((event, sourceIndex) => {
     const isPlayer = event.runner === playerIndex
     if (event.type === 'skill-activated' && event.skillId) {
-      const candidate: CueCandidate = {
-        kind: 'skill',
-        runner: event.runner,
-        tick: event.tick,
-        skillId: event.skillId,
-        skillEffects: [...(event.skillEffects ?? [])],
-        additionalCount: 0,
-        isPlayer,
-        priority: isPlayer ? 0 : 4,
-        sourceIndex,
-      }
-      if (isPlayer) candidates.push(candidate)
-      else {
-        const halfSecondTicks = Math.max(1, Math.round(timeline.tickRate / 2))
-        const bucket = Math.floor(event.tick / halfSecondTicks)
-        const grouped = rivalSkills.get(bucket)
-        if (grouped && candidate.runner < grouped.runner) {
-          candidate.additionalCount = grouped.additionalCount + 1
-          rivalSkills.set(bucket, candidate)
-        } else if (grouped) grouped.additionalCount += 1
-        else rivalSkills.set(bucket, candidate)
-      }
+      candidates.push({
+        kind: 'skill', runner: event.runner, tick: event.tick, skillId: event.skillId,
+        skillEffects: [...(event.skillEffects ?? [])], isPlayer, priority: isPlayer ? 0 : 4, sourceIndex,
+      })
       return
     }
-
     if (event.type === 'late-start') {
-      const candidate: CueCandidate = {
-        kind: 'late-start', runner: event.runner, tick: event.tick, additionalCount: 0, isPlayer,
-        priority: isPlayer ? 1 : 4, sourceIndex,
-      }
-      if (isPlayer) candidates.push(candidate)
-      else if (rivalLate) rivalLate.additionalCount += 1
-      else rivalLate = candidate
+      candidates.push({ kind: 'late-start', runner: event.runner, tick: event.tick, isPlayer, priority: isPlayer ? 1 : 3, sourceIndex })
       return
     }
-
     // Engine v5 duels: the cue names the rival, so it carries her index as its runner.
     if (isPlayer && event.type === 'duel' && event.value === 1 && event.targetRunner !== undefined) {
-      candidates.push({
-        kind: 'duel', runner: event.targetRunner, tick: event.tick, additionalCount: 0, isPlayer: true,
-        priority: 1, sourceIndex,
-      })
+      candidates.push({ kind: 'duel', runner: event.targetRunner, tick: event.tick, isPlayer: true, priority: 1, sourceIndex })
       return
     }
-
     if (isPlayer && event.type === 'spurt') {
-      candidates.push({
-        kind: 'spurt', runner: event.runner, tick: event.tick, additionalCount: 0, isPlayer: true,
-        priority: 1, sourceIndex,
-      })
+      candidates.push({ kind: 'spurt', runner: event.runner, tick: event.tick, isPlayer: true, priority: 1, sourceIndex })
       return
     }
-
     if (isPlayer) {
       const kind = packCue(event)
       const seconds = event.tick / timeline.tickRate
@@ -132,35 +115,44 @@ export function buildRaceCues(timeline: RaceTimeline, playerIndex: number): Race
       const quiet = kind === 'Repositioning' || kind === 'Securing lead' ? 10 : 3
       if (!kind || seconds - (lastPlayerPack.get(kind) ?? -Infinity) < quiet) return
       lastPlayerPack.set(kind, seconds)
-      candidates.push({
-        kind: 'pack', runner: event.runner, tick: event.tick, packKind: kind, additionalCount: 0, isPlayer: true,
-        priority: 3, sourceIndex,
-      })
+      candidates.push({ kind: 'pack', runner: event.runner, tick: event.tick, packKind: kind, isPlayer: true, priority: 2, sourceIndex })
     }
   })
-
-  candidates.push(...rivalSkills.values())
-  if (rivalLate) candidates.push(rivalLate)
   candidates.sort((left, right) =>
     left.tick - right.tick || left.priority - right.priority || left.runner - right.runner || left.sourceIndex - right.sourceIndex)
 
+  const rate = timeline.tickRate === 1 ? TURN_RACE_RATE : 1
   const schedule: RaceCue[] = []
-  let nextAvailable = 0
   for (const candidate of candidates) {
-    const sourceSeconds = candidate.tick / timeline.tickRate
-    const startSeconds = Math.max(sourceSeconds, nextAvailable)
-    const protectedPlayerCue = candidate.isPlayer && candidate.kind !== 'pack'
-    if (!protectedPlayerCue && startSeconds - sourceSeconds > 2.5) continue
-    const endSeconds = startSeconds + cueDuration(candidate.kind)
+    const startSeconds = candidate.tick / timeline.tickRate
+    const live = schedule.filter((cue) => cue.endSeconds > startSeconds)
+    const rival = live.find((cue) => !cue.isPlayer)
+    if (!candidate.isPlayer) {
+      if (rival) {
+        if (rival.kind === candidate.kind) rival.folded.push(startSeconds)
+        continue
+      }
+      if (live.length >= RACE_FEED_SLOTS) continue
+    } else if (live.length >= RACE_FEED_SLOTS) {
+      (rival ?? live[0]!).endSeconds = startSeconds
+    }
     const { priority: _priority, sourceIndex: _sourceIndex, ...cue } = candidate
-    schedule.push({ ...cue, startSeconds, endSeconds })
-    nextAvailable = endSeconds
+    schedule.push({
+      ...cue,
+      id: schedule.length,
+      startSeconds,
+      endSeconds: startSeconds + cueWallSeconds(candidate.kind) * rate,
+      folded: [],
+    })
   }
   return schedule
 }
 
-export function activeRaceCue(cues: readonly RaceCue[], seconds: number): RaceCue | null {
-  return cues.find((cue) => seconds >= cue.startSeconds && seconds < cue.endSeconds) ?? null
+/** The toasts showing at `seconds`, newest first; a pure function of playback time, so pause and seek always agree. */
+export function liveRaceCues(cues: readonly RaceCue[], seconds: number): RaceCue[] {
+  return cues
+    .filter((cue) => seconds >= cue.startSeconds && seconds < cue.endSeconds)
+    .sort((left, right) => right.startSeconds - left.startSeconds)
 }
 
 export function presentationStageAt(elapsed: number, reducedMotion: boolean): RacePresentationStage {

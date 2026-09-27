@@ -3,13 +3,16 @@ import { describe, expect, it } from 'vitest'
 import {
   PHOTO_HOLD_SECONDS,
   PRE_ROLL_SECONDS,
+  RACE_FEED_SLOTS,
   REDUCED_PRE_ROLL_SECONDS,
   RacePlaybackClock,
-  activeRaceCue,
+  TURN_RACE_RATE,
   buildRaceCues,
   coursePositionLabel,
   isPhotoFinish,
+  liveRaceCues,
   summarizePlayerActivations,
+  type RaceCue,
 } from './presentation'
 
 const timeline = (overrides: Partial<RaceTimeline> = {}): RaceTimeline => ({
@@ -57,25 +60,60 @@ describe('race presentation clock', () => {
   })
 })
 
-describe('race cue scheduling', () => {
-  it('prioritizes player cues, groups simultaneous rivals, and never overlaps popups', () => {
+const mostLive = (cues: readonly RaceCue[]) => Math.max(0, ...cues.map((cue) => liveRaceCues(cues, cue.startSeconds).length))
+
+describe('race feed scheduling (D178)', () => {
+  it('shows every cue at its own moment, newest first, with rivals folded into one toast', () => {
     const cues = buildRaceCues(timeline({ events: [
       { tick: 10, runner: 2, type: 'skill-activated', skillId: 'rival-b', skillEffects: ['target-speed'] },
       { tick: 10, runner: 1, type: 'skill-activated', skillId: 'rival-a', skillEffects: ['acceleration'] },
       { tick: 10, runner: 0, type: 'skill-activated', skillId: 'player', skillEffects: ['recovery'] },
+      { tick: 14, runner: 2, type: 'skill-activated', skillId: 'rival-c' },
       { tick: 20, runner: 0, type: 'blocked', value: 1 },
       { tick: 25, runner: 0, type: 'overtake', value: 1 },
       { tick: 30, runner: 0, type: 'blocked', value: 0 },
       { tick: 35, runner: 0, type: 'blocked', value: 1 },
       { tick: 55, runner: 0, type: 'blocked', value: 1 },
     ] }), 0)
-    expect(cues[0]).toMatchObject({ kind: 'skill', skillId: 'player', isPlayer: true, startSeconds: 1 })
-    expect(cues.find((cue) => !cue.isPlayer && cue.kind === 'skill')).toMatchObject({ runner: 1, additionalCount: 1 })
-    expect(cues.filter((cue) => cue.packKind === 'Blocked')).toHaveLength(2)
-    for (let index = 1; index < cues.length; index += 1) {
-      expect(cues[index]!.startSeconds).toBeGreaterThanOrEqual(cues[index - 1]!.endSeconds)
-    }
-    expect(activeRaceCue(cues, 1.1)?.skillId).toBe('player')
+    expect(cues[0]).toMatchObject({ kind: 'skill', skillId: 'player', isPlayer: true, startSeconds: 1, endSeconds: 3 })
+    // One rival toast, from the lowest gate, counting the others as they happen.
+    expect(cues.filter((cue) => !cue.isPlayer)).toEqual([expect.objectContaining({ runner: 1, skillId: 'rival-a', folded: [1, 1.4] })])
+    // Nothing waits: a cue starts when its event happens, so the second Blocked (3 s quiet) is at 5.5 s, not later.
+    expect(cues.filter((cue) => cue.packKind === 'Blocked').map((cue) => cue.startSeconds)).toEqual([2, 5.5])
+    expect(cues.find((cue) => cue.packKind === 'Overtaking')?.startSeconds).toBe(2.5)
+    expect(liveRaceCues(cues, 2.6).map((cue) => cue.packKind ?? cue.skillId)).toEqual(['Overtaking', 'Blocked', 'player'])
+    expect(new Set(cues.map((cue) => cue.id)).size).toBe(cues.length)
+  })
+
+  it('never shows more than three: player moments push out the rival toast, then the oldest', () => {
+    const cues = buildRaceCues(timeline({ events: [
+      { tick: 0, runner: 1, type: 'skill-activated', skillId: 'rival' },
+      { tick: 1, runner: 0, type: 'skill-activated', skillId: 'first' },
+      { tick: 2, runner: 0, type: 'skill-activated', skillId: 'second' },
+      { tick: 3, runner: 0, type: 'skill-activated', skillId: 'third' },
+      { tick: 4, runner: 0, type: 'skill-activated', skillId: 'fourth' },
+      { tick: 5, runner: 2, type: 'skill-activated', skillId: 'late-rival' },
+    ] }), 0)
+    expect(mostLive(cues)).toBe(RACE_FEED_SLOTS)
+    expect(cues.find((cue) => cue.skillId === 'rival')?.endSeconds).toBe(0.3)
+    expect(cues.find((cue) => cue.skillId === 'first')?.endSeconds).toBe(0.4)
+    expect(liveRaceCues(cues, 0.45).map((cue) => cue.skillId)).toEqual(['fourth', 'third', 'second'])
+    // A rival with the feed full of her moments is not shown at all.
+    expect(cues.some((cue) => cue.skillId === 'late-rival')).toBe(false)
+  })
+
+  it('drops a rival cue of another kind rather than queueing it', () => {
+    const cues = buildRaceCues(timeline({ events: [
+      { tick: 0, runner: 1, type: 'late-start', value: 0.2 },
+      { tick: 0, runner: 2, type: 'late-start', value: 0.3 },
+      { tick: 0, runner: 2, type: 'skill-activated', skillId: 'rival' },
+    ] }), 0)
+    expect(cues).toEqual([expect.objectContaining({ kind: 'late-start', runner: 1, folded: [0] })])
+  })
+
+  it('keeps a toast up as long in a turn race as in a timed one, at 1×', () => {
+    const cues = buildRaceCues(timeline({ tickRate: 1, events: [{ tick: 5, runner: 0, type: 'spurt', value: 1 }] }), 0)
+    expect(cues[0]).toMatchObject({ startSeconds: 5, endSeconds: 5 + 1.6 * TURN_RACE_RATE })
   })
 
   it('summarizes player effects without leaking rival activations', () => {

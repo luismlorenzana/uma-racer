@@ -1,4 +1,4 @@
-import type { RaceGrade, Strategy } from '@racer/domain'
+import type { RaceGrade, RaceSkillEffectKind, Strategy } from '@racer/domain'
 
 export const STRATEGY_LABEL: Record<Strategy, string> = {
   front: 'Front Runner',
@@ -25,4 +25,15 @@ export const GRADE_STYLE: Record<RaceGrade, string> = {
   'pre-op': 'from-[#56b991] to-[#328468]',
   maiden: 'from-[#a7a2d9] to-[#716ca9]',
   debut: 'from-[#9aa7b8] to-[#6b7a8f]',
+}
+
+/** What a skill did, from its effects: the race feed's line under a player skill, and the results' activations. */
+export function effectLabel(effects: readonly RaceSkillEffectKind[]) {
+  const labels: string[] = []
+  if (effects.includes('recovery')) labels.push('Stamina recovery')
+  if (effects.some((effect) => effect === 'current-speed' || effect === 'current-speed-natural' || effect === 'target-speed')) labels.push('Speed boost')
+  if (effects.includes('acceleration')) labels.push('Acceleration')
+  if (effects.some((effect) => effect.startsWith('passive-'))) labels.push('Stat boost')
+  if (effects.includes('start-delay')) labels.push('Quick start')
+  return labels.join(' · ') || 'Activated'
 }

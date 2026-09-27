@@ -1,4 +1,4 @@
-import { COURSE_ROTATION, LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, isGateLevel, type RaceResultRecord, type RaceSkillEffectKind, type Strategy } from '@racer/domain'
+import { COURSE_ROTATION, LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, isGateLevel, type RaceResultRecord, type Strategy } from '@racer/domain'
 import { formatMargin, type RaceTimeline } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -10,20 +10,20 @@ import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../game/flair-vi
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
-import { summarizePlayerActivations, type RaceCue } from '../../scenes/race/presentation'
+import { TURN_RACE_RATE, summarizePlayerActivations, type RacePresentationStage } from '../../scenes/race/presentation'
 import { Button } from '../../ui/Button'
 import { FlairCards } from '../../ui/FlairCards'
 import { ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon } from '../../ui/icons'
 import { Meter } from '../../ui/Meter'
 import { UmaBust } from '../../ui/UmaBust'
-import { GRADE_LABEL, STRATEGY_LABEL } from './labels'
+import { GRADE_LABEL, STRATEGY_LABEL, effectLabel } from './labels'
+import { RaceFeed } from './RaceFeed'
 
 const PHASES = ['Opening', 'Middle leg', 'Final leg', 'Last spurt']
 /**
- * Turn races (engine v6, M021) play two turns a second at 1×, so a 2,400 m race runs in about a minute; Slow plays a
- * turn in 1.5 s. Older, time-based replays keep real time at 1×.
+ * Turn races (engine v6, M021) play two turns a second at 1× (`TURN_RACE_RATE`), so a 2,400 m race runs in about a
+ * minute; Slow plays a turn in 1.5 s. Older, time-based replays keep real time at 1×.
  */
-const TURN_RACE_RATE = 2
 const TURN_SPEEDS = [{ value: 1 / 3, label: 'Slow' }, { value: 1, label: '1×' }, { value: 2, label: '2×' }] as const
 const TIME_SPEEDS = [{ value: 1, label: '1×' }, { value: 2, label: '2×' }] as const
 const RIVAL_COLORS = [0x5b8def, 0xef6f6c, 0x8e6cef, 0x3cb4a4, 0xf29e4c, 0x6c8ea4, 0xd96fb6, 0x7bbf4a]
@@ -41,30 +41,14 @@ const CONFETTI = Array.from({ length: 14 }, (_, index) => ({
   color: ['#ffc42e', '#ff5a5f', '#2fa8f5', '#8e6cef', '#2ec27e'][index % 5]!,
 }))
 
-const effectLabel = (effects: readonly RaceSkillEffectKind[]) => {
-  const labels: string[] = []
-  if (effects.includes('recovery')) labels.push('Stamina recovery')
-  if (effects.some((effect) => effect === 'current-speed' || effect === 'current-speed-natural' || effect === 'target-speed')) labels.push('Speed boost')
-  if (effects.includes('acceleration')) labels.push('Acceleration')
-  if (effects.some((effect) => effect.startsWith('passive-'))) labels.push('Stat boost')
-  if (effects.includes('start-delay')) labels.push('Quick start')
-  return labels.join(' · ') || 'Activated'
-}
-
-function cueText(cue: RaceCue, skillName: string | null, rivalName: string): { eyebrow: string; title: string } {
-  if (cue.kind === 'skill') return {
-    eyebrow: cue.isPlayer ? 'Your skill' : rivalName,
-    title: `${skillName ?? cue.skillId ?? 'Skill'}${cue.additionalCount ? ` · +${cue.additionalCount} rival skill${cue.additionalCount === 1 ? '' : 's'}` : ''}`,
-  }
-  if (cue.kind === 'late-start') return cue.isPlayer
-    ? { eyebrow: 'Start', title: 'Slow start!' }
-    : { eyebrow: 'Field start', title: `${cue.additionalCount + 1} rivals started late` }
-  if (cue.kind === 'spurt') return { eyebrow: 'Final drive', title: 'Last spurt!' }
-  if (cue.kind === 'duel') return { eyebrow: 'Final straight', title: `Duel with ${rivalName}` }
-  const eyebrow = cue.packKind === 'Spot struggle' ? 'Early race'
-    : cue.packKind === 'Securing lead' || cue.packKind === 'Repositioning' || cue.packKind === 'Saving stamina' ? 'Before the spurt'
-      : 'Pack'
-  return { eyebrow, title: cue.packKind ?? 'Pack change' }
+/** The start countdown and the photo finish, over the course's top edge; the feed has the right-hand side. */
+function stageBanner(stage: RacePresentationStage, runners: number, raceName: string): { eyebrow: string; title: string } | null {
+  if (stage === 'field') return { eyebrow: `${runners} runners`, title: raceName }
+  if (stage === 'staged') return { eyebrow: 'At the gates', title: 'Runners set' }
+  if (stage === 'ready') return { eyebrow: 'Ready', title: 'Ready…' }
+  if (stage === 'go') return { eyebrow: 'Start', title: 'GO!' }
+  if (stage === 'photo') return { eyebrow: 'Finish', title: 'Photo finish!' }
+  return null
 }
 
 function FullScreenMessage({
@@ -278,13 +262,7 @@ export function RaceRunScreen() {
   const closed = Boolean(savedUma && awaitingAdvance(savedUma))
   const finalTier = Boolean(savedUma && savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO)
   const promote = closed && !finalTier
-  const activeCue = hud?.activeCue ?? null
-  const activeCueRunner = activeCue ? attempt.runners[activeCue.runner] : undefined
-  const activeCueText = activeCue ? cueText(
-    activeCue,
-    activeCue.skillId ? content.skills.byId.get(activeCue.skillId)?.name ?? null : null,
-    content.umas.byId.get(activeCueRunner?.templateId ?? '')?.name ?? 'Rival skill',
-  ) : null
+  const banner = hud ? stageBanner(hud.stage, attempt.input.runners.length, race.name) : null
   const activationSummary = summarizePlayerActivations(timeline, attempt.playerIndex)
   const goalResult = record && savedUma ? buildResultGoalView(record, savedUma, content, freshGoalCommit) : null
   const badgeState = badges[badgeStateId(attempt.umaId)]
@@ -358,50 +336,27 @@ export function RaceRunScreen() {
         </div>
       </div>
 
-      <m.div
-        ref={hostRef}
-        className="relative min-h-0 flex-1 overflow-hidden"
-        animate={!reducedMotion && hud?.phase === 3 && hud.stage === 'running' ? { scale: 1.015, opacity: 1 } : { scale: 1, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      />
-
-      <AnimatePresence mode="wait">
-        {hud && ['field', 'staged', 'ready', 'go'].includes(hud.stage) && (
-          <m.div
-            key={hud.stage}
-            className="pointer-events-none absolute inset-x-5 top-[28%] z-20 rounded-[1.5rem] border border-hairline bg-ink/80 px-5 py-4 text-center text-white shadow-2"
-            initial={reducedMotion ? false : { scale: 0.92, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={reducedMotion ? { opacity: 0 } : { scale: 1.04, opacity: 0 }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-widest text-accent">
-              {hud.stage === 'field' ? `${attempt.input.runners.length} runners` : hud.stage === 'staged' ? 'At the gates' : hud.stage === 'ready' ? 'Ready' : 'Start'}
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-outline">{hud.stage === 'field' ? race.name : hud.stage === 'staged' ? 'Runners set' : hud.stage === 'ready' ? 'Ready…' : 'GO!'}</p>
-          </m.div>
+      {/* The course, with its countdown and race feed laid over it, never over the header (D178). */}
+      <div className="relative min-h-0 flex-1">
+        <m.div
+          ref={hostRef}
+          className="absolute inset-0 overflow-hidden"
+          animate={!reducedMotion && hud?.phase === 3 && hud.stage === 'running' ? { scale: 1.015, opacity: 1 } : { scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+        {hud && banner && (
+          <div className="pointer-events-none absolute inset-x-0 top-[12%] z-20 flex justify-center px-6">
+            <div
+              key={hud.stage}
+              className={`race-banner-in max-w-full rounded-2xl px-4 py-1.5 text-center shadow-2 ${hud.stage === 'photo' ? 'bg-accent text-ink' : 'bg-ink/80 text-white'}`}
+            >
+              <p className={`text-[10px] font-bold tracking-widest uppercase ${hud.stage === 'photo' ? 'text-ink/75' : 'text-accent'}`}>{banner.eyebrow}</p>
+              <p className="truncate text-lg leading-6 font-semibold">{banner.title}</p>
+            </div>
+          </div>
         )}
-        {hud?.stage === 'photo' && (
-          <m.div key="photo" className="pointer-events-none absolute inset-x-5 top-[28%] z-20 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <span className="inline-block rounded-full border border-hairline bg-accent px-5 py-2 text-xl font-semibold text-white text-outline shadow-2">Photo finish!</span>
-          </m.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence mode="wait">
-        {activeCue && activeCueText && (
-          <m.div
-            key={`${activeCue.kind}:${activeCue.runner}:${activeCue.tick}`}
-            className={`pointer-events-none absolute top-32 left-1/2 z-20 w-[min(86vw,22rem)] -translate-x-1/2 rounded-md border-2 px-4 py-2 text-center shadow-2 ${activeCue.isPlayer ? 'border-accent bg-accent text-white text-outline' : 'border-hairline bg-panel/95 text-ink'}`}
-            initial={reducedMotion ? false : { y: 10, scale: 0.9, opacity: 0 }}
-            animate={reducedMotion ? { opacity: 1 } : { y: 0, scale: 1, opacity: 1 }}
-            exit={reducedMotion ? { opacity: 0 } : { y: -8, opacity: 0 }}
-          >
-            <p className="text-xs font-semibold uppercase">{activeCueText.eyebrow}</p>
-            <p className="truncate text-lg font-semibold">{activeCueText.title}</p>
-            {activeCue.kind === 'skill' && activeCue.skillEffects && <p className="text-xs font-bold opacity-85">{effectLabel(activeCue.skillEffects)}</p>}
-          </m.div>
-        )}
-      </AnimatePresence>
+        {hud && <RaceFeed cues={hud.cues} seconds={hud.seconds} content={content} runners={attempt.runners} />}
+      </div>
 
       <div className="pb-safe px-3">
         <div className="mb-2 rounded-md border border-hairline bg-panel/90 p-3 shadow-2">

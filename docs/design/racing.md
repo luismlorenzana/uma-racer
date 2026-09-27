@@ -313,10 +313,18 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
   view, are drawn in front, and the player always on top.
 - A **progress rail** shows every runner's position along the whole distance at a glance.
 - **Phase banner:** Opening → Middle → Final Leg → **Last Spurt**, with course labels such as "Final corner" and "Final straight".
-- Before timeline second zero, the renderer shows a 2.4-second field → staged gates → Ready → Go sequence. The engine's
-  seeded start delays begin only when the gate opens. Reduced motion keeps the same text in a shortened 0.6-second sequence.
-- **Stamina bar** for the player's Uma. A deterministic single-slot queue shows player skills, late start, last spurt, and
-  pack state ahead of grouped rival activations, so simultaneous events never cover each other.
+- Before timeline second zero, the renderer shows a 2.4-second field → staged gates → Ready → Go sequence in a small
+  banner over the course's top edge. The engine's seeded start delays begin only when the gate opens. Reduced motion
+  keeps the same text in a shortened 0.6-second sequence. A photo finish shows in the same banner.
+- **Stamina bar** for the player's Uma.
+- **Race feed** (D178): small toasts on the right of the course, over the outer lanes the field seldom uses, newest on
+  top and at most three at once. Each shows at its own moment, never queued, for 2 s at 1× (a skill) or 1.6 s
+  (anything else). Her skills, her duel and her last spurt are in the accent, with her face or her rival's; her late
+  start and pack state (Spot struggle, pushes before the spurt, Saving stamina, Blocked, Pace up and down) are white;
+  rivals share one dark toast, and further rival events of the same kind fold into it as "+N" as they happen. A full
+  feed drops the rival toast, else the oldest, for a player moment; a rival event finds room or is not shown. What
+  shows is a pure function of playback time, so pause, step and seek always agree and no toast outlives its moment.
+  The feed and banner sit inside the course view, so they never cover the header.
 - **Finish:** Nose/Head margins (runner-up gap greater than zero and below 0.15 lengths) slow the final 0.8 timeline seconds
   to 0.4× and hold the finish frame for 0.65 seconds. Skip and reduced motion go directly to the same computed result.
 - Results show the full field, rewards, EXP/levels, and player activation effects. Save

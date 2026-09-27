@@ -230,6 +230,20 @@
   50% { transform: scale(1.3); opacity: 0; }
 }
 
+/* The race feed's toasts (D178) and the start countdown slide in; they leave by an opacity transition. */
+@keyframes race-toast-in {
+  from { transform: translateX(14px) scale(0.94); opacity: 0; }
+}
+.race-toast-in {
+  animation: race-toast-in 180ms ease-out;
+}
+@keyframes race-banner-in {
+  from { transform: scale(0.85); opacity: 0; }
+}
+.race-banner-in {
+  animation: race-banner-in 200ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
