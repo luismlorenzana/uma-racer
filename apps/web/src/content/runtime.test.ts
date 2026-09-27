@@ -45,7 +45,7 @@ function syntheticWebp(width: number, height: number): Uint8Array {
   return output
 }
 
-function fixture(versionCharacter = 'a', includeSparkRivals = false): Fixture {
+function fixture(versionCharacter = 'a', includeSparkRivals = false, extraCardArt = 0): Fixture {
   const responses = new Map<string, { bytes: ArrayBuffer; contentType: string }>()
   const files: ContentManifestFile[] = []
   const add = (path: string, value: string | Uint8Array, contentType: string) => {
@@ -112,6 +112,9 @@ function fixture(versionCharacter = 'a', includeSparkRivals = false): Fixture {
   for (const [dir, id] of [['uma', 'uma-x'], ['card', 'card-x'], ['chibi', 'uma-x-a'], ['dress', '1001-summer'], ['face', '1001']] as const) {
     add(`art/${dir}/${id}.${versionCharacter.repeat(8)}.webp`, syntheticWebp(512, 512), 'image/webp')
   }
+  for (let index = 0; index < extraCardArt; index += 1) {
+    add(`art/card/c-${index}.${versionCharacter.repeat(8)}.webp`, syntheticWebp(450, 600 + index), 'image/webp')
+  }
   files.sort((left, right) => left.path.localeCompare(right.path))
   const version = createHash('sha256')
     .update(files.map((file) => file.sha256).sort().join(''))
@@ -174,6 +177,24 @@ describe('private art loader', () => {
     expect(await content.content.art.load('uma', 'uma-x')).toBe(first)
     // Art the manifest does not carry resolves to null so callers fall back to the icon atlas.
     expect(await content.content.art.load('card', 'missing')).toBeNull()
+  })
+
+  it('never revokes art a screen still holds, however many others load after it (D183)', async () => {
+    const current = fixture('a', false, 30)
+    const { urls, revoke } = urlFactory()
+    const content = await new ContentRuntime(transport(() => current), new MemoryStore(), urls).load()
+    if (content.status !== 'ready') throw new Error('expected ready content')
+    const art = content.content.art
+    const release = art.hold!('card', 'c-0')
+    const held = await art.load('card', 'c-0')
+    const unheld = await art.load('card', 'c-1')
+    for (let index = 2; index < 30; index += 1) await art.load('card', `c-${index}`)
+    // Past the 24-entry window the oldest unheld entries go; the held one stays and is still served.
+    expect(revoke).toHaveBeenCalledWith(unheld)
+    expect(revoke).not.toHaveBeenCalledWith(held)
+    expect(await art.load('card', 'c-0')).toBe(held)
+    release()
+    release()
   })
 
   it('resolves T059\'s chibi, outfit-stand and race-face art', async () => {

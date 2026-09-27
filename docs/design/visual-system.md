@@ -37,11 +37,11 @@ Three levels is the whole system. A panel inside a panel drops to a hairline div
 | Accent (silks gold) | `--accent` / `--accent-strong` | `#D39A2B` / `#B87F18` |
 | Turf | `--turf` | `#2F7A4F` |
 | Dirt | `--dirt` | `#8A6A4B` |
-| Speed · Stamina · Power · Guts · Wit | `--stat-*` | `#2F6FE0` · `#D6483F` · `#E07B22` · `#D24E8C` · `#1F9A70` |
+| Speed · Stamina · Power · Guts · Wit | `--stat-*` | `#0980E6` · `#DD4433` · `#E66E00` · `#F1368B` · `#05A371`: the original's own, the rims of its type icons (D183) |
 | Tier metals | `--tier-*` | bronze `#B07A46` · silver `#9AA6B5` · gold `#D9A62B` · platinum `#6FB7D9` · rainbow gradient |
 | Semantic | `--success` / `--danger` / `--warning` / `--info` | `#2F7A4F` / `#C23B33` / `#D08A0E` / `#2F6FE0` |
 
-Stat colours are one notch less saturated than today's, and they appear as **meters, dots and 2 px accents** — never as
+Stat colours are the original's (D183), and they appear as **meters, dots, 2 px accents and the type icons** — never as
 a filled pill behind text. Tier metals belong to flair only. Text contrast stays at 4.5:1 or better, and state is never
 carried by colour alone.
 
@@ -97,6 +97,11 @@ Two faces, both OFL and self-hosted, latin subset only:
 - Line by default, solid for active states, and **illustrated two-tone versions for the five tab icons and the three
   currencies** — those are the ones that carry personality.
 - Every icon ships with an accessible name. **No emoji in the product** once the set lands.
+- **Stats and card types have one icon each** (D183), `ui/TypeIcon`: our own drawings in the original's style, a
+  rounded tile with a darker rim, a top-to-bottom gradient and a white glyph (boot, heart, flexed arm, flame,
+  mortarboard), and the light Friend and Group tiles with their figures, in colours sampled from the original's icons.
+  They ship with the app, so they draw before content loads and stay crisp at any size; the line set keeps no stat
+  glyphs.
 - The set lives in `apps/web/src/ui/icons/`: one module per icon, a typed `IconName` union, sizes 16 / 20 / 24 / 32 in
   `currentColor`. Each drawing has three layers: the outline, the inner marks (knocked out of a solid silhouette), and
   the tone that duotone paints in the accent (or `accent`, such as the panel white on the raised Race tab). An icon

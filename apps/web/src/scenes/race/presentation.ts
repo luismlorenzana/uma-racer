@@ -1,5 +1,5 @@
 import type { RaceCourseLayout, RaceSkillEffectKind } from '@racer/domain'
-import type { RaceEvent, RaceTimeline } from '@racer/race'
+import { sampleTimeline, type RaceEvent, type RaceTimeline } from '@racer/race'
 
 // Pure renderer choreography derived from immutable race output
 // (docs/design/racing.md#presentation-straight-line-real-time-view).
@@ -11,7 +11,7 @@ export const PHOTO_SPEED = 0.4
 export const PHOTO_HOLD_SECONDS = 0.65
 
 export type RacePresentationStage = 'field' | 'staged' | 'ready' | 'go' | 'running' | 'photo' | 'finished'
-export type RaceCueKind = 'skill' | 'late-start' | 'spurt' | 'pack' | 'duel'
+export type RaceCueKind = 'skill' | 'late-start' | 'spurt' | 'pack' | 'duel' | 'hp-empty'
 export type RacePackCue =
   | 'Blocked' | 'Overtaking' | 'Pace up' | 'Pace down' | 'Holding lead'
   /** Engine v7's field mechanics (D158). */
@@ -28,6 +28,8 @@ export interface RaceCue {
   skillId?: string
   skillEffects?: readonly RaceSkillEffectKind[]
   packKind?: RacePackCue
+  /** A spurt cue: whether her HP covered her full-speed spurt when she started it. */
+  fullSpurt?: boolean
   /** When each rival event of the same kind folded into this toast happened, in sim seconds; empty for most cues. */
   folded: number[]
   isPlayer: boolean
@@ -40,6 +42,7 @@ interface CueCandidate {
   skillId?: string
   skillEffects?: readonly RaceSkillEffectKind[]
   packKind?: RacePackCue
+  fullSpurt?: boolean
   isPlayer: boolean
   priority: number
   sourceIndex: number
@@ -105,7 +108,14 @@ export function buildRaceCues(timeline: RaceTimeline, playerIndex: number): Race
       return
     }
     if (isPlayer && event.type === 'spurt') {
-      candidates.push({ kind: 'spurt', runner: event.runner, tick: event.tick, isPlayer: true, priority: 1, sourceIndex })
+      candidates.push({
+        kind: 'spurt', runner: event.runner, tick: event.tick, fullSpurt: spurtWasFull(timeline, event), isPlayer: true,
+        priority: 1, sourceIndex,
+      })
+      return
+    }
+    if (isPlayer && event.type === 'hp-empty') {
+      candidates.push({ kind: 'hp-empty', runner: event.runner, tick: event.tick, isPlayer: true, priority: 1, sourceIndex })
       return
     }
     if (isPlayer) {
@@ -265,6 +275,47 @@ export function coursePositionLabel(layout: RaceCourseLayout | undefined, distan
   const slope = layout.slopes?.find((segment) => distance >= segment.start && distance < segment.end)
   const hill = slope ? slope.slope > 0 ? 'Uphill' : 'Downhill' : null
   return [place, hill].filter(Boolean).join(' · ') || null
+}
+
+/**
+ * A spurt event was her full-speed spurt if her final plan was the maximum and this is that speed: a heal can re-plan
+ * a held-back spurt up to the maximum (D158), so an earlier, slower start stays held back.
+ */
+function spurtWasFull(timeline: RaceTimeline, event: RaceEvent): boolean {
+  const result = timeline.results.find((entry) => entry.runner === event.runner)
+  return Boolean(result?.spurtMaxed && (event.value ?? 0) >= result.spurtSpeed - 1e-6)
+}
+
+/**
+ * What her stamina decided (D179). Everyone's HP runs low by the line, as in the original: most of it is the distance
+ * itself, and the last spurt spends the rest on speed. What stamina changes is whether that spurt could be her fastest,
+ * and whether she ran dry before the line.
+ */
+export interface StaminaStory {
+  /** When she started her (last) spurt, in sim seconds; null if she never spurted. */
+  spurtSeconds: number | null
+  fullSpurt: boolean
+  /** When her HP ran out and how far she still had to go; null if it never did. */
+  emptySeconds: number | null
+  emptyMetersLeft: number | null
+  /** Her HP share as she crossed the line. */
+  finishHp: number
+}
+
+export function staminaStory(timeline: RaceTimeline, playerIndex: number): StaminaStory {
+  const spurts = timeline.events.filter((event) => event.runner === playerIndex && event.type === 'spurt')
+  const spurt = spurts[spurts.length - 1]
+  const empty = timeline.events.find((event) => event.runner === playerIndex && event.type === 'hp-empty')
+  const result = timeline.results.find((entry) => entry.runner === playerIndex)
+  const frames = sampleTimeline(timeline, result?.finishTime ?? Number.POSITIVE_INFINITY, [])
+  const emptyAt = empty ? timeline.distance[Math.min(empty.tick, timeline.ticks - 1) * timeline.runnerCount + playerIndex] : undefined
+  return {
+    spurtSeconds: spurt ? spurt.tick / timeline.tickRate : null,
+    fullSpurt: spurt ? spurtWasFull(timeline, spurt) : false,
+    emptySeconds: empty ? empty.tick / timeline.tickRate : null,
+    emptyMetersLeft: emptyAt !== undefined ? Math.max(0, Math.round(timeline.courseDistance - emptyAt)) : null,
+    finishHp: Math.max(0, frames[playerIndex]?.hp ?? 0),
+  }
 }
 
 export function summarizePlayerActivations(timeline: RaceTimeline, playerIndex: number): ActivationSummary[] {

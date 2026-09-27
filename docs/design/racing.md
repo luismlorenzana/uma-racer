@@ -316,11 +316,17 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
 - Before timeline second zero, the renderer shows a 2.4-second field → staged gates → Ready → Go sequence in a small
   banner over the course's top edge. The engine's seeded start delays begin only when the gate opens. Reduced motion
   keeps the same text in a shortened 0.6-second sequence. A photo finish shows in the same banner.
-- **Stamina bar** for the player's Uma.
+- **HP bar** for the player's Uma (D179), her HP as a share of her maximum. As in the original, every runner's HP runs
+  low by the line: most of it is the distance itself, about half is gone when the final leg starts at any distance,
+  and the last spurt spends the rest on speed. So from her spurt the bar is labelled with what stamina decided:
+  **Full spurt** (it paid for her fastest), **Held-back spurt** (a slower or later spurt, amber) or **Out of HP** (she
+  ran dry and slowed to her minimum speed, red). The feed cues the same moments, and the results' Stamina line says
+  which it was, how far from the line she ran out, and the HP she had left.
 - **Race feed** (D178): small toasts on the right of the course, over the outer lanes the field seldom uses, newest on
   top and at most three at once. Each shows at its own moment, never queued, for 2 s at 1× (a skill) or 1.6 s
-  (anything else). Her skills, her duel and her last spurt are in the accent, with her face or her rival's; her late
-  start and pack state (Spot struggle, pushes before the spurt, Saving stamina, Blocked, Pace up and down) are white;
+  (anything else). Her skills, her duel and a full spurt are in the accent, with her face or her rival's; her late
+  start, a held-back spurt and pack state (Spot struggle, pushes before the spurt, Saving stamina, Blocked, Pace up and
+  down) are white; running out of HP is red;
   rivals share one dark toast, and further rival events of the same kind fold into it as "+N" as they happen. A full
   feed drops the rival toast, else the oldest, for a player moment; a rival event finds room or is not shown. What
   shows is a pure function of playback time, so pause, step and seek always agree and no toast outlives its moment.

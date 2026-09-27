@@ -25,7 +25,7 @@ export const ICON_NAMES = [
   'gem',
   'goal',
   'grade',
-  'guts',
+  'heart',
   'home',
   'honors',
   'level-up',
@@ -39,7 +39,6 @@ export const ICON_NAMES = [
   'pause',
   'play',
   'plus',
-  'power',
   'promotion',
   'question',
   'race',
@@ -52,9 +51,7 @@ export const ICON_NAMES = [
   'skip',
   'sort',
   'spark',
-  'speed',
   'stable',
-  'stamina',
   'star',
   'stats',
   'stopwatch',
@@ -74,7 +71,6 @@ export const ICON_NAMES = [
   'view-grid',
   'view-list',
   'warning',
-  'wit',
 ] as const
 
 export type IconName = (typeof ICON_NAMES)[number]

@@ -10,6 +10,7 @@ import { emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumView } from '
 import {
   STABLE_ALBUM_ID,
   STABLE_DEFAULT_QUERY,
+  STABLE_PREFS_REV,
   STABLE_FACETS,
   STABLE_MODES,
   STABLE_PRESETS,
@@ -227,7 +228,7 @@ export function StableScreen() {
   const navigate = useNavigate()
   const reducedMotion = useReducedMotion()
 
-  const [prefs, setPrefs] = useState<AlbumPrefs>({ id: STABLE_ALBUM_ID, query: STABLE_DEFAULT_QUERY, views: [], seen: [] })
+  const [prefs, setPrefs] = useState<AlbumPrefs>({ id: STABLE_ALBUM_ID, query: STABLE_DEFAULT_QUERY, views: [], seen: [], rev: STABLE_PREFS_REV })
   const [parameter, setParameter] = useState<string | null>(null)
   const [lastRacedAt, setLastRacedAt] = useState<Record<string, number>>({})
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -244,7 +245,7 @@ export function StableScreen() {
 
   useEffect(() => {
     let cancelled = false
-    void loadAlbumPrefs(STABLE_ALBUM_ID, STABLE_DEFAULT_QUERY, STABLE_FACETS, STABLE_SORTS, [...STABLE_MODES])
+    void loadAlbumPrefs(STABLE_ALBUM_ID, STABLE_DEFAULT_QUERY, STABLE_FACETS, STABLE_SORTS, [...STABLE_MODES], STABLE_PREFS_REV)
       .then(({ fresh, ...loaded }) => {
         if (cancelled) return
         setPrefs(loaded)

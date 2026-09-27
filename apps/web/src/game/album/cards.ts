@@ -71,7 +71,7 @@ export interface CardAlbum {
   orphanedIds: string[]
 }
 
-/** "Spe 70 · Pow 30": how one node of this card splits, tilt included — or "Skill points" for a Friend or Group card. */
+/** "Spe 70 · Pow 30": how one node of this card splits — or "Skill points" for a Friend or Group card. */
 export function cardSplitLabel(template: SupportCardTemplate): string {
   if (paysSkillPoints(template)) return 'Skill points'
   const shares = cardShares(template)

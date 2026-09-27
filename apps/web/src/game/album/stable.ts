@@ -251,8 +251,8 @@ export const STABLE_FACETS: FacetDef[] = [
 ]
 
 export const STABLE_SORTS: SortDef[] = [
-  { key: 'release', label: 'Release date', defaultDirection: 'desc' },
   { key: 'level', label: 'Uma level', defaultDirection: 'desc' },
+  { key: 'release', label: 'Release date', defaultDirection: 'desc' },
   { key: 'name', label: 'Name', defaultDirection: 'asc' },
   { key: 'tier', label: 'Scenario tier', defaultDirection: 'desc' },
   { key: 'trainingLevel', label: 'Training Level', defaultDirection: 'desc' },
@@ -272,11 +272,11 @@ export const STABLE_SORTS: SortDef[] = [
   },
 ]
 
-/** Owned before unowned → newest release → highest level → name (docs/design/collection.md#default-sorts). */
+/** Highest level first, as every Uma list is (D181), then newest release, then name (docs/design/collection.md#default-sorts). */
 export const STABLE_DEFAULT_QUERY: AlbumQuery = {
   search: '',
   filters: { ownership: ['owned'] },
-  sort: 'release',
+  sort: 'level',
   direction: 'desc',
   group: null,
   view: 'icons',
@@ -285,8 +285,12 @@ export const STABLE_DEFAULT_QUERY: AlbumQuery = {
 
 export const STABLE_TIE_BREAK = [
   { key: 'level', direction: 'desc' as const },
+  { key: 'release', direction: 'desc' as const },
   { key: 'name', direction: 'asc' as const },
 ]
+
+/** Bumped when the Stable's default sort changes, so a device's stored sort takes the new default once (D181). */
+export const STABLE_PREFS_REV = 2
 
 export interface AlbumPreset {
   key: string

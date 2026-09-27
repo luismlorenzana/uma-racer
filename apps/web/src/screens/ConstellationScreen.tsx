@@ -37,6 +37,7 @@ import { UmaBust } from '../ui/UmaBust'
 import { Stars } from '../ui/Stars'
 import { BottomSheet } from '../ui/BottomSheet'
 import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
+import { UmaPickerSheet, type UmaPickerSort } from '../ui/album/UmaPickerSheet'
 import { useTraining } from './TrainingScene'
 import { formatTickets } from '../ui/tickets'
 
@@ -46,6 +47,8 @@ export function ConstellationScreen() {
   const { content, save, uma, cards, umas, tickets } = useTraining()
   const pushToast = useGame((state) => state.pushToast)
   const [openNode, setOpenNode] = useState<ConstellationNode | null>(null)
+  // The lineage slot whose Uma picker is open (D181).
+  const [lineageNode, setLineageNode] = useState<ConstellationNode | null>(null)
   const [busy, setBusy] = useState(false)
 
   const { derived, run } = uma
@@ -74,6 +77,7 @@ export function ConstellationScreen() {
     try {
       await setConstellationNode(save.templateId, nodeId, assignment)
       setOpenNode(null)
+      setLineageNode(null)
     } catch (reason) {
       pushToast(reason instanceof Error ? reason.message : 'Could not change that node')
     } finally {
@@ -222,15 +226,14 @@ export function ConstellationScreen() {
             ))}
 
             {(openNode.kind === 'parent' || openNode.kind === 'grandparent') && (
-              <LineagePicker
+              <LineageSlot
                 busy={busy}
-                // Legends (tier 10): the first parent slot takes any Uma, owned or not (D165).
-                candidateIds={lineageSlotTakesAnyUma(run.tier, openNode.id) ? content.umas.items.map((entry) => entry.id) : Object.keys(umas)}
                 content={content}
-                child={uma.template}
-                held={derived.lineage}
                 currentId={currentLineageId(run.assignments[openNode.id])}
-                onPick={(templateId) => void assign(openNode.id, { kind: 'lineage', templateId })}
+                onChoose={() => {
+                  setLineageNode(openNode)
+                  setOpenNode(null)
+                }}
               />
             )}
 
@@ -238,6 +241,20 @@ export function ConstellationScreen() {
           </div>
         )}
       </BottomSheet>
+
+      {lineageNode && (
+        <LineagePickerSheet
+          node={lineageNode}
+          // Legends (tier 10): the first parent slot takes any Uma, owned or not (D165).
+          candidateIds={lineageSlotTakesAnyUma(run.tier, lineageNode.id) ? content.umas.items.map((entry) => entry.id) : Object.keys(umas)}
+          content={content}
+          child={uma.template}
+          held={derived.lineage}
+          currentId={currentLineageId(run.assignments[lineageNode.id])}
+          onClose={() => setLineageNode(null)}
+          onPick={(templateId) => void assign(lineageNode.id, { kind: 'lineage', templateId })}
+        />
+      )}
     </>
   )
 }
@@ -268,55 +285,88 @@ function LockedNote({
   )
 }
 
-function LineagePicker({
+/** The slot sheet's lineage section: who holds it, and the way into the picker. */
+function LineageSlot({
   busy,
+  content,
+  currentId,
+  onChoose,
+}: {
+  busy: boolean
+  content: LoadedContent
+  currentId: string | null
+  onChoose: () => void
+}) {
+  const current = currentId ? content.umas.byId.get(currentId) : undefined
+  return (
+    <div className="grid gap-1.5">
+      {current && (
+        <div className="flex min-h-[44px] items-center gap-2 rounded-sm bg-panel px-3 py-2">
+          <UmaBust content={content} umaId={current.id} className="h-10 w-10 shrink-0 rounded-sm border border-hairline bg-gradient-to-b from-panel to-sunken" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold">{current.name}</span>
+            <span className="text-micro">In this slot</span>
+          </span>
+        </div>
+      )}
+      <button type="button" disabled={busy} onClick={onChoose} className="min-h-[44px] rounded-sm bg-accent px-3 text-sm font-semibold text-ink">
+        {current ? 'Choose another Uma' : 'Choose an Uma'}
+      </button>
+    </div>
+  )
+}
+
+/**
+ * The lineage slot's Uma picker: eligibility and what each pick would move, with an "Aptitude gain" sort beside the
+ * shared level order (D181).
+ */
+function LineagePickerSheet({
+  node,
   candidateIds,
   content,
   child,
   held,
   currentId,
+  onClose,
   onPick,
 }: {
-  busy: boolean
+  node: ConstellationNode
   candidateIds: readonly string[]
   content: LoadedContent
   child: UmaTemplate
   held: readonly UmaTemplate[]
   currentId: string | null
+  onClose: () => void
   onPick: (templateId: string) => void
 }) {
   const base: Aptitudes = child.aptitudes
+  const others = held.filter((entry) => entry.id !== currentId)
+  // What each pick would move, shown before committing to it.
+  const moves = (template: UmaTemplate) => explainAptitudes(base, [...others, template]).filter((row) => row.result !== row.base)
+  const gain: UmaPickerSort = {
+    key: 'aptitudeGain',
+    label: 'Aptitude gain',
+    direction: 'desc',
+    value: (entry) => moves(entry.template).reduce((sum, row) => sum + row.steps, 0),
+  }
   return (
-    <div className="max-h-[44dvh] overflow-y-auto">
-      {candidateIds.map((id) => {
-        const candidate = content.umas.byId.get(id)
-        if (!candidate) return null
-        const others = held.filter((entry) => entry.id !== currentId)
-        const eligibility = lineageEligibility(candidate, child, others)
-        // What this pick would move, shown before committing to it.
-        const preview = explainAptitudes(base, [...others, candidate]).filter((row) => row.result !== row.base)
-        return (
-          <button
-            key={id}
-            type="button"
-            disabled={busy || !eligibility.eligible}
-            className="flex min-h-[44px] w-full items-center gap-2 rounded-sm bg-panel px-3 py-2 text-left disabled:opacity-40"
-            onClick={() => onPick(id)}
-          >
-            <UmaBust content={content} umaId={id} className="h-10 w-10 shrink-0 rounded-sm border border-hairline bg-gradient-to-b from-panel to-sunken" />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">{candidate.name}</span>
-              <span className="text-micro">
-                {eligibility.reason
-                  ?? (preview.length > 0
-                    ? `Moves ${preview.slice(0, 3).map((row) => `${row.key} ${row.base}→${row.result}`).join(', ')}`
-                    : `${candidate.awakeningSkillIds.length} baseline skills`)}
-              </span>
-            </span>
-            {id === currentId && <span className="shrink-0 text-[10px] font-bold text-accent">In slot</span>}
-          </button>
-        )
-      })}
-    </div>
+    <UmaPickerSheet
+      open
+      onClose={onClose}
+      title={node.kind === 'parent' ? 'Choose a parent' : 'Choose a grandparent'}
+      content={content}
+      candidateIds={candidateIds.filter((id) => id !== child.id)}
+      selectedIds={currentId ? [currentId] : []}
+      selectedLabel="In slot"
+      sorts={[gain]}
+      describe={(entry) => {
+        const preview = moves(entry.template)
+        return preview.length > 0
+          ? `Moves ${preview.slice(0, 3).map((row) => `${row.key} ${row.base}→${row.result}`).join(', ')}`
+          : `${entry.template.awakeningSkillIds.length} baseline skills`
+      }}
+      disabledReason={(entry) => lineageEligibility(entry.template, child, others).reason ?? null}
+      onPick={onPick}
+    />
   )
 }

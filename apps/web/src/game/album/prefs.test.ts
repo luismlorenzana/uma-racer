@@ -6,6 +6,7 @@ import {
   markSeen,
   parseViews,
   removeSavedView,
+  reviseQuery,
   sanitizeQuery,
   type SavedView,
 } from './prefs'
@@ -84,5 +85,12 @@ describe('album preferences', () => {
     expect(overflowing).toHaveLength(MAX_SEEN_IDS)
     expect(overflowing.at(-1)).toBe('fresh')
     expect(overflowing).not.toContain('old-0')
+  })
+
+  it('gives a row from an older defaults revision the new default sort once, keeping its filters (D181)', () => {
+    const stored: AlbumQuery = { ...fallback, filters: { starter: true }, sort: 'name', direction: 'asc', view: 'list' }
+    const level: AlbumQuery = { ...fallback, sort: 'level', direction: 'desc' }
+    expect(reviseQuery(stored, undefined, 2, level)).toEqual({ ...stored, sort: 'level', direction: 'desc' })
+    expect(reviseQuery(stored, 2, 2, level)).toEqual(stored)
   })
 })

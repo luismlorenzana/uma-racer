@@ -24,9 +24,11 @@ with its own values: Seiun Sky's *Angling and Scheming* gives +0.2 acceleration 
 
 Two deterministic sources, both recomputed from the constellation rather than stored:
 
-1. **Card nodes.** Each node a card occupies unlocks the **next** skill from that card's `hintSkills`, ordered
-   gold-first, then white, then by skill id. A card on four nodes pays four of its skills, so stacking a card
-   is a skill decision as much as a stat one.
+1. **Card nodes.** Each node a card occupies unlocks the **next of its golds**, while it has any left, and the **next
+   of its whites** (D182). A card's whites are its `hintSkills`, in the pack's order; its golds are the golds among its
+   `eventSkills`, in event order, because in the original a card's gold comes from its event chain and every hint skill
+   is white. A card on four nodes pays four whites and up to four golds (most cards have one), so stacking a card is a
+   skill decision as well as a stat one.
 2. **Lineage nodes.** Each filled parent or grandparent slot contributes that Uma template's four
    `awakeningSkillIds` (her baseline golds and whites; all 268 templates carry exactly four) and her unique in its
    inherited form. Choosing lineage is choosing skills: Seiun Sky lends any front runner her late-race corner

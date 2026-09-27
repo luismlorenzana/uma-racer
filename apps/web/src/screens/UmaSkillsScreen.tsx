@@ -26,6 +26,7 @@ import { ScreenState } from '../ui/ScreenState'
 import { Collapsible } from '../ui/Section'
 import { SkillChips } from '../ui/SkillChips'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
+import { SkillIcon } from '../ui/SkillIcon'
 
 // An Uma's skills on a page of their own (D175): the whole library with room to scroll, grouped by kind, filterable,
 // equipped with a tap, and the SP budget always in sight. The profile shows only what she carries.
@@ -97,6 +98,7 @@ function SkillRow({ row, aptitudes, busy, onToggle }: { row: SkillRowModel; apti
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
+          <SkillIcon skill={skill} size={24} />
           <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{skill.name}</span>
           <SkillKindBadge kind={skill.kind} />
         </span>

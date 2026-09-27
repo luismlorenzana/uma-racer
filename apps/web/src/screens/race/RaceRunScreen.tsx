@@ -10,7 +10,7 @@ import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../game/flair-vi
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
-import { TURN_RACE_RATE, summarizePlayerActivations, type RacePresentationStage } from '../../scenes/race/presentation'
+import { TURN_RACE_RATE, staminaStory, summarizePlayerActivations, type RacePresentationStage, type StaminaStory } from '../../scenes/race/presentation'
 import { Button } from '../../ui/Button'
 import { FlairCards } from '../../ui/FlairCards'
 import { ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon } from '../../ui/icons'
@@ -49,6 +49,17 @@ function stageBanner(stage: RacePresentationStage, runners: number, raceName: st
   if (stage === 'go') return { eyebrow: 'Start', title: 'GO!' }
   if (stage === 'photo') return { eyebrow: 'Finish', title: 'Photo finish!' }
   return null
+}
+
+/** The results' account of her stamina (D179): whether it paid for her fastest spurt, and whether she ran dry. */
+function staminaVerdict(story: StaminaStory, distance: number): { title: string; detail: string; tone: string } {
+  const atLine = `${Math.round(story.finishHp * 100)}% HP at the line`
+  if (story.emptyMetersLeft !== null && story.emptyMetersLeft > 0) {
+    return { title: `Out of HP ${story.emptyMetersLeft} m from the line`, detail: `Too little stamina for ${distance.toLocaleString()} m: she slowed to her minimum speed`, tone: 'text-danger' }
+  }
+  if (story.spurtSeconds === null) return { title: 'No last spurt', detail: atLine, tone: 'text-warning' }
+  if (!story.fullSpurt) return { title: 'Held-back spurt', detail: `Not enough stamina for her fastest spurt over ${distance.toLocaleString()} m · ${atLine}`, tone: 'text-warning' }
+  return { title: 'Full spurt', detail: `Her stamina paid for her fastest spurt · ${atLine}`, tone: 'text-accent-strong' }
 }
 
 function FullScreenMessage({
@@ -264,6 +275,17 @@ export function RaceRunScreen() {
   const promote = closed && !finalTier
   const banner = hud ? stageBanner(hud.stage, attempt.input.runners.length, race.name) : null
   const activationSummary = summarizePlayerActivations(timeline, attempt.playerIndex)
+  const stamina = staminaStory(timeline, attempt.playerIndex)
+  const verdict = staminaVerdict(stamina, race.distance)
+  // The HP bar's note: nothing until her spurt, then what her stamina made of it.
+  const hudSeconds = hud?.seconds ?? 0
+  const running = hud?.stage === 'running' || hud?.stage === 'photo' || hud?.stage === 'finished'
+  const emptyNow = running && stamina.emptySeconds !== null && hudSeconds >= stamina.emptySeconds && (hud?.playerHp ?? 1) <= 0.001
+  const spurtNow = running && stamina.spurtSeconds !== null && hudSeconds >= stamina.spurtSeconds
+  const hpNote = emptyNow ? { text: 'Out of HP', tone: 'text-danger', color: '#ff5a5f' }
+    : spurtNow && !stamina.fullSpurt ? { text: 'Held-back spurt', tone: 'text-warning', color: '#f0a92e' }
+      : spurtNow ? { text: 'Full spurt', tone: 'text-accent-strong', color: 'linear-gradient(90deg,#2ec27e,#8be07a)' }
+        : null
   const goalResult = record && savedUma ? buildResultGoalView(record, savedUma, content, freshGoalCommit) : null
   const badgeState = badges[badgeStateId(attempt.umaId)]
   const earnedFlair = record?.earnedFlairEventIds && badgeState?.scope === 'uma'
@@ -372,8 +394,11 @@ export function RaceRunScreen() {
           <div className="flex items-center gap-3">
             <span className="w-14 text-2xl font-semibold tabular-nums">{hud ? ordinal(hud.playerPosition) : '—'}</span>
             <div className="flex-1">
-              <p className="mb-1 text-xs font-semibold text-ink-soft">STAMINA</p>
-              <Meter value={hud?.playerHp ?? 1} color={(hud?.playerHp ?? 1) < 0.2 ? '#ff5a5f' : 'linear-gradient(90deg,#2ec27e,#8be07a)'} height={12} motion="linear" />
+              <p className="mb-1 flex justify-between gap-2 text-xs font-semibold text-ink-soft">
+                <span>HP</span>
+                {hpNote && <span className={`truncate font-bold ${hpNote.tone}`}>{hpNote.text}</span>}
+              </p>
+              <Meter value={hud?.playerHp ?? 1} color={hpNote?.color ?? 'linear-gradient(90deg,#2ec27e,#8be07a)'} height={12} motion="linear" />
             </div>
             <span className="w-16 text-right text-sm font-semibold tabular-nums text-ink-soft">{formatTime(hud?.seconds ?? 0)}</span>
           </div>
@@ -485,6 +510,11 @@ export function RaceRunScreen() {
                   </div>}
                   {earnedFlair.length > 0 && <div className="mt-3"><FlairCards title={freshGoalCommit ? 'Flair earned' : 'Earned in this race'} items={earnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}
                   {trainerEarnedFlair.length > 0 && <div className="mt-3"><FlairCards title="Trainer achievements" items={trainerEarnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}
+                  <div className="mt-2 rounded-sm bg-panel px-3 py-2">
+                    <p className="text-xs font-semibold text-ink-soft">STAMINA</p>
+                    <p className={`mt-0.5 text-sm font-bold ${verdict.tone}`}>{verdict.title}</p>
+                    <p className="text-xs text-ink-soft">{verdict.detail}</p>
+                  </div>
                   <div className="mt-2 rounded-sm bg-panel px-3 py-2">
                     <p className="text-xs font-semibold text-ink-soft">YOUR ACTIVATIONS</p>
                     {activationSummary.length === 0 ? <p className="mt-1 text-sm font-bold text-ink-soft">No player skills activated.</p> : (

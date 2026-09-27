@@ -7,13 +7,12 @@ import {
   BurstIcon,
   CrownIcon,
   GateIcon,
-  GutsIcon,
   MoveToIcon,
-  StaminaIcon,
   WarningIcon,
   type IconComponent,
 } from '../../ui/icons'
 import { UmaBust } from '../../ui/UmaBust'
+import { TypeIcon, type TypeIconKind } from '../../ui/TypeIcon'
 import { effectLabel } from './labels'
 
 // The race feed (D178): small toasts on the right of the course, over the outer lanes the field seldom uses, newest on
@@ -23,19 +22,20 @@ import { effectLabel } from './labels'
 /** A toast's height and the gap under it, in px. */
 const ROW = 37
 
-const PACK_ICON: Record<RacePackCue, IconComponent> = {
+// Her Guts and Stamina moments carry those stats' own icons (D183).
+const PACK_TYPE: Partial<Record<RacePackCue, TypeIconKind>> = { 'Spot struggle': 'guts', 'Saving stamina': 'stamina' }
+
+const PACK_ICON: Partial<Record<RacePackCue, IconComponent>> = {
   Blocked: WarningIcon,
   Overtaking: MoveToIcon,
   'Pace up': ArrowUpIcon,
   'Pace down': ArrowDownIcon,
   'Holding lead': CrownIcon,
-  'Spot struggle': GutsIcon,
   'Securing lead': CrownIcon,
   Repositioning: MoveToIcon,
-  'Saving stamina': StaminaIcon,
 }
 
-type Tone = 'mine' | 'player' | 'rival'
+type Tone = 'mine' | 'player' | 'rival' | 'alert'
 const TONE: Record<Tone, { toast: string; badge: string; eyebrow: string }> = {
   // Her skills and big moments, in the accent.
   mine: { toast: 'bg-accent text-ink', badge: 'bg-panel text-accent-strong', eyebrow: 'text-ink/75' },
@@ -43,6 +43,8 @@ const TONE: Record<Tone, { toast: string; badge: string; eyebrow: string }> = {
   player: { toast: 'bg-panel/95 text-ink', badge: 'bg-accent-wash text-accent-strong', eyebrow: 'text-ink-soft' },
   // Everyone else, quieter.
   rival: { toast: 'bg-ink/80 text-white', badge: 'bg-white/15 text-white', eyebrow: 'text-white/75' },
+  // Her HP ran out: she drops to her minimum speed.
+  alert: { toast: 'bg-danger text-white', badge: 'bg-white/20 text-white', eyebrow: 'text-white/80' },
 }
 
 interface ToastView {
@@ -53,6 +55,7 @@ interface ToastView {
   more: number
   face: string | null
   icon: IconComponent | null
+  type?: TypeIconKind
 }
 
 function toastView(cue: RaceCue, seconds: number, content: LoadedContent, runners: readonly PreparedRaceRunner[]): ToastView {
@@ -71,12 +74,21 @@ function toastView(cue: RaceCue, seconds: number, content: LoadedContent, runner
       ? { ...view, tone: 'player', eyebrow: 'Start', title: 'Slow start', icon: GateIcon }
       : { ...view, tone: 'rival', eyebrow: 'Field start', title: `${more + 1} rival${more ? 's' : ''} started late`, icon: GateIcon }
   }
-  if (cue.kind === 'spurt') return { ...view, tone: 'mine', eyebrow: 'Final drive', title: 'Last spurt!', icon: BurstIcon }
+  if (cue.kind === 'spurt') {
+    return cue.fullSpurt === false
+      ? { ...view, tone: 'player', eyebrow: 'Stamina short', title: 'Held-back spurt', icon: BurstIcon }
+      : { ...view, tone: 'mine', eyebrow: 'Final drive', title: 'Full spurt!', icon: BurstIcon }
+  }
+  if (cue.kind === 'hp-empty') return { ...view, tone: 'alert', eyebrow: 'Stamina', title: 'Out of HP', icon: WarningIcon }
   if (cue.kind === 'duel') return { ...view, tone: 'mine', eyebrow: 'Final straight', title: `Duel with ${name}`, face: umaId }
   const eyebrow = cue.packKind === 'Spot struggle' ? 'Early race'
     : cue.packKind === 'Securing lead' || cue.packKind === 'Repositioning' || cue.packKind === 'Saving stamina' ? 'Before the spurt'
       : 'Pack'
-  return { ...view, tone: 'player', eyebrow, title: cue.packKind ?? 'Pack change', icon: cue.packKind ? PACK_ICON[cue.packKind] : null }
+  return {
+    ...view, tone: 'player', eyebrow, title: cue.packKind ?? 'Pack change',
+    icon: cue.packKind ? PACK_ICON[cue.packKind] ?? null : null,
+    ...(cue.packKind && PACK_TYPE[cue.packKind] ? { type: PACK_TYPE[cue.packKind] } : {}),
+  }
 }
 
 export function RaceFeed({
@@ -107,6 +119,8 @@ export function RaceFeed({
             <div className={`race-toast-in flex h-8 max-w-full items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1 shadow-2 ${tone.toast}`}>
               {view.face ? (
                 <UmaBust content={content} umaId={view.face} className="h-6 w-6 shrink-0 rounded-full bg-sunken ring-2 ring-white/80" />
+              ) : view.type ? (
+                <TypeIcon type={view.type} size={24} />
               ) : (
                 <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${tone.badge}`}>{Icon && <Icon size={16} variant="solid" />}</span>
               )}

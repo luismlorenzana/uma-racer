@@ -33,8 +33,9 @@ import {
 } from '@racer/domain'
 import type { ReactNode } from 'react'
 import { PagedGuide } from '../../../ui/PagedGuide'
-import { CheckIcon, RaceIcon, SparkIcon, StaminaIcon } from '../../../ui/icons'
-import { STAT_BG, STAT_ICONS, STAT_NAMES, TypeBadge } from './FtCard'
+import { CheckIcon, HeartIcon, RaceIcon } from '../../../ui/icons'
+import { TypeIcon } from '../../../ui/TypeIcon'
+import { STAT_NAMES, TypeBadge } from './FtCard'
 
 // How to play Friendship Training (M020): a paged, illustrated guide. Every number is read from the rules module, so
 // the guide changes with the balance and can never teach a stale rule.
@@ -74,10 +75,9 @@ const STAT_FILL: Readonly<Record<StatKey, string>> = {
 /** A slim card for the formation rows: five fit beside the description. */
 function SlimCard({ type, copy }: { type: FtCardType; copy?: string }) {
   const broad = type === 'friend' || type === 'group'
-  const Icon = broad ? SparkIcon : STAT_ICONS[type]
   return (
     <span className={`relative flex h-9 w-[22px] shrink-0 items-center justify-center rounded-xs border border-white/25 text-white ${broad ? 'bg-accent-strong/70' : STAT_FILL[type]}`}>
-      <Icon size={16} />
+      <TypeIcon type={type} size={18} />
       {copy && <span className="absolute right-px bottom-0 text-[8px] font-bold">{copy}</span>}
     </span>
   )
@@ -124,7 +124,7 @@ function Hearts({ filled, bonded = false }: { filled: number; bonded?: boolean }
   return (
     <span className="flex gap-0.5">
       {Array.from({ length: FT_BOND_GAUGE }, (_, index) => (
-        <StaminaIcon key={index} size={24} variant="solid" className={bonded ? 'text-accent' : index < filled ? 'text-stat-guts' : 'text-white/25'} />
+        <HeartIcon key={index} size={24} variant="solid" className={bonded ? 'text-accent' : index < filled ? 'text-stat-guts' : 'text-white/25'} />
       ))}
     </span>
   )
@@ -193,11 +193,10 @@ function pages(tier: number): { id: GuidePageId; title: string; body: ReactNode 
           <Panel>
             <div className="grid gap-1.5">
               {(['stamina', 'wit', 'guts'] as StatKey[]).map((stat, index) => {
-                const Icon = STAT_ICONS[stat]
                 const grade = FT_FACILITY_GRADES[index]!
                 return (
                   <div key={stat} className="flex items-center gap-2">
-                    <span className={`flex h-7 w-7 items-center justify-center rounded-full text-white ${STAT_BG[stat]}`}><Icon size={16} /></span>
+                    <TypeIcon type={stat} size={28} />
                     <span className="flex-1 text-[13px] font-semibold">{STAT_NAMES[stat]} <span className="text-[10px] text-ink-on-dark-soft uppercase">{['Easy', 'Standard', 'Hard'][index]}</span></span>
                     <span className="font-display text-[14px] font-bold">{Math.round((FT_WEEK_TARGETS[0]![0] * grade.target) / 10) * 10}</span>
                     <span className="w-14 text-right text-[11px] font-semibold text-accent">+{grade.payout} fans</span>

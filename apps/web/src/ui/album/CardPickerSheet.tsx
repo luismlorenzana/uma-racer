@@ -15,7 +15,7 @@ import { emptyStateHint, runAlbumQuery, type AlbumQuery } from '../../game/album
 import { ArtTile } from '../ArtTile'
 import { Stars } from '../Stars'
 import { BottomSheet } from '../BottomSheet'
-import { Crest } from '../Crest'
+import { TypeIcon } from '../TypeIcon'
 import { AlbumChrome } from './AlbumChrome'
 import { VirtualGrid } from './VirtualGrid'
 
@@ -83,7 +83,7 @@ export function CardPickerSheet({
                 <ArtTile
                   asset={entry.asset}
                   alt={`${entry.template.charName} support card`}
-                  overlay={<Crest>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>}
+                  corner={<TypeIcon type={entry.template.type} size={22} className="drop-shadow" />}
                   footer={
                     <>
                       <p className="font-display truncate text-[12px] font-semibold">{entry.template.charName}</p>
