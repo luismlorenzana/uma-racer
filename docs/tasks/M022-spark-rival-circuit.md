@@ -10,14 +10,33 @@ T074 closes them with the simulator and the owner's iPhone.
 
 | Task | Delivery | Must land before |
 |---|---|---|
-| [T071](T071-spark-rival-engine.md) | Pure replay engine, balance harness, synthetic Pixi touch vertical slice | T072 |
+| T071 (complete) | Pure replay engine, balance harness, synthetic Pixi touch vertical slice | T072 |
 | [T072](T072-spark-rival-content.md) | Private fourteen-scenario rival roster pipeline and deterministic fallback | T073 |
 | [T073](T073-spark-rival-runtime.md) | Production route, Dexie action journal, authoritative host commit, old-run cutover | T074 |
 | [T074](T074-spark-rival-polish.md) | Balance matrix, complete feedback/accessibility, physical-iPhone closure | M020 |
 
 The PRs are sequential. T071 deliberately proves the engine and touch interaction with synthetic art before real-content
 work. T072 establishes the data boundary before the production screen depends on it. T073 performs the one-way cutover.
-T074 tunes and closes; Friendship Training (M020) follows and reuses its versioned local journal.
+T074 tunes and closes. Friendship Training (M020) landed first with its own saved run setup and choices; T073 must absorb
+those rows or remain compatible with them rather than migrating a run twice.
+
+T071's engine, simulator and browser proof are implemented. The checked-in 390×844
+[mid-drag](../proofs/T071-spark-rival-mid-drag.jpg) and [cascade](../proofs/T071-spark-rival-cascade.jpg) captures are
+synthetic. Its physical-iPhone acceptance is still open, so **T072 must not start until the owner approves drag
+acquisition, finger occlusion, edge gestures, cancellation and a 30-second frame-pacing pass on the device**.
+
+### Current integration truth
+
+T071 is deliberately a free development proof at `/dev/spark-rival-proof`. It computes deterministic Rival Circuit
+Training EXP but never calls `beginRun` or `commitRun`, spends no ticket and writes no save. The production Spark route is
+still the retired adjacent-swap screen: its existing host does atomically spend one ticket, apply that screen's submitted
+score through `addTrainingExp`, write the Uma/outbox/run, update training badges and return opened-node labels exactly once.
+That proves the old progression path, **not** the new engine's integration.
+
+Rival Circuit results are not fully integrated until T073 lands its encounter snapshot, action journal and authoritative
+replay commit. T073's tests and device acceptance must prove clear and both loss reasons, partial/zero EXP, multi-level
+crossing, TL10 clamp, real focusable node ids/labels, ticket/ledger accounting, transaction rollback and idempotent retry.
+Do not describe a T071 proof result as saved progress.
 
 ## Fixed product contract
 
@@ -28,6 +47,8 @@ T074 tunes and closes; Friendship Training (M020) follows and reuses its version
   begins on the first cell transition and allows **seven seconds**; planning before touch is unlimited.
 - The advantage ring is Pace → Front → End → Late → Pace. Advantage is 1.5×, resistance 0.67×, opposite is
   neutral. Strategy glyph and text always accompany colour.
+- Every board kind keeps a whole standing Chibi in a strong kind-coloured ring and faint tint, with its glyph/mark; the
+  encountered rival uses her Chibi in the current strategy ring. A direct Matchups control opens the text ring legend.
 - A run is two ordinary training rivals and a boss. Each exposes strategy, Resolve, countdown and next intent. A wave has
   at most **eight player turns**.
 - Spark matches charge Spark Shift; at full charge it converts all Spark orbs to the trainee's best strategy. Recovery
@@ -35,6 +56,8 @@ T074 tunes and closes; Friendship Training (M020) follows and reuses its version
 - A clear and a loss both commit once. A loss banks bounded Training EXP; a clear is substantially more efficient. The
   target remains about ten competent clears for the 21,600 EXP TL1→10 curve.
 - Results name every crossed level and real constellation node opened and link back to the constellation.
+- The full illustrated guide reuses Friendship Training's paged/swipe shell, auto-opens once before a paid run, remains
+  on the free start screen and is reachable contextually during battle.
 - Sparring never grants Uma EXP, race rewards, goals, race records, badges or milestones.
 - Rival identities live in the private content pipeline. Git contains schemas and small synthetic fixtures only.
 - No support-card combat layer, PAD-style team/helper, loot, evolution, continues, second energy currency or late-game
@@ -84,7 +107,8 @@ interface ReplayJournalV1<A> {
   unfinished or inconsistent claim and never accepts score/EXP from the UI.
 - Completed rows retain reward and remain idempotent. Open adjacent-swap rows keep their ticket, seed and attempt index but
   adopt the new engine with an empty action list. No second charge and no silent reroll.
-- The journal API is minigame-generic enough for M020, but T071–T074 do not implement Friendship Training.
+- The journal API remains compatible with M020's landed frozen setup and saved-choice rows; T071–T074 do not reimplement
+  Friendship Training.
 
 ## Performance and device budgets
 

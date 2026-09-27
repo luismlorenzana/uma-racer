@@ -132,4 +132,9 @@ export const router = createBrowserRouter([
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading collection reveal" />,
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
+  ...(import.meta.env.DEV ? [{
+    path: 'dev/spark-rival-proof',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Spark Rival touch proof" />,
+    lazy: async () => ({ Component: (await import('../screens/minigames/SparkRivalProofScreen')).SparkRivalProofScreen }),
+  }] : []),
 ])

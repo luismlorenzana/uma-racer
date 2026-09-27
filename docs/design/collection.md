@@ -175,7 +175,7 @@ Seven families, each used where it belongs:
 | Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Stable detail area, the Uma reveal, the art viewer |
 | Card art | 450×600 full illustration, the source's own size | One file per card, fetched on demand | The card page's hero, the Cards tab detail sheet, the card reveal, Friendship Training's hand, the art viewer (D144) |
 | Race face | 128 px square, transparent | Cut from each character's summer-uniform stand at import, one file per character | The runner tokens in a race (D160) |
-| Chibi | 256 px, transparent, standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Standing: Spark Match tiles (D161). Celebrating: not placed yet |
+| Chibi | 256 px, transparent, standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Standing: Spark Rival board faces/rivals and Friendship Training scenes (D173, D184). Celebrating: Friendship Training bond state |
 | Outfit stand | 512 px, transparent: gym clothes, summer and winter uniforms, casual clothes | Four per character, from the owner's local copy (T059) | Imported, not placed yet |
 
 The bust is the original's Trainee Select tile: the portrait cropped to a square around her head. The importer finds the

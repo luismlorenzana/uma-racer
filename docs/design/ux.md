@@ -109,16 +109,21 @@ zones are, top to bottom:
 
 1. **Run HUD:** Leave/pause, scenario, wave `1/3`, trainee Drive and Spark gauges. Leaving preserves the run for resume;
    v1 has no manual forfeit or reroll.
-2. **Rival stage:** full rival art or bust, name and strategy glyph, Resolve, countdown and a plain-language next-intent
-   card. A phase or Guard status stays beside the gauge instead of appearing only as a toast.
-3. **Puzzle board:** a square-celled 6 × 5 PixiJS board. The held orb draws above the finger, its origin remains marked,
+2. **Rival stage:** the encountered Uma's whole standing Chibi in a clear strategy-coloured ring, with icon/silhouette
+   fallback, name and strategy glyph, Resolve, countdown and a plain-language next-intent card. A phase or Guard status
+   stays beside the gauge instead of appearing only as a toast.
+3. **Puzzle board:** a square-celled 6 × 5 PixiJS board. Each kind keeps Spark Match's whole-Chibi tile face inside its
+   strong colour ring and faint tint, plus a glyph/mark; the held orb draws above the finger, its origin remains marked,
    displaced orbs visibly slide, and a radial movement clock appears only after the first cell transition.
-4. **Thumb zone:** Spark Shift when charged, a one-line advantage-ring reminder until dismissed, and no critical control
-   in an iOS gesture corner. The bottom uses `pb-safe`.
+4. **Thumb zone:** Spark Shift when charged, an always-available **Matchups** control for the text advantage legend, and
+   no critical control in an iOS gesture corner. The bottom uses `pb-safe`.
 
-Before the first charged run, a three-panel, replayable tutorial demonstrates drag-through swapping, the strategy ring and
-visible enemy intent with synthetic board states; it never charges a ticket. The paid start screen names the three-wave
-structure, current TL/EXP, possible opened-node count, and **Begin · 1 ticket**.
+Before the first charged run, a full illustrated guide opens once and never charges a ticket. It reuses Friendship
+Training's page-at-a-time/swipe model and teaches: the three-wave circuit; drag-through swapping and its seven-second
+movement clock; matches/cascades; the complete strategy ring; Spark/Recovery; visible enemy intent and turn bound; and
+saved Training EXP/node progress. The unpaid start screen retains **How to play**, and the live run's help control opens
+the page relevant to its current state. The paid start screen names the three-wave structure, current TL/EXP, possible
+opened-node count, and **Begin · 1 ticket**.
 
 During resolution the path is no longer editable. Matches outline before clearing; attack trails use both strategy colour
 and glyph; Recovery travels to Drive; Spark travels to its gauge; the rival reacts only after engine-produced damage.

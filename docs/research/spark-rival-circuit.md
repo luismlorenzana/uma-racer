@@ -89,8 +89,8 @@ Colour never carries the distinction alone: every orb also has a strategy glyph 
 8. `commitRun` replays the stored actions, applies Training EXP once, and names every Training Level and constellation
    node opened.
 
-The starting tuning drafts are a 6×5 board, a seven-second movement clock, three waves and at most eight player turns per
-wave. T071 and T074 may move those numbers only with the simulator, matching design updates and the domain pinning test.
+The T071-pinned baseline is a 6×5 board, a seven-second movement clock, three waves and at most eight player turns per
+wave. T074 may move those numbers only with the simulator, matching design updates and the domain pinning test.
 
 ## Rival vocabulary
 
@@ -157,17 +157,36 @@ resolution to the useful source-art density, pauses while hidden, and uses elaps
 T071 proves this interaction with synthetic art before the content and persistence work proceed. T074 closes physical
 iPhone feel; desktop emulation cannot prove finger occlusion, Safari frame pacing or accidental system gestures.
 
+## T071 measured baseline
+
+`pnpm sim:spark` runs fixed synthetic encounters at scenario tiers 1, 7 and 14; Training Levels 1, 5 and 9; all four
+base rival archetypes; two aptitude profiles; and twelve seeds per cell. The landed baseline measured across 864 runs per
+agent:
+
+| Agent | Clear rate | Combos / drag | Clear EXP | Loss EXP |
+|---|---:|---:|---:|---:|
+| Random legal | 0% | 0.32 | — | 91 |
+| Greedy | 70% | 2.89 | 2,196 | 853 |
+| Planner | 80% | 3.05 | 2,197 | 850 |
+
+The planner's median wave clear is five drags, inside the target five-to-seven range, and no loss exceeds the 877 EXP
+cap. Individual twelve-seed cells remain noisy: Guard at the highest tier is the hardest row and some early Finisher rows
+are effectively solved. That spread is recorded rather than hidden; T074 owns balance retuning after real-device play.
+The browser proof fits without page scroll at 390×844 and 375×667, keeps 30 board sprites and 24 effects bounded, and
+records zero React updates from pointer movement. Its [mid-drag](../proofs/T071-spark-rival-mid-drag.jpg) and
+[cascade](../proofs/T071-spark-rival-cascade.jpg) captures use only synthetic presentation.
+
 ## Delivery recommendation
 
 M022 is four sequential units:
 
-1. **T071 — engine, simulator and touch proof:** validate the game and the interaction before content investment.
+1. **T071 — engine, simulator and touch proof:** implemented; browser proof complete, physical-iPhone acceptance pending.
 2. **T072 — private rival content:** author and publish the data boundary with a non-blocking fallback.
 3. **T073 — production route and save wiring:** replace the old game, journal actions and commit replayed outcomes.
 4. **T074 — balance and device closure:** tune the full matrix, profile the iPhone and finish feedback/accessibility.
 
-Friendship Training (M020) follows M022. It keeps its own game and reward, but reuses the versioned local action journal
-instead of independently changing `minigameRuns` at the same time.
+Friendship Training (M020) landed before M022. It keeps its own game and reward plus its frozen setup and saved choices;
+T073's generic action journal must absorb those rows or stay compatible with them instead of migrating a run twice.
 
 ## Sources
 

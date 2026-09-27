@@ -22,7 +22,7 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
-| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | [T071](T071-spark-rival-engine.md) · [T072](T072-spark-rival-content.md) · [T073](T073-spark-rival-runtime.md) · [T074](T074-spark-rival-polish.md) | Specified · next |
+| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | T071 complete · [T072](T072-spark-rival-content.md) · [T073](T073-spark-rival-runtime.md) · [T074](T074-spark-rival-polish.md) | Device acceptance gate · next |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
@@ -67,7 +67,8 @@ landed on 2026-09-26 and was removed under D104; D146, D168, D173, D177 and
 
 M020 landed first, with its own frozen setup and saved choices on the local run row (D168). M022's generic action journal
 (T073) should absorb those rows or stay compatible with them, so no run is migrated twice. T071–T074 are reserved for
-M022 and are never reused.
+M022 and are never reused. T071's browser proof is complete, but T072 remains blocked until the owner accepts the
+continuous drag on the physical iPhone, as required by M022.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

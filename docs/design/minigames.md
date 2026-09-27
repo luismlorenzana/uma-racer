@@ -1,6 +1,7 @@
 # Minigames
 
-> All numbers are **draft values for tuning**. Names are provisional.
+> Numbers marked as tuning baselines are checked-in and pinned. T074 may retune Rival Circuit only through the design,
+> decision-log and domain-test process required by AGENTS.md. Names remain provisional.
 
 Minigames are the **third pillar** of the game, beside Collection and Racing. They are the only way to raise a
 Training Level and the only way to earn a card's stars. There is no other training loop: no turns, no
@@ -61,7 +62,7 @@ Pace ──beats──► Front ──beats──► End ──beats──► La
 ```
 
 An advantaged attack deals **1.5×**, a resisted attack **0.67×**, and either opposite-style matchup **1×**. Spark
-damage is always neutral. Strategy aptitude modifies only that strategy's attack; the draft scale is S 1.10, A 1.00,
+damage is always neutral. Strategy aptitude modifies only that strategy's attack; the T071 baseline is S 1.10, A 1.00,
 B 0.95, C 0.90, D 0.85, E 0.80, F 0.75, G 0.70. This is a puzzle-battle reading of aptitude and has no effect on the
 race engine.
 
@@ -80,10 +81,10 @@ The engine resolves one accepted drag in this order:
 6. Advance the rival countdown. At zero, execute the already displayed intent and reset its countdown.
 7. Check victory, loss and the **eight-player-turn bound for the current wave**.
 
-The first simulator baseline is below. These are checked-in tuning constants, not private content fields. `pnpm sim:spark`
-pins them in T071 and T074; any change follows AGENTS.md's design/decision/domain-test rule.
+The T071 simulator baseline is below. These are checked-in tuning constants, not private content fields. `pnpm sim:spark`
+and the domain test pin them; any change follows AGENTS.md's design/decision/domain-test rule.
 
-| Constant/formula | Draft value |
+| Constant/formula | T071 baseline |
 |---|---|
 | Maximum Drive | 100 |
 | Match shape | `1 + 0.25 × (orbs − 3)` |
@@ -144,7 +145,7 @@ Wave EXP budgets are **500 / 650 / 800**. An uncleared wave pays
 no bonuses and is capped at 45% of the 1,950 wave-budget total. This prevents a high-Resolve rival, healing or stalling from
 being an unintended EXP farm and makes a full clear substantially more efficient than repeatedly losing late.
 
-The draft balance target is **about 2,200 Training EXP for a competent three-wave clear**, with losses retaining only the
+The pinned balance target is **about 2,200 Training EXP for a competent three-wave clear**, with losses retaining only the
 bounded progress actually earned. Training EXP resolves greedily and surplus carries:
 
 ```
@@ -214,6 +215,12 @@ with an empty action list. It is never charged again. Already completed rows rem
 
 The route is `/minigames/spark-match/:umaId` and remains lazy. Presentation is hybrid:
 
+- **Chibi faces** remain Spark Match's board identity (D184). Each of the six kinds is a whole standing Chibi in a thick
+  kind-coloured ring over a faint tint. The four strategies retain their letter glyph; Spark is gold and Recovery is
+  green with their own marks. The active trainee owns the Spark face; the other five faces are a deterministic,
+  display-only cast from the already loaded catalogue and never affect engine state, damage or replay. The encountered
+  rival's Chibi appears on the rival stage inside her current strategy ring. Private icons, then labelled silhouettes,
+  are the fallback while art is absent or loading.
 - **PixiJS 8** owns the 30 orb sprites, held orb, swaps, clear/fall/cascade sequence, pooled particles, attacks, rival
   reactions and damage/recovery numbers.
 - **React DOM** owns navigation, wave label, Drive/Resolve/Spark gauges, strategy and intent, tutorial, accessible live
@@ -226,6 +233,12 @@ steps already produced by the engine and temporarily locks input. Sprites and ef
 is capped to useful art density, the ticker pauses when hidden, and all movement uses elapsed milliseconds. The target is a
 stable 60 fps on the owner's iPhone, with 120 Hz presentation where Safari supplies it; game results never depend on refresh
 rate. Reduced motion shortens travel and removes nonessential particles without removing board-state feedback.
+
+Spark uses the same full-screen paged/swipe guide shell as Friendship Training. Its illustrated pages cover the circuit,
+continuous drag, matches/cascades, the complete advantage ring, Spark/Recovery, rival intent and saved Training EXP. It
+opens automatically once per device before any ticket can be spent, is always reachable from the unpaid start screen,
+and opens from the live run at a context-relevant page. A separate **Matchups** control opens the advantage page directly;
+the legend names `Pace → Front → End → Late → Pace`, advantage, resistance and neutral opposites in text.
 
 At 390 × 844 the entire run has no page scroll, the board remains square-celled, HUD and board avoid the safe areas, and
 every DOM control is at least 44 pt. Physical-device validation must cover finger occlusion, edge/system gestures, pointer

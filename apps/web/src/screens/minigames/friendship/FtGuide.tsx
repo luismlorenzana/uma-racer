@@ -31,12 +31,11 @@ import {
   type FtSkillRuleId,
   type StatKey,
 } from '@racer/domain'
-import { AnimatePresence, m, useReducedMotion } from 'motion/react'
-import { useEffect, useState, type ReactNode } from 'react'
-import { Button } from '../../../ui/Button'
-import { CheckIcon, CloseIcon, RaceIcon, SparkIcon, HeartIcon } from '../../../ui/icons'
-import { STAT_NAMES, TypeBadge } from './FtCard'
+import type { ReactNode } from 'react'
+import { PagedGuide } from '../../../ui/PagedGuide'
+import { CheckIcon, HeartIcon, RaceIcon } from '../../../ui/icons'
 import { TypeIcon } from '../../../ui/TypeIcon'
+import { STAT_NAMES, TypeBadge } from './FtCard'
 
 // How to play Friendship Training (M020): a paged, illustrated guide. Every number is read from the rules module, so
 // the guide changes with the balance and can never teach a stale rule.
@@ -388,80 +387,14 @@ function pages(tier: number): { id: GuidePageId; title: string; body: ReactNode 
  * first visit, and from the run's menu at the page that fits the moment.
  */
 export function FtGuide({ open, tier, startAt = 'goal', onClose }: { open: boolean; tier: number; startAt?: GuidePageId; onClose: () => void }) {
-  const reducedMotion = useReducedMotion()
-  const all = pages(tier)
-  const [index, setIndex] = useState(0)
-  const [direction, setDirection] = useState(1)
-  const startIndex = Math.max(0, all.findIndex((page) => page.id === startAt))
-  // The guide opens at the page that fits the moment.
-  useEffect(() => {
-    if (open) setIndex(startIndex)
-  }, [open, startIndex])
-  const go = (next: number) => {
-    if (next < 0 || next >= all.length) return
-    setDirection(next > index ? 1 : -1)
-    setIndex(next)
-  }
-  const page = all[index]!
-  const last = index === all.length - 1
-
   return (
-    <AnimatePresence>
-      {open && (
-        <m.div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ft-guide-title"
-          className="fixed inset-0 z-50 flex flex-col bg-stage text-ink-on-dark pt-safe"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: reducedMotion ? 0 : 0.18 }}
-        >
-          <header className="flex items-center gap-2 px-4 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-micro text-accent">How to play · {index + 1} of {all.length}</p>
-              <h2 id="ft-guide-title" className="truncate text-xl font-semibold">{page.title}</h2>
-            </div>
-            <button type="button" onClick={onClose} aria-label="Close the guide" className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft">
-              <CloseIcon size={20} />
-            </button>
-          </header>
-
-          <div className="relative min-h-0 flex-1 overflow-hidden">
-            <AnimatePresence initial={false} custom={direction} mode="popLayout">
-              <m.section
-                key={page.id}
-                custom={direction}
-                className="absolute inset-0 overflow-y-auto overscroll-contain px-4 pb-4"
-                initial={reducedMotion ? { opacity: 0 } : { x: `${direction * 100}%`, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={reducedMotion ? { opacity: 0 } : { x: `${direction * -100}%`, opacity: 0 }}
-                transition={{ duration: reducedMotion ? 0 : 0.24, ease: [0.2, 0, 0, 1] }}
-                drag={reducedMotion ? false : 'x'}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(_, info) => {
-                  if (info.offset.x < -60) go(index + 1)
-                  else if (info.offset.x > 60) go(index - 1)
-                }}
-              >
-                <div className="grid gap-3 pt-1">{page.body}</div>
-              </m.section>
-            </AnimatePresence>
-          </div>
-
-          <footer className="grid gap-2 px-4 pt-2 pb-safe">
-            <div className="flex justify-center gap-1.5" aria-hidden>
-              {all.map((entry, dot) => <span key={entry.id} className={`h-1.5 rounded-full transition-[width] ${dot === index ? 'w-5 bg-accent' : 'w-1.5 bg-white/25'}`} />)}
-            </div>
-            <div className="grid grid-cols-[1fr_1.4fr] gap-2 pb-2">
-              <Button variant="secondary" disabled={index === 0} onClick={() => go(index - 1)}>Back</Button>
-              <Button onClick={() => last ? onClose() : go(index + 1)}>{last ? 'Let’s train' : 'Next'}</Button>
-            </div>
-          </footer>
-        </m.div>
-      )}
-    </AnimatePresence>
+    <PagedGuide
+      open={open}
+      pages={pages(tier)}
+      startAt={startAt}
+      titleId="ft-guide-title"
+      finishLabel="Let’s train"
+      onClose={onClose}
+    />
   )
 }
