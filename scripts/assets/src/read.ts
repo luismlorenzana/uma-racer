@@ -64,13 +64,6 @@ async function readScenarioIcons(contentDir: string): Promise<ImageSource[]> {
   })
 }
 
-/**
- * The original's support-card type icons (`utx_ico_obtain_00`–`06`), keyed by our card type; the app also uses them
- * as its stat icons (D182). A fixed set: Speed, Stamina, Power, Guts, Wit, Friend and Group, in the original's order.
- */
-export const TYPE_ICON_SOURCES: readonly ImageSource[] = (['speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'group'] as const)
-  .map((type, index) => ({ id: type, url: `https://gametora.com/images/umamusume/icons/utx_ico_obtain_0${index}.png` }))
-
 /** Every icon the skills pack uses, once, keyed by the skill's `iconId` (D182). */
 export function parseSkillIcons(bytes: Buffer): ImageSource[] {
   const { items } = JSON.parse(bytes.toString('utf8')) as { items: { iconId?: unknown }[] }
@@ -100,7 +93,6 @@ export async function readAssetSources(
   umaCharas: { id: string; charaId: string }[]
   cards: ImageSource[]
   scenarios: ImageSource[]
-  types: readonly ImageSource[]
   skills: ImageSource[]
 }> {
   let manifest: ContentManifest
@@ -123,7 +115,6 @@ export async function readAssetSources(
     umaCharas: parseCharas(umaBytes),
     cards: parseSources(cardBytes, 'cards'),
     scenarios: await readScenarioIcons(contentDir),
-    types: TYPE_ICON_SOURCES,
     skills: parseSkillIcons(skillBytes),
   }
 }

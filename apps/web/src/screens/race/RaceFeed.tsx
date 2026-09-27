@@ -7,13 +7,12 @@ import {
   BurstIcon,
   CrownIcon,
   GateIcon,
-  GutsIcon,
   MoveToIcon,
-  StaminaIcon,
   WarningIcon,
   type IconComponent,
 } from '../../ui/icons'
 import { UmaBust } from '../../ui/UmaBust'
+import { TypeIcon, type TypeIconKind } from '../../ui/TypeIcon'
 import { effectLabel } from './labels'
 
 // The race feed (D178): small toasts on the right of the course, over the outer lanes the field seldom uses, newest on
@@ -23,16 +22,17 @@ import { effectLabel } from './labels'
 /** A toast's height and the gap under it, in px. */
 const ROW = 37
 
-const PACK_ICON: Record<RacePackCue, IconComponent> = {
+// Her Guts and Stamina moments carry those stats' own icons (D183).
+const PACK_TYPE: Partial<Record<RacePackCue, TypeIconKind>> = { 'Spot struggle': 'guts', 'Saving stamina': 'stamina' }
+
+const PACK_ICON: Partial<Record<RacePackCue, IconComponent>> = {
   Blocked: WarningIcon,
   Overtaking: MoveToIcon,
   'Pace up': ArrowUpIcon,
   'Pace down': ArrowDownIcon,
   'Holding lead': CrownIcon,
-  'Spot struggle': GutsIcon,
   'Securing lead': CrownIcon,
   Repositioning: MoveToIcon,
-  'Saving stamina': StaminaIcon,
 }
 
 type Tone = 'mine' | 'player' | 'rival' | 'alert'
@@ -55,6 +55,7 @@ interface ToastView {
   more: number
   face: string | null
   icon: IconComponent | null
+  type?: TypeIconKind
 }
 
 function toastView(cue: RaceCue, seconds: number, content: LoadedContent, runners: readonly PreparedRaceRunner[]): ToastView {
@@ -83,7 +84,11 @@ function toastView(cue: RaceCue, seconds: number, content: LoadedContent, runner
   const eyebrow = cue.packKind === 'Spot struggle' ? 'Early race'
     : cue.packKind === 'Securing lead' || cue.packKind === 'Repositioning' || cue.packKind === 'Saving stamina' ? 'Before the spurt'
       : 'Pack'
-  return { ...view, tone: 'player', eyebrow, title: cue.packKind ?? 'Pack change', icon: cue.packKind ? PACK_ICON[cue.packKind] : null }
+  return {
+    ...view, tone: 'player', eyebrow, title: cue.packKind ?? 'Pack change',
+    icon: cue.packKind ? PACK_ICON[cue.packKind] ?? null : null,
+    ...(cue.packKind && PACK_TYPE[cue.packKind] ? { type: PACK_TYPE[cue.packKind] } : {}),
+  }
 }
 
 export function RaceFeed({
@@ -114,6 +119,8 @@ export function RaceFeed({
             <div className={`race-toast-in flex h-8 max-w-full items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1 shadow-2 ${tone.toast}`}>
               {view.face ? (
                 <UmaBust content={content} umaId={view.face} className="h-6 w-6 shrink-0 rounded-full bg-sunken ring-2 ring-white/80" />
+              ) : view.type ? (
+                <TypeIcon type={view.type} size={24} />
               ) : (
                 <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${tone.badge}`}>{Icon && <Icon size={16} variant="solid" />}</span>
               )}

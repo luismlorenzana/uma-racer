@@ -1,10 +1,11 @@
 import { FT_BOND_GAUGE, FT_FORMATIONS, type FtSetup, type FtState, type StatKey, type Surface } from '@racer/domain'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { LoadedContent } from '../../../content/runtime'
+import { getContentAsset, type LoadedContent } from '../../../content/runtime'
+import { AtlasSprite } from '../../../ui/AtlasSprite'
 import { useArt } from '../../../ui/album/useArt'
-import { CheckIcon, RaceIcon, SparkIcon, StaminaIcon } from '../../../ui/icons'
-import { STAT_BG, STAT_ICONS } from './FtCard'
+import { CheckIcon, RaceIcon, SparkIcon, HeartIcon } from '../../../ui/icons'
+import { TypeIcon } from '../../../ui/TypeIcon'
 
 // The run's sense of place (M020): a season map across the top, and a living scene where the main card's character
 // trains. Everything moves by transform and opacity; the global reduced-motion rule stills the loops.
@@ -24,44 +25,85 @@ function seasonPosition(setup: FtSetup, state: FtState): { current: number; lost
   }
 }
 
+/** Where she is, in words: the headline over the season track. */
+function whereNow(setup: FtSetup, state: FtState, current: number): { title: string; detail: string } {
+  const stages = setup.races.length
+  if (state.phase === 'won') return { title: 'Season cleared', detail: `${stages} stage${stages === 1 ? '' : 's'} won` }
+  const stage = Math.min(Math.floor(current / 3), stages - 1)
+  const slot = current - stage * 3
+  const race = setup.races[stage]!
+  const grade = race.grade.toUpperCase()
+  const title = state.phase === 'lost' ? 'Run over'
+    : slot >= 3 ? `Stage ${stage + 1} cleared`
+      : slot === 2 ? `${grade} race` : `Training week ${slot + 1}`
+  const detail = slot >= 3 ? (stage + 1 < stages ? 'Next: a skill, the shop, then stage ' + (stage + 2) : 'Last stage done')
+    : slot === 2 ? `Stage ${stage + 1} of ${stages} · win it to clear the stage`
+      : `Stage ${stage + 1} of ${stages} · ${slot === 0 ? 'two weeks' : 'one week'}, then the ${grade} race`
+  return { title, detail }
+}
+
+/**
+ * The season track (D183): every training week and race of the run, big enough to read at a glance, with where she is
+ * now in words above it. A trained week shows the facility's icon; the race shows its grade.
+ */
 export function SeasonMap({ setup, state }: { setup: FtSetup; state: FtState }) {
   const { current, lost } = seasonPosition(setup, state)
+  const stages = setup.races.length
+  const { title, detail } = whereNow(setup, state, current)
+  const size = stages >= 3 ? 'sm' : 'md'
   return (
-    <ol className="flex items-center gap-1" aria-label={`Season: stage ${state.stage + 1} of ${setup.races.length}`}>
-      {setup.races.map((race, stage) => (
-        <li key={race.id} className="flex min-w-0 flex-1 items-center">
-          {[0, 1, 2].map((slot) => {
-            const index = stage * 3 + slot
-            const status: NodeStatus = index < current ? 'done' : index === current ? (lost ? 'lost' : 'current') : 'next'
-            const stat = slot < 2 ? state.weeksTrained[stage * 2 + slot] : undefined
-            return (
-              <span key={slot} className="flex min-w-0 flex-1 items-center">
-                {slot > 0 && <span className={`h-0.5 flex-1 ${index <= current ? 'bg-accent/70' : 'bg-white/15'}`} />}
-                <MapNode status={status} stat={stat} race={slot === 2 ? race.grade.toUpperCase() : undefined} />
-              </span>
-            )
-          })}
-          {stage < setup.races.length - 1 && <span className="mx-1 h-3 w-px bg-white/20" aria-hidden />}
-        </li>
-      ))}
-    </ol>
+    <section className="rounded-md border border-hairline-dark bg-stage-soft px-3 pt-2 pb-2.5" aria-label={`Season: ${title}`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="font-display truncate text-[15px] font-semibold">{title}</p>
+        <p className="shrink-0 text-[11px] font-semibold text-ink-on-dark-soft tabular-nums">
+          {Math.min(current + (lost ? 1 : 0), stages * 3)} / {stages * 3}
+        </p>
+      </div>
+      <p className="truncate text-[11px] text-ink-on-dark-soft">{detail}</p>
+      <ol className="mt-2 flex gap-2">
+        {setup.races.map((race, stage) => (
+          <li key={race.id} className="min-w-0 flex-1">
+            <p className={`mb-1 text-center text-[9px] font-bold tracking-wide uppercase ${Math.floor(current / 3) === stage ? 'text-accent' : 'text-ink-on-dark-soft'}`}>Stage {stage + 1}</p>
+            <div className="flex items-start">
+              {[0, 1, 2].map((slot) => {
+                const index = stage * 3 + slot
+                const status: NodeStatus = index < current ? 'done' : index === current ? (lost ? 'lost' : 'current') : 'next'
+                const stat = slot < 2 ? state.weeksTrained[stage * 2 + slot] : undefined
+                return (
+                  <span key={slot} className={`flex min-w-0 items-start ${slot > 0 ? 'flex-1' : ''}`}>
+                    {slot > 0 && <span className={`mt-[15px] h-0.5 min-w-1 flex-1 ${index <= current ? 'bg-accent/70' : 'bg-white/15'} ${size === 'sm' ? 'mt-[13px]' : ''}`} />}
+                    <MapNode status={status} stat={stat} size={size}
+                      label={slot === 2 ? race.grade.toUpperCase() : `Week ${slot + 1}`} race={slot === 2} />
+                  </span>
+                )
+              })}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 
-function MapNode({ status, stat, race }: { status: NodeStatus; stat?: StatKey; race?: string }) {
-  const label = race ? `${race} race` : stat ? `${stat} week` : 'week'
-  const shape = race ? 'h-7 min-w-9 rounded-sm px-1' : 'h-6 w-6 rounded-full'
-  const Icon = stat ? STAT_ICONS[stat] : null
+function MapNode({ status, stat, label, race, size }: { status: NodeStatus; stat?: StatKey; label: string; race: boolean; size: 'sm' | 'md' }) {
+  const box = size === 'sm' ? 'h-7' : 'h-8'
+  const shape = race ? `${box} ${size === 'sm' ? 'min-w-9' : 'min-w-11'} rounded-sm px-1` : `${box} ${size === 'sm' ? 'w-7' : 'w-8'} rounded-full`
   const tone = status === 'lost' ? 'bg-danger text-white'
-    : status === 'done' ? (stat && !race ? `${STAT_BG[stat]} text-white` : 'bg-accent text-ink')
+    : status === 'done' ? (race ? 'bg-accent text-ink' : 'bg-white/10 text-white')
       : status === 'current' ? 'border-2 border-accent bg-stage text-accent'
         : 'border border-white/20 bg-stage text-white/40'
   return (
-    <span className={`relative flex shrink-0 items-center justify-center ${shape} ${tone}`} aria-label={`${label}, ${status}`}>
-      {status === 'current' && <span className="absolute inset-0 animate-[ft-pulse_1.6s_ease-in-out_infinite] rounded-[inherit] border-2 border-accent" aria-hidden />}
-      {race ? <span className="font-display flex items-center gap-0.5 text-[10px] font-bold"><RaceIcon size={16} />{race}</span>
-        : Icon ? <Icon size={16} />
-          : status === 'done' ? <CheckIcon size={16} /> : null}
+    <span className="relative flex shrink-0 flex-col items-center gap-0.5" aria-label={`${label}, ${status === 'current' ? 'now' : status}`}>
+      <span className={`relative flex items-center justify-center ${shape} ${tone}`}>
+        {status === 'current' && <span className="absolute inset-0 animate-[ft-pulse_1.6s_ease-in-out_infinite] rounded-[inherit] border-2 border-accent" aria-hidden />}
+        {race ? <span className="font-display flex items-center gap-0.5 text-[11px] font-bold">{status === 'done' ? <CheckIcon size={16} /> : <RaceIcon size={16} />}{label}</span>
+          : status === 'done' && stat ? <TypeIcon type={stat} size={size === 'sm' ? 28 : 32} />
+            : status === 'done' ? <CheckIcon size={16} />
+              : <span className="font-display text-[12px] font-bold">{label.slice(-1)}</span>}
+      </span>
+      <span className={`text-[9px] leading-3 font-semibold whitespace-nowrap ${status === 'current' ? 'text-accent' : 'text-ink-on-dark-soft'}`}>
+        {status === 'current' ? 'Now' : race ? 'Race' : label}
+      </span>
     </span>
   )
 }
@@ -75,13 +117,16 @@ const SPARKS = [
   { left: '90%', delay: '3s', size: 16 as const },
 ]
 
-/** The main card's character: their standing chibi (celebrating once bonded), else their race face. */
+/**
+ * The main card's character: their standing chibi (celebrating once bonded), else their race face, else, for the staff
+ * and team cards whose characters are not Umas, the card's own icon.
+ */
 function useCharacterArt(content: LoadedContent, setup: FtSetup, cheer: boolean) {
   const main = setup.cards[setup.mainCardId]!
   const uma = content.umas.items.find((entry) => entry.charaId === main.charaId && content.art.has('chibi', `${entry.id}-a`))
   const chibi = useArt(content, 'chibi', uma ? `${uma.id}-${cheer && content.art.has('chibi', `${uma.id}-b`) ? 'b' : 'a'}` : null)
   const face = useArt(content, 'face', uma ? null : main.charaId)
-  return { chibi, face, name: main.name }
+  return { chibi, face, icon: getContentAsset(content, 'card-icons', setup.mainCardId), name: main.name }
 }
 
 export interface SceneProps {
@@ -91,13 +136,15 @@ export interface SceneProps {
   /** A week at a facility, a race on its surface, or a rest between them. */
   place: { kind: 'week'; stat: StatKey } | { kind: 'race'; surface: Surface } | { kind: 'rest' }
   cheer?: boolean
+  /** A short strip between choices, rather than the stage that fills a training week. */
+  compact?: boolean
   children?: ReactNode
 }
 
 /** A backdrop that moves, the character who trains, their friendship hearts, and each train's result as it lands. */
-export function FtScene({ content, setup, state, place, cheer = false, children }: SceneProps) {
+export function FtScene({ content, setup, state, place, cheer = false, compact = false, children }: SceneProps) {
   const reducedMotion = useReducedMotion()
-  const { chibi, face, name } = useCharacterArt(content, setup, cheer || state.bonded)
+  const { chibi, face, icon, name } = useCharacterArt(content, setup, cheer || state.bonded)
   const encounter = state.encounter
   const trained = encounter?.trainsUsed ?? 0
   const result = state.lastTrain
@@ -130,7 +177,7 @@ export function FtScene({ content, setup, state, place, cheer = false, children 
       : 'radial-gradient(110% 80% at 50% 110%, color-mix(in oklab, var(--color-accent) 30%, transparent) 0%, transparent 70%), linear-gradient(180deg, var(--color-stage-soft), var(--color-stage))'
 
   return (
-    <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-hairline-dark" style={{ background }}>
+    <div className={`relative overflow-hidden rounded-lg border border-hairline-dark ${compact ? 'h-28 shrink-0' : 'min-h-0 flex-1'}`} style={{ background }}>
       {race && (
         <>
           <div className={`absolute inset-x-0 bottom-0 h-[42%] ${place.surface === 'dirt' ? 'bg-dirt' : 'bg-turf'}`} />
@@ -159,21 +206,23 @@ export function FtScene({ content, setup, state, place, cheer = false, children 
       >
         <div className={`h-full ${race ? 'animate-[ft-run_0.45s_ease-in-out_infinite]' : 'animate-[ft-bob_2.4s_ease-in-out_infinite]'}`}>
           {chibi ? <img src={chibi} alt={name} className="h-full w-auto object-contain drop-shadow-[0_6px_8px_rgb(0_0_0_/_0.45)]" draggable={false} />
-            : face ? <img src={face} alt={name} className="mt-auto h-24 w-24 rounded-full border-2 border-accent object-cover" draggable={false} />
-              : null}
+            : face ? <img src={face} alt={name} className={`mt-auto rounded-full border-2 border-accent object-cover ${compact ? 'h-16 w-16' : 'h-24 w-24'}`} draggable={false} />
+              : <AtlasSprite asset={icon} alt={name} className={`mt-auto rounded-[22%] border-2 border-accent ${compact ? 'h-16 w-16' : 'h-24 w-24'}`} />}
         </div>
       </m.div>
       </div>
 
-      {/* Friendship hearts: three trains together bond the card. */}
+      {/* Friendship hearts: three trains together bond the card, and it then counts as every type. */}
       <div className="absolute right-3 bottom-3 flex flex-col items-center gap-0.5" aria-label={state.bonded ? 'Bonded' : `Friendship ${state.gauge} of ${FT_BOND_GAUGE}`}>
         <span className="flex gap-0.5">
           {Array.from({ length: FT_BOND_GAUGE }, (_, index) => (
-            <StaminaIcon key={index} size={20} variant="solid"
+            <HeartIcon key={index} size={20} variant="solid"
               className={state.bonded ? 'text-accent' : index < state.gauge ? 'text-stat-guts' : 'text-white/25'} />
           ))}
         </span>
-        <span className="text-[10px] font-semibold tracking-wide text-ink-on-dark-soft uppercase">{state.bonded ? 'Bonded' : 'Friendship'}</span>
+        <span className="text-[10px] font-semibold tracking-wide text-ink-on-dark-soft uppercase">
+          {state.bonded ? 'Bonded · every type' : `Friendship ${state.gauge}/${FT_BOND_GAUGE}`}
+        </span>
       </div>
 
       {children && <div className="absolute inset-x-3 top-2.5">{children}</div>}

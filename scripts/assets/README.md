@@ -39,8 +39,6 @@ content/
   atlases/uma-icons.<hash8>.json
   atlases/card-icons-0.<hash8>.webp
   atlases/card-icons.<hash8>.json
-  atlases/type-icons-0.<hash8>.webp     the original's 7 card type icons, also the app's stat icons (D182)
-  atlases/type-icons.<hash8>.json
   atlases/skill-icons-0.<hash8>.webp    every skill icon the skills pack uses, by iconId (D182)
   atlases/skill-icons.<hash8>.json
   art/uma/<umaId>.<hash8>.webp          art/bust/<umaId>…   art/card/<cardId>…
@@ -48,7 +46,8 @@ content/
   art/face/<charaId>.<hash8>.webp
 ```
 
-`pnpm assets:import -- --families=type-icons,skill-icons` rebuilds only those two families (seconds, no other download).
+`pnpm assets:import -- --families=skill-icons` rebuilds only that family (seconds, no other download). Stat and card type
+icons are the app's own drawings (D183), so the `type-icons` family D182 imported is retired: an import drops its files.
 A skill icon GameTora lacks is skipped and the app draws its own star in its place.
 
 More pages are produced automatically if a family grows beyond 961 frames. Atlas descriptors map template ids to their

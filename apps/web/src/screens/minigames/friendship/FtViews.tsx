@@ -27,7 +27,8 @@ import { Button } from '../../../ui/Button'
 import { CheckIcon, RaceIcon } from '../../../ui/icons'
 import { CountUp } from '../../../ui/CountUp'
 import { Stars } from '../../../ui/Stars'
-import { FtCard, STAT_BG, STAT_ICONS, STAT_NAMES, TypeBadge, typeName } from './FtCard'
+import { FtCard, STAT_NAMES, TypeBadge, typeName } from './FtCard'
+import { TypeIcon } from '../../../ui/TypeIcon'
 import { FtScene } from './FtScene'
 
 export interface ViewProps {
@@ -200,12 +201,11 @@ export function BuildView({ act, busy }: ViewProps) {
       </div>
       <div className="grid gap-2">
         {STATS.map((stat) => {
-          const Icon = STAT_ICONS[stat]
           const on = picked.includes(stat)
           return (
             <button key={stat} type="button" aria-pressed={on} onClick={() => toggle(stat)}
               className={`flex min-h-12 items-center gap-3 rounded-md border px-3 ${on ? 'border-accent bg-white/10' : 'border-hairline-dark bg-stage-soft'}`}>
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full text-white ${STAT_BG[stat]}`}><Icon size={20} /></span>
+              <TypeIcon type={stat} size={32} />
               <span className="flex-1 text-left font-semibold">{STAT_NAMES[stat]}</span>
               {on && <CheckIcon size={20} className="text-accent" />}
             </button>
@@ -235,11 +235,10 @@ export function FacilityView(props: ViewProps) {
       </div>
       <div className="grid gap-2">
         {state.facilityOffers!.map((offer, index) => {
-          const Icon = STAT_ICONS[offer.type]
           return (
             <button key={offer.type} type="button" disabled={busy} onClick={() => act({ type: 'facility', index })}
               className="flex min-h-18 items-center gap-3 rounded-md border border-hairline-dark bg-stage-soft px-3 py-2 text-left active:bg-white/10">
-              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white ${STAT_BG[offer.type]}`}><Icon size={24} /></span>
+              <TypeIcon type={offer.type} size={44} />
               <span className="min-w-0 flex-1">
                 <span className="block text-[17px] font-semibold">{STAT_NAMES[offer.type]} <span className="text-[11px] font-semibold text-ink-on-dark-soft uppercase">{grades[index]}</span></span>
                 <span className="block text-[12px] text-ink-on-dark-soft">{onType(offer.type)} of your {state.deck.length} cards on-type</span>
@@ -252,7 +251,7 @@ export function FacilityView(props: ViewProps) {
           )
         })}
       </div>
-      <FtScene content={props.content} setup={setup} state={state} place={{ kind: 'rest' }} />
+      <FtScene content={props.content} setup={setup} state={state} place={{ kind: 'rest' }} compact />
       <p className="text-[12px] text-ink-on-dark-soft">Scenario twist · {FT_TWISTS.find((twist) => twist.id === setup.twist)!.name}: {FT_TWISTS.find((twist) => twist.id === setup.twist)!.rule}</p>
     </div>
   )
@@ -420,7 +419,7 @@ export function RewardView({ content, setup, state, art, act, busy }: ViewProps)
           )
         })}
       </div>
-      <FtScene content={content} setup={setup} state={state} place={{ kind: 'rest' }} cheer />
+      <FtScene content={content} setup={setup} state={state} place={{ kind: 'rest' }} cheer compact />
       <div className="grid grid-cols-[1fr_1.4fr] gap-2 pb-safe">
         <Button variant="secondary" disabled={busy} onClick={() => act({ type: 'reward', cardId: null })}>Skip</Button>
         <Button disabled={busy || picked === null} onClick={() => act({ type: 'reward', cardId: picked })}>Add card</Button>

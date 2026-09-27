@@ -1,11 +1,10 @@
 import { FT_BOND_GAUGE, type FtCardDef, type StatKey } from '@racer/domain'
 import { useRef, type ReactNode } from 'react'
 import type { LoadedContent } from '../../../content/runtime'
-import { GutsIcon, PowerIcon, SparkIcon, SpeedIcon, StaminaIcon, WitIcon, type IconComponent } from '../../../ui/icons'
+import { TypeIcon } from '../../../ui/TypeIcon'
 import { CardArt } from '../CardArt'
 
 export const STAT_NAMES: Readonly<Record<StatKey, string>> = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit' }
-export const STAT_ICONS: Readonly<Record<StatKey, IconComponent>> = { speed: SpeedIcon, stamina: StaminaIcon, power: PowerIcon, guts: GutsIcon, wit: WitIcon }
 export const STAT_BG: Readonly<Record<StatKey, string>> = {
   speed: 'bg-stat-speed', stamina: 'bg-stat-stamina', power: 'bg-stat-power', guts: 'bg-stat-guts', wit: 'bg-stat-wit',
 }
@@ -16,16 +15,9 @@ export const STAT_TEXT: Readonly<Record<StatKey, string>> = {
 export const typeName = (type: FtCardDef['type']): string =>
   type === 'friend' ? 'Friend' : type === 'group' ? 'Group' : STAT_NAMES[type]
 
-/** A stat type's badge: its colour and icon. Friend and Group cards count as any type, so they carry the spark. */
-export function TypeBadge({ type, size = 'sm' }: { type: FtCardDef['type']; size?: 'sm' | 'md' }) {
-  const broad = type === 'friend' || type === 'group'
-  const Icon = broad ? SparkIcon : STAT_ICONS[type]
-  const box = size === 'md' ? 'h-8 w-8' : 'h-6 w-6'
-  return (
-    <span className={`flex ${box} shrink-0 items-center justify-center rounded-full text-white shadow-1 ${broad ? 'bg-accent-strong' : STAT_BG[type]}`}>
-      <Icon size={size === 'md' ? 20 : 16} title={typeName(type)} />
-    </span>
-  )
+/** A card's type as the app's one type icon (D183); Friend and Group cards count as any type. */
+export function TypeBadge({ type, size = 'sm' }: { type: FtCardDef['type']; size?: 'sm' | 'md' | 'lg' }) {
+  return <TypeIcon type={type} size={size === 'lg' ? 44 : size === 'md' ? 32 : 24} title={typeName(type)} className="drop-shadow" />
 }
 
 /** Tap selects; a long press opens the card's sheet instead. */

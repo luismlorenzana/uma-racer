@@ -53,8 +53,8 @@ export interface LoadedContent {
   races: ContentRegistry<RaceTemplate>
   courses: ContentRegistry<CourseTemplate>
   /**
-   * Crests, type icons and skill icons are optional: a manifest published before T051 (crests) or D182 (icons) lacks
-   * them, and the app falls back to no crest and its own icons rather than refusing to load.
+   * Crests and skill icons are optional: a manifest published before T051 (crests) or D182 (skill icons) lacks them,
+   * and the app falls back to no crest and its own star rather than refusing to load.
    */
   atlases: Record<'uma-icons' | 'card-icons', LoadedAtlas> & Partial<Record<OptionalAtlasKind, LoadedAtlas>>
   art: ArtLoader
@@ -76,6 +76,12 @@ export interface ArtLoader {
    * to the icon atlas.
    */
   load: (kind: ArtKind, id: string) => Promise<string | null>
+  /**
+   * Keeps an entry's object URL alive while a screen shows it: the recency window never revokes a held entry, so a
+   * minigame preloading more cards than the window holds cannot break the images already on screen. Returns the
+   * release. Call it before `load`, so nothing can evict the entry between its arrival and the hold.
+   */
+  hold?: (kind: ArtKind, id: string) => () => void
 }
 
 export interface ContentAsset {
@@ -225,6 +231,7 @@ function createArtLoader(
   const index = artIndex(manifest)
   const cache = new Map<string, string>()
   const pending = new Map<string, Promise<string | null>>()
+  const holds = new Map<string, number>()
 
   const fetchArt = async (key: string, file: ContentManifestFile): Promise<string | null> => {
     const result = await transport.file(file.path)
@@ -237,15 +244,32 @@ function createArtLoader(
     cache.set(key, url)
     const kind = key.slice(0, key.indexOf(':')) as ArtKind
     const sameKind = [...cache.keys()].filter((entry) => entry.startsWith(`${kind}:`))
-    for (const oldestKey of sameKind.slice(0, Math.max(0, sameKind.length - ART_CACHE_LIMIT[kind]))) {
+    // Oldest first, skipping whatever a screen still shows; a held window may run over its limit until released.
+    let excess = sameKind.length - ART_CACHE_LIMIT[kind]
+    for (const oldestKey of sameKind) {
+      if (excess <= 0) break
+      if (holds.has(oldestKey)) continue
       urls.revoke(cache.get(oldestKey)!)
       cache.delete(oldestKey)
+      excess -= 1
     }
     return url
   }
 
   return {
     has: (kind, id) => index.has(`${kind}:${id}`),
+    hold: (kind, id) => {
+      const key = `${kind}:${id}`
+      holds.set(key, (holds.get(key) ?? 0) + 1)
+      let released = false
+      return () => {
+        if (released) return
+        released = true
+        const count = (holds.get(key) ?? 1) - 1
+        if (count > 0) holds.set(key, count)
+        else holds.delete(key)
+      }
+    },
     load: async (kind, id) => {
       const key = `${kind}:${id}`
       const cached = cache.get(key)
@@ -270,11 +294,10 @@ const ATLAS_FILES: Record<ContentAtlasKind, RegExp> = {
   'uma-icons': /^atlases\/uma-icons\.[a-f0-9]{8}\.json$/,
   'card-icons': /^atlases\/card-icons\.[a-f0-9]{8}\.json$/,
   'scenario-icons': /^atlases\/scenario-icons\.[a-f0-9]{8}\.json$/,
-  'type-icons': /^atlases\/type-icons\.[a-f0-9]{8}\.json$/,
   'skill-icons': /^atlases\/skill-icons\.[a-f0-9]{8}\.json$/,
 }
 
-const OPTIONAL_ATLASES = ['scenario-icons', 'type-icons', 'skill-icons'] as const
+const OPTIONAL_ATLASES = ['scenario-icons', 'skill-icons'] as const
 type OptionalAtlasKind = (typeof OPTIONAL_ATLASES)[number]
 
 function assertMatchingFrames(label: string, ids: readonly string[], atlas: ContentAtlas): void {

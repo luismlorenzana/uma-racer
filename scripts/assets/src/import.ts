@@ -113,14 +113,14 @@ async function main(): Promise<void> {
     if (families) console.log(`Manifest: ${(await writeArtFiles({ contentDir, families })).version}`)
     return
   }
-  // D182's icon families: the original's card type icons (the app's stat icons) and its skill icons.
-  const iconBuilds = () => [build('type-icons', sources.types, refresh), build('skill-icons', sources.skills, refresh, true)]
-  // `--families=type-icons,skill-icons` rebuilds only those atlas families, leaving every other file as it is.
+  // D182's skill icons. The type icons D182 imported are now our own drawings in the app (D183), so that family retires.
+  const iconBuilds = () => [build('skill-icons', sources.skills, refresh, true)]
+  const retire = ['type-icons']
+  // `--families=skill-icons` rebuilds only that atlas family, leaving every other file as it is.
   const only = process.argv.find((value) => value.startsWith('--families='))?.split('=')[1]?.split(',')
   if (only) {
-    const builds = iconBuilds().filter((_, index) => only.includes(['type-icons', 'skill-icons'][index]!))
-    if (builds.length !== only.length) throw new Error('--families takes type-icons and/or skill-icons')
-    const manifest = await writeAtlases({ contentDir, atlases: await Promise.all(builds) })
+    if (only.some((family) => family !== 'skill-icons')) throw new Error('--families takes skill-icons')
+    const manifest = await writeAtlases({ contentDir, atlases: await Promise.all(iconBuilds()), retire })
     console.log(`Manifest: ${manifest.version} (${manifest.files.length} files)`)
     return
   }
@@ -132,7 +132,7 @@ async function main(): Promise<void> {
   // The crest atlas is skipped entirely when no override is authored, rather than written empty.
   if (sources.scenarios.length > 0) atlasBuilds.push(build('scenario-icons', sources.scenarios, refresh))
   const atlases = await Promise.all(atlasBuilds)
-  let manifest = await writeAtlases({ contentDir, atlases })
+  let manifest = await writeAtlases({ contentDir, atlases, retire })
 
   if (!skipArt) {
     // Art is large and per-entry, so it is written as individual files the app fetches on demand.

@@ -421,8 +421,13 @@ A lazy DOM route, `/minigames/friendship-training/:cardId?tier&uma&return`, with
 - **Reward, skill, shop and result** screens, the result celebrating the star.
 - **How to play:** an illustrated guide, opened once by itself, then from the start screen and the run's menu (the
   menu also holds Give up), at the page that fits the moment; its numbers come from the rules module.
-- **A sense of place** (D173): a season map across the top, and a scene where the main card's character trains at
-  the facility or runs the race, with the friendship hearts and each train's result rising above them.
+- **A sense of place** (D173, D183): a **season track** across the top says where the run is in words (the week or
+  race, the stage, what comes next, and steps done), with every week and race of every stage as a labelled node: a
+  trained week shows its facility's type icon, a cleared race its check, and the current one **Now**. Below, a scene
+  where the main card's character trains at the facility or runs the race, with the friendship hearts ("Friendship
+  1/3", "Bonded · every type") and each train's result rising above them. Between choices (the facility pick, a
+  reward) the scene is a short strip; it fills the space only while training or racing. A card whose character is not
+  an Uma (the staff and team cards) shows its own card icon, since there is no chibi or race face to draw.
 - Reachable from every **Bond** button: the card page, the Cards tab's scenario lenses, the Training scene's card set and a constellation node's sheet (D177).
 
 ### Scenario twists
