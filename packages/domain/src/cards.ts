@@ -1,4 +1,4 @@
-// SSR support cards: stars, and the generated effect profile that still feeds tilt and Race Bonus
+// SSR support cards: stars, and the generated effect profile that still feeds Race Bonus
 // (docs/design/support-cards.md). The rest of the effect model died with the training turn (D125).
 
 import { CARD_SET_SIZE, starNodePct } from './constellation'

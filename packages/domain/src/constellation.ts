@@ -118,8 +118,9 @@ export const spNodeValue = (tier: number): number => Math.round((SP_CARD_SHARE *
 export type CardNodeType = StatKey | 'friend' | 'group'
 
 /**
- * How a card node splits its value, in integer percentage points so the arithmetic stays exact.
- * Every row sums to 100, which is what makes the invariance rule hold whatever you slot.
+ * How a card node splits its value, in integer percentage points so the arithmetic stays exact: the main stat 70 and
+ * the stat its facility also trains in the original 30, Guts 60 with Speed and Power 20 each. Every card of a type
+ * pays the same split (D180). Every row sums to 100, which is what makes the invariance rule hold whatever you slot.
  */
 export const CARD_TYPE_SHARES: Record<CardNodeType, Partial<Record<StatKey, number>>> = {
   speed: { speed: 70, power: 30 },
@@ -152,45 +153,9 @@ export const MIN_ERA_PCT = 40
 export const eraPct = (cardEra: number, tier: number): number =>
   Math.max(MIN_ERA_PCT, 100 - ERA_PENALTY_PER_STEP * Math.max(0, Math.trunc(tier) - Math.trunc(cardEra)))
 
-export const MAX_CARD_TILT = 10
-
-/**
- * A small per-card shift of the primary/secondary split, generated from the effect profile so two
- * max-broken Speed cards are not interchangeable. Integer percentage points in [−10, +10].
- */
-export function cardTilt(template: Pick<SupportCardTemplate, 'type' | 'effectProfile'>): number {
-  if (template.type === 'friend' || template.type === 'group') return 0
-  const statWeight = template.effectProfile.statBonus ?? 0
-  const trainingWeight = template.effectProfile.trainingBonus ?? 0
-  const raw = Math.round((statWeight - trainingWeight) * 25)
-  return Math.max(-MAX_CARD_TILT, Math.min(MAX_CARD_TILT, raw))
-}
-
-/**
- * The card's distribution with its tilt applied: value moves from the secondary stats to the primary.
- * Still sums to 100.
- */
-export function cardShares(
-  template: Pick<SupportCardTemplate, 'type' | 'effectProfile'>,
-): Partial<Record<StatKey, number>> {
-  const base = CARD_TYPE_SHARES[template.type as CardNodeType] ?? CARD_TYPE_SHARES.speed
-  const tilt = cardTilt(template)
-  if (tilt === 0) return { ...base }
-  const primary = template.type as StatKey
-  const secondaries = (Object.keys(base) as StatKey[]).filter((stat) => stat !== primary)
-  if (secondaries.length === 0) return { ...base }
-
-  const shares: Partial<Record<StatKey, number>> = { ...base }
-  // Move `tilt` points to the primary, taken from the secondaries and never pushing one below zero.
-  let moved = 0
-  for (const [index, stat] of secondaries.entries()) {
-    const want = index === secondaries.length - 1 ? tilt - moved : Math.trunc(tilt / secondaries.length)
-    const take = Math.max(-(base[primary] ?? 0), Math.min(base[stat] ?? 0, want))
-    shares[stat] = (shares[stat] ?? 0) - take
-    moved += take
-  }
-  shares[primary] = (shares[primary] ?? 0) + moved
-  return shares
+/** How one node of this card splits, stat by stat: its type's shares (D180). */
+export function cardShares(template: Pick<SupportCardTemplate, 'type'>): Partial<Record<StatKey, number>> {
+  return { ...(CARD_TYPE_SHARES[template.type as CardNodeType] ?? CARD_TYPE_SHARES.speed) }
 }
 
 // --- Templates ---------------------------------------------------------------------------------

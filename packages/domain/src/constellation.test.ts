@@ -12,7 +12,6 @@ import {
   type CardNodeState,
   cardNodeValue,
   cardShares,
-  cardTilt,
   constellationEdges,
   constellationTemplate,
   deriveStats,
@@ -147,26 +146,14 @@ describe('card shares', () => {
     }
   })
 
-  it('still sums to 100 once tilt shifts the split', () => {
-    for (const weights of [{ statBonus: 2, trainingBonus: 0 }, { statBonus: 0, trainingBonus: 2 }, {}]) {
-      for (const type of ['speed', 'stamina', 'power', 'guts', 'wit'] as StatKey[]) {
-        const shares = cardShares(card('c', type, weights).template)
-        const total = Object.values(shares).reduce((sum, share) => sum + (share ?? 0), 0)
-        expect(total).toBe(100)
+  it('pays every card of a type its type’s split, whatever its effect profile (D180)', () => {
+    expect(CARD_TYPE_SHARES.speed).toEqual({ speed: 70, power: 30 })
+    expect(CARD_TYPE_SHARES.guts).toEqual({ guts: 60, speed: 20, power: 20 })
+    for (const type of Object.keys(CARD_TYPE_SHARES) as (keyof typeof CARD_TYPE_SHARES)[]) {
+      for (const weights of [{ statBonus: 1.5, trainingBonus: 0 }, { statBonus: 0, trainingBonus: 1.5 }, {}]) {
+        expect(cardShares(card('c', type, weights).template)).toEqual(CARD_TYPE_SHARES[type])
       }
     }
-  })
-
-  it('tilts toward the primary stat and stays bounded', () => {
-    const specialist = cardShares(card('c', 'speed', { statBonus: 2, trainingBonus: 0 }).template)
-    expect(specialist.speed).toBeGreaterThan(CARD_TYPE_SHARES.speed.speed!)
-    expect(cardTilt(card('c', 'speed', { statBonus: 40, trainingBonus: 0 }).template)).toBe(10)
-    expect(cardTilt(card('c', 'speed', { statBonus: 0, trainingBonus: 40 }).template)).toBe(-10)
-  })
-
-  it('never tilts a broad support card', () => {
-    expect(cardTilt(card('c', 'friend', { statBonus: 9, trainingBonus: 0 }).template)).toBe(0)
-    expect(cardShares(card('c', 'group').template)).toEqual(CARD_TYPE_SHARES.group)
   })
 })
 
