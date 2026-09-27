@@ -13,6 +13,7 @@ import {
   cardStars,
   ftReplay,
   constellationTemplate,
+  deriveUma,
   nodesUnlockedBetween,
   parseCardSave,
   parsePlayerProfileOrThrow,
@@ -27,6 +28,12 @@ import {
 import type { LoadedContent } from '../content/runtime'
 import { db, type MinigameRunRow } from './db'
 import {
+  type MinigameJournal,
+  type SparkReplayJournalV1,
+  type SparkRunSnapshotV1,
+  type SparkRunView,
+} from './minigame-journal'
+import {
   validateFriendshipOutcome,
   validateMinigameOutcome,
   type MinigameHost,
@@ -36,14 +43,27 @@ import {
   type RunTarget,
   type RunTicket,
   type SavedRun,
+  type StoredRunReward,
 } from './minigame-host'
+import {
+  buildSparkRivalEncounter,
+  parseSparkRivalAction,
+  parseSparkRivalActions,
+  parseSparkRivalEncounter,
+  replaySparkRival,
+  selectSparkEncounter,
+  sparkRivalStateHash,
+  type SparkRivalAction,
+} from './minigames/spark-rival'
 import { updateTrainingBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
 import { reconcileTrainerInTransaction } from './trainer'
 
-const cloneReward = (reward: RunReward): RunReward => ({
+const cloneReward = (reward: StoredRunReward): RunReward => ({
   ...reward,
-  nodesUnlocked: reward.nodesUnlocked ? [...reward.nodesUnlocked] : undefined,
+  nodesUnlocked: reward.nodesUnlocked?.map((node) => typeof node === 'string'
+    ? { id: '', label: node }
+    : { ...node }),
 })
 
 const parsedUma = (id: string, value: unknown): UmaSave => {
@@ -58,11 +78,57 @@ const parsedCard = (id: string, value: unknown): CardSave => {
   return card
 }
 
+const record = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+function exactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
+  const keys = Object.keys(value).sort()
+  const wanted = [...expected].sort()
+  return keys.length === wanted.length && keys.every((key, index) => key === wanted[index])
+}
+
+export function parseSparkRunSnapshot(value: unknown): SparkRunSnapshotV1 | null {
+  if (!record(value) || !exactKeys(value, ['contentVersion', 'encounter', 'source', 'version']) || value.version !== 1 ||
+    typeof value.contentVersion !== 'string' || value.contentVersion.length < 1 || value.contentVersion.length > 120 ||
+    (value.source !== 'authored' && value.source !== 'fallback')) return null
+  const encounter = parseSparkRivalEncounter(value.encounter)
+  return encounter ? {
+    version: 1,
+    contentVersion: value.contentVersion,
+    encounter,
+    source: value.source,
+  } : null
+}
+
+export function parseSparkReplayJournal(value: unknown): SparkReplayJournalV1 | null {
+  if (!record(value) || !exactKeys(value, ['actions', 'engine', 'format']) ||
+    value.format !== 1 || value.engine !== 'spark-rival-v1') return null
+  const actions = parseSparkRivalActions(value.actions)
+  return actions ? { format: 1, engine: 'spark-rival-v1', actions: [...actions] } : null
+}
+
 const asTicket = (run: MinigameRunRow): RunTicket => ({
   runId: run.id,
   seed: run.seed,
   attemptIndex: run.attemptIndex,
 })
+
+function sparkRunView(run: MinigameRunRow): SparkRunView {
+  if (run.kind !== 'spark-match' || run.target.kind !== 'spark-match' || run.status !== 'open' ||
+    run.seed.length < 1 || run.seed.length > 120) throw new Error('Spark Rival run row is invalid')
+  const snapshot = parseSparkRunSnapshot(run.sparkSnapshot)
+  const journal = parseSparkReplayJournal(run.journal)
+  if (!snapshot || !journal || snapshot.encounter.scenarioTier !== run.tier ||
+    snapshot.encounter.trainee.templateId !== run.target.umaId) {
+    throw new Error('Spark Rival run replay data is malformed')
+  }
+  return {
+    ticket: asTicket(run),
+    snapshot,
+    actions: journal.actions,
+    replay: replaySparkRival(snapshot.encounter, run.seed, journal.actions),
+  }
+}
 
 const targetKey = (target: RunTarget, tier: number): string => target.kind === 'spark-match'
   ? `spark-match:${target.umaId}:${tier}`
@@ -113,6 +179,100 @@ export function minigameNodeLabel(node: ConstellationNode): string {
     node.kind === 'card' ? 'Card' : node.kind === 'stat' ? 'Stat' : 'Root'
   const ordinal = node.kind === 'card' || node.kind === 'stat' ? ` ${node.order + 1}` : ''
   return `${kind} node${ordinal} · ${positionHint(node)}`
+}
+
+async function buildSparkSnapshot(
+  content: LoadedContent,
+  target: Extract<RunTarget, { kind: 'spark-match' }>,
+  tier: number,
+  seed: string,
+): Promise<SparkRunSnapshotV1> {
+  const umaRow = await db.umas.get(target.umaId)
+  if (!umaRow) throw new Error('Spark Match Uma is not owned')
+  const uma = parsedUma(target.umaId, umaRow.data)
+  const scenario = activeScenario(uma)
+  if (!scenario.started || scenario.tier !== tier || scenario.trainingLevel >= MAX_TRAINING_LEVEL) {
+    throw new Error('The reserved Spark Match scenario is no longer active')
+  }
+  const trainee = content.umas.byId.get(target.umaId)
+  if (!trainee) throw new Error('Spark Match Uma content is missing')
+  const cardSaves = new Map((await db.cards.toArray()).map((row) => [row.id, parsedCard(row.id, row.data)]))
+  const derived = deriveUma({
+    uma,
+    umaTemplate: trainee,
+    cardSaves,
+    cardTemplates: content.cards.byId,
+    umaTemplates: content.umas.byId,
+    skillTemplates: content.skills.byId,
+  })
+  const selection = selectSparkEncounter(content.sparkRivals, content.umas.items, trainee.charaId, tier, seed)
+  return {
+    version: 1,
+    contentVersion: content.manifest.version,
+    encounter: buildSparkRivalEncounter(
+      selection,
+      trainee,
+      tier,
+      scenario.trainingLevel,
+      derived.aptitudes.strategy,
+    ),
+    source: selection.diagnostic.source,
+  }
+}
+
+async function adoptOpenSparkRun(content: LoadedContent, id: string): Promise<MinigameRunRow> {
+  const run = await db.minigameRuns.get(id)
+  if (!run || run.kind !== 'spark-match' || run.target.kind !== 'spark-match') {
+    throw new Error('Unknown Spark Rival run')
+  }
+  if (run.status !== 'open') throw new Error('This Spark Rival run is already finished')
+  if (run.sparkSnapshot !== undefined || run.journal !== undefined) {
+    // A partially present or malformed pair is corruption, never an invitation to silently reroll.
+    sparkRunView(run)
+    return run
+  }
+  const adopted: MinigameRunRow = {
+    ...run,
+    sparkSnapshot: await buildSparkSnapshot(content, run.target, run.tier, run.seed),
+    journal: { format: 1, engine: 'spark-rival-v1', actions: [] },
+  }
+  sparkRunView(adopted)
+  await db.minigameRuns.put(adopted)
+  return adopted
+}
+
+/** Dexie-backed compare-and-append journal; it never mutates the synced save. */
+export class PersistentMinigameJournal implements MinigameJournal {
+  constructor(private readonly content: LoadedContent) {}
+
+  async loadSpark(id: string): Promise<SparkRunView> {
+    return db.transaction('rw', [db.umas, db.cards, db.minigameRuns], async () =>
+      sparkRunView(await adoptOpenSparkRun(this.content, id)))
+  }
+
+  async appendSpark(id: string, expectedActionCount: number, action: SparkRivalAction): Promise<SparkRunView> {
+    if (!Number.isSafeInteger(expectedActionCount) || expectedActionCount < 0) {
+      throw new Error('Spark Rival expected action count is invalid')
+    }
+    return db.transaction('rw', [db.umas, db.cards, db.minigameRuns], async () => {
+      const run = await adoptOpenSparkRun(this.content, id)
+      const current = sparkRunView(run)
+      if (current.actions.length !== expectedActionCount) {
+        throw new Error('Spark Rival action count changed; the saved run must be restored')
+      }
+      if (current.replay.outcome) throw new Error('This Spark Rival run is already terminal')
+      const parsed = parseSparkRivalAction(action)
+      if (!parsed) throw new Error('Spark Rival action is invalid')
+      const actions = [...current.actions, parsed]
+      const replay = replaySparkRival(current.snapshot.encounter, current.ticket.seed, actions)
+      const next: MinigameRunRow = {
+        ...run,
+        journal: { format: 1, engine: 'spark-rival-v1', actions },
+      }
+      await db.minigameRuns.put(next)
+      return { ticket: current.ticket, snapshot: current.snapshot, actions, replay }
+    })
+  }
 }
 
 /**
@@ -302,7 +462,12 @@ export class PersistentMinigameHost implements MinigameHost {
         completedAt: null,
         ...(target.kind === 'friendship-training'
           ? { setup: await this.friendshipSetup(target, valid.tier, seed), actions: [] }
-          : {}),
+          : target.kind === 'spark-match'
+            ? {
+                sparkSnapshot: await buildSparkSnapshot(this.content, target, valid.tier, seed),
+                journal: { format: 1, engine: 'spark-rival-v1', actions: [] },
+              }
+            : {}),
       }
       nextProfile = { ...profile, tickets: profile.tickets - cost }
       const ledger: LedgerEntry = {
@@ -348,12 +513,17 @@ export class PersistentMinigameHost implements MinigameHost {
         let reconcileTrainer = false
 
         if (run.kind === 'spark-match' && run.target.kind === 'spark-match' && outcome.kind === 'spark-match') {
+          const view = sparkRunView(run)
+          if (!view.replay.outcome) throw new Error('This Spark Rival run is not finished')
+          if (view.actions.length !== outcome.actionCount || sparkRivalStateHash(view.replay.state) !== outcome.stateHash) {
+            throw new Error('Spark Rival replay claim is stale')
+          }
           const umaRow = await db.umas.get(run.target.umaId)
           if (!umaRow) throw new Error('Spark Match Uma is not owned')
           const uma = parsedUma(run.target.umaId, umaRow.data)
           const scenario = activeScenario(uma)
           if (scenario.tier !== run.tier || !scenario.started) throw new Error('The reserved Spark Match scenario is no longer active')
-          const gain = addTrainingExp(scenario.trainingLevel, scenario.trainingExp, outcome.score)
+          const gain = addTrainingExp(scenario.trainingLevel, scenario.trainingExp, view.replay.outcome.trainingExp)
           const nextScenario = { ...scenario, trainingLevel: gain.trainingLevel, trainingExp: gain.trainingExp }
           const nextUma = {
             ...uma,
@@ -363,9 +533,12 @@ export class PersistentMinigameHost implements MinigameHost {
             constellationTemplate(run.tier),
             scenario.trainingLevel,
             gain.trainingLevel,
-          ).map(minigameNodeLabel)
+          ).map((node) => ({ id: node.id, label: minigameNodeLabel(node) }))
           result = {
             ticketsSpent: SPARK_MATCH_TICKET_COST,
+            trainingExpEarned: view.replay.outcome.trainingExp,
+            trainingExpBefore: scenario.trainingExp,
+            trainingExpAfter: gain.trainingExp,
             trainingLevelBefore: scenario.trainingLevel,
             trainingLevelAfter: gain.trainingLevel,
             nodesUnlocked,

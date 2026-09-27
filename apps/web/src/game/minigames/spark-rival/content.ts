@@ -3,6 +3,7 @@
 import {
   SPARK_RIVAL_STYLE_RECIPES,
   sparkRivalBestStrategy,
+  type Grade,
   type SparkRivalRecipeId,
   type SparkRivalRosterCandidate,
   type SparkRivalScenarioRoster,
@@ -171,6 +172,7 @@ export function buildSparkRivalEncounter(
   trainee: UmaTemplate,
   tier: number,
   trainingLevel: number,
+  strategyAptitudes: Readonly<Record<Strategy, Grade>> = trainee.aptitudes.strategy,
 ): SparkRivalEncounterV1 {
   const rivals = [...selection.ordinary, selection.boss] as const
   const waves = rivals.map((rival, index) => sparkRivalDefinition({
@@ -181,7 +183,7 @@ export function buildSparkRivalEncounter(
     wave: index as 0 | 1 | 2,
     scenarioTier: tier,
     trainingLevel,
-    traineeAptitudes: trainee.aptitudes.strategy,
+    traineeAptitudes: strategyAptitudes,
   })) as unknown as SparkRivalEncounterV1['waves']
   const encounter: SparkRivalEncounterV1 = {
     version: 1,
@@ -190,7 +192,7 @@ export function buildSparkRivalEncounter(
     trainee: {
       templateId: trainee.id,
       label: trainee.name,
-      strategyAptitudes: trainee.aptitudes.strategy,
+      strategyAptitudes,
     },
     waves,
   }

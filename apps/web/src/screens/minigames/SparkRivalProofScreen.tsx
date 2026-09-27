@@ -1,10 +1,9 @@
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Strategy } from '@racer/domain'
 import { useContent } from '../../content/ContentProvider'
 import type { SparkOrb } from '../../game/minigames/spark-rival'
 import { useGame } from '../../game/store'
-import { SparkRivalProofScene, type SparkRivalProofHud } from '../../scenes/spark-rival/SparkRivalProofScene'
+import { SparkRivalScene, type SparkRivalHud } from '../../scenes/spark-rival/SparkRivalScene'
 import { sparkProofCast } from '../../scenes/spark-rival/proof-cast'
 import { useArtSet } from '../../ui/album/useArt'
 import { QuestionIcon, SparkIcon } from '../../ui/icons'
@@ -32,8 +31,8 @@ export function SparkRivalProofScreen() {
   const contentState = useContent()
   const featuredUmaId = useGame((state) => state.profile?.featuredUmaId ?? null)
   const hostRef = useRef<HTMLDivElement>(null)
-  const sceneRef = useRef<SparkRivalProofScene | null>(null)
-  const [hud, setHud] = useState<SparkRivalProofHud | null>(null)
+  const sceneRef = useRef<SparkRivalScene | null>(null)
+  const [hud, setHud] = useState<SparkRivalHud | null>(null)
   const [forceReducedMotion, setForceReducedMotion] = useState(false)
   const [guide, setGuide] = useState<{ open: boolean; startAt: SparkRivalGuidePageId }>(() => ({ open: !sparkRivalGuideSeen(), startAt: 'circuit' }))
   const reducedMotion = Boolean(systemReducedMotion) || forceReducedMotion
@@ -44,14 +43,16 @@ export function SparkRivalProofScreen() {
   const orbArt = useMemo<Partial<Record<SparkOrb, string | null>>>(() => cast ? Object.fromEntries(
     Object.entries(cast.orbs).map(([orb, id]) => [orb, chibis.get(`${id}-a`) ?? null]),
   ) : {}, [cast, chibis])
-  const rivalArt = useMemo<Partial<Record<Strategy, string | null>>>(() => cast ? Object.fromEntries(
-    Object.entries(cast.rivals).map(([strategy, id]) => [strategy, chibis.get(`${id}-a`) ?? null]),
-  ) : {}, [cast, chibis])
+  const rivalArt = useMemo<Readonly<Record<string, string | null>>>(() => cast ? {
+    'synthetic-rival-1': chibis.get(`${cast.rivals.front}-a`) ?? null,
+    'synthetic-rival-2': chibis.get(`${cast.rivals.late}-a`) ?? null,
+    'synthetic-rival-3': chibis.get(`${cast.rivals.pace}-a`) ?? null,
+  } : {} as Record<string, string | null>, [cast, chibis])
 
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
-    const scene = new SparkRivalProofScene(setHud)
+    const scene = new SparkRivalScene(setHud)
     sceneRef.current = scene
     scene.setReducedMotion(reducedMotion)
     void scene.mount(host)

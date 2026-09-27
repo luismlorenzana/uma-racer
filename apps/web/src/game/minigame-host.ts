@@ -1,6 +1,16 @@
 // Port between the independently shipped minigames and save-v6 progression (docs/tasks/M014-minigames.md).
 
-import { ftReplay, type FtAction, type FtSetup } from '@racer/domain'
+import { SPARK_MATCH_TICKET_COST, ftReplay, type FtAction, type FtSetup } from '@racer/domain'
+import type { SparkRunSnapshotV1, SparkRunView } from './minigame-journal'
+import {
+  parseSparkRivalAction,
+  parseSparkRivalEncounter,
+  replaySparkRival,
+  sparkRivalStateHash,
+  syntheticSparkEncounter,
+  type SparkRivalAction,
+  type SparkRivalReplay,
+} from './minigames/spark-rival'
 
 /** The minigames a run can begin in. Bond Recall is retired (D177); its stored rows keep their `bond-recall` kind. */
 export type MinigameKind = 'spark-match' | 'friendship-training'
@@ -37,21 +47,49 @@ export type RunTarget =
   | { kind: 'friendship-training'; cardId: string; tier: number; umaId?: string | null }
 
 export type RunOutcome =
-  | { kind: 'spark-match'; score: number; moves: number }
+  | { kind: 'spark-match'; engine: 'spark-rival-v1'; actionCount: number; stateHash: string }
   | { kind: 'bond-recall'; cleared: boolean; mismatches: number }
   | { kind: 'friendship-training'; cleared: boolean; actions: FtAction[] }
 
+/** Read-only history shape from the retired adjacent-swap engine. It can never be submitted again. */
+export interface LegacySparkOutcome {
+  kind: 'spark-match'
+  score: number
+  moves: number
+}
+
+export type StoredRunOutcome = RunOutcome | LegacySparkOutcome
+
+export interface RunRewardNode {
+  id: string
+  label: string
+}
+
 export interface RunReward {
   ticketsSpent: number
+  trainingExpEarned?: number
+  trainingExpBefore?: number
+  trainingExpAfter?: number
   trainingLevelBefore?: number
   trainingLevelAfter?: number
-  nodesUnlocked?: string[]
+  nodesUnlocked?: RunRewardNode[]
   starsBefore?: number
   starsAfter?: number
   couponGranted?: boolean
 }
 
-type RewardFactory = (ticket: RunTicket, target: RunTarget, outcome: RunOutcome) => RunReward
+export interface LegacyRunReward extends Omit<RunReward, 'nodesUnlocked'> {
+  nodesUnlocked?: string[]
+}
+
+export type StoredRunReward = RunReward | LegacyRunReward
+
+type RewardFactory = (
+  ticket: RunTicket,
+  target: RunTarget,
+  outcome: RunOutcome,
+  sparkReplay: SparkRivalReplay | null,
+) => RunReward
 
 const targetKey = (target: RunTarget): string =>
   target.kind === 'spark-match' ? `spark-match:${target.umaId}` : `${target.kind}:${target.cardId}:${target.tier}`
@@ -59,8 +97,9 @@ const targetKey = (target: RunTarget): string =>
 export const validateMinigameOutcome = (ticket: RunTicket, target: RunTarget, outcome: RunOutcome): void => {
   if (target.kind !== outcome.kind) throw new Error(`Run ${ticket.runId} received the wrong minigame outcome`)
   if (outcome.kind === 'spark-match') {
-    if (!Number.isSafeInteger(outcome.score) || outcome.score < 0 || outcome.moves !== 25) {
-      throw new Error('Spark Match outcomes require a nonnegative score and exactly 25 moves')
+    if (outcome.engine !== 'spark-rival-v1' || !Number.isSafeInteger(outcome.actionCount) ||
+      outcome.actionCount < 0 || outcome.actionCount > 64 || !/^[a-f0-9]{8}$/.test(outcome.stateHash)) {
+      throw new Error('Spark Match outcomes require a bounded Rival Circuit replay claim')
     }
     return
   }
@@ -85,24 +124,28 @@ export function validateFriendshipOutcome(setup: FtSetup, outcome: Extract<RunOu
 
 const sparkTargetExp = (level: number): number => 1_000 + 350 * (level - 1)
 
-const defaultReward: RewardFactory = (_ticket, target, outcome) => {
+const defaultReward: RewardFactory = (_ticket, target, outcome, sparkReplay) => {
   if (target.kind === 'friendship-training' && outcome.kind === 'friendship-training') {
-    return { ticketsSpent: 10, starsBefore: 0, starsAfter: outcome.cleared ? 1 : 0, couponGranted: false }
+    return { ticketsSpent: 1, starsBefore: 0, starsAfter: outcome.cleared ? 1 : 0, couponGranted: false }
   }
-  if (target.kind !== 'spark-match' || outcome.kind !== 'spark-match') throw new Error('Mismatched test-double run')
+  if (target.kind !== 'spark-match' || outcome.kind !== 'spark-match' || !sparkReplay?.outcome) {
+    throw new Error('Mismatched test-double run')
+  }
   let level = 1
-  let exp = outcome.score
+  let exp = sparkReplay.outcome.trainingExp
   while (level < 10 && exp >= sparkTargetExp(level)) {
     exp -= sparkTargetExp(level)
     level += 1
   }
-  const syntheticNames = ['First Light', 'Rising Arc', 'Bright Turn', 'Golden Line', 'North Star', 'Open Sky']
   const nodesUnlocked = Array.from(
     { length: Math.max(0, level - 1) },
-    (_, index) => syntheticNames[index % syntheticNames.length]!,
+    (_, index) => ({ id: `n${index + 1}`, label: `Card node ${index + 2} · upper center` }),
   )
   return {
-    ticketsSpent: 5,
+    ticketsSpent: SPARK_MATCH_TICKET_COST,
+    trainingExpEarned: sparkReplay.outcome.trainingExp,
+    trainingExpBefore: 0,
+    trainingExpAfter: exp,
     trainingLevelBefore: 1,
     trainingLevelAfter: level,
     nodesUnlocked,
@@ -112,6 +155,20 @@ const defaultReward: RewardFactory = (_ticket, target, outcome) => {
 export interface MinigameHostTestDoubleOptions {
   seedPrefix?: string
   reward?: RewardFactory
+}
+
+const cloneReward = (reward: RunReward): RunReward => ({
+  ...reward,
+  nodesUnlocked: reward.nodesUnlocked?.map((node) => ({ ...node })),
+})
+
+function cloneTestSnapshot(snapshot: SparkRunSnapshotV1): SparkRunSnapshotV1 {
+  const encounter = parseSparkRivalEncounter(snapshot.encounter)
+  if (!encounter) throw new Error('Synthetic Spark Rival snapshot is invalid')
+  return {
+    ...snapshot,
+    encounter,
+  }
 }
 
 /**
@@ -124,6 +181,7 @@ export class MinigameHostTestDouble implements MinigameHost {
   private readonly openByTarget = new Map<string, RunTicket>()
   private readonly targetsByRun = new Map<string, RunTarget>()
   private readonly rewardsByRun = new Map<string, RunReward>()
+  private readonly sparkRuns = new Map<string, { snapshot: SparkRunSnapshotV1; actions: SparkRivalAction[] }>()
   private readonly attemptsByTarget = new Map<string, number>()
   private readonly seedPrefix: string
   private readonly rewardFactory: RewardFactory
@@ -155,6 +213,39 @@ export class MinigameHostTestDouble implements MinigameHost {
   /** Test hook: the setup a Friendship Training run replays from. */
   readonly setups = new Map<string, FtSetup>()
 
+  private sparkView(runId: string, ticket: RunTicket): SparkRunView {
+    const run = this.sparkRuns.get(runId)
+    if (!run) throw new Error('Unknown Spark Rival run')
+    const snapshot = cloneTestSnapshot(run.snapshot)
+    const actions = run.actions.map((action) => parseSparkRivalAction(action)!)
+    return {
+      ticket: { ...ticket },
+      snapshot,
+      actions,
+      replay: replaySparkRival(snapshot.encounter, ticket.seed, actions),
+    }
+  }
+
+  async loadSpark(runId: string): Promise<SparkRunView> {
+    const target = this.targetsByRun.get(runId)
+    const ticket = target ? this.openByTarget.get(targetKey(target)) : null
+    if (!ticket || ticket.runId !== runId) throw new Error('Spark Rival run is no longer active')
+    return this.sparkView(runId, ticket)
+  }
+
+  async appendSpark(runId: string, expectedActionCount: number, action: SparkRivalAction): Promise<SparkRunView> {
+    const target = this.targetsByRun.get(runId)
+    const ticket = target ? this.openByTarget.get(targetKey(target)) : null
+    const run = this.sparkRuns.get(runId)
+    if (!ticket || ticket.runId !== runId || !run) throw new Error('Spark Rival run is no longer active')
+    if (run.actions.length !== expectedActionCount) throw new Error('Spark Rival action count changed; reload the run')
+    const parsed = parseSparkRivalAction(action)
+    if (!parsed) throw new Error('Spark Rival action is invalid')
+    replaySparkRival(run.snapshot.encounter, ticket.seed, [...run.actions, parsed])
+    run.actions.push(parsed)
+    return this.sparkView(runId, ticket)
+  }
+
   async beginRun(kind: MinigameKind, target: RunTarget): Promise<RunTicket> {
     this.beginCalls.push({ kind, target })
     if (kind !== target.kind) throw new Error('Minigame kind and target do not match')
@@ -170,13 +261,24 @@ export class MinigameHostTestDouble implements MinigameHost {
     }
     this.openByTarget.set(key, ticket)
     this.targetsByRun.set(ticket.runId, target)
+    if (target.kind === 'spark-match') {
+      this.sparkRuns.set(ticket.runId, {
+        snapshot: {
+          version: 1,
+          contentVersion: 'synthetic-test-content',
+          encounter: syntheticSparkEncounter(),
+          source: 'fallback',
+        },
+        actions: [],
+      })
+    }
     return { ...ticket }
   }
 
   async commitRun(runId: string, outcome: RunOutcome): Promise<RunReward> {
     this.commitCalls.push({ runId, outcome })
     const existing = this.rewardsByRun.get(runId)
-    if (existing) return { ...existing, nodesUnlocked: existing.nodesUnlocked ? [...existing.nodesUnlocked] : undefined }
+    if (existing) return cloneReward(existing)
     const target = this.targetsByRun.get(runId)
     if (!target) throw new Error('Unknown or expired minigame run')
     const ticket = this.openByTarget.get(targetKey(target))
@@ -184,11 +286,21 @@ export class MinigameHostTestDouble implements MinigameHost {
     validateMinigameOutcome(ticket, target, outcome)
     const setup = this.setups.get(runId)
     if (setup && outcome.kind === 'friendship-training') validateFriendshipOutcome(setup, outcome)
-    const reward = this.rewardFactory(ticket, target, outcome)
-    const stored = { ...reward, nodesUnlocked: reward.nodesUnlocked ? [...reward.nodesUnlocked] : undefined }
+    let sparkReplay: SparkRivalReplay | null = null
+    if (outcome.kind === 'spark-match') {
+      const run = this.sparkRuns.get(runId)
+      if (!run) throw new Error('Spark Rival run has no journal')
+      sparkReplay = replaySparkRival(run.snapshot.encounter, ticket.seed, run.actions)
+      if (!sparkReplay.outcome) throw new Error('This Spark Rival run is not finished')
+      if (run.actions.length !== outcome.actionCount || sparkRivalStateHash(sparkReplay.state) !== outcome.stateHash) {
+        throw new Error('Spark Rival replay claim is stale')
+      }
+    }
+    const reward = this.rewardFactory(ticket, target, outcome, sparkReplay)
+    const stored = cloneReward(reward)
     this.rewardsByRun.set(runId, stored)
     this.openByTarget.delete(targetKey(target))
-    return { ...stored, nodesUnlocked: stored.nodesUnlocked ? [...stored.nodesUnlocked] : undefined }
+    return cloneReward(stored)
   }
 }
 

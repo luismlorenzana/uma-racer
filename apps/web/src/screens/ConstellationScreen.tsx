@@ -7,6 +7,7 @@ import {
   cardNodeValue,
   constellationTemplate,
   explainAptitudes,
+  isNodeUnlocked,
   lineageEligibility,
   lineageUnlockLevel,
   nodeValue,
@@ -26,8 +27,8 @@ import {
   buffedStatNodeValue,
   lineageSlotTakesAnyUma,
 } from '@racer/domain'
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { getContentAsset, type LoadedContent } from '../content/runtime'
 import { setConstellationNode } from '../game/actions'
 import { friendshipTrainingHref } from '../game/bond-links'
@@ -46,6 +47,7 @@ const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.sli
 export function ConstellationScreen() {
   const { content, save, uma, cards, umas, tickets } = useTraining()
   const pushToast = useGame((state) => state.pushToast)
+  const [searchParams] = useSearchParams()
   const [openNode, setOpenNode] = useState<ConstellationNode | null>(null)
   // The lineage slot whose Uma picker is open (D181).
   const [lineageNode, setLineageNode] = useState<ConstellationNode | null>(null)
@@ -70,6 +72,13 @@ export function ConstellationScreen() {
   })
   const aptitudes = explainAptitudes(uma.template.aptitudes, derived.lineage)
   const moved = aptitudes.filter((row) => row.result !== row.base)
+
+  useEffect(() => {
+    const nodeId = searchParams.get('node')
+    if (!nodeId) return
+    const node = template.nodes.find((candidate) => candidate.id === nodeId)
+    if (node && isNodeUnlocked(template, node, run.trainingLevel)) setOpenNode(node)
+  }, [run.trainingLevel, searchParams, template])
 
   const assign = async (nodeId: string, assignment: NodeAssignment | null) => {
     if (busy) return
@@ -109,7 +118,7 @@ export function ConstellationScreen() {
       <section className="px-4 pb-safe pt-2">
         {canPlaySpark ? (
           <Link
-            to={`/minigames/spark-match/${encodeURIComponent(save.templateId)}`}
+            to={`/minigames/spark-match/${encodeURIComponent(save.templateId)}?return=${encodeURIComponent(here)}`}
             className="mb-2 flex min-h-11 items-center justify-between rounded-sm bg-accent px-4 text-sm font-bold text-ink shadow-2"
           >
             <span>Raise Training Level</span>

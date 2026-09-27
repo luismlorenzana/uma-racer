@@ -3,10 +3,12 @@ import 'fake-indexeddb/auto'
 import {
   CARD_EFFECTS,
   activeScenario,
+  addTrainingExp,
   constellationTemplate,
   createCardSave,
   createPlayerProfile,
   createUmaSave,
+  isNodeUnlocked,
   nodesUnlockedBetween,
   type CardEffect,
   type CardSave,
@@ -15,11 +17,12 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from '@racer/domain'
+import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
-import { minigameNodeLabel, minigameAttemptSeed, PersistentMinigameHost, retireBondRecallRuns } from './minigame-runs'
-import { startSparkRun } from './minigames/spark-match'
+import { minigameNodeLabel, minigameAttemptSeed, PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns } from './minigame-runs'
+import { sparkRivalStateHash } from './minigames/spark-rival'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -88,6 +91,21 @@ const content: LoadedContent = {
   art: { has: () => false, load: async () => null },
 }
 
+const lineageTemplates = Array.from({ length: 3 }, (_, index): UmaTemplate => ({
+  ...umaTemplate,
+  id: `lineage-${index + 1}`,
+  charaId: `lineage-character-${index + 1}`,
+  name: `Synthetic Lineage ${index + 1}`,
+  aptitudes: { ...aptitudes, strategy: { front: 'A', pace: 'C', late: 'C', end: 'C' } },
+}))
+const lineageContent: LoadedContent = {
+  ...content,
+  umas: {
+    items: [umaTemplate, ...lineageTemplates],
+    byId: new Map([umaTemplate, ...lineageTemplates].map((entry) => [entry.id, entry])),
+  },
+}
+
 const startedUma = (): UmaSave => {
   const created = createUmaSave(umaTemplate)
   return {
@@ -116,6 +134,17 @@ const host = (now = 2000) => new PersistentMinigameHost(content, {
   today: () => '2000-01-02',
 })
 
+async function finishSpark(ticket: { runId: string }) {
+  const journal = new PersistentMinigameJournal(content)
+  let view = await journal.loadSpark(ticket.runId)
+  while (!view.replay.outcome) {
+    view = await journal.appendSpark(ticket.runId, view.actions.length, {
+      type: 'drag', path: [{ row: 0, column: 0 }, { row: 0, column: 1 }], movementMs: 250,
+    })
+  }
+  return view
+}
+
 describe('persistent minigame host', () => {
   beforeEach(resetDatabase)
   afterEach(resetDatabase)
@@ -141,6 +170,13 @@ describe('persistent minigame host', () => {
     await expect(current.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })).rejects.toThrow(/start this scenario/i)
     await assertNoWrites()
     await db.umas.put(umaRow)
+    await db.umas.put({
+      ...umaRow,
+      data: { ...umaRow.data, scenarios: umaRow.data.scenarios.map((scenario) => ({ ...scenario, trainingLevel: 10, trainingExp: 0 })) },
+    })
+    await expect(current.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })).rejects.toThrow(/already at Training Level 10/i)
+    await assertNoWrites()
+    await db.umas.put(umaRow)
     await expect(current.beginRun('friendship-training', { kind: 'friendship-training', cardId: futureCard.id, tier: 1 })).rejects.toThrow(/not available/i)
     await assertNoWrites()
     const saved = (await db.cards.get(card.id))!
@@ -161,37 +197,165 @@ describe('persistent minigame host', () => {
     expect(await db.minigameRuns.count()).toBe(1)
     expect(first.seed).toBe(minigameAttemptSeed(profile.createdAt, content.manifest.version, target, 1, 0))
     expect(minigameAttemptSeed(profile.createdAt, content.manifest.version, target, 1, 1)).not.toBe(first.seed)
+    const row = (await db.minigameRuns.get(first.runId))!
+    expect(row.journal).toEqual({ format: 1, engine: 'spark-rival-v1', actions: [] })
+    expect(row.sparkSnapshot).toMatchObject({ version: 1, contentVersion: content.manifest.version, source: 'fallback' })
+    expect(row.sparkSnapshot?.encounter.trainee.strategyAptitudes).toEqual(aptitudes.strategy)
   })
 
-  it('restores the identical open board through a new host instance', async () => {
+  it('lazily adopts a legacy open Spark row without changing identity or charging twice', async () => {
+    const profile = await seed()
+    const target = { kind: 'spark-match' as const, umaId: umaTemplate.id }
+    const id = 'spark-match:uma-synthetic:1:0'
+    const seedValue = minigameAttemptSeed(profile.createdAt, content.manifest.version, target, 1, 0)
+    await db.ledger.add({ id, data: { resource: 'tickets', delta: -1, reason: 'training', localDay: '2000-01-01', createdAt: 100 }, createdAt: 100 })
+    await db.minigameRuns.add({ id, targetKey: 'spark-match:uma-synthetic:1', kind: 'spark-match', target,
+      tier: 1, attemptIndex: 0, seed: seedValue, status: 'open', outcome: null, reward: null, createdAt: 100, completedAt: null })
+    const before = (await db.minigameRuns.get(id))!
+    const restored = await new PersistentMinigameJournal(content).loadSpark(id)
+    const after = (await db.minigameRuns.get(id))!
+    expect(restored.ticket).toEqual({ runId: id, seed: seedValue, attemptIndex: 0 })
+    expect(after).toMatchObject(before)
+    expect(after.createdAt).toBe(100)
+    expect(after.journal).toEqual({ format: 1, engine: 'spark-rival-v1', actions: [] })
+    expect(await db.ledger.count()).toBe(1)
+    expect((await db.profile.get('main'))?.data.tickets).toBe(100)
+  })
+
+  it('preserves completed v10 minigame rows byte-for-byte through the additive v11 migration', async () => {
+    db.close()
+    await db.delete()
+    const legacy = new Dexie('uma-racer')
+    legacy.version(10).stores({
+      profile: 'id',
+      umas: 'id',
+      cards: 'id',
+      badges: 'id',
+      raceResults: 'id, createdAt',
+      ledger: 'id, createdAt',
+      flairEvents: 'id, createdAt',
+      outbox: '++seq, [kind+id]',
+      albumPrefs: 'id',
+      minigameRuns: 'id, targetKey, [targetKey+status], [targetKey+attemptIndex]',
+    })
+    await legacy.open()
+    const completed = {
+      id: 'spark-match:uma-synthetic:1:0',
+      targetKey: 'spark-match:uma-synthetic:1',
+      kind: 'spark-match',
+      target: { kind: 'spark-match', umaId: umaTemplate.id },
+      tier: 1,
+      attemptIndex: 0,
+      seed: 'legacy-seed',
+      status: 'completed',
+      outcome: { kind: 'spark-match', score: 425, moves: 8 },
+      reward: {
+        kind: 'spark-match', ticketsSpent: 1, trainingLevelBefore: 1,
+        trainingLevelAfter: 1, nodesUnlocked: [],
+      },
+      createdAt: 100,
+      completedAt: 200,
+    }
+    await legacy.table('minigameRuns').put(completed)
+    legacy.close()
+
+    await db.open()
+    expect(await db.minigameRuns.get(completed.id)).toEqual(completed)
+  })
+
+  it('freezes active derived constellation aptitudes rather than template aptitudes', async () => {
+    const template = constellationTemplate(1)
+    const lineageNodes = template.nodes.filter((node) =>
+      (node.kind === 'parent' || node.kind === 'grandparent') && isNodeUnlocked(template, node, 9))
+    const configured = startedUma()
+    await seed({ uma: {
+      ...configured,
+      scenarios: configured.scenarios.map((scenario) => ({
+        ...scenario,
+        trainingLevel: 9,
+        assignments: Object.fromEntries(lineageNodes.slice(0, 3).map((node, index) => [
+          node.id, { kind: 'lineage' as const, templateId: lineageTemplates[index]!.id },
+        ])),
+      })),
+    } })
+    const ticket = await new PersistentMinigameHost(lineageContent).beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
+    const snapshot = (await db.minigameRuns.get(ticket.runId))!.sparkSnapshot!
+    expect(umaTemplate.aptitudes.strategy.front).toBe('D')
+    expect(snapshot.encounter.trainee.strategyAptitudes.front).toBe('B')
+  })
+
+  it('restores the identical open replay through a new host and journal instance', async () => {
     await seed()
     const target = { kind: 'spark-match' as const, umaId: umaTemplate.id }
     const beforeReload = await host().beginRun('spark-match', target)
     const afterReload = await host(3000).beginRun('spark-match', target)
     expect(afterReload).toEqual(beforeReload)
-    expect(startSparkRun(afterReload.seed).board).toEqual(startSparkRun(beforeReload.seed).board)
+    const firstView = await new PersistentMinigameJournal(content).loadSpark(beforeReload.runId)
+    const secondView = await new PersistentMinigameJournal(content).loadSpark(afterReload.runId)
+    expect(JSON.parse(JSON.stringify(secondView))).toEqual(JSON.parse(JSON.stringify(firstView)))
     expect((await db.profile.get('main'))?.data.tickets).toBe(99)
   })
 
-  it('applies a two-level Spark result once and reports the exact opened nodes', async () => {
+  it('applies engine-derived Spark EXP once and reports real structured opened nodes', async () => {
     await seed()
     const current = host()
     const ticket = await current.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
-    const outcome = { kind: 'spark-match' as const, score: 2400, moves: 25 }
+    const terminal = await finishSpark(ticket)
+    const outcome = {
+      kind: 'spark-match' as const,
+      engine: 'spark-rival-v1' as const,
+      actionCount: terminal.actions.length,
+      stateHash: sparkRivalStateHash(terminal.replay.state),
+    }
     const first = await current.commitRun(ticket.runId, outcome)
     const second = await current.commitRun(ticket.runId, outcome)
-    const expectedNodes = nodesUnlockedBetween(constellationTemplate(1), 1, 3).map(minigameNodeLabel)
-    expect(first).toEqual({
-      ticketsSpent: 1,
-      trainingLevelBefore: 1,
-      trainingLevelAfter: 3,
-      nodesUnlocked: expectedNodes,
-    })
+    const gain = addTrainingExp(1, 0, terminal.replay.outcome!.trainingExp)
+    const expectedNodes = nodesUnlockedBetween(constellationTemplate(1), 1, gain.trainingLevel)
+      .map((node) => ({ id: node.id, label: minigameNodeLabel(node) }))
+    expect(first).toMatchObject({ ticketsSpent: 1, trainingExpEarned: terminal.replay.outcome!.trainingExp,
+      trainingExpBefore: 0, trainingExpAfter: gain.trainingExp, trainingLevelBefore: 1,
+      trainingLevelAfter: gain.trainingLevel, nodesUnlocked: expectedNodes })
     expect(second).toEqual(first)
-    expect(activeScenario((await db.umas.get(umaTemplate.id))!.data)).toMatchObject({ trainingLevel: 3, trainingExp: 50 })
+    expect(activeScenario((await db.umas.get(umaTemplate.id))!.data)).toMatchObject({ trainingLevel: gain.trainingLevel, trainingExp: gain.trainingExp })
     expect((await db.profile.get('main'))?.data.tickets).toBe(99)
     expect(await db.ledger.count()).toBe(1)
     expect((await db.minigameRuns.get(ticket.runId))?.status).toBe('completed')
+  })
+
+  it('keeps journal and save unchanged for stale, nonterminal, and invalid-scenario commits', async () => {
+    await seed()
+    const current = host()
+    const ticket = await current.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
+    await expect(current.commitRun(ticket.runId, {
+      kind: 'spark-match', engine: 'spark-rival-v1', actionCount: 0, stateHash: '00000000',
+    })).rejects.toThrow(/not finished/)
+    const terminal = await finishSpark(ticket)
+    const beforeUma = (await db.umas.get(umaTemplate.id))!.data
+    await expect(current.commitRun(ticket.runId, {
+      kind: 'spark-match', engine: 'spark-rival-v1', actionCount: terminal.actions.length, stateHash: '00000000',
+    })).rejects.toThrow(/stale/)
+    expect((await db.umas.get(umaTemplate.id))!.data).toEqual(beforeUma)
+    const row = (await db.umas.get(umaTemplate.id))!
+    await db.umas.put({ ...row, data: { ...row.data, scenarios: row.data.scenarios.map((scenario) => ({ ...scenario, started: false })) } })
+    await expect(current.commitRun(ticket.runId, {
+      kind: 'spark-match', engine: 'spark-rival-v1', actionCount: terminal.actions.length,
+      stateHash: sparkRivalStateHash(terminal.replay.state),
+    })).rejects.toThrow(/no longer active/)
+    expect((await db.minigameRuns.get(ticket.runId))?.status).toBe('open')
+  })
+
+  it('rolls back stale and invalid journal appends byte-for-byte and rejects terminal appends', async () => {
+    await seed()
+    const ticket = await host().beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
+    const journal = new PersistentMinigameJournal(content)
+    const action = { type: 'drag' as const, path: [{ row: 0, column: 0 }, { row: 0, column: 1 }], movementMs: 250 }
+    await journal.appendSpark(ticket.runId, 0, action)
+    const before = JSON.stringify(await db.minigameRuns.get(ticket.runId))
+    await expect(journal.appendSpark(ticket.runId, 0, action)).rejects.toThrow(/action count changed/)
+    await expect(journal.appendSpark(ticket.runId, 1, { type: 'drag', path: [], movementMs: 0 } as never)).rejects.toThrow(/invalid/)
+    expect(JSON.stringify(await db.minigameRuns.get(ticket.runId))).toBe(before)
+    const terminal = await finishSpark(ticket)
+    await expect(journal.appendSpark(ticket.runId, terminal.actions.length, action)).rejects.toThrow(/already terminal/)
   })
 
   it('retires an open Bond Recall run once, giving its ticket back (D177)', async () => {

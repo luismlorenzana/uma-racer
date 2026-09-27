@@ -1,4 +1,4 @@
-// Development-only Pixi touch proof for Spark Rival Circuit (docs/tasks/T071-spark-rival-engine.md).
+// Pixi touch presentation for Spark Rival Circuit (docs/design/minigames.md#spark-match--rival-circuit).
 import { SPARK_RIVAL_BOARD_HEIGHT, SPARK_RIVAL_BOARD_WIDTH, SPARK_RIVAL_MOVEMENT_MS, type Strategy } from '@racer/domain'
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import {
@@ -16,6 +16,8 @@ import {
   type SparkRivalResolution,
   type SparkRivalState,
 } from '../../game/minigames/spark-rival'
+import type { SparkRunView } from '../../game/minigame-journal'
+import type { ContentAsset } from '../../content/runtime'
 import { SparkDragController } from './controller'
 import { sparkCellAtPoint, type SparkBoardGeometry } from './pointer'
 import { SPARK_ORB_GLYPHS, SPARK_ORB_PIXI_COLORS } from '../../ui/minigames/spark-rival-presentation'
@@ -25,20 +27,30 @@ const EFFECT_POOL_SIZE = 24
 const FINGER_OFFSET = 18
 const ART_TEXTURE_SIZE = 256
 
-async function decodeChibiTexture(url: string): Promise<Texture | null> {
+export type SparkSceneArt = string | ContentAsset | null
+
+const artKey = (source: Exclude<SparkSceneArt, null>): string => typeof source === 'string'
+  ? `chibi:${source}`
+  : `atlas:${source.url}:${source.frame.x}:${source.frame.y}`
+
+async function decodeArtTexture(source: Exclude<SparkSceneArt, null>): Promise<Texture | null> {
   try {
     const image = new Image()
-    image.src = url
+    image.src = typeof source === 'string' ? source : source.url
     await image.decode()
     const canvas = document.createElement('canvas')
     canvas.width = ART_TEXTURE_SIZE
     canvas.height = ART_TEXTURE_SIZE
     const context = canvas.getContext('2d')
     if (!context) return null
-    const scale = Math.min(ART_TEXTURE_SIZE / image.naturalWidth, ART_TEXTURE_SIZE / image.naturalHeight)
-    const width = image.naturalWidth * scale
-    const height = image.naturalHeight * scale
-    context.drawImage(image, (ART_TEXTURE_SIZE - width) / 2, (ART_TEXTURE_SIZE - height) / 2, width, height)
+    if (typeof source === 'string') {
+      const scale = Math.min(ART_TEXTURE_SIZE / image.naturalWidth, ART_TEXTURE_SIZE / image.naturalHeight)
+      const width = image.naturalWidth * scale
+      const height = image.naturalHeight * scale
+      context.drawImage(image, (ART_TEXTURE_SIZE - width) / 2, (ART_TEXTURE_SIZE - height) / 2, width, height)
+    } else {
+      context.drawImage(image, source.frame.x, source.frame.y, source.frame.width, source.frame.height, 0, 0, ART_TEXTURE_SIZE, ART_TEXTURE_SIZE)
+    }
     return Texture.from(canvas)
   } catch {
     return null
@@ -67,7 +79,7 @@ interface DeltaWaiter {
   resolve: () => void
 }
 
-export interface SparkRivalProofHud {
+export interface SparkRivalHud {
   wave: number
   waveTurn: number
   resolve: number
@@ -95,14 +107,19 @@ export interface SparkRivalProofHud {
   }
 }
 
-export class SparkRivalProofScene {
+export interface SparkRivalSceneOptions {
+  encounter?: SparkRivalEncounterV1
+  seed?: string
+  actions?: readonly SparkRivalAction[]
+  append?: (expectedActionCount: number, action: SparkRivalAction) => Promise<SparkRunView>
+  restore?: () => Promise<SparkRunView>
+  onTerminal?: (view: SparkRunView) => void
+}
+
+export class SparkRivalScene {
   private readonly app = new Application()
-  private readonly encounter: SparkRivalEncounterV1 = syntheticSparkEncounter({
-    scenarioTier: 7,
-    trainingLevel: 5,
-    traineeBest: 'pace',
-    recipes: ['rush-pressure', 'surge-convert', 'circuit-boss'],
-  })
+  private readonly encounter: SparkRivalEncounterV1
+  private readonly seed: string
   private readonly controller = new SparkDragController()
   private readonly background = new Graphics()
   private readonly rivalLayer = new Container()
@@ -121,9 +138,9 @@ export class SparkRivalProofScene {
   private readonly effects: EffectToken[] = []
   private readonly waiters: DeltaWaiter[] = []
   private geometry: SparkBoardGeometry = { left: 0, top: 0, cellSize: 1 }
-  private state: SparkRivalState = createSparkRivalState(this.encounter, 'spark-rival-touch-proof-v1')
-  private previewBoard: readonly SparkOrb[] = this.state.board
-  private actionCount = 0
+  private state: SparkRivalState
+  private previewBoard: readonly SparkOrb[]
+  private actionCount: number
   private inputLocked = false
   private destroyed = false
   private mounted = false
@@ -139,10 +156,29 @@ export class SparkRivalProofScene {
   private rivalPulse = 0
   private artVersion = 0
   private orbTextures: Partial<Record<SparkOrb, Texture>> = {}
-  private rivalTextures: Partial<Record<Strategy, Texture>> = {}
+  private rivalTextures: Readonly<Record<string, Texture>> = {}
   private ownedArtTextures: Texture[] = []
 
-  constructor(private readonly onHud: (hud: SparkRivalProofHud) => void) {
+  private readonly options: SparkRivalSceneOptions
+
+  constructor(private readonly onHud: (hud: SparkRivalHud) => void, options: SparkRivalSceneOptions = {}) {
+    this.options = options
+    this.encounter = options.encounter ?? syntheticSparkEncounter({
+      scenarioTier: 7,
+      trainingLevel: 5,
+      traineeBest: 'pace',
+      recipes: ['rush-pressure', 'surge-convert', 'circuit-boss'],
+    })
+    this.seed = options.seed ?? 'spark-rival-touch-proof-v1'
+    const replay = options.actions
+      ? options.actions.reduce(
+          (current, action, index) => reduceSparkRival(this.encounter, current, action, index).state,
+          createSparkRivalState(this.encounter, this.seed),
+        )
+      : createSparkRivalState(this.encounter, this.seed)
+    this.state = replay
+    this.previewBoard = replay.board
+    this.actionCount = options.actions?.length ?? 0
     this.rivalArt.anchor.set(0.5)
     this.rivalGlyph.anchor.set(0.5)
     this.rivalLayer.addChild(this.rivalCard, this.rivalMark, this.rivalArt, this.rivalGlyph)
@@ -190,12 +226,13 @@ export class SparkRivalProofScene {
 
   /** Private Chibis are decoded into owned Pixi textures; missing art leaves the glyph fallback. */
   async setArt(
-    orbs: Partial<Record<SparkOrb, string | null>>,
-    rivals: Partial<Record<Strategy, string | null>>,
+    orbs: Partial<Record<SparkOrb, SparkSceneArt>>,
+    rivals: Readonly<Record<string, SparkSceneArt>>,
   ): Promise<void> {
     const version = ++this.artVersion
-    const urls = [...new Set([...Object.values(orbs), ...Object.values(rivals)].filter((url): url is string => Boolean(url)))]
-    const decoded = await Promise.all(urls.map(async (url) => [url, await decodeChibiTexture(url)] as const))
+    const sources = [...Object.values(orbs), ...Object.values(rivals)].filter((source): source is Exclude<SparkSceneArt, null> => Boolean(source))
+    const unique = [...new Map(sources.map((source) => [artKey(source), source])).entries()]
+    const decoded = await Promise.all(unique.map(async ([key, source]) => [key, await decodeArtTexture(source)] as const))
     const textures = decoded.flatMap(([, texture]) => texture ? [texture] : [])
     if (this.destroyed || version !== this.artVersion) {
       for (const texture of textures) texture.destroy(true)
@@ -203,14 +240,14 @@ export class SparkRivalProofScene {
     }
     for (const texture of this.ownedArtTextures) texture.destroy(true)
     this.ownedArtTextures = textures
-    const byUrl = new Map(decoded)
-    this.orbTextures = Object.fromEntries(Object.entries(orbs).flatMap(([orb, url]) => {
-      const texture = url ? byUrl.get(url) : null
+    const bySource = new Map(decoded)
+    this.orbTextures = Object.fromEntries(Object.entries(orbs).flatMap(([orb, source]) => {
+      const texture = source ? bySource.get(artKey(source)) : null
       return texture ? [[orb, texture]] : []
     }))
-    this.rivalTextures = Object.fromEntries(Object.entries(rivals).flatMap(([strategy, url]) => {
-      const texture = url ? byUrl.get(url) : null
-      return texture ? [[strategy, texture]] : []
+    this.rivalTextures = Object.fromEntries(Object.entries(rivals).flatMap(([id, source]) => {
+      const texture = source ? bySource.get(artKey(source)) : null
+      return texture ? [[id, texture]] : []
     }))
     if (this.tokens.length > 0) this.renderBoard(this.previewBoard, this.heldIndex)
   }
@@ -220,9 +257,9 @@ export class SparkRivalProofScene {
   }
 
   reset(): void {
-    if (this.inputLocked) return
+    if (this.inputLocked || this.options.append) return
     this.controller.cancel()
-    this.state = createSparkRivalState(this.encounter, 'spark-rival-touch-proof-v1')
+    this.state = createSparkRivalState(this.encounter, this.seed)
     this.previewBoard = this.state.board
     this.actionCount = 0
     this.status = 'Proof reset to the same seed and board.'
@@ -420,7 +457,7 @@ export class SparkRivalProofScene {
   private renderRival(): void {
     const strategy = this.state.rival.strategy
     const color = SPARK_ORB_PIXI_COLORS[strategy]
-    const texture = this.rivalTextures[strategy]
+    const texture = this.rivalTextures[this.encounter.waves[this.state.waveIndex]!.id]
     this.rivalMark.clear().circle(0, 0, 31).fill({ color, alpha: 0.24 }).stroke({ width: 4, color })
     this.rivalArt.visible = texture !== undefined
     if (texture) this.rivalArt.texture = texture
@@ -542,21 +579,50 @@ export class SparkRivalProofScene {
   private async resolveAction(action: SparkRivalAction): Promise<void> {
     if (this.inputLocked || this.state.outcome) return
     this.inputLocked = true
-    const before = this.state
-    const reduced = reduceSparkRival(this.encounter, before, action, this.actionCount)
-    this.actionCount += 1
-    this.status = reduced.resolution.combos === 0 ? 'No match — the rival still advances.' : `${reduced.resolution.combos} combo${reduced.resolution.combos === 1 ? '' : 's'}!`
-    this.emitHud()
-    await this.animateResolution(reduced.resolution, reduced.state)
-    if (this.destroyed) return
-    this.state = reduced.state
-    this.previewBoard = this.state.board
-    this.inputLocked = false
-    this.renderBoard(this.state.board)
-    this.status = this.state.outcome
-      ? this.state.outcome.kind === 'clear' ? `Circuit cleared · ${this.state.outcome.trainingExp} EXP` : `Run lost · ${this.state.outcome.trainingExp} EXP banked`
-      : 'Your move. The board and gauges are ready.'
-    this.emitHud()
+    try {
+      const expected = this.actionCount
+      const reduced = this.options.append
+        ? await this.options.append(expected, action)
+        : null
+      const local = reduced ? null : reduceSparkRival(this.encounter, this.state, action, expected)
+      const resolution = reduced?.replay.turns[expected] ?? local!.resolution
+      const finalState = reduced?.replay.state ?? local!.state
+      this.status = resolution.combos === 0 ? 'No match — the rival still advances.' : `${resolution.combos} combo${resolution.combos === 1 ? '' : 's'}!`
+      this.emitHud()
+      await this.animateResolution(resolution, finalState)
+      if (this.destroyed) return
+      this.state = finalState
+      this.previewBoard = finalState.board
+      this.actionCount = reduced?.actions.length ?? expected + 1
+      this.inputLocked = false
+      this.renderBoard(finalState.board)
+      this.status = finalState.outcome
+        ? finalState.outcome.kind === 'clear' ? `Circuit cleared · ${finalState.outcome.trainingExp} EXP` : `Run lost · ${finalState.outcome.trainingExp} EXP banked`
+        : 'Your move. The board and gauges are ready.'
+      this.emitHud()
+      if (reduced?.replay.outcome) this.options.onTerminal?.(reduced)
+    } catch (error) {
+      let restoredBoundary = false
+      try {
+        const restored = await this.options.restore?.()
+        if (restored) {
+          this.state = restored.replay.state
+          this.previewBoard = restored.replay.state.board
+          this.actionCount = restored.actions.length
+          restoredBoundary = true
+          if (restored.replay.outcome) this.options.onTerminal?.(restored)
+        }
+      } catch {
+        // Keep the last authoritative boundary visible if reload is also unavailable.
+      }
+      this.controller.cancel()
+      this.inputLocked = !restoredBoundary
+      this.renderBoard(this.state.board)
+      this.status = restoredBoundary
+        ? `${error instanceof Error ? error.message : 'Action could not be saved'} · restored saved run.`
+        : `${error instanceof Error ? error.message : 'Action could not be saved'} · reload to restore the saved run.`
+      this.emitHud()
+    }
   }
 
   private async animateResolution(resolution: SparkRivalResolution, finalState: SparkRivalState): Promise<void> {
@@ -668,10 +734,8 @@ export class SparkRivalProofScene {
     }
     const timedOut = this.controller.timeout(performance.now())
     if (timedOut) {
-      this.inputLocked = true
       this.status = 'Time! Resolving the recorded path.'
       this.emitHud()
-      this.inputLocked = false
       void this.resolveAction(timedOut)
     }
     this.hudElapsed += deltaMs
@@ -718,7 +782,36 @@ export class SparkRivalProofScene {
   }
 
   private readonly onVisibility = (): void => {
-    if (document.hidden) this.app.ticker.stop()
-    else this.app.ticker.start()
+    if (document.hidden) {
+      const active = this.controller.snapshot
+      if (active) this.cancelPointer(active.pointerId, 'App paused — the live drag was cancelled with no action spent.')
+      this.app.ticker.stop()
+      return
+    }
+    if (!this.options.restore) {
+      this.app.ticker.start()
+      return
+    }
+    this.inputLocked = true
+    this.status = 'Restoring the saved action boundary…'
+    this.emitHud()
+    void this.options.restore().then((restored) => {
+      if (this.destroyed) return
+      this.state = restored.replay.state
+      this.previewBoard = restored.replay.state.board
+      this.actionCount = restored.actions.length
+      this.inputLocked = false
+      this.renderBoard(this.state.board)
+      this.status = restored.replay.outcome ? 'Restored completed circuit.' : 'Saved run restored. Your move.'
+      this.app.ticker.start()
+      this.emitHud()
+      if (restored.replay.outcome) this.options.onTerminal?.(restored)
+    }).catch((error: unknown) => {
+      if (this.destroyed) return
+      this.inputLocked = true
+      this.status = `${error instanceof Error ? error.message : 'Saved run could not be restored'} · reload required.`
+      this.app.ticker.start()
+      this.emitHud()
+    })
   }
 }

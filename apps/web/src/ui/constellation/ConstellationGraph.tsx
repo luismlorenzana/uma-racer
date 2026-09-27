@@ -87,6 +87,18 @@ export function ConstellationGraph({
     return () => observer.disconnect()
   }, [fit, template.tier])
 
+  useEffect(() => {
+    if (!box || !selectedId) return
+    const node = template.nodes.find((candidate) => candidate.id === selectedId)
+    if (!node) return
+    const scale = 1.35
+    setView({
+      scale,
+      x: box.width / 2 - (node.x / 100) * box.width * scale,
+      y: box.height / 2 - (node.y / 100) * box.height * scale,
+    })
+  }, [box, selectedId, template])
+
   const onPointerDown = (event: React.PointerEvent) => {
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     dragged.current = false

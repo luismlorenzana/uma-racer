@@ -104,7 +104,8 @@ import {
 } from './badge-preferences'
 import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAwardRefs } from './trainer'
 import { installMinigameHost } from './minigame-host'
-import { PersistentMinigameHost, retireBondRecallRuns } from './minigame-runs'
+import { installMinigameJournal } from './minigame-journal'
+import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns } from './minigame-runs'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -125,6 +126,7 @@ export class GameRuntime {
   private timer: ReturnType<typeof setTimeout> | null = null
   private content: LoadedContent | null = null
   private uninstallMinigameHost: (() => void) | null = null
+  private uninstallMinigameJournal: (() => void) | null = null
   private flushing = false
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
@@ -225,6 +227,7 @@ export class GameRuntime {
         this.schedule()
       },
     }))
+    this.uninstallMinigameJournal = installMinigameJournal(new PersistentMinigameJournal(content))
 
     try {
       let local = await readLocalSnapshot()
@@ -279,6 +282,8 @@ export class GameRuntime {
     this.generation += 1
     this.uninstallMinigameHost?.()
     this.uninstallMinigameHost = null
+    this.uninstallMinigameJournal?.()
+    this.uninstallMinigameJournal = null
     this.content = null
     this.memoryRaceHistory = []
     this.memoryCardRedemptions.clear()
