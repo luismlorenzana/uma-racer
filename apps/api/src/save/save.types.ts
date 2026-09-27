@@ -71,6 +71,8 @@ const STATS = ['speed', 'stamina', 'power', 'guts', 'wit'] as const
 const GRADES = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G'] as const
 const SKILL_ORIGINS = ['own-unique', 'awakening', 'card', 'inherited'] as const
 export const LEDGER_RESOURCES = ['tickets', 'card-coupons', 'uma-coupons', 'uma-shards'] as const
+/** A scenario completion's goals: a career's maiden, two trials and up to three main races. Mirrors the domain's bound. */
+export const MAX_COMPLETION_GOALS = 6
 export const LEDGER_REASONS = [
   'daily-grant', 'initial-grant', 'training', 'uma-level', 'card-level', 'uma-promotion', 'card-limit-break', 'card-max',
   'uma-shard-exchange', 'card-coupon-redeem', 'uma-coupon-redeem', 'card-unlock', 'dev-grant', 'minigame-refund',
@@ -379,7 +381,7 @@ function parseUmaBadgeFacts(value: unknown): boolean {
     entry.trainingLevel <= 10 && parseStats(entry.stats) !== null && parseUniqueIds(entry.deckCardIds, 6) !== null &&
     Array.isArray(entry.deckEras) && entry.deckEras.length === (entry.deckCardIds as unknown[]).length && entry.deckEras.every(isPositiveInt) &&
     isNonNegativeInt(entry.trainingTurns) &&
-    isNonNegativeInt(entry.friendshipTrainings) && isNonNegativeInt(entry.raceStarts) && parseUniqueIds(entry.completedGoalIds, 3) !== null &&
+    isNonNegativeInt(entry.friendshipTrainings) && isNonNegativeInt(entry.raceStarts) && parseUniqueIds(entry.completedGoalIds, MAX_COMPLETION_GOALS) !== null &&
     typeof entry.honors === 'boolean' && parseUniqueIds(entry.parentUmaIds, 2) !== null && parseUniqueIds(entry.grandparentUmaIds, 4) !== null &&
     (index === 0 || isRecord(completions[index - 1]) && ((completions[index - 1] as Record<string, unknown>).tier as number) < entry.tier))
 }

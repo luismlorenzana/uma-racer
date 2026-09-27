@@ -1,3 +1,4 @@
+import { CAREER_MAIN_RACES } from './scenario-goals'
 import { subject } from './__fixtures__/subject'
 import { describe, expect, it } from 'vitest'
 import {
@@ -6,6 +7,7 @@ import {
   applyParentedStartFact,
   applyRaceBadgeFacts,
   applyScenarioCompletionFact,
+  MAX_COMPLETION_GOALS,
   applyTrainingBadgeFacts,
   badgeStateId,
   createTrainerBadgeState,
@@ -177,6 +179,22 @@ describe('badge state v1', () => {
     expect(completed.facts.completedScenarioTiers).toEqual([1])
     expect(completed.sourceWatermarks.scenarioCompletions).toBe(1)
     expect(parseBadgeState(completed)).toEqual(completed)
+  })
+
+  it('records a whole career: five or six goals complete a scenario, a seventh is malformed', () => {
+    // A career is a maiden, two trials and up to three main races; the old bound of three refused every finished
+    // career and blocked advancing to the next scenario (found on the owner's Silence Suzuka, 2026-09-26).
+    expect(MAX_COMPLETION_GOALS).toBe(1 + 2 + CAREER_MAIN_RACES)
+    const base = createUmaBadgeState(createUmaSave(template), subject(), 100)
+    const complete = (goals: number) => applyScenarioCompletionFact(base, {
+      tier: 1, completedAt: 200, trainingLevel: 10, stats: { speed: 700, stamina: 700, power: 700, guts: 700, wit: 700 },
+      deckCardIds: ['synthetic-card'], deckEras: [1], trainingTurns: 0, friendshipTrainings: 0, raceStarts: 17,
+      completedGoalIds: Array.from({ length: goals }, (_, index) => `goal:1:${index}`), honors: true,
+      parentUmaIds: [], grandparentUmaIds: [],
+    })
+    expect(parseBadgeState(complete(5))).not.toBeNull()
+    expect(parseBadgeState(complete(6))).not.toBeNull()
+    expect(parseBadgeState(complete(7))).toBeNull()
   })
 
   it('strictly validates the reserved append-only flair envelope', () => {

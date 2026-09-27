@@ -522,10 +522,10 @@ export function RaceRunScreen() {
                       >
                         <p className="text-xs font-semibold uppercase tracking-widest text-accent-strong">Goal complete · {goal.label}</p>
                         <p className="mt-1 flex items-center justify-center gap-1.5 text-lg font-semibold"><RibbonIcon size={20} className="text-accent-strong" />{goal.raceName}</p>
-                        <p className="text-xs font-bold text-ink-soft">{goal.rule} · {goalResult.completed} / 3 complete</p>
+                        <p className="text-xs font-bold text-ink-soft">{goal.rule} · {goalResult.completed} / {goalResult.total} complete</p>
                       </m.div>
                     ))}
-                    {goalResult.honors && <m.p initial={!goalResult.animate || reducedMotion ? false : { scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2 text-center font-semibold text-white text-outline"><HonorsIcon size={20} />Scenario Honors · 3 / 3</m.p>}
+                    {goalResult.honors && <m.p initial={!goalResult.animate || reducedMotion ? false : { scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2 text-center font-semibold text-white text-outline"><HonorsIcon size={20} />Scenario Honors · {goalResult.total} / {goalResult.total}</m.p>}
                     {!goalResult.animate && <p className="text-center text-xs font-bold text-ink-soft">Recorded goal summary</p>}
                   </div>}
                   {earnedFlair.length > 0 && <div className="mt-3"><FlairCards title={freshGoalCommit ? 'Flair earned' : 'Earned in this race'} items={earnedFlair} animate={freshGoalCommit && !reducedMotion} /></div>}

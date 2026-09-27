@@ -159,7 +159,7 @@ export function buildResultGoalView(
   uma: UmaSave,
   content: LoadedContent,
   freshCommit: boolean,
-): { completions: GoalView[]; honors: boolean; animate: boolean; completed: number } {
+): { completions: GoalView[]; honors: boolean; animate: boolean; completed: number; total: number } {
   const ids = record.completedGoalIds ?? []
   const allGoals = journeysOf(uma).flatMap((journey) => journey.goals)
   const completions = ids.map((id) => allGoals.find((goal) => goal.id === id))
@@ -168,5 +168,5 @@ export function buildResultGoalView(
     .map((goal) => goalView(goal, content))
   const journey = journeysOf(uma).find((item) => item.goals.some((goal) => ids.includes(goal.id)))
   const summary = journey ? scenarioJourneySummary(journey) : { completed: 0, honors: false }
-  return { completions, honors: summary.honors, completed: summary.completed, animate: freshCommit && completions.length > 0 }
+  return { completions, honors: summary.honors, completed: summary.completed, total: journey?.goals.length ?? 0, animate: freshCommit && completions.length > 0 }
 }

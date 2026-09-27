@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LocalSaveRepository } from './local-save.repository'
-import { LEDGER_REASONS, LEDGER_RESOURCES, MAX_SYNC_OPERATIONS, parseSyncRequest, resolveUpserts, type EntityRecord } from './save.types'
+import { LEDGER_REASONS, LEDGER_RESOURCES, MAX_COMPLETION_GOALS, MAX_SYNC_OPERATIONS, parseSyncRequest, resolveUpserts, type EntityRecord } from './save.types'
 import { fromStored, hasNestedArray, toStored } from './firestore-codec'
 
 describe('LocalSaveRepository sync', () => {
@@ -549,6 +549,11 @@ describe('ledger vocabulary', () => {
     expect(domainList('LEDGER_REASONS')).toContain('card-unlock')
     expect([...LEDGER_REASONS].sort()).toEqual(domainList('LEDGER_REASONS'))
     expect([...LEDGER_RESOURCES].sort()).toEqual(domainList('LEDGER_RESOURCES'))
+  })
+
+  it('bounds a scenario completion\'s goals as the domain does', () => {
+    const domainBadges = readFileSync(resolve(__dirname, '../../../../packages/domain/src/badges.ts'), 'utf8')
+    expect(Number(domainBadges.match(/export const MAX_COMPLETION_GOALS = (\d+)/)?.[1])).toBe(MAX_COMPLETION_GOALS)
   })
 
   it('accepts a ticket-bought card', () => {

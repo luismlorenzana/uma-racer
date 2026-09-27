@@ -749,6 +749,12 @@ export function applyTrainingBadgeFacts(state: UmaBadgeStateV1, snapshot: Traini
   return JSON.stringify(next) === JSON.stringify(state) ? state : next
 }
 
+/**
+ * The most goals one scenario completion can record: a career is one maiden race, two trials and up to three main
+ * races (`CAREER_MAIN_RACES`, D137). The old three-goal scenarios fit too. The API mirrors this bound.
+ */
+export const MAX_COMPLETION_GOALS = 6
+
 export function applyScenarioCompletionFact(state: UmaBadgeStateV1, fact: ScenarioCompletionFact): UmaBadgeStateV1 {
   if (state.facts.completedScenarioTiers.includes(fact.tier)) return state
   return {
@@ -961,7 +967,7 @@ function validateUmaBadgeState(value: UmaBadgeStateV1): boolean {
     !parseStats(entry.stats) || !parseIds(entry.deckCardIds, 6) || !Array.isArray(entry.deckEras) ||
     entry.deckEras.length !== entry.deckCardIds.length || entry.deckEras.some((era) => !isPositiveInt(era)) ||
     !isNonNegativeInt(entry.trainingTurns) || !isNonNegativeInt(entry.friendshipTrainings) || !isNonNegativeInt(entry.raceStarts) ||
-    !parseIds(entry.completedGoalIds, 3) || typeof entry.honors !== 'boolean' || !parseIds(entry.parentUmaIds, 2) || !parseIds(entry.grandparentUmaIds, 4)) ||
+    !parseIds(entry.completedGoalIds, MAX_COMPLETION_GOALS) || typeof entry.honors !== 'boolean' || !parseIds(entry.parentUmaIds, 2) || !parseIds(entry.grandparentUmaIds, 4)) ||
     facts.completions.some((entry, index) => index > 0 && facts.completions[index - 1]!.tier >= entry.tier)) return false
   if (watermarks.raceSequence + 1 !== facts.starts || watermarks.trainingTurns !== facts.lifetimeTrainingTurns ||
     watermarks.scenarioCompletions !== facts.completedScenarioTiers.length ||
