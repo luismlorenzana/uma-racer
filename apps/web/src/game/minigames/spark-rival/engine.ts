@@ -320,7 +320,7 @@ export function replaySparkRival(
   return { state, turns, outcome: state.outcome }
 }
 
-/** Stable FNV-1a digest for diagnostics and the future authoritative journal claim (T073). */
+/** Stable FNV-1a digest for diagnostics and the authoritative journal claim (D171). */
 export function sparkRivalStateHash(state: SparkRivalState): string {
   const encoded = JSON.stringify(state)
   let hash = 0x811c9dc5

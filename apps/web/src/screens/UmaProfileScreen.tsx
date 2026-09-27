@@ -253,7 +253,7 @@ export function UmaProfileScreen() {
             <Button
               variant="primary"
               disabled={!sparkAffordable || busy}
-              onClick={() => navigate(`/minigames/spark-match/${encodeURIComponent(save.templateId)}`)}
+              onClick={() => navigate(`/minigames/spark-match/${encodeURIComponent(save.templateId)}?return=${encodeURIComponent(`/stable/${save.templateId}`)}`)}
             >
               {sparkAffordable
                 ? `Spark Match · ${formatTickets(SPARK_MATCH_TICKET_COST)}`

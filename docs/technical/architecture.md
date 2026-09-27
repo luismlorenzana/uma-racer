@@ -89,14 +89,13 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - Minigame reservations are save-backed transactions. `beginRun` re-parses the target and profile, returns an existing open
   target run without another charge, or atomically spends the documented ticket, appends its stable ledger id, and stores
   a device-local run row. Its FNV-1a seed derives from profile creation time, content version, target, scenario and attempt.
-  Friendship Training rows already freeze setup and choices locally. **M022 T073, not T071,** evolves Spark rows into the
-  bounded action journal: it remains device-local and out of the cloud save, and appending checks the expected prior action
-  count in the same Dexie transaction.
-- `commitRun` is idempotent by run id. The live adjacent-swap Spark route still submits its bounded score to the host;
-  T071's Rival Circuit proof does not call the host or mutate the save. **M022 T073 is the cutover:** Spark then loads the
-  snapshotted encounter, replays seed/actions in its pure engine, derives Training EXP from that authoritative result,
-  applies it through `addTrainingExp` and reports actual constellation nodes opened; the screen can no longer submit a
-  score. Friendship Training replays the run's frozen setup and saved
+  Friendship Training rows freeze setup and choices locally. Spark rows carry a bounded `spark-rival-v1` action journal
+  and complete encounter snapshot; both remain device-local and out of the cloud save. Appending checks the expected prior
+  action count in the same Dexie transaction, and an old open Spark reservation adopts this shape without another charge.
+- `commitRun` is idempotent by run id. Spark loads the snapshotted encounter, replays seed/actions in its pure engine,
+  requires a terminal state and matching diagnostic digest, derives Training EXP from that authoritative result, applies
+  it through `addTrainingExp` and reports actual constellation node ids/labels opened; the screen cannot submit score or
+  EXP. Friendship Training replays the run's frozen setup and saved
   choices, then applies a clear only to the named scenario's card stars, appends the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss
   as a closed paid run. The profile, affected Uma/card, ledger, Trainer reconciliation and outbox work commit atomically
   before Zustand publishes.

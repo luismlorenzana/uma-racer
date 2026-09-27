@@ -32,7 +32,8 @@ import {
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
-import type { RunOutcome, RunReward, RunTarget } from './minigame-host'
+import type { ReplayJournalV1, SparkRunSnapshotV1 } from './minigame-journal'
+import type { RunTarget, StoredRunOutcome, StoredRunReward } from './minigame-host'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
 // outbox marker in one transaction before Zustand publishes it.
@@ -66,13 +67,16 @@ export interface MinigameRunRow {
   attemptIndex: number
   seed: string
   status: 'open' | 'completed'
-  outcome: RunOutcome | null
-  reward: RunReward | null
+  outcome: StoredRunOutcome | null
+  reward: StoredRunReward | null
   createdAt: number
   completedAt: number | null
   /** Friendship Training: the setup frozen at Begin and every choice since, so a reload resumes exactly (D168). */
   setup?: FtSetup
   actions?: FtAction[]
+  /** Generic device-local replay journal. Spark snapshots all encounter semantics beside it (D171). */
+  journal?: ReplayJournalV1
+  sparkSnapshot?: SparkRunSnapshotV1
 }
 
 interface LegacyProfileRow {
@@ -115,7 +119,7 @@ class RacerDb extends Dexie {
   outbox!: EntityTable<OutboxRow, 'seq'>
   /** Device-local album preferences (D112). Never synced, never part of the save. */
   albumPrefs!: EntityTable<AlbumPrefs, 'id'>
-  /** Device-local in-flight/replay journal. Never synced and never part of the save (T058). */
+  /** Device-local in-flight/replay journal. Never synced and never part of the save (D168, D171). */
   minigameRuns!: EntityTable<MinigameRunRow, 'id'>
 
   constructor() {
@@ -248,6 +252,8 @@ class RacerDb extends Dexie {
     this.version(9).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
     // Save v7 (D147, D148): stars and re-denominated tickets.
     this.version(10).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
+    // Additive device-local journal fields. Open legacy Spark rows adopt lazily once verified content is available.
+    this.version(11).stores(storesWithMinigameRuns)
   }
 }
 

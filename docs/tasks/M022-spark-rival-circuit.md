@@ -12,7 +12,7 @@ T074 closes them with the simulator and the owner's iPhone.
 |---|---|---|
 | T071 (complete) | Pure replay engine, balance harness, synthetic Pixi touch vertical slice | T072 |
 | T072 (complete) | Private fourteen-scenario rival roster pipeline and deterministic fallback | T073 |
-| [T073](T073-spark-rival-runtime.md) | Production route, Dexie action journal, authoritative host commit, old-run cutover | T074 |
+| T073 (complete) | Production route, Dexie action journal, authoritative host commit, old-run cutover | T074 |
 | [T074](T074-spark-rival-polish.md) | Balance matrix, complete feedback/accessibility, physical-iPhone closure | M020 |
 
 The PRs are sequential. T071 deliberately proves the engine and touch interaction with synthetic art before real-content
@@ -29,16 +29,13 @@ private pack remains an operator step after the code PR merges.
 
 ### Current integration truth
 
-T071 is deliberately a free development proof at `/dev/spark-rival-proof`. It computes deterministic Rival Circuit
-Training EXP but never calls `beginRun` or `commitRun`, spends no ticket and writes no save. The production Spark route is
-still the retired adjacent-swap screen: its existing host does atomically spend one ticket, apply that screen's submitted
-score through `addTrainingExp`, write the Uma/outbox/run, update training badges and return opened-node labels exactly once.
-That proves the old progression path, **not** the new engine's integration.
-
-Rival Circuit results are not fully integrated until T073 lands its encounter snapshot, action journal and authoritative
-replay commit. T073's tests and device acceptance must prove clear and both loss reasons, partial/zero EXP, multi-level
-crossing, TL10 clamp, real focusable node ids/labels, ticket/ledger accounting, transaction rollback and idempotent retry.
-Do not describe a T071 proof result as saved progress.
+The production `/minigames/spark-match/:umaId` route is Rival Circuit. Reserving a run spends one ticket and freezes its
+derived trainee aptitudes, selected three-wave encounter and seed in the device-local Dexie row. Every accepted drag or
+Spark Shift compare-and-appends to its bounded journal; reload and foreground replay that exact boundary. Terminal commit
+replays the snapshot and journal inside the save transaction, applies only the engine's Training EXP and returns real,
+focusable constellation node ids and labels exactly once. Legacy completed rows remain history, while an old open Spark
+reservation adopts Rival Circuit lazily without a second charge. The synthetic `/dev/spark-rival-proof` remains a free
+development tool, not a progression path. T074 owns final tuning, feedback/accessibility closure and physical-iPhone sign-off.
 
 ## Fixed product contract
 
@@ -90,7 +87,7 @@ action to the journal, replays the engine, then animates the returned steps. Ren
 
 ## Shared action journal
 
-T073 evolves the device-local `minigameRuns` row, not the cloud save:
+T073 evolved the device-local `minigameRuns` row, not the cloud save:
 
 ```ts
 interface ReplayJournalV1<A> {
