@@ -38,7 +38,7 @@ feedback catalogue.
 ```
 
 - **Bottom tab bar** with 5 destinations. Race is the raised center button.
-- **Bottom sheets** (drag to dismiss) for pickers: strategy, card slot, parent picker, filters, confirmations.
+- **Bottom sheets** (drag to dismiss) for pickers: strategy, card slot, the Uma picker (D181), filters, confirmations.
 - **Full-screen scenes** hide the tab bar: Training, Race, Results, Scenario Start, and reveal fanfares.
 - **Swipe back** from the left edge on nested screens, consistent with iOS.
 - **Shared-element transitions**: an Uma tile morphs into the profile hero, and a card tile into its detail.

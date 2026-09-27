@@ -10,7 +10,7 @@ function sha256(bytes: Buffer): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
 
-function dataFile(manifest: ContentManifest, name: 'umas' | 'cards'): ContentManifestFile {
+function dataFile(manifest: ContentManifest, name: 'umas' | 'cards' | 'skills'): ContentManifestFile {
   const matches = manifest.files.filter((file) => new RegExp(`^data/${name}\\.[a-f0-9]{8}\\.json$`).test(file.path))
   if (matches.length !== 1) throw new Error(`Expected exactly one ${name} pack; run pnpm data:import first`)
   return matches[0]!
@@ -64,6 +64,16 @@ async function readScenarioIcons(contentDir: string): Promise<ImageSource[]> {
   })
 }
 
+/** Every icon the skills pack uses, once, keyed by the skill's `iconId` (D182). */
+export function parseSkillIcons(bytes: Buffer): ImageSource[] {
+  const { items } = JSON.parse(bytes.toString('utf8')) as { items: { iconId?: unknown }[] }
+  const ids = new Set<string>()
+  for (const item of items) {
+    if (typeof item.iconId === 'number' && Number.isSafeInteger(item.iconId) && item.iconId > 0) ids.add(String(item.iconId))
+  }
+  return [...ids].sort().map((id) => ({ id, url: `https://gametora.com/images/umamusume/skill_icons/utx_ico_skill_${id}.png` }))
+}
+
 /** Each Uma outfit's character, from the verified pack: T059's stands and faces are per character. */
 function parseCharas(bytes: Buffer): { id: string; charaId: string }[] {
   const { items } = JSON.parse(bytes.toString('utf8')) as { items: { id?: unknown; charaId?: unknown }[] }
@@ -83,6 +93,7 @@ export async function readAssetSources(
   umaCharas: { id: string; charaId: string }[]
   cards: ImageSource[]
   scenarios: ImageSource[]
+  skills: ImageSource[]
 }> {
   let manifest: ContentManifest
   try {
@@ -92,9 +103,11 @@ export async function readAssetSources(
   }
   const umaFile = dataFile(manifest, 'umas')
   const cardFile = dataFile(manifest, 'cards')
-  const [umaBytes, cardBytes] = await Promise.all([
+  const skillFile = dataFile(manifest, 'skills')
+  const [umaBytes, cardBytes, skillBytes] = await Promise.all([
     verifiedPack(contentDir, umaFile),
     verifiedPack(contentDir, cardFile),
+    verifiedPack(contentDir, skillFile),
   ])
   return {
     manifest,
@@ -102,5 +115,6 @@ export async function readAssetSources(
     umaCharas: parseCharas(umaBytes),
     cards: parseSources(cardBytes, 'cards'),
     scenarios: await readScenarioIcons(contentDir),
+    skills: parseSkillIcons(skillBytes),
   }
 }

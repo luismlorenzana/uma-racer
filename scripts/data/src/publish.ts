@@ -17,6 +17,8 @@ export interface RemoteObjectState {
 export interface ContentStorageClient {
   readManifest: () => Promise<unknown | null>
   objectState: (path: string) => Promise<RemoteObjectState | null>
+  /** Every object's size in one call, when the client can; the publisher then skips one lookup per file. */
+  listObjects?: () => Promise<ReadonlyMap<string, number>>
   upload: (localPath: string, objectPath: string) => Promise<void>
 }
 
@@ -129,9 +131,11 @@ export async function publishContent(options: PublishContentOptions): Promise<Pu
   const remoteVersionBefore = remoteVersion(await options.storage.readManifest())
   const uploadPaths: string[] = []
   const alreadyPresentPaths: string[] = []
+  // One listing of the bucket instead of a lookup per file: about 2,000 files took over half an hour one by one.
+  const listed = options.storage.listObjects ? await options.storage.listObjects() : null
   for (const file of manifest.files) {
-    const state = await options.storage.objectState(file.path)
-    if (state?.bytes === file.bytes) alreadyPresentPaths.push(file.path)
+    const bytes = listed ? listed.get(file.path) : (await options.storage.objectState(file.path))?.bytes
+    if (bytes === file.bytes) alreadyPresentPaths.push(file.path)
     else uploadPaths.push(file.path)
   }
 

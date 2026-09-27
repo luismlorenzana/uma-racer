@@ -12,7 +12,6 @@ import {
   type CardNodeState,
   cardNodeValue,
   cardShares,
-  cardTilt,
   constellationEdges,
   constellationTemplate,
   deriveStats,
@@ -147,26 +146,14 @@ describe('card shares', () => {
     }
   })
 
-  it('still sums to 100 once tilt shifts the split', () => {
-    for (const weights of [{ statBonus: 2, trainingBonus: 0 }, { statBonus: 0, trainingBonus: 2 }, {}]) {
-      for (const type of ['speed', 'stamina', 'power', 'guts', 'wit'] as StatKey[]) {
-        const shares = cardShares(card('c', type, weights).template)
-        const total = Object.values(shares).reduce((sum, share) => sum + (share ?? 0), 0)
-        expect(total).toBe(100)
+  it('pays every card of a type its type’s split, whatever its effect profile (D180)', () => {
+    expect(CARD_TYPE_SHARES.speed).toEqual({ speed: 70, power: 30 })
+    expect(CARD_TYPE_SHARES.guts).toEqual({ guts: 60, speed: 20, power: 20 })
+    for (const type of Object.keys(CARD_TYPE_SHARES) as (keyof typeof CARD_TYPE_SHARES)[]) {
+      for (const weights of [{ statBonus: 1.5, trainingBonus: 0 }, { statBonus: 0, trainingBonus: 1.5 }, {}]) {
+        expect(cardShares(card('c', type, weights).template)).toEqual(CARD_TYPE_SHARES[type])
       }
     }
-  })
-
-  it('tilts toward the primary stat and stays bounded', () => {
-    const specialist = cardShares(card('c', 'speed', { statBonus: 2, trainingBonus: 0 }).template)
-    expect(specialist.speed).toBeGreaterThan(CARD_TYPE_SHARES.speed.speed!)
-    expect(cardTilt(card('c', 'speed', { statBonus: 40, trainingBonus: 0 }).template)).toBe(10)
-    expect(cardTilt(card('c', 'speed', { statBonus: 0, trainingBonus: 40 }).template)).toBe(-10)
-  })
-
-  it('never tilts a broad support card', () => {
-    expect(cardTilt(card('c', 'friend', { statBonus: 9, trainingBonus: 0 }).template)).toBe(0)
-    expect(cardShares(card('c', 'group').template)).toEqual(CARD_TYPE_SHARES.group)
   })
 })
 
@@ -628,6 +615,13 @@ describe('derivation', () => {
       cards: new Map([['c', card('c', 'speed')]]),
     })
     expect(derived.cardSkillIds).toEqual(['c-a', 'c-b', 'c-c'])
+    // Each node also pays the next of the card's golds while it has any, gold first (D182).
+    const withGolds = deriveStats({ buffs: false,
+      tier: 1, trainingLevel: 10, template, cardSetIds: ['c'], umaTemplate: uma,
+      assignments: Object.fromEntries(cardNodeIds.map((id) => [id, { kind: 'card', cardId: 'c' } as NodeAssignment])),
+      cards: new Map([['c', { ...card('c', 'speed'), goldSkillIds: ['g-1', 'g-2'] }]]),
+    })
+    expect(withGolds.cardSkillIds).toEqual(['g-1', 'c-a', 'g-2', 'c-b', 'c-c'])
   })
 
   it('is pure: the same input derives the same result', () => {

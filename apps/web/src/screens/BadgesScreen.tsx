@@ -44,7 +44,9 @@ import {
 import type { FlairTimelineCursor } from '../game/badge-preferences'
 import { buildTrainerBadgeCollection } from '../game/trainer-view'
 import { useGame } from '../game/store'
+import { umaIdsByLevel } from '../game/uma-order'
 import { joinUma } from '../game/view'
+import { UmaPickerSheet } from '../ui/album/UmaPickerSheet'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { BottomSheet } from '../ui/BottomSheet'
 import {
@@ -136,12 +138,22 @@ export function BadgesScreen() {
   const [timelineHasMore, setTimelineHasMore] = useState(false)
   const [raceHistory, setRaceHistory] = useState<RaceResultRecord[]>([])
 
+  // Highest level first, as every Uma list is (D181); the page opens on the featured Uma, else the first of these.
   const ownedIds = useMemo(() => contentState.status === 'ready'
-    ? Object.keys(owned).filter((id) => contentState.content.umas.byId.has(id)).sort() : [], [contentState, owned])
+    ? umaIdsByLevel(owned, contentState.content, Object.keys(owned).filter((id) => contentState.content.umas.byId.has(id))) : [], [contentState, owned])
   const route = useMemo(() => parseBadgeRoute(`?${searchParams.toString()}`, new Set(ownedIds)), [ownedIds, searchParams])
   const umaId = resolveBadgeUmaId(route.umaId, ownedIds, profile?.featuredUmaId ?? null)
   const umaState = umaId ? badges[badgeStateId(umaId)] : null
   const trainerState = badges.trainer
+  // The picker's line under each Uma: her awards and frame, built only while it is open.
+  const pickerNotes = useMemo(() => {
+    if (!pickerOpen || contentState.status !== 'ready') return null
+    return new Map(ownedIds.map((id) => {
+      const state = badges[badgeStateId(id)]
+      const view = state?.scope === 'uma' ? buildUmaBadgeCollection(contentState.content, state, flairEvents) : null
+      return [id, `${view?.earnedCount ?? 0} awards · ${view?.frame.label ?? 'Plain'}`]
+    }))
+  }, [badges, contentState, flairEvents, ownedIds, pickerOpen])
 
   const replaceRoute = (next: Partial<Omit<BadgeRouteState, 'unavailable'>>) => {
     const resolved = { ...route, ...next }
@@ -329,7 +341,7 @@ export function BadgesScreen() {
 
     {route.scope === 'uma' && <Panel><div className="flex items-center justify-between gap-2"><div><h2 className="text-lg font-semibold">Flair timeline</h2><p className="text-xs text-ink-soft">Newest award first</p></div><select aria-label="Timeline kind" value={route.timelineKind ?? ''} onChange={(event) => replaceRoute({ timelineKind: event.target.value ? event.target.value as FlairEventKind : null })} className="min-h-11 rounded-sm bg-panel px-2 text-xs font-semibold"><option value="">All kinds</option>{(['badge-tier', 'one-off', 'goal-ribbon', 'honors', 'title', 'trophy-earned'] as FlairEventKind[]).map((kind) => <option key={kind} value={kind}>{titleCase(kind)}</option>)}</select></div><div className="mt-3 grid gap-2">{timeline.map((event) => <div key={event.id} className="rounded-sm bg-panel p-3"><div className="flex justify-between gap-3"><p className="text-sm font-semibold">{event.label}</p><time className="shrink-0 text-[10px] font-bold">{dateLabel(event.earnedAt)}</time></div><p className="text-xs font-bold text-accent-strong">{event.kindLabel} · {titleCase(event.stage)}{event.retroactive ? ' · Retroactive' : ''}</p><p className="text-[11px] text-ink-soft">{event.historyLabel}</p>{event.source?.to ? <Link to={event.source.to} className="mt-1 inline-flex min-h-11 items-center text-xs font-semibold text-accent-strong">{event.source.label} →</Link> : event.source && <p className="mt-1 text-[11px] font-bold text-ink-soft">{event.source.label}{event.source.safeId ? ` · ${event.source.safeId}` : ''}</p>}</div>)}</div>{timeline.length === 0 && <p className="mt-3 text-sm text-ink-soft">No timeline events in this view.</p>}{timelineHasMore && <button type="button" className="mt-3 min-h-11 w-full rounded-sm bg-panel font-semibold" onClick={() => { if (!umaId || !timelineCursor) return; void listFlairTimeline(umaId, timelineCursor, route.timelineKind, 24).then((page) => { setPageEvents((rows) => [...rows, ...page.items]); setTimelineCursor(page.nextCursor); setTimelineHasMore(page.nextCursor !== null) }).catch((reason: unknown) => pushToast(reason instanceof Error ? reason.message : 'Could not load more history')) }}>Load more</button>}</Panel>}
 
-    <BottomSheet open={pickerOpen} onClose={() => setPickerOpen(false)}><div className="max-h-[76dvh] overflow-y-auto"><h2 className="mb-3 text-xl font-semibold">Choose an Uma</h2><div className="grid gap-2">{ownedIds.map((id) => { const save = owned[id]!; const joined = joinUma(save, contentState.content); const state = badges[badgeStateId(id)]; const view = state?.scope === 'uma' ? buildUmaBadgeCollection(contentState.content, state, flairEvents) : null; return joined.status === 'ready' && <button key={id} type="button" onClick={() => { replaceRoute({ umaId: id, detail: null }); setPickerOpen(false) }} className={`flex min-h-16 items-center gap-3 rounded-sm border-2 bg-panel p-2 text-left ${view?.frame.borderClass ?? 'border-hairline'}`}><AtlasSprite asset={joined.value.asset} decorative className="h-12 w-12 shrink-0 rounded-lg" fallback={<div className="flex h-full items-center justify-center text-ink-faint"><StableIcon size={24} /></div>} /><span className="min-w-0 flex-1"><span className="block truncate font-semibold">{joined.value.template.name}</span><span className="block text-xs text-ink-soft">Lv {save.level} · {view?.earnedCount ?? 0} awards · {view?.frame.label ?? 'Plain'}</span></span></button> })}</div></div></BottomSheet>
+    <UmaPickerSheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Choose an Uma" content={contentState.content} candidateIds={ownedIds} selectedIds={umaId ? [umaId] : []} selectedLabel="Showing" describe={(entry) => pickerNotes?.get(entry.id) ?? null} onPick={(id) => replaceRoute({ umaId: id, detail: null })} />
 
     <BottomSheet open={filterOpen} onClose={() => setFilterOpen(false)}><div className="max-h-[76dvh] overflow-y-auto"><div className="sticky top-0 z-10 flex items-center justify-between bg-panel pb-2"><h2 className="text-xl font-semibold">Add a filter</h2><button type="button" onClick={() => { replaceRoute({ filters: [] }); setFilterOpen(false) }} className="min-h-11 px-2 text-sm font-semibold">Clear all</button></div><div className="grid gap-2">{filterOptions.map((option) => <button key={`${option.kind}:${option.value}`} type="button" onClick={() => setFilter(option)} className={`min-h-11 rounded-sm border-2 px-3 text-left text-sm font-semibold ${route.filters.some((filter) => filter.kind === option.kind && filter.value === option.value) ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`}>{option.label}</button>)}</div></div></BottomSheet>
 

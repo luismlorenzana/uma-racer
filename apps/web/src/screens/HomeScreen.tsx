@@ -38,7 +38,8 @@ export function HomeScreen() {
     const valid = Object.values(owned)
       .map((save) => joinUma(save, contentState.content))
       .flatMap((joined) => (joined.status === 'ready' ? [joined.value] : []))
-      .sort((left, right) => left.save.templateId.localeCompare(right.save.templateId))
+      // Without a featured Uma, the one furthest along (D181).
+      .sort((left, right) => right.save.level - left.save.level || left.template.name.localeCompare(right.template.name))
     return valid.find((uma) => uma.save.templateId === profile?.featuredUmaId) ?? valid[0] ?? null
   }, [contentState, owned, profile?.featuredUmaId])
 

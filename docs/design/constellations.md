@@ -259,11 +259,13 @@ Later scenarios' stronger cards loosen it further, the power creep that the stam
 
 Two sources, both deterministic. No hint rolls.
 
-1. **Card nodes.** Each node a card occupies unlocks the **next** skill from that card's `hintSkills`, ordered
-   gold-first then white, then by skill id. A card on four nodes gives four of its skills. Stacking a card is
-   therefore a skill decision as well as a stat one.
+1. **Card nodes.** Each node a card occupies unlocks the **next of its golds**, while it has any left, and the **next
+   of its whites** (D182). A card's whites are its `hintSkills`, in the pack's order; its golds are the golds among its
+   `eventSkills`, in event order, because in the original a card's gold comes from its event chain and every hint skill
+   is white. A card on four nodes pays four whites and up to four golds (most cards have one), so stacking a card is a
+   skill decision as well as a stat one.
 2. **Lineage nodes.** Each filled parent or grandparent node contributes that Uma template's four
-   `awakeningSkillIds` — her baseline golds and whites — to the library. Uniques are **not** inherited (D123).
+   `awakeningSkillIds` — her baseline golds and whites — to the library, and her unique in its inherited form (D174).
 
 Everything lands in the scenario's **skill library**, deduplicated. **Skill Points are the only limit**: the
 equipped loadout's total cost must be ≤ the Uma's current SP. Swapping is free and instant outside races.

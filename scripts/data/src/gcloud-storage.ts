@@ -77,6 +77,19 @@ export class GcloudStorageClient implements ContentStorageClient {
     }
   }
 
+  async listObjects(): Promise<ReadonlyMap<string, number>> {
+    const value = await this.run(['storage', 'objects', 'list', this.uri('**'), '--format=value(name,size)'])
+    const sizes = new Map<string, number>()
+    for (const line of value.split('\n')) {
+      if (!line.trim()) continue
+      const [name, size] = line.split('\t')
+      const bytes = Number(size)
+      if (!name || !Number.isSafeInteger(bytes) || bytes < 0) throw new Error(`Bucket listing returned an invalid row: ${line}`)
+      sizes.set(name, bytes)
+    }
+    return sizes
+  }
+
   async upload(localPath: string, objectPath: string): Promise<void> {
     await this.run(['storage', 'cp', localPath, this.uri(objectPath)])
   }

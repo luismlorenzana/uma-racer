@@ -11,6 +11,7 @@ import {
   coursePositionLabel,
   isPhotoFinish,
   liveRaceCues,
+  staminaStory,
   summarizePlayerActivations,
   type RaceCue,
 } from './presentation'
@@ -114,6 +115,24 @@ describe('race feed scheduling (D178)', () => {
   it('keeps a toast up as long in a turn race as in a timed one, at 1×', () => {
     const cues = buildRaceCues(timeline({ tickRate: 1, events: [{ tick: 5, runner: 0, type: 'spurt', value: 1 }] }), 0)
     expect(cues[0]).toMatchObject({ startSeconds: 5, endSeconds: 5 + 1.6 * TURN_RACE_RATE })
+  })
+
+  it('tells a full spurt from a held-back one, and cues her running dry (D179)', () => {
+    const hp = new Float32Array(303).fill(0.5)
+    const distance = new Float32Array(303)
+    for (let tick = 0; tick < 101; tick += 1) distance[tick * 3] = tick * 10
+    const results = timeline().results.map((result) => result.runner === 0 ? { ...result, spurtSpeed: 20, spurtMaxed: true } : result)
+    const full = timeline({ hp, distance, results, events: [{ tick: 60, runner: 0, type: 'spurt', value: 20 }] })
+    expect(buildRaceCues(full, 0)).toEqual([expect.objectContaining({ kind: 'spurt', fullSpurt: true })])
+    expect(staminaStory(full, 0)).toEqual({ spurtSeconds: 6, fullSpurt: true, emptySeconds: null, emptyMetersLeft: null, finishHp: 0.5 })
+    // A spurt slower than her final, maximum one was held back when it began; a heal raised it later.
+    const held = timeline({ hp, distance, results, events: [
+      { tick: 60, runner: 0, type: 'spurt', value: 19 },
+      { tick: 80, runner: 0, type: 'hp-empty' },
+      { tick: 85, runner: 1, type: 'hp-empty' },
+    ] })
+    expect(buildRaceCues(held, 0).map((cue) => [cue.kind, cue.fullSpurt])).toEqual([['spurt', false], ['hp-empty', undefined]])
+    expect(staminaStory(held, 0)).toMatchObject({ fullSpurt: false, emptySeconds: 8, emptyMetersLeft: 200 })
   })
 
   it('summarizes player effects without leaking rival activations', () => {
