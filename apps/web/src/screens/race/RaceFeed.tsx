@@ -35,7 +35,7 @@ const PACK_ICON: Record<RacePackCue, IconComponent> = {
   'Saving stamina': StaminaIcon,
 }
 
-type Tone = 'mine' | 'player' | 'rival'
+type Tone = 'mine' | 'player' | 'rival' | 'alert'
 const TONE: Record<Tone, { toast: string; badge: string; eyebrow: string }> = {
   // Her skills and big moments, in the accent.
   mine: { toast: 'bg-accent text-ink', badge: 'bg-panel text-accent-strong', eyebrow: 'text-ink/75' },
@@ -43,6 +43,8 @@ const TONE: Record<Tone, { toast: string; badge: string; eyebrow: string }> = {
   player: { toast: 'bg-panel/95 text-ink', badge: 'bg-accent-wash text-accent-strong', eyebrow: 'text-ink-soft' },
   // Everyone else, quieter.
   rival: { toast: 'bg-ink/80 text-white', badge: 'bg-white/15 text-white', eyebrow: 'text-white/75' },
+  // Her HP ran out: she drops to her minimum speed.
+  alert: { toast: 'bg-danger text-white', badge: 'bg-white/20 text-white', eyebrow: 'text-white/80' },
 }
 
 interface ToastView {
@@ -71,7 +73,12 @@ function toastView(cue: RaceCue, seconds: number, content: LoadedContent, runner
       ? { ...view, tone: 'player', eyebrow: 'Start', title: 'Slow start', icon: GateIcon }
       : { ...view, tone: 'rival', eyebrow: 'Field start', title: `${more + 1} rival${more ? 's' : ''} started late`, icon: GateIcon }
   }
-  if (cue.kind === 'spurt') return { ...view, tone: 'mine', eyebrow: 'Final drive', title: 'Last spurt!', icon: BurstIcon }
+  if (cue.kind === 'spurt') {
+    return cue.fullSpurt === false
+      ? { ...view, tone: 'player', eyebrow: 'Stamina short', title: 'Held-back spurt', icon: BurstIcon }
+      : { ...view, tone: 'mine', eyebrow: 'Final drive', title: 'Full spurt!', icon: BurstIcon }
+  }
+  if (cue.kind === 'hp-empty') return { ...view, tone: 'alert', eyebrow: 'Stamina', title: 'Out of HP', icon: WarningIcon }
   if (cue.kind === 'duel') return { ...view, tone: 'mine', eyebrow: 'Final straight', title: `Duel with ${name}`, face: umaId }
   const eyebrow = cue.packKind === 'Spot struggle' ? 'Early race'
     : cue.packKind === 'Securing lead' || cue.packKind === 'Repositioning' || cue.packKind === 'Saving stamina' ? 'Before the spurt'
