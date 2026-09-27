@@ -13,9 +13,29 @@ async function fixture(): Promise<{ contentDir: string; manifest: ContentManifes
   temporaryDirectories.push(contentDir)
   await mkdir(resolve(contentDir, 'data'))
   await mkdir(resolve(contentDir, 'art/uma'), { recursive: true })
+  const sparkPack = JSON.stringify({
+    version: '1',
+    items: Array.from({ length: 14 }, (_, index) => ({
+      id: `tier:${index + 1}`,
+      tier: index + 1,
+      ordinary: ['front', 'pace', 'late', 'end'].map((strategy, candidate) => ({
+        templateId: `synthetic-uma-${index + 1}-${candidate + 1}`,
+        charaId: `synthetic-character-${candidate + 1}`,
+        strategy,
+        recipe: ['rush-pressure', 'tracker-guard', 'surge-convert', 'finisher-delay'][candidate],
+      })),
+      bosses: [0, 1].map((candidate) => ({
+        templateId: `synthetic-boss-${index + 1}-${candidate + 1}`,
+        charaId: `synthetic-character-${candidate + 5}`,
+        strategy: candidate === 0 ? 'front' : 'pace',
+        recipe: 'circuit-boss',
+      })),
+    })),
+  })
   const entries = [
     ['data/alpha.1234abcd.json', '{"synthetic":1}'],
     ['data/beta.5678abcd.json', '{"synthetic":2}'],
+    ['data/spark-rivals.abcdef12.json', sparkPack],
     // Per-entry art publishes through the same path as packs and atlases.
     ['art/uma/synthetic-1.9abcdef0.webp', 'synthetic-art'],
   ] as const
@@ -34,9 +54,19 @@ class FakeStorage implements ContentStorageClient {
   manifest: unknown | null = null
   objects = new Map<string, number>()
   calls: string[] = []
+  activeObjectChecks = 0
+  maxObjectChecks = 0
+  delayObjectChecks = false
 
   readManifest = async () => this.manifest
-  objectState = async (path: string) => this.objects.has(path) ? { bytes: this.objects.get(path)! } : null
+  objectState = async (path: string) => {
+    this.activeObjectChecks += 1
+    this.maxObjectChecks = Math.max(this.maxObjectChecks, this.activeObjectChecks)
+    if (this.delayObjectChecks) await new Promise((resolve) => setTimeout(resolve, 1))
+    const result = this.objects.has(path) ? { bytes: this.objects.get(path)! } : null
+    this.activeObjectChecks -= 1
+    return result
+  }
   upload = async (localPath: string, objectPath: string) => {
     this.calls.push(objectPath)
     if (objectPath === 'manifest.json') this.manifest = JSON.parse(await readFile(localPath, 'utf8')) as unknown
@@ -49,6 +79,19 @@ afterEach(async () => {
 })
 
 describe('content publishing', () => {
+  it('refuses publication without one complete Spark rival pack', async () => {
+    const { contentDir } = await fixture()
+    const manifestPath = resolve(contentDir, 'manifest.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as ContentManifest
+    manifest.files = manifest.files.filter((file) => !file.path.startsWith('data/spark-rivals.'))
+    manifest.version = createHash('sha256').update(manifest.files.map((file) => file.sha256).sort().join('')).digest('hex').slice(0, 12)
+    await writeFile(manifestPath, JSON.stringify(manifest))
+    const storage = new FakeStorage()
+
+    await expect(publishContent({ contentDir, storage, dryRun: true })).rejects.toThrow(/exactly one Spark rival pack/)
+    expect(storage.calls).toEqual([])
+  })
+
   it('verifies bytes and hashes before contacting storage', async () => {
     const { contentDir, manifest } = await fixture()
     await writeFile(resolve(contentDir, manifest.files[0]!.path), 'tampered')
@@ -74,11 +117,14 @@ describe('content publishing', () => {
   it('reports the full plan without mutating storage in dry-run mode', async () => {
     const { contentDir, manifest } = await fixture()
     const storage = new FakeStorage()
+    storage.delayObjectChecks = true
     const result = await publishContent({ contentDir, storage, dryRun: true })
     expect(result.uploadPaths).toEqual(manifest.files.map((file) => file.path))
     expect(result.remoteVersionAfter).toBeNull()
     expect(storage.calls).toEqual([])
     expect(storage.manifest).toBeNull()
+    expect(storage.maxObjectChecks).toBeGreaterThan(1)
+    expect(storage.maxObjectChecks).toBeLessThanOrEqual(8)
   })
 
   it('skips an already-present object and still publishes the manifest last', async () => {

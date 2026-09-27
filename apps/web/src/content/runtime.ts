@@ -1,16 +1,19 @@
 // Authenticated, hash-verified, offline-capable private content runtime (T002).
 
-import type {
-  ContentAtlas,
-  ContentAtlasFrame,
-  ContentAtlasKind,
-  ContentManifest,
-  ContentManifestFile,
-  CourseTemplate,
-  RaceTemplate,
-  SkillTemplate,
-  SupportCardTemplate,
-  UmaTemplate,
+import {
+  parseSparkRivalContentPack,
+  sparkRivalBestStrategy,
+  type ContentAtlas,
+  type ContentAtlasFrame,
+  type ContentAtlasKind,
+  type ContentManifest,
+  type ContentManifestFile,
+  type CourseTemplate,
+  type RaceTemplate,
+  type SparkRivalScenarioRoster,
+  type SkillTemplate,
+  type SupportCardTemplate,
+  type UmaTemplate,
 } from '@racer/domain'
 import { contentApi } from '../api/client'
 import { ContentFallbackError } from './errors'
@@ -52,6 +55,8 @@ export interface LoadedContent {
   skills: ContentRegistry<SkillTemplate>
   races: ContentRegistry<RaceTemplate>
   courses: ContentRegistry<CourseTemplate>
+  /** Optional for older manifests; Spark uses a deterministic catalogue fallback when null. */
+  sparkRivals: readonly SparkRivalScenarioRoster[] | null
   /**
    * Crests are optional: a manifest published before T051 has no scenario atlas, and the Stable simply shows
    * no crest rather than refusing to load.
@@ -198,7 +203,14 @@ const PACK_FILES = {
   skills: /^data\/skills\.[a-f0-9]{8}\.json$/,
   races: /^data\/races\.[a-f0-9]{8}\.json$/,
   courses: /^data\/courses\.[a-f0-9]{8}\.json$/,
+  sparkRivals: /^data\/spark-rivals\.[a-f0-9]{8}\.json$/,
 } as const
+
+function optionalFile(manifest: ContentManifest, pattern: RegExp, label: string): ContentManifestFile | null {
+  const matches = manifest.files.filter((file) => pattern.test(file.path))
+  if (matches.length > 1) throw new Error(`Expected at most one ${label} file, found ${matches.length}`)
+  return matches[0] ?? null
+}
 
 const ART_FILE = /^art\/(uma|card|bust|chibi|dress|face)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
 /**
@@ -297,16 +309,18 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const skillFile = findRequiredFile(manifest, PACK_FILES.skills, 'skills pack')
   const raceFile = findRequiredFile(manifest, PACK_FILES.races, 'races pack')
   const courseFile = findRequiredFile(manifest, PACK_FILES.courses, 'courses pack')
+  const sparkRivalFile = optionalFile(manifest, PACK_FILES.sparkRivals, 'spark-rivals pack')
   const umaAtlasFile = findRequiredFile(manifest, ATLAS_FILES['uma-icons'], 'uma-icons atlas')
   const cardAtlasFile = findRequiredFile(manifest, ATLAS_FILES['card-icons'], 'card-icons atlas')
   const scenarioAtlasFile = manifest.files.find((file) => ATLAS_FILES['scenario-icons'].test(file.path)) ?? null
 
-  const [umaJson, cardJson, skillJson, raceJson, courseJson, umaAtlasJson, cardAtlasJson] = await Promise.all([
+  const [umaJson, cardJson, skillJson, raceJson, courseJson, sparkRivalJson, umaAtlasJson, cardAtlasJson] = await Promise.all([
     verifiedJson(transport, umaFile),
     verifiedJson(transport, cardFile),
     verifiedJson(transport, skillFile),
     verifiedJson(transport, raceFile),
     verifiedJson(transport, courseFile),
+    sparkRivalFile ? verifiedJson(transport, sparkRivalFile) : Promise.resolve(null),
     verifiedJson(transport, umaAtlasFile),
     verifiedJson(transport, cardAtlasFile),
   ])
@@ -320,6 +334,21 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
     return { ...race, seriesLegs: seriesLegs === undefined ? [] : seriesLegs } as RaceTemplate
   })
   const courses = parseContentPack<CourseTemplate>(courseJson, 'course')
+  const sparkRivals = sparkRivalJson === null ? null : parseSparkRivalContentPack(sparkRivalJson).items
+  if (sparkRivals) {
+    const umasById = new Map(umas.map((uma) => [uma.id, uma]))
+    for (const roster of sparkRivals) {
+      for (const [role, candidates] of [['ordinary', roster.ordinary], ['bosses', roster.bosses]] as const) {
+        candidates.forEach((candidate, index) => {
+          const uma = umasById.get(candidate.templateId)
+          if (!uma || uma.charaId !== candidate.charaId ||
+            sparkRivalBestStrategy(uma.aptitudes.strategy) !== candidate.strategy) {
+            throw new Error(`Spark rival content does not match the Uma pack at tier ${roster.tier} ${role}[${index}]`)
+          }
+        })
+      }
+    }
+  }
   const umaAtlas = parseContentAtlas(umaAtlasJson, 'uma-icons')
   const cardAtlas = parseContentAtlas(cardAtlasJson, 'card-icons')
   const scenarioAtlas = scenarioAtlasFile
@@ -365,6 +394,7 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       skills: registry(skills),
       races: registry(races),
       courses: registry(courses),
+      sparkRivals,
       atlases: {
         'uma-icons': umaIcons,
         'card-icons': cardIcons,

@@ -54,6 +54,7 @@ const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({ schemaVersion: 1,
 const content: LoadedContent = {
   manifest: { version: 'synthetic-friendship', generatedAt: '', source: {}, files: [] },
   origin: 'network',
+  sparkRivals: null,
   umas: { items: [], byId: new Map() },
   cards: { items: cards, byId: new Map(cards.map((entry) => [entry.id, entry])) },
   skills: { items: [], byId: new Map() },

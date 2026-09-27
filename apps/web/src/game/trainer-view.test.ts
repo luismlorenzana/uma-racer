@@ -41,7 +41,7 @@ const card: SupportCardTemplate = {
 }
 
 const content: LoadedContent = {
-  manifest: { version: 'synthetic-profile', generatedAt: '', source: {}, files: [] }, origin: 'network',
+  manifest: { version: 'synthetic-profile', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
   umas: { items: [uma], byId: new Map([[uma.id, uma]]) }, cards: { items: [card], byId: new Map([[card.id, card]]) },
   skills: { items: [], byId: new Map() }, races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },
   atlases: {

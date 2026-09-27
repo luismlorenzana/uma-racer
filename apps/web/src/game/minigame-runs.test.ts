@@ -75,6 +75,7 @@ function atlas(kind: ContentAtlas['kind']): ContentAtlas {
 const content: LoadedContent = {
   manifest: { version: 'synthetic-minigames', generatedAt: '', source: {}, files: [] },
   origin: 'network',
+  sparkRivals: null,
   umas: { items: [umaTemplate], byId: new Map([[umaTemplate.id, umaTemplate]]) },
   cards: { items: [card, futureCard], byId: new Map([[card.id, card], [futureCard.id, futureCard]]) },
   skills: { items: [], byId: new Map() },

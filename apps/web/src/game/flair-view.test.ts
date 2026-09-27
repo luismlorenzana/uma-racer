@@ -19,6 +19,7 @@ const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({
 const loadedContent = (): LoadedContent => ({
   manifest: { version: 'synthetic-v1', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] },
   origin: 'network',
+  sparkRivals: null,
   umas: { items: [template], byId: new Map([[template.id, template]]) },
   cards: { items: [], byId: new Map() },
   skills: { items: [], byId: new Map() },

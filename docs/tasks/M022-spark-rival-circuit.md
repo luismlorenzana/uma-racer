@@ -11,19 +11,21 @@ T074 closes them with the simulator and the owner's iPhone.
 | Task | Delivery | Must land before |
 |---|---|---|
 | T071 (complete) | Pure replay engine, balance harness, synthetic Pixi touch vertical slice | T072 |
-| [T072](T072-spark-rival-content.md) | Private fourteen-scenario rival roster pipeline and deterministic fallback | T073 |
+| T072 (complete) | Private fourteen-scenario rival roster pipeline and deterministic fallback | T073 |
 | [T073](T073-spark-rival-runtime.md) | Production route, Dexie action journal, authoritative host commit, old-run cutover | T074 |
 | [T074](T074-spark-rival-polish.md) | Balance matrix, complete feedback/accessibility, physical-iPhone closure | M020 |
 
 The PRs are sequential. T071 deliberately proves the engine and touch interaction with synthetic art before real-content
-work. T072 establishes the data boundary before the production screen depends on it. T073 performs the one-way cutover.
+work. T072 established the data boundary before the production screen depends on it. T073 performs the one-way cutover.
 T074 tunes and closes. Friendship Training (M020) landed first with its own saved run setup and choices; T073 must absorb
 those rows or remain compatible with them rather than migrating a run twice.
 
 T071's engine, simulator and browser proof are implemented. The checked-in 390×844
 [mid-drag](../proofs/T071-spark-rival-mid-drag.jpg) and [cascade](../proofs/T071-spark-rival-cascade.jpg) captures are
-synthetic. Its physical-iPhone acceptance is still open, so **T072 must not start until the owner approves drag
-acquisition, finger occlusion, edge gestures, cancellation and a 30-second frame-pacing pass on the device**.
+synthetic. The owner released its device gate on 2026-09-27 after the development-only route was made explicit. T072 now
+validates all fourteen ignored private rosters, emits the optional content-addressed pack, refuses an incomplete production
+publication and keeps older manifests playable through deterministic catalogue or silhouette fallback. Publishing that
+private pack remains an operator step after the code PR merges.
 
 ### Current integration truth
 

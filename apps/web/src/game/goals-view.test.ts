@@ -22,7 +22,7 @@ const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({
   pages: [{ path: `${kind}.webp`, width: 128, height: 128 }], frames: { x: { page: 0, x: 0, y: 0, width: 128, height: 128 } },
 })
 const content: LoadedContent = {
-  manifest: { version: 'synthetic-v1', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] }, origin: 'network',
+  manifest: { version: 'synthetic-v1', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] }, origin: 'network', sparkRivals: null,
   umas: { items: [template], byId: new Map([[template.id, template]]) }, cards: { items: [], byId: new Map() },
   skills: { items: [], byId: new Map() }, races: { items: races, byId: new Map(races.map((race) => [race.id, race])) },
   courses: { items: [], byId: new Map() },

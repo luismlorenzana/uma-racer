@@ -1,30 +1,15 @@
 // Invented fixtures for tests, simulation, and the development touch proof. No original-game data belongs here.
 import {
-  SPARK_RIVAL_WAVE_PRESSURE,
-  SPARK_RIVAL_WAVE_RESOLVE,
-  SPARK_RIVAL_RECIPE_COUNTDOWNS,
-  SPARK_RIVAL_PHASE_RESOLVE_PERCENT,
-  SPARK_RIVAL_GUARD_REDUCTION,
-  SPARK_RIVAL_GUARD_COMBOS,
-  SPARK_RIVAL_CONVERT_MAXIMUM,
-  SPARK_RIVAL_PRESSURE_MULTIPLIER,
-  SPARK_RIVAL_SHIFT_DELAY,
-  sparkRivalDifficulty,
+  SPARK_RIVAL_RECIPES,
   type Grade,
+  type SparkRivalRecipeId,
   type Strategy,
 } from '@racer/domain'
-import { bestSparkStrategy, sparkAdvantagedStrategy } from './combat'
-import type { RivalPhase, RivalTurnIntent, SparkRivalDefinition, SparkRivalEncounterV1 } from './types'
+import { sparkRivalDefinition } from './recipes'
+import type { SparkRivalDefinition, SparkRivalEncounterV1 } from './types'
 
-export const SPARK_RIVAL_RECIPES = [
-  'rush-pressure',
-  'tracker-guard',
-  'surge-convert',
-  'finisher-delay',
-  'adaptive-duel',
-  'circuit-boss',
-] as const
-export type SparkRivalRecipe = (typeof SPARK_RIVAL_RECIPES)[number]
+export { SPARK_RIVAL_RECIPES }
+export type SparkRivalRecipe = SparkRivalRecipeId
 
 const PRESSURE_STYLE: Record<SparkRivalRecipe, Strategy> = {
   'rush-pressure': 'front',
@@ -44,10 +29,6 @@ export function syntheticAptitudes(best: Strategy, bestGrade: Grade = 'A'): Reco
   }
 }
 
-function styleThatResists(strategy: Strategy): Strategy {
-  return sparkAdvantagedStrategy(strategy)
-}
-
 export function syntheticRival(
   recipe: SparkRivalRecipe,
   wave: 0 | 1 | 2,
@@ -56,64 +37,17 @@ export function syntheticRival(
   traineeAptitudes: Readonly<Record<Strategy, Grade>>,
   suffix = '',
 ): SparkRivalDefinition {
-  const difficulty = sparkRivalDifficulty(scenarioTier, trainingLevel)
-  const maxResolve = Math.round(SPARK_RIVAL_WAVE_RESOLVE[wave] * difficulty)
-  const pressure = Math.round(SPARK_RIVAL_WAVE_PRESSURE[wave] * difficulty)
   const strategy = PRESSURE_STYLE[recipe]
-  let openingCountdown: number = SPARK_RIVAL_RECIPE_COUNTDOWNS[recipe]
-  let intents: RivalTurnIntent[]
-  let phases: RivalPhase[] = []
-
-  switch (recipe) {
-    case 'rush-pressure':
-      intents = [{ type: 'pressure', amount: pressure }]
-      phases = [{ atResolvePercent: SPARK_RIVAL_PHASE_RESOLVE_PERCENT, intent: { type: 'enrage', multiplier: SPARK_RIVAL_PRESSURE_MULTIPLIER } }]
-      break
-    case 'tracker-guard':
-      intents = [
-        { type: 'guard', reduction: SPARK_RIVAL_GUARD_REDUCTION, comboThreshold: SPARK_RIVAL_GUARD_COMBOS },
-        { type: 'pressure', amount: pressure },
-      ]
-      break
-    case 'surge-convert':
-      intents = [
-        { type: 'convert', source: sparkAdvantagedStrategy(strategy), target: strategy, maximum: SPARK_RIVAL_CONVERT_MAXIMUM },
-        { type: 'pressure', amount: pressure },
-      ]
-      break
-    case 'finisher-delay':
-      intents = [
-        { type: 'delay', amount: SPARK_RIVAL_SHIFT_DELAY },
-        { type: 'pressure', amount: Math.round(pressure * SPARK_RIVAL_PRESSURE_MULTIPLIER) },
-      ]
-      break
-    case 'adaptive-duel': {
-      const traineeBest = bestSparkStrategy(traineeAptitudes)
-      intents = [{ type: 'pressure', amount: pressure }]
-      phases = [{ atResolvePercent: SPARK_RIVAL_PHASE_RESOLVE_PERCENT, intent: { type: 'change-style', strategy: styleThatResists(traineeBest) } }]
-      break
-    }
-    case 'circuit-boss': {
-      const traineeBest = bestSparkStrategy(traineeAptitudes)
-      intents = [
-        { type: 'guard', reduction: SPARK_RIVAL_GUARD_REDUCTION, comboThreshold: SPARK_RIVAL_GUARD_COMBOS },
-        { type: 'convert', source: sparkAdvantagedStrategy(strategy), target: strategy, maximum: SPARK_RIVAL_CONVERT_MAXIMUM },
-        { type: 'pressure', amount: pressure },
-      ]
-      phases = [{ atResolvePercent: SPARK_RIVAL_PHASE_RESOLVE_PERCENT, intent: { type: 'change-style', strategy: styleThatResists(traineeBest) } }]
-      break
-    }
-  }
-
-  return {
+  return sparkRivalDefinition({
     id: `synthetic-rival-${wave + 1}${suffix}`,
     label: wave === 2 ? 'Circuit Captain' : `Training Rival ${wave + 1}`,
+    recipe,
     strategy,
-    maxResolve,
-    openingCountdown,
-    intents,
-    phases,
-  }
+    wave,
+    scenarioTier,
+    trainingLevel,
+    traineeAptitudes,
+  })
 }
 
 export interface SyntheticEncounterOptions {

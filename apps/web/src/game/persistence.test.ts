@@ -130,6 +130,7 @@ function content(cardCount = 1): LoadedContent {
   return {
     manifest: { version: 'abc123def456', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] },
     origin: 'network',
+    sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: cards, byId: new Map(cards.map((item) => [item.id, item])) },
     skills: { items: [paidSkill], byId: new Map([[paidSkill.id, paidSkill]]) },

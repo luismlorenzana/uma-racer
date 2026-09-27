@@ -150,6 +150,7 @@ function content(umaCount = 10): LoadedContent {
   return {
     manifest: { version: 'abc123def456', generatedAt: '2000-01-01T00:00:00.000Z', source: {}, files: [] },
     origin: 'network',
+    sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: [card], byId: new Map([[card.id, card]]) },
     skills: { items: baselineSkills, byId: new Map(baselineSkills.map((item) => [item.id, item])) },

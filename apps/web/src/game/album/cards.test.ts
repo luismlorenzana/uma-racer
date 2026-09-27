@@ -51,7 +51,7 @@ function loaded(cards: SupportCardTemplate[], umas: UmaTemplate[]): LoadedConten
   })
   const skill = { id: 'skill-1', kind: 'white' as const, name: 'Corner Recovery', description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null }
   return {
-    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network',
+    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: cards, byId: new Map(cards.map((item) => [item.id, item])) },
     skills: { items: [skill], byId: new Map([[skill.id, skill]]) },

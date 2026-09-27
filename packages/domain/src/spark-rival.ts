@@ -1,4 +1,7 @@
-// Spark Rival Circuit's player-facing tuning contract (docs/design/minigames.md#spark-match--rival-circuit, D169–D172).
+// Spark Rival Circuit's player-facing tuning and private-content contract
+// (docs/design/minigames.md#spark-match--rival-circuit, D169–D172).
+
+import { GRADES, STRATEGIES, type Grade, type Strategy } from './types'
 
 export const SPARK_RIVAL_BOARD_WIDTH = 6
 export const SPARK_RIVAL_BOARD_HEIGHT = 5
@@ -30,6 +33,124 @@ export const SPARK_RIVAL_RECIPE_COUNTDOWNS = {
   'adaptive-duel': 2,
   'circuit-boss': 2,
 } as const
+export const SPARK_RIVAL_RECIPES = Object.keys(SPARK_RIVAL_RECIPE_COUNTDOWNS) as SparkRivalRecipeId[]
+export type SparkRivalRecipeId = keyof typeof SPARK_RIVAL_RECIPE_COUNTDOWNS
+
+export const SPARK_RIVAL_STYLE_RECIPES: Readonly<Partial<Record<SparkRivalRecipeId, Strategy>>> = {
+  'rush-pressure': 'front',
+  'tracker-guard': 'pace',
+  'surge-convert': 'late',
+  'finisher-delay': 'end',
+}
+
+/** Stable strategy tie-break used by import, fallback selection, and the battle engine. */
+export function sparkRivalBestStrategy(aptitudes: Readonly<Record<Strategy, Grade>>): Strategy {
+  return STRATEGIES.reduce((best, strategy) =>
+    GRADES.indexOf(aptitudes[strategy]) < GRADES.indexOf(aptitudes[best]) ? strategy : best,
+  'front')
+}
+
+export interface SparkRivalRosterCandidate {
+  templateId: string
+  charaId: string
+  strategy: Strategy
+  recipe: SparkRivalRecipeId
+}
+
+export interface SparkRivalScenarioRoster {
+  id: string
+  tier: number
+  ordinary: SparkRivalRosterCandidate[]
+  bosses: SparkRivalRosterCandidate[]
+}
+
+export interface SparkRivalContentPackV1 {
+  version: '1'
+  items: SparkRivalScenarioRoster[]
+}
+
+const SPARK_RIVAL_CANDIDATE_LIMIT = 64
+const CONTENT_ID = /^[A-Za-z0-9_.:-]{1,120}$/
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function exactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
+  const keys = Object.keys(value).sort()
+  const sorted = [...expected].sort()
+  return keys.length === sorted.length && keys.every((key, index) => key === sorted[index])
+}
+
+function parseRosterCandidate(value: unknown, tier: number, role: 'ordinary' | 'bosses', index: number): SparkRivalRosterCandidate {
+  const location = `tier ${tier} ${role}[${index}]`
+  if (!record(value) || !exactKeys(value, ['charaId', 'recipe', 'strategy', 'templateId'])) {
+    throw new Error(`Invalid Spark rival candidate shape at ${location}`)
+  }
+  if (typeof value.templateId !== 'string' || !CONTENT_ID.test(value.templateId) ||
+    typeof value.charaId !== 'string' || !CONTENT_ID.test(value.charaId)) {
+    throw new Error(`Invalid Spark rival candidate identity at ${location}`)
+  }
+  if (!STRATEGIES.includes(value.strategy as Strategy) || !SPARK_RIVAL_RECIPES.includes(value.recipe as SparkRivalRecipeId)) {
+    throw new Error(`Invalid Spark rival candidate behavior at ${location}`)
+  }
+  const recipe = value.recipe as SparkRivalRecipeId
+  if ((role === 'bosses') !== (recipe === 'circuit-boss')) {
+    throw new Error(`Invalid Spark rival recipe role at ${location}`)
+  }
+  const requiredStrategy = SPARK_RIVAL_STYLE_RECIPES[recipe]
+  if (requiredStrategy && value.strategy !== requiredStrategy) {
+    throw new Error(`Invalid Spark rival recipe strategy at ${location}`)
+  }
+  return {
+    templateId: value.templateId,
+    charaId: value.charaId,
+    strategy: value.strategy as Strategy,
+    recipe,
+  }
+}
+
+function parseRosterCandidates(value: unknown, tier: number, role: 'ordinary' | 'bosses'): SparkRivalRosterCandidate[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > SPARK_RIVAL_CANDIDATE_LIMIT) {
+    throw new Error(`Invalid Spark rival ${role} count at tier ${tier}`)
+  }
+  const candidates = value.map((candidate, index) => parseRosterCandidate(candidate, tier, role, index))
+  if (new Set(candidates.map((candidate) => candidate.templateId)).size !== candidates.length) {
+    throw new Error(`Duplicate Spark rival template in ${role} at tier ${tier}`)
+  }
+  return [...candidates].sort((left, right) =>
+    left.charaId.localeCompare(right.charaId) || left.templateId.localeCompare(right.templateId))
+}
+
+function parseScenarioRoster(value: unknown, index: number): SparkRivalScenarioRoster {
+  if (!record(value) || !exactKeys(value, ['bosses', 'id', 'ordinary', 'tier']) ||
+    !Number.isSafeInteger(value.tier) || (value.tier as number) < 1 || (value.tier as number) > 14) {
+    throw new Error(`Invalid Spark rival scenario at index ${index}`)
+  }
+  const tier = value.tier as number
+  if (value.id !== `tier:${tier}`) throw new Error(`Invalid Spark rival scenario id at tier ${tier}`)
+  const ordinary = parseRosterCandidates(value.ordinary, tier, 'ordinary')
+  const bosses = parseRosterCandidates(value.bosses, tier, 'bosses')
+  const ordinaryCharacters = new Set(ordinary.map((candidate) => candidate.charaId))
+  const bossCharacters = new Set(bosses.map((candidate) => candidate.charaId))
+  const allCharacters = new Set([...ordinaryCharacters, ...bossCharacters])
+  if (ordinaryCharacters.size < 4 || bossCharacters.size < 2 || allCharacters.size < 4) {
+    throw new Error(`Insufficient Spark rival character coverage at tier ${tier}`)
+  }
+  return { id: `tier:${tier}`, tier, ordinary, bosses }
+}
+
+/** Strict parser shared by publishing and the authenticated runtime. Errors never include private ids or names. */
+export function parseSparkRivalContentPack(value: unknown): SparkRivalContentPackV1 {
+  if (!record(value) || !exactKeys(value, ['items', 'version']) || value.version !== '1' || !Array.isArray(value.items) || value.items.length !== 14) {
+    throw new Error('Invalid Spark rival content pack header')
+  }
+  const items = value.items.map(parseScenarioRoster).sort((left, right) => left.tier - right.tier)
+  if (new Set(items.map((item) => item.tier)).size !== 14 || items.some((item, index) => item.tier !== index + 1)) {
+    throw new Error('Spark rival content pack must cover tiers 1 through 14 exactly once')
+  }
+  return { version: '1', items }
+}
 export const SPARK_RIVAL_PHASE_RESOLVE_PERCENT = 50
 export const SPARK_RIVAL_GUARD_REDUCTION = 0.5
 export const SPARK_RIVAL_GUARD_COMBOS = 4

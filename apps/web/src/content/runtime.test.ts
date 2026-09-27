@@ -45,7 +45,7 @@ function syntheticWebp(width: number, height: number): Uint8Array {
   return output
 }
 
-function fixture(versionCharacter = 'a'): Fixture {
+function fixture(versionCharacter = 'a', includeSparkRivals = false): Fixture {
   const responses = new Map<string, { bytes: ArrayBuffer; contentType: string }>()
   const files: ContentManifestFile[] = []
   const add = (path: string, value: string | Uint8Array, contentType: string) => {
@@ -53,31 +53,59 @@ function fixture(versionCharacter = 'a'): Fixture {
     responses.set(path, { bytes: encoded, contentType })
     files.push({ path, bytes: encoded.byteLength, sha256: hash(encoded) })
   }
-  for (const [name, id] of [
-    ['umas', 'uma-x'],
-    ['cards', 'card-x'],
-    ['skills', 'skill-x'],
-    ['races', 'race-x'],
-    ['courses', 'course-x'],
-  ] as const) {
+  const styles = ['front', 'pace', 'late', 'end', 'front', 'pace'] as const
+  const umaItems = includeSparkRivals
+    ? styles.map((best, index) => ({
+        id: index === 0 ? 'uma-x' : `synthetic-uma-${index + 1}`,
+        charaId: `synthetic-character-${index + 1}`,
+        aptitudes: {
+          strategy: Object.fromEntries(['front', 'pace', 'late', 'end'].map((strategy) => [strategy, strategy === best ? 'A' : 'C'])),
+        },
+      }))
+    : [{ id: 'uma-x' }]
+  add(`data/umas.${versionCharacter.repeat(8)}.json`, JSON.stringify({ version: 'synthetic', items: umaItems }), 'application/json')
+  for (const [name, id] of [['cards', 'card-x'], ['skills', 'skill-x'], ['races', 'race-x'], ['courses', 'course-x']] as const) {
     add(`data/${name}.${versionCharacter.repeat(8)}.json`, JSON.stringify({ version: 'synthetic', items: [{ id }] }), 'application/json')
   }
-  const atlas = (kind: ContentAtlas['kind'], id: string): ContentAtlas => ({
+  if (includeSparkRivals) {
+    const sparkRivals = {
+      version: '1',
+      items: Array.from({ length: 14 }, (_, index) => ({
+        id: `tier:${index + 1}`,
+        tier: index + 1,
+        ordinary: ['front', 'pace', 'late', 'end'].map((strategy, candidate) => ({
+          templateId: umaItems[candidate]!.id,
+          charaId: `synthetic-character-${candidate + 1}`,
+          strategy,
+          recipe: ['rush-pressure', 'tracker-guard', 'surge-convert', 'finisher-delay'][candidate],
+        })),
+        bosses: [0, 1].map((candidate) => ({
+          templateId: umaItems[candidate + 4]!.id,
+          charaId: `synthetic-character-${candidate + 5}`,
+          strategy: candidate === 0 ? 'front' : 'pace',
+          recipe: 'circuit-boss',
+        })),
+      })),
+    }
+    add(`data/spark-rivals.${versionCharacter.repeat(8)}.json`, JSON.stringify(sparkRivals), 'application/json')
+  }
+  const atlas = (kind: ContentAtlas['kind'], ids: readonly string[]): ContentAtlas => ({
     schemaVersion: 1,
     kind,
     frameWidth: 128,
     frameHeight: 128,
-    pages: [{ path: `atlases/${kind}-0.${versionCharacter.repeat(8)}.webp`, width: 132, height: 132 }],
-    frames: { [id]: { page: 0, x: 2, y: 2, width: 128, height: 128 } },
+    pages: [{ path: `atlases/${kind}-0.${versionCharacter.repeat(8)}.webp`, width: 130 * ids.length + 2, height: 132 }],
+    frames: Object.fromEntries(ids.map((id, index) => [id, { page: 0, x: 2 + 130 * index, y: 2, width: 128, height: 128 }])),
   })
-  for (const [kind, id] of [
-    ['uma-icons', 'uma-x'],
-    ['card-icons', 'card-x'],
+  for (const [kind, ids] of [
+    ['uma-icons', umaItems.map((item) => item.id)],
+    ['card-icons', ['card-x']],
   ] as const) {
-    const webp = syntheticWebp(132, 132)
+    const descriptor = atlas(kind, ids)
+    const webp = syntheticWebp(descriptor.pages[0]!.width, descriptor.pages[0]!.height)
     webp[20] = versionCharacter === 'a' ? 0 : 2
     add(`atlases/${kind}-0.${versionCharacter.repeat(8)}.webp`, webp, 'image/webp')
-    add(`atlases/${kind}.${versionCharacter.repeat(8)}.json`, JSON.stringify(atlas(kind, id)), 'application/json')
+    add(`atlases/${kind}.${versionCharacter.repeat(8)}.json`, JSON.stringify(descriptor), 'application/json')
   }
   // Per-entry art: fetched on demand, so it is in the manifest but never loaded up front.
   // T059: chibis per outfit, stands and race faces per character.
@@ -190,6 +218,7 @@ describe('ContentRuntime', () => {
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
     expect(result.content.umas.byId.has('uma-x')).toBe(true)
+    expect(result.content.sparkRivals).toBeNull()
     expect(result.content.races.items[0]?.seriesLegs).toEqual([])
     expect(result.content.origin).toBe('network')
     expect(getContentAsset(result.content, 'uma-icons', 'uma-x')).toMatchObject({
@@ -197,6 +226,34 @@ describe('ContentRuntime', () => {
       frame: { x: 2, y: 2 },
     })
     expect(JSON.parse(store.value!)).toMatchObject({ version: data.manifest.version })
+  })
+
+  it('loads the optional Spark rival pack while keeping old manifests compatible', async () => {
+    const data = fixture('a', true)
+    const runtime = new ContentRuntime(transport(() => data), new MemoryStore(), urlFactory().urls)
+
+    const result = await runtime.load()
+
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.content.sparkRivals).toHaveLength(14)
+    expect(result.content.sparkRivals?.[13]).toMatchObject({ id: 'tier:14', tier: 14 })
+  })
+
+  it('rejects a malformed present Spark rival pack instead of silently falling back', async () => {
+    const data = fixture('a', true)
+    const file = data.manifest.files.find((entry) => entry.path.startsWith('data/spark-rivals.'))!
+    const malformed = bytes(JSON.stringify({ version: '1', items: [] }))
+    data.responses.set(file.path, { bytes: malformed, contentType: 'application/json' })
+    file.bytes = malformed.byteLength
+    file.sha256 = hash(malformed)
+    data.manifest.version = createHash('sha256')
+      .update(data.manifest.files.map((entry) => entry.sha256).sort().join(''))
+      .digest('hex')
+      .slice(0, 12)
+
+    await expect(new ContentRuntime(transport(() => data), new MemoryStore(), urlFactory().urls).load())
+      .rejects.toThrow(/Spark rival content pack header/)
   })
 
   it('rejects an integrity mismatch without persisting it', async () => {

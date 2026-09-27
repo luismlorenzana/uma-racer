@@ -52,7 +52,7 @@ function content(umas: UmaTemplate[]): LoadedContent {
     schemaVersion: 1, kind, frameWidth: 128, frameHeight: 128, pages: [{ path: `${kind}.webp`, width: 128, height: 128 }], frames: {},
   })
   return {
-    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network',
+    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((entry) => [entry.id, entry])) }, cards: { items: [], byId: new Map() },
     skills: { items: [], byId: new Map() }, races: { items: [race], byId: new Map([[race.id, race]]) },
     art: { has: () => false, load: async () => null },
