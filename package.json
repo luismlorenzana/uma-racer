@@ -22,7 +22,8 @@
     "sim:careers": "pnpm dlx tsx scripts/sim/career-balance.ts",
     "sim:turns": "pnpm dlx tsx scripts/sim/turn-balance.ts",
     "assets:bust-sheet": "pnpm --filter @racer/asset-pipeline run bust-sheet",
-    "sim:training": "pnpm dlx tsx scripts/sim/training-balance.ts"
+    "sim:training": "pnpm dlx tsx scripts/sim/training-balance.ts",
+    "sim:spark": "pnpm dlx tsx scripts/sim/spark-balance.ts"
   },
   "devDependencies": {
     "turbo": "^2.10.13"

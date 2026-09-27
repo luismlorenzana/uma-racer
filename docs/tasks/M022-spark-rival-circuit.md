@@ -10,14 +10,20 @@ T074 closes them with the simulator and the owner's iPhone.
 
 | Task | Delivery | Must land before |
 |---|---|---|
-| [T071](T071-spark-rival-engine.md) | Pure replay engine, balance harness, synthetic Pixi touch vertical slice | T072 |
+| T071 (complete) | Pure replay engine, balance harness, synthetic Pixi touch vertical slice | T072 |
 | [T072](T072-spark-rival-content.md) | Private fourteen-scenario rival roster pipeline and deterministic fallback | T073 |
 | [T073](T073-spark-rival-runtime.md) | Production route, Dexie action journal, authoritative host commit, old-run cutover | T074 |
 | [T074](T074-spark-rival-polish.md) | Balance matrix, complete feedback/accessibility, physical-iPhone closure | M020 |
 
 The PRs are sequential. T071 deliberately proves the engine and touch interaction with synthetic art before real-content
 work. T072 establishes the data boundary before the production screen depends on it. T073 performs the one-way cutover.
-T074 tunes and closes; Friendship Training (M020) follows and reuses its versioned local journal.
+T074 tunes and closes. Friendship Training (M020) landed first with its own saved run setup and choices; T073 must absorb
+those rows or remain compatible with them rather than migrating a run twice.
+
+T071's engine, simulator and browser proof are implemented. The checked-in 390×844
+[mid-drag](../proofs/T071-spark-rival-mid-drag.jpg) and [cascade](../proofs/T071-spark-rival-cascade.jpg) captures are
+synthetic. Its physical-iPhone acceptance is still open, so **T072 must not start until the owner approves drag
+acquisition, finger occlusion, edge gestures, cancellation and a 30-second frame-pacing pass on the device**.
 
 ## Fixed product contract
 
@@ -84,7 +90,8 @@ interface ReplayJournalV1<A> {
   unfinished or inconsistent claim and never accepts score/EXP from the UI.
 - Completed rows retain reward and remain idempotent. Open adjacent-swap rows keep their ticket, seed and attempt index but
   adopt the new engine with an empty action list. No second charge and no silent reroll.
-- The journal API is minigame-generic enough for M020, but T071–T074 do not implement Friendship Training.
+- The journal API remains compatible with M020's landed frozen setup and saved-choice rows; T071–T074 do not reimplement
+  Friendship Training.
 
 ## Performance and device budgets
 

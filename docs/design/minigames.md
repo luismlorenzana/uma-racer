@@ -1,6 +1,7 @@
 # Minigames
 
-> All numbers are **draft values for tuning**. Names are provisional.
+> Numbers marked as tuning baselines are checked-in and pinned. T074 may retune Rival Circuit only through the design,
+> decision-log and domain-test process required by AGENTS.md. Names remain provisional.
 
 Minigames are the **third pillar** of the game, beside Collection and Racing. They are the only way to raise a
 Training Level and the only way to earn a card's stars. There is no other training loop: no turns, no
@@ -61,7 +62,7 @@ Pace ──beats──► Front ──beats──► End ──beats──► La
 ```
 
 An advantaged attack deals **1.5×**, a resisted attack **0.67×**, and either opposite-style matchup **1×**. Spark
-damage is always neutral. Strategy aptitude modifies only that strategy's attack; the draft scale is S 1.10, A 1.00,
+damage is always neutral. Strategy aptitude modifies only that strategy's attack; the T071 baseline is S 1.10, A 1.00,
 B 0.95, C 0.90, D 0.85, E 0.80, F 0.75, G 0.70. This is a puzzle-battle reading of aptitude and has no effect on the
 race engine.
 
@@ -80,10 +81,10 @@ The engine resolves one accepted drag in this order:
 6. Advance the rival countdown. At zero, execute the already displayed intent and reset its countdown.
 7. Check victory, loss and the **eight-player-turn bound for the current wave**.
 
-The first simulator baseline is below. These are checked-in tuning constants, not private content fields. `pnpm sim:spark`
-pins them in T071 and T074; any change follows AGENTS.md's design/decision/domain-test rule.
+The T071 simulator baseline is below. These are checked-in tuning constants, not private content fields. `pnpm sim:spark`
+and the domain test pin them; any change follows AGENTS.md's design/decision/domain-test rule.
 
-| Constant/formula | Draft value |
+| Constant/formula | T071 baseline |
 |---|---|
 | Maximum Drive | 100 |
 | Match shape | `1 + 0.25 × (orbs − 3)` |
@@ -144,7 +145,7 @@ Wave EXP budgets are **500 / 650 / 800**. An uncleared wave pays
 no bonuses and is capped at 45% of the 1,950 wave-budget total. This prevents a high-Resolve rival, healing or stalling from
 being an unintended EXP farm and makes a full clear substantially more efficient than repeatedly losing late.
 
-The draft balance target is **about 2,200 Training EXP for a competent three-wave clear**, with losses retaining only the
+The pinned balance target is **about 2,200 Training EXP for a competent three-wave clear**, with losses retaining only the
 bounded progress actually earned. Training EXP resolves greedily and surplus carries:
 
 ```

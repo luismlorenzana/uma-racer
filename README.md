@@ -48,6 +48,7 @@ pnpm lint           # type-check all packages
 pnpm test           # domain rules, race engine, API sync, save persistence and web view models
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
+pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regression gate
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs
