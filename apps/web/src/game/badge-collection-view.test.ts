@@ -134,7 +134,8 @@ describe('Badge collection projections', () => {
     expect(parseBadgeRoute(serializeBadgeRoute(parsed), new Set(['alpha']))).toEqual(parsed)
     expect(parseBadgeRoute('?scope=uma&filter=rarity%3Drare&sort=rarest&uma=missing', new Set(['alpha'])).unavailable).toEqual(expect.arrayContaining(['rarity:rare', 'sort:rarest', 'uma:missing']))
     expect(resolveBadgeUmaId('missing', ['beta', 'alpha'], 'beta')).toBe('beta')
-    expect(resolveBadgeUmaId(null, ['beta', 'alpha'], null)).toBe('alpha')
+    // Otherwise the first in the caller's order, which is highest level first (D181).
+    expect(resolveBadgeUmaId(null, ['beta', 'alpha'], null)).toBe('beta')
     const trainer = parseBadgeRoute('?scope=trainer&filter=category%3Dcollection&filter=surface%3Dturf&filter=rarity%3Drare&sort=rarest', new Set(['alpha']))
     expect(trainer).toMatchObject({ scope: 'trainer', sort: 'recent', filters: [{ kind: 'category', value: 'collection' }] })
     expect(trainer.unavailable).toEqual(expect.arrayContaining(['surface:turf', 'rarity:rare', 'sort:rarest']))

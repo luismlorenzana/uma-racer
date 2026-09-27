@@ -47,11 +47,12 @@
   --color-turf: #2f7a4f;
   --color-dirt: #8a6a4b;
 
-  --color-stat-speed: #2f6fe0;
-  --color-stat-stamina: #d6483f;
-  --color-stat-power: #e07b22;
-  --color-stat-guts: #d24e8c;
-  --color-stat-wit: #1f9a70;
+  /* The original's own stat colours, the rims of its type icons (D183), so a meter matches its icon. */
+  --color-stat-speed: #0980e6;
+  --color-stat-stamina: #dd4433;
+  --color-stat-power: #e66e00;
+  --color-stat-guts: #f1368b;
+  --color-stat-wit: #05a371;
 
   --color-tier-bronze: #b07a46;
   --color-tier-silver: #9aa6b5;

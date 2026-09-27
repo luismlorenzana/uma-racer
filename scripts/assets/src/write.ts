@@ -14,6 +14,8 @@ export interface AtlasDefinition {
 export interface WriteAtlasesOptions {
   contentDir: string
   atlases: readonly AtlasDefinition[]
+  /** Families no longer built: their files leave the manifest and the folder (D183's type-icons). */
+  retire?: readonly string[]
   generatedAt?: string
 }
 
@@ -39,7 +41,7 @@ export async function writeAtlases(options: WriteAtlasesOptions): Promise<Conten
   const previous = await readManifest(options.contentDir)
   const atlasDir = resolve(options.contentDir, 'atlases')
   await mkdir(atlasDir, { recursive: true })
-  const kinds = new Set(options.atlases.map(({ kind }) => kind))
+  const kinds = new Set<string>([...options.atlases.map(({ kind }) => kind), ...(options.retire ?? [])])
   const files: ContentManifestFile[] = previous.files.filter((file) => !isFamilyFile(file.path, kinds))
   const keepNames = new Set<string>()
 

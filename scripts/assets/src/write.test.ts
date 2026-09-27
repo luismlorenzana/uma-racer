@@ -56,4 +56,19 @@ describe('writeAtlases', () => {
     expect(manifest.version).toBe(expectedVersion)
     expect(JSON.parse(await readFile(resolve(contentDir, 'manifest.json'), 'utf8')) as ContentManifest).toEqual(manifest)
   })
+
+  it('drops a retired family from the manifest and the folder without building it (D183)', async () => {
+    const contentDir = await mkdtemp(join(tmpdir(), 'uma-racer-atlas-retire-'))
+    tempDirs.push(contentDir)
+    await mkdir(resolve(contentDir, 'atlases'))
+    await writeFile(resolve(contentDir, 'atlases/type-icons.old00000.json'), '{}')
+    const retired = { path: 'atlases/type-icons.old00000.json', bytes: 2, sha256: 'd'.repeat(64) }
+    await writeFile(resolve(contentDir, 'manifest.json'), JSON.stringify({
+      version: 'old', generatedAt: '2000-01-01T00:00:00.000Z', source: {}, files: [retired],
+    }))
+    const atlas = await buildAtlas([{ id: 'invented-1', bytes: SVG, cacheHit: false }])
+    const manifest = await writeAtlases({ contentDir, atlases: [{ kind: 'skill-icons', atlas }], retire: ['type-icons'] })
+    expect(manifest.files.some((file) => file.path.includes('type-icons'))).toBe(false)
+    expect(await readdir(resolve(contentDir, 'atlases'))).not.toContain('type-icons.old00000.json')
+  })
 })

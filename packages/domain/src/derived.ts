@@ -1,6 +1,7 @@
 // The single read path: everything an Uma is, derived from her active constellation (D121).
 
 import { cardStars } from './card-progression'
+import { cardGoldSkillIds } from './cards'
 import {
   constellationTemplate,
   deriveStats,
@@ -62,7 +63,11 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     const cardTemplate = input.cardTemplates.get(cardId)
     // A card's break belongs to the scenario being derived, not to the account (D127).
     if (save && cardTemplate) {
-      cards.set(cardId, { template: cardTemplate, stars: cardStars(save, scenario.tier) })
+      cards.set(cardId, {
+        template: cardTemplate,
+        stars: cardStars(save, scenario.tier),
+        goldSkillIds: cardGoldSkillIds(cardTemplate, input.skillTemplates),
+      })
     }
   }
 
@@ -107,7 +112,7 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
   for (const skillId of derived.cardSkillIds) {
     const owner = scenario.cardSetIds.find((cardId) => {
       const card = cards.get(cardId)
-      return card?.template.hintSkillIds.includes(skillId) ?? false
+      return (card?.template.hintSkillIds.includes(skillId) || card?.goldSkillIds?.includes(skillId)) ?? false
     })
     add(skillId, 'card', owner ?? null)
   }

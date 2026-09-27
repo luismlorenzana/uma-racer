@@ -13,12 +13,8 @@ export { BadgesIcon } from './BadgesIcon'
 export { TicketIcon } from './TicketIcon'
 export { CardCouponIcon } from './CardCouponIcon'
 export { UmaCouponIcon } from './UmaCouponIcon'
-// Stats
-export { SpeedIcon } from './SpeedIcon'
-export { StaminaIcon } from './StaminaIcon'
-export { PowerIcon } from './PowerIcon'
-export { GutsIcon } from './GutsIcon'
-export { WitIcon } from './WitIcon'
+// Stats and card types are drawn by ui/TypeIcon, the original's style in its colours (D183); the heart is friendship.
+export { HeartIcon } from './HeartIcon'
 export { SkillPointsIcon } from './SkillPointsIcon'
 // Race
 export { GradeIcon } from './GradeIcon'

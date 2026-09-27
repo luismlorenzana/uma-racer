@@ -15,11 +15,16 @@ export function useArt(content: LoadedContent | null, kind: ArtKind, id: string 
     }
     let cancelled = false
     setUrl(null)
+    // Held while shown, so another screen's loads can never revoke it underneath this one.
+    const release = content.art.hold?.(kind, id)
     void content.art.load(kind, id)
       .then((resolved) => { if (!cancelled) setUrl(resolved) })
       // A failed or unverifiable fetch is not an error the player needs: the icon stays.
       .catch(() => { if (!cancelled) setUrl(null) })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      release?.()
+    }
   }, [content, id, kind])
 
   return url
@@ -37,14 +42,20 @@ export function useArtSet(content: LoadedContent | null, kind: ArtKind, ids: rea
     setUrls(new Map())
     if (!content || !key) return
     let cancelled = false
+    const releases: (() => void)[] = []
     for (const id of key.split('|')) {
       if (!content.art.has(kind, id)) continue
+      const release = content.art.hold?.(kind, id)
+      if (release) releases.push(release)
       void content.art.load(kind, id)
         .then((url) => { if (!cancelled && url) setUrls((current) => new Map(current).set(id, url)) })
         // As with useArt, a failed fetch just leaves the icon.
         .catch(() => undefined)
     }
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      for (const release of releases) release()
+    }
   }, [content, key, kind])
 
   return urls

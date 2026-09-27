@@ -10,6 +10,7 @@ import { Numeral } from '../ui/Numeral'
 import { ScreenState } from '../ui/ScreenState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 import { ChevronLeftIcon } from '../ui/icons'
+import { TypeIcon } from '../ui/TypeIcon'
 
 export interface TrainingContext {
   content: LoadedContent
@@ -81,7 +82,7 @@ export function TrainingScene() {
           return (
             <div key={stat} className="min-w-0 flex-1 rounded-lg bg-panel px-1.5 py-1">
               <div className="flex items-baseline justify-between">
-                <span className="text-[9px] font-semibold uppercase text-ink-faint">{stat.slice(0, 3)}</span>
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase text-ink-faint"><TypeIcon type={stat} size={12} />{stat.slice(0, 3)}</span>
                 {delta !== 0 && (
                   <span className={`text-[9px] font-bold ${delta > 0 ? 'text-go' : 'text-danger'}`}>
                     {delta > 0 ? '+' : ''}{delta}

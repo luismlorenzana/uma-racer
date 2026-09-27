@@ -46,6 +46,7 @@ import { SaveErrorState } from '../ui/SaveErrorState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 import { CheckIcon } from '../ui/icons'
 import { formatTickets } from '../ui/tickets'
+import { TypeIcon } from '../ui/TypeIcon'
 
 const MAX_COMPARE = 3
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
@@ -115,7 +116,10 @@ function CardTile({
             <span className="truncate text-[14px] font-semibold">{entry.template.charName}</span>
             {entry.isNew && <Crest tone="accent">NEW</Crest>}
           </span>
-          <span className="block truncate text-[11px] text-ink-faint">{titleCase(entry.template.type)} · {sortLabel ?? cardSplitLabel(entry.template)}</span>
+          <span className="flex min-w-0 items-center gap-1 text-[11px] text-ink-faint">
+            <TypeIcon type={entry.template.type} size={14} />
+            <span className="truncate">{titleCase(entry.template.type)} · {sortLabel ?? cardSplitLabel(entry.template)}</span>
+          </span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-ink-soft">
           {showBond && <Stars value={entry.bond ?? 0} />}
@@ -150,13 +154,15 @@ function CardTile({
               </>
             ) : (
               <>
-                <Crest tone={entry.bond === MAX_STARS ? 'accent' : 'neutral'}>{entry.template.type.slice(0, 3).toUpperCase()}</Crest>
                 {entry.isNew && <Crest tone="accent">NEW</Crest>}
                 {entry.equippedBy.length > 0 && <Crest>In a set</Crest>}
               </>
             )
           }
-          corner={selecting ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? <CheckIcon size={16} title="Picked" /> : <span className="h-4 w-4" />}</Crest> : null}
+          // The card's type in the corner, as the original marks it (D182).
+          corner={selecting
+            ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? <CheckIcon size={16} title="Picked" /> : <span className="h-4 w-4" />}</Crest>
+            : <TypeIcon type={entry.template.type} size={icons ? 18 : 24} className="drop-shadow" />}
           footer={icons
             ? (showBond ? <Stars value={entry.bond ?? 0} onDark /> : undefined)
             : (

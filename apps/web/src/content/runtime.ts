@@ -58,10 +58,10 @@ export interface LoadedContent {
   /** Optional for older manifests; Spark uses a deterministic catalogue fallback when null. */
   sparkRivals: readonly SparkRivalScenarioRoster[] | null
   /**
-   * Crests are optional: a manifest published before T051 has no scenario atlas, and the Stable simply shows
-   * no crest rather than refusing to load.
+   * Crests and skill icons are optional: a manifest published before T051 (crests) or D182 (skill icons) lacks them,
+   * and the app falls back to no crest and its own star rather than refusing to load.
    */
-  atlases: Record<'uma-icons' | 'card-icons', LoadedAtlas> & Partial<Record<'scenario-icons', LoadedAtlas>>
+  atlases: Record<'uma-icons' | 'card-icons', LoadedAtlas> & Partial<Record<OptionalAtlasKind, LoadedAtlas>>
   art: ArtLoader
 }
 
@@ -81,6 +81,12 @@ export interface ArtLoader {
    * to the icon atlas.
    */
   load: (kind: ArtKind, id: string) => Promise<string | null>
+  /**
+   * Keeps an entry's object URL alive while a screen shows it: the recency window never revokes a held entry, so a
+   * minigame preloading more cards than the window holds cannot break the images already on screen. Returns the
+   * release. Call it before `load`, so nothing can evict the entry between its arrival and the hold.
+   */
+  hold?: (kind: ArtKind, id: string) => () => void
 }
 
 export interface ContentAsset {
@@ -237,6 +243,7 @@ function createArtLoader(
   const index = artIndex(manifest)
   const cache = new Map<string, string>()
   const pending = new Map<string, Promise<string | null>>()
+  const holds = new Map<string, number>()
 
   const fetchArt = async (key: string, file: ContentManifestFile): Promise<string | null> => {
     const result = await transport.file(file.path)
@@ -249,15 +256,32 @@ function createArtLoader(
     cache.set(key, url)
     const kind = key.slice(0, key.indexOf(':')) as ArtKind
     const sameKind = [...cache.keys()].filter((entry) => entry.startsWith(`${kind}:`))
-    for (const oldestKey of sameKind.slice(0, Math.max(0, sameKind.length - ART_CACHE_LIMIT[kind]))) {
+    // Oldest first, skipping whatever a screen still shows; a held window may run over its limit until released.
+    let excess = sameKind.length - ART_CACHE_LIMIT[kind]
+    for (const oldestKey of sameKind) {
+      if (excess <= 0) break
+      if (holds.has(oldestKey)) continue
       urls.revoke(cache.get(oldestKey)!)
       cache.delete(oldestKey)
+      excess -= 1
     }
     return url
   }
 
   return {
     has: (kind, id) => index.has(`${kind}:${id}`),
+    hold: (kind, id) => {
+      const key = `${kind}:${id}`
+      holds.set(key, (holds.get(key) ?? 0) + 1)
+      let released = false
+      return () => {
+        if (released) return
+        released = true
+        const count = (holds.get(key) ?? 1) - 1
+        if (count > 0) holds.set(key, count)
+        else holds.delete(key)
+      }
+    },
     load: async (kind, id) => {
       const key = `${kind}:${id}`
       const cached = cache.get(key)
@@ -282,7 +306,11 @@ const ATLAS_FILES: Record<ContentAtlasKind, RegExp> = {
   'uma-icons': /^atlases\/uma-icons\.[a-f0-9]{8}\.json$/,
   'card-icons': /^atlases\/card-icons\.[a-f0-9]{8}\.json$/,
   'scenario-icons': /^atlases\/scenario-icons\.[a-f0-9]{8}\.json$/,
+  'skill-icons': /^atlases\/skill-icons\.[a-f0-9]{8}\.json$/,
 }
+
+const OPTIONAL_ATLASES = ['scenario-icons', 'skill-icons'] as const
+type OptionalAtlasKind = (typeof OPTIONAL_ATLASES)[number]
 
 function assertMatchingFrames(label: string, ids: readonly string[], atlas: ContentAtlas): void {
   const expected = new Set(ids)
@@ -312,7 +340,10 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const sparkRivalFile = optionalFile(manifest, PACK_FILES.sparkRivals, 'spark-rivals pack')
   const umaAtlasFile = findRequiredFile(manifest, ATLAS_FILES['uma-icons'], 'uma-icons atlas')
   const cardAtlasFile = findRequiredFile(manifest, ATLAS_FILES['card-icons'], 'card-icons atlas')
-  const scenarioAtlasFile = manifest.files.find((file) => ATLAS_FILES['scenario-icons'].test(file.path)) ?? null
+  const optionalAtlasFiles = OPTIONAL_ATLASES.flatMap((kind) => {
+    const file = manifest.files.find((entry) => ATLAS_FILES[kind].test(entry.path))
+    return file ? [{ kind, file }] : []
+  })
 
   const [umaJson, cardJson, skillJson, raceJson, courseJson, sparkRivalJson, umaAtlasJson, cardAtlasJson] = await Promise.all([
     verifiedJson(transport, umaFile),
@@ -351,9 +382,10 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   }
   const umaAtlas = parseContentAtlas(umaAtlasJson, 'uma-icons')
   const cardAtlas = parseContentAtlas(cardAtlasJson, 'card-icons')
-  const scenarioAtlas = scenarioAtlasFile
-    ? parseContentAtlas(await verifiedJson(transport, scenarioAtlasFile), 'scenario-icons')
-    : null
+  const optionalAtlases = await Promise.all(optionalAtlasFiles.map(async ({ kind, file }) => ({
+    kind,
+    atlas: parseContentAtlas(await verifiedJson(transport, file), kind),
+  })))
   assertMatchingFrames('Uma', umas.map((item) => item.id), umaAtlas)
   assertMatchingFrames('Card', cards.map((item) => item.id), cardAtlas)
 
@@ -381,10 +413,10 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       )
       return { descriptor: atlas, pageUrls }
     }
-    const [umaIcons, cardIcons, scenarioIcons] = await Promise.all([
+    const [umaIcons, cardIcons, ...optionalIcons] = await Promise.all([
       loadAtlasPages(umaAtlas),
       loadAtlasPages(cardAtlas),
-      scenarioAtlas ? loadAtlasPages(scenarioAtlas) : Promise.resolve(null),
+      ...optionalAtlases.map(({ atlas }) => loadAtlasPages(atlas)),
     ])
     return {
       manifest,
@@ -398,7 +430,7 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       atlases: {
         'uma-icons': umaIcons,
         'card-icons': cardIcons,
-        ...(scenarioIcons ? { 'scenario-icons': scenarioIcons } : {}),
+        ...Object.fromEntries(optionalAtlases.map(({ kind }, index) => [kind, optionalIcons[index]!])),
       },
       art: createArtLoader(transport, manifest, urls, (url) => createdUrls.push(url)),
     }

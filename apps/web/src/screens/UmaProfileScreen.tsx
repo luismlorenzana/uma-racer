@@ -35,8 +35,10 @@ import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
+import { SkillIcon } from '../ui/SkillIcon'
 import { ChevronLeftIcon, ChevronRightIcon } from '../ui/icons'
 import { formatTickets } from '../ui/tickets'
+import { TypeIcon } from '../ui/TypeIcon'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 const statLabel = (stat: StatKey) => (stat === 'wit' ? 'Wit' : titleCase(stat))
@@ -276,8 +278,8 @@ export function UmaProfileScreen() {
         <div className="mt-2 grid gap-1.5">
           {STATS.map((stat) => (
             <div key={stat}>
-              <div className="flex items-baseline justify-between text-[12px] font-semibold">
-                <span>{statLabel(stat)}</span>
+              <div className="flex items-center justify-between text-[12px] font-semibold">
+                <span className="inline-flex items-center gap-1.5"><TypeIcon type={stat} size={18} />{statLabel(stat)}</span>
                 <span className="text-ink-soft"><Numeral className="text-ink">{uma.derived.stats[stat]}</Numeral> / {uma.caps[stat]}</span>
               </div>
               <Meter value={uma.derived.stats[stat] / uma.caps[stat]} color={STAT_TONE[stat]} height={4} />
@@ -384,6 +386,7 @@ export function UmaProfileScreen() {
         <div className="mt-2 grid gap-1">
           {headline.map(({ skill, own }) => (
             <div key={skill.id} className="flex min-h-9 items-center gap-2 rounded-sm bg-sunken px-2">
+              <SkillIcon skill={skill} size={24} />
               <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{skill.name}</span>
               <SkillKindBadge kind={skill.kind} />
               <span className="text-micro w-12 shrink-0 text-right">{own ? 'free' : `${skill.costSp} SP`}</span>
@@ -396,6 +399,7 @@ export function UmaProfileScreen() {
             <div className="grid gap-1">
               {equippedSkills.map((skill) => (
                 <div key={skill.id} className="flex min-h-9 items-center gap-2 rounded-sm bg-sunken px-2">
+                  <SkillIcon skill={skill} size={24} />
                   <span className="min-w-0 flex-1 truncate text-[13px]">{skill.name}</span>
                   <SkillKindBadge kind={skill.kind} />
                   <span className="text-micro w-12 shrink-0 text-right">{skill.costSp} SP</span>

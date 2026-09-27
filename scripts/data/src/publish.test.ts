@@ -114,6 +114,22 @@ describe('content publishing', () => {
     })
   })
 
+  it('reads the bucket once when the client can list it, uploading only what is missing', async () => {
+    const { contentDir, manifest } = await fixture()
+    const storage = new FakeStorage()
+    const [present, ...missing] = manifest.files
+    storage.objects.set(present!.path, present!.bytes)
+    let lookups = 0
+    const listing = Object.assign(storage, {
+      listObjects: async () => new Map(storage.objects),
+      objectState: async () => { lookups += 1; return null },
+    })
+    const result = await publishContent({ contentDir, storage: listing })
+    expect(lookups).toBe(0)
+    expect(result.alreadyPresentPaths).toEqual([present!.path])
+    expect(storage.calls).toEqual([...missing.map((file) => file.path), 'manifest.json'])
+  })
+
   it('reports the full plan without mutating storage in dry-run mode', async () => {
     const { contentDir, manifest } = await fixture()
     const storage = new FakeStorage()

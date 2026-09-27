@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SkillKind, SkillTemplate, UmaTemplate } from './content'
+import { cardGoldSkillIds } from './cards'
 import { deriveUma } from './derived'
 import { lineageInheritedUniques } from './lineage'
 import { createUmaSave, type UmaSave } from './save'
@@ -96,5 +97,12 @@ describe('inherited uniques from lineage (D174)', () => {
       { skillId: 'i-sky', sourceId: 'sky' },
       { skillId: 'i-grand', sourceId: 'grand' },
     ])
+  })
+})
+
+describe('card golds (D182)', () => {
+  it('reads a card’s golds from its event skills, in their order, never its hints', () => {
+    const kinds = new Map([['e-gold', { kind: 'gold' as const }], ['e-white', { kind: 'white' as const }], ['e-gold-2', { kind: 'gold' as const }]])
+    expect(cardGoldSkillIds({ eventSkillIds: ['e-white', 'e-gold', 'missing', 'e-gold-2'] }, kinds)).toEqual(['e-gold', 'e-gold-2'])
   })
 })

@@ -14,8 +14,8 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 | `type` | Speed, Stamina, Power, Guts, Wit, Friend, or Group. All seven are usable |
 | `jpReleaseDate` | Decides the **era** (see [Scenarios](scenarios.md#era-windows)) |
 | `obtain` | `event` / `free` / `gacha`. `event` and `free` make up the **starter set** |
-| `effectProfile` | Now feeds only the **tilt** (below) |
-| `hintSkills` | The skills this card pays into the library through card nodes |
+| `effectProfile` | Now feeds only **Race Bonus** |
+| `hintSkills`, `eventSkills` | Its whites (hints) and golds (the golds among its events): each node it fills pays the next of each (D182) |
 | `icon`, `art` | Local asset references only |
 
 ## Ownership vs. the card set
@@ -46,11 +46,10 @@ Almost everything a card used to do lived in the training turn, which no longer 
 
 | Property | Effect |
 |---|---|
-| **Type** | how a card node distributes its value ([table](constellations.md#what-a-card-node-pays)) |
+| **Type** | how a card node distributes its value ([table](constellations.md#what-a-card-node-pays)), the same for every card of the type (D180) |
 | **Stars** | scale every node the card occupies: 0★ 60% → 5★ 100% |
 | **Era** | scales every node against the *scenario*: current era 100%, −5 points per era older, floor 40% |
-| **Tilt** | a small per-card shift of the primary/secondary split (below) |
-| **`hintSkills`** | which skills the card pays into the library, one per node it occupies |
+| **Skills** | the next white (`hintSkills`) and the next gold (its event golds) for each node it occupies (D182) |
 | **Race Bonus** | **Uma EXP from races** while the card is in the active set, from 1★ |
 
 Deleted with the training turn: Training Bonus, Friendship Bonus, Specialty Priority, Hint Frequency, Stat
@@ -61,23 +60,15 @@ skills and the same stat split; the newer one pays more per node. Because the pe
 scenario rather than in absolute terms, an old card fades as an Uma climbs tiers without ever becoming
 worthless, and the tree budget stays the ceiling at every tier.
 
-### Tilt
+### One split per type
 
-Two max-broken Speed cards should not be interchangeable. Each card's `effectProfile` generates one number:
+Every card of a type pays the same split (D180): the main stat 70 and the stat its facility also trains in the original
+30 (Speed with Power, Stamina with Guts, Power with Stamina, Wit with Speed), and Guts 60 with Speed and Power 20 each.
+So which card goes on which node is a choice about the main stat, and two cards of a type differ by their skills, era,
+stars and Race Bonus. A per-card tilt of the split (D125) is gone: meant as a small nudge, it reached its ±10-point cap
+on almost every card and sent a third of them to 60/40 (Guts 50/25/25).
 
-```
-tilt = clamp(−0.10, +0.10, (statBonusWeight − trainingBonusWeight) × 0.25)
-```
-
-which shifts its distribution toward its primary stat by `tilt` and away from its secondary by the same amount.
-A Speed card at tilt +0.08 pays Speed 0.78 / Power 0.22 instead of 0.70 / 0.30.
-
-**The row still sums to 1.0**, so the [invariance rule](constellations.md#the-invariance-rule) is untouched.
-Tilt changes the *shape* of a card, never its size — a specialist and a generalist are both worth exactly one
-node's value.
-
-Friend and Group cards have no primary, so their tilt is always 0. They pay skill points rather than stats
-(D132); their value is the loadout they buy.
+Friend and Group cards pay skill points rather than stats (D132); their value is the loadout they buy.
 
 ## Stars
 
@@ -109,7 +100,13 @@ threshold, once planned for bond 3, was never built and is not part of stars.
 ## Where cards live on screen
 
 - **The Cards tab** browses by lens — the collection, or one scenario ([Collection](collection.md#card-album)).
-- **Each card's page** (`/cards/:id`) holds owning it, its stars in every reached scenario, and what it pays.
+- **Each card's page** (`/cards/:id`) holds owning it, its stars in every reached scenario, and what it pays. Its type
+  shows as the original's type icon on the illustration, its split with the stat icons, and a **Skills** list with the
+  original's skill icons: its golds first, highlighted, then its whites, each marked with the node that pays it; a tap
+  shows what the skill does and its base cost (D182).
+- **Card tiles** carry the original's type icon in the corner, as the original and GameTora mark cards, and the
+  original's stat icons stand for Speed, Stamina, Power, Guts and Wit on stat rows (the Uma profile, the Training
+  header), with our own glyphs until content has them.
 - **The Training scene's Card set tab** is where a scenario's six are chosen and bonded
   ([UX](ux.md#training-scene)).
 

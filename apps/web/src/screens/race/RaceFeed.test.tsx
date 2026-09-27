@@ -28,6 +28,16 @@ describe('race feed', () => {
     expect(toasts()).toEqual([])
   })
 
+  it('says whether her stamina paid for her fastest spurt, and when it ran out (D179)', () => {
+    const cues = [
+      cue({ id: 2, kind: 'hp-empty', startSeconds: 4 }),
+      cue({ id: 1, kind: 'spurt', fullSpurt: false, startSeconds: 2 }),
+      cue({ id: 0, kind: 'spurt', fullSpurt: true }),
+    ]
+    render(<RaceFeed cues={cues} seconds={4} content={content} runners={runners} />)
+    expect(toasts()).toEqual(['StaminaOut of HP', 'Stamina shortHeld-back spurt', 'Final driveFull spurt!'])
+  })
+
   it('counts a folded rival only once it has happened, and fades a toast over the last fifth of its life', () => {
     const lateStart = cue({ kind: 'late-start', runner: 1, isPlayer: false, startSeconds: 0, endSeconds: 10, folded: [1, 4] })
     const view = render(<RaceFeed cues={[lateStart]} seconds={2} content={content} runners={runners} />)

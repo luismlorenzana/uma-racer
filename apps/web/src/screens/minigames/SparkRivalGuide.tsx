@@ -1,4 +1,4 @@
-// Full Rival Circuit guide, sharing Friendship Training's paged model (D178).
+// Full Rival Circuit guide, sharing Friendship Training's paged model (D184).
 import {
   SPARK_MATCH_TICKET_COST,
   SPARK_RIVAL_BOARD_HEIGHT,
@@ -15,7 +15,7 @@ import type { ReactNode } from 'react'
 import { PagedGuide, type PagedGuidePage } from '../../ui/PagedGuide'
 import {
   SparkIcon,
-  StaminaIcon,
+  HeartIcon,
   StrategyEndIcon,
   StrategyFrontIcon,
   StrategyLateIcon,
@@ -182,7 +182,7 @@ function guidePages(): readonly PagedGuidePage<SparkRivalGuidePageId>[] {
           <Panel>
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="grid justify-items-center gap-1"><SparkRivalChibi kind="spark" chibi={null} asset={null} label="Spark" className="w-16" /><SparkIcon size={20} className="text-accent" /><p className="text-xs">charge {SPARK_RIVAL_SHIFT_CHARGE}</p></div>
-              <div className="grid justify-items-center gap-1"><SparkRivalChibi kind="recovery" chibi={null} asset={null} label="Recovery" className="w-16" /><StaminaIcon size={20} className="text-success" /><p className="text-xs">restore Drive</p></div>
+              <div className="grid justify-items-center gap-1"><SparkRivalChibi kind="recovery" chibi={null} asset={null} label="Recovery" className="w-16" /><HeartIcon size={20} className="text-success" /><p className="text-xs">restore Drive</p></div>
             </div>
           </Panel>
           <Bullets items={[
