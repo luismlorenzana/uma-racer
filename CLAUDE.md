@@ -9,6 +9,7 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
   holds work that is still ahead.
 
 - `README.md` → documentation map. **The design docs are the source of truth.** Read the relevant doc before changing a system.
+- `docs/design/minigame-kit.md` is the shared contract for minigames: read it before designing or reviewing one.
 - `docs/decisions.md` is append-only: to reverse a decision, add a new entry that supersedes it.
 - `docs/open-questions.md` holds anything that needs the owner. The owner prefers **no open questions**: decide with a
   recommendation when a sensible default exists, and log it.

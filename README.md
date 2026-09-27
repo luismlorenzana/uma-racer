@@ -80,6 +80,7 @@ docs/           design, technical, research
 | [Training](docs/design/training.md) | Uma Level vs. Training Level, derived stats, tickets. The entry point to the two below |
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
+| [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |

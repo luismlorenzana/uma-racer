@@ -1,4 +1,4 @@
-// Shared full-screen, swipeable minigame guide shell (D178).
+// Shared full-screen, swipeable minigame guide shell (D184, docs/design/minigame-kit.md#8-the-guide).
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from './Button'

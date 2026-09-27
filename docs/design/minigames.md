@@ -3,6 +3,9 @@
 > Numbers marked as tuning baselines are checked-in and pinned. T074 may retune Rival Circuit only through the design,
 > decision-log and domain-test process required by AGENTS.md. Names remain provisional.
 
+What every minigame shares (the run contract, determinism, where the engine lives, the screen, the look, the guide and
+the reusable pieces) is in the [Minigame kit](minigame-kit.md). This page holds each game's own rules.
+
 Minigames are the **third pillar** of the game, beside Collection and Racing. They are the only way to raise a
 Training Level and the only way to earn a card's stars. There is no other training loop: no turns, no
 facilities, no energy, no per-turn RNG (D120).
@@ -185,6 +188,11 @@ Pressure and EXP budgets come from checked-in tier/TL curves so private content 
 The importer rejects missing ids, an encounter with the trainee as its own rival, duplicate rivals in one run, a scenario
 without enough eligible rivals, unknown intents and a boss with no complete script. Checked-in fixtures are small and
 synthetic. A production publication is incomplete until every scenario validates.
+
+The roster is Claude's to author (D185, like `flair.json`): a scenario's ordinary rivals are the Umas of its era and the
+two before it (all Umas while that is too few), each fighting with the recipe of her best strategy, and the genuinely
+versatile (three strategies tied at best) fight adaptively; its bosses are the eight strongest Umas it can field, one
+outfit per character.
 
 If an older publication has no rival pack, the client deterministically composes two rivals and a boss from the loaded
 Uma catalogue, excluding the trainee's character, and records a diagnostic. The fallback must start a playable run; it is

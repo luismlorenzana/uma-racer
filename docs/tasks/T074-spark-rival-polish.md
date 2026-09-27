@@ -7,6 +7,24 @@ Depends on merged T073 and the authored T072 pack. Read [M022](M022-spark-rival-
 [Minigames](../design/minigames.md#spark-match--rival-circuit), [UX](../design/ux.md#spark-match--rival-circuit), D169–D172
 and [Game-like Web Tech](../research/game-web-tech.md). Branch from current `main`; open a PR; never push to `main`.
 
+## Review findings to close (added by the M022 review)
+
+- **Drive barely moves.** `pnpm sim:spark` at merge finishes clears with a median Drive of 87–100 across every tier and
+  TL row, so rival Pressure is decorative and Recovery orbs have nothing to restore. The "Drive at clear" band above
+  (15–65%) is the first number to fix; re-derive Pressure (or its growth) from the simulator, then re-check the clear-rate
+  and EXP bands it moves.
+- **Proof code in the production scene.** `SparkRivalScene.ts` still carries the touch-proof demo: the default seed
+  `spark-rival-touch-proof-v1`, `playBestAdjacentDemo`, `toggleHeldDemo`, `bestAdjacentAction` and "proof" status copy.
+  Move them to the dev-only proof screen (or a subclass it owns) so the production scene holds only production behaviour.
+- **The authored roster is published.** Claude authors and publishes `content/overrides/spark-rivals.json` (like
+  `flair.json`, D107): each scenario's ordinary rivals are the Umas of its era and the two before it, each with the recipe
+  of her best strategy (the genuinely versatile, three strategies tied at best, fight adaptively), and its bosses are the
+  eight strongest Umas it can field. Tune against the published roster through the content runtime; ask Claude for
+  aggregate numbers rather than reading private rows. Roster changes go through Claude.
+
+**Order (D185):** land the balance closure below as its own PR first, then M023's T077, T076 and T075, then the rest of
+this task (feedback, accessibility, device closure) on the shared minigame shell.
+
 ## Rule for tuning changes
 
 Do not silently tweak constants while polishing. Any changed board size, timer, turn bound, ticket cost, advantage,
@@ -133,9 +151,9 @@ the app. A failed budget is fixed or explicitly brought to the owner; it is not 
 
 ## Content and release closure
 
-- Run the private importer and verify aggregate 14/14 authored coverage with no row-level log.
-- After the code prerequisite is deployed, publish through the existing manifest-last runbook and sign in to verify the
-  active content version contains `spark-rivals` with authenticated integrity.
+- The roster is Claude's to author, import and publish (D185); it was first published with 14/14 scenarios, 836 candidates
+  and 135 characters. Verify the signed-in app reports that content version and shows no fallback banner, and ask Claude
+  for any roster change or aggregate check.
 - Verify offline reload after one successful authenticated fetch and verify the fallback against a synthetic/old manifest.
 - Do not edit `.github/workflows/`, `infra/`, Firebase config, env files or API Dockerfile.
 
@@ -148,7 +166,8 @@ the app. A failed budget is fixed or explicitly brought to the owner; it is not 
 - Attach 390 × 844 screenshots of mid-drag, cascade/attack, boss intent, partial-loss result and clear/node result. Attach
   one physical-device capture or the owner's explicit validation note.
 - Update minigame/UX/architecture docs with final measured constants and remove T074 plus M022/T071–T073 specs under D104
-  only when the implementation PR completes the milestone. `docs/tasks/README.md` then marks M020 next.
+  only when the implementation PR completes the milestone, and update the [Minigame kit](../design/minigame-kit.md) if the
+  shared contract moved. `docs/tasks/README.md` then marks the next milestone.
 
 ## Out of scope
 

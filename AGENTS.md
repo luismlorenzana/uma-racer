@@ -11,6 +11,7 @@ the Claude session that runs production; when the two differ, **this file govern
 3. `docs/decisions.md` — what's decided (append-only log). `docs/open-questions.md` — what needs the owner.
 4. `docs/technical/architecture.md` — how the pieces fit together.
 5. Your task spec, if you were given one (`docs/tasks/*`), and `docs/tasks/README.md` for where it sits in the plan.
+6. For any minigame work, `docs/design/minigame-kit.md`: the contract, look and reusable pieces every minigame shares.
 
 ## Hard rules
 
