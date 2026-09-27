@@ -2,7 +2,8 @@
 
 import { ftReplay, type FtAction, type FtSetup } from '@racer/domain'
 
-export type MinigameKind = 'spark-match' | 'bond-recall' | 'friendship-training'
+/** The minigames a run can begin in. Bond Recall is retired (D177); its stored rows keep their `bond-recall` kind. */
+export type MinigameKind = 'spark-match' | 'friendship-training'
 
 export interface MinigameHost {
   /** Reserves a run: spends tickets, returns the deterministic seed. Rejects if tickets are short. */
@@ -30,6 +31,7 @@ export interface RunTicket {
 
 export type RunTarget =
   | { kind: 'spark-match'; umaId: string }
+  /** Retired (D177): only in stored history rows, never begun. */
   | { kind: 'bond-recall'; cardId: string; tier: number }
   /** The Uma names the card set the deck is built from; without one, the first set anyone holds there. */
   | { kind: 'friendship-training'; cardId: string; tier: number; umaId?: string | null }
@@ -68,9 +70,7 @@ export const validateMinigameOutcome = (ticket: RunTicket, target: RunTarget, ou
     }
     return
   }
-  if (!Number.isSafeInteger(outcome.mismatches) || outcome.mismatches < 0) {
-    throw new Error('Bond Recall outcomes require a nonnegative mismatch count')
-  }
+  throw new Error('Bond Recall is retired: Bond opens Friendship Training')
 }
 
 /**
@@ -86,8 +86,7 @@ export function validateFriendshipOutcome(setup: FtSetup, outcome: Extract<RunOu
 const sparkTargetExp = (level: number): number => 1_000 + 350 * (level - 1)
 
 const defaultReward: RewardFactory = (_ticket, target, outcome) => {
-  if ((target.kind === 'bond-recall' && outcome.kind === 'bond-recall') ||
-    (target.kind === 'friendship-training' && outcome.kind === 'friendship-training')) {
+  if (target.kind === 'friendship-training' && outcome.kind === 'friendship-training') {
     return { ticketsSpent: 10, starsBefore: 0, starsAfter: outcome.cleared ? 1 : 0, couponGranted: false }
   }
   if (target.kind !== 'spark-match' || outcome.kind !== 'spark-match') throw new Error('Mismatched test-double run')

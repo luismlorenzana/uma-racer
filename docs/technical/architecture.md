@@ -93,8 +93,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   not part of the cloud save. Appending an action checks the expected prior action count in the same Dexie transaction.
 - `commitRun` is idempotent by run id. Spark Rival Circuit loads the private encounter definition, replays the row's seed
   and actions in its pure engine, derives Training EXP from that authoritative result, applies it through `addTrainingExp`
-  and reports actual constellation nodes opened. The screen cannot submit a score. Bond Recall applies a clear only to the
-  named scenario's card stars, appends the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss
+  and reports actual constellation nodes opened. The screen cannot submit a score. Friendship Training replays the run's frozen setup and saved
+  choices, then applies a clear only to the named scenario's card stars, appends the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss
   as a closed paid run. The profile, affected Uma/card, ledger, Trainer reconciliation and outbox work commit atomically
   before Zustand publishes.
 - Collection acquisition uses the same boundary. Shard exchange transactionally derives its next numbered prefix and

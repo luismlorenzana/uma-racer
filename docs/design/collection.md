@@ -167,7 +167,7 @@ Seven families, each used where it belongs:
 | Icon | 128 px, atlased | Loaded with the content packs | Card grids, and any Uma list before her bust arrives |
 | Uma bust | 256 px square, head and shoulders | Cropped from her portrait at import, one file per Uma | Every list of Umas: Stable grid, the Race tab's picker, lineage picker, pre-race field, results (D142) |
 | Uma portrait | 512 px, transparent | One file per Uma, fetched on demand | Stable detail area, the Uma reveal, the art viewer |
-| Card art | 450×600 full illustration, the source's own size | One file per card, fetched on demand | The card page's hero, the Cards tab detail area, the card reveal, Bond Recall faces, the art viewer (D144) |
+| Card art | 450×600 full illustration, the source's own size | One file per card, fetched on demand | The card page's hero, the Cards tab detail sheet, the card reveal, Friendship Training's hand, the art viewer (D144) |
 | Race face | 128 px square, transparent | Cut from each character's summer-uniform stand at import, one file per character | The runner tokens in a race (D160) |
 | Chibi | 256 px, transparent, standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Standing: Spark Match tiles (D161). Celebrating: not placed yet |
 | Outfit stand | 512 px, transparent: gym clothes, summer and winter uniforms, casual clothes | Four per character, from the owner's local copy (T059) | Imported, not placed yet |
@@ -267,8 +267,8 @@ scenario any Uma has reached. It opens on the featured Uma's active scenario and
 Ties break owned first, then by per-node pay. The two lenses keep separate saved queries and views, since bond means
 nothing in the collection.
 
-- The reserved detail area above the grid acts on the lens: in a scenario it shows the card's bond there and a
-  **Bond** button straight into Bond Recall (returning to the same lens); an unowned card shows **Unlock** with its
+- The card's detail sheet acts on the lens: in a scenario it shows the card's bond there and a
+  **Bond** button straight into Friendship Training (returning to the same lens); an unowned card shows **Unlock** with its
   price. **Open** goes to the card's page.
 - Compare shows type, era, how one node splits, bond and per-node pay in the lens scenario, skill count and price.
 - **The card set picker uses this album**, on the scenario lens of the set being filled, owned cards only, sorted by

@@ -74,10 +74,20 @@ async function reset() {
   await db.delete()
 }
 
-async function seed(tickets = 3) {
+async function seed(tickets = 3, mainStars: Record<string, number> = {}) {
   await db.open()
   await db.profile.put({ id: 'main', data: { ...createPlayerProfile('synthetic-friendship', 1234), tickets }, version: 1 })
-  for (const template of cards) await db.cards.put({ id: template.id, data: createCardSave(template), version: 1 })
+  for (const template of cards) {
+    const save = createCardSave(template)
+    await db.cards.put({ id: template.id, data: template.id === 'card-0' ? { ...save, stars: mainStars } : save, version: 1 })
+  }
+}
+
+/** Plays the reserved run with the bot and commits what it did. */
+async function playOut(runId: string) {
+  const { setup } = (await host().loadRun(runId))!
+  const { actions, state } = ftBotPlay(setup)
+  return { cleared: state.phase === 'won', reward: await host().commitRun(runId, { kind: 'friendship-training', cleared: state.phase === 'won', actions }) }
 }
 
 const tickets = async () => parsePlayerProfileOrThrow((await db.profile.get('main'))!.data).tickets
@@ -138,6 +148,46 @@ describe('Friendship Training runs', () => {
     expect(reward.starsAfter).toBe(0)
     expect(await stars()).toBe(0)
     expect(await tickets()).toBe(2)
+  })
+
+  it('advances only the named scenario’s star, and pays no tickets for it', async () => {
+    await seed(3, { '1': 2 })
+    const { runId } = await host().beginRun('friendship-training', { ...target, tier: 2 })
+    const { cleared, reward } = await playOut(runId)
+    expect(cleared).toBe(true)
+    expect(reward).toEqual({ ticketsSpent: 1, starsBefore: 0, starsAfter: 1, couponGranted: false })
+    expect(parseCardSave((await db.cards.get('card-0'))!.data)!.stars).toEqual({ '1': 2, '2': 1 })
+    expect(await tickets()).toBe(2)
+    expect(await db.ledger.count()).toBe(1)
+  })
+
+  it('grants the 5★ Card Select Coupon once across scenarios', async () => {
+    await seed(3, { '1': 4, '2': 4 })
+    // A 5★ season is balanced for a real collection; this rule is about the coupon, so each run is cut to one stage.
+    const shorten = async (runId: string) => {
+      const row = (await db.minigameRuns.get(runId))!
+      await db.minigameRuns.put({ ...row, setup: { ...row.setup!, earning: 1, races: row.setup!.races.slice(0, 1) } })
+    }
+    const first = await host().beginRun('friendship-training', target)
+    await shorten(first.runId)
+    const one = await playOut(first.runId)
+    const second = await host().beginRun('friendship-training', { ...target, tier: 2 })
+    await shorten(second.runId)
+    const two = await playOut(second.runId)
+    expect([one.cleared, two.cleared]).toEqual([true, true])
+    expect(one.reward).toMatchObject({ starsAfter: 5, couponGranted: true })
+    expect(two.reward).toMatchObject({ starsAfter: 5, couponGranted: false })
+    expect((await db.ledger.toArray()).filter((row) => row.data.reason === 'card-max')).toHaveLength(1)
+  })
+
+  it('starts a new attempt after a loss', async () => {
+    await seed()
+    const first = await host().beginRun('friendship-training', target)
+    await host().commitRun(first.runId, { kind: 'friendship-training', cleared: false, actions: [{ type: 'give-up' }] })
+    const next = await host().beginRun('friendship-training', target)
+    expect(next.attemptIndex).toBe(1)
+    expect(next.seed).not.toBe(first.seed)
+    expect(await tickets()).toBe(1)
   })
 
   it('needs a ticket', async () => {

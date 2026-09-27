@@ -24,7 +24,6 @@ multipliers on a training turn that no longer exists.
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
 | [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | [T071](T071-spark-rival-engine.md) · [T072](T072-spark-rival-content.md) · [T073](T073-spark-rival-runtime.md) · [T074](T074-spark-rival-polish.md) | Specified · next |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M020 — Friendship Training](M020-friendship-training.md) | T065; T063 and T064 complete (beta) | Awaiting the owner's play |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
 
@@ -60,11 +59,15 @@ fourteen scenario buffs) landed on 2026-09-26 and was removed under D104; D163�
 
 M009 (look and feel: the Paddock tokens and primitives, every screen rolled onto them, and the original icon set with
 the drawn mark) landed on 2026-09-26 and was removed under D104; D166–D167 and
-[Visual System](../design/visual-system.md) carry it. Spark Match keeps its own look until its rework, and Bond Recall until Friendship Training (M020) replaces it.
+[Visual System](../design/visual-system.md) carry it. Spark Match keeps its own look until its rework.
 
-M022 runs before M020. Spark Rival Circuit establishes and proves the generic local action journal that M020's longer
-Friendship Training runs need; implementing both journal migrations independently would create an avoidable save and merge
-conflict. T071–T074 are reserved for M022 and are never reused.
+M020 (Friendship Training: the roguelite card minigame, its scenario twists, and the cutover that retired Bond Recall)
+landed on 2026-09-26 and was removed under D104; D146, D168, D173, D177 and
+[Minigames](../design/minigames.md#friendship-training--card-stars) carry it.
+
+M020 landed first, with its own frozen setup and saved choices on the local run row (D168). M022's generic action journal
+(T073) should absorb those rows or stay compatible with them, so no run is migrated twice. T071–T074 are reserved for
+M022 and are never reused.
 
 Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
 

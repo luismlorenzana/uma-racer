@@ -41,7 +41,7 @@ describe('MinigameHostTestDouble', () => {
     expect(host.commitCalls).toHaveLength(2)
   })
 
-  it('advances Bond Recall once when its completed run is committed twice', async () => {
+  it('advances a card once when its completed Friendship Training run is committed twice', async () => {
     const reward = vi.fn(() => ({
       ticketsSpent: 10,
       starsBefore: 0,
@@ -49,18 +49,18 @@ describe('MinigameHostTestDouble', () => {
       couponGranted: false,
     }))
     const host = new MinigameHostTestDouble({ reward })
-    const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card', tier: 1 })
-    const outcome = { kind: 'bond-recall' as const, cleared: true, mismatches: 4 }
+    const ticket = await host.beginRun('friendship-training', { kind: 'friendship-training', cardId: 'synthetic-card', tier: 1 })
+    const outcome = { kind: 'friendship-training' as const, cleared: true, actions: [] }
     expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ starsBefore: 0, starsAfter: 1 })
     expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ starsBefore: 0, starsAfter: 1 })
     expect(reward).toHaveBeenCalledTimes(1)
     expect(host.commitCalls).toHaveLength(2)
   })
 
-  it('spends the Bond Recall ticket without advancing after a loss', async () => {
+  it('spends the Friendship Training ticket without advancing after a loss', async () => {
     const host = new MinigameHostTestDouble()
-    const ticket = await host.beginRun('bond-recall', { kind: 'bond-recall', cardId: 'synthetic-card', tier: 1 })
-    expect(await host.commitRun(ticket.runId, { kind: 'bond-recall', cleared: false, mismatches: 10 })).toEqual({
+    const ticket = await host.beginRun('friendship-training', { kind: 'friendship-training', cardId: 'synthetic-card', tier: 1 })
+    expect(await host.commitRun(ticket.runId, { kind: 'friendship-training', cleared: false, actions: [] })).toEqual({
       ticketsSpent: 10,
       starsBefore: 0,
       starsAfter: 0,
@@ -70,7 +70,7 @@ describe('MinigameHostTestDouble', () => {
 
   it('rejects mismatched targets and incomplete Spark Match outcomes', async () => {
     const host = new MinigameHostTestDouble()
-    await expect(host.beginRun('bond-recall', { kind: 'spark-match', umaId: 'synthetic-uma' })).rejects.toThrow(/do not match/)
+    await expect(host.beginRun('friendship-training', { kind: 'spark-match', umaId: 'synthetic-uma' })).rejects.toThrow(/do not match/)
     const ticket = await host.beginRun('spark-match', { kind: 'spark-match', umaId: 'synthetic-uma' })
     await expect(host.commitRun(ticket.runId, { kind: 'spark-match', score: 100, moves: 24 })).rejects.toThrow(/exactly 25/)
   })

@@ -263,6 +263,8 @@ export const LEDGER_REASONS = [
   'card-unlock',
   /** Owner-only top-up for playtesting; never earned in play (docs/design/economy.md). */
   'dev-grant',
+  /** A run retired before it could finish gives its ticket back: open Bond Recall runs at the cutover (D177). */
+  'minigame-refund',
 ] as const
 export type LedgerReason = (typeof LEDGER_REASONS)[number]
 

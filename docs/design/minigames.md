@@ -9,15 +9,14 @@ facilities, no energy, no per-turn RNG (D120).
 | Minigame | Raises | Board |
 |---|---|---|
 | **Spark Match — Rival Circuit** | Training Level 1 → 10 of the active scenario | continuous-drag puzzle battle |
-| **Bond Recall** | one card by one star, until Friendship Training replaces it (M020) | match-2 memory |
-| **Friendship Training** (beta) | one card by one star, beside Bond Recall until the owner prefers it | a roguelite deck of support cards |
+| **Friendship Training** | one card by one star in one scenario | a roguelite deck of support cards |
 
 Both are **seeded and replay-stable**. Spark Rival Circuit is a pure replay of its encounter, seed and persisted
-actions; Bond Recall's board comes from `(saveId, target, attemptIndex)`. Reloading mid-run restores the same state and
+actions; Friendship Training replays its frozen setup and saved choices. Reloading mid-run restores the same state and
 cannot reroll a friendlier one. Neither uses `Math.random`.
 
-Both are **lazy-loaded routes**. Spark Match loads its own PixiJS scene under the existing route; Bond Recall is DOM and
-CSS. Neither may push the main bundle past the 180 KB gzip budget.
+Both are **lazy-loaded routes**. Spark Match loads its own PixiJS scene under the existing route; Friendship Training is
+DOM and CSS. Neither may push the main bundle past the 180 KB gzip budget.
 
 ---
 
@@ -234,82 +233,225 @@ cancellation, background/resume and sustained frame pacing; browser emulation al
 
 ---
 
-## Bond Recall — card stars
+## Friendship Training — card stars
 
-Pick one owned card **and one scenario**, then clear a grid of face-down tiles by matching pairs. A full
-clear gives that card **one star in that scenario** (D127, D147).
+The card minigame (D146, D177): a Balatro-style run that trains one card through a season of weeks and races. A clear
+is **one star in one scenario**, for one ticket, all or nothing. D168 closed its lists, D173 gave it a sense of place,
+and the numbers are tuning drafts held by `pnpm sim:training`, which keeps the bot's clear rates near 90 / 85 / 80 / 75
+/ 70% for 1★–5★ and every scenario twist within its band. The engine is `packages/domain/src/friendship-*.ts`; the
+screens are `apps/web/src/screens/minigames/friendship/`.
 
-A card can be trained in any scenario its era allows that some Uma has unlocked. Every way in names the card, the
-scenario and where to return to (M016): a **Bond** button on each slot of the Training scene's Card set tab and
-beside each card in a constellation node's sheet, and the Cards album. A run with no card redirects to the album;
-there is no scenario-less picker. After a run, **Bond again** starts the next one and **Done** goes back.
+### Fixed choices (D146)
 
-### Board
+- **Target and price:** a run names one card and one scenario, costs **1 ticket** (D148), and a clear gives that card
+  **+1★ there**. There is no partial progress: a loss costs the ticket and nothing else.
+- **Owned cards only.** Runs never show unowned cards; unlocking stays tickets and coupons (D130).
+- **Spark Match stays separate** and remains the only way to raise a Training Level. M022 replaces its adjacent-swap
+  rules with Rival Circuit before this milestone begins; Friendship Training does not share combat, rewards or UI with it.
+- **Length grows with the star being earned**, so early stars are quick and the fifth is a real run.
+- **Seeded and resumable:** the run is a pure function of its setup and the player's choices, so a reload resumes it
+  exactly and cannot reroll a friendlier draw.
 
-One board per star being earned, growing with the card:
+### A run
 
-| Earning | Pairs | Grid | Mismatches allowed |
+A run is a short **season of stages**. Each stage is **two training weeks and a race**:
+
+| Earning | Stages | Races | About |
 |---|---|---|---|
-| 1★ | 6 | 3 × 4 | 10 |
-| 2★ | 8 | 4 × 4 | 12 |
-| 3★ | 9 | 3 × 6 | 13 |
-| 4★ | 10 | 4 × 5 | 14 |
-| 5★ | 12 | 4 × 6 | 16 |
+| 1★ | 1 | G3 | 5 min |
+| 2★ | 2 | G3, G2 | 8 min |
+| 3★ | 2 | G3, G2 (harder targets) | 8 min |
+| 4★ | 3 | G3, G2, G1 | 12 min |
+| 5★ | 3 | G3, G2, G1 (harder targets) | 12 min |
 
-Tile faces are the **cards of the set the run was launched from** (else the first set anyone holds in that
-scenario), then filler drawn deterministically from the player's other owned cards. Running out of mismatches ends the run without an advance — this one has
-real stakes, which is why it is the shorter game.
+Each stage's race is drawn by the seed from the real races of its grade. Missing any week's or race's target ends
+the run.
 
-### Presentation
+### The deck
 
-Tiles are **cards**: the full illustration at its own 3:4 shape, never cropped, so a face is recognisable at a glance
-and tiles can stay small. The board measures the space it is given and uses the largest tile that fits, capped at
-88 pt wide, so a 4 × 6 board fits a 375 × 667 phone (54 × 72 pt tiles) and a 3 × 4 board never balloons (88 × 117 pt).
-The board sits centred in that space, so it can never push the status line off screen or squash its own rows.
+- **Starting deck (12):** two copies of the **main card** and two of each other card in the set the run was launched
+  from. A set with fewer than six cards is topped up from owned, era-eligible cards chosen by the seed.
+- **Rewards:** after each training week, **pick 1 of 3** owned, era-eligible cards to add a copy of, or skip.
+- **Card strength** grows with the card's own stars in this scenario, `× (1 + 0.1 × stars)`, so bonding one card makes
+  the next run easier.
 
-- **Backs** carry a gold inlay and a ✦ emblem on a lattice, on a felt-dark table; flips turn in 3D perspective.
-- **States:** a first pick gets a gold ring; a missed pair shows red rings until it turns back; matched cards glow gold
-  and carry a ✓.
-- The **card being bonded** leads the start screen as full art and sits beside the verdict on the result screen.
-- Cards with no published illustration show their icon and name on the face instead.
+### An encounter
 
-### Stars, not levels
+Every week and every race is an **encounter**: the whole deck is shuffled, the main card goes into the hand, and the
+hand fills to 7. Scoring an encounter's target ends it at once; every train left unused pays 2 fans.
 
-Card levels and card EXP are deleted (D120, D130): a card has one number per scenario, its **stars**, 0★ to 5★
-(D147). Reaching 5★ grants the one-time **Card Select Coupon**; a star pays no tickets (D148).
+### A training week
 
-Stars are what scale a card node's contribution ([Constellations](constellations.md#what-a-card-node-pays)), so the
-card minigame is the direct path from "I own this card" to "this card is worth slotting".
+1. **Pick a facility** from three offered (three different stat types). They differ: an easy one (target × 0.9, 2
+   fans), a standard one (× 1, 3 fans) and a hard one (× 1.15, 4 fans), so the choice is type against payout.
+2. **Hand of 7**, with **3 trains** and **2 redraws** (discard up to five and draw back).
+3. **Train:** select 1–5 cards. Every selected card scores its points, and the best **formation** the selection
+   makes sets the rest: `(card points + formation points) × (formation mult + bonuses)`.
 
-### Cost
+| Formation | Rule | Points | Mult |
+|---|---|---|---|
+| Solo | anything | 5 | 1 |
+| Duo | two copies of one card | 10 | 2 |
+| Friendship | two on-type cards | 15 | 2 |
+| Trio | three copies of one card | 30 | 3 |
+| **Rainbow** | three or more on-type cards | 30 | 3, +1 per card past three, up to 5 |
+| Full team | all five stat types | 40 | 4 |
+| Rainbow team | five on-type cards | 60 | 6 |
 
-**1 training ticket per run**, win or lose (D148).
+- **On-type** means the card's type is the facility's. Friend and Group cards count as any type, and so fill a gap in
+  a Full team.
+- **Card points:** 10 on-type, 5 elsewhere; Friend and Group cards score 7 anywhere. Then × the card's strength.
+- **Each card's trait** comes from its strongest effect-profile weight, so the 312 cards need no hand-written rules:
 
----
+| Strongest weight | Trait | Cards |
+|---|---|---|
+| Friendship Bonus | +1 mult on its own facility | 68 |
+| Training Bonus | +6 points | 67 |
+| Race Bonus | +50% card points in races | 52 |
+| Specialty Priority | counts twice towards a Rainbow | 43 |
+| Stat Bonus | +4 points, +2 more on its own facility | 34 |
+| Hint Frequency | draw a card after the train | 28 |
+| Skill Point Bonus | +1 fan when played | 13 |
+| Initial Stats | +10 points on the encounter's first train | 7 |
 
-## Friendship Training — card stars (beta)
+### The main card
 
-A Balatro-style run that trains one card through a season of weeks and races; a clear is one star in one scenario,
-for one ticket, all or nothing (D146). The rules, numbers and twists live in
-[M020](../tasks/M020-friendship-training.md) until the cutover (T065); D168 closed its lists and D173 its look.
+- It is **always in the opening hand**.
+- Each train it joins fills its **friendship gauge**. At 3, it is **bonded for the rest of the run**: it counts as
+  on-type everywhere, and its **signature** switches on: its unique effect's kinds from the original data, as the
+  matching traits at ×1.5 (a unique effect with no matching kind repeats the card's own trait at ×1.5).
+- This is the fantasy: training *with* the card until it lights up, as rainbow training did in the original.
 
-- **Where:** a **Train · beta** button beside Bond on each scenario row of a card's page.
-- **A run:** stages of two training weeks and a race. Pick a facility (easy, standard or hard), then play cards from
-  a hand of seven in formations (Friendship, Rainbow, Full team…) to reach the target. The main card bonds after
-  three trains and then counts as every type. Races favour two types by course and carry a rival rule; a won race
-  offers a skill, and the shop sells copies, removals, upgrades and skills for fans.
-- **Its look:** a season map across the top marks every week and race; a living scene shows the main card's
-  character (their standing chibi, celebrating once bonded) at a facility tinted by its stat or on a moving track,
-  with the friendship hearts beside them and each train's formation and score rising as it lands. The hand is two
-  rows of full-art cards in the thumb zone, about 80 × 107 pt, 72 × 96 at 375 × 667.
-- **How to play:** an illustrated eleven-page guide (the goal, the season map, facilities, the hand, formations, card
-  points and traits, the bond, races, skills and the shop, scenario twists, tips). It opens by itself on a device's
-  first visit, from **How to play** on the start screen, and from the run's menu at the page that fits the moment.
-  Every number in it is read from the rules module, so it changes with the balance.
-- **Saving:** Begin freezes the setup on the local run row and every choice is appended, so a reload resumes exactly
-  (Resume on the start screen); the commit replays the choices before the star is granted. Give up is a loss.
-- **Balance:** `pnpm sim:training` holds the bot's clear rates near 90 / 85 / 80 / 75 / 70% for 1★–5★, and every
-  scenario twist within its band.
+### Races
+
+The same play with **4 trains**, no facility choice, and its own target. The course sets two
+favoured types, which count as on-type:
+
+| Distance | Turf | Dirt |
+|---|---|---|
+| Sprint | Speed, Power | Power, Guts |
+| Mile | Speed, Wit | Speed, Power |
+| Medium | Speed, Stamina | Speed, Power |
+| Long | Stamina, Guts | Stamina, Power |
+
+One **rival rule** applies, drawn by the seed:
+
+| Rival rule | Effect |
+|---|---|
+| Front-runner | your first train scores half |
+| Heavy going | Speed cards score half their card points |
+| Marked | the main card's trait and signature are off |
+| Fast pace | one redraw fewer |
+| Crowded field | hand size 6 |
+| Stamina test | trains of fewer than three cards score half |
+| Traffic | Rainbow, Full team and Rainbow team get −1 mult |
+| Duel | the target is 25% higher, and you get a fifth train |
+
+Winning a race offers **1 of 3 skills**. After every race but the last, the shop opens.
+
+### Skills (the relics)
+
+- **Five slots.** A full bar can replace a slot or skip. Offers come from the main card's hint skills first, then the
+  other deck cards' hints, then the learnable white and gold pool.
+- **A skill's rule is generated from its data**: its effect and where it fires pick one of twelve rules, and gold
+  skills are stronger than white. When a skill has several effects, the first of start, recovery, vision, lane,
+  acceleration, speed, stats, debuff decides.
+
+| Rule | From | White | Gold |
+|---|---|---|---|
+| Gate | start (gate) skills | a race's first train × 1.5 | × 2 |
+| Second Wind | recovery | +1 redraw each encounter | +2 |
+| Vision | vision | +1 hand size | +1 hand size and +1 redraw |
+| Positioning | lane | +1 train in races | +1 train and +1 mult in races |
+| Kick | acceleration | +4 points per card trained | +6 |
+| Corner | speed at a corner | an encounter's first train × 1.5 | × 2 |
+| Straight | speed on a straight | +20 points on a train of four or more | +30 |
+| Spurt | speed late in the race | +3 mult on an encounter's last train | +5 |
+| Surge | any other speed skill | +2 mult on a train with a Speed card | +3 |
+| Aptitude | stat (green) skills | +5 points per card of the stat it raises | +8 |
+| Pressure | debuffs | the rival rule lifts after your first train | the rival rule is off |
+| Form | anything else | +10 points on every train | +15 |
+
+- **The skill's name and its race effect are shown with its run rule**, so the run teaches what the skill does on track.
+
+### Fans and the shop
+
+- **Fans** are the run's currency: a week's payout, 5 for a race, +2 per unused train, and the Skill Point trait.
+- **The shop** opens after each race but the last. It sells a card copy (4), a removal (3), an upgrade of +5 points to
+  one copy (3), a white skill (6), a gold skill (8) and a reroll of the copy and skills (2). Fans vanish at the end of
+  the run.
+
+### The hand at 390 × 844 (D168)
+
+Seven full-art cards will not fit in one row, and a fan hides the art, so the hand is **two rows**: 4 over 3, each
+card its full 3:4 illustration at about 80 × 107 pt, uncropped. Eight or nine cards (Vision) make 4 over 4 or 5 over
+4 at the width that fits. A card's face carries its type icon (top left) and its points here (bottom right); the
+main card wears its gauge (three pips) and, once bonded, a gold ring. **Tap** selects (the card lifts and rings);
+**long-press** opens its sheet: trait, signature, points on this facility. The hand sits in the thumb zone above
+**Redraw** and **Train**; the target, score bar and live readout ("Rainbow · 45 × 4 = 180") sit above it. At
+375 × 667 the cards shrink to about 72 × 96 pt and nothing scrolls.
+
+### A run's lifecycle (D168)
+
+- **Begin** spends the ticket and freezes the run's **setup**: the deck's cards with their types, traits, signatures
+  and strengths, the reward and skill pools, the chosen races and the twist. The run replays from that setup, so a
+  content update mid-run cannot change it.
+- **Every choice is saved** on the run's local row as it is made. Leaving or reloading resumes exactly where the run
+  was; the Start screen says **Resume**. One open run per card and scenario; different cards can each have one.
+- **Give up** (behind a confirm) ends the run as a loss. The ticket stays spent.
+- **Runs are local.** The ticket and a cleared star sync; a run in progress stays on the device that began it.
+- **The commit replays** the setup and the saved choices, and grants the star only if the replay clears.
+- **Journal implementation:** use M022's generic local action-journal port and expected-action-count append. Do not add a
+  second Dexie migration or parallel journal service; Friendship Training's frozen setup remains part of its own row.
+
+### Balance (`pnpm sim:training`)
+
+A headless bot plays seeded runs for each star (greedy best formation, redraws towards on-type cards, simple shop
+choices). Targets are tuned until the bot clears about **90% / 85% / 80% / 75% / 70%** for 1★–5★; a person who plans
+ahead does better. The table is printed and gated like `sim:careers`.
+
+### Screens
+
+A lazy DOM route, `/minigames/friendship-training/:cardId?tier&uma&return`, with Motion `m.*` and transforms only.
+
+- **Start:** the main card's art (D144), stars now → next, run length, the scenario's twist, cost, **Begin · 1
+  ticket** (or **Resume**).
+- **Week choice:** three facility cards with target and payout.
+- **Training and races:** as laid out above, with the skills bar under the header.
+- **Reward, skill, shop and result** screens, the result celebrating the star.
+- **How to play:** an illustrated guide, opened once by itself, then from the start screen and the run's menu (the
+  menu also holds Give up), at the page that fits the moment; its numbers come from the rules module.
+- **A sense of place** (D173): a season map across the top, and a scene where the main card's character trains at
+  the facility or runs the race, with the friendship hearts and each train's result rising above them.
+- Reachable from every **Bond** button: the card page, the Cards tab's scenario lenses, the Training scene's card set and a constellation node's sheet (D177).
+
+### Scenario twists
+
+Each scenario's run carries **its buff's theme** (D165) as one run rule, so a scenario has one identity in both
+places. Drafts, each with a sim row:
+
+| Scenario | Twist |
+|---|---|
+| URA Finale | **Foundation:** none, the base game |
+| Unity Cup | **Team Spirit:** a train with five different characters adds +1 mult |
+| Trackblazer | **Climax:** each race won adds +1 mult to every later train |
+| Our Grand Concert | **Performance:** each train earns a note for every stat type in it; with all five, the next train scores × 2 and the notes reset |
+| Grand Masters | **Fragments:** each train earns a fragment, two with a card at 4★ or more; at eight, the next train scores × 1.5 |
+| Project L'Arc | **Expedition:** winning a race takes its first favoured type with you: on-type for the rest of the run |
+| U.A.F. Ready GO! | **Genres:** the same facility in consecutive weeks adds +1 mult per week of the streak |
+| Great Food Festival | **Cooking:** each week's facility gives its ingredient; three of a kind cook a dish, × 1.2 for the next three trains |
+| Run! Mecha Umamusume | **Research:** each cleared week upgrades its facility, +10% there per level for the rest of the run |
+| The Twinkle Legends | **Legends:** one other card of the set plays as if at 5★ |
+| Design Your Island | **Construction:** before the first week, build two facilities; they pay +5 points per card |
+| Yukoma Hot Springs | **Soak:** after each race, the next stage's weeks get +1 redraw |
+| Beyond Dreams | **Shared Light:** the two facility types trained least get +1 mult |
+| Tracen Diner | **Orders:** each week posts a formation; filling it pays 3 fans |
+
+### What it never does
+
+- Unowned cards in runs, scouting, or any new unlock path (D146).
+- Training Level progress from runs: Spark Match owns it.
+- Meta-progression inside the minigame (permanent run upgrades); the stars are the progression.
 
 ---
 
@@ -321,5 +463,7 @@ Deleted outright, with the save fields that carried them:
   multipliers, and the 1200 soft-cap halving on gains.
 - Skill hint rolls. Skills now come from node assignments ([Constellations](constellations.md#skills)).
 - Card EXP and the 1–25 level curve.
+- **Bond Recall**, the match-2 memory game that first earned card stars, retired by Friendship Training (D177). Its
+  links redirect, and a run left open there gave its ticket back.
 - Scenario modifiers as training-gain multipliers. A scenario's identity is now its cap profile, its
   constellation shape and slot count, and its buff ([Scenarios](scenarios.md#scenario-buffs)).

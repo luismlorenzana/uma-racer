@@ -12,7 +12,7 @@ import {
   treeBudget,
   nodeValue,
   SPARK_MATCH_TICKET_COST,
-  BOND_RECALL_TICKET_COST,
+  FRIENDSHIP_TRAINING_TICKET_COST,
   DAILY_TICKETS,
   TICKET_STORAGE_CAP,
   cardUnlockCost,
@@ -342,7 +342,7 @@ describe('progression and economy', () => {
 
   it('prices every run at one ticket, and unlocks at a fifth of their old price (D148)', () => {
     expect(SPARK_MATCH_TICKET_COST).toBe(1)
-    expect(BOND_RECALL_TICKET_COST).toBe(1)
+    expect(FRIENDSHIP_TRAINING_TICKET_COST).toBe(1)
     expect(umaPromotionCost(1)).toBe(5)
     expect(umaPromotionCost(10)).toBe(50)
     expect(cardUnlockCost(1)).toBe(6)

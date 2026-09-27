@@ -186,7 +186,7 @@ and `treeBudget(T)` stays the real ceiling at every tier rather than drifting up
 
 This is also the pressure that keeps a collection alive: as an Uma climbs tiers, the cards that carried her
 fall behind, and the ones you pull matter again. An under-broken card underpays the same way, which is what
-makes the [card minigame](minigames.md#bond-recall--card-stars) worth playing.
+makes the [card minigame](minigames.md#friendship-training--card-stars) worth playing.
 
 ### Skill-point cards
 

@@ -30,7 +30,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { getContentAsset, type LoadedContent } from '../content/runtime'
 import { setConstellationNode } from '../game/actions'
-import { bondRecallHref } from '../game/bond-links'
+import { friendshipTrainingHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { UmaBust } from '../ui/UmaBust'
@@ -199,7 +199,7 @@ export function ConstellationScreen() {
                     </button>
                     {bond < MAX_STARS && (
                       <Link
-                        to={bondRecallHref({ cardId, tier: run.tier, umaId: save.templateId, returnTo: here })}
+                        to={friendshipTrainingHref({ cardId, tier: run.tier, umaId: save.templateId, returnTo: here })}
                         className="flex min-w-14 items-center justify-center rounded-sm bg-sunken px-2 text-[12px] font-semibold text-accent-strong"
                       >
                         Bond

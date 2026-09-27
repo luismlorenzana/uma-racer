@@ -1,4 +1,4 @@
-import { BOND_RECALL_TICKET_COST, MAX_STARS, brokenTiers, scenarioForTier } from '@racer/domain'
+import { FRIENDSHIP_TRAINING_TICKET_COST, MAX_STARS, brokenTiers, scenarioForTier } from '@racer/domain'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
@@ -25,7 +25,7 @@ import {
   type CardEntry,
   type CardLens,
 } from '../game/album/cards'
-import { bondRecallHref } from '../game/bond-links'
+import { friendshipTrainingHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { AlbumChrome } from '../ui/album/AlbumChrome'
 import { AlbumDetail } from '../ui/album/AlbumDetail'
@@ -305,7 +305,7 @@ export function CardsScreen() {
     navigate(`/cards/${encodeURIComponent(entry.id)}${lensTier ? `?tier=${lensTier}` : ''}`)
   }
   const bondHref = (entry: CardEntry, tier: number) =>
-    bondRecallHref({ cardId: entry.id, tier, returnTo: `/cards?lens=${tier}` })
+    friendshipTrainingHref({ cardId: entry.id, tier, returnTo: `/cards?lens=${tier}` })
   const unlock = (entry: CardEntry) => {
     if (busy) return
     setBusy(true)
@@ -322,13 +322,13 @@ export function CardsScreen() {
 
   const bondAction = (entry: CardEntry, size: 'sm' | 'md') => {
     if (lensTier === null || !entry.owned || (entry.bond ?? 0) >= MAX_STARS) return null
-    if (tickets < BOND_RECALL_TICKET_COST) return <Button size={size} disabled>Bond · need {formatTickets(BOND_RECALL_TICKET_COST)}</Button>
+    if (tickets < FRIENDSHIP_TRAINING_TICKET_COST) return <Button size={size} disabled>Bond · need {formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)}</Button>
     return (
       <Link
         to={bondHref(entry, lensTier)}
         className={`font-display inline-flex items-center justify-center rounded-sm bg-accent px-3 font-semibold text-ink shadow-1 ${size === 'sm' ? 'min-h-11 text-sm' : 'min-h-12 text-[15px]'}`}
       >
-        Bond · {formatTickets(BOND_RECALL_TICKET_COST)}
+        Bond · {formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)}
       </Link>
     )
   }

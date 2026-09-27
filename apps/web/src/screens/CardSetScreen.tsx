@@ -1,5 +1,5 @@
 import {
-  BOND_RECALL_TICKET_COST,
+  FRIENDSHIP_TRAINING_TICKET_COST,
   CARD_SET_SIZE,
   MAX_STARS,
   autoCardSet,
@@ -14,7 +14,7 @@ import {
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { setUmaDeck } from '../game/actions'
-import { bondRecallHref } from '../game/bond-links'
+import { friendshipTrainingHref } from '../game/bond-links'
 import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -45,7 +45,7 @@ export function CardSetScreen() {
   const ids = run.cardSetIds
   const deck = buildDeckView(save, cards, content)
   const here = `/constellation/${encodeURIComponent(save.templateId)}/cards`
-  const canBond = tickets >= BOND_RECALL_TICKET_COST
+  const canBond = tickets >= FRIENDSHIP_TRAINING_TICKET_COST
   const cardNodes = ids.reduce((total, id) => total + cardNodeCount(run, id), 0)
   const full = ids.length >= CARD_SET_SIZE
   const nodeCap = cardNodeCap(tier)
@@ -121,7 +121,7 @@ export function CardSetScreen() {
       </section>
 
       <p className="mt-3 mb-1.5 flex items-baseline justify-between px-1 text-[11px] text-ink-soft">
-        <span>Bond Recall · {formatTickets(BOND_RECALL_TICKET_COST)} a run</span>
+        <span>Bond: Friendship Training · {formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)} a run</span>
         <span>You have <Numeral className="text-ink">{tickets}</Numeral></span>
       </p>
 
@@ -198,7 +198,7 @@ export function CardSetScreen() {
                 <span className="flex w-16 shrink-0 items-center justify-center rounded-md bg-sunken text-[11px] font-semibold text-ink-faint">Max</span>
               ) : canBond ? (
                 <Link
-                  to={bondRecallHref({ cardId, tier, umaId: save.templateId, returnTo: here })}
+                  to={friendshipTrainingHref({ cardId, tier, umaId: save.templateId, returnTo: here })}
                   className="font-display flex w-16 shrink-0 flex-col items-center justify-center rounded-md border border-accent bg-accent-wash text-[13px] font-semibold text-ink"
                 >
                   Bond
@@ -207,7 +207,7 @@ export function CardSetScreen() {
               ) : (
                 <span className="flex w-16 shrink-0 flex-col items-center justify-center rounded-md bg-sunken text-[11px] font-semibold text-ink-faint">
                   Bond
-                  <span className="text-[10px] font-normal">need {BOND_RECALL_TICKET_COST}</span>
+                  <span className="text-[10px] font-normal">need {FRIENDSHIP_TRAINING_TICKET_COST}</span>
                 </span>
               )}
             </div>

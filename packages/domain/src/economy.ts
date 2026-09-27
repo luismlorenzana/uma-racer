@@ -4,9 +4,9 @@
 export const DAILY_TICKETS = 10
 /** Five days of grants. Only limits the daily grant; level-up tickets are always added. */
 export const TICKET_STORAGE_CAP = 50
-/** One run of either minigame: Spark Match raises a Training Level, the card minigame earns a star. */
+/** One run of either minigame: Spark Match raises a Training Level, Friendship Training earns a card's star. */
 export const SPARK_MATCH_TICKET_COST = 1
-export const BOND_RECALL_TICKET_COST = 1
+export const FRIENDSHIP_TRAINING_TICKET_COST = 1
 
 /**
  * Unlocking a card with tickets (M016). Newer cards pay more per node in later scenarios (D126), so they cost more.

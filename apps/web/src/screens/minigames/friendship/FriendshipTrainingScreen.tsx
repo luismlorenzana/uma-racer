@@ -59,7 +59,7 @@ const messageOf = (reason: unknown, fallback: string) => reason instanceof Error
 
 /**
  * Friendship Training (M020 T063, D146, D168): train one card through a season of weeks and races; a clear is one star
- * in one scenario. Beta beside Bond Recall until the owner prefers it (T065).
+ * in one scenario. It is the card minigame: every Bond button opens it (D177).
  */
 export function FriendshipTrainingScreen() {
   const { cardId = '' } = useParams()
@@ -203,7 +203,7 @@ export function FriendshipTrainingScreen() {
           <div className="flex flex-1 flex-col gap-3">
             <div className="mx-auto w-40"><FtCard content={content} def={ftCardDef(template, Math.min(stars, MAX_STARS))} art={art.get(template.id) ?? null} /></div>
             <div className="text-center">
-              <p className="text-micro text-accent">Friendship Training · beta</p>
+              <p className="text-micro text-accent">Friendship Training</p>
               <h1 className="text-xl font-semibold">{template.charName}</h1>
               <p className="text-[12px] text-ink-on-dark-soft">{template.title}</p>
             </div>

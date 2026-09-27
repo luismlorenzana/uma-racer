@@ -105,7 +105,7 @@ Two faces, both OFL and self-hosted, latin subset only:
   view use solid. Tier metals colour the flair medal; the stage label still names the tier.
 - Every definition is `/* @__PURE__ */`, so a screen ships only the icons it draws; the shell's icons add about 2 KB
   gzip to startup. Tests pin the drawings and fail on any emoji, or on any symbol-font glyph standing in for an icon
-  (Spark Match is exempt until its rework, Bond Recall until Friendship Training replaces it in M020). Typography stays: `·`, `—`, `…`, `→` in copy, `×` in counts,
+  (Spark Match is exempt until its rework). Typography stays: `·`, `—`, `…`, `→` in copy, `×` in counts,
   `★` in ratings.
 - The mark is a gold horseshoe, open to the sky, holding a spark, on the stage. `apps/web/scripts/generate-icons.mjs`
   draws the Home Screen PNGs and `icon.svg` (the favicon and the top bar logo) from the same numbers, inside the

@@ -201,7 +201,7 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
   button per reached scenario, then what it pays — its split, a 0★–5★ per-node ladder (in SP for a Friend or Group card), Race
   Bonus and its skills in node order — and every set it sits in.
 - **Unlock** hands to the full-screen collection reveal, which returns to the card's page.
-- A bond is raised only in Bond Recall, which always returns where it was launched: the album lens, the card page,
+- A bond is raised only in Friendship Training, which always returns where it was launched: the album lens, the card page,
   or the Training scene.
 
 ### Badges

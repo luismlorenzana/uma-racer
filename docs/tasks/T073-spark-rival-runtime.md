@@ -39,13 +39,15 @@ interface SparkRunSnapshotV1 {
 }
 ```
 
-The implementation should use discriminated typed rows rather than leaving `unknown` after parse. Bond Recall rows remain
-valid with no journal. Limit Spark journals to **64 actions**, drag paths to the T071 maximum and all serialized text/arrays
+The implementation should use discriminated typed rows rather than leaving `unknown` after parse. Friendship Training
+rows already carry their frozen `setup` and their `actions` (D168, D173): fold them into this journal (engine
+`friendship-training-v1`) or keep them valid as they are, but never break a saved run. Retired Bond Recall rows remain
+valid history with no journal. Limit Spark journals to **64 actions**, drag paths to the T071 maximum and all serialized text/arrays
 to explicit bounds. A malformed row becomes a visible recoverable minigame error; never delete it or refund silently.
 
 The migration preserves completed rows verbatim. An open adjacent-swap Spark row is marked for lazy adoption: on first
 load, resolve a T072 encounter from its existing seed/tier/target, write `spark-rival-v1` with an empty action list and keep
-id, attempt index, ticket ledger, created time and seed. It receives no new ticket charge. An open Bond row is untouched.
+id, attempt index, ticket ledger, created time and seed. It receives no new ticket charge. Open Bond Recall rows no longer exist: the app retires and refunds them at startup (D177).
 
 No journal or encounter snapshot enters Zustand game state, the outbox, `/api/sync`, Firestore or the cloud save parsers.
 
@@ -109,8 +111,8 @@ is not trusted as proof. Inside the existing all-or-nothing host transaction, `c
 6. Writes the Uma/outbox plus completed row/outcome/reward atomically, then publishes Zustand after commit.
 
 A save change that makes the reserved Uma/scenario invalid rejects visibly and keeps the journal for diagnosis. A retry of
-the same completed `runId` returns the same reward without applying EXP or Trainer reconciliation twice. Bond Recall's
-existing branch and outcome remain unchanged.
+the same completed `runId` returns the same reward without applying EXP or Trainer reconciliation twice. Friendship
+Training's existing branch and outcome remain unchanged.
 
 ## Production screen
 
@@ -176,7 +178,7 @@ below TL10.
   Training EXP exactly once on clear and on loss.
 - Newly opened nodes are real for that tier, named and focusable from the result.
 - An old open Spark run adopts Rival Circuit with the same run id/seed and no second ledger entry.
-- Existing Bond Recall behavior/tests pass unchanged.
+- Existing Friendship Training behavior/tests pass unchanged.
 - `pnpm sim:spark`, `pnpm lint`, `pnpm test` and `pnpm build` pass; PR states startup gzip size (≤ 180 KB) and lazy Spark
   chunk size. Attach 390 × 844 screenshots of mid-drag, cascade/attack and result.
 

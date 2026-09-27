@@ -1,7 +1,6 @@
 // Atomic minigame reservations and rewards (docs/design/minigames.md).
 
 import {
-  BOND_RECALL_TICKET_COST,
   FRIENDSHIP_TRAINING_TICKET_COST,
   MAX_STARS,
   MAX_SCENARIO_TIER,
@@ -71,7 +70,6 @@ const targetKey = (target: RunTarget, tier: number): string => target.kind === '
 
 const TICKET_COST: Readonly<Record<MinigameKind, number>> = {
   'spark-match': SPARK_MATCH_TICKET_COST,
-  'bond-recall': BOND_RECALL_TICKET_COST,
   'friendship-training': FRIENDSHIP_TRAINING_TICKET_COST,
 }
 
@@ -115,6 +113,44 @@ export function minigameNodeLabel(node: ConstellationNode): string {
     node.kind === 'card' ? 'Card' : node.kind === 'stat' ? 'Stat' : 'Root'
   const ordinal = node.kind === 'card' || node.kind === 'stat' ? ` ${node.order + 1}` : ''
   return `${kind} node${ordinal} · ${positionHint(node)}`
+}
+
+/**
+ * Bond Recall retired at the cutover (D177). A run left open there can never finish, so it closes as retired and its
+ * ticket comes back under `minigame-refund`. Idempotent: a run is closed and refunded once. Returns the tickets given back.
+ */
+export async function retireBondRecallRuns(now: number, today: string): Promise<number> {
+  return db.transaction('rw', [db.profile, db.ledger, db.outbox, db.minigameRuns], async () => {
+    const open = (await db.minigameRuns.toArray()).filter((run) => run.kind === 'bond-recall' && run.status === 'open')
+    if (open.length === 0) return 0
+    const profileRow = await db.profile.get('main')
+    if (!profileRow) return 0
+    let refunded = 0
+    for (const run of open) {
+      const spent = await db.ledger.get(run.id)
+      const cost = spent ? Math.max(0, -(spent.data as LedgerEntry).delta) : 0
+      const refundId = `${run.id}:refund`
+      if (cost > 0 && !(await db.ledger.get(refundId))) {
+        const refund: LedgerEntry = { resource: 'tickets', delta: cost, reason: 'minigame-refund', localDay: today, createdAt: now }
+        await db.ledger.add({ id: refundId, data: refund, createdAt: now })
+        await queueInTransaction('ledger', refundId, 'append', now)
+        refunded += cost
+      }
+      await db.minigameRuns.put({
+        ...run,
+        status: 'completed',
+        outcome: { kind: 'bond-recall', cleared: false, mismatches: 0 },
+        reward: { ticketsSpent: 0 },
+        completedAt: now,
+      })
+    }
+    if (refunded > 0) {
+      const profile = parsePlayerProfileOrThrow(profileRow.data)
+      await db.profile.put({ ...profileRow, data: { ...profile, tickets: profile.tickets + refunded } })
+      await queueInTransaction('profile', 'main', 'upsert', now)
+    }
+    return refunded
+  })
 }
 
 export interface MinigameHostMutation {
@@ -161,6 +197,7 @@ export class PersistentMinigameHost implements MinigameHost {
       if (scenario.trainingLevel >= MAX_TRAINING_LEVEL) throw new Error('This constellation is already at Training Level 10')
       return { tier: scenario.tier, key: targetKey(target, scenario.tier) }
     }
+    if (target.kind === 'bond-recall') throw new Error('Bond Recall is retired: Bond opens Friendship Training')
     const row = await db.cards.get(target.cardId)
     if (!row) throw new Error('This card is not owned')
     const card = parsedCard(target.cardId, row.data)
@@ -339,12 +376,9 @@ export class PersistentMinigameHost implements MinigameHost {
           await updateTrainingBadgeFacts({ content: this.content, uma: nextUma, sourceId: id, now })
           mutation = { profile, uma: nextUma }
           reconcileTrainer = true
-        } else if ((run.kind === 'bond-recall' && run.target.kind === 'bond-recall' && outcome.kind === 'bond-recall') ||
-          (run.kind === 'friendship-training' && run.target.kind === 'friendship-training' && outcome.kind === 'friendship-training')) {
-          if (outcome.kind === 'friendship-training') {
-            if (!run.setup) throw new Error('This Friendship Training run has no setup')
-            validateFriendshipOutcome(run.setup, outcome)
-          }
+        } else if (run.kind === 'friendship-training' && run.target.kind === 'friendship-training' && outcome.kind === 'friendship-training') {
+          if (!run.setup) throw new Error('This Friendship Training run has no setup')
+          validateFriendshipOutcome(run.setup, outcome)
           const cardRow = await db.cards.get(run.target.cardId)
           if (!cardRow) throw new Error('This card is not owned')
           const card = parsedCard(run.target.cardId, cardRow.data)
@@ -379,7 +413,7 @@ export class PersistentMinigameHost implements MinigameHost {
             reconcileTrainer = true
           }
           result = {
-            ticketsSpent: TICKET_COST[run.kind],
+            ticketsSpent: FRIENDSHIP_TRAINING_TICKET_COST,
             starsBefore: before,
             starsAfter: after,
             couponGranted,

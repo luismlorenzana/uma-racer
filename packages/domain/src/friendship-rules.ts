@@ -7,9 +7,6 @@ import type { DistanceCategory, RaceGrade, StatKey, Surface } from './types'
 
 export type FtCardType = SupportCardType
 
-/** A run's cost and reward are Bond Recall's: one ticket, one star (D148). */
-export const FRIENDSHIP_TRAINING_TICKET_COST = 1
-
 export const FT_HAND_SIZE = 7
 export const FT_WEEK_TRAINS = 3
 export const FT_RACE_TRAINS = 4

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { bondRecallHref, safeReturnPath } from './bond-links'
+import { friendshipTrainingHref, safeReturnPath } from './bond-links'
 
 describe('bond links', () => {
   it('names the card, the scenario, the Uma and the way back', () => {
-    const href = bondRecallHref({ cardId: '30019', tier: 2, umaId: '100101', returnTo: '/constellation/100101/cards' })
+    const href = friendshipTrainingHref({ cardId: '30019', tier: 2, umaId: '100101', returnTo: '/constellation/100101/cards' })
     const url = new URL(href, 'https://app.test')
-    expect(url.pathname).toBe('/minigames/bond-recall/30019')
+    expect(url.pathname).toBe('/minigames/friendship-training/30019')
     expect(url.searchParams.get('tier')).toBe('2')
     expect(url.searchParams.get('uma')).toBe('100101')
     expect(url.searchParams.get('return')).toBe('/constellation/100101/cards')

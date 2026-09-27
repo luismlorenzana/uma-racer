@@ -41,7 +41,7 @@ lost.
 | Use | Cost |
 |---|---|
 | [Spark Match — Rival Circuit](minigames.md#spark-match--rival-circuit) run — raises Training Level | **1** |
-| The card minigame run ([Bond Recall](minigames.md#bond-recall--card-stars), then Friendship Training) — earns a star | **1** |
+| A [Friendship Training](minigames.md#friendship-training--card-stars) run — earns a card's star | **1** |
 | Unlocking a card (D130) | **5 + era** — 6 to 19 |
 | Unlocking the next scenario | **5 × fromTier** |
 | **Reconfiguring a constellation** | **free, always** |

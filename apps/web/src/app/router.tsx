@@ -1,4 +1,4 @@
-import { Navigate, createBrowserRouter, useParams } from 'react-router'
+import { Navigate, createBrowserRouter, useLocation, useParams } from 'react-router'
 import { AppShell } from './AppShell'
 
 /** The card set moved into the Training scene (M016); old links still land there. */
@@ -17,6 +17,13 @@ function ScenarioRedirect() {
 function TrainingRedirect() {
   const { umaId = '' } = useParams()
   return <Navigate to={`/constellation/${encodeURIComponent(umaId)}`} replace />
+}
+
+/** Bond Recall retired (D177): its links open Friendship Training for the same card, scenario and way back. */
+function BondRecallRedirect() {
+  const { cardId } = useParams()
+  const { search } = useLocation()
+  return <Navigate to={cardId ? `/minigames/friendship-training/${encodeURIComponent(cardId)}${search}` : '/cards'} replace />
 }
 
 // Tab screens live inside the shell (top bar + bottom tabs). Full-screen scenes (race, constellation, reveals) sit
@@ -113,8 +120,7 @@ export const router = createBrowserRouter([
   },
   {
     path: 'minigames/bond-recall/:cardId?',
-    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Bond Recall" />,
-    lazy: async () => ({ Component: (await import('../screens/minigames/BondRecallScreen')).BondRecallScreen }),
+    element: <BondRecallRedirect />,
   },
   {
     path: 'race/run',

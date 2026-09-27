@@ -2,7 +2,7 @@ import { FT_BOND_GAUGE, type FtCardDef, type StatKey } from '@racer/domain'
 import { useRef, type ReactNode } from 'react'
 import type { LoadedContent } from '../../../content/runtime'
 import { GutsIcon, PowerIcon, SparkIcon, SpeedIcon, StaminaIcon, WitIcon, type IconComponent } from '../../../ui/icons'
-import { CardArt } from '../BondBoard'
+import { CardArt } from '../CardArt'
 
 export const STAT_NAMES: Readonly<Record<StatKey, string>> = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit' }
 export const STAT_ICONS: Readonly<Record<StatKey, IconComponent>> = { speed: SpeedIcon, stamina: StaminaIcon, power: PowerIcon, guts: GutsIcon, wit: WitIcon }
@@ -58,7 +58,7 @@ function useLongPress(onPress: () => void, onLong: () => void) {
 
 /**
  * One card in a run: its full 3:4 illustration, its type (top left) and what it scores here (bottom right). The main
- * card wears its friendship gauge, and a gold ring once bonded (docs/tasks/M020-friendship-training.md#the-hand).
+ * card wears its friendship gauge, and a gold ring once bonded (docs/design/minigames.md, the hand at 390 × 844).
  */
 export function FtCard({
   content,

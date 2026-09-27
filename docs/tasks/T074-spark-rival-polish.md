@@ -140,7 +140,7 @@ the app. A failed budget is fixed or explicitly brought to the owner; it is not 
 
 - Run `pnpm sim:spark -- --full`, `pnpm sim:constellation`, `pnpm sim:careers`, `pnpm lint`, `pnpm test` and `pnpm build`.
 - Startup stays ≤ 180 KB gzip; record Spark lazy chunk size. Compare before/after trace and bundle output in the PR.
-- Bond Recall, race Pixi scene, service-worker update deferral, content diagnostics, offline startup and sync tests remain
+- Friendship Training, race Pixi scene, service-worker update deferral, content diagnostics, offline startup and sync tests remain
   green. An open Spark run continues to defer silent app restart.
 - Attach 390 × 844 screenshots of mid-drag, cascade/attack, boss intent, partial-loss result and clear/node result. Attach
   one physical-device capture or the owner's explicit validation note.

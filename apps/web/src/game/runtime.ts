@@ -104,7 +104,7 @@ import {
 } from './badge-preferences'
 import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAwardRefs } from './trainer'
 import { installMinigameHost } from './minigame-host'
-import { PersistentMinigameHost } from './minigame-runs'
+import { PersistentMinigameHost, retireBondRecallRuns } from './minigame-runs'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -254,12 +254,15 @@ export class GameRuntime {
       const archivedAwards = await bootstrapUmaFlair(content, now)
       await bootstrapTrainerBadgeState(now)
       const granted = await applyOwedDailyGrant(today, now)
+      // Bond Recall is retired (D177): a run left open there gives its ticket back.
+      const refunded = await retireBondRecallRuns(now, today)
       const trainerArchive = await reconcileTrainerPersistent(content, now, true, 'migration:trainer')
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
       if (generation !== this.generation) return
       adoptGameState(stateFromSnapshot(local, content, true))
       if (granted > 0) useGame.getState().pushToast(`+${granted} Daily tickets`, 'ticket')
+      if (refunded > 0) useGame.getState().pushToast(`+${refunded} back from an unfinished Bond Recall run`, 'ticket')
       if (archivedAwards > 0) useGame.getState().pushToast(`Flair archive updated · ${archivedAwards} awards`)
       if (trainerArchive.events.length > 0) useGame.getState().pushToast(`Trainer archive updated · ${trainerArchive.events.length} achievements`)
       window.addEventListener('online', this.onlineHandler)

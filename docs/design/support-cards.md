@@ -82,7 +82,7 @@ Friend and Group cards have no primary, so their tilt is always 0. They pay skil
 ## Stars
 
 A card holds **0★ to 5★ in each scenario**, and there is **no card level** (D130, D147). It earns **one star per clear**
-of the card minigame ([Bond Recall](minigames.md#bond-recall--card-stars) until Friendship Training replaces it), in
+of the card minigame, [Friendship Training](minigames.md#friendship-training--card-stars), in
 the scenario that run named. That is the only way. **Bond** is the act of raising a card's stars: the button that
 launches the minigame, and what the minigame is about.
 
@@ -113,4 +113,4 @@ threshold, once planned for bond 3, was never built and is not part of stars.
 - **The Training scene's Card set tab** is where a scenario's six are chosen and bonded
   ([UX](ux.md#training-scene)).
 
-Every Bond button leads to Bond Recall, which returns to the screen it was launched from.
+Every Bond button opens Friendship Training, which returns to the screen it was launched from.
