@@ -11,10 +11,6 @@ import {
   SPARK_RIVAL_TURNS_PER_WAVE,
   STRATEGIES,
   addTrainingExp,
-  type Grade,
-  type Strategy,
-} from '../../packages/domain/src/index'
-import {
   bestSparkStrategy,
   createSparkRivalState,
   currentSparkRivalIntent,
@@ -29,7 +25,9 @@ import {
   type SparkRivalEncounterV1,
   type SparkRivalRecipe,
   type SparkRivalState,
-} from '../../apps/web/src/game/minigames/spark-rival/index'
+  type Grade,
+  type Strategy,
+} from '../../packages/domain/src/index'
 
 type AgentKind = 'random' | 'greedy' | 'planner' | 'healer' | 'no-match' | 'hoard' | 'farm-loss' | 'disadvantaged'
 

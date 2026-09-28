@@ -1,4 +1,4 @@
-import { SPARK_RIVAL_ACTION_LIMIT, SPARK_RIVAL_PATH_LIMIT } from '@racer/domain'
+import { SPARK_RIVAL_ACTION_LIMIT, SPARK_RIVAL_PATH_LIMIT } from '../../spark-rival'
 import { describe, expect, it } from 'vitest'
 import { syntheticSparkEncounter } from './fixtures'
 import { parseSparkRivalAction, parseSparkRivalActions, parseSparkRivalEncounter } from './types'

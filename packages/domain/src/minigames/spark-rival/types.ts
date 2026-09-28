@@ -1,15 +1,17 @@
 // Data-only Spark Rival Circuit contract (docs/design/minigames.md#spark-match--rival-circuit, D169–D172).
 import {
-  GRADES,
   SPARK_RIVAL_ACTION_LIMIT,
   SPARK_RIVAL_BOARD_HEIGHT,
   SPARK_RIVAL_BOARD_WIDTH,
   SPARK_RIVAL_MOVEMENT_MS,
   SPARK_RIVAL_PATH_LIMIT,
+} from '../../spark-rival'
+import {
+  GRADES,
   STRATEGIES,
   type Grade,
   type Strategy,
-} from '@racer/domain'
+} from '../../types'
 
 export const SPARK_ORBS = ['front', 'pace', 'late', 'end', 'spark', 'recovery'] as const
 export type SparkOrb = (typeof SPARK_ORBS)[number]

@@ -1,4 +1,4 @@
-import { SPARK_RIVAL_BOARD_SIZE } from '@racer/domain'
+import { SPARK_RIVAL_BOARD_SIZE } from '../../spark-rival'
 import { describe, expect, it } from 'vitest'
 import {
   applySparkPath,

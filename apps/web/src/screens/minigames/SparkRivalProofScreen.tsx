@@ -1,7 +1,7 @@
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { SparkOrb } from '@racer/domain'
 import { useContent } from '../../content/ContentProvider'
-import type { SparkOrb } from '../../game/minigames/spark-rival'
 import { useGame } from '../../game/store'
 import { SparkRivalScene, type SparkRivalHud } from '../../scenes/spark-rival/SparkRivalScene'
 import { sparkProofCast } from '../../scenes/spark-rival/proof-cast'

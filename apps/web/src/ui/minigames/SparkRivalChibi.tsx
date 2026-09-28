@@ -1,6 +1,5 @@
-import type { Strategy } from '@racer/domain'
+import type { SparkOrb, Strategy } from '@racer/domain'
 import type { ContentAsset } from '../../content/runtime'
-import type { SparkOrb } from '../../game/minigames/spark-rival'
 import { AtlasSprite } from '../AtlasSprite'
 import { SparkIcon } from '../icons'
 import { SPARK_ORB_COLORS, SPARK_ORB_GLYPHS, SPARK_ORB_LABELS } from './spark-rival-presentation'

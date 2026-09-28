@@ -1,4 +1,4 @@
-import { SPARK_RIVAL_SHIFT_CHARGE } from '@racer/domain'
+import { SPARK_RIVAL_SHIFT_CHARGE } from '../../spark-rival'
 import { describe, expect, it } from 'vitest'
 import { createSparkRivalState, reduceSparkRival, replaySparkRival, SparkRivalEngineError, sparkRivalStateHash } from './engine'
 import { syntheticSparkEncounter } from './fixtures'

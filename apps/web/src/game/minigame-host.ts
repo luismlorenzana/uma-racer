@@ -1,16 +1,19 @@
 // Port between the independently shipped minigames and save-v6 progression (docs/tasks/M014-minigames.md).
 
-import { SPARK_MATCH_TICKET_COST, ftReplay, type FtAction, type FtSetup } from '@racer/domain'
-import type { SparkRunSnapshotV1, SparkRunView } from './minigame-journal'
 import {
+  SPARK_MATCH_TICKET_COST,
+  ftReplay,
   parseSparkRivalAction,
   parseSparkRivalEncounter,
   replaySparkRival,
   sparkRivalStateHash,
   syntheticSparkEncounter,
+  type FtAction,
+  type FtSetup,
   type SparkRivalAction,
   type SparkRivalReplay,
-} from './minigames/spark-rival'
+} from '@racer/domain'
+import type { SparkRunSnapshotV1, SparkRunView } from './minigame-journal'
 
 /** The minigames a run can begin in. Bond Recall is retired (D177); its stored rows keep their `bond-recall` kind. */
 export type MinigameKind = 'spark-match' | 'friendship-training'

@@ -7,7 +7,7 @@ Decision: D185. Source of truth: [Minigame kit](../design/minigame-kit.md). Owne
 
 | Task | Delivery | Order |
 |---|---|---|
-| [T077](T077-engines-in-domain.md) | Spark's and Friendship Training's rules move to `packages/domain/src/minigames/<id>/`, byte-identical replays | first |
+| T077 (complete) | Spark's and Friendship Training's rules moved to `packages/domain/src/minigames/<id>/`, byte-identical replays | first |
 | [T076](T076-one-journal.md) | One engine-agnostic journal port; Friendship Training moves onto the replay journal and a replayed commit | second |
 | [T075](T075-minigame-shell.md) | A shared header, start panel, result panel, gauge and guide memory, used by both games | third |
 

@@ -6,8 +6,8 @@ rules stay in [Minigames](minigames.md); this page is what they have in common.
 
 | Minigame | Raises | Rules | Code |
 |---|---|---|---|
-| **Spark Match — Rival Circuit** (M022) | the active scenario's Training Level | [Minigames](minigames.md#spark-match--rival-circuit) | engine `apps/web/src/game/minigames/spark-rival/` (moving, T077) · screen `screens/minigames/SparkMatchScreen.tsx` · Pixi `scenes/spark-rival/` |
-| **Friendship Training** (M020) | one card by one star in one scenario | [Minigames](minigames.md#friendship-training--card-stars) | engine `packages/domain/src/friendship-*.ts` · screen `screens/minigames/friendship/` |
+| **Spark Match — Rival Circuit** (M022) | the active scenario's Training Level | [Minigames](minigames.md#spark-match--rival-circuit) | engine `packages/domain/src/minigames/spark-rival/` · screen `screens/minigames/SparkMatchScreen.tsx` · Pixi `scenes/spark-rival/` |
+| **Friendship Training** (M020) | one card by one star in one scenario | [Minigames](minigames.md#friendship-training--card-stars) | engine `packages/domain/src/minigames/friendship/` · screen `screens/minigames/friendship/` |
 
 ## 1. What a minigame is here
 
@@ -64,8 +64,9 @@ A run's state is a pure function: `state = replay(frozenInputs, seed, actions)`.
 
 ## 4. Engine module shape
 
-New minigames put their rules in **`packages/domain/src/minigames/<id>/`** (D185), like every other pure rule; the web app
-keeps presentation, the journal and the screen. Spark's engine and Friendship Training's files move there in T077.
+Minigame rules live in **`packages/domain/src/minigames/<id>/`** (D185), like every other pure rule; the web app keeps
+presentation, the journal and the screen. Imports from React, PixiJS, Dexie and browser globals are regression-tested out
+of this tree.
 
 - `types.ts` — actions, frozen inputs, state and outcome, with their parsers and bounds.
 - `rules.ts` — tuning constants, named and exported, pinned in `packages/domain/src/domain.test.ts` beside their design

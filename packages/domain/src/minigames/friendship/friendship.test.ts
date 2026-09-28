@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { CARD_EFFECTS, type CardEffect } from './cards'
-import type { RaceTemplate, SkillTemplate, SupportCardTemplate } from './content'
-import { ftBotPlay } from './friendship-bot'
+import { CARD_EFFECTS, type CardEffect } from '../../cards'
+import type { RaceTemplate, SkillTemplate, SupportCardTemplate } from '../../content'
+import { ftBotPlay } from './bot'
 import {
   FtActionError,
   ftApply,
@@ -10,8 +10,8 @@ import {
   ftStart,
   type FtAction,
   type FtState,
-} from './friendship-engine'
-import { FT_SHOP_PRICES, ftFavouredTypes, type FtRivalRuleId, type FtSkillRuleId, type FtTwistId } from './friendship-rules'
+} from './engine'
+import { FT_SHOP_PRICES, ftFavouredTypes, type FtRivalRuleId, type FtSkillRuleId, type FtTwistId } from './rules'
 import {
   buildFriendshipSetup,
   ftCardDef,
@@ -20,8 +20,8 @@ import {
   type FtCardDef,
   type FtSetup,
   type FtSkillDef,
-} from './friendship-setup'
-import type { StatKey } from './types'
+} from './setup'
+import type { StatKey } from '../../types'
 
 // ── Fixtures ────────────────────────────────────────────────────────────────────────────────────────────────────────
 

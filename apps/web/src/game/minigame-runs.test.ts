@@ -22,7 +22,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { minigameNodeLabel, minigameAttemptSeed, PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns } from './minigame-runs'
-import { sparkRivalStateHash } from './minigames/spark-rival'
+import { sparkRivalStateHash } from '@racer/domain'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },

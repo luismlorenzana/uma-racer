@@ -1,8 +1,8 @@
 // A Friendship Training run's frozen setup (D168): everything the run can show, resolved from content and the save when
 // the run begins, so the run replays from it exactly even if content changes mid-run.
 
-import { CARD_EFFECTS, MAX_STARS, cardUniqueEffectKinds, type CardEffect } from './cards'
-import type { RaceTemplate, SkillTemplate, SupportCardTemplate } from './content'
+import { CARD_EFFECTS, MAX_STARS, cardUniqueEffectKinds, type CardEffect } from '../../cards'
+import type { RaceTemplate, SkillTemplate, SupportCardTemplate } from '../../content'
 import {
   FT_DECK_COPIES,
   FT_SET_OTHERS,
@@ -12,9 +12,9 @@ import {
   type FtCardType,
   type FtSkillRuleId,
   type FtTwistId,
-} from './friendship-rules'
-import { skillTags } from './skill-tags'
-import { STATS, type DistanceCategory, type RaceGrade, type StatKey, type Surface } from './types'
+} from './rules'
+import { skillTags } from '../../skill-tags'
+import { STATS, type DistanceCategory, type RaceGrade, type StatKey, type Surface } from '../../types'
 
 export interface FtCardDef {
   id: string
