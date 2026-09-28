@@ -23,7 +23,7 @@ multipliers on a training turn that no longer exists.
 |---|---|---|
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
 | [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | T071–T073 complete · [T074](T074-spark-rival-polish.md) balance complete | Paused for M023 · feedback and device closure follow |
-| [M023 — Minigame kit](M023-minigame-kit.md) | T077 complete · [T076](T076-one-journal.md) → [T075](T075-minigame-shell.md) | In progress · after T074's balance pass, before the rest of T074 |
+| [M023 — Minigame kit](M023-minigame-kit.md) | T077 and T076 complete · [T075](T075-minigame-shell.md) | In progress · shared shell next |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |

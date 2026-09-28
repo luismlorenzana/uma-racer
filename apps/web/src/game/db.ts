@@ -23,8 +23,6 @@ import {
   type BadgeStateV1,
   type FlairEventV1,
   type EntityKind,
-  type FtAction,
-  type FtSetup,
   type LedgerEntry,
   type LogKind,
   type PlayerProfile,
@@ -32,7 +30,7 @@ import {
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
-import type { ReplayJournalV1, SparkRunSnapshotV1 } from './minigame-journal'
+import type { MinigameRunSnapshotV1, ReplayJournalV1 } from './minigame-journal'
 import type { RunTarget, StoredRunOutcome, StoredRunReward } from './minigame-host'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
@@ -71,12 +69,17 @@ export interface MinigameRunRow {
   reward: StoredRunReward | null
   createdAt: number
   completedAt: number | null
-  /** Friendship Training: the setup frozen at Begin and every choice since, so a reload resumes exactly (D168). */
-  setup?: FtSetup
-  actions?: FtAction[]
-  /** Generic device-local replay journal. Spark snapshots all encounter semantics beside it (D171). */
+  /** Engine-tagged frozen inputs and action journal. Device-local only (D168, D171, D185). */
+  snapshot?: MinigameRunSnapshotV1
   journal?: ReplayJournalV1
-  sparkSnapshot?: SparkRunSnapshotV1
+}
+
+interface LegacyMinigameRunRow extends Omit<MinigameRunRow, 'journal' | 'snapshot'> {
+  setup?: unknown
+  actions?: unknown
+  journal?: unknown
+  sparkSnapshot?: unknown
+  snapshot?: unknown
 }
 
 interface LegacyProfileRow {
@@ -254,6 +257,32 @@ class RacerDb extends Dexie {
     this.version(10).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
     // Additive device-local journal fields. Open legacy Spark rows adopt lazily once verified content is available.
     this.version(11).stores(storesWithMinigameRuns)
+    // One engine-tagged snapshot and journal for every open minigame. Completed rows remain byte-identical history.
+    this.version(12).stores(storesWithMinigameRuns).upgrade(migrateOpenMinigameJournals)
+  }
+}
+
+async function migrateOpenMinigameJournals(tx: Transaction): Promise<void> {
+  const table = tx.table('minigameRuns')
+  const rows = await table.toArray() as LegacyMinigameRunRow[]
+  for (const row of rows) {
+    if (row.status !== 'open') continue
+    if (row.kind === 'friendship-training' && row.snapshot === undefined && row.journal === undefined && row.setup !== undefined) {
+      const migrated: Record<string, unknown> = {
+        ...row,
+        snapshot: { version: 1, setup: row.setup },
+        journal: { format: 1, engine: 'friendship-training-v1', actions: row.actions ?? [] },
+      }
+      delete migrated.setup
+      delete migrated.actions
+      await table.put(migrated)
+      continue
+    }
+    if (row.kind === 'spark-match' && row.snapshot === undefined && row.sparkSnapshot !== undefined) {
+      const migrated: Record<string, unknown> = { ...row, snapshot: row.sparkSnapshot }
+      delete migrated.sparkSnapshot
+      await table.put(migrated)
+    }
   }
 }
 

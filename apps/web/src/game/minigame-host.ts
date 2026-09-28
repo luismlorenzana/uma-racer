@@ -1,8 +1,11 @@
-// Port between the independently shipped minigames and save-v6 progression (docs/tasks/M014-minigames.md).
+// Save-facing minigame reservation and authoritative commit port (docs/design/minigame-kit.md#2-the-run-lifecycle).
 
 import {
   SPARK_MATCH_TICKET_COST,
+  ftFinished,
   ftReplay,
+  ftStateHash,
+  parseFtAction,
   parseSparkRivalAction,
   parseSparkRivalEncounter,
   replaySparkRival,
@@ -13,7 +16,13 @@ import {
   type SparkRivalAction,
   type SparkRivalReplay,
 } from '@racer/domain'
-import type { SparkRunSnapshotV1, SparkRunView } from './minigame-journal'
+import type {
+  FriendshipRunView,
+  MinigameJournalAction,
+  MinigameRunView,
+  SparkRunSnapshotV1,
+  SparkRunView,
+} from './minigame-journal'
 
 /** The minigames a run can begin in. Bond Recall is retired (D177); its stored rows keep their `bond-recall` kind. */
 export type MinigameKind = 'spark-match' | 'friendship-training'
@@ -23,17 +32,8 @@ export interface MinigameHost {
   beginRun(kind: MinigameKind, target: RunTarget): Promise<RunTicket>
   /** Commits a finished run atomically. Safe to call twice with the same runId. */
   commitRun(runId: string, outcome: RunOutcome): Promise<RunReward>
-  /** A Friendship Training run's frozen setup and the choices made so far (D168); null for any other run. */
-  loadRun(runId: string): Promise<SavedRun | null>
-  /** Appends a Friendship Training run's choices as they are made, so a reload resumes exactly. */
-  saveProgress(runId: string, actions: readonly FtAction[]): Promise<void>
   /** The target's open run, if one is waiting to resume; never spends a ticket. */
   findOpenRun(target: RunTarget): Promise<RunTicket | null>
-}
-
-export interface SavedRun {
-  setup: FtSetup
-  actions: FtAction[]
 }
 
 export interface RunTicket {
@@ -52,7 +52,7 @@ export type RunTarget =
 export type RunOutcome =
   | { kind: 'spark-match'; engine: 'spark-rival-v1'; actionCount: number; stateHash: string }
   | { kind: 'bond-recall'; cleared: boolean; mismatches: number }
-  | { kind: 'friendship-training'; cleared: boolean; actions: FtAction[] }
+  | { kind: 'friendship-training'; engine: 'friendship-training-v1'; actionCount: number; stateHash: string }
 
 /** Read-only history shape from the retired adjacent-swap engine. It can never be submitted again. */
 export interface LegacySparkOutcome {
@@ -61,7 +61,13 @@ export interface LegacySparkOutcome {
   moves: number
 }
 
-export type StoredRunOutcome = RunOutcome | LegacySparkOutcome
+export interface LegacyFriendshipOutcome {
+  kind: 'friendship-training'
+  cleared: boolean
+  actions: FtAction[]
+}
+
+export type StoredRunOutcome = RunOutcome | LegacySparkOutcome | LegacyFriendshipOutcome
 
 export interface RunRewardNode {
   id: string
@@ -107,29 +113,20 @@ export const validateMinigameOutcome = (ticket: RunTicket, target: RunTarget, ou
     return
   }
   if (outcome.kind === 'friendship-training') {
-    if (typeof outcome.cleared !== 'boolean' || !Array.isArray(outcome.actions)) {
-      throw new Error('Friendship Training outcomes require a clear flag and the run\'s choices')
+    if (outcome.engine !== 'friendship-training-v1' || !Number.isSafeInteger(outcome.actionCount) ||
+      outcome.actionCount < 0 || outcome.actionCount > 64 || !/^[a-f0-9]{8}$/.test(outcome.stateHash)) {
+      throw new Error('Friendship Training outcomes require a bounded replay claim')
     }
     return
   }
   throw new Error('Bond Recall is retired: Bond opens Friendship Training')
 }
 
-/**
- * A Friendship Training commit replays the frozen setup with the choices and must land where the outcome says: a clear
- * is always a real one, and a loss is a finished run (D168).
- */
-export function validateFriendshipOutcome(setup: FtSetup, outcome: Extract<RunOutcome, { kind: 'friendship-training' }>): void {
-  const state = ftReplay(setup, outcome.actions)
-  if (state.phase !== 'won' && state.phase !== 'lost') throw new Error('This Friendship Training run is not finished')
-  if ((state.phase === 'won') !== outcome.cleared) throw new Error('The run does not replay to that result')
-}
-
 const sparkTargetExp = (level: number): number => 1_000 + 350 * (level - 1)
 
 const defaultReward: RewardFactory = (_ticket, target, outcome, sparkReplay) => {
   if (target.kind === 'friendship-training' && outcome.kind === 'friendship-training') {
-    return { ticketsSpent: 1, starsBefore: 0, starsAfter: outcome.cleared ? 1 : 0, couponGranted: false }
+    return { ticketsSpent: 1, starsBefore: 0, starsAfter: 1, couponGranted: false }
   }
   if (target.kind !== 'spark-match' || outcome.kind !== 'spark-match' || !sparkReplay?.outcome) {
     throw new Error('Mismatched test-double run')
@@ -175,8 +172,8 @@ function cloneTestSnapshot(snapshot: SparkRunSnapshotV1): SparkRunSnapshotV1 {
 }
 
 /**
- * Stateful boundary double used until the save-v5 host is installed. It reserves at most one open run per target,
- * and memoizes a committed reward so a retry cannot grant progression twice.
+ * Stateful boundary double for screens and contract tests. It reserves at most one open run per target and memoizes a
+ * committed reward so a retry cannot grant progression twice.
  */
 export class MinigameHostTestDouble implements MinigameHost {
   readonly beginCalls: Array<{ kind: MinigameKind; target: RunTarget }> = []
@@ -188,29 +185,16 @@ export class MinigameHostTestDouble implements MinigameHost {
   private readonly attemptsByTarget = new Map<string, number>()
   private readonly seedPrefix: string
   private readonly rewardFactory: RewardFactory
+  private readonly progress = new Map<string, FtAction[]>()
 
   constructor(options: MinigameHostTestDoubleOptions = {}) {
     this.seedPrefix = options.seedPrefix ?? 'synthetic-minigame'
     this.rewardFactory = options.reward ?? defaultReward
   }
 
-  private readonly progress = new Map<string, FtAction[]>()
-
-  async loadRun(runId: string): Promise<SavedRun | null> {
-    const setup = this.setups.get(runId)
-    return setup ? { setup, actions: [...(this.progress.get(runId) ?? [])] } : null
-  }
-
   async findOpenRun(target: RunTarget): Promise<RunTicket | null> {
     const open = this.openByTarget.get(targetKey(target))
     return open ? { ...open } : null
-  }
-
-  async saveProgress(runId: string, actions: readonly FtAction[]): Promise<void> {
-    if (!this.openByTarget.has(targetKey(this.targetsByRun.get(runId) ?? { kind: 'spark-match', umaId: '' }))) {
-      throw new Error('Minigame run is no longer active')
-    }
-    this.progress.set(runId, [...actions])
   }
 
   /** Test hook: the setup a Friendship Training run replays from. */
@@ -222,6 +206,7 @@ export class MinigameHostTestDouble implements MinigameHost {
     const snapshot = cloneTestSnapshot(run.snapshot)
     const actions = run.actions.map((action) => parseSparkRivalAction(action)!)
     return {
+      engine: 'spark-rival-v1',
       ticket: { ...ticket },
       snapshot,
       actions,
@@ -229,24 +214,50 @@ export class MinigameHostTestDouble implements MinigameHost {
     }
   }
 
-  async loadSpark(runId: string): Promise<SparkRunView> {
-    const target = this.targetsByRun.get(runId)
-    const ticket = target ? this.openByTarget.get(targetKey(target)) : null
-    if (!ticket || ticket.runId !== runId) throw new Error('Spark Rival run is no longer active')
-    return this.sparkView(runId, ticket)
+  private friendshipView(runId: string, ticket: RunTicket): FriendshipRunView {
+    const setup = this.setups.get(runId)
+    if (!setup) throw new Error('Unknown Friendship Training run')
+    const actions = [...(this.progress.get(runId) ?? [])]
+    return {
+      engine: 'friendship-training-v1',
+      ticket: { ...ticket },
+      snapshot: { version: 1, setup },
+      actions,
+      replay: ftReplay(setup, actions),
+    }
   }
 
-  async appendSpark(runId: string, expectedActionCount: number, action: SparkRivalAction): Promise<SparkRunView> {
+  async load(runId: string): Promise<MinigameRunView> {
     const target = this.targetsByRun.get(runId)
     const ticket = target ? this.openByTarget.get(targetKey(target)) : null
-    const run = this.sparkRuns.get(runId)
-    if (!ticket || ticket.runId !== runId || !run) throw new Error('Spark Rival run is no longer active')
-    if (run.actions.length !== expectedActionCount) throw new Error('Spark Rival action count changed; reload the run')
-    const parsed = parseSparkRivalAction(action)
-    if (!parsed) throw new Error('Spark Rival action is invalid')
-    replaySparkRival(run.snapshot.encounter, ticket.seed, [...run.actions, parsed])
-    run.actions.push(parsed)
-    return this.sparkView(runId, ticket)
+    if (!target || !ticket || ticket.runId !== runId) throw new Error('Minigame run is no longer active')
+    if (target.kind === 'spark-match') return this.sparkView(runId, ticket)
+    if (target.kind === 'friendship-training') return this.friendshipView(runId, ticket)
+    throw new Error('Bond Recall has no replay journal')
+  }
+
+  async append(runId: string, expectedActionCount: number, action: MinigameJournalAction): Promise<MinigameRunView> {
+    const target = this.targetsByRun.get(runId)
+    const ticket = target ? this.openByTarget.get(targetKey(target)) : null
+    if (!target || !ticket || ticket.runId !== runId) throw new Error('Minigame run is no longer active')
+    const current = await this.load(runId)
+    if (current.actions.length !== expectedActionCount) throw new Error('Minigame action count changed; reload the run')
+    if (current.engine === 'spark-rival-v1') {
+      if (current.replay.outcome) throw new Error('This minigame run is already terminal')
+      const parsed = parseSparkRivalAction(action)
+      const run = this.sparkRuns.get(runId)
+      if (!parsed || !run) throw new Error('Spark Rival action is invalid')
+      replaySparkRival(run.snapshot.encounter, ticket.seed, [...run.actions, parsed])
+      run.actions.push(parsed)
+      return this.sparkView(runId, ticket)
+    }
+    if (ftFinished(current.replay)) throw new Error('This minigame run is already terminal')
+    const parsed = parseFtAction(action)
+    if (!parsed) throw new Error('Friendship Training action is invalid')
+    const actions = [...current.actions, parsed]
+    ftReplay(current.snapshot.setup, actions)
+    this.progress.set(runId, actions)
+    return this.friendshipView(runId, ticket)
   }
 
   async beginRun(kind: MinigameKind, target: RunTarget): Promise<RunTicket> {
@@ -287,8 +298,6 @@ export class MinigameHostTestDouble implements MinigameHost {
     const ticket = this.openByTarget.get(targetKey(target))
     if (!ticket || ticket.runId !== runId) throw new Error('Minigame run is no longer active')
     validateMinigameOutcome(ticket, target, outcome)
-    const setup = this.setups.get(runId)
-    if (setup && outcome.kind === 'friendship-training') validateFriendshipOutcome(setup, outcome)
     let sparkReplay: SparkRivalReplay | null = null
     if (outcome.kind === 'spark-match') {
       const run = this.sparkRuns.get(runId)
@@ -297,6 +306,12 @@ export class MinigameHostTestDouble implements MinigameHost {
       if (!sparkReplay.outcome) throw new Error('This Spark Rival run is not finished')
       if (run.actions.length !== outcome.actionCount || sparkRivalStateHash(sparkReplay.state) !== outcome.stateHash) {
         throw new Error('Spark Rival replay claim is stale')
+      }
+    } else if (outcome.kind === 'friendship-training') {
+      const view = this.friendshipView(runId, ticket)
+      if (!ftFinished(view.replay)) throw new Error('This Friendship Training run is not finished')
+      if (view.actions.length !== outcome.actionCount || ftStateHash(view.replay) !== outcome.stateHash) {
+        throw new Error('Friendship Training replay claim is stale')
       }
     }
     const reward = this.rewardFactory(ticket, target, outcome, sparkReplay)
@@ -312,12 +327,6 @@ const unavailableHost: MinigameHost = {
     throw new Error('Minigame save host is not ready')
   },
   async commitRun() {
-    throw new Error('Minigame save host is not ready')
-  },
-  async loadRun() {
-    throw new Error('Minigame save host is not ready')
-  },
-  async saveProgress() {
     throw new Error('Minigame save host is not ready')
   },
   async findOpenRun() {

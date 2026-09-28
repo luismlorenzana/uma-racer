@@ -45,8 +45,11 @@ Also part of the contract:
 - **Bounds everywhere:** a journal holds at most 64 actions; every array and string in an action or snapshot has an
   explicit limit; a malformed row is a visible, recoverable error, never deleted or refunded silently.
 
-Today Friendship Training saves through `loadRun`/`saveProgress` and Spark through `MinigameJournal`'s
-`loadSpark`/`appendSpark`. One generic journal for every engine is T076.
+Every row carries the same engine-tagged snapshot union and `ReplayJournalV1`. The journal port exposes only
+`load(runId)` and compare-and-`append(runId, expectedActionCount, action)`; it dispatches parsing, replay, terminal checks
+and state hashing through the registered engine adapter. Dexie v12 migrated open Friendship Training and Spark rows to
+that shape without changing run identity or replay state. Completed rows remain verbatim history, and malformed or
+future-engine rows stay on the device with a visible recovery error.
 
 ## 3. Determinism
 
@@ -149,7 +152,7 @@ or Back/Next, safe-area controls, reduced motion.
 | Piece | Where | For |
 |---|---|---|
 | `MinigameHost`, `MinigameHostTestDouble` | `game/minigame-host.ts` | reserve, commit, resume; screens test against the double |
-| Journal port | `game/minigame-journal.ts` | load and append actions (generic in T076) |
+| Journal port | `game/minigame-journal.ts` | engine-agnostic load and compare-and-append actions |
 | `PagedGuide` | `ui/PagedGuide.tsx` | the guide shell |
 | `TypeIcon`, `SkillIcon`, `SkillKindBadge` | `ui/` | stats, card types, skills |
 | `Button`, `BottomSheet`, `Meter`, `Stars`, `CountUp` | `ui/` | controls, sheets (menu, give up, card details), gauges, stars, scores |

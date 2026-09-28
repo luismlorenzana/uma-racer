@@ -5,9 +5,12 @@ import { ftBotPlay } from './bot'
 import {
   FtActionError,
   ftApply,
+  parseFtAction,
+  parseFtActions,
   ftReplay,
   ftScoreTrain,
   ftStart,
+  ftStateHash,
   type FtAction,
   type FtState,
 } from './engine'
@@ -17,6 +20,7 @@ import {
   ftCardDef,
   ftSkillRule,
   ftTrait,
+  parseFtSetup,
   type FtCardDef,
   type FtSetup,
   type FtSkillDef,
@@ -565,6 +569,17 @@ describe('determinism', () => {
     expect(actions.length).toBeGreaterThan(5)
     expect(ftReplay(setup, actions)).toEqual(state)
     expect(ftReplay(setup, actions.slice(0, 4))).toEqual(ftReplay(setup, actions.slice(0, 4)))
+    expect(parseFtSetup(JSON.parse(JSON.stringify(setup)))).toEqual(setup)
+    expect(parseFtActions(JSON.parse(JSON.stringify(actions)))).toEqual(actions)
+    expect(ftStateHash(ftReplay(setup, actions))).toBe(ftStateHash(state))
+  })
+
+  it('rejects malformed and unbounded saved inputs and actions', () => {
+    expect(parseFtSetup({ ...setup, extra: true })).toBeNull()
+    expect(parseFtSetup({ ...setup, deck: Array.from({ length: 65 }, () => 'm') })).toBeNull()
+    expect(parseFtAction({ type: 'train', uids: [] })).toBeNull()
+    expect(parseFtAction({ type: 'facility', index: 0, extra: true })).toBeNull()
+    expect(parseFtActions(Array.from({ length: 65 }, () => ({ type: 'give-up' })))).toBeNull()
   })
 
   it('rejects an action list that does not fit the run', () => {

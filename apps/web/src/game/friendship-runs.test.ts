@@ -2,23 +2,26 @@ import 'fake-indexeddb/auto'
 
 import {
   CARD_EFFECTS,
+  buildFriendshipSetup,
   cardStars,
   createCardSave,
   createPlayerProfile,
   ftBotPlay,
   ftReplay,
+  ftStateHash,
   parseCardSave,
   parsePlayerProfileOrThrow,
   type CardEffect,
   type ContentAtlas,
-  type FtAction,
   type RaceTemplate,
   type SupportCardTemplate,
 } from '@racer/domain'
+import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
-import { PersistentMinigameHost } from './minigame-runs'
+import { PersistentMinigameHost, PersistentMinigameJournal } from './minigame-runs'
+import type { FriendshipRunView } from './minigame-journal'
 
 // Friendship Training through the real local-first host (M020 T063, D168): Begin freezes the setup, choices are saved
 // as they are made, and the commit replays them before a star is granted.
@@ -68,6 +71,7 @@ const content: LoadedContent = {
 }
 
 const host = () => new PersistentMinigameHost(content, { now: () => 5000, today: () => '2000-01-02' })
+const journal = () => new PersistentMinigameJournal(content)
 const target = { kind: 'friendship-training' as const, cardId: 'card-0', tier: 1 }
 
 async function reset() {
@@ -84,11 +88,64 @@ async function seed(tickets = 3, mainStars: Record<string, number> = {}) {
   }
 }
 
-/** Plays the reserved run with the bot and commits what it did. */
+const legacyStores = {
+  profile: 'id',
+  umas: 'id',
+  cards: 'id',
+  badges: 'id',
+  raceResults: 'id, createdAt',
+  ledger: 'id, createdAt',
+  flairEvents: 'id, createdAt',
+  outbox: '++seq, [kind+id]',
+  albumPrefs: 'id',
+  minigameRuns: 'id, targetKey, [targetKey+status], [targetKey+attemptIndex]',
+}
+
+function migrationSetup(mainCardIndex: number, seedValue: number) {
+  return buildFriendshipSetup({
+    seed: seedValue,
+    tier: 1,
+    mainStars: 1,
+    mainCard: cards[mainCardIndex]!,
+    setCardIds: cards.map((entry) => entry.id),
+    owned: cards.map((template) => ({ template, stars: 1 })),
+    skills: [],
+    races,
+  })
+}
+
+function prefixWhere(setup: ReturnType<typeof migrationSetup>, predicate: (state: ReturnType<typeof ftReplay>) => boolean) {
+  const actions = [] as ReturnType<typeof ftBotPlay>['actions']
+  for (const action of ftBotPlay(setup).actions) {
+    actions.push(action)
+    if (predicate(ftReplay(setup, actions))) return [...actions]
+  }
+  throw new Error('Synthetic run did not reach the requested migration state')
+}
+
+async function friendshipView(runId: string): Promise<FriendshipRunView> {
+  const view = await journal().load(runId)
+  if (view.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
+  return view
+}
+
+const claim = (view: FriendshipRunView) => ({
+  kind: 'friendship-training' as const,
+  engine: 'friendship-training-v1' as const,
+  actionCount: view.actions.length,
+  stateHash: ftStateHash(view.replay),
+})
+
+/** Plays the reserved run through the journal with the bot and commits its authoritative claim. */
 async function playOut(runId: string) {
-  const { setup } = (await host().loadRun(runId))!
-  const { actions, state } = ftBotPlay(setup)
-  return { cleared: state.phase === 'won', reward: await host().commitRun(runId, { kind: 'friendship-training', cleared: state.phase === 'won', actions }) }
+  let view = await friendshipView(runId)
+  const played = ftBotPlay(view.snapshot.setup)
+  for (const action of played.actions) {
+    const next = await journal().append(runId, view.actions.length, action)
+    if (next.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
+    view = next
+  }
+  return { cleared: view.replay.phase === 'won', reward: await host().commitRun(runId, claim(view)) }
 }
 
 const tickets = async () => parsePlayerProfileOrThrow((await db.profile.get('main'))!.data).tickets
@@ -98,15 +155,90 @@ describe('Friendship Training runs', () => {
   beforeEach(reset)
   afterEach(reset)
 
+  it('migrates open v11 runs mid-week and mid-encounter to identical replay states', async () => {
+    const weekSetup = migrationSetup(0, 101)
+    const encounterSetup = migrationSetup(1, 202)
+    const weekActions = prefixWhere(weekSetup, (state) => state.phase === 'facility' && state.week === 1)
+    const encounterActions = prefixWhere(encounterSetup, (state) => state.phase === 'encounter' && state.encounter!.trainsUsed > 0)
+    const fixtures = [
+      { id: 'friendship-training:card-0:1:0', cardId: 'card-0', seed: '101', setup: weekSetup, actions: weekActions },
+      { id: 'friendship-training:card-1:1:0', cardId: 'card-1', seed: '202', setup: encounterSetup, actions: encounterActions },
+    ]
+
+    const legacy = new Dexie('uma-racer')
+    legacy.version(11).stores(legacyStores)
+    await legacy.open()
+    for (const fixture of fixtures) {
+      await legacy.table('minigameRuns').put({
+        id: fixture.id,
+        targetKey: `friendship-training:${fixture.cardId}:1`,
+        kind: 'friendship-training',
+        target: { kind: 'friendship-training', cardId: fixture.cardId, tier: 1 },
+        tier: 1,
+        attemptIndex: 0,
+        seed: fixture.seed,
+        status: 'open',
+        outcome: null,
+        reward: null,
+        createdAt: 100,
+        completedAt: null,
+        setup: fixture.setup,
+        actions: fixture.actions,
+      })
+    }
+    legacy.close()
+
+    await db.open()
+    for (const fixture of fixtures) {
+      const restored = await friendshipView(fixture.id)
+      expect(ftStateHash(restored.replay)).toBe(ftStateHash(ftReplay(fixture.setup, fixture.actions)))
+      expect(restored.ticket).toEqual({ runId: fixture.id, seed: fixture.seed, attemptIndex: 0 })
+      const row = (await db.minigameRuns.get(fixture.id))!
+      expect(row.snapshot).toEqual({ version: 1, setup: fixture.setup })
+      expect(row.journal).toEqual({ format: 1, engine: 'friendship-training-v1', actions: fixture.actions })
+      expect('setup' in row).toBe(false)
+      expect('actions' in row).toBe(false)
+    }
+  })
+
+  it('keeps a malformed legacy run for visible recovery instead of deleting it', async () => {
+    const legacy = new Dexie('uma-racer')
+    legacy.version(11).stores(legacyStores)
+    await legacy.open()
+    const malformed = {
+      id: 'friendship-training:card-0:1:0',
+      targetKey: 'friendship-training:card-0:1',
+      kind: 'friendship-training',
+      target: { kind: 'friendship-training', cardId: 'card-0', tier: 1 },
+      tier: 1,
+      attemptIndex: 0,
+      seed: '101',
+      status: 'open',
+      outcome: null,
+      reward: null,
+      createdAt: 100,
+      completedAt: null,
+      setup: { version: 1, malformed: true },
+      actions: [{ type: 'give-up' }],
+    }
+    await legacy.table('minigameRuns').put(malformed)
+    legacy.close()
+
+    await db.open()
+    expect(await db.minigameRuns.get(malformed.id)).toBeDefined()
+    await expect(journal().load(malformed.id)).rejects.toThrow(/malformed.*kept|kept.*recovery/i)
+    expect(await db.minigameRuns.get(malformed.id)).toBeDefined()
+  })
+
   it('spends one ticket and freezes a setup built from the owned cards', async () => {
     await seed()
     const ticket = await host().beginRun('friendship-training', target)
     expect(await tickets()).toBe(2)
-    const saved = await host().loadRun(ticket.runId)
-    expect(saved!.actions).toEqual([])
-    expect(saved!.setup.mainCardId).toBe('card-0')
-    expect(saved!.setup.deck).toHaveLength(12)
-    expect(saved!.setup.races.map((entry) => entry.grade)).toEqual(['g3'])
+    const saved = await friendshipView(ticket.runId)
+    expect(saved.actions).toEqual([])
+    expect(saved.snapshot.setup.mainCardId).toBe('card-0')
+    expect(saved.snapshot.setup.deck).toHaveLength(12)
+    expect(saved.snapshot.setup.races.map((entry) => entry.grade)).toEqual(['g3'])
     // A second Begin resumes the open run instead of spending again.
     expect((await host().beginRun('friendship-training', target)).runId).toBe(ticket.runId)
     expect(await tickets()).toBe(2)
@@ -115,37 +247,42 @@ describe('Friendship Training runs', () => {
   it('saves choices as they are made and refuses ones the run does not accept', async () => {
     await seed()
     const { runId } = await host().beginRun('friendship-training', target)
-    await host().saveProgress(runId, [{ type: 'facility', index: 1 }])
-    expect((await host().loadRun(runId))!.actions).toEqual([{ type: 'facility', index: 1 }])
-    await expect(host().saveProgress(runId, [{ type: 'train', uids: [1] }])).rejects.toThrow()
-    expect((await host().loadRun(runId))!.actions).toHaveLength(1)
+    await journal().append(runId, 0, { type: 'facility', index: 1 })
+    expect((await friendshipView(runId)).actions).toEqual([{ type: 'facility', index: 1 }])
+    await expect(journal().append(runId, 1, { type: 'train', uids: [999] })).rejects.toThrow()
+    expect((await friendshipView(runId)).actions).toHaveLength(1)
   })
 
   it('grants the star only for a clear that replays, once', async () => {
     await seed()
     const { runId } = await host().beginRun('friendship-training', target)
-    const { setup } = (await host().loadRun(runId))!
+    let view = await friendshipView(runId)
     // The bot clears this small synthetic run, so the star path is the one exercised.
-    const { actions, state } = ftBotPlay(setup)
-    const cleared = state.phase === 'won'
-    expect(cleared).toBe(true)
-    await expect(host().commitRun(runId, { kind: 'friendship-training', cleared: !cleared, actions })).rejects.toThrow()
-    const reward = await host().commitRun(runId, { kind: 'friendship-training', cleared, actions })
+    const played = ftBotPlay(view.snapshot.setup)
+    for (const action of played.actions) {
+      const next = await journal().append(runId, view.actions.length, action)
+      if (next.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
+      view = next
+    }
+    expect(view.replay.phase).toBe('won')
+    await expect(host().commitRun(runId, { ...claim(view), stateHash: '00000000' })).rejects.toThrow(/stale/)
+    const reward = await host().commitRun(runId, claim(view))
     expect(reward.starsBefore).toBe(0)
-    expect(reward.starsAfter).toBe(cleared ? 1 : 0)
-    expect(await stars()).toBe(cleared ? 1 : 0)
-    expect(await host().commitRun(runId, { kind: 'friendship-training', cleared, actions })).toEqual(reward)
-    await expect(host().saveProgress(runId, actions)).rejects.toThrow()
+    expect(reward.starsAfter).toBe(1)
+    expect(await stars()).toBe(1)
+    expect(await host().commitRun(runId, claim(view))).toEqual(reward)
+    await expect(journal().append(runId, view.actions.length, { type: 'give-up' })).rejects.toThrow(/finished/)
   })
 
   it('refuses to commit an unfinished run, and counts giving up as a loss', async () => {
     await seed()
     const { runId } = await host().beginRun('friendship-training', target)
-    await expect(host().commitRun(runId, { kind: 'friendship-training', cleared: false, actions: [] })).rejects.toThrow()
-    const actions: FtAction[] = [{ type: 'give-up' }]
-    const { setup } = (await host().loadRun(runId))!
-    expect(ftReplay(setup, actions).phase).toBe('lost')
-    const reward = await host().commitRun(runId, { kind: 'friendship-training', cleared: false, actions })
+    const open = await friendshipView(runId)
+    await expect(host().commitRun(runId, claim(open))).rejects.toThrow(/not finished/)
+    const ended = await journal().append(runId, 0, { type: 'give-up' })
+    if (ended.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
+    expect(ended.replay.phase).toBe('lost')
+    const reward = await host().commitRun(runId, claim(ended))
     expect(reward.starsAfter).toBe(0)
     expect(await stars()).toBe(0)
     expect(await tickets()).toBe(2)
@@ -167,7 +304,11 @@ describe('Friendship Training runs', () => {
     // A 5★ season is balanced for a real collection; this rule is about the coupon, so each run is cut to one stage.
     const shorten = async (runId: string) => {
       const row = (await db.minigameRuns.get(runId))!
-      await db.minigameRuns.put({ ...row, setup: { ...row.setup!, earning: 1, races: row.setup!.races.slice(0, 1) } })
+      if (!row.snapshot || !('setup' in row.snapshot)) throw new Error('Expected a Friendship Training snapshot')
+      await db.minigameRuns.put({
+        ...row,
+        snapshot: { ...row.snapshot, setup: { ...row.snapshot.setup, earning: 1, races: row.snapshot.setup.races.slice(0, 1) } },
+      })
     }
     const first = await host().beginRun('friendship-training', target)
     await shorten(first.runId)
@@ -184,7 +325,9 @@ describe('Friendship Training runs', () => {
   it('starts a new attempt after a loss', async () => {
     await seed()
     const first = await host().beginRun('friendship-training', target)
-    await host().commitRun(first.runId, { kind: 'friendship-training', cleared: false, actions: [{ type: 'give-up' }] })
+    const ended = await journal().append(first.runId, 0, { type: 'give-up' })
+    if (ended.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
+    await host().commitRun(first.runId, claim(ended))
     const next = await host().beginRun('friendship-training', target)
     expect(next.attemptIndex).toBe(1)
     expect(next.seed).not.toBe(first.seed)

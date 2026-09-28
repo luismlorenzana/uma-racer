@@ -150,6 +150,91 @@ export type FtAction =
   | { type: 'leave-shop' }
   | { type: 'give-up' }
 
+type UnknownRecord = Record<string, unknown>
+
+const isRecord = (value: unknown): value is UnknownRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+function exactKeys(value: UnknownRecord, expected: readonly string[]): boolean {
+  const actual = Object.keys(value).sort()
+  const wanted = [...expected].sort()
+  return actual.length === wanted.length && actual.every((key, index) => key === wanted[index])
+}
+
+const boundedText = (value: unknown): value is string =>
+  typeof value === 'string' && value.length > 0 && value.length <= 160
+
+const boundedInteger = (value: unknown, minimum: number, maximum: number): value is number =>
+  Number.isSafeInteger(value) && (value as number) >= minimum && (value as number) <= maximum
+
+function uidList(value: unknown, maximum: number): number[] | null {
+  if (!Array.isArray(value) || value.length < 1 || value.length > maximum ||
+    !value.every((entry) => boundedInteger(entry, 1, 10_000)) || new Set(value).size !== value.length) return null
+  return [...value] as number[]
+}
+
+/** Strict parser for one bounded journal entry. Semantic validity is checked by `ftApply`. */
+export function parseFtAction(value: unknown): FtAction | null {
+  if (!isRecord(value) || typeof value.type !== 'string') return null
+  switch (value.type) {
+    case 'build': {
+      if (!exactKeys(value, ['facilities', 'type']) || !Array.isArray(value.facilities) ||
+        value.facilities.length !== FT_TWIST_VALUES.constructionBuilds ||
+        !value.facilities.every((entry) => STATS.includes(entry as StatKey)) ||
+        new Set(value.facilities).size !== value.facilities.length) return null
+      return { type: 'build', facilities: [...value.facilities] as StatKey[] }
+    }
+    case 'facility':
+      return exactKeys(value, ['index', 'type']) && boundedInteger(value.index, 0, FT_OFFER_SIZE - 1)
+        ? { type: 'facility', index: value.index }
+        : null
+    case 'train': {
+      const uids = exactKeys(value, ['type', 'uids']) ? uidList(value.uids, FT_MAX_TRAIN) : null
+      return uids ? { type: 'train', uids } : null
+    }
+    case 'redraw': {
+      const uids = exactKeys(value, ['type', 'uids']) ? uidList(value.uids, FT_MAX_REDRAW) : null
+      return uids ? { type: 'redraw', uids } : null
+    }
+    case 'reward':
+      return exactKeys(value, ['cardId', 'type']) && (value.cardId === null || boundedText(value.cardId))
+        ? { type: 'reward', cardId: value.cardId }
+        : null
+    case 'skill': {
+      const expected = value.replace === undefined ? ['skillId', 'type'] : ['replace', 'skillId', 'type']
+      if (!exactKeys(value, expected) || (value.skillId !== null && !boundedText(value.skillId)) ||
+        (value.replace !== undefined && (value.skillId === null || !boundedInteger(value.replace, 0, FT_SKILL_SLOTS - 1)))) return null
+      return {
+        type: 'skill',
+        skillId: value.skillId,
+        ...(value.replace === undefined ? {} : { replace: value.replace }),
+      }
+    }
+    case 'buy': {
+      if (typeof value.item !== 'string' || !Object.hasOwn(FT_SHOP_PRICES, value.item)) return null
+      const item = value.item as FtShopItem
+      const needsUid = item === 'remove' || item === 'upgrade'
+      const takesReplace = item === 'white' || item === 'gold'
+      const expected = ['item', 'type', ...(needsUid ? ['uid'] : []), ...(takesReplace && value.replace !== undefined ? ['replace'] : [])]
+      if (!exactKeys(value, expected) || (needsUid && !boundedInteger(value.uid, 1, 10_000)) ||
+        (takesReplace && value.replace !== undefined && !boundedInteger(value.replace, 0, FT_SKILL_SLOTS - 1))) return null
+      const action: Extract<FtAction, { type: 'buy' }> = { type: 'buy', item }
+      if (needsUid) action.uid = value.uid as number
+      if (takesReplace && value.replace !== undefined) action.replace = value.replace as number
+      return action
+    }
+    case 'leave-shop': return exactKeys(value, ['type']) ? { type: 'leave-shop' } : null
+    case 'give-up': return exactKeys(value, ['type']) ? { type: 'give-up' } : null
+    default: return null
+  }
+}
+
+export function parseFtActions(value: unknown, maximum = 64): FtAction[] | null {
+  if (!Array.isArray(value) || value.length > maximum) return null
+  const parsed = value.map(parseFtAction)
+  return parsed.some((action) => action === null) ? null : parsed as FtAction[]
+}
+
 export class FtActionError extends Error {}
 
 const zeroByStat = (): Record<StatKey, number> => ({ speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })
@@ -792,3 +877,14 @@ export function ftReplay(setup: FtSetup, actions: readonly FtAction[]): FtState 
 }
 
 export const ftFinished = (state: FtState): boolean => state.phase === 'won' || state.phase === 'lost'
+
+/** Stable FNV-1a digest for diagnostics and authoritative replay claims. */
+export function ftStateHash(state: FtState): string {
+  const encoded = JSON.stringify(state)
+  let hash = 0x811c9dc5
+  for (let index = 0; index < encoded.length; index += 1) {
+    hash ^= encoded.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}

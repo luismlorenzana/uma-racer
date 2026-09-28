@@ -21,7 +21,14 @@ import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
-import { minigameNodeLabel, minigameAttemptSeed, PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns } from './minigame-runs'
+import {
+  minigameNodeLabel,
+  minigameAttemptSeed,
+  parseSparkRunSnapshot,
+  PersistentMinigameHost,
+  PersistentMinigameJournal,
+  retireBondRecallRuns,
+} from './minigame-runs'
 import { sparkRivalStateHash } from '@racer/domain'
 
 const aptitudes = {
@@ -136,11 +143,15 @@ const host = (now = 2000) => new PersistentMinigameHost(content, {
 
 async function finishSpark(ticket: { runId: string }) {
   const journal = new PersistentMinigameJournal(content)
-  let view = await journal.loadSpark(ticket.runId)
+  const loaded = await journal.load(ticket.runId)
+  if (loaded.engine !== 'spark-rival-v1') throw new Error('Expected a Spark Rival fixture')
+  let view = loaded
   while (!view.replay.outcome) {
-    view = await journal.appendSpark(ticket.runId, view.actions.length, {
+    const next = await journal.append(ticket.runId, view.actions.length, {
       type: 'drag', path: [{ row: 0, column: 0 }, { row: 0, column: 1 }], movementMs: 250,
     })
+    if (next.engine !== 'spark-rival-v1') throw new Error('Expected a Spark Rival fixture')
+    view = next
   }
   return view
 }
@@ -199,8 +210,9 @@ describe('persistent minigame host', () => {
     expect(minigameAttemptSeed(profile.createdAt, content.manifest.version, target, 1, 1)).not.toBe(first.seed)
     const row = (await db.minigameRuns.get(first.runId))!
     expect(row.journal).toEqual({ format: 1, engine: 'spark-rival-v1', actions: [] })
-    expect(row.sparkSnapshot).toMatchObject({ version: 1, contentVersion: content.manifest.version, source: 'fallback' })
-    expect(row.sparkSnapshot?.encounter.trainee.strategyAptitudes).toEqual(aptitudes.strategy)
+    const snapshot = parseSparkRunSnapshot(row.snapshot)!
+    expect(snapshot).toMatchObject({ version: 1, contentVersion: content.manifest.version, source: 'fallback' })
+    expect(snapshot.encounter.trainee.strategyAptitudes).toEqual(aptitudes.strategy)
   })
 
   it('lazily adopts a legacy open Spark row without changing identity or charging twice', async () => {
@@ -212,7 +224,7 @@ describe('persistent minigame host', () => {
     await db.minigameRuns.add({ id, targetKey: 'spark-match:uma-synthetic:1', kind: 'spark-match', target,
       tier: 1, attemptIndex: 0, seed: seedValue, status: 'open', outcome: null, reward: null, createdAt: 100, completedAt: null })
     const before = (await db.minigameRuns.get(id))!
-    const restored = await new PersistentMinigameJournal(content).loadSpark(id)
+    const restored = await new PersistentMinigameJournal(content).load(id)
     const after = (await db.minigameRuns.get(id))!
     expect(restored.ticket).toEqual({ runId: id, seed: seedValue, attemptIndex: 0 })
     expect(after).toMatchObject(before)
@@ -222,7 +234,33 @@ describe('persistent minigame host', () => {
     expect((await db.profile.get('main'))?.data.tickets).toBe(100)
   })
 
-  it('preserves completed v10 minigame rows byte-for-byte through the additive v11 migration', async () => {
+  it('moves an open v11 Spark snapshot onto the shared snapshot field', async () => {
+    await seed()
+    const ticket = await host().beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
+    const current = (await db.minigameRuns.get(ticket.runId))!
+    const snapshot = current.snapshot!
+
+    await resetDatabase()
+    const legacy = new Dexie('uma-racer')
+    legacy.version(11).stores({
+      profile: 'id', umas: 'id', cards: 'id', badges: 'id', raceResults: 'id, createdAt', ledger: 'id, createdAt',
+      flairEvents: 'id, createdAt', outbox: '++seq, [kind+id]', albumPrefs: 'id',
+      minigameRuns: 'id, targetKey, [targetKey+status], [targetKey+attemptIndex]',
+    })
+    await legacy.open()
+    const { snapshot: _snapshot, ...legacyRow } = current
+    await legacy.table('minigameRuns').put({ ...legacyRow, sparkSnapshot: snapshot })
+    legacy.close()
+
+    await db.open()
+    const migrated = (await db.minigameRuns.get(ticket.runId))!
+    expect(migrated.snapshot).toEqual(snapshot)
+    expect('sparkSnapshot' in migrated).toBe(false)
+    const restored = await new PersistentMinigameJournal(content).load(ticket.runId)
+    expect(restored.engine).toBe('spark-rival-v1')
+  })
+
+  it('preserves completed minigame rows byte-for-byte through the journal migrations', async () => {
     db.close()
     await db.delete()
     const legacy = new Dexie('uma-racer')
@@ -279,7 +317,7 @@ describe('persistent minigame host', () => {
       })),
     } })
     const ticket = await new PersistentMinigameHost(lineageContent).beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
-    const snapshot = (await db.minigameRuns.get(ticket.runId))!.sparkSnapshot!
+    const snapshot = parseSparkRunSnapshot((await db.minigameRuns.get(ticket.runId))!.snapshot)!
     expect(umaTemplate.aptitudes.strategy.front).toBe('D')
     expect(snapshot.encounter.trainee.strategyAptitudes.front).toBe('B')
   })
@@ -290,8 +328,8 @@ describe('persistent minigame host', () => {
     const beforeReload = await host().beginRun('spark-match', target)
     const afterReload = await host(3000).beginRun('spark-match', target)
     expect(afterReload).toEqual(beforeReload)
-    const firstView = await new PersistentMinigameJournal(content).loadSpark(beforeReload.runId)
-    const secondView = await new PersistentMinigameJournal(content).loadSpark(afterReload.runId)
+    const firstView = await new PersistentMinigameJournal(content).load(beforeReload.runId)
+    const secondView = await new PersistentMinigameJournal(content).load(afterReload.runId)
     expect(JSON.parse(JSON.stringify(secondView))).toEqual(JSON.parse(JSON.stringify(firstView)))
     expect((await db.profile.get('main'))?.data.tickets).toBe(99)
   })
@@ -349,13 +387,23 @@ describe('persistent minigame host', () => {
     const ticket = await host().beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
     const journal = new PersistentMinigameJournal(content)
     const action = { type: 'drag' as const, path: [{ row: 0, column: 0 }, { row: 0, column: 1 }], movementMs: 250 }
-    await journal.appendSpark(ticket.runId, 0, action)
+    await journal.append(ticket.runId, 0, action)
     const before = JSON.stringify(await db.minigameRuns.get(ticket.runId))
-    await expect(journal.appendSpark(ticket.runId, 0, action)).rejects.toThrow(/action count changed/)
-    await expect(journal.appendSpark(ticket.runId, 1, { type: 'drag', path: [], movementMs: 0 } as never)).rejects.toThrow(/invalid/)
+    await expect(journal.append(ticket.runId, 0, action)).rejects.toThrow(/action count changed/)
+    await expect(journal.append(ticket.runId, 1, { type: 'drag', path: [], movementMs: 0 } as never)).rejects.toThrow(/invalid/)
     expect(JSON.stringify(await db.minigameRuns.get(ticket.runId))).toBe(before)
     const terminal = await finishSpark(ticket)
-    await expect(journal.appendSpark(ticket.runId, terminal.actions.length, action)).rejects.toThrow(/already terminal/)
+    await expect(journal.append(ticket.runId, terminal.actions.length, action)).rejects.toThrow(/already terminal/)
+  })
+
+  it('keeps an unknown engine row and reports that it needs a compatible app', async () => {
+    await seed()
+    const ticket = await host().beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
+    const row = (await db.minigameRuns.get(ticket.runId))!
+    const unknown = { ...row, journal: { format: 1, engine: 'synthetic-future-v2', actions: [] } }
+    await db.table('minigameRuns').put(unknown)
+    await expect(new PersistentMinigameJournal(content).load(ticket.runId)).rejects.toThrow(/not supported.*update the app/i)
+    expect(await db.table('minigameRuns').get(ticket.runId)).toEqual(unknown)
   })
 
   it('retires an open Bond Recall run once, giving its ticket back (D177)', async () => {
