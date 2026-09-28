@@ -99,6 +99,11 @@ export interface RaceResultRecord {
   sequence: number
   seed: number
   strategy: Strategy
+  /**
+   * The scenario she raced as, written only when it is one before her current scenario (D190). Such a race pays no
+   * EXP, tickets or shards and settles no goal. Absent, the scenario is the tier of her start level.
+   */
+  tier?: number
   startLevel: number
   startExp: number
   startStats: Stats
@@ -303,10 +308,11 @@ export function bestStrategy(template: UmaTemplate): Strategy {
 /** Generated Race Bonus from the currently equipped and usable stat-card deck. */
 /**
  * The scenario a race was run in (D122, T055). A promotion raises an Uma's level and her scenario in one step, so her
- * scenario is always the tier of her level, and a record's start level names it exactly: no separate field is needed,
- * and every record ever written already carries it.
+ * current scenario is always the tier of her level, and a record's start level names it. A race run as one of her
+ * earlier scenarios names that one instead (D190).
  */
-export const raceScenarioTier = (record: Pick<RaceResultRecord, 'startLevel'>): number => tierOfLevel(record.startLevel)
+export const raceScenarioTier = (record: Pick<RaceResultRecord, 'startLevel' | 'tier'>): number =>
+  record.tier ?? tierOfLevel(record.startLevel)
 
 export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[]): number {
   const validation = validateEquippedSupportDeck(tier, cards)
@@ -424,9 +430,11 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const hasCompletedGoalIds = isRecord(value) && Object.hasOwn(value, 'completedGoalIds')
   const hasAccomplishmentFacts = isRecord(value) && Object.hasOwn(value, 'accomplishmentFacts')
   const hasEarnedFlairEventIds = isRecord(value) && Object.hasOwn(value, 'earnedFlairEventIds')
+  const hasTier = isRecord(value) && Object.hasOwn(value, 'tier')
   const keys = [
     ...(hasEngineVersion ? ['engineVersion'] : []),
     ...(hasEngineVersion ? ['course'] : []),
+    ...(hasTier ? ['tier'] : []),
     'contentVersion', 'umaId', 'raceId', 'sequence', 'seed', 'strategy', 'startLevel', 'startExp', 'startStats',
     'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward',
     ...(hasCompletedGoalIds ? ['completedGoalIds'] : []),
@@ -473,7 +481,11 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     !isNonNegativeInt(value.ticketReward) || !isNonNegativeInt(value.shardReward) || value.shardReward > 1 ||
     (hasCompletedGoalIds && (!Array.isArray(value.completedGoalIds) || value.completedGoalIds.some((id) => !isId(id)) ||
       new Set(value.completedGoalIds).size !== value.completedGoalIds.length)) ||
-    fieldSize < 8 || fieldSize > 18 || runners.some((runner) => runner === null) || !isNonNegativeInt(value.createdAt)
+    fieldSize < 8 || fieldSize > 18 || runners.some((runner) => runner === null) || !isNonNegativeInt(value.createdAt) ||
+    // A past scenario's race (D190) names a scenario before her current one and pays nothing.
+    (hasTier && (!isPositiveInt(value.tier) || value.tier >= tierOfLevel(value.startLevel) || value.expGained !== 0 ||
+      value.levelsGained.length > 0 || value.ticketReward !== 0 || value.shardReward !== 0 ||
+      (hasCompletedGoalIds && (value.completedGoalIds as unknown[]).length > 0)))
   ) return null
   const field = runners as RaceResultRunner[]
   const levels = value.levelsGained as number[]
@@ -512,6 +524,7 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     sequence: value.sequence,
     seed: value.seed,
     strategy: value.strategy as Strategy,
+    ...(hasTier ? { tier: value.tier as number } : {}),
     startLevel: value.startLevel,
     startExp: value.startExp,
     startStats,

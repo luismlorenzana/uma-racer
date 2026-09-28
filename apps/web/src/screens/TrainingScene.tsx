@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation, useNavigate, useOutletContext, useParams } f
 import { useContent } from '../content/ContentProvider'
 import type { LoadedContent } from '../content/runtime'
 import { useGame } from '../game/store'
+import { useChosenTier } from '../game/scenario-choice'
 import { joinUma, type UmaViewModel } from '../game/view'
 import { Crest } from '../ui/Crest'
 import { Numeral } from '../ui/Numeral'
@@ -43,9 +44,11 @@ export function TrainingScene() {
   const baseline = useRef<Stats | null>(null)
 
   const save = umas[umaId]
+  // The scenario chosen for her on her profile or Race Select (D190).
+  const tier = useChosenTier(save) ?? undefined
   const joined = useMemo(
-    () => (contentState.status === 'ready' && save ? joinUma(save, contentState.content, cards) : null),
-    [cards, contentState, save],
+    () => (contentState.status === 'ready' && save ? joinUma(save, contentState.content, cards, tier) : null),
+    [cards, contentState, save, tier],
   )
 
   if (contentState.status !== 'ready' || status !== 'ready') {

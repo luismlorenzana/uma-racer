@@ -39,7 +39,8 @@ for the distance decide (D152, D159).
 
 Your Uma races with **the stats on her profile**: her base stats plus what her constellation pays. Nothing is added
 or multiplied at the gate. Rivals are built as **a typical trained Uma of your tier** (six 3★ cards, one of them a
-Friend card, D159), then handicapped by the race's grade:
+Friend card, D159), then handicapped by the race's grade. The tier is the scenario she races as: her current one, or
+an earlier trained unit's, whose rivals come from that scenario (D190):
 
 | Grade | Handicap | Rivals race at |
 |---|---|---|

@@ -1,7 +1,7 @@
 // The active scenario's card set, joined to content (docs/design/support-cards.md#ownership-vs-the-card-set).
 
 import {
-  activeScenario,
+  trainedScenario,
   cardSetRaceBonus,
   deckSlotCount,
   supportDeckIssueMessage,
@@ -38,9 +38,13 @@ export function buildDeckView(
   uma: UmaSave,
   cardsById: Readonly<Record<string, CardSave>>,
   content: LoadedContent,
-  orderedCardIds: readonly string[] = activeScenario(uma).cardSetIds,
+  orderedCardIds?: readonly string[],
+  /** Which of her scenarios' sets (D190); her current one when omitted. */
+  requestedTier?: number,
 ): DeckViewModel {
-  const tier = uma.unlockedTier
+  const run = trainedScenario(uma, requestedTier)
+  const tier = run.tier
+  orderedCardIds ??= run.cardSetIds
   const slotCount = deckSlotCount(tier)
   const validation = validateSupportDeck({
     tier,

@@ -379,6 +379,26 @@ describe('persistent minigame host', () => {
     expect((await db.minigameRuns.get(ticket.runId))?.status).toBe('completed')
   })
 
+  it('trains one of her earlier scenarios toward TL10 without touching her current one (D190)', async () => {
+    const base = startedUma()
+    const first = { ...base.scenarios[0]!, trainingLevel: 3 }
+    const current = { ...first, tier: 2, trainingLevel: 1, trainingExp: 0, started: false, journey: null, assignments: {}, cardSetIds: [], loadoutSkillIds: [] }
+    await seed({ uma: { ...base, level: 15, unlockedTier: 2, scenarios: [first, current] } })
+    const reserved = host()
+    await expect(reserved.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })).rejects.toThrow(/Start this scenario/)
+    await expect(reserved.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id, tier: 3 })).rejects.toThrow(/not unlocked/)
+    const ticket = await reserved.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id, tier: 1 })
+    expect(ticket.runId).toBe('spark-match:uma-synthetic:1:0')
+    const terminal = await finishSpark(ticket)
+    const reward = await reserved.commitRun(ticket.runId, {
+      kind: 'spark-match', engine: 'spark-rival-v1', actionCount: terminal.actions.length, stateHash: sparkRivalStateHash(terminal.replay.state),
+    })
+    const gain = addTrainingExp(3, 0, terminal.replay.outcome!.trainingExp)
+    expect(reward).toMatchObject({ trainingLevelBefore: 3, trainingLevelAfter: gain.trainingLevel })
+    const saved = (await db.umas.get(umaTemplate.id))!.data as UmaSave
+    expect(saved.scenarios.map((run) => [run.tier, run.trainingLevel, run.trainingExp])).toEqual([[1, gain.trainingLevel, gain.trainingExp], [2, 1, 0]])
+  })
+
   it('keeps journal and save unchanged for stale, nonterminal, and invalid-scenario commits', async () => {
     await seed()
     const current = host()

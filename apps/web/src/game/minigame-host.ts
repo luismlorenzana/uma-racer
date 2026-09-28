@@ -43,7 +43,8 @@ export interface RunTicket {
 }
 
 export type RunTarget =
-  | { kind: 'spark-match'; umaId: string }
+  /** Which of her scenarios trains (D190); her current one when omitted. */
+  | { kind: 'spark-match'; umaId: string; tier?: number }
   /** Retired (D177): only in stored history rows, never begun. */
   | { kind: 'bond-recall'; cardId: string; tier: number }
   /** The Uma names the card set the deck is built from; without one, the first set anyone holds there. */

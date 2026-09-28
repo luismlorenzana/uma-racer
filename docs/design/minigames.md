@@ -12,7 +12,7 @@ facilities, no energy, no per-turn RNG (D120).
 
 | Minigame | Raises | Board |
 |---|---|---|
-| **Spark Match — Rival Circuit** | Training Level 1 → 10 of the active scenario | continuous-drag puzzle battle |
+| **Spark Match — Rival Circuit** | Training Level 1 → 10 of the chosen scenario (D190) | continuous-drag puzzle battle |
 | **Friendship Training** | one card by one star in one scenario | a roguelite deck of support cards |
 
 Both are **seeded and replay-stable**. Spark Rival Circuit is a pure replay of its encounter, seed and persisted
@@ -31,7 +31,7 @@ path, and use their strategy advantage to break a rival's **Resolve** before her
 temporary **Drive** (D169). Two training rivals lead to one boss rival.
 
 The public name remains **Spark Match**; **Rival Circuit** distinguishes this ruleset from the retired adjacent-swap
-game. It remains the only way to raise the active scenario's Training Level.
+game. It remains the only way to raise a scenario's Training Level: her current one, or an earlier trained unit's (D190).
 
 ### Board and movement
 

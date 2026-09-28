@@ -392,6 +392,13 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ appends: [{
       kind: 'raceResults', id: 'race:u1:0', data: { ...v3, accomplishmentFacts: { ...accomplishmentFacts, distanceCategory: 'long' } }, createdAt: 1,
     }] })).toMatch(/invalid raceResults data/)
+    // A race run as one of her earlier scenarios names it and pays nothing (D190).
+    const past = { ...data, tier: 1, startLevel: 15, expGained: 0, levelsGained: [], ticketReward: 0, shardReward: 0 }
+    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: past, createdAt: 1 }] }))
+      .toMatchObject({ appends: [{ data: { tier: 1 } }] })
+    for (const bad of [{ ...past, tier: 2 }, { ...past, tier: 0 }, { ...past, expGained: 155 }, { ...past, completedGoalIds: ['goal:1:main:1'] }]) {
+      expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: bad, createdAt: 1 }] })).toMatch(/invalid raceResults data/)
+    }
   })
 })
 

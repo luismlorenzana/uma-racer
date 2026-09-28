@@ -57,9 +57,29 @@ and run a Long race with the same Uma minutes later.
 Promoting does not continue a run, it starts a new one at a higher ceiling: new Training Level 1, new card set,
 new goals, new milestones, and a temporarily weaker Uma who rebuilds. Races and achievements are
 **scenario-linked** (D122) — the Arima Kinen won in Trackblazer and the Arima Kinen won in Our Grand Concert are
-two separate records. Only the **active** scenario, always the highest unlocked, contributes to races (D121).
+two separate records. The **active** scenario, always the highest unlocked, is her career: the one that earns
+Uma EXP and has goals (D121). Every earlier scenario stays a trained unit she can still race (below, D190).
 
 See [Constellations — a scenario is a career run](constellations.md#a-scenario-is-a-career-run).
+
+## Trained units
+
+Every scenario an Uma has unlocked keeps its **trained unit**: that scenario's Training Level, card set,
+constellation and loadout (D190). A Silence Suzuka trained in URA Finale and the same Silence Suzuka rebuilding in
+Unity Cup are two units, and either can race.
+
+- **Choosing.** Her profile and Race Select show one switch per unlocked scenario; the choice is remembered for her on
+  the device and returns to her current scenario when she advances. Her current scenario is the default.
+- **Racing in context.** A race uses the chosen scenario's derived stats, skills and aptitudes under its caps, its card
+  set, and rivals rolled for that scenario. The result is recorded under that scenario (D122), so its wins, records,
+  badges and flair count there.
+- **No Uma EXP from an earlier scenario.** Levels and careers belong to the current scenario: an earlier scenario's
+  race pays no Uma EXP, tickets or shards and settles no goals. A finished build therefore cannot farm the rebuild a
+  new scenario asks for. It also never waits on her gate: an Uma ready to advance can still race her earlier units.
+- **Still trainable.** An earlier unit reconfigures for free like any other, edits its card set within its own era, and
+  plays Spark Match (for a ticket) until it reaches Training Level 10. Friendship Training already earns stars per
+  scenario.
+- **Advancing is unchanged.** A newly unlocked scenario starts from scratch at Training Level 1 with an empty set.
 
 ## Training Tickets
 

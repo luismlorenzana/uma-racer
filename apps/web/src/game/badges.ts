@@ -26,6 +26,7 @@ import {
   parseRaceResultRecord,
   parseUmaSave,
   raceAttemptId,
+  raceScenarioTier,
   tierOfLevel,
   type RaceAccomplishmentFactsV1,
   type RaceResultRecord,
@@ -345,7 +346,7 @@ export function updateMemoryRaceBadgeFacts(input: {
   }
   const courseRecordIds = courseRecordIdsForResult(input.state, input.facts, input.record)
   const evaluation = evaluateUmaBadgeState(input.content, facts, {
-    source: { kind: 'race', id: input.resultId, tier: tierOfLevel(input.record.startLevel) },
+    source: { kind: 'race', id: input.resultId, tier: raceScenarioTier(input.record) },
     earnedAt: input.now,
     retroactive: false,
   }, courseRecordIds)

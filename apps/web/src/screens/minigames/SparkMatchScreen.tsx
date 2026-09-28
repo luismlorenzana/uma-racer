@@ -5,7 +5,8 @@ import {
   SPARK_RIVAL_COMBO_BONUS_CAP,
   SPARK_RIVAL_DRIVE_BONUS_CAP,
   SPARK_RIVAL_WAVE_EXP,
-  activeScenario,
+  scenarioForTier,
+  trainedScenario,
   addTrainingExp,
   constellationTemplate,
   nodesUnlockedBetween,
@@ -21,6 +22,7 @@ import { getContentAsset } from '../../content/runtime'
 import { safeReturnPath } from '../../game/bond-links'
 import { getMinigameHost, type RunReward } from '../../game/minigame-host'
 import { getMinigameJournal, type SparkRunView } from '../../game/minigame-journal'
+import { useChosenTier } from '../../game/scenario-choice'
 import { useGame } from '../../game/store'
 import { SparkRivalScene, type SparkRivalHud, type SparkSceneArt } from '../../scenes/spark-rival/SparkRivalScene'
 import { sparkProofCast } from '../../scenes/spark-rival/proof-cast'
@@ -61,7 +63,9 @@ export function SparkMatchScreen() {
   const committingRef = useRef(false)
   const content = contentState.status === 'ready' ? contentState.content : null
   const returnTo = safeReturnPath(params.get('return'), `/constellation/${encodeURIComponent(umaId)}`)
-  const scenario = uma ? activeScenario(uma) : null
+  // The scenario chosen for her (D190): an earlier trained unit keeps training toward TL10.
+  const chosenTier = useChosenTier(uma)
+  const scenario = uma && chosenTier !== null ? trainedScenario(uma, chosenTier) : null
   const template = content?.umas.byId.get(umaId) ?? null
 
   const finish = useCallback(async (terminal: SparkRunView) => {
@@ -91,7 +95,7 @@ export function SparkMatchScreen() {
     let cancelled = false
     setPhase('loading')
     setResumeAvailable(false)
-    void getMinigameHost().findOpenRun({ kind: 'spark-match', umaId }).then(async (open) => {
+    void getMinigameHost().findOpenRun({ kind: 'spark-match', umaId, tier: scenario.tier }).then(async (open) => {
       if (cancelled) return
       if (!open) {
         setPhase('ready')
@@ -115,11 +119,11 @@ export function SparkMatchScreen() {
   }, [content, finish, gameStatus, scenario?.tier, uma?.templateId, umaId])
 
   const reserve = async () => {
-    if (!uma) return
+    if (!uma || !scenario) return
     setPhase('reserving')
     setError(null)
     try {
-      const ticket = await getMinigameHost().beginRun('spark-match', { kind: 'spark-match', umaId })
+      const ticket = await getMinigameHost().beginRun('spark-match', { kind: 'spark-match', umaId, tier: scenario.tier })
       setResumeAvailable(true)
       const loaded = await getMinigameJournal().load(ticket.runId)
       if (loaded.engine !== 'spark-rival-v1') throw new Error('The saved run belongs to another minigame')
@@ -206,12 +210,14 @@ export function SparkMatchScreen() {
     return <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark"><div className="max-w-sm text-center"><h1 className="text-xl">{title}</h1><Link to="/stable" className="mt-4 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 font-display font-semibold text-ink">Back to Stable</Link></div></div>
   }
 
-  if ((!scenario.started || scenario.trainingLevel >= MAX_TRAINING_LEVEL) && !view && !reward) {
+  // Her current scenario trains once started; an earlier trained unit always can, until TL10 (D190).
+  const trainable = scenario.started || scenario.tier < uma.unlockedTier
+  if ((!trainable || scenario.trainingLevel >= MAX_TRAINING_LEVEL) && !view && !reward) {
     return (
       <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark">
         <div className="max-w-sm rounded-lg border border-hairline-dark bg-stage-soft p-5 text-center shadow-3">
-          <h1 className="text-2xl">{scenario.started ? 'Training Level maxed' : 'Start this scenario first'}</h1>
-          <p className="mt-2 text-sm text-ink-on-dark-soft">{scenario.started ? 'This constellation is already at TL10.' : 'Spark Match trains the active scenario constellation.'}</p>
+          <h1 className="text-2xl">{trainable ? 'Training Level maxed' : 'Start this scenario first'}</h1>
+          <p className="mt-2 text-sm text-ink-on-dark-soft">{trainable ? 'This constellation is already at TL10.' : 'Spark Match trains the scenario once it has started.'}</p>
           <Link to={`/constellation/${encodeURIComponent(umaId)}`} className="mt-5 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-display font-bold text-ink">Back to Training</Link>
         </div>
       </div>
@@ -251,7 +257,7 @@ export function SparkMatchScreen() {
           )}
           eyebrow="Three waves · 6 × 5 board · no turn timer"
           title="Enter the Rival Circuit"
-          subtitle={template.name}
+          subtitle={`${template.name} · ${scenarioForTier(scenario.tier)?.name ?? `Scenario ${scenario.tier}`}`}
           stake={(
             <>
               <MinigameGauge label={`TL ${scenario.trainingLevel} Training EXP`} value={scenario.trainingExp} maximum={trainingExpToNext(scenario.trainingLevel)} tone="accent" />

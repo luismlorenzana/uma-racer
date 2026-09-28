@@ -73,10 +73,12 @@ Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-2
 
 1. **Identity** — portrait, name, outfit, Uma Level, Prestige, active title, the featured star, and the three
    highest-tier badges earned.
-2. **This scenario** — scenario name and Training Level, one status line, and the actions inline (Constellation,
-   Race, Spark Match, Start or Unlock next when they apply); stats metered against this scenario's caps; the card
+2. **This scenario** — once she has more than one scenario, a **scenario switch** (one chip per unlocked scenario
+   with its TL, her career marked) picks which trained unit the zone shows and uses (D190). Then scenario name and
+   Training Level, one status line, and the actions inline (Constellation, Race, Spark Match, Start or Unlock next
+   when they apply; an earlier scenario has no Start or Unlock); stats metered against this scenario's caps; the card
    set with each card's stars and a **Manage · Bond** link; aptitudes; the scenario's goals, each linking to its
-   race or its result.
+   race or its result. The Training scene, Skills page and Spark Match follow the same choice.
 3. **Archive** — collapsed rows for everything browsed rather than used: all badges, scenario history, lineage,
    races run.
 
@@ -94,7 +96,7 @@ against the moment the scene opened. Two tabs sit under it (M016):
 
 - **Constellation** — the tree, the node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
   shows each card's bond and what one node of it pays, with a **Bond** link beside it.
-- **Card set** — the active scenario's six slots. Each shows the card, its type, its stars in this scenario,
+- **Card set** — the chosen scenario's six slots. Each shows the card, its type, its stars in this scenario,
   what one node pays (SP per node for a Friend or Group card, marked **Skill points**), how many nodes it fills, and
   a **Bond** button. Tapping a card offers Open card, **Replace** (the new card takes over its nodes), and Remove.
   Edits save as they are made, like the constellation; empty slots open the album picker, and **Fill empty slots**
@@ -145,6 +147,8 @@ board returns to the exact wave, board, gauges and intent rather than to the sta
 
 - A **racing Uma strip** under the title: a horizontal row of her busts, the featured Uma first, then by level. Tapping
   one switches every section below to her; the picked bust is outlined and scrolled into view.
+- **Racing as**: the same scenario switch as her profile, when she has more than one scenario (D190). An earlier
+  scenario hides the career tracker and EXP, and says it races without Uma EXP.
 - A **career tracker**: her three stages with levels and progress, the current stage's goal races, and what the stage
   is holding ([Scenario Careers](scenario-goals.md#presentation)).
 - **Next up**: 5–10 race cards worth running now — the unwon goals up to her current stage, then races graded for her

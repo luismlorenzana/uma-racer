@@ -10,6 +10,7 @@ import {
   awaitingAdvance,
   isCareerStage,
   racingSkillCosts,
+  scenarioForTier,
   summarizeSkillLoadout,
   type Grade,
   type RaceResultRecord,
@@ -23,6 +24,7 @@ import { buildUmaBadgeCollection, type BadgeCollectionItem } from '../game/badge
 import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import { buildJourneyView } from '../game/goals-view'
+import { useChosenTier } from '../game/scenario-choice'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -37,6 +39,7 @@ import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { SkillIcon } from '../ui/SkillIcon'
+import { ScenarioSwitch } from '../ui/ScenarioSwitch'
 import { ChevronLeftIcon, ChevronRightIcon } from '../ui/icons'
 import { formatTickets } from '../ui/tickets'
 import { TypeIcon } from '../ui/TypeIcon'
@@ -73,6 +76,8 @@ export function UmaProfileScreen() {
   const pushToast = useGame((state) => state.pushToast)
   const [busy, setBusy] = useState(false)
   const [raceHistory, setRaceHistory] = useState<RaceResultRecord[]>([])
+  // Which of her trained units the page shows (D190): her current scenario unless another was chosen.
+  const chosenTier = useChosenTier(save)
 
   const flairSummary = useMemo(() => {
     if (contentState.status !== 'ready' || !save) return null
@@ -112,18 +117,20 @@ export function UmaProfileScreen() {
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening profile…" detail="Loading private content and save data." />
   if (!save) return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
 
-  const joined = joinUma(save, contentState.content, cards)
+  const joined = joinUma(save, contentState.content, cards, chosenTier ?? undefined)
   if (joined.status !== 'ready') {
     return <ScreenState title="Content reference missing" detail={`The save is preserving ${joined.templateId} until its template is restored.`} action={{ label: 'Back to Stable', to: '/stable' }} />
   }
 
   const uma = joined.value
   const featured = profile.featuredUmaId === save.templateId
-  const setupPending = !uma.run.started
-  const atGate = awaitingAdvance(save)
-  const sparkAvailable = uma.run.started && uma.derived.trainingLevel < MAX_TRAINING_LEVEL
+  // An earlier scenario is a finished trained unit: it races and trains, but has no start, gate or advance (D190).
+  const past = uma.past
+  const setupPending = !past && !uma.run.started
+  const atGate = !past && awaitingAdvance(save)
+  const sparkAvailable = (past || uma.run.started) && uma.derived.trainingLevel < MAX_TRAINING_LEVEL
   const sparkAffordable = profile.tickets >= SPARK_MATCH_TICKET_COST
-  const raceUnlocked = uma.run.started && !atGate
+  const raceUnlocked = past || (uma.run.started && !atGate)
   const loadout = summarizeSkillLoadout(uma.derived, uma.template, contentState.content.skills.byId)
   // The profile shows her unique and the equipped inherited uniques and golds; whites wait behind "All equipped".
   const ownUnique = uma.template.uniqueSkillId ? contentState.content.skills.byId.get(uma.template.uniqueSkillId) : undefined
@@ -134,12 +141,14 @@ export function UmaProfileScreen() {
     ...equippedSkills.filter((skill) => skill.kind === 'inherited-unique').map((skill) => ({ skill, own: false })),
     ...equippedSkills.filter((skill) => skill.kind === 'gold').map((skill) => ({ skill, own: false })),
   ]
-  const deck = buildDeckView(save, cards, contentState.content)
+  const deck = buildDeckView(save, cards, contentState.content, undefined, uma.tier)
   const journey = buildJourneyView(save, contentState.content)
   const currentJourney = journey.find((item) => item.tier === uma.tier) ?? null
   const ownRaces = raceHistory.filter((record) => record.umaId === save.templateId)
 
-  const statusLine = setupPending
+  const statusLine = past
+    ? 'An earlier scenario: it races for its own records, without Uma EXP.'
+    : setupPending
     ? 'Start this scenario before racing.'
     : uma.readyToAdvance
       ? 'Ready to unlock the next scenario.'
@@ -226,8 +235,9 @@ export function UmaProfileScreen() {
         )}
       </Panel>
 
-      {/* ── This scenario ────────────────────────────────────────────── */}
-      <SectionHeading label="This scenario" hint={`Tier ${uma.tier}`} />
+      {/* ── This scenario: one trained unit per unlocked scenario (D190) ── */}
+      <SectionHeading label={past ? 'Earlier scenario' : 'This scenario'} hint={`Tier ${uma.tier}`} />
+      <ScenarioSwitch uma={save} tier={uma.tier} label="Her scenarios" />
 
       <Panel className="p-3">
         <div className="flex items-start justify-between gap-2">
@@ -235,7 +245,7 @@ export function UmaProfileScreen() {
             <p className="font-display truncate text-[15px] font-semibold">{uma.scenario?.name ?? 'Future scenario'}</p>
             <p className="text-[12px] text-ink-soft">{statusLine}</p>
           </div>
-          <Crest tone="accent">TL {uma.derived.trainingLevel}</Crest>
+          <Crest tone="accent" className="shrink-0 whitespace-nowrap">TL {uma.derived.trainingLevel}</Crest>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -264,7 +274,7 @@ export function UmaProfileScreen() {
                 : `Spark Match · need ${formatTickets(SPARK_MATCH_TICKET_COST)}`}
             </Button>
           )}
-          {uma.readyToAdvance && (
+          {!past && uma.readyToAdvance && (
             <Button variant="primary" disabled={busy} onClick={() => void runAction(() => advanceUma(save.templateId), 'Could not unlock the next scenario')}>
               Unlock the next scenario
             </Button>
@@ -505,7 +515,9 @@ export function UmaProfileScreen() {
                   {contentState.content.races.byId.get(record.raceId)?.name ?? record.raceId}
                 </span>
                 <span className="text-micro shrink-0">
-                  {record.playerPlacement === 1 ? 'won' : `${record.playerPlacement}th`} · +{record.expGained} EXP
+                  {record.playerPlacement === 1 ? 'won' : `${record.playerPlacement}th`} · {record.tier
+                    ? scenarioForTier(record.tier)?.name ?? `Scenario ${record.tier}`
+                    : `+${record.expGained} EXP`}
                 </span>
               </div>
             ))}

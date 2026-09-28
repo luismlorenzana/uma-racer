@@ -7,7 +7,7 @@ import {
   type FlairSeriesTag,
 } from './badges'
 import type { RaceTemplate, UmaTemplate } from './content'
-import { parseRaceResultRecord, type RaceResultRecord } from './progression-race'
+import { parseRaceResultRecord, raceScenarioTier, type RaceResultRecord } from './progression-race'
 import {
   activeScenario,
   CAREER_STAGES,
@@ -471,7 +471,7 @@ export function evaluateScenarioGoals(input: EvaluateScenarioGoalsInput): Evalua
     throw new Error('Scenario goal result input is malformed')
   }
   if (input.journey.tracking !== 'tracked' || input.journey.state !== 'active') return { journey: input.journey, newlyCompletedIds: [] }
-  if (input.journey.tier !== tierOfLevel(uma.level) || result.umaId !== uma.templateId || tierOfLevel(result.startLevel) !== input.journey.tier ||
+  if (input.journey.tier !== tierOfLevel(uma.level) || result.umaId !== uma.templateId || raceScenarioTier(result) !== input.journey.tier ||
     result.raceId !== input.race.id) return { journey: input.journey, newlyCompletedIds: [] }
   const player = result.field.find((runner) => runner.isPlayer)
   if (!player || result.playerPlacement !== 1 || player.placement !== 1) return { journey: input.journey, newlyCompletedIds: [] }

@@ -11,19 +11,20 @@ export async function setConstellationNode(
   id: string,
   nodeId: string,
   assignment: import('@racer/domain').NodeAssignment | null,
+  tier?: number,
 ) {
   const { gameRuntime } = await import('./runtime')
-  await gameRuntime.setConstellationNode(id, nodeId, assignment)
+  await gameRuntime.setConstellationNode(id, nodeId, assignment, tier)
 }
 
-export async function setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {
+export async function setUmaLoadout(id: string, skillIds: readonly string[], tier?: number): Promise<void> {
   const { gameRuntime } = await import('./runtime')
-  await gameRuntime.setUmaLoadout(id, skillIds)
+  await gameRuntime.setUmaLoadout(id, skillIds, tier)
 }
 
-export async function setUmaDeck(id: string, orderedCardIds: readonly string[]): Promise<void> {
+export async function setUmaDeck(id: string, orderedCardIds: readonly string[], tier?: number): Promise<void> {
   const { gameRuntime } = await import('./runtime')
-  await gameRuntime.setUmaDeck(id, orderedCardIds)
+  await gameRuntime.setUmaDeck(id, orderedCardIds, undefined, tier)
 }
 
 export async function prepareRace(
@@ -31,9 +32,10 @@ export async function prepareRace(
   raceId: string,
   strategy: import('@racer/domain').Strategy,
   sequence?: number,
+  tier?: number,
 ) {
   const { gameRuntime } = await import('./runtime')
-  return gameRuntime.prepareRace(umaId, raceId, strategy, sequence)
+  return gameRuntime.prepareRace(umaId, raceId, strategy, sequence, tier)
 }
 
 export async function completeRace(attempt: import('./racing').PreparedRace) {

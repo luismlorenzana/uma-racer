@@ -6,7 +6,7 @@ import {
   MAX_SCENARIO_TIER,
   MAX_TRAINING_LEVEL,
   SPARK_MATCH_TICKET_COST,
-  activeScenario,
+  scenarioAt,
   addTrainingExp,
   advanceCardStars,
   buildFriendshipSetup,
@@ -34,6 +34,7 @@ import {
   type ConstellationNode,
   type LedgerEntry,
   type PlayerProfile,
+  type ScenarioTraining,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -240,6 +241,16 @@ export function minigameRunStateHash(view: MinigameRunView): string {
   return ENGINE_ADAPTERS.get(view.engine)!.stateHash(view)
 }
 
+/**
+ * The scenario a Spark run trains: her current one once started, or any of her earlier trained units (D190), which
+ * keep training toward Training Level 10.
+ */
+function sparkScenario(uma: UmaSave, tier: number): ScenarioTraining | null {
+  const run = scenarioAt(uma, tier)
+  if (!run) return null
+  return run.tier < uma.unlockedTier || run.started ? run : null
+}
+
 const targetKey = (target: RunTarget, tier: number): string => target.kind === 'spark-match'
   ? `spark-match:${target.umaId}:${tier}`
   : `${target.kind}:${target.cardId}:${tier}`
@@ -300,8 +311,8 @@ async function buildSparkSnapshot(
   const umaRow = await db.umas.get(target.umaId)
   if (!umaRow) throw new Error('Spark Match Uma is not owned')
   const uma = parsedUma(target.umaId, umaRow.data)
-  const scenario = activeScenario(uma)
-  if (!scenario.started || scenario.tier !== tier || scenario.trainingLevel >= MAX_TRAINING_LEVEL) {
+  const scenario = sparkScenario(uma, tier)
+  if (!scenario || scenario.trainingLevel >= MAX_TRAINING_LEVEL) {
     throw new Error('The reserved Spark Match scenario is no longer active')
   }
   const trainee = content.umas.byId.get(target.umaId)
@@ -309,6 +320,7 @@ async function buildSparkSnapshot(
   const cardSaves = new Map((await db.cards.toArray()).map((row) => [row.id, parsedCard(row.id, row.data)]))
   const derived = deriveUma({
     uma,
+    tier,
     umaTemplate: trainee,
     cardSaves,
     cardTemplates: content.cards.byId,
@@ -459,10 +471,12 @@ export class PersistentMinigameHost implements MinigameHost {
       const row = await db.umas.get(target.umaId)
       if (!row) throw new Error('Spark Match Uma is not owned')
       const uma = parsedUma(target.umaId, row.data)
-      const scenario = activeScenario(uma)
-      if (!scenario.started) throw new Error('Start this scenario before playing Spark Match')
+      const tier = target.tier ?? uma.unlockedTier
+      if (!scenarioAt(uma, tier)) throw new Error('She has not unlocked that scenario')
+      const scenario = sparkScenario(uma, tier)
+      if (!scenario) throw new Error('Start this scenario before playing Spark Match')
       if (scenario.trainingLevel >= MAX_TRAINING_LEVEL) throw new Error('This constellation is already at Training Level 10')
-      return { tier: scenario.tier, key: targetKey(target, scenario.tier) }
+      return { tier, key: targetKey(target, tier) }
     }
     if (target.kind === 'bond-recall') throw new Error('Bond Recall is retired: Bond opens Friendship Training')
     const row = await db.cards.get(target.cardId)
@@ -622,8 +636,8 @@ export class PersistentMinigameHost implements MinigameHost {
           const umaRow = await db.umas.get(run.target.umaId)
           if (!umaRow) throw new Error('Spark Match Uma is not owned')
           const uma = parsedUma(run.target.umaId, umaRow.data)
-          const scenario = activeScenario(uma)
-          if (scenario.tier !== run.tier || !scenario.started) throw new Error('The reserved Spark Match scenario is no longer active')
+          const scenario = sparkScenario(uma, run.tier)
+          if (!scenario) throw new Error('The reserved Spark Match scenario is no longer active')
           const gain = addTrainingExp(scenario.trainingLevel, scenario.trainingExp, view.replay.outcome.trainingExp)
           const nextScenario = { ...scenario, trainingLevel: gain.trainingLevel, trainingExp: gain.trainingExp }
           const nextUma = {

@@ -9,6 +9,7 @@ import {
   skillPointCap,
   scenarioForTier,
   tierOfLevel,
+  trainedScenario,
   type CardSave,
   type DerivedUma,
   type DistanceCategory,
@@ -35,10 +36,13 @@ export interface UmaViewModel {
   save: UmaSave
   template: UmaTemplate
   asset: ContentAsset | null
+  /** The scenario shown: her current one unless another of her trained units was asked for (D190). */
   tier: number
   scenario: ScenarioDef | undefined
-  /** The active scenario's run. */
+  /** That scenario's run. */
   run: ScenarioTraining
+  /** True when `tier` is one of her earlier scenarios rather than her current one. */
+  past: boolean
   /** Stats, skills and aptitudes, recomputed from the constellation (D121). */
   derived: DerivedUma
   /** Per-stat caps for this scenario. */
@@ -60,13 +64,15 @@ export function joinUma(
   save: UmaSave,
   content: LoadedContent,
   cardSaves: Readonly<Record<string, CardSave>> = {},
+  requestedTier?: number,
 ): UmaJoinResult {
   const template = content.umas.byId.get(save.templateId)
   if (!template) return { status: 'missing-content', templateId: save.templateId }
-  const tier = save.unlockedTier
+  const tier = requestedTier !== undefined && save.scenarios.some((run) => run.tier === requestedTier) ? requestedTier : save.unlockedTier
   const finalLevel = save.level >= SCENARIOS.length * LEVELS_PER_SCENARIO
   const derived = deriveUma({
     uma: save,
+    tier,
     umaTemplate: template,
     cardSaves: new Map(Object.entries(cardSaves)),
     cardTemplates: content.cards.byId,
@@ -81,13 +87,14 @@ export function joinUma(
       asset: umaAsset(content, save.templateId),
       tier,
       scenario: scenarioForTier(tier),
-      run: activeScenario(save),
+      run: trainedScenario(save, tier),
+      past: tier < save.unlockedTier,
       derived,
       caps: capProfile(tier),
       spCap: skillPointCap(tier),
       expToNext: expToNextUmaLevel(save.level),
       readyToAdvance: activeScenario(save).started && awaitingAdvance(save)
-        && tierOfLevel(save.level) === tier && !finalLevel,
+        && tierOfLevel(save.level) === save.unlockedTier && !finalLevel,
     },
   }
 }

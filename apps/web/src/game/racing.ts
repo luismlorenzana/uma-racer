@@ -10,6 +10,9 @@ import {
   closeFinalScenario,
   activeScenario,
   deriveUma,
+  isPastScenario,
+  raceScenarioTier,
+  trainedScenario,
   type DerivedUma,
   type Stats,
   GATE_SHARD_REWARD,
@@ -41,7 +44,6 @@ import {
   summarizeSkillLoadout,
   SCENARIOS,
   supportDeckIssueMessage,
-  tierOfLevel,
   validateSupportDeck,
   type CardSave,
   type CompiledRaceSkill,
@@ -77,6 +79,8 @@ export interface PreparedRace {
   sequence: number
   seed: number
   strategy: Strategy
+  /** The scenario she races as (D190): her current one, or one of her earlier trained units. */
+  tier: number
   startLevel: number
   startExp: number
   startStats: Stats
@@ -115,6 +119,8 @@ interface BuildRaceInput {
   raceId: string
   strategy: Strategy
   sequence: number
+  /** Which of her scenarios races (D190); her current one when omitted. */
+  tier?: number
 }
 
 const parsedUma = (id: string, value: unknown): UmaSave => {
@@ -153,11 +159,12 @@ function uniqueOpponentPool(player: UmaTemplate, umas: readonly UmaTemplate[]): 
 function equippedCards(
   content: LoadedContent,
   uma: UmaSave,
+  tier: number,
   cardsById: Readonly<Record<string, CardSave>>,
 ) {
   const validation = validateSupportDeck({
-    tier: uma.unlockedTier,
-    orderedCardIds: activeScenario(uma).cardSetIds,
+    tier,
+    orderedCardIds: trainedScenario(uma, tier).cardSetIds,
     ownedCards: Object.values(cardsById),
     templates: content.cards.byId,
   })
@@ -202,16 +209,20 @@ function playerRaceSkills(
 
 export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   const { content, profile, uma, raceId, strategy, sequence } = input
-  const run = activeScenario(uma)
-  if (!run.started) throw new Error('Start this scenario before racing')
+  const tier = input.tier ?? uma.unlockedTier
+  const run = trainedScenario(uma, tier)
+  // One of her earlier scenarios races as the trained unit it is: no career, no gate (D190).
+  const past = isPastScenario(uma, tier)
+  if (!past && !run.started) throw new Error('Start this scenario before racing')
   if (run.trainingLevel < 1) throw new Error('Play one Spark Match run to unlock races for this Uma')
   // An unfinished career keeps racing at the gate level; anything else waits for the advance (D137).
-  if (isGateLevel(uma.level) && !careerOpenAtGate(run.journey)) throw new Error('Advance this Uma before entering another race')
+  if (!past && isGateLevel(uma.level) && !careerOpenAtGate(run.journey)) throw new Error('Advance this Uma before entering another race')
   const template = content.umas.byId.get(uma.templateId)
   if (!template) throw new Error(`Race content is missing Uma ${uma.templateId}`)
-  // Stats, skills and aptitudes all come from the active constellation (D121).
+  // Stats, skills and aptitudes all come from the racing scenario's constellation (D121, D190).
   const derived = deriveUma({
     uma,
+    tier,
     umaTemplate: template,
     cardSaves: new Map(Object.entries(input.cardsById)),
     cardTemplates: content.cards.byId,
@@ -232,14 +243,14 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   }
   const rng = createRng(seed ^ 0x5bd1e995)
   const playerGate = Math.floor(rng.next() * fieldSize)
-  const raceBonus = equippedRaceBonus(tierOfLevel(uma.level), equippedCards(content, uma, input.cardsById))
+  const raceBonus = equippedRaceBonus(tier, equippedCards(content, uma, tier, input.cardsById))
   const playerSkills = playerRaceSkills(content, derived, template)
   // Each rival rolls her own whites from the pool (D163), on a stream of their own so the field's other rolls stay put.
   const skillRng = createRng((seed ^ 0x2545f491) >>> 0)
   const pool = rivalSkillPool(content)
-  // A fresh field every race: styles and stats rolled from the tier's presets, each style run by an Uma suited to it
-  // (D153, docs/design/racing.md#opponents-generated-rivals).
-  const slots = rollRivalField({ tier: uma.unlockedTier, grade: race.grade, distance: race.distanceCategory, meters: race.distance, count: fieldSize - 1, rng })
+  // A fresh field every race: styles and stats rolled from the racing scenario's presets, each style run by an Uma
+  // suited to it (D153, D190, docs/design/racing.md#opponents-generated-rivals).
+  const slots = rollRivalField({ tier, grade: race.grade, distance: race.distanceCategory, meters: race.distance, count: fieldSize - 1, rng })
   const cast = castRivals(opponents, slots)
   let rivalIndex = 0
   const runners = Array.from({ length: fieldSize }, (_, gate) => {
@@ -290,6 +301,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     sequence,
     seed,
     strategy,
+    tier,
     startLevel: uma.level,
     startExp: uma.exp,
     startStats: { ...derived.stats },
@@ -324,6 +336,7 @@ function recordMatchesAttempt(record: RaceResultRecord, attempt: PreparedRace): 
     record.sequence === attempt.sequence &&
     record.seed === attempt.seed &&
     record.strategy === attempt.strategy &&
+    raceScenarioTier(record) === attempt.tier &&
     record.startLevel === attempt.startLevel &&
     record.startExp === attempt.startExp &&
     record.raceBonus === attempt.raceBonus &&
@@ -375,6 +388,7 @@ function resultRecord(
       skills: [...(runner.skills ?? [])],
     }
   }).sort((left, right) => left.placement - right.placement)
+  const past = isPastScenario(uma, attempt.tier)
   const unsettled: RaceResultRecord = {
     engineVersion: 7,
     course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
@@ -384,6 +398,7 @@ function resultRecord(
     sequence: attempt.sequence,
     seed: attempt.seed,
     strategy: attempt.strategy,
+    ...(past ? { tier: attempt.tier } : {}),
     startLevel: attempt.startLevel,
     startExp: attempt.startExp,
     startStats: { ...attempt.startStats },
@@ -398,6 +413,9 @@ function resultRecord(
     field,
     createdAt,
   }
+  // Levels and careers belong to her current scenario: an earlier one races for its own record, results and flair
+  // only, so a finished build cannot farm the rebuild a new scenario asks for (D190).
+  if (past) return { uma, ticketReward: 0, shardReward: 0, record: unsettled }
   // Goals settle before EXP, so the race that wins a stage's goal also releases the level it was holding (D137).
   const goals = settleScenarioGoals(uma, race, attempt.id, unsettled, createdAt)
   const progress = resolveRaceExperience(goals.uma, race.grade, playerResult.placement, attempt.raceBonus,
@@ -501,14 +519,14 @@ export async function readLatestRaceTimes(): Promise<Record<string, number>> {
   return latest
 }
 
-async function savedRaceInputs(content: LoadedContent, umaId: string) {
+async function savedRaceInputs(content: LoadedContent, umaId: string, tier?: number) {
   const profileRow = await db.profile.get('main')
   const umaRow = await db.umas.get(umaId)
   if (!profileRow) throw new Error('Local profile is missing')
   if (!umaRow) throw new Error('Race Uma is not owned')
   const profile = parsePlayerProfileOrThrow(profileRow.data)
   const uma = parsedUma(umaId, umaRow.data)
-  const cardSetIds = activeScenario(uma).cardSetIds
+  const cardSetIds = trainedScenario(uma, tier).cardSetIds
   const rows = await db.cards.bulkGet(cardSetIds)
   const cardsById = Object.fromEntries(cardSetIds.map((id, index) => {
     const row = rows[index]
@@ -524,8 +542,9 @@ export async function preparePersistentRace(
   raceId: string,
   strategy: Strategy,
   requestedSequence?: number,
+  requestedTier?: number,
 ): Promise<RacePreparation> {
-  const { profile, uma, cardsById } = await savedRaceInputs(content, umaId)
+  const { profile, uma, cardsById } = await savedRaceInputs(content, umaId, requestedTier)
   const history = validateUmaSequence((await db.raceResults.toArray()).map(parseHistoryRow), umaId)
   const sequence = requestedSequence ?? history.length
   if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > history.length) throw new Error('Race attempt is stale')
@@ -534,7 +553,7 @@ export async function preparePersistentRace(
     if (record.raceId !== raceId || record.strategy !== strategy) throw new Error('Race attempt no longer matches history')
     return { status: 'completed', record }
   }
-  return { status: 'prepared', attempt: buildPreparedRace({ content, profile, uma, cardsById, raceId, strategy, sequence }) }
+  return { status: 'prepared', attempt: buildPreparedRace({ content, profile, uma, cardsById, raceId, strategy, sequence, tier: requestedTier }) }
 }
 
 export function prepareMemoryRace(
@@ -546,6 +565,7 @@ export function prepareMemoryRace(
   raceId: string,
   strategy: Strategy,
   requestedSequence?: number,
+  requestedTier?: number,
 ): RacePreparation {
   const results = validateUmaSequence(history, uma.templateId)
   const sequence = requestedSequence ?? results.length
@@ -555,7 +575,7 @@ export function prepareMemoryRace(
     if (record.raceId !== raceId || record.strategy !== strategy) throw new Error('Race attempt no longer matches history')
     return { status: 'completed', record }
   }
-  return { status: 'prepared', attempt: buildPreparedRace({ content, profile, uma, cardsById, raceId, strategy, sequence }) }
+  return { status: 'prepared', attempt: buildPreparedRace({ content, profile, uma, cardsById, raceId, strategy, sequence, tier: requestedTier }) }
 }
 
 export function completeMemoryRace(
@@ -587,6 +607,7 @@ export function completeMemoryRace(
     raceId: attempt.raceId,
     strategy: attempt.strategy,
     sequence: validateUmaSequence(history, uma.templateId).length,
+    tier: attempt.tier,
   })
   if (!sameAttempt(current, attempt)) throw new Error('Race attempt is stale; prepare a new race')
   const race = content.races.byId.get(attempt.raceId)!
@@ -618,7 +639,7 @@ export async function completePersistentRace(
     if (existingRow) {
       const record = parseHistoryRow(existingRow)
       if (!recordMatchesAttempt(record, attempt)) throw new Error('Race result id collision')
-      const saved = await savedRaceInputs(content, attempt.umaId)
+      const saved = await savedRaceInputs(content, attempt.umaId, attempt.tier)
       const timeline = simulatePreparedRace(attempt)
       const race = content.races.byId.get(attempt.raceId)
       if (!race || !record.accomplishmentFacts || JSON.stringify(record.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
@@ -634,7 +655,7 @@ export async function completePersistentRace(
       }
     }
 
-    const { profile, uma, cardsById } = await savedRaceInputs(content, attempt.umaId)
+    const { profile, uma, cardsById } = await savedRaceInputs(content, attempt.umaId, attempt.tier)
     const history = validateUmaSequence((await db.raceResults.toArray()).map(parseHistoryRow), attempt.umaId)
     const current = buildPreparedRace({
       content,
@@ -644,6 +665,7 @@ export async function completePersistentRace(
       raceId: attempt.raceId,
       strategy: attempt.strategy,
       sequence: history.length,
+      tier: attempt.tier,
     })
     if (!sameAttempt(current, attempt)) throw new Error('Race attempt is stale; prepare a new race')
     const race = content.races.byId.get(attempt.raceId)!
@@ -740,6 +762,7 @@ export function preparedRaceFromRecord(content: LoadedContent, record: RaceResul
     sequence: record.sequence,
     seed: record.seed,
     strategy: record.strategy,
+    tier: raceScenarioTier(record),
     startLevel: record.startLevel,
     startExp: record.startExp,
     startStats: { ...record.startStats },

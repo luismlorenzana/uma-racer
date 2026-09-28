@@ -13,7 +13,7 @@ import {
   createUmaBadgeState,
   createInitialSave,
   deriveUma,
-  activeScenario,
+  trainedScenario,
   constellationTemplate,
   isNodeUnlocked,
   type NodeAssignment,
@@ -402,13 +402,14 @@ export class GameRuntime {
    * Assigns or clears one constellation node. Free, instant and always reversible: reconfiguring is the
    * point of the system, so it costs nothing and cannot fail on a locked or unknown node (D121).
    */
-  async setConstellationNode(id: string, nodeId: string, assignment: NodeAssignment | null): Promise<void> {
+  async setConstellationNode(id: string, nodeId: string, assignment: NodeAssignment | null, tier?: number): Promise<void> {
     const generation = this.generation
     const state = useGame.getState()
     const uma = state.umas[id]
     if (state.status !== 'ready' || !uma) throw new Error('Constellation Uma must be owned')
 
-    const run = activeScenario(uma)
+    // Any of her trained units reconfigures the same way (D190).
+    const run = trainedScenario(uma, tier)
     const node = constellationTemplate(run.tier).nodes.find((entry) => entry.id === nodeId)
     if (!node || node.kind === 'root') throw new Error('Unknown constellation node')
     if (!isNodeUnlocked(constellationTemplate(run.tier), node, run.trainingLevel)) {
@@ -446,7 +447,7 @@ export class GameRuntime {
     this.schedule()
   }
 
-  async setUmaLoadout(id: string, skillIds: readonly string[]): Promise<void> {
+  async setUmaLoadout(id: string, skillIds: readonly string[], tier?: number): Promise<void> {
     const generation = this.generation
     const content = this.content
     const state = useGame.getState()
@@ -455,6 +456,7 @@ export class GameRuntime {
     if (!content || state.status !== 'ready' || !uma || !template) throw new Error('Loadout Uma must be owned')
     const derived = deriveUma({
       uma,
+      tier,
       umaTemplate: template,
       cardSaves: new Map(Object.entries(state.cards)),
       cardTemplates: content.cards.byId,
@@ -465,7 +467,7 @@ export class GameRuntime {
     const next: UmaSave = {
       ...uma,
       scenarios: uma.scenarios.map((run) =>
-        run.tier === uma.unlockedTier ? { ...run, loadoutSkillIds } : run),
+        run.tier === derived.tier ? { ...run, loadoutSkillIds } : run),
     }
     if (!state.persistent) {
       replaceUma(next)
@@ -484,7 +486,7 @@ export class GameRuntime {
     this.schedule()
   }
 
-  async setUmaDeck(id: string, orderedCardIds: readonly string[], now = Date.now()): Promise<void> {
+  async setUmaDeck(id: string, orderedCardIds: readonly string[], now = Date.now(), tier?: number): Promise<void> {
     if (this.deckLocks.has(id)) throw new Error('This deck is already being saved')
     this.deckLocks.add(id)
     try {
@@ -494,8 +496,8 @@ export class GameRuntime {
       const uma = state.umas[id]
       if (!content || state.status !== 'ready' || !uma) throw new Error('Deck Uma must be owned')
       const mutation = state.persistent
-        ? await setPersistentUmaDeck(content, id, orderedCardIds, now)
-        : setMemoryUmaDeck(content, uma, state.cards, orderedCardIds)
+        ? await setPersistentUmaDeck(content, id, orderedCardIds, now, tier)
+        : setMemoryUmaDeck(content, uma, state.cards, orderedCardIds, tier)
       if (generation !== this.generation) return
       replaceUma(mutation.uma)
       if (state.persistent && mutation.changed) {
@@ -507,14 +509,14 @@ export class GameRuntime {
     }
   }
 
-  async prepareRace(umaId: string, raceId: string, strategy: Strategy, sequence?: number) {
+  async prepareRace(umaId: string, raceId: string, strategy: Strategy, sequence?: number, tier?: number) {
     const content = this.content
     const state = useGame.getState()
     const uma = state.umas[umaId]
     if (!content || state.status !== 'ready' || !state.profile || !uma) throw new Error('Race Uma must be owned')
     return state.persistent
-      ? preparePersistentRace(content, umaId, raceId, strategy, sequence)
-      : prepareMemoryRace(content, state.profile, uma, state.cards, this.memoryRaceHistory, raceId, strategy, sequence)
+      ? preparePersistentRace(content, umaId, raceId, strategy, sequence, tier)
+      : prepareMemoryRace(content, state.profile, uma, state.cards, this.memoryRaceHistory, raceId, strategy, sequence, tier)
   }
 
   async completeRace(attempt: PreparedRace, today = localDay(), now = Date.now()) {

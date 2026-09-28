@@ -1,4 +1,4 @@
-import { COURSE_ROTATION, LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, isGateLevel, type RaceResultRecord, type Strategy } from '@racer/domain'
+import { COURSE_ROTATION, LEVELS_PER_SCENARIO, SCENARIOS, STRATEGIES, awaitingAdvance, badgeStateId, expToNextUmaLevel, isGateLevel, isPastScenario, scenarioForTier, type RaceResultRecord, type Strategy } from '@racer/domain'
 import { formatMargin, type RaceTimeline } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -120,7 +120,11 @@ export function RaceRunScreen() {
   const strategy = (STRATEGIES as readonly string[]).includes(strategyParam) ? strategyParam as Strategy : null
   const sequenceText = params.get('sequence')
   const sequence = sequenceText !== null ? Number(sequenceText) : Number.NaN
-  const validQuery = Boolean(umaId && raceId && strategy && Number.isSafeInteger(sequence) && sequence >= 0)
+  // Which of her scenarios races (D190); absent means her current one.
+  const tierText = params.get('tier')
+  const tier = tierText !== null ? Number(tierText) : undefined
+  const validQuery = Boolean(umaId && raceId && strategy && Number.isSafeInteger(sequence) && sequence >= 0 &&
+    (tier === undefined || (Number.isSafeInteger(tier) && tier >= 1)))
 
   useEffect(() => {
     recordRef.current = record
@@ -143,7 +147,7 @@ export function RaceRunScreen() {
     setAgainBusy(false)
     setFreshGoalCommit(false)
     finishingRef.current = false
-    void prepareRace(umaId, raceId, strategy, sequence).then((preparation) => {
+    void prepareRace(umaId, raceId, strategy, sequence, tier).then((preparation) => {
       if (cancelled || contentState.status !== 'ready') return
       if (preparation.status === 'completed') {
         const replay = preparedRaceFromRecord(contentState.content, preparation.record)
@@ -160,7 +164,7 @@ export function RaceRunScreen() {
       if (!cancelled) setLoadError(reason instanceof Error ? reason.message : 'Could not prepare race')
     })
     return () => { cancelled = true }
-  }, [contentState, gameStatus, raceId, sequence, strategy, umaId, validQuery])
+  }, [contentState, gameStatus, raceId, sequence, strategy, tier, umaId, validQuery])
 
   useEffect(() => {
     const host = hostRef.current
@@ -269,9 +273,11 @@ export function RaceRunScreen() {
     marginLengths: result.marginLengths,
   }))
   const umaExpTarget = savedUma ? expToNextUmaLevel(savedUma.level + (isGateLevel(savedUma.level) ? 1 : 0)) : 1
+  // A race as one of her earlier scenarios pays no EXP and never meets her gate (D190).
+  const pastRace = Boolean(savedUma && isPastScenario(savedUma, attempt.tier))
   // Racing closes at the gate only once her career has nothing left to win there (D137).
-  const closed = Boolean(savedUma && awaitingAdvance(savedUma))
-  const finalTier = Boolean(savedUma && savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO)
+  const closed = !pastRace && Boolean(savedUma && awaitingAdvance(savedUma))
+  const finalTier = !pastRace && Boolean(savedUma && savedUma.level >= SCENARIOS.length * LEVELS_PER_SCENARIO)
   const promote = closed && !finalTier
   const banner = hud ? stageBanner(hud.stage, attempt.input.runners.length, race.name) : null
   const activationSummary = summarizePlayerActivations(timeline, attempt.playerIndex)
@@ -316,9 +322,9 @@ export function RaceRunScreen() {
     setAgainBusy(true)
     setCommitError(null)
     try {
-      const next = await prepareRace(attempt.umaId, attempt.raceId, attempt.strategy)
+      const next = await prepareRace(attempt.umaId, attempt.raceId, attempt.strategy, undefined, attempt.tier)
       if (next.status !== 'prepared') throw new Error('Could not create the next race attempt')
-      navigate(`/race/run?uma=${encodeURIComponent(attempt.umaId)}&race=${encodeURIComponent(attempt.raceId)}&strategy=${attempt.strategy}&sequence=${next.attempt.sequence}`, { replace: true })
+      navigate(`/race/run?uma=${encodeURIComponent(attempt.umaId)}&race=${encodeURIComponent(attempt.raceId)}&strategy=${attempt.strategy}&sequence=${next.attempt.sequence}&tier=${attempt.tier}`, { replace: true })
     } catch (reason) {
       setCommitError(reason instanceof Error ? reason.message : 'Could not prepare another race')
       setAgainBusy(false)
@@ -476,7 +482,12 @@ export function RaceRunScreen() {
               <p className="mt-1 text-center text-sm font-semibold text-ink-soft">{playerTemplate.name} · {formatTime(playerTimelineResult.finishTime)}</p>
 
               {committing && <p className="mt-3 rounded-sm bg-accent-wash px-3 py-2 text-center text-sm font-bold">Saving result and rewards…</p>}
-              {record && (
+              {record && pastRace && (
+                <p className="mt-3 rounded-sm bg-panel px-3 py-2 text-center text-sm font-semibold">
+                  Raced as {scenarioForTier(attempt.tier)?.name ?? `Scenario ${attempt.tier}`}: the result and its badges count there, with no Uma EXP.
+                </p>
+              )}
+              {record && !pastRace && (
                 <div className="mt-3">
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <m.div className="rounded-sm bg-panel p-2" initial={reducedMotion ? false : { y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }}><p className="text-xs text-ink-soft">Uma EXP</p><p className="font-semibold text-accent-strong">+{record.expGained}</p></m.div>

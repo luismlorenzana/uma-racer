@@ -1119,6 +1119,20 @@ export function scenarioAt(uma: UmaSave, tier: number): ScenarioTraining | null 
   return uma.scenarios.find((entry) => entry.tier === tier) ?? null
 }
 
+/**
+ * One of her trained units (D190): the scenario at `tier`, or the active one when no tier is named. Every unlocked
+ * scenario keeps its own Training Level, card set, constellation and loadout, and races in its own context.
+ */
+export function trainedScenario(uma: UmaSave, tier?: number): ScenarioTraining {
+  if (tier === undefined) return activeScenario(uma)
+  const run = scenarioAt(uma, tier)
+  if (!run) throw new Error(`Uma ${uma.templateId} has no scenario at tier ${tier}`)
+  return run
+}
+
+/** A scenario before her current one (D190): it races and trains, but levels and careers belong to the current one. */
+export const isPastScenario = (uma: Pick<UmaSave, 'unlockedTier'>, tier: number): boolean => tier < uma.unlockedTier
+
 /** Parse a current Uma at a storage/network boundary while distinguishing unsupported nested state. */
 export function parseUmaSaveOrThrow(value: unknown): UmaSave {
   if (isObject(value) && 'schemaVersion' in value && value.schemaVersion !== SAVE_SCHEMA_VERSION) {

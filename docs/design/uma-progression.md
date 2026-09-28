@@ -27,13 +27,14 @@ you own is a usable parent the moment you own her (D123).
 | Field | Notes |
 |---|---|
 | `level`, `exp` | **Uma Level**: permanent, earned from races only. Unlocks scenarios; does not feed stats |
-| `unlockedTier` | Highest scenario unlocked. The **active** scenario, and the only one that races (D121) |
+| `unlockedTier` | Highest scenario unlocked. The **active** scenario: her career, the only one that earns Uma EXP (D121). Every unlocked scenario still races as a trained unit (D190) |
 | `scenarios[]` | **One `ScenarioTraining` per unlocked tier** (below). The heart of the save |
 | `lifetimeSkills` | Every skill ever learned, with the scenario it was learned in. Badges and history |
 | Badge/title/showcase state | Separate versioned `badges/uma:<umaId>` entity. See [Badges](badges.md) |
 
 **Stats, skill points, aptitudes, the skill library and the loadout are no longer stored.** They are derived
-from the active `ScenarioTraining` whenever read ([Training](training.md#stats-are-derived)).
+from a `ScenarioTraining` whenever read, the active one unless another trained unit is racing
+([Training](training.md#stats-are-derived), D190).
 
 ### ScenarioTraining (one per unlocked scenario)
 
@@ -48,7 +49,8 @@ from the active `ScenarioTraining` whenever read ([Training](training.md#stats-a
 | `raceHistory` | This scenario's races. **Races are scenario-linked** (D122) |
 | `milestones` | This scenario's achievement facts |
 
-A completed scenario's entry is kept in full, readable, and frozen. It no longer affects races.
+A completed scenario's entry is kept in full as a **trained unit** (D190): it still races, reconfigures and trains in its
+own context, without Uma EXP. Its career stays closed. See [Training — trained units](training.md#trained-units).
 
 ## Uma Level and EXP
 
@@ -76,7 +78,7 @@ A completed scenario's entry is kept in full, readable, and frozen. It no longer
    - A **new `ScenarioTraining`** is created at Training Level 1 with the baseline nodes open, an empty card
      set, a fresh career, and an empty race record.
    - It becomes the **active** scenario at once and drives every race from then on.
-   - The previous scenario's entry is frozen and kept.
+   - The previous scenario's entry is kept as a trained unit that can still race (D190); its career is closed.
    - The Uma earns the **"<Scenario> Graduate"** badge.
 
 There is no promotion stat bonus and no Initial Stats grant: stats are derived, so the new scenario's tree is

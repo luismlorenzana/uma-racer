@@ -150,9 +150,10 @@ Reaching the gate Uma Level (10, 20, 30…) grants **1 Uma Shard** and **unlocks
 costs `5 × fromTier` training tickets (D148) and is explicit: the player chooses when to move on.
 
 On unlocking, the new scenario opens at Training Level 1 with the baseline nodes, an empty six-card set, fresh
-goals, and an empty race record. It **immediately becomes the active scenario** and drives races from then on
-(D121). The previous scenario's constellation, card set, races, and milestones are **kept and readable**, and
-stop affecting races.
+goals, and an empty race record. It **immediately becomes the active scenario**: her career, and where Uma EXP
+comes from (D121). The previous scenario stays a **trained unit** with its constellation, card set, races and
+milestones: it can still race, reconfigure and train in its own context, without Uma EXP
+([Training — trained units](training.md#trained-units), D190).
 
 Because achievements are scenario-linked (D122), each scenario carries its own milestone set, and the same
 race won in two scenarios is two separate accomplishments. Badges earned in a completed scenario are permanent.

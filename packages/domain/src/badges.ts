@@ -591,7 +591,7 @@ export function applyRaceBadgeFacts(
         .map((goalId) => ({
           goalId,
           resultId,
-          tier: tierOfLevel(record.startLevel),
+          tier: raceScenarioTier(record),
           completedAt: record.createdAt,
         }))].sort((left, right) => left.goalId.localeCompare(right.goalId)),
       raceStartsByTier: incrementCount(state.facts.raceStartsByTier, String(raceScenarioTier(record))),

@@ -9,7 +9,9 @@ import {
   LEVELS_PER_SCENARIO,
   SCENARIOS,
   SCENARIO_SERIES_LABELS,
-  activeScenario,
+  isPastScenario,
+  raceScenarioTier,
+  trainedScenario,
   careerComplete,
   careerHoldLevel,
   careerProfile,
@@ -19,7 +21,6 @@ import {
   isCareerJourney,
   levelsIntoScenario,
   stableHash,
-  tierOfLevel,
   type Aptitudes,
   type CareerProfile,
   type CareerStage,
@@ -105,22 +106,26 @@ const stageByLevel = (level: number): CareerStage => {
 export interface RacePlanInput {
   uma: UmaSave
   template: UmaTemplate
-  /** Her aptitudes now, from the active constellation (D121). */
+  /** Her aptitudes now, from the racing scenario's constellation (D121, D190). */
   aptitudes: Aptitudes
   races: readonly RaceTemplate[]
   /** This Uma's results, any order. */
   history: readonly RaceResultRecord[]
+  /** Which of her scenarios races (D190); her current one when omitted. */
+  tier?: number
 }
 
 export function buildRacePlan(input: RacePlanInput): RacePlan {
   const { uma, aptitudes } = input
-  const run = activeScenario(uma)
+  const run = trainedScenario(uma, input.tier)
+  // An earlier scenario races for its own record: its career is closed, so it has no tracker and no goals (D190).
+  const past = isPastScenario(uma, run.tier)
   const journey = run.journey
   const byId = new Map(input.races.map((race) => [race.id, race]))
   const profile = careerProfile(aptitudes, input.template, input.races)
 
   // Her history, split into this scenario and ever.
-  const here = input.history.filter((record) => record.umaId === uma.templateId && tierOfLevel(record.startLevel) === run.tier)
+  const here = input.history.filter((record) => record.umaId === uma.templateId && raceScenarioTier(record) === run.tier)
   const racedHere = new Map<string, number>()
   for (const record of here) racedHere.set(record.raceId, (racedHere.get(record.raceId) ?? 0) + 1)
   const wonHere = new Map<string, number>()
@@ -157,7 +162,7 @@ export function buildRacePlan(input: RacePlanInput): RacePlan {
   const won = all.filter((entry) => entry.wonThisScenario)
     .sort((left, right) => (wonHere.get(right.race.id) ?? 0) - (wonHere.get(left.race.id) ?? 0))
 
-  if (!run.started) return { tracker: null, nextUp: [], won, all }
+  if (!run.started && !past) return { tracker: null, nextUp: [], won, all }
 
   // Next up: unwon goals up to her current stage, then races graded for where she is, all in her profile.
   const stage = isCareerJourney(journey) ? careerStage(journey) : stageByLevel(uma.level)
@@ -203,7 +208,7 @@ export function buildRacePlan(input: RacePlanInput): RacePlan {
     }
   }
 
-  return { tracker: isCareerJourney(journey) ? tracker(uma, journey!, profile, byId) : null, nextUp, won, all }
+  return { tracker: !past && isCareerJourney(journey) ? tracker(uma, journey!, profile, byId) : null, nextUp, won, all }
 }
 
 function goalLabel(goal: ScenarioGoal): string {

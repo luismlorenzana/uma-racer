@@ -30,7 +30,7 @@ import { formatTickets } from '../ui/tickets'
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
 /**
- * The active scenario's six cards, and the place to bond them (M016). Edits save as they are made, like the
+ * The scenario's six cards, her current one or an earlier trained unit's (D190), and the place to bond them (M016). Edits save as they are made, like the
  * constellation beside it: there is no draft to lose.
  */
 export function CardSetScreen() {
@@ -43,7 +43,7 @@ export function CardSetScreen() {
   const { run, derived } = uma
   const tier = run.tier
   const ids = run.cardSetIds
-  const deck = buildDeckView(save, cards, content)
+  const deck = buildDeckView(save, cards, content, undefined, tier)
   const here = `/constellation/${encodeURIComponent(save.templateId)}/cards`
   const canBond = tickets >= FRIENDSHIP_TRAINING_TICKET_COST
   const cardNodes = ids.reduce((total, id) => total + cardNodeCount(run, id), 0)
@@ -54,7 +54,7 @@ export function CardSetScreen() {
     if (busy) return
     setBusy(true)
     try {
-      await setUmaDeck(save.templateId, next)
+      await setUmaDeck(save.templateId, next, tier)
       if (success) pushToast(success)
     } catch (reason) {
       pushToast(reason instanceof Error ? reason.message : 'Could not change the card set')

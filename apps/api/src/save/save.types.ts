@@ -844,9 +844,11 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
   const hasCompletedGoalIds = Object.hasOwn(value, 'completedGoalIds')
   const hasAccomplishmentFacts = Object.hasOwn(value, 'accomplishmentFacts')
   const hasEarnedFlairEventIds = Object.hasOwn(value, 'earnedFlairEventIds')
+  const hasTier = Object.hasOwn(value, 'tier')
   const version = value.engineVersion
   if (!exactKeys(value, [
     ...RACE_RESULT_FIELDS,
+    ...(hasTier ? ['tier'] : []),
     ...(hasCompletedGoalIds ? ['completedGoalIds'] : []),
     ...(hasAccomplishmentFacts ? ['accomplishmentFacts'] : []),
     ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
@@ -878,7 +880,11 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     !isNonNegativeInt(value.shardReward) || value.shardReward > 1 || fieldSize < 8 || fieldSize > 18 ||
     (hasCompletedGoalIds && parseUniqueIds(value.completedGoalIds) === null) ||
     (hasEarnedFlairEventIds && parseUniqueIds(value.earnedFlairEventIds) === null) ||
-    !isNonNegativeInt(value.createdAt)
+    !isNonNegativeInt(value.createdAt) ||
+    // A race run as one of her earlier scenarios names it and pays nothing (D190).
+    (hasTier && (!isPositiveInt(value.tier) || value.tier >= Math.ceil(value.startLevel / 10) || value.expGained !== 0 ||
+      value.levelsGained.length > 0 || value.ticketReward !== 0 || value.shardReward !== 0 ||
+      (hasCompletedGoalIds && (value.completedGoalIds as unknown[]).length > 0)))
   ) return null
   const runners = value.field as unknown[]
   for (const runner of runners) {

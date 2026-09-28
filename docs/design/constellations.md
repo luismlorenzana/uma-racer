@@ -15,12 +15,12 @@ Uma  ─ has ─►  one ScenarioTraining per unlocked scenario
                  ├── cardSetIds[6]             ← the cards this scenario may use
                  └── node assignments          ← what fills each unlocked slot
 
-Active scenario = the highest tier the Uma has unlocked. Only the active scenario's
-constellation contributes to races (D121).
+Active scenario = the highest tier the Uma has unlocked: her career. Every unlocked scenario is a
+trained unit that can race in its own context (D190).
 ```
 
-Everything an Uma *is* in a race — stats, skills, aptitudes — is **derived** from the active constellation
-every time it is read. Nothing is accumulated into a stored number, so re-slotting a card takes effect
+Everything an Uma *is* in a race — stats, skills, aptitudes — is **derived** from the racing scenario's
+constellation every time it is read. Nothing is accumulated into a stored number, so re-slotting a card takes effect
 immediately and can always be undone.
 
 ## A scenario is a career run
@@ -35,7 +35,8 @@ Consequences, all of which the save must honour:
 - **Races are scenario-linked** (D122). Winning the Arima Kinen in Trackblazer and winning it in Our Grand
   Concert are two different accomplishments, recorded separately.
 - **Achievements, goals, and badges are scenario-scoped**, each scenario carrying its own milestone set.
-- The previous scenario's constellation is **kept, readable, and frozen**. It no longer affects races.
+- The previous scenario's constellation is **kept as a trained unit** (D190): it still races, and can still be
+  reconfigured and trained, in that scenario's context. It pays no Uma EXP, and its career is closed.
 - **Uma Level** stays permanent and account-facing: it is earned by racing and it is what unlocks the next
   scenario. It does not feed stats.
 

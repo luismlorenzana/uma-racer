@@ -84,7 +84,7 @@ export function ConstellationScreen() {
     if (busy) return
     setBusy(true)
     try {
-      await setConstellationNode(save.templateId, nodeId, assignment)
+      await setConstellationNode(save.templateId, nodeId, assignment, run.tier)
       setOpenNode(null)
       setLineageNode(null)
     } catch (reason) {
@@ -98,7 +98,9 @@ export function ConstellationScreen() {
   const buff = scenarioBuff(run.tier)
   const statPay = buffedStatNodeValue(run.tier, statNodeValue(run.tier))
   const treeNodes = template.cardNodes + template.statNodes
-  const canPlaySpark = run.started && run.trainingLevel < MAX_TRAINING_LEVEL &&
+  // An earlier trained unit keeps training toward TL10 (D190); her current scenario trains once started.
+  const trainable = run.started || uma.past
+  const canPlaySpark = trainable && run.trainingLevel < MAX_TRAINING_LEVEL &&
     tickets >= SPARK_MATCH_TICKET_COST
 
   return (
@@ -126,7 +128,7 @@ export function ConstellationScreen() {
           </Link>
         ) : (
           <div className="mb-2 flex min-h-11 items-center justify-between rounded-sm bg-sunken px-4 text-sm font-bold text-ink-faint" aria-disabled="true">
-            <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !run.started ? 'Start scenario first' : 'Raise Training Level'}</span>
+            <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !trainable ? 'Start scenario first' : 'Raise Training Level'}</span>
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
         )}

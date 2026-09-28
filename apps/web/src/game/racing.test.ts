@@ -6,6 +6,7 @@ import {
   createCardSave,
   createPlayerProfile,
   createUmaSave,
+  deriveUma,
   expToNextUmaLevel,
   parseRaceResultRecord,
   type ContentAtlas,
@@ -213,6 +214,13 @@ function withCareer(player: UmaSave, maidenRaceId: string, level: number, exp: n
   }
 }
 
+/** Her finished tier-1 unit beside a fresh tier-2 career (D190). */
+function twoScenarios(player: UmaSave, level = 15): UmaSave {
+  const trained = player.scenarios[0]!
+  const fresh = { ...trained, tier: 2, trainingLevel: 1, trainingExp: 0, cardSetIds: ['c1'], assignments: {}, loadoutSkillIds: [], journey: null }
+  return { ...player, level, unlockedTier: 2, scenarios: [trained, fresh] }
+}
+
 describe('progression race field', () => {
   it('is deterministic, uses the saved player, and never repeats a character', () => {
     const loaded = content()
@@ -314,6 +322,42 @@ describe('progression race field', () => {
     expect(() => buildPreparedRace({ content: loaded, profile, uma: gate, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 })).not.toThrow()
     expect(() => buildPreparedRace({ content: loaded, profile, uma: withGoalJourney({ ...player, level: 10 }, 1), cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 }))
       .toThrow(/Advance this Uma/)
+  })
+
+  it('races an earlier scenario as its own trained unit, for its record only (D190)', () => {
+    const loaded = content()
+    const { profile, player, cards } = state()
+    const both = twoScenarios(player)
+    const input = { content: loaded, profile, uma: both, cardsById: cards, raceId: 'r1', strategy: 'pace' as const, sequence: 0 }
+    const past = buildPreparedRace({ ...input, tier: 1 })
+    const current = buildPreparedRace(input)
+    expect([past.tier, current.tier]).toEqual([1, 2])
+    // Her tier-1 build, against rivals rolled for tier 1.
+    const derive = (tier: number) => deriveUma({
+      uma: both, tier, umaTemplate: loaded.umas.byId.get('u1')!, cardSaves: new Map(Object.entries(cards)),
+      cardTemplates: loaded.cards.byId, umaTemplates: loaded.umas.byId, skillTemplates: loaded.skills.byId,
+    })
+    expect(past.startStats).toEqual(derive(1).stats)
+    expect(current.startStats).toEqual(derive(2).stats)
+    const rivalTotal = (attempt: typeof past) => attempt.input.runners
+      .filter((_, gate) => gate !== attempt.playerIndex)
+      .reduce((sum, runner) => sum + Object.values(runner.stats).reduce((a, b) => a + b, 0), 0)
+    expect(rivalTotal(past)).not.toBe(rivalTotal(current))
+
+    const done = completeMemoryRace(loaded, profile, both, cards, [], past, '2026-09-28', 100)
+    expect(done.record).toMatchObject({ tier: 1, expGained: 0, levelsGained: [], ticketReward: 0, shardReward: 0, completedGoalIds: [] })
+    expect(done.uma).toEqual(both)
+    expect(done.profile).toEqual(profile)
+    expect(parseRaceResultRecord(done.record)).toEqual(done.record)
+    expect(preparedRaceFromRecord(loaded, done.record).tier).toBe(1)
+    // A record cannot claim an earlier scenario and pay, nor name her current one.
+    expect(parseRaceResultRecord({ ...done.record, expGained: 10 })).toBeNull()
+    expect(parseRaceResultRecord({ ...done.record, tier: 2 })).toBeNull()
+
+    // Her current career waiting at its gate never holds an earlier scenario back.
+    const gated = twoScenarios(player, 20)
+    expect(() => buildPreparedRace({ ...input, uma: gated })).toThrow(/Advance this Uma/)
+    expect(() => buildPreparedRace({ ...input, uma: gated, tier: 1 })).not.toThrow()
   })
 
   it('snapshots authoritative goal completion ids in the same memory result', () => {

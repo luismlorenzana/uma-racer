@@ -20,6 +20,7 @@ import { useContent } from '../content/ContentProvider'
 import type { LoadedContent } from '../content/runtime'
 import { setUmaLoadout } from '../game/actions'
 import { safeReturnPath } from '../game/bond-links'
+import { useChosenTier } from '../game/scenario-choice'
 import { joinUma } from '../game/view'
 import { useGame } from '../game/store'
 import { Chip } from '../ui/Chip'
@@ -151,7 +152,9 @@ export function UmaSkillsScreen() {
   const [saving, setSaving] = useState<string | null>(null)
 
   const content = contentState.status === 'ready' ? contentState.content : null
-  const joined = useMemo(() => content && save ? joinUma(save, content, cards) : null, [cards, content, save])
+  // The scenario chosen for her (D190): each trained unit keeps its own library and loadout.
+  const tier = useChosenTier(save) ?? undefined
+  const joined = useMemo(() => content && save ? joinUma(save, content, cards, tier) : null, [cards, content, save, tier])
   const race: RaceTemplate | undefined = raceId && content ? content.races.byId.get(raceId) : undefined
 
   const rows = useMemo((): SkillRowModel[] => {
@@ -251,7 +254,7 @@ export function UmaSkillsScreen() {
       : [...kept.slice(0, place), skillId, ...kept.slice(place)]
     setSaving(skillId)
     try {
-      await setUmaLoadout(save.templateId, next)
+      await setUmaLoadout(save.templateId, next, tier)
     } catch (reason) {
       pushToast(reason instanceof Error ? reason.message : 'Could not update skill loadout')
     } finally {

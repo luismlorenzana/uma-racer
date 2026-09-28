@@ -1,8 +1,8 @@
 // Atomic per-Uma support decks (docs/design/support-cards.md#deck).
 
 import {
-  activeScenario,
   parseCardSave,
+  trainedScenario,
   parseUmaSave,
   supportDeckIdentityIssues,
   supportDeckIssueMessage,
@@ -15,11 +15,11 @@ import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { queueInTransaction } from './persistence'
 
-/** Card sets belong to the active scenario run now (D125), which is always the highest unlocked (D121). */
-function withCardSet(uma: UmaSave, orderedCardIds: readonly string[]): UmaSave {
+/** Card sets belong to a scenario run (D125): her current one, or one of her earlier trained units (D190). */
+function withCardSet(uma: UmaSave, tier: number, orderedCardIds: readonly string[]): UmaSave {
   return {
     ...uma,
-    scenarios: uma.scenarios.map((run) => run.tier === uma.unlockedTier ? withRunCardSet(run, orderedCardIds) : run),
+    scenarios: uma.scenarios.map((run) => run.tier === tier ? withRunCardSet(run, orderedCardIds) : run),
   }
 }
 
@@ -40,16 +40,18 @@ export function setMemoryUmaDeck(
   uma: UmaSave,
   cardsById: Readonly<Record<string, CardSave>>,
   orderedCardIds: readonly string[],
+  requestedTier?: number,
 ): DeckMutationResult {
+  const tier = trainedScenario(uma, requestedTier).tier
   const validation = validateSupportDeck({
-    tier: uma.unlockedTier,
+    tier,
     orderedCardIds,
     ownedCards: Object.values(cardsById),
     templates: content.cards.byId,
   })
   if (!validation.valid) throwFirstIssue(validation.issues)
-  if (sameOrder(activeScenario(uma).cardSetIds, orderedCardIds)) return { uma, changed: false }
-  return { uma: withCardSet(uma, orderedCardIds), changed: true }
+  if (sameOrder(trainedScenario(uma, tier).cardSetIds, orderedCardIds)) return { uma, changed: false }
+  return { uma: withCardSet(uma, tier, orderedCardIds), changed: true }
 }
 
 export async function setPersistentUmaDeck(
@@ -57,6 +59,7 @@ export async function setPersistentUmaDeck(
   umaId: string,
   orderedCardIds: readonly string[],
   now: number,
+  requestedTier?: number,
 ): Promise<DeckMutationResult> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Invalid deck timestamp')
   const identityIssues = supportDeckIdentityIssues(1, orderedCardIds, true)
@@ -67,7 +70,7 @@ export async function setPersistentUmaDeck(
     if (!umaRow) throw new Error('Deck Uma is not owned')
     const uma = parseUmaSave(umaRow.data)
     if (!uma || uma.templateId !== umaId) throw new Error(`Invalid local Uma save: ${umaId}`)
-    const tier = uma.unlockedTier
+    const tier = trainedScenario(uma, requestedTier).tier
     const slotIssues = supportDeckIdentityIssues(tier, orderedCardIds)
     if (slotIssues.length > 0) throwFirstIssue(slotIssues)
     const rows = await db.cards.bulkGet([...orderedCardIds])
@@ -85,8 +88,8 @@ export async function setPersistentUmaDeck(
       templates: content.cards.byId,
     })
     if (!validation.valid) throwFirstIssue(validation.issues)
-    if (sameOrder(activeScenario(uma).cardSetIds, orderedCardIds)) return { uma, changed: false }
-    const next = withCardSet(uma, orderedCardIds)
+    if (sameOrder(trainedScenario(uma, tier).cardSetIds, orderedCardIds)) return { uma, changed: false }
+    const next = withCardSet(uma, tier, orderedCardIds)
     await db.umas.put({ ...umaRow, data: next })
     await queueInTransaction('umas', umaId, 'upsert', now)
     return { uma: next, changed: true }

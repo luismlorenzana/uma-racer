@@ -1,6 +1,7 @@
 import {
-  activeScenario,
   deriveUma,
+  isPastScenario,
+  trainedScenario,
   STRATEGIES,
   SCENARIOS,
   compileRaceSkill,
@@ -40,6 +41,8 @@ import { SkillIcon } from '../ui/SkillIcon'
 import { UmaBust } from '../ui/UmaBust'
 import { UmaPickerSheet } from '../ui/album/UmaPickerSheet'
 import { umaIdsByLevel } from '../game/uma-order'
+import { useChosenTier } from '../game/scenario-choice'
+import { ScenarioSwitch } from '../ui/ScenarioSwitch'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
 
@@ -49,9 +52,12 @@ const ordinal = (value: number) => {
   return `${value}${suffix[(mod - 20) % 10] ?? suffix[mod] ?? 'th'}`
 }
 
-function raceLockReason(save: UmaSave, race: RaceTemplate, opponentCharacters: number): string | null {
-  if (!activeScenario(save).started) return 'Start this scenario before racing.'
-  if (awaitingAdvance(save)) return 'This Uma is ready for the next scenario and cannot race again yet.'
+function raceLockReason(save: UmaSave, tier: number, race: RaceTemplate, opponentCharacters: number): string | null {
+  // An earlier scenario races as the finished unit it is: no start, no gate (D190).
+  if (!isPastScenario(save, tier)) {
+    if (!trainedScenario(save, tier).started) return 'Start this scenario before racing.'
+    if (awaitingAdvance(save)) return 'This Uma is ready for the next scenario and cannot race again yet.'
+  }
   const fieldSize = progressionFieldSize(race)
   if (opponentCharacters < fieldSize - 1) return `This field needs ${fieldSize - 1} distinct opponents.`
   return null
@@ -73,7 +79,7 @@ function MarkChip({ mark }: { mark: RaceMark }) {
   )
 }
 
-function RaceCard({ entry, raceBonus, onPick }: { entry: PlannedRace; raceBonus: number; onPick: () => void }) {
+function RaceCard({ entry, raceBonus, past, onPick }: { entry: PlannedRace; raceBonus: number; past: boolean; onPick: () => void }) {
   const { race } = entry
   return (
     <button
@@ -92,10 +98,13 @@ function RaceCard({ entry, raceBonus, onPick }: { entry: PlannedRace; raceBonus:
           {entry.raced > 0 ? ` · run ${entry.raced}×` : ''}
         </span>
       </span>
-      <span className="shrink-0 text-right">
-        <span className="font-display block text-[15px] font-semibold text-ink">+{raceExp(race.grade, 1, raceBonus)}</span>
-        <span className="text-micro block">EXP</span>
-      </span>
+      {/* An earlier scenario's race pays no Uma EXP (D190). */}
+      {!past && (
+        <span className="shrink-0 text-right">
+          <span className="font-display block text-[15px] font-semibold text-ink">+{raceExp(race.grade, 1, raceBonus)}</span>
+          <span className="text-micro block">EXP</span>
+        </span>
+      )}
     </button>
   )
 }
@@ -192,7 +201,9 @@ export function RaceSelectScreen() {
     const leading = ownedIds.slice(0, STRIP_SIZE)
     return selectedUmaId && !leading.includes(selectedUmaId) ? [...leading, selectedUmaId] : leading
   }, [ownedIds, selectedUmaId])
-  const loadoutKey = selectedUma ? activeScenario(selectedUma).loadoutSkillIds.join('|') : ''
+  // Which of her trained units races (D190): her current scenario unless another was chosen for her.
+  const tier = useChosenTier(selectedUma) ?? 1
+  const loadoutKey = selectedUma ? `${tier}:${trainedScenario(selectedUma, tier).loadoutSkillIds.join('|')}` : ''
   const requestedGoalRace = params.get('goal')
 
   useEffect(() => {
@@ -230,7 +241,7 @@ export function RaceSelectScreen() {
     let cancelled = false
     setPreview(null)
     setPreviewError(null)
-    void prepareRace(selectedUmaId, picked.id, strategy).then((preparation) => {
+    void prepareRace(selectedUmaId, picked.id, strategy, undefined, tier).then((preparation) => {
       if (cancelled) return
       if (preparation.status === 'prepared') setPreview(preparation.attempt)
       else setPreviewError('The next race attempt was already completed.')
@@ -238,7 +249,7 @@ export function RaceSelectScreen() {
       if (!cancelled) setPreviewError(reason instanceof Error ? reason.message : 'Could not build field preview')
     })
     return () => { cancelled = true }
-  }, [contentState, loadoutKey, picked, selectedUmaId, status, strategy])
+  }, [contentState, loadoutKey, picked, selectedUmaId, status, strategy, tier])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to race" detail="Progression races use your private Stable and content." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -252,31 +263,33 @@ export function RaceSelectScreen() {
   const content = contentState.content
   const umaTemplate = content.umas.byId.get(selectedUmaId)
   if (!umaTemplate) return <ScreenState title="Content reference missing" detail={`The save is preserving ${selectedUmaId} until its template is restored.`} />
-  if (!activeScenario(selectedUma).started) return <ScreenState title="Start this scenario" detail="Start her scenario from her profile before racing." action={{ label: 'Open her profile', to: `/stable/${encodeURIComponent(selectedUmaId)}` }} />
+  const past = isPastScenario(selectedUma, tier)
+  if (!past && !trainedScenario(selectedUma, tier).started) return <ScreenState title="Start this scenario" detail="Start her scenario from her profile before racing." action={{ label: 'Open her profile', to: `/stable/${encodeURIComponent(selectedUmaId)}` }} />
   const derivedUma = deriveUma({
     uma: selectedUma,
+    tier,
     umaTemplate,
     cardSaves: new Map(Object.entries(cards)),
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
     skillTemplates: content.skills.byId,
   })
-  const plan = buildRacePlan({ uma: selectedUma, template: umaTemplate, aptitudes: derivedUma.aptitudes, races: content.races.items, history: umaHistory })
-  const pickedGoals = picked ? goalsAtStake(selectedUma, picked.id, content) : []
+  const plan = buildRacePlan({ uma: selectedUma, template: umaTemplate, aptitudes: derivedUma.aptitudes, races: content.races.items, history: umaHistory, tier })
+  const pickedGoals = picked && !past ? goalsAtStake(selectedUma, picked.id, content) : []
   const pickedEntry = picked ? plan.all.find((entry) => entry.race.id === picked.id) : undefined
   const opponentCharacters = new Set(content.umas.items.filter((item) => item.charaId !== umaTemplate.charaId).map((item) => item.charaId)).size
   let raceBonus = 0
   let deckError: string | null = null
   try {
     const deck = validateSupportDeck({
-      tier: selectedUma.unlockedTier,
-      orderedCardIds: activeScenario(selectedUma).cardSetIds,
+      tier,
+      orderedCardIds: trainedScenario(selectedUma, tier).cardSetIds,
       ownedCards: Object.values(cards),
       templates: content.cards.byId,
     })
     const issue = deck.issues[0]
     if (issue) throw new Error(supportDeckIssueMessage(issue))
-    raceBonus = equippedRaceBonus(selectedUma.unlockedTier, deck.cards)
+    raceBonus = equippedRaceBonus(tier, deck.cards)
   } catch (reason) {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }
@@ -288,9 +301,9 @@ export function RaceSelectScreen() {
     ...skillLoadout.skills.map((skill) => ({ skill, own: false })),
   ].map((entry) => ({ ...entry, onCourse: picked ? raceSkillCompatibleWithCourse(compileRaceSkill(entry.skill), picked) : true }))
   const finalTier = selectedUma.level >= SCENARIOS.length * 10
-  const advanceRequired = awaitingAdvance(selectedUma) && !finalTier
+  const advanceRequired = !past && awaitingAdvance(selectedUma) && !finalTier
   const lockReason = picked
-    ? raceLockReason(selectedUma, picked, opponentCharacters) ?? deckError ?? (skillLoadout.valid ? null : skillLoadout.errors[0]!)
+    ? raceLockReason(selectedUma, tier, picked, opponentCharacters) ?? deckError ?? (skillLoadout.valid ? null : skillLoadout.errors[0]!)
     : null
 
   const chooseUma = (id: string) => {
@@ -309,9 +322,9 @@ export function RaceSelectScreen() {
     setStarting(true)
     setStartError(null)
     try {
-      const preparation = await prepareRace(selectedUmaId, picked.id, strategy)
+      const preparation = await prepareRace(selectedUmaId, picked.id, strategy, undefined, tier)
       if (preparation.status !== 'prepared') throw new Error('The next race attempt was already completed')
-      navigate(`/race/run?uma=${encodeURIComponent(selectedUmaId)}&race=${encodeURIComponent(picked.id)}&strategy=${strategy}&sequence=${preparation.attempt.sequence}`)
+      navigate(`/race/run?uma=${encodeURIComponent(selectedUmaId)}&race=${encodeURIComponent(picked.id)}&strategy=${strategy}&sequence=${preparation.attempt.sequence}&tier=${tier}`)
     } catch (reason) {
       setStartError(reason instanceof Error ? reason.message : 'Could not prepare race')
       setStarting(false)
@@ -323,7 +336,9 @@ export function RaceSelectScreen() {
     <div className="flex flex-col gap-3 pt-2 pb-4">
       <div className="min-w-0 px-1">
         <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Races</h1>
-        <p className="truncate text-[13px] text-ink-soft">{umaTemplate.name} · {SCENARIOS[selectedUma.unlockedTier - 1]?.name} · Lv {scenarioLevel(selectedUma.level)}/10</p>
+        <p className="truncate text-[13px] text-ink-soft">
+          {umaTemplate.name} · {SCENARIOS[tier - 1]?.name} · {past ? `TL ${trainedScenario(selectedUma, tier).trainingLevel} · no Uma EXP` : `Lv ${scenarioLevel(selectedUma.level)}/10`}
+        </p>
       </div>
       <div role="radiogroup" aria-label="Racing Uma" className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
         {stripIds.map((id) => {
@@ -366,12 +381,16 @@ export function RaceSelectScreen() {
         selectedLabel="Racing"
         onPick={chooseUma}
       />
+      <ScenarioSwitch uma={selectedUma} tier={tier} label="Racing as" />
 
       {!persistent && <Panel className="border-warning/40 py-3 text-[13px] font-semibold text-warning">Memory only — race progress will not survive a reload or sync.</Panel>}
-      {awaitingAdvance(selectedUma) && (
+      {!past && awaitingAdvance(selectedUma) && (
         <Panel className="border-accent text-center">
           <p className="font-display font-semibold">{finalTier ? 'Latest scenario complete' : 'Ready for the next scenario'}</p>
-          <p className="text-micro mt-1">{finalTier ? 'No later scenario is available yet.' : 'Advance her from her profile to race again.'}</p>
+          <p className="text-micro mt-1">
+            {finalTier ? 'No later scenario is available yet.' : 'Advance her from her profile to race again.'}
+            {selectedUma.scenarios.length > 1 ? ' Her earlier scenarios above can still race.' : ''}
+          </p>
           {!finalTier && <Button className="mt-3" onClick={() => navigate(`/stable/${encodeURIComponent(selectedUmaId)}`)}>Open her profile</Button>}
         </Panel>
       )}
@@ -380,20 +399,20 @@ export function RaceSelectScreen() {
 
       <SectionHeading label="Next up" hint={`${plan.nextUp.length} races`} />
       <div className="grid grid-cols-1 gap-2">
-        {plan.nextUp.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} onPick={() => pick(entry.race)} />)}
+        {plan.nextUp.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} past={past} onPick={() => pick(entry.race)} />)}
         {plan.nextUp.length === 0 && <Panel className="text-center text-[13px] text-ink-soft">No race fits her right now. Every race is still open under All races.</Panel>}
       </div>
 
       <Collapsible label="Won this scenario" count={plan.won.length}>
         <div className="grid grid-cols-1 gap-2">
-          {plan.won.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} onPick={() => pick(entry.race)} />)}
+          {plan.won.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} past={past} onPick={() => pick(entry.race)} />)}
           {plan.won.length === 0 && <p className="text-micro">No wins in this scenario yet.</p>}
         </div>
       </Collapsible>
 
       <Collapsible label="All races" count={plan.all.length}>
         <div className="grid grid-cols-1 gap-2">
-          {plan.all.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} onPick={() => pick(entry.race)} />)}
+          {plan.all.map((entry) => <RaceCard key={entry.race.id} entry={entry} raceBonus={raceBonus} past={past} onPick={() => pick(entry.race)} />)}
         </div>
       </Collapsible>
 
@@ -434,8 +453,8 @@ export function RaceSelectScreen() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{umaTemplate.name} · Lv {selectedUma.level}</p>
-                <p className="text-micro">Training Level {activeScenario(selectedUma).trainingLevel} · Race Bonus +{Math.round(raceBonus * 100)}%</p>
-                <p className="text-micro">1st place +{raceExp(picked.grade, 1, raceBonus)} EXP</p>
+                <p className="text-micro">{SCENARIOS[tier - 1]?.name} · Training Level {trainedScenario(selectedUma, tier).trainingLevel}{past ? '' : ` · Race Bonus +${Math.round(raceBonus * 100)}%`}</p>
+                <p className="text-micro">{past ? 'Earlier scenario: results and badges, no Uma EXP' : `1st place +${raceExp(picked.grade, 1, raceBonus)} EXP`}</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
