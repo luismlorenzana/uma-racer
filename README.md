@@ -106,6 +106,7 @@ docs/           design, technical, research
 | [Game UI Reference](docs/research/game-ui-reference.md) | What Umamusume and HoYoverse interfaces do, why the old skin failed, and album browsing patterns |
 | [Game-like Web Tech](docs/research/game-web-tech.md) | Rendering, frame rate, animation, PWA on iOS, performance playbook |
 | [Spark Rival Circuit Research](docs/research/spark-rival-circuit.md) | Puzzle-battle adaptation, strategy advantage, deterministic touch architecture, and rejected scope |
+| [World Expeditions Research](docs/research/world-expeditions.md) | International Dirt and Turf specialist race pools, proposed 5-of-8 and 8-of-12 completion sizes, and source risks |
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Race Engine R3 Findings](docs/research/race-engine-r3-findings.md) | Pack formulas, explicit approximations, launch-unique coverage, and balance results |
