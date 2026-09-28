@@ -9,6 +9,7 @@ import {
   cardStars,
   awaitingAdvance,
   isCareerStage,
+  racingSkillCosts,
   summarizeSkillLoadout,
   type Grade,
   type RaceResultRecord,
@@ -127,6 +128,7 @@ export function UmaProfileScreen() {
   // The profile shows her unique and the equipped inherited uniques and golds; whites wait behind "All equipped".
   const ownUnique = uma.template.uniqueSkillId ? contentState.content.skills.byId.get(uma.template.uniqueSkillId) : undefined
   const equippedSkills = loadout.skills
+  const skillCosts = racingSkillCosts(loadout)
   const headline = [
     ...(ownUnique ? [{ skill: ownUnique, own: true }] : []),
     ...equippedSkills.filter((skill) => skill.kind === 'inherited-unique').map((skill) => ({ skill, own: false })),
@@ -389,7 +391,7 @@ export function UmaProfileScreen() {
               <SkillIcon skill={skill} size={24} />
               <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{skill.name}</span>
               <SkillKindBadge kind={skill.kind} />
-              <span className="text-micro w-12 shrink-0 text-right">{own ? 'free' : `${skill.costSp} SP`}</span>
+              <span className="text-micro w-12 shrink-0 text-right">{own ? 'free' : `${skillCosts.get(skill.id) ?? skill.costSp} SP`}</span>
             </div>
           ))}
           {headline.length === 0 && <p className="text-[12px] text-ink-soft">No skills yet. Slot cards onto her constellation to earn some.</p>}
@@ -402,7 +404,7 @@ export function UmaProfileScreen() {
                   <SkillIcon skill={skill} size={24} />
                   <span className="min-w-0 flex-1 truncate text-[13px]">{skill.name}</span>
                   <SkillKindBadge kind={skill.kind} />
-                  <span className="text-micro w-12 shrink-0 text-right">{skill.costSp} SP</span>
+                  <span className="text-micro w-12 shrink-0 text-right">{skillCosts.get(skill.id) ?? skill.costSp} SP</span>
                 </div>
               ))}
             </div>

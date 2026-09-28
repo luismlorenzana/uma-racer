@@ -518,13 +518,63 @@ export function levelUniqueSkill(skill: CompiledRaceSkill): CompiledRaceSkill {
   }
 }
 
+/**
+ * The skills a skill stands on (D187): a gold's white and a ◎'s ○ (`normalSkillId`), and on down the chain, nearest
+ * first. As with the original's upper skills, learning a skill learns every one of these, each is paid for once, and
+ * only the highest learned skill of a chain races.
+ */
+export function skillChainBelow(
+  skill: Pick<SkillTemplate, 'id' | 'normalSkillId'>,
+  skillsById: ReadonlyMap<string, SkillTemplate>,
+): SkillTemplate[] {
+  const below: SkillTemplate[] = []
+  const seen = new Set([skill.id])
+  let next = skill.normalSkillId
+  while (next && !seen.has(next)) {
+    const lower = skillsById.get(next)
+    if (!lower) break
+    below.push(lower)
+    seen.add(next)
+    next = lower.normalSkillId
+  }
+  return below
+}
+
+export interface SkillLoadoutEntry {
+  skill: SkillTemplate
+  /** What it adds to the loadout: its own SP and whatever of its chain nothing earlier in the loadout paid for. */
+  cost: number
+  /** The lower skills of its chain it pays for here. */
+  includes: SkillTemplate[]
+  /** Every skill below it in its chain; an equipped one of these is part of it and does not race on its own. */
+  belowIds: string[]
+}
+
 export interface SkillLoadoutSummary {
   valid: boolean
+  /** Every learned skill counted once: equipped skills and the chains below them (D187). */
   cost: number
   cap: number
   errors: string[]
+  /** The equipped skills that race: an equipped skill that another equipped skill upgrades is left out. */
   skills: SkillTemplate[]
+  /** Every valid equipped skill in equip order, with what it costs and includes. */
+  entries: SkillLoadoutEntry[]
+  /** Skill ids learned through an equipped upgrade, mapped to the upgrade that learned them. */
+  learnedBy: ReadonlyMap<string, SkillTemplate>
 }
+
+/** What each racing skill cost, its chain included, even where its lower skill was equipped and paid for first (D187). */
+export function racingSkillCosts(summary: Pick<SkillLoadoutSummary, 'entries'>): ReadonlyMap<string, number> {
+  return new Map(summary.entries.map((entry) => [
+    entry.skill.id,
+    entry.cost + summary.entries.filter((other) => entry.belowIds.includes(other.skill.id)).reduce((sum, other) => sum + other.cost, 0),
+  ]))
+}
+
+/** Of these equipped entries, the skills that race: none that another of them upgrades. */
+const racingSkills = (entries: readonly SkillLoadoutEntry[]): SkillTemplate[] =>
+  entries.filter((entry) => !entries.some((other) => other !== entry && other.belowIds.includes(entry.skill.id))).map((entry) => entry.skill)
 
 /** The derived shape a loadout is checked against; `deriveUma` produces one. */
 export interface SkillLoadoutSource {
@@ -565,11 +615,25 @@ export function summarizeSkillLoadout(
     }
     return [skill]
   })
-  const cost = skills.reduce((sum, skill) => sum + skill.costSp!, 0)
+  // Each learned skill is paid once, by the first equipped skill that learns it (D187).
+  const paid = new Set<string>()
+  const learnedBy = new Map<string, SkillTemplate>()
+  const entries = skills.map((skill): SkillLoadoutEntry => {
+    const below = skillChainBelow(skill, skillsById)
+    const includes = below.filter((lower) => !paid.has(lower.id))
+    const cost = (paid.has(skill.id) ? 0 : skill.costSp!) + includes.reduce((sum, lower) => sum + (lower.costSp ?? 0), 0)
+    paid.add(skill.id)
+    for (const lower of below) {
+      paid.add(lower.id)
+      if (!learnedBy.has(lower.id)) learnedBy.set(lower.id, skill)
+    }
+    return { skill, cost, includes, belowIds: below.map((lower) => lower.id) }
+  })
+  const cost = entries.reduce((sum, entry) => sum + entry.cost, 0)
   if (cost > source.skillPoints) {
     errors.push(`Loadout costs ${cost} SP but only ${source.skillPoints} SP is available`)
   }
-  return { valid: errors.length === 0, cost, cap: source.skillPoints, errors, skills }
+  return { valid: errors.length === 0, cost, cap: source.skillPoints, errors, skills: racingSkills(entries), entries, learnedBy }
 }
 
 /**
@@ -577,15 +641,16 @@ export function summarizeSkillLoadout(
  * off its nodes can take SP away after skills were equipped. Kept in equip order, stopping at the first that no
  * longer fits, so a reconfiguration never blocks a race; the profile shows the overdraft.
  */
-export function affordableLoadout(skills: readonly SkillTemplate[], skillPoints: number): SkillTemplate[] {
-  const kept: SkillTemplate[] = []
+export function affordableLoadout(entries: readonly SkillLoadoutEntry[], skillPoints: number): SkillTemplate[] {
+  const kept: SkillLoadoutEntry[] = []
   let spent = 0
-  for (const skill of skills) {
-    spent += skill.costSp ?? 0
+  for (const entry of entries) {
+    spent += entry.cost
     if (spent > skillPoints) break
-    kept.push(skill)
+    kept.push(entry)
   }
-  return kept
+  // An upgrade that no longer fits leaves its lower skill to race on its own (D187).
+  return racingSkills(kept)
 }
 
 /** Returns the validated loadout ids; the caller writes them onto the scenario they belong to. */

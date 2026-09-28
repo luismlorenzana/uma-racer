@@ -5,6 +5,7 @@ import {
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
   skillAimsAtOthers,
+  skillChainBelow,
   skillTags,
   summarizeSkillLoadout,
   type Aptitudes,
@@ -62,6 +63,12 @@ export interface SkillRowModel {
   /** On the race being prepared, whether it can trigger at all; null without a race. */
   onCourse: boolean | null
   source: string
+  /** What equipping it costs now, and the lower skills of its chain that come with it (D187). */
+  price?: { cost: number; with: string[] }
+  /** Learned through an equipped upgrade, so it is part of that skill rather than equipped on its own. */
+  includedIn?: string | null
+  /** Equipped, but an equipped upgrade of it races instead. */
+  upgradedBy?: string | null
 }
 
 /** Where a skill in her library came from, in words. */
@@ -91,14 +98,18 @@ export function skillSource(content: LoadedContent, unlock: SkillUnlock, lineage
 
 function SkillRow({ row, aptitudes, busy, onToggle }: { row: SkillRowModel; aptitudes: Aptitudes; busy: boolean; onToggle: () => void }) {
   const { skill, own, equipped, supported } = row
+  const price = row.price
+    ? `${row.price.cost} SP${row.price.with.length > 0 ? ` · with ${row.price.with.join(', ')}` : ''}`
+    : `${skill.costSp ?? '—'} SP`
   const status = own
     ? supported ? 'Always equipped' : 'Waits for later race mechanics'
-    : supported ? `${skill.costSp ?? '—'} SP` : skillAimsAtOthers(skill) ? 'Only affects rivals · not in this game' : 'Needs later race mechanics'
+    : !supported ? skillAimsAtOthers(skill) ? 'Only affects rivals · not in this game' : 'Needs later race mechanics'
+      : row.includedIn ? `Included in ${row.includedIn}` : price
   return (
     <button
       type="button"
       aria-pressed={equipped}
-      disabled={own || (!supported && !equipped) || busy}
+      disabled={own || (!supported && !equipped) || Boolean(row.includedIn) || busy}
       onClick={onToggle}
       className={`flex min-h-14 items-start gap-2 rounded-md border px-2.5 py-2 text-left disabled:opacity-60 ${equipped ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`}
     >
@@ -116,6 +127,7 @@ function SkillRow({ row, aptitudes, busy, onToggle }: { row: SkillRowModel; apti
         <span className="text-micro mt-1 flex flex-wrap gap-x-2">
           <span className="font-semibold text-ink">{status}</span>
           <span>{row.source}</span>
+          {row.upgradedBy && <span className="text-accent-strong">{row.upgradedBy} races instead</span>}
           {row.onCourse === false && supported && <span className="text-danger">can’t trigger in this race</span>}
         </span>
       </span>
@@ -185,7 +197,24 @@ export function UmaSkillsScreen() {
     .flatMap((id) => content.skills.byId.get(id) ?? [])
   const opensIn = SCENARIOS[uma.derived.tier]?.name
   const needle = search.trim().toLocaleLowerCase()
-  const shown = rows.filter((row) => {
+  // Upper skills (D187): a gold carries its white (a double-circle white its single-circle one); each is paid once and
+  // only the top of a chain races.
+  const learned = new Set([...uma.derived.loadoutSkillIds, ...loadout.learnedBy.keys()])
+  const entries = new Map(loadout.entries.map((entry) => [entry.skill.id, entry]))
+  const priced = rows.map((row): SkillRowModel => {
+    if (row.own) return row
+    const entry = entries.get(row.skill.id)
+    const unpaid = entry ? entry.includes : skillChainBelow(row.skill, content.skills.byId).filter((lower) => !learned.has(lower.id))
+    const cost = entry ? entry.cost : (row.skill.costSp ?? 0) + unpaid.reduce((sum, lower) => sum + (lower.costSp ?? 0), 0)
+    const upgrade = loadout.entries.find((other) => other.skill.id !== row.skill.id && other.belowIds.includes(row.skill.id))
+    return {
+      ...row,
+      price: { cost, with: unpaid.map((lower) => lower.name) },
+      includedIn: !row.equipped ? loadout.learnedBy.get(row.skill.id)?.name ?? null : null,
+      upgradedBy: row.equipped ? upgrade?.skill.name ?? null : null,
+    }
+  })
+  const shown = priced.filter((row) => {
     if (needle && !row.skill.name.toLocaleLowerCase().includes(needle) && !row.skill.description.toLocaleLowerCase().includes(needle)) return false
     switch (filter) {
       case 'equipped': return row.equipped
@@ -210,9 +239,16 @@ export function UmaSkillsScreen() {
 
   const toggle = async (skillId: string) => {
     if (saving) return
-    const next = uma.derived.loadoutSkillIds.includes(skillId)
-      ? uma.derived.loadoutSkillIds.filter((id) => id !== skillId)
-      : [...uma.derived.loadoutSkillIds, skillId]
+    const current = uma.derived.loadoutSkillIds
+    const skill = content.skills.byId.get(skillId)
+    // Equipping an upgrade takes the place of any lower skill of its chain already equipped: it includes them (D187).
+    const below = new Set(skill ? skillChainBelow(skill, content.skills.byId).map((lower) => lower.id) : [])
+    const at = current.findIndex((id) => below.has(id))
+    const kept = current.filter((id) => !below.has(id))
+    const place = at < 0 ? kept.length : current.slice(0, at).filter((id) => !below.has(id)).length
+    const next = current.includes(skillId)
+      ? current.filter((id) => id !== skillId)
+      : [...kept.slice(0, place), skillId, ...kept.slice(place)]
     setSaving(skillId)
     try {
       await setUmaLoadout(save.templateId, next)

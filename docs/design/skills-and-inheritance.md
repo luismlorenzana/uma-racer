@@ -41,6 +41,18 @@ Three deterministic sources, all recomputed rather than stored:
 
 Plus her **own unique**, which is permanent and free.
 
+### Upper skills (D187)
+
+A gold stands on its white, and a ◎ white on its ○, as in the original: Concentration on Focus, Right-Handed ◎ on
+Right-Handed ○, and Right-Handed Demon on Right-Handed ◎. **Equipping a skill learns every skill below it in its chain**,
+each is paid for once, and **only the highest learned skill of a chain races**; the gold is the improved version that
+takes effect. So a gold costs its own SP plus its white's, unless the white is already equipped, and equipping the gold
+takes the white's place. The white does not have to be in her library for its gold to be learned. A chain whose upgrade
+no longer fits the SP she earns races its lower skill alone. 336 of 346 golds have a white in the data and all 65 ◎ have
+their ○; the few that stand alone (Runaway and some scenario golds) cost only themselves. The Skills page prices each
+skill with what it brings ("280 SP · with Focus") and marks a white learned through its gold as "Included in
+Concentration".
+
 Everything lands in the scenario's **skill library**, deduplicated. Removing a card removes the skills it was
 paying for, in the same way it removes the stats.
 

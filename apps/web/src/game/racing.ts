@@ -194,7 +194,7 @@ function playerRaceSkills(
   if (!structure.valid) throw new Error(structure.errors[0])
   // Her own unique races at Lv5, a fully starred Uma's (D158).
   const own = template.uniqueSkillId ? compiledSupported(content.skills.byId.get(template.uniqueSkillId)).map(levelUniqueSkill) : []
-  const equipped = affordableLoadout(structure.skills, derived.skillPoints).map((skill) => compileRaceSkill(skill))
+  const equipped = affordableLoadout(structure.entries, derived.skillPoints).map((skill) => compileRaceSkill(skill))
   const unsupported = equipped.find((skill) => !raceSkillSupported(skill))
   if (unsupported) throw new Error(`Equipped skill ${unsupported.id} is not supported by the basic race engine`)
   return [...own, ...equipped]

@@ -121,6 +121,11 @@ const rootConditions = [
 export const syntheticSkills = [
   { id: 7301, rarity: 1, enname: 'White Prototype', desc_en: 'Helps a Runner.', cost: 90, iconid: 1 },
   { id: 7302, rarity: 2, enname: 'Gold Prototype', desc_en: 'Helps a Leader.', cost: 250, iconid: 2, versions: [9999, 7301] },
+  // An upgrade chain (D187): Prototype Turn ○ → ◎ → a gold, and the × a ◎ never stands on.
+  { id: 7311, rarity: 1, enname: 'Prototype Turn ◎', desc_en: 'Turns better.', cost: 110, iconid: 1, versions: [7312, 7313, 7314] },
+  { id: 7312, rarity: 1, enname: 'Prototype Turn ○', desc_en: 'Turns a little better.', cost: 90, iconid: 1, versions: [7311, 7313, 7314] },
+  { id: 7313, rarity: 1, enname: 'Prototype Turn ×', desc_en: 'Turns worse.', cost: 50, iconid: 4, versions: [7311, 7312, 7314] },
+  { id: 7314, rarity: 2, enname: 'Prototype Turn Demon', desc_en: 'Turns best.', cost: 130, iconid: 2, versions: [7311, 7312, 7313] },
   { id: 7303, rarity: 3, enname: 'Upgraded Unique', desc_en: 'Helps a Betweener.', cost: 0, iconid: 3 },
   { id: 7304, rarity: 4, enname: 'Inherited Prototype', desc_en: 'Helps a Chaser.', cost: 200, iconid: 4 },
   {

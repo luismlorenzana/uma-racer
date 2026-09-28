@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   affordableLoadout,
+  racingSkillCosts,
+  skillChainBelow,
   assertRaceSkillContent,
   compileRaceSkill,
   createUmaSave,
@@ -215,14 +217,62 @@ describe('skill loadouts', () => {
 })
 
 describe('affordableLoadout', () => {
-  const skill = (id: string, costSp: number) => ({ id, costSp }) as Parameters<typeof affordableLoadout>[0][number]
+  const entry = (id: string, cost: number, belowIds: string[] = []) =>
+    ({ skill: { id } as SkillTemplate, cost, includes: [], belowIds })
 
   it('keeps equipped skills in order while they fit, and stops at the first that does not', () => {
-    const skills = [skill('a', 100), skill('b', 150), skill('c', 50)]
-    expect(affordableLoadout(skills, 300).map((entry) => entry.id)).toEqual(['a', 'b', 'c'])
-    expect(affordableLoadout(skills, 260).map((entry) => entry.id)).toEqual(['a', 'b'])
-    expect(affordableLoadout(skills, 120).map((entry) => entry.id)).toEqual(['a'])
-    expect(affordableLoadout(skills, 0)).toEqual([])
+    const entries = [entry('a', 100), entry('b', 150), entry('c', 50)]
+    expect(affordableLoadout(entries, 300).map((skill) => skill.id)).toEqual(['a', 'b', 'c'])
+    expect(affordableLoadout(entries, 260).map((skill) => skill.id)).toEqual(['a', 'b'])
+    expect(affordableLoadout(entries, 120).map((skill) => skill.id)).toEqual(['a'])
+    expect(affordableLoadout(entries, 0)).toEqual([])
+  })
+
+  it('races an upgrade instead of its lower skill, and the lower skill alone when the upgrade does not fit (D187)', () => {
+    const entries = [entry('white', 140), entry('gold', 140, ['white'])]
+    expect(affordableLoadout(entries, 280).map((skill) => skill.id)).toEqual(['gold'])
+    expect(affordableLoadout(entries, 200).map((skill) => skill.id)).toEqual(['white'])
+  })
+})
+
+describe('skill upgrades (D187)', () => {
+  // Right-Handed ○ → ◎ → Right-Handed Demon, and a gold on a plain white, as in the original's upper skills.
+  const circle = skill('circle', 'white', 90)
+  const double = { ...skill('double', 'white', 110), normalSkillId: 'circle' }
+  const demon = { ...skill('demon', 'gold', 130), normalSkillId: 'double' }
+  const focus = skill('focus', 'white', 140)
+  const concentration = { ...skill('concentration', 'gold', 140), normalSkillId: 'focus' }
+  const skills = new Map([circle, double, demon, focus, concentration].map((entry) => [entry.id, entry]))
+  const source = (loadoutSkillIds: string[] = []) => ({
+    skillPoints: 1_000,
+    loadoutSkillIds,
+    // Only the golds are in her library: equipping one learns its chain anyway.
+    library: ['demon', 'concentration', 'focus'].map((skillId) => ({ skillId, origin: 'card' as const, sourceId: 'card-1' })),
+  })
+
+  it('walks a chain down from any skill, nearest first', () => {
+    expect(skillChainBelow(demon, skills).map((entry) => entry.id)).toEqual(['double', 'circle'])
+    expect(skillChainBelow(focus, skills)).toEqual([])
+  })
+
+  it('charges a gold its whole chain once, and races only the gold', () => {
+    const summary = summarizeSkillLoadout(source(), uma, skills, ['concentration', 'demon'])
+    expect(summary.cost).toBe(280 + 330)
+    expect(summary.entries.map((entry) => [entry.skill.id, entry.cost, entry.includes.map((lower) => lower.id)])).toEqual([
+      ['concentration', 280, ['focus']],
+      ['demon', 330, ['double', 'circle']],
+    ])
+    expect(summary.skills.map((entry) => entry.id)).toEqual(['concentration', 'demon'])
+    expect(summary.learnedBy.get('focus')?.id).toBe('concentration')
+  })
+
+  it('counts an equipped white once when its gold is equipped too, and races the gold alone', () => {
+    const summary = summarizeSkillLoadout(source(), uma, skills, ['focus', 'concentration'])
+    expect(summary.entries.map((entry) => entry.cost)).toEqual([140, 140])
+    expect(summary.cost).toBe(280)
+    expect(summary.skills.map((entry) => entry.id)).toEqual(['concentration'])
+    // The racing gold is shown at its whole chain's price, though its white was paid for first.
+    expect(racingSkillCosts(summary).get('concentration')).toBe(280)
   })
 })
 

@@ -11,6 +11,7 @@ import {
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
   skillAimsAtOthers,
+  racingSkillCosts,
   summarizeSkillLoadout,
   supportDeckIssueMessage,
   validateSupportDeck,
@@ -280,6 +281,7 @@ export function RaceSelectScreen() {
     deckError = reason instanceof Error ? reason.message : 'Race deck is invalid'
   }
   const skillLoadout = summarizeSkillLoadout(derivedUma, umaTemplate, content.skills.byId)
+  const skillCosts = racingSkillCosts(skillLoadout)
   const ownUnique = umaTemplate.uniqueSkillId ? content.skills.byId.get(umaTemplate.uniqueSkillId) : undefined
   const raceSkills = [
     ...(ownUnique ? [{ skill: ownUnique, own: true }] : []),
@@ -462,7 +464,7 @@ export function RaceSelectScreen() {
                     <SkillIcon skill={skill} size={24} className={onCourse ? '' : 'opacity-50'} />
                     <span className={`min-w-0 flex-1 truncate text-[13px] font-semibold ${onCourse ? '' : 'text-ink-faint'}`}>{skill.name}</span>
                     <SkillKindBadge kind={skill.kind} />
-                    <span className="text-micro w-20 shrink-0 text-right">{onCourse ? own ? 'free' : `${skill.costSp} SP` : 'won’t trigger'}</span>
+                    <span className="text-micro w-20 shrink-0 text-right">{onCourse ? own ? 'free' : `${skillCosts.get(skill.id) ?? skill.costSp} SP` : 'won’t trigger'}</span>
                   </div>
                 ))}
               </div>
