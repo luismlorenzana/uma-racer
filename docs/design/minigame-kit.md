@@ -124,7 +124,7 @@ Minigames are full-screen **stage** scenes: the dark end of the Paddock palette
 | Primary action | the accent gold (`Button` primary, or `bg-accent text-ink`), one per zone |
 | Numbers | `font-display`, `numeral-on-dark`, `tabular-nums`; `CountUp` for a score landing |
 | Stats and card types | `ui/TypeIcon`, the one set in the original's style and colours (D183); the `--stat-*` tokens for their meters |
-| Strategies | `Strategy{Front,Pace,Late,End}Icon` with their strategy colour, always with a glyph or text, never colour alone |
+| Strategies | `Strategy{Front,Pace,Late,End}Icon` with their strategy colour, always with a glyph or text, never colour alone. Spark uses cool silver-gray for End so Recovery is the only green board kind. |
 | Skills | `ui/SkillIcon` (the original's skill icons, private) and `SkillKindBadge` |
 | Tickets | `formatTickets` and the ticket icon: **Begin · 1 ticket**, **Train again · 1 ticket** |
 | Stars | `Stars`, and `GainedStars` for a result |
@@ -154,16 +154,17 @@ or Back/Next, safe-area controls, reduced motion.
 | `MinigameHost`, `MinigameHostTestDouble` | `game/minigame-host.ts` | reserve, commit, resume; screens test against the double |
 | Journal port | `game/minigame-journal.ts` | engine-agnostic load and compare-and-append actions |
 | `PagedGuide` | `ui/PagedGuide.tsx` | the guide shell |
+| `MinigameShell`, `MinigameHeader` | `ui/minigames/` | the full-screen stage, safe-area frame and common header |
+| `MinigameStart`, `MinigameResult` | `ui/minigames/` | free preview, ticket reservation, saved outcome and retry actions |
+| `MinigameGauge` | `ui/minigames/` | labelled, accessible token-colour meter |
+| `createGuideMemory` | `ui/minigames/guide-memory.ts` | resilient once-per-device guide memory |
 | `TypeIcon`, `SkillIcon`, `SkillKindBadge` | `ui/` | stats, card types, skills |
 | `Button`, `BottomSheet`, `Meter`, `Stars`, `CountUp` | `ui/` | controls, sheets (menu, give up, card details), gauges, stars, scores |
 | `GainedStars`, `CardArt`, `useCardArt` | `screens/minigames/` | results and card faces |
 | `useArt`, `useArtSet` | `ui/album/useArt.ts` | private art that stays while shown |
 | `formatTickets` | `ui/tickets.ts` | every ticket price |
 | `safeReturnPath`, `friendshipTrainingHref` | `game/bond-links.ts` | entry links and the way back |
-| Minigame UI | `ui/minigames/` | shared minigame components (the shell, T075); Spark's orb faces and presentation constants live here today |
-
-The shared **shell** (header, start panel, result panel, gauge) and one guide-memory helper are T075; until then copy
-Friendship Training's patterns, not Spark's first-pass shell.
+| Spark presentation | `ui/minigames/spark-rival-presentation.ts` | orb faces, glyphs and presentation constants |
 
 ## 10. Adding a minigame
 

@@ -13,7 +13,7 @@ T074 closes them with the simulator and the owner's iPhone.
 | T071 (complete) | Pure replay engine, balance harness, synthetic Pixi touch vertical slice | T072 |
 | T072 (complete) | Private fourteen-scenario rival roster pipeline and deterministic fallback | T073 |
 | T073 (complete) | Production route, Dexie action journal, authoritative host commit, old-run cutover | T074 |
-| [T074](T074-spark-rival-polish.md) | Balance matrix, complete feedback/accessibility, physical-iPhone closure | balance before [M023](M023-minigame-kit.md); the rest after it |
+| [T074](T074-spark-rival-polish.md) | Balance matrix, complete feedback/accessibility, physical-iPhone closure | balance before the completed minigame-kit work; the rest after it |
 
 The PRs are sequential. T071 deliberately proves the engine and touch interaction with synthetic art before real-content
 work. T072 established the data boundary before the production screen depends on it. T073 performs the one-way cutover.

@@ -34,6 +34,7 @@ import {
 import type { ReactNode } from 'react'
 import { PagedGuide } from '../../../ui/PagedGuide'
 import { CheckIcon, HeartIcon, RaceIcon } from '../../../ui/icons'
+import { createGuideMemory } from '../../../ui/minigames/guide-memory'
 import { TypeIcon } from '../../../ui/TypeIcon'
 import { STAT_NAMES, TypeBadge } from './FtCard'
 
@@ -44,23 +45,9 @@ export type GuidePageId =
   | 'goal' | 'season' | 'facility' | 'train' | 'formations' | 'points' | 'main' | 'races' | 'skills' | 'twists' | 'tips'
 
 const GUIDE_SEEN_KEY = 'uma-racer:friendship-guide-seen'
-
-/** Whether this device has shown the guide; it opens by itself once. */
-export function guideSeen(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(GUIDE_SEEN_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-export function rememberGuideSeen(): void {
-  try {
-    globalThis.localStorage?.setItem(GUIDE_SEEN_KEY, '1')
-  } catch {
-    // Private mode or blocked storage: the guide opens again next time, which is harmless.
-  }
-}
+const guideMemory = createGuideMemory(GUIDE_SEEN_KEY)
+export const guideSeen = guideMemory.seen
+export const rememberGuideSeen = guideMemory.remember
 
 // ── Illustrations ───────────────────────────────────────────────────────────────────────────────────────────────────
 

@@ -22,8 +22,8 @@ and [Game-like Web Tech](../research/game-web-tech.md). Branch from current `mai
   eight strongest Umas it can field. Tune against the published roster through the content runtime; ask Claude for
   aggregate numbers rather than reading private rows. Roster changes go through Claude.
 
-**Order (D185):** land the balance closure below as its own PR first, then M023's T077, T076 and T075, then the rest of
-this task (feedback, accessibility, device closure) on the shared minigame shell.
+**Order (D185):** the balance closure landed first, followed by M023's T077, T076 and T075. Finish the rest of this task
+(feedback, accessibility and device closure) on the shared minigame shell.
 
 ## Rule for tuning changes
 

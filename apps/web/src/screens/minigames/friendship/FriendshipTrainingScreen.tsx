@@ -14,17 +14,19 @@ import {
   type FtState,
 } from '@racer/domain'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router'
+import { Navigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../../../content/ContentProvider'
 import { safeReturnPath } from '../../../game/bond-links'
 import { getMinigameHost, type RunReward, type RunTarget, type RunTicket } from '../../../game/minigame-host'
 import { getMinigameJournal, type FriendshipRunView } from '../../../game/minigame-journal'
 import { useGame } from '../../../game/store'
 import { BottomSheet } from '../../../ui/BottomSheet'
-import { Button } from '../../../ui/Button'
-import { CardsIcon, ChevronLeftIcon, MoreIcon } from '../../../ui/icons'
+import { Button, IconButton } from '../../../ui/Button'
+import { CardsIcon, MoreIcon } from '../../../ui/icons'
+import { MinigameResult } from '../../../ui/minigames/MinigameResult'
+import { MinigameHeader, MinigameShell } from '../../../ui/minigames/MinigameShell'
+import { MinigameStart } from '../../../ui/minigames/MinigameStart'
 import { Stars } from '../../../ui/Stars'
-import { formatTickets } from '../../../ui/tickets'
 import { GainedStars } from '../GainedStars'
 import { useCardArt } from '../useCardArt'
 import { FtCard } from './FtCard'
@@ -183,71 +185,70 @@ export function FriendshipTrainingScreen() {
 
   const view: ViewProps | null = run ? { content, setup: run.setup, state: run.state, art, act, busy: phase !== 'playing' } : null
   const stageCount = FT_STAGES[stars + 1] ?? 0
+  const playing = Boolean(view && run && !ftFinished(run.state) &&
+    (phase === 'playing' || phase === 'saving' || phase === 'committing' || phase === 'commit-error'))
+  const showInlineError = Boolean(error && run && !ftFinished(run.state))
 
   return (
-    <div className="flex h-dvh flex-col bg-stage text-ink-on-dark pt-safe">
-      <header className="flex items-center gap-2 px-4 py-2">
-        <Link to={returnTo} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft" aria-label="Back">
-          <ChevronLeftIcon size={20} />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold">{template.charName}</p>
-          <p className="truncate text-[11px] text-ink-on-dark-soft">
-            {run && phase !== 'start' ? runProgress(run.setup, run.state) : `Friendship Training · ${scenario?.name ?? `Tier ${tier}`}`}
-          </p>
-        </div>
-        {run && phase === 'playing' && (
-          <>
-            <span className="font-display rounded-full bg-white/10 px-2.5 text-[13px] leading-8 font-semibold tabular-nums" aria-label={`${run.state.fans} fans`}>{run.state.fans} fans</span>
-            <button type="button" onClick={() => setDeckOpen(true)} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft" aria-label="Deck">
+    <MinigameShell playing={playing}>
+      <MinigameHeader
+        backTo={returnTo}
+        backLabel="Leave Friendship Training"
+        eyebrow={run && phase !== 'start' ? runProgress(run.setup, run.state) : `Friendship Training · ${scenario?.name ?? `Tier ${tier}`}`}
+        title={template.charName}
+        onGuide={() => setGuide({ open: true, startAt: run ? guidePageFor(run.state) : 'goal' })}
+        guideLabel="How to play Friendship Training"
+        headline={playing && run ? { label: 'Fans', value: run.state.fans, ariaLabel: `${run.state.fans} fans` } : undefined}
+        trailing={playing && run ? (
+          <div className="flex gap-1">
+            <IconButton onClick={() => setDeckOpen(true)} className="!border !border-hairline-dark !bg-stage-soft !text-ink-on-dark !shadow-none" aria-label="Deck">
               <CardsIcon size={20} />
-            </button>
-            <button type="button" onClick={() => setMenuOpen(true)} className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft" aria-label="Menu">
+            </IconButton>
+            <IconButton onClick={() => setMenuOpen(true)} className="!border !border-hairline-dark !bg-stage-soft !text-ink-on-dark !shadow-none" aria-label="Menu">
               <MoreIcon size={20} />
-            </button>
-          </>
-        )}
-      </header>
+            </IconButton>
+          </div>
+        ) : undefined}
+      />
 
-      <main className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-2">
-        {error && <p role="alert" className="rounded-sm bg-danger/20 px-3 py-2 text-[13px]">{error}</p>}
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        {showInlineError && <p role="alert" className="mx-4 rounded-sm bg-danger/20 px-3 py-2 text-[13px]">{error}</p>}
 
         {(phase === 'start' || phase === 'loading') && (
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="mx-auto w-40"><FtCard content={content} def={ftCardDef(template, Math.min(stars, MAX_STARS))} art={art.get(template.id) ?? null} /></div>
-            <div className="text-center">
-              <p className="text-micro text-accent">Friendship Training</p>
-              <h1 className="text-xl font-semibold">{template.charName}</h1>
-              <p className="text-[12px] text-ink-on-dark-soft">{template.title}</p>
-            </div>
-            {stars >= MAX_STARS ? (
-              <p className="text-center text-[14px]">This card is already 5★ in {scenario?.name}.</p>
-            ) : (
-              <>
-                <div className="flex items-center justify-center gap-2 text-[13px]">
-                  <Stars value={stars} onDark /> <span className="text-ink-on-dark-soft">now → {stars + 1}★ in {scenario?.name}</span>
-                </div>
-                <ul className="grid gap-1 rounded-md border border-hairline-dark bg-stage-soft px-3 py-2 text-[13px]">
-                  <li>{stageCount} stage{stageCount === 1 ? '' : 's'}: two training weeks and a race each.</li>
-                  <li>Play cards in formations to reach each target. Three of the facility’s type make a Rainbow.</li>
-                  <li>Train with {template.charName} three times to bond: the card then counts as every type.</li>
-                  <li><span className="font-semibold text-accent">{twist.name}:</span> {twist.rule}</li>
-                  <li>Clear every week and race for the star. A loss keeps the ticket spent.</li>
-                </ul>
-                <div className="mt-auto grid gap-2 pb-safe">
-                  <Button className="w-full" disabled={phase === 'loading' || openRun === undefined || (!openRun && tickets < FRIENDSHIP_TRAINING_TICKET_COST)} onClick={() => void begin()}>
-                    {openRun ? 'Resume' : `Begin · ${formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)}`}
-                  </Button>
-                  {!openRun && tickets < FRIENDSHIP_TRAINING_TICKET_COST && <p className="text-center text-[12px] text-ink-on-dark-soft">You need {formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)}.</p>}
-                  <Button variant="tertiary" className="w-full text-ink-on-dark" onClick={() => setGuide({ open: true, startAt: 'goal' })}>How to play</Button>
-                </div>
-              </>
-            )}
-          </div>
+          stars >= MAX_STARS ? (
+            <section className="grid flex-1 place-content-center justify-items-center gap-3 text-center">
+              <div className="w-40"><FtCard content={content} def={ftCardDef(template, MAX_STARS)} art={art.get(template.id) ?? null} /></div>
+              <h2 className="text-2xl">Already fully bonded</h2>
+              <p className="text-[14px] text-ink-on-dark-soft">This card is already 5★ in {scenario?.name}.</p>
+            </section>
+          ) : (
+            <MinigameStart
+              artwork={<div className="w-40"><FtCard content={content} def={ftCardDef(template, stars)} art={art.get(template.id) ?? null} /></div>}
+              eyebrow="Friendship Training"
+              title={template.charName}
+              subtitle={template.title}
+              stake={<div className="flex items-center justify-center gap-2 text-[13px]"><Stars value={stars} onDark /><span className="text-ink-on-dark-soft">now → {stars + 1}★ in {scenario?.name}</span></div>}
+              rules={[
+                `${stageCount} stage${stageCount === 1 ? '' : 's'}: two training weeks and a race each.`,
+                'Play cards in formations to reach each target. Three of the facility’s type make a Rainbow.',
+                `Train with ${template.charName} three times to bond: the card then counts as every type.`,
+                <span><span className="font-semibold text-accent">{twist.name}:</span> {twist.rule}</span>,
+                'Clear every week and race for the star. A loss keeps the ticket spent.',
+              ]}
+              cost={FRIENDSHIP_TRAINING_TICKET_COST}
+              tickets={tickets}
+              resume={Boolean(openRun)}
+              pending={phase === 'loading' || openRun === undefined}
+              pendingLabel={phase === 'loading' ? 'Loading run…' : 'Checking saved run…'}
+              error={error}
+              onBegin={() => void begin()}
+              onGuide={() => setGuide({ open: true, startAt: 'goal' })}
+            />
+          )
         )}
 
         {view && (phase === 'playing' || phase === 'saving' || phase === 'committing' || phase === 'commit-error') && run && !ftFinished(run.state) && (
-          <>
+          <div className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-2">
             <SeasonMap setup={run.setup} state={run.state} />
             <SkillBar setup={run.setup} state={run.state} />
             {run.state.phase === 'build' && <BuildView {...view} />}
@@ -256,39 +257,36 @@ export function FriendshipTrainingScreen() {
             {run.state.phase === 'reward' && <RewardView {...view} />}
             {run.state.phase === 'skill' && <SkillView {...view} />}
             {run.state.phase === 'shop' && <ShopView {...view} />}
-          </>
+          </div>
         )}
 
         {run && ftFinished(run.state) && phase !== 'start' && phase !== 'loading' && (
-          <div className="flex flex-1 flex-col items-center gap-3 pt-4 text-center">
-            <div className="w-36"><FtCard content={content} def={run.setup.cards[run.setup.mainCardId]!} art={art.get(run.setup.mainCardId) ?? null} bonded={run.state.phase === 'won'} /></div>
-            {run.state.phase === 'won' ? (
-              <>
-                <p className="text-micro text-accent">Season cleared</p>
-                <h2 className="text-2xl font-semibold">{template.charName} bonded</h2>
-                {reward && <GainedStars before={reward.starsBefore ?? stars} after={reward.starsAfter ?? stars} onDark />}
-                {reward?.couponGranted && <p className="text-[13px] text-accent">5★: a Card Select Coupon is yours.</p>}
-              </>
-            ) : (
-              <>
-                <p className="text-micro text-ink-on-dark-soft">Run over</p>
-                <h2 className="text-2xl font-semibold">Not this time</h2>
-                <p className="text-[14px] text-ink-on-dark-soft">{run.state.lossReason} The ticket stays spent.</p>
-              </>
-            )}
-            {phase === 'committing' && <p className="text-[13px] text-ink-on-dark-soft">Saving…</p>}
-            {phase === 'commit-error' && <Button onClick={() => void commit(run)}>Retry saving</Button>}
-            {phase === 'done' && (
-              <div className="mt-auto grid w-full gap-2 pb-safe">
-                {(reward?.starsAfter ?? stars) < MAX_STARS && tickets >= FRIENDSHIP_TRAINING_TICKET_COST && (
-                  <Button className="w-full" onClick={() => { setRun(null); void begin() }}>Train again · {formatTickets(FRIENDSHIP_TRAINING_TICKET_COST)}</Button>
-                )}
-                <Link to={returnTo} className="font-display flex min-h-11 items-center justify-center rounded-sm border border-hairline-dark text-[15px] font-semibold">Done</Link>
+          <MinigameResult
+            outcome={run.state.phase === 'won' ? 'cleared' : 'lost'}
+            eyebrow={run.state.phase === 'won' ? 'Season cleared' : 'Run over'}
+            headline={run.state.phase === 'won' ? `${template.charName} bonded` : 'Not this time'}
+            reason={run.state.phase === 'lost' ? `${run.state.lossReason} The ticket stays spent.` : undefined}
+            artwork={<div className="w-36"><FtCard content={content} def={run.setup.cards[run.setup.mainCardId]!} art={art.get(run.setup.mainCardId) ?? null} bonded={run.state.phase === 'won'} /></div>}
+            reward={reward && run.state.phase === 'won' ? (
+              <div className="grid justify-items-center gap-2 text-center">
+                <h3 className="text-lg">Scenario stars</h3>
+                <GainedStars before={reward.starsBefore ?? stars} after={reward.starsAfter ?? stars} onDark />
+                {reward.couponGranted && <p className="text-[13px] text-accent">5★: a Card Select Coupon is yours.</p>}
               </div>
-            )}
-          </div>
+            ) : undefined}
+            pending={phase === 'committing'}
+            error={phase === 'commit-error' ? error : null}
+            onRetry={() => void commit(run)}
+            doneTo={returnTo}
+            again={(reward?.starsAfter ?? stars) < MAX_STARS ? {
+              label: 'Train again',
+              cost: FRIENDSHIP_TRAINING_TICKET_COST,
+              tickets,
+              onClick: () => { setRun(null); void begin() },
+            } : undefined}
+          />
         )}
-      </main>
+      </div>
 
       {run && view && (
         <DeckSheet content={content} setup={run.setup} state={run.state} art={art} open={deckOpen} title="Your deck" onClose={() => setDeckOpen(false)} />
@@ -308,6 +306,6 @@ export function FriendshipTrainingScreen() {
           <Button variant="destructive" onClick={() => { setConfirmGiveUp(false); act({ type: 'give-up' }) }}>Give up</Button>
         </div>
       </BottomSheet>
-    </div>
+    </MinigameShell>
   )
 }
