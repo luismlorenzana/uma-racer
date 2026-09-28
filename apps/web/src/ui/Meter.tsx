@@ -11,16 +11,18 @@ export function Meter({
   marker,
   height = 6,
   motion = 'spring',
+  trackClassName = 'bg-sunken',
 }: {
   value: number
   color: string
   marker?: number
   height?: number
   motion?: 'spring' | 'linear'
+  trackClassName?: string
 }) {
   const clamped = Math.max(0, Math.min(1, value))
   return (
-    <div className="relative w-full overflow-hidden rounded-full bg-sunken" style={{ height }}>
+    <div className={`relative w-full overflow-hidden rounded-full ${trackClassName}`} style={{ height }}>
       {motion === 'spring' ? (
         <m.div
           className="h-full rounded-full"

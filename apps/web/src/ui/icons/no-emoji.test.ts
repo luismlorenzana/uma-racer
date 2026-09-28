@@ -7,9 +7,9 @@ import { describe, expect, it } from 'vitest'
 const SRC = fileURLToPath(new URL('../..', import.meta.url))
 const EMOJI = /[\p{Extended_Pictographic}\u{FE0F}]/u
 // Symbol-font glyphs standing in for icons: technical, geometric, miscellaneous symbols, dingbats, and the single
-// guillemets once used as chevrons. The star stays as text in ratings like "3★". Spark Match is exempt until its rework.
+// guillemets once used as chevrons. The star stays as text in ratings like "3★".
 const GLYPH = /[\u2300-\u23ff\u25a0-\u25ff\u2600-\u2604\u2606-\u27bf\u2b00-\u2bff\u219d\u21e5\u2039\u203a]/u
-const GLYPH_EXEMPT = ['screens/minigames/SparkMatchScreen.tsx', 'ui/minigames/']
+const GLYPH_EXEMPT = ['ui/minigames/']
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {

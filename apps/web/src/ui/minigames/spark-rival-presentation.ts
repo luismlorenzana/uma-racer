@@ -1,4 +1,4 @@
-// Shared Spark Rival colours and readable labels (D178). Gameplay remains in the pure engine.
+// Shared Spark Rival colours and readable labels (D184). Gameplay remains in the pure engine.
 import type { SparkOrb, Strategy } from '@racer/domain'
 
 export const SPARK_STRATEGY_LABELS: Readonly<Record<Strategy, string>> = {
@@ -30,7 +30,7 @@ export const SPARK_ORB_COLORS: Readonly<Record<SparkOrb, string>> = {
   front: '#e05d58',
   pace: '#4a86e8',
   late: '#9a68db',
-  end: '#3ab28f',
+  end: '#a8b6c6',
   spark: '#f3b53f',
   recovery: '#58bf70',
 }
@@ -39,7 +39,7 @@ export const SPARK_ORB_PIXI_COLORS: Readonly<Record<SparkOrb, number>> = {
   front: 0xe05d58,
   pace: 0x4a86e8,
   late: 0x9a68db,
-  end: 0x3ab28f,
+  end: 0xa8b6c6,
   spark: 0xf3b53f,
   recovery: 0x58bf70,
 }

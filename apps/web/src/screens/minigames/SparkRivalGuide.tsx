@@ -23,27 +23,15 @@ import {
   TrainingLevelIcon,
 } from '../../ui/icons'
 import { SparkRivalChibi } from '../../ui/minigames/SparkRivalChibi'
+import { createGuideMemory } from '../../ui/minigames/guide-memory'
 import { SPARK_ORB_COLORS, SPARK_STRATEGY_LABELS } from '../../ui/minigames/spark-rival-presentation'
 
 export type SparkRivalGuidePageId = 'circuit' | 'drag' | 'matches' | 'advantage' | 'spark' | 'intent' | 'rewards'
 
 const GUIDE_SEEN_KEY = 'uma-racer:spark-rival-guide-seen'
-
-export function sparkRivalGuideSeen(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(GUIDE_SEEN_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-export function rememberSparkRivalGuideSeen(): void {
-  try {
-    globalThis.localStorage?.setItem(GUIDE_SEEN_KEY, '1')
-  } catch {
-    // A blocked store only means the free guide opens again next visit.
-  }
-}
+const guideMemory = createGuideMemory(GUIDE_SEEN_KEY)
+export const sparkRivalGuideSeen = guideMemory.seen
+export const rememberSparkRivalGuideSeen = guideMemory.remember
 
 const Panel = ({ children }: { children: ReactNode }) => (
   <div className="rounded-md border border-hairline-dark bg-stage-soft p-3">{children}</div>

@@ -22,8 +22,7 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
-| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | T071–T073 complete · [T074](T074-spark-rival-polish.md) balance complete | Paused for M023 · feedback and device closure follow |
-| [M023 — Minigame kit](M023-minigame-kit.md) | T077 and T076 complete · [T075](T075-minigame-shell.md) | In progress · shared shell next |
+| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | T071–T073 complete · [T074](T074-spark-rival-polish.md) balance complete | In progress · feedback and device closure next |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
@@ -65,6 +64,9 @@ the drawn mark) landed on 2026-09-26 and was removed under D104; D166–D167 and
 M020 (Friendship Training: the roguelite card minigame, its scenario twists, and the cutover that retired Bond Recall)
 landed on 2026-09-26 and was removed under D104; D146, D168, D173, D177 and
 [Minigames](../design/minigames.md#friendship-training--card-stars) carry it.
+
+M023 (the shared minigame engine home, replay journal and screen shell) landed on 2026-09-28 and was removed under D104;
+D185 and the [Minigame kit](../design/minigame-kit.md) carry it.
 
 M020 landed first, with its own frozen setup and saved choices on the local run row (D168). M022's generic action journal
 (T073) kept those rows compatible, so no run is migrated twice. T071–T074 are reserved for
