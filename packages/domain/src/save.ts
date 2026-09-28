@@ -408,6 +408,10 @@ function assertSaveUmaTemplate(template: UmaTemplate): void {
   if (!parseUniqueIds(template.awakeningSkillIds)) {
     throw new Error(`Uma ${template.id} has invalid awakening skill references`)
   }
+  // Her innate and story-event skills (D186) are optional: a pack published before them has neither.
+  for (const list of [template.innateSkillIds, template.eventSkillIds]) {
+    if (list !== undefined && !parseUniqueIds(list)) throw new Error(`Uma ${template.id} has invalid own skill references`)
+  }
 }
 
 function assertSaveCardTemplate(template: SupportCardTemplate): void {

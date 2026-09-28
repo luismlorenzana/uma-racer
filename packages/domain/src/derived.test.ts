@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SkillKind, SkillTemplate, UmaTemplate } from './content'
 import { cardGoldSkillIds } from './cards'
-import { deriveUma } from './derived'
+import { awakeningSkillsOpen, deriveUma, ownSkillIds } from './derived'
 import { lineageInheritedUniques } from './lineage'
 import { createUmaSave, type UmaSave } from './save'
 
@@ -104,5 +104,31 @@ describe('card golds (D182)', () => {
   it('reads a card’s golds from its event skills, in their order, never its hints', () => {
     const kinds = new Map([['e-gold', { kind: 'gold' as const }], ['e-white', { kind: 'white' as const }], ['e-gold-2', { kind: 'gold' as const }]])
     expect(cardGoldSkillIds({ eventSkillIds: ['e-white', 'e-gold', 'missing', 'e-gold-2'] }, kinds)).toEqual(['e-gold', 'e-gold-2'])
+  })
+})
+
+describe('her own skills (D186)', () => {
+  const own: UmaTemplate = {
+    ...uma('own', 'u-own', ['a-white-1', 'a-gold-1', 'a-white-2', 'a-gold-2']),
+    innateSkillIds: ['i-1', 'i-2', 'i-3'],
+    eventSkillIds: ['e-1', 'a-white-1'],
+  }
+
+  it('opens her awakening skills a pair at a time: a white and a gold in her first scenario, all four from her second', () => {
+    expect([1, 2, 3, 14].map(awakeningSkillsOpen)).toEqual([2, 4, 4, 4])
+    expect(ownSkillIds(own, 1)).toEqual(['a-white-1', 'a-gold-1', 'i-1', 'i-2', 'i-3', 'e-1', 'a-white-1'])
+    expect(ownSkillIds(own, 2).slice(0, 4)).toEqual(['a-white-1', 'a-gold-1', 'a-white-2', 'a-gold-2'])
+  })
+
+  it('puts her innate and story skills in her first scenario’s library, once each, beside her unique', () => {
+    const library = deriveUma({
+      uma: createUmaSave(own), umaTemplate: own, cardSaves: new Map(), cardTemplates: new Map(), umaTemplates: new Map([[own.id, own]]), skillTemplates: new Map(),
+    }).library
+    expect(library.map((entry) => entry.skillId)).toEqual(['u-own', 'a-white-1', 'a-gold-1', 'i-1', 'i-2', 'i-3', 'e-1'])
+    expect(library.filter((entry) => entry.skillId !== 'u-own').every((entry) => entry.origin === 'awakening' && entry.sourceId === 'own')).toBe(true)
+  })
+
+  it('reads a pack from before D186, with no innate or story lists, as her awakening skills alone', () => {
+    expect(ownSkillIds(uma('old', 'u-old', ['w', 'g', 'w2', 'g2']), 1)).toEqual(['w', 'g'])
   })
 })

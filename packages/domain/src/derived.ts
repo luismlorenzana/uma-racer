@@ -15,8 +15,25 @@ import { lineageAptitudes, lineageInheritedUniques, lineageSkillIds } from './li
 import { activeScenario, type CardSave, type ScenarioTraining, type SkillUnlock, type UmaSave } from './save'
 import type { Aptitudes, Stats } from './types'
 
-/** One awakening skill unlocks per completed scenario, up to four. */
+/** An Uma's awakening skills: four, a white and a gold per pair, as in the original. */
 export const MAX_AWAKENING_SKILLS = 4
+
+/**
+ * How many of her awakening skills are open in a scenario of this tier (D186): the first pair (a white and a gold) from
+ * her first scenario, both pairs from her second on. Supersedes D39's one per completed scenario, which left her first
+ * scenario with none of her own.
+ */
+export const awakeningSkillsOpen = (tier: number): number =>
+  Math.max(0, Math.min(MAX_AWAKENING_SKILLS, 2 * Math.trunc(tier)))
+
+/** Her own skills beyond her unique, in library order: open awakening skills, then innate, then her story events'. */
+export function ownSkillIds(template: Pick<UmaTemplate, 'awakeningSkillIds' | 'innateSkillIds' | 'eventSkillIds'>, tier: number): string[] {
+  return [
+    ...template.awakeningSkillIds.slice(0, awakeningSkillsOpen(tier)),
+    ...(template.innateSkillIds ?? []),
+    ...(template.eventSkillIds ?? []),
+  ]
+}
 
 export interface DerivedUma {
   tier: number
@@ -103,10 +120,9 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
   }
 
   if (input.umaTemplate.uniqueSkillId) add(input.umaTemplate.uniqueSkillId, 'own-unique', input.umaTemplate.id)
-  for (const skillId of input.umaTemplate.awakeningSkillIds.slice(
-    0,
-    Math.min(Math.max(0, scenario.tier - 1), MAX_AWAKENING_SKILLS),
-  )) add(skillId, 'awakening', input.umaTemplate.id)
+  // Her own kit (D186): open awakening skills, innate skills and her story events' skills, all under the save's
+  // existing `awakening` origin, so the save shape does not change.
+  for (const skillId of ownSkillIds(input.umaTemplate, scenario.tier)) add(skillId, 'awakening', input.umaTemplate.id)
 
   // Card-node skills carry the card that paid for them, so removing the card removes the skill.
   for (const skillId of derived.cardSkillIds) {

@@ -89,6 +89,9 @@ export function normalizeUmas(
       aptitudes: aptitude,
       uniqueSkillId: uniqueSkills[0] ?? null,
       awakeningSkillIds: ids(row.skills_awakening_en ?? row.skills_awakening),
+      // Her innate skills and her own story events' skills (D186); the library deduplicates repeats across lists.
+      innateSkillIds: [...new Set(ids(row.skills_innate))],
+      eventSkillIds: [...new Set(ids(row.skills_event))],
       realHorseSex: horseSex(charactersById.get(charaId)),
       signatureRaceFamilyIds: [...(signatureFamilies.get(charaId) ?? [])],
       imageSource: `https://gametora.com/images/umamusume/characters/thumb/chara_stand_${charaId}_${umaId}.png`,

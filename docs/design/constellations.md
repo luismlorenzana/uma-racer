@@ -257,7 +257,7 @@ Later scenarios' stronger cards loosen it further, the power creep that the stam
 
 ## Skills
 
-Two sources, both deterministic. No hint rolls.
+Three sources, all deterministic. No hint rolls.
 
 1. **Card nodes.** Each node a card occupies unlocks the **next of its golds**, while it has any left, and the **next
    of its whites** (D182). A card's whites are its `hintSkills`, in the pack's order; its golds are the golds among its
@@ -266,6 +266,10 @@ Two sources, both deterministic. No hint rolls.
    skill decision as well as a stat one.
 2. **Lineage nodes.** Each filled parent or grandparent node contributes that Uma template's four
    `awakeningSkillIds` — her baseline golds and whites — to the library, and her unique in its inherited form (D174).
+3. **Her own kit** (D186). What she brings herself, as an original career does: her three **innate** skills and every
+   skill her own **story events** teach (mostly whites), from her first scenario; and her four **awakening** skills in
+   pairs, a white and a gold, the first pair from her first scenario and the second from her second. The Skills page
+   shows a pair that is still closed, with the scenario it opens in, so nothing of hers is hidden.
 
 Everything lands in the scenario's **skill library**, deduplicated. **Skill Points are the only limit**: the
 equipped loadout's total cost must be ≤ the Uma's current SP. Swapping is free and instant outside races.

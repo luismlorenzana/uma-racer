@@ -1,4 +1,6 @@
 import {
+  SCENARIOS,
+  awakeningSkillsOpen,
   compileRaceSkill,
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
@@ -66,7 +68,14 @@ export interface SkillRowModel {
 export function skillSource(content: LoadedContent, unlock: SkillUnlock, lineageRole: (templateId: string) => string | null): string {
   switch (unlock.origin) {
     case 'own-unique': return 'Her unique'
-    case 'awakening': return 'Her own skill'
+    case 'awakening': {
+      // Her own kit (D186), told apart by her template: a skill on two lists reads as its awakening one.
+      const template = unlock.sourceId ? content.umas.byId.get(unlock.sourceId) : undefined
+      if (template?.awakeningSkillIds.includes(unlock.skillId)) return 'Her awakening skill'
+      if (template?.innateSkillIds?.includes(unlock.skillId)) return 'Hers from the start'
+      if (template?.eventSkillIds?.includes(unlock.skillId)) return 'From her story'
+      return 'Her own skill'
+    }
     case 'card': {
       const card = unlock.sourceId ? content.cards.byId.get(unlock.sourceId) : undefined
       return card ? `Card · ${card.charName}` : 'Card'
@@ -169,6 +178,12 @@ export function UmaSkillsScreen() {
 
   const uma = joined.value
   const loadout = summarizeSkillLoadout(uma.derived, uma.template, content.skills.byId)
+  // Her awakening skills still closed in this scenario (D186): shown, so nothing of hers is hidden, with where they open.
+  const inLibrary = new Set(uma.derived.library.map((unlock) => unlock.skillId))
+  const lockedOwn = uma.template.awakeningSkillIds.slice(awakeningSkillsOpen(uma.derived.tier))
+    .filter((id) => !inLibrary.has(id))
+    .flatMap((id) => content.skills.byId.get(id) ?? [])
+  const opensIn = SCENARIOS[uma.derived.tier]?.name
   const needle = search.trim().toLocaleLowerCase()
   const shown = rows.filter((row) => {
     if (needle && !row.skill.name.toLocaleLowerCase().includes(needle) && !row.skill.description.toLocaleLowerCase().includes(needle)) return false
@@ -271,6 +286,19 @@ export function UmaSkillsScreen() {
         <p className="rounded-md border border-hairline bg-panel p-4 text-center text-[13px] text-ink-soft">
           {rows.length === 0 ? 'Slot cards onto constellation nodes, and fill her lineage, to earn skills.' : 'No skills match.'}
         </p>
+      )}
+
+      {lockedOwn.length > 0 && filter === 'all' && !needle && (
+        <section className="grid gap-1.5">
+          <h2 className="text-micro mt-1">Her next awakening pair{opensIn ? ` · opens in ${opensIn}` : ''}</h2>
+          {lockedOwn.map((skill) => (
+            <div key={skill.id} className="flex min-h-12 items-center gap-2 rounded-md border border-dashed border-hairline px-2.5 py-2 opacity-70">
+              <SkillIcon skill={skill} size={24} />
+              <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{skill.name}</span>
+              <SkillKindBadge kind={skill.kind} />
+            </div>
+          ))}
+        </section>
       )}
 
       {unusable.length > 0 && (

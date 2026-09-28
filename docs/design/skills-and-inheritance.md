@@ -12,8 +12,8 @@ nothing is frozen into a snapshot.
 |---|---|---|---|
 | **Unique** | The Uma's own template | Free, always equipped | Her signature skill |
 | **Inherited unique** | Lineage nodes | 200 (from the data) | A parent's or grandparent's unique, in its weaker inherited form |
-| **Gold (rare)** | Card nodes · lineage nodes | 250–350 | An upgraded white skill |
-| **White (normal)** | Card nodes · lineage nodes | 90–180 | The common pool |
+| **Gold (rare)** | Card nodes · lineage nodes · her own awakening pair | 250–350 | An upgraded white skill |
+| **White (normal)** | Card nodes · lineage nodes · her own kit | 90–180 | The common pool |
 
 A lineage slot passes a template's **baseline golds and whites** and its **unique in inherited form** (D174, which
 brings back what D123 removed). The inherited form is the original game's own record for it (`inheritedSkillId`),
@@ -22,7 +22,7 @@ with its own values: Seiun Sky's *Angling and Scheming* gives +0.2 acceleration 
 
 ## Where skills come from
 
-Two deterministic sources, both recomputed from the constellation rather than stored:
+Three deterministic sources, all recomputed rather than stored:
 
 1. **Card nodes.** Each node a card occupies unlocks the **next of its golds**, while it has any left, and the **next
    of its whites** (D182). A card's whites are its `hintSkills`, in the pack's order; its golds are the golds among its
@@ -33,6 +33,11 @@ Two deterministic sources, both recomputed from the constellation rather than st
    `awakeningSkillIds` (her baseline golds and whites; all 268 templates carry exactly four) and her unique in its
    inherited form. Choosing lineage is choosing skills: Seiun Sky lends any front runner her late-race corner
    acceleration.
+
+3. **Her own kit** (D186). What she brings herself, as an original career does: her three **innate** skills and every
+   skill her own **story events** teach (mostly whites), from her first scenario; and her four **awakening** skills in
+   pairs, a white and a gold, the first pair from her first scenario and the second from her second. The Skills page
+   shows a pair that is still closed, with the scenario it opens in, so nothing of hers is hidden.
 
 Plus her **own unique**, which is permanent and free.
 

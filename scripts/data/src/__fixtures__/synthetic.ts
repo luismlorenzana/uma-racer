@@ -20,6 +20,8 @@ export const syntheticCharacterCards = [
     skills_unique: [7001],
     skills_awakening: [7002],
     skills_awakening_en: [7003, 7004],
+    skills_innate: [7005, 7006, 7005],
+    skills_event: [7007],
   },
   {
     card_id: 9002,

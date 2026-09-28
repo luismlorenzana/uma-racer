@@ -22,9 +22,12 @@ describe('normalizeUmas', () => {
       starter: true,
       uniqueSkillId: '7001',
       awakeningSkillIds: ['7003', '7004'],
+      // Her innate and story-event skills (D186), deduplicated within each list.
+      innateSkillIds: ['7005', '7006'],
+      eventSkillIds: ['7007'],
       realHorseSex: 'male',
     })
-    expect(result.items[1]).toMatchObject({ starter: false, realHorseSex: 'female' })
+    expect(result.items[1]).toMatchObject({ starter: false, realHorseSex: 'female', innateSkillIds: [], eventSkillIds: [] })
   })
 
   it('shares ordered, distinct retained objective families across outfits', () => {

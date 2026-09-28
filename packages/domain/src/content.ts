@@ -16,7 +16,15 @@ export interface UmaTemplate {
   growthRates: Stats
   aptitudes: Aptitudes
   uniqueSkillId: string | null
+  /** Her four awakening skills, a white and a gold per pair; the first pair opens in her first scenario (D186). */
   awakeningSkillIds: string[]
+  /**
+   * Her innate skills, learnable from her first scenario as at the start of an original career (D186). Absent from packs
+   * published before D186, which read as none.
+   */
+  innateSkillIds?: string[]
+  /** The skills her own story events teach, learnable from her first scenario (D186). Absent before D186. */
+  eventSkillIds?: string[]
   realHorseSex: 'male' | 'female' | null
   /** Ordered, distinct source race-family ids from this character's career objectives. */
   signatureRaceFamilyIds: string[]

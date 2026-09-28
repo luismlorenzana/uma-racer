@@ -54,7 +54,8 @@ export default defineConfig({
     // `host: true` exposes the dev server on the LAN so the iPhone can load it directly.
     host: true,
     proxy: {
-      '/api': { target: 'http://localhost:8080', changeOrigin: true },
+      // API_PROXY_TARGET lets a second dev server run beside another checkout's (another agent's on 8080).
+      '/api': { target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080', changeOrigin: true },
     },
   },
   build: {
