@@ -22,7 +22,7 @@ multipliers on a training turn that no longer exists.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
-| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | T071–T073 complete · [T074](T074-spark-rival-polish.md) balance complete | In progress · feedback and device closure next |
+| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | T071–T073 complete · [T074](T074-spark-rival-polish.md) code/balance complete | In progress · owner physical-device sign-off remains |
 | [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
 | [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |

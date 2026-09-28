@@ -54,6 +54,7 @@ export function SparkMatchScreen() {
   const [hud, setHud] = useState<SparkRivalHud | null>(null)
   const [reward, setReward] = useState<RunReward | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [resumeAvailable, setResumeAvailable] = useState(false)
   const [guide, setGuide] = useState<{ open: boolean; startAt: SparkRivalGuidePageId }>({ open: false, startAt: 'circuit' })
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<SparkRivalScene | null>(null)
@@ -89,6 +90,7 @@ export function SparkMatchScreen() {
     if (!content || gameStatus !== 'ready' || !uma || !scenario) return
     let cancelled = false
     setPhase('loading')
+    setResumeAvailable(false)
     void getMinigameHost().findOpenRun({ kind: 'spark-match', umaId }).then(async (open) => {
       if (cancelled) return
       if (!open) {
@@ -96,10 +98,12 @@ export function SparkMatchScreen() {
         if (!sparkRivalGuideSeen()) setGuide({ open: true, startAt: 'circuit' })
         return
       }
+      setResumeAvailable(true)
       const restored = await getMinigameJournal().load(open.runId)
       if (restored.engine !== 'spark-rival-v1') throw new Error('The saved run belongs to another minigame')
       if (cancelled) return
       setView(restored)
+      setResumeAvailable(false)
       setPhase(restored.replay.outcome ? 'committing' : 'playing')
       if (restored.replay.outcome) void finish(restored)
     }).catch((reason: unknown) => {
@@ -116,9 +120,11 @@ export function SparkMatchScreen() {
     setError(null)
     try {
       const ticket = await getMinigameHost().beginRun('spark-match', { kind: 'spark-match', umaId })
+      setResumeAvailable(true)
       const loaded = await getMinigameJournal().load(ticket.runId)
       if (loaded.engine !== 'spark-rival-v1') throw new Error('The saved run belongs to another minigame')
       setView(loaded)
+      setResumeAvailable(false)
       setPhase(loaded.replay.outcome ? 'committing' : 'playing')
       if (loaded.replay.outcome) await finish(loaded)
     } catch (reason) {
@@ -189,6 +195,7 @@ export function SparkMatchScreen() {
     setReward(null)
     setHud(null)
     setError(null)
+    setResumeAvailable(false)
     await reserve()
   }
 
@@ -225,7 +232,7 @@ export function SparkMatchScreen() {
     <MinigameShell playing={battle}>
       <MinigameHeader
         backTo={returnTo}
-        backLabel="Leave Spark Match"
+        backLabel="Pause and leave Spark Match"
         eyebrow="Spark Match · Rival Circuit"
         title={template.name}
         onGuide={() => setGuide({ open: true, startAt: battle ? 'intent' : 'circuit' })}
@@ -258,8 +265,9 @@ export function SparkMatchScreen() {
           ]}
           cost={SPARK_MATCH_TICKET_COST}
           tickets={tickets}
+          resume={resumeAvailable}
           pending={phase === 'reserving'}
-          pendingLabel="Reserving circuit…"
+          pendingLabel={resumeAvailable ? 'Restoring circuit…' : 'Reserving circuit…'}
           error={error}
           onBegin={start}
           onGuide={() => setGuide({ open: true, startAt: 'circuit' })}
@@ -267,10 +275,10 @@ export function SparkMatchScreen() {
       ) : phase === 'complete' && reward && outcome ? (
         <MinigameResult
           outcome={outcome.kind === 'clear' ? 'cleared' : 'lost'}
-          eyebrow={outcome.kind === 'clear' ? 'Circuit cleared' : 'Training banked'}
-          headline={`+${reward.trainingExpEarned?.toLocaleString() ?? outcome.trainingExp.toLocaleString()} Training EXP`}
-          reason={outcome.reason === 'circuit-cleared' ? 'All three rivals defeated.' : outcome.reason === 'drive-depleted' ? 'Drive was depleted; Resolve progress still paid out.' : 'The wave turn limit was reached; Resolve progress still paid out.'}
-          artwork={<div className="flex h-20 w-20 items-center justify-center rounded-full border border-accent/50 bg-accent/15 text-accent"><SparkIcon size={32} /></div>}
+          eyebrow={outcome.kind === 'clear' ? 'Victory' : 'Progress saved'}
+          headline={outcome.reason === 'circuit-cleared' ? 'Circuit cleared' : outcome.reason === 'drive-depleted' ? 'Drive depleted' : 'Turn limit reached'}
+          reason={<><strong className="text-ink-on-dark">+{reward.trainingExpEarned?.toLocaleString() ?? outcome.trainingExp.toLocaleString()} Training EXP</strong><span className="block">{outcome.reason === 'circuit-cleared' ? 'All three rivals defeated.' : 'Resolve progress was banked for this constellation.'}</span></>}
+          artwork={<div className={`relative flex h-24 w-24 items-center justify-center rounded-full border text-accent ${outcome.kind === 'clear' ? 'border-accent bg-accent/20 shadow-[0_0_36px_rgba(242,189,85,0.35)]' : 'border-hairline-dark bg-stage-soft'}`}><span className="absolute inset-2 rounded-full border border-current/30" aria-hidden /><SparkIcon size={32} /></div>}
           reward={(
             <>
               <div className="flex items-center justify-between gap-2"><h3 className="text-lg">Training progress</h3><strong>TL {reward.trainingLevelBefore} → {reward.trainingLevelAfter}</strong></div>
@@ -296,7 +304,19 @@ export function SparkMatchScreen() {
           </section>
           {view.snapshot.source === 'fallback' && <p className="shrink-0 bg-warning/15 px-3 py-1 text-center text-[10px] text-warning">Authored circuit unavailable; deterministic catalogue rivals are in use.</p>}
           <div ref={hostRef} className="min-h-0 flex-1" aria-describedby="spark-board-help" />
-          <section className="shrink-0 border-t border-hairline-dark bg-stage/95 px-3 pt-2 pb-2"><p id="spark-board-help" className="sr-only">Touch and drag an orb through adjacent board cells, then release to resolve one turn.</p><p className="min-h-5 truncate text-center text-xs font-semibold" role="status" aria-live="polite">{phase === 'committing' ? 'Saving Training progress…' : error ?? hud?.status ?? 'Restoring battle…'}</p><div className="mt-2 grid grid-cols-2 gap-2"><Button variant="tertiary" size="sm" onClick={() => setGuide({ open: true, startAt: 'advantage' })} className="w-full !border !border-hairline-dark !bg-stage-soft !text-ink-on-dark !shadow-none">Matchups</Button><Button size="sm" disabled={phase !== 'playing' || !hud || hud.inputLocked || hud.dragging || hud.sparkCharge < hud.sparkTarget} onClick={() => sceneRef.current?.triggerShift()} className="w-full">Spark Shift</Button></div>{error && view.replay.outcome && <Button variant="tertiary" size="sm" onClick={retryCommit} className="mt-2 w-full !border !border-accent !text-accent !shadow-none">Retry save</Button>}</section>
+          <section className="shrink-0 border-t border-hairline-dark bg-stage/95 px-3 pt-2 pb-2">
+            <p id="spark-board-help" className="sr-only">Touch and drag an orb through adjacent board cells, then release to resolve one turn. The board itself is a pointer-only mechanic.</p>
+            <p className="sr-only" aria-live="polite" aria-atomic="true">{hud && `Update ${hud.announcementSerial}. ${hud.announcement}`}</p>
+            <p className="min-h-5 truncate text-center text-xs font-semibold">{phase === 'committing' ? 'Saving Training progress…' : error ?? hud?.status ?? 'Restoring battle…'}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2"><Button variant="tertiary" size="sm" onClick={() => setGuide({ open: true, startAt: 'advantage' })} className="w-full !border !border-hairline-dark !bg-stage-soft !text-ink-on-dark !shadow-none">Matchups</Button><Button size="sm" disabled={phase !== 'playing' || !hud || hud.inputLocked || hud.dragging || hud.sparkCharge < hud.sparkTarget} onClick={() => sceneRef.current?.triggerShift()} className="w-full">Spark Shift</Button></div>
+            {hud?.recoveryNeeded && <div className="mt-2 grid grid-cols-2 gap-2"><Button size="sm" onClick={() => sceneRef.current?.retryRestore()}>Retry run</Button><Link to={returnTo} className="font-display flex min-h-11 items-center justify-center rounded-sm border border-hairline-dark px-3 font-semibold text-ink-on-dark">Return</Link></div>}
+            {error && view.replay.outcome && <Button variant="tertiary" size="sm" onClick={retryCommit} className="mt-2 w-full !border !border-accent !text-accent !shadow-none">Retry save</Button>}
+          </section>
+          <div className="pointer-events-auto fixed inset-0 z-50 hidden flex-col items-center justify-center bg-stage/95 p-6 text-center landscape:flex" role="status">
+            <SparkIcon size={32} className="text-accent" />
+            <h2 className="mt-3 text-2xl">Rotate to portrait</h2>
+            <p className="mt-2 max-w-xs text-sm text-ink-on-dark-soft">Your run is saved at the last completed turn. Rotate back to continue safely.</p>
+          </div>
         </>
       ) : null}
       <SparkRivalGuide open={guide.open} startAt={guide.startAt} onClose={closeGuide} />

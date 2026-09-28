@@ -116,6 +116,7 @@ describe('Minigame result', () => {
       />,
     )
     expect(screen.getByText('+900 Training EXP')).toBeTruthy()
+    expect(screen.getByRole('status').textContent).toContain('All rivals defeated.')
     expect(screen.getByText('TL 2 and First Light')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Done' }).getAttribute('href')).toBe('/constellation/synthetic')
     expect(screen.getByRole('button', { name: 'Run again · 1 ticket' })).toBeTruthy()

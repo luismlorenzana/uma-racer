@@ -109,9 +109,12 @@ of this tree.
 - **Reduced motion** keeps every state change visible and removes travel and particles. Every animation uses elapsed
   time; results never depend on the refresh rate. A hidden page pauses its ticker.
 - **Input is locked** while an action is being saved or a commit is pending. A save conflict or error reloads the run from
-  its journal and says the run was restored.
+  its journal and says the run was restored; if restore itself fails, the screen keeps explicit Retry and Return actions.
 - **Background and resume:** leaving mid-gesture cancels the gesture with no action; returning reloads the row before
   input is enabled.
+- **Pointer and orientation safety:** a pointer-driven game names that limitation honestly, announces resolved actions
+  through one DOM live region, cancels an in-flight gesture on viewport changes, and uses a continue-safe portrait prompt
+  rather than attempting unsupported landscape play.
 
 ## 7. Visual identity
 
