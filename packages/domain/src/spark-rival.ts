@@ -1,5 +1,5 @@
 // Spark Rival Circuit's player-facing tuning and private-content contract
-// (docs/design/minigames.md#spark-match--rival-circuit, D169–D172).
+// (docs/design/minigames.md#spark-match--rival-circuit, D169–D172, D187).
 
 import { GRADES, STRATEGIES, type Grade, type Strategy } from './types'
 
@@ -15,9 +15,9 @@ export const SPARK_RIVAL_TURNS_PER_WAVE = 8
 
 export const SPARK_RIVAL_ADVANTAGE_MULTIPLIER = 1.5
 export const SPARK_RIVAL_RESISTED_MULTIPLIER = 0.67
-export const SPARK_RIVAL_STYLE_ATTACK = 40
-export const SPARK_RIVAL_NEUTRAL_ATTACK = 30
-export const SPARK_RIVAL_RECOVERY_PER_ORB = 6
+export const SPARK_RIVAL_STYLE_ATTACK = 52
+export const SPARK_RIVAL_NEUTRAL_ATTACK = 40
+export const SPARK_RIVAL_RECOVERY_PER_ORB = 3
 export const SPARK_RIVAL_MATCH_SHAPE_PER_ORB = 0.25
 export const SPARK_RIVAL_COMBO_PER_MATCH = 0.2
 
@@ -26,11 +26,11 @@ export const SPARK_RIVAL_SHIFT_DELAY = 3
 export const SPARK_RIVAL_SHIFT_CHARGE_CAP = 15
 
 export const SPARK_RIVAL_RECIPE_COUNTDOWNS = {
-  'rush-pressure': 2,
+  'rush-pressure': 3,
   'tracker-guard': 3,
   'surge-convert': 2,
   'finisher-delay': 3,
-  'adaptive-duel': 2,
+  'adaptive-duel': 3,
   'circuit-boss': 2,
 } as const
 export const SPARK_RIVAL_RECIPES = Object.keys(SPARK_RIVAL_RECIPE_COUNTDOWNS) as SparkRivalRecipeId[]
@@ -155,10 +155,10 @@ export const SPARK_RIVAL_PHASE_RESOLVE_PERCENT = 50
 export const SPARK_RIVAL_GUARD_REDUCTION = 0.5
 export const SPARK_RIVAL_GUARD_COMBOS = 4
 export const SPARK_RIVAL_CONVERT_MAXIMUM = 4
-export const SPARK_RIVAL_PRESSURE_MULTIPLIER = 1.5
+export const SPARK_RIVAL_PRESSURE_MULTIPLIER = 1.25
 
 export const SPARK_RIVAL_WAVE_RESOLVE = [500, 650, 900] as const
-export const SPARK_RIVAL_WAVE_PRESSURE = [12, 16, 24] as const
+export const SPARK_RIVAL_WAVE_PRESSURE = [40, 50, 62] as const
 export const SPARK_RIVAL_WAVE_EXP = [500, 650, 800] as const
 export const SPARK_RIVAL_CLEAR_BONUS = 50
 export const SPARK_RIVAL_COMBO_BONUS_CAP = 100
@@ -178,5 +178,5 @@ export const SPARK_RIVAL_APTITUDE_MULTIPLIERS = {
 
 /** Tier and Training Level scaling shared by Resolve and Pressure. */
 export function sparkRivalDifficulty(scenarioTier: number, trainingLevel: number): number {
-  return 1 + 0.01 * (scenarioTier - 1) + 0.015 * (trainingLevel - 1)
+  return 1 + 0.003 * (scenarioTier - 1) + 0.005 * (trainingLevel - 1)
 }

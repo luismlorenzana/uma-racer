@@ -113,28 +113,28 @@ import {
 } from './index'
 
 describe('Spark Rival Circuit', () => {
-  it('pins the D169–D172 board, touch, combat, and reward contract', () => {
+  it('pins the D169–D172 and D187 board, touch, combat, and reward contract', () => {
     expect([SPARK_RIVAL_BOARD_WIDTH, SPARK_RIVAL_BOARD_HEIGHT]).toEqual([6, 5])
     expect([SPARK_RIVAL_ACTION_LIMIT, SPARK_RIVAL_PATH_LIMIT, SPARK_RIVAL_CASCADE_LIMIT, SPARK_RIVAL_MOVEMENT_MS]).toEqual([64, 256, 64, 7_000])
     expect([SPARK_RIVAL_MAX_DRIVE, SPARK_RIVAL_TURNS_PER_WAVE]).toEqual([100, 8])
     expect([SPARK_RIVAL_ADVANTAGE_MULTIPLIER, SPARK_RIVAL_RESISTED_MULTIPLIER]).toEqual([1.5, 0.67])
-    expect([SPARK_RIVAL_STYLE_ATTACK, SPARK_RIVAL_NEUTRAL_ATTACK, SPARK_RIVAL_RECOVERY_PER_ORB]).toEqual([40, 30, 6])
+    expect([SPARK_RIVAL_STYLE_ATTACK, SPARK_RIVAL_NEUTRAL_ATTACK, SPARK_RIVAL_RECOVERY_PER_ORB]).toEqual([52, 40, 3])
     expect([SPARK_RIVAL_MATCH_SHAPE_PER_ORB, SPARK_RIVAL_COMBO_PER_MATCH]).toEqual([0.25, 0.2])
     expect(SPARK_RIVAL_APTITUDE_MULTIPLIERS).toEqual({ S: 1.1, A: 1, B: 0.95, C: 0.9, D: 0.85, E: 0.8, F: 0.75, G: 0.7 })
     expect([SPARK_RIVAL_SHIFT_CHARGE, SPARK_RIVAL_SHIFT_DELAY, SPARK_RIVAL_SHIFT_CHARGE_CAP]).toEqual([9, 3, 15])
     expect(SPARK_RIVAL_RECIPE_COUNTDOWNS).toEqual({
-      'rush-pressure': 2, 'tracker-guard': 3, 'surge-convert': 2,
-      'finisher-delay': 3, 'adaptive-duel': 2, 'circuit-boss': 2,
+      'rush-pressure': 3, 'tracker-guard': 3, 'surge-convert': 2,
+      'finisher-delay': 3, 'adaptive-duel': 3, 'circuit-boss': 2,
     })
     expect([SPARK_RIVAL_PHASE_RESOLVE_PERCENT, SPARK_RIVAL_GUARD_REDUCTION, SPARK_RIVAL_GUARD_COMBOS, SPARK_RIVAL_CONVERT_MAXIMUM, SPARK_RIVAL_PRESSURE_MULTIPLIER])
-      .toEqual([50, 0.5, 4, 4, 1.5])
+      .toEqual([50, 0.5, 4, 4, 1.25])
     expect(SPARK_RIVAL_WAVE_RESOLVE).toEqual([500, 650, 900])
-    expect(SPARK_RIVAL_WAVE_PRESSURE).toEqual([12, 16, 24])
+    expect(SPARK_RIVAL_WAVE_PRESSURE).toEqual([40, 50, 62])
     expect(SPARK_RIVAL_WAVE_EXP).toEqual([500, 650, 800])
     expect([SPARK_RIVAL_CLEAR_BONUS, SPARK_RIVAL_COMBO_BONUS_CAP, SPARK_RIVAL_DRIVE_BONUS_CAP, SPARK_RIVAL_LOSS_EXP_SHARE])
       .toEqual([50, 100, 100, 0.45])
     expect(sparkRivalDifficulty(1, 1)).toBe(1)
-    expect(sparkRivalDifficulty(14, 9)).toBeCloseTo(1.25)
+    expect(sparkRivalDifficulty(14, 9)).toBeCloseTo(1.079)
   })
 })
 

@@ -46,15 +46,15 @@ describe('Spark Rival combat', () => {
       group('recovery', 4, 10),
     ])], aptitudes, 'front', null)
     expect(totals.combos).toBe(4)
-    expect(totals.attacks.find((attack) => attack.orb === 'pace')).toMatchObject({ rawAmount: 216, appliedAmount: 216, matchup: 'advantaged' })
-    expect(totals.attacks.find((attack) => attack.orb === 'spark')).toMatchObject({ rawAmount: 48, matchup: 'neutral' })
-    expect(totals.recovery).toBe(38)
+    expect(totals.attacks.find((attack) => attack.orb === 'pace')).toMatchObject({ rawAmount: 281, appliedAmount: 281, matchup: 'advantaged' })
+    expect(totals.attacks.find((attack) => attack.orb === 'spark')).toMatchObject({ rawAmount: 64, matchup: 'neutral' })
+    expect(totals.recovery).toBe(19)
     expect(totals.charge).toBe(3)
   })
 
   it('applies Guard only when the combo threshold is missed', () => {
     const low = sparkTurnTotals([cascade([group('pace', 3)])], aptitudes, 'front', { reduction: 0.5, comboThreshold: 4 })
-    expect(low.attacks.find((attack) => attack.orb === 'pace')).toMatchObject({ rawAmount: 60, appliedAmount: 30 })
+    expect(low.attacks.find((attack) => attack.orb === 'pace')).toMatchObject({ rawAmount: 78, appliedAmount: 39 })
     const high = sparkTurnTotals([cascade([
       group('pace', 3), group('spark', 3, 3), group('recovery', 3, 6), group('front', 3, 9),
     ])], aptitudes, 'front', { reduction: 0.5, comboThreshold: 4 })

@@ -78,6 +78,7 @@ export function sparkRivalDefinition(input: SparkRivalRecipeInput): SparkRivalDe
       break
     case 'circuit-boss':
       intents = [
+        { type: 'pressure', amount: pressure },
         { type: 'guard', reduction: SPARK_RIVAL_GUARD_REDUCTION, comboThreshold: SPARK_RIVAL_GUARD_COMBOS },
         {
           type: 'convert',
@@ -85,7 +86,6 @@ export function sparkRivalDefinition(input: SparkRivalRecipeInput): SparkRivalDe
           target: input.strategy,
           maximum: SPARK_RIVAL_CONVERT_MAXIMUM,
         },
-        { type: 'pressure', amount: pressure },
       ]
       phases = [{
         atResolvePercent: SPARK_RIVAL_PHASE_RESOLVE_PERCENT,

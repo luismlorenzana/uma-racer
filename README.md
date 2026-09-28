@@ -49,6 +49,7 @@ pnpm test           # domain rules, race engine, API sync, save persistence and 
 pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
 pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regression gate
+pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs

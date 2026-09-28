@@ -1,7 +1,7 @@
 # Minigames
 
-> Numbers marked as tuning baselines are checked-in and pinned. T074 may retune Rival Circuit only through the design,
-> decision-log and domain-test process required by AGENTS.md. Names remain provisional.
+> Numbers marked as tuning baselines are checked-in and pinned. Rival Circuit's T074 balance closure is D187; later
+> retunes still use the design, decision-log and domain-test process required by AGENTS.md. Names remain provisional.
 
 What every minigame shares (the run contract, determinism, where the engine lives, the screen, the look, the guide and
 the reusable pieces) is in the [Minigame kit](minigame-kit.md). This page holds each game's own rules.
@@ -84,22 +84,22 @@ The engine resolves one accepted drag in this order:
 6. Advance the rival countdown. At zero, execute the already displayed intent and reset its countdown.
 7. Check victory, loss and the **eight-player-turn bound for the current wave**.
 
-The T071 simulator baseline is below. These are checked-in tuning constants, not private content fields. `pnpm sim:spark`
+The T074 simulator baseline is below. These are checked-in tuning constants, not private content fields. `pnpm sim:spark`
 and the domain test pin them; any change follows AGENTS.md's design/decision/domain-test rule.
 
-| Constant/formula | T071 baseline |
+| Constant/formula | T074 baseline |
 |---|---|
 | Maximum Drive | 100 |
 | Match shape | `1 + 0.25 × (orbs − 3)` |
 | Whole-turn combo | `1 + 0.20 × (combos − 1)` |
-| Style attack per match | `round(40 × shape × combo × aptitude × matchup)` |
-| Spark attack per match | `round(30 × shape × combo)` |
-| Recovery per match | `round(6 × orbs × combo)` |
+| Style attack per match | `round(52 × shape × combo × aptitude × matchup)` |
+| Spark attack per match | `round(40 × shape × combo)` |
+| Recovery per match | `round(3 × orbs × combo)` |
 | Spark charge | cleared Spark orb count; ready at 9 |
 | Delay | +3 remaining requirement; ready threshold capped at 15 |
-| Difficulty factor | `1 + 0.01 × (tier − 1) + 0.015 × (TL − 1)` |
+| Difficulty factor | `1 + 0.003 × (tier − 1) + 0.005 × (TL − 1)` |
 | Wave Resolve | `round([500, 650, 900][wave] × difficulty)` |
-| Base Pressure | `round([12, 16, 24][wave] × difficulty)` before recipe modifiers |
+| Base Pressure | `round([40, 50, 62][wave] × difficulty)` before recipe modifiers |
 
 ### Spark Shift
 
@@ -129,12 +129,12 @@ style recipes require a matching best strategy, while adaptive/boss accept any:
 
 | Recipe | Script |
 |---|---|
-| `rush-pressure` (Front) | countdown 2; Pressure; below half, Enrage once to ×1.5 later Pressure |
+| `rush-pressure` (Front) | countdown 3; Pressure; below half, Enrage once to ×1.25 later Pressure |
 | `tracker-guard` (Pace) | countdown 3; Guard by 50% unless 4 combos, then Pressure, repeat |
 | `surge-convert` (Late) | countdown 2; convert up to 4 orbs that beat it into its own style, then Pressure, repeat |
-| `finisher-delay` (End) | countdown 3; Delay +3, then ×1.5 Pressure, repeat |
-| `adaptive-duel` | countdown 2; Pressure; below half, change once to resist trainee's best strategy |
-| `circuit-boss` | countdown 2; Guard → Convert → Pressure; one adaptive phase below half |
+| `finisher-delay` (End) | countdown 3; Delay +3, then ×1.25 Pressure, repeat |
+| `adaptive-duel` | countdown 3; Pressure; below half, change once to resist trainee's best strategy |
+| `circuit-boss` | countdown 2; Pressure → Guard → Convert; one adaptive phase below half |
 
 Intent has no hidden target selection. A status must be visible on the rival or gauge for its entire lifetime. A wave ends
 immediately at zero Resolve. A run ends in a loss at zero Drive or when the eighth player turn finishes without clearing
@@ -162,6 +162,12 @@ targetExp(n) = 1000 + 350 × (n − 1)        n = the level you are leaving, 1�
 The full TL1→10 curve is 21,600 EXP, so the target remains roughly **ten good clears**. A run can cross more than one
 level. A loss is real—the encounter ends—but the ticket is not made worthless because partial EXP is still committed.
 At TL10, a run cannot be started for that Uma and scenario.
+
+`pnpm sim:spark` is the checked regression sample; `pnpm sim:spark -- --full` runs 1,000 fixed seeds for every one of the
+126 tier/Training-Level rows. Within each row it rotates all four trainee best strategies, all five ordinary recipes plus
+the boss, and low/average/high aptitude profiles. The report includes Wilson 95% intervals, Drive, Shift use, recipe/style
+fairness, both loss reasons and a 1,000-path TL1→10 projection. It uses only invented fixtures and never reads the private
+roster rows.
 
 Levelling unlocks constellation nodes immediately ([Constellations](constellations.md#unlock-schedule)); the
 post-run summary names exactly which nodes opened.
