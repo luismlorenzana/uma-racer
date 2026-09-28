@@ -89,14 +89,15 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - Minigame reservations are save-backed transactions. `beginRun` re-parses the target and profile, returns an existing open
   target run without another charge, or atomically spends the documented ticket, appends its stable ledger id, and stores
   a device-local run row. Its FNV-1a seed derives from profile creation time, content version, target, scenario and attempt.
-  Friendship Training rows freeze setup and choices locally. Spark rows carry a bounded `spark-rival-v1` action journal
-  and complete encounter snapshot; both remain device-local and out of the cloud save. Appending checks the expected prior
-  action count in the same Dexie transaction, and an old open Spark reservation adopts this shape without another charge.
-- `commitRun` is idempotent by run id. Spark loads the snapshotted encounter, replays seed/actions in its pure engine,
-  requires a terminal state and matching diagnostic digest, derives Training EXP from that authoritative result, applies
-  it through `addTrainingExp` and reports actual constellation node ids/labels opened; the screen cannot submit score or
-  EXP. Friendship Training replays the run's frozen setup and saved
-  choices, then applies a clear only to the named scenario's card stars, appends the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss
+  Every game stores one engine-tagged frozen snapshot and bounded action journal; these remain device-local and out of the
+  cloud save. A generic journal port dispatches `load` and compare-and-`append` through the engine adapter, checking the
+  expected prior action count in the same Dexie transaction. Dexie v12 moved open Friendship Training and Spark rows to
+  this shape without changing their ids, tickets, seeds or replay states; completed history is untouched.
+- `commitRun` is idempotent by run id. It reloads the engine-tagged snapshot and journal, replays them in the pure engine,
+  and requires a terminal state plus the screen's matching action-count/state-hash claim. Spark derives Training EXP from
+  that authoritative result, applies it through `addTrainingExp` and reports actual constellation node ids/labels opened;
+  the screen cannot submit score or EXP. Friendship Training applies a replayed clear only to the named scenario's card
+  stars, appends the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss
   as a closed paid run. The profile, affected Uma/card, ledger, Trainer reconciliation and outbox work commit atomically
   before Zustand publishes.
 - Collection acquisition uses the same boundary. Shard exchange transactionally derives its next numbered prefix and

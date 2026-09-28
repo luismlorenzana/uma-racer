@@ -11,11 +11,16 @@ import {
   advanceCardStars,
   buildFriendshipSetup,
   cardStars,
+  ftFinished,
   ftReplay,
+  ftStateHash,
   constellationTemplate,
   deriveUma,
   nodesUnlockedBetween,
   parseCardSave,
+  parseFtAction,
+  parseFtActions,
+  parseFtSetup,
   parsePlayerProfileOrThrow,
   parseSparkRivalAction,
   parseSparkRivalActions,
@@ -27,22 +32,26 @@ import {
   buildSparkRivalEncounter,
   type CardSave,
   type ConstellationNode,
-  type FtAction,
   type LedgerEntry,
   type PlayerProfile,
-  type SparkRivalAction,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db, type MinigameRunRow } from './db'
 import {
+  MINIGAME_JOURNAL_ACTION_LIMIT,
+  type FriendshipReplayJournalV1,
+  type FriendshipRunSnapshotV1,
+  type FriendshipRunView,
   type MinigameJournal,
+  type MinigameJournalAction,
+  type MinigameRunView,
+  type ReplayJournalV1,
   type SparkReplayJournalV1,
   type SparkRunSnapshotV1,
   type SparkRunView,
 } from './minigame-journal'
 import {
-  validateFriendshipOutcome,
   validateMinigameOutcome,
   type MinigameHost,
   type MinigameKind,
@@ -50,7 +59,6 @@ import {
   type RunReward,
   type RunTarget,
   type RunTicket,
-  type SavedRun,
   type StoredRunReward,
 } from './minigame-host'
 import { updateTrainingBadgeFacts } from './badges'
@@ -105,6 +113,19 @@ export function parseSparkReplayJournal(value: unknown): SparkReplayJournalV1 | 
   return actions ? { format: 1, engine: 'spark-rival-v1', actions: [...actions] } : null
 }
 
+export function parseFriendshipRunSnapshot(value: unknown): FriendshipRunSnapshotV1 | null {
+  if (!record(value) || !exactKeys(value, ['setup', 'version']) || value.version !== 1) return null
+  const setup = parseFtSetup(value.setup)
+  return setup ? { version: 1, setup } : null
+}
+
+export function parseFriendshipReplayJournal(value: unknown): FriendshipReplayJournalV1 | null {
+  if (!record(value) || !exactKeys(value, ['actions', 'engine', 'format']) ||
+    value.format !== 1 || value.engine !== 'friendship-training-v1') return null
+  const actions = parseFtActions(value.actions, MINIGAME_JOURNAL_ACTION_LIMIT)
+  return actions ? { format: 1, engine: 'friendship-training-v1', actions } : null
+}
+
 const asTicket = (run: MinigameRunRow): RunTicket => ({
   runId: run.id,
   seed: run.seed,
@@ -114,18 +135,109 @@ const asTicket = (run: MinigameRunRow): RunTicket => ({
 function sparkRunView(run: MinigameRunRow): SparkRunView {
   if (run.kind !== 'spark-match' || run.target.kind !== 'spark-match' || run.status !== 'open' ||
     run.seed.length < 1 || run.seed.length > 120) throw new Error('Spark Rival run row is invalid')
-  const snapshot = parseSparkRunSnapshot(run.sparkSnapshot)
+  const snapshot = parseSparkRunSnapshot(run.snapshot)
   const journal = parseSparkReplayJournal(run.journal)
   if (!snapshot || !journal || snapshot.encounter.scenarioTier !== run.tier ||
     snapshot.encounter.trainee.templateId !== run.target.umaId) {
     throw new Error('Spark Rival run replay data is malformed')
   }
   return {
+    engine: 'spark-rival-v1',
     ticket: asTicket(run),
     snapshot,
     actions: journal.actions,
     replay: replaySparkRival(snapshot.encounter, run.seed, journal.actions),
   }
+}
+
+function friendshipRunView(run: MinigameRunRow): FriendshipRunView {
+  if (run.kind !== 'friendship-training' || run.target.kind !== 'friendship-training' || run.status !== 'open' ||
+    run.seed.length < 1 || run.seed.length > 120) throw new Error('Friendship Training run row is invalid')
+  const snapshot = parseFriendshipRunSnapshot(run.snapshot)
+  const journal = parseFriendshipReplayJournal(run.journal)
+  if (!snapshot || !journal || snapshot.setup.tier !== run.tier ||
+    snapshot.setup.mainCardId !== run.target.cardId || String(snapshot.setup.seed) !== run.seed) {
+    throw new Error('Friendship Training run replay data is malformed; this saved run was kept for recovery')
+  }
+  return {
+    engine: 'friendship-training-v1',
+    ticket: asTicket(run),
+    snapshot,
+    actions: journal.actions,
+    replay: ftReplay(snapshot.setup, journal.actions),
+  }
+}
+
+interface MinigameEngineAdapter {
+  engine: MinigameRunView['engine']
+  view(run: MinigameRunRow): MinigameRunView
+  append(view: MinigameRunView, action: MinigameJournalAction): MinigameRunView
+  isTerminal(view: MinigameRunView): boolean
+  stateHash(view: MinigameRunView): string
+}
+
+const sparkAdapter: MinigameEngineAdapter = {
+  engine: 'spark-rival-v1',
+  view: sparkRunView,
+  append(view, action) {
+    if (view.engine !== 'spark-rival-v1') throw new Error('Spark Rival journal adapter received the wrong run')
+    const parsed = parseSparkRivalAction(action)
+    if (!parsed) throw new Error('Spark Rival action is invalid')
+    const actions = [...view.actions, parsed]
+    return {
+      ...view,
+      actions,
+      replay: replaySparkRival(view.snapshot.encounter, view.ticket.seed, actions),
+    }
+  },
+  isTerminal: (view) => view.engine === 'spark-rival-v1' && view.replay.outcome !== null,
+  stateHash: (view) => {
+    if (view.engine !== 'spark-rival-v1') throw new Error('Spark Rival journal adapter received the wrong run')
+    return sparkRivalStateHash(view.replay.state)
+  },
+}
+
+const friendshipAdapter: MinigameEngineAdapter = {
+  engine: 'friendship-training-v1',
+  view: friendshipRunView,
+  append(view, action) {
+    if (view.engine !== 'friendship-training-v1') throw new Error('Friendship Training journal adapter received the wrong run')
+    const parsed = parseFtAction(action)
+    if (!parsed) throw new Error('Friendship Training action is invalid')
+    const actions = [...view.actions, parsed]
+    return {
+      ...view,
+      actions,
+      replay: ftReplay(view.snapshot.setup, actions),
+    }
+  },
+  isTerminal: (view) => view.engine === 'friendship-training-v1' && ftFinished(view.replay),
+  stateHash: (view) => {
+    if (view.engine !== 'friendship-training-v1') throw new Error('Friendship Training journal adapter received the wrong run')
+    return ftStateHash(view.replay)
+  },
+}
+
+const ENGINE_ADAPTERS = new Map<MinigameRunView['engine'], MinigameEngineAdapter>([
+  [sparkAdapter.engine, sparkAdapter],
+  [friendshipAdapter.engine, friendshipAdapter],
+])
+
+function adapterFor(run: MinigameRunRow): MinigameEngineAdapter {
+  if (!record(run.journal) || typeof run.journal.engine !== 'string') {
+    throw new Error('This minigame run has no readable replay journal; the saved row was kept for recovery')
+  }
+  const adapter = ENGINE_ADAPTERS.get(run.journal.engine as MinigameRunView['engine'])
+  if (!adapter) throw new Error(`Minigame engine ${run.journal.engine} is not supported; update the app to recover this run`)
+  return adapter
+}
+
+function minigameRunView(run: MinigameRunRow): MinigameRunView {
+  return adapterFor(run).view(run)
+}
+
+export function minigameRunStateHash(view: MinigameRunView): string {
+  return ENGINE_ADAPTERS.get(view.engine)!.stateHash(view)
 }
 
 const targetKey = (target: RunTarget, tier: number): string => target.kind === 'spark-match'
@@ -218,57 +330,54 @@ async function buildSparkSnapshot(
   }
 }
 
-async function adoptOpenSparkRun(content: LoadedContent, id: string): Promise<MinigameRunRow> {
+async function adoptOpenRun(content: LoadedContent, id: string): Promise<MinigameRunRow> {
   const run = await db.minigameRuns.get(id)
-  if (!run || run.kind !== 'spark-match' || run.target.kind !== 'spark-match') {
-    throw new Error('Unknown Spark Rival run')
-  }
-  if (run.status !== 'open') throw new Error('This Spark Rival run is already finished')
-  if (run.sparkSnapshot !== undefined || run.journal !== undefined) {
+  if (!run) throw new Error('Unknown minigame run')
+  if (run.status !== 'open') throw new Error('This minigame run is already finished')
+  if (run.snapshot !== undefined || run.journal !== undefined || run.kind !== 'spark-match' || run.target.kind !== 'spark-match') {
     // A partially present or malformed pair is corruption, never an invitation to silently reroll.
-    sparkRunView(run)
+    minigameRunView(run)
     return run
   }
   const adopted: MinigameRunRow = {
     ...run,
-    sparkSnapshot: await buildSparkSnapshot(content, run.target, run.tier, run.seed),
+    snapshot: await buildSparkSnapshot(content, run.target, run.tier, run.seed),
     journal: { format: 1, engine: 'spark-rival-v1', actions: [] },
   }
-  sparkRunView(adopted)
+  minigameRunView(adopted)
   await db.minigameRuns.put(adopted)
   return adopted
 }
 
-/** Dexie-backed compare-and-append journal; it never mutates the synced save. */
+/** Dexie-backed, adapter-driven compare-and-append journal; it never mutates the synced save. */
 export class PersistentMinigameJournal implements MinigameJournal {
   constructor(private readonly content: LoadedContent) {}
 
-  async loadSpark(id: string): Promise<SparkRunView> {
+  async load(id: string): Promise<MinigameRunView> {
     return db.transaction('rw', [db.umas, db.cards, db.minigameRuns], async () =>
-      sparkRunView(await adoptOpenSparkRun(this.content, id)))
+      minigameRunView(await adoptOpenRun(this.content, id)))
   }
 
-  async appendSpark(id: string, expectedActionCount: number, action: SparkRivalAction): Promise<SparkRunView> {
-    if (!Number.isSafeInteger(expectedActionCount) || expectedActionCount < 0) {
-      throw new Error('Spark Rival expected action count is invalid')
+  async append(id: string, expectedActionCount: number, action: MinigameJournalAction): Promise<MinigameRunView> {
+    if (!Number.isSafeInteger(expectedActionCount) || expectedActionCount < 0 ||
+      expectedActionCount >= MINIGAME_JOURNAL_ACTION_LIMIT) {
+      throw new Error('Minigame expected action count is invalid')
     }
     return db.transaction('rw', [db.umas, db.cards, db.minigameRuns], async () => {
-      const run = await adoptOpenSparkRun(this.content, id)
-      const current = sparkRunView(run)
+      const run = await adoptOpenRun(this.content, id)
+      const adapter = adapterFor(run)
+      const current = adapter.view(run)
       if (current.actions.length !== expectedActionCount) {
-        throw new Error('Spark Rival action count changed; the saved run must be restored')
+        throw new Error('Minigame action count changed; the saved run must be restored')
       }
-      if (current.replay.outcome) throw new Error('This Spark Rival run is already terminal')
-      const parsed = parseSparkRivalAction(action)
-      if (!parsed) throw new Error('Spark Rival action is invalid')
-      const actions = [...current.actions, parsed]
-      const replay = replaySparkRival(current.snapshot.encounter, current.ticket.seed, actions)
+      if (adapter.isTerminal(current)) throw new Error('This minigame run is already terminal')
+      const nextView = adapter.append(current, action)
       const next: MinigameRunRow = {
         ...run,
-        journal: { format: 1, engine: 'spark-rival-v1', actions },
+        journal: { format: 1, engine: nextView.engine, actions: [...nextView.actions] } as ReplayJournalV1,
       }
       await db.minigameRuns.put(next)
-      return { ticket: current.ticket, snapshot: current.snapshot, actions, replay }
+      return nextView
     })
   }
 }
@@ -409,23 +518,6 @@ export class PersistentMinigameHost implements MinigameHost {
     return open ? asTicket(open) : null
   }
 
-  async loadRun(id: string): Promise<SavedRun | null> {
-    const run = await db.minigameRuns.get(id)
-    if (!run || run.kind !== 'friendship-training' || !run.setup) return null
-    return { setup: run.setup, actions: [...(run.actions ?? [])] }
-  }
-
-  async saveProgress(id: string, actions: readonly FtAction[]): Promise<void> {
-    await db.transaction('rw', [db.minigameRuns], async () => {
-      const run = await db.minigameRuns.get(id)
-      if (!run || run.kind !== 'friendship-training' || !run.setup) throw new Error('Unknown Friendship Training run')
-      if (run.status !== 'open') throw new Error('This run is already finished')
-      // Only choices the run accepts are kept: an invalid list throws here and never reaches the row.
-      ftReplay(run.setup, actions)
-      await db.minigameRuns.put({ ...run, actions: [...actions] })
-    })
-  }
-
   async beginRun(kind: MinigameKind, target: RunTarget): Promise<RunTicket> {
     if (kind !== target.kind) throw new Error('Minigame kind and target do not match')
     const now = this.now()
@@ -459,10 +551,13 @@ export class PersistentMinigameHost implements MinigameHost {
         createdAt: now,
         completedAt: null,
         ...(target.kind === 'friendship-training'
-          ? { setup: await this.friendshipSetup(target, valid.tier, seed), actions: [] }
+          ? {
+              snapshot: { version: 1, setup: await this.friendshipSetup(target, valid.tier, seed) },
+              journal: { format: 1, engine: 'friendship-training-v1', actions: [] },
+            }
           : target.kind === 'spark-match'
             ? {
-                sparkSnapshot: await buildSparkSnapshot(this.content, target, valid.tier, seed),
+                snapshot: await buildSparkSnapshot(this.content, target, valid.tier, seed),
                 journal: { format: 1, engine: 'spark-rival-v1', actions: [] },
               }
             : {}),
@@ -504,18 +599,22 @@ export class PersistentMinigameHost implements MinigameHost {
           return cloneReward(run.reward)
         }
         validateMinigameOutcome(asTicket(run), run.target, outcome)
+        if (outcome.kind === 'bond-recall') throw new Error('Bond Recall is retired: Bond opens Friendship Training')
+        const view = minigameRunView(run)
+        const adapter = ENGINE_ADAPTERS.get(view.engine)!
+        if (!adapter.isTerminal(view)) throw new Error('This minigame run is not finished')
+        if (view.actions.length !== outcome.actionCount || minigameRunStateHash(view) !== outcome.stateHash) {
+          throw new Error('Minigame replay claim is stale; the saved run must be restored')
+        }
         const profileRow = await db.profile.get('main')
         if (!profileRow) throw new Error('Local profile is missing')
         let profile = parsePlayerProfileOrThrow(profileRow.data)
         let result: RunReward
         let reconcileTrainer = false
 
-        if (run.kind === 'spark-match' && run.target.kind === 'spark-match' && outcome.kind === 'spark-match') {
-          const view = sparkRunView(run)
+        if (run.kind === 'spark-match' && run.target.kind === 'spark-match' && outcome.kind === 'spark-match' &&
+          view.engine === 'spark-rival-v1') {
           if (!view.replay.outcome) throw new Error('This Spark Rival run is not finished')
-          if (view.actions.length !== outcome.actionCount || sparkRivalStateHash(view.replay.state) !== outcome.stateHash) {
-            throw new Error('Spark Rival replay claim is stale')
-          }
           const umaRow = await db.umas.get(run.target.umaId)
           if (!umaRow) throw new Error('Spark Match Uma is not owned')
           const uma = parsedUma(run.target.umaId, umaRow.data)
@@ -547,9 +646,9 @@ export class PersistentMinigameHost implements MinigameHost {
           await updateTrainingBadgeFacts({ content: this.content, uma: nextUma, sourceId: id, now })
           mutation = { profile, uma: nextUma }
           reconcileTrainer = true
-        } else if (run.kind === 'friendship-training' && run.target.kind === 'friendship-training' && outcome.kind === 'friendship-training') {
-          if (!run.setup) throw new Error('This Friendship Training run has no setup')
-          validateFriendshipOutcome(run.setup, outcome)
+        } else if (run.kind === 'friendship-training' && run.target.kind === 'friendship-training' &&
+          outcome.kind === 'friendship-training' && view.engine === 'friendship-training-v1') {
+          const cleared = view.replay.phase === 'won'
           const cardRow = await db.cards.get(run.target.cardId)
           if (!cardRow) throw new Error('This card is not owned')
           const card = parsedCard(run.target.cardId, cardRow.data)
@@ -557,7 +656,7 @@ export class PersistentMinigameHost implements MinigameHost {
           let nextCard = card
           let after = before
           let couponGranted = false
-          if (outcome.cleared) {
+          if (cleared) {
             const advance = advanceCardStars(card, run.tier)
             nextCard = advance.card
             after = advance.toStars
@@ -595,7 +694,6 @@ export class PersistentMinigameHost implements MinigameHost {
 
         await db.minigameRuns.put({
           ...run,
-          ...(outcome.kind === 'friendship-training' ? { actions: [...outcome.actions] } : {}),
           status: 'completed',
           outcome: { ...outcome },
           reward: cloneReward(result),

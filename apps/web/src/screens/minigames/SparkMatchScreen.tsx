@@ -106,7 +106,8 @@ export function SparkMatchScreen() {
         if (!sparkRivalGuideSeen()) setGuide({ open: true, startAt: 'circuit' })
         return
       }
-      const restored = await getMinigameJournal().loadSpark(open.runId)
+      const restored = await getMinigameJournal().load(open.runId)
+      if (restored.engine !== 'spark-rival-v1') throw new Error('The saved run belongs to another minigame')
       if (cancelled) return
       setView(restored)
       setPhase(restored.replay.outcome ? 'committing' : 'playing')
@@ -125,7 +126,8 @@ export function SparkMatchScreen() {
     setError(null)
     try {
       const ticket = await getMinigameHost().beginRun('spark-match', { kind: 'spark-match', umaId })
-      const loaded = await getMinigameJournal().loadSpark(ticket.runId)
+      const loaded = await getMinigameJournal().load(ticket.runId)
+      if (loaded.engine !== 'spark-rival-v1') throw new Error('The saved run belongs to another minigame')
       setView(loaded)
       setPhase(loaded.replay.outcome ? 'committing' : 'playing')
       if (loaded.replay.outcome) await finish(loaded)
@@ -160,12 +162,14 @@ export function SparkMatchScreen() {
       seed: view.ticket.seed,
       actions: view.actions,
       append: async (expected, action) => {
-        const next = await getMinigameJournal().appendSpark(view.ticket.runId, expected, action)
+        const next = await getMinigameJournal().append(view.ticket.runId, expected, action)
+        if (next.engine !== 'spark-rival-v1') throw new Error('The saved run belongs to another minigame')
         setView(next)
         return next
       },
       restore: async () => {
-        const restored = await getMinigameJournal().loadSpark(view.ticket.runId)
+        const restored = await getMinigameJournal().load(view.ticket.runId)
+        if (restored.engine !== 'spark-rival-v1') throw new Error('The saved run belongs to another minigame')
         setView(restored)
         return restored
       },

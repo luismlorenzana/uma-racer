@@ -6,15 +6,26 @@ import type { RaceTemplate, SkillTemplate, SupportCardTemplate } from '../../con
 import {
   FT_DECK_COPIES,
   FT_SET_OTHERS,
+  FT_SKILL_RULES,
   FT_STAGES,
   FT_STAGE_GRADES,
+  FT_TWISTS,
   ftTwist,
   type FtCardType,
   type FtSkillRuleId,
   type FtTwistId,
 } from './rules'
 import { skillTags } from '../../skill-tags'
-import { STATS, type DistanceCategory, type RaceGrade, type StatKey, type Surface } from '../../types'
+import {
+  DISTANCE_CATEGORIES,
+  RACE_GRADES,
+  STATS,
+  SURFACES,
+  type DistanceCategory,
+  type RaceGrade,
+  type StatKey,
+  type Surface,
+} from '../../types'
 
 export interface FtCardDef {
   id: string
@@ -243,3 +254,147 @@ export function buildFriendshipSetup(input: BuildFriendshipSetupInput): FtSetup 
 
 /** The stat types, for callers that iterate facilities. */
 export const FT_STATS: readonly StatKey[] = STATS
+
+type UnknownRecord = Record<string, unknown>
+
+const FT_SETUP_TEXT_LIMIT = 1_000
+const FT_SETUP_CARD_LIMIT = 512
+const FT_SETUP_SKILL_LIMIT = 256
+const FT_SETUP_DECK_LIMIT = 64
+const FT_CARD_TYPES = [...STATS, 'friend', 'group'] as const
+
+const isRecord = (value: unknown): value is UnknownRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+function exactKeys(value: UnknownRecord, expected: readonly string[]): boolean {
+  const actual = Object.keys(value).sort()
+  const wanted = [...expected].sort()
+  return actual.length === wanted.length && actual.every((key, index) => key === wanted[index])
+}
+
+const boundedText = (value: unknown, maximum = FT_SETUP_TEXT_LIMIT, allowEmpty = false): value is string =>
+  typeof value === 'string' && (allowEmpty || value.length > 0) && value.length <= maximum
+
+const boundedInteger = (value: unknown, minimum: number, maximum: number): value is number =>
+  Number.isSafeInteger(value) && (value as number) >= minimum && (value as number) <= maximum
+
+function stringList(value: unknown, maximum: number, allowEmpty = true): string[] | null {
+  if (!Array.isArray(value) || value.length > maximum || (!allowEmpty && value.length === 0)) return null
+  return value.every((entry) => boundedText(entry, 160)) ? [...value] : null
+}
+
+function parseCardDef(value: unknown): FtCardDef | null {
+  if (!isRecord(value) || !exactKeys(value, ['charaId', 'id', 'name', 'signature', 'stars', 'title', 'trait', 'type']) ||
+    !boundedText(value.id, 160) || !boundedText(value.charaId, 160) || !boundedText(value.name, FT_SETUP_TEXT_LIMIT, true) ||
+    !boundedText(value.title, FT_SETUP_TEXT_LIMIT, true) || !FT_CARD_TYPES.includes(value.type as FtCardType) ||
+    !CARD_EFFECTS.includes(value.trait as CardEffect) || !boundedInteger(value.stars, 0, MAX_STARS) ||
+    !Array.isArray(value.signature) || value.signature.length < 1 || value.signature.length > CARD_EFFECTS.length ||
+    !value.signature.every((entry) => CARD_EFFECTS.includes(entry as CardEffect))) return null
+  return {
+    id: value.id,
+    charaId: value.charaId,
+    name: value.name,
+    title: value.title,
+    type: value.type as FtCardType,
+    trait: value.trait as CardEffect,
+    signature: [...value.signature] as CardEffect[],
+    stars: value.stars,
+  }
+}
+
+function parseSkillDef(value: unknown): FtSkillDef | null {
+  if (!isRecord(value) || !exactKeys(value, value.stat === undefined
+    ? ['description', 'gold', 'id', 'name', 'rule']
+    : ['description', 'gold', 'id', 'name', 'rule', 'stat']) ||
+    !boundedText(value.id, 160) || !boundedText(value.name, FT_SETUP_TEXT_LIMIT, true) ||
+    !boundedText(value.description, FT_SETUP_TEXT_LIMIT, true) ||
+    typeof value.gold !== 'boolean' || typeof value.rule !== 'string' || !Object.hasOwn(FT_SKILL_RULES, value.rule) ||
+    (value.stat !== undefined && !STATS.includes(value.stat as StatKey))) return null
+  return {
+    id: value.id,
+    name: value.name,
+    description: value.description,
+    gold: value.gold,
+    rule: value.rule as FtSkillRuleId,
+    ...(value.stat === undefined ? {} : { stat: value.stat as StatKey }),
+  }
+}
+
+function parseRaceDef(value: unknown): FtRaceDef | null {
+  if (!isRecord(value) || !exactKeys(value, ['distance', 'distanceCategory', 'grade', 'id', 'name', 'surface']) ||
+    !boundedText(value.id, 160) || !boundedText(value.name, FT_SETUP_TEXT_LIMIT, true) ||
+    !RACE_GRADES.includes(value.grade as RaceGrade) ||
+    !boundedInteger(value.distance, 100, 10_000) ||
+    !DISTANCE_CATEGORIES.includes(value.distanceCategory as DistanceCategory) ||
+    !SURFACES.includes(value.surface as Surface)) return null
+  return {
+    id: value.id,
+    name: value.name,
+    grade: value.grade as RaceGrade,
+    distance: value.distance,
+    distanceCategory: value.distanceCategory as DistanceCategory,
+    surface: value.surface as Surface,
+  }
+}
+
+function parseRecord<T>(
+  value: unknown,
+  maximum: number,
+  parser: (entry: unknown) => T | null,
+  idOf: (entry: T) => string,
+): Record<string, T> | null {
+  if (!isRecord(value) || Object.keys(value).length > maximum) return null
+  const result: Record<string, T> = {}
+  for (const [id, raw] of Object.entries(value)) {
+    if (!boundedText(id, 160)) return null
+    const parsed = parser(raw)
+    if (!parsed || idOf(parsed) !== id) return null
+    result[id] = parsed
+  }
+  return result
+}
+
+/** Strict, bounded parser for the frozen Friendship Training inputs stored in a device-local journal. */
+export function parseFtSetup(value: unknown): FtSetup | null {
+  if (!isRecord(value) || !exactKeys(value, [
+    'cards', 'deck', 'earning', 'legendsCardId', 'mainCardId', 'races', 'rewardPool', 'seed', 'skillSources',
+    'skills', 'tier', 'twist', 'version',
+  ]) || value.version !== 1 || !boundedInteger(value.seed, 0, 0xffff_ffff) ||
+    !boundedInteger(value.tier, 1, FT_TWISTS.length) || !boundedInteger(value.earning, 1, MAX_STARS) ||
+    !boundedText(value.mainCardId, 160) || !Object.hasOwn(FT_TWISTS, Number(value.tier) - 1) ||
+    ftTwist(value.tier as number).id !== value.twist) return null
+
+  const cards = parseRecord(value.cards, FT_SETUP_CARD_LIMIT, parseCardDef, (entry) => entry.id)
+  const skills = parseRecord(value.skills, FT_SETUP_SKILL_LIMIT, parseSkillDef, (entry) => entry.id)
+  const deck = stringList(value.deck, FT_SETUP_DECK_LIMIT, false)
+  const rewardPool = stringList(value.rewardPool, FT_SETUP_CARD_LIMIT)
+  if (!cards || !skills || !deck || !rewardPool || !cards[value.mainCardId]) return null
+  if (deck.some((id) => !cards[id]) || rewardPool.some((id) => !cards[id])) return null
+
+  if (!isRecord(value.skillSources) || !exactKeys(value.skillSources, ['deck', 'main', 'pool'])) return null
+  const main = stringList(value.skillSources.main, FT_SETUP_SKILL_LIMIT)
+  const deckSkills = stringList(value.skillSources.deck, FT_SETUP_SKILL_LIMIT)
+  const pool = stringList(value.skillSources.pool, FT_SETUP_SKILL_LIMIT)
+  if (!main || !deckSkills || !pool || [...main, ...deckSkills, ...pool].some((id) => !skills[id])) return null
+
+  if (!Array.isArray(value.races) || value.races.length < 1 || value.races.length > 3) return null
+  const races = value.races.map(parseRaceDef)
+  if (races.some((race) => race === null)) return null
+  if (value.legendsCardId !== null && (!boundedText(value.legendsCardId, 160) || !cards[value.legendsCardId])) return null
+
+  return {
+    version: 1,
+    seed: value.seed,
+    tier: value.tier,
+    twist: value.twist as FtTwistId,
+    earning: value.earning,
+    mainCardId: value.mainCardId,
+    deck,
+    cards,
+    rewardPool,
+    skills,
+    skillSources: { main, deck: deckSkills, pool },
+    races: races as FtRaceDef[],
+    legendsCardId: value.legendsCardId as string | null,
+  }
+}

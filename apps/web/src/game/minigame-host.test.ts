@@ -1,15 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
-import { sparkRivalStateHash } from '@racer/domain'
+import { ftStateHash, sparkRivalStateHash, type FtSetup } from '@racer/domain'
 import { MinigameHostTestDouble, type RunOutcome, type RunTicket } from './minigame-host'
 
 async function terminalClaim(host: MinigameHostTestDouble, ticket: RunTicket): Promise<Extract<RunOutcome, { kind: 'spark-match' }>> {
-  let view = await host.loadSpark(ticket.runId)
+  const loaded = await host.load(ticket.runId)
+  if (loaded.engine !== 'spark-rival-v1') throw new Error('Expected a Spark Rival fixture')
+  let view = loaded
   while (!view.replay.outcome) {
-    view = await host.appendSpark(ticket.runId, view.actions.length, {
+    const next = await host.append(ticket.runId, view.actions.length, {
       type: 'drag',
       path: [{ row: 0, column: 0 }, { row: 0, column: 1 }],
       movementMs: 250,
     })
+    if (next.engine !== 'spark-rival-v1') throw new Error('Expected a Spark Rival fixture')
+    view = next
   }
   return {
     kind: 'spark-match',
@@ -17,6 +21,27 @@ async function terminalClaim(host: MinigameHostTestDouble, ticket: RunTicket): P
     actionCount: view.actions.length,
     stateHash: sparkRivalStateHash(view.replay.state),
   }
+}
+
+const friendshipSetup: FtSetup = {
+  version: 1,
+  seed: 1,
+  tier: 1,
+  twist: 'foundation',
+  earning: 1,
+  mainCardId: 'synthetic-card',
+  deck: ['synthetic-card'],
+  cards: {
+    'synthetic-card': {
+      id: 'synthetic-card', charaId: 'synthetic-character', name: 'Synthetic Card', title: 'Practice Notes',
+      type: 'speed', trait: 'trainingBonus', signature: ['trainingBonus'], stars: 0,
+    },
+  },
+  rewardPool: ['synthetic-card'],
+  skills: {},
+  skillSources: { main: [], deck: [], pool: [] },
+  races: [{ id: 'synthetic-race', name: 'Synthetic Race', grade: 'g3', distance: 1_600, distanceCategory: 'mile', surface: 'turf' }],
+  legendsCardId: null,
 }
 
 describe('MinigameHostTestDouble', () => {
@@ -31,7 +56,7 @@ describe('MinigameHostTestDouble', () => {
       attemptIndex: 0,
     })
     expect(restored).toEqual(first)
-    expect((await host.loadSpark(first.runId)).actions).toEqual([])
+    expect((await host.load(first.runId)).actions).toEqual([])
   })
 
   it('returns one structured replay reward when the same completed run is committed twice', async () => {
@@ -52,11 +77,19 @@ describe('MinigameHostTestDouble', () => {
     expect(host.commitCalls).toHaveLength(2)
   })
 
-  it('advances a card once when its completed Friendship Training run is committed twice', async () => {
+  it('returns one reward when a completed Friendship Training run is committed twice', async () => {
     const reward = vi.fn(() => ({ ticketsSpent: 1, starsBefore: 0, starsAfter: 1, couponGranted: false }))
     const host = new MinigameHostTestDouble({ reward })
     const ticket = await host.beginRun('friendship-training', { kind: 'friendship-training', cardId: 'synthetic-card', tier: 1 })
-    const outcome = { kind: 'friendship-training' as const, cleared: true, actions: [] }
+    host.setups.set(ticket.runId, friendshipSetup)
+    const view = await host.append(ticket.runId, 0, { type: 'give-up' })
+    if (view.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
+    const outcome = {
+      kind: 'friendship-training' as const,
+      engine: 'friendship-training-v1' as const,
+      actionCount: view.actions.length,
+      stateHash: ftStateHash(view.replay),
+    }
     expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ starsBefore: 0, starsAfter: 1 })
     expect(await host.commitRun(ticket.runId, outcome)).toMatchObject({ starsBefore: 0, starsAfter: 1 })
     expect(reward).toHaveBeenCalledTimes(1)

@@ -1,25 +1,24 @@
 import {
   FRIENDSHIP_TRAINING_TICKET_COST,
   FT_STAGES,
-  FtActionError,
   MAX_SCENARIO_TIER,
   MAX_STARS,
   cardStars,
-  ftApply,
   ftCardDef,
   ftFinished,
-  ftReplay,
+  ftStateHash,
   ftTwist,
   scenarioForTier,
   type FtAction,
   type FtSetup,
   type FtState,
 } from '@racer/domain'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../../../content/ContentProvider'
 import { safeReturnPath } from '../../../game/bond-links'
 import { getMinigameHost, type RunReward, type RunTarget, type RunTicket } from '../../../game/minigame-host'
+import { getMinigameJournal, type FriendshipRunView } from '../../../game/minigame-journal'
 import { useGame } from '../../../game/store'
 import { BottomSheet } from '../../../ui/BottomSheet'
 import { Button } from '../../../ui/Button'
@@ -33,7 +32,7 @@ import { FtGuide, guideSeen, rememberGuideSeen, type GuidePageId } from './FtGui
 import { SeasonMap } from './FtScene'
 import { BuildView, DeckSheet, EncounterView, FacilityView, RewardView, ShopView, SkillBar, SkillView, runProgress, type ViewProps } from './FtViews'
 
-type Phase = 'start' | 'loading' | 'playing' | 'committing' | 'commit-error' | 'done'
+type Phase = 'start' | 'loading' | 'playing' | 'saving' | 'committing' | 'commit-error' | 'done'
 
 interface Run {
   ticket: RunTicket
@@ -56,6 +55,13 @@ const guidePageFor = (state: FtState): GuidePageId => {
 }
 
 const messageOf = (reason: unknown, fallback: string) => reason instanceof Error ? reason.message : fallback
+
+const runFromView = (view: FriendshipRunView): Run => ({
+  ticket: view.ticket,
+  setup: view.snapshot.setup,
+  actions: [...view.actions],
+  state: view.replay,
+})
 
 /**
  * Friendship Training (M020 T063, D146, D168): train one card through a season of weeks and races; a clear is one star
@@ -89,8 +95,6 @@ export function FriendshipTrainingScreen() {
     rememberGuideSeen()
     setGuide((current) => ({ ...current, open: false }))
   }
-  const saves = useRef<Promise<void>>(Promise.resolve())
-
   const artIds = useMemo(() => run ? Object.keys(run.setup.cards) : template ? [template.id] : [], [run, template])
   const art = useCardArt(content, artIds)
 
@@ -114,11 +118,11 @@ export function FriendshipTrainingScreen() {
     setPhase('committing')
     setError(null)
     try {
-      await saves.current
       const result = await getMinigameHost().commitRun(current.ticket.runId, {
         kind: 'friendship-training',
-        cleared: current.state.phase === 'won',
-        actions: current.actions,
+        engine: 'friendship-training-v1',
+        actionCount: current.actions.length,
+        stateHash: ftStateHash(current.state),
       })
       setReward(result)
       setOpenRun(null)
@@ -135,9 +139,9 @@ export function FriendshipTrainingScreen() {
     setReward(null)
     try {
       const ticket = await getMinigameHost().beginRun('friendship-training', target)
-      const saved = await getMinigameHost().loadRun(ticket.runId)
-      if (!saved) throw new Error('This run has no saved setup')
-      const next: Run = { ticket, setup: saved.setup, actions: saved.actions, state: ftReplay(saved.setup, saved.actions) }
+      const saved = await getMinigameJournal().load(ticket.runId)
+      if (saved.engine !== 'friendship-training-v1') throw new Error('The saved run belongs to another minigame')
+      const next = runFromView(saved)
       setRun(next)
       setOpenRun(ticket)
       if (ftFinished(next.state)) await commit(next)
@@ -148,25 +152,34 @@ export function FriendshipTrainingScreen() {
     }
   }
 
-  function act(action: FtAction) {
+  async function persistAction(action: FtAction) {
     if (!run || phase !== 'playing') return
-    let state: FtState
-    try {
-      state = ftApply(run.setup, run.state, action)
-    } catch (reason) {
-      setError(reason instanceof FtActionError ? reason.message : messageOf(reason, 'That move is not allowed'))
-      return
-    }
+    setPhase('saving')
     setError(null)
-    const next: Run = { ...run, actions: [...run.actions, action], state }
-    setRun(next)
-    // Saves run in order, so a reload always resumes from the latest choice.
-    const { runId } = run.ticket
-    saves.current = saves.current.then(() => getMinigameHost().saveProgress(runId, next.actions)).catch((reason: unknown) => {
-      setError(messageOf(reason, 'Could not save this move; a reload resumes from the last saved one'))
-    })
-    if (ftFinished(state)) void commit(next)
+    try {
+      const saved = await getMinigameJournal().append(run.ticket.runId, run.actions.length, action)
+      if (saved.engine !== 'friendship-training-v1') throw new Error('The saved run belongs to another minigame')
+      const next = runFromView(saved)
+      setRun(next)
+      if (ftFinished(next.state)) await commit(next)
+      else setPhase('playing')
+    } catch (reason) {
+      try {
+        const restored = await getMinigameJournal().load(run.ticket.runId)
+        if (restored.engine !== 'friendship-training-v1') throw new Error('The saved run belongs to another minigame')
+        const next = runFromView(restored)
+        setRun(next)
+        setError(`${messageOf(reason, 'That move could not be saved')} The run was restored.`)
+        if (ftFinished(next.state)) await commit(next)
+        else setPhase('playing')
+      } catch (restoreReason) {
+        setError(messageOf(restoreReason, 'The saved run could not be restored'))
+        setPhase('commit-error')
+      }
+    }
   }
+
+  function act(action: FtAction) { void persistAction(action) }
 
   const view: ViewProps | null = run ? { content, setup: run.setup, state: run.state, art, act, busy: phase !== 'playing' } : null
   const stageCount = FT_STAGES[stars + 1] ?? 0
@@ -233,7 +246,7 @@ export function FriendshipTrainingScreen() {
           </div>
         )}
 
-        {view && (phase === 'playing' || phase === 'committing' || phase === 'commit-error') && run && !ftFinished(run.state) && (
+        {view && (phase === 'playing' || phase === 'saving' || phase === 'committing' || phase === 'commit-error') && run && !ftFinished(run.state) && (
           <>
             <SeasonMap setup={run.setup} state={run.state} />
             <SkillBar setup={run.setup} state={run.state} />
