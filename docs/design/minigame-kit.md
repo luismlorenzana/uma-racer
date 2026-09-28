@@ -41,7 +41,9 @@ Also part of the contract:
 - **Retiring a minigame** closes its open runs at startup with the ticket refunded under the `minigame-refund` ledger
   reason (D177). Completed rows stay as history and never replay or pay again.
 - **The journal never syncs.** Runs are device-local; only the committed result (Training EXP, stars, ledger) enters the
-  synced save. A run in progress stays on its device.
+  synced save. A run in progress stays on its device, and removing the app loses it with its spent ticket. A reinstalled
+  or second device numbers its next attempt after every attempt the synced ledger remembers, since a run's id is its
+  target and attempt number.
 - **Bounds everywhere:** a journal holds at most 64 actions; every array and string in an action or snapshot has an
   explicit limit; a malformed row is a visible, recoverable error, never deleted or refunded silently.
 

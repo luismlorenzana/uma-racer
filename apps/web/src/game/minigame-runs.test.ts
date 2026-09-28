@@ -215,6 +215,25 @@ describe('persistent minigame host', () => {
     expect(snapshot.encounter.trainee.strategyAptitudes).toEqual(aptitudes.strategy)
   })
 
+  it('begins after the attempts a synced ledger remembers when this device has no run rows', async () => {
+    const profile = await seed()
+    const target = { kind: 'spark-match' as const, umaId: umaTemplate.id }
+    // A reinstall: the cloud save brings back two attempts' ticket rows, but not their device-local run rows.
+    for (const index of [0, 1]) {
+      await db.ledger.add({ id: `spark-match:uma-synthetic:1:${index}`, createdAt: 100,
+        data: { resource: 'tickets', delta: -1, reason: 'training', localDay: '2000-01-01', createdAt: 100 } })
+    }
+    const ticket = await host().beginRun('spark-match', target)
+    expect(ticket).toEqual({
+      runId: 'spark-match:uma-synthetic:1:2',
+      seed: minigameAttemptSeed(profile.createdAt, content.manifest.version, target, 1, 2),
+      attemptIndex: 2,
+    })
+    expect((await db.profile.get('main'))?.data.tickets).toBe(99)
+    expect(await db.ledger.count()).toBe(3)
+    expect(await db.minigameRuns.count()).toBe(1)
+  })
+
   it('lazily adopts a legacy open Spark row without changing identity or charging twice', async () => {
     const profile = await seed()
     const target = { kind: 'spark-match' as const, umaId: umaTemplate.id }

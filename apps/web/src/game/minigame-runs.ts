@@ -533,9 +533,13 @@ export class PersistentMinigameHost implements MinigameHost {
 
       const cost = TICKET_COST[kind]
       if (profile.tickets < cost) throw new Error(`You need ${cost} Training Tickets to begin this run`)
-      const attemptIndex = await db.minigameRuns.where('targetKey').equals(valid.key).count()
+      // Runs stay on their device, but each one's ticket row syncs: after a reinstall, or on a second device, the ledger
+      // remembers attempts this device has no row for. A new attempt takes the first index no earlier attempt spent.
+      let attemptIndex = await db.minigameRuns.where('targetKey').equals(valid.key).count()
+      while (await db.ledger.get(runId(target, valid.tier, attemptIndex)) || await db.minigameRuns.get(runId(target, valid.tier, attemptIndex))) {
+        attemptIndex += 1
+      }
       const id = runId(target, valid.tier, attemptIndex)
-      if (await db.ledger.get(id)) throw new Error('This minigame run was already recorded')
       const seed = minigameAttemptSeed(profile.createdAt, this.content.manifest.version, target, valid.tier, attemptIndex)
       const run: MinigameRunRow = {
         id,
