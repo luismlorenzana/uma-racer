@@ -63,16 +63,16 @@ describe('Spark Rival engine', () => {
       rivalRngState: 2_292_797_102,
       waveIndex: 0,
       waveTurn: 3,
-      drive: 88,
+      drive: 50,
       maxDrive: 100,
       sparkCharge: 0,
       sparkTarget: 9,
       totalDrags: 3,
       totalCombos: 4,
-      waveDamage: [208, 0, 0],
+      waveDamage: [271, 0, 0],
       rival: {
-        strategy: 'front', resolve: 292, maxResolve: 500, countdown: 1, intentIndex: 0,
-        pressureMultiplier: 1, guard: null, firedPhases: [],
+        strategy: 'front', resolve: 229, maxResolve: 500, countdown: 3, intentIndex: 0,
+        pressureMultiplier: 1.25, guard: null, firedPhases: [0],
       },
       outcome: null,
     })
@@ -196,7 +196,7 @@ describe('Spark Rival engine', () => {
       board: noMatchBoard(),
       rival: { ...enrageInitial.rival, resolve: Math.floor(enrageInitial.rival.maxResolve / 2) },
     }), noMatchDrag())
-    expect(enraged.state.rival.pressureMultiplier).toBe(1.5)
+    expect(enraged.state.rival.pressureMultiplier).toBe(1.25)
 
     const adaptiveEncounter = syntheticSparkEncounter({ traineeBest: 'front', recipes: ['adaptive-duel', 'tracker-guard', 'circuit-boss'] })
     const adaptiveInitial = createSparkRivalState(adaptiveEncounter, 'adaptive')

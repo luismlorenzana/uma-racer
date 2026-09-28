@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SPARK_RIVAL_RECIPES, type SparkRivalRecipeId, type Strategy } from '@racer/domain'
-import { syntheticAptitudes } from './fixtures'
+import { syntheticAptitudes, syntheticSparkEncounter } from './fixtures'
 import { sparkRivalDefinition } from './recipes'
 import { parseSparkRivalEncounter, type SparkRivalEncounterV1 } from './types'
 
@@ -39,5 +39,16 @@ describe('Spark rival recipes', () => {
       expect(definition.intents.length).toBeLessThanOrEqual(3)
       expect(definition.phases.length).toBeLessThanOrEqual(1)
     }
+  })
+
+  it('puts visible Pressure first in the circuit boss script', () => {
+    const encounter = syntheticSparkEncounter({ bossStrategy: 'front' })
+    expect(encounter.waves[2].strategy).toBe('front')
+    expect(encounter.waves[2].intents.map((intent) => intent.type)).toEqual(['pressure', 'guard', 'convert'])
+  })
+
+  it('can build synthetic low and high aptitude profiles without private content', () => {
+    expect(syntheticAptitudes('late', 'B', 'D')).toEqual({ front: 'D', pace: 'D', late: 'B', end: 'D' })
+    expect(syntheticAptitudes('end', 'S', 'A')).toEqual({ front: 'A', pace: 'A', late: 'A', end: 'S' })
   })
 })
