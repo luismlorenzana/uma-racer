@@ -1,8 +1,8 @@
 // Friendship Training's engine (M020 T063–T064): a run is `replay(setup, actions)`, a pure fold of the player's
 // choices over a frozen setup, so a reload resumes exactly and a commit can check a clear by replaying it.
-// docs/design/minigames.md#friendship-training holds the rules; friendship-rules.ts holds the numbers.
+// docs/design/minigames.md#friendship-training holds the rules; rules.ts holds the numbers.
 
-import type { CardEffect } from './cards'
+import type { CardEffect } from '../../cards'
 import {
   FT_BOND_GAUGE,
   FT_CARD_POINTS,
@@ -37,9 +37,9 @@ import {
   type FtRivalRuleId,
   type FtShopItem,
   type FtSkillRuleId,
-} from './friendship-rules'
-import { ftRng, ftShuffle, type FtCardDef, type FtSetup, type FtSkillDef } from './friendship-setup'
-import { STATS, type StatKey } from './types'
+} from './rules'
+import { ftRng, ftShuffle, type FtCardDef, type FtSetup, type FtSkillDef } from './setup'
+import { STATS, type StatKey } from '../../types'
 
 export interface FtInstance {
   uid: number

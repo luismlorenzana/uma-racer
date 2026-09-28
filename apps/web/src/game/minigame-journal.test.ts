@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { syntheticSparkEncounter } from '@racer/domain'
 import { getMinigameJournal, installMinigameJournal } from './minigame-journal'
 import { MinigameHostTestDouble } from './minigame-host'
 import { parseSparkReplayJournal, parseSparkRunSnapshot } from './minigame-runs'
-import { syntheticSparkEncounter } from './minigames/spark-rival'
 
 const cleanups: Array<() => void> = []
 afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup() })

@@ -3,9 +3,9 @@ import {
   parseSparkRivalContentPack,
   type SparkRivalContentPackV1,
   type SparkRivalRecipeId,
-  type Strategy,
-  type UmaTemplate,
-} from '@racer/domain'
+} from '../../spark-rival'
+import type { UmaTemplate } from '../../content'
+import type { Strategy } from '../../types'
 import { buildSparkRivalEncounter, selectSparkEncounter } from './content'
 import { parseSparkRivalEncounter } from './types'
 

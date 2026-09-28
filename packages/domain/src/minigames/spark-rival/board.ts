@@ -4,7 +4,7 @@ import {
   SPARK_RIVAL_BOARD_SIZE,
   SPARK_RIVAL_BOARD_WIDTH,
   SPARK_RIVAL_CASCADE_LIMIT,
-} from '@racer/domain'
+} from '../../spark-rival'
 import { sparkNextInt, sparkShuffle } from './rng'
 import { SPARK_ORBS, type SparkCascade, type SparkCell, type SparkMatchGroup, type SparkOrb } from './types'
 

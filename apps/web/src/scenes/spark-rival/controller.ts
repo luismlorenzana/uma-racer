@@ -1,6 +1,5 @@
 // Browser-independent drag lifecycle for the Spark Rival touch scene (docs/design/minigames.md#presentation-and-touch).
-import { SPARK_RIVAL_MOVEMENT_MS, SPARK_RIVAL_PATH_LIMIT } from '@racer/domain'
-import type { SparkCell, SparkRivalAction } from '../../game/minigames/spark-rival'
+import { SPARK_RIVAL_MOVEMENT_MS, SPARK_RIVAL_PATH_LIMIT, type SparkCell, type SparkRivalAction } from '@racer/domain'
 import { appendSparkPointerSample } from './pointer'
 
 export interface SparkDragSnapshot {

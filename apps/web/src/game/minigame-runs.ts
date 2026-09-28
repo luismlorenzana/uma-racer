@@ -17,12 +17,20 @@ import {
   nodesUnlockedBetween,
   parseCardSave,
   parsePlayerProfileOrThrow,
+  parseSparkRivalAction,
+  parseSparkRivalActions,
+  parseSparkRivalEncounter,
   parseUmaSave,
+  replaySparkRival,
+  selectSparkEncounter,
+  sparkRivalStateHash,
+  buildSparkRivalEncounter,
   type CardSave,
   type ConstellationNode,
   type FtAction,
   type LedgerEntry,
   type PlayerProfile,
+  type SparkRivalAction,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -45,16 +53,6 @@ import {
   type SavedRun,
   type StoredRunReward,
 } from './minigame-host'
-import {
-  buildSparkRivalEncounter,
-  parseSparkRivalAction,
-  parseSparkRivalActions,
-  parseSparkRivalEncounter,
-  replaySparkRival,
-  selectSparkEncounter,
-  sparkRivalStateHash,
-  type SparkRivalAction,
-} from './minigames/spark-rival'
 import { updateTrainingBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
 import { reconcileTrainerInTransaction } from './trainer'

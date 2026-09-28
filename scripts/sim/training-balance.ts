@@ -5,7 +5,7 @@
 //   pnpm sim:training -- --content=<dir>     read the pack from another folder (default content/data)
 //
 // Setups are built from the local, gitignored content pack the way a real run is: a main card, a six-card set around
-// it and a large owned pool, each with plausible stars. The bot (packages/domain/src/friendship-bot.ts) plays each
+// it and a large owned pool, each with plausible stars. The domain minigame bot plays each
 // seed; the table prints only rates. Exit 1 when a row leaves its band.
 
 import { readdirSync, readFileSync } from 'node:fs'

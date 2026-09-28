@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SPARK_RIVAL_RECIPES, type SparkRivalRecipeId, type Strategy } from '@racer/domain'
+import { SPARK_RIVAL_RECIPES, type SparkRivalRecipeId } from '../../spark-rival'
+import type { Strategy } from '../../types'
 import { syntheticAptitudes, syntheticSparkEncounter } from './fixtures'
 import { sparkRivalDefinition } from './recipes'
 import { parseSparkRivalEncounter, type SparkRivalEncounterV1 } from './types'

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { sparkRivalStateHash } from './minigames/spark-rival'
+import { sparkRivalStateHash } from '@racer/domain'
 import { MinigameHostTestDouble, type RunOutcome, type RunTicket } from './minigame-host'
 
 async function terminalClaim(host: MinigameHostTestDouble, ticket: RunTicket): Promise<Extract<RunOutcome, { kind: 'spark-match' }>> {

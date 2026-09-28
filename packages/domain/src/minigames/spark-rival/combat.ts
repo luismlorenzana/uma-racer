@@ -13,11 +13,13 @@ import {
   SPARK_RIVAL_RESISTED_MULTIPLIER,
   SPARK_RIVAL_STYLE_ATTACK,
   SPARK_RIVAL_WAVE_EXP,
-  STRATEGIES,
   sparkRivalBestStrategy,
+} from '../../spark-rival'
+import {
+  STRATEGIES,
   type Grade,
   type Strategy,
-} from '@racer/domain'
+} from '../../types'
 import { SPARK_ORBS, type SparkAttackTotal, type SparkCascade, type SparkOrb, type SparkRivalOutcome } from './types'
 
 const BEATS: Record<Strategy, Strategy> = {

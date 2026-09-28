@@ -6,8 +6,8 @@ describe('Spark Rival deterministic source boundary', () => {
     const sources = [
       'board.ts', 'combat.ts', 'content.ts', 'engine.ts', 'fixtures.ts', 'recipes.ts', 'rng.ts', 'types.ts',
     ].map((name) => readFileSync(new URL(name, import.meta.url), 'utf8'))
-    sources.push(readFileSync(new URL('../../../../../../scripts/sim/spark-balance.ts', import.meta.url), 'utf8'))
-    sources.push(readFileSync(new URL('../../../../../../scripts/data/src/normalize/spark-rivals.ts', import.meta.url), 'utf8'))
+    sources.push(readFileSync(new URL('../../../../../scripts/sim/spark-balance.ts', import.meta.url), 'utf8'))
+    sources.push(readFileSync(new URL('../../../../../scripts/data/src/normalize/spark-rivals.ts', import.meta.url), 'utf8'))
     const banned = ['Math', 'random'].join('.')
     for (const source of sources) expect(source).not.toContain(banned)
   })

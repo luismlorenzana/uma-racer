@@ -1,9 +1,9 @@
 // Friendship Training's rules as data (M020, D146, D168; docs/design/minigames.md#friendship-training). Every number
 // here is a tuning draft that `pnpm sim:training` holds to its clear-rate table.
 
-import type { CardEffect } from './cards'
-import type { SupportCardType } from './content'
-import type { DistanceCategory, RaceGrade, StatKey, Surface } from './types'
+import type { CardEffect } from '../../cards'
+import type { SupportCardType } from '../../content'
+import type { DistanceCategory, RaceGrade, StatKey, Surface } from '../../types'
 
 export type FtCardType = SupportCardType
 

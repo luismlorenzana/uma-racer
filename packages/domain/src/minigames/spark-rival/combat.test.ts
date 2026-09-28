@@ -1,4 +1,4 @@
-import { GRADES, STRATEGIES } from '@racer/domain'
+import { GRADES, STRATEGIES } from '../../types'
 import { describe, expect, it } from 'vitest'
 import {
   bestSparkStrategy,

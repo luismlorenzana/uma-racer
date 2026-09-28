@@ -1,6 +1,5 @@
 // Shared Spark Rival colours and readable labels (D178). Gameplay remains in the pure engine.
-import type { Strategy } from '@racer/domain'
-import type { SparkOrb } from '../../game/minigames/spark-rival'
+import type { SparkOrb, Strategy } from '@racer/domain'
 
 export const SPARK_STRATEGY_LABELS: Readonly<Record<Strategy, string>> = {
   front: 'Front Runner',

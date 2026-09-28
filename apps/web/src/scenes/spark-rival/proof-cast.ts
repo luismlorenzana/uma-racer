@@ -1,6 +1,5 @@
 // Deterministic, presentation-only Chibi casting for the T071 proof (D178).
-import { GRADES, STRATEGIES, type Strategy, type UmaTemplate } from '@racer/domain'
-import type { SparkOrb } from '../../game/minigames/spark-rival'
+import { GRADES, STRATEGIES, type SparkOrb, type Strategy, type UmaTemplate } from '@racer/domain'
 
 export interface SparkProofCast {
   orbs: Readonly<Record<SparkOrb, string>>

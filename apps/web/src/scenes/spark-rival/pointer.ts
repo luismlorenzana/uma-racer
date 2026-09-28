@@ -1,6 +1,5 @@
 // Deterministic pointer-to-board traversal for Spark Rival Circuit (docs/design/minigames.md#board-and-movement).
-import { SPARK_RIVAL_BOARD_HEIGHT, SPARK_RIVAL_BOARD_WIDTH } from '@racer/domain'
-import type { SparkCell } from '../../game/minigames/spark-rival'
+import { SPARK_RIVAL_BOARD_HEIGHT, SPARK_RIVAL_BOARD_WIDTH, type SparkCell } from '@racer/domain'
 
 export interface SparkBoardGeometry {
   left: number

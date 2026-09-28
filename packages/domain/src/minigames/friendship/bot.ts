@@ -11,10 +11,10 @@ import {
   type FtAction,
   type FtState,
   type FtTrainResult,
-} from './friendship-engine'
-import { FT_MAX_REDRAW, FT_MAX_TRAIN, FT_SHOP_PRICES, FT_SKILL_SLOTS } from './friendship-rules'
-import type { FtSetup } from './friendship-setup'
-import { STATS, type StatKey } from './types'
+} from './engine'
+import { FT_MAX_REDRAW, FT_MAX_TRAIN, FT_SHOP_PRICES, FT_SKILL_SLOTS } from './rules'
+import type { FtSetup } from './setup'
+import { STATS, type StatKey } from '../../types'
 
 function subsets(items: readonly number[], max: number): number[][] {
   const result: number[][] = []

@@ -3,13 +3,12 @@
 import {
   SPARK_RIVAL_STYLE_RECIPES,
   sparkRivalBestStrategy,
-  type Grade,
   type SparkRivalRecipeId,
   type SparkRivalRosterCandidate,
   type SparkRivalScenarioRoster,
-  type Strategy,
-  type UmaTemplate,
-} from '@racer/domain'
+} from '../../spark-rival'
+import type { UmaTemplate } from '../../content'
+import type { Grade, Strategy } from '../../types'
 import { sparkShuffle, sparkSeed } from './rng'
 import { sparkRivalDefinition } from './recipes'
 import { parseSparkRivalEncounter, type SparkRivalEncounterV1 } from './types'

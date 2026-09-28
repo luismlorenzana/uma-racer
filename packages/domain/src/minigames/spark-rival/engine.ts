@@ -5,7 +5,7 @@ import {
   SPARK_RIVAL_SHIFT_CHARGE,
   SPARK_RIVAL_SHIFT_CHARGE_CAP,
   SPARK_RIVAL_TURNS_PER_WAVE,
-} from '@racer/domain'
+} from '../../spark-rival'
 import { applySparkPath, createSparkRivalBoard, resolveSparkBoard } from './board'
 import { bestSparkStrategy, sparkOutcome, sparkTurnTotals } from './combat'
 import { sparkSeed, sparkShuffle } from './rng'

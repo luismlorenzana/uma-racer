@@ -1,14 +1,12 @@
 // Invented fixtures for tests, simulation, and the development touch proof. No original-game data belongs here.
 import {
   SPARK_RIVAL_RECIPES,
-  type Grade,
   type SparkRivalRecipeId,
-  type Strategy,
-} from '@racer/domain'
+} from '../../spark-rival'
+import type { Grade, Strategy } from '../../types'
 import { sparkRivalDefinition } from './recipes'
 import type { SparkRivalDefinition, SparkRivalEncounterV1 } from './types'
 
-export { SPARK_RIVAL_RECIPES }
 export type SparkRivalRecipe = SparkRivalRecipeId
 
 const PRESSURE_STYLE: Record<SparkRivalRecipe, Strategy> = {

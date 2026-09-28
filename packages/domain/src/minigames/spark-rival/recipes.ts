@@ -11,10 +11,9 @@ import {
   SPARK_RIVAL_WAVE_PRESSURE,
   SPARK_RIVAL_WAVE_RESOLVE,
   sparkRivalDifficulty,
-  type Grade,
   type SparkRivalRecipeId,
-  type Strategy,
-} from '@racer/domain'
+} from '../../spark-rival'
+import type { Grade, Strategy } from '../../types'
 import { bestSparkStrategy, sparkAdvantagedStrategy } from './combat'
 import type { RivalPhase, RivalTurnIntent, SparkRivalDefinition } from './types'
 

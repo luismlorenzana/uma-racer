@@ -1,11 +1,11 @@
 // Installed device-local replay journal port (docs/design/minigames.md#determinism-journal-and-commit, D171).
 
-import type { FtAction } from '@racer/domain'
 import type {
+  FtAction,
   SparkRivalAction,
   SparkRivalEncounterV1,
   SparkRivalReplay,
-} from './minigames/spark-rival'
+} from '@racer/domain'
 import type { RunTicket } from './minigame-host'
 
 export interface SparkReplayJournalV1 {

@@ -1,7 +1,8 @@
 // Pixi touch presentation for Spark Rival Circuit (docs/design/minigames.md#spark-match--rival-circuit).
-import { SPARK_RIVAL_BOARD_HEIGHT, SPARK_RIVAL_BOARD_WIDTH, SPARK_RIVAL_MOVEMENT_MS, type Strategy } from '@racer/domain'
-import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import {
+  SPARK_RIVAL_BOARD_HEIGHT,
+  SPARK_RIVAL_BOARD_WIDTH,
+  SPARK_RIVAL_MOVEMENT_MS,
   applySparkPath,
   createSparkRivalState,
   currentSparkRivalIntent,
@@ -15,7 +16,9 @@ import {
   type SparkRivalEncounterV1,
   type SparkRivalResolution,
   type SparkRivalState,
-} from '../../game/minigames/spark-rival'
+  type Strategy,
+} from '@racer/domain'
+import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import type { SparkRunView } from '../../game/minigame-journal'
 import type { ContentAsset } from '../../content/runtime'
 import { SparkDragController } from './controller'
