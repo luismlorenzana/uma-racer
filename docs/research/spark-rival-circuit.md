@@ -188,6 +188,10 @@ M022 is four sequential units:
 Friendship Training (M020) landed before M022. It keeps its own game and reward plus its frozen setup and saved choices;
 T073's generic action journal must absorb those rows or stay compatible with them instead of migrating a run twice.
 
+**Outcome (2026-09-28):** all four landed, and M023 then moved both minigames onto one engine home, journal and screen
+shell ([Minigame kit](../design/minigame-kit.md)). The measured balance is D187 and
+[Minigames](../design/minigames.md#spark-match--rival-circuit); the physical-iPhone pass waits in T038 (D189).
+
 ## Sources
 
 - [Puzzle & Dragons — About](https://www.puzzleanddragons.us/about)

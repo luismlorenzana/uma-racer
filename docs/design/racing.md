@@ -436,7 +436,7 @@ Stats decide: at 2,000 m a runner at twice the field's average wins every race b
 and at +10% 32–52%. At the field's average she almost never wins, since the luckiest rolls in a field of eleven beat
 her. v5, for comparison, blocked a runner 17–26 s a race, and a runner at twice the field won half her races. Front
 runners still lead sprints, as they do in the original, and the field still finishes within about a second at
-2,000 m, under M021's 2–6 s target: rivals of one grade share presets. Both are open in T070.
+2,000 m, under M021's 2–6 s target: rivals of one grade share presets. Engine v7 settled both (below).
 
 ### Engine v7: the original's physics and field
 
@@ -500,7 +500,7 @@ heal less often than the old fixed one did. **The finish spread stays about a se
 (T070): rivals of one grade roll every stat independently between 80% and 100% of one preset, so their overall strength
 averages out near 90% and a G1 field finishes close together, as fields of evenly matched runners do. The lever that
 would spread it, rolling each rival's stats together so some are clearly stronger, would also make the strongest rival
-in every field stronger, which changes difficulty; it waits on the owner's call.
+in every field stronger, which changes difficulty; it stays off unless the owner asks for harder fields (D189).
 
 At 3,000 m most scenario-1 rivals run short because none puts more than 40% of her build into Stamina. No one runs
 dry before the last 60 m: a runner short of a full spurt plans a slower one that her HP holds, as in the original.

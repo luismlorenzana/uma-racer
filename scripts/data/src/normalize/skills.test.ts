@@ -20,7 +20,7 @@ describe('normalizeSkills', () => {
     ])
     const unique = result.items.find((skill) => skill.id === '7305')!
     expect(result.items.find((skill) => skill.id === '7302')?.normalSkillId).toBe('7301')
-    // Upper skills (D187): the gold stands on the ◎, the ◎ on the ○, and the ○ on nothing.
+    // Upper skills (D188): the gold stands on the ◎, the ◎ on the ○, and the ○ on nothing.
     const upper = (skillId: string) => result.items.find((skill) => skill.id === skillId)?.normalSkillId
     expect([upper('7314'), upper('7311'), upper('7312')]).toEqual(['7311', '7312', null])
     expect(unique.inheritedSkillId).toBe('7391')

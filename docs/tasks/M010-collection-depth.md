@@ -31,8 +31,8 @@ T035 Race Select                 (delegable)
 | T034 ✅ | The Cards album, card detail, redemption **and the deck editor** on the same engine | New card mechanics, Friend/Group gameplay (M8) |
 | [T035](T035-race-select-browsing.md) | Race Select — the third long list — with aptitude fit, series filters and pinned goal targets | Race rules, rewards, the Pixi scene |
 
-All three depend on Milestone 9's visual system for tiles and controls. If Milestone 9 has not landed, build against the
-tokens and accept a second cosmetic pass.
+All three build on Milestone 9's [visual system](../design/visual-system.md), which has landed. T035 also reuses the
+shared Uma picker (`ui/album/UmaPickerSheet`, D181) that Race Select already uses to switch Umas.
 
 ## Definition of done
 

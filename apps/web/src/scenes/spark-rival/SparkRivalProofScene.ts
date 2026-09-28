@@ -1,4 +1,4 @@
-// Development-only automation controls for the Spark Rival touch proof (docs/tasks/T074-spark-rival-polish.md).
+// Development-only automation controls for the Spark Rival touch proof (docs/design/minigame-kit.md, D185).
 import {
   SPARK_RIVAL_BOARD_WIDTH,
   applySparkPath,

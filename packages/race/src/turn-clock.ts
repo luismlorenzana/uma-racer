@@ -1,4 +1,4 @@
-// Engine v6's clock (docs/tasks/M021-turn-based-races.md, D154): a race is a fixed number of one-second turns, and its
+// Engine v6's clock (docs/design/racing.md#engine-v6-turns-m021, D154): a race is a fixed number of one-second turns, and its
 // phases start on fixed turns shared by the whole field.
 
 /** A course's turn count: its distance over its base speed, `20 − (distance − 2000) / 1000` m/s, rounded up. */

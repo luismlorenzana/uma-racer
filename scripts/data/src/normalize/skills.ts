@@ -133,7 +133,7 @@ export function normalizeSkills(value: unknown): NormalizeResult<SkillTemplate> 
     if (normalSkillId === null) warnings.push(`Gold skill ${item.id} has no retained white counterpart`)
   }
 
-  // A ◎ white stands on its ○, as a gold stands on its white: the original's upper skills (D187).
+  // A ◎ white stands on its ○, as a gold stands on its white: the original's upper skills (D188).
   for (const raw of sourceRows) {
     const skillId = id(raw.id)
     const item = skillId ? itemsById.get(skillId) : undefined

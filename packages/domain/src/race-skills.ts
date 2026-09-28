@@ -519,7 +519,7 @@ export function levelUniqueSkill(skill: CompiledRaceSkill): CompiledRaceSkill {
 }
 
 /**
- * The skills a skill stands on (D187): a gold's white and a ◎'s ○ (`normalSkillId`), and on down the chain, nearest
+ * The skills a skill stands on (D188): a gold's white and a ◎'s ○ (`normalSkillId`), and on down the chain, nearest
  * first. As with the original's upper skills, learning a skill learns every one of these, each is paid for once, and
  * only the highest learned skill of a chain races.
  */
@@ -552,7 +552,7 @@ export interface SkillLoadoutEntry {
 
 export interface SkillLoadoutSummary {
   valid: boolean
-  /** Every learned skill counted once: equipped skills and the chains below them (D187). */
+  /** Every learned skill counted once: equipped skills and the chains below them (D188). */
   cost: number
   cap: number
   errors: string[]
@@ -564,7 +564,7 @@ export interface SkillLoadoutSummary {
   learnedBy: ReadonlyMap<string, SkillTemplate>
 }
 
-/** What each racing skill cost, its chain included, even where its lower skill was equipped and paid for first (D187). */
+/** What each racing skill cost, its chain included, even where its lower skill was equipped and paid for first (D188). */
 export function racingSkillCosts(summary: Pick<SkillLoadoutSummary, 'entries'>): ReadonlyMap<string, number> {
   return new Map(summary.entries.map((entry) => [
     entry.skill.id,
@@ -615,7 +615,7 @@ export function summarizeSkillLoadout(
     }
     return [skill]
   })
-  // Each learned skill is paid once, by the first equipped skill that learns it (D187).
+  // Each learned skill is paid once, by the first equipped skill that learns it (D188).
   const paid = new Set<string>()
   const learnedBy = new Map<string, SkillTemplate>()
   const entries = skills.map((skill): SkillLoadoutEntry => {
@@ -649,7 +649,7 @@ export function affordableLoadout(entries: readonly SkillLoadoutEntry[], skillPo
     if (spent > skillPoints) break
     kept.push(entry)
   }
-  // An upgrade that no longer fits leaves its lower skill to race on its own (D187).
+  // An upgrade that no longer fits leaves its lower skill to race on its own (D188).
   return racingSkills(kept)
 }
 

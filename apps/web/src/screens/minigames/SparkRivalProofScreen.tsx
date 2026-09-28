@@ -26,7 +26,7 @@ function Gauge({ label, value, maximum, color }: { label: string; value: number;
   )
 }
 
-/** Synthetic, development-only interaction proof. Production Spark Match remains untouched until T073. */
+/** Synthetic, development-only interaction proof; the production game is `SparkMatchScreen`. */
 export function SparkRivalProofScreen() {
   const systemReducedMotion = useReducedMotion()
   const contentState = useContent()

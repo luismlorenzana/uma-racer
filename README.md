@@ -12,13 +12,12 @@ while the stable itself grows into a collection.
 > showcases, and Trainer achievements.
 >
 > The 2026-09 training redirection is now the source of truth: Training Levels open a per-scenario constellation, cards
-> earn per-scenario stars, and races use the resulting derived build. Turn-based race engine work is tracked in
-> [M021](docs/tasks/M021-turn-based-races.md); the next minigame implementation is
-> [M022 — Spark Rival Circuit](docs/tasks/M022-spark-rival-circuit.md), replacing adjacent-swap Spark Match with a
-> deterministic three-wave continuous-drag puzzle battle. Cards earn their stars in
-> [Friendship Training](docs/design/minigames.md#friendship-training--card-stars), the roguelite card minigame that
-> replaced Bond Recall. The Paddock visual system and original icon set have
-> landed; remaining alignment, collection and device work stays indexed in [Tasks](docs/tasks/README.md).
+> earn per-scenario stars, and races use the resulting derived build. Races run on
+> [turn-based engine v7](docs/design/racing.md#engine-v7-the-originals-physics-and-field). Training Levels come from
+> [Spark Match — Rival Circuit](docs/design/minigames.md#spark-match--rival-circuit), a three-wave continuous-drag puzzle
+> battle, and cards earn their stars in [Friendship Training](docs/design/minigames.md#friendship-training--card-stars);
+> both share one [Minigame kit](docs/design/minigame-kit.md). The Paddock visual system and original icon set have
+> landed. What comes next is in [Tasks](docs/tasks/README.md).
 
 ## Ground rules
 

@@ -7,80 +7,57 @@ This folder holds **only work that is planned or in progress**. A task spec is a
   each task lands.
 - [decisions.md](../decisions.md) is the append-only record of *why*.
 - A task spec is **deleted when its work is merged and the design docs carry the result** (D104). The full spec stays in
-  git history: `git show 463edb8:docs/tasks/T014-scenario-goals-and-journey.md`.
-
-T001–T018 and the Milestone 6 plan were completed and removed on 2026-09-19; commit `463edb8` is the last one that
-contains them. T024–T027 and M008 were **superseded** on 2026-09-20 rather than completed; `0a57f4c` is the last
-commit that contains them.
+  git history; the table at the bottom names the last commit that holds each one.
 
 ## Current plan
 
-The training rework (D119–D125) replaced the turn-based training loop with per-scenario constellations and
-two minigames. **M008 and its remaining modifier tasks were deleted**, not completed: they specified
-multipliers on a training turn that no longer exists.
-
 | Milestone | Tasks | State |
 |---|---|---|
-| [M021 — Turn-based races](M021-turn-based-races.md) | T067 – T070; T066 complete | In progress · now |
-| [M022 — Spark Rival Circuit](M022-spark-rival-circuit.md) | T071–T073 complete · [T074](T074-spark-rival-polish.md) code/balance complete | In progress · owner physical-device sign-off remains |
-| [M007 — Align and stabilize](M007-align-and-stabilize.md) | T023; T019–T022 complete | In progress |
-| [M010 — Collection depth](M010-collection-depth.md) | T035; T033 and T034 complete | In progress |
-| [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined |
+| [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | **Next up** · specified, delegable |
+| [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
 
-M012 (the constellation engine, save v5, and the removal of the training turn), M013 (the constellation
-screen) and M014 (Spark Match and Bond Recall) all landed on 2026-09-21; `ac1c157` is the last commit that
-contains their specs. T058 then connected both games to the save and was removed under D104.
+**T035 is the one specified unit of work.** Anything new starts as a new milestone or task with the next free numbers
+below, written in the shape at the end of this page.
 
-T057 was consumed by the per-scenario limit-break branch and is not reused.
+The owner's device checks (every milestone's, including Spark Rival Circuit's physical-iPhone pass) wait in
+[Open questions](../open-questions.md#needs-you-owner-actions-not-design-questions) and close together in T038 (D189).
+Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
+task.
 
-M016 (cards by scenario: the Training scene's Card set tab, card pages, ticket unlocks and the Cards tab lenses)
-landed on 2026-09-22 and was removed under D104; D129–D131 and the design docs carry it.
+**Next free numbers: M024 and T078.** Numbers are never reused, so a decision that mentions T014 always means the same
+work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
-M017 (career goals: stage-gated careers per scenario, goal plan v3, the Race tab's tracker and Next up) landed on
-2026-09-24 and was removed under D104; D137–D138 and [Scenario Careers](../design/scenario-goals.md) carry it.
+## Completed and removed
 
-M018 (race engine v5: the verified spurt plan, hills, duels, gate and green skills, 41 more skill conditions, and
-the race drawn on its own course) and T060 (the early stamina wall, resolved by D139–D140) landed on 2026-09-24 and
-were removed under D104; D139–D141, [Racing](../design/racing.md#engine-v5-m018) and
-[Race Engine v5 Findings](../research/race-engine-v5-findings.md) carry them.
+Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
-T052 (the fourteen constellation silhouettes, drawn on a grid) landed on 2026-09-25 with the constellation's visual
-pass and was removed from M015 under D104; D143 and [Constellations](../design/constellations.md#silhouettes) carry it.
+| Work | Landed | Carried by | Last commit with the specs |
+|---|---|---|---|
+| T001–T018 and the Milestone 6 plan | 2026-09-19 | design docs | `463edb8` |
+| T024–T027 and M008, **superseded** by the training rework (D119–D125) rather than completed | 2026-09-20 | — | `0a57f4c` |
+| M012 (constellation engine, save v5), M013 (constellation screen), M014 (Spark Match, Bond Recall), then T058 | 2026-09-21 | [Constellations](../design/constellations.md), [Minigames](../design/minigames.md) | `ac1c157` |
+| M016 — cards by scenario | 2026-09-22 | D129–D131, [Support Cards](../design/support-cards.md) | git history |
+| M017 — career goals | 2026-09-24 | D137–D138, [Scenario Careers](../design/scenario-goals.md) | git history |
+| M018 — race engine v5, and T060 (the early stamina wall) | 2026-09-24 | D139–D141, [Racing](../design/racing.md#engine-v5-m018), [Race Engine v5 Findings](../research/race-engine-v5-findings.md) | git history |
+| T052 — constellation silhouettes | 2026-09-25 | D143, [Constellations](../design/constellations.md#silhouettes) | git history |
+| M019 — stars and tickets | 2026-09-25 | D147–D148, D150, [Support Cards](../design/support-cards.md#stars), [Economy](../design/economy.md) | git history |
+| T059 — chibi and outfit-stand art | 2026-09-26 | D160, [Collection](../design/collection.md#art-tiers) | git history |
+| M015 — scenario identity | 2026-09-26 | D163–D165, [Scenarios](../design/scenarios.md#scenario-buffs), [Badges](../design/badges.md), [Collection](../design/collection.md#icon-overlays) | git history |
+| M009 — look and feel | 2026-09-26 | D166–D167, [Visual System](../design/visual-system.md) | git history |
+| M020 — Friendship Training | 2026-09-26 | D146, D168, D173, D177, [Minigames](../design/minigames.md#friendship-training--card-stars) | git history |
+| M007 — align and stabilize (T019–T022; T023 retired, D189) | 2026-09-28 | D105–D108, D114, [Infrastructure](../technical/infrastructure.md#release-runbook) | `7129d77` |
+| M021 — turn-based races (T066–T070) | 2026-09-28 | D153–D155, D158–D159, D163, [Racing](../design/racing.md#engine-v7-the-originals-physics-and-field) | `7129d77` |
+| M022 — Spark Rival Circuit (T071–T074) | 2026-09-28 | D169–D172, D187, [Minigames](../design/minigames.md#spark-match--rival-circuit) | `7129d77` |
+| M023 — minigame kit (T075–T077) | 2026-09-28 | D185, [Minigame kit](../design/minigame-kit.md) | `04b395a` (M023, T075) · `19a8dc0` (T076) · `ef1ac35` (T077) |
 
-M019 (stars and tickets: 0★–5★ per card per scenario, one ticket per run, save v7) landed on 2026-09-25 and was removed
-under D104; D147–D148, D150 and [Support Cards](../design/support-cards.md#stars) and [Economy](../design/economy.md) carry it.
-
-T059 (chibi and outfit-stand art, from the owner's local copy rather than the wiki) landed on 2026-09-26 with the race
-face tokens and was removed under D104; D160 and [Collection](../design/collection.md#art-tiers) carry it.
-
-M015 (scenario identity: crests on the Stable's icons, scenario-linked races, minigame-era training badges and the
-fourteen scenario buffs) landed on 2026-09-26 and was removed under D104; D163–D165, [Scenarios](../design/scenarios.md#scenario-buffs),
-[Badges](../design/badges.md) and [Collection](../design/collection.md#icon-overlays) carry it.
-
-M009 (look and feel: the Paddock tokens and primitives, every screen rolled onto them, and the original icon set with
-the drawn mark) landed on 2026-09-26 and was removed under D104; D166–D167 and
-[Visual System](../design/visual-system.md) carry it. Spark Match keeps its own look until its rework.
-
-M020 (Friendship Training: the roguelite card minigame, its scenario twists, and the cutover that retired Bond Recall)
-landed on 2026-09-26 and was removed under D104; D146, D168, D173, D177 and
-[Minigames](../design/minigames.md#friendship-training--card-stars) carry it.
-
-M023 (the shared minigame engine home, replay journal and screen shell) landed on 2026-09-28 and was removed under D104;
-D185 and the [Minigame kit](../design/minigame-kit.md) carry it.
-
-M020 landed first, with its own frozen setup and saved choices on the local run row (D168). M022's generic action journal
-(T073) kept those rows compatible, so no run is migrated twice. T071–T074 are reserved for
-M022 and are never reused. The owner released T071's device gate on 2026-09-27 with the development-only boundary made
-explicit. T072 then added the optional private roster pack, strict publisher checklist and deterministic fallback; its
-production publication remains pending until its code PR merges. T073 then landed the production route/save cutover;
-T074 owns balance, feedback/accessibility and physical-device closure.
-
-Task numbers never get reused, so a decision entry that mentions T014 always means the same work.
+"git history": `git log --diff-filter=D -1 --format=%h -- docs/tasks/<file>` finds the commit that removed a spec; its
+parent (`<hash>^`) still holds it.
 
 ## Writing a task spec
 
 Follow the shape the earlier specs used: scope and fixed choices, an implementation contract, deliverables, tests,
 acceptance, and what is explicitly out of scope. Every rule in a spec must be traceable to a design doc or a decision
-entry; if a task needs a new rule, it updates the design doc and appends a decision in the same PR.
+entry; if a task needs a new rule, it updates the design doc and appends a decision in the same PR. A new minigame
+follows [Minigame kit — Adding a minigame](../design/minigame-kit.md#10-adding-a-minigame).
 
 Agents: read [AGENTS.md](../../AGENTS.md) first. Work on a branch and open a pull request. Never push to `main`.

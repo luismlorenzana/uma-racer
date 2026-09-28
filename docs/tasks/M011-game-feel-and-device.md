@@ -15,7 +15,7 @@ Specs get written when each task becomes next.
 |---|---|
 | T036 | **Audio and device preferences:** one lazy `AudioContext`, a pooled cue catalogue (taps, training, race, progression, collection, flair), master/SFX/music volume, reduced-motion override, default race speed, honest haptic capability |
 | T037 | **Coordinated feedback:** one deterministic presentation queue with ordinary/useful/major/exceptional intensities; complete Training, race, results, collection, scenario and flair sequences; shared-element transitions |
-| T038 | **Physical-iPhone acceptance:** close the device backlog in [open-questions.md](../open-questions.md), the lifecycle matrix, measured budgets, the hidden diagnostics panel, and a VoiceOver and Dynamic Type audit |
+| T038 | **Physical-iPhone acceptance:** close the device backlog in [open-questions.md](../open-questions.md), the lifecycle matrix, measured budgets, the hidden diagnostics panel, and a VoiceOver and Dynamic Type audit. It includes Spark Rival Circuit's physical-device protocol and 30-second trace budget (D189), written out in `git show 7129d77:docs/tasks/T074-spark-rival-polish.md` |
 | T039 | **Optional:** night theme from the existing tokens, bespoke badge and trophy illustrations, higher-resolution portrait art only with a documented private source |
 
 ## Fixed rules

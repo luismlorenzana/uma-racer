@@ -228,14 +228,14 @@ describe('affordableLoadout', () => {
     expect(affordableLoadout(entries, 0)).toEqual([])
   })
 
-  it('races an upgrade instead of its lower skill, and the lower skill alone when the upgrade does not fit (D187)', () => {
+  it('races an upgrade instead of its lower skill, and the lower skill alone when the upgrade does not fit (D188)', () => {
     const entries = [entry('white', 140), entry('gold', 140, ['white'])]
     expect(affordableLoadout(entries, 280).map((skill) => skill.id)).toEqual(['gold'])
     expect(affordableLoadout(entries, 200).map((skill) => skill.id)).toEqual(['white'])
   })
 })
 
-describe('skill upgrades (D187)', () => {
+describe('skill upgrades (D188)', () => {
   // Right-Handed ○ → ◎ → Right-Handed Demon, and a gold on a plain white, as in the original's upper skills.
   const circle = skill('circle', 'white', 90)
   const double = { ...skill('double', 'white', 110), normalSkillId: 'circle' }

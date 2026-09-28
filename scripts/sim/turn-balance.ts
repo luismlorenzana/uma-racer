@@ -1,4 +1,4 @@
-// Engine v7 balance (docs/tasks/M021-turn-based-races.md#t070--balance-pnpm-simturns, D158). Synthetic fields only.
+// Engine v7 balance (docs/design/racing.md#engine-v7-the-originals-physics-and-field, D158). Synthetic fields only.
 //
 //   pnpm sim:turns                     every target, 40 races per row
 //   pnpm sim:turns -- 100              races per row

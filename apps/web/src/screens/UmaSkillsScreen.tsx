@@ -63,7 +63,7 @@ export interface SkillRowModel {
   /** On the race being prepared, whether it can trigger at all; null without a race. */
   onCourse: boolean | null
   source: string
-  /** What equipping it costs now, and the lower skills of its chain that come with it (D187). */
+  /** What equipping it costs now, and the lower skills of its chain that come with it (D188). */
   price?: { cost: number; with: string[] }
   /** Learned through an equipped upgrade, so it is part of that skill rather than equipped on its own. */
   includedIn?: string | null
@@ -197,7 +197,7 @@ export function UmaSkillsScreen() {
     .flatMap((id) => content.skills.byId.get(id) ?? [])
   const opensIn = SCENARIOS[uma.derived.tier]?.name
   const needle = search.trim().toLocaleLowerCase()
-  // Upper skills (D187): a gold carries its white (a double-circle white its single-circle one); each is paid once and
+  // Upper skills (D188): a gold carries its white (a double-circle white its single-circle one); each is paid once and
   // only the top of a chain races.
   const learned = new Set([...uma.derived.loadoutSkillIds, ...loadout.learnedBy.keys()])
   const entries = new Map(loadout.entries.map((entry) => [entry.skill.id, entry]))
@@ -241,7 +241,7 @@ export function UmaSkillsScreen() {
     if (saving) return
     const current = uma.derived.loadoutSkillIds
     const skill = content.skills.byId.get(skillId)
-    // Equipping an upgrade takes the place of any lower skill of its chain already equipped: it includes them (D187).
+    // Equipping an upgrade takes the place of any lower skill of its chain already equipped: it includes them (D188).
     const below = new Set(skill ? skillChainBelow(skill, content.skills.byId).map((lower) => lower.id) : [])
     const at = current.findIndex((id) => below.has(id))
     const kept = current.filter((id) => !below.has(id))

@@ -41,7 +41,7 @@ Three deterministic sources, all recomputed rather than stored:
 
 Plus her **own unique**, which is permanent and free.
 
-### Upper skills (D187)
+### Upper skills (D188)
 
 A gold stands on its white, and a ◎ white on its ○, as in the original: Concentration on Focus, Right-Handed ◎ on
 Right-Handed ○, and Right-Handed Demon on Right-Handed ◎. **Equipping a skill learns every skill below it in its chain**,
