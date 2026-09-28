@@ -65,6 +65,7 @@ import {
   VISIBLE_DISTANCE,
   umaPromotionCost,
   trainedStat,
+  fieldTrainedStat,
   OVERFLOW_BANK_LEVELS,
   PROMOTION_BONUS_PER_STAT,
   compileRaceSkill,
@@ -310,6 +311,15 @@ describe('rivals (D152)', () => {
     // 3,012 raw points; Foundation's typical 4% makes 3,132.5, 626.5 a stat, on a base of 110.
     expect(trainedStat(1)).toBeCloseTo(736.496)
     expect(trainedStat(14)).toBeGreaterThan(trainedStat(1))
+  })
+
+  it('never builds an earlier scenario\'s field above a later one\'s (D191)', () => {
+    // Scenarios 1–5 share their caps; the typical builds wobble with how six cards split each tree, so the field
+    // takes the lowest typical build from its scenario onwards: Grand Masters' 709 for all five.
+    expect([1, 2, 3, 4, 5].map((tier) => Math.round(fieldTrainedStat(tier)))).toEqual([709, 709, 709, 709, 709])
+    expect(fieldTrainedStat(9)).toBeCloseTo(trainedStat(10))
+    expect(fieldTrainedStat(14)).toBe(trainedStat(14))
+    for (let tier = 2; tier <= 14; tier += 1) expect(fieldTrainedStat(tier)).toBeGreaterThanOrEqual(fieldTrainedStat(tier - 1))
   })
 
   it('handicaps G3 most, then G2, then G1, and the lower grades more still', () => {

@@ -19,6 +19,7 @@ import {
   rollRivalSkills,
   rollRivalStats,
   rollStyleCounts,
+  fieldTrainedStat,
   trainedStat,
   type Aptitudes,
   type CompiledRaceSkill,
@@ -43,9 +44,10 @@ const mean = (stats: Stats) => STATS.reduce((sum, stat) => sum + stats[stat], 0)
 
 describe('rival presets (D153, D159)', () => {
   it('average the handicapped trained Uma where no cap bites', () => {
-    // Tier 1's caps are even, so the scenario leans nowhere: 736.5 × (1 − 0.05) on average for a G1.
-    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(699.6712)
-    expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(trainedStat(1) * 0.75)
+    // Tier 1's caps are even, so the scenario leans nowhere: its field's 709.0 (D191) × (1 − 0.05) on average for a G1.
+    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(673.588)
+    expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(fieldTrainedStat(1) * 0.75)
+    expect(fieldTrainedStat(1)).toBeLessThan(trainedStat(1))
   })
 
   it('carry the Stamina a full spurt at the race distance needs, from a 90% roll up', () => {

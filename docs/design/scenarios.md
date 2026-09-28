@@ -126,7 +126,8 @@ never changes a total.
 **Typical** is what a typical trained Uma of the scenario gains, as a share of her tree: six 3★ current-era cards with
 one Friend card, about four lineage slots filled, two career goals won. **Rivals carry it** (their `trainedStat`
 includes it), so a buff makes you stronger than the field only as far as your build leans into it, and the grade
-handicaps keep their meaning. Fragments and Legends have no typical value: a typical set is 3★, and a lineage choice
+handicaps keep their meaning. A field never exceeds a later scenario's, so a strong buff early on (Foundation's 4%) is
+yours to keep rather than the rivals' ([Racing — presets](racing.md#presets), D191). Fragments and Legends have no typical value: a typical set is 3★, and a lineage choice
 pays aptitudes and skills, not stats.
 
 Five rules replace drafts that could not work (D165): Trackblazer, Grand Masters and U.A.F. paid by which node a card

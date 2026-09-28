@@ -4,6 +4,7 @@ import { STAT_NODE_POOL, averageCap, capProfile, cardFairShare, nodeValue, shape
 import type { UmaTemplate } from './content'
 import { raceSkillFitsRunner, type CompiledRaceSkill, type RaceSkillCourseFacts } from './race-skills'
 import { scenarioBuff } from './scenario-buffs'
+import { MAX_SCENARIO_TIER } from './scenarios'
 import { GRADES, STATS, STRATEGIES, mapStats, type DistanceCategory, type RaceGrade, type StatKey, type Stats, type Strategy } from './types'
 
 /** Uniform in [0, 1). The race's seeded RNG; the domain never uses Math.random. */
@@ -27,6 +28,18 @@ export const trainedStat = (tier: number): number => {
   const statCardNodes = shapeDef(tier).cardNodes - cardFairShare(tier)
   const tree = (statCardNodes * nodeValue(tier) * starNodePct(TYPICAL_CARD_STARS)) / 100 + STAT_NODE_POOL
   return TYPICAL_BASE_STAT + (tree * (1 + scenarioBuff(tier).typical)) / STATS.length
+}
+
+/**
+ * The trained Uma a scenario's field is built on (D191): its typical build, but never stronger than a later scenario's.
+ * Scenarios 1–5 share their caps, so their typical builds differ only by how six cards split each tree (the Friend
+ * card's share rounds up) and by the buff: URA Finale's came out 4% above Grand Masters'. An earlier era's field is
+ * never the harder one, so each tier takes the lowest typical build from it onwards.
+ */
+export const fieldTrainedStat = (tier: number): number => {
+  let value = trainedStat(tier)
+  for (let later = tier + 1; later <= MAX_SCENARIO_TIER; later += 1) value = Math.min(value, trainedStat(later))
+  return value
 }
 
 /**
@@ -133,7 +146,7 @@ export function rivalPreset(
 ): Stats {
   const caps = capProfile(tier)
   const average = averageCap(tier)
-  const total = trainedStat(tier) * (1 - GRADE_HANDICAP[grade]) * STATS.length
+  const total = fieldTrainedStat(tier) * (1 - GRADE_HANDICAP[grade]) * STATS.length
   const weight = (stat: SpreadStat) => NPC_PROFILE[distance][stat] * STYLE_PROFILE[strategy][stat] * Math.sqrt(caps[stat] / average)
   const weights = SPREAD_STATS.reduce((sum, stat) => sum + weight(stat), 0)
   const spread = (budget: number) => Object.fromEntries(SPREAD_STATS.map((stat) =>

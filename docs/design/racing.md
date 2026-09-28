@@ -98,7 +98,8 @@ distance needs**, and spreads the rest by the distance, her running style and th
 for every scenario, race distance and style.
 
 ```
-total       = 5 × trainedStat(T) × (1 − handicap[grade])
+total       = 5 × fieldStat(T) × (1 − handicap[grade])
+fieldStat   = min(trainedStat(t) for t = T … 14)
 stamina     = min(cap, 0.4 × total, fullSpurtStamina(distance, style, speed, guts) / 0.9)
 preset[s]   = min(cap[s], (total − stamina) × shape[s] / Σ shape)         for Speed, Power, Guts, Wit
 shape[s]    = distance[s] × style[s] × √(cap[s] / averageCap(T))
@@ -108,8 +109,16 @@ handicap    = Debut/Maiden 0.35 · Pre-OP/OP 0.30 · G3 0.25 · G2 0.15 · G1 0.
 
 **`trainedStat`** is a realistic set rather than a perfect one: six current-era cards at **3★** (84% of a node), one of
 them a **Friend card** whose fair share of the nodes pays skill points instead of stats, plus the stat nodes, on the
-median base stat. It is 712 in scenario 1 and 905 in scenario 14; D152's full tree of 5★ cards was 950 and 1,259,
-which no real build reaches (the owner's TL10 Special Week is 989 / 617 / 567 / 616 / 691).
+median base stat, with the scenario's typical buff (D165). It is 736 in scenario 1 and 948 in scenario 14; D152's full
+tree of 5★ cards was 950 and 1,259, which no real build reaches (the owner's TL10 Special Week is 989 / 617 / 567 / 616 /
+691).
+
+**A field is never stronger than a later scenario's** (`fieldStat`, D191). Scenarios 1–5 share their caps, so their
+typical builds differ only by how six cards split each tree, where the Friend card's share rounds up, and by the buff:
+URA Finale's came out 736 against Grand Masters' 709, which made the first scenario's G1s the hardest of the five. Each
+scenario's field takes the lowest typical build from it onwards: 709 in scenarios 1–5, 835 in 9 and 10, 891 in 12 and
+13, the typical build everywhere else. Rivals of an earlier scenario are therefore never tougher than a later one's, and
+a later era's field is always at least as strong.
 
 **Stamina follows the distance.** `fullSpurtStamina` is engine v7's HP model: the opening and middle legs at her
 style's pace, with a margin for the field's pushes, then the final third at full spurt, which Speed makes dearer and
@@ -244,6 +253,14 @@ sprint / mile / medium / long:
 | 7 | 5★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 95 · 100 · 100 · 100% |
 | 14 | 0★ | 95 · 90 · 100 · 100% | 70 · 60 · 90 · 100% | 35 · 30 · 55 · 60% |
 | 14 | 5★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% |
+
+D191 (2026-09-28, 40 races a cell) evened out the first scenarios' fields. A 0★ set's G1s, before → after:
+
+| Tier | G1 before | G1 after |
+|---|---|---|
+| 1 URA Finale | 45 · 35 · 48 · 30% | 65 · 45 · 53 · 40% |
+| 2 Unity Cup | 58 · 55 · 43 · 43% | 63 · 58 · 38 · 43% (unchanged within noise) |
+| 3 Trackblazer | 55 · 53 · 40 · 40% | 55 · 55 · 55 · 50% |
 
 Rivals are now a typical set of 3★ cards (D159), so a new 0★ set, a little below them, wins about half its G1s when it
 picks its best strategy and deck, which is easier than D152's aim that it should not. The grade handicaps are the
