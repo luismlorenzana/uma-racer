@@ -35,7 +35,7 @@ export function MinigameResult({
   return (
     <section className="mx-auto flex w-full max-w-md flex-1 flex-col items-center gap-3 px-4 py-5 text-center">
       {artwork}
-      <div>
+      <div role="status" aria-live="polite" aria-atomic="true">
         <p className={`text-micro ${outcome === 'cleared' ? '!text-accent' : '!text-ink-on-dark-soft'}`}>{eyebrow}</p>
         <h2 className="mt-1 text-3xl">{headline}</h2>
         {reason && <div className="mt-1 text-[14px] text-ink-on-dark-soft">{reason}</div>}

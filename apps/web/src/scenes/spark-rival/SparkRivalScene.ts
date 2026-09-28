@@ -7,9 +7,8 @@ import {
   createSparkRivalState,
   currentSparkRivalIntent,
   reduceSparkRival,
+  sparkRivalStateHash,
   sparkIndexCell,
-  syntheticSparkEncounter,
-  type SparkCell,
   type SparkOrb,
   type SparkPresentationStep,
   type SparkRivalAction,
@@ -22,11 +21,17 @@ import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js
 import type { SparkRunView } from '../../game/minigame-journal'
 import type { ContentAsset } from '../../content/runtime'
 import { SparkDragController } from './controller'
+import {
+  SPARK_EFFECT_CAPACITY,
+  SPARK_LABEL_CAPACITY,
+  sparkAttackLabel,
+  sparkIntentAnnouncement,
+  sparkResolutionAnnouncement,
+} from './feedback'
 import { sparkCellAtPoint, type SparkBoardGeometry } from './pointer'
 import { SPARK_ORB_GLYPHS, SPARK_ORB_PIXI_COLORS } from '../../ui/minigames/spark-rival-presentation'
 
 const INK = 0x101a24
-const EFFECT_POOL_SIZE = 24
 const FINGER_OFFSET = 18
 const ART_TEXTURE_SIZE = 256
 
@@ -77,6 +82,12 @@ interface EffectToken {
   life: number
 }
 
+interface LabelToken {
+  text: Text
+  active: boolean
+  life: number
+}
+
 interface DeltaWaiter {
   remaining: number
   resolve: () => void
@@ -100,19 +111,28 @@ export interface SparkRivalHud {
   inputLocked: boolean
   outcome: string | null
   status: string
+  announcement: string
+  announcementSerial: number
+  recoveryNeeded: boolean
   debug: {
     boardSprites: string
     activeEffects: number
     effectCapacity: number
+    activeLabels: number
+    labelCapacity: number
     fps: number
+    frameMs: number
+    actionCount: number
+    stateHash: string
+    paused: boolean
     pointerMoveReactUpdates: 0
     ignoredPointers: number
   }
 }
 
 export interface SparkRivalSceneOptions {
-  encounter?: SparkRivalEncounterV1
-  seed?: string
+  encounter: SparkRivalEncounterV1
+  seed: string
   actions?: readonly SparkRivalAction[]
   append?: (expectedActionCount: number, action: SparkRivalAction) => Promise<SparkRunView>
   restore?: () => Promise<SparkRunView>
@@ -121,9 +141,9 @@ export interface SparkRivalSceneOptions {
 
 export class SparkRivalScene {
   private readonly app = new Application()
-  private readonly encounter: SparkRivalEncounterV1
-  private readonly seed: string
-  private readonly controller = new SparkDragController()
+  protected readonly encounter: SparkRivalEncounterV1
+  protected readonly seed: string
+  protected readonly controller = new SparkDragController()
   private readonly background = new Graphics()
   private readonly rivalLayer = new Container()
   private readonly rivalCard = new Graphics()
@@ -139,24 +159,30 @@ export class SparkRivalScene {
   private readonly tokens: OrbToken[] = []
   private readonly tokenTargets: { x: number; y: number }[] = []
   private readonly effects: EffectToken[] = []
+  private readonly labels: LabelToken[] = []
   private readonly waiters: DeltaWaiter[] = []
-  private geometry: SparkBoardGeometry = { left: 0, top: 0, cellSize: 1 }
-  private state: SparkRivalState
-  private previewBoard: readonly SparkOrb[]
-  private actionCount: number
-  private inputLocked = false
+  protected geometry: SparkBoardGeometry = { left: 0, top: 0, cellSize: 1 }
+  protected state: SparkRivalState
+  protected previewBoard: readonly SparkOrb[]
+  protected actionCount: number
+  protected inputLocked = false
   private destroyed = false
   private mounted = false
   private reducedMotion = false
-  private status = 'Drag an orb through several cells. The clock starts when it moves.'
-  private pointerX = 0
-  private pointerY = 0
-  private heldIndex: number | null = null
+  protected status = 'Drag an orb through several cells. The clock starts when it moves.'
+  protected pointerX = 0
+  protected pointerY = 0
+  protected heldIndex: number | null = null
   private ignoredPointers = 0
   private hudElapsed = 0
+  private lastFrameMs = 0
   private lastWidth = 0
   private lastHeight = 0
   private rivalPulse = 0
+  private announcement = ''
+  private announcementSerial = 0
+  private recoveryNeeded = false
+  private paused = false
   private artVersion = 0
   private orbTextures: Partial<Record<SparkOrb, Texture>> = {}
   private rivalTextures: Readonly<Record<string, Texture>> = {}
@@ -164,15 +190,10 @@ export class SparkRivalScene {
 
   private readonly options: SparkRivalSceneOptions
 
-  constructor(private readonly onHud: (hud: SparkRivalHud) => void, options: SparkRivalSceneOptions = {}) {
+  constructor(private readonly onHud: (hud: SparkRivalHud) => void, options: SparkRivalSceneOptions) {
     this.options = options
-    this.encounter = options.encounter ?? syntheticSparkEncounter({
-      scenarioTier: 7,
-      trainingLevel: 5,
-      traineeBest: 'pace',
-      recipes: ['rush-pressure', 'surge-convert', 'circuit-boss'],
-    })
-    this.seed = options.seed ?? 'spark-rival-touch-proof-v1'
+    this.encounter = options.encounter
+    this.seed = options.seed
     const replay = options.actions
       ? options.actions.reduce(
           (current, action, index) => reduceSparkRival(this.encounter, current, action, index).state,
@@ -204,7 +225,8 @@ export class SparkRivalScene {
     host.appendChild(this.app.canvas)
     this.app.canvas.style.touchAction = 'none'
     this.app.canvas.style.display = 'block'
-    this.app.canvas.setAttribute('aria-label', 'Spark Rival six by five orb board')
+    this.app.canvas.setAttribute('role', 'img')
+    this.app.canvas.setAttribute('aria-label', 'Touch-only Spark Rival six by five orb board. Use Matchups for the strategy legend.')
     this.app.stage.sortableChildren = true
     this.app.stage.addChild(this.background, this.rivalLayer, this.boardPlate, this.boardLayer, this.effectLayer)
     this.buildPool()
@@ -213,6 +235,7 @@ export class SparkRivalScene {
     this.bindPointerEvents()
     this.app.ticker.add(this.update)
     document.addEventListener('visibilitychange', this.onVisibility)
+    this.announceWave()
     this.emitHud()
   }
 
@@ -259,63 +282,14 @@ export class SparkRivalScene {
     this.reducedMotion = value
   }
 
-  reset(): void {
-    if (this.inputLocked || this.options.append) return
-    this.controller.cancel()
-    this.state = createSparkRivalState(this.encounter, this.seed)
-    this.previewBoard = this.state.board
-    this.actionCount = 0
-    this.status = 'Proof reset to the same seed and board.'
-    this.renderBoard(this.state.board)
-    this.emitHud()
-  }
-
   triggerShift(): void {
     if (this.inputLocked || this.controller.snapshot) return
     void this.resolveAction({ type: 'spark-shift' })
   }
 
-  playBestAdjacentDemo(): void {
-    if (this.inputLocked || this.controller.snapshot || this.state.outcome) return
-    const best = this.bestAdjacentAction()
-    if (best) void this.resolveAction(best.action)
-  }
-
-  toggleHeldDemo(): void {
-    if (this.inputLocked || this.state.outcome) return
-    if (this.controller.snapshot) {
-      this.controller.cancel()
-      this.previewBoard = this.state.board
-      this.status = 'Held proof cancelled; no action reached the engine.'
-      this.renderBoard(this.state.board)
-      this.emitHud()
-      return
-    }
-    const best = this.bestAdjacentAction()
-    if (!best || best.action.type !== 'drag') return
-    const [from, to] = best.action.path
-    if (!from || !to) return
-    this.controller.begin(-1, from)
-    this.controller.move(-1, to, performance.now())
-    this.pointerX = this.geometry.left + (to.column + 0.5) * this.geometry.cellSize
-    this.pointerY = this.geometry.top + (to.row + 0.5) * this.geometry.cellSize
-    this.previewBoard = applySparkPath(this.state.board, best.action.path)
-    this.status = 'Held-orb proof · displaced cell visible · cancel or wait for timeout.'
-    this.renderBoard(this.previewBoard, to.row * SPARK_RIVAL_BOARD_WIDTH + to.column)
-    this.emitHud()
-  }
-
-  private bestAdjacentAction(): { action: SparkRivalAction; resolution: SparkRivalResolution } | null {
-    let best: { action: SparkRivalAction; resolution: SparkRivalResolution } | null = null
-    for (let from = 0; from < 30; from += 1) for (let to = 0; to < 30; to += 1) {
-      const left = sparkIndexCell(from)
-      const right = sparkIndexCell(to)
-      if (Math.max(Math.abs(left.row - right.row), Math.abs(left.column - right.column)) !== 1) continue
-      const action = { type: 'drag' as const, path: [left, right], movementMs: 320 }
-      const candidate = reduceSparkRival(this.encounter, this.state, action, this.actionCount)
-      if (!best || candidate.resolution.combos > best.resolution.combos) best = { action, resolution: candidate.resolution }
-    }
-    return best
+  retryRestore(): void {
+    if (!this.recoveryNeeded || !this.options.restore) return
+    void this.restoreBoundary('Retrying the saved run…')
   }
 
   private buildPool(): void {
@@ -340,11 +314,28 @@ export class SparkRivalScene {
       this.tokens.push({ root, body, art, shine, badge, glyph })
       this.tokenTargets.push({ x: 0, y: 0 })
     }
-    for (let index = 0; index < EFFECT_POOL_SIZE; index += 1) {
+    for (let index = 0; index < SPARK_EFFECT_CAPACITY; index += 1) {
       const graphic = new Graphics().circle(0, 0, 4).fill({ color: 0xffffff })
       graphic.visible = false
       this.effectLayer.addChild(graphic)
       this.effects.push({ graphic, active: false, vx: 0, vy: 0, life: 0 })
+    }
+    for (let index = 0; index < SPARK_LABEL_CAPACITY; index += 1) {
+      const label = new Text({
+        text: '',
+        style: {
+          fontFamily: 'Outfit, system-ui, sans-serif',
+          fontSize: 20,
+          fontWeight: '800',
+          fill: 0xffffff,
+          stroke: { color: INK, width: 4 },
+          align: 'center',
+        },
+      })
+      label.anchor.set(0.5)
+      label.visible = false
+      this.effectLayer.addChild(label)
+      this.labels.push({ text: label, active: false, life: 0 })
     }
   }
 
@@ -352,8 +343,16 @@ export class SparkRivalScene {
     const width = this.app.screen.width
     const height = this.app.screen.height
     if (!force && width === this.lastWidth && height === this.lastHeight) return
+    const resized = this.lastWidth > 0 && (width !== this.lastWidth || height !== this.lastHeight)
     this.lastWidth = width
     this.lastHeight = height
+    if (resized && this.controller.snapshot) {
+      this.controller.cancel()
+      this.previewBoard = this.state.board
+      this.heldIndex = null
+      this.status = 'Layout changed — drag cancelled and no turn was spent.'
+      this.announce('Layout changed. Drag cancelled; no turn was spent.')
+    }
     const margin = Math.max(10, Math.min(18, width * 0.04))
     const cellSize = Math.floor(Math.min((width - margin * 2) / SPARK_RIVAL_BOARD_WIDTH, (height - 94 - margin * 2) / SPARK_RIVAL_BOARD_HEIGHT))
     const boardWidth = cellSize * SPARK_RIVAL_BOARD_WIDTH
@@ -400,7 +399,7 @@ export class SparkRivalScene {
     if (snap) this.tokens[index]!.root.position.set(x, y)
   }
 
-  private renderBoard(
+  protected renderBoard(
     board: readonly SparkOrb[],
     heldIndex: number | null = null,
     displaced?: { tokenIndex: number; fromIndex: number },
@@ -461,6 +460,10 @@ export class SparkRivalScene {
     const strategy = this.state.rival.strategy
     const color = SPARK_ORB_PIXI_COLORS[strategy]
     const texture = this.rivalTextures[this.encounter.waves[this.state.waveIndex]!.id]
+    const boss = this.state.waveIndex === this.encounter.waves.length - 1
+    this.rivalCard.clear().roundRect(-76, -35, 152, 70, 20)
+      .fill({ color: boss ? 0x2c2518 : 0x172838, alpha: 0.98 })
+      .stroke({ width: boss ? 2.5 : 1.5, color: boss ? 0xf2bd55 : 0xffffff, alpha: boss ? 0.82 : 0.14 })
     this.rivalMark.clear().circle(0, 0, 31).fill({ color, alpha: 0.24 }).stroke({ width: 4, color })
     this.rivalArt.visible = texture !== undefined
     if (texture) this.rivalArt.texture = texture
@@ -579,10 +582,11 @@ export class SparkRivalScene {
     await this.resolveAction(action)
   }
 
-  private async resolveAction(action: SparkRivalAction): Promise<void> {
+  protected async resolveAction(action: SparkRivalAction): Promise<void> {
     if (this.inputLocked || this.state.outcome) return
     this.inputLocked = true
     try {
+      const priorWave = this.state.waveIndex
       const expected = this.actionCount
       const reduced = this.options.append
         ? await this.options.append(expected, action)
@@ -597,11 +601,22 @@ export class SparkRivalScene {
       this.state = finalState
       this.previewBoard = finalState.board
       this.actionCount = reduced?.actions.length ?? expected + 1
-      this.inputLocked = false
+      this.recoveryNeeded = false
       this.renderBoard(finalState.board)
+      if (!finalState.outcome && finalState.waveIndex !== priorWave) {
+        const boss = finalState.waveIndex === this.encounter.waves.length - 1
+        this.status = `${boss ? 'Circuit boss' : `Wave ${finalState.waveIndex + 1}`} · ${this.encounter.waves[finalState.waveIndex]!.label}`
+        this.showLabel(boss ? 'CIRCUIT BOSS' : `WAVE ${finalState.waveIndex + 1}`, 0xf2bd55, this.rivalLayer.x, this.rivalLayer.y + 42)
+        this.emitHud()
+        await this.wait(this.reducedMotion ? 60 : 300)
+        if (this.destroyed) return
+      }
+      this.inputLocked = false
       this.status = finalState.outcome
         ? finalState.outcome.kind === 'clear' ? `Circuit cleared · ${finalState.outcome.trainingExp} EXP` : `Run lost · ${finalState.outcome.trainingExp} EXP banked`
         : 'Your move. The board and gauges are ready.'
+      const turnAnnouncement = sparkResolutionAnnouncement(resolution, finalState)
+      this.announce(finalState.outcome ? turnAnnouncement : `${turnAnnouncement} ${this.readyAnnouncement()}`)
       this.emitHud()
       if (reduced?.replay.outcome) this.options.onTerminal?.(reduced)
     } catch (error) {
@@ -620,10 +635,12 @@ export class SparkRivalScene {
       }
       this.controller.cancel()
       this.inputLocked = !restoredBoundary
+      this.recoveryNeeded = !restoredBoundary
       this.renderBoard(this.state.board)
       this.status = restoredBoundary
         ? `${error instanceof Error ? error.message : 'Action could not be saved'} · restored saved run.`
-        : `${error instanceof Error ? error.message : 'Action could not be saved'} · reload to restore the saved run.`
+        : `${error instanceof Error ? error.message : 'Action could not be saved'} · use Retry or Return.`
+      this.announce(restoredBoundary ? 'Action was not saved. The last saved turn was restored.' : 'The saved run could not be restored. Use Retry or Return.')
       this.emitHud()
     }
   }
@@ -631,6 +648,7 @@ export class SparkRivalScene {
   private async animateResolution(resolution: SparkRivalResolution, finalState: SparkRivalState): Promise<void> {
     if (resolution.action.type === 'spark-shift') {
       this.renderBoard(finalState.board)
+      this.showLabel('SPARK SHIFT', 0xf2bd55, this.app.screen.width / 2, this.rivalLayer.y + 48)
       await this.wait(this.reducedMotion ? 70 : 360)
       return
     }
@@ -640,6 +658,14 @@ export class SparkRivalScene {
     }
     for (const cascade of resolution.cascades) {
       this.renderBoard(cascade.before)
+      if (cascade.index === 0) this.showLabel(`${resolution.combos} COMBO${resolution.combos === 1 ? '' : 'S'}`, 0xffffff, this.app.screen.width / 2, this.geometry.top - 16)
+      for (const group of cascade.groups) for (const index of group.indices) {
+        const token = this.tokens[index]!
+        token.body.circle(0, 0, this.geometry.cellSize * 0.44).stroke({ width: 4, color: 0xffffff, alpha: 0.95 })
+      }
+      this.status = cascade.index === 0 ? `${resolution.combos} combo${resolution.combos === 1 ? '' : 's'} ready` : `Cascade ${cascade.index + 1} ready`
+      this.emitHud()
+      await this.wait(this.reducedMotion ? 35 : 120)
       for (const group of cascade.groups) for (const index of group.indices) {
         this.tokens[index]!.root.alpha = 0.28
         this.burst(index, SPARK_ORB_PIXI_COLORS[group.orb])
@@ -656,17 +682,82 @@ export class SparkRivalScene {
   private async animateCombatStep(step: SparkPresentationStep): Promise<void> {
     if (step.type === 'attack' && step.attack.appliedAmount > 0) {
       this.rivalPulse = 1
-      this.status = `${step.attack.orb === 'spark' ? 'Spark' : step.attack.orb} hit · ${step.attack.appliedAmount} Resolve`
+      const matchup = step.attack.matchup === 'advantaged' ? ' · Weak' : step.attack.matchup === 'resisted' ? ' · Resist' : ''
+      this.status = `${step.attack.orb === 'spark' ? 'Spark' : step.attack.orb} hit · ${step.attack.appliedAmount} Resolve${matchup}`
+      this.showLabel(sparkAttackLabel(step.attack), SPARK_ORB_PIXI_COLORS[step.attack.orb], this.rivalLayer.x, this.rivalLayer.y)
+      this.attackTrail(SPARK_ORB_PIXI_COLORS[step.attack.orb])
+      this.impact(this.rivalLayer.x, this.rivalLayer.y, SPARK_ORB_PIXI_COLORS[step.attack.orb])
       this.emitHud()
-      await this.wait(this.reducedMotion ? 45 : 150)
+      await this.wait(this.reducedMotion ? 45 : 230)
+    } else if (step.type === 'recovery' && step.amount > 0) {
+      this.status = `${step.amount} Drive recovered`
+      this.showLabel(`+${step.amount} DRIVE`, 0x39c78b, this.app.screen.width * 0.25, this.rivalLayer.y)
+      this.emitHud()
+      await this.wait(this.reducedMotion ? 40 : 180)
+    } else if (step.type === 'charge' && step.amount > 0) {
+      this.status = `${step.amount} Spark charged`
+      this.showLabel(`+${step.amount} SPARK`, 0xf2bd55, this.app.screen.width * 0.75, this.rivalLayer.y)
+      this.emitHud()
+      await this.wait(this.reducedMotion ? 40 : 180)
     } else if (step.type === 'rival-intent') {
-      this.status = `Rival used ${step.intent.type.replace('-', ' ')}`
+      this.status = sparkIntentAnnouncement(step.intent, step.driveBefore, step.driveAfter, step.converted.length)
+      this.showLabel(step.intent.type.toUpperCase().replace('-', ' '), 0xff7a6f, this.rivalLayer.x, this.rivalLayer.y + 8)
+      if (step.intent.type === 'pressure') this.impact(this.app.screen.width / 2, this.geometry.top - 20, 0xff7a6f)
+      if (step.intent.type === 'convert') this.renderBoard(step.boardAfter)
       this.emitHud()
       await this.wait(this.reducedMotion ? 45 : 240)
     } else if (step.type === 'wave-clear') {
       this.status = `Wave ${step.wave} cleared`
+      this.showLabel(`WAVE ${step.wave} CLEAR`, 0xf2bd55, this.rivalLayer.x, this.rivalLayer.y)
       this.emitHud()
       await this.wait(this.reducedMotion ? 80 : 420)
+    }
+  }
+
+  private showLabel(message: string, color: number, x: number, y: number): void {
+    const token = this.labels.find((candidate) => !candidate.active)
+    if (!token) return
+    token.active = true
+    token.life = 760
+    token.text.text = message
+    token.text.style.fill = color
+    token.text.alpha = 1
+    token.text.position.set(x, y)
+    token.text.visible = true
+  }
+
+  private impact(x: number, y: number, color: number): void {
+    if (this.reducedMotion) return
+    for (let count = 0; count < 6; count += 1) {
+      const token = this.effects.find((effect) => !effect.active)
+      if (!token) return
+      const angle = count * Math.PI / 3
+      token.active = true
+      token.life = 420
+      token.vx = Math.cos(angle) * 0.09
+      token.vy = Math.sin(angle) * 0.09
+      token.graphic.tint = color
+      token.graphic.alpha = 0.95
+      token.graphic.position.set(x, y)
+      token.graphic.visible = true
+    }
+  }
+
+  private attackTrail(color: number): void {
+    if (this.reducedMotion) return
+    const startY = this.geometry.top - 4
+    const distance = Math.max(1, startY - this.rivalLayer.y)
+    for (let count = 0; count < 4; count += 1) {
+      const token = this.effects.find((effect) => !effect.active)
+      if (!token) return
+      token.active = true
+      token.life = 420
+      token.vx = (count - 1.5) * 0.01
+      token.vy = -distance / 420
+      token.graphic.tint = color
+      token.graphic.alpha = 0.9
+      token.graphic.position.set(this.app.screen.width / 2, startY + count * 5)
+      token.graphic.visible = true
     }
   }
 
@@ -699,6 +790,7 @@ export class SparkRivalScene {
     if (this.destroyed) return
     this.layout()
     const deltaMs = Math.min(50, ticker.deltaMS)
+    this.lastFrameMs = deltaMs
     for (let index = this.waiters.length - 1; index >= 0; index -= 1) {
       const waiter = this.waiters[index]!
       waiter.remaining -= deltaMs
@@ -716,6 +808,16 @@ export class SparkRivalScene {
       if (effect.life <= 0) {
         effect.active = false
         effect.graphic.visible = false
+      }
+    }
+    for (const label of this.labels) {
+      if (!label.active) continue
+      label.life -= deltaMs
+      label.text.y -= deltaMs * 0.025
+      label.text.alpha = Math.max(0, label.life / 760)
+      if (label.life <= 0) {
+        label.active = false
+        label.text.visible = false
       }
     }
     const settle = Math.min(1, deltaMs / (this.reducedMotion ? 16 : 55))
@@ -748,7 +850,7 @@ export class SparkRivalScene {
     }
   }
 
-  private emitHud(fps = Math.round(this.app.ticker.FPS || 0)): void {
+  protected emitHud(fps = Math.round(this.app.ticker.FPS || 0)): void {
     const active = this.controller.snapshot
     const elapsed = active?.movementStartedAt === null || active?.movementStartedAt === undefined
       ? null
@@ -773,48 +875,90 @@ export class SparkRivalScene {
       inputLocked: this.inputLocked,
       outcome: this.state.outcome?.kind ?? null,
       status: this.status,
+      announcement: this.announcement,
+      announcementSerial: this.announcementSerial,
+      recoveryNeeded: this.recoveryNeeded,
       debug: {
         boardSprites: `${this.tokens.length}/30`,
         activeEffects: this.effects.filter((effect) => effect.active).length,
         effectCapacity: this.effects.length,
+        activeLabels: this.labels.filter((label) => label.active).length,
+        labelCapacity: this.labels.length,
         fps,
+        frameMs: Math.round(this.lastFrameMs * 10) / 10,
+        actionCount: this.actionCount,
+        stateHash: sparkRivalStateHash(this.state),
+        paused: this.paused,
         pointerMoveReactUpdates: 0,
         ignoredPointers: this.ignoredPointers,
       },
     })
   }
 
-  private readonly onVisibility = (): void => {
-    if (document.hidden) {
-      const active = this.controller.snapshot
-      if (active) this.cancelPointer(active.pointerId, 'App paused — the live drag was cancelled with no action spent.')
-      this.app.ticker.stop()
-      return
-    }
-    if (!this.options.restore) {
-      this.app.ticker.start()
-      return
-    }
+  private announce(message: string): void {
+    if (!message) return
+    this.announcement = message
+    this.announcementSerial += 1
+  }
+
+  private readyAnnouncement(): string {
+    if (this.state.outcome) return ''
+    const wave = this.encounter.waves[this.state.waveIndex]!
+    const intent = currentSparkRivalIntent(this.encounter, this.state)
+    return `Wave ${this.state.waveIndex + 1}. ${wave.label}, ${wave.strategy} style. Next rival intent is ${intent.type.replace('-', ' ')} in ${this.state.rival.countdown} turns.`
+  }
+
+  private announceWave(): void {
+    const message = this.readyAnnouncement()
+    if (message) this.announce(message)
+  }
+
+  private async restoreBoundary(status: string): Promise<void> {
+    if (!this.options.restore) return
     this.inputLocked = true
-    this.status = 'Restoring the saved action boundary…'
+    this.recoveryNeeded = false
+    this.status = status
     this.emitHud()
-    void this.options.restore().then((restored) => {
+    try {
+      const restored = await this.options.restore()
       if (this.destroyed) return
       this.state = restored.replay.state
       this.previewBoard = restored.replay.state.board
       this.actionCount = restored.actions.length
       this.inputLocked = false
+      this.recoveryNeeded = false
       this.renderBoard(this.state.board)
       this.status = restored.replay.outcome ? 'Restored completed circuit.' : 'Saved run restored. Your move.'
+      this.announce(restored.replay.outcome ? 'Completed circuit restored.' : 'Saved run restored at the last completed turn.')
       this.app.ticker.start()
       this.emitHud()
       if (restored.replay.outcome) this.options.onTerminal?.(restored)
-    }).catch((error: unknown) => {
+    } catch (error) {
       if (this.destroyed) return
       this.inputLocked = true
-      this.status = `${error instanceof Error ? error.message : 'Saved run could not be restored'} · reload required.`
+      this.recoveryNeeded = true
+      this.status = `${error instanceof Error ? error.message : 'Saved run could not be restored'} · use Retry or Return.`
+      this.announce('The saved run could not be restored. Use Retry or Return.')
       this.app.ticker.start()
       this.emitHud()
-    })
+    }
+  }
+
+  private readonly onVisibility = (): void => {
+    if (document.hidden) {
+      const active = this.controller.snapshot
+      if (active) this.cancelPointer(active.pointerId, 'App paused — the live drag was cancelled with no action spent.')
+      this.paused = true
+      this.emitHud()
+      this.app.ticker.stop()
+      return
+    }
+    this.paused = false
+    if (!this.options.restore) {
+      this.app.ticker.start()
+      this.emitHud()
+      return
+    }
+    void this.restoreBoundary('Restoring the saved action boundary…')
   }
 }

@@ -130,6 +130,12 @@ and glyph; Recovery travels to Drive; Spark travels to its gauge; the rival reac
 Cascades are labelled in one stable counter. Reduced motion shortens travel to fades and scale changes but keeps match,
 damage, recovery and intent order legible.
 
+The renderer uses fixed pools of 30 board sprites, 24 particle effects and 8 combat labels. The development overlay shows
+FPS/frame time, live/pool counts, action count, engine hash, content source and pause state without private ids. One polite
+DOM live region announces a whole resolved turn and the next intent; it never narrates the dragged path. A resize during a
+drag cancels that uncommitted gesture, landscape asks the player to rotate while preserving the saved turn boundary, and a
+journal restore failure keeps explicit **Retry run** and **Return** actions visible.
+
 The result leads with **Circuit cleared**, **Drive depleted** or **Turn limit reached**. It then shows Training EXP, the
 before/after TL bar, every level crossed and every opened constellation node by real name. Each node opens the Training
 scene focused on it; **Done** returns to the caller and **Run again · 1 ticket** reserves a new attempt. A reload during a
@@ -253,6 +259,9 @@ The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mo
 | Coupon reveal | Flip with anticipation shake | Drumroll → reveal | Burst | Heavy |
 
 Haptics are progressive enhancement only (see research). Motion plus sound must stand on their own.
+The sound and haptic rows are the shared semantic cue catalog; their device service and licensed/local assets remain
+M011/T036 work. Rival Circuit's checked-in implementation is visually complete and announcement-complete when that service
+is unavailable, and does not download or embed original-game audio.
 
 ## Accessibility and comfort
 

@@ -236,7 +236,8 @@ The route is `/minigames/spark-match/:umaId` and remains lazy. Presentation is h
   rival's Chibi appears on the rival stage inside her current strategy ring. Private icons, then labelled silhouettes,
   are the fallback while art is absent or loading.
 - **PixiJS 8** owns the 30 orb sprites, held orb, swaps, clear/fall/cascade sequence, pooled particles, attacks, rival
-  reactions and damage/recovery numbers.
+  reactions and damage/recovery numbers. The renderer preallocates at most 24 particle objects and 8 combat-label
+  objects; both pools plateau and reuse inactive objects rather than allocating during resolution.
 - **React DOM** owns navigation, wave label, Drive/Resolve/Spark gauges, strategy and intent, tutorial, accessible live
   announcements and result actions.
 - **Pointer Events** on the canvas own one active drag using `setPointerCapture`; the canvas uses `touch-action: none`,
@@ -246,7 +247,15 @@ The held orb is drawn slightly above the finger; displaced orbs slide into the p
 steps already produced by the engine and temporarily locks input. Sprites and effect objects are pooled, canvas resolution
 is capped to useful art density, the ticker pauses when hidden, and all movement uses elapsed milliseconds. The target is a
 stable 60 fps on the owner's iPhone, with 120 Hz presentation where Safari supplies it; game results never depend on refresh
-rate. Reduced motion shortens travel and removes nonessential particles without removing board-state feedback.
+rate. Reduced motion shortens travel and removes nonessential particles without removing board-state feedback. A resize
+or orientation change during a drag cancels the uncommitted gesture with no turn spent; landscape covers the board with an
+intentional rotate-to-continue treatment. If the journal boundary cannot be restored, the live screen offers Retry and
+Return instead of leaving a locked or blank canvas.
+
+Each completed turn produces one polite DOM announcement summarizing combos, Resolve damage, Recovery/charge, rival
+intent, the next visible intent and terminal outcome; pointer cells and individual animation frames are never narrated.
+The visible canvas is explicitly described as a touch/pointer mechanic. The same state is also carried by glyphs, short
+labels, integer combat text and meters, so no rule relies on colour or animation alone.
 
 Spark uses the same full-screen paged/swipe guide shell as Friendship Training. Its illustrated pages cover the circuit,
 continuous drag, matches/cascades, the complete advantage ring, Spark/Recovery, rival intent and saved Training EXP. It

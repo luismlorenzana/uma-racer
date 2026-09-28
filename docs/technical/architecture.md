@@ -181,7 +181,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   animation frames and wall time never enter the reducer; a renderer may drop frames without changing a result.
 - The puzzle canvas captures one Pointer Event stream directly and mutates renderer objects without a React render per
   `pointermove`. A deterministic grid traversal fills skipped cells. Pixi sprites and effects are pooled, the ticker uses
-  elapsed milliseconds and pauses while hidden, and refresh rate affects presentation only.
+  elapsed milliseconds and pauses while hidden, and refresh rate affects presentation only. Production scene code accepts
+  an explicit encounter/seed and has no synthetic proof controls; the development proof owns those in a separate subclass.
+  Spark preallocates 30 board tokens, 24 effect tokens and 8 combat-label tokens. Its proof overlay reports timing,
+  pool use, journal action count, state hash, content source and pause state without exposing content ids.
 
 ### 3. Content: reference data and images
 

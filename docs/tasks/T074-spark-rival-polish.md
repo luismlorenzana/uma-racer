@@ -25,6 +25,11 @@ and [Game-like Web Tech](../research/game-web-tech.md). Branch from current `mai
 **Order (D185):** the balance closure landed first, followed by M023's T077, T076 and T075. Finish the rest of this task
 (feedback, accessibility and device closure) on the shared minigame shell.
 
+**Closure status:** balance, proof isolation, bounded feedback, accessible announcements, resize/orientation safety and
+browser-size verification are implemented. Keep this task and M022 open until the owner completes the physical installed-
+iPhone protocol below; that owner-only gate is not replaced by desktop emulation. Shared sound/haptic service work remains
+in M011/T036 because the repository does not yet contain that service or licensed/local audio assets.
+
 ## Rule for tuning changes
 
 Do not silently tweak constants while polishing. Any changed board size, timer, turn bound, ticket cost, advantage,

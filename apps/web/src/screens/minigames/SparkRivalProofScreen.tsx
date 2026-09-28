@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { SparkOrb } from '@racer/domain'
 import { useContent } from '../../content/ContentProvider'
 import { useGame } from '../../game/store'
-import { SparkRivalScene, type SparkRivalHud } from '../../scenes/spark-rival/SparkRivalScene'
+import type { SparkRivalHud } from '../../scenes/spark-rival/SparkRivalScene'
+import { SparkRivalProofScene } from '../../scenes/spark-rival/SparkRivalProofScene'
 import { sparkProofCast } from '../../scenes/spark-rival/proof-cast'
 import { useArtSet } from '../../ui/album/useArt'
 import { QuestionIcon, SparkIcon } from '../../ui/icons'
@@ -31,7 +32,7 @@ export function SparkRivalProofScreen() {
   const contentState = useContent()
   const featuredUmaId = useGame((state) => state.profile?.featuredUmaId ?? null)
   const hostRef = useRef<HTMLDivElement>(null)
-  const sceneRef = useRef<SparkRivalScene | null>(null)
+  const sceneRef = useRef<SparkRivalProofScene | null>(null)
   const [hud, setHud] = useState<SparkRivalHud | null>(null)
   const [forceReducedMotion, setForceReducedMotion] = useState(false)
   const [guide, setGuide] = useState<{ open: boolean; startAt: SparkRivalGuidePageId }>(() => ({ open: !sparkRivalGuideSeen(), startAt: 'circuit' }))
@@ -52,7 +53,7 @@ export function SparkRivalProofScreen() {
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
-    const scene = new SparkRivalScene(setHud)
+    const scene = new SparkRivalProofScene(setHud)
     sceneRef.current = scene
     scene.setReducedMotion(reducedMotion)
     void scene.mount(host)
@@ -106,7 +107,8 @@ export function SparkRivalProofScreen() {
       <div ref={hostRef} className="min-h-0 flex-1" />
 
       <section className="shrink-0 border-t border-hairline-dark bg-stage/95 px-3 pt-2 pb-2">
-        <p className="min-h-5 truncate text-center text-xs font-semibold text-ink-on-dark" role="status" aria-live="polite">{hud?.status ?? 'Preparing deterministic board…'}</p>
+        <p className="sr-only" aria-live="polite" aria-atomic="true">{hud && `Update ${hud.announcementSerial}. ${hud.announcement}`}</p>
+        <p className="min-h-5 truncate text-center text-xs font-semibold text-ink-on-dark">{hud?.status ?? 'Preparing deterministic board…'}</p>
         <div className="mt-2 grid grid-cols-4 gap-2">
           <button type="button" className="min-h-11 rounded-sm border border-hairline-dark bg-stage-soft px-1 text-[11px] font-bold disabled:opacity-40" disabled={!hud || hud.inputLocked} onClick={() => sceneRef.current?.reset()}>Reset</button>
           <button type="button" className="min-h-11 rounded-sm border border-hairline-dark bg-stage-soft px-1 text-[11px] font-bold disabled:opacity-40" disabled={!hud || hud.inputLocked || hud.outcome !== null} onClick={() => sceneRef.current?.toggleHeldDemo()}>{hud?.dragging ? 'Cancel hold' : 'Hold drag'}</button>
@@ -119,7 +121,9 @@ export function SparkRivalProofScreen() {
             Reduced motion
           </label>
           <p className="text-right font-mono leading-tight" aria-label="Pixi pool and frame diagnostics">
-            sprites {hud?.debug.boardSprites ?? '0/30'} · fx {hud?.debug.activeEffects ?? 0}/{hud?.debug.effectCapacity ?? 24} · {hud?.debug.fps ?? 0} fps<br />
+            sprites {hud?.debug.boardSprites ?? '0/30'} · fx {hud?.debug.activeEffects ?? 0}/{hud?.debug.effectCapacity ?? 24} · labels {hud?.debug.activeLabels ?? 0}/{hud?.debug.labelCapacity ?? 8}<br />
+            {hud?.debug.fps ?? 0} fps · {hud?.debug.frameMs ?? 0} ms · actions {hud?.debug.actionCount ?? 0} · {hud?.debug.paused ? 'paused' : 'live'}<br />
+            state {hud?.debug.stateHash.slice(0, 8) ?? '—'} · content {contentState.status === 'ready' ? 'private runtime' : contentState.status}<br />
             pointer→React {hud?.debug.pointerMoveReactUpdates ?? 0} · ignored {hud?.debug.ignoredPointers ?? 0}
           </p>
         </div>
