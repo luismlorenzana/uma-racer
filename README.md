@@ -49,6 +49,7 @@ pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
 pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regression gate
 pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
+pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs
@@ -81,7 +82,7 @@ docs/           design, technical, research
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
-| [Stable Farm](docs/design/farm.md) | Planned one-to-six-plot account farm, per-outfit and aggregate Farm Levels, scenario produce and global Item inventory |
+| [Stable Farm](docs/design/farm.md) | Pure rules/catalog landed; one-to-six-plot account farm, per-outfit and aggregate Farm Levels, scenario produce and global Item inventory |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |

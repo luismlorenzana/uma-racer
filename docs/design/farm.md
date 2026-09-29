@@ -1,7 +1,7 @@
 # Stable Farm
 
-> **Status: planned (M025).** This document is the implementation contract; the current deployed app does not yet
-> contain the Farm or Item inventory.
+> **Status: M025 in progress.** T082's pure domain rules, strict parsers, 70-crop catalog and progression simulator are
+> implemented. The current deployed app does not contain the Farm or Item inventory until T083–T085 land.
 
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows into a
 six-plot field as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting adds produce to

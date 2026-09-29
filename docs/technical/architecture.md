@@ -163,6 +163,9 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ### 2. Deterministic simulation, then playback
 
+- Stable Farm keeps its clock outside the domain: pure rules receive an integer `now`, persist one fixed twelve-hour
+  deadline, and derive Locked/Growing/Ready plus every outfit/Farm/crop unlock. Its synthetic `sim:farm` harness pins
+  the one-to-six expansion envelope without reading a save, browser API or private content.
 - `simulateRace(input) → RaceTimeline` runs the **whole race up front** in a few milliseconds: 18 runners × about 2,250 ticks at 1/15 s.
 - The renderer **plays the timeline back** and interpolates between ticks at the display's refresh rate (60 Hz, or 120 Hz where Safari allows).
 - This gives free **skip** (jump to results), **replay** (store `seed` + inputs, re-simulate), and **headless batch balance runs** in Node or a Web Worker.

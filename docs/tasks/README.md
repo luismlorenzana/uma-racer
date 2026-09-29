@@ -14,14 +14,15 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | [T078 three stars](T078-three-star-cards.md) · [T079 card training on its own](T079-card-training-on-its-own.md) · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **Specified** · owners to be assigned; T078 and T080 can start now |
-| [M025 — Stable Farm](M025-stable-farm.md) | [T082 domain](T082-farm-domain.md) · [T083 runtime](T083-farm-runtime.md) · [T084 screen](T084-farm-screen.md) · [T085 inventory](T085-item-inventory.md) | Planned · fully specified; T082 first |
+| [M025 — Stable Farm](M025-stable-farm.md) | T082 domain complete · [T083 runtime](T083-farm-runtime.md) · [T084 screen](T084-farm-screen.md) · [T085 inventory](T085-item-inventory.md) | In progress · T083 next |
 | [M026 — Produce nodes](M026-produce-nodes.md) | [T086 constellation bridge](T086-produce-nodes.md) | Planned after M025 · fully specified |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
 
 **M024 is the next unit of work** (D199–D202): T078 and T080 are independent and can start in parallel; T079 follows
-T078, and T081 follows both. M025's Farm then runs T082 → T083 → T084 → T085, followed by M026's Produce-node
-bridge. T035 stays specified and can be picked up any time. Anything new starts with the next free numbers below.
+T078, and T081 follows both. M025's Farm continues T083 → T084 → T085 after its completed T082 domain, followed by
+M026's Produce-node bridge. T035 stays specified and can be picked up any time. Anything new starts with the next free
+numbers below.
 
 The owner's device checks (every milestone's, including Spark Rival Circuit's physical-iPhone pass) wait in
 [Open questions](../open-questions.md#needs-you-owner-actions-not-design-questions) and close together in T038 (D189).
