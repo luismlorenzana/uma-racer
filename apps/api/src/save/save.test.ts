@@ -491,7 +491,7 @@ describe('save v6 over the wire', () => {
   })
 })
 
-describe('goal plan v3 careers over the wire', () => {
+describe('goal plan v3+ careers over the wire', () => {
   const goal = (id: string, slot: string, raceId: string | null, extra: Record<string, unknown> = {}) => ({
     id, slot, raceId, kind: 'win', series: null, minimumMarginLengths: 0, status: 'active', completedRaceResultId: null, completedAt: null, ...extra,
   })
@@ -517,7 +517,7 @@ describe('goal plan v3 careers over the wire', () => {
       journey: { tier: 1, tracking: 'tracked', state: 'active', completedAt: null, goals: careerGoals },
     }],
     skillHistory: [],
-    goalPlanVersion: 3,
+    goalPlanVersion: 4,
   }
   const push = (goals: unknown[], over: Record<string, unknown> = {}) => parseSyncRequest({ upserts: [{
     kind: 'umas', id: '100101', baseVersion: 1,
@@ -531,7 +531,7 @@ describe('goal plan v3 careers over the wire', () => {
 
   it('rejects stages out of order, wrong counts or ids, and a mix with the legacy slots', () => {
     const [maiden, trialA, trialB, main] = careerGoals
-    expect(push(careerGoals, { goalPlanVersion: 4 })).toMatch(/invalid umas data/)
+    expect(push(careerGoals, { goalPlanVersion: 5 })).toMatch(/invalid umas data/)
     expect(push([trialA, maiden, trialB, main])).toMatch(/invalid umas data/)
     expect(push([maiden, trialA, main])).toMatch(/invalid umas data/)
     expect(push([maiden, trialA, trialB])).toMatch(/invalid umas data/)

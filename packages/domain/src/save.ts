@@ -73,12 +73,12 @@ export interface ParentSnapshot extends FrozenParent {
 
 /** The three optional targets of goal plans v1 and v2, kept only on journeys frozen before careers. */
 export type LegacyGoalSlot = 'aptitude' | 'identity' | 'challenge'
-/** Goal plan v3: a career's stages, in order (D137). */
+/** Goal plan v3+: a career's stages, in order (D137). */
 export const CAREER_STAGES = ['maiden', 'trials', 'main'] as const
 export type CareerStage = (typeof CAREER_STAGES)[number]
 export type GoalSlot = LegacyGoalSlot | CareerStage
-/** Goal plan v3 generates stage-gated careers (docs/design/scenario-goals.md). */
-export const SCENARIO_GOAL_VERSION = 3 as const
+/** Goal plan v4 repairs untouched careers whose targets left the regular race catalog (D194). */
+export const SCENARIO_GOAL_VERSION = 4 as const
 export type GoalStatus = 'active' | 'completed' | 'missed'
 
 export interface ScenarioGoalLeg {
@@ -707,7 +707,7 @@ function isLegacyGoalPlan(goals: readonly ScenarioGoal[]): boolean {
 }
 
 /**
- * Goal plan v3: stages in order, each with its documented count, ids numbered within the stage
+ * Goal plan v3+: stages in order, each with its documented count, ids numbered within the stage
  * (`goal:3:maiden`, `goal:3:trials:1`, `goal:3:main:2`), and at most one series goal, among the main goals.
  */
 function isCareerGoalPlan(goals: readonly ScenarioGoal[], tier: number): boolean {

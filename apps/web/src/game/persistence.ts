@@ -30,7 +30,7 @@ import {
   type LogKind,
   type PlayerProfile,
   raceAttemptId,
-  regularRaceCatalog,
+  careerRaceCatalog,
   SCENARIO_GOAL_VERSION,
   deriveUma,
   upgradeGoalPlan,
@@ -228,7 +228,7 @@ export async function completeStarterSeed(content: LoadedContent, now: number): 
  */
 export async function bootstrapGoalPlans(content: LoadedContent, now: number): Promise<number> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Goal bootstrap time is invalid')
-  const races = regularRaceCatalog(content.races.items)
+  const races = careerRaceCatalog(content.races.items)
   const affectedCount = await db.transaction('rw', [db.umas, db.cards, db.outbox], async () => {
     const umaRows = await db.umas.toArray()
     const affected = umaRows.filter((row) => {

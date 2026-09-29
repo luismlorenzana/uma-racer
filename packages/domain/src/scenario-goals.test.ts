@@ -330,4 +330,21 @@ describe('career saves', () => {
     expect(careerStage(activeJourney(kept))).toBeNull()
     expect(upgradeGoalPlan(input(upgraded))).toBe(upgraded)
   })
+
+  it('repairs an untouched v3 career that names a retired race and preserves one with progress', () => {
+    const retiredRaceId = goalRaceIds(journey.goals[1]!)[0]!
+    const availableRaces = RACES.filter((race) => race.id !== retiredRaceId)
+    const v3 = withJourney({ ...base, goalPlanVersion: 3 }, journey)
+    const input = (uma: UmaSave) => ({ uma, umaTemplate: COLT, aptitudes: COLT.aptitudes, races: availableRaces })
+
+    const repaired = upgradeGoalPlan(input(v3))
+    expect(repaired.goalPlanVersion).toBe(4)
+    expect(activeJourney(repaired)).not.toEqual(journey)
+    expect(activeJourney(repaired)?.goals.flatMap(goalRaceIds)).not.toContain(retiredRaceId)
+
+    const progressed = withJourney({ ...base, goalPlanVersion: 3 }, complete(journey, ['maiden']))
+    const preserved = upgradeGoalPlan(input(progressed))
+    expect(preserved.goalPlanVersion).toBe(4)
+    expect(activeJourney(preserved)).toEqual(activeJourney(progressed))
+  })
 })

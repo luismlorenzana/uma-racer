@@ -86,7 +86,7 @@ export const CAREER_MAIN_RACES = 3
 
 export const isCareerStage = (slot: string): slot is CareerStage => (CAREER_STAGES as readonly string[]).includes(slot)
 
-/** Goal plan v3 journeys. v1–v2 journeys keep their three optional slots and none of the stage rules. */
+/** Goal plan v3+ journeys. v1–v2 journeys keep their three optional slots and none of the stage rules. */
 export const isCareerJourney = (journey: ScenarioJourney | null | undefined): journey is ScenarioJourney =>
   Boolean(journey && journey.goals.length > 0 && journey.goals.every((goal) => isCareerStage(goal.slot)))
 
@@ -430,17 +430,20 @@ const untouched = (journey: ScenarioJourney): boolean => journey.goals.every((go
   goal.status === 'active' && (goal.series?.legs.every((leg) => leg.status === 'active') ?? true))
 
 /**
- * Upgrade an Uma to goal plan v3. Only the active scenario's journey can change, and only when nothing in it has
- * been won or missed: that one is regenerated as a career. A journey with progress keeps its frozen plan, and its
- * goals stay optional (D137). Migration invents no wins, misses, or rewards.
+ * Upgrade an Uma to the current goal plan. Only the active scenario's journey can change, and only when nothing in it
+ * has been won or missed: legacy plans become careers, and v3 careers with retired targets are repaired. A journey
+ * with progress keeps its frozen plan (D137, D194). Migration invents no wins, misses, or rewards.
  */
 export function upgradeGoalPlan(input: GenerateScenarioJourneyInput): UmaSave {
   const { uma } = input
   if (uma.goalPlanVersion >= SCENARIO_GOAL_VERSION) return uma
   const run = uma.scenarios.find((entry) => entry.tier === uma.unlockedTier)
   const journey = run?.journey
+  const availableRaceIds = new Set(input.races.map((race) => race.id))
+  const referencesRetiredRace = isCareerJourney(journey) &&
+    journey.goals.some((goal) => goalRaceIds(goal).some((raceId) => !availableRaceIds.has(raceId)))
   const regenerate = run?.started === true && journey?.tracking === 'tracked' && journey.state === 'active' &&
-    !isCareerJourney(journey) && untouched(journey) && tierOfLevel(uma.level) === run.tier
+    (!isCareerJourney(journey) || referencesRetiredRace) && untouched(journey) && tierOfLevel(uma.level) === run.tier
   return {
     ...uma,
     goalPlanVersion: SCENARIO_GOAL_VERSION,

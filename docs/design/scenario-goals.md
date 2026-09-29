@@ -2,9 +2,10 @@
 
 Every scenario gives each Uma a **career**: a short, authored run of races she has to win, in three stages, that
 loops with the scenario. A new scenario gets a new career. Targets are concrete private `RaceTemplate.id` values,
-frozen when the scenario starts, so content updates never silently reroll an active or historical career.
+frozen when the scenario starts, so ordinary content updates never silently reroll an active or historical career. An
+explicit regular-catalog retirement may regenerate only an active career with no completed or missed goal (D194).
 
-> **Status:** goal plan **v3** (D137, D138) is live: career rules, level holds, save shape, migration, the Race tab,
+> **Status:** goal plan **v4** (D137, D138, D194) is live: career rules, level holds, save shape, migration, the Race tab,
 > and the career on Home and the profile.
 
 ## Three stages
@@ -93,7 +94,9 @@ Winning a set inside one scenario is also how its title is earned, so a career n
 
 ### Guarantees
 
-`pnpm sim:careers` generates a career for every Uma at every tier from the private pack. It fails if any career cannot
+`pnpm sim:careers` generates a career for every Uma at every tier from the non-retired career catalog projected from the
+private pack. That catalog keeps duplicate-name source variants because their family ids carry Uma career identity; Race
+Select collapses them only after a frozen goal variant has been preferred (D195). The sim fails if any career cannot
 be generated, if any race falls outside her profile or below B, or if a stage's race is not winnable by Training Level
 10 with the [constellation harness](constellations.md#balance-targets-the-stamina-ladder)'s builds. Today it produces 3,752 of 3,752
 careers, every one with three main-goal G1s, and none needing a relaxed pick. Every stage is raced at TL10, the way
@@ -122,7 +125,7 @@ is appended, so the race that wins a stage's goal also levels through the hold i
 Careers reuse `ScenarioJourney` and `ScenarioGoal`. A career's goals are, in order, `goal:<tier>:maiden`,
 `goal:<tier>:trials:1` and `:2`, then `goal:<tier>:main:1` to `:4`, with slots `maiden`, `trials` and `main`. A set is
 one `win-series` main goal whose legs carry their own completion; every other goal is `win`, and a career holds at most
-one set. `UmaSave.goalPlanVersion` is **3**. The domain parser and the API validator (D128) check the same shape.
+one set. `UmaSave.goalPlanVersion` is **4**. The domain parser and the API validator (D128) check the same shape.
 
 ## Lifecycle and migration
 
@@ -131,10 +134,14 @@ one set. `UmaSave.goalPlanVersion` is **3**. The domain parser and the API valid
 - **v2 → v3:** an active journey with **nothing won or missed** is regenerated as a career. One with progress keeps its
   frozen v2 plan until the Uma advances; its three goals stay optional, with no holds and no advance gate. Migration
   invents no wins, misses or rewards.
+- **v3 → v4:** an active career with **nothing won or missed** is regenerated only when one of its targets is absent from
+  the regular race catalog. A career with any progress remains byte-for-byte frozen apart from its version marker, so a
+  catalog cleanup never deletes a win or changes the remaining steps of an underway career.
 - Earlier plans are history. Goal plans v1–v2 gave three optional slots: Aptitude, Identity (her real career, then her
   sex's classic set) and Challenge (a 5-length win). Their journeys still parse and still count toward ribbons and
   Honors.
-- Missing or retired target content shows its safe id and leaves the frozen goal honestly unavailable until restored.
+- Missing or retired target content in a progressed career shows its safe id and leaves the frozen goal honestly
+  unavailable until restored.
 
 ## Presentation
 

@@ -44,4 +44,9 @@ describe('regular race catalog', () => {
       .map(({ id }) => id)).toEqual(['10'])
     expect(rows).toHaveLength(3)
   })
+
+  it('prefers a frozen goal variant without showing both rows', () => {
+    const rows = [race('10', 'Synthetic Classic'), race('20', 'Synthetic Classic')]
+    expect(regularRaceCatalog(rows, ['20']).map(({ id }) => id)).toEqual(['20'])
+  })
 })
