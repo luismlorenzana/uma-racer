@@ -37,6 +37,10 @@ Training Level no longer sets stat caps. Caps belong to the scenario
 ([cap profiles](scenarios.md#cap-profiles)); Training Level decides how much of the tree you can reach, and the
 tree is what pays the stats.
 
+> **Planned Farm bridge:** [Stable Farm](farm.md) first ships produce and global Item inventory without changing a build.
+> A later milestone replaces the six freely selected stat assignments with scenario-matched Produce nodes that consume
+> those items (D205). Until that bridge lands, the current free stat-node behavior below remains executable truth.
+
 ## Stats are derived
 
 An Uma's stats are recomputed from her active constellation whenever they are read:
@@ -117,3 +121,4 @@ gating, ownership, and the no-duplicate-character rule are unchanged
 
 - Further minigames, one per scenario, replacing Spark Match as that scenario's level path.
 - Constellation presets, if reconfiguring by hand ever becomes tedious.
+- Stable Farm's later Produce-node bridge: six stat nodes keep their 40-point values, but a crop item chooses the stat.
