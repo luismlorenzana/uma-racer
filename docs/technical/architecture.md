@@ -117,6 +117,9 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   three deterministic targets, and only current-tier results are replayed. New Scenario Starts generate post-inheritance
   targets atomically; the v1→v2 pass regenerates only untouched active plans. Promotion/final completion closes the
   previous Journey without inventing rewards or history.
+- Goal-plan v4 uses the same content-ready transaction to compare frozen targets with the curated regular catalog. It
+  regenerates only an active career with no completed or missed goal when a target was retired; progressed and historical
+  journeys remain frozen.
 - Milestone 6 introduced the independently versioned `badges` collection; core profile/Uma state is now save v3. T015
   creates one bounded fact/award/preference state per owned Uma and defines a preference-valid `trainer` shell. T016 now
   evaluates the complete per-Uma catalog after each fact transition and during content-ready retroactive reconciliation;

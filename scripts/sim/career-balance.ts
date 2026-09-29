@@ -14,6 +14,7 @@ import { join } from 'node:path'
 import {
   CAREER_STAGE_GRADES,
   GRADES,
+  careerRaceCatalog,
   createScenarioTraining,
   createUmaSave,
   goalRaceIds,
@@ -45,7 +46,7 @@ function readPack<T>(prefix: string): T[] {
   return (JSON.parse(readFileSync(join(CONTENT, file), 'utf8')) as { items: T[] }).items
 }
 
-const races = readPack<RaceTemplate>('races')
+const races = careerRaceCatalog(readPack<RaceTemplate>('races'))
 const umas = readPack<UmaTemplate>('umas')
 const byId = new Map(races.map((race) => [race.id, race]))
 const eligible = (uma: UmaTemplate, race: RaceTemplate) =>

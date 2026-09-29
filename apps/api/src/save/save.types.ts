@@ -578,7 +578,7 @@ function parseGoalLeg(value: unknown): boolean {
 }
 
 const LEGACY_GOAL_SLOTS = ['aptitude', 'identity', 'challenge'] as const
-/** Goal plan v3 career stages, in order, with each stage's goal count (mirrors @racer/domain save.ts, D137). */
+/** Goal plan v3+ career stages, in order, with each stage's goal count (mirrors @racer/domain save.ts, D137). */
 const CAREER_STAGE_COUNTS = [['maiden', 1, 1], ['trials', 2, 2], ['main', 1, 4]] as const
 const isCareerSlot = (slot: unknown): boolean => CAREER_STAGE_COUNTS.some(([stage]) => stage === slot)
 
@@ -678,7 +678,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
   const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
   if (value.exp > expLimit) return null
-  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 3) return null
+  if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 4) return null
 
   const currentTier = Math.ceil((value.level as number) / 10)
   if (!isPositiveInt(value.unlockedTier) || value.unlockedTier > currentTier) return null

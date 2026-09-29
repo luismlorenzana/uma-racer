@@ -16,12 +16,15 @@ Racing is the **first system to be built** and the heart of the game. Races gran
 
 Based on real JRA races (plus a few NAR dirt G1s), so names, venues, and distances are recognizable.
 
-Race Select presents a curated **regular catalog** rather than every private source row (D192). It keeps one canonical
-row for races with the same display name, choosing the smallest stable content id, and hides foreign scenario/story rows.
+Race Select presents a curated **regular catalog** rather than every private source row (D192, D195). It keeps one
+canonical row for races with the same display name, choosing the smallest stable content id unless the Uma's frozen goal
+uses another variant, and hides foreign scenario/story rows.
 Longchamp races — including every Prix de l'Arc de Triomphe variant — and Copa República Argentina are not regular races.
-The private registry keeps those rows for historical records, frozen goals, and future World Expeditions; a direct link to
-an already-frozen special goal may still open that race, but it does not return to the ordinary list. New scenario careers
-are generated only from the regular catalog.
+The private registry keeps those rows for historical records, progressed frozen goals, and future World Expeditions.
+Goal plan v4 regenerates an entirely untouched active career when one of its frozen targets leaves the regular catalog;
+a progressed career stays frozen and its special goal remains directly reachable until completed. New scenario careers
+use every non-retired source variant so their private family ids still match the Uma's career data; presentation then
+collapses those variants to one row per name (D194, D195).
 
 | Field | Example |
 |---|---|

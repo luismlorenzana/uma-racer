@@ -6,6 +6,7 @@ import {
   SCENARIOS,
   compileRaceSkill,
   equippedRaceBonus,
+  goalRaceIds,
   awaitingAdvance,
   raceExp,
   progressionFieldSize,
@@ -279,7 +280,10 @@ export function RaceSelectScreen() {
     uma: selectedUma,
     template: umaTemplate,
     aptitudes: derivedUma.aptitudes,
-    races: regularRaceCatalog(content.races.items),
+    races: regularRaceCatalog(
+      content.races.items,
+      trainedScenario(selectedUma, tier).journey?.goals.flatMap(goalRaceIds) ?? [],
+    ),
     history: umaHistory,
     tier,
   })
