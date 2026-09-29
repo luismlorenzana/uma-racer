@@ -110,7 +110,26 @@ import {
   SPARK_RIVAL_DRIVE_BONUS_CAP,
   SPARK_RIVAL_LOSS_EXP_SHARE,
   sparkRivalDifficulty,
+  FARM_GROWTH_HOURS,
+  FARM_CROP_YIELD,
+  FARMING_EXP_PER_HARVEST,
+  MAX_OUTFIT_FARMING_LEVEL,
+  FARM_PLOT_LEVEL_REQUIREMENTS,
+  FARM_OUTFIT_LEVEL_REQUIREMENTS,
+  FARM_CROP_LEVEL_REQUIREMENTS,
+  farmingXpToReachLevel,
 } from './index'
+
+describe('Stable Farm', () => {
+  it('pins the D203–D208 field, crop, and progression contract', () => {
+    expect([FARM_GROWTH_HOURS, FARM_CROP_YIELD, FARMING_EXP_PER_HARVEST, MAX_OUTFIT_FARMING_LEVEL])
+      .toEqual([12, 1, 12, 20])
+    expect(FARM_PLOT_LEVEL_REQUIREMENTS).toEqual([1, 2, 6, 13, 27, 42])
+    expect(FARM_OUTFIT_LEVEL_REQUIREMENTS).toEqual([1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20])
+    expect(FARM_CROP_LEVEL_REQUIREMENTS).toEqual([1, 2, 4, 7, 11, 16, 22, 29, 37, 46, 56, 67, 79, 92])
+    expect(farmingXpToReachLevel(20)).toBe(1_344)
+  })
+})
 
 describe('Spark Rival Circuit', () => {
   it('pins the D169–D172 and D187 board, touch, combat, and reward contract', () => {

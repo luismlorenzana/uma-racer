@@ -7,7 +7,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./farm": "./src/farm/index.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",
