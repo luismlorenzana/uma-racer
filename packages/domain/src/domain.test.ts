@@ -15,7 +15,6 @@ import {
   FRIENDSHIP_TRAINING_TICKET_COST,
   DAILY_TICKETS,
   TICKET_STORAGE_CAP,
-  cardUnlockCost,
   redenominateTickets,
   MAX_STARS,
   cardRaceBonus,
@@ -409,13 +408,11 @@ describe('progression and economy', () => {
     expect(progressionFieldSize({ fieldSize: 18 })).toBe(18)
   })
 
-  it('prices every run at one ticket, and unlocks at a fifth of their old price (D148)', () => {
+  it('prices every run at one ticket, and scenario unlocks at a fifth of their old price (D148); cards take coupons only (D198)', () => {
     expect(SPARK_MATCH_TICKET_COST).toBe(1)
     expect(FRIENDSHIP_TRAINING_TICKET_COST).toBe(1)
     expect(umaPromotionCost(1)).toBe(5)
     expect(umaPromotionCost(10)).toBe(50)
-    expect(cardUnlockCost(1)).toBe(6)
-    expect(cardUnlockCost(14)).toBe(19)
   })
 
   it('grants fifteen a day and banks four days, capping only the grant', () => {

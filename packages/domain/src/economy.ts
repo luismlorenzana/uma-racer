@@ -8,14 +8,7 @@ export const TICKET_STORAGE_CAP = 60
 export const SPARK_MATCH_TICKET_COST = 1
 export const FRIENDSHIP_TRAINING_TICKET_COST = 1
 
-/**
- * Unlocking a card with tickets (M016). Newer cards pay more per node in later scenarios (D126), so they cost more.
- * Card Select Coupons remain a free unlock.
- */
-export const CARD_UNLOCK_BASE_TICKETS = 5
-export const CARD_UNLOCK_TICKETS_PER_ERA = 1
-export const cardUnlockCost = (era: number): number =>
-  CARD_UNLOCK_BASE_TICKETS + CARD_UNLOCK_TICKETS_PER_ERA * Math.max(1, Math.trunc(era))
+// A card is owned only by a Card Select Coupon (D198): tickets pay for minigame runs and scenario unlocks, never cards.
 
 /** Unlocking the next scenario. */
 export const umaPromotionCost = (fromTier: number): number => 5 * fromTier

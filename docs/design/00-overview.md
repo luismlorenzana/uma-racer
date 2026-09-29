@@ -41,12 +41,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    Daily([Daily +10]) --> Tickets[("🎫 Training Tickets")]
+    Daily([Daily +15]) --> Tickets[("🎫 Training Tickets")]
     UmaLv["Uma Level-ups +1"] --> Tickets
     Tickets -->|"1 a run"| Spark["Spark Rival Circuit: Training Levels"]
     Tickets -->|"1 a run"| Bond["Card minigame: a card's stars per scenario"]
     Bond -->|"first 5★"| CardCoupon["🎟️ Card Select Coupon"]
-    Tickets -->|"5 + era"| Cards[("Card collection")]
     CardCoupon --> Cards
     Tickets --> UmaPromo["Uma promotions"]
     Levels["Any Uma reaches<br/>level 10, 20, 30…"] --> Shards["Uma Shard"]
@@ -82,7 +81,7 @@ flowchart LR
 | **Uma** | A playable character. It has static template data (base stats, growth rates, aptitudes, unique skill) and a persisted instance with permanent level plus per-scenario constellations and records. Stats, aptitudes, SP and skill library are derived from the active constellation. |
 | **Uma Level** | Permanent level earned **only from racing**. Levels 1–10 are scenario 1, 11–20 are scenario 2, and so on. |
 | **Training Level (TL)** | 1–10, earned **only from Spark Rival Circuit**, and fresh in each scenario. It decides which constellation nodes are open; it does not multiply stats or caps. |
-| **Training Ticket** | **The only currency.** One ticket is one minigame run. Earned from the daily +15 (stored up to 60, four days) and Uma Level-ups. Spent on minigame runs, unlocking cards, and unlocking the next scenario. |
+| **Training Ticket** | **The only currency.** One ticket is one minigame run. Earned from the daily +15 (stored up to 60, four days) and Uma Level-ups. Spent on minigame runs and unlocking the next scenario; cards take a Card Select Coupon (D198). |
 | **Scenario / Tier** | A 10-level band named after an original career scenario. It sets stat and SP caps and which card era is available. |
 | **Gate level** | Level 10, 20, 30… Grants an Uma Shard. EXP stops at the maximum until promotion. |
 | **Promotion** | Spending training tickets to move an Uma to the next scenario. |

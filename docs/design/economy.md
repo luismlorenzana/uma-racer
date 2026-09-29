@@ -8,8 +8,8 @@
 
 | Item | Earned by | Spent on | Expires? |
 |---|---|---|---|
-| 🎫 **Training Tickets** | Daily grant · Uma Level-ups | Minigame runs · unlocking cards · unlocking the next scenario | Never |
-| 🎟️ **Card Select Coupon** | A card's first 5★ | A free unlock of any unowned SSR card | Never |
+| 🎫 **Training Tickets** | Daily grant · Uma Level-ups | Minigame runs · unlocking the next scenario | Never |
+| 🎟️ **Card Select Coupon** | A card's first 5★ | Unlocking any unowned SSR card, the only way to own one (D198) | Never |
 | 💎 **Uma Shard** | An Uma reaching a gate level (10, 20, 30…) | 5 shards → 1 Uma Select Coupon | Never |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma | Never |
 
@@ -42,7 +42,6 @@ lost.
 |---|---|
 | [Spark Match — Rival Circuit](minigames.md#spark-match--rival-circuit) run — raises Training Level | **1** |
 | A [Friendship Training](minigames.md#friendship-training--card-stars) run — earns a card's star | **1** |
-| Unlocking a card (D130) | **5 + era** — 6 to 19 |
 | Unlocking the next scenario | **5 × fromTier** |
 | **Reconfiguring a constellation** | **free, always** |
 

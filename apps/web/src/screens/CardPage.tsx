@@ -8,7 +8,6 @@ import {
   cardRaceBonus,
   cardGoldSkillIds,
   cardShares,
-  cardUnlockCost,
   cardSpPerNode,
   paysSkillPoints,
   scenarioForTier,
@@ -91,7 +90,6 @@ export function CardPage() {
   const shares = cardShares(template)
   const skillPoints = paysSkillPoints(template)
   const payPerNode = skillPoints ? cardSpPerNode : cardNodeValue
-  const cost = cardUnlockCost(template.era)
   const raceBonus = cardRaceBonus(template, 1)
   const raceBonusMax = cardRaceBonus(template, MAX_STARS)
   // Each node it fills pays the next of its golds and the next of its whites (D182).
@@ -105,11 +103,11 @@ export function CardPage() {
     .sort((left, right) => (umas[right.umaId]?.level ?? 0) - (umas[left.umaId]?.level ?? 0) || right.tier - left.tier ||
       left.umaId.localeCompare(right.umaId))
 
-  const unlock = async (method: 'coupon' | 'tickets') => {
+  const unlock = async () => {
     if (busy) return
     setBusy(true)
     try {
-      await unlockCard(cardId, method)
+      await unlockCard(cardId)
       navigate(`/collection/reveal/card/${encodeURIComponent(cardId)}`, { replace: true })
     } catch (reason) {
       pushToast(reason instanceof Error ? reason.message : 'Could not unlock this card')
@@ -158,19 +156,13 @@ export function CardPage() {
           </>
         )}
 
+        {/* A card is owned only with a Card Select Coupon (D198); tickets never buy one. */}
         {!save && (
           <div className="mt-3 grid gap-2">
-            <Button disabled={busy || profile.tickets < cost} onClick={() => void unlock('tickets')}>
-              Unlock · {cost} tickets
+            <Button disabled={busy || profile.cardCoupons < 1} onClick={() => void unlock()}>
+              {profile.cardCoupons > 0 ? `Use a Card Select Coupon · ${profile.cardCoupons} left` : 'Needs a Card Select Coupon'}
             </Button>
-            {profile.cardCoupons > 0 && (
-              <Button variant="secondary" disabled={busy} onClick={() => void unlock('coupon')}>
-                Use a Card Select Coupon · {profile.cardCoupons} left
-              </Button>
-            )}
-            <p className="text-center text-[11px] text-ink-soft">
-              You have <Numeral className="text-ink">{profile.tickets}</Numeral> tickets
-            </p>
+            <p className="text-center text-[11px] text-ink-soft">Every card&rsquo;s first 5★ earns one coupon.</p>
           </div>
         )}
       </Panel>

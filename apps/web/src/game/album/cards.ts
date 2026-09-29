@@ -10,7 +10,6 @@ import {
   cardNodeValue,
   cardShares,
   cardSpPerNode,
-  cardUnlockCost,
   paysSkillPoints,
   type CardSave,
   type SupportCardTemplate,
@@ -37,7 +36,6 @@ export interface CardEntry {
   save: CardSave | null
   owned: boolean
   asset: ContentAsset | null
-  unlockCost: number
   /** Bond in the lens scenario; null in the collection lens or when unowned. */
   bond: number | null
   /** What one node pays in the lens scenario at the current bond — SP for a skill-point card; null in the collection lens. */
@@ -104,7 +102,6 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
       save,
       owned: save !== null,
       asset: getContentAsset(content, 'card-icons', template.id),
-      unlockCost: cardUnlockCost(template.era),
       bond,
       perNode: tier === null ? null : (paysSkillPoints(template) ? cardSpPerNode : cardNodeValue)(tier, { template, stars: bond ?? 0 }),
       skillPoints: paysSkillPoints(template),

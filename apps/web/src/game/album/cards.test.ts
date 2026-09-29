@@ -99,7 +99,6 @@ describe('card album · collection lens', () => {
 
   it('prices unowned cards by era', () => {
     const built = album('collection', ['c1'])
-    expect(built.entries.get('c2')?.unlockCost).toBe(8)
     const unowned = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, { ...CARD_COLLECTION_QUERY, filters: { ownership: ['unowned'] } })
     expect(unowned.rows.map((row) => row.id).sort()).toEqual(['c2', 'c3'])
   })
@@ -133,7 +132,6 @@ describe('card album · scenario lens', () => {
     const built = album(1, ['c1'], { breaks: { c1: { '1': 1 } } })
     // 220 a node at 1★, which pays 68% (D147).
     expect(built.entries.get('c1')?.perNode).toBeCloseTo(149.6)
-    expect(built.entries.get('c1')?.unlockCost).toBe(6)
   })
 
   it('filters on what can still be bonded here', () => {

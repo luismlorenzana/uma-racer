@@ -86,11 +86,11 @@ export async function exchangeUmaShards() {
   return gameRuntime.exchangeUmaShards()
 }
 
-/** Owns a card with a Card Select Coupon or with tickets (M016). */
-export async function unlockCard(id: string, method: 'coupon' | 'tickets') {
+/** Owns a card with a Card Select Coupon, the only way to unlock one (D198). */
+export async function unlockCard(id: string) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.unlockCard(id, method)
+    return gameRuntime.unlockCard(id)
   })
 }
 

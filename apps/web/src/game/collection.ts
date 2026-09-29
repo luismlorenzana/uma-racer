@@ -13,9 +13,7 @@ import {
   parseLedgerEntry,
   parsePlayerProfileOrThrow,
   parseUmaSave,
-  cardUnlockCost,
   redeemCardSelectCoupon,
-  unlockCardWithTickets,
   redeemUmaSelectCoupon,
   type CardSave,
   type FlairEventRecord,
@@ -37,11 +35,8 @@ export interface ShardExchangeMutation {
   ledgerIds: [string, string]
 }
 
-/** A Card Select Coupon or tickets: the two ways to own a card (M016). */
-export type CardUnlockMethod = 'coupon' | 'tickets'
-
-const cardUnlockLedgerId = (cardId: string, method: CardUnlockMethod): string =>
-  method === 'coupon' ? `card-coupon-redeem:${cardId}` : `card-unlock:${cardId}`
+/** A Card Select Coupon is the one way to own a card (D198); `card-unlock` ticket rows remain only as history. */
+const cardUnlockLedgerId = (cardId: string): string => `card-coupon-redeem:${cardId}`
 
 export interface CardRedemptionMutation {
   profile: PlayerProfile
@@ -100,13 +95,11 @@ export function redeemMemoryCard(
   cardId: string,
   today: string,
   now: number,
-  method: CardUnlockMethod = 'coupon',
 ): CardRedemptionMutation {
   assertSafeTarget(cardId, 'Card')
   const template = content.cards.byId.get(cardId)
   if (!template) throw new Error('Card content is missing')
-  const unlock = method === 'coupon' ? redeemCardSelectCoupon : unlockCardWithTickets
-  const mutation = unlock(profile, template, cardsById[cardId] !== undefined, today, now)
+  const mutation = redeemCardSelectCoupon(profile, template, cardsById[cardId] !== undefined, today, now)
   return { profile: mutation.profile, card: mutation.card, ledgerId: mutation.ledger[0].id, alreadyRedeemed: false }
 }
 
@@ -159,15 +152,12 @@ export async function redeemPersistentCard(
   cardId: string,
   today: string,
   now: number,
-  method: CardUnlockMethod = 'coupon',
 ): Promise<CardRedemptionMutation> {
   assertSafeTarget(cardId, 'Card')
   const template = content.cards.byId.get(cardId)
   if (!template) throw new Error('Card content is missing')
-  const ledgerId = cardUnlockLedgerId(cardId, method)
-  const expected = method === 'coupon'
-    ? { resource: 'card-coupons' as const, delta: -1, reason: 'card-coupon-redeem' as const }
-    : { resource: 'tickets' as const, delta: -cardUnlockCost(template.era), reason: 'card-unlock' as const }
+  const ledgerId = cardUnlockLedgerId(cardId)
+  const expected = { resource: 'card-coupons' as const, delta: -1, reason: 'card-coupon-redeem' as const }
   return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
     const [profileRow, cardRow, ledgerRow] = await Promise.all([
       db.profile.get('main'), db.cards.get(cardId), db.ledger.get(ledgerId),
@@ -182,7 +172,7 @@ export async function redeemPersistentCard(
     }
     if (ledgerRow) throw new Error('Card redemption record exists without its card')
     if (cardRow) throw new Error('Support card is already owned')
-    const mutation = (method === 'coupon' ? redeemCardSelectCoupon : unlockCardWithTickets)(profile, template, false, today, now)
+    const mutation = redeemCardSelectCoupon(profile, template, false, today, now)
     const entry = mutation.ledger[0]
     await db.profile.put({ ...profileRow, data: mutation.profile })
     await db.cards.add({ id: cardId, data: mutation.card, version: 0 })

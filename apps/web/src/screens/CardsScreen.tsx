@@ -53,9 +53,9 @@ const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.sli
 const scenarioName = (tier: number) => scenarioForTier(tier)?.name ?? `Tier ${tier}`
 const emptyPrefs = (id: string, query: AlbumQuery): AlbumPrefs => ({ id, query, views: [], seen: [] })
 
-/** What a tile says under or beside the art: bond and pay in a scenario, price when unowned. */
+/** What a tile says under or beside the art: bond and pay in a scenario, or that it is not owned yet. */
 function tileValue(entry: CardEntry, lens: CardLens): string {
-  if (!entry.owned) return `${entry.unlockCost} tickets`
+  if (!entry.owned) return 'Not owned'
   if (lens === 'collection') return cardSplitLabel(entry.template)
   return cardPayLabel(entry) ?? ''
 }
@@ -296,6 +296,8 @@ export function CardsScreen() {
   if (contentState.content.cards.items.length === 0) return <ScreenState title="No support cards imported" detail="Run and publish the private content pipeline first." />
 
   const tickets = profile.tickets
+  // Card Select Coupons are the only way to own a card (D198).
+  const coupons = profile.cardCoupons
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])
   // A tapped tile opens its detail in a sheet, where the list is, instead of a panel above it (D176).
   const detail = (detailId ? album.entries.get(detailId) : undefined) ?? null
@@ -315,7 +317,7 @@ export function CardsScreen() {
   const unlock = (entry: CardEntry) => {
     if (busy) return
     setBusy(true)
-    void unlockCard(entry.id, 'tickets')
+    void unlockCard(entry.id)
       .then(() => navigate(`/collection/reveal/card/${encodeURIComponent(entry.id)}`))
       .catch((reason: unknown) => pushToast(reason instanceof Error ? reason.message : 'Could not unlock this card'))
       .finally(() => setBusy(false))
@@ -460,7 +462,7 @@ export function CardsScreen() {
           </div>
           <p className="mt-1 text-[12px] text-ink-soft">{cardSplitLabel(detail.template)}</p>
           {!detail.owned ? (
-            <p className="mt-2 text-[12px] font-semibold">Not owned · {detail.unlockCost} tickets to unlock</p>
+            <p className="mt-2 text-[12px] font-semibold">Not owned · a Card Select Coupon unlocks it</p>
           ) : lensTier !== null ? (
             <div className="mt-2">
               <div className="flex items-center gap-2">
@@ -479,7 +481,7 @@ export function CardsScreen() {
           )}
           <div className="mt-2 flex flex-wrap gap-2">
             {!detail.owned
-              ? <Button size="sm" disabled={busy || tickets < detail.unlockCost} onClick={() => unlock(detail)}>Unlock · {detail.unlockCost}</Button>
+              ? coupons > 0 && <Button size="sm" disabled={busy} onClick={() => unlock(detail)}>Use a coupon · {coupons} left</Button>
               : bondAction(detail, 'sm')}
             <Button size="sm" variant="secondary" onClick={() => openEntry(detail)}>Open</Button>
           </div>
@@ -501,7 +503,7 @@ export function CardsScreen() {
             { label: 'Pays per node here', values: compareEntries.map((entry) => entry.owned ? cardPayLabel(entry) : null) },
           ]),
           { label: 'Skills', values: compareEntries.map((entry) => entry.hintSkillNames.length), best: 'high' },
-          { label: 'Unlock', values: compareEntries.map((entry) => entry.owned ? 'Owned' : `${entry.unlockCost} tickets`) },
+          { label: 'Owned', values: compareEntries.map((entry) => entry.owned ? 'Owned' : 'Coupon to unlock') },
         ]}
       />
 
@@ -510,9 +512,9 @@ export function CardsScreen() {
           <div className="grid gap-1.5 pb-2">
             <h2 className="font-display mb-1 text-xl font-bold">{actionsFor.template.charName}</h2>
             <Button variant="secondary" onClick={() => { const entry = actionsFor; setActionsFor(null); openEntry(entry) }}>Open card</Button>
-            {!actionsFor.owned && (
-              <Button disabled={busy || tickets < actionsFor.unlockCost} onClick={() => { const entry = actionsFor; setActionsFor(null); unlock(entry) }}>
-                Unlock · {actionsFor.unlockCost} tickets
+            {!actionsFor.owned && coupons > 0 && (
+              <Button disabled={busy} onClick={() => { const entry = actionsFor; setActionsFor(null); unlock(entry) }}>
+                Use a Card Select Coupon · {coupons} left
               </Button>
             )}
             {bondAction(actionsFor, 'md')}

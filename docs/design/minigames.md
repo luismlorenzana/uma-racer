@@ -281,7 +281,7 @@ screens are `apps/web/src/screens/minigames/friendship/`.
 
 - **Target and price:** a run names one card and one scenario, costs **1 ticket** (D148), and a clear gives that card
   **+1★ there**. There is no partial progress: a loss costs the ticket and nothing else.
-- **Owned cards only.** Runs never show unowned cards; unlocking stays tickets and coupons (D130).
+- **Owned cards only.** Runs never show unowned cards; unlocking takes a Card Select Coupon (D198).
 - **Spark Match stays separate** and remains the only way to raise a Training Level. M022 replaces its adjacent-swap
   rules with Rival Circuit before this milestone begins; Friendship Training does not share combat, rewards or UI with it.
 - **Length grows with the star being earned**, so early stars are quick and the fifth is a real run.

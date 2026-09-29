@@ -7,10 +7,8 @@ import {
   createUmaSave,
   exchangeUmaShards,
   nextUmaShardExchangeSequence,
-  cardUnlockCost,
   redeemCardSelectCoupon,
   redeemUmaSelectCoupon,
-  unlockCardWithTickets,
   umaCollectionCounts,
   type SupportCardTemplate,
   type UmaTemplate,
@@ -88,26 +86,6 @@ describe('collection mutations', () => {
     })
     expect(() => redeemCardSelectCoupon(profile, cardTemplate, true, '2000-01-02', 51)).toThrow('already owned')
     expect(() => redeemUmaSelectCoupon({ ...profile, umaCoupons: 0 }, umaTemplate, false, '2000-01-02', 52)).toThrow('No Uma')
-  })
-})
-
-describe('unlocking a card with tickets', () => {
-  it('prices a card by its era: 6 in URA Finale up to 19 in the newest scenario (D148)', () => {
-    expect(cardUnlockCost(1)).toBe(6)
-    expect(cardUnlockCost(8)).toBe(13)
-    expect(cardUnlockCost(14)).toBe(19)
-  })
-
-  it('spends tickets once, under a ledger id keyed by the card', () => {
-    const profile = { ...createPlayerProfile('synthetic', 1), tickets: 20 }
-    const cardTemplate = card('card-new', 8, 'speed')
-    expect(unlockCardWithTickets(profile, cardTemplate, false, '2000-01-02', 53)).toEqual({
-      profile: { ...profile, tickets: 7 },
-      card: createCardSave(cardTemplate),
-      ledger: [{ id: 'card-unlock:card-new', data: { resource: 'tickets', delta: -13, reason: 'card-unlock', localDay: '2000-01-02', createdAt: 53 } }],
-    })
-    expect(() => unlockCardWithTickets({ ...profile, tickets: 12 }, cardTemplate, false, '2000-01-02', 53)).toThrow('needs 13 tickets')
-    expect(() => unlockCardWithTickets(profile, cardTemplate, true, '2000-01-02', 53)).toThrow('already owned')
   })
 })
 

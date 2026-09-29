@@ -40,12 +40,9 @@ Notes:
 
 ## Unlocking cards
 
-A card is unlocked on its own page (`/cards/:id`) in one of two ways (D130):
-
-| Way | Cost | Notes |
-|---|---|---|
-| **Tickets** | `5 + era`: 6 for a URA Finale-era card, 19 for the newest (D148) | Ledger reason `card-unlock`, keyed by card id |
-| **Card Select Coupon** | 1 coupon | A free unlock; keyed by card id as before |
+A card is unlocked with a **Card Select Coupon**, on its own page (`/cards/:id`) or from the album's detail and
+quick actions: one coupon, keyed by card id. **Tickets never buy a card** (D198): D130's `5 + era` ticket unlock is gone,
+so tickets stay for minigame runs and scenario unlocks. Past `card-unlock` ledger rows stay as history.
 
 Unlocking hands straight to the collection reveal, then back to the card's page. The standalone Card Select screen
 is gone; `/cards/redeem` redirects to the album.
