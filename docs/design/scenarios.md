@@ -112,7 +112,7 @@ never changes a total.
 | 2 | Unity Cup | **Team Spirit** | Each filled lineage slot adds +1% to every card node | 3.7% |
 | 3 | Trackblazer | **Climax** | Each career goal won in this scenario adds +2% to every card node, up to +8% | 3.7% |
 | 4 | Our Grand Concert | **Performance** | A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5% | 2.3% |
-| 5 | Grand Masters | **Fragments** | Cards at 4★ or higher pay +8% | 0% |
+| 5 | Grand Masters | **Fragments** | Cards at 3★ pay +8% | 0% |
 | 6 | Project L'Arc | **Expedition** | Cards from era 6 or newer pay +5% | 4.6% |
 | 7 | U.A.F. Ready GO! | **Genres** | A card type with two or more cards in the set pays +6% on those cards | 2.2% |
 | 8 | Great Food Festival | **Cooking** | A card on its full node cap pays +10% on all its nodes | 2.0% |

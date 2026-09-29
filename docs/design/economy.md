@@ -9,7 +9,7 @@
 | Item | Earned by | Spent on | Expires? |
 |---|---|---|---|
 | 🎫 **Training Tickets** | Daily grant · Uma Level-ups | Minigame runs · unlocking the next scenario | Never |
-| 🎟️ **Card Select Coupon** | A card's first 5★ | Unlocking any unowned SSR card, the only way to own one (D198) | Never |
+| 🎟️ **Card Select Coupon** | A card's first 3★ | Unlocking any unowned SSR card, the only way to own one (D198) | Never |
 | 💎 **Uma Shard** | An Uma reaching a gate level (10, 20, 30…) | 5 shards → 1 Uma Select Coupon | Never |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma | Never |
 
@@ -62,16 +62,16 @@ records keep the ticket reward of their day, five a level before v7 and one afte
 
 ## Pacing sanity check
 
-- **Maxing one card in one scenario** is five clears, 0★ → 5★. All-or-nothing means a lost run costs its ticket, so
-  budget **about six tickets**, and about 45 minutes once Friendship Training's runs grow from about 5 to 12 minutes.
+- **Maxing one card in one scenario** is three clears, 0★ → 3★ (D200). All-or-nothing means a lost run costs its
+  ticket, so budget **about four tickets**, and about 25 minutes for runs of about 5, 8 and 12 minutes.
 - **One Uma through a scenario's Training Levels** is about 10 competent Spark Rival Circuit clears: about 10 tickets,
   one day. Losses retain partial EXP but make the route less ticket-efficient.
-- **A day's 15 tickets** max one card with nine Spark Match runs to spare, or take one Uma through a scenario with room
-  for several losses.
+- **A day's 15 tickets** max about three cards, or one card with ten Spark Match runs to spare, or take one Uma through
+  a scenario with room for several losses.
 - **Late scenarios:** unlocking tier 10 → 11 costs 50, three full daily grants plus five tickets, minus what racing earns
   back.
-- **Stars are per scenario** (D127), so a six-card set is about 36 tickets, or roughly two and a half daily grants, to
-  max in one scenario.
+- **Stars are per scenario** (D127), so a six-card set is about 24 tickets, or roughly a daily grant and a half, to max
+  in one scenario.
 - **The core choice:** minigame runs and scenario unlocks draw from the same tickets. That's intended.
 
 Revisit these numbers once a balance simulation exists.

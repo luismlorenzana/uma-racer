@@ -135,10 +135,10 @@ describe('progression race content and setup rules', () => {
 
   it('uses generated equipped-card Race Bonus', () => {
     const template = card()
-    const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), stars: { '1': 1 } }, template }])
+    const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), bonds: { '1': 1 } }, template }])
     expect(bonus).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
     expect(equippedRaceBonus(1, [{
-      save: { ...createCardSave(template), stars: { '1': 1 } },
+      save: { ...createCardSave(template), bonds: { '1': 1 } },
       template: { ...template, type: 'friend' },
     }])).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
   })

@@ -4,8 +4,11 @@
 import { CARD_SET_SIZE, starNodePct } from './constellation'
 import type { SkillTemplate, SupportCardTemplate } from './content'
 
-/** A card holds 0★–5★ in each scenario; 5★ is max, with every bonus at full strength (D147). */
-export const MAX_STARS = 5
+/**
+ * A card holds 0★–3★ in each scenario; 3★ is max, with every bonus at full strength (D200). The three stars are the old
+ * 1★ · 3★ · 5★ (D147), so a maxed card pays what a 5★ card paid.
+ */
+export const MAX_STARS = 3
 
 export const eraMult = (era: number): number => 1 + 0.08 * (era - 1)
 
@@ -71,15 +74,15 @@ export function cardUniqueEffectKinds(template: SupportCardTemplate): ReadonlySe
 }
 
 /**
- * Race Bonus at 5★ for an era-1 card whose profile weight is 1. It is the value the old model reached at max limit
+ * Race Bonus at max stars for an era-1 card whose profile weight is 1. It is the value the old model reached at max limit
  * break and level 25 (0.03 × 1.5 × 1.08), so a maxed card races exactly as it did before stars (D147).
  */
 const RACE_BONUS_AT_MAX = 0.03 * 1.5 * 1.08
 
 /**
  * What one card adds to race EXP at its stars in a scenario, the one generated effect that outlived the training turn
- * (D125). Nothing at 0★; from 1★ it follows the same star curve as a card node (68% … 100%), so every limit break the
- * v7 migration turned into stars keeps at least the Race Bonus it had. At 5★ the card's unique effect adds its bonus if
+ * (D125). Nothing at 0★; from 1★ it follows the same star curve as a card node (68% · 84% · 100%, D200), so no migration
+ * ever lowered a card's Race Bonus. At 3★ the card's unique effect adds its bonus if
  * Race Bonus is one of its kinds.
  */
 export function cardRaceBonus(template: SupportCardTemplate, stars: number): number {

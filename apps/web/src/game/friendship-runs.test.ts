@@ -84,7 +84,7 @@ async function seed(tickets = 3, mainStars: Record<string, number> = {}) {
   await db.profile.put({ id: 'main', data: { ...createPlayerProfile('synthetic-friendship', 1234), tickets }, version: 1 })
   for (const template of cards) {
     const save = createCardSave(template)
-    await db.cards.put({ id: template.id, data: template.id === 'card-0' ? { ...save, stars: mainStars } : save, version: 1 })
+    await db.cards.put({ id: template.id, data: template.id === 'card-0' ? { ...save, bonds: mainStars } : save, version: 1 })
   }
 }
 
@@ -294,14 +294,14 @@ describe('Friendship Training runs', () => {
     const { cleared, reward } = await playOut(runId)
     expect(cleared).toBe(true)
     expect(reward).toEqual({ ticketsSpent: 1, starsBefore: 0, starsAfter: 1, couponGranted: false })
-    expect(parseCardSave((await db.cards.get('card-0'))!.data)!.stars).toEqual({ '1': 2, '2': 1 })
+    expect(parseCardSave((await db.cards.get('card-0'))!.data)!.bonds).toEqual({ '1': 2, '2': 1 })
     expect(await tickets()).toBe(2)
     expect(await db.ledger.count()).toBe(1)
   })
 
-  it('grants the 5★ Card Select Coupon once across scenarios', async () => {
-    await seed(3, { '1': 4, '2': 4 })
-    // A 5★ season is balanced for a real collection; this rule is about the coupon, so each run is cut to one stage.
+  it('grants the 3★ Card Select Coupon once across scenarios', async () => {
+    await seed(3, { '1': 2, '2': 2 })
+    // A 3★ season is balanced for a real collection; this rule is about the coupon, so each run is cut to one stage.
     const shorten = async (runId: string) => {
       const row = (await db.minigameRuns.get(runId))!
       if (!row.snapshot || !('setup' in row.snapshot)) throw new Error('Expected a Friendship Training snapshot')
@@ -317,8 +317,8 @@ describe('Friendship Training runs', () => {
     await shorten(second.runId)
     const two = await playOut(second.runId)
     expect([one.cleared, two.cleared]).toEqual([true, true])
-    expect(one.reward).toMatchObject({ starsAfter: 5, couponGranted: true })
-    expect(two.reward).toMatchObject({ starsAfter: 5, couponGranted: false })
+    expect(one.reward).toMatchObject({ starsAfter: 3, couponGranted: true })
+    expect(two.reward).toMatchObject({ starsAfter: 3, couponGranted: false })
     expect((await db.ledger.toArray()).filter((row) => row.data.reason === 'card-max')).toHaveLength(1)
   })
 

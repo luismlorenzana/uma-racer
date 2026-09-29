@@ -15,11 +15,11 @@ export interface RivalRng {
 /** Median base stat of the imported roster. */
 export const TYPICAL_BASE_STAT = 110
 
-/** A typical trained Uma's cards are 3★, so a node pays 84% of its value (D159). */
-export const TYPICAL_CARD_STARS = 3
+/** A typical trained Uma's cards pay 84% of a node (D159): 2★ of 3 since D200, the old 3★ of 5, so no field moved. */
+export const TYPICAL_CARD_STARS = 2
 
 /**
- * A typical trained Uma's average stat at a tier (D159, superseding D152's full tree of 5★ cards): her base plus a
+ * A typical trained Uma's average stat at a tier (D159, superseding D152's full tree of maxed cards): her base plus a
  * fifth of what a realistic set pays — six current-era cards at 3★, one of them a Friend card whose fair share of the
  * nodes pays skill points instead of stats — and the stat nodes, with what the scenario's buff typically adds (D165).
  * 736 in scenario 1, where Foundation adds half again to the stat nodes.

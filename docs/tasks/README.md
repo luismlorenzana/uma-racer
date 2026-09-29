@@ -13,7 +13,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M024 — Card Training Loop](M024-card-training-loop.md) | [T078 three stars](T078-three-star-cards.md) · [T079 card training on its own](T079-card-training-on-its-own.md) · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **Specified** · owners to be assigned; T078 and T080 can start now |
+| [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · [T079 card training on its own](T079-card-training-on-its-own.md) · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **Specified** · owners to be assigned; T078 and T080 can start now |
 | [M025 — Stable Farm](M025-stable-farm.md) | T082 domain complete · [T083 runtime](T083-farm-runtime.md) · [T084 screen](T084-farm-screen.md) · [T085 inventory](T085-item-inventory.md) | In progress · T083 next |
 | [M026 — Produce nodes](M026-produce-nodes.md) | [T086 constellation bridge](T086-produce-nodes.md) | Planned after M025 · fully specified |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |

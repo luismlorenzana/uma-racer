@@ -61,9 +61,10 @@ const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const MAX_SCENARIO_TIER = 14
 const MAX_UMA_LEVEL = MAX_SCENARIO_TIER * 10
 const MAX_TRAINING_LEVEL = 10
-/** v5 and v6 cards held limit breaks up to 4; v7 cards hold 0★–5★ (D147). */
+/** v5 and v6 cards held limit breaks up to 4; v7 cards hold 0★–5★ (D147); v8 cards 0★–3★ as `bonds` (D200). */
 const LEGACY_MAX_LIMIT_BREAK = 4
-const MAX_STARS = 5
+const LEGACY_MAX_STARS_V7 = 5
+const MAX_STARS = 3
 const CARD_SET_SIZE = 6
 /** A ceiling on constellation size, not the authored node count: the templates are not in this deploy. */
 const MAX_CONSTELLATION_NODES = 128
@@ -87,6 +88,7 @@ const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGrant
 const CARD_V5_FIELDS = ['templateId', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V6_FIELDS = ['templateId', 'limitBreaks', 'maxCouponGranted'] as const
 const CARD_V7_FIELDS = ['templateId', 'stars', 'maxCouponGranted'] as const
+const CARD_V8_FIELDS = ['templateId', 'bonds', 'maxCouponGranted'] as const
 const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
 const SKILL_HISTORY_FIELDS = [...SKILL_FIELDS, 'tier'] as const
 const PARENT_FIELDS = ['umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes'] as const
@@ -478,7 +480,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7].includes(value.schemaVersion as number)) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -672,9 +674,9 @@ function parseScenarioTraining(value: unknown, umaLevel: number): boolean {
   return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
 }
 
-/** v5, v6 and v7 Umas share one shape: only cards (and v7's tickets) changed between them. */
+/** v5 to v8 Umas share one shape: only cards (and v7's tickets) changed between them. */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6, 7].includes(value.schemaVersion as number)) return null
+  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6, 7, 8].includes(value.schemaVersion as number)) return null
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
   const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
   if (value.exp > expLimit) return null
@@ -702,7 +704,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if (value.schemaVersion === 5 || value.schemaVersion === 6 || value.schemaVersion === 7) return parseUmaV6(value)
+  if ([5, 6, 7, 8].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null
@@ -745,11 +747,15 @@ function parsePerTier(value: unknown, max: number): boolean {
 }
 
 function parseCard(value: unknown): Record<string, unknown> | null {
-  if (isRecord(value) && exactKeys(value, CARD_V7_FIELDS)) {
-    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parsePerTier(value.stars, MAX_STARS)) return null
+  if (isRecord(value) && exactKeys(value, CARD_V8_FIELDS)) {
+    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parsePerTier(value.bonds, MAX_STARS)) return null
     return value
   }
-  // Old clients still sync v6 and v5 cards until they update; the app migrates them on read.
+  // Old clients still sync v7, v6 and v5 cards until they update; the app migrates them on read.
+  if (isRecord(value) && exactKeys(value, CARD_V7_FIELDS)) {
+    if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parsePerTier(value.stars, LEGACY_MAX_STARS_V7)) return null
+    return value
+  }
   if (isRecord(value) && exactKeys(value, CARD_V6_FIELDS)) {
     if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parsePerTier(value.limitBreaks, LEGACY_MAX_LIMIT_BREAK)) return null
     return value
@@ -973,6 +979,17 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
   return { upserts: parsedUpserts, appends: parsedAppends }
 }
 
+/**
+ * The save schema an entity is written in, where it can be told: profiles and Umas carry it; a card shows it by its
+ * field (`bonds` v8, `stars` v7, `limitBreaks` v6, `limitBreak` older). A write in an older schema never replaces a newer one.
+ */
+function entitySchema(kind: string, data: Record<string, unknown>): number | null {
+  if (kind === 'profile') return typeof data.schemaVersion === 'number' ? data.schemaVersion : null
+  if (kind === 'umas') return typeof data.schemaVersion === 'number' ? data.schemaVersion : 1
+  if (kind === 'cards') return 'bonds' in data ? 8 : 'stars' in data ? 7 : 'limitBreaks' in data ? 6 : 5
+  return null
+}
+
 /** Apply version-matched mutable entities and return authoritative server copies for stale writes. */
 export function resolveUpserts(
   existing: Map<string, EntityRecord>,
@@ -985,12 +1002,8 @@ export function resolveUpserts(
     const key = `${upsert.kind}/${upsert.id}`
     const current = existing.get(key)
     const currentVersion = current?.version ?? 0
-    const currentSchema = current && (current.kind === 'profile' || current.kind === 'umas')
-      ? (current.kind === 'profile' ? current.data.schemaVersion : (current.data.schemaVersion ?? 1))
-      : null
-    const incomingSchema = upsert.kind === 'profile' || upsert.kind === 'umas'
-      ? (upsert.kind === 'profile' ? upsert.data.schemaVersion : (upsert.data.schemaVersion ?? 1))
-      : null
+    const currentSchema = current ? entitySchema(current.kind, current.data) : null
+    const incomingSchema = entitySchema(upsert.kind, upsert.data)
     if (current && typeof currentSchema === 'number' && typeof incomingSchema === 'number' && currentSchema > incomingSchema) {
       conflicts.push(current)
       continue

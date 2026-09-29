@@ -26,7 +26,7 @@ function derive(tier: number, set: SetCard[], options: { statNodes?: number; lin
   const template = constellationTemplate(tier)
   const cards = new Map(set.map((entry) => [entry.id, {
     template: { id: entry.id, type: entry.type, era: entry.era ?? tier, effectProfile: { statBonus: 1, trainingBonus: 1 }, hintSkillIds: [] },
-    stars: entry.stars ?? 5,
+    stars: entry.stars ?? 3,
   } as unknown as CardNodeState]))
   const assignments: Record<string, NodeAssignment> = {}
   const cardNodes = template.nodes.filter((node) => node.kind === 'card')
@@ -79,9 +79,9 @@ describe('scenario buffs (D165)', () => {
     expect(lift(4, five.slice(0, 4))).toBe(1)
   })
 
-  it('Fragments (5): cards at 4★ or higher pay +8%', () => {
-    expect(lift(5, [{ id: 'a', type: 'speed', stars: 4 }])).toBeCloseTo(1.08, 9)
-    expect(lift(5, [{ id: 'a', type: 'speed', stars: 3 }])).toBe(1)
+  it('Fragments (5): cards at 3★ pay +8% (D200)', () => {
+    expect(lift(5, [{ id: 'a', type: 'speed', stars: 3 }])).toBeCloseTo(1.08, 9)
+    expect(lift(5, [{ id: 'a', type: 'speed', stars: 2 }])).toBe(1)
   })
 
   it('Expedition (6): cards of era 6 or newer pay +5%', () => {

@@ -182,13 +182,24 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: profile }] })).toMatchObject({
       upserts: [{ kind: 'profile', data: { schemaVersion: 7 } }],
     })
-    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 8 } }] }))
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 9 } }] }))
       .toMatch(/invalid profile data/)
     const card = (data: Record<string, unknown>) => parseSyncRequest({ upserts: [{ kind: 'cards', id: 'c1', baseVersion: 1, data: { templateId: 'c1', maxCouponGranted: false, ...data } }] })
     expect(card({ stars: { '1': 5, '2': 3 } })).toMatchObject({ upserts: [{ kind: 'cards', data: { stars: { '1': 5 } } }] })
     expect(card({ stars: { '1': 6 } })).toMatch(/invalid cards data/)
     expect(card({ limitBreaks: { '1': 4 } })).toMatchObject({ upserts: [{ kind: 'cards' }] })
     expect(card({ limitBreaks: { '1': 5 } })).toMatch(/invalid cards data/)
+    // Save v8 (D200): three-star cards under `bonds`, beside a v7 card from a client that has not updated.
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 8 } }] }))
+      .toMatchObject({ upserts: [{ kind: 'profile', data: { schemaVersion: 8 } }] })
+    expect(card({ bonds: { '1': 3, '2': 1 } })).toMatchObject({ upserts: [{ kind: 'cards', data: { bonds: { '1': 3 } } }] })
+    expect(card({ bonds: { '1': 4 } })).toMatch(/invalid cards data/)
+    const v8Card = { kind: 'cards' as const, id: 'c1', version: 2, data: { templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: true }, deleted: false, updatedAt: 1 }
+    const olderCard = resolveUpserts(new Map([['cards/c1', v8Card as EntityRecord]]), [{ kind: 'cards', id: 'c1', baseVersion: 2, data: { templateId: 'c1', stars: { '1': 5 }, maxCouponGranted: true } }], 2)
+    expect(olderCard.conflicts).toHaveLength(1)
+    expect(olderCard.writes).toHaveLength(0)
+    const newerCard = resolveUpserts(new Map([['cards/c1', { ...v8Card, data: { templateId: 'c1', stars: { '1': 5 }, maxCouponGranted: true } } as EntityRecord]]), [{ kind: 'cards', id: 'c1', baseVersion: 2, data: v8Card.data }], 2)
+    expect(newerCard.writes).toHaveLength(1)
     // A current profile never gives way to an older one.
     const current = { kind: 'profile' as const, id: 'main', version: 4, data: profile, deleted: false, updatedAt: 1 }
     const stale = resolveUpserts(new Map([['profile/main', current as EntityRecord]]), [{ kind: 'profile', id: 'main', baseVersion: 4, data: { ...profile, schemaVersion: 6, tickets: 444 } }], 2)

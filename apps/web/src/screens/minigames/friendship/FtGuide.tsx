@@ -23,6 +23,7 @@ import {
   FT_TWISTS,
   FT_UNUSED_TRAIN_FANS,
   FT_WEEK_TARGETS,
+  MAX_STARS,
   FT_WEEK_TRAINS,
   ftFavouredTypes,
   scenarioForTier,
@@ -256,7 +257,7 @@ function pages(tier: number): { id: GuidePageId; title: string; body: ReactNode 
           </Panel>
           <Bullets items={[
             <>Friend and Group cards score {FT_CARD_POINTS.broad} anywhere and count as <strong>any type</strong>, so they fill a Rainbow or a Full team.</>,
-            <>A card’s stars in this scenario make it stronger: +{Math.round(FT_STRENGTH_PER_STAR * 100)}% per star.</>,
+            <>A card’s stars in this scenario make it stronger: × {(1 + FT_STRENGTH_PER_STAR).toFixed(2)} at 1★, up to × {(1 + FT_STRENGTH_PER_STAR * MAX_STARS).toFixed(1)} at {MAX_STARS}★.</>,
             <>Each card has one <strong>trait</strong>, from its strongest effect in the original data:</>,
           ]} />
           <div className="grid gap-1">

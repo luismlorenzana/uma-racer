@@ -51,7 +51,7 @@ is gone; `/cards/redeem` redirects to the album.
 
 | Item | How it's earned | Redeems for | Rules |
 |---|---|---|---|
-| 🎟️ **Card Select Coupon** | A card first reaches **5★** in any scenario (once per card ever) | A free unlock of any unowned SSR card | Stackable · never expires |
+| 🎟️ **Card Select Coupon** | A card first reaches **3★**, its max, in any scenario (once per card ever) | The only unlock of an unowned SSR card (D198) | Stackable · never expires |
 | 💎 **Uma Shard** | Any Uma **reaches** level 10, 20, 30 … (once per Uma per gate) | 5 shards make 1 Uma Select Coupon | Stackable · never expires |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma in the game | Stackable · never expires |
 
@@ -67,8 +67,7 @@ owned result without spending again. An entity that predates the matching redemp
 
 - **One Uma** taken from level 1 to 50 earns 5 shards, which is **1 Uma coupon**. Taking her to 100 earns a second.
 - **Across the stable**, it's 1 Uma coupon per 50 levels gained by all Umas combined, so leveling several Umas pays off too.
-- **Cards** compound: a card's first 5★ funds the next one, and tickets buy the rest. Every unowned card together
-  costs about 2,400 tickets; URA Finale's 37 unowned cards about 220.
+- **Cards** compound: a card's first 3★ funds the next one; coupons are the only way to own a card (D198).
 
 ## Albums
 
@@ -301,7 +300,7 @@ badge state, and race/Journey facts.
 |---|---|---|
 | Stable Master | Umas owned (25 at start) | 30 / 40 / 60 / 90 / all |
 | Card Collector | SSR cards owned | 10 / 25 / 50 / 100 / all |
-| Maxed Out | Cards at 5★ in any scenario | 1 / 5 / 15 / 40 / 100 |
+| Maxed Out | Cards at 3★ (max) in any scenario | 1 / 5 / 15 / 40 / 100 |
 | [Era] Complete | Own every card of that era | one-off per era |
 | [Type] Complete | Own every card of that type | one-off per type |
 | Coupon Clipper | Coupons redeemed | 1 / 5 / 15 / 40 / 100 |

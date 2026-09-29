@@ -28,8 +28,9 @@ import {
   PersistentMinigameHost,
   PersistentMinigameJournal,
   retireBondRecallRuns,
+  retireFiveStarFriendshipRuns,
 } from './minigame-runs'
-import { sparkRivalStateHash } from '@racer/domain'
+import { FT_SETUP_VERSION, sparkRivalStateHash } from '@racer/domain'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -191,8 +192,8 @@ describe('persistent minigame host', () => {
     await expect(current.beginRun('friendship-training', { kind: 'friendship-training', cardId: futureCard.id, tier: 1 })).rejects.toThrow(/not available/i)
     await assertNoWrites()
     const saved = (await db.cards.get(card.id))!
-    await db.cards.put({ ...saved, data: { ...saved.data, stars: { '1': 5 } } })
-    await expect(current.beginRun('friendship-training', { kind: 'friendship-training', cardId: card.id, tier: 1 })).rejects.toThrow(/already has 5★/i)
+    await db.cards.put({ ...saved, data: { ...saved.data, bonds: { '1': 3 } } })
+    await expect(current.beginRun('friendship-training', { kind: 'friendship-training', cardId: card.id, tier: 1 })).rejects.toThrow(/already has 3★/i)
     await assertNoWrites()
   })
 
@@ -458,6 +459,28 @@ describe('persistent minigame host', () => {
     expect((await db.ledger.get(`${id}:refund`))?.data).toMatchObject({ resource: 'tickets', delta: 1, reason: 'minigame-refund' })
     expect((await db.minigameRuns.get(id))?.status).toBe('completed')
     expect(await retireBondRecallRuns(3000, '2000-01-03')).toBe(0)
+    expect((await db.profile.get('main'))?.data.tickets).toBe(101)
+  })
+
+  it('closes a card run frozen for five stars once, giving its ticket back, and keeps a three-star run open (D200)', async () => {
+    await seed()
+    const old = 'friendship-training:card-synthetic:1:0'
+    await db.ledger.add({ id: old, data: { resource: 'tickets', delta: -1, reason: 'card-limit-break', localDay: '2000-01-01', createdAt: 1 }, createdAt: 1 })
+    const row = (id: string, attemptIndex: number, setupVersion: number) => ({
+      id, targetKey: 'friendship-training:card-synthetic:1', kind: 'friendship-training' as const,
+      target: { kind: 'friendship-training' as const, cardId: card.id, tier: 1 }, tier: 1, attemptIndex, seed: '1', status: 'open' as const,
+      outcome: null, reward: null, createdAt: 1, completedAt: null,
+      snapshot: { version: 1, setup: { version: setupVersion } } as never,
+      journal: { format: 1, engine: 'friendship-training-v1', actions: [{ type: 'give-up' }] } as never,
+    })
+    await db.minigameRuns.add(row(old, 0, 1))
+    await db.minigameRuns.add(row('friendship-training:card-synthetic:1:1', 1, FT_SETUP_VERSION))
+    expect(await retireFiveStarFriendshipRuns(2000, '2000-01-02')).toBe(1)
+    expect((await db.profile.get('main'))?.data.tickets).toBe(101)
+    expect((await db.ledger.get(`${old}:refund`))?.data).toMatchObject({ resource: 'tickets', delta: 1, reason: 'minigame-refund' })
+    expect(await db.minigameRuns.get(old)).toMatchObject({ status: 'completed', reward: { ticketsSpent: 0 }, outcome: { actionCount: 1 } })
+    expect((await db.minigameRuns.get('friendship-training:card-synthetic:1:1'))?.status).toBe('open')
+    expect(await retireFiveStarFriendshipRuns(3000, '2000-01-03')).toBe(0)
     expect((await db.profile.get('main'))?.data.tickets).toBe(101)
   })
 

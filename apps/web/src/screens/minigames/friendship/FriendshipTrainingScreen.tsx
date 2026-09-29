@@ -219,7 +219,7 @@ export function FriendshipTrainingScreen() {
             <section className="grid flex-1 place-content-center justify-items-center gap-3 text-center">
               <div className="w-40"><FtCard content={content} def={ftCardDef(template, MAX_STARS)} art={art.get(template.id) ?? null} /></div>
               <h2 className="text-2xl">Already fully bonded</h2>
-              <p className="text-[14px] text-ink-on-dark-soft">This card is already 5★ in {scenario?.name}.</p>
+              <p className="text-[14px] text-ink-on-dark-soft">This card is already {MAX_STARS}★ in {scenario?.name}.</p>
             </section>
           ) : (
             <MinigameStart
@@ -274,7 +274,7 @@ export function FriendshipTrainingScreen() {
               <div className="grid justify-items-center gap-2 text-center">
                 <h3 className="text-lg">Scenario stars</h3>
                 <GainedStars before={reward.starsBefore ?? stars} after={reward.starsAfter ?? stars} onDark />
-                {reward.couponGranted && <p className="text-[13px] text-accent">5★: a Card Select Coupon is yours.</p>}
+                {reward.couponGranted && <p className="text-[13px] text-accent">{MAX_STARS}★: a Card Select Coupon is yours.</p>}
               </div>
             ) : undefined}
             pending={phase === 'committing'}

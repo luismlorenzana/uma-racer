@@ -88,7 +88,7 @@ export const slotCount = (tier: number): number => {
 }
 
 /**
- * Raw points one **card** node pays at 5★ and current era: what is left of the tree's share of the cap budget
+ * Raw points one **card** node pays at max stars and current era: what is left of the tree's share of the cap budget
  * once the stat-node pool is set aside, over the card nodes (D134). Rounded to an integer so the invariance rule can
  * be asserted exactly rather than within a tolerance.
  */
@@ -98,7 +98,7 @@ export const nodeValue = (tier: number): number =>
 /** Raw points one stat node pays: the pool shared over that tier's stat nodes. An integer at every tier. */
 export const statNodeValue = (tier: number): number => STAT_NODE_POOL / shapeDef(tier).statNodes
 
-/** Total raw points a fully-filled constellation of current-era, 5★ stat cards pays. */
+/** Total raw points a fully-filled constellation of current-era, maxed stat cards pays. */
 export const treeBudget = (tier: number): number => shapeDef(tier).cardNodes * nodeValue(tier) + STAT_NODE_POOL
 
 /** The nodes one card of six gets if the tree is shared out evenly, rounded up (D134). */
@@ -132,8 +132,8 @@ export const CARD_TYPE_SHARES: Record<CardNodeType, Partial<Record<StatKey, numb
   group: { speed: 20, stamina: 20, power: 20, guts: 20, wit: 20 },
 }
 
-/** Percentage of a node's value a card pays at 0★–5★: 60% rising 8 points a star to 100% (D147). */
-export const STAR_NODE_PCT = [60, 68, 76, 84, 92, 100] as const
+/** Percentage of a node's value a card pays at 0★–3★ (D200): the old 0★ · 1★ · 3★ · 5★ of D147's curve. */
+export const STAR_NODE_PCT = [60, 68, 84, 100] as const
 
 export const starNodePct = (stars: number): number =>
   STAR_NODE_PCT[Math.min(MAX_STARS, Math.max(0, Math.trunc(stars)))]!

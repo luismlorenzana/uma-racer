@@ -68,6 +68,7 @@ import { setMemoryUmaDeck, setPersistentUmaDeck } from './decks'
 import {
   type DevGrant,
   grantPersistentDevResources,
+  grantOwedMaxCoupons,
   exchangeMemoryUmaShards,
   exchangePersistentUmaShards,
   redeemMemoryCard,
@@ -104,7 +105,7 @@ import {
 import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAwardRefs } from './trainer'
 import { installMinigameHost } from './minigame-host'
 import { installMinigameJournal } from './minigame-journal'
-import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns } from './minigame-runs'
+import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -258,6 +259,9 @@ export class GameRuntime {
       const granted = await applyOwedDailyGrant(today, now)
       // Bond Recall is retired (D177): a run left open there gives its ticket back.
       const refunded = await retireBondRecallRuns(now, today)
+      // Three stars (D200): a card run frozen for five gives its ticket back, and a card the migration maxed is paid its coupon.
+      const refundedRuns = await retireFiveStarFriendshipRuns(now, today)
+      const owedCoupons = await grantOwedMaxCoupons(now, today)
       const trainerArchive = await reconcileTrainerPersistent(content, now, true, 'migration:trainer')
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
@@ -265,6 +269,8 @@ export class GameRuntime {
       adoptGameState(stateFromSnapshot(local, content, true))
       if (granted > 0) useGame.getState().pushToast(`+${granted} Daily tickets`, 'ticket')
       if (refunded > 0) useGame.getState().pushToast(`+${refunded} back from an unfinished Bond Recall run`, 'ticket')
+      if (refundedRuns > 0) useGame.getState().pushToast(`+${refundedRuns} back from unfinished card training: cards now max at 3★`, 'ticket')
+      if (owedCoupons > 0) useGame.getState().pushToast(`+${owedCoupons} Card Select Coupon${owedCoupons === 1 ? '' : 's'} for cards now at 3★`)
       if (archivedAwards > 0) useGame.getState().pushToast(`Flair archive updated · ${archivedAwards} awards`)
       if (trainerArchive.events.length > 0) useGame.getState().pushToast(`Trainer archive updated · ${trainerArchive.events.length} achievements`)
       window.addEventListener('online', this.onlineHandler)

@@ -139,7 +139,7 @@ needs some stamina and guts from the tree ([the stamina ladder](#balance-targets
 
 That is what keeps re-slotting a trade rather than a grind: you build for a Sprint race, rebuild for a Long
 one, and you are redistributing, never farming. The ceiling is still `treeBudget(T)`, reached by a full tree
-of **current-era, 5★** cards.
+of **current-era, maxed (3★)** cards.
 
 What *can* change the total is **card quality** — era and stars (D126, D147, below). A better card is worth
 more on the same node, which is what makes the collection matter. Two further exceptions, both visible in the
@@ -174,11 +174,11 @@ you find the 200 Stamina a Mile race wants without slotting a Stamina card you w
 A node pays `nodeValue(T) × starPct × eraPct`, both percentages:
 
 ```
-starPct = 0★ 60 · 1★ 68 · 2★ 76 · 3★ 84 · 4★ 92 · 5★ 100
+starPct = 0★ 60 · 1★ 68 · 2★ 84 · 3★ 100
 eraPct  = max(40, 100 − 5 × (T − cardEra))
 ```
 
-A card's stars are **also per scenario** (D127, D147), so both halves of card quality are measured against the
+A card's stars are **also per scenario** (D127, D200), so both halves of card quality are measured against the
 scenario a node belongs to.
 
 **Era is measured against the scenario, not in absolute terms.** A card from the scenario's own era is full

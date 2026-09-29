@@ -45,7 +45,7 @@ aptitudes" has real choices. At 25% 174/164 cards tag; at 40%, 124/100. T080 fix
 
 | Task | Delivery | Depends on | Suggested owner |
 |---|---|---|---|
-| [T078](T078-three-star-cards.md) | Three stars: 0★–3★, save v8 migration, run ladder, coupon at 3★, rivals unchanged | — | Claude (save migration, API, production publish of the change) or Codex with Claude reviewing the migration |
+| T078 ✅ | Three stars: 0★–3★, save v8 migration, run ladder, coupon at 3★, rivals unchanged | — | Claude, landed 2026-09-29 |
 | [T079](T079-card-training-on-its-own.md) | Every scenario open; a run's partners picked on its own, not from an Uma | T078 | Codex (delegable) |
 | [T080](T080-card-focus-tags.md) | Running-style and distance focus per card; album facets; authored overrides | — (parallel with T078) | Codex for code; Claude authors and publishes the private overrides |
 | [T081](T081-card-bond-achievements.md) | Bond achievement families (type, style, distance, combos, scenario, totals) | T078, T080 | Codex (delegable) |

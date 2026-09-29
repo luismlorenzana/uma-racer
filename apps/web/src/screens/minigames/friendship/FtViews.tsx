@@ -6,8 +6,10 @@ import {
   FT_SHOP_PRICES,
   FT_SKILL_RULES,
   FT_SKILL_SLOTS,
+  FT_STRENGTH_PER_STAR,
   FT_TRAITS,
   FT_TWISTS,
+  MAX_STARS,
   STATS,
   ftFinished,
   ftScoreTrain,
@@ -135,8 +137,8 @@ export function CardSheet({ setup, def, points, onClose }: { setup: FtSetup; def
             </div>
           </div>
           <div className="flex items-center gap-2 text-[13px]">
-            <Stars value={setup.legendsCardId === def.id ? 5 : def.stars} />
-            <span className="text-ink-soft">{setup.legendsCardId === def.id ? 'Legends: plays as 5★' : `strength × ${(1 + 0.1 * def.stars).toFixed(1)}`}</span>
+            <Stars value={setup.legendsCardId === def.id ? MAX_STARS : def.stars} />
+            <span className="text-ink-soft">{setup.legendsCardId === def.id ? `Legends: plays as ${MAX_STARS}★` : `strength × ${(1 + FT_STRENGTH_PER_STAR * def.stars).toFixed(2)}`}</span>
           </div>
           {points !== undefined && <p className="text-[13px]">Scores <strong>{points}</strong> points here.</p>}
           <p className="text-[14px]"><strong>{FT_TRAITS[def.trait].name}:</strong> {FT_TRAITS[def.trait].rule}.</p>

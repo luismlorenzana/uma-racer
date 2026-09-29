@@ -273,8 +273,8 @@ cancellation, background/resume and sustained frame pacing; browser emulation al
 
 The card minigame (D146, D177): a Balatro-style run that trains one card through a season of weeks and races. A clear
 is **one star in one scenario**, for one ticket, all or nothing. D168 closed its lists, D173 gave it a sense of place,
-and the numbers are tuning drafts held by `pnpm sim:training`, which keeps the bot's clear rates near 90 / 85 / 80 / 75
-/ 70% for 1★–5★ and every scenario twist within its band. The engine is `packages/domain/src/friendship-*.ts`; the
+and the numbers are tuning drafts held by `pnpm sim:training`, which keeps the bot's clear rates near 90 / 80 / 70% for
+1★–3★ and every scenario twist within its band. The engine is `packages/domain/src/friendship-*.ts`; the
 screens are `apps/web/src/screens/minigames/friendship/`.
 
 ### Fixed choices (D146)
@@ -284,7 +284,7 @@ screens are `apps/web/src/screens/minigames/friendship/`.
 - **Owned cards only.** Runs never show unowned cards; unlocking takes a Card Select Coupon (D198).
 - **Spark Match stays separate** and remains the only way to raise a Training Level. M022 replaces its adjacent-swap
   rules with Rival Circuit before this milestone begins; Friendship Training does not share combat, rewards or UI with it.
-- **Length grows with the star being earned**, so early stars are quick and the fifth is a real run.
+- **Length grows with the star being earned**, so the first star is quick and the third is a real run.
 - **Seeded and resumable:** the run is a pure function of its setup and the player's choices, so a reload resumes it
   exactly and cannot reroll a friendlier draw.
 
@@ -295,10 +295,12 @@ A run is a short **season of stages**. Each stage is **two training weeks and a 
 | Earning | Stages | Races | About |
 |---|---|---|---|
 | 1★ | 1 | G3 | 5 min |
-| 2★ | 2 | G3, G2 | 8 min |
-| 3★ | 2 | G3, G2 (harder targets) | 8 min |
-| 4★ | 3 | G3, G2, G1 | 12 min |
-| 5★ | 3 | G3, G2, G1 (harder targets) | 12 min |
+| 2★ | 2 | G3, G2 (targets × 1.18) | 8 min |
+| 3★ | 3 | G3, G2, G1 (targets × 1.12) | 12 min |
+
+The three runs are the old 1★, 3★ and 5★ runs of the five-star ladder (D200), with the same stages and targets: a card
+maxes in three clears (six stages) instead of five (eleven). A card's stars in the scenario make it play stronger,
+`1 + stars / 6`: × 1.5 at 3★, as at the old 5★.
 
 Each stage's race is drawn by the seed from the real races of its grade. Missing any week's or race's target ends
 the run.
@@ -443,7 +445,7 @@ main card wears its gauge (three pips) and, once bonded, a gold ring. **Tap** se
 ### Balance (`pnpm sim:training`)
 
 A headless bot plays seeded runs for each star (greedy best formation, redraws towards on-type cards, simple shop
-choices). Targets are tuned until the bot clears about **90% / 85% / 80% / 75% / 70%** for 1★–5★; a person who plans
+choices). Targets are tuned until the bot clears about **90% / 80% / 70%** for 1★–3★ (measured 93 / 78 / 74%); a person who plans
 ahead does better. The table is printed and gated like `sim:careers`.
 
 ### Screens
@@ -477,12 +479,12 @@ places. Drafts, each with a sim row:
 | Unity Cup | **Team Spirit:** a train with five different characters adds +1 mult |
 | Trackblazer | **Climax:** each race won adds +1 mult to every later train |
 | Our Grand Concert | **Performance:** each train earns a note for every stat type in it; with all five, the next train scores × 2 and the notes reset |
-| Grand Masters | **Fragments:** each train earns a fragment, two with a card at 4★ or more; at eight, the next train scores × 1.5 |
+| Grand Masters | **Fragments:** each train earns a fragment, two with a card at 3★; at eight, the next train scores × 1.5 |
 | Project L'Arc | **Expedition:** winning a race takes its first favoured type with you: on-type for the rest of the run |
 | U.A.F. Ready GO! | **Genres:** the same facility in consecutive weeks adds +1 mult per week of the streak |
 | Great Food Festival | **Cooking:** each week's facility gives its ingredient; three of a kind cook a dish, × 1.2 for the next three trains |
 | Run! Mecha Umamusume | **Research:** each cleared week upgrades its facility, +10% there per level for the rest of the run |
-| The Twinkle Legends | **Legends:** one other card of the set plays as if at 5★ |
+| The Twinkle Legends | **Legends:** one other card of the set plays as if at 3★ |
 | Design Your Island | **Construction:** before the first week, build two facilities; they pay +5 points per card |
 | Yukoma Hot Springs | **Soak:** after each race, the next stage's weeks get +1 redraw |
 | Beyond Dreams | **Shared Light:** the two facility types trained least get +1 mult |

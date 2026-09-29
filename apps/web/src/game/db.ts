@@ -259,6 +259,8 @@ class RacerDb extends Dexie {
     this.version(11).stores(storesWithMinigameRuns)
     // One engine-tagged snapshot and journal for every open minigame. Completed rows remain byte-identical history.
     this.version(12).stores(storesWithMinigameRuns).upgrade(migrateOpenMinigameJournals)
+    // Save v8 (D200): cards move to three stars. Owed coupons and five-star runs settle at startup, where every path meets.
+    this.version(13).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
   }
 }
 

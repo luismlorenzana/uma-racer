@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ftStateHash, sparkRivalStateHash, type FtSetup } from '@racer/domain'
+import { FT_SETUP_VERSION, ftStateHash, sparkRivalStateHash, type FtSetup } from '@racer/domain'
 import { MinigameHostTestDouble, type RunOutcome, type RunTicket } from './minigame-host'
 
 async function terminalClaim(host: MinigameHostTestDouble, ticket: RunTicket): Promise<Extract<RunOutcome, { kind: 'spark-match' }>> {
@@ -24,7 +24,7 @@ async function terminalClaim(host: MinigameHostTestDouble, ticket: RunTicket): P
 }
 
 const friendshipSetup: FtSetup = {
-  version: 1,
+  version: FT_SETUP_VERSION,
   seed: 1,
   tier: 1,
   twist: 'foundation',

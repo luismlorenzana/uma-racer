@@ -23,13 +23,14 @@ import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel }
 import { EXP_TO_NEXT_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type StatKey, type Stats } from './types'
 
-export const SAVE_SCHEMA_VERSION = 7 as const
+export const SAVE_SCHEMA_VERSION = 8 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V4 = 4 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V5 = 5 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V6 = 6 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V7 = 7 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -199,6 +200,11 @@ export interface LegacyPlayerProfileV6 extends Omit<PlayerProfile, 'schemaVersio
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V6
 }
 
+/** v7 profiles have v8's shape; the bump belongs to the cards' three-star scale (D200). */
+export interface LegacyPlayerProfileV7 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V7
+}
+
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
   raceId: string
   kind: 'win' | 'win-by-margin'
@@ -221,11 +227,18 @@ export interface LegacyUmaSaveV1 extends Omit<LegacyUmaSaveV4,
   'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys' | 'scenarioModifier'> {}
 
 /**
- * Cards earn one star per clear of the card minigame, 0★–5★, and stars belong to the scenario they were earned in but
- * are shared by every Uma (D127, D147). An absent tier means 0★ there. The field is `stars`, not v6's `limitBreaks`, so a
- * v6 card, on the old 0–4 scale, can never be read as stars without its conversion.
+ * Cards earn one star per clear of the card minigame, 0★–3★ (D200), and stars belong to the scenario they were earned in
+ * but are shared by every Uma (D127). An absent tier means 0★ there. The field is `bonds`, not v7's `stars` (0★–5★) or
+ * v6's `limitBreaks`, so a card on an older scale can never be read without its conversion.
  */
 export interface CardSave {
+  templateId: string
+  bonds: Record<string, number>
+  maxCouponGranted: boolean
+}
+
+/** The v7 shape: per-scenario stars on the five-star scale (D147). */
+export interface LegacyCardSaveV7 {
   templateId: string
   stars: Record<string, number>
   maxCouponGranted: boolean
@@ -432,7 +445,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -509,6 +522,17 @@ export function migratePlayerProfileV5(value: LegacyPlayerProfileV5): PlayerProf
 
 export function parseLegacyPlayerProfileV6(value: unknown): LegacyPlayerProfileV6 | null {
   return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V6)
+}
+
+export function parseLegacyPlayerProfileV7(value: unknown): LegacyPlayerProfileV7 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V7)
+}
+
+/** A stamp bump: v8 changed the cards (D200), not the profile. */
+export function migratePlayerProfileV7(value: LegacyPlayerProfileV7): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV7(value)
+  if (!parsed) throw new Error('Legacy v7 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
 /** One ticket became one run (D148): the balance is re-denominated once, here, and never again. */
@@ -1040,7 +1064,23 @@ export interface LegacyUmaSaveV6 extends Omit<UmaSave, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V6
 }
 
-/** v5, v6 and v7 Umas share a shape (v6 changed cards, v7 cards and tickets), so these are stamp bumps. */
+export interface LegacyUmaSaveV7 extends Omit<UmaSave, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V7
+}
+
+/** v5 to v8 Umas share a shape (v6 changed cards, v7 cards and tickets, v8 cards), so these are stamp bumps. */
+export function parseLegacyUmaSaveV7(value: unknown): LegacyUmaSaveV7 | null {
+  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V7) return null
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  return parsed ? { ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V7 } : null
+}
+
+export function migrateUmaSaveV7(value: LegacyUmaSaveV7): UmaSave {
+  const parsed = parseLegacyUmaSaveV7(value)
+  if (!parsed) throw new Error('Legacy v7 Uma save is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
 export function parseLegacyUmaSaveV6(value: unknown): LegacyUmaSaveV6 | null {
   if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V6) return null
   const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
@@ -1171,6 +1211,8 @@ function parsePerTier(value: unknown, max: number): Record<string, number> | nul
 export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
   const current = parseUmaSave(value)
   if (current) return current
+  const v7 = parseLegacyUmaSaveV7(value)
+  if (v7) return migrateUmaSaveV7(v7)
   const v6 = parseLegacyUmaSaveV6(value)
   if (v6) return migrateUmaSaveV6(v6)
   const v5 = parseLegacyUmaSaveV5(value)
@@ -1187,13 +1229,15 @@ export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
 
 /** Walks any supported stored card shape to the current one. */
 export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
-  return parseCardSave(value) ?? migrateCardSaveV6(value) ?? migrateCardSaveV5(value)
+  return parseCardSave(value) ?? migrateCardSaveV7(value) ?? migrateCardSaveV6(value) ?? migrateCardSaveV5(value)
 }
 
 /** Walks any supported stored profile shape to the current one. */
 export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
   const current = parsePlayerProfile(value)
   if (current) return current
+  const v7 = parseLegacyPlayerProfileV7(value)
+  if (v7) return migratePlayerProfileV7(v7)
   const v6 = parseLegacyPlayerProfileV6(value)
   if (v6) return migratePlayerProfileV6(v6)
   const v5 = parseLegacyPlayerProfileV5(value)
@@ -1209,25 +1253,45 @@ export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | n
 }
 
 export function parseCardSave(value: unknown): CardSave | null {
-  if (!isObject(value) || !exactKeys(value, ['templateId', 'stars', 'maxCouponGranted']) || !isId(value.templateId)) return null
-  const stars = parsePerTier(value.stars, MAX_STARS)
-  if (!stars) return null
+  if (!isObject(value) || !exactKeys(value, ['templateId', 'bonds', 'maxCouponGranted']) || !isId(value.templateId)) return null
+  const bonds = parsePerTier(value.bonds, MAX_STARS)
+  if (!bonds) return null
   if (typeof value.maxCouponGranted !== 'boolean') return null
-  return { templateId: value.templateId, stars, maxCouponGranted: value.maxCouponGranted }
+  return { templateId: value.templateId, bonds, maxCouponGranted: value.maxCouponGranted }
 }
 
-/** A v6 limit break as stars: `ceil(1.25 × LB)`, so no card loses node value and LB4 stays max at 5★ (D147). */
+/** v7's five-star scale (D147). */
+const LEGACY_MAX_STARS_V7 = 5
+
+/**
+ * A v7 star count on the three-star scale, `⌈3s / 5⌉` (D200): 1→1, 2→2, 3→2, 4→3, 5→3. Rounding up keeps every node
+ * percent a card had, and a card one star from the old max becomes max.
+ */
+export const fiveStarToThree = (stars: number): number => Math.ceil((stars * MAX_STARS) / LEGACY_MAX_STARS_V7)
+
+export function migrateCardSaveV7(value: unknown): CardSave | null {
+  if (!isObject(value) || !exactKeys(value, ['templateId', 'stars', 'maxCouponGranted']) || !isId(value.templateId)) return null
+  const stars = parsePerTier(value.stars, LEGACY_MAX_STARS_V7)
+  if (!stars || typeof value.maxCouponGranted !== 'boolean') return null
+  return {
+    templateId: value.templateId,
+    bonds: Object.fromEntries(Object.entries(stars).map(([tier, count]) => [tier, fiveStarToThree(count)])),
+    maxCouponGranted: value.maxCouponGranted,
+  }
+}
+
+/** A v6 limit break as v7 stars: `ceil(1.25 × LB)`, so no card loses node value and LB4 stays max at 5★ (D147). */
 export const limitBreakToStars = (limitBreak: number): number => Math.ceil(limitBreak * 1.25)
 
 export function migrateCardSaveV6(value: unknown): CardSave | null {
   if (!isObject(value) || !exactKeys(value, ['templateId', 'limitBreaks', 'maxCouponGranted']) || !isId(value.templateId)) return null
   const limitBreaks = parsePerTier(value.limitBreaks, LEGACY_MAX_LIMIT_BREAK)
   if (!limitBreaks || typeof value.maxCouponGranted !== 'boolean') return null
-  return {
+  return migrateCardSaveV7({
     templateId: value.templateId,
     stars: Object.fromEntries(Object.entries(limitBreaks).map(([tier, limitBreak]) => [tier, limitBreakToStars(limitBreak)])),
     maxCouponGranted: value.maxCouponGranted,
-  }
+  })
 }
 
 /**
@@ -1307,7 +1371,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
 
 export function createCardSave(template: SupportCardTemplate): CardSave {
   assertSaveCardTemplate(template)
-  return { templateId: template.id, stars: {}, maxCouponGranted: false }
+  return { templateId: template.id, bonds: {}, maxCouponGranted: false }
 }
 
 function nextLocalDay(day: string): string {

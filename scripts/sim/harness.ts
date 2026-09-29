@@ -106,14 +106,14 @@ export interface BuildOptions {
   trainingLevel?: number
   /** Nodes go to the Friend card first (its fair share, for SP) or last, when stats matter more than skills. */
   friend?: 'first' | 'last'
-  /** Every card's stars in this scenario. Defaults to 5, a fully bonded set. */
+  /** Every card's stars in this scenario. Defaults to max, a fully bonded set. */
   stars?: number
   /** Cards (by deck index) filled to their cap right after the lean, before Speed and Wit. */
   first?: number[]
 }
 
 /**
- * Race stats for a six-card set, current era, 5★ unless `stars` says otherwise. The card at `leanIndex` takes `lean`
+ * Race stats for a six-card set, current era, maxed unless `stars` says otherwise. The card at `leanIndex` takes `lean`
  * nodes, any `first` cards fill to their cap, Speed then Wit fill what is left up to the per-card cap, and the Friend
  * card takes its fair share first or last.
  */

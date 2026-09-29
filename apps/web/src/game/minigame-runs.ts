@@ -2,6 +2,7 @@
 
 import {
   FRIENDSHIP_TRAINING_TICKET_COST,
+  FT_SETUP_VERSION,
   MAX_STARS,
   MAX_SCENARIO_TIER,
   MAX_TRAINING_LEVEL,
@@ -399,8 +400,37 @@ export class PersistentMinigameJournal implements MinigameJournal {
  * ticket comes back under `minigame-refund`. Idempotent: a run is closed and refunded once. Returns the tickets given back.
  */
 export async function retireBondRecallRuns(now: number, today: string): Promise<number> {
+  return retireOpenRuns(now, today, (run) => run.kind === 'bond-recall',
+    () => ({ outcome: { kind: 'bond-recall', cleared: false, mismatches: 0 } }))
+}
+
+/**
+ * A Friendship Training run frozen for the five-star ladder (setup version 1) cannot replay on the three-star one (D200),
+ * so it closes and its ticket comes back, as D177 did for Bond Recall. Idempotent. Returns the tickets given back.
+ */
+export async function retireFiveStarFriendshipRuns(now: number, today: string): Promise<number> {
+  const frozenForFiveStars = (run: MinigameRunRow) => {
+    const setup = (run.snapshot as { setup?: { version?: unknown } } | undefined)?.setup
+    return run.kind === 'friendship-training' && setup?.version !== FT_SETUP_VERSION
+  }
+  return retireOpenRuns(now, today, frozenForFiveStars, (run) => ({
+    outcome: {
+      kind: 'friendship-training',
+      engine: 'friendship-training-v1',
+      actionCount: (run.journal as { actions?: unknown[] } | undefined)?.actions?.length ?? 0,
+      stateHash: '00000000',
+    },
+  }))
+}
+
+async function retireOpenRuns(
+  now: number,
+  today: string,
+  retire: (run: MinigameRunRow) => boolean,
+  closing: (run: MinigameRunRow) => Pick<MinigameRunRow, 'outcome'>,
+): Promise<number> {
   return db.transaction('rw', [db.profile, db.ledger, db.outbox, db.minigameRuns], async () => {
-    const open = (await db.minigameRuns.toArray()).filter((run) => run.kind === 'bond-recall' && run.status === 'open')
+    const open = (await db.minigameRuns.toArray()).filter((run) => run.status === 'open' && retire(run))
     if (open.length === 0) return 0
     const profileRow = await db.profile.get('main')
     if (!profileRow) return 0
@@ -417,8 +447,8 @@ export async function retireBondRecallRuns(now: number, today: string): Promise<
       }
       await db.minigameRuns.put({
         ...run,
+        ...closing(run),
         status: 'completed',
-        outcome: { kind: 'bond-recall', cleared: false, mismatches: 0 },
         reward: { ticketsSpent: 0 },
         completedAt: now,
       })
@@ -488,7 +518,7 @@ export class PersistentMinigameHost implements MinigameHost {
       throw new Error('This card is not available in that scenario')
     }
     if (cardStars(card, target.tier) >= MAX_STARS) {
-      throw new Error('This card already has 5★ in that scenario')
+      throw new Error(`This card already has ${MAX_STARS}★ in that scenario`)
     }
     return { tier: target.tier, key: targetKey(target, target.tier) }
   }

@@ -158,8 +158,8 @@ describe('card shares', () => {
 })
 
 describe('stars', () => {
-  it('pays 60% of a node at 0★, rising 8 points a star to 100% at 5★ (D147)', () => {
-    expect(STAR_NODE_PCT).toEqual([60, 68, 76, 84, 92, 100])
+  it('pays 60% of a node at 0★ and 100% at 3★, the old 0★ · 1★ · 3★ · 5★ (D147, D200)', () => {
+    expect(STAR_NODE_PCT).toEqual([60, 68, 84, 100])
     expect(starNodePct(MAX_STARS)).toBe(100)
     expect(starNodePct(99)).toBe(100)
     expect(starNodePct(-1)).toBe(60)

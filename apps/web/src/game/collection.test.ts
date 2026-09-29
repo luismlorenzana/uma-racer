@@ -6,6 +6,7 @@ import type { LoadedContent } from '../content/runtime'
 import {
   exchangeMemoryUmaShards,
   exchangePersistentUmaShards,
+  grantOwedMaxCoupons,
   redeemMemoryCard,
   redeemMemoryUma,
   redeemPersistentCard,
@@ -77,7 +78,7 @@ describe('collection persistence', () => {
     await seed()
     const first = await redeemPersistentCard(content, cardTemplate.id, '2000-01-02', 60)
     const retry = await redeemPersistentCard(content, cardTemplate.id, '2000-01-03', 70)
-    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { stars: {} } })
+    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { bonds: {} } })
     expect(retry).toMatchObject({ alreadyRedeemed: true, profile: { cardCoupons: 1 } })
     expect((await db.cards.get(cardTemplate.id))?.version).toBe(0)
     expect(await db.ledger.get(`card-coupon-redeem:${cardTemplate.id}`)).toMatchObject({
@@ -137,5 +138,23 @@ describe('memory-only collection mutations', () => {
     expect(redeemMemoryCard(content, profile, {}, cardTemplate.id, '2000-01-02', 50).card).toEqual(createCardSave(cardTemplate))
     expect(redeemMemoryUma(content, profile, {}, umaTemplate.id, '2000-01-02', 50).uma).toEqual(createUmaSave(umaTemplate))
     expect(() => redeemMemoryCard(content, profile, { [cardTemplate.id]: createCardSave(cardTemplate) }, cardTemplate.id, '2000-01-02', 50)).toThrow('already owned')
+  })
+
+  it('pays the coupon a card was owed for reaching 3★ through the v8 migration, once (D200)', async () => {
+    await seed({ cardCoupons: 0 })
+    const put = (id: string, bonds: Record<string, number>, maxCouponGranted: boolean) =>
+      db.cards.put({ id, version: 1, data: { templateId: id, bonds, maxCouponGranted } })
+    await put('maxed', { '1': 3 }, false)
+    await put('paid', { '2': 3 }, true)
+    await put('short', { '1': 2 }, false)
+    expect(await grantOwedMaxCoupons(100, '2000-01-02')).toBe(1)
+    expect((await db.profile.get('main'))?.data.cardCoupons).toBe(1)
+    expect((await db.cards.get('maxed'))?.data.maxCouponGranted).toBe(true)
+    expect((await db.cards.get('short'))?.data.maxCouponGranted).toBe(false)
+    expect((await db.ledger.get('card-max-v8:maxed'))?.data).toMatchObject({ resource: 'card-coupons', delta: 1, reason: 'card-max' })
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort())
+      .toEqual(['cards/maxed', 'ledger/card-max-v8:maxed', 'profile/main'])
+    expect(await grantOwedMaxCoupons(200, '2000-01-03')).toBe(0)
+    expect((await db.profile.get('main'))?.data.cardCoupons).toBe(1)
   })
 })

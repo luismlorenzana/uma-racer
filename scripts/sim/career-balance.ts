@@ -12,6 +12,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  MAX_STARS,
   CAREER_STAGE_GRADES,
   GRADES,
   careerRaceCatalog,
@@ -118,11 +119,11 @@ for (const [key, count] of outside) {
 
 /**
  * Each stage's race at TL10, the way the owner plays: train fully, then race (D152). Her best of four strategies and
- * the decks for the distance, with the golds her SP buys, once with a new set (0★) and once fully bonded (5★). The
+ * the decks for the distance, with the golds her SP buys, once with a new set (0★) and once fully bonded (3★, D200). The
  * fully bonded Uma must win every stage's race at least FLOOR% of the time; retries are free, so that is finishable.
  */
 const FLOOR = 25
-const STARS = [0, 5] as const
+const STARS = [0, MAX_STARS] as const
 // The stamina ladder's decks for each distance (constellations.md#balance-targets), with the Friend card last or first.
 // Sprints and miles also try a Power card (engine v7, D158): acceleration decides short races, as in the original.
 const DECKS: Record<DistanceCategory, { distance: number; golds: number; builds: ((tier: number, stars: number) => Stats)[] }> = {
@@ -171,7 +172,7 @@ function bestWinRate(tier: number, stage: CareerStage, category: DistanceCategor
 }
 
 if (!COVERAGE_ONLY) {
-  console.log(`\nStage win rates at TL10 (best of 4 strategies and the decks per distance, ${RACES} races per cell, 12 runners; 5★ floor ${FLOOR}%)`)
+  console.log(`\nStage win rates at TL10 (best of 4 strategies and the decks per distance, ${RACES} races per cell, 12 runners; ${MAX_STARS}★ floor ${FLOOR}%)`)
   console.log('            maiden G3          trials G2          main G1')
   console.log('            spr mil med lng    spr mil med lng    spr mil med lng')
   for (const tier of TIERS_SAMPLED) {
@@ -179,9 +180,9 @@ if (!COVERAGE_ONLY) {
       const cells = (['maiden', 'trials', 'main'] as const).map((stage) =>
         (['sprint', 'mile', 'medium', 'long'] as const).map((category) => {
           const rate = bestWinRate(tier, stage, category, stars)
-          if (stars === 5 && rate < FLOOR) {
+          if (stars === MAX_STARS && rate < FLOOR) {
             hardFailures += 1
-            console.error(`FAIL T${tier} ${stage} ${category} at 5★: ${rate}%`)
+            console.error(`FAIL T${tier} ${stage} ${category} at ${MAX_STARS}★: ${rate}%`)
           }
           return String(rate).padStart(3)
         }).join(' '))

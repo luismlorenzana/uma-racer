@@ -16,6 +16,7 @@ import {
 } from './engine'
 import { FT_SHOP_PRICES, ftFavouredTypes, type FtRivalRuleId, type FtSkillRuleId, type FtTwistId } from './rules'
 import {
+  FT_SETUP_VERSION,
   buildFriendshipSetup,
   ftCardDef,
   ftSkillRule,
@@ -85,7 +86,7 @@ function setupWith(cards: FtCardDef[], options: { twist?: FtTwistId; deck?: stri
   const byId = Object.fromEntries(cards.map((card) => [card.id, card]))
   const skills = Object.fromEntries((options.skills ?? []).map((entry) => [entry.id, entry]))
   return {
-    version: 1, seed: 1234, tier: 1, twist: options.twist ?? 'foundation', earning: options.earning ?? 1,
+    version: FT_SETUP_VERSION, seed: 1234, tier: 1, twist: options.twist ?? 'foundation', earning: options.earning ?? 1,
     mainCardId: cards[0]!.id,
     deck: options.deck ?? cards.flatMap((card) => [card.id, card.id]),
     cards: byId,
@@ -126,16 +127,17 @@ describe('Friendship Training setup', () => {
   const skills = [skill('h1'), skill('h2', { kind: 'gold' }), skill('h3'), skill('unique', { kind: 'unique' }), ...Array.from({ length: 60 }, (_, index) => skill(`p${index}`))]
   const races = [race('g3a', 'g3'), race('g3b', 'g3'), race('g2a', 'g2'), race('g1a', 'g1', 'long', 'dirt')]
   const build = (overrides: Partial<Parameters<typeof buildFriendshipSetup>[0]> = {}) => buildFriendshipSetup({
-    seed: 42, tier: 1, mainStars: 3, mainCard: main, setCardIds: ['a', 'b', 'c', 'd', 'e'], owned, skills, races, ...overrides,
+    seed: 42, tier: 1, mainStars: 2, mainCard: main, setCardIds: ['a', 'b', 'c', 'd', 'e'], owned, skills, races, ...overrides,
   })
 
   it('deals two of the main card and two of each other set card, and earns the next star', () => {
     const setup = build()
-    expect(setup.earning).toBe(4)
+    expect(setup.earning).toBe(3)
+    expect(setup.version).toBe(FT_SETUP_VERSION)
     expect(setup.deck).toHaveLength(12)
     expect(setup.deck.filter((id) => id === 'main')).toHaveLength(2)
     expect(new Set(setup.deck)).toEqual(new Set(['main', 'a', 'b', 'c', 'd', 'e']))
-    expect(setup.cards.main!.stars).toBe(3)
+    expect(setup.cards.main!.stars).toBe(2)
   })
 
   it('tops a short set up from owned, era-eligible cards, never a later era', () => {
@@ -169,8 +171,14 @@ describe('Friendship Training setup', () => {
     expect(build({ tier: 10 }).twist).toBe('legends')
   })
 
-  it('refuses a card already at 5★', () => {
-    expect(() => build({ mainStars: 5 })).toThrow()
+  it('refuses a card already at 3★, and runs one · two · three stages for 1★ · 2★ · 3★ (D200)', () => {
+    expect(() => build({ mainStars: 3 })).toThrow()
+    expect([0, 1, 2].map((mainStars) => build({ mainStars }).races.length)).toEqual([1, 2, 3])
+  })
+
+  it('never reads a setup frozen for five stars', () => {
+    expect(parseFtSetup({ ...build(), version: 1 })).toBeNull()
+    expect(parseFtSetup(build())).toEqual(build())
   })
 })
 
@@ -229,11 +237,12 @@ describe('formations', () => {
   })
 
   it('grows with the card’s stars and shop upgrades', () => {
-    const starred = setupWith([def('m', 'wit'), def('x', 'speed', 'trainingBonus', { stars: 4 })])
+    // A maxed card plays at × 1.5, as a 5★ card did (D200).
+    const starred = setupWith([def('m', 'wit'), def('x', 'speed', 'trainingBonus', { stars: 3 })])
     const state = inHand(starred, ['x'])
-    expect(score(starred, state).cardPoints).toBeCloseTo(10 * 1.4 + 6, 9)
+    expect(score(starred, state).cardPoints).toBeCloseTo(10 * 1.5 + 6, 9)
     state.deck[0]!.bonus = 5
-    expect(score(starred, state).cardPoints).toBeCloseTo(10 * 1.4 + 6 + 5, 9)
+    expect(score(starred, state).cardPoints).toBeCloseTo(10 * 1.5 + 6 + 5, 9)
   })
 })
 
@@ -453,7 +462,7 @@ describe('the shop', () => {
 
 describe('scenario twists', () => {
   const cards = [def('m', 'wit'), def('a', 'speed'), def('b', 'stamina'), def('c', 'power'), def('d', 'guts'), def('e', 'wit'),
-    def('hi', 'speed', 'trainingBonus', { stars: 4 })]
+    def('hi', 'speed', 'trainingBonus', { stars: 3 })]
   const twist = (id: FtTwistId, extra: Parameters<typeof setupWith>[1] = {}) => setupWith(cards, { twist: id, ...extra })
 
   it('Team Spirit: five different characters add +1 mult', () => {
@@ -475,7 +484,7 @@ describe('scenario twists', () => {
     expect(score(setup, after, after.encounter!.hand.slice(0, 1)).factor).toBe(2)
   })
 
-  it('Fragments: a 4★ card earns two, and eight make × 1.5', () => {
+  it('Fragments: a 3★ card earns two, and eight make × 1.5', () => {
     const setup = twist('fragments')
     const state = inHand(setup, ['hi', 'a'], { trainsLeft: 3 })
     state.twist.fragments = 6
@@ -557,7 +566,7 @@ describe('scenario twists', () => {
 
 describe('determinism', () => {
   const pool = [...deckCards, def('f', 'friend', 'friendshipBonus'), def('g', 'stamina', 'hintFrequency'), def('h', 'power', 'specialtyPriority')]
-  const setup = { ...setupWith(pool, { deck: ['m', 'm', 'a', 'a', 'b', 'b', 'c', 'c', 'd', 'd', 'e', 'e'], earning: 5, skills: [skillDef('s1', 'surge'), skillDef('s2', 'second-wind', true), skillDef('s3', 'vision')] }),
+  const setup = { ...setupWith(pool, { deck: ['m', 'm', 'a', 'a', 'b', 'b', 'c', 'c', 'd', 'd', 'e', 'e'], earning: 3, skills: [skillDef('s1', 'surge'), skillDef('s2', 'second-wind', true), skillDef('s3', 'vision')] }),
     races: [
       { id: 'r1', name: 'One', grade: 'g3' as const, distance: 1200, distanceCategory: 'sprint' as const, surface: 'turf' as const },
       { id: 'r2', name: 'Two', grade: 'g2' as const, distance: 2000, distanceCategory: 'medium' as const, surface: 'dirt' as const },

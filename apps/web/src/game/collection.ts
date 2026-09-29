@@ -8,6 +8,7 @@ import {
   evaluateUmaFlair,
   exchangeUmaShards,
   nextUmaShardExchangeSequence,
+  owedMaxCouponCardIds,
   parseBadgeState,
   parseCardSave,
   parseLedgerEntry,
@@ -280,5 +281,42 @@ export async function grantPersistentDevResources(grant: DevGrant, today: string
       await queueInTransaction('ledger', entry.id, 'append', now)
     }
     return { profile: next, ledgerIds: rows.map((entry) => entry.id) }
+  })
+}
+
+/**
+ * Pays the Card Select Coupon a card is owed for reaching max stars (D200). Only the v8 migration raises a card to max
+ * without paying it, so this runs once at startup; each card is paid once, under `card-max-v8:<card>`. Returns the
+ * coupons granted.
+ */
+export async function grantOwedMaxCoupons(now: number, today: string): Promise<number> {
+  return db.transaction('rw', db.profile, db.cards, db.ledger, db.outbox, async () => {
+    const rows = await db.cards.toArray()
+    const cards = rows.flatMap((row) => {
+      const card = parseCardSave(row.data)
+      return card && card.templateId === row.id ? [card] : []
+    })
+    const owed = owedMaxCouponCardIds(cards)
+    const profileRow = await db.profile.get('main')
+    if (owed.length === 0 || !profileRow) return 0
+    let granted = 0
+    for (const cardId of owed) {
+      const row = rows.find((entry) => entry.id === cardId)!
+      const card = cards.find((entry) => entry.templateId === cardId)!
+      await db.cards.put({ ...row, data: { ...card, maxCouponGranted: true } })
+      await queueInTransaction('cards', cardId, 'upsert', now)
+      const ledgerId = `card-max-v8:${cardId}`
+      if (await db.ledger.get(ledgerId)) continue
+      const entry: LedgerEntry = { resource: 'card-coupons', delta: 1, reason: 'card-max', localDay: today, createdAt: now }
+      await db.ledger.add({ id: ledgerId, data: entry, createdAt: now })
+      await queueInTransaction('ledger', ledgerId, 'append', now)
+      granted += 1
+    }
+    if (granted > 0) {
+      const profile = parsePlayerProfileOrThrow(profileRow.data)
+      await db.profile.put({ ...profileRow, data: { ...profile, cardCoupons: profile.cardCoupons + granted } })
+      await queueInTransaction('profile', 'main', 'upsert', now)
+    }
+    return granted
   })
 }

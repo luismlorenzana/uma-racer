@@ -20,10 +20,12 @@ export const FT_DECK_COPIES = 2
 export const FT_SET_OTHERS = 5
 export const FT_OFFER_SIZE = 3
 
-/** Stages by the star being earned: 1★ one stage, up to three for 4★ and 5★. */
-export const FT_STAGES: Readonly<Record<number, number>> = { 1: 1, 2: 2, 3: 2, 4: 3, 5: 3 }
-/** 3★ and 5★ repeat 2★'s and 4★'s length with harder targets. */
-export const FT_EARNING_TARGET_MULT: Readonly<Record<number, number>> = { 1: 1, 2: 1, 3: 1.18, 4: 1, 5: 1.12 }
+/**
+ * Stages by the star being earned (D200): one for 1★, two for 2★, three for 3★. They are the runs that earned the old
+ * 1★, 3★ and 5★, with the same targets, so the hardest run is as hard as it was.
+ */
+export const FT_STAGES: Readonly<Record<number, number>> = { 1: 1, 2: 2, 3: 3 }
+export const FT_EARNING_TARGET_MULT: Readonly<Record<number, number>> = { 1: 1, 2: 1.18, 3: 1.12 }
 export const FT_STAGE_GRADES: readonly RaceGrade[] = ['g3', 'g2', 'g1']
 
 /**
@@ -44,7 +46,8 @@ export const FT_RACE_PAYOUT = 5
 export const FT_UNUSED_TRAIN_FANS = 2
 
 export const FT_CARD_POINTS = { onType: 10, offType: 5, broad: 7 } as const
-export const FT_STRENGTH_PER_STAR = 0.1
+/** A maxed card plays at × 1.5, as a 5★ card did (D200). */
+export const FT_STRENGTH_PER_STAR = 1 / 6
 export const FT_UPGRADE_POINTS = 5
 
 /** A Rainbow's mult grows by one per on-type card past three, up to this many. */
@@ -142,12 +145,12 @@ export const FT_TWISTS: readonly { id: FtTwistId; name: string; rule: string }[]
   { id: 'team-spirit', name: 'Team Spirit', rule: 'A train with five different characters adds +1 mult.' },
   { id: 'climax', name: 'Climax', rule: 'Each race won adds +1 mult to every later train.' },
   { id: 'performance', name: 'Performance', rule: 'Each train earns a note for every stat type in it. With all five, the next train scores × 2.' },
-  { id: 'fragments', name: 'Fragments', rule: 'Each train earns a fragment, two with a card at 4★ or more. At eight, the next train scores × 1.5.' },
+  { id: 'fragments', name: 'Fragments', rule: 'Each train earns a fragment, two with a card at 3★. At eight, the next train scores × 1.5.' },
   { id: 'expedition', name: 'Expedition', rule: "Winning a race takes its first favoured type with you: it is on-type for the rest of the run." },
   { id: 'genres', name: 'Genres', rule: 'The same facility in consecutive weeks adds +1 mult per week of the streak.' },
   { id: 'cooking', name: 'Cooking', rule: "Each week's facility gives its ingredient. Three of a kind cook a dish: × 1.2 for the next three trains." },
   { id: 'research', name: 'Research', rule: 'Each cleared week upgrades its facility: +10% there per level.' },
-  { id: 'legends', name: 'Legends', rule: 'One other card of the set plays as if at 5★.' },
+  { id: 'legends', name: 'Legends', rule: 'One other card of the set plays as if at 3★.' },
   { id: 'construction', name: 'Construction', rule: 'Before the first week, build two facilities. They pay +5 points per card.' },
   { id: 'soak', name: 'Soak', rule: "After each race, the next stage's weeks get +1 redraw." },
   { id: 'shared-light', name: 'Shared Light', rule: 'The two facility types trained least get +1 mult.' },
@@ -160,7 +163,7 @@ export const FT_TWIST_VALUES = {
   teamSpiritMult: 1,
   performanceFactor: 2,
   fragmentsNeeded: 8,
-  fragmentsStars: 4,
+  fragmentsStars: 3,
   fragmentsFactor: 1.5,
   cookingNeeded: 3,
   cookingFactor: 1.2,
@@ -169,7 +172,7 @@ export const FT_TWIST_VALUES = {
   constructionPoints: 5,
   constructionBuilds: 2,
   ordersFans: 3,
-  legendsStars: 5,
+  legendsStars: 3,
 } as const
 /** Formations an Orders week can post. */
 export const FT_ORDER_FORMATIONS: readonly FtFormationId[] = ['duo', 'friendship', 'trio', 'rainbow', 'full-team']

@@ -63,7 +63,7 @@ export interface CardAlbum {
   /** Cards in this lens: every card for the collection, only era-eligible ones for a scenario. */
   total: number
   owned: number
-  /** Scenario lens only: owned cards with at least one star, and at 5★. */
+  /** Scenario lens only: owned cards with at least one star, and at max stars. */
   bonded: number
   maxed: number
   orphanedIds: string[]
@@ -185,7 +185,7 @@ export const CARD_SCENARIO_FACETS: FacetDef[] = [
     })),
   },
   { key: 'bondable', label: 'Can still bond', kind: 'boolean', group: 'This scenario' },
-  { key: 'maxed', label: '5★', kind: 'boolean', group: 'This scenario' },
+  { key: 'maxed', label: `${MAX_STARS}★`, kind: 'boolean', group: 'This scenario' },
   { key: 'equipped', label: 'In a set here', kind: 'boolean', group: 'This scenario' },
   ERA,
   { key: 'isNew', label: 'New to you', kind: 'boolean', group: 'Collection' },
@@ -245,7 +245,7 @@ export function buildCardPresets(lens: CardLens): AlbumPreset[] {
   return [
     { key: 'bondable', label: 'Can still bond', apply: (query) => ({ ...query, filters: { bondable: true } }) },
     { key: 'here', label: 'In a set here', apply: (query) => ({ ...query, filters: { equipped: true } }) },
-    { key: 'maxed', label: '5★', apply: (query) => ({ ...query, filters: { maxed: true } }) },
+    { key: 'maxed', label: `${MAX_STARS}★`, apply: (query) => ({ ...query, filters: { maxed: true } }) },
     { key: 'unowned', label: 'Not owned', apply: (query) => ({ ...query, filters: { ownership: ['unowned'] } }) },
   ]
 }

@@ -118,6 +118,11 @@ import {
   FARM_OUTFIT_LEVEL_REQUIREMENTS,
   FARM_CROP_LEVEL_REQUIREMENTS,
   farmingXpToReachLevel,
+  FT_EARNING_TARGET_MULT,
+  FT_STAGES,
+  FT_STRENGTH_PER_STAR,
+  TYPICAL_CARD_STARS,
+  starNodePct,
 } from './index'
 
 describe('Stable Farm', () => {
@@ -457,19 +462,27 @@ describe('cards', () => {
     uniqueEffect: uniqueRaceBonus ? { level: 30, effects: [{ type: 15, value: 5 }] } : null,
   }) as unknown as Parameters<typeof cardRaceBonus>[0]
 
-  it('holds 0★ to 5★ (D147)', () => {
-    expect(MAX_STARS).toBe(5)
+  it('holds 0★ to 3★ (D200)', () => {
+    expect(MAX_STARS).toBe(3)
   })
 
-  it('pays Race Bonus from 1★ on the node curve, reaching the old max-limit-break value at 5★', () => {
+  it('earns 1★ · 2★ · 3★ in runs of one · two · three stages, the old 1★ · 3★ · 5★ runs, and keeps rivals at 84% a node (D200)', () => {
+    expect(FT_STAGES).toEqual({ 1: 1, 2: 2, 3: 3 })
+    expect(FT_EARNING_TARGET_MULT).toEqual({ 1: 1, 2: 1.18, 3: 1.12 })
+    expect(1 + FT_STRENGTH_PER_STAR * MAX_STARS).toBeCloseTo(1.5)
+    expect(starNodePct(TYPICAL_CARD_STARS)).toBe(84)
+  })
+
+  it('pays Race Bonus from 1★ on the node curve, reaching the old max-limit-break value at 3★', () => {
     expect(cardRaceBonus(template(1), 0)).toBe(0)
     expect(cardRaceBonus(template(1), 1)).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
-    expect(cardRaceBonus(template(1), 5)).toBeCloseTo(0.03 * 1.5 * 1.08)
-    expect(cardRaceBonus(template(11), 5)).toBeCloseTo(0.03 * 1.8 * 1.5 * 1.08)
+    expect(cardRaceBonus(template(1), 2)).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.84)
+    expect(cardRaceBonus(template(1), 3)).toBeCloseTo(0.03 * 1.5 * 1.08)
+    expect(cardRaceBonus(template(11), 3)).toBeCloseTo(0.03 * 1.8 * 1.5 * 1.08)
   })
 
-  it('adds the unique bonus at 5★ only', () => {
-    expect(cardRaceBonus(template(1, true), 4)).toBeCloseTo(cardRaceBonus(template(1), 4))
-    expect(cardRaceBonus(template(1, true), 5)).toBeCloseTo(cardRaceBonus(template(1), 5) * 1.25)
+  it('adds the unique bonus at 3★ only', () => {
+    expect(cardRaceBonus(template(1, true), 2)).toBeCloseTo(cardRaceBonus(template(1), 2))
+    expect(cardRaceBonus(template(1, true), 3)).toBeCloseTo(cardRaceBonus(template(1), 3) * 1.25)
   })
 })

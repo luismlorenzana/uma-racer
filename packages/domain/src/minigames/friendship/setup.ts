@@ -59,12 +59,18 @@ export interface FtRaceDef {
   surface: Surface
 }
 
+/**
+ * The frozen setup's version: 2 since the three-star ladder (D200). A version-1 setup was built for five stars; an open
+ * run holding one is closed and refunded at startup rather than replayed on the new ladder.
+ */
+export const FT_SETUP_VERSION = 2
+
 export interface FtSetup {
-  version: 1
+  version: typeof FT_SETUP_VERSION
   seed: number
   tier: number
   twist: FtTwistId
-  /** The star a clear grants, 1–5. */
+  /** The star a clear grants, 1–3. */
   earning: number
   mainCardId: string
   /** The starting deck's card ids, copies included. */
@@ -78,7 +84,7 @@ export interface FtSetup {
   skillSources: { main: string[]; deck: string[]; pool: string[] }
   /** One race per stage. */
   races: FtRaceDef[]
-  /** Legends: the card that plays as if at 5★. */
+  /** Legends: the card that plays as if at max stars. */
   legendsCardId: string | null
 }
 
@@ -186,7 +192,7 @@ export interface BuildFriendshipSetupInput {
 export function buildFriendshipSetup(input: BuildFriendshipSetupInput): FtSetup {
   const { seed, tier, mainCard } = input
   if (!Number.isSafeInteger(input.mainStars) || input.mainStars < 0 || input.mainStars >= MAX_STARS) {
-    throw new Error('Friendship Training needs a card from 0★ through 4★')
+    throw new Error(`Friendship Training needs a card below ${MAX_STARS}★`)
   }
   const earning = input.mainStars + 1
   const eligible = input.owned
@@ -236,7 +242,7 @@ export function buildFriendshipSetup(input: BuildFriendshipSetupInput): FtSetup 
     : null
 
   return {
-    version: 1,
+    version: FT_SETUP_VERSION,
     seed,
     tier,
     twist,
@@ -359,7 +365,7 @@ export function parseFtSetup(value: unknown): FtSetup | null {
   if (!isRecord(value) || !exactKeys(value, [
     'cards', 'deck', 'earning', 'legendsCardId', 'mainCardId', 'races', 'rewardPool', 'seed', 'skillSources',
     'skills', 'tier', 'twist', 'version',
-  ]) || value.version !== 1 || !boundedInteger(value.seed, 0, 0xffff_ffff) ||
+  ]) || value.version !== FT_SETUP_VERSION || !boundedInteger(value.seed, 0, 0xffff_ffff) ||
     !boundedInteger(value.tier, 1, FT_TWISTS.length) || !boundedInteger(value.earning, 1, MAX_STARS) ||
     !boundedText(value.mainCardId, 160) || !Object.hasOwn(FT_TWISTS, Number(value.tier) - 1) ||
     ftTwist(value.tier as number).id !== value.twist) return null
@@ -383,7 +389,7 @@ export function parseFtSetup(value: unknown): FtSetup | null {
   if (value.legendsCardId !== null && (!boundedText(value.legendsCardId, 160) || !cards[value.legendsCardId])) return null
 
   return {
-    version: 1,
+    version: FT_SETUP_VERSION,
     seed: value.seed,
     tier: value.tier,
     twist: value.twist as FtTwistId,

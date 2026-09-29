@@ -162,7 +162,7 @@ export function CardPage() {
             <Button disabled={busy || profile.cardCoupons < 1} onClick={() => void unlock()}>
               {profile.cardCoupons > 0 ? `Use a Card Select Coupon · ${profile.cardCoupons} left` : 'Needs a Card Select Coupon'}
             </Button>
-            <p className="text-center text-[11px] text-ink-soft">Every card&rsquo;s first 5★ earns one coupon.</p>
+            <p className="text-center text-[11px] text-ink-soft">Every card&rsquo;s first {MAX_STARS}★ earns one coupon.</p>
           </div>
         )}
       </Panel>

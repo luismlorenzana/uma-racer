@@ -74,7 +74,7 @@ function album(
 ) {
   const cards = Object.fromEntries(ownedIds.map((id) => {
     const save = createCardSave(templates.find((entry) => entry.id === id)!)
-    return [id, { ...save, stars: options.breaks?.[id] ?? {} }]
+    return [id, { ...save, bonds: options.breaks?.[id] ?? {} }]
   }))
   const save = createUmaSave(uma('u1'))
   return buildCardAlbumRows({
@@ -118,11 +118,11 @@ describe('card album · collection lens', () => {
 
 describe('card album · scenario lens', () => {
   it('holds only cards that era allows, most bonded first and unowned last', () => {
-    const built = album(2, ['c1', 'c3'], { breaks: { c3: { '2': 2 }, c1: { '1': 5 } } })
+    const built = album(2, ['c1', 'c3'], { breaks: { c3: { '2': 2 }, c1: { '1': 3 } } })
     expect([...built.entries.keys()].sort()).toEqual(['c1', 'c3'])
     const result = runAlbumQuery(built.rows, CARD_SCENARIO_FACETS, CARD_SCENARIO_QUERY, CARD_TIE_BREAK)
     expect(result.rows.map((row) => row.id)).toEqual(['c3', 'c1'])
-    // c1 has 5★ in tier 1, but stars belong to their scenario: in tier 2 it starts over.
+    // c1 has 3★ in tier 1, but stars belong to their scenario: in tier 2 it starts over.
     expect(built.entries.get('c1')?.bond).toBe(0)
     expect(built.entries.get('c3')?.bond).toBe(2)
     expect(built.bonded).toBe(1)
@@ -135,7 +135,7 @@ describe('card album · scenario lens', () => {
   })
 
   it('filters on what can still be bonded here', () => {
-    const built = album(1, ['c1'], { breaks: { c1: { '1': 5 } } })
+    const built = album(1, ['c1'], { breaks: { c1: { '1': 3 } } })
     const [bondable] = buildCardPresets(1)
     const result = runAlbumQuery(built.rows, CARD_SCENARIO_FACETS, bondable!.apply(CARD_SCENARIO_QUERY))
     expect(result.rows).toEqual([])
@@ -143,8 +143,8 @@ describe('card album · scenario lens', () => {
   })
 
   it('labels the value the active sort is about', () => {
-    const entry = album(2, ['c3'], { breaks: { c3: { '2': 5 } } }).entries.get('c3')!
-    expect(cardSortValueLabel(entry, 'bond')).toBe('5★')
+    const entry = album(2, ['c3'], { breaks: { c3: { '2': 3 } } }).entries.get('c3')!
+    expect(cardSortValueLabel(entry, 'bond')).toBe('3★')
     expect(cardSortValueLabel(entry, 'type')).toBe('Friend')
     expect(cardSortValueLabel(entry, 'name')).toBeNull()
   })

@@ -273,7 +273,7 @@ export function ftHandSize(setup: FtSetup, state: FtState): number {
   return FT_HAND_SIZE + vision - (ftRivalActive(setup, state, 'crowded-field') ? 1 : 0)
 }
 
-/** A card's strength: `1 + 0.1 × stars`, as if 5★ for the Legends card. */
+/** A card's strength: `1 + stars / 6`, as if at max for the Legends card (D200). */
 export function ftStrength(setup: FtSetup, def: FtCardDef): number {
   const stars = setup.legendsCardId === def.id ? FT_TWIST_VALUES.legendsStars : def.stars
   return 1 + FT_STRENGTH_PER_STAR * stars

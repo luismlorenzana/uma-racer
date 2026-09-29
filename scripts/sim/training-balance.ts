@@ -1,6 +1,6 @@
 // Friendship Training balance (M020 T063–T064):
 //
-//   pnpm sim:training                        clear rates by star, and each scenario twist at 3★
+//   pnpm sim:training                        clear rates by star, and each scenario twist at 2★
 //   pnpm sim:training -- --runs=400          more seeds per row
 //   pnpm sim:training -- --content=<dir>     read the pack from another folder (default content/data)
 //
@@ -12,6 +12,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   FT_TWISTS,
+  MAX_STARS,
   buildFriendshipSetup,
   ftBotPlay,
   ftRng,
@@ -47,7 +48,7 @@ function setupFor(tier: number, earning: number, seed: number) {
   const rest = pool.filter((card) => !sameType.includes(card) && !broad.includes(card))
   const set = [...sameType, ...broad, ...rest].slice(0, 5)
   const owned = [main, ...set, ...rest.slice(5, 80)]
-  const starsFor = () => Math.min(4, Math.floor(random() * (earning + 1)))
+  const starsFor = () => Math.min(MAX_STARS, Math.floor(random() * (earning + 1)))
   return buildFriendshipSetup({
     seed,
     tier,
@@ -69,26 +70,27 @@ function clearRate(tier: number, earning: number): number {
   return (100 * cleared) / RUNS
 }
 
-const TARGETS: Readonly<Record<number, number>> = { 1: 90, 2: 85, 3: 80, 4: 75, 5: 70 }
+/** The three runs are the old 1★, 3★ and 5★ runs (D200), and keep their targets. */
+const TARGETS: Readonly<Record<number, number>> = { 1: 90, 2: 80, 3: 70 }
 const BAND = 8
 let failures = 0
 const started = Date.now()
 
 console.log(`Friendship Training clear rates, bot, ${RUNS} seeds per row (target ±${BAND})`)
 console.log('Foundation (URA Finale)')
-for (let earning = 1; earning <= 5; earning += 1) {
+for (let earning = 1; earning <= MAX_STARS; earning += 1) {
   const rate = clearRate(1, earning)
   const ok = Math.abs(rate - TARGETS[earning]!) <= BAND
   if (!ok) failures += 1
   console.log(`  ${earning}★  ${rate.toFixed(0).padStart(3)}%  target ${TARGETS[earning]}%${ok ? '' : '  ✗'}`)
 }
 
-// A twist is an edge, never a wall: at 3★ each scenario clears no less than the base game's band allows, and no more
-// than a few points above it.
-console.log('Twists at 3★')
+// A twist is an edge, never a wall: at 2★ (the middle run) each scenario clears no less than the base game's band
+// allows, and no more than a few points above it.
+console.log('Twists at 2★')
 for (let tier = 2; tier <= FT_TWISTS.length; tier += 1) {
-  const rate = clearRate(tier, 3)
-  const ok = rate >= TARGETS[3]! - BAND && rate <= TARGETS[3]! + 12
+  const rate = clearRate(tier, 2)
+  const ok = rate >= TARGETS[2]! - BAND && rate <= TARGETS[2]! + 12
   if (!ok) failures += 1
   console.log(`  ${FT_TWISTS[tier - 1]!.name.padEnd(13)} ${rate.toFixed(0).padStart(3)}%${ok ? '' : '  ✗'}`)
 }

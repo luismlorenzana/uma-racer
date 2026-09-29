@@ -212,8 +212,8 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
   ([Collection](collection.md#card-album)). In a scenario, tiles carry stars and the reserved detail area has a
   **Bond** button, so a bond is one tap from the tab.
 - **Card page** (`/cards/:id`): the card's illustration full width, with its name, type and ownership over its foot (a
-  tap opens the whole illustration), then how to own it (tickets or a coupon), **Bond by scenario** with a Bond
-  button per reached scenario, then what it pays — its split, a 0★–5★ per-node ladder (in SP for a Friend or Group card), Race
+  tap opens the whole illustration), then how to own it (a Card Select Coupon), **Bond by scenario** with a Bond
+  button per scenario, then what it pays — its split, a 0★–3★ per-node ladder (in SP for a Friend or Group card), Race
   Bonus and its skills in node order — and every set it sits in.
 - **Unlock** hands to the full-screen collection reveal, which returns to the card's page.
 - A bond is raised only in Friendship Training, which always returns where it was launched: the album lens, the card page,

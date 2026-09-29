@@ -119,10 +119,10 @@ trainedStat = 110 + ((cardNodes − fairShare) × nodeValue × 84% + 240) / 5
 handicap    = Debut/Maiden 0.35 · Pre-OP/OP 0.30 · G3 0.25 · G2 0.15 · G1 0.05
 ```
 
-**`trainedStat`** is a realistic set rather than a perfect one: six current-era cards at **3★** (84% of a node), one of
+**`trainedStat`** is a realistic set rather than a perfect one: six current-era cards at **84% of a node** (2★ of 3 since D200, the old 3★ of 5), one of
 them a **Friend card** whose fair share of the nodes pays skill points instead of stats, plus the stat nodes, on the
 median base stat, with the scenario's typical buff (D165). It is 736 in scenario 1 and 948 in scenario 14; D152's full
-tree of 5★ cards was 950 and 1,259, which no real build reaches (the owner's TL10 Special Week is 989 / 617 / 567 / 616 /
+tree of maxed cards was 950 and 1,259, which no real build reaches (the owner's TL10 Special Week is 989 / 617 / 567 / 616 /
 691).
 
 **A field is never stronger than a later scenario's** (`fieldStat`, D191). Scenarios 1–5 share their caps, so their
@@ -260,11 +260,11 @@ sprint / mile / medium / long:
 | Tier | Set | G3 | G2 | G1 |
 |---|---|---|---|---|
 | 1 | 0★ | 95 · 95 · 95 · 100% | 80 · 90 · 70 · 85% | 50 · 45 · 45 · 50% |
-| 1 | 5★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% |
+| 1 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% |
 | 7 | 0★ | 95 · 95 · 100 · 100% | 80 · 80 · 100 · 90% | 70 · 50 · 55 · 75% |
-| 7 | 5★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 95 · 100 · 100 · 100% |
+| 7 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 95 · 100 · 100 · 100% |
 | 14 | 0★ | 95 · 90 · 100 · 100% | 70 · 60 · 90 · 100% | 35 · 30 · 55 · 60% |
-| 14 | 5★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% |
+| 14 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% |
 
 D191 (2026-09-28, 40 races a cell) evened out the first scenarios' fields. A 0★ set's G1s, before → after:
 
