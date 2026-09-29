@@ -83,10 +83,10 @@ export function CardPage() {
   const here = `/cards/${encodeURIComponent(cardId)}`
   const highestTier = Math.max(1, ...Object.values(umas).map((uma) => uma.unlockedTier))
   const lensTier = Number(params.get('tier')) || null
-  const reached = SCENARIOS.filter((scenario) => scenario.tier >= template.era && scenario.tier <= highestTier)
-  const later = SCENARIOS.filter((scenario) => scenario.tier >= template.era && scenario.tier > highestTier)
-  // The scenario the numbers below are quoted in: the lens it was opened from, else the newest one it can reach.
-  const referenceTier = lensTier && lensTier >= template.era ? lensTier : reached.at(-1)?.tier ?? template.era
+  // Every scenario from the card's era on is open for bonding, however far the Umas have gone (D199).
+  const scenarios = SCENARIOS.filter((scenario) => scenario.tier >= template.era)
+  // The scenario the numbers below are quoted in: the lens it was opened from, else the furthest one an Uma has reached.
+  const referenceTier = lensTier && lensTier >= template.era ? lensTier : Math.max(template.era, highestTier)
   const shares = cardShares(template)
   const skillPoints = paysSkillPoints(template)
   const payPerNode = skillPoints ? cardSpPerNode : cardNodeValue
@@ -197,13 +197,9 @@ export function CardPage() {
       {/* ── Bond by scenario ─────────────────────────────────────────── */}
       <SectionHeading label="Bond by scenario" hint="shared by every Uma there" />
       <Panel className="p-2">
-        {reached.length === 0 ? (
-          <p className="p-2 text-[12px] text-ink-soft">
-            This card arrives in {scenarioForTier(template.era)?.name ?? `tier ${template.era}`}, which none of your Umas has reached yet.
-          </p>
-        ) : (
+        {(
           <div className="grid gap-1">
-            {[...reached].reverse().map((scenario) => {
+            {scenarios.map((scenario) => {
               const bond = save ? cardStars(save, scenario.tier) : 0
               const maxed = bond >= MAX_STARS
               const highlighted = scenario.tier === referenceTier
@@ -234,19 +230,14 @@ export function CardPage() {
             })}
           </div>
         )}
-        {later.length > 0 && (
-          <p className="px-2 pt-2 pb-1 text-[11px] text-ink-faint">
-            {later.length} later scenario{later.length === 1 ? '' : 's'} open{later.length === 1 ? 's' : ''} as your Umas reach them — each starts at 0★.
-          </p>
-        )}
-        {!save && reached.length > 0 && <p className="px-2 pt-2 pb-1 text-[11px] text-ink-soft">Unlock the card to bond it.</p>}
+        {!save && <p className="px-2 pt-2 pb-1 text-[11px] text-ink-soft">Unlock the card to bond it.</p>}
       </Panel>
 
       {/* ── What it pays ─────────────────────────────────────────────── */}
       <SectionHeading label="What it pays" hint={scenarioForTier(referenceTier)?.name} />
       <Panel className="p-3">
         <p className="text-micro mb-1">One node it fills, by stars{skillPoints ? ' · skill points' : ''}</p>
-        <div className="grid grid-cols-3 gap-1 text-center">
+        <div className="grid grid-cols-4 gap-1 text-center">
           {Array.from({ length: MAX_STARS + 1 }, (_, bond) => {
             const current = save ? cardStars(save, referenceTier) === bond : false
             return (

@@ -18,6 +18,7 @@ import { FT_SHOP_PRICES, ftFavouredTypes, type FtRivalRuleId, type FtSkillRuleId
 import {
   FT_SETUP_VERSION,
   buildFriendshipSetup,
+  defaultFriendshipPartners,
   ftCardDef,
   ftSkillRule,
   ftTrait,
@@ -179,6 +180,29 @@ describe('Friendship Training setup', () => {
   it('never reads a setup frozen for five stars', () => {
     expect(parseFtSetup({ ...build(), version: 1 })).toBeNull()
     expect(parseFtSetup(build())).toEqual(build())
+  })
+})
+
+describe('default partners (D199)', () => {
+  const card = (id: string, type: SupportCardTemplate['type'], era = 1) => ({ id, type, era })
+  const owned = (entries: [ReturnType<typeof card>, number][]) => entries.map(([template, stars]) => ({ template, stars }))
+
+  it('takes the most-starred eligible cards, preferring a stat type not yet picked, then newer eras, never the main card', () => {
+    const partners = defaultFriendshipPartners({
+      tier: 3,
+      mainCardId: 'main',
+      owned: owned([
+        [card('main', 'speed'), 3], [card('s1', 'speed'), 3], [card('s2', 'speed', 2), 3], [card('p1', 'power'), 2],
+        [card('w1', 'wit'), 2], [card('w2', 'wit', 3), 2], [card('g1', 'guts'), 0], [card('late', 'stamina', 9), 3],
+      ]),
+    })
+    // 3★ first (s2 is newer than s1), then the 2★ wit and power before a second of either, then the rest.
+    expect(partners).toEqual(['s2', 's1', 'w2', 'p1', 'w1'])
+  })
+
+  it('offers fewer than five when fewer are owned, and nothing needs an Uma', () => {
+    expect(defaultFriendshipPartners({ tier: 1, mainCardId: 'main', owned: owned([[card('main', 'speed'), 0], [card('a', 'wit'), 0]]) }))
+      .toEqual(['a'])
   })
 })
 

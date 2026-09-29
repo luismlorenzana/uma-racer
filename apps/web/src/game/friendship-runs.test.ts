@@ -244,6 +244,28 @@ describe('Friendship Training runs', () => {
     expect(await tickets()).toBe(2)
   })
 
+  it('trains in any scenario with no Uma there, and freezes the partners chosen for the run (D199)', async () => {
+    await seed()
+    // No Uma exists in this save at all: scenario 9 is open to an era-1 card all the same.
+    const chosen = ['card-3', 'card-1']
+    const { runId } = await host().beginRun('friendship-training', { ...target, tier: 9, partnerIds: chosen })
+    const setup = (await friendshipView(runId)).snapshot.setup
+    expect(setup.tier).toBe(9)
+    // Two copies of the main card and of each partner, the rest topped up by seed from owned cards.
+    expect(setup.deck.slice(2, 6)).toEqual(['card-3', 'card-3', 'card-1', 'card-1'])
+    expect(setup.deck).toHaveLength(12)
+  })
+
+  it('refuses a partner list it cannot honour, with nothing written', async () => {
+    await seed()
+    for (const partnerIds of [['card-0'], ['card-1', 'card-1'], ['missing'], ['card-1', 'card-2', 'card-3', 'card-4', 'card-5', 'card-6']]) {
+      await expect(host().beginRun('friendship-training', { ...target, partnerIds })).rejects.toThrow()
+    }
+    expect(await tickets()).toBe(3)
+    expect(await db.minigameRuns.count()).toBe(0)
+    expect(await db.ledger.count()).toBe(0)
+  })
+
   it('saves choices as they are made and refuses ones the run does not accept', async () => {
     await seed()
     const { runId } = await host().beginRun('friendship-training', target)

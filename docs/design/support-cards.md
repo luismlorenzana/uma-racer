@@ -107,7 +107,8 @@ built and is not part of stars.
 ## Where cards live on screen
 
 - **The Cards tab** browses by lens — the collection, or one scenario ([Collection](collection.md#card-album)).
-- **Each card's page** (`/cards/:id`) holds owning it, its stars in every reached scenario, and what it pays. Its type
+- **Each card's page** (`/cards/:id`) holds owning it, its stars and a **Bond** action in every scenario from its era on
+  (D199), and what it pays. Its type
   shows as the original's type icon on the illustration, its split with the stat icons, and a **Skills** list with the
   original's skill icons: its golds first, highlighted, then its whites, each marked with the node that pays it; a tap
   shows what the skill does and its base cost (D182).

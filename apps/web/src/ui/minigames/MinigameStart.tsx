@@ -9,6 +9,7 @@ export function MinigameStart({
   title,
   subtitle,
   stake,
+  extra,
   rules,
   cost,
   tickets,
@@ -25,6 +26,8 @@ export function MinigameStart({
   title: string
   subtitle?: ReactNode
   stake: ReactNode
+  /** Choices the run freezes when it is reserved, such as Friendship Training's partners (D199). */
+  extra?: ReactNode
   rules: readonly ReactNode[]
   cost: number
   tickets: number
@@ -54,6 +57,7 @@ export function MinigameStart({
         {subtitle && <div className="mt-0.5 text-[12px] text-ink-on-dark-soft">{subtitle}</div>}
       </div>
       <div className="rounded-md border border-hairline-dark bg-stage-soft p-3">{stake}</div>
+      {extra}
       <ul className="grid gap-1.5 rounded-md border border-hairline-dark bg-stage-soft px-3 py-2.5 text-[13px] leading-snug">
         {rules.map((rule, index) => <li key={index}>{rule}</li>)}
       </ul>

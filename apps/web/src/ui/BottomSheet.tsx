@@ -24,7 +24,7 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
           />
           <m.div
             role="dialog"
-            className="pb-safe fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-lg border-t border-hairline bg-panel shadow-3"
+            className="pb-safe fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-lg border-t border-hairline bg-panel text-ink shadow-3"
             initial={reducedMotion ? false : { y: '100%' }}
             animate={{ y: 0 }}
             exit={reducedMotion ? { opacity: 0 } : { y: '100%' }}

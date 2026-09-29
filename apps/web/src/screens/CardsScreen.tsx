@@ -1,4 +1,4 @@
-import { FRIENDSHIP_TRAINING_TICKET_COST, MAX_STARS, brokenTiers, scenarioForTier } from '@racer/domain'
+import { FRIENDSHIP_TRAINING_TICKET_COST, MAX_SCENARIO_TIER, MAX_STARS, brokenTiers, scenarioForTier } from '@racer/domain'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
@@ -251,14 +251,20 @@ export function CardsScreen() {
     if (requested) navigate(`/cards/${encodeURIComponent(requested)}`, { replace: true })
   }, [navigate, params])
 
+  // Every scenario is open for card training from the start (D199); the Umas only choose where the tab opens.
   const highestTier = useMemo(() => Math.max(1, ...Object.values(umas).map((save) => save.unlockedTier)), [umas])
   const featuredTier = profile?.featuredUmaId ? umas[profile.featuredUmaId]?.unlockedTier : undefined
   const lensParam = params.get('lens')
   const lens: CardLens = lensParam === 'collection'
     ? 'collection'
-    : Number(lensParam) >= 1 && Number(lensParam) <= highestTier
+    : Number.isSafeInteger(Number(lensParam)) && Number(lensParam) >= 1 && Number(lensParam) <= MAX_SCENARIO_TIER
       ? Number(lensParam)
-      : Math.min(highestTier, featuredTier ?? highestTier)
+      : featuredTier ?? highestTier
+  // Fourteen scenarios overflow the row: keep the chosen one in view.
+  const selectedLensRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    selectedLensRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' })
+  }, [contentState.status, lens, status])
 
   const prefs = lens === 'collection' ? collectionPrefs : scenarioPrefs
   const facets = cardFacets(lens)
@@ -306,7 +312,7 @@ export function CardsScreen() {
   const columns = view === 'icons' ? 5 : view === 'cards' ? 2 : 1
   const rowHeight = view === 'icons' ? 80 : view === 'cards' ? 215 : 64
   const lensTier = lens === 'collection' ? null : lens
-  const reachedTiers = Array.from({ length: highestTier }, (_, index) => highestTier - index)
+  const scenarioTiers = Array.from({ length: MAX_SCENARIO_TIER }, (_, index) => index + 1)
 
   const openEntry = (entry: CardEntry) => {
     if (entry.isNew) updatePrefs({ ...collectionPrefs, seen: markSeen(collectionPrefs.seen, [entry.id]) })
@@ -343,12 +349,19 @@ export function CardsScreen() {
 
   return (
     <div className="flex flex-col gap-3 pt-1">
-      <div role="tablist" aria-label="Show cards for" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5">
+      <div role="tablist" aria-label="Show cards for" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
         <Chip role="tab" aria-selected={lens === 'collection'} selected={lens === 'collection'} onClick={() => setLens('collection')}>
           Collection
         </Chip>
-        {reachedTiers.map((tier) => (
-          <Chip key={tier} role="tab" aria-selected={lens === tier} selected={lens === tier} onClick={() => setLens(tier)}>
+        {scenarioTiers.map((tier) => (
+          <Chip
+            key={tier}
+            ref={lens === tier ? selectedLensRef : undefined}
+            role="tab"
+            aria-selected={lens === tier}
+            selected={lens === tier}
+            onClick={() => setLens(tier)}
+          >
             {scenarioName(tier)}
           </Chip>
         ))}

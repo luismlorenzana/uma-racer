@@ -1,9 +1,11 @@
 import {
   FRIENDSHIP_TRAINING_TICKET_COST,
+  FT_SET_OTHERS,
   FT_STAGES,
   MAX_SCENARIO_TIER,
   MAX_STARS,
   cardStars,
+  defaultFriendshipPartners,
   ftCardDef,
   ftFinished,
   ftStateHash,
@@ -19,8 +21,10 @@ import { useContent } from '../../../content/ContentProvider'
 import { safeReturnPath } from '../../../game/bond-links'
 import { getMinigameHost, type RunReward, type RunTarget, type RunTicket } from '../../../game/minigame-host'
 import { getMinigameJournal, type FriendshipRunView } from '../../../game/minigame-journal'
+import { rememberPartners, rememberedPartners } from '../../../game/partner-choice'
 import { useGame } from '../../../game/store'
 import { BottomSheet } from '../../../ui/BottomSheet'
+import { CardPickerSheet } from '../../../ui/album/CardPickerSheet'
 import { Button, IconButton } from '../../../ui/Button'
 import { CardsIcon, MoreIcon } from '../../../ui/icons'
 import { MinigameResult } from '../../../ui/minigames/MinigameResult'
@@ -77,11 +81,30 @@ export function FriendshipTrainingScreen() {
   const returnTo = safeReturnPath(params.get('return'), `/cards/${encodeURIComponent(cardId)}`)
   const contentState = useContent()
   const gameStatus = useGame((state) => state.status)
-  const cardSave = useGame((state) => state.cards[cardId])
+  const cards = useGame((state) => state.cards)
+  const umas = useGame((state) => state.umas)
+  const cardSave = cards[cardId]
   const tickets = useGame((state) => state.profile?.tickets ?? 0)
   const content = contentState.status === 'ready' ? contentState.content : null
   const template = content?.cards.byId.get(cardId)
-  const target = useMemo<RunTarget>(() => ({ kind: 'friendship-training', cardId, tier, umaId: umaParam }), [cardId, tier, umaParam])
+  const target = useMemo<Extract<RunTarget, { kind: 'friendship-training' }>>(() => ({ kind: 'friendship-training', cardId, tier }), [cardId, tier])
+  // The run's partners are chosen for it, never borrowed from an Uma (D199): the ones picked here, else the Uma's set it
+  // was opened from, else the ones last used in this scenario, topped up with the default pick.
+  const [partnerChoice, setPartnerChoice] = useState<string[] | null>(null)
+  const [swapIndex, setSwapIndex] = useState<number | null>(null)
+  const partners = useMemo(() => {
+    if (!content) return []
+    const owned = Object.values(cards).flatMap((card) => {
+      const entry = content.cards.byId.get(card.templateId)
+      return entry ? [{ template: entry, stars: cardStars(card, tier) }] : []
+    })
+    const eligible = (id: string) => id !== cardId && cards[id] !== undefined && (content.cards.byId.get(id)?.era ?? Infinity) <= tier
+    const fromUma = umaParam ? umas[umaParam]?.scenarios.find((entry) => entry.tier === tier)?.cardSetIds ?? [] : []
+    const preferred = partnerChoice ?? (fromUma.length > 0 ? fromUma : rememberedPartners(tier))
+    const chosen = [...new Set(preferred)].filter(eligible).slice(0, FT_SET_OTHERS)
+    const defaults = defaultFriendshipPartners({ tier, mainCardId: cardId, owned })
+    return [...chosen, ...defaults.filter((id) => !chosen.includes(id))].slice(0, FT_SET_OTHERS)
+  }, [cardId, cards, content, partnerChoice, tier, umaParam, umas])
 
   const [phase, setPhase] = useState<Phase>('start')
   const [run, setRun] = useState<Run | null>(null)
@@ -97,7 +120,7 @@ export function FriendshipTrainingScreen() {
     rememberGuideSeen()
     setGuide((current) => ({ ...current, open: false }))
   }
-  const artIds = useMemo(() => run ? Object.keys(run.setup.cards) : template ? [template.id] : [], [run, template])
+  const artIds = useMemo(() => run ? Object.keys(run.setup.cards) : template ? [template.id, ...partners] : [], [partners, run, template])
   const art = useCardArt(content, artIds)
 
   useEffect(() => {
@@ -140,7 +163,8 @@ export function FriendshipTrainingScreen() {
     setError(null)
     setReward(null)
     try {
-      const ticket = await getMinigameHost().beginRun('friendship-training', target)
+      // Resuming keeps the partners the run froze; a new run freezes these.
+      const ticket = await getMinigameHost().beginRun('friendship-training', openRun ? target : { ...target, partnerIds: partners })
       const saved = await getMinigameJournal().load(ticket.runId)
       if (saved.engine !== 'friendship-training-v1') throw new Error('The saved run belongs to another minigame')
       const next = runFromView(saved)
@@ -228,6 +252,35 @@ export function FriendshipTrainingScreen() {
               title={template.charName}
               subtitle={template.title}
               stake={<div className="flex items-center justify-center gap-2 text-[13px]"><Stars value={stars} onDark /><span className="text-ink-on-dark-soft">now → {stars + 1}★ in {scenario?.name}</span></div>}
+              extra={openRun ? null : (
+                <div className="rounded-md border border-hairline-dark bg-stage-soft p-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-[13px] font-semibold">Partners</p>
+                    <p className="text-[11px] text-ink-on-dark-soft">Tap one to swap it</p>
+                  </div>
+                  <div className="mt-2 grid grid-cols-5 gap-1.5">
+                    {partners.map((id, index) => {
+                      const partner = content.cards.byId.get(id)!
+                      return (
+                        <button key={id} type="button" className="min-w-0" aria-label={`Swap ${partner.charName}`} onClick={() => setSwapIndex(index)}>
+                          <FtCard content={content} def={ftCardDef(partner, cardStars(cards[id]!, tier))} art={art.get(id) ?? null} />
+                        </button>
+                      )
+                    })}
+                    {partners.length < FT_SET_OTHERS && (
+                      <button
+                        type="button"
+                        onClick={() => setSwapIndex(partners.length)}
+                        className="flex aspect-[3/4] items-center justify-center rounded-sm border border-dashed border-hairline-dark text-[20px] text-ink-on-dark-soft"
+                        aria-label="Add a partner"
+                      >+</button>
+                    )}
+                  </div>
+                  {partners.length < FT_SET_OTHERS && (
+                    <p className="mt-2 text-[11px] text-ink-on-dark-soft">Fewer than five owned cards fit here; the run fills the rest.</p>
+                  )}
+                </div>
+              )}
               rules={[
                 `${stageCount} stage${stageCount === 1 ? '' : 's'}: two training weeks and a race each.`,
                 'Play cards in formations to reach each target. Three of the facility’s type make a Rainbow.',
@@ -301,6 +354,24 @@ export function FriendshipTrainingScreen() {
         </div>
       </BottomSheet>
       <FtGuide open={guide.open} tier={tier} startAt={guide.startAt} onClose={closeGuide} />
+      <CardPickerSheet
+        open={swapIndex !== null}
+        onClose={() => setSwapIndex(null)}
+        content={content}
+        cards={cards}
+        umas={umas}
+        tier={tier}
+        excludeIds={[cardId, ...partners]}
+        title="Choose a partner"
+        onPick={(entry) => {
+          const next = swapIndex !== null && swapIndex < partners.length
+            ? partners.map((id, index) => (index === swapIndex ? entry.id : id))
+            : [...partners, entry.id]
+          setPartnerChoice(next)
+          rememberPartners(tier, next)
+          setSwapIndex(null)
+        }}
+      />
       <BottomSheet open={confirmGiveUp} onClose={() => setConfirmGiveUp(false)}>
         <h2 className="text-lg font-semibold">Give up this run?</h2>
         <p className="mt-1 text-[14px] text-ink-soft">It ends as a loss: no star, and the ticket stays spent.</p>

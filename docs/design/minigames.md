@@ -307,11 +307,14 @@ the run.
 
 ### The deck
 
-- **Starting deck (12):** two copies of the **main card** and two of each other card in the set the run was launched
-  from. A set with fewer than six cards is topped up from owned, era-eligible cards chosen by the seed.
+- **Starting deck (12):** two copies of the **main card** and two of each of its five **partners**, chosen for the run
+  on the Start screen (D199). By default they are the owned cards eligible there with the most stars in that scenario,
+  then a stat type not yet picked, then the newest era; tapping one swaps it through the card picker, and the choice is
+  remembered per scenario on the device. A run opened from an Uma's card set starts from her set, a convenience rather
+  than a dependency: card training never needs an Uma. Fewer than five owned cards are topped up by the seed.
 - **Rewards:** after each training week, **pick 1 of 3** owned, era-eligible cards to add a copy of, or skip.
-- **Card strength** grows with the card's own stars in this scenario, `× (1 + 0.1 × stars)`, so bonding one card makes
-  the next run easier.
+- **Card strength** grows with the card's own stars in this scenario, `× (1 + stars / 6)` (× 1.5 at 3★), so bonding one
+  card makes the next run in that scenario easier.
 
 ### An encounter
 
@@ -431,7 +434,7 @@ main card wears its gauge (three pips) and, once bonded, a gold ring. **Tap** se
 
 ### A run's lifecycle (D168)
 
-- **Begin** spends the ticket and freezes the run's **setup**: the deck's cards with their types, traits, signatures
+- **Begin** spends the ticket and freezes the run's **setup**: its partners, the deck's cards with their types, traits, signatures
   and strengths, the reward and skill pools, the chosen races and the twist. The run replays from that setup, so a
   content update mid-run cannot change it.
 - **Every choice is saved** on the run's local row as it is made. Leaving or reloading resumes exactly where the run

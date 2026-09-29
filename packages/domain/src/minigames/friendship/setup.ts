@@ -181,12 +181,37 @@ export interface BuildFriendshipSetupInput {
   /** The main card's stars before this run; the run earns the next one. */
   mainStars: number
   mainCard: SupportCardTemplate
-  /** The set the run was launched from (may include the main card); empty when launched without an Uma. */
+  /** The run's partner cards, chosen for it (D199; may include the main card, which is skipped). Topped up by seed. */
   setCardIds: readonly string[]
   /** Every owned card with its stars in this scenario. */
   owned: readonly { template: SupportCardTemplate; stars: number }[]
   skills: readonly SkillTemplate[]
   races: readonly RaceTemplate[]
+}
+
+/**
+ * A run's default partners when the player picks none (D199): owned cards eligible in the scenario, other than the main
+ * card, taken one at a time by most stars there, then a stat type the partners do not have yet, then newest era, then
+ * id. No Uma is involved, so card training never waits on Uma training.
+ */
+export function defaultFriendshipPartners(input: {
+  tier: number
+  mainCardId: string
+  owned: readonly { template: Pick<SupportCardTemplate, 'id' | 'era' | 'type'>; stars: number }[]
+}): string[] {
+  const candidates = input.owned
+    .filter(({ template }) => template.era <= input.tier && template.id !== input.mainCardId)
+  const picked: typeof candidates = []
+  while (picked.length < FT_SET_OTHERS && picked.length < candidates.length) {
+    const types = new Set(picked.map(({ template }) => template.type))
+    const next = candidates
+      .filter((entry) => !picked.includes(entry))
+      .sort((left, right) => right.stars - left.stars ||
+        Number(types.has(left.template.type)) - Number(types.has(right.template.type)) ||
+        right.template.era - left.template.era || left.template.id.localeCompare(right.template.id))[0]!
+    picked.push(next)
+  }
+  return picked.map(({ template }) => template.id)
 }
 
 export function buildFriendshipSetup(input: BuildFriendshipSetupInput): FtSetup {

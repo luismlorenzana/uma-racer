@@ -47,8 +47,11 @@ export type RunTarget =
   | { kind: 'spark-match'; umaId: string; tier?: number }
   /** Retired (D177): only in stored history rows, never begun. */
   | { kind: 'bond-recall'; cardId: string; tier: number }
-  /** The Uma names the card set the deck is built from; without one, the first set anyone holds there. */
-  | { kind: 'friendship-training'; cardId: string; tier: number; umaId?: string | null }
+  /**
+   * The run's partner cards, chosen for it (D199); without them, the default partners. `umaId` is read only from rows
+   * stored before D199, when the deck came from an Uma's set.
+   */
+  | { kind: 'friendship-training'; cardId: string; tier: number; partnerIds?: string[]; umaId?: string | null }
 
 export type RunOutcome =
   | { kind: 'spark-match'; engine: 'spark-rival-v1'; actionCount: number; stateHash: string }

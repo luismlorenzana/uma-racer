@@ -208,7 +208,7 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 
 ### Cards
 
-- **Album**: a lens chip row — Collection, then each reached scenario — over the shared album chrome
+- **Album**: a lens chip row — Collection, then all fourteen scenarios (D199) — over the shared album chrome
   ([Collection](collection.md#card-album)). In a scenario, tiles carry stars and the reserved detail area has a
   **Bond** button, so a bond is one tap from the tab.
 - **Card page** (`/cards/:id`): the card's illustration full width, with its name, type and ownership over its foot (a

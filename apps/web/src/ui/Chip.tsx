@@ -1,14 +1,16 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react'
 
 /** Filter / state chip. Selected uses an accent wash, never a saturated fill. */
 export function Chip({
   selected = false,
   children,
   className = '',
+  ref,
   ...rest
-}: { selected?: boolean; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: { selected?: boolean; children: ReactNode; ref?: Ref<HTMLButtonElement> } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
+      ref={ref}
       type="button"
       aria-pressed={selected}
       {...rest}

@@ -31,6 +31,7 @@ export function CardPickerSheet({
   umas,
   tier,
   excludeIds,
+  title = 'Add a card',
   onPick,
 }: {
   open: boolean
@@ -41,6 +42,7 @@ export function CardPickerSheet({
   /** The scenario being filled: its era gate and its bonds. */
   tier: number
   excludeIds: readonly string[]
+  title?: string
   onPick: (entry: CardEntry) => void
 }) {
   const [query, setQuery] = useState<AlbumQuery>(CARD_SCENARIO_QUERY)
@@ -56,7 +58,7 @@ export function CardPickerSheet({
     <BottomSheet open={open} onClose={onClose}>
       <div className="max-h-[74vh] overflow-y-auto pb-2">
         <AlbumChrome
-          title="Add a card"
+          title={title}
           completion={<>{entries.length} owned card{entries.length === 1 ? '' : 's'} eligible here</>}
           facets={facets}
           sorts={CARD_SCENARIO_SORTS}

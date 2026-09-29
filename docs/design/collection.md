@@ -258,12 +258,15 @@ becomes a browsing session. The shard and coupon strip stays above the chrome, s
 
 ### Card album
 
-The Cards tab is seen through a **lens** (D131), chosen from a chip row at the top: **Collection**, or one chip per
-scenario any Uma has reached. It opens on the featured Uma's active scenario and remembers the lens in the URL.
+The Cards tab is seen through a **lens** (D131), chosen from a chip row at the top: **Collection**, or one chip for
+each of the fourteen scenarios. **Card training stands on its own** (D199): every scenario is open from the start,
+however far the Umas have gone, and the player decides how many cards to bond where and when. The tab opens on the
+featured Uma's current scenario (else the furthest any Uma has reached), keeps the chosen chip in view, and remembers the
+lens in the URL.
 
 | Lens | Holds | Sorts | Filters | A tile shows |
 |---|---|---|---|---|
-| **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · era · in an active set · starter/free · new | art; unowned dimmed with its ticket price |
+| **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · era · in an active set · starter/free · new | art; unowned dimmed |
 | **A scenario** | only cards its era allows | stars (default) · pays per node · era · type · character · card name | ownership · type · bond 0–Max · can still bond · max bond · in a set here · era · new | art with that scenario's bond pips and per-node pay |
 
 Ties break owned first, then by per-node pay. The two lenses keep separate saved queries and views, since bond means

@@ -11,6 +11,8 @@ import {
   addTrainingExp,
   advanceCardStars,
   buildFriendshipSetup,
+  defaultFriendshipPartners,
+  FT_SET_OTHERS,
   cardStars,
   ftFinished,
   ftReplay,
@@ -520,10 +522,24 @@ export class PersistentMinigameHost implements MinigameHost {
     if (cardStars(card, target.tier) >= MAX_STARS) {
       throw new Error(`This card already has ${MAX_STARS}★ in that scenario`)
     }
+    if (target.partnerIds !== undefined) await this.validatePartners(target.partnerIds, target.cardId, target.tier)
     return { tier: target.tier, key: targetKey(target, target.tier) }
   }
 
-  /** The Friendship Training run's frozen setup: the deck from the named Uma's set, else the first set anyone holds there. */
+  /** Partners must be owned, eligible in the scenario, distinct, not the main card, and at most five (D199). */
+  private async validatePartners(partnerIds: readonly string[], mainCardId: string, tier: number): Promise<void> {
+    if (!Array.isArray(partnerIds) || partnerIds.length > FT_SET_OTHERS || new Set(partnerIds).size !== partnerIds.length) {
+      throw new Error(`Pick up to ${FT_SET_OTHERS} different partner cards`)
+    }
+    for (const id of partnerIds) {
+      if (id === mainCardId) throw new Error('The trained card cannot also be its own partner')
+      const template = typeof id === 'string' ? this.content.cards.byId.get(id) : undefined
+      if (!template || !(await db.cards.get(id))) throw new Error('A partner card is not owned')
+      if (template.era > tier) throw new Error(`${template.charName} is not available in that scenario`)
+    }
+  }
+
+  /** The Friendship Training run's frozen setup: the chosen partners, else the default ones; never an Uma's set (D199). */
   private async friendshipSetup(target: Extract<RunTarget, { kind: 'friendship-training' }>, tier: number, seed: string) {
     const mainCard = this.content.cards.byId.get(target.cardId)
     if (!mainCard) throw new Error(`Card content is missing ${target.cardId}`)
@@ -535,10 +551,7 @@ export class PersistentMinigameHost implements MinigameHost {
         return template ? [{ template, stars: cardStars(card, tier) }] : []
       })
     const main = owned.find((entry) => entry.template.id === target.cardId) ?? { template: mainCard, stars: 0 }
-    const umas = (await db.umas.toArray()).map((row) => parsedUma(row.id, row.data)).sort((left, right) => left.templateId.localeCompare(right.templateId))
-    const named = target.umaId ? umas.find((uma) => uma.templateId === target.umaId)?.scenarios.find((run) => run.tier === tier) : undefined
-    const any = umas.flatMap((uma) => uma.scenarios.filter((run) => run.tier === tier && run.cardSetIds.length > 0))[0]
-    const set = (named && named.cardSetIds.length > 0 ? named : any)?.cardSetIds ?? []
+    const set = target.partnerIds ?? defaultFriendshipPartners({ tier, mainCardId: target.cardId, owned })
     return buildFriendshipSetup({
       seed: Number(seed),
       tier,
