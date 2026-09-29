@@ -49,6 +49,11 @@ Consequences, all of which the save must honour:
 | **Parent** (2) | any owned Uma template | aptitude grades · that Uma's baseline skills |
 | **Grandparent** (4) | any owned Uma template | aptitude grades · that Uma's baseline skills |
 
+**Planned, not yet executable:** [Stable Farm](farm.md) M025 builds scenario produce and global Item inventory. M026 then
+renames these six Stat nodes to Produce nodes without moving or revaluing them: filling one consumes a scenario-matched
+crop, whose stat receives the same 40 raw points (D205). Existing assignments migrate as contribution-preserving legacy
+fills. Until M026 lands, every Stat rule in this document remains current.
+
 Card and stat nodes form **one tree rooted at a single root node**. The root is always unlocked and always
 empty; it exists to anchor the graph. Parent nodes are **detached from that tree**, and each parent node is
 linked to exactly **two grandparent nodes** of its own.

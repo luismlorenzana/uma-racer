@@ -21,6 +21,11 @@ rules stay in [Minigames](minigames.md); this page is what they have in common.
 - **No per-turn luck the player cannot see.** Every roll comes from the run's seed; anything that will happen next is
   shown before the player commits (a rival's intent, a facility's target).
 
+[Stable Farm](farm.md) is deliberately outside this kit. It is an asynchronous synced account activity with a persistent
+outfit crew, a field that grows from one to six plots and persisted deadlines, not a ticketed run with a seed, action
+journal, terminal result or win/loss. It may reuse visual primitives and `PagedGuide`, but it must not be forced through
+`MinigameHost` (D203, D206).
+
 ## 2. The run lifecycle
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
