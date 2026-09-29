@@ -12,29 +12,31 @@ one surface-and-distance specialty without requiring the player to run an entire
 The names below are working game names. Unless a source explicitly calls a set a series, the grouping is our proposed
 curation rather than a claim that racing authorities award that championship in the real world.
 
-## Recommended completion size
+## Recommended completion rule
 
-An Expedition should offer meaningful choice rather than require a calendar sweep:
+An Expedition should use one clear finish line, while deeper race pools provide more ways to reach it:
 
 | Size | Minimum eligible race families | Wins for success | Optional share at the minimum |
 |---|---:|---:|---:|
-| **Standard Expedition** | 8 | **5 distinct races** | 3 of 8 (37.5%) |
+| **Standard Expedition** | 8 | **8 distinct races** | 0 of 8 (0%) |
 | **Grand Expedition** | 12 | **8 distinct races** | 4 of 12 (33.3%) |
 
-Five-of-eight is long enough to establish a specialty while still fitting a compact jurisdiction such as Dubai or South
-Korea. Eight-of-twelve makes the deeper American, British, Australian, and European pools feel like major campaigns
-without making every race mandatory. Adding races to a pool does not raise its success threshold automatically.
+Every Expedition uses the same eight-win finish line. At its minimum size, a Standard Expedition demands mastery of its
+whole compact circuit; any ninth or later family becomes an alternate route. A Grand Expedition starts with four choices
+the player may skip. **Standard** and **Grand** therefore describe pool depth, not different completion rules, and adding
+races to either pool never raises its success threshold.
 
 Planning assumptions:
 
 - Wins are by **one Uma** and count once per distinct race family; repeating the same race cannot fill two slots.
 - The listed pool is the set a future implementation may select from, not a requirement to schedule every race in one run.
-- A success is the 5- or 8-win threshold. A complete sweep may later be a title or hidden badge, but is not ordinary
-  completion.
+- A success is always the **8-win threshold**. Winning beyond eight or sweeping an expanded pool may later be a title or
+  hidden badge, but is not ordinary completion.
 - Exact attempt, retry, reward, unlock, and calendar rules are intentionally deferred.
 
-This 62.5–66.7% completion ratio is the research recommendation to carry into the eventual design pass. It is not yet a
-pinning-test value or a change to the shipped game.
+This fixed eight-win requirement is the research recommendation to carry into the eventual design pass. It is 100% of a
+minimum Standard pool and 66.7% of a minimum Grand pool; it is not yet a pinning-test value or a change to the shipped
+game.
 
 ## Distance vocabulary
 
@@ -58,10 +60,10 @@ band.
 | Surface and focus | Expedition | Size | Pool | Success |
 |---|---|---|---:|---:|
 | Dirt Sprint/Mile | United States Speed Championship | Grand | 12 | 8 wins |
-| Dirt Sprint/Mile | South Korean Sprint Circuit | Standard | 8 | 5 wins |
+| Dirt Sprint/Mile | South Korean Sprint Circuit | Standard | 8 | 8 wins |
 | Dirt Mile/Medium | American Dirt Classics | Grand | 12 | 8 wins |
-| Dirt Mile/Medium | Dubai Dirt Classics | Standard | 9 | 5 wins |
-| Turf Sprint/Mile | Hong Kong Speed & Mile | Standard | 10 | 5 wins |
+| Dirt Mile/Medium | Dubai Dirt Classics | Standard | 9 | 8 wins |
+| Turf Sprint/Mile | Hong Kong Speed & Mile | Standard | 10 | 8 wins |
 | Turf Sprint/Mile | Australian Speed & Mile | Grand | 12 | 8 wins |
 | Turf Sprint/Mile | British Speed & Mile | Grand | 12 | 8 wins |
 | Turf Mile/Medium | British Champions | Grand | 12 | 8 wins |
@@ -104,7 +106,7 @@ the Dirt Dozen. It is the strongest option if race density matters more than kee
 
 ### South Korean Sprint Circuit
 
-**Recommendation:** Standard Expedition · **5 distinct wins from 8**
+**Recommendation:** Standard Expedition · **8 distinct wins from 8**
 
 **Identity:** a compact official sprint ladder at Seoul and Busan, supplemented by two short-mile races.
 
@@ -119,8 +121,9 @@ the Dirt Dozen. It is the strongest option if race density matters more than kee
 | International Newspaper Cup | 1,400 m | Sprint | Extended sprint |
 | Owners' Cup | 1,600 m | Mile | Mile capstone |
 
-The first three named series legs are an official sweep. The wider eight-race set is our curation and gives the Expedition
-enough choice for 5-of-8 success.
+The first three named series legs are an official sweep. The wider eight-race set is our curation; at this minimum pool
+size, Expedition success is deliberately a full sweep. Additional eligible families may add alternate routes later
+without changing the eight-win threshold.
 
 ## Dirt Mile/Medium
 
@@ -150,7 +153,7 @@ rather than one hard-coded course row. Triple Crown sweep and eight-win Expediti
 
 ### Dubai Dirt Classics
 
-**Recommendation:** Standard Expedition · **5 distinct wins from 9**
+**Recommendation:** Standard Expedition · **8 distinct wins from 9**
 
 **Identity:** a single-venue Carnival covering proper dirt miles before rising through 1,900–2,000 m classics.
 
@@ -173,7 +176,7 @@ Expedition enforces those conditions is a later design question.
 
 ### Hong Kong Speed & Mile
 
-**Recommendation:** Standard Expedition · **5 distinct wins from 10**
+**Recommendation:** Standard Expedition · **8 distinct wins from 10**
 
 **Identity:** two clean specialties at Sha Tin: the official Speed Series and a sequence of major miles.
 
@@ -190,8 +193,8 @@ Expedition enforces those conditions is a later design question.
 | Hong Kong Sprint | 1,200 m | Sprint | International sprint final |
 | Hong Kong Mile | 1,600 m | Mile | International mile final |
 
-Five wins allow a pure Sprint route, a Mile-heavy route, or a mixed speed route without requiring every official series
-leg.
+Eight wins require success in both Sprint and Mile races while still allowing two misses; the player does not have to win
+every official series leg.
 
 ### Australian Speed & Mile
 
