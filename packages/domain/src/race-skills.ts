@@ -661,6 +661,10 @@ export function replaceSkillLoadout(
   ids: readonly string[],
 ): string[] {
   const summary = summarizeSkillLoadout(source, template, skillsById, ids)
-  if (!summary.valid) throw new Error(summary.errors[0])
-  return [...ids]
+  if (summary.valid) return [...ids]
+  // An overdraft never locks a loadout (D192): when SP falls below what is equipped (a card moved, or D188 priced a gold
+  // with its white), a change that costs no more than the loadout it replaces is kept, so skills can always come off.
+  const overBudgetOnly = summary.errors.length === 1 && summary.cost > summary.cap
+  if (overBudgetOnly && summary.cost <= summarizeSkillLoadout(source, template, skillsById).cost) return [...ids]
+  throw new Error(summary.errors[0])
 }

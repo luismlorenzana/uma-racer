@@ -251,12 +251,15 @@ export function FriendshipTrainingScreen() {
           <div className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-2">
             <SeasonMap setup={run.setup} state={run.state} />
             <SkillBar setup={run.setup} state={run.state} />
-            {run.state.phase === 'build' && <BuildView {...view} />}
-            {run.state.phase === 'facility' && <FacilityView {...view} />}
-            {run.state.phase === 'encounter' && <EncounterView {...view} />}
-            {run.state.phase === 'reward' && <RewardView {...view} />}
-            {run.state.phase === 'skill' && <SkillView {...view} />}
-            {run.state.phase === 'shop' && <ShopView {...view} />}
+            {/* The page never scrolls during play; a phase taller than the phone (the shop, a long reward list) scrolls here. */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+              {run.state.phase === 'build' && <BuildView {...view} />}
+              {run.state.phase === 'facility' && <FacilityView {...view} />}
+              {run.state.phase === 'encounter' && <EncounterView {...view} />}
+              {run.state.phase === 'reward' && <RewardView {...view} />}
+              {run.state.phase === 'skill' && <SkillView {...view} />}
+              {run.state.phase === 'shop' && <ShopView {...view} />}
+            </div>
           </div>
         )}
 

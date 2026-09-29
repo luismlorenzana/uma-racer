@@ -191,6 +191,21 @@ describe('race skill compiler', () => {
 })
 
 describe('skill loadouts', () => {
+  it('lets an overdrawn loadout shed skills, but never grow its overdraft (D192)', () => {
+    const skills = new Map(['a', 'b', 'c'].map((id) => [id, skill(id)]))
+    // Three 90 SP skills equipped on 100 SP: 270, over budget, as a D188 repricing or a moved card can leave it.
+    const source = {
+      skillPoints: 100,
+      loadoutSkillIds: ['a', 'b', 'c'],
+      library: ['a', 'b', 'c'].map((id) => ({ skillId: id, origin: 'card' as const, sourceId: 'card-1' })),
+    }
+    expect(replaceSkillLoadout(source, uma, skills, ['a', 'b'])).toEqual(['a', 'b'])
+    expect(replaceSkillLoadout(source, uma, skills, ['c', 'b', 'a'])).toEqual(['c', 'b', 'a'])
+    expect(replaceSkillLoadout(source, uma, skills, [])).toEqual([])
+    expect(() => replaceSkillLoadout({ ...source, loadoutSkillIds: ['a', 'b'] }, uma, skills, ['a', 'b', 'c'])).toThrow(/costs 270 SP/)
+    expect(() => replaceSkillLoadout(source, uma, skills, ['a', 'missing'])).toThrow(/not available/)
+  })
+
   it('keeps the own unique implicit and enforces library membership and SP capacity', () => {
     const paid = skill('paid-1')
     const skills = new Map([['unique-1', skill('unique-1', 'unique', null)], ['paid-1', paid]])

@@ -72,7 +72,8 @@ in our content, so tier 1 buys five or six.
 the rest** ([Constellations](constellations.md#skill-point-cards)), and the total is clamped to `spCap`. The equipped **loadout**
 must cost ≤ current SP. Swapping is free and instant outside races. If a reconfiguration takes SP away after skills
 were equipped, racing does not stop: the equipped skills race in equip order while they fit, and the rest sit out
-until the SP is back or they are unequipped (D132).
+until the SP is back or they are unequipped (D132). An overdrawn loadout is never locked: any change that costs no more
+than the loadout it replaces is accepted, so skills can always come off (D192); only a change that adds cost must fit.
 
 So the loadout trade is direct and legible: a bigger library needs more slots spent on cards, and equipping
 more of it needs nodes spent on a Friend or Group card. That is the whole economy of skills.

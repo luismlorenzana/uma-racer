@@ -212,7 +212,7 @@ export function BuildView({ act, busy }: ViewProps) {
           )
         })}
       </div>
-      <div className="mt-auto pb-safe">
+      <div className="mt-auto">
         <Button className="w-full" disabled={picked.length !== 2 || busy} onClick={() => act({ type: 'build', facilities: picked })}>Build</Button>
       </div>
     </div>
@@ -380,7 +380,7 @@ export function EncounterView({ content, setup, state, art, act, busy }: ViewPro
         })}
       </div>
 
-      <div className="grid grid-cols-[1fr_1.4fr] gap-2 pb-safe">
+      <div className="grid grid-cols-[1fr_1.4fr] gap-2">
         <Button variant="secondary" disabled={busy || selected.length === 0 || selected.length > FT_MAX_REDRAW || encounter.redrawsLeft <= 0}
           onClick={() => act({ type: 'redraw', uids: selected })}>
           Redraw{selected.length > 0 ? ` ${selected.length}` : ''}
@@ -420,7 +420,7 @@ export function RewardView({ content, setup, state, art, act, busy }: ViewProps)
         })}
       </div>
       <FtScene content={content} setup={setup} state={state} place={{ kind: 'rest' }} cheer compact />
-      <div className="grid grid-cols-[1fr_1.4fr] gap-2 pb-safe">
+      <div className="grid grid-cols-[1fr_1.4fr] gap-2">
         <Button variant="secondary" disabled={busy} onClick={() => act({ type: 'reward', cardId: null })}>Skip</Button>
         <Button disabled={busy || picked === null} onClick={() => act({ type: 'reward', cardId: picked })}>Add card</Button>
       </div>
@@ -455,7 +455,7 @@ export function SkillView({ setup, state, act, busy }: ViewProps) {
           ))}
         </div>
       )}
-      <div className="mt-auto grid grid-cols-[1fr_1.4fr] gap-2 pb-safe">
+      <div className="mt-auto grid grid-cols-[1fr_1.4fr] gap-2">
         <Button variant="secondary" disabled={busy} onClick={() => act({ type: 'skill', skillId: null })}>Skip</Button>
         <Button disabled={busy || picked === null || (full && replace === null)}
           onClick={() => act({ type: 'skill', skillId: picked, ...(full && replace !== null ? { replace } : {}) })}>
@@ -513,7 +513,8 @@ export function ShopView({ content, setup, state, art, act, busy }: ViewProps) {
       {white && row('white', white.name, `White · ${skillRuleText(white)}`, () => buySkill('white'))}
       {gold && row('gold', gold.name, `Gold · ${skillRuleText(gold)}`, () => buySkill('gold'))}
       {row('reroll', 'Reroll', 'New card and skills on the shelf.', () => act({ type: 'buy', item: 'reroll' }))}
-      <div className="mt-auto pb-safe pt-2">
+      {/* Pinned to the bottom of the scrolling shop, so Next stage is always in reach. */}
+      <div className="sticky bottom-0 mt-auto bg-stage pt-2">
         <Button className="w-full" disabled={busy} onClick={() => act({ type: 'leave-shop' })}>Next stage</Button>
       </div>
       <DeckSheet content={content} setup={setup} state={state} art={art} open={picker !== null}

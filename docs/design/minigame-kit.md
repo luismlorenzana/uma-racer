@@ -107,7 +107,9 @@ of this tree.
      Resolve gauges). The player can always tell what comes next.
   3. **Stage:** the board or scene. It fills the space while the player is acting and shrinks to a strip between choices.
   4. **Thumb zone:** the primary action and its siblings, at least 44 pt, above the home indicator.
-- **During play the page never scrolls.** Safe areas are padded; nothing sits under the notch or the home indicator.
+- **During play the page never scrolls.** Safe areas are padded by the shell, once; a view never pads them again.
+  A phase taller than the phone (Friendship Training's shop) scrolls inside the stage region under the progress track,
+  with its primary action pinned to the region's bottom, so it is always in reach.
 - **Reduced motion** keeps every state change visible and removes travel and particles. Every animation uses elapsed
   time; results never depend on the refresh rate. A hidden page pauses its ticker.
 - **Input is locked** while an action is being saved or a commit is pending. A save conflict or error reloads the run from
