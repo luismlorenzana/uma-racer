@@ -19,6 +19,7 @@ import {
   createUmaSave,
   goalRaceIds,
   planScenarioCareer,
+  regularRaceCatalog,
   type CareerStage,
   type DistanceCategory,
   type RaceTemplate,
@@ -46,7 +47,8 @@ function readPack<T>(prefix: string): T[] {
   return (JSON.parse(readFileSync(join(CONTENT, file), 'utf8')) as { items: T[] }).items
 }
 
-const races = careerRaceCatalog(readPack<RaceTemplate>('races'))
+const sourceRaces = readPack<RaceTemplate>('races')
+const races = careerRaceCatalog(sourceRaces)
 const umas = readPack<UmaTemplate>('umas')
 const byId = new Map(races.map((race) => [race.id, race]))
 const eligible = (uma: UmaTemplate, race: RaceTemplate) =>
@@ -59,6 +61,7 @@ const mains = new Map<string, number>()
 const outside = new Map<string, number>()
 let careers = 0
 let short = 0
+let unavailableFrozenTargets = 0
 
 for (const uma of umas) {
   for (const tier of TIERS) {
@@ -76,6 +79,12 @@ for (const uma of umas) {
       console.error(`FAIL ${uma.id} T${tier}: ${(error as Error).message}`)
       continue
     }
+    // Plans frozen before catalog curation may name retired or same-name source variants. Every exact target that
+    // still exists in the private registry must remain runnable, even though it is absent from the ordinary catalog.
+    const historical = planScenarioCareer({ uma: save, umaTemplate: uma, aptitudes: uma.aptitudes, races: sourceRaces })
+    const historicalTargets = historical.journey.goals.flatMap(goalRaceIds)
+    const presentedIds = new Set(regularRaceCatalog(sourceRaces, historicalTargets).map((race) => race.id))
+    unavailableFrozenTargets += historicalTargets.filter((id) => !presentedIds.has(id)).length
     careers += 1
     if (tier === 1) tally(profiles, `${plan.profile.surface} ${plan.profile.band}`)
     tally(mains, plan.main)
@@ -97,6 +106,8 @@ console.log(`Profiles:   ${table(profiles)}`)
 console.log(`Main plans: ${table(mains)}`)
 console.log(`Fewer than 3 main races: ${short}`)
 console.log(`Relaxed picks: ${outside.size === 0 ? 'none' : table(outside)}`)
+console.log(`Unavailable historical frozen targets: ${unavailableFrozenTargets}`)
+if (unavailableFrozenTargets > 0) hardFailures += unavailableFrozenTargets
 // A relaxed pick is allowed by the generator (it never fails a career), but in the real pack none should be needed.
 for (const [key, count] of outside) {
   hardFailures += count

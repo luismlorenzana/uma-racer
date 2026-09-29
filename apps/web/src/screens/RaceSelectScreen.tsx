@@ -282,7 +282,11 @@ export function RaceSelectScreen() {
     aptitudes: derivedUma.aptitudes,
     races: regularRaceCatalog(
       content.races.items,
-      trainedScenario(selectedUma, tier).journey?.goals.flatMap(goalRaceIds) ?? [],
+      trainedScenario(selectedUma, tier).journey?.goals
+        .filter((goal) => goal.status === 'active')
+        .flatMap((goal) => goal.series
+          ? goal.series.legs.filter((leg) => leg.status === 'active').map((leg) => leg.raceId)
+          : goalRaceIds(goal)) ?? [],
     ),
     history: umaHistory,
     tier,

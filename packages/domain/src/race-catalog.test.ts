@@ -49,4 +49,23 @@ describe('regular race catalog', () => {
     const rows = [race('10', 'Synthetic Classic'), race('20', 'Synthetic Classic')]
     expect(regularRaceCatalog(rows, ['20']).map(({ id }) => id)).toEqual(['20'])
   })
+
+  it('keeps an exact frozen goal reachable when ordinary play hides it', () => {
+    const rows = [
+      race('10', 'Synthetic Classic'),
+      race('20', 'Synthetic Overseas Trial', 'Longchamp'),
+    ]
+    expect(regularRaceCatalog(rows).map(({ id }) => id)).toEqual(['10'])
+    expect(regularRaceCatalog(rows, ['20']).map(({ id }) => id)).toEqual(['10', '20'])
+  })
+
+  it('keeps every exact frozen goal when distinct ids share a display name', () => {
+    const rows = [
+      race('10', 'Synthetic Classic'),
+      race('20', 'Synthetic Classic'),
+      race('30', 'Synthetic Classic'),
+      race('40', 'Synthetic Sprint'),
+    ]
+    expect(regularRaceCatalog(rows, ['20', '30']).map(({ id }) => id)).toEqual(['20', '30', '40'])
+  })
 })

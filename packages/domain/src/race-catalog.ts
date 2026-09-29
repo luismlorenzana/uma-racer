@@ -39,12 +39,20 @@ export function careerRaceCatalog(races: readonly RaceTemplate[]): RaceTemplate[
 }
 
 /**
- * Presents one canonical row per ordinary race in Race Select. A frozen goal wins its name group; other
- * historical/course variants use the smallest stable content id.
+ * Presents one canonical row per ordinary race in Race Select, plus every exact frozen goal row that still exists
+ * in the source registry. Frozen rows replace the ordinary row with their name; if two goals use distinct rows with
+ * the same name, both stay reachable because goal completion matches the exact race id.
  */
 export function regularRaceCatalog(
   races: readonly RaceTemplate[],
   preferredRaceIds: readonly string[] = [],
 ): RaceTemplate[] {
-  return projectRaceCatalog(careerRaceCatalog(races), () => false, new Set(preferredRaceIds))
+  const preferred = new Set(preferredRaceIds)
+  const frozen = races.filter((race) => preferred.has(race.id))
+  const frozenNames = new Set(frozen.map((race) => raceNameKey(race.name)))
+  const ordinary = projectRaceCatalog(
+    careerRaceCatalog(races),
+    (race) => frozenNames.has(raceNameKey(race.name)),
+  )
+  return [...ordinary, ...frozen].sort((left, right) => left.id.localeCompare(right.id))
 }
