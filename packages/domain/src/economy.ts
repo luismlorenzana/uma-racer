@@ -1,9 +1,9 @@
 // Training Tickets are the only currency (docs/design/economy.md). One ticket is one minigame run (D148).
 
 /** A day's grant: enough to max one card in one scenario, with Spark Match runs to spare. */
-export const DAILY_TICKETS = 10
-/** Five days of grants. Only limits the daily grant; level-up tickets are always added. */
-export const TICKET_STORAGE_CAP = 50
+export const DAILY_TICKETS = 15
+/** Four days of grants. Only limits the daily grant; level-up tickets are always added. */
+export const TICKET_STORAGE_CAP = 60
 /** One run of either minigame: Spark Match raises a Training Level, Friendship Training earns a card's star. */
 export const SPARK_MATCH_TICKET_COST = 1
 export const FRIENDSHIP_TRAINING_TICKET_COST = 1

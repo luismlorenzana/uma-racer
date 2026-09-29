@@ -188,7 +188,7 @@ describe('save persistence', () => {
     await persistInitial(loaded, '2000-01-02', 10)
 
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile.data).toMatchObject({ tickets: 10, cardCoupons: 3, featuredUmaId: 'u00' })
+    expect(snapshot?.profile.data).toMatchObject({ tickets: 15, cardCoupons: 3, featuredUmaId: 'u00' })
     expect(snapshot?.umas).toHaveLength(25)
     expect(snapshot?.cards).toHaveLength(1)
     expect(await db.ledger.count()).toBe(2)
@@ -463,7 +463,7 @@ describe('game bootstrap coordinator', () => {
     const loaded = content()
     const load = vi.spyOn(saveApi, 'load').mockResolvedValueOnce({ entities: [], logs: [], serverTime: 1 })
     await runtime.start(loaded)
-    expect(useGame.getState()).toMatchObject({ status: 'ready', persistent: true, profile: { tickets: 10 } })
+    expect(useGame.getState()).toMatchObject({ status: 'ready', persistent: true, profile: { tickets: 15 } })
     expect(Object.keys(useGame.getState().umas)).toHaveLength(25)
     expect(load).toHaveBeenCalledTimes(1)
 
