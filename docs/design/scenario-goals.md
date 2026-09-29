@@ -140,7 +140,8 @@ one set. `UmaSave.goalPlanVersion` is **4**. The domain parser and the API valid
 - Earlier plans are history. Goal plans v1–v2 gave three optional slots: Aptitude, Identity (her real career, then her
   sex's classic set) and Challenge (a 5-length win). Their journeys still parse and still count toward ribbons and
   Honors.
-- Missing or retired target content in a progressed career shows its safe id and leaves the frozen goal honestly
+- An active retired target in a progressed career remains directly runnable from the private source registry, but only
+  for an Uma whose frozen plan names that exact id. Content that is genuinely absent still shows its safe id and remains
   unavailable until restored.
 
 ## Presentation
