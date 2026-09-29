@@ -191,7 +191,7 @@ describe('race skill compiler', () => {
 })
 
 describe('skill loadouts', () => {
-  it('lets an overdrawn loadout shed skills, but never grow its overdraft (D192)', () => {
+  it('lets an overdrawn loadout shed skills, but never grow its overdraft (D196)', () => {
     const skills = new Map(['a', 'b', 'c'].map((id) => [id, skill(id)]))
     // Three 90 SP skills equipped on 100 SP: 270, over budget, as a D188 repricing or a moved card can leave it.
     const source = {
