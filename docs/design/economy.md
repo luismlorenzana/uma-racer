@@ -26,14 +26,14 @@ These are the **only** sources ✅:
 
 | Source | Amount |
 |---|---|
-| Daily grant | **+10 per day**, accruing while you're away |
+| Daily grant | **+15 per day**, accruing while you're away |
 | Uma Level-up (from race EXP) | **+1** |
 
 A card's star pays nothing: its run already cost one ticket, and the star is the reward. There are **no login streaks**,
 and badges, achievements, and goals don't pay tickets ✅.
 
-**Storage cap (50, five days):** the cap only stops the **daily grant** from accruing, so you can skip up to five days
-and spend them at once. Tickets earned by leveling Umas are always added, even above 50, so nothing earned is ever
+**Storage cap (60, four days):** the cap only stops the **daily grant** from accruing, so you can skip up to four days
+and spend them at once. Tickets earned by leveling Umas are always added, even above 60, so nothing earned is ever
 lost.
 
 ### Spending
@@ -67,10 +67,12 @@ records keep the ticket reward of their day, five a level before v7 and one afte
   budget **about six tickets**, and about 45 minutes once Friendship Training's runs grow from about 5 to 12 minutes.
 - **One Uma through a scenario's Training Levels** is about 10 competent Spark Rival Circuit clears: about 10 tickets,
   one day. Losses retain partial EXP but make the route less ticket-efficient.
-- **A day's 10 tickets** max one card with four Spark Match runs to spare, or take one Uma through a scenario when its
-  Circuit clears are consistent.
-- **Late scenarios:** unlocking tier 10 → 11 costs 50, five days of the daily grant, minus what racing earns back.
-- **Stars are per scenario** (D127), so a six-card set is about six days to max in one scenario.
+- **A day's 15 tickets** max one card with nine Spark Match runs to spare, or take one Uma through a scenario with room
+  for several losses.
+- **Late scenarios:** unlocking tier 10 → 11 costs 50, three full daily grants plus five tickets, minus what racing earns
+  back.
+- **Stars are per scenario** (D127), so a six-card set is about 36 tickets, or roughly two and a half daily grants, to
+  max in one scenario.
 - **The core choice:** minigame runs and scenario unlocks draw from the same tickets. That's intended.
 
 Revisit these numbers once a balance simulation exists.

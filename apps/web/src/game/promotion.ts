@@ -6,6 +6,7 @@ import {
   deriveUma,
   parsePlayerProfileOrThrow,
   parseUmaSave,
+  regularRaceCatalog,
   scenarioAdvanceReadiness,
   startScenario,
   type BadgeStateV1,
@@ -63,7 +64,7 @@ export function startMemoryScenario(
     uma,
     umaTemplate: template,
     aptitudes: aptitudesFor(content, uma, cardsById),
-    races: content.races.items,
+    races: regularRaceCatalog(content.races.items),
   })
   return { profile, uma: started, result: null, alreadyStarted: false, earnedFlairEventIds: [] }
 }
@@ -83,7 +84,7 @@ export function advanceMemoryUma(
     umaTemplate: template,
     // The next tier opens with nothing configured, so its goals see her base aptitudes.
     aptitudes: aptitudesFor(content, uma, cardsById),
-    races: content.races.items,
+    races: regularRaceCatalog(content.races.items),
     now,
   })
   return {

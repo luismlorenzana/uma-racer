@@ -90,7 +90,7 @@ Tickets remain the only currency and the only pacing lever ([Economy](economy.md
 | Spark Rival Circuit run | **1 ticket** |
 | Card minigame run | **1 ticket** |
 | Reconfiguring the constellation | **free, always** |
-| Daily grant | **+10 per day**, stored up to **50** (five days) |
+| Daily grant | **+15 per day**, stored up to **60** (four days) |
 | Scope | account-wide, shared by all Umas |
 
 Reconfiguration is free on purpose. Charging for it would make players hoard one safe build, which is the

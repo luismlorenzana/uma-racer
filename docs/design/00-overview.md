@@ -62,7 +62,7 @@ flowchart LR
 | Original game | Uma Racer |
 |---|---|
 | A career run makes a one-off trained Uma instance | Each Uma is permanent, with a permanent **Uma Level** (from races) and a per-scenario **Training Level** (from training) |
-| Training is limited by career turns | Training is a **puzzle-battle and constellation loop**, paced by **10 daily tickets banked to 50** |
+| Training is limited by career turns | Training is a **puzzle-battle and constellation loop**, paced by **15 daily tickets banked to 60** |
 | Scenarios are separate career modes you pick | Scenarios are **progression tiers**, 10 levels each, in release order |
 | R / SR / SSR support cards | **SSR cards only** |
 | Gacha for Umas and cards | Free/event cards to start, then **Select Coupons** earned by maxing cards and leveling Umas |
@@ -82,7 +82,7 @@ flowchart LR
 | **Uma** | A playable character. It has static template data (base stats, growth rates, aptitudes, unique skill) and a persisted instance with permanent level plus per-scenario constellations and records. Stats, aptitudes, SP and skill library are derived from the active constellation. |
 | **Uma Level** | Permanent level earned **only from racing**. Levels 1–10 are scenario 1, 11–20 are scenario 2, and so on. |
 | **Training Level (TL)** | 1–10, earned **only from Spark Rival Circuit**, and fresh in each scenario. It decides which constellation nodes are open; it does not multiply stats or caps. |
-| **Training Ticket** | **The only currency.** One ticket is one minigame run. Earned from the daily +10 (stored up to 50, five days) and Uma Level-ups. Spent on minigame runs, unlocking cards, and unlocking the next scenario. |
+| **Training Ticket** | **The only currency.** One ticket is one minigame run. Earned from the daily +15 (stored up to 60, four days) and Uma Level-ups. Spent on minigame runs, unlocking cards, and unlocking the next scenario. |
 | **Scenario / Tier** | A 10-level band named after an original career scenario. It sets stat and SP caps and which card era is available. |
 | **Gate level** | Level 10, 20, 30… Grants an Uma Shard. EXP stops at the maximum until promotion. |
 | **Promotion** | Spending training tickets to move an Uma to the next scenario. |

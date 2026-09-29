@@ -49,7 +49,7 @@ feedback catalogue.
 
 - **Featured Uma** portrait, large, with a gentle idle "breathing" motion. Level ring, Training Level bar, active title.
 - **Two big CTAs** in the thumb zone: **Train** and **Race**.
-- On open, the **daily ticket grant** flies "+10 🎫" into the counter.
+- On open, the **daily ticket grant** flies "+15 🎫" into the counter.
 - **Career** card for the featured Uma (a pip per goal race, her stage, and her next goal race under the Race button), followed by the implemented **recent flair** card with the latest
   three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
   recent-flair feed.

@@ -9,6 +9,7 @@ import {
   awaitingAdvance,
   raceExp,
   progressionFieldSize,
+  regularRaceCatalog,
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
   skillAimsAtOthers,
@@ -274,7 +275,14 @@ export function RaceSelectScreen() {
     umaTemplates: content.umas.byId,
     skillTemplates: content.skills.byId,
   })
-  const plan = buildRacePlan({ uma: selectedUma, template: umaTemplate, aptitudes: derivedUma.aptitudes, races: content.races.items, history: umaHistory, tier })
+  const plan = buildRacePlan({
+    uma: selectedUma,
+    template: umaTemplate,
+    aptitudes: derivedUma.aptitudes,
+    races: regularRaceCatalog(content.races.items),
+    history: umaHistory,
+    tier,
+  })
   const pickedGoals = picked && !past ? goalsAtStake(selectedUma, picked.id, content) : []
   const pickedEntry = picked ? plan.all.find((entry) => entry.race.id === picked.id) : undefined
   const opponentCharacters = new Set(content.umas.items.filter((item) => item.charaId !== umaTemplate.charaId).map((item) => item.charaId)).size

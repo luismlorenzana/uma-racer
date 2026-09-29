@@ -75,7 +75,18 @@ export function SettingsScreen() {
           recorded in the ledger as <code>dev-grant</code>, so balance work can filter it out — nothing in
           ordinary play ever produces one.
         </p>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 grid gap-2">
+          <Button
+            variant="secondary"
+            disabled={granting || gameStatus !== 'ready'}
+            onClick={() => {
+              setGranting(true)
+              void grantDevResources({ tickets: 10, cardCoupons: 0, umaCoupons: 0, umaShards: 0 })
+                .finally(() => setGranting(false))
+            }}
+          >
+            {granting ? 'Granting…' : '+10 tickets'}
+          </Button>
           <Button
             variant="secondary"
             disabled={granting || gameStatus !== 'ready'}

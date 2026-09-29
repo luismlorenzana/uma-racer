@@ -92,7 +92,7 @@ describe('save initialization', () => {
     expect(result.umas).toHaveLength(25)
     expect(result.umas[0]?.templateId).toBe('u00')
     expect(result.cards.map((item) => item.templateId)).toEqual(['c1', 'c2'])
-    expect(result.profile).toMatchObject({ tickets: 10, cardCoupons: 3, featuredUmaId: 'u00', starterSeedContentVersion: 'abc123' })
+    expect(result.profile).toMatchObject({ tickets: 15, cardCoupons: 3, featuredUmaId: 'u00', starterSeedContentVersion: 'abc123' })
     expect(result.ledger.map((item) => item.id)).toEqual(['initial-card-coupons', 'daily-tickets:2026-03-08'])
 
     // A new Uma starts with one scenario at tier 1 and nothing configured in it.
@@ -123,11 +123,11 @@ describe('daily grants', () => {
   it('handles missed calendar days, DST-shaped dates, and the cap', () => {
     const profile = { ...createPlayerProfile('v1', 1), tickets: 36, lastDailyGrant: '2026-03-07' }
     const result = applyDailyGrants(profile, '2026-03-10', 2)
-    expect(result.profile.tickets).toBe(50)
+    expect(result.profile.tickets).toBe(60)
     expect(result.profile.lastDailyGrant).toBe('2026-03-10')
     expect(result.ledger.map((item) => [item.id, item.data.delta])).toEqual([
-      ['daily-tickets:2026-03-08', 10],
-      ['daily-tickets:2026-03-09', 4],
+      ['daily-tickets:2026-03-08', 15],
+      ['daily-tickets:2026-03-09', 9],
     ])
   })
 

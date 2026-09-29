@@ -418,12 +418,12 @@ describe('progression and economy', () => {
     expect(cardUnlockCost(14)).toBe(19)
   })
 
-  it('grants ten a day and banks five days, capping only the grant', () => {
-    expect(DAILY_TICKETS).toBe(10)
-    expect(TICKET_STORAGE_CAP).toBe(5 * DAILY_TICKETS)
-    expect(grantDailyTickets(45, 1)).toBe(50)
-    expect(grantDailyTickets(60, 3)).toBe(60)
-    expect(grantDailyTickets(0, 20)).toBe(50)
+  it('grants fifteen a day and banks four days, capping only the grant', () => {
+    expect(DAILY_TICKETS).toBe(15)
+    expect(TICKET_STORAGE_CAP).toBe(4 * DAILY_TICKETS)
+    expect(grantDailyTickets(45, 1)).toBe(60)
+    expect(grantDailyTickets(70, 3)).toBe(70)
+    expect(grantDailyTickets(0, 20)).toBe(60)
   })
 
   it('re-denominates a v6 balance to a fifth, rounding up so no run is lost', () => {
