@@ -24,6 +24,9 @@ import {
   type FlairEventV1,
   type EntityKind,
   type LedgerEntry,
+  type FarmState,
+  type InventoryStackData,
+  type ItemLedgerEntry,
   type LogKind,
   type PlayerProfile,
   type UmaSave,
@@ -40,6 +43,11 @@ export interface VersionedRow<T> {
   id: string
   data: T
   version: number
+}
+
+/** Server entity version plus a device-local optimistic command revision for stale-screen protection. */
+export interface FarmRow extends VersionedRow<FarmState> {
+  revision: number
 }
 
 export interface LogRow<T = Record<string, unknown>> {
@@ -119,6 +127,9 @@ class RacerDb extends Dexie {
   raceResults!: EntityTable<LogRow, 'id'>
   ledger!: EntityTable<LogRow<LedgerEntry>, 'id'>
   flairEvents!: EntityTable<LogRow<FlairEventV1>, 'id'>
+  farm!: EntityTable<FarmRow, 'id'>
+  items!: EntityTable<VersionedRow<InventoryStackData>, 'id'>
+  itemLedger!: EntityTable<LogRow<ItemLedgerEntry>, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
   /** Device-local album preferences (D112). Never synced, never part of the save. */
   albumPrefs!: EntityTable<AlbumPrefs, 'id'>
@@ -141,6 +152,12 @@ class RacerDb extends Dexie {
     const storesWithMinigameRuns = {
       ...storesWithAlbumPrefs,
       minigameRuns: 'id, targetKey, [targetKey+status], [targetKey+attemptIndex]',
+    }
+    const storesWithFarm = {
+      ...storesWithMinigameRuns,
+      farm: 'id',
+      items: 'id',
+      itemLedger: 'id, createdAt',
     }
     this.version(1).stores(stores)
     this.version(2).stores(stores).upgrade(async (tx: Transaction) => {
@@ -261,6 +278,8 @@ class RacerDb extends Dexie {
     this.version(12).stores(storesWithMinigameRuns).upgrade(migrateOpenMinigameJournals)
     // Save v8 (D200): cards move to three stars. Owed coupons and five-star runs settle at startup, where every path meets.
     this.version(13).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
+    // Additive synced Farm projections and evidence. Farm initializes lazily; migrations fabricate no rows.
+    this.version(14).stores(storesWithFarm)
   }
 }
 

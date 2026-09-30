@@ -48,6 +48,7 @@ import {
   putConflict,
   queueInTransaction,
   readLocalSnapshot,
+  reconcileFarmProjectionsInTransaction,
   stateFromSnapshot,
   updateEntityVersion,
 } from './persistence'
@@ -106,6 +107,7 @@ import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAward
 import { installMinigameHost } from './minigame-host'
 import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
+import { installFarmHost, MemoryFarmHost, PersistentFarmHost } from './farm/host'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -127,6 +129,7 @@ export class GameRuntime {
   private content: LoadedContent | null = null
   private uninstallMinigameHost: (() => void) | null = null
   private uninstallMinigameJournal: (() => void) | null = null
+  private uninstallFarmHost: (() => void) | null = null
   private flushing = false
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
@@ -201,6 +204,7 @@ export class GameRuntime {
           flairEvents: [...evaluations.flatMap((evaluation) => evaluation.events), ...trainer.events].map((event) => ({ id: event.id, ...event.data })),
           persistent: false,
         })
+        this.uninstallFarmHost = installFarmHost(new MemoryFarmHost(new Set(initial.umas.map((item) => item.templateId))))
         setSyncState({
           status: 'error',
           error: `Local storage unavailable: ${error instanceof Error ? error.message : String(error)}`,
@@ -228,6 +232,13 @@ export class GameRuntime {
       },
     }))
     this.uninstallMinigameJournal = installMinigameJournal(new PersistentMinigameJournal(content))
+    this.uninstallFarmHost = installFarmHost(new PersistentFarmHost({
+      afterMutation: async () => {
+        if (generation !== this.generation) return
+        await this.refreshPending()
+        this.schedule()
+      },
+    }))
 
     try {
       let local = await readLocalSnapshot()
@@ -289,6 +300,8 @@ export class GameRuntime {
     this.uninstallMinigameHost = null
     this.uninstallMinigameJournal?.()
     this.uninstallMinigameJournal = null
+    this.uninstallFarmHost?.()
+    this.uninstallFarmHost = null
     this.content = null
     this.memoryRaceHistory = []
     this.memoryCardRedemptions.clear()
@@ -861,8 +874,8 @@ export class GameRuntime {
           !Number.isSafeInteger(item.seq) ||
           !Number.isSafeInteger(item.queuedAt) ||
           item.queuedAt < 0 ||
-          (item.op === 'upsert' && !['profile', 'umas', 'cards', 'badges'].includes(item.kind)) ||
-          (item.op === 'append' && !['raceResults', 'ledger', 'flairEvents'].includes(item.kind))
+          (item.op === 'upsert' && !['profile', 'umas', 'cards', 'badges', 'farm', 'items'].includes(item.kind)) ||
+          (item.op === 'append' && !['raceResults', 'ledger', 'flairEvents', 'itemLedger'].includes(item.kind))
         ) {
           throw new Error('Outbox row is malformed')
         }
@@ -884,7 +897,7 @@ export class GameRuntime {
       const acknowledged = acknowledgedSequences(batch, request, response)
       const sentSequence = new Map(batch.map((item) => [`${item.kind}/${item.id}`, item.seq]))
 
-      await db.transaction('rw', db.profile, db.umas, db.cards, db.badges, db.outbox, async () => {
+      await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.farm, db.items, db.itemLedger, db.outbox], async () => {
         for (const applied of response.applied) await updateEntityVersion(applied.kind, applied.id, applied.version)
         for (const conflict of response.conflicts) {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
@@ -903,6 +916,7 @@ export class GameRuntime {
           }
         }
         await db.outbox.bulkDelete(acknowledged)
+        await reconcileFarmProjectionsInTransaction(response.serverTime)
       })
       if (generation !== this.generation) return
       const local = await readLocalSnapshot()

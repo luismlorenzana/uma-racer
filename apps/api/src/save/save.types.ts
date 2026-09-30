@@ -1,9 +1,9 @@
 // API-side validation for the @racer/domain save wire contract (docs/technical/architecture.md).
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -134,6 +134,12 @@ const BADGE_FILTER_CATEGORIES = [
 const TRAINER_RECORD_KINDS = [
   'highest-stat', 'most-wins', 'most-g1-wins', 'most-badge-stages', 'biggest-winning-margin', 'longest-win-streak',
 ] as const
+const FARM_SCHEMA_VERSION = 1
+const FARM_PLOT_IDS = ['plot-1', 'plot-2', 'plot-3', 'plot-4', 'plot-5', 'plot-6'] as const
+const FARM_PLOT_LEVELS = [1, 2, 6, 13, 27, 42] as const
+const FARM_CROP_ID_PATTERN = /^produce:t([1-9]|1[0-4]):(speed|stamina|power|guts|wit)$/
+const FARM_GROWTH_MS = 12 * 60 * 60 * 1_000
+const MAX_FARM_WORKERS = 1_000
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -175,6 +181,76 @@ function parseAptitudes(value: unknown): Record<string, unknown> | null {
 function parseUniqueIds(value: unknown, max = Number.POSITIVE_INFINITY): string[] | null {
   if (!Array.isArray(value) || value.length > max || value.some((item) => !isId(item))) return null
   return new Set(value).size === value.length ? [...value] as string[] : null
+}
+
+function parseFarmProgress(value: unknown): { level: number; exp: number } | null {
+  if (!isRecord(value) || !exactKeys(value, ['level', 'exp']) || !isPositiveInt(value.level) || value.level > 20 ||
+    !isNonNegativeInt(value.exp)) return null
+  if (value.level === 20) return value.exp === 0 ? { level: 20, exp: 0 } : null
+  const required = 48 + 12 * Math.floor((value.level - 1) / 4)
+  return value.exp < required ? { level: value.level, exp: value.exp } : null
+}
+
+function parseFarm(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, ['schemaVersion', 'plots', 'workers']) ||
+    value.schemaVersion !== FARM_SCHEMA_VERSION || !Array.isArray(value.plots) ||
+    value.plots.length !== FARM_PLOT_IDS.length || !isRecord(value.workers)) return null
+  const workerIds = Object.keys(value.workers)
+  if (workerIds.length > MAX_FARM_WORKERS || workerIds.some((id) => !isId(id))) return null
+  let farmLevel = 1
+  for (const id of workerIds) {
+    const progress = parseFarmProgress(value.workers[id])
+    if (!progress) return null
+    farmLevel += progress.level - 1
+  }
+  const assigned = new Set<string>()
+  for (let index = 0; index < value.plots.length; index += 1) {
+    const plot = value.plots[index]
+    if (!isRecord(plot) || !exactKeys(plot, ['id', 'templateId', 'lastCropId', 'attempt', 'cycle']) ||
+      plot.id !== FARM_PLOT_IDS[index] || !isNonNegativeInt(plot.attempt) ||
+      !(plot.templateId === null || isId(plot.templateId)) ||
+      !(plot.lastCropId === null || (typeof plot.lastCropId === 'string' && FARM_CROP_ID_PATTERN.test(plot.lastCropId)))) return null
+    if (typeof plot.templateId === 'string') {
+      if (assigned.has(plot.templateId)) return null
+      assigned.add(plot.templateId)
+    }
+    if (plot.cycle !== null) {
+      const cycle = plot.cycle
+      if (!isRecord(cycle) || !exactKeys(cycle, ['id', 'cropId', 'plantedAt', 'readyAt']) ||
+        cycle.id !== `farm:${String(plot.id)}:${String(plot.attempt)}` ||
+        typeof cycle.cropId !== 'string' || !FARM_CROP_ID_PATTERN.test(cycle.cropId) ||
+        !isNonNegativeInt(cycle.plantedAt) || !isNonNegativeInt(cycle.readyAt) ||
+        cycle.readyAt - cycle.plantedAt !== FARM_GROWTH_MS || plot.templateId === null || plot.attempt < 1) return null
+    }
+    if (plot.templateId === null && (plot.lastCropId !== null || plot.cycle !== null)) return null
+    if (farmLevel < FARM_PLOT_LEVELS[index]! && (plot.templateId !== null || plot.lastCropId !== null || plot.cycle !== null)) return null
+  }
+  return value
+}
+
+function parseItemStack(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, ['itemId', 'quantity', 'updatedAt']) || !isId(value.itemId) ||
+    !isNonNegativeInt(value.quantity) || !isNonNegativeInt(value.updatedAt)) return null
+  return value
+}
+
+function parseItemLedger(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, ['id', 'itemId', 'delta', 'reason', 'source', 'createdAt']) ||
+    !isId(value.id) || typeof value.itemId !== 'string' || !FARM_CROP_ID_PATTERN.test(value.itemId) ||
+    !isNonNegativeInt(value.createdAt) || !isRecord(value.source)) return null
+  if (value.reason === 'farm-harvest') {
+    if (value.delta !== 1 || !exactKeys(value.source, ['kind', 'plotId', 'cycleId', 'templateId', 'farmingExp']) ||
+      value.source.kind !== 'farm-harvest' || !FARM_PLOT_IDS.includes(value.source.plotId as (typeof FARM_PLOT_IDS)[number]) ||
+      value.source.cycleId !== value.id || !isId(value.source.templateId) || value.source.farmingExp !== 12) return null
+    return value
+  }
+  if (value.reason === 'constellation-produce') {
+    if (value.delta !== -1 || !exactKeys(value.source, ['kind', 'umaId', 'tier', 'nodeId', 'revision']) ||
+      value.source.kind !== 'constellation-produce' || !isId(value.source.umaId) || !isId(value.source.nodeId) ||
+      !isPositiveInt(value.source.tier) || value.source.tier > 14 || !isPositiveInt(value.source.revision)) return null
+    return value
+  }
+  return null
 }
 
 function jsonIsBounded(value: unknown, depth = 0): boolean {
@@ -926,13 +1002,16 @@ function parseEntityData(kind: EntityKind, value: unknown): Record<string, unkno
   if (kind === 'profile') return parseProfile(value)
   if (kind === 'umas') return parseUma(value)
   if (kind === 'cards') return parseCard(value)
-  return parseBadge(value)
+  if (kind === 'badges') return parseBadge(value)
+  if (kind === 'farm') return parseFarm(value)
+  return parseItemStack(value)
 }
 
 function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
   if (kind === 'ledger') return parseLedger(value)
   if (kind === 'raceResults') return parseRaceResult(value)
-  return parseFlair(value)
+  if (kind === 'flairEvents') return parseFlair(value)
+  return parseItemLedger(value)
 }
 
 /** Shape-check an untrusted sync body before it reaches either repository implementation. */
@@ -952,7 +1031,9 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
     if (!data) return `invalid ${kind} data`
-    if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+    if ((kind === 'profile' && value.id !== 'main') || (kind === 'farm' && value.id !== 'main') ||
+      ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+      (kind === 'items' && data.itemId !== value.id) ||
       (kind === 'badges' && (data.scope === 'trainer' ? value.id !== 'trainer' : value.id !== `uma:${String(data.umaId)}`))) return `${kind} id does not match data`
     if (value.deleted !== undefined && typeof value.deleted !== 'boolean') return 'invalid deleted flag'
     parsedUpserts.push({ kind, id: value.id, baseVersion: value.baseVersion, data, deleted: value.deleted as boolean | undefined })
@@ -971,6 +1052,9 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
       return 'raceResults id or timestamp does not match data'
     }
     if (kind === 'flairEvents' && value.createdAt !== data.earnedAt) return 'flairEvents timestamp does not match data'
+    if (kind === 'itemLedger' && (value.id !== data.id || value.createdAt !== data.createdAt)) {
+      return 'itemLedger id or timestamp does not match data'
+    }
     parsedAppends.push({ kind, id: value.id, data, createdAt: value.createdAt })
   }
   const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)
@@ -987,6 +1071,7 @@ function entitySchema(kind: string, data: Record<string, unknown>): number | nul
   if (kind === 'profile') return typeof data.schemaVersion === 'number' ? data.schemaVersion : null
   if (kind === 'umas') return typeof data.schemaVersion === 'number' ? data.schemaVersion : 1
   if (kind === 'cards') return 'bonds' in data ? 8 : 'stars' in data ? 7 : 'limitBreaks' in data ? 6 : 5
+  if (kind === 'farm') return typeof data.schemaVersion === 'number' ? data.schemaVersion : null
   return null
 }
 

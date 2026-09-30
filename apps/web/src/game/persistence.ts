@@ -12,6 +12,10 @@ import {
   parseCardSave,
   parseBadgeState,
   parseFlairEvent,
+  parseFarmState,
+  parseInventoryStackData,
+  parseItemLedgerEntry,
+  reconcileFarmEvidence,
   parseEntityData,
   parseLedgerEntry,
   parseLogData,
@@ -27,6 +31,9 @@ import {
   type EntityKind,
   type EntityRecord,
   type LedgerEntry,
+  type FarmState,
+  type InventoryStackData,
+  type ItemLedgerEntry,
   type LogKind,
   type PlayerProfile,
   raceAttemptId,
@@ -37,7 +44,7 @@ import {
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
-import { db, type LogRow, type OutboxRow, type VersionedRow } from './db'
+import { db, type FarmRow, type LogRow, type OutboxRow, type VersionedRow } from './db'
 
 export interface LocalSnapshot {
   profile: VersionedRow<PlayerProfile>
@@ -45,6 +52,9 @@ export interface LocalSnapshot {
   cards: VersionedRow<CardSave>[]
   badges: VersionedRow<BadgeStateV1>[]
   flairEvents: LogRow<FlairEventV1>[]
+  farm: FarmRow | null
+  items: VersionedRow<InventoryStackData>[]
+  itemLedger: LogRow<ItemLedgerEntry>[]
 }
 
 export async function queueInTransaction(
@@ -55,6 +65,31 @@ export async function queueInTransaction(
 ): Promise<void> {
   await db.outbox.where('[kind+id]').equals([kind, id]).delete()
   await db.outbox.add({ kind, id, op, queuedAt })
+}
+
+/** Repairs Farm/item projections from append-only evidence. Call inside a transaction containing these four tables. */
+export async function reconcileFarmProjectionsInTransaction(now: number): Promise<{ farmChanged: boolean; changedItemIds: string[] }> {
+  const farmRow = await db.farm.get('main')
+  if (!farmRow) return { farmChanged: false, changedItemIds: [] }
+  const movements = (await db.itemLedger.toArray()).map((row) => {
+    const parsed = parseItemLedgerEntry(row.data)
+    if (!parsed || parsed.id !== row.id || parsed.createdAt !== row.createdAt) throw new Error(`Invalid local item ledger: ${row.id}`)
+    return parsed
+  })
+  const itemRows = await db.items.toArray()
+  const result = reconcileFarmEvidence(farmRow.data, itemRows.map((row) => row.data), movements)
+  if (result.farmChanged) {
+    await db.farm.put({ ...farmRow, data: result.farm, revision: farmRow.revision + 1 })
+    await queueInTransaction('farm', 'main', 'upsert', now)
+  }
+  for (const itemId of result.changedItemIds) {
+    const data = result.stacks.find((stack) => stack.itemId === itemId)
+    if (!data) throw new Error(`Reconciled item stack is missing: ${itemId}`)
+    const row = await db.items.get(itemId)
+    await db.items.put({ id: itemId, data, version: row?.version ?? 0 })
+    await queueInTransaction('items', itemId, 'upsert', now)
+  }
+  return { farmChanged: result.farmChanged, changedItemIds: result.changedItemIds }
 }
 
 export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
@@ -69,6 +104,9 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   const cardRows = await db.cards.toArray()
   const badgeRows = await db.badges.toArray()
   const flairRows = await db.flairEvents.toArray()
+  const farmRow = await db.farm.get('main')
+  const itemRows = await db.items.toArray()
+  const itemLedgerRows = await db.itemLedger.toArray()
   const umas = umaRows.map((row) => {
     const data = parseUmaSaveOrThrow(row.data)
     if (data.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
@@ -91,10 +129,28 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
     if (!data || data.earnedAt !== row.createdAt) throw new Error(`Invalid local flair event: ${row.id}`)
     return { ...row, data }
   })
+  const farm = farmRow ? (() => {
+    const data = parseFarmState(farmRow.data)
+    if (!data || farmRow.id !== 'main' || !Number.isSafeInteger(farmRow.version) || farmRow.version < 0 ||
+      !Number.isSafeInteger(farmRow.revision) || farmRow.revision < 0) {
+      throw new Error('Invalid local Farm state')
+    }
+    return { ...farmRow, data }
+  })() : null
+  const items = itemRows.map((row) => {
+    const data = parseInventoryStackData(row.data, row.id)
+    if (!data || !Number.isSafeInteger(row.version) || row.version < 0) throw new Error(`Invalid local item stack: ${row.id}`)
+    return { ...row, data }
+  })
+  const itemLedger = itemLedgerRows.map((row) => {
+    const data = parseItemLedgerEntry(row.data)
+    if (!data || data.id !== row.id || data.createdAt !== row.createdAt) throw new Error(`Invalid local item ledger: ${row.id}`)
+    return { ...row, data }
+  })
   if (umaRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local Uma row version is invalid')
   if (cardRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local card row version is invalid')
   if (badgeRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local badge row version is invalid')
-  return { profile: { ...profileRow, data: profile }, umas, cards, badges, flairEvents }
+  return { profile: { ...profileRow, data: profile }, umas, cards, badges, flairEvents, farm, items, itemLedger }
 }
 
 export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
@@ -106,6 +162,9 @@ export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
     db.raceResults.count(),
     db.ledger.count(),
     db.flairEvents.count(),
+    db.farm.count(),
+    db.items.count(),
+    db.itemLedger.count(),
     db.outbox.count(),
   ])
   return counts.every((count) => count === 0)
@@ -150,8 +209,8 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
   }
   if (profileRecords.length !== 1 || profileRecords[0]!.id !== 'main') throw new Error('Server save has duplicate profiles')
 
-  await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
-    await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.outbox.clear()])
+  await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger, db.outbox], async () => {
+    await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.farm.clear(), db.items.clear(), db.itemLedger.clear(), db.outbox.clear()])
     for (const record of snapshot.entities) {
       if (record.deleted) continue
       // A server row can be any supported schema. Migrate on the way in, and re-queue whatever moved so the
@@ -175,20 +234,25 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.cards.put({ id: record.id, data: card, version: record.version })
       }
       if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
+      if (record.kind === 'farm') await db.farm.put({ id: record.id, data: parseFarmState(record.data)!, version: record.version, revision: record.version })
+      if (record.kind === 'items') await db.items.put({ id: record.id, data: parseInventoryStackData(record.data, record.id)!, version: record.version })
     }
     for (const record of snapshot.logs) {
       if (record.kind === 'ledger') {
         await db.ledger.put({ id: record.id, data: parseLedgerEntry(record.data)!, createdAt: record.createdAt })
       } else if (record.kind === 'raceResults') {
         await db.raceResults.put({ id: record.id, data: record.data, createdAt: record.createdAt })
-      } else {
+      } else if (record.kind === 'flairEvents') {
         await db.flairEvents.put({ id: record.id, data: parseFlairEvent(record.data)!, createdAt: record.createdAt })
+      } else {
+        await db.itemLedger.put({ id: record.id, data: parseItemLedgerEntry(record.data)!, createdAt: record.createdAt })
       }
     }
     for (const key of legacyKeys) {
       const separator = key.indexOf('/')
       await queueInTransaction(key.slice(0, separator) as EntityKind, key.slice(separator + 1), 'upsert', snapshot.serverTime)
     }
+    await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })
   return 'adopted'
 }
@@ -305,20 +369,31 @@ export async function entityRow(kind: EntityKind, id: string): Promise<Versioned
       ? await db.umas.get(id)
       : kind === 'cards'
         ? await db.cards.get(id)
-        : await db.badges.get(id)
+        : kind === 'badges'
+          ? await db.badges.get(id)
+          : kind === 'farm'
+            ? await db.farm.get(id)
+            : await db.items.get(id)
   if (!row) return null
   if (row.id !== id || !Number.isSafeInteger(row.version) || row.version < 0) {
     throw new Error(`Invalid local ${kind} row metadata: ${id}`)
   }
   const data = kind === 'profile' ? parsePlayerProfileOrThrow(row.data) : parseEntityData(kind, row.data)
-  if (!data || ((kind === 'umas' || kind === 'cards') && (!('templateId' in data) || data.templateId !== id))) {
+  if (!data || ((kind === 'umas' || kind === 'cards') && (!('templateId' in data) || data.templateId !== id)) ||
+    (kind === 'farm' && id !== 'main') || (kind === 'items' && (!('itemId' in data) || data.itemId !== id))) {
     throw new Error(`Invalid local ${kind} data: ${id}`)
   }
   return { id: row.id, version: row.version, data }
 }
 
 export async function logRow(kind: LogKind, id: string): Promise<LogRow<object> | null> {
-  const row = kind === 'ledger' ? await db.ledger.get(id) : kind === 'raceResults' ? await db.raceResults.get(id) : await db.flairEvents.get(id)
+  const row = kind === 'ledger'
+    ? await db.ledger.get(id)
+    : kind === 'raceResults'
+      ? await db.raceResults.get(id)
+      : kind === 'flairEvents'
+        ? await db.flairEvents.get(id)
+        : await db.itemLedger.get(id)
   if (!row) return null
   if (row.id !== id || !Number.isSafeInteger(row.createdAt) || row.createdAt < 0) {
     throw new Error(`Invalid local ${kind} row metadata: ${id}`)
@@ -347,6 +422,8 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
     if (record.kind === 'umas') await db.umas.delete(record.id)
     if (record.kind === 'cards') await db.cards.delete(record.id)
     if (record.kind === 'badges') await db.badges.delete(record.id)
+    if (record.kind === 'farm') await db.farm.delete(record.id)
+    if (record.kind === 'items') await db.items.delete(record.id)
     return
   }
   // Migrate on the way in, as a first load does: a conflict can carry any supported schema, and a row that cannot be
@@ -376,6 +453,17 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
       await queueInTransaction('badges', record.id, 'upsert', now)
     }
   }
+  if (record.kind === 'farm') {
+    const farm = parseFarmState(record.data)
+    if (!farm || record.id !== 'main') throw new Error(`Invalid server Farm conflict: ${record.id}`)
+    const local = await db.farm.get(record.id)
+    await db.farm.put({ id: record.id, data: farm, version: record.version, revision: (local?.revision ?? record.version) + 1 })
+  }
+  if (record.kind === 'items') {
+    const item = parseInventoryStackData(record.data, record.id)
+    if (!item) throw new Error(`Invalid server item conflict: ${record.id}`)
+    await db.items.put({ id: record.id, data: item, version: record.version })
+  }
   if (queueMigrated && (record.kind === 'profile' || record.kind === 'umas' || record.kind === 'cards')) {
     await queueInTransaction(record.kind, record.id, 'upsert', now)
   }
@@ -386,4 +474,6 @@ export async function updateEntityVersion(kind: EntityKind, id: string, version:
   if (kind === 'umas') await db.umas.update(id, { version })
   if (kind === 'cards') await db.cards.update(id, { version })
   if (kind === 'badges') await db.badges.update(id, { version })
+  if (kind === 'farm') await db.farm.update(id, { version })
+  if (kind === 'items') await db.items.update(id, { version })
 }
