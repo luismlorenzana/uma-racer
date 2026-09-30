@@ -288,12 +288,17 @@ export async function grantPersistentDevResources(grant: DevGrant, today: string
  * Grants the owner asked for by hand (D209). Each is paid once, at startup, as `dev-grant` rows under fixed ids
  * (`owner-gift:<gift>:<resource>`); a server save brings the whole ledger back, so a reinstall never pays one twice.
  */
-export const OWNER_GIFTS: readonly { id: string; grant: DevGrant }[] = [
+export interface OwnerGift {
+  id: string
+  grant: DevGrant
+}
+
+export const OWNER_GIFTS: readonly OwnerGift[] = [
   { id: '2026-09-30', grant: { tickets: 0, cardCoupons: 0, umaCoupons: 3, umaShards: 0 } },
 ]
 
 /** Pays every owner gift not yet in the ledger. Returns what it paid. */
-export async function grantOwnerGifts(now: number, today: string, gifts = OWNER_GIFTS): Promise<DevGrant> {
+export async function grantOwnerGifts(now: number, today: string, gifts: readonly OwnerGift[] = OWNER_GIFTS): Promise<DevGrant> {
   return db.transaction('rw', db.profile, db.ledger, db.outbox, async () => {
     const paid: DevGrant = { tickets: 0, cardCoupons: 0, umaCoupons: 0, umaShards: 0 }
     const profileRow = await db.profile.get('main')

@@ -466,7 +466,7 @@ describe('game bootstrap coordinator', () => {
   beforeEach(async () => {
     await resetDatabase()
     clearGameState()
-    runtime = new GameRuntime()
+    runtime = new GameRuntime([])
     vi.stubGlobal('window', { addEventListener: vi.fn(), removeEventListener: vi.fn() })
     vi.stubGlobal('document', { visibilityState: 'visible', addEventListener: vi.fn(), removeEventListener: vi.fn() })
     vi.stubGlobal('navigator', { onLine: false })

@@ -71,6 +71,8 @@ import {
   grantPersistentDevResources,
   grantOwedMaxCoupons,
   grantOwnerGifts,
+  OWNER_GIFTS,
+  type OwnerGift,
   exchangeMemoryUmaShards,
   exchangePersistentUmaShards,
   redeemMemoryCard,
@@ -148,6 +150,9 @@ export class GameRuntime {
   private visibilityHandler = () => {
     if (document.visibilityState === 'hidden') void this.flush()
   }
+
+  /** Tests boot with no owner gifts (D209), so a gift never shows up in their saves. */
+  constructor(private readonly ownerGifts: readonly OwnerGift[] = OWNER_GIFTS) {}
 
   async start(content: LoadedContent): Promise<void> {
     this.stop(false)
@@ -274,7 +279,7 @@ export class GameRuntime {
       // Three stars (D200): a card run frozen for five gives its ticket back, and a card the migration maxed is paid its coupon.
       const refundedRuns = await retireFiveStarFriendshipRuns(now, today)
       const owedCoupons = await grantOwedMaxCoupons(now, today)
-      const gift = await grantOwnerGifts(now, today)
+      const gift = await grantOwnerGifts(now, today, this.ownerGifts)
       const trainerArchive = await reconcileTrainerPersistent(content, now, true, 'migration:trainer')
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
