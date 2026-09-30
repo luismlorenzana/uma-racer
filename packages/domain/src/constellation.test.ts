@@ -398,7 +398,7 @@ describe('the invariance rule', () => {
             held.set(cardId, (held.get(cardId) ?? 0) + 1)
             assignments[node.id] = { kind: 'card', cardId }
           } else if (node.kind === 'stat') {
-            assignments[node.id] = { kind: 'stat', stat: stats[Math.floor(random() * stats.length)]! }
+            assignments[node.id] = { kind: 'legacy-produce', stat: stats[Math.floor(random() * stats.length)]! }
           }
         }
 
@@ -451,7 +451,7 @@ describe('the invariance rule', () => {
     for (const node of template.nodes) {
       // Round-robin keeps every card inside its cap (D134).
       if (node.kind === 'card') assignments[node.id] = { kind: 'card', cardId: cardIds[next++ % cardIds.length]! }
-      if (node.kind === 'stat') assignments[node.id] = { kind: 'stat', stat: 'speed' }
+      if (node.kind === 'stat') assignments[node.id] = { kind: 'legacy-produce', stat: 'speed' }
     }
     const cardNodes = template.nodes.filter((node) => node.kind === 'card').length
     const statNodes = template.nodes.filter((node) => node.kind === 'stat').length
@@ -573,7 +573,7 @@ describe('derivation', () => {
       template.nodes
         .filter((node) => node.kind === 'stat' || node.kind === 'card')
         .map((node) => [node.id, node.kind === 'stat'
-          ? ({ kind: 'stat', stat: 'speed' } as NodeAssignment)
+          ? ({ kind: 'legacy-produce', stat: 'speed' } as NodeAssignment)
           : ({ kind: 'card', cardId: 'c' } as NodeAssignment)]),
     )
     const derived = deriveStats({ buffs: false,

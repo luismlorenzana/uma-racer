@@ -72,8 +72,9 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v7 stores mutable profile/Uma/card state, including one constellation per unlocked scenario, scenario-scoped card
-  stars (the field is `stars`, so a v6 `limitBreaks` card is never read without its conversion), skill history, and typed Journey slots with frozen series legs. Derived stats, node values, static names,
+- Save v9 stores mutable profile/Uma state, including one constellation per unlocked scenario, scenario-scoped card
+  bonds (the current three-star shape follows v7's five-star and v6's `limitBreaks` migrations), skill history, typed
+  Journey slots with frozen series legs, and Produce/legacy-Produce assignments. Derived stats, node values, static names,
   art, release metadata, and card/skill definitions stay outside the save and are joined from the private content registry.
   Dexie and cloud adoption migrate older schemas one way, preserve entity versions, and queue only upgraded synced rows;
   the API accepts rollout reads but rejects an older schema over a newer one.
@@ -82,7 +83,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
 - Every action (a deck edit, minigame result, race, or promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
-- Stable Farm uses an independent `FarmHost`, not `MinigameHost`. Dexie v13 adds one lazy `farm/main` entity, versioned
+- Stable Farm uses an independent `FarmHost`, not `MinigameHost`. Dexie v14 adds one lazy `farm/main` entity, versioned
   `items/{itemId}` stacks and append-only `itemLedger/{cycleId}` evidence. Assignment and planting update Farm plus its
   coalesced outbox marker; harvest commits Farm, stack, evidence and all three outbox markers atomically. A device-local
   command revision rejects stale screens without changing the server entity version used by sync.
@@ -93,6 +94,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   One visibility-aware minute clock derives readiness without persistence writes. The Item view joins synced stacks to
   the checked-in catalog; owned/all, stat, scenario and density preferences reuse device-local `albumPrefs` and never sync.
   Settings diagnostics expose aggregate Farm/item/ledger counts only, never private item names or ids.
+- Dexie v15 walks v8 Uma rows to save v9 by translating filled Stat assignments to stat-only Legacy Produce. It creates
+  no stack or evidence. A new Produce fill/replacement uses a pure expected-revision command and one transaction across
+  Uma, item stack, `-1 constellation-produce` evidence, badge/flair reconciliation and outbox. Evidence ids include Uma,
+  tier, node and replacement revision; matching retries pay once, stale screens reload, and Zustand publishes after commit.
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
   duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
@@ -240,8 +245,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ```text
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v7: level/EXP, unlocked tier, one training run per scenario, history, version
-players/{uid}/cards/{cardId}          save v7: templateId, stars per scenario, maxCouponGranted, version
+players/{uid}/umas/{umaId}            save v9: level/EXP, scenarios, Produce assignments, history, version
+players/{uid}/cards/{cardId}          templateId, three-star bonds per scenario, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
@@ -249,19 +254,17 @@ players/{uid}/ledger/{id}             append-only ticket, coupon, and shard move
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 players/{uid}/farm/main               Farm schema, six plots, persistent outfit assignments/progress and attempt counters
 players/{uid}/items/{itemId}          current global item-stack quantity and update time
-players/{uid}/itemLedger/{id}         append-only item movement and Farm-harvest XP evidence
+players/{uid}/itemLedger/{id}         append-only harvest/Produce item movement and Farm-harvest XP evidence
 ```
 
 Firestore cannot store an array directly inside another array, and a race record's compiled skill conditions are one.
 A record whose data holds a nested array is written with its data as JSON text (`dataJson`) and decoded on every read;
 all other records keep `data` as a map (D151).
 
-The profile is save v4 and retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
-creation time, and schema version. Every Uma row is also explicitly v4. Parent/snapshot/history and strict Journey goal
-fields are present, including per-leg evidence for series goals; pending setup has no active Journey, active scenarios
-have exactly one for the current tier, and final completion has none. The nullable `scenarioModifier` is a separately
-versioned strict union initialized/replaced by Scenario Start; v3 rows migrate to null without inventing active-tier
-progress. Badge-state v1 is independently migratable and cannot force a progression save reset.
+The profile's save-v9 row retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
+creation time, and schema version. Uma save v9 holds one bounded run per unlocked scenario and assignment unions for
+cards, Produce, Legacy Produce and lineage. The API accepts the prior v8 Stat shape during rollout but schema conflict
+resolution never lets it replace v9. Badge-state v1 is independently migratable and cannot force a progression reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic

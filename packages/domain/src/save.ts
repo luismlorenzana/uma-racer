@@ -23,9 +23,10 @@ import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel }
 import { EXP_TO_NEXT_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type StatKey, type Stats } from './types'
 import { FARM_SCHEMA_VERSION } from './farm/constants'
-import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry } from './farm/types'
+import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry, type FarmCropId } from './farm/types'
+import { farmCropById } from './farm/catalog'
 
-export const SAVE_SCHEMA_VERSION = 8 as const
+export const SAVE_SCHEMA_VERSION = 9 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
@@ -33,6 +34,7 @@ export const LEGACY_SAVE_SCHEMA_VERSION_V4 = 4 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V5 = 5 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V6 = 6 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V7 = 7 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V8 = 8 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -205,6 +207,11 @@ export interface LegacyPlayerProfileV6 extends Omit<PlayerProfile, 'schemaVersio
 /** v7 profiles have v8's shape; the bump belongs to the cards' three-star scale (D200). */
 export interface LegacyPlayerProfileV7 extends Omit<PlayerProfile, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V7
+}
+
+/** v8 profiles have v9's shape; v9 belongs to Produce assignments on Uma rows. */
+export interface LegacyPlayerProfileV8 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V8
 }
 
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
@@ -447,7 +454,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -528,6 +535,17 @@ export function parseLegacyPlayerProfileV6(value: unknown): LegacyPlayerProfileV
 
 export function parseLegacyPlayerProfileV7(value: unknown): LegacyPlayerProfileV7 | null {
   return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V7)
+}
+
+export function parseLegacyPlayerProfileV8(value: unknown): LegacyPlayerProfileV8 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V8)
+}
+
+/** A stamp bump: v9 changes Uma constellation assignments, not the profile. */
+export function migratePlayerProfileV8(value: LegacyPlayerProfileV8): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV8(value)
+  if (!parsed) throw new Error('Legacy v8 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
 /** A stamp bump: v8 changed the cards (D200), not the profile. */
@@ -1005,9 +1023,15 @@ function parseNodeAssignment(value: unknown): NodeAssignment | null {
       ? { kind: 'card', cardId: value.cardId }
       : null
   }
-  if (value.kind === 'stat') {
+  if (value.kind === 'produce') {
+    return exactKeys(value, ['kind', 'itemId', 'revision']) && typeof value.itemId === 'string' &&
+      farmCropById(value.itemId) !== null && isPositiveInt(value.revision)
+      ? { kind: 'produce', itemId: value.itemId as FarmCropId, revision: value.revision }
+      : null
+  }
+  if (value.kind === 'legacy-produce') {
     return exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as StatKey)
-      ? { kind: 'stat', stat: value.stat as StatKey }
+      ? { kind: 'legacy-produce', stat: value.stat as StatKey }
       : null
   }
   if (value.kind === 'lineage') {
@@ -1031,14 +1055,20 @@ function parseScenarioTraining(value: unknown, umaLevel: number): ScenarioTraini
 
   if (!isObject(value.assignments)) return null
   const template = constellationTemplate(value.tier)
-  const nodeIds = new Set(template.nodes.map((node) => node.id))
+  const nodes = new Map(template.nodes.map((node) => [node.id, node]))
   const assignments: Record<string, NodeAssignment> = {}
   for (const [nodeId, raw] of Object.entries(value.assignments)) {
     // An assignment naming a node this template does not have is dropped, not fatal: a template can be
     // re-authored (T052) and a stale key must never lock the player out of her save.
-    if (!nodeIds.has(nodeId)) continue
+    const node = nodes.get(nodeId)
+    if (!node) continue
     const assignment = parseNodeAssignment(raw)
     if (!assignment) return null
+    if (assignment.kind === 'legacy-produce' && node.kind !== 'stat') return null
+    if (assignment.kind === 'produce') {
+      const crop = farmCropById(assignment.itemId)
+      if (node.kind !== 'stat' || crop?.scenarioTier !== value.tier) return null
+    }
     assignments[nodeId] = assignment
   }
 
@@ -1070,41 +1100,78 @@ export interface LegacyUmaSaveV7 extends Omit<UmaSave, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V7
 }
 
-/** v5 to v8 Umas share a shape (v6 changed cards, v7 cards and tickets, v8 cards), so these are stamp bumps. */
-export function parseLegacyUmaSaveV7(value: unknown): LegacyUmaSaveV7 | null {
-  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V7) return null
+export interface LegacyUmaSaveV8 extends Omit<UmaSave, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V8
+}
+
+/** v5–v8 used free Stat assignments. Translate those values before the current parser sees them. */
+function parseLegacyProduceUma<T extends 5 | 6 | 7 | 8>(
+  value: unknown,
+  schemaVersion: T,
+): (Omit<UmaSave, 'schemaVersion'> & { schemaVersion: T }) | null {
+  if (!isObject(value) || value.schemaVersion !== schemaVersion || !Array.isArray(value.scenarios)) return null
+  const scenarios = value.scenarios.map((raw) => {
+    if (!isObject(raw) || !isObject(raw.assignments)) return null
+    const knownNodes = isPositiveInt(raw.tier) && raw.tier <= MAX_SCENARIO_TIER
+      ? new Set(constellationTemplate(raw.tier).nodes.map((node) => node.id))
+      : null
+    const assignments: Record<string, unknown> = {}
+    for (const [nodeId, assignment] of Object.entries(raw.assignments)) {
+      // Preserve the current parser's stale-template tolerance during the one-way semantic migration.
+      if (knownNodes && !knownNodes.has(nodeId)) continue
+      if (!isObject(assignment)) return null
+      if (assignment.kind === 'stat') {
+        if (!exactKeys(assignment, ['kind', 'stat']) || !STATS.includes(assignment.stat as StatKey)) return null
+        assignments[nodeId] = { kind: 'legacy-produce', stat: assignment.stat }
+      } else if (assignment.kind === 'card' || assignment.kind === 'lineage') {
+        assignments[nodeId] = assignment
+      } else return null
+    }
+    return { ...raw, assignments }
+  })
+  if (scenarios.some((run) => run === null)) return null
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, scenarios })
+  return parsed ? { ...parsed, schemaVersion } : null
+}
+
+export function parseLegacyUmaSaveV8(value: unknown): LegacyUmaSaveV8 | null {
+  return parseLegacyProduceUma(value, LEGACY_SAVE_SCHEMA_VERSION_V8)
+}
+
+export function migrateUmaSaveV8(value: LegacyUmaSaveV8): UmaSave {
   const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
-  return parsed ? { ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V7 } : null
+  if (!parsed) throw new Error('Legacy v8 Uma save is malformed')
+  return parsed
+}
+
+export function parseLegacyUmaSaveV7(value: unknown): LegacyUmaSaveV7 | null {
+  return parseLegacyProduceUma(value, LEGACY_SAVE_SCHEMA_VERSION_V7)
 }
 
 export function migrateUmaSaveV7(value: LegacyUmaSaveV7): UmaSave {
-  const parsed = parseLegacyUmaSaveV7(value)
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
   if (!parsed) throw new Error('Legacy v7 Uma save is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return parsed
 }
 
 export function parseLegacyUmaSaveV6(value: unknown): LegacyUmaSaveV6 | null {
-  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V6) return null
-  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
-  return parsed ? { ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V6 } : null
+  return parseLegacyProduceUma(value, LEGACY_SAVE_SCHEMA_VERSION_V6)
 }
 
 export function migrateUmaSaveV6(value: LegacyUmaSaveV6): UmaSave {
-  const parsed = parseLegacyUmaSaveV6(value)
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
   if (!parsed) throw new Error('Legacy v6 Uma save is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return parsed
 }
 
 export function parseLegacyUmaSaveV5(value: unknown): LegacyUmaSaveV5 | null {
-  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V5) return null
-  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
-  return parsed ? { ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V5 } : null
+  return parseLegacyProduceUma(value, LEGACY_SAVE_SCHEMA_VERSION_V5)
 }
 
 export function migrateUmaSaveV5(value: LegacyUmaSaveV5): UmaSave {
-  const parsed = parseLegacyUmaSaveV5(value)
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
   if (!parsed) throw new Error('Legacy v5 Uma save is malformed')
-  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+  return parsed
 }
 
 export function parseUmaSave(value: unknown): UmaSave | null {
@@ -1213,6 +1280,8 @@ function parsePerTier(value: unknown, max: number): Record<string, number> | nul
 export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
   const current = parseUmaSave(value)
   if (current) return current
+  const v8 = parseLegacyUmaSaveV8(value)
+  if (v8) return migrateUmaSaveV8(v8)
   const v7 = parseLegacyUmaSaveV7(value)
   if (v7) return migrateUmaSaveV7(v7)
   const v6 = parseLegacyUmaSaveV6(value)
@@ -1238,6 +1307,8 @@ export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
 export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
   const current = parsePlayerProfile(value)
   if (current) return current
+  const v8 = parseLegacyPlayerProfileV8(value)
+  if (v8) return migratePlayerProfileV8(v8)
   const v7 = parseLegacyPlayerProfileV7(value)
   if (v7) return migratePlayerProfileV7(v7)
   const v6 = parseLegacyPlayerProfileV6(value)

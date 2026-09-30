@@ -6,6 +6,8 @@ import { SHAPE_ART, cellKey, parseShapeArt, type ShapeCell } from './constellati
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { MAX_SCENARIO_TIER, SCENARIOS, baselineSkillPoints, skillPointCap } from './scenarios'
 import { STATS, type StatKey, type Stats, zeroStats } from './types'
+import { farmCropById } from './farm/catalog'
+import type { FarmCropId } from './farm/types'
 
 export const MAX_TRAINING_LEVEL = 10
 /** Training Levels 1–8 open card and stat nodes; 9 and 10 open lineage (docs/design/constellations.md). */
@@ -401,10 +403,38 @@ export function nodesUnlockedBetween(
 
 // --- Derivation --------------------------------------------------------------------------------
 
+export interface ProduceAssignment {
+  kind: 'produce'
+  itemId: FarmCropId
+  /** Monotonic per-node replacement revision. The first stocked fill is revision 1. */
+  revision: number
+}
+
+export interface LegacyProduceAssignment {
+  kind: 'legacy-produce'
+  /** Contribution-preserving v8 migration. It never names or consumes an item. */
+  stat: StatKey
+}
+
 export type NodeAssignment =
   | { kind: 'card'; cardId: string }
-  | { kind: 'stat'; stat: StatKey }
+  | ProduceAssignment
+  | LegacyProduceAssignment
   | { kind: 'lineage'; templateId: string }
+
+/** The stat a valid Produce assignment pays in this scenario; malformed/stale assignments pay nothing. */
+export function produceAssignmentStat(assignment: NodeAssignment | undefined, tier: number): StatKey | null {
+  if (assignment?.kind === 'legacy-produce') return assignment.stat
+  if (assignment?.kind !== 'produce') return null
+  const crop = farmCropById(assignment.itemId)
+  return crop?.scenarioTier === tier ? crop.stat : null
+}
+
+/** Empty and legacy nodes are revision 0. Non-Produce assignments cannot participate in a Produce command. */
+export function produceAssignmentRevision(assignment: NodeAssignment | undefined): number | null {
+  if (assignment === undefined || assignment.kind === 'legacy-produce') return 0
+  return assignment.kind === 'produce' ? assignment.revision : null
+}
 
 /** What one node filled with this card pays, before the stat split. The Cards album shows this. */
 export function cardNodeValue(
@@ -481,7 +511,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
 
   // First pass: which nodes pay, and how many live nodes each card fills. Past its cap a card pays nothing (D134);
   // nodes count in template order, so the earliest ones stay live. Cooking and Construction read the final counts.
-  const live: { node: ConstellationNode; assignment: NodeAssignment }[] = []
+  const live: { node: ConstellationNode; assignment: NodeAssignment; produceStat?: StatKey }[] = []
   const cardNodesUsed = new Map<string, number>()
   let lineageFilled = 0
   let filled = 0
@@ -491,7 +521,10 @@ export function deriveStats(input: DeriveInput): DerivedStats {
     const assignment = assignments[node.id]
     if (!assignment) continue
     if ((node.kind === 'parent' || node.kind === 'grandparent') && assignment.kind === 'lineage') lineageFilled += 1
-    if (node.kind === 'stat' && assignment.kind === 'stat') live.push({ node, assignment })
+    if (node.kind === 'stat') {
+      const produceStat = produceAssignmentStat(assignment, input.tier)
+      if (produceStat) live.push({ node, assignment, produceStat })
+    }
     if (node.kind === 'card' && assignment.kind === 'card' && inSet.has(assignment.cardId) && cards.has(assignment.cardId)) {
       const used = cardNodesUsed.get(assignment.cardId) ?? 0
       if (used >= perCardCap) continue
@@ -527,9 +560,9 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   const skillCursor = new Map<string, number>()
   const statPct = buff === 'foundation' ? BUFF_VALUES.foundationStatPct : 100
 
-  for (const { assignment } of live) {
-    if (assignment.kind === 'stat') {
-      scaled[assignment.stat] += statValue * 100 * 100 * 100 * statPct
+  for (const { assignment, produceStat } of live) {
+    if (produceStat) {
+      scaled[produceStat] += statValue * 100 * 100 * 100 * statPct
       continue
     }
     if (assignment.kind !== 'card') continue

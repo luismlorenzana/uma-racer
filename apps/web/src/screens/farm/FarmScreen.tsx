@@ -81,7 +81,7 @@ const GUIDE_PAGES: readonly PagedGuidePage<'assign' | 'wait' | 'harvest' | 'prod
   { id: 'assign', title: 'Build a farm crew', body: <GuideCard>Each plot keeps one owned Uma outfit as its worker. Outfits of the same character are separate workers with separate Farming Levels.</GuideCard> },
   { id: 'wait', title: 'Growth continues offline', body: <GuideCard>Plant an unlocked crop, then come back after twelve hours. Nothing withers, and a ready crop waits until you harvest it.</GuideCard> },
   { id: 'harvest', title: 'Learn with every harvest', body: <GuideCard>Harvesting adds one item and 12 Farming XP. Outfit levels combine into Farm Level, opening more plots and crop rows.</GuideCard> },
-  { id: 'produce', title: 'Produce has a purpose', body: <GuideCard>Every crop belongs to one scenario and one stat. Items enter the global inventory for future constellation Produce nodes.</GuideCard> },
+  { id: 'produce', title: 'Produce has a purpose', body: <GuideCard>Every crop belongs to one scenario and one stat. Fill or replace that scenario's constellation Produce nodes from global Item inventory.</GuideCard> },
 ]
 
 function GuideCard({ children }: { children: ReactNode }) {
