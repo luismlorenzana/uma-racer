@@ -1,5 +1,6 @@
 import {
   MAX_TRAINING_LEVEL,
+  TRAINING_EXP_PER_LEVEL,
   SPARK_MATCH_TICKET_COST,
   SPARK_RIVAL_CLEAR_BONUS,
   SPARK_RIVAL_COMBO_BONUS_CAP,
@@ -291,6 +292,14 @@ export function SparkMatchScreen() {
               <div className="flex items-center justify-between gap-2"><h3 className="text-lg">Training progress</h3><strong>TL {reward.trainingLevelBefore} → {reward.trainingLevelAfter}</strong></div>
               <div className="mt-3"><MinigameGauge label="Training EXP" value={reward.trainingExpAfter ?? 0} maximum={reward.trainingLevelAfter === MAX_TRAINING_LEVEL ? 1 : trainingExpToNext(reward.trainingLevelAfter ?? 1)} tone="accent" /></div>
               <p className="mt-2 text-sm text-ink-on-dark-soft">EXP {reward.trainingExpBefore ?? 0} → {reward.trainingExpAfter ?? 0}{crossedLevels.length > 0 ? ` · crossed ${crossedLevels.map((level) => `TL${level}`).join(', ')}` : ''}</p>
+              {(reward.trainingExpBanked ?? 0) > 0 && (
+                <div className="mt-3 rounded-sm border border-hairline-dark bg-black/15 px-3 py-2 text-sm">
+                  <p className="font-semibold text-ink-on-dark">+{reward.trainingExpBanked!.toLocaleString()} EXP to the Training EXP bank</p>
+                  {(reward.levelUpTicketsGranted ?? 0) > 0
+                    ? <Link to="/farm/items" className="mt-1 flex min-h-11 items-center justify-between font-semibold text-accent"><span>+{reward.levelUpTicketsGranted} Training Level-Up Ticket{reward.levelUpTicketsGranted === 1 ? '' : 's'}</span><ChevronRightIcon size={20} aria-hidden /></Link>
+                    : <p className="mt-1 text-ink-on-dark-soft">Every {TRAINING_EXP_PER_LEVEL.toLocaleString()} banked becomes a Training Level-Up Ticket.</p>}
+                </div>
+              )}
               <section className="mt-4"><h3 className="text-lg">Nodes opened</h3>{reward.nodesUnlocked?.length ? <div className="mt-2 grid gap-2">{reward.nodesUnlocked.map((node) => <Link key={node.id} to={constellationNodeHref(umaId, scenario.tier, node.id)} className="flex min-h-11 items-center justify-between rounded-sm border border-hairline-dark bg-black/15 px-3 font-semibold text-ink-on-dark"><span>{node.label}</span><ChevronRightIcon size={20} aria-hidden /></Link>)}</div> : <p className="mt-1 text-sm text-ink-on-dark-soft">No node opened this run; every EXP point carried forward.</p>}</section>
             </>
           )}

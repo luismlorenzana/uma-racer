@@ -5,7 +5,7 @@ EXP past TL10 is never wasted: it fills one account-wide **Training EXP bank**, 
 **Training Level-Up Ticket** in the global Item inventory. The player spends those tickets on the Spark Match start screen
 to raise the selected Uma's Training Level without playing.
 
-Decisions: D211 (the linear curve), D212 (the EXP bank and Level-Up Tickets), D213 (spending them).
+Decisions: D211 (the linear curve), D212 (the EXP bank and Level-Up Tickets), D213 (spending them), D214 (T087 as built).
 Source of truth once each task lands: [Training](../design/training.md),
 [Minigames — Training EXP](../design/minigames.md#training-exp-and-levelling), [Economy](../design/economy.md),
 [Stable Farm — Global Item inventory](../design/farm.md#global-item-inventory).
@@ -33,7 +33,7 @@ Source of truth once each task lands: [Training](../design/training.md),
 
 | Task | Delivery | Depends on | Suggested owner |
 |---|---|---|---|
-| [T087](T087-linear-training-levels.md) | Linear curve (1,250 a level), save v11 re-levelling, the EXP bank, the Level-Up Ticket item and its grants | PR #71 merged | Claude: it migrates the owner's save and grants items retroactively |
+| T087 ✅ | Linear curve (1,250 a level), save v11 re-levelling, the EXP bank, the Level-Up Ticket item and its grants | PR #71 merged | Claude, landed 2026-09-30 |
 | [T088](T088-spend-level-up-tickets.md) | Spend Level-Up Tickets on the Spark Match start screen for the selected unit | T087 | Codex (delegable) |
 
 ```text
@@ -50,8 +50,8 @@ first.
 - **Nothing is lost in the change.** An existing unit keeps its total earned EXP. It lands on the higher of its current
   level and the level that total buys. EXP beyond TL10 goes to the bank.
 - **One bank, account-wide.** EXP past TL10, from the run that reaches it, from a Level-Up Ticket, or from the one-time
-  migration, goes into the bank. Each full 1,250 becomes one Training Level-Up Ticket at once, so the bank always holds
-  less than 1,250.
+  migration, goes into the bank. Each full 1,250 becomes one Training Level-Up Ticket at once, so the bank holds less
+  than 1,250 after every commit; what the migration banked is settled at the next startup (D214).
 - **The ticket is an item** in the global Item inventory, not a profile currency and not a Training Ticket. A Level-Up
   Ticket is exactly one level's EXP (+1,250), spent on the Spark Match start screen for the Uma and scenario unit that
   screen is for.

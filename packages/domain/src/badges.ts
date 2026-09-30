@@ -53,8 +53,8 @@ export const BADGE_THRESHOLDS = {
   // the last needs an even, fully bonded tree in a late scenario.
   balanced: [400, 600, 800, 1_000, 1_200],
   level: [10, 25, 50, 75, 100],
-  // Spark Match runs (D164): about ten take a scenario to TL10, so the last stage is all fourteen trained.
-  diligent: [10, 25, 50, 100, 140],
+  // Spark Match runs (D164, D214): about six take a scenario to TL10 (D211), so the last stage is all fourteen trained.
+  diligent: [6, 15, 30, 60, 84],
   lifetimeSkills: [5, 15, 30, 60, 100],
   scenarioSkills: [5, 10, 15, 20, 25],
   destiny: [3, 10, 25, 50, 100],

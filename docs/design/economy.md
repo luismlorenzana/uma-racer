@@ -12,6 +12,7 @@
 | 🎟️ **Card Select Coupon** | A card's first 3★ | Unlocking any unowned SSR card, the only way to own one (D198) | Never |
 | 💎 **Uma Shard** | An Uma reaching a gate level (10, 20, 30…) | 5 shards → 1 Uma Select Coupon | Never |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma | Never |
+| ⏫ **Training Level-Up Ticket** | Every 1,250 Training EXP past TL10, through the Training EXP bank (D212) | One Training Level for the unit on the Spark Match start screen (D213) | Never |
 
 **Two separate collection paths** ✅: **leveling Umas earns more Umas**, and **leveling cards earns more cards**.
 Card coupons never come from Umas, and Uma coupons never come from cards. Details are in [Collection](collection.md).
@@ -64,10 +65,12 @@ records keep the ticket reward of their day, five a level before v7 and one afte
 
 - **Maxing one card in one scenario** is three clears, 0★ → 3★ (D200). All-or-nothing means a lost run costs its
   ticket, so budget **about four tickets**, and about 25 minutes for runs of about 5, 8 and 12 minutes.
-- **One Uma through a scenario's Training Levels** is about 10 competent Spark Rival Circuit clears: about 10 tickets,
-  one day. Losses retain partial EXP but make the route less ticket-efficient.
-- **A day's 15 tickets** max about three cards, or one card with ten Spark Match runs to spare, or take one Uma through
-  a scenario with room for several losses.
+- **One Uma through a scenario's Training Levels** is 11,250 Training EXP (D211): a median of 6 paid Spark Rival Circuit
+  runs, p90 8. Losses retain partial EXP but make the route less ticket-efficient.
+- **A day's 15 tickets** max about three cards, or one card with ten Spark Match runs to spare, or take two to three Umas
+  through a scenario.
+- **Level-Up Tickets** come only from EXP past TL10, so they arrive at most about one per Uma finished and never replace
+  the daily Training Tickets. The v11 migration paid the surplus of units trained on the old, steeper curve.
 - **Late scenarios:** unlocking tier 10 → 11 costs 50, three full daily grants plus five tickets, minus what racing earns
   back.
 - **Stars are per scenario** (D127), so a six-card set is about 24 tickets, or roughly a daily grant and a half, to max

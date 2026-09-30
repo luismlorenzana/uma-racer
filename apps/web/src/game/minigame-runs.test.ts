@@ -10,9 +10,13 @@ import {
   createUmaSave,
   isNodeUnlocked,
   nodesUnlockedBetween,
+  reduceSparkRival,
+  TRAINING_EXP_PER_LEVEL,
+  TRAINING_LEVEL_UP_TICKET_ID,
   type CardEffect,
   type CardSave,
   type ContentAtlas,
+  type SparkCell,
   type SupportCardTemplate,
   type UmaSave,
   type UmaTemplate,
@@ -127,9 +131,9 @@ async function resetDatabase(): Promise<void> {
   await db.delete()
 }
 
-async function seed(options: { tickets?: number; uma?: UmaSave; card?: CardSave; future?: boolean } = {}) {
+async function seed(options: { tickets?: number; bank?: number; uma?: UmaSave; card?: CardSave; future?: boolean } = {}) {
   await db.open()
-  const profile = { ...createPlayerProfile('synthetic-minigames', 1234), tickets: options.tickets ?? 100 }
+  const profile = { ...createPlayerProfile('synthetic-minigames', 1234), tickets: options.tickets ?? 100, trainingExpBank: options.bank ?? 0 }
   await db.profile.put({ id: 'main', data: profile, version: 2 })
   await db.umas.put({ id: umaTemplate.id, data: options.uma ?? startedUma(), version: 3 })
   await db.cards.put({ id: card.id, data: options.card ?? createCardSave(card), version: 4 })
@@ -151,6 +155,34 @@ async function finishSpark(ticket: { runId: string }) {
     const next = await journal.append(ticket.runId, view.actions.length, {
       type: 'drag', path: [{ row: 0, column: 0 }, { row: 0, column: 1 }], movementMs: 250,
     })
+    if (next.engine !== 'spark-rival-v1') throw new Error('Expected a Spark Rival fixture')
+    view = next
+  }
+  return view
+}
+
+/** Plays a run greedily with the engine's own reducer, so it deals damage and earns real Training EXP. */
+async function playSparkForExp(ticket: { runId: string }) {
+  const journal = new PersistentMinigameJournal(content)
+  const loaded = await journal.load(ticket.runId)
+  if (loaded.engine !== 'spark-rival-v1') throw new Error('Expected a Spark Rival fixture')
+  let view: Extract<typeof loaded, { engine: 'spark-rival-v1' }> = loaded
+  const paths: SparkCell[][] = []
+  for (let row = 0; row < 5; row += 1) {
+    for (let column = 0; column < 6; column += 1) {
+      if (column < 5) paths.push([{ row, column }, { row, column: column + 1 }])
+      if (row < 4) paths.push([{ row, column }, { row: row + 1, column }])
+    }
+  }
+  while (!view.replay.outcome) {
+    const state = view.replay.state
+    const encounter = view.snapshot.encounter
+    const damage = (path: SparkCell[]) => {
+      const next = reduceSparkRival(encounter, state, { type: 'drag', path, movementMs: 250 }).state
+      return next.waveIndex > state.waveIndex ? state.rival.resolve + 1 : state.rival.resolve - next.rival.resolve
+    }
+    const best = paths.reduce((left, right) => damage(right) > damage(left) ? right : left)
+    const next = await journal.append(ticket.runId, view.actions.length, { type: 'drag', path: best, movementMs: 250 })
     if (next.engine !== 'spark-rival-v1') throw new Error('Expected a Spark Rival fixture')
     view = next
   }
@@ -378,6 +410,36 @@ describe('persistent minigame host', () => {
     expect((await db.profile.get('main'))?.data.tickets).toBe(99)
     expect(await db.ledger.count()).toBe(1)
     expect((await db.minigameRuns.get(ticket.runId))?.status).toBe('completed')
+  })
+
+  it('banks a TL10 run\'s surplus and pays a Level-Up Ticket for a full level, once (D212)', async () => {
+    await seed({ bank: 1249 })
+    const current = host()
+    const base = startedUma()
+    await db.umas.put({ id: umaTemplate.id, data: { ...base, scenarios: [{ ...base.scenarios[0]!, trainingLevel: 9, trainingExp: 1249 }] }, version: 3 })
+    const ticket = await current.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
+    const terminal = await playSparkForExp(ticket)
+    const earned = terminal.replay.outcome!.trainingExp
+    expect(earned).toBeGreaterThan(1)
+    const outcome = {
+      kind: 'spark-match' as const, engine: 'spark-rival-v1' as const,
+      actionCount: terminal.actions.length, stateHash: sparkRivalStateHash(terminal.replay.state),
+    }
+    const reward = await current.commitRun(ticket.runId, outcome)
+    // 1 EXP finishes TL9; the rest is past TL10. With 1,249 already banked, the first of it completes a ticket.
+    const overflow = earned - 1
+    const tickets = Math.floor((1249 + overflow) / TRAINING_EXP_PER_LEVEL)
+    expect(reward).toMatchObject({ trainingLevelAfter: 10, trainingExpAfter: 0, trainingExpBanked: overflow, levelUpTicketsGranted: tickets })
+    expect((await db.profile.get('main'))?.data.trainingExpBank).toBe((1249 + overflow) % TRAINING_EXP_PER_LEVEL)
+    expect((await db.items.get(TRAINING_LEVEL_UP_TICKET_ID))?.data).toEqual({ itemId: TRAINING_LEVEL_UP_TICKET_ID, quantity: tickets, updatedAt: 2000 })
+    expect((await db.itemLedger.get(`exp-bank:${ticket.runId}`))?.data).toMatchObject({
+      delta: tickets, reason: 'exp-bank', source: { kind: 'spark-run', runId: ticket.runId },
+    })
+    expect(await db.outbox.where('kind').anyOf('profile', 'items', 'itemLedger').count()).toBe(3)
+    // A retried commit is the stored reward: nothing more is banked or granted.
+    expect(await current.commitRun(ticket.runId, outcome)).toEqual(reward)
+    expect((await db.items.get(TRAINING_LEVEL_UP_TICKET_ID))?.data.quantity).toBe(tickets)
+    expect(await db.itemLedger.count()).toBe(1)
   })
 
   it('trains one of her earlier scenarios toward TL10 without touching her current one (D190)', async () => {

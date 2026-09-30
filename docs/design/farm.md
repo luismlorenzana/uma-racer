@@ -196,8 +196,9 @@ outfit meet the two farming requirements. Stockpiling for a future Uma is allowe
 
 ## Global Item inventory
 
-The inventory is an account system, not a field bag. Its first category is `produce`, but its shape must admit later
-bounded item definitions without adding farm fields to the profile.
+The inventory is an account system, not a field bag. Its first category is `produce`. The second is `training`: one item,
+the **Training Level-Up Ticket** (`training:level-up-ticket`), which the Training EXP bank pays (D212,
+[Training](training.md#the-training-exp-bank-and-level-up-tickets)).
 
 ```ts
 interface InventoryStack {
@@ -211,10 +212,13 @@ interface ItemLedgerEntry {
   id: string              // operation id; farm harvest uses the cycle id
   itemId: string
   delta: number           // non-zero safe integer
-  reason: 'farm-harvest' | 'constellation-produce'
+  reason: 'farm-harvest' | 'constellation-produce' | 'exp-bank' | 'training-level-up'
   source:
     | { kind: 'farm-harvest'; plotId: string; cycleId: string; templateId: string; farmingExp: 12 }
     | { kind: 'constellation-produce'; umaId: string; tier: number; nodeId: string; revision: number }
+    | { kind: 'spark-run'; runId: string }            // exp-bank: a run past TL10, id exp-bank:<runId>
+    | { kind: 'bank-settle' }                         // exp-bank: startup settling the migrated bank
+    | { kind: 'level-up'; umaId: string; tier: number; fromLevel: number; fromExp: number } // a spend (T088)
   createdAt: number
 }
 ```
@@ -228,8 +232,9 @@ interface ItemLedgerEntry {
 - Cloud sync uses the existing versioned-entity/first-write-wins-log rules. Reconciliation can rebuild a stack and worker
   XP from unique item-ledger evidence, clear a cycle whose harvest evidence already exists, and advance each plot's
   attempt floor after a two-device conflict; it never invents a harvest.
-- The Item inventory route groups produce by stat and filters by destination scenario. Zero stacks are hidden by default
-  but catalog completion can show them as silhouettes.
+- The Item inventory route opens with a **Training** panel (Level-Up Tickets owned and the Training EXP bank as
+  `850 / 1,250`), then groups produce by stat and filters by destination scenario. Zero produce stacks are hidden by
+  default but catalog completion can show them as silhouettes.
 
 ## Screen contract
 

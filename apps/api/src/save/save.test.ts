@@ -541,6 +541,44 @@ describe('save v6 over the wire', () => {
     expect(older.conflicts).toEqual([stored])
   })
 
+  it('accepts v11: linear Training Levels, the Training EXP bank and Level-Up Tickets (D211–D213)', () => {
+    const v11 = { ...uma, schemaVersion: 11, racePreferences: null }
+    const run = uma.scenarios[0]!
+    const sync = (kind: string, data: unknown) => parseSyncRequest({ upserts: [{ kind, id: kind === 'profile' ? 'main' : '100101', baseVersion: 3, data }] })
+    expect(sync('umas', { ...v11, scenarios: [{ ...run, trainingLevel: 7, trainingExp: 1249 }] })).toMatchObject({ upserts: [{ kind: 'umas' }] })
+    expect(sync('umas', { ...v11, scenarios: [{ ...run, trainingLevel: 7, trainingExp: 1250 }] })).toMatch(/invalid umas data/)
+    expect(sync('umas', { ...v11, scenarios: [{ ...run, trainingLevel: 10, trainingExp: 1 }] })).toMatch(/invalid umas data/)
+    // A v10 row is still on the old curve, so it may hold more.
+    expect(sync('umas', { ...v11, schemaVersion: 10, scenarios: [{ ...run, trainingLevel: 7, trainingExp: 3000 }] })).toMatchObject({ upserts: [{ kind: 'umas' }] })
+
+    const v11Profile = { ...profile, schemaVersion: 11, trainingExpBank: 850 }
+    expect(sync('profile', v11Profile)).toMatchObject({ upserts: [{ kind: 'profile' }] })
+    // The migration may bank more than a level until startup settles it.
+    expect(sync('profile', { ...v11Profile, trainingExpBank: 62_100 })).toMatchObject({ upserts: [{ kind: 'profile' }] })
+    expect(sync('profile', { ...v11Profile, trainingExpBank: -1 })).toMatch(/invalid profile data/)
+    expect(sync('profile', { ...profile, schemaVersion: 11 })).toMatch(/invalid profile data/)
+    expect(sync('profile', { ...profile, schemaVersion: 10, trainingExpBank: 0 })).toMatch(/invalid profile data/)
+
+    const ticket = 'training:level-up-ticket'
+    const levelUp = { kind: 'level-up', umaId: '100101', tier: 1, fromLevel: 9, fromExp: 800 }
+    const append = (data: Record<string, unknown>) => parseSyncRequest({ appends: [{ kind: 'itemLedger', id: data.id, data, createdAt: data.createdAt }] })
+    for (const data of [
+      { id: 'exp-bank:spark:1', itemId: ticket, delta: 1, reason: 'exp-bank', source: { kind: 'spark-run', runId: 'spark:1' }, createdAt: 5 },
+      { id: 'exp-bank:settle:5', itemId: ticket, delta: 49, reason: 'exp-bank', source: { kind: 'bank-settle' }, createdAt: 5 },
+      { id: 'level-up:100101:1:9.800', itemId: ticket, delta: -1, reason: 'training-level-up', source: levelUp, createdAt: 5 },
+    ]) expect(append(data)).toMatchObject({ appends: [{ kind: 'itemLedger' }] })
+    expect(append({ id: 'x', itemId: ticket, delta: 1, reason: 'training-level-up', source: levelUp, createdAt: 5 })).toMatch(/invalid itemLedger data/)
+    expect(append({ id: 'x', itemId: ticket, delta: 1, reason: 'farm-harvest', source: levelUp, createdAt: 5 })).toMatch(/invalid itemLedger data/)
+    expect(append({ id: 'x', itemId: 'produce:t1:speed', delta: 1, reason: 'exp-bank', source: { kind: 'bank-settle' }, createdAt: 5 })).toMatch(/invalid itemLedger data/)
+
+    // A v10 row never replaces a v11 one.
+    const stored: EntityRecord = { kind: 'umas', id: '100101', version: 4, data: v11, deleted: false, updatedAt: 1 }
+    const older = resolveUpserts(new Map([['umas/100101', stored]]), [{
+      kind: 'umas', id: '100101', baseVersion: 4, data: { ...v11, schemaVersion: 10 },
+    }], 2)
+    expect(older.writes).toEqual([])
+  })
+
   it('never lets a v8 Uma replace a v9 Uma', () => {
     const v9 = {
       ...uma,

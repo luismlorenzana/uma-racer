@@ -67,6 +67,7 @@ import {
 } from './minigame-host'
 import { updateTrainingBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
+import { bankTrainingExpInTransaction } from './training-bank'
 import { reconcileTrainerInTransaction } from './trainer'
 
 const cloneReward = (reward: StoredRunReward): RunReward => ({
@@ -651,7 +652,7 @@ export class PersistentMinigameHost implements MinigameHost {
     let mutation: MinigameHostMutation | null = null
     const reward = await db.transaction(
       'rw',
-      [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox, db.minigameRuns],
+      [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.items, db.itemLedger, db.outbox, db.minigameRuns],
       async () => {
         const run = await db.minigameRuns.get(id)
         if (!run) throw new Error('Unknown or expired minigame run')
@@ -700,6 +701,12 @@ export class PersistentMinigameHost implements MinigameHost {
             trainingLevelBefore: scenario.trainingLevel,
             trainingLevelAfter: gain.trainingLevel,
             nodesUnlocked,
+          }
+          // The run that reaches TL10 banks what it earned past it, and a full level becomes a Level-Up Ticket (D212).
+          if (gain.overflowExp > 0) {
+            const banked = await bankTrainingExpInTransaction(gain.overflowExp, `exp-bank:${id}`, { kind: 'spark-run', runId: id }, now)
+            profile = banked.profile
+            result = { ...result, trainingExpBanked: gain.overflowExp, levelUpTicketsGranted: banked.tickets }
           }
           await db.umas.put({ ...umaRow, data: nextUma })
           await queueInTransaction('umas', nextUma.templateId, 'upsert', now)

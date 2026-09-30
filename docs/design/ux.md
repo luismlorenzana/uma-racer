@@ -67,7 +67,8 @@ and missing target content. Each available active target links directly into Rac
 - The Field is the complete two-by-three future shape: locked, unassigned, idle, growing and ready plots; assignment is
   per outfit, crop choice names both unlock tracks, and a twelve-hour crop keeps growing offline without withering.
 - Workers lists every owned outfit separately with Farm-only XP and level. Crops exposes the seventy scenario/stat
-  definitions and both locks. Items joins the global synced stacks to that catalog, defaults to owned produce, remembers
+  definitions and both locks. Items opens with a Training panel (Level-Up Tickets owned and the Training EXP bank as a
+  meter, `850 / 1,250`), then joins the global synced stacks to the produce catalog, defaults to owned produce, remembers
   owned/all, stat, scenario and density locally, and exposes source plus the constellation use that consumes it.
 - Harvest feedback appears only after the transaction commits, links to the exact Item stack, and names XP, outfit/Farm
   levels and unlocks. Stale views reload; ambiguous harvests recover from authoritative cycle evidence.
@@ -159,7 +160,8 @@ drag cancels that uncommitted gesture, landscape asks the player to rotate while
 journal restore failure keeps explicit **Retry run** and **Return** actions visible.
 
 The result leads with **Circuit cleared**, **Drive depleted** or **Turn limit reached**. It then shows Training EXP, the
-before/after TL bar, every level crossed and every opened node by real name. Each node opens its matching
+before/after TL bar, every level crossed and every opened node by real name. A run that reaches TL10 adds a line for the
+EXP it banked and, when the bank completes one, **+N Training Level-Up Ticket** linking to Items (D212). Each node opens its matching
 Constellation, Inspiration or Extra stats view focused on it; **Done** returns to the caller and **Run again · 1 ticket** reserves a new attempt. A reload during a
 board returns to the exact wave, board, gauges and intent rather than to the start screen.
 

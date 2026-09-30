@@ -7,6 +7,10 @@ import {
   lineageSteps,
   upgradedGrade,
   trainingExpToNext,
+  TRAINING_EXP_PER_LEVEL,
+  TRAINING_EXP_TO_MAX,
+  relevelLegacyTraining,
+  depositTrainingExp,
   capProfile,
   capBudget,
   treeBudget,
@@ -177,7 +181,7 @@ describe('flair', () => {
       statPeak: [600, 900, 1_200, 1_600, 2_000],
       balanced: [400, 600, 800, 1_000, 1_200],
       level: [10, 25, 50, 75, 100],
-      diligent: [10, 25, 50, 100, 140],
+      diligent: [6, 15, 30, 60, 84],
       lifetimeSkills: [5, 15, 30, 60, 100],
       scenarioSkills: [5, 10, 15, 20, 25],
       destiny: [3, 10, 25, 50, 100],
@@ -291,30 +295,49 @@ describe('scenarios', () => {
 })
 
 describe('training levels', () => {
-  it('pins the Spark Match target curve', () => {
-    expect(trainingExpToNext(1)).toBe(1000)
-    expect(trainingExpToNext(9)).toBe(3800)
-    expect([1, 2, 3].map(trainingExpToNext)).toEqual([1000, 1350, 1700])
+  it('pins the linear Training curve: 1,250 a level, 11,250 to TL10, today\'s TL1→7 cost (D211)', () => {
+    expect([1, 2, 5, 9].map(trainingExpToNext)).toEqual([1250, 1250, 1250, 1250])
+    expect(TRAINING_EXP_PER_LEVEL).toBe(1250)
+    expect(TRAINING_EXP_TO_MAX).toBe(11_250)
+    expect(1000 + 1350 + 1700 + 2050 + 2400 + 2750).toBe(TRAINING_EXP_TO_MAX)
   })
 
   it('carries surplus over and can cross more than one level in a run', () => {
-    expect(addTrainingExp(1, 0, 1200)).toEqual({ trainingLevel: 2, trainingExp: 200, levelsGained: 1 })
-    expect(addTrainingExp(1, 0, 2400)).toEqual({ trainingLevel: 3, trainingExp: 50, levelsGained: 2 })
+    expect(addTrainingExp(1, 0, 1300)).toEqual({ trainingLevel: 2, trainingExp: 50, levelsGained: 1, overflowExp: 0 })
+    expect(addTrainingExp(1, 0, 2600)).toEqual({ trainingLevel: 3, trainingExp: 100, levelsGained: 2, overflowExp: 0 })
   })
 
-  it('stops accumulating at the maximum', () => {
-    expect(addTrainingExp(10, 0, 99_999)).toEqual({ trainingLevel: 10, trainingExp: 0, levelsGained: 0 })
+  it('overflows past TL10 instead of accumulating (D212)', () => {
+    expect(addTrainingExp(9, 1000, 2200)).toEqual({ trainingLevel: 10, trainingExp: 0, levelsGained: 1, overflowExp: 1950 })
+    expect(addTrainingExp(10, 0, 500)).toEqual({ trainingLevel: 10, trainingExp: 0, levelsGained: 0, overflowExp: 500 })
   })
 
-  it('reaches TL10 in roughly ten good runs', () => {
-    let state = { trainingLevel: 1, trainingExp: 0, levelsGained: 0 }
+  it('reaches TL10 in about six good runs', () => {
+    let state = { trainingLevel: 1, trainingExp: 0 }
     let runs = 0
     while (state.trainingLevel < 10 && runs < 40) {
-      state = addTrainingExp(state.trainingLevel, state.trainingExp, 2400)
+      state = addTrainingExp(state.trainingLevel, state.trainingExp, 2200)
       runs += 1
     }
     expect(state.trainingLevel).toBe(10)
-    expect(runs).toBeLessThanOrEqual(12)
+    expect(runs).toBe(6)
+  })
+
+  it('re-levels a unit once through its total earned EXP, never demoting it (D211)', () => {
+    expect(relevelLegacyTraining(1, 600)).toEqual({ trainingLevel: 1, trainingExp: 600, surplusExp: 0 })
+    expect(relevelLegacyTraining(2, 0)).toEqual({ trainingLevel: 2, trainingExp: 0, surplusExp: 0 })
+    expect(relevelLegacyTraining(3, 1000)).toEqual({ trainingLevel: 3, trainingExp: 850, surplusExp: 0 })
+    expect(relevelLegacyTraining(6, 0)).toEqual({ trainingLevel: 7, trainingExp: 1000, surplusExp: 0 })
+    expect(relevelLegacyTraining(7, 0)).toEqual({ trainingLevel: 10, trainingExp: 0, surplusExp: 0 })
+    expect(relevelLegacyTraining(9, 3799)).toEqual({ trainingLevel: 10, trainingExp: 0, surplusExp: 10_349 })
+    expect(relevelLegacyTraining(10, 0)).toEqual({ trainingLevel: 10, trainingExp: 0, surplusExp: 10_350 })
+  })
+
+  it('converts every full level in the bank into one Level-Up Ticket (D212)', () => {
+    expect(depositTrainingExp(0, 0)).toEqual({ bank: 0, tickets: 0 })
+    expect(depositTrainingExp(0, 1249)).toEqual({ bank: 1249, tickets: 0 })
+    expect(depositTrainingExp(1249, 1)).toEqual({ bank: 0, tickets: 1 })
+    expect(depositTrainingExp(850, 62_100 - 850)).toEqual({ bank: 850, tickets: 49 })
   })
 
   it('pins the cap profiles and tree budgets from docs/design/scenarios.md', () => {

@@ -149,39 +149,41 @@ no bonuses and is capped at 45% of the 1,950 wave-budget total. This prevents a 
 being an unintended EXP farm and makes a full clear substantially more efficient than repeatedly losing late.
 
 The pinned balance target is **about 2,200 Training EXP for a competent three-wave clear**, with losses retaining only the
-bounded progress actually earned. Training EXP resolves greedily and surplus carries:
+bounded progress actually earned. Training EXP resolves greedily and surplus carries. Every level costs the same (D211):
 
 ```
-targetExp(n) = 1000 + 350 × (n − 1)        n = the level you are leaving, 1–9
+targetExp(n) = 1,250        n = the level you are leaving, 1–9
+TL1 → TL10   = 11,250       what TL1 → TL7 cost on the old 1000 + 350 × (n − 1) curve
 ```
 
-| Leaving TL | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
-|---|---|---|---|---|---|---|---|---|---|
-| EXP to next | 1000 | 1350 | 1700 | 2050 | 2400 | 2750 | 3100 | 3450 | 3800 |
+The full curve is therefore about **six paid runs**: `pnpm sim:spark` measures a median of 6 and a p90 of 8 (it was 12 and
+13 on the old curve). A run can cross more than one level. A loss is real—the encounter ends—but the ticket is not made
+worthless because partial EXP is still committed. At TL10, a run cannot be started for that Uma and scenario.
 
-The full TL1→10 curve is 21,600 EXP, so the target remains roughly **ten good clears**. A run can cross more than one
-level. A loss is real—the encounter ends—but the ticket is not made worthless because partial EXP is still committed.
-At TL10, a run cannot be started for that Uma and scenario.
+**EXP past TL10 is never lost** (D212). The run that reaches TL10 deposits its surplus in the account's **Training EXP
+bank**, and every full 1,250 there becomes a **Training Level-Up Ticket** in the global Item inventory at once. The result
+shows the banked EXP and any ticket it completed.
 
 `pnpm sim:spark` is the checked regression sample; `pnpm sim:spark -- --full` runs 1,000 fixed seeds for every one of the
 126 tier/Training-Level rows. Within each row it rotates all four trainee best strategies, all five ordinary recipes plus
 the boss, and low/average/high aptitude profiles. The report includes Wilson 95% intervals, Drive, Shift use, recipe/style
-fairness, both loss reasons and a 1,000-path TL1→10 projection. It uses only invented fixtures and never reads the private
-roster rows.
+fairness, both loss reasons and a 1,000-path TL1→10 projection, gated at a median of 5–7 paid runs and a p90 of at
+most 9. It uses only invented fixtures and never reads the private roster rows.
 
 Levelling unlocks constellation nodes immediately ([Constellations](constellations.md#unlock-schedule)); the
 post-run summary names exactly which nodes opened.
 
 The result first states **Circuit cleared** or the loss reason, then shows EXP earned, before/after Training Level and bar,
 every level crossed, and every newly opened constellation node **by its real name**. Each opened node links back to that
-Uma's constellation.
+Uma's constellation. A run that reaches TL10 adds the EXP it banked and any Training Level-Up Ticket that completed, which
+links to Items.
 
 ### Cost and rewards
 
-**1 training ticket per run** (D148). A day's 10 tickets take about one Uma to TL10, which keeps tickets the pacing
+**1 training ticket per run** (D148). A day's 15 tickets take two to three Umas to TL10, which keeps tickets the pacing
 currency they have always been ([Economy](economy.md)).
 
-Training EXP and node unlocks are its only progression outputs. Rivals are sparring partners: a run never grants Uma EXP,
+Training EXP, node unlocks and the Training EXP bank are its only progression outputs. Rivals are sparring partners: a run never grants Uma EXP,
 finishes a career goal, creates a race record, pays a race ticket, or advances race badges and milestones.
 
 ### Encounter content

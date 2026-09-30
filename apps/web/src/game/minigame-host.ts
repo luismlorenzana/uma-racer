@@ -11,6 +11,7 @@ import {
   replaySparkRival,
   sparkRivalStateHash,
   syntheticSparkEncounter,
+  trainingExpToNext,
   type FtAction,
   type FtSetup,
   type SparkRivalAction,
@@ -86,6 +87,10 @@ export interface RunReward {
   trainingLevelBefore?: number
   trainingLevelAfter?: number
   nodesUnlocked?: RunRewardNode[]
+  /** Training EXP a run carried past TL10 into the bank (D212). */
+  trainingExpBanked?: number
+  /** Training Level-Up Tickets that deposit completed. */
+  levelUpTicketsGranted?: number
   starsBefore?: number
   starsAfter?: number
   couponGranted?: boolean
@@ -126,7 +131,6 @@ export const validateMinigameOutcome = (ticket: RunTicket, target: RunTarget, ou
   throw new Error('Bond Recall is retired: Bond opens Friendship Training')
 }
 
-const sparkTargetExp = (level: number): number => 1_000 + 350 * (level - 1)
 
 const defaultReward: RewardFactory = (_ticket, target, outcome, sparkReplay) => {
   if (target.kind === 'friendship-training' && outcome.kind === 'friendship-training') {
@@ -137,8 +141,8 @@ const defaultReward: RewardFactory = (_ticket, target, outcome, sparkReplay) => 
   }
   let level = 1
   let exp = sparkReplay.outcome.trainingExp
-  while (level < 10 && exp >= sparkTargetExp(level)) {
-    exp -= sparkTargetExp(level)
+  while (level < 10 && exp >= trainingExpToNext(level)) {
+    exp -= trainingExpToNext(level)
     level += 1
   }
   const nodesUnlocked = Array.from(

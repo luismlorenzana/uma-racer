@@ -111,8 +111,9 @@ const REGRESSION = {
   plannerMedianClearExp: { minimum: 2_100, maximum: 2_300 },
   plannerMedianClearDrive: { minimum: 15, maximum: 65 },
   plannerShiftClearRate: { minimum: 0.25, maximum: 0.75 },
-  trainingPathMedian: { minimum: 9, maximum: 12 },
-  trainingPathP90Maximum: 15,
+  // Linear Training Levels (D211): 11,250 EXP to TL10, measured at a median of 6 paid runs and p90 8 on 2026-09-30.
+  trainingPathMedian: { minimum: 5, maximum: 7 },
+  trainingPathP90Maximum: 9,
   styleLeadMaximum: 0.10,
 } as const
 

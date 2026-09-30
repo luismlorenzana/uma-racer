@@ -14,14 +14,14 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078 and T079 landed; T080 next, then T081 |
-| [M027 — Training Rebalance](M027-training-rebalance.md) | [T087 linear levels and EXP bank](T087-linear-training-levels.md) · [T088 spend Level-Up Tickets](T088-spend-level-up-tickets.md) | **Specified** · after PR #71 (the three training views) merges; independent of M024 |
+| [M027 — Training Rebalance](M027-training-rebalance.md) | T087 linear levels and EXP bank ✅ · [T088 spend Level-Up Tickets](T088-spend-level-up-tickets.md) | **In progress** · T087 landed; T088 next. Independent of M024 |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
 
 **M024 is the current unit of work** (D199–D202): T078 and T079 landed on 2026-09-29; T080 is next, and T081 follows
 it. M025–M026's Farm and Produce bridge are complete. T035 stays specified and can be picked up any
-time. **M027 — Training Rebalance** (D211–D213) is specified and can run before T080/T081: T087 needs ChatGPT's PR #71
-merged first, and T088 follows T087. Anything new starts with the next free numbers below.
+time. **M027 — Training Rebalance** (D211–D214) runs beside it: T087 landed on 2026-09-30, and T088 (spending Level-Up
+Tickets) is next. Anything new starts with the next free numbers below.
 
 The owner's device checks (every milestone's, including Spark Rival Circuit's physical-iPhone pass) wait in
 [Open questions](../open-questions.md#needs-you-owner-actions-not-design-questions) and close together in T038 (D189).

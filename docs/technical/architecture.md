@@ -72,7 +72,8 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v10 stores mutable profile/Uma state, including one constellation per unlocked scenario, nullable per-outfit race
+- Save v11 stores mutable profile/Uma state, including the account's Training EXP bank, one constellation per unlocked
+  scenario on the linear Training curve (D211), nullable per-outfit race
   defaults (null preserves automatic recommendations), scenario-scoped card
   bonds (the current three-star shape follows v7's five-star and v6's `limitBreaks` migrations), skill history, typed
   Journey slots with frozen series legs, and Produce/legacy-Produce assignments. Derived stats, node values, static names,
@@ -101,6 +102,11 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   tier, node and replacement revision; matching retries pay once, stale screens reload, and Zustand publishes after commit.
 - Dexie v16 walks v9 Uma rows to save v10, adding null race preferences without regenerating any frozen journey.
   Editing preferences upserts only that Uma; the API validates the exact union and sync carries the same row.
+- Dexie v17 walks every older Uma to v10's shape and then re-levels it once to v11 through its total Training EXP
+  (`migrateUmaSaveWithSurplus`). Only a profile migrating in the same pass banks the surplus past TL10 (a legacy cloud
+  save adopted on a new device does the same from its raw rows), so an already-migrated profile never banks it twice.
+  Startup settles a bank holding a full level into Level-Up Tickets (`exp-bank:settle:<now>`), where the item tables
+  always exist; a Spark commit deposits and converts in its own transaction (`exp-bank:<runId>`).
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
   duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
@@ -247,8 +253,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 ## Firestore data model (saves)
 
 ```text
-players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v10: level/EXP, scenarios, Produce assignments, race defaults, history, version
+players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
+players/{uid}/umas/{umaId}            save v11: level/EXP, scenarios, Produce assignments, race defaults, history, version
 players/{uid}/cards/{cardId}          templateId, three-star bonds per scenario, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
@@ -257,17 +263,18 @@ players/{uid}/ledger/{id}             append-only ticket, coupon, and shard move
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 players/{uid}/farm/main               Farm schema, six plots, persistent outfit assignments/progress and attempt counters
 players/{uid}/items/{itemId}          current global item-stack quantity and update time
-players/{uid}/itemLedger/{id}         append-only harvest/Produce item movement and Farm-harvest XP evidence
+players/{uid}/itemLedger/{id}         append-only harvest/Produce/Level-Up Ticket movements and Farm-harvest XP evidence
 ```
 
 Firestore cannot store an array directly inside another array, and a race record's compiled skill conditions are one.
 A record whose data holds a nested array is written with its data as JSON text (`dataJson`) and decoded on every read;
 all other records keep `data` as a map (D151).
 
-The profile's save-v10 row retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
-creation time, and schema version. Uma save v10 holds one bounded run per unlocked scenario, assignment unions for
-cards, Produce, Legacy Produce and lineage, and optional race defaults. The API accepts older shapes during rollout but
-schema conflict resolution never lets one replace v10. Badge-state v1 is independently migratable and cannot force a
+The profile's save-v11 row retains currencies, the Training EXP bank, local daily-grant date, featured Uma id, one-time
+starter-content marker, creation time, and schema version. Uma save v11 holds one bounded run per unlocked scenario on the
+linear curve (under 1,250 EXP below TL10, 0 at TL10), assignment unions for cards, Produce, Legacy Produce and lineage,
+and optional race defaults. The API accepts older shapes during rollout but schema conflict resolution never lets one
+replace v11. Badge-state v1 is independently migratable and cannot force a
 progression reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each

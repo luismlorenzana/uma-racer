@@ -4,6 +4,7 @@ import {
   parsePlayerProfile,
   migrateCardSaveToCurrent,
   migrateUmaSaveToCurrent,
+  migrateUmaSaveWithSurplus,
   migratePlayerProfileToCurrent,
   applyDailyGrants,
   createCardSave,
@@ -187,6 +188,7 @@ export async function persistInitial(content: LoadedContent, today: string, now:
 export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adopted'> {
   const snapshot = parseSaveSnapshotOrThrow(raw)
   const legacyKeys = new Set<string>()
+  const trainingSurplus = legacyTrainingSurplus(raw)
   if (typeof raw === 'object' && raw !== null && !Array.isArray(raw) && Array.isArray((raw as Record<string, unknown>).entities)) {
     for (const record of (raw as Record<string, unknown>).entities as unknown[]) {
       if (typeof record !== 'object' || record === null || Array.isArray(record)) continue
@@ -216,15 +218,20 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       // A server row can be any supported schema. Migrate on the way in, and re-queue whatever moved so the
       // cloud copy catches up rather than staying on an old shape forever.
       if (record.kind === 'profile') {
-        const profile = migratePlayerProfileToCurrent(record.data)
-        if (!profile) throw new Error('Server player profile cannot be migrated')
+        const migrated = migratePlayerProfileToCurrent(record.data)
+        if (!migrated) throw new Error('Server player profile cannot be migrated')
         if (!parsePlayerProfile(record.data)) legacyKeys.add(`profile/${record.id}`)
+        // A pre-v11 profile banks what its Umas' re-levelling carried past TL10, as the local walk does (D212).
+        const profile = trainingSurplus.legacyProfile
+          ? { ...migrated, trainingExpBank: migrated.trainingExpBank + trainingSurplus.exp }
+          : migrated
+        if (trainingSurplus.legacyProfile) legacyKeys.add(`profile/${record.id}`)
         await db.profile.put({ id: record.id, data: profile, version: record.version })
       }
       if (record.kind === 'umas') {
         const uma = migrateUmaSaveToCurrent(record.data)
         if (!uma) throw new Error(`Server Uma ${record.id} cannot be migrated`)
-        if (!parseUmaSave(record.data)) legacyKeys.add(`umas/${record.id}`)
+        if (!parseUmaSave(record.data) || trainingSurplus.legacyUmaIds.has(record.id)) legacyKeys.add(`umas/${record.id}`)
         await db.umas.put({ id: record.id, data: uma, version: record.version })
       }
       if (record.kind === 'cards') {
@@ -255,6 +262,31 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
     await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })
   return 'adopted'
+}
+
+/**
+ * A cloud copy from before save v11 still holds its Umas on the old Training curve (D211). The snapshot parser migrates
+ * rows on the way in, which re-levels them, so what passed TL10 is read from the raw rows. It is banked only when the
+ * profile is pre-v11 too: a current profile already banked it on the device that migrated first.
+ */
+function legacyTrainingSurplus(raw: unknown): { exp: number; legacyProfile: boolean; legacyUmaIds: Set<string> } {
+  const result = { exp: 0, legacyProfile: false, legacyUmaIds: new Set<string>() }
+  const entities = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>).entities : null
+  if (!Array.isArray(entities)) return result
+  for (const entry of entities as unknown[]) {
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue
+    const row = entry as Record<string, unknown>
+    if (row.deleted === true || typeof row.id !== 'string') continue
+    if (row.kind === 'profile' && !parsePlayerProfile(row.data) && migratePlayerProfileToCurrent(row.data)) result.legacyProfile = true
+    if (row.kind === 'umas' && !parseUmaSave(row.data)) {
+      const migrated = migrateUmaSaveWithSurplus(row.data)
+      if (!migrated) continue
+      result.exp += migrated.surplusExp
+      result.legacyUmaIds.add(row.id)
+    }
+  }
+  if (!result.legacyProfile) result.exp = 0
+  return result
 }
 
 export async function completeStarterSeed(content: LoadedContent, now: number): Promise<void> {

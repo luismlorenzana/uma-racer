@@ -111,6 +111,7 @@ import {
 } from './badge-preferences'
 import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAwardRefs } from './trainer'
 import { installMinigameHost } from './minigame-host'
+import { settleTrainingExpBank } from './training-bank'
 import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
 import { installFarmHost, MemoryFarmHost, PersistentFarmHost } from './farm/host'
@@ -285,6 +286,8 @@ export class GameRuntime {
       const refundedRuns = await retireFiveStarFriendshipRuns(now, today)
       const owedCoupons = await grantOwedMaxCoupons(now, today)
       const gift = await grantOwnerGifts(now, today, this.ownerGifts)
+      // Linear Training Levels (D211, D212): what the v11 re-levelling carried past TL10 becomes Level-Up Tickets.
+      const settled = await settleTrainingExpBank(now)
       const trainerArchive = await reconcileTrainerPersistent(content, now, true, 'migration:trainer')
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
@@ -298,6 +301,9 @@ export class GameRuntime {
       if (gift.cardCoupons > 0) useGame.getState().pushToast(`+${gift.cardCoupons} Card Select Coupon${gift.cardCoupons === 1 ? '' : 's'} granted`)
       if (gift.umaCoupons > 0) useGame.getState().pushToast(`+${gift.umaCoupons} Uma Select Coupon${gift.umaCoupons === 1 ? '' : 's'} granted`)
       if (gift.umaShards > 0) useGame.getState().pushToast(`+${gift.umaShards} Uma Shard${gift.umaShards === 1 ? '' : 's'} granted`)
+      if (settled && settled.tickets > 0) {
+        useGame.getState().pushToast(`+${settled.tickets} Training Level-Up Ticket${settled.tickets === 1 ? '' : 's'} from EXP past TL10`)
+      }
       if (archivedAwards > 0) useGame.getState().pushToast(`Flair archive updated · ${archivedAwards} awards`)
       if (trainerArchive.events.length > 0) useGame.getState().pushToast(`Trainer archive updated · ${trainerArchive.events.length} achievements`)
       window.addEventListener('online', this.onlineHandler)

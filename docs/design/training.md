@@ -30,7 +30,7 @@ The two halves have their own docs:
 | | **Uma Level** | **Training Level (TL)** |
 |---|---|---|
 | Range | 1 → 10 × scenarios, **permanent** | **1–10, per scenario** |
-| Earned by | **Racing only** (Uma EXP) | **Spark Rival Circuit only** |
+| Earned by | **Racing only** (Uma EXP) | **Spark Rival Circuit**, 1,250 EXP a level (D211) |
 | Controls | Which scenarios are unlocked | **How many constellation nodes are open** |
 | At level 1 of a scenario | — | the baseline node set only |
 
@@ -103,6 +103,31 @@ Tickets remain the only currency and the only pacing lever ([Economy](economy.md
 
 Card and lineage reconfiguration is free on purpose. Produce is the one deliberate material layer: its cost is inventory,
 not a ticket, and the confirmation always states the spend and no-refund rule.
+
+## Training Levels are linear
+
+Every Training Level costs **1,250 Training EXP**, so TL1 → TL10 is **11,250**: what TL1 → TL7 cost on the old
+`1000 + 350 × (n − 1)` curve, about six Spark Rival Circuit runs (D211). Leaving TL1 costs 250 more than it did; every
+later level costs less.
+
+Save v11 moved every unit once through its total earned EXP. It landed on the higher of its old level and what that total
+buys, so nothing was demoted, and kept the remainder. A unit that was TL6 became TL7 · 1,000; anything at TL7 or above
+became TL10.
+
+## The Training EXP bank and Level-Up Tickets
+
+EXP is never wasted at the top (D212). Whatever a unit earns past TL10 goes into **one account-wide Training EXP bank**,
+and every full 1,250 there becomes a **Training Level-Up Ticket** at once: an item in the global
+[Item inventory](farm.md#global-item-inventory), worth exactly one Training Level.
+
+| Source | When |
+|---|---|
+| The Spark run that reaches TL10 | its EXP past TL10, in the same commit as the level |
+| The v11 migration | what re-levelling carried past TL10, banked with the profile and settled into tickets at the next startup |
+
+The bank shows on the Items screen as `850 / 1,250`, and a ticket grant is item-ledger evidence (`exp-bank`), so a retried
+commit never pays twice. TL10 still ends Spark for that unit: the bank fills from real progress, not from replaying a
+finished one. Tickets are spent before a Spark run, on the Spark Match start screen (D213, T088).
 
 ## Opening a scenario
 

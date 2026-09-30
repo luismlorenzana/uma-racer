@@ -11,6 +11,8 @@ import {
   migratePlayerProfileToCurrent,
   migrateCardSaveToCurrent,
   migrateUmaSaveToCurrent,
+  migrateUmaSaveWithSurplus,
+  parseLegacyUmaSaveV10,
   applyDailyGrants,
   createInitialSave,
   createPlayerProfile,
@@ -38,6 +40,12 @@ const aptitudes = {
   distance: { sprint: 'B', mile: 'A', medium: 'A', long: 'C' },
   strategy: { front: 'D', pace: 'A', late: 'B', end: 'C' },
 } as const
+
+/** A profile as schemas 1–10 stored it: the same fields, before v11's Training EXP bank (D212). */
+function legacyProfile<V extends number>(schemaVersion: V, overrides: Record<string, unknown> = {}) {
+  const { trainingExpBank: _bank, ...body } = createPlayerProfile('v1', 1)
+  return { ...body, ...overrides, schemaVersion }
+}
 
 function uma(id: string, starter = true): UmaTemplate {
   return {
@@ -170,18 +178,19 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 11 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 11 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 12 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 12 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), trainingExpBank: -1 })).toBeNull()
   })
 
   it('migrates v1 profiles and Umas into current defaults and preserves every v2 goal fact', () => {
     // Every older profile passes through v6 → v7 once, so its tickets are re-denominated exactly once (D148).
-    const profileV1 = { ...createPlayerProfile('v1', 1), schemaVersion: 1 as const, tickets: 77 }
-    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: SAVE_SCHEMA_VERSION, tickets: 16 })
+    const profileV1 = legacyProfile(1 as const, { tickets: 77 })
+    expect(migratePlayerProfileV1(profileV1)).toEqual({ ...profileV1, schemaVersion: SAVE_SCHEMA_VERSION, tickets: 16, trainingExpBank: 0 })
     const profileV2 = { ...profileV1, schemaVersion: 2 as const }
-    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: SAVE_SCHEMA_VERSION, tickets: 16 })
+    expect(migratePlayerProfileV2(profileV2)).toEqual({ ...profileV2, schemaVersion: SAVE_SCHEMA_VERSION, tickets: 16, trainingExpBank: 0 })
     const profileV3 = { ...profileV1, schemaVersion: 3 as const }
-    expect(migratePlayerProfileV3(profileV3)).toEqual({ ...profileV3, schemaVersion: SAVE_SCHEMA_VERSION, tickets: 16 })
+    expect(migratePlayerProfileV3(profileV3)).toEqual({ ...profileV3, schemaVersion: SAVE_SCHEMA_VERSION, tickets: 16, trainingExpBank: 0 })
     // v4 is the last shape with a flat run; v5 turns it into one ScenarioTraining at her current tier.
     const legacyV4 = {
       schemaVersion: 4 as const,
@@ -209,7 +218,8 @@ describe('save parsing', () => {
     }
 
     const migratedV4 = migrateUmaSaveV4(legacyV4)
-    expect(migratedV4).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, level: 12, unlockedTier: 2, goalPlanVersion: 0 })
+    // Every older shape stops at v10, on the old Training curve; v11's re-levelling runs once, after it (D211).
+    expect(migratedV4).toMatchObject({ schemaVersion: 10, level: 12, unlockedTier: 2, goalPlanVersion: 0 })
     expect(migratedV4.scenarios).toEqual([{
       tier: 2,
       trainingLevel: 7,
@@ -222,7 +232,12 @@ describe('save parsing', () => {
       journey: null,
       started: true,
     }])
-    expect(parseUmaSave(migratedV4)).toEqual(migratedV4)
+    expect(parseLegacyUmaSaveV10(migratedV4)).toEqual(migratedV4)
+    // Its TL7 · 40 is 11,290 EXP on the old curve: TL10 on the linear one, with 40 for the bank.
+    expect(migrateUmaSaveWithSurplus(legacyV4)).toMatchObject({
+      uma: { schemaVersion: SAVE_SCHEMA_VERSION, scenarios: [{ tier: 2, trainingLevel: 10, trainingExp: 0 }] },
+      surplusExp: 40,
+    })
 
     // Parents and modifier state are dropped outright rather than approximated.
     expect(JSON.stringify(migratedV4)).not.toContain('parentSnapshot')
@@ -307,7 +322,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 11 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 12 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
@@ -388,7 +403,7 @@ describe('the migration chain', () => {
   })
 
   it('re-denominates a v6 profile once and stamps v6 Umas as current', () => {
-    const v6Profile = { ...createPlayerProfile('v1', 1), schemaVersion: 6 as const, tickets: 444 }
+    const v6Profile = legacyProfile(6 as const, { tickets: 444 })
     const migrated = migratePlayerProfileToCurrent(v6Profile)!
     expect(migrated).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, tickets: 89 })
     expect(migratePlayerProfileToCurrent(migrated)).toEqual(migrated)
@@ -441,10 +456,13 @@ describe('the migration chain', () => {
 
   it('reads every supported profile schema', () => {
     const current = createPlayerProfile('v1', 1)
-    for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9] as const) {
-      const migrated = migratePlayerProfileToCurrent({ ...current, schemaVersion })
+    for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const) {
+      const migrated = migratePlayerProfileToCurrent(legacyProfile(schemaVersion))
       expect(migrated?.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
+      expect(migrated?.trainingExpBank).toBe(0)
     }
+    // A v10 profile already carrying the bank is not a v10 profile.
+    expect(migratePlayerProfileToCurrent({ ...current, schemaVersion: 10 })).toBeNull()
     expect(migratePlayerProfileToCurrent(current)?.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
   })
 
@@ -460,9 +478,35 @@ describe('the migration chain', () => {
     const journey = { tier: 1, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: 7, goals: [] }
     const { racePreferences: _unused, ...v9 } = { ...current, scenarios: [{ ...current.scenarios[0]!, started: true, journey }] }
     const migrated = migrateUmaSaveToCurrent({ ...v9, schemaVersion: 9 })
-    expect(migrated).toMatchObject({ schemaVersion: 10, racePreferences: null, scenarios: [{ journey }] })
+    expect(migrated).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null, scenarios: [{ journey }] })
     expect(parseUmaSave({ ...migrated!, racePreferences: { strategy: 'front', distance: 'long', surface: 'turf' } })).not.toBeNull()
     expect(parseUmaSave({ ...migrated!, racePreferences: { strategy: 'wrong', distance: 'long', surface: 'turf' } })).toBeNull()
+  })
+
+  it('re-levels every v10 unit once through its total EXP and returns what passed TL10 (D211)', () => {
+    const current = createUmaSave(template)
+    const v10 = {
+      ...current,
+      schemaVersion: 10 as const,
+      level: 25,
+      unlockedTier: 3,
+      scenarios: [
+        { ...current.scenarios[0]!, tier: 1, trainingLevel: 10, trainingExp: 0 },
+        { ...current.scenarios[0]!, tier: 2, trainingLevel: 6, trainingExp: 0 },
+        { ...current.scenarios[0]!, tier: 3, trainingLevel: 2, trainingExp: 900 },
+      ],
+    }
+    const migrated = migrateUmaSaveWithSurplus(v10)!
+    expect(migrated.uma.scenarios.map((run) => [run.trainingLevel, run.trainingExp])).toEqual([[10, 0], [7, 1000], [2, 650]])
+    expect(migrated.surplusExp).toBe(10_350)
+    expect(migrateUmaSaveToCurrent(v10)).toEqual(migrated.uma)
+    // Already current: nothing moves and nothing is banked again.
+    expect(migrateUmaSaveWithSurplus(migrated.uma)).toEqual({ uma: migrated.uma, surplusExp: 0 })
+    // A current unit must fit the linear curve; the same numbers are only readable as v10.
+    const offCurve = { ...current, scenarios: [{ ...current.scenarios[0]!, trainingLevel: 6, trainingExp: 2000 }] }
+    expect(parseUmaSave(offCurve)).toBeNull()
+    expect(parseUmaSave({ ...current, scenarios: [{ ...current.scenarios[0]!, trainingLevel: 10, trainingExp: 5 }] })).toBeNull()
+    expect(parseLegacyUmaSaveV10({ ...offCurve, schemaVersion: 10 })).not.toBeNull()
   })
 
   it('returns null for something that is not a save, rather than inventing one', () => {
@@ -472,7 +516,7 @@ describe('the migration chain', () => {
   })
 
   it('accepts a v5 cloud snapshot instead of demanding an app update', () => {
-    const profile = { ...createPlayerProfile('v1', 1), schemaVersion: 5 as const }
+    const profile = legacyProfile(5 as const)
     expect(() => parseSaveSnapshotOrThrow({
       entities: [
         { kind: 'profile', id: 'main', version: 1, data: profile, deleted: false, updatedAt: 1 },

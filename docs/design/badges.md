@@ -202,7 +202,7 @@ Perfect facts that cannot be reconstructed remain untracked.
 
 | Definition | Criterion | Tiers |
 |---|---|---|
-| Diligent | Spark Match runs with this Uma (D164) | 10 / 25 / 50 / 100 / 140 |
+| Diligent | Spark Match runs with this Uma (D164, D214) | 6 / 15 / 30 / 60 / 84 |
 | [Scenario] Fully Trained | Reached TL10 in that scenario | One-off per scenario |
 | Era Loyalist | Completed a scenario using only cards whose era equals that scenario tier | One-off per scenario |
 | Full House | Filled every card and Produce node of one constellation (D164, D205) | Hidden one-off |

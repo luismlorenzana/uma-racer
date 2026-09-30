@@ -91,8 +91,40 @@ export interface ConstellationProduceMovement {
   createdAt: number
 }
 
+/** The Training Level-Up Ticket (D212): one Training Level's EXP, paid by the Training EXP bank. */
+export const TRAINING_LEVEL_UP_TICKET_ID = 'training:level-up-ticket' as const
+
+/** A spend of Level-Up Tickets on one unit, named by where it started so an exact retry finds its own evidence (D213). */
+export interface TrainingLevelUpSource {
+  kind: 'level-up'
+  umaId: string
+  tier: number
+  fromLevel: number
+  fromExp: number
+}
+
+/** Tickets the Training EXP bank paid out: from a Spark run past TL10, a settled bank, or a spend past TL10. */
+export interface TrainingExpBankMovement {
+  id: string
+  itemId: typeof TRAINING_LEVEL_UP_TICKET_ID
+  delta: number
+  reason: 'exp-bank'
+  source: { kind: 'spark-run'; runId: string } | { kind: 'bank-settle' } | TrainingLevelUpSource
+  createdAt: number
+}
+
+/** Tickets spent on one unit's Training Levels (D213). */
+export interface TrainingLevelUpMovement {
+  id: string
+  itemId: typeof TRAINING_LEVEL_UP_TICKET_ID
+  delta: number
+  reason: 'training-level-up'
+  source: TrainingLevelUpSource
+  createdAt: number
+}
+
 /** Append-only evidence from which item quantities and Farm harvest XP can be repaired. */
-export type ItemLedgerEntry = FarmHarvestMovement | ConstellationProduceMovement
+export type ItemLedgerEntry = FarmHarvestMovement | ConstellationProduceMovement | TrainingExpBankMovement | TrainingLevelUpMovement
 
 type UnknownRecord = Record<string, unknown>
 
@@ -225,9 +257,42 @@ export function parseInventoryStackData(value: unknown, expectedItemId?: string)
   return { itemId: value.itemId, quantity: value.quantity, updatedAt: value.updatedAt }
 }
 
+function parseTrainingLevelUpSource(value: unknown): TrainingLevelUpSource | null {
+  if (!isRecord(value) || !exactKeys(value, ['fromExp', 'fromLevel', 'kind', 'tier', 'umaId']) || value.kind !== 'level-up' ||
+    typeof value.umaId !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.umaId) || !safeInteger(value.tier, 1) ||
+    value.tier > 14 || !safeInteger(value.fromLevel, 1) || value.fromLevel > 9 || !safeInteger(value.fromExp)) return null
+  return { kind: 'level-up', umaId: value.umaId, tier: value.tier, fromLevel: value.fromLevel, fromExp: value.fromExp }
+}
+
+function parseTrainingTicketMovement(value: unknown): TrainingExpBankMovement | TrainingLevelUpMovement | null {
+  if (!isRecord(value) || !exactKeys(value, ['createdAt', 'delta', 'id', 'itemId', 'reason', 'source']) ||
+    typeof value.id !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.id) || value.itemId !== TRAINING_LEVEL_UP_TICKET_ID ||
+    !safeInteger(value.createdAt) || !isRecord(value.source)) return null
+  if (value.reason === 'training-level-up') {
+    const source = parseTrainingLevelUpSource(value.source)
+    if (!source || !Number.isSafeInteger(value.delta) || (value.delta as number) >= 0) return null
+    return { id: value.id, itemId: TRAINING_LEVEL_UP_TICKET_ID, delta: value.delta as number, reason: 'training-level-up', source, createdAt: value.createdAt }
+  }
+  if (value.reason !== 'exp-bank' || !safeInteger(value.delta, 1)) return null
+  let source: TrainingExpBankMovement['source'] | null = null
+  if (value.source.kind === 'spark-run') {
+    source = exactKeys(value.source, ['kind', 'runId']) && typeof value.source.runId === 'string' &&
+      FARM_SAFE_ID_PATTERN.test(value.source.runId) ? { kind: 'spark-run', runId: value.source.runId } : null
+  } else if (value.source.kind === 'bank-settle') {
+    source = exactKeys(value.source, ['kind']) ? { kind: 'bank-settle' } : null
+  } else {
+    source = parseTrainingLevelUpSource(value.source)
+  }
+  return source
+    ? { id: value.id, itemId: TRAINING_LEVEL_UP_TICKET_ID, delta: value.delta, reason: 'exp-bank', source, createdAt: value.createdAt }
+    : null
+}
+
 export function parseItemLedgerEntry(value: unknown): ItemLedgerEntry | null {
   const harvest = parseFarmHarvestMovement(value)
   if (harvest) return harvest
+  const training = parseTrainingTicketMovement(value)
+  if (training) return training
   if (!isRecord(value) || !exactKeys(value, ['createdAt', 'delta', 'id', 'itemId', 'reason', 'source']) ||
     typeof value.id !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.id) || !cropId(value.itemId) ||
     value.delta !== -1 || value.reason !== 'constellation-produce' || !safeInteger(value.createdAt) ||

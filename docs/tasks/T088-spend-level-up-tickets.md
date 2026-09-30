@@ -12,8 +12,9 @@ Depends on merged T087. Read [M027](M027-training-rebalance.md), D212 and D213,
 - **Where:** the Spark Match start screen, in `MinigameStart`'s `extra` slot (the slot T079 added for partners), for the
   Uma and scenario unit the screen was opened for (D190). Nowhere else.
 - **What one ticket does:** `addTrainingExp(TL, exp, n × 1250)` for `n` tickets. That is exactly `n` levels, and the
-  unit keeps its progress inside the current level. EXP it carries past TL10 is deposited in the bank with
-  `depositTrainingExp` (T087). If that makes a full 1,250, the bank pays a ticket back at once.
+  unit keeps its progress inside the current level. EXP it carries past TL10 is deposited with
+  `bankTrainingExpInTransaction` (`apps/web/src/game/training-bank.ts`, T087) under `exp-bank:level-up:<umaId>:<tier>:
+  <fromLevel>.<fromExp>`. If that makes a full 1,250, the bank pays a ticket back at once.
 - **Limits:** from 1 to `min(owned, 10 − TL)`. It is not offered at TL10 or while that unit has an open Spark run. The
   start screen is resuming in that case, so the control is hidden.
 - **Cost:** only the tickets. No Training Ticket is spent, nothing is refunded, and no run is created.

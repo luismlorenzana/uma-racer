@@ -1,7 +1,7 @@
 import {
   parseCardSave,
   migrateCardSaveToCurrent,
-  migrateUmaSaveToCurrent,
+  migrateUmaSaveWithSurplus,
   migratePlayerProfileToCurrent,
   migratePlayerProfileV1,
   migratePlayerProfileV2,
@@ -15,6 +15,7 @@ import {
   parseLegacyUmaSaveV1,
   parseLegacyUmaSaveV2,
   parseLegacyUmaSaveV3,
+  parseLegacyUmaSaveV10,
   parsePlayerProfile,
   parseBadgeState,
   parseUmaSave,
@@ -185,7 +186,7 @@ class RacerDb extends Dexie {
 
       const umaRows = await umaTable.toArray() as VersionedRow<unknown>[]
       for (const row of umaRows) {
-        if (parseUmaSave(row.data)) continue
+        if (isCurrentOrV10(row.data)) continue
         const legacy = parseLegacyUmaSaveV1(row.data)
         if (!legacy) throw new Error(`Local Uma ${row.id} cannot be migrated`)
         const migrated = migrateUmaSaveV1(legacy)
@@ -223,7 +224,7 @@ class RacerDb extends Dexie {
 
       const umaRows = await umaTable.toArray() as VersionedRow<unknown>[]
       for (const row of umaRows) {
-        if (parseUmaSave(row.data)) continue
+        if (isCurrentOrV10(row.data)) continue
         const legacy = parseLegacyUmaSaveV2(row.data)
         if (!legacy) throw new Error(`Local v2 Uma ${row.id} cannot be migrated`)
         const migrated = migrateUmaSaveV2(legacy)
@@ -254,7 +255,7 @@ class RacerDb extends Dexie {
 
       const umaRows = await umaTable.toArray() as VersionedRow<unknown>[]
       for (const row of umaRows) {
-        if (parseUmaSave(row.data)) continue
+        if (isCurrentOrV10(row.data)) continue
         if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data && row.data.schemaVersion === 4) {
           parseUmaSaveOrThrow(row.data)
         }
@@ -284,8 +285,13 @@ class RacerDb extends Dexie {
     this.version(15).stores(storesWithFarm).upgrade(walkRowsToCurrent)
     // Save v10 adds nullable per-outfit racing preferences; all v9 rows keep their frozen careers.
     this.version(16).stores(storesWithFarm).upgrade(walkRowsToCurrent)
+    // Save v11 (D211, D212): linear Training Levels. Units re-level once, and what passes TL10 is banked on the profile.
+    this.version(17).stores(storesWithFarm).upgrade(walkRowsToCurrent)
   }
 }
+
+/** A row the old per-hop upgrades must leave alone: current, or already at v10, which the chain re-levels once. */
+const isCurrentOrV10 = (data: unknown): boolean => parseUmaSave(data) !== null || parseLegacyUmaSaveV10(data) !== null
 
 async function migrateOpenMinigameJournals(tx: Transaction): Promise<void> {
   const table = tx.table('minigameRuns')
@@ -329,21 +335,29 @@ async function walkRowsToCurrent(tx: Transaction): Promise<void> {
 
   const profileTable = tx.table('profile')
   const profileRow = await profileTable.get('main') as VersionedRow<unknown> | undefined
+  let migratedProfile: PlayerProfile | null = null
   if (profileRow && !parsePlayerProfile(profileRow.data)) {
-    const migrated = migratePlayerProfileToCurrent(profileRow.data)
-    if (!migrated) throw new Error('Local player profile cannot be migrated')
-    await profileTable.put({ ...profileRow, data: migrated })
-    await queue('profile', 'main')
+    migratedProfile = migratePlayerProfileToCurrent(profileRow.data)
+    if (!migratedProfile) throw new Error('Local player profile cannot be migrated')
   }
 
   const umaTable = tx.table('umas')
+  let surplusExp = 0
   for (const row of await umaTable.toArray() as VersionedRow<unknown>[]) {
     if (parseUmaSave(row.data)) continue
-    const migrated = migrateUmaSaveToCurrent(row.data)
+    const migrated = migrateUmaSaveWithSurplus(row.data)
     if (!migrated) throw new Error(`Local Uma ${row.id} cannot be migrated`)
-    if (migrated.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
-    await umaTable.put({ ...row, data: migrated })
+    if (migrated.uma.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
+    surplusExp += migrated.surplusExp
+    await umaTable.put({ ...row, data: migrated.uma })
     await queue('umas', row.id)
+  }
+
+  // What the v11 re-levelling carried past TL10 is banked on the profile it migrated with, once (D212). Startup turns
+  // every full level of it into a Level-Up Ticket, where the item tables always exist.
+  if (profileRow && migratedProfile) {
+    await profileTable.put({ ...profileRow, data: { ...migratedProfile, trainingExpBank: migratedProfile.trainingExpBank + surplusExp } })
+    await queue('profile', 'main')
   }
 
   const cardTable = tx.table('cards')

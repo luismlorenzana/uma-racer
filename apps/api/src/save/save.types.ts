@@ -61,6 +61,9 @@ const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const MAX_SCENARIO_TIER = 14
 const MAX_UMA_LEVEL = MAX_SCENARIO_TIER * 10
 const MAX_TRAINING_LEVEL = 10
+/** From save v11 every Training Level costs the same (D211). */
+const TRAINING_EXP_PER_LEVEL = 1250
+const TRAINING_LEVEL_UP_TICKET_ID = 'training:level-up-ticket'
 /** v5 and v6 cards held limit breaks up to 4; v7 cards hold 0★–5★ (D147); v8 cards 0★–3★ as `bonds` (D200). */
 const LEGACY_MAX_LIMIT_BREAK = 4
 const LEGACY_MAX_STARS_V7 = 5
@@ -79,6 +82,8 @@ export const LEDGER_REASONS = [
   'uma-shard-exchange', 'card-coupon-redeem', 'uma-coupon-redeem', 'card-unlock', 'dev-grant', 'minigame-refund',
 ] as const
 const PROFILE_FIELDS = ['schemaVersion', 'tickets', 'cardCoupons', 'umaCoupons', 'umaShards', 'lastDailyGrant', 'featuredUmaId', 'starterSeedContentVersion', 'createdAt'] as const
+/** v11 adds the Training EXP bank (D212). */
+const PROFILE_V11_FIELDS = [...PROFILE_FIELDS, 'trainingExpBank'] as const
 const LEGACY_UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'trainingExp', 'stats', 'skillPoints', 'aptitudes', 'deckCardIds', 'skillLibrary', 'loadoutSkillIds', 'trainingsThisScenario'] as const
 const UMA_FIELDS = ['schemaVersion', ...LEGACY_UMA_FIELDS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot', 'goalPlanVersion', 'scenarioJourneys'] as const
 const CURRENT_UMA_FIELDS = [...UMA_FIELDS, 'scenarioModifier'] as const
@@ -235,10 +240,34 @@ function parseItemStack(value: unknown): Record<string, unknown> | null {
   return value
 }
 
+/** Where a Training Level-Up Ticket was spent, named by the unit's starting point (D213). */
+function isLevelUpSource(value: Record<string, unknown>): boolean {
+  return exactKeys(value, ['kind', 'umaId', 'tier', 'fromLevel', 'fromExp']) && value.kind === 'level-up' &&
+    isId(value.umaId) && isPositiveInt(value.tier) && value.tier <= MAX_SCENARIO_TIER &&
+    isPositiveInt(value.fromLevel) && value.fromLevel < MAX_TRAINING_LEVEL && isNonNegativeInt(value.fromExp)
+}
+
+/** Training Level-Up Tickets: paid by the Training EXP bank, spent on one unit's levels (D212, D213). */
+function parseTrainingTicketMovement(value: Record<string, unknown>): Record<string, unknown> | null {
+  const source = value.source as Record<string, unknown>
+  if (value.reason === 'exp-bank') {
+    if (!isPositiveInt(value.delta)) return null
+    if (source.kind === 'spark-run') return exactKeys(source, ['kind', 'runId']) && isId(source.runId) ? value : null
+    if (source.kind === 'bank-settle') return exactKeys(source, ['kind']) ? value : null
+    return isLevelUpSource(source) ? value : null
+  }
+  if (value.reason === 'training-level-up') {
+    return Number.isSafeInteger(value.delta) && (value.delta as number) < 0 && isLevelUpSource(source) ? value : null
+  }
+  return null
+}
+
 function parseItemLedger(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value) || !exactKeys(value, ['id', 'itemId', 'delta', 'reason', 'source', 'createdAt']) ||
-    !isId(value.id) || typeof value.itemId !== 'string' || !FARM_CROP_ID_PATTERN.test(value.itemId) ||
+    !isId(value.id) || typeof value.itemId !== 'string' ||
     !isNonNegativeInt(value.createdAt) || !isRecord(value.source)) return null
+  if (value.itemId === TRAINING_LEVEL_UP_TICKET_ID) return parseTrainingTicketMovement(value)
+  if (!FARM_CROP_ID_PATTERN.test(value.itemId)) return null
   if (value.reason === 'farm-harvest') {
     if (value.delta !== 1 || !exactKeys(value.source, ['kind', 'plotId', 'cycleId', 'templateId', 'farmingExp']) ||
       value.source.kind !== 'farm-harvest' || !FARM_PLOT_IDS.includes(value.source.plotId as (typeof FARM_PLOT_IDS)[number]) ||
@@ -557,7 +586,10 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
+  if (!isRecord(value)) return null
+  if (value.schemaVersion === 11
+    ? !exactKeys(value, PROFILE_V11_FIELDS) || !isNonNegativeInt(value.trainingExpBank)
+    : !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -753,6 +785,10 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
   if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > Math.ceil(umaLevel / 10)) return false
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return false
   if (!isNonNegativeInt(value.trainingExp) || typeof value.started !== 'boolean') return false
+  // v11 units sit on the linear curve: short of a level, and 0 at TL10 (D211).
+  if (schemaVersion >= 11 && (value.trainingLevel === MAX_TRAINING_LEVEL
+    ? value.trainingExp !== 0
+    : value.trainingExp >= TRAINING_EXP_PER_LEVEL)) return false
   if (!parseUniqueIds(value.cardSetIds, CARD_SET_SIZE) || !parseUniqueIds(value.loadoutSkillIds)) return false
   if (!isRecord(value.assignments)) return false
   const nodeIds = Object.keys(value.assignments)
@@ -764,11 +800,12 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
   return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
 }
 
-/** v5 to v10 Umas share the scenario shape; v10 adds outfit race preferences. */
+/** v5 to v11 Umas share the scenario shape; v10 adds outfit race preferences, and v11 re-levels on the linear curve. */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  if (!exactKeys(value, value.schemaVersion === 10 ? UMA_V10_FIELDS : UMA_V6_FIELDS) ||
-    ![5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
-  if (value.schemaVersion === 10 && value.racePreferences !== null &&
+  const withPreferences = value.schemaVersion === 10 || value.schemaVersion === 11
+  if (!exactKeys(value, withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS) ||
+    ![5, 6, 7, 8, 9, 10, 11].includes(value.schemaVersion as number)) return null
+  if (withPreferences && value.racePreferences !== null &&
     (!isRecord(value.racePreferences) || !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
       !['front', 'pace', 'late', 'end'].includes(value.racePreferences.strategy as string) ||
       !['sprint', 'mile', 'medium', 'long'].includes(value.racePreferences.distance as string) ||
@@ -800,7 +837,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9, 10, 11].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null

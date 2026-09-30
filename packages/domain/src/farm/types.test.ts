@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { FARM_GROWTH_MS, FARM_PLOT_IDS, MAX_FARM_WORKERS } from './constants'
 import { createInitialFarmState } from './rules'
+import { reconcileFarmEvidence } from './reconciliation'
 import {
+  TRAINING_LEVEL_UP_TICKET_ID,
   parseFarmCropDefinition,
   parseFarmHarvestMovement,
   parseFarmState,
+  parseItemLedgerEntry,
   type FarmState,
 } from './types'
 
@@ -82,5 +85,26 @@ describe('Farm parsers', () => {
     }
     expect(parseFarmHarvestMovement(movement)).toEqual(movement)
     expect(parseFarmHarvestMovement({ ...movement, delta: 2 })).toBeNull()
+  })
+
+  it('parses Training Level-Up Ticket grants and spends, and counts them into the stack (D212, D213)', () => {
+    const levelUp = { kind: 'level-up', umaId: 'u1', tier: 2, fromLevel: 9, fromExp: 800 }
+    const grants = [
+      { id: 'exp-bank:spark:u1:2:3', source: { kind: 'spark-run', runId: 'spark:u1:2:3' }, delta: 1 },
+      { id: 'exp-bank:settle:40', source: { kind: 'bank-settle' }, delta: 49 },
+      { id: 'exp-bank:level-up:u1:2:9.800', source: levelUp, delta: 1 },
+    ].map((entry) => ({ ...entry, itemId: TRAINING_LEVEL_UP_TICKET_ID, reason: 'exp-bank', createdAt: 40 }))
+    for (const grant of grants) expect(parseItemLedgerEntry(grant)).toEqual(grant)
+    const spend = { id: 'level-up:u1:2:9.800', itemId: TRAINING_LEVEL_UP_TICKET_ID, delta: -1, reason: 'training-level-up', source: levelUp, createdAt: 50 }
+    expect(parseItemLedgerEntry(spend)).toEqual(spend)
+
+    expect(parseItemLedgerEntry({ ...grants[0], delta: 0 })).toBeNull()
+    expect(parseItemLedgerEntry({ ...grants[0], itemId: 'produce:t1:speed' })).toBeNull()
+    expect(parseItemLedgerEntry({ ...grants[1], source: { kind: 'bank-settle', extra: 1 } })).toBeNull()
+    expect(parseItemLedgerEntry({ ...spend, delta: 1 })).toBeNull()
+    expect(parseItemLedgerEntry({ ...spend, source: { ...levelUp, fromLevel: 10 } })).toBeNull()
+
+    const reconciled = reconcileFarmEvidence(createInitialFarmState(), [], [...grants, spend] as never)
+    expect(reconciled.stacks).toEqual([{ itemId: TRAINING_LEVEL_UP_TICKET_ID, quantity: 50, updatedAt: 50 }])
   })
 })

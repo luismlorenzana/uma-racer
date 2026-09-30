@@ -1,6 +1,6 @@
 // Global Item inventory, first surfaced inside Stable Farm (docs/design/farm.md#global-item-inventory, T085).
 
-import { SCENARIOS, STATS, scenarioForTier, type StatKey } from '@racer/domain'
+import { SCENARIOS, STATS, TRAINING_EXP_PER_LEVEL, TRAINING_LEVEL_UP_TICKET_ID, scenarioForTier, type StatKey } from '@racer/domain'
 import { FARM_CROPS } from '@racer/domain/farm'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -18,6 +18,9 @@ import { SegmentedControl } from '../../ui/SegmentedControl'
 import { TypeIcon } from '../../ui/TypeIcon'
 import { CropMark } from '../../ui/farm/CropMark'
 import { ViewGridIcon, ViewListIcon } from '../../ui/icons'
+import { useGame } from '../../game/store'
+import { Meter } from '../../ui/Meter'
+import { LevelUpIcon } from '../../ui/icons'
 import { useFarmScreen } from './FarmScreen'
 
 const DEFAULTS: ItemInventoryPreferences = {
@@ -65,9 +68,12 @@ export function ItemInventoryScreen() {
     setPreferences(next)
     if (loadedPreferences) void saveItemInventoryPreferences(next)
   }
-  const stacks = useMemo(() => Object.entries(farm.view.inventory).map(([itemId, quantity]) => ({
-    itemId, quantity, updatedAt: 0,
-  })), [farm.view.inventory])
+  // Training items have their own section; the grid below is the produce catalog.
+  const stacks = useMemo(() => Object.entries(farm.view.inventory)
+    .filter(([itemId]) => itemId !== TRAINING_LEVEL_UP_TICKET_ID)
+    .map(([itemId, quantity]) => ({ itemId, quantity, updatedAt: 0 })), [farm.view.inventory])
+  const levelUpTickets = farm.view.inventory[TRAINING_LEVEL_UP_TICKET_ID] ?? 0
+  const trainingExpBank = useGame((state) => state.profile?.trainingExpBank ?? 0)
   const inventory = useMemo(() => buildItemInventory(DEFINITIONS, stacks, {
     visibility: preferences.visibility,
     facets: { stat: preferences.stat, scenario: preferences.scenarioTier === null ? null : String(preferences.scenarioTier) },
@@ -93,6 +99,20 @@ export function ItemInventoryScreen() {
       <div className="flex items-start justify-between gap-3"><div><h2 className="font-display text-lg font-bold">Global Items</h2><p className="text-[12px] text-ink-soft">{inventory.ownedUnique} owned kinds · {inventory.totalQuantity} items</p></div><Crest>{inventory.catalogTotal} crops</Crest></div>
       {inventory.orphanedStacks > 0 && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[11px] text-warning">{inventory.orphanedStacks} future or missing item stack{inventory.orphanedStacks === 1 ? '' : 's'} preserved.</p>}
     </div>
+
+    <Panel className="mb-3" aria-label={`Training Level-Up Tickets, ${levelUpTickets} owned; Training EXP bank ${trainingExpBank} of ${TRAINING_EXP_PER_LEVEL}`}>
+      <p className="text-micro">Training</p>
+      <div className="mt-2 flex items-center gap-3">
+        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-sm bg-accent/15 text-accent-strong ${levelUpTickets === 0 ? 'opacity-45' : ''}`}><LevelUpIcon size={24} /></span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-semibold">Training Level-Up Ticket</p>
+          <p className="text-[11px] text-ink-soft">One Training Level for the Uma you train. Earned from EXP past TL10.</p>
+        </div>
+        <Crest tone={levelUpTickets > 0 ? 'accent' : 'neutral'}>×{levelUpTickets}</Crest>
+      </div>
+      <div className="mt-3 flex items-center justify-between text-[11px] text-ink-soft"><span>Training EXP bank</span><span className="font-semibold text-ink">{trainingExpBank.toLocaleString()} / {TRAINING_EXP_PER_LEVEL.toLocaleString()}</span></div>
+      <div className="mt-1"><Meter value={trainingExpBank / TRAINING_EXP_PER_LEVEL} color="var(--color-accent)" /></div>
+    </Panel>
 
     <SegmentedControl label="Item visibility" value={preferences.visibility} onChange={(visibility) => update({ ...preferences, visibility })} options={[
       { value: 'owned', label: 'Owned' }, { value: 'all', label: 'All crops' },
