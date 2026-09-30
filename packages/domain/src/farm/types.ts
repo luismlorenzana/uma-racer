@@ -69,6 +69,31 @@ export interface FarmHarvestMovement {
   createdAt: number
 }
 
+/** Synced data stored inside one versioned `items/{itemId}` entity. */
+export interface InventoryStackData {
+  itemId: string
+  quantity: number
+  updatedAt: number
+}
+
+export interface ConstellationProduceMovement {
+  id: string
+  itemId: FarmCropId
+  delta: -1
+  reason: 'constellation-produce'
+  source: {
+    kind: 'constellation-produce'
+    umaId: string
+    tier: number
+    nodeId: string
+    revision: number
+  }
+  createdAt: number
+}
+
+/** Append-only evidence from which item quantities and Farm harvest XP can be repaired. */
+export type ItemLedgerEntry = FarmHarvestMovement | ConstellationProduceMovement
+
 type UnknownRecord = Record<string, unknown>
 
 export const FARM_SAFE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
@@ -187,6 +212,41 @@ export function parseFarmHarvestMovement(value: unknown): FarmHarvestMovement | 
       cycleId: value.source.cycleId,
       templateId: value.source.templateId,
       farmingExp: FARMING_EXP_PER_HARVEST,
+    },
+    createdAt: value.createdAt,
+  }
+}
+
+export function parseInventoryStackData(value: unknown, expectedItemId?: string): InventoryStackData | null {
+  if (!isRecord(value) || !exactKeys(value, ['itemId', 'quantity', 'updatedAt']) ||
+    typeof value.itemId !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.itemId) ||
+    (expectedItemId !== undefined && value.itemId !== expectedItemId) ||
+    !safeInteger(value.quantity) || !safeInteger(value.updatedAt)) return null
+  return { itemId: value.itemId, quantity: value.quantity, updatedAt: value.updatedAt }
+}
+
+export function parseItemLedgerEntry(value: unknown): ItemLedgerEntry | null {
+  const harvest = parseFarmHarvestMovement(value)
+  if (harvest) return harvest
+  if (!isRecord(value) || !exactKeys(value, ['createdAt', 'delta', 'id', 'itemId', 'reason', 'source']) ||
+    typeof value.id !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.id) || !cropId(value.itemId) ||
+    value.delta !== -1 || value.reason !== 'constellation-produce' || !safeInteger(value.createdAt) ||
+    !isRecord(value.source) || !exactKeys(value.source, ['kind', 'nodeId', 'revision', 'tier', 'umaId']) ||
+    value.source.kind !== 'constellation-produce' || typeof value.source.umaId !== 'string' ||
+    !FARM_SAFE_ID_PATTERN.test(value.source.umaId) || typeof value.source.nodeId !== 'string' ||
+    !FARM_SAFE_ID_PATTERN.test(value.source.nodeId) || !safeInteger(value.source.revision, 1) ||
+    !safeInteger(value.source.tier, 1) || value.source.tier > 14) return null
+  return {
+    id: value.id,
+    itemId: value.itemId,
+    delta: -1,
+    reason: 'constellation-produce',
+    source: {
+      kind: 'constellation-produce',
+      umaId: value.source.umaId,
+      tier: value.source.tier,
+      nodeId: value.source.nodeId,
+      revision: value.source.revision,
     },
     createdAt: value.createdAt,
   }

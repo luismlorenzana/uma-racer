@@ -82,6 +82,13 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
 - Every action (a deck edit, minigame result, race, or promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
+- Stable Farm uses an independent `FarmHost`, not `MinigameHost`. Dexie v13 adds one lazy `farm/main` entity, versioned
+  `items/{itemId}` stacks and append-only `itemLedger/{cycleId}` evidence. Assignment and planting update Farm plus its
+  coalesced outbox marker; harvest commits Farm, stack, evidence and all three outbox markers atomically. A device-local
+  command revision rejects stale screens without changing the server entity version used by sync.
+- Farm/item conflict adoption is followed by evidence reconciliation inside the same Dexie transaction. Unique movement
+  ids rebuild stack quantity and harvest XP, advance plot attempt floors and clear a harvested cycle resurrected by a
+  stale Farm copy. Matching projections are a write-free no-op; IndexedDB-unavailable play uses the same port in memory.
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
   duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
@@ -235,6 +242,9 @@ players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, tit
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
+players/{uid}/farm/main               Farm schema, six plots, persistent outfit assignments/progress and attempt counters
+players/{uid}/items/{itemId}          current global item-stack quantity and update time
+players/{uid}/itemLedger/{id}         append-only item movement and Farm-harvest XP evidence
 ```
 
 Firestore cannot store an array directly inside another array, and a race record's compiled skill conditions are one.

@@ -1,7 +1,7 @@
 # Stable Farm
 
-> **Status: M025 in progress.** T082's pure domain rules, strict parsers, 70-crop catalog and progression simulator are
-> implemented. The current deployed app does not contain the Farm or Item inventory until T083–T085 land.
+> **Status: M025 in progress.** The pure rules/catalog and the synced Farm, Item and item-ledger runtime are implemented
+> through T083. The current deployed app has no Farm route or Item browser until T084–T085 land.
 
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows into a
 six-plot field as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting adds produce to
@@ -288,6 +288,12 @@ must not alter constellation templates, assignments, derived stats or their pinn
 
 M025 adds synced Farm state, inventory stacks and item-ledger rows through the normal local-first save. It does not put
 timers in the profile, an Uma row, local preferences or `minigameRuns`.
+
+The production `FarmHost` lazily creates `farm/main` on first Farm access and exposes optimistic command revisions so a
+stale screen cannot overwrite a newer local command while the cloud entity version is still awaiting sync. Assignment,
+plant and harvest re-read Farm and ownership inside Dexie transactions. Harvest retries resolve from the cycle-keyed
+evidence row, while evidence reconciliation repairs item quantities, outfit XP, attempt floors and a harvested cycle
+resurrected by a sync conflict. An already-correct projection performs no write.
 
 ```text
 players/{uid}/farm/main              schema, six plot slots, persistent outfit assignments, outfit XP/levels, attempts, version

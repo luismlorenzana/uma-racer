@@ -22,6 +22,8 @@ import {
 import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL } from './training'
 import { GRADES, STATS, type Aptitudes, type Grade, type StatKey, type Stats } from './types'
+import { FARM_SCHEMA_VERSION } from './farm/constants'
+import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry } from './farm/types'
 
 export const SAVE_SCHEMA_VERSION = 8 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
@@ -296,9 +298,9 @@ export interface InitialSave {
   ledger: { id: string; data: LedgerEntry }[]
 }
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -1450,6 +1452,8 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
   if (kind === 'umas') return parseUmaSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'cards') return parseCardSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'badges') return parseBadgeState(value) as unknown as Record<string, unknown> | null
+  if (kind === 'farm') return parseFarmState(value) as unknown as Record<string, unknown> | null
+  if (kind === 'items') return parseInventoryStackData(value) as unknown as Record<string, unknown> | null
   return parseGenericData(value)
 }
 
@@ -1457,6 +1461,7 @@ export function parseLogData(kind: LogKind, value: unknown): Record<string, unkn
   if (kind === 'ledger') return parseLedgerEntry(value) as unknown as Record<string, unknown> | null
   if (kind === 'raceResults') return parseRaceResultRecord(value) as unknown as Record<string, unknown> | null
   if (kind === 'flairEvents') return parseFlairEvent(value) as unknown as Record<string, unknown> | null
+  if (kind === 'itemLedger') return parseItemLedgerEntry(value) as unknown as Record<string, unknown> | null
   return parseGenericData(value)
 }
 
@@ -1480,7 +1485,9 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
     if (!data) return `invalid ${kind} data`
-    if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+    if ((kind === 'profile' && value.id !== 'main') || (kind === 'farm' && value.id !== 'main') ||
+      ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+      (kind === 'items' && data.itemId !== value.id) ||
       (kind === 'badges' && !badgeIdMatchesData(value.id, data))) {
       return `${kind} id does not match data`
     }
@@ -1501,6 +1508,9 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
       return 'raceResults id or timestamp does not match data'
     }
     if (kind === 'flairEvents' && value.createdAt !== data.earnedAt) return 'flairEvents timestamp does not match data'
+    if (kind === 'itemLedger' && (value.id !== data.id || value.createdAt !== data.createdAt)) {
+      return 'itemLedger id or timestamp does not match data'
+    }
     parsedAppends.push({ kind, id: value.id, data, createdAt: value.createdAt })
   }
   const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)
@@ -1517,7 +1527,9 @@ function parseEntityRecord(value: unknown): EntityRecord | null {
   if (!isPositiveInt(value.version) || typeof value.deleted !== 'boolean' || !isTimestamp(value.updatedAt)) return null
   const data = parseStoredEntityData(kind, value.data)
   if (!data) return null
-  if ((kind === 'profile' && value.id !== 'main') || ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+  if ((kind === 'profile' && value.id !== 'main') || (kind === 'farm' && value.id !== 'main') ||
+    ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
+    (kind === 'items' && data.itemId !== value.id) ||
     (kind === 'badges' && !badgeIdMatchesData(value.id, data))) return null
   return { kind, id: value.id, version: value.version, data, deleted: value.deleted, updatedAt: value.updatedAt }
 }
@@ -1528,6 +1540,7 @@ function parseLogRecord(value: unknown): LogRecord | null {
   const data = parseLogData(kind, value.data)
   if (kind === 'raceResults' && data && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) return null
   if (kind === 'flairEvents' && data && value.createdAt !== data.earnedAt) return null
+  if (kind === 'itemLedger' && data && (value.id !== data.id || value.createdAt !== data.createdAt)) return null
   return data ? { kind, id: value.id, data, createdAt: value.createdAt } : null
 }
 
@@ -1553,6 +1566,10 @@ function assertSupportedProfileRecords(records: unknown): void {
       if (!migrateUmaSaveToCurrent(record.data)) {
         throw new Error(`App update required for save schema ${String(record.data.schemaVersion)}`)
       }
+    }
+    if (isObject(record) && record.kind === 'farm' && isObject(record.data) &&
+      typeof record.data.schemaVersion === 'number' && record.data.schemaVersion > FARM_SCHEMA_VERSION) {
+      throw new Error(`App update required for Farm schema ${String(record.data.schemaVersion)}`)
     }
   }
 }
