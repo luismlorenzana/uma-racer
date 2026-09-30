@@ -53,37 +53,87 @@ shows RPG Level. Racing and Farm values are read as inputs where specified, neve
 | **Stamina** | Initiative / action speed, with HP or endurance contribution to be decided | Stamina enables longer efforts in racing; it should not quietly replace Speed as the primary damage stat. |
 | **Power** | Physical DEF, guard strength | A sturdy physical role. |
 | **Guts** | Dexterity / critical reliability | Precision and clutch effects, not another raw ATK stat. |
-| **Wit** | MP and magical resource economy | A visible reason to value Wit on caster/hybrid builds. |
+| **Wit** | MP and magical resource economy | A visible reason to value Wit on caster and support builds. |
 
 The conversion reads the outfit's **base racing stats and growths**, not its mutable scenario constellation or Produce
-assignments, to keep this global profile stable when the player switches scenarios. The exact formula, HP source,
-magical defense, caps, level curve, growth rounding and how class changes affect derived stats are deliberately
-unfixed. The formula must use enough growth information that outfits do not become identical after their base stats
-normalize, but cannot make a favorite race build mandatory for RPG play. Level-up gains are displayed as a before/after
-snapshot; any random variation must be seeded and replayable, not rolled by the screen.
+assignments, to keep this global profile stable when the player switches scenarios. Level-up gains are deterministic,
+never a hidden random stat roll. A class or weapon switch changes the available actions, not the outfit's earned
+RPG EXP or five core-stat history. This lets a dual-A outfit try another role without rerolling favorable growths.
 
-EXP comes from resolved battles and possibly chapter completion. A lower-level participant should catch up faster and
-an overleveled one should receive less EXP from weak enemies; no one gets EXP merely for opening a map or abandoning a
-fight. The relative-level formula, KO participation rule, level cap and chapter-replay policy require simulation.
+### First balance candidate: levels and stats
+
+This is a **simulation candidate, not an approved tuning pin**. It gives implementation planning a concrete curve to
+test against a fourteen-chapter campaign without pretending that battle payouts or chapter lengths are settled.
+
+| Measure | Candidate rule | What the player sees |
+|---|---|---|
+| RPG Level | Starts at 1, caps at **50**, per owned outfit | Level and EXP bar in RPG only; never changes race Uma Level or Farming Level. |
+| EXP to next level from current level `L` | `100 + 18L + 2L²` for `1 ≤ L < 50` | 120 from Lv1→2, 480 from Lv10→11, 1,260 from Lv20→21, 5,784 from Lv49→50; 107,800 total to Lv50. |
+| Core RPG stat `s` at level `L` | `round(B_s / 5 + (L − 1) × 1.5 × (1 + G_s))`, where `B_s` is the outfit's base racing stat and `G_s` its stored fractional growth rate (`0.2` means +20%) | Five permanent core values are **derived**, not accumulated as mutable rolls. The level-up panel compares exact old/new values. |
+| Combat projection | ATK/MATK from RPG Speed; initiative and part of HP from RPG Stamina; PDEF/guard from RPG Power; dexterity from RPG Guts; MP/support capacity from RPG Wit | The equipped weapon's physical/magical channel decides which offensive value is used. A Greatsword cannot use MATK just because it is computed. |
+
+For a **synthetic** outfit with base Speed 100 and stored Speed growth `0.2`, RPG Speed would read 20 at Lv1,
+22 at Lv2, 36 at Lv10 and 108 at Lv50. The result panel would show `Speed 20 → 22`, then recalculate ATK and
+MATK from the new value; only the equipped weapon's channel is usable in that battle. This example is invented for
+the draft, not copied from a private Uma row.
+
+HP, MP, magical defense and the damage formula still need their own simulation; they must derive from the five core
+values without making Speed the answer to every defense or heal. Candidate pacing is about one early level per two
+level-matched encounters and one late level per six to eight; the exact encounter/chapter EXP and level-relative
+catch-up multiplier are **not** set. Lv50 may take replaying chapters rather than only their first clear. If the sim
+cannot make that a satisfying long-term destination, change the formula and this table before code lands.
+
+EXP is awarded after a resolved battle to the participating outfits and optionally at chapter clear, with one
+idempotent grant per encounter/clear. A lower-level participant should catch up faster and an overleveled one should
+receive less EXP from weak enemies; no one gets EXP merely for opening a map or abandoning a fight. A KO'd member's
+participation rule and repeat-clear reward need explicit decisions. The result first applies EXP, then shows each
+crossed level in order, its five core-stat deltas, changes to HP/MP/ATK/MATK/etc., and every new skill row or slot.
+
+### First balance candidate: skill progression
+
+Attack and Guard are always available and **do not consume equip slots**. Each weapon has a neutral basic action, a
+starter technique, later utility and elemental techniques. Leveling unlocks *eligible blueprints* automatically;
+equipping remains a deliberate between-battle choice. No duplicate skill grind or separate RPG skill currency is
+proposed. A and B aptitudes determine which element tiers a blueprint may take, while weapon choice determines what
+the action actually does.
+
+| RPG Level | New options (candidate) | Equipped active-skill slots |
+|---|---|---:|
+| 1 | Chosen class/weapon, neutral basic action, Rank I elemental technique from eligible affinities | 2 |
+| 5 | Class utility: Greatsword guard-break, Spear target mark, Paladin protect, Wizard area control, Cleric restoration, or Tome mark | 3 |
+| 10 | Rank II elemental evolutions; one more simultaneous technique | 4 |
+| 15 | Second weapon-specific utility or combo setup; no mandatory menu interruption | 4 |
+| 20 | Rank III weapon × element combinations; broad build-defining effects | 5 |
+| 30 | Sixth slot so a multi-element outfit can carry more coverage/support | 6 |
+| 40 | Rank IV capstone for **A-grade** element affinity only; B stays through Rank III | 6 |
+| 50 | Level cap and mastery presentation; no seventh slot or unseen damage jump | 6 |
+
+When several levels are crossed in one result, all unlocks appear together but the screen names each level. A new
+skill does not silently replace an equipped one. If the loadout is full, it becomes **Available** in the RPG profile
+and the result links to skill setup. An active battle keeps its frozen level/loadout; newly earned levels apply at
+the next safe checkpoint. Tier thresholds and slot counts above must be tested for menu burden and role parity.
 
 ## Class, weapon and aptitude identity
 
-Each outfit chooses **one RPG class from the running styles for which it has A aptitude**. Multiple A styles are
-alternatives, not simultaneous class counts. A class can be changed between chapters or at a safe checkpoint if the
-final respec policy allows it; an in-progress battle never changes class. No role is mandatory in a party.
+Each outfit chooses **one style-class from the running styles for which it has A aptitude**, then **one weapon path**
+within that class. Multiple A styles are alternatives, not simultaneous class counts. Pace chooses Spear *or* Sword +
+shield; Late chooses Wizard *or* Cleric staff; no one dual-wields both paths in battle. A class/weapon path can change
+between chapters or at a safe checkpoint if the final respec policy allows it; an in-progress battle never changes.
+No role is mandatory in a party.
 
-| Running-style class | RPG role | Weapon choices | Expected strengths |
+| Running-style class | RPG role | Weapon choices | Damage and support identity |
 |---|---|---|---|
-| **Front — Guardian** | Defensive physical anchor | Sword + shield | Guard, intercept, physical attacks, defensive buffs. |
-| **Pace — Vanguard** | Flexible physical damage | Spear **or** axe | Reliable strikes, stagger/armor pressure, situational party support. Two weapons give the large Pace pool variety. |
-| **Late — Arcanist** | Magical damage and support | Tome **or** staff | Tome favors offensive spells; staff favors healing/buffs while retaining damage. |
-| **End — Spellblade** | Physical/magical hybrid | Spellblade | Attacks that combine or switch physical and magic pressure; tactical finishing, not mandatory sustain. |
+| **Front — Breaker** | Physical-only heavy attacker | **Greatsword** | Heavy single-target and cleave hits, armor pressure, elemental martial finishers. No magical-damage actions. |
+| **Pace — Lancer or Paladin** | Physical offense **or** physical support | **Spear** or **Sword + shield** | Spear favors repeated hits and marks; sword/shield guards allies, buffs defenses and heals while retaining physical attacks. |
+| **Late — Wizard or Cleric** | Magical offense **or** magical support | **Wizard staff** or **Cleric staff** | Wizard has elemental burst/area control; Cleric has offensive buffs and healing with a modest magical attack. |
+| **End — Tome Mage** | Magical-only specialist | **Magic tome** | Spell chaining, marks and elemental finishers. No physical-damage actions. |
 
-The owner's **10% class-specialization bonus** is a draft rule: one chosen weapon and one chosen signature element get
-the bonus in their applicable action calculations. It should not stack twice on a hybrid's same damage component.
-Exact eligibility, rounding and whether it boosts damage, accuracy or another action outcome need a combat sim and a
-pinning test. Two A styles do not grant two simultaneous class bonuses. Weapon restrictions are class identity;
-element access is set by distance/surface aptitudes separately.
+The owner's **10% specialization bonus** remains a draft rule: the selected class weapon and one signature element
+receive it in their applicable action calculations. It must not double-count one elemental action. Exact eligibility,
+rounding and whether it boosts damage, accuracy or another action outcome need a combat sim and a pinning test. Two A
+styles do not grant two simultaneous class bonuses. There is no End-only fallback, penalty or special party rule;
+End follows the same aptitude, level, element, slot and reward contracts as Front, Pace and Late. Weapon identity comes
+from the selected running-style class; element access comes from distance/surface aptitudes separately.
 
 ### Distance and element proposal
 
@@ -101,8 +151,8 @@ the outfit may equip skills from every eligible affinity, subject only to the RP
 set and tier ladder await the skill catalog. Turf/Dirt also matter: their grade determines whether the
 distance-derived affinity is full strength on a chapter's matching surface, or whether a narrower off-surface version
 is allowed. This is *not yet defined*; do not ship the table as distance-only and silently ignore surface aptitude.
-Likewise, an outfit with no A style or a chapter roster with no viable End must still have an explicit rule and warning,
-not an empty picker. Class/element candidates come from the outfit's source aptitudes, not its editable racing defaults.
+An outfit with no A style still needs an explicit general fallback rule before implementation; it must not see an
+empty class picker. Class/element candidates come from the outfit's source aptitudes, not editable racing defaults.
 
 The elemental relationship is:
 
@@ -117,13 +167,54 @@ shows a text/glyph legend, target weakness/resistance and projected effect. Colo
 Medium's Fire/Dark pair deliberately gives a large Medium roster two different matchup families; it does not yet grant
 a higher damage coefficient or an extra skill tier.
 
+### Weapon × element skill matrix
+
+**Damage channel and element are separate axes.** Front and Pace basic attacks are neutral **physical** hits; Late
+and End basic attacks are neutral **magical** hits. An MP-costing Greatsword Flame Rend is still a physical strike: its
+elemental portion changes matchup/status, but the whole action uses ATK and physical defense. It is not secretly a
+MATK spell. Likewise a Tome Fire Sigil uses MATK and magical defense. Paladin and Cleric healing/support spend MP but
+do not turn their basic damage channel into the opposite type. This is how every weapon gains elemental play without
+erasing the owner's physical-only Front and magical-only End identities.
+
+At Rank I, every permitted weapon/element pair has a simple infused attack or support technique. Rank II strengthens
+its element's status/utility; Rank III introduces the pair's **combo identity** below; Rank IV is an A-affinity
+capstone version, not a second unrelated element. The matrix is a *design vocabulary*, not 30 copied source-game
+skills or a promise to author 30 unique animations. The example names below are invented and provisional. The six
+weapon templates and five element modifiers should compose into many combinations, while combat coefficients are
+domain rules to simulate, document and pin; checked-in tests use synthetic actors.
+
+| Weapon path / neutral baseline | Fire — Burn / pressure | Ice — Slow / control | Lightning — Chain / tempo | Light — Ward / cleanse | Dark — Drain / weaken |
+|---|---|---|---|---|---|
+| **Front Greatsword** · heavy physical cut | Flame Rend: physical cleave with burn addendum | Frost Rend: physical cut that delays target intent | Storm Rend: physical hit with secondary chain target | Dawn Rend: physical hit that breaks a hostile ward | Night Rend: physical hit that weakens the next enemy attack |
+| **Pace Spear** · repeated physical thrust | Ember Lance: successive strikes intensify burn | Rime Pin: strike and slow a marked target | Arc Lance: repeat hit jumps to marked foe | Beacon Lance: expose target for an ally | Shade Lance: strike and reduce target offense |
+| **Pace Sword + shield** · physical strike/guard | Ember Aegis: guard, then retaliate physically | Ice Bastion: guard plus stronger defense buff | Thunder March: guard plus ally initiative buff | Mercy Ward: defend and heal an ally | Gloam Ward: defend and blunt enemy offense |
+| **Late Wizard staff** · magical bolt | Fire Bloom: magical burst/area burn | Winter Field: magical area slow | Chain Spark: magical jumps across targets | Sunray: magical hit against wards | Umbral Hex: magical hit plus resistance debuff |
+| **Late Cleric staff** · small magical bolt/heal | Warmth: ally healing over time plus attack buff | Shelter: heal plus damage mitigation | Quickening: heal plus initiative buff | Benediction: focused heal and cleanse | Veil: restorative drain plus enemy weaken |
+| **End Magic tome** · magical sigil | Cinder Script: stack, then detonate burn | Glacier Script: accumulate control for a seal | Volt Script: charge then chain damage | Halo Script: puncture a dark ward | Eclipse Script: mark then drain/finish |
+
+These are **six weapon paths**, each with five elemental evolutions. The element's global motif remains consistent,
+while the weapon changes target pattern and role. A skill card shows weapon, element, channel, rank, MP, target,
+projected damage/heal, status/duration and affinity gate. For a multi-element outfit, any eligible skills can fill
+its slots together; the signature element only chooses the specialization bonus and portrait badge. A single action
+may use one element, never two advantages at once; a combo skill can require a visible setup mark or ally action but
+must be deterministic and previewed. The first simulator should compare all six paths across neutral, advantaged,
+disadvantaged and Light/Dark matchups, including whether healing/support crowds out offense.
+
+A physical elemental technique should display a **physical base + an elemental rider**. Both portions use ATK against
+physical defense; only the rider receives elemental advantage/resistance and its status effect. A magical elemental
+technique uses MATK against magical defense and applies its element to the spell. This gives a Front an MP-spending
+physical-plus-Fire attack without a hidden second MATK hit. Healing and buffs use their own support formulas; their
+element changes the rider (for example Light cleansing or Lightning initiative), not the caster's damage channel.
+For example, a Greatsword Fire line might evolve from one burning cut at Rank I, to a more reliable burn at Rank II,
+to a burn-consuming cleave at Rank III, to an A-only finishing strike at Rank IV; an Ice Wizard line evolves from a
+single slow bolt to area control. Rank upgrades must have new tactical choices, not only larger numbers.
+
 ## Five-member combat proposal
 
-A five-member party is the leading design, not a class quota. A natural team can be **one Front guardian, three
-Pace/Late flex slots and one End spellblade**, but a five-Pace challenge party or a team with no End remains legal.
-The actual role balance must be measured against the owned launch roster; the research shows only one starter End-A
-outfit, so mandatory End would make the mode unnecessarily restrictive. Four-versus-five mobile readability is an
-explicit prototype gate before the save schema commits to five.
+A five-member party is the leading design, **not a class quota**. A natural team can be **one Front Greatsword, three
+Pace/Late flex slots and one End Tome Mage**, but neither Front nor End is mandatory; a five-Pace challenge party is
+legal. The owner will acquire more End outfits normally—there is no End-specific exception or filler system.
+Four-versus-five mobile readability remains an explicit prototype gate before the save schema commits to five.
 
 The core turn reads: inspect visible enemy composition/intent → choose an acting Uma → Attack, Skill, Guard or Item
 (only if a later item policy defines battle consumables) → resolve with visible weakness and defenses → enemy action →
@@ -131,9 +222,9 @@ repeat. The player can target deliberately. Physical and magical damage, MP cost
 states are required categories; skill definitions and numeric effects are separate balancing work. Each skill must
 state target, element, physical/magical type, MP cost, magnitude, duration, stacking and what happens on resistance.
 
-The first combat slice should prove: a Front guard can protect allies, Pace has two meaningfully different weapon
-plans, Late tome/staff have both damage and recovery, End uses both ATK and MATK without double dipping, and every
-element's weakness matters. Persona's extra-action-on-weakness is a promising **candidate**, not a decided rule: if
+The first combat slice should prove: Front Greatsword is strong but strictly physical; Pace Spear and Paladin have
+different physical plans; Late Wizard and Cleric have distinct magical offense/support; End Tome is strictly magical;
+and every element's weakness matters. Persona's extra-action-on-weakness is a promising **candidate**, not a decided rule: if
 five actors can chain indefinitely, fights become trivial. Prototype a bounded follow-up or momentum action and
 compare it with no extra action. Enemy intent is revealed before commitment; no hidden reroll after reload.
 
@@ -153,9 +244,12 @@ reward must be idempotent, with no way to claim twice by navigating back or reco
   edited only between battles**; each battle freezes the loadout that entered it. Level-ups earned elsewhere while a
   preset is open must not retroactively alter a frozen battle. Exact behavior for the next checkpoint is a technical
   design question, not license to discard the new EXP.
-- Ordinary enemies can be synthetic monsters for the engine and tests; private authored production packs may use
-  PriConne guest characters for named encounters/bosses, based on the owner's preference. Their names, art, battle
-  kits and rows stay in private content, not git. Missing or outdated private content is surfaced clearly.
+- Ordinary enemies can be synthetic monsters for the engine and tests. The [PriConne research](../research/uma-rpg.md)
+  now separates **ordinary monster encounters** (for example a magical multi-target hound versus a physical thief
+  fork) from **named guest/sparring encounters** (a physical frontline guest, magical debuffer, support or barrier
+  specialist). A first private chapter should prove both lanes and a composition-dependent path choice before
+  multiplying content across scenarios. Exact names-as-data, art, battle kits and rows stay in private content, not
+  git. Missing or outdated private content is surfaced clearly; no unrelated silent fallback duel.
 - Chapter rewards may include a scenario-typed **Parent Unlock item** (working name). This is an item stack plus an
   append-only ledger grant in the existing global Item inventory, transactionally coupled with chapter-clear evidence.
   **This draft defines no consumption, constellation node effect, required amount, or per-run quantity.** The separate
