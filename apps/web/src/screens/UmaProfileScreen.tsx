@@ -1,25 +1,26 @@
 import {
   DISTANCE_CATEGORIES,
-  MAX_TRAINING_LEVEL,
-  SPARK_MATCH_TICKET_COST,
   STATS,
   STRATEGIES,
   SURFACES,
   badgeStateId,
+  careerRaceCatalog,
   cardStars,
   awaitingAdvance,
   isCareerStage,
+  recommendedRacePreferences,
   racingSkillCosts,
   scenarioForTier,
   summarizeSkillLoadout,
   type Grade,
   type RaceResultRecord,
+  type RacePreferences,
   type StatKey,
 } from '@racer/domain'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { advanceUma, listRaceHistory, setFeaturedUma, startScenario } from '../game/actions'
+import { advanceUma, listRaceHistory, setFeaturedUma, setRacePreferences, startScenario } from '../game/actions'
 import { buildUmaBadgeCollection, type BadgeCollectionItem } from '../game/badge-collection-view'
 import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
@@ -31,6 +32,7 @@ import { AtlasSprite } from '../ui/AtlasSprite'
 import { Stars } from '../ui/Stars'
 import { Crest } from '../ui/Crest'
 import { Button } from '../ui/Button'
+import { BottomSheet } from '../ui/BottomSheet'
 import { Meter } from '../ui/Meter'
 import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
@@ -41,7 +43,6 @@ import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { SkillIcon } from '../ui/SkillIcon'
 import { ScenarioSwitch } from '../ui/ScenarioSwitch'
 import { ChevronLeftIcon, ChevronRightIcon } from '../ui/icons'
-import { formatTickets } from '../ui/tickets'
 import { TypeIcon } from '../ui/TypeIcon'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
@@ -76,6 +77,7 @@ export function UmaProfileScreen() {
   const pushToast = useGame((state) => state.pushToast)
   const [busy, setBusy] = useState(false)
   const [raceHistory, setRaceHistory] = useState<RaceResultRecord[]>([])
+  const [editingPreferences, setEditingPreferences] = useState<RacePreferences | null>(null)
   // Which of her trained units the page shows (D190): her current scenario unless another was chosen.
   const chosenTier = useChosenTier(save)
 
@@ -128,8 +130,6 @@ export function UmaProfileScreen() {
   const past = uma.past
   const setupPending = !past && !uma.run.started
   const atGate = !past && awaitingAdvance(save)
-  const sparkAvailable = (past || uma.run.started) && uma.derived.trainingLevel < MAX_TRAINING_LEVEL
-  const sparkAffordable = profile.tickets >= SPARK_MATCH_TICKET_COST
   const raceUnlocked = past || (uma.run.started && !atGate)
   const loadout = summarizeSkillLoadout(uma.derived, uma.template, contentState.content.skills.byId)
   // The profile shows her unique and the equipped inherited uniques and golds; whites wait behind "All equipped".
@@ -145,6 +145,9 @@ export function UmaProfileScreen() {
   const journey = buildJourneyView(save, contentState.content)
   const currentJourney = journey.find((item) => item.tier === uma.tier) ?? null
   const ownRaces = raceHistory.filter((record) => record.umaId === save.templateId)
+  const racePreferences = save.racePreferences ?? recommendedRacePreferences(
+    uma.template.aptitudes, uma.template, careerRaceCatalog(contentState.content.races.items),
+  )
 
   const statusLine = past
     ? 'An earlier scenario: it races for its own records, without Uma EXP.'
@@ -248,30 +251,10 @@ export function UmaProfileScreen() {
           <Crest tone="accent" className="shrink-0 whitespace-nowrap">TL {uma.derived.trainingLevel}</Crest>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button variant="secondary" disabled={busy} onClick={() => navigate(`/constellation/${encodeURIComponent(save.templateId)}`)}>
-            Constellation
-          </Button>
-          <Button variant="primary" disabled={!raceUnlocked || busy} onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}>
-            Race
-          </Button>
-        </div>
-
-        <div className="mt-2 grid gap-2">
+        <div className="mt-3 grid gap-2">
           {setupPending && (
             <Button variant="primary" disabled={busy} onClick={() => void runAction(() => startScenario(save.templateId), 'Could not start this scenario')}>
               Start scenario
-            </Button>
-          )}
-          {sparkAvailable && (
-            <Button
-              variant="primary"
-              disabled={!sparkAffordable || busy}
-              onClick={() => navigate(`/minigames/spark-match/${encodeURIComponent(save.templateId)}?return=${encodeURIComponent(`/stable/${save.templateId}`)}`)}
-            >
-              {sparkAffordable
-                ? `Spark Match · ${formatTickets(SPARK_MATCH_TICKET_COST)}`
-                : `Spark Match · need ${formatTickets(SPARK_MATCH_TICKET_COST)}`}
             </Button>
           )}
           {!past && uma.readyToAdvance && (
@@ -281,6 +264,75 @@ export function UmaProfileScreen() {
           )}
         </div>
       </Panel>
+
+      <SectionHeading label="Racing" hint="career & races" />
+      <Panel className="p-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap gap-1.5" aria-label="Race defaults">
+            {([racePreferences.strategy, racePreferences.distance, racePreferences.surface] as const).map((value) => (
+              <span key={value} className="rounded-full bg-sunken px-2.5 py-1 text-[12px] font-semibold">{titleCase(value)}</span>
+            ))}
+          </div>
+          <button type="button" className="min-h-11 shrink-0 rounded-sm px-2 text-[12px] font-semibold text-accent-strong" onClick={() => setEditingPreferences({ ...racePreferences })}>Edit defaults</button>
+        </div>
+        <p className="mb-3 text-[12px] text-ink-soft">Style starts selected in Race. Distance and surface shape new scenario careers; this scenario's goals stay as earned.</p>
+        <Button variant="primary" className="w-full" disabled={!raceUnlocked || busy} onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}>
+          Open races
+        </Button>
+      </Panel>
+
+      <BottomSheet open={editingPreferences !== null} onClose={() => setEditingPreferences(null)}>
+        {editingPreferences && <div className="grid gap-4 px-4 pb-safe">
+          <h2 className="font-display text-lg font-bold">Race defaults</h2>
+          {([
+            ['strategy', 'Running style', STRATEGIES],
+            ['distance', 'Distance', DISTANCE_CATEGORIES],
+            ['surface', 'Surface', SURFACES],
+          ] as const).map(([key, label, options]) => (
+            <fieldset key={key}>
+              <legend className="mb-1 text-[12px] font-semibold text-ink-soft">{label}</legend>
+              <div className="grid grid-cols-2 gap-1.5">
+                {options.map((option) => (
+                  <button key={option} type="button" aria-pressed={editingPreferences[key] === option}
+                    className={`min-h-11 rounded-sm border px-3 text-[13px] font-semibold ${editingPreferences[key] === option ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`}
+                    onClick={() => setEditingPreferences((current) => current ? { ...current, [key]: option } : null)}>
+                    {titleCase(option)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+          <p className="text-[12px] text-ink-soft">Changing these does not reset Uma Level, completed wins or rewards. Your current career stays frozen; the distance and surface apply when a new scenario starts.</p>
+          <Button variant="primary" disabled={busy} onClick={() => void (async () => {
+            if (busy) return
+            setBusy(true)
+            try {
+              await setRacePreferences(save.templateId, editingPreferences)
+              setEditingPreferences(null)
+            } catch (reason) {
+              pushToast(reason instanceof Error ? reason.message : 'Could not save race defaults')
+            } finally { setBusy(false) }
+          })()}>Save defaults</Button>
+        </div>}
+      </BottomSheet>
+
+      <SectionHeading label="Training" hint="build this scenario" />
+      <div className="grid gap-2">
+        {([
+          ['Constellation', 'Cards and Training Level · enter Spark Match here', ''],
+          ['Inspiration', 'Parents, grandparents, aptitudes and inherited skills', '/inspiration'],
+          ['Extra stats', 'Farm Produce and the six small stat boosts', '/extra-stats'],
+        ] as const).map(([label, detail, suffix]) => (
+          <Link
+            key={label}
+            to={`/constellation/${encodeURIComponent(save.templateId)}${suffix}`}
+            className="flex min-h-16 items-center justify-between gap-3 rounded-md border border-hairline bg-panel px-4 py-3 shadow-1"
+          >
+            <span className="min-w-0"><span className="block font-display text-[15px] font-semibold">{label}</span><span className="block text-[12px] text-ink-soft">{detail}</span></span>
+            <ChevronRightIcon size={20} className="shrink-0 text-ink-faint" />
+          </Link>
+        ))}
+      </div>
 
       <Panel className="p-3">
         <div className="flex items-baseline justify-between">

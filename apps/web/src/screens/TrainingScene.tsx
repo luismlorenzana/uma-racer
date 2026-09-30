@@ -63,6 +63,8 @@ export function TrainingScene() {
   if (baseline.current === null) baseline.current = derived.stats
   const base = `/constellation/${encodeURIComponent(save.templateId)}`
   const tab: TrainingTab = location.pathname.endsWith('/cards') ? 'cards' : 'constellation'
+  const separateView = location.pathname.endsWith('/inspiration') ? 'Inspiration'
+    : location.pathname.endsWith('/extra-stats') ? 'Extra stats' : null
   const context: TrainingContext = { content: contentState.content, save, uma, cards, umas, tickets }
 
   return (
@@ -110,12 +112,12 @@ export function TrainingScene() {
       </div>
 
       <div className="px-3 pb-2">
-        <SegmentedControl
+        {separateView ? <h1 className="font-display text-lg font-bold">{separateView}</h1> : <SegmentedControl
           label="Training"
           value={tab}
           onChange={(next) => navigate(next === 'cards' ? `${base}/cards` : base, { replace: true })}
           options={[{ value: 'constellation', label: 'Constellation' }, { value: 'cards', label: 'Card set' }] as const}
-        />
+        />}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">

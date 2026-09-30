@@ -182,7 +182,7 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: profile }] })).toMatchObject({
       upserts: [{ kind: 'profile', data: { schemaVersion: 7 } }],
     })
-    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 10 } }] }))
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 11 } }] }))
       .toMatch(/invalid profile data/)
     const card = (data: Record<string, unknown>) => parseSyncRequest({ upserts: [{ kind: 'cards', id: 'c1', baseVersion: 1, data: { templateId: 'c1', maxCouponGranted: false, ...data } }] })
     expect(card({ stars: { '1': 5, '2': 3 } })).toMatchObject({ upserts: [{ kind: 'cards', data: { stars: { '1': 5 } } }] })
@@ -524,6 +524,21 @@ describe('save v6 over the wire', () => {
       kind: 'umas', id: '100101', baseVersion: 3,
       data: { ...uma, schemaVersion: 8, scenarios: [{ ...scenario, assignments: { 'stat-1': { kind: 'produce', itemId: 'produce:t1:speed', revision: 1 } } }] },
     }] })).toMatch(/invalid umas data/)
+  })
+
+  it('accepts v10 outfit race defaults and rejects malformed choices', () => {
+    const current = { ...uma, schemaVersion: 10, racePreferences: { strategy: 'front', distance: 'long', surface: 'turf' } }
+    const sync = (data: unknown) => parseSyncRequest({ upserts: [{ kind: 'umas', id: '100101', baseVersion: 3, data }] })
+    expect(sync(current)).toMatchObject({ upserts: [{ kind: 'umas', data: current }] })
+    expect(sync({ ...current, racePreferences: null })).toMatchObject({ upserts: [{ kind: 'umas' }] })
+    expect(sync({ ...current, racePreferences: { ...current.racePreferences, strategy: 'random' } })).toMatch(/invalid umas data/)
+    expect(sync({ ...current, racePreferences: { ...current.racePreferences, extra: true } })).toMatch(/invalid umas data/)
+    const stored: EntityRecord = { kind: 'umas', id: '100101', version: 4, data: current, deleted: false, updatedAt: 1 }
+    const older = resolveUpserts(new Map([['umas/100101', stored]]), [{
+      kind: 'umas', id: '100101', baseVersion: 4, data: { ...uma, schemaVersion: 9 },
+    }], 2)
+    expect(older.writes).toEqual([])
+    expect(older.conflicts).toEqual([stored])
   })
 
   it('never lets a v8 Uma replace a v9 Uma', () => {

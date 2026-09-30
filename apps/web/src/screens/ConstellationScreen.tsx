@@ -51,7 +51,17 @@ import { TypeIcon } from '../ui/TypeIcon'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
-export function ConstellationScreen() {
+type NodeView = 'constellation' | 'inspiration' | 'extra-stats'
+
+export function InspirationScreen() { return <ConstellationScreen viewMode="inspiration" /> }
+export function ExtraStatsScreen() { return <ConstellationScreen viewMode="extra-stats" /> }
+
+const belongsToView = (node: ConstellationNode, viewMode: NodeView) =>
+  viewMode === 'constellation' ? node.kind === 'card'
+    : viewMode === 'inspiration' ? node.kind === 'parent' || node.kind === 'grandparent'
+      : node.kind === 'stat'
+
+export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?: NodeView }) {
   const { content, save, uma, cards, umas, tickets } = useTraining()
   const pushToast = useGame((state) => state.pushToast)
   const persistent = useGame((state) => state.persistent)
@@ -66,7 +76,7 @@ export function ConstellationScreen() {
 
   const { derived, run } = uma
   const template = constellationTemplate(run.tier)
-  const here = `/constellation/${encodeURIComponent(save.templateId)}`
+  const here = `/constellation/${encodeURIComponent(save.templateId)}${viewMode === 'constellation' ? '' : `/${viewMode}`}`
   const nodeCap = cardNodeCap(run.tier)
 
   const cardTypes = Object.fromEntries(
@@ -88,8 +98,8 @@ export function ConstellationScreen() {
     const nodeId = searchParams.get('node')
     if (!nodeId) return
     const node = template.nodes.find((candidate) => candidate.id === nodeId)
-    if (node && isNodeUnlocked(template, node, run.trainingLevel)) setOpenNode(node)
-  }, [run.trainingLevel, searchParams, template])
+    if (node && belongsToView(node, viewMode) && isNodeUnlocked(template, node, run.trainingLevel)) setOpenNode(node)
+  }, [run.trainingLevel, searchParams, template, viewMode])
 
   useEffect(() => {
     if (openNode?.kind !== 'stat' || !persistent) return
@@ -149,10 +159,12 @@ export function ConstellationScreen() {
     setProduceResult(null)
   }
 
-  const openCount = unlockedNodeCount(run.tier, run.trainingLevel)
+  const visibleNodes = template.nodes.filter((node) => belongsToView(node, viewMode))
+  const openCount = visibleNodes.filter((node) => isNodeUnlocked(template, node, run.trainingLevel)).length
+  const filledCount = visibleNodes.filter((node) => run.assignments[node.id] !== undefined).length
   const buff = scenarioBuff(run.tier)
   const statPay = buffedStatNodeValue(run.tier, statNodeValue(run.tier))
-  const treeNodes = template.cardNodes + template.statNodes
+  const treeNodes = visibleNodes.length
   // An earlier trained unit keeps training toward TL10 (D190); her current scenario trains once started.
   const trainable = run.started || uma.past
   const canPlaySpark = trainable && run.trainingLevel < MAX_TRAINING_LEVEL &&
@@ -169,11 +181,12 @@ export function ConstellationScreen() {
           cardTypes={cardTypes}
           selectedId={openNode?.id ?? null}
           onSelect={setOpenNode}
+          viewMode={viewMode}
         />
       </div>
 
       <section className="px-4 pb-safe pt-2">
-        {canPlaySpark ? (
+        {viewMode === 'constellation' && (canPlaySpark ? (
           <Link
             to={`/minigames/spark-match/${encodeURIComponent(save.templateId)}?return=${encodeURIComponent(here)}`}
             className="mb-2 flex min-h-11 items-center justify-between rounded-sm bg-accent px-4 text-sm font-bold text-ink shadow-2"
@@ -186,12 +199,14 @@ export function ConstellationScreen() {
             <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !trainable ? 'Start scenario first' : 'Raise Training Level'}</span>
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
-        )}
+        ))}
+        {viewMode === 'inspiration' && <p className="mb-2 rounded-md bg-sunken px-3 py-2 text-[12px] text-ink-soft">Parents and grandparents lend skills and can raise aptitudes. These slots open at Training Levels 9 and 10.</p>}
+        {viewMode === 'extra-stats' && <p className="mb-2 rounded-md bg-sunken px-3 py-2 text-[12px] text-ink-soft">Fill Produce nodes with crops from your Farm. Each one gives a small boost to its crop's stat.</p>}
         {/* The scenario's buff is always on show (D165). */}
         <p className="mb-2 rounded-md border border-accent/40 bg-accent-wash px-3 py-1.5 text-[12px]">
           <span className="font-semibold">{buff.name}</span> <span className="text-ink-soft">· {buff.rule}</span>
         </p>
-        {overCap.length > 0 && (
+        {viewMode === 'constellation' && overCap.length > 0 && (
           <p role="status" className="mb-2 rounded-md bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">
             {overCap.map((row) => `${row.name} is on ${row.extra} node${row.extra === 1 ? '' : 's'} past its cap of ${nodeCap}`).join(' · ')}.
             {' '}Those nodes pay nothing: move them to another card or a stat.
@@ -199,10 +214,10 @@ export function ConstellationScreen() {
         )}
         <div className="flex items-baseline justify-between">
           <p className="text-[11px] font-semibold">
-            Aptitudes <span className="text-ink-faint">· {derived.assignedNodes}/{openCount} of {treeNodes} nodes</span>
+            {viewMode === 'constellation' ? 'Card constellation' : viewMode === 'inspiration' ? 'Inspiration' : 'Extra stats'} <span className="text-ink-faint">· {filledCount} filled · {openCount} of {treeNodes} unlocked</span>
           </p>
         </div>
-        <div className="mt-1 flex flex-wrap gap-1">
+        {viewMode === 'inspiration' && <div className="mt-1 flex flex-wrap gap-1">
           {moved.length > 0
             ? moved.map((row) => (
               <span key={`${row.category}-${row.key}`} className="rounded-full bg-panel px-2 py-0.5 text-[10px] font-semibold">
@@ -211,7 +226,7 @@ export function ConstellationScreen() {
               </span>
             ))
             : <span className="text-[10px] text-ink-soft">Fill lineage slots to move an aptitude grade.</span>}
-        </div>
+        </div>}
       </section>
 
       <BottomSheet open={openNode !== null} onClose={closeNode}>

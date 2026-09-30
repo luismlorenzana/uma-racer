@@ -106,6 +106,14 @@ export const router = createBrowserRouter([
         path: 'cards',
         lazy: async () => ({ Component: (await import('../screens/CardSetScreen')).CardSetScreen }),
       },
+      {
+        path: 'inspiration',
+        lazy: async () => ({ Component: (await import('../screens/ConstellationScreen')).InspirationScreen }),
+      },
+      {
+        path: 'extra-stats',
+        lazy: async () => ({ Component: (await import('../screens/ConstellationScreen')).ExtraStatsScreen }),
+      },
     ],
   },
   {

@@ -21,12 +21,12 @@ import {
 } from './constellation'
 import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL } from './training'
-import { GRADES, STATS, type Aptitudes, type Grade, type StatKey, type Stats } from './types'
+import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type DistanceCategory, type Grade, type StatKey, type Stats, type Strategy, type Surface } from './types'
 import { FARM_SCHEMA_VERSION } from './farm/constants'
 import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry, type FarmCropId } from './farm/types'
 import { farmCropById } from './farm/catalog'
 
-export const SAVE_SCHEMA_VERSION = 9 as const
+export const SAVE_SCHEMA_VERSION = 10 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
@@ -35,6 +35,7 @@ export const LEGACY_SAVE_SCHEMA_VERSION_V5 = 5 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V6 = 6 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V7 = 7 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V8 = 8 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V9 = 9 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -142,6 +143,12 @@ export interface ScenarioTraining {
  * Stats, skill points, aptitudes, the skill library and the loadout are **not** stored: they are derived
  * from the active scenario's constellation on read (D121, docs/design/constellations.md).
  */
+export interface RacePreferences {
+  strategy: Strategy
+  distance: DistanceCategory
+  surface: Surface
+}
+
 export interface UmaSave {
   schemaVersion: typeof SAVE_SCHEMA_VERSION
   templateId: string
@@ -153,6 +160,8 @@ export interface UmaSave {
   scenarios: ScenarioTraining[]
   skillHistory: SkillHistoryEntry[]
   goalPlanVersion: number
+  /** Null means the deterministic template recommendation until the owner sets a preference. */
+  racePreferences: RacePreferences | null
 }
 
 /** The v4 shape, retained only so a stored save can be migrated forward. */
@@ -212,6 +221,10 @@ export interface LegacyPlayerProfileV7 extends Omit<PlayerProfile, 'schemaVersio
 /** v8 profiles have v9's shape; v9 belongs to Produce assignments on Uma rows. */
 export interface LegacyPlayerProfileV8 extends Omit<PlayerProfile, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V8
+}
+
+export interface LegacyPlayerProfileV9 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V9
 }
 
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
@@ -454,7 +467,7 @@ const PROFILE_KEYS = [
   'starterSeedContentVersion', 'createdAt',
 ] as const
 
-function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
+function parsePlayerProfileVersion<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10>(value: unknown, schemaVersion: T): (Omit<PlayerProfile, 'schemaVersion'> & { schemaVersion: T }) | null {
   if (!isObject(value) || !exactKeys(value, PROFILE_KEYS)) return null
   if (value.schemaVersion !== schemaVersion) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -539,6 +552,16 @@ export function parseLegacyPlayerProfileV7(value: unknown): LegacyPlayerProfileV
 
 export function parseLegacyPlayerProfileV8(value: unknown): LegacyPlayerProfileV8 | null {
   return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V8)
+}
+
+export function parseLegacyPlayerProfileV9(value: unknown): LegacyPlayerProfileV9 | null {
+  return parsePlayerProfileVersion(value, LEGACY_SAVE_SCHEMA_VERSION_V9)
+}
+
+export function migratePlayerProfileV9(value: LegacyPlayerProfileV9): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV9(value)
+  if (!parsed) throw new Error('Legacy v9 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
 /** A stamp bump: v9 changes Uma constellation assignments, not the profile. */
@@ -829,8 +852,9 @@ const LEGACY_UMA_V4_KEYS = [
   'goalPlanVersion', 'scenarioJourneys', 'scenarioModifier',
 ] as const
 const UMA_VERSIONED_KEYS = [
-  'schemaVersion', 'templateId', 'level', 'exp', 'unlockedTier', 'scenarios', 'skillHistory', 'goalPlanVersion',
+  'schemaVersion', 'templateId', 'level', 'exp', 'unlockedTier', 'scenarios', 'skillHistory', 'goalPlanVersion', 'racePreferences',
 ] as const
+const LEGACY_UMA_V9_KEYS = UMA_VERSIONED_KEYS.filter((key) => key !== 'racePreferences')
 const SCENARIO_TRAINING_KEYS = [
   'tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started',
 ] as const
@@ -1013,6 +1037,7 @@ export function migrateUmaSaveV4(value: LegacyUmaSaveV4): UmaSave {
     }],
     skillHistory: parsed.skillHistory,
     goalPlanVersion: parsed.goalPlanVersion,
+    racePreferences: null,
   }
 }
 
@@ -1088,19 +1113,19 @@ function parseScenarioTraining(value: unknown, umaLevel: number): ScenarioTraini
   }
 }
 
-export interface LegacyUmaSaveV5 extends Omit<UmaSave, 'schemaVersion'> {
+export interface LegacyUmaSaveV5 extends Omit<UmaSave, 'schemaVersion' | 'racePreferences'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V5
 }
 
-export interface LegacyUmaSaveV6 extends Omit<UmaSave, 'schemaVersion'> {
+export interface LegacyUmaSaveV6 extends Omit<UmaSave, 'schemaVersion' | 'racePreferences'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V6
 }
 
-export interface LegacyUmaSaveV7 extends Omit<UmaSave, 'schemaVersion'> {
+export interface LegacyUmaSaveV7 extends Omit<UmaSave, 'schemaVersion' | 'racePreferences'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V7
 }
 
-export interface LegacyUmaSaveV8 extends Omit<UmaSave, 'schemaVersion'> {
+export interface LegacyUmaSaveV8 extends Omit<UmaSave, 'schemaVersion' | 'racePreferences'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V8
 }
 
@@ -1108,7 +1133,7 @@ export interface LegacyUmaSaveV8 extends Omit<UmaSave, 'schemaVersion'> {
 function parseLegacyProduceUma<T extends 5 | 6 | 7 | 8>(
   value: unknown,
   schemaVersion: T,
-): (Omit<UmaSave, 'schemaVersion'> & { schemaVersion: T }) | null {
+): (Omit<UmaSave, 'schemaVersion' | 'racePreferences'> & { schemaVersion: T }) | null {
   if (!isObject(value) || value.schemaVersion !== schemaVersion || !Array.isArray(value.scenarios)) return null
   const scenarios = value.scenarios.map((raw) => {
     if (!isObject(raw) || !isObject(raw.assignments)) return null
@@ -1130,8 +1155,10 @@ function parseLegacyProduceUma<T extends 5 | 6 | 7 | 8>(
     return { ...raw, assignments }
   })
   if (scenarios.some((run) => run === null)) return null
-  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, scenarios })
-  return parsed ? { ...parsed, schemaVersion } : null
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, scenarios, racePreferences: null })
+  if (!parsed) return null
+  const { racePreferences: _unused, ...legacy } = parsed
+  return { ...legacy, schemaVersion }
 }
 
 export function parseLegacyUmaSaveV8(value: unknown): LegacyUmaSaveV8 | null {
@@ -1139,7 +1166,7 @@ export function parseLegacyUmaSaveV8(value: unknown): LegacyUmaSaveV8 | null {
 }
 
 export function migrateUmaSaveV8(value: LegacyUmaSaveV8): UmaSave {
-  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
   if (!parsed) throw new Error('Legacy v8 Uma save is malformed')
   return parsed
 }
@@ -1149,7 +1176,7 @@ export function parseLegacyUmaSaveV7(value: unknown): LegacyUmaSaveV7 | null {
 }
 
 export function migrateUmaSaveV7(value: LegacyUmaSaveV7): UmaSave {
-  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
   if (!parsed) throw new Error('Legacy v7 Uma save is malformed')
   return parsed
 }
@@ -1159,7 +1186,7 @@ export function parseLegacyUmaSaveV6(value: unknown): LegacyUmaSaveV6 | null {
 }
 
 export function migrateUmaSaveV6(value: LegacyUmaSaveV6): UmaSave {
-  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
   if (!parsed) throw new Error('Legacy v6 Uma save is malformed')
   return parsed
 }
@@ -1169,8 +1196,26 @@ export function parseLegacyUmaSaveV5(value: unknown): LegacyUmaSaveV5 | null {
 }
 
 export function migrateUmaSaveV5(value: LegacyUmaSaveV5): UmaSave {
-  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
   if (!parsed) throw new Error('Legacy v5 Uma save is malformed')
+  return parsed
+}
+
+export interface LegacyUmaSaveV9 extends Omit<UmaSave, 'schemaVersion' | 'racePreferences'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V9
+}
+
+export function parseLegacyUmaSaveV9(value: unknown): LegacyUmaSaveV9 | null {
+  if (!isObject(value) || !exactKeys(value, LEGACY_UMA_V9_KEYS) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V9) return null
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
+  if (!parsed) return null
+  const { racePreferences: _unused, ...legacy } = parsed
+  return { ...legacy, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V9 }
+}
+
+export function migrateUmaSaveV9(value: LegacyUmaSaveV9): UmaSave {
+  const parsed = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
+  if (!parsed) throw new Error('Legacy v9 Uma save is malformed')
   return parsed
 }
 
@@ -1186,6 +1231,11 @@ export function parseUmaSave(value: unknown): UmaSave | null {
       ? value.exp > expToNextUmaLevel(value.level + 1)
       : value.exp >= expToNextUmaLevel(value.level)) return null
   if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > SCENARIO_GOAL_VERSION) return null
+  if (value.racePreferences !== null && (!isObject(value.racePreferences) ||
+    !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
+    !STRATEGIES.includes(value.racePreferences.strategy as Strategy) ||
+    !DISTANCE_CATEGORIES.includes(value.racePreferences.distance as DistanceCategory) ||
+    !SURFACES.includes(value.racePreferences.surface as Surface))) return null
 
   const currentTier = tierOfLevel(value.level)
   if (!isPositiveInt(value.unlockedTier) || value.unlockedTier > currentTier) return null
@@ -1214,6 +1264,7 @@ export function parseUmaSave(value: unknown): UmaSave | null {
     scenarios: runs,
     skillHistory: history,
     goalPlanVersion: value.goalPlanVersion,
+    racePreferences: value.racePreferences as RacePreferences | null,
   }
 }
 
@@ -1280,6 +1331,8 @@ function parsePerTier(value: unknown, max: number): Record<string, number> | nul
 export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
   const current = parseUmaSave(value)
   if (current) return current
+  const v9 = parseLegacyUmaSaveV9(value)
+  if (v9) return migrateUmaSaveV9(v9)
   const v8 = parseLegacyUmaSaveV8(value)
   if (v8) return migrateUmaSaveV8(v8)
   const v7 = parseLegacyUmaSaveV7(value)
@@ -1307,6 +1360,8 @@ export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
 export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
   const current = parsePlayerProfile(value)
   if (current) return current
+  const v9 = parseLegacyPlayerProfileV9(value)
+  if (v9) return migratePlayerProfileV9(v9)
   const v8 = parseLegacyPlayerProfileV8(value)
   if (v8) return migratePlayerProfileV8(v8)
   const v7 = parseLegacyPlayerProfileV7(value)
@@ -1439,6 +1494,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
     scenarios: [createScenarioTraining(1)],
     skillHistory,
     goalPlanVersion: SCENARIO_GOAL_VERSION,
+    racePreferences: null,
   }
 }
 

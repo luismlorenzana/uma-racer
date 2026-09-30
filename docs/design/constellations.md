@@ -59,6 +59,10 @@ Card and Produce nodes form **one tree rooted at a single root node**. The root 
 empty; it exists to anchor the graph. Parent nodes are **detached from that tree**, and each parent node is
 linked to exactly **two grandparent nodes** of its own.
 
+Presentation splits these saved nodes across three full-screen views: **Constellation** for card nodes and the root,
+**Inspiration** for the parent/grandparent branch, and **Extra stats** for Produce nodes. Their ids, assignments,
+unlock order and derived values do not change. Only Constellation offers the Spark training entry for now.
+
 A card may occupy **any number of nodes**, including all of them. That is the central decision: stacking one
 card concentrates its stat and hands you more of its skills.
 

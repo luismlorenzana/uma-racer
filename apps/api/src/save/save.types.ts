@@ -83,6 +83,7 @@ const LEGACY_UMA_FIELDS = ['templateId', 'level', 'exp', 'trainingLevel', 'train
 const UMA_FIELDS = ['schemaVersion', ...LEGACY_UMA_FIELDS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot', 'goalPlanVersion', 'scenarioJourneys'] as const
 const CURRENT_UMA_FIELDS = [...UMA_FIELDS, 'scenarioModifier'] as const
 const UMA_V6_FIELDS = ['schemaVersion', 'templateId', 'level', 'exp', 'unlockedTier', 'scenarios', 'skillHistory', 'goalPlanVersion'] as const
+const UMA_V10_FIELDS = [...UMA_V6_FIELDS, 'racePreferences'] as const
 const SCENARIO_TRAINING_FIELDS = ['tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started'] as const
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V5_FIELDS = ['templateId', 'limitBreak', 'maxCouponGranted'] as const
@@ -556,7 +557,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(value.schemaVersion as number)) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -731,10 +732,10 @@ function parseNodeAssignment(value: unknown, schemaVersion: number, tier: number
     return schemaVersion < 9 && exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
   }
   if (value.kind === 'legacy-produce') {
-    return schemaVersion === 9 && exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
+    return schemaVersion >= 9 && exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
   }
   if (value.kind === 'produce') {
-    if (schemaVersion !== 9 || !exactKeys(value, ['kind', 'itemId', 'revision']) ||
+    if (schemaVersion < 9 || !exactKeys(value, ['kind', 'itemId', 'revision']) ||
       typeof value.itemId !== 'string' || !isPositiveInt(value.revision)) return false
     const match = FARM_CROP_ID_PATTERN.exec(value.itemId)
     return match !== null && Number(match[1]) === tier
@@ -763,9 +764,15 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
   return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
 }
 
-/** v5 to v9 Umas share one outer shape; v9 replaces stat assignments with Produce assignments (D205). */
+/** v5 to v10 Umas share the scenario shape; v10 adds outfit race preferences. */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6, 7, 8, 9].includes(value.schemaVersion as number)) return null
+  if (!exactKeys(value, value.schemaVersion === 10 ? UMA_V10_FIELDS : UMA_V6_FIELDS) ||
+    ![5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
+  if (value.schemaVersion === 10 && value.racePreferences !== null &&
+    (!isRecord(value.racePreferences) || !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
+      !['front', 'pace', 'late', 'end'].includes(value.racePreferences.strategy as string) ||
+      !['sprint', 'mile', 'medium', 'long'].includes(value.racePreferences.distance as string) ||
+      !['turf', 'dirt'].includes(value.racePreferences.surface as string))) return null
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
   const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
   if (value.exp > expLimit) return null
@@ -793,7 +800,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8, 9].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null

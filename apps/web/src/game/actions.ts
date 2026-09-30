@@ -7,6 +7,11 @@ export async function setFeaturedUma(id: string): Promise<void> {
   await gameRuntime.setFeaturedUma(id)
 }
 
+export async function setRacePreferences(id: string, preferences: import('@racer/domain').RacePreferences): Promise<void> {
+  const { gameRuntime } = await import('./runtime')
+  await gameRuntime.setRacePreferences(id, preferences)
+}
+
 export async function setConstellationNode(
   id: string,
   nodeId: string,
