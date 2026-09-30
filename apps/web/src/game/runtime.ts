@@ -70,6 +70,7 @@ import {
   type DevGrant,
   grantPersistentDevResources,
   grantOwedMaxCoupons,
+  grantOwnerGifts,
   exchangeMemoryUmaShards,
   exchangePersistentUmaShards,
   redeemMemoryCard,
@@ -273,6 +274,7 @@ export class GameRuntime {
       // Three stars (D200): a card run frozen for five gives its ticket back, and a card the migration maxed is paid its coupon.
       const refundedRuns = await retireFiveStarFriendshipRuns(now, today)
       const owedCoupons = await grantOwedMaxCoupons(now, today)
+      const gift = await grantOwnerGifts(now, today)
       const trainerArchive = await reconcileTrainerPersistent(content, now, true, 'migration:trainer')
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
@@ -282,6 +284,10 @@ export class GameRuntime {
       if (refunded > 0) useGame.getState().pushToast(`+${refunded} back from an unfinished Bond Recall run`, 'ticket')
       if (refundedRuns > 0) useGame.getState().pushToast(`+${refundedRuns} back from unfinished card training: cards now max at 3★`, 'ticket')
       if (owedCoupons > 0) useGame.getState().pushToast(`+${owedCoupons} Card Select Coupon${owedCoupons === 1 ? '' : 's'} for cards now at 3★`)
+      if (gift.tickets > 0) useGame.getState().pushToast(`+${gift.tickets} tickets granted`, 'ticket')
+      if (gift.cardCoupons > 0) useGame.getState().pushToast(`+${gift.cardCoupons} Card Select Coupon${gift.cardCoupons === 1 ? '' : 's'} granted`)
+      if (gift.umaCoupons > 0) useGame.getState().pushToast(`+${gift.umaCoupons} Uma Select Coupon${gift.umaCoupons === 1 ? '' : 's'} granted`)
+      if (gift.umaShards > 0) useGame.getState().pushToast(`+${gift.umaShards} Uma Shard${gift.umaShards === 1 ? '' : 's'} granted`)
       if (archivedAwards > 0) useGame.getState().pushToast(`Flair archive updated · ${archivedAwards} awards`)
       if (trainerArchive.events.length > 0) useGame.getState().pushToast(`Trainer archive updated · ${trainerArchive.events.length} achievements`)
       window.addEventListener('online', this.onlineHandler)

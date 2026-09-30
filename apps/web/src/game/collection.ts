@@ -238,6 +238,13 @@ export interface DevGrant {
   umaShards: number
 }
 
+const DEV_GRANT_RESOURCES = [
+  ['tickets', 'tickets'],
+  ['cardCoupons', 'card-coupons'],
+  ['umaCoupons', 'uma-coupons'],
+  ['umaShards', 'uma-shards'],
+] as const satisfies readonly (readonly [keyof DevGrant, LedgerEntry['resource']])[]
+
 export interface DevGrantMutation {
   profile: PlayerProfile
   ledgerIds: string[]
@@ -260,18 +267,11 @@ export async function grantPersistentDevResources(grant: DevGrant, today: string
       umaCoupons: profile.umaCoupons + grant.umaCoupons,
       umaShards: profile.umaShards + grant.umaShards,
     }
-    const rows: { id: string; data: LedgerEntry }[] = (
-      [
-        ['tickets', grant.tickets],
-        ['card-coupons', grant.cardCoupons],
-        ['uma-coupons', grant.umaCoupons],
-        ['uma-shards', grant.umaShards],
-      ] as const
-    )
-      .filter(([, delta]) => delta > 0)
-      .map(([resource, delta]) => ({
+    const rows: { id: string; data: LedgerEntry }[] = DEV_GRANT_RESOURCES
+      .filter(([field]) => grant[field] > 0)
+      .map(([field, resource]) => ({
         id: `dev-grant:${resource}:${now}`,
-        data: { resource, delta, reason: 'dev-grant' as const, localDay: today, createdAt: now },
+        data: { resource, delta: grant[field], reason: 'dev-grant' as const, localDay: today, createdAt: now },
       }))
 
     await db.profile.put({ ...profileRow, data: next })
@@ -281,6 +281,47 @@ export async function grantPersistentDevResources(grant: DevGrant, today: string
       await queueInTransaction('ledger', entry.id, 'append', now)
     }
     return { profile: next, ledgerIds: rows.map((entry) => entry.id) }
+  })
+}
+
+/**
+ * Grants the owner asked for by hand (D209). Each is paid once, at startup, as `dev-grant` rows under fixed ids
+ * (`owner-gift:<gift>:<resource>`); a server save brings the whole ledger back, so a reinstall never pays one twice.
+ */
+export const OWNER_GIFTS: readonly { id: string; grant: DevGrant }[] = [
+  { id: '2026-09-30', grant: { tickets: 0, cardCoupons: 0, umaCoupons: 3, umaShards: 0 } },
+]
+
+/** Pays every owner gift not yet in the ledger. Returns what it paid. */
+export async function grantOwnerGifts(now: number, today: string, gifts = OWNER_GIFTS): Promise<DevGrant> {
+  return db.transaction('rw', db.profile, db.ledger, db.outbox, async () => {
+    const paid: DevGrant = { tickets: 0, cardCoupons: 0, umaCoupons: 0, umaShards: 0 }
+    const profileRow = await db.profile.get('main')
+    if (!profileRow) return paid
+    for (const gift of gifts) {
+      for (const [field, resource] of DEV_GRANT_RESOURCES) {
+        const delta = gift.grant[field]
+        const ledgerId = `owner-gift:${gift.id}:${resource}`
+        if (delta <= 0 || await db.ledger.get(ledgerId)) continue
+        const entry: LedgerEntry = { resource, delta, reason: 'dev-grant', localDay: today, createdAt: now }
+        await db.ledger.add({ id: ledgerId, data: entry, createdAt: now })
+        await queueInTransaction('ledger', ledgerId, 'append', now)
+        paid[field] += delta
+      }
+    }
+    if (DEV_GRANT_RESOURCES.some(([field]) => paid[field] > 0)) {
+      const profile = parsePlayerProfileOrThrow(profileRow.data)
+      const next: PlayerProfile = {
+        ...profile,
+        tickets: profile.tickets + paid.tickets,
+        cardCoupons: profile.cardCoupons + paid.cardCoupons,
+        umaCoupons: profile.umaCoupons + paid.umaCoupons,
+        umaShards: profile.umaShards + paid.umaShards,
+      }
+      await db.profile.put({ ...profileRow, data: next })
+      await queueInTransaction('profile', 'main', 'upsert', now)
+    }
+    return paid
   })
 }
 

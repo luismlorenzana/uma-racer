@@ -7,6 +7,7 @@ import {
   exchangeMemoryUmaShards,
   exchangePersistentUmaShards,
   grantOwedMaxCoupons,
+  grantOwnerGifts,
   redeemMemoryCard,
   redeemMemoryUma,
   redeemPersistentCard,
@@ -139,6 +140,11 @@ describe('memory-only collection mutations', () => {
     expect(redeemMemoryUma(content, profile, {}, umaTemplate.id, '2000-01-02', 50).uma).toEqual(createUmaSave(umaTemplate))
     expect(() => redeemMemoryCard(content, profile, { [cardTemplate.id]: createCardSave(cardTemplate) }, cardTemplate.id, '2000-01-02', 50)).toThrow('already owned')
   })
+})
+
+describe('startup grants', () => {
+  beforeEach(resetDatabase)
+  afterEach(resetDatabase)
 
   it('pays the coupon a card was owed for reaching 3★ through the v8 migration, once (D200)', async () => {
     await seed({ cardCoupons: 0 })
@@ -156,5 +162,17 @@ describe('memory-only collection mutations', () => {
       .toEqual(['cards/maxed', 'ledger/card-max-v8:maxed', 'profile/main'])
     expect(await grantOwedMaxCoupons(200, '2000-01-03')).toBe(0)
     expect((await db.profile.get('main'))?.data.cardCoupons).toBe(1)
+  })
+
+  it('pays each owner gift once, under fixed dev-grant ledger ids (D209)', async () => {
+    await seed({ umaCoupons: 1 })
+    const gifts = [{ id: 'g1', grant: { tickets: 0, cardCoupons: 0, umaCoupons: 3, umaShards: 0 } }]
+    expect(await grantOwnerGifts(100, '2000-01-02', gifts)).toEqual({ tickets: 0, cardCoupons: 0, umaCoupons: 3, umaShards: 0 })
+    expect((await db.profile.get('main'))?.data.umaCoupons).toBe(4)
+    expect((await db.ledger.get('owner-gift:g1:uma-coupons'))?.data).toMatchObject({ resource: 'uma-coupons', delta: 3, reason: 'dev-grant' })
+    expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort())
+      .toEqual(['ledger/owner-gift:g1:uma-coupons', 'profile/main'])
+    expect(await grantOwnerGifts(200, '2000-01-03', gifts)).toEqual({ tickets: 0, cardCoupons: 0, umaCoupons: 0, umaShards: 0 })
+    expect((await db.profile.get('main'))?.data.umaCoupons).toBe(4)
   })
 })
