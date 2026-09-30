@@ -34,9 +34,12 @@ adjusted through balance simulation and playtesting.
   Browser emulation cannot prove finger occlusion, Safari pointer cancellation or sustained 60/120 Hz pacing. The full
   protocol and trace budget were T074's (`git show 7129d77:docs/tasks/T074-spark-rival-polish.md`); M022 itself is
   complete (D189).
+- **Stable Farm device/offline feel (M025):** assign and plant on the installed Home Screen app, close it, reopen after
+  the real deadline, harvest, follow the result into Items, reload offline, then reconnect and verify the same stack on
+  sync. Browser/test-clock validation covers every state and transaction but not a physical twelve-hour iOS lifecycle.
 
 These device checks now belong to **T038** in [Milestone 11](tasks/M011-game-feel-and-device.md), which closes them as one
-acceptance pass rather than leaving seven separate reminders open.
+acceptance pass rather than leaving eight separate reminders open.
 
 ## Not questions, but still to come
 

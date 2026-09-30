@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { flairContentCoverage } from '@racer/domain'
 import { Link } from 'react-router'
@@ -10,6 +10,7 @@ import { useGame } from '../game/store'
 import { Button } from '../ui/Button'
 import { grantDevResources } from '../game/actions'
 import { Panel } from '../ui/Panel'
+import { readFarmSaveSummary, type FarmSaveSummary } from '../game/farm/diagnostics'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -31,6 +32,13 @@ export function SettingsScreen() {
   const reduced = useReducedMotion()
   const content = useContent()
   const update = useAppUpdate()
+  const [farmSummary, setFarmSummary] = useState<FarmSaveSummary | null>(null)
+  useEffect(() => {
+    if (gameStatus !== 'ready') { setFarmSummary(null); return }
+    let active = true
+    void readFarmSaveSummary().then((summary) => { if (active) setFarmSummary(summary) }).catch(() => { if (active) setFarmSummary(null) })
+    return () => { active = false }
+  }, [gameStatus, sync.pending])
   const contentLabel =
     content.status === 'signed-out'
       ? 'Sign in first'
@@ -106,6 +114,8 @@ export function SettingsScreen() {
         <Row label="Signed in as" value={auth.user?.email ?? auth.user?.name ?? '—'} />
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />
         <Row label="Save state" value={gameStatus} />
+        <Row label="Farm save" value={farmSummary?.farmPresent ? `Lv${farmSummary.farmLevel} · ${farmSummary.unlockedPlots}/6 plots · ${farmSummary.readyPlots} ready` : 'Not opened'} />
+        <Row label="Global Items" value={farmSummary ? `${farmSummary.itemStacks} stacks · ${farmSummary.totalItems} items · ${farmSummary.itemMovements} movements` : '—'} />
         <Row label="Cloud sync" value={`${sync.status}${sync.pending ? ` · ${sync.pending} pending` : ''}`} />
         <Row label="Last synced" value={sync.lastSuccessAt ? new Date(sync.lastSuccessAt).toLocaleString() : '—'} />
         {(orphanedUmas > 0 || orphanedCards > 0) && <Row label="Missing references" value={`${orphanedUmas} Umas · ${orphanedCards} cards`} />}

@@ -142,7 +142,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'items',
-        lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmItemsPlaceholderScreen }),
+        lazy: async () => ({ Component: (await import('../screens/farm/ItemInventoryScreen')).ItemInventoryScreen }),
       },
     ],
   },

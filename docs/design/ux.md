@@ -53,10 +53,24 @@ feedback catalogue.
 - **Career** card for the featured Uma (a pip per goal race, her stage, and her next goal race under the Race button), followed by the implemented **recent flair** card with the latest
   three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
   recent-flair feed.
+- A **Stable Farm** card shows Farm Level, ready/working/open plots, the nearest deadline and next plot/crop unlock. It
+  opens the saved field directly; Home has no separate Item shortcut.
 - A swipe on the portrait switches the featured Uma.
 
 The implemented goal tracker handles pending setup, active/completed/missed goals, legacy-untracked saves, final completion,
 and missing target content. Each available active target links directly into Race Select.
+
+### Stable Farm
+
+- A full-screen account activity outside the five-tab shell. Its header owns Back, Farm Level, **How it works**, and
+  Field / Workers / Crops / Items navigation; `/farm` always opens the persistent field.
+- The Field is the complete two-by-three future shape: locked, unassigned, idle, growing and ready plots; assignment is
+  per outfit, crop choice names both unlock tracks, and a twelve-hour crop keeps growing offline without withering.
+- Workers lists every owned outfit separately with Farm-only XP and level. Crops exposes the seventy scenario/stat
+  definitions and both locks. Items joins the global synced stacks to that catalog, defaults to owned produce, remembers
+  owned/all, stat, scenario and density locally, and exposes source/future-use detail without offering consumption yet.
+- Harvest feedback appears only after the transaction commits, links to the exact Item stack, and names XP, outfit/Farm
+  levels and unlocks. Stale views reload; ambiguous harvests recover from authoritative cycle evidence.
 
 ### Stable
 
