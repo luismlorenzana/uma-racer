@@ -19,6 +19,7 @@ import { Placeholder } from '../ui/Placeholder'
 import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { FlairCards } from '../ui/FlairCards'
+import { FarmHomeCard } from '../ui/farm/FarmHomeCard'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 
 export function HomeScreen() {
@@ -217,6 +218,8 @@ export function HomeScreen() {
           <Meter value={profile.tickets / TICKET_STORAGE_CAP} color="var(--color-accent)" height={6} />
         </div>
       </Panel>
+
+      <FarmHomeCard />
 
       {flairSummary && (
         <Panel label="Recent flair">

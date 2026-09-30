@@ -123,6 +123,30 @@ export const router = createBrowserRouter([
     element: <BondRecallRedirect />,
   },
   {
+    // A lazy full-screen account activity: no sixth tab and no Farm screen code in the startup bundle (T084).
+    path: 'farm',
+    hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Stable Farm" />,
+    lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmShell }),
+    children: [
+      {
+        index: true,
+        lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmFieldScreen }),
+      },
+      {
+        path: 'workers',
+        lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmWorkersScreen }),
+      },
+      {
+        path: 'crops',
+        lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmCropsScreen }),
+      },
+      {
+        path: 'items',
+        lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmItemsPlaceholderScreen }),
+      },
+    ],
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),

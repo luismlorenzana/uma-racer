@@ -24,7 +24,7 @@ T082 domain rules + crop catalog ✓
 T083 save + runtime transactions ✓
         │
         ▼
-T084 Farm screen + Home entry
+T084 Farm screen + Home entry ✓
         │
         ▼
 T085 global Item inventory + closure
@@ -34,12 +34,13 @@ T085 global Item inventory + closure
 |---|---|---|
 | T082 ✓ | Pure farm rules, level curve, 70-crop catalog, strict parsers and synthetic simulator | Dexie, API, React, timers |
 | T083 ✓ | Synced Farm/items/item-ledger save, offline deadlines and atomic idempotent plant/harvest | Screen work, constellation changes |
-| [T084](T084-farm-screen.md) | Lazy Farm shell, progressive six-plot field, persistent outfit crew, Home state and Farm menus | Item browser, farm economy expansion |
+| T084 ✓ | Lazy Farm shell, progressive six-plot field, persistent outfit crew, Home state and Farm menus | Item browser, farm economy expansion |
 | [T085](T085-item-inventory.md) | Global Item inventory, farm result links, migration/reconciliation closure and device acceptance | Produce-node consumption (M026) |
 
 Each task branches from the latest `main`, opens its own PR and deletes its own spec when it merges (D104).
 
-**Current state:** T082–T083 are complete. T084 is next and owns the lazy Farm shell, field and Home entry.
+**Current state:** T082–T084 are complete. T085 is next and owns the live global Item inventory plus migration and
+device-acceptance closure.
 
 ## Fixed rules
 
