@@ -182,7 +182,7 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: profile }] })).toMatchObject({
       upserts: [{ kind: 'profile', data: { schemaVersion: 7 } }],
     })
-    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 9 } }] }))
+    expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 10 } }] }))
       .toMatch(/invalid profile data/)
     const card = (data: Record<string, unknown>) => parseSyncRequest({ upserts: [{ kind: 'cards', id: 'c1', baseVersion: 1, data: { templateId: 'c1', maxCouponGranted: false, ...data } }] })
     expect(card({ stars: { '1': 5, '2': 3 } })).toMatchObject({ upserts: [{ kind: 'cards', data: { stars: { '1': 5 } } }] })
@@ -499,6 +499,45 @@ describe('save v6 over the wire', () => {
       .toMatch(/invalid cards data/)
     expect(parseSyncRequest({ upserts: [{ kind: 'cards', id: '30019', baseVersion: 2, data: { ...card, limitBreaks: { '0': 2 } } }] }))
       .toMatch(/invalid cards data/)
+  })
+
+  it('accepts v9 Produce assignments while keeping the v8 wire shape migration-only', () => {
+    const scenario = {
+      ...uma.scenarios[0]!,
+      assignments: {
+        'stat-1': { kind: 'produce', itemId: 'produce:t1:speed', revision: 2 },
+        'stat-2': { kind: 'legacy-produce', stat: 'stamina' },
+      },
+    }
+    const v9 = { ...uma, schemaVersion: 9, scenarios: [scenario] }
+    expect(parseSyncRequest({ upserts: [{ kind: 'umas', id: '100101', baseVersion: 3, data: v9 }] }))
+      .toMatchObject({ upserts: [{ kind: 'umas', data: { schemaVersion: 9 } }] })
+    expect(parseSyncRequest({ upserts: [{
+      kind: 'umas', id: '100101', baseVersion: 3,
+      data: { ...v9, scenarios: [{ ...scenario, assignments: { 'stat-1': { kind: 'stat', stat: 'speed' } } }] },
+    }] })).toMatch(/invalid umas data/)
+    expect(parseSyncRequest({ upserts: [{
+      kind: 'umas', id: '100101', baseVersion: 3,
+      data: { ...v9, scenarios: [{ ...scenario, assignments: { 'stat-1': { kind: 'produce', itemId: 'produce:t2:speed', revision: 1 } } }] },
+    }] })).toMatch(/invalid umas data/)
+    expect(parseSyncRequest({ upserts: [{
+      kind: 'umas', id: '100101', baseVersion: 3,
+      data: { ...uma, schemaVersion: 8, scenarios: [{ ...scenario, assignments: { 'stat-1': { kind: 'produce', itemId: 'produce:t1:speed', revision: 1 } } }] },
+    }] })).toMatch(/invalid umas data/)
+  })
+
+  it('never lets a v8 Uma replace a v9 Uma', () => {
+    const v9 = {
+      ...uma,
+      schemaVersion: 9,
+      scenarios: [{ ...uma.scenarios[0]!, assignments: { 'stat-1': { kind: 'produce', itemId: 'produce:t1:speed', revision: 1 } } }],
+    }
+    const current: EntityRecord = { kind: 'umas', id: '100101', version: 4, data: v9, deleted: false, updatedAt: 1 }
+    const resolved = resolveUpserts(new Map([['umas/100101', current]]), [{
+      kind: 'umas', id: '100101', baseVersion: 4, data: { ...uma, schemaVersion: 8 },
+    }], 2)
+    expect(resolved.writes).toEqual([])
+    expect(resolved.conflicts).toEqual([current])
   })
 })
 

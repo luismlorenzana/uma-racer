@@ -205,7 +205,7 @@ Perfect facts that cannot be reconstructed remain untracked.
 | Diligent | Spark Match runs with this Uma (D164) | 10 / 25 / 50 / 100 / 140 |
 | [Scenario] Fully Trained | Reached TL10 in that scenario | One-off per scenario |
 | Era Loyalist | Completed a scenario using only cards whose era equals that scenario tier | One-off per scenario |
-| Full House | Filled every card and stat node of one constellation (D164) | Hidden one-off |
+| Full House | Filled every card and Produce node of one constellation (D164, D205) | Hidden one-off |
 | Skill Collector | Distinct skills ever learned, from skill history | Distinct lifetime skills |
 | Full Kit | Highest distinct skills unlocked within one scenario | Skills in one scenario |
 | Goal Ribbon | One named ribbon per exact completed T014 goal | One point each |
@@ -245,7 +245,7 @@ the source log and flair events remain their own append-only log.
 **Training in the minigame era (T056, D164).** The facts that once counted training turns now count what replaced
 them: an Uma's Spark Match runs per scenario, read from the synced ledger (each run's id is `spark-match:<uma>:<tier>:
 <attempt>`, so the history is exact from the first run), her Training Level 10 in each scenario, and each constellation
-whose card and stat nodes are all filled. A Spark Match run and a constellation edit update them in the same
+whose card and Produce nodes are all filled. A Spark Match run and a committed Produce/card constellation edit update them in the same
 transaction, and startup backfills them for every Uma with training to count. Friendship Power is retired: the card
 minigame's runs belong to a card, not an Uma, and Friendship Training (M020) will bring its own badges.
 Scenario Start increments selected parents' Legacy facts in the same transaction as the child. Promotion/final completion

@@ -556,7 +556,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 }
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8].includes(value.schemaVersion as number)) return null
+  if (!isRecord(value) || !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
   if (value.lastDailyGrant !== null && !isLocalDay(value.lastDailyGrant)) return null
   if (value.featuredUmaId !== null && !isId(value.featuredUmaId)) return null
@@ -724,10 +724,21 @@ function parseJourney(value: unknown, legacy: boolean): value is Record<string, 
 }
 
 /** One filled constellation node (D121). The node ids belong to the client's templates, so only the value is checked. */
-function parseNodeAssignment(value: unknown): boolean {
+function parseNodeAssignment(value: unknown, schemaVersion: number, tier: number): boolean {
   if (!isRecord(value)) return false
   if (value.kind === 'card') return exactKeys(value, ['kind', 'cardId']) && isId(value.cardId)
-  if (value.kind === 'stat') return exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
+  if (value.kind === 'stat') {
+    return schemaVersion < 9 && exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
+  }
+  if (value.kind === 'legacy-produce') {
+    return schemaVersion === 9 && exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
+  }
+  if (value.kind === 'produce') {
+    if (schemaVersion !== 9 || !exactKeys(value, ['kind', 'itemId', 'revision']) ||
+      typeof value.itemId !== 'string' || !isPositiveInt(value.revision)) return false
+    const match = FARM_CROP_ID_PATTERN.exec(value.itemId)
+    return match !== null && Number(match[1]) === tier
+  }
   if (value.kind === 'lineage') return exactKeys(value, ['kind', 'templateId']) && isId(value.templateId)
   return false
 }
@@ -736,7 +747,7 @@ function parseNodeAssignment(value: unknown): boolean {
  * One persisted career run. `assignments` is only shape-checked: which node ids exist per tier comes from
  * the authored constellation templates, which live in @racer/domain and are not shipped to this deploy.
  */
-function parseScenarioTraining(value: unknown, umaLevel: number): boolean {
+function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: number): boolean {
   if (!isRecord(value) || !exactKeys(value, SCENARIO_TRAINING_FIELDS)) return false
   if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > Math.ceil(umaLevel / 10)) return false
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return false
@@ -745,14 +756,16 @@ function parseScenarioTraining(value: unknown, umaLevel: number): boolean {
   if (!isRecord(value.assignments)) return false
   const nodeIds = Object.keys(value.assignments)
   if (nodeIds.length > MAX_CONSTELLATION_NODES || nodeIds.some((nodeId) => !isId(nodeId))) return false
-  if (nodeIds.some((nodeId) => !parseNodeAssignment((value.assignments as Record<string, unknown>)[nodeId]))) return false
+  if (nodeIds.some((nodeId) => !parseNodeAssignment(
+    (value.assignments as Record<string, unknown>)[nodeId], schemaVersion, value.tier as number,
+  ))) return false
   if (value.journey === null) return true
   return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
 }
 
-/** v5 to v8 Umas share one shape: only cards (and v7's tickets) changed between them. */
+/** v5 to v9 Umas share one outer shape; v9 replaces stat assignments with Produce assignments (D205). */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6, 7, 8].includes(value.schemaVersion as number)) return null
+  if (!exactKeys(value, UMA_V6_FIELDS) || ![5, 6, 7, 8, 9].includes(value.schemaVersion as number)) return null
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
   const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
   if (value.exp > expLimit) return null
@@ -761,7 +774,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
   const currentTier = Math.ceil((value.level as number) / 10)
   if (!isPositiveInt(value.unlockedTier) || value.unlockedTier > currentTier) return null
   if (!Array.isArray(value.scenarios) || value.scenarios.length === 0) return null
-  if (value.scenarios.some((run) => !parseScenarioTraining(run, value.level as number))) return null
+  if (value.scenarios.some((run) => !parseScenarioTraining(run, value.level as number, value.schemaVersion as number))) return null
   const runs = value.scenarios as Record<string, unknown>[]
   const tiers = runs.map((run) => run.tier as number)
   if (new Set(tiers).size !== tiers.length) return null
@@ -780,7 +793,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null

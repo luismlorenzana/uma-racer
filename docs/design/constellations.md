@@ -45,16 +45,17 @@ Consequences, all of which the save must honour:
 | Kind | Fills with | Pays |
 |---|---|---|
 | **Card** | one of the six cards in this scenario's card set | stats, by the card's type |
-| **Stat** | a stat you pick freely | that stat |
+| **Produce** (6) | one stocked crop authored for this scenario | the crop's stat, 40 raw points |
 | **Parent** (2) | any owned Uma template | aptitude grades · that Uma's baseline skills |
 | **Grandparent** (4) | any owned Uma template | aptitude grades · that Uma's baseline skills |
 
-**Planned, not yet executable:** [Stable Farm](farm.md) M025 builds scenario produce and global Item inventory. M026 then
-renames these six Stat nodes to Produce nodes without moving or revaluing them: filling one consumes a scenario-matched
-crop, whose stat receives the same 40 raw points (D205). Existing assignments migrate as contribution-preserving legacy
-fills. Until M026 lands, every Stat rule in this document remains current.
+Produce nodes retain the six former Stat-node ids, unlock positions, gem silhouettes and values (D205). A first fill or
+replacement consumes one crop from global Item inventory whose `scenarioTier` matches the constellation. The crop's stat
+receives the node's 40 points; replacement never refunds the old crop, and a filled Produce node has no clear action.
+Pre-v9 Stat assignments migrate one-way to `Legacy · <Stat> +40`: they preserve the build without inventing an item or
+ledger evidence and follow the normal crop rule once replaced.
 
-Card and stat nodes form **one tree rooted at a single root node**. The root is always unlocked and always
+Card and Produce nodes form **one tree rooted at a single root node**. The root is always unlocked and always
 empty; it exists to anchor the graph. Parent nodes are **detached from that tree**, and each parent node is
 linked to exactly **two grandparent nodes** of its own.
 
@@ -66,17 +67,17 @@ card concentrates its stat and hands you more of its skills.
 | Training Level | Unlocks |
 |---|---|
 | 1 | the baseline set (see below) |
-| 2–8 | the remaining card and stat nodes, in template order |
+| 2–8 | the remaining card and Produce nodes, in template order |
 | 9 | parent node A, plus its two grandparent nodes |
 | 10 | parent node B, plus its two grandparent nodes |
 
-With `N` = card nodes + stat nodes, the count unlocked at Training Level `TL ≤ 8` is:
+With `N` = card nodes + Produce nodes, the count unlocked at Training Level `TL ≤ 8` is:
 
 ```
 unlockedNodes(TL) = ceil(N × TL / 8)
 ```
 
-so Training Level 8 opens every card and stat node, and 9 and 10 are purely lineage. Which specific nodes open
+so Training Level 8 opens every card and Produce node, and 9 and 10 are purely lineage. Which specific nodes open
 is fixed by the template's ordering, which is a breadth-first walk from the root: the tree always grows
 outward and never strands an unreachable node.
 
@@ -95,7 +96,7 @@ nodeValue(T)     = round((0.60 × capBudget(T) − 240) / cardNodes(T))    one c
 treeBudget(T)    = cardNodes(T) × nodeValue(T) + 240                    ≈ 0.60 × capBudget(T)
 ```
 
-**Stat nodes share a fixed 240-point pool** at every tier (D134), and every tree has **six** of them (D162), so each
+**Produce nodes share a fixed 240-point pool** at every tier (D134, D205), and every tree has **six** of them (D162), so each
 pays 40 and a build can spread its tweaks over several stats. They are for tweaks — the stamina a mile needs, one
 more point of Speed — and cards carry the build. Card nodes
 share the rest: **220** at tier 1, 163–172 from tier 5. Per-scenario counts are in
@@ -104,7 +105,7 @@ share the rest: **220** at tier 1, 163–172 from tier 5. Per-scenario counts ar
 | Tier | 1 | 2 | 3 | 4 | 5–7 | 8–11 | 12 | 13–14 |
 |---|---|---|---|---|---|---|---|---|
 | Card node | 220 | 198 | 233 | 189 | 163–164 | 167–169 | 172 | 171 |
-| Stat node | 40 | 40 | 40 | 40 | 40 | 40 | 40 | 40 |
+| Produce node | 40 | 40 | 40 | 40 | 40 | 40 | 40 | 40 |
 | Per-card cap | 4 | 5 | 4 | 5 | 6 | 6 | 6 | 7 |
 
 ### Per-card cap
@@ -166,8 +167,9 @@ the invariance rule holds regardless of which types you slot:
 | Wit | Wit 0.70 · Speed 0.30 |
 | Friend / Group | **skill points instead** — see [Skill-point cards](#skill-point-cards) |
 
-A **stat node** puts 1.00 of its value into the stat you pick. Stat nodes are the release valve: they are how
-you find the 200 Stamina a Mile race wants without slotting a Stamina card you would otherwise never bring.
+A **Produce node** puts 1.00 of its value into the stat named by its consumed crop. Produce nodes are the release valve:
+they are how you find the 200 Stamina a Mile race wants without slotting a Stamina card you would otherwise never bring.
+The five scenario crops expose the same five-way choice as the former free assignment, but stock makes it deliberate.
 
 ### Card quality: era and stars
 
@@ -222,7 +224,7 @@ Tazuna paid a thin 20% to every stat. A card's type is visible on the card; a sl
 ### Applying the budget
 
 ```
-raw(s)     = Σ card nodes ( nodeValue × starPct × eraPct × share[type][s] ) + Σ stat nodes on s ( statNodeValue )
+raw(s)     = Σ card nodes ( nodeValue × starPct × eraPct × share[type][s] ) + Σ Produce nodes on s ( statNodeValue )
 derived(s) = min( capProfile(T)[s], round( max(baseStats[s], 50 × TL) + raw(s) × (1 + growthRates[s]) ) )
 ```
 
@@ -245,14 +247,14 @@ Stats start at base (D152), so every rung pays for its stamina, and each adds on
 
 | Distance | Deck | Stamina (tier 1 · 14) | Holds at |
 |---|---|---|---|
-| Sprint (1,400 m) | 2 Speed · Stamina · 2 Wit · Friend, stat nodes into Speed | 567 · 823 | every tier |
-| Mile (1,800 m) | the same, stat nodes into Stamina | 807 · 1,063 | every tier |
-| Medium (2,200–2,400 m) | 2 Speed · Stamina leaned one node · Power · Wit · Friend, stat nodes into Stamina | 1,225 · 1,542 | every tier |
-| Long (2,500–3,200 m) | 2 Speed · 2 Stamina · Wit · Friend, stat nodes into Stamina, 1–2 gold heals | 1,400 · 1,900 (both caps) | every tier |
+| Sprint (1,400 m) | 2 Speed · Stamina · 2 Wit · Friend, Produce into Speed | 567 · 823 | every tier |
+| Mile (1,800 m) | the same, Produce into Stamina | 807 · 1,063 | every tier |
+| Medium (2,200–2,400 m) | 2 Speed · Stamina leaned one node · Power · Wit · Friend, Produce into Stamina | 1,225 · 1,542 | every tier |
+| Long (2,500–3,200 m) | 2 Speed · 2 Stamina · Wit · Friend, Produce into Stamina, 1–2 gold heals | 1,400 · 1,900 (both caps) | every tier |
 
 "Holds" means a full spurt with HP lasting to within 60 m of the line, the stretch the original's spurt plan leaves out
 (D158). The sim fails its run if any of these stops holding. Soft checks ask whether each step is also *needed*. One
-holds at every tier: a set with no stamina card cannot run 1,400 m, however its stat nodes go. The rest are looser than
+holds at every tier: a set with no stamina card cannot run 1,400 m, however its Produce goes. The rest are looser than
 the table: a Power card set runs 3,000 m with a gold heal at every tier but 1, 10 and 11, a lean alone runs 2,400 m
 at tiers 2, 13 and 14, and a sprint set runs 1,800 m at tiers 8, 12, 13 and 14. At tier 1 a lean alone falls short of
 2,200 m, which is why the Medium row carries a Power card. Measured 2026-09-26 on engine v7, at the original's HP
@@ -323,8 +325,9 @@ Every unlocked node is editable at any time, outside a race. There is exactly on
 scenario — the current one. There are no saved presets and no configuration history: you change it, you race,
 you change it back.
 
-Reconfiguration never costs tickets, never touches Training Level, never touches card levels, and cannot fail.
-The only thing that gates it is whether a node is unlocked.
+Reconfiguration never costs tickets and never touches Training Level or card levels. Card and lineage nodes remain free
+and reversible. A Produce fill/replacement requires one in-stock crop for this scenario, consumes it atomically and cannot
+be cleared or refunded; a stale screen reloads the winning assignment without spending.
 
 ## The screen
 
@@ -334,7 +337,7 @@ edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143)
 
 - **The root** sits where the silhouette puts it and carries the scenario's crest in a gold ring. Every path
   starts there, so the tree visibly grows from the scenario.
-- **Nodes** are shaped by kind: card nodes are framed square tiles, stat nodes are gems (a tile turned 45°), and
+- **Nodes** are shaped by kind: card nodes are framed square tiles, Produce nodes are gems (a tile turned 45°), and
   lineage nodes are portrait rounds. Each has four states:
 
   | State | Look |
@@ -342,7 +345,7 @@ edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143)
   | Locked | A dark recessed socket with a faint lock; lineage sockets name their Training Level |
   | Opens next | A dashed gold socket naming the Training Level that opens it (`TL3`) |
   | Open, empty | A lit frame with a **+**, gold on the tree and silver in lineage |
-  | Filled | The card icon, the stat's colour and label, or the Uma's bust, framed and glowing in the card type's, stat's or lineage colour |
+  | Filled | The card icon, crop mark (or labelled Legacy stat), or Uma bust, framed and glowing in the card type's, stat's or lineage colour |
 
 - **Paths** are drawn, not hairlines. A path into a locked node is a dark groove. An open path is a slate line
   in a dark outline. A path whose two ends are both filled **lights up**: gold, glowing, and in the card's own
@@ -351,6 +354,9 @@ edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143)
 - **A stat strip** above the graph carries the five derived stats and SP, each with a delta against the
   configuration as it was when the screen opened.
 - **The aptitude line** below it names every grade lineage has moved, with the step count that produced it.
+- **The Produce sheet** shows the five matching-scenario crops and global quantities; zero stock is visible but disabled.
+  Confirmation says **Consume 1**, the exact stat and quantity delta, and the no-refund rule. Success updates the graph,
+  stat strip and quantity together and links to that crop in Items.
 - **Pan and pinch-zoom.** A **Fit** control appears once the view has moved; at fit it would only cover a
   corner node. The view refits when the host resizes.
 
@@ -377,7 +383,7 @@ Each scenario's tree is **drawn on a grid** in `packages/domain/src/constellatio
 
 ```
       R          R  the root
-      |          o  a card or stat node
+      |          o  a card or Produce node
 o-o-o-o-o-o-o    -  |  join straight neighbours; a run may cross an empty position
 |     |     |    /  \  join diagonal neighbours
 o     o     o
@@ -390,13 +396,14 @@ labelled divider between.
 
 What each node *is* is not drawn. The template numbers the nodes **breadth-first from the root**, nearer rows
 and then columns first. That number is the unlock order, so the tree opens outward from the root, and the last
-`statNodes` numbers, the ends of the branches, are the stat nodes. Ids (`n0`…), kinds and order are therefore
+`statNodes` numbers, the ends of the branches, are the Produce nodes. The internal field/kind remains `stat` so existing
+template ids and silhouettes cannot drift during the save migration. Ids (`n0`…), kinds and order are therefore
 fixed by the counts alone: redrawing a silhouette moves nodes on screen but never turns a saved card node into a
-stat node. Adding stat nodes, as D162 did, appends new ids after every old one and only ever opens more nodes at a
+Produce node. Adding Produce nodes, as D162 did, appends new ids after every old one and only ever opens more nodes at a
 Training Level, never fewer.
 
 A template refuses to build if its drawing has the wrong node count, is not one tree, or has a connector that
-leads nowhere. `validateTemplate` then checks the structure: the card and stat nodes form one connected tree
+leads nowhere. `validateTemplate` then checks the structure: the card and Produce nodes form one connected tree
 rooted at the root node, the parent nodes are detached with exactly two grandparent children each, and the counts
 match. The domain tests also pin 40 pt between nodes on a 375 pt phone, no crossing edges, and breadth-first
 order.

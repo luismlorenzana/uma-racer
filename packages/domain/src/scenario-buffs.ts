@@ -41,7 +41,7 @@ export const BUFF_VALUES = {
 } as const
 
 export const SCENARIO_BUFFS: readonly ScenarioBuff[] = [
-  { id: 'foundation', name: 'Foundation', rule: 'Stat nodes pay ×1.5.', typical: 0.04 },
+  { id: 'foundation', name: 'Foundation', rule: 'Produce nodes pay ×1.5.', typical: 0.04 },
   { id: 'team-spirit', name: 'Team Spirit', rule: 'Each filled lineage slot adds +1% to every card node.', typical: 0.037 },
   { id: 'climax', name: 'Climax', rule: 'Each career goal won in this scenario adds +2% to every card node, up to +8%.', typical: 0.037 },
   { id: 'performance', name: 'Performance', rule: 'A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5%.', typical: 0.023 },

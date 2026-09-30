@@ -37,9 +37,12 @@ adjusted through balance simulation and playtesting.
 - **Stable Farm device/offline feel (M025):** assign and plant on the installed Home Screen app, close it, reopen after
   the real deadline, harvest, follow the result into Items, reload offline, then reconnect and verify the same stack on
   sync. Browser/test-clock validation covers every state and transaction but not a physical twelve-hour iOS lifecycle.
+- **Produce-node device feel (M026):** on the installed app, fill one empty Produce node, replace one Legacy/current
+  assignment, verify the Item quantity and stat strip move together, then reload offline/reconnect. Browser validation
+  covers the two phone layouts, transaction rollback and stale-screen behavior, but not physical thumb/VoiceOver feel.
 
 These device checks now belong to **T038** in [Milestone 11](tasks/M011-game-feel-and-device.md), which closes them as one
-acceptance pass rather than leaving eight separate reminders open.
+acceptance pass rather than leaving nine separate reminders open.
 
 ## Not questions, but still to come
 

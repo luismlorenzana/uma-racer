@@ -17,6 +17,24 @@ export async function setConstellationNode(
   await gameRuntime.setConstellationNode(id, nodeId, assignment, tier)
 }
 
+export async function consumeConstellationProduce(input: {
+  umaId: string
+  tier: number
+  nodeId: string
+  itemId: string
+  expectedRevision: number
+}) {
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.consumeConstellationProduce(input)
+  })
+}
+
+export async function listProduceInventory(tier: number) {
+  const { readProduceInventory } = await import('./produce')
+  return readProduceInventory(tier)
+}
+
 export async function setUmaLoadout(id: string, skillIds: readonly string[], tier?: number): Promise<void> {
   const { gameRuntime } = await import('./runtime')
   await gameRuntime.setUmaLoadout(id, skillIds, tier)

@@ -151,7 +151,7 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
   for (const node of [...template.nodes].sort((a, b) => a.order - b.order)) {
     if (node.order >= open) continue
     if (node.kind === 'card' && queue.length > 0) assignments[node.id] = { kind: 'card', cardId: queue.shift()! }
-    if (node.kind === 'stat') assignments[node.id] = { kind: 'stat', stat: statNodesTo }
+    if (node.kind === 'stat') assignments[node.id] = { kind: 'legacy-produce', stat: statNodesTo }
   }
   return deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards }).stats
 }

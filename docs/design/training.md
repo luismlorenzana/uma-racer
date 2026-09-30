@@ -3,7 +3,8 @@
 > All numbers are **draft values for tuning**. The goal is readable formulas, not a copy of the original game.
 
 Training is **persisted and deliberate**, not a turn loop. You play a minigame to unlock slots, then you decide
-what fills them. Nothing is rolled, nothing is spent per turn, and every choice is reversible (D120).
+what fills them. Nothing is rolled and nothing is spent per turn. Card and lineage choices are freely reversible;
+Produce choices consume one Farm crop on first fill and replacement (D120, D205).
 
 ```
 Play Spark Rival Circuit ──► Training Level rises ──► constellation nodes unlock
@@ -37,9 +38,10 @@ Training Level no longer sets stat caps. Caps belong to the scenario
 ([cap profiles](scenarios.md#cap-profiles)); Training Level decides how much of the tree you can reach, and the
 tree is what pays the stats.
 
-> **Planned Farm bridge:** [Stable Farm](farm.md) first ships produce and global Item inventory without changing a build.
-> A later milestone replaces the six freely selected stat assignments with scenario-matched Produce nodes that consume
-> those items (D205). Until that bridge lands, the current free stat-node behavior below remains executable truth.
+The six minor-stat slots are **Produce nodes**. Filling one consumes a crop from global Item inventory whose destination
+scenario matches this constellation; that crop's stat receives the unchanged 40 raw points. A replacement consumes the
+new crop, does not refund the old one and cannot be cleared by itself. Saves created before this bridge keep their exact
+contribution as visibly labelled Legacy Produce until the player replaces it (D205).
 
 ## Stats are derived
 
@@ -53,8 +55,8 @@ derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthR
 `baseStats` and `growthRates` come from the Uma template, unchanged. There is no stored, accumulating stat
 number and no gain formula. Remove a card and the stats it was paying for come straight back off.
 
-This is what makes the constellation worth reconfiguring: you set a build for a Medium race, swap two nodes,
-and run a Long race with the same Uma minutes later.
+This is what makes the constellation worth configuring: you set a build for a Medium race, move Card or Lineage nodes
+freely, and deliberately spend stocked Produce when changing the six minor-stat choices.
 
 ## A scenario is a career run
 
@@ -80,7 +82,8 @@ Unity Cup are two units, and either can race.
 - **No Uma EXP from an earlier scenario.** Levels and careers belong to the current scenario: an earlier scenario's
   race pays no Uma EXP, tickets or shards and settles no goals. A finished build therefore cannot farm the rebuild a
   new scenario asks for. It also never waits on her gate: an Uma ready to advance can still race her earlier units.
-- **Still trainable.** An earlier unit reconfigures for free like any other, edits its card set within its own era, and
+- **Still trainable.** An earlier unit edits its free Card/Lineage configuration like any other, spends matching Produce
+  for Produce-node changes, edits its card set within its own era, and
   plays Spark Match (for a ticket) until it reaches Training Level 10. Friendship Training already earns stars per
   scenario.
 - **Advancing is unchanged.** A newly unlocked scenario starts from scratch at Training Level 1 with an empty set.
@@ -93,12 +96,13 @@ Tickets remain the only currency and the only pacing lever ([Economy](economy.md
 |---|---|
 | Spark Rival Circuit run | **1 ticket** |
 | Card minigame run | **1 ticket** |
-| Reconfiguring the constellation | **free, always** |
+| Card and lineage reconfiguration | **free, always** |
+| Produce fill or replacement | **1 matching crop; no refund** |
 | Daily grant | **+15 per day**, stored up to **60** (four days) |
 | Scope | account-wide, shared by all Umas |
 
-Reconfiguration is free on purpose. Charging for it would make players hoard one safe build, which is the
-opposite of what the constellation is for.
+Card and lineage reconfiguration is free on purpose. Produce is the one deliberate material layer: its cost is inventory,
+not a ticket, and the confirmation always states the spend and no-refund rule.
 
 ## Opening a scenario
 
@@ -121,4 +125,3 @@ gating, ownership, and the no-duplicate-character rule are unchanged
 
 - Further minigames, one per scenario, replacing Spark Match as that scenario's level path.
 - Constellation presets, if reconfiguring by hand ever becomes tedious.
-- Stable Farm's later Produce-node bridge: six stat nodes keep their 40-point values, but a crop item chooses the stat.

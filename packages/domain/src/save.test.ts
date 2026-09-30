@@ -4,6 +4,7 @@ import { constellationTemplate, starNodePct } from './constellation'
 import { describe, expect, it } from 'vitest'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { createUmaBadgeState } from './badges'
+import { deriveUma } from './derived'
 import {
   createCardSave,
   SAVE_SCHEMA_VERSION,
@@ -29,6 +30,7 @@ import {
   parseSyncRequest,
   parseUmaSave,
   parseUmaSaveOrThrow,
+  type UmaSave,
 } from './save'
 
 const aptitudes = {
@@ -168,8 +170,8 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 9 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 9 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 10 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 10 })).toThrow(/App update required/)
   })
 
   it('migrates v1 profiles and Umas into current defaults and preserves every v2 goal fact', () => {
@@ -236,8 +238,12 @@ describe('save parsing', () => {
     const run = save.scenarios[0]!
     expect(parseUmaSave({ ...save, skillHistory: [...save.skillHistory, ...save.skillHistory] })).toBeNull()
     const realNodeId = constellationTemplate(1).nodes.find((node) => node.kind === 'card')!.id
+    const produceNodeId = constellationTemplate(1).nodes.find((node) => node.kind === 'stat')!.id
     expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'nonsense' } } }] })).toBeNull()
     expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'stat', stat: 'nope' } } }] })).toBeNull()
+    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [produceNodeId]: { kind: 'legacy-produce', stat: 'speed' } } }] })).not.toBeNull()
+    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [produceNodeId]: { kind: 'produce', itemId: 'produce:t1:speed', revision: 1 } } }] })).not.toBeNull()
+    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [produceNodeId]: { kind: 'produce', itemId: 'produce:t2:speed', revision: 1 } } }] })).toBeNull()
     // A journey must belong to the run that holds it.
     expect(parseUmaSave({ ...save, scenarios: [{ ...run, journey: {
       tier: 2, tracking: 'tracked', state: 'active', completedAt: null, goals: [],
@@ -301,7 +307,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 9 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 10 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
@@ -390,9 +396,52 @@ describe('the migration chain', () => {
     expect(migrateUmaSaveToCurrent(v6Uma)).toEqual({ ...v6Uma, schemaVersion: SAVE_SCHEMA_VERSION })
   })
 
+  it('migrates every filled v8 Stat assignment to legacy Produce without inventing item progress', () => {
+    const current = createUmaSave(template)
+    const nodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'stat')
+    const legacy = {
+      ...current,
+      schemaVersion: 8 as const,
+      scenarios: [{
+        ...current.scenarios[0]!,
+        assignments: {
+          [nodes[0]!.id]: { kind: 'stat', stat: 'speed' },
+          [nodes[1]!.id]: { kind: 'stat', stat: 'stamina' },
+          'retired-template-node': { kind: 'retired-shape' },
+        },
+      }],
+    }
+    const migrated = migrateUmaSaveToCurrent(legacy)
+    expect(migrated?.scenarios[0]?.assignments).toEqual({
+      [nodes[0]!.id]: { kind: 'legacy-produce', stat: 'speed' },
+      [nodes[1]!.id]: { kind: 'legacy-produce', stat: 'stamina' },
+    })
+    expect(JSON.stringify(migrated)).not.toContain('itemId')
+    const expected = {
+      ...current,
+      scenarios: [{
+        ...current.scenarios[0]!,
+        assignments: {
+          [nodes[0]!.id]: { kind: 'legacy-produce' as const, stat: 'speed' as const },
+          [nodes[1]!.id]: { kind: 'legacy-produce' as const, stat: 'stamina' as const },
+        },
+      }],
+    }
+    const derive = (save: UmaSave) => deriveUma({
+      uma: save,
+      umaTemplate: template,
+      cardSaves: new Map(),
+      cardTemplates: new Map(),
+      umaTemplates: new Map([[template.id, template]]),
+      skillTemplates: new Map(),
+    })
+    // The full derived projection pins stats, SP, aptitudes, skill library/loadout and every other racing input.
+    expect(derive(migrated!)).toEqual(derive(expected))
+  })
+
   it('reads every supported profile schema', () => {
     const current = createPlayerProfile('v1', 1)
-    for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7] as const) {
+    for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9] as const) {
       const migrated = migratePlayerProfileToCurrent({ ...current, schemaVersion })
       expect(migrated?.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
     }

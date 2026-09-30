@@ -13,6 +13,7 @@ import {
   createUmaBadgeState,
   createInitialSave,
   deriveUma,
+  ConstellationProduceConflictError,
   trainedScenario,
   constellationTemplate,
   isNodeUnlocked,
@@ -31,6 +32,7 @@ import {
   type TrainerBadgePreferences,
   type FlairEventKind,
   type LedgerEntry,
+  parseUmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
@@ -111,6 +113,7 @@ import { installMinigameHost } from './minigame-host'
 import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
 import { installFarmHost, MemoryFarmHost, PersistentFarmHost } from './farm/host'
+import { consumePersistentProduce, type ConsumeProduceReceipt } from './produce'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -141,6 +144,7 @@ export class GameRuntime {
   private cardRedemptionLocks = new Set<string>()
   private umaRedemptionLocks = new Set<string>()
   private badgePreferenceLocks = new Set<string>()
+  private produceLocks = new Set<string>()
   private exchangeLocked = false
   private memoryCardRedemptions = new Set<string>()
   private memoryUmaRedemptions = new Set<string>()
@@ -318,6 +322,7 @@ export class GameRuntime {
     this.memoryCardRedemptions.clear()
     this.memoryUmaRedemptions.clear()
     this.badgePreferenceLocks.clear()
+    this.produceLocks.clear()
     this.memoryExchangeSequence = 0
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
@@ -427,10 +432,7 @@ export class GameRuntime {
     return result.events.map((event) => event.id)
   }
 
-  /**
-   * Assigns or clears one constellation node. Free, instant and always reversible: reconfiguring is the
-   * point of the system, so it costs nothing and cannot fail on a locked or unknown node (D121).
-   */
+  /** Assigns or clears a Card or Lineage node. Produce has its own consuming transaction (D205). */
   async setConstellationNode(id: string, nodeId: string, assignment: NodeAssignment | null, tier?: number): Promise<void> {
     const generation = this.generation
     const state = useGame.getState()
@@ -441,6 +443,9 @@ export class GameRuntime {
     const run = trainedScenario(uma, tier)
     const node = constellationTemplate(run.tier).nodes.find((entry) => entry.id === nodeId)
     if (!node || node.kind === 'root') throw new Error('Unknown constellation node')
+    if (node.kind === 'stat' || assignment?.kind === 'produce' || assignment?.kind === 'legacy-produce') {
+      throw new Error('Produce nodes must be filled from the Produce picker')
+    }
     if (!isNodeUnlocked(constellationTemplate(run.tier), node, run.trainingLevel)) {
       throw new Error('That node is still locked')
     }
@@ -474,6 +479,44 @@ export class GameRuntime {
     await this.refreshBadges()
     await this.refreshPending()
     this.schedule()
+  }
+
+  async consumeConstellationProduce(input: {
+    umaId: string
+    tier: number
+    nodeId: string
+    itemId: string
+    expectedRevision: number
+  }): Promise<ConsumeProduceReceipt> {
+    const key = `${input.umaId}:${input.tier}:${input.nodeId}`
+    if (this.produceLocks.has(key)) throw new Error('That Produce node is already being updated')
+    this.produceLocks.add(key)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      if (!content || state.status !== 'ready' || !state.umas[input.umaId]) throw new Error('Constellation Uma must be owned')
+      if (!state.persistent) throw new Error('Produce consumption needs local storage')
+      try {
+        const receipt = await consumePersistentProduce(content, { ...input, now: Date.now() })
+        if (generation !== this.generation) return receipt
+        replaceUma(receipt.uma)
+        await this.refreshBadges()
+        await this.refreshPending()
+        this.schedule()
+        return receipt
+      } catch (error) {
+        // A stale screen must show the winning assignment before it asks the player to choose again.
+        if (error instanceof ConstellationProduceConflictError && generation === this.generation) {
+          const row = await db.umas.get(input.umaId)
+          const latest = row ? parseUmaSave(row.data) : null
+          if (latest) replaceUma(latest)
+        }
+        throw error
+      }
+    } finally {
+      this.produceLocks.delete(key)
+    }
   }
 
   async setUmaLoadout(id: string, skillIds: readonly string[], tier?: number): Promise<void> {

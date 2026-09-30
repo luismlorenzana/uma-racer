@@ -280,6 +280,8 @@ class RacerDb extends Dexie {
     this.version(13).stores(storesWithMinigameRuns).upgrade(walkRowsToCurrent)
     // Additive synced Farm projections and evidence. Farm initializes lazily; migrations fabricate no rows.
     this.version(14).stores(storesWithFarm)
+    // Save v9: free Stat assignments become explicit legacy Produce, without fabricating inventory or evidence.
+    this.version(15).stores(storesWithFarm).upgrade(walkRowsToCurrent)
   }
 }
 

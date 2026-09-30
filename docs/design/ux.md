@@ -68,7 +68,7 @@ and missing target content. Each available active target links directly into Rac
   per outfit, crop choice names both unlock tracks, and a twelve-hour crop keeps growing offline without withering.
 - Workers lists every owned outfit separately with Farm-only XP and level. Crops exposes the seventy scenario/stat
   definitions and both locks. Items joins the global synced stacks to that catalog, defaults to owned produce, remembers
-  owned/all, stat, scenario and density locally, and exposes source/future-use detail without offering consumption yet.
+  owned/all, stat, scenario and density locally, and exposes source plus the constellation use that consumes it.
 - Harvest feedback appears only after the transaction commits, links to the exact Item stack, and names XP, outfit/Farm
   levels and unlocks. Stale views reload; ambiguous harvests recover from authoritative cycle evidence.
 
@@ -109,7 +109,9 @@ A full-screen scene with one header — the Uma, scenario crest and TL — and a
 against the moment the scene opened. Two tabs sit under it (M016):
 
 - **Constellation** — the tree, the node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
-  shows each card's bond and what one node of it pays, with a **Bond** link beside it.
+  shows each card's bond and what one node of it pays, with a **Bond** link beside it. A Produce gem shows its crop mark;
+  its sheet reads the five matching-scenario global stacks, labels migrated choices **Legacy**, disables zero stock and
+  requires a no-refund **Consume 1** confirmation. The committed result updates the live stat strip and links to Items.
 - **Card set** — the chosen scenario's six slots. Each shows the card, its type, its stars in this scenario,
   what one node pays (SP per node for a Friend or Group card, marked **Skill points**), how many nodes it fills, and
   a **Bond** button. Tapping a card offers Open card, **Replace** (the new card takes over its nodes), and Remove.

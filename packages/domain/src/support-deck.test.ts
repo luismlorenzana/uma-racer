@@ -112,7 +112,7 @@ describe('withCardSet', () => {
     n1: { kind: 'card', cardId: 'a' },
     n2: { kind: 'card', cardId: 'a' },
     n3: { kind: 'card', cardId: 'b' },
-    s1: { kind: 'stat', stat: 'speed' },
+    s1: { kind: 'legacy-produce', stat: 'speed' },
   })
 
   it('hands a replaced card\'s nodes to the card that took its slot', () => {
@@ -120,7 +120,7 @@ describe('withCardSet', () => {
     expect(next.cardSetIds).toEqual(['x', 'b', 'c'])
     expect(cardNodeCount(next, 'x')).toBe(2)
     expect(cardNodeCount(next, 'a')).toBe(0)
-    expect(next.assignments.s1).toEqual({ kind: 'stat', stat: 'speed' })
+    expect(next.assignments.s1).toEqual({ kind: 'legacy-produce', stat: 'speed' })
   })
 
   it('empties the nodes of a card removed outright', () => {
@@ -175,7 +175,7 @@ describe('cardNodeCapIssue', () => {
   it('allows moving a card between nodes it holds, other cards, stats and clearing', () => {
     expect(cardNodeCapIssue(run(four), 'a', { kind: 'card', cardId: 'x' })).toBeNull()
     expect(cardNodeCapIssue(run(four), 'e', { kind: 'card', cardId: 'y' })).toBeNull()
-    expect(cardNodeCapIssue(run(four), 'e', { kind: 'stat', stat: 'speed' })).toBeNull()
+    expect(cardNodeCapIssue(run(four), 'e', { kind: 'legacy-produce', stat: 'speed' })).toBeNull()
     expect(cardNodeCapIssue(run(four), 'e', null)).toBeNull()
   })
 })
