@@ -7,7 +7,9 @@ Racing is the **first system to be built** and the heart of the game. Races gran
 
 0. **Opening training first:** a scenario's races unlock after 1 training turn in that scenario (see [Training](training.md#opening-training)). Races cost no tickets.
 1. **Pick a race** from the calendar or catalog. It shows grade, venue, surface, distance, rewards, and any career goal it counts toward.
-2. **Pick the Uma, strategy, and skill loadout.** Aptitudes are shown for the race's surface, distance, and each strategy.
+2. **Pick the Uma, strategy, and skill loadout.** The strategy starts at that outfit's saved default (or its strongest
+   baseline style until edited), and can still be changed for this race. Aptitudes are shown for the race's surface,
+   distance, and each strategy.
 3. **Watch the race** turn by turn on its own course ([engine v7](#engine-v7-the-originals-physics-and-field)): 1×
    plays two one-second turns a second, and Slow, 2×, pause, step one turn and skip are always at hand.
 4. **Results:** finishing order, margins, time, EXP gained, goal and badge progress, and new badges or titles with fanfare.

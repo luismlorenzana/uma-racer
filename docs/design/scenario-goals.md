@@ -44,6 +44,14 @@ Mile is also A. Ties go to the band holding more of her real career's races (`si
 Mile · Medium. Her surface is the better of Turf and Dirt; a tie goes to her career, then Turf. Aptitudes are the
 constellation's (after lineage, D121) at the moment the career is frozen.
 
+Each outfit can persist a preferred **distance** and **surface**. Before the owner chooses them, the automatic profile
+above remains the default. A chosen distance selects one of the neighbouring bands that contains it, ranking the
+other distance by the usual weaker/stronger grades and career tie-break; a chosen surface replaces the automatic
+surface choice. The new profile applies when a scenario career is first frozen at Start or Advance. Editing a preference
+does not regenerate an already-started journey, lower Uma Level, erase a goal win, or replay a reward. Its matching
+running-style preference is the default selection on Race Select, not a restriction: the owner can choose any style
+for an individual race. The profile displays all three defaults and their editor away from the career's frozen record.
+
 The imported roster splits 127 Medium · Long, 90 Mile · Medium and 34 Sprint · Mile on turf, plus 17 dirt specialists.
 
 ## Choosing the races

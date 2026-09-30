@@ -19,6 +19,7 @@ import {
   isNodeUnlocked,
   type NodeAssignment,
   type UmaSave,
+  type RacePreferences,
   parseSyncResponseOrThrow,
   SCENARIOS,
   replaceSkillLoadout as resolveSkillLoadout,
@@ -356,6 +357,36 @@ export class GameRuntime {
       await queueInTransaction('profile', 'main', 'upsert', now)
     })
     replaceProfile(profile)
+    await this.refreshPending()
+    this.schedule()
+  }
+
+  /** One outfit's synced race defaults; no current journey, level, result, or reward is rewritten. */
+  async setRacePreferences(id: string, preferences: RacePreferences): Promise<void> {
+    const generation = this.generation
+    const state = useGame.getState()
+    const uma = state.umas[id]
+    if (state.status !== 'ready' || !uma) throw new Error('Race preferences Uma must be owned')
+    const next = { ...uma, racePreferences: preferences }
+    if (!parseUmaSave(next)) throw new Error('Race preferences are invalid')
+    if (!state.persistent) {
+      replaceUma(next)
+      return
+    }
+    const now = Date.now()
+    const committed = await db.transaction('rw', [db.umas, db.outbox], async () => {
+      const row = await db.umas.get(id)
+      if (!row) throw new Error('Local Uma is missing')
+      const current = parseUmaSave(row.data)
+      if (!current) throw new Error('Local Uma is malformed')
+      const updated = parseUmaSave({ ...current, racePreferences: preferences })
+      if (!updated) throw new Error('Race preferences are invalid')
+      await db.umas.put({ ...row, data: updated })
+      await queueInTransaction('umas', id, 'upsert', now)
+      return updated
+    })
+    if (generation !== this.generation) return
+    replaceUma(committed)
     await this.refreshPending()
     this.schedule()
   }

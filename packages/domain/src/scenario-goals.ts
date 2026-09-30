@@ -18,12 +18,14 @@ import {
   type ScenarioGoal,
   type ScenarioGoalLeg,
   type ScenarioJourney,
+  type RacePreferences,
   type UmaSave,
 } from './save'
 import { LEVELS_PER_SCENARIO, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
 import {
   GRADES,
   RACE_GRADES,
+  STRATEGIES,
   SURFACES,
   type Aptitudes,
   type DistanceCategory,
@@ -164,15 +166,16 @@ export const inCareerProfile = (profile: CareerProfile, race: RaceTemplate): boo
  * Her best two neighbouring distances on her better surface. A pair ranks by its weaker grade, then its stronger
  * one, then by how many of her real career's races it holds.
  */
-export function careerProfile(aptitudes: Aptitudes, template: UmaTemplate, races: readonly RaceTemplate[]): CareerProfile {
+export function careerProfile(aptitudes: Aptitudes, template: UmaTemplate, races: readonly RaceTemplate[], preference?: Pick<RacePreferences, 'distance' | 'surface'> | null): CareerProfile {
   const signature = new Set(template.signatureRaceFamilyIds)
   const career = races.filter((race) => signature.has(race.familyId))
   const careerFamilies = (test: (race: RaceTemplate) => boolean) => new Set(career.filter(test).map((race) => race.familyId)).size
-  const surface = [...SURFACES].sort((left, right) =>
+  const surface = preference?.surface ?? [...SURFACES].sort((left, right) =>
     gradeIndex(aptitudes.surface[left]) - gradeIndex(aptitudes.surface[right]) ||
     careerFamilies((race) => race.surface === right) - careerFamilies((race) => race.surface === left) ||
     SURFACES.indexOf(left) - SURFACES.indexOf(right))[0]!
-  const band = BAND_PREFERENCE.map((candidate) => {
+  const bands = preference ? BAND_PREFERENCE.filter((candidate) => CAREER_BANDS[candidate].includes(preference.distance)) : BAND_PREFERENCE
+  const band = bands.map((candidate) => {
     const distances = CAREER_BANDS[candidate]
     const grades = distances.map((distance) => gradeIndex(aptitudes.distance[distance]))
     return {
@@ -184,6 +187,18 @@ export function careerProfile(aptitudes: Aptitudes, template: UmaTemplate, races
   }).sort((left, right) => left.worse - right.worse || left.better - right.better || right.career - left.career ||
     BAND_PREFERENCE.indexOf(left.band) - BAND_PREFERENCE.indexOf(right.band))[0]!.band
   return { band, surface, distances: CAREER_BANDS[band] }
+}
+
+/** Existing Umas keep their old automatic career until the owner saves a preference. */
+export function recommendedRacePreferences(aptitudes: Aptitudes, template: UmaTemplate, races: readonly RaceTemplate[]): RacePreferences {
+  const profile = careerProfile(aptitudes, template, races)
+  const distance = [...profile.distances].sort((left, right) =>
+    gradeIndex(aptitudes.distance[left]) - gradeIndex(aptitudes.distance[right]) ||
+    profile.distances.indexOf(right) - profile.distances.indexOf(left))[0]!
+  const strategy = [...STRATEGIES].sort((left, right) =>
+    gradeIndex(aptitudes.strategy[left]) - gradeIndex(aptitudes.strategy[right]) ||
+    STRATEGIES.indexOf(left) - STRATEGIES.indexOf(right))[0]!
+  return { strategy, distance, surface: profile.surface }
 }
 
 // ---- Selection -------------------------------------------------------------------------------------------------
@@ -390,7 +405,7 @@ export function planScenarioCareer(input: GenerateScenarioJourneyInput): CareerP
   if (!scenarioForTier(tier)) throw new Error('Scenario goal tier is unknown')
   assertScenarioGoalContent([input.umaTemplate], input.races)
   const races = [...input.races].sort((left, right) => left.id.localeCompare(right.id))
-  const profile = careerProfile(input.aptitudes, input.umaTemplate, races)
+  const profile = careerProfile(input.aptitudes, input.umaTemplate, races, input.uma.racePreferences)
   const ctx: CareerContext = { template: input.umaTemplate, aptitudes: input.aptitudes, races, tier, profile }
   const taken = new Set<string>()
 

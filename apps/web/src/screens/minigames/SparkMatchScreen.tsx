@@ -20,6 +20,7 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { getContentAsset } from '../../content/runtime'
 import { safeReturnPath } from '../../game/bond-links'
+import { constellationNodeHref } from '../../game/constellation-links'
 import { getMinigameHost, type RunReward } from '../../game/minigame-host'
 import { getMinigameJournal, type SparkRunView } from '../../game/minigame-journal'
 import { useChosenTier } from '../../game/scenario-choice'
@@ -290,7 +291,7 @@ export function SparkMatchScreen() {
               <div className="flex items-center justify-between gap-2"><h3 className="text-lg">Training progress</h3><strong>TL {reward.trainingLevelBefore} → {reward.trainingLevelAfter}</strong></div>
               <div className="mt-3"><MinigameGauge label="Training EXP" value={reward.trainingExpAfter ?? 0} maximum={reward.trainingLevelAfter === MAX_TRAINING_LEVEL ? 1 : trainingExpToNext(reward.trainingLevelAfter ?? 1)} tone="accent" /></div>
               <p className="mt-2 text-sm text-ink-on-dark-soft">EXP {reward.trainingExpBefore ?? 0} → {reward.trainingExpAfter ?? 0}{crossedLevels.length > 0 ? ` · crossed ${crossedLevels.map((level) => `TL${level}`).join(', ')}` : ''}</p>
-              <section className="mt-4"><h3 className="text-lg">Constellation nodes opened</h3>{reward.nodesUnlocked?.length ? <div className="mt-2 grid gap-2">{reward.nodesUnlocked.map((node) => <Link key={node.id} to={`/constellation/${encodeURIComponent(umaId)}?node=${encodeURIComponent(node.id)}`} className="flex min-h-11 items-center justify-between rounded-sm border border-hairline-dark bg-black/15 px-3 font-semibold text-ink-on-dark"><span>{node.label}</span><ChevronRightIcon size={20} aria-hidden /></Link>)}</div> : <p className="mt-1 text-sm text-ink-on-dark-soft">No node opened this run; every EXP point carried forward.</p>}</section>
+              <section className="mt-4"><h3 className="text-lg">Nodes opened</h3>{reward.nodesUnlocked?.length ? <div className="mt-2 grid gap-2">{reward.nodesUnlocked.map((node) => <Link key={node.id} to={constellationNodeHref(umaId, scenario.tier, node.id)} className="flex min-h-11 items-center justify-between rounded-sm border border-hairline-dark bg-black/15 px-3 font-semibold text-ink-on-dark"><span>{node.label}</span><ChevronRightIcon size={20} aria-hidden /></Link>)}</div> : <p className="mt-1 text-sm text-ink-on-dark-soft">No node opened this run; every EXP point carried forward.</p>}</section>
             </>
           )}
           doneTo={returnTo}

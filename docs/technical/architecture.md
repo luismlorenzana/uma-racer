@@ -72,7 +72,8 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v9 stores mutable profile/Uma state, including one constellation per unlocked scenario, scenario-scoped card
+- Save v10 stores mutable profile/Uma state, including one constellation per unlocked scenario, nullable per-outfit race
+  defaults (null preserves automatic recommendations), scenario-scoped card
   bonds (the current three-star shape follows v7's five-star and v6's `limitBreaks` migrations), skill history, typed
   Journey slots with frozen series legs, and Produce/legacy-Produce assignments. Derived stats, node values, static names,
   art, release metadata, and card/skill definitions stay outside the save and are joined from the private content registry.
@@ -98,6 +99,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   no stack or evidence. A new Produce fill/replacement uses a pure expected-revision command and one transaction across
   Uma, item stack, `-1 constellation-produce` evidence, badge/flair reconciliation and outbox. Evidence ids include Uma,
   tier, node and replacement revision; matching retries pay once, stale screens reload, and Zustand publishes after commit.
+- Dexie v16 walks v9 Uma rows to save v10, adding null race preferences without regenerating any frozen journey.
+  Editing preferences upserts only that Uma; the API validates the exact union and sync carries the same row.
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
   duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
@@ -245,7 +248,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ```text
 players/{uid}/profile/main            currencies, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v9: level/EXP, scenarios, Produce assignments, history, version
+players/{uid}/umas/{umaId}            save v10: level/EXP, scenarios, Produce assignments, race defaults, history, version
 players/{uid}/cards/{cardId}          templateId, three-star bonds per scenario, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
@@ -261,10 +264,11 @@ Firestore cannot store an array directly inside another array, and a race record
 A record whose data holds a nested array is written with its data as JSON text (`dataJson`) and decoded on every read;
 all other records keep `data` as a map (D151).
 
-The profile's save-v9 row retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
-creation time, and schema version. Uma save v9 holds one bounded run per unlocked scenario and assignment unions for
-cards, Produce, Legacy Produce and lineage. The API accepts the prior v8 Stat shape during rollout but schema conflict
-resolution never lets it replace v9. Badge-state v1 is independently migratable and cannot force a progression reset.
+The profile's save-v10 row retains currencies, local daily-grant date, featured Uma id, one-time starter-content marker,
+creation time, and schema version. Uma save v10 holds one bounded run per unlocked scenario, assignment unions for
+cards, Produce, Legacy Produce and lineage, and optional race defaults. The API accepts older shapes during rollout but
+schema conflict resolution never lets one replace v10. Badge-state v1 is independently migratable and cannot force a
+progression reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each
 Uma entity. Static race/Uma names and art are joined from the current private content registry at render time; deterministic

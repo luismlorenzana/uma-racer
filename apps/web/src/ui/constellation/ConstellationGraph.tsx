@@ -1,6 +1,4 @@
 import {
-  LINEAGE_BAND,
-  TREE_BOX,
   constellationEdges,
   farmCropById,
   isNodeUnlocked,
@@ -52,6 +50,7 @@ export function ConstellationGraph({
   cardTypes,
   selectedId,
   onSelect,
+  viewMode = 'constellation',
 }: {
   template: ConstellationTemplate
   trainingLevel: number
@@ -61,6 +60,7 @@ export function ConstellationGraph({
   cardTypes: Readonly<Record<string, string>>
   selectedId: string | null
   onSelect: (node: ConstellationNode) => void
+  viewMode?: 'constellation' | 'inspiration' | 'extra-stats'
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState<{ width: number; height: number } | null>(null)
@@ -68,6 +68,28 @@ export function ConstellationGraph({
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const gesture = useRef<{ distance: number; scale: number; x: number; y: number } | null>(null)
   const dragged = useRef(false)
+  const visibleNodes = useMemo(() => template.nodes.filter((node) =>
+    viewMode === 'constellation' ? node.kind === 'root' || node.kind === 'card'
+      : viewMode === 'inspiration' ? node.kind === 'parent' || node.kind === 'grandparent'
+        : node.kind === 'stat'), [template, viewMode])
+  const visibleIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes])
+  const bounds = useMemo(() => ({
+    minX: Math.min(...visibleNodes.map((node) => node.x)),
+    maxX: Math.max(...visibleNodes.map((node) => node.x)),
+    minY: Math.min(...visibleNodes.map((node) => node.y)),
+    maxY: Math.max(...visibleNodes.map((node) => node.y)),
+  }), [visibleNodes])
+  // The three views keep the template's relative geometry, but each fills its own canvas.
+  const position = useCallback((node: ConstellationNode) => {
+    if (viewMode === 'extra-stats') {
+      const index = visibleNodes.findIndex((candidate) => candidate.id === node.id)
+      return { x: index % 2 === 0 ? 30 : 70, y: 23 + Math.floor(index / 2) * 27 }
+    }
+    return {
+      x: 12 + ((node.x - bounds.minX) / Math.max(1, bounds.maxX - bounds.minX)) * 76,
+      y: 12 + ((node.y - bounds.minY) / Math.max(1, bounds.maxY - bounds.minY)) * 76,
+    }
+  }, [bounds, viewMode, visibleNodes])
 
   /** The canvas already fills the host, so fitting is simply the identity view. */
   const fit = useCallback(() => setView({ scale: 1, x: 0, y: 0 }), [])
@@ -91,15 +113,16 @@ export function ConstellationGraph({
 
   useEffect(() => {
     if (!box || !selectedId) return
-    const node = template.nodes.find((candidate) => candidate.id === selectedId)
+    const node = visibleNodes.find((candidate) => candidate.id === selectedId)
     if (!node) return
     const scale = 1.35
+    const point = position(node)
     setView({
       scale,
-      x: box.width / 2 - (node.x / 100) * box.width * scale,
-      y: box.height / 2 - (node.y / 100) * box.height * scale,
+      x: box.width / 2 - (point.x / 100) * box.width * scale,
+      y: box.height / 2 - (point.y / 100) * box.height * scale,
     })
-  }, [box, selectedId, template])
+  }, [box, selectedId, visibleNodes, position])
 
   const onPointerDown = (event: React.PointerEvent) => {
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
@@ -153,20 +176,23 @@ export function ConstellationGraph({
     if (pointers.current.size < 2) gesture.current = null
   }
 
-  const edges = useMemo(() => constellationEdges(template), [template])
+  const edges = useMemo(() => viewMode === 'extra-stats' ? [] : constellationEdges(template).filter(({ from, to }) =>
+    visibleIds.has(from.id) && visibleIds.has(to.id)), [template, visibleIds, viewMode])
   const size = useMemo(() => {
     if (!box) return NODE_MIN
     let gap = Infinity
-    const nodes = template.nodes
+    const nodes = visibleNodes
     for (let i = 0; i < nodes.length; i += 1) {
       for (let j = i + 1; j < nodes.length; j += 1) {
-        const dx = ((nodes[i]!.x - nodes[j]!.x) / 100) * box.width
-        const dy = ((nodes[i]!.y - nodes[j]!.y) / 100) * box.height
+        const a = position(nodes[i]!)
+        const b = position(nodes[j]!)
+        const dx = ((a.x - b.x) / 100) * box.width
+        const dy = ((a.y - b.y) / 100) * box.height
         gap = Math.min(gap, Math.hypot(dx, dy))
       }
     }
     return Math.round(Math.min(NODE_MAX, Math.max(NODE_MIN, gap * NODE_FILL)))
-  }, [box, template])
+  }, [box, visibleNodes, position])
 
   const unlocked = (node: ConstellationNode) => isNodeUnlocked(template, node, trainingLevel)
   const filled = (node: ConstellationNode) => node.kind === 'root' || (unlocked(node) && assignments[node.id] !== undefined)
@@ -194,11 +220,13 @@ export function ConstellationGraph({
     return { state: 'lit', tone: to.kind === 'grandparent' ? LINEAGE : ACCENT }
   }
 
-  const px = (node: ConstellationNode) => ({ x: (node.x / 100) * (box?.width ?? 0), y: (node.y / 100) * (box?.height ?? 0) })
+  const px = (node: ConstellationNode) => {
+    const point = position(node)
+    return { x: (point.x / 100) * (box?.width ?? 0), y: (point.y / 100) * (box?.height ?? 0) }
+  }
   const nextLevel = trainingLevel + 1
   const crest = getContentAsset(content, 'scenario-icons', template.scenarioId)
-  const root = template.nodes.find((node) => node.kind === 'root')
-  const lineageDividerY = (TREE_BOX.maxY + LINEAGE_BAND.parentY) / 2
+  const root = visibleNodes.find((node) => node.kind === 'root')
   const fitted = view.scale === 1 && view.x === 0 && view.y === 0
 
   return (
@@ -226,16 +254,6 @@ export function ConstellationGraph({
               transform: `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.scale})`,
             }}
           >
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-5 flex items-center gap-2"
-              style={{ top: `${lineageDividerY}%`, transform: 'translateY(-50%)' }}
-            >
-              <span className="h-px flex-1 bg-white/10" />
-              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-ink-on-dark-soft/70">Lineage</span>
-              <span className="h-px flex-1 bg-white/10" />
-            </div>
-
             <svg className="absolute inset-0" width={box.width} height={box.height} aria-hidden="true">
               {edges.map(({ from, to }) => {
                 const { state, tone } = edgeLook(from, to)
@@ -276,7 +294,7 @@ export function ConstellationGraph({
               </div>
             )}
 
-            {template.nodes.map((node) => {
+            {visibleNodes.map((node) => {
               if (node.kind === 'root') return null
               const open = unlocked(node)
               const assignment = open ? assignments[node.id] : undefined
@@ -311,6 +329,14 @@ export function ConstellationGraph({
                   />
                 </button>
               )
+            })}
+            {viewMode === 'extra-stats' && visibleNodes.map((node, index) => {
+              const center = px(node)
+              return <span key={`${node.id}-caption`} aria-hidden="true"
+                className="absolute whitespace-nowrap text-center text-[11px] font-semibold text-ink-on-dark-soft"
+                style={{ left: center.x, top: center.y + size / 2 + 10, transform: 'translateX(-50%)' }}>
+                Produce {index + 1} · TL{nodeUnlockLevel(template, node)}
+              </span>
             })}
           </div>
         )}

@@ -87,12 +87,12 @@ Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-2
 
 1. **Identity** — portrait, name, outfit, Uma Level, Prestige, active title, the featured star, and the three
    highest-tier badges earned.
-2. **This scenario** — once she has more than one scenario, a **scenario switch** (one chip per unlocked scenario
-   with its TL, her career marked) picks which trained unit the zone shows and uses (D190). Then scenario name and
-   Training Level, one status line, and the actions inline (Constellation, Race, Spark Match, Start or Unlock next
-   when they apply; an earlier scenario has no Start or Unlock); stats metered against this scenario's caps; the card
-   set with each card's stars and a **Manage · Bond** link; aptitudes; the scenario's goals, each linking to its
-   race or its result. The Training scene, Skills page and Spark Match follow the same choice.
+2. **This scenario** — the scenario switch (D190), scenario status, Start/Unlock actions, then distinct **Racing**
+   and **Training** zones. Racing shows three compact defaults (style, distance, surface), an Edit sheet and one full-width
+   Races action. Training has three full-width destinations: **Constellation** (card tree and the only Spark Match entry),
+   **Inspiration** (parent/grandparent nodes and aptitude changes), and **Extra stats** (the six Produce nodes). These are
+   separate pages, not three kinds of node mixed in one canvas. Stats, card set, aptitudes and frozen career goals follow.
+   An earlier scenario still has no Start or Unlock. The Training scene, Skills page and Spark Match follow the chosen unit.
 3. **Archive** — collapsed rows for everything browsed rather than used: all badges, scenario history, lineage,
    races run.
 
@@ -108,10 +108,8 @@ inheritance picks. Lineage is set on the constellation's parent nodes instead.
 A full-screen scene with one header — the Uma, scenario crest and TL — and a live stat strip whose deltas read
 against the moment the scene opened. Two tabs sit under it (M016):
 
-- **Constellation** — the tree, the node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
-  shows each card's bond and what one node of it pays, with a **Bond** link beside it. A Produce gem shows its crop mark;
-  its sheet reads the five matching-scenario global stacks, labels migrated choices **Legacy**, disables zero stock and
-  requires a no-refund **Consume 1** confirmation. The committed result updates the live stat strip and links to Items.
+- **Constellation** — the card tree, the card node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
+  shows each card's bond and what one node pays, with a **Bond** link beside it.
 - **Card set** — the chosen scenario's six slots. Each shows the card, its type, its stars in this scenario,
   what one node pays (SP per node for a Friend or Group card, marked **Skill points**), how many nodes it fills, and
   a **Bond** button. Tapping a card offers Open card, **Replace** (the new card takes over its nodes), and Remove.
@@ -119,6 +117,12 @@ against the moment the scene opened. Two tabs sit under it (M016):
   tops the set up without touching what is already there.
 
 Every card-minigame run launched here returns here.
+
+The separate **Inspiration** page shows only the two parent and four grandparent slots with their aptitude deltas and
+lineage picker. **Extra stats** shows only the six Produce gems; a gem's sheet reads matching-scenario global stacks,
+labels migrated choices **Legacy**, disables zero stock and requires a no-refund **Consume 1** confirmation. Its result
+updates the live stat strip and links to Items. Neither page offers a training-minigame button. All three pages edit the
+same scenario's saved node ids; only their visualizations differ.
 
 ### Spark Match — Rival Circuit
 
@@ -155,8 +159,8 @@ drag cancels that uncommitted gesture, landscape asks the player to rotate while
 journal restore failure keeps explicit **Retry run** and **Return** actions visible.
 
 The result leads with **Circuit cleared**, **Drive depleted** or **Turn limit reached**. It then shows Training EXP, the
-before/after TL bar, every level crossed and every opened constellation node by real name. Each node opens the Training
-scene focused on it; **Done** returns to the caller and **Run again · 1 ticket** reserves a new attempt. A reload during a
+before/after TL bar, every level crossed and every opened node by real name. Each node opens its matching
+Constellation, Inspiration or Extra stats view focused on it; **Done** returns to the caller and **Run again · 1 ticket** reserves a new attempt. A reload during a
 board returns to the exact wave, board, gauges and intent rather than to the start screen.
 
 ### Race Select

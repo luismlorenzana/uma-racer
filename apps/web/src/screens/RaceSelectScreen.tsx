@@ -10,6 +10,7 @@ import {
   awaitingAdvance,
   raceExp,
   progressionFieldSize,
+  recommendedRacePreferences,
   regularRaceCatalog,
   raceSkillCompatibleWithCourse,
   raceSkillSupported,
@@ -198,6 +199,13 @@ export function RaceSelectScreen() {
       ? profile.featuredUmaId
       : ownedIds[0] ?? null
   const selectedUma = selectedUmaId ? owned[selectedUmaId] : undefined
+  const defaultStrategy = useMemo(() => {
+    if (!selectedUma || contentState.status !== 'ready') return 'pace'
+    if (selectedUma.racePreferences) return selectedUma.racePreferences.strategy
+    const template = contentState.content.umas.byId.get(selectedUma.templateId)
+    return template ? recommendedRacePreferences(template.aptitudes, template, contentState.content.races.items).strategy : 'pace'
+  }, [selectedUma, contentState])
+  useEffect(() => { setStrategy(defaultStrategy) }, [selectedUmaId, defaultStrategy])
   // The strip holds the leading few, and her if she is further down; the rest are one tap away in the picker.
   const stripIds = useMemo(() => {
     const leading = ownedIds.slice(0, STRIP_SIZE)

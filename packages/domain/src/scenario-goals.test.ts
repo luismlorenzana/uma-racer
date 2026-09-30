@@ -17,6 +17,7 @@ import {
   goalRaceIds,
   parseUmaSave,
   planScenarioCareer,
+  recommendedRacePreferences,
   SCENARIO_GOAL_VERSION,
   scenarioAdvanceReadiness,
   scenarioJourneySummary,
@@ -152,6 +153,16 @@ describe('career profile', () => {
     expect(careerProfile(even, template('even', even), RACES).band).toBe('mile-medium')
     const sprintCareer = template('sprint-career', even, { signatureRaceFamilyIds: [byId.get('sprinters-stakes')!.familyId] })
     expect(careerProfile(even, sprintCareer, RACES).band).toBe('sprint-mile')
+  })
+
+  it('recommends one style, distance and surface, and constrains a chosen future career band', () => {
+    expect(recommendedRacePreferences(COLT.aptitudes, COLT, RACES))
+      .toEqual({ strategy: 'pace', distance: 'long', surface: 'turf' })
+    expect(careerProfile(COLT.aptitudes, COLT, RACES, { distance: 'sprint', surface: 'dirt' }))
+      .toMatchObject({ band: 'sprint-mile', surface: 'dirt' })
+    const chosen = { ...atTier(COLT, 1), racePreferences: { strategy: 'front' as const, distance: 'sprint' as const, surface: 'dirt' as const } }
+    expect(planScenarioCareer({ uma: chosen, umaTemplate: COLT, aptitudes: COLT.aptitudes, races: RACES }).profile)
+      .toMatchObject({ band: 'sprint-mile', surface: 'dirt' })
   })
 })
 

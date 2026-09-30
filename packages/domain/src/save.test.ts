@@ -170,8 +170,8 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 10 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 10 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 11 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 11 })).toThrow(/App update required/)
   })
 
   it('migrates v1 profiles and Umas into current defaults and preserves every v2 goal fact', () => {
@@ -307,7 +307,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 10 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 11 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
@@ -393,7 +393,7 @@ describe('the migration chain', () => {
     expect(migrated).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, tickets: 89 })
     expect(migratePlayerProfileToCurrent(migrated)).toEqual(migrated)
     const v6Uma = { ...v5Uma(), schemaVersion: 6 as const }
-    expect(migrateUmaSaveToCurrent(v6Uma)).toEqual({ ...v6Uma, schemaVersion: SAVE_SCHEMA_VERSION })
+    expect(migrateUmaSaveToCurrent(v6Uma)).toEqual({ ...v6Uma, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
   })
 
   it('migrates every filled v8 Stat assignment to legacy Produce without inventing item progress', () => {
@@ -453,6 +453,16 @@ describe('the migration chain', () => {
     expect(migrateUmaSaveToCurrent(current)).toEqual(current)
     const cardSave = createCardSave(card('c1'))
     expect(migrateCardSaveToCurrent(cardSave)).toEqual(cardSave)
+  })
+
+  it('adds nullable race preferences to v9 without changing a frozen journey', () => {
+    const current = createUmaSave(template)
+    const journey = { tier: 1, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: 7, goals: [] }
+    const { racePreferences: _unused, ...v9 } = { ...current, scenarios: [{ ...current.scenarios[0]!, started: true, journey }] }
+    const migrated = migrateUmaSaveToCurrent({ ...v9, schemaVersion: 9 })
+    expect(migrated).toMatchObject({ schemaVersion: 10, racePreferences: null, scenarios: [{ journey }] })
+    expect(parseUmaSave({ ...migrated!, racePreferences: { strategy: 'front', distance: 'long', surface: 'turf' } })).not.toBeNull()
+    expect(parseUmaSave({ ...migrated!, racePreferences: { strategy: 'wrong', distance: 'long', surface: 'turf' } })).toBeNull()
   })
 
   it('returns null for something that is not a save, rather than inventing one', () => {

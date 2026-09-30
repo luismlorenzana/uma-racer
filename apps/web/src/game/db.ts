@@ -282,6 +282,8 @@ class RacerDb extends Dexie {
     this.version(14).stores(storesWithFarm)
     // Save v9: free Stat assignments become explicit legacy Produce, without fabricating inventory or evidence.
     this.version(15).stores(storesWithFarm).upgrade(walkRowsToCurrent)
+    // Save v10 adds nullable per-outfit racing preferences; all v9 rows keep their frozen careers.
+    this.version(16).stores(storesWithFarm).upgrade(walkRowsToCurrent)
   }
 }
 
