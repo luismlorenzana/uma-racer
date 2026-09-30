@@ -1,7 +1,7 @@
 # Stable Farm
 
-> **Status: M025 in progress.** The pure rules/catalog and the synced Farm, Item and item-ledger runtime are implemented
-> through T083. The current deployed app has no Farm route or Item browser until T084–T085 land.
+> **Status: M025 complete.** The rules/catalog, synced Farm and item-ledger runtime, Home/field/worker/crop screens and
+> global Item inventory are implemented. M026's constellation Produce-node consumption remains deliberately later.
 
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows into a
 six-plot field as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting adds produce to

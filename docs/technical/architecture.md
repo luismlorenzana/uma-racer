@@ -89,6 +89,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - Farm/item conflict adoption is followed by evidence reconciliation inside the same Dexie transaction. Unique movement
   ids rebuild stack quantity and harvest XP, advance plot attempt floors and clear a harvested cycle resurrected by a
   stale Farm copy. Matching projections are a write-free no-op; IndexedDB-unavailable play uses the same port in memory.
+- Home reads an aggregate Farm projection and `/farm` lazy-loads the full-screen Field / Workers / Crops / Items shell.
+  One visibility-aware minute clock derives readiness without persistence writes. The Item view joins synced stacks to
+  the checked-in catalog; owned/all, stat, scenario and density preferences reuse device-local `albumPrefs` and never sync.
+  Settings diagnostics expose aggregate Farm/item/ledger counts only, never private item names or ids.
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
   duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
@@ -172,7 +176,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 - Stable Farm keeps its clock outside the domain: pure rules receive an integer `now`, persist one fixed twelve-hour
   deadline, and derive Locked/Growing/Ready plus every outfit/Farm/crop unlock. Its synthetic `sim:farm` harness pins
-  the one-to-six expansion envelope without reading a save, browser API or private content.
+  the one-to-six expansion envelope without reading a save, browser API or private content. Presentation recomputes on
+  a shared minute boundary plus focus/visibility, while planting and harvesting alone cross the save boundary.
 - `simulateRace(input) → RaceTimeline` runs the **whole race up front** in a few milliseconds: 18 runners × about 2,250 ticks at 1/15 s.
 - The renderer **plays the timeline back** and interpolates between ticks at the display's refresh rate (60 Hz, or 120 Hz where Safari allows).
 - This gives free **skip** (jump to results), **replay** (store `seed` + inputs, re-simulate), and **headless batch balance runs** in Node or a Web Worker.

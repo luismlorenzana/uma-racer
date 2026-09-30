@@ -14,14 +14,13 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078 and T079 landed; T080 next, then T081 |
-| [M025 — Stable Farm](M025-stable-farm.md) | T082 domain complete · T083 runtime complete · T084 screen complete · [T085 inventory](T085-item-inventory.md) | In progress · T085 next |
 | [M026 — Produce nodes](M026-produce-nodes.md) | [T086 constellation bridge](T086-produce-nodes.md) | Planned after M025 · fully specified |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
 
 **M024 is the current unit of work** (D199–D202): T078 and T079 landed on 2026-09-29; T080 is next, and T081 follows
-it. M025's Farm continues with T085 after its completed domain/runtime/screen, followed by M026's Produce-node bridge.
-T035 stays specified and can be picked up any time. Anything new starts with the next free numbers below.
+it. M025's Farm is complete; M026's Produce-node bridge is its next unit. T035 stays specified and can be picked up any
+time. Anything new starts with the next free numbers below.
 
 The owner's device checks (every milestone's, including Spark Rival Circuit's physical-iPhone pass) wait in
 [Open questions](../open-questions.md#needs-you-owner-actions-not-design-questions) and close together in T038 (D189).
@@ -37,6 +36,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| M025 — Stable Farm (T082–T085) | 2026-09-30 | [Stable Farm](../design/farm.md) and [Architecture](../technical/architecture.md) | `4ac41d7` |
 | T001–T018 and the Milestone 6 plan | 2026-09-19 | design docs | `463edb8` |
 | T024–T027 and M008, **superseded** by the training rework (D119–D125) rather than completed | 2026-09-20 | — | `0a57f4c` |
 | M012 (constellation engine, save v5), M013 (constellation screen), M014 (Spark Match, Bond Recall), then T058 | 2026-09-21 | [Constellations](../design/constellations.md), [Minigames](../design/minigames.md) | `ac1c157` |

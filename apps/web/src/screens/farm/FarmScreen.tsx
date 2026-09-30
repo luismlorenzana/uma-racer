@@ -56,8 +56,9 @@ import { Panel } from '../../ui/Panel'
 import { Placeholder } from '../../ui/Placeholder'
 import { ScreenState } from '../../ui/ScreenState'
 import { SegmentedControl } from '../../ui/SegmentedControl'
-import { TypeIcon, TYPE_ICON_COLORS, type TypeIconKind } from '../../ui/TypeIcon'
+import { TypeIcon } from '../../ui/TypeIcon'
 import { useArt } from '../../ui/album/useArt'
+import { CropMark } from '../../ui/farm/CropMark'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -94,7 +95,7 @@ interface HarvestMoment {
   farmLevels: number[]
 }
 
-interface FarmScreenContextValue {
+export interface FarmScreenContextValue {
   view: FarmView
   now: number
   templates: ReadonlyMap<string, UmaTemplate>
@@ -111,7 +112,7 @@ interface FarmScreenContextValue {
 
 const FarmScreenContext = createContext<FarmScreenContextValue | null>(null)
 
-function useFarmScreen(): FarmScreenContextValue {
+export function useFarmScreen(): FarmScreenContextValue {
   const context = useContext(FarmScreenContext)
   if (!context) throw new Error('Farm screen must be inside FarmShell')
   return context
@@ -277,18 +278,6 @@ export function FarmShell() {
 
       <PagedGuide open={guide} pages={GUIDE_PAGES} startAt="assign" titleId="farm-guide-title" finishLabel="Open the field" onClose={() => setGuide(false)} />
     </div>
-  )
-}
-
-function CropMark({ crop, size = 48 }: { crop: FarmCropDefinition; size?: number }) {
-  const color = TYPE_ICON_COLORS[crop.stat as TypeIconKind]
-  return (
-    <svg viewBox="0 0 56 56" width={size} height={size} role="img" aria-label={`${crop.name}, ${crop.stat} produce`} className="shrink-0">
-      <circle cx="28" cy="30" r="19" fill={color.top} stroke={color.rim} strokeWidth="3" />
-      <path d="M27 14c-1-7 4-11 11-10-1 7-5 10-11 10Z" fill="#238958" />
-      <path d="M27 15c-5-6-10-7-15-3 4 5 9 7 15 3Z" fill="#45aa67" />
-      <path d="M20 27c4-5 12-5 16 0M19 35c5 4 13 4 18 0" fill="none" stroke={color.glyph} strokeWidth="3" strokeLinecap="round" opacity=".9" />
-    </svg>
   )
 }
 
@@ -481,7 +470,8 @@ export function FarmFieldScreen() {
           <p className="text-[13px] text-ink-soft">Now {farm.harvestMoment.receipt.quantity} in Items · +{FARMING_EXP_PER_HARVEST} Farming XP</p>
           {farm.harvestMoment.outfitLevels.map((level) => <p key={`outfit-${level}`} className="mt-2 font-semibold text-accent-strong">Farming Level {level} reached</p>)}
           {farm.harvestMoment.farmLevels.map((level) => <p key={`farm-${level}`} className="font-semibold text-accent-strong">Farm Level {level} reached</p>)}
-          <Button className="mt-4 w-full" onClick={farm.clearHarvestMoment}>Back to field</Button>
+          <Link to={`/farm/items?item=${encodeURIComponent(farm.harvestMoment.receipt.itemId)}`} onClick={farm.clearHarvestMoment} className="font-display mt-4 flex min-h-12 w-full items-center justify-center rounded-sm bg-accent px-4 font-semibold text-ink shadow-1">View this item · ×{farm.harvestMoment.receipt.quantity}</Link>
+          <Button variant="tertiary" className="mt-1 w-full" onClick={farm.clearHarvestMoment}>Back to field</Button>
         </m.div>
       </m.div>}
     </AnimatePresence>
@@ -549,10 +539,4 @@ export function FarmCropsScreen() {
     })}</div>
     <BottomSheet open={pickingWorker} onClose={() => setPickingWorker(false)}><h2 className="font-display text-xl font-bold">Check crop access</h2><div className="mt-3 grid gap-2">{farm.workers.map((entry) => <button key={entry.id} type="button" onClick={() => { setWorkerId(entry.id); setPickingWorker(false) }} className="flex min-h-14 items-center justify-between rounded-sm border border-hairline bg-panel px-3 text-left"><span><span className="block text-[13px] font-semibold">{entry.name}</span><span className="block text-[11px] text-ink-soft">{entry.outfit ?? 'Standard outfit'} · Farming Lv{entry.progress.level}</span></span>{entry.id === worker?.id && <Crest tone="accent">Selected</Crest>}</button>)}</div></BottomSheet>
   </div>
-}
-
-export function FarmItemsPlaceholderScreen() {
-  const farm = useFarmScreen()
-  const total = Object.values(farm.view.inventory).reduce((sum, quantity) => sum + quantity, 0)
-  return <div className="pb-4"><Panel className="text-center"><CropMark crop={FARM_CROPS[0]!} size={64} /><h2 className="font-display mt-2 text-lg font-bold">Global Items</h2><p className="mt-1 text-[13px] text-ink-soft">{total} harvested item{total === 1 ? '' : 's'} are safely stored. The complete inventory browser arrives in the next Farm task.</p><Link to="/farm" className="mt-4 inline-flex min-h-11 items-center gap-1 font-semibold text-accent-strong">Return to Field <ChevronRightIcon size={20} /></Link></Panel></div>
 }
