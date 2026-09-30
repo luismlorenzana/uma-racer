@@ -1,10 +1,22 @@
 # Open Questions
 
-Every earlier design question has been resolved and logged in [decisions.md](decisions.md) (see D49–D58).
+Earlier shipped-system design questions have been resolved and logged in [decisions.md](decisions.md). The proposed
+[Global Uma RPG](design/uma-rpg.md) has new questions below; none should be treated as an implemented rule. Draft
+numbers across the design docs (curves, costs, thresholds) are **tuning values**, not open questions. They get adjusted
+through balance simulation and playtesting.
 
+## Global Uma RPG — resolve before implementation
 
-Draft numbers across the design docs (curves, costs, thresholds) are **tuning values**, not open questions. They get
-adjusted through balance simulation and playtesting.
+| Question | Recommended first answer / validation |
+|---|---|
+| Is the party **five** rather than four, and must all five be filled? | Prototype both at 390×844. Lead with five full slots and five saved presets, with no mandatory class composition; the starter pack has only one End-A outfit. |
+| How do **surface aptitude**, B-distance elements and an outfit with no A running style affect class/skill eligibility? | Use source aptitudes rather than editable racing defaults; explicitly design the off-surface and no-A fallbacks before coding. Do not silently drop Turf/Dirt. |
+| Which element is an outfit's active signature, and what exactly does its draft **10% class bonus** modify? | Choose one from its permitted elements in setup; do not double-apply to hybrid damage. Simulate the bonus and elemental multiplier together, then pin the settled constants. |
+| What are the RPG level cap/curve, HP/MP formulas, skill tiers/slots, healing and KO rules, chapter length and weak/strong enemy EXP adjustment? | Build a synthetic combat-and-progression sim before adopting numbers. Keep Speed as both ATK and MATK input. |
+| What happens when a chapter is open on one device and the player switches preset, edits that outfit elsewhere, reconnects on another device or reinstalls? | Freeze each entered battle, sync clear checkpoints and idempotent rewards, and write down an explicit second-device policy. Never silently reroll an open fight. |
+| Which PriConne characters/monster variants, fighting styles and art are authored for production? | Start with a small named-guest/boss shortlist and ordinary synthetic foes; keep all extracted/third-party rows and images in private content. A missing pack must be visible. |
+| What is the scenario Parent Unlock item's exact name, clear quantity, repeatability and eventual consumption? | First delivery grants only an auditable global Item stack; coordinate the later sink with the separate Inspiration design. Do not let this draft alter constellation gates. |
+| Is chapter entry free, and can a failed or abandoned chapter be retried without cost or map reset? | Lead with free entry and explicit retry/checkpoint rules; decide and pin before implementing the save contract. |
 
 ## Needs you (owner actions, not design questions)
 

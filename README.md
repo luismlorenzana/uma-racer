@@ -83,6 +83,7 @@ docs/           design, technical, research
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Complete one-to-six-plot account loop: persistent outfit workers, scenario crops, synced harvests, global Items and constellation Produce consumption |
+| [Global Uma RPG — first draft](docs/design/uma-rpg.md) | Proposed account-wide turn-based campaign: outfit RPG levels, five-person parties, classes/elements, chapter maps and inventory-only rewards; not implemented |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
@@ -110,6 +111,7 @@ docs/           design, technical, research
 | [Spark Rival Circuit Research](docs/research/spark-rival-circuit.md) | Puzzle-battle adaptation, strategy advantage, deterministic touch architecture, and rejected scope |
 | [World Expeditions Research](docs/research/world-expeditions.md) | International Dirt and Turf specialist race pools, a unified eight-win completion rule, and source risks |
 | [Farming Game Research](docs/research/farming-games.md) | Popular farming loops compared against Stable Farm's plots, workers, offline clock, crop progression and inventory |
+| [Uma RPG Research](docs/research/uma-rpg.md) | Persona/Fire Emblem/Octopath comparisons, actual A-aptitude overlap and PriConne enemy-content direction |
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Race Engine R3 Findings](docs/research/race-engine-r3-findings.md) | Pack formulas, explicit approximations, launch-unique coverage, and balance results |
@@ -118,4 +120,4 @@ docs/           design, technical, research
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
 | [Tasks](docs/tasks/README.md) | The current milestone plan and its delegable task specs (see [AGENTS.md](AGENTS.md)) |
-| [Open Questions](docs/open-questions.md) | Currently none. New questions land here before they're resolved |
+| [Open Questions](docs/open-questions.md) | Owner/device checks and the proposed Uma RPG's unresolved rules |

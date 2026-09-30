@@ -26,6 +26,10 @@ outfit crew, a field that grows from one to six plots and persisted deadlines, n
 journal, terminal result or win/loss. It may reuse visual primitives and `PagedGuide`, but it must not be forced through
 `MinigameHost` (D203, D206).
 
+The [Global Uma RPG](uma-rpg.md) is likewise a **proposal outside this ticketed-run contract**: its chapters contain
+multiple battles and synced checkpoints. It should reuse the kit's pure-engine, deterministic-replay, private-content,
+mobile and guide standards, but must define its own long-lived chapter/battle save contract before implementation.
+
 ## 2. The run lifecycle
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
