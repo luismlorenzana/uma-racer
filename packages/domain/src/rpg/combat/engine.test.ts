@@ -175,6 +175,24 @@ describe('pure RPG combat', () => {
     expect(state.units.filter((part) => part.side === 'ally' && part.hp > 0)).toHaveLength(0)
   })
 
+  it('counts a simultaneous full-party and final-enemy burn KO as a loss', () => {
+    const input = syntheticEncounter('spear', 'fire', 'ice')
+    input.enemies = [syntheticEnemy('foe-a', 'ice')]
+    input.enemies[0]!.moves = [{ id: 'wait', kind: 'guard', channel: 'physical',
+      element: null, power: 0, target: 'self', intentText: 'Wait' }]
+    let state = createEncounter(input).state
+    state = JSON.parse(JSON.stringify(state)) as typeof state
+    for (const part of state.units) {
+      part.hp = 1
+      part.statuses = [{ kind: 'burn', stacks: 1, turns: 1 }]
+    }
+    for (let index = 0; index < 5; index += 1) {
+      state = applyAction(state, { kind: 'guard', actorId: `ally-${index}`, targetId: `ally-${index}` }).state
+    }
+    expect(state.outcome).toBe('loss')
+    expect(state.units.every((part) => part.hp === 0)).toBe(true)
+  })
+
   it('replay exactly matches stepping, including cues, after a JSON round trip', () => {
     const input = syntheticEncounter('spear', 'fire', 'ice', 2026)
     const actions: CombatAction[] = []

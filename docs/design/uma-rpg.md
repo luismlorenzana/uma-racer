@@ -317,7 +317,8 @@ another's intent. No wall clock or `Math.random` is consulted.
   acted, once each in descending Initiative; enemy id breaks equal-Initiative ties. A KO'd enemy skips its intent.
   Ally Initiative is displayed from Stamina but does not add actions or override deliberate player order in v1.
   At most **40 rounds** are allowed; an unresolved battle at the limit is a loss. Victory is all enemies KO'd, loss
-  is all allies KO'd. A KO'd entrant still receives future win EXP under D225, outside this engine.
+  is all allies KO'd; a simultaneous full-party and final-enemy KO is a **loss**. A KO'd entrant still receives
+  future win EXP under D225, outside this engine.
 - Enemy intent includes the selected move **and target** before the player commits. The move is chosen by seeded
   hash of entry seed, round, enemy id and phase; target is front formation, lowest HP fraction (id tie-break), or
   seeded live ally according to the authored policy. If the revealed target falls before its enemy acts, a deterministic

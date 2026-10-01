@@ -266,8 +266,11 @@ function heal(state: CombatState, actor: CombatUnit, target: CombatUnit, coeffic
   if (supportStatus === 'ward') target.statuses = target.statuses.filter((part) => part.kind !== 'burn' && part.kind !== 'weaken')
 }
 function checkTerminal(state: CombatState, cues: CombatCue[]): boolean {
-  if (!living(state, 'enemy').length || !living(state, 'ally').length) {
-    state.outcome = living(state, 'enemy').length ? 'loss' : 'victory'
+  const alliesAlive = living(state, 'ally').length
+  const enemiesAlive = living(state, 'enemy').length
+  if (!enemiesAlive || !alliesAlive) {
+    // No surviving entrant means no clear, even when the last enemy falls on that same tick.
+    state.outcome = alliesAlive && !enemiesAlive ? 'victory' : 'loss'
     state.intents = []
     cues.push({ kind: 'result', label: state.outcome })
     return true
