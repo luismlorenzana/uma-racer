@@ -1,25 +1,37 @@
-# T092 — Battle journal, resume and commit boundary
+# T092 — Battle journal, offline pending and result commit
 
-**Goal:** connect the pure battle to persistent frozen entries without granting duplicate rewards. Read
-[M028](M028-uma-rpg.md), [Architecture](../technical/architecture.md), D219 and the T090/T091 implementations.
-Depends on T090 and T091.
+**Outcome:** a frozen battle survives reload and cross-device conflict without rerolling or orphaning a result.
+Depends on T090/T091. Read [M028](M028-uma-rpg.md), [implementation contract](../technical/uma-rpg-implementation.md),
+[Architecture](../technical/architecture.md), D219/D223 and the implemented T090/T091 interfaces.
 
-## Scope and contract
+## Host deliverables
 
-- Define an RPG battle host separate from ticketed `MinigameHost`: enter from a validated preset/chapter node,
-  atomically freeze encounter identity/content version/party and seed, append player actions to a device-local Dexie
-  journal, restore by replay, and close with a revision-checked terminal result. Do not cap it at 64 actions.
-- Save journal schema/version and replay hash. A reload on the same device presents the exact current turn. Missing or
-  corrupt local journal requires an **explicit** restart from the same frozen entry, never a new encounter. A second-
-  device takeover invalidates the former lease; the stale device must display a conflict and cannot commit.
-- Make result evidence idempotent on attempt/encounter id. A loss returns to the frozen entry/checkpoint for a free
-  retry; already-cleared node rewards remain. The host exposes a typed result for later T095 EXP and T098 token
-  integration, but does not yet mint either. No network round-trip is needed for each action.
+1. Provide a typed web `RpgBattleHost` with enter, resume, submit action, explicit takeover, complete and abandon to
+   checkpoint operations (names may fit surrounding code; semantics may not change). Enter uses T090's grouped
+   checkpoint command and frozen entry; action appends only to a device-local Dexie journal **after** the pure
+   reducer accepts it; complete checks terminal replay hash and sends one revision-checked grouped result. T096
+   later adds EXP to that same command, not a separate write.
+2. Version the journal engine input and action encoding, keyed by frozen entry id **plus retry ordinal**. On
+   same-device reload replay every action and compare hash
+   before enabling controls. Missing/corrupt local journal offers an explicit restart from the **same** frozen
+   entry. Archive/prune only after an accepted receipt can reconstruct the result. Never apply a 64-action cap from
+   ticketed `MinigameHost`.
+3. Offline entry/result is Pending. Actions continue locally, but a pending result cannot advance map, grant EXP or
+   unlock Items. On acknowledgement move to Accepted. On second-device takeover increment only lease/revision and
+   restart the same entry; the former device becomes Stale and cannot commit. A rejected old result stays visible as
+   conflicted history, not reissued as a new attempt.
+4. Supply one host view model for Open, Pending, Conflict, Frozen content unavailable, Loss and Accepted. Memory-only
+   development and local JSON API honor the same semantics; neither pretends a browser journal synced to another
+   device.
 
-## Acceptance
+## Recovery matrix and acceptance
 
-Tests cover interrupted turn replay, corrupt journal, reconnect, concurrent takeover, stale commit rejection,
-duplicate terminal call and free retry with unchanged seed/content. A repeated action cannot be journaled twice.
-`pnpm lint`, `pnpm test`, `pnpm build` and replay tests pass. Update architecture and remove this spec in its PR (D104).
+Interrupt after each action; reload mid-animation; duplicate/illegal action; background/foreground; missing local
+journal; offline finish/reconnect; two takeovers; old-device commit after takeover; duplicate accepted terminal
+receipt; free loss retry at identical seed/content. An accepted loss and later winning retry have distinct result ids
+but the same frozen entry/seed/kit. Assert exactly one accepted reward and zero orphan evidence.
+`pnpm lint`, `pnpm test`, `pnpm build` and fixed replay tests pass. Update architecture and delete this spec in the
+same PR (D104).
 
-**Out of scope:** battle UI, map authoring, level grants and token grants.
+**Out of scope:** battle screen, map, EXP and token grants. T095 owns map navigation, T096 adds EXP, T098 adds
+chapter token clear/spend.

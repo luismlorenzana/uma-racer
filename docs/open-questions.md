@@ -6,7 +6,9 @@ question here blocks reviewing that draft. Two explicit draft defaults are avail
 does not gate elemental trees, and every replayed chapter clear grants one scenario token. Its remaining HP/MP
 coefficients, depth gates, active-slot count, private
 PriConne content selection and phone layout are **implementation/balance checks**, not unanswered owner choices;
-the design's delivery sequence names where each is tested. Draft numbers across the design docs are tuning values
+[M028](tasks/M028-uma-rpg.md) names the responsible task and its acceptance gate for each. The planned RPG
+sync policy (D223) lets battle actions work offline but holds entry/result rewards as pending until a grouped
+commit is acknowledged; the owner may revise that tradeoff before T090. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
 
 ## Needs you (owner actions, not design questions)

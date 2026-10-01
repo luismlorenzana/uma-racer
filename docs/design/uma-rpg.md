@@ -1,6 +1,6 @@
-# Global Uma RPG — first design draft
+# Global Uma RPG — design and implementation boundaries
 
-> **Status: proposal, not implemented.** The owner has fixed the mode's global scope, outfit-specific RPG levels,
+> **Status: approved scope, not implemented.** The owner has fixed the mode's global scope, outfit-specific RPG levels,
 > Speed-as-offense mapping, a permanently chosen running-style class, visible weapon/element identity, and
 > inventory-only destination for its future rewards. Level 50 is a repeatable **class-promotion point**, not a final
 > cap. Five filled party slots, the signature-element choice and the Inspiration token destination are fixed.
@@ -62,8 +62,10 @@ shows RPG Level. Racing and Farm values are read as inputs where specified, neve
 | **Guts** | Dexterity / critical reliability | Precision and clutch effects, not another raw ATK stat. |
 | **Wit** | MP and magical resource economy | A visible reason to value Wit on caster and support builds. |
 
-The conversion reads the outfit's **base racing stats and growths**, not its mutable scenario constellation or Produce
-assignments, to keep this global profile stable when the player switches scenarios. Level-up gains are deterministic,
+The conversion freezes the outfit's **base racing stats and growths** and their source content version at RPG
+enrollment (D226), not its mutable scenario constellation or Produce assignments. A later private pack update cannot
+silently change an already-enrolled RPG profile; any explicit rebase would need a separate migration decision. This
+keeps the global profile stable when the player switches scenarios. Level-up gains are deterministic,
 never a hidden random stat roll. At RPG enrollment the player chooses one eligible running-style class and one weapon
 path for that outfit. The **running style is permanent** across presets, chapters and promotions; a dual-A racing
 outfit does **not** level multiple style classes or switch between them. The selected weapon path stays with that outfit
@@ -101,11 +103,13 @@ result shows the exact five-stat carry-forward and any new tier bonus; no retroa
 lifetime gain makes later tiers too strong, tune the projection/enemy scale in simulation rather than resetting earned
 stats. HP, MP, magical defense, damage and any tier bonus still need their own formulas and pinning tests.
 
-EXP is awarded after a resolved battle to participating outfits and optionally at chapter clear, with one idempotent
-grant per encounter/clear. Level-relative rewards should accelerate catch-up and taper farming weak chapters, but must
-not prevent a player from progressing. EXP earned at Lv50 **banks** until the player promotes; promotion then applies
-that bank to the next tier without loss or duplicate grants. A KO'd member's participation rule and repeat-clear reward
-need explicit decisions. The result names every crossed level, exact stat changes and new skill choices. A **small,
+EXP is awarded once for a **won encounter** to all five frozen entrant outfits, including a member KO'd before the
+win; a lost or abandoned encounter pays none. The boss pays its authored encounter EXP, while chapter clear grants
+its scenario token, **not another hidden EXP bonus** (D225). Level-relative rewards should accelerate catch-up and
+taper farming weak chapters, but never to zero; the exact formula is T096's simulation-and-pinning gate after T095's
+chapter fixture exists. EXP earned at Lv50 **banks** until the player promotes; promotion then applies that bank to
+the next tier without loss or duplicate grants. The result names every crossed level, exact stat changes and new
+skill choices. A **small,
 synthetic two-tier sanity simulation** should check five-chapter pacing, one overleveled replay, one catch-up party and
 no stat/EXP loss on promotion; it need not exhaustively solve every party. Pin the finalized curve before implementation.
 
@@ -290,6 +294,14 @@ its frozen entry state**; it may not silently reroll enemies, content, seed, or 
 the former device stale before it can commit. Results grant EXP/items once by encounter/clear identity; navigation,
 retry and reconnect cannot claim twice. Battle actions may not require a network round-trip.
 
+**Reward acknowledgement:** ordinary save sync appends logs even when a related entity conflicts, so RPG results use
+one conditional grouped save mutation (D223). Battle actions and same-device resume work offline. An offline entry
+or finished fight is visibly **pending** until sync acknowledges it; its EXP, next map node and Item reward cannot be
+spent while pending. A rejected competing-device result shows the accepted checkpoint and never applies its
+provisional reward. This is an explicit first-delivery limitation, not a hidden reroll or a claim that two
+disconnected devices can both commit the same encounter. The [implementation contract](../technical/uma-rpg-implementation.md)
+defines the command and replay boundary.
+
 ## Chapters, content and reward boundary
 
 - A chapter selects one of the existing scenarios as theme/reward destination. Every preset may launch any chapter;
@@ -356,9 +368,11 @@ second reward wallet. **Today**, the implemented Inspiration lineage branches st
 owned by an Inspiration/inventory bridge with save migration; merely granting tokens in the RPG must not leave them
 unspendable or silently alter live Training Level rules.
 
-The implementation plan is [M028 — Global Uma RPG](../tasks/M028-uma-rpg.md), split into T089–T099. Its first PRs
-settle the remaining balance and persistence contracts with synthetic fixtures; later PRs build the battle, chapter,
-progression, private-content and Inspiration bridge. The Home entry remains hidden until a real chapter can be played
-and rewarded end to end. Each task updates this design when a candidate rule becomes settled, appends a decision for
-new rules, pins changed numbers in `packages/domain/src/domain.test.ts`, and runs lint, test, build and relevant RPG
-simulations. Original-game and PriConne content stays private throughout.
+The implementation plan is [M028 — first playable RPG](../tasks/M028-uma-rpg.md), split into T089–T099, followed by
+[M029 — chapter rollout](../tasks/M029-rpg-chapter-rollout.md), T100–T103, covering the other thirteen current
+scenarios. The [technical contract](../technical/uma-rpg-implementation.md) specifies state ownership, grouped
+transactions, replay and handoffs. The first PRs settle balance and persistence with synthetic fixtures; later PRs
+build the battle, chapter, progression, private-content and Inspiration bridge. The Home entry remains hidden until a
+real chapter can be played and rewarded end to end. Each task updates this design when a candidate rule becomes
+settled, appends a decision for new rules, pins changed numbers in `packages/domain/src/domain.test.ts`, and runs
+lint, test, build and relevant RPG simulations. Original-game and PriConne content stays private throughout.

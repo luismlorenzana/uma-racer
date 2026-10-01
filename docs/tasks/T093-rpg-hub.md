@@ -1,8 +1,9 @@
 # T093 — RPG roster, enrollment and party hub
 
 **Goal:** let the player set up and inspect their RPG roster before a chapter exists, without exposing an unfinished
-Home entry. Read [M028](M028-uma-rpg.md), [Global Uma RPG](../design/uma-rpg.md), [Visual System](../design/visual-system.md)
-and D219–D221. Depends on T089 and T090.
+Home entry. Read [M028](M028-uma-rpg.md), [Global Uma RPG](../design/uma-rpg.md),
+[implementation contract](../technical/uma-rpg-implementation.md), [Visual System](../design/visual-system.md)
+and D219–D223. Depends on T089 and T090.
 
 ## Scope and contract
 
@@ -17,6 +18,22 @@ and D219–D221. Depends on T089 and T090.
 - Use existing outfit art if present, and place readable weapon and element glyph+text overlays on every RPG portrait
   component for later map/battle/result reuse. Include a toggleable element legend; color cannot be the sole cue.
   Mobile touch targets ≥44 pt, safe-area padding, reduced-motion support and lazy route/chunk.
+
+## Screen/state handoff
+
+- Internal route structure: Hub (five preset cards, continue/change party), Roster (owned outfit list and RPG
+  profile), Parties (five ordered slots, signature/loadout), Enrollment confirmation. All use the same saved state
+  selectors; no second roster copy in component state. Before T095 exists, chapter CTA says unavailable in this
+  internal route rather than linking to an empty map; **do not add Home navigation**.
+- Roster shows Locked choice, eligible A-style options and A/B-distance elemental legend before enrollment. An
+  ineligible outfit remains visible with a reason. An enrolled outfit's style/weapon is displayed read-only; no
+  accidental re-enrollment/reset. The profile distinguishes RPG tier/local level from race Uma Level, Training Level
+  and Farming Level. Preset edit warns if a selected outfit changes elsewhere and reloads on stale revision.
+- Build one reusable `RpgPortrait`/overlay projection for party, map, battle and result: outfit art, weapon glyph+text,
+  active signature glyph+text, optional affinity legend. Portrait face remains unobscured; missing private art gets
+  the app's honest content-unavailable treatment, not a new copyrighted placeholder in git.
+- UI states to screenshot/test: empty account, five owned eligible outfits, partial preset, duplicate outfit
+  refusal, no-A outfit, dual-A enrollment choice, active-signature switch and stale/cloud-updated preset.
 
 ## Acceptance
 
