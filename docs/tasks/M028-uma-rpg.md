@@ -17,7 +17,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 
 | Task | PR-sized outcome | Depends on |
 |---|---|---|
-| [T089 — RPG rules and tuning](T089-rpg-rules.md) | Pure aptitude, profile, EXP, class-tier and skill-tree rules; bounded synthetic progression sim; settled numeric pins | Current `main`; rebase after concurrent save/item work |
+| T089 — RPG rules and tuning ✅ | Pure aptitude, profile, EXP, class-tier and skill-tree rules; bounded synthetic progression sim; settled numeric pins | Landed; see D227 and [RPG design](../design/uma-rpg.md#outfit-rpg-profile-and-progression) |
 | [T090 — RPG save contract](T090-rpg-save.md) | Versioned outfit/preset/checkpoint state, API validation, Dexie migration and **atomic grouped mutation** protocol | T089; latest save version |
 | [T091 — Deterministic combat engine](T091-rpg-combat.md) | Pure five-member battle, six weapon paths, five elements, enemy intent, statuses and replay; combat sim | T089 |
 | [T092 — Battle journal and host](T092-rpg-battle-host.md) | Device-local action journal, frozen entry, second-device takeover and idempotent battle result boundary | T090, T091 |
@@ -64,10 +64,11 @@ milestone table, and record any newly settled rule in `docs/decisions.md`.
 
 ## Balance and architecture gates
 
-T089 and T091 must settle **only the rules they implement**. The current curve, 10% specialization, skill point
-scaffold and elemental direction are documented candidates or approved scaffold, not permission to bake untested
-coefficients into save migrations. Check a five-scenario promotion pace and two tiers with a modest synthetic sim;
-compare six paths, heal/guard/weakness, overleveled replay and catch-up. Write the chosen formulas in the design,
+T089 settled the level curve, 10% specialization, skill points, depth gates and slot bounds in D227. T091 must settle
+**only the combat rules it implements**; the elemental matchup direction remains a candidate, not permission to bake
+untested coefficients into save migrations. T089 checked a five-scenario promotion pace and two tiers with a modest
+synthetic sim; T091 compares six paths, heal/guard/weakness, overleveled replay and catch-up. Write its chosen
+formulas in the design,
 append decisions, pin changed numbers in `packages/domain/src/domain.test.ts`, and save replay fixtures/hashes so later
 screen/content work cannot alter results accidentally. If tuning materially changes the approved identity, stop and
 ask the owner before implementation.

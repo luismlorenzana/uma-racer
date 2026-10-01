@@ -15,7 +15,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078 and T079 landed; T080 next, then T081 |
 | [M027 — Training Rebalance](M027-training-rebalance.md) | T087 linear levels and EXP bank ✅ · [T088 spend Level-Up Tickets](T088-spend-level-up-tickets.md) | **In progress** · T087 landed; T088 next. Independent of M024 |
-| [M028 — Global Uma RPG](M028-uma-rpg.md) | [T089–T099](M028-uma-rpg.md#delivery-sequence) | **Implementation-ready plan, not implemented** · rules/save, synthetic vertical slice, real URA chapter and Inspiration sink |
+| [M028 — Global Uma RPG](M028-uma-rpg.md) | T089 pure rules ✅ · [T090–T099](M028-uma-rpg.md#delivery-sequence) | **In progress** · T089 landed; save contract next, then synthetic vertical slice, real URA chapter and Inspiration sink |
 | [M029 — RPG chapter rollout](M029-rpg-chapter-rollout.md) | [T100–T103](M029-rpg-chapter-rollout.md#delivery-sequence) | **Specified, not implemented** · private content for the remaining thirteen scenarios and a 14/14 gate |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -39,6 +39,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T089 — RPG pure progression rules | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#outfit-rpg-profile-and-progression), D227 and `packages/domain/src/rpg/` | `ce2aa37` |
 | M026 — Produce nodes (T086) | 2026-09-30 | [Stable Farm](../design/farm.md), [Constellations](../design/constellations.md) and [Architecture](../technical/architecture.md) | `f6dd79a` |
 | M025 — Stable Farm (T082–T085) | 2026-09-30 | [Stable Farm](../design/farm.md) and [Architecture](../technical/architecture.md) | `4ac41d7` |
 | T001–T018 and the Milestone 6 plan | 2026-09-19 | design docs | `463edb8` |
