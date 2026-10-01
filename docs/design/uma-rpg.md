@@ -1,11 +1,12 @@
 # Global Uma RPG — design and implementation boundaries
 
-> **Status: approved scope, not implemented.** The owner has fixed the mode's global scope, outfit-specific RPG levels,
+> **Status: pure progression rules implemented; mode not playable.** The owner has fixed the mode's global scope,
+> outfit-specific RPG levels,
 > Speed-as-offense mapping, a permanently chosen running-style class, visible weapon/element identity, and
 > inventory-only destination for its future rewards. Level 50 is a repeatable **class-promotion point**, not a final
 > cap. Five filled party slots, the signature-element choice and the Inspiration token destination are fixed.
-> Encounter math, the leveling curve, exact skill catalog and chapter length still need bounded tuning before
-> any engine/save migration is implemented.
+> T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227). Combat coefficients, encounter
+> EXP payout, the exact skill catalog and chapter length remain for their owning tasks.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -57,7 +58,7 @@ shows RPG Level. Racing and Farm values are read as inputs where specified, neve
 | Existing Uma input | RPG attribute it informs | Intent |
 |---|---|---|
 | **Speed** (base stat + growth) | **Physical ATK and magical MATK** | The owner's core mapping: Speed is the main race-winning stat, so it should drive both offensive routes. |
-| **Stamina** | Initiative / action speed, with HP or endurance contribution to be decided | Stamina enables longer efforts in racing; it should not quietly replace Speed as the primary damage stat. |
+| **Stamina** | Initiative and HP | Stamina enables longer efforts in racing; it does not replace Speed as the primary damage stat. |
 | **Power** | Physical DEF, guard strength | A sturdy physical role. |
 | **Guts** | Dexterity / critical reliability | Precision and clutch effects, not another raw ATK stat. |
 | **Wit** | MP and magical resource economy | A visible reason to value Wit on caster and support builds. |
@@ -73,9 +74,9 @@ through chapters and promotions in the first delivery, so there is only one acti
 within-style respec would be a separate design change, not parallel progress. Multiple aptitudes create breadth in
 the *elemental* trees instead.
 
-### First balance candidate: repeatable class tiers and stats
+### Settled T089 rule: repeatable class tiers and stats
 
-This is a **simulation candidate, not an approved tuning pin**. Each outfit starts at **Class Tier 1, Lv1**. Lv50 is
+Each outfit starts at **Class Tier 1, Lv1**. Lv50 is
 the end of one tier's learning arc; after resolving its pending EXP and skill choices, the player may **promote** to
 Tier 2, Lv1, then Tier 3, and so on. There is no planned final tier. Promotion never changes the locked running style
 or erases earned stats, and never changes race Uma Level or Farming Level. The selected weapon path also carries
@@ -85,23 +86,26 @@ fourteen current scenarios would give about two promotions and progress deep int
 **not** a chapter-order gate: any party may enter any chapter, and replay/catch-up rewards must respect the outfit's
 current tier and level. Future scenarios extend the loop without a schema cap.
 
-| Measure | Candidate rule | What the player sees |
+| Measure | T089 rule (D227) | What the player sees |
 |---|---|---|
 | Tier-local level | `1…50`, per owned outfit, followed by an explicit promotion into the next tier | `Tier 2 · Lv1` is visibly stronger than `Tier 1 · Lv50`; the profile also shows lifetime promotions. |
-| EXP to next level from current level `L` | Keep the draft `100 + 18L + 2L²` for `1 ≤ L < 50` **only as a first simulation input** | 120 from Lv1→2, 480 from Lv10→11, 1,260 from Lv20→21, 5,784 from Lv49→50; 107,800 per tier before reward scaling. |
+| EXP to next level from current level `L` | `120 + 16L` for `1 ≤ L < 50`, integer EXP; **25,480** from Lv1→50 | 136 from Lv1→2, 280 from Lv10→11, 904 from Lv49→50. At Lv50 EXP banks without auto-promotion; explicit promotion applies it to the new tier, possibly crossing several levels. |
 | Permanent core RPG stat `s` | `round(B_s / 5 + N × 1.5 × (1 + G_s))`, with `N = 50 × (tier − 1) + (L − 1)`; `B_s` is base racing stat, `G_s` stored fractional growth (`0.2` means +20%) | Five deterministic values derived from lifetime promoted levels, not mutable random rolls. Promotion advances `N` from 49 to 50 and cannot lower a stat. |
-| Combat projection | ATK/MATK from RPG Speed; initiative and part of HP from RPG Stamina; PDEF/guard from RPG Power; dexterity from RPG Guts; MP/support capacity from RPG Wit | Weapon channel decides which offensive value is used. |
+| Combat projection | `ATK = MATK = Speed`; `initiative = Stamina`; `PDEF = Power`; `MDEF = round((Power + Wit)/2)`; `dexterity = Guts`; `HP = 100 + 6×Stamina + 2×Power`; `MP = 20 + 3×Wit` | Weapon channel decides which offensive value is used. Round core stats once after base/growth conversion. |
 
-A small arithmetic check of that **candidate** curve gives 2,760 / 8,760 / 18,760 / 32,760 / 44,760 EXP for
-roughly ten-level stretches across one tier (Lv1→11, 11→21, 21→31, 31→41, 41→50). Equal chapter payouts therefore
-**would not** yield the intended pace; encounter/chapter EXP must rise with recommended tier-local level, and the
-two-tier sanity test should reject a curve that needs an unreasonable payout jump.
+The former quadratic candidate (`100 + 18L + 2L²`) required 2,760 / 8,760 / 18,760 / 32,760 / 44,760 EXP for
+successive chapter-sized stretches: a **16.2×** first-to-last jump. T089's linear curve needs **2,080 / 3,680 /
+5,280 / 6,880 / 7,560** for Lv1→11→21→31→41→50, a **3.6×** jump. The synthetic two-tier sim repeats those five
+budgets per tier and reaches Lv50 both times; Tier 1 Lv50→Tier 2 Lv1 goes from Speed 108→110 and HP 874→888 for its
+invented base outfit. A weak-chapter replay at an illustrative 25% budget moves Lv11→12; an illustrative 150%
+catch-up grant moves Lv1→20. Those multipliers are **sim probes, not payout rules**: T096 settles actual encounter
+reward and taper against T095's chapter fixture.
 
-For a **synthetic** outfit with base Speed 100 and growth `0.2`, RPG Speed would read 20 at Tier 1 Lv1, 22 at Lv2,
+For a **synthetic** outfit with base Speed 100 and growth `0.2`, RPG Speed reads 20 at Tier 1 Lv1, 22 at Lv2,
 108 at Tier 1 Lv50 and **110 at Tier 2 Lv1**. That example is invented, not copied from private Uma data. A promotion
-result shows the exact five-stat carry-forward and any new tier bonus; no retroactive stat reroll. If the linear
-lifetime gain makes later tiers too strong, tune the projection/enemy scale in simulation rather than resetting earned
-stats. HP, MP, magical defense, damage and any tier bonus still need their own formulas and pinning tests.
+result shows exact five-stat carry-forward; no retroactive stat reroll or hidden tier bonus. If the lifetime gain
+makes later tiers too strong, tune enemies rather than resetting earned stats. HP, MP and magical defense are pinned
+here; damage and class-mastery variant effects remain T091's combat work.
 
 EXP is awarded once for a **won encounter** to all five frozen entrant outfits, including a member KO'd before the
 win; a lost or abandoned encounter pays none. The boss pays its authored encounter EXP, while chapter clear grants
@@ -109,11 +113,10 @@ its scenario token, **not another hidden EXP bonus** (D225). Level-relative rewa
 taper farming weak chapters, but never to zero; the exact formula is T096's simulation-and-pinning gate after T095's
 chapter fixture exists. EXP earned at Lv50 **banks** until the player promotes; promotion then applies that bank to
 the next tier without loss or duplicate grants. The result names every crossed level, exact stat changes and new
-skill choices. A **small,
-synthetic two-tier sanity simulation** should check five-chapter pacing, one overleveled replay, one catch-up party and
-no stat/EXP loss on promotion; it need not exhaustively solve every party. Pin the finalized curve before implementation.
+skill choices. `pnpm sim:rpg:progression` runs the synthetic two-tier, replay, catch-up and focus/breadth checks; it
+does not read private chapter or Uma content.
 
-### First balance candidate: skill trees and tier renewal
+### Settled T089 scaffold: skill trees and tier renewal
 
 Attack and Guard are always available and **do not consume equip slots**. One locked class/weapon supplies its neutral
 basic action and utility. Its **weapon × element matrix cell is a five-depth mini tree**, not one linear spell. An
@@ -127,8 +130,13 @@ cell, take an alternative branch at an already opened depth, or improve a learne
 one skill level, up to **skill level 5**. Depths unlock gradually: early levels offer a focused strike/support base;
 middle levels open target-pattern and setup choices; the fifth-depth signature is first eligible at **Lv50**. Choices
 are not automatic stat rolls: the result identifies available points and offers a safe-checkpoint skill-tree CTA.
-The exact depth gates, slot ladder and point costs still need a focused specialization-versus-breadth check and
-pinning before implementation.
+Each unlock or +1 skill level costs **one point**, including an alternative branch. Depth gates are tier-local levels
+**2 / 10 / 20 / 34 / 50**. Each depth after one requires at least one purchased node at the previous depth in the
+same elemental cell. Branches are foundation; focused/area; committed/multi; role/hybrid; signature. A-grade cells
+may reach depth 5; B-grade cells stop at **depth 3**. If two distance aptitudes offer the same element, A wins.
+Skill level caps at **5**. A node's purchased level counts as its point cost. The 25-point synthetic sim shows
+focused Fire buying five Lv5 nodes through depth 5 versus breadth buying five elements' foundations at Lv3 and
+area branches at Lv2, with no capstone.
 
 | Depth | Decision within each permitted weapon × element cell | Example payoff |
 |---|---|---|
@@ -141,22 +149,29 @@ pinning before implementation.
 These are *choice axes*, not a promise that every cell has only five total nodes. The alternative at a depth is a
 real unlock, not a free toggle; investing in both trades away depth or another element. Improving a known skill to
 level 5 raises its documented effect/efficiency within the current tier, but cannot bypass an affinity gate. Grade B
-opens only lower-depth skills of that **same weapon**, never its fifth-depth signature or an alternate weapon tree.
-One or two lower-depth B side nodes for coverage/utility remain a focused balance option, not a higher tier. A
+opens only depths 1–3 of that **same weapon**, never its fifth-depth signature or an alternate weapon tree. A
 multi-A outfit can specialize two elemental cells or spread points widely, but cannot automatically master every
 cell in a single tier.
 
+**Active skill slots** are 3 at tier-local Lv1, 4 at Lv10, 5 at Lv20, 6 at Lv35 and 7 at Lv50. Attack and Guard
+remain free outside those slots. A loadout may contain at most **two legacy techniques** among its active slots.
+The preset may use any eligible active signature, not just the outfit's enrollment default. A skill id includes its
+tier, locked weapon, element, depth and branch; duplicated ids and unlearned skills are invalid.
+
 Promotion opens a **fresh Tier 2 matrix** for the selected weapon path and eligible elements: no unspent Tier 1 point
-silently turns into a Tier 2 point, and Tier 2's tree choices begin empty. Previously learned skills remain visible as
-**legacy techniques** and usable in a loadout until replaced; otherwise promoting would make a stronger outfit unable
-to fight. Their prior levels/branches do not auto-unlock Tier 2 equivalents. New-tier techniques may adapt the cell's
-effect and offer a different branch choice, while the old tier's mastery stays recorded for history and presentation.
+silently turns into a Tier 2 point. If points remain, promotion requires an explicit discard choice rather than
+silently deleting them; Tier 2's tree choices begin empty. The full prior tree is archived as mastery
+history, while the player selects up to two learned current or carried skills to keep usable as **legacy techniques**.
+That bounded pair survives until deliberately replaced at a later promotion; archived but unselected skills do not
+auto-unlock Tier 2 equivalents. Attack and Guard remain usable even when no legacy skill is carried. New-tier
+techniques may adapt the cell's effect and offer a different branch choice, while the old tier's mastery stays recorded
+for history and presentation.
 At promotion, a small **class-mastery variant** is a candidate choice for the *new tier's* weapon skills—for example,
 Greatsword pressure versus a wider cleave, or Paladin stronger protection versus a modest heal. It changes a tactical
 rider, not the locked style, damage channel or base-stat growth; variants do not stack without bound across promotions.
 The exact menu and effect sizes need combat simulation before pinning.
-Balancing must prevent an ever-growing legacy catalog from swamping the loadout; active slots are bounded and any
-eventual legacy-slot restriction needs its own decision. A battle freezes its entrant's tier, stats and loadout.
+The mastery archive is separate from the active outfit projection; it does not grow the hot profile row without
+bound. A battle freezes its entrant's tier, stats and loadout.
 Several levels crossed in one result are named in order, and new skills never silently replace equipped ones.
 
 ## Class, weapon and aptitude identity
@@ -179,9 +194,11 @@ loadouts, not independent copies of classes. No role is mandatory in a party.
 At enrollment, the outfit chooses **one default signature element from its permitted affinities**. Each preset slot
 may select its active signature from those same eligible elements. It determines the portrait overlay and
 specialization for that party, but never prevents equipping other eligible elements. The owner's **10% specialization
-bonus** is the starting balance candidate for the selected class weapon and signature element. It must not
-double-count one elemental action. The exact affected outcome, rounding and interaction with advantage and a physical
-elemental rider need one focused combat check and a pinning test before implementation. Two A styles do not grant two
+bonus** applies once to the final nonnegative **damage or healing magnitude** of a technique of the locked weapon
+and active signature element, after the combat engine's matchup calculation, rounded to nearest integer. A physical
+base and elemental rider form one final magnitude before this bonus; the rider is not bonused a second time. MP
+cost, status duration, neutral Attack and Guard do not receive it. T091 owns the elemental advantage multiplier
+and damage/healing calculations. Two A styles do not grant two
 simultaneous class bonuses or another class track. There is no End-only fallback, penalty or special party rule;
 End follows the same aptitude, level, element, slot and reward contracts as Front, Pace and Late. Weapon identity comes
 from the selected running-style class; element access comes from **distance aptitude** separately.
@@ -199,8 +216,9 @@ Every A distance contributes both listed affinities, so a multi-A outfit can hav
 permits that element's highest tier; **B** contributes those elements only to lower depths of the currently selected
 weapon's tree, never an alternate class/weapon or the A-only capstone.
 The signature element selects the **portrait overlay and specialization bonus**, not a one-element spell limit:
-the outfit may equip skills from every eligible affinity, subject only to the RPG skill slots/tier rules. The exact B
-side-node catalog and tier ladder await focused tuning. **Turf/Dirt aptitude does not gate the RPG element trees** in
+the outfit may equip skills from every eligible affinity, subject only to the RPG skill slots/tier rules. T089 pins
+the B depth and active-slot ladder; T091 owns individual skill effects. **Turf/Dirt aptitude does not gate the RPG
+element trees** in
 this draft: surfaces can theme a chapter and appear in its route preview, while distance A/B controls elemental skill
 eligibility. A future terrain bonus would require its own explicit decision and balance check.
 An owned outfit with **no A running style is ineligible for RPG party selection**; it remains owned and usable in

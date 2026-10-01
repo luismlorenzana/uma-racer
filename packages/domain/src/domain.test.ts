@@ -127,7 +127,54 @@ import {
   FT_STRENGTH_PER_STAR,
   TYPICAL_CARD_STARS,
   starNodePct,
+  RPG_TIER_MAX_LEVEL,
+  RPG_TREE_POINTS_PER_EVEN_LEVEL,
+  RPG_SKILL_MAX_LEVEL,
+  RPG_DEPTH_GATES,
+  RPG_B_MAX_DEPTH,
+  RPG_ACTIVE_SLOT_GATES,
+  RPG_MAX_LEGACY_SLOTS,
+  RPG_SIGNATURE_MULTIPLIER,
+  rpgExpToNext,
+  projectRpgStats,
+  rpgTreePointsEarned,
+  rpgActiveSlots,
+  rpgSignatureMagnitude,
 } from './index'
+
+describe('Global Uma RPG — D227 progression pins', () => {
+  it('keeps a repeatable 50-level tier with a linear 25,480 EXP climb', () => {
+    expect(RPG_TIER_MAX_LEVEL).toBe(50)
+    expect([rpgExpToNext(1), rpgExpToNext(10), rpgExpToNext(49)]).toEqual([136, 280, 904])
+    expect(Array.from({ length: 49 }, (_, index) => rpgExpToNext(index + 1))
+      .reduce((sum, value) => sum + value, 0)).toBe(25_480)
+  })
+
+  it('pins the frozen-stat conversion, HP/MP and promotion carry-forward', () => {
+    const baseStats = { speed: 100, stamina: 90, power: 80, guts: 70, wit: 60 }
+    const growthRates = { speed: 0.2, stamina: 0.1, power: 0, guts: 0, wit: 0.3 }
+    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1 }))
+      .toMatchObject({ speed: 20, atk: 20, matk: 20, stamina: 18, power: 16,
+        guts: 14, wit: 12, hp: 240, mp: 56, mdef: 14 })
+    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 50 }).speed).toBe(108)
+    expect(projectRpgStats({ baseStats, growthRates, tier: 2, level: 1 }).speed).toBe(110)
+  })
+
+  it('pins the 25-point, five-depth tree and bounded loadout ladder', () => {
+    expect([RPG_TREE_POINTS_PER_EVEN_LEVEL, RPG_SKILL_MAX_LEVEL, RPG_B_MAX_DEPTH,
+      RPG_MAX_LEGACY_SLOTS, RPG_SIGNATURE_MULTIPLIER]).toEqual([1, 5, 3, 2, 1.1])
+    expect(RPG_DEPTH_GATES).toEqual([2, 10, 20, 34, 50])
+    expect(RPG_ACTIVE_SLOT_GATES).toEqual([1, 10, 20, 35, 50])
+    expect([rpgTreePointsEarned(1), rpgTreePointsEarned(2), rpgTreePointsEarned(50)])
+      .toEqual([0, 1, 25])
+    expect([rpgActiveSlots(1), rpgActiveSlots(10), rpgActiveSlots(50)]).toEqual([3, 4, 7])
+    const profile = { weapon: 'spear' as const, affinities: { fire: 'A' as const, ice: 'B' as const } }
+    expect(rpgSignatureMagnitude(105, profile, { kind: 'damage', weapon: 'spear', element: 'fire' }, 'fire'))
+      .toBe(116)
+    expect(rpgSignatureMagnitude(105, profile, { kind: 'healing', weapon: 'spear', element: 'ice' }, 'fire'))
+      .toBe(105)
+  })
+})
 
 describe('Stable Farm', () => {
   it('pins the D203–D208 field, crop, and progression contract', () => {

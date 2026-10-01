@@ -2,8 +2,8 @@
 
 **Status:** implementation plan, not deployed behavior. Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
-left ambiguous. It does not pin candidate balance coefficients: T089/T091/T096 must simulate those, then update the
-design, `packages/domain/src/domain.test.ts` and the append-only decisions log before shipping them.
+left ambiguous. T089's progression coefficients are now pinned in D227; T091/T096 must simulate their own remaining
+combat/reward candidates, then update the design, `packages/domain/src/domain.test.ts` and append-only decisions log.
 
 ## Existing seams and the sync hazard
 
