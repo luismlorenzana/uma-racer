@@ -83,7 +83,7 @@ docs/           design, technical, research
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Complete one-to-six-plot account loop: persistent outfit workers, scenario crops, synced harvests, global Items and constellation Produce consumption |
-| [Global Uma RPG — first draft](docs/design/uma-rpg.md) | Proposed account-wide turn-based campaign: outfit class tiers/promotions, locked style-classes, elemental skill trees, five-person parties, PriConne character teams, chapter maps and inventory-only rewards; not implemented |
+| [Global Uma RPG — first draft](docs/design/uma-rpg.md) | Proposed account-wide turn-based campaign: outfit class tiers/promotions, locked style-classes, elemental skill trees, five-person parties, PriConne character teams, chapter maps and scenario Inspiration tokens; not implemented |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
@@ -120,4 +120,4 @@ docs/           design, technical, research
 | [Data Backlog](docs/research/data-backlog.md) | Game data to gather (Umas, cards, skills, races) |
 | [Decisions Log](docs/decisions.md) | What has been decided, and when |
 | [Tasks](docs/tasks/README.md) | The current milestone plan and its delegable task specs (see [AGENTS.md](AGENTS.md)) |
-| [Open Questions](docs/open-questions.md) | Owner/device checks and the proposed Uma RPG's unresolved rules |
+| [Open Questions](docs/open-questions.md) | Owner/device checks; the proposed RPG's answered rules now live in its design draft |

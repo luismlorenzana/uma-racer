@@ -75,6 +75,11 @@ card concentrates its stat and hands you more of its skills.
 | 9 | parent node A, plus its two grandparent nodes |
 | 10 | parent node B, plus its two grandparent nodes |
 
+**Current implementation:** TL9/10 still open these lineage branches. The proposed
+[Global Uma RPG Inspiration token bridge](uma-rpg.md#chapters-content-and-reward-boundary) would replace that gate in a
+future migration: one scenario token opens one parent and its two linked grandparents, two tokens open both branches
+for an Uma in a scenario, and already-open branches stay open. This proposal does not alter today's save or TL rules.
+
 With `N` = card nodes + Produce nodes, the count unlocked at Training Level `TL ≤ 8` is:
 
 ```

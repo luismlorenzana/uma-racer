@@ -1,24 +1,13 @@
 # Open Questions
 
-Earlier shipped-system design questions have been resolved and logged in [decisions.md](decisions.md). The proposed
-[Global Uma RPG](design/uma-rpg.md) has new questions below; none should be treated as an implemented rule. Draft
-numbers across the design docs (curves, costs, thresholds) are **tuning values**, not open questions. They get adjusted
-through balance simulation and playtesting.
-
-## Global Uma RPG — resolve before implementation
-
-| Question | Recommended first answer / validation |
-|---|---|
-| Is the party **five** rather than four, and must all five be filled? | Prototype both at 390×844. Lead with five full slots and five saved presets. **No class quota**: Front and End are recommended in one composition, not required, and End receives no exception. |
-| How do **surface aptitude**, B-distance elements and an outfit with no A running style affect class/skill eligibility? | Use source aptitudes rather than editable racing defaults; explicitly design the off-surface and no-A fallbacks before coding. Do not silently drop Turf/Dirt. An eligible running-style class is chosen once and locked for the outfit; only elemental affinities branch thereafter. |
-| Within a locked Pace or Late running style, may an outfit **change weapon path at promotion**? | First draft keeps one selected weapon path across tiers, so mastery and legacy loadouts remain coherent. A later intra-style switch could be allowed only with explicit rules for old skills and new-tree eligibility; it must never create parallel running-style EXP tracks. |
-| Which element is an outfit's active signature, and what exactly does its draft **10% class bonus** modify? | Choose one from permitted elements in setup; it never limits other equipped elements. Simulate the bonus, physical-element rider and advantage together, then pin settled constants. |
-| Does the candidate **repeatable Lv1–50 class-tier curve, permanent-stat formula and elemental-tree ladder** feel rewarding, and what are HP/MP, healing, KO, chapter length and level-relative EXP rules? | Test five-scenario promotion pacing and at least two full tiers in a synthetic combat-and-progression sim. Promotion cannot lower stats or lose banked EXP. Keep Speed as both ATK and MATK input. |
-| What are the exact **tree-point, depth-gate, skill-level, legacy-loadout and active-slot** rules? | Lead with one point at even tier-local levels (2…50), five depths per eligible weapon×element cell, meaningful target/hit/support branches, A-only capstone and useful lower-depth B-side options. Simulate specialization against breadth before pinning counts. |
-| What happens when a chapter is open on one device and the player switches preset, edits that outfit elsewhere, reconnects on another device or reinstalls? | Freeze each entered battle, sync clear checkpoints and idempotent rewards, and write down an explicit second-device policy. Never silently reroll an open fight. |
-| Which **playable PriConne character teams**, adapted affinities, phases and portraits are authored for production? | Research lists a sourced shortlist and candidate opening chapter. Validate image links/variants on the official character site, then author one complete private chapter before expanding. Keep all extracted rows and art in private content. A missing pack must be visible; monsters are not the default enemy cast. |
-| What is the scenario Parent Unlock item's exact name, clear quantity, repeatability and eventual consumption? | First delivery grants only an auditable global Item stack; coordinate the later sink with the separate Inspiration design. Do not let this draft alter constellation gates. |
-| Is chapter entry free, and can a failed or abandoned chapter be retried without cost or map reset? | Lead with free entry and explicit retry/checkpoint rules; decide and pin before implementing the save contract. |
+Earlier shipped-system design questions have been resolved and logged in [decisions.md](decisions.md). The owner's
+Global Uma RPG answers are now incorporated in the [RPG design draft](design/uma-rpg.md) and D219–D221. No RPG
+question here blocks reviewing that draft. Two explicit draft defaults are available for owner review there: Turf/Dirt
+does not gate elemental trees, and every replayed chapter clear grants one scenario token. Its remaining HP/MP
+coefficients, depth gates, active-slot count, private
+PriConne content selection and phone layout are **implementation/balance checks**, not unanswered owner choices;
+the design's delivery sequence names where each is tested. Draft numbers across the design docs are tuning values
+until pinned in domain tests and a decision.
 
 ## Needs you (owner actions, not design questions)
 

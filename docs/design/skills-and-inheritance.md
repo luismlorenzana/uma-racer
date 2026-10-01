@@ -124,6 +124,10 @@ in the **lifetime skill log** for badges and history.
 Six slots — **2 parents, 4 grandparents** — unlocked at Training Levels 9 and 10. Each parent node is linked to
 exactly two grandparent nodes and is detached from the card tree.
 
+This is the **current implemented gate**. The proposed [Global Uma RPG](uma-rpg.md#chapters-content-and-reward-boundary)
+would later let a scenario-typed Inspiration token open each three-node parent branch independently of Training Level;
+that change requires an Inspiration save migration and keeps any branch already open today.
+
 A slot holds a **reference to any Uma template the player owns**. Not a snapshot, not a trained instance:
 templates never change, so nothing needs freezing and nothing can go stale (D123).
 
