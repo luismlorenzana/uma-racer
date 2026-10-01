@@ -24,7 +24,7 @@ Home → RPG hub → choose a party preset → choose any chapter → preview ro
 - The hub opens directly on the player's saved RPG state; it does not ask for a featured Uma first. Its internal
   navigation is **Map · Parties · Roster · Items/Records** (names provisional). No sixth bottom tab.
 - Five named presets are account-wide quick configurations. A preset saves member order, signature element and RPG
-  skill loadout for each slot; an outfit's class/weapon is locked on its RPG profile, not independently chosen by each
+  skill loadout for each slot; an outfit's style and current weapon path live on its RPG profile, not independently chosen by each
   preset. The first-pass proposal disallows duplicate outfits; whether
   two outfits of the same character may coexist remains open. An empty or partial preset is editable but cannot launch
   a five-member chapter.
@@ -59,17 +59,19 @@ shows RPG Level. Racing and Farm values are read as inputs where specified, neve
 
 The conversion reads the outfit's **base racing stats and growths**, not its mutable scenario constellation or Produce
 assignments, to keep this global profile stable when the player switches scenarios. Level-up gains are deterministic,
-never a hidden random stat roll. At RPG enrollment the player chooses one eligible running-style class and its weapon
-path for that outfit. This choice is permanent across presets, chapters and promotions; a dual-A racing outfit does
-**not** level multiple style classes or switch between them. Multiple aptitudes create breadth in the *elemental*
-trees of that one class instead.
+never a hidden random stat roll. At RPG enrollment the player chooses one eligible running-style class and one weapon
+path for that outfit. The **running style is permanent** across presets, chapters and promotions; a dual-A racing
+outfit does **not** level multiple style classes or switch between them. The first draft also keeps one selected weapon
+path through a tier so there is only one active weapon × element matrix; whether it may change *within the locked
+style* at a later promotion is unresolved. Multiple aptitudes create breadth in the *elemental* trees instead.
 
 ### First balance candidate: repeatable class tiers and stats
 
 This is a **simulation candidate, not an approved tuning pin**. Each outfit starts at **Class Tier 1, Lv1**. Lv50 is
 the end of one tier's learning arc; after resolving its pending EXP and skill choices, the player may **promote** to
-Tier 2, Lv1, then Tier 3, and so on. There is no planned final tier. Promotion never changes the locked class or
-weapon, never erases earned stats, and never changes race Uma Level or Farming Level. The initial pacing target is
+Tier 2, Lv1, then Tier 3, and so on. There is no planned final tier. Promotion never changes the locked running style
+or erases earned stats, and never changes race Uma Level or Farming Level. The first draft carries the current weapon
+path forward unless a future within-style respec rule is approved. The initial pacing target is
 **roughly ten RPG levels per scenario-length chapter**, so a five-scenario block roughly fills one 50-level tier;
 fourteen current scenarios would give about two promotions and progress deep into Tier 3. This is a pacing target,
 **not** a chapter-order gate: any party may enter any chapter, and replay/catch-up rewards must respect the outfit's
@@ -128,7 +130,7 @@ may get one or two lower-depth side nodes for coverage/utility so it is useful w
 the exact B/surface rule still needs resolution. A multi-A outfit can specialize two elemental cells or spread points
 widely, but cannot automatically master every cell in a single tier.
 
-Promotion opens a **fresh Tier 2 matrix** for the same locked weapon and eligible elements: no unspent Tier 1 point
+Promotion opens a **fresh Tier 2 matrix** for the selected weapon path and eligible elements: no unspent Tier 1 point
 silently turns into a Tier 2 point, and Tier 2's tree choices begin empty. Previously learned skills remain visible as
 **legacy techniques** and usable in a loadout until replaced; otherwise promoting would make a stronger outfit unable
 to fight. Their prior levels/branches do not auto-unlock Tier 2 equivalents. New-tier techniques may adapt the cell's
@@ -144,10 +146,12 @@ Several levels crossed in one result are named in order, and new skills never si
 ## Class, weapon and aptitude identity
 
 At first RPG enrollment, each outfit chooses **one running-style class from its A aptitudes** and **one weapon path**
-inside that class. The choice is then **locked for that outfit**, including at promotion: multiple A running styles
-are alternatives at enrollment, not parallel classes, extra trees or permission to switch later. Pace chooses Spear
-*or* Sword + shield; Late chooses Wizard *or* Cleric staff. The five named party presets only arrange outfits and
-their elemental loadouts, not independent copies of their classes. No role is mandatory in a party.
+inside that class. The **style is locked for that outfit**, including at promotion: multiple A running styles are
+alternatives at enrollment, not parallel classes, extra trees or permission to switch later. Pace chooses Spear *or*
+Sword + shield; Late chooses Wizard *or* Cleric staff. The first draft keeps that one weapon path active across
+chapters and tiers; a possible **within-style weapon change at promotion** needs an explicit future rule for mastery
+and legacy techniques. The five party presets only arrange outfits and their elemental loadouts, not independent
+copies of classes. No role is mandatory in a party.
 
 | Running-style class | RPG role | Weapon choices | Damage and support identity |
 |---|---|---|---|
@@ -156,7 +160,7 @@ their elemental loadouts, not independent copies of their classes. No role is ma
 | **Late — Wizard or Cleric** | Magical offense **or** magical support | **Wizard staff** or **Cleric staff** | Wizard has elemental burst/area control; Cleric has offensive buffs and healing with a modest magical attack. |
 | **End — Tome Mage** | Magical-only specialist | **Magic tome** | Spell chaining, marks and elemental finishers. No physical-damage actions. |
 
-The owner's **10% specialization bonus** remains a draft rule: the locked class weapon and one signature element
+The owner's **10% specialization bonus** remains a draft rule: the selected class weapon and one signature element
 receive it in their applicable action calculations. It must not double-count one elemental action. Exact eligibility,
 rounding and whether it boosts damage, accuracy or another action outcome need a combat sim and a pinning test. Two A
 styles do not grant two simultaneous class bonuses or another class track. There is no End-only fallback, penalty or special party rule;
@@ -220,7 +224,7 @@ actors.
 | **Late Cleric staff** · small magical bolt/heal | Warmth: ally healing over time plus attack buff | Shelter: heal plus damage mitigation | Quickening: heal plus initiative buff | Benediction: focused heal and cleanse | Veil: restorative drain plus enemy weaken |
 | **End Magic tome** · magical sigil | Cinder Script: stack, then detonate burn | Glacier Script: accumulate control for a seal | Volt Script: charge then chain damage | Halo Script: puncture a dark ward | Eclipse Script: mark then drain/finish |
 
-These are **six possible locked weapon paths**, each with five elemental cells. The element's global motif remains consistent,
+These are **six possible weapon paths**, each with five elemental cells. The element's global motif remains consistent,
 while the weapon changes target pattern and role. A skill card shows weapon, element, channel, tree depth, skill level, MP, target,
 projected damage/heal, status/duration and affinity gate. For a multi-element outfit, any eligible skills can fill
 its slots together; the signature element only chooses the specialization bonus and portrait badge. A single action
