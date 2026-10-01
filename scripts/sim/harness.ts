@@ -20,10 +20,10 @@ import {
   type Stats,
   type Strategy,
 } from '../../packages/domain/src/index'
-import { V7_TUNING, createRng } from '../../packages/race/src/index'
+import { V8_TUNING, createRng } from '../../packages/race/src/index'
 
-// Every sim can try an engine v7 tuning change without editing the engine: V7='{"hpScale":0.9}' pnpm sim:…
-if (process.env.V7) Object.assign(V7_TUNING, JSON.parse(process.env.V7))
+// Every sim can try an engine v8 tuning change without editing the engine: V8='{"railDrift":0.5}' pnpm sim:…
+if (process.env.V8) Object.assign(V8_TUNING, JSON.parse(process.env.V8))
 
 // --- Synthetic kit -------------------------------------------------------------------------------
 
@@ -177,19 +177,26 @@ export const FIELD_STRATEGIES: Strategy[] = ['front', 'pace', 'late', 'end']
  * A typical course for the sims: the imported courses' median final straight (about 330 m) after a final corner,
  * and no hills, so duels can happen as they do in real races while results stay comparable across distances.
  */
-export function typicalCourse(distance: number): { distance: number; surface: 'turf'; layout: { corners: { start: number; end: number; number: number }[]; straights: { start: number; end: number }[]; slopes: [] }; trackId: number; rotation: number } {
-  const finalStraight = Math.min(330, distance / 3)
-  const finalCorner = Math.min(300, distance / 4)
-  const cornerEnd = distance - finalStraight
-  return {
-    distance,
-    surface: 'turf',
-    layout: {
-      corners: [{ start: cornerEnd - finalCorner, end: cornerEnd, number: 4 }],
-      straights: [{ start: 0, end: cornerEnd - finalCorner }, { start: cornerEnd, end: distance }],
-      slopes: [],
-    },
-    trackId: 0,
-    rotation: 2,
+export function typicalCourse(distance: number): { distance: number; surface: 'turf'; layout: { corners: { start: number; end: number; number: number }[]; straights: { start: number; end: number; frontType: 1 | 2 }[]; slopes: [] }; trackId: number; rotation: number; grade: number } {
+  // A synthetic oval, laid out back from the finish like a mid-size course: a 350 m home straight after the final turn
+  // (corners 4 and 3, a quarter-turn each over 250 m), a 400 m back straight, the first turn (corners 2 and 1), and so on.
+  const pattern: readonly ({ kind: 'straight'; length: number; frontType: 1 | 2 } | { kind: 'corner'; length: number; number: number })[] = [
+    { kind: 'straight', length: 350, frontType: 1 },
+    { kind: 'corner', length: 250, number: 4 },
+    { kind: 'corner', length: 250, number: 3 },
+    { kind: 'straight', length: 400, frontType: 2 },
+    { kind: 'corner', length: 250, number: 2 },
+    { kind: 'corner', length: 250, number: 1 },
+  ]
+  const corners: { start: number; end: number; number: number }[] = []
+  const straights: { start: number; end: number; frontType: 1 | 2 }[] = []
+  let end = distance
+  for (let index = 0; end > 0; index += 1) {
+    const segment = pattern[index % pattern.length]!
+    const start = Math.max(0, end - segment.length)
+    if (segment.kind === 'corner') corners.unshift({ start, end, number: segment.number })
+    else straights.unshift({ start, end, frontType: segment.frontType })
+    end = start
   }
+  return { distance, surface: 'turf', layout: { corners, straights, slopes: [] }, trackId: 0, rotation: 2, grade: 100 }
 }

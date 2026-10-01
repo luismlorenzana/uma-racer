@@ -80,6 +80,8 @@ export interface TurnField {
   /** The first turn of the final leg, and the engine's HP rate. */
   legTurn: number
   hpScale: number
+  /** Engine v8: the position-keeping bands' scale (1 in v7). */
+  bandScale: number
 }
 
 export function createTurnRunnerState(r: RunnerState): TurnRunnerState {
@@ -168,7 +170,7 @@ export function positionKeepTurn(r: RunnerState, index: number, state: TurnRunne
         enter('front-speed-up')
       }
     } else {
-      const [min, max] = positionThresholds(strategy, distance)
+      const [min, max] = positionThresholds(strategy, distance).map((edge) => edge * field.bandScale) as [number, number]
       if (gap > max && rng.next() < positionKeepWitChance(r.wit, 15)) {
         enter('pace-up', rng.range(min, max))
       } else if (gap < min && !self.hasSpeedEffect) {

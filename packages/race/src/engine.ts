@@ -141,6 +141,11 @@ export interface RunnerState {
   duelCount: number
   /** Engine v5 counters and timers read by skill conditions. */
   activations: { all: number; start: number; middle: number; endAfter: number; laterHalf: number; heal: number }
+  /** Engine v8: numeric ids of the skills she has used this race, for `is_used_skill_id`. */
+  usedSkillIds: Set<number>
+  /** Engine v8: the last turn she used any skill, and a heal, for `is_activate_any_skill` and `is_activate_heal_skill`. */
+  lastSkillTick: number
+  lastHealTick: number
   overtakeTicks: number
   blockedTicks: number
   infrontNearTicks: number
@@ -157,6 +162,12 @@ interface SkillRuntime {
 interface SkillGroupRuntime {
   armed: boolean
   randomTriggers: RandomPhaseTrigger[]
+  /** Engine v8: this group has fired (a skill's second stage waits on another group firing first). */
+  fired: boolean
+  /** Engine v8 `run_at_full_speed_random`: the turn it holds from, drawn once her full-speed spurt begins. */
+  fullSpeedTurn: number | null
+  /** Engine v8 `random_lot==X`: X if this race's X% lottery came up, −1 if it did not; drawn the first time it is read. */
+  lot: number | null
 }
 
 interface RandomPhaseTrigger {
@@ -172,9 +183,12 @@ interface ActiveEffect {
   kind: Exclude<RaceSkillEffectKind, 'recovery'>
   amount: number
   untilTick: number
+  /** Engine v8: the share of its last turn the effect still runs, and the share it runs this turn. */
+  lastScale?: number
+  scale?: number
 }
 
-export type RulesVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7
+export type RulesVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
 
 export const hpPerSecond = (v: number, baseSpeed: number, lateRace: boolean, gutsMod: number): number =>
   ((20 * (v - baseSpeed + 12) ** 2) / 144) * (lateRace ? gutsMod : 1)
@@ -319,6 +333,9 @@ export function initRunner(input: RaceRunnerInput, course: RaceCourse, rng: Rng,
         rng: skillRng,
         groups: skill.groups.map((group) => ({
           armed: false,
+          fired: false,
+          fullSpeedTurn: null,
+          lot: null,
           randomTriggers: [
             ...randomPhaseTriggers(group.precondition, skillRng, course, turns),
             ...randomPhaseTriggers(group.condition, skillRng, course, turns),
@@ -346,6 +363,9 @@ export function initRunner(input: RaceRunnerInput, course: RaceCourse, rng: Rng,
     dueled: false,
     duelCount: 0,
     activations: { all: 0, start: 0, middle: 0, endAfter: 0, laterHalf: 0, heal: 0 },
+    usedSkillIds: new Set(),
+    lastSkillTick: Number.NEGATIVE_INFINITY,
+    lastHealTick: Number.NEGATIVE_INFINITY,
     overtakeTicks: 0,
     blockedTicks: 0,
     infrontNearTicks: 0,
@@ -436,7 +456,25 @@ export function planSpurt(r: RunnerState, distance: number, rng: Rng, rulesVersi
 }
 
 export function activeModifier(r: RunnerState, kind: ActiveEffect['kind']): number {
-  return r.activeEffects.filter((effect) => effect.kind === kind).reduce((sum, effect) => sum + effect.amount, 0)
+  return r.activeEffects.filter((effect) => effect.kind === kind).reduce((sum, effect) => sum + effect.amount * (effect.scale ?? 1), 0)
+}
+
+/**
+ * Engine v8: an effect runs for its exact duration. One that ends part-way through a turn counts for that share of its
+ * last turn, rather than v6–v7's rounding to whole turns. Call at the start of each turn, after expiry.
+ */
+export function scaleActiveEffects(r: RunnerState, turn: number): void {
+  for (const effect of r.activeEffects) effect.scale = turn === effect.untilTick - 1 ? effect.lastScale ?? 1 : 1
+}
+
+/** A skill group that is a second stage: it may fire only after another of the skill's groups has (engine v8). */
+const followsOtherGroup = (group: CompiledRaceSkill['groups'][number]): boolean =>
+  [group.precondition, group.condition].some((condition) =>
+    condition?.some((alternative) => alternative.some((atom) => atom.variable === 'is_activate_other_skill_detail')) ?? false)
+
+/** Engine v8 facts a skill reads about itself: how many runners carry it. */
+export interface SkillFieldFacts {
+  sameSkillCounts: ReadonlyMap<string, number>
 }
 
 export function expireActiveEffects(r: RunnerState, tick: number, rulesVersion: RulesVersion): void {
@@ -597,30 +635,64 @@ export function activateSkills(
   courseDistance: number,
   /** Engine v6: the turn and its race-wide phase. Durations then count whole turns. */
   turn?: { turn: number; phase: number },
+  /** Engine v8: field facts a skill reads about itself. */
+  facts?: SkillFieldFacts,
 ): void {
+  const v8 = rulesVersion >= 8
+  const sets = v8 ? { is_used_skill_id: r.usedSkillIds } : undefined
   for (const runtime of r.skills) {
-    if (runtime.resolved) continue
+    // v8: a skill that has fired may still fire a second stage, a group waiting on another of its groups.
+    if (runtime.resolved && !(v8 && runtime.skill.groups.some((group, index) => !runtime.groups[index]!.fired && followsOtherGroup(group)))) continue
+    const firstFire = !runtime.resolved
     for (const [groupIndex, group] of runtime.skill.groups.entries()) {
       const state = runtime.groups[groupIndex]!
       if (group.effects.length === 0 || group.unsupportedVariables.length || group.unsupportedEffects.length) continue
       // Gate-only groups resolved (or failed) at the gate; they never fire mid-race.
       if (group.effects.every((effect) => GATE_EFFECT_KINDS.has(effect.kind))) continue
+      if (v8 && (state.fired || (runtime.resolved && !followsOtherGroup(group)))) continue
       const groupContext = { ...context }
+      if (v8) {
+        groupContext.is_activate_other_skill_detail = runtime.groups.some((other, index) => index !== groupIndex && other.fired) ? 1 : 0
+        groupContext.same_skill_horse_count = facts?.sameSkillCounts.get(runtime.skill.id) ?? 1
+        // A random point in her full-speed spurt, drawn once it begins, from what is left of the course at that speed.
+        if (state.fullSpeedTurn === null && r.spurting && r.spurtMaxed && turn !== undefined && r.spurt !== null) {
+          const remaining = Math.max(1, Math.ceil((courseDistance - r.d) / Math.max(1, r.spurt)))
+          state.fullSpeedTurn = turn.turn + Math.floor(runtime.rng.next() * remaining)
+        }
+        groupContext.run_at_full_speed_random = state.fullSpeedTurn !== null && turn !== undefined && turn.turn >= state.fullSpeedTurn ? 1 : 0
+        // Another skill, or a heal, used this turn or the last one.
+        groupContext.is_activate_any_skill = tick - r.lastSkillTick <= 1 ? 1 : 0
+        groupContext.is_activate_heal_skill = tick - r.lastHealTick <= 1 ? 1 : 0
+        if (state.lot === null) {
+          const odds = [group.precondition, group.condition].flatMap((condition) => condition ?? []).flat()
+            .find((atom) => atom.variable === 'random_lot')?.value
+          state.lot = odds === undefined ? -1 : runtime.rng.next() * 100 < odds ? odds : -1
+        }
+        groupContext.random_lot = state.lot
+      }
       const crossed = state.randomTriggers.filter((trigger) => !trigger.consumed && (trigger.turn !== undefined
         ? turn !== undefined && turn.turn >= trigger.turn
         : context.distance_rate! / 100 >= trigger.distanceShare))
       for (const trigger of state.randomTriggers) groupContext[trigger.variable] = -1
       for (const trigger of crossed) groupContext[trigger.variable] = trigger.value
-      if (!state.armed && evaluateRaceCondition(group.precondition, groupContext)) state.armed = true
-      const matches = state.armed && evaluateRaceCondition(group.condition, groupContext)
+      if (!state.armed && evaluateRaceCondition(group.precondition, groupContext, sets)) state.armed = true
+      const matches = state.armed && evaluateRaceCondition(group.condition, groupContext, sets)
       for (const trigger of crossed) trigger.consumed = true
       if (!matches) continue
       runtime.resolved = true
-      if (runtime.skill.activation === 'wit' && runtime.rng.next() >= skillActivationChance(r.wit)) break
+      // Wit decides once whether the skill fires at all; a second stage needs no second roll.
+      if (firstFire && runtime.skill.activation === 'wit' && runtime.rng.next() >= skillActivationChance(r.wit)) break
+      state.fired = true
+      if (v8) {
+        if (/^\d+$/.test(runtime.skill.id)) r.usedSkillIds.add(Number(runtime.skill.id))
+        r.lastSkillTick = tick
+        if (group.effects.some((effect) => effect.kind === 'recovery')) r.lastHealTick = tick
+      }
       const duration = rulesVersion >= 3 && group.duration >= 0 ? group.duration * courseDistance / 1_000 : group.duration
-      const untilTick = duration === -1
-        ? Number.MAX_SAFE_INTEGER
-        : tick + Math.max(1, Math.round(duration * (turn ? 1 : TICK_RATE)))
+      // v8 keeps the exact duration: whole turns, and the share of a last one.
+      const turnsRun = duration === -1 ? 0 : v8 ? Math.max(1, Math.ceil(duration - 1e-9)) : Math.max(1, Math.round(duration * (turn ? 1 : TICK_RATE)))
+      const lastScale = v8 && duration > 0 ? duration - (turnsRun - 1) : 1
+      const untilTick = duration === -1 ? Number.MAX_SAFE_INTEGER : tick + turnsRun
       if (rulesVersion >= 5) {
         const phase = turn ? turn.phase : phaseAt(r.d, courseDistance)
         r.activations.all += 1
@@ -646,7 +718,7 @@ export function activateSkills(
         } else if (effect.kind === 'current-speed' && rulesVersion < 3) {
           r.v = Math.max(0, r.v + effect.amount)
         } else {
-          r.activeEffects.push({ kind: effect.kind, amount: effect.amount, untilTick })
+          r.activeEffects.push({ kind: effect.kind, amount: effect.amount, untilTick, ...(v8 ? { lastScale, scale: turnsRun === 1 ? lastScale : 1 } : {}) })
         }
       }
       events.push({

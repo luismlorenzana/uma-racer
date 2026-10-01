@@ -69,6 +69,8 @@ export interface RaceResultCourse {
   /** Engine v5: the imported track id and the original's rotation code, for course-fact skill conditions. */
   trackId?: number
   rotation?: number
+  /** Engine v8: the original's grade code (G1 100, G2 200, G3 300, OP 400 …) for the `grade` condition. */
+  grade?: number
 }
 
 export interface RaceAccomplishmentFactsV1 {
@@ -90,7 +92,7 @@ export interface RaceAccomplishmentFactsV1 {
 
 export interface RaceResultRecord {
   /** Absent means legacy skillless engine v1. */
-  engineVersion?: 2 | 3 | 4 | 5 | 6 | 7
+  engineVersion?: 2 | 3 | 4 | 5 | 6 | 7 | 8
   /** Present on engine-v2/v3 records so replay does not depend on mutable content metadata. */
   course?: RaceResultCourse
   contentVersion: string
@@ -151,17 +153,20 @@ function parseAptitude(value: unknown): RaceResultAptitude | null {
   return value as unknown as RaceResultAptitude
 }
 
-function parseCourseLayout(value: unknown, distance: number, withSlopes = false): RaceCourseLayout | null {
+function parseCourseLayout(value: unknown, distance: number, withSlopes = false, withFrontTypes = false): RaceCourseLayout | null {
   if (!isRecord(value) || !hasExactKeys(value, withSlopes ? ['corners', 'straights', 'slopes'] : ['corners', 'straights']) ||
     !Array.isArray(value.corners) || !Array.isArray(value.straights) || (withSlopes && !Array.isArray(value.slopes))) return null
   const parseSegments = (segments: unknown[], corner: boolean) => segments.map((segment, index) => {
-    if (!isRecord(segment) || !hasExactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end']) ||
+    // Engine v8 straights may name their front type (1 home, 2 back) for `straight_front_type`.
+    const frontType = !corner && withFrontTypes && isRecord(segment) && Object.hasOwn(segment, 'frontType')
+    if (!isRecord(segment) || !hasExactKeys(segment, corner ? ['start', 'end', 'number'] : frontType ? ['start', 'end', 'frontType'] : ['start', 'end']) ||
       !isFiniteNonNegative(segment.start) || !isFiniteNonNegative(segment.end) || segment.end <= segment.start ||
       segment.end > distance || (index > 0 && ((segments[index - 1] as Record<string, unknown>).end as number) > segment.start) ||
-      (corner && (!isPositiveInt(segment.number) || segment.number > 32))) return null
+      (corner && (!isPositiveInt(segment.number) || segment.number > 32)) ||
+      (frontType && segment.frontType !== 1 && segment.frontType !== 2)) return null
     return corner
       ? { start: segment.start, end: segment.end, number: segment.number as number }
-      : { start: segment.start, end: segment.end }
+      : { start: segment.start, end: segment.end, ...(frontType ? { frontType: segment.frontType as 1 | 2 } : {}) }
   })
   const corners = parseSegments(value.corners, true)
   const straights = parseSegments(value.straights, false)
@@ -446,27 +451,32 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const fieldSize = value.field.length
   const startStats = parseStats(value.startStats)
   const runners = value.field.map((runner) => parseRunner(runner, fieldSize))
-  const version = hasEngineVersion && [2, 3, 4, 5, 6, 7].includes(value.engineVersion as number) ? value.engineVersion as 2 | 3 | 4 | 5 | 6 | 7 : null
-  // Engine v4 (the stamina contest, D135) records the same course shape as v3; v5 adds slopes, track and rotation, and
-  // v6 (turns, D154) and v7 (D158) record the same course as v5.
+  const version = hasEngineVersion && [2, 3, 4, 5, 6, 7, 8].includes(value.engineVersion as number) ? value.engineVersion as 2 | 3 | 4 | 5 | 6 | 7 | 8 : null
+  // Engine v4 (the stamina contest, D135) records the same course shape as v3; v5 adds slopes, track and rotation;
+  // v6 (turns, D154) and v7 (D158) record the same course as v5; v8 adds the race's grade and each straight's front type.
   const hasLayout = version !== null && version >= 3
   const v5 = version !== null && version >= 5
-  const courseKeys = v5
-    ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation']
-    : hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
+  const v8 = version !== null && version >= 8
+  const courseKeys = v8
+    ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation', 'grade']
+    : v5
+      ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation']
+      : hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
   const courseLayout = hasLayout && isRecord(value.course) && isPositiveInt(value.course.distance)
-    ? parseCourseLayout(value.course.layout, value.course.distance, v5)
+    ? parseCourseLayout(value.course.layout, value.course.distance, v5, v8)
     : null
   const course = hasEngineVersion && isRecord(value.course) && hasExactKeys(value.course, courseKeys) &&
     isPositiveInt(value.course.distance) && SURFACES.includes(value.course.surface as Surface) && isNonNegativeInt(value.course.season) &&
     (!hasLayout || courseLayout) &&
-    (!v5 || (isNonNegativeInt(value.course.trackId) && isNonNegativeInt(value.course.rotation)))
+    (!v5 || (isNonNegativeInt(value.course.trackId) && isNonNegativeInt(value.course.rotation))) &&
+    (!v8 || isNonNegativeInt(value.course.grade))
     ? {
       distance: value.course.distance,
       surface: value.course.surface as Surface,
       season: value.course.season,
       ...(hasLayout ? { layout: courseLayout! } : {}),
       ...(v5 ? { trackId: value.course.trackId as number, rotation: value.course.rotation as number } : {}),
+      ...(v8 ? { grade: value.course.grade as number } : {}),
     }
     : null
   if (

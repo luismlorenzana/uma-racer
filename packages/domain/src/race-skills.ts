@@ -235,11 +235,46 @@ export const RANDOM_COURSE_VARIABLES = new Set([
   'up_slope_random',
 ])
 
+/**
+ * Engine v8 conditions (D231): which straight she is on, a skill's second stage, the skills she has used or just used,
+ * places gained in the middle leg or since the final corner, keeping a place band, the field's favourites and grade,
+ * runners sharing a skill, runners in view or close in front, a lottery, and a random point in a full-speed spurt.
+ * Older engines replay their records, whose compiled skills still list these as unsupported.
+ */
+export const V8_RACE_VARIABLES = new Set([
+  'change_order_up_finalcorner_after',
+  'change_order_up_middle',
+  'grade',
+  'is_activate_any_skill',
+  'is_activate_heal_skill',
+  'is_activate_other_skill_detail',
+  'is_used_skill_id',
+  'near_infront_count',
+  'order_rate_in20_continue',
+  'order_rate_in40_continue',
+  'order_rate_in50_continue',
+  'order_rate_in80_continue',
+  'order_rate_out20_continue',
+  'order_rate_out40_continue',
+  'order_rate_out50_continue',
+  'order_rate_out70_continue',
+  'popularity',
+  'random_lot',
+  'run_at_full_speed_random',
+  'same_skill_horse_count',
+  'straight_front_type',
+  'visiblehorse',
+])
+
+/** Conditions read as membership rather than a value: `is_used_skill_id==X` asks whether she has used skill X. */
+export const MEMBERSHIP_RACE_VARIABLES = new Set(['is_used_skill_id'])
+
 export const RACE_VARIABLES = new Set([
   ...BASIC_RACE_VARIABLES,
   ...PACK_RACE_VARIABLES,
   ...COURSE_RACE_VARIABLES,
   ...RANDOM_COURSE_VARIABLES,
+  ...V8_RACE_VARIABLES,
 ])
 
 export const RANDOM_PHASE_VARIABLES = new Set([
@@ -305,9 +340,16 @@ function unsupportedConditionVariables(
   }))
 }
 
-export function evaluateRaceCondition(condition: RaceCondition | null, context: Readonly<Record<string, number>>): boolean {
+export function evaluateRaceCondition(
+  condition: RaceCondition | null,
+  context: Readonly<Record<string, number>>,
+  /** Engine v8 membership variables: `==` asks whether the set holds the value, `!=` whether it does not. */
+  sets?: Readonly<Record<string, ReadonlySet<number>>>,
+): boolean {
   if (condition === null) return true
   return condition.some((group) => group.every((atom) => {
+    const set = sets?.[atom.variable]
+    if (set && (atom.operator === '==' || atom.operator === '!=')) return set.has(atom.value) === (atom.operator === '==')
     const actual = context[atom.variable]
     if (actual === undefined || !Number.isFinite(actual)) return false
     if (atom.operator === '<=') return actual <= atom.value

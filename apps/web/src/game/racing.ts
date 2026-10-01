@@ -5,6 +5,7 @@ import {
   compileRaceSkill,
   levelUniqueSkill,
   compileRaceCourseLayout,
+  RACE_GRADE_CODE,
   compileRaceCourseSlopes,
   COURSE_ROTATION,
   closeFinalScenario,
@@ -57,7 +58,7 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from '@racer/domain'
-import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, simulateRaceV3, simulateRaceV4, simulateRaceV5, simulateRaceV6, type RaceInput, type RaceTimeline } from '@racer/race'
+import { createRng, simulateRace, simulateRaceV1, simulateRaceV2, simulateRaceV3, simulateRaceV4, simulateRaceV5, simulateRaceV6, simulateRaceV7, type RaceInput, type RaceTimeline } from '@racer/race'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
 import { updateRaceBadgeFacts, updateScenarioBadgeFacts } from './badges'
@@ -71,7 +72,7 @@ export interface PreparedRaceRunner {
 }
 
 export interface PreparedRace {
-  engineVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7
+  engineVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
   id: string
   contentVersion: string
   umaId: string
@@ -109,7 +110,8 @@ export const simulatePreparedRace = (attempt: PreparedRace): RaceTimeline =>
         : attempt.engineVersion === 4 ? simulateRaceV4(attempt.input)
           : attempt.engineVersion === 5 ? simulateRaceV5(attempt.input)
             : attempt.engineVersion === 6 ? simulateRaceV6(attempt.input)
-              : simulateRace(attempt.input)
+              : attempt.engineVersion === 7 ? simulateRaceV7(attempt.input)
+                : simulateRace(attempt.input)
 
 interface BuildRaceInput {
   content: LoadedContent
@@ -233,8 +235,11 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
   if (!race) throw new Error(`Race content is missing race ${raceId}`)
   const course = content.courses.byId.get(race.courseId)
   if (!course) throw new Error(`Race content is missing course ${race.courseId}`)
-  // Engine v5 snapshots the course's hills with its corners and straights (M018).
-  const layout = { ...compileRaceCourseLayout(course, race.distance, race.direction), slopes: compileRaceCourseSlopes(course, race.distance) }
+  // Engine v5 snapshots the course's hills with its corners and straights (M018); v8 keeps each straight's front type.
+  const layout = {
+    ...compileRaceCourseLayout(course, race.distance, race.direction, { frontTypes: true }),
+    slopes: compileRaceCourseSlopes(course, race.distance),
+  }
   const seed = raceAttemptSeed(profile.createdAt, content.manifest.version, uma.templateId, race.id, strategy, sequence)
   const fieldSize = progressionFieldSize(race)
   const opponents = shuffled(uniqueOpponentPool(template, content.umas.items), seed ^ 0x9e3779b9)
@@ -293,7 +298,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     }
   })
   return {
-    engineVersion: 7,
+    engineVersion: 8,
     id: raceAttemptId(uma.templateId, sequence),
     contentVersion: content.manifest.version,
     umaId: uma.templateId,
@@ -316,6 +321,8 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
         // Imported track ids are numeric; anything else reads as no track, so no track-specific skill fires.
         trackId: /^\d+$/.test(course.trackId) ? Number(course.trackId) : 0,
         rotation: COURSE_ROTATION[race.direction],
+        // Engine v8's `grade` condition reads the original's codes.
+        grade: RACE_GRADE_CODE[race.grade],
       },
       runners: runners.map((runner) => runner.engine),
       seed,
@@ -390,7 +397,7 @@ function resultRecord(
   }).sort((left, right) => left.placement - right.placement)
   const past = isPastScenario(uma, attempt.tier)
   const unsettled: RaceResultRecord = {
-    engineVersion: 7,
+    engineVersion: 8,
     course: { ...attempt.input.course, season: attempt.input.course.season ?? 0 },
     contentVersion: attempt.contentVersion,
     umaId: attempt.umaId,

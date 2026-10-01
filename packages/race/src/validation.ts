@@ -27,6 +27,7 @@ export function assertRaceInput(value: unknown): asserts value is RaceInput {
     ...(Object.hasOwn(value.course, 'layout') ? ['layout'] : []),
     ...(Object.hasOwn(value.course, 'trackId') ? ['trackId'] : []),
     ...(Object.hasOwn(value.course, 'rotation') ? ['rotation'] : []),
+    ...(Object.hasOwn(value.course, 'grade') ? ['grade'] : []),
   ]
   const nonNegativeInt = (field: string) =>
     !Object.hasOwn(value.course as object, field) ||
@@ -34,7 +35,7 @@ export function assertRaceInput(value: unknown): asserts value is RaceInput {
   if (
     !exactKeys(value.course, courseKeys) || !finiteNonNegative(value.course.distance) || value.course.distance <= 0 ||
     !SURFACES.includes(value.course.surface as (typeof SURFACES)[number]) ||
-    !nonNegativeInt('season') || !nonNegativeInt('trackId') || !nonNegativeInt('rotation')
+    !nonNegativeInt('season') || !nonNegativeInt('trackId') || !nonNegativeInt('rotation') || !nonNegativeInt('grade')
   ) throw new Error('Invalid race course')
   if (Object.hasOwn(value.course, 'layout')) {
     const layout = value.course.layout
@@ -45,7 +46,10 @@ export function assertRaceInput(value: unknown): asserts value is RaceInput {
     }
     const distance = value.course.distance as number
     const validSegments = (segments: unknown[], corner: boolean) => segments.every((segment, index) => {
-      if (!isRecord(segment) || !exactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end'])) return false
+      // A straight may name its front type (1 home, 2 back) for engine v8's `straight_front_type`.
+      const frontType = !corner && isRecord(segment) && Object.hasOwn(segment, 'frontType')
+      if (!isRecord(segment) || !exactKeys(segment, corner ? ['start', 'end', 'number'] : frontType ? ['start', 'end', 'frontType'] : ['start', 'end'])) return false
+      if (frontType && segment.frontType !== 1 && segment.frontType !== 2) return false
       if (!finiteNonNegative(segment.start) || !finiteNonNegative(segment.end) || segment.end <= segment.start || segment.end > distance) return false
       if (index > 0) {
         const previous = segments[index - 1]

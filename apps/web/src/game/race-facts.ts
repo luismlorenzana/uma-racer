@@ -15,6 +15,7 @@ import {
   simulateRaceV4,
   simulateRaceV5,
   simulateRaceV6,
+  simulateRaceV7,
   type RaceInput,
   type RaceTimeline,
 } from '@racer/race'
@@ -78,8 +79,10 @@ export function projectLegacyAccomplishmentFacts(content: LoadedContent, record:
     if (!race) return null
     const replay = replayInput(content, record)
     // Each record replays under the rules it was run with; v3 must not pick up v4's stamina contest, nor v4 v5's rules.
-    const timeline = record.engineVersion === 7
+    const timeline = record.engineVersion === 8
       ? simulateRace(replay.input)
+      : record.engineVersion === 7
+        ? simulateRaceV7(replay.input)
       : record.engineVersion === 6
         ? simulateRaceV6(replay.input)
       : record.engineVersion === 5

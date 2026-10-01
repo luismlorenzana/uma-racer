@@ -4,6 +4,11 @@ A review of engine v7 (D158) against the original's mechanics, prompted by the o
 2026-09-30. It explains what the engine does phase by phase, lists where it departs from the original with evidence, and
 sets out what each stat buys. No private source rows, names or ids are recorded here.
 
+> **Outcome (2026-10-01):** all five findings are fixed in engine v8 (D231, [Racing — Engine
+> v8](../design/racing.md#engine-v8-the-originals-start-corners-and-final-straight)). Fixing the start alone left front
+> runners winning 0–5% of races, so v8 also widens the position-keeping bands ×1.9, on purpose, to keep every style
+> viable. The sections below describe v7, as reviewed.
+
 ## How it was checked
 
 - **The owner's own races.** The 20 most recent races of the owner's front runner (Speed 1,221 · Stamina 1,064 ·
@@ -223,14 +228,16 @@ skills firing.
 
 For 2,000 m races, moving Stamina into Power would gain the most.
 
-## Recommended work
+## What engine v8 did with them
 
-Every rule change needs a new engine version (v8), so the owner's v7 records keep replaying exactly.
+Every rule change went into a new engine version (v8, D231), so the owner's v7 records keep replaying exactly.
 
-1. **The final corner and straight (finding 2):** no inward drift from the final corner on, and the original's extra
-   move lane. Small, measured, safe on its own.
-2. **Unsupported skill conditions (finding 4):** `straight_front_type` (with straight types in the course layout) and
-   `is_activate_other_skill_detail` first.
-3. **Start and passing together (findings 1 and 3):** the original's start dash, a lane-based corner distance, and a
-   recheck of lane-change speed, retuned with `pnpm sim:turns` until style win shares hold.
-4. **Fractional skill durations (finding 5)**, when convenient.
+1. **The final corner and straight (finding 2):** a runner holds her lane from the final corner on. The original's
+   "extra move lane" spread was left out: the reference's formula for it is ambiguous, and holding the lane alone cut
+   the owner's final-leg blocks from 0.68 to 0.11 a race.
+2. **Skill conditions (finding 4):** 22 more variables, including `straight_front_type` (each straight's front type now
+   travels with the race's course) and two-stage skills. Unsupported groups fell from 11.8% of the pack to 2.4%.
+3. **Start and passing (findings 1 and 3):** the original's start dash with exact in-turn physics, and the ground a
+   runner off the rail gives up on a corner. Slowing lateral swings was tried and dropped: it added blocking for every
+   style, front runners included, and weakened skills. The bands ×1.9 restore the style balance.
+4. **Exact skill durations (finding 5).**

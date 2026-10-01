@@ -62,6 +62,9 @@ export interface PackState {
   order: number
   orderDelta: number
   passesAfterFinalLeg: number
+  /** Engine v8 `change_order_up_middle` and `change_order_up_finalcorner_after`: places gained in the middle leg and since the final corner. */
+  passesMiddle: number
+  passesFinalCorner: number
   metrics: RunnerPackMetrics
 }
 
@@ -105,6 +108,8 @@ export function createPackState(gate: number): PackState {
     order: gate + 1,
     orderDelta: 0,
     passesAfterFinalLeg: 0,
+    passesMiddle: 0,
+    passesFinalCorner: 0,
     metrics: { modeSeconds: emptyModeSeconds(), blockedSeconds: 0, overtakeAttempts: 0, overtakeSuccesses: 0 },
   }
 }

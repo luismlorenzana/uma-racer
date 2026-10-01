@@ -278,11 +278,12 @@ describe('progression race field', () => {
     expect(parseRaceResultRecord(completion.record)).toEqual(completion.record)
     expect(completion.profile.tickets).toBe(1)
     const replay = preparedRaceFromRecord(loaded, completion.record)
+    // Engine v8 records each straight's front type and the race's grade code (D231).
     expect(replay.input.course).toEqual({ distance: 2_000, surface: 'turf', season: 1, layout: {
       corners: course.corners.map(({ start, end, number }) => ({ start, end, number })),
-      straights: course.straights.map(({ start, end }) => ({ start, end })),
+      straights: course.straights.map(({ start, end, frontType }) => ({ start, end, frontType })),
       slopes: [],
-    }, trackId: 0, rotation: 2 })
+    }, trackId: 0, rotation: 2, grade: 100 })
     expect(simulatePreparedRace(replay).results).toEqual(completion.timeline.results)
 
     const { engineVersion: _engineVersion, course: _course, ...legacyBody } = completion.record

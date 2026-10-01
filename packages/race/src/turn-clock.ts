@@ -47,6 +47,15 @@ export interface TurnTuning {
   swing: number
   /** Lanes an unblocked runner drifts toward the rail per turn when the way is clear. */
   railDrift: number
+  /** Engine v8: from the final corner on she holds her lane instead of drifting back to the rail (the original's). */
+  finalCornerHold: boolean
+  /** Engine v8: each corner's turn, in radians, so a runner off the rail covers more ground for the same progress. 0 is v6–v7's free running wide. */
+  cornerAngle: number
+  /**
+   * Engine v8: scales the original's position-keeping bands (how far behind the leader Pace, Late and End settle) so
+   * the styles stay balanced once the start no longer hands front runners a free lead (D231). 1 is the original's.
+   */
+  bandScale: number
   /** Width, in % of base speed, of each section's Wit roll (the original's is 0.65). */
   sectionLuck: number
   /** The original's mood: each level from Awful (−2) to Great (+2) moves every stat by this much. */
@@ -68,6 +77,9 @@ export const V6_TUNING: Readonly<TurnTuning> = Object.freeze<TurnTuning>({
   hpScale: 0.85,
   swing: 3,
   railDrift: 0.2,
+  finalCornerHold: false,
+  cornerAngle: 0,
+  bandScale: 1,
   sectionLuck: 0.65,
   moodStep: 0.02,
 })
@@ -77,7 +89,7 @@ export const V6_TUNING: Readonly<TurnTuning> = Object.freeze<TurnTuning>({
  * HP at the original's rates — so every stat and every skill weighs what it does in the original. The sims may adjust
  * it between runs (`V7='{…}' pnpm sim:turns`); the game treats it as constant.
  */
-export const V7_TUNING: TurnTuning = {
+export const V7_TUNING: Readonly<TurnTuning> = Object.freeze<TurnTuning>({
   bands: { front: [0, 2], pace: [2, 5], late: [5, 8], end: [7, 11] },
   ease: 0.985,
   press: 1.015,
@@ -88,12 +100,30 @@ export const V7_TUNING: TurnTuning = {
   hpScale: 1,
   swing: 3,
   railDrift: 0.2,
+  finalCornerHold: false,
+  cornerAngle: 0,
+  bandScale: 1,
   sectionLuck: 0.65,
   moodStep: 0.02,
+})
+
+/**
+ * Engine v8 (D231): v7 with the original's start dash and exact physics inside each turn, the ground a runner off the
+ * rail gives up on a corner, holding her lane from the final corner, and exact skill durations. The sims may adjust it
+ * between runs (`V8='{…}' pnpm sim:turns`); the game treats it as constant.
+ */
+export const V8_TUNING: TurnTuning = {
+  ...V7_TUNING,
+  bands: { ...V7_TUNING.bands },
+  finalCornerHold: true,
+  cornerAngle: Math.PI / 2,
+  // Set with `pnpm sim:turns` (2026-10-01): wins by style stay within 13–37% at every distance, as under v7.
+  bandScale: 1.9,
 }
 
 /** The tuning a turn engine version runs on. */
-export const tuningFor = (rulesVersion: number): TurnTuning => rulesVersion >= 7 ? V7_TUNING : V6_TUNING
+export const tuningFor = (rulesVersion: number): TurnTuning =>
+  rulesVersion >= 8 ? V8_TUNING : rulesVersion >= 7 ? V7_TUNING : V6_TUNING
 
 /** A turn engine's Speed term for an effective Speed stat and a distance-aptitude multiplier. */
 export function turnSpeedTerm(speed: number, aptitude: number, tuning: TurnTuning): number {

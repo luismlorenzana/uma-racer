@@ -11,6 +11,8 @@ export interface RaceCourse {
   /** Engine v5 course facts for skill conditions: the imported track id and the original's rotation code. */
   trackId?: number
   rotation?: number
+  /** Engine v8: the original's grade code (G1 100, G2 200, G3 300, OP 400 …) for the `grade` condition. */
+  grade?: number
 }
 
 export interface RaceRunnerInput {

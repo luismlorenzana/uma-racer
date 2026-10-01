@@ -10,7 +10,7 @@ Racing is the **first system to be built** and the heart of the game. Races gran
 2. **Pick the Uma, strategy, and skill loadout.** The strategy starts at that outfit's saved default (or its strongest
    baseline style until edited), and can still be changed for this race. Aptitudes are shown for the race's surface,
    distance, and each strategy.
-3. **Watch the race** turn by turn on its own course ([engine v7](#engine-v7-the-originals-physics-and-field)): 1×
+3. **Watch the race** turn by turn on its own course ([engine v8](#engine-v8-the-originals-start-corners-and-final-straight)): 1×
    plays two one-second turns a second, and Slow, 2×, pause, step one turn and skip are always at hand.
 4. **Results:** finishing order, margins, time, EXP gained, goal and badge progress, and new badges or titles with fanfare.
 
@@ -254,19 +254,22 @@ per-strategy stat bonus; the G1 player targets below remain the player-facing ac
 
 An under-trained Uma, or one racing off-aptitude, loses to the field. At Training Level 10 a trained Uma should win
 the grades below G1; G1 is a real contest, which a fully bonded set is favoured to win and a typical one wins on its
-skills and on carrying the Stamina the distance needs (D152, D159). `pnpm sim:careers` measures it on engine v7 at
+skills and on carrying the Stamina the distance needs (D152, D159). `pnpm sim:careers` measures it on engine v8 at
 TL10 with each distance's decks (the [stamina ladder](constellations.md#balance-targets-the-stamina-ladder)'s, plus a
-Power card for sprints and miles) against generated fields, best of four strategies, 12 runners. Measured 2026-09-26,
-sprint / mile / medium / long:
+Power card for sprints and miles) against generated fields, best of four strategies, 12 runners. Measured 2026-10-01
+(20 races a cell), sprint / mile / medium / long:
 
 | Tier | Set | G3 | G2 | G1 |
 |---|---|---|---|---|
-| 1 | 0★ | 95 · 95 · 95 · 100% | 80 · 90 · 70 · 85% | 50 · 45 · 45 · 50% |
-| 1 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% |
-| 7 | 0★ | 95 · 95 · 100 · 100% | 80 · 80 · 100 · 90% | 70 · 50 · 55 · 75% |
-| 7 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 95 · 100 · 100 · 100% |
-| 14 | 0★ | 95 · 90 · 100 · 100% | 70 · 60 · 90 · 100% | 35 · 30 · 55 · 60% |
-| 14 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% |
+| 1 | 0★ | 90 · 100 · 100 · 100% | 75 · 75 · 95 · 90% | 55 · 55 · 75 · 80% |
+| 1 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 90 · 100 · 100% |
+| 7 | 0★ | 80 · 90 · 100 · 100% | 70 · 65 · 75 · 90% | 50 · 45 · 45 · 60% |
+| 7 | 3★ | 95 · 100 · 100 · 100% | 95 · 95 · 100 · 100% | 80 · 90 · 100 · 100% |
+| 14 | 0★ | 75 · 70 · 85 · 95% | 55 · 55 · 70 · 70% | 40 · 40 · 40 · 45% |
+| 14 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 80 · 80 · 100 · 100% |
+
+Against engine v7 (2026-09-26) sprint and mile G1s ease to 80–90% for a fully bonded set in later scenarios: v8's start
+makes Power count, and those decks carry little of it.
 
 D191 (2026-09-28, 40 races a cell) evened out the first scenarios' fields. A 0★ set's G1s, before → after:
 
@@ -391,6 +394,7 @@ Based on [Race Mechanics Research](../research/race-mechanics.md):
 | R4: Drama (engines v5, v7) | **Slopes and final-straight dueling** ✅ (v5). **Spot Struggle, Repositioning, Secure Lead and Stamina keep** ✅ (v7, D158), since Guts and Wit mean little without them. Rushing stays out (D141) |
 | R5: Full skills (engine v5) | Random course points, the race clock, course facts, counters, green and gate skills ✅. Debuffs and team effects are out (D141) |
 | Turns (engine v6, M021) | One-second turns, race-wide phases, per-turn passing, style bands, mood, and a Speed term that decides races ✅ |
+| The original's start, corners and final straight (engine v8) | The start dash to 85% of base speed and exact physics inside each turn; ground lost off the rail on corners; holding a lane from the final corner; exact skill durations; 22 more skill conditions ✅ (D231) |
 | The original's physics (engine v7) | Speed, acceleration and HP at the original's rates; the original's position keeping on Wit; the field mechanics above; Power-scaled lane changes; Lv5 uniques; late-heal spurt re-plans ✅ (D158) |
 
 ### Engine v5 (M018)
@@ -472,6 +476,8 @@ runners still lead sprints, as they do in the original, and the field still fini
 
 ### Engine v7: the original's physics and field
 
+Frozen since engine v8 (D231): races run on v7 replay on it, and new races run on v8.
+
 v6's turns with the **original's physics and field mechanics** (D158), so every stat does what it does in the original
 and skills decide races. Races run on v6 replay on v6. The full formulas and sources are in
 [Race Engine v7 Findings](../research/race-engine-v7-findings.md).
@@ -536,3 +542,59 @@ in every field stronger, which changes difficulty; it stays off unless the owner
 
 At 3,000 m most scenario-1 rivals run short because none puts more than 40% of her build into Stamina. No one runs
 dry before the last 60 m: a runner short of a full spurt plans a slower one that her HP holds, as in the original.
+
+### Engine v8: the original's start, corners and final straight
+
+v7's turns and field mechanics with four departures from the original fixed (D231). The evidence, the owner's races
+replayed, and what each stat buys are in the [Race Mechanics Review](../research/race-mechanics-review.md).
+
+**What changes from v7:**
+
+- **The start.** The start dash adds 24 m/s² only until a runner reaches 85% of base speed; from there her own
+  acceleration, `0.0006 × √(500 × Power)`, carries her to her opening target over several seconds. Power and early
+  acceleration skills now decide who gets to the front. In v7 every runner reached full speed in the first second.
+- **Exact physics inside a turn.** Speed and distance are integrated piece by piece through the turn (the dash, then
+  her own acceleration or deceleration, stopping at the target), where v7 averaged the turn's two ends.
+- **Corners.** A runner off the rail runs farther for the same progress: on a corner of length L turning θ (a quarter
+  turn per corner), a runner w meters out makes `R / (R + w)` of her running, with `R = L / θ`; HP pays for the ground
+  she ran. Roughly 2 m per lane over a 180° turn. In v7 running wide was free.
+- **The final corner and straight.** From the final corner on, a runner holds her lane instead of drifting back to the
+  rail. She still swings out when blocked and goes round a slower runner.
+- **Exact skill durations.** An effect lasts `base × distance / 1,000` seconds exactly; one that ends part-way through
+  a turn counts for that share of it. v7 rounded to whole turns.
+- **Skill conditions.** 22 more variables are read, which cuts the skill groups that can never fire from 11.8% of the
+  pack to 2.4% (42 of 1,743). A two-stage skill's second group fires after its first (`is_activate_other_skill_detail`), and
+  the engine reads which straight she is on, the skills she has used or just used (and just healed with), places gained
+  in the middle leg and since the final corner, place bands held since the start, the field's favourites (ranked on
+  raced stats, as the original ranks its odds) and the race's grade, runners sharing a skill, runners in view or close
+  in front, a once-a-race lottery, and a random point in a full-speed spurt.
+- **Position-keeping bands ×1.9** (ours). Pace, Late and End settle 1.9 times as far behind the leader as the
+  original's bands. v7's free start handed front runners an early lead that kept the styles balanced; with the original's
+  start, the original's bands left front runners winning 5–10% of races. Widening the bands gives that lead back on
+  purpose.
+
+**Tuning** (`V8_TUNING`, set with `pnpm sim:turns`): v7's, plus `finalCornerHold`, `cornerAngle` (π/2 per corner) and
+`bandScale` 1.9.
+
+Measured with `pnpm sim:turns` on a synthetic oval (a 350 m home straight, two-corner turns of 500 m, a 400 m back
+straight), 120 races a row, 2026-10-01:
+
+| Distance | Turns | Winner → last | Overtakes | Blocked a runner | Short of stamina | Wins F / P / L / E |
+|---|---|---|---|---|---|---|
+| 1,200 m | 58 | 0.9 s | 71 | 0.7 s | 29% | 23 / 33 / 27 / 17% |
+| 1,600 m | 79 | 1.3 s | 79 | 0.7 s | 36% | 23 / 23 / 31 / 23% |
+| 2,000 m | 100 | 1.2 s | 83 | 0.9 s | 20% | 28 / 21 / 20 / 31% |
+| 2,400 m | 123 | 1.4 s | 81 | 0.9 s | 25% | 26 / 18 / 26 / 31% |
+| 3,000 m | 158 | 2.4 s | 104 | 4.0 s | 67% | 25 / 9 / 38 / 28% |
+
+v7 on the same courses: front runners 37% of sprint wins falling to 20–23% at 2,400 m and beyond. Skills still beat
+Speed: 1,000 Speed with a Lv5 unique, two golds and two whites finishes ahead of 1,400 Speed without in 82–90% of races.
+A runner at twice the field wins 99–100%; at +20% 39–63%.
+
+**The owner's front runner** (2026-10-01): her 20 v7 races re-run on 25 seeds each on both engines, with v8 given each
+course's straight types and grade and her skills' newly read conditions. Wins 55% → 61%, top three 65% → 70%, mean
+place 4.63 → 3.81, leading the other fronts 5 s in 51% → 87%, final-leg blocks 0.68 → 0.11 a race, and her unique's
+final-leg group firing in 0% → 23% of races.
+
+`pnpm sim:balance` runs on courses with no geometry, so it sees the start and the bands but no corners: there end
+closers win most rows, as they did on v7 (54%). Every course in the game has corners.

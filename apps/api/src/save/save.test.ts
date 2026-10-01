@@ -371,8 +371,19 @@ describe('parseSyncRequest', () => {
       expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...v3, engineVersion, course: v5Course }, createdAt: 1 }] }))
         .toMatchObject({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { engineVersion } }] })
     }
-    expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { ...v3, engineVersion: 8, course: v5Course }, createdAt: 1 }] }))
+    // Engine v8 (D231) adds the race's grade code and each straight's front type; older engines' courses carry neither.
+    const v8Course = {
+      ...v5Course,
+      layout: { ...v5Course.layout, straights: [{ start: 0, end: 1_200, frontType: 2 }, { start: 1_600, end: 2_000, frontType: 1 }] },
+      grade: 100,
+    }
+    const append = (data: unknown) => parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data, createdAt: 1 }] })
+    expect(append({ ...v3, engineVersion: 8, course: v8Course })).toMatchObject({ appends: [{ data: { engineVersion: 8 } }] })
+    expect(append({ ...v3, engineVersion: 8, course: v5Course })).toMatch(/invalid raceResults data/)
+    expect(append({ ...v3, engineVersion: 7, course: v8Course })).toMatch(/invalid raceResults data/)
+    expect(append({ ...v3, engineVersion: 8, course: { ...v8Course, layout: { ...v8Course.layout, straights: [{ start: 0, end: 2_000, frontType: 3 }] } } }))
       .toMatch(/invalid raceResults data/)
+    expect(append({ ...v3, engineVersion: 9, course: v8Course })).toMatch(/invalid raceResults data/)
     const withGoals = { ...v3, completedGoalIds: ['goal:1:aptitude', 'goal:1:challenge'] }
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: withGoals, createdAt: 1 }] })).toMatchObject({
       appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { completedGoalIds: withGoals.completedGoalIds } }],

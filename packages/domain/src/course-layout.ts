@@ -1,6 +1,7 @@
 // Bounded private-course geometry for race engine R3 (docs/design/racing.md#pack-racing-r3).
 
 import type { CourseTemplate, RaceDirection, RaceTemplate } from './content'
+import type { RaceGrade } from './types'
 
 export interface RaceCourseCorner {
   /** Meters from the start, inclusive. */
@@ -16,6 +17,8 @@ export interface RaceCourseStraight {
   start: number
   /** Meters from the start, exclusive. */
   end: number
+  /** Engine v8: the original's `straight_front_type`, 1 for the home straight and 2 for the back straight. */
+  frontType?: 1 | 2
 }
 
 export interface RaceCourseSlope {
@@ -32,6 +35,11 @@ export interface RaceCourseLayout {
   straights: RaceCourseStraight[]
   /** Engine v5 hills (M018). v3–v4 layouts have none. */
   slopes?: RaceCourseSlope[]
+}
+
+/** The original's `grade` condition codes (engine v8): G1 100, G2 200, G3 300, OP 400, then the lower classes. */
+export const RACE_GRADE_CODE: Readonly<Record<RaceGrade, number>> = {
+  g1: 100, g2: 200, g3: 300, op: 400, 'pre-op': 700, maiden: 800, debut: 900,
 }
 
 /** How a course turns, as the original's `rotation` condition numbers it. */
@@ -73,6 +81,8 @@ export function compileRaceCourseLayout(
   course: CourseTemplate,
   raceDistance: number,
   direction: RaceDirection,
+  /** Engine v8 keeps each straight's front type for `straight_front_type`; older engines' layouts never carry it. */
+  options: { frontTypes?: boolean } = {},
 ): RaceCourseLayout {
   if (!Number.isSafeInteger(raceDistance) || raceDistance <= 0) throw new Error('Invalid race distance for course layout')
   if (!Array.isArray(course.corners) || !Array.isArray(course.straights)) throw new Error(`Course ${course.id} has no typed layout`)
@@ -87,9 +97,11 @@ export function compileRaceCourseLayout(
     }
     return [{ start: segment.start, end, number: segment.number }]
   })
-  const straights = course.straights.flatMap((segment) => {
+  const straights = course.straights.flatMap((segment): RaceCourseStraight[] => {
     const end = Math.min(raceDistance, segment.end)
-    return segment.start >= raceDistance || end <= segment.start ? [] : [{ start: segment.start, end }]
+    if (segment.start >= raceDistance || end <= segment.start) return []
+    const frontType = options.frontTypes && (segment.frontType === 1 || segment.frontType === 2) ? segment.frontType : undefined
+    return [{ start: segment.start, end, ...(frontType ? { frontType } : {}) }]
   })
   if (corners.length === 0 && straights.length === 0) {
     if (direction !== 'straight') throw new Error(`Course ${course.id} has no usable geometry`)

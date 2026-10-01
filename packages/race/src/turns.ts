@@ -38,10 +38,12 @@ import {
   planSpurt,
   rankRunners,
   resolveGateSkills,
+  scaleActiveEffects,
   skillContext,
   targetSpeed,
   updateFieldStateV5,
   type RunnerState,
+  type SkillFieldFacts,
 } from './engine'
 import type { PackRunnerSnapshot } from './pack'
 import { createRng } from './rng'
@@ -56,6 +58,7 @@ import {
   swingLanes,
   type TurnField,
 } from './turn-rules'
+import { NEAR_DISTANCE, NEAR_LANES, VISIBLE_DISTANCE } from './constants'
 import type { PositionMode, RaceCourse, RaceEvent, RaceInput, RaceTimeline } from './types'
 import { assertRaceInput } from './validation'
 
@@ -73,6 +76,30 @@ interface Move {
   speed: number
   lane: number
   blockedBy: number | null
+  /** Engine v8: progress along the course per meter she runs (below 1 off the rail on a corner). */
+  ratio: number
+}
+
+/**
+ * Exact speed and distance over `dt` seconds moving from `v0` toward `target` at `rate` (positive accelerating, negative
+ * slowing), stopping at the target: engine v8's step, where v6–v7 averaged the turn's two ends.
+ */
+function stepTowards(v0: number, target: number, rate: number, dt: number): [number, number] {
+  if (dt <= 0) return [v0, 0]
+  if (rate === 0 || (rate > 0 ? v0 >= target : v0 <= target)) return [v0, v0 * dt]
+  const reach = (target - v0) / rate
+  if (reach >= dt) return [v0 + rate * dt, v0 * dt + 0.5 * rate * dt * dt]
+  return [target, v0 * reach + 0.5 * rate * reach * reach + target * (dt - reach)]
+}
+
+/**
+ * Engine v8: progress per meter run for a runner `lane` meters off the rail on a corner of `length` meters turning
+ * `angle` radians. Off the rail she runs the arc of radius R + lane for the rail's R, so she covers R / (R + lane) of it.
+ */
+export function cornerRatio(length: number, angle: number, lane: number): number {
+  if (angle <= 0 || length <= 0 || lane <= 0) return 1
+  const radius = length / angle
+  return radius / (radius + lane)
 }
 
 /** Engine v6 hills: which slope she is on, and once a turn on a descent whether downhill accel mode starts or ends. */
@@ -113,15 +140,22 @@ function bandPull(r: RunnerState, leaderDistance: number, phase: number, distanc
 /** Engine v6 (D154–D155), frozen: races run on it replay exactly. */
 export const simulateRaceV6 = (input: RaceInput): RaceTimeline => simulateTurns(input, 6)
 
-/** Engine v7 (D158): the original's physics and field mechanics on the turn clock. */
+/** Engine v7 (D158), frozen: races run on it replay exactly. */
 export const simulateRaceV7 = (input: RaceInput): RaceTimeline => simulateTurns(input, 7)
 
-function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
+/** Engine v8 (D231): v7 with the original's start, corners, final straight and exact turn physics. */
+export const simulateRaceV8 = (input: RaceInput): RaceTimeline => simulateTurns(input, 8)
+
+function simulateTurns(input: RaceInput, version: 6 | 7 | 8): RaceTimeline {
   assertRaceInput(input)
   const { distance } = input.course
   const total = raceTurns(distance)
   const tuning = tuningFor(version)
   const v7 = version >= 7
+  const v8 = version >= 8
+  const finalCorner = input.course.layout?.corners.at(-1)
+  const corners = input.course.layout?.corners ?? []
+  const straights = input.course.layout?.straights ?? []
   const lastStraight = input.course.layout?.straights.at(-1)
   const rng = createRng(input.seed)
   // Mood (the original's motivation), from each runner's own stream so it never shifts the race's other rolls.
@@ -138,6 +172,27 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
   runners.forEach((r, i) => {
     if (r.skills.length > 0) resolveGateSkills(r, i, skillContext(r, input.course, i + 1, count, 0, null, i, strategies), events, distance)
   })
+  // Engine v8 field facts: how many runners carry each skill; the favourites, ranked on their raced stats (the original
+  // ranks its odds; stats stand in); and whether each runner has kept to a place band since the start settled.
+  const sameSkillCounts = new Map<string, number>()
+  const facts: SkillFieldFacts = { sameSkillCounts }
+  const popularity: number[] = []
+  // Place bands held since the start settled: inside the top X% (`order_rate_inX_continue`), and outside it (`…outX…`).
+  const IN_BANDS = [20, 40, 50, 80] as const
+  const OUT_BANDS = [20, 40, 50, 70] as const
+  const bands = runners.map(() => ({
+    in: Object.fromEntries(IN_BANDS.map((band) => [band, true])) as Record<number, boolean>,
+    out: Object.fromEntries(OUT_BANDS.map((band) => [band, true])) as Record<number, boolean>,
+  }))
+  if (v8) {
+    for (const runner of input.runners) {
+      for (const id of new Set((runner.skills ?? []).map((skill) => skill.id))) sameSkillCounts.set(id, (sameSkillCounts.get(id) ?? 0) + 1)
+    }
+    const strength = (r: RunnerState) => r.speedStat + r.stamina + r.power + r.guts + r.wit
+    runners.map((r, index) => ({ index, value: strength(r) }))
+      .sort((left, right) => right.value - left.value || left.index - right.index)
+      .forEach((entry, rank) => { popularity[entry.index] = rank + 1 })
+  }
 
   const distances: number[] = []
   const speeds: number[] = []
@@ -175,7 +230,10 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
       .sort((left, right) => right.distance - left.distance || left.index - right.index)
     const places = new Map(order.map((item, index) => [item.index, index + 1]))
     const leaderDistance = order[0]!.distance
-    runners.forEach((runner) => expireActiveEffects(runner, turn, version))
+    runners.forEach((runner) => {
+      expireActiveEffects(runner, turn, version)
+      if (v8) scaleActiveEffects(runner, turn)
+    })
     const snapshots: PackRunnerSnapshot[] = runners.map((runner, index) => ({
       index,
       distance: runner.d,
@@ -196,10 +254,19 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
       const order = places.get(index)!
       pack.orderDelta = order - pack.order
       if (phase >= 2 && pack.orderDelta < 0) pack.passesAfterFinalLeg += -pack.orderDelta
+      if (v8 && phase === 1 && pack.orderDelta < 0) pack.passesMiddle += -pack.orderDelta
+      if (v8 && finalCorner && r.d >= finalCorner.start && pack.orderDelta < 0) pack.passesFinalCorner += -pack.orderDelta
       pack.order = order
+      // v8: a place band held continuously from the second section on (the start's scramble excluded).
+      if (v8 && section >= 1) {
+        const rate = (order / count) * 100
+        const band = bands[index]!
+        for (const edge of IN_BANDS) if (rate > edge) band.in[edge] = false
+        for (const edge of OUT_BANDS) if (rate <= edge) band.out[edge] = false
+      }
     })
     const field: TurnField | null = v7
-      ? { snapshots, order: order.map((item) => item.index), strategies, distance, turn, section, phase, legTurn, hpScale: tuning.hpScale }
+      ? { snapshots, order: order.map((item) => item.index), strategies, distance, turn, section, phase, legTurn, hpScale: tuning.hpScale, bandScale: tuning.bandScale }
       : null
     if (field) spotStruggleTurn(runners, turnStates, field, events, struggle)
 
@@ -239,9 +306,21 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
             is_last_straight_onetime: r.d >= lastStraight.start &&
               r.d < lastStraight.start + Math.max(LAST_STRAIGHT_ONETIME_METERS, actualSpeed(r)) ? 1 : 0,
           } : {}),
+          ...(v8 ? {
+            straight_front_type: straights.find((straight) => r.d >= straight.start && r.d < straight.end)?.frontType ?? 0,
+            change_order_up_middle: r.pack!.passesMiddle,
+            change_order_up_finalcorner_after: r.pack!.passesFinalCorner,
+            ...Object.fromEntries(IN_BANDS.map((edge) => [`order_rate_in${edge}_continue`, bands[i]!.in[edge] ? 1 : 0])),
+            ...Object.fromEntries(OUT_BANDS.map((edge) => [`order_rate_out${edge}_continue`, bands[i]!.out[edge] ? 1 : 0])),
+            near_infront_count: snapshots.filter((other) => other.index !== i && other.distance > r.d && other.distance - r.d <= NEAR_DISTANCE &&
+              Math.abs(other.lane - r.pack!.lane) < NEAR_LANES * HORSE_LANE).length,
+            popularity: popularity[i]!,
+            grade: input.course.grade ?? 0,
+            visiblehorse: snapshots.filter((other) => other.index !== i && other.distance > r.d && other.distance - r.d <= VISIBLE_DISTANCE).length,
+          } : {}),
         }
         const hpBefore = r.hp
-        activateSkills(r, i, turn, context, events, version, distance, { turn, phase })
+        activateSkills(r, i, turn, context, events, version, distance, { turn, phase }, facts)
         // A heal resets stamina keep: she may compete again if her HP now covers the spurt.
         if (v7 && r.hp > hpBefore) turnStates[i]!.staminaKeep = false
       }
@@ -260,6 +339,40 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
       let target = targetSpeed(r, phase, distance, band.coefficient, version)
       if (v7 && !r.hpEmpty) target = Math.min(MAX_TARGET_SPEED, target + fieldBonus(turnStates[i]!))
       const before = actualSpeed(r)
+      // v8: off the rail on a corner she covers less of the course for the same running.
+      const corner = v8 ? corners.find((segment) => r.d >= segment.start && r.d < segment.end) : undefined
+      const ratio = corner ? cornerRatio(corner.end - corner.start, tuning.cornerAngle, r.pack!.lane) : 1
+      if (v8) {
+        // v8: the original's start dash, +24 m/s² only until 85% of base speed, then her own acceleration; and the
+        // turn's speed and distance integrated exactly, piece by piece.
+        const p = Math.min(phase, 2) as 0 | 1 | 2
+        let accel = (r.slope > 0 ? UPHILL_BASE_ACCEL : BASE_ACCEL) * Math.sqrt(500 * r.power) * ACCEL_COEF[r.input.strategy][p] *
+          SURFACE_APT_ACCEL[r.input.aptitude.surface] * DISTANCE_APT_ACCEL[r.input.aptitude.distance]
+        accel = accel * tuning.accelScale + activeModifier(r, 'acceleration')
+        if (r.dueling) accel += (160 * r.guts) ** 0.59 * 0.0001
+        let run = 0
+        let left = dt
+        if (r.startDash && r.v < target) {
+          const dashTo = Math.min(target, START_DASH_UNTIL * baseSpeed)
+          const dashRate = accel + START_DASH_ACCEL
+          const dashTime = Math.min(left, Math.max(0, (dashTo - r.v) / dashRate))
+          const [v, covered] = stepTowards(r.v, dashTo, dashRate, dashTime)
+          r.v = v
+          run += covered
+          left -= dashTime
+          if (r.v >= dashTo - 1e-9) {
+            r.startDash = false
+            events.push({ tick: turn, runner: i, type: 'start-dash-end' })
+          }
+        }
+        const decel = r.hpEmpty ? HP_EMPTY_DECEL : band.mode === 'pace-down' ? PACE_DOWN_DECEL : DECEL[Math.min(phase, 2)]!
+        const [v, covered] = stepTowards(r.v, target, r.v < target ? accel : decel, left)
+        r.v = v
+        run += covered
+        const bonus = actualSpeed(r) - r.v
+        moves.push({ index: i, from: r.d, to: r.d + (run + bonus * dt) * ratio, speed: actualSpeed(r), lane: r.pack!.lane, blockedBy: null, ratio })
+        return
+      }
       if (r.v < target) {
         const p = Math.min(phase, 2) as 0 | 1 | 2
         let accel = (r.slope > 0 ? UPHILL_BASE_ACCEL : BASE_ACCEL) * Math.sqrt(500 * r.power) * ACCEL_COEF[r.input.strategy][p] *
@@ -277,7 +390,7 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
         events.push({ tick: turn, runner: i, type: 'start-dash-end' })
       }
       const after = actualSpeed(r)
-      moves.push({ index: i, from: r.d, to: r.d + ((before + after) / 2) * dt, speed: after, lane: r.pack!.lane, blockedBy: null })
+      moves.push({ index: i, from: r.d, to: r.d + ((before + after) / 2) * dt, speed: after, lane: r.pack!.lane, blockedBy: null, ratio: 1 })
     })
 
     // 9: passing, front to back by where each runner started the turn.
@@ -318,7 +431,9 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
           move.lane = out
           events.push({ tick: turn, runner: move.index, type: 'lane-change', value: out })
         }
-      } else if (move.lane > 0 && tuning.railDrift > 0) {
+      } else if (move.lane > 0 && tuning.railDrift > 0 &&
+        // v8: from the final corner on she holds her lane, as the original's runners do, rather than return to the rail.
+        !(tuning.finalCornerHold && finalCorner !== undefined && move.from >= finalCorner.start)) {
         const inside = Math.max(0, move.lane - tuning.railDrift * LANE_STEP)
         if (!occupied(inside, move.to, move.index)) move.lane = inside
       }
@@ -354,7 +469,8 @@ function simulateTurns(input: RaceInput, version: 6 | 7): RaceTimeline {
       const r = runners[move.index]!
       const dt = turn === 1 ? 1 - r.startDelay : 1
       const covered = move.to - move.from
-      const speed = covered / Math.max(dt, 0.001)
+      // v8: HP pays for the ground she ran, which off the rail on a corner is more than her progress.
+      const speed = covered / move.ratio / Math.max(dt, 0.001)
       if (move.blockedBy !== null) r.v = Math.min(r.v, move.speed)
       r.pack!.lane = move.lane
       r.pack!.targetLane = move.lane

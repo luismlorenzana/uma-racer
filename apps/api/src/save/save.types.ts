@@ -115,6 +115,8 @@ const RACE_RESULT_FIELDS = [
 const RACE_COURSE_FIELDS = ['distance', 'surface', 'season'] as const
 const RACE_COURSE_V3_FIELDS = ['distance', 'surface', 'season', 'layout'] as const
 const RACE_COURSE_V5_FIELDS = ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation'] as const
+/** Engine v8 adds the race's grade code for the `grade` skill condition. */
+const RACE_COURSE_V8_FIELDS = [...RACE_COURSE_V5_FIELDS, 'grade'] as const
 /** Mirrors @racer/domain RACE_SKILL_EFFECT_KINDS (engine v5 adds gate and passive kinds, M018). */
 const RACE_SKILL_EFFECT_KINDS = [
   'recovery', 'current-speed', 'current-speed-natural', 'target-speed', 'acceleration',
@@ -958,7 +960,7 @@ function parseCompiledSkill(value: unknown): boolean {
   })
 }
 
-function parseCourseLayout(value: unknown, distance: number, withSlopes = false): boolean {
+function parseCourseLayout(value: unknown, distance: number, withSlopes = false, withFrontTypes = false): boolean {
   if (!isRecord(value) || !exactKeys(value, withSlopes ? ['corners', 'straights', 'slopes'] : ['corners', 'straights']) ||
     !Array.isArray(value.corners) || !Array.isArray(value.straights) || (withSlopes && !Array.isArray(value.slopes))) return false
   const slopesValid = !withSlopes || (value.slopes as unknown[]).every((slope, index, all) =>
@@ -969,7 +971,10 @@ function parseCourseLayout(value: unknown, distance: number, withSlopes = false)
     (index === 0 || ((all[index - 1] as Record<string, unknown>).end as number) <= slope.start))
   if (!slopesValid) return false
   const valid = (segments: unknown[], corner: boolean) => segments.every((segment, index) => {
-    if (!isRecord(segment) || !exactKeys(segment, corner ? ['start', 'end', 'number'] : ['start', 'end'])) return false
+    // Engine v8 straights may name their front type (1 home, 2 back).
+    const frontType = !corner && withFrontTypes && isRecord(segment) && Object.hasOwn(segment, 'frontType')
+    if (!isRecord(segment) || !exactKeys(segment, corner ? ['start', 'end', 'number'] : frontType ? ['start', 'end', 'frontType'] : ['start', 'end'])) return false
+    if (frontType && segment.frontType !== 1 && segment.frontType !== 2) return false
     if (typeof segment.start !== 'number' || !Number.isFinite(segment.start) || segment.start < 0 ||
       typeof segment.end !== 'number' || !Number.isFinite(segment.end) || segment.end <= segment.start || segment.end > distance ||
       (index > 0 && ((segments[index - 1] as Record<string, unknown>).end as number) > segment.start)) return false
@@ -994,17 +999,19 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
     ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
     ...(versioned ? ['engineVersion', 'course'] : []),
   ]) ||
-      (versioned && ![2, 3, 4, 5, 6, 7].includes(version as number)) || !Array.isArray(value.field)) return null
-  // Engines v6 (turns, D154) and v7 (D158) record the same course as v5.
-  const v5Course = version === 5 || version === 6 || version === 7
+      (versioned && ![2, 3, 4, 5, 6, 7, 8].includes(version as number)) || !Array.isArray(value.field)) return null
+  // Engines v6 (turns, D154) and v7 (D158) record the same course as v5; v8 (D231) adds the grade and straight types.
+  const v8Course = version === 8
+  const v5Course = version === 5 || version === 6 || version === 7 || v8Course
   const hasLayout = version === 3 || version === 4 || v5Course
   if (versioned && (
     !isRecord(value.course) ||
-    !exactKeys(value.course, v5Course ? RACE_COURSE_V5_FIELDS : hasLayout ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
+    !exactKeys(value.course, v8Course ? RACE_COURSE_V8_FIELDS : v5Course ? RACE_COURSE_V5_FIELDS : hasLayout ? RACE_COURSE_V3_FIELDS : RACE_COURSE_FIELDS) ||
     !isPositiveInt(value.course.distance) || !['turf', 'dirt'].includes(String(value.course.surface)) ||
     !isNonNegativeInt(value.course.season) ||
-    (hasLayout && !parseCourseLayout(value.course.layout, value.course.distance, v5Course)) ||
-    (v5Course && (!isNonNegativeInt(value.course.trackId) || !isNonNegativeInt(value.course.rotation)))
+    (hasLayout && !parseCourseLayout(value.course.layout, value.course.distance, v5Course, v8Course)) ||
+    (v5Course && (!isNonNegativeInt(value.course.trackId) || !isNonNegativeInt(value.course.rotation))) ||
+    (v8Course && !isNonNegativeInt(value.course.grade))
   )) return null
   const fieldSize = value.field.length
   if (

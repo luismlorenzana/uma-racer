@@ -266,7 +266,7 @@ Stats start at base (D152), so every rung pays for its stamina, and each adds on
 holds at every tier: a set with no stamina card cannot run 1,400 m, however its Produce goes. The rest are looser than
 the table: a Power card set runs 3,000 m with a gold heal at every tier but 1, 10 and 11, a lean alone runs 2,400 m
 at tiers 2, 13 and 14, and a sprint set runs 1,800 m at tiers 8, 12, 13 and 14. At tier 1 a lean alone falls short of
-2,200 m, which is why the Medium row carries a Power card. Measured 2026-09-26 on engine v7, at the original's HP
+2,200 m, which is why the Medium row carries a Power card. Measured 2026-09-26 on engine v7 and held on engine v8 (2026-10-01, D231), at the original's HP
 rate (D158), against realistic generated rival fields (D159). v7's heals re-plan a spurt already under way, which is
 what lets the Long row's two gold heals carry 3,200 m at tier 1.
 Later scenarios' stronger cards loosen it further, the power creep that the stamina contest
