@@ -252,6 +252,12 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ## Firestore data model (saves)
 
+The future Global Uma RPG has a separate [implementation contract](uma-rpg-implementation.md). M028 does **not**
+embed per-outfit RPG levels in `UmaSave.scenarios` or send its reward-bearing result as ordinary unrelated sync
+upserts/appends: that path can append a log when a related entity conflicts. It adds per-outfit, per-preset and
+per-preset/chapter rows and a conditional grouped checkpoint/reward command, plus a device-local action journal.
+This is planned architecture, not a claim that the collections exist in the deployed save.
+
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
 players/{uid}/umas/{umaId}            save v11: level/EXP, scenarios, Produce assignments, race defaults, history, version
