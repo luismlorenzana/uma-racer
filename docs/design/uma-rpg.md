@@ -1,9 +1,10 @@
 # Global Uma RPG — first design draft
 
 > **Status: proposal, not implemented.** The owner has fixed the mode's global scope, outfit-specific RPG levels,
-> Speed-as-offense mapping, visible weapon/element identity, and inventory-only destination for its future rewards.
-> Party size, encounter math, leveling curve, exact skill catalog, chapter length and reward quantities are *drafts or
-> open questions*. This document must be resolved and pinned before any engine/save migration is implemented.
+> Speed-as-offense mapping, a permanently chosen running-style class, visible weapon/element identity, and
+> inventory-only destination for its future rewards. Level 50 is a repeatable **class-promotion point**, not a final
+> cap. Party size, encounter math, leveling curve, exact skill catalog, chapter length and reward quantities are
+> *drafts or open questions*. This document must be resolved and pinned before any engine/save migration is implemented.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -22,8 +23,9 @@ Home → RPG hub → choose a party preset → choose any chapter → preview ro
 
 - The hub opens directly on the player's saved RPG state; it does not ask for a featured Uma first. Its internal
   navigation is **Map · Parties · Roster · Items/Records** (names provisional). No sixth bottom tab.
-- Five named presets are account-wide quick configurations. A preset saves member order, the chosen class/weapon,
-  signature element and RPG skill loadout for each slot. The first-pass proposal disallows duplicate outfits; whether
+- Five named presets are account-wide quick configurations. A preset saves member order, signature element and RPG
+  skill loadout for each slot; an outfit's class/weapon is locked on its RPG profile, not independently chosen by each
+  preset. The first-pass proposal disallows duplicate outfits; whether
   two outfits of the same character may coexist remains open. An empty or partial preset is editable but cannot launch
   a five-member chapter.
 - Any preset may choose any chapter. Recommended RPG level and expected enemy elements are shown; a low-level party
@@ -42,7 +44,7 @@ Home → RPG hub → choose a party preset → choose any chapter → preview ro
 
 ## Outfit RPG profile and progression
 
-An owned outfit has one RPG level/EXP pair shared by every preset and chapter. Different outfits of the same character
+An owned outfit has one class tier, level and EXP track shared by every preset and chapter. Different outfits of the same character
 have different RPG levels, as in Farm; there is no scenario-specific RPG copy. An RPG profile shows its class, chosen
 weapon, active element, available element affinities, skill slots, level/EXP and combat attributes. Only the RPG area
 shows RPG Level. Racing and Farm values are read as inputs where specified, never mutated by RPG fights.
@@ -57,69 +59,95 @@ shows RPG Level. Racing and Farm values are read as inputs where specified, neve
 
 The conversion reads the outfit's **base racing stats and growths**, not its mutable scenario constellation or Produce
 assignments, to keep this global profile stable when the player switches scenarios. Level-up gains are deterministic,
-never a hidden random stat roll. A class or weapon switch changes the available actions, not the outfit's earned
-RPG EXP or five core-stat history. This lets a dual-A outfit try another role without rerolling favorable growths.
+never a hidden random stat roll. At RPG enrollment the player chooses one eligible running-style class and its weapon
+path for that outfit. This choice is permanent across presets, chapters and promotions; a dual-A racing outfit does
+**not** level multiple style classes or switch between them. Multiple aptitudes create breadth in the *elemental*
+trees of that one class instead.
 
-### First balance candidate: levels and stats
+### First balance candidate: repeatable class tiers and stats
 
-This is a **simulation candidate, not an approved tuning pin**. It gives implementation planning a concrete curve to
-test against a fourteen-chapter campaign without pretending that battle payouts or chapter lengths are settled.
+This is a **simulation candidate, not an approved tuning pin**. Each outfit starts at **Class Tier 1, Lv1**. Lv50 is
+the end of one tier's learning arc; after resolving its pending EXP and skill choices, the player may **promote** to
+Tier 2, Lv1, then Tier 3, and so on. There is no planned final tier. Promotion never changes the locked class or
+weapon, never erases earned stats, and never changes race Uma Level or Farming Level. The initial pacing target is
+**roughly ten RPG levels per scenario-length chapter**, so a five-scenario block roughly fills one 50-level tier;
+fourteen current scenarios would give about two promotions and progress deep into Tier 3. This is a pacing target,
+**not** a chapter-order gate: any party may enter any chapter, and replay/catch-up rewards must respect the outfit's
+current tier and level. Future scenarios extend the loop without a schema cap.
 
 | Measure | Candidate rule | What the player sees |
 |---|---|---|
-| RPG Level | Starts at 1, caps at **50**, per owned outfit | Level and EXP bar in RPG only; never changes race Uma Level or Farming Level. |
-| EXP to next level from current level `L` | `100 + 18L + 2L²` for `1 ≤ L < 50` | 120 from Lv1→2, 480 from Lv10→11, 1,260 from Lv20→21, 5,784 from Lv49→50; 107,800 total to Lv50. |
-| Core RPG stat `s` at level `L` | `round(B_s / 5 + (L − 1) × 1.5 × (1 + G_s))`, where `B_s` is the outfit's base racing stat and `G_s` its stored fractional growth rate (`0.2` means +20%) | Five permanent core values are **derived**, not accumulated as mutable rolls. The level-up panel compares exact old/new values. |
-| Combat projection | ATK/MATK from RPG Speed; initiative and part of HP from RPG Stamina; PDEF/guard from RPG Power; dexterity from RPG Guts; MP/support capacity from RPG Wit | The equipped weapon's physical/magical channel decides which offensive value is used. A Greatsword cannot use MATK just because it is computed. |
+| Tier-local level | `1…50`, per owned outfit, followed by an explicit promotion into the next tier | `Tier 2 · Lv1` is visibly stronger than `Tier 1 · Lv50`; the profile also shows lifetime promotions. |
+| EXP to next level from current level `L` | Keep the draft `100 + 18L + 2L²` for `1 ≤ L < 50` **only as a first simulation input** | 120 from Lv1→2, 480 from Lv10→11, 1,260 from Lv20→21, 5,784 from Lv49→50; 107,800 per tier before reward scaling. |
+| Permanent core RPG stat `s` | `round(B_s / 5 + N × 1.5 × (1 + G_s))`, with `N = 50 × (tier − 1) + (L − 1)`; `B_s` is base racing stat, `G_s` stored fractional growth (`0.2` means +20%) | Five deterministic values derived from lifetime promoted levels, not mutable random rolls. Promotion advances `N` from 49 to 50 and cannot lower a stat. |
+| Combat projection | ATK/MATK from RPG Speed; initiative and part of HP from RPG Stamina; PDEF/guard from RPG Power; dexterity from RPG Guts; MP/support capacity from RPG Wit | Weapon channel decides which offensive value is used. |
 
-For a **synthetic** outfit with base Speed 100 and stored Speed growth `0.2`, RPG Speed would read 20 at Lv1,
-22 at Lv2, 36 at Lv10 and 108 at Lv50. The result panel would show `Speed 20 → 22`, then recalculate ATK and
-MATK from the new value; only the equipped weapon's channel is usable in that battle. This example is invented for
-the draft, not copied from a private Uma row.
+For a **synthetic** outfit with base Speed 100 and growth `0.2`, RPG Speed would read 20 at Tier 1 Lv1, 22 at Lv2,
+108 at Tier 1 Lv50 and **110 at Tier 2 Lv1**. That example is invented, not copied from private Uma data. A promotion
+result shows the exact five-stat carry-forward and any new tier bonus; no retroactive stat reroll. If the linear
+lifetime gain makes later tiers too strong, tune the projection/enemy scale in simulation rather than resetting earned
+stats. HP, MP, magical defense, damage and any tier bonus still need their own formulas and pinning tests.
 
-HP, MP, magical defense and the damage formula still need their own simulation; they must derive from the five core
-values without making Speed the answer to every defense or heal. Candidate pacing is about one early level per two
-level-matched encounters and one late level per six to eight; the exact encounter/chapter EXP and level-relative
-catch-up multiplier are **not** set. Lv50 may take replaying chapters rather than only their first clear. If the sim
-cannot make that a satisfying long-term destination, change the formula and this table before code lands.
+EXP is awarded after a resolved battle to participating outfits and optionally at chapter clear, with one idempotent
+grant per encounter/clear. Level-relative rewards should accelerate catch-up and taper farming weak chapters, but must
+not prevent a player from progressing. EXP earned at Lv50 **banks** until the player promotes; promotion then applies
+that bank to the next tier without loss or duplicate grants. A KO'd member's participation rule and repeat-clear reward
+need explicit decisions. The result names every crossed level, exact stat changes and new skill choices. The simulator
+must test per-tier EXP scaling, five-chapter pacing, an overleveled replay, lower-tier catch-up and safe-integer bounds
+before treating this curve as final.
 
-EXP is awarded after a resolved battle to the participating outfits and optionally at chapter clear, with one
-idempotent grant per encounter/clear. A lower-level participant should catch up faster and an overleveled one should
-receive less EXP from weak enemies; no one gets EXP merely for opening a map or abandoning a fight. A KO'd member's
-participation rule and repeat-clear reward need explicit decisions. The result first applies EXP, then shows each
-crossed level in order, its five core-stat deltas, changes to HP/MP/ATK/MATK/etc., and every new skill row or slot.
+### First balance candidate: skill trees and tier renewal
 
-### First balance candidate: skill progression
+Attack and Guard are always available and **do not consume equip slots**. One locked class/weapon supplies its neutral
+basic action and utility. Its **weapon × element matrix cell is a five-depth mini tree**, not one linear spell. An
+outfit's A/B distance and surface aptitudes determine which elemental cells it may invest in. A multi-affinity outfit
+chooses how to distribute one tier's learning across *those elements of its single class*; it never receives a second
+running-style tree or a second class EXP track.
 
-Attack and Guard are always available and **do not consume equip slots**. Each weapon has a neutral basic action, a
-starter technique, later utility and elemental techniques. Leveling unlocks *eligible blueprints* automatically;
-equipping remains a deliberate between-battle choice. No duplicate skill grind or separate RPG skill currency is
-proposed. A and B aptitudes determine which element tiers a blueprint may take, while weapon choice determines what
-the action actually does.
+As a candidate, reaching each **even tier-local level** (Lv2, 4, …, 50) awards one tree point: 25 choices per tier,
+with the first onboarding choice at Lv2 and subsequent choices two levels apart. A point
+can deepen an eligible cell, take an alternative branch at an already opened depth, or improve a learned technique by
+one skill level, up to **skill level 5**. Depths unlock gradually: early levels offer a focused strike/support base;
+middle levels open target-pattern and setup choices; the fifth-depth signature is first eligible at **Lv50**. Choices
+are not automatic stat rolls: the result identifies available points and offers a safe-checkpoint skill-tree CTA.
+The exact depth gates, slot ladder and point costs are still to be simulated and pinned.
 
-| RPG Level | New options (candidate) | Equipped active-skill slots |
-|---|---|---:|
-| 1 | Chosen class/weapon, neutral basic action, Rank I elemental technique from eligible affinities | 2 |
-| 5 | Class utility: Greatsword guard-break, Spear target mark, Paladin protect, Wizard area control, Cleric restoration, or Tome mark | 3 |
-| 10 | Rank II elemental evolutions; one more simultaneous technique | 4 |
-| 15 | Second weapon-specific utility or combo setup; no mandatory menu interruption | 4 |
-| 20 | Rank III weapon × element combinations; broad build-defining effects | 5 |
-| 30 | Sixth slot so a multi-element outfit can carry more coverage/support | 6 |
-| 40 | Rank IV capstone for **A-grade** element affinity only; B stays through Rank III | 6 |
-| 50 | Level cap and mastery presentation; no seventh slot or unseen damage jump | 6 |
+| Depth | Decision within each permitted weapon × element cell | Example payoff |
+|---|---|---|
+| 1 — foundation | Learn that weapon's elemental attack or support motif | Physical Fire cut, magical Ice bolt, or Light ward. |
+| 2 — target shape | Focused single target **or** weaker area pattern; the other branch can be bought later | Boss pressure versus waves; support chooses focused rescue versus party-wide smaller aid. |
+| 3 — hit rhythm | One committed hit **or** multiple smaller hits/turns | Burst versus mark/status buildup; healer chooses immediate restoration versus staged recovery. |
+| 4 — role expression | Class-specific combo, pure-support strengthening, or support-DPS hybrid | Paladin protect/retaliate; Cleric stronger ward versus ward plus magical counter. |
+| 5 — tier signature | High-impact final technique at Lv50, for an A-grade affinity only | A visible capstone that becomes a legacy tool after promotion. |
 
-When several levels are crossed in one result, all unlocks appear together but the screen names each level. A new
-skill does not silently replace an equipped one. If the loadout is full, it becomes **Available** in the RPG profile
-and the result links to skill setup. An active battle keeps its frozen level/loadout; newly earned levels apply at
-the next safe checkpoint. Tier thresholds and slot counts above must be tested for menu burden and role parity.
+These are *choice axes*, not a promise that every cell has only five total nodes. The alternative at a depth is a
+real unlock, not a free toggle; investing in both trades away depth or another element. Improving a known skill to
+level 5 raises its documented effect/efficiency within the current tier, but cannot bypass an affinity gate. Grade B
+should open most lower depths but not the fifth-depth signature. As a **balance candidate**, a non-A eligible element
+may get one or two lower-depth side nodes for coverage/utility so it is useful without becoming a second A affinity;
+the exact B/surface rule still needs resolution. A multi-A outfit can specialize two elemental cells or spread points
+widely, but cannot automatically master every cell in a single tier.
+
+Promotion opens a **fresh Tier 2 matrix** for the same locked weapon and eligible elements: no unspent Tier 1 point
+silently turns into a Tier 2 point, and Tier 2's tree choices begin empty. Previously learned skills remain visible as
+**legacy techniques** and usable in a loadout until replaced; otherwise promoting would make a stronger outfit unable
+to fight. Their prior levels/branches do not auto-unlock Tier 2 equivalents. New-tier techniques may adapt the cell's
+effect and offer a different branch choice, while the old tier's mastery stays recorded for history and presentation.
+At promotion, a small **class-mastery variant** is a candidate choice for the *new tier's* weapon skills—for example,
+Greatsword pressure versus a wider cleave, or Paladin stronger protection versus a modest heal. It changes a tactical
+rider, not the locked style, damage channel or base-stat growth; variants do not stack without bound across promotions.
+The exact menu and effect sizes need combat simulation before pinning.
+Balancing must prevent an ever-growing legacy catalog from swamping the loadout; active slots are bounded and any
+eventual legacy-slot restriction needs its own decision. A battle freezes its entrant's tier, stats and loadout.
+Several levels crossed in one result are named in order, and new skills never silently replace equipped ones.
 
 ## Class, weapon and aptitude identity
 
-Each outfit chooses **one style-class from the running styles for which it has A aptitude**, then **one weapon path**
-within that class. Multiple A styles are alternatives, not simultaneous class counts. Pace chooses Spear *or* Sword +
-shield; Late chooses Wizard *or* Cleric staff; no one dual-wields both paths in battle. A class/weapon path can change
-between chapters or at a safe checkpoint if the final respec policy allows it; an in-progress battle never changes.
-No role is mandatory in a party.
+At first RPG enrollment, each outfit chooses **one running-style class from its A aptitudes** and **one weapon path**
+inside that class. The choice is then **locked for that outfit**, including at promotion: multiple A running styles
+are alternatives at enrollment, not parallel classes, extra trees or permission to switch later. Pace chooses Spear
+*or* Sword + shield; Late chooses Wizard *or* Cleric staff. The five named party presets only arrange outfits and
+their elemental loadouts, not independent copies of their classes. No role is mandatory in a party.
 
 | Running-style class | RPG role | Weapon choices | Damage and support identity |
 |---|---|---|---|
@@ -128,10 +156,10 @@ No role is mandatory in a party.
 | **Late — Wizard or Cleric** | Magical offense **or** magical support | **Wizard staff** or **Cleric staff** | Wizard has elemental burst/area control; Cleric has offensive buffs and healing with a modest magical attack. |
 | **End — Tome Mage** | Magical-only specialist | **Magic tome** | Spell chaining, marks and elemental finishers. No physical-damage actions. |
 
-The owner's **10% specialization bonus** remains a draft rule: the selected class weapon and one signature element
+The owner's **10% specialization bonus** remains a draft rule: the locked class weapon and one signature element
 receive it in their applicable action calculations. It must not double-count one elemental action. Exact eligibility,
 rounding and whether it boosts damage, accuracy or another action outcome need a combat sim and a pinning test. Two A
-styles do not grant two simultaneous class bonuses. There is no End-only fallback, penalty or special party rule;
+styles do not grant two simultaneous class bonuses or another class track. There is no End-only fallback, penalty or special party rule;
 End follows the same aptitude, level, element, slot and reward contracts as Front, Pace and Late. Weapon identity comes
 from the selected running-style class; element access comes from distance/surface aptitudes separately.
 
@@ -176,12 +204,12 @@ MATK spell. Likewise a Tome Fire Sigil uses MATK and magical defense. Paladin an
 do not turn their basic damage channel into the opposite type. This is how every weapon gains elemental play without
 erasing the owner's physical-only Front and magical-only End identities.
 
-At Rank I, every permitted weapon/element pair has a simple infused attack or support technique. Rank II strengthens
-its element's status/utility; Rank III introduces the pair's **combo identity** below; Rank IV is an A-affinity
-capstone version, not a second unrelated element. The matrix is a *design vocabulary*, not 30 copied source-game
-skills or a promise to author 30 unique animations. The example names below are invented and provisional. The six
-weapon templates and five element modifiers should compose into many combinations, while combat coefficients are
-domain rules to simulate, document and pin; checked-in tests use synthetic actors.
+Every permitted weapon/element pair receives the **five-depth branching tree** described above. The matrix below
+names each cell's eventual combo identity; it is *design vocabulary*, not 30 copied source-game skills or a promise
+to author 30 unique animations. The example names are invented and provisional. Six weapon templates, five element
+motifs and a bounded library of target/rhythm/support branches should compose the variants without making each cell
+an unrelated rules engine. Coefficients are domain rules to simulate, document and pin; checked-in tests use synthetic
+actors.
 
 | Weapon path / neutral baseline | Fire — Burn / pressure | Ice — Slow / control | Lightning — Chain / tempo | Light — Ward / cleanse | Dark — Drain / weaken |
 |---|---|---|---|---|---|
@@ -192,8 +220,8 @@ domain rules to simulate, document and pin; checked-in tests use synthetic actor
 | **Late Cleric staff** · small magical bolt/heal | Warmth: ally healing over time plus attack buff | Shelter: heal plus damage mitigation | Quickening: heal plus initiative buff | Benediction: focused heal and cleanse | Veil: restorative drain plus enemy weaken |
 | **End Magic tome** · magical sigil | Cinder Script: stack, then detonate burn | Glacier Script: accumulate control for a seal | Volt Script: charge then chain damage | Halo Script: puncture a dark ward | Eclipse Script: mark then drain/finish |
 
-These are **six weapon paths**, each with five elemental evolutions. The element's global motif remains consistent,
-while the weapon changes target pattern and role. A skill card shows weapon, element, channel, rank, MP, target,
+These are **six possible locked weapon paths**, each with five elemental cells. The element's global motif remains consistent,
+while the weapon changes target pattern and role. A skill card shows weapon, element, channel, tree depth, skill level, MP, target,
 projected damage/heal, status/duration and affinity gate. For a multi-element outfit, any eligible skills can fill
 its slots together; the signature element only chooses the specialization bonus and portrait badge. A single action
 may use one element, never two advantages at once; a combo skill can require a visible setup mark or ally action but
@@ -205,9 +233,10 @@ physical defense; only the rider receives elemental advantage/resistance and its
 technique uses MATK against magical defense and applies its element to the spell. This gives a Front an MP-spending
 physical-plus-Fire attack without a hidden second MATK hit. Healing and buffs use their own support formulas; their
 element changes the rider (for example Light cleansing or Lightning initiative), not the caster's damage channel.
-For example, a Greatsword Fire line might evolve from one burning cut at Rank I, to a more reliable burn at Rank II,
-to a burn-consuming cleave at Rank III, to an A-only finishing strike at Rank IV; an Ice Wizard line evolves from a
-single slow bolt to area control. Rank upgrades must have new tactical choices, not only larger numbers.
+For example, a Greatsword Fire tree can start with one burning cut, branch into a focused strike or weaker cleave,
+offer a one-hit burn detonation versus several setup hits, and end at Lv50 with an A-only finisher. An Ice Wizard
+tree can choose a single slow bolt versus area control. Tree depth introduces tactical choices; skill levels within
+that depth improve a chosen technique up to 5 without changing its target pattern by accident.
 
 ## Five-member combat proposal
 
@@ -244,12 +273,19 @@ reward must be idempotent, with no way to claim twice by navigating back or reco
   edited only between battles**; each battle freezes the loadout that entered it. Level-ups earned elsewhere while a
   preset is open must not retroactively alter a frozen battle. Exact behavior for the next checkpoint is a technical
   design question, not license to discard the new EXP.
-- Ordinary enemies can be synthetic monsters for the engine and tests. The [PriConne research](../research/uma-rpg.md)
-  now separates **ordinary monster encounters** (for example a magical multi-target hound versus a physical thief
-  fork) from **named guest/sparring encounters** (a physical frontline guest, magical debuffer, support or barrier
-  specialist). A first private chapter should prove both lanes and a composition-dependent path choice before
-  multiplying content across scenarios. Exact names-as-data, art, battle kits and rows stay in private content, not
-  git. Missing or outdated private content is surfaced clearly; no unrelated silent fallback duel.
+- The intended production opponents are **playable PriConne characters**, in curated teams throughout the map—not
+  monsters with one occasional guest fight. [PriConne research](../research/uma-rpg.md) proposes frontline, caster,
+  support, healer and pressure roles grounded in official character/skill references, but their Uma RPG rules are
+  original. Engine tests use invented synthetic actors only. Exact character rows, art, battle kits and chapter
+  rosters stay in private content, not git. Missing or outdated private content is surfaced clearly; no unrelated
+  silent fallback duel.
+- A branch preview identifies the opposing **character team**, formation/role icons, affinity risks and reward or
+  recovery tradeoff. Each battle shows intent before commitment. Target order matters: a guard may protect a caster,
+  a support may accelerate a finisher, or a healer may restore a ward. Elite teams can change formation or tactics at
+  an HP threshold, but the shift is telegraphed and deterministic. Bosses are authored character encounters with a
+  visible phase plan, not merely inflated HP. A loss resumes at a defined checkpoint without duplicating EXP or items.
+  Candidate pacing is several brief normal team fights, one optional elite branch and one multi-phase boss per
+  chapter; exact counts and recovery points need phone prototyping and simulation.
 - Chapter rewards may include a scenario-typed **Parent Unlock item** (working name). This is an item stack plus an
   append-only ledger grant in the existing global Item inventory, transactionally coupled with chapter-clear evidence.
   **This draft defines no consumption, constellation node effect, required amount, or per-run quantity.** The separate
@@ -287,12 +323,14 @@ flight and the gates below remain unresolved:
    chapter checkpoints, cross-device behavior and item identity; pin constants and synthetic fixtures.
 2. **RPG roster and presets:** global hub, five named presets, outfit profiles, class/weapon/element setup and portrait
    overlays, with complete reload/sync tests.
-3. **Battle vertical slice:** pure deterministic engine, one synthetic encounter per role/element, phone battle UI,
-   skill/guard/heal/debuff mechanics, resume and idempotent result.
-4. **Map and content:** branch/reconverge chapter engine, versioned private enemy packs, level warnings, boss, guide
-   and readable battle previews. Production content is a separate private publish.
-5. **Progression and inventory:** RPG EXP/level-up reveal/skill slots, preset checkpoint resume, scenario item grant into
-   global inventory, conflict/replay simulations and full chapter balance.
+3. **Battle vertical slice:** pure deterministic engine, synthetic character-team fixtures exercising guard, caster,
+   support, heal and weakness tactics; phone battle UI, resume and idempotent result.
+4. **Map and private content:** branch/reconverge chapter engine, playable PriConne opponent packs, art import and
+   validation, level warnings, telegraphed boss phases, guide and readable battle previews. Production content is a
+   separate private publish.
+5. **Progression and inventory:** tier-local EXP/level-up reveal, branching elemental trees and promotion carry-over,
+   preset checkpoint resume, scenario item grant into global inventory, conflict/replay simulations and full chapter
+   balance across more than one tier.
 6. **Device acceptance:** 390×844 and small-iPhone screenshots, VoiceOver/reduced-motion, background/reload/offline,
    long chapter, party switching, clear/retry and owner physical-iPhone sign-off.
 

@@ -40,7 +40,8 @@ The concern about Pace/Late double counting is real: **69 of the 136 Late-A outf
 have exactly Pace+Late; seven of the thirteen starter Late-A outfits also have Pace-A. Exact style masks in the full
 pack are: Pace only 72, Pace+Late 66, Late only 46, Front only 27, Late+End 20, Front+Pace 19, End only 13, and six
 spread across three rarer combinations. Counting Pace and Late as two distinct armies would exaggerate choice. The
-design should let a dual-A Uma **choose one role** without forcing a party quota. End follows the same role and party
+design should let a dual-A Uma **choose one role at RPG enrollment and lock it for that outfit** without forcing a
+party quota. The overlapping running styles do not create parallel class trees. End follows the same role and party
 rules as every other style; the owner expects to unlock more End outfits through normal collection.
 
 Medium-A is common (214/268), so giving Medium two distinct elements is a strong variety lever. However, **element
@@ -48,68 +49,73 @@ access is not equivalent to elemental power**: whether Medium also gets the best
 catalog and encounter simulation. The proposed distance→element mapping is the owner's intended starting point, not a
 fact about the source game.
 
-## PriConne enemy direction — monsters and guest duels
+## PriConne enemy direction — playable characters as the cast
 
-The owner prefers *Princess Connect! Re:Dive* (PriConne) over an unrelated generic monster pack. Cygames itself
-supplies two useful lanes: its [Clan Battle boss notices](https://priconne-redive.jp/news/event/37700/) name recurring
-monster opponents and distinguish physical/magical attack and defense; its
-[character directory](https://priconne-redive.jp/character/) and
-[official anime cast list](https://anime.priconne-redive.jp/archive/1st/character/) identify recognizable characters.
-The proposed story framing is **monster encounters along a route, then an authored sparring/guest duel** with a core
-PriConne character or team. Calling those characters opponents need not portray the protagonists as villains.
+The owner clarified the crossover: **PriConne's playable characters are the recurring enemies**, not a monster
+route with occasional guest duels. The [official character directory](https://priconne-redive.jp/character/) and its
+[Gourmet Guild page](https://priconne-redive.jp/character/gourmet_guild/) establish character identities and available
+portrait sources; the [official anime cast list](https://anime.priconne-redive.jp/archive/1st/character/) shows how
+many recognizable teams are possible. Cygames' [balance notes](https://priconne-redive.jp/news/information/35036/)
+and [skill notices](https://dmg.priconne-redive.jp/news/detail.php?id=5294) support broad battle-role motifs. None of
+these pages supplies Uma Racer balance values, elemental affinities or permission to copy source combat formulas.
+The story can frame opponents as tournament rivals or friendly challenge teams, not automatically villains.
 
-### Candidate ordinary monsters
+### Candidate character roles and teams
 
-The [September 2026 official Clan Battle notice](https://priconne-redive.jp/news/event/37700/) names five bosses. The
-observed attack channels and multi-target layouts below come from that notice; the **RPG hooks are our own proposed
-adaptations**, not copied abilities or stats.
+These are public research pointers for **private** encounter authorship, not checked-in roster rows. The right-hand
+column is *our inference/design proposal* from the cited motif, not a claim about PriConne's actual encounter logic.
 
-| Public reference | Observed hook | Proposed Uma RPG encounter job |
+| Public character | Source-supported motif | Proposed Uma RPG encounter job |
 |---|---|---|
-| **Frost Hound** | Magic attack; multi-target body | Teaches magical-defense/ward planning and target selection across parts. |
-| **Jackal Thief** | Physical attack | A fast striker that warns whom it will attack; test Paladin protection and defensive skill choices. |
-| **Land Sloth** | Both physical and magical attack | Changes posture between two clearly telegraphed attack channels. |
-| **Dark Gargoyle** | Both channels and strong defenses | A defensive mini-boss that rewards marks, debuffs and varied damage channels. |
-| **Glutton** | Multi-target body | A boss whose parts offer a path choice: reduce pressure or rush the main target. |
+| **Pecorine** | [Physical damage/defense and self-sustain](https://dmg.priconne-redive.jp/news/detail.php?id=5294). | A frontline guard who protects a fragile ally; telegraph a short break window after her heavy attack. |
+| **Karyl** | [Magical attack and magic-defense reduction](https://dmg.priconne-redive.jp/news/detail.php?id=10897). | A caster who first marks a target, then threatens a delayed burst; guard or disrupt the setup. |
+| **Kokkoro** | [Team-enhancing support](https://priconne-redive.jp/news/information/35036/). | A tempo support whose visible buff strengthens the next enemy action, making target priority meaningful. |
+| **Yui** | [Barriers and resource support](https://dmg.priconne-redive.jp/news/detail.php?id=37312). | A ward/heal specialist: choose whether to break a ward, pressure another enemy, or save MP. |
+| **Tomo** | [Repeated physical strikes and multi-target pressure](https://priconne-redive.jp/news/information/35036/). | A fast attacker whose marked lane receives several smaller hits; test guard versus counterattack. |
+| **Hatsune** | [Magic offense and debuff interactions](https://priconne-redive.jp/news/information/35036/). | A spellcaster who changes target priority if the party has little magical cover. |
+| **Yukari** | [Growing support effects](https://priconne-redive.jp/news/information/35036/). | A support whose repeated actions build a visible threat; a reason to end a fight before full ramp. |
 
-The notice's **own** weaknesses include Wind and Water, which do not match Uma Racer's Fire/Ice/Lightning/Light/Dark
-proposal. Do **not** copy or silently rename those affinities; a private author explicitly assigns each encounter a
-new weakness/resistance profile for this mode and documents it in the private pack. No Cygames HP, attack, defense or
-level values are reused. Those values are from a different balance system and would overwhelm this RPG's small scale.
+An opening chapter could use **Kokkoro + Tomo** to teach support/physical focus, then offer a route fork between
+**Pecorine + Yui** (guard/ward attrition) and **Karyl + Hatsune** (magical burst), reconverging on an authored
+**Pecorine + Karyl + Kokkoro** boss team. This is a candidate *composition*, not source-game canon or a production
+roster. The five-element weaknesses, target intent and statuses are authored for Uma Racer, with no imported Cygames
+damage, skill names, coefficients or action rotations. Expand beyond this first small cast only after a complete
+private chapter is fun and readable; fourteen scenarios must not all recycle the same four names.
 
-### Candidate named guest encounters
+### Battle hooks worth testing
 
-The official cast confirms names, while Cygames' own [skill wording](https://dmg.priconne-redive.jp/news/detail.php?id=10897)
-and [balance notes](https://priconne-redive.jp/news/information/35036/) give grounded *motifs*. These are a shortlist
-for private authoring, not checked-in enemy definitions:
+- **Visible role synergy:** an enemy support announces whom it will buff; a guard visibly intercepts; a marked caster
+  announces the target of the next burst. The player can remove the enabler, defend, or exploit an elemental weakness.
+- **Formation and focus:** frontline protection has a clear rule and an exposed counter-window. A five-Uma party has
+  choices beyond hitting the lowest HP bar, but target legality remains readable on a phone.
+- **Branch identity:** the map previews enemy portraits, role icons, likely affinity family, level and recovery tradeoff
+  before a fork. A route rich in wards favors different elements/classes than one rich in physical pressure.
+- **Boss phases:** a named team changes *one* telegraphed tactical relationship at a time (for example guard switches
+  to protect Karyl after Pecorine's threshold), not arbitrary hidden buffs. A phase transition is deterministic and
+  recoverable from replay. Weakness follow-ups must be bounded so a five-member party cannot take infinite turns.
+- **Failure and return:** a loss or phone interruption restores the same encounter/checkpoint and never pays EXP or
+  Items twice. A safe checkpoint allows skill-tree/loadout choices after level-up, never mid-action.
 
-| Public character | Source-supported motif | Proposed Uma RPG duel (new mechanics) |
-|---|---|---|
-| **Pecorine** | Physical damage, defense and self-sustain in [Cygames' skill notes](https://dmg.priconne-redive.jp/news/detail.php?id=5294). | Frontline guest with telegraphed guard and a recoverable break window. |
-| **Karyl** | Magical attack with magical-defense reduction in [Cygames' skill notes](https://dmg.priconne-redive.jp/news/detail.php?id=10897). | Caster guest who marks a target before a burst; counter with defense/interrupt timing. |
-| **Kokkoro** | Ally-enhancing support in [Cygames' balance notes](https://priconne-redive.jp/news/information/35036/). | Support guest who strengthens another foe; party may focus her or endure the buff. |
-| **Yui** | Barriers and resource support in [Cygames' balance notes](https://dmg.priconne-redive.jp/news/detail.php?id=37312). | Protective guest who tests ward breaking and healing pressure. |
+### Private portrait and encounter import plan
 
-The individual motifs are **not** an instruction to replicate a proprietary skill name, animation, coefficient or
-move list. A chapter might pair one guest with two ordinary monsters, or reconverge two paths on a named team duel.
-Its enemy intent, group composition, level band and affinity should be visible before the player commits to the path.
-The first production publish should author a small vertical slice of one chapter, then expand across scenario maps;
-it should not claim all fourteen chapters are covered by one repeated four-character lineup.
+The [official character pages](https://priconne-redive.jp/character/) are **candidate source pages**, not proof that
+every desired image is directly downloadable at a usable resolution. Before production authoring, inspect each
+character page's actual image links, dimensions, variant labeling and reliability; record a source URL and provenance
+for each chosen visual. A small private manifest under gitignored `/content/overrides/` should map a stable local
+character/variant id to source URL, display label, chosen crop/pose and encounter role. The existing private
+`scripts/data` / `scripts/assets` pipeline can then validate ids, download/cache permitted source files, make mobile
+WebP portraits/atlases and publish the versioned pack into the **private** content bucket through the established
+owner-controlled content path. Do not assume the existing GameTora parser understands PriConne HTML; the importer
+will need a separate adapter and a fail-closed validation step. No art, extracted roster, cache or generated pack is
+committed to git, and the app loads the pack only through the signed-in private-content route.
 
-### Private content contract
-
-Each authored encounter needs a stable private id, content version, art key, display label, combat role/channel,
-adapted element/weakness/resistance, bounded action list with telegraphed targets, and optional boss phase. The pure
-engine uses synthetic shape-compatible fixtures; import/publish validation checks that every chapter node resolves
-and that every opponent has a renderable art fallback and legal actions. No network or third-party content is used in
-tests. Which guest forms, exact artwork and additional monsters to publish remain private-content authorship choices.
-
-The personal-only nature of Uma Racer does not change its repository rule: extracted names-as-data, images, sprites,
-packs and caches stay under gitignored `/content/` or script caches, never in git. Checked-in fixtures must be small
-and synthetic. The design and tests must work with a synthetic enemy catalog before any PriConne pack is available;
-production must say when a private chapter pack is missing rather than silently substituting unrelated fights. A
-[CC0 monster-builder pack](https://kenney.nl/assets/monster-builder-pack) exists as an optional visual fallback for
-original placeholder encounters, not as a replacement for the owner's chosen direction.
+Each authored encounter needs a stable private id, content version, opponent variant/art keys, display labels,
+combat role/channel, *adapted* element/weakness/resistance, bounded action list with telegraphed targets, formation,
+optional phase plan and reward identity. Import/publish validation checks that every chapter node resolves, every
+opponent has a renderable art asset and every action is legal. The pure engine and checked-in tests use **invented
+synthetic actors** with shape-compatible data; no network or third-party content is used in tests. A missing or
+outdated production pack is a visible content error, never a silent generic-monster replacement. This whole source
+and publish step remains private content work, not a normal code PR.
 
 ## Research conclusions
 
@@ -120,5 +126,8 @@ original placeholder encounters, not as a replacement for the owner's chosen dir
    on memorizing an unseen chart.
 3. Keep the map and battles short enough to resume on a phone. A chapter can be a long-term campaign without making
    every individual encounter a long session.
-4. Keep this mode's levels and EXP per outfit, global across all parties/chapters, and do not turn it into a second
-   source of racing or Training EXP.
+4. Keep this mode's tier-local levels and EXP per outfit, global across all parties/chapters. Lv50 is a promotion
+   transition that preserves earned stats and starts a fresh elemental matrix for the **same locked class**, not a
+   permanent level cap or a second running-style progression track. Do not pay racing or Training EXP.
+5. Make playable PriConne characters the normal enemy cast and bosses. Source names/visuals only through private
+   content; author new combat rules and test with synthetic actors before any private pack is available.
