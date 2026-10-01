@@ -31,6 +31,7 @@ import { listRaceHistory, listUmaRaceHistory, prepareRace } from '../game/action
 import { goalsAtStake } from '../game/goals-view'
 import { buildRacePlan, scenarioLevel, type CareerTracker, type PlannedRace, type RaceMark } from '../game/race-plan'
 import type { PreparedRace } from '../game/racing'
+import { raceStatFit, type StatFit, type StatFitVerdict } from '../game/race-fit'
 import { useGame } from '../game/store'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
@@ -41,6 +42,7 @@ import { SaveErrorState } from '../ui/SaveErrorState'
 import { Collapsible, SectionHeading } from '../ui/Section'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { SkillIcon } from '../ui/SkillIcon'
+import { TypeIcon } from '../ui/TypeIcon'
 import { UmaBust } from '../ui/UmaBust'
 import { UmaPickerSheet } from '../ui/album/UmaPickerSheet'
 import { umaIdsByLevel } from '../game/uma-order'
@@ -166,6 +168,58 @@ function Tracker({ tracker, level, umaId }: { tracker: CareerTracker; level: num
 
 /** How many Umas the race strip shows before the rest are in the picker. */
 const STRIP_SIZE = 12
+
+const STAT_NAME: Record<StatFit['stat'], string> = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit' }
+const VERDICT: Record<StatFitVerdict, { label: string; className: string }> = {
+  good: { label: 'Good', className: 'bg-success/10 text-success' },
+  average: { label: 'Average', className: 'bg-sunken text-ink-soft' },
+  bad: { label: 'Bad', className: 'bg-danger/10 text-danger' },
+}
+
+/** Her stats for this race (D233): Stamina against a full spurt at this distance and style, the rest against this field. */
+function StatFitPanel({ fits, fieldError, distance, strategy }: {
+  fits: StatFit[] | null
+  /** No field could be built: Stamina still reads, the rest has nothing to rank against. */
+  fieldError: string | null
+  distance: number
+  strategy: Strategy
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <p className="font-display text-[13px] font-semibold">Her stats for this race</p>
+        <p className="text-micro truncate">{distance.toLocaleString()} m · {STRATEGY_LABEL[strategy]}</p>
+      </div>
+      {!fits ? <p className="text-micro">Reading the field…</p> : (
+        <div className="flex min-w-0 flex-col gap-1">
+          {fits.map((fit) => {
+            const ranked = fit.stat === 'stamina' || !fieldError
+            return (
+              <div key={fit.stat} className="flex min-h-9 min-w-0 items-center gap-1.5 rounded-sm bg-sunken px-2" aria-label={`${STAT_NAME[fit.stat]} ${fit.value}${ranked ? `: ${VERDICT[fit.verdict].label}` : ''}`}>
+                <TypeIcon type={fit.stat} size={20} />
+                <span className="w-14 shrink-0 text-[13px] font-semibold">{STAT_NAME[fit.stat]}</span>
+                <span className="font-display w-10 shrink-0 text-right text-[13px] font-semibold tabular-nums">{fit.value}</span>
+                {ranked
+                  ? <span className={`w-14 shrink-0 rounded-xs py-0.5 text-center text-[11px] font-semibold ${VERDICT[fit.verdict].className}`}>{VERDICT[fit.verdict].label}</span>
+                  : <span className="w-14 shrink-0 text-center text-[11px] text-ink-faint">—</span>}
+                <span className="min-w-0 flex-1 truncate text-right text-[11px] text-ink-soft">
+                  {fit.stat === 'stamina'
+                    ? `needs ${fit.reference.toLocaleString()}${fit.spare >= 200 ? ` · ${fit.spare.toLocaleString()} spare` : ''}`
+                    : ranked ? `beats ${Math.floor(fit.ahead ?? 0)}/${fit.rivals} · mid ${fit.reference.toLocaleString()}` : 'no field yet'}
+                </span>
+              </div>
+            )
+          })}
+          <p className="text-[11px] text-ink-soft">
+            {fieldError
+              ? 'Stamina: what a full spurt needs here. The rest ranks against the field once it can be built.'
+              : 'Stamina: what a full spurt needs here. The rest: how many of this field she beats, and the field’s middle value.'}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function RaceSelectScreen() {
   const navigate = useNavigate()
@@ -481,6 +535,27 @@ export function RaceSelectScreen() {
                 <p className="text-micro">{past ? 'Earlier scenario: results and badges, no Uma EXP' : `1st place +${raceExp(picked.grade, 1, raceBonus)} EXP`}</p>
               </div>
             </div>
+            <div>
+              {/* Strategy and Start sit up top, so starting never means scrolling past skills and the field. */}
+              <p className="font-display mb-2 text-[13px] font-semibold">Strategy</p>
+              <div className="grid grid-cols-2 gap-2">
+                {STRATEGIES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={strategy === value}
+                    onClick={() => { setStrategy(value); setStartError(null) }}
+                    className={`min-h-11 rounded-sm border px-3 text-[14px] font-semibold transition-transform active:scale-[0.98] ${strategy === value ? 'border-accent bg-accent-wash text-accent-strong' : 'border-hairline bg-panel text-ink'}`}
+                  >
+                    {STRATEGY_LABEL[value]} · {derivedUma.aptitudes.strategy[value]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {(lockReason || startError) && <p className="rounded-sm bg-danger/10 px-3 py-2 text-[13px] font-semibold text-danger">{startError ?? lockReason}</p>}
+            <Button size="lg" disabled={!advanceRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => advanceRequired ? navigate(`/stable/${encodeURIComponent(selectedUmaId)}`) : void start()}>
+              {advanceRequired ? 'Open her profile' : starting ? 'Preparing…' : 'Start race'}
+            </Button>
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
                 ['Surface', derivedUma.aptitudes.surface[picked.surface]],
@@ -493,6 +568,17 @@ export function RaceSelectScreen() {
                 </div>
               ))}
             </div>
+            <StatFitPanel
+              fits={preview ? raceStatFit({
+                stats: preview.input.runners[preview.playerIndex]!.stats,
+                rivals: preview.input.runners.filter((_, index) => index !== preview.playerIndex).map((runner) => runner.stats),
+                distance: picked.distance,
+                strategy,
+              }) : previewError ? raceStatFit({ stats: derivedUma.stats, rivals: [], distance: picked.distance, strategy }) : null}
+              fieldError={preview ? null : previewError}
+              distance={picked.distance}
+              strategy={strategy}
+            />
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <p className="font-display text-[13px] font-semibold">Race skills</p>
@@ -540,26 +626,6 @@ export function RaceSelectScreen() {
                 </div>
               )}
             </div>
-            <div>
-              <p className="font-display mb-2 text-[13px] font-semibold">Strategy</p>
-              <div className="grid grid-cols-2 gap-2">
-                {STRATEGIES.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={strategy === value}
-                    onClick={() => { setStrategy(value); setStartError(null) }}
-                    className={`min-h-12 rounded-sm border px-3 text-[14px] font-semibold transition-transform active:scale-[0.98] ${strategy === value ? 'border-accent bg-accent-wash text-accent-strong' : 'border-hairline bg-panel text-ink'}`}
-                  >
-                    {STRATEGY_LABEL[value]} · {derivedUma.aptitudes.strategy[value]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {(lockReason || startError) && <p className="rounded-sm bg-danger/10 px-3 py-2 text-[13px] font-semibold text-danger">{startError ?? lockReason}</p>}
-            <Button size="lg" disabled={!advanceRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => advanceRequired ? navigate(`/stable/${encodeURIComponent(selectedUmaId)}`) : void start()}>
-              {advanceRequired ? 'Open her profile' : starting ? 'Preparing…' : 'Start race'}
-            </Button>
           </div>
         )}
       </BottomSheet>

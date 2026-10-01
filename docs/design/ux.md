@@ -184,10 +184,19 @@ race when available; missing/retired targets remain explicit instead of silently
 
 ### Pre-race
 
-- **Field preview**: a row of the field's busts, in gate order.
-- **Strategy** segmented control, with aptitude letters. **Loadout** summary chip (tap to edit in a sheet).
-- The race's marks, and every active goal at stake with its win rule.
-- A big **Start** button at the bottom.
+A bottom sheet, top to bottom, so starting never means scrolling past the skills and the field (D233):
+
+- The race, its marks, and every active goal at stake with its win rule; then her summary (scenario, Training Level,
+  Race Bonus, EXP).
+- **Strategy**, four buttons with aptitude letters, and the big **Start race** button right below it.
+- **Aptitudes** for this race's surface, distance and strategy.
+- **Her stats for this race**: each stat with **Good**, **Average** or **Bad**. Stamina is read against what a full
+  spurt needs at this distance and style (the same HP model rivals are built on): Good from 105% of the need, Average
+  from 95%, and where nothing turns it into speed (2,100 m and under) the spare is named. Speed, Power, Guts and Wit are
+  ranked against the field she will meet, from the prepared race: Good when she beats two-thirds of it, Average a
+  third, with the count beaten and the field's middle value. Stats above 1,200 count half, as in the race. Nothing is
+  authored per race; changing the strategy re-reads it. If the field cannot be built, Stamina still reads.
+- **Race skills** with SP and an Edit link, then the **Field** preview, a row of busts in gate order.
 
 ### Race (PixiJS scene)
 
