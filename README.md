@@ -115,6 +115,7 @@ docs/           design, technical, research
 | [World Expeditions Research](docs/research/world-expeditions.md) | International Dirt and Turf specialist race pools, a unified eight-win completion rule, and source risks |
 | [Farming Game Research](docs/research/farming-games.md) | Popular farming loops compared against Stable Farm's plots, workers, offline clock, crop progression and inventory |
 | [Uma RPG Research](docs/research/uma-rpg.md) | Persona/Fire Emblem/Octopath comparisons, actual A-aptitude overlap and playable PriConne character-team/content direction |
+| [Race Mechanics Review](docs/research/race-mechanics-review.md) | Engine v7 against the original: target vs current speed, each phase, five departures with evidence, and what every stat buys |
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |
 | [Race Engine R2.5 Findings](docs/research/race-engine-r2.5-findings.md) | Basic-skill coverage, recovery comparison, and the pre-pack balance baseline |
 | [Race Engine R3 Findings](docs/research/race-engine-r3-findings.md) | Pack formulas, explicit approximations, launch-unique coverage, and balance results |
