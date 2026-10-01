@@ -1,12 +1,12 @@
 # Global Uma RPG — design and implementation boundaries
 
-> **Status: pure progression rules implemented; mode not playable.** The owner has fixed the mode's global scope,
+> **Status: pure progression and combat rules implemented; mode not playable.** The owner has fixed the mode's global scope,
 > outfit-specific RPG levels,
 > Speed-as-offense mapping, a permanently chosen running-style class, visible weapon/element identity, and
 > inventory-only destination for its future rewards. Level 50 is a repeatable **class-promotion point**, not a final
 > cap. Five filled party slots, the signature-element choice and the Inspiration token destination are fixed.
-> T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227). Combat coefficients, encounter
-> EXP payout, the exact skill catalog and chapter length remain for their owning tasks.
+> T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227); T091 has pinned combat and the
+> compositional skill catalog (D229). Encounter EXP payout and chapter length remain for their owning tasks.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -105,7 +105,7 @@ For a **synthetic** outfit with base Speed 100 and growth `0.2`, RPG Speed reads
 108 at Tier 1 Lv50 and **110 at Tier 2 Lv1**. That example is invented, not copied from private Uma data. A promotion
 result shows exact five-stat carry-forward; no retroactive stat reroll or hidden tier bonus. If the lifetime gain
 makes later tiers too strong, tune enemies rather than resetting earned stats. HP, MP and magical defense are pinned
-here; damage and class-mastery variant effects remain T091's combat work.
+here; T091's first damage rules are below, while class-mastery variant effects remain later work.
 
 EXP is awarded once for a **won encounter** to all five frozen entrant outfits, including a member KO'd before the
 win; a lost or abandoned encounter pays none. The boss pays its authored encounter EXP, while chapter clear grants
@@ -197,8 +197,8 @@ specialization for that party, but never prevents equipping other eligible eleme
 bonus** applies once to the final nonnegative **damage or healing magnitude** of a technique of the locked weapon
 and active signature element, after the combat engine's matchup calculation, rounded to nearest integer. A physical
 base and elemental rider form one final magnitude before this bonus; the rider is not bonused a second time. MP
-cost, status duration, neutral Attack and Guard do not receive it. T091 owns the elemental advantage multiplier
-and damage/healing calculations. Two A styles do not grant two
+cost, status duration, neutral Attack and Guard do not receive it. T091 pinned the elemental advantage multiplier
+and damage/healing calculations below. Two A styles do not grant two
 simultaneous class bonuses or another class track. There is no End-only fallback, penalty or special party rule;
 End follows the same aptitude, level, element, slot and reward contracts as Front, Pace and Late. Weapon identity comes
 from the selected running-style class; element access comes from **distance aptitude** separately.
@@ -217,7 +217,7 @@ permits that element's highest tier; **B** contributes those elements only to lo
 weapon's tree, never an alternate class/weapon or the A-only capstone.
 The signature element selects the **portrait overlay and specialization bonus**, not a one-element spell limit:
 the outfit may equip skills from every eligible affinity, subject only to the RPG skill slots/tier rules. T089 pins
-the B depth and active-slot ladder; T091 owns individual skill effects. **Turf/Dirt aptitude does not gate the RPG
+the B depth and active-slot ladder; T091 pins individual skill effects below. **Turf/Dirt aptitude does not gate the RPG
 element trees** in
 this draft: surfaces can theme a chapter and appear in its route preview, while distance A/B controls elemental skill
 eligibility. A future terrain bonus would require its own explicit decision and balance check.
@@ -233,7 +233,7 @@ Light ↔ Dark (each weak to the other)
 Light/Dark ↔ Fire/Ice/Lightning (neutral both ways)
 ```
 
-The triangle direction above is a **provisional** choice; no advantage multiplier is fixed. The combat UI always
+The triangle direction and T091 multipliers are now fixed (D229). The combat UI always
 shows a text/glyph legend, target weakness/resistance and projected effect. Color is an extra cue, never the sole cue.
 Medium's Fire/Dark pair deliberately gives a large Medium roster two different matchup families; it does not yet grant
 a higher damage coefficient or an extra skill tier.
@@ -281,7 +281,7 @@ offer a one-hit burn detonation versus several setup hits, and end at Lv50 with 
 tree can choose a single slow bolt versus area control. Tree depth introduces tactical choices; skill levels within
 that depth improve a chosen technique up to 5 without changing its target pattern by accident.
 
-## Five-member combat proposal
+## Five-member combat
 
 A five-member party is **confirmed**; every slot must be filled to enter a chapter, but there is **no class quota**.
 A natural team can be **one Front Greatsword, three Pace/Late flex slots and one End Tome Mage**, but neither Front nor
@@ -296,11 +296,82 @@ repeat. The player can target deliberately. Physical and magical damage, MP cost
 states are required categories; skill definitions and numeric effects are separate balancing work. Each skill must
 state target, element, physical/magical type, MP cost, magnitude, duration, stacking and what happens on resistance.
 
-The first combat slice should prove: Front Greatsword is strong but strictly physical; Pace Spear and Paladin have
+The first combat slice proves: Front Greatsword is strong but strictly physical; Pace Spear and Paladin have
 different physical plans; Late Wizard and Cleric have distinct magical offense/support; End Tome is strictly magical;
-and every element's weakness matters. Persona's extra-action-on-weakness is a promising **candidate**, not a decided rule: if
-five actors can chain indefinitely, fights become trivial. Prototype a bounded follow-up or momentum action and
-compare it with no extra action. Enemy intent is revealed before commitment; no hidden reroll after reload.
+and every element's weakness matters. Weakness gives one **automatic bounded follow-up per player round**, never
+another selectable turn or recursive chain. Enemy intent is revealed before commitment; no hidden reroll after reload.
+
+### Settled T091 combat contract (D229)
+
+`packages/domain/src/rpg/combat/` is a pure version-1 reducer. A frozen entry contains five distinct allies with
+stats, locked weapon, affinity/tree/loadout and active signature; one to five enemy kits, including any phase-two
+actions; content version; seed; and the fixed weakness-follow-up mode. `createEncounter` copies/validates the entry,
+reveals the first intents and returns a versioned state hash. `applyAction` returns a new state, ordered render cues,
+hash or a legality error with the **same previous state**. `replay` is equivalent to live stepping for every prefix;
+the renderer never chooses damage, targets, RNG or phase. A JSON round trip preserves hash and intents. The seed
+selects enemy move/seeded target from named round/enemy/phase streams, so changing one enemy's kit cannot reroll
+another's intent. No wall clock or `Math.random` is consulted.
+
+- One **round** gives each living ally one chosen Attack, Skill or Guard opportunity, in any player-selected order.
+  `Item` is disabled. An ally cannot act twice; a KO'd ally cannot act. Enemies act after the last living ally has
+  acted, once each in descending Initiative; enemy id breaks equal-Initiative ties. A KO'd enemy skips its intent.
+  Ally Initiative is displayed from Stamina but does not add actions or override deliberate player order in v1.
+  At most **40 rounds** are allowed; an unresolved battle at the limit is a loss. Victory is all enemies KO'd, loss
+  is all allies KO'd. A KO'd entrant still receives future win EXP under D225, outside this engine.
+- Enemy intent includes the selected move **and target** before the player commits. The move is chosen by seeded
+  hash of entry seed, round, enemy id and phase; target is front formation, lowest HP fraction (id tie-break), or
+  seeded live ally according to the authored policy. If the revealed target falls before its enemy acts, a deterministic
+  retarget cue precedes that action. A boss crosses into phase two at or below its authored integer HP threshold
+  (the synthetic fixture uses **50%**), and the new phase's intent is revealed immediately before any enemy
+  resolution. A phase never silently changes after reload.
+- Basic Attack is neutral and free: **physical** for Greatsword/Spear/Sword+shield, **magical** for Wizard/Cleric/Tome.
+  Guard chooses one living ally. A single-target enemy hit aimed at that ally is intercepted by the first live
+  protector in party order; the protector takes **50%** damage, rounded, minimum one. Guard ends after that enemy
+  phase, including if no attack arrives. Enemy guards instead protect through the next player phase. Area hits
+  are not intercepted. MP is validated then deducted once at skill commit, even when the target is KO'd by the
+  first hit of a multi-hit skill; invalid actor, target, unlearned/wrong-weapon/grade/slot skill or insufficient MP
+  leaves the state unchanged.
+- For damage, compute the acting channel's ATK or MATK and the target's PDEF or MDEF. Deduct **0.45× defense**
+  proportionally across a physical base and rider, clamping each nonnegative. Only the rider gets the elemental
+  matchup; a magical spell's entire magnitude gets it. Fire > Ice > Lightning > Fire is **×1.5** for advantage,
+  **×0.75** for resistance; Light/Dark are ×1.5 against each other and neutral to the triangle. A resisted attack
+  does damage but suppresses its harmful status. Skill-level, existing outgoing/incoming statuses and the already
+  pinned **×1.1 signature** apply with one final integer rounding; a neutral/weak hit then applies its new status.
+  A weak hit can add one automatic **25%** post-damage follow-up in the player round, only if its target survives;
+  it costs no MP, cannot apply another status, and cannot trigger itself. Basic Attack has no element/follow-up.
+- Healing uses the same weapon's offensive stat—ATK for Paladin, MATK for Cleric—at the catalog coefficient,
+  skill level and signature once, rounded and capped at missing HP. Light healing clears burn and weaken and grants
+  Ward. Fire healing grants Regen. Other support healing grants Power Up. Light damage breaks a hostile Ward.
+  Burn ticks for **2% of max HP per stack** after the enemy phase; Regen restores **4%** then; both and all other
+  statuses begin at **two enemy phases** and tick down after effects. Burn/Mark stack to **three** and refresh duration;
+  other statuses refresh at one stack. Mark raises incoming damage **10% per stack**; Power Up raises outgoing
+  damage **15%**; Weaken and Slow each reduce outgoing damage **15%**; Ward reduces incoming damage **15%**.
+  Statuses cannot revive KO'd actors. Skill effects and status ticks are ordered cues, never animation-driven rules.
+
+The machine-readable catalog composes **six weapons × five elements × eight branches = 240 templates**, plus
+**12 always-available neutral Attack/Guard definitions** (one pair per weapon). Skill ids
+add the learned tier; each template declares channel, one element, target mask, MP, base/rider/heal coefficient,
+status, duration, stacking, intent text and tree/A-or-B gate. B stops at depth 3; depths 4–5 require A. Foundation
+offers the motif; depth-2 focused/area changes single versus group target (Paladin/Cleric use focused/party healing);
+depth-3 committed/multi changes hit count (two hits at **0.58× each**); depth-4 role/hybrid changes support versus
+damage-plus-small-heal; depth-5 is the A-only signature. A skill level adds **8% magnitude per level after Lv1**,
+not another target. Basic Attack is **1.5× offense**. Weapon coefficients are Greatsword **1.20**, Spear **1.05**,
+Sword+shield **0.82**, Wizard **1.12**, Cleric **0.78**, Tome **1.15**; each depth adds **16%** to its coefficient,
+area is **0.62×**, and a physical technique splits **72% base / 28% rider**. Role healing starts at **1.25×** and
+adds **0.20×** per depth; hybrid healing is **0.45×**. Skill MP is **4 + 3×depth**, plus **3** for area. These are
+T091's first combat envelope, not a promise that every private enemy roster is balanced; T095/T096 tune chapter
+composition and encounter EXP without secretly changing this rule.
+
+`pnpm sim:rpg:combat` runs 12 fixed seeds for every weapon/element against neutral, weak and (for the triangle)
+resistant synthetic teams, plus a two-phase boss, guard/heal pressure and a deliberately fragile losing party. At
+this pin, the regular matrix clears **100%** in **4.7** mean rounds with **72% HP / 61% MP** remaining and **0.22**
+allied KOs per battle; this is a starter-vs-standard fixture, not a target production win rate. Weak-target rounds
+average **3.8 without** versus **3.7 with** the bounded follow-up, with 79–80% HP left: the follow-up is noticeable
+without producing a second full turn. All 72 boss samples change phase, mean **4.7** rounds; the fragile elite
+probe loses all 12. The sim gates broad turns/HP/phase/status/loss envelopes, while fixed replay hashes pin exact
+mechanics. A stronger replay probe clears in **4.0** rounds, while the same boss against a weaker catch-up party
+takes **7.0** rounds with more KOs; these are combat-only probes, not EXP payout rules. Real opponent kits and
+chapter pacing are still authored privately in T097 and validated in T095/T096.
 
 Combat rules are pure TypeScript in `packages/domain`; presentation can use React for menus and PixiJS only if a scene
 actually benefits from many animated actors. Rules consume a frozen encounter/content version, deterministic seed and

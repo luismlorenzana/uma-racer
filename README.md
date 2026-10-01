@@ -51,6 +51,7 @@ pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regressio
 pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
 pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
 pnpm sim:rpg:progression # synthetic two-tier RPG leveling and tree envelope (T089)
+pnpm sim:rpg:combat # synthetic six-weapon/five-element RPG combat and replay envelope (T091)
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs
@@ -84,7 +85,7 @@ docs/           design, technical, research
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Complete one-to-six-plot account loop: persistent outfit workers, scenario crops, synced harvests, global Items and constellation Produce consumption |
-| [Global Uma RPG — M028/M029](docs/design/uma-rpg.md) | Account-wide turn-based campaign: outfit class tiers/promotions, locked style-classes, elemental skill trees, five-person parties, PriConne character teams, chapter maps and scenario Inspiration tokens; T089 pure progression rules landed, while the [first playable release](docs/tasks/M028-uma-rpg.md) and [14-scenario rollout](docs/tasks/M029-rpg-chapter-rollout.md) remain ahead |
+| [Global Uma RPG — M028/M029](docs/design/uma-rpg.md) | Account-wide turn-based campaign: outfit class tiers/promotions, locked style-classes, elemental skill trees, five-person parties, PriConne character teams, chapter maps and scenario Inspiration tokens; pure progression, save transport and combat rules have landed, while the [first playable release](docs/tasks/M028-uma-rpg.md) and [14-scenario rollout](docs/tasks/M029-rpg-chapter-rollout.md) remain ahead |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |

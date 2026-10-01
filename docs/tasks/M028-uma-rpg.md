@@ -19,7 +19,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 |---|---|---|
 | T089 — RPG rules and tuning ✅ | Pure aptitude, profile, EXP, class-tier and skill-tree rules; bounded synthetic progression sim; settled numeric pins | Landed; see D227 and [RPG design](../design/uma-rpg.md#outfit-rpg-profile-and-progression) |
 | T090 — RPG save contract ✅ | Versioned outfit/preset/checkpoint state, API validation, Dexie v18 and **atomic grouped mutation** protocol; D228 | T089; landed |
-| [T091 — Deterministic combat engine](T091-rpg-combat.md) | Pure five-member battle, six weapon paths, five elements, enemy intent, statuses and replay; combat sim | T089 |
+| T091 — Deterministic combat engine ✅ | Pure five-member battle, six weapon paths, five elements, enemy intent, statuses and replay; combat sim (D229) | Landed |
 | [T092 — Battle journal and host](T092-rpg-battle-host.md) | Device-local action journal, frozen entry, second-device takeover and idempotent battle result boundary | T090, T091 |
 | [T093 — RPG roster and party hub](T093-rpg-hub.md) | Lazy internal route, enrollment/profiles, five saved presets and overlays; no Home entry | T089, T090 |
 | [T094 — Phone battle screen](T094-rpg-battle-screen.md) | Five-actor touch battle and result view against synthetic encounters, with same-device resume | T091–T093 |
@@ -35,7 +35,7 @@ T089 ─► T090 ────────────────┬─► T092 
           T090 ─► T093 ───────────────┘          └───────────────────────────► T099
 ```
 
-The diagram is a dependency guide, not permission to merge against stale `main`. T093 can proceed while T091 is
+The diagram is a dependency guide, not permission to merge against stale `main`. T093 can proceed while T092 is
 built; T097's private authoring can begin after T095 defines the schema while T098 implements the token bridge. T099
 waits for both. One task = one PR; remove that task's spec in its implementation PR (D104), update the design and
 milestone table, and record any newly settled rule in `docs/decisions.md`.
@@ -64,14 +64,11 @@ milestone table, and record any newly settled rule in `docs/decisions.md`.
 
 ## Balance and architecture gates
 
-T089 settled the level curve, 10% specialization, skill points, depth gates and slot bounds in D227. T091 must settle
-**only the combat rules it implements**; the elemental matchup direction remains a candidate, not permission to bake
-untested coefficients into save migrations. T089 checked a five-scenario promotion pace and two tiers with a modest
-synthetic sim; T091 compares six paths, heal/guard/weakness, overleveled replay and catch-up. Write its chosen
-formulas in the design,
-append decisions, pin changed numbers in `packages/domain/src/domain.test.ts`, and save replay fixtures/hashes so later
-screen/content work cannot alter results accidentally. If tuning materially changes the approved identity, stop and
-ask the owner before implementation.
+T089 settled the level curve, 10% specialization, skill points, depth gates and slot bounds in D227. T091 settled
+the combat rules, elemental triangle and bounded weakness follow-up in D229 with the synthetic six-weapon matrix and
+fixed replay fixture. These coefficients live only in the pure engine, not save migrations. T095/T096 still measure
+chapter and EXP pacing before tuning real-content encounters. If later tuning materially changes the approved identity,
+stop and ask the owner before implementation.
 
 T090 defined the save and conflict boundary *before* a UI writes it: RPG wire schema v1, Dexie v18, independent API
 validation and conditional grouped acknowledgements (D228). A rejected checkpoint leaves no result or Item ledger
