@@ -31,6 +31,12 @@ import {
   type LogKind,
   type PlayerProfile,
   type UmaSave,
+  type RpgOutfitSaveV1,
+  type RpgPresetSaveV1,
+  type RpgCheckpointSaveV1,
+  type RpgResultEvidenceV1,
+  type RpgPromotionEvidenceV1,
+  type RpgCommandReceiptV1,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
@@ -83,6 +89,15 @@ export interface MinigameRunRow {
   journal?: ReplayJournalV1
 }
 
+/** Device-local command queue; no RPG rewards are projected before server acknowledgement. */
+export interface PendingRpgCommandRow {
+  id: string
+  body: unknown
+  status: 'pending' | 'conflict'
+  queuedAt: number
+  conflict: unknown | null
+}
+
 interface LegacyMinigameRunRow extends Omit<MinigameRunRow, 'journal' | 'snapshot'> {
   setup?: unknown
   actions?: unknown
@@ -131,6 +146,13 @@ class RacerDb extends Dexie {
   farm!: EntityTable<FarmRow, 'id'>
   items!: EntityTable<VersionedRow<InventoryStackData>, 'id'>
   itemLedger!: EntityTable<LogRow<ItemLedgerEntry>, 'id'>
+  rpgOutfits!: EntityTable<VersionedRow<RpgOutfitSaveV1>, 'id'>
+  rpgPresets!: EntityTable<VersionedRow<RpgPresetSaveV1>, 'id'>
+  rpgCheckpoints!: EntityTable<VersionedRow<RpgCheckpointSaveV1>, 'id'>
+  rpgResults!: EntityTable<LogRow<RpgResultEvidenceV1>, 'id'>
+  rpgPromotions!: EntityTable<LogRow<RpgPromotionEvidenceV1>, 'id'>
+  rpgReceipts!: EntityTable<LogRow<RpgCommandReceiptV1>, 'id'>
+  pendingRpgCommands!: EntityTable<PendingRpgCommandRow, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
   /** Device-local album preferences (D112). Never synced, never part of the save. */
   albumPrefs!: EntityTable<AlbumPrefs, 'id'>
@@ -159,6 +181,11 @@ class RacerDb extends Dexie {
       farm: 'id',
       items: 'id',
       itemLedger: 'id, createdAt',
+    }
+    const storesWithRpg = { ...storesWithFarm,
+      rpgOutfits: 'id', rpgPresets: 'id', rpgCheckpoints: 'id',
+      rpgResults: 'id, createdAt', rpgPromotions: 'id, createdAt', rpgReceipts: 'id, createdAt',
+      pendingRpgCommands: 'id, status, queuedAt',
     }
     this.version(1).stores(stores)
     this.version(2).stores(stores).upgrade(async (tx: Transaction) => {
@@ -287,6 +314,8 @@ class RacerDb extends Dexie {
     this.version(16).stores(storesWithFarm).upgrade(walkRowsToCurrent)
     // Save v11 (D211, D212): linear Training Levels. Units re-level once, and what passes TL10 is banked on the profile.
     this.version(17).stores(storesWithFarm).upgrade(walkRowsToCurrent)
+    // Additive RPG state and device-local pending command queue. No enrollment is synthesized.
+    this.version(18).stores(storesWithRpg)
   }
 }
 

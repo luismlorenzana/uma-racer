@@ -4,6 +4,7 @@ import { dirname } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import type { SaveRepository } from './save.repository'
 import { resolveUpserts, type EntityRecord, type LogRecord, type SaveSnapshot, type SyncRequest, type SyncResponse } from './save.types'
+import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 
 interface FileShape {
   [uid: string]: { entities: Record<string, EntityRecord>; logs: Record<string, LogRecord> }
@@ -78,6 +79,20 @@ export class LocalSaveRepository implements SaveRepository {
         appended,
         serverTime: now,
       }
+    })
+  }
+
+  rpgCommand(uid: string, request: RpgCommandRequest): Promise<RpgCommandResponse> {
+    return this.serialize(async () => {
+      const all = await this.read()
+      const user = (all[uid] ??= { entities: {}, logs: {} })
+      const resolved = resolveRpgCommand(uid, request, new Map(Object.entries(user.entities)),
+        new Map(Object.entries(user.logs)), Date.now())
+      if (resolved.response.status !== 'applied') return resolved.response
+      for (const row of resolved.writes) user.entities[`${row.kind}/${row.id}`] = row
+      for (const row of resolved.appends) user.logs[`${row.kind}/${row.id}`] = row
+      await this.write(all)
+      return resolved.response
     })
   }
 }

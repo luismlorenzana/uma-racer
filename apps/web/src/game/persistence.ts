@@ -43,6 +43,12 @@ import {
   deriveUma,
   upgradeGoalPlan,
   type UmaSave,
+  type RpgOutfitSaveV1,
+  type RpgPresetSaveV1,
+  type RpgCheckpointSaveV1,
+  type RpgResultEvidenceV1,
+  type RpgPromotionEvidenceV1,
+  type RpgCommandReceiptV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db, type FarmRow, type LogRow, type OutboxRow, type VersionedRow } from './db'
@@ -56,6 +62,12 @@ export interface LocalSnapshot {
   farm: FarmRow | null
   items: VersionedRow<InventoryStackData>[]
   itemLedger: LogRow<ItemLedgerEntry>[]
+  rpgOutfits: VersionedRow<RpgOutfitSaveV1>[]
+  rpgPresets: VersionedRow<RpgPresetSaveV1>[]
+  rpgCheckpoints: VersionedRow<RpgCheckpointSaveV1>[]
+  rpgResults: LogRow<RpgResultEvidenceV1>[]
+  rpgPromotions: LogRow<RpgPromotionEvidenceV1>[]
+  rpgReceipts: LogRow<RpgCommandReceiptV1>[]
 }
 
 export async function queueInTransaction(
@@ -108,6 +120,12 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   const farmRow = await db.farm.get('main')
   const itemRows = await db.items.toArray()
   const itemLedgerRows = await db.itemLedger.toArray()
+  const rpgOutfits = validateRpgEntities('rpgOutfits', await db.rpgOutfits.toArray()) as VersionedRow<RpgOutfitSaveV1>[]
+  const rpgPresets = validateRpgEntities('rpgPresets', await db.rpgPresets.toArray()) as VersionedRow<RpgPresetSaveV1>[]
+  const rpgCheckpoints = validateRpgEntities('rpgCheckpoints', await db.rpgCheckpoints.toArray()) as VersionedRow<RpgCheckpointSaveV1>[]
+  const rpgResults = validateRpgLogs('rpgResults', await db.rpgResults.toArray()) as LogRow<RpgResultEvidenceV1>[]
+  const rpgPromotions = validateRpgLogs('rpgPromotions', await db.rpgPromotions.toArray()) as LogRow<RpgPromotionEvidenceV1>[]
+  const rpgReceipts = validateRpgLogs('rpgReceipts', await db.rpgReceipts.toArray()) as LogRow<RpgCommandReceiptV1>[]
   const umas = umaRows.map((row) => {
     const data = parseUmaSaveOrThrow(row.data)
     if (data.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
@@ -151,7 +169,42 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   if (umaRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local Uma row version is invalid')
   if (cardRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local card row version is invalid')
   if (badgeRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local badge row version is invalid')
-  return { profile: { ...profileRow, data: profile }, umas, cards, badges, flairEvents, farm, items, itemLedger }
+  return { profile: { ...profileRow, data: profile }, umas, cards, badges, flairEvents, farm, items, itemLedger,
+    rpgOutfits, rpgPresets, rpgCheckpoints, rpgResults, rpgPromotions, rpgReceipts }
+}
+
+function validateRpgEntities(kind: EntityKind, rows: VersionedRow<unknown>[]): VersionedRow<object>[] {
+  return rows.map((row) => {
+    if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data &&
+      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 1) {
+      throw new Error(`App update required for RPG schema ${row.data.schemaVersion}`)
+    }
+    const parsed = parseEntityData(kind, row.data)
+    if (!parsed || !Number.isSafeInteger(row.version) || row.version < 0) throw new Error(`Invalid local ${kind}/${row.id}`)
+    if ((kind === 'rpgOutfits' && (parsed.profile as Record<string, unknown>).outfitId !== row.id) ||
+      (kind === 'rpgPresets' && parsed.presetId !== row.id) ||
+      (kind === 'rpgCheckpoints' && `${parsed.presetId}:${parsed.chapterId}` !== row.id)) {
+      throw new Error(`Invalid local ${kind} identity: ${row.id}`)
+    }
+    return { ...row, data: parsed }
+  })
+}
+
+function validateRpgLogs(kind: LogKind, rows: LogRow<unknown>[]): LogRow<object>[] {
+  return rows.map((row) => {
+    if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data &&
+      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 1) {
+      throw new Error(`App update required for RPG schema ${row.data.schemaVersion}`)
+    }
+    const parsed = parseLogData(kind, row.data)
+    if (!parsed || !Number.isSafeInteger(row.createdAt) || row.createdAt < 0 || parsed.createdAt !== row.createdAt) {
+      throw new Error(`Invalid local ${kind}/${row.id}`)
+    }
+    if ((kind === 'rpgResults' && parsed.resultId !== row.id) ||
+      (kind === 'rpgPromotions' && parsed.promotionId !== row.id) ||
+      (kind === 'rpgReceipts' && parsed.commandId !== row.id)) throw new Error(`Invalid local ${kind} identity: ${row.id}`)
+    return { ...row, data: parsed }
+  })
 }
 
 export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
@@ -166,6 +219,8 @@ export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
     db.farm.count(),
     db.items.count(),
     db.itemLedger.count(),
+    db.rpgOutfits.count(), db.rpgPresets.count(), db.rpgCheckpoints.count(),
+    db.rpgResults.count(), db.rpgPromotions.count(), db.rpgReceipts.count(), db.pendingRpgCommands.count(),
     db.outbox.count(),
   ])
   return counts.every((count) => count === 0)
@@ -211,7 +266,8 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
   }
   if (profileRecords.length !== 1 || profileRecords[0]!.id !== 'main') throw new Error('Server save has duplicate profiles')
 
-  await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger, db.outbox], async () => {
+  await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger,
+    db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.outbox], async () => {
     await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.farm.clear(), db.items.clear(), db.itemLedger.clear(), db.outbox.clear()])
     for (const record of snapshot.entities) {
       if (record.deleted) continue
@@ -243,6 +299,9 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
       if (record.kind === 'farm') await db.farm.put({ id: record.id, data: parseFarmState(record.data)!, version: record.version, revision: record.version })
       if (record.kind === 'items') await db.items.put({ id: record.id, data: parseInventoryStackData(record.data, record.id)!, version: record.version })
+      if (record.kind === 'rpgOutfits' || record.kind === 'rpgPresets' || record.kind === 'rpgCheckpoints') {
+        await mergeRpgEntity(record)
+      }
     }
     for (const record of snapshot.logs) {
       if (record.kind === 'ledger') {
@@ -251,6 +310,8 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.raceResults.put({ id: record.id, data: record.data, createdAt: record.createdAt })
       } else if (record.kind === 'flairEvents') {
         await db.flairEvents.put({ id: record.id, data: parseFlairEvent(record.data)!, createdAt: record.createdAt })
+      } else if (record.kind === 'rpgResults' || record.kind === 'rpgPromotions' || record.kind === 'rpgReceipts') {
+        await mergeRpgLog(record)
       } else {
         await db.itemLedger.put({ id: record.id, data: parseItemLedgerEntry(record.data)!, createdAt: record.createdAt })
       }
@@ -262,6 +323,41 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
     await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })
   return 'adopted'
+}
+
+/** Cloud adoption never erases a newer or absent-from-cloud local RPG row. Equal-version divergence is visible. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
+  if (value !== null && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(',')}}`
+  }
+  return JSON.stringify(value)
+}
+
+async function mergeRpgEntity(record: EntityRecord): Promise<void> {
+  if (!['rpgOutfits', 'rpgPresets', 'rpgCheckpoints'].includes(record.kind)) throw new Error('Not an RPG entity')
+  const table = db.table<VersionedRow<Record<string, unknown>>, string>(record.kind)
+  const local = await table.get(record.id)
+  if (local && local.version > record.version) return
+  if (local && local.version === record.version && canonicalJson(local.data) !== canonicalJson(record.data)) {
+    throw new Error(`Conflicting RPG row ${record.kind}/${record.id} at version ${record.version}`)
+  }
+  if (record.deleted) {
+    if (!local || local.version < record.version) await table.delete(record.id)
+  } else if (!local || local.version < record.version) {
+    await table.put({ id: record.id, data: record.data, version: record.version })
+  }
+}
+
+async function mergeRpgLog(record: { kind: LogKind; id: string; data: Record<string, unknown>; createdAt: number }): Promise<void> {
+  if (!['rpgResults', 'rpgPromotions', 'rpgReceipts'].includes(record.kind)) throw new Error('Not an RPG log')
+  const table = db.table<LogRow<Record<string, unknown>>, string>(record.kind)
+  const local = await table.get(record.id)
+  if (local && (local.createdAt !== record.createdAt || canonicalJson(local.data) !== canonicalJson(record.data))) {
+    throw new Error(`Conflicting RPG evidence ${record.kind}/${record.id}`)
+  }
+  if (!local) await table.put({ id: record.id, data: record.data, createdAt: record.createdAt })
 }
 
 /**
@@ -405,6 +501,12 @@ export async function entityRow(kind: EntityKind, id: string): Promise<Versioned
           ? await db.badges.get(id)
           : kind === 'farm'
             ? await db.farm.get(id)
+            : kind === 'rpgOutfits'
+              ? await db.rpgOutfits.get(id)
+              : kind === 'rpgPresets'
+                ? await db.rpgPresets.get(id)
+                : kind === 'rpgCheckpoints'
+                  ? await db.rpgCheckpoints.get(id)
             : await db.items.get(id)
   if (!row) return null
   if (row.id !== id || !Number.isSafeInteger(row.version) || row.version < 0) {
@@ -425,6 +527,12 @@ export async function logRow(kind: LogKind, id: string): Promise<LogRow<object> 
       ? await db.raceResults.get(id)
       : kind === 'flairEvents'
         ? await db.flairEvents.get(id)
+        : kind === 'rpgResults'
+          ? await db.rpgResults.get(id)
+          : kind === 'rpgPromotions'
+            ? await db.rpgPromotions.get(id)
+            : kind === 'rpgReceipts'
+              ? await db.rpgReceipts.get(id)
         : await db.itemLedger.get(id)
   if (!row) return null
   if (row.id !== id || !Number.isSafeInteger(row.createdAt) || row.createdAt < 0) {
@@ -456,6 +564,9 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
     if (record.kind === 'badges') await db.badges.delete(record.id)
     if (record.kind === 'farm') await db.farm.delete(record.id)
     if (record.kind === 'items') await db.items.delete(record.id)
+    if (record.kind === 'rpgOutfits') await db.rpgOutfits.delete(record.id)
+    if (record.kind === 'rpgPresets') await db.rpgPresets.delete(record.id)
+    if (record.kind === 'rpgCheckpoints') await db.rpgCheckpoints.delete(record.id)
     return
   }
   // Migrate on the way in, as a first load does: a conflict can carry any supported schema, and a row that cannot be
@@ -496,6 +607,9 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
     if (!item) throw new Error(`Invalid server item conflict: ${record.id}`)
     await db.items.put({ id: record.id, data: item, version: record.version })
   }
+  if (record.kind === 'rpgOutfits' || record.kind === 'rpgPresets' || record.kind === 'rpgCheckpoints') {
+    await mergeRpgEntity(record)
+  }
   if (queueMigrated && (record.kind === 'profile' || record.kind === 'umas' || record.kind === 'cards')) {
     await queueInTransaction(record.kind, record.id, 'upsert', now)
   }
@@ -508,4 +622,7 @@ export async function updateEntityVersion(kind: EntityKind, id: string, version:
   if (kind === 'badges') await db.badges.update(id, { version })
   if (kind === 'farm') await db.farm.update(id, { version })
   if (kind === 'items') await db.items.update(id, { version })
+  if (kind === 'rpgOutfits') await db.rpgOutfits.update(id, { version })
+  if (kind === 'rpgPresets') await db.rpgPresets.update(id, { version })
+  if (kind === 'rpgCheckpoints') await db.rpgCheckpoints.update(id, { version })
 }

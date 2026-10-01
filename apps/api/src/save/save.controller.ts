@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, Inject, Post, UseGuards } f
 import { AuthGuard, CurrentUid } from '../auth/auth.guard'
 import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'
 import { parseSyncRequest } from './save.types'
+import { parseRpgCommandRequest } from './rpg-command'
 
 @UseGuards(AuthGuard)
 @Controller()
@@ -20,5 +21,13 @@ export class SaveController {
     const parsed = parseSyncRequest(body)
     if (typeof parsed === 'string') throw new BadRequestException(parsed)
     return this.saves.sync(uid, parsed)
+  }
+
+  /** All RPG projections and evidence move as one conditional command. */
+  @Post('rpg/command')
+  rpgCommand(@CurrentUid() uid: string, @Body() body: unknown) {
+    const parsed = parseRpgCommandRequest(body)
+    if (typeof parsed === 'string') throw new BadRequestException(parsed)
+    return this.saves.rpgCommand(uid, parsed)
   }
 }

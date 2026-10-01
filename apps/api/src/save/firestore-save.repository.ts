@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common'
 import * as admin from 'firebase-admin'
 import { isDeepStrictEqual } from 'node:util'
 import { fromStored, toStored } from './firestore-codec'
+import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 import type { SaveRepository } from './save.repository'
 import {
   ENTITY_KINDS,
@@ -20,7 +21,10 @@ import {
 export class FirestoreSaveRepository implements SaveRepository {
   private readonly logger = new Logger('SaveSync')
 
+  constructor(private readonly injectedDb?: admin.firestore.Firestore) {}
+
   private get db(): admin.firestore.Firestore {
+    if (this.injectedDb) return this.injectedDb
     if (admin.apps.length === 0) admin.initializeApp()
     return admin.firestore()
   }
@@ -82,6 +86,41 @@ export class FirestoreSaveRepository implements SaveRepository {
         appended,
         serverTime: now,
       }
+    })
+  }
+
+  async rpgCommand(uid: string, request: RpgCommandRequest): Promise<RpgCommandResponse> {
+    const player = this.player(uid)
+    const now = Date.now()
+    return this.db.runTransaction(async (tx) => {
+      const entityKeys = new Map<string, { kind: EntityRecord['kind']; id: string }>(request.expected.map((row) => [`${row.kind}/${row.id}`, row]))
+      for (const row of request.upserts) entityKeys.set(`${row.kind}/${row.id}`, row)
+      const entityRefs = [...entityKeys.values()].map((row) => player.collection(row.kind).doc(row.id))
+      const logRows = [...request.appends, { kind: 'rpgReceipts' as const, id: request.commandId }]
+      const logRefs = logRows.map((row) => player.collection(row.kind).doc(row.id))
+      const [entityDocs, logDocs] = await Promise.all([
+        entityRefs.length ? tx.getAll(...entityRefs) : Promise.resolve([]),
+        tx.getAll(...logRefs),
+      ])
+      const entities = new Map<string, EntityRecord>()
+      const logs = new Map<string, LogRecord>()
+      entityDocs.forEach((doc) => {
+        if (doc.exists) {
+          const record = fromStored<EntityRecord>(doc.data()!)
+          entities.set(`${record.kind}/${record.id}`, record)
+        }
+      })
+      logDocs.forEach((doc) => {
+        if (doc.exists) {
+          const record = fromStored<LogRecord>(doc.data()!)
+          logs.set(`${record.kind}/${record.id}`, record)
+        }
+      })
+      const resolved = resolveRpgCommand(uid, request, entities, logs, now)
+      if (resolved.response.status !== 'applied') return resolved.response
+      for (const row of resolved.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+      for (const row of resolved.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+      return resolved.response
     })
   }
 }

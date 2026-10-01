@@ -1,6 +1,6 @@
 // Fetch client with a pluggable token provider (same pattern as uma-planner's api/client.ts).
 
-import type { SyncRequest } from '@racer/domain'
+import type { RpgCommandRequest, SyncRequest } from '@racer/domain'
 
 // Base URL: empty in dev (relative /api, proxied by Vite) or the Cloud Run URL in prod.
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -51,4 +51,5 @@ export const contentApi = {
 export const saveApi = {
   load: () => request<unknown>('/api/save'),
   sync: (body: SyncRequest) => request<unknown>('/api/sync', { method: 'POST', body: JSON.stringify(body) }),
+  rpgCommand: (body: RpgCommandRequest) => request<unknown>('/api/rpg/command', { method: 'POST', body: JSON.stringify(body) }),
 }

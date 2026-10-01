@@ -18,7 +18,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 | Task | PR-sized outcome | Depends on |
 |---|---|---|
 | T089 — RPG rules and tuning ✅ | Pure aptitude, profile, EXP, class-tier and skill-tree rules; bounded synthetic progression sim; settled numeric pins | Landed; see D227 and [RPG design](../design/uma-rpg.md#outfit-rpg-profile-and-progression) |
-| [T090 — RPG save contract](T090-rpg-save.md) | Versioned outfit/preset/checkpoint state, API validation, Dexie migration and **atomic grouped mutation** protocol | T089; latest save version |
+| T090 — RPG save contract ✅ | Versioned outfit/preset/checkpoint state, API validation, Dexie v18 and **atomic grouped mutation** protocol; D228 | T089; landed |
 | [T091 — Deterministic combat engine](T091-rpg-combat.md) | Pure five-member battle, six weapon paths, five elements, enemy intent, statuses and replay; combat sim | T089 |
 | [T092 — Battle journal and host](T092-rpg-battle-host.md) | Device-local action journal, frozen entry, second-device takeover and idempotent battle result boundary | T090, T091 |
 | [T093 — RPG roster and party hub](T093-rpg-hub.md) | Lazy internal route, enrollment/profiles, five saved presets and overlays; no Home entry | T089, T090 |
@@ -73,11 +73,10 @@ append decisions, pin changed numbers in `packages/domain/src/domain.test.ts`, a
 screen/content work cannot alter results accidentally. If tuning materially changes the approved identity, stop and
 ask the owner before implementation.
 
-T090 defines the save and conflict boundary *before* a UI writes it. It must follow the latest actual save version and
-Dexie tables when started; do not reserve a version number in this plan. Its API parser rejects malformed or oversized
-untrusted RPG state. It also implements conditional grouped acknowledgements so a rejected checkpoint cannot leave a
-result or Item ledger entry behind. The active battle action journal stays device-local, while the frozen entry and
-chapter checkpoint sync. Every new global Item uses the existing stack and ledger rather than a second wallet. The RPG is **not** a
+T090 defined the save and conflict boundary *before* a UI writes it: RPG wire schema v1, Dexie v18, independent API
+validation and conditional grouped acknowledgements (D228). A rejected checkpoint leaves no result or Item ledger
+entry behind. The active battle action journal remains T092's device-local work, while the frozen entry and chapter
+checkpoint sync. Every new global Item uses the existing stack and ledger rather than a second wallet. The RPG is **not** a
 ticketed `MinigameHost` run, and its multi-fight chapter must not inherit that port's action cap or terminal run model.
 
 ## Release and verification

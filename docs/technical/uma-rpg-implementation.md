@@ -1,22 +1,21 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** implementation plan, not deployed behavior. Read [the design](../design/uma-rpg.md) for product rules and
+**Status:** T089 rules and T090 save transport implemented; the RPG is not playable or Home-visible yet. Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
 left ambiguous. T089's progression coefficients are now pinned in D227; T091/T096 must simulate their own remaining
 combat/reward candidates, then update the design, `packages/domain/src/domain.test.ts` and append-only decisions log.
 
 ## Existing seams and the sync hazard
 
-- Current `packages/domain/src/save.ts` is save v11; `apps/web/src/game/db.ts` is Dexie v17 on the planning branch.
-  T090 must use the versions on **its** latest `main`, not hard-code v12/v18 in this plan. The current API has entity
-  kinds `profile`, `umas`, `cards`, `badges`, `farm`, `items` and log kinds `raceResults`, `ledger`, `flairEvents`,
-  `itemLedger`. The production API parses those shapes independently of `@racer/domain`.
+- `packages/domain/src/save.ts` remains save v11; `apps/web/src/game/db.ts` is Dexie v18. T090 added separate
+  `rpgOutfits`, `rpgPresets`, `rpgCheckpoints` entities and `rpgResults`, `rpgPromotions`, `rpgReceipts` logs.
+  The production API parses those shapes independently of `@racer/domain`.
 - `apps/api/src/save/firestore-save.repository.ts` and `local-save.repository.ts` currently resolve each entity
   upsert and then append every new log even if an entity conflicted. The Firestore transaction is atomic as a database
   operation, but **the game command is not all-or-nothing**. The ordinary `/api/sync` batch must not carry an RPG
   result, EXP update or token movement as unrelated upserts/appends. T090 implements a grouped conditional RPG
-  mutation in the authenticated save protocol (or an equivalently atomic authenticated command); a test must first
-  demonstrate the current orphan-log failure and then prove it cannot occur for an RPG command. No workflow, infra or
+  mutation at `POST /api/rpg/command`; tests demonstrate the existing orphan-log failure and prove it cannot occur for
+  an RPG command. No workflow, infra or
   `.env` changes are authorized by this plan.
 - The app remains local-first for battle **actions**. An active battle can continue and replay offline from a local
   journal. A new entry or terminal result made offline is explicitly **pending** until its grouped command is
@@ -42,8 +41,9 @@ strings and matching API-side parser. Every id uses the existing safe-id rules.
 | Grouped-command receipt | append-only sync log, by command id | Payload hash, accepted entity versions and result/evidence ids. This is the durable duplicate response, not a client-memory flag; a reused id with different payload rejects. |
 | Scenario token | existing `items` + `itemLedger` | Item id derives from scenario id, not from a chapter's display label. Clear grant id derives from accepted chapter-attempt id; spend id derives from Uma/scenario/branch plus an increasing revision. Stacks are projections of accepted movements, not a second RPG wallet. |
 
-T090 must choose exact exported TypeScript names, parser limits and migration number against current `main`, then pin
-those choices in a wire-shape test. Do not store full chapter definitions in mutable account rows: the checkpoint
+T090 chose RPG wire schema v1, Dexie v18, five presets/five slots, 25 tree nodes, 64 path entries, 16,384 enemy-kit
+JSON characters and 20 grouped operations (D228; pinned in `domain.test.ts` and wire tests). Do not store full
+chapter definitions in mutable account rows: the checkpoint
 stores its immutable version/hash and the frozen **entered encounter**; T097's content loader retains old packs needed
 for open chapters. A missing old pack is a visible recovery error, not permission to substitute new enemies.
 

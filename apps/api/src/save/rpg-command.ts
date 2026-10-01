@@ -1,0 +1,298 @@
+// Atomic RPG command validation and resolution (docs/technical/uma-rpg-implementation.md, T090).
+import { createHash } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
+import { ENTITY_KINDS, LOG_KINDS, parseEntityData, parseLogData, saveEntityIdMatches, saveLogIdMatches,
+  type EntityKind, type EntityRecord, type LogAppend, type LogKind, type LogRecord } from './save.types'
+import { RPG_ACTIONS, RPG_MAX_GROUP_OPERATIONS, rpgExact, rpgId, rpgInt, rpgRecord,
+  type RpgAction } from './rpg-save.types'
+
+export interface RpgExpected { kind: EntityKind; id: string; version: number }
+export interface RpgUpsert { kind: EntityKind; id: string; data: Record<string, unknown> }
+export interface RpgCommandRequest {
+  schemaVersion: 1
+  commandId: string
+  action: RpgAction
+  expected: RpgExpected[]
+  upserts: RpgUpsert[]
+  appends: LogAppend[]
+}
+export interface RpgReceipt {
+  schemaVersion: 1
+  commandId: string
+  action: RpgAction
+  payloadHash: string
+  applied: Array<{ kind: EntityKind; id: string; version: number }>
+  appendedIds: string[]
+  createdAt: number
+}
+export type RpgCommandResponse =
+  | { status: 'applied' | 'duplicate'; receipt: RpgReceipt; entities: EntityRecord[]; logs: LogRecord[] }
+  | { status: 'conflict'; authoritative: Array<{ kind: EntityKind; id: string; record: EntityRecord | null }> }
+  | { status: 'rejected'; reason: string }
+
+const entityKey = (kind: EntityKind, id: string) => `${kind}/${id}`
+const logKey = (kind: LogKind, id: string) => `${kind}/${id}`
+const allowedEntities: Record<RpgAction, readonly EntityKind[]> = {
+  enroll: ['rpgOutfits'], 'edit-preset': ['rpgPresets'], 'start-chapter': ['rpgCheckpoints', 'rpgPresets'],
+  'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
+  'battle-result': ['rpgCheckpoints', 'rpgOutfits'], 'clear-chapter': ['rpgCheckpoints', 'items'],
+  promote: ['rpgOutfits'], 'spend-inspiration': ['umas', 'items'],
+}
+const allowedLogs: Record<RpgAction, readonly LogKind[]> = {
+  enroll: [], 'edit-preset': [], 'start-chapter': [], 'begin-battle': [], takeover: [],
+  'battle-result': ['rpgResults'], 'clear-chapter': ['itemLedger'],
+  promote: ['rpgPromotions'], 'spend-inspiration': ['itemLedger'],
+}
+
+export function parseRpgCommandRequest(body: unknown): RpgCommandRequest | string {
+  if (!rpgRecord(body) || !rpgExact(body, ['schemaVersion', 'commandId', 'action', 'expected', 'upserts', 'appends'])) {
+    return 'RPG command must have exact versioned fields'
+  }
+  if (body.schemaVersion !== 1 || !rpgId(body.commandId) || !RPG_ACTIONS.includes(body.action as RpgAction)) {
+    return 'Unsupported RPG command version, id or action'
+  }
+  const action = body.action as RpgAction
+  if (!Array.isArray(body.expected) || !Array.isArray(body.upserts) || !Array.isArray(body.appends) ||
+    body.expected.length + body.upserts.length + body.appends.length > RPG_MAX_GROUP_OPERATIONS ||
+    body.upserts.length === 0) return 'Invalid RPG command operation count'
+  const expected: RpgExpected[] = []
+  for (const entry of body.expected) {
+    if (!rpgRecord(entry) || !rpgExact(entry, ['kind', 'id', 'version']) ||
+      !ENTITY_KINDS.includes(entry.kind as EntityKind) || !rpgId(entry.id) || !rpgInt(entry.version)) return 'Invalid RPG expected row'
+    expected.push(entry as unknown as RpgExpected)
+  }
+  const upserts: RpgUpsert[] = []
+  for (const entry of body.upserts) {
+    if (!rpgRecord(entry) || !rpgExact(entry, ['kind', 'id', 'data']) ||
+      !ENTITY_KINDS.includes(entry.kind as EntityKind) || !allowedEntities[action].includes(entry.kind as EntityKind) ||
+      !rpgId(entry.id)) return 'Invalid RPG entity operation'
+    const kind = entry.kind as EntityKind
+    const data = parseEntityData(kind, entry.data)
+    if (!data || !saveEntityIdMatches(kind, entry.id, data)) return 'Invalid RPG entity data or identity'
+    upserts.push({ kind, id: entry.id, data })
+  }
+  const appends: LogAppend[] = []
+  for (const entry of body.appends) {
+    if (!rpgRecord(entry) || !rpgExact(entry, ['kind', 'id', 'data', 'createdAt']) ||
+      !LOG_KINDS.includes(entry.kind as LogKind) || !allowedLogs[action].includes(entry.kind as LogKind) ||
+      !rpgId(entry.id) || !rpgInt(entry.createdAt)) return 'Invalid RPG log operation'
+    const kind = entry.kind as LogKind
+    const data = parseLogData(kind, entry.data)
+    if (!data || !saveLogIdMatches(kind, entry.id, data, entry.createdAt)) return 'Invalid RPG log data or identity'
+    appends.push({ kind, id: entry.id, data, createdAt: entry.createdAt })
+  }
+  const expectedKeys = expected.map((entry) => entityKey(entry.kind, entry.id))
+  const entityKeys = upserts.map((entry) => entityKey(entry.kind, entry.id))
+  const logKeys = appends.map((entry) => logKey(entry.kind, entry.id))
+  if (new Set(expectedKeys).size !== expectedKeys.length || new Set(entityKeys).size !== entityKeys.length ||
+    new Set(logKeys).size !== logKeys.length || new Set(appends.map((entry) => entry.id)).size !== appends.length ||
+    entityKeys.some((key) => !expectedKeys.includes(key))) {
+    return 'RPG command has duplicate or unversioned operations'
+  }
+  if (action === 'enroll' && (upserts.length !== 1 || upserts[0]?.kind !== 'rpgOutfits' ||
+    !expectedKeys.includes(entityKey('umas', upserts[0].id)))) return 'Enrollment needs one outfit and owned Uma version'
+  if (action === 'edit-preset') {
+    if (upserts.length !== 1 || upserts[0]?.kind !== 'rpgPresets') return 'Preset edit needs one preset'
+    const slots = upserts[0].data.slots as Array<{ outfitId: string } | null>
+    if (slots.some((slot) => slot && !expectedKeys.includes(entityKey('rpgOutfits', slot.outfitId)))) {
+      return 'Preset edit needs versioned outfit dependencies'
+    }
+  }
+  if (action === 'start-chapter' && (upserts.filter((row) => row.kind === 'rpgCheckpoints').length !== 1 ||
+    !expectedKeys.includes(entityKey('rpgPresets', upserts.find((row) => row.kind === 'rpgCheckpoints')?.data.presetId as string)))) {
+    return 'Chapter start needs a versioned preset'
+  }
+  if (['begin-battle', 'takeover', 'battle-result', 'clear-chapter'].includes(action) &&
+    upserts.filter((row) => row.kind === 'rpgCheckpoints').length !== 1) return 'Command needs one checkpoint'
+  if (action === 'begin-battle') {
+    const data = upserts.find((row) => row.kind === 'rpgCheckpoints')!.data
+    if (!rpgRecord(data.frozenEntry) || !Array.isArray(data.frozenEntry.party)) return 'Battle entry lacks a frozen party'
+    if (data.frozenEntry.retryOrdinal === 0 &&
+      (!expectedKeys.includes(entityKey('rpgPresets', data.presetId as string)) ||
+        data.frozenEntry.party.some((member: unknown) => !rpgRecord(member) ||
+          !expectedKeys.includes(entityKey('rpgOutfits', member.outfitId as string))))) {
+      return 'Battle entry needs versioned preset and all five outfits'
+    }
+  }
+  if (action === 'battle-result' && appends.filter((entry) => entry.kind === 'rpgResults').length !== 1) return 'Battle result evidence required'
+  if (action === 'promote' && appends.filter((entry) => entry.kind === 'rpgPromotions').length !== 1) return 'Promotion evidence required'
+  if (action === 'promote' && (upserts.length !== 1 || upserts[0]?.kind !== 'rpgOutfits')) return 'Promotion needs one outfit'
+  return { schemaVersion: 1, commandId: body.commandId, action, expected, upserts, appends }
+}
+
+function stable(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stable)
+  if (rpgRecord(value)) return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]))
+  return value
+}
+export function rpgPayloadHash(request: RpgCommandRequest): string {
+  return createHash('sha256').update(JSON.stringify(stable(request))).digest('hex')
+}
+
+export function rpgEncounterSeed(uid: string, presetId: string, chapterId: string, attemptIndex: number, nodeId: string): string {
+  const identity = `${uid}:rpg-entry:${presetId}:${chapterId}:${attemptIndex}:${nodeId}`
+  let hash = 2166136261
+  for (let index = 0; index < identity.length; index += 1) {
+    hash ^= identity.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+function checkpoint(request: RpgCommandRequest): Record<string, unknown> | null {
+  return request.upserts.find((row) => row.kind === 'rpgCheckpoints')?.data ?? null
+}
+function currentCheckpoint(request: RpgCommandRequest, existing: Map<string, EntityRecord>): Record<string, unknown> | null {
+  const row = request.upserts.find((item) => item.kind === 'rpgCheckpoints')
+  return row ? existing.get(entityKey(row.kind, row.id))?.data ?? null : null
+}
+function sameFrozen(previous: Record<string, unknown>, next: Record<string, unknown>, ignored: string[] = []): boolean {
+  const a = { ...previous }
+  const b = { ...next }
+  for (const key of ignored) { delete a[key]; delete b[key] }
+  return isDeepStrictEqual(a, b)
+}
+
+function semanticError(uid: string, request: RpgCommandRequest, existing: Map<string, EntityRecord>): string | null {
+  const next = checkpoint(request)
+  const current = currentCheckpoint(request, existing)
+  if (request.action === 'enroll') {
+    const row = request.upserts[0]!
+    if (existing.has(entityKey(row.kind, row.id))) return 'RPG outfit is already enrolled'
+    const owned = existing.get(entityKey('umas', row.id))
+    if (!owned || owned.deleted) return 'Outfit is not owned'
+    const profile = row.data.profile as Record<string, unknown>
+    if (profile.tier !== 1 || profile.level !== 1 || profile.exp !== 0 ||
+      !Array.isArray(profile.tree) || profile.tree.length !== 0 ||
+      !Array.isArray(profile.legacy) || profile.legacy.length !== 0 || row.data.projectionRevision !== 0) {
+      return 'Enrollment must begin at RPG Tier 1 Lv1'
+    }
+  }
+  if (request.action === 'edit-preset') {
+    const row = request.upserts[0]!
+    const slots = row.data.slots as Array<Record<string, unknown> | null>
+    if (slots.some((slot) => {
+      if (!slot) return false
+      const owned = existing.get(entityKey('rpgOutfits', slot.outfitId as string))
+      const profile = owned?.data.profile
+      return !owned || owned.deleted || !rpgRecord(profile) || !rpgRecord(profile.affinities) ||
+        !profile.affinities[slot.signature as string]
+    })) return 'Preset contains an unowned or ineligible outfit'
+  }
+  if (request.action === 'start-chapter') {
+    if (!next || (current && current.status !== 'cleared') || next.status !== 'at-checkpoint' || next.frozenEntry !== null) {
+      return 'Chapter start is not a fresh checkpoint'
+    }
+    if (current ? next.attemptIndex !== (current.attemptIndex as number) + 1 ||
+      next.revision !== (current.revision as number) + 1 : next.attemptIndex !== 1 || next.revision !== 0) {
+      return 'Chapter attempt or revision is not the next value'
+    }
+    const presetId = next.presetId as string
+    const party = existing.get(entityKey('rpgPresets', presetId))?.data
+    if (!party || !Array.isArray(party.slots) || party.slots.some((slot) => slot === null)) return 'Chapter needs a complete preset'
+    if (party.slots.some((slot) => !rpgRecord(slot) || !request.expected.some((row) =>
+      row.kind === 'rpgOutfits' && row.id === slot.outfitId))) return 'Chapter needs versioned party outfits'
+  }
+  if (request.action === 'begin-battle') {
+    if (!current || !next || current.status !== 'at-checkpoint' || next.status !== 'in-battle' ||
+      next.revision !== (current.revision as number) + 1 || !rpgRecord(next.frozenEntry) ||
+      !sameFrozen(current, next, ['revision', 'status', 'frozenEntry'])) return 'Battle must begin at checkpoint'
+    const frozen = next.frozenEntry
+    if (current.frozenEntry === null) {
+      const party = existing.get(entityKey('rpgPresets', next.presetId as string))?.data
+      if (!party || !Array.isArray(party.slots) || party.slots.some((slot) => !rpgRecord(slot)) ||
+        !isDeepStrictEqual(party.slots.map((slot: Record<string, unknown>) => slot.outfitId),
+          (frozen.party as Array<{ outfitId: string }>).map((member) => member.outfitId)) ||
+        party.slots.some((slot: Record<string, unknown>, index: number) => {
+          const member = (frozen.party as Array<{ signature: string }>)[index]
+          return slot.signature !== member?.signature ||
+            !existing.has(entityKey('rpgOutfits', slot.outfitId as string))
+        })) return 'Frozen party differs from owned preset'
+    }
+    if (frozen.seed !== rpgEncounterSeed(uid, next.presetId as string, next.chapterId as string,
+      next.attemptIndex as number, frozen.nodeId as string) ||
+      (current.frozenEntry === null ? (frozen.retryOrdinal !== 0 || frozen.leaseRevision !== 0) :
+        !isDeepStrictEqual(current.frozenEntry, frozen))) {
+      return 'Encounter identity or seed changed'
+    }
+  }
+  if (request.action === 'takeover') {
+    if (!current || !next || current.status !== 'in-battle' || next.status !== 'in-battle' ||
+      next.revision !== (current.revision as number) + 1 || !rpgRecord(current.frozenEntry) ||
+      !rpgRecord(next.frozenEntry) ||
+      next.frozenEntry.leaseRevision !== (current.frozenEntry.leaseRevision as number) + 1 ||
+      !sameFrozen(current.frozenEntry, next.frozenEntry, ['leaseRevision']) ||
+      !sameFrozen(current, next, ['revision', 'frozenEntry'])) return 'Takeover changed frozen encounter'
+  }
+  if (request.action === 'battle-result') {
+    const evidence = request.appends.find((row) => row.kind === 'rpgResults')?.data
+    if (!current || !next || current.status !== 'in-battle' || !rpgRecord(current.frozenEntry) ||
+      !rpgRecord(next.frozenEntry) || !evidence || evidence.entryId !== current.frozenEntry.entryId ||
+      evidence.retryOrdinal !== current.frozenEntry.retryOrdinal || evidence.contentHash !== current.contentHash ||
+      evidence.contentVersion !== current.contentVersion ||
+      next.revision !== (current.revision as number) + 1 ||
+      !sameFrozen(current, next, ['revision', 'status', 'frozenEntry']) ||
+      !Array.isArray(evidence.memberExp) ||
+      !isDeepStrictEqual((evidence.memberExp as Array<{ outfitId: string }>).map((member) => member.outfitId).sort(),
+        (current.frozenEntry.party as Array<{ outfitId: string }>).map((member) => member.outfitId).sort()) ||
+      !sameFrozen(current.frozenEntry, next.frozenEntry, evidence.outcome === 'loss' ? ['retryOrdinal'] : []) ||
+      next.status !== (evidence.outcome === 'win' ? 'pending-result' : 'at-checkpoint') ||
+      (evidence.outcome === 'loss' && next.frozenEntry.retryOrdinal !== (current.frozenEntry.retryOrdinal as number) + 1)) {
+      return 'Battle result does not match an open frozen entry'
+    }
+  }
+  if (request.action === 'clear-chapter' && (!current || !next || current.status !== 'pending-result' || next.status !== 'cleared' ||
+    next.revision !== (current.revision as number) + 1 || !sameFrozen(current, next, ['revision', 'status']))) {
+    return 'Chapter clear requires a completed battle'
+  }
+  if ((request.action === 'clear-chapter' || request.action === 'spend-inspiration') &&
+    request.upserts.some((row) => row.kind === 'items') && !request.appends.some((row) => row.kind === 'itemLedger')) {
+    return 'Item change requires its ledger evidence'
+  }
+  if (request.action === 'promote') {
+    const row = request.upserts[0]!
+    const before = existing.get(entityKey(row.kind, row.id))?.data
+    const after = row.data
+    const evidence = request.appends[0]?.data
+    if (!before || !rpgRecord(before.profile) || !rpgRecord(after.profile) || !evidence ||
+      before.profile.level !== 50 || after.profile.tier !== (before.profile.tier as number) + 1 ||
+      after.profile.outfitId !== before.profile.outfitId ||
+      after.projectionRevision !== (before.projectionRevision as number) + 1 ||
+      !sameFrozen(before.profile, after.profile, ['tier', 'level', 'exp', 'tree', 'legacy']) ||
+      evidence.outfitId !== row.id || evidence.fromTier !== before.profile.tier ||
+      evidence.toTier !== after.profile.tier || !isDeepStrictEqual(evidence.archive, before.profile.tree)) {
+      return 'Promotion does not match a mastered Lv50 outfit'
+    }
+  }
+  return null
+}
+
+/** Pure decision: repositories read all dependencies first, then apply every write or none. */
+export function resolveRpgCommand(uid: string, request: RpgCommandRequest, entities: Map<string, EntityRecord>,
+  logs: Map<string, LogRecord>, now: number): { response: RpgCommandResponse; writes: EntityRecord[]; appends: LogRecord[] } {
+  const receiptKey = logKey('rpgReceipts', request.commandId)
+  const previousReceipt = logs.get(receiptKey)
+  const payloadHash = rpgPayloadHash(request)
+  if (previousReceipt) {
+    if (previousReceipt.data.payloadHash !== payloadHash) return { response: { status: 'rejected', reason: 'Command id reused with different payload' }, writes: [], appends: [] }
+    const receipt = previousReceipt.data as unknown as RpgReceipt
+    return { response: { status: 'duplicate', receipt, entities: [], logs: [] }, writes: [], appends: [] }
+  }
+  const stale = request.expected.some((row) => (entities.get(entityKey(row.kind, row.id))?.version ?? 0) !== row.version)
+  if (stale) return { response: { status: 'conflict', authoritative: request.expected.map((row) => ({ kind: row.kind,
+    id: row.id, record: entities.get(entityKey(row.kind, row.id)) ?? null })) }, writes: [], appends: [] }
+  for (const append of request.appends) {
+    if (logs.has(logKey(append.kind, append.id))) return { response: { status: 'rejected', reason: `Log id already claimed: ${append.kind}/${append.id}` }, writes: [], appends: [] }
+  }
+  const error = semanticError(uid, request, entities)
+  if (error) return { response: { status: 'rejected', reason: error }, writes: [], appends: [] }
+  const writes = request.upserts.map((row): EntityRecord => ({ kind: row.kind, id: row.id,
+    version: (entities.get(entityKey(row.kind, row.id))?.version ?? 0) + 1,
+    data: row.data, deleted: false, updatedAt: now }))
+  const appends = request.appends.map((row): LogRecord => ({ kind: row.kind, id: row.id, data: row.data, createdAt: row.createdAt }))
+  const receipt: RpgReceipt = { schemaVersion: 1, commandId: request.commandId, action: request.action, payloadHash,
+    applied: writes.map((row) => ({ kind: row.kind, id: row.id, version: row.version })),
+    appendedIds: appends.map((row) => row.id), createdAt: now }
+  appends.push({ kind: 'rpgReceipts', id: request.commandId, data: receipt as unknown as Record<string, unknown>, createdAt: now })
+  return { response: { status: 'applied', receipt, entities: writes, logs: appends }, writes, appends }
+}
