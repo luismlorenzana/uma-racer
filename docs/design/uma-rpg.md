@@ -1,6 +1,6 @@
 # Global Uma RPG — design and implementation boundaries
 
-> **Status: pure progression and combat rules implemented; mode not playable.** The owner has fixed the mode's global scope,
+> **Status: progression, combat, save and internal party setup implemented; mode not playable.** The owner has fixed the mode's global scope,
 > outfit-specific RPG levels,
 > Speed-as-offense mapping, a permanently chosen running-style class, visible weapon/element identity, and
 > inventory-only destination for its future rewards. Level 50 is a repeatable **class-promotion point**, not a final
@@ -417,6 +417,17 @@ same zero-reward retry path. Rejected commands and displaced local journals rema
 automatically rebased attempts. T096 will add EXP to the same grouped result, and T098 will add token movement to the
 chapter-clear group; neither reward is claimed by the T092 host.
 
+T093 adds a lazy, **internal-only** `/rpg` setup route (D232). It projects five named presets even when none has
+been saved, but creates a synchronized preset row only after an edit is acknowledged. Owned outfits come from the
+existing Uma save and verified private content; enrollment freezes the source template's base stats, growths,
+aptitudes and manifest version after explicit class/weapon confirmation. An A running style is required; no mutable
+racing preference is consulted. Preset edits validate distinct enrolled outfits, eligible active signatures and
+learned/slot-bounded loadouts before submitting a grouped command with expected preset and outfit versions. An
+offline edit remains visibly pending and cannot masquerade as the saved preset; a stale revision requires an explicit
+RPG-only account refresh, which leaves unrelated queued saves untouched.
+Partial parties stay editable but cannot launch. Chapter selection is explicitly unavailable until its task;
+Home still has no RPG link and no synthetic production encounter.
+
 ## Chapters, content and reward boundary
 
 - A chapter selects one of the existing scenarios as theme/reward destination. Every preset may launch any chapter;
@@ -464,6 +475,10 @@ Items links. The party setup uses five legible cards rather than five tiny portr
 portrait, including map/party/combat/result variants, carries small visible overlays for its equipped weapon and
 active element**: glyph plus short text/accessible label, with a toggleable affinity legend. The overlays cannot cover
 the face or rely on two similar colors. The RPG profile makes outfit identity and RPG Level unambiguous.
+Until chapter maps exist, the internal setup hub shows five party cards and an unavailable chapter action instead
+of a fabricated resume. `RpgPortrait` is shared by roster/profile/party and is the presentation handoff for future
+map, battle and result screens; it uses private bust/icon art with an honest missing-art state and distinct weapon
+and element glyph-plus-text overlays. The roster and party editor expose a toggleable text advantage/affinity legend.
 
 The battle stage keeps the current target, HP/MP, intent and weakness visible; actions occupy the thumb zone with
 44 pt targets and `pb-safe`. The active fight does not page-scroll. Map and roster menus may scroll normally. Use
