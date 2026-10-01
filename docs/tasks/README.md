@@ -15,6 +15,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078 and T079 landed; T080 next, then T081 |
 | [M027 — Training Rebalance](M027-training-rebalance.md) | T087 linear levels and EXP bank ✅ · [T088 spend Level-Up Tickets](T088-spend-level-up-tickets.md) | **In progress** · T087 landed; T088 next. Independent of M024 |
+| [M028 — Global Uma RPG](M028-uma-rpg.md) | [T089–T099](M028-uma-rpg.md#delivery-sequence) | **Specified, not implemented** · rules/save first, then a synthetic playable loop, private content and release |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
 
@@ -28,7 +29,7 @@ The owner's device checks (every milestone's, including Spark Rival Circuit's ph
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M028 and T089.** Numbers are never reused, so a decision that mentions T014 always means the same
+**Next free numbers: M029 and T100.** Numbers are never reused, so a decision that mentions T014 always means the same
 work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed

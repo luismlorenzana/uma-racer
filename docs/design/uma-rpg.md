@@ -24,8 +24,10 @@ Home → RPG hub → choose a party preset → choose any chapter → preview ro
 
 - The hub opens directly on the player's saved RPG state; it does not ask for a featured Uma first. Its internal
   navigation is **Map · Parties · Roster · Items/Records** (names provisional). No sixth bottom tab.
-- Five named presets are account-wide quick configurations. A preset saves member order, signature element and RPG
-  skill loadout for each slot; an outfit's style and current weapon path live on its RPG profile, not independently
+- Five named presets are account-wide quick configurations. A preset saves member order, active signature element and RPG
+  skill loadout for each slot; enrollment saves an outfit's initial signature as the default when adding it to a
+  preset. A preset may choose a different eligible signature without changing the outfit's locked class or weapon.
+  An outfit's style and current weapon path live on its RPG profile, not independently
   chosen by each preset. A chapter requires **five filled slots**. An empty or partial preset is editable but cannot
   launch. The first-pass proposal disallows the exact same outfit twice in a party; two different outfits of one
   character remain a content/identity validation detail, not a reason to change the five-slot rule.
@@ -170,8 +172,9 @@ loadouts, not independent copies of classes. No role is mandatory in a party.
 | **Late — Wizard or Cleric** | Magical offense **or** magical support | **Wizard staff** or **Cleric staff** | Wizard has elemental burst/area control; Cleric has offensive buffs and healing with a modest magical attack. |
 | **End — Tome Mage** | Magical-only specialist | **Magic tome** | Spell chaining, marks and elemental finishers. No physical-damage actions. |
 
-At setup, the outfit chooses **one signature element from its permitted affinities**. It determines the portrait
-overlay and specialization, but never prevents equipping other eligible elements. The owner's **10% specialization
+At enrollment, the outfit chooses **one default signature element from its permitted affinities**. Each preset slot
+may select its active signature from those same eligible elements. It determines the portrait overlay and
+specialization for that party, but never prevents equipping other eligible elements. The owner's **10% specialization
 bonus** is the starting balance candidate for the selected class weapon and signature element. It must not
 double-count one elemental action. The exact affected outcome, rounding and interaction with advantage and a physical
 elemental rider need one focused combat check and a pinning test before implementation. Two A styles do not grant two
@@ -353,24 +356,9 @@ second reward wallet. **Today**, the implemented Inspiration lineage branches st
 owned by an Inspiration/inventory bridge with save migration; merely granting tokens in the RPG must not leave them
 unspendable or silently alter live Training Level rules.
 
-The proposed sequence is deliberately **not yet numbered into implementation tasks** while concurrent work is in
-flight and the remaining technical/tuning gates below need validation:
-
-1. **Rules and save contract:** pin five-member eligibility, aptitude rules, lightly test level/stat and tree curves,
-   define combat math, chapter checkpoints, cross-device takeover and item identity with synthetic fixtures.
-2. **RPG roster and presets:** global hub, five named presets, outfit profiles, class/weapon/element setup and portrait
-   overlays, with complete reload/sync tests.
-3. **Battle vertical slice:** pure deterministic engine, synthetic character-team fixtures exercising guard, caster,
-   support, heal and weakness tactics; phone battle UI, resume and idempotent result.
-4. **Map and private content:** branch/reconverge chapter engine, playable PriConne opponent packs, art import and
-   validation, level warnings, telegraphed boss phases, guide and readable battle previews. Production content is a
-   separate private publish.
-5. **Progression and inventory:** tier-local EXP/level-up reveal, branching elemental trees and promotion carry-over,
-   preset checkpoint resume, scenario token grant into global inventory, idempotent conflict/replay checks and the
-   Inspiration bridge that replaces TL gates without relocking already-open branches.
-6. **Device acceptance:** 390×844 and small-iPhone screenshots, VoiceOver/reduced-motion, background/reload/offline,
-   long chapter, party switching, clear/retry and owner physical-iPhone sign-off.
-
-The full milestone should get task IDs and one PR per delivery slice only after those implementation gates are scoped.
-Implementation must then update this design doc, append decisions, pin each numeric rule in
-`packages/domain/src/domain.test.ts`, and run lint, test, build and a dedicated RPG simulator.
+The implementation plan is [M028 — Global Uma RPG](../tasks/M028-uma-rpg.md), split into T089–T099. Its first PRs
+settle the remaining balance and persistence contracts with synthetic fixtures; later PRs build the battle, chapter,
+progression, private-content and Inspiration bridge. The Home entry remains hidden until a real chapter can be played
+and rewarded end to end. Each task updates this design when a candidate rule becomes settled, appends a decision for
+new rules, pins changed numbers in `packages/domain/src/domain.test.ts`, and runs lint, test, build and relevant RPG
+simulations. Original-game and PriConne content stays private throughout.
