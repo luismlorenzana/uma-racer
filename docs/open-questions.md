@@ -8,7 +8,7 @@ coefficients, depth gates, active-slot count, private
 PriConne content selection and phone layout are **implementation/balance checks**, not unanswered owner choices;
 [M028](tasks/M028-uma-rpg.md) names the responsible task and its acceptance gate for each. The planned RPG
 sync policy (D223) lets battle actions work offline but holds entry/result rewards as pending until a grouped
-commit is acknowledged; the owner may revise that tradeoff before T090. Draft numbers across the design docs are tuning values
+commit is acknowledged; T090–T092 now implement that boundary, and any later change needs a new decision. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
 
 ## Needs you (owner actions, not design questions)

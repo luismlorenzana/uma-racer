@@ -42,6 +42,7 @@ import Dexie, { type EntityTable, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
 import type { MinigameRunSnapshotV1, ReplayJournalV1 } from './minigame-journal'
 import type { RunTarget, StoredRunOutcome, StoredRunReward } from './minigame-host'
+import type { CombatAction } from '@racer/domain'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
 // outbox marker in one transaction before Zustand publishes it.
@@ -96,6 +97,35 @@ export interface PendingRpgCommandRow {
   status: 'pending' | 'conflict'
   queuedAt: number
   conflict: unknown | null
+  /** A result cannot be sent until its entry/takeover receipt is installed. */
+  dependsOn?: string | null
+}
+
+/** Device-local RPG battle replay; never joins the cloud save or ordinary outbox. */
+export interface RpgBattleJournalRow {
+  id: string
+  entryId: string
+  retryOrdinal: number
+  engineVersion: 1
+  frozenHash: string
+  actions: CombatAction[]
+  stateHash: string
+  terminal: 'open' | 'win' | 'loss' | 'abandoned'
+  commitStatus: 'none' | 'pending' | 'accepted' | 'conflict'
+  createdAt: number
+  updatedAt: number
+}
+
+/** Ownership marker survives a missing/corrupt journal so another device still needs takeover. */
+export interface RpgBattleClaimRow {
+  id: string
+  leaseRevision: number
+}
+
+export interface RpgBattleArchiveRow {
+  id: string
+  journal: RpgBattleJournalRow
+  reason: 'takeover'
 }
 
 interface LegacyMinigameRunRow extends Omit<MinigameRunRow, 'journal' | 'snapshot'> {
@@ -153,6 +183,9 @@ class RacerDb extends Dexie {
   rpgPromotions!: EntityTable<LogRow<RpgPromotionEvidenceV1>, 'id'>
   rpgReceipts!: EntityTable<LogRow<RpgCommandReceiptV1>, 'id'>
   pendingRpgCommands!: EntityTable<PendingRpgCommandRow, 'id'>
+  rpgBattleJournals!: EntityTable<RpgBattleJournalRow, 'id'>
+  rpgBattleClaims!: EntityTable<RpgBattleClaimRow, 'id'>
+  rpgBattleArchives!: EntityTable<RpgBattleArchiveRow, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
   /** Device-local album preferences (D112). Never synced, never part of the save. */
   albumPrefs!: EntityTable<AlbumPrefs, 'id'>
@@ -186,6 +219,11 @@ class RacerDb extends Dexie {
       rpgOutfits: 'id', rpgPresets: 'id', rpgCheckpoints: 'id',
       rpgResults: 'id, createdAt', rpgPromotions: 'id, createdAt', rpgReceipts: 'id, createdAt',
       pendingRpgCommands: 'id, status, queuedAt',
+    }
+    const storesWithBattleJournal = { ...storesWithRpg,
+      rpgBattleJournals: 'id, entryId, [entryId+retryOrdinal]',
+      rpgBattleClaims: 'id',
+      rpgBattleArchives: 'id',
     }
     this.version(1).stores(stores)
     this.version(2).stores(stores).upgrade(async (tx: Transaction) => {
@@ -316,6 +354,7 @@ class RacerDb extends Dexie {
     this.version(17).stores(storesWithFarm).upgrade(walkRowsToCurrent)
     // Additive RPG state and device-local pending command queue. No enrollment is synthesized.
     this.version(18).stores(storesWithRpg)
+    this.version(19).stores(storesWithBattleJournal)
   }
 }
 

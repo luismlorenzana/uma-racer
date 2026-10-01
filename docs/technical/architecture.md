@@ -111,6 +111,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   queue. It creates no enrollment. An older cloud snapshot leaves existing local RPG rows in place; a newer copy wins
   by version, and equal-version divergence stops adoption visibly. Normal save v11 profile/Uma/Farm/Items rows are not
   migrated by this additive schema change.
+- Dexie v19 adds only device-local RPG battle journals, lease markers and displaced-journal archives. The journal is
+  keyed by frozen entry and retry ordinal, holds engine-versioned actions plus a replay hash, and never syncs. A
+  missing/corrupt journal requires an explicit same-entry restart; a second device requires an acknowledged lease
+  takeover before it can restart that frozen entry. No save-v11 row or RPG cloud schema changes in this migration.
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
   duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
@@ -179,6 +183,11 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   expected-version grouped resolver in one transaction; stale groups write no entity, evidence or receipt. A durable
   receipt keyed by command id makes identical retries duplicate-safe. The device queue projects no RPG reward until
   acknowledgement; a conflict remains recorded for explicit resolution rather than automatic rebase.
+- The web `RpgBattleHost` queues one version-checked entry, replays local actions through the pure combat engine,
+  and queues a terminal result only after its replay hash agrees. A result queued while entry is offline depends on
+  the entry receipt; rejected entry marks the dependent result conflicted without sending it. Accepted result evidence
+  is the only spendable outcome, while rejected journals remain on device for diagnosis. The frozen combat input is
+  key/enum-dictionary encoded and versioned inside the checkpoint's bounded `enemyKitJson`; it is not re-read from live content.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
@@ -263,8 +272,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 The Global Uma RPG has a separate [implementation contract](uma-rpg-implementation.md). M028 does **not**
 embed per-outfit RPG levels in `UmaSave.scenarios` or send its reward-bearing result as ordinary unrelated sync
 upserts/appends: that path can append a log when a related entity conflicts. It adds per-outfit, per-preset and
-per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090 has landed the versioned rows,
-Dexie v18 and transport; the action journal, UI, combat and actual reward rules remain later M028 work. The RPG
+per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090–T092 have landed the versioned rows,
+Dexie v19, transport, pure combat and device-local journal/host; the UI and actual reward rules remain later M028 work. The RPG
 is not exposed from Home yet.
 
 ```text
