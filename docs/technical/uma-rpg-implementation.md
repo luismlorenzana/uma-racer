@@ -1,6 +1,6 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** T089 rules, T090 save transport and T091 pure combat implemented; the RPG is not playable or Home-visible yet. Read [the design](../design/uma-rpg.md) for product rules and
+**Status:** T089 rules, T090 save transport, T091 pure combat and T092 battle journal/host implemented; the RPG is not playable or Home-visible yet. Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
 left ambiguous. T089's progression coefficients are pinned in D227 and T091's combat coefficients in D229; T096
 must simulate its remaining reward candidates, then update the design, `packages/domain/src/domain.test.ts` and
@@ -8,7 +8,7 @@ append-only decisions log.
 
 ## Existing seams and the sync hazard
 
-- `packages/domain/src/save.ts` remains save v11; `apps/web/src/game/db.ts` is Dexie v18. T090 added separate
+- `packages/domain/src/save.ts` remains save v11; `apps/web/src/game/db.ts` is Dexie v19. T090 added separate
   `rpgOutfits`, `rpgPresets`, `rpgCheckpoints` entities and `rpgResults`, `rpgPromotions`, `rpgReceipts` logs.
   The production API parses those shapes independently of `@racer/domain`.
 - `apps/api/src/save/firestore-save.repository.ts` and `local-save.repository.ts` currently resolve each entity
@@ -47,6 +47,13 @@ JSON characters and 20 grouped operations (D228; pinned in `domain.test.ts` and 
 chapter definitions in mutable account rows: the checkpoint
 stores its immutable version/hash and the frozen **entered encounter**; T097's content loader retains old packs needed
 for open chapters. A missing old pack is a visible recovery error, not permission to substitute new enemies.
+T092 added Dexie v19's local journal, claim and archive tables without altering that wire schema. The complete
+combat input is frozen in `enemyKitJson` using `rpg-combat-kit-v1` key/enum-dictionary encoding; the host validates it
+against the checkpoint's party, seed and content version before replay. Each journal records the combat engine version,
+frozen-kit SHA-256, ordered actions, current engine hash and terminal/commit markers. A queued result depends on its
+entry acknowledgement, so a rejected parent cannot send a result. The local lease marker distinguishes a
+missing journal on the owning device from a second device that must take over. Displaced journals are archived;
+conflicted commands and their action history are not silently reissued.
 
 ## Command state machine
 
@@ -70,7 +77,7 @@ with fresh seed, content, or reward id. A conflicting terminal result is **not**
 
 `begin` and `commit` may queue offline, but **only acknowledged state is spendable**. The UI must show Pending sync,
 Conflict, Frozen content unavailable and Accepted states distinctly. T090 owns grouped transport/receipt semantics;
-T092 owns the local journal; T096 owns EXP integration; T098 extends the grouped command to the Item sink. The local
+T092 owns the implemented local journal and host; T096 owns EXP integration; T098 extends the grouped command to the Item sink. The local
 JSON API and Firestore repository must agree on acceptance, duplicate and conflict behavior.
 As elsewhere in this personal game, the server validates wire shape, ownership, expected versions and command
 identity; the **client** checks combat legality and replay hash with the pure engine. This does not require the API to

@@ -404,6 +404,19 @@ rows merely because it predates the feature. The current wire limits are five pr
 is FNV-1a over account, preset, chapter, attempt and node; loss retry changes only retry ordinal/result id, and
 takeover changes only lease/revision. These are transport bounds, not chapter balance values.
 
+T092's battle host now makes that boundary operational without exposing the mode yet. Dexie v19 holds an engine-v1
+action journal keyed by entry id and retry ordinal, a local lease marker and displaced-journal history. A versioned,
+key/enum-dictionary frozen combat kit contains the complete input within the existing 16,384-character wire bound; the
+screen will animate its deterministic reducer rather than author actions or outcomes. Every accepted action appends
+under an expected count, and reload replays the entire prefix and checks its engine hash before enabling controls.
+A missing or corrupt local journal requires an explicit restart of the *same* entry; a different device must first
+take over its lease. The host holds an offline entry/result as Pending, never projects EXP or map progress, and submits
+terminal evidence only after replay agrees. The wire's 64-character result digest is SHA-256 of the engine's tagged
+state hash. An accepted loss increments the retry ordinal but preserves seed, kit and party; abandon follows the
+same zero-reward retry path. Rejected commands and displaced local journals remain recoverable history, not
+automatically rebased attempts. T096 will add EXP to the same grouped result, and T098 will add token movement to the
+chapter-clear group; neither reward is claimed by the T092 host.
+
 ## Chapters, content and reward boundary
 
 - A chapter selects one of the existing scenarios as theme/reward destination. Every preset may launch any chapter;

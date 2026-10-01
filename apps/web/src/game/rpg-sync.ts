@@ -4,15 +4,17 @@ import { parseRpgCommandResponseOrThrow, parseSaveSnapshotOrThrow,
 import { saveApi } from '../api/client'
 import { db } from './db'
 
-export async function enqueueRpgCommand(body: RpgCommandRequest, now: number): Promise<void> {
+export async function enqueueRpgCommand(body: RpgCommandRequest, now: number, dependsOn: string | null = null): Promise<void> {
   if (body.schemaVersion !== 1 || !/^[A-Za-z0-9_.:-]{1,120}$/.test(body.commandId) ||
     !Number.isSafeInteger(now) || now < 0) throw new Error('Invalid RPG command queue entry')
   const existing = await db.pendingRpgCommands.get(body.commandId)
   if (existing) {
-    if (JSON.stringify(existing.body) !== JSON.stringify(body)) throw new Error('RPG command id already queued with another payload')
+    if (JSON.stringify(existing.body) !== JSON.stringify(body) || (existing.dependsOn ?? null) !== dependsOn) {
+      throw new Error('RPG command id already queued with another payload or dependency')
+    }
     return
   }
-  await db.pendingRpgCommands.add({ id: body.commandId, body, status: 'pending', queuedAt: now, conflict: null })
+  await db.pendingRpgCommands.add({ id: body.commandId, body, status: 'pending', queuedAt: now, conflict: null, dependsOn })
 }
 
 const entityTables = [db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.umas, db.items]
@@ -54,7 +56,18 @@ function rowsForDuplicate(snapshot: { entities: EntityRecord[]; logs: LogRecord[
 
 /** Returns true only after one command's server-acknowledged rows are locally installed. */
 export async function flushOneRpgCommand(): Promise<boolean> {
-  const row = await db.pendingRpgCommands.orderBy('queuedAt').filter((candidate) => candidate.status === 'pending').first()
+  const pending = await db.pendingRpgCommands.orderBy('queuedAt').filter((candidate) => candidate.status === 'pending').toArray()
+  let row: typeof pending[number] | undefined
+  for (const candidate of pending) {
+    const dependency = candidate.dependsOn ? await db.pendingRpgCommands.get(candidate.dependsOn) : null
+    if (dependency?.status === 'conflict') {
+      await db.pendingRpgCommands.update(candidate.id, { status: 'conflict', conflict: dependency.conflict })
+      continue
+    }
+    if (dependency) continue
+    row = candidate
+    break
+  }
   if (!row) return false
   const body = row.body as RpgCommandRequest
   const response = parseRpgCommandResponseOrThrow(await saveApi.rpgCommand(body), row.id)

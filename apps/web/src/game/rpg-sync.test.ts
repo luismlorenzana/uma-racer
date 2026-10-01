@@ -33,7 +33,7 @@ describe('RPG IndexedDB save and pending commands', () => {
   afterEach(() => { vi.restoreAllMocks(); db.close() })
 
   it('opens the additive current schema without inventing RPG enrollments or changing an older profile', async () => {
-    expect(db.verno).toBe(18)
+    expect(db.verno).toBe(19)
     expect(await db.rpgOutfits.count()).toBe(0)
     expect(await db.rpgPresets.count()).toBe(0)
     expect(await db.pendingRpgCommands.count()).toBe(0)
@@ -41,7 +41,7 @@ describe('RPG IndexedDB save and pending commands', () => {
     expect((await readLocalSnapshot())?.profile.version).toBe(3)
   })
 
-  it('migrates a v17 database to v18 without fabricating enrollments or changing existing tables', async () => {
+  it('migrates a v17 database to v19 without fabricating enrollments or changing existing tables', async () => {
     db.close()
     await db.delete()
     const old = new Dexie('uma-racer')
@@ -55,11 +55,34 @@ describe('RPG IndexedDB save and pending commands', () => {
     await old.table('items').put({ id: 'synthetic-item', data: { itemId: 'synthetic-item', quantity: 2, updatedAt: 1 }, version: 3 })
     old.close()
     await db.open()
-    expect(db.verno).toBe(18)
+    expect(db.verno).toBe(19)
     expect((await db.profile.get('main'))?.version).toBe(7)
     expect((await db.items.get('synthetic-item'))?.version).toBe(3)
     expect(await db.rpgOutfits.count()).toBe(0)
     expect(await db.pendingRpgCommands.count()).toBe(0)
+  })
+
+  it('adds a device-only battle journal and lease marker to an existing v18 RPG save', async () => {
+    db.close()
+    await db.delete()
+    const old = new Dexie('uma-racer')
+    old.version(18).stores({ profile: 'id', umas: 'id', cards: 'id', badges: 'id',
+      raceResults: 'id, createdAt', ledger: 'id, createdAt', flairEvents: 'id, createdAt',
+      outbox: '++seq, [kind+id]', albumPrefs: 'id',
+      minigameRuns: 'id, targetKey, [targetKey+status], [targetKey+attemptIndex]',
+      farm: 'id', items: 'id', itemLedger: 'id, createdAt',
+      rpgOutfits: 'id', rpgPresets: 'id', rpgCheckpoints: 'id',
+      rpgResults: 'id, createdAt', rpgPromotions: 'id, createdAt', rpgReceipts: 'id, createdAt',
+      pendingRpgCommands: 'id, status, queuedAt' })
+    await old.open()
+    await old.table('rpgOutfits').put({ id: profile.outfitId, data: outfit, version: 3 })
+    old.close()
+    await db.open()
+    expect(db.verno).toBe(19)
+    expect((await db.rpgOutfits.get(profile.outfitId))?.version).toBe(3)
+    expect(await db.rpgBattleJournals.count()).toBe(0)
+    expect(await db.rpgBattleClaims.count()).toBe(0)
+    expect(await db.rpgBattleArchives.count()).toBe(0)
   })
 
   it('preserves locally acknowledged RPG rows when an older cloud snapshot lacks them', async () => {
