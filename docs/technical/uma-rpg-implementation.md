@@ -1,9 +1,10 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** T089 rules and T090 save transport implemented; the RPG is not playable or Home-visible yet. Read [the design](../design/uma-rpg.md) for product rules and
+**Status:** T089 rules, T090 save transport and T091 pure combat implemented; the RPG is not playable or Home-visible yet. Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
-left ambiguous. T089's progression coefficients are now pinned in D227; T091/T096 must simulate their own remaining
-combat/reward candidates, then update the design, `packages/domain/src/domain.test.ts` and append-only decisions log.
+left ambiguous. T089's progression coefficients are pinned in D227 and T091's combat coefficients in D229; T096
+must simulate its remaining reward candidates, then update the design, `packages/domain/src/domain.test.ts` and
+append-only decisions log.
 
 ## Existing seams and the sync hazard
 
@@ -77,12 +78,13 @@ run a second TypeScript combat engine or to trust unbounded/unparsed request bod
 
 ## Pure engine, content and results
 
-- T089 owns aptitude/enrollment projection, repeatable tier math and tree eligibility; T091 owns the battle reducer.
+- T089 owns aptitude/enrollment projection, repeatable tier math and tree eligibility; T091 owns the pure version-1
+  battle reducer under `packages/domain/src/rpg/combat/`, with frozen input, ordered cues and versioned state hashes.
   Public API shape: `createEncounter(frozenInputs)`, `applyAction(state, action)` and `replay(frozenInputs, actions)`
   returning state, ordered render cues, legality errors and a stable hash. No React, browser time, network or
   `Math.random` in either rule package. Renderer timing never changes the hash.
 - The skill catalog is composed from **six weapon paths × five element motifs × branch definitions**, with Attack
-  and Guard always available. T091 must publish a machine-readable catalog table: action id, channel, element,
+  and Guard always available. T091 publishes a machine-readable catalog table: action id, channel, element,
   target mask, MP, base/rider magnitude, status duration/stack rule and intent text. Each A/B/slot gate has a
   validation path. A single action has one element, not multiple simultaneous advantages. Front cannot use MATK;
   End cannot use ATK. T089 owns tree unlocks; T091 owns what an unlocked action actually does.
