@@ -135,12 +135,27 @@ import {
   RPG_ACTIVE_SLOT_GATES,
   RPG_MAX_LEGACY_SLOTS,
   RPG_SIGNATURE_MULTIPLIER,
+  RPG_SAVE_SCHEMA_VERSION,
+  RPG_PARTY_SIZE,
+  RPG_PRESET_COUNT,
+  RPG_MAX_TREE_NODES,
+  RPG_MAX_SELECTED_PATH,
+  RPG_MAX_ENEMY_KIT_CHARS,
+  RPG_MAX_GROUP_OPERATIONS,
   rpgExpToNext,
   projectRpgStats,
   rpgTreePointsEarned,
   rpgActiveSlots,
   rpgSignatureMagnitude,
 } from './index'
+
+describe('Global Uma RPG — D228 save wire pins', () => {
+  it('bounds synced account rows and grouped commands', () => {
+    expect([RPG_SAVE_SCHEMA_VERSION, RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_MAX_TREE_NODES,
+      RPG_MAX_SELECTED_PATH, RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_GROUP_OPERATIONS])
+      .toEqual([1, 5, 5, 25, 64, 16_384, 20])
+  })
+})
 
 describe('Global Uma RPG — D227 progression pins', () => {
   it('keeps a repeatable 50-level tier with a linear 25,480 EXP climb', () => {

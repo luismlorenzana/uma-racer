@@ -37,6 +37,7 @@ import {
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
+import { flushOneRpgCommand } from './rpg-sync'
 import { db } from './db'
 import {
   adoptServerSnapshot,
@@ -929,9 +930,12 @@ export class GameRuntime {
   }
 
   private async refreshPending(): Promise<void> {
-    const pending = await db.outbox.count()
+    const [ordinary, rpg, conflicts] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
+      db.pendingRpgCommands.where('status').equals('conflict').count()])
+    const pending = ordinary + rpg
     const online = typeof navigator === 'undefined' || navigator.onLine
-    setSyncState({ status: pending === 0 ? 'idle' : online ? 'pending' : 'offline', pending, error: null })
+    setSyncState({ status: !online && pending ? 'offline' : conflicts ? 'error' : pending ? 'pending' : 'idle', pending,
+      error: conflicts ? 'RPG command conflicted; progress was not applied' : null })
   }
 
   private async refreshBadges(): Promise<void> {
@@ -946,7 +950,8 @@ export class GameRuntime {
   async flush(): Promise<void> {
     if (this.flushing || !this.content || !useGame.getState().persistent) return
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      const pending = await db.outbox.count().catch(() => useGame.getState().sync.pending)
+      const pending = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count()])
+        .then(([ordinary, rpg]) => ordinary + rpg).catch(() => useGame.getState().sync.pending)
       setSyncState({ status: pending > 0 ? 'offline' : 'idle', pending })
       return
     }
@@ -955,7 +960,16 @@ export class GameRuntime {
     try {
       const batch = await db.outbox.orderBy('seq').limit(MAX_SYNC_OPERATIONS).toArray()
       if (batch.length === 0) {
-        setSyncState({ status: 'idle', pending: 0, error: null })
+        const accepted = await flushOneRpgCommand()
+        if (accepted) {
+          const local = await readLocalSnapshot()
+          if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
+        }
+        const [ordinary, rpg, actionable] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
+          db.pendingRpgCommands.where('status').equals('pending').count()])
+        setSyncState({ status: rpg > actionable ? 'error' : ordinary + rpg ? 'pending' : 'idle',
+          pending: ordinary + rpg, error: rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
+        if (actionable > 0) this.schedule(0)
         return
       }
       setSyncState({ status: 'syncing', error: null })
@@ -1009,16 +1023,21 @@ export class GameRuntime {
         await db.outbox.bulkDelete(acknowledged)
         await reconcileFarmProjectionsInTransaction(response.serverTime)
       })
+      await flushOneRpgCommand()
       if (generation !== this.generation) return
       const local = await readLocalSnapshot()
       if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
-      const pending = await db.outbox.count()
+      const [ordinary, rpg, actionable] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
+        db.pendingRpgCommands.where('status').equals('pending').count()])
+      const pending = ordinary + rpg
       const syncedAt = Date.now()
       rememberLastSync(syncedAt)
-      setSyncState({ status: pending ? 'pending' : 'idle', pending, lastSuccessAt: syncedAt, error: null })
-      if (pending) this.schedule(0)
+      setSyncState({ status: rpg > actionable ? 'error' : pending ? 'pending' : 'idle', pending,
+        lastSuccessAt: syncedAt, error: rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
+      if (ordinary + actionable > 0) this.schedule(0)
     } catch (error) {
-      const pending = await db.outbox.count().catch(() => useGame.getState().sync.pending)
+      const pending = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count()])
+        .then(([ordinary, rpg]) => ordinary + rpg).catch(() => useGame.getState().sync.pending)
       setSyncState({ status: typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'error', pending, error: error instanceof Error ? error.message : String(error) })
     } finally {
       this.flushing = false

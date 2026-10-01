@@ -107,6 +107,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   save adopted on a new device does the same from its raw rows), so an already-migrated profile never banks it twice.
   Startup settles a bank holding a full level into Level-Up Tickets (`exp-bank:settle:<now>`), where the item tables
   always exist; a Spark commit deposits and converts in its own transaction (`exp-bank:<runId>`).
+- Dexie v18 adds synchronized RPG outfit, preset, checkpoint and evidence tables plus a device-local pending-command
+  queue. It creates no enrollment. An older cloud snapshot leaves existing local RPG rows in place; a newer copy wins
+  by version, and equal-version divergence stops adoption visibly. Normal save v11 profile/Uma/Farm/Items rows are not
+  migrated by this additive schema change.
 - A focused domain validator resolves an ordered deck against tier slots, ownership, current content, stat-card type, era,
   duplicate ids, and duplicate characters. The editor, constellation, and racing use that same result. Saving re-reads the Uma
   and selected card rows, updates only the Uma plus its coalesced outbox row in one transaction, and treats an identical
@@ -171,6 +175,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   goal evaluation updates the active Journey and snapshots exact `completedGoalIds` on the result in that same transaction.
   A matching retry reads the existing result and pays/animates nothing twice; abandoning before the finish writes nothing.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
+- RPG writes use authenticated `POST /api/rpg/command`, not ordinary sync. Both local JSON and Firestore run the same
+  expected-version grouped resolver in one transaction; stale groups write no entity, evidence or receipt. A durable
+  receipt keyed by command id makes identical retries duplicate-safe. The device queue projects no RPG reward until
+  acknowledgement; a conflict remains recorded for explicit resolution rather than automatic rebase.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
@@ -252,11 +260,12 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ## Firestore data model (saves)
 
-The future Global Uma RPG has a separate [implementation contract](uma-rpg-implementation.md). M028 does **not**
+The Global Uma RPG has a separate [implementation contract](uma-rpg-implementation.md). M028 does **not**
 embed per-outfit RPG levels in `UmaSave.scenarios` or send its reward-bearing result as ordinary unrelated sync
 upserts/appends: that path can append a log when a related entity conflicts. It adds per-outfit, per-preset and
-per-preset/chapter rows and a conditional grouped checkpoint/reward command, plus a device-local action journal.
-This is planned architecture, not a claim that the collections exist in the deployed save.
+per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090 has landed the versioned rows,
+Dexie v18 and transport; the action journal, UI, combat and actual reward rules remain later M028 work. The RPG
+is not exposed from Home yet.
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
@@ -270,6 +279,12 @@ players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence
 players/{uid}/farm/main               Farm schema, six plots, persistent outfit assignments/progress and attempt counters
 players/{uid}/items/{itemId}          current global item-stack quantity and update time
 players/{uid}/itemLedger/{id}         append-only harvest/Produce/Level-Up Ticket movements and Farm-harvest XP evidence
+players/{uid}/rpgOutfits/{outfitId}    schema-v1 locked class, frozen enrollment inputs, tier EXP/tree, revision
+players/{uid}/rpgPresets/party-{1..5} schema-v1 ordered nullable five-slot parties and foreground chapter
+players/{uid}/rpgCheckpoints/{id}     schema-v1 per-preset/chapter progress and optional frozen entry
+players/{uid}/rpgResults/{id}         append-only accepted battle evidence
+players/{uid}/rpgPromotions/{id}      append-only prior-tier mastery evidence
+players/{uid}/rpgReceipts/{commandId} append-only grouped-command hash and applied-version receipt
 ```
 
 Firestore cannot store an array directly inside another array, and a race record's compiled skill conditions are one.

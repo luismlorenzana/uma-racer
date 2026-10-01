@@ -320,6 +320,18 @@ provisional reward. This is an explicit first-delivery limitation, not a hidden 
 disconnected devices can both commit the same encounter. The [implementation contract](../technical/uma-rpg-implementation.md)
 defines the command and replay boundary.
 
+The save/transport layer is now present (D228), while the RPG remains hidden until the full chapter ships. Each
+enrolled outfit, five-slot preset and preset/chapter checkpoint is a separate schema-v1 row; result, promotion and
+command receipts are append-only. One authenticated grouped command supplies a stable id, expected versions for every
+touched row, its proposed entity changes and evidence. The server accepts the whole group or none; an identical retry
+returns the original receipt, while an id reused with different bytes is rejected. The normal sync endpoint refuses
+RPG rows and logs. Dexie v18 holds acknowledged projections and a separate device-local pending queue: conflict or
+offline state leaves a command pending and grants nothing spendable. An older cloud snapshot cannot erase local RPG
+rows merely because it predates the feature. The current wire limits are five presets × five slots, 25 tree nodes,
+64 selected path entries, 16,384 characters of frozen enemy-kit JSON and 20 grouped operations. The encounter seed
+is FNV-1a over account, preset, chapter, attempt and node; loss retry changes only retry ordinal/result id, and
+takeover changes only lease/revision. These are transport bounds, not chapter balance values.
+
 ## Chapters, content and reward boundary
 
 - A chapter selects one of the existing scenarios as theme/reward destination. Every preset may launch any chapter;

@@ -25,6 +25,9 @@ import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitude
 import { FARM_SCHEMA_VERSION } from './farm/constants'
 import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry, type FarmCropId } from './farm/types'
 import { farmCropById } from './farm/catalog'
+import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt, parseRpgOutfitSave,
+  parseRpgPresetSave, parseRpgPromotionEvidence, parseRpgResultEvidence, rpgCheckpointId,
+  type RpgCommandAction, type RpgCommandReceiptV1 } from './rpg/save'
 
 export const SAVE_SCHEMA_VERSION = 11 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
@@ -331,9 +334,9 @@ export interface InitialSave {
   ledger: { id: string; data: LedgerEntry }[]
 }
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -379,6 +382,21 @@ export interface SyncResponse {
   appended: number
   serverTime: number
 }
+
+/** RPG mutations are never placed on the ordinary sync outbox. */
+export interface RpgCommandRequest {
+  schemaVersion: 1
+  commandId: string
+  action: RpgCommandAction
+  expected: Array<{ kind: EntityKind; id: string; version: number }>
+  upserts: Array<{ kind: EntityKind; id: string; data: Record<string, unknown> }>
+  appends: LogAppend[]
+}
+
+export type RpgCommandResponse =
+  | { status: 'applied' | 'duplicate'; receipt: RpgCommandReceiptV1; entities: EntityRecord[]; logs: LogRecord[] }
+  | { status: 'conflict'; authoritative: Array<{ kind: EntityKind; id: string; record: EntityRecord | null }> }
+  | { status: 'rejected'; reason: string }
 
 export interface SaveSnapshot {
   entities: EntityRecord[]
@@ -1677,6 +1695,9 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
   if (kind === 'badges') return parseBadgeState(value) as unknown as Record<string, unknown> | null
   if (kind === 'farm') return parseFarmState(value) as unknown as Record<string, unknown> | null
   if (kind === 'items') return parseInventoryStackData(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgOutfits') return parseRpgOutfitSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgPresets') return parseRpgPresetSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgCheckpoints') return parseRpgCheckpointSave(value) as unknown as Record<string, unknown> | null
   return parseGenericData(value)
 }
 
@@ -1685,6 +1706,9 @@ export function parseLogData(kind: LogKind, value: unknown): Record<string, unkn
   if (kind === 'raceResults') return parseRaceResultRecord(value) as unknown as Record<string, unknown> | null
   if (kind === 'flairEvents') return parseFlairEvent(value) as unknown as Record<string, unknown> | null
   if (kind === 'itemLedger') return parseItemLedgerEntry(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgResults') return parseRpgResultEvidence(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgPromotions') return parseRpgPromotionEvidence(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgReceipts') return parseRpgCommandReceipt(value) as unknown as Record<string, unknown> | null
   return parseGenericData(value)
 }
 
@@ -1704,6 +1728,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isObject(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
+    if (kind.startsWith('rpg')) return 'RPG rows require the grouped command endpoint'
     if (!isId(value.id)) return 'invalid entity id'
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
@@ -1723,6 +1748,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isObject(value)) return 'append must be an object'
     if (!LOG_KINDS.includes(value.kind as LogKind)) return `unknown log kind ${String(value.kind)}`
     const kind = value.kind as LogKind
+    if (kind.startsWith('rpg')) return 'RPG logs require the grouped command endpoint'
     if (!isId(value.id)) return 'invalid log id'
     const data = parseLogData(kind, value.data)
     if (!data) return `invalid ${kind} data`
@@ -1753,6 +1779,9 @@ function parseEntityRecord(value: unknown): EntityRecord | null {
   if ((kind === 'profile' && value.id !== 'main') || (kind === 'farm' && value.id !== 'main') ||
     ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
     (kind === 'items' && data.itemId !== value.id) ||
+    (kind === 'rpgOutfits' && (data.profile as Record<string, unknown>).outfitId !== value.id) ||
+    (kind === 'rpgPresets' && data.presetId !== value.id) ||
+    (kind === 'rpgCheckpoints' && value.id !== rpgCheckpointId(data.presetId as string, data.chapterId as string)) ||
     (kind === 'badges' && !badgeIdMatchesData(value.id, data))) return null
   return { kind, id: value.id, version: value.version, data, deleted: value.deleted, updatedAt: value.updatedAt }
 }
@@ -1764,6 +1793,9 @@ function parseLogRecord(value: unknown): LogRecord | null {
   if (kind === 'raceResults' && data && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) return null
   if (kind === 'flairEvents' && data && value.createdAt !== data.earnedAt) return null
   if (kind === 'itemLedger' && data && (value.id !== data.id || value.createdAt !== data.createdAt)) return null
+  if (kind === 'rpgResults' && data && (value.id !== data.resultId || value.createdAt !== data.createdAt)) return null
+  if (kind === 'rpgPromotions' && data && (value.id !== data.promotionId || value.createdAt !== data.createdAt)) return null
+  if (kind === 'rpgReceipts' && data && (value.id !== data.commandId || value.createdAt !== data.createdAt)) return null
   return data ? { kind, id: value.id, data, createdAt: value.createdAt } : null
 }
 
@@ -1793,6 +1825,10 @@ function assertSupportedProfileRecords(records: unknown): void {
     if (isObject(record) && record.kind === 'farm' && isObject(record.data) &&
       typeof record.data.schemaVersion === 'number' && record.data.schemaVersion > FARM_SCHEMA_VERSION) {
       throw new Error(`App update required for Farm schema ${String(record.data.schemaVersion)}`)
+    }
+    if (isObject(record) && typeof record.kind === 'string' && record.kind.startsWith('rpg') &&
+      isObject(record.data) && typeof record.data.schemaVersion === 'number' && record.data.schemaVersion > RPG_SAVE_SCHEMA_VERSION) {
+      throw new Error(`App update required for RPG schema ${String(record.data.schemaVersion)}`)
     }
   }
 }
@@ -1826,4 +1862,38 @@ export function parseSyncResponseOrThrow(value: unknown): SyncResponse {
   const response = parseSyncResponse(value)
   if (!response) throw new Error('Sync response is malformed')
   return response
+}
+
+export function parseRpgCommandResponseOrThrow(value: unknown, commandId: string): RpgCommandResponse {
+  if (!isObject(value)) throw new Error('RPG command response is malformed')
+  if (value.status === 'rejected' && typeof value.reason === 'string' && value.reason.length <= 200) {
+    return { status: 'rejected', reason: value.reason }
+  }
+  if (value.status === 'conflict' && Array.isArray(value.authoritative) && value.authoritative.length <= 20) {
+    const authoritative = value.authoritative.map((entry) => {
+      if (!isObject(entry) || !ENTITY_KINDS.includes(entry.kind as EntityKind) || !isId(entry.id)) return null
+      const record = entry.record === null ? null : parseEntityRecord(entry.record)
+      if (entry.record !== null && (!record || record.kind !== entry.kind || record.id !== entry.id)) return null
+      return { kind: entry.kind as EntityKind, id: entry.id, record }
+    })
+    if (authoritative.some((entry) => entry === null)) throw new Error('RPG conflict response is malformed')
+    return { status: 'conflict', authoritative: authoritative as Array<{ kind: EntityKind; id: string; record: EntityRecord | null }> }
+  }
+  if ((value.status === 'applied' || value.status === 'duplicate') && Array.isArray(value.entities) && Array.isArray(value.logs)) {
+    assertSupportedProfileRecords(value.entities)
+    const receipt = parseRpgCommandReceipt(value.receipt)
+    const snapshot = parseSaveSnapshot({ entities: value.entities, logs: value.logs, serverTime: receipt?.createdAt ?? 0 })
+    if (receipt && receipt.commandId === commandId && snapshot && value.status === 'duplicate' &&
+      snapshot.entities.length === 0 && snapshot.logs.length === 0) {
+      return { status: 'duplicate', receipt, entities: [], logs: [] }
+    }
+    if (receipt && receipt.commandId === commandId && snapshot &&
+      snapshot.entities.length === receipt.applied.length && snapshot.logs.length === receipt.appendedIds.length + 1 &&
+      receipt.applied.every((applied) => snapshot.entities.some((row) => row.kind === applied.kind && row.id === applied.id && row.version === applied.version)) &&
+      receipt.appendedIds.every((id, index) => snapshot.logs[index]?.id === id) &&
+      snapshot.logs.at(-1)?.kind === 'rpgReceipts' && snapshot.logs.at(-1)?.id === commandId) {
+      return { status: value.status, receipt, entities: snapshot.entities, logs: snapshot.logs }
+    }
+  }
+  throw new Error('RPG command response is malformed')
 }

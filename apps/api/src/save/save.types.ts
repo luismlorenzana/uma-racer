@@ -1,9 +1,10 @@
 // API-side validation for the @racer/domain save wire contract (docs/technical/architecture.md).
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
+import { parseRpgEntity, parseRpgLog, rpgEntityIdMatches, rpgLogIdMatches } from './rpg-save.types'
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -1055,20 +1056,38 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
   return value
 }
 
-function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
+export function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
   if (kind === 'profile') return parseProfile(value)
   if (kind === 'umas') return parseUma(value)
   if (kind === 'cards') return parseCard(value)
   if (kind === 'badges') return parseBadge(value)
   if (kind === 'farm') return parseFarm(value)
+  if (kind.startsWith('rpg')) return parseRpgEntity(kind, value)
   return parseItemStack(value)
 }
 
-function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
+export function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
   if (kind === 'ledger') return parseLedger(value)
   if (kind === 'raceResults') return parseRaceResult(value)
   if (kind === 'flairEvents') return parseFlair(value)
+  if (kind.startsWith('rpg')) return parseRpgLog(kind, value)
   return parseItemLedger(value)
+}
+
+export function saveEntityIdMatches(kind: EntityKind, id: string, data: Record<string, unknown>): boolean {
+  if (kind.startsWith('rpg')) return rpgEntityIdMatches(kind, id, data)
+  return (kind === 'profile' || kind === 'farm') ? id === 'main' :
+    (kind === 'umas' || kind === 'cards') ? data.templateId === id :
+    kind === 'items' ? data.itemId === id :
+    kind === 'badges' ? (data.scope === 'trainer' ? id === 'trainer' : id === `uma:${String(data.umaId)}`) : false
+}
+
+export function saveLogIdMatches(kind: LogKind, id: string, data: Record<string, unknown>, createdAt: number): boolean {
+  if (kind.startsWith('rpg')) return rpgLogIdMatches(kind, id, data, createdAt)
+  if (kind === 'raceResults') return id === `race:${String(data.umaId)}:${String(data.sequence)}` && createdAt === data.createdAt
+  if (kind === 'flairEvents') return createdAt === data.earnedAt
+  if (kind === 'itemLedger') return id === data.id && createdAt === data.createdAt
+  return true
 }
 
 /** Shape-check an untrusted sync body before it reaches either repository implementation. */
@@ -1084,6 +1103,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isRecord(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
+    if (kind.startsWith('rpg')) return 'RPG rows require the grouped command endpoint'
     if (!isId(value.id)) return 'invalid entity id'
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
@@ -1101,6 +1121,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isRecord(value)) return 'append must be an object'
     if (!LOG_KINDS.includes(value.kind as LogKind)) return `unknown log kind ${String(value.kind)}`
     const kind = value.kind as LogKind
+    if (kind.startsWith('rpg')) return 'RPG logs require the grouped command endpoint'
     if (!isId(value.id)) return 'invalid log id'
     const data = parseLogData(kind, value.data)
     if (!data) return `invalid ${kind} data`
