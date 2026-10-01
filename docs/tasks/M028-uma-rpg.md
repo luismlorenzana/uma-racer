@@ -21,7 +21,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 | T090 — RPG save contract ✅ | Versioned outfit/preset/checkpoint state, API validation, Dexie v18 and **atomic grouped mutation** protocol; D228 | T089; landed |
 | T091 — Deterministic combat engine ✅ | Pure five-member battle, six weapon paths, five elements, enemy intent, statuses and replay; combat sim (D229) | Landed |
 | T092 — Battle journal and host ✅ | Device-local action journal, frozen entry, second-device takeover and idempotent battle result boundary (D230) | Landed |
-| [T093 — RPG roster and party hub](T093-rpg-hub.md) | Lazy internal route, enrollment/profiles, five saved presets and overlays; no Home entry | T089, T090 |
+| T093 — RPG roster and party hub ✅ | Lazy internal route, enrollment/profiles, five saved presets and overlays; no Home entry (D232) | Landed |
 | [T094 — Phone battle screen](T094-rpg-battle-screen.md) | Five-actor touch battle and result view against synthetic encounters, with same-device resume | T091–T093 |
 | [T095 — Chapter maps and checkpoints](T095-rpg-chapters.md) | Branching chapter contract, previews, pause/retry, boss and map UI using synthetic content | T090, T092, T094 |
 | [T096 — RPG progression integration](T096-rpg-progression.md) | EXP grants tuned on T095's map, level reveals, tree spending/loadouts and lossless class promotion | T089, T090, T092, T094, T095 |
@@ -35,8 +35,8 @@ T089 ─► T090 ────────────────┬─► T092 
           T090 ─► T093 ───────────────┘          └───────────────────────────► T099
 ```
 
-The diagram is a dependency guide, not permission to merge against stale `main`. T092 is complete; T093 is the next
-roster/party handoff. T097's private authoring can begin after T095 defines the schema while T098 implements the token bridge. T099
+The diagram is a dependency guide, not permission to merge against stale `main`. T093 is complete; T094 is the next
+phone battle handoff. T097's private authoring can begin after T095 defines the schema while T098 implements the token bridge. T099
 waits for both. One task = one PR; remove that task's spec in its implementation PR (D104), update the design and
 milestone table, and record any newly settled rule in `docs/decisions.md`.
 

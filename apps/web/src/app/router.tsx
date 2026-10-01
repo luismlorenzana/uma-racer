@@ -155,6 +155,19 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    // T093 internal setup only; Home does not expose RPG until the complete first chapter ships (T099).
+    path: 'rpg',
+    hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Uma RPG" />,
+    lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgShell }),
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgHubScreen }) },
+      { path: 'roster', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgRosterScreen }) },
+      { path: 'roster/:outfitId', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgProfileScreen }) },
+      { path: 'parties', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgPartiesScreen }) },
+      { path: 'parties/:presetId', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgPartyScreen }) },
+    ],
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),

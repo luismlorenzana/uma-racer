@@ -272,9 +272,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 The Global Uma RPG has a separate [implementation contract](uma-rpg-implementation.md). M028 does **not**
 embed per-outfit RPG levels in `UmaSave.scenarios` or send its reward-bearing result as ordinary unrelated sync
 upserts/appends: that path can append a log when a related entity conflicts. It adds per-outfit, per-preset and
-per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090–T092 have landed the versioned rows,
-Dexie v19, transport, pure combat and device-local journal/host; the UI and actual reward rules remain later M028 work. The RPG
-is not exposed from Home yet.
+per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090–T093 have landed the versioned rows,
+Dexie v19, transport, pure combat, device-local journal/host and a lazy internal roster/party setup route. Enrollment
+and preset edits use the grouped command and project only acknowledged rows; combat UI and actual reward rules remain
+later M028 work. The RPG is not exposed from Home yet.
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
