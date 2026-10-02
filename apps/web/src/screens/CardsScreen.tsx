@@ -47,7 +47,7 @@ import { SegmentedControl } from '../ui/SegmentedControl'
 import { CheckIcon } from '../ui/icons'
 import { formatTickets } from '../ui/tickets'
 import { TypeIcon } from '../ui/TypeIcon'
-import { CardFocusChips, CardFocusMark, cardFocusLabel } from '../ui/CardFocusBadges'
+import { CardDistanceIcon, CardFocusChips, CardStyleIcon, cardFocusLabel } from '../ui/CardFocusBadges'
 
 const MAX_COMPARE = 3
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
@@ -116,7 +116,7 @@ function CardTile({
           <span className="flex items-center gap-1.5">
             <span className="truncate text-[14px] font-semibold">{entry.template.charName}</span>
             {entry.isNew && <Crest tone="accent">NEW</Crest>}
-            <span className="shrink-0"><CardFocusMark focus={entry.focus} /></span>
+            <span className="flex shrink-0 items-center gap-0.5"><CardDistanceIcon focus={entry.focus} size={16} /><CardStyleIcon focus={entry.focus} size={16} /></span>
           </span>
           <span className="flex min-w-0 items-center gap-1 text-[11px] text-ink-faint">
             <TypeIcon type={entry.template.type} size={14} />
@@ -148,33 +148,42 @@ function CardTile({
           alt={entry.owned ? `${entry.template.charName} support card` : `${entry.template.charName} support card, not owned`}
           dimmed={!entry.owned}
           chamfer={!icons && entry.bond === MAX_STARS}
+          // Four corners (D238): distance top left, running style top right, type bottom left, stars bottom right.
+          tight={icons}
           overlay={
             icons ? (
               <>
-                <CardFocusMark focus={entry.focus} compact />
+                <CardDistanceIcon focus={entry.focus} size={16} />
                 {entry.isNew && <span aria-hidden className="h-2 w-2 rounded-full bg-accent shadow-1" />}
                 {entry.equippedBy.length > 0 && <span aria-hidden className="h-2 w-2 rounded-full bg-info shadow-1" />}
               </>
             ) : (
               <>
-                <CardFocusMark focus={entry.focus} />
+                <CardDistanceIcon focus={entry.focus} size={22} />
                 {entry.isNew && <Crest tone="accent">NEW</Crest>}
                 {entry.equippedBy.length > 0 && <Crest>In a set</Crest>}
               </>
             )
           }
-          // The card's type in the corner, as the original marks it (D182).
-          corner={selecting
-            ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? <CheckIcon size={16} title="Picked" /> : <span className="h-4 w-4" />}</Crest>
-            : <TypeIcon type={entry.template.type} size={icons ? 18 : 24} className="drop-shadow" />}
+          corner={
+            <>
+              <CardStyleIcon focus={entry.focus} size={icons ? 16 : 22} />
+              {selecting && <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? <CheckIcon size={16} title="Picked" /> : <span className="h-4 w-4" />}</Crest>}
+            </>
+          }
+          bottomLeft={icons ? <TypeIcon type={entry.template.type} size={16} className="drop-shadow" /> : undefined}
+          badge={icons && showBond ? <Stars value={entry.bond ?? 0} compact /> : undefined}
           footer={icons
-            ? (showBond ? <Stars value={entry.bond ?? 0} onDark /> : undefined)
+            ? undefined
             : (
               <>
                 <p className="font-display truncate text-[14px] font-semibold">{entry.template.charName}</p>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[11px] text-ink-on-dark-soft">{tileValue(entry, lens)}</span>
-                  {showBond && <Stars value={entry.bond ?? 0} onDark />}
+                  <span className="flex min-w-0 items-center gap-1">
+                    <TypeIcon type={entry.template.type} size={18} className="drop-shadow" />
+                    <span className="truncate text-[11px] text-ink-on-dark-soft">{tileValue(entry, lens)}</span>
+                  </span>
+                  {showBond && <Stars value={entry.bond ?? 0} compact />}
                 </div>
               </>
             )}

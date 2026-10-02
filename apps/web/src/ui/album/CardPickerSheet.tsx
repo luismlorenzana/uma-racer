@@ -16,7 +16,7 @@ import { ArtTile } from '../ArtTile'
 import { Stars } from '../Stars'
 import { BottomSheet } from '../BottomSheet'
 import { TypeIcon } from '../TypeIcon'
-import { CardFocusMark } from '../CardFocusBadges'
+import { CardDistanceIcon, CardStyleIcon } from '../CardFocusBadges'
 import { AlbumChrome } from './AlbumChrome'
 import { VirtualGrid } from './VirtualGrid'
 
@@ -86,12 +86,16 @@ export function CardPickerSheet({
                 <ArtTile
                   asset={entry.asset}
                   alt={`${entry.template.charName} support card`}
-                  corner={<TypeIcon type={entry.template.type} size={22} className="drop-shadow" />}
-                  overlay={<CardFocusMark focus={entry.focus} compact />}
+                  // The album's four corners (D238): distance, running style, then type and stars along the bottom.
+                  overlay={<CardDistanceIcon focus={entry.focus} size={20} />}
+                  corner={<CardStyleIcon focus={entry.focus} size={20} />}
                   footer={
                     <>
                       <p className="font-display truncate text-[12px] font-semibold">{entry.template.charName}</p>
-                      <Stars value={entry.bond ?? 0} onDark className="mt-0.5" />
+                      <div className="mt-0.5 flex items-center justify-between gap-1">
+                        <TypeIcon type={entry.template.type} size={16} className="drop-shadow" />
+                        <Stars value={entry.bond ?? 0} compact />
+                      </div>
                     </>
                   }
                 />

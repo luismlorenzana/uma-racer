@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
-import { flairContentCoverage } from '@racer/domain'
+import { MAX_FARM_PLOTS, flairContentCoverage } from '@racer/domain'
 import { Link } from 'react-router'
 import { APP_BUILD_ID } from '../app/build'
 import { useAppUpdate } from '../app/UpdateNotice'
@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useContent } from '../content/ContentProvider'
 import { useGame } from '../game/store'
 import { Button } from '../ui/Button'
-import { grantDevResources } from '../game/actions'
+import { grantDevResources, hastenFarmCrops } from '../game/actions'
 import { Panel } from '../ui/Panel'
 import { readFarmSaveSummary, type FarmSaveSummary } from '../game/farm/diagnostics'
 
@@ -24,6 +24,7 @@ function Row({ label, value }: { label: string; value: string }) {
 export function SettingsScreen() {
   const auth = useAuth()
   const [granting, setGranting] = useState(false)
+  const [farmNote, setFarmNote] = useState<string | null>(null)
   const persistent = useGame((s) => s.persistent)
   const gameStatus = useGame((s) => s.status)
   const sync = useGame((s) => s.sync)
@@ -81,7 +82,7 @@ export function SettingsScreen() {
         <p className="mt-1 text-[12px] text-ink-soft">
           Tops up the account so a loop can be exercised without waiting on the daily grant. Every grant is
           recorded in the ledger as <code>dev-grant</code>, so balance work can filter it out — nothing in
-          ordinary play ever produces one.
+          ordinary play ever produces one. The Farm button brings every crop still growing 30 minutes closer.
         </p>
         <div className="mt-3 grid gap-2">
           <Button
@@ -106,6 +107,23 @@ export function SettingsScreen() {
           >
             {granting ? 'Granting…' : '+50 tickets · 5+5 coupons · 10 shards'}
           </Button>
+          <Button
+            variant="secondary"
+            disabled={granting || gameStatus !== 'ready'}
+            onClick={() => {
+              setGranting(true)
+              setFarmNote(null)
+              void hastenFarmCrops(30)
+                .then((plots) => setFarmNote(plots === 0
+                  ? 'No Farm crops are growing.'
+                  : `${plots} growing ${plots === 1 ? 'crop is' : 'crops are'} now due 30 minutes sooner.`))
+                .catch(() => setFarmNote('The Farm could not be changed. Open it once, then try again.'))
+                .finally(() => setGranting(false))
+            }}
+          >
+            {granting ? 'Working…' : 'Farm: growing crops −30 min'}
+          </Button>
+          {farmNote && <p role="status" className="px-1 text-[12px] text-ink-soft">{farmNote}</p>}
         </div>
       </Panel>
       <Panel>
@@ -114,7 +132,7 @@ export function SettingsScreen() {
         <Row label="Signed in as" value={auth.user?.email ?? auth.user?.name ?? '—'} />
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />
         <Row label="Save state" value={gameStatus} />
-        <Row label="Farm save" value={farmSummary?.farmPresent ? `Lv${farmSummary.farmLevel} · ${farmSummary.unlockedPlots}/6 plots · ${farmSummary.readyPlots} ready` : 'Not opened'} />
+        <Row label="Farm save" value={farmSummary?.farmPresent ? `Lv${farmSummary.farmLevel} · ${farmSummary.unlockedPlots}/${MAX_FARM_PLOTS} plots · ${farmSummary.readyPlots} ready` : 'Not opened'} />
         <Row label="Global Items" value={farmSummary ? `${farmSummary.itemStacks} stacks · ${farmSummary.totalItems} items · ${farmSummary.itemMovements} movements` : '—'} />
         <Row label="Cloud sync" value={`${sync.status}${sync.pending ? ` · ${sync.pending} pending` : ''}`} />
         <Row label="Last synced" value={sync.lastSuccessAt ? new Date(sync.lastSuccessAt).toLocaleString() : '—'} />

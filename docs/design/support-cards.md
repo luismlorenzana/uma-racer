@@ -125,8 +125,14 @@ pick (D201, D236). A focus is a category for browsing and achievements, never a 
   restricted to one side. Ask Claude for any change to an authored tag.
 - On the pack of 2026-10-02 (312 cards, aggregates only): 163 cards have a style (Front 31, Pace 52, Late 57, End 23),
   151 a distance (Sprint 19, Mile 26, Medium 67, Long 39), 67 both and 65 neither; 35 entries are overrides.
-- **On screen:** the card page and the album detail show two chips, Style and Distance, Generalist included; album and
-  picker tiles carry a compact focus mark; the album filters by both ([Collection](collection.md#card-album)).
+- **Icons** (D238): a running style is two white letters on a coloured tile built like the stat icons, **FR** (red),
+  **PC** (purple), **LS** (teal) and **EC** (indigo), hues no stat icon uses. A distance is the original's running shoe,
+  redrawn as one bold sneaker on the original's yellow item tile in the colours sampled from its Sprint (pink), Mile
+  (lime), Medium (gold) and Long (blue) shoes, so it reads at 16 px. Both are our own SVG drawings
+  (`ui/CardFocusIcons`), like the stat icons (D183); no original image is shipped.
+- **On screen:** the card page and the album detail show two chips, Style and Distance, each with its icon (Generalist
+  has none); album and picker tiles carry both icons in their corners; the album filters by both
+  ([Collection](collection.md#card-album)).
 
 ## Where cards live on screen
 
@@ -136,10 +142,10 @@ pick (D201, D236). A focus is a category for browsing and achievements, never a 
   shows as the original's type icon on the illustration, its split with the stat icons, and a **Skills** list with the
   original's skill icons: its golds first, highlighted, then its whites, each marked with the node that pays it; a tap
   shows what the skill does and its base cost (D182).
-- **Card tiles** carry their focus mark over the top-left of the art ([Card focus](#card-focus)) and the original's type
-  icon in the corner, as the original and GameTora mark cards, and the
-  original's stat icons stand for Speed, Stamina, Power, Guts and Wit on stat rows (the Uma profile, the Training
-  header), with our own glyphs until content has them.
+- **Card tiles** use all four corners over the art (D238): the **distance** shoe top left, the **running style** top right,
+  the card's **type** icon bottom left and, in a scenario, its **stars** bottom right on a small dark pill. A Generalist
+  dimension leaves its corner empty. The original's stat icons stand for Speed, Stamina, Power, Guts and Wit on stat rows
+  (the Uma profile, the Training header).
 - **The Training scene's Card set tab** is where a scenario's six are chosen and bonded
   ([UX](ux.md#training-scene)).
 

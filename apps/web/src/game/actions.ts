@@ -115,6 +115,14 @@ export async function grantDevResources(grant: import('./collection').DevGrant) 
   })
 }
 
+/** Playtesting (D238): every Farm crop still growing comes due `minutes` sooner. Returns how many moved. */
+export async function hastenFarmCrops(minutes: number): Promise<number> {
+  return criticalGameplayAction(async () => {
+    const { getFarmHost } = await import('./farm/host')
+    return (await getFarmHost().hastenGrowing({ minutes })).plots
+  })
+}
+
 export async function exchangeUmaShards() {
   const { gameRuntime } = await import('./runtime')
   return gameRuntime.exchangeUmaShards()

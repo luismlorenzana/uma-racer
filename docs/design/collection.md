@@ -206,7 +206,8 @@ data, not just a name:
 
 - Uma tiles: portrait, name, level, active-scenario crest, a compact aptitude line (surface / distance / strategy
   grades), and at most two state chips (*Gate ready*, *Goal active*).
-- Card tiles: card art, and in a scenario lens its **stars** and what one node of it pays there.
+- Card tiles: card art with its distance, running style, type and (in a scenario lens) **stars** in the four corners
+  (D238), and what one node of it pays there.
 - The **secondary line follows the active sort**. Sorting by release shows the date, by total stats shows the total, by
   bond shows the bond. Sorting by something you cannot see is a dead end.
 - Unowned entries are desaturated art behind a lock, never empty silhouette boxes.
@@ -266,8 +267,8 @@ lens in the URL.
 
 | Lens | Holds | Sorts | Filters | A tile shows |
 |---|---|---|---|---|
-| **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · running style · distance · era · in an active set · starter/free · new | art and its focus mark; unowned dimmed |
-| **A scenario** | only cards its era allows | stars (default) · pays per node · era · type · character · card name | ownership · type · running style · distance · bond 0–Max · can still bond · max bond · in a set here · era · new | art and its focus mark, with that scenario's bond pips and per-node pay |
+| **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · running style · distance · era · in an active set · starter/free · new | art with distance, style and type in its corners; unowned dimmed |
+| **A scenario** | only cards its era allows | stars (default) · pays per node · era · type · character · card name | ownership · type · running style · distance · bond 0–Max · can still bond · max bond · in a set here · era · new | art with distance, style, type and stars in its four corners, and per-node pay |
 
 Ties break owned first, then by per-node pay. The two lenses keep separate saved queries and views, since bond means
 nothing in the collection.
@@ -281,9 +282,11 @@ nothing in the collection.
 - Hint skills are searchable text, so "Corner Recovery" finds every card that pays it.
 - **Running style** (Front Runner, Pace Chaser, Late Surger, End Closer, Generalist) and **Distance** (Sprint, Mile,
   Medium, Long, Generalist) are facets in the Card group, so a Late, Long Uma's set is two taps away in the picker too
-  ([Card focus](support-cards.md#card-focus), D201, D236). Every tile with a focus carries a dark **focus mark** over the
-  top-left of its art ("Late · Long"; in the icons grid one pill per value, and beside the name in the list), and the
-  detail sheet names both, Generalist included. A card that is Generalist in both has no mark, and no tile grows.
+  ([Card focus](support-cards.md#card-focus), D201, D236). **Every card tile uses its four corners** (D238): the distance
+  shoe top left, the running-style tile (FR, PC, LS, EC) top right, the type icon bottom left and, in a scenario, the
+  stars bottom right on a small dark pill; in the card view the type and stars sit at either end of the footer's last
+  line, and in the list the two focus icons follow the name. NEW and In-a-set marks stack under the distance. The detail
+  sheet names both dimensions, Generalist included. No tile grows.
 
 ### What the save cannot answer yet
 

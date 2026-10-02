@@ -129,6 +129,27 @@ describe('PersistentFarmHost', () => {
     expect(roundTrip).toEqual(planted.state)
   })
 
+  it('brings growing crops 30 minutes closer for playtesting, saved and queued for sync (D238)', async () => {
+    now = 20 * 60 * 60 * 1_000
+    const initial = await host.getFarm()
+    const assigned = await host.assign({ plotId: 'plot-1', templateId: 'outfit-a', expectedFarmVersion: initial.version })
+    const planted = await host.plant({ plotId: 'plot-1', cropId: 'produce:t1:speed', expectedFarmVersion: assigned.version })
+    await db.outbox.clear()
+    now += 60_000
+    const half = 30 * 60_000
+    const hastened = await host.hastenGrowing({ minutes: 30 })
+    expect(hastened.plots).toBe(1)
+    expect(hastened.farm.plots[0]?.cycle).toMatchObject({ plantedAt: planted.plots[0]!.cycle!.plantedAt - half,
+      readyAt: planted.plots[0]!.cycle!.readyAt - half })
+    expect((await db.farm.get('main'))!.data).toEqual(hastened.farm.state)
+    expect(await db.outbox.where('[kind+id]').equals(['farm', 'main']).count()).toBe(1)
+    // Once it is ready there is nothing left to hasten, and nothing is written.
+    now = hastened.farm.plots[0]!.cycle!.readyAt
+    await db.outbox.clear()
+    expect((await host.hastenGrowing({ minutes: 30 })).plots).toBe(0)
+    expect(await db.outbox.count()).toBe(0)
+  })
+
   it('rejects stale commands and serializes concurrent assignment', async () => {
     const initial = await host.getFarm()
     const results = await Promise.allSettled([

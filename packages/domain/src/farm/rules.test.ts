@@ -7,11 +7,12 @@ import {
   farmPlot,
   farmWorkerProgress,
   harvestPlot,
+  hastenGrowingCrops,
   plantPlot,
   plotStatus,
   unassignFarmOutfit,
 } from './rules'
-import type { FarmState } from './types'
+import { parseFarmState, type FarmState } from './types'
 
 const OWNED = new Set(['outfit-a', 'outfit-b', 'outfit-c'])
 const HOUR = 60 * 60 * 1_000
@@ -28,6 +29,21 @@ function harvestOnce(progress: { level: number; exp: number }) {
 }
 
 describe('Farm rules', () => {
+  it('hastens only crops still growing, moving planting and deadline together so the save stays valid (D238)', () => {
+    const now = 20 * HOUR
+    const planted = plantPlot({ farm: assignedFarm({ level: 6, exp: 0 }), plotId: 'plot-1', crop: crop(1), ownedTemplateIds: OWNED, now })
+    const before = structuredClone(planted.farm)
+    const hastened = hastenGrowingCrops(planted.farm, HOUR / 2, now + HOUR)
+    expect(planted.farm).toEqual(before)
+    expect(hastened.plotIds).toEqual(['plot-1'])
+    expect(farmPlot(hastened.farm, 'plot-1').cycle).toMatchObject({ plantedAt: now - HOUR / 2, readyAt: planted.readyAt - HOUR / 2 })
+    expect(parseFarmState(hastened.farm)).not.toBeNull()
+    // A crop already ready, or a farm with nothing growing, is left as it is.
+    expect(hastenGrowingCrops(planted.farm, HOUR / 2, planted.readyAt).plotIds).toEqual([])
+    expect(hastenGrowingCrops(assignedFarm(), HOUR / 2, now).plotIds).toEqual([])
+    expect(() => hastenGrowingCrops(planted.farm, 0, now)).toThrow(/invalid/)
+  })
+
   it('starts with one unlocked unassigned plot and derives every other lock', () => {
     const farm = createInitialFarmState()
     expect(['plot-1', 'plot-2', 'plot-6', 'plot-7'].map((id) => plotStatus(farm, id as 'plot-1', 0)))

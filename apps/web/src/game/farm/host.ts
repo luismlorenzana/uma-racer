@@ -12,6 +12,8 @@ import {
   farmPlotId,
   farmWorkerProgress,
   harvestPlot,
+  hastenGrowingCrops,
+  MINUTE_MS,
   parseFarmState,
   parseInventoryStackData,
   parseItemLedgerEntry,
@@ -76,6 +78,8 @@ export interface FarmHost {
   unassign(input: { plotId: FarmPlotId; expectedFarmVersion: number }): Promise<FarmView>
   plant(input: { plotId: FarmPlotId; cropId: FarmCropId; expectedFarmVersion: number }): Promise<FarmView>
   harvest(input: { plotId: FarmPlotId; cycleId: string; expectedFarmVersion: number }): Promise<FarmHarvestReceipt>
+  /** Playtesting (D238): every crop still growing comes due `minutes` sooner. */
+  hastenGrowing(input: { minutes: number }): Promise<{ farm: FarmView; plots: number }>
 }
 
 export interface PersistentFarmHostOptions {
@@ -267,6 +271,23 @@ export class PersistentFarmHost implements FarmHost {
     return viewFromRow(row, now)
   }
 
+  async hastenGrowing(input: { minutes: number }): Promise<{ farm: FarmView; plots: number }> {
+    const now = this.now()
+    await this.ensureFarm(now)
+    const result = await db.transaction('rw', [db.farm, db.outbox], async () => {
+      const current = parseFarmRow(await db.farm.get('main'))
+      if (!current) throw new Error('Farm is missing')
+      const hastened = hastenGrowingCrops(current.data, input.minutes * MINUTE_MS, now)
+      if (hastened.plotIds.length === 0) return { row: current, plots: 0 }
+      const updated = { ...current, data: hastened.farm, revision: current.revision + 1 }
+      await db.farm.put(updated)
+      await queueInTransaction('farm', 'main', 'upsert', now)
+      return { row: updated, plots: hastened.plotIds.length }
+    })
+    if (result.plots > 0) await this.afterMutation()
+    return { farm: await viewFromRow(result.row, now), plots: result.plots }
+  }
+
   async harvest(input: { plotId: FarmPlotId; cycleId: string; expectedFarmVersion: number }): Promise<FarmHarvestReceipt> {
     const now = this.now()
     await this.ensureFarm(now)
@@ -386,6 +407,15 @@ export class MemoryFarmHost implements FarmHost {
     return this.view()
   }
 
+  async hastenGrowing(input: { minutes: number }): Promise<{ farm: FarmView; plots: number }> {
+    const hastened = hastenGrowingCrops(this.farm, input.minutes * MINUTE_MS, this.clock())
+    if (hastened.plotIds.length > 0) {
+      this.farm = hastened.farm
+      this.version += 1
+    }
+    return { farm: this.view(), plots: hastened.plotIds.length }
+  }
+
   async harvest(input: { plotId: FarmPlotId; cycleId: string; expectedFarmVersion: number }): Promise<FarmHarvestReceipt> {
     const prior = this.evidence.get(input.cycleId)
     if (prior) {
@@ -420,6 +450,7 @@ const unavailableHost: FarmHost = {
   async unassign() { throw new Error('Farm save host is not ready') },
   async plant() { throw new Error('Farm save host is not ready') },
   async harvest() { throw new Error('Farm save host is not ready') },
+  async hastenGrowing() { throw new Error('Farm save host is not ready') },
 }
 
 let installedHost: FarmHost = unavailableHost

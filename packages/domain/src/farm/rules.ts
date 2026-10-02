@@ -264,3 +264,34 @@ export function harvestPlot(input: HarvestFarmInput): HarvestFarmResult {
     cropTiersUnlocked: cropTiersUnlockedBetween(before.level, applied.progress.level),
   }
 }
+
+export interface HastenFarmResult {
+  farm: FarmState
+  /** The growing plots whose crops moved earlier, in plot order. */
+  plotIds: FarmPlotId[]
+}
+
+/**
+ * A playtesting shortcut (D238): every crop still growing at `now` moves `ms` earlier, its planting and its deadline
+ * together, so each cycle keeps the duration it was planted with and the save stays valid. Ready crops are left alone.
+ */
+export function hastenGrowingCrops(farm: FarmState, ms: number, now: number): HastenFarmResult {
+  if (!validNow(now) || !Number.isSafeInteger(ms) || ms <= 0) {
+    throw new FarmRuleError('invalid-farm-command', 'Farm hasten input is invalid')
+  }
+  const plotIds: FarmPlotId[] = []
+  const plots = farm.plots.map((plot) => {
+    const cycle = plot.cycle
+    if (cycle === null || cycle.readyAt <= now || cycle.plantedAt < ms) return copyPlot(plot)
+    plotIds.push(plot.id)
+    return { ...plot, cycle: { ...cycle, plantedAt: cycle.plantedAt - ms, readyAt: cycle.readyAt - ms } }
+  })
+  return {
+    farm: {
+      ...farm,
+      plots,
+      workers: Object.fromEntries(Object.entries(farm.workers).map(([id, progress]) => [id, { ...progress }])),
+    },
+    plotIds,
+  }
+}

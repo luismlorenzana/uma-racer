@@ -93,7 +93,9 @@ The cycle id is deterministic and monotonic per plot: `farm:<plotId>:<attempt>`.
 `readyAt = plantedAt + growth time` once, from her level at that moment; a cycle carries one of the eleven allowed
 durations (10h, 9h 45m … 7h 30m), or one of D234's (12h, 11h 36m … 8h) on a crop planted before D237, which finishes on
 its own deadline. Reloading, going offline, changing time zone or opening on another route never rolls or
-recomputes the deadline.
+recomputes the deadline. The one exception is a playtesting shortcut: Settings → Playtesting → **Farm: growing crops −30 min** moves
+every crop still growing 30 minutes earlier, its `plantedAt` and `readyAt` together, so the cycle keeps an allowed
+duration and syncs like any other Farm change (D238).
 
 Harvest is one atomic transaction:
 
