@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { createEncounter, enrollRpgOutfit, projectRpgStats, replay, rpgCheckpointId,
+import { applyAction, createEncounter, enrollRpgOutfit, projectRpgStats, replay, rpgCheckpointId,
   type EncounterInput, type RpgCheckpointSaveV1, type RpgCommandRequest,
   type RpgOutfitSaveV1, type RpgPresetSaveV1 } from '@racer/domain'
 import { syntheticEnemy } from '../../../../packages/domain/src/rpg/combat/synthetic'
@@ -174,7 +174,17 @@ describe('RPG battle host and device journal', () => {
     const resumed = await new DexieRpgBattleHost(() => 52).resume(checkpointId)
     expect(resumed).toMatchObject({ kind: 'pending', phase: 'entry' })
     expect('state' in resumed ? resumed.state?.outcome : null).toBe('active')
-    expect((await db.rpgBattleJournals.toArray())[0]?.actions).toHaveLength(65)
+    const journal = (await db.rpgBattleJournals.toArray())[0]!
+    expect(journal.actions).toHaveLength(65)
+    const before = replay(decodeKit(resumed.checkpoint.frozenEntry!.enemyKitJson), journal.actions.slice(0, -1))
+    const last = journal.actions.at(-1)!
+    const canonical = applyAction(before.state, last)
+    expect(resumed.actionCount).toBe(65)
+    expect(resumed.lastAction).toEqual(last)
+    expect(resumed.cueState).toEqual(before.state)
+    expect(resumed.state).toEqual(canonical.state)
+    expect(resumed.cues).toEqual(canonical.cues)
+    expect(canonical.hash).toBe(journal.stateHash)
   })
 
   it('keeps a rejected offline result as conflicted history when another device wins entry first', async () => {
