@@ -54,6 +54,8 @@ export interface FarmWorkerIdentity {
   id: string
   name: string
   outfit: string | null
+  /** Permanent Uma Level earned from racing; used as the secondary farm-worker sort. */
+  racingLevel: number
 }
 
 export interface FarmWorkerRow extends FarmWorkerIdentity {
@@ -160,8 +162,9 @@ export function buildFarmWorkerRows(view: FarmView, identities: readonly FarmWor
     return [{ ...identity, progress, plotId: plotByWorker.get(identity.id) ?? null,
       xpToNext: farmingXpToNext(progress.level) }]
   }).sort((left, right) =>
-    right.progress.level - left.progress.level || left.name.localeCompare(right.name) ||
-    (left.outfit ?? '').localeCompare(right.outfit ?? '') || left.id.localeCompare(right.id))
+    right.progress.level - left.progress.level || right.racingLevel - left.racingLevel ||
+    left.name.localeCompare(right.name) || (left.outfit ?? '').localeCompare(right.outfit ?? '') ||
+    left.id.localeCompare(right.id))
 }
 
 /** A crop row is the worker's alone to open; when she can grow it, her level decides how long it takes (D234). */

@@ -310,11 +310,13 @@ interface ItemLedgerEntry {
 - Ready: brighter border, `Ready` text and **Harvest** in the thumb zone. Readiness is never communicated by color alone.
 - **Harvest** returns to the same assigned Idle plot. **Plant again** may preselect its last crop but is always an explicit
   confirmation; there is no auto-repeat.
-- Assign/Change opens the shared Farm outfit picker. It lists every owned outfit separately, shows Farming Level/progress and
-  current plot, disables outfits already working elsewhere, and returns to the calling Farm menu.
+- Assign/Change opens the shared Farm outfit picker. It lists every owned outfit separately, shows Farming Level/progress,
+  Uma Level and current plot, disables outfits already working elsewhere, and returns to the calling Farm menu.
 - Plant opens the crop picker directly for the assigned outfit, on her newest open row. It filters by stat/scenario,
   marks a row she has not opened with its Farming Level, and shows `Grows in 10h 48m` on every crop she can plant.
-- **Workers** is the complete outfit roster, grouped Working / Available and sorted by level then character/outfit name.
+- **Workers** is the complete outfit roster, grouped Working / Available and sorted within each group by **Farming Level
+  descending, then Uma Level descending**, then character/outfit name and id for deterministic ties. The shared assignment
+  picker and crop-access worker picker use this same order, and show both levels so the priority is legible.
   Each card shows her Section and plot, Farming XP to the next level, her newest row and how fast she grows it, and the
   row her next tenth level opens. **Crops** is the 70-item catalog with scenario/stat filters, each row's Farming Level
   or growth time for a chosen worker, and stock. Both reuse the same outfit picker rather than creating a selected-Uma

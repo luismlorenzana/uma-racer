@@ -92,13 +92,31 @@ describe('Farm screen view model', () => {
       'synthetic-other': { level: 1, exp: 0 },
     }, plots: { 'plot-1': { templateId: 'synthetic-dress-b' } } })
     const rows = buildFarmWorkerRows(view, [
-      { id: 'synthetic-dress-b', name: 'Synthetic Star', outfit: 'Winter' },
-      { id: 'synthetic-other', name: 'Another Uma', outfit: null },
-      { id: 'synthetic-dress-a', name: 'Synthetic Star', outfit: 'Classic' },
-      { id: 'missing-art-outfit', name: 'Missing Art', outfit: 'Long Outfit Name' },
+      { id: 'synthetic-dress-b', name: 'Synthetic Star', outfit: 'Winter', racingLevel: 12 },
+      { id: 'synthetic-other', name: 'Another Uma', outfit: null, racingLevel: 99 },
+      { id: 'synthetic-dress-a', name: 'Synthetic Star', outfit: 'Classic', racingLevel: 12 },
+      { id: 'missing-art-outfit', name: 'Missing Art', outfit: 'Long Outfit Name', racingLevel: 1 },
     ])
     expect(rows.map((row) => [row.id, row.plotId, row.xpToNext])).toEqual([
       ['synthetic-dress-a', null, 24], ['synthetic-dress-b', 'plot-1', 24], ['synthetic-other', null, 24],
+    ])
+  })
+
+  it('sorts worker choices by Farming Level, then racing Uma Level', () => {
+    const view = farmView({ workers: {
+      'farm-leader': { level: 3, exp: 0 },
+      'race-leader': { level: 2, exp: 0 },
+      'farm-peer': { level: 2, exp: 0 },
+      'farm-rookie': { level: 1, exp: 0 },
+    } })
+    const rows = buildFarmWorkerRows(view, [
+      { id: 'farm-rookie', name: 'Rookie', outfit: null, racingLevel: 140 },
+      { id: 'race-leader', name: 'Alpha', outfit: null, racingLevel: 110 },
+      { id: 'farm-peer', name: 'Zulu', outfit: null, racingLevel: 120 },
+      { id: 'farm-leader', name: 'Farm Leader', outfit: null, racingLevel: 1 },
+    ])
+    expect(rows.map((row) => [row.id, row.progress.level, row.racingLevel])).toEqual([
+      ['farm-leader', 3, 1], ['farm-peer', 2, 120], ['race-leader', 2, 110], ['farm-rookie', 1, 140],
     ])
   })
 
