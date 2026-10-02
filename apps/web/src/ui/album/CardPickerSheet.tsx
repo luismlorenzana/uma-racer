@@ -16,6 +16,7 @@ import { ArtTile } from '../ArtTile'
 import { Stars } from '../Stars'
 import { BottomSheet } from '../BottomSheet'
 import { TypeIcon } from '../TypeIcon'
+import { CardFocusMark } from '../CardFocusBadges'
 import { AlbumChrome } from './AlbumChrome'
 import { VirtualGrid } from './VirtualGrid'
 
@@ -86,6 +87,7 @@ export function CardPickerSheet({
                   asset={entry.asset}
                   alt={`${entry.template.charName} support card`}
                   corner={<TypeIcon type={entry.template.type} size={22} className="drop-shadow" />}
+                  overlay={<CardFocusMark focus={entry.focus} compact />}
                   footer={
                     <>
                       <p className="font-display truncate text-[12px] font-semibold">{entry.template.charName}</p>

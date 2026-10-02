@@ -1,9 +1,10 @@
 // CLI orchestration for the private content data pipeline (scripts/data/README.md).
 
 import { SCENARIOS, assertRaceCourseContent, selectRivalSkillPool, summarizeRaceSkillCoverage } from '@racer/domain'
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { DATASET_NAMES, loadGameToraData } from './gametora'
+import { applyCardFocusOverride, cardFocusReport } from './normalize/card-focus'
 import { normalizeCards } from './normalize/cards'
 import { normalizeCourses } from './normalize/courses'
 import { applyFlairOverride } from './normalize/flair'
@@ -40,8 +41,17 @@ async function main(): Promise<void> {
     umas.items,
     await readOptionalJson(resolve(DEFAULT_CONTENT_DIR, 'overrides/spark-rivals.json')),
   )
-  const cards = normalizeCards(datasets['support-cards'])
+  const normalizedCards = normalizeCards(datasets['support-cards'])
   const skills = normalizeSkills(datasets.skills)
+  // Each card's running-style and distance focus (D201): the rule, plus Claude's private corrections.
+  const focus = applyCardFocusOverride(
+    normalizedCards.items,
+    skills.items,
+    await readOptionalJson(resolve(DEFAULT_CONTENT_DIR, 'overrides/card-focus.json')),
+  )
+  const cards = { items: focus.items, warnings: [...normalizedCards.warnings, ...focus.warnings] }
+  await mkdir(resolve(DEFAULT_CONTENT_DIR, 'review'), { recursive: true })
+  await writeFile(resolve(DEFAULT_CONTENT_DIR, 'review/card-focus.md'), cardFocusReport(cards.items, skills.items))
   const courses = normalizeCourses(datasets.racetracks)
   const skillCoverage = summarizeRaceSkillCoverage(skills.items)
   // Rivals roll their whites from this pool (D163); an empty pool would leave every rival with only her unique.
@@ -57,6 +67,8 @@ async function main(): Promise<void> {
   console.log(`Umas: ${umas.items.length} (${umaStarters} starters)`)
   console.log(`SSR cards: ${cards.items.length} (${cardStarters} starters)`)
   console.log(`Skills: ${skills.items.length}`)
+  const counts = (record: Record<string, number>) => Object.entries(record).sort().map(([key, count]) => `${key} ${count}`).join(' · ')
+  console.log(`Card focus: style ${counts(focus.coverage.style)} | distance ${counts(focus.coverage.distance)} | both ${focus.coverage.both} · neither ${focus.coverage.neither} · overridden ${focus.coverage.overridden}`)
   console.log(`Race-skill coverage: ${skillCoverage.supported}/${skillCoverage.total}`)
   console.log(`Rival skill pool: ${rivalPool.length} whites`)
   console.log(`Races: ${races.items.length}`)

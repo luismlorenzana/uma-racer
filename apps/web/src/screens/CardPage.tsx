@@ -3,6 +3,7 @@ import {
   MAX_STARS,
   SCENARIOS,
   STATS,
+  cardFocus,
   cardStars,
   cardNodeValue,
   cardRaceBonus,
@@ -27,6 +28,7 @@ import { ArtViewer, ExpandMark } from '../ui/ArtViewer'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { Stars } from '../ui/Stars'
 import { Button } from '../ui/Button'
+import { CardFocusChips } from '../ui/CardFocusBadges'
 import { Crest } from '../ui/Crest'
 import { Numeral } from '../ui/Numeral'
 import { Panel } from '../ui/Panel'
@@ -155,6 +157,8 @@ export function CardPage() {
             </p>
           </>
         )}
+
+        <CardFocusChips focus={cardFocus(template, content.skills.byId)} className="mt-2.5" />
 
         {/* A card is owned only with a Card Select Coupon (D198); tickets never buy one. */}
         {!save && (

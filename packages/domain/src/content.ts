@@ -1,6 +1,7 @@
 // Static content-pack contracts produced by scripts/data (docs/technical/architecture.md §3).
 
 import type { CardEffect } from './cards'
+import type { CardFocusOverride } from './card-focus'
 import type { FlairSeriesTag } from './badges'
 import type { Aptitudes, DistanceCategory, RaceGrade, StatKey, Stats, Surface } from './types'
 
@@ -54,6 +55,8 @@ export interface SupportCardTemplate {
   effectProfile: Record<CardEffect, number>
   uniqueEffect: SupportCardUniqueEffect | null
   imageSource: string
+  /** An authored correction of the card's derived focus (D201); a pack without it keeps working. */
+  focus?: CardFocusOverride
 }
 
 export type SkillKind = 'white' | 'gold' | 'unique-upgraded' | 'inherited-unique' | 'unique'

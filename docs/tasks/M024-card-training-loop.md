@@ -5,7 +5,7 @@ the player decides which cards to bond where and when, a card maxes in **three**
 carries a **running-style** and a **distance** focus beside its stat type, and a family of **Bond achievements**
 rewards bonding many cards across those categories.
 
-Decisions: D199 (card training stands on its own), D200 (three stars), D201 (card focus), D202 (Bond achievements).
+Decisions: D199 (card training stands on its own), D200 (three stars), D201 and D236 (card focus), D202 (Bond achievements).
 Source of truth once each task lands: [Support Cards](../design/support-cards.md),
 [Minigames — Friendship Training](../design/minigames.md#friendship-training--card-stars),
 [Collection](../design/collection.md), [Economy](../design/economy.md).
@@ -47,7 +47,7 @@ aptitudes" has real choices. At 25% 174/164 cards tag; at 40%, 124/100. T080 fix
 |---|---|---|---|
 | T078 ✅ | Three stars: 0★–3★, save v8 migration, run ladder, coupon at 3★, rivals unchanged | — | Claude, landed 2026-09-29 |
 | T079 ✅ | Every scenario open; a run's partners picked on its own, not from an Uma | T078 | Claude, landed 2026-09-29 |
-| [T080](T080-card-focus-tags.md) | Running-style and distance focus per card; album facets; authored overrides | — (parallel with T078) | Codex for code; Claude authors and publishes the private overrides |
+| T080 ✅ | Running-style and distance focus per card; album facets; tile marks; authored overrides | — (parallel with T078) | Claude, landed 2026-10-02 |
 | [T081](T081-card-bond-achievements.md) | Bond achievement families (type, style, distance, combos, scenario, totals) | T078, T080 | Codex (delegable) |
 
 ```text

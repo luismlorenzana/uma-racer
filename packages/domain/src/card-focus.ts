@@ -1,0 +1,130 @@
+// A card's running-style and distance focus, beside its stat type (docs/design/support-cards.md#card-focus, D201).
+// Derived from its skills, corrected by hand in a private override where the rule misreads a card.
+
+import type { SkillTemplate, SupportCardTemplate } from './content'
+import { parseRaceCondition, type RaceConditionAtom } from './race-skills'
+import { DISTANCE_CATEGORIES, STRATEGIES, type DistanceCategory, type Strategy } from './types'
+
+export type CardStyleFocus = Strategy | 'generalist'
+export type CardDistanceFocus = DistanceCategory | 'generalist'
+
+export interface CardFocus {
+  style: CardStyleFocus
+  distance: CardDistanceFocus
+}
+
+/** An authored correction for one or both dimensions, imported onto the card template as `focus`. */
+export interface CardFocusOverride {
+  style?: CardStyleFocus
+  distance?: CardDistanceFocus
+}
+
+/** A focus needs at least two of the card's skills restricted to it ... */
+export const CARD_FOCUS_MIN_SKILLS = 2
+/** ... and at least 30% of them. */
+export const CARD_FOCUS_MIN_SHARE = 0.3
+
+export const CARD_STYLE_FOCI: readonly CardStyleFocus[] = [...STRATEGIES, 'generalist']
+export const CARD_DISTANCE_FOCI: readonly CardDistanceFocus[] = [...DISTANCE_CATEGORIES, 'generalist']
+
+const STYLE_CODES: Readonly<Record<number, Strategy>> = { 1: 'front', 2: 'pace', 3: 'late', 4: 'end' }
+const DISTANCE_CODES: Readonly<Record<number, DistanceCategory>> = { 1: 'sprint', 2: 'mile', 3: 'medium', 4: 'long' }
+
+/** A condition's alternatives as atom lists, or one empty alternative when there is none or it cannot be read. */
+function alternatives(condition: string | null): RaceConditionAtom[][] {
+  if (condition === null || condition.length === 0) return [[]]
+  try {
+    return parseRaceCondition(condition) ?? [[]]
+  } catch {
+    // An unreadable condition restricts nothing.
+    return [[]]
+  }
+}
+
+/**
+ * The values a skill is restricted to for `variable` (`running_style` or `distance_type`), sorted, or none. A branch is one
+ * `@` alternative of a condition read with each alternative of its precondition. A skill is restricted only when every
+ * branch of every condition names exactly one value; branches may name different ones, so a Mile-or-Medium skill is
+ * restricted to both (D201, refined by D236). A branch that names none leaves the skill unrestricted.
+ */
+export function skillRestrictions(skill: Pick<SkillTemplate, 'conditions'>, variable: 'running_style' | 'distance_type'): number[] {
+  if (skill.conditions.length === 0) return []
+  const union = new Set<number>()
+  for (const group of skill.conditions) {
+    for (const pre of alternatives(group.precondition)) {
+      for (const branch of alternatives(group.condition)) {
+        const named = new Set([...pre, ...branch]
+          .filter((atom) => atom.variable === variable && atom.operator === '==')
+          .map((atom) => atom.value))
+        if (named.size !== 1) return []
+        union.add([...named][0]!)
+      }
+    }
+  }
+  return [...union].sort((left, right) => left - right)
+}
+
+/** The one value a skill is restricted to, or null when it is unrestricted or fits several. */
+export function skillRestriction(skill: Pick<SkillTemplate, 'conditions'>, variable: 'running_style' | 'distance_type'): number | null {
+  const values = skillRestrictions(skill, variable)
+  return values.length === 1 ? values[0]! : null
+}
+
+/** The card's distinct hint and event skills found in the skills pack, its own gold included. */
+export function cardSkills(
+  template: Pick<SupportCardTemplate, 'hintSkillIds' | 'eventSkillIds'>,
+  skillsById: ReadonlyMap<string, SkillTemplate>,
+): SkillTemplate[] {
+  return [...new Set([...template.hintSkillIds, ...template.eventSkillIds])].flatMap((id) => {
+    const skill = skillsById.get(id)
+    return skill ? [skill] : []
+  })
+}
+
+function leading<T extends string>(restricted: readonly (readonly T[])[], total: number): T | 'generalist' {
+  const counts = new Map<T, number>()
+  for (const values of restricted) for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
+  const ranked = [...counts.entries()].sort((left, right) => right[1] - left[1])
+  const [top, second] = ranked
+  if (!top || (second && second[1] === top[1])) return 'generalist'
+  return top[1] >= CARD_FOCUS_MIN_SKILLS && top[1] >= CARD_FOCUS_MIN_SHARE * total ? top[0] : 'generalist'
+}
+
+/** What the rule reads off the card's skills alone (D201): each skill counts once for every value it is restricted to. */
+export function derivedCardFocus(
+  template: Pick<SupportCardTemplate, 'hintSkillIds' | 'eventSkillIds'>,
+  skillsById: ReadonlyMap<string, SkillTemplate>,
+): CardFocus {
+  const skills = cardSkills(template, skillsById)
+  const read = <T>(variable: 'running_style' | 'distance_type', codes: Readonly<Record<number, T>>) =>
+    skills.map((skill) => skillRestrictions(skill, variable).flatMap((code) => codes[code] !== undefined ? [codes[code]!] : []))
+  return {
+    style: leading(read('running_style', STYLE_CODES), skills.length),
+    distance: leading(read('distance_type', DISTANCE_CODES), skills.length),
+  }
+}
+
+/** The card's focus: an authored override for the dimension it names, the rule for the other. */
+export function cardFocus(
+  template: Pick<SupportCardTemplate, 'hintSkillIds' | 'eventSkillIds' | 'focus'>,
+  skillsById: ReadonlyMap<string, SkillTemplate>,
+): CardFocus {
+  const derived = derivedCardFocus(template, skillsById)
+  return { style: template.focus?.style ?? derived.style, distance: template.focus?.distance ?? derived.distance }
+}
+
+/** Validates one override entry from `content/overrides/card-focus.json`: a value for at least one dimension, and a note. */
+export function parseCardFocusOverride(value: unknown): (CardFocusOverride & { note: string }) | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
+  const entry = value as Record<string, unknown>
+  if (Object.keys(entry).some((key) => key !== 'style' && key !== 'distance' && key !== 'note')) return null
+  if (typeof entry.note !== 'string' || entry.note.trim().length === 0) return null
+  if (entry.style === undefined && entry.distance === undefined) return null
+  if (entry.style !== undefined && !CARD_STYLE_FOCI.includes(entry.style as CardStyleFocus)) return null
+  if (entry.distance !== undefined && !CARD_DISTANCE_FOCI.includes(entry.distance as CardDistanceFocus)) return null
+  return {
+    ...(entry.style !== undefined ? { style: entry.style as CardStyleFocus } : {}),
+    ...(entry.distance !== undefined ? { distance: entry.distance as CardDistanceFocus } : {}),
+    note: entry.note,
+  }
+}

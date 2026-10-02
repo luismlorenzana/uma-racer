@@ -104,6 +104,30 @@ open on the five-star ladder is closed with its ticket refunded. The save field 
 scale can never be read without its conversion. A gold skill at a star threshold, once planned for bond 3, was never
 built and is not part of stars.
 
+## Card focus
+
+Beside its stat type, every card has a **running-style focus** (Front Runner, Pace Chaser, Late Surger, End Closer or
+Generalist) and a **distance focus** (Sprint, Mile, Medium, Long or Generalist), so a set for a Late, Long Uma is easy to
+pick (D201, D236). A focus is a category for browsing and achievements, never a bonus.
+
+- **The rule** (`cardFocus` in `packages/domain/src/card-focus.ts`): a card's skills are its distinct hint and event
+  skills in the skills pack. A skill is **restricted** to the styles its activation branches name
+  (`running_style==1..4`; each `@` branch of its condition, read with its precondition) when every branch names exactly
+  one; a branch that names none restricts nothing. A skill whose branches name Late and End counts once for each. The
+  card's focus is the style its skills are restricted to most when that is **at least 2 skills and 30%** of them
+  (`CARD_FOCUS_MIN_SKILLS`, `CARD_FOCUS_MIN_SHARE`); fewer, or a tie for the most, is Generalist. Distance reads
+  `distance_type==1..4` the same way, independently.
+- **Authored corrections:** the private, gitignored `content/overrides/card-focus.json` maps a card id to
+  `{ style?, distance?, note }`. `pnpm data:import` refuses an unknown id, an unknown value or a missing note, writes an
+  optional `focus` field onto those cards, and writes a private review table to `content/review/card-focus.md`. An
+  override replaces only the dimension it names. Claude authors it (as with `flair.json`): a card left Generalist whose
+  top value has at least two skills including its own single-valued gold takes that value, and a tie is broken by a gold
+  restricted to one side. Ask Claude for any change to an authored tag.
+- On the pack of 2026-10-02 (312 cards, aggregates only): 163 cards have a style (Front 31, Pace 52, Late 57, End 23),
+  151 a distance (Sprint 19, Mile 26, Medium 67, Long 39), 67 both and 65 neither; 35 entries are overrides.
+- **On screen:** the card page and the album detail show two chips, Style and Distance, Generalist included; album and
+  picker tiles carry a compact focus mark; the album filters by both ([Collection](collection.md#card-album)).
+
 ## Where cards live on screen
 
 - **The Cards tab** browses by lens — the collection, or one scenario ([Collection](collection.md#card-album)).
@@ -112,7 +136,8 @@ built and is not part of stars.
   shows as the original's type icon on the illustration, its split with the stat icons, and a **Skills** list with the
   original's skill icons: its golds first, highlighted, then its whites, each marked with the node that pays it; a tap
   shows what the skill does and its base cost (D182).
-- **Card tiles** carry the original's type icon in the corner, as the original and GameTora mark cards, and the
+- **Card tiles** carry their focus mark over the top-left of the art ([Card focus](#card-focus)) and the original's type
+  icon in the corner, as the original and GameTora mark cards, and the
   original's stat icons stand for Speed, Stamina, Power, Guts and Wit on stat rows (the Uma profile, the Training
   header), with our own glyphs until content has them.
 - **The Training scene's Card set tab** is where a scenario's six are chosen and bonded

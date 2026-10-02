@@ -47,6 +47,7 @@ import { SegmentedControl } from '../ui/SegmentedControl'
 import { CheckIcon } from '../ui/icons'
 import { formatTickets } from '../ui/tickets'
 import { TypeIcon } from '../ui/TypeIcon'
+import { CardFocusChips, CardFocusMark, cardFocusLabel } from '../ui/CardFocusBadges'
 
 const MAX_COMPARE = 3
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
@@ -115,6 +116,7 @@ function CardTile({
           <span className="flex items-center gap-1.5">
             <span className="truncate text-[14px] font-semibold">{entry.template.charName}</span>
             {entry.isNew && <Crest tone="accent">NEW</Crest>}
+            <span className="shrink-0"><CardFocusMark focus={entry.focus} /></span>
           </span>
           <span className="flex min-w-0 items-center gap-1 text-[11px] text-ink-faint">
             <TypeIcon type={entry.template.type} size={14} />
@@ -139,7 +141,7 @@ function CardTile({
         onPointerUp={endPress}
         onPointerLeave={endPress}
         className={`block w-full min-w-0 rounded-md text-left ${ring}`}
-        aria-label={`${entry.template.charName} support card${entry.owned ? '' : ', not owned'}${showBond ? `, ${entry.bond}★` : ''}`}
+        aria-label={`${entry.template.charName} support card, ${cardFocusLabel(entry.focus)}${entry.owned ? '' : ', not owned'}${showBond ? `, ${entry.bond}★` : ''}`}
       >
         <ArtTile
           asset={entry.asset}
@@ -149,11 +151,13 @@ function CardTile({
           overlay={
             icons ? (
               <>
+                <CardFocusMark focus={entry.focus} compact />
                 {entry.isNew && <span aria-hidden className="h-2 w-2 rounded-full bg-accent shadow-1" />}
                 {entry.equippedBy.length > 0 && <span aria-hidden className="h-2 w-2 rounded-full bg-info shadow-1" />}
               </>
             ) : (
               <>
+                <CardFocusMark focus={entry.focus} />
                 {entry.isNew && <Crest tone="accent">NEW</Crest>}
                 {entry.equippedBy.length > 0 && <Crest>In a set</Crest>}
               </>
@@ -474,6 +478,7 @@ export function CardsScreen() {
             {detail.isNew && <Crest tone="accent">NEW</Crest>}
           </div>
           <p className="mt-1 text-[12px] text-ink-soft">{cardSplitLabel(detail.template)}</p>
+          <CardFocusChips focus={detail.focus} className="mt-1.5" />
           {!detail.owned ? (
             <p className="mt-2 text-[12px] font-semibold">Not owned · a Card Select Coupon unlocks it</p>
           ) : lensTier !== null ? (

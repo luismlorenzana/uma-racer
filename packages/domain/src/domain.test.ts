@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   addTrainingExp,
   APTITUDE_REFS,
+  CARD_FOCUS_MIN_SHARE,
+  CARD_FOCUS_MIN_SKILLS,
   LINEAGE_SLOT_COUNT,
   lineageSteps,
   upgradedGrade,
@@ -245,6 +247,12 @@ describe('Global Uma RPG — D227 progression pins', () => {
       .toBe(116)
     expect(rpgSignatureMagnitude(105, profile, { kind: 'healing', weapon: 'spear', element: 'ice' }, 'fire'))
       .toBe(105)
+  })
+})
+
+describe('Card focus', () => {
+  it('pins the D201 rule: at least two skills and 30% of them', () => {
+    expect([CARD_FOCUS_MIN_SKILLS, CARD_FOCUS_MIN_SHARE]).toEqual([2, 0.3])
   })
 })
 

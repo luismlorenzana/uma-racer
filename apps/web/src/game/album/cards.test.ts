@@ -50,11 +50,17 @@ function loaded(cards: SupportCardTemplate[], umas: UmaTemplate[]): LoadedConten
     frames: Object.fromEntries(ids.map((id, index) => [id, { page: 0, x: index * 128, y: 0, width: 128, height: 128 }])),
   })
   const skill = { id: 'skill-1', kind: 'white' as const, name: 'Corner Recovery', description: '', costSp: 100, iconId: null, conditions: [], inheritedSkillId: null, normalSkillId: null }
+  // Two Late Surger skills, so a card hinting both reads as Late (D201).
+  const late = [1, 2].map((index) => ({
+    ...skill, id: `late-${index}`, name: `Late Kick ${index}`,
+    conditions: [{ precondition: null, condition: 'running_style==3&phase==2', baseTime: 30_000, cooldown: null, effects: [{ type: 27, value: 1_500 }] }],
+  }))
+  const skills = [skill, ...late]
   return {
     manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
     umas: { items: umas, byId: new Map(umas.map((item) => [item.id, item])) },
     cards: { items: cards, byId: new Map(cards.map((item) => [item.id, item])) },
-    skills: { items: [skill], byId: new Map([[skill.id, skill]]) },
+    skills: { items: skills, byId: new Map(skills.map((item) => [item.id, item])) },
     races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },
     atlases: {
       'uma-icons': { descriptor: atlas('uma-icons', umas.map((item) => item.id)), pageUrls: ['blob:uma'] },
@@ -64,7 +70,12 @@ function loaded(cards: SupportCardTemplate[], umas: UmaTemplate[]): LoadedConten
   }
 }
 
-const templates = [card('c1', 1, 'speed', true), card('c2', 3, 'stamina'), card('c3', 2, 'friend')]
+const templates = [
+  card('c1', 1, 'speed', true),
+  // An authored correction, for the distance only: its style still comes from its skills.
+  { ...card('c2', 3, 'stamina'), focus: { distance: 'long' as const } },
+  { ...card('c3', 2, 'friend'), hintSkillIds: ['late-1', 'late-2', 'skill-1'] },
+]
 const content = loaded(templates, [uma('u1')])
 
 function album(
@@ -107,6 +118,19 @@ describe('card album · collection lens', () => {
     const built = album('collection', ['c1', 'c2'], { deck: ['c1'] })
     expect(built.entries.get('c1')?.equippedBy).toEqual(['u1'])
     expect(built.entries.get('c2')?.equippedBy).toEqual([])
+  })
+
+  it('tags running style and distance focus, override first, and filters on them', () => {
+    const built = album('collection', [])
+    expect(built.entries.get('c1')?.focus).toEqual({ style: 'generalist', distance: 'generalist' })
+    expect(built.entries.get('c2')?.focus).toEqual({ style: 'generalist', distance: 'long' })
+    expect(built.entries.get('c3')?.focus).toEqual({ style: 'late', distance: 'generalist' })
+    const late = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, { ...CARD_COLLECTION_QUERY, filters: { style: ['late'] } })
+    expect(late.rows.map((row) => row.id)).toEqual(['c3'])
+    const long = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, { ...CARD_COLLECTION_QUERY, filters: { distance: ['long'] } })
+    expect(long.rows.map((row) => row.id)).toEqual(['c2'])
+    const anyStyle = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, { ...CARD_COLLECTION_QUERY, filters: { style: ['generalist'] } })
+    expect(anyStyle.rows.map((row) => row.id).sort()).toEqual(['c1', 'c2'])
   })
 
   it('searches character names and hint skills', () => {

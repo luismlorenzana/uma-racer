@@ -3,14 +3,18 @@
 // per node. A card's power is never account-wide, so nothing here reads its best stars anywhere or a card level.
 
 import {
+  CARD_DISTANCE_FOCI,
+  CARD_STYLE_FOCI,
   MAX_STARS,
   SCENARIOS,
   STATS,
+  cardFocus,
   cardStars,
   cardNodeValue,
   cardShares,
   cardSpPerNode,
   paysSkillPoints,
+  type CardFocus,
   type CardSave,
   type SupportCardTemplate,
   type UmaSave,
@@ -45,7 +49,16 @@ export interface CardEntry {
   /** Umas with this card in a set — in the lens scenario, or in their active scenario for the collection. */
   equippedBy: string[]
   hintSkillNames: string[]
+  /** Running-style and distance focus beside the stat type (D201). */
+  focus: CardFocus
   isNew: boolean
+}
+
+export const CARD_STYLE_FOCUS_LABEL: Record<CardFocus['style'], string> = {
+  front: 'Front Runner', pace: 'Pace Chaser', late: 'Late Surger', end: 'End Closer', generalist: 'Generalist',
+}
+export const CARD_DISTANCE_FOCUS_LABEL: Record<CardFocus['distance'], string> = {
+  sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long', generalist: 'Generalist',
 }
 
 export interface CardAlbumInput {
@@ -110,6 +123,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
         const skill = content.skills.byId.get(id)
         return skill ? [skill.name] : []
       }),
+      focus: cardFocus(template, content.skills.byId),
       isNew: save !== null && !seen.has(template.id),
     }
   })
@@ -121,6 +135,8 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
     facets: {
       ownership: [entry.owned ? 'owned' : 'unowned'],
       type: [entry.template.type],
+      style: [entry.focus.style],
+      distance: [entry.focus.distance],
       era: [String(entry.template.era)],
       bond: entry.bond === null ? [] : [String(entry.bond)],
       bondable: entry.bond !== null && entry.bond < MAX_STARS,
@@ -160,6 +176,14 @@ const TYPE: FacetDef = {
   key: 'type', label: 'Type', kind: 'enum', group: 'Card',
   options: CARD_TYPES.map((type) => ({ value: type, label: titleCase(type) })),
 }
+const STYLE_FOCUS: FacetDef = {
+  key: 'style', label: 'Running style', kind: 'enum', group: 'Card',
+  options: CARD_STYLE_FOCI.map((value) => ({ value, label: CARD_STYLE_FOCUS_LABEL[value] })),
+}
+const DISTANCE_FOCUS: FacetDef = {
+  key: 'distance', label: 'Distance', kind: 'enum', group: 'Card',
+  options: CARD_DISTANCE_FOCI.map((value) => ({ value, label: CARD_DISTANCE_FOCUS_LABEL[value] })),
+}
 const ERA: FacetDef = {
   key: 'era', label: 'Era', kind: 'enum', group: 'Card',
   options: SCENARIOS.map((scenario) => ({ value: String(scenario.tier), label: `${scenario.tier} · ${scenario.name}` })),
@@ -168,6 +192,8 @@ const ERA: FacetDef = {
 export const CARD_COLLECTION_FACETS: FacetDef[] = [
   OWNERSHIP,
   TYPE,
+  STYLE_FOCUS,
+  DISTANCE_FOCUS,
   ERA,
   { key: 'equipped', label: 'In an active set', kind: 'boolean', group: 'Sets' },
   { key: 'starter', label: 'Free or event card', kind: 'boolean', group: 'Collection' },
@@ -177,6 +203,8 @@ export const CARD_COLLECTION_FACETS: FacetDef[] = [
 export const CARD_SCENARIO_FACETS: FacetDef[] = [
   OWNERSHIP,
   TYPE,
+  STYLE_FOCUS,
+  DISTANCE_FOCUS,
   {
     key: 'bond', label: 'Stars', kind: 'enum', group: 'This scenario',
     options: Array.from({ length: MAX_STARS + 1 }, (_, index) => ({
