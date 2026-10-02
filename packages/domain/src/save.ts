@@ -23,6 +23,7 @@ import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel }
 import { EXP_TO_NEXT_TRAINING_LEVEL, fitsTrainingCurve, relevelLegacyTraining } from './training'
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type DistanceCategory, type Grade, type StatKey, type Stats, type Strategy, type Surface } from './types'
 import { FARM_SCHEMA_VERSION } from './farm/constants'
+import { migrateFarmStateToCurrent } from './farm/legacy'
 import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry, type FarmCropId } from './farm/types'
 import { farmCropById } from './farm/catalog'
 import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt, parseRpgOutfitSave,
@@ -1685,6 +1686,7 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
   if (kind === 'profile') return migratePlayerProfileToCurrent(value) as unknown as Record<string, unknown> | null
   if (kind === 'umas') return migrateUmaSaveToCurrent(value) as unknown as Record<string, unknown> | null
   if (kind === 'cards') return migrateCardSaveToCurrent(value) as unknown as Record<string, unknown> | null
+  if (kind === 'farm') return migrateFarmStateToCurrent(value) as unknown as Record<string, unknown> | null
   return parseEntityData(kind, value)
 }
 

@@ -1,4 +1,4 @@
-// Compact, read-only Home entry for Stable Farm (docs/design/farm.md#screen-contract, T084).
+// Compact, read-only Home entry for Stable Farm (docs/design/farm.md#screen-contract, T084, D234).
 
 import { Link } from 'react-router'
 import { useFarmPresentationNow } from '../../game/farm/presentation-clock'
@@ -21,14 +21,14 @@ export function FarmHomeCard() {
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2"><span className="font-display text-lg font-bold">Stable Farm</span>{summary && <Crest tone="accent">Lv {summary.farmLevel}</Crest>}</span>
           <span className="mt-1 block text-[12px] text-ink-soft">
-            {summary ? `${summary.ready} ready · ${summary.working} working · ${summary.unlocked}/6 plots open` : state.status === 'error' ? 'Tap to retry from the Farm' : 'Opening the field…'}
+            {summary ? `${summary.ready} ready · ${summary.working} working · ${summary.unlocked} ${summary.unlocked === 1 ? 'plot' : 'plots'} open` : state.status === 'error' ? 'Tap to retry from the Farm' : 'Opening the field…'}
           </span>
         </span>
         <ChevronRightIcon size={20} className="mt-3 shrink-0 text-ink-faint" />
       </div>
       {summary && <div className="mt-3 grid grid-cols-[auto_1fr] items-start gap-x-2 border-t border-hairline pt-2 text-[11px]">
         <StopwatchIcon size={16} className="text-ink-faint" />
-        <span><span className="font-semibold">{summary.deadlineLabel}</span><span className="block text-ink-soft">Next: {summary.nextPlotUnlock} · {summary.nextCropUnlock}</span></span>
+        <span><span className="font-semibold">{summary.deadlineLabel}</span><span className="block text-ink-soft">Next: {summary.nextPlotUnlock}</span></span>
       </div>}
     </Panel>
   </Link>

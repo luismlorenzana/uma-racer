@@ -1,18 +1,24 @@
-// Strict data-only Stable Farm vocabulary (docs/design/farm.md, T082).
+// Strict data-only Stable Farm vocabulary (docs/design/farm.md, T082, D234).
 
 import { STATS, type StatKey } from '../types'
 import {
+  FARM_CROP_TIERS,
   FARM_CROP_YIELD,
-  FARM_GROWTH_HOURS,
-  FARM_GROWTH_MS,
-  FARM_PLOT_IDS,
-  FARM_PLOT_LEVEL_REQUIREMENTS,
   FARM_SCHEMA_VERSION,
   FARMING_EXP_PER_HARVEST,
+  MAX_FARM_PLOTS,
   MAX_FARM_WORKERS,
-  MAX_OUTFIT_FARMING_LEVEL,
+  MAX_FARMING_LEVEL_BOUND,
   type FarmPlotId,
 } from './constants'
+import {
+  cropTierOpenLevel,
+  farmingXpToNext,
+  farmPlotNumber,
+  isFarmGrowthDuration,
+  isFarmPlotId,
+  plotLevelRequirement,
+} from './progression'
 
 export type FarmCropId = `produce:t${number}:${StatKey}`
 
@@ -21,9 +27,8 @@ export interface FarmCropDefinition {
   name: string
   stat: StatKey
   scenarioTier: number
+  /** The Farming Level that opens this row (D234). How fast it grows depends on the worker. */
   outfitLevelRequired: number
-  farmLevelRequired: number
-  growthHours: typeof FARM_GROWTH_HOURS
   yield: typeof FARM_CROP_YIELD
   farmingExp: typeof FARMING_EXP_PER_HARVEST
 }
@@ -50,6 +55,7 @@ export interface FarmPlot {
 
 export interface FarmState {
   schemaVersion: typeof FARM_SCHEMA_VERSION
+  /** Only plots that differ from an empty, never-planted plot, in plot order (D234). */
   plots: FarmPlot[]
   workers: Record<string, OutfitFarmingProgress>
 }
@@ -148,12 +154,11 @@ const cropId = (value: unknown): value is FarmCropId =>
 
 export function parseFarmCropDefinition(value: unknown): FarmCropDefinition | null {
   if (!isRecord(value) || !exactKeys(value, [
-    'farmLevelRequired', 'farmingExp', 'growthHours', 'id', 'name', 'outfitLevelRequired', 'scenarioTier', 'stat', 'yield',
+    'farmingExp', 'id', 'name', 'outfitLevelRequired', 'scenarioTier', 'stat', 'yield',
   ])) return null
   if (!cropId(value.id) || typeof value.name !== 'string' || value.name.length < 1 || value.name.length > 60 ||
-    !STATS.includes(value.stat as StatKey) || !safeInteger(value.scenarioTier, 1) || value.scenarioTier > 14 ||
-    !safeInteger(value.outfitLevelRequired, 1) || value.outfitLevelRequired > MAX_OUTFIT_FARMING_LEVEL ||
-    !safeInteger(value.farmLevelRequired, 1) || value.growthHours !== FARM_GROWTH_HOURS ||
+    !STATS.includes(value.stat as StatKey) || !safeInteger(value.scenarioTier, 1) || value.scenarioTier > FARM_CROP_TIERS ||
+    value.outfitLevelRequired !== cropTierOpenLevel(value.scenarioTier) ||
     value.yield !== FARM_CROP_YIELD || value.farmingExp !== FARMING_EXP_PER_HARVEST) return null
   const match = FARM_CROP_ID_PATTERN.exec(value.id)
   if (!match || Number(match[1]) !== value.scenarioTier || match[2] !== value.stat) return null
@@ -163,8 +168,6 @@ export function parseFarmCropDefinition(value: unknown): FarmCropDefinition | nu
     stat: value.stat as StatKey,
     scenarioTier: value.scenarioTier,
     outfitLevelRequired: value.outfitLevelRequired,
-    farmLevelRequired: value.farmLevelRequired,
-    growthHours: FARM_GROWTH_HOURS,
     yield: FARM_CROP_YIELD,
     farmingExp: FARMING_EXP_PER_HARVEST,
   }
@@ -172,24 +175,22 @@ export function parseFarmCropDefinition(value: unknown): FarmCropDefinition | nu
 
 export function parseOutfitFarmingProgress(value: unknown): OutfitFarmingProgress | null {
   if (!isRecord(value) || !exactKeys(value, ['exp', 'level']) ||
-    !safeInteger(value.level, 1) || value.level > MAX_OUTFIT_FARMING_LEVEL || !safeInteger(value.exp)) return null
-  if (value.level === MAX_OUTFIT_FARMING_LEVEL) return value.exp === 0 ? { level: value.level, exp: 0 } : null
-  const maximumExp = 48 + 12 * Math.floor((value.level - 1) / 4)
-  if (value.exp >= maximumExp) return null
+    !safeInteger(value.level, 1) || value.level > MAX_FARMING_LEVEL_BOUND || !safeInteger(value.exp)) return null
+  if (value.exp >= farmingXpToNext(value.level)) return null
   return { level: value.level, exp: value.exp }
 }
 
 export function parseFarmCycle(value: unknown, plotId?: FarmPlotId, attempt?: number): FarmCycle | null {
   if (!isRecord(value) || !exactKeys(value, ['cropId', 'id', 'plantedAt', 'readyAt']) ||
     typeof value.id !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.id) || !cropId(value.cropId) ||
-    !safeInteger(value.plantedAt) || !safeInteger(value.readyAt) || value.readyAt - value.plantedAt !== FARM_GROWTH_MS) return null
+    !safeInteger(value.plantedAt) || !safeInteger(value.readyAt) || !isFarmGrowthDuration(value.readyAt - value.plantedAt)) return null
   if (plotId !== undefined && attempt !== undefined && value.id !== `farm:${plotId}:${attempt}`) return null
   return { id: value.id, cropId: value.cropId, plantedAt: value.plantedAt, readyAt: value.readyAt }
 }
 
 export function parseFarmPlot(value: unknown): FarmPlot | null {
   if (!isRecord(value) || !exactKeys(value, ['attempt', 'cycle', 'id', 'lastCropId', 'templateId']) ||
-    !FARM_PLOT_IDS.includes(value.id as FarmPlotId) || !safeInteger(value.attempt) ||
+    !isFarmPlotId(value.id) || !safeInteger(value.attempt) ||
     !(value.templateId === null || (typeof value.templateId === 'string' && FARM_SAFE_ID_PATTERN.test(value.templateId))) ||
     !(value.lastCropId === null || cropId(value.lastCropId))) return null
   const id = value.id as FarmPlotId
@@ -200,14 +201,20 @@ export function parseFarmPlot(value: unknown): FarmPlot | null {
   return { id, templateId: value.templateId, lastCropId: value.lastCropId, attempt: value.attempt, cycle }
 }
 
+/** An empty plot that was never planted: the default every unrecorded plot reads as, so it is never stored. */
+export const isEmptyFarmPlot = (plot: FarmPlot): boolean =>
+  plot.templateId === null && plot.lastCropId === null && plot.cycle === null && plot.attempt === 0
+
 export function parseFarmState(value: unknown): FarmState | null {
   if (!isRecord(value) || !exactKeys(value, ['plots', 'schemaVersion', 'workers']) ||
-    value.schemaVersion !== FARM_SCHEMA_VERSION || !Array.isArray(value.plots) || value.plots.length !== FARM_PLOT_IDS.length ||
+    value.schemaVersion !== FARM_SCHEMA_VERSION || !Array.isArray(value.plots) || value.plots.length > MAX_FARM_PLOTS ||
     !isRecord(value.workers)) return null
   const plots = value.plots.map(parseFarmPlot)
   if (plots.some((plot) => plot === null)) return null
   const checkedPlots = plots as FarmPlot[]
-  if (checkedPlots.some((plot, index) => plot.id !== FARM_PLOT_IDS[index])) return null
+  // Stored sparsely and canonically: in plot order, once each, and never an empty never-planted plot (D234).
+  const numbers = checkedPlots.map((plot) => farmPlotNumber(plot.id)!)
+  if (numbers.some((number, index) => index > 0 && number <= numbers[index - 1]!) || checkedPlots.some(isEmptyFarmPlot)) return null
   const assigned = checkedPlots.flatMap((plot) => plot.templateId === null ? [] : [plot.templateId])
   if (new Set(assigned).size !== assigned.length) return null
   const workerIds = Object.keys(value.workers)
@@ -219,7 +226,7 @@ export function parseFarmState(value: unknown): FarmState | null {
     workers[id] = progress
   }
   const accountFarmLevel = 1 + Object.values(workers).reduce((sum, progress) => sum + progress.level - 1, 0)
-  if (checkedPlots.some((plot, index) => accountFarmLevel < FARM_PLOT_LEVEL_REQUIREMENTS[index]! &&
+  if (checkedPlots.some((plot) => accountFarmLevel < plotLevelRequirement(plot.id) &&
     (plot.templateId !== null || plot.lastCropId !== null || plot.cycle !== null))) return null
   return { schemaVersion: FARM_SCHEMA_VERSION, plots: checkedPlots, workers }
 }
@@ -230,7 +237,7 @@ export function parseFarmHarvestMovement(value: unknown): FarmHarvestMovement | 
     value.delta !== FARM_CROP_YIELD || value.reason !== 'farm-harvest' || !safeInteger(value.createdAt) ||
     !isRecord(value.source) || !exactKeys(value.source, ['cycleId', 'farmingExp', 'kind', 'plotId', 'templateId']) ||
     value.source.kind !== 'farm-harvest' || typeof value.source.cycleId !== 'string' || value.source.cycleId !== value.id ||
-    !FARM_PLOT_IDS.includes(value.source.plotId as FarmPlotId) ||
+    !isFarmPlotId(value.source.plotId) ||
     typeof value.source.templateId !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.source.templateId) ||
     value.source.farmingExp !== FARMING_EXP_PER_HARVEST) return null
   return {
@@ -300,7 +307,7 @@ export function parseItemLedgerEntry(value: unknown): ItemLedgerEntry | null {
     value.source.kind !== 'constellation-produce' || typeof value.source.umaId !== 'string' ||
     !FARM_SAFE_ID_PATTERN.test(value.source.umaId) || typeof value.source.nodeId !== 'string' ||
     !FARM_SAFE_ID_PATTERN.test(value.source.nodeId) || !safeInteger(value.source.revision, 1) ||
-    !safeInteger(value.source.tier, 1) || value.source.tier > 14) return null
+    !safeInteger(value.source.tier, 1) || value.source.tier > FARM_CROP_TIERS) return null
   return {
     id: value.id,
     itemId: value.itemId,

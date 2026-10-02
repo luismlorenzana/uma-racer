@@ -1,8 +1,9 @@
 // Evidence-based Farm projection repair (docs/design/farm.md#persistence-boundary, T083).
 
-import { FARM_PLOT_IDS, type FarmPlotId } from './constants'
-import { applyFarmingXp, defaultOutfitFarmingProgress } from './progression'
+import type { FarmPlotId } from './constants'
+import { applyFarmingXp, defaultOutfitFarmingProgress, farmPlotNumber } from './progression'
 import {
+  isEmptyFarmPlot,
   parseFarmState,
   parseInventoryStackData,
   parseItemLedgerEntry,
@@ -81,7 +82,14 @@ export function reconcileFarmEvidence(
   }
 
   const workers = Object.fromEntries([...progress.entries()].sort(([left], [right]) => left.localeCompare(right)))
-  const plots = parsedFarm.plots.map((plot) => {
+  // Plots are stored sparsely (D234): evidence can name a plot this projection lost to a sync conflict.
+  const stored = new Map(parsedFarm.plots.map((plot) => [plot.id, plot]))
+  for (const entry of harvestedByCycle.values()) {
+    if (!stored.has(entry.source.plotId)) {
+      stored.set(entry.source.plotId, { id: entry.source.plotId, templateId: null, lastCropId: null, attempt: 0, cycle: null })
+    }
+  }
+  const plots = [...stored.values()].sort((left, right) => farmPlotNumber(left.id)! - farmPlotNumber(right.id)!).map((plot) => {
     let attempt = plot.attempt
     for (const entry of harvestedByCycle.values()) {
       if (entry.source.plotId !== plot.id) continue
@@ -96,10 +104,7 @@ export function reconcileFarmEvidence(
       attempt,
       cycle: null,
     }
-  })
-  // Every parser-valid Farm always has the six canonical slots; retaining this guard makes accidental future widening
-  // fail visibly instead of writing a partial repair.
-  if (plots.length !== FARM_PLOT_IDS.length) throw new Error('Farm projection has an invalid plot count')
+  }).filter((plot) => !isEmptyFarmPlot(plot))
   const farm = { ...parsedFarm, plots, workers }
   if (!parseFarmState(farm)) throw new Error('Item ledger evidence cannot produce a valid Farm projection')
 

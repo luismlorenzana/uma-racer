@@ -53,8 +53,8 @@ feedback catalogue.
 - **Career** card for the featured Uma (a pip per goal race, her stage, and her next goal race under the Race button), followed by the implemented **recent flair** card with the latest
   three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
   recent-flair feed.
-- A **Stable Farm** card shows Farm Level, ready/working/open plots, the nearest deadline and next plot/crop unlock. It
-  opens the saved field directly; Home has no separate Item shortcut.
+- A **Stable Farm** card shows Farm Level, ready/working/open plots, the nearest deadline and the next plot unlock. It
+  opens the saved Sections directly; Home has no separate Item shortcut.
 - A swipe on the portrait switches the featured Uma.
 
 The implemented goal tracker handles pending setup, active/completed/missed goals, legacy-untracked saves, final completion,
@@ -62,12 +62,14 @@ and missing target content. Each available active target links directly into Rac
 
 ### Stable Farm
 
-- A full-screen account activity outside the five-tab shell. Its header owns Back, Farm Level, **How it works**, and
-  Field / Workers / Crops / Items navigation; `/farm` always opens the persistent field.
-- The Field is the complete two-by-three future shape: locked, unassigned, idle, growing and ready plots; assignment is
-  per outfit, crop choice names both unlock tracks, and a twelve-hour crop keeps growing offline without withering.
-- Workers lists every owned outfit separately with Farm-only XP and level. Crops exposes the seventy scenario/stat
-  definitions and both locks. Items opens with a Training panel (Level-Up Tickets owned and the Training EXP bank as a
+- A full-screen account activity outside the five-tab shell. Its header owns Back, Farm Level (one number), **How it
+  works**, and Field / Workers / Crops / Items navigation; `/farm` always opens the persistent Section list (D234).
+- Field lists every Section with an open plot, then the next one locked. Each Section card previews its six slots
+  (worker chibi, crop, READY band, locks) and when its next crop is ready; tapping it opens that Section's two-by-three
+  field of locked, unassigned, idle, growing and ready plots. Assignment is per outfit, the crop picker opens on her
+  newest row and shows each crop's growth time (12h down to 8h), and a crop keeps growing offline without withering.
+- Workers lists every owned outfit separately with Farm-only XP and level, her newest crop row and its growth time.
+  Crops exposes the seventy scenario/stat definitions with each row's Farming Level or growth time. Items opens with a Training panel (Level-Up Tickets owned and the Training EXP bank as a
   meter, `850 / 1,250`), then joins the global synced stacks to the produce catalog, defaults to owned produce, remembers
   owned/all, stat, scenario and density locally, and exposes source plus the constellation use that consumes it.
 - Harvest feedback appears only after the transaction commits, links to the exact Item stack, and names XP, outfit/Farm

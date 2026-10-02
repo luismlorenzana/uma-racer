@@ -1,10 +1,14 @@
 import 'fake-indexeddb/auto'
 
-import { createUmaSave, FARM_GROWTH_MS, type UmaTemplate } from '@racer/domain'
+import { createUmaSave, type UmaTemplate } from '@racer/domain'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { db } from '../db'
 import { FarmConflictError, PersistentFarmHost } from './host'
+
+const FARM_GROWTH_MS = 12 * 60 * 60 * 1_000
+/** Section 1 shows plot 1 open, then Section 2 is shown locked (D234). */
+const FRESH_STATUSES = ['unassigned', ...Array.from({ length: 11 }, () => 'locked')]
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },
@@ -44,8 +48,9 @@ describe('PersistentFarmHost', () => {
   it('lazily initializes one unlocked unassigned plot and no fabricated progress or inventory', async () => {
     expect(await db.farm.count()).toBe(0)
     const view = await host.getFarm()
-    expect(view.plots.map((plot) => plot.status)).toEqual(['unassigned', 'locked', 'locked', 'locked', 'locked', 'locked'])
-    expect(view.state.workers).toEqual({})
+    expect(view.plots.map((plot) => plot.status)).toEqual(FRESH_STATUSES)
+    expect(view.unlockedPlots).toBe(1)
+    expect(view.state).toEqual({ schemaVersion: 2, plots: [], workers: {} })
     expect(view.inventory).toEqual({})
     expect(await db.items.count()).toBe(0)
     expect(await db.itemLedger.count()).toBe(0)
@@ -68,7 +73,32 @@ describe('PersistentFarmHost', () => {
     expect(await db.items.count()).toBe(0)
     expect(await db.itemLedger.count()).toBe(0)
     const view = await new PersistentFarmHost({ now: () => now }).getFarm()
-    expect(view.plots.map((plot) => plot.status)).toEqual(['unassigned', 'locked', 'locked', 'locked', 'locked', 'locked'])
+    expect(view.plots.map((plot) => plot.status)).toEqual(FRESH_STATUSES)
+  })
+
+  it('upgrades a v1 Farm row to v2 once, re-levelled and queued for upload (D234)', async () => {
+    const stores = Object.fromEntries(db.tables.map((table) =>
+      [table.name, [table.schema.primKey.src, ...table.schema.indexes.map((index) => index.src)].join(', ')]))
+    db.close()
+    await db.delete()
+    const legacy = new Dexie('uma-racer')
+    legacy.version(19).stores(stores)
+    await legacy.open()
+    const empty = (id: string) => ({ id, templateId: null, lastCropId: null, attempt: 0, cycle: null })
+    await legacy.table('farm').put({ id: 'main', version: 3, revision: 3, data: {
+      schemaVersion: 1,
+      plots: [{ ...empty('plot-1'), templateId: 'outfit-a', attempt: 1, lastCropId: 'produce:t1:speed' },
+        ...['plot-2', 'plot-3', 'plot-4', 'plot-5', 'plot-6'].map(empty)],
+      workers: { 'outfit-a': { level: 2, exp: 0 } },
+    } })
+    legacy.close()
+    await db.open()
+    const row = (await db.farm.get('main'))!
+    expect(row).toMatchObject({ version: 3, revision: 4 })
+    // Four v1 harvests (48 XP) are two v2 levels.
+    expect(row.data).toEqual({ schemaVersion: 2, workers: { 'outfit-a': { level: 3, exp: 0 } },
+      plots: [{ ...empty('plot-1'), templateId: 'outfit-a', attempt: 1, lastCropId: 'produce:t1:speed' }] })
+    expect(await db.outbox.where('[kind+id]').equals(['farm', 'main']).count()).toBe(1)
   })
 
   it('persists an assignment across reload and permits different outfits of one character', async () => {
@@ -79,7 +109,7 @@ describe('PersistentFarmHost', () => {
     expect(reloaded.plots[0]?.templateId).toBe('outfit-a')
 
     const row = (await db.farm.get('main'))!
-    await db.farm.put({ ...row, data: { ...row.data, workers: { 'outfit-a': { level: 2, exp: 0 } } }, revision: row.revision + 1 })
+    await db.farm.put({ ...row, data: { ...row.data, workers: { 'outfit-a': { level: 3, exp: 0 } } }, revision: row.revision + 1 })
     const expanded = await host.getFarm()
     await expect(host.assign({ plotId: 'plot-2', templateId: 'outfit-a', expectedFarmVersion: expanded.version }))
       .rejects.toThrow(/already assigned/)

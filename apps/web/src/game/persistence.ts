@@ -13,6 +13,7 @@ import {
   parseCardSave,
   parseBadgeState,
   parseFlairEvent,
+  migrateFarmStateToCurrent,
   parseFarmState,
   parseInventoryStackData,
   parseItemLedgerEntry,
@@ -255,6 +256,9 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
           legacyKeys.add(`${row.kind}/${row.id}`)
         }
       }
+      // A v1 Farm reads as v2 (D234); upload the new shape so the cloud copy catches up.
+      if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
+        !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
     }
   }
   const profileRecords = snapshot.entities.filter((record) => record.kind === 'profile' && !record.deleted)
@@ -297,7 +301,11 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.cards.put({ id: record.id, data: card, version: record.version })
       }
       if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
-      if (record.kind === 'farm') await db.farm.put({ id: record.id, data: parseFarmState(record.data)!, version: record.version, revision: record.version })
+      if (record.kind === 'farm') {
+        const farm = migrateFarmStateToCurrent(record.data)
+        if (!farm) throw new Error(`Server Farm ${record.id} cannot be migrated`)
+        await db.farm.put({ id: record.id, data: farm, version: record.version, revision: record.version })
+      }
       if (record.kind === 'items') await db.items.put({ id: record.id, data: parseInventoryStackData(record.data, record.id)!, version: record.version })
       if (record.kind === 'rpgOutfits' || record.kind === 'rpgPresets' || record.kind === 'rpgCheckpoints') {
         await mergeRpgEntity(record)
@@ -597,7 +605,7 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
     }
   }
   if (record.kind === 'farm') {
-    const farm = parseFarmState(record.data)
+    const farm = migrateFarmStateToCurrent(record.data)
     if (!farm || record.id !== 'main') throw new Error(`Invalid server Farm conflict: ${record.id}`)
     const local = await db.farm.get(record.id)
     await db.farm.put({ id: record.id, data: farm, version: record.version, revision: (local?.revision ?? record.version) + 1 })

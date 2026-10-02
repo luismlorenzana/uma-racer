@@ -1,13 +1,8 @@
 // Authored synthetic produce catalog for Stable Farm (docs/design/farm.md#crop-catalog).
 
 import { STATS, type StatKey } from '../types'
-import {
-  FARM_CROP_LEVEL_REQUIREMENTS,
-  FARM_CROP_YIELD,
-  FARM_GROWTH_HOURS,
-  FARM_OUTFIT_LEVEL_REQUIREMENTS,
-  FARMING_EXP_PER_HARVEST,
-} from './constants'
+import { FARM_CROP_TIERS, FARM_CROP_YIELD, FARMING_EXP_PER_HARVEST } from './constants'
+import { cropTierOpenLevel } from './progression'
 import { parseFarmCropDefinition, type FarmCropDefinition, type FarmCropId } from './types'
 
 const CROP_NAMES: readonly (readonly [string, string, string, string, string])[] = [
@@ -32,9 +27,7 @@ const definition = (scenarioTier: number, stat: StatKey, name: string): FarmCrop
   name,
   stat,
   scenarioTier,
-  outfitLevelRequired: FARM_OUTFIT_LEVEL_REQUIREMENTS[scenarioTier - 1]!,
-  farmLevelRequired: FARM_CROP_LEVEL_REQUIREMENTS[scenarioTier - 1]!,
-  growthHours: FARM_GROWTH_HOURS,
+  outfitLevelRequired: cropTierOpenLevel(scenarioTier),
   yield: FARM_CROP_YIELD,
   farmingExp: FARMING_EXP_PER_HARVEST,
 })
@@ -50,7 +43,9 @@ export const farmCropFor = (scenarioTier: number, stat: StatKey): FarmCropDefini
   farmCropById(`produce:t${scenarioTier}:${stat}`)
 
 export function assertFarmCropCatalog(catalog: readonly FarmCropDefinition[] = FARM_CROPS): void {
-  if (catalog.length !== CROP_NAMES.length * STATS.length) throw new Error('Farm crop catalog must contain 70 crops')
+  if (CROP_NAMES.length !== FARM_CROP_TIERS || catalog.length !== CROP_NAMES.length * STATS.length) {
+    throw new Error(`Farm crop catalog must contain ${FARM_CROP_TIERS * STATS.length} crops`)
+  }
   const ids = new Set<string>()
   const pairs = new Set<string>()
   for (const crop of catalog) {
@@ -61,10 +56,7 @@ export function assertFarmCropCatalog(catalog: readonly FarmCropDefinition[] = F
     const pair = `${parsed.scenarioTier}:${parsed.stat}`
     if (pairs.has(pair)) throw new Error(`Farm crop tier/stat pair is duplicated: ${pair}`)
     pairs.add(pair)
-    if (parsed.outfitLevelRequired !== FARM_OUTFIT_LEVEL_REQUIREMENTS[parsed.scenarioTier - 1] ||
-      parsed.farmLevelRequired !== FARM_CROP_LEVEL_REQUIREMENTS[parsed.scenarioTier - 1]) {
-      throw new Error(`Farm crop requirements drifted: ${parsed.id}`)
-    }
+    if (parsed.outfitLevelRequired !== cropTierOpenLevel(parsed.scenarioTier)) throw new Error(`Farm crop requirements drifted: ${parsed.id}`)
   }
   for (let tier = 1; tier <= CROP_NAMES.length; tier += 1) {
     for (const stat of STATS) {

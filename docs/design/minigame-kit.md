@@ -22,7 +22,7 @@ rules stay in [Minigames](minigames.md); this page is what they have in common.
   shown before the player commits (a rival's intent, a facility's target).
 
 [Stable Farm](farm.md) is deliberately outside this kit. It is an asynchronous synced account activity with a persistent
-outfit crew, a field that grows from one to six plots and persisted deadlines, not a ticketed run with a seed, action
+outfit crew, a field that grows plot by plot in Sections of six and persisted deadlines, not a ticketed run with a seed, action
 journal, terminal result or win/loss. It may reuse visual primitives and `PagedGuide`, but it must not be forced through
 `MinigameHost` (D203, D206).
 

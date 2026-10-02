@@ -30,6 +30,13 @@ describe('Farm evidence reconciliation', () => {
     expect(repaired).toMatchObject({ farmChanged: true, changedItemIds: [crop.id] })
   })
 
+  it('restores a plot that a sync conflict dropped from the sparse projection (D234)', () => {
+    const result = harvested()
+    const repaired = reconcileFarmEvidence(createInitialFarmState(), [], [result.movement])
+    expect(repaired.farm.plots).toEqual([{ id: 'plot-1', templateId: null, lastCropId: null, attempt: 1, cycle: null }])
+    expect(repaired.farmChanged).toBe(true)
+  })
+
   it('is write-free when projections already match and rejects conflicting evidence ids', () => {
     const result = harvested()
     const stack = { itemId: crop.id, quantity: 1, updatedAt: result.movement.createdAt }

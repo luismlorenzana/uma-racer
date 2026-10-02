@@ -20,7 +20,16 @@ describe('Farm save vocabulary', () => {
 
   it('reports a newer Farm schema as an app-update error', () => {
     expect(() => parseSaveSnapshotOrThrow({ entities: [{
-      kind: 'farm', id: 'main', version: 1, data: { ...createInitialFarmState(), schemaVersion: 2 }, deleted: false, updatedAt: 1,
-    }], logs: [], serverTime: 1 })).toThrow('App update required for Farm schema 2')
+      kind: 'farm', id: 'main', version: 1, data: { ...createInitialFarmState(), schemaVersion: 3 }, deleted: false, updatedAt: 1,
+    }], logs: [], serverTime: 1 })).toThrow('App update required for Farm schema 3')
+  })
+
+  it('reads a v1 Farm from the server as v2 (D234)', () => {
+    const empty = (id: string) => ({ id, templateId: null, lastCropId: null, attempt: 0, cycle: null })
+    const v1 = { schemaVersion: 1, plots: ['plot-1', 'plot-2', 'plot-3', 'plot-4', 'plot-5', 'plot-6'].map(empty),
+      workers: { 'outfit-a': { level: 1, exp: 12 } } }
+    const snapshot = parseSaveSnapshotOrThrow({ entities: [{ kind: 'farm', id: 'main', version: 4, data: v1, deleted: false, updatedAt: 1 }],
+      logs: [], serverTime: 1 })
+    expect(snapshot.entities[0]!.data).toEqual({ schemaVersion: 2, plots: [], workers: { 'outfit-a': { level: 1, exp: 12 } } })
   })
 })

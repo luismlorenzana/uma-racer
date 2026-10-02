@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseSyncRequest, resolveUpserts, type EntityRecord } from './save.types'
 
-const farm = {
+const farmV1 = {
   schemaVersion: 1,
   plots: Array.from({ length: 6 }, (_, index) => ({
     id: `plot-${index + 1}`,
@@ -12,6 +12,13 @@ const farm = {
       id: 'farm:plot-1:1', cropId: 'produce:t1:speed', plantedAt: 1, readyAt: 43_200_001,
     } : null,
   })),
+  workers: {},
+}
+
+/** v2 (D234): sparse plots and uncapped Farming Levels. */
+const farm = {
+  schemaVersion: 2,
+  plots: [farmV1.plots[0]!],
   workers: {},
 }
 
@@ -54,9 +61,30 @@ describe('Farm save wire contract', () => {
       data: { itemId: 'produce:t1:power', quantity: 1, updatedAt: 1 } }] })).toMatch(/id does not match/)
   })
 
-  it('keeps a newer Farm schema as the authoritative conflict', () => {
-    const future: EntityRecord = { kind: 'farm', id: 'main', version: 7, data: { ...farm, schemaVersion: 2 }, deleted: false, updatedAt: 1 }
-    const result = resolveUpserts(new Map([['farm/main', future]]), [{ kind: 'farm', id: 'main', baseVersion: 7, data: farm }], 2)
-    expect(result).toEqual({ writes: [], conflicts: [future] })
+  it('opens plots past six by Farm Level, sparsely, and times crops from 12h down to 8h (D234)', () => {
+    const upsert = (data: unknown) => parseSyncRequest({ upserts: [{ kind: 'farm', id: 'main', baseVersion: 0, data }] })
+    const idle = (id: string, templateId: string) => ({ id, templateId, lastCropId: null, attempt: 0, cycle: null })
+    // Plot 7 opens at Farm Level 183; one worker at Lv183 is Farm Level 183.
+    const sectionTwo = { ...farm, plots: [...farm.plots, idle('plot-7', 'second-outfit')], workers: { 'synthetic-outfit': { level: 183, exp: 0 } } }
+    expect(upsert(sectionTwo)).toMatchObject({ upserts: [{ kind: 'farm' }] })
+    expect(upsert({ ...sectionTwo, workers: { 'synthetic-outfit': { level: 182, exp: 0 } } })).toMatch(/invalid farm/)
+    expect(upsert({ ...farm, plots: [...farm.plots, { ...idle('plot-2', 'x'), templateId: null }] })).toMatch(/invalid farm/)
+    expect(upsert({ ...sectionTwo, plots: [...sectionTwo.plots].reverse() })).toMatch(/invalid farm/)
+    const lasting = (minutes: number) => upsert({ ...farm, plots: [{ ...farm.plots[0]!,
+      cycle: { ...farm.plots[0]!.cycle!, readyAt: 1 + minutes * 60_000 } }] })
+    expect(lasting(480)).toMatchObject({ upserts: [{ kind: 'farm' }] })
+    expect(lasting(456)).toMatch(/invalid farm/)
+    expect(upsert({ ...farm, workers: { a: { level: 50_000, exp: 23 } } })).toMatchObject({ upserts: [{ kind: 'farm' }] })
+    expect(upsert({ ...farm, workers: { a: { level: 500, exp: 24 } } })).toMatch(/invalid farm/)
+    expect(parseSyncRequest({ appends: [{ kind: 'itemLedger', id: 'farm:plot-40:3', createdAt: 5, data: { ...movement,
+      id: 'farm:plot-40:3', createdAt: 5, source: { ...movement.source, plotId: 'plot-40', cycleId: 'farm:plot-40:3' } } }] }))
+      .toMatchObject({ appends: [{ kind: 'itemLedger' }] })
+  })
+
+  it('still answers an older client that writes v1, and keeps the newer schema as the conflict', () => {
+    expect(parseSyncRequest({ upserts: [{ kind: 'farm', id: 'main', baseVersion: 0, data: farmV1 }] })).toMatchObject({ upserts: [{ kind: 'farm' }] })
+    const current: EntityRecord = { kind: 'farm', id: 'main', version: 7, data: farm, deleted: false, updatedAt: 1 }
+    const result = resolveUpserts(new Map([['farm/main', current]]), [{ kind: 'farm', id: 'main', baseVersion: 7, data: farmV1 }], 2)
+    expect(result).toEqual({ writes: [], conflicts: [current] })
   })
 })

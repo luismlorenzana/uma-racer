@@ -114,13 +114,17 @@ import {
   SPARK_RIVAL_DRIVE_BONUS_CAP,
   SPARK_RIVAL_LOSS_EXP_SHARE,
   sparkRivalDifficulty,
-  FARM_GROWTH_HOURS,
+  FARM_BASE_GROWTH_MINUTES,
   FARM_CROP_YIELD,
+  FARM_FASTEST_GROWTH_MINUTES,
+  FARM_GROWTH_STEP_MINUTES,
+  FARM_GROWTH_STEPS,
+  FARM_LEVELS_PER_CROP_TIER,
+  FARM_PLOT_STEP_FACTOR,
+  FARM_PLOTS_PER_SECTION,
+  FARMING_EXP_PER_LEVEL,
   FARMING_EXP_PER_HARVEST,
-  MAX_OUTFIT_FARMING_LEVEL,
-  FARM_PLOT_LEVEL_REQUIREMENTS,
-  FARM_OUTFIT_LEVEL_REQUIREMENTS,
-  FARM_CROP_LEVEL_REQUIREMENTS,
+  farmPlotRequirement,
   farmingXpToReachLevel,
   FT_EARNING_TARGET_MULT,
   FT_STAGES,
@@ -245,13 +249,12 @@ describe('Global Uma RPG — D227 progression pins', () => {
 })
 
 describe('Stable Farm', () => {
-  it('pins the D203–D208 field, crop, and progression contract', () => {
-    expect([FARM_GROWTH_HOURS, FARM_CROP_YIELD, FARMING_EXP_PER_HARVEST, MAX_OUTFIT_FARMING_LEVEL])
-      .toEqual([12, 1, 12, 20])
-    expect(FARM_PLOT_LEVEL_REQUIREMENTS).toEqual([1, 2, 6, 13, 27, 42])
-    expect(FARM_OUTFIT_LEVEL_REQUIREMENTS).toEqual([1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20])
-    expect(FARM_CROP_LEVEL_REQUIREMENTS).toEqual([1, 2, 4, 7, 11, 16, 22, 29, 37, 46, 56, 67, 79, 92])
-    expect(farmingXpToReachLevel(20)).toBe(1_344)
+  it('pins the D234 field, crop, and progression contract', () => {
+    expect([FARM_CROP_YIELD, FARMING_EXP_PER_HARVEST, FARM_PLOTS_PER_SECTION, FARM_LEVELS_PER_CROP_TIER]).toEqual([1, 12, 6, 10])
+    expect([FARM_BASE_GROWTH_MINUTES, FARM_GROWTH_STEP_MINUTES, FARM_GROWTH_STEPS, FARM_FASTEST_GROWTH_MINUTES]).toEqual([720, 24, 10, 480])
+    expect([FARM_PLOT_STEP_FACTOR, FARMING_EXP_PER_LEVEL]).toEqual([2, 24])
+    expect([2, 6, 7, 12, 13, 18].map(farmPlotRequirement)).toEqual([3, 111, 183, 1_013, 1_301, 3_571])
+    expect([1, 10, 20, 130].map(farmingXpToReachLevel)).toEqual([0, 216, 456, 3_096])
   })
 })
 

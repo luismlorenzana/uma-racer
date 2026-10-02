@@ -205,9 +205,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ### 2. Deterministic simulation, then playback
 
-- Stable Farm keeps its clock outside the domain: pure rules receive an integer `now`, persist one fixed twelve-hour
-  deadline, and derive Locked/Growing/Ready plus every outfit/Farm/crop unlock. Its synthetic `sim:farm` harness pins
-  the one-to-six expansion envelope without reading a save, browser API or private content. Presentation recomputes on
+- Stable Farm keeps its clock outside the domain: pure rules receive an integer `now`, persist each cycle's deadline once
+  (12h down to 8h by the worker's level), and derive Locked/Growing/Ready plus every plot and crop-row unlock. Its
+  synthetic `sim:farm` harness pins the Section-by-Section expansion envelope without reading a save, browser API or
+  private content. Presentation recomputes on
   a shared minute boundary plus focus/visibility, while planting and harvesting alone cross the save boundary.
 - `simulateRace(input) → RaceTimeline` runs the **whole race up front** in a few milliseconds: 18 runners × about 2,250 ticks at 1/15 s.
 - The renderer **plays the timeline back** and interpolates between ticks at the display's refresh rate (60 Hz, or 120 Hz where Safari allows).
@@ -286,7 +287,7 @@ players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, tit
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
-players/{uid}/farm/main               Farm schema, six plots, persistent outfit assignments/progress and attempt counters
+players/{uid}/farm/main               Farm schema v2: used plots (sparse), outfit assignments/progress and attempt counters
 players/{uid}/items/{itemId}          current global item-stack quantity and update time
 players/{uid}/itemLedger/{id}         append-only harvest/Produce/Level-Up Ticket movements and Farm-harvest XP evidence
 players/{uid}/rpgOutfits/{outfitId}    schema-v1 locked class, frozen enrollment inputs, tier EXP/tree, revision

@@ -1,4 +1,6 @@
 import {
+  migrateFarmStateToCurrent,
+  parseFarmState,
   parseCardSave,
   migrateCardSaveToCurrent,
   migrateUmaSaveWithSurplus,
@@ -355,7 +357,21 @@ class RacerDb extends Dexie {
     // Additive RPG state and device-local pending command queue. No enrollment is synthesized.
     this.version(18).stores(storesWithRpg)
     this.version(19).stores(storesWithBattleJournal)
+    // Farm v2 (D234): uncapped Farming Levels, Sections of numbered plots.
+    this.version(20).stores(storesWithBattleJournal).upgrade(migrateFarmRow)
   }
+}
+
+async function migrateFarmRow(tx: Transaction): Promise<void> {
+  const farmTable = tx.table('farm')
+  const row = await farmTable.get('main') as (VersionedRow<unknown> & { revision: number }) | undefined
+  if (!row || parseFarmState(row.data)) return
+  const migrated = migrateFarmStateToCurrent(row.data)
+  if (!migrated) throw new Error('Local Farm cannot be migrated')
+  await farmTable.put({ ...row, data: migrated, revision: row.revision + 1 })
+  const outboxTable = tx.table('outbox')
+  await outboxTable.where('[kind+id]').equals(['farm', 'main']).delete()
+  await outboxTable.add({ kind: 'farm', id: 'main', op: 'upsert', queuedAt: Date.now() })
 }
 
 /** A row the old per-hop upgrades must leave alone: current, or already at v10, which the chain re-levels once. */

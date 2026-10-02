@@ -138,6 +138,11 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
+        lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmSectionsScreen }),
+      },
+      {
+        // Six plots at a time, one Farm Section per screen (D234).
+        path: 'section/:section',
         lazy: async () => ({ Component: (await import('../screens/farm/FarmScreen')).FarmFieldScreen }),
       },
       {

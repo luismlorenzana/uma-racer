@@ -1,12 +1,14 @@
 # Stable Farm
 
-> **Status: complete through M026.** The rules/catalog, synced Farm and item-ledger runtime, Home/field/worker/crop
-> screens, global Item inventory and constellation Produce consumption are implemented.
+> **Status: complete through M026, rebalanced by D234.** The rules/catalog, synced Farm and item-ledger runtime,
+> Home/Sections/field/worker/crop screens, global Item inventory and constellation Produce consumption are implemented.
 
-Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows into a
-six-plot field as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting adds produce to
-the global Item inventory, the worker earns an outfit-specific Farming Level, and every outfit level feeds the account's
-aggregate Farm Level (D203–D208; D206–D208 supersede the initial fixed-field/character drafts).
+Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows, plot by plot,
+into **Farm Sections** of six as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting
+adds produce to the global Item inventory, and the worker earns an outfit-specific Farming Level that opens the next
+scenario's crops every ten levels and grows her crops faster. Every outfit level feeds the account's aggregate Farm
+Level, which opens plots. Neither level has a cap: it is meant to run for years, with many outfits levelling in
+parallel (D203–D208; D234 supersedes the six-plot field, the Lv20 cap, the Farm Level crop gate and fixed timers).
 
 The design is informed by [Farming game research](../research/farming-games.md). Although the player may call it a
 minigame, it is intentionally **not** a ticketed `MinigameHost` run: there is no match, seed, journal, score, win or loss.
@@ -19,11 +21,13 @@ flowchart LR
     Home --> Farm
     Farm --> Field[Persistent field + assigned outfits]
     Field --> Plant[Choose stat + scenario crop]
-    Plant --> Wait[12 hours · app may be closed]
+    Plant --> Wait[12h → 8h · app may be closed]
     Wait --> Harvest
     Harvest --> Outfit[Outfit Farming Level]
+    Outfit --> Rows[Her crop rows + faster growth]
+    Rows --> Field
     Outfit --> Account[Aggregate Farm Level]
-    Account --> Unlock[More plots + scenario crop rows]
+    Account --> Unlock[More plots, Section by Section]
     Unlock --> Field
     Harvest --> Items[(Global Item inventory)]
     Items --> Produce[Consume on a constellation Produce node]
@@ -38,12 +42,14 @@ flowchart LR
 
 ## The field
 
-There are six stable slots, `plot-1` through `plot-6`, not free-positioned objects. **Only plot 1 starts unlocked**;
-Farm Level opens the other five (D206–D208). A plot is one of five states:
+Plots are numbered slots, `plot-1`, `plot-2`, … without end, not free-positioned objects. Every six make a **Farm
+Section**: plots 1–6 are Section 1, plots 7–12 Section 2, and so on, so one Section is exactly the 2 × 3 field a phone
+shows at once. **Only plot 1 starts unlocked**; Farm Level opens the rest in order, filling each Section before the next
+(D234). A plot is one of five states:
 
 | State | Stored data | Player action |
 |---|---|---|
-| **Locked** | plot id only; lock is derived from Farm Level | Inspect the level requirement |
+| **Locked** | nothing; the lock is derived from Farm Level | Inspect the level requirement |
 | **Unassigned** | unlocked plot id, no worker | Assign an owned outfit |
 | **Idle** | plot id and assigned outfit template id; optional last crop id | Plant a crop or change worker |
 | **Growing** | assigned outfit, cycle id, crop id, `plantedAt`, `readyAt` | Inspect; no mid-cycle edits |
@@ -62,24 +68,29 @@ Nothing withers and a ready plot waits indefinitely.
   outfit picker opens from an unlocked plot or a Farm management menu and shows outfits, not collapsed characters.
 - A worker may be changed only while her plot is Idle. A growing or Ready cycle freezes its outfit and crop; there is no
   cancel or swap, which prevents timer resets and ambiguous XP ownership.
-- Planting requires both the outfit's Farming Level and the aggregate Farm Level to meet the crop's two requirements. The
-  confirmation shows the outfit, crop, destination scenario and exact ready time.
+- Planting requires only the outfit's Farming Level to have opened the crop's scenario row (D234). The confirmation shows
+  the outfit, crop, destination scenario, Section and plot, how long it will take and the exact ready time.
 - Seeds are unlimited and free. Time, plot capacity and worker progression are the pacing constraints.
 
 ### Cycle and harvest
 
-Every crop uses the same first-release values:
-
 | Rule | Value |
 |---|---|
-| Growth time | **12 hours** |
+| Growth time | **12 hours** when the worker opens that scenario's row, **24 minutes less** for each of her next ten levels, then **8 hours** |
 | Yield | **1 item** |
 | Worker reward | **12 Farming XP** |
 | Randomness | none |
 
+Growth time belongs to the worker and the crop row together (D234). Her first row (scenario 1) opens at Farming Lv1, so
+she grows it in 12h at Lv1, 11h 36m at Lv2 … and 8h from Lv11. Scenario 2 opens at Lv10 at 12h and reaches 8h at Lv20;
+scenario `t` opens at Lv`10 × (t − 1)` and reaches 8h ten levels later. Every level therefore pays something: it speeds
+up her newest row, or opens the next one. Eight hours is three harvests a day for someone who checks in morning,
+afternoon and night.
+
 The cycle id is deterministic and monotonic per plot: `farm:<plotId>:<attempt>`. Planting writes `plantedAt` and
-`readyAt = plantedAt + 12 h` once. Reloading, going offline, changing time zone or opening on another route never rolls
-or recomputes the deadline.
+`readyAt = plantedAt + growth time` once, from her level at that moment; a cycle carries one of the eleven allowed
+durations (12h, 11h 36m … 8h). Reloading, going offline, changing time zone or opening on another route never rolls or
+recomputes the deadline.
 
 Harvest is one atomic transaction:
 
@@ -97,57 +108,72 @@ so no server clock or online check is introduced.
 
 ## Outfit Farming Level and aggregate Farm Level
 
-**Outfit Farming Level** is per owned Uma template, from **1 to 20**. It has no relationship to Uma Level, Training Level,
-scenario progress, aptitudes, cards, races or badges. Only a completed harvest earns Farming XP. Every newly owned outfit
-starts at Farming Level 1 with 0 XP; merely acquiring another outfit does not advance the Farm.
+**Outfit Farming Level** is per owned Uma template and **has no cap** (D234). It has no relationship to Uma Level,
+Training Level, scenario progress, aptitudes, cards, races or badges. Only a completed harvest earns Farming XP. Every
+newly owned outfit starts at Farming Level 1 with 0 XP; merely acquiring another outfit does not advance the Farm.
 
-For current level `L` from 1 through 19:
+Farming Level is the **vertical** track, and it is linear (D234): every level costs the same 24 XP, two harvests, and a
+new scenario's crops open every ten levels.
 
 ```
-xpToNext(L) = 48 + 12 × floor((L − 1) / 4)
+xpToNext(L) = 24
 ```
 
-| Current levels | XP to next | Perfect 12 h cycles | Active time per level |
+| Opens | At Farming Level | Harvests from Lv1 | Days at two harvests a day |
 |---|---:|---:|---:|
-| 1–4 | 48 | 4 | 2 days |
-| 5–8 | 60 | 5 | 2.5 days |
-| 9–12 | 72 | 6 | 3 days |
-| 13–16 | 84 | 7 | 3.5 days |
-| 17–19 | 96 | 8 | 4 days |
+| Scenario 1 crops | 1 | 0 | 0 |
+| Scenario 2 crops | 10 | 18 | 9 |
+| Scenario 5 crops | 40 | 78 | 39 |
+| Scenario 14 crops | 130 | 258 | 129 |
 
-A continuously assigned outfit reaches level 20 after **112 harvests / 56 days** at perfect cadence. Unlocked plots let
-several outfits advance in parallel. Excess XP applies across level boundaries and XP at level 20 is clamped to zero
-remaining; there is no outfit prestige loop.
+Her Farming Level does two things: it opens a scenario's crop row every tenth level, and it grows each open row faster
+for ten levels (above). The ladder simply continues when a new scenario adds a crop row. Excess XP applies across level
+boundaries.
 
-The account's **Farm Level** is derived, never earned from a separate XP bar:
+The account's **Farm Level** is derived, never earned from a separate XP bar, and has no cap:
 
 ```
 farmLevel = 1 + Σ over owned outfits (outfitFarmingLevel − 1)
 ```
 
-Every outfit level after its free baseline therefore advances Farm Level once. A single outfit can add at most 19 Farm
-Levels, so later field and crop unlocks require raising multiple outfits. Different outfits of the same character count
-separately. Farm Level has no artificial cap; once current unlocks end, the number remains an account record ready for
-later Farm content.
+Every outfit level after its free baseline advances Farm Level once. Different outfits of the same character count
+separately. Farm Level is the **horizontal** track, and the one that steepens (D234). It does one thing: it opens plots,
+in order, and each plot costs twice the square of the plots already open more than the one before:
 
-Farm Level opens plots on this first balance ladder:
+```
+required(1) = 1;   required(n) = required(n − 1) + 2 × (n − 1)²
+```
 
-| Plot | 1 | 2 | 3 | 4 | 5 | 6 |
-|---|---:|---:|---:|---:|---:|---:|
-| Farm Level required | 1 | 2 | 6 | 13 | 27 | 42 |
-| Ideal twice-daily spread target | start | day 2 | day 6 | day 12 | day 20 | day 28 |
+| Section | Plots open at Farm Level |
+|---|---|
+| 1 | 1 · 3 · 11 · 29 · 61 · 111 |
+| 2 | 183 · 281 · 409 · 571 · 771 · 1,013 |
+| 3 | 1,301 · 1,639 · 2,031 · 2,481 · 2,993 · 3,571 |
+| 4 | 4,219 · 4,941 · 5,741 · 6,623 · 7,591 · 8,649 |
 
-The day row is a tuning target from an ideal policy that gives every available plot two harvests a day and spreads work
-across low-level owned outfits. It is not a login streak or promise. `pnpm sim:farm` must measure first/median unlocks for
-focused, even-spread and casual one-harvest-per-day policies before a threshold changes.
+Since every harvest is worth the same Farm Level, Farm Level grows with the number of working plots. Each plot adds a
+worker, but the next plot's cost grows faster than that, so every wait is a little longer than the last. Later Sections
+need many outfits levelled very high, and new outfits start at Lv1 on scenario 1 crops at twelve hours, so the field
+always mixes veterans and newcomers.
 
-Outfit Farming Level and Farm Level change **only crop/field eligibility**. Neither shortens a timer nor increases yield,
-so a favorite does not become the objectively correct worker forever, and moving several outfits forward is valuable.
+`pnpm sim:farm` measures this with a synthetic stable of 30 outfits gaining one a week. At each check-in it harvests
+whatever is ready, puts a free outfit on any empty open plot, and plants the worker's fastest crop:
+
+| Check-ins | Section 1 full | Section 2 full | Section 3 full | Section 4 full | Best worker opens scenario 14 |
+|---|---:|---:|---:|---:|---:|
+| Five times a day | day 26 | day 97 | day 215 | day 380 | day 89 |
+| Twice a day | day 30 | day 132 | day 306 | day 552 | day 129 |
+| Once a day | day 61 | day 265 | day 613 | day 1,105 | day 258 |
+
+Twice a day, the waits between plots run 2, 4, 6 … days in Section 1 and pass a month each in Section 4. The sim fails
+if twice-daily play stops filling Section 1 in about a month, Section 2 in about four or Section 3 in about ten, or if a
+wait ever gets shorter than the one before.
 
 ## Crop catalog
 
 Each of the fourteen scenario tiers has one crop for each stat: **70 item definitions**. They are ordinary fruit and
-vegetable names authored for Uma Racer, not imported source rows. Every item definition contains:
+vegetable names authored for Uma Racer, not imported source rows. A new scenario adds a row of five. Every item
+definition contains:
 
 ```ts
 interface FarmCropDefinition {
@@ -155,21 +181,19 @@ interface FarmCropDefinition {
   name: string
   stat: 'speed' | 'stamina' | 'power' | 'guts' | 'wit'
   scenarioTier: number
-  outfitLevelRequired: number
-  farmLevelRequired: number
-  growthHours: 12
+  outfitLevelRequired: number   // 1, then 10 × (tier − 1)
   yield: 1
   farmingExp: 12
 }
 ```
 
-Each scenario crop row has two gates. The Farm Level opens it in the account's Crop Catalog; the assigned outfit's level
-proves that farmer can grow it:
+Each scenario crop row has one gate, the worker's own Farming Level (D234); growth time follows from how far past it
+she is:
 
 | Scenario tier | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Outfit Farming Level | 1 | 2 | 4 | 5 | 7 | 8 | 10 | 11 | 13 | 14 | 16 | 17 | 19 | 20 |
-| Aggregate Farm Level | 1 | 2 | 4 | 7 | 11 | 16 | 22 | 29 | 37 | 46 | 56 | 67 | 79 | 92 |
+| Opens at Farming Level | 1 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100 | 110 | 120 | 130 |
+| 8 hours from Farming Level | 11 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100 | 110 | 120 | 130 | 140 |
 
 The launch names are deliberately generic and checked in; tests may use smaller invented fixtures.
 
@@ -190,9 +214,10 @@ The launch names are deliberately generic and checked in; tests may use smaller 
 | 13 | Starfruit | Lotus Root | Jackfruit | Habanero | Kiwi |
 | 14 | Snow Pea | Winter Melon | Romanesco | Scotch Bonnet | Dragon Fruit |
 
-The stat glyph and text are always shown; crop art and color are supporting cues only. The Crop Catalog shows both lock
-reasons. A crop can be grown even if no racing Uma has reached its destination scenario, provided the Farm and assigned
-outfit meet the two farming requirements. Stockpiling for a future Uma is allowed.
+The stat glyph and text are always shown; crop art and color are supporting cues only. The Crop Catalog shows the
+Farming Level a row needs, or how long the chosen worker takes to grow it. A crop can be grown even if no racing Uma
+has reached its destination scenario, provided the assigned outfit has opened its row. Stockpiling for a future Uma is
+allowed.
 
 ## Global Item inventory
 
@@ -240,17 +265,28 @@ interface ItemLedgerEntry {
 
 ### Entry, shell and routes
 
-- Home gains a **Farm** card with Farm Level, `ready / unlocked plots`, the next deadline and the next field/crop unlock.
-  Tapping it opens the lazy `/farm` route directly on the saved field—never an Uma-selection interstitial.
-- Farm is a nested full-screen account activity with Back, **How it works**, Farm Level and a compact internal navigation:
-  **Field · Workers · Crops · Items**. It does not add a sixth bottom tab.
-- `/farm`, `/farm/workers`, `/farm/crops` and `/farm/items` share one Farm shell and preserve field scroll/selection on
-  return. Item inventory remains global in data scope even though Farm is its first home.
+- Home gains a **Farm** card with Farm Level, ready/working/open plots, the next deadline and the next plot unlock.
+  Tapping it opens the lazy `/farm` route directly on the saved Sections—never an Uma-selection interstitial.
+- Farm is a nested full-screen account activity with Back, **How it works**, Farm Level (one number) and a compact
+  internal navigation: **Field · Workers · Crops · Items**. It does not add a sixth bottom tab.
+- `/farm`, `/farm/section/<n>`, `/farm/workers`, `/farm/crops` and `/farm/items` share one Farm shell and preserve scroll
+  on return. Field covers the Section list and every Section. Item inventory remains global in data scope even though
+  Farm is its first home.
 
-### Field at 390 × 844
+### Sections at 390 × 844
 
-- All six plot positions render as a 2 × 3 grid so the farm's future shape is visible. Locked plots name their Farm Level;
-  every unlocked panel has a minimum 44 pt action target.
+- `/farm` lists every Section with an open plot, then the next Section, locked, with the Farm Level that opens it (D234).
+- Each Section card is a quick preview: its name, a status line (`1 ready · 2 growing · 1 idle · 1 empty`), six small slots
+  showing each worker's standing chibi with the crop growing under her, a **READY** band on a ready slot and a lock on a
+  locked one, and when its next crop is ready. Readiness is also in the text, never color alone.
+- Tapping an open Section opens its field. A locked Section is not a link. Below the list, **Next** names the next plot
+  and its Farm Level.
+
+### A Section's field at 390 × 844
+
+- The Section's six plot positions render as a 2 × 3 grid, numbered Plot 1–6 within the Section. Locked plots name
+  their Farm Level; every unlocked panel has a minimum 44 pt action target. A Back row returns to the Section list and
+  repeats the Section's status; a Section that is not open, or an unknown number, redirects to the list.
 - Unassigned: soil illustration, **Assign outfit** and no fake worker. This appears only on a newly unlocked plot or after
   the player explicitly removes an idle assignment.
 - Idle: the persistent outfit chibi and level, the last crop as a suggestion, **Plant**, and a secondary **Change** action.
@@ -261,11 +297,14 @@ interface ItemLedgerEntry {
   confirmation; there is no auto-repeat.
 - Assign/Change opens the shared Farm outfit picker. It lists every owned outfit separately, shows Farming Level/progress and
   current plot, disables outfits already working elsewhere, and returns to the calling Farm menu.
-- Plant opens the crop picker directly for the assigned outfit. It filters by stat/scenario and explains Farm-level and
-  outfit-level locks separately.
+- Plant opens the crop picker directly for the assigned outfit, on her newest open row. It filters by stat/scenario,
+  marks a row she has not opened with its Farming Level, and shows `Grows in 10h 48m` on every crop she can plant.
 - **Workers** is the complete outfit roster, grouped Working / Available and sorted by level then character/outfit name.
-  **Crops** is the 70-item catalog with scenario/stat filters, both gates, stock and the next unlock. Both reuse the same
-  outfit picker rather than creating a selected-Uma state for the whole Farm.
+  Each card shows her Section and plot, Farming XP to the next level, her newest row and how fast she grows it, and the
+  row her next tenth level opens. **Crops** is the 70-item catalog with scenario/stat filters, each row's Farming Level
+  or growth time for a chosen worker, and stock. Both reuse the same outfit picker rather than creating a selected-Uma
+  state for the whole Farm.
+- The harvest moment names any Farming Level, the new Farm Level and every plot it opened (`Section 2 · Plot 1 opened`).
 
 The route reuses Paddock panels, `TypeIcon`, `Meter`, `BottomSheet`, safe-area utilities and private standing chibis. Crop
 marks are original code-native drawings; emoji and checked-in original-game images are prohibited. Motion is transform
@@ -311,9 +350,18 @@ players/{uid}/items/{itemId}         current global stack quantity, version
 players/{uid}/itemLedger/{id}        append-only item movement evidence
 ```
 
-The Farm row is bounded: six plot records and one compact worker-progress record per owned outfit. Farm Level and plot
-locks are derived from those records, not stored as another mutable counter. Parsers cap
-arrays, ids, timestamps, XP and attempts. Unknown/future schema is a visible save error; corrupt rows are never reset.
+The Farm row is bounded: one plot record for each plot that differs from an empty, never-planted one, in plot order, and
+one compact worker-progress record per owned outfit. Farm Level and plot locks are derived from those records, not
+stored as another mutable counter. Parsers cap arrays, ids, timestamps, XP and attempts; their bounds (plot 600,
+Farming Lv99,999) are far past anything reachable and are not design caps. Unknown/future schema is a visible save
+error; corrupt rows are never reset.
+
+**Farm schema v2 (D234).** v1 stored exactly six plots and Farming Levels 1–20 on the old curve. v2 stores plots
+sparsely as `plot-<n>`, accepts any of the eleven growth durations and uncapped levels. Moving a v1 Farm to v2 re-levels
+each worker from her lifetime Farming XP (every harvest is still 12 XP, so this equals replaying her harvest evidence),
+which only ever raises her, and drops never-planted plots. A growing 12-hour cycle keeps its deadline. Dexie v20 moves
+the local row once and queues it for upload; a v1 row pulled from the server moves the same way and is re-uploaded. The
+API accepts both shapes, so an older build can still sync, and the newer schema always wins a conflict.
 
 ## Acceptance targets
 
@@ -321,11 +369,11 @@ arrays, ids, timestamps, XP and attempts. Unknown/future schema is a visible sav
 - A harvest writes exactly one item and one XP award; retry is a no-op with the same result.
 - A new account opens plot 1 only; plot assignment persists after harvest and across reloads. Farm never asks for an Uma
   merely because the route opened.
-- Six different outfits may work; the same outfit cannot occupy two plots even through stale screens, while two outfits
+- Many different outfits may work; the same outfit cannot occupy two plots even through stale screens, while two outfits
   of the same character remain independent valid workers.
-- An outfit reaches Farming Lv2 after four perfect cycles and Lv20 after 112. Aggregate Farm Level, plots at
-  1 / 2 / 6 / 13 / 27 / 42 and both crop
-  gates unlock exactly as documented and are covered by `pnpm sim:farm`.
+- An outfit reaches Farming Lv10 after 18 harvests and opens scenario 14's row at Lv130 after 258. Plots open at
+  1 / 3 / 11 / 29 / 61 / 111, then 183 for Section 2. Growth times step from 12h to 8h in 24-minute steps over the ten
+  levels after a row opens. All of this is pinned by tests, and the pacing envelope by `pnpm sim:farm`.
 - Farm state syncs to another device through the existing save flow; a running crop is not rerolled or shortened.
 - A Produce fill/replacement spends exactly one crop, advances one node revision and writes one `-1` movement; retry is
   idempotent, stale screens do not spend, and migrated builds derive byte-for-byte the same racing state.
@@ -335,8 +383,9 @@ arrays, ids, timestamps, XP and attempts. Unknown/future schema is a visible sav
 
 ## Deliberately later
 
-- expansion beyond six plots, decoration or free placement;
-- variable timers, worker specialties, yield/speed bonuses or crop mastery;
+- decoration or free placement;
+- batch **Harvest all** / **Plant again** per Section, the obvious next step once several Sections are open;
+- worker specialties, yield bonuses or per-crop mastery;
 - watering, weather, seasons, fertilizer, quality, failure or withering;
 - auto-repeat, batch planting, push notifications or background tasks;
 - cooking, crafting, selling, exchanges or any second currency;

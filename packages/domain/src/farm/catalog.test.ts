@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { STATS } from '../types'
-import {
-  FARM_CROP_LEVEL_REQUIREMENTS,
-  FARM_CROP_YIELD,
-  FARM_GROWTH_HOURS,
-  FARM_OUTFIT_LEVEL_REQUIREMENTS,
-  FARMING_EXP_PER_HARVEST,
-} from './constants'
+import { FARM_CROP_YIELD, FARMING_EXP_PER_HARVEST } from './constants'
+import { cropTierOpenLevel } from './progression'
 import { assertFarmCropCatalog, farmCropById, farmCropFor, FARM_CROPS } from './catalog'
 
 const EXPECTED_NAMES = [
@@ -37,9 +32,7 @@ describe('Farm crop catalog', () => {
           name: EXPECTED_NAMES[tier - 1]![statIndex],
           stat,
           scenarioTier: tier,
-          outfitLevelRequired: FARM_OUTFIT_LEVEL_REQUIREMENTS[tier - 1],
-          farmLevelRequired: FARM_CROP_LEVEL_REQUIREMENTS[tier - 1],
-          growthHours: FARM_GROWTH_HOURS,
+          outfitLevelRequired: cropTierOpenLevel(tier),
           yield: FARM_CROP_YIELD,
           farmingExp: FARMING_EXP_PER_HARVEST,
         })
@@ -52,8 +45,8 @@ describe('Farm crop catalog', () => {
     expect(() => assertFarmCropCatalog([...FARM_CROPS.slice(1), FARM_CROPS[1]!])).toThrow()
     expect(() => assertFarmCropCatalog(FARM_CROPS.slice(0, -1))).toThrow(/70/)
     expect(() => assertFarmCropCatalog(FARM_CROPS.map((crop, index) => index === 0
-      ? { ...crop, farmLevelRequired: crop.farmLevelRequired + 1 }
-      : crop))).toThrow(/drifted/)
+      ? { ...crop, outfitLevelRequired: crop.outfitLevelRequired + 1 }
+      : crop))).toThrow(/invalid/)
   })
 })
 

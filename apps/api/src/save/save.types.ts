@@ -143,12 +143,23 @@ const BADGE_FILTER_CATEGORIES = [
 const TRAINER_RECORD_KINDS = [
   'highest-stat', 'most-wins', 'most-g1-wins', 'most-badge-stages', 'biggest-winning-margin', 'longest-win-streak',
 ] as const
-const FARM_SCHEMA_VERSION = 1
-const FARM_PLOT_IDS = ['plot-1', 'plot-2', 'plot-3', 'plot-4', 'plot-5', 'plot-6'] as const
-const FARM_PLOT_LEVELS = [1, 2, 6, 13, 27, 42] as const
+const FARM_SCHEMA_VERSION = 2
+const FARM_PLOT_IDS_V1 = ['plot-1', 'plot-2', 'plot-3', 'plot-4', 'plot-5', 'plot-6'] as const
+const FARM_PLOT_LEVELS_V1 = [1, 2, 6, 13, 27, 42] as const
 const FARM_CROP_ID_PATTERN = /^produce:t([1-9]|1[0-4]):(speed|stamina|power|guts|wit)$/
-const FARM_GROWTH_MS = 12 * 60 * 60 * 1_000
+const FARM_GROWTH_MS_V1 = 12 * 60 * 60 * 1_000
 const MAX_FARM_WORKERS = 1_000
+/** Farm v2 (D234): plots `plot-1` … `plot-600`; plot n costs 2 × (n − 1)² Farm Levels more than plot n − 1. */
+const FARM_PLOT_ID_PATTERN = /^plot-([1-9]\d{0,2})$/
+const MAX_FARM_PLOTS = 600
+const MAX_FARMING_LEVEL_BOUND = 99_999
+const FARM_PLOT_LEVELS: readonly number[] = (() => {
+  const levels = [0, 1]
+  for (let plot = 2; plot <= MAX_FARM_PLOTS; plot += 1) {
+    levels.push(levels[plot - 1]! + 2 * (plot - 1) ** 2)
+  }
+  return levels
+})()
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -192,7 +203,7 @@ function parseUniqueIds(value: unknown, max = Number.POSITIVE_INFINITY): string[
   return new Set(value).size === value.length ? [...value] as string[] : null
 }
 
-function parseFarmProgress(value: unknown): { level: number; exp: number } | null {
+function parseFarmProgressV1(value: unknown): { level: number; exp: number } | null {
   if (!isRecord(value) || !exactKeys(value, ['level', 'exp']) || !isPositiveInt(value.level) || value.level > 20 ||
     !isNonNegativeInt(value.exp)) return null
   if (value.level === 20) return value.exp === 0 ? { level: 20, exp: 0 } : null
@@ -200,39 +211,92 @@ function parseFarmProgress(value: unknown): { level: number; exp: number } | nul
   return value.exp < required ? { level: value.level, exp: value.exp } : null
 }
 
-function parseFarm(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value) || !exactKeys(value, ['schemaVersion', 'plots', 'workers']) ||
-    value.schemaVersion !== FARM_SCHEMA_VERSION || !Array.isArray(value.plots) ||
-    value.plots.length !== FARM_PLOT_IDS.length || !isRecord(value.workers)) return null
-  const workerIds = Object.keys(value.workers)
+/** v2 (D234): no cap; every level costs 24 XP, two harvests. */
+function parseFarmProgress(value: unknown): { level: number; exp: number } | null {
+  if (!isRecord(value) || !exactKeys(value, ['level', 'exp']) || !isPositiveInt(value.level) ||
+    value.level > MAX_FARMING_LEVEL_BOUND || !isNonNegativeInt(value.exp)) return null
+  return value.exp < 24 ? { level: value.level, exp: value.exp } : null
+}
+
+const farmPlotNumber = (value: unknown): number | null => {
+  const match = typeof value === 'string' ? FARM_PLOT_ID_PATTERN.exec(value) : null
+  const number = match ? Number(match[1]) : NaN
+  return number >= 1 && number <= MAX_FARM_PLOTS ? number : null
+}
+
+/** 12h, then 24 minutes faster a level for ten levels, to 8h (D234). */
+const isFarmGrowthMs = (value: number): boolean => {
+  const saved = 720 - value / 60_000
+  return Number.isSafeInteger(value) && value % 60_000 === 0 && saved >= 0 && saved % 24 === 0 && saved <= 240
+}
+
+function parseFarmPlotShape(plot: unknown, growthOk: (ms: number) => boolean): plot is Record<string, unknown> {
+  if (!isRecord(plot) || !exactKeys(plot, ['id', 'templateId', 'lastCropId', 'attempt', 'cycle']) ||
+    farmPlotNumber(plot.id) === null || !isNonNegativeInt(plot.attempt) ||
+    !(plot.templateId === null || isId(plot.templateId)) ||
+    !(plot.lastCropId === null || (typeof plot.lastCropId === 'string' && FARM_CROP_ID_PATTERN.test(plot.lastCropId)))) return false
+  if (plot.cycle !== null) {
+    const cycle = plot.cycle
+    if (!isRecord(cycle) || !exactKeys(cycle, ['id', 'cropId', 'plantedAt', 'readyAt']) ||
+      cycle.id !== `farm:${String(plot.id)}:${String(plot.attempt)}` ||
+      typeof cycle.cropId !== 'string' || !FARM_CROP_ID_PATTERN.test(cycle.cropId) ||
+      !isNonNegativeInt(cycle.plantedAt) || !isNonNegativeInt(cycle.readyAt) ||
+      !growthOk(cycle.readyAt - cycle.plantedAt) || plot.templateId === null || plot.attempt < 1) return false
+  }
+  return !(plot.templateId === null && (plot.lastCropId !== null || plot.cycle !== null))
+}
+
+function parseFarmWorkers(value: Record<string, unknown>, parse: typeof parseFarmProgress): number | null {
+  const workerIds = Object.keys(value)
   if (workerIds.length > MAX_FARM_WORKERS || workerIds.some((id) => !isId(id))) return null
   let farmLevel = 1
   for (const id of workerIds) {
-    const progress = parseFarmProgress(value.workers[id])
+    const progress = parse(value[id])
     if (!progress) return null
     farmLevel += progress.level - 1
   }
+  return farmLevel
+}
+
+/** The v1 Farm (six fixed plots, Farming Levels 1–20), still accepted so an older client's sync is answered. */
+function parseFarmV1(value: Record<string, unknown>): Record<string, unknown> | null {
+  if (!Array.isArray(value.plots) || value.plots.length !== FARM_PLOT_IDS_V1.length || !isRecord(value.workers)) return null
+  const farmLevel = parseFarmWorkers(value.workers, parseFarmProgressV1)
+  if (farmLevel === null) return null
   const assigned = new Set<string>()
   for (let index = 0; index < value.plots.length; index += 1) {
     const plot = value.plots[index]
-    if (!isRecord(plot) || !exactKeys(plot, ['id', 'templateId', 'lastCropId', 'attempt', 'cycle']) ||
-      plot.id !== FARM_PLOT_IDS[index] || !isNonNegativeInt(plot.attempt) ||
-      !(plot.templateId === null || isId(plot.templateId)) ||
-      !(plot.lastCropId === null || (typeof plot.lastCropId === 'string' && FARM_CROP_ID_PATTERN.test(plot.lastCropId)))) return null
+    if (!parseFarmPlotShape(plot, (ms) => ms === FARM_GROWTH_MS_V1) || plot.id !== FARM_PLOT_IDS_V1[index]) return null
     if (typeof plot.templateId === 'string') {
       if (assigned.has(plot.templateId)) return null
       assigned.add(plot.templateId)
     }
-    if (plot.cycle !== null) {
-      const cycle = plot.cycle
-      if (!isRecord(cycle) || !exactKeys(cycle, ['id', 'cropId', 'plantedAt', 'readyAt']) ||
-        cycle.id !== `farm:${String(plot.id)}:${String(plot.attempt)}` ||
-        typeof cycle.cropId !== 'string' || !FARM_CROP_ID_PATTERN.test(cycle.cropId) ||
-        !isNonNegativeInt(cycle.plantedAt) || !isNonNegativeInt(cycle.readyAt) ||
-        cycle.readyAt - cycle.plantedAt !== FARM_GROWTH_MS || plot.templateId === null || plot.attempt < 1) return null
+    if (farmLevel < FARM_PLOT_LEVELS_V1[index]! && (plot.templateId !== null || plot.lastCropId !== null || plot.cycle !== null)) return null
+  }
+  return value
+}
+
+function parseFarm(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !exactKeys(value, ['schemaVersion', 'plots', 'workers'])) return null
+  if (value.schemaVersion === 1) return parseFarmV1(value)
+  if (value.schemaVersion !== FARM_SCHEMA_VERSION || !Array.isArray(value.plots) || value.plots.length > MAX_FARM_PLOTS ||
+    !isRecord(value.workers)) return null
+  const farmLevel = parseFarmWorkers(value.workers, parseFarmProgress)
+  if (farmLevel === null) return null
+  // Sparse and canonical: plot order, once each, never an empty never-planted plot.
+  const assigned = new Set<string>()
+  let previous = 0
+  for (const plot of value.plots) {
+    if (!parseFarmPlotShape(plot, isFarmGrowthMs)) return null
+    const number = farmPlotNumber(plot.id)!
+    if (number <= previous) return null
+    previous = number
+    if (plot.templateId === null && plot.lastCropId === null && plot.cycle === null && plot.attempt === 0) return null
+    if (typeof plot.templateId === 'string') {
+      if (assigned.has(plot.templateId)) return null
+      assigned.add(plot.templateId)
     }
-    if (plot.templateId === null && (plot.lastCropId !== null || plot.cycle !== null)) return null
-    if (farmLevel < FARM_PLOT_LEVELS[index]! && (plot.templateId !== null || plot.lastCropId !== null || plot.cycle !== null)) return null
+    if (farmLevel < FARM_PLOT_LEVELS[number]! && (plot.templateId !== null || plot.lastCropId !== null || plot.cycle !== null)) return null
   }
   return value
 }
@@ -273,7 +337,7 @@ function parseItemLedger(value: unknown): Record<string, unknown> | null {
   if (!FARM_CROP_ID_PATTERN.test(value.itemId)) return null
   if (value.reason === 'farm-harvest') {
     if (value.delta !== 1 || !exactKeys(value.source, ['kind', 'plotId', 'cycleId', 'templateId', 'farmingExp']) ||
-      value.source.kind !== 'farm-harvest' || !FARM_PLOT_IDS.includes(value.source.plotId as (typeof FARM_PLOT_IDS)[number]) ||
+      value.source.kind !== 'farm-harvest' || farmPlotNumber(value.source.plotId) === null ||
       value.source.cycleId !== value.id || !isId(value.source.templateId) || value.source.farmingExp !== 12) return null
     return value
   }

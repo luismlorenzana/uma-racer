@@ -1,23 +1,25 @@
-// Pure Stable Farm assignment, planting, readiness, and harvest rules (docs/design/farm.md, T082).
+// Pure Stable Farm assignment, planting, readiness, and harvest rules (docs/design/farm.md, T082, D234).
 
 import {
   FARM_CROP_YIELD,
-  FARM_GROWTH_MS,
-  FARM_PLOT_IDS,
   FARM_SCHEMA_VERSION,
   FARMING_EXP_PER_HARVEST,
   type FarmPlotId,
 } from './constants'
 import {
   applyFarmingXp,
+  cropGrowthMs,
+  cropTierOpenLevel,
   cropTiersUnlockedBetween,
   defaultOutfitFarmingProgress,
   farmLevel,
+  farmPlotNumber,
   isPlotUnlocked,
   plotsUnlockedBetween,
 } from './progression'
 import {
   FARM_SAFE_ID_PATTERN,
+  isEmptyFarmPlot,
   parseFarmCropDefinition,
   type FarmCropDefinition,
   type FarmHarvestMovement,
@@ -35,10 +37,9 @@ export type FarmPlantBlockReason =
   | 'outfit-unowned'
   | 'outfit-assigned-elsewhere'
   | 'outfit-level-required'
-  | 'farm-level-required'
 
 export type FarmPlantCheck =
-  | { ok: true; templateId: string; outfitLevel: number; farmLevel: number }
+  | { ok: true; templateId: string; outfitLevel: number; farmLevel: number; growthMs: number }
   | { ok: false; reason: FarmPlantBlockReason; requiredLevel?: number }
 
 export interface PlantFarmInput {
@@ -92,10 +93,14 @@ const copyPlot = (plot: FarmPlot): FarmPlot => ({
   cycle: plot.cycle === null ? null : { ...plot.cycle },
 })
 
+const plotOrder = (left: FarmPlot, right: FarmPlot): number => farmPlotNumber(left.id)! - farmPlotNumber(right.id)!
+
+/** Writes one plot back in plot order; an empty never-planted plot is not stored (D234). */
 function replacePlot(farm: FarmState, replacement: FarmPlot): FarmState {
+  const others = farm.plots.filter((plot) => plot.id !== replacement.id).map(copyPlot)
   return {
     ...farm,
-    plots: farm.plots.map((plot) => plot.id === replacement.id ? replacement : copyPlot(plot)),
+    plots: (isEmptyFarmPlot(replacement) ? others : [...others, replacement]).sort(plotOrder),
     workers: Object.fromEntries(Object.entries(farm.workers).map(([id, progress]) => [id, { ...progress }])),
   }
 }
@@ -112,11 +117,14 @@ function replaceWorker(farm: FarmState, templateId: string, progress: OutfitFarm
   }
 }
 
-function requirePlot(farm: FarmState, plotId: FarmPlotId): FarmPlot {
+/** Every plot reads as stored, or as an empty never-planted plot when nothing is stored for it. */
+export function farmPlot(farm: FarmState, plotId: FarmPlotId): FarmPlot {
+  if (farmPlotNumber(plotId) === null) throw new FarmRuleError('invalid-farm-command', `Farm plot is invalid: ${plotId}`)
   const plot = farm.plots.find((candidate) => candidate.id === plotId)
-  if (!plot) throw new FarmRuleError('invalid-farm-command', `Farm plot is missing: ${plotId}`)
-  return plot
+  return plot ? copyPlot(plot) : { id: plotId, templateId: null, lastCropId: null, attempt: 0, cycle: null }
 }
+
+const requirePlot = farmPlot
 
 function requireTemplateId(templateId: string): void {
   if (!FARM_SAFE_ID_PATTERN.test(templateId)) throw new FarmRuleError('invalid-farm-command', 'Outfit id is unsafe')
@@ -125,7 +133,7 @@ function requireTemplateId(templateId: string): void {
 export function createInitialFarmState(): FarmState {
   return {
     schemaVersion: FARM_SCHEMA_VERSION,
-    plots: FARM_PLOT_IDS.map((id) => ({ id, templateId: null, lastCropId: null, attempt: 0, cycle: null })),
+    plots: [],
     workers: {},
   }
 }
@@ -183,13 +191,10 @@ export function canPlant(
     return { ok: false, reason: 'outfit-assigned-elsewhere' }
   }
   const outfitLevel = farmWorkerProgress(farm, plot.templateId).level
-  if (outfitLevel < crop.outfitLevelRequired) {
-    return { ok: false, reason: 'outfit-level-required', requiredLevel: crop.outfitLevelRequired }
-  }
-  if (accountFarmLevel < crop.farmLevelRequired) {
-    return { ok: false, reason: 'farm-level-required', requiredLevel: crop.farmLevelRequired }
-  }
-  return { ok: true, templateId: plot.templateId, outfitLevel, farmLevel: accountFarmLevel }
+  const required = cropTierOpenLevel(crop.scenarioTier)
+  if (outfitLevel < required) return { ok: false, reason: 'outfit-level-required', requiredLevel: required }
+  return { ok: true, templateId: plot.templateId, outfitLevel, farmLevel: accountFarmLevel,
+    growthMs: cropGrowthMs(crop.scenarioTier, outfitLevel) }
 }
 
 export function plantPlot(input: PlantFarmInput): PlantFarmResult {
@@ -200,7 +205,8 @@ export function plantPlot(input: PlantFarmInput): PlantFarmResult {
   if (!check.ok) throw new FarmRuleError(check.reason, `Farm crop cannot be planted: ${check.reason}`)
   const plot = requirePlot(input.farm, input.plotId)
   const attempt = plot.attempt + 1
-  const readyAt = input.now + FARM_GROWTH_MS
+  // Her level when planted decides the time, which the cycle then keeps (D234).
+  const readyAt = input.now + check.growthMs
   if (!Number.isSafeInteger(attempt) || !Number.isSafeInteger(readyAt)) {
     throw new FarmRuleError('invalid-farm-command', 'Farm cycle counter overflow')
   }
@@ -255,6 +261,6 @@ export function harvestPlot(input: HarvestFarmInput): HarvestFarmResult {
     farmLevelBefore: beforeFarmLevel,
     farmLevelAfter: afterFarmLevel,
     plotsUnlocked: plotsUnlockedBetween(beforeFarmLevel, afterFarmLevel),
-    cropTiersUnlocked: cropTiersUnlockedBetween(before.level, applied.progress.level, beforeFarmLevel, afterFarmLevel),
+    cropTiersUnlocked: cropTiersUnlockedBetween(before.level, applied.progress.level),
   }
 }

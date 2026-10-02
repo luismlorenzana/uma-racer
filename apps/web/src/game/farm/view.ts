@@ -1,11 +1,17 @@
-// Pure Stable Farm presentation rules (docs/design/farm.md#screen-contract, T084).
+// Pure Stable Farm presentation rules (docs/design/farm.md#screen-contract, T084, D234).
 
 import {
-  FARM_CROP_LEVEL_REQUIREMENTS,
-  FARM_OUTFIT_LEVEL_REQUIREMENTS,
-  FARM_PLOT_IDS,
-  FARM_PLOT_LEVEL_REQUIREMENTS,
+  FARM_CROP_TIERS,
+  FARM_FASTEST_GROWTH_MINUTES,
+  FARM_PLOTS_PER_SECTION,
+  cropGrowthMinutes,
+  cropTierOpenLevel,
+  farmPlotNumber,
+  farmPlotRequirement,
+  farmSectionOf,
   farmingXpToNext,
+  highestCropTier,
+  plotLevelRequirement,
   type FarmCropDefinition,
   type FarmPlotId,
   type FarmPlotStatus,
@@ -21,7 +27,25 @@ export interface FarmHomeSummary {
   deadline: number | null
   deadlineLabel: string
   nextPlotUnlock: string
-  nextCropUnlock: string
+  /** The Farm Level that opens the next plot. */
+  nextPlotLevel: number
+}
+
+export interface FarmSectionSummary {
+  section: number
+  plots: FarmPlotView[]
+  statuses: FarmPlotStatus[]
+  unlocked: number
+  ready: number
+  growing: number
+  /** Open plots with a worker and nothing planted. */
+  idle: number
+  /** Open plots with no worker. */
+  unassigned: number
+  /** The nearest growing deadline, or null. */
+  nextReadyAt: number | null
+  /** The Farm Level that opens this Section's first plot. */
+  opensAt: number
 }
 
 export interface FarmWorkerIdentity {
@@ -37,15 +61,34 @@ export interface FarmWorkerRow extends FarmWorkerIdentity {
 }
 
 export type FarmCropAvailability =
-  | { available: true }
-  | { available: false; farmLevelRequired: number | null; outfitLevelRequired: number | null }
+  | { available: true; growthMinutes: number }
+  | { available: false; outfitLevelRequired: number }
 
 export function presentedPlotStatus(plot: FarmPlotView, farmLevel: number, now: number): FarmPlotStatus {
-  const index = FARM_PLOT_IDS.indexOf(plot.id)
-  if (farmLevel < FARM_PLOT_LEVEL_REQUIREMENTS[index]!) return 'locked'
+  if (farmLevel < plotLevelRequirement(plot.id)) return 'locked'
   if (plot.templateId === null) return 'unassigned'
   if (plot.cycle === null) return 'idle'
   return now >= plot.cycle.readyAt ? 'ready' : 'growing'
+}
+
+/** "Section 2 · Plot 3": plots are numbered within their Section of six. */
+export function farmPlotLabel(plotId: FarmPlotId): string {
+  const number = farmPlotNumber(plotId)!
+  return `Section ${farmSectionOf(number)} · Plot ${(number - 1) % FARM_PLOTS_PER_SECTION + 1}`
+}
+
+/** "12h", "10h 48m", "8h". */
+export function formatGrowthMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  if (hours === 0) return `${rest}m`
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
+}
+
+/** A compact countdown for badges: "Ready", "45m", "10h 12m". */
+export function formatFarmCountdown(deadline: number, now: number): string {
+  if (deadline <= now) return 'Ready'
+  return formatGrowthMinutes(Math.max(1, Math.ceil((deadline - now) / 60_000)))
 }
 
 export function formatFarmRemaining(deadline: number | null, now: number): string {
@@ -58,32 +101,52 @@ export function formatFarmRemaining(deadline: number | null, now: number): strin
   return rest === 0 ? `${hours}h remaining` : `${hours}h ${rest}m remaining`
 }
 
+function nextPlotUnlock(unlocked: number): string {
+  const next = unlocked + 1
+  return `${farmPlotLabel(`plot-${next}`)} at Farm Lv${farmPlotRequirement(next).toLocaleString()}`
+}
+
 export function buildFarmHomeSummary(view: FarmView, now: number): FarmHomeSummary {
   const statuses = view.plots.map((plot) => presentedPlotStatus(plot, view.farmLevel, now))
-  const unlocked = statuses.filter((status) => status !== 'locked').length
   const ready = statuses.filter((status) => status === 'ready').length
   const working = statuses.filter((status) => status === 'growing' || status === 'ready').length
-  const growingDeadlines = view.plots.flatMap((plot, index) => {
-    if (statuses[index] !== 'growing' || plot.cycle === null) return []
-    return [plot.cycle.readyAt]
-  })
+  const growingDeadlines = view.plots.flatMap((plot, index) =>
+    statuses[index] === 'growing' && plot.cycle !== null ? [plot.cycle.readyAt] : [])
   const deadline = ready > 0 ? now : growingDeadlines.length > 0 ? Math.min(...growingDeadlines) : null
-  const nextPlotIndex = FARM_PLOT_LEVEL_REQUIREMENTS.findIndex((level) => level > view.farmLevel)
-  const nextCropIndex = FARM_CROP_LEVEL_REQUIREMENTS.findIndex((level) => level > view.farmLevel)
   return {
     farmLevel: view.farmLevel,
     ready,
     working,
-    unlocked,
+    unlocked: view.unlockedPlots,
     deadline,
     deadlineLabel: formatFarmRemaining(deadline, now),
-    nextPlotUnlock: nextPlotIndex < 0
-      ? 'All plots unlocked'
-      : `Plot ${nextPlotIndex + 1} at Farm Lv${FARM_PLOT_LEVEL_REQUIREMENTS[nextPlotIndex]}`,
-    nextCropUnlock: nextCropIndex < 0
-      ? 'All crop rows unlocked'
-      : `Scenario ${nextCropIndex + 1} crops at Farm Lv${FARM_CROP_LEVEL_REQUIREMENTS[nextCropIndex]}`,
+    nextPlotUnlock: nextPlotUnlock(view.unlockedPlots),
+    nextPlotLevel: farmPlotRequirement(view.unlockedPlots + 1),
   }
+}
+
+/** One summary per visible Section: every Section with an open plot, then the next (D234). */
+export function buildFarmSections(view: FarmView, now: number): FarmSectionSummary[] {
+  const sections: FarmSectionSummary[] = []
+  for (let start = 0; start < view.plots.length; start += FARM_PLOTS_PER_SECTION) {
+    const plots = view.plots.slice(start, start + FARM_PLOTS_PER_SECTION)
+    const statuses = plots.map((plot) => presentedPlotStatus(plot, view.farmLevel, now))
+    const growing = plots.flatMap((plot, index) => statuses[index] === 'growing' && plot.cycle ? [plot.cycle.readyAt] : [])
+    const count = (status: FarmPlotStatus) => statuses.filter((entry) => entry === status).length
+    sections.push({
+      section: start / FARM_PLOTS_PER_SECTION + 1,
+      plots,
+      statuses,
+      unlocked: plots.length - count('locked'),
+      ready: count('ready'),
+      growing: count('growing'),
+      idle: count('idle'),
+      unassigned: count('unassigned'),
+      nextReadyAt: growing.length > 0 ? Math.min(...growing) : null,
+      opensAt: farmPlotRequirement(start + 1),
+    })
+  }
+  return sections
 }
 
 export function buildFarmWorkerRows(view: FarmView, identities: readonly FarmWorkerIdentity[]): FarmWorkerRow[] {
@@ -98,16 +161,12 @@ export function buildFarmWorkerRows(view: FarmView, identities: readonly FarmWor
     (left.outfit ?? '').localeCompare(right.outfit ?? '') || left.id.localeCompare(right.id))
 }
 
-export function cropAvailability(
-  crop: FarmCropDefinition,
-  progress: OutfitFarmingProgress,
-  farmLevel: number,
-): FarmCropAvailability {
-  const farmLevelRequired = farmLevel < crop.farmLevelRequired ? crop.farmLevelRequired : null
-  const outfitLevelRequired = progress.level < crop.outfitLevelRequired ? crop.outfitLevelRequired : null
-  return farmLevelRequired === null && outfitLevelRequired === null
-    ? { available: true }
-    : { available: false, farmLevelRequired, outfitLevelRequired }
+/** A crop row is the worker's alone to open; when she can grow it, her level decides how long it takes (D234). */
+export function cropAvailability(crop: FarmCropDefinition, progress: OutfitFarmingProgress): FarmCropAvailability {
+  const required = cropTierOpenLevel(crop.scenarioTier)
+  return progress.level < required
+    ? { available: false, outfitLevelRequired: required }
+    : { available: true, growthMinutes: cropGrowthMinutes(crop.scenarioTier, progress.level) }
 }
 
 export function farmPlantConfirmation(input: {
@@ -115,16 +174,28 @@ export function farmPlantConfirmation(input: {
   outfit: string | null
   crop: FarmCropDefinition
   plotId: FarmPlotId
+  growthMinutes: number
   readyAt: number
   formatTime?: (time: number) => string
 }): string {
   const formatTime = input.formatTime ?? ((time: number) => new Date(time).toLocaleString([], {
     weekday: 'short', hour: 'numeric', minute: '2-digit',
   }))
-  return `${input.workerName} · ${input.outfit ?? 'Standard outfit'} will grow ${input.crop.name} for ${input.crop.stat} in ${input.plotId.replace('plot-', 'Plot ')}. Ready ${formatTime(input.readyAt)}.`
+  return `${input.workerName} · ${input.outfit ?? 'Standard outfit'} will grow ${input.crop.name} for ${input.crop.stat} in ${farmPlotLabel(input.plotId)}. Ready in ${formatGrowthMinutes(input.growthMinutes)}, ${formatTime(input.readyAt)}.`
 }
 
 export function nextOutfitCropUnlock(level: number): string {
-  const index = FARM_OUTFIT_LEVEL_REQUIREMENTS.findIndex((required) => required > level)
-  return index < 0 ? 'All scenario crops unlocked' : `Scenario ${index + 1} at Farming Lv${FARM_OUTFIT_LEVEL_REQUIREMENTS[index]}`
+  const highest = highestCropTier(level)
+  return highest >= FARM_CROP_TIERS
+    ? `Every scenario's crops are open`
+    : `Scenario ${highest + 1} crops at Farming Lv${cropTierOpenLevel(highest + 1)}`
+}
+
+/** Her newest crop row and how fast she grows it: "Scenario 2 crops in 10h 48m". */
+export function workerGrowthNote(level: number): string {
+  const tier = highestCropTier(level)
+  const minutes = cropGrowthMinutes(tier, level)
+  return minutes === FARM_FASTEST_GROWTH_MINUTES
+    ? `Scenario ${tier} crops in ${formatGrowthMinutes(minutes)}, her fastest`
+    : `Scenario ${tier} crops in ${formatGrowthMinutes(minutes)}`
 }

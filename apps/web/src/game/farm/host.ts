@@ -5,7 +5,10 @@ import {
   applyFarmingXp,
   createInitialFarmState,
   defaultOutfitFarmingProgress,
+  FARM_PLOTS_PER_SECTION,
   farmLevel,
+  farmPlot,
+  farmPlotId,
   farmWorkerProgress,
   harvestPlot,
   parseFarmState,
@@ -14,6 +17,7 @@ import {
   plantPlot,
   plotStatus,
   unassignFarmOutfit,
+  unlockedPlotCount,
   type FarmCropDefinition,
   type FarmCropId,
   type FarmHarvestMovement,
@@ -39,6 +43,9 @@ export interface FarmView {
   version: number
   state: FarmState
   farmLevel: number
+  /** Plots this Farm Level has opened, in order (D234). */
+  unlockedPlots: number
+  /** Every plot of each Section with an open plot, then the next Section's six, in order. */
   plots: FarmPlotView[]
   workers: Record<string, OutfitFarmingProgress>
   inventory: Record<string, number>
@@ -85,6 +92,21 @@ const cloneFarm = (farm: FarmState): FarmState => ({
 
 const validVersion = (value: number): boolean => Number.isSafeInteger(value) && value >= 0
 
+/** Every Section with an open plot, plus the next one so its unlock is in view (D234). */
+export const visibleFarmPlotCount = (unlockedPlots: number): number =>
+  FARM_PLOTS_PER_SECTION * (Math.ceil(unlockedPlots / FARM_PLOTS_PER_SECTION) + 1)
+
+function plotViews(farm: FarmState, now: number): Pick<FarmView, 'farmLevel' | 'unlockedPlots' | 'plots'> {
+  const level = farmLevel(farm.workers)
+  const unlockedPlots = unlockedPlotCount(level)
+  const plots = Array.from({ length: visibleFarmPlotCount(unlockedPlots) }, (_, index) => {
+    const plot = farmPlot(farm, farmPlotId(index + 1))
+    return { id: plot.id, status: plotStatus(farm, plot.id, now), templateId: plot.templateId, lastCropId: plot.lastCropId,
+      cycle: plot.cycle ? { ...plot.cycle } : null }
+  })
+  return { farmLevel: level, unlockedPlots, plots }
+}
+
 async function loadCrop(id: FarmCropId): Promise<FarmCropDefinition> {
   const { farmCropById } = await import('@racer/domain/farm')
   const crop = farmCropById(id)
@@ -120,20 +142,7 @@ async function viewFromRow(row: FarmRow, now: number): Promise<FarmView> {
     inventory[item.itemId] = item.quantity
   }
   const workers = Object.fromEntries([...owned].sort().map((id) => [id, farmWorkerProgress(farm, id)]))
-  return {
-    version: row.revision,
-    state: farm,
-    farmLevel: farmLevel(farm.workers),
-    plots: farm.plots.map((plot) => ({
-      id: plot.id,
-      status: plotStatus(farm, plot.id, now),
-      templateId: plot.templateId,
-      lastCropId: plot.lastCropId,
-      cycle: plot.cycle ? { ...plot.cycle } : null,
-    })),
-    workers,
-    inventory,
-  }
+  return { version: row.revision, state: farm, ...plotViews(farm, now), workers, inventory }
 }
 
 async function historicalReceiptProjection(target: FarmHarvestMovement): Promise<{
@@ -266,7 +275,7 @@ export class PersistentFarmHost implements FarmHost {
     if (existing?.reason === 'farm-harvest') cropId = existing.itemId
     else {
       const current = parseFarmRow(await db.farm.get('main'))
-      const cycle = current?.data.plots.find((plot) => plot.id === input.plotId)?.cycle
+      const cycle = current ? farmPlot(current.data, input.plotId).cycle : null
       if (!cycle || cycle.id !== input.cycleId) throw new Error('Farm cycle changed or is missing')
       cropId = cycle.cropId
     }
@@ -344,9 +353,7 @@ export class MemoryFarmHost implements FarmHost {
     return {
       version: this.version,
       state,
-      farmLevel: farmLevel(state.workers),
-      plots: state.plots.map((plot) => ({ id: plot.id, status: plotStatus(state, plot.id, now), templateId: plot.templateId,
-        lastCropId: plot.lastCropId, cycle: plot.cycle ? { ...plot.cycle } : null })),
+      ...plotViews(state, now),
       workers: Object.fromEntries([...this.owned].sort().map((id) => [id, farmWorkerProgress(state, id)])),
       inventory: Object.fromEntries(this.inventory),
     }
@@ -388,7 +395,7 @@ export class MemoryFarmHost implements FarmHost {
         farmLevel: farm.farmLevel, alreadyHarvested: true, farm }
     }
     this.expected(input.expectedFarmVersion)
-    const cycle = this.farm.plots.find((plot) => plot.id === input.plotId)?.cycle
+    const cycle = farmPlot(this.farm, input.plotId).cycle
     if (!cycle || cycle.id !== input.cycleId) throw new Error('Farm cycle changed or is missing')
     const result = harvestPlot({ farm: this.farm, plotId: input.plotId, cycleId: input.cycleId,
       crop: await loadCrop(cycle.cropId), now: this.clock() })
