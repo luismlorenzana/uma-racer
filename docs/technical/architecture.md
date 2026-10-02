@@ -101,7 +101,10 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   Uma, item stack, `-1 constellation-produce` evidence, badge/flair reconciliation and outbox. Evidence ids include Uma,
   tier, node and replacement revision; matching retries pay once, stale screens reload, and Zustand publishes after commit.
   Save v12 (Dexie v21) replaced Produce nodes with each unit's Extra stats grid (D235): filled Produce nodes become
-  bought, active grid nodes. A purchase is one transaction across Uma, item stack, `extra-stat-unlock` evidence
+  bought, active grid nodes. Save v13 (Dexie v22) costs every scenario's Uma Levels the same (D241): each v12 Uma
+  re-levels through her current scenario's EXP, stopping at her career hold and the gate, and the walk pays each level
+  it reaches (`uma-level-tickets:<umaId>:<level>`, and `uma-gate-shard:<umaId>:<gate>`) in the same transaction, skipping
+  ids already in the ledger; a cloud snapshot adopted from v12 pays the same after its ledger loads. A purchase is one transaction across Uma, item stack, `extra-stat-unlock` evidence
   `extra:<umaId>:<tier>:<nodeId>` (−1…−4), badge/flair reconciliation and outbox; switching nodes is an Uma-only write.
 - Dexie v16 walks v9 Uma rows to save v10, adding null race preferences without regenerating any frozen journey.
   Editing preferences upserts only that Uma; the API validates the exact union and sync carries the same row.
@@ -283,7 +286,7 @@ later M028 work. The RPG is not exposed from Home yet.
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v12: level/EXP, scenarios, assignments, Extra stats grids, race defaults, history, version
+players/{uid}/umas/{umaId}            save v13: level/EXP, scenarios, assignments, Extra stats grids, race defaults, history, version
 players/{uid}/cards/{cardId}          templateId, three-star bonds per scenario, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
@@ -305,8 +308,9 @@ Firestore cannot store an array directly inside another array, and a race record
 A record whose data holds a nested array is written with its data as JSON text (`dataJson`) and decoded on every read;
 all other records keep `data` as a map (D151).
 
-The profile's save-v12 row retains currencies, the Training EXP bank, local daily-grant date, featured Uma id, one-time
-starter-content marker, creation time, and schema version (v12 is a stamp on the profile). Uma save v12 holds one bounded
+The profile's save-v13 row retains currencies, the Training EXP bank, local daily-grant date, featured Uma id, one-time
+starter-content marker, creation time, and schema version (v12 and v13 are stamps on the profile). Uma save v13 has
+Uma Level EXP on the flat per-scenario curve (D241) and holds one bounded
 run per unlocked scenario on the linear curve (under 1,250 EXP below TL10, 0 at TL10), assignment unions for cards and
 lineage, the unit's Extra stats grid (each stat's bought count 0–4 and at most six active nodes, D235), and optional race
 defaults. The API accepts older shapes during rollout but schema conflict resolution never lets one replace v12. Badge-state v1 is independently migratable and cannot force a

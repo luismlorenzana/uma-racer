@@ -1,5 +1,10 @@
 import {
+  GATE_SHARD_REWARD,
+  UMA_LEVEL_TICKET_REWARD,
   parseLegacyPlayerProfileV11,
+  parseLegacyPlayerProfileV12,
+  umaGateShardLedgerId,
+  umaLevelTicketLedgerId,
   migrateFarmStateToCurrent,
   parseFarmState,
   parseCardSave,
@@ -41,10 +46,11 @@ import {
   type RpgPromotionEvidenceV1,
   type RpgCommandReceiptV1,
 } from '@racer/domain'
-import Dexie, { type EntityTable, type Transaction } from 'dexie'
+import Dexie, { type EntityTable, type Table, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
 import type { MinigameRunSnapshotV1, ReplayJournalV1 } from './minigame-journal'
 import type { RunTarget, StoredRunOutcome, StoredRunReward } from './minigame-host'
+import { localDay } from './store'
 import type { CombatAction } from '@racer/domain'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
@@ -362,7 +368,56 @@ class RacerDb extends Dexie {
     this.version(20).stores(storesWithBattleJournal).upgrade(migrateFarmRow)
     // Save v12 (D235): every Uma and the profile walk forward; Produce nodes become each unit's Extra stats grid.
     this.version(21).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
+    // Save v13 (D241): every scenario's Uma Levels cost the same. Each Uma re-levels through this scenario's EXP, and
+    // the levels it reaches pay their tickets (and a gate its shard) as race levels do.
+    this.version(22).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
   }
+}
+
+/** An Uma's save-v13 re-levelling (D241): the levels it reached and the gate, if it reached one. */
+export interface UmaRelevelPayout {
+  umaId: string
+  levelsGained: readonly number[]
+  gateReached: number | null
+}
+
+/**
+ * Pays what save v13's re-levelling reached as race levels pay (D241): a ticket a level and a gate's Uma Shard, each
+ * under the race's own ledger id, so a level already paid is never paid again. Runs inside the caller's transaction
+ * over the profile, ledger and outbox tables; without a profile there is nothing to pay into.
+ */
+export async function payUmaRelevels(
+  tables: { profile: Table; ledger: Table; outbox: Table },
+  relevels: readonly UmaRelevelPayout[],
+  now: number,
+): Promise<void> {
+  const row = await tables.profile.get('main') as VersionedRow<unknown> | undefined
+  const profile = row ? parsePlayerProfile(row.data) : null
+  if (!row || !profile) return
+  const today = localDay(new Date(now))
+  const queue = async (kind: EntityKind | LogKind, id: string, op: 'upsert' | 'append') => {
+    await tables.outbox.where('[kind+id]').equals([kind, id]).delete()
+    await tables.outbox.add({ kind, id, op, queuedAt: now })
+  }
+  let tickets = 0
+  let shards = 0
+  for (const relevel of relevels) {
+    const rewards = [
+      ...relevel.levelsGained.map((level) => ({ id: umaLevelTicketLedgerId(relevel.umaId, level), resource: 'tickets' as const, delta: UMA_LEVEL_TICKET_REWARD })),
+      ...(relevel.gateReached === null ? [] : [{ id: umaGateShardLedgerId(relevel.umaId, relevel.gateReached), resource: 'uma-shards' as const, delta: GATE_SHARD_REWARD }]),
+    ]
+    for (const reward of rewards) {
+      if (await tables.ledger.get(reward.id)) continue
+      const entry: LedgerEntry = { resource: reward.resource, delta: reward.delta, reason: 'uma-level', localDay: today, createdAt: now }
+      await tables.ledger.add({ id: reward.id, data: entry, createdAt: now })
+      await queue('ledger', reward.id, 'append')
+      if (reward.resource === 'tickets') tickets += reward.delta
+      else shards += reward.delta
+    }
+  }
+  if (tickets === 0 && shards === 0) return
+  await tables.profile.put({ ...row, data: { ...profile, tickets: profile.tickets + tickets, umaShards: profile.umaShards + shards } })
+  await queue('profile', 'main', 'upsert')
 }
 
 async function migrateFarmRow(tx: Transaction): Promise<void> {
@@ -430,23 +485,26 @@ async function walkRowsToCurrent(tx: Transaction): Promise<void> {
 
   const umaTable = tx.table('umas')
   let surplusExp = 0
+  const relevels: UmaRelevelPayout[] = []
   for (const row of await umaTable.toArray() as VersionedRow<unknown>[]) {
     if (parseUmaSave(row.data)) continue
     const migrated = migrateUmaSaveWithSurplus(row.data)
     if (!migrated) throw new Error(`Local Uma ${row.id} cannot be migrated`)
     if (migrated.uma.templateId !== row.id) throw new Error(`Local Uma ${row.id} has mismatched data`)
     surplusExp += migrated.surplusExp
+    relevels.push({ umaId: row.id, levelsGained: migrated.levelsGained, gateReached: migrated.gateReached })
     await umaTable.put({ ...row, data: migrated.uma })
     await queue('umas', row.id)
   }
 
-  // What the v11 re-levelling carried past TL10 is banked on the profile it migrated with, once (D212); a v11 profile
-  // already banked it, and only takes v12's stamp. Startup turns every full level of it into a Level-Up Ticket.
+  // What the v11 re-levelling carried past TL10 is banked on the profile it migrated with, once (D212); a v11 or v12
+  // profile already banked it, and only takes the stamp. Startup turns every full level of it into a Level-Up Ticket.
   if (profileRow && migratedProfile) {
-    const bank = parseLegacyPlayerProfileV11(profileRow.data) ? 0 : surplusExp
+    const bank = parseLegacyPlayerProfileV11(profileRow.data) || parseLegacyPlayerProfileV12(profileRow.data) ? 0 : surplusExp
     await profileTable.put({ ...profileRow, data: { ...migratedProfile, trainingExpBank: migratedProfile.trainingExpBank + bank } })
     await queue('profile', 'main')
   }
+  await payUmaRelevels({ profile: profileTable, ledger: tx.table('ledger'), outbox: outboxTable }, relevels, queuedAt)
 
   const cardTable = tx.table('cards')
   for (const row of await cardTable.toArray() as VersionedRow<unknown>[]) {

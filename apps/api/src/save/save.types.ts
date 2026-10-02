@@ -687,7 +687,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
-  if (value.schemaVersion === 11 || value.schemaVersion === 12
+  if (value.schemaVersion === 11 || value.schemaVersion === 12 || value.schemaVersion === 13
     ? !exactKeys(value, PROFILE_V11_FIELDS) || !isNonNegativeInt(value.trainingExpBank)
     : !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -731,10 +731,18 @@ function parseSkill(value: unknown): value is Record<string, unknown> {
     SKILL_ORIGINS.includes(value.origin as (typeof SKILL_ORIGINS)[number]) && (value.sourceId === null || isId(value.sourceId))
 }
 
+/**
+ * The most EXP an Uma may hold at a level: short of the next level, or a gate's bank of one. v13 costs every scenario's
+ * levels the same, 100 + 25 a level into it (D241); v12 and older rose without end, 100 + 25 × (level − 1).
+ */
+function umaExpLimit(level: number, curve: 'flat' | 'rising'): number {
+  const toNext = (at: number) => 100 + 25 * (curve === 'flat' ? (at - 1) % 10 : at - 1)
+  return level === MAX_UMA_LEVEL ? 0 : level % 10 === 0 ? toNext(level + 1) : toNext(level) - 1
+}
+
 function parseUmaBase(value: Record<string, unknown>): boolean {
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return false
-  const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
-  if (value.exp > expLimit) return false
+  if (value.exp > umaExpLimit(value.level, 'rising')) return false
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > 10 || !isNonNegativeInt(value.trainingExp)) return false
   if ((value.trainingLevel === 10 && value.trainingExp !== 0) || (value.trainingLevel < 10 && value.trainingExp >= 100)) return false
   if (!parseStats(value.stats) || !parseAptitudes(value.aptitudes) || !isNonNegativeInt(value.skillPoints) || !isNonNegativeInt(value.trainingsThisScenario)) return false
@@ -904,21 +912,21 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
 }
 
 /**
- * v5 to v12 Umas share the Uma shape; v10 adds outfit race preferences, v11 re-levels on the linear curve, and v12 adds
- * each unit's Extra stats grid (D235).
+ * v5 to v13 Umas share the Uma shape; v10 adds outfit race preferences, v11 re-levels on the linear curve, v12 adds
+ * each unit's Extra stats grid (D235), and v13 costs every scenario's Uma Levels the same (D241).
  */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  const withPreferences = value.schemaVersion === 10 || value.schemaVersion === 11 || value.schemaVersion === 12
+  const withPreferences = value.schemaVersion === 10 || value.schemaVersion === 11 || value.schemaVersion === 12 ||
+    value.schemaVersion === 13
   if (!exactKeys(value, withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS) ||
-    ![5, 6, 7, 8, 9, 10, 11, 12].includes(value.schemaVersion as number)) return null
+    ![5, 6, 7, 8, 9, 10, 11, 12, 13].includes(value.schemaVersion as number)) return null
   if (withPreferences && value.racePreferences !== null &&
     (!isRecord(value.racePreferences) || !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
       !['front', 'pace', 'late', 'end'].includes(value.racePreferences.strategy as string) ||
       !['sprint', 'mile', 'medium', 'long'].includes(value.racePreferences.distance as string) ||
       !['turf', 'dirt'].includes(value.racePreferences.surface as string))) return null
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
-  const expLimit = value.level === MAX_UMA_LEVEL ? 0 : value.level % 10 === 0 ? 100 + 25 * value.level : 100 + 25 * (value.level - 1) - 1
-  if (value.exp > expLimit) return null
+  if (value.exp > umaExpLimit(value.level, value.schemaVersion === 13 ? 'flat' : 'rising')) return null
   if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 4) return null
 
   const currentTier = Math.ceil((value.level as number) / 10)
@@ -943,7 +951,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8, 9, 10, 11, 12].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9, 10, 11, 12, 13].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null

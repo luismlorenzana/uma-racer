@@ -2,6 +2,7 @@
 
 import {
   parseLegacyPlayerProfileV11,
+  parseLegacyPlayerProfileV12,
   parsePlayerProfile,
   migrateCardSaveToCurrent,
   migrateUmaSaveToCurrent,
@@ -53,7 +54,7 @@ import {
   type RpgCommandReceiptV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
-import { db, type FarmRow, type LogRow, type OutboxRow, type VersionedRow } from './db'
+import { db, payUmaRelevels, type FarmRow, type LogRow, type OutboxRow, type UmaRelevelPayout, type VersionedRow } from './db'
 
 export interface LocalSnapshot {
   profile: VersionedRow<PlayerProfile>
@@ -246,6 +247,8 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
   const snapshot = parseSaveSnapshotOrThrow(raw)
   const legacyKeys = new Set<string>()
   const trainingSurplus = legacyTrainingSurplus(raw)
+  // A pre-v13 cloud copy re-levels its Umas on the way in (D241); what that reaches is paid once the rows are written.
+  const relevels: UmaRelevelPayout[] = []
   if (typeof raw === 'object' && raw !== null && !Array.isArray(raw) && Array.isArray((raw as Record<string, unknown>).entities)) {
     for (const record of (raw as Record<string, unknown>).entities as unknown[]) {
       if (typeof record !== 'object' || record === null || Array.isArray(record)) continue
@@ -290,10 +293,11 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.profile.put({ id: record.id, data: profile, version: record.version })
       }
       if (record.kind === 'umas') {
-        const uma = migrateUmaSaveToCurrent(record.data)
-        if (!uma) throw new Error(`Server Uma ${record.id} cannot be migrated`)
+        const migrated = migrateUmaSaveWithSurplus(record.data)
+        if (!migrated) throw new Error(`Server Uma ${record.id} cannot be migrated`)
         if (!parseUmaSave(record.data) || trainingSurplus.legacyUmaIds.has(record.id)) legacyKeys.add(`umas/${record.id}`)
-        await db.umas.put({ id: record.id, data: uma, version: record.version })
+        relevels.push({ umaId: record.id, levelsGained: migrated.levelsGained, gateReached: migrated.gateReached })
+        await db.umas.put({ id: record.id, data: migrated.uma, version: record.version })
       }
       if (record.kind === 'cards') {
         const card = migrateCardSaveToCurrent(record.data)
@@ -329,6 +333,8 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       const separator = key.indexOf('/')
       await queueInTransaction(key.slice(0, separator) as EntityKind, key.slice(separator + 1), 'upsert', snapshot.serverTime)
     }
+    // After the cloud's ledger is in, so a level another device already paid is skipped (D241).
+    await payUmaRelevels({ profile: db.profile, ledger: db.ledger, outbox: db.outbox }, relevels, snapshot.serverTime)
     await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })
   return 'adopted'
@@ -382,9 +388,9 @@ function legacyTrainingSurplus(raw: unknown): { exp: number; legacyProfile: bool
     if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue
     const row = entry as Record<string, unknown>
     if (row.deleted === true || typeof row.id !== 'string') continue
-    // Only a profile from before v11 has not banked its Umas' re-levelling yet (D212); v11 is a stamp away from v12.
+    // Only a profile from before v11 has not banked its Umas' re-levelling yet (D212); v11 and v12 are stamps away.
     if (row.kind === 'profile' && !parsePlayerProfile(row.data) && !parseLegacyPlayerProfileV11(row.data) &&
-      migratePlayerProfileToCurrent(row.data)) result.legacyProfile = true
+      !parseLegacyPlayerProfileV12(row.data) && migratePlayerProfileToCurrent(row.data)) result.legacyProfile = true
     if (row.kind === 'umas' && !parseUmaSave(row.data)) {
       const migrated = migrateUmaSaveWithSurplus(row.data)
       if (!migrated) continue

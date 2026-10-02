@@ -22,6 +22,10 @@ import {
   type UmaSave,
 } from './save'
 import { LEVELS_PER_SCENARIO, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
+import { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
+
+// The stage rules live in a leaf module so the save's v13 migration can read a career's holds (D241).
+export { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
 import {
   GRADES,
   RACE_GRADES,
@@ -74,23 +78,10 @@ export const CAREER_STAGE_LABELS: Readonly<Record<CareerStage, string>> = {
   main: 'Main goals',
 }
 
-/** Levels into the scenario (1–10) each stage spans. An unfinished stage holds the Uma at its last level. */
-export const CAREER_STAGE_LEVELS: Readonly<Record<CareerStage, { first: number; last: number }>> = {
-  maiden: { first: 1, last: 2 },
-  trials: { first: 3, last: 5 },
-  main: { first: 6, last: 10 },
-}
-
 export const CAREER_STAGE_GRADES: Readonly<Record<CareerStage, RaceGrade>> = { maiden: 'g3', trials: 'g2', main: 'g1' }
 
 /** Main goals ask for three G1 wins: a two-leg set is topped up with one more G1 from her own career. */
 export const CAREER_MAIN_RACES = 3
-
-export const isCareerStage = (slot: string): slot is CareerStage => (CAREER_STAGES as readonly string[]).includes(slot)
-
-/** Goal plan v3+ journeys. v1–v2 journeys keep their three optional slots and none of the stage rules. */
-export const isCareerJourney = (journey: ScenarioJourney | null | undefined): journey is ScenarioJourney =>
-  Boolean(journey && journey.goals.length > 0 && journey.goals.every((goal) => isCareerStage(goal.slot)))
 
 /** The earliest stage with a goal still to win, or null once the career is complete (or is not a career). */
 export function careerStage(journey: ScenarioJourney | null | undefined): CareerStage | null {
@@ -100,23 +91,6 @@ export function careerStage(journey: ScenarioJourney | null | undefined): Career
 
 export const careerComplete = (journey: ScenarioJourney | null | undefined): boolean =>
   isCareerJourney(journey) && journey.goals.every((goal) => goal.status === 'completed')
-
-/**
- * The Uma Level race EXP stops at: the last level of the earliest stage that still has a goal to win. Maiden holds
- * level 2 of the scenario and Trials level 5. Main goals need no hold, because level 10 is already the gate. An Uma
- * already past a hold (a career generated mid-scenario) is never pushed back.
- */
-export function careerHoldLevel(journey: ScenarioJourney | null | undefined, level: number): number | null {
-  if (!isCareerJourney(journey) || journey.state !== 'active' || tierOfLevel(level) !== journey.tier) return null
-  const base = (journey.tier - 1) * LEVELS_PER_SCENARIO
-  for (const stage of ['maiden', 'trials'] as const) {
-    const hold = base + CAREER_STAGE_LEVELS[stage].last
-    const open = journey.goals.some((goal) => goal.status === 'active' &&
-      CAREER_STAGES.indexOf(goal.slot as CareerStage) <= CAREER_STAGES.indexOf(stage))
-    if (open && level <= hold) return hold
-  }
-  return null
-}
 
 /** At the gate level an unfinished career keeps racing. Everything else waits for the scenario to advance. */
 export const careerOpenAtGate = (journey: ScenarioJourney | null | undefined): boolean =>

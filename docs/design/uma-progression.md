@@ -61,7 +61,19 @@ own context, without Uma EXP. Its career stays closed. See [Training — trained
 - **Her career holds levels 2 and 5 of each scenario** until its Maiden and Trials goals are won. A held Uma banks
   EXP just short of the next level, and the race that wins the goal releases it
   ([Scenario Careers](scenario-goals.md#three-stages)).
-- Draft curve: `expToNext(level) = 100 + 25 × (level − 1)`
+- **Every scenario costs the same** (D241): `expToNext(level) = 100 + 25 × levelsIntoScenario(level)`, so a scenario's
+  levels cost 100, 125 … 300 and its nine level-ups 1,800 EXP, from URA Finale to the fourteenth. A gate banks the next
+  scenario's first level, 100. Uma Level is race EXP only; it has nothing to do with Training Level or Level-Up Tickets.
+
+  | Wins a scenario takes | G1 (150) | G1 with +33% Race Bonus (200) | G2 (110) |
+  |---|---:|---:|---:|
+  | Any scenario, 1,800 EXP | 12 | 9 | 17 |
+
+  An Uma therefore runs about 12–16 races a scenario (her six career goals among them, with some 2nd and 3rd places at
+  a quarter of the EXP), and roughly 170–220 to finish all fourteen. The curve before save v13 rose without end,
+  `100 + 25 × (level − 1)`: scenario 2 cost 4,050 EXP (27 G1 wins), scenario 14 31,050 (207), and Lv140 about 230,000.
+  Save v13 re-levelled each Uma through the EXP she had earned in her current scenario, with the tickets and gate shard of
+  every level it reached paid under the race's own ledger ids.
 - Draft EXP per win by grade, before card Race Bonus:
 
   | Debut/Maiden | Pre-OP/OP | G3 | G2 | G1 |

@@ -2,6 +2,8 @@
 
 import {
   SAVE_ID_PATTERN,
+  umaGateShardLedgerId,
+  umaLevelTicketLedgerId,
   compileRaceSkill,
   levelUniqueSkill,
   compileRaceCourseLayout,
@@ -680,9 +682,9 @@ export async function completePersistentRace(
     const timeline = simulatePreparedRace(attempt)
     const resolved = resultRecord(content, attempt, race, uma, timeline, now)
     const completedUma = captureFinalSnapshot(content, resolved.uma, now)
-    const levelIds = resolved.record.levelsGained.map((level) => `uma-level-tickets:${attempt.umaId}:${level}`)
+    const levelIds = resolved.record.levelsGained.map((level) => umaLevelTicketLedgerId(attempt.umaId, level))
     const gate = resolved.record.shardReward ? resolved.record.levelsGained.at(-1) : undefined
-    const shardId = gate === undefined ? null : `uma-gate-shard:${attempt.umaId}:${gate}`
+    const shardId = gate === undefined ? null : umaGateShardLedgerId(attempt.umaId, gate)
     const existingRewards = await db.ledger.bulkGet(shardId ? [...levelIds, shardId] : levelIds)
     if (existingRewards.some((entry) => entry !== undefined)) throw new Error('Race reward was already recorded')
     const nextProfile = {

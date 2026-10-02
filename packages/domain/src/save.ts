@@ -11,7 +11,8 @@ import {
 } from './badges'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { DAILY_TICKETS, TICKET_STORAGE_CAP, redenominateTickets } from './economy'
-import { expToNextUmaLevel } from './progression'
+import { expToNextUmaLevel, legacyExpToNextUmaLevel } from './progression'
+import { CAREER_STAGES, careerHoldLevel, type CareerStage } from './career-stages'
 import { parseRaceResultRecord } from './progression-race'
 import {
   CARD_SET_SIZE,
@@ -23,7 +24,7 @@ import {
   type NodeAssignment,
 } from './constellation'
 import { emptyExtraStats, extraStatsFromProduce, parseExtraStats, type ExtraStats } from './extra-stats'
-import { MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
+import { LEVELS_PER_SCENARIO, MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL, fitsTrainingCurve, relevelLegacyTraining } from './training'
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type DistanceCategory, type Grade, type StatKey, type Stats, type Strategy, type Surface } from './types'
 import { FARM_SCHEMA_VERSION } from './farm/constants'
@@ -34,7 +35,7 @@ import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt
   parseRpgPresetSave, parseRpgPromotionEvidence, parseRpgResultEvidence, rpgCheckpointId,
   type RpgCommandAction, type RpgCommandReceiptV1 } from './rpg/save'
 
-export const SAVE_SCHEMA_VERSION = 12 as const
+export const SAVE_SCHEMA_VERSION = 13 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
@@ -46,6 +47,7 @@ export const LEGACY_SAVE_SCHEMA_VERSION_V8 = 8 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V9 = 9 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V10 = 10 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V11 = 11 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V12 = 12 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -97,9 +99,7 @@ export interface ParentSnapshot extends FrozenParent {
 
 /** The three optional targets of goal plans v1 and v2, kept only on journeys frozen before careers. */
 export type LegacyGoalSlot = 'aptitude' | 'identity' | 'challenge'
-/** Goal plan v3+: a career's stages, in order (D137). */
-export const CAREER_STAGES = ['maiden', 'trials', 'main'] as const
-export type CareerStage = (typeof CAREER_STAGES)[number]
+export { CAREER_STAGES, type CareerStage } from './career-stages'
 export type GoalSlot = LegacyGoalSlot | CareerStage
 /** Goal plan v4 repairs untouched careers whose targets left the regular race catalog (D194). */
 export const SCENARIO_GOAL_VERSION = 4 as const
@@ -259,9 +259,14 @@ export interface LegacyPlayerProfileV10 extends LegacyPlayerProfileBody {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V10
 }
 
-/** v11 profiles have v12's shape; v12 belongs to the Uma rows' Extra stats grid (D235). */
+/** v11 profiles have the current shape; v12 belongs to the Uma rows' Extra stats grid (D235). */
 export interface LegacyPlayerProfileV11 extends Omit<PlayerProfile, 'schemaVersion'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V11
+}
+
+/** v12 profiles have the current shape too; v13 belongs to the Uma rows' level curve (D241). */
+export interface LegacyPlayerProfileV12 extends Omit<PlayerProfile, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V12
 }
 
 export interface LegacyScenarioGoalV2 extends Omit<ScenarioGoal, 'series' | 'kind' | 'raceId'> {
@@ -562,6 +567,19 @@ export function parseLegacyPlayerProfileV11(value: unknown): LegacyPlayerProfile
 export function migratePlayerProfileV11(value: LegacyPlayerProfileV11): PlayerProfile {
   const parsed = parseLegacyPlayerProfileV11(value)
   if (!parsed) throw new Error('Legacy v11 player profile is malformed')
+  return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
+}
+
+export function parseLegacyPlayerProfileV12(value: unknown): LegacyPlayerProfileV12 | null {
+  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V12) return null
+  const parsed = parsePlayerProfile({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  return parsed ? { ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V12 } : null
+}
+
+/** A stamp bump: v13 changes the Uma rows' level curve (D241), not the profile. */
+export function migratePlayerProfileV12(value: LegacyPlayerProfileV12): PlayerProfile {
+  const parsed = parseLegacyPlayerProfileV12(value)
+  if (!parsed) throw new Error('Legacy v12 player profile is malformed')
   return { ...parsed, schemaVersion: SAVE_SCHEMA_VERSION }
 }
 
@@ -951,11 +969,15 @@ const LEGACY_UMA_VERSIONED_KEYS = [
   'goalPlanVersion', 'scenarioJourneys',
 ] as const
 
+/** Her EXP fits her level on a curve: short of the next level, or a gate's bank of one level at most. */
+function umaExpFits(level: number, exp: number, toNext: (level: number) => number): boolean {
+  return level === MAX_UMA_LEVEL ? exp === 0 : isGateLevel(level) ? exp <= toNext(level + 1) : exp < toNext(level)
+}
+
 function parseUmaCore(value: Record<string, unknown>): LegacyUmaSaveV1 | null {
   if (!isId(value.templateId)) return null
   if (!isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
-  const maxLevel = MAX_UMA_LEVEL
-  if (value.level === maxLevel ? value.exp !== 0 : isGateLevel(value.level) ? value.exp > expToNextUmaLevel(value.level + 1) : value.exp >= expToNextUmaLevel(value.level)) return null
+  if (!umaExpFits(value.level, value.exp, legacyExpToNextUmaLevel)) return null
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL || !isNonNegativeInt(value.trainingExp)) return null
   if (
     (value.trainingLevel === MAX_TRAINING_LEVEL && value.trainingExp !== 0) ||
@@ -1355,14 +1377,17 @@ export function parseLegacyUmaSaveV10(value: unknown): LegacyUmaSaveV10 | null {
   return asLegacyUmaV10(value)
 }
 
-/** An Uma moved to the current schema, and the Training EXP its re-levelled units carried past TL10. */
-export interface UmaMigration {
+/**
+ * An Uma moved to the current schema, the Training EXP its re-levelled units carried past TL10 (D211), and the Uma
+ * Levels the v13 curve re-levelled her to (D241).
+ */
+export interface UmaMigration extends UmaRelevel {
   uma: UmaSave
   surplusExp: number
 }
 
 /** v11 re-levels every unit once on the linear curve through its total earned EXP (D211). */
-export function migrateUmaSaveV10(value: LegacyUmaSaveV10): UmaMigration {
+export function migrateUmaSaveV10(value: LegacyUmaSaveV10): { uma: LegacyUmaSaveV12; surplusExp: number } {
   let surplusExp = 0
   const scenarios = value.scenarios.map((run) => {
     const releveled = relevelLegacyTraining(run.trainingLevel, run.trainingExp)
@@ -1384,7 +1409,7 @@ export function parseLegacyUmaSaveV11(value: unknown): LegacyUmaSaveV11 | null {
  * v12 takes the Produce nodes out of the tree (D235): each filled one buys and turns on the next Extra stat node of its
  * stat, free, four at most a stat. Card and lineage assignments are kept as they were.
  */
-export function migrateUmaSaveV11(value: LegacyUmaSaveV11): UmaSave {
+export function migrateUmaSaveV11(value: LegacyUmaSaveV11): LegacyUmaSaveV12 {
   const scenarios: ScenarioTraining[] = value.scenarios.map((run) => {
     const assignments: Record<string, NodeAssignment> = {}
     const produce: StatKey[] = []
@@ -1400,19 +1425,76 @@ export function migrateUmaSaveV11(value: LegacyUmaSaveV11): UmaSave {
     const { loadoutSkillIds, journey, started, ...head } = run
     return { ...head, assignments, extraStats: extraStatsFromProduce(produce), loadoutSkillIds, journey, started }
   })
-  const uma = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, scenarios })
+  const uma = parseLegacyUmaSaveV12({ ...value, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V12, scenarios })
   if (!uma) throw new Error('Legacy v11 Uma save is malformed')
   return uma
 }
 
 export function parseUmaSave(value: unknown): UmaSave | null {
   if (!isObject(value) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
-  const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level))
+  const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level), expToNextUmaLevel)
   return body ? { schemaVersion: SAVE_SCHEMA_VERSION, ...body } : null
 }
 
+/** v12 is v13's shape with Uma Levels on the rising curve (D241). */
+export interface LegacyUmaSaveV12 extends Omit<UmaSave, 'schemaVersion'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V12
+}
+
+export function parseLegacyUmaSaveV12(value: unknown): LegacyUmaSaveV12 | null {
+  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V12) return null
+  const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level), legacyExpToNextUmaLevel)
+  return body ? { schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V12, ...body } : null
+}
+
+/** What the v13 re-levelling did: the levels it reached (each pays its ticket) and the gate, if it reached one. */
+export interface UmaRelevel {
+  levelsGained: number[]
+  gateReached: number | null
+}
+
+/**
+ * Save v13 (D241): every scenario's levels cost the same. A v12 Uma keeps the EXP she earned in her current scenario
+ * and re-levels through it on the flat curve from the scenario's first level, stopping at her career's hold and at the
+ * gate as a race would, and never below the level she had. The caller pays the levels gained like race levels.
+ */
+export function migrateUmaSaveV12(value: LegacyUmaSaveV12): { uma: UmaSave } & UmaRelevel {
+  const parsed = parseLegacyUmaSaveV12(value)
+  if (!parsed) throw new Error('Legacy v12 Uma save is malformed')
+  let level = parsed.level
+  let exp = parsed.exp
+  if (level < MAX_UMA_LEVEL) {
+    const start = (tierOfLevel(level) - 1) * LEVELS_PER_SCENARIO + 1
+    let earned = exp
+    for (let step = start; step < level; step += 1) earned += legacyExpToNextUmaLevel(step)
+    const hold = careerHoldLevel(parsed.scenarios.find((run) => run.tier === parsed.unlockedTier)?.journey, parsed.level)
+    level = start
+    exp = earned
+    while (!isGateLevel(level)) {
+      const needed = expToNextUmaLevel(level)
+      if (hold !== null && level >= hold) {
+        exp = Math.min(needed - 1, exp)
+        break
+      }
+      if (exp < needed) break
+      exp -= needed
+      level += 1
+    }
+    // A gate banks one level at most, the next scenario's first.
+    if (isGateLevel(level)) exp = Math.min(expToNextUmaLevel(level + 1), exp)
+    if (level < parsed.level) {
+      level = parsed.level
+      exp = Math.min(exp, isGateLevel(level) ? expToNextUmaLevel(level + 1) : expToNextUmaLevel(level) - 1)
+    }
+  }
+  const uma = parseUmaSave({ ...parsed, schemaVersion: SAVE_SCHEMA_VERSION, level, exp })
+  if (!uma) throw new Error('Legacy v12 Uma save cannot be re-levelled')
+  const levelsGained = Array.from({ length: level - parsed.level }, (_, index) => parsed.level + index + 1)
+  return { uma, levelsGained, gateReached: levelsGained.length > 0 && isGateLevel(level) ? level : null }
+}
+
 function parseLegacyUmaBody(value: Record<string, unknown>, curve: 'linear' | 'legacy'): LegacyUmaBody | null {
-  return parseUmaBody(value, (run, level) => parseLegacyScenarioTraining(run, level, curve))
+  return parseUmaBody(value, (run, level) => parseLegacyScenarioTraining(run, level, curve), legacyExpToNextUmaLevel)
 }
 
 /**
@@ -1422,15 +1504,12 @@ function parseLegacyUmaBody(value: Record<string, unknown>, curve: 'linear' | 'l
 function parseUmaBody<Run extends { tier: number }>(
   value: Record<string, unknown>,
   parseRun: (run: unknown, level: number) => Run | null,
+  expToNext: (level: number) => number,
 ): (Omit<UmaSave, 'schemaVersion' | 'scenarios'> & { scenarios: Run[] }) | null {
   if (!exactKeys(value, UMA_VERSIONED_KEYS)) return null
   if (!isId(value.templateId)) return null
   if (!isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
-  if (value.level === MAX_UMA_LEVEL
-    ? value.exp !== 0
-    : isGateLevel(value.level)
-      ? value.exp > expToNextUmaLevel(value.level + 1)
-      : value.exp >= expToNextUmaLevel(value.level)) return null
+  if (!umaExpFits(value.level, value.exp, expToNext)) return null
   if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > SCENARIO_GOAL_VERSION) return null
   if (value.racePreferences !== null && (!isObject(value.racePreferences) ||
     !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
@@ -1538,7 +1617,14 @@ export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
  */
 export function migrateUmaSaveWithSurplus(value: unknown): UmaMigration | null {
   const current = parseUmaSave(value)
-  if (current) return { uma: current, surplusExp: 0 }
+  if (current) return { uma: current, surplusExp: 0, levelsGained: [], gateReached: null }
+  const v12 = migrateUmaSaveToV12(value)
+  return v12 ? { ...migrateUmaSaveV12(v12.uma), surplusExp: v12.surplusExp } : null
+}
+
+function migrateUmaSaveToV12(value: unknown): { uma: LegacyUmaSaveV12; surplusExp: number } | null {
+  const v12 = parseLegacyUmaSaveV12(value)
+  if (v12) return { uma: v12, surplusExp: 0 }
   const v11 = parseLegacyUmaSaveV11(value)
   if (v11) return { uma: migrateUmaSaveV11(v11), surplusExp: 0 }
   const v10 = migrateUmaSaveToV10(value)
@@ -1577,6 +1663,8 @@ export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
 export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
   const current = parsePlayerProfile(value)
   if (current) return current
+  const v12 = parseLegacyPlayerProfileV12(value)
+  if (v12) return migratePlayerProfileV12(v12)
   const v11 = parseLegacyPlayerProfileV11(value)
   if (v11) return migratePlayerProfileV11(v11)
   const v10 = parseLegacyPlayerProfileV10(value)

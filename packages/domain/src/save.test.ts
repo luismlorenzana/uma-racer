@@ -184,8 +184,8 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 13 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 13 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 14 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 14 })).toThrow(/App update required/)
     expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), trainingExpBank: -1 })).toBeNull()
   })
 
@@ -340,7 +340,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 13 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 14 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
@@ -504,7 +504,7 @@ describe('the migration chain', () => {
     expect(migrated.surplusExp).toBe(10_350)
     expect(migrateUmaSaveToCurrent(v10)).toEqual(migrated.uma)
     // Already current: nothing moves and nothing is banked again.
-    expect(migrateUmaSaveWithSurplus(migrated.uma)).toEqual({ uma: migrated.uma, surplusExp: 0 })
+    expect(migrateUmaSaveWithSurplus(migrated.uma)).toEqual({ uma: migrated.uma, surplusExp: 0, levelsGained: [], gateReached: null })
     // A current unit must fit the linear curve; the same numbers are only readable as v10.
     const offCurve = { ...current, scenarios: [{ ...current.scenarios[0]!, trainingLevel: 6, trainingExp: 2000 }] }
     expect(parseUmaSave(offCurve)).toBeNull()

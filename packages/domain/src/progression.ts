@@ -1,7 +1,18 @@
 // Uma Level: permanent, earned only from racing (docs/design/uma-progression.md).
+import { levelsIntoScenario } from './scenarios'
 import type { RaceGrade } from './types'
 
-export const expToNextUmaLevel = (level: number): number => 100 + 25 * (level - 1)
+/**
+ * Every scenario's levels cost the same (D241): 100 EXP at its first level and 25 more at each level after, 1,800 for a
+ * scenario's nine. A gate's bank is the next scenario's first level, 100.
+ */
+export const expToNextUmaLevel = (level: number): number => 100 + 25 * levelsIntoScenario(level)
+
+/**
+ * The curve before save v13: it kept rising from scenario to scenario, so the second cost 4,050 EXP and the fourteenth
+ * 31,050 (D241). Only the save's legacy parsers and the v13 migration read it.
+ */
+export const legacyExpToNextUmaLevel = (level: number): number => 100 + 25 * (level - 1)
 
 export const WIN_EXP: Record<RaceGrade, number> = {
   debut: 40,
@@ -20,6 +31,11 @@ export const UMA_LEVEL_TICKET_REWARD = 1
 /** What a level paid before save v7; race records written then keep it, as the facts of their day. */
 export const LEGACY_UMA_LEVEL_TICKET_REWARD = 5
 export const GATE_SHARD_REWARD = 1
+
+/** The ledger entry that pays an Uma Level's ticket: one per Uma per level, ever (D148, D241). */
+export const umaLevelTicketLedgerId = (umaId: string, level: number): string => `uma-level-tickets:${umaId}:${level}`
+/** The ledger entry that pays a gate's Uma Shard: one per Uma per gate, ever. */
+export const umaGateShardLedgerId = (umaId: string, gate: number): string => `uma-gate-shard:${umaId}:${gate}`
 
 /** Uma EXP for a finish. `raceBonus` is the summed card Race Bonus (0.03 = +3%). */
 export function raceExp(grade: RaceGrade, placement: number, raceBonus = 0): number {

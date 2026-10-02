@@ -458,7 +458,8 @@ describe('persistent progression race', () => {
       shardReward: 1,
     })
     expect((await db.profile.get('main'))?.data).toMatchObject({ tickets: 1, umaShards: 1 })
-    expect((await db.umas.get('u1'))?.data).toMatchObject({ level: 10, exp: 154 })
+    // A gate banks one level at most: the next scenario's first, 100 (D241).
+    expect((await db.umas.get('u1'))?.data).toMatchObject({ level: 10, exp: 100 })
     expect((await db.ledger.toArray()).map((entry) => entry.id).sort()).toEqual([
       'uma-gate-shard:u1:10',
       'uma-level-tickets:u1:10',

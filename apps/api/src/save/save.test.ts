@@ -593,6 +593,21 @@ describe('save v6 over the wire', () => {
     expect(older.writes).toEqual([])
   })
 
+  it('accepts v13, with every scenario\'s Uma Levels on the flat curve (D241)', () => {
+    const run = { ...uma.scenarios[0]!, extraStats: { unlocked: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, active: [] } }
+    const v13 = { ...uma, schemaVersion: 13, racePreferences: null, scenarios: [run], level: 15 }
+    const sync = (kind: string, data: unknown) => parseSyncRequest({ upserts: [{ kind, id: kind === 'profile' ? 'main' : '100101', baseVersion: 3, data }] })
+    const accepted = { upserts: [{ kind: 'umas' }] }
+    // Lv15 costs 200 on the flat curve, and 450 on the rising one a v12 row is read on.
+    expect(sync('umas', { ...v13, exp: 199 })).toMatchObject(accepted)
+    expect(sync('umas', { ...v13, exp: 200 })).toMatch(/invalid umas data/)
+    expect(sync('umas', { ...v13, schemaVersion: 12, exp: 449 })).toMatchObject(accepted)
+    // A gate banks the next scenario's first level, 100.
+    expect(sync('umas', { ...v13, level: 20, exp: 100 })).toMatchObject(accepted)
+    expect(sync('umas', { ...v13, level: 20, exp: 101 })).toMatch(/invalid umas data/)
+    expect(sync('profile', { ...profile, schemaVersion: 13, trainingExpBank: 0 })).toMatchObject({ upserts: [{ kind: 'profile' }] })
+  })
+
   it('accepts v12: each unit\'s Extra stats grid, no Produce in the tree, and unlock evidence (D235)', () => {
     const grid = { unlocked: { speed: 2, stamina: 4, power: 0, guts: 0, wit: 1 }, active: ['speed-1', 'stamina-1', 'stamina-2', 'stamina-3', 'stamina-4', 'wit-1'] }
     const run = { ...uma.scenarios[0]!, extraStats: grid }
