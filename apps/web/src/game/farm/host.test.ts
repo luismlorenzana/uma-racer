@@ -6,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { db } from '../db'
 import { FarmConflictError, PersistentFarmHost } from './host'
 
-const FARM_GROWTH_MS = 12 * 60 * 60 * 1_000
+// A Lv1 worker grows her first row in ten hours (D237).
+const FARM_GROWTH_MS = 10 * 60 * 60 * 1_000
 /** Section 1 shows plot 1 open, then Section 2 is shown locked (D234). */
 const FRESH_STATUSES = ['unassigned', ...Array.from({ length: 11 }, () => 'locked')]
 
@@ -117,7 +118,7 @@ describe('PersistentFarmHost', () => {
     expect(second.plots[1]?.templateId).toBe('outfit-b')
   })
 
-  it('freezes worker, crop, attempt, and the exact twelve-hour deadline', async () => {
+  it('freezes worker, crop, attempt, and the exact ten-hour deadline', async () => {
     const initial = await host.getFarm()
     const assigned = await host.assign({ plotId: 'plot-1', templateId: 'outfit-a', expectedFarmVersion: initial.version })
     const planted = await host.plant({ plotId: 'plot-1', cropId: 'produce:t1:speed', expectedFarmVersion: assigned.version })

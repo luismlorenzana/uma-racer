@@ -6,6 +6,7 @@ import {
   createInitialFarmState,
   defaultOutfitFarmingProgress,
   FARM_PLOTS_PER_SECTION,
+  MAX_FARM_PLOTS,
   farmLevel,
   farmPlot,
   farmPlotId,
@@ -92,9 +93,9 @@ const cloneFarm = (farm: FarmState): FarmState => ({
 
 const validVersion = (value: number): boolean => Number.isSafeInteger(value) && value >= 0
 
-/** Every Section with an open plot, plus the next one so its unlock is in view (D234). */
+/** Every Section with an open plot, plus the next one so its unlock is in view, up to the three Sections (D234, D237). */
 export const visibleFarmPlotCount = (unlockedPlots: number): number =>
-  FARM_PLOTS_PER_SECTION * (Math.ceil(unlockedPlots / FARM_PLOTS_PER_SECTION) + 1)
+  Math.min(MAX_FARM_PLOTS, FARM_PLOTS_PER_SECTION * (Math.ceil(unlockedPlots / FARM_PLOTS_PER_SECTION) + 1))
 
 function plotViews(farm: FarmState, now: number): Pick<FarmView, 'farmLevel' | 'unlockedPlots' | 'plots'> {
   const level = farmLevel(farm.workers)

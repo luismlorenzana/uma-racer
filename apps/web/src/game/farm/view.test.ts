@@ -49,11 +49,16 @@ function farmView(input: {
 describe('Farm screen view model', () => {
   it('summarizes the one-plot start and names the next plot by Section', () => {
     expect(buildFarmHomeSummary(farmView(), NOW)).toMatchObject({
-      farmLevel: 1, ready: 0, working: 0, unlocked: 1, deadline: null, nextPlotUnlock: 'Section 1 · Plot 2 at Farm Lv3',
+      farmLevel: 1, ready: 0, working: 0, unlocked: 1, deadline: null, nextPlotUnlock: 'Next: Section 1 · Plot 2 at Farm Lv3',
     })
     expect(buildFarmHomeSummary(farmView({ farmLevel: 111 }), NOW)).toMatchObject({
-      unlocked: 6, nextPlotUnlock: 'Section 2 · Plot 1 at Farm Lv183',
+      unlocked: 6, nextPlotUnlock: 'Next: Section 2 · Plot 1 at Farm Lv183', nextPlotLevel: 183,
     })
+    // Three Sections are the whole Farm (D237): nothing past them is shown or promised.
+    const full = farmView({ farmLevel: 9_999 })
+    expect(full.plots).toHaveLength(18)
+    expect(buildFarmHomeSummary(full, NOW)).toMatchObject({ unlocked: 18, nextPlotUnlock: 'All 18 plots are open', nextPlotLevel: null })
+    expect(buildFarmSections(farmView({ farmLevel: 1_013 }), NOW).map((entry) => entry.section)).toEqual([1, 2, 3])
   })
 
   it('derives multiple growing plots, one or many ready plots and the nearest deadline from time', () => {
@@ -100,7 +105,9 @@ describe('Farm screen view model', () => {
   it('gates crops on the worker alone, times them by her level, and writes exact confirmation copy', () => {
     const crop = FARM_CROPS.find((entry) => entry.scenarioTier === 4 && entry.stat === 'power')!
     expect(cropAvailability(crop, { level: 29, exp: 0 })).toEqual({ available: false, outfitLevelRequired: 30 })
-    expect(cropAvailability(crop, { level: 35, exp: 0 })).toEqual({ available: true, growthMinutes: 600 })
+    expect(cropAvailability(crop, { level: 35, exp: 0 })).toEqual({ available: true, growthMinutes: 525 })
+    // An older row is 7h 30m whatever her level.
+    expect(cropAvailability(crop, { level: 40, exp: 0 })).toEqual({ available: true, growthMinutes: 450 })
     expect(farmPlantConfirmation({ workerName: 'Synthetic Star', outfit: 'Classic', crop, plotId: 'plot-8', growthMinutes: 648,
       readyAt: NOW, formatTime: () => 'Thursday at 8:00 PM' })).toBe(
       'Synthetic Star · Classic will grow Onion for power in Section 2 · Plot 2. Ready in 10h 48m, Thursday at 8:00 PM.',
@@ -108,8 +115,9 @@ describe('Farm screen view model', () => {
     expect([farmPlotLabel('plot-6'), farmPlotLabel('plot-13')]).toEqual(['Section 1 · Plot 6', 'Section 3 · Plot 1'])
     expect([formatGrowthMinutes(720), formatGrowthMinutes(648), formatGrowthMinutes(480)]).toEqual(['12h', '10h 48m', '8h'])
     expect([nextOutfitCropUnlock(9), nextOutfitCropUnlock(130)]).toEqual(['Scenario 2 crops at Farming Lv10', "Every scenario's crops are open"])
-    expect([workerGrowthNote(1), workerGrowthNote(9), workerGrowthNote(12), workerGrowthNote(140)])
-      .toEqual(['Scenario 1 crops in 12h', 'Scenario 1 crops in 8h 48m', 'Scenario 2 crops in 11h 12m', 'Scenario 14 crops in 8h, her fastest'])
+    expect([workerGrowthNote(1), workerGrowthNote(9), workerGrowthNote(12), workerGrowthNote(140)]).toEqual([
+      'Scenario 1 crops in 10h', 'Scenario 1 crops in 8h', 'Scenario 2 crops in 9h 30m · older 7h 30m', 'Every crop in 7h 30m, her fastest',
+    ])
   })
 
   it('presents status and rounded remaining time without relying on persisted status', () => {

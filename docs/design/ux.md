@@ -64,10 +64,10 @@ and missing target content. Each available active target links directly into Rac
 
 - A full-screen account activity outside the five-tab shell. Its header owns Back, Farm Level (one number), **How it
   works**, and Field / Workers / Crops / Items navigation; `/farm` always opens the persistent Section list (D234).
-- Field lists every Section with an open plot, then the next one locked. Each Section card previews its six slots
+- Field lists every Section with an open plot, then the next one locked, up to the Farm's three. Each Section card previews its six slots
   (worker chibi, crop, READY band, locks) and when its next crop is ready; tapping it opens that Section's two-by-three
   field of locked, unassigned, idle, growing and ready plots. Assignment is per outfit, the crop picker opens on her
-  newest row and shows each crop's growth time (12h down to 8h), and a crop keeps growing offline without withering.
+  newest row and shows each crop's growth time (10h down to 7h 30m; older rows 7h 30m), and a crop keeps growing offline without withering.
 - Workers lists every owned outfit separately with Farm-only XP and level, her newest crop row and its growth time.
   Crops exposes the seventy scenario/stat definitions with each row's Farming Level or growth time. Items opens with a Training panel (Level-Up Tickets owned and the Training EXP bank as a
   meter, `850 / 1,250`), then joins the global synced stacks to the produce catalog, defaults to owned produce, remembers

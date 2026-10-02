@@ -506,7 +506,7 @@ export function FarmSectionsScreen() {
           : <Link key={entry.section} to={`/farm/section/${entry.section}`} aria-label={label}><Panel className={`p-3 ${entry.ready > 0 ? 'border-accent-strong' : ''}`}>{body}</Panel></Link>
       })}
     </div>
-    <p className="mt-3 px-1 text-[11px] text-ink-soft">Next: {summary.nextPlotUnlock}</p>
+    <p className="mt-3 px-1 text-[11px] text-ink-soft">{summary.nextPlotUnlock}</p>
   </div>
 }
 

@@ -1,10 +1,13 @@
-// Stable Farm outfit, field, and crop progression (docs/design/farm.md#outfit-farming-level-and-aggregate-farm-level, D234).
+// Stable Farm outfit, field, and crop progression (docs/design/farm.md#outfit-farming-level-and-aggregate-farm-level, D234,
+// D237).
 
 import {
   FARM_BASE_GROWTH_MINUTES,
   FARM_CROP_TIERS,
   FARM_GROWTH_STEP_MINUTES,
+  FARM_FASTEST_GROWTH_MINUTES,
   FARM_GROWTH_STEPS,
+  FARM_LEGACY_GROWTH,
   FARM_LEVELS_PER_CROP_TIER,
   FARM_PLOT_ID_PATTERN,
   FARM_PLOT_STEP_FACTOR,
@@ -105,7 +108,7 @@ export function plotLevelRequirement(plotId: FarmPlotId): number {
   return farmPlotRequirement(number)
 }
 
-/** How many plots a Farm Level opens; they open in order, Section by Section. */
+/** How many plots a Farm Level opens; they open in order, Section by Section, up to the three Sections' 18 (D237). */
 export function unlockedPlotCount(level: number): number {
   if (!Number.isSafeInteger(level) || level < 1) return 0
   let count = 0
@@ -151,21 +154,28 @@ export function cropTiersUnlockedBetween(outfitLevelBefore: number, outfitLevelA
 }
 
 /**
- * How long a worker takes to grow a scenario's crop: twelve hours when the row opens, 24 minutes less for each of her
- * next ten levels, then eight hours (D234). A row she has not opened has no time.
+ * How long a worker takes to grow a scenario's crop (D237): her newest row takes ten hours when it opens and 15 minutes
+ * less for each of her next ten levels; every older row takes seven and a half. A row she has not opened has no time.
  */
 export function cropGrowthMinutes(scenarioTier: number, outfitLevel: number): number {
   const past = requireLevel(outfitLevel) - cropTierOpenLevel(scenarioTier)
   if (past < 0) throw new Error('This worker has not opened that crop row')
+  if (scenarioTier < highestCropTier(outfitLevel)) return FARM_FASTEST_GROWTH_MINUTES
   return FARM_BASE_GROWTH_MINUTES - FARM_GROWTH_STEP_MINUTES * Math.min(FARM_GROWTH_STEPS, past)
 }
 
 export const cropGrowthMs = (scenarioTier: number, outfitLevel: number): number =>
   cropGrowthMinutes(scenarioTier, outfitLevel) * MINUTE_MS
 
-/** Every growth time a stored cycle may carry: 12h, 11h 36m … 8h. */
+const onGrowthLadder = (minutes: number, base: number, step: number, steps: number): boolean => {
+  const saved = base - minutes
+  return saved >= 0 && saved % step === 0 && saved / step <= steps
+}
+
+/** Every growth time a stored cycle may carry: 10h, 9h 45m … 7h 30m, or D234's 12h … 8h on a cycle planted before D237. */
 export function isFarmGrowthDuration(ms: number): boolean {
   if (!Number.isSafeInteger(ms) || ms % MINUTE_MS !== 0) return false
-  const saved = FARM_BASE_GROWTH_MINUTES - ms / MINUTE_MS
-  return saved >= 0 && saved % FARM_GROWTH_STEP_MINUTES === 0 && saved / FARM_GROWTH_STEP_MINUTES <= FARM_GROWTH_STEPS
+  const minutes = ms / MINUTE_MS
+  return onGrowthLadder(minutes, FARM_BASE_GROWTH_MINUTES, FARM_GROWTH_STEP_MINUTES, FARM_GROWTH_STEPS) ||
+    onGrowthLadder(minutes, FARM_LEGACY_GROWTH.baseMinutes, FARM_LEGACY_GROWTH.stepMinutes, FARM_LEGACY_GROWTH.steps)
 }

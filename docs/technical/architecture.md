@@ -209,7 +209,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 ### 2. Deterministic simulation, then playback
 
 - Stable Farm keeps its clock outside the domain: pure rules receive an integer `now`, persist each cycle's deadline once
-  (12h down to 8h by the worker's level), and derive Locked/Growing/Ready plus every plot and crop-row unlock. Its
+  (10h down to 7h 30m by the worker's level, older rows 7h 30m), and derive Locked/Growing/Ready plus every plot and crop-row unlock. Its
   synthetic `sim:farm` harness pins the Section-by-Section expansion envelope without reading a save, browser API or
   private content. Presentation recomputes on
   a shared minute boundary plus focus/visibility, while planting and harvesting alone cross the save boundary.

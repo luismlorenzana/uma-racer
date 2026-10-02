@@ -1,6 +1,6 @@
-// Stable Farm's pinned progression and cycle constants (docs/design/farm.md, D203–D208, D234).
+// Stable Farm's pinned progression and cycle constants (docs/design/farm.md, D203–D208, D234, D237).
 
-/** v2 (D234): plots are numbered without end and stored sparsely; Farming Levels have no cap. */
+/** v2 (D234): plots are stored sparsely; Farming Levels have no cap. */
 export const FARM_SCHEMA_VERSION = 2 as const
 
 /** A plot is `plot-<n>`, numbered from 1 across every Farm Section. */
@@ -9,8 +9,9 @@ export const FARM_PLOT_ID_PATTERN = /^plot-([1-9]\d{0,2})$/
 
 /** Sections hold six plots each, the 2 × 3 field a phone shows at once (D234). */
 export const FARM_PLOTS_PER_SECTION = 6
-/** A parser bound on plot numbers, not a design cap: Farm Level keeps opening plots (D234). */
-export const MAX_FARM_PLOTS = 600
+/** The Farm is three Sections (D237): plot 18, the last, opens at Farm Level 3,571. */
+export const FARM_SECTIONS = 3
+export const MAX_FARM_PLOTS = FARM_SECTIONS * FARM_PLOTS_PER_SECTION
 
 /**
  * The Farm Level a plot costs over the one before it (D234): twice the square of the plots already open. Each wait is a
@@ -23,11 +24,16 @@ export const FARM_LEVELS_PER_CROP_TIER = 10
 /** Scenario crop rows in the catalog. A new scenario adds a row; nothing else caps the ladder. */
 export const FARM_CROP_TIERS = 14
 
-/** Every crop starts at twelve hours and grows 24 minutes faster for each of the next ten levels, to eight (D234). */
-export const FARM_BASE_GROWTH_MINUTES = 720
-export const FARM_GROWTH_STEP_MINUTES = 24
+/**
+ * A worker's newest crop row starts at ten hours and grows 15 minutes faster for each of her next ten levels, to seven
+ * and a half; every older row grows in seven and a half (D237).
+ */
+export const FARM_BASE_GROWTH_MINUTES = 600
+export const FARM_GROWTH_STEP_MINUTES = 15
 export const FARM_GROWTH_STEPS = 10
 export const FARM_FASTEST_GROWTH_MINUTES = FARM_BASE_GROWTH_MINUTES - FARM_GROWTH_STEP_MINUTES * FARM_GROWTH_STEPS
+/** D234's 12h → 8h ladder in 24-minute steps: still a valid duration for a cycle planted before D237. */
+export const FARM_LEGACY_GROWTH = { baseMinutes: 720, stepMinutes: 24, steps: 10 } as const
 export const MINUTE_MS = 60 * 1_000
 
 /** Every Farming Level costs the same two harvests (D234): the vertical track is linear. */

@@ -28,7 +28,7 @@ export function FarmHomeCard() {
       </div>
       {summary && <div className="mt-3 grid grid-cols-[auto_1fr] items-start gap-x-2 border-t border-hairline pt-2 text-[11px]">
         <StopwatchIcon size={16} className="text-ink-faint" />
-        <span><span className="font-semibold">{summary.deadlineLabel}</span><span className="block text-ink-soft">Next: {summary.nextPlotUnlock}</span></span>
+        <span><span className="font-semibold">{summary.deadlineLabel}</span><span className="block text-ink-soft">{summary.nextPlotUnlock}</span></span>
       </div>}
     </Panel>
   </Link>

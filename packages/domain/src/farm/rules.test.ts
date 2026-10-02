@@ -49,14 +49,15 @@ describe('Farm rules', () => {
     expect(unassignFarmOutfit(parallel, 'plot-2').plots.map((plot) => plot.id)).toEqual(['plot-1'])
   })
 
-  it('gates a crop row on the worker alone and times it by her level (D234)', () => {
+  it('gates a crop row on the worker alone and times it by her level (D234, D237)', () => {
     expect(canPlant(assignedFarm(), 'plot-1', crop(2), OWNED)).toEqual({
       ok: false, reason: 'outfit-level-required', requiredLevel: 10,
     })
     expect(canPlant(assignedFarm({ level: 10, exp: 0 }), 'plot-1', crop(2), OWNED)).toEqual({
-      ok: true, templateId: 'outfit-a', outfitLevel: 10, farmLevel: 10, growthMs: 12 * HOUR,
+      ok: true, templateId: 'outfit-a', outfitLevel: 10, farmLevel: 10, growthMs: 10 * HOUR,
     })
-    expect(canPlant(assignedFarm({ level: 12, exp: 0 }), 'plot-1', crop(1), OWNED)).toMatchObject({ ok: true, growthMs: 8 * HOUR })
+    // Scenario 1 is an older row once scenario 2 is open.
+    expect(canPlant(assignedFarm({ level: 12, exp: 0 }), 'plot-1', crop(1), OWNED)).toMatchObject({ ok: true, growthMs: 7.5 * HOUR })
   })
 
   it('plants deterministic monotonic cycles without mutating its input', () => {
@@ -65,8 +66,8 @@ describe('Farm rules', () => {
     const planted = plantPlot({ farm, plotId: 'plot-1', crop: crop(1), ownedTemplateIds: OWNED, now: 5_000 })
     expect(farm).toEqual(before)
     expect(planted.cycleId).toBe('farm:plot-1:1')
-    // Lv6 is five levels past the row's Lv1: 12h − 5 × 24 min.
-    expect(planted.readyAt).toBe(5_000 + 10 * HOUR)
+    // Lv6 is five levels past the row's Lv1: 10h − 5 × 15 min.
+    expect(planted.readyAt).toBe(5_000 + 8.75 * HOUR)
     expect(plotStatus(planted.farm, 'plot-1', planted.readyAt - 1)).toBe('growing')
     expect(plotStatus(planted.farm, 'plot-1', planted.readyAt)).toBe('ready')
     expect(() => assignFarmOutfit(planted.farm, 'plot-1', 'outfit-b', OWNED)).toThrow(/cannot change/)

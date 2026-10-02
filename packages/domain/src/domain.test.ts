@@ -124,6 +124,8 @@ import {
   FARM_LEVELS_PER_CROP_TIER,
   FARM_PLOT_STEP_FACTOR,
   FARM_PLOTS_PER_SECTION,
+  FARM_SECTIONS,
+  MAX_FARM_PLOTS,
   FARMING_EXP_PER_LEVEL,
   FARMING_EXP_PER_HARVEST,
   farmPlotRequirement,
@@ -259,7 +261,8 @@ describe('Card focus', () => {
 describe('Stable Farm', () => {
   it('pins the D234 field, crop, and progression contract', () => {
     expect([FARM_CROP_YIELD, FARMING_EXP_PER_HARVEST, FARM_PLOTS_PER_SECTION, FARM_LEVELS_PER_CROP_TIER]).toEqual([1, 12, 6, 10])
-    expect([FARM_BASE_GROWTH_MINUTES, FARM_GROWTH_STEP_MINUTES, FARM_GROWTH_STEPS, FARM_FASTEST_GROWTH_MINUTES]).toEqual([720, 24, 10, 480])
+    expect([FARM_BASE_GROWTH_MINUTES, FARM_GROWTH_STEP_MINUTES, FARM_GROWTH_STEPS, FARM_FASTEST_GROWTH_MINUTES]).toEqual([600, 15, 10, 450])
+    expect([FARM_SECTIONS, MAX_FARM_PLOTS]).toEqual([3, 18])
     expect([FARM_PLOT_STEP_FACTOR, FARMING_EXP_PER_LEVEL]).toEqual([2, 24])
     expect([2, 6, 7, 12, 13, 18].map(farmPlotRequirement)).toEqual([3, 111, 183, 1_013, 1_301, 3_571])
     expect([1, 10, 20, 130].map(farmingXpToReachLevel)).toEqual([0, 216, 456, 3_096])

@@ -54,7 +54,7 @@ describe('Farm parsers', () => {
     expect(parseFarmState(withPlot(state, { ...idle, templateId: 'outfit-a' }))).toBeNull()
     // Farm Level 5 opens plots 1–2; plot 3 needs 11, so nothing may be stored there yet.
     expect(parseFarmState(withPlot(state, { ...idle, id: 'plot-3' }))).toBeNull()
-    expect(parseFarmState(withPlot(state, { ...idle, id: 'plot-601' as FarmPlot['id'] }))).toBeNull()
+    expect(parseFarmState(withPlot(state, { ...idle, id: 'plot-19' as FarmPlot['id'] }))).toBeNull()
   })
 
   it('rejects unknown keys, unsafe ids, timestamps, counters, growth times, and progress', () => {
@@ -65,12 +65,12 @@ describe('Farm parsers', () => {
     expect(parseFarmState(firstPlot(state, (plot) => ({ ...plot, cycle: { ...plot.cycle!, plantedAt: 1.5 } })))).toBeNull()
     expect(parseFarmState(firstPlot(state, (plot) => ({ ...plot, attempt: -1 })))).toBeNull()
     expect(parseFarmState(firstPlot(state, (plot) => ({ ...plot, cycle: { ...plot.cycle!, readyAt: plot.cycle!.readyAt + 1 } })))).toBeNull()
-    // Any time on the 12h → 8h ladder is valid; anything off it is not.
+    // Any time on the 10h → 7h 30m ladder, or D234's 12h → 8h, is valid; anything off both is not.
     const lasting = (minutes: number) => parseFarmState(firstPlot(state, (plot) => ({
       ...plot, cycle: { ...plot.cycle!, readyAt: plot.cycle!.plantedAt + minutes * MINUTE },
     })))
-    expect([720, 600, 480].map((minutes) => lasting(minutes) !== null)).toEqual([true, true, true])
-    expect([456, 610, 744].map((minutes) => lasting(minutes))).toEqual([null, null, null])
+    expect([600, 525, 450, 720, 480].map((minutes) => lasting(minutes) !== null)).toEqual([true, true, true, true, true])
+    expect([435, 456, 610, 744].map((minutes) => lasting(minutes))).toEqual([null, null, null, null])
     expect(parseFarmState({ ...state, workers: { 'outfit-a': { level: 5, exp: 24 } } })).toBeNull()
     expect(parseFarmState({ ...state, workers: { 'outfit-a': { level: 50_000, exp: 23 } } })).not.toBeNull()
     expect(parseFarmState({ ...state, workers: { 'outfit-a': { level: 100_000, exp: 0 } } })).toBeNull()

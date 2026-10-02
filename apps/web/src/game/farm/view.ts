@@ -4,6 +4,7 @@ import {
   FARM_CROP_TIERS,
   FARM_FASTEST_GROWTH_MINUTES,
   FARM_PLOTS_PER_SECTION,
+  MAX_FARM_PLOTS,
   cropGrowthMinutes,
   cropTierOpenLevel,
   farmPlotNumber,
@@ -26,9 +27,10 @@ export interface FarmHomeSummary {
   unlocked: number
   deadline: number | null
   deadlineLabel: string
+  /** The next plot and its Farm Level, or that all of the Farm's plots are open. */
   nextPlotUnlock: string
-  /** The Farm Level that opens the next plot. */
-  nextPlotLevel: number
+  /** The Farm Level that opens the next plot; null once all three Sections are open (D237). */
+  nextPlotLevel: number | null
 }
 
 export interface FarmSectionSummary {
@@ -102,8 +104,9 @@ export function formatFarmRemaining(deadline: number | null, now: number): strin
 }
 
 function nextPlotUnlock(unlocked: number): string {
+  if (unlocked >= MAX_FARM_PLOTS) return `All ${MAX_FARM_PLOTS} plots are open`
   const next = unlocked + 1
-  return `${farmPlotLabel(`plot-${next}`)} at Farm Lv${farmPlotRequirement(next).toLocaleString()}`
+  return `Next: ${farmPlotLabel(`plot-${next}`)} at Farm Lv${farmPlotRequirement(next).toLocaleString()}`
 }
 
 export function buildFarmHomeSummary(view: FarmView, now: number): FarmHomeSummary {
@@ -121,7 +124,7 @@ export function buildFarmHomeSummary(view: FarmView, now: number): FarmHomeSumma
     deadline,
     deadlineLabel: formatFarmRemaining(deadline, now),
     nextPlotUnlock: nextPlotUnlock(view.unlockedPlots),
-    nextPlotLevel: farmPlotRequirement(view.unlockedPlots + 1),
+    nextPlotLevel: view.unlockedPlots >= MAX_FARM_PLOTS ? null : farmPlotRequirement(view.unlockedPlots + 1),
   }
 }
 
@@ -191,11 +194,12 @@ export function nextOutfitCropUnlock(level: number): string {
     : `Scenario ${highest + 1} crops at Farming Lv${cropTierOpenLevel(highest + 1)}`
 }
 
-/** Her newest crop row and how fast she grows it: "Scenario 2 crops in 10h 48m". */
+/** Her newest crop row and how fast she grows it, and that older rows take 7h 30m (D237): "Scenario 2 crops in 9h 30m · older 7h 30m". */
 export function workerGrowthNote(level: number): string {
   const tier = highestCropTier(level)
   const minutes = cropGrowthMinutes(tier, level)
-  return minutes === FARM_FASTEST_GROWTH_MINUTES
-    ? `Scenario ${tier} crops in ${formatGrowthMinutes(minutes)}, her fastest`
-    : `Scenario ${tier} crops in ${formatGrowthMinutes(minutes)}`
+  const fastest = formatGrowthMinutes(FARM_FASTEST_GROWTH_MINUTES)
+  if (minutes === FARM_FASTEST_GROWTH_MINUTES) return `Every crop in ${fastest}, her fastest`
+  const newest = `Scenario ${tier} crops in ${formatGrowthMinutes(minutes)}`
+  return tier > 1 ? `${newest} · older ${fastest}` : newest
 }

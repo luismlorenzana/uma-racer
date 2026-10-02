@@ -152,9 +152,9 @@ const FARM_PLOT_LEVELS_V1 = [1, 2, 6, 13, 27, 42] as const
 const FARM_CROP_ID_PATTERN = /^produce:t([1-9]|1[0-4]):(speed|stamina|power|guts|wit)$/
 const FARM_GROWTH_MS_V1 = 12 * 60 * 60 * 1_000
 const MAX_FARM_WORKERS = 1_000
-/** Farm v2 (D234): plots `plot-1` … `plot-600`; plot n costs 2 × (n − 1)² Farm Levels more than plot n − 1. */
+/** Farm v2 (D234, D237): three Sections, `plot-1` … `plot-18`; plot n costs 2 × (n − 1)² Farm Levels more than plot n − 1. */
 const FARM_PLOT_ID_PATTERN = /^plot-([1-9]\d{0,2})$/
-const MAX_FARM_PLOTS = 600
+const MAX_FARM_PLOTS = 18
 const MAX_FARMING_LEVEL_BOUND = 99_999
 const FARM_PLOT_LEVELS: readonly number[] = (() => {
   const levels = [0, 1]
@@ -227,10 +227,12 @@ const farmPlotNumber = (value: unknown): number | null => {
   return number >= 1 && number <= MAX_FARM_PLOTS ? number : null
 }
 
-/** 12h, then 24 minutes faster a level for ten levels, to 8h (D234). */
+/** 10h, then 15 minutes faster a level for ten levels, to 7h 30m (D237); or D234's 12h → 8h in 24-minute steps. */
 const isFarmGrowthMs = (value: number): boolean => {
-  const saved = 720 - value / 60_000
-  return Number.isSafeInteger(value) && value % 60_000 === 0 && saved >= 0 && saved % 24 === 0 && saved <= 240
+  if (!Number.isSafeInteger(value) || value % 60_000 !== 0) return false
+  const minutes = value / 60_000
+  const onLadder = (base: number, step: number) => base - minutes >= 0 && (base - minutes) % step === 0 && base - minutes <= step * 10
+  return onLadder(600, 15) || onLadder(720, 24)
 }
 
 function parseFarmPlotShape(plot: unknown, growthOk: (ms: number) => boolean): plot is Record<string, unknown> {

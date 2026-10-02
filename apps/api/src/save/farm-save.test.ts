@@ -61,7 +61,7 @@ describe('Farm save wire contract', () => {
       data: { itemId: 'produce:t1:power', quantity: 1, updatedAt: 1 } }] })).toMatch(/id does not match/)
   })
 
-  it('opens plots past six by Farm Level, sparsely, and times crops from 12h down to 8h (D234)', () => {
+  it('opens plots past six by Farm Level, sparsely, up to 18, and times crops on the D237 or D234 ladder', () => {
     const upsert = (data: unknown) => parseSyncRequest({ upserts: [{ kind: 'farm', id: 'main', baseVersion: 0, data }] })
     const idle = (id: string, templateId: string) => ({ id, templateId, lastCropId: null, attempt: 0, cycle: null })
     // Plot 7 opens at Farm Level 183; one worker at Lv183 is Farm Level 183.
@@ -72,13 +72,16 @@ describe('Farm save wire contract', () => {
     expect(upsert({ ...sectionTwo, plots: [...sectionTwo.plots].reverse() })).toMatch(/invalid farm/)
     const lasting = (minutes: number) => upsert({ ...farm, plots: [{ ...farm.plots[0]!,
       cycle: { ...farm.plots[0]!.cycle!, readyAt: 1 + minutes * 60_000 } }] })
-    expect(lasting(480)).toMatchObject({ upserts: [{ kind: 'farm' }] })
-    expect(lasting(456)).toMatch(/invalid farm/)
+    // 10h → 7h 30m in 15-minute steps (D237), or a crop planted on D234's 12h → 8h ladder.
+    for (const minutes of [600, 525, 450, 720, 480]) expect(lasting(minutes)).toMatchObject({ upserts: [{ kind: 'farm' }] })
+    for (const minutes of [435, 456, 610]) expect(lasting(minutes)).toMatch(/invalid farm/)
     expect(upsert({ ...farm, workers: { a: { level: 50_000, exp: 23 } } })).toMatchObject({ upserts: [{ kind: 'farm' }] })
     expect(upsert({ ...farm, workers: { a: { level: 500, exp: 24 } } })).toMatch(/invalid farm/)
-    expect(parseSyncRequest({ appends: [{ kind: 'itemLedger', id: 'farm:plot-40:3', createdAt: 5, data: { ...movement,
-      id: 'farm:plot-40:3', createdAt: 5, source: { ...movement.source, plotId: 'plot-40', cycleId: 'farm:plot-40:3' } } }] }))
-      .toMatchObject({ appends: [{ kind: 'itemLedger' }] })
+    // Three Sections are the whole Farm (D237): plot 18 is the last a harvest can come from.
+    const harvestFrom = (plotId: string) => parseSyncRequest({ appends: [{ kind: 'itemLedger', id: `farm:${plotId}:3`, createdAt: 5,
+      data: { ...movement, id: `farm:${plotId}:3`, createdAt: 5, source: { ...movement.source, plotId, cycleId: `farm:${plotId}:3` } } }] })
+    expect(harvestFrom('plot-18')).toMatchObject({ appends: [{ kind: 'itemLedger' }] })
+    expect(harvestFrom('plot-19')).toMatch(/invalid itemLedger/)
   })
 
   it('still answers an older client that writes v1, and keeps the newer schema as the conflict', () => {

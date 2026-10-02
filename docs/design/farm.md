@@ -1,14 +1,15 @@
 # Stable Farm
 
-> **Status: complete through M026, rebalanced by D234.** The rules/catalog, synced Farm and item-ledger runtime,
+> **Status: complete through M026, rebalanced by D234 and D237.** The rules/catalog, synced Farm and item-ledger runtime,
 > Home/Sections/field/worker/crop screens, global Item inventory and the Extra stats bridge (D235) are implemented.
 
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows, plot by plot,
-into **Farm Sections** of six as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting
+into three **Farm Sections** of six as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting
 adds produce to the global Item inventory, and the worker earns an outfit-specific Farming Level that opens the next
 scenario's crops every ten levels and grows her crops faster. Every outfit level feeds the account's aggregate Farm
-Level, which opens plots. Neither level has a cap: it is meant to run for years, with many outfits levelling in
-parallel (D203–D208; D234 supersedes the six-plot field, the Lv20 cap, the Farm Level crop gate and fixed timers).
+Level, which opens plots. Neither level has a cap, though the field stops at 18 plots: it is meant to run for many months,
+with many outfits levelling in parallel (D203–D208; D234 supersedes the six-plot field, the Lv20 cap, the Farm Level crop
+gate and fixed timers; D237 sets three Sections and the 10h → 7h 30m timers).
 
 The design is informed by [Farming game research](../research/farming-games.md). Although the player may call it a
 minigame, it is intentionally **not** a ticketed `MinigameHost` run: there is no match, seed, journal, score, win or loss.
@@ -21,13 +22,13 @@ flowchart LR
     Home --> Farm
     Farm --> Field[Persistent field + assigned outfits]
     Field --> Plant[Choose stat + scenario crop]
-    Plant --> Wait[12h → 8h · app may be closed]
+    Plant --> Wait[10h → 7h 30m · app may be closed]
     Wait --> Harvest
     Harvest --> Outfit[Outfit Farming Level]
     Outfit --> Rows[Her crop rows + faster growth]
     Rows --> Field
     Outfit --> Account[Aggregate Farm Level]
-    Account --> Unlock[More plots, Section by Section]
+    Account --> Unlock[More plots, up to three Sections]
     Unlock --> Field
     Harvest --> Items[(Global Item inventory)]
     Items --> Extra[Buy Extra stat nodes]
@@ -42,8 +43,8 @@ flowchart LR
 
 ## The field
 
-Plots are numbered slots, `plot-1`, `plot-2`, … without end, not free-positioned objects. Every six make a **Farm
-Section**: plots 1–6 are Section 1, plots 7–12 Section 2, and so on, so one Section is exactly the 2 × 3 field a phone
+Plots are numbered slots, `plot-1` … `plot-18`, not free-positioned objects. Every six make a **Farm Section**: plots 1–6
+are Section 1, 7–12 Section 2 and 13–18 Section 3, the whole Farm (D237), so one Section is exactly the 2 × 3 field a phone
 shows at once. **Only plot 1 starts unlocked**; Farm Level opens the rest in order, filling each Section before the next
 (D234). A plot is one of five states:
 
@@ -76,20 +77,22 @@ Nothing withers and a ready plot waits indefinitely.
 
 | Rule | Value |
 |---|---|
-| Growth time | **12 hours** when the worker opens that scenario's row, **24 minutes less** for each of her next ten levels, then **8 hours** |
+| Growth time | Her **newest** row: **10 hours** when it opens, **15 minutes less** for each of her next ten levels. Every **older** row: **7h 30m** |
 | Yield | **1 item** |
 | Worker reward | **12 Farming XP** |
 | Randomness | none |
 
-Growth time belongs to the worker and the crop row together (D234). Her first row (scenario 1) opens at Farming Lv1, so
-she grows it in 12h at Lv1, 11h 36m at Lv2 … and 8h from Lv11. Scenario 2 opens at Lv10 at 12h and reaches 8h at Lv20;
-scenario `t` opens at Lv`10 × (t − 1)` and reaches 8h ten levels later. Every level therefore pays something: it speeds
-up her newest row, or opens the next one. Eight hours is three harvests a day for someone who checks in morning,
-afternoon and night.
+Growth time belongs to the worker and the crop row together (D234, D237). Her first row (scenario 1) opens at Farming Lv1,
+so she grows it in 10h at Lv1, 9h 45m at Lv2 … 8h at Lv9. At Lv10 scenario 2 opens at 10h, and scenario 1 becomes an
+older row at 7h 30m; scenario 2 reaches 7h 45m at Lv19 and 7h 30m at Lv20, when scenario 3 opens. Scenario `t` opens at
+Lv`10 × (t − 1)`; scenario 14, with no row after it, reaches 7h 30m at Lv140. Every level therefore pays something: it
+speeds up her newest row, or opens the next one. Older crops at 7h 30m are three harvests a day for someone who checks in
+morning, afternoon and night.
 
 The cycle id is deterministic and monotonic per plot: `farm:<plotId>:<attempt>`. Planting writes `plantedAt` and
 `readyAt = plantedAt + growth time` once, from her level at that moment; a cycle carries one of the eleven allowed
-durations (12h, 11h 36m … 8h). Reloading, going offline, changing time zone or opening on another route never rolls or
+durations (10h, 9h 45m … 7h 30m), or one of D234's (12h, 11h 36m … 8h) on a crop planted before D237, which finishes on
+its own deadline. Reloading, going offline, changing time zone or opening on another route never rolls or
 recomputes the deadline.
 
 Harvest is one atomic transaction:
@@ -149,25 +152,32 @@ required(1) = 1;   required(n) = required(n − 1) + 2 × (n − 1)²
 | 1 | 1 · 3 · 11 · 29 · 61 · 111 |
 | 2 | 183 · 281 · 409 · 571 · 771 · 1,013 |
 | 3 | 1,301 · 1,639 · 2,031 · 2,481 · 2,993 · 3,571 |
-| 4 | 4,219 · 4,941 · 5,741 · 6,623 · 7,591 · 8,649 |
+
+Three Sections are the whole Farm (D237). The last plot, at Farm Level 3,571, is 3,570 outfit levels past the free first
+ones: **24 outfits at Farming Lv150** (37 at Lv100), or 7,140 harvests however they are split, since every level is two
+harvests. Farm Level keeps counting after that, but opens nothing more.
 
 Since every harvest is worth the same Farm Level, Farm Level grows with the number of working plots. Each plot adds a
 worker, but the next plot's cost grows faster than that, so every wait is a little longer than the last. Later Sections
-need many outfits levelled very high, and new outfits start at Lv1 on scenario 1 crops at twelve hours, so the field
+need many outfits levelled very high, and new outfits start at Lv1 on scenario 1 crops at ten hours, so the field
 always mixes veterans and newcomers.
 
 `pnpm sim:farm` measures this with a synthetic stable of 30 outfits gaining one a week. At each check-in it harvests
-whatever is ready, puts a free outfit on any empty open plot, and plants the worker's fastest crop:
+whatever is ready, puts a free outfit on any empty open plot, and plants the worker's fastest crop (an older row at
+7h 30m, once she has two):
 
-| Check-ins | Section 1 full | Section 2 full | Section 3 full | Section 4 full | Best worker opens scenario 14 |
-|---|---:|---:|---:|---:|---:|
-| Five times a day | day 26 | day 97 | day 215 | day 380 | day 89 |
-| Twice a day | day 30 | day 132 | day 306 | day 552 | day 129 |
-| Once a day | day 61 | day 265 | day 613 | day 1,105 | day 258 |
+| Check-ins | Section 1 full | Section 2 full | Section 3 full (the Farm) | Best worker opens scenario 14 |
+|---|---:|---:|---:|---:|
+| Five times a day | day 25 | day 96 | day 213 | day 88 |
+| Three times a day, 8h apart | day 30 | day 102 | day 220 | day 91 |
+| Twice a day | day 30 | day 132 | day 306 | day 129 |
+| Once a day | day 61 | day 265 | day 613 | day 258 |
 
-Twice a day, the waits between plots run 2, 4, 6 … days in Section 1 and pass a month each in Section 4. The sim fails
-if twice-daily play stops filling Section 1 in about a month, Section 2 in about four or Section 3 in about ten, or if a
-wait ever gets shorter than the one before.
+Twice a day every crop is one harvest a check-in, so the timers change nothing there; three check-ins 8 hours apart turn
+every older-row crop into three harvests a day and fill the Farm about three months sooner. Twice a day, the waits between
+plots run 2, 4, 6 … days in Section 1 and about a month each late in Section 3. The sim fails if twice-daily play stops
+filling Section 1 in about a month, Section 2 in about four or Section 3 in about ten, or if a wait ever gets shorter than
+the one before.
 
 ## Crop catalog
 
@@ -276,7 +286,9 @@ interface ItemLedgerEntry {
 
 ### Sections at 390 × 844
 
-- `/farm` lists every Section with an open plot, then the next Section, locked, with the Farm Level that opens it (D234).
+- `/farm` lists every Section with an open plot, then the next Section, locked, with the Farm Level that opens it (D234);
+  once Section 3 has a plot open there is no next Section, and once its last plot opens **Next** reads "All 18 plots are
+  open" (D237).
 - Each Section card is a quick preview: its name, a status line (`1 ready · 2 growing · 1 idle · 1 empty`), six small slots
   showing each worker's standing chibi with the crop growing under her, a **READY** band on a ready slot and a lock on a
   locked one, and when its next crop is ready. Readiness is also in the text, never color alone.
@@ -370,8 +382,9 @@ API accepts both shapes, so an older build can still sync, and the newer schema 
 - Many different outfits may work; the same outfit cannot occupy two plots even through stale screens, while two outfits
   of the same character remain independent valid workers.
 - An outfit reaches Farming Lv10 after 18 harvests and opens scenario 14's row at Lv130 after 258. Plots open at
-  1 / 3 / 11 / 29 / 61 / 111, then 183 for Section 2. Growth times step from 12h to 8h in 24-minute steps over the ten
-  levels after a row opens. All of this is pinned by tests, and the pacing envelope by `pnpm sim:farm`.
+  1 / 3 / 11 / 29 / 61 / 111, then 183 for Section 2, and stop at plot 18 (Farm Lv3,571). A newest row steps from 10h
+  in 15-minute steps over the ten levels after it opens, and an older row is 7h 30m. All of this is pinned by tests, and
+  the pacing envelope by `pnpm sim:farm`.
 - Farm state syncs to another device through the existing save flow; a running crop is not rerolled or shortened.
 - An Extra stat purchase spends exactly its 1–4 crops and writes one movement; retry is idempotent and stale screens do
   not spend. Switching nodes spends nothing.

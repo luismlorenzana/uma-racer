@@ -48,7 +48,15 @@ describe('Farm progression (D234)', () => {
     expect(plotsUnlockedBetween(190, 100)).toEqual([])
     expect([1, 6, 7, 12, 13].map(farmSectionOf)).toEqual([1, 1, 2, 2, 3])
     expect(farmSectionPlotIds(2)).toEqual(['plot-7', 'plot-8', 'plot-9', 'plot-10', 'plot-11', 'plot-12'])
-    expect(['plot-1', 'plot-600', 'plot-0', 'plot-01', 'plot-601', 'plot-x'].map(farmPlotNumber)).toEqual([1, 600, null, null, null, null])
+    expect(['plot-1', 'plot-18', 'plot-0', 'plot-01', 'plot-19', 'plot-x'].map(farmPlotNumber)).toEqual([1, 18, null, null, null, null])
+  })
+
+  it('stops at three Sections: plot 18 opens at Farm Level 3,571, and no level opens a 19th (D237)', () => {
+    expect([3_570, 3_571, 1_000_000].map(unlockedPlotCount)).toEqual([17, 18, 18])
+    expect(() => farmPlotRequirement(19)).toThrow(/invalid/)
+    // 3,570 levels past the free first: 24 outfits at Farming Lv150 (149 each), or 7,140 harvests however they are split.
+    expect(farmLevel(Object.fromEntries(Array.from({ length: 24 }, (_, index) => [`o${index}`, { level: 150, exp: 0 }])))).toBeGreaterThanOrEqual(3_571)
+    expect(farmLevel(Object.fromEntries(Array.from({ length: 23 }, (_, index) => [`o${index}`, { level: 150, exp: 0 }])))).toBeLessThan(3_571)
   })
 
   it('opens a scenario row every ten Farming Levels', () => {
@@ -60,14 +68,18 @@ describe('Farm progression (D234)', () => {
     expect(cropTiersUnlockedBetween(19, 31)).toEqual([3, 4])
   })
 
-  it('grows a row 24 minutes faster for each of the ten levels after it opens, from 12 hours to 8', () => {
-    expect([1, 2, 6, 11, 50].map((level) => cropGrowthMinutes(1, level))).toEqual([720, 696, 600, 480, 480])
-    expect([10, 15, 20].map((level) => cropGrowthMinutes(2, level))).toEqual([720, 600, 480])
-    expect(cropGrowthMinutes(14, 140)).toBe(480)
+  it('grows her newest row from 10 hours, 15 minutes faster a level for ten levels, and every older row in 7h 30m', () => {
+    // Scenario 1 is her newest row until Lv10 opens scenario 2; from then on it is an older row.
+    expect([1, 2, 6, 9, 10, 50].map((level) => cropGrowthMinutes(1, level))).toEqual([600, 585, 525, 480, 450, 450])
+    expect([10, 15, 19, 20].map((level) => cropGrowthMinutes(2, level))).toEqual([600, 525, 465, 450])
+    // Scenario 14 has no row after it, so its ten levels run out at Lv140.
+    expect([130, 139, 140, 500].map((level) => cropGrowthMinutes(14, level))).toEqual([600, 465, 450, 450])
     expect(() => cropGrowthMinutes(3, 19)).toThrow(/not opened/)
     const minutes = (value: number) => value * 60_000
+    expect([600, 585, 450].map((value) => isFarmGrowthDuration(minutes(value)))).toEqual([true, true, true])
+    // A crop planted on D234's 12h → 8h ladder still finishes on its own deadline.
     expect([720, 696, 480].map((value) => isFarmGrowthDuration(minutes(value)))).toEqual([true, true, true])
-    expect([456, 700, 744].map((value) => isFarmGrowthDuration(minutes(value)))).toEqual([false, false, false])
-    expect(isFarmGrowthDuration(minutes(720) + 1)).toBe(false)
+    expect([435, 456, 610, 700, 744].map((value) => isFarmGrowthDuration(minutes(value)))).toEqual([false, false, false, false, false])
+    expect(isFarmGrowthDuration(minutes(600) + 1)).toBe(false)
   })
 })

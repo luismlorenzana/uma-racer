@@ -1,14 +1,17 @@
-// Stable Farm progression harness (docs/design/farm.md#outfit-farming-level-and-aggregate-farm-level, D234).
+// Stable Farm progression harness (docs/design/farm.md#outfit-farming-level-and-aggregate-farm-level, D234, D237).
 // Every outfit and crop is synthetic; this script never reads private content.
 //
 // Each policy is a check-in schedule (hours of the day the player opens the Farm). At every check-in the player harvests
-// what is ready, assigns a free outfit to any open plot without one, and plants the fastest crop the worker can grow.
+// what is ready, assigns a free outfit to any open plot without one, and plants the fastest crop the worker can grow
+// (an older row, at 7h 30m, once she has two).
 // Workers stay on their plots: with a linear Farming Level every harvest is worth the same Farm Level whoever grows it,
 // and a veteran grows faster. The stable starts with 30 owned outfits and gains one a week.
 import {
   FARM_CROP_TIERS,
   FARM_PLOTS_PER_SECTION,
   FARMING_EXP_PER_HARVEST,
+  FARMING_EXP_PER_LEVEL,
+  MAX_FARM_PLOTS,
   applyFarmingXp,
   cropGrowthMinutes,
   cropTierOpenLevel,
@@ -19,7 +22,7 @@ import {
   type OutfitFarmingProgress,
 } from '../../packages/domain/src/farm/index'
 
-type PolicyId = 'five-a-day' | 'twice-a-day' | 'once-a-day'
+type PolicyId = 'five-a-day' | 'three-a-day' | 'twice-a-day' | 'once-a-day'
 
 interface Policy {
   id: PolicyId
@@ -37,18 +40,20 @@ export interface FarmProgressionSimulation {
 }
 
 const DAYS = 1_460
-const PLOTS_TRACKED = 30
+const PLOTS_TRACKED = MAX_FARM_PLOTS
 const START_OUTFITS = 30
 const NEW_OUTFIT_EVERY_DAYS = 7
 const SNAPSHOT_DAYS = [30, 90, 180, 365, 730, 1_460] as const
 
 const POLICIES: readonly Policy[] = [
   { id: 'five-a-day', checks: [8, 12, 16, 20, 24] },
+  // Eight hours apart: every 7h 30m older-row crop is ready at the next check-in (D237).
+  { id: 'three-a-day', checks: [7, 15, 23] },
   { id: 'twice-a-day', checks: [8, 20] },
   { id: 'once-a-day', checks: [20] },
 ]
 
-/** The fastest crop she can grow: once a row has had ten levels, it is eight hours. */
+/** The fastest crop she can grow: an older row, at 7h 30m, once she has two (D237). */
 function fastestMinutes(level: number): number {
   let best = Number.POSITIVE_INFINITY
   for (let tier = 1; tier <= highestCropTier(level); tier += 1) best = Math.min(best, cropGrowthMinutes(tier, level))
@@ -103,7 +108,7 @@ const days = (values: readonly (number | null)[], from: number, to: number): str
 const results = POLICIES.map(simulateFarmProgression)
 
 // The pacing envelope D234 was tuned to, opening the Farm twice a day: Section 1 fills in about a month, Section 2 in about
-// four, Section 3 in about ten, and every plot takes longer than the one before.
+// four, Section 3, the last (D237), in about ten, and every plot takes longer than the one before.
 const twice = results.find((result) => result.policy === 'twice-a-day')!
 const sectionDone = (section: number) => twice.plotDays[section * FARM_PLOTS_PER_SECTION - 1]
 const envelope: Array<[string, number | null | undefined, number, number]> = [
@@ -118,8 +123,12 @@ const opened = twice.plotDays.filter((day): day is number => day !== null)
 const waits = opened.slice(1).map((day, index) => day - opened[index]!)
 if (waits.some((wait, index) => index > 0 && wait < waits[index - 1]! - 1)) throw new Error(`Farm plot waits shrank: ${waits.join(' ')}`)
 
+const last = farmPlotRequirement(MAX_FARM_PLOTS)
+const harvestsPerLevel = FARMING_EXP_PER_LEVEL / FARMING_EXP_PER_HARVEST
 console.log('Stable Farm progression — synthetic outfits (30, +1 a week), 2 harvests a level, fastest crop, workers stay')
-console.log(`Plot Farm Levels: ${Array.from({ length: 24 }, (_, index) => farmPlotRequirement(index + 1)).join(' ')} …`)
+console.log(`Plot Farm Levels: ${Array.from({ length: MAX_FARM_PLOTS }, (_, index) => farmPlotRequirement(index + 1)).join(' ')}`)
+console.log(`Plot ${MAX_FARM_PLOTS} (the last) at Farm Lv${last.toLocaleString()}: ${((last - 1) * harvestsPerLevel).toLocaleString()} harvests, ` +
+  `or ${Math.ceil((last - 1) / 149)} outfits at Farming Lv150, ${Math.ceil((last - 1) / 99)} at Lv100, ${Math.ceil((last - 1) / 139)} at Lv140`)
 for (const result of results) {
   console.log(`\n${result.policy}`)
   for (let section = 1; section * FARM_PLOTS_PER_SECTION <= PLOTS_TRACKED; section += 1) {
