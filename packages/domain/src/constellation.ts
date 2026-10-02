@@ -25,24 +25,24 @@ export const SP_CARD_SHARE = 0.6
 export const TREE_BUDGET_SHARE = 0.6
 
 /**
- * Per-stat caps. Tiers 1–4 are the original game's real values, verified 2026-09-20; tiers 5–14 extend the
- * idea on our own ladder (D119). Each row sums to that scenario's cap budget.
+ * Per-stat caps. URA Finale caps every stat at 1200 (6000); each later scenario adds 250: 100 to Speed, 100 to a main
+ * stat and 50 to a sub stat, round-robin through Stamina, Power, Guts and Wit. Each row sums to that scenario's cap budget.
  */
 export const CAP_PROFILES: readonly Stats[] = [
-  { speed: 1400, stamina: 1400, power: 1400, guts: 1400, wit: 1400 }, // 1  URA Finale
-  { speed: 1300, stamina: 1300, power: 1300, guts: 1300, wit: 1800 }, // 2  Unity Cup
-  { speed: 1200, stamina: 1900, power: 1200, guts: 1200, wit: 1500 }, // 3  Trackblazer
-  { speed: 1600, stamina: 1300, power: 1300, guts: 1500, wit: 1300 }, // 4  Our Grand Concert
-  { speed: 1400, stamina: 1300, power: 1500, guts: 1250, wit: 1800 }, // 5  Grand Masters
-  { speed: 1400, stamina: 1900, power: 1400, guts: 1500, wit: 1300 }, // 6  Project L'Arc
-  { speed: 1600, stamina: 1550, power: 1600, guts: 1500, wit: 1500 }, // 7  U.A.F. Ready GO!
-  { speed: 1500, stamina: 1700, power: 1500, guts: 1900, wit: 1400 }, // 8  Great Food Festival
-  { speed: 1900, stamina: 1500, power: 1950, guts: 1500, wit: 1400 }, // 9  Run! Mecha Umamusume
-  { speed: 2000, stamina: 1650, power: 1700, guts: 1550, wit: 1600 }, // 10 The Twinkle Legends
-  { speed: 1750, stamina: 1750, power: 1750, guts: 1750, wit: 1750 }, // 11 Design Your Island
-  { speed: 1700, stamina: 1900, power: 1700, guts: 2000, wit: 1700 }, // 12 Yukoma Hot Springs
-  { speed: 2000, stamina: 1750, power: 1800, guts: 1700, wit: 2000 }, // 13 Beyond Dreams
-  { speed: 1850, stamina: 1900, power: 2000, guts: 1950, wit: 1800 }, // 14 Tracen Diner
+  { speed: 1200, stamina: 1200, power: 1200, guts: 1200, wit: 1200 }, // 1  URA Finale
+  { speed: 1300, stamina: 1300, power: 1250, guts: 1200, wit: 1200 }, // 2  Unity Cup
+  { speed: 1400, stamina: 1300, power: 1350, guts: 1250, wit: 1200 }, // 3  Trackblazer
+  { speed: 1500, stamina: 1300, power: 1350, guts: 1350, wit: 1250 }, // 4  Our Grand Concert
+  { speed: 1600, stamina: 1350, power: 1350, guts: 1350, wit: 1350 }, // 5  Grand Masters
+  { speed: 1700, stamina: 1450, power: 1400, guts: 1350, wit: 1350 }, // 6  Project L'Arc
+  { speed: 1800, stamina: 1450, power: 1500, guts: 1400, wit: 1350 }, // 7  U.A.F. Ready GO!
+  { speed: 1900, stamina: 1450, power: 1500, guts: 1500, wit: 1400 }, // 8  Great Food Festival
+  { speed: 2000, stamina: 1500, power: 1500, guts: 1500, wit: 1500 }, // 9  Run! Mecha Umamusume
+  { speed: 2100, stamina: 1600, power: 1550, guts: 1500, wit: 1500 }, // 10 The Twinkle Legends
+  { speed: 2200, stamina: 1600, power: 1650, guts: 1550, wit: 1500 }, // 11 Design Your Island
+  { speed: 2300, stamina: 1600, power: 1650, guts: 1650, wit: 1550 }, // 12 Yukoma Hot Springs
+  { speed: 2400, stamina: 1650, power: 1650, guts: 1650, wit: 1650 }, // 13 Beyond Dreams
+  { speed: 2500, stamina: 1750, power: 1700, guts: 1650, wit: 1650 }, // 14 Tracen Diner
 ]
 
 export interface ShapeDef {

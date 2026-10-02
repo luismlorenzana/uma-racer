@@ -470,9 +470,9 @@ describe('training levels', () => {
   })
 
   it('pins the cap profiles and tree budgets from docs/design/scenarios.md', () => {
-    expect(capProfile(2).wit).toBe(1800)
-    expect(capProfile(3).stamina).toBe(1900)
-    expect([1, 2, 3, 4].map(capBudget)).toEqual([7000, 7000, 7000, 7000])
+    expect(capProfile(2).stamina).toBe(1300)
+    expect(capProfile(3).power).toBe(1350)
+    expect([1, 2, 3, 4].map(capBudget)).toEqual([6000, 6250, 6500, 6750])
     expect(treeBudget(1)).toBe(4200)
     // D134: card nodes share what the 240-point stat pool leaves of the tree.
     expect([1, 2, 3, 4].map(nodeValue)).toEqual([220, 198, 233, 189])
