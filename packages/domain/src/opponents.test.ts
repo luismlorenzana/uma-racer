@@ -44,10 +44,10 @@ const mean = (stats: Stats) => STATS.reduce((sum, stat) => sum + stats[stat], 0)
 
 describe('rival presets (D153, D159)', () => {
   it('average the handicapped trained Uma where no cap bites', () => {
-    // Tier 1's caps are even, so the scenario leans nowhere: its field's 709.0 (D191) × (1 − 0.05) on average for a G1.
-    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(673.588)
+    // D244: Tier 1's even caps leave its 650.0096 field × (1 − 0.05) on average for a G1.
+    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(617.50912)
     expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(fieldTrainedStat(1) * 0.75)
-    expect(fieldTrainedStat(1)).toBeLessThan(trainedStat(1))
+    expect(fieldTrainedStat(1)).toBe(trainedStat(1))
   })
 
   it('carry the Stamina a full spurt at the race distance needs, from a 90% roll up', () => {
@@ -59,9 +59,9 @@ describe('rival presets (D153, D159)', () => {
     }
     const stamina = (meters: number) => rivalPreset(1, 'g1', 'medium', 'pace', meters).stamina
     expect(stamina(2400)).toBeGreaterThan(stamina(2000) + 250)
-    // A marathon cannot take more than 40% of the build.
+    // A marathon cannot take more than 40% of the target build OR pass the scenario cap (D244).
     const marathon = rivalPreset(1, 'g1', 'long', 'pace', 3600)
-    expect(marathon.stamina).toBeCloseTo(0.4 * 5 * mean(marathon))
+    expect(marathon.stamina).toBe(Math.min(capProfile(1).stamina, 0.4 * 5 * fieldTrainedStat(1) * 0.95))
   })
 
   it('shape each running style after what it needs', () => {
@@ -74,10 +74,13 @@ describe('rival presets (D153, D159)', () => {
   })
 
   it('lean the way the scenario caps lean, and never pass a cap', () => {
-    // Trackblazer (tier 3) caps Speed at 1,200; Grand Masters (tier 5) caps Wit at 1,800.
-    const share = (tier: number, stat: 'speed' | 'wit') => rivalPreset(tier, 'g1', 'medium', 'pace', 2000)[stat] / mean(rivalPreset(tier, 'g1', 'medium', 'pace', 2000))
-    expect(share(3, 'speed')).toBeLessThan(share(1, 'speed'))
-    expect(share(5, 'wit')).toBeGreaterThan(share(1, 'wit'))
+    // D244 grows Speed faster than Wit; relative spread follows the cap lean independently of Stamina.
+    const lean = (tier: number) => {
+      const preset = rivalPreset(tier, 'g1', 'medium', 'pace', 2000)
+      return preset.speed / preset.wit
+    }
+    expect(lean(3)).toBeGreaterThan(lean(1))
+    expect(lean(5)).toBeGreaterThan(lean(1))
     for (let tier = 1; tier <= CAP_PROFILES.length; tier += 1) {
       for (const grade of RACE_GRADES) for (const distance of DISTANCE_CATEGORIES) for (const strategy of STRATEGIES) {
         const preset = rivalPreset(tier, grade, distance, strategy)

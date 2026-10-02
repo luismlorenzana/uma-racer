@@ -229,7 +229,7 @@ function hit(state: CombatState, actor: CombatUnit, target: CombatUnit, channel:
   const amount = intercept && receiver.guardingFor !== null
     ? Math.max(1, Math.round(result.amount * RPG_GUARD_FACTOR)) : result.amount
   receiver.hp = Math.max(0, receiver.hp - amount)
-  cues.push({ kind: 'hit', actorId: actor.id, targetId: receiver.id, amount,
+  cues.push({ kind: 'hit', actorId: actor.id, targetId: receiver.id, amount, channel, element, rider: rider > 0,
     label: result.weakness ? 'Weakness' : receiver.id !== target.id ? 'Intercepted' : undefined })
   if (receiver.hp === 0) cues.push({ kind: 'ko', actorId: actor.id, targetId: receiver.id })
   if (receiver.hp > 0 && appliedStatus && (!element ||

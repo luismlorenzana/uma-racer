@@ -76,7 +76,7 @@ describe('Uma view models', () => {
     expect(joined.status).toBe('ready')
     if (joined.status !== 'ready') return
     expect(joined.value).toMatchObject({ tier: 1, spCap: 2000, readyToAdvance: true })
-    expect(joined.value.caps).toEqual({ speed: 1400, stamina: 1400, power: 1400, guts: 1400, wit: 1400 })
+    expect(joined.value.caps).toEqual({ speed: 1200, stamina: 1200, power: 1200, guts: 1200, wit: 1200 })
     expect(joined.value.asset?.url).toBe('blob:synthetic-umas')
     const oldMaximum = joinUma({ ...save, level: 110, unlockedTier: 11, scenarios: [{ ...save.scenarios[0]!, tier: 11, started: true }] }, content)
     expect(oldMaximum.status === 'ready' && oldMaximum.value.readyToAdvance).toBe(true)

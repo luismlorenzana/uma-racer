@@ -66,29 +66,30 @@ The **shape** is the silhouette the nodes are laid out in — the thing that mak
 at a glance. The **slot count** is how finely that scenario's budget is divided, never how much it pays:
 
 ```
-treeBudget(T) = round(0.60 × capBudget(T))
-nodeValue(T)  = treeBudget(T) / (cardNodes + statNodes)
+nodeValue(T)  = round((0.60 × capBudget(T) − 240) / cardNodes(T))
+treeBudget(T) = cardNodes(T) × nodeValue(T) + 240
 ```
 
-| # | Scenario | Shape | Card | Stat | Total | Card node value |
-|---|---|---|---|---|---|---|
-| 1 | URA Finale | a single trunk, short branches alternating like a fern | 18 | 6 | 24 | 220 |
-| 2 | Unity Cup | three long branches from one stem | 20 | 6 | 26 | 198 |
-| 3 | Trackblazer | one long oval track, open at the foot, with side spurs | 17 | 6 | 23 | 233 |
-| 4 | Our Grand Concert | five-arm star around a central root | 21 | 6 | 27 | 189 |
-| 5 | Grand Masters | twin arcs hanging from one bar, a pendant between them | 25 | 6 | 31 | 164 |
-| 6 | Project L'Arc | an arch: a heavy lintel on two legs, the root its keystone | 26 | 6 | 32 | 164 |
-| 7 | U.A.F. Ready GO! | three feathered branches, one per sport | 27 | 6 | 33 | 163 |
-| 8 | Great Food Festival | wide canopy on a short trunk, rooted below | 27 | 6 | 33 | 169 |
-| 9 | Run! Mecha Umamusume | a spine with ribs, their ends dropping like an open lattice | 28 | 6 | 34 | 168 |
-| 10 | The Twinkle Legends | seven-point crown on its band, rooted below | 29 | 6 | 35 | 168 |
-| 11 | Design Your Island | a central island, spokes out to a ring open at the foot | 30 | 6 | 36 | 167 |
-| 12 | Yukoma Hot Springs | a square spiral out from the root | 30 | 6 | 36 | 172 |
-| 13 | Beyond Dreams | twin trunks meeting at the root and touching at the foot | 31 | 6 | 37 | 171 |
-| 14 | Tracen Diner | a counter with pendants of alternating length | 32 | 6 | 38 | 171 |
+| # | Scenario | Shape | Card nodes | Active Extra stat slots | Card node value (D244) |
+|---|---|---|---|---|---|
+| 1 | URA Finale | a single trunk, short branches alternating like a fern | 18 | 6 | 187 |
+| 2 | Unity Cup | three long branches from one stem | 20 | 6 | 176 |
+| 3 | Trackblazer | one long oval track, open at the foot, with side spurs | 17 | 6 | 215 |
+| 4 | Our Grand Concert | five-arm star around a central root | 21 | 6 | 181 |
+| 5 | Grand Masters | twin arcs hanging from one bar, a pendant between them | 25 | 6 | 158 |
+| 6 | Project L'Arc | an arch: a heavy lintel on two legs, the root its keystone | 26 | 6 | 158 |
+| 7 | U.A.F. Ready GO! | three feathered branches, one per sport | 27 | 6 | 158 |
+| 8 | Great Food Festival | wide canopy on a short trunk, rooted below | 27 | 6 | 163 |
+| 9 | Run! Mecha Umamusume | a spine with ribs, their ends dropping like an open lattice | 28 | 6 | 163 |
+| 10 | The Twinkle Legends | seven-point crown on its band, rooted below | 29 | 6 | 162 |
+| 11 | Design Your Island | a central island, spokes out to a ring open at the foot | 30 | 6 | 162 |
+| 12 | Yukoma Hot Springs | a square spiral out from the root | 30 | 6 | 167 |
+| 13 | Beyond Dreams | twin trunks meeting at the root and touching at the foot | 31 | 6 | 166 |
+| 14 | Tracen Diner | a counter with pendants of alternating length | 32 | 6 | 166 |
 
-Early scenarios have few, chunky card nodes, so each decision is heavy and legible. Every tree has **six stat
-nodes** of 40 raw points each (D162); the card nodes carry the rest of the budget ([Constellations](constellations.md#stat-budget)). Each tier also carries the fixed
+Early scenarios have few, chunky card nodes, so each decision is heavy and legible. The separate **Extra stats grid**
+has six active slots of 40 raw points each (D235); they are not drawn tree nodes. Card nodes carry the rest of the
+budget ([Constellations](constellations.md#stat-budget)). Each tier also carries the fixed
 **2 parent + 4 grandparent** lineage nodes, which pay aptitudes and skills rather than stats.
 
 Each silhouette is drawn on a grid, which keeps every edge straight and uncrossed; see

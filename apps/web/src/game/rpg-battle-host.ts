@@ -2,12 +2,12 @@
 import { applyAction, createEncounter, parseRpgCheckpointSave, parseRpgResultEvidence,
   projectRpgStats, replay, rpgCheckpointId, rpgEncounterSeed, rpgEntryId, rpgResultId,
   RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_ROUNDS,
-  type CombatAction, type CombatState, type EncounterInput, type RpgCheckpointSaveV1,
+  type CombatAction, type CombatCue, type CombatState, type EncounterInput, type RpgCheckpointSaveV1,
   type RpgCommandRequest, type RpgFrozenEntryV1, type RpgResultEvidenceV1 } from '@racer/domain'
 import { db, type PendingRpgCommandRow, type RpgBattleJournalRow, type VersionedRow } from './db'
 import { enqueueRpgCommand } from './rpg-sync'
 
-export type RpgBattleView =
+type RpgBattleStatus =
   | { kind: 'open'; checkpoint: RpgCheckpointSaveV1; state: CombatState | null; actionCount: number;
       recovery: 'none' | 'restart-journal' | 'takeover-required' }
   | { kind: 'pending'; checkpoint: RpgCheckpointSaveV1; state: CombatState | null; phase: 'entry' | 'takeover' | 'result';
@@ -16,6 +16,16 @@ export type RpgBattleView =
   | { kind: 'frozen-content-unavailable'; checkpoint: RpgCheckpointSaveV1; reason: string }
   | { kind: 'loss'; checkpoint: RpgCheckpointSaveV1; resultId: string }
   | { kind: 'accepted'; checkpoint: RpgCheckpointSaveV1; resultId: string; outcome: 'win' | 'loss' }
+
+/** Read-only replay projection, including acknowledged results whose checkpoint has already moved. */
+export type RpgBattleView = RpgBattleStatus & {
+  state: CombatState | null
+  actionCount: number
+  cues: CombatCue[]
+  lastAction: CombatAction | null
+  cueState: CombatState | null
+  evidence: RpgResultEvidenceV1 | null
+}
 
 export interface RpgBattleHost {
   enter(uid: string, checkpointId: string, nodeId: string, input?: EncounterInput): Promise<RpgBattleView>
@@ -250,6 +260,41 @@ export class DexieRpgBattleHost implements RpgBattleHost {
   }
 
   async resume(checkpointId: string): Promise<RpgBattleView> {
+    const view = await this.resumeStatus(checkpointId)
+    const entry = view.checkpoint.frozenEntry
+    const resultId = view.kind === 'accepted' || view.kind === 'loss' ? view.resultId : null
+    const evidence = resultId ? (await db.rpgResults.get(resultId))?.data ?? null : null
+    let state = 'state' in view ? view.state : null
+    let actionCount = 0
+    let cues: CombatCue[] = []
+    let lastAction: CombatAction | null = null
+    let cueState: CombatState | null = null
+    // Conflicts and unknown kits never regain controls through a presentation projection.
+    if (entry && view.kind !== 'conflict' && view.kind !== 'frozen-content-unavailable') {
+      const frozen = view.kind === 'loss' ? { ...entry, retryOrdinal: entry.retryOrdinal - 1 } : entry
+      try {
+        const input = frozenInput(frozen, view.checkpoint)
+        const raw = await db.rpgBattleJournals.get(rpgBattleJournalId(frozen))
+        const journal = raw && parseJournal(raw, frozen, await digest(frozen.enemyKitJson))
+        if (journal) {
+          const restored = replay(input, journal.actions)
+          if (!restored.error && restored.hash === journal.stateHash) {
+            actionCount = journal.actions.length
+            if (view.kind === 'accepted' || view.kind === 'loss') state = restored.state
+            const last = journal.actions.at(-1)
+            if (last) {
+              lastAction = last
+              cueState = replay(input, journal.actions.slice(0, -1)).state
+              cues = applyAction(cueState, last).cues
+            }
+          }
+        }
+      } catch { /* An unavailable projection must not replace the explicit host recovery state. */ }
+    }
+    return { ...view, state, actionCount, cues, lastAction, cueState, evidence }
+  }
+
+  private async resumeStatus(checkpointId: string): Promise<RpgBattleStatus> {
     const { acknowledged, checkpoint, pending } = await this.context(checkpointId)
     const conflicting = pending.find((row) => row.status === 'conflict')
     const result = pending.find((row) => (row.body as RpgCommandRequest).action === 'battle-result' && row.status === 'pending')
@@ -366,7 +411,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     if (!entry) throw new Error('No frozen battle')
     const resultId = rpgBattleJournalId(entry)
     const existing = await db.rpgResults.get(resultId)
-    if (existing) return { kind: 'accepted', checkpoint: acknowledged.data, resultId, outcome: existing.data.outcome }
+    if (existing) return this.resume(checkpointId)
     if (checkpoint.status !== 'in-battle') throw new Error('No open frozen battle')
     if (pending.some((row) => (row.body as RpgCommandRequest).action === 'takeover' && row.status === 'pending')) {
       throw new Error('Takeover must be acknowledged before a result')

@@ -123,16 +123,13 @@ handicap    = Debut/Maiden 0.35 · Pre-OP/OP 0.30 · G3 0.25 · G2 0.15 · G1 0.
 
 **`trainedStat`** is a realistic set rather than a perfect one: six current-era cards at **84% of a node** (2★ of 3 since D200, the old 3★ of 5), one of
 them a **Friend card** whose fair share of the nodes pays skill points instead of stats, plus six Extra stats, on the
-median base stat, with the scenario's typical buff (D165). It is 736 in scenario 1 and 948 in scenario 14; D152's full
-tree of maxed cards was 950 and 1,259, which no real build reaches (the owner's TL10 Special Week is 989 / 617 / 567 / 616 /
-691).
+median base stat, with the scenario's typical buff (D165). Under D244's cap ladder it is about 650 in scenario 1
+and 925 in scenario 14. It follows the current card-node budget rather than historical original-game caps.
 
-**A field is never stronger than a later scenario's** (`fieldStat`, D191). Scenarios 1–5 share their caps, so their
-typical builds differ only by how six cards split each tree, where the Friend card's share rounds up, and by the buff:
-URA Finale's came out 736 against Grand Masters' 709, which made the first scenario's G1s the hardest of the five. Each
-scenario's field takes the lowest typical build from it onwards: 709 in scenarios 1–5, 835 in 9 and 10, 891 in 12 and
-13, the typical build everywhere else. Rivals of an earlier scenario are therefore never tougher than a later one's, and
-a later era's field is always at least as strong.
+**A field is never stronger than a later scenario's** (`fieldStat`, D191). Each scenario's field takes the lowest
+typical build from it onwards, smoothing card-count, Friend-share rounding and scenario-buff differences. With
+D244's rising cap budgets, rounded fields are 650, 650, 684, 688 and 689 in scenarios 1–5, 811 in 9 and 10,
+869 in 12 and 13. Rivals of an earlier scenario are therefore never tougher than a later one's.
 
 **Stamina follows the distance.** `fullSpurtStamina` is engine v7's HP model: the opening and middle legs at her
 style's pace, with a margin for the field's pushes, then the final third at full spurt, which Speed makes dearer and

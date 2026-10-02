@@ -112,6 +112,8 @@ describe('RPG battle host and device journal', () => {
     const reloaded = new DexieRpgBattleHost(() => 51)
     const restored = await reloaded.resume(checkpointId)
     expect('state' in restored ? restored.state?.outcome : null).toBe('victory')
+    expect(restored.actionCount).toBe(1)
+    expect(restored.cues.some((cue) => cue.kind === 'ko')).toBe(true)
     expect((await db.rpgBattleJournals.toArray())[0]?.actions).toEqual([action])
     expect(await flushOneRpgCommand()).toBe(true)
     expect((await reloaded.resume(checkpointId)).kind).toBe('pending')
@@ -120,6 +122,10 @@ describe('RPG battle host and device journal', () => {
     expect(await db.pendingRpgCommands.count()).toBe(1)
     expect(await flushOneRpgCommand()).toBe(true)
     expect(await reloaded.resume(checkpointId)).toMatchObject({ kind: 'accepted', outcome: 'win' })
+    const receipt = await reloaded.resume(checkpointId)
+    expect(receipt.state?.outcome).toBe('victory')
+    expect(receipt.actionCount).toBe(1)
+    expect(receipt.evidence?.memberExp.every((member) => member.delta === 0)).toBe(true)
     expect(await reloaded.complete(checkpointId)).toMatchObject({ kind: 'accepted', outcome: 'win' })
     expect([...serverLogs.values()].filter((row) => row.kind === 'rpgResults')).toHaveLength(1)
     expect(await db.rpgResults.count()).toBe(1)
@@ -272,6 +278,8 @@ describe('RPG battle host and device journal', () => {
     expect(afterLoss.frozenEntry).toMatchObject({ seed: before.seed, enemyKitJson: before.enemyKitJson,
       retryOrdinal: 1 })
     expect((await db.rpgResults.get(rpgBattleJournalId(before)))?.data.outcome).toBe('loss')
+    expect(await host.resume(checkpointId)).toMatchObject({ kind: 'loss', actionCount: 0,
+      evidence: { outcome: 'loss' } })
     await host.enter(uid, checkpointId, nodeId)
     await flushOneRpgCommand()
     const retry = (await db.rpgCheckpoints.get(checkpointId))!.data.frozenEntry!
