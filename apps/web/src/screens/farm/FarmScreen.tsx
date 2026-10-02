@@ -159,6 +159,7 @@ function useFarmScrollMemory() {
 export function FarmShell() {
   const gameStatus = useGame((state) => state.status)
   const persistent = useGame((state) => state.persistent)
+  const umas = useGame((state) => state.umas)
   const contentState = useContent()
   const now = useFarmPresentationNow()
   const { state, setView, reload } = useFarmView(gameStatus === 'ready')
@@ -172,9 +173,9 @@ export function FarmShell() {
   const workers = useMemo(() => state.view ? buildFarmWorkerRows(
     state.view,
     [...templates.values()].filter((template) => state.view?.workers[template.id]).map((template) => ({
-      id: template.id, name: template.name, outfit: template.outfit,
+      id: template.id, name: template.name, outfit: template.outfit, racingLevel: umas[template.id]?.level ?? 0,
     })),
-  ) : [], [state.view, templates])
+  ) : [], [state.view, templates, umas])
 
   const explainFailure = async (reason: unknown): Promise<void> => {
     if (reason instanceof FarmConflictError) {
@@ -315,6 +316,7 @@ function WorkerProgress({ worker }: { worker: FarmWorkerRow }) {
       <span>{`${worker.progress.exp} / ${maximum} XP`}</span>
     </div>
     <div className="mt-1"><Meter value={worker.progress.exp / maximum} color="var(--color-accent)" height={5} /></div>
+    <p className="mt-1 text-[10px] text-ink-soft">Race Lv{worker.racingLevel}</p>
     <p className="mt-1 text-[10px] text-ink-soft">{workerGrowthNote(worker.progress.level)}</p>
   </div>
 }
@@ -336,7 +338,7 @@ function OutfitPicker({ open, plotId, onClose }: { open: boolean; plotId: FarmPl
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[14px] font-semibold">{worker.name}</span>
             <span className="block truncate text-[11px] text-ink-soft">{worker.outfit ?? 'Standard outfit'}</span>
-            <span className="mt-1 block text-[11px] font-semibold text-accent-strong">Farming Lv{worker.progress.level}{worker.plotId ? ` · ${farmPlotLabel(worker.plotId)}` : ' · Available'}</span>
+            <span className="mt-1 block text-[11px] font-semibold text-accent-strong">Farming Lv{worker.progress.level} · Race Lv{worker.racingLevel}{worker.plotId ? ` · ${farmPlotLabel(worker.plotId)}` : ' · Available'}</span>
           </span>
           {current === worker.id ? <Crest tone="accent">Current</Crest> : <ChevronRightIcon size={20} className="text-ink-faint" />}
         </button>
@@ -434,6 +436,7 @@ function PlotPanel({ plotId, onAssign, onPlant, onDetail }: {
       <div className="min-w-0 flex-1 pt-1">
         <p className="truncate text-[13px] font-semibold">{worker.name}</p>
         <p className="truncate text-[10px] text-ink-soft">{worker.outfit ?? 'Standard outfit'}</p>
+        <p className="truncate text-[10px] text-ink-faint">Race Lv{worker.racingLevel}</p>
         {crop && <div className="mt-1 flex items-center gap-1"><CropMark crop={crop} size={28} /><span className="truncate text-[11px]">{crop.name}</span></div>}
       </div>
     </div>
@@ -620,7 +623,7 @@ export function FarmCropsScreen() {
   const crops = FARM_CROPS.filter((crop) => (stat === 'all' || crop.stat === stat) && (tier === 'all' || crop.scenarioTier === tier))
   return <div className="pb-4"><div className="mb-3 px-1"><h2 className="font-display text-lg font-bold">Crop catalog</h2><p className="text-[12px] text-ink-soft">{FARM_CROPS.length} crops · five stats for every scenario. A worker opens the next scenario every ten Farming Levels.</p></div>
     <button type="button" onClick={() => setPickingWorker(true)} className="mb-3 flex min-h-12 w-full items-center justify-between rounded-sm border border-hairline bg-panel px-3 text-left shadow-1">
-      <span><span className="text-micro block">Check outfit requirements</span><span className="text-[13px] font-semibold">{worker ? `${worker.name} · Farming Lv${worker.progress.level}` : 'No owned outfit'}</span></span><ChevronRightIcon size={20} />
+      <span><span className="text-micro block">Check outfit requirements</span><span className="text-[13px] font-semibold">{worker ? `${worker.name} · Farming Lv${worker.progress.level} · Race Lv${worker.racingLevel}` : 'No owned outfit'}</span></span><ChevronRightIcon size={20} />
     </button>
     <div className="grid grid-cols-2 gap-2">
       <label className="text-[11px] font-semibold text-ink-soft">Scenario<select value={tier} onChange={(event) => setTier(event.target.value === 'all' ? 'all' : Number(event.target.value))} className="mt-1 min-h-11 w-full rounded-sm border border-hairline-strong bg-panel px-2 text-[13px] text-ink"><option value="all">All scenarios</option>{SCENARIOS.map((scenario) => <option key={scenario.tier} value={scenario.tier}>{scenario.tier} · {scenario.name}</option>)}</select></label>
@@ -630,6 +633,6 @@ export function FarmCropsScreen() {
       const availability = worker ? cropAvailability(crop, worker.progress) : null
       return <Panel key={crop.id} className="flex items-center gap-3 p-2"><CropMark crop={crop} size={46} /><div className="min-w-0 flex-1"><p className="truncate text-[14px] font-semibold">{crop.name}</p><p className="flex items-center gap-1 text-[11px] text-ink-soft"><TypeIcon type={crop.stat} size={16} />{scenarioForTier(crop.scenarioTier)?.name} · {crop.stat}</p><p className={`mt-1 text-[10px] font-semibold ${availability?.available ? 'text-accent-strong' : 'text-danger'}`}>{availability?.available ? `Grows in ${formatGrowthMinutes(availability.growthMinutes)}` : `Farming Lv${crop.outfitLevelRequired}`}</p></div><span className="text-[12px] font-semibold">×{farm.view.inventory[crop.id] ?? 0}</span></Panel>
     })}</div>
-    <BottomSheet open={pickingWorker} onClose={() => setPickingWorker(false)}><h2 className="font-display text-xl font-bold">Check crop access</h2><div className="mt-3 grid gap-2">{farm.workers.map((entry) => <button key={entry.id} type="button" onClick={() => { setWorkerId(entry.id); setPickingWorker(false) }} className="flex min-h-14 items-center justify-between rounded-sm border border-hairline bg-panel px-3 text-left"><span><span className="block text-[13px] font-semibold">{entry.name}</span><span className="block text-[11px] text-ink-soft">{entry.outfit ?? 'Standard outfit'} · Farming Lv{entry.progress.level}</span></span>{entry.id === worker?.id && <Crest tone="accent">Selected</Crest>}</button>)}</div></BottomSheet>
+    <BottomSheet open={pickingWorker} onClose={() => setPickingWorker(false)}><h2 className="font-display text-xl font-bold">Check crop access</h2><div className="mt-3 grid gap-2">{farm.workers.map((entry) => <button key={entry.id} type="button" onClick={() => { setWorkerId(entry.id); setPickingWorker(false) }} className="flex min-h-14 items-center justify-between rounded-sm border border-hairline bg-panel px-3 text-left"><span><span className="block text-[13px] font-semibold">{entry.name}</span><span className="block text-[11px] text-ink-soft">{entry.outfit ?? 'Standard outfit'} · Farming Lv{entry.progress.level} · Race Lv{entry.racingLevel}</span></span>{entry.id === worker?.id && <Crest tone="accent">Selected</Crest>}</button>)}</div></BottomSheet>
   </div>
 }
