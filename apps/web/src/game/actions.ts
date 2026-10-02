@@ -34,6 +34,18 @@ export async function setExtraStatActive(id: string, tier: number, nodeId: impor
   await gameRuntime.setExtraStatActive(id, tier, nodeId, on)
 }
 
+export async function spendLevelUpTickets(input: { umaId: string; tier: number; count: number; fromLevel: number; fromExp: number }) {
+  return criticalGameplayAction(async () => {
+    const { gameRuntime } = await import('./runtime')
+    return gameRuntime.spendLevelUpTickets(input)
+  })
+}
+
+export async function readLevelUpTickets(): Promise<number> {
+  const { readLevelUpTickets: read } = await import('./training-level-up')
+  return read()
+}
+
 export async function listProduceInventory(tier: number) {
   const { readProduceInventory } = await import('./extra-stats')
   return readProduceInventory(tier)

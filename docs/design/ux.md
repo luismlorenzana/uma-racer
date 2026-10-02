@@ -162,6 +162,11 @@ DOM live region announces a whole resolved turn and the next intent; it never na
 drag cancels that uncommitted gesture, landscape asks the player to rotate while preserving the saved turn boundary, and a
 journal restore failure keeps explicit **Retry run** and **Return** actions visible.
 
+Below the stake, the start screen offers **Level-Up Tickets** for this unit (D213): owned and the EXP bank, a stepper
+capped at the levels left to TL10, a preview of the levels and nodes it opens, and **Use N tickets**. It is hidden while a
+run is resuming and disabled, with how tickets are earned, when none are owned. Using them shows the same Training
+progress summary as a run's result, with the ticket line, and **Done** returns to the start screen.
+
 The result leads with **Circuit cleared**, **Drive depleted** or **Turn limit reached**. It then shows Training EXP, the
 before/after TL bar, every level crossed and every opened node by real name. A run that reaches TL10 adds a line for the
 EXP it banked and, when the bank completes one, **+N Training Level-Up Ticket** linking to Items (D212). Each node opens its matching

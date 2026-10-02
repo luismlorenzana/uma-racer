@@ -14,7 +14,6 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · [T080 card focus](T080-card-focus-tags.md) · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078 and T079 landed; T080 next, then T081 |
-| [M027 — Training Rebalance](M027-training-rebalance.md) | T087 linear levels and EXP bank ✅ · [T088 spend Level-Up Tickets](T088-spend-level-up-tickets.md) | **In progress** · T087 landed; T088 next. Independent of M024 |
 | [M028 — Global Uma RPG](M028-uma-rpg.md) | T089 pure rules ✅ · T090 save contract ✅ · T091 combat ✅ · T092 battle host ✅ · T093 roster/party hub ✅ · [T094–T099](M028-uma-rpg.md#delivery-sequence) | **In progress** · T094 phone battle screen next; then synthetic chapter, real URA chapter and Inspiration sink |
 | [M029 — RPG chapter rollout](M029-rpg-chapter-rollout.md) | [T100–T103](M029-rpg-chapter-rollout.md#delivery-sequence) | **Specified, not implemented** · private content for the remaining thirteen scenarios and a 14/14 gate |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
@@ -22,8 +21,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 **M024 is the current unit of work** (D199–D202): T078 and T079 landed on 2026-09-29; T080 is next, and T081 follows
 it. M025–M026's Farm and Produce bridge are complete. T035 stays specified and can be picked up any
-time. **M027 — Training Rebalance** (D211–D214) runs beside it: T087 landed on 2026-09-30, and T088 (spending Level-Up
-Tickets) is next. Anything new starts with the next free numbers below.
+time. **M027 — Training Rebalance** (D211–D214) is complete. Anything new starts with the next free numbers below.
 
 The owner's device checks (every milestone's, including Spark Rival Circuit's physical-iPhone pass) wait in
 [Open questions](../open-questions.md#needs-you-owner-actions-not-design-questions) and close together in T038 (D189).
@@ -39,6 +37,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| M027 — Training Rebalance (T087 linear levels and EXP bank, T088 spending Level-Up Tickets) | 2026-10-02 | [Training](../design/training.md#the-training-exp-bank-and-level-up-tickets), D211–D214 | git history |
 | T089 — RPG pure progression rules | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#outfit-rpg-profile-and-progression), D227 and `packages/domain/src/rpg/` | `ce2aa37` |
 | T090 — RPG save and grouped commands | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#five-member-combat-proposal), [Architecture](../technical/architecture.md), D228 | git history |
 | T091 — RPG deterministic combat | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#settled-t091-combat-contract-d229), D229 and `packages/domain/src/rpg/combat/` | git history |

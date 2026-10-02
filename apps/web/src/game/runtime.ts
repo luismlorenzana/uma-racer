@@ -118,6 +118,12 @@ import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
 import { installFarmHost, MemoryFarmHost, PersistentFarmHost } from './farm/host'
 import { ExtraStatConflictError, unlockPersistentExtraStat, type UnlockExtraStatReceipt } from './extra-stats'
+import {
+  LevelUpTicketsStaleError,
+  spendPersistentLevelUpTickets,
+  type LevelUpTicketsReceipt,
+  type SpendLevelUpTicketsInput,
+} from './training-level-up'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -148,7 +154,7 @@ export class GameRuntime {
   private cardRedemptionLocks = new Set<string>()
   private umaRedemptionLocks = new Set<string>()
   private badgePreferenceLocks = new Set<string>()
-  private extraStatLocks = new Set<string>()
+  private unitLocks = new Set<string>()
   private exchangeLocked = false
   private memoryCardRedemptions = new Set<string>()
   private memoryUmaRedemptions = new Set<string>()
@@ -331,7 +337,7 @@ export class GameRuntime {
     this.memoryCardRedemptions.clear()
     this.memoryUmaRedemptions.clear()
     this.badgePreferenceLocks.clear()
-    this.extraStatLocks.clear()
+    this.unitLocks.clear()
     this.memoryExchangeSequence = 0
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
@@ -520,8 +526,8 @@ export class GameRuntime {
   /** Buys a unit's next Extra stat node of one stat with that scenario's crop (D235). Needs local storage. */
   async unlockExtraStat(input: { umaId: string; tier: number; nodeId: ExtraStatNodeId }): Promise<UnlockExtraStatReceipt> {
     const key = `${input.umaId}:${input.tier}`
-    if (this.extraStatLocks.has(key)) throw new Error('That Extra stats grid is already being updated')
-    this.extraStatLocks.add(key)
+    if (this.unitLocks.has(key)) throw new Error('That Extra stats grid is already being updated')
+    this.unitLocks.add(key)
     try {
       const generation = this.generation
       const content = this.content
@@ -546,7 +552,41 @@ export class GameRuntime {
         throw error
       }
     } finally {
-      this.extraStatLocks.delete(key)
+      this.unitLocks.delete(key)
+    }
+  }
+
+  /** Spends Training Level-Up Tickets on one unit, one Training Level each (D213). Needs local storage. */
+  async spendLevelUpTickets(input: Omit<SpendLevelUpTicketsInput, 'now'>): Promise<LevelUpTicketsReceipt> {
+    const key = `${input.umaId}:${input.tier}`
+    if (this.unitLocks.has(`level-up:${key}`)) throw new Error('Those tickets are already being used')
+    this.unitLocks.add(`level-up:${key}`)
+    try {
+      const generation = this.generation
+      const content = this.content
+      const state = useGame.getState()
+      if (!content || state.status !== 'ready' || !state.umas[input.umaId]) throw new Error('Training Uma must be owned')
+      if (!state.persistent) throw new Error('Level-Up Tickets need local storage')
+      try {
+        const receipt = await spendPersistentLevelUpTickets(content, { ...input, now: Date.now() })
+        if (generation !== this.generation) return receipt
+        replaceUma(receipt.uma)
+        replaceProfile(receipt.profile)
+        await this.refreshBadges()
+        await this.refreshPending()
+        this.schedule()
+        return receipt
+      } catch (error) {
+        // A stale screen shows the unit as it is before the player chooses again.
+        if (error instanceof LevelUpTicketsStaleError && generation === this.generation) {
+          const row = await db.umas.get(input.umaId)
+          const latest = row ? parseUmaSave(row.data) : null
+          if (latest) replaceUma(latest)
+        }
+        throw error
+      }
+    } finally {
+      this.unitLocks.delete(`level-up:${key}`)
     }
   }
 

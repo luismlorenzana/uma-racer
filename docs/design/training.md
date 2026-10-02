@@ -128,7 +128,26 @@ and every full 1,250 there becomes a **Training Level-Up Ticket** at once: an it
 
 The bank shows on the Items screen as `850 / 1,250`, and a ticket grant is item-ledger evidence (`exp-bank`), so a retried
 commit never pays twice. TL10 still ends Spark for that unit: the bank fills from real progress, not from replaying a
-finished one. Tickets are spent before a Spark run, on the Spark Match start screen (D213, T088).
+finished one.
+
+### Spending Level-Up Tickets
+
+Tickets are spent on the **Spark Match start screen**, on the unit it was opened for (D213), below TL10 and while no
+Spark run is open for that unit. A **Level-Up Tickets** row shows `Owned 3 · EXP bank 850 / 1,250` and a stepper from 1 to
+`min(owned, 10 − TL)`, previews `2 tickets · TL6 → TL8 · opens 3 nodes`, and **Use 2 tickets** confirms. With none owned
+the row stays, with the hint that they are earned from EXP past TL10.
+
+- **One ticket is one Training Level:** `n` tickets add `n × 1,250` Training EXP, so the unit keeps its progress inside
+  the current level. EXP carried past TL10 goes back to the bank, and if that completes 1,250 a ticket pays straight
+  back. Nothing else is spent: no Training Ticket, and no run is created.
+- **One commit:** the unit, the ticket stack, `training-level-up` evidence `level-up:<umaId>:<tier>:<fromLevel>.<fromExp>`,
+  the bank and any regranted ticket, badge facts (a unit reaching TL10 is Fully Trained, as by a Spark run) and outbox.
+  The id is the starting point the screen saw: a retried tap finds its own receipt, and a stale screen that no longer
+  matches the unit spends nothing and reloads.
+- **The result** is the summary a Spark run shows: TL before and after, every level crossed and every opened node
+  linking to its view, plus `−2 Training Level-Up Tickets` and any EXP banked. **Done** returns to the start screen at
+  the new level, where a Spark run can begin.
+- Tickets need local storage; a memory-only session never holds any.
 
 ## Opening a scenario
 

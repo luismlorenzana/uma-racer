@@ -10,6 +10,7 @@ import {
   trainedScenario,
   addTrainingExp,
   constellationTemplate,
+  maxLevelUpTickets,
   nodesUnlockedBetween,
   sparkRivalStateHash,
   trainingExpToNext,
@@ -20,21 +21,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { getContentAsset } from '../../content/runtime'
+import { readLevelUpTickets, spendLevelUpTickets } from '../../game/actions'
 import { safeReturnPath } from '../../game/bond-links'
 import { constellationNodeHref } from '../../game/constellation-links'
 import { getMinigameHost, type RunReward } from '../../game/minigame-host'
 import { getMinigameJournal, type SparkRunView } from '../../game/minigame-journal'
+import type { LevelUpTicketsReceipt } from '../../game/training-level-up'
 import { useChosenTier } from '../../game/scenario-choice'
 import { useGame } from '../../game/store'
 import { SparkRivalScene, type SparkRivalHud, type SparkSceneArt } from '../../scenes/spark-rival/SparkRivalScene'
 import { sparkProofCast } from '../../scenes/spark-rival/proof-cast'
 import { useArtSet } from '../../ui/album/useArt'
 import { Button } from '../../ui/Button'
-import { ChevronRightIcon, SparkIcon } from '../../ui/icons'
+import { ChevronRightIcon, LevelUpIcon, SparkIcon } from '../../ui/icons'
 import { MinigameGauge } from '../../ui/minigames/MinigameGauge'
 import { MinigameResult } from '../../ui/minigames/MinigameResult'
 import { MinigameHeader, MinigameShell } from '../../ui/minigames/MinigameShell'
 import { MinigameStart } from '../../ui/minigames/MinigameStart'
+import { LevelUpTicketsPanel, TrainingProgress } from './TrainingLevelUp'
 import { SPARK_ORB_COLORS, SPARK_STRATEGY_LABELS } from '../../ui/minigames/spark-rival-presentation'
 import {
   rememberSparkRivalGuideSeen,
@@ -43,7 +47,7 @@ import {
   type SparkRivalGuidePageId,
 } from './SparkRivalGuide'
 
-type Phase = 'loading' | 'ready' | 'reserving' | 'playing' | 'committing' | 'complete'
+type Phase = 'loading' | 'ready' | 'reserving' | 'playing' | 'committing' | 'complete' | 'leveled'
 
 export function SparkMatchScreen() {
   const { umaId = '' } = useParams()
@@ -60,6 +64,10 @@ export function SparkMatchScreen() {
   const [error, setError] = useState<string | null>(null)
   const [resumeAvailable, setResumeAvailable] = useState(false)
   const [guide, setGuide] = useState<{ open: boolean; startAt: SparkRivalGuidePageId }>({ open: false, startAt: 'circuit' })
+  const bank = useGame((state) => state.profile?.trainingExpBank ?? 0)
+  const [ownedTickets, setOwnedTickets] = useState<number | null>(null)
+  const [ticketCount, setTicketCount] = useState(1)
+  const [levelUp, setLevelUp] = useState<LevelUpTicketsReceipt | null>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<SparkRivalScene | null>(null)
   const committingRef = useRef(false)
@@ -140,6 +148,30 @@ export function SparkMatchScreen() {
   }
   const start = () => { if (phase === 'ready') void reserve() }
 
+  useEffect(() => {
+    if (phase !== 'ready' || gameStatus !== 'ready') return
+    let cancelled = false
+    void readLevelUpTickets().then((owned) => { if (!cancelled) setOwnedTickets(owned) }).catch(() => { if (!cancelled) setOwnedTickets(0) })
+    return () => { cancelled = true }
+  }, [gameStatus, phase])
+
+  const spendTickets = async () => {
+    if (!scenario || phase !== 'ready') return
+    const count = Math.min(maxLevelUpTickets(scenario.trainingLevel, ownedTickets ?? 0), Math.max(1, ticketCount))
+    if (count < 1) return
+    setPhase('reserving')
+    setError(null)
+    try {
+      const receipt = await spendLevelUpTickets({ umaId, tier: scenario.tier, count, fromLevel: scenario.trainingLevel, fromExp: scenario.trainingExp })
+      setLevelUp(receipt)
+      setTicketCount(1)
+      setPhase('leveled')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The tickets could not be used')
+      setPhase('ready')
+    }
+  }
+
   const cast = useMemo(() => content && view ? sparkProofCast(content.umas.items, view.snapshot.encounter.trainee.templateId) : null, [content, view])
   const artIds = useMemo(() => {
     if (!view || !cast) return []
@@ -214,7 +246,7 @@ export function SparkMatchScreen() {
 
   // Her current scenario trains once started; an earlier trained unit always can, until TL10 (D190).
   const trainable = scenario.started || scenario.tier < uma.unlockedTier
-  if ((!trainable || scenario.trainingLevel >= MAX_TRAINING_LEVEL) && !view && !reward) {
+  if ((!trainable || scenario.trainingLevel >= MAX_TRAINING_LEVEL) && !view && !reward && !levelUp) {
     return (
       <div className="flex h-dvh items-center justify-center bg-stage p-5 text-ink-on-dark">
         <div className="max-w-sm rounded-lg border border-hairline-dark bg-stage-soft p-5 text-center shadow-3">
@@ -229,9 +261,6 @@ export function SparkMatchScreen() {
   const maxClearExp = SPARK_RIVAL_WAVE_EXP.reduce((sum, value) => sum + value, 0) + SPARK_RIVAL_CLEAR_BONUS + SPARK_RIVAL_COMBO_BONUS_CAP + SPARK_RIVAL_DRIVE_BONUS_CAP
   const possible = addTrainingExp(scenario.trainingLevel, scenario.trainingExp, maxClearExp)
   const possibleNodes = nodesUnlockedBetween(constellationTemplate(scenario.tier), scenario.trainingLevel, possible.trainingLevel).length
-  const crossedLevels = reward?.trainingLevelBefore !== undefined && reward.trainingLevelAfter !== undefined
-    ? Array.from({ length: Math.max(0, reward.trainingLevelAfter - reward.trainingLevelBefore) }, (_, index) => reward.trainingLevelBefore! + index + 1)
-    : []
   const battle = phase === 'playing' || phase === 'committing'
   const outcome = view?.replay.outcome
   const wave = hud?.wave ?? ((view?.replay.state.waveIndex ?? 0) + 1)
@@ -276,6 +305,20 @@ export function SparkMatchScreen() {
           resume={resumeAvailable}
           pending={phase === 'reserving'}
           pendingLabel={resumeAvailable ? 'Restoring circuit…' : 'Reserving circuit…'}
+          extra={resumeAvailable ? undefined : (
+            <LevelUpTicketsPanel
+              owned={ownedTickets}
+              bank={bank}
+              trainingLevel={scenario.trainingLevel}
+              trainingExp={scenario.trainingExp}
+              opensFor={(count) => nodesUnlockedBetween(constellationTemplate(scenario.tier), scenario.trainingLevel,
+                addTrainingExp(scenario.trainingLevel, scenario.trainingExp, count * TRAINING_EXP_PER_LEVEL).trainingLevel).length}
+              count={ticketCount}
+              onCount={setTicketCount}
+              pending={phase === 'reserving'}
+              onUse={() => void spendTickets()}
+            />
+          )}
           error={error}
           onBegin={start}
           onGuide={() => setGuide({ open: true, startAt: 'circuit' })}
@@ -288,20 +331,9 @@ export function SparkMatchScreen() {
           reason={<><strong className="text-ink-on-dark">+{reward.trainingExpEarned?.toLocaleString() ?? outcome.trainingExp.toLocaleString()} Training EXP</strong><span className="block">{outcome.reason === 'circuit-cleared' ? 'All three rivals defeated.' : 'Resolve progress was banked for this constellation.'}</span></>}
           artwork={<div className={`relative flex h-24 w-24 items-center justify-center rounded-full border text-accent ${outcome.kind === 'clear' ? 'border-accent bg-accent/20 shadow-[0_0_36px_rgba(242,189,85,0.35)]' : 'border-hairline-dark bg-stage-soft'}`}><span className="absolute inset-2 rounded-full border border-current/30" aria-hidden /><SparkIcon size={32} /></div>}
           reward={(
-            <>
-              <div className="flex items-center justify-between gap-2"><h3 className="text-lg">Training progress</h3><strong>TL {reward.trainingLevelBefore} → {reward.trainingLevelAfter}</strong></div>
-              <div className="mt-3"><MinigameGauge label="Training EXP" value={reward.trainingExpAfter ?? 0} maximum={reward.trainingLevelAfter === MAX_TRAINING_LEVEL ? 1 : trainingExpToNext(reward.trainingLevelAfter ?? 1)} tone="accent" /></div>
-              <p className="mt-2 text-sm text-ink-on-dark-soft">EXP {reward.trainingExpBefore ?? 0} → {reward.trainingExpAfter ?? 0}{crossedLevels.length > 0 ? ` · crossed ${crossedLevels.map((level) => `TL${level}`).join(', ')}` : ''}</p>
-              {(reward.trainingExpBanked ?? 0) > 0 && (
-                <div className="mt-3 rounded-sm border border-hairline-dark bg-black/15 px-3 py-2 text-sm">
-                  <p className="font-semibold text-ink-on-dark">+{reward.trainingExpBanked!.toLocaleString()} EXP to the Training EXP bank</p>
-                  {(reward.levelUpTicketsGranted ?? 0) > 0
-                    ? <Link to="/farm/items" className="mt-1 flex min-h-11 items-center justify-between font-semibold text-accent"><span>+{reward.levelUpTicketsGranted} Training Level-Up Ticket{reward.levelUpTicketsGranted === 1 ? '' : 's'}</span><ChevronRightIcon size={20} aria-hidden /></Link>
-                    : <p className="mt-1 text-ink-on-dark-soft">Every {TRAINING_EXP_PER_LEVEL.toLocaleString()} banked becomes a Training Level-Up Ticket.</p>}
-                </div>
-              )}
-              <section className="mt-4"><h3 className="text-lg">Nodes opened</h3>{reward.nodesUnlocked?.length ? <div className="mt-2 grid gap-2">{reward.nodesUnlocked.map((node) => <Link key={node.id} to={constellationNodeHref(umaId, scenario.tier, node.id)} className="flex min-h-11 items-center justify-between rounded-sm border border-hairline-dark bg-black/15 px-3 font-semibold text-ink-on-dark"><span>{node.label}</span><ChevronRightIcon size={20} aria-hidden /></Link>)}</div> : <p className="mt-1 text-sm text-ink-on-dark-soft">No node opened this run; every EXP point carried forward.</p>}</section>
-            </>
+            <TrainingProgress umaId={umaId} tier={scenario.tier} levelBefore={reward.trainingLevelBefore ?? 1}
+              levelAfter={reward.trainingLevelAfter ?? 1} expBefore={reward.trainingExpBefore ?? 0} expAfter={reward.trainingExpAfter ?? 0}
+              banked={reward.trainingExpBanked ?? 0} granted={reward.levelUpTicketsGranted ?? 0} nodes={reward.nodesUnlocked ?? []} />
           )}
           doneTo={returnTo}
           again={{
@@ -312,6 +344,20 @@ export function SparkMatchScreen() {
             onClick: () => void runAgain(),
           }}
         />
+      ) : phase === 'leveled' && levelUp ? (
+        <section className="mx-auto flex w-full max-w-md flex-1 flex-col items-center gap-3 px-4 py-5 text-center">
+          <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-accent bg-accent/20 text-accent shadow-[0_0_36px_rgba(242,189,85,0.35)]"><LevelUpIcon size={32} /></div>
+          <div role="status" aria-live="polite" aria-atomic="true">
+            <p className="text-micro !text-accent">Level-Up Tickets</p>
+            <h2 className="mt-1 text-3xl">TL {levelUp.trainingLevelBefore} → {levelUp.trainingLevelAfter}</h2>
+          </div>
+          <div className="w-full rounded-md border border-hairline-dark bg-stage-soft p-4 text-left">
+            <TrainingProgress umaId={umaId} tier={scenario.tier} levelBefore={levelUp.trainingLevelBefore} levelAfter={levelUp.trainingLevelAfter}
+              expBefore={levelUp.trainingExpBefore} expAfter={levelUp.trainingExpAfter} banked={levelUp.trainingExpBanked}
+              granted={levelUp.levelUpTicketsGranted} nodes={levelUp.nodesUnlocked} ticketsSpent={levelUp.ticketsSpent} />
+          </div>
+          <Button className="mt-auto w-full" onClick={() => { setLevelUp(null); setPhase('ready') }}>Done</Button>
+        </section>
       ) : view ? (
         <>
           <section className="grid shrink-0 grid-cols-[1fr_auto] gap-3 border-b border-hairline-dark bg-stage-soft/90 px-3 py-2" aria-label="Battle status">

@@ -70,7 +70,8 @@ records keep the ticket reward of their day, five a level before v7 and one afte
 - **A day's 15 tickets** max about three cards, or one card with ten Spark Match runs to spare, or take two to three Umas
   through a scenario.
 - **Level-Up Tickets** come only from EXP past TL10, so they arrive at most about one per Uma finished and never replace
-  the daily Training Tickets. The v11 migration paid the surplus of units trained on the old, steeper curve.
+  the daily Training Tickets. Each is spent as one Training Level on the Spark Match start screen, the work of about two
+  thirds of a paid run (D213). The v11 migration paid the surplus of units trained on the old, steeper curve.
 - **Late scenarios:** unlocking tier 10 → 11 costs 50, three full daily grants plus five tickets, minus what racing earns
   back.
 - **Stars are per scenario** (D127), so a six-card set is about 24 tickets, or roughly a daily grant and a half, to max

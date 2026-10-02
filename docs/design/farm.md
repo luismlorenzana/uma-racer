@@ -244,7 +244,7 @@ interface ItemLedgerEntry {
     | { kind: 'constellation-produce'; umaId: string; tier: number; nodeId: string; revision: number } // pre-v12 history
     | { kind: 'spark-run'; runId: string }            // exp-bank: a run past TL10, id exp-bank:<runId>
     | { kind: 'bank-settle' }                         // exp-bank: startup settling the migrated bank
-    | { kind: 'level-up'; umaId: string; tier: number; fromLevel: number; fromExp: number } // a spend (T088)
+    | { kind: 'level-up'; umaId: string; tier: number; fromLevel: number; fromExp: number } // a spend (D213)
   createdAt: number
 }
 ```
