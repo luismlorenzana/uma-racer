@@ -295,6 +295,7 @@ export interface OwnerGift {
 
 export const OWNER_GIFTS: readonly OwnerGift[] = [
   { id: '2026-09-30', grant: { tickets: 0, cardCoupons: 0, umaCoupons: 3, umaShards: 0 } },
+  { id: '2026-10-02', grant: { tickets: 0, cardCoupons: 0, umaCoupons: 2, umaShards: 0 } },
 ]
 
 /** Pays every owner gift not yet in the ledger. Returns what it paid. */
