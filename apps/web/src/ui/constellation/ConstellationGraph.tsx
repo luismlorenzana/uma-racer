@@ -1,6 +1,5 @@
 import {
   constellationEdges,
-  farmCropById,
   isNodeUnlocked,
   nodeUnlockLevel,
   type ConstellationNode,
@@ -11,8 +10,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { getContentAsset, type LoadedContent } from '../../content/runtime'
 import { AtlasSprite } from '../AtlasSprite'
 import { UmaBust } from '../UmaBust'
-import { TypeIcon } from '../TypeIcon'
-import { CropMark } from '../farm/CropMark'
 
 /**
  * The canvas fills the host at scale 1, so the 100×100 unit layout stretches to the screen's aspect. On a portrait
@@ -60,7 +57,7 @@ export function ConstellationGraph({
   cardTypes: Readonly<Record<string, string>>
   selectedId: string | null
   onSelect: (node: ConstellationNode) => void
-  viewMode?: 'constellation' | 'inspiration' | 'extra-stats'
+  viewMode?: 'constellation' | 'inspiration'
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState<{ width: number; height: number } | null>(null)
@@ -70,8 +67,7 @@ export function ConstellationGraph({
   const dragged = useRef(false)
   const visibleNodes = useMemo(() => template.nodes.filter((node) =>
     viewMode === 'constellation' ? node.kind === 'root' || node.kind === 'card'
-      : viewMode === 'inspiration' ? node.kind === 'parent' || node.kind === 'grandparent'
-        : node.kind === 'stat'), [template, viewMode])
+      : node.kind === 'parent' || node.kind === 'grandparent'), [template, viewMode])
   const visibleIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes])
   const bounds = useMemo(() => ({
     minX: Math.min(...visibleNodes.map((node) => node.x)),
@@ -79,12 +75,8 @@ export function ConstellationGraph({
     minY: Math.min(...visibleNodes.map((node) => node.y)),
     maxY: Math.max(...visibleNodes.map((node) => node.y)),
   }), [visibleNodes])
-  // The three views keep the template's relative geometry, but each fills its own canvas.
+  // Both views keep the template's relative geometry, but each fills its own canvas.
   const position = useCallback((node: ConstellationNode) => {
-    if (viewMode === 'extra-stats') {
-      const index = visibleNodes.findIndex((candidate) => candidate.id === node.id)
-      return { x: index % 2 === 0 ? 30 : 70, y: 23 + Math.floor(index / 2) * 27 }
-    }
     return {
       x: 12 + ((node.x - bounds.minX) / Math.max(1, bounds.maxX - bounds.minX)) * 76,
       y: 12 + ((node.y - bounds.minY) / Math.max(1, bounds.maxY - bounds.minY)) * 76,
@@ -176,8 +168,8 @@ export function ConstellationGraph({
     if (pointers.current.size < 2) gesture.current = null
   }
 
-  const edges = useMemo(() => viewMode === 'extra-stats' ? [] : constellationEdges(template).filter(({ from, to }) =>
-    visibleIds.has(from.id) && visibleIds.has(to.id)), [template, visibleIds, viewMode])
+  const edges = useMemo(() => constellationEdges(template).filter(({ from, to }) =>
+    visibleIds.has(from.id) && visibleIds.has(to.id)), [template, visibleIds])
   const size = useMemo(() => {
     if (!box) return NODE_MIN
     let gap = Infinity
@@ -199,13 +191,9 @@ export function ConstellationGraph({
   const toneOf = (assignment: NodeAssignment | undefined): string | null =>
     assignment?.kind === 'card'
       ? STAT_TONE[cardTypes[assignment.cardId] ?? ''] ?? ACCENT
-      : assignment?.kind === 'legacy-produce'
-        ? STAT_TONE[assignment.stat] ?? ACCENT
-        : assignment?.kind === 'produce'
-          ? STAT_TONE[farmCropById(assignment.itemId)?.stat ?? ''] ?? ACCENT
-        : assignment?.kind === 'lineage'
-          ? LINEAGE
-          : null
+      : assignment?.kind === 'lineage'
+        ? LINEAGE
+        : null
 
   /**
    * A path lights up gold where both ends are filled, and in the card's own colour where both hold the same card, so a
@@ -330,14 +318,7 @@ export function ConstellationGraph({
                 </button>
               )
             })}
-            {viewMode === 'extra-stats' && visibleNodes.map((node, index) => {
-              const center = px(node)
-              return <span key={`${node.id}-caption`} aria-hidden="true"
-                className="absolute whitespace-nowrap text-center text-[11px] font-semibold text-ink-on-dark-soft"
-                style={{ left: center.x, top: center.y + size / 2 + 10, transform: 'translateX(-50%)' }}>
-                Produce {index + 1} · TL{nodeUnlockLevel(template, node)}
-              </span>
-            })}
+
           </div>
         )}
       </div>
@@ -383,8 +364,7 @@ function NodeTile({
   content: LoadedContent
 }) {
   const lineage = node.kind === 'parent' || node.kind === 'grandparent'
-  const gem = node.kind === 'stat'
-  const side = gem ? size * 0.76 : size
+  const side = size
   const glow = tone ?? (lineage ? LINEAGE : ACCENT)
   const frame = open ? glow : upNext ? alpha(ACCENT, 70) : '#1c2733'
   const ring = selected ? `0 0 0 2px ${SOCKET}, 0 0 0 4px #fff, ` : ''
@@ -395,13 +375,11 @@ function NodeTile({
   const style: CSSProperties = {
     width: side,
     height: side,
-    borderRadius: lineage ? '9999px' : gem ? '22%' : '26%',
+    borderRadius: lineage ? '9999px' : '26%',
     border: `${open ? 2 : 1.5}px ${upNext ? 'dashed' : 'solid'} ${frame}`,
-    background: assignment?.kind === 'produce' || assignment?.kind === 'legacy-produce'
-      ? `linear-gradient(135deg, color-mix(in srgb, ${glow} 70%, white), ${glow} 55%, color-mix(in srgb, ${glow} 70%, black))`
-      : open ? 'linear-gradient(180deg, #16222e, #0c141c)' : SOCKET,
+    background: open ? 'linear-gradient(180deg, #16222e, #0c141c)' : SOCKET,
     boxShadow: `${ring}${lift}`,
-    transform: `${gem ? 'rotate(45deg)' : ''}${selected ? ' scale(1.08)' : ''}` || undefined,
+    transform: selected ? 'scale(1.08)' : undefined,
     transition: 'transform 160ms ease-out, box-shadow 160ms ease-out',
   }
 
@@ -410,16 +388,6 @@ function NodeTile({
     face = <AtlasSprite asset={getContentAsset(content, 'card-icons', assignment.cardId)} decorative className="h-full w-full" />
   } else if (assignment?.kind === 'lineage') {
     face = <UmaBust content={content} umaId={assignment.templateId} className="h-full w-full" />
-  } else if (assignment?.kind === 'produce') {
-    const crop = farmCropById(assignment.itemId)
-    face = crop ? <CropMark crop={crop} size={Math.max(22, size * 0.7)} /> : <span>?</span>
-  } else if (assignment?.kind === 'legacy-produce') {
-    face = (
-      <span className="flex flex-col items-center text-white">
-        <TypeIcon type={assignment.stat} size={Math.max(16, size * 0.48)} />
-        <span className="text-[7px] font-bold">LEGACY</span>
-      </span>
-    )
   } else if (open) {
     face = <span className="font-display font-bold leading-none" style={{ fontSize: size * 0.5, color: glow }}>+</span>
   } else if (upNext || lineage) {
@@ -434,9 +402,7 @@ function NodeTile({
 
   return (
     <span className="pointer-events-none relative flex items-center justify-center overflow-hidden" style={style}>
-      <span className="flex h-full w-full items-center justify-center" style={gem ? { transform: 'rotate(-45deg)' } : undefined}>
-        {face}
-      </span>
+      <span className="flex h-full w-full items-center justify-center">{face}</span>
     </span>
   )
 }
@@ -453,10 +419,5 @@ function LockGlyph({ size }: { size: number }) {
 function nodeLabel(node: ConstellationNode, open: boolean, opensAt: number, assignment: NodeAssignment | undefined): string {
   if (!open) return `Locked ${node.kind} node — opens at Training Level ${opensAt}`
   if (!assignment) return `Empty ${node.kind} node`
-  if (assignment.kind === 'legacy-produce') return `Produce node — legacy ${assignment.stat}`
-  if (assignment.kind === 'produce') {
-    const crop = farmCropById(assignment.itemId)
-    return crop ? `Produce node — ${crop.name}, ${crop.stat}` : 'Produce node — filled'
-  }
   return `${node.kind} node — filled`
 }

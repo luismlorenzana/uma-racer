@@ -13,10 +13,11 @@ import {
   createUmaBadgeState,
   createInitialSave,
   deriveUma,
-  ConstellationProduceConflictError,
+  toggleExtraStat,
   trainedScenario,
   constellationTemplate,
   isNodeUnlocked,
+  type ExtraStatNodeId,
   type NodeAssignment,
   type UmaSave,
   type RacePreferences,
@@ -116,7 +117,7 @@ import { settleTrainingExpBank } from './training-bank'
 import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
 import { installFarmHost, MemoryFarmHost, PersistentFarmHost } from './farm/host'
-import { consumePersistentProduce, type ConsumeProduceReceipt } from './produce'
+import { ExtraStatConflictError, unlockPersistentExtraStat, type UnlockExtraStatReceipt } from './extra-stats'
 
 const toRecord = (value: object): Record<string, unknown> => value as unknown as Record<string, unknown>
 
@@ -147,7 +148,7 @@ export class GameRuntime {
   private cardRedemptionLocks = new Set<string>()
   private umaRedemptionLocks = new Set<string>()
   private badgePreferenceLocks = new Set<string>()
-  private produceLocks = new Set<string>()
+  private extraStatLocks = new Set<string>()
   private exchangeLocked = false
   private memoryCardRedemptions = new Set<string>()
   private memoryUmaRedemptions = new Set<string>()
@@ -330,7 +331,7 @@ export class GameRuntime {
     this.memoryCardRedemptions.clear()
     this.memoryUmaRedemptions.clear()
     this.badgePreferenceLocks.clear()
-    this.produceLocks.clear()
+    this.extraStatLocks.clear()
     this.memoryExchangeSequence = 0
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
@@ -470,7 +471,7 @@ export class GameRuntime {
     return result.events.map((event) => event.id)
   }
 
-  /** Assigns or clears a Card or Lineage node. Produce has its own consuming transaction (D205). */
+  /** Assigns or clears a Card or Lineage node. Extra stats are bought and turned on beside the tree (D235). */
   async setConstellationNode(id: string, nodeId: string, assignment: NodeAssignment | null, tier?: number): Promise<void> {
     const generation = this.generation
     const state = useGame.getState()
@@ -481,9 +482,6 @@ export class GameRuntime {
     const run = trainedScenario(uma, tier)
     const node = constellationTemplate(run.tier).nodes.find((entry) => entry.id === nodeId)
     if (!node || node.kind === 'root') throw new Error('Unknown constellation node')
-    if (node.kind === 'stat' || assignment?.kind === 'produce' || assignment?.kind === 'legacy-produce') {
-      throw new Error('Produce nodes must be filled from the Produce picker')
-    }
     if (!isNodeUnlocked(constellationTemplate(run.tier), node, run.trainingLevel)) {
       throw new Error('That node is still locked')
     }
@@ -519,24 +517,19 @@ export class GameRuntime {
     this.schedule()
   }
 
-  async consumeConstellationProduce(input: {
-    umaId: string
-    tier: number
-    nodeId: string
-    itemId: string
-    expectedRevision: number
-  }): Promise<ConsumeProduceReceipt> {
-    const key = `${input.umaId}:${input.tier}:${input.nodeId}`
-    if (this.produceLocks.has(key)) throw new Error('That Produce node is already being updated')
-    this.produceLocks.add(key)
+  /** Buys a unit's next Extra stat node of one stat with that scenario's crop (D235). Needs local storage. */
+  async unlockExtraStat(input: { umaId: string; tier: number; nodeId: ExtraStatNodeId }): Promise<UnlockExtraStatReceipt> {
+    const key = `${input.umaId}:${input.tier}`
+    if (this.extraStatLocks.has(key)) throw new Error('That Extra stats grid is already being updated')
+    this.extraStatLocks.add(key)
     try {
       const generation = this.generation
       const content = this.content
       const state = useGame.getState()
-      if (!content || state.status !== 'ready' || !state.umas[input.umaId]) throw new Error('Constellation Uma must be owned')
-      if (!state.persistent) throw new Error('Produce consumption needs local storage')
+      if (!content || state.status !== 'ready' || !state.umas[input.umaId]) throw new Error('Training Uma must be owned')
+      if (!state.persistent) throw new Error('Buying Extra stats needs local storage')
       try {
-        const receipt = await consumePersistentProduce(content, { ...input, now: Date.now() })
+        const receipt = await unlockPersistentExtraStat(content, { ...input, now: Date.now() })
         if (generation !== this.generation) return receipt
         replaceUma(receipt.uma)
         await this.refreshBadges()
@@ -544,8 +537,8 @@ export class GameRuntime {
         this.schedule()
         return receipt
       } catch (error) {
-        // A stale screen must show the winning assignment before it asks the player to choose again.
-        if (error instanceof ConstellationProduceConflictError && generation === this.generation) {
+        // A stale screen must show the grid as it is before the player chooses again.
+        if (error instanceof ExtraStatConflictError && generation === this.generation) {
           const row = await db.umas.get(input.umaId)
           const latest = row ? parseUmaSave(row.data) : null
           if (latest) replaceUma(latest)
@@ -553,8 +546,40 @@ export class GameRuntime {
         throw error
       }
     } finally {
-      this.produceLocks.delete(key)
+      this.extraStatLocks.delete(key)
     }
+  }
+
+  /** Turns a bought Extra stat node on or off: free and reversible, six on at most (D235). */
+  async setExtraStatActive(id: string, tier: number, nodeId: ExtraStatNodeId, on: boolean): Promise<void> {
+    const generation = this.generation
+    const state = useGame.getState()
+    const uma = state.umas[id]
+    if (state.status !== 'ready' || !uma) throw new Error('Training Uma must be owned')
+    const run = trainedScenario(uma, tier)
+    const extraStats = toggleExtraStat(run.extraStats, nodeId, on)
+    const next: UmaSave = {
+      ...uma,
+      scenarios: uma.scenarios.map((entry) => (entry.tier === run.tier ? { ...entry, extraStats } : entry)),
+    }
+    if (!state.persistent) {
+      replaceUma(next)
+      return
+    }
+    const now = Date.now()
+    const content = this.content
+    await db.transaction('rw', [db.umas, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
+      const row = await db.umas.get(id)
+      if (!row) throw new Error('Local Uma is missing')
+      await db.umas.put({ ...row, data: next })
+      await queueInTransaction('umas', id, 'upsert', now)
+      if (content) await updateTrainingBadgeFacts({ content, uma: next, sourceId: `extra-stats:${id}:${run.tier}`, now })
+    })
+    if (generation !== this.generation) return
+    replaceUma(next)
+    await this.refreshBadges()
+    await this.refreshPending()
+    this.schedule()
   }
 
   async setUmaLoadout(id: string, skillIds: readonly string[], tier?: number): Promise<void> {

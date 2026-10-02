@@ -10,7 +10,6 @@ import {
   lineageEligibility,
   lineageUnlockLevel,
   nodeValue,
-  statNodeValue,
   cardNodeCap,
   cardNodeCount,
   cardSpPerNode,
@@ -23,19 +22,12 @@ import {
   type StatKey,
   type UmaTemplate,
   scenarioBuff,
-  buffedStatNodeValue,
   lineageSlotTakesAnyUma,
-  farmCropById,
-  farmCropFor,
-  produceAssignmentRevision,
-  produceAssignmentStat,
-  type FarmCropDefinition,
-  type InventoryStackData,
 } from '@racer/domain'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { getContentAsset, type LoadedContent } from '../content/runtime'
-import { consumeConstellationProduce, listProduceInventory, setConstellationNode } from '../game/actions'
+import { setConstellationNode } from '../game/actions'
 import { friendshipTrainingHref } from '../game/bond-links'
 import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -46,20 +38,15 @@ import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
 import { UmaPickerSheet, type UmaPickerSort } from '../ui/album/UmaPickerSheet'
 import { useTraining } from './TrainingScene'
 import { formatTickets } from '../ui/tickets'
-import { CropMark } from '../ui/farm/CropMark'
-import { TypeIcon } from '../ui/TypeIcon'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
-type NodeView = 'constellation' | 'inspiration' | 'extra-stats'
+type NodeView = 'constellation' | 'inspiration'
 
 export function InspirationScreen() { return <ConstellationScreen viewMode="inspiration" /> }
-export function ExtraStatsScreen() { return <ConstellationScreen viewMode="extra-stats" /> }
 
 const belongsToView = (node: ConstellationNode, viewMode: NodeView) =>
-  viewMode === 'constellation' ? node.kind === 'card'
-    : viewMode === 'inspiration' ? node.kind === 'parent' || node.kind === 'grandparent'
-      : node.kind === 'stat'
+  viewMode === 'constellation' ? node.kind === 'card' : node.kind === 'parent' || node.kind === 'grandparent'
 
 export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?: NodeView }) {
   const { content, save, uma, cards, umas, tickets } = useTraining()
@@ -70,9 +57,6 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
   // The lineage slot whose Uma picker is open (D181).
   const [lineageNode, setLineageNode] = useState<ConstellationNode | null>(null)
   const [busy, setBusy] = useState(false)
-  const [produceInventory, setProduceInventory] = useState<InventoryStackData[] | null>(null)
-  const [confirmCrop, setConfirmCrop] = useState<FarmCropDefinition | null>(null)
-  const [produceResult, setProduceResult] = useState<{ crop: FarmCropDefinition; before: number; after: number } | null>(null)
 
   const { derived, run } = uma
   const template = constellationTemplate(run.tier)
@@ -101,18 +85,6 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
     if (node && belongsToView(node, viewMode) && isNodeUnlocked(template, node, run.trainingLevel)) setOpenNode(node)
   }, [run.trainingLevel, searchParams, template, viewMode])
 
-  useEffect(() => {
-    if (openNode?.kind !== 'stat' || !persistent) return
-    let active = true
-    setProduceInventory(null)
-    void listProduceInventory(run.tier).then((inventory) => {
-      if (active) setProduceInventory(inventory)
-    }).catch((reason) => {
-      if (active) pushToast(reason instanceof Error ? reason.message : 'Could not read Produce inventory')
-    })
-    return () => { active = false }
-  }, [openNode?.id, openNode?.kind, persistent, pushToast, run.tier])
-
   const assign = async (nodeId: string, assignment: NodeAssignment | null) => {
     if (busy) return
     setBusy(true)
@@ -127,43 +99,12 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
     }
   }
 
-  const consumeProduce = async () => {
-    if (!openNode || openNode.kind !== 'stat' || !confirmCrop || busy) return
-    setBusy(true)
-    try {
-      const expectedRevision = produceAssignmentRevision(run.assignments[openNode.id])
-      if (expectedRevision === null) throw new Error('That node does not hold Produce')
-      const receipt = await consumeConstellationProduce({
-        umaId: save.templateId,
-        tier: run.tier,
-        nodeId: openNode.id,
-        itemId: confirmCrop.id,
-        expectedRevision,
-      })
-      setProduceInventory((current) => current?.map((stack) => stack.itemId === receipt.movement.itemId
-        ? { ...stack, quantity: receipt.quantityAfter }
-        : stack) ?? null)
-      setProduceResult({ crop: confirmCrop, before: receipt.quantityBefore, after: receipt.quantityAfter })
-      setConfirmCrop(null)
-    } catch (reason) {
-      pushToast(reason instanceof Error ? reason.message : 'Could not fill that Produce node')
-      try { setProduceInventory(await listProduceInventory(run.tier)) } catch { /* The original error is actionable. */ }
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const closeNode = () => {
-    setOpenNode(null)
-    setConfirmCrop(null)
-    setProduceResult(null)
-  }
+  const closeNode = () => setOpenNode(null)
 
   const visibleNodes = template.nodes.filter((node) => belongsToView(node, viewMode))
   const openCount = visibleNodes.filter((node) => isNodeUnlocked(template, node, run.trainingLevel)).length
   const filledCount = visibleNodes.filter((node) => run.assignments[node.id] !== undefined).length
   const buff = scenarioBuff(run.tier)
-  const statPay = buffedStatNodeValue(run.tier, statNodeValue(run.tier))
   const treeNodes = visibleNodes.length
   // An earlier trained unit keeps training toward TL10 (D190); her current scenario trains once started.
   const trainable = run.started || uma.past
@@ -201,7 +142,6 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
           </div>
         ))}
         {viewMode === 'inspiration' && <p className="mb-2 rounded-md bg-sunken px-3 py-2 text-[12px] text-ink-soft">Parents and grandparents lend skills and can raise aptitudes. These slots open at Training Levels 9 and 10.</p>}
-        {viewMode === 'extra-stats' && <p className="mb-2 rounded-md bg-sunken px-3 py-2 text-[12px] text-ink-soft">Fill Produce nodes with crops from your Farm. Each one gives a small boost to its crop's stat.</p>}
         {/* The scenario's buff is always on show (D165). */}
         <p className="mb-2 rounded-md border border-accent/40 bg-accent-wash px-3 py-1.5 text-[12px]">
           <span className="font-semibold">{buff.name}</span> <span className="text-ink-soft">· {buff.rule}</span>
@@ -209,12 +149,12 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
         {viewMode === 'constellation' && overCap.length > 0 && (
           <p role="status" className="mb-2 rounded-md bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">
             {overCap.map((row) => `${row.name} is on ${row.extra} node${row.extra === 1 ? '' : 's'} past its cap of ${nodeCap}`).join(' · ')}.
-            {' '}Those nodes pay nothing: move them to another card or a stat.
+            {' '}Those nodes pay nothing: move them to another card.
           </p>
         )}
         <div className="flex items-baseline justify-between">
           <p className="text-[11px] font-semibold">
-            {viewMode === 'constellation' ? 'Card constellation' : viewMode === 'inspiration' ? 'Inspiration' : 'Extra stats'} <span className="text-ink-faint">· {filledCount} filled · {openCount} of {treeNodes} unlocked</span>
+            {viewMode === 'constellation' ? 'Card constellation' : 'Inspiration'} <span className="text-ink-faint">· {filledCount} filled · {openCount} of {treeNodes} unlocked</span>
           </p>
         </div>
         {viewMode === 'inspiration' && <div className="mt-1 flex flex-wrap gap-1">
@@ -233,22 +173,20 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
         {openNode && (
           <div className="grid gap-1.5 px-4 pb-6">
             <div className="flex items-baseline justify-between">
-              <h3 className="text-sm font-semibold">{openNode.kind === 'stat' ? 'Produce node' : `${titleCase(openNode.kind)} node`}</h3>
+              <h3 className="text-sm font-semibold">{`${titleCase(openNode.kind)} node`}</h3>
               <span className="text-micro">
-                {openNode.kind === 'stat' ? `+${statPay} stat` : openNode.kind === 'card' ? `up to ${nodeValue(run.tier)} raw points` : 'baseline skills'}
+                {openNode.kind === 'card' ? `up to ${nodeValue(run.tier)} raw points` : 'baseline skills'}
               </span>
             </div>
 
-            {openNode.kind !== 'stat' && (
-              <button
-                type="button"
-                disabled={busy}
-                className="min-h-[44px] rounded-sm bg-sunken px-3 text-left text-sm font-semibold"
-                onClick={() => void assign(openNode.id, null)}
-              >
-                Leave empty
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={busy}
+              className="min-h-[44px] rounded-sm bg-sunken px-3 text-left text-sm font-semibold"
+              onClick={() => void assign(openNode.id, null)}
+            >
+              Leave empty
+            </button>
 
             {openNode.kind === 'card' && (run.cardSetIds.length === 0
               ? <p className="py-2 text-[11px] text-ink-soft">Pick a card set before filling card nodes.</p>
@@ -296,22 +234,6 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
                 )
               }))}
 
-            {openNode.kind === 'stat' && (
-              <ProduceNodeContents
-                assignment={run.assignments[openNode.id]}
-                tier={run.tier}
-                statPay={statPay}
-                inventory={produceInventory}
-                persistent={persistent}
-                busy={busy}
-                confirmCrop={confirmCrop}
-                result={produceResult}
-                onChoose={setConfirmCrop}
-                onBack={() => { setConfirmCrop(null); setProduceResult(null) }}
-                onConfirm={() => void consumeProduce()}
-              />
-            )}
-
             {(openNode.kind === 'parent' || openNode.kind === 'grandparent') && (
               <LineageSlot
                 busy={busy}
@@ -349,139 +271,6 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
 const currentLineageId = (assignment: NodeAssignment | undefined): string | null =>
   assignment?.kind === 'lineage' ? assignment.templateId : null
 
-export function ProduceNodeContents({
-  assignment,
-  tier,
-  statPay,
-  inventory,
-  persistent,
-  busy,
-  confirmCrop,
-  result,
-  onChoose,
-  onBack,
-  onConfirm,
-}: {
-  assignment: NodeAssignment | undefined
-  tier: number
-  statPay: number
-  inventory: InventoryStackData[] | null
-  persistent: boolean
-  busy: boolean
-  confirmCrop: FarmCropDefinition | null
-  result: { crop: FarmCropDefinition; before: number; after: number } | null
-  onChoose: (crop: FarmCropDefinition) => void
-  onBack: () => void
-  onConfirm: () => void
-}) {
-  const currentStat = produceAssignmentStat(assignment, tier)
-  const currentCrop = assignment?.kind === 'produce' ? farmCropById(assignment.itemId) : null
-
-  if (result) {
-    return (
-      <div className="grid gap-3" role="status">
-        <div className="flex items-center gap-3 rounded-md bg-go/10 p-3">
-          <CropMark crop={result.crop} size={58} />
-          <div className="min-w-0">
-            <p className="text-micro text-go">Produce set</p>
-            <p className="truncate font-display text-lg font-bold">{result.crop.name}</p>
-            <p className="flex items-center gap-1 text-[12px] text-ink-soft">
-              <TypeIcon type={result.crop.stat} size={17} /> {titleCase(result.crop.stat)} +{statPay}
-            </p>
-          </div>
-        </div>
-        <p className="rounded-sm bg-sunken px-3 py-2 text-[12px]">
-          Inventory <strong>{result.before} → {result.after}</strong>. The live stat strip above now reflects this node.
-        </p>
-        <Link
-          to={`/farm/items?item=${encodeURIComponent(result.crop.id)}`}
-          className="flex min-h-11 items-center justify-center rounded-sm bg-accent px-3 text-sm font-bold text-ink"
-        >
-          View {result.crop.name} in Items
-        </Link>
-        <button type="button" onClick={onBack} className="min-h-11 rounded-sm bg-sunken px-3 text-sm font-semibold">
-          Replace again
-        </button>
-      </div>
-    )
-  }
-
-  if (confirmCrop) {
-    const quantity = inventory?.find((stack) => stack.itemId === confirmCrop.id)?.quantity ?? 0
-    const sameStat = currentStat === confirmCrop.stat
-    const delta = currentStat === null
-      ? `${titleCase(confirmCrop.stat)} +${statPay}`
-      : sameStat
-        ? `Stats stay the same · ${titleCase(confirmCrop.stat)} +${statPay}`
-        : `${titleCase(currentStat)} −${statPay} · ${titleCase(confirmCrop.stat)} +${statPay}`
-    return (
-      <div className="grid gap-3">
-        <div className="flex items-center gap-3 rounded-md bg-sunken p-3">
-          <CropMark crop={confirmCrop} size={58} />
-          <div>
-            <p className="font-display text-lg font-bold">Use {confirmCrop.name}?</p>
-            <p className="flex items-center gap-1 text-[12px] text-ink-soft"><TypeIcon type={confirmCrop.stat} size={17} />{delta}</p>
-          </div>
-        </div>
-        <p className="text-[12px] text-ink-soft">
-          Consume 1 crop · inventory {quantity} → {Math.max(0, quantity - 1)}. Replacing Produce does not refund the crop already in this node.
-        </p>
-        <button
-          type="button"
-          disabled={busy || quantity <= 0}
-          onClick={onConfirm}
-          className="min-h-11 rounded-sm bg-accent px-3 text-sm font-bold text-ink disabled:opacity-40"
-        >
-          {busy ? 'Setting Produce…' : `Consume 1 ${confirmCrop.name}`}
-        </button>
-        <button type="button" disabled={busy} onClick={onBack} className="min-h-11 rounded-sm bg-sunken px-3 text-sm font-semibold">
-          Back to crops
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid gap-2">
-      {assignment && (
-        <div className="flex min-h-11 items-center gap-2 rounded-sm bg-sunken px-3 py-2">
-          {currentCrop ? <CropMark crop={currentCrop} size={36} /> : currentStat ? <TypeIcon type={currentStat} size={32} /> : null}
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold">{currentCrop?.name ?? `Legacy ${currentStat ? titleCase(currentStat) : 'Produce'}`}</span>
-            <span className="text-micro">Current · {currentStat ? `${titleCase(currentStat)} +${statPay}` : 'no valid effect'}</span>
-          </span>
-        </div>
-      )}
-      <p className="text-[11px] text-ink-soft">
-        Choose one crop grown for this scenario. A crop is consumed on first fill and every replacement; Produce cannot be removed for a refund.
-      </p>
-      {!persistent && <p className="rounded-sm bg-danger/10 px-3 py-2 text-[12px] font-semibold text-danger">Produce needs local storage and is unavailable in memory-only mode.</p>}
-      {persistent && inventory === null && <p className="py-4 text-center text-[12px] text-ink-soft">Reading Item inventory…</p>}
-      {persistent && inventory?.map((stack) => {
-        const crop = farmCropFor(tier, stack.itemId.split(':').at(-1) as StatKey)
-        if (!crop || crop.id !== stack.itemId) return null
-        return (
-          <button
-            key={crop.id}
-            type="button"
-            disabled={busy || stack.quantity <= 0}
-            onClick={() => onChoose(crop)}
-            className="flex min-h-[52px] items-center gap-3 rounded-sm bg-panel px-3 py-2 text-left disabled:opacity-40"
-          >
-            <CropMark crop={crop} size={42} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">{crop.name}</span>
-              <span className="flex items-center gap-1 text-micro"><TypeIcon type={crop.stat} size={15} />{titleCase(crop.stat)} +{statPay}</span>
-            </span>
-            <span className="text-sm font-bold">×{stack.quantity}</span>
-          </button>
-        )
-      })}
-      <p className="text-[10px] text-ink-faint">Only Tier {tier} crops fit this constellation. Out-of-stock crops stay visible but cannot be selected.</p>
-    </div>
-  )
-}
-
 function LockedNote({
   node,
   template,
@@ -500,7 +289,7 @@ function LockedNote({
     <p className="pt-1 text-[11px] text-ink-soft">
       {required !== null
         ? `Locked — opens at Training Level ${required}.`
-        : `Locked — Training Levels 1–8 open the tree, and ${unlockedNodeCount(template.tier, trainingLevel)} of ${template.cardNodes + template.statNodes} are open at TL ${trainingLevel}.`}
+        : `Locked — Training Levels 1–8 open the card nodes, and ${unlockedNodeCount(template.tier, trainingLevel)} of ${template.cardNodes} are open at TL ${trainingLevel}.`}
     </p>
   )
 }

@@ -590,6 +590,38 @@ describe('save v6 over the wire', () => {
     expect(older.writes).toEqual([])
   })
 
+  it('accepts v12: each unit\'s Extra stats grid, no Produce in the tree, and unlock evidence (D235)', () => {
+    const grid = { unlocked: { speed: 2, stamina: 4, power: 0, guts: 0, wit: 1 }, active: ['speed-1', 'stamina-1', 'stamina-2', 'stamina-3', 'stamina-4', 'wit-1'] }
+    const run = { ...uma.scenarios[0]!, extraStats: grid }
+    const v12 = { ...uma, schemaVersion: 12, racePreferences: null, scenarios: [run] }
+    const sync = (kind: string, data: unknown) => parseSyncRequest({ upserts: [{ kind, id: kind === 'profile' ? 'main' : '100101', baseVersion: 3, data }] })
+    expect(sync('umas', v12)).toMatchObject({ upserts: [{ kind: 'umas', data: { schemaVersion: 12 } }] })
+    expect(sync('umas', { ...v12, scenarios: [{ ...run, extraStats: { ...grid, active: [...grid.active, 'speed-2'] } }] })).toMatch(/invalid umas data/)
+    expect(sync('umas', { ...v12, scenarios: [{ ...run, extraStats: { ...grid, active: ['power-1'] } }] })).toMatch(/invalid umas data/)
+    expect(sync('umas', { ...v12, scenarios: [{ ...run, extraStats: { ...grid, active: ['wit-1', 'speed-1'] } }] })).toMatch(/invalid umas data/)
+    expect(sync('umas', { ...v12, scenarios: [{ ...run, extraStats: { ...grid, unlocked: { ...grid.unlocked, guts: 5 } } }] })).toMatch(/invalid umas data/)
+    expect(sync('umas', { ...v12, scenarios: [uma.scenarios[0]!] })).toMatch(/invalid umas data/)
+    expect(sync('umas', { ...v12, scenarios: [{ ...run, assignments: { 'n20': { kind: 'legacy-produce', stat: 'speed' } } }] })).toMatch(/invalid umas data/)
+    // A v11 row may not carry a grid.
+    expect(sync('umas', { ...v12, schemaVersion: 11 })).toMatch(/invalid umas data/)
+    expect(sync('profile', { ...profile, schemaVersion: 12, trainingExpBank: 30 })).toMatchObject({ upserts: [{ kind: 'profile' }] })
+
+    const append = (data: Record<string, unknown>) => parseSyncRequest({ appends: [{ kind: 'itemLedger', id: data.id, data, createdAt: data.createdAt }] })
+    const unlock = { id: 'extra:100101:1:stamina-3', itemId: 'produce:t1:stamina', delta: -3, reason: 'extra-stat-unlock',
+      source: { kind: 'extra-stat-unlock', umaId: '100101', tier: 1, nodeId: 'stamina-3' }, createdAt: 9 }
+    expect(append(unlock)).toMatchObject({ appends: [{ kind: 'itemLedger' }] })
+    expect(append({ ...unlock, delta: -1 })).toMatch(/invalid itemLedger data/)
+    expect(append({ ...unlock, itemId: 'produce:t1:speed' })).toMatch(/invalid itemLedger data/)
+    expect(append({ ...unlock, id: 'extra:100101:1:stamina-2' })).toMatch(/invalid itemLedger data/)
+
+    // A v11 row never replaces a v12 one.
+    const stored: EntityRecord = { kind: 'umas', id: '100101', version: 4, data: v12, deleted: false, updatedAt: 1 }
+    const older = resolveUpserts(new Map([['umas/100101', stored]]), [{
+      kind: 'umas', id: '100101', baseVersion: 4, data: { ...uma, schemaVersion: 11, racePreferences: null },
+    }], 2)
+    expect(older.writes).toEqual([])
+  })
+
   it('never lets a v8 Uma replace a v9 Uma', () => {
     const v9 = {
       ...uma,

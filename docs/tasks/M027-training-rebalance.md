@@ -21,8 +21,8 @@ Source of truth once each task lands: [Training](../design/training.md),
 - **Measured** with `pnpm sim:spark` on 2026-09-30: TL1→10 takes a median of **12** paid runs (p90 13). The same
   sample with a flat 1,250 per level takes **6** (p90 8).
 - **TL10 ends Spark** for that unit, and the run that reaches it throws its surplus away (`addTrainingExp` zeroes it).
-- **Training Level still opens nodes in all three views:** the baseline at TL1, card and Produce nodes over TL2–8, and
-  lineage at TL9 and TL10. The `max(base, 50 × TL)` stat floor and the SP baseline (`TL / 10` of 40% of the cap) also
+- **Training Level opens card nodes over TL1–8 and lineage at TL9 and TL10** (D235; Extra stats are bought with Farm
+  crops and no longer read TL). The `max(base, 50 × TL)` stat floor and the SP baseline (`TL / 10` of 40% of the cap) also
   read TL.
 - **The global Item inventory** (M025, `items` and `itemLedger`) holds only `produce` today. Its item ids are validated
   as crop ids on the API, and its ledger reasons are `farm-harvest` and `constellation-produce`.
@@ -73,7 +73,7 @@ Each PR runs `pnpm lint`, `pnpm test`, `pnpm build` and the sims it names. The m
 ## Out of scope
 
 - The Inspiration minigame and whether lineage keeps opening at TL9–10 (ChatGPT's minigame decides its own gate).
-- Extra Stats and Produce. The Farm already feeds them (D205).
+- Extra Stats. The Farm feeds them (D235).
 - Rival Circuit rules, rewards per run, difficulty by TL, and Training Ticket prices.
 - Running Spark on a TL10 unit to fill the bank (D212).
 - Any other use of Level-Up Tickets: other screens, other currencies, selling or exchanging.

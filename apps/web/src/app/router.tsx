@@ -112,7 +112,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'extra-stats',
-        lazy: async () => ({ Component: (await import('../screens/ConstellationScreen')).ExtraStatsScreen }),
+        lazy: async () => ({ Component: (await import('../screens/ExtraStatsScreen')).ExtraStatsScreen }),
       },
     ],
   },

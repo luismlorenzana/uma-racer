@@ -1,4 +1,5 @@
 import {
+  parseLegacyPlayerProfileV11,
   migrateFarmStateToCurrent,
   parseFarmState,
   parseCardSave,
@@ -359,6 +360,8 @@ class RacerDb extends Dexie {
     this.version(19).stores(storesWithBattleJournal)
     // Farm v2 (D234): uncapped Farming Levels, Sections of numbered plots.
     this.version(20).stores(storesWithBattleJournal).upgrade(migrateFarmRow)
+    // Save v12 (D235): every Uma and the profile walk forward; Produce nodes become each unit's Extra stats grid.
+    this.version(21).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
   }
 }
 
@@ -437,10 +440,11 @@ async function walkRowsToCurrent(tx: Transaction): Promise<void> {
     await queue('umas', row.id)
   }
 
-  // What the v11 re-levelling carried past TL10 is banked on the profile it migrated with, once (D212). Startup turns
-  // every full level of it into a Level-Up Ticket, where the item tables always exist.
+  // What the v11 re-levelling carried past TL10 is banked on the profile it migrated with, once (D212); a v11 profile
+  // already banked it, and only takes v12's stamp. Startup turns every full level of it into a Level-Up Ticket.
   if (profileRow && migratedProfile) {
-    await profileTable.put({ ...profileRow, data: { ...migratedProfile, trainingExpBank: migratedProfile.trainingExpBank + surplusExp } })
+    const bank = parseLegacyPlayerProfileV11(profileRow.data) ? 0 : surplusExp
+    await profileTable.put({ ...profileRow, data: { ...migratedProfile, trainingExpBank: migratedProfile.trainingExpBank + bank } })
     await queue('profile', 'main')
   }
 

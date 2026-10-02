@@ -1,6 +1,6 @@
 import { emptySubject } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
-import { constellationTemplate, createUmaBadgeState, createUmaSave, farmCropFor, type RaceAccomplishmentFactsV1, type RaceResultRecord, type UmaTemplate } from '@racer/domain'
+import { constellationTemplate, createUmaBadgeState, createUmaSave, type RaceAccomplishmentFactsV1, type RaceResultRecord, type UmaTemplate } from '@racer/domain'
 import { courseRecordIdsForResult, trainingSnapshot } from './badges'
 
 const template: UmaTemplate = {
@@ -35,30 +35,14 @@ describe('course record evidence', () => {
   })
 })
 
-describe('Produce badge facts', () => {
-  it('treats a full legacy tree and a full crop tree as the same Full House fact', () => {
+describe('Full House', () => {
+  it('counts a tree full when every card node is filled; Extra stats sit beside it (D235)', () => {
     const save = createUmaSave(template)
-    const statNodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'stat')
     const cardNodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'card')
-    const common = Object.fromEntries(cardNodes.map((node) => [node.id, { kind: 'card' as const, cardId: `card-${node.id}` }]))
-    const legacy = {
-      ...save,
-      scenarios: [{ ...save.scenarios[0]!, assignments: {
-        ...common,
-        ...Object.fromEntries(statNodes.map((node) => [node.id, { kind: 'legacy-produce' as const, stat: 'speed' as const }])),
-      } }],
-    }
-    const produce = {
-      ...save,
-      scenarios: [{ ...save.scenarios[0]!, assignments: {
-        ...common,
-        ...Object.fromEntries(statNodes.map((node, index) => {
-          const stats = ['speed', 'stamina', 'power', 'guts', 'wit'] as const
-          return [node.id, { kind: 'produce' as const, itemId: farmCropFor(1, stats[index % stats.length]!)!.id, revision: 1 }]
-        })),
-      } }],
-    }
-    expect(trainingSnapshot(legacy, new Map()).fullTreeTiers).toEqual([1])
-    expect(trainingSnapshot(produce, new Map())).toEqual(trainingSnapshot(legacy, new Map()))
+    const full = Object.fromEntries(cardNodes.map((node) => [node.id, { kind: 'card' as const, cardId: `card-${node.id}` }]))
+    const tree = (assignments: typeof full) => ({ ...save, scenarios: [{ ...save.scenarios[0]!, assignments }] })
+    expect(trainingSnapshot(tree(full), new Map()).fullTreeTiers).toEqual([1])
+    const { [cardNodes[0]!.id]: _first, ...missingOne } = full
+    expect(trainingSnapshot(tree(missingOne), new Map()).fullTreeTiers).toEqual([])
   })
 })

@@ -98,6 +98,7 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     cardSetIds: scenario.cardSetIds,
     umaTemplate: input.umaTemplate,
     cards,
+    extraStats: scenario.extraStats,
     // Trackblazer's Climax counts the career goals she has won in this scenario (D165).
     goalsWon: scenario.journey?.goals.filter((goal) => goal.status === 'completed').length ?? 0,
   })

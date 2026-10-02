@@ -27,7 +27,7 @@ Items/Inspiration implementation on `main`.
    present; branch B if old TL≥10 or any B-branch assignment is present. Preserve those assignments and derived
    stats/skills. Do **not** issue tokens for grandfathered branches, spend tokens retroactively or change TL. Migrate
    local Dexie and older cloud copies exactly once; compare derived pre/post build on synthetic TL8/9/10 saves.
-2. Refactor lineage unlock checks through the explicit branch state, while card/Produce checks still use TL. This
+2. Refactor lineage unlock checks through the explicit branch state, while card checks still use TL (Extra stats ignore TL since D235). This
    affects `packages/domain/src/constellation.ts` (`isNodeUnlocked`, `unlockedNodes`, `nodesUnlockedBetween`,
    `deriveStats`), `packages/domain/src/derived.ts`, web runtime assignment validation, Constellation graph and
    Inspiration screen, Spark result links/tests and any caller found by `rg isNodeUnlocked`. A TL9/10 Spark result

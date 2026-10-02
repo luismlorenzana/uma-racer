@@ -5,6 +5,7 @@ import {
   MAX_STARS,
   constellationTemplate,
   deriveStats,
+  extraStatsFromProduce,
   parseRaceCondition,
   rollRivalField,
   rollRivalSkills,
@@ -113,9 +114,17 @@ export interface BuildOptions {
 }
 
 /**
+ * The six Extra stats a build turns on (D235): four of the stat it leans on, the most a stat holds, and two of the stat
+ * that best backs it up (Guts behind Stamina, which spends less HP on the spurt; Power behind Speed).
+ */
+const EXTRA_BACKUP: Record<StatKey, StatKey> = { speed: 'power', stamina: 'guts', power: 'speed', guts: 'stamina', wit: 'speed' }
+export const buildExtraStats = (stat: StatKey) =>
+  extraStatsFromProduce([stat, stat, stat, stat, EXTRA_BACKUP[stat], EXTRA_BACKUP[stat]])
+
+/**
  * Race stats for a six-card set, current era, maxed unless `stars` says otherwise. The card at `leanIndex` takes `lean`
  * nodes, any `first` cards fill to their cap, Speed then Wit fill what is left up to the per-card cap, and the Friend
- * card takes its fair share first or last.
+ * card takes its fair share first or last. Six Extra stats lean on `statNodesTo` at any Training Level.
  */
 export function buildStats(tier: number, deck: CardType[], leanIndex: number, lean: number, statNodesTo: StatKey, options: BuildOptions = {}): Stats {
   const trainingLevel = options.trainingLevel ?? 10
@@ -151,9 +160,9 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
   for (const node of [...template.nodes].sort((a, b) => a.order - b.order)) {
     if (node.order >= open) continue
     if (node.kind === 'card' && queue.length > 0) assignments[node.id] = { kind: 'card', cardId: queue.shift()! }
-    if (node.kind === 'stat') assignments[node.id] = { kind: 'legacy-produce', stat: statNodesTo }
   }
-  return deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards }).stats
+  return deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards,
+    extraStats: buildExtraStats(statNodesTo) }).stats
 }
 
 /**

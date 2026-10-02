@@ -97,6 +97,18 @@ export interface ConstellationProduceMovement {
   createdAt: number
 }
 
+/** A stat's next Extra stat node, bought with that many of the scenario's crop for the stat (D235). */
+export interface ExtraStatUnlockMovement {
+  /** `extra:<umaId>:<tier>:<nodeId>`: a node is bought once. */
+  id: string
+  itemId: FarmCropId
+  /** Minus the node's position in its row: 1, 2, 3 or 4 crops. */
+  delta: number
+  reason: 'extra-stat-unlock'
+  source: { kind: 'extra-stat-unlock'; umaId: string; tier: number; nodeId: `${StatKey}-${1 | 2 | 3 | 4}` }
+  createdAt: number
+}
+
 /** The Training Level-Up Ticket (D212): one Training Level's EXP, paid by the Training EXP bank. */
 export const TRAINING_LEVEL_UP_TICKET_ID = 'training:level-up-ticket' as const
 
@@ -130,7 +142,12 @@ export interface TrainingLevelUpMovement {
 }
 
 /** Append-only evidence from which item quantities and Farm harvest XP can be repaired. */
-export type ItemLedgerEntry = FarmHarvestMovement | ConstellationProduceMovement | TrainingExpBankMovement | TrainingLevelUpMovement
+export type ItemLedgerEntry =
+  | FarmHarvestMovement
+  | ConstellationProduceMovement
+  | ExtraStatUnlockMovement
+  | TrainingExpBankMovement
+  | TrainingLevelUpMovement
 
 type UnknownRecord = Record<string, unknown>
 
@@ -295,11 +312,38 @@ function parseTrainingTicketMovement(value: unknown): TrainingExpBankMovement | 
     : null
 }
 
+const EXTRA_STAT_NODE_PATTERN = /^(speed|stamina|power|guts|wit)-([1-4])$/
+
+function parseExtraStatUnlockMovement(value: unknown): ExtraStatUnlockMovement | null {
+  if (!isRecord(value) || !exactKeys(value, ['createdAt', 'delta', 'id', 'itemId', 'reason', 'source']) ||
+    value.reason !== 'extra-stat-unlock' || typeof value.id !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.id) ||
+    !cropId(value.itemId) || !safeInteger(value.createdAt) || !isRecord(value.source) ||
+    !exactKeys(value.source, ['kind', 'nodeId', 'tier', 'umaId']) || value.source.kind !== 'extra-stat-unlock' ||
+    typeof value.source.umaId !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.source.umaId) ||
+    !safeInteger(value.source.tier, 1) || value.source.tier > FARM_CROP_TIERS || typeof value.source.nodeId !== 'string') return null
+  const node = EXTRA_STAT_NODE_PATTERN.exec(value.source.nodeId)
+  const crop = FARM_CROP_ID_PATTERN.exec(value.itemId)
+  // The crop is the node's stat for the unit's scenario, and the spend is the node's place in its row.
+  if (!node || !crop || Number(crop[1]) !== value.source.tier || crop[2] !== node[1] || value.delta !== -Number(node[2]) ||
+    value.id !== `extra:${value.source.umaId}:${value.source.tier}:${value.source.nodeId}`) return null
+  return {
+    id: value.id,
+    itemId: value.itemId,
+    delta: value.delta,
+    reason: 'extra-stat-unlock',
+    source: { kind: 'extra-stat-unlock', umaId: value.source.umaId, tier: value.source.tier,
+      nodeId: value.source.nodeId as ExtraStatUnlockMovement['source']['nodeId'] },
+    createdAt: value.createdAt,
+  }
+}
+
 export function parseItemLedgerEntry(value: unknown): ItemLedgerEntry | null {
   const harvest = parseFarmHarvestMovement(value)
   if (harvest) return harvest
   const training = parseTrainingTicketMovement(value)
   if (training) return training
+  const extra = parseExtraStatUnlockMovement(value)
+  if (extra) return extra
   if (!isRecord(value) || !exactKeys(value, ['createdAt', 'delta', 'id', 'itemId', 'reason', 'source']) ||
     typeof value.id !== 'string' || !FARM_SAFE_ID_PATTERN.test(value.id) || !cropId(value.itemId) ||
     value.delta !== -1 || value.reason !== 'constellation-produce' || !safeInteger(value.createdAt) ||

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { emptyExtraStats } from './extra-stats'
 import { CARD_EFFECTS, type CardEffect } from './cards'
 import type { SupportCardTemplate } from './content'
 import { createCardSave } from './save'
@@ -106,13 +107,14 @@ describe('support deck validation', () => {
 
 describe('withCardSet', () => {
   const run = (cardSetIds: string[], assignments: ScenarioTraining['assignments']): ScenarioTraining => ({
-    tier: 1, trainingLevel: 8, trainingExp: 0, cardSetIds, assignments, loadoutSkillIds: [], journey: null, started: true,
+    tier: 1, trainingLevel: 8, trainingExp: 0, cardSetIds, assignments, extraStats: emptyExtraStats(), loadoutSkillIds: [],
+    journey: null, started: true,
   })
   const base = run(['a', 'b', 'c'], {
     n1: { kind: 'card', cardId: 'a' },
     n2: { kind: 'card', cardId: 'a' },
     n3: { kind: 'card', cardId: 'b' },
-    s1: { kind: 'legacy-produce', stat: 'speed' },
+    p0: { kind: 'lineage', templateId: 'ancestor' },
   })
 
   it('hands a replaced card\'s nodes to the card that took its slot', () => {
@@ -120,14 +122,14 @@ describe('withCardSet', () => {
     expect(next.cardSetIds).toEqual(['x', 'b', 'c'])
     expect(cardNodeCount(next, 'x')).toBe(2)
     expect(cardNodeCount(next, 'a')).toBe(0)
-    expect(next.assignments.s1).toEqual({ kind: 'legacy-produce', stat: 'speed' })
+    expect(next.assignments.p0).toEqual({ kind: 'lineage', templateId: 'ancestor' })
   })
 
   it('empties the nodes of a card removed outright', () => {
     const next = withCardSet(base, ['b', 'c'])
     expect(cardNodeCount(next, 'a')).toBe(0)
     expect(cardNodeCount(next, 'b')).toBe(1)
-    expect(Object.keys(next.assignments).sort()).toEqual(['n3', 's1'])
+    expect(Object.keys(next.assignments).sort()).toEqual(['n3', 'p0'])
   })
 
   it('keeps every node when cards only change order', () => {
@@ -172,10 +174,10 @@ describe('cardNodeCapIssue', () => {
     expect(cardNodeCapIssue(run(four), 'e', { kind: 'card', cardId: 'x' })).toMatch(/already fills its 4 nodes/)
   })
 
-  it('allows moving a card between nodes it holds, other cards, stats and clearing', () => {
+  it('allows moving a card between nodes it holds, other cards, lineage and clearing', () => {
     expect(cardNodeCapIssue(run(four), 'a', { kind: 'card', cardId: 'x' })).toBeNull()
     expect(cardNodeCapIssue(run(four), 'e', { kind: 'card', cardId: 'y' })).toBeNull()
-    expect(cardNodeCapIssue(run(four), 'e', { kind: 'legacy-produce', stat: 'speed' })).toBeNull()
+    expect(cardNodeCapIssue(run(four), 'e', { kind: 'lineage', templateId: 'ancestor' })).toBeNull()
     expect(cardNodeCapIssue(run(four), 'e', null)).toBeNull()
   })
 })

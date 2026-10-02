@@ -301,8 +301,8 @@ function positionHint(node: ConstellationNode): string {
 /** Human-readable constellation summary; internal node ids never reach the player. */
 export function minigameNodeLabel(node: ConstellationNode): string {
   const kind = node.kind === 'parent' ? 'Parent' : node.kind === 'grandparent' ? 'Grandparent' :
-    node.kind === 'card' ? 'Card' : node.kind === 'stat' ? 'Stat' : 'Root'
-  const ordinal = node.kind === 'card' || node.kind === 'stat' ? ` ${node.order + 1}` : ''
+    node.kind === 'card' ? 'Card' : 'Root'
+  const ordinal = node.kind === 'card' ? ` ${node.order + 1}` : ''
   return `${kind} node${ordinal} · ${positionHint(node)}`
 }
 

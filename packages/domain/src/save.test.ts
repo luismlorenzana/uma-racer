@@ -1,6 +1,7 @@
 import { subject } from './__fixtures__/subject'
 import { MAX_STARS } from './cards'
-import { constellationTemplate, starNodePct } from './constellation'
+import { constellationTemplate, legacyProduceNodeIds, starNodePct } from './constellation'
+import { emptyExtraStats, type ExtraStats } from './extra-stats'
 import { describe, expect, it } from 'vitest'
 import type { SupportCardTemplate, UmaTemplate } from './content'
 import { createUmaBadgeState } from './badges'
@@ -42,6 +43,11 @@ const aptitudes = {
 } as const
 
 /** A profile as schemas 1–10 stored it: the same fields, before v11's Training EXP bank (D212). */
+/** A v5–v11 Uma made from today's: the same, without the Extra stats grid (D235). */
+function legacyUma<V extends number>(save: UmaSave, schemaVersion: V) {
+  return { ...save, schemaVersion, scenarios: save.scenarios.map(({ extraStats: _grid, ...run }) => run) }
+}
+
 function legacyProfile<V extends number>(schemaVersion: V, overrides: Record<string, unknown> = {}) {
   const { trainingExpBank: _bank, ...body } = createPlayerProfile('v1', 1)
   return { ...body, ...overrides, schemaVersion }
@@ -109,7 +115,7 @@ describe('save initialization', () => {
     // A new Uma starts with one scenario at tier 1 and nothing configured in it.
     expect(result.umas[0]!.unlockedTier).toBe(1)
     expect(result.umas[0]!.scenarios).toEqual([{
-      tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {},
+      tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {}, extraStats: emptyExtraStats(),
       loadoutSkillIds: [], journey: null, started: false,
     }])
   })
@@ -178,8 +184,8 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 12 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 12 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 13 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 13 })).toThrow(/App update required/)
     expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), trainingExpBank: -1 })).toBeNull()
   })
 
@@ -253,12 +259,24 @@ describe('save parsing', () => {
     const run = save.scenarios[0]!
     expect(parseUmaSave({ ...save, skillHistory: [...save.skillHistory, ...save.skillHistory] })).toBeNull()
     const realNodeId = constellationTemplate(1).nodes.find((node) => node.kind === 'card')!.id
-    const produceNodeId = constellationTemplate(1).nodes.find((node) => node.kind === 'stat')!.id
+    const oldProduceId = legacyProduceNodeIds(1)[0]!
     expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'nonsense' } } }] })).toBeNull()
     expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'stat', stat: 'nope' } } }] })).toBeNull()
-    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [produceNodeId]: { kind: 'legacy-produce', stat: 'speed' } } }] })).not.toBeNull()
-    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [produceNodeId]: { kind: 'produce', itemId: 'produce:t1:speed', revision: 1 } } }] })).not.toBeNull()
-    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [produceNodeId]: { kind: 'produce', itemId: 'produce:t2:speed', revision: 1 } } }] })).toBeNull()
+    // v12 holds no Produce: on a card node it is malformed, and the old Produce ids are stale keys, dropped (D235).
+    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'legacy-produce', stat: 'speed' } } }] })).toBeNull()
+    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [oldProduceId]: { kind: 'legacy-produce', stat: 'speed' } } }] })
+      ?.scenarios[0]?.assignments).toEqual({})
+    // The Extra stats grid: counts 0–4, at most six active nodes, each bought, in grid order.
+    const grid = (extraStats: unknown) => parseUmaSave({ ...save, scenarios: [{ ...run, extraStats }] })
+    const unlocked = { speed: 4, stamina: 2, power: 0, guts: 0, wit: 1 }
+    expect(grid({ unlocked, active: ['speed-1', 'speed-2', 'speed-3', 'speed-4', 'stamina-1', 'wit-1'] })).not.toBeNull()
+    expect(grid({ unlocked, active: ['speed-1', 'speed-2', 'speed-3', 'speed-4', 'stamina-1', 'stamina-2', 'wit-1'] })).toBeNull()
+    expect(grid({ unlocked, active: ['power-1'] })).toBeNull()
+    expect(grid({ unlocked, active: ['stamina-1', 'speed-1'] })).toBeNull()
+    expect(grid({ unlocked: { ...unlocked, guts: 5 }, active: [] })).toBeNull()
+    expect(grid({ unlocked, active: [], extra: true })).toBeNull()
+    const { extraStats: _grid, ...withoutGrid } = run
+    expect(parseUmaSave({ ...save, scenarios: [withoutGrid] })).toBeNull()
     // A journey must belong to the run that holds it.
     expect(parseUmaSave({ ...save, scenarios: [{ ...run, journey: {
       tier: 2, tracking: 'tracked', state: 'active', completedAt: null, goals: [],
@@ -322,7 +340,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 12 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 13 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
@@ -363,10 +381,7 @@ describe('save parsing', () => {
 describe('the migration chain', () => {
   const template = uma('u1')
 
-  const v5Uma = () => {
-    const current = createUmaSave(template)
-    return { ...current, schemaVersion: 5 as const }
-  }
+  const v5Uma = () => legacyUma(createUmaSave(template), 5 as const)
   const v5Card = { templateId: 'c1', limitBreak: 3, maxCouponGranted: false }
 
   it('reads a v5 Uma, which is what broke after the card schema bump', () => {
@@ -408,40 +423,28 @@ describe('the migration chain', () => {
     expect(migrated).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, tickets: 89 })
     expect(migratePlayerProfileToCurrent(migrated)).toEqual(migrated)
     const v6Uma = { ...v5Uma(), schemaVersion: 6 as const }
-    expect(migrateUmaSaveToCurrent(v6Uma)).toEqual({ ...v6Uma, schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null })
+    expect(migrateUmaSaveToCurrent(v6Uma)).toEqual({ ...createUmaSave(template), racePreferences: null })
   })
 
-  it('migrates every filled v8 Stat assignment to legacy Produce without inventing item progress', () => {
+  it('carries every filled v8 Stat node through Produce into the Extra stats grid without inventing item progress', () => {
     const current = createUmaSave(template)
-    const nodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'stat')
+    const nodes = legacyProduceNodeIds(1)
     const legacy = {
-      ...current,
-      schemaVersion: 8 as const,
+      ...legacyUma(current, 8 as const),
       scenarios: [{
-        ...current.scenarios[0]!,
+        ...legacyUma(current, 8 as const).scenarios[0]!,
         assignments: {
-          [nodes[0]!.id]: { kind: 'stat', stat: 'speed' },
-          [nodes[1]!.id]: { kind: 'stat', stat: 'stamina' },
+          [nodes[0]!]: { kind: 'stat', stat: 'speed' },
+          [nodes[1]!]: { kind: 'stat', stat: 'stamina' },
           'retired-template-node': { kind: 'retired-shape' },
         },
       }],
     }
     const migrated = migrateUmaSaveToCurrent(legacy)
-    expect(migrated?.scenarios[0]?.assignments).toEqual({
-      [nodes[0]!.id]: { kind: 'legacy-produce', stat: 'speed' },
-      [nodes[1]!.id]: { kind: 'legacy-produce', stat: 'stamina' },
-    })
+    const grid: ExtraStats = { unlocked: { speed: 1, stamina: 1, power: 0, guts: 0, wit: 0 }, active: ['speed-1', 'stamina-1'] }
+    expect(migrated?.scenarios[0]).toMatchObject({ assignments: {}, extraStats: grid })
     expect(JSON.stringify(migrated)).not.toContain('itemId')
-    const expected = {
-      ...current,
-      scenarios: [{
-        ...current.scenarios[0]!,
-        assignments: {
-          [nodes[0]!.id]: { kind: 'legacy-produce' as const, stat: 'speed' as const },
-          [nodes[1]!.id]: { kind: 'legacy-produce' as const, stat: 'stamina' as const },
-        },
-      }],
-    }
+    const expected = { ...current, scenarios: [{ ...current.scenarios[0]!, extraStats: grid }] }
     const derive = (save: UmaSave) => deriveUma({
       uma: save,
       umaTemplate: template,
@@ -476,7 +479,7 @@ describe('the migration chain', () => {
   it('adds nullable race preferences to v9 without changing a frozen journey', () => {
     const current = createUmaSave(template)
     const journey = { tier: 1, tracking: 'legacy-untracked' as const, state: 'completed' as const, completedAt: 7, goals: [] }
-    const { racePreferences: _unused, ...v9 } = { ...current, scenarios: [{ ...current.scenarios[0]!, started: true, journey }] }
+    const { racePreferences: _unused, ...v9 } = legacyUma({ ...current, scenarios: [{ ...current.scenarios[0]!, started: true, journey }] }, 9)
     const migrated = migrateUmaSaveToCurrent({ ...v9, schemaVersion: 9 })
     expect(migrated).toMatchObject({ schemaVersion: SAVE_SCHEMA_VERSION, racePreferences: null, scenarios: [{ journey }] })
     expect(parseUmaSave({ ...migrated!, racePreferences: { strategy: 'front', distance: 'long', surface: 'turf' } })).not.toBeNull()
@@ -485,15 +488,15 @@ describe('the migration chain', () => {
 
   it('re-levels every v10 unit once through its total EXP and returns what passed TL10 (D211)', () => {
     const current = createUmaSave(template)
+    const legacyRun = legacyUma(current, 10).scenarios[0]!
     const v10 = {
-      ...current,
-      schemaVersion: 10 as const,
+      ...legacyUma(current, 10 as const),
       level: 25,
       unlockedTier: 3,
       scenarios: [
-        { ...current.scenarios[0]!, tier: 1, trainingLevel: 10, trainingExp: 0 },
-        { ...current.scenarios[0]!, tier: 2, trainingLevel: 6, trainingExp: 0 },
-        { ...current.scenarios[0]!, tier: 3, trainingLevel: 2, trainingExp: 900 },
+        { ...legacyRun, tier: 1, trainingLevel: 10, trainingExp: 0 },
+        { ...legacyRun, tier: 2, trainingLevel: 6, trainingExp: 0 },
+        { ...legacyRun, tier: 3, trainingLevel: 2, trainingExp: 900 },
       ],
     }
     const migrated = migrateUmaSaveWithSurplus(v10)!
@@ -506,7 +509,33 @@ describe('the migration chain', () => {
     const offCurve = { ...current, scenarios: [{ ...current.scenarios[0]!, trainingLevel: 6, trainingExp: 2000 }] }
     expect(parseUmaSave(offCurve)).toBeNull()
     expect(parseUmaSave({ ...current, scenarios: [{ ...current.scenarios[0]!, trainingLevel: 10, trainingExp: 5 }] })).toBeNull()
-    expect(parseLegacyUmaSaveV10({ ...offCurve, schemaVersion: 10 })).not.toBeNull()
+    expect(parseLegacyUmaSaveV10(legacyUma(offCurve, 10))).not.toBeNull()
+  })
+
+  it('turns v11 Produce nodes into bought, active Extra stats, four at most a stat, and keeps the tree (D235)', () => {
+    const current = createUmaSave(template)
+    const [a, b, c, d, e, f] = legacyProduceNodeIds(1)
+    const cardNode = constellationTemplate(1).nodes.find((node) => node.kind === 'card')!.id
+    const v11 = legacyUma({ ...current, scenarios: [{ ...current.scenarios[0]!, trainingLevel: 10, cardSetIds: ['c1'] }] }, 11)
+    const produce = (stat: string) => ({ kind: 'legacy-produce', stat })
+    const migrated = migrateUmaSaveToCurrent({ ...v11, scenarios: [{ ...v11.scenarios[0]!, assignments: {
+      [cardNode]: { kind: 'card', cardId: 'c1' },
+      [a!]: produce('stamina'), [b!]: produce('stamina'), [c!]: produce('stamina'), [d!]: produce('stamina'),
+      [e!]: produce('stamina'), [f!]: { kind: 'produce', itemId: 'produce:t1:speed', revision: 2 },
+    } }] })!
+    expect(migrated.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
+    expect(migrated.scenarios[0]!.assignments).toEqual({ [cardNode]: { kind: 'card', cardId: 'c1' } })
+    // A fifth Stamina has no node to become: four Stamina and the Speed are bought and on, and one slot opens.
+    expect(migrated.scenarios[0]!.extraStats).toEqual({
+      unlocked: { speed: 1, stamina: 4, power: 0, guts: 0, wit: 0 },
+      active: ['speed-1', 'stamina-1', 'stamina-2', 'stamina-3', 'stamina-4'],
+    })
+    // A v11 shape with a grid, or a v12 one without, is neither.
+    expect(migrateUmaSaveToCurrent({ ...current, schemaVersion: 11 })).toBeNull()
+    expect(parseUmaSave(v11)).toBeNull()
+    // The profile is a stamp: v11 keeps its bank.
+    const profile = { ...createPlayerProfile('v1', 1), trainingExpBank: 700 }
+    expect(migratePlayerProfileToCurrent({ ...profile, schemaVersion: 11 })).toEqual(profile)
   })
 
   it('returns null for something that is not a save, rather than inventing one', () => {

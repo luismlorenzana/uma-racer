@@ -1,6 +1,7 @@
 // Typed IndexedDB reads and atomic save mutations (docs/technical/architecture.md).
 
 import {
+  parseLegacyPlayerProfileV11,
   parsePlayerProfile,
   migrateCardSaveToCurrent,
   migrateUmaSaveToCurrent,
@@ -381,7 +382,9 @@ function legacyTrainingSurplus(raw: unknown): { exp: number; legacyProfile: bool
     if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue
     const row = entry as Record<string, unknown>
     if (row.deleted === true || typeof row.id !== 'string') continue
-    if (row.kind === 'profile' && !parsePlayerProfile(row.data) && migratePlayerProfileToCurrent(row.data)) result.legacyProfile = true
+    // Only a profile from before v11 has not banked its Umas' re-levelling yet (D212); v11 is a stamp away from v12.
+    if (row.kind === 'profile' && !parsePlayerProfile(row.data) && !parseLegacyPlayerProfileV11(row.data) &&
+      migratePlayerProfileToCurrent(row.data)) result.legacyProfile = true
     if (row.kind === 'umas' && !parseUmaSave(row.data)) {
       const migrated = migrateUmaSaveWithSurplus(row.data)
       if (!migrated) continue

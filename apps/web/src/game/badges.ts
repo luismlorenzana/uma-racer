@@ -173,8 +173,9 @@ export async function sparkRunsByTier(umaId: string): Promise<Map<number, number
 
 /** What her save and her runs say about her training (T056): the runs, each TL10, and each constellation filled. */
 export function trainingSnapshot(uma: UmaSave, runsByTier: ReadonlyMap<number, number>): TrainingBadgeSnapshot {
+  // A full tree is every card node filled; Extra stats sit beside the tree (D235).
   const full = (run: UmaSave['scenarios'][number]) => constellationTemplate(run.tier).nodes
-    .filter((node) => node.kind === 'card' || node.kind === 'stat')
+    .filter((node) => node.kind === 'card')
     .every((node) => run.assignments[node.id] !== undefined)
   return {
     runsByTier,

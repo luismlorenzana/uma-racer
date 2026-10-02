@@ -26,16 +26,17 @@ import {
   nodeValue,
   shapeDef,
   slotCount,
-  STAT_NODES,
+  DRAWN_TIPS,
+  legacyProduceNodeIds,
   spNodeValue,
   STAT_NODE_POOL,
-  statNodeValue,
   TREE_BOX,
   treeBudget,
   unlockedNodeCount,
   validateTemplate,
 } from './constellation'
 import { MAX_STARS } from './cards'
+import { EXTRA_STAT_NODE_VALUE, emptyExtraStats, extraStatsFromProduce, type ExtraStats } from './extra-stats'
 import { parseShapeArt } from './constellation-shapes'
 import { MAX_SCENARIO_TIER, baselineSkillPoints, skillPointCap } from './scenarios'
 import { STATS, type StatKey, type Stats } from './types'
@@ -110,15 +111,10 @@ describe('budgets', () => {
     }
   })
 
-  it('pays card and stat nodes integer values, stat nodes sharing a fixed 240-point pool (D134)', () => {
-    for (const tier of TIERS) {
-      expect(Number.isInteger(nodeValue(tier))).toBe(true)
-      expect(Number.isInteger(statNodeValue(tier))).toBe(true)
-      expect(statNodeValue(tier) * shapeDef(tier).statNodes).toBe(240)
-    }
+  it('pays card nodes integer values beside a fixed 240-point Extra stats pool: six active nodes of 40 (D134, D235)', () => {
+    for (const tier of TIERS) expect(Number.isInteger(nodeValue(tier))).toBe(true)
     expect(TIERS.map(nodeValue)).toEqual([220, 198, 233, 189, 164, 164, 163, 169, 168, 168, 167, 172, 171, 171])
-    // Six stat nodes everywhere (D162): 40 raw points a node at every tier.
-    expect(TIERS.map(statNodeValue)).toEqual(TIERS.map(() => 40))
+    expect([STAT_NODE_POOL, EXTRA_STAT_NODE_VALUE]).toEqual([240, 40])
   })
 
   it('caps every card at its fair share of the card nodes plus one (D134)', () => {
@@ -130,10 +126,15 @@ describe('budgets', () => {
     }
   })
 
-  it('gives every tree six stat nodes, and its card nodes the rest of its slots (D162)', () => {
+  it('builds every tree from card nodes alone; the six drawn tips that were Produce nodes are pruned (D235)', () => {
     for (const tier of TIERS) {
-      expect(shapeDef(tier).statNodes).toBe(STAT_NODES)
-      expect(slotCount(tier)).toBe(shapeDef(tier).cardNodes + 6)
+      const template = constellationTemplate(tier)
+      expect(slotCount(tier)).toBe(shapeDef(tier).cardNodes)
+      expect(template.nodes.filter((node) => node.kind === 'card')).toHaveLength(shapeDef(tier).cardNodes)
+      // The tips' old ids are kept only for the v12 migration, and no tree node uses them.
+      const tips = legacyProduceNodeIds(tier)
+      expect(tips).toHaveLength(DRAWN_TIPS)
+      expect(template.nodes.some((node) => tips.includes(node.id))).toBe(false)
     }
   })
 })
@@ -231,8 +232,7 @@ describe('templates', () => {
 })
 
 describe('layout', () => {
-  const tree = (tier: number) =>
-    constellationTemplate(tier).nodes.filter((node) => node.kind === 'card' || node.kind === 'stat')
+  const tree = (tier: number) => constellationTemplate(tier).nodes.filter((node) => node.kind === 'card')
 
   it('keeps every tree inside its box', () => {
     for (const tier of TIERS) {
@@ -278,21 +278,16 @@ describe('layout', () => {
       for (const node of tree(tier)) {
         const parent = byId.get(node.parentId!)!
         if (parent.kind !== 'root') expect(parent.order).toBeLessThan(node.order)
-        // Stat nodes are the last reached, so a card node never hangs below one.
-        if (parent.kind === 'stat') expect(node.kind).toBe('stat')
       }
     }
   })
 
   it('keeps node ids, kinds and order fixed by the counts, so a redrawn shape never changes a saved assignment', () => {
     for (const tier of TIERS) {
-      const { cardNodes, statNodes } = shapeDef(tier)
+      const { cardNodes } = shapeDef(tier)
       const nodes = tree(tier)
-      expect(nodes.map((node) => node.id)).toEqual(Array.from({ length: cardNodes + statNodes }, (_, i) => `n${i}`))
-      for (const node of nodes) {
-        expect(node.id).toBe(`n${node.order}`)
-        expect(node.kind).toBe(node.order < cardNodes ? 'card' : 'stat')
-      }
+      expect(nodes.map((node) => node.id)).toEqual(Array.from({ length: cardNodes }, (_, i) => `n${i}`))
+      for (const node of nodes) expect(node.id).toBe(`n${node.order}`)
     }
   })
 
@@ -336,12 +331,13 @@ describe('unlock schedule', () => {
     }
   })
 
-  it('opens every card and stat node by Training Level 8', () => {
+  it('spreads the card nodes over Training Levels 1–8 (D235)', () => {
     for (const tier of TIERS) {
       expect(unlockedNodeCount(tier, 8)).toBe(slotCount(tier))
       expect(unlockedNodeCount(tier, 10)).toBe(slotCount(tier))
-      expect(unlockedNodeCount(tier, 1)).toBeLessThan(slotCount(tier))
+      expect(unlockedNodeCount(tier, 1)).toBe(Math.ceil(shapeDef(tier).cardNodes / 8))
     }
+    expect([1, 2, 4, 7, 8].map((level) => unlockedNodeCount(1, level))).toEqual([3, 5, 9, 16, 18])
   })
 
   it('never removes a node as the level rises', () => {
@@ -367,6 +363,16 @@ describe('unlock schedule', () => {
     expect(nodesUnlockedBetween(template, 5, 5)).toHaveLength(0)
   })
 })
+
+/** Six active Extra stats: the ones given, topped up with Wit then Guts so no stat passes four. */
+function fillSix(extra: ExtraStats): ExtraStats {
+  const stats: StatKey[] = []
+  for (const id of extra.active) stats.push(id.split('-')[0] as StatKey)
+  for (const stat of ['wit', 'guts', 'power', 'stamina', 'speed'] as StatKey[]) {
+    while (stats.length < 6 && stats.filter((entry) => entry === stat).length < 4) stats.push(stat)
+  }
+  return extraStatsFromProduce(stats)
+}
 
 describe('the invariance rule', () => {
   const stats: StatKey[] = [...STATS]
@@ -397,10 +403,10 @@ describe('the invariance rule', () => {
             const cardId = open[Math.floor(random() * open.length)]!
             held.set(cardId, (held.get(cardId) ?? 0) + 1)
             assignments[node.id] = { kind: 'card', cardId }
-          } else if (node.kind === 'stat') {
-            assignments[node.id] = { kind: 'legacy-produce', stat: stats[Math.floor(random() * stats.length)]! }
           }
         }
+        // Six active Extra stats, any spread of at most four a stat (D235).
+        const extraStats = extraStatsFromProduce(Array.from({ length: 12 }, () => stats[Math.floor(random() * stats.length)]!).slice(0, 6))
 
         const derived = deriveStats({ buffs: false,
           tier,
@@ -410,9 +416,10 @@ describe('the invariance rule', () => {
           cardSetIds: cardIds,
           umaTemplate: uma,
           cards,
+          extraStats: fillSix(extraStats),
         })
         expect(derived.rawTotal).toBe(treeBudget(tier))
-        expect(derived.assignedNodes).toBe(slotCount(tier))
+        expect(derived.assignedNodes).toBe(slotCount(tier) + 6)
       }
     }
   })
@@ -451,10 +458,9 @@ describe('the invariance rule', () => {
     for (const node of template.nodes) {
       // Round-robin keeps every card inside its cap (D134).
       if (node.kind === 'card') assignments[node.id] = { kind: 'card', cardId: cardIds[next++ % cardIds.length]! }
-      if (node.kind === 'stat') assignments[node.id] = { kind: 'legacy-produce', stat: 'speed' }
     }
     const cardNodes = template.nodes.filter((node) => node.kind === 'card').length
-    const statNodes = template.nodes.filter((node) => node.kind === 'stat').length
+    const extraStats = extraStatsFromProduce(['speed', 'speed', 'speed', 'speed', 'stamina', 'stamina'])
 
     for (let stars = 0; stars <= MAX_STARS; stars += 1) {
       const derived = deriveStats({ buffs: false,
@@ -465,9 +471,10 @@ describe('the invariance rule', () => {
         cardSetIds: cardIds,
         umaTemplate: uma,
         cards: new Map(cardIds.map((id) => [id, { ...card(id, 'speed'), stars }])),
+        extraStats,
       })
       const expected =
-        (nodeValue(1) * cardNodes * starNodePct(stars)) / 100 + statNodeValue(1) * statNodes
+        (nodeValue(1) * cardNodes * starNodePct(stars)) / 100 + EXTRA_STAT_NODE_VALUE * 6
       expect(derived.rawTotal).toBeCloseTo(expected, 6)
     }
   })
@@ -570,17 +577,14 @@ describe('derivation', () => {
 
   it('never lets a stat exceed its cap', () => {
     const assignments = Object.fromEntries(
-      template.nodes
-        .filter((node) => node.kind === 'stat' || node.kind === 'card')
-        .map((node) => [node.id, node.kind === 'stat'
-          ? ({ kind: 'legacy-produce', stat: 'speed' } as NodeAssignment)
-          : ({ kind: 'card', cardId: 'c' } as NodeAssignment)]),
+      template.nodes.filter((node) => node.kind === 'card').map((node) => [node.id, { kind: 'card', cardId: 'c' } as NodeAssignment]),
     )
     const derived = deriveStats({ buffs: false,
       tier: 1,
       trainingLevel: 10,
       template,
       assignments,
+      extraStats: extraStatsFromProduce(['speed', 'speed', 'speed', 'speed']),
       cardSetIds: ['c'],
       umaTemplate: { baseStats: uma.baseStats, growthRates: { speed: 1, stamina: 0, power: 0, guts: 0, wit: 0 } },
       cards: new Map([['c', card('c', 'speed')]]),

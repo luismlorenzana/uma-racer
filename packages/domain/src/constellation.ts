@@ -8,16 +8,17 @@ import { MAX_SCENARIO_TIER, SCENARIOS, baselineSkillPoints, skillPointCap } from
 import { STATS, type StatKey, type Stats, zeroStats } from './types'
 import { farmCropById } from './farm/catalog'
 import type { FarmCropId } from './farm/types'
+import { EXTRA_STAT_NODE_VALUE, EXTRA_STAT_SLOTS, extraStatCounts, type ExtraStats } from './extra-stats'
 
 export const MAX_TRAINING_LEVEL = 10
-/** Training Levels 1–8 open card and stat nodes; 9 and 10 open lineage (docs/design/constellations.md). */
+/** Training Levels 1–8 open card nodes; 9 and 10 open lineage (docs/design/constellations.md, D235). */
 export const NODE_UNLOCK_LEVELS = 8
 export const CARD_SET_SIZE = 6
 /**
- * Raw points a tier's stat nodes pay between them, however many there are (D134). Small on purpose: stat nodes are
- * for tweaks — the stamina a mile needs, one more point of Speed — and cards carry the build.
+ * Raw points the six active Extra stat nodes pay between them (D134, D235). Small on purpose: they are for tweaks — the
+ * stamina a mile needs, one more point of Speed — and cards carry the build.
  */
-export const STAT_NODE_POOL = 240
+export const STAT_NODE_POOL = EXTRA_STAT_NODE_VALUE * EXTRA_STAT_SLOTS
 /** A max-bonded Friend or Group card on its fair share of nodes pays this share of the SP cap (D133). */
 export const SP_CARD_SHARE = 0.6
 /** A full constellation pays this share of the scenario's cap budget, so no build reaches every cap. */
@@ -47,28 +48,30 @@ export const CAP_PROFILES: readonly Stats[] = [
 export interface ShapeDef {
   shape: string
   cardNodes: number
-  statNodes: number
 }
 
-/** Every tree has six stat nodes (D162), so any build can spread its tweaks over several stats. */
-export const STAT_NODES = 6
+/**
+ * The silhouettes are drawn with six tips past the card nodes: the Produce nodes before D235. Building a tree prunes
+ * them, so the card nodes keep their ids and places, and the ids the tips had are only read by the v11 migration.
+ */
+export const DRAWN_TIPS = 6
 
 /** Slot counts and silhouettes per scenario (docs/design/scenarios.md#constellation-shapes). */
 export const CONSTELLATION_SHAPES: readonly ShapeDef[] = [
-  { shape: 'single-trunk', cardNodes: 18, statNodes: STAT_NODES },
-  { shape: 'three-branch', cardNodes: 20, statNodes: STAT_NODES },
-  { shape: 'track-spurs', cardNodes: 17, statNodes: STAT_NODES },
-  { shape: 'five-arm-star', cardNodes: 21, statNodes: STAT_NODES },
-  { shape: 'twin-arcs', cardNodes: 25, statNodes: STAT_NODES },
-  { shape: 'arch', cardNodes: 26, statNodes: STAT_NODES },
-  { shape: 'three-colour', cardNodes: 27, statNodes: STAT_NODES },
-  { shape: 'canopy', cardNodes: 27, statNodes: STAT_NODES },
-  { shape: 'lattice-spine', cardNodes: 28, statNodes: STAT_NODES },
-  { shape: 'crown', cardNodes: 29, statNodes: STAT_NODES },
-  { shape: 'island-ring', cardNodes: 30, statNodes: STAT_NODES },
-  { shape: 'spiral', cardNodes: 30, statNodes: STAT_NODES },
-  { shape: 'twin-trunks', cardNodes: 31, statNodes: STAT_NODES },
-  { shape: 'counter', cardNodes: 32, statNodes: STAT_NODES },
+  { shape: 'single-trunk', cardNodes: 18 },
+  { shape: 'three-branch', cardNodes: 20 },
+  { shape: 'track-spurs', cardNodes: 17 },
+  { shape: 'five-arm-star', cardNodes: 21 },
+  { shape: 'twin-arcs', cardNodes: 25 },
+  { shape: 'arch', cardNodes: 26 },
+  { shape: 'three-colour', cardNodes: 27 },
+  { shape: 'canopy', cardNodes: 27 },
+  { shape: 'lattice-spine', cardNodes: 28 },
+  { shape: 'crown', cardNodes: 29 },
+  { shape: 'island-ring', cardNodes: 30 },
+  { shape: 'spiral', cardNodes: 30 },
+  { shape: 'twin-trunks', cardNodes: 31 },
+  { shape: 'counter', cardNodes: 32 },
 ]
 
 const clampTier = (tier: number): number => Math.min(MAX_SCENARIO_TIER, Math.max(1, Math.trunc(tier)))
@@ -84,23 +87,18 @@ export const averageCap = (tier: number): number => capBudget(tier) / STATS.leng
 export const shapeDef = (tier: number): ShapeDef => CONSTELLATION_SHAPES[clampTier(tier) - 1]!
 
 
-export const slotCount = (tier: number): number => {
-  const def = shapeDef(tier)
-  return def.cardNodes + def.statNodes
-}
+/** The tree's nodes that Training Levels 1–8 open: its card nodes (D235). */
+export const slotCount = (tier: number): number => shapeDef(tier).cardNodes
 
 /**
  * Raw points one **card** node pays at max stars and current era: what is left of the tree's share of the cap budget
- * once the stat-node pool is set aside, over the card nodes (D134). Rounded to an integer so the invariance rule can
+ * once the Extra stat pool is set aside, over the card nodes (D134). Rounded to an integer so the invariance rule can
  * be asserted exactly rather than within a tolerance.
  */
 export const nodeValue = (tier: number): number =>
   Math.round((TREE_BUDGET_SHARE * capBudget(tier) - STAT_NODE_POOL) / shapeDef(tier).cardNodes)
 
-/** Raw points one stat node pays: the pool shared over that tier's stat nodes. An integer at every tier. */
-export const statNodeValue = (tier: number): number => STAT_NODE_POOL / shapeDef(tier).statNodes
-
-/** Total raw points a fully-filled constellation of current-era, maxed stat cards pays. */
+/** Total raw points a fully-filled constellation of current-era, maxed stat cards and six Extra stats pays. */
 export const treeBudget = (tier: number): number => shapeDef(tier).cardNodes * nodeValue(tier) + STAT_NODE_POOL
 
 /** The nodes one card of six gets if the tree is shared out evenly, rounded up (D134). */
@@ -162,7 +160,7 @@ export function cardShares(template: Pick<SupportCardTemplate, 'type'>): Partial
 
 // --- Templates ---------------------------------------------------------------------------------
 
-export const NODE_KINDS = ['root', 'card', 'stat', 'parent', 'grandparent'] as const
+export const NODE_KINDS = ['root', 'card', 'parent', 'grandparent'] as const
 export type NodeKind = (typeof NODE_KINDS)[number]
 
 export interface ConstellationNode {
@@ -173,7 +171,7 @@ export interface ConstellationNode {
   /** Layout position in a 0–100 square. Authored, never simulated. */
   x: number
   y: number
-  /** Unlock order among card and stat nodes; lineage nodes use their fixed Training Level instead. */
+  /** Unlock order among card nodes; lineage nodes use their fixed Training Level instead. */
   order: number
 }
 
@@ -182,7 +180,6 @@ export interface ConstellationTemplate {
   scenarioId: string
   shape: string
   cardNodes: number
-  statNodes: number
   nodes: ConstellationNode[]
 }
 
@@ -197,16 +194,16 @@ const round1 = (value: number): number => Math.round(value * 10) / 10
 /**
  * Builds a scenario's tree from its silhouette (`SHAPE_ART`). Each grid cell becomes a position in `TREE_BOX`, so a
  * sparse shape spreads out and a dense one packs in. Nodes are numbered breadth-first from the root, nearer rows and
- * then columns first: the number is the unlock order, so the tree opens outward, and the last nodes reached, the
- * tips, are the stat nodes. Ids, kinds and order are therefore fixed by the counts alone, and a redrawn silhouette
- * never moves a saved assignment to a different kind of node.
+ * then columns first: the number is the unlock order, so the tree opens outward. The last `DRAWN_TIPS` reached were the
+ * Produce nodes until D235 and are pruned; being last breadth-first, nothing hangs off them. Ids and order are therefore
+ * fixed by the counts alone, and a redrawn silhouette never moves a saved assignment to a different node.
  */
 export function buildTemplate(tier: number): ConstellationTemplate {
   const t = clampTier(tier)
   const def = shapeDef(t)
   const scenario = SCENARIOS[t - 1]!
   const grid = parseShapeArt(SHAPE_ART[t - 1]!)
-  const total = def.cardNodes + def.statNodes
+  const total = def.cardNodes + DRAWN_TIPS
   if (grid.cells.length !== total) throw new Error(`tier ${t} draws ${grid.cells.length} nodes, expected ${total}`)
   const links = [...grid.links.values()].reduce((sum, neighbours) => sum + neighbours.length, 0) / 2
   if (links !== total) throw new Error(`tier ${t} draws ${links} connectors for ${total} nodes; a tree needs one per node`)
@@ -221,25 +218,22 @@ export function buildTemplate(tier: number): ConstellationTemplate {
   const ids = new Map<string, string>([[cellKey(grid.root), ROOT_NODE_ID]])
   const nodes: ConstellationNode[] = [{ id: ROOT_NODE_ID, kind: 'root', parentId: null, ...place(grid.root), order: -1 }]
   const queue: ShapeCell[] = [grid.root]
+  let reached = 0
   while (queue.length > 0) {
     const cell = queue.shift()!
     const neighbours = [...(grid.links.get(cellKey(cell)) ?? [])].sort((a, b) => a.row - b.row || a.col - b.col)
     for (const next of neighbours) {
       if (ids.has(cellKey(next))) continue
-      const order = nodes.length - 1
-      const id = `n${order}`
-      ids.set(cellKey(next), id)
-      nodes.push({
-        id,
-        kind: order < def.cardNodes ? 'card' : 'stat',
-        parentId: ids.get(cellKey(cell))!,
-        ...place(next),
-        order,
-      })
+      const order = reached
+      reached += 1
+      ids.set(cellKey(next), `n${order}`)
       queue.push(next)
+      // The drawn tips are pruned (D235).
+      if (order >= def.cardNodes) continue
+      nodes.push({ id: `n${order}`, kind: 'card', parentId: ids.get(cellKey(cell))!, ...place(next), order })
     }
   }
-  if (nodes.length - 1 !== total) throw new Error(`tier ${t} is not one connected tree`)
+  if (reached !== total) throw new Error(`tier ${t} is not one connected tree`)
 
   for (const [index, side] of ([-1, 1] as const).entries()) {
     const parentId = `parent${index}`
@@ -261,12 +255,15 @@ export function buildTemplate(tier: number): ConstellationTemplate {
     scenarioId: scenario.id,
     shape: def.shape,
     cardNodes: def.cardNodes,
-    statNodes: def.statNodes,
     nodes,
   }
 }
 
-/** Drawable edges: card/stat nodes to their parent, and each grandparent to its parent node. */
+/** The ids the drawn tips had: a v11 unit's Produce nodes, which the v12 migration turns into Extra stats (D235). */
+export const legacyProduceNodeIds = (tier: number): string[] =>
+  Array.from({ length: DRAWN_TIPS }, (_, index) => `n${shapeDef(tier).cardNodes + index}`)
+
+/** Drawable edges: card nodes to their parent, and each grandparent to its parent node. */
 export function constellationEdges(
   template: ConstellationTemplate,
 ): { from: ConstellationNode; to: ConstellationNode }[] {
@@ -299,12 +296,10 @@ export function validateTemplate(template: ConstellationTemplate): string | null
   if (root.length !== 1 || root[0]!.parentId !== null) return 'exactly one root with no parent is required'
 
   const cards = template.nodes.filter((node) => node.kind === 'card')
-  const stats = template.nodes.filter((node) => node.kind === 'stat')
   if (cards.length !== template.cardNodes) return `expected ${template.cardNodes} card nodes, found ${cards.length}`
-  if (stats.length !== template.statNodes) return `expected ${template.statNodes} stat nodes, found ${stats.length}`
 
-  // Card and stat nodes form one connected tree rooted at the root.
-  for (const node of [...cards, ...stats]) {
+  // Card nodes form one connected tree rooted at the root.
+  for (const node of cards) {
     let cursor: ConstellationNode | undefined = node
     const seen = new Set<string>()
     while (cursor && cursor.kind !== 'root') {
@@ -312,7 +307,7 @@ export function validateTemplate(template: ConstellationTemplate): string | null
       seen.add(cursor.id)
       if (cursor.parentId === null) return `${node.id} is not connected to the root`
       const next: ConstellationNode | undefined = byId.get(cursor.parentId)
-      if (!next || (next.kind !== 'card' && next.kind !== 'stat' && next.kind !== 'root')) {
+      if (!next || (next.kind !== 'card' && next.kind !== 'root')) {
         return `${node.id} hangs off a ${next?.kind ?? 'missing'} node`
       }
       cursor = next
@@ -331,8 +326,8 @@ export function validateTemplate(template: ConstellationTemplate): string | null
     return 'exactly four grandparent nodes are required'
   }
 
-  const orders = [...cards, ...stats].map((node) => node.order).sort((a, b) => a - b)
-  if (orders.some((order, index) => order !== index)) return 'card and stat node order must be 0..N-1'
+  const orders = cards.map((node) => node.order).sort((a, b) => a - b)
+  if (orders.some((order, index) => order !== index)) return 'card node order must be 0..N-1'
 
   return null
 }
@@ -342,7 +337,7 @@ export function validateTemplate(template: ConstellationTemplate): string | null
 export const clampTrainingLevel = (level: number): number =>
   Math.min(MAX_TRAINING_LEVEL, Math.max(1, Math.trunc(level)))
 
-/** Card and stat nodes open on a straight line from Training Level 1 to 8. */
+/** Card nodes open on a straight line from Training Level 1 to 8 (D235). */
 export function unlockedNodeCount(tier: number, trainingLevel: number): number {
   const n = slotCount(tier)
   const tl = clampTrainingLevel(trainingLevel)
@@ -359,7 +354,7 @@ export function lineageUnlockLevel(template: ConstellationTemplate, nodeId: stri
   return null
 }
 
-/** The Training Level that opens a node: 1 to 8 by unlock order for card and stat nodes, 9 or 10 for lineage. */
+/** The Training Level that opens a node: 1 to 8 by unlock order for card nodes, 9 or 10 for lineage. */
 export function nodeUnlockLevel(template: ConstellationTemplate, node: ConstellationNode): number {
   if (node.kind === 'root') return 1
   const lineage = lineageUnlockLevel(template, node.id)
@@ -377,9 +372,7 @@ export function isNodeUnlocked(
 ): boolean {
   const tl = clampTrainingLevel(trainingLevel)
   if (node.kind === 'root') return true
-  if (node.kind === 'card' || node.kind === 'stat') {
-    return node.order < unlockedNodeCount(template.tier, tl)
-  }
+  if (node.kind === 'card') return node.order < unlockedNodeCount(template.tier, tl)
   const required = lineageUnlockLevel(template, node.id)
   return required !== null && tl >= required
 }
@@ -403,6 +396,11 @@ export function nodesUnlockedBetween(
 
 // --- Derivation --------------------------------------------------------------------------------
 
+export type NodeAssignment =
+  | { kind: 'card'; cardId: string }
+  | { kind: 'lineage'; templateId: string }
+
+/** A v9–v11 Produce node filled from inventory. Only the v12 migration reads it (D205, D235). */
 export interface ProduceAssignment {
   kind: 'produce'
   itemId: FarmCropId
@@ -410,30 +408,21 @@ export interface ProduceAssignment {
   revision: number
 }
 
+/** A v9–v11 Produce node carried over from a pre-v9 Stat node. Only the v12 migration reads it. */
 export interface LegacyProduceAssignment {
   kind: 'legacy-produce'
-  /** Contribution-preserving v8 migration. It never names or consumes an item. */
   stat: StatKey
 }
 
-export type NodeAssignment =
-  | { kind: 'card'; cardId: string }
-  | ProduceAssignment
-  | LegacyProduceAssignment
-  | { kind: 'lineage'; templateId: string }
+/** What a v11 unit's nodes could hold, Produce included. */
+export type LegacyNodeAssignment = NodeAssignment | ProduceAssignment | LegacyProduceAssignment
 
-/** The stat a valid Produce assignment pays in this scenario; malformed/stale assignments pay nothing. */
-export function produceAssignmentStat(assignment: NodeAssignment | undefined, tier: number): StatKey | null {
+/** The stat a v11 Produce assignment paid in this scenario; malformed/stale assignments paid nothing. */
+export function produceAssignmentStat(assignment: LegacyNodeAssignment | undefined, tier: number): StatKey | null {
   if (assignment?.kind === 'legacy-produce') return assignment.stat
   if (assignment?.kind !== 'produce') return null
   const crop = farmCropById(assignment.itemId)
   return crop?.scenarioTier === tier ? crop.stat : null
-}
-
-/** Empty and legacy nodes are revision 0. Non-Produce assignments cannot participate in a Produce command. */
-export function produceAssignmentRevision(assignment: NodeAssignment | undefined): number | null {
-  if (assignment === undefined || assignment.kind === 'legacy-produce') return 0
-  return assignment.kind === 'produce' ? assignment.revision : null
 }
 
 /** What one node filled with this card pays, before the stat split. The Cards album shows this. */
@@ -474,6 +463,8 @@ export interface DeriveInput {
   cardSetIds: readonly string[]
   umaTemplate: Pick<UmaTemplate, 'baseStats' | 'growthRates'>
   cards: ReadonlyMap<string, CardNodeState>
+  /** The unit's Extra stats grid; its active nodes pay (D235). None when omitted. */
+  extraStats?: ExtraStats
   /** Career goals won in this scenario, for Trackblazer's Climax (D165). */
   goalsWon?: number
   /** The scenario's buff (D165); off only where a test checks the tree's own arithmetic. */
@@ -503,7 +494,6 @@ const SCALE = 100_000_000
 export function deriveStats(input: DeriveInput): DerivedStats {
   const { template, assignments, cards, umaTemplate } = input
   const value = nodeValue(input.tier)
-  const statValue = statNodeValue(input.tier)
   const spValue = spNodeValue(input.tier)
   const perCardCap = cardNodeCap(input.tier)
   const inSet = new Set(input.cardSetIds)
@@ -511,20 +501,16 @@ export function deriveStats(input: DeriveInput): DerivedStats {
 
   // First pass: which nodes pay, and how many live nodes each card fills. Past its cap a card pays nothing (D134);
   // nodes count in template order, so the earliest ones stay live. Cooking and Construction read the final counts.
-  const live: { node: ConstellationNode; assignment: NodeAssignment; produceStat?: StatKey }[] = []
+  const live: { node: ConstellationNode; assignment: NodeAssignment }[] = []
   const cardNodesUsed = new Map<string, number>()
   let lineageFilled = 0
   let filled = 0
   for (const node of template.nodes) {
     if (node.kind === 'root' || !isNodeUnlocked(template, node, input.trainingLevel)) continue
-    if (node.kind === 'card' || node.kind === 'stat') filled += 1
+    if (node.kind === 'card') filled += 1
     const assignment = assignments[node.id]
     if (!assignment) continue
     if ((node.kind === 'parent' || node.kind === 'grandparent') && assignment.kind === 'lineage') lineageFilled += 1
-    if (node.kind === 'stat') {
-      const produceStat = produceAssignmentStat(assignment, input.tier)
-      if (produceStat) live.push({ node, assignment, produceStat })
-    }
     if (node.kind === 'card' && assignment.kind === 'card' && inSet.has(assignment.cardId) && cards.has(assignment.cardId)) {
       const used = cardNodesUsed.get(assignment.cardId) ?? 0
       if (used >= perCardCap) continue
@@ -560,11 +546,16 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   const skillCursor = new Map<string, number>()
   const statPct = buff === 'foundation' ? BUFF_VALUES.foundationStatPct : 100
 
-  for (const { assignment, produceStat } of live) {
-    if (produceStat) {
-      scaled[produceStat] += statValue * 100 * 100 * 100 * statPct
-      continue
-    }
+  // The active Extra stat nodes, whatever the Training Level (D235).
+  const extraCounts = input.extraStats ? extraStatCounts(input.extraStats) : null
+  let extraActive = 0
+  for (const stat of STATS) {
+    const count = extraCounts?.[stat] ?? 0
+    extraActive += count
+    scaled[stat] += count * EXTRA_STAT_NODE_VALUE * 100 * 100 * 100 * statPct
+  }
+
+  for (const { assignment } of live) {
     if (assignment.kind !== 'card') continue
     const card = cards.get(assignment.cardId)!
     const quality = starNodePct(card.stars) * eraPct(card.template.era, input.tier) * cardBuffPct(assignment.cardId, card)
@@ -595,7 +586,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
       scaled[stat] = (scaled[stat] * (100 + BUFF_VALUES.sharedLight)) / 100
     }
   }
-  const assigned = live.length
+  const assigned = live.length + extraActive
 
   // Sum the integers, then divide once. Dividing per stat and adding the results loses the exactness at
   // tiers whose node value is not a dyadic fraction (tier 4's 168, for one).

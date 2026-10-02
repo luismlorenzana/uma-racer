@@ -91,6 +91,9 @@ const CURRENT_UMA_FIELDS = [...UMA_FIELDS, 'scenarioModifier'] as const
 const UMA_V6_FIELDS = ['schemaVersion', 'templateId', 'level', 'exp', 'unlockedTier', 'scenarios', 'skillHistory', 'goalPlanVersion'] as const
 const UMA_V10_FIELDS = [...UMA_V6_FIELDS, 'racePreferences'] as const
 const SCENARIO_TRAINING_FIELDS = ['tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started'] as const
+/** v12 units carry the Extra stats grid (D235). */
+const SCENARIO_TRAINING_V12_FIELDS = [...SCENARIO_TRAINING_FIELDS, 'extraStats'] as const
+const EXTRA_STAT_NODE_PATTERN = /^(speed|stamina|power|guts|wit)-([1-4])$/
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V5_FIELDS = ['templateId', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V6_FIELDS = ['templateId', 'limitBreaks', 'maxCouponGranted'] as const
@@ -347,7 +350,35 @@ function parseItemLedger(value: unknown): Record<string, unknown> | null {
       !isPositiveInt(value.source.tier) || value.source.tier > 14 || !isPositiveInt(value.source.revision)) return null
     return value
   }
+  // An Extra stat node bought with its stat's scenario crop, as many as its place in the row (D235).
+  if (value.reason === 'extra-stat-unlock') {
+    if (!exactKeys(value.source, ['kind', 'umaId', 'tier', 'nodeId']) || value.source.kind !== 'extra-stat-unlock' ||
+      !isId(value.source.umaId) || !isPositiveInt(value.source.tier) || value.source.tier > 14 ||
+      typeof value.source.nodeId !== 'string') return null
+    const node = EXTRA_STAT_NODE_PATTERN.exec(value.source.nodeId)
+    const crop = FARM_CROP_ID_PATTERN.exec(value.itemId)
+    if (!node || !crop || Number(crop[1]) !== value.source.tier || crop[2] !== node[1] || value.delta !== -Number(node[2]) ||
+      value.id !== `extra:${value.source.umaId}:${value.source.tier}:${value.source.nodeId}`) return null
+    return value
+  }
   return null
+}
+
+/** A unit's Extra stats grid (D235): each stat's bought count 0–4, and at most six bought nodes on, in grid order. */
+function parseExtraStats(value: unknown): boolean {
+  if (!isRecord(value) || !exactKeys(value, ['unlocked', 'active']) || !isRecord(value.unlocked) ||
+    !exactKeys(value.unlocked, STATS) || !Array.isArray(value.active) || value.active.length > 6) return false
+  const unlocked = value.unlocked
+  if (STATS.some((stat) => !isNonNegativeInt(unlocked[stat]) || (unlocked[stat] as number) > 4)) return false
+  let previous = -1
+  for (const id of value.active) {
+    const node = typeof id === 'string' ? EXTRA_STAT_NODE_PATTERN.exec(id) : null
+    if (!node || Number(node[2]) > (unlocked[node[1]!] as number)) return false
+    const order = STATS.indexOf(node[1] as (typeof STATS)[number]) * 4 + Number(node[2])
+    if (order <= previous) return false
+    previous = order
+  }
+  return true
 }
 
 function jsonIsBounded(value: unknown, depth = 0): boolean {
@@ -654,7 +685,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
-  if (value.schemaVersion === 11
+  if (value.schemaVersion === 11 || value.schemaVersion === 12
     ? !exactKeys(value, PROFILE_V11_FIELDS) || !isNonNegativeInt(value.trainingExpBank)
     : !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -830,11 +861,13 @@ function parseNodeAssignment(value: unknown, schemaVersion: number, tier: number
   if (value.kind === 'stat') {
     return schemaVersion < 9 && exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
   }
+  // v9–v11 Produce nodes; v12 moved them to the Extra stats grid (D235).
   if (value.kind === 'legacy-produce') {
-    return schemaVersion >= 9 && exactKeys(value, ['kind', 'stat']) && STATS.includes(value.stat as (typeof STATS)[number])
+    return schemaVersion >= 9 && schemaVersion <= 11 && exactKeys(value, ['kind', 'stat']) &&
+      STATS.includes(value.stat as (typeof STATS)[number])
   }
   if (value.kind === 'produce') {
-    if (schemaVersion < 9 || !exactKeys(value, ['kind', 'itemId', 'revision']) ||
+    if (schemaVersion < 9 || schemaVersion > 11 || !exactKeys(value, ['kind', 'itemId', 'revision']) ||
       typeof value.itemId !== 'string' || !isPositiveInt(value.revision)) return false
     const match = FARM_CROP_ID_PATTERN.exec(value.itemId)
     return match !== null && Number(match[1]) === tier
@@ -848,7 +881,8 @@ function parseNodeAssignment(value: unknown, schemaVersion: number, tier: number
  * the authored constellation templates, which live in @racer/domain and are not shipped to this deploy.
  */
 function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: number): boolean {
-  if (!isRecord(value) || !exactKeys(value, SCENARIO_TRAINING_FIELDS)) return false
+  if (!isRecord(value) || !exactKeys(value, schemaVersion >= 12 ? SCENARIO_TRAINING_V12_FIELDS : SCENARIO_TRAINING_FIELDS)) return false
+  if (schemaVersion >= 12 && !parseExtraStats(value.extraStats)) return false
   if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > Math.ceil(umaLevel / 10)) return false
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return false
   if (!isNonNegativeInt(value.trainingExp) || typeof value.started !== 'boolean') return false
@@ -867,11 +901,14 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
   return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
 }
 
-/** v5 to v11 Umas share the scenario shape; v10 adds outfit race preferences, and v11 re-levels on the linear curve. */
+/**
+ * v5 to v12 Umas share the Uma shape; v10 adds outfit race preferences, v11 re-levels on the linear curve, and v12 adds
+ * each unit's Extra stats grid (D235).
+ */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  const withPreferences = value.schemaVersion === 10 || value.schemaVersion === 11
+  const withPreferences = value.schemaVersion === 10 || value.schemaVersion === 11 || value.schemaVersion === 12
   if (!exactKeys(value, withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS) ||
-    ![5, 6, 7, 8, 9, 10, 11].includes(value.schemaVersion as number)) return null
+    ![5, 6, 7, 8, 9, 10, 11, 12].includes(value.schemaVersion as number)) return null
   if (withPreferences && value.racePreferences !== null &&
     (!isRecord(value.racePreferences) || !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
       !['front', 'pace', 'late', 'end'].includes(value.racePreferences.strategy as string) ||
@@ -904,7 +941,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8, 9, 10, 11].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9, 10, 11, 12].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null

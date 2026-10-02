@@ -4,7 +4,7 @@
 
 Training is **persisted and deliberate**, not a turn loop. You play a minigame to unlock slots, then you decide
 what fills them. Nothing is rolled and nothing is spent per turn. Card and lineage choices are freely reversible;
-Produce choices consume one Farm crop on first fill and replacement (D120, D205).
+Extra stat nodes are bought once with Farm crops and switched on or off freely (D120, D235).
 
 ```
 Play Spark Rival Circuit ──► Training Level rises ──► constellation nodes unlock
@@ -31,24 +31,24 @@ The two halves have their own docs:
 |---|---|---|
 | Range | 1 → 10 × scenarios, **permanent** | **1–10, per scenario** |
 | Earned by | **Racing only** (Uma EXP) | **Spark Rival Circuit**, 1,250 EXP a level (D211) |
-| Controls | Which scenarios are unlocked | **How many constellation nodes are open** |
+| Controls | Which scenarios are unlocked | **How many card nodes are open (TL1–8) and the lineage (TL9–10)** |
 | At level 1 of a scenario | — | the baseline node set only |
 
 Training Level no longer sets stat caps. Caps belong to the scenario
 ([cap profiles](scenarios.md#cap-profiles)); Training Level decides how much of the tree you can reach, and the
 tree is what pays the stats.
 
-The six minor-stat slots are **Produce nodes**. Filling one consumes a crop from global Item inventory whose destination
-scenario matches this constellation; that crop's stat receives the unchanged 40 raw points. A replacement consumes the
-new crop, does not refund the old one and cannot be cleared by itself. Saves created before this bridge keep their exact
-contribution as visibly labelled Legacy Produce until the player replaces it (D205).
+The minor stats are **[Extra stats](constellations.md#extra-stats)** (D235): a grid of 20 nodes a scenario, four of each
+stat, bought in order with that scenario's crop for the stat (1, 2, 3 and 4 crops), for good. Any six bought nodes can be
+on, each paying 40 raw points to its stat, and switching is free. Training Level does not touch them. Save v12 turned each
+filled Produce node into a bought, active node of its stat.
 
 ## Stats are derived
 
 An Uma's stats are recomputed from her active constellation whenever they are read:
 
 ```
-raw(s)     = Σ over assigned nodes of ( nodeValue × lbPct × eraPct × share[type][s] )
+raw(s)     = Σ over assigned card nodes of ( nodeValue × lbPct × eraPct × share[type][s] ) + 40 × active Extra stats of s
 derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthRates[s]) ) )
 ```
 
@@ -56,7 +56,7 @@ derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthR
 number and no gain formula. Remove a card and the stats it was paying for come straight back off.
 
 This is what makes the constellation worth configuring: you set a build for a Medium race, move Card or Lineage nodes
-freely, and deliberately spend stocked Produce when changing the six minor-stat choices.
+freely, and switch which six Extra stats are on.
 
 ## A scenario is a career run
 
@@ -82,8 +82,8 @@ Unity Cup are two units, and either can race.
 - **No Uma EXP from an earlier scenario.** Levels and careers belong to the current scenario: an earlier scenario's
   race pays no Uma EXP, tickets or shards and settles no goals. A finished build therefore cannot farm the rebuild a
   new scenario asks for. It also never waits on her gate: an Uma ready to advance can still race her earlier units.
-- **Still trainable.** An earlier unit edits its free Card/Lineage configuration like any other, spends matching Produce
-  for Produce-node changes, edits its card set within its own era, and
+- **Still trainable.** An earlier unit edits its free Card/Lineage configuration and Extra stats like any other, buys
+  Extra stat nodes with its own scenario's crops, edits its card set within its own era, and
   plays Spark Match (for a ticket) until it reaches Training Level 10. Friendship Training already earns stars per
   scenario.
 - **Advancing is unchanged.** A newly unlocked scenario starts from scratch at Training Level 1 with an empty set.
@@ -97,12 +97,13 @@ Tickets remain the only currency and the only pacing lever ([Economy](economy.md
 | Spark Rival Circuit run | **1 ticket** |
 | Card minigame run | **1 ticket** |
 | Card and lineage reconfiguration | **free, always** |
-| Produce fill or replacement | **1 matching crop; no refund** |
+| Extra stat node | **1–4 matching crops, once; no refund** |
+| Extra stats on or off | **free, always** |
 | Daily grant | **+15 per day**, stored up to **60** (four days) |
 | Scope | account-wide, shared by all Umas |
 
-Card and lineage reconfiguration is free on purpose. Produce is the one deliberate material layer: its cost is inventory,
-not a ticket, and the confirmation always states the spend and no-refund rule.
+Card and lineage reconfiguration is free on purpose. Extra stats are the one deliberate material layer: their cost is
+Farm inventory, not a ticket, and the confirmation always states the spend and no-refund rule.
 
 ## Training Levels are linear
 

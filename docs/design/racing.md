@@ -122,7 +122,7 @@ handicap    = Debut/Maiden 0.35 · Pre-OP/OP 0.30 · G3 0.25 · G2 0.15 · G1 0.
 ```
 
 **`trainedStat`** is a realistic set rather than a perfect one: six current-era cards at **84% of a node** (2★ of 3 since D200, the old 3★ of 5), one of
-them a **Friend card** whose fair share of the nodes pays skill points instead of stats, plus the stat nodes, on the
+them a **Friend card** whose fair share of the nodes pays skill points instead of stats, plus six Extra stats, on the
 median base stat, with the scenario's typical buff (D165). It is 736 in scenario 1 and 948 in scenario 14; D152's full
 tree of maxed cards was 950 and 1,259, which no real build reaches (the owner's TL10 Special Week is 989 / 617 / 567 / 616 /
 691).

@@ -22,21 +22,20 @@ export async function setConstellationNode(
   await gameRuntime.setConstellationNode(id, nodeId, assignment, tier)
 }
 
-export async function consumeConstellationProduce(input: {
-  umaId: string
-  tier: number
-  nodeId: string
-  itemId: string
-  expectedRevision: number
-}) {
+export async function unlockExtraStat(input: { umaId: string; tier: number; nodeId: import('@racer/domain').ExtraStatNodeId }) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')
-    return gameRuntime.consumeConstellationProduce(input)
+    return gameRuntime.unlockExtraStat(input)
   })
 }
 
+export async function setExtraStatActive(id: string, tier: number, nodeId: import('@racer/domain').ExtraStatNodeId, on: boolean): Promise<void> {
+  const { gameRuntime } = await import('./runtime')
+  await gameRuntime.setExtraStatActive(id, tier, nodeId, on)
+}
+
 export async function listProduceInventory(tier: number) {
-  const { readProduceInventory } = await import('./produce')
+  const { readProduceInventory } = await import('./extra-stats')
   return readProduceInventory(tier)
 }
 

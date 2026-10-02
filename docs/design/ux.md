@@ -93,7 +93,7 @@ Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-2
 2. **This scenario** — the scenario switch (D190), scenario status, Start/Unlock actions, then distinct **Racing**
    and **Training** zones. Racing shows three compact defaults (style, distance, surface), an Edit sheet and one full-width
    Races action. Training has three full-width destinations: **Constellation** (card tree and the only Spark Match entry),
-   **Inspiration** (parent/grandparent nodes and aptitude changes), and **Extra stats** (the six Produce nodes). These are
+   **Inspiration** (parent/grandparent nodes and aptitude changes), and **Extra stats** (the crop-bought stat grid). These are
    separate pages, not three kinds of node mixed in one canvas. Stats, card set, aptitudes and frozen career goals follow.
    An earlier scenario still has no Start or Unlock. The Training scene, Skills page and Spark Match follow the chosen unit.
 3. **Archive** — collapsed rows for everything browsed rather than used: all badges, scenario history, lineage,
@@ -122,10 +122,11 @@ against the moment the scene opened. Two tabs sit under it (M016):
 Every card-minigame run launched here returns here.
 
 The separate **Inspiration** page shows only the two parent and four grandparent slots with their aptitude deltas and
-lineage picker. **Extra stats** shows only the six Produce gems; a gem's sheet reads matching-scenario global stacks,
-labels migrated choices **Legacy**, disables zero stock and requires a no-refund **Consume 1** confirmation. Its result
-updates the live stat strip and links to Items. Neither page offers a training-minigame button. All three pages edit the
-same scenario's saved node ids; only their visualizations differ.
+lineage picker. **Extra stats** (D235) is a grid, not a graph: a row per stat showing its scenario crop and stock and four
+node buttons (on in the stat's colour with `+40`, off, the next to buy with `×cost`, or locked), under a `Slots on · n / 6`
+meter. Tapping a bought node switches it on or off; tapping the next opens a sheet naming the crop, the cost, the stock
+before and after and the no-refund rule, with a Farm link when short. Every state is in the button's accessible name.
+The live stat strip above moves with every change. Neither page offers a training-minigame button.
 
 ### Spark Match — Rival Circuit
 

@@ -321,7 +321,7 @@ export function UmaProfileScreen() {
         {([
           ['Constellation', 'Cards and Training Level · enter Spark Match here', ''],
           ['Inspiration', 'Parents, grandparents, aptitudes and inherited skills', '/inspiration'],
-          ['Extra stats', 'Farm Produce and the six small stat boosts', '/extra-stats'],
+          ['Extra stats', 'Buy stat nodes with Farm crops and turn on any six', '/extra-stats'],
         ] as const).map(([label, detail, suffix]) => (
           <Link
             key={label}

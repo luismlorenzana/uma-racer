@@ -108,7 +108,7 @@ never changes a total.
 
 | # | Scenario | Buff | Rule | Typical |
 |---|---|---|---|---|
-| 1 | URA Finale | **Foundation** | Produce nodes pay ×1.5 (60 each) | 4.0% |
+| 1 | URA Finale | **Foundation** | Extra stats pay ×1.5 (60 each) | 4.0% |
 | 2 | Unity Cup | **Team Spirit** | Each filled lineage slot adds +1% to every card node | 3.7% |
 | 3 | Trackblazer | **Climax** | Each career goal won in this scenario adds +2% to every card node, up to +8% | 3.7% |
 | 4 | Our Grand Concert | **Performance** | A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5% | 2.3% |

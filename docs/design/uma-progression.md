@@ -43,7 +43,8 @@ from a `ScenarioTraining` whenever read, the active one unless another trained u
 | `tier` | Which scenario this is |
 | `trainingLevel`, `trainingExp` | 1–10, earned by [Spark Rival Circuit](minigames.md#spark-match--rival-circuit). Decides which nodes are open |
 | `cardSetIds` | Up to 6 owned, era-eligible cards; no duplicate character |
-| `assignments` | `nodeId → { card } | { stat } | { lineage }`. The current configuration, and the only one |
+| `assignments` | `nodeId → { card } | { lineage }`. The current configuration, and the only one |
+| `extraStats` | The [Extra stats](constellations.md#extra-stats) grid: each stat's bought nodes (0–4) and the six at most that are on (D235) |
 | `loadoutSkillIds` | The equipped subset of the derived library |
 | `goals`, `journey` | This scenario's frozen [career](scenario-goals.md) and its outcomes |
 | `raceHistory` | This scenario's races. **Races are scenario-linked** (D122) |

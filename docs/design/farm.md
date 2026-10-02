@@ -1,7 +1,7 @@
 # Stable Farm
 
 > **Status: complete through M026, rebalanced by D234.** The rules/catalog, synced Farm and item-ledger runtime,
-> Home/Sections/field/worker/crop screens, global Item inventory and constellation Produce consumption are implemented.
+> Home/Sections/field/worker/crop screens, global Item inventory and the Extra stats bridge (D235) are implemented.
 
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows, plot by plot,
 into **Farm Sections** of six as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting
@@ -30,14 +30,14 @@ flowchart LR
     Account --> Unlock[More plots, Section by Section]
     Unlock --> Field
     Harvest --> Items[(Global Item inventory)]
-    Items --> Produce[Consume on a constellation Produce node]
+    Items --> Extra[Buy Extra stat nodes]
 ```
 
 - Farm progress is **account-wide**, not attached to the featured Uma or an active scenario.
 - It never spends or pays Training Tickets and never grants Uma EXP, Training EXP, card stars, badges or race facts.
 - Outfit Farming Level and aggregate Farm Level are visible only inside the Farm shell. They do not join the Stable sort,
   Uma profile or global account header; the Home Farm card may show the Farm Level and next Farm unlock.
-- Produce is the Farm's racing bridge: a constellation consumes one matching-scenario crop for a first fill or replacement.
+- Produce is the Farm's racing bridge: a scenario's crops buy its [Extra stat](constellations.md#extra-stats) nodes (D235).
   Inventory remains global and the Farm loop itself never depends on the featured Uma or active scenario.
 
 ## The field
@@ -237,10 +237,11 @@ interface ItemLedgerEntry {
   id: string              // operation id; farm harvest uses the cycle id
   itemId: string
   delta: number           // non-zero safe integer
-  reason: 'farm-harvest' | 'constellation-produce' | 'exp-bank' | 'training-level-up'
+  reason: 'farm-harvest' | 'extra-stat-unlock' | 'constellation-produce' | 'exp-bank' | 'training-level-up'
   source:
     | { kind: 'farm-harvest'; plotId: string; cycleId: string; templateId: string; farmingExp: 12 }
-    | { kind: 'constellation-produce'; umaId: string; tier: number; nodeId: string; revision: number }
+    | { kind: 'extra-stat-unlock'; umaId: string; tier: number; nodeId: string }   // −1…−4, id extra:<umaId>:<tier>:<nodeId>
+    | { kind: 'constellation-produce'; umaId: string; tier: number; nodeId: string; revision: number } // pre-v12 history
     | { kind: 'spark-run'; runId: string }            // exp-bank: a run past TL10, id exp-bank:<runId>
     | { kind: 'bank-settle' }                         // exp-bank: startup settling the migrated bank
     | { kind: 'level-up'; umaId: string; tier: number; fromLevel: number; fromExp: number } // a spend (T088)
@@ -311,22 +312,20 @@ marks are original code-native drawings; emoji and checked-in original-game imag
 and opacity only, reduced-motion has an instant equivalent, and a one-minute presentation tick updates labels without
 writing the save.
 
-## Constellation Produce bridge
+## Extra stats bridge
 
-The Farm's Produce is the stocked minor-stat choice in every constellation (D205). It shipped separately from M025
-because it changed existing saved constellations and their interaction contract.
+The Farm's crops buy the [Extra stats](constellations.md#extra-stats) grid of every trained unit (D235; it replaced
+D205's Produce nodes).
 
-- Every current `stat` node becomes a **Produce node** with the same id, unlock order and **40 raw-point value**. The
-  six-node 240-point pool and invariance tests do not change.
-- Filling an empty Produce node selects one inventory crop whose `scenarioTier` matches that constellation and consumes
-  exactly one. Its `stat` decides which stat receives the node's 40 points.
-- Replacing a filled Produce node consumes one new crop and does not refund the old one. Clearing alone is not offered.
-  A confirmation names the item, available quantity and exact stat delta.
-- Existing filled stat nodes migrate to a `legacy-produce` assignment that keeps the same contribution without creating
-  or consuming inventory. Once replaced, it follows the normal Produce rule. Save v9 and Dexie v15 perform this one-way
-  migration while the API rejects an older Uma row over a newer one.
-- Card and lineage reconfiguration remains free. The training screen filters the Item inventory to the active scenario;
-  farming itself remains global.
+- Each scenario's grid has four nodes of each stat. A stat's next node costs that stat's crop for the scenario: 1, 2, 3
+  and 4 of them, so 10 for a full row and 50 for a unit's grid. Crops are consumed for good.
+- Any six bought nodes can be on, each paying 40 raw points to its stat. Switching is free; buying is the only spend.
+- A purchase commits the Uma, the crop stack, its `-cost` evidence `extra:{umaId}:{tier}:{nodeId}` and outbox in one
+  transaction. A retry finds its evidence; a stale screen that targets a node already bought reloads the grid.
+- Every new Uma starts each scenario with an empty grid, and every scenario is its own sink: 50 crops a unit, from each
+  scenario's own crop row, which is what keeps the Farm worth growing for years.
+- Older `constellation-produce` evidence stays valid history. Save v12 turned each filled Produce node into a bought,
+  active node of its stat, free, four at most a stat.
 
 ## Persistence boundary
 
@@ -339,10 +338,9 @@ plant and harvest re-read Farm and ownership inside Dexie transactions. Harvest 
 evidence row, while evidence reconciliation repairs item quantities, outfit XP, attempt floors and a harvested cycle
 resurrected by a sync conflict. An already-correct projection performs no write.
 
-M026 adds no Farm fields. Save v9 stores a crop id plus monotonic revision on each new Produce assignment, or a stat-only
-legacy assignment for migrated builds. Dexie v15 migrates every v8 Uma row without touching `items` or `itemLedger`.
-The consuming transaction spans Uma, item stack, item evidence, badge/flair projections and all outbox markers; Zustand
-publishes only after commit. Its evidence id is `produce:{umaId}:{tier}:{nodeId}:{revision}`.
+M026 added no Farm fields; its Produce nodes lived on the Uma rows (save v9–v11). Save v12 (D235) replaces them with each
+unit's `extraStats` grid. A purchase transaction spans Uma, item stack, item evidence, badge/flair projections and all
+outbox markers; Zustand publishes only after commit. Its evidence id is `extra:{umaId}:{tier}:{nodeId}`.
 
 ```text
 players/{uid}/farm/main              schema, six plot slots, persistent outfit assignments, outfit XP/levels, attempts, version
@@ -375,8 +373,8 @@ API accepts both shapes, so an older build can still sync, and the newer schema 
   1 / 3 / 11 / 29 / 61 / 111, then 183 for Section 2. Growth times step from 12h to 8h in 24-minute steps over the ten
   levels after a row opens. All of this is pinned by tests, and the pacing envelope by `pnpm sim:farm`.
 - Farm state syncs to another device through the existing save flow; a running crop is not rerolled or shortened.
-- A Produce fill/replacement spends exactly one crop, advances one node revision and writes one `-1` movement; retry is
-  idempotent, stale screens do not spend, and migrated builds derive byte-for-byte the same racing state.
+- An Extra stat purchase spends exactly its 1–4 crops and writes one movement; retry is idempotent and stale screens do
+  not spend. Switching nodes spends nothing.
 - The Home badge, field, pickers, workers and inventory are usable at 390 × 844 and 375 × 667 with 44 pt targets,
   VoiceOver labels, reduced motion and no startup-bundle regression over 180 KB gzip.
 - Checked-in fixtures are small and synthetic. No original-game rows or images enter git.

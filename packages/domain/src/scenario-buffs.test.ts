@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { extraStatsFromProduce } from './extra-stats'
 import {
   CARD_SET_SIZE,
   cardFairShare,
@@ -36,13 +37,12 @@ function derive(tier: number, set: SetCard[], options: { statNodes?: number; lin
       assignments[cardNodes[cursor++]!.id] = { kind: 'card', cardId: entry.id }
     }
   }
-  template.nodes.filter((node) => node.kind === 'stat').slice(0, options.statNodes ?? 0)
-    .forEach((node) => { assignments[node.id] = { kind: 'legacy-produce', stat: 'speed' } })
+  const extraStats = extraStatsFromProduce(Array.from({ length: options.statNodes ?? 0 }, () => 'speed' as const))
   template.nodes.filter((node) => node.kind === 'parent' || node.kind === 'grandparent').slice(0, options.lineage ?? 0)
     .forEach((node, index) => { assignments[node.id] = { kind: 'lineage', templateId: `ancestor-${index}` } })
   return deriveStats({
     tier, trainingLevel: 10, template, assignments, cardSetIds: set.map((entry) => entry.id), umaTemplate: uma, cards,
-    goalsWon: options.goalsWon, buffs: options.buffs,
+    extraStats, goalsWon: options.goalsWon, buffs: options.buffs,
   })
 }
 
@@ -147,8 +147,8 @@ describe('scenario buffs (D165)', () => {
       const place = (order: readonly string[]) => {
         const assignments: Record<string, NodeAssignment> = {}
         cardNodes.forEach((nodeId, index) => { assignments[nodeId] = { kind: 'card', cardId: order[index]! } })
-        template.nodes.filter((node) => node.kind === 'stat').forEach((node, index) => { assignments[node.id] = { kind: 'legacy-produce', stat: STATS[index % 5]! } })
-        return deriveStats({ tier, trainingLevel: 10, template, assignments, cardSetIds: [...cards.keys()], umaTemplate: uma, cards, goalsWon: 2 })
+        const extraStats = extraStatsFromProduce(Array.from({ length: 6 }, (_, index) => STATS[index % 5]!))
+        return deriveStats({ tier, trainingLevel: 10, template, assignments, cardSetIds: [...cards.keys()], umaTemplate: uma, cards, extraStats, goalsWon: 2 })
       }
       const base = place(ids)
       const moved = place([...ids].reverse())
