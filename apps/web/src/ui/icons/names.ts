@@ -5,6 +5,7 @@ export const ICON_NAMES = [
   'badges',
   'burst',
   'card-coupon',
+  'carrot',
   'cards',
   'check',
   'chevron-down',

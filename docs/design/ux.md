@@ -88,7 +88,8 @@ and missing target content. Each available active target links directly into Rac
 
 Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-21):
 
-1. **Identity** — portrait, name, outfit, Uma Level, Prestige, active title, the featured star, and the three
+1. **Identity** — portrait, name, outfit, her two levels as label-free chips (the race flag's **Uma Level** and the
+   carrot's **Farming Level**, D239), Prestige, active title, the featured star, and the three
    highest-tier badges earned.
 2. **This scenario** — the scenario switch (D190), scenario status, Start/Unlock actions, then distinct **Racing**
    and **Training** zones. Racing shows three compact defaults (style, distance, surface), an Edit sheet and one full-width

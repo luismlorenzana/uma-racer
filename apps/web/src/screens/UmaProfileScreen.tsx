@@ -25,6 +25,7 @@ import { buildUmaBadgeCollection, type BadgeCollectionItem } from '../game/badge
 import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
 import { buildJourneyView } from '../game/goals-view'
+import { useFarmView } from '../game/farm/useFarmView'
 import { useChosenTier } from '../game/scenario-choice'
 import { useGame } from '../game/store'
 import { joinUma } from '../game/view'
@@ -42,7 +43,7 @@ import { Collapsible, SectionHeading } from '../ui/Section'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { SkillIcon } from '../ui/SkillIcon'
 import { ScenarioSwitch } from '../ui/ScenarioSwitch'
-import { ChevronLeftIcon, ChevronRightIcon } from '../ui/icons'
+import { CarrotIcon, ChevronLeftIcon, ChevronRightIcon, RaceIcon } from '../ui/icons'
 import { TypeIcon } from '../ui/TypeIcon'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
@@ -76,6 +77,9 @@ export function UmaProfileScreen() {
   const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
   const [busy, setBusy] = useState(false)
+  // Her Farming Level, from the Farm save; an outfit that never farmed is Lv1 (D239).
+  const farm = useFarmView(status === 'ready')
+  const farmingLevel = farm.state.view?.workers[umaId]?.level ?? null
   const [raceHistory, setRaceHistory] = useState<RaceResultRecord[]>([])
   const [editingPreferences, setEditingPreferences] = useState<RacePreferences | null>(null)
   // Which of her trained units the page shows (D190): her current scenario unless another was chosen.
@@ -205,9 +209,17 @@ export function UmaProfileScreen() {
             </div>
 
             <div className="mt-2 flex items-end gap-3">
-              <div>
-                <p className="text-micro">Uma level</p>
-                <Numeral className="block text-[26px] leading-none">{save.level}</Numeral>
+              {/* Her two levels as icons, no labels (D239): the race flag's Uma Level and the carrot's Farming Level. */}
+              <div className="flex items-center gap-1.5">
+                <span role="img" aria-label={`Uma level ${save.level}`} className="flex h-8 items-center gap-1 rounded-full bg-sunken pr-2.5 pl-2">
+                  <RaceIcon size={16} className="text-accent-strong" />
+                  <Numeral className="text-[17px] leading-none">{save.level}</Numeral>
+                </span>
+                <span role="img" aria-label={farmingLevel === null ? 'Farming level loading' : `Farming level ${farmingLevel}`}
+                  className="flex h-8 items-center gap-1 rounded-full bg-sunken pr-2.5 pl-2">
+                  <CarrotIcon size={16} variant="duotone" className="text-ink-soft" />
+                  <Numeral className="text-[17px] leading-none">{farmingLevel ?? '–'}</Numeral>
+                </span>
               </div>
               <div className="border-l border-hairline pl-3">
                 <p className="text-micro">Prestige</p>
