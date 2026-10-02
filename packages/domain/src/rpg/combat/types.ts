@@ -74,7 +74,8 @@ export type CombatAction =
   | { kind: 'item'; actorId: string; targetId: string; itemId: string }
 export type CombatCue =
   | { kind: 'intent'; actorId: string; targetId: string; label: string }
-  | { kind: 'hit' | 'heal' | 'guard' | 'ko' | 'phase' | 'status' | 'follow-up'; actorId: string; targetId: string; amount?: number; label?: string }
+  | { kind: 'hit' | 'heal' | 'guard' | 'ko' | 'phase' | 'status' | 'follow-up'; actorId: string; targetId: string; amount?: number; label?: string;
+      channel?: CombatChannel | 'status'; element?: RpgElement | null; rider?: boolean }
   | { kind: 'result'; label: 'victory' | 'loss' }
 export type CombatError = 'terminal' | 'invalid-actor' | 'already-acted' | 'invalid-target' |
   'invalid-skill' | 'insufficient-mp' | 'item-disabled' | 'invalid-state'

@@ -428,6 +428,27 @@ RPG-only account refresh, which leaves unrelated queued saves untouched.
 Partial parties stay editable but cannot launch. Chapter selection is explicitly unavailable until its task;
 Home still has no RPG link and no synthetic production encounter.
 
+T094 adds the lazy standalone **`/rpg/battle/:checkpointId`** stage (D243), not a Home or chapter launch action.
+Five readable party cards carry portrait weapon/signature overlays, HP/MP, KO, acted and status labels. Attack,
+equipped Skill and Guard use explicit actor/target selection; Details runs the pure reducer for legal targets and
+projected cues, including enemy retaliation on the last ally action. Plans lists every enemy intent. The host
+supplies the saved action count, replay cues/last action and acknowledged evidence, including a terminal replay
+after a loss checkpoint has advanced its retry ordinal. Hit cues annotate their original channel/element/rider,
+so a later intent or boss phase cannot mislabel damage; no combat formula or seed belongs to the screen.
+
+The renderer journals first, then plays ordered transform/opacity cues using elapsed frame deltas. Input is locked
+through playback; Skip, reduced motion, background and orientation changes affect presentation only. Reopening
+restores the exact saved action prefix without replaying or submitting it again. Missing/corrupt journals, lease
+takeover, Pending and Conflict each have explicit recovery screens. Pending results say **not yet earned** and have
+no map/EXP/Item spend action. Accepted results display only their typed receipt; T094 adds no rewards or save fields.
+The battle guide reuses `PagedGuide`, with modal focus containment and accessible text for channels and matchups.
+
+The DEV/TEST-only **`/dev/rpg-battle-proof?mode=practice|boss|loss`** uses invented mixed-weapon teams and a separate
+`uma-rpg-battle-proof-v1` Dexie database. It cannot access account tables, enqueue commands or mint rewards. Each
+mode resumes its own saved journal; its reset affects only that proof. Runtime portraits are optional presentation
+references, never combat inputs; `art=off` makes screenshots fully synthetic. This route and its fixtures are absent
+from the production build. [Phone proof](../research/rpg-battle-phone-proof.md) records both viewport checks.
+
 ## Chapters, content and reward boundary
 
 - A chapter selects one of the existing scenarios as theme/reward destination. Every preset may launch any chapter;

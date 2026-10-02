@@ -154,8 +154,8 @@ describe('card album · scenario lens', () => {
 
   it('pays per node at the scenario, by stars', () => {
     const built = album(1, ['c1'], { breaks: { c1: { '1': 1 } } })
-    // 220 a node at 1★, which pays 68% (D147).
-    expect(built.entries.get('c1')?.perNode).toBeCloseTo(149.6)
+    // D244: 187 a node at 1★, which pays 68% (D147).
+    expect(built.entries.get('c1')?.perNode).toBeCloseTo(127.16)
   })
 
   it('filters on what can still be bonded here', () => {

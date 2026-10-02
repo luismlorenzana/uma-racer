@@ -173,6 +173,11 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    path: 'rpg/battle/:checkpointId',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading RPG battle" />,
+    lazy: async () => ({ Component: (await import('../screens/rpg/RpgBattleScreen')).RpgBattleScreen }),
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
@@ -183,6 +188,10 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/rpg-battle-proof',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading RPG proof" />,
+    lazy: async () => ({ Component: (await import('../screens/rpg/RpgBattleProofScreen')).RpgBattleProofScreen }),
+  }, {
     path: 'dev/spark-rival-proof',
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Spark Rival touch proof" />,
     lazy: async () => ({ Component: (await import('../screens/minigames/SparkRivalProofScreen')).SparkRivalProofScreen }),

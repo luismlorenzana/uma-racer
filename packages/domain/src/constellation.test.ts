@@ -108,7 +108,7 @@ describe('budgets', () => {
 
   it('pays card nodes integer values beside a fixed 240-point Extra stats pool: six active nodes of 40 (D134, D235)', () => {
     for (const tier of TIERS) expect(Number.isInteger(nodeValue(tier))).toBe(true)
-    expect(TIERS.map(nodeValue)).toEqual([220, 198, 233, 189, 164, 164, 163, 169, 168, 168, 167, 172, 171, 171])
+    expect(TIERS.map(nodeValue)).toEqual([187, 176, 215, 181, 158, 158, 158, 163, 163, 162, 162, 167, 166, 166])
     expect([STAT_NODE_POOL, EXTRA_STAT_NODE_VALUE]).toEqual([240, 40])
   })
 
@@ -554,11 +554,11 @@ describe('derivation', () => {
       },
       cards: new Map([['c', card('c', 'speed')]]),
     })
-    // 220 × 0.70 = 154 raw speed ×1.2 growth = 184.8, on top of base 100.
-    expect(derived.raw.speed).toBe(154)
-    expect(derived.stats.speed).toBe(285)
-    // 220 × 0.30 = 66 raw power, no growth, on the same start.
-    expect(derived.stats.power).toBe(166)
+    // D244: 187 × 0.70 = 130.9 raw speed ×1.2 growth = 157.08, on top of base 100.
+    expect(derived.raw.speed).toBeCloseTo(130.9)
+    expect(derived.stats.speed).toBe(257)
+    // 187 × 0.30 = 56.1 raw power, no growth, on the same start.
+    expect(derived.stats.power).toBe(156)
     // An untouched stat sits exactly on her base.
     expect(derived.stats.guts).toBe(uma.baseStats.guts)
   })

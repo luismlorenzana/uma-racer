@@ -2,12 +2,12 @@
 import { applyAction, createEncounter, parseRpgCheckpointSave, parseRpgResultEvidence,
   projectRpgStats, replay, rpgCheckpointId, rpgEncounterSeed, rpgEntryId, rpgResultId,
   RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_ROUNDS,
-  type CombatAction, type CombatState, type EncounterInput, type RpgCheckpointSaveV1,
+  type CombatAction, type CombatCue, type CombatState, type EncounterInput, type RpgCheckpointSaveV1,
   type RpgCommandRequest, type RpgFrozenEntryV1, type RpgResultEvidenceV1 } from '@racer/domain'
 import { db, type PendingRpgCommandRow, type RpgBattleJournalRow, type VersionedRow } from './db'
 import { enqueueRpgCommand } from './rpg-sync'
 
-export type RpgBattleView =
+type RpgBattleStatus =
   | { kind: 'open'; checkpoint: RpgCheckpointSaveV1; state: CombatState | null; actionCount: number;
       recovery: 'none' | 'restart-journal' | 'takeover-required' }
   | { kind: 'pending'; checkpoint: RpgCheckpointSaveV1; state: CombatState | null; phase: 'entry' | 'takeover' | 'result';
@@ -16,6 +16,39 @@ export type RpgBattleView =
   | { kind: 'frozen-content-unavailable'; checkpoint: RpgCheckpointSaveV1; reason: string }
   | { kind: 'loss'; checkpoint: RpgCheckpointSaveV1; resultId: string }
   | { kind: 'accepted'; checkpoint: RpgCheckpointSaveV1; resultId: string; outcome: 'win' | 'loss' }
+
+/** Read-only replay projection, including acknowledged results whose checkpoint has already moved. */
+export type RpgBattleView = RpgBattleStatus & {
+  state: CombatState | null
+  actionCount: number
+  cues: CombatCue[]
+  lastAction: CombatAction | null
+  cueState: CombatState | null
+  evidence: RpgResultEvidenceV1 | null
+}
+
+type BattleProjection = Pick<RpgBattleView, 'state' | 'actionCount' | 'cues' | 'lastAction' | 'cueState'>
+
+function battleView(status: RpgBattleStatus, projection: BattleProjection | null = null,
+  evidence: RpgResultEvidenceV1 | null = null): RpgBattleView {
+  return { ...status, state: 'state' in status ? status.state : projection?.state ?? null,
+    actionCount: projection?.actionCount ?? 0, cues: projection?.cues ?? [],
+    lastAction: projection?.lastAction ?? null, cueState: projection?.cueState ?? null, evidence }
+}
+
+/** Validate the final state and capture its last cue step in one replay, not three full prefixes. */
+function projectJournal(input: EncounterInput, journal: RpgBattleJournalRow): BattleProjection | null {
+  const last = journal.actions.at(-1)
+  const before = replay(input, last ? journal.actions.slice(0, -1) : [])
+  if (before.error) return null
+  const step = last ? applyAction(before.state, last) : before
+  if (step.error || step.hash !== journal.stateHash ||
+    !(journal.terminal === 'abandoned' || journal.terminal === 'open' && step.state.outcome === 'active' ||
+      journal.terminal === 'win' && step.state.outcome === 'victory' ||
+      journal.terminal === 'loss' && step.state.outcome === 'loss')) return null
+  return { state: step.state, actionCount: journal.actions.length, cues: last ? step.cues : [],
+    lastAction: last ?? null, cueState: last ? before.state : null }
+}
 
 export interface RpgBattleHost {
   enter(uid: string, checkpointId: string, nodeId: string, input?: EncounterInput): Promise<RpgBattleView>
@@ -249,48 +282,58 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     return this.resume(checkpointId)
   }
 
+  private async projectEntry(entry: RpgFrozenEntryV1, checkpoint: RpgCheckpointSaveV1): Promise<BattleProjection | null> {
+    try {
+      const input = frozenInput(entry, checkpoint)
+      const raw = await db.rpgBattleJournals.get(rpgBattleJournalId(entry))
+      const journal = raw && parseJournal(raw, entry, await digest(entry.enemyKitJson))
+      return journal ? projectJournal(input, journal) : null
+    } catch { return null /* An accepted receipt remains authoritative without its local replay. */ }
+  }
+
   async resume(checkpointId: string): Promise<RpgBattleView> {
     const { acknowledged, checkpoint, pending } = await this.context(checkpointId)
     const conflicting = pending.find((row) => row.status === 'conflict')
     const result = pending.find((row) => (row.body as RpgCommandRequest).action === 'battle-result' && row.status === 'pending')
     const entry = checkpoint.frozenEntry
-    if (conflicting) return { kind: 'conflict', checkpoint: acknowledged.data,
-      reason: JSON.stringify(conflicting.conflict ?? 'RPG command conflicted'), state: null }
+    if (conflicting) return battleView({ kind: 'conflict', checkpoint: acknowledged.data,
+      reason: JSON.stringify(conflicting.conflict ?? 'RPG command conflicted'), state: null })
     if (!entry) throw new Error('No frozen battle at this checkpoint')
     const id = rpgBattleJournalId(entry)
     const accepted = await db.rpgResults.get(id)
-    if (accepted) return { kind: 'accepted', checkpoint: acknowledged.data, resultId: id,
-      outcome: accepted.data.outcome }
+    if (accepted) return battleView({ kind: 'accepted', checkpoint: acknowledged.data, resultId: id,
+      outcome: accepted.data.outcome }, await this.projectEntry(entry, acknowledged.data), accepted.data)
     let input: EncounterInput
     let frozenHash: string
     try { input = frozenInput(entry, checkpoint); frozenHash = await digest(entry.enemyKitJson) }
-    catch (error) { return { kind: 'frozen-content-unavailable', checkpoint, reason: String(error) } }
+    catch (error) { return battleView({ kind: 'frozen-content-unavailable', checkpoint, reason: String(error) }) }
     const raw = await db.rpgBattleJournals.get(id)
     const claim = await db.rpgBattleClaims.get(id)
     const journal = raw ? parseJournal(raw, entry, frozenHash) : null
-    if (claim && claim.leaseRevision !== entry.leaseRevision) return { kind: 'conflict', checkpoint,
-      reason: 'Battle lease changed; this device is stale', state: null }
-    let state: CombatState | null = null
+    if (claim && claim.leaseRevision !== entry.leaseRevision) return battleView({ kind: 'conflict', checkpoint,
+      reason: 'Battle lease changed; this device is stale', state: null })
+    let projection: BattleProjection | null = null
     if (journal) {
-      try {
-        const step = replay(input, journal.actions)
-        if (!step.error && step.hash === journal.stateHash &&
-          (journal.terminal === 'abandoned' || journal.terminal === 'open' && step.state.outcome === 'active' ||
-            journal.terminal === 'win' && step.state.outcome === 'victory' ||
-            journal.terminal === 'loss' && step.state.outcome === 'loss')) state = step.state
-      } catch { /* Corrupt journals stay on disk; recovery must be explicit. */ }
+      try { projection = projectJournal(input, journal) }
+      catch { /* Corrupt journals stay on disk; recovery must be explicit. */ }
     }
-    if (result) return { kind: 'pending', checkpoint, state, phase: 'result' }
+    const state = projection?.state ?? null
+    if (result) return battleView({ kind: 'pending', checkpoint, state, phase: 'result' }, projection)
     const takeover = pending.find((row) => (row.body as RpgCommandRequest).action === 'takeover')
-    if (takeover) return { kind: 'pending', checkpoint, state: null, phase: 'takeover' }
-    if (checkpoint.status === 'at-checkpoint') return { kind: 'loss', checkpoint, resultId: rpgResultId(entry.entryId, entry.retryOrdinal - 1) }
+    if (takeover) return battleView({ kind: 'pending', checkpoint, state: null, phase: 'takeover' })
+    if (checkpoint.status === 'at-checkpoint') {
+      const previous = { ...entry, retryOrdinal: entry.retryOrdinal - 1 }
+      const resultId = rpgBattleJournalId(previous)
+      return battleView({ kind: 'loss', checkpoint, resultId }, await this.projectEntry(previous, checkpoint),
+        (await db.rpgResults.get(resultId))?.data ?? null)
+    }
     const begin = pending.find((row) => (row.body as RpgCommandRequest).action === 'begin-battle')
-    if (journal?.terminal !== 'open' && journal && state) return { kind: 'pending', checkpoint, state, phase: 'result' }
-    if (begin) return { kind: 'pending', checkpoint, state, phase: 'entry',
-      recovery: state ? 'none' : claim?.leaseRevision === entry.leaseRevision ? 'restart-journal' : undefined }
-    return { kind: 'open', checkpoint, state, actionCount: journal?.actions.length ?? 0,
+    if (journal?.terminal !== 'open' && journal && state) return battleView({ kind: 'pending', checkpoint, state, phase: 'result' }, projection)
+    if (begin) return battleView({ kind: 'pending', checkpoint, state, phase: 'entry',
+      recovery: state ? 'none' : claim?.leaseRevision === entry.leaseRevision ? 'restart-journal' : undefined }, projection)
+    return battleView({ kind: 'open', checkpoint, state, actionCount: projection?.actionCount ?? 0,
       recovery: claim?.leaseRevision !== entry.leaseRevision ? 'takeover-required' :
-        state ? 'none' : 'restart-journal' }
+        state ? 'none' : 'restart-journal' }, projection)
   }
 
   async submitAction(checkpointId: string, expectedActionCount: number, action: CombatAction): Promise<RpgBattleView> {
@@ -366,7 +409,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     if (!entry) throw new Error('No frozen battle')
     const resultId = rpgBattleJournalId(entry)
     const existing = await db.rpgResults.get(resultId)
-    if (existing) return { kind: 'accepted', checkpoint: acknowledged.data, resultId, outcome: existing.data.outcome }
+    if (existing) return this.resume(checkpointId)
     if (checkpoint.status !== 'in-battle') throw new Error('No open frozen battle')
     if (pending.some((row) => (row.body as RpgCommandRequest).action === 'takeover' && row.status === 'pending')) {
       throw new Error('Takeover must be acknowledged before a result')

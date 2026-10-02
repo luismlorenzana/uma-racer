@@ -1,6 +1,6 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** T089 rules, T090 save transport, T091 pure combat, T092 battle journal/host and T093 internal roster/party setup implemented; the RPG is not playable or Home-visible yet. Read [the design](../design/uma-rpg.md) for product rules and
+**Status:** T089–T094 rules, save transport, combat, battle journal/host, internal roster/party setup and mobile battle stage implemented. A development-only synthetic fight is playable; real campaign launch, rewards and Home entry remain gated. Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
 left ambiguous. T089's progression coefficients are pinned in D227 and T091's combat coefficients in D229; T096
 must simulate its remaining reward candidates, then update the design, `packages/domain/src/domain.test.ts` and
@@ -8,9 +8,16 @@ append-only decisions log.
 
 ## Existing seams and the sync hazard
 
-- `packages/domain/src/save.ts` remains save v11; `apps/web/src/game/db.ts` is Dexie v19. T090 added separate
+- The current root save is v13 and Dexie v22; RPG cloud rows remain schema v1, unchanged by the later Farm/racing migrations. T090 added separate
   `rpgOutfits`, `rpgPresets`, `rpgCheckpoints` entities and `rpgResults`, `rpgPromotions`, `rpgReceipts` logs.
   The production API parses those shapes independently of `@racer/domain`.
+- T094's `RpgBattleView` adds read-only `actionCount`, last-step `cues`, `lastAction`, pre-cue `cueState`, final
+  `state` and accepted `evidence`. Terminal projections validate the same kit/journal/hash as open turns, using the
+  preceding retry ordinal for an accepted loss. No view field is a new save field. The screen previews through
+  `applyAction`, appends through the host, then checks the returned hash before playing cues. Optional hit channel,
+  element and rider annotations do not enter state hashes or change engine-v1 rules.
+  A single prefix replay followed by its last action supplies validation, final state and pre-cue/last-step
+  feedback together; the view never replays the same history separately for each presentation field.
 - `apps/api/src/save/firestore-save.repository.ts` and `local-save.repository.ts` currently resolve each entity
   upsert and then append every new log even if an entity conflicted. The Firestore transaction is atomic as a database
   operation, but **the game command is not all-or-nothing**. The ordinary `/api/sync` batch must not carry an RPG

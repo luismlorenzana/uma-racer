@@ -68,6 +68,7 @@ describe('pure RPG combat', () => {
     physical.allies[0]!.stats.matk = 1
     const before = createEncounter(physical)
     const after = applyAction(before.state, skill('ally-0', 'foe-a', physical))
+    expect(after.cues.find((cue) => cue.kind === 'hit')).toMatchObject({ channel: 'physical', element: 'fire', rider: true })
     expect(after.cues.filter((cue) => cue.kind === 'follow-up')).toHaveLength(RPG_WEAK_FOLLOW_UP_LIMIT)
     const damage = amountOf(after.cues, 'hit')
     expect(damage).toBeGreaterThan(100)
@@ -80,6 +81,7 @@ describe('pure RPG combat', () => {
     tome.allies[0]!.stats.matk = 100
     tome.allies[0]!.stats.atk = 1
     const magic = applyAction(createEncounter(tome).state, skill('ally-0', 'foe-a', tome))
+    expect(magic.cues.find((cue) => cue.kind === 'hit')).toMatchObject({ channel: 'magical', element: 'fire', rider: false })
     expect(amountOf(magic.cues, 'hit')).toBeGreaterThan(100)
     const second = applyAction(after.state, skill('ally-1', 'foe-b', physical))
     expect(second.cues.filter((cue) => cue.kind === 'follow-up')).toHaveLength(0)
