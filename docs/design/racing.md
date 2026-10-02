@@ -10,7 +10,7 @@ Racing is the **first system to be built** and the heart of the game. Races gran
 2. **Pick the Uma, strategy, and skill loadout.** The strategy starts at that outfit's saved default (or its strongest
    baseline style until edited), and can still be changed for this race. Aptitudes are shown for the race's surface,
    distance, and each strategy.
-3. **Watch the race** turn by turn on its own course ([engine v8](#engine-v8-the-originals-start-corners-and-final-straight)): 1×
+3. **Watch the race** turn by turn on its own course ([engine v9](#engine-v9-a-speed-skill-always-speeds-her-up)): 1×
    plays two one-second turns a second, and Slow, 2×, pause, step one turn and skip are always at hand.
 4. **Results:** finishing order, margins, time, EXP gained, goal and badge progress, and new badges or titles with fanfare.
 
@@ -254,7 +254,7 @@ per-strategy stat bonus; the G1 player targets below remain the player-facing ac
 
 An under-trained Uma, or one racing off-aptitude, loses to the field. At Training Level 10 a trained Uma should win
 the grades below G1; G1 is a real contest, which a fully bonded set is favoured to win and a typical one wins on its
-skills and on carrying the Stamina the distance needs (D152, D159). `pnpm sim:careers` measures it on engine v8 at
+skills and on carrying the Stamina the distance needs (D152, D159). `pnpm sim:careers` measures it on engine v9 at
 TL10 with each distance's decks (the [stamina ladder](constellations.md#balance-targets-the-stamina-ladder)'s, plus a
 Power card for sprints and miles) against generated fields, best of four strategies, 12 runners. Measured 2026-10-01
 (20 races a cell), sprint / mile / medium / long:
@@ -395,6 +395,7 @@ Based on [Race Mechanics Research](../research/race-mechanics.md):
 | R5: Full skills (engine v5) | Random course points, the race clock, course facts, counters, green and gate skills ✅. Debuffs and team effects are out (D141) |
 | Turns (engine v6, M021) | One-second turns, race-wide phases, per-turn passing, style bands, mood, and a Speed term that decides races ✅ |
 | The original's start, corners and final straight (engine v8) | The start dash to 85% of base speed and exact physics inside each turn; ground lost off the rail on corners; holding a lane from the final corner; exact skill durations; 22 more skill conditions ✅ (D231) |
+| A speed skill always speeds her up (engine v9) | A target-speed boost also lifts her running speed while she is still accelerating, never past the boosted target ✅ (D240) |
 | The original's physics (engine v7) | Speed, acceleration and HP at the original's rates; the original's position keeping on Wit; the field mechanics above; Power-scaled lane changes; Lv5 uniques; late-heal spurt re-plans ✅ (D158) |
 
 ### Engine v5 (M018)
@@ -598,3 +599,23 @@ final-leg group firing in 0% → 23% of races.
 
 `pnpm sim:balance` runs on courses with no geometry, so it sees the start and the bands but no corners: there end
 closers win most rows, as they did on v7 (54%). Every course in the game has corners.
+
+### Engine v9: a speed skill always speeds her up
+
+v8 with one change of ours (D240). A target-speed skill raises only the pace a runner is heading for, so in v8 (as in
+the original) one that fired while she was still accelerating, out of the start or into her spurt, did nothing: she
+reached that pace at her own rate either way. With Power a low stat that is a large share of a race: the owner's
+Kitasan Black (Power 465) spent 42% of her races accelerating, and 22 of her 42 recorded Professor of Curvature
+activations gained 0.6 m on average against 1.9 m at cruise.
+
+**The rule:** while a target-speed effect is active and she is below her (boosted) target, the boost also lifts her
+running speed, never past that target: `running = min(target, v + boost)`. At cruise nothing changes. Her acceleration,
+HP and blocking are unchanged; HP pays for the ground she covers, lift included, and the timeline's speed (what playback
+shows) includes it. v8 races replay on v8.
+
+Measured on the owner's 44 recorded Professor of Curvature races, each against the same race with the skill's effect
+zeroed (same random draws): a mid-acceleration activation now gains 1.8 m (0.6 on v8) and one at cruise 2.3 m (1.9);
+her finish improves 0.11 s on average (0.05) and her place in 10 races (6). `pnpm sim:turns` (2026-10-02, `ENGINE=8`
+for v8): the field's spreads and style wins are unchanged within noise; a skilled 1,000-Speed runner beats 1,400 Speed
+without skills in 80–90% of races (78–90% on v8); the owner's TL10 Special Week wins 1,600 m G1s against tier-1 fields
+40% of the time (33%). `pnpm sim:careers` keeps every fully bonded stage at 75–100%.

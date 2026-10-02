@@ -1,4 +1,4 @@
-// Engine v8 balance (docs/design/racing.md, D158, D231). Synthetic fields only.
+// Engine v9 balance (docs/design/racing.md, D158, D231, D240). Synthetic fields only.
 //
 //   pnpm sim:turns                     every target, 40 races per row
 //   pnpm sim:turns -- 100              races per row
@@ -7,17 +7,18 @@
 //
 // Races are 12 runners of generated G1 rivals (D153) at tier 1 unless a row says otherwise.
 import { NPC_PROFILE, mapStats, type Stats, type Strategy } from '../../packages/domain/src/index'
-import { SPURT_BUFFER_METERS, V8_TUNING, raceTurns, simulateRace as simulateCurrent, simulateRaceV7, type RaceTimeline } from '../../packages/race/src/index'
+import { SPURT_BUFFER_METERS, V8_TUNING, raceTurns, simulateRace as simulateCurrent, simulateRaceV7, simulateRaceV8, type RaceTimeline } from '../../packages/race/src/index'
 
-// ENGINE=7 pnpm sim:turns compares against the frozen engine v7 on the same fields and courses.
-const simulateRace = process.env.ENGINE === '7' ? simulateRaceV7 : simulateCurrent
+// ENGINE=7 or ENGINE=8 pnpm sim:turns compares against a frozen engine on the same fields and courses.
+const ENGINE = process.env.ENGINE === '7' ? 7 : process.env.ENGINE === '8' ? 8 : 9
+const simulateRace = ENGINE === 7 ? simulateRaceV7 : ENGINE === 8 ? simulateRaceV8 : simulateCurrent
 import { NPC_KIT, PLAYER_KIT, rivalRunners, skill, typicalCourse } from './harness'
 
 const args = process.argv.slice(2)
 const RACES = Number(args.find((value) => /^\d+$/.test(value)) ?? 40)
 // PROFILE='{"medium":{…}}' tries rival distance profiles without editing the domain.
 if (process.env.PROFILE) Object.assign(NPC_PROFILE, JSON.parse(process.env.PROFILE))
-console.log(`Engine v${process.env.ENGINE === '7' ? 7 : 8} · ${RACES} races per row · tuning ${JSON.stringify(V8_TUNING)}`)
+console.log(`Engine v${ENGINE} · ${RACES} races per row · tuning ${JSON.stringify(V8_TUNING)}`)
 
 type Runner = ReturnType<typeof rivalRunners>[number]
 

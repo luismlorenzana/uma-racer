@@ -463,3 +463,29 @@ describe('engine v8 (D231)', () => {
     for (const stat of ['speed', 'stamina', 'power', 'guts', 'wit'] as const) expect(time(stat)).toBeLessThan(baseline)
   })
 })
+
+describe('engine v9 (D240)', () => {
+  // Low Power: she is still accelerating into her spurt when a speed skill fires at the start of the final leg.
+  const slow = { ...even(800), power: 400 }
+  const race = (amount: number, engine: typeof simulateRace) => engine({
+    course: oval(2000), seed: 5, runners: [runner(0, slow, 'late', [guaranteed('burst', 'phase==2', 'target-speed', amount, 3)])],
+  })
+
+  it('speeds her up with a speed skill even while she is still accelerating, which v8 did not', () => {
+    const gained = (engine: typeof simulateRace) => race(0, engine).results[0]!.finishTime - race(0.35, engine).results[0]!.finishTime
+    expect(gained(simulateRaceV8)).toBeLessThan(0.02)
+    // 0.35 m/s for 3 s × 2 = 6 turns is about 2 m, near a tenth of a second at spurt speed.
+    expect(gained(simulateRace)).toBeGreaterThan(0.06)
+    const timeline = race(0.35, simulateRace)
+    const fired = timeline.events.find((event) => event.type === 'skill-activated')!
+    const without = race(0, simulateRace)
+    expect(timeline.speed[fired.tick + 1]!).toBeGreaterThan(without.speed[fired.tick + 1]! + 0.3)
+  })
+
+  it('never lifts her past her boosted target, so a skill at cruise runs as before', () => {
+    const cruise = (engine: typeof simulateRace) => engine({
+      course: oval(2000), seed: 11, runners: [runner(0, even(800), 'front', [guaranteed('burst', 'phase==1', 'target-speed', 0.4, 1.5)])],
+    }).results[0]!.finishTime
+    expect(cruise(simulateRace)).toBeCloseTo(cruise(simulateRaceV8), 2)
+  })
+})

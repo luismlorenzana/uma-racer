@@ -107,6 +107,8 @@ export interface RunnerState {
   hp: number
   startDelay: number
   v: number
+  /** Engine v9 (D240): what an active speed skill adds to her running speed this turn while she is still accelerating. */
+  lift: number
   d: number
   startDash: boolean
   sectionRandom: number
@@ -188,7 +190,7 @@ interface ActiveEffect {
   scale?: number
 }
 
-export type RulesVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+export type RulesVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 export const hpPerSecond = (v: number, baseSpeed: number, lateRace: boolean, gutsMod: number): number =>
   ((20 * (v - baseSpeed + 12) ** 2) / 144) * (lateRace ? gutsMod : 1)
@@ -344,6 +346,7 @@ export function initRunner(input: RaceRunnerInput, course: RaceCourse, rng: Rng,
       }
     }) : [],
     activeEffects: [],
+    lift: 0,
     pack: rulesVersion >= 3 ? createPackState(input.gate) : null,
     packRng: createRng((raceSeed ^ Math.imul(input.gate + 1, 0x27d4eb2d) ^ 0x165667b1) >>> 0),
     rawStamina: input.stats.stamina,

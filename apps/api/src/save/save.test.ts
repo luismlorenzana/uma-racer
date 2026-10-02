@@ -383,7 +383,10 @@ describe('parseSyncRequest', () => {
     expect(append({ ...v3, engineVersion: 7, course: v8Course })).toMatch(/invalid raceResults data/)
     expect(append({ ...v3, engineVersion: 8, course: { ...v8Course, layout: { ...v8Course.layout, straights: [{ start: 0, end: 2_000, frontType: 3 }] } } }))
       .toMatch(/invalid raceResults data/)
-    expect(append({ ...v3, engineVersion: 9, course: v8Course })).toMatch(/invalid raceResults data/)
+    // Engine v9 (D240) records v8's course; v10 does not exist yet.
+    expect(append({ ...v3, engineVersion: 9, course: v8Course })).toMatchObject({ appends: [{ data: { engineVersion: 9 } }] })
+    expect(append({ ...v3, engineVersion: 9, course: v5Course })).toMatch(/invalid raceResults data/)
+    expect(append({ ...v3, engineVersion: 10, course: v8Course })).toMatch(/invalid raceResults data/)
     const withGoals = { ...v3, completedGoalIds: ['goal:1:aptitude', 'goal:1:challenge'] }
     expect(parseSyncRequest({ appends: [{ kind: 'raceResults', id: 'race:u1:0', data: withGoals, createdAt: 1 }] })).toMatchObject({
       appends: [{ kind: 'raceResults', id: 'race:u1:0', data: { completedGoalIds: withGoals.completedGoalIds } }],

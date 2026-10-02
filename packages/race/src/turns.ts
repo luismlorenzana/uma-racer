@@ -143,16 +143,20 @@ export const simulateRaceV6 = (input: RaceInput): RaceTimeline => simulateTurns(
 /** Engine v7 (D158), frozen: races run on it replay exactly. */
 export const simulateRaceV7 = (input: RaceInput): RaceTimeline => simulateTurns(input, 7)
 
-/** Engine v8 (D231): v7 with the original's start, corners, final straight and exact turn physics. */
+/** Engine v8 (D231), frozen: v7 with the original's start, corners, final straight and exact turn physics. */
 export const simulateRaceV8 = (input: RaceInput): RaceTimeline => simulateTurns(input, 8)
 
-function simulateTurns(input: RaceInput, version: 6 | 7 | 8): RaceTimeline {
+/** Engine v9 (D240): v8, and a speed skill speeds her up even while she is still accelerating. */
+export const simulateRaceV9 = (input: RaceInput): RaceTimeline => simulateTurns(input, 9)
+
+function simulateTurns(input: RaceInput, version: 6 | 7 | 8 | 9): RaceTimeline {
   assertRaceInput(input)
   const { distance } = input.course
   const total = raceTurns(distance)
   const tuning = tuningFor(version)
   const v7 = version >= 7
   const v8 = version >= 8
+  const v9 = version >= 9
   const finalCorner = input.course.layout?.corners.at(-1)
   const corners = input.course.layout?.corners ?? []
   const straights = input.course.layout?.straights ?? []
@@ -201,7 +205,7 @@ function simulateTurns(input: RaceInput, version: 6 | 7 | 8): RaceTimeline {
   const record = () => {
     for (const r of runners) {
       distances.push(r.d)
-      speeds.push(r.finishTime === null && r.d > 0 ? actualSpeed(r) : 0)
+      speeds.push(r.finishTime === null && r.d > 0 ? actualSpeed(r) + r.lift : 0)
       hps.push(Math.max(0, r.hp / r.maxHp))
       lanes.push(r.pack!.lane)
     }
@@ -237,7 +241,7 @@ function simulateTurns(input: RaceInput, version: 6 | 7 | 8): RaceTimeline {
     const snapshots: PackRunnerSnapshot[] = runners.map((runner, index) => ({
       index,
       distance: runner.d,
-      speed: actualSpeed(runner),
+      speed: actualSpeed(runner) + runner.lift,
       targetSpeed: targetSpeed(runner, phase, distance, 1, version),
       power: runner.power,
       wit: runner.wit,
@@ -369,8 +373,12 @@ function simulateTurns(input: RaceInput, version: 6 | 7 | 8): RaceTimeline {
         const [v, covered] = stepTowards(r.v, target, r.v < target ? accel : decel, left)
         r.v = v
         run += covered
-        const bonus = actualSpeed(r) - r.v
-        moves.push({ index: i, from: r.d, to: r.d + (run + bonus * dt) * ratio, speed: actualSpeed(r), lane: r.pack!.lane, blockedBy: null, ratio })
+        // v9: a target-speed skill only raises the pace she is heading for, so one that fires while she is still
+        // accelerating did nothing in v8. Now its boost also lifts her running speed, never past that boosted target:
+        // at cruise nothing changes, and below it she runs the boost faster for as long as it lasts (D240).
+        r.lift = v9 ? Math.min(Math.max(0, activeModifier(r, 'target-speed')), Math.max(0, target - r.v)) : 0
+        const bonus = actualSpeed(r) - r.v + r.lift
+        moves.push({ index: i, from: r.d, to: r.d + (run + bonus * dt) * ratio, speed: actualSpeed(r) + r.lift, lane: r.pack!.lane, blockedBy: null, ratio })
         return
       }
       if (r.v < target) {
