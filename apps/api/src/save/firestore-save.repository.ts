@@ -110,6 +110,19 @@ export class FirestoreSaveRepository implements SaveRepository {
           entities.set(`${record.kind}/${record.id}`, record)
         }
       })
+      // Advance/clear consumes existing accepted evidence, never a new client claim.
+      if (request.action === 'choose-node' || request.action === 'clear-chapter') {
+        const target = request.upserts.find((row) => row.kind === 'rpgCheckpoints')
+        const current = target && entities.get(`rpgCheckpoints/${target.id}`)?.data
+        const entry = current?.frozenEntry as { entryId: string; retryOrdinal: number } | null | undefined
+        if (entry) {
+          const [result] = await tx.getAll(player.collection('rpgResults').doc(`${entry.entryId}:retry-${entry.retryOrdinal}`))
+          if (result?.exists) {
+            const row = fromStored<LogRecord>(result.data()!)
+            logs.set(`${row.kind}/${row.id}`, row)
+          }
+        }
+      }
       logDocs.forEach((doc) => {
         if (doc.exists) {
           const record = fromStored<LogRecord>(doc.data()!)

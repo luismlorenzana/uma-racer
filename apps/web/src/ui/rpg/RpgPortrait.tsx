@@ -66,7 +66,7 @@ export function RpgElementLegend() {
   const [open, setOpen] = useState(false)
   return <div>
     <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}
-      className="min-h-11 rounded-sm border border-hairline bg-panel px-3 text-[13px] font-semibold">
+      className="min-h-11 rounded-sm border border-hairline bg-panel px-3 text-[13px] font-semibold text-ink">
       {open ? 'Hide' : 'Show'} element guide
     </button>
     {open && <div className="mt-2 rounded-md border border-hairline bg-panel p-3 text-[12px] leading-5 text-ink-soft">

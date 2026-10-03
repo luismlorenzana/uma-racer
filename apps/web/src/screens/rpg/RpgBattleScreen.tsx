@@ -65,9 +65,9 @@ function HostNotice({ view }: { view: RpgBattleView }) {
 }
 
 /** Port injection is used only by the DEV proof and component tests; production always uses the real host. */
-export function RpgBattleStage({ host, checkpointId, content, uid, proof = false, names = {}, portraits = {}, headerTools, onSync }: {
+export function RpgBattleStage({ host, checkpointId, content, uid, proof = false, names = {}, portraits = {}, headerTools, onSync, backTo = '/rpg' }: {
   host: RpgBattleHost; checkpointId: string; content: LoadedContent | null; uid: string | null; proof?: boolean;
-  names?: Readonly<Record<string, string>>; portraits?: Readonly<Record<string, string>>; headerTools?: ReactNode; onSync?: () => void
+  names?: Readonly<Record<string, string>>; portraits?: Readonly<Record<string, string>>; headerTools?: ReactNode; onSync?: () => void; backTo?: string
 }) {
   const [view, setView] = useState<RpgBattleView | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -191,7 +191,7 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
   }
 
   return <MinigameShell playing className="!touch-pan-y">
-    <MinigameHeader backTo="/rpg" backLabel="Leave battle, keep saved turn" eyebrow={proof ? 'Development proof · no rewards' : 'Global Uma RPG'}
+    <MinigameHeader backTo={backTo} backLabel="Leave battle, keep saved turn" eyebrow={proof ? 'Development proof · no rewards' : 'Global Uma RPG'}
       title="RPG battle" headline={{ label: 'Round', value: display?.round ?? '—' }} onGuide={() => setDialog('guide')} guideLabel="Battle guide" trailing={headerTools} />
     {view && <HostNotice view={view} />}
     {error && <p role="alert" className="shrink-0 px-3 py-2 text-[12px] text-red-300">{error}<button onClick={() => { void host.resume(checkpointId).then(setView).then(() => setError(null)).catch((reason: unknown) => setError(String(reason))) }} className="ml-2 min-h-11 underline">Reload saved view</button></p>}
@@ -203,7 +203,7 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
       {view.kind === 'open' && view.recovery === 'takeover-required' && <Button className="mt-4 w-full" onClick={() => setDialog('takeover')}>Review takeover</Button>}
       {(view.kind === 'open' || view.kind === 'pending') && view.recovery === 'restart-journal' && <Button className="mt-4 w-full" disabled={busy} onClick={() => { void command(() => host.restartFromFrozenEntry(checkpointId)) }}>Restart same frozen battle</Button>}
       {view.kind === 'pending' && view.phase === 'takeover' && <Button className="mt-4 w-full" disabled={busy} onClick={onSync}>Try sync</Button>}
-      <Link to="/rpg" className="mt-4 flex min-h-11 items-center text-accent">Return to RPG checkpoint</Link>
+      <Link to={backTo} className="mt-4 flex min-h-11 items-center text-accent">Return to RPG checkpoint</Link>
     </section>}
     {!unavailable && result && view && !playback.playing && <section className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4" aria-label="Battle result">
       <p className="text-micro text-accent">{view.kind === 'pending' ? 'Projected result · not yet earned' : 'Acknowledged result'}</p>
@@ -219,7 +219,7 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
       <p className="mt-4 rounded-sm border border-hairline-dark bg-stage-soft p-3 text-[12px]">{proof ? 'Test encounter: no RPG EXP, Items or account progress awarded.' : view.kind === 'pending' ? 'Not yet earned. EXP, Items and the next map node remain unavailable until the result is acknowledged.' : 'EXP is read from the accepted receipt. Item and campaign rewards are not configured yet.'}</p>
       {view.kind === 'pending' && <Button className="mt-3 w-full" disabled={busy} onClick={() => { void command(() => host.complete(checkpointId)) }}>Submit result / try sync</Button>}
       {loss && view.kind !== 'pending' && <Button className="mt-3 w-full" disabled={busy || !uid} onClick={() => { void command(retry) }}>Retry free · same seed and enemy kit</Button>}
-      <Link to="/rpg" className="mt-3 flex min-h-11 items-center justify-center text-accent">Return to RPG</Link>
+      <Link to={backTo} className="mt-3 flex min-h-11 items-center justify-center text-accent">Return to RPG</Link>
     </section>}
     {!unavailable && (!result || playback.playing) && display && <>
       <section className="flex min-h-0 flex-1 flex-col justify-center gap-2 px-3 py-2 [@media(max-height:700px)]:gap-1 [@media(max-height:700px)]:py-1" aria-label="Battle formation">
@@ -286,5 +286,5 @@ export function RpgBattleScreen() {
   }, [auth.ready, auth.user?.email])
   const host = useMemo(() => new DexieRpgBattleHost(), [])
   return <RpgBattleStage host={host} checkpointId={checkpointId} content={contentState.status === 'ready' ? contentState.content : null}
-    uid={uid} onSync={() => gameRuntime.schedule(0)} />
+    uid={uid} backTo={`/rpg/chapters/${checkpointId.split(':')[0]}?chapter=${encodeURIComponent(checkpointId.slice(checkpointId.indexOf(':') + 1))}`} onSync={() => gameRuntime.schedule(0)} />
 }

@@ -27,10 +27,11 @@ journal, terminal result or win/loss. It may reuse visual primitives and `PagedG
 `MinigameHost` (D203, D206).
 
 The [Global Uma RPG](uma-rpg.md) is likewise **outside this ticketed-run contract**: its chapters contain multiple
-battles and synced checkpoints. T089–T094 now implement its own rules, grouped save, battle journal, internal setup
-and mobile stage; campaign/reward release is still gated. It reuses the kit's pure-engine, deterministic-replay,
+battles and synced checkpoints. T089–T095 now implement its own rules, grouped save, battle journal, internal setup,
+mobile stage and branching maps; private campaign/reward release is still gated. It reuses the kit's pure-engine, deterministic-replay,
 private-content and mobile standards, `MinigameShell`/`MinigameHeader` and `PagedGuide`, not `MinigameHost` or tickets.
-Its isolated DEV battle proof grants no account rewards ([phone checks](../research/rpg-battle-phone-proof.md)).
+Its isolated DEV battle/chapter proofs grant no account rewards ([battle checks](../research/rpg-battle-phone-proof.md),
+[chapter checks](../research/rpg-chapter-phone-proof.md)). Neither uses the ticketed MinigameHost.
 
 ## 2. The run lifecycle
 

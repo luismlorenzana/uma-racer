@@ -34,13 +34,13 @@ const entityKey = (kind: EntityKind, id: string) => `${kind}/${id}`
 const logKey = (kind: LogKind, id: string) => `${kind}/${id}`
 const allowedEntities: Record<RpgAction, readonly EntityKind[]> = {
   enroll: ['rpgOutfits'], 'edit-preset': ['rpgPresets'], 'start-chapter': ['rpgCheckpoints', 'rpgPresets'],
-  'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
+  'choose-node': ['rpgCheckpoints'], 'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
   'battle-result': ['rpgCheckpoints', 'rpgOutfits'], 'clear-chapter': ['rpgCheckpoints', 'items'],
   promote: ['rpgOutfits'], 'spend-inspiration': ['umas', 'items'],
 }
 const allowedLogs: Record<RpgAction, readonly LogKind[]> = {
   enroll: [], 'edit-preset': [], 'start-chapter': [], 'begin-battle': [], takeover: [],
-  'battle-result': ['rpgResults'], 'clear-chapter': ['itemLedger'],
+  'choose-node': [], 'battle-result': ['rpgResults'], 'clear-chapter': ['itemLedger'],
   promote: ['rpgPromotions'], 'spend-inspiration': ['itemLedger'],
 }
 
@@ -102,7 +102,7 @@ export function parseRpgCommandRequest(body: unknown): RpgCommandRequest | strin
     !expectedKeys.includes(entityKey('rpgPresets', upserts.find((row) => row.kind === 'rpgCheckpoints')?.data.presetId as string)))) {
     return 'Chapter start needs a versioned preset'
   }
-  if (['begin-battle', 'takeover', 'battle-result', 'clear-chapter'].includes(action) &&
+  if (['choose-node', 'begin-battle', 'takeover', 'battle-result', 'clear-chapter'].includes(action) &&
     upserts.filter((row) => row.kind === 'rpgCheckpoints').length !== 1) return 'Command needs one checkpoint'
   if (action === 'begin-battle') {
     const data = upserts.find((row) => row.kind === 'rpgCheckpoints')!.data
@@ -153,7 +153,7 @@ function sameFrozen(previous: Record<string, unknown>, next: Record<string, unkn
   return isDeepStrictEqual(a, b)
 }
 
-function semanticError(uid: string, request: RpgCommandRequest, existing: Map<string, EntityRecord>): string | null {
+function semanticError(uid: string, request: RpgCommandRequest, existing: Map<string, EntityRecord>, logs: Map<string, LogRecord>): string | null {
   const next = checkpoint(request)
   const current = currentCheckpoint(request, existing)
   if (request.action === 'enroll') {
@@ -187,6 +187,7 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
       next.revision !== (current.revision as number) + 1 : next.attemptIndex !== 1 || next.revision !== 0) {
       return 'Chapter attempt or revision is not the next value'
     }
+    if (next.lastClearedNodeId !== null || !Array.isArray(next.selectedPath) || next.selectedPath.length !== 0) return 'Chapter start must reset the map'
     const presetId = next.presetId as string
     const party = existing.get(entityKey('rpgPresets', presetId))?.data
     if (!party || !Array.isArray(party.slots) || party.slots.some((slot) => slot === null)) return 'Chapter needs a complete preset'
@@ -241,9 +242,21 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
       return 'Battle result does not match an open frozen entry'
     }
   }
-  if (request.action === 'clear-chapter' && (!current || !next || current.status !== 'pending-result' || next.status !== 'cleared' ||
-    next.revision !== (current.revision as number) + 1 || !sameFrozen(current, next, ['revision', 'status']))) {
-    return 'Chapter clear requires a completed battle'
+  if (request.action === 'choose-node' || request.action === 'clear-chapter') {
+    if (!current || !next || next.revision !== (current.revision as number) + 1 ||
+      !sameFrozen(current, next, ['revision', 'status', 'frozenEntry', 'lastClearedNodeId', 'selectedPath']) ||
+      next.frozenEntry !== null || !Array.isArray(current.selectedPath) || !Array.isArray(next.selectedPath) ||
+      next.selectedPath.length !== current.selectedPath.length + 1 ||
+      !isDeepStrictEqual(next.selectedPath.slice(0, -1), current.selectedPath) ||
+      next.selectedPath.at(-1) !== next.lastClearedNodeId || current.selectedPath.includes(next.lastClearedNodeId)) return 'Map transition changed chapter identity or path'
+    if (current.status === 'pending-result' && rpgRecord(current.frozenEntry)) {
+      const entry = current.frozenEntry
+      const result = logs.get(`rpgResults/${entry.entryId}:retry-${entry.retryOrdinal}`)?.data
+      if (!result || result.outcome !== 'win' || result.contentHash !== current.contentHash ||
+        result.contentVersion !== current.contentVersion || next.lastClearedNodeId !== entry.nodeId ||
+        next.status !== (request.action === 'clear-chapter' ? 'cleared' : 'at-checkpoint')) return 'Map advance requires accepted winning evidence'
+    } else if (request.action !== 'choose-node' || current.status !== 'at-checkpoint' ||
+      current.frozenEntry !== null || next.status !== 'at-checkpoint') return 'Map node requires an accepted safe checkpoint'
   }
   if ((request.action === 'clear-chapter' || request.action === 'spend-inspiration') &&
     request.upserts.some((row) => row.kind === 'items') && !request.appends.some((row) => row.kind === 'itemLedger')) {
@@ -284,7 +297,7 @@ export function resolveRpgCommand(uid: string, request: RpgCommandRequest, entit
   for (const append of request.appends) {
     if (logs.has(logKey(append.kind, append.id))) return { response: { status: 'rejected', reason: `Log id already claimed: ${append.kind}/${append.id}` }, writes: [], appends: [] }
   }
-  const error = semanticError(uid, request, entities)
+  const error = semanticError(uid, request, entities, logs)
   if (error) return { response: { status: 'rejected', reason: error }, writes: [], appends: [] }
   const writes = request.upserts.map((row): EntityRecord => ({ kind: row.kind, id: row.id,
     version: (entities.get(entityKey(row.kind, row.id))?.version ?? 0) + 1,

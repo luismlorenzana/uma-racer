@@ -133,6 +133,7 @@ export function RpgHubScreen() {
       </Link>
     })}
     <Link to="/rpg/roster" className="inline-flex min-h-11 items-center font-semibold text-accent-strong">Browse owned RPG roster →</Link>
+    {view.presets.map((row) => <Link key={row.id} to={`/rpg/chapters/${row.id}`} className="flex min-h-11 items-center rounded-sm border border-hairline px-3 text-sm">Chapters · {row.data.name}</Link>)}
   </div>
 }
 
