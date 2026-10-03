@@ -48,6 +48,12 @@ import { formatTickets } from '../ui/tickets'
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
 type NodeView = 'constellation' | 'inspiration'
+type LineageSkillGroup = {
+  id: string
+  label: string
+  uma: UmaTemplate | undefined
+  skills: readonly SkillTemplate[]
+}
 
 export function InspirationScreen() { return <ConstellationScreen viewMode="inspiration" /> }
 
@@ -118,14 +124,19 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
   }
 
   const visibleNodes = template.nodes.filter((node) => belongsToView(node, viewMode))
-  const selectedLineageNode = viewMode === 'inspiration'
-    ? visibleNodes.find((node) => node.id === selectedLineageId)
-    : undefined
-  const selectedLineageAssignment = selectedLineageNode ? run.assignments[selectedLineageNode.id] : undefined
-  const selectedLineageUma = selectedLineageAssignment?.kind === 'lineage'
-    ? content.umas.byId.get(selectedLineageAssignment.templateId)
-    : undefined
-  const selectedLineageSkills = selectedLineageUma ? naturalLineageSkills(selectedLineageUma, content.skills.byId) : []
+  const lineageSkillGroups: LineageSkillGroup[] = viewMode === 'inspiration'
+    ? visibleNodes.map((node, index) => {
+        const assignment = run.assignments[node.id]
+        const lineageUma = assignment?.kind === 'lineage' ? content.umas.byId.get(assignment.templateId) : undefined
+        const slotNumber = visibleNodes.slice(0, index + 1).filter((candidate) => candidate.kind === node.kind).length
+        return {
+          id: node.id,
+          label: `${titleCase(node.kind)} ${slotNumber}`,
+          uma: lineageUma,
+          skills: lineageUma ? naturalLineageSkills(lineageUma, content.skills.byId) : [],
+        }
+      })
+    : []
   const openCount = visibleNodes.filter((node) => isNodeUnlocked(template, node, run.trainingLevel)).length
   const filledCount = visibleNodes.filter((node) => run.assignments[node.id] !== undefined).length
   const buff = scenarioBuff(run.tier)
@@ -196,9 +207,7 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
 
       {viewMode === 'inspiration' && (
         <LineageSkillRail
-          node={selectedLineageNode}
-          uma={selectedLineageUma}
-          skills={selectedLineageSkills}
+          groups={lineageSkillGroups}
           onSelect={setSelectedSkill}
         />
       )}
@@ -305,54 +314,59 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
 }
 
 function LineageSkillRail({
-  node,
-  uma,
-  skills,
+  groups,
   onSelect,
 }: {
-  node: ConstellationNode | undefined
-  uma: UmaTemplate | undefined
-  skills: readonly SkillTemplate[]
+  groups: readonly LineageSkillGroup[]
   onSelect: (skill: SkillTemplate) => void
 }) {
+  const filledCount = groups.filter((group) => group.uma).length
+  const skillCount = groups.reduce((total, group) => total + group.skills.length, 0)
+
   return (
     <section className="max-h-[30dvh] overflow-y-auto overscroll-contain px-4 pb-safe pt-2">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-micro">Lineage skill bank</p>
-          <h2 className="truncate font-display text-lg font-bold">
-            {uma ? uma.name : 'Select a lineage Uma'}
-          </h2>
+          <p className="text-micro">Complete inheritance setup</p>
+          <h2 className="font-display text-lg font-bold">Inheritance skill bank</h2>
         </div>
-        {node && <span className="shrink-0 text-[11px] font-semibold text-ink-soft">{titleCase(node.kind)}</span>}
+        <span className="shrink-0 text-[11px] font-semibold text-ink-soft">{filledCount}/{groups.length} Umas · {skillCount} skills</span>
       </div>
-      {!uma ? (
-        <p className="rounded-md border border-dashed border-hairline bg-sunken px-3 py-3 text-[12px] text-ink-soft">
-          Tap a filled parent or grandparent planet to inspect its natural unique and gold skills.
-        </p>
-      ) : (
-        <div className="grid gap-1.5">
-          {skills.map((skill) => (
-            <button
-              key={skill.id}
-              type="button"
-              className="flex min-h-14 items-start gap-2 rounded-md border border-hairline bg-panel px-2.5 py-2 text-left transition-colors hover:border-accent/60 active:bg-accent-wash"
-              onClick={() => onSelect(skill)}
-            >
-              <SkillIcon skill={skill} size={30} />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5">
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{skill.name}</span>
-                  <SkillKindBadge kind={skill.kind} />
-                </span>
-                <SkillChips tags={skillTags(skill)} />
-                {skill.description && <span className="mt-1 line-clamp-2 block text-[12px] leading-snug text-ink-soft">{skill.description}</span>}
-              </span>
-            </button>
-          ))}
-          {skills.length === 0 && <p className="rounded-md bg-sunken px-3 py-3 text-[12px] text-ink-soft">This Uma has no natural unique or gold skills in the current content pack.</p>}
-        </div>
-      )}
+      <div className="grid gap-2">
+        {groups.map((group) => (
+          <section key={group.id} className="rounded-md border border-hairline bg-sunken p-2">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">{group.label}</p>
+              <p className="min-w-0 truncate text-[12px] font-semibold">{group.uma?.name ?? 'Empty slot'}</p>
+            </div>
+            {group.uma ? (
+              <div className="grid gap-1.5">
+                {group.skills.map((skill) => (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    className="flex min-h-14 items-start gap-2 rounded-md border border-hairline bg-panel px-2.5 py-2 text-left transition-colors hover:border-accent/60 active:bg-accent-wash"
+                    onClick={() => onSelect(skill)}
+                  >
+                    <SkillIcon skill={skill} size={30} />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{skill.name}</span>
+                        <SkillKindBadge kind={skill.kind} />
+                      </span>
+                      <SkillChips tags={skillTags(skill)} />
+                      {skill.description && <span className="mt-1 line-clamp-2 block text-[12px] leading-snug text-ink-soft">{skill.description}</span>}
+                    </span>
+                  </button>
+                ))}
+                {group.skills.length === 0 && <p className="rounded-md bg-panel px-3 py-2 text-[12px] text-ink-soft">No natural unique or gold skills in this content pack.</p>}
+              </div>
+            ) : (
+              <p className="rounded-md border border-dashed border-hairline bg-panel/50 px-3 py-2 text-[12px] text-ink-soft">Assign an Uma to add her natural skills.</p>
+            )}
+          </section>
+        ))}
+      </div>
     </section>
   )
 }

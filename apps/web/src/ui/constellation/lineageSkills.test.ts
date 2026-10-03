@@ -1,6 +1,6 @@
 import type { SkillTemplate } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
-import { naturalGoldSkills, naturalLineageSkills } from './lineageSkills'
+import { naturalGoldSkills, naturalLineageSkills, naturalUniqueSkill } from './lineageSkills'
 
 const skill = (id: string, kind: SkillTemplate['kind']): SkillTemplate => ({
   id,
@@ -26,6 +26,7 @@ describe('lineage skill presentation', () => {
 
     expect(naturalLineageSkills(template, skills).map((entry) => entry.id)).toEqual(['unique', 'gold-a', 'gold-b'])
     expect(naturalGoldSkills(template, skills).map((entry) => entry.id)).toEqual(['gold-a', 'gold-b'])
+    expect(naturalUniqueSkill(template, skills)?.id).toBe('unique')
   })
 
   it('does not duplicate a skill that appears in both source lists', () => {

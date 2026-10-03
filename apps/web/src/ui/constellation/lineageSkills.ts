@@ -22,3 +22,10 @@ export function naturalGoldSkills(
 ): SkillTemplate[] {
   return naturalLineageSkills(template, skills).filter((skill) => skill.kind === 'gold')
 }
+
+export function naturalUniqueSkill(
+  template: Pick<UmaTemplate, 'uniqueSkillId'>,
+  skills: ReadonlyMap<string, SkillTemplate>,
+): SkillTemplate | undefined {
+  return template.uniqueSkillId ? skills.get(template.uniqueSkillId) : undefined
+}
