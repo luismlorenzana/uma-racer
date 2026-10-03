@@ -178,6 +178,11 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/rpg/RpgBattleScreen')).RpgBattleScreen }),
   },
   {
+    path: 'rpg/chapters/:presetId',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading RPG chapters" />,
+    lazy: async () => ({ Component: (await import('../screens/rpg/RpgChapterScreen')).RpgChapterScreen }),
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
@@ -188,6 +193,10 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/rpg-chapter-proof',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading chapter proof" />,
+    lazy: async () => ({ Component: (await import('../screens/rpg/RpgChapterProofScreen')).RpgChapterProofScreen }),
+  }, {
     path: 'dev/rpg-battle-proof',
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading RPG proof" />,
     lazy: async () => ({ Component: (await import('../screens/rpg/RpgBattleProofScreen')).RpgBattleProofScreen }),

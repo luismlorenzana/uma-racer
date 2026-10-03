@@ -425,7 +425,8 @@ racing preference is consulted. Preset edits validate distinct enrolled outfits,
 learned/slot-bounded loadouts before submitting a grouped command with expected preset and outfit versions. An
 offline edit remains visibly pending and cannot masquerade as the saved preset; a stale revision requires an explicit
 RPG-only account refresh, which leaves unrelated queued saves untouched.
-Partial parties stay editable but cannot launch. Chapter selection is explicitly unavailable until its task;
+Partial parties stay editable but cannot launch. T095 adds internal chapter selection/maps; private campaign
+content, rewards and Home release remain gated by T096–T099.
 Home still has no RPG link and no synthetic production encounter.
 
 T094 adds the lazy standalone **`/rpg/battle/:checkpointId`** stage (D243), not a Home or chapter launch action.
@@ -454,8 +455,9 @@ from the production build. [Phone proof](../research/rpg-battle-phone-proof.md) 
 - A chapter selects one of the existing scenarios as theme/reward destination. Every preset may launch any chapter;
   its recommended level, surfaces, dominant elements and boss are visible first. An authored path has branches, regular
   fights, optional recovery/setup points and a boss. The map is not a set of actual races that alter race history.
-- A chapter run freezes its chapter definition and membership/class/weapon/element at start. **Skill loadouts may be
-  edited only between battles**; each battle freezes the loadout that entered it. Level-ups earned elsewhere while a
+- A chapter run freezes its chapter definition/version/hash at start. Preset membership/order edits affect only
+  future entries; each entered battle freezes party, class, weapon, element, stats and skills. **Existing members'
+  signature/skill loadouts may be edited only at accepted safe checkpoints**, expecting that checkpoint's revision. Level-ups earned elsewhere while a
   preset is open must not retroactively alter a frozen battle. At the next safe checkpoint, show newly earned levels
   and allow loadout edits before the next encounter. Concurrent chapter edits must use an expected revision; stale
   copies cannot overwrite a later checkpoint or reward.
@@ -471,7 +473,39 @@ from the production build. [Phone proof](../research/rpg-battle-phone-proof.md) 
   an HP threshold, but the shift is telegraphed and deterministic. Bosses are authored character encounters with a
   visible phase plan, not merely inflated HP. A loss resumes at a defined checkpoint without duplicating EXP or items.
   Candidate pacing is several brief normal team fights, one optional elite branch and one multi-phase boss per
-  chapter; exact counts and recovery points need phone prototyping and simulation.
+  chapter; exact production counts and recovery points remain private authoring and reward tuning work.
+
+### Implemented chapter map and boundary (T095, D245)
+
+`packages/domain/src/rpg/chapter.ts` parses an immutable graph with known scenario, unique safe ids, resolved enemy
+and art references, engine-compatible inline action/phase kits, one terminal boss, no cycles/dead ends and
+complete reachability. Ordered enemy ids are the formation. Roles, elemental weaknesses and phase intents are
+visible before entry. The [content-authoring contract](../technical/rpg-chapter-content.md) carries the exact schema,
+an invented example, validation limits and the T096 fixture handoff. The lazy private loader verifies SHA-256 and
+never substitutes a synthetic encounter when a pack or frozen version/hash is missing.
+
+The internal lazy `/rpg/chapters/:presetId?chapter=<id>` map projects acknowledged per-preset/chapter checkpoints.
+Starting needs five filled slots; a low average level warns but does not block. Selecting a chapter previews it;
+Start/Resume explicitly changes that preset's foreground. Other saved chapters stay intact. An open foreground
+fight must be explicitly paused/abandoned and acknowledged before switching: only its unresolved actions are
+forfeited, not its entry, seed, kit, party or earlier rewards. Back/route changes alone keep the saved turn.
+
+A finished battle cannot open a route. Its accepted winning `rpgResults` evidence is consumed by one expected-version
+`choose-node` group (ordinary/elite) or `clear-chapter` group (boss), which appends the node, clears the entered kit
+and marks the accepted checkpoint/clear. Safe branches, setup stops and rejoin points also use `choose-node`.
+Pending start/entry/result/map groups remain visibly unaccepted; a pending local entry can still reopen its saved
+battle. Duplicate or stale submissions cannot move the map twice. Explicit conflict recovery adopts accepted RPG
+rows/evidence and discards rejected commands/dependants, retaining local journals instead of rebasing a rejected win.
+Loss/abandon has zero rewards and retries the identical frozen encounter under a new retry ordinal. Only explicit
+Replay after an accepted boss clear starts a new attempt and map.
+
+The six-node DEV fixture has two required fights and one optional elite (route counts **[2, 3]**), one fork/rejoin,
+a phase-changing boss and Tier 1 Lv10 recommendations. Its recovery stop is a safe setup/shorter route, **not** a new
+persistent HP resource: every engine-v1 fight already starts at full HP/MP. Elite encounter EXP arrives in T096;
+T095 still grants zero EXP and no Items/tickets/tokens. Private PriConne content remains T097, token grant T098 and
+Home release T099. The isolated `/dev/rpg-chapter-proof` uses the real hosts with separate client/simulated-account
+databases and invented rows only, excluded from production. [Phone proof](../research/rpg-chapter-phone-proof.md)
+records 390×844/375×667 checks, acknowledgement, replay and recovery coverage.
 - **Inspiration Unlock Token [Scenario]** is one scenario-typed global Item stack, not a Badge-page award. **Every
   successful clear, including a replay, grants one token** for that chapter's scenario with append-only evidence
   transactionally coupled to that clear attempt. A failed or abandoned battle/chapter grants no clear token. One token

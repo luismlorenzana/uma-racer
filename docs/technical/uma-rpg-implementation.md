@@ -1,6 +1,6 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** T089–T094 rules, save transport, combat, battle journal/host, internal roster/party setup and mobile battle stage implemented. A development-only synthetic fight is playable; real campaign launch, rewards and Home entry remain gated. Read [the design](../design/uma-rpg.md) for product rules and
+**Status:** T089–T095 rules, save transport, combat, battle journal/host, internal roster/party setup, battle stage and branching map implemented. A complete development-only synthetic chapter is playable; real campaign launch, rewards and Home entry remain gated. Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
 left ambiguous. T089's progression coefficients are pinned in D227 and T091's combat coefficients in D229; T096
 must simulate its remaining reward candidates, then update the design, `packages/domain/src/domain.test.ts` and
@@ -75,6 +75,7 @@ with fresh seed, content, or reward id. A conflicting terminal result is **not**
 | Enroll outfit | Owned outfit, at least one source A running style, eligible signature; profile absent | RPG outfit entity with immutable style/weapon/enrollment inputs | Existing profile returns it; never re-enrolls to change class. |
 | Edit preset | Expected preset revision; distinct owned outfits and legal signature/loadouts | Only that preset row | Stale editor reloads; cannot rewrite a frozen battle. |
 | Start chapter / choose node | Complete preset; authored pack verified; expected checkpoint revision | Checkpoint with chapter version/attempt and then frozen encounter id/seed/kit | Duplicate command returns same entry. A paused other chapter remains. |
+| Accept map node | Legal graph edge/safe node, or existing acknowledged winning receipt for the frozen battle | `choose-node` appends one path id, clears the finished entry and returns to at-checkpoint | Server consumes accepted evidence inside its transaction. Pending/losing results cannot advance; a stale version conflicts. |
 | Append battle action | Local journal and exact engine-valid action | Local journal only | Replaying the prefix gives the same hash; duplicate action index is refused. |
 | Take over on another device | Synced open entry and expected lease revision; explicit player confirmation | Checkpoint lease revision only, preserving frozen entry byte-for-byte | Old device becomes stale; offline takeover waits for acknowledgement. |
 | Commit battle result | Terminal replay hash matches frozen entry and retry ordinal; expected lease/checkpoint and involved outfit versions | Checkpoint, accepted result evidence and RPG EXP projections as one conditional group; an accepted loss increments only retry ordinal | Duplicate result receipt pays once. Stale/losing device stays pending/conflicted; no orphan log or EXP. A loss and later winning retry use different claim ids but identical entry/seed/kit. |
@@ -104,8 +105,9 @@ run a second TypeScript combat engine or to trust unbounded/unparsed request bod
   End cannot use ATK. T089 owns tree unlocks; T091 owns what an unlocked action actually does.
 - First chapter fixture in git is invented: five synthetic allies, several synthetic enemy teams, a route fork that
   reconverges, an optional recovery/elite choice and a phase-changing boss. Its purpose is to exercise every map
-  transition and reward boundary, **not** to set the production chapter's fight count. T095 authors a concrete
-  production chapter schema and measures phone pacing; T097 privately authors the first real chapter against it.
+  transition and reward boundary, **not** to set the production chapter's fight count. T095 implements the
+  [chapter schema and handoff](rpg-chapter-content.md): six nodes, two/three fights, Tier 1 Lv10, full HP/MP at
+  every entry and recovery as a safe setup/shorter route. T097 privately authors the first real chapter against it.
 - The result is a receipt, not a screen-local claim: member EXP and level changes are per outfit; a KO rule and
   catch-up/taper are fixed in T096; chapter clear token is granted only after accepted boss completion in T098.
   Race EXP, Training EXP, Farm XP, badges and card stars are absent. The result screen names pending versus accepted

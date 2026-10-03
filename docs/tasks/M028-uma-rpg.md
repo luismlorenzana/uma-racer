@@ -23,7 +23,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 | T092 — Battle journal and host ✅ | Device-local action journal, frozen entry, second-device takeover and idempotent battle result boundary (D230) | Landed |
 | T093 — RPG roster and party hub ✅ | Lazy internal route, enrollment/profiles, five saved presets and overlays; no Home entry (D232) | Landed |
 | T094 — Phone battle screen ✅ | Five-actor touch battle, replay-only preview/cues, explicit recovery/results and isolated DEV proof (D243) | Landed; [phone checks](../research/rpg-battle-phone-proof.md) |
-| [T095 — Chapter maps and checkpoints](T095-rpg-chapters.md) | Branching chapter contract, previews, pause/retry, boss and map UI using synthetic content | T090, T092, T094 |
+| T095 — Chapter maps and checkpoints ✅ | Pure graph/private schema, receipt-gated branching map, pause/retry/clear/replay and isolated synthetic chapter (D245) | Landed; [handoff](../technical/rpg-chapter-content.md), [phone checks](../research/rpg-chapter-phone-proof.md) |
 | [T096 — RPG progression integration](T096-rpg-progression.md) | EXP grants tuned on T095's map, level reveals, tree spending/loadouts and lossless class promotion | T089, T090, T092, T094, T095 |
 | [T097 — Private PriConne content pipeline](T097-rpg-content.md) | Validated pack/import/art references and first authored private chapter; owner-run private publish | T095's chapter schema |
 | [T098 — Inspiration reward bridge](T098-rpg-inspiration.md) | Transactional scenario token grants and consumption, grandfathered lineage migration | T090, T095, T096; latest Inspiration and Items implementation |
@@ -35,8 +35,8 @@ T089 ─► T090 ────────────────┬─► T092 
           T090 ─► T093 ───────────────┘          └───────────────────────────► T099
 ```
 
-The diagram is a dependency guide, not permission to merge against stale `main`. T094 is complete; T095's chapter
-maps/checkpoints are next. T097's private authoring can begin after T095 defines the schema while T098 implements the token bridge. T099
+The diagram is a dependency guide, not permission to merge against stale `main`. T095 is complete; T096's EXP,
+level reveals, trees and promotion integration are next. T097's private authoring can use T095's schema while T098 implements the token bridge. T099
 waits for both. One task = one PR; remove that task's spec in its implementation PR (D104), update the design and
 milestone table, and record any newly settled rule in `docs/decisions.md`.
 

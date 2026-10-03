@@ -134,7 +134,7 @@ export interface RpgBattleClaimRow {
 export interface RpgBattleArchiveRow {
   id: string
   journal: RpgBattleJournalRow
-  reason: 'takeover'
+  reason: 'takeover' | 'rejected-command'
 }
 
 interface LegacyMinigameRunRow extends Omit<MinigameRunRow, 'journal' | 'snapshot'> {
@@ -174,7 +174,7 @@ function migrateLegacyProfile(row: LegacyProfileRow | VersionedRow<unknown>): Ve
   }
 }
 
-class RacerDb extends Dexie {
+export class RacerDb extends Dexie {
   profile!: EntityTable<VersionedRow<PlayerProfile>, 'id'>
   umas!: EntityTable<VersionedRow<UmaSave>, 'id'>
   cards!: EntityTable<VersionedRow<CardSave>, 'id'>
@@ -201,8 +201,8 @@ class RacerDb extends Dexie {
   /** Device-local in-flight/replay journal. Never synced and never part of the save (D168, D171). */
   minigameRuns!: EntityTable<MinigameRunRow, 'id'>
 
-  constructor() {
-    super('uma-racer')
+  constructor(databaseName = 'uma-racer') {
+    super(databaseName)
     const stores = {
       profile: 'id',
       umas: 'id',

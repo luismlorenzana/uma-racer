@@ -4,7 +4,7 @@ import { applyAction, createEncounter, parseRpgCheckpointSave, parseRpgResultEvi
   RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_ROUNDS,
   type CombatAction, type CombatCue, type CombatState, type EncounterInput, type RpgCheckpointSaveV1,
   type RpgCommandRequest, type RpgFrozenEntryV1, type RpgResultEvidenceV1 } from '@racer/domain'
-import { db, type PendingRpgCommandRow, type RpgBattleJournalRow, type VersionedRow } from './db'
+import { db, type PendingRpgCommandRow, type RpgBattleJournalRow, type VersionedRow, type RacerDb } from './db'
 import { enqueueRpgCommand } from './rpg-sync'
 
 type RpgBattleStatus =
@@ -66,6 +66,13 @@ const exact = (value: Record<string, unknown>, keys: string[]): boolean =>
   Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key))
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
+
+// Dictionary-decoded numeric keys can reorder objects. Compare values, never property insertion order.
+function stableJson(value: unknown): string {
+  const sorted = (part: unknown): unknown => Array.isArray(part) ? part.map(sorted)
+    : record(part) ? Object.fromEntries(Object.keys(part).sort().map((key) => [key, sorted(part[key])])) : part
+  return JSON.stringify(sorted(value))
+}
 
 // Versioned key/enum dictionary keeps a fully frozen five-member kit inside T090's 16,384-character wire bound.
 // Only known schema keys/enums are shortened; authored names and actor identities remain byte-for-byte.
@@ -161,8 +168,8 @@ function frozenInput(entry: RpgFrozenEntryV1, checkpoint: RpgCheckpointSaveV1): 
       const ally = input.allies[index]
       return !ally || ally.id !== member.outfitId || ally.tier !== member.tier ||
         ally.level !== member.level || ally.signature !== member.signature ||
-        JSON.stringify(ally.stats) !== JSON.stringify(member.stats) ||
-        JSON.stringify(ally.loadout) !== JSON.stringify(member.skills)
+        stableJson(ally.stats) !== stableJson(member.stats) ||
+        stableJson(ally.loadout) !== stableJson(member.skills)
     })) throw new Error('Frozen encounter differs from its entry')
   createEncounter(input)
   return input
@@ -183,8 +190,8 @@ function pendingCheckpoint(row: PendingRpgCommandRow): RpgCheckpointSaveV1 | nul
   return value ? parseRpgCheckpointSave(value) : null
 }
 
-async function pendingFor(checkpointId: string): Promise<PendingRpgCommandRow[]> {
-  const rows = await db.pendingRpgCommands.toArray()
+async function pendingFor(checkpointId: string, database: RacerDb): Promise<PendingRpgCommandRow[]> {
+  const rows = await database.pendingRpgCommands.toArray()
   return rows.filter((row) => (row.body as RpgCommandRequest).upserts?.some((upsert) =>
     upsert.kind === 'rpgCheckpoints' && upsert.id === checkpointId)).sort((a, b) => a.queuedAt - b.queuedAt)
 }
@@ -196,13 +203,13 @@ function journalFor(input: EncounterInput, entry: RpgFrozenEntryV1, frozenHash: 
 }
 
 export class DexieRpgBattleHost implements RpgBattleHost {
-  constructor(private readonly now: () => number = Date.now) {}
+  constructor(private readonly now: () => number = Date.now, private readonly database: RacerDb = db) {}
 
   private async context(checkpointId: string): Promise<{ acknowledged: VersionedRow<RpgCheckpointSaveV1>;
     checkpoint: RpgCheckpointSaveV1; pending: PendingRpgCommandRow[] }> {
-    const acknowledged = await db.rpgCheckpoints.get(checkpointId)
+    const acknowledged = await this.database.rpgCheckpoints.get(checkpointId)
     if (!acknowledged || !parseRpgCheckpointSave(acknowledged.data)) throw new Error('RPG checkpoint is unavailable')
-    const pending = await pendingFor(checkpointId)
+    const pending = await pendingFor(checkpointId, this.database)
     const latest = [...pending].reverse().find((row) => row.status === 'pending' &&
       (row.body as RpgCommandRequest).action !== 'battle-result')
     const checkpoint = (latest && pendingCheckpoint(latest)) || acknowledged.data
@@ -226,14 +233,14 @@ export class DexieRpgBattleHost implements RpgBattleHost {
       const seed = rpgEncounterSeed(uid, checkpoint.presetId, checkpoint.chapterId, checkpoint.attemptIndex, nodeId)
       combat = { ...input, seed: Number.parseInt(seed, 16), contentVersion: checkpoint.contentVersion }
       createEncounter(combat)
-      const preset = await db.rpgPresets.get(checkpoint.presetId)
+      const preset = await this.database.rpgPresets.get(checkpoint.presetId)
       if (!preset || preset.data.slots.some((slot) => slot === null)) throw new Error('Battle needs a complete preset')
       const slots = preset.data.slots
       const expected: RpgCommandRequest['expected'] = [{ kind: 'rpgPresets', id: preset.id, version: preset.version }]
       for (let index = 0; index < slots.length; index += 1) {
         const slot = slots[index]!
         const ally = combat.allies[index]
-        const outfit = await db.rpgOutfits.get(slot!.outfitId)
+        const outfit = await this.database.rpgOutfits.get(slot!.outfitId)
         if (!outfit || !ally || ally.id !== slot!.outfitId || ally.signature !== slot!.signature ||
           JSON.stringify(ally.loadout) !== JSON.stringify(slot!.loadout) ||
           ally.style !== outfit.data.profile.style || ally.weapon !== outfit.data.profile.weapon ||
@@ -259,12 +266,12 @@ export class DexieRpgBattleHost implements RpgBattleHost {
         next, { expected, upserts: [], appends: [] })
       const frozenHash = await digest(enemyKitJson)
       const now = this.now()
-      await db.transaction('rw', [db.pendingRpgCommands, db.rpgBattleJournals, db.rpgBattleClaims], async () => {
-        await enqueueRpgCommand(command, now)
-        if (!await db.rpgBattleJournals.get(rpgBattleJournalId(frozen!))) {
-          await db.rpgBattleJournals.add(journalFor(combat, frozen!, frozenHash, now))
+      await this.database.transaction('rw', [this.database.pendingRpgCommands, this.database.rpgBattleJournals, this.database.rpgBattleClaims], async () => {
+        await enqueueRpgCommand(command, now, null, this.database)
+        if (!await this.database.rpgBattleJournals.get(rpgBattleJournalId(frozen!))) {
+          await this.database.rpgBattleJournals.add(journalFor(combat, frozen!, frozenHash, now))
         }
-        await db.rpgBattleClaims.put({ id: rpgBattleJournalId(frozen!), leaseRevision: 0 })
+        await this.database.rpgBattleClaims.put({ id: rpgBattleJournalId(frozen!), leaseRevision: 0 })
       })
       return this.resume(checkpointId)
     }
@@ -272,12 +279,12 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     const command = checkpointCommand(`rpg-begin:${rpgBattleJournalId(frozen)}`, 'begin-battle', acknowledged, next)
     const frozenHash = await digest(frozen.enemyKitJson)
     const now = this.now()
-    await db.transaction('rw', [db.pendingRpgCommands, db.rpgBattleJournals, db.rpgBattleClaims], async () => {
-      await enqueueRpgCommand(command, now)
-      if (!await db.rpgBattleJournals.get(rpgBattleJournalId(frozen))) {
-        await db.rpgBattleJournals.add(journalFor(combat, frozen, frozenHash, now))
+    await this.database.transaction('rw', [this.database.pendingRpgCommands, this.database.rpgBattleJournals, this.database.rpgBattleClaims], async () => {
+      await enqueueRpgCommand(command, now, null, this.database)
+      if (!await this.database.rpgBattleJournals.get(rpgBattleJournalId(frozen))) {
+        await this.database.rpgBattleJournals.add(journalFor(combat, frozen, frozenHash, now))
       }
-      await db.rpgBattleClaims.put({ id: rpgBattleJournalId(frozen), leaseRevision: frozen.leaseRevision })
+      await this.database.rpgBattleClaims.put({ id: rpgBattleJournalId(frozen), leaseRevision: frozen.leaseRevision })
     })
     return this.resume(checkpointId)
   }
@@ -285,7 +292,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
   private async projectEntry(entry: RpgFrozenEntryV1, checkpoint: RpgCheckpointSaveV1): Promise<BattleProjection | null> {
     try {
       const input = frozenInput(entry, checkpoint)
-      const raw = await db.rpgBattleJournals.get(rpgBattleJournalId(entry))
+      const raw = await this.database.rpgBattleJournals.get(rpgBattleJournalId(entry))
       const journal = raw && parseJournal(raw, entry, await digest(entry.enemyKitJson))
       return journal ? projectJournal(input, journal) : null
     } catch { return null /* An accepted receipt remains authoritative without its local replay. */ }
@@ -300,15 +307,15 @@ export class DexieRpgBattleHost implements RpgBattleHost {
       reason: JSON.stringify(conflicting.conflict ?? 'RPG command conflicted'), state: null })
     if (!entry) throw new Error('No frozen battle at this checkpoint')
     const id = rpgBattleJournalId(entry)
-    const accepted = await db.rpgResults.get(id)
+    const accepted = await this.database.rpgResults.get(id)
     if (accepted) return battleView({ kind: 'accepted', checkpoint: acknowledged.data, resultId: id,
       outcome: accepted.data.outcome }, await this.projectEntry(entry, acknowledged.data), accepted.data)
     let input: EncounterInput
     let frozenHash: string
     try { input = frozenInput(entry, checkpoint); frozenHash = await digest(entry.enemyKitJson) }
     catch (error) { return battleView({ kind: 'frozen-content-unavailable', checkpoint, reason: String(error) }) }
-    const raw = await db.rpgBattleJournals.get(id)
-    const claim = await db.rpgBattleClaims.get(id)
+    const raw = await this.database.rpgBattleJournals.get(id)
+    const claim = await this.database.rpgBattleClaims.get(id)
     const journal = raw ? parseJournal(raw, entry, frozenHash) : null
     if (claim && claim.leaseRevision !== entry.leaseRevision) return battleView({ kind: 'conflict', checkpoint,
       reason: 'Battle lease changed; this device is stale', state: null })
@@ -325,7 +332,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
       const previous = { ...entry, retryOrdinal: entry.retryOrdinal - 1 }
       const resultId = rpgBattleJournalId(previous)
       return battleView({ kind: 'loss', checkpoint, resultId }, await this.projectEntry(previous, checkpoint),
-        (await db.rpgResults.get(resultId))?.data ?? null)
+        (await this.database.rpgResults.get(resultId))?.data ?? null)
     }
     const begin = pending.find((row) => (row.body as RpgCommandRequest).action === 'begin-battle')
     if (journal?.terminal !== 'open' && journal && state) return battleView({ kind: 'pending', checkpoint, state, phase: 'result' }, projection)
@@ -347,8 +354,8 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     const input = frozenInput(entry, view.checkpoint)
     const frozenHash = await digest(entry.enemyKitJson)
     const id = rpgBattleJournalId(entry)
-    await db.transaction('rw', db.rpgBattleJournals, async () => {
-      const current = await db.rpgBattleJournals.get(id)
+    await this.database.transaction('rw', this.database.rpgBattleJournals, async () => {
+      const current = await this.database.rpgBattleJournals.get(id)
       const journal = current && parseJournal(current, entry, frozenHash)
       if (!journal || journal.actions.length !== expectedActionCount || journal.terminal !== 'open') {
         throw new Error('Battle action count is stale or journal is unavailable')
@@ -358,7 +365,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
       const applied = applyAction(replayed.state, action)
       if (applied.error) throw new Error(`Illegal RPG action: ${applied.error}`)
       const terminal = applied.state.outcome === 'victory' ? 'win' : applied.state.outcome === 'loss' ? 'loss' : 'open'
-      await db.rpgBattleJournals.put({ ...journal, actions: [...journal.actions, action], stateHash: applied.hash,
+      await this.database.rpgBattleJournals.put({ ...journal, actions: [...journal.actions, action], stateHash: applied.hash,
         terminal, updatedAt: Math.max(this.now(), journal.updatedAt) })
     })
     return this.resume(checkpointId)
@@ -371,7 +378,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     const entry = view.checkpoint.frozenEntry!
     const input = frozenInput(entry, view.checkpoint)
     const now = this.now()
-    await db.rpgBattleJournals.put(journalFor(input, entry, await digest(entry.enemyKitJson), now))
+    await this.database.rpgBattleJournals.put(journalFor(input, entry, await digest(entry.enemyKitJson), now))
     return this.resume(checkpointId)
   }
 
@@ -381,8 +388,8 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     const frozen = checkpoint.frozenEntry
     frozenInput(frozen, checkpoint)
     const id = rpgBattleJournalId(frozen)
-    const localClaim = await db.rpgBattleClaims.get(id)
-    const localJournal = await db.rpgBattleJournals.get(id)
+    const localClaim = await this.database.rpgBattleClaims.get(id)
+    const localJournal = await this.database.rpgBattleJournals.get(id)
     if (localClaim?.leaseRevision === frozen.leaseRevision && localJournal) {
       throw new Error('This device already owns the open battle; resume it instead')
     }
@@ -390,15 +397,15 @@ export class DexieRpgBattleHost implements RpgBattleHost {
       frozenEntry: { ...frozen, leaseRevision: frozen.leaseRevision + 1 } }
     const command = checkpointCommand(`rpg-takeover:${rpgBattleJournalId(frozen)}:lease-${next.frozenEntry!.leaseRevision}`,
       'takeover', acknowledged, next)
-    await db.transaction('rw', [db.pendingRpgCommands, db.rpgBattleClaims,
-      db.rpgBattleJournals, db.rpgBattleArchives], async () => {
-      await enqueueRpgCommand(command, this.now())
+    await this.database.transaction('rw', [this.database.pendingRpgCommands, this.database.rpgBattleClaims,
+      this.database.rpgBattleJournals, this.database.rpgBattleArchives], async () => {
+      await enqueueRpgCommand(command, this.now(), null, this.database)
       if (localJournal) {
-        await db.rpgBattleArchives.put({ id: `${id}:lease-${frozen.leaseRevision}`,
+        await this.database.rpgBattleArchives.put({ id: `${id}:lease-${frozen.leaseRevision}`,
           journal: { ...localJournal, commitStatus: 'conflict' }, reason: 'takeover' })
-        await db.rpgBattleJournals.delete(id)
+        await this.database.rpgBattleJournals.delete(id)
       }
-      await db.rpgBattleClaims.put({ id, leaseRevision: next.frozenEntry!.leaseRevision })
+      await this.database.rpgBattleClaims.put({ id, leaseRevision: next.frozenEntry!.leaseRevision })
     })
     return this.resume(checkpointId)
   }
@@ -408,19 +415,19 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     const entry = checkpoint.frozenEntry
     if (!entry) throw new Error('No frozen battle')
     const resultId = rpgBattleJournalId(entry)
-    const existing = await db.rpgResults.get(resultId)
+    const existing = await this.database.rpgResults.get(resultId)
     if (existing) return this.resume(checkpointId)
     if (checkpoint.status !== 'in-battle') throw new Error('No open frozen battle')
     if (pending.some((row) => (row.body as RpgCommandRequest).action === 'takeover' && row.status === 'pending')) {
       throw new Error('Takeover must be acknowledged before a result')
     }
-    const claim = await db.rpgBattleClaims.get(resultId)
+    const claim = await this.database.rpgBattleClaims.get(resultId)
     if (!claim || claim.leaseRevision !== entry.leaseRevision) throw new Error('Battle lease is stale; take over explicitly')
     if (pending.some((row) => row.status === 'conflict')) return this.resume(checkpointId)
     if (pending.some((row) => row.id === resultId)) return this.resume(checkpointId)
     const input = frozenInput(entry, checkpoint)
     const frozenHash = await digest(entry.enemyKitJson)
-    const raw = await db.rpgBattleJournals.get(resultId)
+    const raw = await this.database.rpgBattleJournals.get(resultId)
     const journal = raw && parseJournal(raw, entry, frozenHash)
     if (!journal) throw new Error('Battle journal is missing or corrupt')
     const step = replay(input, journal.actions)
@@ -433,7 +440,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
       frozenEntry: outcome === 'win' ? entry : { ...entry, retryOrdinal: entry.retryOrdinal + 1 } }
     const now = this.now()
     const outfits = await Promise.all(entry.party.map(async (member) => {
-      const row = await db.rpgOutfits.get(member.outfitId)
+      const row = await this.database.rpgOutfits.get(member.outfitId)
       if (!row || row.data.profile.tier !== member.tier || row.data.profile.level !== member.level) {
         throw new Error('Frozen outfit projection is unavailable')
       }
@@ -454,13 +461,13 @@ export class DexieRpgBattleHost implements RpgBattleHost {
         appends: [{ kind: 'rpgResults', id: resultId, data: evidence as unknown as Record<string, unknown>, createdAt: now }] })
     const dependency = pending.filter((row) => row.status === 'pending' &&
       (row.body as RpgCommandRequest).action !== 'battle-result').at(-1)?.id ?? null
-    await db.transaction('rw', [db.rpgBattleJournals, db.pendingRpgCommands], async () => {
-      const fresh = await db.rpgBattleJournals.get(resultId)
+    await this.database.transaction('rw', [this.database.rpgBattleJournals, this.database.pendingRpgCommands], async () => {
+      const fresh = await this.database.rpgBattleJournals.get(resultId)
       if (!fresh || fresh.actions.length !== journal.actions.length || fresh.stateHash !== journal.stateHash) {
         throw new Error('Battle journal changed before result reservation')
       }
-      await enqueueRpgCommand(command, now, dependency)
-      await db.rpgBattleJournals.put({ ...journal, terminal: abandon ? 'abandoned' : journal.terminal,
+      await enqueueRpgCommand(command, now, dependency, this.database)
+      await this.database.rpgBattleJournals.put({ ...journal, terminal: abandon ? 'abandoned' : journal.terminal,
         commitStatus: 'pending', updatedAt: Math.max(now, journal.updatedAt) })
     })
     return this.resume(checkpointId)

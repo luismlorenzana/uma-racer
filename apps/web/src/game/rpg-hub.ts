@@ -137,7 +137,7 @@ export async function saveRpgPreset(input: {
   const { preset, expectedVersion, expectedOutfitVersions } = input
   if (!parseRpgPresetSave(preset)) throw new Error('Party name or slots are invalid.')
   const id = commandId('edit-preset')
-  await db.transaction('rw', [db.umas, db.rpgOutfits, db.rpgPresets, db.pendingRpgCommands], async () => {
+  await db.transaction('rw', [db.umas, db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.pendingRpgCommands], async () => {
     const current = await db.rpgPresets.get(preset.presetId)
     if ((current?.version ?? 0) !== expectedVersion) throw new RpgHubConflictError()
     requireNoPending(await db.pendingRpgCommands.toArray(), 'edit-preset', preset.presetId)
@@ -146,6 +146,20 @@ export async function saveRpgPreset(input: {
     const owned = await Promise.all(filled.map((slot) => db.umas.get(slot.outfitId)))
     const profiles = new Map<string, RpgProfile>()
     const expected: RpgCommandRequest['expected'] = [{ kind: 'rpgPresets', id: preset.presetId, version: expectedVersion }]
+    const chapterId = current?.data.foregroundChapterId
+    const checkpoint = chapterId ? await db.rpgCheckpoints.get(`${preset.presetId}:${chapterId}`) : undefined
+    const loadoutChanged = preset.slots.some((slot) => {
+      const previous = current?.data.slots.find((s) => s?.outfitId === slot?.outfitId)
+      return slot && previous && (slot.signature !== previous.signature || JSON.stringify(slot.loadout) !== JSON.stringify(previous.loadout))
+    })
+    if (loadoutChanged && checkpoint) {
+      const pending = await db.pendingRpgCommands.toArray()
+      if (!['at-checkpoint', 'cleared'].includes(checkpoint.data.status) || pending.some((row) =>
+        (row.body as RpgCommandRequest).upserts.some((upsert) => upsert.kind === 'rpgCheckpoints' && upsert.id === checkpoint.id))) {
+        throw new RpgHubConflictError('Change skill loadouts only at an accepted safe checkpoint. The entered battle remains frozen.')
+      }
+      expected.push({ kind: 'rpgCheckpoints', id: checkpoint.id, version: checkpoint.version })
+    }
     for (let index = 0; index < filled.length; index += 1) {
       const row = outfitRows[index]
       const slot = filled[index]!

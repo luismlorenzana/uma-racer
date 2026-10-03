@@ -2,44 +2,44 @@
 import { parseRpgCommandResponseOrThrow, parseSaveSnapshotOrThrow,
   type EntityRecord, type LogRecord, type RpgCommandRequest, type RpgCommandResponse } from '@racer/domain'
 import { saveApi } from '../api/client'
-import { db } from './db'
+import { db, type RacerDb } from './db'
 
-export async function enqueueRpgCommand(body: RpgCommandRequest, now: number, dependsOn: string | null = null): Promise<void> {
+export async function enqueueRpgCommand(body: RpgCommandRequest, now: number, dependsOn: string | null = null, database: RacerDb = db): Promise<void> {
   if (body.schemaVersion !== 1 || !/^[A-Za-z0-9_.:-]{1,120}$/.test(body.commandId) ||
     !Number.isSafeInteger(now) || now < 0) throw new Error('Invalid RPG command queue entry')
-  const existing = await db.pendingRpgCommands.get(body.commandId)
+  const existing = await database.pendingRpgCommands.get(body.commandId)
   if (existing) {
     if (JSON.stringify(existing.body) !== JSON.stringify(body) || (existing.dependsOn ?? null) !== dependsOn) {
       throw new Error('RPG command id already queued with another payload or dependency')
     }
     return
   }
-  await db.pendingRpgCommands.add({ id: body.commandId, body, status: 'pending', queuedAt: now, conflict: null, dependsOn })
+  await database.pendingRpgCommands.add({ id: body.commandId, body, status: 'pending', queuedAt: now, conflict: null, dependsOn })
 }
 
-const entityTables = [db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.umas, db.items]
-const logTables = [db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.itemLedger]
 
-async function installAccepted(commandId: string, response: Extract<RpgCommandResponse, { status: 'applied' | 'duplicate' }>): Promise<void> {
+async function installAccepted(commandId: string, response: Extract<RpgCommandResponse, { status: 'applied' | 'duplicate' }>, database: RacerDb): Promise<void> {
+  const entityTables = [database.rpgOutfits, database.rpgPresets, database.rpgCheckpoints, database.umas, database.items]
+  const logTables = [database.rpgResults, database.rpgPromotions, database.rpgReceipts, database.itemLedger]
   const entities = response.entities
   const logs = response.logs
-  await db.transaction('rw', [...entityTables, ...logTables, db.pendingRpgCommands, db.outbox], async () => {
+  await database.transaction('rw', [...entityTables, ...logTables, database.pendingRpgCommands, database.outbox], async () => {
     for (const row of entities) {
       if (row.kind !== 'rpgOutfits' && row.kind !== 'rpgPresets' && row.kind !== 'rpgCheckpoints' &&
         row.kind !== 'umas' && row.kind !== 'items') throw new Error(`Unexpected RPG command entity: ${row.kind}`)
       if ((row.kind === 'umas' || row.kind === 'items') &&
-        await db.outbox.where('[kind+id]').equals([row.kind, row.id]).count()) {
+        await database.outbox.where('[kind+id]').equals([row.kind, row.id]).count()) {
         throw new Error(`Cannot adopt RPG command while ${row.kind}/${row.id} has a pending ordinary write`)
       }
-      await db.table(row.kind).put({ id: row.id, version: row.version, data: row.data })
+      await database.table(row.kind).put({ id: row.id, version: row.version, data: row.data })
     }
     for (const row of logs) {
       if (row.kind !== 'rpgResults' && row.kind !== 'rpgPromotions' && row.kind !== 'rpgReceipts' && row.kind !== 'itemLedger') {
         throw new Error(`Unexpected RPG command log: ${row.kind}`)
       }
-      await db.table(row.kind).put({ id: row.id, createdAt: row.createdAt, data: row.data })
+      await database.table(row.kind).put({ id: row.id, createdAt: row.createdAt, data: row.data })
     }
-    await db.pendingRpgCommands.delete(commandId)
+    await database.pendingRpgCommands.delete(commandId)
   })
 }
 
@@ -55,13 +55,13 @@ function rowsForDuplicate(snapshot: { entities: EntityRecord[]; logs: LogRecord[
 }
 
 /** Returns true only after one command's server-acknowledged rows are locally installed. */
-export async function flushOneRpgCommand(): Promise<boolean> {
-  const pending = await db.pendingRpgCommands.orderBy('queuedAt').filter((candidate) => candidate.status === 'pending').toArray()
+export async function flushOneRpgCommand(database: RacerDb = db, transport: Pick<typeof saveApi, 'load' | 'rpgCommand'> = saveApi): Promise<boolean> {
+  const pending = await database.pendingRpgCommands.orderBy('queuedAt').filter((candidate) => candidate.status === 'pending').toArray()
   let row: typeof pending[number] | undefined
   for (const candidate of pending) {
-    const dependency = candidate.dependsOn ? await db.pendingRpgCommands.get(candidate.dependsOn) : null
+    const dependency = candidate.dependsOn ? await database.pendingRpgCommands.get(candidate.dependsOn) : null
     if (dependency?.status === 'conflict') {
-      await db.pendingRpgCommands.update(candidate.id, { status: 'conflict', conflict: dependency.conflict })
+      await database.pendingRpgCommands.update(candidate.id, { status: 'conflict', conflict: dependency.conflict })
       continue
     }
     if (dependency) continue
@@ -70,17 +70,17 @@ export async function flushOneRpgCommand(): Promise<boolean> {
   }
   if (!row) return false
   const body = row.body as RpgCommandRequest
-  const response = parseRpgCommandResponseOrThrow(await saveApi.rpgCommand(body), row.id)
+  const response = parseRpgCommandResponseOrThrow(await transport.rpgCommand(body), row.id)
   if (response.status === 'conflict' || response.status === 'rejected') {
-    await db.pendingRpgCommands.update(row.id, { status: 'conflict', conflict: response })
+    await database.pendingRpgCommands.update(row.id, { status: 'conflict', conflict: response })
     return false
   }
   if (response.status === 'duplicate') {
-    const snapshot = parseSaveSnapshotOrThrow(await saveApi.load())
+    const snapshot = parseSaveSnapshotOrThrow(await transport.load())
     const selected = rowsForDuplicate(snapshot, body, response.receipt)
-    await installAccepted(row.id, { ...response, ...selected })
+    await installAccepted(row.id, { ...response, ...selected }, database)
   } else {
-    await installAccepted(row.id, response)
+    await installAccepted(row.id, response, database)
   }
   return true
 }

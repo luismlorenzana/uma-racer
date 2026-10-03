@@ -156,4 +156,22 @@ describe('RPG hub enrollment and party commands', () => {
       expectedOutfitVersions: { [template.id]: 1 } })).rejects.toThrow(/selected outfit changed/)
     expect(await db.pendingRpgCommands.count()).toBe(0)
   })
+  it('allows signature/loadout edits only at an accepted safe checkpoint and versions that dependency', async () => {
+    const template = outfit(9)
+    await own(template); await enroll(template); await flushOneRpgCommand()
+    const preset: RpgPresetSaveV1 = { ...emptyRpgPreset(1), foregroundChapterId: 'test-chapter', slots: [
+      { outfitId: template.id, signature: 'fire', loadout: [] }, null, null, null, null] }
+    await db.rpgPresets.put({ id: preset.presetId, version: 1, data: preset })
+    const checkpoint = { schemaVersion: 1 as const, presetId: 'party-1', chapterId: 'test-chapter', contentVersion: 'invented-v1',
+      contentHash: 'a'.repeat(64), attemptIndex: 1, attemptId: 'rpg-attempt:party-1:test-chapter:1', lastClearedNodeId: null,
+      selectedPath: [], status: 'pending-result' as const, revision: 1, frozenEntry: null }
+    await db.rpgCheckpoints.put({ id: 'party-1:test-chapter', version: 2, data: checkpoint })
+    const changed = structuredClone(preset)
+    changed.slots[0]!.signature = 'ice'
+    await expect(saveRpgPreset({ preset: changed, expectedVersion: 1 })).rejects.toThrow(/accepted safe checkpoint/)
+    await db.rpgCheckpoints.put({ id: 'party-1:test-chapter', version: 3, data: { ...checkpoint, status: 'at-checkpoint' } })
+    await saveRpgPreset({ preset: changed, expectedVersion: 1 })
+    const command = (await db.pendingRpgCommands.toArray())[0]!.body as RpgCommandRequest
+    expect(command.expected).toContainEqual({ kind: 'rpgCheckpoints', id: 'party-1:test-chapter', version: 3 })
+  })
 })
