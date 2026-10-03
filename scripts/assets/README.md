@@ -57,6 +57,15 @@ then removes stale files from the two atlas families.
 Production upload is intentionally not part of this package. Claude/the owner uploads the completed ignored `content/`
 tree to the private GCS bucket using the documented production process.
 
+## Private PriConne portraits
+
+`pnpm assets:rpg:import` reads the reviewed private chapter plus `content/overrides/rpg-source-evidence.json`.
+It verifies the selected official-page portrait URLs, caches source bytes by URL hash, natively decodes and crops
+256×256 WebP into `art/priconne/<key>.<hash8>.webp`, retaining earlier image objects. It pins exact current art
+paths in the manifest for `pnpm data:rpg:import`; no publishing occurs. `--offline` never fetches and fails on a
+missing source cache. See [the content contract](../../docs/technical/rpg-chapter-content.md) for browser evidence,
+allowed hosts, custom private paths and owner handoff. Tests use generated pixels and invented characters only.
+
 ## Safety and tests
 
 Never commit anything under `content/` or `scripts/assets/.cache/`. Tests generate tiny synthetic SVG inputs with invented

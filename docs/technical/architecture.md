@@ -260,6 +260,13 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   fourteen authored rosters.
 - Images are fetched once by a local pipeline script, normalized without crop into 128×128 WebP frames, and packed into
   deterministic **sprite atlases** used by DOM UI and later race scenes.
+- RPG playable-character teams follow the separate [private chapter contract](rpg-chapter-content.md) (D248).
+  Curated official-page evidence selects portrait variants; the adapter decodes/crops 256×256 WebP into a separate
+  `art/priconne/` family. Offline compilation verifies the graph, positive EXP, mechanically changed boss phase and
+  provenance. A hashed catalog retains exact pack/version and portrait mappings for existing checkpoints, selecting
+  its active pack only for new attempts. Runtime names/art are lazy, authenticated and hash-verified; no synthetic
+  fallback or source hotlink. GameTora reimports preserve RPG packs/catalog/pins; the publisher checks present RPG
+  content before remote access. The [URA private handoff](../research/rpg-private-ura-handoff.md) awaits owner publish.
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.

@@ -4,6 +4,7 @@ import { parseSparkRivalContentPack, type ContentManifest, type ContentManifestF
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { RPG_CATALOG_PATH, RPG_PACK_PATH, validateRpgContent } from './rpg'
 
 const VERSION_PATTERN = /^[a-f0-9]{12}$/
 const SHA_PATTERN = /^[a-f0-9]{64}$/
@@ -147,6 +148,7 @@ export async function publishContent(options: PublishContentOptions): Promise<Pu
   const { manifest, path: manifestPath } = await readManifest(options.contentDir)
   const localPaths = new Map<string, string>()
   for (const file of manifest.files) localPaths.set(file.path, await verifyFile(options.contentDir, file))
+  if (manifest.files.some(f => RPG_CATALOG_PATH.test(f.path) || RPG_PACK_PATH.test(f.path))) await validateRpgContent(options.contentDir, manifest)
   const sparkPacks = manifest.files.filter((file) => SPARK_RIVALS_PATH.test(file.path))
   if (sparkPacks.length !== 1) throw new Error(`Production content must contain exactly one Spark rival pack; found ${sparkPacks.length}`)
   try {

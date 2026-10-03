@@ -8,14 +8,17 @@ import type { EnemyMove, FrozenEnemy } from './combat/types'
 import { RPG_MAX_SELECTED_PATH, rpgResultId, type RpgCheckpointSaveV1, type RpgResultEvidenceV1 } from './save'
 
 export type RpgNodeKind = 'encounter' | 'elite' | 'boss' | 'branch' | 'recovery' | 'checkpoint'
-export interface RpgChapterActor { id: string; name: string; role: string; artKey: string; combat: FrozenEnemy }
+export interface RpgCharacterSource {
+  characterId: string; pageUrl: string; portraitUrl: string; variant: string; attribution: string; verifiedAt: string
+}
+export interface RpgChapterActor { id: string; name: string; role: string; artKey: string; combat: FrozenEnemy; source?: RpgCharacterSource }
 export interface RpgChapterNode { id: string; name: string; kind: RpgNodeKind; detail: string; enemies: string[]; exits: string[]; baseExp?: number }
 export interface RpgChapter {
   id: string; scenarioId: string; title: string; contentVersion: string; contentHash: string
   recommendedTier: number; recommendedLevel: number; surface: Surface; distance: DistanceCategory
   startNodeId: string; bossNodeId: string; nodes: RpgChapterNode[]
 }
-export interface RpgChapterPack { schemaVersion: 1; version: string; contentHash: string; actors: RpgChapterActor[]; chapters: RpgChapter[] }
+export interface RpgChapterPack { schemaVersion: 1 | 2; version: string; contentHash: string; actors: RpgChapterActor[]; chapters: RpgChapter[] }
 export interface RpgChapterSource { version: string; contentHash: string; artKeys: readonly string[] }
 const record = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const exact = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).length === keys.length && keys.every((k) => Object.hasOwn(v, k))
@@ -41,8 +44,24 @@ function moves(v: unknown): v is EnemyMove[] {
   })
 }
 
-function actor(v: unknown, arts: readonly string[]): v is RpgChapterActor {
-  if (!record(v) || !exact(v, ['id', 'name', 'role', 'artKey', 'combat']) || !id(v.id) || !text(v.name, 80) ||
+export function isRpgCharacterSource(v: unknown): v is RpgCharacterSource {
+  if (!record(v) || !exact(v, ['characterId', 'pageUrl', 'portraitUrl', 'variant', 'attribution', 'verifiedAt']) ||
+    !id(v.characterId) || !text(v.variant, 80) || !text(v.attribution, 240) || !text(v.pageUrl, 2048) || !text(v.portraitUrl, 2048) || typeof v.verifiedAt !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v.verifiedAt) || !Number.isFinite(Date.parse(v.verifiedAt))) return false
+  try {
+    if (new Date(v.verifiedAt).toISOString() !== v.verifiedAt) return false
+    const page = new URL(String(v.pageUrl)), image = new URL(String(v.portraitUrl))
+    return page.href === v.pageUrl && !page.username && !page.password && page.origin === 'https://priconne-redive.jp' &&
+      [ `/character/${v.characterId}`, `/character/${v.characterId}/` ].includes(page.pathname) && !page.search && !page.hash &&
+      image.href === v.portraitUrl && image.protocol === 'https:' && !image.username && !image.password &&
+      ['priconne-redive.jp', 'images.microcms-assets.io'].includes(image.hostname) && !image.port && !image.hash &&
+      /\.(png|webp|jpg|jpeg)$/.test(image.pathname)
+  } catch { return false }
+}
+
+function actor(v: unknown, arts: readonly string[], version: 1 | 2): v is RpgChapterActor {
+  if (!record(v) || !exact(v, ['id', 'name', 'role', 'artKey', 'combat', ...(version === 2 ? ['source'] : [])]) ||
+    version === 2 && !isRpgCharacterSource(v.source) || !id(v.id) || !text(v.name, 80) ||
     !text(v.role, 80) || !id(v.artKey) || !arts.includes(v.artKey) || !record(v.combat)) return false
   const c = v.combat
   if (!exact(c, ['id', 'element', 'stats', 'moves', ...(Object.hasOwn(c, 'phaseTwo') ? ['phaseTwo'] : [])]) || c.id !== v.id ||
@@ -55,12 +74,13 @@ function actor(v: unknown, arts: readonly string[]): v is RpgChapterActor {
 /** Bytes are SHA-256 verified by the content runtime; the pure parser binds their manifest identity and references. */
 export function parseRpgChapterPack(value: unknown, source: RpgChapterSource): RpgChapterPack {
   if (!/^[a-f0-9]{64}$/.test(source.contentHash) || !/^[A-Za-z0-9_.:-]{1,120}$/.test(source.version) ||
-    !record(value) || !exact(value, ['schemaVersion', 'version', 'actors', 'chapters']) || value.schemaVersion !== 1 ||
+    !record(value) || !exact(value, ['schemaVersion', 'version', 'actors', 'chapters']) || ![1, 2].includes(value.schemaVersion as number) ||
     value.version !== source.version || !Array.isArray(value.actors) || value.actors.length < 1 || value.actors.length > 500 ||
     !Array.isArray(value.chapters) || value.chapters.length < 1 || value.chapters.length > 64) fail('version, hash or bounded arrays')
   const raw = value as Record<string, unknown>
   const actors = raw.actors as unknown[]
-  if (!actors.every((v) => actor(v, source.artKeys))) fail('actor, action kit or art reference')
+  const schemaVersion = raw.schemaVersion as 1 | 2
+  if (!actors.every((v) => actor(v, source.artKeys, schemaVersion))) fail('actor, action kit, source or art reference')
   const typedActors = actors as RpgChapterActor[]
   if (new Set(typedActors.map((a) => a.id)).size !== actors.length) fail('duplicate actor')
   const chapters: RpgChapter[] = []
@@ -82,7 +102,7 @@ export function parseRpgChapterPack(value: unknown, source: RpgChapterSource): R
     chapters.push(chapter)
   }
   if (new Set(chapters.map((c) => c.id)).size !== chapters.length) fail('duplicate chapter')
-  return { schemaVersion: 1, version: source.version, contentHash: source.contentHash, actors: typedActors, chapters }
+  return { schemaVersion, version: source.version, contentHash: source.contentHash, actors: typedActors, chapters }
 }
 
 export const isRpgBattleNode = (node: RpgChapterNode): boolean => ['encounter', 'elite', 'boss'].includes(node.kind)

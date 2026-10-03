@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../../auth/AuthProvider'
 import { firebaseEnabled, loadAuth } from '../../auth/firebase'
 import { useContent } from '../../content/ContentProvider'
-import { loadRpgChapterPack } from '../../content/rpg'
+import { rpgContentLibrary } from '../../content/rpg'
 import type { LoadedContent } from '../../content/runtime'
 import { RpgChapterHost, type RpgChapterView } from '../../game/rpg-chapter-host'
 import { gameRuntime } from '../../game/runtime'
@@ -15,6 +15,7 @@ import { MinigameHeader } from '../../ui/minigames/MinigameShell'
 import { PagedGuide } from '../../ui/PagedGuide'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgElementLegend, RpgPortrait } from '../../ui/rpg/RpgPortrait'
+import { RpgEnemyPortrait, useRpgPresentation } from '../../ui/rpg/RpgEnemyPortrait'
 
 export function useRpgAccountId() {
   const auth = useAuth()
@@ -57,6 +58,7 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
     finally { lock.current = false; setBusy(false) }
   }
   const cp = view?.checkpoint, chapter = view?.chapter, preset = view?.preset
+  const presentation = useRpgPresentation(content, chapter)
   const pending = Boolean(view?.pending.length)
   const queuedEntry = view?.pending.some((r) => r.status === 'pending' && (r.body as RpgCommandRequest).action === 'begin-battle' &&
     (r.body as RpgCommandRequest).upserts.some((u) => u.kind === 'rpgCheckpoints' && u.id === cp?.id))
@@ -102,7 +104,7 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
             {switchBlocked && foreground?.data.status === 'pending-result' && <Button className="w-full" onClick={() => onSelect(foreground.data.chapterId)}>Return to foreground result</Button>}
             {foreground?.data.status === 'in-battle' && foreground.data.chapterId !== chapter.id && <div className="rounded-sm border border-hairline-dark p-3"><p className="text-xs">Switching chapters forfeits only the open fight's actions. Its seed and enemy kit stay fixed for a free retry.</p><Button className="mt-2 w-full" disabled={pending || busy} onClick={() => { void command(async () => { await host.battle.abandonToCheckpoint(foreground.id) }) }}>Pause foreground fight · no reward</Button></div>}
             {cp && !view.unavailable && <>
-              {cp.data.status === 'cleared' && <div role="status" className="rounded-md border border-accent bg-stage-soft p-4"><h3 className="text-xl">Chapter cleared</h3><p className="mt-2 text-xs text-ink-on-dark-soft">Accepted route saved. {proof ? 'Synthetic proof: no EXP or Items awarded.' : 'EXP integration and Inspiration token grants are not enabled yet.'}</p><Button className="mt-3 w-full" disabled={disabled || switchBlocked} onClick={() => { void command(() => host.start(presetId, chapter.id, true)) }}>Replay chapter · new attempt</Button></div>}
+              {cp.data.status === 'cleared' && <div role="status" className="rounded-md border border-accent bg-stage-soft p-4"><h3 className="text-xl">Chapter cleared</h3><p className="mt-2 text-xs text-ink-on-dark-soft">Accepted route saved. {proof ? 'Synthetic proof: EXP stays in isolated profiles; no Items awarded.' : 'Battle EXP is recorded. Inspiration token grants arrive in a later task.'}</p><Button className="mt-3 w-full" disabled={disabled || switchBlocked} onClick={() => { void command(() => host.start(presetId, chapter.id, true)) }}>Replay chapter · new attempt</Button></div>}
               {(cp.data.status === 'in-battle' || queuedEntry) && <Button className="w-full" disabled={busy} onClick={() => onBattle(cp.id)}>Continue frozen battle</Button>}
               {cp.data.status === 'pending-result' && <Button className="w-full" disabled={disabled} onClick={() => { void command(() => host.advance(presetId, chapter.id)) }}>Accept win · {cp.data.frozenEntry?.nodeId === chapter.bossNodeId ? 'clear chapter' : 'continue map'}</Button>}
               {cp.data.status === 'at-checkpoint' && cp.data.frozenEntry && <Button className="w-full" disabled={disabled || preset.data.foregroundChapterId !== chapter.id} onClick={() => { void choose(chapter.nodes.find((n) => n.id === cp.data.frozenEntry!.nodeId)!) }}>Retry free · same encounter</Button>}
@@ -110,7 +112,7 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
                 <p className="text-micro text-accent">{node.kind}</p><h4 className="mt-1 text-lg">{node.name}</h4><p className="mt-1 text-xs leading-5 text-ink-on-dark-soft">{node.detail}</p>
                 {node.enemies.length > 0 && <div aria-label="Enemy formation" className="mt-2 space-y-2">{node.enemies.map((id, index) => {
                   const actor = view.pack!.actors.find((a) => a.id === id)!
-                  return <div key={id} className="border-l-2 border-accent pl-2 text-xs"><p>{index === 0 ? 'Front' : `Slot ${index + 1}`} · {actor.name} · {actor.combat.element}</p><p className="mt-0.5 text-ink-on-dark-soft">{actor.role} · Weak to {rpgEnemyWeaknesses(actor.combat.element).join(', ')}</p></div>
+                  return <div key={id} className="flex items-center gap-2 border-l-2 border-accent pl-2 text-xs"><RpgEnemyPortrait content={content} artId={presentation.portraits[id]} name={actor.name} className="h-12 w-10 shrink-0" /><div><p>{index === 0 ? 'Front' : `Slot ${index + 1}`} · {actor.name} · {actor.combat.element}</p><p className="mt-0.5 text-ink-on-dark-soft">{actor.role} · Weak to {rpgEnemyWeaknesses(actor.combat.element).join(', ')}</p></div></div>
                 })}<button aria-expanded={preview === node.id} onClick={() => setPreview(preview === node.id ? null : node.id)} className="min-h-11 w-full rounded-sm border border-hairline-dark px-2 text-left text-xs">{preview === node.id ? 'Hide' : 'Review'} enemy intents and phases</button>{preview === node.id && node.enemies.map((id) => {
                   const actor = view.pack!.actors.find((a) => a.id === id)!
                   return <div key={id} className="text-xs leading-5 text-ink-on-dark-soft"><p>{actor.name}: {actor.combat.moves.map((m) => m.intentText).join(' · ')}</p>{actor.combat.phaseTwo && <p>At {actor.combat.phaseTwo.thresholdPercent}% HP: {actor.combat.phaseTwo.moves.map((m) => m.intentText).join(' · ')}</p>}</div>
@@ -143,10 +145,7 @@ export function RpgChapterScreen() {
   const uid = useRpgAccountId()
   const navigate = useNavigate()
   const host = useMemo(() => {
-    const pack = content ? loadRpgChapterPack(content) : Promise.resolve(null)
-    // Keep the rejected promise handled until a subscribed map can show its recovery message.
-    void pack.catch(() => {})
-    return new RpgChapterHost(() => pack)
+    return new RpgChapterHost(identity => content ? rpgContentLibrary(content).load(identity) : Promise.resolve(null))
   }, [content])
   return <RpgChapterMap host={host} presetId={presetId} chapterId={params.get('chapter') ?? undefined} content={content} uid={uid}
     onSelect={(id) => setParams({ chapter: id })} onBattle={(id) => { void navigate(`/rpg/battle/${encodeURIComponent(id)}`) }}

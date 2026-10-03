@@ -70,7 +70,7 @@ export interface LoadedContent {
  * tile for Uma lists (`art/bust/<umaId>`). T059 adds `chibi` (`<umaId>-a` standing, `-b` celebrating), `dress`
  * (`<charaId>-gym|summer|winter|casual`) and `face` (`<charaId>`, the 128 px race token).
  */
-export type ArtKind = 'uma' | 'card' | 'bust' | 'chibi' | 'dress' | 'face'
+export type ArtKind = 'uma' | 'card' | 'bust' | 'chibi' | 'dress' | 'face' | 'priconne'
 
 export interface ArtLoader {
   /** True when the published manifest carries art for this entry. */
@@ -218,18 +218,18 @@ function optionalFile(manifest: ContentManifest, pattern: RegExp, label: string)
   return matches[0] ?? null
 }
 
-const ART_FILE = /^art\/(uma|card|bust|chibi|dress|face)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
+const ART_FILE = /^art\/(uma|card|bust|chibi|dress|face|priconne)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
 /**
  * Object URLs held per kind for recently viewed art; older ones are revoked so memory stays bounded. Busts are small
  * (~18 KB) and fill whole grids, so a list keeps every one it shows; the large art keeps a short window.
  */
-const ART_CACHE_LIMIT: Record<ArtKind, number> = { uma: 24, card: 24, bust: 320, chibi: 64, dress: 24, face: 72 }
+const ART_CACHE_LIMIT: Record<ArtKind, number> = { uma: 24, card: 24, bust: 320, chibi: 64, dress: 24, face: 72, priconne: 24 }
 
 function artIndex(manifest: ContentManifest): Map<string, ContentManifestFile> {
   const index = new Map<string, ContentManifestFile>()
   for (const file of manifest.files) {
     const match = ART_FILE.exec(file.path)
-    if (match) index.set(`${match[1]}:${match[2]}`, file)
+    if (match) index.set(`${match[1]}:${match[2]}${match[1] === 'priconne' ? `-${file.sha256.slice(0, 8)}` : ''}`, file)
   }
   return index
 }
@@ -251,6 +251,10 @@ function createArtLoader(
     if (result.bytes.byteLength !== file.bytes) throw new Error(`Content byte length mismatch: ${file.path}`)
     const digest = hex(await globalThis.crypto.subtle.digest('SHA-256', result.bytes))
     if (digest !== file.sha256) throw new Error(`Content hash mismatch: ${file.path}`)
+    if (key.startsWith('priconne:')) {
+      const { width, height } = readWebpDimensions(result.bytes)
+      if (width !== 256 || height !== 256) throw new Error('Invalid RPG portrait dimensions')
+    }
     const url = urls.create(new Blob([result.bytes], { type: 'image/webp' }))
     track(url)
     cache.set(key, url)

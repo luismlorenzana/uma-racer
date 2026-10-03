@@ -7,7 +7,8 @@
 > cap. Five filled party slots, the signature-element choice and the Inspiration token destination are fixed.
 > T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227); T091 has pinned combat and the
 > compositional skill catalog (D229). T095 supplies branching maps (D245); T096 settles encounter EXP and integrates
-> safe-checkpoint progression (D246). Private PriConne content, Inspiration tokens and Home entry remain T097–T099.
+> safe-checkpoint progression (D246). T097 implements the private pipeline and prepared URA draft (D248);
+> owner publication, Inspiration tokens and Home entry remain gated by T098–T099 and the private handoff.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -419,7 +420,8 @@ without producing a second full turn. All 72 boss samples change phase, mean **4
 probe loses all 12. The sim gates broad turns/HP/phase/status/loss envelopes, while fixed replay hashes pin exact
 mechanics. A stronger replay probe clears in **4.0** rounds, while the same boss against a weaker catch-up party
 takes **7.0** rounds with more KOs; these are combat-only probes, not EXP payout rules. Real opponent kits and
-chapter pacing are still authored privately in T097 and validated in T095/T096.
+chapter pacing now have T097's private URA draft and bounded replay check; owner publication and real-party/device
+balance remain release gates ([handoff](../research/rpg-private-ura-handoff.md)).
 
 Combat rules are pure TypeScript in `packages/domain`; presentation can use React for menus and PixiJS only if a scene
 actually benefits from many animated actors. Rules consume a frozen encounter/content version, deterministic seed and
@@ -473,7 +475,8 @@ learned/slot-bounded loadouts before submitting a grouped command with expected 
 offline edit remains visibly pending and cannot masquerade as the saved preset; a stale revision requires an explicit
 RPG-only account refresh, which leaves unrelated queued saves untouched.
 Partial parties stay editable but cannot launch. T095 adds internal chapter selection/maps and T096 adds
-acknowledged progression; private campaign content, tokens and Home release remain gated by T097–T099.
+acknowledged progression; T097 adds a private URA draft and exact-version content pipeline. Owner publication,
+tokens and Home release remain gated by the private handoff and T098–T099.
 Home still has no RPG link and no synthetic production encounter.
 
 T094 adds the lazy standalone **`/rpg/battle/:checkpointId`** stage (D243), not a Home or chapter launch action.
@@ -550,7 +553,8 @@ Replay after an accepted boss clear starts a new attempt and map.
 The six-node DEV fixture has two required fights and one optional elite (route counts **[2, 3]**), one fork/rejoin,
 a phase-changing boss and Tier 1 Lv10 recommendations. Its recovery stop is a safe setup/shorter route, **not** a new
 persistent HP resource: every engine-v1 fight already starts at full HP/MP. T096 adds ordinary/elite/boss encounter
-EXP and safe-checkpoint setup/promotion; no Items/tickets/tokens. Private PriConne content remains T097, token grant T098 and
+EXP and safe-checkpoint setup/promotion; no Items/tickets/tokens. T097's private pipeline/draft are implemented;
+publication remains owner/Claude, token grant T098 and
 Home release T099. The isolated `/dev/rpg-chapter-proof` uses the real hosts with separate client/simulated-account
 databases and invented rows only, excluded from production. [Phone proof](../research/rpg-chapter-phone-proof.md)
 records 390×844/375×667 checks, acknowledgement, replay and recovery coverage.

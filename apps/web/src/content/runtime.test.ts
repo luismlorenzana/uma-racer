@@ -161,6 +161,25 @@ function transport(current: () => Fixture): ContentTransport {
 }
 
 describe('private art loader', () => {
+  it('keeps RPG portraits lazy and hash-specific when two retained packs share an art key',async()=>{
+    const current=fixture(), versions=[bytes(syntheticWebp(256,256)),bytes(syntheticWebp(256,256))]
+    new Uint8Array(versions[1]!)[20]=16
+    const ids=versions.map(value=>{
+      const sha256=hash(value),path=`art/priconne/example.${sha256.slice(0,8)}.webp`
+      current.manifest.files.push({path,sha256,bytes:value.byteLength});current.responses.set(path,{bytes:value,contentType:'image/webp'})
+      return `example-${sha256.slice(0,8)}`
+    })
+    current.manifest.version=createHash('sha256').update(current.manifest.files.map(f=>f.sha256).sort().join('')).digest('hex').slice(0,12)
+    const {urls}=urlFactory(), fetcher=transport(()=>current), file=vi.spyOn(fetcher,'file')
+    const runtime=new ContentRuntime(fetcher,new MemoryStore(),urls), loaded=await runtime.load()
+    if(loaded.status!=='ready')throw new Error('Fixture unavailable')
+    expect(file.mock.calls.some(([path])=>path.startsWith('art/priconne'))).toBe(false)
+    expect(loaded.content.art.has('priconne','example')).toBe(false)
+    expect(loaded.content.art.has('priconne',ids[0]!)).toBe(true)
+    const release=loaded.content.art.hold!('priconne',ids[0]!)
+    expect(await loaded.content.art.load('priconne',ids[0]!)).not.toBe(await loaded.content.art.load('priconne',ids[1]!))
+    release()
+  })
   it('serves art on demand, caches it, and reports what the manifest has', async () => {
     const current = fixture()
     const { urls } = urlFactory()

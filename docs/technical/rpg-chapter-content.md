@@ -1,30 +1,43 @@
 # RPG chapter content and checkpoint authoring
 
-T095/T096's standing contract for T097 private authoring. Product rules remain in
+T095–T097's standing content and authoring contract (D245, D246, D248). Product rules remain in
 [Global Uma RPG](../design/uma-rpg.md); grouped saves in [the implementation contract](uma-rpg-implementation.md).
 No real PriConne rows, extracted descriptions or portraits belong in this document or git.
 
-## Private pack v1
+## Private packs and exact-version catalog
 
-The authenticated content manifest may contain one `data/rpg-chapters.<first-eight-sha256>.json` file. The lazy
+The authenticated content manifest carries one `data/rpg-catalog.<first-eight-sha256>.json` plus retained
+`data/rpg-chapters.<first-eight-sha256>.json` files and their portraits. The lazy
 `apps/web/src/content/rpg.ts` loader checks MIME type, byte length and SHA-256 before the pure
-`parseRpgChapterPack` parser runs. No file means **unavailable**, never a synthetic encounter. Multiple matching
-files are ambiguous and rejected. A replaced pack whose hash differs from an open checkpoint is also unavailable;
-T097 must retain/load the exact old pack before enabling that old map, not rewrite its checkpoint.
+`parseRpgChapterPack` parser runs. No file means **unavailable**, never a synthetic encounter. The catalog selects
+`activeHash` for new attempts and an exact `contentVersion` + `contentHash` for an existing checkpoint. A missing
+retained pack blocks map continuation without rewriting any checkpoint or battle. Explicit replay after clear
+starts on the current active pack; ordinary resume does not. A legacy manifest without a catalog can read one v1
+pack; multiple legacy packs are ambiguous and rejected.
 
-The JSON is `{ schemaVersion: 1, version, actors, chapters }`. `version` is an immutable authored identifier
+Catalog shape: `{ schemaVersion: 1, activeHash, packs: [{ version, sha256, path, art: [{ key, path }] }] }`.
+It accepts 1–64 immutable pack references, unique versions/full hashes and 1–500 unique art keys per pack.
+Every pack path and portrait path must bind its manifest SHA-256 and eight-character filename prefix. Import
+retains older packs and images in both the manifest and local output: **there is no implicit pruning**. Owners must
+not remove a version while any device/checkpoint references it. Reusing a version for different JSON, or changing
+a retained pack's key-to-image mapping, fails rather than silently updating old maps. Catalog/pack requests are
+lazy and deduplicated; a failed fetch can retry. Each image id is `key-hash8`, so two versions of the same character
+never share the wrong live portrait. Held Blob URLs follow the app's bounded art loader; art is not fetched at startup.
+
+Production JSON is `{ schemaVersion: 2, version, actors, chapters }`; legacy schema 1 remains readable. `version` is an immutable authored identifier
 (for example `opening-v1`), **not** the whole manifest version or a hash of itself. Each chapter's `contentVersion`
 must equal it. The verified file's full SHA-256 is injected into each parsed chapter as `contentHash`, stored in the
 checkpoint and frozen entry, and checked on resume. It is not embedded in the JSON being hashed.
 
 | Row | Required fields |
 |---|---|
-| Actor | `id`, `name`, `role`, `artKey`, `combat` |
+| Actor | `id`, `name`, `role`, `artKey`, `combat`, `source` (required in v2, absent in v1) |
 | Chapter | `id`, `scenarioId`, `title`, `contentVersion`, `recommendedTier`, `recommendedLevel`, `surface`, `distance`, `startNodeId`, `bossNodeId`, `nodes` |
 | Node | `id`, `name`, `kind`, `detail`, `enemies`, `exits`; optional `baseExp` for old-pack compatibility |
 | Combat actor | `id` (same as actor), `element`, `stats`, `moves`, optional `phaseTwo` |
 | Move | `id`, `kind`, `channel`, `element` or `null`, `power`, `target`, `intentText`, optional `status` |
 | Phase two | `thresholdPercent`, `moves` |
+| Source | `characterId`, `pageUrl`, `portraitUrl`, `variant`, `attribution`, `verifiedAt` |
 
 All objects reject unknown/missing keys. Stable chapter/node/actor/move/art ids use the bounded safe-id alphabet
 `A–Z a–z 0–9 _ . : -`, up to 24 characters. Art keys must resolve against actual manifest entries
@@ -32,7 +45,9 @@ All objects reject unknown/missing keys. Stable chapter/node/actor/move/art ids 
 Names/roles are nonempty and at most 80 characters; chapter titles 100; node detail 240. Node detail explains the
 tradeoff, not an unimplemented reward claim. Pack bounds are 1–500 actors, 1–64 chapters and 1–64 nodes per chapter,
 matching the existing selected-path bound. Each team contains 1–5 unique actor ids in **front-to-back formation order**.
-Enemy art loading/importing and production character selection are T097; T095's previews label missing art safely.
+Production art keys use the filesystem-safe subset `A–Z a–z 0–9 _ -` (at most 24 characters).
+The map and battle stage join names/portraits from the checkpoint's exact pack; an unavailable image is visibly
+labelled, not replaced with another character. It never changes a frozen combat kit.
 
 Node kinds: `encounter`, `elite`, `boss`, `branch`, `recovery`, `checkpoint`. Battle nodes must name a nonempty
 team; safe nodes must have an empty team. Exits are ordered, unique node ids. A chapter has one terminal boss,
@@ -57,6 +72,74 @@ physical/magical; elements Fire/Ice/Lightning/Light/Dark. Damage targets front/l
 burn/slow/mark/weaken; support targets self/lowest-hp-ally and may apply ward/regen/power-up. Phase threshold is
 1–99% HP. The engine selects deterministic visible intents from these kits; there is no per-screen random plan.
 Never reference a missing action or invent a new status in a private row: unsupported kits fail validation.
+
+The production gate additionally requires positive EXP on every battle and at least one boss actor whose phase
+kit changes mechanics (different ids/intent wording alone are not a phase). Runtime v2 parsing checks this too.
+These are content validation rules, not new combat coefficients. Native portrait decode happens before packing;
+offline publication rechecks byte/hash integrity and 256×256 WebP metadata.
+
+## Curated official-site source evidence
+
+`source.characterId` identifies a playable character on the [official directory](https://priconne-redive.jp/character/).
+`pageUrl` must be its exact HTTPS `/character/<id>/` page (without query/fragment); `portraitUrl` is the exact chosen
+PNG/JPEG/WebP on that page, on `priconne-redive.jp` or the site's `images.microcms-assets.io` CDN. URLs are bounded
+at 2048 characters, without credentials; provenance includes a chosen-variant note (80 characters), attribution
+(240) and valid ISO UTC verification timestamp. No remote image hotlink appears in the UI.
+
+The current official site is a client-rendered SPA: fetching its initial HTML is **not** proof that a portrait belongs
+to a character. Use the browser to verify the character page and fantasy/modern/other selected panel, then record
+private `content/overrides/rpg-source-evidence.json`:
+
+```json
+{ "schemaVersion": 1, "pages": [{
+  "pageUrl": "https://priconne-redive.jp/character/example/",
+  "portraitUrls": ["https://images.microcms-assets.io/assets/invented.png"]
+}] }
+```
+
+This example is invented. The adapter requires every actor's exact selected URL in its matching page evidence,
+and one image source per art key. It downloads once into `scripts/assets/.cache/priconne/` keyed by URL SHA-256,
+decodes with the workspace's existing Sharp dependency and writes cropped 256×256 WebP portraits. Source pins
+`manifest.source["rpg-art:<key>"]` select exact addressed images for compilation. All evidence, rows, caches and art
+remain ignored. `--offline` uses only cached source images, never the network; missing/corrupt images fail.
+
+## Commands and owner/Claude publication checklist
+
+From the repository root, with a reviewed private `content/overrides/rpg-chapters.json`:
+
+```bash
+pnpm assets:rpg:import             # sources + evidence → verified private portraits, manifest pins
+pnpm assets:rpg:import --offline   # repeat without network once every source is cached
+pnpm data:rpg:import               # canonical JSON → immutable pack and retained-version catalog
+pnpm data:rpg:validate --replay    # credential-free integrity, graph/kit/art gate and bounded route probe
+```
+
+All accept `--content-dir=/absolute/private/path`; importers also accept `--input=/absolute/private/source.json`.
+Portrait import accepts `--evidence=...` and `--cache-dir=...`. They print only version/hash, counts and aggregate
+coverage; CLI failures do not dump private rows/URLs. Canonical object-key sorting preserves ordered formation,
+exits and moves. Failed validation must not swap the last good pack/catalog. The regular GameTora data importer
+preserves retained RPG packs/catalog and source pins; regular atlas/art rebuilds preserve the separate PriConne family.
+
+For **each** chapter, the private author must:
+
+1. Pick playable character teams for opening/fork/elite/boss, with genuinely different fork matchups and clear intent.
+2. Verify official character pages and the exact selected portrait variants; record private source evidence.
+3. Author Uma RPG stats, elements, formation, actions/statuses and phase scripts. Never copy source damage formulas.
+4. Author positive encounter EXP using the actual required/optional fight counts; keep a new immutable version for edits.
+5. Import art, compile and validate every reference/retained object; run the bounded probe and inspect the chapter privately.
+6. **Owner/Claude only:** combine with the complete current private Uma/Spark content tree, then run existing
+   `pnpm content:publish -- --dry-run` and `pnpm content:publish`. No task-local partial manifest may replace production.
+7. Fetch through the signed-in runtime, record the published manifest version plus RPG pack version/full hash, play
+   every route and test old checkpoint resume after an updated active pack. T099 stays blocked until this succeeds.
+
+The existing publisher now rejects invalid present RPG content **before** reading/uploading remote storage. A
+publication without RPG remains valid for the current non-RPG game. Publication credentials/infrastructure are
+unchanged and belong to the owner; these importers never publish.
+
+The bounded `--replay` probe uses invented base-100/no-growth five-weapon entrants, three fixed seeds, full
+HP/MP per encounter and the real EXP/skill rules. It measures live-versus-JSON-restored state hashes, clear count,
+phase triggers, mean rounds and ending levels. It is not a production-balance claim for every owned Uma or loadout.
+See [the initial private handoff](../research/rpg-private-ura-handoff.md) for aggregate results and the prepared version.
 
 An invented minimal shape (not the production chapter; its art references must still resolve in a private manifest):
 
