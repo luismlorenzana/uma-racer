@@ -1,6 +1,6 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** T089–T096 rules, save transport, combat, battle journal/host, internal roster/party setup, branching map and accepted EXP/skills/promotion implemented. A complete development-only synthetic chapter is playable; real content, tokens and Home entry remain gated. Read [the design](../design/uma-rpg.md) for product rules and
+**Status:** T089–T097 rules, save transport, combat, battle journal/host, internal setup, branching map, accepted progression and private content/portrait pipeline implemented. The private URA draft is prepared; owner publication, tokens and Home entry remain gated ([handoff](../research/rpg-private-ura-handoff.md)). Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
 left ambiguous. T089's progression coefficients are pinned in D227, T091's combat coefficients in D229 and T096's
 encounter payouts in D246. Their synthetic sims and `packages/domain/src/domain.test.ts` pin these rules.

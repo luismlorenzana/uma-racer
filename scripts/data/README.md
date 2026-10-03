@@ -58,6 +58,22 @@ removed after the replacement manifest is written. Existing atlas entries are pr
 path, byte count, and full SHA-256. Its version is the first 12 hexadecimal characters of the SHA-256 over the sorted file
 hashes. Paths are resolved from this package's location, so the result does not depend on the command's current directory.
 
+## Private RPG chapter pipeline
+
+After a reviewed private `content/overrides/rpg-chapters.json` and official-page evidence are authored:
+
+```bash
+pnpm assets:rpg:import
+pnpm data:rpg:import
+pnpm data:rpg:validate --replay  # offline, credential-free validation and bounded invented-party replay
+```
+
+See [the standing RPG content contract](../../docs/technical/rpg-chapter-content.md) for v2 provenance, exact-version
+catalog/art references, custom paths and owner-only publication. Every old pack/image remains retained; versions
+cannot be reauthored. Regular data imports preserve RPG files/catalog and source pins. A present RPG pack must pass
+this gate before the existing publisher contacts storage. A partial RPG-only staging manifest must never replace
+the complete production manifest. The first URA draft's [handoff](../../docs/research/rpg-private-ura-handoff.md) is pending publication.
+
 ## Safety and tests
 
 `content/` and `scripts/data/.cache/` contain original-game data and must never be committed, copied into fixtures, or put

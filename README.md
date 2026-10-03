@@ -52,6 +52,7 @@ pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
 pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
 pnpm sim:rpg:progression # per-fight two-tier RPG rewards, replay/catch-up and tree envelope (T096)
 pnpm sim:rpg:combat # synthetic six-weapon/five-element RPG combat and replay envelope (T091)
+pnpm data:rpg:validate --replay # offline private RPG chapter integrity, coverage and bounded replay (T097)
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs

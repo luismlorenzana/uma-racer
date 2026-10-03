@@ -89,6 +89,27 @@ describe('chapter host + real grouped server acceptance', () => {
     await expect(host.choose(uid, presetId, chapterId, 'fork')).rejects.toThrow(/pending/)
     await sync(); expect((await database.rpgCheckpoints.get(id))!.data.selectedPath).toEqual(['opening'])
   })
+  it('selects retained content for an open checkpoint, then current content only for explicit replay',async()=>{
+    const old=syntheticChapterPack(), current=syntheticChapterPack()
+    current.version='invented-new';current.contentHash='c'.repeat(64)
+    for(const chapter of current.chapters){chapter.contentVersion=current.version;chapter.contentHash=current.contentHash}
+    let active=old,retained=true
+    const versioned=new RpgChapterHost(async identity=>{
+      if(!identity)return active
+      if(identity.contentHash===old.contentHash&&retained)return old
+      if(identity.contentHash===current.contentHash)return current
+      throw new Error('Exact pack not retained')
+    },database,()=>++now)
+    await versioned.start(presetId,chapterId);await sync();active=current
+    expect((await versioned.read(presetId,chapterId)).chapter?.contentVersion).toBe(old.version)
+    retained=false;expect((await versioned.read(presetId,chapterId)).unavailable).toMatch(/not retained/)
+    await expect(versioned.choose(uid,presetId,chapterId,'opening')).rejects.toThrow(/not retained/)
+    expect(await database.rpgBattleJournals.count()).toBe(0);retained=true
+    await clearFight('opening');await host.choose(uid,presetId,chapterId,'fork');await sync()
+    await host.choose(uid,presetId,chapterId,'rest');await sync();await host.choose(uid,presetId,chapterId,'join');await sync();await clearFight('boss')
+    await versioned.start(presetId,chapterId,true);await sync()
+    expect((await database.rpgCheckpoints.get(id))!.data).toMatchObject({contentHash:current.contentHash,contentVersion:current.version,attemptIndex:2})
+  })
   it('loss, reload and chapter switching preserve exact kit and prior clears; future party edits affect only future entries', async () => {
     await host.start(presetId, chapterId); await sync(); await clearFight('opening')
     await host.choose(uid, presetId, chapterId, 'fork'); await sync()

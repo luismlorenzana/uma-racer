@@ -17,6 +17,7 @@ import { IdentityGlyph, RpgPortrait, RPG_WEAPON_LABELS } from '../../ui/rpg/RpgP
 import { useBattlePlayback } from '../../ui/rpg/useBattlePlayback'
 import { RpgBattleGuide } from './RpgBattleGuide'
 import { RpgRewardReveal } from '../../ui/rpg/RpgRewardReveal'
+import { RpgEnemyPortrait, useRpgPresentation } from '../../ui/rpg/RpgEnemyPortrait'
 
 function Gauge({ label, value, maximum, mp = false }: { label: string; value: number; maximum: number; mp?: boolean }) {
   return <div className="flex min-w-0 items-center gap-1 text-[10px] leading-3">
@@ -105,8 +106,9 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
   }, [host, checkpointId])
 
   const state = view?.state ?? null
+  const presentation = useRpgPresentation(content, proof ? null : view?.checkpoint)
   const display = playback.playing && beforePlayback ? beforePlayback : state
-  const name = (id: string) => names[id] ?? content?.umas.byId.get(id)?.name ?? humanize(id)
+  const name = (id: string) => names[id] ?? presentation.names[id] ?? content?.umas.byId.get(id)?.name ?? humanize(id)
   const inputAvailable = view && ((view.kind === 'open' && view.recovery === 'none') ||
     (view.kind === 'pending' && view.phase === 'entry' && view.recovery !== 'restart-journal')) && state?.outcome === 'active'
   const locked = busy || playback.playing || !inputAvailable
@@ -180,7 +182,7 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
       className={`relative flex min-h-14 min-w-0 items-center gap-1.5 rounded-sm border px-1.5 py-1 text-left ${selected || selectAsTarget && target?.id === unit.id ? 'border-accent bg-accent/10' : 'border-hairline-dark bg-stage-soft'} ${ally ? '' : 'w-40 shrink-0'} [@media(max-height:700px)]:min-h-12`}>
       {ally ? <RpgPortrait compact content={content} outfitId={portraits[ally.id] ?? ally.id} name={name(ally.id)} weapon={ally.weapon} element={ally.signature}
         className="h-12 w-10 shrink-0 [@media(max-height:700px)]:h-10" />
-        : <span className="flex h-10 w-8 shrink-0 flex-col items-center justify-center rounded-sm bg-white/5"><IdentityGlyph element={foe!.element} /><span className="mt-0.5 text-[9px]">P{unit.phase}</span></span>}
+        : <span className="relative shrink-0"><RpgEnemyPortrait content={content} artId={presentation.portraits[unit.id]} name={name(unit.id)} className="h-12 w-10 [@media(max-height:700px)]:h-10" /><span className="absolute bottom-0 right-0 flex items-center rounded-sm bg-stage/90 px-0.5"><IdentityGlyph element={foe!.element} /><span className="text-[8px]">P{unit.phase}</span></span></span>}
       <span className="min-w-0 flex-1">
         <span className="flex items-center justify-between gap-1 text-[11px] font-semibold"><span className="truncate">{name(unit.id)}</span><span className="text-[9px] text-accent">{unit.hp === 0 ? 'KO' : ally && display.acted.includes(unit.id) ? 'Done' : ''}</span></span>
         <span className="block truncate text-[9px] text-ink-on-dark-soft">{ally ? `${RPG_WEAPON_LABELS[ally.weapon]} · ${humanize(ally.signature)}` : `${humanize(foe!.element)} · ${choice ? targetRelation(display, unit.id, choice) : ''}`}</span>
@@ -195,6 +197,7 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
     <MinigameHeader backTo={backTo} backLabel="Leave battle, keep saved turn" eyebrow={proof ? 'Development proof · isolated save' : 'Global Uma RPG'}
       title="RPG battle" headline={{ label: 'Round', value: display?.round ?? '—' }} onGuide={() => setDialog('guide')} guideLabel="Battle guide" trailing={headerTools} />
     {view && <HostNotice view={view} />}
+    {presentation.unavailable && <p role="status" className="shrink-0 bg-stage-soft px-3 py-1 text-center text-[10px] text-ink-on-dark-soft">Exact chapter names/art unavailable. The saved battle is unchanged; restore its private pack before continuing the map.</p>}
     {error && <p role="alert" className="shrink-0 px-3 py-2 text-[12px] text-red-300">{error}<button onClick={() => { void host.resume(checkpointId).then(setView).then(() => setError(null)).catch((reason: unknown) => setError(String(reason))) }} className="ml-2 min-h-11 underline">Reload saved view</button></p>}
     {!view && !error && <p className="p-6" role="status">Restoring frozen battle…</p>}
     {unavailable && view && <section className="min-h-0 flex-1 overflow-y-auto p-4">
