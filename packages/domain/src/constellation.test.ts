@@ -74,24 +74,19 @@ const rng = (seed: number) => {
 }
 
 describe('cap profiles', () => {
-  it('matches the original game for the four released scenarios', () => {
-    expect(capProfile(1)).toEqual({ speed: 1400, stamina: 1400, power: 1400, guts: 1400, wit: 1400 })
-    expect(capProfile(2).wit).toBe(1800)
-    expect(capProfile(3).stamina).toBe(1900)
-    expect(capProfile(4).speed).toBe(1600)
+  it('starts URA Finale at 1200 in every stat', () => {
+    expect(capProfile(1)).toEqual({ speed: 1200, stamina: 1200, power: 1200, guts: 1200, wit: 1200 })
+    expect(capProfile(2)).toEqual({ speed: 1300, stamina: 1300, power: 1250, guts: 1200, wit: 1200 })
+    expect(capProfile(14)).toEqual({ speed: 2500, stamina: 1750, power: 1700, guts: 1650, wit: 1650 })
   })
 
-  it('gives every released scenario the same 7000 budget, shaped differently', () => {
-    for (const tier of [1, 2, 3, 4]) expect(capBudget(tier)).toBe(7000)
-    expect(new Set([1, 2, 3, 4].map((tier) => JSON.stringify(capProfile(tier)))).size).toBe(4)
-  })
-
-  it('rises by 250 per tier from tier 5 and never exceeds the 2000 ceiling', () => {
-    for (let tier = 5; tier <= MAX_SCENARIO_TIER; tier += 1) {
-      expect(capBudget(tier)).toBe(7000 + 250 * (tier - 4))
+  it('rises by 250 per tier from 6000, 100 of it to Speed', () => {
+    for (let tier = 1; tier <= MAX_SCENARIO_TIER; tier += 1) {
+      expect(capBudget(tier)).toBe(6000 + 250 * (tier - 1))
+      expect(capProfile(tier).speed).toBe(1200 + 100 * (tier - 1))
     }
     for (const profile of CAP_PROFILES) {
-      for (const stat of STATS) expect(profile[stat]).toBeLessThanOrEqual(2000)
+      for (const stat of STATS) expect(profile[stat]).toBeLessThanOrEqual(2500)
     }
   })
 
@@ -113,7 +108,7 @@ describe('budgets', () => {
 
   it('pays card nodes integer values beside a fixed 240-point Extra stats pool: six active nodes of 40 (D134, D235)', () => {
     for (const tier of TIERS) expect(Number.isInteger(nodeValue(tier))).toBe(true)
-    expect(TIERS.map(nodeValue)).toEqual([220, 198, 233, 189, 164, 164, 163, 169, 168, 168, 167, 172, 171, 171])
+    expect(TIERS.map(nodeValue)).toEqual([187, 176, 215, 181, 158, 158, 158, 163, 163, 162, 162, 167, 166, 166])
     expect([STAT_NODE_POOL, EXTRA_STAT_NODE_VALUE]).toEqual([240, 40])
   })
 
@@ -559,11 +554,11 @@ describe('derivation', () => {
       },
       cards: new Map([['c', card('c', 'speed')]]),
     })
-    // 220 × 0.70 = 154 raw speed ×1.2 growth = 184.8, on top of base 100.
-    expect(derived.raw.speed).toBe(154)
-    expect(derived.stats.speed).toBe(285)
-    // 220 × 0.30 = 66 raw power, no growth, on the same start.
-    expect(derived.stats.power).toBe(166)
+    // D244: 187 × 0.70 = 130.9 raw speed ×1.2 growth = 157.08, on top of base 100.
+    expect(derived.raw.speed).toBeCloseTo(130.9)
+    expect(derived.stats.speed).toBe(257)
+    // 187 × 0.30 = 56.1 raw power, no growth, on the same start.
+    expect(derived.stats.power).toBe(156)
     // An untouched stat sits exactly on her base.
     expect(derived.stats.guts).toBe(uma.baseStats.guts)
   })

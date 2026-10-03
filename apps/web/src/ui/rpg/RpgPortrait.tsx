@@ -15,7 +15,7 @@ export const RPG_ELEMENT_LABELS: Record<RpgElement, string> = {
   fire: 'Fire', ice: 'Ice', lightning: 'Lightning', light: 'Light', dark: 'Dark',
 }
 
-function IdentityGlyph({ weapon, element }: { weapon?: RpgWeapon; element?: RpgElement }) {
+export function IdentityGlyph({ weapon, element }: { weapon?: RpgWeapon; element?: RpgElement }) {
   const path = weapon === 'greatsword' ? 'M3 17 16 4m-2-2 4 0v4M2 13l5 5m-4 0-1 1'
     : weapon === 'spear' ? 'M3 18 15 4m-1-2 4 0-1 4M7 11l3 3'
     : weapon === 'sword-shield' ? 'M2 17 11 7m-3-2 6-3-2 6M2 12l5 5m7-9 4 1v5l-4 4-4-4V9l4-1Z'
@@ -30,22 +30,27 @@ function IdentityGlyph({ weapon, element }: { weapon?: RpgWeapon; element?: RpgE
   return <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={path} /></svg>
 }
 
-export function RpgPortrait({ content, outfitId, name, weapon, element, className = '' }: {
+export function RpgPortrait({ content, outfitId, name, weapon, element, className = '', compact = false }: {
   content: LoadedContent | null
   outfitId: string
   name: string
   weapon: RpgWeapon | null
   element: RpgElement | null
   className?: string
+  compact?: boolean
 }) {
   const bust = useArt(content, 'bust', outfitId)
   const asset = content ? getContentAsset(content, 'uma-icons', outfitId) : null
   return <div className={`relative isolate overflow-hidden rounded-md border border-hairline bg-sunken ${className}`}>
     <div className="absolute inset-0">
       {bust ? <img src={bust} alt="" draggable={false} className="h-full w-full object-cover object-top" />
-        : <AtlasSprite asset={asset} alt="" decorative className="h-full w-full object-cover" fallback={<Placeholder label="Portrait unavailable" />} />}
+        : <AtlasSprite asset={asset} alt="" decorative className="h-full w-full object-cover" fallback={compact
+          ? <span className="flex h-full items-center justify-center bg-stage-soft text-[18px] text-ink-on-dark-soft" aria-label="Portrait unavailable">{name.slice(0, 1)}</span>
+          : <Placeholder label="Portrait unavailable" />} />}
     </div>
-    <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-stage via-stage/90 to-transparent px-2 pb-2 pt-8 text-ink-on-dark">
+    {compact ? <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-stage/90 py-0.5 text-ink-on-dark" aria-label={`${name}, ${weapon ? RPG_WEAPON_LABELS[weapon] : 'Not enrolled'}, ${element ?? 'no element'}`}>
+      <IdentityGlyph weapon={weapon ?? undefined} /><IdentityGlyph element={element ?? undefined} />
+    </div> : <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-stage via-stage/90 to-transparent px-2 pb-2 pt-8 text-ink-on-dark">
       <span className="block truncate text-[12px] font-semibold" title={name}>{name}</span>
       <span className="mt-1 flex flex-wrap gap-1">
         <span className="inline-flex min-h-6 items-center gap-0.5 rounded-xs bg-white/15 px-1 text-[10px] leading-3">
@@ -53,7 +58,7 @@ export function RpgPortrait({ content, outfitId, name, weapon, element, classNam
         </span>
         {element && <span className="inline-flex min-h-6 items-center gap-0.5 rounded-xs bg-white/15 px-1 text-[10px] leading-3"><IdentityGlyph element={element} />{RPG_ELEMENT_LABELS[element]}</span>}
       </span>
-    </div>
+    </div>}
   </div>
 }
 
@@ -61,7 +66,7 @@ export function RpgElementLegend() {
   const [open, setOpen] = useState(false)
   return <div>
     <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}
-      className="min-h-11 rounded-sm border border-hairline bg-panel px-3 text-[13px] font-semibold">
+      className="min-h-11 rounded-sm border border-hairline bg-panel px-3 text-[13px] font-semibold text-ink">
       {open ? 'Hide' : 'Show'} element guide
     </button>
     {open && <div className="mt-2 rounded-md border border-hairline bg-panel p-3 text-[12px] leading-5 text-ink-soft">

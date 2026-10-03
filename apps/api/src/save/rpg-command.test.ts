@@ -151,6 +151,28 @@ for (const backend of ['local', 'firestore'] as const) {
       expect((await repo.load('u1')).logs.filter((row) => row.kind === 'rpgResults')).toHaveLength(1)
     })
 
+    it.each(['choose-node', 'clear-chapter'] as const)('consumes accepted win evidence once for %s on both backends', async (action) => {
+      await seedCheckpoint()
+      await repo.rpgCommand('u1', command('begin-map', 'begin-battle', 1, inBattle))
+      const done = { ...inBattle, status: 'pending-result', revision: 2 }
+      await repo.rpgCommand('u1', command('result-map', 'battle-result', 2, done,
+        [{ kind: 'rpgResults', id: result.resultId, data: result, createdAt: 30 }]))
+      const advance = command('advance-map', action, 3, { ...done, revision: 3, status: action === 'clear-chapter' ? 'cleared' : 'at-checkpoint',
+        lastClearedNodeId: frozen.nodeId, selectedPath: [frozen.nodeId], frozenEntry: null })
+      expect((await repo.rpgCommand('u1', advance)).status).toBe('applied')
+      expect((await repo.rpgCommand('u1', advance)).status).toBe('duplicate')
+      expect((await repo.load('u1')).entities.find((r) => r.id === checkpointId)?.data.selectedPath).toEqual([frozen.nodeId])
+    })
+
+    it('refuses an invented pending result without accepted evidence and preserves the map', async () => {
+      await seedCheckpoint()
+      await repo.sync('u1', { upserts: [{ kind: 'rpgCheckpoints', id: checkpointId, baseVersion: 1,
+        data: { ...inBattle, revision: 2, status: 'pending-result' } }], appends: [] })
+      const advance = command('forged-map', 'choose-node', 2, { ...atCheckpoint, revision: 3, lastClearedNodeId: frozen.nodeId, selectedPath: [frozen.nodeId] })
+      expect(await repo.rpgCommand('u1', advance)).toMatchObject({ status: 'rejected', reason: 'Map advance requires accepted winning evidence' })
+      expect((await repo.load('u1')).entities.find((r) => r.id === checkpointId)?.data.lastClearedNodeId).toBeNull()
+    })
+
     it('freezes entry bytes through takeover and refuses stale Item plus ledger writes', async () => {
       await seedCheckpoint()
       await repo.rpgCommand('u1', command('begin-1', 'begin-battle', 1, inBattle))
@@ -226,7 +248,8 @@ for (const backend of ['local', 'firestore'] as const) {
       const evidence = { schemaVersion: 1, promotionId: 'promote-uma-a', outfitId: 'uma-a',
         fromTier: 1, toTier: 2, archive: [], createdAt: 50 }
       const raw = { schemaVersion: 1, commandId: 'promote-1', action: 'promote',
-        expected: [{ kind: 'rpgOutfits', id: 'uma-a', version: 1 }],
+        expected: [{ kind: 'rpgOutfits', id: 'uma-a', version: 1 },
+          ...Array.from({ length: 5 }, (_, i) => ({ kind: 'rpgPresets', id: `party-${i + 1}`, version: 0 }))],
         upserts: [{ kind: 'rpgOutfits', id: 'uma-a', data: { schemaVersion: 1,
           profile: { ...base, tier: 2, level: 1 }, projectionRevision: 1 } }],
         appends: [{ kind: 'rpgPromotions', id: evidence.promotionId, data: evidence, createdAt: 50 }] }

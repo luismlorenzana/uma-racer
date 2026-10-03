@@ -91,10 +91,9 @@ node.
 
 ## Stat budget
 
-Each scenario has a **cap profile**: five per-stat caps whose sum is that scenario's **cap budget**. Tiers 1–4
-use the original game's real values, verified 2026-09-20 ([Scenarios](scenarios.md#cap-profiles)). Every early
-scenario has the same 7000-point budget shaped differently, which is what makes a scenario an identity rather
-than a number.
+Each scenario has a **cap profile**: five per-stat caps whose sum is that scenario's **cap budget**. D244 records
+URA Finale at 6,000 and an increase of 250 per tier, with Speed taking 100 and the complementary stats sharing 150
+([Scenarios](scenarios.md#cap-profiles)). These are Uma Racer's settled progression values, not original-game caps.
 
 A **full constellation pays less than the cap budget**, so no configuration reaches every cap:
 
@@ -106,12 +105,12 @@ treeBudget(T)    = cardNodes(T) × nodeValue(T) + 240                    ≈ 0.6
 
 **The six active Extra stats share a fixed 240-point pool** at every tier (D134, D235), so each pays 40 and a build can
 spread its tweaks over several stats. They are for tweaks — the stamina a mile needs, one more point of Speed — and cards
-carry the build. Card nodes share the rest: **220** at tier 1, 163–172 from tier 5. Per-scenario counts are in
+carry the build. Card nodes share the rest: **187** at tier 1, 158–167 from tier 5. Per-scenario counts are in
 [Scenarios](scenarios.md#constellation-shapes).
 
 | Tier | 1 | 2 | 3 | 4 | 5–7 | 8–11 | 12 | 13–14 |
 |---|---|---|---|---|---|---|---|---|
-| Card node | 220 | 198 | 233 | 189 | 163–164 | 167–169 | 172 | 171 |
+| Card node | 187 | 176 | 215 | 181 | 158 | 162–163 | 167 | 166 |
 | Active Extra stat | 40 | 40 | 40 | 40 | 40 | 40 | 40 | 40 |
 | Per-card cap | 4 | 5 | 4 | 5 | 6 | 6 | 6 | 7 |
 

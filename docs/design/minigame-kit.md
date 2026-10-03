@@ -26,9 +26,14 @@ outfit crew, a field that grows plot by plot in Sections of six and persisted de
 journal, terminal result or win/loss. It may reuse visual primitives and `PagedGuide`, but it must not be forced through
 `MinigameHost` (D203, D206).
 
-The [Global Uma RPG](uma-rpg.md) is likewise a **proposal outside this ticketed-run contract**: its chapters contain
-multiple battles and synced checkpoints. It should reuse the kit's pure-engine, deterministic-replay, private-content,
-mobile and guide standards, but must define its own long-lived chapter/battle save contract before implementation.
+The [Global Uma RPG](uma-rpg.md) is likewise **outside this ticketed-run contract**: its chapters contain multiple
+battles and synced checkpoints. T089–T096 now implement its own rules, grouped save, battle journal, internal setup,
+mobile stage, branching maps and acknowledged EXP/skills/promotion; private content, tokens and Home release are
+still gated. It reuses the kit's pure-engine, deterministic-replay,
+private-content and mobile standards, `MinigameShell`/`MinigameHeader` and `PagedGuide`, not `MinigameHost` or tickets.
+Its isolated DEV battle/chapter proofs grant no real-account rewards ([battle checks](../research/rpg-battle-phone-proof.md),
+[chapter checks](../research/rpg-chapter-phone-proof.md), [progression checks](../research/rpg-progression-phone-proof.md)).
+The chapter proof now awards only its isolated synthetic profiles; never real account EXP/Items. Neither uses the ticketed MinigameHost.
 
 ## 2. The run lifecycle
 

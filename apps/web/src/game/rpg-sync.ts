@@ -1,45 +1,46 @@
 // Device-local RPG command queue and acknowledged projection install (docs/technical/uma-rpg-implementation.md, T090).
-import { parseRpgCommandResponseOrThrow, parseSaveSnapshotOrThrow,
+import { parseRpgCommandResponseOrThrow, parseSaveSnapshotOrThrow, parseRpgOutfitSave, rpgRewardProjection,
+  parseRpgResultEvidence,
   type EntityRecord, type LogRecord, type RpgCommandRequest, type RpgCommandResponse } from '@racer/domain'
 import { saveApi } from '../api/client'
-import { db } from './db'
+import { db, type RacerDb } from './db'
 
-export async function enqueueRpgCommand(body: RpgCommandRequest, now: number, dependsOn: string | null = null): Promise<void> {
+export async function enqueueRpgCommand(body: RpgCommandRequest, now: number, dependsOn: string | null = null, database: RacerDb = db): Promise<void> {
   if (body.schemaVersion !== 1 || !/^[A-Za-z0-9_.:-]{1,120}$/.test(body.commandId) ||
     !Number.isSafeInteger(now) || now < 0) throw new Error('Invalid RPG command queue entry')
-  const existing = await db.pendingRpgCommands.get(body.commandId)
+  const existing = await database.pendingRpgCommands.get(body.commandId)
   if (existing) {
     if (JSON.stringify(existing.body) !== JSON.stringify(body) || (existing.dependsOn ?? null) !== dependsOn) {
       throw new Error('RPG command id already queued with another payload or dependency')
     }
     return
   }
-  await db.pendingRpgCommands.add({ id: body.commandId, body, status: 'pending', queuedAt: now, conflict: null, dependsOn })
+  await database.pendingRpgCommands.add({ id: body.commandId, body, status: 'pending', queuedAt: now, conflict: null, dependsOn })
 }
 
-const entityTables = [db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.umas, db.items]
-const logTables = [db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.itemLedger]
 
-async function installAccepted(commandId: string, response: Extract<RpgCommandResponse, { status: 'applied' | 'duplicate' }>): Promise<void> {
+async function installAccepted(commandId: string, response: Extract<RpgCommandResponse, { status: 'applied' | 'duplicate' }>, database: RacerDb): Promise<void> {
+  const entityTables = [database.rpgOutfits, database.rpgPresets, database.rpgCheckpoints, database.umas, database.items]
+  const logTables = [database.rpgResults, database.rpgPromotions, database.rpgReceipts, database.itemLedger]
   const entities = response.entities
   const logs = response.logs
-  await db.transaction('rw', [...entityTables, ...logTables, db.pendingRpgCommands, db.outbox], async () => {
+  await database.transaction('rw', [...entityTables, ...logTables, database.pendingRpgCommands, database.outbox], async () => {
     for (const row of entities) {
       if (row.kind !== 'rpgOutfits' && row.kind !== 'rpgPresets' && row.kind !== 'rpgCheckpoints' &&
         row.kind !== 'umas' && row.kind !== 'items') throw new Error(`Unexpected RPG command entity: ${row.kind}`)
       if ((row.kind === 'umas' || row.kind === 'items') &&
-        await db.outbox.where('[kind+id]').equals([row.kind, row.id]).count()) {
+        await database.outbox.where('[kind+id]').equals([row.kind, row.id]).count()) {
         throw new Error(`Cannot adopt RPG command while ${row.kind}/${row.id} has a pending ordinary write`)
       }
-      await db.table(row.kind).put({ id: row.id, version: row.version, data: row.data })
+      await database.table(row.kind).put({ id: row.id, version: row.version, data: row.data })
     }
     for (const row of logs) {
       if (row.kind !== 'rpgResults' && row.kind !== 'rpgPromotions' && row.kind !== 'rpgReceipts' && row.kind !== 'itemLedger') {
         throw new Error(`Unexpected RPG command log: ${row.kind}`)
       }
-      await db.table(row.kind).put({ id: row.id, createdAt: row.createdAt, data: row.data })
+      await database.table(row.kind).put({ id: row.id, createdAt: row.createdAt, data: row.data })
     }
-    await db.pendingRpgCommands.delete(commandId)
+    await database.pendingRpgCommands.delete(commandId)
   })
 }
 
@@ -54,14 +55,56 @@ function rowsForDuplicate(snapshot: { entities: EntityRecord[]; logs: LogRecord[
   return { entities: entities as EntityRecord[], logs: logs as LogRecord[] }
 }
 
+/** Only a profile-only conflict may be reconciled. A changed checkpoint/lease is NEVER a rebased win. */
+async function reconcileBattleProfiles(body: RpgCommandRequest,
+  response: Extract<RpgCommandResponse, { status: 'conflict' }>, database: RacerDb): Promise<boolean> {
+  if (body.action !== 'battle-result') return false
+  const evidence = parseRpgResultEvidence(body.appends.find((a) => a.kind === 'rpgResults')?.data)
+  if (!evidence || response.authoritative.length !== body.expected.length) return false
+  const authoritative = new Map(response.authoritative.map((r) => [`${r.kind}/${r.id}`, r.record]))
+  if (body.expected.some((e) => e.kind !== 'rpgOutfits' && authoritative.get(`${e.kind}/${e.id}`)?.version !== e.version)) return false
+  const members = evidence.memberExp.map((member) => {
+    const row = authoritative.get(`rpgOutfits/${member.outfitId}`)
+    const parsed = row && !row.deleted && parseRpgOutfitSave(row.data)
+    return row && parsed ? { row, parsed, grant: rpgRewardProjection(parsed.profile, member.delta) } : null
+  })
+  if (members.some((m) => !m)) return false
+  const valid = members.filter((m) => m !== null)
+  const next: RpgCommandRequest = { ...body,
+    expected: body.expected.map((e) => e.kind === 'rpgOutfits' ? { ...e,
+      version: valid.find((m) => m.row.id === e.id)!.row.version } : e),
+    upserts: body.upserts.map((u) => {
+      if (u.kind !== 'rpgOutfits') return u
+      const member = valid.find((m) => m.row.id === u.id)!
+      return { ...u, data: { ...member.parsed, profile: member.grant.profile,
+        projectionRevision: member.parsed.projectionRevision + 1 } as unknown as Record<string, unknown> }
+    }),
+    appends: body.appends.map((a) => a.kind === 'rpgResults' ? { ...a,
+      data: { ...evidence, memberExp: valid.map((m) => m.grant.member) } as unknown as Record<string, unknown> } : a),
+  }
+  if (JSON.stringify(next) === JSON.stringify(body)) return false
+  await database.transaction('rw', [database.rpgOutfits, database.pendingRpgCommands], async () => {
+    const pending = await database.pendingRpgCommands.get(body.commandId)
+    if (!pending || JSON.stringify(pending.body) !== JSON.stringify(body)) throw new Error('Result reservation changed during reconciliation')
+    for (const member of valid) {
+      const local = await database.rpgOutfits.get(member.row.id)
+      if (local && local.version > member.row.version) throw new Error('Newer profile arrived during reward reconciliation')
+      await database.rpgOutfits.put({ id: member.row.id, version: member.row.version, data: member.parsed })
+    }
+    // Same result/command identity, seed, kit, delta, hash and timestamp. The failed group wrote nothing.
+    await database.pendingRpgCommands.update(body.commandId, { body: next, status: 'pending', conflict: null })
+  })
+  return true
+}
+
 /** Returns true only after one command's server-acknowledged rows are locally installed. */
-export async function flushOneRpgCommand(): Promise<boolean> {
-  const pending = await db.pendingRpgCommands.orderBy('queuedAt').filter((candidate) => candidate.status === 'pending').toArray()
+export async function flushOneRpgCommand(database: RacerDb = db, transport: Pick<typeof saveApi, 'load' | 'rpgCommand'> = saveApi): Promise<boolean> {
+  const pending = await database.pendingRpgCommands.orderBy('queuedAt').filter((candidate) => candidate.status === 'pending').toArray()
   let row: typeof pending[number] | undefined
   for (const candidate of pending) {
-    const dependency = candidate.dependsOn ? await db.pendingRpgCommands.get(candidate.dependsOn) : null
+    const dependency = candidate.dependsOn ? await database.pendingRpgCommands.get(candidate.dependsOn) : null
     if (dependency?.status === 'conflict') {
-      await db.pendingRpgCommands.update(candidate.id, { status: 'conflict', conflict: dependency.conflict })
+      await database.pendingRpgCommands.update(candidate.id, { status: 'conflict', conflict: dependency.conflict })
       continue
     }
     if (dependency) continue
@@ -70,17 +113,18 @@ export async function flushOneRpgCommand(): Promise<boolean> {
   }
   if (!row) return false
   const body = row.body as RpgCommandRequest
-  const response = parseRpgCommandResponseOrThrow(await saveApi.rpgCommand(body), row.id)
+  const response = parseRpgCommandResponseOrThrow(await transport.rpgCommand(body), row.id)
+  if (response.status === 'conflict' && await reconcileBattleProfiles(body, response, database)) return false
   if (response.status === 'conflict' || response.status === 'rejected') {
-    await db.pendingRpgCommands.update(row.id, { status: 'conflict', conflict: response })
+    await database.pendingRpgCommands.update(row.id, { status: 'conflict', conflict: response })
     return false
   }
   if (response.status === 'duplicate') {
-    const snapshot = parseSaveSnapshotOrThrow(await saveApi.load())
+    const snapshot = parseSaveSnapshotOrThrow(await transport.load())
     const selected = rowsForDuplicate(snapshot, body, response.receipt)
-    await installAccepted(row.id, { ...response, ...selected })
+    await installAccepted(row.id, { ...response, ...selected }, database)
   } else {
-    await installAccepted(row.id, response)
+    await installAccepted(row.id, response, database)
   }
   return true
 }

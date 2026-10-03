@@ -50,7 +50,7 @@ pnpm sim:balance    # headless race balance table
 pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regression gate
 pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
 pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
-pnpm sim:rpg:progression # synthetic two-tier RPG leveling and tree envelope (T089)
+pnpm sim:rpg:progression # per-fight two-tier RPG rewards, replay/catch-up and tree envelope (T096)
 pnpm sim:rpg:combat # synthetic six-weapon/five-element RPG combat and replay envelope (T091)
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up

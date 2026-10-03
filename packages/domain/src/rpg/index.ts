@@ -1,3 +1,5 @@
 export * from './rules'
 export * from './save'
 export * from './combat'
+export * from './chapter'
+export * from './rewards'

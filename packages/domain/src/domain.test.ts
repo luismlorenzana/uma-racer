@@ -186,7 +186,20 @@ import {
   rpgTreePointsEarned,
   rpgActiveSlots,
   rpgSignatureMagnitude,
+  RPG_EXP_RELATIVE_STEP, RPG_EXP_FACTOR_MIN, RPG_EXP_FACTOR_MAX, RPG_CHAPTER_EXP_MARGIN,
+  RPG_ENCOUNTER_EXP_WEIGHTS, RPG_MAX_ENCOUNTER_EXP, rpgEncounterBaseExp, rpgEncounterExp,
 } from './index'
+
+describe('Global Uma RPG — T096 reward pins', () => {
+  it('pins authored schedule, frozen-level taper, rounding and positive floor', () => {
+    expect([RPG_EXP_RELATIVE_STEP, RPG_EXP_FACTOR_MIN, RPG_EXP_FACTOR_MAX, RPG_CHAPTER_EXP_MARGIN]).toEqual([0.025, 0.25, 1.5, 1.1])
+    expect(RPG_ENCOUNTER_EXP_WEIGHTS).toEqual({ encounter: 0.4, elite: 0.25, boss: 0.6 })
+    expect(RPG_MAX_ENCOUNTER_EXP).toBe(1_000_000)
+    expect([1, 11, 21, 31, 41].map((l) => rpgEncounterBaseExp(l, 'encounter'))).toEqual([915, 1619, 2323, 3027, 3326])
+    expect(rpgEncounterBaseExp(10, 'boss')).toBe(2323)
+    expect(rpgEncounterExp({ baseExp: 1619, recommendedTier: 1, recommendedLevel: 11 }, { tier: 2, level: 11 })).toBe(405)
+  })
+})
 
 describe('Global Uma RPG — D229 combat pins', () => {
   it('pins the damage, matchup, protection and bounded round contract', () => {
@@ -379,7 +392,7 @@ describe('scenarios', () => {
     expect(upgradedGrade('G', slots, long)).toBe('B')
   })
 
-  it('pins all 14 JP scenarios, the +80 cap ladder, and the tier-14 SP cap', () => {
+  it('pins all 14 JP scenarios, D244\'s +250 budget ladder, and the tier-14 SP cap', () => {
     expect(SCENARIOS.map((scenario) => [scenario.tier, scenario.jpRelease])).toEqual([
       [1, '2021-02-24'], [2, '2021-08-30'], [3, '2022-02-24'], [4, '2022-08-24'],
       [5, '2023-02-24'], [6, '2023-08-24'], [7, '2024-02-24'], [8, '2024-06-26'],
@@ -387,8 +400,8 @@ describe('scenarios', () => {
       [13, '2026-02-24'], [14, '2026-06-29'],
     ])
     expect(MAX_UMA_LEVEL).toBe(140)
-    expect(averageCap(1)).toBe(1400)
-    expect(averageCap(14)).toBe(1900)
+    expect(averageCap(1)).toBe(1200)
+    expect(averageCap(14)).toBe(1850)
     // D133: grounded at tiers 2–3 (Unity Cup ~2,000–2,500, Trackblazer ~2,800), drafted elsewhere.
     expect(skillPointCap(1)).toBe(2000)
     expect(skillPointCap(3)).toBe(2800)
@@ -470,28 +483,27 @@ describe('training levels', () => {
   })
 
   it('pins the cap profiles and tree budgets from docs/design/scenarios.md', () => {
-    expect(capProfile(2).wit).toBe(1800)
-    expect(capProfile(3).stamina).toBe(1900)
-    expect([1, 2, 3, 4].map(capBudget)).toEqual([7000, 7000, 7000, 7000])
-    expect(treeBudget(1)).toBe(4200)
+    expect(capProfile(2).stamina).toBe(1300)
+    expect(capProfile(3).power).toBe(1350)
+    expect([1, 2, 3, 4].map(capBudget)).toEqual([6000, 6250, 6500, 6750])
+    expect(treeBudget(1)).toBe(3606)
     // D134: card nodes share what the 240-point stat pool leaves of the tree.
-    expect([1, 2, 3, 4].map(nodeValue)).toEqual([220, 198, 233, 189])
+    expect([1, 2, 3, 4].map(nodeValue)).toEqual([187, 176, 215, 181])
     expect(skillPointCap(1)).toBe(2000)
   })
 })
 
 describe('rivals (D152)', () => {
   it('builds on a typical trained Uma: median base plus a fifth of a realistic set (D159) and its typical buff (D165)', () => {
-    // Tier 1: 15 of 18 card nodes pay stats (the Friend card's 3 pay SP), at 3★ 84% of 220, plus the 240 stat pool:
-    // 3,012 raw points; Foundation's typical 4% makes 3,132.5, 626.5 a stat, on a base of 110.
-    expect(trainedStat(1)).toBeCloseTo(736.496)
+    // D244: 15 stat-paying nodes × 187 × 84% + 240 = 2,596.2;
+    // Foundation's typical 4% makes 2,700.048, 540.0096 a stat, on a base of 110.
+    expect(trainedStat(1)).toBeCloseTo(650.0096)
     expect(trainedStat(14)).toBeGreaterThan(trainedStat(1))
   })
 
   it('never builds an earlier scenario\'s field above a later one\'s (D191)', () => {
-    // Scenarios 1–5 share their caps; the typical builds wobble with how six cards split each tree, so the field
-    // takes the lowest typical build from its scenario onwards: Grand Masters' 709 for all five.
-    expect([1, 2, 3, 4, 5].map((tier) => Math.round(fieldTrainedStat(tier)))).toEqual([709, 709, 709, 709, 709])
+    // D244 raises each budget by 250. D191 still smooths card-count/buff wobbles via the later-tier minimum.
+    expect([1, 2, 3, 4, 5].map((tier) => Math.round(fieldTrainedStat(tier)))).toEqual([650, 650, 684, 688, 689])
     expect(fieldTrainedStat(9)).toBeCloseTo(trainedStat(10))
     expect(fieldTrainedStat(14)).toBe(trainedStat(14))
     for (let tier = 2; tier <= 14; tier += 1) expect(fieldTrainedStat(tier)).toBeGreaterThanOrEqual(fieldTrainedStat(tier - 1))

@@ -1,7 +1,7 @@
 // API-side RPG wire validation. Kept independent of the ESM domain package (T090).
 import type { EntityKind, LogKind } from './save.types'
 
-export const RPG_ACTIONS = ['enroll', 'edit-preset', 'start-chapter', 'begin-battle', 'takeover',
+export const RPG_ACTIONS = ['enroll', 'edit-preset', 'edit-outfit', 'start-chapter', 'choose-node', 'begin-battle', 'takeover',
   'battle-result', 'clear-chapter', 'promote', 'spend-inspiration'] as const
 export type RpgAction = typeof RPG_ACTIONS[number]
 export const RPG_MAX_GROUP_OPERATIONS = 20

@@ -23,6 +23,9 @@ import { Numeral } from '../../ui/Numeral'
 import { Panel } from '../../ui/Panel'
 import { ScreenState } from '../../ui/ScreenState'
 import { RpgElementLegend, RpgPortrait, RPG_ELEMENT_LABELS, RPG_WEAPON_LABELS } from '../../ui/rpg/RpgPortrait'
+import { RpgProgressionEditor } from '../../ui/rpg/RpgProgressionEditor'
+import { RpgProgressionHost } from '../../game/rpg-progression-host'
+const progressionHost = new RpgProgressionHost()
 
 interface Context { content: LoadedContent; view: RpgHubView; refresh: () => Promise<void> }
 const RpgContext = createContext<Context | null>(null)
@@ -133,6 +136,7 @@ export function RpgHubScreen() {
       </Link>
     })}
     <Link to="/rpg/roster" className="inline-flex min-h-11 items-center font-semibold text-accent-strong">Browse owned RPG roster →</Link>
+    {view.presets.map((row) => <Link key={row.id} to={`/rpg/chapters/${row.id}`} className="flex min-h-11 items-center rounded-sm border border-hairline px-3 text-sm">Chapters · {row.data.name}</Link>)}
   </div>
 }
 
@@ -238,6 +242,7 @@ export function RpgProfileScreen() {
       <Panel><p className="text-micro">Combat attributes</p><div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
         {([['ATK / MATK', `${stats.atk} / ${stats.matk}`], ['HP / MP', `${stats.hp} / ${stats.mp}`], ['Initiative', stats.initiative], ['PDEF / MDEF', `${stats.pdef} / ${stats.mdef}`], ['Dexterity', stats.dexterity]] as const).map(([label, value]) => <p key={label} className="flex justify-between gap-2"><span className="text-ink-soft">{label}</span><span className="font-semibold">{value}</span></p>)}
       </div><p className="mt-2 text-[11px] text-ink-faint">Growth derives from frozen base stats and growth rates, not Racing, Training or Farm progress.</p></Panel>
+      <RpgProgressionEditor host={progressionHost} outfitId={outfitId} onSync={requestSync} />
     </> : styles.length === 0 ? <ScreenState title="Not RPG-eligible" detail="This outfit has no A running-style aptitude. It remains usable in every other game mode." />
       : pending?.status === 'pending' ? <ScreenState title="Enrollment pending" detail="This outfit will be available for parties after the account acknowledges it." />
         : <Panel><p className="text-micro">One-time enrollment</p><p className="mt-1 text-[12px] text-ink-soft">Only A running styles are offered. The selected style and weapon are permanent for this delivery.</p>

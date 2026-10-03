@@ -5,6 +5,7 @@ import { ENTITY_KINDS, LOG_KINDS, parseEntityData, parseLogData, saveEntityIdMat
   type EntityKind, type EntityRecord, type LogAppend, type LogKind, type LogRecord } from './save.types'
 import { RPG_ACTIONS, RPG_MAX_GROUP_OPERATIONS, rpgExact, rpgId, rpgInt, rpgRecord,
   type RpgAction } from './rpg-save.types'
+import { frozenReward, legalLoadout, oneTreePoint, progression, skillKey } from './rpg-progression'
 
 export interface RpgExpected { kind: EntityKind; id: string; version: number }
 export interface RpgUpsert { kind: EntityKind; id: string; data: Record<string, unknown> }
@@ -33,14 +34,14 @@ export type RpgCommandResponse =
 const entityKey = (kind: EntityKind, id: string) => `${kind}/${id}`
 const logKey = (kind: LogKind, id: string) => `${kind}/${id}`
 const allowedEntities: Record<RpgAction, readonly EntityKind[]> = {
-  enroll: ['rpgOutfits'], 'edit-preset': ['rpgPresets'], 'start-chapter': ['rpgCheckpoints', 'rpgPresets'],
-  'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
+  enroll: ['rpgOutfits'], 'edit-preset': ['rpgPresets'], 'edit-outfit': ['rpgOutfits'], 'start-chapter': ['rpgCheckpoints', 'rpgPresets'],
+  'choose-node': ['rpgCheckpoints'], 'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
   'battle-result': ['rpgCheckpoints', 'rpgOutfits'], 'clear-chapter': ['rpgCheckpoints', 'items'],
-  promote: ['rpgOutfits'], 'spend-inspiration': ['umas', 'items'],
+  promote: ['rpgOutfits', 'rpgPresets'], 'spend-inspiration': ['umas', 'items'],
 }
 const allowedLogs: Record<RpgAction, readonly LogKind[]> = {
-  enroll: [], 'edit-preset': [], 'start-chapter': [], 'begin-battle': [], takeover: [],
-  'battle-result': ['rpgResults'], 'clear-chapter': ['itemLedger'],
+  enroll: [], 'edit-preset': [], 'edit-outfit': [], 'start-chapter': [], 'begin-battle': [], takeover: [],
+  'choose-node': [], 'battle-result': ['rpgResults'], 'clear-chapter': ['itemLedger'],
   promote: ['rpgPromotions'], 'spend-inspiration': ['itemLedger'],
 }
 
@@ -102,7 +103,7 @@ export function parseRpgCommandRequest(body: unknown): RpgCommandRequest | strin
     !expectedKeys.includes(entityKey('rpgPresets', upserts.find((row) => row.kind === 'rpgCheckpoints')?.data.presetId as string)))) {
     return 'Chapter start needs a versioned preset'
   }
-  if (['begin-battle', 'takeover', 'battle-result', 'clear-chapter'].includes(action) &&
+  if (['choose-node', 'begin-battle', 'takeover', 'battle-result', 'clear-chapter'].includes(action) &&
     upserts.filter((row) => row.kind === 'rpgCheckpoints').length !== 1) return 'Command needs one checkpoint'
   if (action === 'begin-battle') {
     const data = upserts.find((row) => row.kind === 'rpgCheckpoints')!.data
@@ -116,7 +117,8 @@ export function parseRpgCommandRequest(body: unknown): RpgCommandRequest | strin
   }
   if (action === 'battle-result' && appends.filter((entry) => entry.kind === 'rpgResults').length !== 1) return 'Battle result evidence required'
   if (action === 'promote' && appends.filter((entry) => entry.kind === 'rpgPromotions').length !== 1) return 'Promotion evidence required'
-  if (action === 'promote' && (upserts.length !== 1 || upserts[0]?.kind !== 'rpgOutfits')) return 'Promotion needs one outfit'
+  if (action === 'promote' && upserts.filter((r) => r.kind === 'rpgOutfits').length !== 1) return 'Promotion needs one outfit'
+  if (action === 'edit-outfit' && (upserts.length !== 1 || upserts[0]?.kind !== 'rpgOutfits')) return 'Tree edit needs one outfit'
   return { schemaVersion: 1, commandId: body.commandId, action, expected, upserts, appends }
 }
 
@@ -153,7 +155,7 @@ function sameFrozen(previous: Record<string, unknown>, next: Record<string, unkn
   return isDeepStrictEqual(a, b)
 }
 
-function semanticError(uid: string, request: RpgCommandRequest, existing: Map<string, EntityRecord>): string | null {
+function semanticError(uid: string, request: RpgCommandRequest, existing: Map<string, EntityRecord>, logs: Map<string, LogRecord>): string | null {
   const next = checkpoint(request)
   const current = currentCheckpoint(request, existing)
   if (request.action === 'enroll') {
@@ -171,12 +173,23 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
   if (request.action === 'edit-preset') {
     const row = request.upserts[0]!
     const slots = row.data.slots as Array<Record<string, unknown> | null>
+    const previous = existing.get(`rpgPresets/${row.id}`)?.data
+    const changed = previous && (previous.slots as Array<Record<string, unknown> | null>).some((old) => {
+      const slot = slots.find((s) => s?.outfitId === old?.outfitId)
+      return old && slot && (!isDeepStrictEqual(old.loadout, slot.loadout) || old.signature !== slot.signature)
+    })
+    if (changed && previous.foregroundChapterId) {
+      const id = `${row.id}:${previous.foregroundChapterId}`
+      const cp = existing.get(`rpgCheckpoints/${id}`)
+      if (!request.expected.some((e) => e.kind === 'rpgCheckpoints' && e.id === id) || !cp ||
+        !['at-checkpoint', 'cleared'].includes(cp.data.status as string)) return 'Loadout edit requires its accepted safe checkpoint'
+    }
     if (slots.some((slot) => {
       if (!slot) return false
       const owned = existing.get(entityKey('rpgOutfits', slot.outfitId as string))
       const profile = owned?.data.profile
       return !owned || owned.deleted || !rpgRecord(profile) || !rpgRecord(profile.affinities) ||
-        !profile.affinities[slot.signature as string]
+        !profile.affinities[slot.signature as string] || !legalLoadout(profile, slot)
     })) return 'Preset contains an unowned or ineligible outfit'
   }
   if (request.action === 'start-chapter') {
@@ -187,6 +200,7 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
       next.revision !== (current.revision as number) + 1 : next.attemptIndex !== 1 || next.revision !== 0) {
       return 'Chapter attempt or revision is not the next value'
     }
+    if (next.lastClearedNodeId !== null || !Array.isArray(next.selectedPath) || next.selectedPath.length !== 0) return 'Chapter start must reset the map'
     const presetId = next.presetId as string
     const party = existing.get(entityKey('rpgPresets', presetId))?.data
     if (!party || !Array.isArray(party.slots) || party.slots.some((slot) => slot === null)) return 'Chapter needs a complete preset'
@@ -240,17 +254,65 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
       (evidence.outcome === 'loss' && next.frozenEntry.retryOrdinal !== (current.frozenEntry.retryOrdinal as number) + 1)) {
       return 'Battle result does not match an open frozen entry'
     }
+    for (const member of evidence.memberExp as Record<string, unknown>[]) {
+      const entrant = (current.frozenEntry.party as Record<string, unknown>[]).find((m) => m.outfitId === member.outfitId)!
+      if (member.delta !== frozenReward(current.frozenEntry.enemyKitJson as string, entrant, evidence.outcome === 'win')) return 'EXP differs from frozen encounter reward'
+      const owned = existing.get(`rpgOutfits/${member.outfitId}`)
+      const upsert = request.upserts.find((r) => r.kind === 'rpgOutfits' && r.id === member.outfitId)
+      if (member.delta === 0 && !upsert) continue // Old unrewarded entries remain valid.
+      if (!owned || owned.deleted || !rpgRecord(owned.data.profile) || !upsert || !rpgRecord(upsert.data.profile) ||
+        !request.expected.some((r) => r.kind === 'rpgOutfits' && r.id === member.outfitId)) return 'Reward needs versioned outfit projections'
+      const p = owned.data.profile, after = upsert.data.profile
+      const settled = progression(p.level as number, p.exp as number, member.delta as number)
+      if (!settled || member.beforeTier !== p.tier || member.beforeLevel !== p.level || member.beforeExp !== p.exp ||
+        member.afterTier !== p.tier || member.afterLevel !== settled.level || member.afterExp !== settled.exp ||
+        !isDeepStrictEqual(after, { ...p, ...settled }) ||
+        upsert.data.projectionRevision !== (owned.data.projectionRevision as number) + 1) return 'Reward projection and evidence disagree'
+    }
+    if (request.upserts.some((r) => r.kind === 'rpgOutfits' && !(evidence.memberExp as Record<string, unknown>[])
+      .some((m) => m.outfitId === r.id && (m.delta as number) > 0))) return 'Unexpected reward outfit mutation'
   }
-  if (request.action === 'clear-chapter' && (!current || !next || current.status !== 'pending-result' || next.status !== 'cleared' ||
-    next.revision !== (current.revision as number) + 1 || !sameFrozen(current, next, ['revision', 'status']))) {
-    return 'Chapter clear requires a completed battle'
+  if (request.action === 'choose-node' || request.action === 'clear-chapter') {
+    if (!current || !next || next.revision !== (current.revision as number) + 1 ||
+      !sameFrozen(current, next, ['revision', 'status', 'frozenEntry', 'lastClearedNodeId', 'selectedPath']) ||
+      next.frozenEntry !== null || !Array.isArray(current.selectedPath) || !Array.isArray(next.selectedPath) ||
+      next.selectedPath.length !== current.selectedPath.length + 1 ||
+      !isDeepStrictEqual(next.selectedPath.slice(0, -1), current.selectedPath) ||
+      next.selectedPath.at(-1) !== next.lastClearedNodeId || current.selectedPath.includes(next.lastClearedNodeId)) return 'Map transition changed chapter identity or path'
+    if (current.status === 'pending-result' && rpgRecord(current.frozenEntry)) {
+      const entry = current.frozenEntry
+      const result = logs.get(`rpgResults/${entry.entryId}:retry-${entry.retryOrdinal}`)?.data
+      if (!result || result.outcome !== 'win' || result.contentHash !== current.contentHash ||
+        result.contentVersion !== current.contentVersion || next.lastClearedNodeId !== entry.nodeId ||
+        next.status !== (request.action === 'clear-chapter' ? 'cleared' : 'at-checkpoint')) return 'Map advance requires accepted winning evidence'
+    } else if (request.action !== 'choose-node' || current.status !== 'at-checkpoint' ||
+      current.frozenEntry !== null || next.status !== 'at-checkpoint') return 'Map node requires an accepted safe checkpoint'
   }
   if ((request.action === 'clear-chapter' || request.action === 'spend-inspiration') &&
     request.upserts.some((row) => row.kind === 'items') && !request.appends.some((row) => row.kind === 'itemLedger')) {
     return 'Item change requires its ledger evidence'
   }
+  if (request.action === 'edit-outfit' || request.action === 'promote') {
+    const row = request.upserts.find((r) => r.kind === 'rpgOutfits')!
+    for (let index = 1; index <= 5; index++) {
+      const id = `party-${index}`
+      if (!request.expected.some((e) => e.kind === 'rpgPresets' && e.id === id)) return 'Outfit edit requires all five party dependencies'
+      const preset = existing.get(`rpgPresets/${id}`)?.data
+      if (preset && (preset.slots as Array<Record<string, unknown> | null>).some((s) => s?.outfitId === row.id) && preset.foregroundChapterId) {
+        const cpId = `${id}:${preset.foregroundChapterId}`
+        if (!request.expected.some((e) => e.kind === 'rpgCheckpoints' && e.id === cpId)) return 'Outfit edit requires foreground checkpoint dependency'
+      }
+    }
+    for (const expected of request.expected.filter((e) => e.kind === 'rpgCheckpoints')) {
+      const cp = existing.get(`rpgCheckpoints/${expected.id}`)?.data
+      if (cp && !['at-checkpoint', 'cleared'].includes(cp.status as string)) return 'Skills and promotion require an accepted safe checkpoint'
+    }
+    const before = existing.get(entityKey(row.kind, row.id))?.data
+    if (request.action === 'edit-outfit' && (!before || !rpgRecord(before.profile) || !rpgRecord(row.data.profile) ||
+      row.data.projectionRevision !== (before.projectionRevision as number) + 1 || !oneTreePoint(before.profile, row.data.profile))) return 'Tree edit must spend exactly one earned point'
+  }
   if (request.action === 'promote') {
-    const row = request.upserts[0]!
+    const row = request.upserts.find((r) => r.kind === 'rpgOutfits')!
     const before = existing.get(entityKey(row.kind, row.id))?.data
     const after = row.data
     const evidence = request.appends[0]?.data
@@ -262,6 +324,28 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
       evidence.outfitId !== row.id || evidence.fromTier !== before.profile.tier ||
       evidence.toTier !== after.profile.tier || !isDeepStrictEqual(evidence.archive, before.profile.tree)) {
       return 'Promotion does not match a mastered Lv50 outfit'
+    }
+    const settled = progression(1, 0, before.profile.exp as number)
+    const learned = [...before.profile.tree as Record<string, unknown>[], ...before.profile.legacy as Record<string, unknown>[]]
+    const legacy = after.profile.legacy as Record<string, unknown>[]
+    if (!settled || after.profile.level !== settled.level || after.profile.exp !== settled.exp ||
+      (after.profile.tree as unknown[]).length !== 0 || (after.profile.legacy as Record<string, unknown>[])
+        .some((s) => !learned.some((known) => isDeepStrictEqual(s, known)))) return 'Promotion lost bank or invented legacy skills'
+    for (const changed of request.upserts.filter((u) => u.kind === 'rpgPresets')) {
+      const previous = existing.get(`rpgPresets/${changed.id}`)?.data
+      if (!previous || !Array.isArray(previous.slots) || !Array.isArray(changed.data.slots)) return 'Promotion preset unavailable'
+      const expectedSlots = previous.slots.map((slot: Record<string, unknown> | null) => slot?.outfitId === row.id
+        ? { ...slot, loadout: (slot.loadout as Record<string, unknown>[]).filter((ref) =>
+          legacy.some((s) => skillKey(s) === skillKey(ref))) } : slot)
+      if (!isDeepStrictEqual(changed.data, { ...previous, slots: expectedSlots })) return 'Promotion may only prune unavailable legacy loadouts'
+    }
+    for (const dependency of request.expected.filter((e) => e.kind === 'rpgPresets')) {
+      const previous = existing.get(`rpgPresets/${dependency.id}`)?.data
+      if (!previous) continue
+      const slots = (request.upserts.find((u) => u.kind === 'rpgPresets' && u.id === dependency.id)?.data ?? previous).slots as Array<Record<string, unknown> | null>
+      if (slots.some((slot) => slot?.outfitId === row.id && !legalLoadout(after.profile as Record<string, unknown>, slot))) {
+        return 'Promotion must prune unavailable skills from every party'
+      }
     }
   }
   return null
@@ -284,7 +368,7 @@ export function resolveRpgCommand(uid: string, request: RpgCommandRequest, entit
   for (const append of request.appends) {
     if (logs.has(logKey(append.kind, append.id))) return { response: { status: 'rejected', reason: `Log id already claimed: ${append.kind}/${append.id}` }, writes: [], appends: [] }
   }
-  const error = semanticError(uid, request, entities)
+  const error = semanticError(uid, request, entities, logs)
   if (error) return { response: { status: 'rejected', reason: error }, writes: [], appends: [] }
   const writes = request.upserts.map((row): EntityRecord => ({ kind: row.kind, id: row.id,
     version: (entities.get(entityKey(row.kind, row.id))?.version ?? 0) + 1,

@@ -36,30 +36,26 @@ English version; Global has released only through #4, so **eras use JP dates** �
 
 ## Cap profiles
 
-Each scenario caps the five stats differently, and the five caps sum to that scenario's **cap budget**. This is
-how the original game does it, and it is why a scenario is an identity rather than a number: Trackblazer is
-where Stamina goes to 1900, Unity Cup is where Wit does.
-
-**Tiers 1–4 are the original game's real values**, verified 2026-09-20 against the public stat-cap tables
-(D119). Tiers 5–14 extend the idea on our own ladder, themed on each scenario's focus, with the budget rising
-+250 per tier from tier 5 and no single stat above the game's 2000 ceiling.
+Each scenario caps the five stats differently, and the five caps sum to that scenario's **cap budget**. URA Finale
+caps every stat at 1200 (6000). Each later scenario adds 250: 100 to Speed, 100 to a main stat and 50 to a sub stat,
+round-robin through Stamina, Power, Guts and Wit.
 
 | # | Scenario | Speed | Stamina | Power | Guts | Wit | Cap budget |
 |---|---|---|---|---|---|---|---|
-| 1 | URA Finale | 1400 | 1400 | 1400 | 1400 | 1400 | 7000 |
-| 2 | Unity Cup | 1300 | 1300 | 1300 | 1300 | **1800** | 7000 |
-| 3 | Trackblazer | 1200 | **1900** | 1200 | 1200 | 1500 | 7000 |
-| 4 | Our Grand Concert | **1600** | 1300 | 1300 | **1500** | 1300 | 7000 |
-| 5 | Grand Masters | 1400 | 1300 | 1500 | 1250 | **1800** | 7250 |
-| 6 | Project L'Arc | 1400 | **1900** | 1400 | 1500 | 1300 | 7500 |
-| 7 | U.A.F. Ready GO! | 1600 | 1550 | 1600 | 1500 | 1500 | 7750 |
-| 8 | Great Food Festival | 1500 | 1700 | 1500 | **1900** | 1400 | 8000 |
-| 9 | Run! Mecha Umamusume | 1900 | 1500 | **1950** | 1500 | 1400 | 8250 |
-| 10 | The Twinkle Legends | **2000** | 1650 | 1700 | 1550 | 1600 | 8500 |
-| 11 | Design Your Island | 1750 | 1750 | 1750 | 1750 | 1750 | 8750 |
-| 12 | Yukoma Hot Springs | 1700 | 1900 | 1700 | **2000** | 1700 | 9000 |
-| 13 | Beyond Dreams | **2000** | 1750 | 1800 | 1700 | **2000** | 9250 |
-| 14 | Tracen Diner | 1850 | 1900 | **2000** | 1950 | 1800 | 9500 |
+| 1 | URA Finale | 1200 | 1200 | 1200 | 1200 | 1200 | 6000 |
+| 2 | Unity Cup | 1300 | 1300 | 1250 | 1200 | 1200 | 6250 |
+| 3 | Trackblazer | 1400 | 1300 | 1350 | 1250 | 1200 | 6500 |
+| 4 | Our Grand Concert | 1500 | 1300 | 1350 | 1350 | 1250 | 6750 |
+| 5 | Grand Masters | 1600 | 1350 | 1350 | 1350 | 1350 | 7000 |
+| 6 | Project L'Arc | 1700 | 1450 | 1400 | 1350 | 1350 | 7250 |
+| 7 | U.A.F. Ready GO! | 1800 | 1450 | 1500 | 1400 | 1350 | 7500 |
+| 8 | Great Food Festival | 1900 | 1450 | 1500 | 1500 | 1400 | 7750 |
+| 9 | Run! Mecha Umamusume | 2000 | 1500 | 1500 | 1500 | 1500 | 8000 |
+| 10 | The Twinkle Legends | 2100 | 1600 | 1550 | 1500 | 1500 | 8250 |
+| 11 | Design Your Island | 2200 | 1600 | 1650 | 1550 | 1500 | 8500 |
+| 12 | Yukoma Hot Springs | 2300 | 1600 | 1650 | 1650 | 1550 | 8750 |
+| 13 | Beyond Dreams | 2400 | 1650 | 1650 | 1650 | 1650 | 9000 |
+| 14 | Tracen Diner | 2500 | 1750 | 1700 | 1650 | 1650 | 9250 |
 
 As in the original game ✅, the part of a stat **above 1200 counts about half in races**. That halving lives in
 [Racing](racing.md) now, not in training gains.
@@ -70,29 +66,30 @@ The **shape** is the silhouette the nodes are laid out in — the thing that mak
 at a glance. The **slot count** is how finely that scenario's budget is divided, never how much it pays:
 
 ```
-treeBudget(T) = round(0.60 × capBudget(T))
-nodeValue(T)  = treeBudget(T) / (cardNodes + statNodes)
+nodeValue(T)  = round((0.60 × capBudget(T) − 240) / cardNodes(T))
+treeBudget(T) = cardNodes(T) × nodeValue(T) + 240
 ```
 
-| # | Scenario | Shape | Card | Stat | Total | Card node value |
-|---|---|---|---|---|---|---|
-| 1 | URA Finale | a single trunk, short branches alternating like a fern | 18 | 6 | 24 | 220 |
-| 2 | Unity Cup | three long branches from one stem | 20 | 6 | 26 | 198 |
-| 3 | Trackblazer | one long oval track, open at the foot, with side spurs | 17 | 6 | 23 | 233 |
-| 4 | Our Grand Concert | five-arm star around a central root | 21 | 6 | 27 | 189 |
-| 5 | Grand Masters | twin arcs hanging from one bar, a pendant between them | 25 | 6 | 31 | 164 |
-| 6 | Project L'Arc | an arch: a heavy lintel on two legs, the root its keystone | 26 | 6 | 32 | 164 |
-| 7 | U.A.F. Ready GO! | three feathered branches, one per sport | 27 | 6 | 33 | 163 |
-| 8 | Great Food Festival | wide canopy on a short trunk, rooted below | 27 | 6 | 33 | 169 |
-| 9 | Run! Mecha Umamusume | a spine with ribs, their ends dropping like an open lattice | 28 | 6 | 34 | 168 |
-| 10 | The Twinkle Legends | seven-point crown on its band, rooted below | 29 | 6 | 35 | 168 |
-| 11 | Design Your Island | a central island, spokes out to a ring open at the foot | 30 | 6 | 36 | 167 |
-| 12 | Yukoma Hot Springs | a square spiral out from the root | 30 | 6 | 36 | 172 |
-| 13 | Beyond Dreams | twin trunks meeting at the root and touching at the foot | 31 | 6 | 37 | 171 |
-| 14 | Tracen Diner | a counter with pendants of alternating length | 32 | 6 | 38 | 171 |
+| # | Scenario | Shape | Card nodes | Active Extra stat slots | Card node value (D244) |
+|---|---|---|---|---|---|
+| 1 | URA Finale | a single trunk, short branches alternating like a fern | 18 | 6 | 187 |
+| 2 | Unity Cup | three long branches from one stem | 20 | 6 | 176 |
+| 3 | Trackblazer | one long oval track, open at the foot, with side spurs | 17 | 6 | 215 |
+| 4 | Our Grand Concert | five-arm star around a central root | 21 | 6 | 181 |
+| 5 | Grand Masters | twin arcs hanging from one bar, a pendant between them | 25 | 6 | 158 |
+| 6 | Project L'Arc | an arch: a heavy lintel on two legs, the root its keystone | 26 | 6 | 158 |
+| 7 | U.A.F. Ready GO! | three feathered branches, one per sport | 27 | 6 | 158 |
+| 8 | Great Food Festival | wide canopy on a short trunk, rooted below | 27 | 6 | 163 |
+| 9 | Run! Mecha Umamusume | a spine with ribs, their ends dropping like an open lattice | 28 | 6 | 163 |
+| 10 | The Twinkle Legends | seven-point crown on its band, rooted below | 29 | 6 | 162 |
+| 11 | Design Your Island | a central island, spokes out to a ring open at the foot | 30 | 6 | 162 |
+| 12 | Yukoma Hot Springs | a square spiral out from the root | 30 | 6 | 167 |
+| 13 | Beyond Dreams | twin trunks meeting at the root and touching at the foot | 31 | 6 | 166 |
+| 14 | Tracen Diner | a counter with pendants of alternating length | 32 | 6 | 166 |
 
-Early scenarios have few, chunky card nodes, so each decision is heavy and legible. Every tree has **six stat
-nodes** of 40 raw points each (D162); the card nodes carry the rest of the budget ([Constellations](constellations.md#stat-budget)). Each tier also carries the fixed
+Early scenarios have few, chunky card nodes, so each decision is heavy and legible. The separate **Extra stats grid**
+has six active slots of 40 raw points each (D235); they are not drawn tree nodes. Card nodes carry the rest of the
+budget ([Constellations](constellations.md#stat-budget)). Each tier also carries the fixed
 **2 parent + 4 grandparent** lineage nodes, which pay aptitudes and skills rather than stats.
 
 Each silhouette is drawn on a grid, which keeps every edge straight and uncrossed; see
