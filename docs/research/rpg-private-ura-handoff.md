@@ -1,6 +1,6 @@
 # First private URA RPG chapter — owner/Claude handoff
 
-Prepared on 2026-10-03 under T097 (D247). **Not published and not a playable-release sign-off.** This report
+Prepared on 2026-10-03 under T097 (D248). **Not published and not a playable-release sign-off.** This report
 contains only aggregate coverage and immutable identity, not extracted character rows or art. The standing
 schema, commands and per-chapter checklist are in [RPG chapter content](../technical/rpg-chapter-content.md).
 

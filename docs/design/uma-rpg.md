@@ -7,7 +7,7 @@
 > cap. Five filled party slots, the signature-element choice and the Inspiration token destination are fixed.
 > T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227); T091 has pinned combat and the
 > compositional skill catalog (D229). T095 supplies branching maps (D245); T096 settles encounter EXP and integrates
-> safe-checkpoint progression (D246). T097 implements the private pipeline and prepared URA draft (D247);
+> safe-checkpoint progression (D246). T097 implements the private pipeline and prepared URA draft (D248);
 > owner publication, Inspiration tokens and Home entry remain gated by T098–T099 and the private handoff.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.

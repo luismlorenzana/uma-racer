@@ -260,7 +260,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   fourteen authored rosters.
 - Images are fetched once by a local pipeline script, normalized without crop into 128×128 WebP frames, and packed into
   deterministic **sprite atlases** used by DOM UI and later race scenes.
-- RPG playable-character teams follow the separate [private chapter contract](rpg-chapter-content.md) (D247).
+- RPG playable-character teams follow the separate [private chapter contract](rpg-chapter-content.md) (D248).
   Curated official-page evidence selects portrait variants; the adapter decodes/crops 256×256 WebP into a separate
   `art/priconne/` family. Offline compilation verifies the graph, positive EXP, mechanically changed boss phase and
   provenance. A hashed catalog retains exact pack/version and portrait mappings for existing checkpoints, selecting

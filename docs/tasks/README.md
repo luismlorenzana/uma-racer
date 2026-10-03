@@ -46,7 +46,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 | T094 — Phone battle screen | 2026-10-02 | [Global Uma RPG](../design/uma-rpg.md), D243 and [phone proof](../research/rpg-battle-phone-proof.md) | git history |
 | T095 — Chapter maps and checkpoints | 2026-10-02 | [Global Uma RPG](../design/uma-rpg.md), D245, [content handoff](../technical/rpg-chapter-content.md) and [phone proof](../research/rpg-chapter-phone-proof.md) | git history |
 | T096 — Battle EXP, skills and class promotion | 2026-10-03 | [Global Uma RPG](../design/uma-rpg.md), D246 and [phone proof](../research/rpg-progression-phone-proof.md) | git history |
-| T097 — Private PriConne pipeline / URA draft | 2026-10-03 | [Content contract](../technical/rpg-chapter-content.md), D247 and [private publication handoff](../research/rpg-private-ura-handoff.md) | git history |
+| T097 — Private PriConne pipeline / URA draft | 2026-10-03 | [Content contract](../technical/rpg-chapter-content.md), D248 and [private publication handoff](../research/rpg-private-ura-handoff.md) | git history |
 | M026 — Produce nodes (T086) | 2026-09-30 | [Stable Farm](../design/farm.md), [Constellations](../design/constellations.md) and [Architecture](../technical/architecture.md) | `f6dd79a` |
 | M025 — Stable Farm (T082–T085) | 2026-09-30 | [Stable Farm](../design/farm.md) and [Architecture](../technical/architecture.md) | `4ac41d7` |
 | T001–T018 and the Milestone 6 plan | 2026-09-19 | design docs | `463edb8` |
