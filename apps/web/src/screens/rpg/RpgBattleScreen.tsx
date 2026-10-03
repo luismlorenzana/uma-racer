@@ -16,6 +16,7 @@ import { battleChoices, battleTargets, chosenAction, describeCue, humanize, proj
 import { IdentityGlyph, RpgPortrait, RPG_WEAPON_LABELS } from '../../ui/rpg/RpgPortrait'
 import { useBattlePlayback } from '../../ui/rpg/useBattlePlayback'
 import { RpgBattleGuide } from './RpgBattleGuide'
+import { RpgRewardReveal } from '../../ui/rpg/RpgRewardReveal'
 
 function Gauge({ label, value, maximum, mp = false }: { label: string; value: number; maximum: number; mp?: boolean }) {
   return <div className="flex min-w-0 items-center gap-1 text-[10px] leading-3">
@@ -191,7 +192,7 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
   }
 
   return <MinigameShell playing className="!touch-pan-y">
-    <MinigameHeader backTo={backTo} backLabel="Leave battle, keep saved turn" eyebrow={proof ? 'Development proof · no rewards' : 'Global Uma RPG'}
+    <MinigameHeader backTo={backTo} backLabel="Leave battle, keep saved turn" eyebrow={proof ? 'Development proof · isolated save' : 'Global Uma RPG'}
       title="RPG battle" headline={{ label: 'Round', value: display?.round ?? '—' }} onGuide={() => setDialog('guide')} guideLabel="Battle guide" trailing={headerTools} />
     {view && <HostNotice view={view} />}
     {error && <p role="alert" className="shrink-0 px-3 py-2 text-[12px] text-red-300">{error}<button onClick={() => { void host.resume(checkpointId).then(setView).then(() => setError(null)).catch((reason: unknown) => setError(String(reason))) }} className="ml-2 min-h-11 underline">Reload saved view</button></p>}
@@ -209,17 +210,21 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
       <p className="text-micro text-accent">{view.kind === 'pending' ? 'Projected result · not yet earned' : 'Acknowledged result'}</p>
       <h2 className="mt-1 text-3xl">{loss ? 'Party defeated' : 'Victory'}</h2>
       <p className="mt-2 text-[13px] text-ink-on-dark-soft">{state ? `Round ${state.round} · ${view.actionCount} saved actions` : 'Saved result; the local replay is unavailable.'}</p>
-      <div className="mt-4 grid grid-cols-2 gap-2">{state?.input.allies.map((ally) => <div key={ally.id} className="rounded-sm border border-hairline-dark bg-stage-soft p-2">
+      {(view.evidence ?? view.previewEvidence) && view.rewardProfiles?.length ? <RpgRewardReveal evidence={(view.evidence ?? view.previewEvidence)!}
+        profiles={view.rewardProfiles} pending={view.kind === 'pending'} content={content} name={name}
+        signatures={Object.fromEntries(view.checkpoint.frozenEntry?.party.map((p) => [p.outfitId, p.signature]) ?? [])}
+        knockedOut={state?.units.filter((u) => u.side === 'ally' && u.hp === 0).map((u) => u.id)} />
+        : <div className="mt-4 grid grid-cols-2 gap-2">{state?.input.allies.map((ally) => <div key={ally.id} className="rounded-sm border border-hairline-dark bg-stage-soft p-2">
         <p className="text-[12px] font-semibold">{name(ally.id)} · {state.units.find((part) => part.id === ally.id)?.hp === 0 ? 'KO' : 'Standing'}</p>
         <p className="text-[10px] text-ink-on-dark-soft">{RPG_WEAPON_LABELS[ally.weapon]} · {humanize(ally.signature)}</p>
-        <p className="mt-1 text-xs">RPG EXP {view.evidence?.memberExp.find((part) => part.outfitId === ally.id)?.delta ?? 0}</p>
-      </div>)}</div>
+        <p className="mt-1 text-xs">{view.kind === 'pending' ? 'Awaiting result submission' : `RPG EXP ${view.evidence?.memberExp.find((part) => part.outfitId === ally.id)?.delta ?? 0}`}</p>
+      </div>)}</div>}
       <h3 className="mt-4 text-sm">Decisive actions</h3>
       <ul className="mt-1 space-y-1 text-[12px] text-ink-on-dark-soft">{state && view.cues.filter((cue) => cue.kind !== 'intent').map((cue, index) => <li key={index}>{describeCue(cue, view.cueState ?? state, name, view.lastAction ?? undefined)}</li>)}</ul>
-      <p className="mt-4 rounded-sm border border-hairline-dark bg-stage-soft p-3 text-[12px]">{proof ? 'Test encounter: no RPG EXP, Items or account progress awarded.' : view.kind === 'pending' ? 'Not yet earned. EXP, Items and the next map node remain unavailable until the result is acknowledged.' : 'EXP is read from the accepted receipt. Item and campaign rewards are not configured yet.'}</p>
+      <p className="mt-4 rounded-sm border border-hairline-dark bg-stage-soft p-3 text-[12px]">{view.kind === 'pending' ? 'Not yet earned. EXP, tree points, promotion and the next map node remain unavailable until the result is acknowledged.' : proof ? 'Isolated test account only. Your real RPG roster and Items are unchanged.' : 'All five entrants earn win EXP, including KO’d allies. Accept the map checkpoint to set up skills. Clear tokens arrive separately.'}</p>
       {view.kind === 'pending' && <Button className="mt-3 w-full" disabled={busy} onClick={() => { void command(() => host.complete(checkpointId)) }}>Submit result / try sync</Button>}
       {loss && view.kind !== 'pending' && <Button className="mt-3 w-full" disabled={busy || !uid} onClick={() => { void command(retry) }}>Retry free · same seed and enemy kit</Button>}
-      <Link to={backTo} className="mt-3 flex min-h-11 items-center justify-center text-accent">Return to RPG</Link>
+      <Link to={backTo} className="mt-3 flex min-h-11 items-center justify-center text-accent">{view.kind === 'accepted' && !loss ? 'Return to map · accept checkpoint & set up skills' : 'Return to RPG'}</Link>
     </section>}
     {!unavailable && (!result || playback.playing) && display && <>
       <section className="flex min-h-0 flex-1 flex-col justify-center gap-2 px-3 py-2 [@media(max-height:700px)]:gap-1 [@media(max-height:700px)]:py-1" aria-label="Battle formation">

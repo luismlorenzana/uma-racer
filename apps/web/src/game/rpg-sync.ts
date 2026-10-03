@@ -1,5 +1,6 @@
 // Device-local RPG command queue and acknowledged projection install (docs/technical/uma-rpg-implementation.md, T090).
-import { parseRpgCommandResponseOrThrow, parseSaveSnapshotOrThrow,
+import { parseRpgCommandResponseOrThrow, parseSaveSnapshotOrThrow, parseRpgOutfitSave, rpgRewardProjection,
+  parseRpgResultEvidence,
   type EntityRecord, type LogRecord, type RpgCommandRequest, type RpgCommandResponse } from '@racer/domain'
 import { saveApi } from '../api/client'
 import { db, type RacerDb } from './db'
@@ -54,6 +55,48 @@ function rowsForDuplicate(snapshot: { entities: EntityRecord[]; logs: LogRecord[
   return { entities: entities as EntityRecord[], logs: logs as LogRecord[] }
 }
 
+/** Only a profile-only conflict may be reconciled. A changed checkpoint/lease is NEVER a rebased win. */
+async function reconcileBattleProfiles(body: RpgCommandRequest,
+  response: Extract<RpgCommandResponse, { status: 'conflict' }>, database: RacerDb): Promise<boolean> {
+  if (body.action !== 'battle-result') return false
+  const evidence = parseRpgResultEvidence(body.appends.find((a) => a.kind === 'rpgResults')?.data)
+  if (!evidence || response.authoritative.length !== body.expected.length) return false
+  const authoritative = new Map(response.authoritative.map((r) => [`${r.kind}/${r.id}`, r.record]))
+  if (body.expected.some((e) => e.kind !== 'rpgOutfits' && authoritative.get(`${e.kind}/${e.id}`)?.version !== e.version)) return false
+  const members = evidence.memberExp.map((member) => {
+    const row = authoritative.get(`rpgOutfits/${member.outfitId}`)
+    const parsed = row && !row.deleted && parseRpgOutfitSave(row.data)
+    return row && parsed ? { row, parsed, grant: rpgRewardProjection(parsed.profile, member.delta) } : null
+  })
+  if (members.some((m) => !m)) return false
+  const valid = members.filter((m) => m !== null)
+  const next: RpgCommandRequest = { ...body,
+    expected: body.expected.map((e) => e.kind === 'rpgOutfits' ? { ...e,
+      version: valid.find((m) => m.row.id === e.id)!.row.version } : e),
+    upserts: body.upserts.map((u) => {
+      if (u.kind !== 'rpgOutfits') return u
+      const member = valid.find((m) => m.row.id === u.id)!
+      return { ...u, data: { ...member.parsed, profile: member.grant.profile,
+        projectionRevision: member.parsed.projectionRevision + 1 } as unknown as Record<string, unknown> }
+    }),
+    appends: body.appends.map((a) => a.kind === 'rpgResults' ? { ...a,
+      data: { ...evidence, memberExp: valid.map((m) => m.grant.member) } as unknown as Record<string, unknown> } : a),
+  }
+  if (JSON.stringify(next) === JSON.stringify(body)) return false
+  await database.transaction('rw', [database.rpgOutfits, database.pendingRpgCommands], async () => {
+    const pending = await database.pendingRpgCommands.get(body.commandId)
+    if (!pending || JSON.stringify(pending.body) !== JSON.stringify(body)) throw new Error('Result reservation changed during reconciliation')
+    for (const member of valid) {
+      const local = await database.rpgOutfits.get(member.row.id)
+      if (local && local.version > member.row.version) throw new Error('Newer profile arrived during reward reconciliation')
+      await database.rpgOutfits.put({ id: member.row.id, version: member.row.version, data: member.parsed })
+    }
+    // Same result/command identity, seed, kit, delta, hash and timestamp. The failed group wrote nothing.
+    await database.pendingRpgCommands.update(body.commandId, { body: next, status: 'pending', conflict: null })
+  })
+  return true
+}
+
 /** Returns true only after one command's server-acknowledged rows are locally installed. */
 export async function flushOneRpgCommand(database: RacerDb = db, transport: Pick<typeof saveApi, 'load' | 'rpgCommand'> = saveApi): Promise<boolean> {
   const pending = await database.pendingRpgCommands.orderBy('queuedAt').filter((candidate) => candidate.status === 'pending').toArray()
@@ -71,6 +114,7 @@ export async function flushOneRpgCommand(database: RacerDb = db, transport: Pick
   if (!row) return false
   const body = row.body as RpgCommandRequest
   const response = parseRpgCommandResponseOrThrow(await transport.rpgCommand(body), row.id)
+  if (response.status === 'conflict' && await reconcileBattleProfiles(body, response, database)) return false
   if (response.status === 'conflict' || response.status === 'rejected') {
     await database.pendingRpgCommands.update(row.id, { status: 'conflict', conflict: response })
     return false

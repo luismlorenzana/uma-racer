@@ -2,6 +2,7 @@
 import { parseRpgChapterPack, type RpgChapterPack, type RpgChapterNode } from './chapter'
 import { syntheticEnemy } from './combat/synthetic'
 import { enrollRpgOutfit, type RpgProfile, type RpgWeapon, type RpgElement } from './rules'
+import { rpgEncounterBaseExp } from './rewards'
 
 export const SYNTHETIC_CHAPTER_HASH = 'a'.repeat(64)
 export function syntheticChapterJson() {
@@ -22,10 +23,11 @@ export function syntheticChapterJson() {
     { id: 'opening', name: 'Opening challenge', kind: 'encounter', detail: 'An invented scout guards the crossroads.', enemies: [scout.id], exits: ['fork'] },
     { id: 'fork', name: 'Crossroads', kind: 'branch', detail: 'A safe setup stop or an optional elite fight. Both rejoin.', enemies: [], exits: ['rest', 'elite'] },
     { id: 'rest', name: 'Quiet camp', kind: 'recovery', detail: 'Skip the extra fight and prepare your loadout. Every encounter starts at full HP/MP.', enemies: [], exits: ['join'] },
-    { id: 'elite', name: 'Elite challenge', kind: 'elite', detail: 'An extra battle for future encounter EXP. No extra token or rewards in this proof.', enemies: [elite.id], exits: ['join'] },
+    { id: 'elite', name: 'Elite challenge', kind: 'elite', detail: 'An extra battle for RPG EXP in this isolated test account. No extra clear token.', enemies: [elite.id], exits: ['join'] },
     { id: 'join', name: 'Captain approach', kind: 'checkpoint', detail: 'Paths rejoin. Review your five-outfit party before the boss.', enemies: [], exits: ['boss'] },
     { id: 'boss', name: 'Captain finale', kind: 'boss', detail: 'The captain changes intent and heals below half HP.', enemies: [boss.id], exits: [] },
   ]
+  for (const node of nodes) if (node.kind === 'encounter' || node.kind === 'elite' || node.kind === 'boss') node.baseExp = rpgEncounterBaseExp(10, node.kind)
   return { schemaVersion: 1, version: 'invented-map-v1', actors, chapters: [
     { id: 'test-chapter', scenarioId: 'ura-finale', title: 'Invented crossroads', contentVersion: 'invented-map-v1',
       recommendedTier: 1, recommendedLevel: 10, surface: 'turf', distance: 'medium', startNodeId: 'opening', bossNodeId: 'boss', nodes },
@@ -33,7 +35,7 @@ export function syntheticChapterJson() {
       recommendedTier: 1, recommendedLevel: 10, surface: 'dirt', distance: 'mile', startNodeId: 'opening', bossNodeId: 'boss', nodes: structuredClone(nodes) },
     { id: 'test-loss', scenarioId: 'ura-finale', title: 'Deliberate defeat probe', contentVersion: 'invented-map-v1',
       recommendedTier: 1, recommendedLevel: 50, surface: 'turf', distance: 'long', startNodeId: 'wall', bossNodeId: 'wall',
-      nodes: [{ id: 'wall', name: 'Defeat rehearsal', kind: 'boss' as const, detail: 'Test only: an impossible fight checks KO, zero-reward loss and same-kit retry.', enemies: [wall.id], exits: [] }] },
+      nodes: [{ id: 'wall', name: 'Defeat rehearsal', kind: 'boss' as const, detail: 'Test only: an impossible fight checks KO, zero-reward loss and same-kit retry.', baseExp: rpgEncounterBaseExp(50, 'boss'), enemies: [wall.id], exits: [] }] },
   ] }
 }
 export function syntheticChapterPack(): RpgChapterPack {

@@ -1,6 +1,6 @@
 # RPG chapter content and checkpoint authoring
 
-T095's standing contract for T096 reward tuning and T097 private authoring. Product rules remain in
+T095/T096's standing contract for T097 private authoring. Product rules remain in
 [Global Uma RPG](../design/uma-rpg.md); grouped saves in [the implementation contract](uma-rpg-implementation.md).
 No real PriConne rows, extracted descriptions or portraits belong in this document or git.
 
@@ -21,7 +21,7 @@ checkpoint and frozen entry, and checked on resume. It is not embedded in the JS
 |---|---|
 | Actor | `id`, `name`, `role`, `artKey`, `combat` |
 | Chapter | `id`, `scenarioId`, `title`, `contentVersion`, `recommendedTier`, `recommendedLevel`, `surface`, `distance`, `startNodeId`, `bossNodeId`, `nodes` |
-| Node | `id`, `name`, `kind`, `detail`, `enemies`, `exits` |
+| Node | `id`, `name`, `kind`, `detail`, `enemies`, `exits`; optional `baseExp` for old-pack compatibility |
 | Combat actor | `id` (same as actor), `element`, `stats`, `moves`, optional `phaseTwo` |
 | Move | `id`, `kind`, `channel`, `element` or `null`, `power`, `target`, `intentText`, optional `status` |
 | Phase two | `thresholdPercent`, `moves` |
@@ -38,6 +38,13 @@ Node kinds: `encounter`, `elite`, `boss`, `branch`, `recovery`, `checkpoint`. Ba
 team; safe nodes must have an empty team. Exits are ordered, unique node ids. A chapter has one terminal boss,
 every node is reachable from start, every non-boss has an exit, and no cycles are allowed. This makes all routes
 reach the boss without duplicate node rewards. A reconvergence is a `checkpoint` reached from multiple exits.
+
+T096 adds explicit **`baseExp`**, integer 0–1,000,000. Every T097 production battle node must author a positive
+base; safe nodes omit it or use zero. Old packs with no base remain readable but unrewarded. Entry freezes the
+base and chapter recommendation in a v2 kit wrapper, separate from combat input/hashes. The result uses the
+[D246 formula and authoring budget](../design/uma-rpg.md#settled-t096-encounter-exp-and-checkpoint-choices-d246),
+never a screen default. Author/retest the chapter's total budget for its actual fight count; the helper's
+ordinary/elite/boss weights describe the two/three-fight test graph, not every production chapter.
 
 Recommended tier is positive (bounded at 10,000) and local level 1–50. Surface is `turf`/`dirt`; distance is
 `sprint`/`mile`/`medium`/`long`. They theme the map and preview; they do not launch races or alter main-game aptitudes.
@@ -72,7 +79,7 @@ An invented minimal shape (not the production chapter; its art references must s
     "recommendedTier": 1, "recommendedLevel": 10, "surface": "turf", "distance": "medium",
     "startNodeId": "boss", "bossNodeId": "boss",
     "nodes": [{ "id": "boss", "name": "Example finale", "kind": "boss", "detail": "Invented schema example.",
-      "enemies": ["example-captain"], "exits": [] }]
+      "enemies": ["example-captain"], "exits": [], "baseExp": 2323 }]
   }]
 }
 ```
@@ -87,7 +94,8 @@ DEV route. Do not publish it or use its sizes, names or stats as production defa
 2. A safe node queues `choose-node`, appending exactly its id to the path at the expected checkpoint version.
    A battle node instead enters through T092, freezing the full current party, kit and deterministic seed.
 3. Actions stay in the local journal. A win queues `battle-result`; it does **not** move the map. On acknowledgement,
-   its receipt exists in `rpgResults` and the checkpoint is `pending-result`.
+   its receipt exists in `rpgResults`, five outfit EXP projections settle atomically and the checkpoint is
+   `pending-result`. The preview is unearned until this acknowledgement; a loss pays zero.
 4. Accept win consumes that exact accepted winning evidence: `choose-node` for ordinary/elite, `clear-chapter`
    for the terminal boss. The group appends the battle node to the accepted path, clears the frozen entry and
    sets at-checkpoint/cleared. The API reads that evidence inside the same transaction; missing/losing evidence rejects.
@@ -109,7 +117,7 @@ Accepted-result journals remain intact. It never reissues a rejected result or m
 The T092 second-device takeover/restart policy still applies to an open battle. The root save schema and Dexie schema
 are unchanged; `choose-node` is an additive grouped command action, not a new save field.
 
-## T096 handoff: measure rewards on a real fixture
+## Synthetic reward fixture and private-authoring handoff
 
 `syntheticChapterPack()` contains two distinct branching chapter ids for pause/resume testing, both at **Tier 1 Lv10**,
 plus a one-fight deliberately unwinnable KO/loss probe (Tier 1 Lv50 recommendation, not a balance target).
@@ -120,11 +128,12 @@ equips their foundation techniques; host traversal tests also use Attack-only lo
 
 The browser Attack-only recovery route cleared the opening in **two saved actions / one round** and boss in
 **six / two rounds**. The boss crosses its phase threshold. This deliberately short fixture tests transitions, not
-production balance. T096 must measure its reward candidates over both routes, including catch-up/taper, KO and
-two-tier promotion, instead of assuming equal fight counts. T097's authored production count remains independently
+production balance. T096 measures its pinned reward formula over both routes, including catch-up/taper, KO and
+two-tier promotion; the sim prints every fight and chapter. T097's authored production count remains independently
 chosen and must be retested before release.
 
 Recovery means a **safe setup stop/shorter path** today: every engine-v1 encounter starts at full HP/MP, so it does
-not heal a new persistent resource. Elite adds a fight for T096 encounter EXP, not an extra chapter token. T095
-grants zero EXP and no Items, tickets, seals or racing/training progress. T096 adds battle EXP in the existing
-result group; T098 adds the scenario token to the boss-clear group. Home stays gated until T099.
+not heal a new persistent resource. Elite adds a fight for encounter EXP, not an extra chapter token. The Lv10
+fixture's ordinary/elite/boss bases are 1,549 / 968 / 2,323; payouts taper against each frozen entrant level.
+T096 adds battle EXP in the existing result group and safe-checkpoint skills/promotion, but no Items, tickets,
+seals or racing/training progress. T098 adds the scenario token to the boss-clear group. Home stays gated until T099.

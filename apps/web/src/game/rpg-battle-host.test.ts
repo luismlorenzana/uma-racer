@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseRpgCommandRequest, resolveRpgCommand } from '../../../api/src/save/rpg-command'
 import { saveApi } from '../api/client'
 import { db } from './db'
-import { decodeKit, DexieRpgBattleHost, encodeKit, rpgBattleJournalId } from './rpg-battle-host'
+import { decodeKit, decodeReward, DexieRpgBattleHost, encodeKit, rpgBattleJournalId } from './rpg-battle-host'
 import { flushOneRpgCommand } from './rpg-sync'
 
 const uid = 'synthetic-account'
@@ -70,6 +70,15 @@ async function seed() {
 }
 
 describe('RPG battle host and device journal', () => {
+  it('adds frozen v2 rewards without altering v1 combat input or replay hashes', () => {
+    const v1 = encodeKit(input), reward = { baseExp: 100, recommendedTier: 1, recommendedLevel: 10 }
+    const v2 = encodeKit(input, reward)
+    expect(decodeReward(v1)).toBeNull()
+    expect(decodeReward(v2)).toEqual(reward)
+    expect(decodeKit(v2)).toEqual(decodeKit(v1))
+    const action = { kind: 'attack' as const, actorId: input.allies[0]!.id, targetId: input.enemies[0]!.id }
+    expect(replay(decodeKit(v2), [action]).hash).toBe(replay(decodeKit(v1), [action]).hash)
+  })
   beforeEach(async () => {
     db.close()
     await db.delete()

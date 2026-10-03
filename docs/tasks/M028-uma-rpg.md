@@ -24,7 +24,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 | T093 — RPG roster and party hub ✅ | Lazy internal route, enrollment/profiles, five saved presets and overlays; no Home entry (D232) | Landed |
 | T094 — Phone battle screen ✅ | Five-actor touch battle, replay-only preview/cues, explicit recovery/results and isolated DEV proof (D243) | Landed; [phone checks](../research/rpg-battle-phone-proof.md) |
 | T095 — Chapter maps and checkpoints ✅ | Pure graph/private schema, receipt-gated branching map, pause/retry/clear/replay and isolated synthetic chapter (D245) | Landed; [handoff](../technical/rpg-chapter-content.md), [phone checks](../research/rpg-chapter-phone-proof.md) |
-| [T096 — RPG progression integration](T096-rpg-progression.md) | EXP grants tuned on T095's map, level reveals, tree spending/loadouts and lossless class promotion | T089, T090, T092, T094, T095 |
+| T096 — RPG progression integration ✅ | Atomic five-outfit EXP, pending/accepted level reveals, safe skill/loadout edits and bank-preserving promotion (D246) | Landed; [progression rules](../design/uma-rpg.md#settled-t096-encounter-exp-and-checkpoint-choices-d246), [phone checks](../research/rpg-progression-phone-proof.md) |
 | [T097 — Private PriConne content pipeline](T097-rpg-content.md) | Validated pack/import/art references and first authored private chapter; owner-run private publish | T095's chapter schema |
 | [T098 — Inspiration reward bridge](T098-rpg-inspiration.md) | Transactional scenario token grants and consumption, grandfathered lineage migration | T090, T095, T096; latest Inspiration and Items implementation |
 | [T099 — Playable release and device pass](T099-rpg-release.md) | End-to-end real-content gate, Home entry, guide, regression/device protocol and handoff | T093–T098 and private publish |
@@ -35,8 +35,8 @@ T089 ─► T090 ────────────────┬─► T092 
           T090 ─► T093 ───────────────┘          └───────────────────────────► T099
 ```
 
-The diagram is a dependency guide, not permission to merge against stale `main`. T095 is complete; T096's EXP,
-level reveals, trees and promotion integration are next. T097's private authoring can use T095's schema while T098 implements the token bridge. T099
+The diagram is a dependency guide, not permission to merge against stale `main`. T096 is complete; T097's private
+content pipeline and URA chapter are next, using T095's graph and T096's explicit encounter EXP. T098 implements the token bridge. T099
 waits for both. One task = one PR; remove that task's spec in its implementation PR (D104), update the design and
 milestone table, and record any newly settled rule in `docs/decisions.md`.
 
@@ -66,8 +66,9 @@ milestone table, and record any newly settled rule in `docs/decisions.md`.
 
 T089 settled the level curve, 10% specialization, skill points, depth gates and slot bounds in D227. T091 settled
 the combat rules, elemental triangle and bounded weakness follow-up in D229 with the synthetic six-weapon matrix and
-fixed replay fixture. These coefficients live only in the pure engine, not save migrations. T095/T096 still measure
-chapter and EXP pacing before tuning real-content encounters. If later tuning materially changes the approved identity,
+fixed replay fixture. These coefficients live only in the pure engine, not save migrations. T096 settles encounter
+EXP against both T095 routes over five chapters/two tiers (D246); production chapters must remeasure their authored
+fight counts before release. If later tuning materially changes the approved identity,
 stop and ask the owner before implementation.
 
 T090 defined the save and conflict boundary *before* a UI writes it: RPG wire schema v1, Dexie v18, independent API

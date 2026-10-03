@@ -1,12 +1,13 @@
 # Global Uma RPG — design and implementation boundaries
 
-> **Status: progression, combat, save and internal party setup implemented; mode not playable.** The owner has fixed the mode's global scope,
+> **Status: synthetic chapter, battle rewards, skills and promotion implemented; real mode not released.** The owner has fixed the mode's global scope,
 > outfit-specific RPG levels,
 > Speed-as-offense mapping, a permanently chosen running-style class, visible weapon/element identity, and
 > inventory-only destination for its future rewards. Level 50 is a repeatable **class-promotion point**, not a final
 > cap. Five filled party slots, the signature-element choice and the Inspiration token destination are fixed.
 > T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227); T091 has pinned combat and the
-> compositional skill catalog (D229). Encounter EXP payout and chapter length remain for their owning tasks.
+> compositional skill catalog (D229). T095 supplies branching maps (D245); T096 settles encounter EXP and integrates
+> safe-checkpoint progression (D246). Private PriConne content, Inspiration tokens and Home entry remain T097–T099.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -41,8 +42,9 @@ Home → RPG hub → choose a party preset → choose any chapter → preview ro
 - The map branches around enemy compositions and tactical tradeoffs, not random hidden doors. G1 race names, distance
   bands and surfaces may theme map nodes and suggest their enemy mix, but these are RPG encounters: they do not run the
   race engine, mark race goals, or pay racing EXP.
-  A path reconverges before a named boss. Chapter length, number of fights and replay **EXP** are not yet fixed;
-  the scenario-token clear reward is fixed below.
+  A path reconverges before a named boss. The synthetic proof has two required fights and an optional elite;
+  production counts remain private authoring. Encounter/replay EXP is settled below; the scenario-token clear
+  reward is fixed but not yet implemented.
 - After a fight, the result shows each participating outfit's RPG EXP, new level, stat changes and newly available
   skill slots/tiers in a Fire Emblem-like reveal. The player can open skill setup before choosing the next map node.
   Chapter clear pays its defined RPG reward; the scenario-linked **Inspiration Unlock Token [Scenario]** goes straight
@@ -95,11 +97,8 @@ current tier and level. Future scenarios extend the loop without a schema cap.
 
 The former quadratic candidate (`100 + 18L + 2L²`) required 2,760 / 8,760 / 18,760 / 32,760 / 44,760 EXP for
 successive chapter-sized stretches: a **16.2×** first-to-last jump. T089's linear curve needs **2,080 / 3,680 /
-5,280 / 6,880 / 7,560** for Lv1→11→21→31→41→50, a **3.6×** jump. The synthetic two-tier sim repeats those five
-budgets per tier and reaches Lv50 both times; Tier 1 Lv50→Tier 2 Lv1 goes from Speed 108→110 and HP 874→888 for its
-invented base outfit. A weak-chapter replay at an illustrative 25% budget moves Lv11→12; an illustrative 150%
-catch-up grant moves Lv1→20. Those multipliers are **sim probes, not payout rules**: T096 settles actual encounter
-reward and taper against T095's chapter fixture.
+5,280 / 6,880 / 7,560** for Lv1→11→21→31→41→50, a **3.6×** jump. T096 measures actual encounter payouts against
+both synthetic routes rather than pretending all chapters award one equal lump of EXP.
 
 For a **synthetic** outfit with base Speed 100 and growth `0.2`, RPG Speed reads 20 at Tier 1 Lv1, 22 at Lv2,
 108 at Tier 1 Lv50 and **110 at Tier 2 Lv1**. That example is invented, not copied from private Uma data. A promotion
@@ -109,12 +108,60 @@ here; T091's first damage rules are below, while class-mastery variant effects r
 
 EXP is awarded once for a **won encounter** to all five frozen entrant outfits, including a member KO'd before the
 win; a lost or abandoned encounter pays none. The boss pays its authored encounter EXP, while chapter clear grants
-its scenario token, **not another hidden EXP bonus** (D225). Level-relative rewards should accelerate catch-up and
-taper farming weak chapters, but never to zero; the exact formula is T096's simulation-and-pinning gate after T095's
-chapter fixture exists. EXP earned at Lv50 **banks** until the player promotes; promotion then applies that bank to
+its scenario token, **not another hidden EXP bonus** (D225). Level-relative rewards accelerate catch-up and
+taper farming weak chapters, but never to zero for an authored positive payout. EXP earned at Lv50 **banks** until the player promotes; promotion then applies that bank to
 the next tier without loss or duplicate grants. The result names every crossed level, exact stat changes and new
 skill choices. `pnpm sim:rpg:progression` runs the synthetic two-tier, replay, catch-up and focus/breadth checks; it
 does not read private chapter or Uma content.
+
+### Settled T096 encounter EXP and checkpoint choices (D246)
+
+Each battle node carries explicit integer **`baseExp` (0…1,000,000)**. It is frozen with the chapter's recommended
+tier/local level when entering, not recalculated by the result screen. Let
+`d = 50 × (entrantTier − recommendedTier) + entrantLevel − recommendedLevel`, using that outfit's **frozen entry** level. A win pays
+`max(1, round(baseExp × clamp(1 − 0.025d, 0.25, 1.5)))` per entrant. A zero base pays zero, as do loss/abandon.
+HP, KO and the number of survivors never reduce a winner's payout. Concurrent wins may change the recipient's
+current profile, but never the frozen level-relative factor. EXP settlement consumes the existing `120 + 16L`
+curve repeatedly, stops at Lv50 and banks all overflow. There is no hidden boss-clear EXP.
+
+The starter **authoring helper**, not a runtime fallback, sums the cost of ten levels from the recommendation
+(stopping at Lv50), multiplies by **1.10**, then by **0.40 ordinary / 0.25 elite / 0.60 boss**, rounding each base
+once. A Lv50 recommendation uses the final Lv41→50 stretch. These weights apply to the two/three-fight synthetic
+graph; a differently sized private chapter must budget its explicit nodes and remeasure before release.
+For its Lv10 recommendation the invented opening/elite/boss bases are **1,549 / 968 / 2,323**. Old nodes without
+`baseExp` and old frozen v1 kits remain unrewarded, not retroactively paid. T097 must author positive EXP for every
+production fight; no synthetic reward or opponent substitutes for a missing pack.
+
+`sim:rpg:progression` prints each fight and chapter for recommendations Lv1/11/21/31/41 over two tiers:
+
+| Route | Tier 1 chapter end levels | First promotion | Tier 2 chapter end levels | Second promotion |
+|---|---|---|---|---|
+| Two fights / rest | 11 / 21 / 31 / 41 / 50 | 657 bank → Tier 2 Lv5 | 12 / 22 / 31 / 41 / 50 | 909 bank → Tier 3 Lv6 |
+| Three fights / elite | 12 / 23 / 34 / 44 / 50 | 4,219 bank → Tier 2 Lv17 | 21 / 28 / 36 / 46 / 50 | 5,165 bank → Tier 3 Lv19 |
+
+The gate is **7–14 levels** for non-final first-tier chapters, **3–14** after carried-bank promotion; final chapters
+must reach Lv50, and both promotions must preserve bank and nondecreasing stats. Measured non-final gains are
+10–11 first-tier and 4–10 second-tier. Elite earns extra progress and can reach Lv50 before its boss, whose EXP
+then banks; it does not create a second token. For base 1,619 at Tier 1 Lv11, Tier 2 Lv11 replay pays **405** at the
+25% floor, while Tier 1 Lv1 catch-up pays **2,024**. The 150% ceiling bounds larger gaps. These are small synthetic
+progression checks, not a production combat-balance claim.
+
+The replayed terminal command atomically writes result evidence, checkpoint and all five positive EXP projections.
+Pending previews name every crossed level, all five stat deltas, tree points, active slots and bank, but say
+**unearned** and expose no spend action. Only acknowledged profiles fund choices. A profile-only stale revision
+can adopt authoritative profiles and resubmit the **same result id, seed, kit, state hash and deltas** at their new
+versions; a changed checkpoint/lease cannot be reconciled into a win. Lost acknowledgements use the durable receipt,
+not another grant. No race, Training, Farm, card or global Item resource moves in this task.
+
+After accepting the winning map node, each party member links to her RPG profile/skill editor. One grouped
+`edit-outfit` spends exactly one earned point; loadouts are validated against learned skills, affinity, weapon and
+slot bounds. Edits depend on the outfit, all five preset membership versions and involved foreground checkpoints;
+an open battle or pending result blocks spending/promotion. They only affect later entries. Manual promotion at
+Lv50 archives the whole current tree, explicitly discards unspent points if any, selects zero to two usable legacy
+techniques and settles the full EXP bank into the new tier. Unselected equipped skills are pruned from **all**
+presets in that same group. Style/weapon/enrollment inputs never change. New-tier points/slots follow the existing
+ladder, and the current tree starts empty; class-mastery variant effects remain a separate candidate, not shipped.
+[Phone proof](../research/rpg-progression-phone-proof.md) records the pending/result/setup/promotion checks.
 
 ### Settled T089 scaffold: skill trees and tier renewal
 
@@ -414,8 +461,8 @@ take over its lease. The host holds an offline entry/result as Pending, never pr
 terminal evidence only after replay agrees. The wire's 64-character result digest is SHA-256 of the engine's tagged
 state hash. An accepted loss increments the retry ordinal but preserves seed, kit and party; abandon follows the
 same zero-reward retry path. Rejected commands and displaced local journals remain recoverable history, not
-automatically rebased attempts. T096 will add EXP to the same grouped result, and T098 will add token movement to the
-chapter-clear group; neither reward is claimed by the T092 host.
+automatically rebased attempts. T096 now adds EXP to this same grouped result, with only profile-version
+reconciliation as defined above. T098 will add token movement to the chapter-clear group.
 
 T093 adds a lazy, **internal-only** `/rpg` setup route (D232). It projects five named presets even when none has
 been saved, but creates a synchronized preset row only after an edit is acknowledged. Owned outfits come from the
@@ -425,8 +472,8 @@ racing preference is consulted. Preset edits validate distinct enrolled outfits,
 learned/slot-bounded loadouts before submitting a grouped command with expected preset and outfit versions. An
 offline edit remains visibly pending and cannot masquerade as the saved preset; a stale revision requires an explicit
 RPG-only account refresh, which leaves unrelated queued saves untouched.
-Partial parties stay editable but cannot launch. T095 adds internal chapter selection/maps; private campaign
-content, rewards and Home release remain gated by T096–T099.
+Partial parties stay editable but cannot launch. T095 adds internal chapter selection/maps and T096 adds
+acknowledged progression; private campaign content, tokens and Home release remain gated by T097–T099.
 Home still has no RPG link and no synthetic production encounter.
 
 T094 adds the lazy standalone **`/rpg/battle/:checkpointId`** stage (D243), not a Home or chapter launch action.
@@ -441,7 +488,8 @@ The renderer journals first, then plays ordered transform/opacity cues using ela
 through playback; Skip, reduced motion, background and orientation changes affect presentation only. Reopening
 restores the exact saved action prefix without replaying or submitting it again. Missing/corrupt journals, lease
 takeover, Pending and Conflict each have explicit recovery screens. Pending results say **not yet earned** and have
-no map/EXP/Item spend action. Accepted results display only their typed receipt; T094 adds no rewards or save fields.
+no map/EXP/Item spend action. Accepted results display only their typed receipt. T096 adds its five-outfit progression
+reveal and return-to-map/setup link without changing combat or adding save fields.
 The battle guide reuses `PagedGuide`, with modal focus containment and accessible text for channels and matchups.
 
 The DEV/TEST-only **`/dev/rpg-battle-proof?mode=practice|boss|loss`** uses invented mixed-weapon teams and a separate
@@ -501,8 +549,8 @@ Replay after an accepted boss clear starts a new attempt and map.
 
 The six-node DEV fixture has two required fights and one optional elite (route counts **[2, 3]**), one fork/rejoin,
 a phase-changing boss and Tier 1 Lv10 recommendations. Its recovery stop is a safe setup/shorter route, **not** a new
-persistent HP resource: every engine-v1 fight already starts at full HP/MP. Elite encounter EXP arrives in T096;
-T095 still grants zero EXP and no Items/tickets/tokens. Private PriConne content remains T097, token grant T098 and
+persistent HP resource: every engine-v1 fight already starts at full HP/MP. T096 adds ordinary/elite/boss encounter
+EXP and safe-checkpoint setup/promotion; no Items/tickets/tokens. Private PriConne content remains T097, token grant T098 and
 Home release T099. The isolated `/dev/rpg-chapter-proof` uses the real hosts with separate client/simulated-account
 databases and invented rows only, excluded from production. [Phone proof](../research/rpg-chapter-phone-proof.md)
 records 390×844/375×667 checks, acknowledgement, replay and recovery coverage.

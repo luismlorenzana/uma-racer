@@ -2,13 +2,14 @@
 import { SCENARIOS } from '../scenarios'
 import { DISTANCE_CATEGORIES, SURFACES, type DistanceCategory, type Surface } from '../types'
 import { RPG_ELEMENTS, type RpgElement } from './rules'
+import { RPG_MAX_ENCOUNTER_EXP } from './rewards'
 import { elementMatchup } from './combat/catalog'
 import type { EnemyMove, FrozenEnemy } from './combat/types'
 import { RPG_MAX_SELECTED_PATH, rpgResultId, type RpgCheckpointSaveV1, type RpgResultEvidenceV1 } from './save'
 
 export type RpgNodeKind = 'encounter' | 'elite' | 'boss' | 'branch' | 'recovery' | 'checkpoint'
 export interface RpgChapterActor { id: string; name: string; role: string; artKey: string; combat: FrozenEnemy }
-export interface RpgChapterNode { id: string; name: string; kind: RpgNodeKind; detail: string; enemies: string[]; exits: string[] }
+export interface RpgChapterNode { id: string; name: string; kind: RpgNodeKind; detail: string; enemies: string[]; exits: string[]; baseExp?: number }
 export interface RpgChapter {
   id: string; scenarioId: string; title: string; contentVersion: string; contentHash: string
   recommendedTier: number; recommendedLevel: number; surface: Surface; distance: DistanceCategory
@@ -71,10 +72,11 @@ export function parseRpgChapterPack(value: unknown, source: RpgChapterSource): R
       !Array.isArray(c.nodes) || c.nodes.length < 1 || c.nodes.length > RPG_MAX_SELECTED_PATH) fail('chapter fields or scenario')
     const chapter = { ...(c as Record<string, unknown>), contentHash: source.contentHash } as unknown as RpgChapter
     for (const n of chapter.nodes) {
-      if (!record(n) || !exact(n, ['id', 'name', 'kind', 'detail', 'enemies', 'exits']) || !id(n.id) || !text(n.name, 80) ||
+      if (!record(n) || !exact(n, ['id', 'name', 'kind', 'detail', 'enemies', 'exits', ...(Object.hasOwn(n, 'baseExp') ? ['baseExp'] : [])]) || !id(n.id) || !text(n.name, 80) ||
         !text(n.detail, 240) || !enumValue(n.kind, ['encounter', 'elite', 'boss', 'branch', 'recovery', 'checkpoint']) ||
         !list(n.enemies, 5) || !list(n.exits, RPG_MAX_SELECTED_PATH) || n.enemies.some((key) => !typedActors.some((a) => a.id === key)) ||
-        (isRpgBattleNode(n as unknown as RpgChapterNode) ? n.enemies.length < 1 : n.enemies.length !== 0)) fail('node or enemy reference')
+        (isRpgBattleNode(n as unknown as RpgChapterNode) ? n.enemies.length < 1 : n.enemies.length !== 0) ||
+        Object.hasOwn(n, 'baseExp') && (!int(n.baseExp, 0, RPG_MAX_ENCOUNTER_EXP) || !isRpgBattleNode(n as unknown as RpgChapterNode) && n.baseExp !== 0)) fail('node, reward or enemy reference')
     }
     validateRpgChapterGraph(chapter)
     chapters.push(chapter)

@@ -7,6 +7,20 @@ const cp: RpgCheckpointSaveV1 = { schemaVersion: 1, presetId: 'party-1', chapter
   contentHash: source.contentHash, attemptIndex: 1, attemptId: 'rpg-attempt:party-1:test-chapter:1', selectedPath: [], lastClearedNodeId: null,
   status: 'at-checkpoint', revision: 0, frozenEntry: null }
 describe('immutable RPG chapter graphs', () => {
+  it('accepts legacy unrewarded nodes and bounded explicit EXP, never rewards a safe node', () => {
+    const raw = syntheticChapterJson(), node = raw.chapters[0]!.nodes[0]!
+    expect(parseRpgChapterPack(raw, source).chapters[0]!.nodes[0]!.baseExp).toBe(1549)
+    delete node.baseExp
+    expect(parseRpgChapterPack(raw, source).chapters[0]!.nodes[0]!.baseExp).toBeUndefined()
+    for (const invalid of [-1, 1.5, 1_000_001, NaN]) {
+      node.baseExp = invalid
+      expect(() => parseRpgChapterPack(raw, source)).toThrow(/reward/)
+    }
+    node.baseExp = 1_000_000
+    expect(parseRpgChapterPack(raw, source).chapters[0]!.nodes[0]!.baseExp).toBe(1_000_000)
+    raw.chapters[0]!.nodes.find((n) => n.kind === 'recovery')!.baseExp = 1
+    expect(() => parseRpgChapterPack(raw, source)).toThrow(/reward/)
+  })
   it('has two/three fights, a fork/rejoin and phase boss without choosing production length', () => {
     const chapter = syntheticChapterPack().chapters[0]!
     expect(rpgChapterFightCounts(chapter)).toEqual([2, 3])

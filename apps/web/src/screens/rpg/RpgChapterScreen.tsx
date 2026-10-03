@@ -121,6 +121,7 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
             </>}
           </>}
           <RpgElementLegend />
+          {cp && chapter && ['at-checkpoint', 'cleared'].includes(cp.data.status) && !view.pending.length && <section className="mt-3 space-y-1" aria-label="Safe checkpoint skill setup"><h3 className="text-sm">Set up RPG skills</h3><p className="text-xs text-ink-on-dark-soft">Spend earned points, equip skills or promote before the next fight.</p>{party.map(({ slot }) => <Link key={slot.outfitId} to={proof ? `/dev/rpg-chapter-proof?chapter=${chapter.id}&view=skills&outfit=${slot.outfitId}` : `/rpg/roster/${slot.outfitId}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · profile & skills</Link>)}</section>}
           <Link to={`/rpg/parties/${presetId}`} className="flex min-h-11 items-center text-sm text-accent">Edit future party entries</Link>
         </>}
       </div>

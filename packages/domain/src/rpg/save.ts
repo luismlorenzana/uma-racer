@@ -14,7 +14,7 @@ export const RPG_MAX_SELECTED_PATH = 64
 export const RPG_MAX_ENEMY_KIT_CHARS = 16_384
 export const RPG_MAX_GROUP_OPERATIONS = 20
 export const RPG_COMMAND_ACTIONS = [
-  'enroll', 'edit-preset', 'start-chapter', 'choose-node', 'begin-battle', 'takeover',
+  'enroll', 'edit-preset', 'edit-outfit', 'start-chapter', 'choose-node', 'begin-battle', 'takeover',
   'battle-result', 'clear-chapter', 'promote', 'spend-inspiration',
 ] as const
 export type RpgCommandAction = typeof RPG_COMMAND_ACTIONS[number]
