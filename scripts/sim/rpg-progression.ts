@@ -1,8 +1,9 @@
-// T089 progression envelope. Invented outfits and EXP budgets only; no private pack or chapter rows.
+// T096 per-fight progression envelope. Invented outfits and T095 graphs; no private content.
 import {
   enrollRpgOutfit, grantRpgExp, promoteRpgOutfit, projectRpgStats, rpgExpToNext,
-  spendRpgTreePoint, type RpgProfile, type RpgSkillRef,
+  spendRpgTreePoint, rpgEncounterBaseExp, rpgEncounterExp, rpgChapterFightCounts, type RpgProfile, type RpgSkillRef,
 } from '../../packages/domain/src/rpg/index'
+import { syntheticChapterPack } from '../../packages/domain/src/rpg/chapter.synthetic'
 
 const outfit = {
   id: 'synthetic-runner',
@@ -24,34 +25,47 @@ const budgets = [cost(1, 11), cost(11, 21), cost(21, 31), cost(31, 41), cost(41,
 const expected = [2_080, 3_680, 5_280, 6_880, 7_560]
 if (JSON.stringify(budgets) !== JSON.stringify(expected)) throw new Error(`RPG chapter budgets drifted: ${budgets}`)
 
-let profile = enroll()
 const rows: string[] = []
-for (let tier = 1; tier <= 2; tier += 1) {
-  for (const [index, budget] of budgets.entries()) {
-    profile = grantRpgExp(profile, budget).profile
-    rows.push(`Tier ${tier} chapter ${index + 1}: +${budget} EXP → Lv${profile.level}, bank ${profile.exp}`)
-    if (profile.level !== [11, 21, 31, 41, 50][index]) throw new Error('RPG five-chapter pacing drifted')
-  }
-  if (tier === 1) {
+const fixture = syntheticChapterPack().chapters[0]!
+if (JSON.stringify(rpgChapterFightCounts(fixture)) !== '[2,3]') throw new Error('T095 route lengths drifted')
+for (const route of ['rest', 'elite'] as const) {
+  let profile = enroll()
+  for (let tier = 1; tier <= 2; tier++) {
+    for (let chapter = 0; chapter < 5; chapter++) {
+      const recommendedLevel = 1 + chapter * 10
+      const before = profile.level
+      let total = 0
+      const fights = fixture.nodes.filter((n) => n.kind === 'encounter' || n.kind === 'boss' || route === 'elite' && n.kind === 'elite')
+      for (const node of fights) {
+        const reward = { baseExp: rpgEncounterBaseExp(recommendedLevel, node.kind as 'encounter' | 'elite' | 'boss'),
+          recommendedTier: tier, recommendedLevel }
+        const delta = rpgEncounterExp(reward, profile)
+        const from = profile.level
+        profile = grantRpgExp(profile, delta).profile
+        total += delta
+        rows.push(`${route} T${tier} chapter ${chapter + 1} ${node.kind}: +${delta} → Lv${from}→${profile.level}, EXP/bank ${profile.exp}`)
+      }
+      rows.push(`  Chapter total +${total}; ${profile.level - before} levels`)
+      if (chapter < 4 && (profile.level - before < (tier === 1 ? 7 : 3) || profile.level - before > 14)) throw new Error(`Chapter pacing outside first-tier 7–14 / carried-bank 3–14 levels: ${rows.join('\n')}`)
+    }
+    if (profile.level !== 50) throw new Error(`${route} five chapters did not reach promotion: Lv${profile.level}`)
     const before = projectRpgStats(profile)
+    const bank = profile.exp
     profile = promoteRpgOutfit(profile, [], true).profile
     const after = projectRpgStats(profile)
-    if (profile.tier !== 2 || profile.level !== 1 || after.speed < before.speed || after.hp < before.hp) {
-      throw new Error('RPG promotion lost progression')
-    }
-    rows.push(`Promotion T1 Lv50 → T2 Lv1: Speed ${before.speed}→${after.speed}, HP ${before.hp}→${after.hp}`)
+    if (profile.tier !== tier + 1 || after.speed < before.speed || after.hp < before.hp) throw new Error('Promotion lost stats')
+    rows.push(`Promotion T${tier} → T${profile.tier} Lv${profile.level}: bank ${bank} applied; Speed ${before.speed}→${after.speed}, HP ${before.hp}→${after.hp}`)
   }
 }
 
-// These replay/catch-up grants are illustrative inputs, not T096's eventual level-relative payout rule.
 const mid = grantRpgExp(enroll(), budgets[0]!).profile
-const weakReplay = grantRpgExp(mid, Math.round(budgets[0]! * 0.25)).profile
-const catchUp = grantRpgExp(enroll(), Math.round(budgets[1]! * 1.5)).profile
-if (weakReplay.level <= mid.level || weakReplay.level >= 21 || catchUp.level <= mid.level) {
-  throw new Error('RPG illustrative replay/catch-up envelope drifted')
-}
-rows.push(`Weak-chapter replay (illustrative 25%): Lv${mid.level}→${weakReplay.level}`)
-rows.push(`Catch-up (illustrative 150%): Lv1→${catchUp.level}`)
+const reward = { baseExp: rpgEncounterBaseExp(11, 'encounter'), recommendedTier: 1, recommendedLevel: 11 }
+const over = { ...mid, tier: 2, level: 11 }
+const replayExp = rpgEncounterExp(reward, over), catchExp = rpgEncounterExp(reward, enroll())
+if (replayExp !== Math.round(reward.baseExp * 0.25) || catchExp <= reward.baseExp) throw new Error('Replay/catch-up envelope drifted')
+rows.push(`Weak replay T2 Lv11: +${replayExp} (25% floor); catch-up T1 Lv1: +${catchExp} vs on-level ${reward.baseExp}`)
+const varied = [1, 5, 11, 30, 50].map((level) => rpgEncounterExp(reward, { tier: 1, level }))
+rows.push(`Five entrants Lv1/5/11/30/50: ${varied.join(' / ')} EXP; KO does not change grants`)
 
 const ref = (element: RpgSkillRef['element'], depth: number, branch: RpgSkillRef['branch']): RpgSkillRef =>
   ({ tier: 1, weapon: 'spear', element, depth, branch })

@@ -188,7 +188,9 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 - RPG writes use authenticated `POST /api/rpg/command`, not ordinary sync. Both local JSON and Firestore run the same
   expected-version grouped resolver in one transaction; stale groups write no entity, evidence or receipt. A durable
   receipt keyed by command id makes identical retries duplicate-safe. The device queue projects no RPG reward until
-  acknowledgement; a conflict remains recorded for explicit resolution rather than automatic rebase.
+  acknowledgement; a checkpoint/lease conflict remains recorded for explicit resolution. T096's narrow
+  profile-only conflict path adopts authoritative recipients and retries unchanged encounter identity/deltas,
+  never replays a displaced result as a new win.
 - The web `RpgBattleHost` queues one version-checked entry, replays local actions through the pure combat engine,
   and queues a terminal result only after its replay hash agrees. A result queued while entry is offline depends on
   the entry receipt; rejected entry marks the dependent result conflicted without sending it. Accepted result evidence
@@ -279,7 +281,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 The Global Uma RPG has a separate [implementation contract](uma-rpg-implementation.md). M028 does **not**
 embed per-outfit RPG levels in `UmaSave.scenarios` or send its reward-bearing result as ordinary unrelated sync
 upserts/appends: that path can append a log when a related entity conflicts. It adds per-outfit, per-preset and
-per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090–T095 have landed the versioned rows,
+per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090–T096 have landed the versioned rows,
 transport, pure combat, device-local journal/host, internal roster/party setup and lazy standalone battle stage.
 Enrollment and preset edits use the grouped command and project only acknowledged rows. Battle previews and playback
 consume the reducer and host's read-only replay projection; local action counts guard duplicate submissions. The DEV
@@ -288,8 +290,11 @@ the RPG's schema-v1 rows and v19 journal tables intact. T095 adds the pure immut
 map host. `choose-node`/`clear-chapter` consume accepted winning evidence transactionally; pending battles cannot
 advance. A lazy SHA-256-verified private chapter loader rejects absent/drifted packs with no synthetic fallback.
 Explicit account recovery discards rejected commands/dependants but preserves local journals. Its separate DEV
-client/simulated-account proof traverses both paths and never opens account storage. Rewards/private production
-chapter/Home release remain later M028 work; [content contract](rpg-chapter-content.md).
+client/simulated-account proof traverses both paths and never opens account storage. T096 freezes authored EXP in
+a v2 kit wrapper (v1 remains unrewarded), grants all five entrants with the accepted terminal group and adds
+safe-checkpoint point spends, loadouts and lossless promotion with atomic preset pruning. Pending results remain
+unearned. No root-save or Dexie migration is needed. Private production chapter, tokens and Home release remain
+later M028 work; [content contract](rpg-chapter-content.md).
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version

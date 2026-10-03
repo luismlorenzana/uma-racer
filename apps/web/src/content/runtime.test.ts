@@ -243,9 +243,11 @@ describe('ContentRuntime', () => {
     expect(result.content.races.items[0]?.seriesLegs).toEqual([])
     expect(result.content.origin).toBe('network')
     expect(getContentAsset(result.content, 'uma-icons', 'uma-x')).toMatchObject({
-      url: 'blob:synthetic-1',
+      // Atlas downloads resolve concurrently; the Uma page need not allocate the first Blob URL.
+      url: result.content.atlases['uma-icons'].pageUrls[0],
       frame: { x: 2, y: 2 },
     })
+    expect(result.content.atlases['uma-icons'].pageUrls[0]).toMatch(/^blob:synthetic-/)
     expect(JSON.parse(store.value!)).toMatchObject({ version: data.manifest.version })
   })
 

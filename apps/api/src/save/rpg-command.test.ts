@@ -248,7 +248,8 @@ for (const backend of ['local', 'firestore'] as const) {
       const evidence = { schemaVersion: 1, promotionId: 'promote-uma-a', outfitId: 'uma-a',
         fromTier: 1, toTier: 2, archive: [], createdAt: 50 }
       const raw = { schemaVersion: 1, commandId: 'promote-1', action: 'promote',
-        expected: [{ kind: 'rpgOutfits', id: 'uma-a', version: 1 }],
+        expected: [{ kind: 'rpgOutfits', id: 'uma-a', version: 1 },
+          ...Array.from({ length: 5 }, (_, i) => ({ kind: 'rpgPresets', id: `party-${i + 1}`, version: 0 }))],
         upserts: [{ kind: 'rpgOutfits', id: 'uma-a', data: { schemaVersion: 1,
           profile: { ...base, tier: 2, level: 1 }, projectionRevision: 1 } }],
         appends: [{ kind: 'rpgPromotions', id: evidence.promotionId, data: evidence, createdAt: 50 }] }

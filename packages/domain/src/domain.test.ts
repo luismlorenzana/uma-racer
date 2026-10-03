@@ -186,7 +186,20 @@ import {
   rpgTreePointsEarned,
   rpgActiveSlots,
   rpgSignatureMagnitude,
+  RPG_EXP_RELATIVE_STEP, RPG_EXP_FACTOR_MIN, RPG_EXP_FACTOR_MAX, RPG_CHAPTER_EXP_MARGIN,
+  RPG_ENCOUNTER_EXP_WEIGHTS, RPG_MAX_ENCOUNTER_EXP, rpgEncounterBaseExp, rpgEncounterExp,
 } from './index'
+
+describe('Global Uma RPG — T096 reward pins', () => {
+  it('pins authored schedule, frozen-level taper, rounding and positive floor', () => {
+    expect([RPG_EXP_RELATIVE_STEP, RPG_EXP_FACTOR_MIN, RPG_EXP_FACTOR_MAX, RPG_CHAPTER_EXP_MARGIN]).toEqual([0.025, 0.25, 1.5, 1.1])
+    expect(RPG_ENCOUNTER_EXP_WEIGHTS).toEqual({ encounter: 0.4, elite: 0.25, boss: 0.6 })
+    expect(RPG_MAX_ENCOUNTER_EXP).toBe(1_000_000)
+    expect([1, 11, 21, 31, 41].map((l) => rpgEncounterBaseExp(l, 'encounter'))).toEqual([915, 1619, 2323, 3027, 3326])
+    expect(rpgEncounterBaseExp(10, 'boss')).toBe(2323)
+    expect(rpgEncounterExp({ baseExp: 1619, recommendedTier: 1, recommendedLevel: 11 }, { tier: 2, level: 11 })).toBe(405)
+  })
+})
 
 describe('Global Uma RPG — D229 combat pins', () => {
   it('pins the damage, matchup, protection and bounded round contract', () => {

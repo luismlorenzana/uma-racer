@@ -23,7 +23,7 @@ parser/resolver; API repository tests check the receipt boundary in both local a
 - Opening → crossroads → camp → approach → phased boss clears in two encounters. Replaying explicitly increments
   attempt identity. The alternative elite route adds a third encounter and rejoins at the same approach/boss.
   The fixture is intentionally short; its two/three fight counts and Tier 1 Lv10 recommendation are the
-  [T096 handoff](../technical/rpg-chapter-content.md#t096-handoff-measure-rewards-on-a-real-fixture), not production pacing.
+  [reward fixture handoff](../technical/rpg-chapter-content.md#synthetic-reward-fixture-and-private-authoring-handoff), not production pacing.
 - A locally completed boss remains Pending while acknowledgement is held. Refresh preserves that pending result;
   no next node or Cleared state appears. Only acknowledged winning evidence enables the explicit map transition.
 - Leaving a fight resumes its saved turn. Switching to a second chapter requires an explicit pause; accepted earlier

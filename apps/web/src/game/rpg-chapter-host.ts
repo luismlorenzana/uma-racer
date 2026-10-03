@@ -112,7 +112,8 @@ export class RpgChapterHost {
     if (isRpgBattleNode(node)) {
       const input: EncounterInput = { version: 1, contentVersion: cp.contentVersion, seed: 0, weaknessFollowUp: 'bounded',
         allies: this.party(view), enemies: node.enemies.map((id) => view.pack!.actors.find((a) => a.id === id)!.combat) }
-      await this.battle.enter(uid, view.checkpoint.id, nodeId, input)
+      await this.battle.enter(uid, view.checkpoint.id, nodeId, input, { baseExp: node.baseExp ?? 0,
+        recommendedTier: view.chapter.recommendedTier, recommendedLevel: view.chapter.recommendedLevel })
       return 'battle'
     }
     await this.move(view.checkpoint, rpgAcceptSafeNode(view.chapter, cp, nodeId), 'choose-node')

@@ -6,12 +6,14 @@ import { RpgChapterHost } from '../../game/rpg-chapter-host'
 import { flushOneRpgCommand } from '../../game/rpg-sync'
 import type { saveApi } from '../../api/client'
 import Dexie, { type Table } from 'dexie'
+import { RpgProgressionHost } from '../../game/rpg-progression-host'
 
 type ProofServer = Dexie & { entities: Table<EntityRecord & { key: string }, string>; logs: Table<LogRecord & { key: string }, string> }
 export class ChapterProof {
   readonly database: RacerDb
   readonly server: ProofServer
   readonly host: RpgChapterHost
+  readonly progression: RpgProgressionHost
   readonly uid = 'chapter-proof'
   readonly ready: Promise<void>
   constructor(name = 'uma-rpg-chapter-proof-v1') {
@@ -20,6 +22,7 @@ export class ChapterProof {
     this.server.version(1).stores({ entities: '&key', logs: '&key' })
     const pack = syntheticChapterPack()
     this.host = new RpgChapterHost(async () => pack, this.database, Date.now, this.transport)
+    this.progression = new RpgProgressionHost(this.database)
     this.ready = this.seed()
   }
   private async seed() {
@@ -63,6 +66,15 @@ export class ChapterProof {
     await this.ready
     const cps = (await this.server.entities.toArray()).filter((e) => e.kind === 'rpgCheckpoints')
     for (const cp of cps) await this.server.entities.put({ ...cp, version: cp.version + 1 })
+  }
+  async promotionProbe() {
+    await this.reset()
+    for (const row of await this.database.rpgOutfits.toArray()) {
+      const data = { ...row.data, profile: { ...row.data.profile, level: 50, exp: 657 } }
+      await this.database.rpgOutfits.put({ ...row, data })
+      const server = (await this.server.entities.get(`rpgOutfits/${row.id}`))!
+      await this.server.entities.put({ ...server, data: data as unknown as Record<string, unknown> })
+    }
   }
   async reset() {
     // Only this named proof's rows; no account database is opened or deleted.
