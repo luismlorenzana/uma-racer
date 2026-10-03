@@ -27,7 +27,7 @@ authenticated published-content/device verification remains owner/Claude and T09
 
 ## Build and release boundary
 
-Startup entry **151.89 KB gzip** (limit 180 KB). Lazy RPG setup **12.24 KB**, map **7.77 KB**, battle **10.74 KB**
+Startup entry **151.94 KB gzip** (limit 180 KB, after rebasing the latest lineage UI). Lazy RPG setup **12.24 KB**, map **7.77 KB**, battle **10.74 KB**
 and shared enemy/content chunk **13.55 KB** gzip; Spark Match screen **18.07 KB** gzip. Private data/images are
 not bundled. Full lint/test/build and both existing RPG sims pass; the existing 250ms race timing assertion
 failed once under concurrent workspace load (350ms), then passed with suites serialized, without a test change.
