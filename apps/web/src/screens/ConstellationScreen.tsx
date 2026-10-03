@@ -21,8 +21,10 @@ import {
   type NodeAssignment,
   type StatKey,
   type UmaTemplate,
+  type SkillTemplate,
   scenarioBuff,
   lineageSlotTakesAnyUma,
+  skillTags,
 } from '@racer/domain'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
@@ -33,8 +35,12 @@ import { useGame } from '../game/store'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { UmaBust } from '../ui/UmaBust'
 import { Stars } from '../ui/Stars'
+import { SkillChips } from '../ui/SkillChips'
+import { SkillIcon } from '../ui/SkillIcon'
+import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { BottomSheet } from '../ui/BottomSheet'
 import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
+import { naturalLineageSkills } from '../ui/constellation/lineageSkills'
 import { UmaPickerSheet, type UmaPickerSort } from '../ui/album/UmaPickerSheet'
 import { useTraining } from './TrainingScene'
 import { formatTickets } from '../ui/tickets'
@@ -54,6 +60,9 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
   const persistent = useGame((state) => state.persistent)
   const [searchParams] = useSearchParams()
   const [openNode, setOpenNode] = useState<ConstellationNode | null>(null)
+  // Inspiration keeps the selected planet highlighted after its assignment sheet closes.
+  const [selectedLineageId, setSelectedLineageId] = useState<string | null>(null)
+  const [selectedSkill, setSelectedSkill] = useState<SkillTemplate | null>(null)
   // The lineage slot whose Uma picker is open (D181).
   const [lineageNode, setLineageNode] = useState<ConstellationNode | null>(null)
   const [busy, setBusy] = useState(false)
@@ -82,7 +91,10 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
     const nodeId = searchParams.get('node')
     if (!nodeId) return
     const node = template.nodes.find((candidate) => candidate.id === nodeId)
-    if (node && belongsToView(node, viewMode) && isNodeUnlocked(template, node, run.trainingLevel)) setOpenNode(node)
+    if (node && belongsToView(node, viewMode) && isNodeUnlocked(template, node, run.trainingLevel)) {
+      setOpenNode(node)
+      if (viewMode === 'inspiration') setSelectedLineageId(node.id)
+    }
   }, [run.trainingLevel, searchParams, template, viewMode])
 
   const assign = async (nodeId: string, assignment: NodeAssignment | null) => {
@@ -100,8 +112,20 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
   }
 
   const closeNode = () => setOpenNode(null)
+  const selectNode = (node: ConstellationNode) => {
+    setOpenNode(node)
+    if (viewMode === 'inspiration') setSelectedLineageId(node.id)
+  }
 
   const visibleNodes = template.nodes.filter((node) => belongsToView(node, viewMode))
+  const selectedLineageNode = viewMode === 'inspiration'
+    ? visibleNodes.find((node) => node.id === selectedLineageId)
+    : undefined
+  const selectedLineageAssignment = selectedLineageNode ? run.assignments[selectedLineageNode.id] : undefined
+  const selectedLineageUma = selectedLineageAssignment?.kind === 'lineage'
+    ? content.umas.byId.get(selectedLineageAssignment.templateId)
+    : undefined
+  const selectedLineageSkills = selectedLineageUma ? naturalLineageSkills(selectedLineageUma, content.skills.byId) : []
   const openCount = visibleNodes.filter((node) => isNodeUnlocked(template, node, run.trainingLevel)).length
   const filledCount = visibleNodes.filter((node) => run.assignments[node.id] !== undefined).length
   const buff = scenarioBuff(run.tier)
@@ -113,20 +137,21 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
 
   return (
     <>
-      <div className="min-h-0 flex-1 px-3">
+      <div className="min-h-[240px] min-w-0 flex-1 px-3">
         <ConstellationGraph
           template={template}
           trainingLevel={run.trainingLevel}
           assignments={run.assignments}
           content={content}
           cardTypes={cardTypes}
-          selectedId={openNode?.id ?? null}
-          onSelect={setOpenNode}
+          selectedId={viewMode === 'inspiration' ? selectedLineageId : openNode?.id ?? null}
+          onSelect={selectNode}
+          onSkillSelect={setSelectedSkill}
           viewMode={viewMode}
         />
       </div>
 
-      <section className="px-4 pb-safe pt-2">
+      <section className={viewMode === 'inspiration' ? 'px-4 pt-2' : 'px-4 pb-safe pt-2'}>
         {viewMode === 'constellation' && (canPlaySpark ? (
           <Link
             to={`/minigames/spark-match/${encodeURIComponent(save.templateId)}?return=${encodeURIComponent(here)}`}
@@ -168,6 +193,15 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
             : <span className="text-[10px] text-ink-soft">Fill lineage slots to move an aptitude grade.</span>}
         </div>}
       </section>
+
+      {viewMode === 'inspiration' && (
+        <LineageSkillRail
+          node={selectedLineageNode}
+          uma={selectedLineageUma}
+          skills={selectedLineageSkills}
+          onSelect={setSelectedSkill}
+        />
+      )}
 
       <BottomSheet open={openNode !== null} onClose={closeNode}>
         {openNode && (
@@ -264,7 +298,87 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
           onPick={(templateId) => void assign(lineageNode.id, { kind: 'lineage', templateId })}
         />
       )}
+
+      <SkillDetailSheet skill={selectedSkill} onClose={() => setSelectedSkill(null)} />
     </>
+  )
+}
+
+function LineageSkillRail({
+  node,
+  uma,
+  skills,
+  onSelect,
+}: {
+  node: ConstellationNode | undefined
+  uma: UmaTemplate | undefined
+  skills: readonly SkillTemplate[]
+  onSelect: (skill: SkillTemplate) => void
+}) {
+  return (
+    <section className="max-h-[30dvh] overflow-y-auto overscroll-contain px-4 pb-safe pt-2">
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-micro">Lineage skill bank</p>
+          <h2 className="truncate font-display text-lg font-bold">
+            {uma ? uma.name : 'Select a lineage Uma'}
+          </h2>
+        </div>
+        {node && <span className="shrink-0 text-[11px] font-semibold text-ink-soft">{titleCase(node.kind)}</span>}
+      </div>
+      {!uma ? (
+        <p className="rounded-md border border-dashed border-hairline bg-sunken px-3 py-3 text-[12px] text-ink-soft">
+          Tap a filled parent or grandparent planet to inspect its natural unique and gold skills.
+        </p>
+      ) : (
+        <div className="grid gap-1.5">
+          {skills.map((skill) => (
+            <button
+              key={skill.id}
+              type="button"
+              className="flex min-h-14 items-start gap-2 rounded-md border border-hairline bg-panel px-2.5 py-2 text-left transition-colors hover:border-accent/60 active:bg-accent-wash"
+              onClick={() => onSelect(skill)}
+            >
+              <SkillIcon skill={skill} size={30} />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{skill.name}</span>
+                  <SkillKindBadge kind={skill.kind} />
+                </span>
+                <SkillChips tags={skillTags(skill)} />
+                {skill.description && <span className="mt-1 line-clamp-2 block text-[12px] leading-snug text-ink-soft">{skill.description}</span>}
+              </span>
+            </button>
+          ))}
+          {skills.length === 0 && <p className="rounded-md bg-sunken px-3 py-3 text-[12px] text-ink-soft">This Uma has no natural unique or gold skills in the current content pack.</p>}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function SkillDetailSheet({ skill, onClose }: { skill: SkillTemplate | null; onClose: () => void }) {
+  return (
+    <BottomSheet open={skill !== null} onClose={onClose}>
+      {skill && (
+        <div className="grid gap-3 px-1 pb-5">
+          <div className="flex items-center gap-3">
+            <SkillIcon skill={skill} size={52} />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-xl font-bold leading-tight">{skill.name}</h2>
+              <div className="mt-1 flex items-center gap-1.5">
+                <SkillKindBadge kind={skill.kind} />
+                {skill.costSp !== null && <span className="text-micro">{skill.costSp} SP</span>}
+              </div>
+            </div>
+          </div>
+          <SkillChips tags={skillTags(skill)} />
+          <p className="rounded-md bg-sunken px-3 py-3 text-[13px] leading-relaxed text-ink-soft">
+            {skill.description || 'No description in this content pack.'}
+          </p>
+        </div>
+      )}
+    </BottomSheet>
   )
 }
 
