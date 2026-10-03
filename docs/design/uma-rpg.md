@@ -8,7 +8,8 @@
 > T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227); T091 has pinned combat and the
 > compositional skill catalog (D229). T095 supplies branching maps (D245); T096 settles encounter EXP and integrates
 > safe-checkpoint progression (D246). T097 implements the private pipeline and prepared URA draft (D248);
-> owner publication, Inspiration tokens and Home entry remain gated by T098–T099 and the private handoff.
+> T098 integrates scenario Inspiration rewards and independent slot/gold unlocks (D250). Owner publication and
+> Home entry remain gated by T099 and the private handoff.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -44,12 +45,11 @@ Home → RPG hub → choose a party preset → choose any chapter → preview ro
   bands and surfaces may theme map nodes and suggest their enemy mix, but these are RPG encounters: they do not run the
   race engine, mark race goals, or pay racing EXP.
   A path reconverges before a named boss. The synthetic proof has two required fights and an optional elite;
-  production counts remain private authoring. Encounter/replay EXP is settled below; the scenario-token clear
-  reward is fixed but not yet implemented.
+  production counts remain private authoring. Encounter/replay EXP and scenario-token rewards are settled below.
 - After a fight, the result shows each participating outfit's RPG EXP, new level, stat changes and newly available
   skill slots/tiers in a Fire Emblem-like reveal. The player can open skill setup before choosing the next map node.
-  Chapter clear pays its defined RPG reward; the scenario-linked **Inspiration Unlock Token [Scenario]** goes straight
-  to the global Item inventory. Its future Inspiration use is defined below, not on the card Constellation.
+  Accepted map advances collect Skill Tokens and boss clears collect Slot Tokens into global Items for that
+  scenario. Their Inspiration use is defined below, not on the card Constellation.
 
 ## Outfit RPG profile and progression
 
@@ -464,7 +464,7 @@ terminal evidence only after replay agrees. The wire's 64-character result diges
 state hash. An accepted loss increments the retry ordinal but preserves seed, kit and party; abandon follows the
 same zero-reward retry path. Rejected commands and displaced local journals remain recoverable history, not
 automatically rebased attempts. T096 now adds EXP to this same grouped result, with only profile-version
-reconciliation as defined above. T098 will add token movement to the chapter-clear group.
+reconciliation as defined above. T098 adds frozen token movements to winning map advances and chapter-clear groups.
 
 T093 adds a lazy, **internal-only** `/rpg` setup route (D232). It projects five named presets even when none has
 been saved, but creates a synchronized preset row only after an edit is acknowledged. Owned outfits come from the
@@ -476,7 +476,7 @@ offline edit remains visibly pending and cannot masquerade as the saved preset; 
 RPG-only account refresh, which leaves unrelated queued saves untouched.
 Partial parties stay editable but cannot launch. T095 adds internal chapter selection/maps and T096 adds
 acknowledged progression; T097 adds a private URA draft and exact-version content pipeline. Owner publication,
-tokens and Home release remain gated by the private handoff and T098–T099.
+Home release remains gated by the private handoff and T099; T098 implements the token sink.
 Home still has no RPG link and no synthetic production encounter.
 
 T094 adds the lazy standalone **`/rpg/battle/:checkpointId`** stage (D243), not a Home or chapter launch action.
@@ -553,27 +553,48 @@ Replay after an accepted boss clear starts a new attempt and map.
 The six-node DEV fixture has two required fights and one optional elite (route counts **[2, 3]**), one fork/rejoin,
 a phase-changing boss and Tier 1 Lv10 recommendations. Its recovery stop is a safe setup/shorter route, **not** a new
 persistent HP resource: every engine-v1 fight already starts at full HP/MP. T096 adds ordinary/elite/boss encounter
-EXP and safe-checkpoint setup/promotion; no Items/tickets/tokens. T097's private pipeline/draft are implemented;
-publication remains owner/Claude, token grant T098 and
+EXP and safe-checkpoint setup/promotion; T098 adds isolated Item/token grants. T097's private pipeline/draft are implemented;
+publication remains owner/Claude and
 Home release T099. The isolated `/dev/rpg-chapter-proof` uses the real hosts with separate client/simulated-account
 databases and invented rows only, excluded from production. [Phone proof](../research/rpg-chapter-phone-proof.md)
 records 390×844/375×667 checks, acknowledgement, replay and recovery coverage.
-- **Inspiration Unlock Token [Scenario]** is one scenario-typed global Item stack, not a Badge-page award. **Every
-  successful clear, including a replay, grants one token** for that chapter's scenario with append-only evidence
-  transactionally coupled to that clear attempt. A failed or abandoned battle/chapter grants no clear token. One token
-  is consumed to unlock **one complete parent branch** for one Uma in that scenario: the parent node and its two
-  linked grandparent nodes. Thus fully opening
-  both parent branches for that Uma/scenario costs **two tokens**. There is no card Constellation node unlock or
-  Training Level prerequisite in this future rule; filling and changing lineage assignments remain separate actions.
-  The Item view displays the scenario in square brackets, and the Inspiration view shows 0/2, 1/2 or 2/2 branches
-  open with a token-spend confirmation. Existing branches opened under today's TL9/10 rules must be grandfathered by
-  migration, never relocked or charged retroactively. This sink is a **future Inspiration bridge**, not live behavior.
 - The RPG never pays Training EXP, race Uma EXP, Farm XP, race goals or card stars unless a later decision explicitly
   changes that boundary. Chapter entry and retry cost **no Training Ticket or other entry currency**. Losing or
   abandoning returns to the last cleared map checkpoint; prior cleared nodes and rewards stay earned, while the
   unfinished encounter may be retried for free from its same frozen start. Switching to another chapter pauses this
   checkpoint rather than resetting it. **Only a voluntary replay after a completed boss clear** starts a new chapter
   attempt at its beginning; its new clear has its own idempotent reward identity.
+
+## Inspiration rewards (D250)
+
+Global Items has **Inspiration Slot Token [Scenario]** and **Inspiration Skill Token [Scenario]**, never an RPG
+wallet or Badge-page reward. One slot token opens one of an outfit's six parent/grandparent slots for that scenario;
+one skill token opens one of two natural-gold positions per slot. Independent parents, exact opposite-side mirrored
+grandparents and full-chain SP rules are defined in [Lineage](skills-and-inheritance.md#lineage).
+
+- An accepted boss clear pays **30 slot tokens**: five outfits × six slots. A shortest completed chapter pays at
+  least **60 skill tokens**: five × six × two golds. Thus five scenario chapters fund five outfits in each scenario,
+  **150 slot + at least 300 skill tokens**, independent of level-relative EXP taper. Longer routes earn surplus.
+- Let `n = minimum legal start-to-boss fight count − 1`. Each positive-authored-EXP ordinary/elite win pays
+  `ceil(60 / n)` skill tokens. Optional fights use the same amount. Boss-only graphs pay 60 skill tokens with the
+  boss instead. Safe nodes, missing/zero EXP entries, loss/abandon and legacy wrappers pay zero. The authoring graph
+  must reward every fight on its shortest route; no live content or missing-pack fallback invents rewards.
+- T098 freezes `{tier, slot, skill}` beside EXP and the unchanged engine input in combat-kit wrapper **v3**. Existing
+  v1/v2 fights replay byte-for-byte and grant zero tokens, with no retroactive claim. Retries never recalculate from
+  a new graph or re-roll. A voluntary new attempt uses current content and earns again under its new identity.
+- Tokens collect on the **acknowledged winning map advance**, not the EXP result. Regular/elite use `choose-node`;
+  boss uses `clear-chapter`. The group expects checkpoint and Item versions, consumes accepted winning evidence,
+  updates stack(s), appends typed Item evidence and writes its receipt atomically. Movement ids are
+  `rpg-inspiration:{entryId}:{slot|skill}`; the entry binds its chapter attempt and node. Duplicate tap/lost ACK never
+  pays twice; stale checkpoint or Item leaves every write unchanged and requires explicit accepted-account recovery.
+- Slot/gold purchases are one conditional `spend-inspiration`: Uma + correct scenario stack + one −1 movement;
+  `inspiration:{umaId}:{tier}:{slot}:{slot|gold0|gold1}` identifies that permanent position. Pending grants and spends
+  are visible but unavailable. Related ordinary Uma/Item edits wait until acknowledgement or conflict resolution.
+  Item ledger reconciliation deduplicates evidence and repairs projections, even before Farm is initialized.
+- Linked-portrait and four-point-skill **original SVG** crests distinguish the families by shape as well as color.
+  Inspiration shows /6 slots, /12 golds, both stocks, token-specific confirmation and SP/mirror notes. Items names the
+  scenario and links through the owned-Uma picker. Maps/results label previews, collection and accepted Items
+  distinctly. Existing TL-open or filled-under-gate branches retain slots and both golds in v14 without token charges.
 
 ## Phone presentation
 
@@ -600,10 +621,8 @@ This is a **persistent global campaign**, like Farm in scope, not a ticketed `Mi
 mobile safe areas, guide, result clarity—but its one-ticket reservation, 64-action journal and unsynced terminal
 run lifecycle cannot simply be imposed on a multi-fight chapter. The design must explicitly define its own save and
 sync contract before implementation. Farm already owns global Items; the RPG uses the same stacks and ledger, not a
-second reward wallet. **Today**, the implemented Inspiration lineage branches still open at TL9/10
-([Constellations](constellations.md#unlock-schedule)). The token sink above is a **future change** to those unlock gates,
-owned by an Inspiration/inventory bridge with save migration; merely granting tokens in the RPG must not leave them
-unspendable or silently alter live Training Level rules.
+  second reward wallet. Inspiration uses the implemented token sink and grandfathered v14 migration below; no TL
+gate remains on lineage ([Constellations](constellations.md#unlock-schedule)).
 
 The implementation plan is [M028 — first playable RPG](../tasks/M028-uma-rpg.md), split into T089–T099, followed by
 [M029 — chapter rollout](../tasks/M029-rpg-chapter-rollout.md), T100–T103, covering the other thirteen current

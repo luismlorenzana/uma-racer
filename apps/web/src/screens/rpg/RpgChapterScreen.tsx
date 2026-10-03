@@ -1,5 +1,5 @@
 // Lazy chapter map; all navigation is derived from accepted checkpoints (docs/design/uma-rpg.md, T095).
-import { isRpgBattleNode, rpgChapterChoices, rpgEnemyWeaknesses, RPG_TIER_MAX_LEVEL, type RpgChapterNode, type RpgCommandRequest } from '@racer/domain'
+import { isRpgBattleNode, rpgChapterChoices, rpgEnemyWeaknesses, RPG_TIER_MAX_LEVEL, rpgInspirationReward, type RpgChapterNode, type RpgCommandRequest } from '@racer/domain'
 import { liveQuery } from 'dexie'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
@@ -16,6 +16,8 @@ import { PagedGuide } from '../../ui/PagedGuide'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgElementLegend, RpgPortrait } from '../../ui/rpg/RpgPortrait'
 import { RpgEnemyPortrait, useRpgPresentation } from '../../ui/rpg/RpgEnemyPortrait'
+import { decodeInspirationReward } from '../../game/rpg-battle-host'
+import { RpgInspirationReward } from '../../ui/rpg/RpgInspirationReward'
 
 export function useRpgAccountId() {
   const auth = useAuth()
@@ -53,7 +55,7 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
   async function command(operation: () => Promise<void>) {
     if (lock.current) return
     lock.current = true; setBusy(true); setError(null)
-    try { await operation(); await onSync(); setView(await host.read(presetId, chapterId)) }
+    try { await operation(); await onSync(); if (!proof) await gameRuntime.refreshLocalState(); setView(await host.read(presetId, chapterId)) }
     catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { lock.current = false; setBusy(false) }
   }
@@ -74,6 +76,9 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
   const warning = chapter && average < (chapter.recommendedTier - 1) * RPG_TIER_MAX_LEVEL + chapter.recommendedLevel
   const disabled = busy || pending || !uid || Boolean(view?.unavailable)
   const choices = cp && chapter && !view?.unavailable ? rpgChapterChoices(chapter, cp.data) : []
+  const collecting = cp?.data.frozenEntry && decodeInspirationReward(cp.data.frozenEntry.enemyKitJson)
+  const earned = view?.tokenGrants.reduce((r, g) => ({ tier: g.source.tier,
+    slot: r.slot + (g.itemId.endsWith(':slot') ? g.delta : 0), skill: r.skill + (g.itemId.endsWith(':skill') ? g.delta : 0) }), { tier: 1, slot: 0, skill: 0 }) ?? null
   const name = (id: string) => content?.umas.byId.get(id)?.name ?? (proof ? ['Ember', 'Rill', 'Beacon', 'Dawn', 'Volt'][Number(id.at(-1))] ?? id : id)
   const choose = (node: RpgChapterNode) => command(async () => {
     if (!uid || !chapter) return
@@ -104,9 +109,9 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
             {switchBlocked && foreground?.data.status === 'pending-result' && <Button className="w-full" onClick={() => onSelect(foreground.data.chapterId)}>Return to foreground result</Button>}
             {foreground?.data.status === 'in-battle' && foreground.data.chapterId !== chapter.id && <div className="rounded-sm border border-hairline-dark p-3"><p className="text-xs">Switching chapters forfeits only the open fight's actions. Its seed and enemy kit stay fixed for a free retry.</p><Button className="mt-2 w-full" disabled={pending || busy} onClick={() => { void command(async () => { await host.battle.abandonToCheckpoint(foreground.id) }) }}>Pause foreground fight · no reward</Button></div>}
             {cp && !view.unavailable && <>
-              {cp.data.status === 'cleared' && <div role="status" className="rounded-md border border-accent bg-stage-soft p-4"><h3 className="text-xl">Chapter cleared</h3><p className="mt-2 text-xs text-ink-on-dark-soft">Accepted route saved. {proof ? 'Synthetic proof: EXP stays in isolated profiles; no Items awarded.' : 'Battle EXP is recorded. Inspiration token grants arrive in a later task.'}</p><Button className="mt-3 w-full" disabled={disabled || switchBlocked} onClick={() => { void command(() => host.start(presetId, chapter.id, true)) }}>Replay chapter · new attempt</Button></div>}
+              {cp.data.status === 'cleared' && <div role="status" className="rounded-md border border-accent bg-stage-soft p-4"><h3 className="text-xl">Chapter cleared</h3><p className="mt-2 text-xs text-ink-on-dark-soft">Accepted route saved. {proof ? 'Synthetic EXP and Items stay in this isolated account.' : 'Battle EXP and collected tokens are recorded.'}</p><Button className="mt-3 w-full" disabled={disabled || switchBlocked} onClick={() => { void command(() => host.start(presetId, chapter.id, true)) }}>Replay chapter · new attempt</Button></div>}
               {(cp.data.status === 'in-battle' || queuedEntry) && <Button className="w-full" disabled={busy} onClick={() => onBattle(cp.id)}>Continue frozen battle</Button>}
-              {cp.data.status === 'pending-result' && <Button className="w-full" disabled={disabled} onClick={() => { void command(() => host.advance(presetId, chapter.id)) }}>Accept win · {cp.data.frozenEntry?.nodeId === chapter.bossNodeId ? 'clear chapter' : 'continue map'}</Button>}
+              {cp.data.status === 'pending-result' && <><RpgInspirationReward reward={collecting || null} label="Collect on map acknowledgement · not yet in Items" /><Button className="w-full" disabled={disabled} onClick={() => { void command(() => host.advance(presetId, chapter.id)) }}>Accept win & collect · {cp.data.frozenEntry?.nodeId === chapter.bossNodeId ? 'clear chapter' : 'continue map'}</Button></>}
               {cp.data.status === 'at-checkpoint' && cp.data.frozenEntry && <Button className="w-full" disabled={disabled || preset.data.foregroundChapterId !== chapter.id} onClick={() => { void choose(chapter.nodes.find((n) => n.id === cp.data.frozenEntry!.nodeId)!) }}>Retry free · same encounter</Button>}
               {cp.data.status === 'at-checkpoint' && preset.data.foregroundChapterId === chapter.id && choices.length > 0 && <section aria-label="Available paths" className="space-y-3"><h3 className="text-sm text-ink-on-dark-soft">{choices.length > 1 ? 'Choose your path · both routes rejoin' : 'Next checkpoint'}</h3>{choices.map((node) => <article key={node.id} className="rounded-md border border-hairline-dark bg-stage-soft p-3">
                 <p className="text-micro text-accent">{node.kind}</p><h4 className="mt-1 text-lg">{node.name}</h4><p className="mt-1 text-xs leading-5 text-ink-on-dark-soft">{node.detail}</p>
@@ -117,11 +122,14 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
                   const actor = view.pack!.actors.find((a) => a.id === id)!
                   return <div key={id} className="text-xs leading-5 text-ink-on-dark-soft"><p>{actor.name}: {actor.combat.moves.map((m) => m.intentText).join(' · ')}</p>{actor.combat.phaseTwo && <p>At {actor.combat.phaseTwo.thresholdPercent}% HP: {actor.combat.phaseTwo.moves.map((m) => m.intentText).join(' · ')}</p>}</div>
                 })}</div>}
+                {isRpgBattleNode(node) && <RpgInspirationReward reward={rpgInspirationReward(chapter, node)} label="Reward preview · win and collect" />}
                 <Button className="mt-3 w-full" disabled={disabled} onClick={() => { void choose(node) }}>{isRpgBattleNode(node) ? 'Enter battle' : 'Continue'} · {node.name}</Button>
               </article>)}</section>}
               <details className="rounded-sm border border-hairline-dark"><summary className="flex min-h-11 cursor-pointer items-center px-3 text-xs">Accepted route · {cp.data.selectedPath.length} checkpoints</summary><ol className="space-y-1 px-6 pb-3 text-xs text-ink-on-dark-soft">{cp.data.selectedPath.map((id) => <li key={id}>{chapter.nodes.find((n) => n.id === id)?.name}</li>)}</ol></details>
             </>}
           </>}
+          <RpgInspirationReward reward={earned} label="Collected this attempt · acknowledged Items" />
+          {!proof && earned && earned.slot + earned.skill > 0 && <div><Link to="/farm/items" className="flex min-h-11 items-center text-sm text-accent">Open global Items</Link>{party.map(({ slot }) => <Link key={slot.outfitId} to={`/constellation/${slot.outfitId}/inspiration?tier=${earned.tier}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · Inspiration</Link>)}</div>}
           <RpgElementLegend />
           {cp && chapter && ['at-checkpoint', 'cleared'].includes(cp.data.status) && !view.pending.length && <section className="mt-3 space-y-1" aria-label="Safe checkpoint skill setup"><h3 className="text-sm">Set up RPG skills</h3><p className="text-xs text-ink-on-dark-soft">Spend earned points, equip skills or promote before the next fight.</p>{party.map(({ slot }) => <Link key={slot.outfitId} to={proof ? `/dev/rpg-chapter-proof?chapter=${chapter.id}&view=skills&outfit=${slot.outfitId}` : `/rpg/roster/${slot.outfitId}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · profile & skills</Link>)}</section>}
           <Link to={`/rpg/parties/${presetId}`} className="flex min-h-11 items-center text-sm text-accent">Edit future party entries</Link>
@@ -132,6 +140,7 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
     {guide && <RpgModalFocus onClose={() => setGuide(false)}><PagedGuide open startAt="route" titleId="rpg-chapter-guide" finishLabel="Back to map" onClose={() => setGuide(false)} pages={[
       { id: 'route', title: 'Choose a route', body: <p>Five filled slots enter for free. Levels are recommendations, not gates. Review enemy roles, weaknesses and visible phase plans before choosing a path.</p> },
       { id: 'accepted', title: 'Accepted checkpoints', body: <p>Battle actions save on this device. A win opens the next checkpoint only after account acknowledgement and map acceptance. Pending results grant nothing. You can edit future party entries at safe checkpoints.</p> },
+      { id: 'tokens', title: 'Build your Inspiration', body: <p>Regular and elite wins supply scenario Skill Tokens; the boss supplies Slot Tokens. Collect at the map checkpoint. One slot token opens one parent or grandparent; one skill token opens one natural gold. Entry and retry are free. A mirrored grandparent outfit on both sides uses normal SP; a single-side grandparent's unique and golds cost twice the SP.</p> },
       { id: 'pause', title: 'Pause, retry, replay', body: <p>Leaving a battle keeps its turn. Switching chapters explicitly forfeits its actions but preserves the same seed and kit for a free retry. Earlier clears remain. Only replaying a cleared chapter creates a new attempt.</p> },
     ]} /></RpgModalFocus>}
   </div>

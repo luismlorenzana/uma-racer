@@ -345,7 +345,7 @@ export function unlockedNodeCount(tier: number, trainingLevel: number): number {
   return Math.ceil((n * tl) / NODE_UNLOCK_LEVELS)
 }
 
-/** Parent A and its grandparents open at Training Level 9; parent B and hers at 10. */
+/** Historical TL gates, retained only as a migration reference. Live Inspiration never reads them (D250). */
 export function lineageUnlockLevel(template: ConstellationTemplate, nodeId: string): number | null {
   const node = template.nodes.find((entry) => entry.id === nodeId)
   if (!node) return null
@@ -354,11 +354,10 @@ export function lineageUnlockLevel(template: ConstellationTemplate, nodeId: stri
   return null
 }
 
-/** The Training Level that opens a node: 1 to 8 by unlock order for card nodes, 9 or 10 for lineage. */
+/** Live Training Level gate: 1–8 for cards; lineage has no TL gate and requires explicit tokens. */
 export function nodeUnlockLevel(template: ConstellationTemplate, node: ConstellationNode): number {
   if (node.kind === 'root') return 1
-  const lineage = lineageUnlockLevel(template, node.id)
-  if (lineage !== null) return lineage
+  if (node.kind === 'parent' || node.kind === 'grandparent') return Infinity
   for (let level = 1; level < NODE_UNLOCK_LEVELS; level += 1) {
     if (node.order < unlockedNodeCount(template.tier, level)) return level
   }
@@ -369,19 +368,20 @@ export function isNodeUnlocked(
   template: ConstellationTemplate,
   node: ConstellationNode,
   trainingLevel: number,
+  inspiration?: { slots: readonly string[] },
 ): boolean {
   const tl = clampTrainingLevel(trainingLevel)
   if (node.kind === 'root') return true
   if (node.kind === 'card') return node.order < unlockedNodeCount(template.tier, tl)
-  const required = lineageUnlockLevel(template, node.id)
-  return required !== null && tl >= required
+  return inspiration?.slots.includes(node.id) ?? false
 }
 
 export function unlockedNodes(
   template: ConstellationTemplate,
   trainingLevel: number,
+  inspiration?: { slots: readonly string[] },
 ): ConstellationNode[] {
-  return template.nodes.filter((node) => isNodeUnlocked(template, node, trainingLevel))
+  return template.nodes.filter((node) => isNodeUnlocked(template, node, trainingLevel, inspiration))
 }
 
 /** Which nodes a Training Level gain opens. Drives the Spark Match post-run summary. */
@@ -465,6 +465,7 @@ export interface DeriveInput {
   cards: ReadonlyMap<string, CardNodeState>
   /** The unit's Extra stats grid; its active nodes pay (D235). None when omitted. */
   extraStats?: ExtraStats
+  inspiration?: { slots: readonly string[] }
   /** Career goals won in this scenario, for Trackblazer's Climax (D165). */
   goalsWon?: number
   /** The scenario's buff (D165); off only where a test checks the tree's own arithmetic. */
@@ -506,7 +507,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   let lineageFilled = 0
   let filled = 0
   for (const node of template.nodes) {
-    if (node.kind === 'root' || !isNodeUnlocked(template, node, input.trainingLevel)) continue
+    if (node.kind === 'root' || !isNodeUnlocked(template, node, input.trainingLevel, input.inspiration)) continue
     if (node.kind === 'card') filled += 1
     const assignment = assignments[node.id]
     if (!assignment) continue

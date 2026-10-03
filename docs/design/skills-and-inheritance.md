@@ -15,7 +15,7 @@ nothing is frozen into a snapshot.
 | **Gold (rare)** | Card nodes · lineage nodes · her own awakening pair | 250–350 | An upgraded white skill |
 | **White (normal)** | Card nodes · lineage nodes · her own kit | 90–180 | The common pool |
 
-A lineage slot passes a template's **baseline golds and whites** and its **unique in inherited form** (D174, which
+A lineage slot passes a template's **baseline whites, separately unlocked natural golds** and its **unique in inherited form** (D174, which
 brings back what D123 removed). The inherited form is the original game's own record for it (`inheritedSkillId`),
 with its own values: Seiun Sky's *Angling and Scheming* gives +0.2 acceleration for 2.4 s where her own gives +0.4 for
 4 s. The engine takes those values as they are; it no longer halves them a second time.
@@ -29,8 +29,8 @@ Three deterministic sources, all recomputed rather than stored:
    `eventSkills`, in event order, because in the original a card's gold comes from its event chain and every hint skill
    is white. A card on four nodes pays four whites and up to four golds (most cards have one), so stacking a card is a
    skill decision as well as a stat one.
-2. **Lineage nodes.** Each filled parent or grandparent slot contributes that Uma template's four
-   `awakeningSkillIds` (her baseline golds and whites; all 268 templates carry exactly four) and her unique in its
+2. **Lineage nodes.** Each filled open parent or grandparent slot contributes that Uma template's baseline whites,
+   separately unlocked natural gold positions (in awakening-gold order), and her unique in its
    inherited form. Choosing lineage is choosing skills: Seiun Sky lends any front runner her late-race corner
    acceleration.
 
@@ -121,24 +121,49 @@ in the **lifetime skill log** for badges and history.
 
 ## Lineage
 
-Six slots — **2 parents, 4 grandparents** — unlocked at Training Levels 9 and 10. Each parent node is linked to
+Six slots — **2 parents, 4 grandparents** — opened individually with scenario Slot Tokens (D250). Each parent node is linked to
 exactly two grandparent nodes and is detached from the card tree.
 
-This is the **current implemented gate**. The proposed [Global Uma RPG](uma-rpg.md#chapters-content-and-reward-boundary)
-would later let a scenario-typed Inspiration token open each three-node parent branch independently of Training Level;
-that change requires an Inspiration save migration and keeps any branch already open today.
+The [Global Uma RPG](uma-rpg.md#inspiration-rewards-d249) supplies two global Item families: slot and skill tokens.
+No Training Level gate remains on lineage. Cards still open at TL1–8; TL9/10 still raise baseline stats and SP.
 
 A slot holds a **reference to any Uma template the player owns**. Not a snapshot, not a trained instance:
 templates never change, so nothing needs freezing and nothing can go stale (D123).
 
 - The Uma herself is never eligible.
-- No two slots may hold the same character, including different outfits.
+- The two parents must be different characters. A grandparent cannot be either parent or repeat a character on its
+  own side. The **same exact grandparent outfit** may occur once on each opposite side, in either position; a
+  different outfit of that character is not an eligible mirror.
 - Slots are editable whenever they are unlocked, like every other node.
 
 ### What lineage pays
 
-1. **Skills** — each filled slot's four `awakeningSkillIds` and its inherited unique, into the library.
+1. **Skills** — each filled open slot's whites and inherited unique, plus its separately unlocked natural golds.
 2. **Aptitudes** — the only thing in the game that moves an aptitude grade.
+
+### Independent unlocks and grandparent pricing (D250)
+
+One **Inspiration Slot Token [Scenario]** opens one slot for one outfit in that scenario. A grandparent requires its
+parent slot to be open (it need not be filled). One **Inspiration Skill Token [Scenario]** opens one of that slot's
+two natural-gold positions; the slot must be open, filled and have that gold. Positions are indexed in awakening-gold
+order, not keyed to a particular ancestor. Bought unlocks survive free replacements. Unlocking makes a skill
+available; it does not equip it or waive SP. Own-kit and card availability is unaffected by a locked lineage moon.
+
+An inherited unique or natural gold supplied only by a **single-side grandparent costs 2× SP**, including the gold's
+entire prerequisite chain. The same grandparent outfit on both sides uses normal SP. Parent/own/card sources use
+normal SP; a deduplicated skill uses its cheapest live source. Shared prerequisites are paid once at the cheapest
+selected upgrade's rate; explicitly selecting a white cannot bypass a 2× gold. A baseline white selected without its
+gold is normal price. Skills UI, budget validation and racing all use this same derived pricing. Mirrored
+grandparents count as two filled aptitude slots but never duplicate a library or equipped skill.
+
+Save **v14**, Dexie **v23**, persist only bounded `inspiration: { slots, golds }` alongside each scenario's assignments.
+There are at most six existing slot ids and twelve `slot:gold0|gold1` keys. A −1 Item movement and precisely one
+new unlock commit atomically through `spend-inspiration` with expected Uma/Item versions; pending/conflicted changes
+are not spendable and ordinary edits to a reserved Uma/stack wait. No memory-only unlock or optimistic deduction.
+Old rows retain A's three slots at TL9, both sides at TL10; an existing below-gate assignment retains its whole side.
+Both gold positions of every grandfathered slot stay open, preserving availability without charges, grants or EXP
+changes. Current explicit closed state never reopens merely because TL reached 10. Pure migration also handles cloud
+adoption, is idempotent, and rejects malformed/future data instead of resetting it.
 
 ### Aptitude upgrades
 

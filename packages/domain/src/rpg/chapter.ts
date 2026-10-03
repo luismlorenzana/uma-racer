@@ -3,6 +3,7 @@ import { SCENARIOS } from '../scenarios'
 import { DISTANCE_CATEGORIES, SURFACES, type DistanceCategory, type Surface } from '../types'
 import { RPG_ELEMENTS, type RpgElement } from './rules'
 import { RPG_MAX_ENCOUNTER_EXP } from './rewards'
+import { RPG_SLOT_TOKEN_REWARD, RPG_SKILL_TOKEN_BUDGET, type InspirationReward } from '../inspiration'
 import { elementMatchup } from './combat/catalog'
 import type { EnemyMove, FrozenEnemy } from './combat/types'
 import { RPG_MAX_SELECTED_PATH, rpgResultId, type RpgCheckpointSaveV1, type RpgResultEvidenceV1 } from './save'
@@ -178,4 +179,12 @@ export function rpgChapterFightCounts(chapter: RpgChapter): number[] {
     return counts
   }
   return visit(chapter.startNodeId).sort((a, b) => a - b)
+}
+
+/** Full five-outfit Inspiration funding even on the shortest route. Optional encounters add surplus. */
+export function rpgInspirationReward(chapter: RpgChapter, node: RpgChapterNode): InspirationReward {
+  const minimum = rpgChapterFightCounts(chapter)[0]! - 1
+  const enabled = isRpgBattleNode(node) && (node.baseExp ?? 0) > 0
+  return { tier: SCENARIOS.find(s => s.id === chapter.scenarioId)!.tier, slot: enabled && node.kind === 'boss' ? RPG_SLOT_TOKEN_REWARD : 0,
+    skill: !enabled ? 0 : node.kind === 'boss' ? (minimum === 0 ? RPG_SKILL_TOKEN_BUDGET : 0) : Math.ceil(RPG_SKILL_TOKEN_BUDGET / minimum) }
 }

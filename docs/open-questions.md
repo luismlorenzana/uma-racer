@@ -2,8 +2,7 @@
 
 Earlier shipped-system design questions have been resolved and logged in [decisions.md](decisions.md). The owner's
 Global Uma RPG answers are now incorporated in the [RPG design draft](design/uma-rpg.md) and D219–D221. No RPG
-question here blocks reviewing that draft. Two explicit draft defaults are available for owner review there: Turf/Dirt
-does not gate elemental trees, and every replayed chapter clear grants one scenario token. Its remaining HP/MP
+question here blocks reviewing that draft. Turf/Dirt does not gate elemental trees. D250 supersedes the one-token draft: regular fights grant skill tokens and a boss grants slot tokens; each completed scenario chapter funds five outfits' six slots and twelve golds. Its remaining HP/MP
 coefficients, depth gates, active-slot count, private
 PriConne content selection and phone layout are **implementation/balance checks**, not unanswered owner choices;
 [M028](tasks/M028-uma-rpg.md) names the responsible task and its acceptance gate for each. The planned RPG

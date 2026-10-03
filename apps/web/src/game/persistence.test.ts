@@ -25,7 +25,7 @@ import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /** A v5–v11 unit made from today's: the same, without the Extra stats grid (D235). */
-const legacyRun = ({ extraStats: _grid, ...run }: ScenarioTraining) => run
+const legacyRun = ({ extraStats: _grid, inspiration: _inspiration, ...run }: ScenarioTraining) => run
 import { saveApi } from '../api/client'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
@@ -309,11 +309,11 @@ describe('save persistence', () => {
 
   it('reports an unsupported local profile schema without replacing it', async () => {
     await db.open()
-    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 14 }
+    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 15 }
     await db.table('profile').put({ id: 'main', data: unsupported, version: 7 })
 
     await expect(readLocalSnapshot()).rejects.toThrow(/App update required/)
-    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 14 } })
+    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 15 } })
   })
 
   it('parses a cloud snapshot before replacing any local rows', async () => {
@@ -390,8 +390,8 @@ describe('save persistence', () => {
     await db.open()
     const migrated = await readLocalSnapshot()
     // 225 old tickets are 45 now (D148); the chain re-denominates exactly once.
-    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 13, tickets: 45, cardCoupons: 7, starterSeedContentVersion: null } })
-    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 13, unlockedTier: 1, goalPlanVersion: 0, racePreferences: null })
+    expect(migrated?.profile).toMatchObject({ version: 6, data: { schemaVersion: 14, tickets: 45, cardCoupons: 7, starterSeedContentVersion: null } })
+    expect(migrated?.umas[0]?.data).toMatchObject({ schemaVersion: 14, unlockedTier: 1, goalPlanVersion: 0, racePreferences: null })
     expect(await db.outbox.where('kind').equals('profile').count()).toBe(1)
     expect(await db.outbox.where('[kind+id]').equals(['umas', existing.templateId]).count()).toBe(1)
     await completeStarterSeed(loaded, 30)
@@ -400,8 +400,51 @@ describe('save persistence', () => {
     expect(completed?.profile.data.starterSeedContentVersion).toBe(loaded.manifest.version)
     expect(completed?.umas).toHaveLength(25)
     // The v5 migration discards stored stats rather than inventing a configuration that reproduces them.
-    expect(completed?.umas.find((row) => row.id === existing.templateId)).toMatchObject({ version: 3, data: { schemaVersion: 13 } })
+    expect(completed?.umas.find((row) => row.id === existing.templateId)).toMatchObject({ version: 3, data: { schemaVersion: 14 } })
     expect(await db.badges.count()).toBe(1)
+  })
+
+  it('upgrades Dexie v22/save v13 Inspiration once without EXP, assignment, inventory or version changes', async () => {
+    const current = createUmaSave(uma('synthetic-inspiration'))
+    const { inspiration: _i, ...run } = current.scenarios[0]!
+    const legacyUma = { ...current, schemaVersion: 13, exp: 25, scenarios: [{ ...run, trainingLevel: 9, trainingExp: 333,
+      assignments: { parent0: { kind: 'lineage', templateId: 'invented-parent' } } }] }
+    const legacy = new Dexie('uma-racer')
+    // v23 keeps the v22 table/index contract unchanged; only the row migration changes.
+    legacy.version(22).stores(Object.fromEntries(db.tables.map(table => [table.name,
+      [table.schema.primKey.src, ...table.schema.indexes.map(index => index.src)].join(', ')])))
+    await legacy.open()
+    await legacy.table('profile').put({ id: 'main', version: 4, data: { ...createPlayerProfile('synthetic', 1), schemaVersion: 13 } })
+    await legacy.table('umas').put({ id: current.templateId, version: 7, data: legacyUma })
+    legacy.close()
+    await db.open()
+    const migrated = (await db.umas.get(current.templateId))!
+    expect(migrated.version).toBe(7)
+    expect(migrated.data.schemaVersion).toBe(14)
+    const { inspiration, ...after } = migrated.data.scenarios[0]!
+    expect(inspiration).toEqual({ slots: ['parent0', 'parent0-gp0', 'parent0-gp1'],
+      golds: ['parent0:gold0', 'parent0:gold1', 'parent0-gp0:gold0', 'parent0-gp0:gold1', 'parent0-gp1:gold0', 'parent0-gp1:gold1'] })
+    expect(after).toEqual(legacyUma.scenarios[0]); expect(migrated.data.exp).toBe(25)
+    expect(await db.items.count()).toBe(0); expect(await db.itemLedger.count()).toBe(0)
+    const markers = await db.outbox.toArray()
+    expect(markers.map(r => `${r.kind}/${r.id}`).sort()).toEqual(['profile/main', `umas/${current.templateId}`])
+    db.close(); await db.open()
+    expect(await db.umas.get(current.templateId)).toEqual(migrated)
+    expect(await db.outbox.toArray()).toEqual(markers)
+  })
+
+  it('adopts v13 cloud lineage access without inventing token grants or changing entity versions', async () => {
+    await db.open()
+    const current = createUmaSave(uma('synthetic-cloud-inspiration'))
+    const legacy = { ...current, schemaVersion: 13, scenarios: current.scenarios.map(({ inspiration: _i, ...run }) => ({ ...run, trainingLevel: 10 })) }
+    await adoptServerSnapshot({ entities: [
+      { kind: 'profile', id: 'main', version: 3, data: toRecord({ ...createPlayerProfile('synthetic', 1), schemaVersion: 13 }), deleted: false, updatedAt: 1 },
+      { kind: 'umas', id: current.templateId, version: 6, data: toRecord(legacy), deleted: false, updatedAt: 1 },
+    ], logs: [], serverTime: 2 })
+    expect((await db.umas.get(current.templateId))?.version).toBe(6)
+    expect((await db.umas.get(current.templateId))?.data.scenarios[0]!.inspiration.slots).toHaveLength(6)
+    expect((await db.umas.get(current.templateId))?.data.scenarios[0]!.inspiration.golds).toHaveLength(12)
+    expect(await db.items.count()).toBe(0); expect(await db.itemLedger.count()).toBe(0)
   })
 
   it('moves a v7 save to three stars on open, once, and queues the moved rows (D200)', async () => {
@@ -418,7 +461,7 @@ describe('save persistence', () => {
 
     await db.open()
     const migrated = await readLocalSnapshot()
-    expect(migrated?.profile).toMatchObject({ version: 9, data: { schemaVersion: 13, tickets: 12 } })
+    expect(migrated?.profile).toMatchObject({ version: 9, data: { schemaVersion: 14, tickets: 12 } })
     expect(migrated?.cards[0]).toMatchObject({ version: 4, data: { templateId: 'c1', bonds: { '1': 3, '2': 2, '3': 3 }, maxCouponGranted: true } })
     expect(await db.outbox.where('[kind+id]').equals(['cards', 'c1']).count()).toBe(1)
     expect(await db.outbox.where('[kind+id]').equals(['profile', 'main']).count()).toBe(1)
@@ -428,7 +471,7 @@ describe('save persistence', () => {
     const loaded = content()
     const current = createUmaSave(loaded.umas.items[0]!)
     const nodeId = legacyProduceNodeIds(1)[0]!
-    const { extraStats: _grid, ...run } = current.scenarios[0]!
+    const { extraStats: _grid, inspiration: _inspiration, ...run } = current.scenarios[0]!
     const legacyUma = {
       ...current,
       schemaVersion: 8,
@@ -449,7 +492,7 @@ describe('save persistence', () => {
 
     await db.open()
     expect((await db.umas.get(current.templateId))?.data).toMatchObject({
-      schemaVersion: 13,
+      schemaVersion: 14,
       scenarios: [{ assignments: {}, extraStats: { unlocked: { power: 1 }, active: ['power-1'] } }],
     })
     expect(await db.items.get(stack.itemId)).toEqual({ id: stack.itemId, data: stack, version: 3 })
@@ -478,9 +521,9 @@ describe('save persistence', () => {
 
     await db.open()
     expect((await db.umas.get(current.templateId))?.data).toMatchObject({
-      schemaVersion: 13, racePreferences: null, scenarios: [{ journey }],
+      schemaVersion: 14, racePreferences: null, scenarios: [{ journey }],
     })
-    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 13 })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 14 })
     expect(await db.outbox.where('[kind+id]').equals(['umas', current.templateId]).count()).toBe(1)
     expect(await db.ledger.count()).toBe(0)
     expect(await db.raceResults.count()).toBe(0)
@@ -515,8 +558,8 @@ describe('save persistence', () => {
       serverTime: 21,
     })).resolves.toBe('adopted')
     const snapshot = await readLocalSnapshot()
-    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 13, tickets: 18 } })
-    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 13, unlockedTier: 1 } })
+    expect(snapshot?.profile).toMatchObject({ version: 7, data: { schemaVersion: 14, tickets: 18 } })
+    expect(snapshot?.umas[0]).toMatchObject({ version: 5, data: { schemaVersion: 14, unlockedTier: 1 } })
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`).sort()).toEqual(['profile/main', `umas/${legacyUma.templateId}`])
     // An old profile beside a current Uma, as a failed profile upload leaves the cloud: each migrates on its own.
     await expect(adoptServerSnapshot({
@@ -528,7 +571,7 @@ describe('save persistence', () => {
       serverTime: 21,
     })).resolves.toBe('adopted')
     const mixed = await readLocalSnapshot()
-    expect(mixed?.profile.data).toMatchObject({ schemaVersion: 13, tickets: 18 })
+    expect(mixed?.profile.data).toMatchObject({ schemaVersion: 14, tickets: 18 })
     expect(mixed?.umas[0]?.data).toEqual(current)
     expect((await db.outbox.toArray()).map((row) => `${row.kind}/${row.id}`)).toEqual(['profile/main'])
   })
@@ -557,7 +600,7 @@ describe('save persistence', () => {
     await db.open()
     expect(activeScenario((await db.umas.get(current.templateId))!.data)).toMatchObject({ trainingLevel: 10, trainingExp: 0 })
     expect(activeScenario((await db.umas.get(second.templateId))!.data)).toMatchObject({ trainingLevel: 7, trainingExp: 1000 })
-    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 13, trainingExpBank: 10_350 })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 14, trainingExpBank: 10_350 })
     expect(await db.outbox.where('kind').equals('umas').count()).toBe(2)
 
     const settled = await settleTrainingExpBank(500)
@@ -592,7 +635,7 @@ describe('save persistence', () => {
     // Scenario 2 at Lv15 with 136 of 450: 1,686 EXP since Lv11, which is Lv19 with 186 of 300 on the flat curve.
     await legacy.table('umas').put({ id: current.templateId, version: 8, data: {
       ...current, schemaVersion: 12, level: 15, exp: 136, unlockedTier: 2,
-      scenarios: [current.scenarios[0]!, { ...current.scenarios[0]!, tier: 2 }],
+      scenarios: [current.scenarios[0]!, { ...current.scenarios[0]!, tier: 2 }].map(({ inspiration: _inspiration, ...run }) => run),
     } })
     // A level some device already paid is not paid again.
     const paid = { resource: 'tickets', delta: 1, reason: 'uma-level', localDay: '2026-10-01', createdAt: 1 }
@@ -600,8 +643,8 @@ describe('save persistence', () => {
     legacy.close()
 
     await db.open()
-    expect((await db.umas.get(current.templateId))?.data).toMatchObject({ schemaVersion: 13, level: 19, exp: 186 })
-    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 13, tickets: 13 })
+    expect((await db.umas.get(current.templateId))?.data).toMatchObject({ schemaVersion: 14, level: 19, exp: 186 })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 14, tickets: 13 })
     expect((await db.ledger.toArray()).map((row) => row.id).sort()).toEqual([16, 17, 18, 19].map((level) => `uma-level-tickets:${current.templateId}:${level}`))
     expect((await db.ledger.get(`uma-level-tickets:${current.templateId}:16`))?.data).toEqual(paid)
     expect(await db.outbox.where('kind').equals('ledger').count()).toBe(3)
@@ -823,7 +866,7 @@ describe('game bootstrap coordinator', () => {
     await runtime.flush()
 
     // Our copy stands on the server's version, queued to go again; nothing threw and nothing rolled back.
-    expect((await readLocalSnapshot())?.profile).toMatchObject({ version: 4, data: { featuredUmaId: 'u01', schemaVersion: 13 } })
+    expect((await readLocalSnapshot())?.profile).toMatchObject({ version: 4, data: { featuredUmaId: 'u01', schemaVersion: 14 } })
     expect(await db.outbox.where('[kind+id]').equals(['profile', 'main']).count()).toBe(1)
     expect(useGame.getState().profile?.featuredUmaId).toBe('u01')
 
@@ -857,7 +900,7 @@ describe('game bootstrap coordinator', () => {
     expect(isLegacyServerRecord(record)).toBe(true)
     await db.open()
     await db.transaction('rw', db.profile, db.umas, db.cards, db.badges, db.outbox, () => putConflict(record, true, 5))
-    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 13, tickets: 60 })
+    expect((await db.profile.get('main'))?.data).toMatchObject({ schemaVersion: 14, tickets: 60 })
     expect(await db.outbox.where('[kind+id]').equals(['profile', 'main']).count()).toBe(1)
   })
 

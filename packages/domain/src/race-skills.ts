@@ -623,6 +623,7 @@ export interface SkillLoadoutSource {
   library: readonly SkillUnlock[]
   skillPoints: number
   loadoutSkillIds: readonly string[]
+  skillCostMultipliers?: ReadonlyMap<string, number>
 }
 
 export function summarizeSkillLoadout(
@@ -657,13 +658,22 @@ export function summarizeSkillLoadout(
     }
     return [skill]
   })
+  // Price full chains from their cheapest racing root. Explicit lower skills cannot evade a 2× inherited gold.
+  const prices = new Map<string, number>()
+  const roots = skills.filter(skill => !skills.some(other => other !== skill && skillChainBelow(other, skillsById).some(lower => lower.id === skill.id)))
+  for (const root of roots) {
+    const multiplier = source.skillCostMultipliers?.get(root.id) === 2 ? 2 : 1
+    for (const skill of [root, ...skillChainBelow(root, skillsById)]) {
+      prices.set(skill.id, Math.min(prices.get(skill.id) ?? Infinity, (skill.costSp ?? 0) * multiplier))
+    }
+  }
   // Each learned skill is paid once, by the first equipped skill that learns it (D188).
   const paid = new Set<string>()
   const learnedBy = new Map<string, SkillTemplate>()
   const entries = skills.map((skill): SkillLoadoutEntry => {
     const below = skillChainBelow(skill, skillsById)
     const includes = below.filter((lower) => !paid.has(lower.id))
-    const cost = (paid.has(skill.id) ? 0 : skill.costSp!) + includes.reduce((sum, lower) => sum + (lower.costSp ?? 0), 0)
+    const cost = (paid.has(skill.id) ? 0 : prices.get(skill.id)!) + includes.reduce((sum, lower) => sum + (prices.get(lower.id) ?? 0), 0)
     paid.add(skill.id)
     for (const lower of below) {
       paid.add(lower.id)

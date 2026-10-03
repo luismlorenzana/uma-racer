@@ -8,7 +8,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { firebaseEnabled, loadAuth } from '../../auth/firebase'
 import { useContent } from '../../content/ContentProvider'
 import type { LoadedContent } from '../../content/runtime'
-import { DexieRpgBattleHost, type RpgBattleHost, type RpgBattleView } from '../../game/rpg-battle-host'
+import { DexieRpgBattleHost, decodeInspirationReward, type RpgBattleHost, type RpgBattleView } from '../../game/rpg-battle-host'
 import { gameRuntime } from '../../game/runtime'
 import { Button } from '../../ui/Button'
 import { MinigameHeader, MinigameShell } from '../../ui/minigames/MinigameShell'
@@ -18,6 +18,7 @@ import { useBattlePlayback } from '../../ui/rpg/useBattlePlayback'
 import { RpgBattleGuide } from './RpgBattleGuide'
 import { RpgRewardReveal } from '../../ui/rpg/RpgRewardReveal'
 import { RpgEnemyPortrait, useRpgPresentation } from '../../ui/rpg/RpgEnemyPortrait'
+import { RpgInspirationReward } from '../../ui/rpg/RpgInspirationReward'
 
 function Gauge({ label, value, maximum, mp = false }: { label: string; value: number; maximum: number; mp?: boolean }) {
   return <div className="flex min-w-0 items-center gap-1 text-[10px] leading-3">
@@ -223,6 +224,7 @@ export function RpgBattleStage({ host, checkpointId, content, uid, proof = false
         <p className="mt-1 text-xs">{view.kind === 'pending' ? 'Awaiting result submission' : `RPG EXP ${view.evidence?.memberExp.find((part) => part.outfitId === ally.id)?.delta ?? 0}`}</p>
       </div>)}</div>}
       <h3 className="mt-4 text-sm">Decisive actions</h3>
+      {!loss && view.checkpoint.frozenEntry && <RpgInspirationReward reward={decodeInspirationReward(view.checkpoint.frozenEntry.enemyKitJson)} label={view.kind === 'pending' ? 'Token preview · result not acknowledged' : 'Return to map to collect · not yet in Items'} />}
       <ul className="mt-1 space-y-1 text-[12px] text-ink-on-dark-soft">{state && view.cues.filter((cue) => cue.kind !== 'intent').map((cue, index) => <li key={index}>{describeCue(cue, view.cueState ?? state, name, view.lastAction ?? undefined)}</li>)}</ul>
       <p className="mt-4 rounded-sm border border-hairline-dark bg-stage-soft p-3 text-[12px]">{view.kind === 'pending' ? 'Not yet earned. EXP, tree points, promotion and the next map node remain unavailable until the result is acknowledged.' : proof ? 'Isolated test account only. Your real RPG roster and Items are unchanged.' : 'All five entrants earn win EXP, including KO’d allies. Accept the map checkpoint to set up skills. Clear tokens arrive separately.'}</p>
       {view.kind === 'pending' && <Button className="mt-3 w-full" disabled={busy} onClick={() => { void command(() => host.complete(checkpointId)) }}>Submit result / try sync</Button>}

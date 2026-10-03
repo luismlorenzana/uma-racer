@@ -17,7 +17,7 @@ function view(): RpgChapterView {
   const preset: RpgPresetSaveV1 = { schemaVersion: 1, presetId: 'party-1', name: 'Test party', foregroundChapterId: chapter.id,
     slots: profiles.map((p) => ({ outfitId: p.outfitId, signature: p.defaultSignature, loadout: [] })) as unknown as RpgPresetSaveV1['slots'] }
   return { pack, chapter, unavailable: null, preset: { id: 'party-1', version: 1, data: preset }, checkpoint: { id: 'party-1:test-chapter', version: 4, data: cp },
-    outfits: profiles.map((p) => ({ id: p.outfitId, version: 1, data: { schemaVersion: 1, profile: p, projectionRevision: 0 } })), checkpoints: [], pending: [] }
+    outfits: profiles.map((p) => ({ id: p.outfitId, version: 1, data: { schemaVersion: 1, profile: p, projectionRevision: 0 } })), checkpoints: [], pending: [], tokenGrants: [] }
 }
 function mount(value = view()) {
   const choose = vi.fn(async () => 'map'), advance = vi.fn(async () => {}), onBattle = vi.fn()

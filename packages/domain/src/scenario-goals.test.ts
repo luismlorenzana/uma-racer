@@ -301,7 +301,7 @@ describe('career stages', () => {
 
 describe('save v13: every scenario costs the same EXP (D241)', () => {
   const fresh = career(COLT, 2).journey
-  const v12 = (uma: UmaSave) => ({ ...uma, schemaVersion: 12 })
+  const v12 = (uma: UmaSave) => ({ ...uma, schemaVersion: 12, scenarios: uma.scenarios.map(({ inspiration: _inspiration, ...run }) => run) })
   const at = (level: number, exp: number, stages: readonly ScenarioGoal['slot'][]) =>
     v12(withJourney({ ...atTier(COLT, 2), level, exp }, complete(fresh, stages)))
 
@@ -317,7 +317,7 @@ describe('save v13: every scenario costs the same EXP (D241)', () => {
   it('re-levels a v12 Uma through the EXP she earned this scenario, and reports the levels to pay', () => {
     // Lv15 with 136 of 450: 1,686 earned since Lv11, which is Lv19 with 186 of 300 on the flat curve.
     const migrated = migrateUmaSaveWithSurplus(at(15, 136, ['maiden', 'trials']))!
-    expect(migrated.uma).toMatchObject({ schemaVersion: 13, level: 19, exp: 186 })
+    expect(migrated.uma).toMatchObject({ schemaVersion: 14, level: 19, exp: 186 })
     expect(migrated).toMatchObject({ levelsGained: [16, 17, 18, 19], gateReached: null, surplusExp: 0 })
     // Enough to pass the gate stops there with one level banked, and the gate is reported for its shard.
     const toGate = migrateUmaSaveWithSurplus(at(19, 500, ['maiden', 'trials']))!
@@ -339,8 +339,8 @@ describe('save v13: every scenario costs the same EXP (D241)', () => {
 
   it('reads v12 on the rising curve and v13 on the flat one', () => {
     expect(parseLegacyUmaSaveV12(at(15, 449, ['maiden']))).not.toBeNull()
-    expect(parseUmaSave({ ...at(15, 449, ['maiden']), schemaVersion: 13 })).toBeNull()
-    expect(parseUmaSave({ ...at(15, 199, ['maiden']), schemaVersion: 13 })).not.toBeNull()
+    expect(migrateUmaSaveWithSurplus({ ...at(15, 449, ['maiden']), schemaVersion: 13 })).toBeNull()
+    expect(migrateUmaSaveWithSurplus({ ...at(15, 199, ['maiden']), schemaVersion: 13 })).not.toBeNull()
   })
 })
 

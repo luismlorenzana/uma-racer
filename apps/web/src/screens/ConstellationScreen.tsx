@@ -7,13 +7,14 @@ import {
   constellationTemplate,
   explainAptitudes,
   isNodeUnlocked,
-  lineageEligibility,
-  lineageUnlockLevel,
+  lineageSlotEligibility,
+  inspirationGoldKey, inspirationParent, inspirationTokenId, inspirationTokenName, scenarioForTier,
   nodeValue,
   cardNodeCap,
   cardNodeCount,
   cardSpPerNode,
   paysSkillPoints,
+  skillChainBelow,
   unlockedNodeCount,
   type Aptitudes,
   type ConstellationNode,
@@ -26,7 +27,7 @@ import {
   lineageSlotTakesAnyUma,
   skillTags,
 } from '@racer/domain'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { getContentAsset, type LoadedContent } from '../content/runtime'
 import { setConstellationNode } from '../game/actions'
@@ -40,10 +41,14 @@ import { SkillIcon } from '../ui/SkillIcon'
 import { SkillKindBadge } from '../ui/SkillKindBadge'
 import { BottomSheet } from '../ui/BottomSheet'
 import { ConstellationGraph } from '../ui/constellation/ConstellationGraph'
+import { RpgModalFocus } from '../ui/rpg/RpgModalFocus'
 import { naturalLineageSkills } from '../ui/constellation/lineageSkills'
 import { UmaPickerSheet, type UmaPickerSort } from '../ui/album/UmaPickerSheet'
-import { useTraining } from './TrainingScene'
+import { useTraining, type TrainingContext } from './TrainingScene'
 import { formatTickets } from '../ui/tickets'
+import { InspirationTokenIcon } from '../ui/InspirationTokenIcon'
+import { useInspiration } from '../game/use-inspiration'
+import { reserveInspirationUnlock } from '../game/inspiration-host'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
@@ -53,6 +58,8 @@ type LineageSkillGroup = {
   label: string
   uma: UmaTemplate | undefined
   skills: readonly SkillTemplate[]
+  pricing: string
+  status: (skill: SkillTemplate) => string
 }
 
 export function InspirationScreen() { return <ConstellationScreen viewMode="inspiration" /> }
@@ -60,10 +67,11 @@ export function InspirationScreen() { return <ConstellationScreen viewMode="insp
 const belongsToView = (node: ConstellationNode, viewMode: NodeView) =>
   viewMode === 'constellation' ? node.kind === 'card' : node.kind === 'parent' || node.kind === 'grandparent'
 
-export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?: NodeView }) {
-  const { content, save, uma, cards, umas, tickets } = useTraining()
+export function ConstellationScreen({ viewMode = 'constellation', preview }: { viewMode?: NodeView; preview?: TrainingContext }) {
+  const training = useTraining()
+  const { content, save, uma, cards, umas, tickets } = preview ?? training
   const pushToast = useGame((state) => state.pushToast)
-  const persistent = useGame((state) => state.persistent)
+  const persistent = useGame((state) => state.persistent) && !preview
   const [searchParams] = useSearchParams()
   const [openNode, setOpenNode] = useState<ConstellationNode | null>(null)
   // Inspiration keeps the selected planet highlighted after its assignment sheet closes.
@@ -74,7 +82,34 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
   const [busy, setBusy] = useState(false)
 
   const { derived, run } = uma
-  const template = constellationTemplate(run.tier)
+  const savedTokens = useInspiration(save.templateId, run.tier, persistent && viewMode === 'inspiration')
+  const tokenView = preview ? { slot: 6, skill: 12, pending: false, conflict: false, error: '' } : savedTokens
+  const [confirmation, setConfirmation] = useState<{ nodeId: string; goldIndex: number | null; name: string } | null>(null)
+  const [recovery, setRecovery] = useState(false)
+  const recover = async () => {
+    setBusy(true)
+    try {
+      const [{ RpgChapterHost }, { gameRuntime }] = await Promise.all([import('../game/rpg-chapter-host'), import('../game/runtime')])
+      await new RpgChapterHost(async () => null).refreshAccount(true)
+      await gameRuntime.refreshLocalState()
+      setRecovery(false)
+    } catch (error) { pushToast(error instanceof Error ? error.message : String(error)) }
+    finally { setBusy(false) }
+  }
+  const requestUnlock = (nodeId: string, goldIndex: number | null, name: string) => { setOpenNode(null); setSelectedSkill(null); setConfirmation({ nodeId, goldIndex, name }) }
+  const unlock = async () => {
+    if (!confirmation || busy || !persistent) return
+    setBusy(true)
+    try {
+      await reserveInspirationUnlock({ umaId: save.templateId, tier: run.tier, ...confirmation }, { umas: content.umas.byId, skills: content.skills.byId })
+      const { gameRuntime } = await import('../game/runtime')
+      await gameRuntime.flush()
+      setConfirmation(null)
+      pushToast('Unlock submitted. It opens only after sync acknowledgement.')
+    } catch (error) { pushToast(error instanceof Error ? error.message : String(error)) }
+    finally { setBusy(false) }
+  }
+  const template = useMemo(() => constellationTemplate(run.tier), [run.tier])
   const here = `/constellation/${encodeURIComponent(save.templateId)}${viewMode === 'constellation' ? '' : `/${viewMode}`}`
   const nodeCap = cardNodeCap(run.tier)
 
@@ -97,14 +132,14 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
     const nodeId = searchParams.get('node')
     if (!nodeId) return
     const node = template.nodes.find((candidate) => candidate.id === nodeId)
-    if (node && belongsToView(node, viewMode) && isNodeUnlocked(template, node, run.trainingLevel)) {
+    if (node && belongsToView(node, viewMode)) {
       setOpenNode(node)
       if (viewMode === 'inspiration') setSelectedLineageId(node.id)
     }
   }, [run.trainingLevel, searchParams, template, viewMode])
 
   const assign = async (nodeId: string, assignment: NodeAssignment | null) => {
-    if (busy) return
+    if (busy || preview) return
     setBusy(true)
     try {
       await setConstellationNode(save.templateId, nodeId, assignment, run.tier)
@@ -124,20 +159,49 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
   }
 
   const visibleNodes = template.nodes.filter((node) => belongsToView(node, viewMode))
+  const mirroredGrandparent = (slot: string, templateId: string) => slot.includes('-gp') && run.inspiration.slots.some(other => {
+    const assignment = run.assignments[other]
+    return other.includes('-gp') && inspirationParent(other) !== inspirationParent(slot) &&
+      assignment?.kind === 'lineage' && assignment.templateId === templateId
+  })
   const lineageSkillGroups: LineageSkillGroup[] = viewMode === 'inspiration'
     ? visibleNodes.map((node, index) => {
         const assignment = run.assignments[node.id]
         const lineageUma = assignment?.kind === 'lineage' ? content.umas.byId.get(assignment.templateId) : undefined
         const slotNumber = visibleNodes.slice(0, index + 1).filter((candidate) => candidate.kind === node.kind).length
+        const skills = lineageUma ? naturalLineageSkills(lineageUma, content.skills.byId) : []
+        const golds = skills.filter(skill => skill.kind === 'gold')
         return {
           id: node.id,
           label: `${titleCase(node.kind)} ${slotNumber}`,
           uma: lineageUma,
-          skills: lineageUma ? naturalLineageSkills(lineageUma, content.skills.byId) : [],
+          skills,
+          pricing: node.kind === 'grandparent' ? lineageUma && mirroredGrandparent(node.id, lineageUma.id)
+            ? 'Mirrored grandparent · normal SP' : 'Single-side grandparent · 2× SP' : 'Parent · normal SP',
+          status: (skill: SkillTemplate) => skill.kind === 'gold'
+            ? run.inspiration.golds.includes(inspirationGoldKey(node.id, golds.findIndex(gold => gold.id === skill.id)))
+              ? 'Gold unlocked' : 'Locked · 1 skill token'
+            : 'Inherited unique · slot unlocked',
         }
       })
     : []
-  const openCount = visibleNodes.filter((node) => isNodeUnlocked(template, node, run.trainingLevel)).length
+  const selectedLineageNode = viewMode === 'inspiration'
+    ? visibleNodes.find((node) => node.id === selectedLineageId)
+    : undefined
+  const selectedLineageAssignment = selectedLineageNode ? run.assignments[selectedLineageNode.id] : undefined
+  const selectedLineageUma = selectedLineageAssignment?.kind === 'lineage'
+    ? content.umas.byId.get(selectedLineageAssignment.templateId)
+    : undefined
+  const selectedLineageSkills = selectedLineageUma ? naturalLineageSkills(selectedLineageUma, content.skills.byId) : []
+  const openCount = visibleNodes.filter((node) => isNodeUnlocked(template, node, run.trainingLevel, run.inspiration)).length
+  const selectedGolds = selectedLineageSkills.filter(s => s.kind === 'gold')
+  const goldIndex = selectedSkill ? selectedGolds.findIndex(s => s.id === selectedSkill.id) : -1
+  const goldOpen = goldIndex < 0 || Boolean(selectedLineageNode && run.inspiration.golds.includes(inspirationGoldKey(selectedLineageNode.id, goldIndex)))
+  const selectedMirrored = Boolean(selectedLineageNode && selectedLineageUma && mirroredGrandparent(selectedLineageNode.id, selectedLineageUma.id))
+  const spMultiplier = selectedLineageNode?.kind === 'grandparent' && !selectedMirrored ? 2 : 1
+  const selectedInherited = selectedSkill?.kind === 'unique' && selectedSkill.inheritedSkillId ? content.skills.byId.get(selectedSkill.inheritedSkillId) : selectedSkill
+  const selectedPrice = selectedInherited && [...skillChainBelow(selectedInherited, content.skills.byId), selectedInherited].reduce((sum, skill) => sum + (skill.costSp ?? 0), 0) * spMultiplier
+  const openNodeUnlocked = Boolean(openNode && isNodeUnlocked(template, openNode, run.trainingLevel, run.inspiration))
   const filledCount = visibleNodes.filter((node) => run.assignments[node.id] !== undefined).length
   const buff = scenarioBuff(run.tier)
   const treeNodes = visibleNodes.length
@@ -152,6 +216,7 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
         <ConstellationGraph
           template={template}
           trainingLevel={run.trainingLevel}
+          inspiration={run.inspiration}
           assignments={run.assignments}
           content={content}
           cardTypes={cardTypes}
@@ -177,7 +242,13 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
         ))}
-        {viewMode === 'inspiration' && <p className="mb-2 rounded-md bg-sunken px-3 py-2 text-[12px] text-ink-soft">Parents and grandparents lend skills and can raise aptitudes. These slots open at Training Levels 9 and 10.</p>}
+        {viewMode === 'inspiration' && <div className="mb-2 rounded-md bg-sunken px-3 py-2 text-[12px] text-ink-soft">
+          <div className="flex items-center justify-between gap-2">{(['slot', 'skill'] as const).map(kind => <span key={kind} className="flex items-center gap-1"><InspirationTokenIcon kind={kind} size={28} />{tokenView[kind]} {kind} tokens</span>)}<Link className="flex min-h-11 items-center font-semibold text-accent-strong" to={`/farm/items?item=${inspirationTokenId(run.tier, 'slot')}`}>Items</Link></div>
+          <p>{run.inspiration.slots.length}/6 slots · {run.inspiration.golds.length}/12 golds open. Slots lend unique skills and aptitudes; gold moons unlock separately.</p>
+          {tokenView.pending && <><p role="status">{tokenView.conflict ? 'Conflict: no rejected token spend was applied.' : 'Pending sync — nothing is spent or opened yet.'}</p><button className="min-h-11 font-semibold text-accent-strong" disabled={busy} onClick={() => { if (tokenView.conflict) setRecovery(true); else void import('../game/runtime').then(({ gameRuntime }) => gameRuntime.flush()) }}>{tokenView.conflict ? 'Review accepted-account recovery' : 'Try sync'}</button></>}
+          {!persistent && <p>{preview ? 'Read-only invented preview · no account changes.' : 'Unlocking needs local storage and acknowledged sync.'}</p>}
+          {tokenView.error && <p role="alert">{tokenView.error}</p>}
+        </div>}
         {/* The scenario's buff is always on show (D165). */}
         <p className="mb-2 rounded-md border border-accent/40 bg-accent-wash px-3 py-1.5 text-[12px]">
           <span className="font-semibold">{buff.name}</span> <span className="text-ink-soft">· {buff.rule}</span>
@@ -208,7 +279,7 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
       {viewMode === 'inspiration' && (
         <LineageSkillRail
           groups={lineageSkillGroups}
-          onSelect={setSelectedSkill}
+          onSelect={(slot, skill) => { setSelectedLineageId(slot); setSelectedSkill(skill) }}
         />
       )}
 
@@ -224,7 +295,7 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
 
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || !openNodeUnlocked}
               className="min-h-[44px] rounded-sm bg-sunken px-3 text-left text-sm font-semibold"
               onClick={() => void assign(openNode.id, null)}
             >
@@ -277,7 +348,7 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
                 )
               }))}
 
-            {(openNode.kind === 'parent' || openNode.kind === 'grandparent') && (
+            {openNodeUnlocked && (openNode.kind === 'parent' || openNode.kind === 'grandparent') && (
               <LineageSlot
                 busy={busy}
                 content={content}
@@ -289,7 +360,8 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
               />
             )}
 
-            <LockedNote node={openNode} template={template} trainingLevel={run.trainingLevel} />
+            {!openNodeUnlocked && openNode.kind !== 'card' && <><p className="text-sm text-ink-soft">{openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id)) ? 'Open this side’s parent slot first.' : 'One scenario slot token opens this position permanently.'}</p><button type="button" disabled={busy || !persistent || tokenView.pending || tokenView.slot < 1 || openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id))} className="min-h-11 rounded-sm bg-accent px-3 font-semibold" onClick={() => requestUnlock(openNode.id, null, `${titleCase(openNode.kind)} ${openNode.id.replace(/\D/g, '')}`)}>Unlock {openNode.kind} · 1 slot token</button></>}
+            {openNode.kind === 'card' && <LockedNote node={openNode} template={template} trainingLevel={run.trainingLevel} />}
           </div>
         )}
       </BottomSheet>
@@ -301,14 +373,23 @@ export function ConstellationScreen({ viewMode = 'constellation' }: { viewMode?:
           candidateIds={lineageSlotTakesAnyUma(run.tier, lineageNode.id) ? content.umas.items.map((entry) => entry.id) : Object.keys(umas)}
           content={content}
           child={uma.template}
-          held={derived.lineage}
+          assignments={run.assignments}
           currentId={currentLineageId(run.assignments[lineageNode.id])}
           onClose={() => setLineageNode(null)}
           onPick={(templateId) => void assign(lineageNode.id, { kind: 'lineage', templateId })}
         />
       )}
 
-      <SkillDetailSheet skill={selectedSkill} onClose={() => setSelectedSkill(null)} />
+      {recovery && <RpgModalFocus onClose={() => setRecovery(false)}><BottomSheet open onClose={() => setRecovery(false)}><div className="space-y-3 pb-safe"><h2 className="font-display text-xl">Use the accepted account?</h2><p className="text-sm text-ink-soft">Discard rejected RPG commands and refresh accepted Uma/Items. Ordinary queued edits and archived battle history stay on this device. No rejected reward or unlock is retried.</p><button disabled={busy} className="min-h-11 w-full rounded-sm bg-accent px-3 font-semibold" onClick={() => void recover()}>Discard rejected commands and refresh</button></div></BottomSheet></RpgModalFocus>}
+      <SkillDetailSheet skill={selectedSkill} onClose={() => setSelectedSkill(null)} price={selectedPrice || undefined}
+        note={goldOpen ? `Full chain from this slot · ${spMultiplier === 2 ? 'single-side grandparent 2× SP' : 'normal SP'}. The Skills page uses the cheapest available source and shares prerequisites.` : 'Locked gold · unlock with one scenario skill token, then equip using SP.'}
+        unlock={!goldOpen && selectedLineageNode ? () => requestUnlock(selectedLineageNode.id, goldIndex, selectedSkill!.name) : undefined} />
+      {confirmation && <RpgModalFocus onClose={() => setConfirmation(null)}><BottomSheet open onClose={() => setConfirmation(null)}><div className="space-y-3 pb-safe">
+        <InspirationTokenIcon kind={confirmation.goldIndex === null ? 'slot' : 'skill'} size={56} />
+        <h2 className="font-display text-xl">Unlock {confirmation.name}?</h2><p>{uma.template.name} · {scenarioForTier(run.tier)?.name}</p>
+        <p className="text-sm text-ink-soft">Consumes 1 {inspirationTokenName(run.tier, confirmation.goldIndex === null ? 'slot' : 'skill')}. This position stays open when its ancestor changes. No Training Level required.</p>
+        <button type="button" disabled={busy || tokenView.pending || !persistent} onClick={() => void unlock()} className="min-h-11 w-full rounded-sm bg-accent px-3 font-semibold">Confirm · 1 token</button>
+      </div></BottomSheet></RpgModalFocus>}
     </>
   )
 }
@@ -318,7 +399,7 @@ function LineageSkillRail({
   onSelect,
 }: {
   groups: readonly LineageSkillGroup[]
-  onSelect: (skill: SkillTemplate) => void
+  onSelect: (slot: string, skill: SkillTemplate) => void
 }) {
   const filledCount = groups.filter((group) => group.uma).length
   const skillCount = groups.reduce((total, group) => total + group.skills.length, 0)
@@ -341,12 +422,13 @@ function LineageSkillRail({
             </div>
             {group.uma ? (
               <div className="grid gap-1.5">
+                <p className="text-xs text-ink-soft">{group.pricing}</p>
                 {group.skills.map((skill) => (
                   <button
                     key={skill.id}
                     type="button"
                     className="flex min-h-14 items-start gap-2 rounded-md border border-hairline bg-panel px-2.5 py-2 text-left transition-colors hover:border-accent/60 active:bg-accent-wash"
-                    onClick={() => onSelect(skill)}
+                    onClick={() => onSelect(group.id, skill)}
                   >
                     <SkillIcon skill={skill} size={30} />
                     <span className="min-w-0 flex-1">
@@ -355,6 +437,7 @@ function LineageSkillRail({
                         <SkillKindBadge kind={skill.kind} />
                       </span>
                       <SkillChips tags={skillTags(skill)} />
+                      <span className="block text-xs font-semibold text-accent-strong">{group.status(skill)}</span>
                       {skill.description && <span className="mt-1 line-clamp-2 block text-[12px] leading-snug text-ink-soft">{skill.description}</span>}
                     </span>
                   </button>
@@ -371,10 +454,10 @@ function LineageSkillRail({
   )
 }
 
-function SkillDetailSheet({ skill, onClose }: { skill: SkillTemplate | null; onClose: () => void }) {
+function SkillDetailSheet({ skill, onClose, price, note, unlock }: { skill: SkillTemplate | null; onClose: () => void; price?: number; note?: string; unlock?: () => void }) {
+  if (!skill) return null
   return (
-    <BottomSheet open={skill !== null} onClose={onClose}>
-      {skill && (
+    <RpgModalFocus onClose={onClose}><BottomSheet open onClose={onClose}>
         <div className="grid gap-3 px-1 pb-5">
           <div className="flex items-center gap-3">
             <SkillIcon skill={skill} size={52} />
@@ -382,17 +465,18 @@ function SkillDetailSheet({ skill, onClose }: { skill: SkillTemplate | null; onC
               <h2 className="font-display text-xl font-bold leading-tight">{skill.name}</h2>
               <div className="mt-1 flex items-center gap-1.5">
                 <SkillKindBadge kind={skill.kind} />
-                {skill.costSp !== null && <span className="text-micro">{skill.costSp} SP</span>}
+                {(price ?? skill.costSp) !== null && <span className="text-micro">{price ?? skill.costSp} SP</span>}
               </div>
             </div>
           </div>
           <SkillChips tags={skillTags(skill)} />
+          {note && <p className="text-sm text-ink-soft">{note}</p>}
+          {unlock && <button type="button" className="min-h-11 rounded-sm bg-accent px-3 font-semibold" onClick={unlock}>Unlock gold · 1 skill token</button>}
           <p className="rounded-md bg-sunken px-3 py-3 text-[13px] leading-relaxed text-ink-soft">
             {skill.description || 'No description in this content pack.'}
           </p>
         </div>
-      )}
-    </BottomSheet>
+    </BottomSheet></RpgModalFocus>
   )
 }
 
@@ -408,16 +492,11 @@ function LockedNote({
   template: ConstellationTemplate
   trainingLevel: number
 }) {
-  const required = lineageUnlockLevel(template, node.id)
-  const open = required !== null
-    ? trainingLevel >= required
-    : node.order < unlockedNodeCount(template.tier, trainingLevel)
+  const open = node.order < unlockedNodeCount(template.tier, trainingLevel)
   if (open) return null
   return (
     <p className="pt-1 text-[11px] text-ink-soft">
-      {required !== null
-        ? `Locked — opens at Training Level ${required}.`
-        : `Locked — Training Levels 1–8 open the card nodes, and ${unlockedNodeCount(template.tier, trainingLevel)} of ${template.cardNodes} are open at TL ${trainingLevel}.`}
+      {`Locked — Training Levels 1–8 open the card nodes, and ${unlockedNodeCount(template.tier, trainingLevel)} of ${template.cardNodes} are open at TL ${trainingLevel}.`}
     </p>
   )
 }
@@ -462,7 +541,7 @@ function LineagePickerSheet({
   candidateIds,
   content,
   child,
-  held,
+  assignments,
   currentId,
   onClose,
   onPick,
@@ -471,13 +550,17 @@ function LineagePickerSheet({
   candidateIds: readonly string[]
   content: LoadedContent
   child: UmaTemplate
-  held: readonly UmaTemplate[]
+  assignments: Readonly<Record<string, Assignment>>
   currentId: string | null
   onClose: () => void
   onPick: (templateId: string) => void
 }) {
   const base: Aptitudes = child.aptitudes
-  const others = held.filter((entry) => entry.id !== currentId)
+  const slots = new Map(Object.entries(assignments).flatMap(([slot, assignment]) => {
+    const entry = assignment.kind === 'lineage' ? content.umas.byId.get(assignment.templateId) : null
+    return entry ? [[slot, entry] as const] : []
+  }))
+  const others = [...slots].filter(([slot]) => slot !== node.id).map(([, entry]) => entry)
   // What each pick would move, shown before committing to it.
   const moves = (template: UmaTemplate) => explainAptitudes(base, [...others, template]).filter((row) => row.result !== row.base)
   const gain: UmaPickerSort = {
@@ -502,7 +585,7 @@ function LineagePickerSheet({
           ? `Moves ${preview.slice(0, 3).map((row) => `${row.key} ${row.base}→${row.result}`).join(', ')}`
           : `${entry.template.awakeningSkillIds.length} baseline skills`
       }}
-      disabledReason={(entry) => lineageEligibility(entry.template, child, others).reason ?? null}
+      disabledReason={(entry) => lineageSlotEligibility(entry.template, child, node.id, slots).reason ?? null}
       onPick={onPick}
     />
   )

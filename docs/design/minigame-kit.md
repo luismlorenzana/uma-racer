@@ -27,14 +27,14 @@ journal, terminal result or win/loss. It may reuse visual primitives and `PagedG
 `MinigameHost` (D203, D206).
 
 The [Global Uma RPG](uma-rpg.md) is likewise **outside this ticketed-run contract**: its chapters contain multiple
-battles and synced checkpoints. T089–T097 now implement its own rules, grouped save, battle journal, internal setup,
+battles and synced checkpoints. T089–T098 now implement its own rules, grouped save, battle journal, internal setup,
 mobile stage, branching maps, acknowledged EXP/skills/promotion and the private content/portrait pipeline.
-The private URA draft is prepared; owner publication, tokens and Home release remain gated
+The private URA draft is prepared; owner publication and Home release remain gated
 ([handoff](../research/rpg-private-ura-handoff.md)). It reuses the kit's pure-engine, deterministic-replay,
 private-content and mobile standards, `MinigameShell`/`MinigameHeader` and `PagedGuide`, not `MinigameHost` or tickets.
 Its isolated DEV battle/chapter proofs grant no real-account rewards ([battle checks](../research/rpg-battle-phone-proof.md),
 [chapter checks](../research/rpg-chapter-phone-proof.md), [progression checks](../research/rpg-progression-phone-proof.md)).
-The chapter proof now awards only its isolated synthetic profiles; never real account EXP/Items. Neither uses the ticketed MinigameHost.
+The chapter proof awards isolated synthetic EXP and scenario tokens; never real-account progress. T098 uses the existing global Items/ledger and conditional map/spend commands, outside the ticketed-run port. Inspiration's independent slot/gold rules and original SVG token marks are in D250. Neither uses the ticketed MinigameHost.
 
 ## 2. The run lifecycle
 

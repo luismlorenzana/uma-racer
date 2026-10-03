@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseRpgCommandRequest, resolveRpgCommand } from '../../../api/src/save/rpg-command'
 import { saveApi } from '../api/client'
 import { db } from './db'
-import { decodeKit, decodeReward, DexieRpgBattleHost, encodeKit, rpgBattleJournalId } from './rpg-battle-host'
+import { decodeKit, decodeReward, decodeInspirationReward, DexieRpgBattleHost, encodeKit, rpgBattleJournalId } from './rpg-battle-host'
 import { flushOneRpgCommand } from './rpg-sync'
 
 const uid = 'synthetic-account'
@@ -78,6 +78,18 @@ describe('RPG battle host and device journal', () => {
     expect(decodeKit(v2)).toEqual(decodeKit(v1))
     const action = { kind: 'attack' as const, actorId: input.allies[0]!.id, targetId: input.enemies[0]!.id }
     expect(replay(decodeKit(v2), [action]).hash).toBe(replay(decodeKit(v1), [action]).hash)
+  })
+  it('v3 freezes tokens without changing v1/v2 input, EXP or replay; legacy entries grant no tokens', () => {
+    const reward = { baseExp: 100, recommendedTier: 1, recommendedLevel: 10 }
+    const inspiration = { tier: 1, slot: 0, skill: 60 }
+    const v1 = encodeKit(input), v2 = encodeKit(input, reward), v3 = encodeKit(input, reward, inspiration)
+    expect(decodeInspirationReward(v1)).toBeNull(); expect(decodeInspirationReward(v2)).toBeNull()
+    expect(decodeInspirationReward(v3)).toEqual(inspiration)
+    expect(decodeReward(v3)).toEqual(decodeReward(v2))
+    expect(decodeKit(v3)).toEqual(decodeKit(v1))
+    const action = { kind: 'attack' as const, actorId: input.allies[0]!.id, targetId: input.enemies[0]!.id }
+    expect(replay(decodeKit(v3), [action]).hash).toBe(replay(decodeKit(v1), [action]).hash)
+    expect(() => encodeKit(input, reward, { ...inspiration, tier: 15 })).toThrow(/Inspiration/)
   })
   beforeEach(async () => {
     db.close()

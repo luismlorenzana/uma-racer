@@ -193,6 +193,9 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/inspiration-proof',
+    lazy: async () => ({ Component: (await import('../screens/rpg/InspirationProofScreen')).InspirationProofScreen }),
+  }, {
     path: 'dev/rpg-chapter-proof',
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading chapter proof" />,
     lazy: async () => ({ Component: (await import('../screens/rpg/RpgChapterProofScreen')).RpgChapterProofScreen }),

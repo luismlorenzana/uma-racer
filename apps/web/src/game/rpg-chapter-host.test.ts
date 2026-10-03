@@ -70,7 +70,8 @@ describe('chapter host + real grouped server acceptance', () => {
     expect(before).toMatchObject({ status: 'cleared', attemptIndex: 1, lastClearedNodeId: 'boss', frozenEntry: null })
     expect(before.selectedPath).toEqual(['opening', 'fork', path, 'join', 'boss'])
     expect(await database.rpgResults.count()).toBe(path === 'elite' ? 3 : 2)
-    expect(await database.items.count()).toBe(0)
+    expect((await database.items.get('inspiration:t1:slot'))?.data.quantity).toBe(30)
+    expect((await database.items.get('inspiration:t1:skill'))?.data.quantity).toBe(path === 'elite' ? 120 : 60)
     await expect(host.start(presetId, chapterId)).rejects.toThrow(/explicit replay/)
     await host.start(presetId, chapterId, true); await sync()
     expect((await database.rpgCheckpoints.get(id))!.data).toMatchObject({ attemptIndex: 2, selectedPath: [], lastClearedNodeId: null })
@@ -157,6 +158,21 @@ describe('chapter host + real grouped server acceptance', () => {
     const command = (await database.pendingRpgCommands.toArray())[0]!.body as RpgCommandRequest
     logs.clear()
     expect(await transport.rpgCommand(command)).toMatchObject({ status: 'rejected', reason: 'Map advance requires accepted winning evidence' })
+  })
+  it('recovers a lost grant ACK after reload without collecting the same winning entry twice', async () => {
+    await host.start(presetId, chapterId); await sync(); await host.choose(uid, presetId, chapterId, 'opening'); await sync(); await win(); await sync()
+    await host.advance(presetId, chapterId)
+    await expect(flushOneRpgCommand(database, { ...transport, rpgCommand: async body => {
+      await transport.rpgCommand(body); throw new Error('Lost map ACK')
+    } })).rejects.toThrow(/Lost map ACK/)
+    expect(await database.items.count()).toBe(0)
+    expect((await database.rpgCheckpoints.get(id))!.data.lastClearedNodeId).toBeNull()
+    const restored = new RpgChapterHost(async () => pack, database)
+    await sync()
+    expect((await database.items.get('inspiration:t1:skill'))?.data.quantity).toBe(60)
+    expect(await database.itemLedger.count()).toBe(1)
+    await expect(restored.advance(presetId, chapterId)).rejects.toThrow()
+    expect(await database.itemLedger.count()).toBe(1)
   })
   it('archives a rejected terminal journal and explicitly restarts the same accepted frozen entry, never its stale result', async () => {
     await host.start(presetId, chapterId); await sync(); await host.choose(uid, presetId, chapterId, 'opening'); await sync()

@@ -371,6 +371,8 @@ export class RacerDb extends Dexie {
     // Save v13 (D241): every scenario's Uma Levels cost the same. Each Uma re-levels through this scenario's EXP, and
     // the levels it reaches pay their tickets (and a gate its shard) as race levels do.
     this.version(22).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
+    // Save v14 (D250): grandfather lineage availability, then decouple new slots/golds from Training Level.
+    this.version(23).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
   }
 }
 

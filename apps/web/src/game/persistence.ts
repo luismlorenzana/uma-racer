@@ -12,6 +12,7 @@ import {
   createCardSave,
   createInitialSave,
   createUmaSave,
+  createInitialFarmState,
   parseCardSave,
   parseBadgeState,
   parseFlairEvent,
@@ -54,6 +55,7 @@ import {
   type RpgCommandReceiptV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
+import Dexie from 'dexie'
 import { db, payUmaRelevels, type FarmRow, type LogRow, type OutboxRow, type UmaRelevelPayout, type VersionedRow } from './db'
 
 export interface LocalSnapshot {
@@ -79,6 +81,16 @@ export async function queueInTransaction(
   op: OutboxRow['op'],
   queuedAt: number,
 ): Promise<void> {
+  if (op === 'upsert' && (kind === 'umas' || kind === 'items')) {
+    // The grouped reservation locks the same entity tables. Read its queue outside the caller's table scope,
+    // so ordinary transactions cannot change a reserved row before the acknowledged group is installed.
+    const pending = Dexie.currentTransaction?.storeNames.includes('pendingRpgCommands')
+      ? await db.pendingRpgCommands.toArray()
+      : await Dexie.waitFor(Dexie.ignoreTransaction(() => db.pendingRpgCommands.toArray()))
+    if (pending.some(p => (p.body as import('@racer/domain').RpgCommandRequest).upserts.some(u => u.kind === kind && u.id === id))) {
+      throw new Error('This Uma or Item has a pending RPG change; sync or resolve it before editing')
+    }
+  }
   await db.outbox.where('[kind+id]').equals([kind, id]).delete()
   await db.outbox.add({ kind, id, op, queuedAt })
 }
@@ -86,15 +98,14 @@ export async function queueInTransaction(
 /** Repairs Farm/item projections from append-only evidence. Call inside a transaction containing these four tables. */
 export async function reconcileFarmProjectionsInTransaction(now: number): Promise<{ farmChanged: boolean; changedItemIds: string[] }> {
   const farmRow = await db.farm.get('main')
-  if (!farmRow) return { farmChanged: false, changedItemIds: [] }
   const movements = (await db.itemLedger.toArray()).map((row) => {
     const parsed = parseItemLedgerEntry(row.data)
     if (!parsed || parsed.id !== row.id || parsed.createdAt !== row.createdAt) throw new Error(`Invalid local item ledger: ${row.id}`)
     return parsed
   })
   const itemRows = await db.items.toArray()
-  const result = reconcileFarmEvidence(farmRow.data, itemRows.map((row) => row.data), movements)
-  if (result.farmChanged) {
+  const result = reconcileFarmEvidence(farmRow?.data ?? createInitialFarmState(), itemRows.map((row) => row.data), movements)
+  if (result.farmChanged && farmRow) {
     await db.farm.put({ ...farmRow, data: result.farm, revision: farmRow.revision + 1 })
     await queueInTransaction('farm', 'main', 'upsert', now)
   }
