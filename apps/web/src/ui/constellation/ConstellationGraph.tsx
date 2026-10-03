@@ -12,12 +12,11 @@ import { getContentAsset, type LoadedContent } from '../../content/runtime'
 import { AtlasSprite } from '../AtlasSprite'
 import { SkillIcon } from '../SkillIcon'
 import { UmaBust } from '../UmaBust'
-import { naturalGoldSkills } from './lineageSkills'
+import { naturalGoldSkills, naturalUniqueSkill } from './lineageSkills'
 
 /**
- * The canvas fills the host at scale 1, so the 100×100 unit layout stretches to the screen's aspect. On a portrait
- * phone that spreads the tree down the long axis instead of wasting it. Tiles are sized from the tightest spacing
- * between two nodes, so a sparse tree gets thumb-sized tiles and a dense one still never overlaps.
+ * The canvas fills the host at scale 1. The Inspiration view deliberately compresses its two lineage rows so the
+ * parents and grandparents read as one compact, square-ish inheritance setup instead of a tall ladder.
  */
 const NODE_FILL = 0.72
 const NODE_MIN = 26
@@ -80,8 +79,15 @@ export function ConstellationGraph({
     minY: Math.min(...visibleNodes.map((node) => node.y)),
     maxY: Math.max(...visibleNodes.map((node) => node.y)),
   }), [visibleNodes])
-  // Both views keep the template's relative geometry, but each fills its own canvas.
+  // Card constellations keep their template geometry. Inspiration gets a compact two-row layout with room around each
+  // planet for its four skill moons.
   const position = useCallback((node: ConstellationNode) => {
+    if (viewMode === 'inspiration') {
+      return {
+        x: 12 + ((node.x - bounds.minX) / Math.max(1, bounds.maxX - bounds.minX)) * 76,
+        y: node.kind === 'parent' ? 34 : 66,
+      }
+    }
     return {
       x: 12 + ((node.x - bounds.minX) / Math.max(1, bounds.maxX - bounds.minX)) * 76,
       y: 12 + ((node.y - bounds.minY) / Math.max(1, bounds.maxY - bounds.minY)) * 76,
@@ -228,6 +234,7 @@ export function ConstellationGraph({
   const selectedLineageUma = selectedLineageAssignment?.kind === 'lineage'
     ? content.umas.byId.get(selectedLineageAssignment.templateId)
     : undefined
+  const selectedUniqueSkill = selectedLineageUma ? naturalUniqueSkill(selectedLineageUma, content.skills.byId) : undefined
   const selectedGoldSkills = selectedLineageUma ? naturalGoldSkills(selectedLineageUma, content.skills.byId).slice(0, 2) : []
 
   return (
@@ -332,13 +339,14 @@ export function ConstellationGraph({
               )
             })}
 
-            {selectedLineageNode && selectedGoldSkills.length > 0 && (
+            {selectedLineageNode && (selectedUniqueSkill || selectedGoldSkills.length > 0) && (
               <LineageSkillMoons
                 center={px(selectedLineageNode)}
                 size={size}
                 box={box}
-                skillCount={selectedGoldSkills.length}
-                skills={selectedGoldSkills}
+                nodeKind={selectedLineageNode.kind === 'parent' ? 'parent' : 'grandparent'}
+                uniqueSkill={selectedUniqueSkill}
+                goldSkills={selectedGoldSkills}
                 onSelect={onSkillSelect}
               />
             )}
@@ -361,38 +369,55 @@ export function ConstellationGraph({
   )
 }
 
-/** Two natural gold skills orbit the selected lineage Uma without changing the saved constellation geometry. */
+/** Natural skills orbit the selected lineage Uma without changing the saved constellation geometry. */
 function LineageSkillMoons({
   center,
   size,
   box,
-  skillCount,
-  skills,
+  nodeKind,
+  uniqueSkill,
+  goldSkills,
   onSelect,
 }: {
   center: { x: number; y: number }
   size: number
   box: { width: number; height: number }
-  skillCount: number
-  skills: readonly SkillTemplate[]
+  nodeKind: 'parent' | 'grandparent'
+  uniqueSkill: SkillTemplate | undefined
+  goldSkills: readonly SkillTemplate[]
   onSelect: (skill: SkillTemplate) => void
 }) {
   const moon = Math.max(22, Math.min(30, size * 0.68))
-  const side = center.x < box.width * 0.27 ? 1 : center.x > box.width * 0.73 ? -1 : 0
-  const offsets = side === 0
-    ? [{ x: -size * 1.25, y: 0 }, { x: size * 1.25, y: 0 }]
-    : [{ x: side * size * 1.15, y: -size * 0.75 }, { x: side * size * 1.15, y: size * 0.75 }]
-  const clamped = offsets.map((offset) => ({
-    x: Math.min(box.width - moon / 2 - 4, Math.max(moon / 2 + 4, center.x + offset.x)),
-    y: Math.min(box.height - moon / 2 - 4, Math.max(moon / 2 + 4, center.y + offset.y)),
-  }))
-  const ringWidth = side === 0 ? size * 3.1 : size * 2.1
-  const ringHeight = side === 0 ? size * 1.6 : size * 2.9
+  const clampPoint = (point: { x: number; y: number }) => ({
+    x: Math.min(box.width - moon / 2 - 4, Math.max(moon / 2 + 4, point.x)),
+    y: Math.min(box.height - moon / 2 - 4, Math.max(moon / 2 + 4, point.y)),
+  })
+  const points = [
+    uniqueSkill
+      ? {
+          skill: uniqueSkill,
+          point: clampPoint({
+            x: center.x,
+            y: center.y + (nodeKind === 'parent' ? -1 : 1) * (size * 0.95 + moon * 0.72),
+          }),
+        }
+      : null,
+    ...goldSkills.slice(0, 2).map((skill, index) => ({
+      skill,
+      point: clampPoint({
+        x: center.x + (index === 0 ? -1 : 1) * (size * 1.22 + moon * 0.18),
+        y: center.y,
+      }),
+    })),
+  ].filter((entry): entry is { skill: SkillTemplate; point: { x: number; y: number } } => entry !== null)
+  const ringWidth = size * 3.3
+  const ringHeight = size * 3.15
 
   return (
     <div
       className="pointer-events-none absolute z-20"
-      aria-label="Natural gold skills"
+      role="group"
+      aria-label="Natural lineage skills"
       style={{
         width: ringWidth,
         height: ringHeight,
@@ -403,8 +428,7 @@ function LineageSkillMoons({
         boxShadow: '0 0 18px rgb(255 214 102 / 0.12)',
       }}
     >
-      {skills.slice(0, skillCount).map((skill, index) => {
-        const point = clamped[index] ?? clamped[0]!
+      {points.map(({ skill, point }) => {
         return (
           <button
             key={skill.id}
