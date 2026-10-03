@@ -399,7 +399,8 @@ function LineageSkillMoons({
 }) {
   const moon = 44
   const clampPoint = (point: { x: number; y: number }) => ({
-    x: Math.min(box.width - moon / 2 - 4, Math.max(moon / 2 + 4, point.x)),
+    // Never collapse an edge moon onto its planet: selecting the planet pans these semantic orbits into view.
+    x: point.x,
     y: Math.min(box.height - moon / 2 - 4, Math.max(moon / 2 + 4, point.y)),
   })
   const points = [
@@ -415,7 +416,7 @@ function LineageSkillMoons({
     ...goldSkills.slice(0, 2).map((skill, index) => ({
       skill, open: isOpen(index),
       point: clampPoint({
-        x: center.x + (index === 0 ? -1 : 1) * (size * 1.22 + moon * 0.18),
+        x: center.x + (index === 0 ? -1 : 1) * ((size + moon) / 2 + 6),
         y: center.y,
       }),
     })),

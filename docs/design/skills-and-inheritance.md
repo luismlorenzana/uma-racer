@@ -124,7 +124,7 @@ in the **lifetime skill log** for badges and history.
 Six slots — **2 parents, 4 grandparents** — opened individually with scenario Slot Tokens (D250). Each parent node is linked to
 exactly two grandparent nodes and is detached from the card tree.
 
-The [Global Uma RPG](uma-rpg.md#inspiration-rewards-d249) supplies two global Item families: slot and skill tokens.
+The [Global Uma RPG](uma-rpg.md#inspiration-rewards-d250) supplies two global Item families: slot and skill tokens.
 No Training Level gate remains on lineage. Cards still open at TL1–8; TL9/10 still raise baseline stats and SP.
 
 A slot holds a **reference to any Uma template the player owns**. Not a snapshot, not a trained instance:

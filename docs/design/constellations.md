@@ -77,7 +77,7 @@ card concentrates its stat and hands you more of its skills.
 Skill Token per natural-gold position (two per slot, twelve total). A grandparent needs its parent's slot open.
 Slots provide inherited unique/whites/aptitudes; gold moons are separate. Old TL9/10 unlocks are grandfathered in
 save v14 / Dexie v23 without payment. See [Lineage](skills-and-inheritance.md#lineage) and
-[RPG rewards](uma-rpg.md#inspiration-rewards-d249). No Training Level or Extra stats prerequisite applies.
+[RPG rewards](uma-rpg.md#inspiration-rewards-d250). No Training Level or Extra stats prerequisite applies.
 
 With `N` = card nodes, the count unlocked at Training Level `TL ≤ 8` is:
 

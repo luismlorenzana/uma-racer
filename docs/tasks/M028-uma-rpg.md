@@ -4,7 +4,8 @@
 reachable from Home. The player saves
 five party presets, enrolls eligible outfits into one locked class/weapon, navigates an authored branching chapter,
 fights deterministic character teams, earns outfit-specific RPG levels/skills, promotes through repeatable class tiers,
-and receives scenario Inspiration Unlock Tokens in global Items. Tokens open Inspiration parent branches. Racing,
+and receives scenario Inspiration Slot and Skill Tokens in global Items. Tokens independently open lineage slots
+and natural-gold positions, with mirrored-grandparent SP efficiency (D250). Racing,
 Training, cards and Farm retain their own progression.
 
 Source of truth: [Global Uma RPG](../design/uma-rpg.md), [implementation contract](../technical/uma-rpg-implementation.md),

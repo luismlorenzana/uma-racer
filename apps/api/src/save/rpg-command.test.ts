@@ -110,7 +110,9 @@ for (const backend of ['local', 'firestore'] as const) {
 
     it.each(['choose-node', 'clear-chapter'] as const)('collects frozen tokens with %s once, atomically rejecting stale inventory', async action => {
       const reward = { tier: 1, slot: action === 'clear-chapter' ? 30 : 0, skill: action === 'choose-node' ? 60 : 0 }
-      const entry = { ...frozen, enemyKitJson: JSON.stringify({ format: 'rpg-combat-kit-v3', input: [], reward: null, inspiration: reward }) }
+      // Opaque accepted encounter data: this test isolates map receipt/item transactions, not engine replay.
+      const entry = { ...frozen, enemyKitJson: JSON.stringify({ format: 'rpg-combat-kit-v3', data: {},
+        reward: { baseExp: 100, recommendedTier: 1, recommendedLevel: 10 }, inspiration: reward }) }
       const pending = { ...atCheckpoint, status: 'pending-result', revision: 2, frozenEntry: entry }
       await repo.sync('u1', { upserts: [{ kind: 'rpgCheckpoints', id: checkpointId, baseVersion: 0, data: pending }],
         appends: [{ kind: 'rpgResults', id: result.resultId, data: result, createdAt: 30 }] })

@@ -34,7 +34,11 @@ The private URA draft is prepared; owner publication and Home release remain gat
 private-content and mobile standards, `MinigameShell`/`MinigameHeader` and `PagedGuide`, not `MinigameHost` or tickets.
 Its isolated DEV battle/chapter proofs grant no real-account rewards ([battle checks](../research/rpg-battle-phone-proof.md),
 [chapter checks](../research/rpg-chapter-phone-proof.md), [progression checks](../research/rpg-progression-phone-proof.md)).
-The chapter proof awards isolated synthetic EXP and scenario tokens; never real-account progress. T098 uses the existing global Items/ledger and conditional map/spend commands, outside the ticketed-run port. Inspiration's independent slot/gold rules and original SVG token marks are in D250. Neither uses the ticketed MinigameHost.
+The chapter proof awards isolated synthetic EXP and scenario tokens; never real-account progress. T098 uses the existing
+global Items/ledger and conditional map/spend commands, outside the ticketed-run port. Inspiration's independent
+slot/gold rules and original SVG token marks are in D250 ([reward/unlock phone proof](../research/rpg-inspiration-phone-proof.md)).
+It preserves D249's compact planets, semantic Unique/gold moons and complete six-slot bank; each rail action carries
+its own slot identity. Neither mode uses the ticketed MinigameHost.
 
 ## 2. The run lifecycle
 
