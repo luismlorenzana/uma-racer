@@ -5,11 +5,14 @@ import {
   type ConstellationNode,
   type ConstellationTemplate,
   type NodeAssignment,
+  type SkillTemplate,
 } from '@racer/domain'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { getContentAsset, type LoadedContent } from '../../content/runtime'
 import { AtlasSprite } from '../AtlasSprite'
+import { SkillIcon } from '../SkillIcon'
 import { UmaBust } from '../UmaBust'
+import { naturalGoldSkills } from './lineageSkills'
 
 /**
  * The canvas fills the host at scale 1, so the 100×100 unit layout stretches to the screen's aspect. On a portrait
@@ -47,6 +50,7 @@ export function ConstellationGraph({
   cardTypes,
   selectedId,
   onSelect,
+  onSkillSelect,
   viewMode = 'constellation',
 }: {
   template: ConstellationTemplate
@@ -57,6 +61,7 @@ export function ConstellationGraph({
   cardTypes: Readonly<Record<string, string>>
   selectedId: string | null
   onSelect: (node: ConstellationNode) => void
+  onSkillSelect: (skill: SkillTemplate) => void
   viewMode?: 'constellation' | 'inspiration'
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -216,6 +221,14 @@ export function ConstellationGraph({
   const crest = getContentAsset(content, 'scenario-icons', template.scenarioId)
   const root = visibleNodes.find((node) => node.kind === 'root')
   const fitted = view.scale === 1 && view.x === 0 && view.y === 0
+  const selectedLineageNode = viewMode === 'inspiration'
+    ? visibleNodes.find((node) => node.id === selectedId && (node.kind === 'parent' || node.kind === 'grandparent'))
+    : undefined
+  const selectedLineageAssignment = selectedLineageNode ? assignments[selectedLineageNode.id] : undefined
+  const selectedLineageUma = selectedLineageAssignment?.kind === 'lineage'
+    ? content.umas.byId.get(selectedLineageAssignment.templateId)
+    : undefined
+  const selectedGoldSkills = selectedLineageUma ? naturalGoldSkills(selectedLineageUma, content.skills.byId).slice(0, 2) : []
 
   return (
     <div
@@ -319,6 +332,17 @@ export function ConstellationGraph({
               )
             })}
 
+            {selectedLineageNode && selectedGoldSkills.length > 0 && (
+              <LineageSkillMoons
+                center={px(selectedLineageNode)}
+                size={size}
+                box={box}
+                skillCount={selectedGoldSkills.length}
+                skills={selectedGoldSkills}
+                onSelect={onSkillSelect}
+              />
+            )}
+
           </div>
         )}
       </div>
@@ -333,6 +357,72 @@ export function ConstellationGraph({
           Fit
         </button>
       )}
+    </div>
+  )
+}
+
+/** Two natural gold skills orbit the selected lineage Uma without changing the saved constellation geometry. */
+function LineageSkillMoons({
+  center,
+  size,
+  box,
+  skillCount,
+  skills,
+  onSelect,
+}: {
+  center: { x: number; y: number }
+  size: number
+  box: { width: number; height: number }
+  skillCount: number
+  skills: readonly SkillTemplate[]
+  onSelect: (skill: SkillTemplate) => void
+}) {
+  const moon = Math.max(22, Math.min(30, size * 0.68))
+  const side = center.x < box.width * 0.27 ? 1 : center.x > box.width * 0.73 ? -1 : 0
+  const offsets = side === 0
+    ? [{ x: -size * 1.25, y: 0 }, { x: size * 1.25, y: 0 }]
+    : [{ x: side * size * 1.15, y: -size * 0.75 }, { x: side * size * 1.15, y: size * 0.75 }]
+  const clamped = offsets.map((offset) => ({
+    x: Math.min(box.width - moon / 2 - 4, Math.max(moon / 2 + 4, center.x + offset.x)),
+    y: Math.min(box.height - moon / 2 - 4, Math.max(moon / 2 + 4, center.y + offset.y)),
+  }))
+  const ringWidth = side === 0 ? size * 3.1 : size * 2.1
+  const ringHeight = side === 0 ? size * 1.6 : size * 2.9
+
+  return (
+    <div
+      className="pointer-events-none absolute z-20"
+      aria-label="Natural gold skills"
+      style={{
+        width: ringWidth,
+        height: ringHeight,
+        left: center.x - ringWidth / 2,
+        top: center.y - ringHeight / 2,
+        border: '1px solid rgb(255 214 102 / 0.28)',
+        borderRadius: '50%',
+        boxShadow: '0 0 18px rgb(255 214 102 / 0.12)',
+      }}
+    >
+      {skills.slice(0, skillCount).map((skill, index) => {
+        const point = clamped[index] ?? clamped[0]!
+        return (
+          <button
+            key={skill.id}
+            type="button"
+            title={skill.name}
+            aria-label={`View ${skill.name}`}
+            className="pointer-events-auto absolute flex items-center justify-center rounded-full border border-accent bg-panel p-0.5 shadow-2 transition-transform hover:scale-110 active:scale-95"
+            style={{ width: moon, height: moon, left: point.x - (center.x - ringWidth / 2) - moon / 2, top: point.y - (center.y - ringHeight / 2) - moon / 2 }}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation()
+              onSelect(skill)
+            }}
+          >
+            <SkillIcon skill={skill} size={moon - 6} />
+          </button>
+        )
+      })}
     </div>
   )
 }

@@ -56,7 +56,10 @@ Farm crops and independent of Training Level (D235).
 
 Presentation splits these across three full-screen views: **Constellation** for card nodes and the root, **Inspiration**
 for the parent/grandparent branch, and **Extra stats** for the grid. Only Constellation offers the Spark training entry
-for now.
+for now. Inspiration keeps the six lineage planets spacious and selectable: selecting a filled parent or grandparent
+leaves that planet focused, places its two natural gold skills as smaller orbiting moons, and opens a skill detail overlay
+when a moon is tapped. A skill rail below the canvas shows that selected Uma's natural unique and gold skills in the same
+icon, kind-badge, tag and description language as the Skills page.
 
 A card may occupy **any number of nodes**, including all of them. That is the central decision: stacking one
 card concentrates its stat and hands you more of its skills.
