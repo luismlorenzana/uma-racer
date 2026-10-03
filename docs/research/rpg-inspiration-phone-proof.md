@@ -9,8 +9,9 @@ skill bank remain intact. This is not the T099 Home/playable-content release.
 Winning battles award synthetic RPG EXP; winning map transitions collect synthetic global Item tokens in those
 databases only. `/dev/inspiration-proof?node=parent0-gp0` renders invented outfits/skills and a read-only token stock.
 Its Mirror Rill checkbox compares single-side and exact-opposite-side grandparent prices. Its confirmation cannot
-spend anything. Neither proof opens the player's account database, and both routes/fixtures are excluded from
-production. All captures below contain invented data and no original-game art.
+spend anything. Reward/unlock commands in these proofs never address the player's account database; the normal
+app providers can still initialize in the background. Both routes/fixtures are excluded from production. All
+captures below contain invented data and no original-game art.
 
 ## Verified behavior
 
