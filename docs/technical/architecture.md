@@ -292,20 +292,24 @@ per-preset/chapter rows and a conditional grouped checkpoint/reward command. T09
 transport, pure combat, device-local journal/host, internal roster/party setup and lazy standalone battle stage.
 Enrollment and preset edits use the grouped command and project only acknowledged rows. Battle previews and playback
 consume the reducer and host's read-only replay projection; local action counts guard duplicate submissions. The DEV
-proof lives in a separate database, excluded from production, and grants nothing. Current save v13/Dexie v22 leave
+proof lives in a separate database, excluded from production, and grants nothing to the account. Current save v14/Dexie v23 leave
 the RPG's schema-v1 rows and v19 journal tables intact. T095 adds the pure immutable chapter parser/graph and lazy
 map host. `choose-node`/`clear-chapter` consume accepted winning evidence transactionally; pending battles cannot
 advance. A lazy SHA-256-verified private chapter loader rejects absent/drifted packs with no synthetic fallback.
 Explicit account recovery discards rejected commands/dependants but preserves local journals. Its separate DEV
 client/simulated-account proof traverses both paths and never opens account storage. T096 freezes authored EXP in
 a v2 kit wrapper (v1 remains unrewarded), grants all five entrants with the accepted terminal group and adds
-safe-checkpoint point spends, loadouts and lossless promotion with atomic preset pruning. Pending results remain
-unearned. No root-save or Dexie migration is needed. Private production chapter, tokens and Home release remain
-later M028 work; [content contract](rpg-chapter-content.md).
+safe-checkpoint point spends, loadouts and lossless promotion with atomic preset pruning. T098 freezes scenario Slot/Skill
+Token quantities in a v3 wrapper; v1/v2 combat replays unchanged and grants no tokens. Winning map advances atomically
+update the checkpoint, global Item stacks, append-only token evidence and receipt. Inspiration spends atomically update
+one explicit Uma slot/gold position and its Item stack/evidence. Related ordinary Uma/Item writes cannot overlap a reserved
+group. Pending results and tokens remain unearned. The v14/v23 migration preserves old TL9/10 lineage access and filled
+branches without charging or minting tokens, changing EXP or disturbing open RPG journals. T097's private chapter is
+authored; content publication and Home/device release remain T099 work; [content contract](rpg-chapter-content.md).
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v13: level/EXP, scenarios, assignments, Extra stats grids, race defaults, history, version
+players/{uid}/umas/{umaId}            save v14: level/EXP, scenarios, Inspiration unlocks, assignments, Extra stats grids, race defaults, history, version
 players/{uid}/cards/{cardId}          templateId, three-star bonds per scenario, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
@@ -314,7 +318,7 @@ players/{uid}/ledger/{id}             append-only ticket, coupon, and shard move
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
 players/{uid}/farm/main               Farm schema v2: used plots (sparse), outfit assignments/progress and attempt counters
 players/{uid}/items/{itemId}          current global item-stack quantity and update time
-players/{uid}/itemLedger/{id}         append-only harvest/Extra stat/Produce/Level-Up Ticket movements and Farm-harvest XP evidence
+players/{uid}/itemLedger/{id}         append-only Farm/Extra stat/Ticket movements and scenario Inspiration grants/spends
 players/{uid}/rpgOutfits/{outfitId}    schema-v1 locked class, frozen enrollment inputs, tier EXP/tree, revision
 players/{uid}/rpgPresets/party-{1..5} schema-v1 ordered nullable five-slot parties and foreground chapter
 players/{uid}/rpgCheckpoints/{id}     schema-v1 per-preset/chapter progress and optional frozen entry
@@ -327,12 +331,13 @@ Firestore cannot store an array directly inside another array, and a race record
 A record whose data holds a nested array is written with its data as JSON text (`dataJson`) and decoded on every read;
 all other records keep `data` as a map (D151).
 
-The profile's save-v13 row retains currencies, the Training EXP bank, local daily-grant date, featured Uma id, one-time
-starter-content marker, creation time, and schema version (v12 and v13 are stamps on the profile). Uma save v13 has
+The profile's save-v14 row retains currencies, the Training EXP bank, local daily-grant date, featured Uma id, one-time
+starter-content marker, creation time, and schema version (v12–v14 are stamps on the profile). Uma save v14 has
 Uma Level EXP on the flat per-scenario curve (D241) and holds one bounded
 run per unlocked scenario on the linear curve (under 1,250 EXP below TL10, 0 at TL10), assignment unions for cards and
-lineage, the unit's Extra stats grid (each stat's bought count 0–4 and at most six active nodes, D235), and optional race
-defaults. The API accepts older shapes during rollout but schema conflict resolution never lets one replace v12. Badge-state v1 is independently migratable and cannot force a
+lineage, explicit scenario Inspiration slot/gold-position unlocks (D250), the unit's Extra stats grid (each stat's bought
+count 0–4 and at most six active nodes, D235), and optional race defaults. The API accepts older shapes during rollout
+but schema conflict resolution never lets an older shape replace a newer one. Badge-state v1 is independently migratable and cannot force a
 progression reset.
 
 Race history is intentionally the typed append-only `raceResults` collection, not a growing array duplicated inside each

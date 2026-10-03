@@ -44,6 +44,7 @@ type EdgeState = 'locked' | 'open' | 'lit'
 export function ConstellationGraph({
   template,
   trainingLevel,
+  inspiration,
   assignments,
   content,
   cardTypes,
@@ -54,6 +55,7 @@ export function ConstellationGraph({
 }: {
   template: ConstellationTemplate
   trainingLevel: number
+  inspiration?: import('@racer/domain').InspirationState
   assignments: Readonly<Record<string, NodeAssignment>>
   content: LoadedContent
   /** Card id → its type, for the tile and path colour. */
@@ -69,6 +71,7 @@ export function ConstellationGraph({
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const gesture = useRef<{ distance: number; scale: number; x: number; y: number } | null>(null)
   const dragged = useRef(false)
+  const focusedSelection = useRef<string | null>(null)
   const visibleNodes = useMemo(() => template.nodes.filter((node) =>
     viewMode === 'constellation' ? node.kind === 'root' || node.kind === 'card'
       : node.kind === 'parent' || node.kind === 'grandparent'), [template, viewMode])
@@ -116,8 +119,12 @@ export function ConstellationGraph({
 
   useEffect(() => {
     if (!box || !selectedId) return
+    // Content joins can produce a new template without changing selection. Do not undo a user's Fit/pan.
+    const key = `${template.tier}:${viewMode}:${selectedId}:${box.width}:${box.height}`
+    if (focusedSelection.current === key) return
     const node = visibleNodes.find((candidate) => candidate.id === selectedId)
     if (!node) return
+    focusedSelection.current = key
     const scale = 1.35
     const point = position(node)
     setView({
@@ -125,7 +132,7 @@ export function ConstellationGraph({
       x: box.width / 2 - (point.x / 100) * box.width * scale,
       y: box.height / 2 - (point.y / 100) * box.height * scale,
     })
-  }, [box, selectedId, visibleNodes, position])
+  }, [box, selectedId, visibleNodes, position, template.tier, viewMode])
 
   const onPointerDown = (event: React.PointerEvent) => {
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
@@ -197,7 +204,7 @@ export function ConstellationGraph({
     return Math.round(Math.min(NODE_MAX, Math.max(NODE_MIN, gap * NODE_FILL)))
   }, [box, visibleNodes, position])
 
-  const unlocked = (node: ConstellationNode) => isNodeUnlocked(template, node, trainingLevel)
+  const unlocked = (node: ConstellationNode) => isNodeUnlocked(template, node, trainingLevel, inspiration)
   const filled = (node: ConstellationNode) => node.kind === 'root' || (unlocked(node) && assignments[node.id] !== undefined)
   const toneOf = (assignment: NodeAssignment | undefined): string | null =>
     assignment?.kind === 'card'
@@ -315,7 +322,7 @@ export function ConstellationGraph({
                   type="button"
                   aria-label={nodeLabel(node, open, opensAt, assignment)}
                   aria-pressed={selected}
-                  disabled={!open}
+                  disabled={!open && node.kind === 'card'}
                   onClick={() => {
                     // A pan that ends over a node must not also open it.
                     if (dragged.current) return
@@ -328,7 +335,7 @@ export function ConstellationGraph({
                     node={node}
                     size={size}
                     open={open}
-                    upNext={!open && opensAt === nextLevel}
+                    upNext={node.kind === 'card' && !open && opensAt === nextLevel}
                     opensAt={opensAt}
                     assignment={assignment}
                     tone={toneOf(assignment)}
@@ -348,6 +355,7 @@ export function ConstellationGraph({
                 uniqueSkill={selectedUniqueSkill}
                 goldSkills={selectedGoldSkills}
                 onSelect={onSkillSelect}
+                isOpen={(index) => inspiration?.golds.includes(`${selectedLineageNode.id}:gold${index}`) ?? false}
               />
             )}
 
@@ -360,7 +368,7 @@ export function ConstellationGraph({
         <button
           type="button"
           onClick={fit}
-          className="absolute right-2 top-2 min-h-[32px] rounded-full bg-white/10 px-3 text-[11px] font-semibold text-ink-on-dark backdrop-blur"
+          className="absolute right-2 top-2 min-h-11 min-w-11 rounded-full bg-white/10 px-3 text-[11px] font-semibold text-ink-on-dark backdrop-blur"
         >
           Fit
         </button>
@@ -378,6 +386,7 @@ function LineageSkillMoons({
   uniqueSkill,
   goldSkills,
   onSelect,
+  isOpen,
 }: {
   center: { x: number; y: number }
   size: number
@@ -386,16 +395,18 @@ function LineageSkillMoons({
   uniqueSkill: SkillTemplate | undefined
   goldSkills: readonly SkillTemplate[]
   onSelect: (skill: SkillTemplate) => void
+  isOpen: (index: number) => boolean
 }) {
-  const moon = Math.max(22, Math.min(30, size * 0.68))
+  const moon = 44
   const clampPoint = (point: { x: number; y: number }) => ({
-    x: Math.min(box.width - moon / 2 - 4, Math.max(moon / 2 + 4, point.x)),
+    // Never collapse an edge moon onto its planet: selecting the planet pans these semantic orbits into view.
+    x: point.x,
     y: Math.min(box.height - moon / 2 - 4, Math.max(moon / 2 + 4, point.y)),
   })
   const points = [
     uniqueSkill
       ? {
-          skill: uniqueSkill,
+          skill: uniqueSkill, open: true,
           point: clampPoint({
             x: center.x,
             y: center.y + (nodeKind === 'parent' ? -1 : 1) * (size * 0.95 + moon * 0.72),
@@ -403,13 +414,13 @@ function LineageSkillMoons({
         }
       : null,
     ...goldSkills.slice(0, 2).map((skill, index) => ({
-      skill,
+      skill, open: isOpen(index),
       point: clampPoint({
-        x: center.x + (index === 0 ? -1 : 1) * (size * 1.22 + moon * 0.18),
+        x: center.x + (index === 0 ? -1 : 1) * ((size + moon) / 2 + 6),
         y: center.y,
       }),
     })),
-  ].filter((entry): entry is { skill: SkillTemplate; point: { x: number; y: number } } => entry !== null)
+  ].filter((entry): entry is { skill: SkillTemplate; open: boolean; point: { x: number; y: number } } => entry !== null)
   const ringWidth = size * 3.3
   const ringHeight = size * 3.15
 
@@ -428,13 +439,13 @@ function LineageSkillMoons({
         boxShadow: '0 0 18px rgb(255 214 102 / 0.12)',
       }}
     >
-      {points.map(({ skill, point }) => {
+      {points.map(({ skill, point, open }) => {
         return (
           <button
             key={skill.id}
             type="button"
             title={skill.name}
-            aria-label={`View ${skill.name}`}
+            aria-label={`${open ? 'Unlocked' : 'Locked · 1 skill token'} · View ${skill.name}`}
             className="pointer-events-auto absolute flex items-center justify-center rounded-full border border-accent bg-panel p-0.5 shadow-2 transition-transform hover:scale-110 active:scale-95"
             style={{ width: moon, height: moon, left: point.x - (center.x - ringWidth / 2) - moon / 2, top: point.y - (center.y - ringHeight / 2) - moon / 2 }}
             onPointerDown={(event) => event.stopPropagation()}
@@ -443,7 +454,8 @@ function LineageSkillMoons({
               onSelect(skill)
             }}
           >
-            <SkillIcon skill={skill} size={moon - 6} />
+            <span className={open ? '' : 'opacity-40 grayscale'}><SkillIcon skill={skill} size={moon - 6} /></span>
+            {!open && <span className="absolute -bottom-1 rounded-full bg-stage px-1 text-[9px] text-ink-on-dark">Locked</span>}
           </button>
         )
       })}
@@ -507,7 +519,7 @@ function NodeTile({
   } else if (upNext || lineage) {
     face = (
       <span className="font-display font-bold" style={{ fontSize: Math.max(8, size * 0.24), color: upNext ? ACCENT : '#3a4a5c' }}>
-        TL{opensAt}
+        {lineage ? 'Token' : `TL${opensAt}`}
       </span>
     )
   } else {
@@ -531,7 +543,7 @@ function LockGlyph({ size }: { size: number }) {
 }
 
 function nodeLabel(node: ConstellationNode, open: boolean, opensAt: number, assignment: NodeAssignment | undefined): string {
-  if (!open) return `Locked ${node.kind} node — opens at Training Level ${opensAt}`
+  if (!open) return node.kind === 'card' ? `Locked ${node.kind} node — opens at Training Level ${opensAt}` : `Locked ${node.kind} ${node.id} — unlock with 1 slot token`
   if (!assignment) return `Empty ${node.kind} node`
   return `${node.kind} node — filled`
 }

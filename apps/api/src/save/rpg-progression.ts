@@ -12,7 +12,7 @@ export function frozenReward(kitJson: string, member: Record<string, unknown>, w
   if (!win) return 0
   try {
     const kit: unknown = JSON.parse(kitJson)
-    if (!rpgRecord(kit) || kit.format !== 'rpg-combat-kit-v2') return 0 // Unrewarded v1 entries.
+    if (!rpgRecord(kit) || !['rpg-combat-kit-v2', 'rpg-combat-kit-v3'].includes(kit.format as string)) return 0 // Unrewarded v1 entries.
     const r = kit.reward
     if (!rpgRecord(r) || !Number.isSafeInteger(r.baseExp) || (r.baseExp as number) < 0 || (r.baseExp as number) > 1_000_000 ||
       !Number.isSafeInteger(r.recommendedTier) || (r.recommendedTier as number) < 1 || (r.recommendedTier as number) > 10_000 ||

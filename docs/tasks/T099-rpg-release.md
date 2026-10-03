@@ -12,8 +12,10 @@ T093–T098 **and** a verified private first-chapter publish.
   unavailable explanation, never synthetic production opponents. Add the in-mode paged guide for party/class choice,
   weapon/element legend, MP, action/weakness, checkpoints/resume, promotion and where scenario tokens go.
 - Run one real-content scenario path: enroll five outfits, save preset, choose chapter, inspect route/enemies, win/lose
-  and retry, pause/reload/switch devices, clear boss, see RPG EXP/skills, promote if eligible, receive a token in Items
-  and spend it on a parent branch. Verify idempotence by reopening result and reconnecting after clear. Record pack
+  and retry, pause/reload/switch devices, clear boss, see RPG EXP/skills, promote if eligible, receive both scenario
+  token families in Items and spend them on an independent lineage slot and natural-gold position (D250).
+  Verify single-side grandparent 2× SP and exact opposite-side mirror normal SP, including a cheaper own/card/parent
+  source. Verify idempotence by reopening result and reconnecting after clear. Record pack
   version/hash, not private roster data, in the PR.
 - Check 390×844 and a smaller iPhone viewport, thumb targets/safe areas/no battle page scroll, VoiceOver labels,
   text/glyph affinity cues, reduced motion, offline/background return and a long battle/chapter. Attach map, mid-fight,
@@ -28,7 +30,7 @@ T093–T098 **and** a verified private first-chapter publish.
   validator reports zero dangling references and a reproducible hash. The app never renders synthetic enemies when
   that pack is absent. An old frozen entry either finds its exact referenced version or shows a recovery error.
 - **Progress and economy:** one normal fight, loss/retry, boss clear and voluntary replay produce exactly the
-  accepted encounter/clear receipts. After reload/reconnect, outfit EXP, tree points, Items and Inspiration branch
+  accepted encounter/clear receipts. After reload/reconnect, outfit EXP, tree points, Items and Inspiration slot/gold
   state agree with the ledgers. Pending offline result is visibly pending and unspendable. A second device takes over
   the same frozen entry; the stale device cannot commit. Race/Training/Farm resources are unchanged.
 - **Experience:** no hidden role quota, five portraits readable at 390×844, weapon/element overlays across hub/map/

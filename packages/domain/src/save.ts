@@ -35,7 +35,9 @@ import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt
   parseRpgPresetSave, parseRpgPromotionEvidence, parseRpgResultEvidence, rpgCheckpointId,
   type RpgCommandAction, type RpgCommandReceiptV1 } from './rpg/save'
 
-export const SAVE_SCHEMA_VERSION = 13 as const
+import { emptyInspiration, grandfatherInspiration, parseInspiration, type InspirationState } from './inspiration'
+
+export const SAVE_SCHEMA_VERSION = 14 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
@@ -48,6 +50,7 @@ export const LEGACY_SAVE_SCHEMA_VERSION_V9 = 9 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V10 = 10 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V11 = 11 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V12 = 12 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V13 = 13 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -153,6 +156,8 @@ export interface ScenarioTraining {
   assignments: Record<string, NodeAssignment>
   /** The Extra stats grid: nodes bought with this scenario's crops, and the six at most that pay (D235). */
   extraStats: ExtraStats
+  /** Slot and natural-gold availability, independent of Training Level (D250). */
+  inspiration: InspirationState
   loadoutSkillIds: string[]
   journey: ScenarioJourney | null
   /** False until the player confirms this scenario's start. */
@@ -160,7 +165,7 @@ export interface ScenarioTraining {
 }
 
 /** A v5–v11 unit: Produce nodes in the tree and no Extra stats grid. Only the migrations read it. */
-export interface LegacyScenarioTraining extends Omit<ScenarioTraining, 'assignments' | 'extraStats'> {
+export interface LegacyScenarioTraining extends Omit<ScenarioTraining, 'assignments' | 'extraStats' | 'inspiration'> {
   assignments: Record<string, LegacyNodeAssignment>
 }
 
@@ -964,6 +969,7 @@ const LEGACY_SCENARIO_TRAINING_KEYS = [
   'tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started',
 ] as const
 const SCENARIO_TRAINING_KEYS = [...LEGACY_SCENARIO_TRAINING_KEYS, 'extraStats'] as const
+const SCENARIO_TRAINING_V14_KEYS = [...SCENARIO_TRAINING_KEYS, 'inspiration'] as const
 const LEGACY_UMA_VERSIONED_KEYS = [
   'schemaVersion', ...LEGACY_UMA_KEYS, 'scenarioStarted', 'skillHistory', 'currentParents', 'parentSnapshot',
   'goalPlanVersion', 'scenarioJourneys',
@@ -1184,7 +1190,7 @@ function parseLegacyNodeAssignment(value: unknown): LegacyNodeAssignment | null 
 }
 
 /** The fields every unit shape shares; the caller checks the keys and the assignments. */
-function parseScenarioRun(value: Record<string, unknown>, umaLevel: number, curve: 'linear' | 'legacy'): Omit<ScenarioTraining, 'assignments' | 'extraStats'> | null {
+function parseScenarioRun(value: Record<string, unknown>, umaLevel: number, curve: 'linear' | 'legacy'): Omit<ScenarioTraining, 'assignments' | 'extraStats' | 'inspiration'> | null {
   if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > tierOfLevel(umaLevel)) return null
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return null
   if (!isNonNegativeInt(value.trainingExp)) return null
@@ -1208,8 +1214,8 @@ function parseScenarioRun(value: Record<string, unknown>, umaLevel: number, curv
 }
 
 /** A v12 unit: card and lineage nodes in the tree, and the Extra stats grid beside it (D235). */
-function parseScenarioTraining(value: unknown, umaLevel: number): ScenarioTraining | null {
-  if (!isObject(value) || !exactKeys(value, SCENARIO_TRAINING_KEYS)) return null
+function parseScenarioTraining(value: unknown, umaLevel: number, legacy = false): ScenarioTraining | null {
+  if (!isObject(value) || !exactKeys(value, legacy ? SCENARIO_TRAINING_KEYS : SCENARIO_TRAINING_V14_KEYS)) return null
   const run = parseScenarioRun(value, umaLevel, 'linear')
   if (!run || !isObject(value.assignments)) return null
   const nodes = new Set(constellationTemplate(run.tier).nodes.map((node) => node.id))
@@ -1223,10 +1229,11 @@ function parseScenarioTraining(value: unknown, umaLevel: number): ScenarioTraini
     assignments[nodeId] = assignment
   }
   const extraStats = parseExtraStats(value.extraStats)
-  if (!extraStats) return null
+  const inspiration = legacy ? grandfatherInspiration(run.trainingLevel, assignments) : parseInspiration(value.inspiration)
+  if (!extraStats || !inspiration) return null
   // Canonical key order: badge fingerprints hash the save's JSON.
   return { tier: run.tier, trainingLevel: run.trainingLevel, trainingExp: run.trainingExp, cardSetIds: run.cardSetIds,
-    assignments, extraStats, loadoutSkillIds: run.loadoutSkillIds, journey: run.journey, started: run.started }
+    assignments, extraStats, inspiration, loadoutSkillIds: run.loadoutSkillIds, journey: run.journey, started: run.started }
 }
 
 /** A v5–v11 unit, whose Produce nodes were the tree's six drawn tips. */
@@ -1410,7 +1417,7 @@ export function parseLegacyUmaSaveV11(value: unknown): LegacyUmaSaveV11 | null {
  * stat, free, four at most a stat. Card and lineage assignments are kept as they were.
  */
 export function migrateUmaSaveV11(value: LegacyUmaSaveV11): LegacyUmaSaveV12 {
-  const scenarios: ScenarioTraining[] = value.scenarios.map((run) => {
+  const scenarios: Omit<ScenarioTraining, 'inspiration'>[] = value.scenarios.map((run) => {
     const assignments: Record<string, NodeAssignment> = {}
     const produce: StatKey[] = []
     const legacyIds = new Set(legacyProduceNodeIds(run.tier))
@@ -1437,13 +1444,19 @@ export function parseUmaSave(value: unknown): UmaSave | null {
 }
 
 /** v12 is v13's shape with Uma Levels on the rising curve (D241). */
-export interface LegacyUmaSaveV12 extends Omit<UmaSave, 'schemaVersion'> {
+export interface LegacyUmaSaveV12 extends Omit<UmaSave, 'schemaVersion' | 'scenarios'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V12
+  scenarios: Omit<ScenarioTraining, 'inspiration'>[]
 }
 
 export function parseLegacyUmaSaveV12(value: unknown): LegacyUmaSaveV12 | null {
   if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V12) return null
-  const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level), legacyExpToNextUmaLevel)
+  const body = parseUmaBody(value, (run, level) => {
+    const parsed = parseScenarioTraining(run, level, true)
+    if (!parsed) return null
+    const { inspiration: _inspiration, ...old } = parsed
+    return old
+  }, legacyExpToNextUmaLevel)
   return body ? { schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V12, ...body } : null
 }
 
@@ -1487,7 +1500,8 @@ export function migrateUmaSaveV12(value: LegacyUmaSaveV12): { uma: UmaSave } & U
       exp = Math.min(exp, isGateLevel(level) ? expToNextUmaLevel(level + 1) : expToNextUmaLevel(level) - 1)
     }
   }
-  const uma = parseUmaSave({ ...parsed, schemaVersion: SAVE_SCHEMA_VERSION, level, exp })
+  const uma = parseUmaSave({ ...parsed, schemaVersion: SAVE_SCHEMA_VERSION, level, exp,
+    scenarios: parsed.scenarios.map(run => ({ ...run, inspiration: grandfatherInspiration(run.trainingLevel, run.assignments) })) })
   if (!uma) throw new Error('Legacy v12 Uma save cannot be re-levelled')
   const levelsGained = Array.from({ length: level - parsed.level }, (_, index) => parsed.level + index + 1)
   return { uma, levelsGained, gateReached: levelsGained.length > 0 && isGateLevel(level) ? level : null }
@@ -1618,6 +1632,10 @@ export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
 export function migrateUmaSaveWithSurplus(value: unknown): UmaMigration | null {
   const current = parseUmaSave(value)
   if (current) return { uma: current, surplusExp: 0, levelsGained: [], gateReached: null }
+  if (isObject(value) && value.schemaVersion === 13) {
+    const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level, true), expToNextUmaLevel)
+    return body ? { uma: { schemaVersion: SAVE_SCHEMA_VERSION, ...body }, surplusExp: 0, levelsGained: [], gateReached: null } : null
+  }
   const v12 = migrateUmaSaveToV12(value)
   return v12 ? { ...migrateUmaSaveV12(v12.uma), surplusExp: v12.surplusExp } : null
 }
@@ -1661,6 +1679,7 @@ export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
 
 /** Walks any supported stored profile shape to the current one. */
 export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
+  if (isObject(value) && value.schemaVersion === 13) return parsePlayerProfile({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
   const current = parsePlayerProfile(value)
   if (current) return current
   const v12 = parseLegacyPlayerProfileV12(value)
@@ -1785,6 +1804,7 @@ export function createScenarioTraining(tier: number): ScenarioTraining {
     cardSetIds: [],
     assignments: {},
     extraStats: emptyExtraStats(),
+    inspiration: emptyInspiration(),
     loadoutSkillIds: [],
     journey: null,
     started: false,

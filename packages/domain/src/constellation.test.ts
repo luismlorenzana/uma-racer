@@ -319,6 +319,7 @@ describe('unlock schedule', () => {
     for (const tier of TIERS) {
       const template = constellationTemplate(tier)
       for (const node of template.nodes) {
+        if (node.kind === 'parent' || node.kind === 'grandparent') continue
         const level = nodeUnlockLevel(template, node)
         if (node.kind !== 'root') expect(isNodeUnlocked(template, node, level - 1)).toBe(level === 1)
         expect(isNodeUnlocked(template, node, level)).toBe(true)
@@ -343,18 +344,18 @@ describe('unlock schedule', () => {
     }
   })
 
-  it('opens the first parent and its grandparents at 9, the second at 10', () => {
+  it('does not open lineage by Training Level after the token bridge', () => {
     const template = constellationTemplate(1)
     const lineage = template.nodes.filter((node) => node.kind === 'parent' || node.kind === 'grandparent')
     expect(lineage.filter((node) => isNodeUnlocked(template, node, 8))).toHaveLength(0)
-    expect(lineage.filter((node) => isNodeUnlocked(template, node, 9))).toHaveLength(3)
-    expect(lineage.filter((node) => isNodeUnlocked(template, node, 10))).toHaveLength(6)
+    expect(lineage.filter((node) => isNodeUnlocked(template, node, 9))).toHaveLength(0)
+    expect(lineage.filter((node) => isNodeUnlocked(template, node, 10))).toHaveLength(0)
   })
 
   it('names exactly the nodes a level-up opened', () => {
     const template = constellationTemplate(1)
     const opened = nodesUnlockedBetween(template, 9, 10)
-    expect(opened.map((node) => node.id).sort()).toEqual(['parent1', 'parent1-gp0', 'parent1-gp1'])
+    expect(opened).toEqual([])
     expect(nodesUnlockedBetween(template, 5, 5)).toHaveLength(0)
   })
 })

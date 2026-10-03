@@ -339,6 +339,7 @@ function parseItemLedger(value: unknown): Record<string, unknown> | null {
     !isId(value.id) || typeof value.itemId !== 'string' ||
     !isNonNegativeInt(value.createdAt) || !isRecord(value.source)) return null
   if (value.itemId === TRAINING_LEVEL_UP_TICKET_ID) return parseTrainingTicketMovement(value)
+  if (/^inspiration:t([1-9]|1[0-4]):(slot|skill)$/.test(value.itemId)) return parseInspirationMovement(value)
   if (!FARM_CROP_ID_PATTERN.test(value.itemId)) return null
   if (value.reason === 'farm-harvest') {
     if (value.delta !== 1 || !exactKeys(value.source, ['kind', 'plotId', 'cycleId', 'templateId', 'farmingExp']) ||
@@ -367,6 +368,24 @@ function parseItemLedger(value: unknown): Record<string, unknown> | null {
 }
 
 /** A unit's Extra stats grid (D235): each stat's bought count 0–4, and at most six bought nodes on, in grid order. */
+function parseInspirationMovement(value: Record<string, unknown>): Record<string, unknown> | null {
+  const token = /^inspiration:t([1-9]|1[0-4]):(slot|skill)$/.exec(value.itemId as string)
+  if (!token || !isRecord(value.source)) return null
+  const s = value.source, tier = Number(token[1]), kind = token[2]
+  if (s.tier !== tier || s.kind !== value.reason) return null
+  if (value.reason === 'rpg-inspiration') {
+    if (!exactKeys(s, ['kind', 'entryId', 'attemptId', 'tier', 'tokenKind']) || !isId(s.entryId) || !isId(s.attemptId) ||
+      s.tokenKind !== kind || !isPositiveInt(value.delta) || value.delta > (kind === 'slot' ? 30 : 60) ||
+      value.id !== `rpg-inspiration:${s.entryId}:${kind}`) return null
+  } else if (value.reason === 'inspiration-unlock') {
+    if (!exactKeys(s, ['kind', 'umaId', 'tier', 'nodeId', 'goldIndex']) || !isId(s.umaId) ||
+      !['parent0', 'parent1', 'parent0-gp0', 'parent0-gp1', 'parent1-gp0', 'parent1-gp1'].includes(s.nodeId as string) ||
+      !(s.goldIndex === null || [0, 1].includes(s.goldIndex as number)) || kind !== (s.goldIndex === null ? 'slot' : 'skill') ||
+      value.delta !== -1 || value.id !== `inspiration:${s.umaId}:${tier}:${s.nodeId}:${s.goldIndex === null ? 'slot' : `gold${s.goldIndex}`}`) return null
+  } else return null
+  return value
+}
+
 function parseExtraStats(value: unknown): boolean {
   if (!isRecord(value) || !exactKeys(value, ['unlocked', 'active']) || !isRecord(value.unlocked) ||
     !exactKeys(value.unlocked, STATS) || !Array.isArray(value.active) || value.active.length > 6) return false
@@ -687,7 +706,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
-  if (value.schemaVersion === 11 || value.schemaVersion === 12 || value.schemaVersion === 13
+  if (value.schemaVersion === 11 || value.schemaVersion === 12 || value.schemaVersion === 13 || value.schemaVersion === 14
     ? !exactKeys(value, PROFILE_V11_FIELDS) || !isNonNegativeInt(value.trainingExpBank)
     : !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -890,8 +909,18 @@ function parseNodeAssignment(value: unknown, schemaVersion: number, tier: number
  * One persisted career run. `assignments` is only shape-checked: which node ids exist per tier comes from
  * the authored constellation templates, which live in @racer/domain and are not shipped to this deploy.
  */
+export function validInspiration(value: unknown): boolean {
+  if (!isRecord(value) || !exactKeys(value, ['slots', 'golds']) || !Array.isArray(value.slots) || !Array.isArray(value.golds)) return false
+  const slots = value.slots
+  if (slots.length > 6 || value.golds.length > 12 || new Set(slots).size !== slots.length || new Set(value.golds).size !== value.golds.length ||
+    slots.some(s => !['parent0', 'parent1', 'parent0-gp0', 'parent0-gp1', 'parent1-gp0', 'parent1-gp1'].includes(s as string))) return false
+  if (slots.some(s => String(s).includes('-gp') && !slots.includes(['parent0-gp0', 'parent0-gp1'].includes(s as string) ? 'parent0' : 'parent1'))) return false
+  return value.golds.every(g => slots.some(s => g === `${s}:gold0` || g === `${s}:gold1`))
+}
+
 function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: number): boolean {
-  if (!isRecord(value) || !exactKeys(value, schemaVersion >= 12 ? SCENARIO_TRAINING_V12_FIELDS : SCENARIO_TRAINING_FIELDS)) return false
+  if (!isRecord(value) || !exactKeys(value, schemaVersion >= 14 ? [...SCENARIO_TRAINING_V12_FIELDS, 'inspiration'] : schemaVersion >= 12 ? SCENARIO_TRAINING_V12_FIELDS : SCENARIO_TRAINING_FIELDS)) return false
+  if (schemaVersion >= 14 && !validInspiration(value.inspiration)) return false
   if (schemaVersion >= 12 && !parseExtraStats(value.extraStats)) return false
   if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > Math.ceil(umaLevel / 10)) return false
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return false
@@ -917,16 +946,16 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
  */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
   const withPreferences = value.schemaVersion === 10 || value.schemaVersion === 11 || value.schemaVersion === 12 ||
-    value.schemaVersion === 13
+    value.schemaVersion === 13 || value.schemaVersion === 14
   if (!exactKeys(value, withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS) ||
-    ![5, 6, 7, 8, 9, 10, 11, 12, 13].includes(value.schemaVersion as number)) return null
+    ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(value.schemaVersion as number)) return null
   if (withPreferences && value.racePreferences !== null &&
     (!isRecord(value.racePreferences) || !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
       !['front', 'pace', 'late', 'end'].includes(value.racePreferences.strategy as string) ||
       !['sprint', 'mile', 'medium', 'long'].includes(value.racePreferences.distance as string) ||
       !['turf', 'dirt'].includes(value.racePreferences.surface as string))) return null
   if (!isId(value.templateId) || !isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
-  if (value.exp > umaExpLimit(value.level, value.schemaVersion === 13 ? 'flat' : 'rising')) return null
+  if (value.exp > umaExpLimit(value.level, (value.schemaVersion as number) >= 13 ? 'flat' : 'rising')) return null
   if (!isNonNegativeInt(value.goalPlanVersion) || value.goalPlanVersion > 4) return null
 
   const currentTier = Math.ceil((value.level as number) / 10)
@@ -951,7 +980,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8, 9, 10, 11, 12, 13].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null

@@ -356,13 +356,14 @@ describe('persistent minigame host', () => {
   it('freezes active derived constellation aptitudes rather than template aptitudes', async () => {
     const template = constellationTemplate(1)
     const lineageNodes = template.nodes.filter((node) =>
-      (node.kind === 'parent' || node.kind === 'grandparent') && isNodeUnlocked(template, node, 9))
+      (node.kind === 'parent' || node.kind === 'grandparent') && node.id.startsWith('parent0'))
     const configured = startedUma()
     await seed({ uma: {
       ...configured,
       scenarios: configured.scenarios.map((scenario) => ({
         ...scenario,
         trainingLevel: 9,
+        inspiration: { slots: ['parent0', 'parent0-gp0', 'parent0-gp1'], golds: [] },
         assignments: Object.fromEntries(lineageNodes.slice(0, 3).map((node, index) => [
           node.id, { kind: 'lineage' as const, templateId: lineageTemplates[index]!.id },
         ])),

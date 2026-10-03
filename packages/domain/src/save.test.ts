@@ -45,7 +45,7 @@ const aptitudes = {
 /** A profile as schemas 1–10 stored it: the same fields, before v11's Training EXP bank (D212). */
 /** A v5–v11 Uma made from today's: the same, without the Extra stats grid (D235). */
 function legacyUma<V extends number>(save: UmaSave, schemaVersion: V) {
-  return { ...save, schemaVersion, scenarios: save.scenarios.map(({ extraStats: _grid, ...run }) => run) }
+  return { ...save, schemaVersion, scenarios: save.scenarios.map(({ extraStats: _grid, inspiration: _inspiration, ...run }) => run) }
 }
 
 function legacyProfile<V extends number>(schemaVersion: V, overrides: Record<string, unknown> = {}) {
@@ -115,7 +115,7 @@ describe('save initialization', () => {
     // A new Uma starts with one scenario at tier 1 and nothing configured in it.
     expect(result.umas[0]!.unlockedTier).toBe(1)
     expect(result.umas[0]!.scenarios).toEqual([{
-      tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {}, extraStats: emptyExtraStats(),
+      tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {}, extraStats: emptyExtraStats(), inspiration: { slots: [], golds: [] },
       loadoutSkillIds: [], journey: null, started: false,
     }])
   })
@@ -184,8 +184,8 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 14 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 14 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 15 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 15 })).toThrow(/App update required/)
     expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), trainingExpBank: -1 })).toBeNull()
   })
 
@@ -340,7 +340,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 14 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 15 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)

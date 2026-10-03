@@ -43,6 +43,7 @@ function derive(tier: number, set: SetCard[], options: { statNodes?: number; lin
   return deriveStats({
     tier, trainingLevel: 10, template, assignments, cardSetIds: set.map((entry) => entry.id), umaTemplate: uma, cards,
     extraStats, goalsWon: options.goalsWon, buffs: options.buffs,
+    inspiration: { slots: template.nodes.filter(n => n.kind === 'parent' || n.kind === 'grandparent').map(n => n.id) },
   })
 }
 

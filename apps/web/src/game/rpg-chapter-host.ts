@@ -2,19 +2,22 @@
 import {
   assertRpgChapterCheckpoint, isRpgBattleNode, projectRpgStats, rpgAcceptBattleNode, rpgAcceptSafeNode,
   rpgChapterChoices, rpgCheckpointId, rpgResultId, validateRpgLoadout,
-  parseSaveSnapshotOrThrow,
+  parseSaveSnapshotOrThrow, parseUmaSave,
+  rpgInspirationReward, inspirationGrantId, inspirationTokenId, parseInspirationMovement, type InspirationMovement,
   type EncounterInput, type RpgChapter, type RpgChapterPack, type RpgCheckpointSaveV1,
   type RpgCommandRequest, type RpgOutfitSaveV1, type RpgPresetSaveV1, type RpgPackIdentity,
 } from '@racer/domain'
 import { db, type RacerDb, type VersionedRow, type PendingRpgCommandRow } from './db'
-import { DexieRpgBattleHost } from './rpg-battle-host'
+import { DexieRpgBattleHost, decodeInspirationReward } from './rpg-battle-host'
 import { enqueueRpgCommand } from './rpg-sync'
 import { saveApi } from '../api/client'
+import { queueInTransaction } from './persistence'
 
 export interface RpgChapterView {
   pack: RpgChapterPack | null; chapter: RpgChapter | null; unavailable: string | null
   preset: VersionedRow<RpgPresetSaveV1> | null; checkpoint: VersionedRow<RpgCheckpointSaveV1> | null
   outfits: VersionedRow<RpgOutfitSaveV1>[]; checkpoints: VersionedRow<RpgCheckpointSaveV1>[]; pending: PendingRpgCommandRow[]
+  tokenGrants: InspirationMovement[]
 }
 const data = (v: object) => v as unknown as Record<string, unknown>
 
@@ -39,7 +42,11 @@ export class RpgChapterHost {
     if (chapter && checkpoint) {
       try { assertRpgChapterCheckpoint(chapter, checkpoint.data) } catch (e) { unavailable = String(e) }
     }
-    return { pack, chapter, unavailable, preset: preset ?? null, checkpoint, outfits,
+    const tokenGrants = (await this.database.itemLedger.toArray()).flatMap(r => {
+      const movement = parseInspirationMovement(r.data)
+      return movement?.source.kind === 'rpg-inspiration' && movement.source.attemptId === checkpoint?.data.attemptId ? [movement] : []
+    })
+    return { pack, chapter, unavailable, preset: preset ?? null, checkpoint, outfits, tokenGrants,
       checkpoints: checkpoints.filter((c) => c.data.presetId === presetId), pending }
   }
 
@@ -116,7 +123,7 @@ export class RpgChapterHost {
       const input: EncounterInput = { version: 1, contentVersion: cp.contentVersion, seed: 0, weaknessFollowUp: 'bounded',
         allies: this.party(view), enemies: node.enemies.map((id) => view.pack!.actors.find((a) => a.id === id)!.combat) }
       await this.battle.enter(uid, view.checkpoint.id, nodeId, input, { baseExp: node.baseExp ?? 0,
-        recommendedTier: view.chapter.recommendedTier, recommendedLevel: view.chapter.recommendedLevel })
+        recommendedTier: view.chapter.recommendedTier, recommendedLevel: view.chapter.recommendedLevel }, rpgInspirationReward(view.chapter, node))
       return 'battle'
     }
     await this.move(view.checkpoint, rpgAcceptSafeNode(view.chapter, cp, nodeId), 'choose-node')
@@ -134,17 +141,34 @@ export class RpgChapterHost {
     await this.move(cp, next, next.status === 'cleared' ? 'clear-chapter' : 'choose-node')
   }
 
-  private move(before: VersionedRow<RpgCheckpointSaveV1>, next: RpgCheckpointSaveV1, action: 'choose-node' | 'clear-chapter') {
-    return this.queue({ schemaVersion: 1, commandId: `rpg-map:${before.id}:${next.revision}`, action,
+  private async move(before: VersionedRow<RpgCheckpointSaveV1>, next: RpgCheckpointSaveV1, action: 'choose-node' | 'clear-chapter') {
+    const body: RpgCommandRequest = { schemaVersion: 1, commandId: `rpg-map:${before.id}:${next.revision}`, action,
       expected: [{ kind: 'rpgCheckpoints', id: before.id, version: before.version }],
-      upserts: [{ kind: 'rpgCheckpoints', id: before.id, data: data(next) }], appends: [] })
+      upserts: [{ kind: 'rpgCheckpoints', id: before.id, data: data(next) }], appends: [] }
+    const entry = before.data.status === 'pending-result' ? before.data.frozenEntry : null
+    const reward = entry && decodeInspirationReward(entry.enemyKitJson)
+    if (entry && reward) for (const kind of ['slot', 'skill'] as const) {
+      const delta = reward[kind]
+      if (!delta) continue
+      const itemId = inspirationTokenId(reward.tier, kind), stack = await this.database.items.get(itemId), now = this.now()
+      const quantity = (stack?.data.quantity ?? 0) + delta
+      if (!Number.isSafeInteger(quantity)) throw new Error('Token inventory overflow')
+      const movement: InspirationMovement = { id: inspirationGrantId(entry.entryId, kind), itemId, delta,
+        reason: 'rpg-inspiration', source: { kind: 'rpg-inspiration', entryId: entry.entryId,
+          attemptId: before.data.attemptId, tier: reward.tier, tokenKind: kind }, createdAt: now }
+      body.expected.push({ kind: 'items', id: itemId, version: stack?.version ?? 0 })
+      body.upserts.push({ kind: 'items', id: itemId, data: { itemId, quantity, updatedAt: now } })
+      body.appends.push({ kind: 'itemLedger', id: movement.id, data: data(movement), createdAt: now })
+    }
+    await this.queue(body)
   }
 
   private async queue(body: RpgCommandRequest) {
-    await this.database.transaction('rw', [this.database.pendingRpgCommands, this.database.rpgCheckpoints, this.database.rpgPresets, this.database.rpgOutfits], async () => {
+    await this.database.transaction('rw', [this.database.pendingRpgCommands, this.database.rpgCheckpoints, this.database.rpgPresets, this.database.rpgOutfits, this.database.items, this.database.outbox], async () => {
       for (const e of body.expected) {
         const row = await this.database.table(e.kind).get(e.id) as VersionedRow<unknown> | undefined
         if ((row?.version ?? 0) !== e.version) throw new Error('Chapter revision changed before reservation')
+        if (e.kind === 'items' && await this.database.outbox.where('[kind+id]').equals([e.kind, e.id]).count()) throw new Error('Sync the Item inventory before collecting tokens')
       }
       const pending = await this.database.pendingRpgCommands.toArray()
       if (pending.some((r) => (r.body as RpgCommandRequest).upserts.some((u) => body.expected.some((e) => e.kind === u.kind && e.id === u.id)))) throw new Error('Chapter change already reserved; wait for acknowledgement')
@@ -154,18 +178,30 @@ export class RpgChapterHost {
 
   /** Explicit conflict recovery. Never rebases rejected wins; rejected journals are archived locally. */
   async refreshAccount(discardRejected = false, transport: Pick<typeof saveApi, 'load'> = this.account): Promise<void> {
-    const snapshot = parseSaveSnapshotOrThrow(await transport.load())
+    const raw = await transport.load()
+    const snapshot = parseSaveSnapshotOrThrow(raw)
+    // The snapshot parser migrates supported data. Compare raw rows after validation to queue cloud replacements.
+    const legacyUmaIds = new Set((raw as { entities: { kind: string; id: string; data: unknown }[] }).entities
+      .filter(e => e.kind === 'umas' && !parseUmaSave(e.data)).map(e => e.id))
     await this.database.transaction('rw', [this.database.rpgOutfits, this.database.rpgPresets, this.database.rpgCheckpoints,
       this.database.rpgResults, this.database.rpgReceipts, this.database.rpgPromotions, this.database.pendingRpgCommands,
-      this.database.rpgBattleJournals, this.database.rpgBattleArchives, this.database.rpgBattleClaims], async () => {
+      this.database.rpgBattleJournals, this.database.rpgBattleArchives, this.database.rpgBattleClaims,
+      this.database.umas, this.database.items, this.database.itemLedger, this.database.outbox], async () => {
+      const migratedUmaIds: string[] = []
       for (const e of snapshot.entities) {
-        if (!['rpgOutfits', 'rpgPresets', 'rpgCheckpoints'].includes(e.kind)) continue
+        if (!['rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'umas', 'items'].includes(e.kind)) continue
+        // Never overwrite a newer ordinary edit while refreshing token conflict dependencies.
+        if ((e.kind === 'umas' || e.kind === 'items') &&
+          await this.database.outbox.where('[kind+id]').equals([e.kind, e.id]).count()) continue
         const local = await this.database.table(e.kind).get(e.id) as VersionedRow<unknown> | undefined
         if (local && local.version > e.version) continue
         if (e.deleted) await this.database.table(e.kind).delete(e.id)
-        else await this.database.table(e.kind).put({ id: e.id, version: e.version, data: e.data })
+        else {
+          if (e.kind === 'umas' && legacyUmaIds.has(e.id)) migratedUmaIds.push(e.id)
+          await this.database.table(e.kind).put({ id: e.id, version: e.version, data: e.data })
+        }
       }
-      for (const e of snapshot.logs) if (['rpgResults', 'rpgReceipts', 'rpgPromotions'].includes(e.kind)) {
+      for (const e of snapshot.logs) if (['rpgResults', 'rpgReceipts', 'rpgPromotions', 'itemLedger'].includes(e.kind)) {
         await this.database.table(e.kind).put({ id: e.id, createdAt: e.createdAt, data: e.data })
       }
       if (discardRejected) {
@@ -200,6 +236,18 @@ export class RpgChapterHost {
           }
         }
         await this.database.pendingRpgCommands.bulkDelete([...rejected])
+      }
+      // Ordinary queue helpers use the account database; isolated DEV/test hosts queue the equivalent marker here.
+      for (const id of migratedUmaIds) {
+        if (this.database === db) await queueInTransaction('umas', id, 'upsert', snapshot.serverTime)
+        else {
+          const pending = await this.database.pendingRpgCommands.toArray()
+          if (pending.some(p => (p.body as RpgCommandRequest).upserts.some(u => u.kind === 'umas' && u.id === id))) {
+            throw new Error('Resolve the pending Uma change before migrating its recovered row')
+          }
+          await this.database.outbox.where('[kind+id]').equals(['umas', id]).delete()
+          await this.database.outbox.add({ kind: 'umas', id, op: 'upsert', queuedAt: snapshot.serverTime })
+        }
       }
     })
   }

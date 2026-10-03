@@ -1,6 +1,7 @@
 // Strict data-only Stable Farm vocabulary (docs/design/farm.md, T082, D234).
 
 import { STATS, type StatKey } from '../types'
+import { parseInspirationMovement, type InspirationMovement } from '../inspiration'
 import {
   FARM_CROP_TIERS,
   FARM_CROP_YIELD,
@@ -143,6 +144,7 @@ export interface TrainingLevelUpMovement {
 
 /** Append-only evidence from which item quantities and Farm harvest XP can be repaired. */
 export type ItemLedgerEntry =
+  | InspirationMovement
   | FarmHarvestMovement
   | ConstellationProduceMovement
   | ExtraStatUnlockMovement
@@ -338,6 +340,8 @@ function parseExtraStatUnlockMovement(value: unknown): ExtraStatUnlockMovement |
 }
 
 export function parseItemLedgerEntry(value: unknown): ItemLedgerEntry | null {
+  const inspiration = parseInspirationMovement(value)
+  if (inspiration) return inspiration
   const harvest = parseFarmHarvestMovement(value)
   if (harvest) return harvest
   const training = parseTrainingTicketMovement(value)

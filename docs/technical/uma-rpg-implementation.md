@@ -1,13 +1,13 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** T089–T097 rules, save transport, combat, battle journal/host, internal setup, branching map, accepted progression and private content/portrait pipeline implemented. The private URA draft is prepared; owner publication, tokens and Home entry remain gated ([handoff](../research/rpg-private-ura-handoff.md)). Read [the design](../design/uma-rpg.md) for product rules and
+**Status:** T089–T098 rules, save transport, combat, battle journal/host, internal setup, branching map, accepted progression and private content/portrait pipeline implemented. The private URA draft is prepared; owner publication and Home entry remain gated ([handoff](../research/rpg-private-ura-handoff.md)). Read [the design](../design/uma-rpg.md) for product rules and
 [M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
 left ambiguous. T089's progression coefficients are pinned in D227, T091's combat coefficients in D229 and T096's
 encounter payouts in D246. Their synthetic sims and `packages/domain/src/domain.test.ts` pin these rules.
 
 ## Existing seams and the sync hazard
 
-- The current root save is v13 and Dexie v22; RPG cloud rows remain schema v1, unchanged by the later Farm/racing migrations. T090 added separate
+- The current root save is v14 and Dexie v23; RPG cloud rows remain schema v1, unchanged by the later Farm/racing migrations. T090 added separate
   `rpgOutfits`, `rpgPresets`, `rpgCheckpoints` entities and `rpgResults`, `rpgPromotions`, `rpgReceipts` logs.
   The production API parses those shapes independently of `@racer/domain`.
 - T094's `RpgBattleView` adds read-only `actionCount`, last-step `cues`, `lastAction`, pre-cue `cueState`, final
@@ -49,7 +49,7 @@ strings and matching API-side parser. Every id uses the existing safe-id rules.
 | Device-local journal | Dexie only, by entry id + retry ordinal | Engine version, frozen-entry hash, ordered validated player actions, replay state hash and terminal/pending marker. No private portrait bytes, no action journal in cloud save. |
 | Result / promotion evidence | append-only sync log | Battle result id = entry id + retry ordinal; accepted outcome hash, member EXP deltas, relevant before/after state and content version. A promotion archive records prior tier mastery without unbounded profile growth. First accepted id wins. A loss receipt and later winning retry have distinct ids but the same frozen seed. |
 | Grouped-command receipt | append-only sync log, by command id | Payload hash, accepted entity versions and result/evidence ids. This is the durable duplicate response, not a client-memory flag; a reused id with different payload rejects. |
-| Scenario token | existing `items` + `itemLedger` | Item id derives from scenario id, not from a chapter's display label. Clear grant id derives from accepted chapter-attempt id; spend id derives from Uma/scenario/branch plus an increasing revision. Stacks are projections of accepted movements, not a second RPG wallet. |
+| Scenario tokens | existing `items` + `itemLedger` | `inspiration:t{tier}:{slot|skill}` families. Grants bind entered encounter + attempt; permanent spends bind Uma/scenario/slot/gold position. Stacks project accepted movements, never a second wallet. Save v14 adds bounded `inspiration.slots/golds`; v23 pure migration preserves old TL9/10 and filled-under-gate sides. |
 
 T090 chose RPG wire schema v1, Dexie v18, five presets/five slots, 25 tree nodes, 64 path entries, 16,384 enemy-kit
 JSON characters and 20 grouped operations (D228; pinned in `domain.test.ts` and wire tests). Do not store full
@@ -59,7 +59,7 @@ for open chapters. A missing old pack is a visible recovery error, not permissio
 T092 added Dexie v19's local journal, claim and archive tables without altering that wire schema. The complete
 combat input is frozen in `enemyKitJson` using key/enum-dictionary encoding; T096's `rpg-combat-kit-v2` wrapper adds
 exact `{baseExp, recommendedTier, recommendedLevel}` reward metadata beside the unchanged compressed combat input.
-Old v1 entries replay identically and award zero; no migration or retroactive grant. The host validates combat input
+T098's v3 wrapper additionally freezes exact `{tier, slot, skill}`. v1/v2 replay the same engine input but grant zero tokens; no retroactive claim. v2 still grants its frozen EXP. The host validates combat input
 against the checkpoint's party, seed and content version before replay. Each journal records the combat engine version,
 frozen-kit SHA-256, ordered actions, current engine hash and terminal/commit markers. A queued result depends on its
 entry acknowledgement, so a rejected parent cannot send a result. The local lease marker distinguishes a
@@ -85,14 +85,14 @@ it still does not execute combat. Overflow or invalid profiles reject rather tha
 | Enroll outfit | Owned outfit, at least one source A running style, eligible signature; profile absent | RPG outfit entity with immutable style/weapon/enrollment inputs | Existing profile returns it; never re-enrolls to change class. |
 | Edit preset | Expected preset revision; distinct owned outfits and legal signature/loadouts | Only that preset row | Stale editor reloads; cannot rewrite a frozen battle. |
 | Start chapter / choose node | Complete preset; authored pack verified; expected checkpoint revision | Checkpoint with chapter version/attempt and then frozen encounter id/seed/kit | Duplicate command returns same entry. A paused other chapter remains. |
-| Accept map node | Legal graph edge/safe node, or existing acknowledged winning receipt for the frozen battle | `choose-node` appends one path id, clears the finished entry and returns to at-checkpoint | Server consumes accepted evidence inside its transaction. Pending/losing results cannot advance; a stale version conflicts. |
+| Accept map node | Legal graph edge/safe node, or existing acknowledged winning receipt for the frozen battle | `choose-node` appends one path id, clears the finished entry, returns to at-checkpoint and atomically collects frozen skill tokens with Item versions/evidence | Server consumes accepted evidence inside its transaction. Pending/losing results cannot advance; a stale version conflicts. |
 | Append battle action | Local journal and exact engine-valid action | Local journal only | Replaying the prefix gives the same hash; duplicate action index is refused. |
 | Take over on another device | Synced open entry and expected lease revision; explicit player confirmation | Checkpoint lease revision only, preserving frozen entry byte-for-byte | Old device becomes stale; offline takeover waits for acknowledgement. |
 | Commit battle result | Terminal replay hash matches frozen entry and retry ordinal; expected lease/checkpoint and all five outfit versions | Checkpoint, accepted result evidence and five positive RPG EXP projections as one conditional group; an accepted loss increments only retry ordinal | Duplicate result receipt pays once. Profile-only reconciliation retains earned identity/deltas; changed checkpoint/lease conflicts. No orphan log or EXP. A loss and later winning retry use different claim ids but identical entry/seed/kit. |
-| Clear chapter | Boss result accepted for current attempt and checkpoint | Cleared checkpoint, one scenario token stack delta and item-ledger movement in one group | Replay starts a **new** attempt; reopening the same clear returns the same receipt. |
+| Clear chapter | Boss result accepted for current attempt and checkpoint | Cleared checkpoint, 30 slot tokens (and 60 skills for a boss-only graph), expected stack versions and typed movements in one group | Replay starts a **new** attempt; reopening the same clear returns the same receipt. |
 | Spend tree point | Acknowledged earned point and legal predecessor/depth/affinity; expected outfit, all five presets and involved foreground checkpoints | One `edit-outfit` buys exactly one node or +1 skill level; projection revision +1 | No respec, refund, stale spend or optimistic profile. Active/pending battle blocks setup. |
 | Promote outfit | Lv50, explicit unspent-point discard if needed; expected outfit, all five presets and involved foreground checkpoints | Next tier Lv1 plus all bank settlement, empty current tree, mastery archive, zero–two selected legacy and all affected preset prunes | Stable outfit/from-tier id makes retry duplicate-safe; no loss of stats/bank, no class/weapon respec. |
-| Spend Inspiration token | Correct scenario token owned, branch closed, expected Uma/item versions | Branch-open state, item stack −1 and item-ledger movement atomically | Double tap or stale branch cannot charge twice; old TL-open branches cost zero. |
+| Spend Inspiration token | Correct scenario/kind owned, slot/gold closed, parent open for grandparent; gold has a filled ancestor; expected Uma/Item versions | Exactly one explicit position, stack −1 and movement atomically | Stable position id prevents duplicate deduction. Ordinary queued writes block reservation; pending reservations block later ordinary edits. Explicit conflict recovery refreshes accepted dependencies while preserving ordinary edits and rejected journals. |
 
 `begin` and `commit` may queue offline, but **only acknowledged state is spendable**. The UI must show Pending sync,
 Conflict, Frozen content unavailable and Accepted states distinctly. T090 owns grouped transport/receipt semantics;
@@ -120,9 +120,9 @@ run a second TypeScript combat engine or to trust unbounded/unparsed request bod
   [chapter schema and handoff](rpg-chapter-content.md): six nodes, two/three fights, Tier 1 Lv10, full HP/MP at
   every entry and recovery as a safe setup/shorter route. T097 privately authors the first real chapter against it.
 - The result is a receipt, not a screen-local claim: member EXP and level changes are per outfit; a KO rule and
-  catch-up/taper are fixed in T096; chapter clear token is granted only after accepted boss completion in T098.
+  catch-up/taper are fixed in T096; T098 tokens collect only with accepted winning map advances, regular skill tokens or boss slot tokens.
   Race EXP, Training EXP, Farm XP, badges and card stars are absent. The result screen names pending versus accepted
-  rewards and links the token to global Items and Inspiration once T098 lands.
+  rewards and links tokens to global Items and Inspiration.
 
 ## Checkpoints for implementers
 
@@ -135,7 +135,7 @@ run a second TypeScript combat engine or to trust unbounded/unparsed request bod
 3. **Vertical slice gate (T093–T096):** one synthetic chapter goes from enrollment through boss result and two-tier
    promotion on a browser, survives reload, and shows accurate pending/accepted status. No Home entry yet.
 4. **Content/sink gate (T097/T098):** one privately published real chapter resolves every character, image, action,
-   phase and scenario id; its clear grants exactly one spendable token, including after reconnect/replay. Existing
+   phase and scenario id; its shortest route grants at least 60 skill and 30 slot tokens, including after reconnect/replay. Existing
    TL9/10-open Inspiration branches stay open without payment.
 5. **Release/coverage gate (T099/M029):** T099 links Home only after the first real chapter and owner device pass;
    [M029](../tasks/M029-rpg-chapter-rollout.md) then tracks authored coverage of all fourteen current scenarios.

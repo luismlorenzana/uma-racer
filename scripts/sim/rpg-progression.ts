@@ -2,7 +2,9 @@
 import {
   enrollRpgOutfit, grantRpgExp, promoteRpgOutfit, projectRpgStats, rpgExpToNext,
   spendRpgTreePoint, rpgEncounterBaseExp, rpgEncounterExp, rpgChapterFightCounts, type RpgProfile, type RpgSkillRef,
+  rpgInspirationReward,
 } from '../../packages/domain/src/rpg/index'
+import { SCENARIOS, INSPIRATION_SLOTS, emptyInspiration, openInspiration } from '../../packages/domain/src/index'
 import { syntheticChapterPack } from '../../packages/domain/src/rpg/chapter.synthetic'
 
 const outfit = {
@@ -35,6 +37,7 @@ for (const route of ['rest', 'elite'] as const) {
       const recommendedLevel = 1 + chapter * 10
       const before = profile.level
       let total = 0
+      let slotTokens = 0, skillTokens = 0
       const fights = fixture.nodes.filter((n) => n.kind === 'encounter' || n.kind === 'boss' || route === 'elite' && n.kind === 'elite')
       for (const node of fights) {
         const reward = { baseExp: rpgEncounterBaseExp(recommendedLevel, node.kind as 'encounter' | 'elite' | 'boss'),
@@ -43,9 +46,22 @@ for (const route of ['rest', 'elite'] as const) {
         const from = profile.level
         profile = grantRpgExp(profile, delta).profile
         total += delta
+        const tokens = rpgInspirationReward({ ...fixture, scenarioId: SCENARIOS[chapter]!.id }, node)
+        slotTokens += tokens.slot; skillTokens += tokens.skill
         rows.push(`${route} T${tier} chapter ${chapter + 1} ${node.kind}: +${delta} → Lv${from}→${profile.level}, EXP/bank ${profile.exp}`)
       }
       rows.push(`  Chapter total +${total}; ${profile.level - before} levels`)
+      // Five outfits, all six lineage slots and both gold moons per slot. No optional fight required.
+      const slotBefore = slotTokens, skillBefore = skillTokens
+      for (let member = 0; member < 5; member++) {
+        let state = emptyInspiration()
+        for (const slot of INSPIRATION_SLOTS) {
+          state = openInspiration(state, slot, null); slotTokens--
+          for (const index of [0, 1]) { state = openInspiration(state, slot, index); skillTokens-- }
+        }
+        if (state.slots.length !== 6 || state.golds.length !== 12 || slotTokens < 0 || skillTokens < 0) throw new Error('Five-outfit Inspiration funding shortfall')
+      }
+      rows.push(`  ${SCENARIOS[chapter]!.name}: ${slotBefore} slot / ${skillBefore} skill tokens → five full builds; surplus ${slotTokens}/${skillTokens}`)
       if (chapter < 4 && (profile.level - before < (tier === 1 ? 7 : 3) || profile.level - before > 14)) throw new Error(`Chapter pacing outside first-tier 7–14 / carried-bank 3–14 levels: ${rows.join('\n')}`)
     }
     if (profile.level !== 50) throw new Error(`${route} five chapters did not reach promotion: Lv${profile.level}`)

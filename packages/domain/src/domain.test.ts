@@ -6,6 +6,11 @@ import {
   CARD_FOCUS_MIN_SHARE,
   CARD_FOCUS_MIN_SKILLS,
   LINEAGE_SLOT_COUNT,
+  INSPIRATION_GOLDS_PER_SLOT,
+  INSPIRATION_UNLOCK_COST,
+  GRANDPARENT_SP_MULTIPLIER,
+  RPG_SLOT_TOKEN_REWARD,
+  RPG_SKILL_TOKEN_BUDGET,
   lineageSteps,
   upgradedGrade,
   trainingExpToNext,
@@ -262,6 +267,18 @@ describe('Global Uma RPG — D227 progression pins', () => {
       .toBe(116)
     expect(rpgSignatureMagnitude(105, profile, { kind: 'healing', weapon: 'spear', element: 'ice' }, 'fire'))
       .toBe(105)
+  })
+})
+
+describe('Inspiration reward budget (D250)', () => {
+  it('funds five full six-slot/twelve-gold builds per scenario', () => {
+    expect(INSPIRATION_GOLDS_PER_SLOT).toBe(2)
+    expect(INSPIRATION_UNLOCK_COST).toBe(1)
+    expect(GRANDPARENT_SP_MULTIPLIER).toBe(2)
+    expect(RPG_SLOT_TOKEN_REWARD).toBe(30)
+    expect(RPG_SKILL_TOKEN_BUDGET).toBe(60)
+    expect(RPG_SLOT_TOKEN_REWARD).toBe(5 * LINEAGE_SLOT_COUNT)
+    expect(RPG_SKILL_TOKEN_BUDGET).toBe(5 * LINEAGE_SLOT_COUNT * INSPIRATION_GOLDS_PER_SLOT)
   })
 })
 

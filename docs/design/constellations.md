@@ -71,13 +71,13 @@ card concentrates its stat and hands you more of its skills.
 |---|---|
 | 1 | the baseline card nodes (see below) |
 | 2–8 | the remaining card nodes, in template order |
-| 9 | parent node A, plus its two grandparent nodes |
-| 10 | parent node B, plus its two grandparent nodes |
+| 9–10 | no further card nodes; baseline stats and SP still rise |
 
-**Current implementation:** TL9/10 still open these lineage branches. The proposed
-[Global Uma RPG Inspiration token bridge](uma-rpg.md#chapters-content-and-reward-boundary) would replace that gate in a
-future migration: one scenario token opens one parent and its two linked grandparents, two tokens open both branches
-for an Uma in a scenario, and already-open branches stay open. This proposal does not alter today's save or TL rules.
+**Inspiration (D250)** opens independently: one scenario Slot Token per parent/grandparent slot (six total), and one
+Skill Token per natural-gold position (two per slot, twelve total). A grandparent needs its parent's slot open.
+Slots provide inherited unique/whites/aptitudes; gold moons are separate. Old TL9/10 unlocks are grandfathered in
+save v14 / Dexie v23 without payment. See [Lineage](skills-and-inheritance.md#lineage) and
+[RPG rewards](uma-rpg.md#inspiration-rewards-d250). No Training Level or Extra stats prerequisite applies.
 
 With `N` = card nodes, the count unlocked at Training Level `TL ≤ 8` is:
 
@@ -85,8 +85,8 @@ With `N` = card nodes, the count unlocked at Training Level `TL ≤ 8` is:
 unlockedNodes(TL) = ceil(N × TL / 8)
 ```
 
-so Training Levels 1–8 open only card nodes, spread evenly (tier 1's 18: 3, 5, 7, 9, 12, 14, 16, 18), and 9 and 10 are
-purely lineage (D235). Training Level has no part in Extra stats. Which specific nodes open is fixed by the template's
+so Training Levels 1–8 open only card nodes, spread evenly (tier 1's 18: 3, 5, 7, 9, 12, 14, 16, 18). Training Level
+has no part in Inspiration or Extra stats. Which specific card nodes open is fixed by the template's
 ordering, which is a breadth-first walk from the root: the tree always grows outward and never strands an unreachable
 node.
 
@@ -281,7 +281,8 @@ Three sources, all deterministic. No hint rolls.
    is white. A card on four nodes pays four whites and up to four golds (most cards have one), so stacking a card is a
    skill decision as well as a stat one.
 2. **Lineage nodes.** Each filled parent or grandparent node contributes that Uma template's four
-   `awakeningSkillIds` — her baseline golds and whites — to the library, and her unique in its inherited form (D174).
+   baseline whites from `awakeningSkillIds` and her unique in its inherited form to the library (D174). Her two natural
+   golds enter only through the independently unlocked gold positions (D250).
 3. **Her own kit** (D186). What she brings herself, as an original career does: her three **innate** skills and every
    skill her own **story events** teach (mostly whites), from her first scenario; and her four **awakening** skills in
    pairs, a white and a gold, the first pair from her first scenario and the second from her second. The Skills page
@@ -320,7 +321,9 @@ A parent or grandparent slot accepts **any Uma template the player owns**. There
 templates never change (D123).
 
 - The Uma herself is never eligible.
-- No two slots may hold the same character, including different outfits of that character.
+- Parents are different characters; grandparents cannot be parents or repeat on their own side. The same exact
+  grandparent outfit may mirror once across sides, counting twice for aptitudes and returning unique/gold costs to
+  normal SP. Single-side grandparents cost 2× SP for unique/gold full chains; cheapest other sources win (D250).
 - Slots may be changed whenever they are unlocked, like every other node.
 
 *(This replaces parent snapshots, grandparent skill-picking, inheritable-white computation, pink sparks, and
@@ -368,7 +371,7 @@ edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143)
 
   | State | Look |
   |---|---|
-  | Locked | A dark recessed socket with a faint lock; lineage sockets name their Training Level |
+  | Locked | A dark recessed socket with a faint lock; lineage sockets name their slot-token requirement |
   | Opens next | A dashed gold socket naming the Training Level that opens it (`TL3`) |
   | Open, empty | A lit frame with a **+**, gold on the tree and silver in lineage |
   | Filled | The card icon or Uma bust, framed and glowing in the card type's or lineage colour |

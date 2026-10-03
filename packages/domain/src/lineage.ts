@@ -1,6 +1,7 @@
 // Lineage slots: baseline skills and aptitude upgrades from Uma templates (docs/design/skills-and-inheritance.md).
 
 import type { SkillTemplate, UmaTemplate } from './content'
+import { inspirationParent } from './inspiration'
 import {
   DISTANCE_CATEGORIES,
   GRADES,
@@ -141,6 +142,20 @@ export function lineageInheritedUniques(
 export interface LineageEligibility {
   eligible: boolean
   reason: string | null
+}
+
+/** Parents are independent; the same exact grandparent outfit may mirror across sides, never within one side. */
+export function lineageSlotEligibility(candidate: Pick<UmaTemplate, 'id' | 'charaId'>,
+  child: Pick<UmaTemplate, 'id' | 'charaId'>, slot: string,
+  held: ReadonlyMap<string, Pick<UmaTemplate, 'id' | 'charaId'>>): LineageEligibility {
+  if (candidate.charaId === child.charaId) return { eligible: false, reason: "That's her" }
+  for (const [otherSlot, other] of held) {
+    if (otherSlot === slot || other.charaId !== candidate.charaId) continue
+    if (slot.includes('-gp') && otherSlot.includes('-gp') &&
+      inspirationParent(slot) !== inspirationParent(otherSlot) && candidate.id === other.id) continue
+    return { eligible: false, reason: 'Only the same grandparent outfit on the opposite side may repeat' }
+  }
+  return { eligible: true, reason: null }
 }
 
 /**

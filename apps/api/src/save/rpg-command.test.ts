@@ -108,6 +108,56 @@ for (const backend of ['local', 'firestore'] as const) {
       ], appends: [] })
     }
 
+    it.each(['choose-node', 'clear-chapter'] as const)('collects frozen tokens with %s once, atomically rejecting stale inventory', async action => {
+      const reward = { tier: 1, slot: action === 'clear-chapter' ? 30 : 0, skill: action === 'choose-node' ? 60 : 0 }
+      // Opaque accepted encounter data: this test isolates map receipt/item transactions, not engine replay.
+      const entry = { ...frozen, enemyKitJson: JSON.stringify({ format: 'rpg-combat-kit-v3', data: {},
+        reward: { baseExp: 100, recommendedTier: 1, recommendedLevel: 10 }, inspiration: reward }) }
+      const pending = { ...atCheckpoint, status: 'pending-result', revision: 2, frozenEntry: entry }
+      await repo.sync('u1', { upserts: [{ kind: 'rpgCheckpoints', id: checkpointId, baseVersion: 0, data: pending }],
+        appends: [{ kind: 'rpgResults', id: result.resultId, data: result, createdAt: 30 }] })
+      const kind = action === 'clear-chapter' ? 'slot' : 'skill', itemId = `inspiration:t1:${kind}`, delta = reward[kind]
+      const movement = { id: `rpg-inspiration:${entry.entryId}:${kind}`, itemId, delta, createdAt: 40, reason: 'rpg-inspiration',
+        source: { kind: 'rpg-inspiration', entryId: entry.entryId, attemptId: pending.attemptId, tier: 1, tokenKind: kind } }
+      const next = { ...pending, status: action === 'clear-chapter' ? 'cleared' : 'at-checkpoint', revision: 3,
+        frozenEntry: null, lastClearedNodeId: entry.nodeId, selectedPath: [entry.nodeId] }
+      const body = command(`collect-${action}`, action, 1, next, [{ kind: 'itemLedger', id: movement.id, data: movement, createdAt: 40 }], {
+        expected: [{ kind: 'items', id: itemId, version: 0 }], upserts: [{ kind: 'items', id: itemId, data: { itemId, quantity: delta, updatedAt: 40 } }],
+      })
+      const applied = await repo.rpgCommand('u1', body)
+      expect(applied.status).toBe('applied'); expect((await repo.rpgCommand('u1', body)).status).toBe('duplicate')
+      const snapshot = await repo.load('u1')
+      expect(snapshot.entities.find(r => r.kind === 'items' && r.id === itemId)?.data.quantity).toBe(delta)
+      expect(snapshot.logs.filter(r => r.kind === 'itemLedger')).toHaveLength(1)
+      // Another attempt cannot use the same version or leave orphan Item evidence.
+      const stale = { ...body, commandId: `stale-${action}` }
+      expect((await repo.rpgCommand('u1', stale)).status).toBe('conflict')
+      expect((await repo.load('u1')).logs.filter(r => r.kind === 'itemLedger')).toHaveLength(1)
+    })
+
+    it('opens precisely one v14 Inspiration position; duplicate and competing versions cannot consume twice', async () => {
+      const umaId = 'invented-child', itemId = 'inspiration:t1:slot'
+      const uma = { schemaVersion: 14, templateId: umaId, level: 1, exp: 0, unlockedTier: 1, goalPlanVersion: 0, racePreferences: null, skillHistory: [],
+        scenarios: [{ tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {}, loadoutSkillIds: [], journey: null, started: false,
+          extraStats: { unlocked: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, active: [] }, inspiration: { slots: [], golds: [] } }] }
+      await repo.sync('u1', { upserts: [{ kind: 'umas', id: umaId, baseVersion: 0, data: uma },
+        { kind: 'items', id: itemId, baseVersion: 0, data: { itemId, quantity: 2, updatedAt: 1 } }], appends: [] })
+      const id = `inspiration:${umaId}:1:parent0:slot`, movement = { id, itemId, delta: -1, createdAt: 2, reason: 'inspiration-unlock',
+        source: { kind: 'inspiration-unlock', umaId, tier: 1, nodeId: 'parent0', goldIndex: null } }
+      const raw: RpgCommandRequest = { schemaVersion: 1, commandId: id, action: 'spend-inspiration',
+        expected: [{ kind: 'umas', id: umaId, version: 1 }, { kind: 'items', id: itemId, version: 1 }],
+        upserts: [{ kind: 'umas', id: umaId, data: { ...uma, scenarios: [{ ...uma.scenarios[0], inspiration: { slots: ['parent0'], golds: [] } }] } },
+          { kind: 'items', id: itemId, data: { itemId, quantity: 1, updatedAt: 2 } }],
+        appends: [{ kind: 'itemLedger', id, data: movement, createdAt: 2 }] }
+      const parsed = parseRpgCommandRequest(raw); if (typeof parsed === 'string') throw new Error(parsed)
+      expect((await repo.rpgCommand('u1', parsed)).status).toBe('applied')
+      expect((await repo.rpgCommand('u1', parsed)).status).toBe('duplicate')
+      expect((await repo.rpgCommand('u1', { ...parsed, commandId: 'competing-spend' })).status).toBe('conflict')
+      const snapshot = await repo.load('u1')
+      expect(snapshot.entities.find(r => r.kind === 'items')?.data.quantity).toBe(1)
+      expect(snapshot.logs.filter(r => r.kind === 'itemLedger')).toHaveLength(1)
+    })
+
     it('demonstrates ordinary sync can orphan a log after a version conflict', async () => {
       await repo.sync('u1', { upserts: [{ kind: 'cards', id: 'card-1', baseVersion: 0, data: { synthetic: 1 } }], appends: [] })
       const stale = await repo.sync('u1', { upserts: [{ kind: 'cards', id: 'card-1', baseVersion: 0,

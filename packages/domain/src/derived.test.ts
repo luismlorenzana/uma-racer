@@ -4,6 +4,7 @@ import { cardGoldSkillIds } from './cards'
 import { awakeningSkillsOpen, deriveUma, ownSkillIds } from './derived'
 import { lineageInheritedUniques } from './lineage'
 import { createUmaSave, type UmaSave } from './save'
+import { grandfatherInspiration } from './inspiration'
 
 // Lineage passes each slot's unique in its inherited form (D174), beside its baseline skills.
 
@@ -55,6 +56,7 @@ function withLineage(trainingLevel: number): UmaSave {
     scenarios: save.scenarios.map((run) => ({
       ...run,
       trainingLevel,
+      inspiration: grandfatherInspiration(trainingLevel, {}),
       assignments: {
         parent0: { kind: 'lineage', templateId: 'sky' },
         'parent0-gp0': { kind: 'lineage', templateId: 'grand' },

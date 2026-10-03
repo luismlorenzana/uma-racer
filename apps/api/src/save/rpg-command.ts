@@ -35,13 +35,13 @@ const entityKey = (kind: EntityKind, id: string) => `${kind}/${id}`
 const logKey = (kind: LogKind, id: string) => `${kind}/${id}`
 const allowedEntities: Record<RpgAction, readonly EntityKind[]> = {
   enroll: ['rpgOutfits'], 'edit-preset': ['rpgPresets'], 'edit-outfit': ['rpgOutfits'], 'start-chapter': ['rpgCheckpoints', 'rpgPresets'],
-  'choose-node': ['rpgCheckpoints'], 'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
+  'choose-node': ['rpgCheckpoints', 'items'], 'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
   'battle-result': ['rpgCheckpoints', 'rpgOutfits'], 'clear-chapter': ['rpgCheckpoints', 'items'],
   promote: ['rpgOutfits', 'rpgPresets'], 'spend-inspiration': ['umas', 'items'],
 }
 const allowedLogs: Record<RpgAction, readonly LogKind[]> = {
   enroll: [], 'edit-preset': [], 'edit-outfit': [], 'start-chapter': [], 'begin-battle': [], takeover: [],
-  'choose-node': [], 'battle-result': ['rpgResults'], 'clear-chapter': ['itemLedger'],
+  'choose-node': ['itemLedger'], 'battle-result': ['rpgResults'], 'clear-chapter': ['itemLedger'],
   promote: ['rpgPromotions'], 'spend-inspiration': ['itemLedger'],
 }
 
@@ -119,6 +119,8 @@ export function parseRpgCommandRequest(body: unknown): RpgCommandRequest | strin
   if (action === 'promote' && appends.filter((entry) => entry.kind === 'rpgPromotions').length !== 1) return 'Promotion evidence required'
   if (action === 'promote' && upserts.filter((r) => r.kind === 'rpgOutfits').length !== 1) return 'Promotion needs one outfit'
   if (action === 'edit-outfit' && (upserts.length !== 1 || upserts[0]?.kind !== 'rpgOutfits')) return 'Tree edit needs one outfit'
+  if (action === 'spend-inspiration' && (upserts.length !== 2 || upserts.filter(r => r.kind === 'umas').length !== 1 ||
+    upserts.filter(r => r.kind === 'items').length !== 1 || appends.length !== 1)) return 'Inspiration spend needs one Uma, stack and movement'
   return { schemaVersion: 1, commandId: body.commandId, action, expected, upserts, appends }
 }
 
@@ -153,6 +155,65 @@ function sameFrozen(previous: Record<string, unknown>, next: Record<string, unkn
   const b = { ...next }
   for (const key of ignored) { delete a[key]; delete b[key] }
   return isDeepStrictEqual(a, b)
+}
+
+function itemDeltaValid(request: RpgCommandRequest, existing: Map<string, EntityRecord>, movement: Record<string, unknown>): boolean {
+  const row = request.upserts.find(r => r.kind === 'items' && r.id === movement.itemId)
+  const before = existing.get(`items/${movement.itemId}`)
+  const quantity = (before?.data.quantity as number ?? 0) + (movement.delta as number)
+  return !!row && !before?.deleted && Number.isSafeInteger(quantity) && quantity >= 0 &&
+    row.data.quantity === quantity && row.data.updatedAt === movement.createdAt
+}
+function inspirationGrantError(request: RpgCommandRequest, cp: Record<string, unknown>, existing: Map<string, EntityRecord>): string | null {
+  let reward: Record<string, unknown> | null = null
+  if (cp.status === 'pending-result' && rpgRecord(cp.frozenEntry)) {
+    try {
+      const kit: unknown = JSON.parse(cp.frozenEntry.enemyKitJson as string)
+      if (rpgRecord(kit) && kit.format === 'rpg-combat-kit-v3') {
+        const v = kit.inspiration
+        if (!rpgRecord(v) || !rpgExact(v, ['tier', 'slot', 'skill']) || !rpgInt(v.tier, 1) || v.tier > 14 ||
+          ![0, 30].includes(v.slot as number) || !rpgInt(v.skill) || v.skill > 60) return 'Malformed token reward kit'
+        reward = v
+      }
+    } catch { return 'Malformed token reward kit' }
+  }
+  const grants = request.appends.filter(a => a.kind === 'itemLedger')
+  const expected = reward ? ['slot', 'skill'].filter(k => (reward![k] as number) > 0) : []
+  if (grants.length !== expected.length || request.upserts.filter(u => u.kind === 'items').length !== expected.length) return 'Token reward operation count differs from frozen kit'
+  if (request.action !== 'clear-chapter' && (reward?.slot as number ?? 0) > 0) return 'Boss tokens require chapter clear'
+  for (const kind of expected) {
+    const g = grants.find(a => a.data.itemId === `inspiration:t${reward!.tier}:${kind}`)?.data
+    if (!g || !rpgRecord(g.source) || g.reason !== 'rpg-inspiration' || g.delta !== reward![kind] ||
+      g.source.entryId !== (cp.frozenEntry as Record<string, unknown>).entryId || g.source.attemptId !== cp.attemptId ||
+      !itemDeltaValid(request, existing, g)) return 'Token reward differs from frozen entry or Item projection'
+  }
+  return null
+}
+function inspirationSpendError(request: RpgCommandRequest, existing: Map<string, EntityRecord>): string | null {
+  const movement = request.appends[0]?.data, source = movement?.source
+  if (!movement || movement.reason !== 'inspiration-unlock' || !rpgRecord(source)) return 'Inspiration spend evidence required'
+  const row = request.upserts.find(u => u.kind === 'umas'), before = row && existing.get(`umas/${row.id}`)
+  if (!row || !before || before.deleted || source.umaId !== row.id || before.data.schemaVersion !== 14 || row.data.schemaVersion !== 14 ||
+    !itemDeltaValid(request, existing, movement)) return 'Inspiration spend needs current owned Uma and sufficient matching tokens'
+  const runs = before.data.scenarios as Record<string, unknown>[]
+  const run = runs.find(r => r.tier === source.tier)
+  if (!run || !rpgRecord(run.inspiration)) return 'Scenario Inspiration unavailable'
+  const slots = run.inspiration.slots as string[], golds = run.inspiration.golds as string[], node = source.nodeId as string
+  let inspiration: Record<string, unknown>
+  if (source.goldIndex === null) {
+    const parent = ['parent0-gp0', 'parent0-gp1'].includes(node) ? 'parent0' : 'parent1'
+    if (slots.includes(node) || node.includes('-gp') && !slots.includes(parent)) return 'Slot already open or parent is closed'
+    const order = ['parent0', 'parent1', 'parent0-gp0', 'parent0-gp1', 'parent1-gp0', 'parent1-gp1']
+    inspiration = { slots: order.filter(s => slots.includes(s) || s === node), golds }
+  } else {
+    const key = `${node}:gold${source.goldIndex}`
+    if (!slots.includes(node) || golds.includes(key) || !rpgRecord(run.assignments) || !rpgRecord(run.assignments[node]) ||
+      run.assignments[node].kind !== 'lineage') return 'Gold already open or slot unfilled/closed'
+    const order = ['parent0', 'parent1', 'parent0-gp0', 'parent0-gp1', 'parent1-gp0', 'parent1-gp1'].flatMap(s => [0, 1].map(i => `${s}:gold${i}`))
+    inspiration = { slots, golds: order.filter(g => golds.includes(g) || g === key) }
+  }
+  const expected = { ...before.data, scenarios: runs.map(r => r === run ? { ...r, inspiration } : r) }
+  return isDeepStrictEqual(row.data, expected) ? null : 'Unlock changed fields other than one Inspiration position'
 }
 
 function semanticError(uid: string, request: RpgCommandRequest, existing: Map<string, EntityRecord>, logs: Map<string, LogRecord>): string | null {
@@ -287,6 +348,12 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
         next.status !== (request.action === 'clear-chapter' ? 'cleared' : 'at-checkpoint')) return 'Map advance requires accepted winning evidence'
     } else if (request.action !== 'choose-node' || current.status !== 'at-checkpoint' ||
       current.frozenEntry !== null || next.status !== 'at-checkpoint') return 'Map node requires an accepted safe checkpoint'
+    const error = inspirationGrantError(request, current, existing)
+    if (error) return error
+  }
+  if (request.action === 'spend-inspiration') {
+    const error = inspirationSpendError(request, existing)
+    if (error) return error
   }
   if ((request.action === 'clear-chapter' || request.action === 'spend-inspiration') &&
     request.upserts.some((row) => row.kind === 'items') && !request.appends.some((row) => row.kind === 'itemLedger')) {

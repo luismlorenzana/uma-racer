@@ -11,7 +11,8 @@ import {
   type DerivedStats,
 } from './constellation'
 import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
-import { lineageAptitudes, lineageInheritedUniques, lineageSkillIds } from './lineage'
+import { lineageAptitudes, lineageInheritedUniques, lineageSlotEligibility } from './lineage'
+import { GRANDPARENT_SP_MULTIPLIER, inspirationGoldKey, inspirationParent } from './inspiration'
 import { trainedScenario, type CardSave, type ScenarioTraining, type SkillUnlock, type UmaSave } from './save'
 import type { Aptitudes, Stats } from './types'
 
@@ -48,6 +49,8 @@ export interface DerivedUma {
   aptitudes: Aptitudes
   /** Recomputed from the configuration, never stored. */
   library: SkillUnlock[]
+  /** Cheapest live source; presentation and racing share this exact pricing. Not persisted. */
+  skillCostMultipliers: ReadonlyMap<string, number>
   /** Templates in the six lineage slots, parents first. */
   lineage: UmaTemplate[]
   /** Loadout entries that survive the current configuration. */
@@ -99,25 +102,39 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     umaTemplate: input.umaTemplate,
     cards,
     extraStats: scenario.extraStats,
+    inspiration: scenario.inspiration,
     // Trackblazer's Climax counts the career goals she has won in this scenario (D165).
     goalsWon: scenario.journey?.goals.filter((goal) => goal.status === 'completed').length ?? 0,
   })
 
   const lineage: UmaTemplate[] = []
-  for (const node of template.nodes) {
+  const lineageSlots = new Map<string, UmaTemplate>()
+  // Parents take priority over an invalid conflicting grandparent in an imported/stale assignment.
+  for (const node of [...template.nodes].sort((a, b) => Number(b.kind === 'parent') - Number(a.kind === 'parent'))) {
     if (node.kind !== 'parent' && node.kind !== 'grandparent') continue
-    if (!isNodeUnlocked(template, node, scenario.trainingLevel)) continue
+    if (!isNodeUnlocked(template, node, scenario.trainingLevel, scenario.inspiration)) continue
     const assignment = scenario.assignments[node.id]
     if (assignment?.kind !== 'lineage') continue
     const entry = input.umaTemplates.get(assignment.templateId)
-    // Never let one Uma occupy two slots, whatever the save says.
-    if (entry && !lineage.some((held) => held.charaId === entry.charaId)) lineage.push(entry)
+    if (entry && lineageSlotEligibility(entry, input.umaTemplate, node.id, lineageSlots).eligible) {
+      lineage.push(entry)
+      lineageSlots.set(node.id, entry)
+    }
   }
 
   const library: SkillUnlock[] = []
   const seen = new Set<string>()
-  const add = (skillId: string, origin: SkillUnlock['origin'], sourceId: string | null) => {
-    if (!skillId || seen.has(skillId)) return
+  const skillCostMultipliers = new Map<string, number>()
+  const add = (skillId: string, origin: SkillUnlock['origin'], sourceId: string | null, multiplier = 1) => {
+    if (!skillId) return
+    const oldCost = skillCostMultipliers.get(skillId)
+    if (oldCost !== undefined && oldCost <= multiplier) return
+    skillCostMultipliers.set(skillId, multiplier)
+    if (seen.has(skillId)) {
+      const index = library.findIndex(s => s.skillId === skillId)
+      library[index] = { skillId, origin, sourceId }
+      return
+    }
     seen.add(skillId)
     library.push({ skillId, origin, sourceId })
   }
@@ -135,12 +152,20 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     })
     add(skillId, 'card', owner ?? null)
   }
-  for (const skillId of lineageSkillIds(lineage)) {
-    const owner = lineage.find((entry) => entry.awakeningSkillIds.includes(skillId))
-    add(skillId, 'inherited', owner?.id ?? null)
+  for (const [slot, entry] of lineageSlots) {
+    const mirrored = [...lineageSlots].some(([other, held]) => other.includes('-gp') &&
+      inspirationParent(other) !== inspirationParent(slot) && held.id === entry.id)
+    const multiplier = slot.includes('-gp') && !mirrored ? GRANDPARENT_SP_MULTIPLIER : 1
+    let goldIndex = 0
+    for (const skillId of entry.awakeningSkillIds) {
+      const gold = input.skillTemplates.get(skillId)?.kind === 'gold'
+      if (!gold || scenario.inspiration.golds.includes(inspirationGoldKey(slot, goldIndex))) {
+        add(skillId, 'inherited', entry.id, gold ? multiplier : 1)
+      }
+      if (gold) goldIndex++
+    }
+    for (const { skillId, sourceId } of lineageInheritedUniques([entry], input.skillTemplates)) add(skillId, 'inherited', sourceId, multiplier)
   }
-  // Every filled slot also passes its unique, in its inherited form (D174).
-  for (const { skillId, sourceId } of lineageInheritedUniques(lineage, input.skillTemplates)) add(skillId, 'inherited', sourceId)
 
   return {
     tier: scenario.tier,
@@ -153,6 +178,7 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     skillPoints: derived.skillPoints,
     aptitudes: lineageAptitudes(input.umaTemplate.aptitudes, lineage),
     library,
+    skillCostMultipliers,
     lineage,
     // A skill the configuration no longer pays for silently leaves the loadout.
     loadoutSkillIds: scenario.loadoutSkillIds.filter((id) => seen.has(id)),

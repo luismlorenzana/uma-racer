@@ -35,6 +35,7 @@ export function RpgBattleGuide({ onClose, reduced, setReduced, onAbandon, canAba
     { id: 'save', title: 'Your turn stays saved', body: <>
       <p>Back or refresh keeps the exact saved action. Skip changes only animation. Missing journals and another device require explicit same-seed recovery; no friendlier enemy kit is generated.</p>
       <p>Pending results are not yet earned. EXP, Items and the next map node cannot be spent or advanced until acknowledgement.</p>
+      <p>Collect Skill Tokens from regular/elite wins and Slot Tokens from boss clears at the map checkpoint. Tokens go to global Items for that scenario's Inspiration slots and gold skills. Entry and retry are free.</p>
       {proof && <p>This development proof never awards account progress.</p>}
       <button disabled={!canAbandon} className="min-h-11 rounded-sm border border-hairline-dark p-3 text-sm disabled:opacity-40" onClick={onAbandon}>Abandon to checkpoint · no rewards</button>
     </> },

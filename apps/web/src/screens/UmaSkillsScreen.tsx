@@ -208,10 +208,12 @@ export function UmaSkillsScreen() {
     if (row.own) return row
     const entry = entries.get(row.skill.id)
     const unpaid = entry ? entry.includes : skillChainBelow(row.skill, content.skills.byId).filter((lower) => !learned.has(lower.id))
-    const cost = entry ? entry.cost : (row.skill.costSp ?? 0) + unpaid.reduce((sum, lower) => sum + (lower.costSp ?? 0), 0)
+    const candidate = summarizeSkillLoadout(uma.derived, uma.template, content.skills.byId, [...uma.derived.loadoutSkillIds, row.skill.id])
+    const cost = entry ? entry.cost : Math.max(0, candidate.cost - loadout.cost)
     const upgrade = loadout.entries.find((other) => other.skill.id !== row.skill.id && other.belowIds.includes(row.skill.id))
     return {
       ...row,
+      source: `${row.source}${uma.derived.skillCostMultipliers.get(row.skill.id) === 2 ? ' · Grandparent 2× SP' : ''}`,
       price: { cost, with: unpaid.map((lower) => lower.name) },
       includedIn: !row.equipped ? loadout.learnedBy.get(row.skill.id)?.name ?? null : null,
       upgradedBy: row.equipped ? upgrade?.skill.name ?? null : null,

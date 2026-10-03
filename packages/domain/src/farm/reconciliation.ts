@@ -1,6 +1,7 @@
 // Evidence-based Farm projection repair (docs/design/farm.md#persistence-boundary, T083).
 
 import type { FarmPlotId } from './constants'
+import { inspirationToken } from '../inspiration'
 import { applyFarmingXp, defaultOutfitFarmingProgress, farmPlotNumber } from './progression'
 import {
   isEmptyFarmPlot,
@@ -68,7 +69,9 @@ export function reconcileFarmEvidence(
     const item = quantities.get(entry.itemId) ?? { quantity: 0, updatedAt: 0 }
     item.quantity += entry.delta
     item.updatedAt = Math.max(item.updatedAt, entry.createdAt)
-    if (!Number.isSafeInteger(item.quantity) || item.quantity < 0) {
+    // Accepted token groups establish causality; device timestamps can differ. Validate their final sum, not
+    // a timestamp-sorted prefix that could put a valid later spend before its grant on another device.
+    if (!Number.isSafeInteger(item.quantity) || item.quantity < 0 && !inspirationToken(entry.itemId)) {
       throw new Error(`Item ledger produces an invalid quantity: ${entry.itemId}`)
     }
     quantities.set(entry.itemId, item)
@@ -82,6 +85,7 @@ export function reconcileFarmEvidence(
   }
 
   const workers = Object.fromEntries([...progress.entries()].sort(([left], [right]) => left.localeCompare(right)))
+  for (const [itemId, item] of quantities) if (item.quantity < 0) throw new Error(`Item ledger produces an invalid quantity: ${itemId}`)
   // Plots are stored sparsely (D234): evidence can name a plot this projection lost to a sync conflict.
   const stored = new Map(parsedFarm.plots.map((plot) => [plot.id, plot]))
   for (const entry of harvestedByCycle.values()) {

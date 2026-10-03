@@ -3,6 +3,7 @@ import { applyAction, createEncounter, parseRpgCheckpointSave, parseRpgResultEvi
   projectRpgStats, replay, rpgCheckpointId, rpgEncounterSeed, rpgEntryId, rpgResultId,
   RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_ROUNDS, rpgEncounterExp, rpgRewardProjection, validRpgRewardInput,
   type CombatAction, type CombatCue, type CombatState, type EncounterInput, type RpgCheckpointSaveV1,
+  validInspirationReward, type InspirationReward,
   type RpgCommandRequest, type RpgFrozenEntryV1, type RpgResultEvidenceV1, type RpgRewardInput, type RpgProfile } from '@racer/domain'
 import { db, type PendingRpgCommandRow, type RpgBattleJournalRow, type VersionedRow, type RacerDb } from './db'
 import { enqueueRpgCommand } from './rpg-sync'
@@ -53,7 +54,7 @@ function projectJournal(input: EncounterInput, journal: RpgBattleJournalRow): Ba
 }
 
 export interface RpgBattleHost {
-  enter(uid: string, checkpointId: string, nodeId: string, input?: EncounterInput, reward?: RpgRewardInput): Promise<RpgBattleView>
+  enter(uid: string, checkpointId: string, nodeId: string, input?: EncounterInput, reward?: RpgRewardInput, inspiration?: InspirationReward): Promise<RpgBattleView>
   resume(checkpointId: string): Promise<RpgBattleView>
   submitAction(checkpointId: string, expectedActionCount: number, action: CombatAction): Promise<RpgBattleView>
   restartFromFrozenEntry(checkpointId: string): Promise<RpgBattleView>
@@ -109,15 +110,18 @@ function mapKit(value: unknown, direction: 'encode' | 'decode'): unknown {
   }))
   return value
 }
-export function encodeKit(input: EncounterInput, reward?: RpgRewardInput): string {
+export function encodeKit(input: EncounterInput, reward?: RpgRewardInput, inspiration?: InspirationReward): string {
   if (reward && !validRpgRewardInput(reward)) throw new Error('Invalid frozen encounter reward')
+  if (inspiration && (!reward || !validInspirationReward(inspiration))) throw new Error('Invalid frozen Inspiration reward')
+  if (inspiration) return JSON.stringify({ format: 'rpg-combat-kit-v3', data: mapKit(input, 'encode'), reward, inspiration })
   return JSON.stringify(reward ? { format: 'rpg-combat-kit-v2', data: mapKit(input, 'encode'), reward }
     : { format: 'rpg-combat-kit-v1', data: mapKit(input, 'encode') })
 }
 export function decodeKit(value: string): EncounterInput {
   const kit: unknown = JSON.parse(value)
   if (!record(kit) || !(kit.format === 'rpg-combat-kit-v1' && exact(kit, ['format', 'data']) ||
-    kit.format === 'rpg-combat-kit-v2' && exact(kit, ['format', 'data', 'reward']) && validRpgRewardInput(kit.reward)) || !record(kit.data)) {
+    kit.format === 'rpg-combat-kit-v2' && exact(kit, ['format', 'data', 'reward']) && validRpgRewardInput(kit.reward) ||
+    kit.format === 'rpg-combat-kit-v3' && exact(kit, ['format', 'data', 'reward', 'inspiration']) && validRpgRewardInput(kit.reward) && validInspirationReward(kit.inspiration)) || !record(kit.data)) {
     throw new Error('Frozen encounter kit is unavailable')
   }
   return mapKit(kit.data, 'decode') as EncounterInput
@@ -126,6 +130,10 @@ export function decodeReward(value: string): RpgRewardInput | null {
   decodeKit(value)
   const kit = JSON.parse(value) as { reward?: RpgRewardInput }
   return kit.reward ?? null // Pre-T096 entries retain their explicitly unrewarded v1 contract.
+}
+export function decodeInspirationReward(value: string): InspirationReward | null {
+  decodeKit(value)
+  return (JSON.parse(value) as { inspiration?: InspirationReward }).inspiration ?? null
 }
 
 async function digest(value: string): Promise<string> {
@@ -226,7 +234,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
     return { acknowledged, checkpoint, pending }
   }
 
-  async enter(uid: string, checkpointId: string, nodeId: string, input?: EncounterInput, reward?: RpgRewardInput): Promise<RpgBattleView> {
+  async enter(uid: string, checkpointId: string, nodeId: string, input?: EncounterInput, reward?: RpgRewardInput, inspiration?: InspirationReward): Promise<RpgBattleView> {
     const { acknowledged, checkpoint, pending } = await this.context(checkpointId)
     if (rpgCheckpointId(checkpoint.presetId, checkpoint.chapterId) !== checkpointId) throw new Error('Checkpoint identity mismatch')
     if (pending.length > 0) return this.resume(checkpointId)
@@ -263,7 +271,7 @@ export class DexieRpgBattleHost implements RpgBattleHost {
         }
         expected.push({ kind: 'rpgOutfits', id: outfit.id, version: outfit.version })
       }
-      const enemyKitJson = encodeKit(combat, reward)
+      const enemyKitJson = encodeKit(combat, reward, inspiration)
       if (enemyKitJson.length > RPG_MAX_ENEMY_KIT_CHARS) throw new Error('Frozen encounter exceeds the save kit bound')
       frozen = { entryId: rpgEntryId(checkpoint.presetId, checkpoint.chapterId, checkpoint.attemptIndex, nodeId),
         nodeId, seed, contentHash: checkpoint.contentHash, engineVersion: 1, enemyKitJson,

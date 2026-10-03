@@ -4,7 +4,8 @@
 reachable from Home. The player saves
 five party presets, enrolls eligible outfits into one locked class/weapon, navigates an authored branching chapter,
 fights deterministic character teams, earns outfit-specific RPG levels/skills, promotes through repeatable class tiers,
-and receives scenario Inspiration Unlock Tokens in global Items. Tokens open Inspiration parent branches. Racing,
+and receives scenario Inspiration Slot and Skill Tokens in global Items. Tokens independently open lineage slots
+and natural-gold positions, with mirrored-grandparent SP efficiency (D250). Racing,
 Training, cards and Farm retain their own progression.
 
 Source of truth: [Global Uma RPG](../design/uma-rpg.md), [implementation contract](../technical/uma-rpg-implementation.md),
@@ -26,7 +27,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 | T095 — Chapter maps and checkpoints ✅ | Pure graph/private schema, receipt-gated branching map, pause/retry/clear/replay and isolated synthetic chapter (D245) | Landed; [handoff](../technical/rpg-chapter-content.md), [phone checks](../research/rpg-chapter-phone-proof.md) |
 | T096 — RPG progression integration ✅ | Atomic five-outfit EXP, pending/accepted level reveals, safe skill/loadout edits and bank-preserving promotion (D246) | Landed; [progression rules](../design/uma-rpg.md#settled-t096-encounter-exp-and-checkpoint-choices-d246), [phone checks](../research/rpg-progression-phone-proof.md) |
 | T097 — Private PriConne content pipeline ✅ | Offline compiler/validator, curated portraits, retained-version runtime and private URA draft (D248) | Code complete; [owner publication handoff](../research/rpg-private-ura-handoff.md) pending |
-| [T098 — Inspiration reward bridge](T098-rpg-inspiration.md) | Transactional scenario token grants and consumption, grandfathered lineage migration | T090, T095, T096; latest Inspiration and Items implementation |
+| T098 — Inspiration reward bridge ✅ | Two scenario token families, independent six-slot/twelve-gold unlocks, mirrored-grandparent SP, v14 migration and original icons (D250) | Implemented; private publication/device release remain T099 |
 | [T099 — Playable release and device pass](T099-rpg-release.md) | End-to-end real-content gate, Home entry, guide, regression/device protocol and handoff | T093–T098 and private publish |
 
 ```text
@@ -36,8 +37,7 @@ T089 ─► T090 ────────────────┬─► T092 
 ```
 
 The diagram is a dependency guide, not permission to merge against stale `main`. T097's compiler/runtime and
-private URA draft are complete; **owner/Claude private publication remains pending**. T098 is next and implements
-the token bridge. T099 waits for it and published-content verification. One task = one PR; remove that task's spec in its implementation PR (D104), update the design and
+private URA draft are complete; **owner/Claude private publication remains pending**. T098's expanded token bridge is implemented. T099 waits for it and published-content verification. One task = one PR; remove that task's spec in its implementation PR (D104), update the design and
 milestone table, and record any newly settled rule in `docs/decisions.md`.
 
 ## Non-negotiable contracts
@@ -56,9 +56,7 @@ milestone table, and record any newly settled rule in `docs/decisions.md`.
 - **Private content.** Playable PriConne characters are the actual opponent cast. Importer/validator code and tiny
   invented fixtures may be checked in; extracted rows, art, generated packs and caches may not. Missing or outdated
   private content is shown as unavailable, never silently substituted with a synthetic production duel.
-- **Token destination and sink ship together.** Each successful clear, including replay, grants one scenario-typed
-  `Inspiration Unlock Token [Scenario]` into the existing global Item inventory. One token opens one full parent
-  branch; two open both. Already-open TL-gated branches remain open and are not charged.
+- **Token destination and sink ship together.** Regular/elite wins grant scenario Skill Tokens; accepted boss clears grant 30 Slot Tokens. At least 60 Skill Tokens on the shortest route fund five outfits' twelve golds; 30 slots fund their six lineage positions each. Tokens use global Items and acknowledged groups. Mirrored grandparents use normal SP; single-side unique/gold full chains cost 2×. Old TL-open sides retain slots and golds without charges (D250).
 - **No premature Home entry.** Development routes may use synthetic fixtures for browser validation, but the public
   navigation points to the mode only after T099 proves a real published chapter, complete reward/sink and resume.
 

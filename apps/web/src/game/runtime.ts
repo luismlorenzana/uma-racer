@@ -17,6 +17,7 @@ import {
   trainedScenario,
   constellationTemplate,
   isNodeUnlocked,
+  lineageSlotEligibility,
   type ExtraStatNodeId,
   type NodeAssignment,
   type UmaSave,
@@ -488,11 +489,21 @@ export class GameRuntime {
     const run = trainedScenario(uma, tier)
     const node = constellationTemplate(run.tier).nodes.find((entry) => entry.id === nodeId)
     if (!node || node.kind === 'root') throw new Error('Unknown constellation node')
-    if (!isNodeUnlocked(constellationTemplate(run.tier), node, run.trainingLevel)) {
+    if (!isNodeUnlocked(constellationTemplate(run.tier), node, run.trainingLevel, run.inspiration)) {
       throw new Error('That node is still locked')
     }
     const capIssue = cardNodeCapIssue(run, nodeId, assignment)
     if (capIssue) throw new Error(capIssue)
+    if (assignment?.kind === 'lineage') {
+      const content = this.content, child = content?.umas.byId.get(id), candidate = content?.umas.byId.get(assignment.templateId)
+      if (!content || !child || !candidate || (!state.umas[candidate.id] && !(run.tier === 10 && nodeId === 'parent0'))) throw new Error('Lineage Uma unavailable or not owned')
+      const held = new Map(Object.entries(run.assignments).flatMap(([slot, a]) => {
+        const entry = a.kind === 'lineage' ? content.umas.byId.get(a.templateId) : null
+        return entry ? [[slot, entry] as const] : []
+      }))
+      const issue = lineageSlotEligibility(candidate, child, nodeId, held)
+      if (!issue.eligible) throw new Error(issue.reason!)
+    }
 
     const assignments = { ...run.assignments }
     if (assignment) assignments[nodeId] = assignment
@@ -511,6 +522,7 @@ export class GameRuntime {
     await db.transaction('rw', [db.umas, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
       const row = await db.umas.get(id)
       if (!row) throw new Error('Local Uma is missing')
+      if (JSON.stringify(row.data) !== JSON.stringify(uma)) throw new Error('Uma changed; reopen this slot before editing')
       await db.umas.put({ ...row, data: next })
       await queueInTransaction('umas', id, 'upsert', now)
       // Filling the last node of a tree is her Full House (T056).
@@ -1010,6 +1022,14 @@ export class GameRuntime {
       Object.fromEntries(snapshot.badges.map((row) => [row.id, row.data])),
       snapshot.flairEvents.map((row) => ({ id: row.id, ...row.data })),
     )
+  }
+
+  /** Publish explicitly refreshed accepted rows without discarding ordinary queued edits in Dexie. */
+  async refreshLocalState(): Promise<void> {
+    const generation = this.generation
+    const snapshot = await readLocalSnapshot()
+    if (snapshot && this.content && generation === this.generation) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
+    await this.refreshPending()
   }
 
   async flush(): Promise<void> {

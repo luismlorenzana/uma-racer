@@ -1,9 +1,9 @@
 // Global Item inventory, first surfaced inside Stable Farm (docs/design/farm.md#global-item-inventory, T085).
 
-import { SCENARIOS, STATS, TRAINING_EXP_PER_LEVEL, TRAINING_LEVEL_UP_TICKET_ID, scenarioForTier, type StatKey } from '@racer/domain'
+import { SCENARIOS, STATS, TRAINING_EXP_PER_LEVEL, TRAINING_LEVEL_UP_TICKET_ID, scenarioForTier, inspirationToken, inspirationTokenId, inspirationTokenName, type StatKey } from '@racer/domain'
 import { FARM_CROPS } from '@racer/domain/farm'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { buildItemInventory, produceItemDefinitions, resolveItemLink } from '../../game/items/view'
 import {
   loadItemInventoryPreferences,
@@ -22,6 +22,7 @@ import { useGame } from '../../game/store'
 import { Meter } from '../../ui/Meter'
 import { LevelUpIcon } from '../../ui/icons'
 import { useFarmScreen } from './FarmScreen'
+import { InspirationTokenIcon } from '../../ui/InspirationTokenIcon'
 
 const DEFAULTS: ItemInventoryPreferences = {
   visibility: 'owned', stat: null, scenarioTier: null, density: 'comfortable',
@@ -54,6 +55,7 @@ function ItemTile({ item, density, open }: {
 
 export function ItemInventoryScreen() {
   const farm = useFarmScreen()
+  const umas = useGame(s => s.umas)
   const [searchParams, setSearchParams] = useSearchParams()
   const [preferences, setPreferences] = useState<ItemInventoryPreferences>(DEFAULTS)
   const [loadedPreferences, setLoadedPreferences] = useState(false)
@@ -70,18 +72,20 @@ export function ItemInventoryScreen() {
   }
   // Training items have their own section; the grid below is the produce catalog.
   const stacks = useMemo(() => Object.entries(farm.view.inventory)
-    .filter(([itemId]) => itemId !== TRAINING_LEVEL_UP_TICKET_ID)
+    .filter(([itemId]) => itemId !== TRAINING_LEVEL_UP_TICKET_ID && !inspirationToken(itemId))
     .map(([itemId, quantity]) => ({ itemId, quantity, updatedAt: 0 })), [farm.view.inventory])
   const levelUpTickets = farm.view.inventory[TRAINING_LEVEL_UP_TICKET_ID] ?? 0
+  const ownedStacks = Object.values(farm.view.inventory).filter(q => q > 0)
   const trainingExpBank = useGame((state) => state.profile?.trainingExpBank ?? 0)
   const inventory = useMemo(() => buildItemInventory(DEFINITIONS, stacks, {
     visibility: preferences.visibility,
     facets: { stat: preferences.stat, scenario: preferences.scenarioTier === null ? null : String(preferences.scenarioTier) },
   }), [preferences.scenarioTier, preferences.stat, preferences.visibility, stacks])
   const itemParam = searchParams.get('item')
+  const token = itemParam ? inspirationToken(itemParam) : null
   const link = resolveItemLink(itemParam, DEFINITIONS)
   const selected = link.status === 'ready' ? link.definition.crop : null
-  const invalidLink = link.status === 'invalid'
+  const invalidLink = link.status === 'invalid' && !token
   const selectedQuantity = selected ? farm.view.inventory[selected.id] ?? 0 : 0
   const closeDetail = () => {
     const next = new URLSearchParams(searchParams)
@@ -96,7 +100,7 @@ export function ItemInventoryScreen() {
 
   return <div className="pb-4">
     <div className="mb-3 px-1">
-      <div className="flex items-start justify-between gap-3"><div><h2 className="font-display text-lg font-bold">Global Items</h2><p className="text-[12px] text-ink-soft">{inventory.ownedUnique} owned kinds · {inventory.totalQuantity} items</p></div><Crest>{inventory.catalogTotal} crops</Crest></div>
+      <div className="flex items-start justify-between gap-3"><div><h2 className="font-display text-lg font-bold">Global Items</h2><p className="text-[12px] text-ink-soft">{ownedStacks.length} owned kinds · {ownedStacks.reduce((sum, q) => sum + q, 0)} items</p></div><Crest>{inventory.catalogTotal} crops</Crest></div>
       {inventory.orphanedStacks > 0 && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[11px] text-warning">{inventory.orphanedStacks} future or missing item stack{inventory.orphanedStacks === 1 ? '' : 's'} preserved.</p>}
     </div>
 
@@ -115,7 +119,7 @@ export function ItemInventoryScreen() {
     </Panel>
 
     <SegmentedControl label="Item visibility" value={preferences.visibility} onChange={(visibility) => update({ ...preferences, visibility })} options={[
-      { value: 'owned', label: 'Owned' }, { value: 'all', label: 'All crops' },
+      { value: 'owned', label: 'Owned' }, { value: 'all', label: 'All items' },
     ]} />
     <div className="mt-2 grid grid-cols-[1fr_1fr_auto] gap-2">
       <label className="text-[10px] font-semibold text-ink-soft">Scenario<select aria-label="Destination scenario" value={preferences.scenarioTier ?? 'all'} onChange={(event) => update({ ...preferences, scenarioTier: event.target.value === 'all' ? null : Number(event.target.value) })} className="mt-1 min-h-11 w-full rounded-sm border border-hairline-strong bg-panel px-2 text-[12px] text-ink"><option value="all">All</option>{SCENARIOS.map((scenario) => <option key={scenario.tier} value={scenario.tier}>{scenario.tier} · {scenario.name}</option>)}</select></label>
@@ -124,12 +128,17 @@ export function ItemInventoryScreen() {
         {preferences.density === 'comfortable' ? <ViewListIcon size={20} /> : <ViewGridIcon size={20} />}
       </button>
     </div>
-    <p role="status" className="mt-2 px-1 text-[11px] text-ink-soft">Showing {inventory.items.length} of {preferences.visibility === 'owned' ? inventory.ownedUnique : inventory.catalogTotal + inventory.orphanedStacks}</p>
+    <p role="status" className="mt-2 px-1 text-[11px] text-ink-soft">Produce: showing {inventory.items.length} of {preferences.visibility === 'owned' ? inventory.ownedUnique : inventory.catalogTotal + inventory.orphanedStacks}</p>
+    <section className="mt-3 space-y-2" aria-label="Inspiration tokens"><h3 className="font-display text-lg">Inspiration</h3><p className="text-xs text-ink-soft">RPG regular battles earn skill tokens; bosses earn slot tokens. Each opens one position for one Uma in its scenario.</p>
+      {SCENARIOS.filter(s => preferences.scenarioTier === null || s.tier === preferences.scenarioTier).flatMap(s => (['slot', 'skill'] as const).map(kind => ({ tier: s.tier, kind, id: inspirationTokenId(s.tier, kind) })))
+        .filter(t => preferences.visibility === 'all' || (farm.view.inventory[t.id] ?? 0) > 0).map(t => <button key={t.id} onClick={() => openDetail(t.id)} className="flex min-h-16 w-full items-center gap-3 rounded-md border border-hairline bg-panel p-3 text-left"><InspirationTokenIcon kind={t.kind} /><span className="min-w-0 flex-1 text-sm font-semibold">{inspirationTokenName(t.tier, t.kind)}</span><Crest>×{farm.view.inventory[t.id] ?? 0}</Crest></button>)}
+    </section>
 
     {invalidLink && <Panel className="mt-3 border-warning/40 bg-warning/10"><p className="text-[13px] font-semibold">Item link unavailable</p><p className="mt-1 text-[11px] text-ink-soft">This item id is unsafe, unknown, or no longer in the catalog. Saved stacks remain untouched.</p><button type="button" onClick={closeDetail} className="mt-2 min-h-11 font-semibold text-accent-strong">Clear item link</button></Panel>}
-    {inventory.items.length === 0 ? <Panel className="mt-3 text-center"><p className="font-semibold">No produce here yet</p><p className="mt-1 text-[12px] text-ink-soft">Harvest a ready crop, or choose All crops to browse the catalog.</p></Panel>
+    {inventory.items.length === 0 ? <Panel className="mt-3 text-center"><p className="font-semibold">No produce here yet</p><p className="mt-1 text-[12px] text-ink-soft">Harvest a ready crop, or choose All items to browse the catalog.</p></Panel>
       : <div className={`mt-3 grid gap-2 ${preferences.density === 'comfortable' ? 'grid-cols-2' : 'grid-cols-1'}`}>{inventory.items.map((item) => <ItemTile key={item.itemId} item={item} density={preferences.density} open={() => { if (item.definition) openDetail(item.itemId) }} />)}</div>}
 
+    <BottomSheet open={token !== null} onClose={closeDetail}>{token && <div className="space-y-3 pb-safe"><InspirationTokenIcon kind={token.kind} size={64} /><h2 className="font-display text-xl">{inspirationTokenName(token.tier, token.kind)}</h2><p className="font-semibold">{farm.view.inventory[itemParam!] ?? 0} in global inventory</p><p className="text-sm text-ink-soft">{token.kind === 'slot' ? 'Earned from an accepted RPG boss clear. Opens one parent or grandparent slot and its inherited unique.' : 'Earned from accepted RPG regular/elite battles. Opens one natural-gold position on a filled lineage slot; equipping still uses SP.'} Choose a trained Uma:</p>{Object.values(umas).filter(u => u.scenarios.some(r => r.tier === token.tier)).map(u => <Link key={u.templateId} to={`/constellation/${u.templateId}/inspiration?tier=${token.tier}`} className="flex min-h-11 items-center rounded-sm bg-sunken px-3 font-semibold text-accent-strong">{farm.templates.get(u.templateId)?.name ?? 'Owned Uma'}</Link>)}</div>}</BottomSheet>
     <BottomSheet open={selected !== null} onClose={closeDetail}>
       {selected && <div>
         <div className="flex items-center gap-3"><CropMark crop={selected} size={64} /><div><p className="text-micro">Global Item · Produce</p><h2 className="font-display text-xl font-bold">{selected.name}</h2><p className="flex items-center gap-1 text-[12px] text-ink-soft"><TypeIcon type={selected.stat} size={18} />{selected.stat} · T{selected.scenarioTier} {scenarioForTier(selected.scenarioTier)?.name}</p></div></div>
