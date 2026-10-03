@@ -14,7 +14,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078–T080 landed; T081 next |
-| [M028 — Global Uma RPG](M028-uma-rpg.md) | T089 pure rules ✅ · T090 save contract ✅ · T091 combat ✅ · T092 battle host ✅ · T093 roster/party hub ✅ · T094 battle screen ✅ · T095 chapters ✅ · T096 progression ✅ · [T097–T099](M028-uma-rpg.md#delivery-sequence) | **In progress** · private PriConne/URA chapter next, then Inspiration sink and release |
+| [M028 — Global Uma RPG](M028-uma-rpg.md) | T089–T096 ✅ · T097 private pipeline/draft ✅ · [T098–T099](M028-uma-rpg.md#delivery-sequence) | **In progress** · Inspiration bridge next; private owner publication and release remain gated |
 | [M029 — RPG chapter rollout](M029-rpg-chapter-rollout.md) | [T100–T103](M029-rpg-chapter-rollout.md#delivery-sequence) | **Specified, not implemented** · private content for the remaining thirteen scenarios and a 14/14 gate |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -46,6 +46,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 | T094 — Phone battle screen | 2026-10-02 | [Global Uma RPG](../design/uma-rpg.md), D243 and [phone proof](../research/rpg-battle-phone-proof.md) | git history |
 | T095 — Chapter maps and checkpoints | 2026-10-02 | [Global Uma RPG](../design/uma-rpg.md), D245, [content handoff](../technical/rpg-chapter-content.md) and [phone proof](../research/rpg-chapter-phone-proof.md) | git history |
 | T096 — Battle EXP, skills and class promotion | 2026-10-03 | [Global Uma RPG](../design/uma-rpg.md), D246 and [phone proof](../research/rpg-progression-phone-proof.md) | git history |
+| T097 — Private PriConne pipeline / URA draft | 2026-10-03 | [Content contract](../technical/rpg-chapter-content.md), D248 and [private publication handoff](../research/rpg-private-ura-handoff.md) | git history |
 | M026 — Produce nodes (T086) | 2026-09-30 | [Stable Farm](../design/farm.md), [Constellations](../design/constellations.md) and [Architecture](../technical/architecture.md) | `f6dd79a` |
 | M025 — Stable Farm (T082–T085) | 2026-09-30 | [Stable Farm](../design/farm.md) and [Architecture](../technical/architecture.md) | `4ac41d7` |
 | T001–T018 and the Milestone 6 plan | 2026-09-19 | design docs | `463edb8` |

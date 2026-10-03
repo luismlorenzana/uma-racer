@@ -79,6 +79,16 @@ afterEach(async () => {
 })
 
 describe('content publishing', () => {
+  it('refuses an uncatalogued RPG pack before any remote access', async () => {
+    const { contentDir, manifest } = await fixture(), value='{}', path='data/rpg-chapters.12345678.json'
+    await writeFile(resolve(contentDir,path),value)
+    manifest.files.push({path,bytes:2,sha256:createHash('sha256').update(value).digest('hex')})
+    manifest.version=createHash('sha256').update(manifest.files.map(f=>f.sha256).sort().join('')).digest('hex').slice(0,12)
+    await writeFile(resolve(contentDir,'manifest.json'),JSON.stringify(manifest))
+    const storage=new FakeStorage();storage.readManifest=async()=>{throw new Error('Remote access must not happen')}
+    await expect(publishContent({contentDir,storage})).rejects.toThrow(/exactly one catalog/)
+    expect(storage.calls).toEqual([])
+  })
   it('refuses publication without one complete Spark rival pack', async () => {
     const { contentDir } = await fixture()
     const manifestPath = resolve(contentDir, 'manifest.json')

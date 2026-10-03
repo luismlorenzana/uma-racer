@@ -4,7 +4,7 @@ import {
   rpgChapterChoices, rpgCheckpointId, rpgResultId, validateRpgLoadout,
   parseSaveSnapshotOrThrow,
   type EncounterInput, type RpgChapter, type RpgChapterPack, type RpgCheckpointSaveV1,
-  type RpgCommandRequest, type RpgOutfitSaveV1, type RpgPresetSaveV1,
+  type RpgCommandRequest, type RpgOutfitSaveV1, type RpgPresetSaveV1, type RpgPackIdentity,
 } from '@racer/domain'
 import { db, type RacerDb, type VersionedRow, type PendingRpgCommandRow } from './db'
 import { DexieRpgBattleHost } from './rpg-battle-host'
@@ -20,7 +20,7 @@ const data = (v: object) => v as unknown as Record<string, unknown>
 
 export class RpgChapterHost {
   readonly battle: DexieRpgBattleHost
-  constructor(private readonly pack: () => Promise<RpgChapterPack | null>, readonly database: RacerDb = db,
+  constructor(private readonly pack: (identity?: RpgPackIdentity) => Promise<RpgChapterPack | null>, readonly database: RacerDb = db,
     private readonly now: () => number = Date.now, private readonly account: Pick<typeof saveApi, 'load'> = saveApi) { this.battle = new DexieRpgBattleHost(now, database) }
 
   async read(presetId: string, chapterId?: string): Promise<RpgChapterView> {
@@ -32,7 +32,7 @@ export class RpgChapterHost {
     const checkpoint = selectedId ? checkpoints.find((c) => c.id === rpgCheckpointId(presetId, selectedId)) ?? null : null
     const pending = allPending.filter((r) => (r.body as RpgCommandRequest).expected.some((e) => e.kind === 'rpgPresets' && e.id === presetId || e.kind === 'rpgCheckpoints' && e.id.startsWith(`${presetId}:`)))
     let pack: RpgChapterPack | null = null, unavailable: string | null = null
-    try { pack = await this.pack() } catch { unavailable = 'Private chapter content could not be verified. Your progress is unchanged.' }
+    try { pack = await this.pack(checkpoint?.data) } catch { unavailable = 'Private chapter content could not be verified or its frozen version is not retained. Your progress is unchanged.' }
     const chapter = pack?.chapters.find((c) => c.id === selectedId) ?? null
     if (!pack) unavailable ??= 'Private chapter pack unavailable. No test encounters will replace it.'
     else if (selectedId && !chapter) unavailable = 'Frozen chapter content unavailable: this chapter is absent from the pack.'
@@ -68,9 +68,12 @@ export class RpgChapterHost {
     if (view.checkpoint && !(replay && view.checkpoint.data.status === 'cleared')) throw new Error('Resume this chapter; only an explicit replay after clear creates another attempt')
     if (!view.checkpoint && replay) throw new Error('No cleared chapter to replay')
     await this.requireSafeForeground(view, chapterId)
+    // A deliberate new attempt uses current content; resuming never replaces an older checkpoint.
+    const currentChapter = (await this.pack())?.chapters.find(c => c.id === chapterId)
+    if (!currentChapter) throw new Error('Current chapter content unavailable')
     const attemptIndex = (view.checkpoint?.data.attemptIndex ?? 0) + 1
-    const next: RpgCheckpointSaveV1 = { schemaVersion: 1, presetId, chapterId, contentVersion: view.chapter.contentVersion,
-      contentHash: view.chapter.contentHash, attemptIndex, attemptId: `rpg-attempt:${presetId}:${chapterId}:${attemptIndex}`,
+    const next: RpgCheckpointSaveV1 = { schemaVersion: 1, presetId, chapterId, contentVersion: currentChapter.contentVersion,
+      contentHash: currentChapter.contentHash, attemptIndex, attemptId: `rpg-attempt:${presetId}:${chapterId}:${attemptIndex}`,
       lastClearedNodeId: null, selectedPath: [], status: 'at-checkpoint', revision: (view.checkpoint?.data.revision ?? -1) + 1, frozenEntry: null }
     const preset = { ...view.preset.data, foregroundChapterId: chapterId }
     await this.queue({ schemaVersion: 1, commandId: `rpg-start:${presetId}:${chapterId}:${attemptIndex}`, action: 'start-chapter',
