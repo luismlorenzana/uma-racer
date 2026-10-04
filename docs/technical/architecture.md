@@ -276,7 +276,7 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   provenance. A hashed catalog retains exact pack/version and portrait mappings for existing checkpoints, selecting
   its active pack only for new attempts. Runtime names/art are lazy, authenticated and hash-verified; no synthetic
   fallback or source hotlink. GameTora reimports preserve RPG packs/catalog/pins; the publisher checks present RPG
-  content before remote access. The [URA private handoff](../research/rpg-private-ura-handoff.md) awaits owner publish.
+  content before remote access. The [URA publication record](../research/rpg-private-ura-handoff.md) records the complete private manifest and retained pack hash.
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.
@@ -315,7 +315,18 @@ update the checkpoint, global Item stacks, append-only token evidence and receip
 one explicit Uma slot/gold position and its Item stack/evidence. Related ordinary Uma/Item writes cannot overlap a reserved
 group. Pending results and tokens remain unearned. The v14/v23 migration preserves old TL9/10 lineage access and filled
 branches without charging or minting tokens, changing EXP or disturbing open RPG journals. T097's private chapter is
-authored; content publication and Home/device release remain T099 work; [content contract](rpg-chapter-content.md).
+authored and published through T099 (D257); [content contract](rpg-chapter-content.md).
+
+T099 adds a lightweight Home card with manifest-only discovery. Opening it dynamically imports
+the RPG content verifier: the active v2 chapter must have production provenance, URA coverage and verified portrait
+bytes before navigation. New chapter attempts also verify this contract, while retained checkpoints resolve their
+exact version/hash without requiring today's active pack. Availability is reference state, not a persisted save flag.
+The route-split hub joins acknowledged checkpoint rows for per-preset resume/collection/replay labels; explicit setup
+refresh also adopts newer checkpoints without touching ordinary queues, RPG pending commands or local battle journals.
+Hub, chapter and battle share one read-only paged guide with device-local memory and focus isolation. DEV fixtures,
+routes and proof-only fallback node identities are tree-shaken from production. The [release acceptance record](../research/rpg-release-acceptance.md)
+records private publication separately from deployment and deferred owner physical-iPhone/real-account checks (D257).
+Neither synthetic proofs nor a green CI run are reported as owner device acceptance.
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version

@@ -103,7 +103,7 @@ decodes with the workspace's existing Sharp dependency and writes cropped 256×2
 `manifest.source["rpg-art:<key>"]` select exact addressed images for compilation. All evidence, rows, caches and art
 remain ignored. `--offline` uses only cached source images, never the network; missing/corrupt images fail.
 
-## Commands and owner/Claude publication checklist
+## Commands and authorized publication checklist
 
 From the repository root, with a reviewed private `content/overrides/rpg-chapters.json`:
 
@@ -127,10 +127,11 @@ For **each** chapter, the private author must:
 3. Author Uma RPG stats, elements, formation, actions/statuses and phase scripts. Never copy source damage formulas.
 4. Author positive encounter EXP using the actual required/optional fight counts; keep a new immutable version for edits.
 5. Import art, compile and validate every reference/retained object; run the bounded probe and inspect the chapter privately.
-6. **Owner/Claude only:** combine with the complete current private Uma/Spark content tree, then run existing
+6. **Owner or explicitly authorized release agent:** combine with the complete current private Uma/Spark content tree, then run existing
    `pnpm content:publish -- --dry-run` and `pnpm content:publish`. No task-local partial manifest may replace production.
 7. Fetch through the signed-in runtime, record the published manifest version plus RPG pack version/full hash, play
-   every route and test old checkpoint resume after an updated active pack. T099 stays blocked until this succeeds.
+   every route and test old checkpoint resume after an updated active pack. D257 authorizes T099's production-first
+   release; physical-device and real-account gameplay checks remain post-release owner acceptance, never fabricated passes.
 
 The existing publisher now rejects invalid present RPG content **before** reading/uploading remote storage. A
 publication without RPG remains valid for the current non-RPG game. Publication credentials/infrastructure are

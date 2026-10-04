@@ -29,8 +29,8 @@ journal, terminal result or win/loss. It may reuse visual primitives and `PagedG
 The [Global Uma RPG](uma-rpg.md) is likewise **outside this ticketed-run contract**: its chapters contain multiple
 battles and synced checkpoints. T089–T098 now implement its own rules, grouped save, battle journal, internal setup,
 mobile stage, branching maps, acknowledged EXP/skills/promotion and the private content/portrait pipeline.
-The private URA draft is prepared; owner publication and Home release remain gated
-([handoff](../research/rpg-private-ura-handoff.md)). It reuses the kit's pure-engine, deterministic-replay,
+The real URA chapter is privately published and T099 supplies verified Home entry (D257)
+([publication record](../research/rpg-private-ura-handoff.md)). It reuses the kit's pure-engine, deterministic-replay,
 private-content and mobile standards, `MinigameShell`/`MinigameHeader` and `PagedGuide`, not `MinigameHost` or tickets.
 Its isolated DEV battle/chapter proofs grant no real-account rewards ([battle checks](../research/rpg-battle-phone-proof.md),
 [chapter checks](../research/rpg-chapter-phone-proof.md), [progression checks](../research/rpg-progression-phone-proof.md)).
@@ -39,6 +39,13 @@ global Items/ledger and conditional map/spend commands, outside the ticketed-run
 slot/gold rules and original SVG token marks are in D250 ([reward/unlock phone proof](../research/rpg-inspiration-phone-proof.md)).
 It preserves D249's compact planets, semantic Unique/gold moons and complete six-slot bank; each rail action carries
 its own slot identity. Neither mode uses the ticketed MinigameHost.
+
+T099 adds manifest-only Home discovery followed by lazy real-chapter/portrait verification,
+acknowledged per-party resume cards, and one nine-page `RpgGuide` shared by hub, map and battle. It reuses
+`createGuideMemory`, `PagedGuide` and `RpgModalFocus`; `PagedGuide` starts on the contextual page on its first paint.
+Its read-only DEV hub proof never opens account storage. D257 moves physical-iPhone and real-account gameplay checks
+after the owner-authorized production release. They stay explicitly open in the
+[release acceptance record](../research/rpg-release-acceptance.md), not claims made by a synthetic proof.
 
 T105's one-time Inspiration advance (D256) is account-wide, outside all run ports. Existing scenario units receive
 shared slot/gold access and matching negative token debt; accepted RPG grants repay that scenario/family before

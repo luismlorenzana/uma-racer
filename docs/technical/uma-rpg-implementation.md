@@ -1,7 +1,10 @@
 # Global Uma RPG — implementation contract for M028–M029
 
-**Status:** T089–T098 rules, save transport, combat, battle journal/host, internal setup, branching map, accepted progression and private content/portrait pipeline implemented. The private URA draft is prepared; owner publication and Home entry remain gated ([handoff](../research/rpg-private-ura-handoff.md)). Read [the design](../design/uma-rpg.md) for product rules and
-[M028](../tasks/M028-uma-rpg.md) for PR order. This document fixes the boundaries that the short first task drafts
+**Status:** T089–T099 implement rules, save transport, combat, journal/host, setup, maps, accepted progression,
+private content/portraits, verified Home entry and the full guide. The real URA chapter is privately published
+([record](../research/rpg-private-ura-handoff.md)); owner production-first validation follows release under D257.
+Read [the design](../design/uma-rpg.md) for product rules and [task history](../tasks/README.md#completed-and-removed)
+for M028's completed sequence. This document fixes the boundaries that the short first task drafts
 left ambiguous. T089's progression coefficients are pinned in D227, T091's combat coefficients in D229 and T096's
 encounter payouts in D246. Their synthetic sims and `packages/domain/src/domain.test.ts` pin these rules.
 
@@ -137,7 +140,8 @@ run a second TypeScript combat engine or to trust unbounded/unparsed request bod
 4. **Content/sink gate (T097/T098):** one privately published real chapter resolves every character, image, action,
    phase and scenario id; its shortest route grants at least 60 skill and 30 slot tokens, including after reconnect/replay. Existing
    TL9/10-open Inspiration branches stay open without payment.
-5. **Release/coverage gate (T099/M029):** T099 links Home only after the first real chapter and owner device pass;
+5. **Release/coverage gate (T099/M029):** T099 links Home only after the first real chapter/portraits verify;
+   D257 defers physical-iPhone and real-account gameplay acceptance until after the owner-authorized production release.
    [M029](../tasks/M029-rpg-chapter-rollout.md) then tracks authored coverage of all fourteen current scenarios.
 
 Every task PR reports `pnpm lint`, `pnpm test`, `pnpm build`, relevant `sim:rpg:*` commands, startup gzip ≤180 KB and

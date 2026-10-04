@@ -20,6 +20,7 @@ import { ScreenState } from '../ui/ScreenState'
 import { SaveErrorState } from '../ui/SaveErrorState'
 import { FlairCards } from '../ui/FlairCards'
 import { FarmHomeCard } from '../ui/farm/FarmHomeCard'
+import { RpgHomeCard } from '../ui/rpg/RpgHomeCard'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 
 export function HomeScreen() {
@@ -220,6 +221,7 @@ export function HomeScreen() {
       </Panel>
 
       <FarmHomeCard />
+      <RpgHomeCard content={contentState.content} />
 
       {flairSummary && (
         <Panel label="Recent flair">

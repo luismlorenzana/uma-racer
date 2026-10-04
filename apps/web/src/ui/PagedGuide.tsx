@@ -29,9 +29,9 @@ export function PagedGuide<Id extends string>({
   onClose,
 }: PagedGuideProps<Id>) {
   const reducedMotion = useReducedMotion()
-  const [index, setIndex] = useState(0)
-  const [direction, setDirection] = useState(1)
   const startIndex = Math.max(0, pages.findIndex((page) => page.id === startAt))
+  const [index, setIndex] = useState(startIndex)
+  const [direction, setDirection] = useState(1)
 
   useEffect(() => {
     if (open) setIndex(startIndex)

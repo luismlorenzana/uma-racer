@@ -4,7 +4,8 @@
 distinct, privately authored RPG chapter and an earnable scenario-specific Inspiration token. The chapter picker
 permits any five-outfit party to enter any published chapter with a recommended-level warning, not an order gate.
 This milestone is not permission to put PriConne rows/art in git. Read [RPG design](../design/uma-rpg.md),
-[technical contract](../technical/uma-rpg-implementation.md), [M028](M028-uma-rpg.md), D224 and `AGENTS.md`.
+[technical contract](../technical/uma-rpg-implementation.md), [first release record](../research/rpg-release-acceptance.md),
+D224/D257 and `AGENTS.md`. M028's retired spec is retained in git history (see the task index).
 
 ## Delivery sequence
 

@@ -7,12 +7,13 @@ import { useAuth } from '../../auth/AuthProvider'
 import { firebaseEnabled, loadAuth } from '../../auth/firebase'
 import { useContent } from '../../content/ContentProvider'
 import { rpgContentLibrary } from '../../content/rpg'
+import { verifyRpgRelease } from '../../content/rpg-release'
 import type { LoadedContent } from '../../content/runtime'
 import { RpgChapterHost, type RpgChapterView } from '../../game/rpg-chapter-host'
 import { gameRuntime } from '../../game/runtime'
 import { Button } from '../../ui/Button'
 import { MinigameHeader } from '../../ui/minigames/MinigameShell'
-import { PagedGuide } from '../../ui/PagedGuide'
+import { RpgGuide } from './RpgGuide'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgElementLegend, RpgPortrait } from '../../ui/rpg/RpgPortrait'
 import { RpgEnemyPortrait, useRpgPresentation } from '../../ui/rpg/RpgEnemyPortrait'
@@ -32,11 +33,12 @@ export function useRpgAccountId() {
   return uid
 }
 
-export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync, onSelect, onBattle, headerTools, proof = false }: {
+export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync, onSelect, onBattle, headerTools, proof: developmentProof = false }: {
   host: RpgChapterHost; presetId: string; chapterId?: string; content: LoadedContent | null; uid: string | null
   onSync: () => void | Promise<void>; onSelect: (chapterId: string) => void; onBattle: (checkpointId: string) => void
   headerTools?: ReactNode; proof?: boolean
 }) {
+  const proof = import.meta.env.DEV && developmentProof
   const [view, setView] = useState<RpgChapterView | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -135,18 +137,13 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
           <RpgInspirationReward reward={earned} repaid={repaid} label="Earned this attempt · acknowledged rewards" />
           {!proof && earned && earned.slot + earned.skill > 0 && <div><Link to="/farm/items" className="flex min-h-11 items-center text-sm text-accent">Open global Items</Link>{party.map(({ slot }) => <Link key={slot.outfitId} to={`/constellation/${slot.outfitId}/inspiration?tier=${earned.tier}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · Inspiration</Link>)}</div>}
           <RpgElementLegend />
-          {cp && chapter && ['at-checkpoint', 'cleared'].includes(cp.data.status) && !view.pending.length && <section className="mt-3 space-y-1" aria-label="Safe checkpoint skill setup"><h3 className="text-sm">Set up RPG skills</h3><p className="text-xs text-ink-on-dark-soft">Spend earned points, equip skills or promote before the next fight.</p>{party.map(({ slot }) => <Link key={slot.outfitId} to={proof ? `/dev/rpg-chapter-proof?chapter=${chapter.id}&view=skills&outfit=${slot.outfitId}` : `/rpg/roster/${slot.outfitId}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · profile & skills</Link>)}</section>}
+          {cp && chapter && ['at-checkpoint', 'cleared'].includes(cp.data.status) && !view.pending.length && <section className="mt-3 space-y-1" aria-label="Safe checkpoint skill setup"><h3 className="text-sm">Set up RPG skills</h3><p className="text-xs text-ink-on-dark-soft">Spend earned points, equip skills or promote before the next fight.</p>{party.map(({ slot }) => <Link key={slot.outfitId} to={import.meta.env.DEV && proof ? `/dev/rpg-chapter-proof?chapter=${chapter.id}&view=skills&outfit=${slot.outfitId}` : `/rpg/roster/${slot.outfitId}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · profile & skills</Link>)}</section>}
           <Link to={`/rpg/parties/${presetId}`} className="flex min-h-11 items-center text-sm text-accent">Edit future party entries</Link>
         </>}
       </div>
     </main>
     {recover && <RpgModalFocus onClose={() => setRecover(false)}><div role="dialog" aria-modal="true" aria-label="Recover accepted account" className="fixed inset-0 z-50 flex items-center bg-stage/95 p-4"><div className="w-full rounded-md border border-hairline-dark bg-stage-soft p-4"><h2 className="text-xl">Use the accepted account checkpoint?</h2><p className="mt-3 text-sm">Rejected queued commands will be discarded, not retried. Battle journals stay on this device for diagnosis. No reward or replacement seed is created.</p><Button className="mt-4 w-full" onClick={() => { setRecover(false); void command(() => host.refreshAccount(true)) }}>Discard rejected commands and refresh</Button><Button className="mt-2 w-full" onClick={() => setRecover(false)}>Keep local history</Button></div></div></RpgModalFocus>}
-    {guide && <RpgModalFocus onClose={() => setGuide(false)}><PagedGuide open startAt="route" titleId="rpg-chapter-guide" finishLabel="Back to map" onClose={() => setGuide(false)} pages={[
-      { id: 'route', title: 'Choose a route', body: <p>Five filled slots enter for free. Levels are recommendations, not gates. Review enemy roles, weaknesses and visible phase plans before choosing a path.</p> },
-      { id: 'accepted', title: 'Accepted checkpoints', body: <p>Battle actions save on this device. A win opens the next checkpoint only after account acknowledgement and map acceptance. Pending results grant nothing. You can edit future party entries at safe checkpoints.</p> },
-      { id: 'tokens', title: 'Build your Inspiration', body: <p>Regular and elite wins supply scenario Skill Tokens; the boss supplies Slot Tokens. Collect at the map checkpoint. One slot token opens one parent or grandparent; one skill token opens one natural gold. Entry and retry are free. A mirrored grandparent outfit on both sides uses normal SP; a single-side grandparent's unique and golds cost twice the SP.</p> },
-      { id: 'pause', title: 'Pause, retry, replay', body: <p>Leaving a battle keeps its turn. Switching chapters explicitly forfeits its actions but preserves the same seed and kit for a free retry. Earlier clears remain. Only replaying a cleared chapter creates a new attempt.</p> },
-    ]} /></RpgModalFocus>}
+    {guide && <RpgGuide onClose={() => setGuide(false)} startAt="save" finishLabel="Back to map" proof={proof} />}
   </div>
 }
 
@@ -158,7 +155,13 @@ export function RpgChapterScreen() {
   const uid = useRpgAccountId()
   const navigate = useNavigate()
   const host = useMemo(() => {
-    return new RpgChapterHost(identity => content ? rpgContentLibrary(content).load(identity) : Promise.resolve(null))
+    return new RpgChapterHost(async identity => {
+      if (!content) return null
+      // Old checkpoints resume their exact version. Only new attempts require today's release gate.
+      if (identity) return rpgContentLibrary(content).load(identity)
+      const release = await verifyRpgRelease(content)
+      return release.status === 'ready' ? release.pack : null
+    })
   }, [content])
   return <RpgChapterMap host={host} presetId={presetId} chapterId={params.get('chapter') ?? undefined} content={content} uid={uid}
     onSelect={(id) => setParams({ chapter: id })} onBattle={(id) => { void navigate(`/rpg/battle/${encodeURIComponent(id)}`) }}
