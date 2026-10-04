@@ -28,7 +28,7 @@ enemies. PRs for this milestone must start from the latest `main`, use a branch 
 | T096 — RPG progression integration ✅ | Atomic five-outfit EXP, pending/accepted level reveals, safe skill/loadout edits and bank-preserving promotion (D246) | Landed; [progression rules](../design/uma-rpg.md#settled-t096-encounter-exp-and-checkpoint-choices-d246), [phone checks](../research/rpg-progression-phone-proof.md) |
 | T097 — Private PriConne content pipeline ✅ | Offline compiler/validator, curated portraits, retained-version runtime and private URA draft (D248) | Code complete; [owner publication handoff](../research/rpg-private-ura-handoff.md) pending |
 | T098 — Inspiration reward bridge ✅ | Two scenario token families, independent six-slot/twelve-gold unlocks, mirrored-grandparent SP, v14 migration and original icons (D250) | Implemented; private publication/device release remain T099 |
-| [T099 — Playable release and device pass](T099-rpg-release.md) | End-to-end real-content gate, Home entry, guide, regression/device protocol and handoff | T093–T098 and private publish |
+| [T099 — Playable release and device pass](T099-rpg-release.md) | Candidate Home/runtime gate, saved-party resumes and full guide; [acceptance record](../research/rpg-release-acceptance.md) | Implementation under verification; private publication and owner device sign-off still required |
 
 ```text
 T089 ─► T090 ────────────────┬─► T092 ─► T094 ─► T095 ─► T096 ─► T097 ─┐
@@ -37,7 +37,7 @@ T089 ─► T090 ────────────────┬─► T092 
 ```
 
 The diagram is a dependency guide, not permission to merge against stale `main`. T097's compiler/runtime and
-private URA draft are complete; **owner/Claude private publication remains pending**. T098's expanded token bridge is implemented. T099 waits for it and published-content verification. One task = one PR; remove that task's spec in its implementation PR (D104), update the design and
+private URA draft are complete; **owner/Claude private publication remains pending**. T098's expanded token bridge is implemented. T099's candidate implementation is under verification, not released. Its spec and this milestone remain open until authenticated publication and physical-iPhone acceptance are recorded. One task = one PR; remove a completed task's spec in its implementation PR (D104), update the design and
 milestone table, and record any newly settled rule in `docs/decisions.md`.
 
 ## Non-negotiable contracts

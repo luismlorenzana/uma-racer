@@ -40,6 +40,12 @@ slot/gold rules and original SVG token marks are in D250 ([reward/unlock phone p
 It preserves D249's compact planets, semantic Unique/gold moons and complete six-slot bank; each rail action carries
 its own slot identity. Neither mode uses the ticketed MinigameHost.
 
+T099's release candidate adds manifest-only Home discovery followed by lazy real-chapter/portrait verification,
+acknowledged per-party resume cards, and one nine-page `RpgGuide` shared by hub, map and battle. It reuses
+`createGuideMemory`, `PagedGuide` and `RpgModalFocus`; `PagedGuide` starts on the contextual page on its first paint.
+Its read-only DEV hub proof never opens account storage. Publication and physical-iPhone sign-off remain separate
+open gates in the [release acceptance record](../research/rpg-release-acceptance.md), not claims made by a synthetic proof.
+
 T105's one-time Inspiration advance (D256) is account-wide, outside all run ports. Existing scenario units receive
 shared slot/gold access and matching negative token debt; accepted RPG grants repay that scenario/family before
 depositing into Items. Gross rewards, seeds, journals and combat remain unchanged. See

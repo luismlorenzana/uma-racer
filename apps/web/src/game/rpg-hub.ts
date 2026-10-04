@@ -1,9 +1,9 @@
 // Account RPG enrollment and party editing (docs/design/uma-rpg.md, T093).
 import {
   RPG_PARTY_SIZE, RPG_PRESET_COUNT, canUseRpgSignature, enrollRpgOutfit,
-  parseRpgOutfitSave, parseRpgPresetSave, parseSaveSnapshotOrThrow, rpgPresetId, validateRpgLoadout,
+  parseRpgCheckpointSave, parseRpgOutfitSave, parseRpgPresetSave, parseSaveSnapshotOrThrow, rpgPresetId, validateRpgLoadout,
   type RpgCommandRequest, type RpgElement, type RpgOutfitSaveV1,
-  type RpgPresetSaveV1, type RpgPresetSlotV1, type RpgProfile,
+  type RpgCheckpointSaveV1, type RpgPresetSaveV1, type RpgPresetSlotV1, type RpgProfile,
   type RpgWeapon, type Strategy, type UmaTemplate,
 } from '@racer/domain'
 import { saveApi } from '../api/client'
@@ -14,6 +14,7 @@ export interface RpgHubView {
   outfits: ReadonlyMap<string, VersionedRow<RpgOutfitSaveV1>>
   presets: readonly VersionedRow<RpgPresetSaveV1>[]
   pending: readonly PendingRpgCommandRow[]
+  checkpoints: readonly VersionedRow<RpgCheckpointSaveV1>[]
 }
 
 export class RpgHubConflictError extends Error {
@@ -29,8 +30,8 @@ export function emptyRpgPreset(index: number): RpgPresetSaveV1 {
 }
 
 export async function readRpgHub(): Promise<RpgHubView> {
-  const [outfits, saved, pending] = await Promise.all([
-    db.rpgOutfits.toArray(), db.rpgPresets.toArray(), db.pendingRpgCommands.toArray(),
+  const [outfits, saved, pending, checkpoints] = await Promise.all([
+    db.rpgOutfits.toArray(), db.rpgPresets.toArray(), db.pendingRpgCommands.toArray(), db.rpgCheckpoints.toArray(),
   ])
   const savedById = new Map(saved.map((row) => [row.id, row]))
   return {
@@ -40,15 +41,16 @@ export async function readRpgHub(): Promise<RpgHubView> {
       return savedById.get(id) ?? { id, version: 0, data: emptyRpgPreset(index + 1) }
     }),
     pending,
+    checkpoints,
   }
 }
 
-/** Pull only acknowledged RPG setup rows; ordinary offline save writes must stay untouched. */
+/** Pull acknowledged RPG setup/checkpoints; ordinary queues and device battle journals stay untouched. */
 export async function refreshRpgHubFromCloud(): Promise<void> {
   const snapshot = parseSaveSnapshotOrThrow(await saveApi.load())
-  await db.transaction('rw', [db.rpgOutfits, db.rpgPresets], async () => {
+  await db.transaction('rw', [db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints], async () => {
     for (const remote of snapshot.entities) {
-      if (remote.kind !== 'rpgOutfits' && remote.kind !== 'rpgPresets') continue
+      if (remote.kind !== 'rpgOutfits' && remote.kind !== 'rpgPresets' && remote.kind !== 'rpgCheckpoints') continue
       if (remote.kind === 'rpgOutfits') {
         const local = await db.rpgOutfits.get(remote.id)
         if (local && local.version >= remote.version) continue
@@ -58,7 +60,7 @@ export async function refreshRpgHubFromCloud(): Promise<void> {
           if (!data) throw new Error(`Invalid account RPG outfit ${remote.id}`)
           await db.rpgOutfits.put({ id: remote.id, version: remote.version, data })
         }
-      } else {
+      } else if (remote.kind === 'rpgPresets') {
         const local = await db.rpgPresets.get(remote.id)
         if (local && local.version >= remote.version) continue
         if (remote.deleted) await db.rpgPresets.delete(remote.id)
@@ -66,6 +68,15 @@ export async function refreshRpgHubFromCloud(): Promise<void> {
           const data = parseRpgPresetSave(remote.data)
           if (!data) throw new Error(`Invalid account RPG party ${remote.id}`)
           await db.rpgPresets.put({ id: remote.id, version: remote.version, data })
+        }
+      } else {
+        const local = await db.rpgCheckpoints.get(remote.id)
+        if (local && local.version >= remote.version) continue
+        if (remote.deleted) await db.rpgCheckpoints.delete(remote.id)
+        else {
+          const data = parseRpgCheckpointSave(remote.data)
+          if (!data) throw new Error(`Invalid account RPG checkpoint ${remote.id}`)
+          await db.rpgCheckpoints.put({ id: remote.id, version: remote.version, data })
         }
       }
     }

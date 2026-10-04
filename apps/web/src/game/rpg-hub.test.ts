@@ -143,6 +143,28 @@ describe('RPG hub enrollment and party commands', () => {
     expect((await readRpgHub()).pending[0]?.status).toBe('conflict')
   })
 
+  it('refreshes saved chapter resumes without erasing device actions or unrelated pending writes', async () => {
+    const checkpoint = { schemaVersion: 1 as const, presetId: 'party-1', chapterId: 'invented-chapter', contentVersion: 'invented-v1',
+      contentHash: 'a'.repeat(64), attemptIndex: 1, attemptId: 'rpg-attempt:party-1:invented-chapter:1', lastClearedNodeId: 'fork',
+      selectedPath: ['fork'], status: 'at-checkpoint' as const, revision: 2, frozenEntry: null }
+    serverEntities.set('rpgCheckpoints/party-1:invented-chapter', { kind: 'rpgCheckpoints', id: 'party-1:invented-chapter',
+      data: checkpoint as unknown as Record<string, unknown>, version: 2, deleted: false, updatedAt: 100 })
+    await db.rpgCheckpoints.put({ id: 'party-1:invented-chapter', version: 1, data: { ...checkpoint, selectedPath: [] } })
+    await db.rpgBattleJournals.put({ id: 'invented-journal', entryId: 'invented-entry', retryOrdinal: 0, engineVersion: 1,
+      frozenHash: 'b'.repeat(64), actions: [], stateHash: 'c'.repeat(64), terminal: 'open', commitStatus: 'none', createdAt: 1, updatedAt: 1 })
+    await saveRpgPreset({ preset: emptyRpgPreset(2), expectedVersion: 0 })
+    await db.outbox.add({ kind: 'items', id: 'invented-item', op: 'upsert', queuedAt: 1 })
+    const pending = await db.pendingRpgCommands.toArray(), ordinary = await db.outbox.toArray(), journals = await db.rpgBattleJournals.toArray()
+    await refreshRpgHubFromCloud()
+    expect((await readRpgHub()).checkpoints).toMatchObject([{ version: 2, data: { selectedPath: ['fork'] } }])
+    expect(await db.pendingRpgCommands.toArray()).toEqual(pending)
+    expect(await db.outbox.toArray()).toEqual(ordinary)
+    expect(await db.rpgBattleJournals.toArray()).toEqual(journals)
+    serverEntities.get('rpgCheckpoints/party-1:invented-chapter')!.version = 1
+    await refreshRpgHubFromCloud()
+    expect((await readRpgHub()).checkpoints[0]?.version).toBe(2)
+  })
+
   it('refuses a party draft if an enrolled outfit revision changed after the editor opened', async () => {
     const template = outfit(8)
     await own(template); await enroll(template); await flushOneRpgCommand()

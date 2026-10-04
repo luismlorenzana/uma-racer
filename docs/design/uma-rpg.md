@@ -8,8 +8,10 @@
 > T089 has pinned enrollment, level/stat projection and tree/loadout rules (D227); T091 has pinned combat and the
 > compositional skill catalog (D229). T095 supplies branching maps (D245); T096 settles encounter EXP and integrates
 > safe-checkpoint progression (D246). T097 implements the private pipeline and prepared URA draft (D248);
-> T098 integrates scenario Inspiration rewards and independent slot/gold unlocks (D250). Owner publication and
-> Home entry remain gated by T099 and the private handoff.
+> T098 integrates scenario Inspiration rewards and independent slot/gold unlocks (D250); T105 adds the temporary
+> Inspiration advance (D256). T099's release candidate adds runtime-verified Home entry, saved-party resumes and the
+> shared nine-page guide. **Private publication and owner iPhone acceptance remain unverified; this is not a released
+> mode.** See the [release checklist](../research/rpg-release-acceptance.md) and [private handoff](../research/rpg-private-ura-handoff.md).
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -27,7 +29,7 @@ Home → RPG hub → choose a party preset → choose any chapter → preview ro
 ```
 
 - The hub opens directly on the player's saved RPG state; it does not ask for a featured Uma first. Its internal
-  navigation is **Map · Parties · Roster · Items/Records** (names provisional). No sixth bottom tab.
+  navigation is **Hub · Roster · Parties**, with per-party chapter/resume actions and a global Items link. No sixth bottom tab.
 - Five named presets are account-wide quick configurations. A preset saves member order, active signature element and RPG
   skill loadout for each slot; enrollment saves an outfit's initial signature as the default when adding it to a
   preset. A preset may choose a different eligible signature without changing the outfit's locked class or weapon.
@@ -466,7 +468,7 @@ same zero-reward retry path. Rejected commands and displaced local journals rema
 automatically rebased attempts. T096 now adds EXP to this same grouped result, with only profile-version
 reconciliation as defined above. T098 adds frozen token movements to winning map advances and chapter-clear groups.
 
-T093 adds a lazy, **internal-only** `/rpg` setup route (D232). It projects five named presets even when none has
+T093 added the lazy `/rpg` setup route (D232). It projects five named presets even when none has
 been saved, but creates a synchronized preset row only after an edit is acknowledged. Owned outfits come from the
 existing Uma save and verified private content; enrollment freezes the source template's base stats, growths,
 aptitudes and manifest version after explicit class/weapon confirmation. An A running style is required; no mutable
@@ -477,7 +479,12 @@ RPG-only account refresh, which leaves unrelated queued saves untouched.
 Partial parties stay editable but cannot launch. T095 adds internal chapter selection/maps and T096 adds
 acknowledged progression; T097 adds a private URA draft and exact-version content pipeline. Owner publication,
 Home release remains gated by the private handoff and T099; T098 implements the token sink.
-Home still has no RPG link and no synthetic production encounter.
+The release candidate's Home card inspects only manifest metadata on startup. On tap it lazy-loads the campaign
+verifier, validates the active production-v2 pack, requires a URA chapter and verifies every referenced portrait's
+bytes/hash before navigating. Missing, outdated, corrupt or offline-unavailable content shows an explanation and
+retry without enrolling outfits or creating attempts; it never substitutes synthetic opponents. New attempts also
+use this gate when reached directly. Existing checkpoints still load their exact retained content identity, including
+legacy packs; missing retained versions show recovery instead of rerolling. No release flag is stored in the save.
 
 T094 adds the lazy standalone **`/rpg/battle/:checkpointId`** stage (D243), not a Home or chapter launch action.
 Five readable party cards carry portrait weapon/signature overlays, HP/MP, KO, acted and status labels. Attack,
@@ -610,16 +617,23 @@ Items links. The party setup uses five legible cards rather than five tiny portr
 portrait, including map/party/combat/result variants, carries small visible overlays for its equipped weapon and
 active element**: glyph plus short text/accessible label, with a toggleable affinity legend. The overlays cannot cover
 the face or rely on two similar colors. The RPG profile makes outfit identity and RPG Level unambiguous.
-Until chapter maps exist, the internal setup hub shows five party cards and an unavailable chapter action instead
-of a fabricated resume. `RpgPortrait` is shared by roster/profile/party and is the presentation handoff for future
-map, battle and result screens; it uses private bust/icon art with an honest missing-art state and distinct weapon
-and element glyph-plus-text overlays. The roster and party editor expose a toggleable text advantage/affinity legend.
+The hub reads acknowledged foreground checkpoints beside its five presets and labels ready-party launch, saved
+battle, accepted-result collection and cleared replay separately. Partial parties stay editable, not launchable.
+Current publication failures still offer recovery for retained saved chapters. Explicit RPG account refresh updates
+outfits, presets and checkpoints without clearing unrelated ordinary writes, pending RPG commands or device journals.
+`RpgPortrait` is shared by hub/roster/profile/party/map/battle/result; it uses private bust/icon art with an honest
+missing-art state and distinct weapon/element overlays. Compact hub cards also show outfit name, Tier and Level.
+The roster and party editor expose a toggleable text advantage/affinity legend.
 
 The battle stage keeps the current target, HP/MP, intent and weakness visible; actions occupy the thumb zone with
 44 pt targets and `pb-safe`. The active fight does not page-scroll. Map and roster menus may scroll normally. Use
 `m.*` under `LazyMotion strict`, transform/opacity animations and delta-timed effects; respect reduced motion. The
-route and any PixiJS scene stay lazy so startup remains ≤180 KB gzip. A short in-mode guide uses the existing paged
-guide pattern and explains class choice, elemental triangle, Light/Dark, MP, resume and reward destination.
+route and any PixiJS scene stay lazy so startup remains ≤180 KB gzip. One shared nine-page `RpgGuide` reuses
+`PagedGuide`, `RpgModalFocus` and resilient device-local guide memory. It opens once from the hub and is always
+reachable there, from the map and from battle; contextual entry begins on the appropriate page immediately.
+It explains party/class choice, weapons/affinities, action/MP channels, advantage, support/KO, offline/retry/takeover,
+EXP/skills/promotion and scenario tokens/advance repayment/Inspiration SP. The guide never issues a game command.
+DEV-only layout/chapter proofs and invented roster imports are excluded from the production route graph and build.
 
 ## Relationship to existing systems and delivery order
 
@@ -635,7 +649,8 @@ The implementation plan is [M028 — first playable RPG](../tasks/M028-uma-rpg.m
 [M029 — chapter rollout](../tasks/M029-rpg-chapter-rollout.md), T100–T103, covering the other thirteen current
 scenarios. The [technical contract](../technical/uma-rpg-implementation.md) specifies state ownership, grouped
 transactions, replay and handoffs. The first PRs settle balance and persistence with synthetic fixtures; later PRs
-build the battle, chapter, progression, private-content and Inspiration bridge. The Home entry remains hidden until a
-real chapter can be played and rewarded end to end. Each task updates this design when a candidate rule becomes
+build the battle, chapter, progression, private-content and Inspiration bridge. The Home entry cannot enter the mode
+until its real chapter and art verify. T099/M028 remain open until published-content acceptance and physical-iPhone
+sign-off; a synthetic browser proof does not close them. Each task updates this design when a candidate rule becomes
 settled, appends a decision for new rules, pins changed numbers in `packages/domain/src/domain.test.ts`, and runs
 lint, test, build and relevant RPG simulations. Original-game and PriConne content stays private throughout.

@@ -56,7 +56,7 @@ describe('chapter map presentation', () => {
   it('contains guide focus and returns it after Escape', async () => {
     mount(); const button = await screen.findByRole('button', { name: 'Chapter guide' })
     button.focus(); fireEvent.click(button)
-    const dialog = await screen.findByRole('dialog', { name: 'Choose a route' })
+    const dialog = await screen.findByRole('dialog', { name: 'Checkpoints, retries and devices' })
     const close = screen.getByRole('button', { name: 'Close the guide' })
     expect(document.activeElement).toBe(close)
     fireEvent.keyDown(dialog, { key: 'Escape' })

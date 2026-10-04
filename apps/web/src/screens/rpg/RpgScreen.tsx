@@ -1,4 +1,4 @@
-// Hidden, lazy account RPG setup screens (docs/design/uma-rpg.md#phone-presentation, T093).
+// Lazy account RPG hub and setup (docs/design/uma-rpg.md#phone-presentation, T099).
 import {
   RPG_ELEMENTS, RPG_PARTY_SIZE, STRATEGIES, canUseRpgSignature,
   projectRpgStats, rpgActiveSlots, rpgAffinities, rpgExpToNext, rpgSkillKey,
@@ -11,6 +11,7 @@ import { useEffect, useState, createContext, useContext } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import type { LoadedContent } from '../../content/runtime'
+import type { RpgRelease } from '../../content/rpg-release'
 import { db, type PendingRpgCommandRow, type VersionedRow } from '../../game/db'
 import { enrollOwnedRpgOutfit, readRpgHub, refreshRpgHubFromCloud, saveRpgPreset, validateRpgPresetSlots,
   type RpgHubView } from '../../game/rpg-hub'
@@ -25,9 +26,11 @@ import { ScreenState } from '../../ui/ScreenState'
 import { RpgElementLegend, RpgPortrait, RPG_ELEMENT_LABELS, RPG_WEAPON_LABELS } from '../../ui/rpg/RpgPortrait'
 import { RpgProgressionEditor } from '../../ui/rpg/RpgProgressionEditor'
 import { RpgProgressionHost } from '../../game/rpg-progression-host'
+import { RpgGuide, rpgGuideMemory } from './RpgGuide'
+import { useRpgRelease } from './useRpgRelease'
 const progressionHost = new RpgProgressionHost()
 
-interface Context { content: LoadedContent; view: RpgHubView; refresh: () => Promise<void> }
+interface Context { content: LoadedContent; view: RpgHubView; refresh: () => Promise<void>; release: RpgRelease | null; retryRelease: () => void }
 const RpgContext = createContext<Context | null>(null)
 function useRpg(): Context {
   const value = useContext(RpgContext)
@@ -86,6 +89,9 @@ export function RpgShell() {
   const persistent = useGame((state) => state.persistent)
   const contentState = useContent()
   const { view, error, refresh } = useHubView(status === 'ready' && persistent)
+  const campaign = useRpgRelease(contentState.status === 'ready' ? contentState.content : null)
+  const [guide, setGuide] = useState(() => !rpgGuideMemory.seen())
+  const closeGuide = () => { rpgGuideMemory.remember(); setGuide(false) }
   if (status !== 'ready') return <ScreenState title="RPG unavailable" detail="Open your saved game first." action={{ label: 'Home', to: '/' }} />
   if (!persistent) return <ScreenState title="RPG save unavailable" detail="RPG party changes require the persistent account save. Your other game modes remain available." action={{ label: 'Home', to: '/' }} />
   if (contentState.status !== 'ready') return <ScreenState title="RPG content unavailable" detail="Your private Uma catalog must load before outfit enrollment." action={{ label: 'Home', to: '/' }} />
@@ -93,13 +99,13 @@ export function RpgShell() {
   if (!view) return <ScreenState title="Loading RPG roster" detail="Reading saved outfits and parties." />
   const nav = [{ to: '/rpg', label: 'Hub', end: true }, { to: '/rpg/roster', label: 'Roster', end: false },
     { to: '/rpg/parties', label: 'Parties', end: false }]
-  return <RpgContext.Provider value={{ content: contentState.content, view, refresh }}>
+  return <RpgContext.Provider value={{ content: contentState.content, view, refresh, release: campaign.state, retryRelease: campaign.retry }}>
     <div className="flex h-dvh flex-col bg-page">
       <header className="pt-safe border-b border-hairline bg-panel px-4 pb-2">
         <div className="flex min-h-12 items-center justify-between gap-3">
           <Link to="/" className="flex min-h-11 items-center text-[13px] font-semibold text-ink-soft">← Home</Link>
           <h1 className="font-display text-xl">Uma RPG</h1>
-          <span className="text-[11px] text-ink-faint">Setup</span>
+          <button aria-label="RPG guide" className="min-h-11 rounded-sm border border-hairline px-2 text-xs font-semibold" onClick={() => setGuide(true)}>How to play</button>
         </div>
         <nav aria-label="RPG menus" className="grid grid-cols-3 gap-1 rounded-sm bg-sunken p-1">
           {nav.map(({ to, label, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) =>
@@ -109,34 +115,60 @@ export function RpgShell() {
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-safe">
         <div className="mx-auto max-w-xl pb-8"><Outlet /></div>
       </main>
+      {guide && <RpgGuide onClose={closeGuide} />}
     </div>
   </RpgContext.Provider>
 }
 
 export function RpgHubScreen() {
-  const { view, content } = useRpg()
+  const { view, content, release, retryRelease } = useRpg()
   const owned = useGame((state) => state.umas)
-  const eligible = Object.keys(owned).filter((id) => {
-    const template = content.umas.byId.get(id)
-    return template && STRATEGIES.some((style) => template.aptitudes.strategy[style] === 'A')
+  return <><SaveNotice /><RpgHubContent view={view} content={content} ownedIds={Object.keys(owned)} release={release} retryRelease={retryRelease} /></>
+}
+
+/** Read-only projection also used by the isolated phone proof; no hosts or enrollment side effects. */
+export function RpgHubContent({ view, content, ownedIds, release, retryRelease, names = {} }: {
+  view: RpgHubView; content: LoadedContent | null; ownedIds: readonly string[]; release: RpgRelease | null
+  retryRelease: () => void; names?: Record<string, string>
+}) {
+  const owned = new Set(ownedIds)
+  const eligible = ownedIds.filter((id) => {
+    const aptitudes = content?.umas.byId.get(id)?.aptitudes ?? view.outfits.get(id)?.data.profile.sourceAptitudes
+    return aptitudes && STRATEGIES.some((style) => aptitudes.strategy[style] === 'A')
   })
+  const profiles = new Map([...view.outfits].filter(([id]) => owned.has(id)).map(([id, saved]) => [id, saved.data.profile]))
   return <div className="space-y-3">
-    <SaveNotice />
-    <div><p className="text-micro text-ink-soft">Account campaign · preparation</p><h2 className="mt-1 text-2xl">Your RPG parties</h2>
+    <div><p className="text-micro text-ink-soft">Account campaign · independent progression</p><h2 className="mt-1 text-2xl">Your RPG parties</h2>
       <p className="mt-1 text-[13px] text-ink-soft">Five presets share outfit RPG levels. A chapter needs five distinct enrolled outfits; no running-style quota.</p></div>
     <Panel className="grid grid-cols-2 gap-2 text-center"><div><Numeral className="text-xl">{view.outfits.size}</Numeral><p className="text-[11px] text-ink-soft">enrolled outfits</p></div>
       <div><Numeral className="text-xl">{eligible.length}</Numeral><p className="text-[11px] text-ink-soft">eligible owned</p></div></Panel>
+    {!release && <p role="status" className="text-xs text-ink-soft">Checking the private chapter and portraits…</p>}
+    {release?.status === 'unavailable' && <Panel><p role="status" className="text-sm">Campaign unavailable</p><p className="mt-1 text-xs leading-5 text-ink-soft">{release.reason}</p><Button variant="secondary" className="mt-2 w-full" onClick={retryRelease}>Retry campaign check</Button></Panel>}
+    {release?.status === 'ready' && <p className="text-xs text-ink-soft">{release.pack.chapters.length} published {release.pack.chapters.length === 1 ? 'chapter' : 'chapters'} · {release.pack.version}</p>}
     {view.presets.map((row) => {
       const filled = RPG_PARTY_SIZE - emptySlots(row.data.slots)
-      const profiles = new Map([...view.outfits].filter(([id]) => owned[id]).map(([id, saved]) => [id, saved.data.profile]))
       const ready = filled === RPG_PARTY_SIZE && validateRpgPresetSlots(row.data.slots, profiles) === null
-      return <Link key={row.id} to={`/rpg/parties/${row.id}`} className="block min-h-20 rounded-md border border-hairline bg-panel p-4 shadow-1">
-        <span className="flex items-center justify-between gap-2"><span className="font-display text-[17px] font-semibold">{row.data.name}</span><span className="text-[12px] font-semibold text-accent-strong">Edit →</span></span>
-        <span className="mt-1 block text-[12px] text-ink-soft">{filled}/5 outfits · {ready ? 'Party ready · chapters unavailable until campaign release' : 'Needs five distinct outfits'}</span>
-      </Link>
+      const checkpoint = view.checkpoints.find(c => c.data.presetId === row.id && c.data.chapterId === row.data.foregroundChapterId)
+      const chapterId = checkpoint?.data.chapterId ?? (release?.status === 'ready' ? release.chapterId : null)
+      const chapterHref = `/rpg/chapters/${row.id}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}` : ''}`
+      const pending = view.pending.some(p => (p.body as RpgCommandRequest).upserts.some(u => u.id === row.id || u.kind === 'rpgCheckpoints' && u.id.startsWith(`${row.id}:`)))
+      const action = checkpoint?.data.status === 'in-battle' ? 'Continue saved battle' : checkpoint?.data.status === 'pending-result' ? 'Collect accepted win'
+        : checkpoint?.data.status === 'cleared' ? 'Review clear / replay' : checkpoint ? 'Resume chapter' : 'Choose chapter'
+      return <Panel key={row.id}>
+        <div className="flex items-center justify-between gap-2"><h3 className="font-display text-[17px] font-semibold">{row.data.name}</h3><Link to={`/rpg/parties/${row.id}`} className="flex min-h-11 items-center text-xs font-semibold text-accent-strong">Edit party</Link></div>
+        <p className="text-xs text-ink-soft">{filled}/{RPG_PARTY_SIZE} outfits · {ready ? 'Party ready' : 'Needs five distinct outfits'}{pending ? ' · Pending / needs sync' : ''}</p>
+        {filled > 0 && <div className="mt-2 grid grid-cols-5 gap-1" aria-label={`${row.data.name} members`}>{row.data.slots.map((slot, i) => {
+          const profile = slot && view.outfits.get(slot.outfitId)?.data.profile
+          const name = slot ? names[slot.outfitId] ?? templateName(content?.umas.byId.get(slot.outfitId), slot.outfitId) : ''
+          return slot ? <div key={i} className="min-w-0"><RpgPortrait content={content} compact outfitId={slot.outfitId} name={name} weapon={profile?.weapon ?? null} element={slot.signature} className="h-16" /><p className="mt-1 truncate text-center text-[11px] font-semibold" title={name}>{name}</p><p className="text-center text-[10px] text-ink-soft">{profile ? `T${profile.tier} · Lv${profile.level}` : 'Unavailable'}</p></div> : <div key={i} className="flex h-16 items-center justify-center rounded-sm border border-hairline text-xs text-ink-faint">Empty</div>
+        })}</div>}
+        {checkpoint && <p className="mt-2 text-xs text-ink-soft">Attempt {checkpoint.data.attemptIndex} · {checkpoint.data.selectedPath.length} accepted checkpoints · {checkpoint.data.status.replaceAll('-', ' ')}</p>}
+        {release?.status === 'ready' && (ready || checkpoint) && <Link to={chapterHref} className="mt-2 flex min-h-11 items-center justify-center rounded-sm bg-accent px-3 text-sm font-semibold text-ink">{action} · {row.data.name}</Link>}
+        {release?.status !== 'ready' && checkpoint && <Link to={chapterHref} className="mt-2 flex min-h-11 items-center text-xs font-semibold text-accent-strong">Review saved chapter / content recovery</Link>}
+      </Panel>
     })}
     <Link to="/rpg/roster" className="inline-flex min-h-11 items-center font-semibold text-accent-strong">Browse owned RPG roster →</Link>
-    {view.presets.map((row) => <Link key={row.id} to={`/rpg/chapters/${row.id}`} className="flex min-h-11 items-center rounded-sm border border-hairline px-3 text-sm">Chapters · {row.data.name}</Link>)}
+    <Link to="/farm/items" className="flex min-h-11 items-center font-semibold text-accent-strong">Global Items · Inspiration tokens</Link>
   </div>
 }
 

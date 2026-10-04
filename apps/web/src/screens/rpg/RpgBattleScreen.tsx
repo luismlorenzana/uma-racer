@@ -68,10 +68,11 @@ function HostNotice({ view }: { view: RpgBattleView }) {
 }
 
 /** Port injection is used only by the DEV proof and component tests; production always uses the real host. */
-export function RpgBattleStage({ host, checkpointId, content, uid, proof = false, names = {}, portraits = {}, headerTools, onSync, backTo = '/rpg' }: {
+export function RpgBattleStage({ host, checkpointId, content, uid, proof: developmentProof = false, names = {}, portraits = {}, headerTools, onSync, backTo = '/rpg' }: {
   host: RpgBattleHost; checkpointId: string; content: LoadedContent | null; uid: string | null; proof?: boolean;
   names?: Readonly<Record<string, string>>; portraits?: Readonly<Record<string, string>>; headerTools?: ReactNode; onSync?: () => void; backTo?: string
 }) {
+  const proof = import.meta.env.DEV && developmentProof
   const [view, setView] = useState<RpgBattleView | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [actorId, setActorId] = useState('')

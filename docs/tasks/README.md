@@ -11,6 +11,11 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
+**T099 — first playable RPG release is in progress:** the release candidate adds verified Home discovery/entry,
+per-party checkpoint resumes and a shared full guide. Browser/automated evidence and the remaining authenticated
+publication/physical-iPhone gates live in [release acceptance](../research/rpg-release-acceptance.md). T099 and M028
+stay open until those gates are recorded; the thirteen other chapters remain M029.
+
 **Owner detour T105 — Inspiration advance is complete** (D256): one-time shared scenario unlocks, a negative token
 bank, and receipt-gated RPG repayment. Its first updated online sync applies the server-owned frozen-cohort advance.
 T099's private release gate is unchanged.
@@ -22,7 +27,7 @@ and playable-release gates remain unchanged.
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078–T080 landed; T081 next |
-| [M028 — Global Uma RPG](M028-uma-rpg.md) | T089–T098 ✅ · [T099](M028-uma-rpg.md#delivery-sequence) | **In progress** · Two-token Inspiration bridge complete; private owner publication and release remain gated |
+| [M028 — Global Uma RPG](M028-uma-rpg.md) | T089–T098 ✅ · [T099](M028-uma-rpg.md#delivery-sequence) | **In progress** · Release candidate under verification; private publication and owner iPhone acceptance remain open |
 | [M029 — RPG chapter rollout](M029-rpg-chapter-rollout.md) | [T100–T103](M029-rpg-chapter-rollout.md#delivery-sequence) | **Specified, not implemented** · private content for the remaining thirteen scenarios and a 14/14 gate |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |

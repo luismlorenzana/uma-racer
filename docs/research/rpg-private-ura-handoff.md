@@ -49,8 +49,10 @@ it does **not** settle difficulty for real account outfits, all compositions or 
    The full manifest version will differ after combining existing Uma/cards/races/Spark packs.
 4. Record the published manifest version and verify the exact pack hash via authenticated `/api/content/*`.
    Play both forks/elite choices through the real runtime, including accepted EXP and checkpoint reload.
-5. T098 supplies Inspiration tokens/consumption; T099 remains blocked on that work, private publication and owner
-   device sign-off. Home entry must not appear early. Other thirteen chapters remain M029, not T097.
+5. T098's token bridge and T105's Inspiration advance are implemented. T099's candidate Home gate, saved-party
+   resumes and full guide are under verification; [release acceptance](rpg-release-acceptance.md) still requires
+   authenticated publication and owner device sign-off. An unavailable Home card must never launch synthetic
+   opponents or an unverified chapter. Other thirteen chapters remain M029, not T097.
 
 No credentials, bucket writes, infrastructure edits or private roster rows were used in the code PR. Prepared
 private content is explicitly separate from merged/deployed application code.

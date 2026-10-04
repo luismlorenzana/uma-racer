@@ -50,3 +50,10 @@ cannot be obtained, report the release as unverified and keep the task open inst
 
 **Out of scope:** fourteen fully authored chapters (M029), battle consumables, further class weapons/respec and new
 infra. T099 is the first real chapter release, not a claim of full scenario coverage.
+
+## Current candidate — 2026-10-04
+
+Implementation and verification are tracked in [release acceptance](../research/rpg-release-acceptance.md): lazy
+real-pack/portrait gating, Home discovery, saved-party resumes and the shared full guide. The prepared private pack
+passes the bounded local validator/replay, but authenticated production publication and owner physical-iPhone sign-off
+are still unverified. This spec and M028 remain open; a draft PR/synthetic browser proof cannot retire them.

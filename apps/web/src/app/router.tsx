@@ -160,7 +160,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    // T093 internal setup only; Home does not expose RPG until the complete first chapter ships (T099).
+    // Route-split campaign; Home verifies private URA content before entry (T099).
     path: 'rpg',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Uma RPG" />,
     lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgShell }),
@@ -193,6 +193,9 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/rpg-release-proof',
+    lazy: async () => ({ Component: (await import('../screens/rpg/RpgReleaseProofScreen')).RpgReleaseProofScreen }),
+  }, {
     path: 'dev/inspiration-advance-proof',
     lazy: async () => ({ Component: (await import('../screens/rpg/InspirationAdvanceProofScreen')).InspirationAdvanceProofScreen }),
   }, {

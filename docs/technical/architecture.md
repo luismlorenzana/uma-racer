@@ -317,6 +317,16 @@ group. Pending results and tokens remain unearned. The v14/v23 migration preserv
 branches without charging or minting tokens, changing EXP or disturbing open RPG journals. T097's private chapter is
 authored; content publication and Home/device release remain T099 work; [content contract](rpg-chapter-content.md).
 
+T099's release candidate adds a lightweight Home card with manifest-only discovery. Opening it dynamically imports
+the RPG content verifier: the active v2 chapter must have production provenance, URA coverage and verified portrait
+bytes before navigation. New chapter attempts also verify this contract, while retained checkpoints resolve their
+exact version/hash without requiring today's active pack. Availability is reference state, not a persisted save flag.
+The route-split hub joins acknowledged checkpoint rows for per-preset resume/collection/replay labels; explicit setup
+refresh also adopts newer checkpoints without touching ordinary queues, RPG pending commands or local battle journals.
+Hub, chapter and battle share one read-only paged guide with device-local memory and focus isolation. DEV fixtures,
+routes and proof-only fallback node identities are tree-shaken from production. The [release acceptance record](../research/rpg-release-acceptance.md)
+keeps authenticated publication and owner physical-iPhone checks explicitly open; code/test completion is not deployment acceptance.
+
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
 players/{uid}/umas/{umaId}            save v15: level/EXP, scenario units (Inspiration unlocks, four distance presets), race defaults, the preset in use, history, version
