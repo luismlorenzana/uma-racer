@@ -30,7 +30,7 @@ export function IdentityGlyph({ weapon, element }: { weapon?: RpgWeapon; element
   return <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={path} /></svg>
 }
 
-export function RpgPortrait({ content, outfitId, name, weapon, element, className = '', compact = false }: {
+export function RpgPortrait({ content, outfitId, name, weapon, element, className = '', compact = false, artwork = 'bust' }: {
   content: LoadedContent | null
   outfitId: string
   name: string
@@ -38,18 +38,19 @@ export function RpgPortrait({ content, outfitId, name, weapon, element, classNam
   element: RpgElement | null
   className?: string
   compact?: boolean
+  artwork?: 'bust' | 'icon'
 }) {
-  const bust = useArt(content, 'bust', outfitId)
+  const bust = useArt(artwork === 'bust' ? content : null, 'bust', outfitId)
   const asset = content ? getContentAsset(content, 'uma-icons', outfitId) : null
   return <div className={`relative isolate overflow-hidden rounded-md border border-hairline bg-sunken ${className}`}>
     <div className="absolute inset-0">
-      {bust ? <img src={bust} alt="" draggable={false} className="h-full w-full object-cover object-top" />
+      {artwork === 'bust' && bust ? <img src={bust} alt="" draggable={false} className="h-full w-full object-cover object-top" />
         : <AtlasSprite asset={asset} alt="" decorative className="h-full w-full object-cover" fallback={compact
           ? <span className="flex h-full items-center justify-center bg-stage-soft text-[18px] text-ink-on-dark-soft" aria-label="Portrait unavailable">{name.slice(0, 1)}</span>
           : <Placeholder label="Portrait unavailable" />} />}
     </div>
-    {compact ? <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-stage/90 py-0.5 text-ink-on-dark" aria-label={`${name}, ${weapon ? RPG_WEAPON_LABELS[weapon] : 'Not enrolled'}, ${element ?? 'no element'}`}>
-      <IdentityGlyph weapon={weapon ?? undefined} /><IdentityGlyph element={element ?? undefined} />
+    {compact ? (weapon || element) && <div role="img" className="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-stage/90 py-0.5 text-ink-on-dark" aria-label={`${name}, ${weapon ? RPG_WEAPON_LABELS[weapon] : 'Not enrolled'}, ${element ? RPG_ELEMENT_LABELS[element] : 'no element'}`}>
+      {weapon && <IdentityGlyph weapon={weapon} />}{element && <IdentityGlyph element={element} />}
     </div> : <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-stage via-stage/90 to-transparent px-2 pb-2 pt-8 text-ink-on-dark">
       <span className="block truncate text-[12px] font-semibold" title={name}>{name}</span>
       <span className="mt-1 flex flex-wrap gap-1">

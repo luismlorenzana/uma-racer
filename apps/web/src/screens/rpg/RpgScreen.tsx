@@ -25,6 +25,7 @@ import { Panel } from '../../ui/Panel'
 import { ScreenState } from '../../ui/ScreenState'
 import { RpgElementLegend, RpgPortrait, RPG_ELEMENT_LABELS, RPG_WEAPON_LABELS } from '../../ui/rpg/RpgPortrait'
 import { RpgProgressionEditor } from '../../ui/rpg/RpgProgressionEditor'
+import { orderRpgRoster, rpgPartyOptions } from '../../ui/rpg/roster-options'
 import { RpgProgressionHost } from '../../game/rpg-progression-host'
 import { RpgGuide, rpgGuideMemory } from './RpgGuide'
 import { useRpgRelease } from './useRpgRelease'
@@ -175,26 +176,56 @@ export function RpgHubContent({ view, content, ownedIds, release, retryRelease, 
 export function RpgRosterScreen() {
   const { view, content } = useRpg()
   const owned = useGame((state) => state.umas)
-  const ids = Object.keys(owned).sort((a, b) => templateName(content.umas.byId.get(a), a).localeCompare(templateName(content.umas.byId.get(b), b)))
+  return <><SaveNotice /><RpgRosterContent view={view} content={content} ownedIds={Object.keys(owned)} /></>
+}
+
+/** Read-only tiles, shared with the synthetic phone proof without opening account storage. */
+export function RpgRosterContent({ view, content, ownedIds, names = {} }: {
+  view: RpgHubView; content: LoadedContent | null; ownedIds: readonly string[]; names?: Record<string, string>
+}) {
+  const name = (id: string) => names[id] ?? templateName(content?.umas.byId.get(id), id)
+  const ids = orderRpgRoster(ownedIds, new Set(view.outfits.keys()), name)
   return <div className="space-y-3">
-    <SaveNotice />
     <div><p className="text-micro text-ink-soft">Owned outfits</p><h2 className="mt-1 text-2xl">RPG roster</h2>
       <p className="mt-1 text-[12px] text-ink-soft">RPG Tier and Level belong to the outfit, separate from Racing, Training and Farm.</p></div>
     <RpgElementLegend />
     {ids.length === 0 && <ScreenState title="No owned outfits" detail="Acquire an Uma outfit in the Stable before making an RPG party." />}
-    <div className="grid grid-cols-2 gap-2">
-      {ids.map((id) => {
-        const template = content.umas.byId.get(id)
-        const profile = view.outfits.get(id)?.data.profile
-        const eligible = template && STRATEGIES.some((style) => template.aptitudes.strategy[style] === 'A')
-        const pending = view.pending.some((row) => row.status === 'pending' && pendingFor(row, 'enroll', id))
-        return <Link key={id} to={`/rpg/roster/${encodeURIComponent(id)}`} className="min-w-0 rounded-md border border-hairline bg-panel p-2 shadow-1">
-          <RpgPortrait content={content} outfitId={id} name={templateName(template, id)} weapon={profile?.weapon ?? null} element={profile?.defaultSignature ?? null} className="aspect-[4/5] w-full" />
-          <span className="mt-1 block text-[11px] font-semibold text-ink-soft">{profile ? `Tier ${profile.tier} · RPG Lv${profile.level}` : pending ? 'Enrollment pending' : eligible ? 'Ready to enroll' : 'No A running style'}</span>
-        </Link>
-      })}
-    </div>
+    {[true, false].map(enrolled => {
+      const group = ids.filter(id => view.outfits.has(id) === enrolled)
+      if (group.length === 0) return null
+      const label = enrolled ? 'Enrolled' : 'Not enrolled'
+      return <section key={label} aria-label={label}>
+        <h3 className="mb-2 text-[12px] font-semibold text-ink-soft">{label} · {group.length}</h3>
+        <div className="grid grid-cols-5 gap-x-1.5 gap-y-3" aria-label={`${label} outfits`}>
+          {group.map((id) => {
+            const template = content?.umas.byId.get(id)
+            const profile = view.outfits.get(id)?.data.profile
+            const eligible = template && STRATEGIES.some((style) => template.aptitudes.strategy[style] === 'A')
+            const pending = view.pending.some((row) => row.status === 'pending' && pendingFor(row, 'enroll', id))
+            const status = profile ? `Tier ${profile.tier} · RPG Lv${profile.level}` : pending ? 'Enrollment pending' : eligible ? 'Ready to enroll' : 'No A running style'
+            const identity = profile ? ` · ${RPG_WEAPON_LABELS[profile.weapon]} · ${RPG_ELEMENT_LABELS[profile.defaultSignature]}` : ''
+            return <Link key={id} to={`/rpg/roster/${encodeURIComponent(id)}`} aria-label={`${name(id)} · ${status}${identity}`}
+              className="block min-h-11 min-w-0 rounded-md focus-visible:outline-2 focus-visible:outline-accent">
+              <RpgPortrait content={content} compact artwork="icon" outfitId={id} name={name(id)} weapon={profile?.weapon ?? null} element={profile?.defaultSignature ?? null} className="aspect-square w-full" />
+              <span className="mt-1 block truncate text-center text-[11px] font-semibold" title={name(id)}>{name(id)}</span>
+              <span className="block text-center text-[10px] text-ink-soft">{profile ? `T${profile.tier} · Lv${profile.level}` : pending ? 'Pending' : eligible ? 'Enroll' : 'Ineligible'}</span>
+            </Link>
+          })}
+        </div>
+      </section>
+    })}
   </div>
+}
+
+export function RpgOutfitPicker({ view, draft, index, ownedIds, content, names = {}, onChange }: {
+  view: RpgHubView; draft: RpgPresetSaveV1; index: number; ownedIds: readonly string[]
+  content: LoadedContent | null; names?: Record<string, string>; onChange: (id: string) => void
+}) {
+  const name = (id: string) => names[id] ?? templateName(content?.umas.byId.get(id), id)
+  const available = rpgPartyOptions(view, draft, index, ownedIds).sort((a, b) => name(a).localeCompare(name(b)) || a.localeCompare(b))
+  return <SelectField label={`Outfit for slot ${index + 1}`} value={draft.slots[index]?.outfitId ?? ''}
+    options={[{ value: '', label: 'Empty slot' }, ...available.map(id => ({ value: id, label: name(id) }))]}
+    onChange={id => { if (id === '' || available.includes(id)) onChange(id) }} />
 }
 
 function AffinityList({ aptitudes }: { aptitudes: UmaTemplate['aptitudes'] }) {
@@ -375,15 +406,14 @@ export function RpgPartyScreen() {
     {pending?.status === 'conflict' && <Button variant="secondary" disabled={busy} onClick={() => void loadCloud()}>Load current account version</Button>}
     <div><p className="text-micro text-ink-soft">{row.id} · revision {row.version}</p><h2 className="mt-1 text-2xl">Edit party</h2></div>
     <label className="block text-[12px] font-semibold text-ink-soft">Party name<input value={draft.name} maxLength={40} onChange={(event) => update({ ...draft, name: event.target.value })} className="mt-1 min-h-11 w-full rounded-sm border border-hairline-strong bg-panel px-3 text-[15px] text-ink" /></label>
+    <p className="text-[12px] leading-5 text-ink-soft">Pick enrolled outfits not assigned to another party. To move one between parties, remove it from its current party and save first.</p>
     {draft.slots.map((slot, index) => {
       const selected = slot ? profiles.get(slot.outfitId) : null
       const template = slot ? content.umas.byId.get(slot.outfitId) : null
-      const available = [...profiles].filter(([id]) => id === slot?.outfitId || !draft.slots.some((candidate) => candidate?.outfitId === id))
-        .sort(([a], [b]) => templateName(content.umas.byId.get(a), a).localeCompare(templateName(content.umas.byId.get(b), b)))
       const skills = selected ? [...selected.tree, ...selected.legacy] : []
       return <Panel key={index} label={`Slot ${index + 1}`} className="space-y-2">
         {slot && <RpgPortrait content={content} outfitId={slot.outfitId} name={templateName(template ?? undefined, slot.outfitId)} weapon={selected?.weapon ?? null} element={slot.signature} className="aspect-square w-36" />}
-        <SelectField label={`Outfit for slot ${index + 1}`} value={slot?.outfitId ?? ''} options={[{ value: '', label: 'Empty slot' }, ...available.map(([id]) => ({ value: id, label: templateName(content.umas.byId.get(id), id) }))]}
+        <RpgOutfitPicker view={view} draft={draft} index={index} ownedIds={Object.keys(owned)} content={content}
           onChange={(id) => { const profile = profiles.get(id); setSlot(index, profile ? { outfitId: id, signature: profile.defaultSignature, loadout: [] } : null) }} />
         {slot && selected && <><p className="text-[11px] text-ink-soft">Locked {title(selected.style)} · {RPG_WEAPON_LABELS[selected.weapon]} · Tier {selected.tier} Lv{selected.level}</p>
           <SelectField label={`Active signature for slot ${index + 1}`} value={slot.signature} options={RPG_ELEMENTS.filter((element) => canUseRpgSignature(selected, element))
@@ -406,7 +436,7 @@ export function RpgPartyScreen() {
     {problem && <p role="alert" className="text-[12px] text-danger">{problem}</p>}
     {changedOutfit && <p role="alert" className="text-[12px] text-warning">A selected outfit changed elsewhere. Reload its latest RPG profile before saving this party.</p>}
     <div className="flex gap-2"><Button variant="secondary" onClick={reload}>Reload saved</Button><Button disabled={busy || !dirty || changedOutfit || baseVersion !== row.version || Boolean(problem) || Boolean(pending && pending.status === 'pending')} className="flex-1" onClick={() => void save()}>Save party</Button></div>
-    <Panel><p className="text-[13px] font-semibold">Chapter selection unavailable</p><p className="mt-1 text-[12px] text-ink-soft">{emptySlots(draft.slots) > 0 ? `Fill ${emptySlots(draft.slots)} more slot(s) before launch.` : 'This party has five outfits. Chapter maps arrive in the next RPG task.'}</p></Panel>
+    <Panel><p className="text-[13px] font-semibold">Choose a chapter from the Hub</p><p className="mt-1 text-[12px] text-ink-soft">{emptySlots(draft.slots) > 0 ? `Fill ${emptySlots(draft.slots)} more slot(s), then save before launch.` : 'Save this party, then return to the Hub to choose or resume its chapter.'}</p><Link to="/rpg" className="inline-flex min-h-11 items-center text-[13px] font-semibold text-accent-strong">RPG Hub</Link></Panel>
     <RpgElementLegend />
   </div>
 }

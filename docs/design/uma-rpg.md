@@ -626,6 +626,20 @@ outfits, presets and checkpoints without clearing unrelated ordinary writes, pen
 missing-art state and distinct weapon/element overlays. Compact hub cards also show outfit name, Tier and Level.
 The roster and party editor expose a toggleable text advantage/affinity legend.
 
+The roster uses **five square Uma icons per row**, icon-atlas art rather than large busts, with icon-only weapon and
+default-signature overlays. Outfit names and compact Tier/Level captions remain below; full identities/statuses are
+accessible labels. Unenrolled outfits have no invented weapon/element marks. Enrolled outfits come first, then those
+not yet enrolled, alphabetically by outfit name within each group with an id tie-break. The Hub's existing resume
+cards are unchanged.
+
+Party outfit dropdowns offer only owned, enrolled outfits **not assigned to any other party or another slot in the
+current draft**. Pending additions in another party reserve their outfits; saved members remain reserved until a
+removal is acknowledged. Within the editor, the draft replaces its own saved membership so a removed member can
+move to a different slot. The current selection stays visible even in previously shared presets; existing parties,
+frozen battles and progression are never automatically cleared. This is a picker preference, not a new cross-device
+save uniqueness invariant. To transfer between parties, remove and save first, then add to the destination party.
+The [roster/picker phone proof](../research/rpg-roster-phone-proof.md) records the synthetic layout and filtering checks.
+
 The battle stage keeps the current target, HP/MP, intent and weakness visible; actions occupy the thumb zone with
 44 pt targets and `pb-safe`. The active fight does not page-scroll. Map and roster menus may scroll normally. Use
 `m.*` under `LazyMotion strict`, transform/opacity animations and delta-timed effects; respect reduced motion. The
