@@ -92,10 +92,12 @@ Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-2
    carrot's **Farming Level**, D239), Prestige, active title, the featured star, and the three
    highest-tier badges earned.
 2. **This scenario** — the scenario switch (D190), scenario status, Start/Unlock actions, then distinct **Racing**
-   and **Training** zones. Racing shows three compact defaults (style, distance, surface), an Edit sheet and one full-width
-   Races action. Training has three full-width destinations: **Constellation** (card tree and the only Spark Match entry),
-   **Inspiration** (parent/grandparent nodes and aptitude changes), and **Extra stats** (the crop-bought stat grid). These are
-   separate pages, not three kinds of node mixed in one canvas. Stats, card set, aptitudes and frozen career goals follow.
+   and **Training** zones. Racing shows three compact defaults (style, distance, surface), an Edit sheet, then the
+   **distance presets** as one row of four shoe buttons with her grade at each distance in its corner (D252, D253), and one
+   full-width Races action. Training builds the selected preset and has four full-width destinations: **Constellation**
+   (card tree and the only Spark Match entry), **Inspiration** (parent/grandparent nodes and aptitude changes), **Extra
+   stats** (the crop-bought stat grid) and **Skills** (the equipped loadout within the preset's SP). These are separate
+   pages, not kinds of node mixed in one canvas; the Training scene and Skills page show the preset they build. Stats, card set, aptitudes and frozen career goals follow.
    An earlier scenario still has no Start or Unlock. The Training scene, Skills page and Spark Match follow the chosen unit.
 3. **Archive** — collapsed rows for everything browsed rather than used: all badges, scenario history, lineage,
    races run.

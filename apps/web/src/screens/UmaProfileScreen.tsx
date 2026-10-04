@@ -20,7 +20,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
-import { advanceUma, listRaceHistory, setFeaturedUma, setRacePreferences, startScenario } from '../game/actions'
+import { advanceUma, listRaceHistory, setActivePreset, setFeaturedUma, setRacePreferences, startScenario } from '../game/actions'
 import { buildUmaBadgeCollection, type BadgeCollectionItem } from '../game/badge-collection-view'
 import { buildDeckView, formatRaceBonus } from '../game/deck-view'
 import { buildUmaFlairSummary } from '../game/flair-view'
@@ -28,7 +28,7 @@ import { buildJourneyView } from '../game/goals-view'
 import { useFarmView } from '../game/farm/useFarmView'
 import { useChosenTier } from '../game/scenario-choice'
 import { useGame } from '../game/store'
-import { joinUma } from '../game/view'
+import { joinUma, presetDistanceGrades } from '../game/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { Stars } from '../ui/Stars'
 import { Crest } from '../ui/Crest'
@@ -131,6 +131,7 @@ export function UmaProfileScreen() {
   }
 
   const uma = joined.value
+  const presetGrades = presetDistanceGrades(save, contentState.content, cards, chosenTier ?? undefined)
   const featured = profile.featuredUmaId === save.templateId
   // An earlier scenario is a finished trained unit: it races and trains, but has no start, gate or advance (D190).
   const past = uma.past
@@ -289,7 +290,20 @@ export function UmaProfileScreen() {
           </div>
           <button type="button" className="min-h-11 shrink-0 rounded-sm px-2 text-[12px] font-semibold text-accent-strong" onClick={() => setEditingPreferences({ ...racePreferences })}>Edit defaults</button>
         </div>
-        <p className="mb-3 text-[12px] text-ink-soft">Style starts selected in Race. Distance and surface shape new scenario careers; this scenario's goals stay as earned.</p>
+        {/* Distance presets (D252): each a whole build of this scenario. Her grade at each distance in its corner. */}
+        <p className="mb-1.5 text-[12px] font-semibold text-ink-soft">Preset · {DISTANCE_ICONS[save.activePreset].label}</p>
+        <IconChoiceRow
+          label="Distance preset"
+          value={save.activePreset}
+          disabled={busy}
+          onChange={(preset) => void runAction(() => setActivePreset(save.templateId, preset), 'Could not switch preset')}
+          options={DISTANCE_CATEGORIES.map((distance) => ({
+            value: distance, name: `${DISTANCE_ICONS[distance].label} preset`, badge: presetGrades[distance],
+            icon: <DistanceTypeIcon distance={distance} size={32} />,
+          }))}
+          className="mb-3"
+        />
+        <p className="mb-3 text-[12px] text-ink-soft">Style starts selected in Race. Distance and surface shape new scenario careers; this scenario's goals stay as earned. A race uses the preset of its distance.</p>
         <Button variant="primary" className="w-full" disabled={!raceUnlocked || busy} onClick={() => navigate(`/race?uma=${encodeURIComponent(save.templateId)}`)}>
           Open races
         </Button>
@@ -343,16 +357,17 @@ export function UmaProfileScreen() {
         </div>}
       </BottomSheet>
 
-      <SectionHeading label="Training" hint="build this scenario" />
+      <SectionHeading label="Training" hint={`build the ${DISTANCE_ICONS[save.activePreset].label} preset`} />
       <div className="grid gap-2">
         {([
-          ['Constellation', 'Cards and Training Level · enter Spark Match here', ''],
-          ['Inspiration', 'Parents, grandparents, aptitudes and inherited skills', '/inspiration'],
-          ['Extra stats', 'Buy stat nodes with Farm crops and turn on any six', '/extra-stats'],
-        ] as const).map(([label, detail, suffix]) => (
+          ['Constellation', 'Cards and Training Level · enter Spark Match here', `/constellation/${encodeURIComponent(save.templateId)}`],
+          ['Inspiration', 'Parents, grandparents, aptitudes and inherited skills', `/constellation/${encodeURIComponent(save.templateId)}/inspiration`],
+          ['Extra stats', 'Buy stat nodes with Farm crops and turn on any six', `/constellation/${encodeURIComponent(save.templateId)}/extra-stats`],
+          ['Skills', 'Equip skills within the SP this preset earns', `/stable/${encodeURIComponent(save.templateId)}/skills`],
+        ] as const).map(([label, detail, to]) => (
           <Link
             key={label}
-            to={`/constellation/${encodeURIComponent(save.templateId)}${suffix}`}
+            to={to}
             className="flex min-h-16 items-center justify-between gap-3 rounded-md border border-hairline bg-panel px-4 py-3 shadow-1"
           >
             <span className="min-w-0"><span className="block font-display text-[15px] font-semibold">{label}</span><span className="block text-[12px] text-ink-soft">{detail}</span></span>

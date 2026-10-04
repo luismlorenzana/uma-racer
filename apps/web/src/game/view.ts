@@ -20,6 +20,8 @@ import {
   type Surface,
   type UmaSave,
   type UmaTemplate,
+  DISTANCE_CATEGORIES,
+  type Grade,
 } from '@racer/domain'
 import type { ContentAsset, LoadedContent } from '../content/runtime'
 
@@ -60,19 +62,42 @@ export type UmaJoinResult =
  * Joins a save to content and derives everything the UI reads. Card saves are needed because stats now come
  * from the constellation, not from the save.
  */
+/**
+ * Her aptitude at each distance, read through that distance's own preset (D252): what each preset button hints, since a
+ * preset's parents can lift the distance it is built for.
+ */
+export function presetDistanceGrades(
+  save: UmaSave,
+  content: LoadedContent,
+  cardSaves: Readonly<Record<string, CardSave>>,
+  tier?: number,
+): Record<DistanceCategory, Grade> {
+  const grades = {} as Record<DistanceCategory, Grade>
+  for (const preset of DISTANCE_CATEGORIES) {
+    const joined = joinUma(save, content, cardSaves, tier, preset)
+    if (joined.status !== 'ready') throw new Error(`Uma ${save.templateId} has no content`)
+    grades[preset] = joined.value.derived.aptitudes.distance[preset]
+  }
+  return grades
+}
+
 export function joinUma(
   save: UmaSave,
   content: LoadedContent,
   cardSaves: Readonly<Record<string, CardSave>> = {},
   requestedTier?: number,
+  /** A distance preset to join instead of her selected one (D252), such as a race's. */
+  requestedPreset?: DistanceCategory,
 ): UmaJoinResult {
   const template = content.umas.byId.get(save.templateId)
   if (!template) return { status: 'missing-content', templateId: save.templateId }
   const tier = requestedTier !== undefined && save.scenarios.some((run) => run.tier === requestedTier) ? requestedTier : save.unlockedTier
   const finalLevel = save.level >= SCENARIOS.length * LEVELS_PER_SCENARIO
+  const preset = requestedPreset ?? save.activePreset
   const derived = deriveUma({
     uma: save,
     tier,
+    preset,
     umaTemplate: template,
     cardSaves: new Map(Object.entries(cardSaves)),
     cardTemplates: content.cards.byId,
@@ -87,7 +112,7 @@ export function joinUma(
       asset: umaAsset(content, save.templateId),
       tier,
       scenario: scenarioForTier(tier),
-      run: trainedScenario(save, tier),
+      run: trainedScenario(save, tier, preset),
       past: tier < save.unlockedTier,
       derived,
       caps: capProfile(tier),

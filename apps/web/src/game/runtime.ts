@@ -22,6 +22,7 @@ import {
   type ExtraStatNodeId,
   type NodeAssignment,
   type UmaSave,
+  type DistanceCategory,
   type RacePreferences,
   parseSyncResponseOrThrow,
   SCENARIOS,
@@ -397,6 +398,37 @@ export class GameRuntime {
       if (!current) throw new Error('Local Uma is malformed')
       const updated = parseUmaSave({ ...current, racePreferences: preferences })
       if (!updated) throw new Error('Race preferences are invalid')
+      await db.umas.put({ ...row, data: updated })
+      await queueInTransaction('umas', id, 'upsert', now)
+      return updated
+    })
+    if (generation !== this.generation) return
+    replaceUma(committed)
+    await this.refreshPending()
+    this.schedule()
+  }
+
+  /** Selects the distance preset her profile shows and edits (D252); no build, level or result is touched. */
+  async setActivePreset(id: string, preset: DistanceCategory): Promise<void> {
+    const generation = this.generation
+    const state = useGame.getState()
+    const uma = state.umas[id]
+    if (state.status !== 'ready' || !uma) throw new Error('Preset Uma must be owned')
+    if (uma.activePreset === preset) return
+    const next = parseUmaSave({ ...uma, activePreset: preset })
+    if (!next) throw new Error('That preset is invalid')
+    if (!state.persistent) {
+      replaceUma(next)
+      return
+    }
+    const now = Date.now()
+    const committed = await db.transaction('rw', [db.umas, db.outbox], async () => {
+      const row = await db.umas.get(id)
+      if (!row) throw new Error('Local Uma is missing')
+      const current = parseUmaSave(row.data)
+      if (!current) throw new Error('Local Uma is malformed')
+      const updated = parseUmaSave({ ...current, activePreset: preset })
+      if (!updated) throw new Error('That preset is invalid')
       await db.umas.put({ ...row, data: updated })
       await queueInTransaction('umas', id, 'upsert', now)
       return updated

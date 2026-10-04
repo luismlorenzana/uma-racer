@@ -14,7 +14,7 @@ import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import { lineageAptitudes, lineageInheritedUniques, lineageSlotEligibility } from './lineage'
 import { GRANDPARENT_SP_MULTIPLIER, inspirationGoldKey, inspirationParent } from './inspiration'
 import { trainedScenario, type CardSave, type ScenarioTraining, type SkillUnlock, type UmaSave } from './save'
-import type { Aptitudes, Stats } from './types'
+import type { Aptitudes, DistanceCategory, Stats } from './types'
 
 /** An Uma's awakening skills: four, a white and a gold per pair, as in the original. */
 export const MAX_AWAKENING_SKILLS = 4
@@ -69,6 +69,8 @@ export interface DeriveUmaInput {
   skillTemplates: ReadonlyMap<string, SkillTemplate>
   /** Which of her scenarios to derive (D190); the active one when omitted. */
   tier?: number
+  /** Which distance preset to derive (D252); her selected one when omitted. */
+  preset?: DistanceCategory
 }
 
 /**
@@ -76,7 +78,7 @@ export interface DeriveUmaInput {
  * throwing, so a save can never be made unreadable by content that moved.
  */
 export function deriveUma(input: DeriveUmaInput): DerivedUma {
-  const scenario = trainedScenario(input.uma, input.tier)
+  const scenario = trainedScenario(input.uma, input.tier, input.preset ?? input.uma.activePreset)
   const template = constellationTemplate(scenario.tier)
 
   const cards = new Map<string, CardNodeState>()

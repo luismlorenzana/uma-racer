@@ -12,6 +12,12 @@ export async function setRacePreferences(id: string, preferences: import('@racer
   await gameRuntime.setRacePreferences(id, preferences)
 }
 
+/** Selects the distance preset her profile shows and her training screens edit (D252). */
+export async function setActivePreset(id: string, preset: import('@racer/domain').DistanceCategory): Promise<void> {
+  const { gameRuntime } = await import('./runtime')
+  await gameRuntime.setActivePreset(id, preset)
+}
+
 export async function setConstellationNode(
   id: string,
   nodeId: string,

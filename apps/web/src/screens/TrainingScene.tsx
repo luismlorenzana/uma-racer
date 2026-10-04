@@ -6,6 +6,7 @@ import type { LoadedContent } from '../content/runtime'
 import { useGame } from '../game/store'
 import { useChosenTier } from '../game/scenario-choice'
 import { joinUma, type UmaViewModel } from '../game/view'
+import { PresetBadge } from '../ui/PresetBadge'
 import { Crest } from '../ui/Crest'
 import { Numeral } from '../ui/Numeral'
 import { ScreenState } from '../ui/ScreenState'
@@ -75,6 +76,8 @@ export function TrainingScene() {
           <span className="truncate">{uma.template.name}</span>
         </Link>
         <div className="flex shrink-0 gap-1">
+          {/* Everything here builds her selected distance preset (D252). */}
+          <PresetBadge preset={run.preset} />
           <Crest>{uma.scenario?.name ?? `Tier ${run.tier}`}</Crest>
           <Crest tone="accent">TL {run.trainingLevel}</Crest>
         </div>
