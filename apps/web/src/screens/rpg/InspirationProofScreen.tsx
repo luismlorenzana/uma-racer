@@ -31,7 +31,7 @@ export function InspirationProofScreen() {
     const save = createUmaSave(umas[0]!), run = save.scenarios[0]!
     run.started = true; run.trainingLevel = 8
     run.inspiration = { slots: ['parent0', 'parent1', 'parent0-gp0', ...(mirror ? ['parent1-gp1' as const] : [])], golds: ['parent0:gold0'] }
-    run.assignments = { parent0: { kind: 'lineage', templateId: umas[1]!.id }, parent1: { kind: 'lineage', templateId: umas[2]!.id }, 'parent0-gp0': { kind: 'lineage', templateId: umas[3]!.id },
+    run.presets[save.activePreset].assignments = { parent0: { kind: 'lineage', templateId: umas[1]!.id }, parent1: { kind: 'lineage', templateId: umas[2]!.id }, 'parent0-gp0': { kind: 'lineage', templateId: umas[3]!.id },
       ...(mirror ? { 'parent1-gp1': { kind: 'lineage' as const, templateId: umas[3]!.id } } : {}) }
     const joined = joinUma(save, content, {})
     if (joined.status !== 'ready') throw new Error('Invalid invented preview')

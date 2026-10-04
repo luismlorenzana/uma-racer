@@ -135,11 +135,13 @@ for (const backend of ['local', 'firestore'] as const) {
       expect((await repo.load('u1')).logs.filter(r => r.kind === 'itemLedger')).toHaveLength(1)
     })
 
-    it('opens precisely one v14 Inspiration position; duplicate and competing versions cannot consume twice', async () => {
+    it('opens precisely one v15 Inspiration position; duplicate and competing versions cannot consume twice', async () => {
       const umaId = 'invented-child', itemId = 'inspiration:t1:slot'
-      const uma = { schemaVersion: 14, templateId: umaId, level: 1, exp: 0, unlockedTier: 1, goalPlanVersion: 0, racePreferences: null, skillHistory: [],
-        scenarios: [{ tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {}, loadoutSkillIds: [], journey: null, started: false,
-          extraStats: { unlocked: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, active: [] }, inspiration: { slots: [], golds: [] } }] }
+      const build = { cardSetIds: [], assignments: {}, activeExtraStats: [], loadoutSkillIds: [] }
+      const uma = { schemaVersion: 15, templateId: umaId, level: 1, exp: 0, unlockedTier: 1, goalPlanVersion: 0, racePreferences: null, skillHistory: [],
+        activePreset: 'medium', scenarios: [{ tier: 1, trainingLevel: 1, trainingExp: 0, journey: null, started: false,
+          extraStatsUnlocked: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, inspiration: { slots: [], golds: [] },
+          presets: { sprint: build, mile: build, medium: build, long: build } }] }
       await repo.sync('u1', { upserts: [{ kind: 'umas', id: umaId, baseVersion: 0, data: uma },
         { kind: 'items', id: itemId, baseVersion: 0, data: { itemId, quantity: 2, updatedAt: 1 } }], appends: [] })
       const id = `inspiration:${umaId}:1:parent0:slot`, movement = { id, itemId, delta: -1, createdAt: 2, reason: 'inspiration-unlock',

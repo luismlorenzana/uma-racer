@@ -2,7 +2,7 @@
 
 import { umaPromotionCost } from './economy'
 import type { RaceTemplate, UmaTemplate } from './content'
-import { createScenarioTraining, type LedgerEntry, type PlayerProfile, type ScenarioTraining, type UmaSave } from './save'
+import { createScenarioTraining, type LedgerEntry, type PlayerProfile, type ScenarioUnit, type UmaSave } from './save'
 import { CAREER_STAGE_LABELS, careerStage, closeScenarioJourney, generateScenarioJourney } from './scenario-goals'
 import { MAX_SCENARIO_TIER, isGateLevel, tierOfLevel } from './scenarios'
 import type { Aptitudes } from './types'
@@ -118,7 +118,7 @@ export function advanceScenario(input: ScenarioAdvanceInput): ScenarioAdvanceRes
   const toTier = readiness.toTier
   const cost = readiness.cost
 
-  const closed: ScenarioTraining[] = input.uma.scenarios.map((entry) =>
+  const closed: ScenarioUnit[] = input.uma.scenarios.map((entry) =>
     entry.tier === fromTier && entry.journey
       ? { ...entry, journey: closeScenarioJourney(entry.journey, input.now) }
       : entry)

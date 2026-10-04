@@ -36,6 +36,8 @@ import {
   type ScenarioCompletionFact,
   type UmaBadgeStateV1,
   type UmaSave,
+  DISTANCE_CATEGORIES,
+  scenarioAt,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { db, type LogRow } from './db'
@@ -173,10 +175,10 @@ export async function sparkRunsByTier(umaId: string): Promise<Map<number, number
 
 /** What her save and her runs say about her training (T056): the runs, each TL10, and each constellation filled. */
 export function trainingSnapshot(uma: UmaSave, runsByTier: ReadonlyMap<number, number>): TrainingBadgeSnapshot {
-  // A full tree is every card node filled; Extra stats sit beside the tree (D235).
-  const full = (run: UmaSave['scenarios'][number]) => constellationTemplate(run.tier).nodes
+  // A full tree is every card node filled, in any one of her distance presets; Extra stats sit beside the tree (D235, D252).
+  const full = (run: UmaSave['scenarios'][number]) => DISTANCE_CATEGORIES.some((distance) => constellationTemplate(run.tier).nodes
     .filter((node) => node.kind === 'card')
-    .every((node) => run.assignments[node.id] !== undefined)
+    .every((node) => run.presets[distance].assignments[node.id] !== undefined))
   return {
     runsByTier,
     fullyTrainedTiers: uma.scenarios.filter((run) => run.trainingLevel >= MAX_TRAINING_LEVEL).map((run) => run.tier),
@@ -392,7 +394,7 @@ export function scenarioCompletionFact(input: {
   const completedGoalIds = journey?.tracking === 'tracked'
     ? journey.goals.filter((goal) => goal.status === 'completed').map((goal) => goal.id).sort()
     : []
-  const run = input.uma.scenarios.find((entry) => entry.tier === input.tier) ?? activeScenario(input.uma)
+  const run = scenarioAt(input.uma, input.tier) ?? activeScenario(input.uma)
   const cardSetIds = [...run.cardSetIds]
   const deckEras = cardSetIds.map((id) => {
     const card = input.content.cards.byId.get(id)

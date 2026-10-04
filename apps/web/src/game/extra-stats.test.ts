@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 
-import { createUmaSave, type UmaTemplate } from '@racer/domain'
+import { activeScenario, createUmaSave, type UmaTemplate } from '@racer/domain'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
@@ -42,7 +42,8 @@ async function reset(stamina = 4, trainingLevel = 1): Promise<void> {
   await db.outbox.clear()
 }
 
-const grid = async () => (await db.umas.get(template.id))!.data.scenarios[0]!.extraStats
+// What her selected preset sees: the unit's bought nodes and that preset's active ones (D252).
+const grid = async () => activeScenario((await db.umas.get(template.id))!.data).extraStats
 const stock = async () => (await db.items.get('produce:t1:stamina'))!.data.quantity
 
 describe('persistent Extra stats (D235)', () => {

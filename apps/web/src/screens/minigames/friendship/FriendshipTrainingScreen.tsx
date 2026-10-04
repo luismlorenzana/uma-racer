@@ -14,6 +14,7 @@ import {
   type FtAction,
   type FtSetup,
   type FtState,
+  scenarioAt,
 } from '@racer/domain'
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams, useSearchParams } from 'react-router'
@@ -99,7 +100,7 @@ export function FriendshipTrainingScreen() {
       return entry ? [{ template: entry, stars: cardStars(card, tier) }] : []
     })
     const eligible = (id: string) => id !== cardId && cards[id] !== undefined && (content.cards.byId.get(id)?.era ?? Infinity) <= tier
-    const fromUma = umaParam ? umas[umaParam]?.scenarios.find((entry) => entry.tier === tier)?.cardSetIds ?? [] : []
+    const fromUma = umaParam && umas[umaParam] ? scenarioAt(umas[umaParam], tier)?.cardSetIds ?? [] : []
     const preferred = partnerChoice ?? (fromUma.length > 0 ? fromUma : rememberedPartners(tier))
     const chosen = [...new Set(preferred)].filter(eligible).slice(0, FT_SET_OTHERS)
     const defaults = defaultFriendshipPartners({ tier, mainCardId: cardId, owned })

@@ -108,7 +108,7 @@ describe('support deck validation', () => {
 describe('withCardSet', () => {
   const run = (cardSetIds: string[], assignments: ScenarioTraining['assignments']): ScenarioTraining => ({
     tier: 1, trainingLevel: 8, trainingExp: 0, cardSetIds, assignments, extraStats: emptyExtraStats(), loadoutSkillIds: [],
-    journey: null, started: true, inspiration: { slots: [], golds: [] },
+    journey: null, started: true, inspiration: { slots: [], golds: [] }, preset: 'medium',
   })
   const base = run(['a', 'b', 'c'], {
     n1: { kind: 'card', cardId: 'a' },

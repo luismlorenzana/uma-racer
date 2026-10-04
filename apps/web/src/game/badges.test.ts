@@ -1,6 +1,6 @@
 import { emptySubject } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
-import { constellationTemplate, createUmaBadgeState, createUmaSave, type RaceAccomplishmentFactsV1, type RaceResultRecord, type UmaTemplate } from '@racer/domain'
+import { activeScenario, constellationTemplate, createUmaBadgeState, createUmaSave, withScenarioView, type RaceAccomplishmentFactsV1, type RaceResultRecord, type UmaTemplate } from '@racer/domain'
 import { courseRecordIdsForResult, trainingSnapshot } from './badges'
 
 const template: UmaTemplate = {
@@ -40,7 +40,7 @@ describe('Full House', () => {
     const save = createUmaSave(template)
     const cardNodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'card')
     const full = Object.fromEntries(cardNodes.map((node) => [node.id, { kind: 'card' as const, cardId: `card-${node.id}` }]))
-    const tree = (assignments: typeof full) => ({ ...save, scenarios: [{ ...save.scenarios[0]!, assignments }] })
+    const tree = (assignments: typeof full) => withScenarioView(save, { ...activeScenario(save), assignments })
     expect(trainingSnapshot(tree(full), new Map()).fullTreeTiers).toEqual([1])
     const { [cardNodes[0]!.id]: _first, ...missingOne } = full
     expect(trainingSnapshot(tree(missingOne), new Map()).fullTreeTiers).toEqual([])

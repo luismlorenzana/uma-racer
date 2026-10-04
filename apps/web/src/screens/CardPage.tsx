@@ -15,6 +15,7 @@ import {
   type SkillTemplate,
   type StatKey,
   type SupportCardTemplate,
+  unitCardSetIds,
 } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
@@ -99,7 +100,7 @@ export function CardPage() {
   const whiteSkills = template.hintSkillIds.flatMap((id) => content.skills.byId.get(id) ?? [])
   const holders = Object.values(umas)
     .flatMap((uma) => uma.scenarios
-      .filter((run) => run.cardSetIds.includes(cardId))
+      .filter((run) => unitCardSetIds(run).includes(cardId))
       .map((run) => ({ umaId: uma.templateId, tier: run.tier, active: run.tier === uma.unlockedTier })))
     // Highest level first, as every Uma list is (D181), then her newest scenario.
     .sort((left, right) => (umas[right.umaId]?.level ?? 0) - (umas[left.umaId]?.level ?? 0) || right.tier - left.tier ||

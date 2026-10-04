@@ -3,7 +3,7 @@ import type { SkillKind, SkillTemplate, UmaTemplate } from './content'
 import { cardGoldSkillIds } from './cards'
 import { awakeningSkillsOpen, deriveUma, ownSkillIds } from './derived'
 import { lineageInheritedUniques } from './lineage'
-import { createUmaSave, type UmaSave } from './save'
+import { activeScenario, createUmaSave, withScenarioView, type UmaSave } from './save'
 import { grandfatherInspiration } from './inspiration'
 
 // Lineage passes each slot's unique in its inherited form (D174), beside its baseline skills.
@@ -51,19 +51,16 @@ const umas = new Map([child, sky, grand, plain].map((entry) => [entry.id, entry]
 
 function withLineage(trainingLevel: number): UmaSave {
   const save = createUmaSave(child)
-  return {
-    ...save,
-    scenarios: save.scenarios.map((run) => ({
-      ...run,
-      trainingLevel,
-      inspiration: grandfatherInspiration(trainingLevel, {}),
-      assignments: {
-        parent0: { kind: 'lineage', templateId: 'sky' },
-        'parent0-gp0': { kind: 'lineage', templateId: 'grand' },
-        'parent0-gp1': { kind: 'lineage', templateId: 'plain' },
-      },
-    })),
-  }
+  return withScenarioView(save, {
+    ...activeScenario(save),
+    trainingLevel,
+    inspiration: grandfatherInspiration(trainingLevel, {}),
+    assignments: {
+      parent0: { kind: 'lineage', templateId: 'sky' },
+      'parent0-gp0': { kind: 'lineage', templateId: 'grand' },
+      'parent0-gp1': { kind: 'lineage', templateId: 'plain' },
+    },
+  })
 }
 
 const derive = (save: UmaSave) => deriveUma({
@@ -88,9 +85,9 @@ describe('inherited uniques from lineage (D174)', () => {
 
   it('keeps an equipped inherited unique in the loadout while its slot holds', () => {
     const save = withLineage(10)
-    const equipped: UmaSave = { ...save, scenarios: save.scenarios.map((run) => ({ ...run, loadoutSkillIds: ['i-sky'] })) }
+    const equipped = withScenarioView(save, { ...activeScenario(save), loadoutSkillIds: ['i-sky'] })
     expect(derive(equipped).loadoutSkillIds).toEqual(['i-sky'])
-    const emptied: UmaSave = { ...equipped, scenarios: equipped.scenarios.map((run) => ({ ...run, assignments: {} })) }
+    const emptied = withScenarioView(equipped, { ...activeScenario(equipped), assignments: {} })
     expect(derive(emptied).loadoutSkillIds).toEqual([])
   })
 

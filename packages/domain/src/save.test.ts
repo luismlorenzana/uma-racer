@@ -34,6 +34,12 @@ import {
   parseUmaSave,
   parseUmaSaveOrThrow,
   type UmaSave,
+  scenarioView,
+  activeScenario,
+  bestBaseDistance,
+  trainedScenario,
+  unitCardSetIds,
+  withScenarioView,
 } from './save'
 
 const aptitudes = {
@@ -43,9 +49,13 @@ const aptitudes = {
 } as const
 
 /** A profile as schemas 1–10 stored it: the same fields, before v11's Training EXP bank (D212). */
-/** A v5–v11 Uma made from today's: the same, without the Extra stats grid (D235). */
+/** A v5–v11 Uma made from today's: one build per scenario (D252), without the Extra stats grid (D235). */
 function legacyUma<V extends number>(save: UmaSave, schemaVersion: V) {
-  return { ...save, schemaVersion, scenarios: save.scenarios.map(({ extraStats: _grid, inspiration: _inspiration, ...run }) => run) }
+  const { activePreset, ...rest } = save
+  return { ...rest, schemaVersion, scenarios: save.scenarios.map((unit) => {
+    const { extraStats: _grid, inspiration: _inspiration, preset: _preset, ...run } = scenarioView(unit, activePreset)
+    return run
+  }) }
 }
 
 function legacyProfile<V extends number>(schemaVersion: V, overrides: Record<string, unknown> = {}) {
@@ -114,9 +124,10 @@ describe('save initialization', () => {
 
     // A new Uma starts with one scenario at tier 1 and nothing configured in it.
     expect(result.umas[0]!.unlockedTier).toBe(1)
+    const emptyPreset = { cardSetIds: [], assignments: {}, activeExtraStats: [], loadoutSkillIds: [] }
     expect(result.umas[0]!.scenarios).toEqual([{
-      tier: 1, trainingLevel: 1, trainingExp: 0, cardSetIds: [], assignments: {}, extraStats: emptyExtraStats(), inspiration: { slots: [], golds: [] },
-      loadoutSkillIds: [], journey: null, started: false,
+      tier: 1, trainingLevel: 1, trainingExp: 0, extraStatsUnlocked: emptyExtraStats().unlocked, inspiration: { slots: [], golds: [] },
+      presets: { sprint: emptyPreset, mile: emptyPreset, medium: emptyPreset, long: emptyPreset }, journey: null, started: false,
     }])
   })
 
@@ -184,8 +195,8 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 15 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 15 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 16 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 16 })).toThrow(/App update required/)
     expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), trainingExpBank: -1 })).toBeNull()
   })
 
@@ -260,30 +271,39 @@ describe('save parsing', () => {
     expect(parseUmaSave({ ...save, skillHistory: [...save.skillHistory, ...save.skillHistory] })).toBeNull()
     const realNodeId = constellationTemplate(1).nodes.find((node) => node.kind === 'card')!.id
     const oldProduceId = legacyProduceNodeIds(1)[0]!
-    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'nonsense' } } }] })).toBeNull()
-    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'stat', stat: 'nope' } } }] })).toBeNull()
-    // v12 holds no Produce: on a card node it is malformed, and the old Produce ids are stale keys, dropped (D235).
-    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [realNodeId]: { kind: 'legacy-produce', stat: 'speed' } } }] })).toBeNull()
-    expect(parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { [oldProduceId]: { kind: 'legacy-produce', stat: 'speed' } } }] })
-      ?.scenarios[0]?.assignments).toEqual({})
-    // The Extra stats grid: counts 0–4, at most six active nodes, each bought, in grid order.
-    const grid = (extraStats: unknown) => parseUmaSave({ ...save, scenarios: [{ ...run, extraStats }] })
+    // Each preset holds its own build (D252).
+    const preset = save.activePreset
+    const withBuild = (patch: Record<string, unknown>) =>
+      ({ ...save, scenarios: [{ ...run, presets: { ...run.presets, [preset]: { ...run.presets[preset], ...patch } } }] })
+    expect(parseUmaSave(withBuild({ assignments: { [realNodeId]: { kind: 'nonsense' } } }))).toBeNull()
+    expect(parseUmaSave(withBuild({ assignments: { [realNodeId]: { kind: 'stat', stat: 'nope' } } }))).toBeNull()
+    // No Produce since v12: on a card node it is malformed, and the old Produce ids are stale keys, dropped (D235).
+    expect(parseUmaSave(withBuild({ assignments: { [realNodeId]: { kind: 'legacy-produce', stat: 'speed' } } }))).toBeNull()
+    expect(parseUmaSave(withBuild({ assignments: { [oldProduceId]: { kind: 'legacy-produce', stat: 'speed' } } }))
+      ?.scenarios[0]?.presets[preset].assignments).toEqual({})
+    // The Extra stats grid: counts 0–4 on the unit, and in each preset at most six active nodes, each bought, in grid order.
+    const grid = (extraStatsUnlocked: unknown, activeExtraStats: unknown) => parseUmaSave({ ...save, scenarios: [{ ...run,
+      extraStatsUnlocked, presets: { ...run.presets, [preset]: { ...run.presets[preset], activeExtraStats } } }] })
     const unlocked = { speed: 4, stamina: 2, power: 0, guts: 0, wit: 1 }
-    expect(grid({ unlocked, active: ['speed-1', 'speed-2', 'speed-3', 'speed-4', 'stamina-1', 'wit-1'] })).not.toBeNull()
-    expect(grid({ unlocked, active: ['speed-1', 'speed-2', 'speed-3', 'speed-4', 'stamina-1', 'stamina-2', 'wit-1'] })).toBeNull()
-    expect(grid({ unlocked, active: ['power-1'] })).toBeNull()
-    expect(grid({ unlocked, active: ['stamina-1', 'speed-1'] })).toBeNull()
-    expect(grid({ unlocked: { ...unlocked, guts: 5 }, active: [] })).toBeNull()
-    expect(grid({ unlocked, active: [], extra: true })).toBeNull()
-    const { extraStats: _grid, ...withoutGrid } = run
+    expect(grid(unlocked, ['speed-1', 'speed-2', 'speed-3', 'speed-4', 'stamina-1', 'wit-1'])).not.toBeNull()
+    expect(grid(unlocked, ['speed-1', 'speed-2', 'speed-3', 'speed-4', 'stamina-1', 'stamina-2', 'wit-1'])).toBeNull()
+    expect(grid(unlocked, ['power-1'])).toBeNull()
+    expect(grid(unlocked, ['stamina-1', 'speed-1'])).toBeNull()
+    expect(grid({ ...unlocked, guts: 5 }, [])).toBeNull()
+    expect(parseUmaSave(withBuild({ extra: true }))).toBeNull()
+    const { extraStatsUnlocked: _grid, ...withoutGrid } = run
     expect(parseUmaSave({ ...save, scenarios: [withoutGrid] })).toBeNull()
+    // All four presets, no more and no fewer.
+    const { long: _long, ...threePresets } = run.presets
+    expect(parseUmaSave({ ...save, scenarios: [{ ...run, presets: threePresets }] })).toBeNull()
+    expect(parseUmaSave({ ...save, activePreset: 'turf' })).toBeNull()
     // A journey must belong to the run that holds it.
     expect(parseUmaSave({ ...save, scenarios: [{ ...run, journey: {
       tier: 2, tracking: 'tracked', state: 'active', completedAt: null, goals: [],
     } }] })).toBeNull()
     // An assignment naming a node this template does not have is dropped rather than fatal.
-    const stale = parseUmaSave({ ...save, scenarios: [{ ...run, assignments: { 'no-such-node': { kind: 'stat', stat: 'speed' } } }] })
-    expect(stale?.scenarios[0]?.assignments).toEqual({})
+    const stale = parseUmaSave(withBuild({ assignments: { 'no-such-node': { kind: 'stat', stat: 'speed' } } }))
+    expect(stale?.scenarios[0]?.presets[preset].assignments).toEqual({})
   })
 
   it('strictly validates single and series goal shapes and distinct frozen targets', () => {
@@ -340,7 +360,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 15 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 16 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)
@@ -375,6 +395,58 @@ describe('save parsing', () => {
     expect(parseSyncRequest({
       appends: [{ kind: 'flairEvents', id: 'flair:synthetic', data: event, createdAt: 21 }],
     })).toMatch(/timestamp/)
+  })
+})
+
+describe('distance presets (D252)', () => {
+  const template = uma('u1')
+
+  it('copies a v14 build into all four presets and starts her on her race-default distance', () => {
+    const current = createUmaSave(template)
+    const build = { cardSetIds: ['c1'], assignments: { parent0: { kind: 'lineage' as const, templateId: 'u2' } },
+      extraStats: { unlocked: { speed: 2, stamina: 0, power: 0, guts: 0, wit: 0 }, active: ['speed-1' as const] }, loadoutSkillIds: ['s1'] }
+    const { activePreset: _preset, ...head } = current
+    const flat = (unit: UmaSave['scenarios'][number]) => {
+      const { preset: _p, ...run } = scenarioView(unit, 'medium')
+      return { ...run, ...build }
+    }
+    const v14 = { ...head, schemaVersion: 14, scenarios: current.scenarios.map(flat),
+      racePreferences: { strategy: 'late', distance: 'long', surface: 'turf' } }
+    const migrated = migrateUmaSaveToCurrent(v14)!
+    expect(migrated.activePreset).toBe('long')
+    for (const distance of ['sprint', 'mile', 'medium', 'long'] as const) {
+      expect(migrated.scenarios[0]!.presets[distance]).toEqual({ cardSetIds: ['c1'], assignments: build.assignments,
+        activeExtraStats: ['speed-1'], loadoutSkillIds: ['s1'] })
+    }
+    expect(migrated.scenarios[0]!.extraStatsUnlocked).toEqual(build.extraStats.unlocked)
+    // Without race defaults she starts on Medium; nothing differs between presets yet.
+    expect(migrateUmaSaveToCurrent({ ...v14, racePreferences: null })!.activePreset).toBe('medium')
+  })
+
+  it('shows a unit through one preset, and writes a change back to that preset alone', () => {
+    const save = { ...createUmaSave(template), activePreset: 'mile' as const }
+    const mile = activeScenario(save)
+    expect(mile.preset).toBe('mile')
+    const changed = withScenarioView(save, { ...mile, cardSetIds: ['c1'], trainingLevel: 4,
+      extraStats: { unlocked: { ...mile.extraStats.unlocked, wit: 1 }, active: ['wit-1'] } })
+    const unit = changed.scenarios[0]!
+    // Training Level and bought nodes are the scenario's; the card set and active nodes are Mile's.
+    expect(unit.trainingLevel).toBe(4)
+    expect(unit.extraStatsUnlocked.wit).toBe(1)
+    expect(unit.presets.mile).toMatchObject({ cardSetIds: ['c1'], activeExtraStats: ['wit-1'] })
+    expect(unit.presets.long).toMatchObject({ cardSetIds: [], activeExtraStats: [] })
+    expect(trainedScenario(changed, 1, 'long')).toMatchObject({ preset: 'long', trainingLevel: 4, cardSetIds: [] })
+    expect(unitCardSetIds(withScenarioView(changed, { ...trainedScenario(changed, 1, 'long'), cardSetIds: ['c2', 'c1'] }).scenarios[0]!))
+      .toEqual(['c1', 'c2'])
+    expect(parseUmaSave(changed)).toEqual(changed)
+  })
+
+  it('starts a new Uma on her best base distance', () => {
+    const grades = (sprint: string, mile: string, medium: string, long: string) =>
+      ({ aptitudes: { ...template.aptitudes, distance: { sprint, mile, medium, long } } }) as Pick<UmaTemplate, 'aptitudes'>
+    expect(bestBaseDistance(grades('B', 'A', 'C', 'G'))).toBe('mile')
+    expect(bestBaseDistance(grades('A', 'B', 'A', 'B'))).toBe('medium')
+    expect(bestBaseDistance(grades('A', 'A', 'B', 'B'))).toBe('sprint')
   })
 })
 
@@ -442,9 +514,9 @@ describe('the migration chain', () => {
     }
     const migrated = migrateUmaSaveToCurrent(legacy)
     const grid: ExtraStats = { unlocked: { speed: 1, stamina: 1, power: 0, guts: 0, wit: 0 }, active: ['speed-1', 'stamina-1'] }
-    expect(migrated?.scenarios[0]).toMatchObject({ assignments: {}, extraStats: grid })
+    expect(scenarioView(migrated!.scenarios[0]!, migrated!.activePreset)).toMatchObject({ assignments: {}, extraStats: grid })
     expect(JSON.stringify(migrated)).not.toContain('itemId')
-    const expected = { ...current, scenarios: [{ ...current.scenarios[0]!, extraStats: grid }] }
+    const expected = withScenarioView(current, { ...activeScenario(current), extraStats: grid })
     const derive = (save: UmaSave) => deriveUma({
       uma: save,
       umaTemplate: template,
@@ -516,7 +588,9 @@ describe('the migration chain', () => {
     const current = createUmaSave(template)
     const [a, b, c, d, e, f] = legacyProduceNodeIds(1)
     const cardNode = constellationTemplate(1).nodes.find((node) => node.kind === 'card')!.id
-    const v11 = legacyUma({ ...current, scenarios: [{ ...current.scenarios[0]!, trainingLevel: 10, cardSetIds: ['c1'] }] }, 11)
+    const unit = current.scenarios[0]!
+    const v11 = legacyUma({ ...current, scenarios: [{ ...unit, trainingLevel: 10,
+      presets: { ...unit.presets, [current.activePreset]: { ...unit.presets[current.activePreset], cardSetIds: ['c1'] } } }] }, 11)
     const produce = (stat: string) => ({ kind: 'legacy-produce', stat })
     const migrated = migrateUmaSaveToCurrent({ ...v11, scenarios: [{ ...v11.scenarios[0]!, assignments: {
       [cardNode]: { kind: 'card', cardId: 'c1' },
@@ -524,9 +598,10 @@ describe('the migration chain', () => {
       [e!]: produce('stamina'), [f!]: { kind: 'produce', itemId: 'produce:t1:speed', revision: 2 },
     } }] })!
     expect(migrated.schemaVersion).toBe(SAVE_SCHEMA_VERSION)
-    expect(migrated.scenarios[0]!.assignments).toEqual({ [cardNode]: { kind: 'card', cardId: 'c1' } })
+    const migratedRun = scenarioView(migrated.scenarios[0]!, migrated.activePreset)
+    expect(migratedRun.assignments).toEqual({ [cardNode]: { kind: 'card', cardId: 'c1' } })
     // A fifth Stamina has no node to become: four Stamina and the Speed are bought and on, and one slot opens.
-    expect(migrated.scenarios[0]!.extraStats).toEqual({
+    expect(migratedRun.extraStats).toEqual({
       unlocked: { speed: 1, stamina: 4, power: 0, guts: 0, wit: 0 },
       active: ['speed-1', 'stamina-1', 'stamina-2', 'stamina-3', 'stamina-4'],
     })

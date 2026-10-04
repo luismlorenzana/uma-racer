@@ -38,6 +38,7 @@ import {
   type LedgerEntry,
   type PlayerProfile,
   type ScenarioTraining,
+  withScenarioView,
   type UmaSave,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -684,10 +685,8 @@ export class PersistentMinigameHost implements MinigameHost {
           if (!scenario) throw new Error('The reserved Spark Match scenario is no longer active')
           const gain = addTrainingExp(scenario.trainingLevel, scenario.trainingExp, view.replay.outcome.trainingExp)
           const nextScenario = { ...scenario, trainingLevel: gain.trainingLevel, trainingExp: gain.trainingExp }
-          const nextUma = {
-            ...uma,
-            scenarios: uma.scenarios.map((entry) => entry.tier === run.tier ? nextScenario : entry),
-          }
+          // Training Level is the scenario's, shared by every preset (D252).
+          const nextUma = withScenarioView(uma, nextScenario)
           const nodesUnlocked = nodesUnlockedBetween(
             constellationTemplate(run.tier),
             scenario.trainingLevel,

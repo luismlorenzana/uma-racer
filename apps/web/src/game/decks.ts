@@ -3,6 +3,7 @@
 import {
   parseCardSave,
   trainedScenario,
+  withScenarioView,
   parseUmaSave,
   supportDeckIdentityIssues,
   supportDeckIssueMessage,
@@ -15,12 +16,12 @@ import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { queueInTransaction } from './persistence'
 
-/** Card sets belong to a scenario run (D125): her current one, or one of her earlier trained units (D190). */
+/**
+ * Card sets belong to a scenario run (D125), her current one or an earlier trained unit (D190), and within it to the
+ * distance preset being edited (D252).
+ */
 function withCardSet(uma: UmaSave, tier: number, orderedCardIds: readonly string[]): UmaSave {
-  return {
-    ...uma,
-    scenarios: uma.scenarios.map((run) => run.tier === tier ? withRunCardSet(run, orderedCardIds) : run),
-  }
+  return withScenarioView(uma, withRunCardSet(trainedScenario(uma, tier), orderedCardIds))
 }
 
 export interface DeckMutationResult {

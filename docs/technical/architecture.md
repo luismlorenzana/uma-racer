@@ -309,7 +309,7 @@ authored; content publication and Home/device release remain T099 work; [content
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v14: level/EXP, scenarios, Inspiration unlocks, assignments, Extra stats grids, race defaults, history, version
+players/{uid}/umas/{umaId}            save v15: level/EXP, scenario units (Inspiration unlocks, four distance presets), race defaults, the preset in use, history, version
 players/{uid}/cards/{cardId}          templateId, three-star bonds per scenario, maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views

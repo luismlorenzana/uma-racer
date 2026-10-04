@@ -28,30 +28,50 @@ you own is a usable parent the moment you own her (D123).
 |---|---|
 | `level`, `exp` | **Uma Level**: permanent, earned from races only. Unlocks scenarios; does not feed stats |
 | `unlockedTier` | Highest scenario unlocked. The **active** scenario: her career, the only one that earns Uma EXP (D121). Every unlocked scenario still races as a trained unit (D190) |
-| `scenarios[]` | **One `ScenarioTraining` per unlocked tier** (below). The heart of the save |
+| `scenarios[]` | **One scenario unit per unlocked tier** (below). The heart of the save |
+| `activePreset` | The [distance preset](#distance-presets) her profile shows and edits, and that every race-free use reads (D252) |
 | `lifetimeSkills` | Every skill ever learned, with the scenario it was learned in. Badges and history |
 | Badge/title/showcase state | Separate versioned `badges/uma:<umaId>` entity. See [Badges](badges.md) |
 
 **Stats, skill points, aptitudes, the skill library and the loadout are no longer stored.** They are derived
-from a `ScenarioTraining` whenever read, the active one unless another trained unit is racing
-([Training](training.md#stats-are-derived), D190).
+from one scenario seen through one distance preset whenever read: the active scenario unless another trained unit is
+racing ([Training](training.md#stats-are-derived), D190), through her selected preset unless a race names its distance
+(D252).
 
-### ScenarioTraining (one per unlocked scenario)
+### Scenario unit (one per unlocked scenario)
 
 | Field | Notes |
 |---|---|
 | `tier` | Which scenario this is |
-| `trainingLevel`, `trainingExp` | 1–10, earned by [Spark Rival Circuit](minigames.md#spark-match--rival-circuit). Decides which nodes are open |
-| `cardSetIds` | Up to 6 owned, era-eligible cards; no duplicate character |
-| `assignments` | `nodeId → { card } | { lineage }`. The current configuration, and the only one |
-| `extraStats` | The [Extra stats](constellations.md#extra-stats) grid: each stat's bought nodes (0–4) and the six at most that are on (D235) |
-| `loadoutSkillIds` | The equipped subset of the derived library |
+| `trainingLevel`, `trainingExp` | 1–10, earned by [Spark Rival Circuit](minigames.md#spark-match--rival-circuit). Decides which nodes are open, for every preset |
+| `extraStatsUnlocked` | Each stat's [Extra stat](constellations.md#extra-stats) nodes bought with crops (0–4), for every preset (D235) |
+| `inspiration` | Which lineage slots and natural golds are open (D250), for every preset |
+| `presets` | Four builds, one per distance (below) |
 | `goals`, `journey` | This scenario's frozen [career](scenario-goals.md) and its outcomes |
 | `raceHistory` | This scenario's races. **Races are scenario-linked** (D122) |
 | `milestones` | This scenario's achievement facts |
 
 A completed scenario's entry is kept in full as a **trained unit** (D190): it still races, reconfigures and trains in its
 own context, without Uma EXP. Its career stays closed. See [Training — trained units](training.md#trained-units).
+
+### Distance presets
+
+An Uma that races more than one distance needs more than one build. Each scenario unit holds **four presets**, Sprint,
+Mile, Medium and Long, and each preset is a whole build of its own (D252):
+
+| Per preset | Shared by the scenario's four presets |
+|---|---|
+| `cardSetIds`: up to 6 owned, era-eligible cards; no duplicate character | Training Level and its EXP, and so which nodes are open |
+| `assignments`: `nodeId → { card } | { lineage }`, the constellation's cards and the parents and grandparents | Extra stat nodes bought with crops |
+| `activeExtraStats`: at most six of the bought Extra stat nodes | Inspiration's open slots and golds |
+| `loadoutSkillIds`: the equipped skills; the SP budget comes from this preset's constellation | The career, scenario start and card stars |
+
+Stats, aptitudes, the skill library and SP follow from the preset, so each preset races with its own numbers. Her
+running style stays one per Uma. Her profile selects a preset (`activePreset`) and every training screen edits it; a
+race uses the preset of its distance. Save v15 copied each scenario's one build into all four presets, so nothing changed
+until one was edited; she started on her race-default distance, or Medium without one, and a new Uma starts on her best
+base distance. A card is "in a set" when any of her presets holds it, and a constellation counts as full for Full House
+when any one preset's tree is.
 
 ## Uma Level and EXP
 

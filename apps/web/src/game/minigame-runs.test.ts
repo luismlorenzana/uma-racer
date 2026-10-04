@@ -20,6 +20,8 @@ import {
   type SupportCardTemplate,
   type UmaSave,
   type UmaTemplate,
+  createScenarioTraining,
+  withScenarioView,
 } from '@racer/domain'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -358,17 +360,14 @@ describe('persistent minigame host', () => {
     const lineageNodes = template.nodes.filter((node) =>
       (node.kind === 'parent' || node.kind === 'grandparent') && node.id.startsWith('parent0'))
     const configured = startedUma()
-    await seed({ uma: {
-      ...configured,
-      scenarios: configured.scenarios.map((scenario) => ({
-        ...scenario,
-        trainingLevel: 9,
-        inspiration: { slots: ['parent0', 'parent0-gp0', 'parent0-gp1'], golds: [] },
-        assignments: Object.fromEntries(lineageNodes.slice(0, 3).map((node, index) => [
-          node.id, { kind: 'lineage' as const, templateId: lineageTemplates[index]!.id },
-        ])),
-      })),
-    } })
+    await seed({ uma: withScenarioView(configured, {
+      ...activeScenario(configured),
+      trainingLevel: 9,
+      inspiration: { slots: ['parent0', 'parent0-gp0', 'parent0-gp1'], golds: [] },
+      assignments: Object.fromEntries(lineageNodes.slice(0, 3).map((node, index) => [
+        node.id, { kind: 'lineage' as const, templateId: lineageTemplates[index]!.id },
+      ])),
+    }) })
     const ticket = await new PersistentMinigameHost(lineageContent).beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })
     const snapshot = parseSparkRunSnapshot((await db.minigameRuns.get(ticket.runId))!.snapshot)!
     expect(umaTemplate.aptitudes.strategy.front).toBe('D')
@@ -446,7 +445,7 @@ describe('persistent minigame host', () => {
   it('trains one of her earlier scenarios toward TL10 without touching her current one (D190)', async () => {
     const base = startedUma()
     const first = { ...base.scenarios[0]!, trainingLevel: 3 }
-    const current = { ...first, tier: 2, trainingLevel: 1, trainingExp: 0, started: false, journey: null, assignments: {}, cardSetIds: [], loadoutSkillIds: [] }
+    const current = createScenarioTraining(2)
     await seed({ uma: { ...base, level: 15, unlockedTier: 2, scenarios: [first, current] } })
     const reserved = host()
     await expect(reserved.beginRun('spark-match', { kind: 'spark-match', umaId: umaTemplate.id })).rejects.toThrow(/Start this scenario/)

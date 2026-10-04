@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { INSPIRATION_SLOTS, emptyInspiration, grandfatherInspiration, inspirationGoldKey, inspirationGrantId,
   inspirationTokenId, inspirationSpendId, openInspiration, parseInspiration, parseInspirationMovement } from './inspiration'
-import { createCardSave, createUmaSave, migrateUmaSaveToCurrent } from './save'
+import { createCardSave, createUmaSave, migrateUmaSaveToCurrent, scenarioView } from './save'
 import { CARD_EFFECTS } from './cards'
 import { deriveUma } from './derived'
 import { lineageSlotEligibility } from './lineage'
@@ -34,7 +34,7 @@ const templates = new Map([child, parent, second, grand].map(u => [u.id, u]))
 const configured = (mirror = false, unlock = false) => {
   const save = createUmaSave(child), run = save.scenarios[0]!
   run.inspiration = { slots: [...INSPIRATION_SLOTS], golds: unlock ? [inspirationGoldKey('parent0-gp0', 0)] : [] }
-  run.assignments = { parent0: { kind: 'lineage', templateId: parent.id }, parent1: { kind: 'lineage', templateId: second.id },
+  run.presets[save.activePreset].assignments = { parent0: { kind: 'lineage', templateId: parent.id }, parent1: { kind: 'lineage', templateId: second.id },
     'parent0-gp0': { kind: 'lineage', templateId: grand.id }, ...(mirror ? { 'parent1-gp1': { kind: 'lineage' as const, templateId: grand.id } } : {}) }
   return save
 }
@@ -58,12 +58,18 @@ describe('explicit Inspiration and migration', () => {
   })
   it.each([8, 9, 10])('grandfathers TL%s without altering EXP, assignments or Extra stats and stays idempotent', level => {
     const current = createUmaSave(child)
-    const legacy = { ...current, schemaVersion: 13, scenarios: current.scenarios.map(({ inspiration: _i, ...run }) => ({ ...run, trainingLevel: level })) }
+    // A v13 save: one build per scenario (D252) and no Inspiration state.
+    const { activePreset, ...head } = current
+    const flat = current.scenarios.map((unit) => {
+      const { inspiration: _i, preset: _p, ...run } = scenarioView(unit, activePreset)
+      return { ...run, trainingLevel: level }
+    })
+    const legacy = { ...head, schemaVersion: 13, scenarios: flat }
     const migrated = migrateUmaSaveToCurrent(legacy)!
     expect(migrated.scenarios[0]!.inspiration.slots).toHaveLength(level === 10 ? 6 : level === 9 ? 3 : 0)
     expect(migrated.scenarios[0]!.inspiration.golds).toHaveLength(level === 10 ? 12 : level === 9 ? 6 : 0)
-    const { inspiration: _i, ...run } = migrated.scenarios[0]!
-    expect(run).toEqual(legacy.scenarios[0]); expect(migrated.exp).toBe(current.exp)
+    const { inspiration: _ii, preset: _pp, ...run } = scenarioView(migrated.scenarios[0]!, migrated.activePreset)
+    expect(run).toEqual(flat[0]); expect(migrated.exp).toBe(current.exp)
     expect(migrateUmaSaveToCurrent(migrated)).toEqual(migrated)
   })
   it('retains a filled branch below its old gate but never reopens a fresh explicit TL10 row', () => {
@@ -109,7 +115,7 @@ describe('grandparent eligibility and SP', () => {
   })
   it('a cheaper parent source wins for a shared gold', () => {
     const save = configured(false, true)
-    save.scenarios[0]!.assignments.parent0 = { kind: 'lineage', templateId: grand.id }
+    save.scenarios[0]!.presets[save.activePreset].assignments.parent0 = { kind: 'lineage', templateId: grand.id }
     save.scenarios[0]!.inspiration.golds.push(inspirationGoldKey('parent0', 0))
     expect(derive(save).skillCostMultipliers.get('gold')).toBe(1)
   })
@@ -124,10 +130,10 @@ describe('grandparent eligibility and SP', () => {
       jpRelease: '2000-01-01', obtain: 'gacha', starter: true, hintSkillIds: ['white'], eventSkillIds: ['gold'],
       effectProfile: Object.fromEntries(CARD_EFFECTS.map(effect => [effect, 1])) as SupportCardTemplate['effectProfile'],
       uniqueEffect: null, imageSource: 'https://invalid.test/invented-card.png' }
-    const save = configured(), run = save.scenarios[0]!
-    run.cardSetIds = [card.id]
+    const save = configured(), build = save.scenarios[0]!.presets[save.activePreset]
+    build.cardSetIds = [card.id]
     const node = constellationTemplate(1).nodes.find(n => n.kind === 'card')!
-    run.assignments[node.id] = { kind: 'card', cardId: card.id }
+    build.assignments[node.id] = { kind: 'card', cardId: card.id }
     const result = deriveUma({ uma: save, umaTemplate: child, cardSaves: new Map([[card.id, createCardSave(card)]]), cardTemplates: new Map([[card.id, card]]), umaTemplates: templates, skillTemplates: skills })
     expect(result.library.find(s => s.skillId === 'gold')?.origin).toBe('card')
     expect(result.skillCostMultipliers.get('gold')).toBe(1)

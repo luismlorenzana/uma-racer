@@ -373,6 +373,8 @@ export class RacerDb extends Dexie {
     this.version(22).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
     // Save v14 (D250): grandfather lineage availability, then decouple new slots/golds from Training Level.
     this.version(23).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
+    // Save v15 (D252): each scenario's build becomes four distance presets, copies of it until one is edited.
+    this.version(24).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
   }
 }
 

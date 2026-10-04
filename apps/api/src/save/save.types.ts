@@ -93,6 +93,9 @@ const UMA_V10_FIELDS = [...UMA_V6_FIELDS, 'racePreferences'] as const
 const SCENARIO_TRAINING_FIELDS = ['tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started'] as const
 /** v12 units carry the Extra stats grid (D235). */
 const SCENARIO_TRAINING_V12_FIELDS = [...SCENARIO_TRAINING_FIELDS, 'extraStats'] as const
+/** Save v15 (D252): a unit's shared state and its four distance presets, each with its own build. */
+const SCENARIO_UNIT_FIELDS = ['tier', 'trainingLevel', 'trainingExp', 'extraStatsUnlocked', 'inspiration', 'presets', 'journey', 'started'] as const
+const TRAINING_PRESET_FIELDS = ['cardSetIds', 'assignments', 'activeExtraStats', 'loadoutSkillIds'] as const
 const EXTRA_STAT_NODE_PATTERN = /^(speed|stamina|power|guts|wit)-([1-4])$/
 const CARD_FIELDS = ['templateId', 'level', 'exp', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V5_FIELDS = ['templateId', 'limitBreak', 'maxCouponGranted'] as const
@@ -706,7 +709,7 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
-  if (value.schemaVersion === 11 || value.schemaVersion === 12 || value.schemaVersion === 13 || value.schemaVersion === 14
+  if (value.schemaVersion === 11 || value.schemaVersion === 12 || value.schemaVersion === 13 || value.schemaVersion === 14 || value.schemaVersion === 15
     ? !exactKeys(value, PROFILE_V11_FIELDS) || !isNonNegativeInt(value.trainingExpBank)
     : !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -918,7 +921,36 @@ export function validInspiration(value: unknown): boolean {
   return value.golds.every(g => slots.some(s => g === `${s}:gold0` || g === `${s}:gold1`))
 }
 
+/** A unit's build: its card set, loadout and node assignments, as one v14 run or one v15 preset holds them. */
+function parseBuild(value: Record<string, unknown>, schemaVersion: number, tier: number): boolean {
+  if (!parseUniqueIds(value.cardSetIds, CARD_SET_SIZE) || !parseUniqueIds(value.loadoutSkillIds)) return false
+  if (!isRecord(value.assignments)) return false
+  const nodeIds = Object.keys(value.assignments)
+  if (nodeIds.length > MAX_CONSTELLATION_NODES || nodeIds.some((nodeId) => !isId(nodeId))) return false
+  return nodeIds.every((nodeId) => parseNodeAssignment((value.assignments as Record<string, unknown>)[nodeId], schemaVersion, tier))
+}
+
+/** v15 (D252): Training Level, bought Extra stat nodes, Inspiration and the career shared; four presets of builds. */
+function parseScenarioUnit(value: unknown, umaLevel: number, schemaVersion: number): boolean {
+  if (!isRecord(value) || !exactKeys(value, SCENARIO_UNIT_FIELDS) || !validInspiration(value.inspiration)) return false
+  if (!parseExtraStats({ unlocked: value.extraStatsUnlocked, active: [] })) return false
+  if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > Math.ceil(umaLevel / 10)) return false
+  if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return false
+  if (!isNonNegativeInt(value.trainingExp) || typeof value.started !== 'boolean') return false
+  if (value.trainingLevel === MAX_TRAINING_LEVEL ? value.trainingExp !== 0 : value.trainingExp >= TRAINING_EXP_PER_LEVEL) return false
+  if (!isRecord(value.presets) || !exactKeys(value.presets, DISTANCES)) return false
+  for (const distance of DISTANCES) {
+    const preset = (value.presets as Record<string, unknown>)[distance]
+    if (!isRecord(preset) || !exactKeys(preset, TRAINING_PRESET_FIELDS) ||
+      !parseExtraStats({ unlocked: value.extraStatsUnlocked, active: preset.activeExtraStats }) ||
+      !parseBuild(preset, schemaVersion, value.tier as number)) return false
+  }
+  if (value.journey === null) return true
+  return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
+}
+
 function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: number): boolean {
+  if (schemaVersion >= 15) return parseScenarioUnit(value, umaLevel, schemaVersion)
   if (!isRecord(value) || !exactKeys(value, schemaVersion >= 14 ? [...SCENARIO_TRAINING_V12_FIELDS, 'inspiration'] : schemaVersion >= 12 ? SCENARIO_TRAINING_V12_FIELDS : SCENARIO_TRAINING_FIELDS)) return false
   if (schemaVersion >= 14 && !validInspiration(value.inspiration)) return false
   if (schemaVersion >= 12 && !parseExtraStats(value.extraStats)) return false
@@ -929,26 +961,21 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
   if (schemaVersion >= 11 && (value.trainingLevel === MAX_TRAINING_LEVEL
     ? value.trainingExp !== 0
     : value.trainingExp >= TRAINING_EXP_PER_LEVEL)) return false
-  if (!parseUniqueIds(value.cardSetIds, CARD_SET_SIZE) || !parseUniqueIds(value.loadoutSkillIds)) return false
-  if (!isRecord(value.assignments)) return false
-  const nodeIds = Object.keys(value.assignments)
-  if (nodeIds.length > MAX_CONSTELLATION_NODES || nodeIds.some((nodeId) => !isId(nodeId))) return false
-  if (nodeIds.some((nodeId) => !parseNodeAssignment(
-    (value.assignments as Record<string, unknown>)[nodeId], schemaVersion, value.tier as number,
-  ))) return false
+  if (!parseBuild(value, schemaVersion, value.tier as number)) return false
   if (value.journey === null) return true
   return parseJourney(value.journey, false) && (value.journey as Record<string, unknown>).tier === value.tier
 }
 
 /**
- * v5 to v13 Umas share the Uma shape; v10 adds outfit race preferences, v11 re-levels on the linear curve, v12 adds
- * each unit's Extra stats grid (D235), and v13 costs every scenario's Uma Levels the same (D241).
+ * v5 to v15 Umas share the Uma shape; v10 adds outfit race preferences, v11 re-levels on the linear curve, v12 adds
+ * each unit's Extra stats grid (D235), v13 costs every scenario's Uma Levels the same (D241), and v15 gives each unit
+ * four distance presets and the Uma the one in use (D252).
  */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
-  const withPreferences = value.schemaVersion === 10 || value.schemaVersion === 11 || value.schemaVersion === 12 ||
-    value.schemaVersion === 13 || value.schemaVersion === 14
-  if (!exactKeys(value, withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS) ||
-    ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(value.schemaVersion as number)) return null
+  const withPreferences = (value.schemaVersion as number) >= 10
+  const fields = value.schemaVersion === 15 ? [...UMA_V10_FIELDS, 'activePreset'] : withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS
+  if (!exactKeys(value, fields) || ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(value.schemaVersion as number)) return null
+  if (value.schemaVersion === 15 && !DISTANCES.includes(value.activePreset as (typeof DISTANCES)[number])) return null
   if (withPreferences && value.racePreferences !== null &&
     (!isRecord(value.racePreferences) || !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
       !['front', 'pace', 'late', 'end'].includes(value.racePreferences.strategy as string) ||
@@ -980,7 +1007,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null

@@ -593,6 +593,23 @@ describe('save v6 over the wire', () => {
     expect(older.writes).toEqual([])
   })
 
+  it('accepts v15: four distance presets per unit and the one in use (D252)', () => {
+    const { cardSetIds: _c, assignments: _a, loadoutSkillIds: _l, ...shared } = uma.scenarios[0]!
+    const build = { cardSetIds: [], assignments: {}, activeExtraStats: ['speed-1'], loadoutSkillIds: [] }
+    const unit = { ...shared, extraStatsUnlocked: { speed: 1, stamina: 0, power: 0, guts: 0, wit: 0 }, inspiration: { slots: [], golds: [] },
+      presets: { sprint: build, mile: build, medium: build, long: { ...build, activeExtraStats: [] } } }
+    const v15 = { ...uma, schemaVersion: 15, racePreferences: null, scenarios: [unit], activePreset: 'mile' }
+    const sync = (data: unknown) => parseSyncRequest({ upserts: [{ kind: 'umas', id: '100101', baseVersion: 3, data }] })
+    expect(sync(v15)).toMatchObject({ upserts: [{ kind: 'umas', data: { schemaVersion: 15 } }] })
+    // A preset may only turn on bought nodes; every distance is present; the Uma names a distance.
+    expect(sync({ ...v15, scenarios: [{ ...unit, presets: { ...unit.presets, long: { ...build, activeExtraStats: ['speed-2'] } } }] })).toMatch(/invalid umas data/)
+    const { long: _long, ...three } = unit.presets
+    expect(sync({ ...v15, scenarios: [{ ...unit, presets: three }] })).toMatch(/invalid umas data/)
+    expect(sync({ ...v15, activePreset: 'dirt' })).toMatch(/invalid umas data/)
+    const { activePreset: _preset, ...noPreset } = v15
+    expect(sync(noPreset)).toMatch(/invalid umas data/)
+  })
+
   it('accepts v13, with every scenario\'s Uma Levels on the flat curve (D241)', () => {
     const run = { ...uma.scenarios[0]!, extraStats: { unlocked: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, active: [] } }
     const v13 = { ...uma, schemaVersion: 13, racePreferences: null, scenarios: [run], level: 15 }

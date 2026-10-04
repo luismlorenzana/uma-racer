@@ -9,6 +9,8 @@ import {
   parseItemLedgerEntry,
   parseUmaSaveOrThrow,
   resolveExtraStatUnlock,
+  scenarioAt,
+  withScenarioView,
   type ExtraStatNodeId,
   type InventoryStackData,
   type UmaSave,
@@ -84,7 +86,8 @@ export async function unlockPersistentExtraStat(
     if (!umaRow) throw new Error('Local Uma is missing')
     const uma = parseUmaSaveOrThrow(umaRow.data)
     if (uma.templateId !== input.umaId) throw new Error('Local Uma id is mismatched')
-    const run = uma.scenarios.find((entry) => entry.tier === input.tier)
+    // Buying is the scenario's, shared by every preset; the new node turns on in the preset being edited (D252).
+    const run = scenarioAt(uma, input.tier)
     if (!run) throw new Error('That scenario has not been unlocked')
     const itemRow = await db.items.get(crop.id)
     const stack = requireStack(itemRow?.data, crop.id)
@@ -104,10 +107,7 @@ export async function unlockPersistentExtraStat(
     const command = resolveExtraStatUnlock({
       umaId: input.umaId, tier: input.tier, extra: run.extraStats, stat: node.stat, quantity: stack.quantity, now: input.now,
     })
-    const nextUma: UmaSave = {
-      ...uma,
-      scenarios: uma.scenarios.map((entry) => entry.tier === input.tier ? { ...entry, extraStats: command.extra } : entry),
-    }
+    const nextUma: UmaSave = withScenarioView(uma, { ...run, extraStats: command.extra })
     await db.umas.put({ ...umaRow, data: nextUma })
     afterWrite('uma')
     await db.items.put({ id: crop.id, data: { itemId: crop.id, quantity: command.quantityAfter, updatedAt: input.now }, version: itemRow?.version ?? 0 })

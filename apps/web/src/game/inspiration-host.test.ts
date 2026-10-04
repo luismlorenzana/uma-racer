@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, afterEach, describe, expect, it } from 'vitest'
-import { createPlayerProfile, createUmaSave, INSPIRATION_SLOTS, type RpgCommandRequest, type SkillTemplate, type UmaTemplate } from '@racer/domain'
+import { createPlayerProfile, createUmaSave, INSPIRATION_SLOTS, scenarioView, type RpgCommandRequest, type SkillTemplate, type UmaTemplate } from '@racer/domain'
 import { parseRpgCommandRequest, resolveRpgCommand } from '../../../api/src/save/rpg-command'
 import { db } from './db'
 import { reserveInspirationUnlock } from './inspiration-host'
@@ -69,7 +69,7 @@ describe('acknowledged Inspiration unlock transactions', () => {
       await unlock(nodeId); await flushOneRpgCommand(db, transport)
       await expect(unlock(nodeId, 0)).rejects.toThrow(/ancestor/)
       const row = (await db.umas.get(child.id))!
-      row.data.scenarios[0]!.assignments[nodeId] = { kind: 'lineage', templateId: ancestor.id }
+      row.data.scenarios[0]!.presets[row.data.activePreset].assignments[nodeId] = { kind: 'lineage', templateId: ancestor.id }
       await db.umas.put(row)
       entities.get(`umas/${child.id}`)!.data = row.data as unknown as Record<string, unknown>
       for (const index of [0, 1]) { await unlock(nodeId, index); await flushOneRpgCommand(db, transport) }
@@ -112,7 +112,13 @@ describe('acknowledged Inspiration unlock transactions', () => {
   })
   it('migrates a recovered v13 Uma and queues its version-preserving replacement', async () => {
     const row = entities.get(`umas/${child.id}`)!
-    row.data = { ...row.data, schemaVersion: 13, scenarios: (await unit()).scenarios.map(({ inspiration: _i, ...run }) => ({ ...run, trainingLevel: 9 })) }
+    // A v13 row: one build per scenario (D252) and no Inspiration state.
+    const saved = await unit()
+    const { activePreset: _preset, ...head } = row.data
+    row.data = { ...head, schemaVersion: 13, scenarios: saved.scenarios.map((entry) => {
+      const { inspiration: _i, preset: _p, ...run } = scenarioView(entry, saved.activePreset)
+      return { ...run, trainingLevel: 9 }
+    }) }
     await new RpgChapterHost(async () => null, db).refreshAccount(true, transport)
     expect((await unit()).scenarios[0]!.inspiration.slots).toEqual(['parent0', 'parent0-gp0', 'parent0-gp1'])
     expect((await db.umas.get(child.id))?.version).toBe(1)

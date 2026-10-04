@@ -193,12 +193,16 @@ function inspirationSpendError(request: RpgCommandRequest, existing: Map<string,
   const movement = request.appends[0]?.data, source = movement?.source
   if (!movement || movement.reason !== 'inspiration-unlock' || !rpgRecord(source)) return 'Inspiration spend evidence required'
   const row = request.upserts.find(u => u.kind === 'umas'), before = row && existing.get(`umas/${row.id}`)
-  if (!row || !before || before.deleted || source.umaId !== row.id || before.data.schemaVersion !== 14 || row.data.schemaVersion !== 14 ||
+  if (!row || !before || before.deleted || source.umaId !== row.id || before.data.schemaVersion !== 15 || row.data.schemaVersion !== 15 ||
     !itemDeltaValid(request, existing, movement)) return 'Inspiration spend needs current owned Uma and sufficient matching tokens'
   const runs = before.data.scenarios as Record<string, unknown>[]
   const run = runs.find(r => r.tier === source.tier)
   if (!run || !rpgRecord(run.inspiration)) return 'Scenario Inspiration unavailable'
   const slots = run.inspiration.slots as string[], golds = run.inspiration.golds as string[], node = source.nodeId as string
+  // Slots and golds are the scenario's; who fills a slot is her selected preset's (D252).
+  const presets = rpgRecord(run.presets) ? run.presets : null
+  const build = presets && typeof before.data.activePreset === 'string' ? presets[before.data.activePreset] : null
+  const assignments = rpgRecord(build) && rpgRecord(build.assignments) ? build.assignments : null
   let inspiration: Record<string, unknown>
   if (source.goldIndex === null) {
     const parent = ['parent0-gp0', 'parent0-gp1'].includes(node) ? 'parent0' : 'parent1'
@@ -207,8 +211,8 @@ function inspirationSpendError(request: RpgCommandRequest, existing: Map<string,
     inspiration = { slots: order.filter(s => slots.includes(s) || s === node), golds }
   } else {
     const key = `${node}:gold${source.goldIndex}`
-    if (!slots.includes(node) || golds.includes(key) || !rpgRecord(run.assignments) || !rpgRecord(run.assignments[node]) ||
-      run.assignments[node].kind !== 'lineage') return 'Gold already open or slot unfilled/closed'
+    if (!slots.includes(node) || golds.includes(key) || !assignments || !rpgRecord(assignments[node]) ||
+      assignments[node].kind !== 'lineage') return 'Gold already open or slot unfilled/closed'
     const order = ['parent0', 'parent1', 'parent0-gp0', 'parent0-gp1', 'parent1-gp0', 'parent1-gp1'].flatMap(s => [0, 1].map(i => `${s}:gold${i}`))
     inspiration = { slots, golds: order.filter(g => golds.includes(g) || g === key) }
   }

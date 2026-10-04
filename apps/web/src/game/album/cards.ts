@@ -18,6 +18,7 @@ import {
   type CardSave,
   type SupportCardTemplate,
   type UmaSave,
+  unitCardSetIds,
 } from '@racer/domain'
 import { getContentAsset, type ContentAsset, type LoadedContent } from '../../content/runtime'
 import type { AlbumQuery, AlbumRow, FacetDef, SortDef } from './query'
@@ -102,7 +103,8 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
     const run = tier === null
       ? uma.scenarios.find((entry) => entry.tier === uma.unlockedTier)
       : uma.scenarios.find((entry) => entry.tier === tier)
-    for (const cardId of run?.cardSetIds ?? []) equippedBy.set(cardId, [...(equippedBy.get(cardId) ?? []), uma.templateId])
+    // In a set when any of her distance presets holds it (D252).
+    for (const cardId of run ? unitCardSetIds(run) : []) equippedBy.set(cardId, [...(equippedBy.get(cardId) ?? []), uma.templateId])
   }
 
   const templates = content.cards.items.filter((template) => tier === null || template.era <= tier)

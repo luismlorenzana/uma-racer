@@ -23,7 +23,7 @@ import {
   type LegacyNodeAssignment,
   type NodeAssignment,
 } from './constellation'
-import { emptyExtraStats, extraStatsFromProduce, parseExtraStats, type ExtraStats } from './extra-stats'
+import { emptyExtraStats, extraStatsFromProduce, parseExtraStats, type ExtraStatNodeId, type ExtraStats } from './extra-stats'
 import { LEVELS_PER_SCENARIO, MAX_SCENARIO_TIER, MAX_UMA_LEVEL, SCENARIOS, isGateLevel, tierOfLevel } from './scenarios'
 import { EXP_TO_NEXT_TRAINING_LEVEL, fitsTrainingCurve, relevelLegacyTraining } from './training'
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type DistanceCategory, type Grade, type StatKey, type Stats, type Strategy, type Surface } from './types'
@@ -37,7 +37,7 @@ import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt
 
 import { emptyInspiration, grandfatherInspiration, parseInspiration, type InspirationState } from './inspiration'
 
-export const SAVE_SCHEMA_VERSION = 14 as const
+export const SAVE_SCHEMA_VERSION = 15 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V2 = 2 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V3 = 3 as const
@@ -51,6 +51,7 @@ export const LEGACY_SAVE_SCHEMA_VERSION_V10 = 10 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V11 = 11 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V12 = 12 as const
 export const LEGACY_SAVE_SCHEMA_VERSION_V13 = 13 as const
+export const LEGACY_SAVE_SCHEMA_VERSION_V14 = 14 as const
 export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -145,7 +146,8 @@ export interface ScenarioJourney {
  * One persisted career run. Everything an Uma is inside a scenario lives here, and an Uma keeps one of
  * these per unlocked tier (D121).
  */
-export interface ScenarioTraining {
+/** A scenario with one build, as saves up to v14 stored it; the shape a preset view still has (D252). */
+export interface FlatScenarioTraining {
   tier: number
   /** 1–10, earned by Spark Match. Decides which constellation nodes are open. */
   trainingLevel: number
@@ -164,13 +166,48 @@ export interface ScenarioTraining {
   started: boolean
 }
 
+/**
+ * One scenario's build for one distance (D252): its card set, the constellation's card and lineage nodes, which of the
+ * bought Extra stat nodes are on, and the equipped skills.
+ */
+export interface TrainingPreset {
+  cardSetIds: string[]
+  assignments: Record<string, NodeAssignment>
+  /** At most six of the unit's bought Extra stat nodes, in grid order (D235). */
+  activeExtraStats: ExtraStatNodeId[]
+  loadoutSkillIds: string[]
+}
+
+/**
+ * A scenario as stored from save v15 (D252): what its four distance presets share (Training Level, the Extra stat nodes
+ * bought with crops, Inspiration's open slots, the career) and the presets themselves.
+ */
+export interface ScenarioUnit {
+  tier: number
+  /** 1–10, earned by Spark Match. Decides which constellation nodes are open, for every preset. */
+  trainingLevel: number
+  trainingExp: number
+  /** How many of each stat's Extra stat nodes are bought, for every preset (D235). */
+  extraStatsUnlocked: ExtraStats['unlocked']
+  inspiration: InspirationState
+  presets: Record<DistanceCategory, TrainingPreset>
+  journey: ScenarioJourney | null
+  /** False until the player confirms this scenario's start. */
+  started: boolean
+}
+
+/** One scenario seen through one distance preset: the unit's shared state and the preset's build (D252). */
+export interface ScenarioTraining extends FlatScenarioTraining {
+  preset: DistanceCategory
+}
+
 /** A v5–v11 unit: Produce nodes in the tree and no Extra stats grid. Only the migrations read it. */
-export interface LegacyScenarioTraining extends Omit<ScenarioTraining, 'assignments' | 'extraStats' | 'inspiration'> {
+export interface LegacyScenarioTraining extends Omit<FlatScenarioTraining, 'assignments' | 'extraStats' | 'inspiration'> {
   assignments: Record<string, LegacyNodeAssignment>
 }
 
 /** The v5–v11 Uma body around legacy units. */
-export type LegacyUmaBody = Omit<UmaSave, 'schemaVersion' | 'scenarios'> & { scenarios: LegacyScenarioTraining[] }
+export type LegacyUmaBody = Omit<UmaSave, 'schemaVersion' | 'scenarios' | 'activePreset'> & { scenarios: LegacyScenarioTraining[] }
 
 /**
  * Stats, skill points, aptitudes, the skill library and the loadout are **not** stored: they are derived
@@ -190,9 +227,11 @@ export interface UmaSave {
   exp: number
   /** Highest unlocked scenario, and always the active one. */
   unlockedTier: number
-  scenarios: ScenarioTraining[]
+  scenarios: ScenarioUnit[]
   skillHistory: SkillHistoryEntry[]
   goalPlanVersion: number
+  /** The distance preset her profile shows and edits, and that every race-free use reads (D252). */
+  activePreset: DistanceCategory
   /** Null means the deterministic template recommendation until the owner sets a preference. */
   racePreferences: RacePreferences | null
 }
@@ -964,6 +1003,12 @@ const LEGACY_UMA_V4_KEYS = [
 const UMA_VERSIONED_KEYS = [
   'schemaVersion', 'templateId', 'level', 'exp', 'unlockedTier', 'scenarios', 'skillHistory', 'goalPlanVersion', 'racePreferences',
 ] as const
+/** Save v15 (D252): each unit holds four distance presets, and the Uma names the one in use. */
+const UMA_V15_KEYS = [...UMA_VERSIONED_KEYS, 'activePreset'] as const
+const SCENARIO_UNIT_KEYS = [
+  'tier', 'trainingLevel', 'trainingExp', 'extraStatsUnlocked', 'inspiration', 'presets', 'journey', 'started',
+] as const
+const TRAINING_PRESET_KEYS = ['cardSetIds', 'assignments', 'activeExtraStats', 'loadoutSkillIds'] as const
 const LEGACY_UMA_V9_KEYS = UMA_VERSIONED_KEYS.filter((key) => key !== 'racePreferences')
 const LEGACY_SCENARIO_TRAINING_KEYS = [
   'tier', 'trainingLevel', 'trainingExp', 'cardSetIds', 'assignments', 'loadoutSkillIds', 'journey', 'started',
@@ -1125,7 +1170,7 @@ export function parseLegacyUmaSaveV4(value: unknown): LegacyUmaSaveV4 | null {
 }
 
 /**
- * v4 held one flat run. It becomes a single ScenarioTraining at her current tier.
+ * v4 held one flat run. It becomes a single FlatScenarioTraining at her current tier.
  *
  * Assignments start empty and her stored stats are discarded: no configuration reproduces them, and
  * inventing one would be a lie about how she was built. Parents and modifier state are dropped outright.
@@ -1190,7 +1235,7 @@ function parseLegacyNodeAssignment(value: unknown): LegacyNodeAssignment | null 
 }
 
 /** The fields every unit shape shares; the caller checks the keys and the assignments. */
-function parseScenarioRun(value: Record<string, unknown>, umaLevel: number, curve: 'linear' | 'legacy'): Omit<ScenarioTraining, 'assignments' | 'extraStats' | 'inspiration'> | null {
+function parseScenarioRun(value: Record<string, unknown>, umaLevel: number, curve: 'linear' | 'legacy'): Omit<FlatScenarioTraining, 'assignments' | 'extraStats' | 'inspiration'> | null {
   if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > tierOfLevel(umaLevel)) return null
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return null
   if (!isNonNegativeInt(value.trainingExp)) return null
@@ -1214,7 +1259,7 @@ function parseScenarioRun(value: Record<string, unknown>, umaLevel: number, curv
 }
 
 /** A v12 unit: card and lineage nodes in the tree, and the Extra stats grid beside it (D235). */
-function parseScenarioTraining(value: unknown, umaLevel: number, legacy = false): ScenarioTraining | null {
+function parseScenarioTraining(value: unknown, umaLevel: number, legacy = false): FlatScenarioTraining | null {
   if (!isObject(value) || !exactKeys(value, legacy ? SCENARIO_TRAINING_KEYS : SCENARIO_TRAINING_V14_KEYS)) return null
   const run = parseScenarioRun(value, umaLevel, 'linear')
   if (!run || !isObject(value.assignments)) return null
@@ -1417,7 +1462,7 @@ export function parseLegacyUmaSaveV11(value: unknown): LegacyUmaSaveV11 | null {
  * stat, free, four at most a stat. Card and lineage assignments are kept as they were.
  */
 export function migrateUmaSaveV11(value: LegacyUmaSaveV11): LegacyUmaSaveV12 {
-  const scenarios: Omit<ScenarioTraining, 'inspiration'>[] = value.scenarios.map((run) => {
+  const scenarios: Omit<FlatScenarioTraining, 'inspiration'>[] = value.scenarios.map((run) => {
     const assignments: Record<string, NodeAssignment> = {}
     const produce: StatKey[] = []
     const legacyIds = new Set(legacyProduceNodeIds(run.tier))
@@ -1437,16 +1482,116 @@ export function migrateUmaSaveV11(value: LegacyUmaSaveV11): LegacyUmaSaveV12 {
   return uma
 }
 
+/** v14: one build per scenario, before distance presets (D252). */
+export interface LegacyUmaSaveV14 extends Omit<UmaSave, 'schemaVersion' | 'scenarios' | 'activePreset'> {
+  schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V14
+  scenarios: FlatScenarioTraining[]
+}
+
+export function parseLegacyUmaSaveV14(value: unknown): LegacyUmaSaveV14 | null {
+  if (!isObject(value) || value.schemaVersion !== LEGACY_SAVE_SCHEMA_VERSION_V14) return null
+  const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level), expToNextUmaLevel)
+  return body ? { schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V14, ...body } : null
+}
+
+/** A unit's one v14 build, copied into each of its four presets (D252). */
+function unitFromFlat(run: FlatScenarioTraining): ScenarioUnit {
+  const preset = (): TrainingPreset => ({ cardSetIds: [...run.cardSetIds], assignments: { ...run.assignments },
+    activeExtraStats: [...run.extraStats.active], loadoutSkillIds: [...run.loadoutSkillIds] })
+  return { tier: run.tier, trainingLevel: run.trainingLevel, trainingExp: run.trainingExp,
+    extraStatsUnlocked: { ...run.extraStats.unlocked }, inspiration: run.inspiration,
+    presets: { sprint: preset(), mile: preset(), medium: preset(), long: preset() }, journey: run.journey, started: run.started }
+}
+
+/**
+ * Save v15 (D252): every scenario's build becomes four distance presets, each a copy of the build she had, so nothing
+ * changes until a preset is edited. She starts on her race-default distance, or Medium without one.
+ */
+export function migrateUmaSaveV14(value: LegacyUmaSaveV14): UmaSave {
+  const uma = parseUmaSave({ ...value, schemaVersion: SAVE_SCHEMA_VERSION, scenarios: value.scenarios.map(unitFromFlat),
+    activePreset: value.racePreferences?.distance ?? 'medium' })
+  if (!uma) throw new Error('Legacy v14 Uma save is malformed')
+  return uma
+}
+
+function parseTrainingPreset(value: unknown, tier: number, unlocked: ExtraStats['unlocked']): TrainingPreset | null {
+  if (!isObject(value) || !exactKeys(value, TRAINING_PRESET_KEYS) || !isObject(value.assignments)) return null
+  const cardSetIds = parseUniqueIds(value.cardSetIds, CARD_SET_SIZE)
+  const loadoutSkillIds = parseUniqueIds(value.loadoutSkillIds)
+  const extra = parseExtraStats({ unlocked, active: value.activeExtraStats })
+  if (!cardSetIds || !loadoutSkillIds || !extra) return null
+  const nodes = new Set(constellationTemplate(tier).nodes.map((node) => node.id))
+  const assignments: Record<string, NodeAssignment> = {}
+  for (const [nodeId, raw] of Object.entries(value.assignments)) {
+    // A stale node id is dropped, not fatal, as in the v14 parser.
+    if (!nodes.has(nodeId)) continue
+    const assignment = parseNodeAssignment(raw)
+    if (!assignment) return null
+    assignments[nodeId] = assignment
+  }
+  return { cardSetIds, assignments, activeExtraStats: extra.active, loadoutSkillIds }
+}
+
+/** A v15 unit: the shared run, Inspiration and bought Extra stat nodes, and its four presets in distance order. */
+function parseScenarioUnit(value: unknown, umaLevel: number): ScenarioUnit | null {
+  if (!isObject(value) || !exactKeys(value, SCENARIO_UNIT_KEYS) || !isObject(value.presets) ||
+    !exactKeys(value.presets, DISTANCE_CATEGORIES)) return null
+  const run = parseScenarioRun({ ...value, cardSetIds: [], loadoutSkillIds: [] }, umaLevel, 'linear')
+  const shared = parseExtraStats({ unlocked: value.extraStatsUnlocked, active: [] })
+  const inspiration = parseInspiration(value.inspiration)
+  if (!run || !shared || !inspiration) return null
+  const presets = {} as Record<DistanceCategory, TrainingPreset>
+  for (const distance of DISTANCE_CATEGORIES) {
+    const preset = parseTrainingPreset((value.presets as Record<string, unknown>)[distance], run.tier, shared.unlocked)
+    if (!preset) return null
+    presets[distance] = preset
+  }
+  // Canonical key order: badge fingerprints hash the save's JSON.
+  return { tier: run.tier, trainingLevel: run.trainingLevel, trainingExp: run.trainingExp, extraStatsUnlocked: shared.unlocked,
+    inspiration, presets, journey: run.journey, started: run.started }
+}
+
 export function parseUmaSave(value: unknown): UmaSave | null {
   if (!isObject(value) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
-  const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level), expToNextUmaLevel)
-  return body ? { schemaVersion: SAVE_SCHEMA_VERSION, ...body } : null
+  if (!DISTANCE_CATEGORIES.includes(value.activePreset as DistanceCategory)) return null
+  const body = parseUmaBody(value, (run, level) => parseScenarioUnit(run, level), expToNextUmaLevel, UMA_V15_KEYS)
+  return body ? { schemaVersion: SAVE_SCHEMA_VERSION, ...body, activePreset: value.activePreset as DistanceCategory } : null
+}
+
+/** A unit seen through one preset: what every view-reading rule and screen works on (D252). */
+export function scenarioView(unit: ScenarioUnit, preset: DistanceCategory): ScenarioTraining {
+  const build = unit.presets[preset]
+  return { tier: unit.tier, trainingLevel: unit.trainingLevel, trainingExp: unit.trainingExp, cardSetIds: build.cardSetIds,
+    assignments: build.assignments, extraStats: { unlocked: unit.extraStatsUnlocked, active: build.activeExtraStats },
+    inspiration: unit.inspiration, loadoutSkillIds: build.loadoutSkillIds, journey: unit.journey, started: unit.started, preset }
+}
+
+/** A changed view written back: the shared fields into its unit, the build into its preset alone (D252). */
+export function unitWithView(unit: ScenarioUnit, view: ScenarioTraining): ScenarioUnit {
+  if (unit.tier !== view.tier) throw new Error(`A tier ${view.tier} view cannot change tier ${unit.tier}`)
+  return {
+    tier: unit.tier, trainingLevel: view.trainingLevel, trainingExp: view.trainingExp,
+    extraStatsUnlocked: { ...view.extraStats.unlocked }, inspiration: view.inspiration,
+    presets: { ...unit.presets, [view.preset]: { cardSetIds: [...view.cardSetIds], assignments: { ...view.assignments },
+      activeExtraStats: [...view.extraStats.active], loadoutSkillIds: [...view.loadoutSkillIds] } },
+    journey: view.journey, started: view.started,
+  }
+}
+
+/** Every card any of a unit's presets holds (D252): a card is in her set when one of her distances uses it. */
+export const unitCardSetIds = (unit: ScenarioUnit): string[] =>
+  [...new Set(DISTANCE_CATEGORIES.flatMap((distance) => unit.presets[distance].cardSetIds))]
+
+/** Writes a changed view back into her save (D252); the view's tier must already be one of her units. */
+export function withScenarioView(uma: UmaSave, view: ScenarioTraining): UmaSave {
+  if (!uma.scenarios.some((unit) => unit.tier === view.tier)) throw new Error(`Uma ${uma.templateId} has no scenario at tier ${view.tier}`)
+  return { ...uma, scenarios: uma.scenarios.map((unit) => unit.tier === view.tier ? unitWithView(unit, view) : unit) }
 }
 
 /** v12 is v13's shape with Uma Levels on the rising curve (D241). */
-export interface LegacyUmaSaveV12 extends Omit<UmaSave, 'schemaVersion' | 'scenarios'> {
+export interface LegacyUmaSaveV12 extends Omit<UmaSave, 'schemaVersion' | 'scenarios' | 'activePreset'> {
   schemaVersion: typeof LEGACY_SAVE_SCHEMA_VERSION_V12
-  scenarios: Omit<ScenarioTraining, 'inspiration'>[]
+  scenarios: Omit<FlatScenarioTraining, 'inspiration'>[]
 }
 
 export function parseLegacyUmaSaveV12(value: unknown): LegacyUmaSaveV12 | null {
@@ -1471,7 +1616,7 @@ export interface UmaRelevel {
  * and re-levels through it on the flat curve from the scenario's first level, stopping at her career's hold and at the
  * gate as a race would, and never below the level she had. The caller pays the levels gained like race levels.
  */
-export function migrateUmaSaveV12(value: LegacyUmaSaveV12): { uma: UmaSave } & UmaRelevel {
+export function migrateUmaSaveV12(value: LegacyUmaSaveV12): { uma: LegacyUmaSaveV14 } & UmaRelevel {
   const parsed = parseLegacyUmaSaveV12(value)
   if (!parsed) throw new Error('Legacy v12 Uma save is malformed')
   let level = parsed.level
@@ -1500,7 +1645,7 @@ export function migrateUmaSaveV12(value: LegacyUmaSaveV12): { uma: UmaSave } & U
       exp = Math.min(exp, isGateLevel(level) ? expToNextUmaLevel(level + 1) : expToNextUmaLevel(level) - 1)
     }
   }
-  const uma = parseUmaSave({ ...parsed, schemaVersion: SAVE_SCHEMA_VERSION, level, exp,
+  const uma = parseLegacyUmaSaveV14({ ...parsed, schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V14, level, exp,
     scenarios: parsed.scenarios.map(run => ({ ...run, inspiration: grandfatherInspiration(run.trainingLevel, run.assignments) })) })
   if (!uma) throw new Error('Legacy v12 Uma save cannot be re-levelled')
   const levelsGained = Array.from({ length: level - parsed.level }, (_, index) => parsed.level + index + 1)
@@ -1519,8 +1664,9 @@ function parseUmaBody<Run extends { tier: number }>(
   value: Record<string, unknown>,
   parseRun: (run: unknown, level: number) => Run | null,
   expToNext: (level: number) => number,
-): (Omit<UmaSave, 'schemaVersion' | 'scenarios'> & { scenarios: Run[] }) | null {
-  if (!exactKeys(value, UMA_VERSIONED_KEYS)) return null
+  keys: readonly string[] = UMA_VERSIONED_KEYS,
+): (Omit<UmaSave, 'schemaVersion' | 'scenarios' | 'activePreset'> & { scenarios: Run[] }) | null {
+  if (!exactKeys(value, keys)) return null
   if (!isId(value.templateId)) return null
   if (!isPositiveInt(value.level) || value.level > MAX_UMA_LEVEL || !isNonNegativeInt(value.exp)) return null
   if (!umaExpFits(value.level, value.exp, expToNext)) return null
@@ -1561,24 +1707,25 @@ function parseUmaBody<Run extends { tier: number }>(
   }
 }
 
-/** The active scenario: always the highest unlocked (D121). */
-export function activeScenario(uma: UmaSave): ScenarioTraining {
+/** The active scenario (always the highest unlocked, D121) through a preset: hers unless one is named (D252). */
+export function activeScenario(uma: UmaSave, preset: DistanceCategory = uma.activePreset): ScenarioTraining {
   const run = uma.scenarios.find((entry) => entry.tier === uma.unlockedTier)
   if (!run) throw new Error(`Uma ${uma.templateId} has no scenario at tier ${uma.unlockedTier}`)
-  return run
+  return scenarioView(run, preset)
 }
 
-export function scenarioAt(uma: UmaSave, tier: number): ScenarioTraining | null {
-  return uma.scenarios.find((entry) => entry.tier === tier) ?? null
+export function scenarioAt(uma: UmaSave, tier: number, preset: DistanceCategory = uma.activePreset): ScenarioTraining | null {
+  const run = uma.scenarios.find((entry) => entry.tier === tier)
+  return run ? scenarioView(run, preset) : null
 }
 
 /**
- * One of her trained units (D190): the scenario at `tier`, or the active one when no tier is named. Every unlocked
- * scenario keeps its own Training Level, card set, constellation and loadout, and races in its own context.
+ * One of her trained units (D190): the scenario at `tier`, or the active one when no tier is named, through a distance
+ * preset (D252). Every unlocked scenario keeps its own Training Level and presets, and races in its own context.
  */
-export function trainedScenario(uma: UmaSave, tier?: number): ScenarioTraining {
-  if (tier === undefined) return activeScenario(uma)
-  const run = scenarioAt(uma, tier)
+export function trainedScenario(uma: UmaSave, tier?: number, preset: DistanceCategory = uma.activePreset): ScenarioTraining {
+  if (tier === undefined) return activeScenario(uma, preset)
+  const run = scenarioAt(uma, tier, preset)
   if (!run) throw new Error(`Uma ${uma.templateId} has no scenario at tier ${tier}`)
   return run
 }
@@ -1632,12 +1779,17 @@ export function migrateUmaSaveToCurrent(value: unknown): UmaSave | null {
 export function migrateUmaSaveWithSurplus(value: unknown): UmaMigration | null {
   const current = parseUmaSave(value)
   if (current) return { uma: current, surplusExp: 0, levelsGained: [], gateReached: null }
+  const v14 = parseLegacyUmaSaveV14(value)
+  if (v14) return { uma: migrateUmaSaveV14(v14), surplusExp: 0, levelsGained: [], gateReached: null }
   if (isObject(value) && value.schemaVersion === 13) {
     const body = parseUmaBody(value, (run, level) => parseScenarioTraining(run, level, true), expToNextUmaLevel)
-    return body ? { uma: { schemaVersion: SAVE_SCHEMA_VERSION, ...body }, surplusExp: 0, levelsGained: [], gateReached: null } : null
+    return body ? { uma: migrateUmaSaveV14({ schemaVersion: LEGACY_SAVE_SCHEMA_VERSION_V14, ...body }), surplusExp: 0, levelsGained: [], gateReached: null } : null
   }
   const v12 = migrateUmaSaveToV12(value)
-  return v12 ? { ...migrateUmaSaveV12(v12.uma), surplusExp: v12.surplusExp } : null
+  if (!v12) return null
+  const relevelled = migrateUmaSaveV12(v12.uma)
+  return { uma: migrateUmaSaveV14(relevelled.uma), levelsGained: relevelled.levelsGained, gateReached: relevelled.gateReached,
+    surplusExp: v12.surplusExp }
 }
 
 function migrateUmaSaveToV12(value: unknown): { uma: LegacyUmaSaveV12; surplusExp: number } | null {
@@ -1679,7 +1831,8 @@ export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
 
 /** Walks any supported stored profile shape to the current one. */
 export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | null {
-  if (isObject(value) && value.schemaVersion === 13) return parsePlayerProfile({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
+  // v13 and v14 profiles have the current shape: v14 and v15 belong to the Uma rows (D250, D252).
+  if (isObject(value) && (value.schemaVersion === 13 || value.schemaVersion === 14)) return parsePlayerProfile({ ...value, schemaVersion: SAVE_SCHEMA_VERSION })
   const current = parsePlayerProfile(value)
   if (current) return current
   const v12 = parseLegacyPlayerProfileV12(value)
@@ -1796,19 +1949,27 @@ export function createPlayerProfile(contentVersion: string, now: number): Player
   }
 }
 
-export function createScenarioTraining(tier: number): ScenarioTraining {
+/** A new scenario unit: Training Level 1, nothing bought, four empty presets (D252). */
+export function createScenarioTraining(tier: number): ScenarioUnit {
+  const preset = (): TrainingPreset => ({ cardSetIds: [], assignments: {}, activeExtraStats: [], loadoutSkillIds: [] })
   return {
     tier,
     trainingLevel: 1,
     trainingExp: 0,
-    cardSetIds: [],
-    assignments: {},
-    extraStats: emptyExtraStats(),
+    extraStatsUnlocked: emptyExtraStats().unlocked,
     inspiration: emptyInspiration(),
-    loadoutSkillIds: [],
+    presets: { sprint: preset(), mile: preset(), medium: preset(), long: preset() },
     journey: null,
     started: false,
   }
+}
+
+/** Her best base distance, Medium on a tie with it, then the shorter: where a new Uma's preset starts (D252). */
+export function bestBaseDistance(template: Pick<UmaTemplate, 'aptitudes'>): DistanceCategory {
+  const rank = (distance: DistanceCategory) => GRADES.indexOf(template.aptitudes.distance[distance])
+  return [...DISTANCE_CATEGORIES].sort((left, right) =>
+    rank(left) - rank(right) || Number(right === 'medium') - Number(left === 'medium') ||
+    DISTANCE_CATEGORIES.indexOf(left) - DISTANCE_CATEGORIES.indexOf(right))[0]!
 }
 
 export function createUmaSave(template: UmaTemplate): UmaSave {
@@ -1826,6 +1987,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
     skillHistory,
     goalPlanVersion: SCENARIO_GOAL_VERSION,
     racePreferences: null,
+    activePreset: bestBaseDistance(template),
   }
 }
 

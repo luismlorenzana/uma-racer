@@ -15,6 +15,7 @@ import {
   deriveUma,
   toggleExtraStat,
   trainedScenario,
+  withScenarioView,
   constellationTemplate,
   isNodeUnlocked,
   lineageSlotEligibility,
@@ -508,10 +509,8 @@ export class GameRuntime {
     const assignments = { ...run.assignments }
     if (assignment) assignments[nodeId] = assignment
     else delete assignments[nodeId]
-    const next: UmaSave = {
-      ...uma,
-      scenarios: uma.scenarios.map((entry) => (entry.tier === run.tier ? { ...entry, assignments } : entry)),
-    }
+    // Node assignments belong to the preset being edited (D252).
+    const next: UmaSave = withScenarioView(uma, { ...run, assignments })
 
     if (!state.persistent) {
       replaceUma(next)
@@ -610,10 +609,8 @@ export class GameRuntime {
     if (state.status !== 'ready' || !uma) throw new Error('Training Uma must be owned')
     const run = trainedScenario(uma, tier)
     const extraStats = toggleExtraStat(run.extraStats, nodeId, on)
-    const next: UmaSave = {
-      ...uma,
-      scenarios: uma.scenarios.map((entry) => (entry.tier === run.tier ? { ...entry, extraStats } : entry)),
-    }
+    // Which bought nodes are on belongs to the preset being edited (D252).
+    const next: UmaSave = withScenarioView(uma, { ...run, extraStats })
     if (!state.persistent) {
       replaceUma(next)
       return
@@ -651,11 +648,8 @@ export class GameRuntime {
       skillTemplates: content.skills.byId,
     })
     const loadoutSkillIds = resolveSkillLoadout(derived, template, content.skills.byId, skillIds)
-    const next: UmaSave = {
-      ...uma,
-      scenarios: uma.scenarios.map((run) =>
-        run.tier === derived.tier ? { ...run, loadoutSkillIds } : run),
-    }
+    // The loadout belongs to the preset being edited (D252).
+    const next: UmaSave = withScenarioView(uma, { ...trainedScenario(uma, derived.tier), loadoutSkillIds })
     if (!state.persistent) {
       replaceUma(next)
       return
