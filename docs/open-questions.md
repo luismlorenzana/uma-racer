@@ -5,7 +5,7 @@ Global Uma RPG answers are now incorporated in the [RPG design draft](design/uma
 question here blocks reviewing that draft. Turf/Dirt does not gate elemental trees. D250 supersedes the one-token draft: regular fights grant skill tokens and a boss grants slot tokens; each completed scenario chapter funds five outfits' six slots and twelve golds. Its remaining HP/MP
 coefficients, depth gates, active-slot count, private
 PriConne content selection and phone layout are **implementation/balance checks**, not unanswered owner choices;
-[M028](tasks/M028-uma-rpg.md) names the responsible task and its acceptance gate for each. The planned RPG
+[RPG implementation contract](technical/uma-rpg-implementation.md) records the implemented boundaries and acceptance checks. The planned RPG
 sync policy (D223) lets battle actions work offline but holds entry/result rewards as pending until a grouped
 commit is acknowledged; T090–T092 now implement that boundary, and any later change needs a new decision. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
@@ -44,6 +44,10 @@ until pinned in domain tests and a decision.
 - **Extra stats device feel (D235):** on the installed app, buy one Extra stat node, switch two on and off, verify the
   Item quantity and stat strip move together, then reload offline/reconnect. Browser validation covers the phone layout,
   transaction rollback and stale-screen behavior, but not physical thumb/VoiceOver feel.
+- **First playable RPG (D257):** the owner explicitly requested production-first release, not a pre-merge iPhone gate.
+  Follow the [standing production/device checklist](research/rpg-release-acceptance.md#owner-productioniphone-protocol--post-release-feedback)
+  for real-party balance, rewards/debt, Inspiration spends, reload/offline and second-device takeover. Publication and
+  deployment evidence are separate from this still-pending physical-iPhone acceptance; no synthetic proof signs it off.
 
 These device checks now belong to **T038** in [Milestone 11](tasks/M011-game-feel-and-device.md), which closes them as one
 acceptance pass rather than leaving nine separate reminders open.

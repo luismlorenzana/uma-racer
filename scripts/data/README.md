@@ -69,10 +69,11 @@ pnpm data:rpg:validate --replay  # offline, credential-free validation and bound
 ```
 
 See [the standing RPG content contract](../../docs/technical/rpg-chapter-content.md) for v2 provenance, exact-version
-catalog/art references, custom paths and owner-only publication. Every old pack/image remains retained; versions
+catalog/art references, custom paths and owner-authorized publication. Every old pack/image remains retained; versions
 cannot be reauthored. Regular data imports preserve RPG files/catalog and source pins. A present RPG pack must pass
 this gate before the existing publisher contacts storage. A partial RPG-only staging manifest must never replace
-the complete production manifest. The first URA draft's [handoff](../../docs/research/rpg-private-ura-handoff.md) is pending publication.
+the complete production manifest. The first URA chapter's [publication record](../../docs/research/rpg-private-ura-handoff.md)
+records the complete manifest and immutable pack hash (D257).
 
 ## Safety and tests
 

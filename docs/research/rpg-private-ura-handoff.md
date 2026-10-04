@@ -1,6 +1,7 @@
-# First private URA RPG chapter — owner/Claude handoff
+# First private URA RPG chapter — publication record
 
-Prepared on 2026-10-03 under T097 (D248). **Not published and not a playable-release sign-off.** This report
+Prepared on 2026-10-03 under T097 (D248); **published on 2026-10-04 by Codex at the owner's direction (D257)**.
+Publication is not a physical-device or real-account gameplay sign-off. This report
 contains only aggregate coverage and immutable identity, not extracted character rows or art. The standing
 schema, commands and per-chapter checklist are in [RPG chapter content](../technical/rpg-chapter-content.md).
 
@@ -9,9 +10,10 @@ schema, commands and per-chapter checklist are in [RPG chapter content](../techn
 The isolated worktree is `/Users/luismartinez/.codex/worktrees/uma-rpg-design/uma-racer`.
 Its ignored `content/overrides/` holds `rpg-chapters.json`, `rpg-source-evidence.json` and the private
 `author-rpg-ura.mts` authoring helper. Imported objects/catalog are under ignored `content/data/` and
-`content/art/priconne/`; source images are in ignored `scripts/assets/.cache/priconne/`. Keep these files until
-the owner has transferred/reimported them into the canonical private content workspace; do not archive this
-worktree and lose ignored files. No original-content file is part of the PR.
+`content/art/priconne/`; source images are in ignored `scripts/assets/.cache/priconne/`. The two override JSON files
+and generated output have now been copied/reimported into `/Users/luismartinez/workspace/uma-racer/content`.
+The source cache and authoring helper still live in the isolated worktree: do not archive it and lose those ignored
+files. No original-content file is part of the PR.
 
 | Identity / coverage | Result |
 |---|---|
@@ -37,22 +39,22 @@ Replay entrants have invented base stats 100, no growth and five different weapo
 unlock when points become available. This bounded check establishes roughly ten levels and replayable fights;
 it does **not** settle difficulty for real account outfits, all compositions or physical iPhone play.
 
-## Publication handoff — still required
+## Publication — completed; gameplay acceptance follows deployment
 
-1. Owner/Claude reviews private teams/variants and adapted kits, then copies the two override JSON files into the
-   canonical ignored `content/overrides/`. Keep the version immutable; edits require a new version.
-2. In the complete canonical private content workspace run `pnpm assets:rpg:import`, `pnpm data:rpg:import`, then
-   `pnpm data:rpg:validate --replay`. Expected identity/coverage are above. The source cache may be transferred
-   privately to permit `pnpm assets:rpg:import --offline`.
-3. Run the existing full-content publication dry run and publish as owner/Claude. The task worktree's partial
-   manifest contains only RPG objects: **never publish that partial manifest as the game's complete manifest**.
-   The full manifest version will differ after combining existing Uma/cards/races/Spark packs.
-4. Record the published manifest version and verify the exact pack hash via authenticated `/api/content/*`.
-   Play both forks/elite choices through the real runtime, including accepted EXP and checkpoint reload.
-5. T098's token bridge and T105's Inspiration advance are implemented. T099's candidate Home gate, saved-party
-   resumes and full guide are under verification; [release acceptance](rpg-release-acceptance.md) still requires
-   authenticated publication and owner device sign-off. An unavailable Home card must never launch synthetic
-   opponents or an unverified chapter. Other thirteen chapters remain M029, not T097.
+1. Codex combined the prepared source with the complete canonical ignored content tree, reimported portraits
+   offline from the verified cache, compiled the immutable pack and ran the private validator/replay above.
+2. The existing publisher's dry run and real run agree: **9 new objects uploaded; 2,055 unchanged objects retained**.
+   Complete manifest **`56f02305d0ee`** replaces `e268e2f353a0`, with 2,064 files / 57,580,630 bytes.
+   New RPG objects total 169,142 bytes; the manifest was uploaded last and read back at the expected version.
+   The task-local partial manifest `69cfea84822d` was never published.
+3. Signed-in production Settings reports **`56f02305d0ee · network`** with existing content coverage intact.
+   T099's Home gate checks the real URA chapter and portraits through that authenticated runtime before entry.
+4. T098's token bridge, T105's advance and T099's Home/resume/guide implementation ship together. The owner
+   explicitly chose production-first validation (D257); real-party fights, rewards/spends and physical-iPhone
+   sign-off remain separate post-release checks in [release acceptance](rpg-release-acceptance.md).
+   An unavailable Home card must never launch synthetic opponents or an unverified chapter.
+5. Other thirteen chapters remain M029. Edits to this chapter require a new immutable version, never overwriting
+   retained content needed by a frozen checkpoint.
 
-No credentials, bucket writes, infrastructure edits or private roster rows were used in the code PR. Prepared
-private content is explicitly separate from merged/deployed application code.
+The release used the existing scoped private-bucket publisher, not new credentials or infrastructure edits.
+Private rows/art remain ignored and separate from the code PR and deployment.

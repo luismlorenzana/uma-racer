@@ -39,6 +39,8 @@ Saved-Uma Training: **Home or Stable → Uma profile → Train → Spark Match o
 Progression racing: **Start a scenario → configure/train as desired → Race → pick a content race, Uma, and strategy**.
 Scenario Start: **Acquire an Uma or reach a non-final gate → start the new per-scenario constellation and career at TL1**.
 Scenario goals: **Home or Profile Journey → choose a target race → win its rule during the active tier → preserve the result on promotion**.
+Global RPG: **Home → Uma RPG → enroll five owned outfits → save a party → Chapters → URA Finale**. The real URA
+chapter and portraits are published privately; owner gameplay/device acceptance follows deployment (D257).
 
 ## Verification
 
@@ -86,7 +88,7 @@ docs/           design, technical, research
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
-| [Global Uma RPG — M028/M029](docs/design/uma-rpg.md) | Account-wide turn-based campaign: outfit class tiers/promotions, locked styles/weapons, elemental trees, five-person parties, PriConne teams and scenario Inspiration tokens. T099 adds verified Home entry, saved-party resumes and the full guide; [release acceptance](docs/research/rpg-release-acceptance.md) remains open pending private publication and owner iPhone sign-off. The other thirteen chapters remain [M029](docs/tasks/M029-rpg-chapter-rollout.md) |
+| [Global Uma RPG — M028/M029](docs/design/uma-rpg.md) | Account-wide turn-based campaign: outfit class tiers/promotions, locked styles/weapons, elemental trees, five-person parties, PriConne teams and scenario Inspiration tokens. First real URA chapter published; verified Home entry, saved-party resumes and full guide. [Post-release owner checks](docs/research/rpg-release-acceptance.md) remain explicit (D257); the other thirteen chapters remain [M029](docs/tasks/M029-rpg-chapter-rollout.md) |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |

@@ -1,13 +1,19 @@
 # First playable RPG — release acceptance
 
-T099 release candidate, 2026-10-04. **Not merged, not deployed, not owner-signed-off.** The candidate supplies the
-Home availability gate, acknowledged saved-party resume actions and a shared nine-page guide. It changes no combat,
-EXP, skill, reward or token-debt numbers. T099/M028 stay open until the two external gates below are satisfied.
+T099 release, 2026-10-04. The owner explicitly authorized Codex to publish, merge and release, then accept
+improvements from production play (D257). This overrides the pre-merge physical-iPhone gate; it does **not** mean
+device or real-account gameplay checks have passed. Home availability, saved-party resume and the nine-page guide
+change no combat, EXP, skill, reward or token-debt numbers. T099/M028 retire with this standing checklist retained.
 
-## Publication gate — unverified
+Code/deployment identity: [PR #88](https://github.com/luismlorenzana/uma-racer/pull/88). Its final merged build,
+deployment workflow and hosted smoke results are recorded on the PR after deployment. Settings must show that
+merged build id; publishing content by itself does not deploy code.
 
-The [private URA handoff](rpg-private-ura-handoff.md) names the prepared, ignored pack and owner/Claude publication
-steps. Revalidated read-only with `pnpm data:rpg:validate --replay --content-dir=<prepared-ignored-content>`:
+## Private publication — complete
+
+The [private publication record](rpg-private-ura-handoff.md) names the ignored source/cache and immutable pack.
+Codex reimported it into `/Users/luismartinez/workspace/uma-racer/content` using cached verified portraits,
+validated the combined tree and published through the existing scoped private-bucket command:
 
 - Pack version `ura-priconne-v1`, SHA-256 `344facafc402061e24c6cc66dc885b8ca80a5aa55c6a6777bd04e00d67a13a7f`.
 - One chapter, ten nodes, five battle nodes, eleven actors, seven characters/portraits and zero unresolved references.
@@ -15,10 +21,16 @@ steps. Revalidated read-only with `pnpm data:rpg:validate --replay --content-dir
 - Invented base-100/no-growth entrants end Lv11–12; mean 5.86 rounds. This is not a real-outfit balance sign-off.
 - Local partial manifest `69cfea84822d` is **not** a production manifest version. Never publish this task worktree's
   RPG-only manifest as the game's complete content manifest.
+- Complete production manifest **`56f02305d0ee`**, replacing `e268e2f353a0`: **2,064 files, 57,580,630 bytes**.
+  All 2,055 previous file paths/hashes are unchanged; nine added objects total 169,142 bytes. Dry run and real
+  publication agree: 9 uploaded, 2,055 already present; manifest uploaded last and read back at the expected version.
+- Signed-in production Settings shows **`56f02305d0ee · network`**, with existing Uma/card/race/atlas coverage intact.
+  The release Home gate additionally verifies real chapter/portrait bytes before opening the hub.
 
-Required evidence: owner/Claude publishes from the complete canonical private workspace; record the authenticated
-published manifest version and the exact RPG hash above (or revalidate a newly authored immutable version). Confirm
-all real art loads through the deployed content runtime. No credentials, original rows or portraits belong in git.
+No credentials, original rows or portraits belong in git. Physical play and real-account rewards/spends are deferred
+below, not inferred from publication. The authenticated desktop session inspected during release had a pre-existing
+Farm projection sync error and 134 pending ordinary changes before T099 deployed. Its save/outbox were preserved;
+no reset, forced snapshot adoption, enrollment or reward-spend mutation was used to manufacture a clean test account.
 
 ## Implementation and automatic checks
 
@@ -74,10 +86,10 @@ Inspiration previews are intentionally read-only: confirmation shows the indepen
 real token-spend acceptance is not claimed by these images; grouped host/API spending tests and the owner protocol
 are separate evidence. All images are invented fixtures, never private character portraits.
 
-## Owner production/iPhone protocol — required, not yet signed off
+## Owner production/iPhone protocol — post-release feedback
 
-1. Record candidate build commit, published manifest version/hash and phone model/iOS. After publishing content,
-   open the release candidate with the real authenticated runtime (or test it on a permitted staging preview).
+1. Record deployed build commit, published manifest version/hash and phone model/iOS. Open the literal production
+   Home Screen app, tap **Update ready → Restart** if offered, then confirm Settings shows the new build/content.
    A failed content check must leave the real save unchanged and show an actionable retry, never invented enemies.
 2. Enroll five owned outfits with eligible A styles, confirm the permanent weapons, fill/save one preset and switch
    away/back. No Front/End quota; enrollment/preset rows must say pending until account acknowledgement. Open every
@@ -105,13 +117,14 @@ are separate evidence. All images are invented fixtures, never private character
    any layout, input, resume, real-outfit difficulty or reward issue. Keep private account/character details outside
    git; record only aggregate pass/fail, immutable pack identity, build and owner confirmation here/in the PR.
 
-## Closure checklist
+## Release evidence and deferred acceptance
 
-- [ ] Authenticated complete production manifest and real URA portraits verified; version/hash recorded.
+- [x] Complete private content published; signed-in production manifest version verified; immutable pack hash recorded.
+- [x] Owner explicitly authorizes production-first merge/release (D257), without waiting on Claude or device sign-off.
+- [x] T099/M028 specs retired under D104; standing rules and this deferred acceptance protocol retained.
+- [ ] Final merged CI/deployment green; hosted build/health/auth-guard and live Home portrait gate verified (record on PR).
 - [ ] Real-content normal fight/loss/retry/fork/boss, EXP/skills, idempotent rewards and Inspiration spend accepted.
 - [ ] Real-device offline/background/reload and explicit second-device takeover checked.
 - [ ] Owner physical-iPhone sign-off recorded, separately from synthetic browser/screenshots/tests.
-- [ ] Final lint/test/build/sims/CI green; startup ≤180 KB gzip and RPG chunks recorded.
-- [ ] Only then mark T099 complete, retire T099/M028 specs under D104 and update status/index before merging.
 
 The remaining thirteen chapter publications are M029; closing this first release does not claim 14/14 coverage.

@@ -1,6 +1,6 @@
 # Global Uma RPG — design and implementation boundaries
 
-> **Status: synthetic chapter, battle rewards, skills and promotion implemented; real mode not released.** The owner has fixed the mode's global scope,
+> **Status: first real URA chapter published; Home playable release authorized (D257).** The owner has fixed the mode's global scope,
 > outfit-specific RPG levels,
 > Speed-as-offense mapping, a permanently chosen running-style class, visible weapon/element identity, and
 > inventory-only destination for its future rewards. Level 50 is a repeatable **class-promotion point**, not a final
@@ -9,9 +9,11 @@
 > compositional skill catalog (D229). T095 supplies branching maps (D245); T096 settles encounter EXP and integrates
 > safe-checkpoint progression (D246). T097 implements the private pipeline and prepared URA draft (D248);
 > T098 integrates scenario Inspiration rewards and independent slot/gold unlocks (D250); T105 adds the temporary
-> Inspiration advance (D256). T099's release candidate adds runtime-verified Home entry, saved-party resumes and the
-> shared nine-page guide. **Private publication and owner iPhone acceptance remain unverified; this is not a released
-> mode.** See the [release checklist](../research/rpg-release-acceptance.md) and [private handoff](../research/rpg-private-ura-handoff.md).
+> Inspiration advance (D256). T099 adds runtime-verified Home entry, saved-party resumes and the
+> shared nine-page guide. Complete private manifest `56f02305d0ee` contains the real URA chapter and portraits.
+> **The owner requested production-first validation; physical-iPhone and real-account gameplay acceptance follow
+> deployment, not a pre-merge gate.** See the [release checklist](../research/rpg-release-acceptance.md) and
+> [private publication record](../research/rpg-private-ura-handoff.md). The other thirteen chapters remain M029.
 
 The [research](../research/uma-rpg.md) compares phone RPG references and measures the overlapping Uma aptitudes.
 This mode is a fourth, self-contained account activity reached from Home, beside Farm, Collection/Racing and Training.
@@ -422,8 +424,8 @@ without producing a second full turn. All 72 boss samples change phase, mean **4
 probe loses all 12. The sim gates broad turns/HP/phase/status/loss envelopes, while fixed replay hashes pin exact
 mechanics. A stronger replay probe clears in **4.0** rounds, while the same boss against a weaker catch-up party
 takes **7.0** rounds with more KOs; these are combat-only probes, not EXP payout rules. Real opponent kits and
-chapter pacing now have T097's private URA draft and bounded replay check; owner publication and real-party/device
-balance remain release gates ([handoff](../research/rpg-private-ura-handoff.md)).
+chapter pacing now have T097's published private URA chapter and bounded replay check; real-party/device
+balance remains post-release owner validation (D257, [record](../research/rpg-private-ura-handoff.md)).
 
 Combat rules are pure TypeScript in `packages/domain`; presentation can use React for menus and PixiJS only if a scene
 actually benefits from many animated actors. Rules consume a frozen encounter/content version, deterministic seed and
@@ -443,7 +445,7 @@ provisional reward. This is an explicit first-delivery limitation, not a hidden 
 disconnected devices can both commit the same encounter. The [implementation contract](../technical/uma-rpg-implementation.md)
 defines the command and replay boundary.
 
-The save/transport layer is now present (D228), while the RPG remains hidden until the full chapter ships. Each
+The save/transport layer is present (D228), and Home entry requires the verified real chapter. Each
 enrolled outfit, five-slot preset and preset/chapter checkpoint is a separate schema-v1 row; result, promotion and
 command receipts are append-only. One authenticated grouped command supplies a stable id, expected versions for every
 touched row, its proposed entity changes and evidence. The server accepts the whole group or none; an identical retry
@@ -477,9 +479,9 @@ learned/slot-bounded loadouts before submitting a grouped command with expected 
 offline edit remains visibly pending and cannot masquerade as the saved preset; a stale revision requires an explicit
 RPG-only account refresh, which leaves unrelated queued saves untouched.
 Partial parties stay editable but cannot launch. T095 adds internal chapter selection/maps and T096 adds
-acknowledged progression; T097 adds a private URA draft and exact-version content pipeline. Owner publication,
-Home release remains gated by the private handoff and T099; T098 implements the token sink.
-The release candidate's Home card inspects only manifest metadata on startup. On tap it lazy-loads the campaign
+acknowledged progression; T097 adds the private URA chapter and exact-version content pipeline.
+T099 publishes the real chapter and exposes verified Home entry (D257); T098 implements the token sink.
+The Home card inspects only manifest metadata on startup. On tap it lazy-loads the campaign
 verifier, validates the active production-v2 pack, requires a URA chapter and verifies every referenced portrait's
 bytes/hash before navigating. Missing, outdated, corrupt or offline-unavailable content shows an explanation and
 retry without enrolling outfits or creating attempts; it never substitutes synthetic opponents. New attempts also
@@ -560,9 +562,8 @@ Replay after an accepted boss clear starts a new attempt and map.
 The six-node DEV fixture has two required fights and one optional elite (route counts **[2, 3]**), one fork/rejoin,
 a phase-changing boss and Tier 1 Lv10 recommendations. Its recovery stop is a safe setup/shorter route, **not** a new
 persistent HP resource: every engine-v1 fight already starts at full HP/MP. T096 adds ordinary/elite/boss encounter
-EXP and safe-checkpoint setup/promotion; T098 adds isolated Item/token grants. T097's private pipeline/draft are implemented;
-publication remains owner/Claude and
-Home release T099. The isolated `/dev/rpg-chapter-proof` uses the real hosts with separate client/simulated-account
+EXP and safe-checkpoint setup/promotion; T098 adds isolated Item/token grants. T097's private pipeline and real URA
+chapter are implemented and published through T099 (D257). The isolated `/dev/rpg-chapter-proof` uses the real hosts with separate client/simulated-account
 databases and invented rows only, excluded from production. [Phone proof](../research/rpg-chapter-phone-proof.md)
 records 390×844/375×667 checks, acknowledgement, replay and recovery coverage.
 - The RPG never pays Training EXP, race Uma EXP, Farm XP, race goals or card stars unless a later decision explicitly
@@ -645,12 +646,13 @@ sync contract before implementation. Farm already owns global Items; the RPG use
   second reward wallet. Inspiration uses the implemented token sink and grandfathered v14 migration below; no TL
 gate remains on lineage ([Constellations](constellations.md#unlock-schedule)).
 
-The implementation plan is [M028 — first playable RPG](../tasks/M028-uma-rpg.md), split into T089–T099, followed by
+M028's first playable RPG was delivered as T089–T099 (specs retained in git history), followed by
 [M029 — chapter rollout](../tasks/M029-rpg-chapter-rollout.md), T100–T103, covering the other thirteen current
 scenarios. The [technical contract](../technical/uma-rpg-implementation.md) specifies state ownership, grouped
 transactions, replay and handoffs. The first PRs settle balance and persistence with synthetic fixtures; later PRs
 build the battle, chapter, progression, private-content and Inspiration bridge. The Home entry cannot enter the mode
-until its real chapter and art verify. T099/M028 remain open until published-content acceptance and physical-iPhone
-sign-off; a synthetic browser proof does not close them. Each task updates this design when a candidate rule becomes
+until its real chapter and art verify. D257 authorizes release before physical-iPhone and real-account gameplay
+acceptance: those checks remain explicitly open in the [standing record](../research/rpg-release-acceptance.md),
+not passed by a synthetic browser proof. Each task updates this design when a candidate rule becomes
 settled, appends a decision for new rules, pins changed numbers in `packages/domain/src/domain.test.ts`, and runs
 lint, test, build and relevant RPG simulations. Original-game and PriConne content stays private throughout.
