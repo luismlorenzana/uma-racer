@@ -663,16 +663,19 @@ export class GameRuntime {
     this.schedule()
   }
 
-  async setUmaLoadout(id: string, skillIds: readonly string[], tier?: number): Promise<void> {
+  async setUmaLoadout(id: string, skillIds: readonly string[], tier?: number, preset?: DistanceCategory): Promise<void> {
     const generation = this.generation
     const content = this.content
     const state = useGame.getState()
     const uma = state.umas[id]
     const template = content?.umas.byId.get(id)
     if (!content || state.status !== 'ready' || !uma || !template) throw new Error('Loadout Uma must be owned')
+    // The preset being edited: hers, or a race's distance when the page was opened for a race (D252).
+    const build = preset ?? uma.activePreset
     const derived = deriveUma({
       uma,
       tier,
+      preset: build,
       umaTemplate: template,
       cardSaves: new Map(Object.entries(state.cards)),
       cardTemplates: content.cards.byId,
@@ -680,8 +683,7 @@ export class GameRuntime {
       skillTemplates: content.skills.byId,
     })
     const loadoutSkillIds = resolveSkillLoadout(derived, template, content.skills.byId, skillIds)
-    // The loadout belongs to the preset being edited (D252).
-    const next: UmaSave = withScenarioView(uma, { ...trainedScenario(uma, derived.tier), loadoutSkillIds })
+    const next: UmaSave = withScenarioView(uma, { ...trainedScenario(uma, derived.tier, build), loadoutSkillIds })
     if (!state.persistent) {
       replaceUma(next)
       return

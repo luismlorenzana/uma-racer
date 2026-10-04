@@ -16,6 +16,8 @@ import {
   type SupportCardTemplate,
   type UmaTemplate,
   type UmaSave,
+  withScenarioView,
+  trainedScenario,
 } from '@racer/domain'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedContent } from '../content/runtime'
@@ -267,6 +269,20 @@ describe('progression race field', () => {
       strategy: 'pace',
       sequence: 0,
     })).toThrow(`Support card ${moved.id} is Era locked until tier 12`)
+  })
+
+  it('races the preset of the race distance, whatever preset is selected (D252)', () => {
+    const loaded = content()
+    const { profile, player, cards } = state()
+    // r1 is a Medium race. Her Medium preset has the card set; selecting Long changes nothing for it.
+    const onLong = { ...player, activePreset: 'long' as const }
+    const emptiedLong = withScenarioView(onLong, { ...trainedScenario(onLong, onLong.unlockedTier, 'long'), cardSetIds: [], assignments: {} })
+    expect(() => buildPreparedRace({ content: loaded, profile, uma: emptiedLong, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 }))
+      .not.toThrow()
+    // Emptying the Medium preset is what stops a Medium race.
+    const emptiedMedium = withScenarioView(player, { ...trainedScenario(player, player.unlockedTier, 'medium'), cardSetIds: [], assignments: {} })
+    expect(() => buildPreparedRace({ content: loaded, profile, uma: emptiedMedium, cardsById: cards, raceId: 'r1', strategy: 'pace', sequence: 0 }))
+      .toThrow('Equip at least one support card')
   })
 
   it('resolves a memory-only result from the exact prepared attempt', () => {

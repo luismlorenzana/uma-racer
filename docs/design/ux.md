@@ -188,6 +188,7 @@ board returns to the exact wave, board, gauges and intent rather than to the sta
   stage in her profile, one per race family. Cards carry line-icon marks: a career goal, a G1 set leg with progress,
   a first G1 win.
 - **Won this scenario**, **All races** and **Recent results** are collapsed below; every race stays runnable.
+- Each race is judged by the preset of its distance (D254): whether she fits a Long race is read through her Long preset.
 - Tap → Pre-race.
 
 Multiple goals for one target share one race card with ordered ribbons. A direct Home/Journey goal link selects that exact
@@ -198,8 +199,9 @@ race when available; missing/retired targets remain explicit instead of silently
 A bottom sheet, top to bottom, so starting never means scrolling past the skills and the field (D233):
 
 - The race, its marks, and every active goal at stake with its win rule; then her summary (scenario, Training Level,
-  Race Bonus, EXP).
-- **Strategy**, four buttons with aptitude letters, and the big **Start race** button right below it.
+  Race Bonus, EXP) with the **distance preset** the race runs on, chosen by its distance (D254).
+- **Strategy**, one row of four running-style icons with aptitude letters (D251), and the big **Start race** button right
+  below it. The style stays the player's choice.
 - **Aptitudes** for this race's surface, distance and strategy.
 - **Her stats for this race**: each stat with **Good**, **Average** or **Bad**. Stamina is read against what a full
   spurt needs at this distance and style (the same HP model rivals are built on): Good from 105% of the need, Average
@@ -207,7 +209,8 @@ A bottom sheet, top to bottom, so starting never means scrolling past the skills
   ranked against the field she will meet, from the prepared race: Good when she beats two-thirds of it, Average a
   third, with the count beaten and the field's middle value. Stats above 1,200 count half, as in the race. Nothing is
   authored per race; changing the strategy re-reads it. If the field cannot be built, Stamina still reads.
-- **Race skills** with SP and an Edit link, then the **Field** preview, a row of busts in gate order.
+- **Race skills** with SP and an Edit link, then the **Field** preview, a row of busts in gate order. Everything here,
+  stats, aptitudes, card set, Race Bonus and skills, is that preset's; the Edit link opens Skills on that preset.
 
 ### Race (PixiJS scene)
 

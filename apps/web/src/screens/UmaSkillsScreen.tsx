@@ -155,8 +155,10 @@ export function UmaSkillsScreen() {
   const content = contentState.status === 'ready' ? contentState.content : null
   // The scenario chosen for her (D190): each trained unit keeps its own library and loadout.
   const tier = useChosenTier(save) ?? undefined
-  const joined = useMemo(() => content && save ? joinUma(save, content, cards, tier) : null, [cards, content, save, tier])
   const race: RaceTemplate | undefined = raceId && content ? content.races.byId.get(raceId) : undefined
+  // Opened for a race, the page edits that distance's preset, the one the race runs on (D252).
+  const preset = race?.distanceCategory
+  const joined = useMemo(() => content && save ? joinUma(save, content, cards, tier, preset) : null, [cards, content, save, tier, preset])
 
   const rows = useMemo((): SkillRowModel[] => {
     if (!content || joined?.status !== 'ready') return []
@@ -257,7 +259,7 @@ export function UmaSkillsScreen() {
       : [...kept.slice(0, place), skillId, ...kept.slice(place)]
     setSaving(skillId)
     try {
-      await setUmaLoadout(save.templateId, next, tier)
+      await setUmaLoadout(save.templateId, next, tier, preset)
     } catch (reason) {
       pushToast(reason instanceof Error ? reason.message : 'Could not update skill loadout')
     } finally {

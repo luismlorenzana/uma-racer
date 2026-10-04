@@ -57,9 +57,11 @@ export async function listProduceInventory(tier: number) {
   return readProduceInventory(tier)
 }
 
-export async function setUmaLoadout(id: string, skillIds: readonly string[], tier?: number): Promise<void> {
+/** Equips skills in one scenario's preset: hers, or the one named, such as a race's distance (D252). */
+export async function setUmaLoadout(id: string, skillIds: readonly string[], tier?: number,
+  preset?: import('@racer/domain').DistanceCategory): Promise<void> {
   const { gameRuntime } = await import('./runtime')
-  await gameRuntime.setUmaLoadout(id, skillIds, tier)
+  await gameRuntime.setUmaLoadout(id, skillIds, tier, preset)
 }
 
 export async function setUmaDeck(id: string, orderedCardIds: readonly string[], tier?: number): Promise<void> {

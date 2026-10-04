@@ -23,6 +23,8 @@ import {
   type RaceTemplate,
   type Strategy,
   type UmaSave,
+  DISTANCE_CATEGORIES,
+  type DistanceCategory,
 } from '@racer/domain'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
@@ -51,6 +53,7 @@ import { ScenarioSwitch } from '../ui/ScenarioSwitch'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 import { RunningStyleIcon } from '../ui/CardFocusIcons'
 import { IconChoiceRow } from '../ui/IconChoiceRow'
+import { PresetBadge } from '../ui/PresetBadge'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
 
 const ordinal = (value: number) => {
@@ -269,7 +272,11 @@ export function RaceSelectScreen() {
   }, [ownedIds, selectedUmaId])
   // Which of her trained units races (D190): her current scenario unless another was chosen for her.
   const tier = useChosenTier(selectedUma) ?? 1
-  const loadoutKey = selectedUma ? `${tier}:${trainedScenario(selectedUma, tier).loadoutSkillIds.join('|')}` : ''
+  // A race runs on the preset of its distance (D252): the picked race's, or hers before one is picked.
+  const pickedPreset = picked?.distanceCategory ?? selectedUma?.activePreset ?? 'medium'
+  const loadoutKey = selectedUma
+    ? `${tier}:${pickedPreset}:${trainedScenario(selectedUma, tier, pickedPreset).loadoutSkillIds.join('|')}:${trainedScenario(selectedUma, tier, pickedPreset).cardSetIds.join('|')}`
+    : ''
   const requestedGoalRace = params.get('goal')
 
   useEffect(() => {
@@ -331,19 +338,23 @@ export function RaceSelectScreen() {
   if (!umaTemplate) return <ScreenState title="Content reference missing" detail={`The save is preserving ${selectedUmaId} until its template is restored.`} />
   const past = isPastScenario(selectedUma, tier)
   if (!past && !trainedScenario(selectedUma, tier).started) return <ScreenState title="Start this scenario" detail="Start her scenario from her profile before racing." action={{ label: 'Open her profile', to: `/stable/${encodeURIComponent(selectedUmaId)}` }} />
-  const derivedUma = deriveUma({
+  // Each distance's own build, so every race is judged by the preset it would run on (D252).
+  const presetDerived = Object.fromEntries(DISTANCE_CATEGORIES.map((preset) => [preset, deriveUma({
     uma: selectedUma,
     tier,
+    preset,
     umaTemplate,
     cardSaves: new Map(Object.entries(cards)),
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
     skillTemplates: content.skills.byId,
-  })
+  })])) as Record<DistanceCategory, ReturnType<typeof deriveUma>>
+  const derivedUma = presetDerived[pickedPreset]
   const plan = buildRacePlan({
     uma: selectedUma,
     template: umaTemplate,
-    aptitudes: derivedUma.aptitudes,
+    aptitudes: presetDerived[selectedUma.activePreset].aptitudes,
+    aptitudesFor: (distance) => presetDerived[distance].aptitudes,
     races: regularRaceCatalog(
       content.races.items,
       trainedScenario(selectedUma, tier).journey?.goals
@@ -363,7 +374,7 @@ export function RaceSelectScreen() {
   try {
     const deck = validateSupportDeck({
       tier,
-      orderedCardIds: trainedScenario(selectedUma, tier).cardSetIds,
+      orderedCardIds: trainedScenario(selectedUma, tier, pickedPreset).cardSetIds,
       ownedCards: Object.values(cards),
       templates: content.cards.byId,
     })
@@ -532,7 +543,7 @@ export function RaceSelectScreen() {
                 <UmaBust content={content} umaId={selectedUmaId} alt={umaTemplate.name} className="rounded-sm bg-panel" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{umaTemplate.name} · Lv {selectedUma.level}</p>
+                <p className="flex min-w-0 items-center gap-1.5 font-semibold"><span className="truncate">{umaTemplate.name} · Lv {selectedUma.level}</span><PresetBadge preset={pickedPreset} className="shrink-0" /></p>
                 <p className="text-micro">{SCENARIOS[tier - 1]?.name} · Training Level {trainedScenario(selectedUma, tier).trainingLevel}{past ? '' : ` · Race Bonus +${Math.round(raceBonus * 100)}%`}</p>
                 <p className="text-micro">{past ? 'Earlier scenario: results and badges, no Uma EXP' : `1st place +${raceExp(picked.grade, 1, raceBonus)} EXP`}</p>
               </div>

@@ -22,6 +22,7 @@ import {
   levelsIntoScenario,
   stableHash,
   type Aptitudes,
+  type DistanceCategory,
   type CareerProfile,
   type CareerStage,
   type RaceGrade,
@@ -106,8 +107,10 @@ const stageByLevel = (level: number): CareerStage => {
 export interface RacePlanInput {
   uma: UmaSave
   template: UmaTemplate
-  /** Her aptitudes now, from the racing scenario's constellation (D121, D190). */
+  /** Her aptitudes now, from the racing scenario's constellation (D121, D190): her selected preset's. */
   aptitudes: Aptitudes
+  /** Her aptitudes through each distance's own preset, which a race of that distance uses (D252); `aptitudes` without it. */
+  aptitudesFor?: (distance: DistanceCategory) => Aptitudes
   races: readonly RaceTemplate[]
   /** This Uma's results, any order. */
   history: readonly RaceResultRecord[]
@@ -117,6 +120,7 @@ export interface RacePlanInput {
 
 export function buildRacePlan(input: RacePlanInput): RacePlan {
   const { uma, aptitudes } = input
+  const raceFits = (race: RaceTemplate) => fits(input.aptitudesFor?.(race.distanceCategory) ?? aptitudes, race)
   const run = trainedScenario(uma, input.tier)
   // An earlier scenario races for its own record: its career is closed, so it has no tracker and no goals (D190).
   const past = isPastScenario(uma, run.tier)
@@ -184,7 +188,7 @@ export function buildRacePlan(input: RacePlanInput): RacePlan {
   const grades = STAGE_EXP_GRADES[stage ?? 'complete']
   const salt = `${uma.templateId}:${run.tier}`
   const pool = input.races
-    .filter((race) => grades.includes(race.grade) && inCareerProfile(profile, race) && fits(aptitudes, race))
+    .filter((race) => grades.includes(race.grade) && inCareerProfile(profile, race) && raceFits(race))
     .sort((left, right) => grades.indexOf(left.grade) - grades.indexOf(right.grade) ||
       Number(wonHere.has(left.id)) - Number(wonHere.has(right.id)) ||
       (racedHere.get(left.id) ?? 0) - (racedHere.get(right.id) ?? 0) ||
@@ -202,7 +206,7 @@ export function buildRacePlan(input: RacePlanInput): RacePlan {
   }
   // A thin profile still offers something: widen to any race of those grades she fits.
   if (nextUp.length < NEXT_UP_MIN) {
-    for (const race of input.races.filter((entry) => grades.includes(entry.grade) && fits(aptitudes, entry))) {
+    for (const race of input.races.filter((entry) => grades.includes(entry.grade) && raceFits(entry))) {
       if (nextUp.length >= NEXT_UP_MIN) break
       add(race)
     }
