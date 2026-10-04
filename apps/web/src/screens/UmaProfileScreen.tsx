@@ -45,6 +45,8 @@ import { SkillIcon } from '../ui/SkillIcon'
 import { ScenarioSwitch } from '../ui/ScenarioSwitch'
 import { CarrotIcon, ChevronLeftIcon, ChevronRightIcon, RaceIcon } from '../ui/icons'
 import { TypeIcon } from '../ui/TypeIcon'
+import { DISTANCE_ICONS, DistanceTypeIcon, RUNNING_STYLE_ICONS, RunningStyleIcon } from '../ui/CardFocusIcons'
+import { IconChoiceRow } from '../ui/IconChoiceRow'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 const statLabel = (stat: StatKey) => (stat === 'wit' ? 'Wit' : titleCase(stat))
@@ -296,9 +298,22 @@ export function UmaProfileScreen() {
       <BottomSheet open={editingPreferences !== null} onClose={() => setEditingPreferences(null)}>
         {editingPreferences && <div className="grid gap-4 px-4 pb-safe">
           <h2 className="font-display text-lg font-bold">Race defaults</h2>
+          {/* Running style and distance pick by icon, her aptitude in each corner (D251). */}
+          <fieldset>
+            <legend className="mb-1 text-[12px] font-semibold text-ink-soft">Running style · {RUNNING_STYLE_ICONS[editingPreferences.strategy].label}</legend>
+            <IconChoiceRow label="Running style" value={editingPreferences.strategy}
+              onChange={(strategy) => setEditingPreferences((current) => current ? { ...current, strategy } : null)}
+              options={STRATEGIES.map((value) => ({ value, name: RUNNING_STYLE_ICONS[value].label,
+                badge: uma.derived.aptitudes.strategy[value], icon: <RunningStyleIcon style={value} size={32} /> }))} />
+          </fieldset>
+          <fieldset>
+            <legend className="mb-1 text-[12px] font-semibold text-ink-soft">Distance · {DISTANCE_ICONS[editingPreferences.distance].label}</legend>
+            <IconChoiceRow label="Distance" value={editingPreferences.distance}
+              onChange={(distance) => setEditingPreferences((current) => current ? { ...current, distance } : null)}
+              options={DISTANCE_CATEGORIES.map((value) => ({ value, name: DISTANCE_ICONS[value].label,
+                badge: uma.derived.aptitudes.distance[value], icon: <DistanceTypeIcon distance={value} size={32} /> }))} />
+          </fieldset>
           {([
-            ['strategy', 'Running style', STRATEGIES],
-            ['distance', 'Distance', DISTANCE_CATEGORIES],
             ['surface', 'Surface', SURFACES],
           ] as const).map(([key, label, options]) => (
             <fieldset key={key}>

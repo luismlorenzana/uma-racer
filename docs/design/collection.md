@@ -283,7 +283,7 @@ nothing in the collection.
 - **Running style** (Front Runner, Pace Chaser, Late Surger, End Closer, Generalist) and **Distance** (Sprint, Mile,
   Medium, Long, Generalist) are facets in the Card group, so a Late, Long Uma's set is two taps away in the picker too
   ([Card focus](support-cards.md#card-focus), D201, D236). **Every card tile uses its four corners** (D238): the distance
-  shoe top left, the running-style tile (FR, PC, LS, EC) top right, the type icon bottom left and, in a scenario, the
+  shoe top left, the running-style mark (D251) top right, the type icon bottom left and, in a scenario, the
   stars bottom right on a small dark pill; in the card view the type and stars sit at either end of the footer's last
   line, and in the list the two focus icons follow the name. NEW and In-a-set marks stack under the distance. The detail
   sheet names both dimensions, Generalist included. No tile grows.

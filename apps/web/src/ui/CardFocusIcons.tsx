@@ -1,18 +1,23 @@
-// A card's running-style and distance focus as icons, readable at stat-icon size (D201, D238).
+// A card's running-style and distance focus as icons, readable at stat-icon size (D201, D238, D251).
 
 import type { DistanceCategory, Strategy } from '@racer/domain'
 import { useId } from 'react'
 
 /**
- * Running styles as two white letters on a coloured tile, built like the stat icons (rim, top-to-bottom gradient), in four
- * hues that no stat icon uses, so a card's type and its style never read as one another.
+ * Running styles as the original's style marks (D251): a coloured ring around four chevrons, the lit one marking where
+ * the style runs (the front runner's is the last, the end closer's the first). Redrawn as our own SVG in the original's
+ * colours, so no image ships and it stays sharp at 14 px.
  */
-export const RUNNING_STYLE_ICONS: Record<Strategy, { letters: string; label: string; rim: string; top: string; bottom: string }> = {
-  front: { letters: 'FR', label: 'Front Runner', rim: '#7f1d1d', top: '#ef5350', bottom: '#c62828' },
-  pace: { letters: 'PC', label: 'Pace Chaser', rim: '#4a148c', top: '#ab47bc', bottom: '#7b1fa2' },
-  late: { letters: 'LS', label: 'Late Surger', rim: '#004d40', top: '#26a69a', bottom: '#00796b' },
-  end: { letters: 'EC', label: 'End Closer', rim: '#1a1f5e', top: '#5c6bc0', bottom: '#283593' },
+export const RUNNING_STYLE_ICONS: Record<Strategy, { label: string; color: string; lit: number }> = {
+  front: { label: 'Front Runner', color: '#2a7fe0', lit: 3 },
+  pace: { label: 'Pace Chaser', color: '#77ac62', lit: 2 },
+  late: { label: 'Late Surger', color: '#fbbb14', lit: 1 },
+  end: { label: 'End Closer', color: '#e0661a', lit: 0 },
 }
+
+const CHEVRON_OFF = '#c2c6c0'
+/** Each chevron's left edge on the 48 grid: right-pointing triangles 7.4 wide and 18.4 tall, as the original draws them. */
+const CHEVRON_X = [9.6, 17.4, 25.2, 33]
 
 export function RunningStyleIcon({
   style,
@@ -26,25 +31,15 @@ export function RunningStyleIcon({
   title?: string
   className?: string
 }) {
-  const id = useId().replace(/[^A-Za-z0-9_-]/g, '')
   const icon = RUNNING_STYLE_ICONS[style]
   return (
     <svg viewBox="0 0 48 48" width={size} height={size} role={title ? 'img' : undefined} aria-label={title}
       aria-hidden={title ? undefined : true} className={`shrink-0 ${className}`}>
-      <defs>
-        <linearGradient id={`${id}-g`} gradientUnits="userSpaceOnUse" x1="0" y1="3" x2="0" y2="45">
-          <stop offset="0" stopColor={icon.top} />
-          <stop offset="1" stopColor={icon.bottom} />
-        </linearGradient>
-      </defs>
-      <rect x="1" y="1" width="46" height="46" rx="10" fill={icon.rim} />
-      <rect x="2.6" y="2.6" width="42.8" height="42.8" rx="8.8" fill={`url(#${id}-g)`} />
-      {/* A rim-coloured stroke under the fill thickens the letters, so two of them still read at 14 px. */}
-      <text x="24" y="32.6" textAnchor="middle" fontSize="23" fontWeight="800" letterSpacing="-0.6" fill="#ffffff"
-        stroke={icon.rim} strokeWidth="1.6" strokeLinejoin="round" paintOrder="stroke"
-        style={{ fontFamily: 'var(--font-display)' }}>
-        {icon.letters}
-      </text>
+      <circle cx="24" cy="24" r="20.5" fill="#ffffff" stroke={icon.color} strokeWidth="4.2" />
+      {CHEVRON_X.map((x, index) => {
+        const fill = index === icon.lit ? icon.color : CHEVRON_OFF
+        return <path key={x} d={`M${x} 14.8 L${x + 7.4} 24 L${x} 33.2 Z`} fill={fill} stroke={fill} strokeWidth="1.4" strokeLinejoin="round" />
+      })}
     </svg>
   )
 }

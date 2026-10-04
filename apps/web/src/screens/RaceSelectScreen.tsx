@@ -49,6 +49,8 @@ import { umaIdsByLevel } from '../game/uma-order'
 import { useChosenTier } from '../game/scenario-choice'
 import { ScenarioSwitch } from '../ui/ScenarioSwitch'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
+import { RunningStyleIcon } from '../ui/CardFocusIcons'
+import { IconChoiceRow } from '../ui/IconChoiceRow'
 import { GRADE_LABEL, STRATEGY_LABEL } from './race/labels'
 
 const ordinal = (value: number) => {
@@ -537,20 +539,17 @@ export function RaceSelectScreen() {
             </div>
             <div>
               {/* Strategy and Start sit up top, so starting never means scrolling past skills and the field. */}
-              <p className="font-display mb-2 text-[13px] font-semibold">Strategy</p>
-              <div className="grid grid-cols-2 gap-2">
-                {STRATEGIES.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={strategy === value}
-                    onClick={() => { setStrategy(value); setStartError(null) }}
-                    className={`min-h-11 rounded-sm border px-3 text-[14px] font-semibold transition-transform active:scale-[0.98] ${strategy === value ? 'border-accent bg-accent-wash text-accent-strong' : 'border-hairline bg-panel text-ink'}`}
-                  >
-                    {STRATEGY_LABEL[value]} · {derivedUma.aptitudes.strategy[value]}
-                  </button>
-                ))}
-              </div>
+              <p className="font-display mb-2 text-[13px] font-semibold">Strategy · {STRATEGY_LABEL[strategy]}</p>
+              {/* Icons only, her aptitude in each corner (D251). */}
+              <IconChoiceRow
+                label="Running style"
+                value={strategy}
+                onChange={(value) => { setStrategy(value); setStartError(null) }}
+                options={STRATEGIES.map((value) => ({
+                  value, name: STRATEGY_LABEL[value], badge: derivedUma.aptitudes.strategy[value],
+                  icon: <RunningStyleIcon style={value} size={32} />,
+                }))}
+              />
             </div>
             {(lockReason || startError) && <p className="rounded-sm bg-danger/10 px-3 py-2 text-[13px] font-semibold text-danger">{startError ?? lockReason}</p>}
             <Button size="lg" disabled={!advanceRequired && (Boolean(lockReason) || Boolean(previewError) || !preview || starting)} onClick={() => advanceRequired ? navigate(`/stable/${encodeURIComponent(selectedUmaId)}`) : void start()}>

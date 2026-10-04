@@ -125,8 +125,9 @@ pick (D201, D236). A focus is a category for browsing and achievements, never a 
   restricted to one side. Ask Claude for any change to an authored tag.
 - On the pack of 2026-10-02 (312 cards, aggregates only): 163 cards have a style (Front 31, Pace 52, Late 57, End 23),
   151 a distance (Sprint 19, Mile 26, Medium 67, Long 39), 67 both and 65 neither; 35 entries are overrides.
-- **Icons** (D238): a running style is two white letters on a coloured tile built like the stat icons, **FR** (red),
-  **PC** (purple), **LS** (teal) and **EC** (indigo), hues no stat icon uses. A distance is the original's running shoe,
+- **Icons** (D238, D251): a running style is the original's style mark, a coloured ring around four chevrons with the
+  one lit where the style runs: Front Runner blue (the last lit), Pace Chaser green, Late Surger yellow, End Closer orange
+  (the first lit). A distance is the original's running shoe,
   redrawn as one bold sneaker on the original's yellow item tile in the colours sampled from its Sprint (pink), Mile
   (lime), Medium (gold) and Long (blue) shoes, so it reads at 16 px. Both are our own SVG drawings
   (`ui/CardFocusIcons`), like the stat icons (D183); no original image is shipped.
