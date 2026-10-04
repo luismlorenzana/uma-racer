@@ -27,12 +27,15 @@ class FakeFirestore {
   readonly docs = new Map<string, Record<string, unknown>>()
   private queue: Promise<unknown> = Promise.resolve()
   collection(name: string) { return new FakeCollection(name, this.docs) }
+  async getAll(...refs: FakeRef[]) { return refs.map(ref => ({ exists: this.docs.has(ref.path), data: () => this.docs.get(ref.path)! })) }
   async runTransaction<T>(fn: (tx: { getAll: (...refs: FakeRef[]) => Promise<Array<{ exists: boolean; data: () => Record<string, unknown> }>>;
+    get: (query: FakeCollection) => ReturnType<FakeCollection['get']>;
     set: (ref: FakeRef, data: Record<string, unknown>) => void }) => Promise<T>): Promise<T> {
     const run = this.queue.then(async () => {
       const writes: Array<[string, Record<string, unknown>]> = []
       const result = await fn({
         getAll: async (...refs) => refs.map((ref) => ({ exists: this.docs.has(ref.path), data: () => this.docs.get(ref.path)! })),
+        get: query => query.get(),
         set: (ref, data) => { writes.push([ref.path, data]) },
       })
       for (const [path, data] of writes) this.docs.set(path, data)
@@ -133,6 +136,36 @@ for (const backend of ['local', 'firestore'] as const) {
       const stale = { ...body, commandId: `stale-${action}` }
       expect((await repo.rpgCommand('u1', stale)).status).toBe('conflict')
       expect((await repo.load('u1')).logs.filter(r => r.kind === 'itemLedger')).toHaveLength(1)
+    })
+
+    it('reads the actual advance bank even if an old client omits it, then commits net tokens once', async () => {
+      const build = { cardSetIds: [], assignments: {}, activeExtraStats: [], loadoutSkillIds: [] }
+      const owned = { schemaVersion: 15, templateId: 'invented-advanced', level: 1, exp: 0, unlockedTier: 1, goalPlanVersion: 0, racePreferences: null, skillHistory: [], activePreset: 'medium',
+        scenarios: [{ tier: 1, trainingLevel: 1, trainingExp: 0, journey: null, started: false, extraStatsUnlocked: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
+          inspiration: { slots: [], golds: [] }, presets: { sprint: build, mile: build, medium: build, long: build } }] }
+      await repo.sync('u1', { upserts: [{ kind: 'umas', id: owned.templateId, baseVersion: 0, data: owned }], appends: [] })
+      const advance = await repo.advanceInspiration('u1'), bank = advance.entities.find(r => r.kind === 'inspirationBank')!
+      const entry = { ...frozen, enemyKitJson: JSON.stringify({ format: 'rpg-combat-kit-v3', data: {}, inspiration: { tier: 1, slot: 0, skill: 60 } }) }
+      const pending = { ...atCheckpoint, status: 'pending-result', revision: 2, frozenEntry: entry }
+      await repo.sync('u1', { upserts: [{ kind: 'rpgCheckpoints', id: checkpointId, baseVersion: 0, data: pending }], appends: [{ kind: 'rpgResults', id: result.resultId, data: result, createdAt: 30 }] })
+      const itemId = 'inspiration:t1:skill', movement = { id: `rpg-inspiration:${entry.entryId}:skill`, itemId, delta: 60, createdAt: 40, reason: 'rpg-inspiration',
+        source: { kind: 'rpg-inspiration', entryId: entry.entryId, attemptId: pending.attemptId, tier: 1, tokenKind: 'skill' } }
+      const next = { ...pending, status: 'at-checkpoint', revision: 3, frozenEntry: null, lastClearedNodeId: entry.nodeId, selectedPath: [entry.nodeId] }
+      const old = command('old-bank-grant', 'choose-node', 1, next, [{ kind: 'itemLedger', id: movement.id, data: movement, createdAt: 40 }], {
+        expected: [{ kind: 'items', id: itemId, version: 0 }], upserts: [{ kind: 'items', id: itemId, data: { itemId, quantity: 60, updatedAt: 40 } }],
+      })
+      expect(await repo.rpgCommand('u1', old)).toMatchObject({ status: 'rejected', reason: expect.stringMatching(/bank/) })
+      expect((await repo.load('u1')).entities.some(e => e.kind === 'items')).toBe(false)
+      const correct: RpgCommandRequest = { ...old, commandId: 'correct-bank-grant',
+        expected: [...old.expected, { kind: 'inspirationBank', id: 'main', version: bank.version }],
+        upserts: old.upserts.map(u => u.kind === 'items' ? { ...u, data: { ...u.data, quantity: 48 } } : u).concat({ kind: 'inspirationBank', id: 'main', data: { ...bank.data, balances: { ...bank.data.balances as object, [itemId]: 0 } } }),
+        appends: [{ kind: 'itemLedger', id: movement.id, createdAt: 40, data: { ...movement, source: { ...movement.source, debtPaid: 12 } } }] }
+      const parsed = parseRpgCommandRequest(correct); if (typeof parsed === 'string') throw new Error(parsed)
+      expect((await repo.rpgCommand('u1', parsed)).status).toBe('applied')
+      expect((await repo.rpgCommand('u1', parsed)).status).toBe('duplicate')
+      const snapshot = await repo.load('u1')
+      expect(snapshot.entities.find(e => e.kind === 'items')!.data.quantity).toBe(48)
+      expect(snapshot.entities.find(e => e.kind === 'inspirationBank')!.data.balances).toEqual({ 'inspiration:t1:slot': -6, 'inspiration:t1:skill': 0 })
     })
 
     it('opens precisely one v15 Inspiration position; duplicate and competing versions cannot consume twice', async () => {

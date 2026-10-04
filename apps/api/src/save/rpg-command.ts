@@ -6,6 +6,7 @@ import { ENTITY_KINDS, LOG_KINDS, parseEntityData, parseLogData, saveEntityIdMat
 import { RPG_ACTIONS, RPG_MAX_GROUP_OPERATIONS, rpgExact, rpgId, rpgInt, rpgRecord,
   type RpgAction } from './rpg-save.types'
 import { frozenReward, legalLoadout, oneTreePoint, progression, skillKey } from './rpg-progression'
+import { parseInspirationBank, repayInspiration } from './inspiration-bank'
 
 export interface RpgExpected { kind: EntityKind; id: string; version: number }
 export interface RpgUpsert { kind: EntityKind; id: string; data: Record<string, unknown> }
@@ -35,8 +36,8 @@ const entityKey = (kind: EntityKind, id: string) => `${kind}/${id}`
 const logKey = (kind: LogKind, id: string) => `${kind}/${id}`
 const allowedEntities: Record<RpgAction, readonly EntityKind[]> = {
   enroll: ['rpgOutfits'], 'edit-preset': ['rpgPresets'], 'edit-outfit': ['rpgOutfits'], 'start-chapter': ['rpgCheckpoints', 'rpgPresets'],
-  'choose-node': ['rpgCheckpoints', 'items'], 'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
-  'battle-result': ['rpgCheckpoints', 'rpgOutfits'], 'clear-chapter': ['rpgCheckpoints', 'items'],
+  'choose-node': ['rpgCheckpoints', 'items', 'inspirationBank'], 'begin-battle': ['rpgCheckpoints'], takeover: ['rpgCheckpoints'],
+  'battle-result': ['rpgCheckpoints', 'rpgOutfits'], 'clear-chapter': ['rpgCheckpoints', 'items', 'inspirationBank'],
   promote: ['rpgOutfits', 'rpgPresets'], 'spend-inspiration': ['umas', 'items'],
 }
 const allowedLogs: Record<RpgAction, readonly LogKind[]> = {
@@ -160,7 +161,8 @@ function sameFrozen(previous: Record<string, unknown>, next: Record<string, unkn
 function itemDeltaValid(request: RpgCommandRequest, existing: Map<string, EntityRecord>, movement: Record<string, unknown>): boolean {
   const row = request.upserts.find(r => r.kind === 'items' && r.id === movement.itemId)
   const before = existing.get(`items/${movement.itemId}`)
-  const quantity = (before?.data.quantity as number ?? 0) + (movement.delta as number)
+  const source = movement.source as Record<string, unknown>
+  const quantity = (before?.data.quantity as number ?? 0) + (movement.delta as number) - (source.kind === 'rpg-inspiration' ? source.debtPaid as number ?? 0 : 0)
   return !!row && !before?.deleted && Number.isSafeInteger(quantity) && quantity >= 0 &&
     row.data.quantity === quantity && row.data.updatedAt === movement.createdAt
 }
@@ -181,12 +183,22 @@ function inspirationGrantError(request: RpgCommandRequest, cp: Record<string, un
   const expected = reward ? ['slot', 'skill'].filter(k => (reward![k] as number) > 0) : []
   if (grants.length !== expected.length || request.upserts.filter(u => u.kind === 'items').length !== expected.length) return 'Token reward operation count differs from frozen kit'
   if (request.action !== 'clear-chapter' && (reward?.slot as number ?? 0) > 0) return 'Boss tokens require chapter clear'
+  const bankRow = existing.get('inspirationBank/main'), bankWrite = request.upserts.find(u => u.kind === 'inspirationBank')
+  let bank = bankRow ? parseInspirationBank(bankRow.data) : null
+  if (bankRow && (!bank || bankRow.deleted)) return 'Inspiration bank unavailable'
+  if (expected.length && bankRow && (!request.expected.some(e => e.kind === 'inspirationBank' && e.id === 'main' && e.version === bankRow.version) || !bankWrite)) return 'Refresh the account to collect tokens against its Inspiration bank'
+  if ((!expected.length || !bankRow) && bankWrite) return 'Unexpected Inspiration bank mutation'
+  if (expected.length && bank?.phase === 'opening') return 'Resume the Inspiration advance before collecting tokens'
   for (const kind of expected) {
     const g = grants.find(a => a.data.itemId === `inspiration:t${reward!.tier}:${kind}`)?.data
+    const settlement = repayInspiration(bank, `inspiration:t${reward!.tier}:${kind}`, reward![kind] as number)
     if (!g || !rpgRecord(g.source) || g.reason !== 'rpg-inspiration' || g.delta !== reward![kind] ||
+      (g.source.debtPaid ?? 0) !== settlement.debtPaid ||
       g.source.entryId !== (cp.frozenEntry as Record<string, unknown>).entryId || g.source.attemptId !== cp.attemptId ||
       !itemDeltaValid(request, existing, g)) return 'Token reward differs from frozen entry or Item projection'
+    bank = settlement.bank
   }
+  if (bankWrite && !isDeepStrictEqual(bankWrite.data, bank)) return 'Inspiration bank projection differs from repayment'
   return null
 }
 function inspirationSpendError(request: RpgCommandRequest, existing: Map<string, EntityRecord>): string | null {

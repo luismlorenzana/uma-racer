@@ -24,6 +24,14 @@ export class SaveController {
   }
 
   /** All RPG projections and evidence move as one conditional command. */
+  @Post('inspiration/advance')
+  async advanceInspiration(@CurrentUid() uid: string, @Body() body: unknown) {
+    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length) throw new BadRequestException('body must be {}')
+    try { return await this.saves.advanceInspiration(uid) }
+    catch (error) { throw new BadRequestException(error instanceof Error ? error.message : 'Inspiration advance failed') }
+  }
+
+  /** All RPG projections and evidence move as one conditional command. */
   @Post('rpg/command')
   rpgCommand(@CurrentUid() uid: string, @Body() body: unknown) {
     const parsed = parseRpgCommandRequest(body)

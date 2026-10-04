@@ -601,6 +601,7 @@ grandparents and full-chain SP rules are defined in [Lineage](skills-and-inherit
   Inspiration shows /6 slots, /12 golds, both stocks, token-specific confirmation and SP/mirror notes. Items names the
   scenario and links through the owned-Uma picker. Maps/results label previews, collection and accepted Items
   distinctly. Existing TL-open or filled-under-gate branches retain slots and both golds in v14 without token charges.
+  D256's later, owner-requested one-time advance deliberately counts those already-open positions in its debt too.
 
 ## Phone presentation
 

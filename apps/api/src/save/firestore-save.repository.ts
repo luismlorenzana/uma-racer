@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common'
 import * as admin from 'firebase-admin'
 import { isDeepStrictEqual } from 'node:util'
 import { fromStored, toStored } from './firestore-codec'
+import { freezeAdvance, advanceOutfit, bankData } from './inspiration-advance'
 import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 import type { SaveRepository } from './save.repository'
 import {
@@ -44,6 +45,30 @@ export class FirestoreSaveRepository implements SaveRepository {
       logs: logSnaps.flatMap((snap) => snap.docs.map((d) => fromStored<LogRecord>(d.data()))),
       serverTime: Date.now(),
     }
+  }
+
+  async advanceInspiration(uid: string): Promise<SaveSnapshot> {
+    const player = this.player(uid), bankRef = player.collection('inspirationBank').doc('main')
+    const initial = await this.db.runTransaction(async tx => {
+      const [doc] = await tx.getAll(bankRef)
+      if (doc!.exists) return fromStored<EntityRecord>(doc!.data()!)
+      const owned = await tx.get(player.collection('umas'))
+      const bank = freezeAdvance(owned.docs.map(d => fromStored<EntityRecord>(d.data())), Date.now())
+      if (bank) tx.set(bankRef, toStored(bank))
+      return bank
+    })
+    if (!initial) return { entities: [], logs: [], serverTime: Date.now() }
+    const initialBank = bankData(initial), ids = Object.keys(initialBank.cohort)
+    for (const id of ids.filter(id => !initialBank.opened.includes(id))) {
+      await this.db.runTransaction(async tx => {
+        const [bankDoc, umaDoc] = await tx.getAll(bankRef, player.collection('umas').doc(id))
+        const bank = fromStored<EntityRecord>(bankDoc!.data()!)
+        const uma = umaDoc!.exists ? fromStored<EntityRecord>(umaDoc!.data()!) : undefined
+        for (const row of advanceOutfit(bank, uma, id, Date.now())) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+      })
+    }
+    const rows = await this.db.getAll(bankRef, ...ids.map(id => player.collection('umas').doc(id)))
+    return { entities: rows.filter(d => d.exists).map(d => fromStored<EntityRecord>(d.data()!)), logs: [], serverTime: Date.now() }
   }
 
   async sync(uid: string, request: SyncRequest): Promise<SyncResponse> {
@@ -95,6 +120,8 @@ export class FirestoreSaveRepository implements SaveRepository {
     return this.db.runTransaction(async (tx) => {
       const entityKeys = new Map<string, { kind: EntityRecord['kind']; id: string }>(request.expected.map((row) => [`${row.kind}/${row.id}`, row]))
       for (const row of request.upserts) entityKeys.set(`${row.kind}/${row.id}`, row)
+      // Read independently of client dependencies: older clients must not bypass an account's advance.
+      if (request.action === 'choose-node' || request.action === 'clear-chapter') entityKeys.set('inspirationBank/main', { kind: 'inspirationBank', id: 'main' })
       const entityRefs = [...entityKeys.values()].map((row) => player.collection(row.kind).doc(row.id))
       const logRows = [...request.appends, { kind: 'rpgReceipts' as const, id: request.commandId }]
       const logRefs = logRows.map((row) => player.collection(row.kind).doc(row.id))

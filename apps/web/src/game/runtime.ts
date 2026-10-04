@@ -1074,7 +1074,10 @@ export class GameRuntime {
       const batch = await db.outbox.orderBy('seq').limit(MAX_SYNC_OPERATIONS).toArray()
       if (batch.length === 0) {
         const accepted = await flushOneRpgCommand()
-        if (accepted) {
+        if (generation !== this.generation) return
+        const { advanceInspirationOnce } = await import('./inspiration-advance')
+        const advanced = await advanceInspirationOnce(db, saveApi, () => generation === this.generation)
+        if (accepted || advanced) {
           const local = await readLocalSnapshot()
           if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
         }
@@ -1141,6 +1144,8 @@ export class GameRuntime {
       })
       await flushOneRpgCommand()
       if (generation !== this.generation) return
+      const { advanceInspirationOnce } = await import('./inspiration-advance')
+      await advanceInspirationOnce(db, saveApi, () => generation === this.generation)
       const local = await readLocalSnapshot()
       if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
       const [ordinary, rpg, actionable] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),

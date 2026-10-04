@@ -1,8 +1,9 @@
 // API-side validation for the @racer/domain save wire contract (docs/technical/architecture.md).
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
 import { parseRpgEntity, parseRpgLog, rpgEntityIdMatches, rpgLogIdMatches } from './rpg-save.types'
+import { parseInspirationBank } from './inspiration-bank'
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
 export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
@@ -378,7 +379,8 @@ function parseInspirationMovement(value: Record<string, unknown>): Record<string
   const s = value.source, tier = Number(token[1]), kind = token[2]
   if (s.tier !== tier || s.kind !== value.reason) return null
   if (value.reason === 'rpg-inspiration') {
-    if (!exactKeys(s, ['kind', 'entryId', 'attemptId', 'tier', 'tokenKind']) || !isId(s.entryId) || !isId(s.attemptId) ||
+    if (!exactKeys(s, s.debtPaid === undefined ? ['kind', 'entryId', 'attemptId', 'tier', 'tokenKind'] : ['kind', 'entryId', 'attemptId', 'tier', 'tokenKind', 'debtPaid']) ||
+      (s.debtPaid !== undefined && (!isNonNegativeInt(s.debtPaid) || s.debtPaid > Number(value.delta))) || !isId(s.entryId) || !isId(s.attemptId) ||
       s.tokenKind !== kind || !isPositiveInt(value.delta) || value.delta > (kind === 'slot' ? 30 : 60) ||
       value.id !== `rpg-inspiration:${s.entryId}:${kind}`) return null
   } else if (value.reason === 'inspiration-unlock') {
@@ -1243,6 +1245,7 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
   if (kind === 'cards') return parseCard(value)
   if (kind === 'badges') return parseBadge(value)
   if (kind === 'farm') return parseFarm(value)
+  if (kind === 'inspirationBank') return parseInspirationBank(value) as unknown as Record<string, unknown> | null
   if (kind.startsWith('rpg')) return parseRpgEntity(kind, value)
   return parseItemStack(value)
 }
@@ -1257,7 +1260,7 @@ export function parseLogData(kind: LogKind, value: unknown): Record<string, unkn
 
 export function saveEntityIdMatches(kind: EntityKind, id: string, data: Record<string, unknown>): boolean {
   if (kind.startsWith('rpg')) return rpgEntityIdMatches(kind, id, data)
-  return (kind === 'profile' || kind === 'farm') ? id === 'main' :
+  return (kind === 'profile' || kind === 'farm' || kind === 'inspirationBank') ? id === 'main' :
     (kind === 'umas' || kind === 'cards') ? data.templateId === id :
     kind === 'items' ? data.itemId === id :
     kind === 'badges' ? (data.scope === 'trainer' ? id === 'trainer' : id === `uma:${String(data.umaId)}`) : false
@@ -1284,7 +1287,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isRecord(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
-    if (kind.startsWith('rpg')) return 'RPG rows require the grouped command endpoint'
+    if (kind.startsWith('rpg') || kind === 'inspirationBank') return 'Server-owned rows require their grouped command endpoint'
     if (!isId(value.id)) return 'invalid entity id'
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
@@ -1345,6 +1348,10 @@ export function resolveUpserts(
   for (const upsert of upserts) {
     const key = `${upsert.kind}/${upsert.id}`
     const current = existing.get(key)
+    if (upsert.kind === 'inspirationBank') {
+      if (current) conflicts.push(current)
+      continue
+    }
     const currentVersion = current?.version ?? 0
     const currentSchema = current ? entitySchema(current.kind, current.data) : null
     const incomingSchema = entitySchema(upsert.kind, upsert.data)
@@ -1357,6 +1364,11 @@ export function resolveUpserts(
       continue
     }
     // Global card progress is permanent. A matched stale device must not lower stars or erase a paid coupon (D255).
+    if (current && !current.deleted && upsert.kind === 'umas' && current.data.schemaVersion === 15 &&
+      !preservesInspiration(current.data, upsert.data, upsert.deleted === true)) {
+      conflicts.push(current)
+      continue
+    }
     if (current && !current.deleted && upsert.kind === 'cards' && incomingSchema === 9 &&
       (Number(upsert.data.stars) < cardProgressCount(current.data) ||
         (current.data.maxCouponGranted === true && upsert.data.maxCouponGranted !== true))) {
@@ -1375,6 +1387,17 @@ export function resolveUpserts(
     writes.push(record)
   }
   return { writes, conflicts }
+}
+
+/** Permanent shared Inspiration positions survive stale ordinary writes (D250, D256). */
+function preservesInspiration(before: Record<string, unknown>, after: Record<string, unknown>, deleted: boolean): boolean {
+  if (deleted || !Array.isArray(after.scenarios)) return false
+  return (before.scenarios as Record<string, unknown>[]).every(unit => {
+    const next = (after.scenarios as Record<string, unknown>[]).find(s => s.tier === unit.tier)
+    const old = unit.inspiration as { slots: string[]; golds: string[] }
+    const state = next?.inspiration as typeof old | undefined
+    return !!state && old.slots.every(s => state.slots.includes(s)) && old.golds.every(g => state.golds.includes(g))
+  })
 }
 
 /** Independently decoded legacy card scales; no game-rule dependency in the API. */

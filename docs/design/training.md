@@ -35,7 +35,7 @@ The two halves have their own docs:
 |---|---|---|
 | Range | 1 → 10 × scenarios, **permanent** | **1–10, per scenario** |
 | Earned by | **Racing only** (Uma EXP) | **Spark Rival Circuit**, 1,250 EXP a level (D211) |
-| Controls | Which scenarios are unlocked | **How many card nodes are open (TL1–8) and the lineage (TL9–10)** |
+| Controls | Which scenarios are unlocked | **Card nodes (TL1–8); Inspiration is independently token-unlocked (D250, D256)** |
 | At level 1 of a scenario | — | the baseline node set only |
 
 Training Level no longer sets stat caps. Caps belong to the scenario

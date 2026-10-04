@@ -191,8 +191,6 @@ circular-lineage merge rules, and the Scenario Start inheritance flow.
 Owning more Umas is still exactly what makes lineage good, so the collection stays load-bearing — it is just
 read from templates now instead of from frozen history.
 
-## Race engine impact
-
 ## Temporary Inspiration advance (D256)
 
 The owner's one-time advance opens **six lineage slots and twelve natural-gold positions** on every already-owned
@@ -208,6 +206,8 @@ Items and Inspiration show outstanding debt; chapter results show gross earned, 
 The first updated online sync runs a protected, resumable server operation after queued work drains. Its frozen cohort
 and per-outfit completion records prevent double charging on refresh, another device or an interrupted request.
 Offline play never fabricates these unlocks; reconnect applies the acknowledged advance.
+
+## Race engine impact
 
 Skills are a core system, so race engine milestone **R2.5 (Basic skills)** comes before pack mechanics.
 See [Racing](racing.md#race-engine-milestones).

@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import type { SaveRepository } from './save.repository'
+import { BANK_KEY, freezeAdvance, advanceOutfit, bankData } from './inspiration-advance'
 import { resolveUpserts, type EntityRecord, type LogRecord, type SaveSnapshot, type SyncRequest, type SyncResponse } from './save.types'
 import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 
@@ -47,6 +48,23 @@ export class LocalSaveRepository implements SaveRepository {
         logs: Object.values(user?.logs ?? {}),
         serverTime: Date.now(),
       }
+    })
+  }
+
+  advanceInspiration(uid: string): Promise<SaveSnapshot> {
+    return this.serialize(async () => {
+      const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }, now = Date.now()
+      const bank = user.entities[BANK_KEY] ?? freezeAdvance(Object.values(user.entities), now)
+      if (!bank) return { entities: [], logs: [], serverTime: now }
+      user.entities[BANK_KEY] = bank
+      for (const id of Object.keys(bankData(bank).cohort)) {
+        for (const row of advanceOutfit(user.entities[BANK_KEY]!, user.entities[`umas/${id}`], id, now)) {
+          user.entities[`${row.kind}/${row.id}`] = row
+        }
+      }
+      await this.write(all)
+      const ids = Object.keys(bankData(user.entities[BANK_KEY]!).cohort)
+      return { entities: [user.entities[BANK_KEY]!, ...ids.map(id => user.entities[`umas/${id}`]!)], logs: [], serverTime: now }
     })
   }
 

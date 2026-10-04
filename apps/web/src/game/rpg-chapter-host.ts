@@ -3,6 +3,7 @@ import {
   assertRpgChapterCheckpoint, isRpgBattleNode, projectRpgStats, rpgAcceptBattleNode, rpgAcceptSafeNode,
   rpgChapterChoices, rpgCheckpointId, rpgResultId, validateRpgLoadout,
   parseSaveSnapshotOrThrow, parseUmaSave,
+  repayInspiration,
   rpgInspirationReward, inspirationGrantId, inspirationTokenId, parseInspirationMovement, type InspirationMovement,
   type EncounterInput, type RpgChapter, type RpgChapterPack, type RpgCheckpointSaveV1,
   type RpgCommandRequest, type RpgOutfitSaveV1, type RpgPresetSaveV1, type RpgPackIdentity,
@@ -147,24 +148,32 @@ export class RpgChapterHost {
       upserts: [{ kind: 'rpgCheckpoints', id: before.id, data: data(next) }], appends: [] }
     const entry = before.data.status === 'pending-result' ? before.data.frozenEntry : null
     const reward = entry && decodeInspirationReward(entry.enemyKitJson)
+    const bankRow = reward && (reward.slot || reward.skill) ? await this.database.inspirationBank.get('main') : undefined
+    let bank = bankRow?.data ?? null
     if (entry && reward) for (const kind of ['slot', 'skill'] as const) {
       const delta = reward[kind]
       if (!delta) continue
       const itemId = inspirationTokenId(reward.tier, kind), stack = await this.database.items.get(itemId), now = this.now()
-      const quantity = (stack?.data.quantity ?? 0) + delta
+      const settled = repayInspiration(bank, itemId, delta)
+      bank = settled.bank
+      const quantity = (stack?.data.quantity ?? 0) + settled.net
       if (!Number.isSafeInteger(quantity)) throw new Error('Token inventory overflow')
       const movement: InspirationMovement = { id: inspirationGrantId(entry.entryId, kind), itemId, delta,
         reason: 'rpg-inspiration', source: { kind: 'rpg-inspiration', entryId: entry.entryId,
-          attemptId: before.data.attemptId, tier: reward.tier, tokenKind: kind }, createdAt: now }
+          attemptId: before.data.attemptId, tier: reward.tier, tokenKind: kind, debtPaid: settled.debtPaid }, createdAt: now }
       body.expected.push({ kind: 'items', id: itemId, version: stack?.version ?? 0 })
       body.upserts.push({ kind: 'items', id: itemId, data: { itemId, quantity, updatedAt: now } })
       body.appends.push({ kind: 'itemLedger', id: movement.id, data: data(movement), createdAt: now })
+    }
+    if (bankRow && bank) {
+      body.expected.push({ kind: 'inspirationBank', id: 'main', version: bankRow.version })
+      body.upserts.push({ kind: 'inspirationBank', id: 'main', data: data(bank) })
     }
     await this.queue(body)
   }
 
   private async queue(body: RpgCommandRequest) {
-    await this.database.transaction('rw', [this.database.pendingRpgCommands, this.database.rpgCheckpoints, this.database.rpgPresets, this.database.rpgOutfits, this.database.items, this.database.outbox], async () => {
+    await this.database.transaction('rw', [this.database.pendingRpgCommands, this.database.rpgCheckpoints, this.database.rpgPresets, this.database.rpgOutfits, this.database.items, this.database.inspirationBank, this.database.outbox], async () => {
       for (const e of body.expected) {
         const row = await this.database.table(e.kind).get(e.id) as VersionedRow<unknown> | undefined
         if ((row?.version ?? 0) !== e.version) throw new Error('Chapter revision changed before reservation')
@@ -186,10 +195,10 @@ export class RpgChapterHost {
     await this.database.transaction('rw', [this.database.rpgOutfits, this.database.rpgPresets, this.database.rpgCheckpoints,
       this.database.rpgResults, this.database.rpgReceipts, this.database.rpgPromotions, this.database.pendingRpgCommands,
       this.database.rpgBattleJournals, this.database.rpgBattleArchives, this.database.rpgBattleClaims,
-      this.database.umas, this.database.items, this.database.itemLedger, this.database.outbox], async () => {
+      this.database.umas, this.database.items, this.database.inspirationBank, this.database.itemLedger, this.database.outbox], async () => {
       const migratedUmaIds: string[] = []
       for (const e of snapshot.entities) {
-        if (!['rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'umas', 'items'].includes(e.kind)) continue
+        if (!['rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'umas', 'items', 'inspirationBank'].includes(e.kind)) continue
         // Never overwrite a newer ordinary edit while refreshing token conflict dependencies.
         if ((e.kind === 'umas' || e.kind === 'items') &&
           await this.database.outbox.where('[kind+id]').equals([e.kind, e.id]).count()) continue

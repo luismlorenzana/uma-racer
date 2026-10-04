@@ -11,8 +11,9 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**Owner detour [T105 — Inspiration advance](T105-inspiration-advance.md) is in progress** (D256): one-time shared
-scenario unlocks, a negative token bank, and receipt-gated RPG repayment. T099's private release gate is unchanged.
+**Owner detour T105 — Inspiration advance is complete** (D256): one-time shared scenario unlocks, a negative token
+bank, and receipt-gated RPG repayment. Its first updated online sync applies the server-owned frozen-cohort advance.
+T099's private release gate is unchanged.
 
 **Owner detour T104 — Global card stars is complete** (D255). It preserves all four distance presets from D252–D254;
 T081's old scenario-occurrence definitions need separate re-authoring before implementation. T099's private publication
@@ -44,6 +45,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T105 — Inspiration advance | 2026-10-04 | [Advance](../design/skills-and-inheritance.md#temporary-inspiration-advance-d256), D256 and [phone proof](../research/inspiration-advance-phone-proof.md) | `1ac3b19` |
 | T104 — Global card stars | 2026-10-03 | [Support Cards](../design/support-cards.md#global-star-cutover-d255), D255 and [phone proof](../research/global-card-stars-phone-proof.md) | `cea441c` |
 | M027 — Training Rebalance (T087 linear levels and EXP bank, T088 spending Level-Up Tickets) | 2026-10-02 | [Training](../design/training.md#the-training-exp-bank-and-level-up-tickets), D211–D214 | git history |
 | T089 — RPG pure progression rules | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#outfit-rpg-profile-and-progression), D227 and `packages/domain/src/rpg/` | `ce2aa37` |

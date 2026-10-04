@@ -50,6 +50,7 @@ export const contentApi = {
 
 export const saveApi = {
   load: () => request<unknown>('/api/save'),
+  advanceInspiration: () => request<unknown>('/api/inspiration/advance', { method: 'POST', body: '{}' }),
   sync: (body: SyncRequest) => request<unknown>('/api/sync', { method: 'POST', body: JSON.stringify(body) }),
   rpgCommand: (body: RpgCommandRequest) => request<unknown>('/api/rpg/command', { method: 'POST', body: JSON.stringify(body) }),
 }

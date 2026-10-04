@@ -40,6 +40,12 @@ slot/gold rules and original SVG token marks are in D250 ([reward/unlock phone p
 It preserves D249's compact planets, semantic Unique/gold moons and complete six-slot bank; each rail action carries
 its own slot identity. Neither mode uses the ticketed MinigameHost.
 
+T105's one-time Inspiration advance (D256) is account-wide, outside all run ports. Existing scenario units receive
+shared slot/gold access and matching negative token debt; accepted RPG grants repay that scenario/family before
+depositing into Items. Gross rewards, seeds, journals and combat remain unchanged. See
+[advance rules](skills-and-inheritance.md#temporary-inspiration-advance-d256) and
+[phone/retry proof](../research/inspiration-advance-phone-proof.md).
+
 ## 2. The run lifecycle
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the

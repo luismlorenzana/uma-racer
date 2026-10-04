@@ -35,6 +35,7 @@ import {
   type BadgeStateV1,
   type FlairEventV1,
   type EntityKind,
+  parseInspirationBank,
   type EntityRecord,
   type LedgerEntry,
   type FarmState,
@@ -135,6 +136,8 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   const farmRow = await db.farm.get('main')
   const itemRows = await db.items.toArray()
   const itemLedgerRows = await db.itemLedger.toArray()
+  const bankRow = await db.inspirationBank.get('main')
+  if (bankRow && (!parseInspirationBank(bankRow.data) || !Number.isSafeInteger(bankRow.version) || bankRow.version < 1)) throw new Error('Invalid local Inspiration bank')
   const rpgOutfits = validateRpgEntities('rpgOutfits', await db.rpgOutfits.toArray()) as VersionedRow<RpgOutfitSaveV1>[]
   const rpgPresets = validateRpgEntities('rpgPresets', await db.rpgPresets.toArray()) as VersionedRow<RpgPresetSaveV1>[]
   const rpgCheckpoints = validateRpgEntities('rpgCheckpoints', await db.rpgCheckpoints.toArray()) as VersionedRow<RpgCheckpointSaveV1>[]
@@ -233,6 +236,7 @@ export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
     db.flairEvents.count(),
     db.farm.count(),
     db.items.count(),
+    db.inspirationBank.count(),
     db.itemLedger.count(),
     db.rpgOutfits.count(), db.rpgPresets.count(), db.rpgCheckpoints.count(),
     db.rpgResults.count(), db.rpgPromotions.count(), db.rpgReceipts.count(), db.pendingRpgCommands.count(),
@@ -290,7 +294,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
   if (profileRecords.length !== 1 || profileRecords[0]!.id !== 'main') throw new Error('Server save has duplicate profiles')
 
   await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger,
-    db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.outbox], async () => {
+    db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.inspirationBank, db.outbox], async () => {
     await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.farm.clear(), db.items.clear(), db.itemLedger.clear(), db.outbox.clear()])
     for (const record of snapshot.entities) {
       if (record.deleted) continue
@@ -327,6 +331,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.farm.put({ id: record.id, data: farm, version: record.version, revision: record.version })
       }
       if (record.kind === 'items') await db.items.put({ id: record.id, data: parseInventoryStackData(record.data, record.id)!, version: record.version })
+      if (record.kind === 'inspirationBank') await db.inspirationBank.put({ id: record.id, data: parseInspirationBank(record.data)!, version: record.version })
       if (record.kind === 'rpgOutfits' || record.kind === 'rpgPresets' || record.kind === 'rpgCheckpoints') {
         await mergeRpgEntity(record)
       }

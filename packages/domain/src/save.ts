@@ -1,6 +1,7 @@
 // Typed local-first save vocabulary and initialization (docs/technical/architecture.md).
 
 import { MAX_STARS } from './cards'
+import { parseInspirationBank } from './inspiration-bank'
 import {
   badgeStateId,
   FLAIR_SERIES_LEG_KEY_PATTERN,
@@ -413,7 +414,7 @@ export interface InitialSave {
   ledger: { id: string; data: LedgerEntry }[]
 }
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank'] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
 export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts'] as const
 export type LogKind = (typeof LOG_KINDS)[number]
@@ -2092,6 +2093,7 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
   if (kind === 'badges') return parseBadgeState(value) as unknown as Record<string, unknown> | null
   if (kind === 'farm') return parseFarmState(value) as unknown as Record<string, unknown> | null
   if (kind === 'items') return parseInventoryStackData(value) as unknown as Record<string, unknown> | null
+  if (kind === 'inspirationBank') return parseInspirationBank(value) as unknown as Record<string, unknown> | null
   if (kind === 'rpgOutfits') return parseRpgOutfitSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'rpgPresets') return parseRpgPresetSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'rpgCheckpoints') return parseRpgCheckpointSave(value) as unknown as Record<string, unknown> | null
@@ -2125,7 +2127,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isObject(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
-    if (kind.startsWith('rpg')) return 'RPG rows require the grouped command endpoint'
+    if (kind.startsWith('rpg') || kind === 'inspirationBank') return 'Server-owned rows require their grouped command endpoint'
     if (!isId(value.id)) return 'invalid entity id'
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
@@ -2173,7 +2175,7 @@ function parseEntityRecord(value: unknown): EntityRecord | null {
   if (!isPositiveInt(value.version) || typeof value.deleted !== 'boolean' || !isTimestamp(value.updatedAt)) return null
   const data = parseStoredEntityData(kind, value.data)
   if (!data) return null
-  if ((kind === 'profile' && value.id !== 'main') || (kind === 'farm' && value.id !== 'main') ||
+  if (((kind === 'profile' || kind === 'farm' || kind === 'inspirationBank') && value.id !== 'main') ||
     ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
     (kind === 'items' && data.itemId !== value.id) ||
     (kind === 'rpgOutfits' && (data.profile as Record<string, unknown>).outfitId !== value.id) ||

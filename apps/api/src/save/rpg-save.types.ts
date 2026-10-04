@@ -175,7 +175,7 @@ function receipt(value: unknown): boolean {
     oneOf(value.action, RPG_ACTIONS) && hash(value.payloadHash) && rpgInt(value.createdAt) &&
     Array.isArray(value.applied) && value.applied.length <= RPG_MAX_GROUP_OPERATIONS &&
     value.applied.every((row: unknown) => rpgRecord(row) && rpgExact(row, ['kind', 'id', 'version']) &&
-      oneOf(row.kind, ['rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'umas', 'items']) && rpgId(row.id) && rpgInt(row.version, 1)) &&
+      oneOf(row.kind, ['rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'umas', 'items', 'inspirationBank']) && rpgId(row.id) && rpgInt(row.version, 1)) &&
     Array.isArray(value.appendedIds) && value.appendedIds.length <= RPG_MAX_GROUP_OPERATIONS &&
     value.appendedIds.every(rpgId) && new Set(value.appendedIds).size === value.appendedIds.length &&
     new Set((value.applied as Array<{ kind: string; id: string }>).map((row) => `${row.kind}/${row.id}`)).size === value.applied.length

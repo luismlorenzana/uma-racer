@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { type RpgCommandRequest, type RpgPresetSaveV1 } from '@racer/domain'
+import { createInspirationBank, openBankOutfit, createInitialFarmState, reconcileFarmEvidence, type RpgCommandRequest, type RpgPresetSaveV1 } from '@racer/domain'
 import { syntheticChapterPack, syntheticChapterProfiles } from '../../../../packages/domain/src/rpg/chapter.synthetic'
 import { parseRpgCommandRequest, resolveRpgCommand } from '../../../api/src/save/rpg-command'
 import { RacerDb } from './db'
@@ -160,6 +160,10 @@ describe('chapter host + real grouped server acceptance', () => {
     expect(await transport.rpgCommand(command)).toMatchObject({ status: 'rejected', reason: 'Map advance requires accepted winning evidence' })
   })
   it('recovers a lost grant ACK after reload without collecting the same winning entry twice', async () => {
+    let bank = createInspirationBank(Array.from({ length: 8 }, (_, i) => ({ id: `advance-outfit-${i}`, scenarios: [{ tier: 1, inspiration: { slots: [], golds: [] } }] })), 1)
+    for (const id of Object.keys(bank.cohort)) bank = openBankOutfit(bank, id)
+    await database.inspirationBank.put({ id: 'main', version: 1, data: bank })
+    entities.set('inspirationBank/main', { kind: 'inspirationBank', id: 'main', version: 1, data: bank as unknown as Record<string, unknown>, deleted: false, updatedAt: 1 })
     await host.start(presetId, chapterId); await sync(); await host.choose(uid, presetId, chapterId, 'opening'); await sync(); await win(); await sync()
     await host.advance(presetId, chapterId)
     await expect(flushOneRpgCommand(database, { ...transport, rpgCommand: async body => {
@@ -169,10 +173,57 @@ describe('chapter host + real grouped server acceptance', () => {
     expect((await database.rpgCheckpoints.get(id))!.data.lastClearedNodeId).toBeNull()
     const restored = new RpgChapterHost(async () => pack, database)
     await sync()
-    expect((await database.items.get('inspiration:t1:skill'))?.data.quantity).toBe(60)
+    expect((await database.items.get('inspiration:t1:skill'))?.data.quantity).toBe(0)
+    expect((await database.inspirationBank.get('main'))!.data.balances['inspiration:t1:skill']).toBe(-36)
+    const receipt = (await database.itemLedger.toArray())[0]!.data
+    expect(receipt).toMatchObject({ delta: 60, source: { debtPaid: 60 } })
     expect(await database.itemLedger.count()).toBe(1)
     await expect(restored.advance(presetId, chapterId)).rejects.toThrow()
     expect(await database.itemLedger.count()).toBe(1)
+    await host.choose(uid, presetId, chapterId, 'fork'); await sync(); await clearFight('elite')
+    expect((await database.items.get('inspiration:t1:skill'))!.data.quantity).toBe(24)
+    expect((await database.inspirationBank.get('main'))!.data.balances['inspiration:t1:skill']).toBe(0)
+    await host.choose(uid, presetId, chapterId, 'join'); await sync(); await clearFight('boss')
+    expect((await database.items.get('inspiration:t1:slot'))!.data.quantity).toBe(0)
+    expect((await database.inspirationBank.get('main'))!.data.balances['inspiration:t1:slot']).toBe(-18)
+    const projection = reconcileFarmEvidence(createInitialFarmState(), [], (await database.itemLedger.toArray()).map(r => r.data))
+    expect(projection.stacks.find(s => s.itemId === 'inspiration:t1:skill')!.quantity).toBe(24)
+    await host.start(presetId, chapterId, true); await sync(); await clearFight('opening')
+    await host.choose(uid, presetId, chapterId, 'fork'); await sync(); await host.choose(uid, presetId, chapterId, 'rest'); await sync()
+    await host.choose(uid, presetId, chapterId, 'join'); await sync(); await clearFight('boss')
+    expect((await database.items.get('inspiration:t1:slot'))!.data.quantity).toBe(12)
+    expect((await database.inspirationBank.get('main'))!.data.balances['inspiration:t1:slot']).toBe(0)
+    expect((await database.items.get('inspiration:t1:skill'))!.data.quantity).toBe(84)
+  })
+  it('rejects omitted/forged bank repayment and stale second-device rewards without partial projection', async () => {
+    let bank = createInspirationBank([{ id: 'advance-outfit', scenarios: [{ tier: 1, inspiration: { slots: [], golds: [] } }] }], 1)
+    bank = openBankOutfit(bank, 'advance-outfit')
+    await database.inspirationBank.put({ id: 'main', version: 1, data: bank })
+    const serverBank: ServerEntity = { kind: 'inspirationBank', id: 'main', version: 1, deleted: false, updatedAt: 1, data: bank as unknown as Record<string, unknown> }
+    entities.set('inspirationBank/main', serverBank)
+    await host.start(presetId, chapterId); await sync(); await host.choose(uid, presetId, chapterId, 'opening'); await sync(); await win(); await sync(); await host.advance(presetId, chapterId)
+    const body = (await database.pendingRpgCommands.toArray())[0]!.body as RpgCommandRequest
+    const omitted = { ...body, expected: body.expected.filter(e => e.kind !== 'inspirationBank'), upserts: body.upserts.filter(e => e.kind !== 'inspirationBank') }
+    expect(await transport.rpgCommand(omitted)).toMatchObject({ status: 'rejected', reason: expect.stringMatching(/bank/) })
+    const forged = structuredClone(body)
+    const grant = forged.appends[0]!.data
+    grant.source = { ...grant.source as Record<string, unknown>, debtPaid: 0 }
+    forged.upserts.find(u => u.kind === 'items')!.data.quantity = 60
+    expect(await transport.rpgCommand(forged)).toMatchObject({ status: 'rejected' })
+    const altered = structuredClone(body)
+    altered.upserts.find(u => u.kind === 'inspirationBank')!.data.createdAt = 2
+    expect(await transport.rpgCommand(altered)).toMatchObject({ status: 'rejected' })
+    entities.set('inspirationBank/main', { ...serverBank, data: { ...bank, phase: 'opening', opened: [], balances: { 'inspiration:t1:slot': 0, 'inspiration:t1:skill': 0 } } as unknown as Record<string, unknown> })
+    expect(await transport.rpgCommand(body)).toMatchObject({ status: 'rejected', reason: expect.stringMatching(/Resume/) })
+    entities.set('inspirationBank/main', serverBank)
+    expect(await database.items.count()).toBe(0); expect(entities.get('inspirationBank/main')!.version).toBe(1)
+    entities.set('inspirationBank/main', { ...serverBank, version: 2 })
+    await sync()
+    expect((await database.pendingRpgCommands.toArray())[0]!.status).toBe('conflict')
+    expect(await database.items.count()).toBe(0)
+    await host.refreshAccount(true, transport)
+    await host.advance(presetId, chapterId); await sync()
+    expect((await database.items.get('inspiration:t1:skill'))!.data.quantity).toBe(48)
   })
   it('archives a rejected terminal journal and explicitly restarts the same accepted frozen entry, never its stale result', async () => {
     await host.start(presetId, chapterId); await sync(); await host.choose(uid, presetId, chapterId, 'opening'); await sync()

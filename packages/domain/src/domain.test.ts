@@ -7,6 +7,8 @@ import {
   CARD_FOCUS_MIN_SKILLS,
   LINEAGE_SLOT_COUNT,
   INSPIRATION_GOLDS_PER_SLOT,
+  INSPIRATION_ADVANCE_SLOTS,
+  INSPIRATION_ADVANCE_SKILLS,
   INSPIRATION_UNLOCK_COST,
   GRANDPARENT_SP_MULTIPLIER,
   RPG_SLOT_TOKEN_REWARD,
@@ -282,6 +284,9 @@ describe('Global Uma RPG — D227 progression pins', () => {
 })
 
 describe('Inspiration reward budget (D250)', () => {
+  it('pins the one-time advance per scenario, not per distance preset (D256)', () => {
+    expect([INSPIRATION_ADVANCE_SLOTS, INSPIRATION_ADVANCE_SKILLS]).toEqual([6, 12])
+  })
   it('funds five full six-slot/twelve-gold builds per scenario', () => {
     expect(INSPIRATION_GOLDS_PER_SLOT).toBe(2)
     expect(INSPIRATION_UNLOCK_COST).toBe(1)

@@ -23,6 +23,7 @@ import { Meter } from '../../ui/Meter'
 import { LevelUpIcon } from '../../ui/icons'
 import { useFarmScreen } from './FarmScreen'
 import { InspirationTokenIcon } from '../../ui/InspirationTokenIcon'
+import { InspirationBankPanel } from '../../ui/InspirationBankPanel'
 
 const DEFAULTS: ItemInventoryPreferences = {
   visibility: 'owned', stat: null, scenarioTier: null, density: 'comfortable',
@@ -99,6 +100,7 @@ export function ItemInventoryScreen() {
   }
 
   return <div className="pb-4">
+    <InspirationBankPanel />
     <div className="mb-3 px-1">
       <div className="flex items-start justify-between gap-3"><div><h2 className="font-display text-lg font-bold">Global Items</h2><p className="text-[12px] text-ink-soft">{ownedStacks.length} owned kinds · {ownedStacks.reduce((sum, q) => sum + q, 0)} items</p></div><Crest>{inventory.catalogTotal} crops</Crest></div>
       {inventory.orphanedStacks > 0 && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[11px] text-warning">{inventory.orphanedStacks} future or missing item stack{inventory.orphanedStacks === 1 ? '' : 's'} preserved.</p>}

@@ -5,6 +5,7 @@ import type { RpgCommandRequest, RpgCommandResponse } from './rpg-command'
 // without touching the controller.
 export interface SaveRepository {
   load(uid: string): Promise<SaveSnapshot>
+  advanceInspiration(uid: string): Promise<SaveSnapshot>
   sync(uid: string, request: SyncRequest): Promise<SyncResponse>
   rpgCommand(uid: string, request: RpgCommandRequest): Promise<RpgCommandResponse>
 }
