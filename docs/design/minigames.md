@@ -277,7 +277,7 @@ The card minigame (D146, D177): a Balatro-style run that trains one card through
 is **one global card star** (D255), for one ticket, all or nothing. The scenario supplies the twist and races,
 not another star track. D168 closed its lists, D173 gave it a sense of place,
 and the numbers are tuning drafts held by `pnpm sim:training`, which keeps the bot's clear rates near 90 / 80 / 70% for
-1★–3★ and every scenario twist within its band. The engine is `packages/domain/src/friendship-*.ts`; the
+1★–3★ and every scenario twist within its band. The engine is `packages/domain/src/minigames/friendship/`; the
 screens are `apps/web/src/screens/minigames/friendship/`.
 
 ### Fixed choices (D146)

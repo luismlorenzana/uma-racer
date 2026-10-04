@@ -82,10 +82,10 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v11 stores mutable profile/Uma state, including the account's Training EXP bank, one constellation per unlocked
+- Save v15 stores mutable profile/Uma state, including the account's Training EXP bank, four distance builds per unlocked
   scenario on the linear Training curve (D211), nullable per-outfit race
-  defaults (null preserves automatic recommendations), scenario-scoped card
-  bonds (the current three-star shape follows v7's five-star and v6's `limitBreaks` migrations), skill history, typed
+  defaults (null preserves automatic recommendations), global card stars in independent card schema 1
+  (following scenario-map, five-star and limit-break migrations), skill history, typed
   Journey slots with frozen series legs, card/lineage assignments and each unit's Extra stats grid (save v12, D235). Derived stats, node values, static names,
   art, release metadata, and card/skill definitions stay outside the save and are joined from the private content registry.
   Dexie and cloud adoption migrate older schemas one way, preserve entity versions, and queue only upgraded synced rows;
@@ -320,7 +320,7 @@ authored; content publication and Home/device release remain T099 work; [content
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
 players/{uid}/umas/{umaId}            save v15: level/EXP, scenario units (Inspiration unlocks, four distance presets), race defaults, the preset in use, history, version
-players/{uid}/cards/{cardId}          templateId, three-star bonds per scenario, maxCouponGranted, version
+players/{uid}/cards/{cardId}          card schema 1: templateId, global stars (0–3), maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences

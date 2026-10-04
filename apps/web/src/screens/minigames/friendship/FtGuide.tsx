@@ -151,7 +151,7 @@ function pages(tier: number): { id: GuidePageId; title: string; body: ReactNode 
             </div>
           </Panel>
           <Bullets items={[
-            <>A run trains <strong>one card</strong> in <strong>one scenario</strong>. Clear the whole season and the card gains one star there, and this run is in {scenario}.</>,
+            <>A run trains <strong>one card globally</strong>. Clear the whole season for one star shared by every Uma, scenario and preset. {scenario} chooses this run’s twist and races, not a separate star track.</>,
             <>A run costs {FRIENDSHIP_TRAINING_TICKET_COST} ticket, win or lose. There is no partial progress: miss a target and the run ends.</>,
             <>Stars make a card pay more on its constellation nodes, so a bonded card is worth slotting.</>,
             <>The higher the star, the longer the run: {Object.entries(FT_STAGES).map(([star, stages]) => `${star}★ ${stages} stage${stages === 1 ? '' : 's'}`).join(' · ')}.</>,
@@ -257,7 +257,7 @@ function pages(tier: number): { id: GuidePageId; title: string; body: ReactNode 
           </Panel>
           <Bullets items={[
             <>Friend and Group cards score {FT_CARD_POINTS.broad} anywhere and count as <strong>any type</strong>, so they fill a Rainbow or a Full team.</>,
-            <>A card’s stars in this scenario make it stronger: × {(1 + FT_STRENGTH_PER_STAR).toFixed(2)} at 1★, up to × {(1 + FT_STRENGTH_PER_STAR * MAX_STARS).toFixed(1)} at {MAX_STARS}★.</>,
+            <>A card’s global stars make it stronger in every eligible scenario: × {(1 + FT_STRENGTH_PER_STAR).toFixed(2)} at 1★, up to × {(1 + FT_STRENGTH_PER_STAR * MAX_STARS).toFixed(1)} at {MAX_STARS}★. Saved runs keep their frozen strength.</>,
             <>Each card has one <strong>trait</strong>, from its strongest effect in the original data:</>,
           ]} />
           <div className="grid gap-1">

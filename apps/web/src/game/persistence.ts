@@ -5,6 +5,7 @@ import {
   parseLegacyPlayerProfileV12,
   parsePlayerProfile,
   migrateCardSaveToCurrent,
+  mergeCardProgress,
   migrateUmaSaveToCurrent,
   migrateUmaSaveWithSurplus,
   migratePlayerProfileToCurrent,
@@ -272,6 +273,9 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         }
       }
       // A v1 Farm reads as v2 (D234); upload the new shape so the cloud copy catches up.
+      // Snapshot decoding already migrated cards; inspect the raw row so its new shape gets uploaded (D255).
+      if (row.kind === 'cards' && typeof row.id === 'string' && !row.deleted &&
+        !parseCardSave(row.data) && migrateCardSaveToCurrent(row.data)) legacyKeys.add(`cards/${row.id}`)
       if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
         !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
     }
@@ -611,7 +615,13 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
   if (record.kind === 'cards') {
     const card = migrateCardSaveToCurrent(record.data)
     if (!card) throw new Error(`Server card ${record.id} cannot be migrated`)
-    await db.cards.put({ id: record.id, data: card, version: record.version })
+    const localRow = await db.cards.get(record.id)
+    const local = localRow ? migrateCardSaveToCurrent(localRow.data) : null
+    const merged = local ? mergeCardProgress(local, card) : card
+    await db.cards.put({ id: record.id, data: merged, version: record.version })
+    if (merged.stars !== card.stars || merged.maxCouponGranted !== card.maxCouponGranted) {
+      await queueInTransaction('cards', record.id, 'upsert', now)
+    }
   }
   if (record.kind === 'badges') {
     const server = parseBadgeState(record.data)

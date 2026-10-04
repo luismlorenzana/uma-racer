@@ -51,7 +51,7 @@ is gone; `/cards/redeem` redirects to the album.
 
 | Item | How it's earned | Redeems for | Rules |
 |---|---|---|---|
-| 🎟️ **Card Select Coupon** | A card first reaches **3★**, its max, in any scenario (once per card ever) | The only unlock of an unowned SSR card (D198) | Stackable · never expires |
+| 🎟️ **Card Select Coupon** | A card first reaches **3★ globally**, its max (once per card ever) | The only unlock of an unowned SSR card (D198) | Stackable · never expires |
 | 💎 **Uma Shard** | Any Uma **reaches** level 10, 20, 30 … (once per Uma per gate) | 5 shards make 1 Uma Select Coupon | Stackable · never expires |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma in the game | Stackable · never expires |
 
@@ -311,7 +311,7 @@ badge state, and race/Journey facts.
 |---|---|---|
 | Stable Master | Umas owned (25 at start) | 30 / 40 / 60 / 90 / all |
 | Card Collector | SSR cards owned | 10 / 25 / 50 / 100 / all |
-| Maxed Out | Cards at 3★ (max) in any scenario | 1 / 5 / 15 / 40 / 100 |
+| Maxed Out | Cards at 3★ globally (max) | 1 / 5 / 15 / 40 / 100 |
 | [Era] Complete | Own every card of that era | one-off per era |
 | [Type] Complete | Own every card of that type | one-off per type |
 | Coupon Clipper | Coupons redeemed | 1 / 5 / 15 / 40 / 100 |

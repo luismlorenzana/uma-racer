@@ -332,7 +332,7 @@ export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[])
     ) {
       throw new Error(`Card ${template.id} has invalid race effect data`)
     }
-    total += cardRaceBonus(template, cardStars(save, tier))
+    total += cardRaceBonus(template, cardStars(save))
   }
   return total
 }

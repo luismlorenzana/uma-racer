@@ -97,7 +97,7 @@ export function FriendshipTrainingScreen() {
     if (!content) return []
     const owned = Object.values(cards).flatMap((card) => {
       const entry = content.cards.byId.get(card.templateId)
-      return entry ? [{ template: entry, stars: cardStars(card, tier) }] : []
+      return entry ? [{ template: entry, stars: cardStars(card) }] : []
     })
     const eligible = (id: string) => id !== cardId && cards[id] !== undefined && (content.cards.byId.get(id)?.era ?? Infinity) <= tier
     const fromUma = umaParam && umas[umaParam] ? scenarioAt(umas[umaParam], tier)?.cardSetIds ?? [] : []
@@ -136,9 +136,10 @@ export function FriendshipTrainingScreen() {
     return <div className="flex h-dvh items-center justify-center bg-stage text-ink-on-dark-soft" aria-label="Loading Friendship Training">Loading…</div>
   }
 
-  const stars = cardStars(cardSave, tier)
-  const scenario = scenarioForTier(tier)
-  const twist = ftTwist(tier)
+  const stars = cardStars(cardSave)
+  const frozenTier = run?.setup.tier ?? tier
+  const scenario = scenarioForTier(frozenTier)
+  const twist = ftTwist(frozenTier)
 
   async function commit(current: Run) {
     setPhase('committing')
@@ -219,7 +220,7 @@ export function FriendshipTrainingScreen() {
       <MinigameHeader
         backTo={returnTo}
         backLabel="Leave Friendship Training"
-        eyebrow={run && phase !== 'start' ? runProgress(run.setup, run.state) : `Friendship Training · ${scenario?.name ?? `Tier ${tier}`}`}
+        eyebrow={run && phase !== 'start' ? `${scenario?.name} · ${runProgress(run.setup, run.state)}` : `Friendship Training · ${scenario?.name ?? `Tier ${tier}`}`}
         title={template.charName}
         onGuide={() => setGuide({ open: true, startAt: run ? guidePageFor(run.state) : 'goal' })}
         guideLabel="How to play Friendship Training"
@@ -240,11 +241,11 @@ export function FriendshipTrainingScreen() {
         {showInlineError && <p role="alert" className="mx-4 rounded-sm bg-danger/20 px-3 py-2 text-[13px]">{error}</p>}
 
         {(phase === 'start' || phase === 'loading') && (
-          stars >= MAX_STARS ? (
+          stars >= MAX_STARS && openRun === null ? (
             <section className="grid flex-1 place-content-center justify-items-center gap-3 text-center">
               <div className="w-40"><FtCard content={content} def={ftCardDef(template, MAX_STARS)} art={art.get(template.id) ?? null} /></div>
               <h2 className="text-2xl">Already fully bonded</h2>
-              <p className="text-[14px] text-ink-on-dark-soft">This card is already {MAX_STARS}★ in {scenario?.name}.</p>
+              <p className="text-[14px] text-ink-on-dark-soft">This card is already {MAX_STARS}★ globally, in every scenario and preset.</p>
             </section>
           ) : (
             <MinigameStart
@@ -252,7 +253,7 @@ export function FriendshipTrainingScreen() {
               eyebrow="Friendship Training"
               title={template.charName}
               subtitle={template.title}
-              stake={<div className="flex items-center justify-center gap-2 text-[13px]"><Stars value={stars} onDark /><span className="text-ink-on-dark-soft">now → {stars + 1}★ in {scenario?.name}</span></div>}
+              stake={<div className="flex items-center justify-center gap-2 text-[13px]"><Stars value={stars} onDark /><span className="text-ink-on-dark-soft">{openRun ? 'Resume the frozen season' : `now → ${Math.min(MAX_STARS, stars + 1)}★ globally`}</span></div>}
               extra={openRun ? null : (
                 <div className="rounded-md border border-hairline-dark bg-stage-soft p-3">
                   <div className="flex items-baseline justify-between gap-2">
@@ -264,7 +265,7 @@ export function FriendshipTrainingScreen() {
                       const partner = content.cards.byId.get(id)!
                       return (
                         <button key={id} type="button" className="min-w-0" aria-label={`Swap ${partner.charName}`} onClick={() => setSwapIndex(index)}>
-                          <FtCard content={content} def={ftCardDef(partner, cardStars(cards[id]!, tier))} art={art.get(id) ?? null} />
+                          <FtCard content={content} def={ftCardDef(partner, cardStars(cards[id]!))} art={art.get(id) ?? null} />
                         </button>
                       )
                     })}
@@ -283,10 +284,10 @@ export function FriendshipTrainingScreen() {
                 </div>
               )}
               rules={[
-                `${stageCount} stage${stageCount === 1 ? '' : 's'}: two training weeks and a race each.`,
+                openRun ? 'Your paid run keeps its original scenario, stages, cards and draws.' : `${stageCount} stage${stageCount === 1 ? '' : 's'}: two training weeks and a race each.`,
                 'Play cards in formations to reach each target. Three of the facility’s type make a Rainbow.',
                 `Train with ${template.charName} three times to bond: the card then counts as every type.`,
-                <span><span className="font-semibold text-accent">{twist.name}:</span> {twist.rule}</span>,
+                openRun ? 'The saved scenario’s twist is restored when you resume.' : <span><span className="font-semibold text-accent">{twist.name}:</span> {twist.rule}</span>,
                 'Clear every week and race for the star. A loss keeps the ticket spent.',
               ]}
               cost={FRIENDSHIP_TRAINING_TICKET_COST}
@@ -326,8 +327,9 @@ export function FriendshipTrainingScreen() {
             artwork={<div className="w-36"><FtCard content={content} def={run.setup.cards[run.setup.mainCardId]!} art={art.get(run.setup.mainCardId) ?? null} bonded={run.state.phase === 'won'} /></div>}
             reward={reward && run.state.phase === 'won' ? (
               <div className="grid justify-items-center gap-2 text-center">
-                <h3 className="text-lg">Scenario stars</h3>
+                <h3 className="text-lg">Global stars</h3>
                 <GainedStars before={reward.starsBefore ?? stars} after={reward.starsAfter ?? stars} onDark />
+                <p className="text-[13px] text-ink-on-dark-soft">{reward.starsBefore === reward.starsAfter ? 'Already maxed globally; your saved season is complete.' : 'Every Uma, scenario and distance preset benefits.'}</p>
                 {reward.couponGranted && <p className="text-[13px] text-accent">{MAX_STARS}★: a Card Select Coupon is yours.</p>}
               </div>
             ) : undefined}
@@ -354,7 +356,7 @@ export function FriendshipTrainingScreen() {
           <Button variant="destructive" className="w-full" onClick={() => { setMenuOpen(false); setConfirmGiveUp(true) }}>Give up this run</Button>
         </div>
       </BottomSheet>
-      <FtGuide open={guide.open} tier={tier} startAt={guide.startAt} onClose={closeGuide} />
+      <FtGuide open={guide.open} tier={frozenTier} startAt={guide.startAt} onClose={closeGuide} />
       <CardPickerSheet
         open={swapIndex !== null}
         onClose={() => setSwapIndex(null)}

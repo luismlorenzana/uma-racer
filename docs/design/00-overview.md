@@ -10,8 +10,8 @@ era, and proves herself in races that feed her progression and fill her trophy c
 ## Design pillars
 
 1. **Progress is permanent.** Uma Levels, owned cards, race records, and badges never reset. What deliberately starts
-   over in each scenario is the career: its Training Level, its constellation, its card set, and every card's **bond**
-   (D121, D127).
+   over in each scenario is the career: its Training Level, its constellation and its distance-preset card sets
+   (D121, D252). A card's **global stars** are permanent across them all (D255).
 2. **Races are the payoff.** Races can be lost. Umas slowly outgrow the field as they level.
 3. **History unfolds in order.** Scenarios are eras. A card becomes equippable in the era it was
    originally released and stays equippable afterwards.
@@ -44,7 +44,7 @@ flowchart LR
     Daily([Daily +15]) --> Tickets[("🎫 Training Tickets")]
     UmaLv["Uma Level-ups +1"] --> Tickets
     Tickets -->|"1 a run"| Spark["Spark Rival Circuit: Training Levels"]
-    Tickets -->|"1 a run"| Bond["Card minigame: a card's stars per scenario"]
+    Tickets -->|"1 a run"| Bond["Card minigame: a card's global stars"]
     Bond -->|"first 3★"| CardCoupon["🎟️ Card Select Coupon"]
     CardCoupon --> Cards
     Tickets --> UmaPromo["Uma promotions"]
@@ -65,7 +65,7 @@ flowchart LR
 | Scenarios are separate career modes you pick | Scenarios are **progression tiers**, 10 levels each, in release order |
 | R / SR / SSR support cards | **SSR cards only** |
 | Gacha for Umas and cards | Free/event cards to start, then **Select Coupons** earned by maxing cards and leveling Umas |
-| Duplicate copies limit break cards | Cards are unlocked with **Card Select Coupons** (D198); a card's **stars** (0★–3★, D200) are earned per scenario in the card minigame and start over in each one |
+| Duplicate copies limit break cards | Cards are unlocked with **Card Select Coupons** (D198); a card's **global stars** (0★–3★, D255) are earned in the card minigame and retained in every scenario/preset |
 | Detailed training formulas with heavy RNG | **Skill-based seeded minigames** open a deterministic constellation; assigned nodes derive the build |
 | Skill points spent during a career | **SP is derived per scenario**, and the Uma **fine-tunes a skill loadout** within it |
 | Sparks inherited from a finished career's legacy | Six manually chosen lineage slots use owned Uma templates; repeated A/S aptitudes raise grades and their baseline awakening skills join the library |
@@ -88,7 +88,7 @@ flowchart LR
 | **Stat cap / SP cap** | A scenario's per-stat and skill-point ceilings. The constellation derives values up to them; Training Level controls access to nodes rather than multiplying the caps. |
 | **Era** | The scenario window in which a card was originally released. |
 | **Support card** | An SSR card placed in a scenario's card set; it pays stats (or, for a Friend or Group card, SP) and skills on the constellation nodes it fills. It has a type and an era. |
-| **Stars** | A card's power in one scenario, 0★ to 3★ (D200). Earned one per clear of the card minigame (**Bond** is that act), shared by every Uma in that scenario, and zero in each new one. There is no card level. |
+| **Stars** | An owned card's global power, 0★ to 3★ (D200, D255). Earned one per clear of the card minigame (**Bond** is that act), shared by every Uma, scenario and distance preset. There is no card level. |
 | **Card Select Coupon** | Earned the first time a card reaches 3★ anywhere. The only way to unlock a card (D198). Stackable, never expires. |
 | **Uma Shard / Uma Select Coupon** | 1 shard each time an Uma reaches a gate level. 5 shards make a coupon that redeems for any Uma. |
 | **SP (Skill Points)** | Derived loadout capacity in the active scenario. Training Level and Friend/Group card nodes supply it, up to the scenario cap. |

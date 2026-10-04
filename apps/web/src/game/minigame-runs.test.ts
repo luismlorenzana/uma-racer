@@ -226,7 +226,7 @@ describe('persistent minigame host', () => {
     await expect(current.beginRun('friendship-training', { kind: 'friendship-training', cardId: futureCard.id, tier: 1 })).rejects.toThrow(/not available/i)
     await assertNoWrites()
     const saved = (await db.cards.get(card.id))!
-    await db.cards.put({ ...saved, data: { ...saved.data, bonds: { '1': 3 } } })
+    await db.cards.put({ ...saved, data: { ...saved.data, stars: 3 } })
     await expect(current.beginRun('friendship-training', { kind: 'friendship-training', cardId: card.id, tier: 1 })).rejects.toThrow(/already has 3★/i)
     await assertNoWrites()
   })

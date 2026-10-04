@@ -1121,7 +1121,10 @@ export class GameRuntime {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
           const originalSequence = sentSequence.get(`${conflict.kind}/${conflict.id}`)
           const legacy = legacyConflicts.has(`${conflict.kind}/${conflict.id}`)
-          if (current?.seq !== originalSequence && conflict.kind !== 'badges') {
+          if (conflict.kind === 'cards' && !conflict.deleted) {
+            // Permanent global progress merges even when a newer local clear arrived while this request was in flight.
+            await putConflict(conflict, legacy, response.serverTime)
+          } else if (current?.seq !== originalSequence && conflict.kind !== 'badges') {
             await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
           } else if (legacy && await entityRow(conflict.kind, conflict.id)) {
             // The server's copy predates the save schema this app writes, so ours is newer: keep it, take the server's

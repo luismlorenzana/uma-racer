@@ -98,7 +98,7 @@ describe('support deck validation', () => {
     const third = card('third', { type: 'group', raceBonus: 4 })
     const equipped = [first, second, third].map((template) => ({
       template,
-      save: { ...createCardSave(template), stars: { '1': 1 } },
+      save: { ...createCardSave(template), stars: 1 },
     }))
     expect(validateEquippedSupportDeck(1, equipped).valid).toBe(true)
     expect(cardSetRaceBonus(equipped, 1)).toBe(equippedRaceBonus(1, equipped))

@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import type { SkillKind, SkillTemplate, UmaTemplate } from './content'
+import type { SkillKind, SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import { cardGoldSkillIds } from './cards'
 import { awakeningSkillsOpen, deriveUma, ownSkillIds } from './derived'
 import { lineageInheritedUniques } from './lineage'
-import { activeScenario, createUmaSave, withScenarioView, type UmaSave } from './save'
+import { activeScenario, createCardSave, createScenarioTraining, createUmaSave, scenarioAt, withScenarioView, type UmaSave } from './save'
+import { cardNodeValue, constellationTemplate } from './constellation'
+import { CARD_EFFECTS, type CardEffect } from './cards'
+import { DISTANCE_CATEGORIES } from './types'
+import { equippedRaceBonus } from './progression-race'
 import { grandfatherInspiration } from './inspiration'
 
 // Lineage passes each slot's unique in its inherited form (D174), beside its baseline skills.
@@ -65,6 +69,46 @@ function withLineage(trainingLevel: number): UmaSave {
 
 const derive = (save: UmaSave) => deriveUma({
   uma: save, umaTemplate: child, cardSaves: new Map(), cardTemplates: new Map(), umaTemplates: umas, skillTemplates: skills,
+})
+
+describe('global cards across fourteen scenarios and four presets (D255)', () => {
+  it('reads one owned reference everywhere without rewriting distinct preset assignments or losing era scaling', () => {
+    const template: SupportCardTemplate = {
+      id: 'global-speed', charaId: 'global-support', charName: 'Invented Support', title: 'Shared Practice', type: 'speed',
+      jpRelease: '2000-01-01', era: 1, obtain: 'free', starter: true, hintSkillIds: [], eventSkillIds: [], uniqueEffect: null,
+      effectProfile: Object.fromEntries(CARD_EFFECTS.map((key) => [key, key === 'raceBonus' ? 1 : 0])) as Record<CardEffect, number>,
+      imageSource: 'https://invalid.test/card.png',
+    }
+    let saved: UmaSave = { ...createUmaSave(child), unlockedTier: 14, level: 140,
+      scenarios: Array.from({ length: 14 }, (_, index) => createScenarioTraining(index + 1)) }
+    for (let tier = 1; tier <= 14; tier += 1) {
+      const nodes = constellationTemplate(tier).nodes.filter((node) => node.kind === 'card')
+      for (const [index, preset] of DISTANCE_CATEGORIES.entries()) {
+        saved = withScenarioView(saved, { ...scenarioAt(saved, tier, preset)!, trainingLevel: 10,
+          cardSetIds: [template.id], assignments: { [nodes[index]!.id]: { kind: 'card', cardId: template.id } } })
+      }
+    }
+    const untouched = structuredClone(saved)
+    const base = createCardSave(template)
+    const maxed = { ...base, stars: 3, maxCouponGranted: true }
+    for (let tier = 1; tier <= 14; tier += 1) {
+      for (const preset of DISTANCE_CATEGORIES) {
+        const read = (card: typeof base) => deriveUma({ uma: saved, umaTemplate: child, tier, preset,
+          cardSaves: new Map([[template.id, card]]), cardTemplates: new Map([[template.id, template]]),
+          umaTemplates: umas, skillTemplates: skills })
+        const before = read(base), after = read(maxed)
+        expect(after.raw.speed).toBeGreaterThan(before.raw.speed)
+        // Scenario buffs may also read stars; the plain tier-1 curve remains exactly 60→100%.
+        if (tier === 1) expect(after.raw.speed / before.raw.speed).toBeCloseTo(100 / 60)
+        expect(after.scenario.cardSetIds).toEqual([template.id])
+        expect(equippedRaceBonus(tier, [{ template, save: maxed }])).toBeGreaterThan(0)
+      }
+    }
+    expect(saved).toEqual(untouched)
+    // Era decay is still real: at the same scenario a current-era card pays more, regardless of global stars.
+    expect(cardNodeValue(14, { template: { ...template, era: 14 }, stars: 3 }))
+      .toBeGreaterThan(cardNodeValue(14, { template, stars: 3 }))
+  })
 })
 
 describe('inherited uniques from lineage (D174)', () => {

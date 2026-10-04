@@ -80,7 +80,7 @@ export function cardUniqueEffectKinds(template: SupportCardTemplate): ReadonlySe
 const RACE_BONUS_AT_MAX = 0.03 * 1.5 * 1.08
 
 /**
- * What one card adds to race EXP at its stars in a scenario, the one generated effect that outlived the training turn
+ * What one card adds to race EXP at its global stars, the one generated effect that outlived the training turn
  * (D125). Nothing at 0★; from 1★ it follows the same star curve as a card node (68% · 84% · 100%, D200), so no migration
  * ever lowered a card's Race Bonus. At 3★ the card's unique effect adds its bonus if
  * Race Bonus is one of its kinds.

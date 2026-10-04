@@ -18,12 +18,13 @@ import {
   unitCardSetIds,
 } from '@racer/domain'
 import { m, useReducedMotion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import { getContentAsset, type ContentAsset } from '../content/runtime'
 import { unlockCard } from '../game/actions'
 import { friendshipTrainingHref } from '../game/bond-links'
+import { getMinigameHost } from '../game/minigame-host'
 import { useGame } from '../game/store'
 import { ArtViewer, ExpandMark } from '../ui/ArtViewer'
 import { AtlasSprite } from '../ui/AtlasSprite'
@@ -70,7 +71,19 @@ export function CardPage() {
   const [busy, setBusy] = useState(false)
   const [viewing, setViewing] = useState(false)
   const [openSkill, setOpenSkill] = useState<string | null>(null)
+  const [trainingTier, setTrainingTier] = useState<number | null>(null)
+  const [hasSavedRun, setHasSavedRun] = useState(false)
   const art = useArt(contentState.status === 'ready' ? contentState.content : null, 'card', cardId || null)
+  useEffect(() => {
+    if (status !== 'ready' || contentState.status !== 'ready' || !cards[cardId]) return
+    const template = contentState.content.cards.byId.get(cardId)
+    if (!template) return
+    let cancelled = false
+    void getMinigameHost().findOpenRun({ kind: 'friendship-training', cardId, tier: template.era })
+      .then((run) => { if (!cancelled) setHasSavedRun(Boolean(run)) })
+      .catch(() => { if (!cancelled) setHasSavedRun(false) })
+    return () => { cancelled = true }
+  }, [cardId, cards, contentState, status])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to view this card" detail="Your card collection is part of your private save." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -89,7 +102,10 @@ export function CardPage() {
   // Every scenario from the card's era on is open for bonding, however far the Umas have gone (D199).
   const scenarios = SCENARIOS.filter((scenario) => scenario.tier >= template.era)
   // The scenario the numbers below are quoted in: the lens it was opened from, else the furthest one an Uma has reached.
-  const referenceTier = lensTier && lensTier >= template.era ? lensTier : Math.max(template.era, highestTier)
+  const referenceTier = lensTier && scenarios.some((scenario) => scenario.tier === lensTier) ? lensTier : Math.max(template.era, highestTier)
+  const contextTier = trainingTier !== null && scenarios.some((scenario) => scenario.tier === trainingTier)
+    ? trainingTier : referenceTier
+  const globalStars = save ? cardStars(save) : 0
   const shares = cardShares(template)
   const skillPoints = paysSkillPoints(template)
   const payPerNode = skillPoints ? cardSpPerNode : cardNodeValue
@@ -199,14 +215,30 @@ export function CardPage() {
         </>
       )}
 
-      {/* ── Bond by scenario ─────────────────────────────────────────── */}
-      <SectionHeading label="Bond by scenario" hint="shared by every Uma there" />
+      <SectionHeading label="Global stars" hint="one card, every preset" />
+      <Panel className="grid gap-2 p-3">
+        <div className="flex items-center gap-2"><Stars value={globalStars} /><span className="text-[13px] font-semibold">{globalStars}★{globalStars === MAX_STARS ? ' · Max everywhere' : ''}</span></div>
+        <p className="text-[12px] text-ink-soft">Shared by every Uma, scenario and distance preset. Your card sets stay as you configured them.</p>
+        {save && (globalStars < MAX_STARS || hasSavedRun) && <>
+          <label className="grid gap-1 text-[12px] font-semibold">Training context
+            <select value={contextTier} onChange={(event) => setTrainingTier(Number(event.target.value))} className="min-h-11 rounded-md border border-hairline bg-sunken px-2 text-ink">
+              {scenarios.map((scenario) => <option key={scenario.tier} value={scenario.tier}>{scenario.name}</option>)}
+            </select>
+          </label>
+          <Link to={friendshipTrainingHref({ cardId, tier: contextTier, returnTo: here })} className="font-display flex min-h-11 items-center justify-center rounded-md border border-accent bg-accent-wash text-[13px] font-semibold">
+            {hasSavedRun ? 'Resume saved training' : `Bond globally · ${FRIENDSHIP_TRAINING_TICKET_COST} ticket`}
+          </Link>
+          <p className="text-[11px] text-ink-soft">The context chooses the twist and races. A saved run keeps its original context.</p>
+        </>}
+        {!save && <p className="text-[11px] text-ink-soft">Unlock the card to bond it.</p>}
+      </Panel>
+
+      <SectionHeading label="Scenario scaling" hint="same stars, different era pay" />
       <Panel className="p-2">
         {(
           <div className="grid gap-1">
             {scenarios.map((scenario) => {
-              const bond = save ? cardStars(save, scenario.tier) : 0
-              const maxed = bond >= MAX_STARS
+              const bond = save ? cardStars(save) : 0
               const highlighted = scenario.tier === referenceTier
               return (
                 <div key={scenario.tier} className={`flex min-h-12 items-center gap-2 rounded-md px-2 ${highlighted ? 'bg-accent-wash' : 'bg-sunken'}`}>
@@ -217,19 +249,6 @@ export function CardPage() {
                       <span className="text-micro">{Math.round(payPerNode(scenario.tier, { template, stars: bond }))}{skillPoints ? ' SP' : ''} per node</span>
                     </span>
                   </span>
-                  {!save ? null : maxed ? (
-                    <span className="w-16 text-center text-[11px] font-semibold text-ink-faint">Max</span>
-                  ) : profile.tickets >= FRIENDSHIP_TRAINING_TICKET_COST ? (
-                    <Link
-                      to={friendshipTrainingHref({ cardId, tier: scenario.tier, returnTo: here })}
-                      className="font-display flex min-h-11 w-16 items-center justify-center rounded-md border border-accent bg-panel text-[13px] font-semibold"
-                      aria-label={`Bond in ${scenario.name}: Friendship Training`}
-                    >
-                      Bond
-                    </Link>
-                  ) : (
-                    <span className="w-16 text-center text-[10px] font-semibold text-ink-faint">need {FRIENDSHIP_TRAINING_TICKET_COST}</span>
-                  )}
                 </div>
               )
             })}
@@ -244,7 +263,7 @@ export function CardPage() {
         <p className="text-micro mb-1">One node it fills, by stars{skillPoints ? ' · skill points' : ''}</p>
         <div className="grid grid-cols-4 gap-1 text-center">
           {Array.from({ length: MAX_STARS + 1 }, (_, bond) => {
-            const current = save ? cardStars(save, referenceTier) === bond : false
+            const current = save ? cardStars(save) === bond : false
             return (
               <div key={bond} className={`rounded-md px-1 py-1.5 ${current ? 'bg-accent-wash outline outline-1 outline-accent' : 'bg-sunken'}`}>
                 <Numeral className="block text-[14px] leading-none">{Math.round(payPerNode(referenceTier, { template, stars: bond }))}</Numeral>

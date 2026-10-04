@@ -116,7 +116,7 @@ against the moment the scene opened. Two tabs sit under it (M016):
 
 - **Constellation** — the card tree, the card node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
   shows each card's bond and what one node pays, with a **Bond** link beside it.
-- **Card set** — the chosen scenario's six slots. Each shows the card, its type, its stars in this scenario,
+- **Card set** — the chosen scenario/distance preset's six slots. Each shows the card, its type, its global stars,
   what one node pays (SP per node for a Friend or Group card, marked **Skill points**), how many nodes it fills, and
   a **Bond** button. Tapping a card offers Open card, **Replace** (the new card takes over its nodes), and Remove.
   Edits save as they are made, like the constellation; empty slots open the album picker, and **Fill empty slots**
@@ -254,11 +254,12 @@ Portrait layout. The track runs horizontally, lanes are stacked vertically, and 
 ### Cards
 
 - **Album**: a lens chip row — Collection, then all fourteen scenarios (D199) — over the shared album chrome
-  ([Collection](collection.md#card-album)). In a scenario, tiles carry stars and the reserved detail area has a
+  ([Collection](collection.md#card-album)). Both lenses carry global stars and the reserved detail area has a
   **Bond** button, so a bond is one tap from the tab.
 - **Card page** (`/cards/:id`): the card's illustration full width, with its name, type and ownership over its foot (a
-  tap opens the whole illustration), then how to own it (a Card Select Coupon), **Bond by scenario** with a Bond
-  button per scenario, then what it pays — its split, a 0★–3★ per-node ladder (in SP for a Friend or Group card), Race
+  tap opens the whole illustration), then how to own it (a Card Select Coupon), **Global stars** with one Bond
+  action and a scenario-context picker (D255), followed by read-only **Scenario scaling**, then what it pays — its split,
+  a 0★–3★ per-node ladder (in SP for a Friend or Group card), Race
   Bonus and its skills in node order — and every set it sits in.
 - **Unlock** hands to the full-screen collection reveal, which returns to the card's page.
 - A bond is raised only in Friendship Training, which always returns where it was launched: the album lens, the card page,

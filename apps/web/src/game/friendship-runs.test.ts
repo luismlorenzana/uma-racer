@@ -84,7 +84,7 @@ async function seed(tickets = 3, mainStars: Record<string, number> = {}) {
   await db.profile.put({ id: 'main', data: { ...createPlayerProfile('synthetic-friendship', 1234), tickets }, version: 1 })
   for (const template of cards) {
     const save = createCardSave(template)
-    await db.cards.put({ id: template.id, data: template.id === 'card-0' ? { ...save, bonds: mainStars } : save, version: 1 })
+    await db.cards.put({ id: template.id, data: template.id === 'card-0' ? { ...save, stars: Math.max(0, ...Object.values(mainStars)) } : save, version: 1 })
   }
 }
 
@@ -145,11 +145,11 @@ async function playOut(runId: string) {
     if (next.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
     view = next
   }
-  return { cleared: view.replay.phase === 'won', reward: await host().commitRun(runId, claim(view)) }
+  return { cleared: view.replay.phase === 'won', outcome: claim(view), reward: await host().commitRun(runId, claim(view)) }
 }
 
 const tickets = async () => parsePlayerProfileOrThrow((await db.profile.get('main'))!.data).tickets
-const stars = async () => cardStars(parseCardSave((await db.cards.get('card-0'))!.data)!, 1)
+const stars = async () => cardStars(parseCardSave((await db.cards.get('card-0'))!.data)!)
 
 describe('Friendship Training runs', () => {
   beforeEach(reset)
@@ -310,13 +310,13 @@ describe('Friendship Training runs', () => {
     expect(await tickets()).toBe(2)
   })
 
-  it('advances only the named scenario’s star, and pays no tickets for it', async () => {
-    await seed(3, { '1': 2 })
+  it('advances global stars in another context, and pays no tickets for it', async () => {
+    await seed(3)
     const { runId } = await host().beginRun('friendship-training', { ...target, tier: 2 })
     const { cleared, reward } = await playOut(runId)
     expect(cleared).toBe(true)
     expect(reward).toEqual({ ticketsSpent: 1, starsBefore: 0, starsAfter: 1, couponGranted: false })
-    expect(parseCardSave((await db.cards.get('card-0'))!.data)!.bonds).toEqual({ '1': 2, '2': 1 })
+    expect(parseCardSave((await db.cards.get('card-0'))!.data)!.stars).toBe(1)
     expect(await tickets()).toBe(2)
     expect(await db.ledger.count()).toBe(1)
   })
@@ -335,12 +335,10 @@ describe('Friendship Training runs', () => {
     const first = await host().beginRun('friendship-training', target)
     await shorten(first.runId)
     const one = await playOut(first.runId)
-    const second = await host().beginRun('friendship-training', { ...target, tier: 2 })
-    await shorten(second.runId)
-    const two = await playOut(second.runId)
-    expect([one.cleared, two.cleared]).toEqual([true, true])
+    await expect(host().beginRun('friendship-training', { ...target, tier: 2 })).rejects.toThrow(/3★ globally/)
+    expect(one.cleared).toBe(true)
     expect(one.reward).toMatchObject({ starsAfter: 3, couponGranted: true })
-    expect(two.reward).toMatchObject({ starsAfter: 3, couponGranted: false })
+    expect(await host().commitRun(first.runId, one.outcome)).toEqual(one.reward)
     expect((await db.ledger.toArray()).filter((row) => row.data.reason === 'card-max')).toHaveLength(1)
   })
 
@@ -354,6 +352,63 @@ describe('Friendship Training runs', () => {
     expect(next.attemptIndex).toBe(1)
     expect(next.seed).not.toBe(first.seed)
     expect(await tickets()).toBe(1)
+  })
+
+  it('resumes the same frozen run across scenario entry points without charging or rerolling', async () => {
+    await seed()
+    const first = await host().beginRun('friendship-training', target)
+    const before = await friendshipView(first.runId)
+    const another = { ...target, tier: 14 }
+    expect(await host().findOpenRun(another)).toEqual(first)
+    expect(await host().beginRun('friendship-training', another)).toEqual(first)
+    const after = await friendshipView(first.runId)
+    expect(after).toEqual(before)
+    expect(after.snapshot.setup.tier).toBe(1)
+    expect(await tickets()).toBe(2)
+    expect(await db.ledger.count()).toBe(1)
+  })
+
+  it('keeps legacy paid journals and finishes a clear after migration already made the card globally maxed', async () => {
+    await seed()
+    const original = await host().beginRun('friendship-training', target)
+    const row = (await db.minigameRuns.get(original.runId))!
+    const legacy = { ...row, id: 'friendship-training:card-0:1:0', targetKey: 'friendship-training:card-0:1' }
+    await db.minigameRuns.delete(row.id)
+    await db.minigameRuns.put(legacy)
+    const before = await friendshipView(legacy.id)
+    const card = (await db.cards.get('card-0'))!
+    await db.cards.put({ ...card, data: { ...card.data, stars: 3, maxCouponGranted: true } })
+    const resume = await host().beginRun('friendship-training', { ...target, tier: 2 })
+    expect(resume.runId).toBe(legacy.id)
+    expect(await friendshipView(legacy.id)).toEqual(before)
+    const played = await playOut(legacy.id)
+    expect(played.cleared).toBe(true)
+    expect(played.reward).toEqual({ ticketsSpent: 1, starsBefore: 3, starsAfter: 3, couponGranted: false })
+    expect(await host().commitRun(legacy.id, played.outcome)).toEqual(played.reward)
+    expect(await stars()).toBe(3)
+    expect((await db.ledger.toArray()).filter((entry) => entry.data.reason === 'card-max')).toHaveLength(0)
+  })
+
+  it('recovers multiple legacy contexts oldest first, then exposes the next already-paid run', async () => {
+    await seed()
+    const first = await host().beginRun('friendship-training', target)
+    const earlier = (await db.minigameRuns.get(first.runId))!
+    await db.minigameRuns.delete(first.runId)
+    const second = await host().beginRun('friendship-training', { ...target, tier: 2 })
+    const later = (await db.minigameRuns.get(second.runId))!
+    await db.minigameRuns.bulkDelete([first.runId, second.runId])
+    const legacyEarlier = { ...earlier, id: 'friendship-training:card-0:1:0', targetKey: 'friendship-training:card-0:1', createdAt: 1000 }
+    const legacyLater = { ...later, id: 'friendship-training:card-0:2:0', targetKey: 'friendship-training:card-0:2', createdAt: 2000 }
+    await db.minigameRuns.bulkPut([legacyLater, legacyEarlier])
+    const frozen = await friendshipView(legacyLater.id)
+    expect((await host().beginRun('friendship-training', { ...target, tier: 14 })).runId).toBe(legacyEarlier.id)
+    const ended = await journal().append(legacyEarlier.id, 0, { type: 'give-up' })
+    if (ended.engine !== 'friendship-training-v1') throw new Error('Expected a Friendship Training fixture')
+    await host().commitRun(legacyEarlier.id, claim(ended))
+    expect((await host().beginRun('friendship-training', target)).runId).toBe(legacyLater.id)
+    expect(await friendshipView(legacyLater.id)).toEqual(frozen)
+    expect(await tickets()).toBe(1) // only the two old reservations were charged
+    expect(await db.ledger.count()).toBe(2)
   })
 
   it('needs a ticket', async () => {

@@ -188,13 +188,13 @@ describe('save parsing', () => {
     expect(parseCardSave({ templateId: 'c1', bonds: { '0': 2 }, maxCouponGranted: false })).toBeNull()
     expect(parseCardSave({ templateId: 'c1', bonds: { '99': 2 }, maxCouponGranted: false })).toBeNull()
     expect(parseCardSave({ templateId: 'c1', bonds: { '1': 2, '3': 3 }, maxCouponGranted: false }))
-      .toEqual({ templateId: 'c1', bonds: { '1': 2, '3': 3 }, maxCouponGranted: false })
+      .toBeNull()
     // A zero is the default, so it never needs storing.
     expect(parseCardSave({ templateId: 'c1', bonds: { '2': 0 }, maxCouponGranted: false }))
-      .toEqual({ templateId: 'c1', bonds: {}, maxCouponGranted: false })
+      .toBeNull()
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
-      .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
+      .toEqual({ schemaVersion: 1, templateId: 'c1', stars: 3, maxCouponGranted: false })
     expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 16 })).toBeNull()
     expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 16 })).toThrow(/App update required/)
     expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), trainingExpBank: -1 })).toBeNull()
@@ -465,13 +465,13 @@ describe('the migration chain', () => {
 
   it('reads a v5 card and puts its break on tier 1, as stars', () => {
     expect(migrateCardSaveToCurrent(v5Card))
-      .toEqual({ templateId: 'c1', bonds: { '1': 3 }, maxCouponGranted: false })
+      .toEqual({ schemaVersion: 1, templateId: 'c1', stars: 3, maxCouponGranted: false })
   })
 
   it('turns v6 limit breaks into v7 stars at ceil(1.25 × LB), then three stars, so no card loses value (D147, D200)', () => {
     const v6 = { templateId: 'c1', limitBreaks: { '1': 1, '2': 2, '3': 3, '4': 4 }, maxCouponGranted: true }
     // LB1–LB4 were 2★–5★ in v7, and are 2★, 2★, 3★, 3★ now.
-    expect(migrateCardSaveToCurrent(v6)).toEqual({ templateId: 'c1', bonds: { '1': 2, '2': 2, '3': 3, '4': 3 }, maxCouponGranted: true })
+    expect(migrateCardSaveToCurrent(v6)).toEqual({ schemaVersion: 1, templateId: 'c1', stars: 3, maxCouponGranted: true })
     expect(limitBreakToStars(4)).toBe(5)
     // A card above the old ceiling was never a valid v6 card.
     expect(migrateCardSaveToCurrent({ ...v6, limitBreaks: { '1': 5 } })).toBeNull()
@@ -482,7 +482,7 @@ describe('the migration chain', () => {
 
   it('maps v7 stars to three at ⌈3s / 5⌉, keeping every node percent and making 4★ max (D200)', () => {
     const v7 = { templateId: 'c1', stars: { '1': 1, '2': 2, '3': 3, '4': 4, '5': 5 }, maxCouponGranted: false }
-    expect(migrateCardSaveToCurrent(v7)).toEqual({ templateId: 'c1', bonds: { '1': 1, '2': 2, '3': 2, '4': 3, '5': 3 }, maxCouponGranted: false })
+    expect(migrateCardSaveToCurrent(v7)).toEqual({ schemaVersion: 1, templateId: 'c1', stars: 3, maxCouponGranted: false })
     // The old curve paid 60 + 8 × stars; nobody pays less on the new one.
     for (const stars of [0, 1, 2, 3, 4, 5]) expect(starNodePct(fiveStarToThree(stars))).toBeGreaterThanOrEqual(60 + 8 * stars)
     expect(fiveStarToThree(5)).toBe(MAX_STARS)

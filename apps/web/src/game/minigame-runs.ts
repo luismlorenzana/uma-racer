@@ -258,7 +258,7 @@ function sparkScenario(uma: UmaSave, tier: number): ScenarioTraining | null {
 
 const targetKey = (target: RunTarget, tier: number): string => target.kind === 'spark-match'
   ? `spark-match:${target.umaId}:${tier}`
-  : `${target.kind}:${target.cardId}:${tier}`
+  : target.kind === 'friendship-training' ? `${target.kind}:${target.cardId}:global` : `${target.kind}:${target.cardId}:${tier}`
 
 const TICKET_COST: Readonly<Record<MinigameKind, number>> = {
   'spark-match': SPARK_MATCH_TICKET_COST,
@@ -515,17 +515,22 @@ export class PersistentMinigameHost implements MinigameHost {
     if (target.kind === 'bond-recall') throw new Error('Bond Recall is retired: Bond opens Friendship Training')
     const row = await db.cards.get(target.cardId)
     if (!row) throw new Error('This card is not owned')
-    const card = parsedCard(target.cardId, row.data)
+    parsedCard(target.cardId, row.data)
     const template = this.content.cards.byId.get(target.cardId)
     if (!template) throw new Error(`Card content is missing ${target.cardId}`)
     if (!Number.isSafeInteger(target.tier) || target.tier < 1 || target.tier > MAX_SCENARIO_TIER || template.era > target.tier) {
       throw new Error('This card is not available in that scenario')
     }
-    if (cardStars(card, target.tier) >= MAX_STARS) {
-      throw new Error(`This card already has ${MAX_STARS}★ in that scenario`)
-    }
-    if (target.partnerIds !== undefined) await this.validatePartners(target.partnerIds, target.cardId, target.tier)
     return { tier: target.tier, key: targetKey(target, target.tier) }
+  }
+
+  /** Find all paid legacy contexts without rewriting a seed, id or journal. Oldest first, with a stable tie-break. */
+  private async openRun(target: RunTarget, key: string): Promise<MinigameRunRow | undefined> {
+    const open = target.kind === 'friendship-training'
+      ? await db.minigameRuns.filter((run) => run.status === 'open' &&
+          run.target.kind === 'friendship-training' && run.target.cardId === target.cardId).toArray()
+      : await db.minigameRuns.where('[targetKey+status]').equals([key, 'open']).toArray()
+    return open.sort((left, right) => left.createdAt - right.createdAt || left.id.localeCompare(right.id))[0]
   }
 
   /** Partners must be owned, eligible in the scenario, distinct, not the main card, and at most five (D199). */
@@ -550,7 +555,7 @@ export class PersistentMinigameHost implements MinigameHost {
       .map((row) => parsedCard(row.id, row.data))
       .flatMap((card) => {
         const template = this.content.cards.byId.get(card.templateId)
-        return template ? [{ template, stars: cardStars(card, tier) }] : []
+        return template ? [{ template, stars: cardStars(card) }] : []
       })
     const main = owned.find((entry) => entry.template.id === target.cardId) ?? { template: mainCard, stars: 0 }
     const set = target.partnerIds ?? defaultFriendshipPartners({ tier, mainCardId: target.cardId, owned })
@@ -573,7 +578,7 @@ export class PersistentMinigameHost implements MinigameHost {
     } catch {
       return null
     }
-    const open = await db.minigameRuns.where('[targetKey+status]').equals([key, 'open']).first()
+    const open = await this.openRun(target, key)
     return open ? asTicket(open) : null
   }
 
@@ -587,8 +592,14 @@ export class PersistentMinigameHost implements MinigameHost {
       if (!profileRow) throw new Error('Local profile is missing')
       const profile = parsePlayerProfileOrThrow(profileRow.data)
       const valid = await this.validateTarget(target)
-      const open = await db.minigameRuns.where('[targetKey+status]').equals([valid.key, 'open']).first()
+      const open = await this.openRun(target, valid.key)
       if (open) return asTicket(open)
+
+      if (target.kind === 'friendship-training') {
+        const card = parsedCard(target.cardId, (await db.cards.get(target.cardId))!.data)
+        if (cardStars(card) >= MAX_STARS) throw new Error(`This card already has ${MAX_STARS}★ globally`)
+        if (target.partnerIds !== undefined) await this.validatePartners(target.partnerIds, target.cardId, valid.tier)
+      }
 
       const cost = TICKET_COST[kind]
       if (profile.tickets < cost) throw new Error(`You need ${cost} Training Tickets to begin this run`)
@@ -719,11 +730,11 @@ export class PersistentMinigameHost implements MinigameHost {
           const cardRow = await db.cards.get(run.target.cardId)
           if (!cardRow) throw new Error('This card is not owned')
           const card = parsedCard(run.target.cardId, cardRow.data)
-          const before = cardStars(card, run.tier)
+          const before = cardStars(card)
           let nextCard = card
           let after = before
           let couponGranted = false
-          if (cleared) {
+          if (cleared && before < MAX_STARS) {
             const advance = advanceCardStars(card, run.tier)
             nextCard = advance.card
             after = advance.toStars

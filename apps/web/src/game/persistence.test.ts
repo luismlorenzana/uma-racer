@@ -204,6 +204,63 @@ async function resetDatabase(): Promise<void> {
 describe('save persistence', () => {
   beforeEach(resetDatabase)
 
+  it('upgrades a v24 database to global maximum stars without modifying any of the four presets', async () => {
+    const loaded = content()
+    const card = loaded.cards.items[0]!
+    const current = withRun(createUmaSave(loaded.umas.items[0]!), { cardSetIds: [card.id] })
+    // Use the current store definitions, but open at the version deployed before global stars.
+    const old = new Dexie('uma-racer')
+    old.version(24).stores(Object.fromEntries(db.tables.map((table) => [table.name,
+      [table.schema.primKey.src, ...table.schema.indexes.map((index) => index.src)].join(', ')])))
+    await old.open()
+    const profile = { id: 'main', data: createPlayerProfile('global-proof', 1), version: 9 }
+    const umaRow = { id: current.templateId, data: current, version: 7 }
+    await old.table('profile').put(profile)
+    await old.table('umas').put(umaRow)
+    await old.table('cards').put({ id: card.id, data: { templateId: card.id,
+      bonds: { '1': 1, '3': 2, '14': 1 }, maxCouponGranted: true }, version: 5 })
+    await old.table('outbox').add({ kind: 'cards', id: card.id, op: 'upsert', queuedAt: 1 })
+    const finished = { id: 'legacy-completed', targetKey: 'friendship-training:card:3', status: 'completed',
+      seed: '123', snapshot: { retained: 'verbatim' }, journal: { retained: 'verbatim' }, reward: { starsAfter: 1 } }
+    await old.table('minigameRuns').put(finished)
+    old.close()
+    await db.open()
+    expect((await db.cards.get(card.id))).toEqual({ id: card.id, version: 5,
+      data: { schemaVersion: 1, templateId: card.id, stars: 2, maxCouponGranted: true } })
+    expect(await db.umas.get(current.templateId)).toEqual(umaRow)
+    expect(await db.profile.get('main')).toEqual(profile)
+    expect(await db.minigameRuns.get(finished.id)).toEqual(finished)
+    expect(await db.outbox.where('[kind+id]').equals(['cards', card.id]).count()).toBe(1)
+    expect(await db.outbox.count()).toBe(1)
+    db.close(); await db.open()
+    expect(await db.outbox.count()).toBe(1)
+  })
+
+  it('migrates cloud card rows on a new device and queues the raw legacy shape for upload', async () => {
+    await db.open()
+    await adoptServerSnapshot({ entities: [
+      { kind: 'profile', id: 'main', version: 2, data: createPlayerProfile('cloud-global', 1), deleted: false, updatedAt: 1 },
+      { kind: 'cards', id: 'cloud-card', version: 7, data: { templateId: 'cloud-card', bonds: { '1': 3, '4': 1 }, maxCouponGranted: true }, deleted: false, updatedAt: 1 },
+    ], logs: [], serverTime: 5 })
+    expect(await db.cards.get('cloud-card')).toEqual({ id: 'cloud-card', version: 7,
+      data: { schemaVersion: 1, templateId: 'cloud-card', stars: 3, maxCouponGranted: true } })
+    expect(await db.outbox.where('[kind+id]').equals(['cards', 'cloud-card']).count()).toBe(1)
+    expect(await db.ledger.count()).toBe(0)
+  })
+
+  it('rebases global card conflicts by maximum and paid flag, never sum or rollback', async () => {
+    await db.open()
+    const local = { schemaVersion: 1 as const, templateId: 'merge-card', stars: 2, maxCouponGranted: true }
+    await db.cards.put({ id: local.templateId, version: 1, data: local })
+    await db.transaction('rw', [db.cards, db.outbox], () => putConflict({ kind: 'cards', id: local.templateId,
+      data: { ...local, stars: 1, maxCouponGranted: false }, version: 3, updatedAt: 1, deleted: false }, false, 5))
+    expect(await db.cards.get(local.templateId)).toEqual({ id: local.templateId, data: local, version: 3 })
+    expect(await db.outbox.where('[kind+id]').equals(['cards', local.templateId]).count()).toBe(1)
+    await db.transaction('rw', [db.cards, db.outbox], () => putConflict({ kind: 'cards', id: local.templateId,
+      data: { ...local, stars: 3 }, version: 4, updatedAt: 1, deleted: false }, false, 6))
+    expect((await db.cards.get(local.templateId))?.data).toEqual({ ...local, stars: 3 })
+  })
+
   it('initializes profile, roster, ledger, and coalesced outbox atomically', async () => {
     const loaded = content()
     await db.open()
@@ -472,7 +529,7 @@ describe('save persistence', () => {
     await db.open()
     const migrated = await readLocalSnapshot()
     expect(migrated?.profile).toMatchObject({ version: 9, data: { schemaVersion: 15, tickets: 12 } })
-    expect(migrated?.cards[0]).toMatchObject({ version: 4, data: { templateId: 'c1', bonds: { '1': 3, '2': 2, '3': 3 }, maxCouponGranted: true } })
+    expect(migrated?.cards[0]).toMatchObject({ version: 4, data: { schemaVersion: 1, templateId: 'c1', stars: 3, maxCouponGranted: true } })
     expect(await db.outbox.where('[kind+id]').equals(['cards', 'c1']).count()).toBe(1)
     expect(await db.outbox.where('[kind+id]').equals(['profile', 'main']).count()).toBe(1)
   })

@@ -85,7 +85,7 @@ function album(
 ) {
   const cards = Object.fromEntries(ownedIds.map((id) => {
     const save = createCardSave(templates.find((entry) => entry.id === id)!)
-    return [id, { ...save, bonds: options.breaks?.[id] ?? {} }]
+    return [id, { ...save, stars: Math.max(0, ...Object.values(options.breaks?.[id] ?? {})) }]
   }))
   const save = createUmaSave(uma('u1'))
   return buildCardAlbumRows({
@@ -98,13 +98,13 @@ function album(
 }
 
 describe('card album · collection lens', () => {
-  it('lists every card, newest era first, and knows nothing about bond', () => {
+  it('lists every card, newest era first, with global stars and no context-dependent pay', () => {
     const built = album('collection', ['c1', 'c2'])
     const result = runAlbumQuery(built.rows, CARD_COLLECTION_FACETS, CARD_COLLECTION_QUERY, CARD_TIE_BREAK)
     expect(result.rows.map((row) => row.id)).toEqual(['c2', 'c3', 'c1'])
     expect(built.total).toBe(3)
     expect(built.owned).toBe(2)
-    expect(built.entries.get('c1')?.bond).toBeNull()
+    expect(built.entries.get('c1')?.bond).toBe(0)
     expect(built.entries.get('c1')?.perNode).toBeNull()
   })
 
@@ -145,11 +145,11 @@ describe('card album · scenario lens', () => {
     const built = album(2, ['c1', 'c3'], { breaks: { c3: { '2': 2 }, c1: { '1': 3 } } })
     expect([...built.entries.keys()].sort()).toEqual(['c1', 'c3'])
     const result = runAlbumQuery(built.rows, CARD_SCENARIO_FACETS, CARD_SCENARIO_QUERY, CARD_TIE_BREAK)
-    expect(result.rows.map((row) => row.id)).toEqual(['c3', 'c1'])
-    // c1 has 3★ in tier 1, but stars belong to their scenario: in tier 2 it starts over.
-    expect(built.entries.get('c1')?.bond).toBe(0)
+    expect(result.rows.map((row) => row.id)).toEqual(['c1', 'c3'])
+    // A card trained anywhere retains the same stars in this lens (D255).
+    expect(built.entries.get('c1')?.bond).toBe(3)
     expect(built.entries.get('c3')?.bond).toBe(2)
-    expect(built.bonded).toBe(1)
+    expect(built.bonded).toBe(2)
   })
 
   it('pays per node at the scenario, by stars', () => {

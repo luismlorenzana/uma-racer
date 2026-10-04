@@ -12,9 +12,9 @@ There is no turn-based training, no facility deal, no energy, and no per-turn RN
 Uma  ─ has ─►  one ScenarioTraining per unlocked scenario
                  │
                  ├── trainingLevel 1–10        ← earned by Spark Rival Circuit
-                 ├── cardSetIds[6]             ← the cards this scenario may use
-                 ├── node assignments          ← what fills each unlocked slot
-                 └── extraStats                ← grid nodes bought with Farm crops, six on
+                 ├── four distance presets    ← each has cardSetIds[6], assignments, active Extra stats and loadout
+                 ├── Inspiration unlocks      ← shared by the four presets
+                 └── Extra stats purchased    ← grid nodes bought with Farm crops, shared unlocks
 
 Active scenario = the highest tier the Uma has unlocked: her career. Every unlocked scenario is a
 trained unit that can race in its own context (D190).
@@ -23,6 +23,10 @@ trained unit that can race in its own context (D190).
 Everything an Uma *is* in a race — stats, skills, aptitudes — is **derived** from the racing scenario's
 constellation every time it is read. Nothing is accumulated into a stored number, so re-slotting a card takes effect
 immediately and can always be undone.
+
+Each preset's set and assignments reference owned card ids; those cards carry one **global** 0–3★ count (D255).
+Stars are not copied into a preset or scenario. Era eligibility/decay and scenario buffs still use the scenario
+being derived; changing global stars benefits every configured build without changing its assignments (D252–D254).
 
 ## A scenario is a career run
 
@@ -186,8 +190,8 @@ starPct = 0★ 60 · 1★ 68 · 2★ 84 · 3★ 100
 eraPct  = max(40, 100 − 5 × (T − cardEra))
 ```
 
-A card's stars are **also per scenario** (D127, D200), so both halves of card quality are measured against the
-scenario a node belongs to.
+A card's stars are **global** (D255); only era quality is measured against the scenario a node belongs to.
+Every preset reads the same owned card's stars, and each scenario still applies its own era decay and buffs.
 
 **Era is measured against the scenario, not in absolute terms.** A card from the scenario's own era is full
 value; every era it predates costs five points, floored at 40. So Kitasan Black's Speed card and a newer Speed
@@ -332,9 +336,10 @@ collection load-bearing.)*
 
 ## Reconfiguration
 
-Every unlocked node is editable at any time, outside a race. There is exactly one persisted configuration per
-scenario — the current one. There are no saved presets and no configuration history: you change it, you race,
-you change it back.
+Every unlocked node is editable at any time, outside a race. Each scenario has four persisted distance presets,
+Sprint, Mile, Medium and Long (D252–D254). Its Training Level, purchased Extra stat nodes and Inspiration unlocks
+are shared; its card set, assignments, active Extra stats and skill loadout belong to each preset. Training edits the
+selected preset, and a race reads the preset of its distance. There is no configuration history within a preset.
 
 Reconfiguration never costs tickets and never touches Training Level or card levels. Card and lineage nodes and which
 Extra stats are on remain free and reversible. Buying an Extra stat node is the one spend: it consumes its crops

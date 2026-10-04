@@ -28,6 +28,8 @@ import {
   TICKET_STORAGE_CAP,
   redenominateTickets,
   MAX_STARS,
+  CARD_SAVE_SCHEMA_VERSION,
+  migrateCardSaveToCurrent,
   cardRaceBonus,
   skillPointCap,
   averageCap,
@@ -194,6 +196,15 @@ import {
   RPG_EXP_RELATIVE_STEP, RPG_EXP_FACTOR_MIN, RPG_EXP_FACTOR_MAX, RPG_CHAPTER_EXP_MARGIN,
   RPG_ENCOUNTER_EXP_WEIGHTS, RPG_MAX_ENCOUNTER_EXP, rpgEncounterBaseExp, rpgEncounterExp,
 } from './index'
+
+describe('Global card stars — D255', () => {
+  it('pins the independent schema, maximum-not-sum policy and unchanged three-star cap', () => {
+    expect(CARD_SAVE_SCHEMA_VERSION).toBe(1)
+    expect(MAX_STARS).toBe(3)
+    expect(migrateCardSaveToCurrent({ templateId: 'pin-card', bonds: { '1': 2, '14': 1 }, maxCouponGranted: true }))
+      .toEqual({ schemaVersion: 1, templateId: 'pin-card', stars: 2, maxCouponGranted: true })
+  })
+})
 
 describe('Global Uma RPG — T096 reward pins', () => {
   it('pins authored schedule, frozen-level taper, rounding and positive floor', () => {

@@ -36,7 +36,7 @@ export interface FtCardDef {
   trait: CardEffect
   /** Its unique effect's kinds, played at ×1.5 once the main card bonds; its own trait when none match. */
   signature: CardEffect[]
-  /** Its stars in this scenario; strength is `1 + 0.1 × stars`. */
+  /** Its global stars frozen at reservation; strength uses FT_STRENGTH_PER_STAR. */
   stars: number
 }
 
@@ -183,7 +183,7 @@ export interface BuildFriendshipSetupInput {
   mainCard: SupportCardTemplate
   /** The run's partner cards, chosen for it (D199; may include the main card, which is skipped). Topped up by seed. */
   setCardIds: readonly string[]
-  /** Every owned card with its stars in this scenario. */
+  /** Every owned card with its global stars at reservation. */
   owned: readonly { template: SupportCardTemplate; stars: number }[]
   skills: readonly SkillTemplate[]
   races: readonly RaceTemplate[]

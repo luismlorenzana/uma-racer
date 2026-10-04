@@ -335,11 +335,20 @@ export interface LegacyUmaSaveV1 extends Omit<LegacyUmaSaveV4,
   'schemaVersion' | 'scenarioStarted' | 'skillHistory' | 'currentParents' | 'parentSnapshot' | 'goalPlanVersion' | 'scenarioJourneys' | 'scenarioModifier'> {}
 
 /**
- * Cards earn one star per clear of the card minigame, 0★–3★ (D200), and stars belong to the scenario they were earned in
- * but are shared by every Uma (D127). An absent tier means 0★ there. The field is `bonds`, not v7's `stars` (0★–5★) or
- * v6's `limitBreaks`, so a card on an older scale can never be read without its conversion.
+ * Independently versioned, account-wide 0★–3★ progression (docs/design/support-cards.md, D255).
+ * The scalar cannot be confused with the historical five-star map; Uma/profile schema stays independent.
  */
 export interface CardSave {
+  schemaVersion: typeof CARD_SAVE_SCHEMA_VERSION
+  templateId: string
+  stars: number
+  maxCouponGranted: boolean
+}
+
+export const CARD_SAVE_SCHEMA_VERSION = 1
+
+/** The unversioned three-star scenario map used from save v8 to v15. */
+export interface LegacyCardSaveV8 {
   templateId: string
   bonds: Record<string, number>
   maxCouponGranted: boolean
@@ -1826,7 +1835,7 @@ function migrateUmaSaveToV10(value: unknown): LegacyUmaSaveV10 | null {
 
 /** Walks any supported stored card shape to the current one. */
 export function migrateCardSaveToCurrent(value: unknown): CardSave | null {
-  return parseCardSave(value) ?? migrateCardSaveV7(value) ?? migrateCardSaveV6(value) ?? migrateCardSaveV5(value)
+  return parseCardSave(value) ?? migrateCardSaveV8(value) ?? migrateCardSaveV7(value) ?? migrateCardSaveV6(value) ?? migrateCardSaveV5(value)
 }
 
 /** Walks any supported stored profile shape to the current one. */
@@ -1862,11 +1871,18 @@ export function migratePlayerProfileToCurrent(value: unknown): PlayerProfile | n
 }
 
 export function parseCardSave(value: unknown): CardSave | null {
+  if (!isObject(value) || !exactKeys(value, ['schemaVersion', 'templateId', 'stars', 'maxCouponGranted']) || !isId(value.templateId)) return null
+  if (value.schemaVersion !== CARD_SAVE_SCHEMA_VERSION || !isNonNegativeInt(value.stars) || value.stars > MAX_STARS) return null
+  if (typeof value.maxCouponGranted !== 'boolean') return null
+  return { schemaVersion: CARD_SAVE_SCHEMA_VERSION, templateId: value.templateId, stars: value.stars, maxCouponGranted: value.maxCouponGranted }
+}
+
+export function migrateCardSaveV8(value: unknown): CardSave | null {
   if (!isObject(value) || !exactKeys(value, ['templateId', 'bonds', 'maxCouponGranted']) || !isId(value.templateId)) return null
   const bonds = parsePerTier(value.bonds, MAX_STARS)
-  if (!bonds) return null
-  if (typeof value.maxCouponGranted !== 'boolean') return null
-  return { templateId: value.templateId, bonds, maxCouponGranted: value.maxCouponGranted }
+  if (!bonds || typeof value.maxCouponGranted !== 'boolean') return null
+  return { schemaVersion: CARD_SAVE_SCHEMA_VERSION, templateId: value.templateId,
+    stars: Math.max(0, ...Object.values(bonds)), maxCouponGranted: value.maxCouponGranted }
 }
 
 /** v7's five-star scale (D147). */
@@ -1883,8 +1899,9 @@ export function migrateCardSaveV7(value: unknown): CardSave | null {
   const stars = parsePerTier(value.stars, LEGACY_MAX_STARS_V7)
   if (!stars || typeof value.maxCouponGranted !== 'boolean') return null
   return {
+    schemaVersion: CARD_SAVE_SCHEMA_VERSION,
     templateId: value.templateId,
-    bonds: Object.fromEntries(Object.entries(stars).map(([tier, count]) => [tier, fiveStarToThree(count)])),
+    stars: fiveStarToThree(Math.max(0, ...Object.values(stars))),
     maxCouponGranted: value.maxCouponGranted,
   }
 }
@@ -1908,7 +1925,7 @@ export function migrateCardSaveV6(value: unknown): CardSave | null {
  * scenario every save has reached and spreading it across tiers would invent progress that was never earned.
  */
 export function migrateCardSaveV5(value: unknown): CardSave | null {
-  if (!isObject(value) || !isId(value.templateId)) return null
+  if (!isObject(value) || 'schemaVersion' in value || !isId(value.templateId)) return null
   if (!isNonNegativeInt(value.limitBreak) || value.limitBreak > LEGACY_MAX_LIMIT_BREAK) return null
   const limitBreak = value.limitBreak as number
   return migrateCardSaveV6({
@@ -1993,7 +2010,7 @@ export function createUmaSave(template: UmaTemplate): UmaSave {
 
 export function createCardSave(template: SupportCardTemplate): CardSave {
   assertSaveCardTemplate(template)
-  return { templateId: template.id, bonds: {}, maxCouponGranted: false }
+  return { schemaVersion: CARD_SAVE_SCHEMA_VERSION, templateId: template.id, stars: 0, maxCouponGranted: false }
 }
 
 function nextLocalDay(day: string): string {

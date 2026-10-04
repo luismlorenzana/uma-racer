@@ -100,8 +100,8 @@ LB2 → 3★, LB3 → 4★, LB4 → 5★ — so no card lost node value or Race 
 Save v8 (D200) moves those five stars to three at `⌈3s / 5⌉`: 1★ → 1★, 2★ and 3★ → 2★, 4★ and 5★ → 3★. Rounding up
 keeps every node percent a card had (old 2★ paid 76%, now 84%), and a card one star from the old max is maxed. A card
 the migration maxes is paid its Card Select Coupon at startup if it never had one, and a Friendship Training run left
-open on the five-star ladder is closed with its ticket refunded. The save field is now `bonds`, so a card on an older
-scale can never be read without its conversion. A gold skill at a star threshold, once planned for bond 3, was never
+open on the five-star ladder is closed with its ticket refunded. Save v8 used the field `bonds`, so a card on an older
+scale could never be read without its conversion. A gold skill at a star threshold, once planned for bond 3, was never
 built and is not part of stars.
 
 ### Global-star cutover (D255)

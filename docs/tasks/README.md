@@ -11,8 +11,9 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**Owner detour: [T104 — Global card stars](T104-global-card-stars.md)** precedes T099. Preserve the four distance
-presets from D252–D254; T081's old scenario-occurrence definitions need separate re-authoring, not implementation here.
+**Owner detour T104 — Global card stars is complete** (D255). It preserves all four distance presets from D252–D254;
+T081's old scenario-occurrence definitions need separate re-authoring before implementation. T099's private publication
+and playable-release gates remain unchanged.
 
 | Milestone | Tasks | State |
 |---|---|---|
@@ -40,6 +41,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T104 — Global card stars | 2026-10-03 | [Support Cards](../design/support-cards.md#global-star-cutover-d255), D255 and [phone proof](../research/global-card-stars-phone-proof.md) | `cea441c` |
 | M027 — Training Rebalance (T087 linear levels and EXP bank, T088 spending Level-Up Tickets) | 2026-10-02 | [Training](../design/training.md#the-training-exp-bank-and-level-up-tickets), D211–D214 | git history |
 | T089 — RPG pure progression rules | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#outfit-rpg-profile-and-progression), D227 and `packages/domain/src/rpg/` | `ce2aa37` |
 | T090 — RPG save and grouped commands | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#five-member-combat-proposal), [Architecture](../technical/architecture.md), D228 | git history |

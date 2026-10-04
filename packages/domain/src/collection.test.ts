@@ -93,7 +93,7 @@ describe('collection counts', () => {
   it('counts known cards by era/type without inflating completion for orphans', () => {
     const cards = [card('c2', 2, 'friend'), card('c1', 1, 'speed'), card('c3', 2, 'speed')]
     const owned = {
-      c1: { ...createCardSave(cards[1]!), bonds: { '1': 3 } },
+      c1: { ...createCardSave(cards[1]!), stars: 3 },
       c2: createCardSave(cards[0]!),
       orphan: createCardSave(card('orphan')),
     }

@@ -37,6 +37,22 @@ describe('LocalSaveRepository sync', () => {
     expect(stale.conflicts[0]?.data).toEqual({ lb: 2 })
   })
 
+  it('keeps global card stars and coupon flags monotonic, including old clients with a matched version', async () => {
+    const data = { schemaVersion: 1, templateId: 'global-card', stars: 3, maxCouponGranted: true }
+    const write = (baseVersion: number, body: object) => repo.sync('global-owner', {
+      upserts: [{ kind: 'cards', id: 'global-card', baseVersion, data: body as Record<string, unknown> }], appends: [],
+    })
+    expect((await write(0, data)).applied).toHaveLength(1)
+    for (const body of [{ ...data, stars: 2 }, { ...data, maxCouponGranted: false },
+      { templateId: 'global-card', bonds: { '1': 3 }, maxCouponGranted: true }]) {
+      const response = await write(1, body)
+      expect(response.applied).toHaveLength(0)
+      expect(response.conflicts[0]?.data).toEqual(data)
+    }
+    expect((await write(1, data)).applied[0]?.version).toBe(2)
+    expect((await write(1, data)).conflicts[0]?.version).toBe(2)
+  })
+
   it('appends logs idempotently and keeps players separate', async () => {
     const append = { kind: 'raceResults' as const, id: 'r1', data: { placement: 1 }, createdAt: 1 }
     expect((await repo.sync('u1', { upserts: [], appends: [append] })).appended).toBe(1)
@@ -185,6 +201,10 @@ describe('parseSyncRequest', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'profile', id: 'main', baseVersion: 3, data: { ...profile, schemaVersion: 11 } }] }))
       .toMatch(/invalid profile data/)
     const card = (data: Record<string, unknown>) => parseSyncRequest({ upserts: [{ kind: 'cards', id: 'c1', baseVersion: 1, data: { templateId: 'c1', maxCouponGranted: false, ...data } }] })
+    expect(card({ schemaVersion: 1, stars: 3 })).toMatchObject({ upserts: [{ data: { schemaVersion: 1, stars: 3 } }] })
+    for (const body of [{ schemaVersion: 2, stars: 3 }, { schemaVersion: 1, stars: 4 },
+      { schemaVersion: 1, stars: 1.5 }, { schemaVersion: 1, stars: { '1': 3 } },
+      { schemaVersion: 1, stars: 3, bonds: {} }]) expect(card(body)).toMatch(/invalid cards data/)
     expect(card({ stars: { '1': 5, '2': 3 } })).toMatchObject({ upserts: [{ kind: 'cards', data: { stars: { '1': 5 } } }] })
     expect(card({ stars: { '1': 6 } })).toMatch(/invalid cards data/)
     expect(card({ limitBreaks: { '1': 4 } })).toMatchObject({ upserts: [{ kind: 'cards' }] })
