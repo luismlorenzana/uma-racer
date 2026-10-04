@@ -402,6 +402,23 @@ apps/web/src/
 
 ## Testing
 
+### Inspiration advance (D256)
+
+`inspirationBank/main` is an independently versioned, server-owned schema-1 account entity, cached in Dexie v26.
+It holds a frozen outfit/scenario cohort (including pre-advance open-position counts), completed outfit ids, phase
+`opening|active`, creation time and signed nonpositive scenario/token balances. Normal sync cannot create/edit/delete
+it. `POST /api/inspiration/advance` accepts only `{}` behind AuthGuard, freezes the authoritative cohort once, then
+opens/debits each outfit with the bank in one transaction. Two-document steps avoid Firestore's bulk write limit.
+Retries resume the same cohort; active calls return the bank and frozen-cohort Uma rows without further writes.
+Malformed/legacy authoritative Umas must be migrated by normal sync before advancement, never silently skipped.
+
+Startup invokes it only with persistent storage, online and drained ordinary/RPG queues. Acknowledged bank/Uma rows
+are adopted transactionally; a local edit queued during the request retains its build and unions permanent unlocks
+onto the returned server version. Failures remain visible/retryable without marking the whole save unavailable.
+RPG map-reward groups read the actual bank even when an old client omits it, require a matching version and exact
+repayment projection, and reject collection during `opening`. Gross ledger grants retain ids and add optional
+`debtPaid`; all inventory evidence reconstruction subtracts it. No profile/Uma schema bump or gameplay RNG changes.
+
 | Layer | Tooling | Focus |
 |---|---|---|
 | `@racer/domain` | Vitest | Formulas match the design docs (caps, rivals, costs, EXP curves) |

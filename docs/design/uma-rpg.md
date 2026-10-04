@@ -567,6 +567,12 @@ records 390×844/375×667 checks, acknowledgement, replay and recovery coverage.
 
 ## Inspiration rewards (D250)
 
+The temporary [Inspiration advance](skills-and-inheritance.md#temporary-inspiration-advance-d256) does not change gross
+rewards or costs. Each accepted reward first repays that scenario/family's negative bank, then deposits the remainder.
+The checkpoint, bank, Item stock and ledger receipt commit together. Ledger `delta` remains gross; optional
+`source.debtPaid` is the withheld portion (legacy entries mean zero), so Item reconstruction sums `delta - debtPaid`.
+An unfinished advance blocks token collection until resumed; replay and another device never repay twice.
+
 Global Items has **Inspiration Slot Token [Scenario]** and **Inspiration Skill Token [Scenario]**, never an RPG
 wallet or Badge-page reward. One slot token opens one of an outfit's six parent/grandparent slots for that scenario;
 one skill token opens one of two natural-gold positions per slot. Independent parents, exact opposite-side mirrored

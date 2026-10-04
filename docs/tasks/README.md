@@ -11,6 +11,9 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
+**Owner detour [T105 — Inspiration advance](T105-inspiration-advance.md) is in progress** (D256): one-time shared
+scenario unlocks, a negative token bank, and receipt-gated RPG repayment. T099's private release gate is unchanged.
+
 **Owner detour T104 — Global card stars is complete** (D255). It preserves all four distance presets from D252–D254;
 T081's old scenario-occurrence definitions need separate re-authoring before implementation. T099's private publication
 and playable-release gates remain unchanged.
@@ -32,7 +35,7 @@ The owner's device checks (every milestone's, including Spark Rival Circuit's ph
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M030 and T105.** Numbers are never reused, so a decision that mentions T014 always means the same
+**Next free numbers: M030 and T106.** Numbers are never reused, so a decision that mentions T014 always means the same
 work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed
