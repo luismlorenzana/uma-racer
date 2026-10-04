@@ -20,14 +20,14 @@ export async function enqueueRpgCommand(body: RpgCommandRequest, now: number, de
 
 
 async function installAccepted(commandId: string, response: Extract<RpgCommandResponse, { status: 'applied' | 'duplicate' }>, database: RacerDb): Promise<void> {
-  const entityTables = [database.rpgOutfits, database.rpgPresets, database.rpgCheckpoints, database.umas, database.items]
+  const entityTables = [database.rpgOutfits, database.rpgPresets, database.rpgCheckpoints, database.umas, database.items, database.inspirationBank]
   const logTables = [database.rpgResults, database.rpgPromotions, database.rpgReceipts, database.itemLedger]
   const entities = response.entities
   const logs = response.logs
   await database.transaction('rw', [...entityTables, ...logTables, database.pendingRpgCommands, database.outbox], async () => {
     for (const row of entities) {
       if (row.kind !== 'rpgOutfits' && row.kind !== 'rpgPresets' && row.kind !== 'rpgCheckpoints' &&
-        row.kind !== 'umas' && row.kind !== 'items') throw new Error(`Unexpected RPG command entity: ${row.kind}`)
+        row.kind !== 'umas' && row.kind !== 'items' && row.kind !== 'inspirationBank') throw new Error(`Unexpected RPG command entity: ${row.kind}`)
       if ((row.kind === 'umas' || row.kind === 'items') &&
         await database.outbox.where('[kind+id]').equals([row.kind, row.id]).count()) {
         throw new Error(`Cannot adopt RPG command while ${row.kind}/${row.id} has a pending ordinary write`)

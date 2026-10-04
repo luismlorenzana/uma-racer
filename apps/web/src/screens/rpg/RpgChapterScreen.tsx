@@ -80,6 +80,10 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
   const earned = view?.tokenGrants.reduce((r, g) => ({ tier: g.source.tier,
     slot: r.slot + (g.itemId.endsWith(':slot') ? g.delta : 0), skill: r.skill + (g.itemId.endsWith(':skill') ? g.delta : 0) }), { tier: 1, slot: 0, skill: 0 }) ?? null
   const name = (id: string) => content?.umas.byId.get(id)?.name ?? (proof ? ['Ember', 'Rill', 'Beacon', 'Dawn', 'Volt'][Number(id.at(-1))] ?? id : id)
+  const repaid = view?.tokenGrants.reduce((r, g) => {
+    const paid = g.source.kind === 'rpg-inspiration' ? g.source.debtPaid ?? 0 : 0
+    return { slot: r.slot + (g.itemId.endsWith(':slot') ? paid : 0), skill: r.skill + (g.itemId.endsWith(':skill') ? paid : 0) }
+  }, { slot: 0, skill: 0 })
   const choose = (node: RpgChapterNode) => command(async () => {
     if (!uid || !chapter) return
     const destination = await host.choose(uid, presetId, chapter.id, node.id)
@@ -128,7 +132,7 @@ export function RpgChapterMap({ host, presetId, chapterId, content, uid, onSync,
               <details className="rounded-sm border border-hairline-dark"><summary className="flex min-h-11 cursor-pointer items-center px-3 text-xs">Accepted route · {cp.data.selectedPath.length} checkpoints</summary><ol className="space-y-1 px-6 pb-3 text-xs text-ink-on-dark-soft">{cp.data.selectedPath.map((id) => <li key={id}>{chapter.nodes.find((n) => n.id === id)?.name}</li>)}</ol></details>
             </>}
           </>}
-          <RpgInspirationReward reward={earned} label="Collected this attempt · acknowledged Items" />
+          <RpgInspirationReward reward={earned} repaid={repaid} label="Earned this attempt · acknowledged rewards" />
           {!proof && earned && earned.slot + earned.skill > 0 && <div><Link to="/farm/items" className="flex min-h-11 items-center text-sm text-accent">Open global Items</Link>{party.map(({ slot }) => <Link key={slot.outfitId} to={`/constellation/${slot.outfitId}/inspiration?tier=${earned.tier}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · Inspiration</Link>)}</div>}
           <RpgElementLegend />
           {cp && chapter && ['at-checkpoint', 'cleared'].includes(cp.data.status) && !view.pending.length && <section className="mt-3 space-y-1" aria-label="Safe checkpoint skill setup"><h3 className="text-sm">Set up RPG skills</h3><p className="text-xs text-ink-on-dark-soft">Spend earned points, equip skills or promote before the next fight.</p>{party.map(({ slot }) => <Link key={slot.outfitId} to={proof ? `/dev/rpg-chapter-proof?chapter=${chapter.id}&view=skills&outfit=${slot.outfitId}` : `/rpg/roster/${slot.outfitId}`} className="flex min-h-11 items-center text-sm text-accent">{name(slot.outfitId)} · profile & skills</Link>)}</section>}

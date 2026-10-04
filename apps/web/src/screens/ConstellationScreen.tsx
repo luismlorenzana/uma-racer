@@ -48,6 +48,7 @@ import { useTraining, type TrainingContext } from './TrainingScene'
 import { formatTickets } from '../ui/tickets'
 import { InspirationTokenIcon } from '../ui/InspirationTokenIcon'
 import { useInspiration } from '../game/use-inspiration'
+import { InspirationBankPanel } from '../ui/InspirationBankPanel'
 import { reserveInspirationUnlock } from '../game/inspiration-host'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
@@ -68,7 +69,7 @@ export function InspirationScreen() { return <ConstellationScreen viewMode="insp
 const belongsToView = (node: ConstellationNode, viewMode: NodeView) =>
   viewMode === 'constellation' ? node.kind === 'card' : node.kind === 'parent' || node.kind === 'grandparent'
 
-export function ConstellationScreen({ viewMode = 'constellation', preview }: { viewMode?: NodeView; preview?: TrainingContext }) {
+export function ConstellationScreen({ viewMode = 'constellation', preview, previewBank }: { viewMode?: NodeView; preview?: TrainingContext; previewBank?: import('@racer/domain').InspirationBank }) {
   const training = useTraining()
   const { content, save, uma, cards, umas, tickets } = preview ?? training
   const pushToast = useGame((state) => state.pushToast)
@@ -266,6 +267,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview }: { v
             {viewMode === 'constellation' ? 'Card constellation' : 'Inspiration'} <span className="text-ink-faint">· {filledCount} filled · {openCount} of {treeNodes} unlocked</span>
           </p>
         </div>
+        {viewMode === 'inspiration' && (!preview || previewBank) && <InspirationBankPanel tier={run.tier} preview={previewBank} />}
         {viewMode === 'inspiration' && <div className="mt-1 flex flex-wrap gap-1">
           {moved.length > 0
             ? moved.map((row) => (

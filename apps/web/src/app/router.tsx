@@ -193,6 +193,9 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/inspiration-advance-proof',
+    lazy: async () => ({ Component: (await import('../screens/rpg/InspirationAdvanceProofScreen')).InspirationAdvanceProofScreen }),
+  }, {
     path: 'dev/inspiration-proof',
     lazy: async () => ({ Component: (await import('../screens/rpg/InspirationProofScreen')).InspirationProofScreen }),
   }, {

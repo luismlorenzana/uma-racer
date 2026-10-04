@@ -286,7 +286,7 @@ export function parseRpgCommandReceipt(value: unknown): RpgCommandReceiptV1 | nu
     value.appendedIds.some((id) => !isId(id)) || new Set(value.appendedIds).size !== value.appendedIds.length) return null
   for (const row of value.applied) {
     if (!isRecord(row) || !exact(row, ['kind', 'id', 'version']) ||
-      !['rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'umas', 'items'].includes(row.kind as string) ||
+      !['rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'umas', 'items', 'inspirationBank'].includes(row.kind as string) ||
       !isId(row.id) || !isInt(row.version, 1)) return null
   }
   if (new Set(value.applied.map((row) => `${(row as Record<string, unknown>).kind}/${(row as Record<string, unknown>).id}`)).size !== value.applied.length) return null

@@ -21,7 +21,7 @@ export function validInspirationReward(value: unknown): value is InspirationRewa
 export interface InspirationMovement {
   id: string; itemId: string; delta: number; createdAt: number
   reason: 'rpg-inspiration' | 'inspiration-unlock'
-  source: { kind: 'rpg-inspiration'; entryId: string; attemptId: string; tier: number; tokenKind: InspirationTokenKind } |
+  source: { kind: 'rpg-inspiration'; entryId: string; attemptId: string; tier: number; tokenKind: InspirationTokenKind; debtPaid?: number } |
     { kind: 'inspiration-unlock'; umaId: string; tier: number; nodeId: InspirationSlot; goldIndex: number | null }
 }
 export const inspirationGrantId = (entryId: string, kind: InspirationTokenKind): string => `rpg-inspiration:${entryId}:${kind}`
@@ -36,7 +36,8 @@ export function parseInspirationMovement(value: unknown): InspirationMovement | 
   const s = v.source as Record<string, unknown>
   if (s.tier !== token.tier || s.kind !== v.reason) return null
   if (v.reason === 'rpg-inspiration') {
-    if (Object.keys(s).sort().join(',') !== 'attemptId,entryId,kind,tier,tokenKind' || !safeId(s.entryId) || !safeId(s.attemptId) ||
+    if (Object.keys(s).sort().join(',') !== (s.debtPaid === undefined ? 'attemptId,entryId,kind,tier,tokenKind' : 'attemptId,debtPaid,entryId,kind,tier,tokenKind') ||
+      (s.debtPaid !== undefined && (!Number.isSafeInteger(s.debtPaid) || (s.debtPaid as number) < 0 || (s.debtPaid as number) > (v.delta as number))) || !safeId(s.entryId) || !safeId(s.attemptId) ||
       s.tokenKind !== token.kind || v.id !== inspirationGrantId(s.entryId, token.kind) || !Number.isSafeInteger(v.delta) ||
       (v.delta as number) <= 0 || (v.delta as number) > (token.kind === 'slot' ? RPG_SLOT_TOKEN_REWARD : RPG_SKILL_TOKEN_BUDGET)) return null
   } else if (v.reason === 'inspiration-unlock') {

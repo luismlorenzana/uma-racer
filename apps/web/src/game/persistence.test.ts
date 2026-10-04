@@ -1,4 +1,6 @@
 import 'fake-indexeddb/auto'
+import { freezeAdvance, advanceOutfit, BANK_KEY, bankData } from '../../../api/src/save/inspiration-advance'
+import type { EntityRecord as ApiEntityRecord } from '../../../api/src/save/save.types'
 
 import { TRAINING_LEVEL_UP_TICKET_ID, activeScenario, constellationTemplate, legacyProduceNodeIds } from '@racer/domain'
 import { badgeSubject } from './badges'
@@ -765,6 +767,30 @@ describe('game bootstrap coordinator', () => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
     await resetDatabase()
+  })
+
+  it('applies the one-time Inspiration advance after startup outbox sync and publishes acknowledged unlocks', async () => {
+    const loaded = content(), server = new Map<string, ApiEntityRecord>()
+    vi.spyOn(saveApi, 'load').mockResolvedValue({ entities: [], logs: [], serverTime: 1 })
+    vi.spyOn(saveApi, 'sync').mockImplementation(async request => {
+      const writes = request.upserts.map(r => ({ kind: r.kind, id: r.id, version: r.baseVersion + 1, data: r.data, deleted: false, updatedAt: 2 }))
+      writes.forEach(r => server.set(`${r.kind}/${r.id}`, r))
+      return { applied: writes.map(r => ({ kind: r.kind, id: r.id, version: r.version })), conflicts: [], appended: request.appends.length, serverTime: 2 }
+    })
+    const advance = vi.spyOn(saveApi, 'advanceInspiration').mockImplementation(async () => {
+      const bank = freezeAdvance([...server.values()], 3)!
+      server.set(BANK_KEY, bank)
+      for (const id of Object.keys(bankData(bank).cohort)) for (const row of advanceOutfit(server.get(BANK_KEY)!, server.get(`umas/${id}`), id, 3)) server.set(`${row.kind}/${row.id}`, row)
+      return { entities: [...server.values()].filter(r => r.kind === 'umas' || r.kind === 'inspirationBank'), logs: [], serverTime: 3 }
+    })
+    await runtime.start(loaded)
+    expect(advance).not.toHaveBeenCalled()
+    vi.stubGlobal('navigator', { onLine: true })
+    await runtime.flush()
+    expect(advance).toHaveBeenCalledTimes(1)
+    expect((await db.inspirationBank.get('main'))!.data.balances).toEqual({ 'inspiration:t1:slot': -150, 'inspiration:t1:skill': -300 })
+    expect(Object.values(useGame.getState().umas).every(u => u.scenarios[0]!.inspiration.slots.length === 6 && u.scenarios[0]!.inspiration.golds.length === 12)).toBe(true)
+    await runtime.flush(); expect(advance).toHaveBeenCalledTimes(1)
   })
 
   it('seeds after an empty cloud response and after an unavailable cloud response', async () => {

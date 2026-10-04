@@ -1,5 +1,5 @@
 // DEV-only read-only display of invented outfits. No account reads/writes or extracted artwork.
-import { createUmaSave, type UmaTemplate, type SkillTemplate, type ContentAtlas } from '@racer/domain'
+import { createUmaSave, createInspirationBank, openBankOutfit, INSPIRATION_SLOTS, inspirationGoldKey, type UmaTemplate, type SkillTemplate, type ContentAtlas } from '@racer/domain'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import type { LoadedContent } from '../../content/runtime'
@@ -27,18 +27,21 @@ const content: LoadedContent = { origin: 'network', manifest: { version: 'invent
 export function InspirationProofScreen() {
   const [mirror, setMirror] = useState(false)
   const [params] = useSearchParams()
+  const advance = params.get('advance') === '1'
+  const previewBank = advance ? openBankOutfit(createInspirationBank([{ id: umas[0]!.id, scenarios: [{ tier: 1, inspiration: { slots: ['parent0', 'parent1', 'parent0-gp0'], golds: ['parent0:gold0'] } }] }], 1), umas[0]!.id) : undefined
   const context = useMemo<TrainingContext>(() => {
     const save = createUmaSave(umas[0]!), run = save.scenarios[0]!
     run.started = true; run.trainingLevel = 8
     run.inspiration = { slots: ['parent0', 'parent1', 'parent0-gp0', ...(mirror ? ['parent1-gp1' as const] : [])], golds: ['parent0:gold0'] }
+    if (advance) run.inspiration = { slots: [...INSPIRATION_SLOTS], golds: INSPIRATION_SLOTS.flatMap(s => [0, 1].map(i => inspirationGoldKey(s, i))) }
     run.presets[save.activePreset].assignments = { parent0: { kind: 'lineage', templateId: umas[1]!.id }, parent1: { kind: 'lineage', templateId: umas[2]!.id }, 'parent0-gp0': { kind: 'lineage', templateId: umas[3]!.id },
       ...(mirror ? { 'parent1-gp1': { kind: 'lineage' as const, templateId: umas[3]!.id } } : {}) }
     const joined = joinUma(save, content, {})
     if (joined.status !== 'ready') throw new Error('Invalid invented preview')
     return { content, save, uma: joined.value, cards: {}, umas: Object.fromEntries(umas.map(u => [u.id, createUmaSave(u)])), tickets: 0 }
-  }, [mirror])
+  }, [mirror, advance])
   return <div className="flex h-dvh flex-col bg-page pt-safe">
     <header className="flex items-center justify-between px-4 py-2"><div><p className="text-micro">Invented read-only proof</p><h1 className="text-lg">Ember · Inspiration</h1></div><label className="flex min-h-11 items-center gap-2 text-xs"><input type="checkbox" checked={mirror} onChange={e => setMirror(e.target.checked)} />Mirror Rill</label></header>
-    <ConstellationScreen viewMode="inspiration" preview={context} key={params.get('node') ?? 'preview'} />
+    <ConstellationScreen viewMode="inspiration" preview={context} previewBank={previewBank} key={params.get('node') ?? 'preview'} />
   </div>
 }

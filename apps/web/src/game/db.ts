@@ -32,6 +32,7 @@ import {
   type BadgeStateV1,
   type FlairEventV1,
   type EntityKind,
+  type InspirationBank,
   type LedgerEntry,
   type FarmState,
   type InventoryStackData,
@@ -184,6 +185,7 @@ export class RacerDb extends Dexie {
   flairEvents!: EntityTable<LogRow<FlairEventV1>, 'id'>
   farm!: EntityTable<FarmRow, 'id'>
   items!: EntityTable<VersionedRow<InventoryStackData>, 'id'>
+  inspirationBank!: EntityTable<VersionedRow<InspirationBank>, 'id'>
   itemLedger!: EntityTable<LogRow<ItemLedgerEntry>, 'id'>
   rpgOutfits!: EntityTable<VersionedRow<RpgOutfitSaveV1>, 'id'>
   rpgPresets!: EntityTable<VersionedRow<RpgPresetSaveV1>, 'id'>
@@ -377,6 +379,8 @@ export class RacerDb extends Dexie {
     this.version(24).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
     // Independent card schema 1 (D255): maximum-earned global stars. Uma v15 presets and journals are unchanged.
     this.version(25).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
+    // Server acknowledgement, not a device-only roster migration (D256).
+    this.version(26).stores({ ...storesWithBattleJournal, inspirationBank: 'id' })
   }
 }
 

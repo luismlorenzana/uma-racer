@@ -191,6 +191,22 @@ circular-lineage merge rules, and the Scenario Start inheritance flow.
 Owning more Umas is still exactly what makes lineage good, so the collection stays load-bearing — it is just
 read from templates now instead of from frozen history.
 
+## Temporary Inspiration advance (D256)
+
+The owner's one-time advance opens **six lineage slots and twelve natural-gold positions** on every already-owned
+outfit's existing scenario units, including unfilled positions. It selects no ancestors. Inherited Unique access is
+part of the slot. Already-open and newly-opened positions both count: each unit owes **6 Slot and 12 Skill tokens**.
+All four distance presets share these unlocks and charges; their builds, TL, careers and EXP remain unchanged.
+
+The account has a separate, nonpositive balance for each scenario and token family, not negative spendable Items.
+Existing Item stock stays untouched. Future RPG awards repay only the matching balance first; overflow becomes normal
+inventory. A zero balance stays as the permanent one-time receipt. Later outfits and scenario units are not included.
+Items and Inspiration show outstanding debt; chapter results show gross earned, repaid and deposited amounts.
+
+The first updated online sync runs a protected, resumable server operation after queued work drains. Its frozen cohort
+and per-outfit completion records prevent double charging on refresh, another device or an interrupted request.
+Offline play never fabricates these unlocks; reconnect applies the acknowledged advance.
+
 ## Race engine impact
 
 Skills are a core system, so race engine milestone **R2.5 (Basic skills)** comes before pack mechanics.
