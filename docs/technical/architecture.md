@@ -1,5 +1,15 @@
 # Architecture
 
+## Global card progression (D255)
+
+Card rows have independent schema 1: `{ schemaVersion: 1, templateId, stars: 0..3, maxCouponGranted }`.
+Uma/profile save v15 and the four distance presets remain unchanged. Dexie v25 migrates legacy card maps to the
+maximum converted count, retaining row versions and coalescing upload writes. Cloud adoption queues migrated raw
+card rows too; conflict reconciliation keeps maximum stars/OR coupon flags, and API writes cannot downgrade either
+the card schema or progress. Sets and node assignments retain owned card ids; readers apply the global count with
+the original scenario's era multiplier. Friendship Training discovers open reservations per card across contexts,
+but leaves paid legacy ids/seeds/setup/journals untouched and displays the frozen scenario when resumed.
+
 Uma Racer reuses the **uma-planner** architecture (`../uma-planner`), which is already proven in production: a TypeScript
 pnpm/Turbo monorepo with a React SPA on Firebase Hosting, a NestJS API on Cloud Run, Firebase Auth with an owner email
 allowlist, and Firestore. The main changes for a game are **local-first state**, **client-side simulation**, and a

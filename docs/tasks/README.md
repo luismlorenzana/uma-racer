@@ -11,6 +11,9 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
+**Owner detour: [T104 — Global card stars](T104-global-card-stars.md)** precedes T099. Preserve the four distance
+presets from D252–D254; T081's old scenario-occurrence definitions need separate re-authoring, not implementation here.
+
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078–T080 landed; T081 next |
@@ -28,7 +31,7 @@ The owner's device checks (every milestone's, including Spark Rival Circuit's ph
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M030 and T104.** Numbers are never reused, so a decision that mentions T014 always means the same
+**Next free numbers: M030 and T105.** Numbers are never reused, so a decision that mentions T014 always means the same
 work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed

@@ -61,6 +61,11 @@ card page, not stars, so it can run beside T078. T079 and T081 both read T078's 
 
 ## Fixed product contract
 
+**D255 supersedes this milestone's scenario-local star scope:** each owned card now has one global 0–3★ count.
+Scenario choice retains era eligibility and minigame twists, while each Uma's four distance-preset sets reference that
+global card. T104 delivers the cutover; T081's occurrence-based/scenario achievement definitions require a separate
+rewrite before implementation. The historical contract below records M024's original authoring, not current star scope.
+
 - **Card training never needs an Uma.** Every scenario, tier 1 to 14, is open for card training from the start; a card
   is trainable in a scenario once its era allows it (`era ≤ tier`, unchanged). Umas still read the stars of the scenario
   they train in (D127): card training feeds Uma training, never the other way round.
