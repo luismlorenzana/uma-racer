@@ -79,7 +79,7 @@ describe('collection persistence', () => {
     await seed()
     const first = await redeemPersistentCard(content, cardTemplate.id, '2000-01-02', 60)
     const retry = await redeemPersistentCard(content, cardTemplate.id, '2000-01-03', 70)
-    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { bonds: {} } })
+    expect(first).toMatchObject({ alreadyRedeemed: false, profile: { cardCoupons: 1 }, card: { stars: 0 } })
     expect(retry).toMatchObject({ alreadyRedeemed: true, profile: { cardCoupons: 1 } })
     expect((await db.cards.get(cardTemplate.id))?.version).toBe(0)
     expect(await db.ledger.get(`card-coupon-redeem:${cardTemplate.id}`)).toMatchObject({
@@ -149,7 +149,7 @@ describe('startup grants', () => {
   it('pays the coupon a card was owed for reaching 3★ through the v8 migration, once (D200)', async () => {
     await seed({ cardCoupons: 0 })
     const put = (id: string, bonds: Record<string, number>, maxCouponGranted: boolean) =>
-      db.cards.put({ id, version: 1, data: { templateId: id, bonds, maxCouponGranted } })
+      db.cards.put({ id, version: 1, data: { schemaVersion: 1, templateId: id, stars: Math.max(0, ...Object.values(bonds)), maxCouponGranted } })
     await put('maxed', { '1': 3 }, false)
     await put('paid', { '2': 3 }, true)
     await put('short', { '1': 2 }, false)

@@ -40,7 +40,7 @@ export function CardPickerSheet({
   content: LoadedContent
   cards: Readonly<Record<string, CardSave>>
   umas: Readonly<Record<string, UmaSave>>
-  /** The scenario being filled: its era gate and its bonds. */
+  /** The scenario being filled: its era gate and node pay; stars are global. */
   tier: number
   excludeIds: readonly string[]
   title?: string

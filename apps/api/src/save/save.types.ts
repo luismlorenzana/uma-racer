@@ -102,6 +102,7 @@ const CARD_V5_FIELDS = ['templateId', 'limitBreak', 'maxCouponGranted'] as const
 const CARD_V6_FIELDS = ['templateId', 'limitBreaks', 'maxCouponGranted'] as const
 const CARD_V7_FIELDS = ['templateId', 'stars', 'maxCouponGranted'] as const
 const CARD_V8_FIELDS = ['templateId', 'bonds', 'maxCouponGranted'] as const
+const CARD_GLOBAL_FIELDS = ['schemaVersion', 'templateId', 'stars', 'maxCouponGranted'] as const
 const SKILL_FIELDS = ['skillId', 'origin', 'sourceId'] as const
 const SKILL_HISTORY_FIELDS = [...SKILL_FIELDS, 'tier'] as const
 const PARENT_FIELDS = ['umaId', 'charaId', 'completedTier', 'takenAt', 'inheritedUniqueSkillId', 'inheritableWhiteSkillIds', 'aptitudes'] as const
@@ -1050,6 +1051,11 @@ function parsePerTier(value: unknown, max: number): boolean {
 }
 
 function parseCard(value: unknown): Record<string, unknown> | null {
+  if (isRecord(value) && exactKeys(value, CARD_GLOBAL_FIELDS)) {
+    if (value.schemaVersion !== 1 || !isId(value.templateId) || !isNonNegativeInt(value.stars) ||
+      value.stars > MAX_STARS || typeof value.maxCouponGranted !== 'boolean') return null
+    return value
+  }
   if (isRecord(value) && exactKeys(value, CARD_V8_FIELDS)) {
     if (!isId(value.templateId) || typeof value.maxCouponGranted !== 'boolean' || !parsePerTier(value.bonds, MAX_STARS)) return null
     return value
@@ -1323,7 +1329,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
 function entitySchema(kind: string, data: Record<string, unknown>): number | null {
   if (kind === 'profile') return typeof data.schemaVersion === 'number' ? data.schemaVersion : null
   if (kind === 'umas') return typeof data.schemaVersion === 'number' ? data.schemaVersion : 1
-  if (kind === 'cards') return 'bonds' in data ? 8 : 'stars' in data ? 7 : 'limitBreaks' in data ? 6 : 5
+  if (kind === 'cards') return data.schemaVersion === 1 ? 9 : 'bonds' in data ? 8 : 'stars' in data ? 7 : 'limitBreaks' in data ? 6 : 5
   if (kind === 'farm') return typeof data.schemaVersion === 'number' ? data.schemaVersion : null
   return null
 }
@@ -1350,6 +1356,13 @@ export function resolveUpserts(
       conflicts.push(current)
       continue
     }
+    // Global card progress is permanent. A matched stale device must not lower stars or erase a paid coupon (D255).
+    if (current && !current.deleted && upsert.kind === 'cards' && incomingSchema === 9 &&
+      (Number(upsert.data.stars) < cardProgressCount(current.data) ||
+        (current.data.maxCouponGranted === true && upsert.data.maxCouponGranted !== true))) {
+      conflicts.push(current)
+      continue
+    }
     const record: EntityRecord = {
       kind: upsert.kind,
       id: upsert.id,
@@ -1362,4 +1375,13 @@ export function resolveUpserts(
     writes.push(record)
   }
   return { writes, conflicts }
+}
+
+/** Independently decoded legacy card scales; no game-rule dependency in the API. */
+function cardProgressCount(data: Record<string, unknown>): number {
+  if (data.schemaVersion === 1) return Number(data.stars)
+  if ('bonds' in data) return Math.max(0, ...Object.values(data.bonds as Record<string, number>))
+  const old = 'stars' in data ? Math.max(0, ...Object.values(data.stars as Record<string, number>)) :
+    Math.ceil(1.25 * ('limitBreaks' in data ? Math.max(0, ...Object.values(data.limitBreaks as Record<string, number>)) : Number(data.limitBreak)))
+  return Math.ceil(3 * old / 5)
 }

@@ -6,6 +6,10 @@ Training is **persisted and deliberate**, not a turn loop. You play a minigame t
 what fills them. Nothing is rolled and nothing is spent per turn. Card and lineage choices are freely reversible;
 Extra stat nodes are bought once with Farm crops and switched on or off freely (D120, D235).
 
+Card stars are account-wide (D255): each distance preset's set points to the same owned cards, so a card's global
+stars feed all builds. Training Level, node assignments and era scaling remain scenario-specific; four independent
+distance presets remain under D252. Friendship Training chooses a scenario as play context, not a new card star track.
+
 ```
 Play Spark Rival Circuit ──► Training Level rises ──► constellation nodes unlock
                                                       │

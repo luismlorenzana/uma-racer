@@ -1,63 +1,62 @@
-// Stars, earned per scenario one clear at a time (docs/design/support-cards.md, D147, D200).
+// Global stars, earned one clear at a time (docs/design/support-cards.md, D200, D255).
 
 import { MAX_STARS } from './cards'
 import { MAX_SCENARIO_TIER } from './scenarios'
 import type { CardSave } from './save'
 
-type Bonds = Pick<CardSave, 'bonds'>
+type Stars = Pick<CardSave, 'stars'>
 
 export interface CardAdvanceResult {
   card: CardSave
   tier: number
   fromStars: number
   toStars: number
-  /** True on the advance that first takes this card to max stars in any scenario. */
+  /** True on the advance that first takes this card to global max. */
   couponGranted: boolean
 }
 
-/** A card's stars in one scenario. Absent means 0★ there (D127). */
-export const cardStars = (card: Bonds, tier: number): number =>
-  card.bonds[String(Math.trunc(tier))] ?? 0
+/** One owned card's progress, shared by every scenario and distance preset. */
+export const cardStars = (card: Stars): number => card.stars
 
-/** The most stars this card holds in any scenario. */
-export const bestCardStars = (card: Bonds): number =>
-  Object.values(card.bonds).reduce((best, value) => Math.max(best, value), 0)
+/** Trainer achievements retain their best-progress reader; that progress is now global. */
+export const bestCardStars = cardStars
 
-/** Scenarios where this card holds any stars, in tier order. */
-export const brokenTiers = (card: Bonds): number[] =>
-  Object.keys(card.bonds).map(Number).sort((left, right) => left - right)
+export const isCardMaxed = (card: Stars): boolean => cardStars(card) >= MAX_STARS
 
-export const isCardMaxedIn = (card: Bonds, tier: number): boolean =>
-  cardStars(card, tier) >= MAX_STARS
+/** Monotonic conflict reconciliation; concurrent clears never add star counts (D255). */
+export function mergeCardProgress(left: CardSave, right: CardSave): CardSave {
+  if (left.templateId !== right.templateId) throw new Error('Cannot merge different cards')
+  return { ...right, stars: Math.max(left.stars, right.stars),
+    maxCouponGranted: left.maxCouponGranted || right.maxCouponGranted }
+}
 
 /**
- * Cards at max stars somewhere whose Card Select Coupon was never paid. Ordinary play pays it on the clear that reaches
+ * Cards at global max whose Card Select Coupon was never paid. Ordinary play pays it on the clear that reaches
  * max; only the v8 migration can raise a card to max without one (D200), so this is where those coupons come from.
  */
-export const owedMaxCouponCardIds = (cards: readonly (Bonds & Pick<CardSave, 'templateId' | 'maxCouponGranted'>)[]): string[] =>
+export const owedMaxCouponCardIds = (cards: readonly (Stars & Pick<CardSave, 'templateId' | 'maxCouponGranted'>)[]): string[] =>
   cards.filter((card) => !card.maxCouponGranted && bestCardStars(card) >= MAX_STARS).map((card) => card.templateId).sort()
 
 
 /**
- * Advance one star in one scenario. The card minigame's run already charged its ticket, so this costs nothing further:
- * the clear *is* the star (D120, D147). Stars are account-wide within that scenario, so every Uma racing there gets them.
+ * Advance one global star. Tier is the frozen run context, not a progress bucket. The run already charged its ticket.
  */
 export function advanceCardStars(card: CardSave, tier: number): CardAdvanceResult {
   if (!Number.isSafeInteger(tier) || tier < 1 || tier > MAX_SCENARIO_TIER) {
-    throw new Error('Card stars belong to a scenario')
+    throw new Error('Card training needs a valid scenario context')
   }
-  const from = cardStars(card, tier)
+  const from = cardStars(card)
   if (!Number.isSafeInteger(from) || from < 0 || from > MAX_STARS) {
     throw new Error('Card progression state is invalid')
   }
-  if (from >= MAX_STARS) throw new Error(`This card already has ${MAX_STARS}★ in that scenario`)
+  if (from >= MAX_STARS) throw new Error(`This card already has ${MAX_STARS}★ globally`)
 
   const toStars = from + 1
   const couponGranted = toStars === MAX_STARS && !card.maxCouponGranted
   return {
     card: {
       ...card,
-      bonds: { ...card.bonds, [String(tier)]: toStars },
+      stars: toStars,
       maxCouponGranted: card.maxCouponGranted || couponGranted,
     },
     tier,

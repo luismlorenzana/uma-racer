@@ -274,15 +274,16 @@ cancellation, background/resume and sustained frame pacing; browser emulation al
 ## Friendship Training — card stars
 
 The card minigame (D146, D177): a Balatro-style run that trains one card through a season of weeks and races. A clear
-is **one star in one scenario**, for one ticket, all or nothing. D168 closed its lists, D173 gave it a sense of place,
+is **one global card star** (D255), for one ticket, all or nothing. The scenario supplies the twist and races,
+not another star track. D168 closed its lists, D173 gave it a sense of place,
 and the numbers are tuning drafts held by `pnpm sim:training`, which keeps the bot's clear rates near 90 / 80 / 70% for
-1★–3★ and every scenario twist within its band. The engine is `packages/domain/src/friendship-*.ts`; the
+1★–3★ and every scenario twist within its band. The engine is `packages/domain/src/minigames/friendship/`; the
 screens are `apps/web/src/screens/minigames/friendship/`.
 
 ### Fixed choices (D146)
 
 - **Target and price:** a run names one card and one scenario, costs **1 ticket** (D148), and a clear gives that card
-  **+1★ there**. There is no partial progress: a loss costs the ticket and nothing else.
+  **+1★ globally**. There is no partial progress: a loss costs the ticket and nothing else.
 - **Owned cards only.** Runs never show unowned cards; unlocking takes a Card Select Coupon (D198).
 - **Spark Match stays separate** and remains the only way to raise a Training Level. M022 replaces its adjacent-swap
   rules with Rival Circuit before this milestone begins; Friendship Training does not share combat, rewards or UI with it.
@@ -301,7 +302,7 @@ A run is a short **season of stages**. Each stage is **two training weeks and a 
 | 3★ | 3 | G3, G2, G1 (targets × 1.12) | 12 min |
 
 The three runs are the old 1★, 3★ and 5★ runs of the five-star ladder (D200), with the same stages and targets: a card
-maxes in three clears (six stages) instead of five (eleven). A card's stars in the scenario make it play stronger,
+maxes in three clears (six stages) instead of five (eleven). A card's global stars make it play stronger,
 `1 + stars / 6`: × 1.5 at 3★, as at the old 5★.
 
 Each stage's race is drawn by the seed from the real races of its grade. Missing any week's or race's target ends
@@ -310,13 +311,18 @@ the run.
 ### The deck
 
 - **Starting deck (12):** two copies of the **main card** and two of each of its five **partners**, chosen for the run
-  on the Start screen (D199). By default they are the owned cards eligible there with the most stars in that scenario,
+  on the Start screen (D199). By default they are the owned cards eligible there with the most global stars,
   then a stat type not yet picked, then the newest era; tapping one swaps it through the card picker, and the choice is
   remembered per scenario on the device. A run opened from an Uma's card set starts from her set, a convenience rather
   than a dependency: card training never needs an Uma. Fewer than five owned cards are topped up by the seed.
 - **Rewards:** after each training week, **pick 1 of 3** owned, era-eligible cards to add a copy of, or skip.
-- **Card strength** grows with the card's own stars in this scenario, `× (1 + stars / 6)` (× 1.5 at 3★), so bonding one
-  card makes the next run in that scenario easier.
+- **Card strength** grows with the card's global stars, `× (1 + stars / 6)` (× 1.5 at 3★), so bonding one
+  card makes every eligible scenario's next run easier.
+
+One card has one open reservation per device across scenario entry points (D255). A saved run keeps its original
+scenario, seed, partners and replay; resume never rebuilds them from today's global stars. Paid legacy runs are retained
+and resumed oldest first. If another clear or migration has already maxed the card, a saved run still finishes normally
+without another star/coupon. New runs cannot begin at global max. The start, result and guide name global progress.
 
 ### An encounter
 

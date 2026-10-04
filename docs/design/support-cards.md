@@ -22,14 +22,13 @@ The game only has **SSR** cards. Cards that were R or SR in the original game ar
 
 - **Owning** is account-wide. Cards come from the starter set or from a Card Select Coupon, on the card's own page or
   in the album (D198, see [Collection](collection.md#unlocking-cards)).
-- **Power belongs to a scenario.** A card's stars (0★–3★) and the nodes it fills are per scenario; nothing about a
-  card's strength is account-wide. There is no card level (D130, D147).
-- A **card set** is per Uma, **per scenario** (D125): **six slots**, era-gated to that scenario's tier, drawn
+- **Stars are global** (D255): a card's one 0★–3★ count follows it across every Uma, scenario and distance preset.
+  Node assignments and era scaling still belong to the scenario's build. There is no card level (D130).
+- A **card set** is per Uma, **per scenario and distance preset** (D125, D252): **six slots**, era-gated to that scenario's tier, drawn
   from owned cards. Six everywhere — the old 4/5/6 tier ramp is gone.
 - No duplicate card and no two cards of the same character in one set.
-- **Stars belong to a scenario, and are shared by every Uma racing there** (D127). Starring a card in URA
-  Finale improves it for every Uma in URA Finale; in Unity Cup that same card starts at 0★ again. So the
-  first Uma you take into a scenario pays for the card set, and every later one rides free.
+- A card trained to 3★ anywhere is 3★ everywhere. Sets store its owned card id, not a scenario copy; changing stars
+  never rewrites a preset's selected cards or node assignments. This supersedes D127's scenario-local stars.
 - **Friend and Group cards pay Skill Points instead of stats**, in any slot; every other card pays its stats
   ([Constellations](constellations.md#skill-point-cards), D132).
 
@@ -72,9 +71,10 @@ Friend and Group cards pay skill points rather than stats (D132); their value is
 
 ## Stars
 
-A card holds **0★ to 3★ in each scenario** (D200), and there is **no card level** (D130). It earns **one star per clear**
+A card holds **one global 0★ to 3★ count** (D200, D255), and there is **no card level** (D130). It earns **one star per clear**
 of the card minigame, [Friendship Training](minigames.md#friendship-training--card-stars), in
-the scenario that run named. That is the only way. **Bond** is the act of raising a card's stars: the button that
+any scenario that allows its era. The run's scenario selects its twist and race pool, not a separate progression track.
+That is the only way. **Bond** is the act of raising a card's stars: the button that
 launches the minigame, and what the minigame is about.
 
 | Stars | 0★ | 1★ | 2★ | 3★ (Max) |
@@ -100,9 +100,22 @@ LB2 → 3★, LB3 → 4★, LB4 → 5★ — so no card lost node value or Race 
 Save v8 (D200) moves those five stars to three at `⌈3s / 5⌉`: 1★ → 1★, 2★ and 3★ → 2★, 4★ and 5★ → 3★. Rounding up
 keeps every node percent a card had (old 2★ paid 76%, now 84%), and a card one star from the old max is maxed. A card
 the migration maxes is paid its Card Select Coupon at startup if it never had one, and a Friendship Training run left
-open on the five-star ladder is closed with its ticket refunded. The save field is now `bonds`, so a card on an older
-scale can never be read without its conversion. A gold skill at a star threshold, once planned for bond 3, was never
+open on the five-star ladder is closed with its ticket refunded. Save v8 used the field `bonds`, so a card on an older
+scale could never be read without its conversion. A gold skill at a star threshold, once planned for bond 3, was never
 built and is not part of stars.
+
+### Global-star cutover (D255)
+
+Card schema 1 stores a scalar `stars` and preserves `maxCouponGranted`; it is independent of Uma/profile save v15.
+Dexie v25 and cloud adoption convert every supported historical card to the **highest** stars earned in any scenario,
+never their sum. Older five-star and limit-break rows first use their existing conversions above. Versions and outbox
+writes are preserved/coalesced, and migration never fabricates another coupon for a card already paid. Unpaid maxed
+cards still use the existing idempotent startup coupon settlement. Sync takes maximum stars and ORs coupon flags;
+the API refuses old-schema or decreasing card writes. Concurrent clears do not add their counts together.
+
+New Friendship Training reservations share one open run per card on this device. Previously paid runs keep their id,
+seed, frozen scenario/setup and replay journal, and resume oldest first. A saved clear after another run/migration
+already reached global max finishes normally with no additional star or coupon. Valid three-star runs are not retired.
 
 ## Card focus
 
@@ -138,13 +151,13 @@ pick (D201, D236). A focus is a category for browsing and achievements, never a 
 ## Where cards live on screen
 
 - **The Cards tab** browses by lens — the collection, or one scenario ([Collection](collection.md#card-album)).
-- **Each card's page** (`/cards/:id`) holds owning it, its stars and a **Bond** action in every scenario from its era on
+- **Each card's page** (`/cards/:id`) holds owning it, its global stars and a **Bond** action with a scenario-context picker from its era on
   (D199), and what it pays. Its type
   shows as the original's type icon on the illustration, its split with the stat icons, and a **Skills** list with the
   original's skill icons: its golds first, highlighted, then its whites, each marked with the node that pays it; a tap
   shows what the skill does and its base cost (D182).
 - **Card tiles** use all four corners over the art (D238): the **distance** shoe top left, the **running style** top right,
-  the card's **type** icon bottom left and, in a scenario, its **stars** bottom right on a small dark pill. A Generalist
+  the card's **type** icon bottom left and its **global stars** bottom right on a small dark pill in either lens. A Generalist
   dimension leaves its corner empty. The original's stat icons stand for Speed, Stamina, Power, Guts and Wit on stat rows
   (the Uma profile, the Training header).
 - **The Training scene's Card set tab** is where a scenario's six are chosen and bonded

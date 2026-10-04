@@ -3,7 +3,7 @@ import { MAX_STARS } from '@racer/domain'
 const STAR_PATH = 'M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z'
 
 /**
- * A card's stars in one scenario, 0★–3★, filled up to its count (D200). `compact` draws them smaller and tighter on a
+ * A card's global stars, 0★–3★, filled up to its count (D200, D255). `compact` draws them smaller and tighter on a
  * dark pill, to sit over a tile's art in a corner (D238).
  */
 export function Stars({

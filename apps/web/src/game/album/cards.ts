@@ -1,6 +1,5 @@
 // Card album projection on the shared engine (docs/design/collection.md#card-album), seen through one of two lenses
-// (M016): the **collection**, where a card is only owned or not, or **one scenario**, where it has a bond and a price
-// per node. A card's power is never account-wide, so nothing here reads its best stars anywhere or a card level.
+// (M016/D255): both show global stars; a scenario adds era eligibility and its own per-node pay.
 
 import {
   CARD_DISTANCE_FOCI,
@@ -25,7 +24,7 @@ import type { AlbumQuery, AlbumRow, FacetDef, SortDef } from './query'
 import type { AlbumPreset } from './stable'
 
 export const CARDS_ALBUM_ID = 'cards'
-/** The scenario lens keeps its own sort and filters: bond means nothing in the collection. */
+/** The scenario lens keeps its own sort and filters; era scaling remains scenario-specific. */
 export const CARDS_SCENARIO_ALBUM_ID = 'cards-scenario'
 
 /** The collection, or one scenario's tier. */
@@ -41,7 +40,7 @@ export interface CardEntry {
   save: CardSave | null
   owned: boolean
   asset: ContentAsset | null
-  /** Bond in the lens scenario; null in the collection lens or when unowned. */
+  /** Global stars in either lens; null only when unowned. */
   bond: number | null
   /** What one node pays in the lens scenario at the current bond — SP for a skill-point card; null in the collection lens. */
   perNode: number | null
@@ -77,7 +76,7 @@ export interface CardAlbum {
   /** Cards in this lens: every card for the collection, only era-eligible ones for a scenario. */
   total: number
   owned: number
-  /** Scenario lens only: owned cards with at least one star, and at max stars. */
+  /** Owned cards in this lens with at least one global star, and at global max. */
   bonded: number
   maxed: number
   orphanedIds: string[]
@@ -110,7 +109,7 @@ export function buildCardAlbumRows(input: CardAlbumInput): CardAlbum {
   const templates = content.cards.items.filter((template) => tier === null || template.era <= tier)
   const entries = templates.map((template): CardEntry => {
     const save = input.cards[template.id] ?? null
-    const bond = tier !== null && save ? cardStars(save, tier) : null
+    const bond = save ? cardStars(save) : null
     return {
       id: template.id,
       template,
@@ -208,14 +207,14 @@ export const CARD_SCENARIO_FACETS: FacetDef[] = [
   STYLE_FOCUS,
   DISTANCE_FOCUS,
   {
-    key: 'bond', label: 'Stars', kind: 'enum', group: 'This scenario',
+    key: 'bond', label: 'Global stars', kind: 'enum', group: 'Global stars',
     options: Array.from({ length: MAX_STARS + 1 }, (_, index) => ({
       value: String(index),
       label: `${index}★`,
     })),
   },
-  { key: 'bondable', label: 'Can still bond', kind: 'boolean', group: 'This scenario' },
-  { key: 'maxed', label: `${MAX_STARS}★`, kind: 'boolean', group: 'This scenario' },
+  { key: 'bondable', label: 'Can still bond globally', kind: 'boolean', group: 'Global stars' },
+  { key: 'maxed', label: `${MAX_STARS}★ globally`, kind: 'boolean', group: 'Global stars' },
   { key: 'equipped', label: 'In a set here', kind: 'boolean', group: 'This scenario' },
   ERA,
   { key: 'isNew', label: 'New to you', kind: 'boolean', group: 'Collection' },
@@ -233,7 +232,7 @@ export const CARD_COLLECTION_SORTS: SortDef[] = [
 ]
 
 export const CARD_SCENARIO_SORTS: SortDef[] = [
-  { key: 'bond', label: 'Stars', defaultDirection: 'desc' },
+  { key: 'bond', label: 'Global stars', defaultDirection: 'desc' },
   { key: 'perNode', label: 'Pays per node', defaultDirection: 'desc' },
   { key: 'era', label: 'Era / release', defaultDirection: 'desc' },
   ...COMMON_SORTS,

@@ -172,7 +172,7 @@ export function cardCollectionCounts(
     total: templates.length,
     maxed: templates.filter((template) => {
       const card = cardsById[template.id]
-      // "Maxed" is account-wide: max stars in any one scenario.
+      // "Maxed" reads the owned card's permanent global stars (D255).
       return card !== undefined && bestCardStars(card) === MAX_STARS
     }).length,
     eras: count(templates.map((template) => template.era)).sort((left, right) => left.key - right.key),

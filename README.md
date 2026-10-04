@@ -12,7 +12,7 @@ while the stable itself grows into a collection.
 > showcases, and Trainer achievements.
 >
 > The 2026-09 training redirection is now the source of truth: Training Levels open a per-scenario constellation, cards
-> earn per-scenario stars, and races use the resulting derived build. Races run on
+> earn global stars (D255), and races use the resulting scenario/distance-preset build. Races run on
 > [turn-based engine v7](docs/design/racing.md#engine-v7-the-originals-physics-and-field). Training Levels come from
 > [Spark Match — Rival Circuit](docs/design/minigames.md#spark-match--rival-circuit), a three-wave continuous-drag puzzle
 > battle, and cards earn their stars in [Friendship Training](docs/design/minigames.md#friendship-training--card-stars);

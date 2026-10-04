@@ -1,5 +1,10 @@
 # T081 — Bond achievements
 
+> **Needs a revised counting contract before implementation (D255).** Stars are now global: a bonded card is one
+> owned card at 3★, not one card×scenario pair. Type/style/distance counts still apply; Bonds Forged, scenario families
+> and their thresholds below are historical proposals, not an instruction to multiply global progress across eras.
+> Re-author those families separately after T104; this task does not block global-star delivery.
+
 **Goal:** a family of trainer achievements that rewards bonding many cards to max across categories — stat type,
 running style, distance, their combinations and scenarios — so training "many speed cards for different aptitudes" has
 visible goals without asking for every card in every scenario (D202).

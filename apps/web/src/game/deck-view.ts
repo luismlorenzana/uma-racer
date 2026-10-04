@@ -30,7 +30,7 @@ export interface DeckViewModel {
   slots: DeckSlotView[]
   validationErrors: string[]
   needsRepair: boolean
-  /** Share of race EXP the set adds, from each card's bond in this scenario. */
+  /** Share of race EXP this preset's set adds, from each card's global stars. */
   raceBonus: number
 }
 

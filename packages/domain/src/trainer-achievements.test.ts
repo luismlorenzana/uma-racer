@@ -103,7 +103,7 @@ describe('Trainer achievement reconciliation', () => {
   const umas = [umaTemplate('uma-a'), umaTemplate('uma-b')]
   const cards = [cardTemplate('card-a', 'speed'), cardTemplate('card-b', 'wit')]
   const ownedUmas: UmaSave[] = umas.map((template, index) => ({ ...createUmaSave(template), level: index === 0 ? 110 : 50 }))
-  const ownedCards: CardSave[] = cards.map((template) => ({ templateId: template.id, bonds: { '1': 3 }, maxCouponGranted: true }))
+  const ownedCards: CardSave[] = cards.map((template) => ({ schemaVersion: 1, templateId: template.id, stars: 3, maxCouponGranted: true }))
   const contributors = [contributor(umas[0]!, true, 100), contributor(umas[1]!, false, 50)]
   const baseInput = {
     contentVersion: 'synthetic-v1', umas, cards, races: [], ownedUmas, ownedCards, contributors,

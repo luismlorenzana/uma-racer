@@ -311,7 +311,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview }: { v
                 const owned = cards[cardId]
                 if (!card || !owned) return null
                 const skillPoints = paysSkillPoints(card)
-                const bond = cardStars(owned, run.tier)
+                const bond = cardStars(owned)
                 const perNode = cardNodeValue(run.tier, { template: card, stars: bond })
                 const held = cardNodeCount(run, cardId)
                 const onThisNode = run.assignments[openNode.id]?.kind === 'card' && (run.assignments[openNode.id] as { cardId: string }).cardId === cardId

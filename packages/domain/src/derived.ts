@@ -85,11 +85,11 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
   for (const cardId of scenario.cardSetIds) {
     const save = input.cardSaves.get(cardId)
     const cardTemplate = input.cardTemplates.get(cardId)
-    // A card's break belongs to the scenario being derived, not to the account (D127).
+    // One global card reference feeds every preset; deriveStats still applies this scenario's era scaling (D255).
     if (save && cardTemplate) {
       cards.set(cardId, {
         template: cardTemplate,
-        stars: cardStars(save, scenario.tier),
+        stars: cardStars(save),
         goldSkillIds: cardGoldSkillIds(cardTemplate, input.skillTemplates),
       })
     }

@@ -375,6 +375,8 @@ export class RacerDb extends Dexie {
     this.version(23).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
     // Save v15 (D252): each scenario's build becomes four distance presets, copies of it until one is edited.
     this.version(24).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
+    // Independent card schema 1 (D255): maximum-earned global stars. Uma v15 presets and journals are unchanged.
+    this.version(25).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
   }
 }
 

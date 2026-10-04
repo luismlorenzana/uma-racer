@@ -51,7 +51,7 @@ is gone; `/cards/redeem` redirects to the album.
 
 | Item | How it's earned | Redeems for | Rules |
 |---|---|---|---|
-| 🎟️ **Card Select Coupon** | A card first reaches **3★**, its max, in any scenario (once per card ever) | The only unlock of an unowned SSR card (D198) | Stackable · never expires |
+| 🎟️ **Card Select Coupon** | A card first reaches **3★ globally**, its max (once per card ever) | The only unlock of an unowned SSR card (D198) | Stackable · never expires |
 | 💎 **Uma Shard** | Any Uma **reaches** level 10, 20, 30 … (once per Uma per gate) | 5 shards make 1 Uma Select Coupon | Stackable · never expires |
 | 🎟️ **Uma Select Coupon** | 5 Uma Shards | Any unowned Uma in the game | Stackable · never expires |
 
@@ -267,15 +267,15 @@ lens in the URL.
 
 | Lens | Holds | Sorts | Filters | A tile shows |
 |---|---|---|---|---|
-| **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · running style · distance · era · in an active set · starter/free · new | art with distance, style and type in its corners; unowned dimmed |
+| **Collection** | all 312 cards | era/release (default) · type · character · card name | ownership · type · running style · distance · era · in an active set · starter/free · new | art with distance, style, type and global stars in its corners; unowned dimmed |
 | **A scenario** | only cards its era allows | stars (default) · pays per node · era · type · character · card name | ownership · type · running style · distance · bond 0–Max · can still bond · max bond · in a set here · era · new | art with distance, style, type and stars in its four corners, and per-node pay |
 
-Ties break owned first, then by per-node pay. The two lenses keep separate saved queries and views, since bond means
-nothing in the collection.
+Ties break owned first, then by per-node pay. The two lenses keep separate saved queries and views. Stars are global
+in both (D255); only era eligibility, per-node pay and which sets hold the card depend on the lens scenario.
 
-- The card's detail sheet acts on the lens: in a scenario it shows the card's bond there and a
+- The card's detail sheet shows global stars in either lens, and in a scenario also its per-node pay, with a
   **Bond** button straight into Friendship Training (returning to the same lens); an unowned card shows **Unlock** with its
-  price. **Open** goes to the card's page.
+  price. In Collection, Bond uses the card's era as the default play context. **Open** goes to the card's page.
 - Compare shows type, era, how one node splits, bond and per-node pay in the lens scenario, skill count and price.
 - **The card set picker uses this album**, on the scenario lens of the set being filled, owned cards only, sorted by
   bond; it must not keep a weaker parallel picker.
@@ -283,7 +283,7 @@ nothing in the collection.
 - **Running style** (Front Runner, Pace Chaser, Late Surger, End Closer, Generalist) and **Distance** (Sprint, Mile,
   Medium, Long, Generalist) are facets in the Card group, so a Late, Long Uma's set is two taps away in the picker too
   ([Card focus](support-cards.md#card-focus), D201, D236). **Every card tile uses its four corners** (D238): the distance
-  shoe top left, the running-style mark (D251) top right, the type icon bottom left and, in a scenario, the
+  shoe top left, the running-style mark (D251) top right, the type icon bottom left and, in both lenses, the
   stars bottom right on a small dark pill; in the card view the type and stars sit at either end of the footer's last
   line, and in the list the two focus icons follow the name. NEW and In-a-set marks stack under the distance. The detail
   sheet names both dimensions, Generalist included. No tile grows.
@@ -311,7 +311,7 @@ badge state, and race/Journey facts.
 |---|---|---|
 | Stable Master | Umas owned (25 at start) | 30 / 40 / 60 / 90 / all |
 | Card Collector | SSR cards owned | 10 / 25 / 50 / 100 / all |
-| Maxed Out | Cards at 3★ (max) in any scenario | 1 / 5 / 15 / 40 / 100 |
+| Maxed Out | Cards at 3★ globally (max) | 1 / 5 / 15 / 40 / 100 |
 | [Era] Complete | Own every card of that era | one-off per era |
 | [Type] Complete | Own every card of that type | one-off per type |
 | Coupon Clipper | Coupons redeemed | 1 / 5 / 15 / 40 / 100 |

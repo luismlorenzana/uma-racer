@@ -143,9 +143,9 @@ export function validateEquippedSupportDeck(
   })
 }
 
-/** The share of race EXP a card set adds: each card's Race Bonus at its stars in this scenario (D125, D127). */
+/** The share of race EXP a preset's set adds: each referenced card's global stars (D255). */
 export function cardSetRaceBonus(cards: readonly SupportDeckCard[], tier: number): number {
-  return cards.reduce((total, card) => total + cardRaceBonus(card.template, cardStars(card.save, tier)), 0)
+  return cards.reduce((total, card) => total + cardRaceBonus(card.template, cardStars(card.save)), 0)
 }
 
 /**
@@ -161,11 +161,11 @@ export function autoCardSet(
 ): string[] {
   const eligible = owned.filter((card) => card.template.era <= tier)
   const strength = (card: SupportDeckCard) =>
-    cardNodeValue(tier, { template: card.template, stars: cardStars(card.save, tier) })
+    cardNodeValue(tier, { template: card.template, stars: cardStars(card.save) })
   const ranked = [...eligible].sort((left, right) =>
     strength(right) - strength(left) ||
     right.template.era - left.template.era ||
-    cardStars(right.save, tier) - cardStars(left.save, tier) ||
+    cardStars(right.save) - cardStars(left.save) ||
     left.template.id.localeCompare(right.template.id))
 
   const picked: SupportDeckCard[] = []

@@ -7,7 +7,7 @@ rules stay in [Minigames](minigames.md); this page is what they have in common.
 | Minigame | Raises | Rules | Code |
 |---|---|---|---|
 | **Spark Match — Rival Circuit** (M022) | a scenario's Training Level (D190) | [Minigames](minigames.md#spark-match--rival-circuit) | engine `packages/domain/src/minigames/spark-rival/` · screen `screens/minigames/SparkMatchScreen.tsx` · Pixi `scenes/spark-rival/` |
-| **Friendship Training** (M020) | one card by one star in one scenario | [Minigames](minigames.md#friendship-training--card-stars) | engine `packages/domain/src/minigames/friendship/` · screen `screens/minigames/friendship/` |
+| **Friendship Training** (M020) | one card by one global star (D255); scenario is the frozen play context | [Minigames](minigames.md#friendship-training--card-stars) | engine `packages/domain/src/minigames/friendship/` · screen `screens/minigames/friendship/` |
 
 ## 1. What a minigame is here
 

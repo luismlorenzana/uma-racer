@@ -156,7 +156,7 @@ export function CardSetScreen() {
               </button>
             )
           }
-          const bond = cardStars(owned, tier)
+          const bond = cardStars(owned)
           const nodes = cardNodeCount(run, cardId)
           const skillPoints = paysSkillPoints(template)
           const pays = skillPoints

@@ -179,7 +179,7 @@ function state() {
     // weakly, so a seed where this Uma wins is pinned: the tests below are about what a win writes, not about balance.
     profile: createPlayerProfile('abc123def456', 3),
     player,
-    cards: { c1: { ...createCardSave(card), bonds: { '1': 1 } } },
+    cards: { c1: { ...createCardSave(card), stars: 1 } },
   }
 }
 
