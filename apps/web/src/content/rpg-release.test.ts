@@ -35,24 +35,21 @@ describe('RPG release gate', () => {
     expect(await verifyRpgRelease(f.content, f.library)).toMatchObject({ status: 'unavailable' })
     expect(f.file).not.toHaveBeenCalled(); expect(f.load).not.toHaveBeenCalled()
   })
-  it('verifies the active v2 pack and every opening-chapter portrait before entry', async () => {
+  it('reads one cast member per character and verifies every portrait before entry', async () => {
     const f = fixture(), result = await verifyRpgRelease(f.content, f.library)
-    expect(result).toMatchObject({ status: 'ready', chapterId: 'test-chapter', pack: { version: 'invented-map-v1' } })
-    if (result.status === 'ready') expect(result.pack.chapters[0]!.contentHash).toBe(f.hash)
-    expect(f.load.mock.calls).toEqual([
-      ['priconne', 'test-scout-bbbbbbbb'], ['priconne', 'test-elite-bbbbbbbb'], ['priconne', 'test-captain-bbbbbbbb'],
-    ])
-    expect(f.file).toHaveBeenCalledTimes(2)
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.cast.map((c) => c.id)).toEqual([...new Set(result.cast.map((c) => c.id))])
+    expect(Object.keys(result.portraits)).toEqual(result.cast.map((c) => c.id))
+    expect(f.load.mock.calls.every(([kind]) => kind === 'priconne')).toBe(true)
+    expect(f.load).toHaveBeenCalledTimes(result.cast.length)
   })
-  it('keeps legacy replay support but refuses a legacy pack as a playable release', async () => {
+  it('refuses a legacy pack without character sources', async () => {
     const f = fixture(1)
     expect((await f.library.load())?.schemaVersion).toBe(1)
     await expect(verifyRpgRelease(f.content, f.library)).rejects.toThrow(/provenance/)
   })
-  it('refuses a pack without URA and any missing/unverified portrait, with no fallback', async () => {
-    const noUra = fixture(2, 'unity-cup')
-    expect(await verifyRpgRelease(noUra.content, noUra.library)).toMatchObject({ status: 'unavailable' })
-    expect(noUra.load).not.toHaveBeenCalled()
+  it('refuses a missing or unverified portrait, with no fallback cast', async () => {
     const broken = fixture(); broken.load.mockRejectedValueOnce(new Error('Art hash mismatch'))
     await expect(verifyRpgRelease(broken.content, broken.library)).rejects.toThrow(/hash/)
     expect((await verifyRpgRelease(broken.content, broken.library)).status).toBe('ready')

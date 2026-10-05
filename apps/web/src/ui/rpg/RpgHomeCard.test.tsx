@@ -25,7 +25,7 @@ describe('lazy Home RPG entry', () => {
     fireEvent.click(screen.getByRole('button', { name: /Checking/ }))
     expect(verify).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('location').textContent).toBe('/')
-    resolve({ status: 'ready', chapterId: 'invented', pack: {} as Extract<RpgRelease, { status: 'ready' }>['pack'] })
+    resolve({ status: 'ready', cast: [], portraits: {} })
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/rpg'))
   })
   it('never navigates on missing or broken content and offers an explicit retry', async () => {
@@ -43,7 +43,7 @@ describe('lazy Home RPG entry', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open Uma RPG' }))
     const replaced = { manifest: { files: [] } } as unknown as LoadedContent
     view.rerender(<LazyMotion features={domAnimation} strict><MemoryRouter><RpgHomeCard content={replaced} verifyContent={verify} /><Location /></MemoryRouter></LazyMotion>)
-    await act(async () => { resolve({ status: 'ready', chapterId: 'invented', pack: {} as Extract<RpgRelease, { status: 'ready' }>['pack'] }) })
+    await act(async () => { resolve({ status: 'ready', cast: [], portraits: {} }) })
     expect(screen.getByTestId('location').textContent).toBe('/')
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Open Uma RPG' }).disabled).toBe(true)
   })

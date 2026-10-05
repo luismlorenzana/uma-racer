@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import type { CombatCue } from '@racer/domain'
+import type { BattleCue } from '@racer/domain'
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBattlePlayback } from './useBattlePlayback'
 
 let frame: FrameRequestCallback | null = null
-const cues: CombatCue[] = [{ kind: 'hit', actorId: 'a', targetId: 'b', amount: 10 }, { kind: 'ko', actorId: 'a', targetId: 'b' }]
+const cues: BattleCue[] = [{ kind: 'hit', actorId: 'a', targetId: 'b', amount: 10, channel: 'physical', element: null, matchup: 'neutral' }, { kind: 'ko', actorId: 'a', targetId: 'b' }]
 beforeEach(() => {
   frame = null
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
@@ -19,10 +19,10 @@ describe('read-only delta-timed cue playback', () => {
     let done: Promise<void> = Promise.resolve()
     act(() => { done = result.current.play(cues) })
     expect(result.current.cue).toEqual(cues[0])
-    for (let timestamp = 0; timestamp < 280; timestamp += 1_000 / hz) act(() => { frame?.(timestamp) })
-    act(() => { frame?.(281) })
+    for (let timestamp = 0; timestamp < 420; timestamp += 1_000 / hz) act(() => { frame?.(timestamp) })
+    act(() => { frame?.(421) })
     expect(result.current.cue).toEqual(cues[1])
-    await act(async () => { frame?.(561); await done })
+    await act(async () => { frame?.(841); await done })
     expect(result.current.playing).toBe(false)
   })
   it('skip, orientation and background finish playback without adding actions', async () => {

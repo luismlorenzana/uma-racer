@@ -1,9 +1,9 @@
 // Cues are already decided and journalled. Playback never advances the engine (docs/design/uma-rpg.md).
-import type { CombatCue } from '@racer/domain'
+import type { BattleCue } from '@racer/domain'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function useBattlePlayback(reducedMotion: boolean) {
-  const [cue, setCue] = useState<CombatCue | null>(null)
+  const [cue, setCue] = useState<BattleCue | null>(null)
   const [playing, setPlaying] = useState(false)
   const finishRef = useRef<(() => void) | null>(null)
   const frameRef = useRef<number | null>(null)
@@ -13,7 +13,7 @@ export function useBattlePlayback(reducedMotion: boolean) {
     setCue(null); setPlaying(false)
     finishRef.current?.(); finishRef.current = null
   }, [])
-  const play = useCallback((cues: CombatCue[]) => {
+  const play = useCallback((cues: BattleCue[]) => {
     skip()
     if (reducedMotion || cues.length === 0 || document.hidden) return Promise.resolve()
     setPlaying(true); setCue(cues[0]!)
@@ -24,8 +24,8 @@ export function useBattlePlayback(reducedMotion: boolean) {
         // Delta time, not a frame-count assumption; one cue has the same duration at 60/120 Hz.
         if (previous !== null) elapsed += Math.max(0, now - previous)
         previous = now
-        while (elapsed >= 280) {
-          elapsed -= 280; index++
+        while (elapsed >= 420) {
+          elapsed -= 420; index++
           if (index >= cues.length) { skip(); return }
           setCue(cues[index]!)
         }

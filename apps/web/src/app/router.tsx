@@ -160,27 +160,19 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    // Route-split campaign; Home verifies private URA content before entry (T099).
+    // Route-split campaign (D263): parties, roster, chapter launch pad, map and fights share one shell.
     path: 'rpg',
-    hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Uma RPG" />,
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Uma RPG" />,
     lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgShell }),
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgHubScreen }) },
       { path: 'roster', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgRosterScreen }) },
       { path: 'roster/:outfitId', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgProfileScreen }) },
-      { path: 'parties', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgPartiesScreen }) },
-      { path: 'parties/:presetId', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgPartyScreen }) },
+      { path: 'party/:presetId', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgLaunchScreen }) },
+      { path: 'party/:presetId/edit', lazy: async () => ({ Component: (await import('../screens/rpg/RpgScreen')).RpgPartyEditScreen }) },
+      { path: 'party/:presetId/:chapterId', lazy: async () => ({ Component: (await import('../screens/rpg/RpgMapScreen')).RpgMapScreen }) },
+      { path: 'party/:presetId/:chapterId/fight', lazy: async () => ({ Component: (await import('../screens/rpg/RpgFightScreen')).RpgFightScreen }) },
     ],
-  },
-  {
-    path: 'rpg/battle/:checkpointId',
-    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading RPG battle" />,
-    lazy: async () => ({ Component: (await import('../screens/rpg/RpgBattleScreen')).RpgBattleScreen }),
-  },
-  {
-    path: 'rpg/chapters/:presetId',
-    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading RPG chapters" />,
-    lazy: async () => ({ Component: (await import('../screens/rpg/RpgChapterScreen')).RpgChapterScreen }),
   },
   {
     path: 'race/run',
@@ -193,22 +185,11 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
-    path: 'dev/rpg-release-proof',
-    lazy: async () => ({ Component: (await import('../screens/rpg/RpgReleaseProofScreen')).RpgReleaseProofScreen }),
-  }, {
     path: 'dev/inspiration-advance-proof',
     lazy: async () => ({ Component: (await import('../screens/rpg/InspirationAdvanceProofScreen')).InspirationAdvanceProofScreen }),
   }, {
     path: 'dev/inspiration-proof',
     lazy: async () => ({ Component: (await import('../screens/rpg/InspirationProofScreen')).InspirationProofScreen }),
-  }, {
-    path: 'dev/rpg-chapter-proof',
-    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading chapter proof" />,
-    lazy: async () => ({ Component: (await import('../screens/rpg/RpgChapterProofScreen')).RpgChapterProofScreen }),
-  }, {
-    path: 'dev/rpg-battle-proof',
-    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading RPG proof" />,
-    lazy: async () => ({ Component: (await import('../screens/rpg/RpgBattleProofScreen')).RpgBattleProofScreen }),
   }, {
     path: 'dev/spark-rival-proof',
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Spark Rival touch proof" />,
