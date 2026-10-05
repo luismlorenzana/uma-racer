@@ -26,7 +26,7 @@ These are invented profiles without original-game art, not production-account ed
 ## Verification
 
 `pnpm lint`, `pnpm test` (1,120 tests), `pnpm build`, `pnpm sim:rpg:progression` and `pnpm sim:rpg:combat` pass.
-Startup JS is **152.32 KB gzip** (limit 180 KB); lazy RPG setup **48.41 KB / 14.90 KB gzip**;
+Startup JS is **152.32 KB gzip** (limit 180 KB); lazy RPG setup **48.46 KB / 14.93 KB gzip**;
 Spark **58.74 KB / 18.10 KB gzip**. No save schema, dependency, content or infrastructure change.
 No task spec was assigned to this small owner request. Real-account class changes and physical-iPhone input remain
 owner validation; this proof does not claim either.
