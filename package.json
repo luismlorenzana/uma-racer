@@ -29,7 +29,8 @@
     "sim:spark": "pnpm dlx tsx scripts/sim/spark-balance.ts",
     "sim:farm": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/farm-progression.ts",
     "sim:rpg:progression": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-progression.ts",
-    "sim:rpg:combat": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-combat.ts"
+    "sim:rpg:combat": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-combat.ts",
+    "sim:rpg:campaign": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-campaign.ts"
   },
   "devDependencies": {
     "turbo": "^2.10.13"

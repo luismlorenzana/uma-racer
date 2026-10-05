@@ -16,7 +16,7 @@ describe('RPG save wire', () => {
   it('pins deterministic encounter identity and additive bounds (T090)', () => {
     expect(rpgEncounterSeed('account-1', 'party-1', 'chapter-1', 2, 'node-3')).toBe('190a9557')
     expect(parseRpgOutfitSave(outfit)).toEqual(outfit)
-    expect(parseRpgOutfitSave({ ...outfit, schemaVersion: 2 })).toBeNull()
+    expect(parseRpgOutfitSave({ ...outfit, schemaVersion: 3 })).toBeNull()
     expect(parseRpgOutfitSave({ ...outfit, profile: { ...profile, copied: true } })).toBeNull()
     expect(parseRpgOutfitSave({ ...outfit, profile: { ...profile, exp: Number.MAX_SAFE_INTEGER + 1 } })).toBeNull()
   })
@@ -35,8 +35,8 @@ describe('RPG save wire', () => {
     expect(parseRpgCheckpointSave({ ...checkpoint, selectedPath: Array(65).fill('n') })).toBeNull()
     expect(parseRpgCheckpointSave({ ...checkpoint, status: 'in-battle' })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({ entities: [{ kind: 'rpgOutfits', id: profile.outfitId,
-      version: 1, data: { ...outfit, schemaVersion: 2 }, deleted: false, updatedAt: 1 }], logs: [], serverTime: 1 }))
-      .toThrow(/App update required for RPG schema 2/)
+      version: 1, data: { ...outfit, schemaVersion: 3 }, deleted: false, updatedAt: 1 }], logs: [], serverTime: 1 }))
+      .toThrow(/App update required for RPG schema 3/)
   })
 
   it('loads synced RPG rows but refuses them through ordinary sync', () => {

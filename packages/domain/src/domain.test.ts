@@ -246,7 +246,7 @@ describe('Global Uma RPG — D228 save wire pins', () => {
   it('bounds synced account rows and grouped commands', () => {
     expect([RPG_SAVE_SCHEMA_VERSION, RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_MAX_TREE_NODES,
       RPG_MAX_SELECTED_PATH, RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_GROUP_OPERATIONS])
-      .toEqual([1, 5, 5, 25, 64, 16_384, 20])
+      .toEqual([2, 5, 5, 25, 64, 16_384, 20])
   })
 })
 
@@ -266,7 +266,7 @@ describe('Global Uma RPG — D227 progression pins', () => {
     const growthRates = { speed: 0.2, stamina: 0.1, power: 0, guts: 0, wit: 0.3 }
     expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1 }))
       .toMatchObject({ speed: 20, atk: 20, matk: 20, stamina: 18, power: 16,
-        guts: 14, wit: 12, hp: 240, mp: 56, mdef: 14 })
+        guts: 14, wit: 12, hp: 240, mp: 38, mdef: 14 })
     expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 50 }).speed).toBe(108)
     expect(projectRpgStats({ baseStats, growthRates, tier: 2, level: 1 }).speed).toBe(110)
   })

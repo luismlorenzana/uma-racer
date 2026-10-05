@@ -100,7 +100,7 @@ describe('RPG enrollment and frozen projections', () => {
   it('projects deterministic lifetime stats without consulting scenarios and grows at promotion', () => {
     const profile = enroll()
     expect(projectRpgStats(profile)).toMatchObject({ speed: 20, atk: 20, matk: 20,
-      stamina: 18, power: 16, guts: 14, wit: 12, hp: 240, mp: 56, mdef: 14 })
+      stamina: 18, power: 16, guts: 14, wit: 12, hp: 240, mp: 38, mdef: 14 })
     const max = { ...profile, level: 50 }
     const after = { ...profile, tier: 2, level: 1 }
     expect(projectRpgStats(max).speed).toBe(108)

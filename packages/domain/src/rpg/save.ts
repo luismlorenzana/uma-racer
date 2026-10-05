@@ -6,7 +6,8 @@ import {
   type RpgCoreStats, type RpgElement, type RpgProfile, type RpgSkill, type RpgSkillRef,
 } from './rules'
 
-export const RPG_SAVE_SCHEMA_VERSION = 1
+/** Campaign-era RPG rows (D263); schema 1 rows still parse and migrate on the way in. */
+export const RPG_SAVE_SCHEMA_VERSION = 2
 export const RPG_PARTY_SIZE = 5
 export const RPG_PRESET_COUNT = 5
 export const RPG_MAX_TREE_NODES = 25
@@ -67,10 +68,12 @@ export function rpgResultId(entryId: string, retryOrdinal: number): string {
   return id
 }
 
-export interface RpgOutfitSaveV1 { schemaVersion: 1; profile: RpgProfile; projectionRevision: number }
+/** Schema 2 is the campaign era (D263): the same shape, after the one-time progression reset. */
+export interface RpgOutfitSaveV1 { schemaVersion: 1 | 2; profile: RpgProfile; projectionRevision: number }
 export interface RpgPresetSlotV1 { outfitId: string; signature: RpgElement; loadout: RpgSkillRef[] }
 export interface RpgPresetSaveV1 {
-  schemaVersion: 1; presetId: string; name: string; slots: [RpgPresetSlotV1 | null, RpgPresetSlotV1 | null,
+  /** Schema 2: campaign-era loadouts (D263); `foregroundChapterId` is the chapter the party last opened. */
+  schemaVersion: 1 | 2; presetId: string; name: string; slots: [RpgPresetSlotV1 | null, RpgPresetSlotV1 | null,
     RpgPresetSlotV1 | null, RpgPresetSlotV1 | null, RpgPresetSlotV1 | null]
   foregroundChapterId: string | null
 }
@@ -143,7 +146,7 @@ function parseRpgSkill(value: unknown): RpgSkill | null {
 
 export function parseRpgOutfitSave(value: unknown): RpgOutfitSaveV1 | null {
   if (!isRecord(value) || !exact(value, ['schemaVersion', 'profile', 'projectionRevision']) ||
-    value.schemaVersion !== RPG_SAVE_SCHEMA_VERSION || !isInt(value.projectionRevision) || !isRecord(value.profile)) return null
+    (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isInt(value.projectionRevision) || !isRecord(value.profile)) return null
   const profile = value.profile
   if (!exact(profile, ['outfitId', 'sourceContentVersion', 'baseStats', 'growthRates', 'sourceAptitudes',
     'affinities', 'style', 'weapon', 'defaultSignature', 'tier', 'level', 'exp', 'tree', 'legacy']) ||
@@ -179,13 +182,27 @@ export function parseRpgOutfitSave(value: unknown): RpgOutfitSaveV1 | null {
   }
   if (typedLegacy.some((skill) => skill.tier >= (profile.tier as number) || skill.weapon !== profile.weapon ||
     !enrolled.affinities[skill.element])) return null
-  return { schemaVersion: 1, profile: profile as unknown as RpgProfile,
+  return { schemaVersion: value.schemaVersion as 1 | 2, profile: profile as unknown as RpgProfile,
     projectionRevision: value.projectionRevision as number }
+}
+
+/** D263: every enrolled outfit restarts at Tier 1 Lv1 under the campaign balance; class, weapon and element stay. */
+export function rpgCampaignOutfit(save: RpgOutfitSaveV1): RpgOutfitSaveV1 {
+  if (save.schemaVersion === 2) return save
+  return { schemaVersion: 2, projectionRevision: save.projectionRevision + 1,
+    profile: { ...save.profile, tier: 1, level: 1, exp: 0, tree: [], legacy: [] } }
+}
+
+/** Parties keep members and signatures; the reset trees leave no skills to equip. */
+export function rpgCampaignPreset(save: RpgPresetSaveV1): RpgPresetSaveV1 {
+  if (save.schemaVersion === 2) return save
+  return { ...save, schemaVersion: 2, foregroundChapterId: null,
+    slots: save.slots.map((slot) => slot ? { ...slot, loadout: [] } : null) as RpgPresetSaveV1['slots'] }
 }
 
 export function parseRpgPresetSave(value: unknown): RpgPresetSaveV1 | null {
   if (!isRecord(value) || !exact(value, ['schemaVersion', 'presetId', 'name', 'slots', 'foregroundChapterId']) ||
-    value.schemaVersion !== 1 || !isRpgPresetId(value.presetId) || typeof value.name !== 'string' ||
+    (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isRpgPresetId(value.presetId) || typeof value.name !== 'string' ||
     value.name.trim().length < 1 || value.name.length > 40 || !Array.isArray(value.slots) ||
     value.slots.length !== RPG_PARTY_SIZE ||
     (value.foregroundChapterId !== null && !isShortId(value.foregroundChapterId))) return null

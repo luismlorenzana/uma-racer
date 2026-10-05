@@ -215,7 +215,8 @@ export function projectRpgStats(profile: Pick<RpgProfile, 'baseStats' | 'growthR
     core[key] = projected
   }
   const hp = 100 + 6 * core.stamina + 2 * core.power
-  const mp = 20 + 3 * core.wit
+  // Campaign MP (D261): a pool worth a few skills that carries between fights; Wit buys more casts.
+  const mp = 20 + Math.round(1.5 * core.wit)
   requireSafe(hp, 'projected HP')
   requireSafe(mp, 'projected MP')
   return { ...core, atk: core.speed, matk: core.speed, initiative: core.stamina,
