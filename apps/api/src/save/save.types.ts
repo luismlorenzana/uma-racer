@@ -1,6 +1,6 @@
 // API-side validation for the @racer/domain save wire contract (docs/technical/architecture.md).
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
-import { parseRpgEntity, parseRpgLog, rpgEntityIdMatches, rpgLogIdMatches } from './rpg-save.types'
+import { parseRpgEntity, parseRpgLog, rpgEntityIdMatches, rpgLogIdMatches, rpgOrdinaryRow } from './rpg-save.types'
 import { parseInspirationBank } from './inspiration-bank'
 
 export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank'] as const
@@ -1287,12 +1287,13 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isRecord(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
-    if (kind.startsWith('rpg') || kind === 'inspirationBank') return 'Server-owned rows require their grouped command endpoint'
     if (!isId(value.id)) return 'invalid entity id'
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
     if (!data) return `invalid ${kind} data`
-    if ((kind === 'profile' && value.id !== 'main') || (kind === 'farm' && value.id !== 'main') ||
+    // Campaign rows sync like any other save row (D263); pre-campaign RPG shapes stay command-only history.
+    if (kind.startsWith('rpg') && (!rpgOrdinaryRow(kind, data) || !rpgEntityIdMatches(kind, value.id, data))) return `${kind} needs its campaign shape and id`
+    if ((kind === 'profile' && value.id !== 'main') || (kind === 'farm' && value.id !== 'main') || (kind === 'inspirationBank' && value.id !== 'main') ||
       ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
       (kind === 'items' && data.itemId !== value.id) ||
       (kind === 'badges' && (data.scope === 'trainer' ? value.id !== 'trainer' : value.id !== `uma:${String(data.umaId)}`))) return `${kind} id does not match data`
@@ -1305,11 +1306,12 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isRecord(value)) return 'append must be an object'
     if (!LOG_KINDS.includes(value.kind as LogKind)) return `unknown log kind ${String(value.kind)}`
     const kind = value.kind as LogKind
-    if (kind.startsWith('rpg')) return 'RPG logs require the grouped command endpoint'
+    if (kind === 'rpgReceipts') return 'RPG receipts belong to the grouped command endpoint'
     if (!isId(value.id)) return 'invalid log id'
     const data = parseLogData(kind, value.data)
     if (!data) return `invalid ${kind} data`
     if (!isNonNegativeInt(value.createdAt)) return 'append createdAt must be a number'
+    if (kind.startsWith('rpg') && (!rpgOrdinaryRow(kind, data) || !rpgLogIdMatches(kind, value.id, data, value.createdAt))) return `${kind} needs its campaign shape and id`
     if (kind === 'raceResults' && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) {
       return 'raceResults id or timestamp does not match data'
     }
@@ -1334,6 +1336,7 @@ function entitySchema(kind: string, data: Record<string, unknown>): number | nul
   if (kind === 'umas') return typeof data.schemaVersion === 'number' ? data.schemaVersion : 1
   if (kind === 'cards') return data.schemaVersion === 1 ? 9 : 'bonds' in data ? 8 : 'stars' in data ? 7 : 'limitBreaks' in data ? 6 : 5
   if (kind === 'farm') return typeof data.schemaVersion === 'number' ? data.schemaVersion : null
+  if (kind.startsWith('rpg')) return typeof data.schemaVersion === 'number' ? data.schemaVersion : null
   return null
 }
 
@@ -1348,7 +1351,9 @@ export function resolveUpserts(
   for (const upsert of upserts) {
     const key = `${upsert.kind}/${upsert.id}`
     const current = existing.get(key)
-    if (upsert.kind === 'inspirationBank') {
+    if (upsert.kind === 'inspirationBank' && (upsert.deleted || !current || current.deleted || upsert.baseVersion !== current.version ||
+      !repaysInspiration(current.data, upsert.data))) {
+      // The advance itself is server-owned; ordinary sync may only repay its debt (D256, D263).
       if (current) conflicts.push(current)
       continue
     }
@@ -1387,6 +1392,14 @@ export function resolveUpserts(
     writes.push(record)
   }
   return { writes, conflicts }
+}
+
+/** Same frozen advance, every balance moved toward zero. */
+function repaysInspiration(before: Record<string, unknown>, after: Record<string, unknown>): boolean {
+  const old = before.balances as Record<string, number>, next = after.balances as Record<string, number>
+  return before.phase === after.phase && before.createdAt === after.createdAt &&
+    JSON.stringify(before.cohort) === JSON.stringify(after.cohort) && JSON.stringify(before.opened) === JSON.stringify(after.opened) &&
+    Object.keys(old).length === Object.keys(next).length && Object.keys(old).every((key) => next[key] !== undefined && next[key]! >= old[key]! && next[key]! <= 0)
 }
 
 /** Permanent shared Inspiration positions survive stale ordinary writes (D250, D256). */

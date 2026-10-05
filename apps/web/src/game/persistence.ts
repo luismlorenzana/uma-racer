@@ -51,7 +51,8 @@ import {
   type UmaSave,
   type RpgOutfitSaveV1,
   type RpgPresetSaveV1,
-  type RpgCheckpointSaveV1,
+  type RpgRunSaveV2,
+  type RpgBattleResultV2,
   type RpgResultEvidenceV1,
   type RpgPromotionEvidenceV1,
   type RpgCommandReceiptV1,
@@ -71,8 +72,8 @@ export interface LocalSnapshot {
   itemLedger: LogRow<ItemLedgerEntry>[]
   rpgOutfits: VersionedRow<RpgOutfitSaveV1>[]
   rpgPresets: VersionedRow<RpgPresetSaveV1>[]
-  rpgCheckpoints: VersionedRow<RpgCheckpointSaveV1>[]
-  rpgResults: LogRow<RpgResultEvidenceV1>[]
+  rpgCheckpoints: VersionedRow<RpgRunSaveV2>[]
+  rpgResults: LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>[]
   rpgPromotions: LogRow<RpgPromotionEvidenceV1>[]
   rpgReceipts: LogRow<RpgCommandReceiptV1>[]
 }
@@ -140,8 +141,8 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   if (bankRow && (!parseInspirationBank(bankRow.data) || !Number.isSafeInteger(bankRow.version) || bankRow.version < 1)) throw new Error('Invalid local Inspiration bank')
   const rpgOutfits = validateRpgEntities('rpgOutfits', await db.rpgOutfits.toArray()) as VersionedRow<RpgOutfitSaveV1>[]
   const rpgPresets = validateRpgEntities('rpgPresets', await db.rpgPresets.toArray()) as VersionedRow<RpgPresetSaveV1>[]
-  const rpgCheckpoints = validateRpgEntities('rpgCheckpoints', await db.rpgCheckpoints.toArray()) as VersionedRow<RpgCheckpointSaveV1>[]
-  const rpgResults = validateRpgLogs('rpgResults', await db.rpgResults.toArray()) as LogRow<RpgResultEvidenceV1>[]
+  const rpgCheckpoints = validateRpgEntities('rpgCheckpoints', await db.rpgCheckpoints.toArray()) as VersionedRow<RpgRunSaveV2>[]
+  const rpgResults = validateRpgLogs('rpgResults', await db.rpgResults.toArray()) as LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>[]
   const rpgPromotions = validateRpgLogs('rpgPromotions', await db.rpgPromotions.toArray()) as LogRow<RpgPromotionEvidenceV1>[]
   const rpgReceipts = validateRpgLogs('rpgReceipts', await db.rpgReceipts.toArray()) as LogRow<RpgCommandReceiptV1>[]
   const umas = umaRows.map((row) => {
@@ -194,7 +195,7 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
 function validateRpgEntities(kind: EntityKind, rows: VersionedRow<unknown>[]): VersionedRow<object>[] {
   return rows.map((row) => {
     if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data &&
-      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 1) {
+      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 2) {
       throw new Error(`App update required for RPG schema ${row.data.schemaVersion}`)
     }
     const parsed = parseEntityData(kind, row.data)
@@ -211,7 +212,7 @@ function validateRpgEntities(kind: EntityKind, rows: VersionedRow<unknown>[]): V
 function validateRpgLogs(kind: LogKind, rows: LogRow<unknown>[]): LogRow<object>[] {
   return rows.map((row) => {
     if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data &&
-      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 1) {
+      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 2) {
       throw new Error(`App update required for RPG schema ${row.data.schemaVersion}`)
     }
     const parsed = parseLogData(kind, row.data)
@@ -282,6 +283,9 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         !parseCardSave(row.data) && migrateCardSaveToCurrent(row.data)) legacyKeys.add(`cards/${row.id}`)
       if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
         !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
+      // Campaign-era outfits and parties (D263) migrate on the way in; upload the reset rows once.
+      if ((row.kind === 'rpgOutfits' || row.kind === 'rpgPresets') && typeof row.id === 'string' && !row.deleted &&
+        typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion === 1) legacyKeys.add(`${row.kind}/${row.id}`)
     }
   }
   const profileRecords = snapshot.entities.filter((record) => record.kind === 'profile' && !record.deleted)
@@ -372,6 +376,8 @@ function canonicalJson(value: unknown): string {
 
 async function mergeRpgEntity(record: EntityRecord): Promise<void> {
   if (!['rpgOutfits', 'rpgPresets', 'rpgCheckpoints'].includes(record.kind)) throw new Error('Not an RPG entity')
+  // First-map checkpoints are retired history; the campaign keeps only its runs (D263).
+  if (record.kind === 'rpgCheckpoints' && record.data.schemaVersion !== 2) return
   const table = db.table<VersionedRow<Record<string, unknown>>, string>(record.kind)
   const local = await table.get(record.id)
   if (local && local.version > record.version) return
@@ -538,6 +544,8 @@ export async function entityRow(kind: EntityKind, id: string): Promise<Versioned
           ? await db.badges.get(id)
           : kind === 'farm'
             ? await db.farm.get(id)
+            : kind === 'inspirationBank'
+              ? await db.inspirationBank.get(id)
             : kind === 'rpgOutfits'
               ? await db.rpgOutfits.get(id)
               : kind === 'rpgPresets'
@@ -604,7 +612,13 @@ export async function putConflict(record: EntityRecord, queueMigrated = false, n
     if (record.kind === 'rpgOutfits') await db.rpgOutfits.delete(record.id)
     if (record.kind === 'rpgPresets') await db.rpgPresets.delete(record.id)
     if (record.kind === 'rpgCheckpoints') await db.rpgCheckpoints.delete(record.id)
+    if (record.kind === 'inspirationBank') await db.inspirationBank.delete(record.id)
     return
+  }
+  if (record.kind === 'inspirationBank') {
+    const bank = parseInspirationBank(record.data)
+    if (!bank) throw new Error('Invalid server Inspiration bank conflict')
+    await db.inspirationBank.put({ id: record.id, data: bank, version: record.version })
   }
   // Migrate on the way in, as a first load does: a conflict can carry any supported schema, and a row that cannot be
   // read is never written (D156).
@@ -668,4 +682,5 @@ export async function updateEntityVersion(kind: EntityKind, id: string, version:
   if (kind === 'rpgOutfits') await db.rpgOutfits.update(id, { version })
   if (kind === 'rpgPresets') await db.rpgPresets.update(id, { version })
   if (kind === 'rpgCheckpoints') await db.rpgCheckpoints.update(id, { version })
+  if (kind === 'inspirationBank') await db.inspirationBank.update(id, { version })
 }

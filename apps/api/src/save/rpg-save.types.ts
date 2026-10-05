@@ -57,7 +57,7 @@ const skillKey = (value: Record<string, unknown>): string =>
 
 function outfit(value: unknown): boolean {
   if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'profile', 'projectionRevision']) ||
-    value.schemaVersion !== 1 || !rpgInt(value.projectionRevision) || !rpgRecord(value.profile)) return false
+    (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !rpgInt(value.projectionRevision) || !rpgRecord(value.profile)) return false
   const p = value.profile
   if (!rpgExact(p, ['outfitId', 'sourceContentVersion', 'baseStats', 'growthRates', 'sourceAptitudes',
     'affinities', 'style', 'weapon', 'defaultSignature', 'tier', 'level', 'exp', 'tree', 'legacy']) ||
@@ -94,7 +94,7 @@ function outfit(value: unknown): boolean {
 
 function presetRow(value: unknown): boolean {
   if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'presetId', 'name', 'slots', 'foregroundChapterId']) ||
-    value.schemaVersion !== 1 || !preset(value.presetId) || typeof value.name !== 'string' ||
+    (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !preset(value.presetId) || typeof value.name !== 'string' ||
     value.name.trim().length < 1 || value.name.length > 40 || !Array.isArray(value.slots) || value.slots.length !== 5 ||
     (value.foregroundChapterId !== null && !short(value.foregroundChapterId))) return false
   const ids: string[] = []
@@ -110,7 +110,36 @@ function presetRow(value: unknown): boolean {
   return new Set(ids).size === ids.length
 }
 
+const counts = (value: unknown, min: number): boolean => rpgRecord(value) && Object.keys(value).length <= 200 &&
+  Object.entries(value).every(([key, n]) => ID.test(key) && rpgInt(n, min))
+const MAX_RUN_BATTLE_CHARS = 65_536
+
+/** Campaign run (D263): cleared nodes, carried MP and an open fight's frozen input. Game rules live in the client. */
+function run(value: unknown): boolean {
+  if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'presetId', 'chapterId', 'wins', 'mp', 'battle', 'battles', 'clearedAt', 'updatedAt']) ||
+    value.schemaVersion !== 2 || !preset(value.presetId) || typeof value.chapterId !== 'string' || !/^[a-z0-9-]{1,24}$/.test(value.chapterId) ||
+    !counts(value.wins, 1) || !counts(value.mp, 0) || !rpgInt(value.battles) ||
+    !(value.clearedAt === null || rpgInt(value.clearedAt)) || !rpgInt(value.updatedAt)) return false
+  const battle = value.battle
+  if (battle === null) return true
+  return rpgRecord(battle) && rpgExact(battle, ['battleId', 'nodeId', 'startedAt', 'input']) && rpgId(battle.battleId) &&
+    rpgId(battle.nodeId) && rpgInt(battle.startedAt) && rpgRecord(battle.input) && battle.input.version === 2 &&
+    JSON.stringify(battle.input).length <= MAX_RUN_BATTLE_CHARS
+}
+
+function campaignResult(value: unknown): boolean {
+  if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'resultId', 'presetId', 'chapterId', 'nodeId', 'rounds', 'members', 'tokens', 'createdAt']) ||
+    value.schemaVersion !== 2 || !rpgId(value.resultId) || !preset(value.presetId) || typeof value.chapterId !== 'string' ||
+    !/^[a-z0-9-]{1,24}$/.test(value.chapterId) || !rpgId(value.nodeId) || !rpgInt(value.rounds, 1) || !rpgInt(value.createdAt) ||
+    !rpgRecord(value.tokens) || !rpgExact(value.tokens, ['tier', 'slot', 'skill']) || !rpgInt(value.tokens.tier, 1) ||
+    !rpgInt(value.tokens.slot) || !rpgInt(value.tokens.skill) || !Array.isArray(value.members) || value.members.length !== 5) return false
+  return value.members.every((m: unknown) => rpgRecord(m) && rpgExact(m, ['outfitId', 'delta', 'beforeTier', 'beforeLevel', 'beforeExp',
+    'afterTier', 'afterLevel', 'afterExp']) && rpgId(m.outfitId) && rpgInt(m.delta) && rpgInt(m.beforeTier, 1) && rpgInt(m.beforeLevel, 1) &&
+    rpgInt(m.beforeExp) && rpgInt(m.afterTier, 1) && rpgInt(m.afterLevel, 1) && rpgInt(m.afterExp))
+}
+
 function checkpoint(value: unknown): boolean {
+  if (rpgRecord(value) && value.schemaVersion === 2) return run(value)
   if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'presetId', 'chapterId', 'contentVersion', 'contentHash',
     'attemptIndex', 'attemptId', 'lastClearedNodeId', 'selectedPath', 'status', 'revision', 'frozenEntry']) ||
     value.schemaVersion !== 1 || !preset(value.presetId) || !short(value.chapterId) || !rpgId(value.contentVersion) ||
@@ -142,6 +171,7 @@ function checkpoint(value: unknown): boolean {
 }
 
 function result(value: unknown): boolean {
+  if (rpgRecord(value) && value.schemaVersion === 2) return campaignResult(value)
   if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'resultId', 'entryId', 'retryOrdinal', 'outcome',
     'stateHash', 'contentHash', 'contentVersion', 'memberExp', 'createdAt']) || value.schemaVersion !== 1 || !rpgId(value.entryId) ||
     !rpgInt(value.retryOrdinal) || value.resultId !== `${value.entryId}:retry-${value.retryOrdinal}` ||
@@ -198,6 +228,12 @@ export function rpgEntityIdMatches(kind: EntityKind, id: string, data: Record<st
   if (kind === 'rpgPresets') return data.presetId === id
   if (kind === 'rpgCheckpoints') return id === `${data.presetId}:${data.chapterId}`
   return false
+}
+
+/** Rows the campaign client writes through ordinary sync (D263); older shapes stay command-only history. */
+export function rpgOrdinaryRow(kind: EntityKind | LogKind, data: Record<string, unknown>): boolean {
+  if (kind === 'rpgOutfits' || kind === 'rpgPresets' || kind === 'rpgCheckpoints' || kind === 'rpgResults') return data.schemaVersion === 2
+  return kind === 'rpgPromotions'
 }
 
 export function rpgLogIdMatches(kind: LogKind, id: string, data: Record<string, unknown>, createdAt: number): boolean {

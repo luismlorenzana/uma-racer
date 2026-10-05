@@ -46,6 +46,13 @@ import {
   type RpgResultEvidenceV1,
   type RpgPromotionEvidenceV1,
   type RpgCommandReceiptV1,
+  type RpgRunSaveV2,
+  type RpgBattleResultV2,
+  type BattleAction,
+  parseRpgOutfitSave,
+  parseRpgPresetSave,
+  rpgCampaignOutfit,
+  rpgCampaignPreset,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Table, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
@@ -109,6 +116,14 @@ export interface PendingRpgCommandRow {
   conflict: unknown | null
   /** A result cannot be sent until its entry/takeover receipt is installed. */
   dependsOn?: string | null
+}
+
+/** Device-local action journal of a campaign run's open fight (D263); the fight's input lives on the synced run. */
+export interface RpgFightRow {
+  /** The run battle id; a mismatched or missing journal replays the fight from its first action. */
+  id: string
+  actions: BattleAction[]
+  updatedAt: number
 }
 
 /** Device-local RPG battle replay; never joins the cloud save or ordinary outbox. */
@@ -189,14 +204,16 @@ export class RacerDb extends Dexie {
   itemLedger!: EntityTable<LogRow<ItemLedgerEntry>, 'id'>
   rpgOutfits!: EntityTable<VersionedRow<RpgOutfitSaveV1>, 'id'>
   rpgPresets!: EntityTable<VersionedRow<RpgPresetSaveV1>, 'id'>
-  rpgCheckpoints!: EntityTable<VersionedRow<RpgCheckpointSaveV1>, 'id'>
-  rpgResults!: EntityTable<LogRow<RpgResultEvidenceV1>, 'id'>
+  /** Campaign runs (schema 2); first-map checkpoints (schema 1) are cleared by version 27. */
+  rpgCheckpoints!: EntityTable<VersionedRow<RpgRunSaveV2>, 'id'>
+  rpgResults!: EntityTable<LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>, 'id'>
   rpgPromotions!: EntityTable<LogRow<RpgPromotionEvidenceV1>, 'id'>
   rpgReceipts!: EntityTable<LogRow<RpgCommandReceiptV1>, 'id'>
   pendingRpgCommands!: EntityTable<PendingRpgCommandRow, 'id'>
   rpgBattleJournals!: EntityTable<RpgBattleJournalRow, 'id'>
   rpgBattleClaims!: EntityTable<RpgBattleClaimRow, 'id'>
   rpgBattleArchives!: EntityTable<RpgBattleArchiveRow, 'id'>
+  rpgFights!: EntityTable<RpgFightRow, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
   /** Device-local album preferences (D112). Never synced, never part of the save. */
   albumPrefs!: EntityTable<AlbumPrefs, 'id'>
@@ -381,7 +398,52 @@ export class RacerDb extends Dexie {
     this.version(25).stores(storesWithBattleJournal).upgrade(walkRowsToCurrent)
     // Server acknowledgement, not a device-only roster migration (D256).
     this.version(26).stores({ ...storesWithBattleJournal, inspirationBank: 'id' })
+    // The campaign (D261–D263): RPG rows save locally and sync like the rest. Outfits restart at Lv1 once, parties
+    // keep their members, first-map checkpoints and grouped commands retire; a queued Inspiration unlock lands locally.
+    this.version(27).stores({ ...storesWithBattleJournal, inspirationBank: 'id', rpgFights: 'id' }).upgrade(migrateRpgCampaign)
   }
+}
+
+async function migrateRpgCampaign(tx: Transaction): Promise<void> {
+  const outbox = tx.table('outbox')
+  const queuedAt = Date.now()
+  const queue = async (kind: EntityKind | LogKind, id: string, op: 'upsert' | 'append' = 'upsert') => {
+    await outbox.where('[kind+id]').equals([kind, id]).delete()
+    await outbox.add({ kind, id, op, queuedAt })
+  }
+  for (const row of await tx.table('rpgOutfits').toArray() as VersionedRow<unknown>[]) {
+    const parsed = parseRpgOutfitSave(row.data)
+    if (!parsed || parsed.schemaVersion === 2) continue
+    await tx.table('rpgOutfits').put({ ...row, data: rpgCampaignOutfit(parsed) })
+    await queue('rpgOutfits', row.id)
+  }
+  for (const row of await tx.table('rpgPresets').toArray() as VersionedRow<unknown>[]) {
+    const parsed = parseRpgPresetSave(row.data)
+    if (!parsed || parsed.schemaVersion === 2) continue
+    await tx.table('rpgPresets').put({ ...row, data: rpgCampaignPreset(parsed) })
+    await queue('rpgPresets', row.id)
+  }
+  for (const row of await tx.table('rpgCheckpoints').toArray() as VersionedRow<{ schemaVersion?: number }>[]) {
+    if (row.data?.schemaVersion !== 2) await tx.table('rpgCheckpoints').delete(row.id)
+  }
+  // An unsent unlock already reserved its Uma and token stack; it becomes the ordinary write it now is.
+  for (const row of await tx.table('pendingRpgCommands').toArray() as PendingRpgCommandRow[]) {
+    const body = row.body as { action?: string; upserts?: Array<{ kind: string; id: string; data: unknown }>;
+      appends?: Array<{ kind: string; id: string; data: unknown; createdAt: number }> }
+    if (row.status === 'pending' && body.action === 'spend-inspiration') {
+      for (const upsert of body.upserts ?? []) {
+        const current = await tx.table(upsert.kind).get(upsert.id) as VersionedRow<unknown> | undefined
+        await tx.table(upsert.kind).put({ id: upsert.id, data: upsert.data, version: current?.version ?? 0 })
+        await queue(upsert.kind as EntityKind, upsert.id)
+      }
+      for (const append of body.appends ?? []) {
+        await tx.table(append.kind).put({ id: append.id, data: append.data, createdAt: append.createdAt })
+        await queue(append.kind as LogKind, append.id, 'append')
+      }
+    }
+    await tx.table('pendingRpgCommands').delete(row.id)
+  }
+  await Promise.all(['rpgBattleJournals', 'rpgBattleClaims', 'rpgBattleArchives'].map((name) => tx.table(name).clear()))
 }
 
 /** An Uma's save-v13 re-levelling (D241): the levels it reached and the gate, if it reached one. */

@@ -90,7 +90,10 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} acco
     expect(bankData(bank).balances['inspiration:t1:slot']).toBe(-12)
     expect((await repo.advanceInspiration('another-owner')).entities).toEqual([])
     for (const baseVersion of [1, saved.version]) expect((await repo.sync('invented-owner', { upserts: [{ kind: 'umas', id: saved.id, baseVersion, data: entity(uma(saved.id)).data }], appends: [] })).applied).toEqual([])
-    expect(typeof parseSyncRequest({ upserts: [{ kind: 'inspirationBank', id: 'main', baseVersion: bank.version, data: bank.data }] })).toBe('string')
+    // Ordinary sync may repay the advance (D263) but never deepen its debt or delete it.
+    expect(typeof parseSyncRequest({ upserts: [{ kind: 'inspirationBank', id: 'main', baseVersion: bank.version, data: bank.data }] })).toBe('object')
+    const deeper = { ...bank.data, balances: { ...bankData(bank).balances, 'inspiration:t1:slot': -13 } }
+    expect((await repo.sync('invented-owner', { upserts: [{ kind: 'inspirationBank', id: 'main', baseVersion: bank.version, data: deeper }], appends: [] })).applied).toEqual([])
     expect((await repo.sync('invented-owner', { upserts: [{ kind: 'inspirationBank', id: 'main', baseVersion: bank.version, data: bank.data, deleted: true }], appends: [] })).applied).toEqual([])
   })
   if (backend === 'firestore') it('resumes after a completed transaction without rerunning its debit', async () => {

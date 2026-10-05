@@ -41,7 +41,6 @@ import {
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
-import { flushOneRpgCommand } from './rpg-sync'
 import { db } from './db'
 import {
   adoptServerSnapshot,
@@ -150,6 +149,7 @@ export class GameRuntime {
   private uninstallMinigameJournal: (() => void) | null = null
   private uninstallFarmHost: (() => void) | null = null
   private flushing = false
+  private inFlight: Promise<void> | null = null
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
   private promotionLocks = new Set<string>()
@@ -349,9 +349,10 @@ export class GameRuntime {
     if (clear) clearGameState()
   }
 
+  /** Arms one flush. The outbox is the truth: a write committed outside the store must still sync (D263). */
   schedule(delay = 750): void {
     const state = useGame.getState()
-    if (!state.persistent || state.sync.pending === 0 || this.timer) return
+    if (!state.persistent || this.timer) return
     this.timer = setTimeout(() => {
       this.timer = null
       void this.flush()
@@ -1060,7 +1061,14 @@ export class GameRuntime {
     await this.refreshPending()
   }
 
-  async flush(): Promise<void> {
+  /** One sync at a time; a caller during a sync awaits that sync rather than returning early. */
+  flush(): Promise<void> {
+    if (this.inFlight) return this.inFlight
+    this.inFlight = this.flushOnce().finally(() => { this.inFlight = null })
+    return this.inFlight
+  }
+
+  private async flushOnce(): Promise<void> {
     if (this.flushing || !this.content || !useGame.getState().persistent) return
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       const pending = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count()])
@@ -1073,11 +1081,10 @@ export class GameRuntime {
     try {
       const batch = await db.outbox.orderBy('seq').limit(MAX_SYNC_OPERATIONS).toArray()
       if (batch.length === 0) {
-        const accepted = await flushOneRpgCommand()
         if (generation !== this.generation) return
         const { advanceInspirationOnce } = await import('./inspiration-advance')
         const advanced = await advanceInspirationOnce(db, saveApi, () => generation === this.generation)
-        if (accepted || advanced) {
+        if (advanced) {
           const local = await readLocalSnapshot()
           if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
         }
@@ -1095,8 +1102,9 @@ export class GameRuntime {
           !Number.isSafeInteger(item.seq) ||
           !Number.isSafeInteger(item.queuedAt) ||
           item.queuedAt < 0 ||
-          (item.op === 'upsert' && !['profile', 'umas', 'cards', 'badges', 'farm', 'items'].includes(item.kind)) ||
-          (item.op === 'append' && !['raceResults', 'ledger', 'flairEvents', 'itemLedger'].includes(item.kind))
+          (item.op === 'upsert' && !['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'inspirationBank',
+            'rpgOutfits', 'rpgPresets', 'rpgCheckpoints'].includes(item.kind)) ||
+          (item.op === 'append' && !['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions'].includes(item.kind))
         ) {
           throw new Error('Outbox row is malformed')
         }
@@ -1118,7 +1126,8 @@ export class GameRuntime {
       const acknowledged = acknowledgedSequences(batch, request, response)
       const sentSequence = new Map(batch.map((item) => [`${item.kind}/${item.id}`, item.seq]))
 
-      await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.farm, db.items, db.itemLedger, db.outbox], async () => {
+      await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.farm, db.items, db.itemLedger, db.inspirationBank,
+        db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.outbox], async () => {
         for (const applied of response.applied) await updateEntityVersion(applied.kind, applied.id, applied.version)
         for (const conflict of response.conflicts) {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
@@ -1142,7 +1151,6 @@ export class GameRuntime {
         await db.outbox.bulkDelete(acknowledged)
         await reconcileFarmProjectionsInTransaction(response.serverTime)
       })
-      await flushOneRpgCommand()
       if (generation !== this.generation) return
       const { advanceInspirationOnce } = await import('./inspiration-advance')
       await advanceInspirationOnce(db, saveApi, () => generation === this.generation)

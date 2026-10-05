@@ -32,6 +32,7 @@ export type RpgCommandResponse =
   | { status: 'conflict'; authoritative: Array<{ kind: EntityKind; id: string; record: EntityRecord | null }> }
   | { status: 'rejected'; reason: string }
 
+const ACTIVE_RPG_ACTIONS: readonly RpgAction[] = ['spend-inspiration']
 const entityKey = (kind: EntityKind, id: string) => `${kind}/${id}`
 const logKey = (kind: LogKind, id: string) => `${kind}/${id}`
 const allowedEntities: Record<RpgAction, readonly EntityKind[]> = {
@@ -54,6 +55,8 @@ export function parseRpgCommandRequest(body: unknown): RpgCommandRequest | strin
     return 'Unsupported RPG command version, id or action'
   }
   const action = body.action as RpgAction
+  // The campaign writes its rows through ordinary sync (D263); only Inspiration spending stays a grouped command.
+  if (!ACTIVE_RPG_ACTIONS.includes(action)) return 'RPG progress now syncs directly; update the app'
   if (!Array.isArray(body.expected) || !Array.isArray(body.upserts) || !Array.isArray(body.appends) ||
     body.expected.length + body.upserts.length + body.appends.length > RPG_MAX_GROUP_OPERATIONS ||
     body.upserts.length === 0) return 'Invalid RPG command operation count'

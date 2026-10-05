@@ -84,20 +84,9 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
   const [busy, setBusy] = useState(false)
 
   const { derived, run } = uma
-  const savedTokens = useInspiration(save.templateId, run.tier, persistent && viewMode === 'inspiration')
-  const tokenView = preview ? { slot: 6, skill: 12, pending: false, conflict: false, error: '' } : savedTokens
+  const savedTokens = useInspiration(run.tier, persistent && viewMode === 'inspiration')
+  const tokenView = preview ? { slot: 6, skill: 12, error: '' } : savedTokens
   const [confirmation, setConfirmation] = useState<{ nodeId: string; goldIndex: number | null; name: string } | null>(null)
-  const [recovery, setRecovery] = useState(false)
-  const recover = async () => {
-    setBusy(true)
-    try {
-      const [{ RpgChapterHost }, { gameRuntime }] = await Promise.all([import('../game/rpg-chapter-host'), import('../game/runtime')])
-      await new RpgChapterHost(async () => null).refreshAccount(true)
-      await gameRuntime.refreshLocalState()
-      setRecovery(false)
-    } catch (error) { pushToast(error instanceof Error ? error.message : String(error)) }
-    finally { setBusy(false) }
-  }
   const requestUnlock = (nodeId: string, goldIndex: number | null, name: string) => { setOpenNode(null); setSelectedSkill(null); setConfirmation({ nodeId, goldIndex, name }) }
   const unlock = async () => {
     if (!confirmation || busy || !persistent) return
@@ -105,9 +94,10 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
     try {
       await reserveInspirationUnlock({ umaId: save.templateId, tier: run.tier, ...confirmation }, { umas: content.umas.byId, skills: content.skills.byId })
       const { gameRuntime } = await import('../game/runtime')
-      await gameRuntime.flush()
+      await gameRuntime.refreshLocalState()
+      gameRuntime.schedule()
       setConfirmation(null)
-      pushToast('Unlock submitted. It opens only after sync acknowledgement.')
+      pushToast(`${confirmation.name} unlocked`)
     } catch (error) { pushToast(error instanceof Error ? error.message : String(error)) }
     finally { setBusy(false) }
   }
@@ -248,7 +238,6 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
         {viewMode === 'inspiration' && <div className="mb-2 rounded-md bg-sunken px-3 py-2 text-[12px] text-ink-soft">
           <div className="flex items-center justify-between gap-2">{(['slot', 'skill'] as const).map(kind => <span key={kind} className="flex items-center gap-1"><InspirationTokenIcon kind={kind} size={28} />{tokenView[kind]} {kind} tokens</span>)}<Link className="flex min-h-11 min-w-11 items-center justify-center font-semibold text-accent-strong" to={`/farm/items?item=${inspirationTokenId(run.tier, 'slot')}`}>Items</Link></div>
           <p>{run.inspiration.slots.length}/6 slots · {run.inspiration.golds.length}/12 golds open. Slots lend unique skills and aptitudes; gold moons unlock separately.</p>
-          {tokenView.pending && <><p role="status">{tokenView.conflict ? 'Conflict: no rejected token spend was applied.' : 'Pending sync — nothing is spent or opened yet.'}</p><button className="min-h-11 font-semibold text-accent-strong" disabled={busy} onClick={() => { if (tokenView.conflict) setRecovery(true); else void import('../game/runtime').then(({ gameRuntime }) => gameRuntime.flush()) }}>{tokenView.conflict ? 'Review accepted-account recovery' : 'Try sync'}</button></>}
           {!persistent && <p>{preview ? 'Read-only invented preview · no account changes.' : 'Unlocking needs local storage and acknowledged sync.'}</p>}
           {tokenView.error && <p role="alert">{tokenView.error}</p>}
         </div>}
@@ -364,7 +353,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
               />
             )}
 
-            {!openNodeUnlocked && openNode.kind !== 'card' && <><p className="text-sm text-ink-soft">{openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id)) ? 'Open this side’s parent slot first.' : 'One scenario slot token opens this position permanently.'}</p><button type="button" disabled={busy || !persistent || tokenView.pending || tokenView.slot < 1 || openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id))} className="min-h-11 rounded-sm bg-accent px-3 font-semibold" onClick={() => requestUnlock(openNode.id, null, lineageSkillGroups.find(group => group.id === openNode.id)?.label ?? titleCase(openNode.kind))}>Unlock {openNode.kind} · 1 slot token</button></>}
+            {!openNodeUnlocked && openNode.kind !== 'card' && <><p className="text-sm text-ink-soft">{openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id)) ? 'Open this side’s parent slot first.' : 'One scenario slot token opens this position permanently.'}</p><button type="button" disabled={busy || !persistent || tokenView.slot < 1 || openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id))} className="min-h-11 rounded-sm bg-accent px-3 font-semibold" onClick={() => requestUnlock(openNode.id, null, lineageSkillGroups.find(group => group.id === openNode.id)?.label ?? titleCase(openNode.kind))}>Unlock {openNode.kind} · 1 slot token</button></>}
             {openNode.kind === 'card' && <LockedNote node={openNode} template={template} trainingLevel={run.trainingLevel} />}
           </div>
         )}
@@ -384,7 +373,6 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
         />
       )}
 
-      {recovery && <RpgModalFocus onClose={() => setRecovery(false)}><BottomSheet open onClose={() => setRecovery(false)}><div className="space-y-3 pb-safe"><h2 className="font-display text-xl">Use the accepted account?</h2><p className="text-sm text-ink-soft">Discard rejected RPG commands and refresh accepted Uma/Items. Ordinary queued edits and archived battle history stay on this device. No rejected reward or unlock is retried.</p><button disabled={busy} className="min-h-11 w-full rounded-sm bg-accent px-3 font-semibold" onClick={() => void recover()}>Discard rejected commands and refresh</button></div></BottomSheet></RpgModalFocus>}
       <SkillDetailSheet skill={selectedSkill} onClose={() => setSelectedSkill(null)} price={selectedPrice || undefined}
         note={goldOpen ? `Full chain from this slot · ${spMultiplier === 2 ? 'single-side grandparent 2× SP' : 'normal SP'}. The Skills page uses the cheapest available source and shares prerequisites.` : 'Locked gold · unlock with one scenario skill token, then equip using SP.'}
         unlock={!goldOpen && selectedLineageNode ? () => requestUnlock(selectedLineageNode.id, goldIndex, selectedSkill!.name) : undefined} />
@@ -392,7 +380,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
         <InspirationTokenIcon kind={confirmation.goldIndex === null ? 'slot' : 'skill'} size={56} />
         <h2 className="font-display text-xl">Unlock {confirmation.name}?</h2><p>{uma.template.name} · {scenarioForTier(run.tier)?.name}</p>
         <p className="text-sm text-ink-soft">Consumes 1 {inspirationTokenName(run.tier, confirmation.goldIndex === null ? 'slot' : 'skill')}. This position stays open when its ancestor changes. No Training Level required.</p>
-        <button type="button" disabled={busy || tokenView.pending || !persistent} onClick={() => void unlock()} className="min-h-11 w-full rounded-sm bg-accent px-3 font-semibold">Confirm · 1 token</button>
+        <button type="button" disabled={busy || !persistent} onClick={() => void unlock()} className="min-h-11 w-full rounded-sm bg-accent px-3 font-semibold">Confirm · 1 token</button>
       </div></BottomSheet></RpgModalFocus>}
     </>
   )
