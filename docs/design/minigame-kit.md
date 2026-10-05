@@ -46,6 +46,8 @@ acknowledged per-party resume cards, and one nine-page `RpgGuide` shared by hub,
 Its read-only DEV hub proof never opens account storage. D257 moves physical-iPhone and real-account gameplay checks
 after the owner-authorized production release. They stay explicitly open in the
 [release acceptance record](../research/rpg-release-acceptance.md), not claims made by a synthetic proof.
+The outfit profile allows free class/weapon correction only at Tier 1, RPG Lv1 (D259), using the same acknowledged
+safe-checkpoint `edit-outfit` transaction as tree setup; it preserves partial EXP and never re-enrolls an outfit.
 
 T105's one-time Inspiration advance (D256) is account-wide, outside all run ports. Existing scenario units receive
 shared slot/gold access and matching negative token debt; accepted RPG grants repay that scenario/family before

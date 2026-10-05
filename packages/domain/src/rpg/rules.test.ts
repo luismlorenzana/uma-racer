@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Aptitudes, Stats } from '../types'
 import {
-  eligibleRpgCells, enrollRpgOutfit, grantRpgExp, promoteRpgOutfit, projectRpgStats, rpgActiveSlots,
+  canChangeRpgClass, changeRpgClass, eligibleRpgCells, enrollRpgOutfit, grantRpgExp, promoteRpgOutfit, projectRpgStats, rpgActiveSlots,
   rpgAffinities, rpgExpToNext, rpgLifetimeLevels, rpgSignatureMagnitude,
   rpgTreePointsEarned, spendRpgTreePoint, validateRpgLoadout, type RpgSkillRef,
 } from './rules'
@@ -22,6 +22,27 @@ const ref = (tier: number, element: RpgSkillRef['element'], depth: number, branc
   ({ tier, weapon: 'spear', element, depth, branch })
 
 describe('RPG enrollment and frozen projections', () => {
+  it('corrects a fresh A class or its weapon without changing partial EXP or any frozen input', () => {
+    const before = { ...enroll(), exp: 65 }
+    const front = changeRpgClass(before, 'front', 'greatsword')
+    expect(front).toEqual({ ...before, style: 'front', weapon: 'greatsword' })
+    expect(projectRpgStats(front)).toEqual(projectRpgStats(before))
+    expect(changeRpgClass(front, 'pace', 'sword-shield')).toEqual({ ...before, weapon: 'sword-shield' })
+    expect(before).toMatchObject({ style: 'pace', weapon: 'spear', exp: 65 })
+    expect(() => changeRpgClass(before, 'late', 'wizard-staff')).toThrow(/A running style/)
+    expect(() => changeRpgClass(before, 'front', 'tome')).toThrow(/Weapon/)
+    expect(() => changeRpgClass(before, 'pace', 'spear')).toThrow(/different/)
+  })
+
+  it('locks class after the first level and through all later tiers, even with empty trees', () => {
+    const profile = enroll()
+    for (const locked of [{ ...profile, level: 2 }, { ...profile, tier: 2 },
+      { ...profile, tree: [{ ...ref(1, 'fire', 1, 'foundation'), level: 1 }] },
+      { ...profile, legacy: [{ ...ref(1, 'fire', 1, 'foundation'), level: 1 }] }]) {
+      expect(canChangeRpgClass(locked)).toBe(false)
+      expect(() => changeRpgClass(locked, 'front', 'greatsword')).toThrow(/Tier 1 RPG Lv1/)
+    }
+  })
   it('locks one chosen A style/weapon and freezes content inputs', () => {
     const outfit = source()
     const profile = enrollRpgOutfit({ outfit, contentVersion: 'synthetic-v1', style: 'front',

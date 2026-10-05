@@ -10,6 +10,7 @@ export type RpgElement = typeof RPG_ELEMENTS[number]
 export const RPG_WEAPONS = ['greatsword', 'spear', 'sword-shield', 'wizard-staff', 'cleric-staff', 'tome'] as const
 export type RpgWeapon = typeof RPG_WEAPONS[number]
 export const RPG_TIER_MAX_LEVEL = 50
+export const RPG_CLASS_EDIT_MAX_LEVEL = 1
 export const RPG_TREE_POINTS_PER_EVEN_LEVEL = 1
 export const RPG_SKILL_MAX_LEVEL = 5
 export const RPG_DEPTH_GATES = [2, 10, 20, 34, 50] as const
@@ -170,6 +171,22 @@ export function enrollRpgOutfit(input: {
     sourceAptitudes, affinities, style, weapon, defaultSignature,
     tier: 1, level: 1, exp: 0, tree: [], legacy: [],
   }
+}
+
+/** D259: correct a fresh class without re-enrollment or loss of partial EXP. */
+export function canChangeRpgClass(profile: RpgProfile): boolean {
+  return profile.tier === 1 && profile.level === RPG_CLASS_EDIT_MAX_LEVEL &&
+    profile.tree.length === 0 && profile.legacy.length === 0
+}
+
+export function changeRpgClass(profile: RpgProfile, style: Strategy, weapon: RpgWeapon): RpgProfile {
+  if (!canChangeRpgClass(profile)) throw new RangeError('Class edits require Tier 1 RPG Lv1 with no learned skills')
+  if (!STRATEGIES.includes(style) || profile.sourceAptitudes.strategy[style] !== 'A') {
+    throw new RangeError('Style is not an A running style')
+  }
+  if (!rpgWeaponsForStyle(style).includes(weapon)) throw new RangeError('Weapon is not in the selected style')
+  if (style === profile.style && weapon === profile.weapon) throw new RangeError('Choose a different class or weapon')
+  return { ...profile, style, weapon }
 }
 
 export function rpgExpToNext(level: number): number {

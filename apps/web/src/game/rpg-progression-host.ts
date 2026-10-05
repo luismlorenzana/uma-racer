@@ -1,7 +1,7 @@
 // Acknowledged safe-checkpoint tree/promotion commands (docs/design/uma-rpg.md, T096).
-import { RPG_PRESET_COUNT, promoteRpgOutfit, rpgPresetId, rpgSkillKey, spendRpgTreePoint,
+import { RPG_PRESET_COUNT, changeRpgClass, promoteRpgOutfit, rpgPresetId, rpgSkillKey, spendRpgTreePoint,
   parseRpgOutfitSave, validateRpgLoadout, type RpgCommandRequest, type RpgOutfitSaveV1, type RpgPresetSaveV1,
-  type RpgCheckpointSaveV1, type RpgSkillRef, type RpgElement } from '@racer/domain'
+  type RpgCheckpointSaveV1, type RpgSkillRef, type RpgElement, type RpgWeapon, type Strategy } from '@racer/domain'
 import { db, type RacerDb, type VersionedRow, type PendingRpgCommandRow } from './db'
 import { enqueueRpgCommand } from './rpg-sync'
 
@@ -30,9 +30,9 @@ export class RpgProgressionHost {
       ['in-battle', 'pending-result'].includes(c.data.status) && c.data.frozenEntry?.party.some((m) => m.outfitId === outfitId))
     for (const c of safeReads) expected.push({ kind: 'rpgCheckpoints', id: c.id, version: c.version })
     const related = pending.filter((p) => (p.body as RpgCommandRequest).upserts.some((u) => expected.some((e) => e.kind === u.kind && e.id === u.id)))
-    const blocked = related.length ? 'RPG change pending or conflicted. Nothing provisional can fund skills or promotion.'
+    const blocked = related.length ? 'RPG change pending or conflicted. Nothing provisional can fund skills, class edits or promotion.'
       : safeReads.some((c) => !['at-checkpoint', 'cleared'].includes(c.data.status))
-        ? 'Finish and accept every open battle using this outfit before changing skills or promoting.' : null
+        ? 'Finish and accept every open battle using this outfit before changing class, skills or promoting.' : null
     return { outfit, presets: involved, checkpoints: safeReads, expected, pending: related, blocked }
   }
 
@@ -56,6 +56,14 @@ export class RpgProgressionHost {
     const body: RpgCommandRequest = { schemaVersion: 1, commandId: `rpg-tree:${crypto.randomUUID()}`, action: 'edit-outfit',
       expected: observed.expected, upserts: [{ kind: 'rpgOutfits', id: observed.outfit.id, data: data(next) }], appends: [] }
     return this.reserve(observed, body)
+  }
+
+  async changeClass(observed: RpgProgressionView, style: Strategy, weapon: RpgWeapon): Promise<string> {
+    if (observed.blocked) throw new Error(observed.blocked)
+    const next = { ...observed.outfit.data, profile: changeRpgClass(observed.outfit.data.profile, style, weapon),
+      projectionRevision: observed.outfit.data.projectionRevision + 1 }
+    return this.reserve(observed, { schemaVersion: 1, commandId: `rpg-class:${crypto.randomUUID()}`, action: 'edit-outfit',
+      expected: observed.expected, upserts: [{ kind: 'rpgOutfits', id: observed.outfit.id, data: data(next) }], appends: [] })
   }
 
   async equip(observed: RpgProgressionView, presetId: string, signature: RpgElement, loadout: RpgSkillRef[]): Promise<string> {

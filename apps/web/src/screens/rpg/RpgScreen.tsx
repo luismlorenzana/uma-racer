@@ -1,6 +1,6 @@
 // Lazy account RPG hub and setup (docs/design/uma-rpg.md#phone-presentation, T099).
 import {
-  RPG_ELEMENTS, RPG_PARTY_SIZE, STRATEGIES, canUseRpgSignature,
+  RPG_CLASS_EDIT_MAX_LEVEL, RPG_ELEMENTS, RPG_PARTY_SIZE, STRATEGIES, canUseRpgSignature,
   projectRpgStats, rpgActiveSlots, rpgAffinities, rpgExpToNext, rpgSkillKey,
   rpgTreePointsEarned, rpgTreePointsSpent, rpgWeaponsForStyle,
   type RpgCommandRequest, type RpgElement, type RpgPresetSaveV1, type RpgPresetSlotV1, type RpgProfile,
@@ -296,9 +296,6 @@ export function RpgProfileScreen() {
     <RpgElementLegend />
     <Panel><AffinityList aptitudes={profile?.sourceAptitudes ?? template.aptitudes} /></Panel>
     {profile && stats ? <>
-      <Panel><p className="text-micro">Locked class identity</p><p className="mt-1 text-[15px] font-semibold">{title(profile.style)} · {RPG_WEAPON_LABELS[profile.weapon]}</p>
-        <p className="mt-1 text-[12px] text-ink-soft">Default signature: {RPG_ELEMENT_LABELS[profile.defaultSignature]} · frozen from content {profile.sourceContentVersion}</p>
-        <p className="mt-2 text-[11px] text-ink-faint">Style and weapon cannot be changed across presets or promotions. A preset may choose another eligible signature.</p></Panel>
       <Panel><p className="text-micro">RPG progression</p><p className="mt-1 text-[13px]">Tier {profile.tier} · Level {profile.level} · {profile.level === 50 ? `${profile.exp} banked EXP` : `${profile.exp}/${rpgExpToNext(profile.level)} EXP`}</p>
         {profile.level < 50 && <Meter value={profile.exp / rpgExpToNext(profile.level)} color="var(--color-accent)" />}
         <p className="mt-2 text-[12px] text-ink-soft">{rpgActiveSlots(profile.level)} active skill slots · {rpgTreePointsEarned(profile.level) - rpgTreePointsSpent(profile.tree)} unspent tree points</p></Panel>
@@ -308,15 +305,15 @@ export function RpgProfileScreen() {
       <RpgProgressionEditor host={progressionHost} outfitId={outfitId} onSync={requestSync} />
     </> : styles.length === 0 ? <ScreenState title="Not RPG-eligible" detail="This outfit has no A running-style aptitude. It remains usable in every other game mode." />
       : pending?.status === 'pending' ? <ScreenState title="Enrollment pending" detail="This outfit will be available for parties after the account acknowledges it." />
-        : <Panel><p className="text-micro">One-time enrollment</p><p className="mt-1 text-[12px] text-ink-soft">Only A running styles are offered. The selected style and weapon are permanent for this delivery.</p>
+        : <Panel><p className="text-micro">One-time enrollment</p><p className="mt-1 text-[12px] text-ink-soft">Only A running styles are offered. You may correct the class and weapon freely while Tier 1, RPG Lv{RPG_CLASS_EDIT_MAX_LEVEL}; from Lv{RPG_CLASS_EDIT_MAX_LEVEL + 1} they stay locked.</p>
           <div className="mt-3 space-y-3">
             <SelectField label="A running-style class" value={chosenStyle!} options={styles.map((value) => ({ value, label: title(value) }))} onChange={(value) => { setStyle(value); setWeapon(null) }} />
             <SelectField label="Locked weapon path" value={chosenWeapon!} options={weapons.map((value) => ({ value, label: RPG_WEAPON_LABELS[value] }))} onChange={setWeapon} />
             <SelectField label="Default signature element" value={chosenSignature!} options={elements.map((value) => ({ value, label: `${RPG_ELEMENT_LABELS[value]} · ${rpgAffinities(template.aptitudes)[value]}` }))} onChange={setSignature} />
-            <Button disabled={busy} className="w-full" onClick={() => setConfirm(true)}>Review permanent choice</Button>
+            <Button disabled={busy} className="w-full" onClick={() => setConfirm(true)}>Review class choice</Button>
           </div></Panel>}
-    <BottomSheet open={confirm} onClose={() => setConfirm(false)}><h3 className="text-xl">Lock this RPG class?</h3>
-      <p className="mt-2 text-[14px] leading-6">{template.name} will become a <strong>{chosenStyle && title(chosenStyle)}</strong> using <strong>{chosenWeapon && RPG_WEAPON_LABELS[chosenWeapon]}</strong>. The class and weapon remain fixed across parties and promotions. {chosenSignature && RPG_ELEMENT_LABELS[chosenSignature]} is the default signature; party slots can change it.</p>
+    <BottomSheet open={confirm} onClose={() => setConfirm(false)}><h3 className="text-xl">Choose this RPG class?</h3>
+      <p className="mt-2 text-[14px] leading-6">{template.name} will become a <strong>{chosenStyle && title(chosenStyle)}</strong> using <strong>{chosenWeapon && RPG_WEAPON_LABELS[chosenWeapon]}</strong>. You can edit these while Tier 1, RPG Lv{RPG_CLASS_EDIT_MAX_LEVEL}; from Lv{RPG_CLASS_EDIT_MAX_LEVEL + 1} they stay fixed across parties and promotions. {chosenSignature && RPG_ELEMENT_LABELS[chosenSignature]} is the default signature; party slots can change it.</p>
       <div className="mt-4 flex gap-2"><Button variant="secondary" className="flex-1" onClick={() => setConfirm(false)}>Cancel</Button><Button disabled={busy} className="flex-1" onClick={() => void submit()}>Confirm enrollment</Button></div>
     </BottomSheet>
   </div>

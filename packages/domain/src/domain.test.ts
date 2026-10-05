@@ -145,6 +145,7 @@ import {
   TYPICAL_CARD_STARS,
   starNodePct,
   RPG_TIER_MAX_LEVEL,
+  RPG_CLASS_EDIT_MAX_LEVEL,
   RPG_TREE_POINTS_PER_EVEN_LEVEL,
   RPG_SKILL_MAX_LEVEL,
   RPG_DEPTH_GATES,
@@ -250,6 +251,9 @@ describe('Global Uma RPG — D228 save wire pins', () => {
 })
 
 describe('Global Uma RPG — D227 progression pins', () => {
+  it('pins D259 fresh class correction to level 1', () => {
+    expect(RPG_CLASS_EDIT_MAX_LEVEL).toBe(1)
+  })
   it('keeps a repeatable 50-level tier with a linear 25,480 EXP climb', () => {
     expect(RPG_TIER_MAX_LEVEL).toBe(50)
     expect([rpgExpToNext(1), rpgExpToNext(10), rpgExpToNext(49)]).toEqual([136, 280, 904])
