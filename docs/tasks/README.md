@@ -11,10 +11,9 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**M028 / T099 — first playable RPG implementation is complete:** verified Home entry, per-party checkpoint resumes
-and a shared full guide ship with the privately published real URA chapter. D257 authorizes production-first release;
-deployment evidence and deferred owner gameplay/iPhone checks live in
-[release acceptance](../research/rpg-release-acceptance.md). The thirteen other chapters remain M029.
+**Owner detour — the RPG campaign is complete** (D260–D263): local-first RPG saves with no Sync steps, one generated
+chapter per scenario on a launch pad, a replayable top-to-bottom map, weakness/break battles with carried MP and camps,
+and EXP plus tokens from every win. It supersedes M029's private chapter rollout (T100–T103), deleted unbuilt.
 
 **Owner detour T105 — Inspiration advance is complete** (D256): one-time shared scenario unlocks, a negative token
 bank, and receipt-gated RPG repayment. Its first updated online sync applies the server-owned frozen-cohort advance.
@@ -26,7 +25,6 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 | Milestone | Tasks | State |
 |---|---|---|
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078–T080 landed; T081 next |
-| [M029 — RPG chapter rollout](M029-rpg-chapter-rollout.md) | [T100–T103](M029-rpg-chapter-rollout.md#delivery-sequence) | **Specified, not implemented** · private content for the remaining thirteen scenarios and a 14/14 gate |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
 
@@ -48,6 +46,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| M029 / T100–T103 — RPG chapter rollout (superseded unbuilt by D262) | 2026-10-05 | [RPG design](../design/uma-rpg.md#chapters-and-the-map-d262), D262 | `9acfb84` |
 | M028 / T099 — First playable RPG | 2026-10-04 | [RPG design](../design/uma-rpg.md), D257 and [release/owner checks](../research/rpg-release-acceptance.md) | `8e1b881` |
 | T105 — Inspiration advance | 2026-10-04 | [Advance](../design/skills-and-inheritance.md#temporary-inspiration-advance-d256), D256 and [phone proof](../research/inspiration-advance-phone-proof.md) | `1ac3b19` |
 | T104 — Global card stars | 2026-10-03 | [Support Cards](../design/support-cards.md#global-star-cutover-d255), D255 and [phone proof](../research/global-card-stars-phone-proof.md) | `cea441c` |

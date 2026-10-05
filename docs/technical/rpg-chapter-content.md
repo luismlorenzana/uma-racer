@@ -1,5 +1,9 @@
 # RPG chapter content and checkpoint authoring
 
+> **Since the campaign (D262) the game reads only the cast from this pack:** one member per portrait key (its name and
+> verified portrait). Chapters, foes, stats and moves are generated in `packages/domain/src/rpg/campaign/`. The pack
+> format and pipeline below are unchanged, so adding cast members is a pack publish; its chapter graph is no longer played.
+
 T095–T097's standing content and authoring contract (D245, D246, D248). Product rules remain in
 [Global Uma RPG](../design/uma-rpg.md); grouped saves in [the implementation contract](uma-rpg-implementation.md).
 No real PriConne rows, extracted descriptions or portraits belong in this document or git.

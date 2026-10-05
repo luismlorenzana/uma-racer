@@ -195,17 +195,8 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
   goal evaluation updates the active Journey and snapshots exact `completedGoalIds` on the result in that same transaction.
   A matching retry reads the existing result and pays/animates nothing twice; abandoning before the finish writes nothing.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
-- RPG writes use authenticated `POST /api/rpg/command`, not ordinary sync. Both local JSON and Firestore run the same
-  expected-version grouped resolver in one transaction; stale groups write no entity, evidence or receipt. A durable
-  receipt keyed by command id makes identical retries duplicate-safe. The device queue projects no RPG reward until
-  acknowledgement; a checkpoint/lease conflict remains recorded for explicit resolution. T096's narrow
-  profile-only conflict path adopts authoritative recipients and retries unchanged encounter identity/deltas,
-  never replays a displaced result as a new win.
-- The web `RpgBattleHost` queues one version-checked entry, replays local actions through the pure combat engine,
-  and queues a terminal result only after its replay hash agrees. A result queued while entry is offline depends on
-  the entry receipt; rejected entry marks the dependent result conflicted without sending it. Accepted result evidence
-  is the only spendable outcome, while rejected journals remain on device for diagnosis. The frozen combat input is
-  key/enum-dictionary encoded and versioned inside the checkpoint's bounded `enemyKitJson`; it is not re-read from live content.
+- RPG rows sync like every other row (D263): outfits, parties, runs (`rpgCheckpoints` schema 2), result and promotion
+  logs, Items and ledger go through `/api/sync`. `/api/rpg/command` survives only for an older app's `spend-inspiration`.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
@@ -295,38 +286,12 @@ Gameplay never waits on the network, because Cloud Run cold starts would ruin th
 
 ## Firestore data model (saves)
 
-The Global Uma RPG has a separate [implementation contract](uma-rpg-implementation.md). M028 does **not**
-embed per-outfit RPG levels in `UmaSave.scenarios` or send its reward-bearing result as ordinary unrelated sync
-upserts/appends: that path can append a log when a related entity conflicts. It adds per-outfit, per-preset and
-per-preset/chapter rows and a conditional grouped checkpoint/reward command. T090–T096 have landed the versioned rows,
-transport, pure combat, device-local journal/host, internal roster/party setup and lazy standalone battle stage.
-Enrollment and preset edits use the grouped command and project only acknowledged rows. Battle previews and playback
-consume the reducer and host's read-only replay projection; local action counts guard duplicate submissions. The DEV
-proof lives in a separate database, excluded from production, and grants nothing to the account. Current save v14/Dexie v23 leave
-the RPG's schema-v1 rows and v19 journal tables intact. T095 adds the pure immutable chapter parser/graph and lazy
-map host. `choose-node`/`clear-chapter` consume accepted winning evidence transactionally; pending battles cannot
-advance. A lazy SHA-256-verified private chapter loader rejects absent/drifted packs with no synthetic fallback.
-Explicit account recovery discards rejected commands/dependants but preserves local journals. Its separate DEV
-client/simulated-account proof traverses both paths and never opens account storage. T096 freezes authored EXP in
-a v2 kit wrapper (v1 remains unrewarded), grants all five entrants with the accepted terminal group and adds
-safe-checkpoint point spends, loadouts and lossless promotion with atomic preset pruning. T098 freezes scenario Slot/Skill
-Token quantities in a v3 wrapper; v1/v2 combat replays unchanged and grants no tokens. Winning map advances atomically
-update the checkpoint, global Item stacks, append-only token evidence and receipt. Inspiration spends atomically update
-one explicit Uma slot/gold position and its Item stack/evidence. Related ordinary Uma/Item writes cannot overlap a reserved
-group. Pending results and tokens remain unearned. The v14/v23 migration preserves old TL9/10 lineage access and filled
-branches without charging or minting tokens, changing EXP or disturbing open RPG journals. T097's private chapter is
-authored and published through T099 (D257); [content contract](rpg-chapter-content.md).
-
-T099 adds a lightweight Home card with manifest-only discovery. Opening it dynamically imports
-the RPG content verifier: the active v2 chapter must have production provenance, URA coverage and verified portrait
-bytes before navigation. New chapter attempts also verify this contract, while retained checkpoints resolve their
-exact version/hash without requiring today's active pack. Availability is reference state, not a persisted save flag.
-The route-split hub joins acknowledged checkpoint rows for per-preset resume/collection/replay labels; explicit setup
-refresh also adopts newer checkpoints without touching ordinary queues, RPG pending commands or local battle journals.
-Hub, chapter and battle share one read-only paged guide with device-local memory and focus isolation. DEV fixtures,
-routes and proof-only fallback node identities are tree-shaken from production. The [release acceptance record](../research/rpg-release-acceptance.md)
-records private publication separately from deployment and deferred owner physical-iPhone/real-account checks (D257).
-Neither synthetic proofs nor a green CI run are reported as owner device acceptance.
+The Global Uma RPG has its own [implementation page](uma-rpg-implementation.md). Since the campaign (D260–D263) its rows
+are ordinary local-first entities and logs: each change commits to Dexie with outbox markers and syncs through
+`/api/sync`. The server validates shapes, refuses an older RPG schema over a newer one and lets the Inspiration bank
+move only toward zero. Dexie v27 restarts outfits at Tier 1 Lv1 once and retires first-map checkpoints and grouped
+commands; the open fight's action journal is device-local (`rpgFights`). Chapters are generated in code; the private
+pack supplies only the cast's names and verified portraits ([content contract](rpg-chapter-content.md)).
 
 ```text
 players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
@@ -340,12 +305,12 @@ players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence
 players/{uid}/farm/main               Farm schema v2: used plots (sparse), outfit assignments/progress and attempt counters
 players/{uid}/items/{itemId}          current global item-stack quantity and update time
 players/{uid}/itemLedger/{id}         append-only Farm/Extra stat/Ticket movements and scenario Inspiration grants/spends
-players/{uid}/rpgOutfits/{outfitId}    schema-v1 locked class, frozen enrollment inputs, tier EXP/tree, revision
-players/{uid}/rpgPresets/party-{1..5} schema-v1 ordered nullable five-slot parties and foreground chapter
-players/{uid}/rpgCheckpoints/{id}     schema-v1 per-preset/chapter progress and optional frozen entry
-players/{uid}/rpgResults/{id}         append-only accepted battle evidence
+players/{uid}/rpgOutfits/{outfitId}    schema-2 locked class, frozen enrollment inputs, tier EXP/tree, revision
+players/{uid}/rpgPresets/party-{1..5} schema-2 ordered nullable five-slot parties and last opened chapter
+players/{uid}/rpgCheckpoints/{id}     schema-2 campaign run: wins per node, carried MP, open fight input
+players/{uid}/rpgResults/{id}         append-only won-fight EXP and token evidence
 players/{uid}/rpgPromotions/{id}      append-only prior-tier mastery evidence
-players/{uid}/rpgReceipts/{commandId} append-only grouped-command hash and applied-version receipt
+players/{uid}/rpgReceipts/{commandId} append-only grouped-command receipts (spend-inspiration only)
 ```
 
 Firestore cannot store an array directly inside another array, and a race record's compiled skill conditions are one.
