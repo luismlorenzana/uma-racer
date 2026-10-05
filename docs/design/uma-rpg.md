@@ -75,7 +75,12 @@ enrollment (D226), not its mutable scenario constellation or Produce assignments
 silently change an already-enrolled RPG profile; any explicit rebase would need a separate migration decision. This
 keeps the global profile stable when the player switches scenarios. Level-up gains are deterministic,
 never a hidden random stat roll. At RPG enrollment the player chooses one eligible running-style class and one weapon
-path for that outfit. The **running style is permanent** across presets, chapters and promotions; a dual-A racing
+path for that outfit. D259 allows a **free correction while Tier 1, RPG Lv1** with empty current/legacy trees:
+choose another frozen-source A running style and one of its weapons, preserving partial EXP, stats, affinities,
+signature, content inputs and party assignments. The profile's **Edit class** uses acknowledged `edit-outfit`, not
+re-enrollment; all five party dependencies and relevant checkpoints must still be current. An open battle, pending
+result or pending/conflicted setup change blocks it. There is no cost or limit on corrections before leveling up.
+From Lv2 (and in every later tier), the **running style is permanent** across presets, chapters and promotions; a dual-A racing
 outfit does **not** level multiple style classes or switch between them. The selected weapon path stays with that outfit
 through chapters and promotions in the first delivery, so there is only one active weapon × element matrix. A later
 within-style respec would be a separate design change, not parallel progress. Multiple aptitudes create breadth in
@@ -229,8 +234,8 @@ Several levels crossed in one result are named in order, and new skills never si
 ## Class, weapon and aptitude identity
 
 At first RPG enrollment, each outfit chooses **one running-style class from its A aptitudes** and **one weapon path**
-inside that class. The **style is locked for that outfit**, including at promotion: multiple A running styles are
-alternatives at enrollment, not parallel classes, extra trees or permission to switch later. Pace chooses Spear *or*
+inside that class. The **style is locked for that outfit from Tier 1 Lv2**, including at promotion: multiple A running styles are
+alternatives at enrollment or its fresh Lv1 correction (D259), not parallel classes, extra trees or permission to switch later. Pace chooses Spear *or*
 Sword + shield; Late chooses Wizard *or* Cleric staff. That one weapon path remains selected across chapters and
 tiers. A future **within-style weapon change at promotion** would need a separate decision for mastery and legacy
 techniques; it is not part of this first RPG delivery. The five party presets only arrange outfits and their elemental

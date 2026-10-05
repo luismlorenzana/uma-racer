@@ -8,6 +8,7 @@ import { RpgProgressionHost, type RpgProgressionView } from '../../game/rpg-prog
 import { Button } from '../Button'
 import { Panel } from '../Panel'
 import { RpgModalFocus } from './RpgModalFocus'
+import { RpgClassEditor } from './RpgClassEditor'
 import { RPG_ELEMENT_LABELS } from './RpgPortrait'
 const branchLabels = { foundation: 'Foundation', focused: 'Focused', area: 'Area', committed: 'Committed', multi: 'Multi-hit', role: 'Role mastery', hybrid: 'Hybrid', signature: 'Signature' }
 const targetLabels = { enemy: 'one enemy', 'all-enemies': 'all enemies', ally: 'one ally', 'all-allies': 'all allies', self: 'self' }
@@ -61,6 +62,9 @@ export function RpgProgressionEditor({ host, outfitId, onSync, showProfile = fal
       <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">{STATS.map((s) => <div key={s}><dt className="text-ink-soft">{s}</dt><dd>{statsBefore[s]}</dd></div>)}</dl></Panel>}
     {view.blocked && <p role="status" className="rounded-sm bg-accent-wash p-3 text-xs">{view.blocked}</p>}
     {error && <p role="alert" className="text-xs text-danger">{error}</p>}
+    <RpgClassEditor key={outfitId} profile={profile} blocked={busy ? 'RPG change saving…' : view.blocked} onChange={async (style, weapon) => {
+      await host.changeClass(view, style, weapon); await onSync()
+    }} />
     <Panel><div className="flex items-center justify-between gap-3"><h3 className="text-lg">Elemental skill trees</h3><span className="text-sm font-semibold text-accent-strong">{points} points</span></div>
       <p className="mt-1 text-xs text-ink-soft">Tier {profile.tier} · one point buys a skill or +1 skill level, up to 5. Choices cannot be refunded.</p>
       <div className="mt-3 flex flex-wrap gap-1" aria-label="Elemental trees">{cells.map((c) => <button key={c.element} aria-pressed={activeElement === c.element}

@@ -63,6 +63,43 @@ describe('real RPG progression + grouped API resolver', () => {
     }
   })
   afterEach(() => db.close())
+  it('acknowledges a fresh class correction once, preserving EXP, party slots and frozen inputs', async () => {
+    await setProfile(0, p => ({ ...p, level: 1, exp: 65, tree: [], sourceAptitudes: {
+      ...p.sourceAptitudes, strategy: { ...p.sourceAptitudes.strategy, pace: 'A' } } }))
+    const view = await host.read(outfitId), before = view.outfit.data.profile
+    const presetBefore = await db.rpgPresets.toArray()
+    await host.changeClass(view, 'pace', 'sword-shield')
+    expect((await db.rpgOutfits.get(outfitId))!.data.profile).toEqual(before)
+    await expect(host.changeClass(view, 'pace', 'spear')).rejects.toThrow(/pending/)
+    const queued = (await db.pendingRpgCommands.toArray())[0]!.body as RpgCommandRequest
+    expect(queued.expected.filter(e => e.kind === 'rpgPresets')).toHaveLength(5)
+    // A lost ACK retries the exact same grouped command, not a new enrollment.
+    await expect(flushOneRpgCommand(db, { ...transport, rpgCommand: async body => {
+      await transport.rpgCommand(body); throw new Error('lost ACK')
+    } })).rejects.toThrow('lost ACK')
+    await sync()
+    expect((await db.rpgOutfits.get(outfitId))!.data.profile).toEqual({ ...before, style: 'pace', weapon: 'sword-shield' })
+    expect((await db.rpgOutfits.get(outfitId))!.data.projectionRevision).toBe(1)
+    expect(await db.rpgPresets.toArray()).toEqual(presetBefore)
+    await expect(host.changeClass(view, 'pace', 'spear')).rejects.toThrow(/changed/)
+    await host.changeClass(await host.read(outfitId), 'pace', 'spear'); await sync()
+    expect((await db.rpgOutfits.get(outfitId))!.data.profile.exp).toBe(65)
+    await setProfile(0, p => ({ ...p, level: 2 }))
+    await expect(host.changeClass(await host.read(outfitId), 'front', 'greatsword')).rejects.toThrow(/Tier 1 RPG Lv1/)
+  })
+  it('blocks fresh class edits during an open fight, even after its member leaves the current party', async () => {
+    await setProfile(0, p => ({ ...p, level: 1, tree: [], sourceAptitudes: {
+      ...p.sourceAptitudes, strategy: { ...p.sourceAptitudes.strategy, pace: 'A' } } }))
+    const stale = await host.read(outfitId)
+    await enter()
+    await expect(host.changeClass(stale, 'pace', 'spear')).rejects.toThrow(/Finish|changed/)
+    await expect(host.changeClass(await host.read(outfitId), 'pace', 'spear')).rejects.toThrow(/Finish/)
+    const preset = (await db.rpgPresets.get('party-1'))!
+    await db.rpgPresets.put({ ...preset, version: preset.version + 1, data: { ...preset.data,
+      slots: preset.data.slots.map(s => s?.outfitId === outfitId ? null : s) as RpgPresetSaveV1['slots'] } })
+    expect((await host.read(outfitId)).checkpoints.map(c => c.id)).toContain(checkpointId)
+    await expect(host.changeClass(await host.read(outfitId), 'pace', 'spear')).rejects.toThrow(/Finish/)
+  })
   it('awards five different levels atomically; pending cannot spend; multiple crossed levels reveal after acknowledgement', async () => {
     for (const [i, level] of [1, 5, 10, 30, 50].entries()) await setProfile(i, (p) => ({ ...p, level, tree: level === 1 ? [] : p.tree }))
     await enter(); expect((await terminal()).state?.outcome).toBe('victory')

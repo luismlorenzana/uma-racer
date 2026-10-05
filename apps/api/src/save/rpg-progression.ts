@@ -54,3 +54,12 @@ export function oneTreePoint(before: Record<string, unknown>, after: Record<stri
   }
   return increased === 1 // Full parser also checks points, predecessor, affinity, level and skill-level gates.
 }
+
+/** Full wire parsing checks the new source-A style/weapon; only those two fields may change (D259). */
+export function levelOneClassChange(before: Record<string, unknown>, after: Record<string, unknown>): boolean {
+  if (before.tier !== 1 || before.level !== 1 || !Array.isArray(before.tree) || before.tree.length !== 0 ||
+    !Array.isArray(before.legacy) || before.legacy.length !== 0 ||
+    before.style === after.style && before.weapon === after.weapon) return false
+  const identity = (p: Record<string, unknown>) => { const copy = { ...p }; delete copy.style; delete copy.weapon; return copy }
+  return isDeepStrictEqual(identity(before), identity(after))
+}

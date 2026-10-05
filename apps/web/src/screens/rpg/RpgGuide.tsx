@@ -1,5 +1,5 @@
 // Contextual campaign guide (docs/design/uma-rpg.md#phone-presentation); read-only, no host calls.
-import { RPG_B_MAX_DEPTH, RPG_DEPTH_GATES, RPG_MAX_LEGACY_SLOTS, RPG_PARTY_SIZE, RPG_PRESET_COUNT,
+import { RPG_B_MAX_DEPTH, RPG_CLASS_EDIT_MAX_LEVEL, RPG_DEPTH_GATES, RPG_MAX_LEGACY_SLOTS, RPG_PARTY_SIZE, RPG_PRESET_COUNT,
   RPG_SIGNATURE_MULTIPLIER, RPG_SKILL_MAX_LEVEL, RPG_SLOT_TOKEN_REWARD, RPG_SKILL_TOKEN_BUDGET, RPG_TIER_MAX_LEVEL,
   type RpgWeapon } from '@racer/domain'
 import { PagedGuide, type PagedGuidePage } from '../../ui/PagedGuide'
@@ -26,7 +26,7 @@ export function RpgGuide({ onClose, startAt = 'party', finishLabel = 'Back to RP
     </> },
     { id: 'class', title: 'A permanent class, flexible elements', body: <>
       <div className="grid grid-cols-2 gap-2">{weapons.map(weapon => <div key={weapon} className="flex items-center gap-2 rounded-sm border border-hairline-dark bg-stage-soft p-2 text-xs"><IdentityGlyph weapon={weapon} />{RPG_WEAPON_LABELS[weapon]}</div>)}</div>
-      <p>Choose an A running style: Front → Greatsword; Pace → Spear or Sword + shield; Late → Wizard or Cleric staff; End → Magic tome. Style and weapon stay locked, including after promotion.</p>
+      <p>Choose an A running style: Front → Greatsword; Pace → Spear or Sword + shield; Late → Wizard or Cleric staff; End → Magic tome. The outfit profile's Edit class is free while Tier 1, RPG Lv{RPG_CLASS_EDIT_MAX_LEVEL} and outside open battles. From Lv{RPG_CLASS_EDIT_MAX_LEVEL + 1}, style and weapon stay locked, including after promotion.</p>
       <p>Distance A/B gives elements: Sprint → Dark/Light; Mile → Ice/Light; Medium → Fire/Dark; Long → Lightning/Light. A permits all depths; B stops at depth {RPG_B_MAX_DEPTH} in the same weapon tree. Turf/Dirt does not gate skills.</p>
       <p>A party slot chooses any eligible signature. Matching techniques gain {Math.round((RPG_SIGNATURE_MULTIPLIER - 1) * 100)}% damage/healing; other eligible elements can still be equipped. Portrait overlays show weapon and signature.</p>
     </> },

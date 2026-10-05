@@ -19,6 +19,44 @@ describe('RPG progression phone controls', () => {
     await db.rpgOutfits.put({ id: outfitId, version: 1, data: { schemaVersion: 1, profile: syntheticChapterProfiles()[0]!, projectionRevision: 0 } })
   })
   afterEach(() => { cleanup(); db.close() })
+  it('offers only frozen A styles, edits both class and weapon, and waits for acknowledgement', async () => {
+    const row = (await db.rpgOutfits.get(outfitId))!
+    await db.rpgOutfits.put({ ...row, data: { ...row.data, profile: { ...row.data.profile, level: 1, exp: 65,
+      tree: [], sourceAptitudes: { ...row.data.profile.sourceAptitudes,
+        strategy: { front: 'A', pace: 'A', late: 'B', end: 'G' } } } } })
+    const sync = vi.fn()
+    mount(<RpgProgressionEditor host={host} outfitId={outfitId} onSync={sync} />)
+    const trigger = await screen.findByRole('button', { name: 'Edit class' })
+    trigger.focus(); fireEvent.click(trigger)
+    const style = screen.getByRole('combobox', { name: 'A running-style class' }) as HTMLSelectElement
+    expect([...style.options].map(o => o.value)).toEqual(['front', 'pace'])
+    expect((screen.getByRole('button', { name: 'Save class' }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(style, { target: { value: 'pace' } })
+    const weapon = screen.getByRole('combobox', { name: 'Weapon path' }) as HTMLSelectElement
+    expect([...weapon.options].map(o => o.value)).toEqual(['spear', 'sword-shield'])
+    fireEvent.change(weapon, { target: { value: 'sword-shield' } })
+    expect(screen.getByText(/your 65 EXP, stats, affinities and party slots stay unchanged/)).toBeTruthy()
+    const save = screen.getByRole('button', { name: 'Save class' })
+    save.focus(); fireEvent.keyDown(save, { key: 'Tab' }); expect(document.activeElement).toBe(style)
+    fireEvent.click(save); fireEvent.click(save)
+    await waitFor(() => expect(sync).toHaveBeenCalledTimes(1))
+    expect((await db.rpgOutfits.get(outfitId))!.data.profile.weapon).toBe('greatsword')
+    expect((await db.rpgOutfits.get(outfitId))!.data.profile.exp).toBe(65)
+    const queued = (await db.pendingRpgCommands.toArray())[0]!
+    expect(queued.body).toMatchObject({ action: 'edit-outfit', upserts: [{ data: {
+      profile: { style: 'pace', weapon: 'sword-shield', exp: 65 }, projectionRevision: 1 } }] })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(document.activeElement).toBe(trigger)
+    await screen.findByText(/Nothing provisional can fund/)
+    expect((screen.getByRole('button', { name: 'Edit class' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+  it.each([{ tier: 1, level: 2 }, { tier: 2, level: 1 }])('has no class edit for progressed profiles %j', async ({ tier, level }) => {
+    const row = (await db.rpgOutfits.get(outfitId))!
+    await db.rpgOutfits.put({ ...row, data: { ...row.data, profile: { ...row.data.profile, tier, level, tree: [] } } })
+    mount(<RpgProgressionEditor host={host} outfitId={outfitId} onSync={() => {}} />)
+    await screen.findByText('Locked class identity')
+    expect(screen.queryByRole('button', { name: 'Edit class' })).toBeNull()
+  })
   it('shows all target/hit/support branches and queues one point without projecting it', async () => {
     const sync = vi.fn()
     mount(<RpgProgressionEditor host={host} outfitId={outfitId} onSync={sync} showProfile />)

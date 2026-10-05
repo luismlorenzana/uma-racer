@@ -69,6 +69,14 @@ const result = { schemaVersion: 1, resultId: `${frozen.entryId}:retry-0`, entryI
   memberExp: memberIds.map((outfitId) => ({ outfitId, delta: 0, beforeTier: 1, beforeLevel: 1,
     beforeExp: 0, afterTier: 1, afterLevel: 1, afterExp: 0 })), createdAt: 30 }
 
+const freshClassProfile = () => ({ outfitId: 'uma-a', sourceContentVersion: 'invented-v1',
+  baseStats: { speed: 100, stamina: 90, power: 80, guts: 70, wit: 60 },
+  growthRates: { speed: 0.2, stamina: 0.1, power: 0, guts: 0, wit: 0.3 },
+  sourceAptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'C', mile: 'C', medium: 'A', long: 'C' },
+    strategy: { front: 'A', pace: 'A', late: 'B', end: 'G' } },
+  affinities: { fire: 'A', dark: 'A' }, style: 'front', weapon: 'greatsword', defaultSignature: 'fire',
+  tier: 1, level: 1, exp: 65, tree: [], legacy: [] })
+
 function command(commandId: string, action: RpgCommandRequest['action'], version: number,
   next: Record<string, unknown>, appends: RpgCommandRequest['appends'] = [], extra: Partial<RpgCommandRequest> = {}): RpgCommandRequest {
   const partyExpected = action === 'begin-battle' &&
@@ -110,6 +118,70 @@ for (const backend of ['local', 'firestore'] as const) {
           data: { profile: { outfitId: id, affinities: { fire: 'A' } } } })),
       ], appends: [] })
     }
+
+    function classEdit(profile = freshClassProfile(), commandId = 'correct-class') {
+      return parseRpgCommandRequest({ schemaVersion: 1, commandId, action: 'edit-outfit',
+        expected: [{ kind: 'rpgOutfits', id: 'uma-a', version: 1 },
+          ...Array.from({ length: 5 }, (_, i) => ({ kind: 'rpgPresets', id: `party-${i + 1}`, version: 0 }))],
+        upserts: [{ kind: 'rpgOutfits', id: 'uma-a', data: { schemaVersion: 1, projectionRevision: 1,
+          profile: { ...profile, style: 'pace', weapon: 'sword-shield' } } }], appends: [] })
+    }
+    async function seedClass(profile = freshClassProfile()) {
+      await repo.sync('u1', { upserts: [{ kind: 'rpgOutfits', id: 'uma-a', baseVersion: 0,
+        data: { schemaVersion: 1, projectionRevision: 0, profile } }], appends: [] })
+    }
+    it('corrects a fresh class with an identical partial EXP balance, idempotently', async () => {
+      const before = freshClassProfile(); await seedClass(before)
+      const body = classEdit()
+      if (typeof body === 'string') throw new Error(body)
+      expect((await repo.rpgCommand('u1', body)).status).toBe('applied')
+      expect((await repo.rpgCommand('u1', body)).status).toBe('duplicate')
+      const snapshot = await repo.load('u1')
+      expect(snapshot.entities.find(r => r.kind === 'rpgOutfits')?.data).toEqual({ schemaVersion: 1, projectionRevision: 1,
+        profile: { ...before, style: 'pace', weapon: 'sword-shield' } })
+      expect((await repo.rpgCommand('u1', { ...body, commandId: 'stale-class' })).status).toBe('conflict')
+      expect(snapshot.logs.filter(r => r.kind !== 'rpgReceipts')).toHaveLength(0)
+      expect(snapshot.logs.filter(r => r.kind === 'rpgReceipts')).toHaveLength(1)
+    })
+    it.each([{ tier: 1, level: 2 }, { tier: 2, level: 1 }])('rejects a class change after progression %j', async state => {
+      const profile = { ...freshClassProfile(), ...state }; await seedClass(profile)
+      const body = classEdit(profile)
+      if (typeof body === 'string') throw new Error(body)
+      expect((await repo.rpgCommand('u1', body)).status).toBe('rejected')
+      expect((await repo.load('u1')).entities.find(r => r.kind === 'rpgOutfits')?.data.profile).toEqual(profile)
+    })
+    it('rejects hidden EXP/input/signature changes, ineligible classes and incomplete party reads', async () => {
+      await seedClass()
+      const body = classEdit(); if (typeof body === 'string') throw new Error(body)
+      for (const patch of [{ exp: 0 }, { baseStats: { ...freshClassProfile().baseStats, speed: 101 } },
+        { defaultSignature: 'dark' }, { sourceContentVersion: 'invented-v2' }]) {
+        const forged = structuredClone(body)
+        Object.assign(forged.upserts[0]!.data.profile as Record<string, unknown>, patch)
+        expect((await repo.rpgCommand('u1', forged)).status).toBe('rejected')
+      }
+      for (const patch of [{ style: 'late', weapon: 'wizard-staff' }, { style: 'pace', weapon: 'tome' }]) {
+        const forged = structuredClone(body)
+        Object.assign(forged.upserts[0]!.data.profile as Record<string, unknown>, patch)
+        expect(typeof parseRpgCommandRequest(forged)).toBe('string')
+      }
+      const missing = { ...body, expected: body.expected.slice(0, -1) }
+      expect((await repo.rpgCommand('u1', missing)).status).toBe('rejected')
+      expect((await repo.load('u1')).entities.find(r => r.kind === 'rpgOutfits')?.data.profile).toEqual(freshClassProfile())
+    })
+    it('refuses class correction while the member has a frozen open battle', async () => {
+      await seedClass()
+      await repo.sync('u1', { upserts: [
+        { kind: 'rpgCheckpoints', id: checkpointId, baseVersion: 0, data: inBattle },
+        { kind: 'rpgPresets', id: 'party-1', baseVersion: 0, data: { schemaVersion: 1, presetId: 'party-1', name: 'Invented',
+          slots: [{ outfitId: 'uma-a', signature: 'fire', loadout: [] }, null, null, null, null], foregroundChapterId: chapter } },
+      ], appends: [] })
+      const body = classEdit(); if (typeof body === 'string') throw new Error(body)
+      body.expected.find(e => e.kind === 'rpgPresets' && e.id === 'party-1')!.version = 1
+      expect((await repo.rpgCommand('u1', body)).status).toBe('rejected') // Omitted required checkpoint.
+      body.expected.push({ kind: 'rpgCheckpoints', id: checkpointId, version: 1 })
+      expect((await repo.rpgCommand('u1', body)).status).toBe('rejected')
+      expect((await repo.load('u1')).entities.find(r => r.kind === 'rpgOutfits')?.data.profile).toEqual(freshClassProfile())
+    })
 
     it.each(['choose-node', 'clear-chapter'] as const)('collects frozen tokens with %s once, atomically rejecting stale inventory', async action => {
       const reward = { tier: 1, slot: action === 'clear-chapter' ? 30 : 0, skill: action === 'choose-node' ? 60 : 0 }

@@ -5,7 +5,7 @@ import { ENTITY_KINDS, LOG_KINDS, parseEntityData, parseLogData, saveEntityIdMat
   type EntityKind, type EntityRecord, type LogAppend, type LogKind, type LogRecord } from './save.types'
 import { RPG_ACTIONS, RPG_MAX_GROUP_OPERATIONS, rpgExact, rpgId, rpgInt, rpgRecord,
   type RpgAction } from './rpg-save.types'
-import { frozenReward, legalLoadout, oneTreePoint, progression, skillKey } from './rpg-progression'
+import { frozenReward, legalLoadout, levelOneClassChange, oneTreePoint, progression, skillKey } from './rpg-progression'
 import { parseInspirationBank, repayInspiration } from './inspiration-bank'
 
 export interface RpgExpected { kind: EntityKind; id: string; version: number }
@@ -119,7 +119,7 @@ export function parseRpgCommandRequest(body: unknown): RpgCommandRequest | strin
   if (action === 'battle-result' && appends.filter((entry) => entry.kind === 'rpgResults').length !== 1) return 'Battle result evidence required'
   if (action === 'promote' && appends.filter((entry) => entry.kind === 'rpgPromotions').length !== 1) return 'Promotion evidence required'
   if (action === 'promote' && upserts.filter((r) => r.kind === 'rpgOutfits').length !== 1) return 'Promotion needs one outfit'
-  if (action === 'edit-outfit' && (upserts.length !== 1 || upserts[0]?.kind !== 'rpgOutfits')) return 'Tree edit needs one outfit'
+  if (action === 'edit-outfit' && (upserts.length !== 1 || upserts[0]?.kind !== 'rpgOutfits')) return 'Outfit edit needs one outfit'
   if (action === 'spend-inspiration' && (upserts.length !== 2 || upserts.filter(r => r.kind === 'umas').length !== 1 ||
     upserts.filter(r => r.kind === 'items').length !== 1 || appends.length !== 1)) return 'Inspiration spend needs one Uma, stack and movement'
   return { schemaVersion: 1, commandId: body.commandId, action, expected, upserts, appends }
@@ -388,11 +388,14 @@ function semanticError(uid: string, request: RpgCommandRequest, existing: Map<st
     }
     for (const expected of request.expected.filter((e) => e.kind === 'rpgCheckpoints')) {
       const cp = existing.get(`rpgCheckpoints/${expected.id}`)?.data
-      if (cp && !['at-checkpoint', 'cleared'].includes(cp.status as string)) return 'Skills and promotion require an accepted safe checkpoint'
+      if (cp && !['at-checkpoint', 'cleared'].includes(cp.status as string)) return 'Class, skills and promotion require an accepted safe checkpoint'
     }
     const before = existing.get(entityKey(row.kind, row.id))?.data
     if (request.action === 'edit-outfit' && (!before || !rpgRecord(before.profile) || !rpgRecord(row.data.profile) ||
-      row.data.projectionRevision !== (before.projectionRevision as number) + 1 || !oneTreePoint(before.profile, row.data.profile))) return 'Tree edit must spend exactly one earned point'
+      row.data.projectionRevision !== (before.projectionRevision as number) + 1 ||
+      !oneTreePoint(before.profile, row.data.profile) && !levelOneClassChange(before.profile, row.data.profile))) {
+      return 'Outfit edit must spend exactly one earned point or correct a Tier 1 Lv1 class'
+    }
   }
   if (request.action === 'promote') {
     const row = request.upserts.find((r) => r.kind === 'rpgOutfits')!
