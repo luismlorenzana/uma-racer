@@ -224,7 +224,7 @@ function ProfileProgress({ outfitId, profile }: { outfitId: string; profile: Rpg
     {canChangeRpgClass(profile) && <ClassEdit outfitId={outfitId} profile={profile} />}
     <section aria-label="Skills">
       <div className="flex items-center justify-between"><h2 className="text-[15px] font-semibold">Skills</h2><span className="text-[12px] text-accent">{points} point{points === 1 ? '' : 's'} to spend</span></div>
-      <p className="mt-0.5 text-[11px] text-ink-on-dark-soft">A point every even level. Depths open at Lv{RPG_DEPTH_GATES.join('/')}; B elements stop at depth {RPG_B_MAX_DEPTH}. Equip skills from the party screen.</p>
+      <p className="mt-0.5 text-[11px] text-ink-on-dark-soft">Two points a level up to Lv45 (90 a tier): learn a skill, then raise any skill to Lv5. Depths open at Lv{RPG_DEPTH_GATES.join('/')}; B elements stop at depth {RPG_B_MAX_DEPTH}. Equip skills from the party screen.</p>
       <div className="mt-2 space-y-2">{cells.map((cell) => <RpgCard key={cell.element}>
         <p className="flex items-center gap-1 text-[13px] font-semibold"><ElementMark element={cell.element} label />· {cell.affinity}</p>
         <div className="mt-2 grid grid-cols-2 gap-1.5">{branches.filter(([depth]) => depth <= cell.maxDepth).map(([depth, branch]) => {
@@ -317,7 +317,7 @@ function SlotLoadout({ presetId, profile, signature, loadout }: { presetId: stri
         onClick={() => { if (e !== signature) void commit(() => equipRpgSkills(presetId, profile.outfitId, e, loadout)) }}
         className={`flex min-h-9 items-center rounded-full border px-2 ${e === signature ? 'border-accent bg-accent/15' : 'border-hairline-dark'}`}><ElementMark element={e} label /></button>)}
     </div>
-    {learned.length === 0 ? <p className="text-[11px] text-ink-on-dark-soft">No skills yet: the first point comes at Lv2.</p>
+    {learned.length === 0 ? <p className="text-[11px] text-ink-on-dark-soft">No skills learned yet: spend her points on her profile.</p>
       : <div className="flex flex-wrap gap-1.5" aria-label={`Skills, ${loadout.length} of ${slots} equipped`}>{learned.map((skill) => {
         const on = keys.has(rpgSkillKey(skill))
         return <button key={rpgSkillKey(skill)} type="button" aria-pressed={on} onClick={() => toggle(skill)}

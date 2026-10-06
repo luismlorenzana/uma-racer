@@ -9,6 +9,7 @@ import {
   BATTLE_RESIST, BATTLE_SHIELDED_FACTOR, BATTLE_SKILL_LEVEL_STEP, BATTLE_STATUS_STACK_CAP, BATTLE_STATUS_TURNS,
   BATTLE_WEAK, battleChannel, battleMatchup, battleSignatureFactor, battleSkill, type BattleSkill,
 } from './skills'
+import { RPG_MAX_TREE_NODES } from '../save'
 import type { BattleAction, BattleAlly, BattleChannel, BattleCue, BattleEnemy, BattleEnemyMove, BattleError,
   BattleInput, BattleIntent, BattleSide, BattleState, BattleStatusKind, BattleStep, BattleUnit } from './types'
 
@@ -73,7 +74,7 @@ function validAlly(a: BattleAlly): boolean {
     !safeInt(a.level, 1, 50) || !validStats(a.stats as unknown as Record<string, unknown>, ALLY_STATS) ||
     !safeInt(a.mp, 0, a.stats.mp) || !a.affinities || !a.affinities[a.signature] ||
     !Array.isArray(a.tree) || !Array.isArray(a.legacy) || !Array.isArray(a.loadout) ||
-    a.loadout.length > rpgActiveSlots(a.level) || a.tree.length > 25 || a.legacy.length > 2) return false
+    a.loadout.length > rpgActiveSlots(a.level) || a.tree.length > RPG_MAX_TREE_NODES || a.legacy.length > 2) return false
   const learned = [...a.tree, ...a.legacy]
   if (new Set(learned.map(rpgSkillKey)).size !== learned.length || rpgTreePointsSpent(a.tree) > rpgTreePointsEarned(a.level)) return false
   if (learned.some((s) => s.weapon !== a.weapon || !a.affinities[s.element] || (a.affinities[s.element] === 'B' && s.depth > 3) ||

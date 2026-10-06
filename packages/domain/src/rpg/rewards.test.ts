@@ -29,7 +29,7 @@ describe('accepted RPG reward rules', () => {
     expect(Object.values(reveal.deltas).every((n) => n > 0)).toBe(true)
     expect(reveal.beforeSlots).toBe(3)
     expect(reveal.afterSlots).toBe(rpgActiveSlots(grant.profile.level))
-    expect(reveal.points).toBe(Math.floor(grant.profile.level / 2) - 4)
+    expect(reveal.points).toBe(2 * (Math.min(grant.profile.level, 45) - 9))
   })
   it('banks overflow and applies it across two explicit promotions without changing class or losing mastery', () => {
     let p = { ...profile(), level: 49, exp: 850 }

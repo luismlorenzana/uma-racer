@@ -45,9 +45,10 @@ Settled by D226, D227 and D259; unchanged by the campaign.
 | Levels | Tier-local Lv1–50, EXP to next `120 + 16L`; Lv50 banks EXP until a manual **promotion** to the next tier. Lifetime level = `50 × (tier − 1) + level`. |
 | Core stats | `round(base / 5 + n × 1.5 × (1 + growth))`, `n` = lifetime level − 1 |
 | Combat stats | ATK = MATK = Speed; Speed (initiative) = Stamina; DEF = Power; M.DEF = (Power + Wit) / 2; HP = 100 + 6 × Stamina + 2 × Power; **MP = 20 + 1.5 × Wit** (D261) |
-| Skill points | One per even level (25 per tier); one point learns a node or raises its level (max 5) |
-| Depth gates | Lv 2 / 10 / 20 / 34 / 50; each depth needs the one above in the same element |
-| Skill slots | 3 at Lv1, 4 at Lv10, 5 at Lv20, 6 at Lv35, 7 at Lv50 (Attack and Guard are free) |
+| Skill points | **Two per level up to Lv45: 90 per tier** (D264); one point learns a skill or raises one skill level (max 5, +8% power each) |
+| Tree cost | An A element has 8 skills (40 points to max), a B element 5 (25). 90 points max **two A trees** (80) or **one A and two B trees** (90) |
+| Depth gates | Lv 1 / 10 / 20 / 30 / 40; each depth needs the one above in the same element |
+| Skill slots | 3 at Lv1, then one more at Lv 10, 15, 20, 25, 30, 35 and 40: **10 by Lv40** (Attack and Guard are free) |
 | Promotion | Keeps stats and banked EXP; archives the tier's tree; up to two legacy skills |
 
 The campaign restarted every enrolled outfit at **Tier 1 Lv1** once (D263): class, weapon, elements and party
@@ -148,9 +149,8 @@ Every won fight pays, first clear or replay:
 
 `pnpm sim:rpg:campaign [scenarioId]` plays a synthetic party (invented outfits and cast) through a chapter with a
 careful policy (weakness skills, one skill per Uma in regular fights, rest below 35% MP) and an attack-only policy.
-At this pin, careful play clears URA, Unity Cup and Project L'Arc: regular fights 2–4 rounds, sub-bosses 4–8 rounds
-with up to 45% party HP lost, champions 10–17 rounds with 55–90% lost (the URA champion one level above wins about
-one try in three). Attack-only loses the first sub-boss every time. Change numbers here and in the tests together.
+At this pin, careful play clears URA, Unity Cup and Project L'Arc: regular fights 2–4 rounds, sub-bosses 3–8 rounds
+with up to 45% party HP lost, champions 9–13 rounds with 50–77% lost. Attack-only loses the first sub-boss every time. Change numbers here and in the tests together.
 
 ## Relationship to other systems
 

@@ -11,11 +11,16 @@ export const RPG_WEAPONS = ['greatsword', 'spear', 'sword-shield', 'wizard-staff
 export type RpgWeapon = typeof RPG_WEAPONS[number]
 export const RPG_TIER_MAX_LEVEL = 50
 export const RPG_CLASS_EDIT_MAX_LEVEL = 1
-export const RPG_TREE_POINTS_PER_EVEN_LEVEL = 1
+/** D264: two points a level up to Lv45, so a tier's 90 points max two A trees or one A and two B trees. */
+export const RPG_TREE_POINTS_PER_LEVEL = 2
+export const RPG_TREE_POINT_MAX_LEVEL = 45
 export const RPG_SKILL_MAX_LEVEL = 5
-export const RPG_DEPTH_GATES = [2, 10, 20, 34, 50] as const
+export const RPG_DEPTH_GATES = [1, 10, 20, 30, 40] as const
 export const RPG_B_MAX_DEPTH = 3
-export const RPG_ACTIVE_SLOT_GATES = [1, 10, 20, 35, 50] as const
+/** Three slots at Lv1, one more at each gate: ten by Lv40 (D264). */
+export const RPG_BASE_ACTIVE_SLOTS = 3
+export const RPG_ACTIVE_SLOT_GATES = [10, 15, 20, 25, 30, 35, 40] as const
+export const RPG_MAX_ACTIVE_SLOTS = RPG_BASE_ACTIVE_SLOTS + RPG_ACTIVE_SLOT_GATES.length
 export const RPG_MAX_LEGACY_SLOTS = 2
 export const RPG_SIGNATURE_MULTIPLIER = 1.1
 
@@ -226,12 +231,12 @@ export function projectRpgStats(profile: Pick<RpgProfile, 'baseStats' | 'growthR
 
 export function rpgTreePointsEarned(level: number): number {
   rpgLifetimeLevels(1, level)
-  return Math.floor(level / 2) * RPG_TREE_POINTS_PER_EVEN_LEVEL
+  return Math.min(level, RPG_TREE_POINT_MAX_LEVEL) * RPG_TREE_POINTS_PER_LEVEL
 }
 
 export function rpgActiveSlots(level: number): number {
   rpgLifetimeLevels(1, level)
-  return RPG_ACTIVE_SLOT_GATES.filter((gate) => level >= gate).length + 2
+  return RPG_BASE_ACTIVE_SLOTS + RPG_ACTIVE_SLOT_GATES.filter((gate) => level >= gate).length
 }
 
 export function rpgTreePointsSpent(tree: readonly RpgSkill[]): number {

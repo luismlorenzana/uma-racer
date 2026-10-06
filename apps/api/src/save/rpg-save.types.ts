@@ -20,6 +20,10 @@ const ROLES: Record<string, string[]> = { front: ['greatsword'], pace: ['spear',
 const ELEMENTS_BY_DISTANCE: Record<string, string[]> = { sprint: ['dark', 'light'], mile: ['ice', 'light'],
   medium: ['fire', 'dark'], long: ['lightning', 'light'] }
 const BRANCHES = [['foundation'], ['focused', 'area'], ['committed', 'multi'], ['role', 'hybrid'], ['signature']]
+// D264: 2 points a level to Lv45, depths at Lv1/10/20/30/40, ten skill slots, up to 40 learned cells.
+const DEPTH_GATES = [1, 10, 20, 30, 40]
+const MAX_SLOTS = 10
+const MAX_TREE_NODES = 40
 
 export const rpgRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -65,7 +69,7 @@ function outfit(value: unknown): boolean {
     !aptitudes(p.sourceAptitudes) || !oneOf(p.style, STYLES) ||
     !ROLES[p.style as string]?.includes(p.weapon as string) ||
     !oneOf(p.defaultSignature, ELEMENTS) || !rpgInt(p.tier, 1) || !rpgInt(p.level, 1) || p.level > 50 ||
-    !rpgInt(p.exp) || !Array.isArray(p.tree) || p.tree.length > 25 ||
+    !rpgInt(p.exp) || !Array.isArray(p.tree) || p.tree.length > MAX_TREE_NODES ||
     !Array.isArray(p.legacy) || p.legacy.length > 2 || !rpgRecord(p.affinities)) return false
   const a = p.sourceAptitudes
   if (a.strategy?.[p.style as string] !== 'A') return false
@@ -84,10 +88,10 @@ function outfit(value: unknown): boolean {
   const tree = p.tree as Record<string, unknown>[]
   const legacy = p.legacy as Record<string, unknown>[]
   if (new Set(tree.map(skillKey)).size !== tree.length || new Set(legacy.map(skillKey)).size !== legacy.length ||
-    tree.reduce((sum, node) => sum + (node.level as number), 0) > Math.floor((p.level as number) / 2)) return false
+    tree.reduce((sum, node) => sum + (node.level as number), 0) > 2 * Math.min(p.level as number, 45)) return false
   return tree.every((node) => node.tier === p.tier && node.weapon === p.weapon && expected[node.element as string] &&
     (expected[node.element as string] === 'A' || (node.depth as number) <= 3) &&
-    [2, 10, 20, 34, 50][(node.depth as number) - 1]! <= (p.level as number) &&
+    DEPTH_GATES[(node.depth as number) - 1]! <= (p.level as number) &&
     ((node.depth as number) === 1 || tree.some((prior) => prior.element === node.element && prior.depth === (node.depth as number) - 1))) &&
     legacy.every((node) => (node.tier as number) < (p.tier as number) && node.weapon === p.weapon && expected[node.element as string])
 }
@@ -101,7 +105,7 @@ function presetRow(value: unknown): boolean {
   for (const slot of value.slots) {
     if (slot === null) continue
     if (!rpgRecord(slot) || !rpgExact(slot, ['outfitId', 'signature', 'loadout']) || !rpgId(slot.outfitId) ||
-      !oneOf(slot.signature, ELEMENTS) || !Array.isArray(slot.loadout) || slot.loadout.length > 7 ||
+      !oneOf(slot.signature, ELEMENTS) || !Array.isArray(slot.loadout) || slot.loadout.length > MAX_SLOTS ||
       !slot.loadout.every((node: unknown) => skill(node, false))) return false
     const loadout = slot.loadout as Record<string, unknown>[]
     if (new Set(loadout.map(skillKey)).size !== loadout.length) return false
@@ -195,7 +199,7 @@ function promotion(value: unknown): boolean {
   return rpgRecord(value) && rpgExact(value, ['schemaVersion', 'promotionId', 'outfitId', 'fromTier',
     'toTier', 'archive', 'createdAt']) && value.schemaVersion === 1 && rpgId(value.promotionId) &&
     rpgId(value.outfitId) && rpgInt(value.fromTier, 1) && value.toTier === value.fromTier + 1 &&
-    rpgInt(value.createdAt) && Array.isArray(value.archive) && value.archive.length <= 25 &&
+    rpgInt(value.createdAt) && Array.isArray(value.archive) && value.archive.length <= MAX_TREE_NODES &&
     value.archive.every((node: unknown) => skill(node, true) && (node as Record<string, unknown>).tier === value.fromTier)
 }
 

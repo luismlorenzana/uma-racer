@@ -146,7 +146,8 @@ import {
   starNodePct,
   RPG_TIER_MAX_LEVEL,
   RPG_CLASS_EDIT_MAX_LEVEL,
-  RPG_TREE_POINTS_PER_EVEN_LEVEL,
+  RPG_TREE_POINTS_PER_LEVEL,
+  RPG_TREE_POINT_MAX_LEVEL,
   RPG_SKILL_MAX_LEVEL,
   RPG_DEPTH_GATES,
   RPG_B_MAX_DEPTH,
@@ -246,7 +247,7 @@ describe('Global Uma RPG — D228 save wire pins', () => {
   it('bounds synced account rows and grouped commands', () => {
     expect([RPG_SAVE_SCHEMA_VERSION, RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_MAX_TREE_NODES,
       RPG_MAX_SELECTED_PATH, RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_GROUP_OPERATIONS])
-      .toEqual([2, 5, 5, 25, 64, 16_384, 20])
+      .toEqual([2, 5, 5, 40, 64, 16_384, 20])
   })
 })
 
@@ -271,14 +272,16 @@ describe('Global Uma RPG — D227 progression pins', () => {
     expect(projectRpgStats({ baseStats, growthRates, tier: 2, level: 1 }).speed).toBe(110)
   })
 
-  it('pins the 25-point, five-depth tree and bounded loadout ladder', () => {
-    expect([RPG_TREE_POINTS_PER_EVEN_LEVEL, RPG_SKILL_MAX_LEVEL, RPG_B_MAX_DEPTH,
-      RPG_MAX_LEGACY_SLOTS, RPG_SIGNATURE_MULTIPLIER]).toEqual([1, 5, 3, 2, 1.1])
-    expect(RPG_DEPTH_GATES).toEqual([2, 10, 20, 34, 50])
-    expect(RPG_ACTIVE_SLOT_GATES).toEqual([1, 10, 20, 35, 50])
-    expect([rpgTreePointsEarned(1), rpgTreePointsEarned(2), rpgTreePointsEarned(50)])
-      .toEqual([0, 1, 25])
-    expect([rpgActiveSlots(1), rpgActiveSlots(10), rpgActiveSlots(50)]).toEqual([3, 4, 7])
+  it('pins the 90-point, five-depth tree and the ten-slot ladder (D264)', () => {
+    expect([RPG_TREE_POINTS_PER_LEVEL, RPG_TREE_POINT_MAX_LEVEL, RPG_SKILL_MAX_LEVEL, RPG_B_MAX_DEPTH,
+      RPG_MAX_LEGACY_SLOTS, RPG_SIGNATURE_MULTIPLIER]).toEqual([2, 45, 5, 3, 2, 1.1])
+    expect(RPG_DEPTH_GATES).toEqual([1, 10, 20, 30, 40])
+    expect(RPG_ACTIVE_SLOT_GATES).toEqual([10, 15, 20, 25, 30, 35, 40])
+    expect([rpgTreePointsEarned(1), rpgTreePointsEarned(2), rpgTreePointsEarned(45), rpgTreePointsEarned(50)])
+      .toEqual([2, 4, 90, 90])
+    // Two A trees (8 cells × Lv5 = 40 each) or one A and two B trees (5 cells × Lv5 = 25 each) fit in 90.
+    expect([2 * 8 * 5, 8 * 5 + 2 * 5 * 5]).toEqual([80, 90])
+    expect([rpgActiveSlots(1), rpgActiveSlots(10), rpgActiveSlots(39), rpgActiveSlots(40), rpgActiveSlots(50)]).toEqual([3, 4, 9, 10, 10])
     const profile = { weapon: 'spear' as const, affinities: { fire: 'A' as const, ice: 'B' as const } }
     expect(rpgSignatureMagnitude(105, profile, { kind: 'damage', weapon: 'spear', element: 'fire' }, 'fire'))
       .toBe(116)

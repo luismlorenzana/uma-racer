@@ -135,12 +135,12 @@ describe('RPG tier EXP and skill choices', () => {
     expect(() => grantRpgExp({ ...initial, exp: Number.MAX_SAFE_INTEGER }, 1)).toThrow(/overflow/)
   })
 
-  it('earns one point per even local level and rejects illegal spend without mutation', () => {
+  it('earns two points a level up to Lv45 and rejects illegal spend without mutation', () => {
     let profile = { ...enroll(), level: 50 }
-    expect(rpgTreePointsEarned(1)).toBe(0)
-    expect(rpgTreePointsEarned(2)).toBe(1)
-    expect(rpgTreePointsEarned(3)).toBe(1)
-    expect(rpgTreePointsEarned(50)).toBe(25)
+    expect(rpgTreePointsEarned(1)).toBe(2)
+    expect(rpgTreePointsEarned(2)).toBe(4)
+    expect(rpgTreePointsEarned(45)).toBe(90)
+    expect(rpgTreePointsEarned(50)).toBe(90)
     const first = ref(1, 'fire', 1, 'foundation')
     const before = profile
     profile = spendRpgTreePoint(profile, first)
@@ -172,7 +172,7 @@ describe('RPG tier EXP and skill choices', () => {
     expect(promoted.legacy).toHaveLength(2)
     expect(validateRpgLoadout(promoted, 'ice', [foundation, focused])).toBe(true)
     expect(rpgActiveSlots(1)).toBe(3)
-    expect(rpgActiveSlots(50)).toBe(7)
+    expect(rpgActiveSlots(50)).toBe(10)
     expect(() => promoteRpgOutfit(profile, [foundation, focused, foundation], true)).toThrow(/legacy/)
     expect(rpgSignatureMagnitude(101, profile, { kind: 'damage', weapon: 'spear', element: 'fire' }, 'fire')).toBe(111)
     expect(rpgSignatureMagnitude(101, profile, { kind: 'healing', weapon: 'spear', element: 'ice' }, 'fire')).toBe(101)

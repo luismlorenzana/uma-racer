@@ -1,7 +1,7 @@
 // Versioned RPG wire rows and deterministic entry identity (docs/technical/uma-rpg-implementation.md, T090).
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type Stats } from '../types'
 import {
-  RPG_DEPTH_GATES, RPG_ELEMENTS, RPG_MAX_LEGACY_SLOTS, RPG_SKILL_MAX_LEVEL, RPG_TIER_MAX_LEVEL,
+  RPG_DEPTH_GATES, RPG_ELEMENTS, RPG_MAX_ACTIVE_SLOTS, RPG_MAX_LEGACY_SLOTS, RPG_SKILL_MAX_LEVEL, RPG_TIER_MAX_LEVEL,
   RPG_WEAPONS, enrollRpgOutfit, rpgSkillKey, rpgTreePointsEarned, rpgTreePointsSpent,
   type RpgCoreStats, type RpgElement, type RpgProfile, type RpgSkill, type RpgSkillRef,
 } from './rules'
@@ -10,7 +10,8 @@ import {
 export const RPG_SAVE_SCHEMA_VERSION = 2
 export const RPG_PARTY_SIZE = 5
 export const RPG_PRESET_COUNT = 5
-export const RPG_MAX_TREE_NODES = 25
+/** Every cell of all five elements (8 per A element) can be learned in one tier (D264). */
+export const RPG_MAX_TREE_NODES = 40
 export const RPG_MAX_SELECTED_PATH = 64
 export const RPG_MAX_ENEMY_KIT_CHARS = 16_384
 export const RPG_MAX_GROUP_OPERATIONS = 20
@@ -210,7 +211,7 @@ export function parseRpgPresetSave(value: unknown): RpgPresetSaveV1 | null {
   for (const slot of value.slots) {
     if (slot === null) continue
     if (!isRecord(slot) || !exact(slot, ['outfitId', 'signature', 'loadout']) || !isId(slot.outfitId) ||
-      !RPG_ELEMENTS.includes(slot.signature as RpgElement) || !Array.isArray(slot.loadout) || slot.loadout.length > 7 ||
+      !RPG_ELEMENTS.includes(slot.signature as RpgElement) || !Array.isArray(slot.loadout) || slot.loadout.length > RPG_MAX_ACTIVE_SLOTS ||
       slot.loadout.some((skill) => !parseRpgSkillRef(skill))) return null
     const keys = slot.loadout.map((skill) => rpgSkillKey(skill as RpgSkillRef))
     if (new Set(keys).size !== keys.length) return null
