@@ -89,7 +89,13 @@ describe('campaign runs (D263)', () => {
   })
 })
 
-describe('campaign save migration (D263)', () => {
+describe('campaign save migration (D263, D265)', () => {
+  it('drops a fight left open under engine v2; the run and its MP stay', () => {
+    const run = { ...createRpgRun('party-1', 'ura-finale', 1), mp: { m1: 4 }, battles: 1,
+      battle: { battleId: 'rpg-battle:party-1:ura-finale:1', nodeId: 'a1r1c1', startedAt: 1, input: { version: 2, seed: 1 } } }
+    expect(parseRpgRunSave(run)).toMatchObject({ battle: null, mp: { m1: 4 }, battles: 1 })
+  })
+
   it('restarts schema-1 outfits at Tier 1 Lv1 once, keeping class and element', () => {
     const old: RpgOutfitSaveV1 = { schemaVersion: 1, projectionRevision: 4,
       profile: { ...member('x'), tier: 2, level: 12, exp: 40, tree: [], legacy: [] } }

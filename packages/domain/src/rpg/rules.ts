@@ -14,6 +14,8 @@ export const RPG_CLASS_EDIT_MAX_LEVEL = 1
 /** D264: two points a level up to Lv45, so a tier's 90 points max two A trees or one A and two B trees. */
 export const RPG_TREE_POINTS_PER_LEVEL = 2
 export const RPG_TREE_POINT_MAX_LEVEL = 45
+/** D265: five more points each time a depth opens, so the larger trees still max two A or one A and two B. */
+export const RPG_TREE_POINTS_PER_DEPTH = 5
 export const RPG_SKILL_MAX_LEVEL = 5
 export const RPG_DEPTH_GATES = [1, 10, 20, 30, 40] as const
 export const RPG_B_MAX_DEPTH = 3
@@ -35,10 +37,13 @@ const ELEMENTS_BY_DISTANCE: Record<typeof DISTANCE_CATEGORIES[number], readonly 
 
 export type RpgAffinity = 'A' | 'B'
 export type RpgAffinities = Partial<Record<RpgElement, RpgAffinity>>
-export type RpgBranch = 'foundation' | 'focused' | 'area' | 'committed' | 'multi' | 'role' | 'hybrid' | 'signature'
-const BRANCHES: readonly (readonly RpgBranch[])[] = [
-  ['foundation'], ['focused', 'area'], ['committed', 'multi'], ['role', 'hybrid'], ['signature'],
+export type RpgBranch = 'foundation' | 'focused' | 'area' | 'double' | 'committed' | 'multi' | 'role' | 'hybrid' | 'quad' |
+  'signature' | 'barrage'
+/** D265: a multi-hit line runs through every depth: 2 hits (double), 3 (multi), 4 (quad), 6 random (barrage). */
+export const RPG_BRANCHES: readonly (readonly RpgBranch[])[] = [
+  ['foundation'], ['focused', 'area', 'double'], ['committed', 'multi'], ['role', 'hybrid', 'quad'], ['signature', 'barrage'],
 ]
+const BRANCHES = RPG_BRANCHES
 
 export interface RpgSkillRef {
   tier: number
@@ -231,7 +236,8 @@ export function projectRpgStats(profile: Pick<RpgProfile, 'baseStats' | 'growthR
 
 export function rpgTreePointsEarned(level: number): number {
   rpgLifetimeLevels(1, level)
-  return Math.min(level, RPG_TREE_POINT_MAX_LEVEL) * RPG_TREE_POINTS_PER_LEVEL
+  return Math.min(level, RPG_TREE_POINT_MAX_LEVEL) * RPG_TREE_POINTS_PER_LEVEL +
+    RPG_DEPTH_GATES.filter((gate) => level >= gate).length * RPG_TREE_POINTS_PER_DEPTH
 }
 
 export function rpgActiveSlots(level: number): number {

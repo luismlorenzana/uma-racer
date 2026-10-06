@@ -1,11 +1,12 @@
-// Campaign battle vocabulary, engine v2 (docs/design/uma-rpg.md#battles, D261).
+// Campaign battle vocabulary, engine v3 (docs/design/uma-rpg.md#battles, D265).
 import type { RpgAffinities, RpgCoreStats, RpgElement, RpgSkill, RpgSkillRef, RpgWeapon } from '../rules'
 import type { Strategy } from '../../types'
 
 export type BattleSide = 'ally' | 'enemy'
 export type BattleChannel = 'physical' | 'magical'
 export type BattleStatusKind = 'burn' | 'slow' | 'mark' | 'ward' | 'weaken' | 'power-up'
-/** Regular foes are knocked Down by a weakness; bosses carry a break shield instead. */
+/** Weapon weaknesses read by kind: both staves count as a staff. */
+export type BattleWeaponKind = 'greatsword' | 'spear' | 'sword' | 'staff' | 'tome'
 export type EnemyRank = 'regular' | 'sub-boss' | 'boss'
 export interface BattleStatus { kind: BattleStatusKind; stacks: number; turns: number }
 
@@ -36,6 +37,8 @@ export interface BattleEnemyMove {
   status?: BattleStatusKind
   label: string
 }
+/** Hits of any listed kind chip the break shield (Octopath Traveler, D265). */
+export interface BattleWeaknesses { element: RpgElement; weapons: BattleWeaponKind[] }
 export interface BattleEnemy {
   id: string
   /** Cast member shown for this foe; presentation only. */
@@ -45,11 +48,13 @@ export interface BattleEnemy {
   /** Lifetime level (Tier 1 Lv1 is 1, Tier 2 Lv1 is 51). */
   level: number
   stats: BattleEnemyStats
+  /** Break shield points; every enemy has one. */
   shield: number
+  weaknesses: BattleWeaknesses
   moves: BattleEnemyMove[]
   phaseTwo?: { thresholdPercent: number; moves: BattleEnemyMove[] }
 }
-export interface BattleInput { version: 2; seed: number; allies: BattleAlly[]; enemies: BattleEnemy[] }
+export interface BattleInput { version: 3; seed: number; allies: BattleAlly[]; enemies: BattleEnemy[] }
 
 export interface BattleUnit {
   id: string
@@ -59,16 +64,14 @@ export interface BattleUnit {
   statuses: BattleStatus[]
   phase: 1 | 2
   guardingFor: string | null
-  /** Knocked Down by a weakness: skips this round's action, stands up after the enemy phase. */
-  down: boolean
-  /** Remaining break shield (bosses only). */
+  /** Remaining break shield (enemies). */
   shield: number
-  /** Round the shield broke in; the boss stays Broken through the next player phase. 0 when standing. */
+  /** Round the shield broke in: the foe loses that round's and the next round's action. 0 when standing. */
   brokenAt: number
 }
 export interface BattleIntent { enemyId: string; moveId: string; targetId: string }
 export interface BattleState {
-  engineVersion: 2
+  engineVersion: 3
   input: BattleInput
   round: number
   units: BattleUnit[]
@@ -80,14 +83,13 @@ export type BattleAction =
   | { kind: 'attack'; actorId: string; targetId: string }
   | { kind: 'guard'; actorId: string; targetId: string }
   | { kind: 'skill'; actorId: string; targetId: string; skill: RpgSkillRef }
-  | { kind: 'all-out'; actorId: string }
 export type BattleCue =
   | { kind: 'intent'; actorId: string; targetId: string; label: string }
   | { kind: 'hit'; actorId: string; targetId: string; amount: number; channel: BattleChannel | 'status';
-      element: RpgElement | null; matchup: 'weak' | 'resist' | 'neutral'; label?: string }
-  | { kind: 'down' | 'one-more' | 'shield' | 'break' | 'recover' | 'ko' | 'phase' | 'status' | 'guard' | 'skip' | 'all-out';
+      element: RpgElement | null; weak: boolean; label?: string }
+  | { kind: 'shield' | 'break' | 'recover' | 'ko' | 'phase' | 'status' | 'guard' | 'skip';
       actorId: string; targetId: string; amount?: number; label?: string }
   | { kind: 'result'; label: 'victory' | 'loss' }
 export type BattleError = 'terminal' | 'invalid-actor' | 'already-acted' | 'invalid-target' |
-  'invalid-skill' | 'insufficient-mp' | 'all-out-unavailable' | 'invalid-state'
+  'invalid-skill' | 'insufficient-mp' | 'invalid-state'
 export interface BattleStep { state: BattleState; cues: BattleCue[]; hash: string; error?: BattleError }

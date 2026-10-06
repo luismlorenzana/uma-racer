@@ -19,8 +19,8 @@ const ROLES: Record<string, string[]> = { front: ['greatsword'], pace: ['spear',
   late: ['wizard-staff', 'cleric-staff'], end: ['tome'] }
 const ELEMENTS_BY_DISTANCE: Record<string, string[]> = { sprint: ['dark', 'light'], mile: ['ice', 'light'],
   medium: ['fire', 'dark'], long: ['lightning', 'light'] }
-const BRANCHES = [['foundation'], ['focused', 'area'], ['committed', 'multi'], ['role', 'hybrid'], ['signature']]
-// D264: 2 points a level to Lv45, depths at Lv1/10/20/30/40, ten skill slots, up to 40 learned cells.
+const BRANCHES = [['foundation'], ['focused', 'area', 'double'], ['committed', 'multi'], ['role', 'hybrid', 'quad'], ['signature', 'barrage']]
+// D264/D265: 2 points a level to Lv45 plus 5 per opened depth, depths at Lv1/10/20/30/40, ten skill slots, up to 40 learned cells.
 const DEPTH_GATES = [1, 10, 20, 30, 40]
 const MAX_SLOTS = 10
 const MAX_TREE_NODES = 40
@@ -88,7 +88,8 @@ function outfit(value: unknown): boolean {
   const tree = p.tree as Record<string, unknown>[]
   const legacy = p.legacy as Record<string, unknown>[]
   if (new Set(tree.map(skillKey)).size !== tree.length || new Set(legacy.map(skillKey)).size !== legacy.length ||
-    tree.reduce((sum, node) => sum + (node.level as number), 0) > 2 * Math.min(p.level as number, 45)) return false
+    tree.reduce((sum, node) => sum + (node.level as number), 0) >
+      2 * Math.min(p.level as number, 45) + 5 * DEPTH_GATES.filter((gate) => (p.level as number) >= gate).length) return false
   return tree.every((node) => node.tier === p.tier && node.weapon === p.weapon && expected[node.element as string] &&
     (expected[node.element as string] === 'A' || (node.depth as number) <= 3) &&
     DEPTH_GATES[(node.depth as number) - 1]! <= (p.level as number) &&
@@ -127,7 +128,7 @@ function run(value: unknown): boolean {
   const battle = value.battle
   if (battle === null) return true
   return rpgRecord(battle) && rpgExact(battle, ['battleId', 'nodeId', 'startedAt', 'input']) && rpgId(battle.battleId) &&
-    rpgId(battle.nodeId) && rpgInt(battle.startedAt) && rpgRecord(battle.input) && battle.input.version === 2 &&
+    rpgId(battle.nodeId) && rpgInt(battle.startedAt) && rpgRecord(battle.input) && (battle.input.version === 2 || battle.input.version === 3) &&
     JSON.stringify(battle.input).length <= MAX_RUN_BATTLE_CHARS
 }
 

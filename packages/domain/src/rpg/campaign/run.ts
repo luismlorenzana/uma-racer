@@ -54,6 +54,8 @@ export function parseRpgRunSave(value: unknown): RpgRunSaveV2 | null {
     typeof value.chapterId !== 'string' || !/^[a-z0-9-]{1,24}$/.test(value.chapterId) || !counts(value.wins, 1) ||
     !counts(value.mp, 0) || !int(value.battles) || !(value.clearedAt === null || int(value.clearedAt)) || !int(value.updatedAt)) return null
   const battle = value.battle
+  // A fight left open under an older engine (D265) is dropped: no reward, MP as it was when it began.
+  if (record(battle) && record(battle.input) && battle.input.version !== 3) return { ...(value as unknown as RpgRunSaveV2), battle: null }
   if (battle !== null) {
     if (!record(battle) || !exact(battle, ['battleId', 'nodeId', 'startedAt', 'input']) || typeof battle.battleId !== 'string' ||
       !ID.test(battle.battleId) || typeof battle.nodeId !== 'string' || !ID.test(battle.nodeId) || !int(battle.startedAt)) return null
@@ -115,7 +117,7 @@ export function rpgBeginRunBattle(chapter: RpgCampaignChapter, run: RpgRunSaveV2
   if (party.length !== 5) throw new Error('A fight needs five party members')
   const battleId = rpgBattleId(run)
   const input: BattleInput = {
-    version: 2, seed: seedOf(battleId),
+    version: 3, seed: seedOf(battleId),
     allies: party.map(({ profile, slot }) => ({ id: profile.outfitId, style: profile.style, weapon: profile.weapon,
       tier: profile.tier, level: profile.level, stats: projectRpgStats(profile), affinities: profile.affinities,
       signature: slot.signature, tree: profile.tree, legacy: profile.legacy, loadout: slot.loadout, mp: rpgCarriedMp(run, profile) })),

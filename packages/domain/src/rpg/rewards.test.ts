@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { grantRpgExp, promoteRpgOutfit, rpgActiveSlots, rpgSkillKey, spendRpgTreePoint, validateRpgLoadout } from './rules'
+import { grantRpgExp, promoteRpgOutfit, rpgActiveSlots, rpgTreePointsEarned, rpgSkillKey, spendRpgTreePoint, validateRpgLoadout } from './rules'
 import { rpgEncounterBaseExp, rpgEncounterExp, rpgLevelReveal, rpgRewardProjection, validRpgRewardInput } from './rewards'
 import { syntheticChapterProfiles } from './chapter.synthetic'
 const profile = () => syntheticChapterProfiles()[0]!
@@ -29,7 +29,7 @@ describe('accepted RPG reward rules', () => {
     expect(Object.values(reveal.deltas).every((n) => n > 0)).toBe(true)
     expect(reveal.beforeSlots).toBe(3)
     expect(reveal.afterSlots).toBe(rpgActiveSlots(grant.profile.level))
-    expect(reveal.points).toBe(2 * (Math.min(grant.profile.level, 45) - 9))
+    expect(reveal.points).toBe(rpgTreePointsEarned(grant.profile.level) - rpgTreePointsEarned(9))
   })
   it('banks overflow and applies it across two explicit promotions without changing class or losing mastery', () => {
     let p = { ...profile(), level: 49, exp: 850 }

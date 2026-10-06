@@ -1,8 +1,8 @@
 // Chapter map: a top-to-bottom route of fights, camps, sub-bosses and five elemental champions (D262, D263).
 // Tap a node to preview it; clear nodes open the ones below, and any cleared fight can be replayed.
 import {
-  RPG_STAGE_NAMES, battleWeakness, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgMemberLevel,
-  rpgNodeParents, rpgNodeStatus, rpgRunId, battleSkill, inspirationTokenName,
+  RPG_STAGE_NAMES, battleWeaponKind, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgMemberLevel,
+  rpgNodeParents, rpgNodeStatus, rpgRunId, inspirationTokenName, type BattleEnemy,
   type RpgCampaignChapter, type RpgMapNode, type RpgProfile, type RpgRunSaveV2,
 } from '@racer/domain'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -11,7 +11,7 @@ import { beginRpgFight, openRpgRun, restRpgRun, rpgOutfitProfiles } from '../../
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgEnemyPortrait } from '../../ui/rpg/RpgEnemyPortrait'
 import { RPG_ELEMENT_LABELS } from '../../ui/rpg/RpgPortrait'
-import { ELEMENT_RING, ElementMark, GhostButton, PrimaryButton, RpgBar, formatRpgBand, formatRpgLevel } from '../../ui/rpg/rpg-ui'
+import { ELEMENT_RING, ElementMark, GhostButton, PrimaryButton, RpgBar, ShieldBadge, WeaknessIcons, formatRpgBand, formatRpgLevel } from '../../ui/rpg/rpg-ui'
 import { InspirationTokenIcon } from '../../ui/InspirationTokenIcon'
 import { CheckIcon } from '../../ui/icons'
 import { ScreenState } from '../../ui/ScreenState'
@@ -103,7 +103,13 @@ function NodeSheet({ chapter, node, run, party, loadouts, presetId, onClose, onF
   const portraits = release?.status === 'ready' ? release.portraits : {}
   const castName = (id: string) => release?.status === 'ready' ? release.cast.find((c) => c.id === id)?.name ?? id : id
   const wins = run?.wins[node.id] ?? 0
-  const breakers = (element: import('@racer/domain').RpgElement) => party.filter((_, i) => loadouts[i]!.some((ref) => battleSkill(ref).element === battleWeakness(element)))
+  const name = (id: string) => content.umas.byId.get(id)?.name ?? id
+  /** Who in the party can chip this foe: by weapon (Attack) or by an equipped skill's element. */
+  const chippers = (enemy: BattleEnemy) => party.flatMap((p, i) => {
+    const byWeapon = enemy.weaknesses.weapons.includes(battleWeaponKind(p.weapon))
+    const byElement = loadouts[i]!.some((ref) => ref.element === enemy.weaknesses.element)
+    return byWeapon || byElement ? [`${name(p.outfitId)} (${[byWeapon && 'Attack', byElement && `${RPG_ELEMENT_LABELS[enemy.weaknesses.element]} skill`].filter(Boolean).join(', ')})`] : []
+  })
   const fight = async () => {
     setBusy(true)
     if (await commit(() => beginRpgFight(chapter, presetId, node.id))) onFight()
@@ -129,14 +135,13 @@ function NodeSheet({ chapter, node, run, party, loadouts, presetId, onClose, onF
         <PrimaryButton disabled={busy || status === 'locked' || Boolean(run?.battle)} onClick={() => void rest()}>{status === 'locked' ? 'Reach this camp first' : run?.battle ? 'Finish the open fight first' : 'Rest · refill MP'}</PrimaryButton>
       </div> : <div className="mt-3 space-y-2">
         {node.enemies.map((enemy) => {
-          const weak = battleWeakness(enemy.element)
-          const able = breakers(enemy.element)
+          const able = chippers(enemy)
           return <div key={enemy.id} className="grid grid-cols-[44px_1fr] gap-2 rounded-sm border border-hairline-dark p-2">
             <RpgEnemyPortrait content={content} artId={portraits[enemy.castId]} name={castName(enemy.castId)} className="h-12 w-11" />
             <div className="min-w-0 text-[12px]">
-              <p className="flex flex-wrap items-center gap-1 font-semibold">{castName(enemy.castId)} <ElementMark element={enemy.element} label />{enemy.rank !== 'regular' && <span className="rounded-xs bg-white/10 px-1 text-[10px]">Shield {enemy.shield}</span>}</p>
-              <p className="text-ink-on-dark-soft">HP {enemy.stats.hp} · Weak to <ElementMark element={weak} label /></p>
-              <p className={able.length ? 'text-accent' : 'text-ink-on-dark-soft'}>{able.length ? `Your ${RPG_ELEMENT_LABELS[weak]} skills: ${able.map((p) => content.umas.byId.get(p.outfitId)?.name ?? p.outfitId).join(', ')}` : `No ${RPG_ELEMENT_LABELS[weak]} skill equipped`}</p>
+              <p className="flex flex-wrap items-center gap-1 font-semibold">{castName(enemy.castId)} <ElementMark element={enemy.element} label /></p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-ink-on-dark-soft"><ShieldBadge value={enemy.shield} /><WeaknessIcons weaknesses={enemy.weaknesses} /><span>HP {enemy.stats.hp}</span></p>
+              <p className={able.length ? 'text-accent' : 'text-ink-on-dark-soft'}>{able.length ? `Can chip: ${able.join(' · ')}` : 'Nobody in this party can chip it'}</p>
               <p className="truncate text-[11px] text-ink-on-dark-soft">{[...enemy.moves, ...enemy.phaseTwo?.moves ?? []].map((m) => m.label).join(' · ')}</p>
             </div>
           </div>

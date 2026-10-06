@@ -135,12 +135,12 @@ describe('RPG tier EXP and skill choices', () => {
     expect(() => grantRpgExp({ ...initial, exp: Number.MAX_SAFE_INTEGER }, 1)).toThrow(/overflow/)
   })
 
-  it('earns two points a level up to Lv45 and rejects illegal spend without mutation', () => {
+  it('earns two points a level up to Lv45 plus five per opened depth and rejects illegal spend without mutation', () => {
     let profile = { ...enroll(), level: 50 }
-    expect(rpgTreePointsEarned(1)).toBe(2)
-    expect(rpgTreePointsEarned(2)).toBe(4)
-    expect(rpgTreePointsEarned(45)).toBe(90)
-    expect(rpgTreePointsEarned(50)).toBe(90)
+    expect(rpgTreePointsEarned(1)).toBe(7)
+    expect(rpgTreePointsEarned(2)).toBe(9)
+    expect(rpgTreePointsEarned(45)).toBe(115)
+    expect(rpgTreePointsEarned(50)).toBe(115)
     const first = ref(1, 'fire', 1, 'foundation')
     const before = profile
     profile = spendRpgTreePoint(profile, first)

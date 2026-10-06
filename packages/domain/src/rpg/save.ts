@@ -1,7 +1,7 @@
 // Versioned RPG wire rows and deterministic entry identity (docs/technical/uma-rpg-implementation.md, T090).
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type Stats } from '../types'
 import {
-  RPG_DEPTH_GATES, RPG_ELEMENTS, RPG_MAX_ACTIVE_SLOTS, RPG_MAX_LEGACY_SLOTS, RPG_SKILL_MAX_LEVEL, RPG_TIER_MAX_LEVEL,
+  RPG_BRANCHES, RPG_DEPTH_GATES, RPG_ELEMENTS, RPG_MAX_ACTIVE_SLOTS, RPG_MAX_LEGACY_SLOTS, RPG_SKILL_MAX_LEVEL, RPG_TIER_MAX_LEVEL,
   RPG_WEAPONS, enrollRpgOutfit, rpgSkillKey, rpgTreePointsEarned, rpgTreePointsSpent,
   type RpgCoreStats, type RpgElement, type RpgProfile, type RpgSkill, type RpgSkillRef,
 } from './rules'
@@ -132,8 +132,8 @@ export function parseRpgSkillRef(value: unknown): RpgSkillRef | null {
   if (!isRecord(value) || !exact(value, ['tier', 'weapon', 'element', 'depth', 'branch']) ||
     !isInt(value.tier, 1) || !RPG_WEAPONS.includes(value.weapon as RpgSkillRef['weapon']) ||
     !RPG_ELEMENTS.includes(value.element as RpgElement) || !isInt(value.depth, 1) || value.depth > 5) return null
-  const branches = [['foundation'], ['focused', 'area'], ['committed', 'multi'], ['role', 'hybrid'], ['signature']]
-  if (!branches[value.depth - 1]?.includes(value.branch as string)) return null
+  const branches = RPG_BRANCHES
+  if (!(branches[value.depth - 1] as readonly string[] | undefined)?.includes(value.branch as string)) return null
   return value as unknown as RpgSkillRef
 }
 

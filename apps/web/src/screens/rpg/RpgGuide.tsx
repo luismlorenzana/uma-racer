@@ -21,18 +21,17 @@ export function RpgGuide({ onClose, startAt = 'party' }: { onClose: () => void; 
       <p>Distance A/B picks elements: Sprint → Dark/Light, Mile → Ice/Light, Medium → Fire/Dark, Long → Lightning/Light. B stops at depth {RPG_B_MAX_DEPTH}. Skills open at Lv{RPG_DEPTH_GATES.join(' / ')}.</p>
     </> },
     { id: 'turn', title: 'Taking a turn', body: <>
-      <p>Each Uma acts once a round, in any order. Tap an enemy to <b>Attack</b>, or pick a <b>Skill</b> first. <b>Guard</b> takes half of one hit for an ally. Enemies act after your last Uma.</p>
+      <p>Each Uma acts once a round, in any order. Tap an enemy to <b>Attack</b> with her weapon, or pick a <b>Skill</b> first. <b>Guard</b> takes half of one hit for an ally. Enemies act after your last Uma.</p>
       <p className={card}>Every enemy shows its next move and target. There is no healing: win by knocking the enemy party out first.</p>
     </> },
-    { id: 'weakness', title: 'Weakness, Down and One More', body: <>
-      <div className={`${card} space-y-1`}>{(['fire', 'ice', 'lightning'] as const).map((element, i) => <p key={element} className="flex items-center gap-2"><IdentityGlyph element={element} />{['Fire beats Ice', 'Ice beats Lightning', 'Lightning beats Fire'][i]}</p>)}<p>Light and Dark beat each other.</p></div>
-      <p>A skill that hits a weakness knocks a regular enemy <b>Down</b>: it loses its next turn and you get <b>One More</b> action.</p>
-      <p>With every enemy Down, any Uma can launch an <b>All-Out Attack</b>: the whole party strikes every enemy at once.</p>
+    { id: 'weakness', title: 'Shields and weaknesses', body: <>
+      <p>Every enemy carries a <b>shield</b> number and icons for what it is weak to: one element and two or more weapons.</p>
+      <p className={card}>Attack hits with your weapon (both staves count as Staff). Skills hit with their element. Each hit on a weakness takes one point off the shield and deals 30% more; Twin, Triple, Quad and Barrage skills chip once per hit.</p>
+      <p>Until its shield breaks, an enemy takes only half damage.</p>
     </> },
-    { id: 'bosses', title: 'Shields and breaks', body: <>
-      <p>Sub-bosses and champions carry a <b>shield</b>. While it holds they take little damage. Only weakness hits chip it.</p>
-      <p>At zero the boss is <b>Broken</b>: it loses this round's turn and takes double damage until your next round ends, then its shield returns. Break it, then pile on.</p>
-      <p>Each chapter ends in five champions, one per element. Your route decides which you face; bring Umas that break it.</p>
+    { id: 'bosses', title: 'Break!', body: <>
+      <p>At zero the enemy <b>Breaks</b>: it loses this round's and the next round's turn and takes full damage. Then its shield returns. Chip with attacks and cheap skills, then spend your big skills on the Break.</p>
+      <p>Regular foes carry 2–3 points, sub-bosses 4 and champions 6. Each chapter ends in five champions, one per element; pick the route your party can break.</p>
     </> },
     { id: 'mp', title: 'MP and camps', body: <>
       <p>HP is full at the start of every fight. MP is not: what you spend carries to the next fight.</p>

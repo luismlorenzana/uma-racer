@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBattlePlayback } from './useBattlePlayback'
 
 let frame: FrameRequestCallback | null = null
-const cues: BattleCue[] = [{ kind: 'hit', actorId: 'a', targetId: 'b', amount: 10, channel: 'physical', element: null, matchup: 'neutral' }, { kind: 'ko', actorId: 'a', targetId: 'b' }]
+const cues: BattleCue[] = [{ kind: 'hit', actorId: 'a', targetId: 'b', amount: 10, channel: 'physical', element: null, weak: false }, { kind: 'ko', actorId: 'a', targetId: 'b' }]
 beforeEach(() => {
   frame = null
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)

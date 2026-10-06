@@ -1,5 +1,5 @@
 // Shared campaign building blocks on the dark stage (docs/design/uma-rpg.md#phone-presentation).
-import { rpgTierLevel, type RpgElement } from '@racer/domain'
+import { rpgTierLevel, type BattleWeaknesses, type BattleWeaponKind, type RpgElement, type RpgWeapon } from '@racer/domain'
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import { IdentityGlyph, RPG_ELEMENT_LABELS } from './RpgPortrait'
@@ -63,4 +63,31 @@ export function PrimaryButton({ children, className = '', ...rest }: React.Butto
 }
 export function GhostButton({ children, className = '', ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" className={`flex min-h-11 items-center justify-center rounded-sm border border-hairline-dark px-3 text-[13px] font-semibold text-ink-on-dark disabled:opacity-40 ${className}`} {...rest}>{children}</button>
+}
+
+export const WEAPON_KIND_LABEL: Readonly<Record<BattleWeaponKind, string>> = {
+  greatsword: 'Greatsword', spear: 'Spear', sword: 'Sword', staff: 'Staff', tome: 'Tome',
+}
+const KIND_GLYPH: Readonly<Record<BattleWeaponKind, RpgWeapon>> = {
+  greatsword: 'greatsword', spear: 'spear', sword: 'sword-shield', staff: 'wizard-staff', tome: 'tome',
+}
+export function WeaponKindMark({ kind, className = '' }: { kind: BattleWeaponKind; className?: string }) {
+  return <span role="img" aria-label={WEAPON_KIND_LABEL[kind]} className={`inline-flex items-center ${className}`}><IdentityGlyph weapon={KIND_GLYPH[kind]} /></span>
+}
+
+/** Octopath-style break gauge: the shield count, or BREAK while it is down. */
+export function ShieldBadge({ value, broken = false, className = '' }: { value: number; broken?: boolean; className?: string }) {
+  return <span role="img" aria-label={broken ? 'Broken' : `Shield ${value}`} className={`relative inline-flex h-7 w-6 shrink-0 items-center justify-center ${className}`}>
+    <svg viewBox="0 0 24 28" className={`absolute inset-0 h-full w-full ${broken ? 'text-accent' : 'text-[#9fb4cc]'}`} aria-hidden>
+      <path d="M12 1 2 5v8c0 7 4.5 11.5 10 14 5.5-2.5 10-7 10-14V5L12 1Z" fill="currentColor" opacity={broken ? 0.9 : 0.35} stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+    <span className="relative text-[11px] font-bold leading-none">{broken ? '!' : value}</span>
+  </span>
+}
+
+/** Weakness icons: the element first, then weapon kinds. */
+export function WeaknessIcons({ weaknesses, className = '' }: { weaknesses: BattleWeaknesses; className?: string }) {
+  return <span className={`inline-flex items-center gap-1 ${className}`} aria-label={`Weak to ${[weaknesses.element, ...weaknesses.weapons.map((w) => WEAPON_KIND_LABEL[w])].join(', ')}`}>
+    <ElementMark element={weaknesses.element} />{weaknesses.weapons.map((w) => <WeaponKindMark key={w} kind={w} />)}
+  </span>
 }

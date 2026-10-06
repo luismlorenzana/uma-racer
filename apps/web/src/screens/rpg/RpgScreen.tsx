@@ -4,7 +4,7 @@ import {
   RPG_ELEMENTS, RPG_PARTY_SIZE, RPG_TIER_MAX_LEVEL, STRATEGIES, battleSkillLabel, battleSkillMp, canChangeRpgClass,
   canUseRpgSignature, eligibleRpgCells, projectRpgStats, rpgActiveSlots, rpgAffinities, rpgCampaign, rpgChapterCleared,
   rpgExpToNext, rpgMemberLevel, rpgNodeStatus, rpgRunId, rpgSkillKey, rpgTreePointsEarned, rpgTreePointsSpent,
-  rpgWeaponsForStyle, RPG_DEPTH_GATES, RPG_B_MAX_DEPTH,
+  rpgWeaponsForStyle, RPG_DEPTH_GATES, RPG_B_MAX_DEPTH, RPG_BRANCHES, battleSkillShape,
   type RpgCampaignChapter, type RpgElement, type RpgPresetSaveV1, type RpgProfile, type RpgSkillRef, type RpgWeapon, type Strategy,
 } from '@racer/domain'
 import { liveQuery } from 'dexie'
@@ -43,6 +43,10 @@ export function useRpg(): RpgContextValue {
 
 const title = (value: string) => value[0]!.toUpperCase() + value.slice(1)
 export const pushToast = (message: string) => useGame.getState().pushToast(message)
+const skillReach = (branch: RpgSkillRef['branch']): string => {
+  const { hits, target } = battleSkillShape(branch)
+  return target === 'all' ? 'all foes' : target === 'random' ? `${hits} random hits` : hits > 1 ? `${hits} hits` : 'one foe'
+}
 /** Commits are local; this only nudges the background sync. */
 export async function commit(operation: () => Promise<unknown>): Promise<boolean> {
   try { await operation(); gameRuntime.schedule(); return true }
@@ -215,7 +219,7 @@ function ProfileProgress({ outfitId, profile }: { outfitId: string; profile: Rpg
   const [busy, setBusy] = useState(false)
   const run = (op: () => Promise<unknown>) => { setBusy(true); void commit(op).finally(() => setBusy(false)) }
   const cells = eligibleRpgCells(profile)
-  const branches: Array<[number, RpgSkillRef['branch']]> = [[1, 'foundation'], [2, 'focused'], [2, 'area'], [3, 'committed'], [3, 'multi'], [4, 'role'], [4, 'hybrid'], [5, 'signature']]
+  const branches = RPG_BRANCHES.flatMap((list, index) => list.map((branch) => [index + 1, branch] as [number, RpgSkillRef['branch']]))
   return <div className="mt-4 space-y-3">
     <RpgCard><div className="grid grid-cols-3 gap-2 text-center text-[11px]">
       {([['ATK', stats.atk], ['HP', stats.hp], ['MP', stats.mp], ['DEF', stats.pdef], ['M.DEF', stats.mdef], ['Speed', stats.initiative]] as const).map(([label, value]) =>
@@ -236,7 +240,7 @@ function ProfileProgress({ outfitId, profile }: { outfitId: string; profile: Rpg
           return <button key={branch} type="button" disabled={busy || !canLearn} onClick={() => run(() => learnRpgSkill(outfitId, ref))}
             className={`min-h-14 rounded-sm border px-2 py-1 text-left text-[11px] disabled:opacity-60 ${learned ? 'border-accent bg-accent/10' : 'border-hairline-dark'}`}>
             <span className="block font-semibold">{battleSkillLabel(ref)}{learned ? ` · Lv${learned.level}` : ''}</span>
-            <span className="block text-ink-on-dark-soft">{gate ? `Opens Lv${RPG_DEPTH_GATES[depth - 1]}` : !prior ? 'Needs the depth above' : `${battleSkillMp(ref)} MP · ${branch === 'area' || branch === 'hybrid' ? 'all foes' : branch === 'multi' ? '2 hits' : 'one foe'}`}</span>
+            <span className="block text-ink-on-dark-soft">{gate ? `Opens Lv${RPG_DEPTH_GATES[depth - 1]}` : !prior ? 'Needs the depth above' : `${battleSkillMp(ref)} MP · ${skillReach(branch)}`}</span>
             {canLearn && <span className="block text-accent">{learned ? 'Level up · 1 pt' : 'Learn · 1 pt'}</span>}
           </button>
         })}</div>

@@ -6,10 +6,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RpgGuide } from './RpgGuide'
 vi.mock('motion/react', async original => ({ ...await original<typeof import('motion/react')>(), useReducedMotion: () => true }))
 afterEach(cleanup)
-describe('campaign guide (D261–D263)', () => {
+describe('campaign guide (D261–D265)', () => {
   it('opens the requested contextual page without briefly rendering the party page', () => {
     render(<LazyMotion features={domAnimation} strict><RpgGuide onClose={() => undefined} startAt="weakness" /></LazyMotion>)
-    expect(screen.getByRole('dialog', { name: 'Weakness, Down and One More' })).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: 'Shields and weaknesses' })).toBeTruthy()
     expect(screen.queryByRole('dialog', { name: 'Five Umas, one party' })).toBeNull()
   })
   it('covers all seven pages with the rule constants and closes once', () => {

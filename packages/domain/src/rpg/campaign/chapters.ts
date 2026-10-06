@@ -3,8 +3,9 @@
 // supplies the cast (names and portraits).
 import { SCENARIOS } from '../../scenarios'
 import { RPG_ELEMENTS, type RpgElement } from '../rules'
-import type { BattleEnemy } from '../battle/types'
-import { RPG_FOE_ROLES, rpgFoe, type RpgFoeRole } from './enemies'
+import type { BattleEnemy, BattleWeaponKind } from '../battle/types'
+import { RPG_FOE_ROLES, RPG_FOE_TUNING, rpgFoe, type RpgFoeRole } from './enemies'
+import { BATTLE_WEAPON_KINDS } from '../battle/skills'
 
 export const RPG_CAMPAIGN_VERSION = 1
 export const RPG_CHAPTER_LEVELS = 10
@@ -107,10 +108,14 @@ function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[]): 
     }
     return cast[offset % cast.length]!
   }
+  // Two weapon weaknesses each (three for champions), drawn so a fight's foes rarely share all of them (D265).
+  const weapons = (slot: number, count: number): BattleWeaponKind[] => [...BATTLE_WEAPON_KINDS]
+    .sort((a, b) => hash(`${chapterId}:${node.id}:${slot}:${a}:weak`) - hash(`${chapterId}:${node.id}:${slot}:${b}:weak`)).slice(0, count)
+  const shield = node.stage >= 2 ? RPG_FOE_TUNING.lateRegularShield : RPG_FOE_TUNING.regularShield
   const regular = (slot: number, element: RpgElement, role?: RpgFoeRole): BattleEnemy => {
     const member = castFor(slot)
-    return rpgFoe({ id: `foe${slot + 1}`, castId: member.id, element, rank: 'regular', level: node.level,
-      role: role ?? pick(RPG_FOE_ROLES, `${chapterId}:${node.id}:${slot}:role`) })
+    return rpgFoe({ id: `foe${slot + 1}`, castId: member.id, element, rank: 'regular', level: node.level, shield,
+      weapons: weapons(slot, 2), role: role ?? pick(RPG_FOE_ROLES, `${chapterId}:${node.id}:${slot}:role`) })
   }
   const others = (avoid: RpgElement, slot: number) => pick(RPG_ELEMENTS.filter((e) => e !== avoid), `${chapterId}:${node.id}:${slot}:el`)
   if (node.kind === 'fight') {
@@ -131,7 +136,8 @@ function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[]): 
   used.add(boss.id)
   const minions = node.kind === 'boss' ? 2 : node.stage < 2 ? 1 : 2
   const enemies = [rpgFoe({ id: 'foe1', castId: boss.id, element, rank: node.kind === 'boss' ? 'boss' : 'sub-boss',
-    level: node.level, role: node.kind === 'boss' ? 'champion' : 'captain' }),
+    level: node.level, role: node.kind === 'boss' ? 'champion' : 'captain',
+    shield: node.kind === 'boss' ? RPG_FOE_TUNING.bossShield : RPG_FOE_TUNING.subBossShield, weapons: weapons(0, node.kind === 'boss' ? 3 : 2) }),
   ...Array.from({ length: minions }, (_, i) => regular(i + 1, others(element, i + 1)))]
   return { enemies, lead: boss }
 }

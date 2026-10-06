@@ -1,10 +1,10 @@
-// Campaign balance (D261–D263): a synthetic five-outfit party plays generated chapters with a careful policy and an
+// Campaign balance (D261–D265): a synthetic five-outfit party plays generated chapters with a careful policy and an
 // attack-only policy. No private Uma, cast or chapter content: outfits and cast are invented here.
 import { RPG_ELEMENTS, enrollRpgOutfit, eligibleRpgCells, projectRpgStats, rpgActiveSlots, rpgSkillKey, rpgTreePointsEarned,
   rpgTreePointsSpent, spendRpgTreePoint, RPG_DEPTH_GATES, type RpgElement, type RpgProfile, type RpgSkillRef, type RpgWeapon } from '../../packages/domain/src/rpg/rules'
 import type { Aptitudes, Strategy } from '../../packages/domain/src/types'
-import { applyBattleAction, battleAllOutReady, battleBroken } from '../../packages/domain/src/rpg/battle/engine'
-import { battleMatchup, battleSkill } from '../../packages/domain/src/rpg/battle/skills'
+import { applyBattleAction, battleBroken } from '../../packages/domain/src/rpg/battle/engine'
+import { battleSkill, battleWeaponKind } from '../../packages/domain/src/rpg/battle/skills'
 import type { BattleAction, BattleState } from '../../packages/domain/src/rpg/battle/types'
 import { rpgCampaignChapter, rpgTierLevel, type RpgCampaignChapter, type RpgMapNode } from '../../packages/domain/src/rpg/campaign/chapters'
 import { createBattle } from '../../packages/domain/src/rpg/battle/engine'
@@ -31,18 +31,18 @@ const PARTY: RpgProfile[] = [
 ]
 
 /** Foundations of two A elements, then the signature's deeper branches, then skill levels. */
+/** Two A elements: each runs foundation → Twin → Triple → Quad → Barrage, then single big hits; spare points level skills. */
 function learn(profile: RpgProfile): RpgProfile {
   let p = profile
   const cells = eligibleRpgCells(p)
   const primary = [p.defaultSignature, ...cells.filter((c) => c.affinity === 'A' && c.element !== p.defaultSignature).map((c) => c.element)].slice(0, 2)
+  const line = [[1, 'foundation'], [2, 'double'], [3, 'multi'], [4, 'quad'], [5, 'barrage'], [2, 'focused'], [3, 'committed'], [5, 'signature']] as const
   while (rpgTreePointsSpent(p.tree) < rpgTreePointsEarned(p.level)) {
-    const has = (element: RpgElement, depth: number) => p.tree.some((s) => s.element === element && s.depth === depth)
     const want: RpgSkillRef[] = []
-    for (const element of primary) if (!has(element, 1)) want.push({ tier: p.tier, weapon: p.weapon, element, depth: 1, branch: 'foundation' })
-    for (const [depth, branch] of [[2, 'focused'], [2, 'area'], [3, 'multi'], [4, 'role'], [5, 'signature']] as const) {
-      if (p.level >= RPG_DEPTH_GATES[depth - 1]! && has(p.defaultSignature, depth - 1) && !p.tree.some((s) => s.element === p.defaultSignature && s.branch === branch)) {
-        want.push({ tier: p.tier, weapon: p.weapon, element: p.defaultSignature, depth, branch })
-      }
+    for (const element of primary) for (const [depth, branch] of line) {
+      const max = cells.find((c) => c.element === element)?.maxDepth ?? 0
+      if (depth <= max && p.level >= RPG_DEPTH_GATES[depth - 1]! && !p.tree.some((s) => s.element === element && s.branch === branch) &&
+        (depth === 1 || p.tree.some((s) => s.element === element && s.depth === depth - 1))) want.push({ tier: p.tier, weapon: p.weapon, element, depth, branch })
     }
     const upgrade = [...p.tree].filter((s) => s.level < 5).sort((a, b) => b.depth - a.depth)[0]
     const ref = want[0] ?? upgrade
@@ -56,39 +56,34 @@ const loadout = (p: RpgProfile): RpgSkillRef[] => [...p.tree].sort((a, b) => b.d
 
 type Policy = 'careful' | 'attack-only'
 function chooseAction(state: BattleState, policy: Policy, boss: boolean, skillsUsed: Map<string, number>): BattleAction {
-  const allies = state.units.filter((u) => u.side === 'ally' && u.hp > 0 && !state.acted.includes(u.id))
+  const actor = state.units.find((u) => u.side === 'ally' && u.hp > 0 && !state.acted.includes(u.id))!
+  const ally = state.input.allies.find((a) => a.id === actor.id)!
   const foes = state.units.filter((u) => u.side === 'enemy' && u.hp > 0)
-  if (battleAllOutReady(state)) return { kind: 'all-out', actorId: allies[0]!.id }
-  const rank = (id: string) => state.input.enemies.find((e) => e.id === id)!.rank
+  const enemy = (id: string) => state.input.enemies.find((e) => e.id === id)!
+  const lowest = (list: typeof foes) => [...list].sort((a, b) => a.hp - b.hp || a.id.localeCompare(b.id))[0]!
   if (policy === 'careful') {
-    for (const actor of allies) {
-      const ally = state.input.allies.find((a) => a.id === actor.id)!
-      if (!boss && (skillsUsed.get(actor.id) ?? 0) >= 1) continue
-      for (const ref of ally.loadout) {
-        const skill = battleSkill(ref)
-        if (actor.mp < skill.mp) continue
-        const targets = foes.filter((f) => battleMatchup(skill.element, state.input.enemies.find((e) => e.id === f.id)!.element) === 'weak' &&
-          (rank(f.id) === 'regular' ? !f.down : f.shield > 0 && !battleBroken(f)))
-        if (!targets.length || (skill.area && targets.length < 2)) continue
-        skillsUsed.set(actor.id, (skillsUsed.get(actor.id) ?? 0) + 1)
-        return { kind: 'skill', actorId: actor.id, targetId: targets[0]!.id, skill: ref }
-      }
+    const skills = ally.loadout.map((ref) => ({ ref, s: battleSkill(ref) })).filter(({ s }) => actor.mp >= s.mp)
+    const spare = (cost: number) => boss || actor.mp - cost >= 0.3 * ally.stats.mp
+    // A Break is the moment for big skills.
+    const broken = foes.filter((f) => battleBroken(f))
+    if (broken.length) {
+      const target = lowest(broken)
+      const best = skills.filter(({ s }) => s.target !== 'all' && spare(s.mp)).sort((a, b) => b.s.power * b.s.hits - a.s.power * a.s.hits)[0]
+      return best ? { kind: 'skill', actorId: actor.id, targetId: target.id, skill: best.ref } : { kind: 'attack', actorId: actor.id, targetId: target.id }
     }
-    const broken = foes.find((f) => battleBroken(f))
-    if (boss && broken) {
-      for (const actor of allies) {
-        const ally = state.input.allies.find((a) => a.id === actor.id)!
-        const ref = ally.loadout.map((r) => ({ r, s: battleSkill(r) })).filter(({ s }) => !s.area && actor.mp >= s.mp &&
-          battleMatchup(s.element, state.input.enemies.find((e) => e.id === broken.id)!.element) !== 'resist').sort((a, b) => b.s.power - a.s.power)[0]
-        if (ref) return { kind: 'skill', actorId: actor.id, targetId: broken.id, skill: ref.r }
-      }
+    // Chip shields: a weak weapon Attack is free; a weak multi-hit skill chips faster.
+    const unbroken = foes.filter((f) => f.shield > 0).sort((a, b) => a.shield - b.shield)
+    const byWeapon = unbroken.find((f) => enemy(f.id).weaknesses.weapons.includes(battleWeaponKind(ally.weapon)))
+    const used = skillsUsed.get(actor.id) ?? 0
+    const bySkill = unbroken.flatMap((f) => skills.filter(({ s }) => s.element === enemy(f.id).weaknesses.element && spare(s.mp))
+      .map((x) => ({ f, ...x }))).sort((a, b) => b.s.hits - a.s.hits)[0]
+    if (bySkill && (!byWeapon || bySkill.f.shield > 1) && (boss || used < 2)) {
+      skillsUsed.set(actor.id, used + 1)
+      return { kind: 'skill', actorId: actor.id, targetId: bySkill.f.id, skill: bySkill.ref }
     }
+    if (byWeapon) return { kind: 'attack', actorId: actor.id, targetId: byWeapon.id }
   }
-  const actor = allies[0]!
-  const minions = foes.filter((f) => rank(f.id) === 'regular')
-  const pool = boss && minions.length && !foes.some((f) => battleBroken(f)) ? minions : foes
-  const target = pool.find((f) => battleBroken(f)) ?? [...pool].sort((a, b) => a.hp - b.hp || a.id.localeCompare(b.id))[0]!
-  return { kind: 'attack', actorId: actor.id, targetId: target.id }
+  return { kind: 'attack', actorId: actor.id, targetId: lowest(foes).id }
 }
 
 interface Fight { node: RpgMapNode; win: boolean; rounds: number; actions: number; kos: number; mpBefore: number; mpAfter: number; hpLost: number; level: number }

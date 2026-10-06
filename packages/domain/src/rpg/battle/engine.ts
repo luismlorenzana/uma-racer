@@ -1,17 +1,18 @@
-// Deterministic campaign battle reducer, engine v2 (docs/design/uma-rpg.md#battles, D261).
-// Persona-style: a weakness knocks a regular foe Down and grants the attacker One More; with every foe Down or
-// Broken the party may All-Out Attack. Bosses carry a break shield that only weakness hits lower.
+// Deterministic campaign battle reducer, engine v3 (docs/design/uma-rpg.md#battles, D265).
+// Octopath Traveler breaks: every foe has a shield and weaknesses (one element, two or more weapon kinds). Each hit of
+// a weak kind chips one point; Attack counts as its weapon. Unbroken foes take half damage; at zero they Break, lose
+// that round's and the next round's action, take full damage, then raise their shield again.
 import { RPG_DEPTH_GATES, RPG_ELEMENTS, rpgActiveSlots, rpgSkillKey, rpgTreePointsEarned, rpgTreePointsSpent,
   rpgWeaponsForStyle, type RpgElement, type RpgSkillRef } from '../rules'
 import {
-  BATTLE_ALL_OUT_POWER, BATTLE_ATTACK_POWER, BATTLE_BROKEN_FACTOR, BATTLE_BUFF_PERCENT, BATTLE_BURN_PERCENT,
-  BATTLE_DEFENSE_SHARE, BATTLE_GUARD_FACTOR, BATTLE_MARK_PERCENT, BATTLE_MAX_ROUNDS, BATTLE_MIN_OFFENSE_SHARE,
-  BATTLE_RESIST, BATTLE_SHIELDED_FACTOR, BATTLE_SKILL_LEVEL_STEP, BATTLE_STATUS_STACK_CAP, BATTLE_STATUS_TURNS,
-  BATTLE_WEAK, battleChannel, battleMatchup, battleSignatureFactor, battleSkill, type BattleSkill,
+  BATTLE_ATTACK_POWER, BATTLE_BREAK_ROUNDS, BATTLE_BUFF_PERCENT, BATTLE_BURN_PERCENT, BATTLE_DEFENSE_SHARE,
+  BATTLE_GUARD_FACTOR, BATTLE_MARK_PERCENT, BATTLE_MAX_ROUNDS, BATTLE_MIN_OFFENSE_SHARE, BATTLE_SKILL_LEVEL_STEP,
+  BATTLE_STATUS_STACK_CAP, BATTLE_STATUS_TURNS, BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK, BATTLE_WEAPON_KINDS,
+  battleChannel, battleSignatureFactor, battleSkill, battleWeaponKind, type BattleSkill,
 } from './skills'
 import { RPG_MAX_TREE_NODES } from '../save'
 import type { BattleAction, BattleAlly, BattleChannel, BattleCue, BattleEnemy, BattleEnemyMove, BattleError,
-  BattleInput, BattleIntent, BattleSide, BattleState, BattleStatusKind, BattleStep, BattleUnit } from './types'
+  BattleInput, BattleIntent, BattleSide, BattleState, BattleStatusKind, BattleStep, BattleUnit, BattleWeaponKind } from './types'
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,127}$/
 const safeInt = (v: unknown, min: number, max: number): v is number => Number.isSafeInteger(v) && (v as number) >= min && (v as number) <= max
@@ -32,7 +33,7 @@ function stable(value: unknown): string {
   return JSON.stringify(value)
 }
 export function battleStateHash(state: BattleState): string {
-  return `rpg-battle-v2:${hashNumber(stable(state)).toString(16).padStart(8, '0')}`
+  return `rpg-battle-v3:${hashNumber(stable(state)).toString(16).padStart(8, '0')}`
 }
 
 const unit = (s: BattleState, id: string) => s.units.find((u) => u.id === id)
@@ -41,7 +42,6 @@ const enemyOf = (s: BattleState, id: string) => s.input.enemies.find((e) => e.id
 const living = (s: BattleState, side: BattleSide) => s.units.filter((u) => u.side === side && u.hp > 0)
 const maxHp = (s: BattleState, id: string) => allyOf(s, id)?.stats.hp ?? enemyOf(s, id)!.stats.hp
 const stacks = (u: BattleUnit, kind: BattleStatusKind) => u.statuses.find((x) => x.kind === kind)?.stacks ?? 0
-const isBoss = (s: BattleState, id: string) => (enemyOf(s, id)?.rank ?? 'regular') !== 'regular'
 export const battleBroken = (u: BattleUnit): boolean => u.brokenAt > 0
 
 function addStatus(target: BattleUnit, kind: BattleStatusKind): void {
@@ -86,17 +86,19 @@ function validAlly(a: BattleAlly): boolean {
     keys.every((k) => learned.some((s) => rpgSkillKey(s) === k))
 }
 function validEnemy(e: BattleEnemy): boolean {
+  const w = e.weaknesses
   return SAFE_ID.test(e.id) && SAFE_ID.test(e.castId) && RPG_ELEMENTS.includes(e.element) &&
     ['regular', 'sub-boss', 'boss'].includes(e.rank) && safeInt(e.level, 1, 1_000_000) &&
-    validStats(e.stats as unknown as Record<string, unknown>, ENEMY_STATS) &&
-    (e.rank === 'regular' ? e.shield === 0 : safeInt(e.shield, 1, 20)) &&
+    validStats(e.stats as unknown as Record<string, unknown>, ENEMY_STATS) && safeInt(e.shield, 1, 20) &&
+    !!w && RPG_ELEMENTS.includes(w.element) && Array.isArray(w.weapons) && w.weapons.length >= 1 && w.weapons.length <= 5 &&
+    w.weapons.every((k) => BATTLE_WEAPON_KINDS.includes(k)) && new Set(w.weapons).size === w.weapons.length &&
     Array.isArray(e.moves) && e.moves.length >= 1 && e.moves.length <= 8 && e.moves.every(validMove) &&
     new Set(e.moves.map((m) => m.id)).size === e.moves.length &&
     (e.phaseTwo === undefined || (safeInt(e.phaseTwo.thresholdPercent, 1, 99) && e.phaseTwo.moves.length >= 1 &&
       e.phaseTwo.moves.length <= 8 && e.phaseTwo.moves.every(validMove)))
 }
 function validateInput(input: BattleInput): void {
-  if (!input || input.version !== 2 || !safeInt(input.seed, 0, 0xffff_ffff) || !Array.isArray(input.allies) ||
+  if (!input || input.version !== 3 || !safeInt(input.seed, 0, 0xffff_ffff) || !Array.isArray(input.allies) ||
     input.allies.length !== 5 || !Array.isArray(input.enemies) || input.enemies.length < 1 || input.enemies.length > 5) {
     throw new RangeError('Invalid battle header')
   }
@@ -149,11 +151,11 @@ export function createBattle(source: BattleInput): BattleStep {
   const input = JSON.parse(JSON.stringify(source)) as BattleInput
   const units: BattleUnit[] = [
     ...input.allies.map((a) => ({ id: a.id, side: 'ally' as const, hp: a.stats.hp, mp: a.mp, statuses: [], phase: 1 as const,
-      guardingFor: null, down: false, shield: 0, brokenAt: 0 })),
+      guardingFor: null, shield: 0, brokenAt: 0 })),
     ...input.enemies.map((e) => ({ id: e.id, side: 'enemy' as const, hp: e.stats.hp, mp: 0, statuses: [], phase: 1 as const,
-      guardingFor: null, down: false, shield: e.shield, brokenAt: 0 })),
+      guardingFor: null, shield: e.shield, brokenAt: 0 })),
   ]
-  const state: BattleState = { engineVersion: 2, input, round: 1, units, acted: [], intents: [], outcome: 'active' }
+  const state: BattleState = { engineVersion: 3, input, round: 1, units, acted: [], intents: [], outcome: 'active' }
   state.intents = intentsFor(state)
   return { state, cues: reveal(state), hash: battleStateHash(state) }
 }
@@ -166,15 +168,20 @@ function defenseOf(s: BattleState, id: string, channel: BattleChannel): number {
   const stats = allyOf(s, id)?.stats ?? enemyOf(s, id)!.stats
   return channel === 'physical' ? stats.pdef : stats.mdef
 }
-const elementOf = (s: BattleState, id: string): RpgElement => enemyOf(s, id)?.element ?? allyOf(s, id)!.signature
+
+/** A hit is weak when its element or (for Attack) its weapon kind is on the foe's list. */
+export function battleHitIsWeak(enemy: BattleEnemy, element: RpgElement | null, weapon: BattleWeaponKind | null): boolean {
+  return (element !== null && enemy.weaknesses.element === element) || (weapon !== null && enemy.weaknesses.weapons.includes(weapon))
+}
 
 /** One hit's final amount; shared by live play, previews and the simulator. */
 export function battleDamage(s: BattleState, attacker: BattleUnit, defender: BattleUnit, channel: BattleChannel,
-  power: number, element: RpgElement | null, skillLevel = 1): { amount: number; matchup: 'weak' | 'resist' | 'neutral' } {
+  power: number, element: RpgElement | null, weapon: BattleWeaponKind | null, skillLevel = 1): { amount: number; weak: boolean } {
   const offense = offenseOf(s, attacker.id, channel)
-  const raw = Math.max(offense * BATTLE_MIN_OFFENSE_SHARE, offense - defenseOf(s, defender.id, channel) * BATTLE_DEFENSE_SHARE) * power
-  const matchup = battleMatchup(element, elementOf(s, defender.id))
-  let amount = raw * (matchup === 'weak' ? BATTLE_WEAK : matchup === 'resist' ? BATTLE_RESIST : 1)
+  let amount = Math.max(offense * BATTLE_MIN_OFFENSE_SHARE, offense - defenseOf(s, defender.id, channel) * BATTLE_DEFENSE_SHARE) * power
+  const foe = defender.side === 'enemy' ? enemyOf(s, defender.id)! : null
+  const weak = !!foe && attacker.side === 'ally' && battleHitIsWeak(foe, element, weapon)
+  if (weak) amount *= BATTLE_WEAK
   amount *= 1 + (skillLevel - 1) * BATTLE_SKILL_LEVEL_STEP
   amount *= 1 + stacks(attacker, 'power-up') * BATTLE_BUFF_PERCENT
   amount *= 1 - stacks(attacker, 'weaken') * BATTLE_BUFF_PERCENT
@@ -183,10 +190,8 @@ export function battleDamage(s: BattleState, attacker: BattleUnit, defender: Bat
   amount *= 1 - stacks(defender, 'ward') * BATTLE_BUFF_PERCENT
   const ally = allyOf(s, attacker.id)
   if (ally) amount *= battleSignatureFactor(ally.signature, element)
-  if (defender.side === 'enemy' && isBoss(s, defender.id)) {
-    amount *= battleBroken(defender) ? BATTLE_BROKEN_FACTOR : defender.shield > 0 ? BATTLE_SHIELDED_FACTOR : 1
-  }
-  return { amount: Math.max(1, Math.round(amount)), matchup }
+  if (foe && !battleBroken(defender)) amount *= BATTLE_UNBROKEN_FACTOR
+  return { amount: Math.max(1, Math.round(amount)), weak }
 }
 
 function guardOf(s: BattleState, target: BattleUnit): BattleUnit {
@@ -202,31 +207,23 @@ function terminal(s: BattleState, cues: BattleCue[]): boolean {
   return true
 }
 
-/** Applies one hit; returns whether a regular foe was newly knocked Down. */
+/** Applies one hit; a weak hit on a standing shield chips it and may Break the foe. */
 function strike(s: BattleState, actor: BattleUnit, target: BattleUnit, channel: BattleChannel, power: number,
-  element: RpgElement | null, level: number, shieldDamage: number, cues: BattleCue[], intercept: boolean): boolean {
+  element: RpgElement | null, weapon: BattleWeaponKind | null, level: number, cues: BattleCue[], intercept: boolean): void {
   const receiver = intercept ? guardOf(s, target) : target
-  const result = battleDamage(s, actor, receiver, channel, power, element, level)
+  const result = battleDamage(s, actor, receiver, channel, power, element, weapon, level)
   const amount = receiver !== target ? Math.max(1, Math.round(result.amount * BATTLE_GUARD_FACTOR)) : result.amount
   receiver.hp = Math.max(0, receiver.hp - amount)
-  cues.push({ kind: 'hit', actorId: actor.id, targetId: receiver.id, amount, channel, element, matchup: result.matchup,
+  cues.push({ kind: 'hit', actorId: actor.id, targetId: receiver.id, amount, channel, element, weak: result.weak,
     label: receiver !== target ? 'Intercepted' : undefined })
-  if (receiver.hp === 0) { cues.push({ kind: 'ko', actorId: actor.id, targetId: receiver.id }); return false }
-  if (result.matchup !== 'weak' || receiver.side !== 'enemy') return false
-  if (isBoss(s, receiver.id)) {
-    if (battleBroken(receiver) || receiver.shield === 0) return false
-    receiver.shield = Math.max(0, receiver.shield - shieldDamage)
-    cues.push({ kind: 'shield', actorId: actor.id, targetId: receiver.id, amount: receiver.shield })
-    if (receiver.shield === 0) {
-      receiver.brokenAt = s.round
-      cues.push({ kind: 'break', actorId: actor.id, targetId: receiver.id })
-    }
-    return false
+  if (receiver.hp === 0) { cues.push({ kind: 'ko', actorId: actor.id, targetId: receiver.id }); return }
+  if (!result.weak || battleBroken(receiver) || receiver.shield === 0) return
+  receiver.shield -= 1
+  cues.push({ kind: 'shield', actorId: actor.id, targetId: receiver.id, amount: receiver.shield })
+  if (receiver.shield === 0) {
+    receiver.brokenAt = s.round
+    cues.push({ kind: 'break', actorId: actor.id, targetId: receiver.id })
   }
-  if (receiver.down) return false
-  receiver.down = true
-  cues.push({ kind: 'down', actorId: actor.id, targetId: receiver.id })
-  return true
 }
 
 function updatePhases(s: BattleState, cues: BattleCue[]): void {
@@ -248,19 +245,13 @@ function resolveEnemies(s: BattleState, cues: BattleCue[]): void {
   for (const intent of s.intents) {
     const actor = unit(s, intent.enemyId)
     if (!actor || actor.hp <= 0 || !living(s, 'ally').length) continue
-    if (actor.down) { cues.push({ kind: 'skip', actorId: actor.id, targetId: actor.id, label: 'Down' }); continue }
-    if (battleBroken(actor)) {
-      if (actor.brokenAt === s.round) { cues.push({ kind: 'skip', actorId: actor.id, targetId: actor.id, label: 'Broken' }); continue }
-      actor.brokenAt = 0
-      actor.shield = enemyOf(s, actor.id)!.shield
-      cues.push({ kind: 'recover', actorId: actor.id, targetId: actor.id, amount: actor.shield })
-    }
+    if (battleBroken(actor)) { cues.push({ kind: 'skip', actorId: actor.id, targetId: actor.id, label: 'Broken' }); continue }
     const source = enemyOf(s, actor.id)!
     const move = movesOf(s, actor).find((m) => m.id === intent.moveId)
     if (!move) throw new RangeError('Frozen intent no longer matches phase')
     if (move.kind === 'damage' && move.target === 'all') {
       for (const target of living(s, 'ally')) {
-        strike(s, actor, target, move.channel, move.power / 100, move.element, 1, 0, cues, false)
+        strike(s, actor, target, move.channel, move.power / 100, move.element, null, 1, cues, false)
         if (target.hp > 0 && move.status) { addStatus(target, move.status); cues.push({ kind: 'status', actorId: actor.id, targetId: target.id, label: move.status }) }
       }
     } else if (move.kind === 'damage' || move.kind === 'debuff') {
@@ -268,7 +259,7 @@ function resolveEnemies(s: BattleState, cues: BattleCue[]): void {
       const target = chosen && chosen.hp > 0 ? chosen : unit(s, chooseTarget(s, source, move))
       if (!target) continue
       if (target.id !== intent.targetId) cues.push({ kind: 'intent', actorId: actor.id, targetId: target.id, label: 'Retarget' })
-      if (move.kind === 'damage') strike(s, actor, target, move.channel, move.power / 100, move.element, 1, 0, cues, true)
+      if (move.kind === 'damage') strike(s, actor, target, move.channel, move.power / 100, move.element, null, 1, cues, true)
       if (target.hp > 0 && move.status) { addStatus(target, move.status); cues.push({ kind: 'status', actorId: actor.id, targetId: target.id, label: move.status }) }
     } else if (move.kind === 'guard') {
       const ward = unit(s, chooseTarget(s, source, move))!
@@ -281,16 +272,20 @@ function resolveEnemies(s: BattleState, cues: BattleCue[]): void {
     }
     if (terminal(s, cues)) return
   }
-  // Downed foes stand; guards lapse; burn ticks before durations decay.
+  // A break ends after its second enemy phase; guards lapse; burn ticks before durations decay.
   for (const u of s.units) {
-    u.down = false
     if (u.side === 'ally') u.guardingFor = null
     if (u.hp <= 0) continue
+    if (u.side === 'enemy' && battleBroken(u) && s.round >= u.brokenAt + BATTLE_BREAK_ROUNDS - 1) {
+      u.brokenAt = 0
+      u.shield = enemyOf(s, u.id)!.shield
+      cues.push({ kind: 'recover', actorId: u.id, targetId: u.id, amount: u.shield })
+    }
     const burn = stacks(u, 'burn')
     if (burn) {
       const amount = Math.max(1, Math.round(maxHp(s, u.id) * BATTLE_BURN_PERCENT * burn))
       u.hp = Math.max(0, u.hp - amount)
-      cues.push({ kind: 'hit', actorId: u.id, targetId: u.id, amount, channel: 'status', element: 'fire', matchup: 'neutral', label: 'Burn' })
+      cues.push({ kind: 'hit', actorId: u.id, targetId: u.id, amount, channel: 'status', element: 'fire', weak: false, label: 'Burn' })
       if (u.hp === 0) cues.push({ kind: 'ko', actorId: u.id, targetId: u.id })
     }
     u.statuses = u.statuses.map((x) => ({ ...x, turns: x.turns - 1 })).filter((x) => x.turns > 0)
@@ -310,12 +305,6 @@ function resolveEnemies(s: BattleState, cues: BattleCue[]): void {
 
 function invalid(s: BattleState, error: BattleError): BattleStep { return { state: s, cues: [], hash: battleStateHash(s), error } }
 
-/** Every living foe is Down or Broken: the party can All-Out Attack. */
-export function battleAllOutReady(s: BattleState): boolean {
-  const foes = living(s, 'enemy')
-  return s.outcome === 'active' && foes.length > 0 && foes.every((u) => u.down || battleBroken(u))
-}
-
 /** Skill the actor may use: learned, slotted, legal for its affinity and tier. */
 export function battleActorSkill(s: BattleState, actorId: string, ref: RpgSkillRef): { skill: BattleSkill; level: number } | null {
   const a = allyOf(s, actorId)
@@ -328,74 +317,63 @@ export function battleActorSkill(s: BattleState, actorId: string, ref: RpgSkillR
   return { skill: battleSkill(ref), level: learned.level }
 }
 
+/** Random-target hits are seeded by the fight, round, actor and hit, so a replay lands the same hits. */
+function randomFoe(s: BattleState, actorId: string, hit: number): BattleUnit | undefined {
+  const foes = living(s, 'enemy')
+  return foes[hashNumber(`${s.input.seed}:${s.round}:${actorId}:${s.acted.length}:${hit}:barrage`) % Math.max(1, foes.length)]
+}
+
 export function applyBattleAction(previous: BattleState, action: BattleAction): BattleStep {
-  if (previous.engineVersion !== 2 || !previous.input || !Array.isArray(previous.units)) return invalid(previous, 'invalid-state')
+  if (previous.engineVersion !== 3 || !previous.input || !Array.isArray(previous.units)) return invalid(previous, 'invalid-state')
   if (previous.outcome !== 'active') return invalid(previous, 'terminal')
-  if (!action || !['attack', 'guard', 'skill', 'all-out'].includes(action.kind)) return invalid(previous, 'invalid-state')
+  if (!action || !['attack', 'guard', 'skill'].includes(action.kind)) return invalid(previous, 'invalid-state')
   const actorUnit = unit(previous, action.actorId)
   if (!actorUnit || actorUnit.side !== 'ally' || actorUnit.hp <= 0) return invalid(previous, 'invalid-actor')
   if (previous.acted.includes(actorUnit.id)) return invalid(previous, 'already-acted')
+  const targetUnit = unit(previous, action.targetId)
+  if (!targetUnit || targetUnit.hp <= 0) return invalid(previous, 'invalid-target')
   const s = clone(previous)
   const actor = unit(s, actorUnit.id)!
+  const target = unit(s, targetUnit.id)!
+  const ally = allyOf(s, actor.id)!
   const cues: BattleCue[] = []
-  if (action.kind === 'all-out') {
-    if (!battleAllOutReady(previous)) return invalid(previous, 'all-out-unavailable')
-    cues.push({ kind: 'all-out', actorId: actor.id, targetId: actor.id })
-    const party = living(s, 'ally')
-    for (const foe of living(s, 'enemy')) {
-      let total = 0
-      for (const member of party) {
-        total += battleDamage(s, member, foe, battleChannel(allyOf(s, member.id)!.weapon), BATTLE_ALL_OUT_POWER, null).amount
-      }
-      foe.hp = Math.max(0, foe.hp - total)
-      cues.push({ kind: 'hit', actorId: actor.id, targetId: foe.id, amount: total, channel: 'physical', element: null, matchup: 'neutral', label: 'All-Out' })
-      if (foe.hp === 0) cues.push({ kind: 'ko', actorId: actor.id, targetId: foe.id })
-    }
-    for (const member of party) if (!s.acted.includes(member.id)) s.acted.push(member.id)
+  if (action.kind === 'guard') {
+    if (target.side !== 'ally' || target.id === actor.id) return invalid(previous, 'invalid-target')
+    actor.guardingFor = target.id
+    cues.push({ kind: 'guard', actorId: actor.id, targetId: target.id })
+  } else if (action.kind === 'attack') {
+    if (target.side !== 'enemy') return invalid(previous, 'invalid-target')
+    strike(s, actor, target, battleChannel(ally.weapon), BATTLE_ATTACK_POWER, null, battleWeaponKind(ally.weapon), 1, cues, true)
   } else {
-    const targetUnit = unit(s, action.targetId)
-    if (!targetUnit || targetUnit.hp <= 0) return invalid(previous, 'invalid-target')
-    if (action.kind === 'guard') {
-      if (targetUnit.side !== 'ally' || targetUnit.id === actor.id) return invalid(previous, 'invalid-target')
-      actor.guardingFor = targetUnit.id
-      cues.push({ kind: 'guard', actorId: actor.id, targetId: targetUnit.id })
-      s.acted.push(actor.id)
-    } else if (action.kind === 'attack') {
-      if (targetUnit.side !== 'enemy') return invalid(previous, 'invalid-target')
-      strike(s, actor, targetUnit, battleChannel(allyOf(s, actor.id)!.weapon), BATTLE_ATTACK_POWER, null, 1, 0, cues, true)
-      s.acted.push(actor.id)
-    } else {
-      if (!action.skill || typeof action.skill !== 'object') return invalid(previous, 'invalid-skill')
-      const legal = battleActorSkill(s, actor.id, action.skill)
-      if (!legal) return invalid(previous, 'invalid-skill')
-      if (targetUnit.side !== 'enemy') return invalid(previous, 'invalid-target')
-      const { skill, level } = legal
-      if (actor.mp < skill.mp) return invalid(previous, 'insufficient-mp')
-      actor.mp -= skill.mp
-      let downed = false
-      const targets = skill.area ? living(s, 'enemy') : [targetUnit]
-      for (const target of targets) {
-        for (let hit = 0; hit < skill.hits && target.hp > 0; hit += 1) {
-          downed = strike(s, actor, target, skill.channel, skill.power, skill.element, level, skill.shield, cues, !skill.area) || downed
-        }
-        const receiver = skill.area ? target : guardOf(s, target)
-        if (receiver.hp > 0 && skill.status && battleMatchup(skill.element, elementOf(s, receiver.id)) !== 'resist') {
-          addStatus(receiver, skill.status)
-          cues.push({ kind: 'status', actorId: actor.id, targetId: receiver.id, label: skill.status })
-        }
-        if (skill.element === 'light' && receiver.hp > 0 && stacks(receiver, 'ward')) {
-          receiver.statuses = receiver.statuses.filter((x) => x.kind !== 'ward')
-          cues.push({ kind: 'status', actorId: actor.id, targetId: receiver.id, label: 'ward broken' })
-        }
+    if (!action.skill || typeof action.skill !== 'object') return invalid(previous, 'invalid-skill')
+    const legal = battleActorSkill(s, actor.id, action.skill)
+    if (!legal) return invalid(previous, 'invalid-skill')
+    if (target.side !== 'enemy') return invalid(previous, 'invalid-target')
+    const { skill, level } = legal
+    if (actor.mp < skill.mp) return invalid(previous, 'insufficient-mp')
+    actor.mp -= skill.mp
+    const struck = new Set<BattleUnit>()
+    const hitOnce = (foe: BattleUnit, intercept: boolean) => {
+      strike(s, actor, foe, skill.channel, skill.power, skill.element, null, level, cues, intercept)
+      struck.add(intercept ? guardOf(s, foe) : foe)
+    }
+    if (skill.target === 'all') for (const foe of living(s, 'enemy')) hitOnce(foe, false)
+    else if (skill.target === 'random') {
+      for (let hit = 0; hit < skill.hits && living(s, 'enemy').length; hit += 1) hitOnce(randomFoe(s, actor.id, hit)!, false)
+    } else for (let hit = 0; hit < skill.hits && target.hp > 0; hit += 1) hitOnce(target, true)
+    for (const foe of struck) {
+      if (foe.hp > 0 && skill.status) { addStatus(foe, skill.status); cues.push({ kind: 'status', actorId: actor.id, targetId: foe.id, label: skill.status }) }
+      if (skill.element === 'light' && foe.hp > 0 && stacks(foe, 'ward')) {
+        foe.statuses = foe.statuses.filter((x) => x.kind !== 'ward')
+        cues.push({ kind: 'status', actorId: actor.id, targetId: foe.id, label: 'ward broken' })
       }
-      if (skill.support) {
-        for (const friend of living(s, 'ally')) addStatus(friend, skill.support)
-        cues.push({ kind: 'status', actorId: actor.id, targetId: actor.id, label: `party ${skill.support}` })
-      }
-      if (downed && living(s, 'enemy').length) cues.push({ kind: 'one-more', actorId: actor.id, targetId: actor.id })
-      else s.acted.push(actor.id)
+    }
+    if (skill.support) {
+      for (const friend of living(s, 'ally')) addStatus(friend, skill.support)
+      cues.push({ kind: 'status', actorId: actor.id, targetId: actor.id, label: `party ${skill.support}` })
     }
   }
+  s.acted.push(actor.id)
   if (!terminal(s, cues)) {
     updatePhases(s, cues)
     if (living(s, 'ally').every((u) => s.acted.includes(u.id))) resolveEnemies(s, cues)
@@ -404,7 +382,7 @@ export function applyBattleAction(previous: BattleState, action: BattleAction): 
 }
 
 export function replayBattle(input: BattleInput, actions: readonly BattleAction[]): BattleStep {
-  if (actions.length > BATTLE_MAX_ROUNDS * 15) throw new RangeError('Battle replay is too long')
+  if (actions.length > BATTLE_MAX_ROUNDS * 5) throw new RangeError('Battle replay is too long')
   let result = createBattle(input)
   const cues = [...result.cues]
   for (const action of actions) {

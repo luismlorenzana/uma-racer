@@ -1,7 +1,6 @@
-// Read-only projections of the engine for the fight screen: legal choices, previews and cue text (D261).
-import { applyBattleAction, battleActorSkill, battleAllOutReady, battleBroken, battleSkill, battleWeakness,
-  type BattleAction, type BattleCue, type BattleSkill, type BattleState, type RpgElement, type RpgSkillRef } from '@racer/domain'
-import { RPG_ELEMENT_LABELS } from './RpgPortrait'
+// Read-only projections of the engine for the fight screen: legal choices, previews and cue text (D265).
+import { applyBattleAction, battleActorSkill, battleBroken, battleWeaponKind,
+  type BattleAction, type BattleCue, type BattleEnemy, type BattleSkill, type BattleState, type RpgSkillRef } from '@racer/domain'
 
 export type BattleMode = { kind: 'attack' } | { kind: 'guard' } | { kind: 'skill'; ref: RpgSkillRef }
 
@@ -20,44 +19,40 @@ export function actionFor(mode: BattleMode, actorId: string, targetId: string): 
   return mode.kind === 'skill' ? { kind: 'skill', actorId, targetId, skill: mode.ref } : { kind: mode.kind, actorId, targetId }
 }
 
-export interface TargetPreview { amount: number; matchup: 'weak' | 'resist' | 'neutral'; down: boolean; shieldHit: boolean; error?: string }
-/** Runs the action on a copy; only this action's first hit on the target is read. */
+export interface TargetPreview { amount: number; weak: boolean; chips: number; breaks: boolean; error?: string }
+/** Runs the action on a copy and totals this action's hits on the target. */
 export function previewTarget(state: BattleState, actorId: string, mode: BattleMode, targetId: string): TargetPreview | null {
   const step = applyBattleAction(state, actionFor(mode, actorId, targetId))
-  if (step.error) return { amount: 0, matchup: 'neutral', down: false, shieldHit: false, error: step.error }
-  const hits = step.cues.flatMap((c) => c.kind === 'hit' && c.actorId === actorId ? [c] : [])
-  const hit = hits.find((c) => c.targetId === targetId) ?? hits[0]
-  if (!hit) return mode.kind === 'guard' ? { amount: 0, matchup: 'neutral', down: false, shieldHit: false } : null
-  const total = hits.filter((c) => c.targetId === hit.targetId).reduce((sum, c) => sum + c.amount, 0)
-  return { amount: total, matchup: hit.matchup, down: step.cues.some((c) => c.kind === 'down' && c.targetId === targetId),
-    shieldHit: step.cues.some((c) => c.kind === 'shield' && c.targetId === targetId) }
+  if (step.error) return { amount: 0, weak: false, chips: 0, breaks: false, error: step.error }
+  const own = step.cues.filter((c) => c.kind !== 'intent' && 'actorId' in c && c.actorId === actorId && 'targetId' in c && c.targetId === targetId)
+  const hits = own.flatMap((c) => c.kind === 'hit' ? [c] : [])
+  if (!hits.length) return mode.kind === 'guard' ? { amount: 0, weak: false, chips: 0, breaks: false } : null
+  return { amount: hits.reduce((sum, c) => sum + c.amount, 0), weak: hits.some((c) => c.weak),
+    chips: own.filter((c) => c.kind === 'shield').length, breaks: own.some((c) => c.kind === 'break') }
 }
 
-export const allOutReady = battleAllOutReady
 export const isBroken = battleBroken
-export const weaknessLabel = (element: RpgElement): string => RPG_ELEMENT_LABELS[battleWeakness(element)]
 
-/** Elements in this party's loadouts that break a foe of `element`. */
-export function partyBreaks(state: BattleState, element: RpgElement): boolean {
-  const weak = battleWeakness(element)
-  return state.input.allies.some((a) => a.loadout.some((ref) => battleSkill(ref).element === weak))
+/** Whether this Uma can chip the foe: by her weapon (Attack) or by an equipped skill's element. */
+export function canChip(state: BattleState, allyId: string, enemy: BattleEnemy): { weapon: boolean; element: boolean } {
+  const ally = state.input.allies.find((a) => a.id === allyId)
+  if (!ally) return { weapon: false, element: false }
+  return { weapon: enemy.weaknesses.weapons.includes(battleWeaponKind(ally.weapon)),
+    element: ally.loadout.some((ref) => ref.element === enemy.weaknesses.element) }
 }
 
 export function describeCue(cue: BattleCue, name: (id: string) => string): string {
   switch (cue.kind) {
     case 'hit': return cue.label === 'Burn' ? `${name(cue.targetId)} burns for ${cue.amount}`
-      : `${name(cue.actorId)} → ${name(cue.targetId)}: ${cue.amount}${cue.matchup === 'weak' ? ' · WEAK!' : cue.matchup === 'resist' ? ' · resisted' : ''}${cue.label === 'All-Out' ? ' · ALL-OUT' : cue.label === 'Intercepted' ? ' · guarded' : ''}`
-    case 'down': return `${name(cue.targetId)} is DOWN!`
-    case 'one-more': return `ONE MORE! ${name(cue.actorId)} acts again`
+      : `${name(cue.actorId)} → ${name(cue.targetId)}: ${cue.amount}${cue.weak ? ' · WEAK' : ''}${cue.label === 'Intercepted' ? ' · guarded' : ''}`
     case 'shield': return `${name(cue.targetId)} shield ${cue.amount}`
-    case 'break': return `${name(cue.targetId)} is BROKEN!`
+    case 'break': return `${name(cue.targetId)} BREAK!`
     case 'recover': return `${name(cue.targetId)} recovers its shield`
     case 'ko': return `${name(cue.targetId)} is knocked out`
     case 'phase': return `${name(cue.targetId)} changes tactics`
     case 'status': return `${name(cue.targetId)}: ${cue.label}`
     case 'guard': return `${name(cue.actorId)} guards ${name(cue.targetId)}`
     case 'skip': return `${name(cue.actorId)} is ${cue.label?.toLowerCase()} and loses its turn`
-    case 'all-out': return 'ALL-OUT ATTACK!'
     case 'intent': return `${name(cue.actorId)}: ${cue.label}`
     case 'result': return cue.label === 'victory' ? 'Victory!' : 'Defeated'
   }

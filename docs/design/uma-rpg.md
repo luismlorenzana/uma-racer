@@ -45,8 +45,8 @@ Settled by D226, D227 and D259; unchanged by the campaign.
 | Levels | Tier-local Lv1–50, EXP to next `120 + 16L`; Lv50 banks EXP until a manual **promotion** to the next tier. Lifetime level = `50 × (tier − 1) + level`. |
 | Core stats | `round(base / 5 + n × 1.5 × (1 + growth))`, `n` = lifetime level − 1 |
 | Combat stats | ATK = MATK = Speed; Speed (initiative) = Stamina; DEF = Power; M.DEF = (Power + Wit) / 2; HP = 100 + 6 × Stamina + 2 × Power; **MP = 20 + 1.5 × Wit** (D261) |
-| Skill points | **Two per level up to Lv45: 90 per tier** (D264); one point learns a skill or raises one skill level (max 5, +8% power each) |
-| Tree cost | An A element has 8 skills (40 points to max), a B element 5 (25). 90 points max **two A trees** (80) or **one A and two B trees** (90) |
+| Skill points | **Two per level up to Lv45, plus five each time a depth opens: 115 per tier** (D264, D265); one point learns a skill or raises one skill level (max 5, +8% power each) |
+| Tree cost | An A element has 11 skills (55 points to max), a B element 6 (30). 115 points max **two A trees** (110) or **one A and two B trees** (115) |
 | Depth gates | Lv 1 / 10 / 20 / 30 / 40; each depth needs the one above in the same element |
 | Skill slots | 3 at Lv1, then one more at Lv 10, 15, 20, 25, 30, 35 and 40: **10 by Lv40** (Attack and Guard are free) |
 | Promotion | Keeps stats and banked EXP; archives the tier's tree; up to two legacy skills |
@@ -54,32 +54,42 @@ Settled by D226, D227 and D259; unchanged by the campaign.
 The campaign restarted every enrolled outfit at **Tier 1 Lv1** once (D263): class, weapon, elements and party
 membership stayed; learned skills, loadouts and first-map chapter progress were cleared.
 
-## Battles (engine v2, D261)
+## Battles (engine v3, D265)
 
 `packages/domain/src/rpg/battle/` is a pure, seeded reducer: a frozen input (five allies with their carried MP, one to
 five foes) plus the action list always replays to the same state and hash. No wall clock or `Math.random`.
+The break rules follow Octopath Traveler; D261's Down, One More and All-Out Attack are gone.
 
-- **Turn:** each living Uma acts once a round in any order: **Attack** (free, neutral), **Skill** (MP) or **Guard**
-  (take half of one single-target hit for an ally). Foes act after the last Uma, in initiative order. Every foe shows
-  its next move and target before you commit. HP is full at the start of every fight; there is **no healing**.
-- **Elements:** Fire > Ice > Lightning > Fire; Light and Dark beat each other. A weak hit deals ×1.5, a resisted one
-  ×0.5 and applies no status. Both channels are fully elemental: a Greatsword Flame Strike is a physical Fire hit.
-- **Down and One More:** a weakness hit on a standing regular foe knocks it **Down** (it loses this round's action and
-  stands up after the enemy phase) and gives the attacker **One More** action. A foe already Down grants nothing.
-- **All-Out Attack:** when every living foe is Down or Broken, any Uma can trigger it: every living Uma strikes every
-  foe at full Attack power, and the party's round ends.
-- **Shields and breaks:** sub-bosses carry a 2-point shield, champions 4. While the shield holds they take ×0.4
-  damage. Each weakness hit removes a point (Flurry hits twice; Finale removes two). At zero the boss is **Broken**: it
-  loses this round's action and takes ×2 damage through your next round, then its shield returns. Bosses are never
-  knocked Down. Bosses change to stronger moves at 50% HP.
-- **Skills:** every technique is an elemental attack. Power per branch: Strike 1.6, Focus 2.0, Sweep 1.1 (all foes),
-  Burst 2.6, Flurry 2 × 1.4, Mastery 3.0, Storm 1.6 (all), Finale 3.8; × weapon (Greatsword 1.15, Spear 1.0,
-  Sword + shield 0.85, Wizard 1.1, Cleric 0.8, Tome 1.1); +8% per skill level. Sword + shield skills also Ward the
-  party (−15% damage taken); Cleric skills Power Up the party (+15% damage). MP cost is
-  `(6 + 4 × depth + 4 if it hits all) × tier`.
-- **Damage:** `power × max(0.2 × offense, offense − 0.5 × defense)`, then matchup, statuses (burn 4% max HP per stack,
-  slow/weaken −15% dealt, mark +10% taken per stack, ward −15% taken, power up +15% dealt), signature and shield.
-- A fight lasting 40 rounds is a loss; a simultaneous wipe is a loss.
+- **Turn:** each living Uma acts once a round in any order: **Attack** (free, hits with her weapon), **Skill** (MP,
+  hits with its element) or **Guard** (take half of one single-target hit for an ally). Foes act after the last Uma,
+  in initiative order. Every foe shows its next move and target before you commit. HP is full at the start of every
+  fight; there is **no healing**.
+- **Shields and weaknesses:** every foe has a **shield** and is weak to **one element** (Fire > Ice > Lightning > Fire;
+  Light ↔ Dark, from its own element) and **two weapon kinds** (three for champions). Weapon kinds are Greatsword,
+  Spear, Sword (Sword + shield) and Staff (both staves) and Tome. Each hit on a weakness deals ×1.3 and removes one
+  shield point; multi-hit skills chip once per hit. Shields: regular foes 2 (3 from the Senior stage), sub-bosses 4,
+  champions 6. The fight screen and the map show the shield number and weakness icons on every foe.
+- **Break:** until its shield breaks a foe takes **half damage**. At zero it is **Broken**: it loses that round's and
+  the next round's action and takes **full damage**; after the second enemy phase its shield returns. (Octopath's ×2 on
+  a broken foe and ×1.3 on a weakness, expressed as half before the break.) Bosses change to stronger moves at 50% HP.
+- **Skills:** every technique is an elemental attack. Per-hit power and hits by branch:
+
+  | Depth | Branches |
+  |---|---|
+  | 1 | Strike 1.6 |
+  | 2 | Focus 2.0 · Sweep 1.1 (all foes) · **Twin 2 × 1.05** |
+  | 3 | Burst 2.6 · **Triple 3 × 0.95** |
+  | 4 | Mastery 3.0 · Storm 1.6 (all foes) · **Quad 4 × 0.85** |
+  | 5 | Finale 3.8 · **Barrage 6 × 0.7 on random foes** |
+
+  × weapon (Greatsword 1.15, Spear 1.0, Sword + shield 0.85, Wizard 1.1, Cleric 0.8, Tome 1.1); +8% per skill level.
+  Sword + shield skills also Ward the party (−15% damage taken); Cleric skills Power Up the party (+15% damage).
+  MP cost is `(6 + 4 × depth + 4 if it hits all) × tier`. Barrage's targets are seeded by the fight, round and actor.
+- **Damage:** `power × max(0.2 × offense, offense − 0.5 × defense)`, × 1.3 on a weakness, statuses (burn 4% max HP per
+  stack, slow/weaken −15% dealt, mark +10% taken per stack, ward −15% taken, power up +15% dealt), signature, and ×0.5
+  while the foe's shield stands.
+- A fight lasting 40 rounds is a loss; a simultaneous wipe is a loss. A fight left open under engine v2 is dropped on
+  update: no reward, MP as it was when it began.
 
 ## Chapters and the map (D262)
 
@@ -138,19 +148,22 @@ Every won fight pays, first clear or replay:
   pickers, signature chips and skill chips; every change saves.
 - **Chapters:** scenario crest, chapter number, level band and progress for all fourteen.
 - **Map:** party MP bar, then the node graph with branch lines (solid once open), each node showing kind, level and its
-  foes' elements; cleared nodes carry a check or win count. A node sheet shows each foe's portrait, element, weakness,
-  HP, shield and moves, which party members can hit the weakness, the EXP and tokens, and Fight / Fight again / Rest.
-- **Fight:** foes with HP, shield pips, weakness and intent; the selected action's projected damage on every foe
-  (WEAK / resist); five party cards with HP and MP. Tap a foe to attack, or pick a skill first. ONE MORE, DOWN, BROKEN
-  and ALL-OUT are called out large. The result settles itself: EXP, level-ups, skill points and tokens.
+  foes' elements; cleared nodes carry a check or win count. A node sheet shows each foe's portrait, element, shield,
+  weakness icons, HP and moves, which party members can chip it (by Attack or by skill element), the EXP and tokens,
+  and Fight / Fight again / Rest.
+- **Fight:** each foe shows HP, an Octopath-style shield badge with its count, weakness icons (element, then weapon
+  kinds) and its intent; the selected action's projected damage on every foe, marked WEAK and with the shield points it
+  removes or BREAK; five party cards with HP and MP. Tap a foe to attack, or pick a skill first. BREAK is called out
+  large. The result settles itself: EXP, level-ups, skill points and tokens.
 - Main JS stays ≤ 180 KB gzip; every RPG screen is a lazy chunk.
 
 ## Tuning
 
 `pnpm sim:rpg:campaign [scenarioId]` plays a synthetic party (invented outfits and cast) through a chapter with a
 careful policy (weakness skills, one skill per Uma in regular fights, rest below 35% MP) and an attack-only policy.
-At this pin, careful play clears URA, Unity Cup and Project L'Arc: regular fights 2–4 rounds, sub-bosses 3–8 rounds
-with up to 45% party HP lost, champions 9–13 rounds with 50–77% lost. Attack-only loses the first sub-boss every time. Change numbers here and in the tests together.
+At this pin (D265, careful policy: chip with weak Attacks and multi-hit skills, spend big skills on a Break), careful
+play clears URA, Unity Cup and Project L'Arc: regular fights 2–6 rounds, sub-bosses 4–8, champions 7–13 rounds with
+30–74% party HP lost. Attack-only can break early foes with weapon weaknesses but loses later sub-bosses. Attack-only loses the first sub-boss every time. Change numbers here and in the tests together.
 
 ## Relationship to other systems
 

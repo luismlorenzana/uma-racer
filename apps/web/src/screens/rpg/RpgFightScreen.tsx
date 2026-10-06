@@ -1,7 +1,7 @@
-// Campaign fight (D261): tap an enemy to attack, or pick a skill first. Weakness knocks foes Down for One More; a
-// fully Downed or Broken field opens the All-Out Attack. The result settles itself the moment the fight ends.
+// Campaign fight (D265): tap an enemy to attack, or pick a skill first. Weak hits chip each foe's shield (its icons
+// show what it is weak to); a Break leaves it open to full damage for two rounds. The result settles itself.
 import {
-  battleBroken, battleWeakness, rpgLevelReveal, rpgMemberLevel,
+  battleBroken, rpgLevelReveal, rpgMemberLevel,
   type BattleAction, type BattleState, type BattleUnit, type RpgSettlement,
 } from '@racer/domain'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -14,9 +14,9 @@ import { ScreenState } from '../../ui/ScreenState'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgEnemyPortrait } from '../../ui/rpg/RpgEnemyPortrait'
 import { RpgPortrait } from '../../ui/rpg/RpgPortrait'
-import { allOutReady, describeCue, previewTarget, skillChoices, type BattleMode } from '../../ui/rpg/battle-view'
+import { describeCue, previewTarget, skillChoices, type BattleMode } from '../../ui/rpg/battle-view'
 import { useBattlePlayback } from '../../ui/rpg/useBattlePlayback'
-import { ElementMark, GhostButton, PrimaryButton, RpgBar, formatRpgLevel } from '../../ui/rpg/rpg-ui'
+import { ElementMark, GhostButton, PrimaryButton, RpgBar, ShieldBadge, WeaknessIcons, formatRpgLevel } from '../../ui/rpg/rpg-ui'
 import { RpgFrame, commit, pushToast, useRpg } from './RpgScreen'
 
 export function RpgFightScreen() {
@@ -50,7 +50,6 @@ export function RpgFightScreen() {
   const living = state?.units.filter((u) => u.side === 'ally' && u.hp > 0 && !state.acted.includes(u.id)) ?? []
   const actor = living.find((u) => u.id === actorId) ?? living[0] ?? null
   const choices = useMemo(() => state && actor ? skillChoices(state, actor.id) : [], [state, actor?.id])
-  const ready = state ? allOutReady(state) : false
   const node = chapter?.nodes.find((n) => n.id === view?.run.battle?.nodeId)
 
   if (!chapter) return <ScreenState title="Loading fight" detail="Preparing the chapter…" action={{ label: 'Map', to: mapPath }} />
@@ -90,7 +89,7 @@ export function RpgFightScreen() {
   const skill = mode.kind === 'skill' ? choices.find((c) => JSON.stringify(c.ref) === JSON.stringify(mode.ref)) : null
   const hint = playback.cue ? describeCue(playback.cue, name)
     : mode.kind === 'guard' ? `Tap an ally for ${name(actor?.id ?? '')} to guard`
-    : skill ? `Tap an enemy: ${skill.skill.label} · ${skill.skill.mp} MP${skill.skill.area ? ' (hits all)' : ''}`
+    : skill ? `Tap an enemy: ${skill.skill.label} · ${skill.skill.mp} MP${skill.skill.target === 'all' ? ' (hits all)' : skill.skill.target === 'random' ? ` (${skill.skill.hits} random hits)` : skill.skill.hits > 1 ? ` (${skill.skill.hits} hits)` : ''}`
     : actor ? `${name(actor.id)}: tap an enemy to attack` : ''
   const enemies = state.units.filter((u) => u.side === 'enemy')
   const allies = state.units.filter((u) => u.side === 'ally')
@@ -104,21 +103,19 @@ export function RpgFightScreen() {
         const preview = actor && unit.hp > 0 && mode.kind !== 'guard' ? previewTarget(state, actor.id, mode, unit.id) : null
         const hit = playback.cue && 'targetId' in playback.cue && playback.cue.targetId === unit.id
         return <button key={unit.id} type="button" disabled={unit.hp <= 0 || busy} onClick={(e) => { e.stopPropagation(); tapUnit(unit) }}
-          aria-label={`${name(unit.id)}, ${enemy.element}, HP ${unit.hp} of ${enemy.stats.hp}${unit.down ? ', down' : ''}${battleBroken(unit) ? ', broken' : ''}`}
+          aria-label={`${name(unit.id)}, ${enemy.element}, HP ${unit.hp} of ${enemy.stats.hp}, ${battleBroken(unit) ? 'broken' : `shield ${unit.shield}`}`}
           className={`relative flex flex-col items-center rounded-md border p-2 text-center transition-transform ${enemies.length <= 2 ? 'w-[46%]' : 'w-[31%]'} ${hit ? 'scale-[1.04] border-accent' : 'border-hairline-dark'} ${unit.hp <= 0 ? 'opacity-30' : 'bg-stage-soft'} ${enemy.rank !== 'regular' ? 'ring-1 ring-white/30' : ''}`}>
           <RpgEnemyPortrait content={content} artId={release?.status === 'ready' ? release.portraits[enemy.castId] : undefined} name={name(unit.id)} className={enemy.rank !== 'regular' ? 'h-24 w-20' : 'h-20 w-16'} />
           <p className="mt-1 flex max-w-full items-center gap-0.5 text-[12px] font-semibold"><ElementMark element={enemy.element} /><span className="truncate">{name(unit.id)}</span></p>
           <RpgBar className="mt-1 w-full" value={unit.hp} max={enemy.stats.hp} />
           <p className="text-[10px] text-ink-on-dark-soft">{unit.hp}/{enemy.stats.hp}</p>
-          {enemy.rank !== 'regular' && <div className="mt-0.5 flex w-full gap-0.5" aria-label={`Shield ${unit.shield}`}>{Array.from({ length: enemy.shield }, (_, i) =>
-            <span key={i} className={`h-1.5 flex-1 rounded-full ${i < unit.shield ? 'bg-[#e0e6ef]' : 'bg-white/10'}`} />)}</div>}
-          <p className="mt-0.5 flex items-center gap-0.5 text-[10px] text-ink-on-dark-soft">Weak <ElementMark element={battleWeakness(enemy.element)} /></p>
-          {(unit.down || battleBroken(unit)) && <span className="absolute -top-2 left-1 rounded-xs bg-accent px-1 text-[10px] font-bold text-ink">{unit.down ? 'DOWN' : 'BROKEN'}</span>}
-          {preview && !preview.error && <span className={`absolute -top-2 right-1 rounded-xs px-1 text-[10px] font-bold ${preview.matchup === 'weak' ? 'bg-[#ffd84d] text-ink' : preview.matchup === 'resist' ? 'bg-white/25' : 'bg-stage text-ink-on-dark'}`}>{preview.amount}{preview.matchup === 'weak' ? ' WEAK' : preview.matchup === 'resist' ? ' resist' : ''}</span>}
-          {move && unit.hp > 0 && <p className="mt-1 line-clamp-2 text-[10px] leading-3 text-ink-on-dark-soft">{unit.down || (battleBroken(unit) && unit.brokenAt === state.round) ? 'Loses its turn' : `${move.label} → ${intent!.targetId === 'all' ? 'all' : name(intent!.targetId)}`}</p>}
+          <div className="mt-1 flex w-full items-center justify-center gap-1.5"><ShieldBadge value={unit.shield} broken={battleBroken(unit)} /><WeaknessIcons weaknesses={enemy.weaknesses} /></div>
+          {battleBroken(unit) && <span className="absolute -top-2 left-1 rounded-xs bg-accent px-1 text-[10px] font-bold text-ink">BREAK</span>}
+          {preview && !preview.error && <span className={`absolute -top-2 right-1 rounded-xs px-1 text-[10px] font-bold ${preview.weak ? 'bg-[#ffd84d] text-ink' : 'bg-stage text-ink-on-dark'}`}>{preview.amount}{preview.breaks ? ' BREAK' : preview.chips ? ` −${preview.chips}` : ''}</span>}
+          {move && unit.hp > 0 && <p className="mt-1 line-clamp-2 text-[10px] leading-3 text-ink-on-dark-soft">{battleBroken(unit) ? 'Broken: loses its turn' : `${move.label} → ${intent!.targetId === 'all' ? 'all' : name(intent!.targetId)}`}</p>}
         </button>
       })}</div>
-      <p aria-live="polite" className={`min-h-8 text-center font-semibold text-accent ${playback.cue && ['one-more', 'down', 'break', 'all-out'].includes(playback.cue.kind) ? 'font-display text-[22px] leading-7 tracking-wide' : 'text-[12px] leading-4'}`}>{hint}</p>
+      <p aria-live="polite" className={`min-h-8 text-center font-semibold text-accent ${playback.cue?.kind === 'break' ? 'font-display text-[22px] leading-7 tracking-wide' : 'text-[12px] leading-4'}`}>{hint}</p>
       <div className="grid grid-cols-5 gap-1" aria-label="Party">{allies.map((unit) => {
         const ally = state.input.allies.find((a) => a.id === unit.id)!
         const done = state.acted.includes(unit.id) || unit.hp <= 0
@@ -135,23 +132,22 @@ export function RpgFightScreen() {
       })}</div>
     </section>
     <footer className="shrink-0 border-t border-hairline-dark bg-stage-soft px-3 pt-2 pb-2">
-      {ready && actor ? <PrimaryButton disabled={busy || playback.playing} className="animate-pulse" onClick={() => void act({ kind: 'all-out', actorId: actor.id })}>ALL-OUT ATTACK!</PrimaryButton>
-        : <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2">
           {(['attack', 'skill', 'guard'] as const).map((kind) => <button key={kind} type="button" disabled={busy || playback.playing || !actor || (kind === 'skill' && choices.length === 0)}
             aria-pressed={mode.kind === kind} onClick={() => { if (kind === 'skill') setSkills(true); else setMode({ kind }) }}
             className={`min-h-12 rounded-sm border text-sm font-semibold disabled:opacity-40 ${mode.kind === kind ? 'border-accent bg-accent/15 text-accent' : 'border-hairline-dark bg-stage'}`}>
             {kind === 'skill' ? `Skill${choices.length ? ` (${choices.length})` : ''}` : kind === 'attack' ? 'Attack' : 'Guard'}</button>)}
-        </div>}
+      </div>
     </footer>
     {skills && actor && <RpgModalFocus onClose={() => setSkills(false)}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => setSkills(false)}>
       <div role="dialog" aria-modal="true" aria-label="Skills" onClick={(e) => e.stopPropagation()} className="pb-safe w-full space-y-2 rounded-t-lg border border-hairline-dark bg-stage-soft p-4">
         <p className="text-sm">{name(actor.id)} · {actor.mp} MP</p>
         {choices.map((choice) => {
-          const weakTargets = enemies.filter((u) => u.hp > 0 && battleWeakness(state.input.enemies.find((e) => e.id === u.id)!.element) === choice.skill.element)
+          const weakTargets = enemies.filter((u) => u.hp > 0 && state.input.enemies.find((e) => e.id === u.id)!.weaknesses.element === choice.skill.element)
           return <button key={JSON.stringify(choice.ref)} type="button" disabled={!choice.affordable} onClick={() => { setMode({ kind: 'skill', ref: choice.ref }); setSkills(false) }}
             className="flex min-h-14 w-full items-center justify-between gap-2 rounded-sm border border-hairline-dark bg-stage p-3 text-left disabled:opacity-40">
             <span><span className="flex items-center gap-1 font-semibold"><ElementMark element={choice.skill.element} />{choice.skill.label}{choice.level > 1 ? ` Lv${choice.level}` : ''}</span>
-              <span className="block text-[11px] text-ink-on-dark-soft">{choice.skill.area ? 'All enemies' : choice.skill.hits > 1 ? 'Two hits' : 'One enemy'}{choice.skill.support ? ` · party ${choice.skill.support}` : ''}{weakTargets.length ? ` · WEAK: ${weakTargets.map((u) => name(u.id)).join(', ')}` : ''}</span></span>
+              <span className="block text-[11px] text-ink-on-dark-soft">{choice.skill.target === 'all' ? 'All enemies' : choice.skill.target === 'random' ? `${choice.skill.hits} hits on random enemies` : choice.skill.hits > 1 ? `${choice.skill.hits} hits` : 'One enemy'}{choice.skill.support ? ` · party ${choice.skill.support}` : ''}{weakTargets.length ? ` · WEAK: ${weakTargets.map((u) => name(u.id)).join(', ')}` : ''}</span></span>
             <span className="text-sm font-semibold">{choice.skill.mp} MP</span>
           </button>
         })}
