@@ -122,7 +122,7 @@ function campaign(scenarioId: string, start: RpgProfile[], policy: Policy) {
   let lastCamp = 'start'
   const weakCount = (element: RpgElement) => party.filter((p) => p.affinities[({ fire: 'lightning', ice: 'fire', lightning: 'ice', light: 'dark', dark: 'light' } as const)[element]] === 'A').length
   const route = [...RPG_ELEMENTS].sort((a, b) => weakCount(b) - weakCount(a))[0]!
-  const order = chapter.nodes.filter((n) => n.kind !== 'boss' && !(n.stage === 4 && n.element && n.element !== route) || n.id === `${route}-boss`)
+  const order = chapter.nodes.filter((n) => n.kind !== 'boss' && !(n.stage === 3 && n.element && n.element !== route) || n.id === `${route}-boss`)
     .sort((a, b) => a.row - b.row || a.col - b.col)
   for (const node of order) {
     if (node.kind === 'camp') { run = rpgRestAtCamp(chapter, run, node.id, now++); lastCamp = node.id; continue }
@@ -144,7 +144,7 @@ function report(scenarioId: string, start: RpgProfile[], policy: Policy) {
   const minutes = fights.reduce((s, f) => s + f.actions * 7 + 15, 0) / 60
   console.log(`\n${chapter.title} · ${policy} · start ${start.map((p) => `T${p.tier}L${p.level}`)[0]} · route ${route}`)
   console.log('stage  kind      fights  losses  rounds  KOs   HP lost  MP used/fight  foe Lv → party Lv')
-  for (let stage = 0; stage <= 4; stage += 1) {
+  for (let stage = 0; stage <= 3; stage += 1) {
     for (const kind of ['fight', 'sub-boss', 'boss'] as const) {
       const rows = fights.filter((f) => f.node.stage === stage && f.node.kind === kind)
       if (!rows.length) continue
@@ -164,7 +164,7 @@ const scenarioArg = process.argv[2]
 const scenarios = scenarioArg ? [scenarioArg] : ['ura-finale', 'unity-cup', 'project-larc']
 for (const id of scenarios) {
   const tier = SCENARIOS.find((s) => s.id === id)!.tier
-  const lifetime = (tier - 1) * 10 + 1
+  const lifetime = (tier - 1) * 12 + 1
   const { tier: classTier, level } = rpgTierLevel(lifetime)
   const start = PARTY.map((p) => ({ ...p, tier: classTier, level, exp: 0, tree: [], legacy: [] }))
   report(id, start, 'careful')

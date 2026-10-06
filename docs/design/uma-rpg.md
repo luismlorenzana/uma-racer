@@ -21,8 +21,9 @@ Home → Uma RPG (Parties) → a party → Chapters (launch pad, one per scenari
   the guide (?) in the header, content below, no footer links (D260).
 - A party must fill all five slots to enter a chapter. Any party may enter any chapter; the launch pad says when a
   chapter is above the party's level.
-- Each chapter is one scenario and covers ten levels: URA Finale Lv1–10, Unity Cup Lv11–20 … Tracen Diner T3 Lv31–40.
-  A full clear of one route is about 47 fights, roughly 1–2 hours of play, and about ten levels for the party.
+- Each chapter is one scenario and covers twelve levels (D266): URA Finale Lv1–12, Unity Cup Lv13–24 … Tracen Diner
+  T4 Lv7–18. Clearing every node (43 battles) ends near the chapter's last level, so four chapters bring a party to
+  about Lv48 and the fifth starts with every skill point and slot. One route to a champion is 35 battles.
 
 ## Roster, classes and elements
 
@@ -96,12 +97,14 @@ The break rules follow Octopath Traveler; D261's Down, One More and All-Out Atta
 `packages/domain/src/rpg/campaign/chapters.ts` generates each scenario's chapter from its tier and the cast. Layout,
 levels, elements and stats are code, so a rebalance never needs a content publish; node ids stay stable.
 
-- **Shape (top to bottom, five columns):** a starting camp; four stages (Debut, Classic, Senior, Finals), each with four
-  rows of regular fights alternating three and two lanes, a camp and a **sub-boss** squad; then a last camp that splits
-  into **five elemental routes** (Ember, Frost, Storm, Dawn, Dusk), each two fights and a **champion** of that element.
-  Pick the route whose champion your party can break. 50 regular fights, 4 sub-bosses, 5 champions, 6 camps.
-- **Levels:** stage `k` fights at `start + 2k` and `+1`, its sub-boss at `start + 2k + 2`; routes at `start + 9`,
-  champions at `start + 10`.
+- **Shape (top to bottom, five columns, D266):** a starting camp; three fight stages (Debut, Classic, Senior Year),
+  each with four rows of regular fights alternating three and two lanes, a camp and a **sub-boss** squad; then the
+  **Finals**: a last camp that splits into **five elemental routes** (Ember, Frost, Storm, Dawn, Dusk), each a
+  sub-boss vanguard and then a **champion** of that element, with no regular fights. Pick the route whose champion your
+  party can break. 30 regular fights, 8 sub-bosses, 5 champions, 5 camps.
+- **Levels:** Debut Lv1–3, Classic 4–6, Senior Year 7–9, Finals 10–12 of the chapter: stage `k` fights at
+  `start + 3k` and `+1`, its sub-boss at `start + 3k + 2`; the last camp at `start + 9`, Finals sub-bosses at
+  `start + 10`, champions at `start + 11`.
 - **Foes:** 2–3 per fight (3 later), cast members in four roles (striker, caster, guard, skirmisher). Side lanes lean
   toward one element so a party can steer by its affinities. Sub-bosses bring 1–2 regular minions, champions 2.
   Leaders rotate through the cast. Stats scale with level from an average enrolled outfit's stat
@@ -124,11 +127,13 @@ same frozen fight from its first action.
 
 Every won fight pays, first clear or replay:
 
-- **EXP** to all five entrants (KO'd included): a share of one level at the foes' level (fight 0.14, sub-boss 0.45,
-  champion 0.8 of `expToNext`), × `1 − 0.1 × (member level − foe level)` clamped to 0.1–2.0. Outleveled fights pay
-  little; fights above you pay up to double.
-- **Inspiration tokens** of the chapter's scenario: fight 1 Slot + 2 Skill, sub-boss 3 + 6, champion 6 + 12. Gross
-  tokens first repay the matching Inspiration advance debt (D256), then land in Items.
+- **EXP** to all five entrants (KO'd included): a share of one level at the foes' level (fight 0.25, sub-boss 0.28,
+  champion 0.32 of `expToNext`, D266), × `1 − 0.1 × (member level − foe level)` clamped to 0.1–2.0. Outleveled fights
+  pay little; fights above you pay up to double. First clears reach the Finals around chapter Lv9, one route ends
+  around Lv10 and every node around Lv12 (Lv24, 36 and 48 in the next chapters).
+- **Inspiration tokens** of the chapter's scenario: fight 1 Slot + 2 Skill, sub-boss 4 + 8, champion 6 + 12 (D266).
+  Clearing every node pays 92 Slot + 184 Skill, enough for fifteen units' parents (6 Slot) and skills (12 Skill).
+  Gross tokens first repay the matching Inspiration advance debt (D256), then land in Items.
 
 ## Saving and sync (D260, D263)
 
@@ -161,9 +166,10 @@ Every won fight pays, first clear or replay:
 
 `pnpm sim:rpg:campaign [scenarioId]` plays a synthetic party (invented outfits and cast) through a chapter with a
 careful policy (weakness skills, one skill per Uma in regular fights, rest below 35% MP) and an attack-only policy.
-At this pin (D265, careful policy: chip with weak Attacks and multi-hit skills, spend big skills on a Break), careful
-play clears URA, Unity Cup and Project L'Arc: regular fights 2–6 rounds, sub-bosses 4–8, champions 7–13 rounds with
-30–74% party HP lost. Attack-only can break early foes with weapon weaknesses but loses later sub-bosses. Attack-only loses the first sub-boss every time. Change numbers here and in the tests together.
+At this pin (D266, careful policy: chip with weak Attacks and multi-hit skills, spend big skills on a Break), careful
+play of one route reaches the Finals at chapter Lv9 and clears URA, Unity Cup and Project L'Arc. The URA champion (Lv12
+against a Lv10 party) takes a retry or two; a full clear meets it about a level higher. Attack-only loses a Senior or
+Finals sub-boss. Change numbers here and in the tests together.
 
 ## Relationship to other systems
 

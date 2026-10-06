@@ -12,10 +12,10 @@ import { rpgCampaignOutfit, type RpgOutfitSaveV1 } from '../save'
 const cast = Array.from({ length: 7 }, (_, i) => ({ id: `cast${i}`, name: `Rival ${i}` }))
 
 describe('generated campaign chapters (D262)', () => {
-  it('builds one ten-level chapter per scenario with a reachable map and five elemental champions', () => {
+  it('builds one twelve-level chapter per scenario: three fight stages, then five elemental sub-bosses and champions (D266)', () => {
     const chapters = rpgCampaign(cast)
     expect(chapters.map((c) => c.scenarioId)).toEqual(SCENARIOS.map((s) => s.id))
-    expect(chapters.map((c) => c.levelStart)).toEqual(SCENARIOS.map((s) => (s.tier - 1) * 10 + 1))
+    expect(chapters.map((c) => c.levelStart)).toEqual(SCENARIOS.map((s) => (s.tier - 1) * 12 + 1))
     for (const chapter of chapters) {
       const ids = new Set(chapter.nodes.map((n) => n.id))
       expect(ids.size).toBe(chapter.nodes.length)
@@ -23,9 +23,13 @@ describe('generated campaign chapters (D262)', () => {
       expect(chapter.nodes.filter((n) => n.id !== 'start').every((n) => rpgNodeParents(chapter, n.id).length > 0)).toBe(true)
       const bosses = chapter.nodes.filter((n) => n.kind === 'boss')
       expect(bosses.map((n) => n.element)).toEqual([...RPG_ELEMENTS])
-      expect(bosses.every((n) => n.level === chapter.levelStart + 10 && n.exits.length === 0)).toBe(true)
-      expect(chapter.nodes.filter((n) => n.kind === 'sub-boss')).toHaveLength(4)
-      expect(chapter.nodes.filter((n) => n.kind === 'fight')).toHaveLength(50)
+      expect(bosses.every((n) => n.level === chapter.levelStart + 11 && n.exits.length === 0)).toBe(true)
+      const subs = chapter.nodes.filter((n) => n.kind === 'sub-boss')
+      expect(subs.map((n) => n.level - chapter.levelStart)).toEqual([2, 5, 8, 10, 10, 10, 10, 10])
+      expect(bosses.every((n) => rpgNodeParents(chapter, n.id).join() === `${n.element}-sub`)).toBe(true)
+      const fights = chapter.nodes.filter((n) => n.kind === 'fight')
+      expect(fights).toHaveLength(30)
+      expect(Math.max(...fights.map((n) => n.level - chapter.levelStart))).toBe(7)
       expect(chapter.nodes.every((n) => n.col >= 0 && n.col < 5 && n.enemies.length <= 5)).toBe(true)
       for (const n of chapter.nodes.filter((x) => x.kind !== 'camp')) {
         expect(n.enemies.every((e) => e.level === n.level && cast.some((c) => c.id === e.castId))).toBe(true)
@@ -41,10 +45,18 @@ describe('generated campaign chapters (D262)', () => {
 
 describe('campaign rewards (D263)', () => {
   it('pays a share of a level, scaled ±10% per level of gap within 10%–200%', () => {
-    expect([rpgBattleBaseExp('fight', 5), rpgBattleBaseExp('sub-boss', 5), rpgBattleBaseExp('boss', 5)]).toEqual([28, 90, 160])
+    expect([rpgBattleBaseExp('fight', 5), rpgBattleBaseExp('sub-boss', 5), rpgBattleBaseExp('boss', 5)]).toEqual([50, 56, 64])
     expect([rpgLevelExpFactor(8, 5), rpgLevelExpFactor(5, 8), rpgLevelExpFactor(20, 5), rpgLevelExpFactor(1, 30)]).toEqual([0.7, 1.3, 0.1, 2])
-    expect(rpgBattleExp('fight', 5, 8)).toBe(20)
-    expect(RPG_BATTLE_TOKENS).toEqual({ fight: { slot: 1, skill: 2 }, 'sub-boss': { slot: 3, skill: 6 }, boss: { slot: 6, skill: 12 } })
+    expect(rpgBattleExp('fight', 5, 8)).toBe(35)
+    expect(RPG_BATTLE_TOKENS).toEqual({ fight: { slot: 1, skill: 2 }, 'sub-boss': { slot: 4, skill: 8 }, boss: { slot: 6, skill: 12 } })
+    // A full clear: 30 fights, 8 sub-bosses, 5 champions → 92 Slot and 184 Skill tokens, at least six units' 6 + 12.
+    const chapter = rpgCampaignChapter('ura-finale', cast)
+    const total = chapter.nodes.filter((n) => n.kind !== 'camp').reduce((sum, n) => {
+      const t = RPG_BATTLE_TOKENS[n.kind as 'fight' | 'sub-boss' | 'boss']
+      return { slot: sum.slot + t.slot, skill: sum.skill + t.skill }
+    }, { slot: 0, skill: 0 })
+    expect(total).toEqual({ slot: 92, skill: 184 })
+    expect(total.slot >= 6 * 6 && total.skill >= 6 * 12).toBe(true)
   })
 })
 

@@ -1,7 +1,7 @@
 // Chapter map: a top-to-bottom route of fights, camps, sub-bosses and five elemental champions (D262, D263).
 // Tap a node to preview it; clear nodes open the ones below, and any cleared fight can be replayed.
 import {
-  RPG_STAGE_NAMES, battleWeaponKind, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgMemberLevel,
+  RPG_CHAPTER_LEVELS, RPG_STAGE_NAMES, battleWeaponKind, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgMemberLevel,
   rpgNodeParents, rpgNodeStatus, rpgRunId, inspirationTokenName, type BattleEnemy,
   type RpgCampaignChapter, type RpgMapNode, type RpgProfile, type RpgRunSaveV2,
 } from '@racer/domain'
@@ -54,8 +54,8 @@ export function RpgMapScreen() {
   const mpNow = party.reduce((sum, m) => sum + (run ? rpgCarriedMp(run, m.profile) : projectRpgStats(m.profile).mp), 0)
   const mpMax = party.reduce((sum, m) => sum + projectRpgStats(m.profile).mp, 0)
   const node = selected ? chapter.nodes.find((n) => n.id === selected) ?? null : null
-  const stageRows = RPG_STAGE_NAMES.map((name, stage) => ({ name, row: Math.min(...chapter.nodes.filter((n) => n.stage === stage && n.kind === 'fight').map((n) => n.row)) }))
-  return <RpgFrame back={`/rpg/party/${presetId}`} backLabel="Chapters" eyebrow={`${preset.name} · ${formatRpgBand(chapter.levelStart, chapter.levelStart + 9)}`} title={chapter.title} guide="map">
+  const stageRows = RPG_STAGE_NAMES.map((name, stage) => ({ name, row: Math.min(...chapter.nodes.filter((n) => n.stage === stage && n.kind !== 'camp').map((n) => n.row)) }))
+  return <RpgFrame back={`/rpg/party/${presetId}`} backLabel="Chapters" eyebrow={`${preset.name} · ${formatRpgBand(chapter.levelStart, chapter.levelStart + RPG_CHAPTER_LEVELS - 1)}`} title={chapter.title} guide="map">
     <div className="sticky top-0 z-10 -mx-4 border-b border-hairline-dark bg-stage/95 px-4 py-2 backdrop-blur">
       <div className="flex items-center gap-2 text-[11px]"><span className="w-16 text-ink-on-dark-soft">Party MP</span><RpgBar className="flex-1" value={mpNow} max={mpMax} tone="mp" /><span className="w-16 text-right">{Math.round(100 * mpNow / Math.max(1, mpMax))}%</span></div>
       {run?.battle && <PrimaryButton className="mt-2" onClick={() => navigate(`/rpg/party/${presetId}/${chapterId}/fight`)}>Resume fight · {chapter.nodes.find((n) => n.id === run.battle!.nodeId)?.name}</PrimaryButton>}

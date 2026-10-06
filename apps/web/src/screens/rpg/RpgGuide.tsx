@@ -1,5 +1,5 @@
 // Campaign guide (docs/design/uma-rpg.md, D261–D263); read-only.
-import { RPG_B_MAX_DEPTH, RPG_BATTLE_TOKENS, RPG_DEPTH_GATES, RPG_PARTY_SIZE, RPG_PRESET_COUNT, type RpgWeapon } from '@racer/domain'
+import { RPG_B_MAX_DEPTH, RPG_BATTLE_TOKENS, RPG_CHAPTER_LEVELS, RPG_DEPTH_GATES, RPG_PARTY_SIZE, RPG_PRESET_COUNT, type RpgWeapon } from '@racer/domain'
 import { PagedGuide, type PagedGuidePage } from '../../ui/PagedGuide'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { IdentityGlyph, RPG_WEAPON_LABELS } from '../../ui/rpg/RpgPortrait'
@@ -13,7 +13,7 @@ export function RpgGuide({ onClose, startAt = 'party' }: { onClose: () => void; 
   const pages: PagedGuidePage<RpgGuidePage>[] = [
     { id: 'party', title: 'Five Umas, one party', body: <>
       <p>Enroll owned Umas in the Roster, then fill a party's {RPG_PARTY_SIZE} slots. You have {RPG_PRESET_COUNT} parties; RPG levels belong to each Uma and are shared by every party.</p>
-      <p>Pick a party, then a chapter. Each chapter is one scenario and spans ten levels: URA Finale Lv1–10, Unity Cup Lv11–20, and onward.</p>
+      <p>Pick a party, then a chapter. Each chapter is one scenario and spans {RPG_CHAPTER_LEVELS} levels: URA Finale Lv1–{RPG_CHAPTER_LEVELS}, Unity Cup Lv{RPG_CHAPTER_LEVELS + 1}–{RPG_CHAPTER_LEVELS * 2}, and onward.</p>
     </> },
     { id: 'class', title: 'Class and elements', body: <>
       <div className="grid grid-cols-2 gap-2">{weapons.map(weapon => <div key={weapon} className="flex items-center gap-2 rounded-sm border border-hairline-dark bg-stage-soft p-2 text-xs"><IdentityGlyph weapon={weapon} />{RPG_WEAPON_LABELS[weapon]}</div>)}</div>
@@ -31,7 +31,7 @@ export function RpgGuide({ onClose, startAt = 'party' }: { onClose: () => void; 
     </> },
     { id: 'bosses', title: 'Break!', body: <>
       <p>At zero the enemy <b>Breaks</b>: it loses this round's and the next round's turn and takes full damage. Then its shield returns. Chip with attacks and cheap skills, then spend your big skills on the Break.</p>
-      <p>Regular foes carry 2–3 points, sub-bosses 4 and champions 6. Each chapter ends in five champions, one per element; pick the route your party can break.</p>
+      <p>Regular foes carry 2–3 points, sub-bosses 4 and champions 6. Debut, Classic and Senior Year each end in a sub-boss. The Finals has no regular fights: five routes, one per element, each a sub-boss and then its champion. Pick the route your party can break.</p>
     </> },
     { id: 'mp', title: 'MP and camps', body: <>
       <p>HP is full at the start of every fight. MP is not: what you spend carries to the next fight.</p>

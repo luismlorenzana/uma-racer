@@ -4,7 +4,7 @@ import {
   RPG_ELEMENTS, RPG_PARTY_SIZE, RPG_TIER_MAX_LEVEL, STRATEGIES, battleSkillLabel, battleSkillMp, canChangeRpgClass,
   canUseRpgSignature, eligibleRpgCells, projectRpgStats, rpgActiveSlots, rpgAffinities, rpgCampaign, rpgChapterCleared,
   rpgExpToNext, rpgMemberLevel, rpgNodeStatus, rpgRunId, rpgSkillKey, rpgTreePointsEarned, rpgTreePointsSpent,
-  rpgWeaponsForStyle, RPG_DEPTH_GATES, RPG_B_MAX_DEPTH, RPG_BRANCHES, battleSkillShape,
+  rpgWeaponsForStyle, RPG_CHAPTER_LEVELS, RPG_DEPTH_GATES, RPG_B_MAX_DEPTH, RPG_BRANCHES, battleSkillShape,
   type RpgCampaignChapter, type RpgElement, type RpgPresetSaveV1, type RpgProfile, type RpgSkillRef, type RpgWeapon, type Strategy,
 } from '@racer/domain'
 import { liveQuery } from 'dexie'
@@ -358,7 +358,7 @@ export function RpgLaunchScreen() {
       const fights = chapter.nodes.filter((n) => n.kind !== 'camp')
       const cleared = fights.filter((n) => rpgNodeStatus(chapter, run, n.id) === 'cleared').length
       const done = rpgChapterCleared(chapter, run)
-      const end = chapter.levelStart + 9
+      const end = chapter.levelStart + RPG_CHAPTER_LEVELS - 1
       const crest = getContentAsset(content, 'scenario-icons', chapter.scenarioId)
       const behind = level !== null && level < chapter.levelStart - 1
       return <li key={chapter.id}>

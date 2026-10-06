@@ -2,11 +2,13 @@
 import { rpgExpToNext, RPG_TIER_MAX_LEVEL } from '../rules'
 import { rpgTierLevel, type RpgMapNodeKind } from './chapters'
 
-export const RPG_BATTLE_EXP_WEIGHTS = { fight: 0.14, 'sub-boss': 0.45, boss: 0.8 } as const
+/** D266: fights carry most leveling (the Finals opens around Lv9); clearing every node ends near the chapter's last level (Lv12, 24, 36, 48 …). */
+export const RPG_BATTLE_EXP_WEIGHTS = { fight: 0.25, 'sub-boss': 0.28, boss: 0.32 } as const
 export const RPG_LEVEL_EXP_STEP = 0.1
 export const RPG_LEVEL_EXP_MIN = 0.1
 export const RPG_LEVEL_EXP_MAX = 2
-export const RPG_BATTLE_TOKENS = { fight: { slot: 1, skill: 2 }, 'sub-boss': { slot: 3, skill: 6 }, boss: { slot: 6, skill: 12 } } as const
+/** A full clear (30 fights, 8 sub-bosses, 5 champions) pays 92 Slot + 184 Skill tokens: fifteen units' Inspiration (D266). */
+export const RPG_BATTLE_TOKENS = { fight: { slot: 1, skill: 2 }, 'sub-boss': { slot: 4, skill: 8 }, boss: { slot: 6, skill: 12 } } as const
 
 type BattleKind = Exclude<RpgMapNodeKind, 'camp'>
 
