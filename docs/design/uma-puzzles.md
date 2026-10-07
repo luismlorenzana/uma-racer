@@ -910,7 +910,8 @@ canonical state hash, replay, deterministic bot and co-located synthetic tests. 
 utilities with Spark through an explicit module; do not import a live old reward engine or copy files indefinitely.
 The old engine stays callable for historical validation/retirement until safely removed.
 
-Proposed domain concepts, **not a finalized save schema**:
+These domain concepts now have [implemented additive schema-1 records and protocol](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273)
+(T110/D273), still behind an off capability; journal/host gameplay and account cutover are not installed:
 
 | Concept | Ownership and frozen inputs |
 |---|---|
@@ -934,6 +935,10 @@ local-first `/api/sync` carries bounded **atomic Puzzle operation groups** and c
 [implementation contract](../technical/uma-puzzles-implementation.md#6-local-first-sync-without-economic-last-write-wins).
 Per-row entity conflict handling alone cannot protect combined EXP, stock, debt and CL changes. Pending operations
 rebase together from canonical evidence; do not resurrect the RPG's retired Sync/Submit UI or call the API per drag.
+T110 pins transport protections, not gameplay caps:16 groups,256KiB encoded operation array,200 total distinct
+referenced records (including mixed ordinary writes),900KiB per receipt, within the existing400-operation/5MiB HTTP
+bounds. Canonical receipts own material/CL changes; Farm/ordinary Racing reconciliation preserves pending predictions
+and unrelated racing/build edits. A save-derived immutable cutover id supplies the stable account seed component.
 
 ### Resume, conflicts and recovery
 

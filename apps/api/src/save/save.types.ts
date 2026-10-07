@@ -2,10 +2,13 @@
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
 import { parseRpgEntity, parseRpgLog, rpgEntityIdMatches, rpgLogIdMatches, rpgOrdinaryRow } from './rpg-save.types'
 import { parseInspirationBank } from './inspiration-bank'
+import { PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, parsePuzzleEntity, puzzleEntityIdMatches, parsePuzzleResultSave,
+  parsePuzzleOperationReceipt, parsePuzzleItemMovement, parsePuzzleOperationBatch, puzzleOperationReferences,
+  PUZZLE_SYNC_LIMITS, type PuzzleOperationV1, type PuzzleOperationResponse } from './puzzles'
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank', ...PUZZLE_ENTITY_KINDS] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts', ...PUZZLE_LOG_KINDS] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -43,6 +46,8 @@ export interface LogAppend {
 export interface SyncRequest {
   upserts: EntityUpsert[]
   appends: LogAppend[]
+  puzzleOperations?: PuzzleOperationV1[]
+  puzzleProtocolVersion?: 1
 }
 
 export interface SyncResponse {
@@ -50,6 +55,7 @@ export interface SyncResponse {
   conflicts: EntityRecord[]
   appended: number
   serverTime: number
+  puzzleOperations?: PuzzleOperationResponse[]
 }
 
 export interface SaveSnapshot {
@@ -340,6 +346,8 @@ function parseTrainingTicketMovement(value: Record<string, unknown>): Record<str
 }
 
 function parseItemLedger(value: unknown): Record<string, unknown> | null {
+  const puzzle = parsePuzzleItemMovement(value)
+  if (puzzle) return puzzle as unknown as Record<string, unknown>
   if (!isRecord(value) || !exactKeys(value, ['id', 'itemId', 'delta', 'reason', 'source', 'createdAt']) ||
     !isId(value.id) || typeof value.itemId !== 'string' ||
     !isNonNegativeInt(value.createdAt) || !isRecord(value.source)) return null
@@ -1240,6 +1248,7 @@ function parseRaceResult(value: unknown): Record<string, unknown> | null {
 }
 
 export function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
+  if (PUZZLE_ENTITY_KINDS.includes(kind as never)) return parsePuzzleEntity(kind, value)
   if (kind === 'profile') return parseProfile(value)
   if (kind === 'umas') return parseUma(value)
   if (kind === 'cards') return parseCard(value)
@@ -1251,6 +1260,8 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
 }
 
 export function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
+  if (kind === 'puzzleResults') return parsePuzzleResultSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'puzzleOperations') return parsePuzzleOperationReceipt(value) as unknown as Record<string, unknown> | null
   if (kind === 'ledger') return parseLedger(value)
   if (kind === 'raceResults') return parseRaceResult(value)
   if (kind === 'flairEvents') return parseFlair(value)
@@ -1259,6 +1270,7 @@ export function parseLogData(kind: LogKind, value: unknown): Record<string, unkn
 }
 
 export function saveEntityIdMatches(kind: EntityKind, id: string, data: Record<string, unknown>): boolean {
+  if (PUZZLE_ENTITY_KINDS.includes(kind as never)) return puzzleEntityIdMatches(kind, id, data)
   if (kind.startsWith('rpg')) return rpgEntityIdMatches(kind, id, data)
   return (kind === 'profile' || kind === 'farm' || kind === 'inspirationBank') ? id === 'main' :
     (kind === 'umas' || kind === 'cards') ? data.templateId === id :
@@ -1267,6 +1279,8 @@ export function saveEntityIdMatches(kind: EntityKind, id: string, data: Record<s
 }
 
 export function saveLogIdMatches(kind: LogKind, id: string, data: Record<string, unknown>, createdAt: number): boolean {
+  if (kind === 'puzzleResults') return id === data.battleId && createdAt === data.createdAt
+  if (kind === 'puzzleOperations') return id === (data.operation as PuzzleOperationV1).operationId && createdAt === data.createdAt
   if (kind.startsWith('rpg')) return rpgLogIdMatches(kind, id, data, createdAt)
   if (kind === 'raceResults') return id === `race:${String(data.umaId)}:${String(data.sequence)}` && createdAt === data.createdAt
   if (kind === 'flairEvents') return createdAt === data.earnedAt
@@ -1279,14 +1293,25 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
   if (!isRecord(body)) return 'body must be an object'
   const upserts = body.upserts ?? []
   const appends = body.appends ?? []
+  const puzzleOperations = body.puzzleOperations === undefined ? undefined : parsePuzzleOperationBatch(body.puzzleOperations)
+  if (body.puzzleOperations !== undefined && !puzzleOperations) return 'invalid Puzzle operations or transport bounds'
+  if (body.puzzleProtocolVersion !== undefined && body.puzzleProtocolVersion !== 1) return 'unsupported Puzzle protocol'
   if (!Array.isArray(upserts) || !Array.isArray(appends)) return 'upserts and appends must be arrays'
-  if (upserts.length + appends.length > MAX_SYNC_OPERATIONS) return `at most ${MAX_SYNC_OPERATIONS} operations per sync`
+  if (upserts.length + appends.length + (puzzleOperations?.length ?? 0) > MAX_SYNC_OPERATIONS) return `at most ${MAX_SYNC_OPERATIONS} operations per sync`
+  if (puzzleOperations?.length) {
+    const docs = new Set(['constellationBank/main', ...upserts.map(u => isRecord(u) ? `${String(u.kind)}/${String(u.id)}` : ''),
+      ...appends.map(a => isRecord(a) ? `${String(a.kind)}/${String(a.id)}` : '')])
+    for (const op of puzzleOperations) { const refs = puzzleOperationReferences(op); refs.entities.forEach(k => docs.add(k)); refs.logs.forEach(k => docs.add(k)) }
+    if (docs.size > PUZZLE_SYNC_LIMITS.documents) return 'Puzzle transaction references too many documents'
+  }
 
   const parsedUpserts: EntityUpsert[] = []
   for (const value of upserts) {
     if (!isRecord(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
+    if (PUZZLE_ENTITY_KINDS.includes(kind as never)) return 'Puzzle projections require semantic operations'
+    if (kind === 'items' && typeof value.id === 'string' && value.id.startsWith('constellation:')) return 'Puzzle inventory requires semantic operations'
     if (!isId(value.id)) return 'invalid entity id'
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
     const data = parseEntityData(kind, value.data)
@@ -1306,6 +1331,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isRecord(value)) return 'append must be an object'
     if (!LOG_KINDS.includes(value.kind as LogKind)) return `unknown log kind ${String(value.kind)}`
     const kind = value.kind as LogKind
+    if (PUZZLE_LOG_KINDS.includes(kind as never) || kind === 'itemLedger' && isRecord(value.data) && value.data.reason === 'puzzle-material') return 'Puzzle evidence requires semantic operations'
     if (kind === 'rpgReceipts') return 'RPG receipts belong to the grouped command endpoint'
     if (!isId(value.id)) return 'invalid log id'
     const data = parseLogData(kind, value.data)
@@ -1324,7 +1350,8 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
   const entityKeys = parsedUpserts.map((item) => `${item.kind}/${item.id}`)
   const logKeys = parsedAppends.map((item) => `${item.kind}/${item.id}`)
   if (new Set(entityKeys).size !== entityKeys.length || new Set(logKeys).size !== logKeys.length) return 'duplicate operation id'
-  return { upserts: parsedUpserts, appends: parsedAppends }
+  return { upserts: parsedUpserts, appends: parsedAppends, ...(puzzleOperations ? { puzzleOperations } : {}),
+    ...(body.puzzleProtocolVersion === 1 ? { puzzleProtocolVersion: 1 as const } : {}) }
 }
 
 /**

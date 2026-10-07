@@ -1,5 +1,4 @@
 // Literal source-A enrollment, independent of racing builds (docs/design/uma-puzzles.md §§3–4).
-import type { UmaTemplate } from '../../content'
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type Stats, type Strategy } from '../../types'
 import { PUZZLE_RULES_VERSION, PUZZLE_SCHEMA_VERSION } from './rules'
 import { PUZZLE_ELEMENTS, type PuzzleElement, type PuzzleEnrollmentV1, type PuzzleSourceV1 } from './types'
@@ -27,7 +26,7 @@ export function parsePuzzleSource(v: unknown): PuzzleSourceV1 | null {
     baseStats: { ...v.baseStats }, growthRates: { ...v.growthRates }, aptitudes } : null
 }
 /** Explicit unit selection avoids guessing whether 0.2 means 0.2% or 20%. Raw percentages must all be integers. */
-export function createPuzzleSource(template: Pick<UmaTemplate, 'id' | 'baseStats' | 'growthRates' | 'aptitudes'>,
+export function createPuzzleSource(template: { id: string; baseStats: Stats; growthRates: Stats; aptitudes: Aptitudes },
   contentVersion: string, growthUnit: 'fraction' | 'percent' = 'fraction'): PuzzleSourceV1 {
   requirePuzzle(growthUnit === 'fraction' || growthUnit === 'percent', 'invalid', 'Unknown growth unit')
   requirePuzzle(puzzleRecord(template.growthRates) && puzzleExact(template.growthRates, STATS), 'invalid', 'Invalid growths')

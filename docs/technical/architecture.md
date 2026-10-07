@@ -204,6 +204,12 @@ active until M030's protected final cutover.
 - A background sync flushes the outbox to `POST /api/sync`: batched, debounced, and also when the app goes to the background.
 - RPG rows sync like every other row (D263): outfits, parties, runs (`rpgCheckpoints` schema 2), result and promotion
   logs, Items and ledger go through `/api/sync`. `/api/rpg/command` survives only for an older app's `spend-inspiration`.
+- Uma Puzzles adds a separate optional semantic operation lane in `/api/sync` (T110/D273), not a replacement RPG
+  protocol. All EXP/stock/debt/CL projections and evidence commit or reject together; same complete payload retry
+  returns its receipt before revision checks. Dexie28 adds synced schema-1 rows and device-only prediction/journal/
+  recovery tables without converting any save. [The exact protocol](uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273)
+  documents16/256KiB/200 transport bounds, standalone API adapters and explicit same-seed takeover. Both capabilities
+  remain off: no live bank or Training/Spark cutover; the real journal host is T111.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
@@ -279,7 +285,8 @@ active until M030's protected final cutover.
 - Uma Puzzles has a separate [private content pipeline/client](puzzle-content.md) (D272): reviewed PAD sources, alpha-safe
   atlases, immutable full-hash packs/catalogs and held authenticated atlas URLs. It never imports PAD combat data, reads
   unrelated private Spark rows or replaces another art family. Code is delivered but real source/art collection is pinned
-  by the owner; original DEV-only placeholders are not a production content pack. T110 save/sync follows; Spark remains live.
+  by the owner; original DEV-only placeholders are not a production content pack. T110 save/sync is implemented but
+  disabled; T111's journal host follows and Spark remains live.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.
 - Protected files are fetched with the Firebase bearer token and verified against their manifest SHA-256 before use. Image
@@ -322,6 +329,13 @@ players/{uid}/rpgCheckpoints/{id}     schema-2 campaign run: wins per node, carr
 players/{uid}/rpgResults/{id}         append-only won-fight EXP and token evidence
 players/{uid}/rpgPromotions/{id}      append-only prior-tier mastery evidence
 players/{uid}/rpgReceipts/{commandId} append-only grouped-command receipts (spend-inspiration only)
+players/{uid}/puzzleOutfits/{outfitId} schema-1 enrollment/source, lifetime PL/EXP, kit and revision (capability off)
+players/{uid}/puzzlePresets/{partyId}  schema-1 five-slot parties, leader and foreground chapter
+players/{uid}/puzzleCheckpoints/{id}  schema-1 derived reached/clear/attempt facts and frozen open encounter
+players/{uid}/constellationBank/main schema-1 protected bounded cutover header, debt and exchange unlock facts
+players/{uid}/puzzleCohort/{id}       schema-1 protected per-outfit/scenario preservation evidence
+players/{uid}/puzzleResults/{battleId} append-only frozen input/result, five EXP awards and gross/debtPaid/net
+players/{uid}/puzzleOperations/{id}   append-only exact typed operation and canonical atomic receipt
 ```
 
 Firestore cannot store an array directly inside another array, and a race record's compiled skill conditions are one.

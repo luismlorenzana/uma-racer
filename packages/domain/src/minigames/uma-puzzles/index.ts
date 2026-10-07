@@ -20,4 +20,6 @@ export { replayBattle as replayPuzzleBattle, battleStateHash as puzzleBattleStat
 export * from './bots'
 export * from './campaign'
 export * from './content'
+export * from './records'
+export * from './operations'
 export { PuzzleRuleError, type PuzzleErrorCode } from './validation'

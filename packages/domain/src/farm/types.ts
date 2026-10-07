@@ -1,6 +1,8 @@
 // Strict data-only Stable Farm vocabulary (docs/design/farm.md, T082, D234).
 
 import { STATS, type StatKey } from '../types'
+import { TRAINING_LEVEL_UP_TICKET_ID } from '../item-ids'
+import { parsePuzzleItemMovement, type PuzzleItemMovement } from '../minigames/uma-puzzles/operations'
 import { parseInspirationMovement, type InspirationMovement } from '../inspiration'
 import {
   FARM_CROP_TIERS,
@@ -111,7 +113,7 @@ export interface ExtraStatUnlockMovement {
 }
 
 /** The Training Level-Up Ticket (D212): one Training Level's EXP, paid by the Training EXP bank. */
-export const TRAINING_LEVEL_UP_TICKET_ID = 'training:level-up-ticket' as const
+export { TRAINING_LEVEL_UP_TICKET_ID } from '../item-ids'
 
 /** A spend of Level-Up Tickets on one unit, named by where it started so an exact retry finds its own evidence (D213). */
 export interface TrainingLevelUpSource {
@@ -144,6 +146,7 @@ export interface TrainingLevelUpMovement {
 
 /** Append-only evidence from which item quantities and Farm harvest XP can be repaired. */
 export type ItemLedgerEntry =
+  | PuzzleItemMovement
   | InspirationMovement
   | FarmHarvestMovement
   | ConstellationProduceMovement
@@ -340,6 +343,8 @@ function parseExtraStatUnlockMovement(value: unknown): ExtraStatUnlockMovement |
 }
 
 export function parseItemLedgerEntry(value: unknown): ItemLedgerEntry | null {
+  const puzzle = parsePuzzleItemMovement(value)
+  if (puzzle) return puzzle
   const inspiration = parseInspirationMovement(value)
   if (inspiration) return inspiration
   const harvest = parseFarmHarvestMovement(value)

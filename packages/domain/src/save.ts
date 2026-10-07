@@ -39,6 +39,8 @@ import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt
   type RpgCommandAction, type RpgCommandReceiptV1 } from './rpg/save'
 
 import { emptyInspiration, grandfatherInspiration, parseInspiration, type InspirationState } from './inspiration'
+import { PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, parsePuzzleEntity, puzzleEntityIdMatches, parsePuzzleResultSave } from './minigames/uma-puzzles/records'
+import { parsePuzzleOperationBatch, parsePuzzleOperationReceipt, parsePuzzleOperationResponses, puzzleOperationReferences, PUZZLE_SYNC_LIMITS, type PuzzleOperationV1, type PuzzleOperationResponse } from './minigames/uma-puzzles/operations'
 
 export const SAVE_SCHEMA_VERSION = 15 as const
 export const LEGACY_SAVE_SCHEMA_VERSION = 1 as const
@@ -416,9 +418,9 @@ export interface InitialSave {
   ledger: { id: string; data: LedgerEntry }[]
 }
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank'] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank', ...PUZZLE_ENTITY_KINDS] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts'] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts', ...PUZZLE_LOG_KINDS] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -456,6 +458,8 @@ export interface LogAppend {
 export interface SyncRequest {
   upserts: EntityUpsert[]
   appends: LogAppend[]
+  puzzleOperations?: PuzzleOperationV1[]
+  puzzleProtocolVersion?: 1
 }
 
 export interface SyncResponse {
@@ -463,6 +467,7 @@ export interface SyncResponse {
   conflicts: EntityRecord[]
   appended: number
   serverTime: number
+  puzzleOperations?: PuzzleOperationResponse[]
 }
 
 /** RPG mutations are never placed on the ordinary sync outbox. */
@@ -2097,6 +2102,7 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
 }
 
 export function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
+  if (PUZZLE_ENTITY_KINDS.includes(kind as never)) return parsePuzzleEntity(kind, value)
   if (kind === 'profile') return parsePlayerProfile(value) as unknown as Record<string, unknown> | null
   if (kind === 'umas') return parseUmaSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'cards') return parseCardSave(value) as unknown as Record<string, unknown> | null
@@ -2113,6 +2119,8 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
 }
 
 export function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
+  if (kind === 'puzzleResults') return parsePuzzleResultSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'puzzleOperations') return parsePuzzleOperationReceipt(value) as unknown as Record<string, unknown> | null
   if (kind === 'ledger') return parseLedgerEntry(value) as unknown as Record<string, unknown> | null
   if (kind === 'raceResults') return parseRaceResultRecord(value) as unknown as Record<string, unknown> | null
   if (kind === 'flairEvents') return parseFlairEvent(value) as unknown as Record<string, unknown> | null
@@ -2132,14 +2140,25 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
   if (!isObject(body)) return 'body must be an object'
   const upserts = body.upserts ?? []
   const appends = body.appends ?? []
+  const puzzleOperations = body.puzzleOperations === undefined ? undefined : parsePuzzleOperationBatch(body.puzzleOperations)
+  if (body.puzzleOperations !== undefined && !puzzleOperations) return 'invalid Puzzle operations or transport bounds'
+  if (body.puzzleProtocolVersion !== undefined && body.puzzleProtocolVersion !== 1) return 'unsupported Puzzle protocol'
   if (!Array.isArray(upserts) || !Array.isArray(appends)) return 'upserts and appends must be arrays'
-  if (upserts.length + appends.length > MAX_SYNC_OPERATIONS) return `at most ${MAX_SYNC_OPERATIONS} operations per sync`
+  if (upserts.length + appends.length + (puzzleOperations?.length ?? 0) > MAX_SYNC_OPERATIONS) return `at most ${MAX_SYNC_OPERATIONS} operations per sync`
+  if (puzzleOperations?.length) {
+    const refs = new Set(['constellationBank/main', ...upserts.map(u => isObject(u) ? `${String(u.kind)}/${String(u.id)}` : ''),
+      ...appends.map(a => isObject(a) ? `${String(a.kind)}/${String(a.id)}` : '')])
+    for (const op of puzzleOperations) { const r = puzzleOperationReferences(op); r.entities.forEach(k => refs.add(k)); r.logs.forEach(k => refs.add(k)) }
+    if (refs.size > PUZZLE_SYNC_LIMITS.documents) return 'Puzzle transaction references too many documents'
+  }
 
   const parsedUpserts: EntityUpsert[] = []
   for (const value of upserts) {
     if (!isObject(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
+    if (PUZZLE_ENTITY_KINDS.includes(kind as never)) return 'Puzzle projections require semantic operations'
+    if (kind === 'items' && typeof value.id === 'string' && value.id.startsWith('constellation:')) return 'Puzzle inventory requires semantic operations'
     if (kind.startsWith('rpg') || kind === 'inspirationBank') return 'Server-owned rows require their grouped command endpoint'
     if (!isId(value.id)) return 'invalid entity id'
     if (!isNonNegativeInt(value.baseVersion)) return 'invalid baseVersion'
@@ -2160,6 +2179,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isObject(value)) return 'append must be an object'
     if (!LOG_KINDS.includes(value.kind as LogKind)) return `unknown log kind ${String(value.kind)}`
     const kind = value.kind as LogKind
+    if (PUZZLE_LOG_KINDS.includes(kind as never) || kind === 'itemLedger' && isObject(value.data) && value.data.reason === 'puzzle-material') return 'Puzzle evidence requires semantic operations'
     if (kind.startsWith('rpg')) return 'RPG logs require the grouped command endpoint'
     if (!isId(value.id)) return 'invalid log id'
     const data = parseLogData(kind, value.data)
@@ -2179,7 +2199,8 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
   if (new Set(entityKeys).size !== entityKeys.length || new Set(logKeys).size !== logKeys.length) {
     return 'duplicate operation id'
   }
-  return { upserts: parsedUpserts, appends: parsedAppends }
+  return { upserts: parsedUpserts, appends: parsedAppends, ...(puzzleOperations ? { puzzleOperations } : {}),
+    ...(body.puzzleProtocolVersion === 1 ? { puzzleProtocolVersion: 1 as const } : {}) }
 }
 
 function parseEntityRecord(value: unknown): EntityRecord | null {
@@ -2187,6 +2208,7 @@ function parseEntityRecord(value: unknown): EntityRecord | null {
   const kind = value.kind as EntityKind
   if (!isPositiveInt(value.version) || typeof value.deleted !== 'boolean' || !isTimestamp(value.updatedAt)) return null
   const data = parseStoredEntityData(kind, value.data)
+  if (data && PUZZLE_ENTITY_KINDS.includes(kind as never) && !puzzleEntityIdMatches(kind, value.id, data)) return null
   if (!data) return null
   if (((kind === 'profile' || kind === 'farm' || kind === 'inspirationBank') && value.id !== 'main') ||
     ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
@@ -2202,6 +2224,8 @@ function parseLogRecord(value: unknown): LogRecord | null {
   if (!isObject(value) || !LOG_KINDS.includes(value.kind as LogKind) || !isId(value.id) || !isTimestamp(value.createdAt)) return null
   const kind = value.kind as LogKind
   const data = parseLogData(kind, value.data)
+  if (kind === 'puzzleResults' && data && (value.id !== data.battleId || value.createdAt !== data.createdAt)) return null
+  if (kind === 'puzzleOperations' && data && (value.id !== (data.operation as PuzzleOperationV1).operationId || value.createdAt !== data.createdAt)) return null
   if (kind === 'raceResults' && data && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) return null
   if (kind === 'flairEvents' && data && value.createdAt !== data.earnedAt) return null
   if (kind === 'itemLedger' && data && (value.id !== data.id || value.createdAt !== data.createdAt)) return null
@@ -2266,7 +2290,10 @@ export function parseSyncResponse(value: unknown): SyncResponse | null {
   })
   const conflicts = value.conflicts.map(parseEntityRecord)
   if (applied.some((item) => item === null) || conflicts.some((item) => item === null)) return null
-  return { applied: applied as SyncResponse['applied'], conflicts: conflicts as EntityRecord[], appended: value.appended, serverTime: value.serverTime }
+  const puzzles = value.puzzleOperations === undefined ? undefined : parsePuzzleOperationResponses(value.puzzleOperations)
+  if (value.puzzleOperations !== undefined && !puzzles) return null
+  return { applied: applied as SyncResponse['applied'], conflicts: conflicts as EntityRecord[], appended: value.appended, serverTime: value.serverTime,
+    ...(puzzles ? { puzzleOperations: puzzles } : {}) }
 }
 
 export function parseSyncResponseOrThrow(value: unknown): SyncResponse {

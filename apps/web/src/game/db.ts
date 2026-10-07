@@ -55,6 +55,8 @@ import {
   rpgCampaignPreset,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Table, type Transaction } from 'dexie'
+import type { PuzzleOutfitSaveV1, PuzzlePresetSaveV1, PuzzleCheckpointSaveV1, ConstellationBankSaveV1, PuzzleCohortSaveV1,
+  PuzzleResultSaveV1, PuzzleOperationReceiptV1, PuzzleOperationV1, PuzzleChange, PuzzleStoredEntity, PuzzleBattleAction } from '@racer/domain'
 import type { AlbumPrefs } from './album/prefs'
 import type { MinigameRunSnapshotV1, ReplayJournalV1 } from './minigame-journal'
 import type { RunTarget, StoredRunOutcome, StoredRunReward } from './minigame-host'
@@ -85,7 +87,7 @@ export interface OutboxRow {
   seq?: number
   kind: EntityKind | LogKind
   id: string
-  op: 'upsert' | 'append'
+  op: 'upsert' | 'append' | 'puzzle'
   queuedAt: number
 }
 
@@ -152,6 +154,15 @@ export interface RpgBattleArchiveRow {
   journal: RpgBattleJournalRow
   reason: 'takeover' | 'rejected-command'
 }
+export interface PendingPuzzleOperationRow {
+  id: string; order: number; operation: PuzzleOperationV1; status: 'pending' | 'rejected' | 'blocked'; queuedAt: number;
+  changes: PuzzleChange[]; prediction: PuzzleOperationReceiptV1; reason: string | null
+}
+export interface PuzzleJournalRow { id: string; schemaVersion: 1; ownerEpoch: number; inputHash: string;
+  actions: PuzzleBattleAction[]; stateHash: string; updatedAt: number }
+export interface PuzzleArchiveRow { id: string; reason: string; data: unknown; createdAt: number }
+export interface PuzzleBaseRow { id: string; record: PuzzleStoredEntity | null }
+export interface PuzzlePreferenceRow { id: string; value: unknown }
 
 interface LegacyMinigameRunRow extends Omit<MinigameRunRow, 'journal' | 'snapshot'> {
   setup?: unknown
@@ -191,6 +202,18 @@ function migrateLegacyProfile(row: LegacyProfileRow | VersionedRow<unknown>): Ve
 }
 
 export class RacerDb extends Dexie {
+  puzzleOutfits!: EntityTable<VersionedRow<PuzzleOutfitSaveV1>, 'id'>
+  puzzlePresets!: EntityTable<VersionedRow<PuzzlePresetSaveV1>, 'id'>
+  puzzleCheckpoints!: EntityTable<VersionedRow<PuzzleCheckpointSaveV1>, 'id'>
+  constellationBank!: EntityTable<VersionedRow<ConstellationBankSaveV1>, 'id'>
+  puzzleCohort!: EntityTable<VersionedRow<PuzzleCohortSaveV1>, 'id'>
+  puzzleResults!: EntityTable<LogRow<PuzzleResultSaveV1>, 'id'>
+  puzzleOperations!: EntityTable<LogRow<PuzzleOperationReceiptV1>, 'id'>
+  pendingPuzzleOperations!: EntityTable<PendingPuzzleOperationRow, 'id'>
+  puzzleJournals!: EntityTable<PuzzleJournalRow, 'id'>
+  puzzleArchives!: EntityTable<PuzzleArchiveRow, 'id'>
+  puzzleBases!: EntityTable<PuzzleBaseRow, 'id'>
+  puzzlePreferences!: EntityTable<PuzzlePreferenceRow, 'id'>
   profile!: EntityTable<VersionedRow<PlayerProfile>, 'id'>
   umas!: EntityTable<VersionedRow<UmaSave>, 'id'>
   cards!: EntityTable<VersionedRow<CardSave>, 'id'>
@@ -401,6 +424,11 @@ export class RacerDb extends Dexie {
     // The campaign (D261–D263): RPG rows save locally and sync like the rest. Outfits restart at Lv1 once, parties
     // keep their members, first-map checkpoints and grouped commands retire; a queued Inspiration unlock lands locally.
     this.version(27).stores({ ...storesWithBattleJournal, inspirationBank: 'id', rpgFights: 'id' }).upgrade(migrateRpgCampaign)
+    // Additive only: no owner enrollment, bank creation, Spark retirement or training EXP conversion.
+    this.version(28).stores({ ...storesWithBattleJournal, inspirationBank: 'id', rpgFights: 'id',
+      puzzleOutfits: 'id', puzzlePresets: 'id', puzzleCheckpoints: 'id', constellationBank: 'id', puzzleCohort: 'id',
+      puzzleResults: 'id, createdAt', puzzleOperations: 'id, createdAt', pendingPuzzleOperations: 'id, &order, status, queuedAt',
+      puzzleJournals: 'id', puzzleArchives: 'id, createdAt', puzzleBases: 'id', puzzlePreferences: 'id' })
   }
 }
 
