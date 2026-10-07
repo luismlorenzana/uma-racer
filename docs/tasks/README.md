@@ -11,11 +11,12 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**Owner review — Uma Puzzles:** [the first design draft](../design/uma-puzzles.md) proposes a global party puzzle
-campaign and material-driven Constellation Levels. It is documentation-only, not an approved cutover or numbered
-implementation milestone. Its [delivery sequence](../design/uma-puzzles.md#11-balance-delivery-and-documentation-work)
-becomes task specs after the owner's [review choices](../design/uma-puzzles.md#12-owner-review) are settled; current
-Spark, account progression and Claude's RPG remain unchanged.
+**Owner-approved plan — Uma Puzzles** (D267): [the design](../design/uma-puzzles.md) defines a global party puzzle
+campaign and material-driven Constellation Levels, with the owner's revised Light/Dark/basic/Dirt registration.
+All uncommon non-Dirt-A multi-style outfits also choose basics; the owner choices are fully resolved and the other
+recommendations are accepted as the starting specification. This is still documentation-only, not a live cutover or
+numbered implementation milestone. Its [delivery sequence](../design/uma-puzzles.md#11-balance-delivery-and-documentation-work)
+is ready for task-spec authoring; current Spark, account progression and Claude's RPG remain unchanged.
 
 **Owner detour — the RPG campaign is complete** (D260–D263): local-first RPG saves with no Sync steps, one generated
 chapter per scenario on a launch pad, a replayable top-to-bottom map, weakness/break battles with carried MP and camps,

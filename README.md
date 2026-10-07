@@ -89,7 +89,7 @@ docs/           design, technical, research
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
 | [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties with locked classes and elemental trees, Persona-style weakness breaks against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D263) |
-| [Uma Puzzles — first draft](docs/design/uma-puzzles.md) | **For owner review, not shipped rules:** global five-Uma puzzle parties, PAD-style battles, counted element alternatives, scenario/style Constellation Level-Up Tickets, exchanges and legacy-progress preservation |
+| [Uma Puzzles — approved plan](docs/design/uma-puzzles.md) | **Not implemented:** global five-Uma puzzle parties, PAD-style battles, resolved element registration covering the catalogue, scenario/style Constellation Level-Up Tickets, exchanges and legacy-progress preservation (D267) |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |

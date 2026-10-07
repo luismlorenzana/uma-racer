@@ -1,22 +1,24 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: first draft for owner review, 2026-10-07. Not implemented or an approved replacement for current rules.**
-Prepared against `main` at `892fd37` (D266). The owner's attached requirements are the fixed brief below;
-everything labelled **Proposal** is a recommendation, not a newly settled number. Existing
+**Status: owner-approved plan, 2026-10-07 (D267). Not implemented; registration is fully resolved.**
+Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
+registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
+specification, not unanswered owner choices; candidate balance coefficients still require simulation and pinning.
+Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
-until this draft is approved and implemented. Claude's RPG work is outside this change.
+until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
 
 ## Reading guide
 
 - [The new loop and fixed brief](#1-the-new-loop-and-fixed-brief)
 - [Constellation Levels and tickets](#2-constellation-levels-and-tickets)
-- [Catalogue counts and four element distributions](#3-element-identity-and-the-catalogue-check)
+- [Approved registration, catalogue counts and historical alternatives](#3-element-identity-and-the-catalogue-check)
 - [Roster, parties and independent Puzzle Levels](#4-roster-parties-and-puzzle-progression)
 - [Board, combat, skills and enemies](#5-the-puzzle-battle)
 - [Chapter maps, fight types and rewards](#6-chapters-and-the-farming-loop)
 - [Exchange shop and negative ticket bank](#7-the-exchange-shop) · [migration](#8-preserving-existing-progress-and-the-negative-ticket-bank)
 - [Phone experience and icons](#9-screens-guides-and-visual-identity)
-- [Persistence, content and delivery](#10-implementation-boundaries) · [review choices](#12-owner-review)
+- [Persistence, content and delivery](#10-implementation-boundaries) · [approval record](#12-owner-review)
 
 ## 1. The new loop and fixed brief
 
@@ -39,7 +41,7 @@ The three global modes have deliberately different products:
 |---|---|---|
 | Stable Farm | Farming Level per outfit; aggregate Farm expansion | Scenario crops for Extra stats |
 | Uma RPG | RPG outfit levels, class tiers, skills; party maps | Scenario Inspiration slot/skill tokens |
-| **Uma Puzzles** | **Puzzle Level per outfit; party maps** — proposed ownership | **Scenario/style Constellation Level-Up Tickets** |
+| **Uma Puzzles** | **Puzzle Level per outfit; party maps** | **Scenario/style Constellation Level-Up Tickets** |
 
 Friendship Training still gives cards global stars. Racing still gives Uma EXP, career accomplishments and scenario
 access. None of these EXP tracks substitute for another. Do not turn Uma Puzzles into RPG weapon/class combat or
@@ -57,7 +59,10 @@ make a racing build mandatory for its party.
 - Add a shop exchanging **one ticket of the immediately higher scenario for two of the lower**, and the reverse.
 - Home opens the global mode. It has its own roster, navigation and **five parties of five Umas**; all five slots
   are filled before entering a battle. Each party can retain its own chapter progress.
-- Choose and lock an outfit's Puzzle element during roster registration. Review alternatives to the supplied mapping.
+- Choose and lock an outfit's Puzzle element during roster registration: non-Dirt-A Front-only/Front+Pace → Light;
+  End-only/Late+End → Dark; Pace-only/Late-only/Pace+Late choose Fire/Water/Wood. **Dirt A chooses any of all five**,
+  overriding style first. All other non-Dirt-A multi-style combinations choose Fire/Water/Wood, explicitly approved
+  for the five uncommon current outfits. Enrollment still requires at least one original A running style.
 - Battles give independent Puzzle EXP. Scenario chapters represent roughly **ten Puzzle levels each**, with regular
   mixed-element squads and mono-element bosses that can be selected for material farming.
 - Target **six Umas' worth of scenario CL tickets per five-Uma party's scenario progression**.
@@ -65,15 +70,14 @@ make a racing build mandatory for its party.
 - Existing earned scenario levels generate a **one-time negative ticket bank**. Later rewards pay matching debt
   before entering spendable inventory. Existing levels are not reset.
 
-### Proposed first-release scope
+### Accepted first-release scope
 
 Keep the strong existing continuous-drag interaction, but replace solo Drive/Resolve circuits with a real party:
 shared HP, healing orbs, element-linked attacks, enemy squads, targeted attacks, individual active skills, one leader
 passive, boss phases and a persistent map. Start with one element per Uma and a small readable enemy-mechanic set.
 
-**Proposal: entry and retries are free.** Do not automatically carry over Spark's one daily Training Ticket cost.
-The owner requested a global material loop but did not specify its entry price. This is a review choice, not permission
-to change the current daily grant or scenario-promotion price.
+**Owner-approved: entry and retries are free.** Do not carry over Spark's one daily Training Ticket cost.
+This does not change the current daily grant or scenario-promotion price.
 
 ## 2. Constellation Levels and tickets
 
@@ -112,7 +116,7 @@ six fresh scenario units = 6 × 9 = 54 tickets
 five fresh scenario units = 45 tickets; the target leaves 9 tickets for another Uma
 ```
 
-### Ticket eligibility — proposal where the brief needs precision
+### Ticket eligibility — accepted contract
 
 Use the outfit template's **original, literal A** running-style grades, frozen from the verified catalogue. Do not use
 lineage-improved grades, mutable race defaults or the Puzzle element. This keeps Farming/RPG/Puzzle setups independent
@@ -169,7 +173,47 @@ save were copied or committed. Grade comparisons below are exactly `=== 'A'`.
 outfit has a source S style. A future exception must have a visible unavailable-enrollment reason and importer report,
 not an arbitrary element or deletion from the collection.
 
-### Option A — the owner's original mapping
+### Approved registration — owner revision, 2026-10-07
+
+Read **original, literal A** grades, not improved lineage or a mutable default style. Apply these exact-set rules in
+order; `Front+Pace` here means those two and no other A running style, as in the original filtered brief:
+
+| Priority | Source condition | Element registration |
+|---|---|---|
+| 1 | Dirt A, regardless of A-style combination | Choose **Fire, Water, Wood, Light or Dark** |
+| 2 | Non-Dirt-A; Front only or Front+Pace | **Light** |
+| 3 | Non-Dirt-A; End only or Late+End | **Dark** |
+| 4 | Non-Dirt-A; Pace only, Late only or Pace+Late | Choose **Fire, Water or Wood** |
+| 5 | Other non-Dirt-A multi-style combination, with at least one A running style | Choose **Fire, Water or Wood** |
+
+The Dirt override includes pure Front/End outfits with Dirt A: they still get all five choices. Registration is one
+chosen element, not five simultaneous elements or five leveling tracks. Lock/correction rules in section 4 apply.
+
+| Registration category | All outfits | Starter outfits |
+|---|---:|---:|
+| Fixed Light | **37** | **5** |
+| Fixed Dark | **31** | **1** |
+| Basic-element choice (including five multi-style exceptions) | **177** | **18** |
+| Dirt-A all-five choice | **23** | **1** |
+| **Total** | **268** | **25** |
+
+Compared with the original mapping's 128 fixed Light/Dark outfits, this has **68/268 = 25.4%** fixed Light/Dark.
+**200** outfits can choose each basic element; **60** are eligible for Light and **54** for Dark, including
+Dirt choices. These eligible pools overlap; they are not final populations and must not be added. Among starters,
+each basic element has **19** eligible choices, Light **6**, Dark **2**. No five-colour party quota is introduced.
+
+**Owner-approved exception:** three non-Dirt-A Pace+Late+End outfits, one Pace+End and one Front+Late also choose
+Fire/Water/Wood. They account for the increase from 172 to **177** basic-choice outfits. Future other multi-A
+combinations follow this same explicit fallback; do not broaden Light/Dark to any Front/End aptitude. An outfit with
+no original A running style remains unavailable for enrollment with a visible reason, not silently assigned or removed
+from the collection. All current 268 outfits are covered, and no current outfit lacks an A style.
+
+Show owned-roster colour counts during enrollment and suggest an underrepresented eligible colour without selecting
+it automatically. **Combat element does not replace source-A running-style eligibility for CL ticket spending.**
+The five-element/four-ticket reward map below remains independent and accepted; changing Front registration to Light
+does not turn every Light enemy drop into an FR ticket.
+
+### Historical Option A — the owner's original mapping (superseded)
 
 For non-Dirt-A outfits: Front-only/Front+Pace → Fire; End-only/Late+End → Water; Late-only → Wood; Pace-only → Light;
 Pace+Late → Dark. Dirt A → choose Fire/Water/Wood.
@@ -189,10 +233,10 @@ Light/Dark alone occupy **128/268 = 47.8%** before choices. Starters have one fi
 only one extra choice. This is workable without a mandatory five-colour party, but creates the scarcity the owner
 anticipated. The missing five are the three Pace+Late+End, one Pace+End and one Front+Late outfits.
 
-**Proposal if A wins:** uncovered multi-A outfits choose any basic element, shown as an explicit exception category.
+**Historical proposal if A won:** uncovered multi-A outfits choose any basic element, shown as an explicit exception category.
 That makes the basic-choice pool 28, but does not silently rewrite the exact supplied predicates.
 
-### Three alternatives
+### Three historical alternatives — comparison only, not current registration
 
 All three keep Dirt A's basic-element override first and freeze a single selected element at registration.
 
@@ -211,11 +255,9 @@ Fire **19**, Water **14**, Wood **22**, Light **5**, Dark **1**. **These numbers
 appear in several eligible pools, but becomes exactly one element after the owner chooses. Similarly, B/C's basic
 pool is not a prediction that three equal-sized populations will actually be selected.
 
-**Recommendation: C.** It most directly reduces compulsory Light/Dark, gives launch parties enough Water options,
-and leaves the dominant Pace/Late population useful across several teams. B is closer to the owner's example of
-Fronts/Ends retaining a rare element even in mixed styles. D preserves more aptitude-specific choice but requires a
-more involved explanation. Show owned-roster colour counts during enrollment; suggest an underrepresented eligible
-colour without automatically assigning it. No party is required to include one of every element.
+**Original recommendation: C, now superseded by the owner's approved registration above.** The retained alternatives
+explain the earlier count comparison; none is an additional selectable ruleset. The owner's choice keeps Front+Pace
+and Late+End in Light/Dark while adding Dirt's all-five freedom. No party is required to include one of every element.
 
 ### Element effectiveness
 
@@ -232,9 +274,9 @@ must remain viable against a boss through neutral damage, healing and routing; w
 ### Five elements, four material styles
 
 Puzzle element is combat identity; CL ticket style is spending eligibility. **They cannot be treated as the same enum.**
-The draft ties enemy colour to a visible reward discipline as follows, independent of which enrollment option wins:
+The accepted plan ties enemy colour to a visible reward discipline as follows, independent of registration eligibility:
 
-| Defeated enemy element | Proposed CL ticket family |
+| Defeated enemy element | Accepted CL ticket family |
 |---|---|
 | Fire | FR |
 | Water | EC |
@@ -246,7 +288,7 @@ A Dark variant always advertises which of the two it grants before entry; it nev
 The Dark boss route offers **Pace** and **Late** variants with the same total payout. No fifth ticket, wildcard drop,
 or implicit conversion is required. This preserves the original Pace+Late association while all four styles have a
 direct boss target. A Fire Uma can earn/use a PC ticket if its source Pace aptitude is A; its chosen combat colour
-does not restrict its inventory reward or material spend. This conversion is a review choice.
+does not restrict its inventory reward or material spend. The owner accepted this conversion map with the other recommendations.
 
 ### Dual elements later
 
@@ -554,7 +596,7 @@ operator does not mint a profit by cycling. Higher-tier replay can intentionally
 At fourteen scenarios, tier-14 stock is equivalent to **8,192 tier-1 tickets** after thirteen downgrades, so the economic
 impact must be tested, not dismissed as a small shop convenience.
 
-**Proposal:** a conversion edge becomes available after that party/account has first cleared the higher chapter's
+**Proposal:** a conversion edge becomes available account-wide after any saved party first clears the higher chapter's
 Opening guardian. This does not require a recipient Uma's racing promotion. It stops tier-1 farming alone converting
 all the way to the final tier, while preserving the requested two-way exchange once a chapter is actually reached.
 If the owner wants all edges immediately available, keep that freedom and rebalance chapter incentives; do not silently
@@ -586,7 +628,7 @@ Spark gains are included through the preserved level, not charged a second time 
 style if still a source A, otherwise the stable Front/Pace/Late/End first-A order. Freeze that selection in its
 receipt; future preference/lineage edits never reassign debt. Show the aggregate scenario/style breakdown before
 applying the migration. Do not debit every A aptitude. An owner choosing a scenario-wide debt pool instead would
-avoid style bias but change the matching-material rule; this is an explicit review choice.
+avoid style bias but change the matching-material rule; that alternative was not selected in the accepted plan.
 
 Never debit an unparseable/unknown-source outfit by guessing. Hold the cohort in a visible resumable `preparing`
 state until its source or authoritative row can be resolved. No new Puzzle reward or exchange is collectible against
@@ -633,15 +675,13 @@ Removing those without compensation is unacceptable. The detailed schema migrati
    Each full old 1,250 becomes one preserved universal ticket; retain the final fractional remainder visibly. Clear
    transferred unit EXP only in the same migration transaction, with a receipt of the exact totals. Applied levels
    are never included in this pool; older overflow already settled to tickets is not counted twice.
-4. A fractional legacy remainder can be topped up with the equivalent fraction of a future CL acquisition, completing
-   a universal ticket while preserving total value. **This needs owner approval:** it complicates integer material
-   output. A simpler alternative is a one-time round-up of that final account fraction to one legacy ticket, explicitly
-   recorded as migration compensation, at most one per account. Recommendation: the simpler round-up; do not silently
-   pretend it is value-neutral or round each unit separately.
+4. The owner accepted the recommended **one-time round-up** of the final account fraction to one legacy ticket,
+   explicitly recorded as migration compensation, at most one per account. Do not pretend it is value-neutral or round
+   each unit separately. The earlier fractional top-up alternative is not part of this plan.
 5. Conversion/round-up preserves value already owned, so it does **not** count as a new reward that repays the bank.
    Spending a preserved ticket still changes CL normally; it must not re-debit the frozen migration cohort.
 
-For review, the recommended selection is **preserve generic stock + pool remainders + at most one account round-up**.
+The accepted selection is **preserve generic stock + pool remainders + at most one account round-up**.
 Tests must pin this choice before any live migration. A preview shows preserved levels, ticket stock, converted EXP,
 round-up and new debt separately; capture a recoverable pre-cutover snapshot through existing save tooling.
 
@@ -835,7 +875,7 @@ closed balance. Pin approved constants in the design, domain pinning test, sim e
 
 ### Suggested delivery sequence — unnumbered until review
 
-Each unit gets a detailed task spec after the choices below are approved. Re-check free milestone/task numbers on
+The owner choices are resolved; each unit can now receive a detailed task spec. Re-check free milestone/task numbers on
 latest main; do not consume M030/T106 merely for a draft or reuse completed task numbers.
 
 | Unit | Deliverable and completion boundary |
@@ -885,12 +925,15 @@ under the guise of the Puzzle draft.
 
 ## 12. Owner review
 
-The fixed brief in section 1 is incorporated. The following are the meaningful choices still needing approval;
-the proposed formulas are starting candidates for testing, not another long list of requests for arbitrary numbers.
+**Owner response, 2026-10-07:** all first-draft suggestions accepted except registration, replaced by the exact rules
+in section 3, then confirmed basic-element choice for the five uncommon non-Dirt-A combinations. Record this as the
+planning baseline (D267), not a claim of implementation or closed balance. **No registration or other first-draft owner
+choice remains open.** PAD asset verification, simulations, save-safety tests and the phone pass are implementation
+checks, not requests to approve the whole plan again.
 
-| Choice | Recommendation | Why it matters |
+| Choice | Accepted plan | Why it matters |
 |---|---|---|
-| Element registration | **Option C**, pure Front→Light/pure End→Dark; others choose basics, Dirt override first | Makes basic elements broadly available without discarding aptitude identity; B stays closer to the owner's example |
+| Element registration | **Front-only/Front+Pace→Light; End-only/Late+End→Dark; other A-style sets choose basics; Dirt A chooses all five** | Matches the owner revision and explicit multi-style fallback; all 268 outfits covered |
 | Five elements → four ticket styles | Fire→FR, Water→EC, Wood→LS, Light→PC, explicit Dark PC/LS variants | Connects enemy drops to all four consumable families without inventing a fifth item |
 | Progression ownership and entry | Global **PL per outfit**, five filled slots, free entry/retry; ten-level chapters | Keeps this independent global loop usable without a new daily gate; no RPG class/tier reset |
 | Chapter/reward budget | **14 primary-route encounters / 54 gross tickets**, optional branches and repeatable targeted bosses | Six fresh units' worth by total; no false guarantee for every restricted recipient roster |
@@ -899,6 +942,6 @@ the proposed formulas are starting candidates for testing, not another long list
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-Once reviewed, settle these choices in the design/decisions, author fully specified tasks, then implement one task to
+The next step is to author fully specified tasks, then implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**

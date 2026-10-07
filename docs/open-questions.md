@@ -10,13 +10,17 @@ sync policy (D223) lets battle actions work offline but holds entry/result rewar
 commit is acknowledged; T090–T092 now implement that boundary, and any later change needs a new decision. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
 
-## Uma Puzzles — first-draft review
+## Uma Puzzles — owner choices resolved
 
-The owner's global-party/ticket rework is captured in [Uma Puzzles](design/uma-puzzles.md), not yet approved or
-implemented. Its [review table](design/uma-puzzles.md#12-owner-review) keeps recommendations and unresolved choices
-together: counted element mapping, five-element/four-style drops, outfit PL/free entry, chapter budget, exchange
-access, one-time debt allocation and preservation of old tickets/partial EXP. No current save or shipped number changes
-while these are under review. PAD source art access is also an explicit content-verification requirement, not a completed import.
+The owner accepted the [Uma Puzzles plan](design/uma-puzzles.md) on 2026-10-07 (D267), changing registration to
+Front-only/Front+Pace → Light; End-only/Late+End → Dark; pure Pace/Late or Pace+Late choose Fire/Water/Wood;
+**Dirt A overrides first and chooses all five**. No account/gameplay change is implemented yet.
+
+The owner also confirmed **Fire/Water/Wood choice** for the five other non-Dirt-A multi-style combinations
+(three Pace+Late+End, one Pace+End, one Front+Late). All 268 catalogue outfits are covered; no registration choice
+remains open. See [counts and exact predicates](design/uma-puzzles.md#3-element-identity-and-the-catalogue-check).
+All first-draft recommendations are approved; candidate tuning values still need simulation/pinning, and PAD
+art provenance and device validation remain implementation checks, not a completed import or phone sign-off.
 
 ## Needs you (owner actions, not design questions)
 
