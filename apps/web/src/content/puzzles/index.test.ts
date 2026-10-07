@@ -34,7 +34,8 @@ function fixture(versions = 2, future = false) {
   } }
   return { manifest, objects, refs, catalog, requests, revoke, create, transport, offline: () => { offline = true } }
 }
-describe('lazy authenticated Puzzle content', () => {
+// Retained-version/lease tests verify many full chapter packs while sibling packages share the CI runner.
+describe('lazy authenticated Puzzle content', { timeout: 30_000 }, () => {
   it('uses only the existing bearer-authenticated API for every pack and image', async () => {
     const f = fixture(1), fetcher = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toMatch(/^\/api\/content\/files\//)

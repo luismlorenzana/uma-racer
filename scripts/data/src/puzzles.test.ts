@@ -36,7 +36,8 @@ async function fixture() {
   await pin(raw)
   return { dir, raw, manifest, pin }
 }
-describe('immutable private Puzzle content compilation', () => {
+// Repeated full 392-node compilation plus disk round-trips competes with all packages on the two-core CI runner.
+describe('immutable private Puzzle content compilation', { timeout: 30_000 }, () => {
   it('reruns deterministically, validates joins, retains old versions and survives normal data reimport', async () => {
     const f = await fixture(), first = await importPuzzlePack(f.dir, f.raw, '2026-10-07T00:00:00.000Z')
     expect(first.packs[0]).toMatchObject({ chapters: 14, encounters: 392, cast: 5, frames: 1, pages: 1 })

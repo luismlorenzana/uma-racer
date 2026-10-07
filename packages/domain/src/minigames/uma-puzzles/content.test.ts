@@ -8,7 +8,8 @@ import { syntheticPuzzleEntrants } from './campaign/fixtures'
 import { freezePuzzleEncounter } from './campaign/encounters'
 import { createBattle } from './battle'
 import { battleStateHash } from './replay'
-describe('Puzzle private presentation contract', () => {
+// Full generated-chapter coverage is deliberately repeated across source/pack variants; keep all joins on slow CI.
+describe('Puzzle private presentation contract', { timeout: 30_000 }, () => {
   it('keeps semantic replay hash/seed unchanged when pack names/art identities change', () => {
     const chapter = puzzleChapter('ura-finale'), pack = syntheticPuzzlePack(), changed = structuredClone(pack)
     changed.version = 'invented-v2'; changed.members.forEach(m => { m.name = 'Invented new name'; m.art.sourceHash = 'f'.repeat(64) })

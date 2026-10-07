@@ -24,7 +24,8 @@ async function fixture(count = 5) {
   const fetcher: typeof fetch = async () => { calls++; return new Response(new Uint8Array(png), { headers: { 'content-type': 'image/png' } }) }
   return { dir, raw, png, evidence, fetcher, calls: () => calls, contentDir: resolve(dir, 'content'), cacheDir: resolve(dir, 'cache') }
 }
-describe('private Puzzle atlas import', () => {
+// Native multi-page codecs and full chapter checks are bounded integration work, not a five-second unit test.
+describe('private Puzzle atlas import', { timeout: 30_000 }, () => {
   it('normalizes grayscale-alpha originals to RGBA before transparency checks and composition', async () => {
     const f = await fixture(), image = await sharp(f.png).toColourspace('b-w').png().toBuffer()
     expect((await sharp(image).metadata()).channels).toBe(2)

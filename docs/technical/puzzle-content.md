@@ -130,7 +130,9 @@ reads/writes. Placeholders are clearly named; they are not part of a production 
 Synthetic tests cover strict parsers, unknown/future joins, deterministic canonical order/hash, cosmetic replay invariance,
 native alpha/decode/multi-page gutters, dedup/offline/corrupt cache, permitted local exports/symlink refusal, MIME/size/retry,
 immutable retention/reimport/publication refusal, authenticated client paths, verified offline restore, exact old packs,
-held URL lifetime/overflow, missing art and visible Retry/Return. No tests contact the network.
+held URL lifetime/overflow, missing art and visible Retry/Return. No tests contact the network. These bounded full-chapter
+and native-codec integration suites use a local 30-second test timeout, after the two-core CI runner exceeded the default
+five seconds; no workflow, global test limit or validation assertion was weakened.
 
 The browser proof at 390×844 has no horizontal/page overflow; placeholders and both failure controls were inspected.
 Screenshots show invented art only, not a final PAD cast or physical-iPhone acceptance. The code-only acceptance run
