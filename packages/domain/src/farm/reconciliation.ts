@@ -67,11 +67,11 @@ export function reconcileFarmEvidence(
   const harvestedByCycle = new Map<string, FarmHarvestMovement>()
   for (const entry of movements) {
     const item = quantities.get(entry.itemId) ?? { quantity: 0, updatedAt: 0 }
-    item.quantity += entry.delta - (entry.source.kind === 'rpg-inspiration' ? entry.source.debtPaid ?? 0 : 0)
+    item.quantity += entry.delta - (entry.source.kind === 'rpg-inspiration' || entry.source.kind === 'puzzle-operation' ? entry.source.debtPaid ?? 0 : 0)
     item.updatedAt = Math.max(item.updatedAt, entry.createdAt)
     // Accepted token groups establish causality; device timestamps can differ. Validate their final sum, not
     // a timestamp-sorted prefix that could put a valid later spend before its grant on another device.
-    if (!Number.isSafeInteger(item.quantity) || item.quantity < 0 && !inspirationToken(entry.itemId)) {
+    if (!Number.isSafeInteger(item.quantity) || item.quantity < 0 && !inspirationToken(entry.itemId) && entry.source.kind !== 'puzzle-operation' && entry.itemId !== 'training:level-up-ticket') {
       throw new Error(`Item ledger produces an invalid quantity: ${entry.itemId}`)
     }
     quantities.set(entry.itemId, item)

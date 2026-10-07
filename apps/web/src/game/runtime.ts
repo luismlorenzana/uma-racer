@@ -38,6 +38,7 @@ import {
   type FlairEventKind,
   type LedgerEntry,
   parseUmaSave,
+  type PuzzlePayload,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { saveApi } from '../api/client'
@@ -1068,6 +1069,18 @@ export class GameRuntime {
     return this.inFlight
   }
 
+  /** T111's host uses this durable lane. The off capability rejects production entry, including guessed routes. */
+  async queuePuzzleOperation(payload: PuzzlePayload, operationId: string, dependencies: string[] = []) {
+    if (!useGame.getState().persistent || useGame.getState().status !== 'ready') throw new Error('A persistent save is required for Uma Puzzles')
+    const { PuzzleOperationCoordinator } = await import('./puzzles/operations')
+    const coordinator = new PuzzleOperationCoordinator(db, '', () => this.schedule())
+    const operation = await coordinator.enqueue(payload, operationId, dependencies)
+    const snapshot = await readLocalSnapshot()
+    if (snapshot && this.content) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
+    await this.refreshPending()
+    return operation
+  }
+
   private async flushOnce(): Promise<void> {
     if (this.flushing || !this.content || !useGame.getState().persistent) return
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -1079,6 +1092,24 @@ export class GameRuntime {
     this.flushing = true
     const generation = this.generation
     try {
+      if (await db.pendingPuzzleOperations.where('status').equals('pending').count()) {
+        const { PuzzleOperationCoordinator } = await import('./puzzles/operations')
+        const coordinator = new PuzzleOperationCoordinator(db, '', () => this.schedule())
+        const operations = await coordinator.nextBatch()
+        if (operations.length) {
+          setSyncState({ status: 'syncing', error: null })
+          const response = parseSyncResponseOrThrow(await saveApi.sync({ upserts: [], appends: [], puzzleProtocolVersion: 1, puzzleOperations: operations }))
+          if (generation !== this.generation) return
+          await coordinator.adopt(operations, response.puzzleOperations, response.serverTime)
+          const snapshot = await readLocalSnapshot()
+          if (snapshot && this.content) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
+          const pending = await db.outbox.count(), rejected = await db.pendingPuzzleOperations.where('status').anyOf(['rejected', 'blocked']).count()
+          setSyncState({ pending, status: rejected ? 'error' : pending ? 'pending' : 'idle',
+            error: rejected ? 'A Puzzle change needs review. Its input and builds are saved; no conflicting reward or spend was kept.' : null })
+          if (pending) this.schedule(0)
+          return
+        }
+      }
       const batch = await db.outbox.orderBy('seq').limit(MAX_SYNC_OPERATIONS).toArray()
       if (batch.length === 0) {
         if (generation !== this.generation) return
@@ -1096,7 +1127,8 @@ export class GameRuntime {
         return
       }
       setSyncState({ status: 'syncing', error: null })
-      const request: SyncRequest = { upserts: [], appends: [] }
+      const request: SyncRequest = { upserts: [], appends: [], puzzleProtocolVersion: 1 }
+      const { canonicalPuzzleUmaForSync, puzzleOrdinaryProtected, puzzleTransactionTables, PuzzleOperationCoordinator, adoptPuzzleUmaVersion } = await import('./puzzles/operations')
       for (const item of batch) {
         if (
           !Number.isSafeInteger(item.seq) ||
@@ -1111,7 +1143,9 @@ export class GameRuntime {
         if (item.op === 'upsert') {
           const row = await entityRow(item.kind as EntityKind, item.id)
           if (!row) throw new Error(`Outbox entity is missing: ${item.kind}/${item.id}`)
-          request.upserts.push({ kind: item.kind as EntityKind, id: item.id, baseVersion: row.version, data: toRecord(row.data) })
+          if (await puzzleOrdinaryProtected(db, item.kind, item.id)) throw new Error('A retired or Puzzle-owned Item is on the ordinary queue; keep the save for recovery')
+          const data = item.kind === 'umas' ? await canonicalPuzzleUmaForSync(db, item.id, toRecord(row.data)) : toRecord(row.data)
+          request.upserts.push({ kind: item.kind as EntityKind, id: item.id, baseVersion: row.version, data })
         } else {
           const row = await logRow(item.kind as LogKind, item.id)
           if (!row) throw new Error(`Outbox log is missing: ${item.kind}/${item.id}`)
@@ -1126,8 +1160,9 @@ export class GameRuntime {
       const acknowledged = acknowledgedSequences(batch, request, response)
       const sentSequence = new Map(batch.map((item) => [`${item.kind}/${item.id}`, item.seq]))
 
-      await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.farm, db.items, db.itemLedger, db.inspirationBank,
-        db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.outbox], async () => {
+      const coordinator = new PuzzleOperationCoordinator(db, '', () => this.schedule())
+      await db.transaction('rw', [...puzzleTransactionTables(db), db.profile, db.cards, db.badges, db.farm, db.inspirationBank,
+        db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints], async () => { await coordinator.reconcileOrdinaryInTransaction(async () => {
         for (const applied of response.applied) await updateEntityVersion(applied.kind, applied.id, applied.version)
         for (const conflict of response.conflicts) {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
@@ -1137,7 +1172,8 @@ export class GameRuntime {
             // Permanent global progress merges even when a newer local clear arrived while this request was in flight.
             await putConflict(conflict, legacy, response.serverTime)
           } else if (current?.seq !== originalSequence && conflict.kind !== 'badges') {
-            await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
+            if (conflict.kind === 'umas' && !conflict.deleted) await adoptPuzzleUmaVersion(db, conflict)
+            else await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
           } else if (legacy && await entityRow(conflict.kind, conflict.id)) {
             // The server's copy predates the save schema this app writes, so ours is newer: keep it, take the server's
             // version, and send it again. Adopting the old copy would roll the save back to before the migration (D156).
@@ -1150,7 +1186,8 @@ export class GameRuntime {
         }
         await db.outbox.bulkDelete(acknowledged)
         await reconcileFarmProjectionsInTransaction(response.serverTime)
-      })
+      }, response.serverTime) })
+      await coordinator.refreshStatus()
       if (generation !== this.generation) return
       const { advanceInspirationOnce } = await import('./inspiration-advance')
       await advanceInspirationOnce(db, saveApi, () => generation === this.generation)
@@ -1159,10 +1196,11 @@ export class GameRuntime {
       const [ordinary, rpg, actionable] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
         db.pendingRpgCommands.where('status').equals('pending').count()])
       const pending = ordinary + rpg
+      const puzzleRecovery = await db.pendingPuzzleOperations.where('status').anyOf(['rejected', 'blocked']).count()
       const syncedAt = Date.now()
       rememberLastSync(syncedAt)
-      setSyncState({ status: rpg > actionable ? 'error' : pending ? 'pending' : 'idle', pending,
-        lastSuccessAt: syncedAt, error: rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
+      setSyncState({ status: puzzleRecovery || rpg > actionable ? 'error' : pending ? 'pending' : 'idle', pending,
+        lastSuccessAt: syncedAt, error: puzzleRecovery ? 'A Puzzle change needs review; its input and builds are saved for recovery.' : rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
       if (ordinary + actionable > 0) this.schedule(0)
     } catch (error) {
       const pending = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count()])

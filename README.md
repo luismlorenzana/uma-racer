@@ -90,7 +90,7 @@ docs/           design, technical, research
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
 | [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: generated twelve-level chapters, replayable maps, five-Uma parties with locked classes and elemental trees, Octopath element/weapon breaks against PriConne teams, carried MP/camps, EXP and Inspiration tokens from every win (D260–D266) |
-| [Uma Puzzles](docs/design/uma-puzzles.md) | **T106–T108 rules and T109 content code implemented, gameplay unavailable:** enrollment, PL/materials, combat/replay/maps, retained private pipeline/client; real PAD inputs/art pinned by owner with DEV placeholders (D272). [M030](docs/tasks/M030-uma-puzzles.md) continues with T110 save/sync. Spark and saves are unchanged |
+| [Uma Puzzles](docs/design/uma-puzzles.md) | **T106–T110 foundations implemented, gameplay unavailable:** progression/combat/maps, private pipeline/client and capability-off atomic saves/sync (D273); real PAD input/art pinned with DEV placeholders (D272). [M030](docs/tasks/M030-uma-puzzles.md) continues with T111 journal/host. Spark/account progression is unchanged |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
@@ -104,7 +104,7 @@ docs/           design, technical, research
 |---|---|
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [RPG implementation](docs/technical/uma-rpg-implementation.md) | Local-first RPG rows and sync, the device fight journal, the generated campaign and the cast-only private pack |
-| [Uma Puzzles implementation contract](docs/technical/uma-puzzles-implementation.md) | **T106–T108 pure rules and T109 content code exist; gameplay runtime planned:** battle/campaign API/parsers/hash, [private pack/atlas/client contract](docs/technical/puzzle-content.md), additive saves, atomic operations, journal/takeover and protected cutover; real PAD input/art pinned for later |
+| [Uma Puzzles implementation contract](docs/technical/uma-puzzles-implementation.md) | **T106–T110 foundations exist; gameplay host planned:** battle/campaign API/parsers/hash, [private pack/atlas/client](docs/technical/puzzle-content.md), exact schema-1 records/Dexie28, atomic operations/repair and takeover boundary; journal host/cutover and real PAD input/art remain |
 | [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, one-time bootstrap, content privacy, environments |
 | [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
 | [Visual System "Paddock"](docs/design/visual-system.md) | Surfaces, colour, type, shape, components, icons, art treatment, motion, density |

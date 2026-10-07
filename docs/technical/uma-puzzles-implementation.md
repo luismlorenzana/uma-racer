@@ -1,8 +1,8 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T108 pure rules and T109 content code implemented (D269–D272); gameplay runtime/cutover planned, not enabled.**
+**Status: T106–T108 pure rules, T109 content code and T110 save/sync implemented (D269–D273); gameplay host/cutover not enabled.**
 T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
-pinned at the owner's request. DEV proofs use original labelled placeholders; T110 is next and no gameplay/cutover is enabled.
+pinned at the owner's request. DEV proofs use original labelled placeholders; T111's replay host is next. No gameplay/cutover is enabled.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
@@ -232,7 +232,8 @@ order only among eligible A styles; an editor can choose another eligible archet
 
 ## 3. Additive account records
 
-These names describe semantic ownership; T110 must publish the exact parsers/field interfaces with no unused fields.
+T110 implements the following additive schema-1 records. Exact exported interfaces and rejecting parsers live in
+`packages/domain/src/minigames/uma-puzzles/records.ts` and `operations.ts`; no profile/Uma schema stamp changes.
 
 | Record | Identity / minimum fields | Sync |
 |---|---|---|
@@ -241,8 +242,9 @@ These names describe semantic ownership; T110 must publish the exact parsers/fie
 | `puzzleCheckpoints` | party/scenario; reached/cleared nodes; first-clear facts; per-node next attempt; open encounter descriptor; revision | Yes |
 | `puzzleResults` | one terminal receipt per battle id; input/hash/epoch identity; outcome; five exact EXP deltas; gross/repaid/net vector | Append-only |
 | `puzzleOperations` | operation id + payload digest; typed operation; dependency ids; expected economic revision; resolved receipt/status | Append-only canonical receipts |
-| `constellationBank` | account; preparing/active; immutable cohort/debit receipt; nonpositive scenario/style balances; cutover version/revision | Yes, protected creation |
-| `puzzleJournals` | battle id/owner epoch; frozen input/version; bounded actions; prior count/hash; origin device | **Device-only** |
+| `constellationBank` | bounded account header; preparing/active; immutable cohort count/debit limits; nonpositive scenario/style balances; cutover version/id/revision | Yes, protected creation |
+| `puzzleCohort` | one outfit/scenario's original TL/preferred style/source, resolved A-style/debit and completion evidence | Yes, protected creation |
+| `puzzleJournals` | battle id/owner epoch/input hash; bounded actions and current state hash; update time (input/version/origin stay on descriptor) | **Device-only** |
 | local pending operations | ordered operation payloads + optimistic projection rollback/rebase metadata | Device-only queue |
 | local archives/preferences | displaced journals; guide memory; chibi/plain-orb preference; last local view | Device-only |
 
@@ -250,6 +252,130 @@ Do not duplicate global item stacks in a puzzle inventory. New acquisitions/spen
 bounded source unions; gross grant evidence includes repayment. Positive stock never includes negative bank balances.
 The bank's frozen cohort may need multiple bounded records if it cannot fit Firestore's document limit; the API must
 refuse oversized work before writing, not discover a production limit after half the account changed.
+
+### T110 implemented persistence/protocol v1 (D273)
+
+All ids use the existing safe 1–120-character alphabet. Every new record has `schemaVersion:1`; metadata keeps the
+existing entity `{kind,id,version,data,deleted,updatedAt}` or log `{kind,id,data,createdAt}` envelope. Stored entity
+versions start at1; a missing expected row is version0. Unsupported stamps, extra/prototype keys, sparse arrays,
+duplicate ids, non-safe numeric values and inconsistent derived fields reject without resetting data.
+
+| Kind / exact data fields | Id and local indexes |
+|---|---|
+| `PuzzleOutfitSaveV1`: `schemaVersion,outfitId,enrollment,kit,revision`; enrollment is T106's source/element/eligibleElements/level/exp/firstBattleId; kit is `{activeId,patternId}` | `puzzleOutfits/{outfitId}`, `id` |
+| `PuzzlePresetSaveV1`: `schemaVersion,partyId,name,slots,leaderId,foregroundChapter,revision`; name is nonblank≤80 characters, exactly five nullable `{outfitId,kit}` slots; chapter is nullable canonical chapter id | `puzzlePresets/puzzle-party-{1..5}`, `id` |
+| `PuzzleCheckpointSaveV1`: `schemaVersion,checkpointId,scenarioId,progress,reached,open,revision`; progress is T108's checkpoint, reached is its exact derived ordered node list | `puzzleCheckpoints/pzp:{partyId}:{scenarioId}`, `id` |
+| `PuzzleOpenEncounterV1`: `schemaVersion,deviceId,ownerEpoch,input,inputHash,content`; `content:{version,contentHash}` freezes T109's immutable pack id and full64-hex hash | Nested on checkpoint; no separate synced journal |
+| `ConstellationBankSaveV1`: `schemaVersion,cutoverVersion:1,cutoverId,phase,cohortCount,completedCount,debitLimits,balances,openingClears,revision` | `constellationBank/main`, `id` |
+| `PuzzleCohortSaveV1`: `schemaVersion,cutoverId,outfitId,scenarioId,legacyLevel,preferredStyle,source,debtStyle,debit,completed` | `puzzleCohort/pcu:{puzzlePayloadHash([outfitId,scenarioId])}`, `id` |
+| `PuzzleResultSaveV1`: `schemaVersion,battleId,input,inputHash,result,fact,exp,materials,createdAt`; five EXP entries `{outfitId,frozenLevel,amount,before,after}`; material entries `{itemId,gross,debtPaid,net}` | `puzzleResults/{canonicalBattleId}`, `id,createdAt` |
+| `PuzzleOperationReceiptV1`: `schemaVersion,operation,createdAt,changes,logs`; changes `{kind,id,before,after}`, logs are exact result/material evidence | `puzzleOperations/{operationId}`, `id,createdAt` |
+
+The bank header contains at most registry-size×4 material keys, not a roster. Keys in `debitLimits`/`balances` match;
+each balance stays in `[-debitLimit,0]`, with summed limits≤9×cohortCount. Completed cohort rows resolve preferred
+original A style or first A style, and debit exactly `legacyLevel-1`; pending rows hold nullable source/style and zero
+debit. Activation requires completedCount=cohortCount, including an empty0/0 cohort; a complete header cannot remain
+preparing. T115 must check full outfit/scenario identities before writing a hashed cohort key (collision is a visible
+error, not a merged unit), create/freeze the cohort and conversion receipts, and implement resumable preparation.
+This task only supplies validated scaffolding: it never creates or activates that header.
+
+Frozen inputs must use recipe `puzzle-campaign-v1`, manifest `puzzles-{contentHash}`, matching party/chapter/attempt,
+five current enrolled entrants and authored numeric foe/reward recipes. The account seed source is the immutable
+save-derived `bank.cutoverId`, **not a uid, clock or new random seed**. T111 passes it as `accountSeed` to
+`freezePuzzleEncounter`; reservation checks `puzzle-seed-{puzzleSeed(cutoverId,'account')}-{puzzleSeed(battleId,'attempt')}`.
+`inputHash` and operation digest use the exported canonical sorted-key16-hex diagnostic hash. These are not security
+signatures: receipt retries additionally compare the entire canonical operation, so a hash collision cannot authorize
+a different payload. Full content SHA-256 remains independent.
+
+Dexie **v28 is additive only**, retaining every v27 table/row/outbox entry. Synced tables above join snapshots; the
+following do not, and must never become ordinary append/upsert rows:
+
+| Local table / fields | Indexes / ownership |
+|---|---|
+| `pendingPuzzleOperations`: `id,order,operation,status,queuedAt,changes,prediction,reason`; status pending/rejected/blocked; prediction is the complete local receipt | `id,&order,status,queuedAt`; ordered rollback/replay and offline result summary |
+| `puzzleJournals`: `id,schemaVersion:1,ownerEpoch,inputHash,actions,stateHash,updatedAt` | `id`; actions follow181-action engine limit; T111 validates append/replay |
+| `puzzleArchives`: `id,reason,data,createdAt` | `id,createdAt`; rejected input/diagnostics, later displaced journals |
+| `puzzleBases`: `id,record` (canonical entity or null) | `id` is `kind/id`; canonical bases of currently predicted fields |
+| `puzzlePreferences`: `id,value` | `id`; guide/presentation/view memory |
+
+Pending operations store predicted result/item evidence locally, **not** in canonical cloud log tables. T111 can reopen
+that pending result without inventing rewards. Only acknowledged receipt adoption installs those logs. Uma/item
+physical versions remain canonical; pending chain metadata carries virtual revisions. Repair of Umas restores only
+receipt-owned CL/retired EXP, preserving racing progress, preferences, Inspiration, Extra stats and all four builds.
+Constellation derivation excludes still-locked nodes after rollback; assignments remain available for recovery.
+Snapshot adoption, canonical rows, pending replay and ordinary state install share one Dexie transaction. Ordinary
+Racing sync temporarily restores canonical economic fields, installs its response, updates bases and replays pending
+groups atomically; its unrelated Uma version bump does not stale an unchanged economic bank. Farm reconciliation
+does not queue or overwrite Puzzle materials (or legacy universals after activation).
+
+`PuzzleOperationCoordinator` in `apps/web/src/game/puzzles/operations.ts` exposes `enqueue`, `nextBatch`, `adopt`,
+snapshot/ordinary reconciliation and status refresh. `GameRuntime.queuePuzzleOperation` persists, publishes then
+schedules normal background sync. The separate Zustand `usePuzzleSync` exposes pending/message/recoveryIds.
+Rejected inputs and dependents remain inspectable; they are not automatically resubmitted with new ids or revisions.
+
+The optional sync request is:
+
+```ts
+{ upserts, appends, puzzleProtocolVersion?: 1, puzzleOperations?: PuzzleOperationV1[] }
+// PuzzleOperationV1:
+{ schemaVersion: 1, operationId, payloadDigest, dependencies, expected, payload }
+// expected: { kind, id, version }[]
+```
+
+Semantic payloads (no arbitrary writable-entity vector) are:
+
+- `enroll {source,element}`, `correct {outfitId,element}`, `equip-outfit {outfitId,kit}` (roster default for future
+  party assignment; does not overwrite independently equipped party slots, and locks during an open battle);
+- `save-party/equip-party {party}`, `transfer {outfitId,fromPartyId,toPartyId,slot}` (slot0…4);
+- `open-chapter {partyId,scenarioId}` (may save/view an incomplete party, cannot battle);
+- `reserve {encounter}`, `settle {checkpointId,inputHash,result}` (terminal engine result, never reward quantities);
+- `cl-spend {outfitId,scenarioId,inputs,source?}`; an unenrolled outfit may supply a validated original source without
+  being forced to enroll/pick a colour; an enrolled outfit's supplied source must match its frozen source;
+- `exchange {from,to,quantity}` (positive input quantity, same-style adjacent edge; higher Opening win required).
+
+Limits pinned in `domain.test.ts`: **16 groups**, **262,144 UTF-8 bytes** for the JSON operation array, **200 distinct
+referenced records** including mixed ordinary references, **921,600 encoded bytes per receipt**. The existing400
+total-operation request bound and HTTP5MiB bound also apply. Dependencies≤16, unique declared refs≤200, receipt
+logs≤8. `partitionPuzzleOperations` keeps whole ordered groups; an oversized single group is a recoverable error.
+References include bank, owned/source/party/checkpoint rows, affected stock/result/movement records, operation receipt
+and dependencies. All five parties and their relevant scenario checkpoints are read to enforce uniqueness and locks.
+Every write must lie within that read set; preflight bounds run before repository reads. Receipt-size preflight rejects
+the whole group before any adapter writes.
+
+Each response contains `puzzleOperations:[{operationId,status,receipt,reason,authoritative}]`, exactly once per request
+operation. Status is applied/duplicate/rejected/blocked; applied/duplicate carry the original receipt and null reason,
+rejected/blocked a reason and null receipt. `authoritative:[{kind,id,record|null}]` covers the exact entity read set and
+reflects the **final** canonical batch state. The client rejects omitted/unknown/duplicate or mismatched responses
+before adoption. Duplicate lookup precedes revision/dependency checks; changed complete payload under one id rejects.
+Unrelated ordinary writes still complete beside a rejected Puzzle group, never beside a partial economic group.
+
+CL/exchange compare bank/stack revisions. Settlement instead checks exact open battle/input/owner and absence of a
+terminal result, adds the five frozen-level EXP amounts to current progress, intercepts matching debt and closes one
+attempt. It cannot roll another accepted win back. The API checks recipe/seed/result/HP/reward/EXP boundaries, not
+server-side pointer replay; T111's local host must replay first. Open encounters lock party/loadout/element correction;
+first entry permanently locks colour correction. A loss/abandon grants zero. Ordinary raw Puzzle/material/receipt
+writes are rejected. After active cutover, protocol1 Racing/config updates preserve canonical CL and zero retired EXP;
+old clients, resurrected EXP and new ordinary universal-ticket movements get explicit update/recovery errors. Farm,
+RPG and Inspiration keep their established unrelated paths, including D149 ordinary-log first-copy warnings.
+
+Both adapters use the same semantic resolver. Firestore reads its complete deduplicated set before writes and
+coalesces final projections; local-file requests serialize and atomic-rename their equivalent result. Production API
+packaging remains standalone CommonJS: `node apps/api/scripts/sync-puzzle-adapter.mjs` mechanically mirrors the narrow
+24-module pure dependency closure into `apps/api/src/save/puzzle-domain/`. A test checks byte-for-byte parity. Edit
+domain sources, regenerate, never hand-edit the adapter; no Docker, infra, dependency or source-TS runtime import change.
+
+Authenticated `POST /api/puzzles/prepare` parses `{schemaVersion:1,cutoverId,expectedBankRevision}` and currently
+returns `{status:'disabled'}` (future enabled scaffold: not-ready); T115 implements its mutation. Authenticated
+`POST /api/puzzles/takeover` parses `{schemaVersion:1,checkpointId,battleId,expectedEpoch,deviceId}`. It returns
+`{status:'taken-over',checkpoint}`, `{status:'settled',result}` or `{status:'rejected',reason}`; the pure response parser
+checks requested identity/owner. Taken-over increments epoch and changes only owner device/epoch/input hash, preserving
+the exact cast, seed, battle and rewards. Settlement winning that race returns its result; superseded epochs reject.
+T111 must additionally compare the returned input to its previously frozen descriptor, then archive/start the journal
+only after acknowledgement. No timeout or disappearance silently grants a new board.
+
+Checked-in API and web capabilities remain **false**. No bank creation, training conversion, Home entry or Spark
+retirement occurs here. Synthetic tests inject enabled banks; production cannot enable this through a query/route.
+The runnable replay host/journal belongs to T111, and real PAD inputs/private preview still belong to deferred T109.
 
 ## 4. Battle input, action and result contract
 
@@ -313,7 +439,7 @@ That cannot atomically preserve a CL spend, its inventory debit and debt repayme
 append accepted while its stack conflicts is not a valid settlement. Never rely on `max(CL)`, `max(PL)` or `max(debt)`
 to repair combined economic mutations.
 
-T110 adds an optional, bounded **Puzzle operation group** to ordinary `/api/sync`, processed by the existing local-file
+T110 implements an optional, bounded **Puzzle operation group** in ordinary `/api/sync`, processed by the existing local-file
 and Firestore repositories. This is background transport, not a new Sync/Submit screen or server call per drag.
 Keep existing unrelated request shapes compatible. A group has an operation id/digest, typed semantic input,
 dependencies/expected economic revisions and bounded replay-derived result evidence where relevant. The server

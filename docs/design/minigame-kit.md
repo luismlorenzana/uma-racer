@@ -65,12 +65,14 @@ defines a device journal, atomic background economic operations and explicit sam
 shipped Training Level game until the final gated preservation cutover; task specs must not retire it halfway through.
 T106 exports pure parsed identity/progression/material/debt/legacy rules. T107 adds an independent pure board/combat
 engine, finite kit, strict transports, authoritative event steps and replay hashes. Its `sim:puzzles` uses only
-invented data and public actions; it is not production balance closure. No new host, Home route, save field or
+invented data and public actions; it is not production balance closure. No new playable host, Home route or
 account migration is installed. T108 adds generated28-node chapters, fixed-reference encounters, replay-derived
 reward/progress projections and exact style/debt/exchange reports. Its600-battle campaign sample records remaining
 balance outliers. T109 now supplies the [private Puzzle pipeline/client](../technical/puzzle-content.md); real PAD
 inputs/art are pinned for the final pass by the owner (D272), with explicitly labelled original DEV placeholders.
-T110 storage/sync is next; placeholders never satisfy verified production content. Spark's board and replay are untouched.
+T110 adds [schema-1 records, additive Dexie28, atomic background operations and canonical repair](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273)
+(D273), still capability-off, without creating a bank or retiring Spark. T111's real replay host/journal is next;
+placeholders never satisfy verified production content. Spark's board and replay are untouched.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):

@@ -1,5 +1,5 @@
 // Scenario/style CL items and pure atomic projections (docs/design/uma-puzzles.md §§2, 7).
-import { TRAINING_LEVEL_UP_TICKET_ID } from '../../farm/types'
+import { TRAINING_LEVEL_UP_TICKET_ID } from '../../item-ids'
 import { SCENARIOS, type ScenarioDef } from '../../scenarios'
 import { STRATEGIES, type Strategy } from '../../types'
 import { eligiblePuzzleStyles } from './identity'

@@ -13,7 +13,7 @@ import {
   PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_REGULAR_LEVELS, PUZZLE_GUARDIAN_LEVELS, PUZZLE_CHAMPION_LEVEL,
   PUZZLE_MAP_BRANCHES, PUZZLE_MAP_NODES, PUZZLE_DROP_COUNTS, PUZZLE_PRIMARY_WINS, PUZZLE_PRIMARY_GROSS, PUZZLE_FULL_GROSS,
   PUZZLE_DARK_VARIANTS, PUZZLE_FOE_ROLES, PUZZLE_FOE_REFERENCE, PUZZLE_FOE_SCALING, PUZZLE_FOE_ROLE_MULTIPLIERS,
-  PUZZLE_FOE_MECHANICS, PUZZLE_SQUAD_MIXES, PUZZLE_ALLOCATION_RECIPIENT_LIMIT, PUZZLE_CONTENT_LIMITS,
+  PUZZLE_FOE_MECHANICS, PUZZLE_SQUAD_MIXES, PUZZLE_ALLOCATION_RECIPIENT_LIMIT, PUZZLE_CONTENT_LIMITS, PUZZLE_SYNC_LIMITS,
 } from './minigames/uma-puzzles'
 
 import {
@@ -711,6 +711,9 @@ describe('cards', () => {
 })
 
 describe('Uma Puzzles initial candidates, not balance closure (D269)', () => {
+  it('pins atomic transport limits, not gameplay progression caps (D273)', () => {
+    expect(PUZZLE_SYNC_LIMITS).toEqual({ groups: 16, bytes: 262144, documents: 200, receiptBytes: 921600 })
+  })
   it('pins bounded private content and alpha-safe presentation, not combat numbers', () => {
     expect(PUZZLE_CONTENT_LIMITS).toEqual({ members: 512, packs: 64, pages: 32, frame: 256, gutter: 2, page: 2048,
       jsonBytes: 2_097_152, imageBytes: 8_388_608, inputPixels: 16_777_216, timeoutMs: 10_000, attempts: 2, cachedPacks: 4, cachedPages: 8 })

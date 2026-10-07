@@ -2,6 +2,7 @@
 
 import type { EntityKind, SyncRequest, SyncResponse } from '@racer/domain'
 import type { OutboxRow } from './db'
+import { parsePuzzleOperationResponses } from '@racer/domain'
 
 const key = (kind: EntityKind, id: string) => `${kind}/${id}`
 
@@ -27,5 +28,7 @@ export function acknowledgedSequences(
     throw new Error('Sync response does not account for the requested entities')
   }
   if (response.appended > request.appends.length) throw new Error('Sync response has an invalid append count')
+  if (request.puzzleOperations && !parsePuzzleOperationResponses(response.puzzleOperations, request.puzzleOperations))
+    throw new Error('Sync response does not account for the requested Puzzle operations')
   return batch.map((item) => item.seq).filter((sequence): sequence is number => sequence !== undefined)
 }

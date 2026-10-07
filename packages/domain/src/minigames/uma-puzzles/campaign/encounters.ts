@@ -10,7 +10,8 @@ import { puzzleSeed } from '../rng'
 import { PUZZLE_PARSE_LIMITS, PUZZLE_STAT_BASE, PUZZLE_STAT_GROWTH } from '../rules'
 import { PUZZLE_ELEMENTS, type PuzzleElement } from '../types'
 import { puzzleArray, puzzleExact, puzzleId, puzzleInteger, puzzleRecord, puzzleSafe, requirePuzzle } from '../validation'
-import { puzzleCampaignId } from './identity'
+import { parsePuzzleCampaignId, puzzleCampaignId } from './identity'
+import { puzzleChapter } from './chapters'
 import { parsePuzzleChapter, puzzleEntryEligibility } from './progress'
 import { PUZZLE_CAMPAIGN_VERSION, PUZZLE_DARK_VARIANTS, PUZZLE_DROP_COUNTS, PUZZLE_FOE_MECHANICS as M,
   PUZZLE_FOE_REFERENCE as R, PUZZLE_FOE_ROLES, PUZZLE_FOE_ROLE_MULTIPLIERS, PUZZLE_FOE_SCALING, type PuzzleFoeRole } from './rules'
@@ -94,6 +95,19 @@ export function resolvePuzzleChapterEncounters(chapter: PuzzleChapter, valueCast
   requirePuzzle(map && cast, 'invalid', 'Invalid chapter/cast contract')
   return map.nodes.flatMap(node => node.kind === 'champion' && node.elements[0] === 'dark'
     ? PUZZLE_DARK_VARIANTS.map(variant => resolveNode(node, cast, variant)) : [resolveNode(node, cast, null)])
+}
+/** API semantic check: cast ids are cosmetic, while every fight coefficient and drop comes from this recipe. */
+export function validatePuzzleEncounterRecipe(input: PuzzleBattleInputV1): boolean {
+  try {
+    const identity = parsePuzzleCampaignId(input.battleId)
+    if (!identity || identity.kind !== 'battle' || identity.partyId !== input.partyId || identity.scenarioId !== input.scenarioId ||
+      input.checkpointId !== puzzleCampaignId({ kind: 'checkpoint', partyId: identity.partyId, scenarioId: identity.scenarioId })) return false
+    const node = puzzleChapter(input.scenarioId).nodes.find(n => n.localId === identity.localId)
+    if (!node || input.kind !== node.kind || input.encounterLevel !== node.level || input.enemies.length !== node.elements.length) return false
+    const variant = node.localId === 'c-dark' ? input.rewards[0]?.style as PuzzleDarkVariant : null
+    if (JSON.stringify(input.rewards) !== JSON.stringify(puzzleEncounterRewards(node, variant))) return false
+    return input.enemies.every((enemy, i) => JSON.stringify(enemy) === JSON.stringify(foe(node.level, node.kind, node.roles[i]!, node.elements[i]!, `${node.id}:foe${i}`, enemy.castId)))
+  } catch { return false }
 }
 export interface PuzzleEncounterEntry {
   chapter: PuzzleChapter; checkpoint: PuzzleCheckpointV1; nodeId: string; entrants: PuzzleEntrant[]; leaderId: PuzzleLeaderId;
