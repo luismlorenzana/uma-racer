@@ -1,11 +1,12 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106–T108 pure foundations/battle/campaign implemented (D269–D271). Gameplay not enabled.**
+**Status: approved plan (D267–D268); T106–T111 foundations/content code/save/sync/real host implemented (D269–D274). Gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
 not balance closure. T108 pins generated maps, fixed-reference encounter scaling, reward vectors and modest simulation
-evidence below. Private content, persistence, screens and release tuning remain T109–T116 work.
+evidence below. T110–T111 add capability-off persistence and the real replay host; real private content, screens and
+release tuning remain the pinned T109 and T112–T116 work.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -1172,6 +1173,10 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-T106–T108 pure foundations/battle/campaign are complete (D269–D271): [T109 private content](../tasks/T109-puzzle-private-content.md) is next. Implement one task to
+T106–T111 foundations/content code/save/sync/real replay host are complete (D269–D274), capability-off.
+[The implemented host](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) owns deterministic
+device journals, atomic reservation/settlement/materials and explicit online recovery. Completion flair follows accepted
+CL rather than a rejectable offline prediction. [T112 Hub/parties/maps](../tasks/T112-puzzle-hub-maps.md) is next;
+[T109 real private content](../tasks/T109-puzzle-private-content.md) remains pinned. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**

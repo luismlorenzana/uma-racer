@@ -46,25 +46,37 @@ async function undoPending(database: RacerDb) {
     await putEntity(database, base.record, kind!, id!)
   }
 }
-async function savePrediction(database: RacerDb, pending: PendingPuzzleOperationRow, prediction: PuzzleOperationReceiptV1) {
+async function savePrediction(database: RacerDb, pending: PendingPuzzleOperationRow, prediction: PuzzleOperationReceiptV1, afterWrite: (kind: string) => void = () => {}) {
   for (const c of prediction.changes) {
     if (!await database.puzzleBases.get(key(c))) await database.puzzleBases.put({ id: key(c), record: c.before })
     // Mutable Uma rows use canonical version on ordinary sync. Puzzles' virtual revisions live in the pending chain.
     const baseline = await database.puzzleBases.get(key(c))
     const record = c.kind === 'umas' || c.kind === 'items' ? { ...c.after, version: baseline?.record?.version ?? 0 } : c.after
     await putEntity(database, record, c.kind, c.id)
+    afterWrite(`${c.kind}/${c.id}`)
   }
   await database.pendingPuzzleOperations.put({ ...pending, changes: prediction.changes, prediction })
+  afterWrite('pending')
+  // Result/movement evidence is stored in that one durable prediction, never separate raw cloud logs.
+  for (const log of prediction.logs) afterWrite(`${log.kind}/${log.id}`)
 }
 /** Publishes after the transaction; injected capability is for isolated tests, never a route/query flag. */
 export class PuzzleOperationCoordinator {
   constructor(private readonly database: RacerDb, private readonly accountSeed: string, private readonly schedule: () => void,
-    private readonly enabled: boolean = PUZZLES_RELEASE_ENABLED) {}
+    private readonly enabled: boolean = PUZZLES_RELEASE_ENABLED, private readonly afterWrite: (kind: string) => void = () => {}) {}
 
   async enqueue(payload: PuzzlePayload, operationId: string, dependencies: string[] = [], now = Date.now()): Promise<PuzzleOperationV1> {
     const operation = await this.database.transaction('rw', puzzleTransactionTables(this.database), async () => {
+      return await this.enqueueInTransaction(payload, operationId, dependencies, now)
+    })
+    await this.afterCommit(); return operation
+  }
+
+  /** Host composition: journal/reservation or terminal archive joins these writes. No publication inside a transaction. */
+  async enqueueInTransaction(payload: PuzzlePayload, operationId: string, dependencies: string[] = [], now = Date.now()): Promise<PuzzleOperationV1> {
       const existing = await this.database.pendingPuzzleOperations.get(operationId)
       if (existing) {
+        if (existing.status !== 'pending') throw new Error(existing.reason ?? 'This saved operation needs recovery')
         if (puzzleCanonical(existing.operation.payload) !== puzzleCanonical(payload) || puzzleCanonical(existing.operation.dependencies) !== puzzleCanonical(dependencies))
           throw new Error('Operation id was reused with a different input')
         return existing.operation
@@ -95,19 +107,38 @@ export class PuzzleOperationCoordinator {
       if (projection.status !== 'applied' || !projection.receipt) throw new Error(projection.reason ?? 'Puzzle prediction failed')
       const order = (pending.at(-1)?.order ?? 0) + 1
       if (!Number.isSafeInteger(order)) throw new Error('Puzzle operation order overflow')
-      await savePrediction(this.database, { id: operationId, order, operation: op, status: 'pending', changes: [], prediction: projection.receipt, reason: null, queuedAt: now }, projection.receipt)
+      await savePrediction(this.database, { id: operationId, order, operation: op, status: 'pending', changes: [], prediction: projection.receipt, reason: null, queuedAt: now }, projection.receipt, this.afterWrite)
       await this.database.outbox.add({ kind: 'puzzleOperations', id: operationId, op: 'puzzle', queuedAt: now })
+      this.afterWrite('outbox')
       return op
-    })
-    await this.publish(); this.schedule(); return operation
   }
+
+  async afterCommit(): Promise<void> { await this.publish(); this.schedule() }
 
   async nextBatch(): Promise<PuzzleOperationV1[]> {
     const rows = (await this.database.pendingPuzzleOperations.orderBy('order').toArray()).filter(r => r.status === 'pending')
     return partitionPuzzleOperations(rows.map(r => r.operation))[0] ?? []
   }
 
-  async adopt(operations: readonly PuzzleOperationV1[], raw: unknown, now = Date.now()): Promise<void> {
+  /** Write-free host preview, including the pending chain's virtual versions. Caller owns the read transaction. */
+  async previewInTransaction(payload: PuzzlePayload, now: number): Promise<PuzzleOperationReceiptV1> {
+    const state = await readState(this.database), pending = (await this.database.pendingPuzzleOperations.orderBy('order').toArray()).filter(p => p.status === 'pending')
+    for (const row of pending) {
+      for (const c of row.changes) state.entities.set(key(c), restorePuzzleOwnedFields(c.after, state.entities.get(key(c)) ?? null))
+      state.logs.set(`puzzleOperations/${row.id}`, { kind: 'puzzleOperations', id: row.id, data: {}, createdAt: row.queuedAt })
+    }
+    // This is an in-memory dry run, not an idempotence lookup for a user-chosen operation id.
+    state.logs.delete('puzzleOperations/puzzle-preview')
+    const provisional = createPuzzleOperation({ schemaVersion: 1, operationId: 'puzzle-preview', dependencies: [], expected: [], payload })
+    const op = createPuzzleOperation({ ...provisional, expected: puzzleOperationReferences(provisional).entities.map(k => {
+      const [kind, id] = k.split('/'); return { kind: kind!, id: id!, version: state.entities.get(k)?.version ?? 0 }
+    }) })
+    const result = resolvePuzzleOperations({ ...state, enabled: this.enabled, accountSeed: this.accountSeed, now }, [op]).responses[0]!
+    if (!result.receipt) throw new Error(result.reason ?? 'This material action is unavailable')
+    return result.receipt
+  }
+
+  async adopt(operations: readonly PuzzleOperationV1[], raw: unknown, now = Date.now(), afterCanonical?: () => Promise<void>): Promise<void> {
     const responses = parsePuzzleOperationResponses(raw, operations)
     if (!responses) throw new Error('Puzzle sync response has missing, duplicated, changed or unknown acknowledgements')
     for (const r of responses) {
@@ -116,7 +147,7 @@ export class PuzzleOperationCoordinator {
       for (const log of r.receipt?.logs ?? []) if (!parseLogData(log.kind as LogKind, log.data)) throw new Error('Puzzle canonical response contains invalid evidence')
     }
     let adjustment: string | null = null
-    await this.database.transaction('rw', puzzleTransactionTables(this.database), async () => {
+    await this.database.transaction('rw', [...puzzleTransactionTables(this.database), ...['badges', 'cards', 'ledger', 'raceResults', 'flairEvents'].map(k => this.database.table(k))], async () => {
       await undoPending(this.database)
       const pending = await this.database.pendingPuzzleOperations.orderBy('order').toArray(), answered = new Set(responses.map(r => r.operationId))
       const authoritative = new Map<string, PuzzleAuthoritative>()
@@ -149,6 +180,7 @@ export class PuzzleOperationCoordinator {
         await this.database.puzzleBases.put({ id: key(a), record: a.record })
       }
       await this.replayRemaining(pending.filter(p => !answered.has(p.id)), now)
+      if (afterCanonical) await afterCanonical()
     })
     await this.publish()
     if (adjustment) usePuzzleSync.setState({ message: adjustment })

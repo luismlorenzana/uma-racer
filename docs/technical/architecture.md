@@ -82,11 +82,10 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 Uma Puzzles' additive pure rules, battle and campaign v1 live in `packages/domain/src/minigames/uma-puzzles/` (D269–D271).
-They have no app/save callers yet: [the versioned contract](uma-puzzles-implementation.md#t107-implemented-battle-v1-d270)
+Their capability-off real host now calls them: [the versioned contract](uma-puzzles-implementation.md#t107-implemented-battle-v1-d270)
 documents independent board/RNG, authoritative events, replay, generated maps and once-account reward projections.
 The campaign uses fixed authored level/role scaling, not the entering party; private cast joins are explicit inputs.
-This is not a new live save or host; Spark remains
-active until M030's protected final cutover.
+This is not an enabled Puzzle release; Spark remains active until M030's protected final cutover.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
 - Save v15 stores mutable profile/Uma state, including the account's Training EXP bank, four distance builds per unlocked
@@ -209,7 +208,11 @@ active until M030's protected final cutover.
   returns its receipt before revision checks. Dexie28 adds synced schema-1 rows and device-only prediction/journal/
   recovery tables without converting any save. [The exact protocol](uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273)
   documents16/256KiB/200 transport bounds, standalone API adapters and explicit same-seed takeover. Both capabilities
-  remain off: no live bank or Training/Spark cutover; the real journal host is T111.
+  remain off: no live bank or Training/Spark cutover. T111 implements the lazy `GameRuntime.puzzleHost()` real adapter,
+  strict device-only journal replay, compare-and-append, atomic terminal/material operations and acknowledged same-seed
+  recovery. Pending results stay in prediction receipts; only accepted CL earns irreversible completion flair, including
+  at boot. [The real port](uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) has no screen/Home entry
+  or production-installed double; T112 is next.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
@@ -286,7 +289,7 @@ active until M030's protected final cutover.
   atlases, immutable full-hash packs/catalogs and held authenticated atlas URLs. It never imports PAD combat data, reads
   unrelated private Spark rows or replaces another art family. Code is delivered but real source/art collection is pinned
   by the owner; original DEV-only placeholders are not a production content pack. T110 save/sync is implemented but
-  disabled; T111's journal host follows and Spark remains live.
+  disabled; T111's real journal host is implemented behind that gate and Spark remains live.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.
 - Protected files are fetched with the Firebase bearer token and verified against their manifest SHA-256 before use. Image
