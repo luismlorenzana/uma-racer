@@ -1,6 +1,6 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: owner-approved plan, 2026-10-07 (D267). Not implemented; registration is fully resolved.**
+**Status: owner-approved plan, 2026-10-07 (D267); full task breakdown M030/T106–T116 (D268). Not implemented.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; candidate balance coefficients still require simulation and pinning.
@@ -19,6 +19,10 @@ until the plan is implemented and safely cut over. Claude's RPG work is outside 
 - [Exchange shop and negative ticket bank](#7-the-exchange-shop) · [migration](#8-preserving-existing-progress-and-the-negative-ticket-bank)
 - [Phone experience and icons](#9-screens-guides-and-visual-identity)
 - [Persistence, content and delivery](#10-implementation-boundaries) · [approval record](#12-owner-review)
+
+Implementation instructions: [M030 and all eleven task specs](../tasks/M030-uma-puzzles.md) and the
+[technical contract](../technical/uma-puzzles-implementation.md). Implement one task to completion at a time;
+current training remains active until the verified replacement and protected preservation cutover are ready.
 
 ## 1. The new loop and fixed brief
 
@@ -370,8 +374,10 @@ five entrants the same base award and their own relative adjustment, regardless 
 A win earns EXP, not necessarily a whole level; the result shows progress when no level is crossed. Loss/abandon gives
 no EXP or material in this proposal; repeat wins still pay.
 
-Show every level crossed with ATK/HP/RCV/guard/resilience deltas. Candidate skill milestones are PL1/5/10 for the
-first kit, then one choice at each completed ten-level band. Keep a compact loadout rather than importing the RPG tree.
+Show every level crossed with ATK/HP/RCV/guard/resilience deltas. The bounded first-release kit uses PL1 actives/leader,
+PL5 four-orb specialization and PL10 row specialization, as detailed in T107 below. Higher-band choices are an
+expansion through explicitly published finite skill rows, not an automatic empty reward every ten levels or infinite
+stacking bonuses. Lifetime PL/stat progression continues beyond the initial kit. Keep a compact loadout, not the RPG tree.
 
 ## 5. The puzzle battle
 
@@ -473,6 +479,13 @@ a specialist ×1.25 on that group's single-target hit; a full six-cell row can g
 group's mass hit. A group gets at most one pattern bonus. Add L/cross/box conditions only with a guide and tests;
 the first production chapter does not need the full PAD awakening system.
 
+**M030's bounded delivery kit:** all source-A initial actives and the three leader choices are available at PL1;
+one four-orb specialist pattern becomes selectable at PL5 and the row pattern at PL10. Equip one active, one pattern,
+and the slot-1 leader passive; no stacking unlock at each later ten-level band. Later active variants/hazards and
+higher-band skill rows are expansion scope rather than half-implemented rewards. T107 publishes the exact recipe table,
+duration/charge semantics and tested coefficients. A shield uses the strongest percentage, not an additive stack,
+covering the next damaging enemy phase; one foe cannot be delayed repeatedly before its next intent executes.
+
 ### Enemy behavior and counterplay
 
 Every foe shows art, element, HP, target state, countdown, next move, and the resulting mitigated damage before a drag.
@@ -518,6 +531,10 @@ Proposed primary progression:
 | Middle | 3 | 1 | 4–6 |
 | Final stretch | 4 | 1 | 7–9 |
 | Champion routes | 0 | one selected champion | 10 |
+
+T108's starting recommended levels within these sectors are regular rows **1,2,3 / 4,5,6 / 7,8,9,9**, guardians
+**3,6,9**, champions **10**, offset by the chapter band. They are named/pinned alongside encounter scaling,
+not inherited from RPG. Both choices at each reached row are previewable/replayable; clearing either advances.
 
 Each regular row offers two alternative squads; choose one to progress, and reveal the other for optional replay after
 that row is reached. This gives **20 regular nodes + 3 guardians + 5 champion nodes = 28 map nodes**, but the primary
@@ -810,7 +827,10 @@ network inside rules.** Monotonic elapsed gesture duration belongs in the bounde
 Append only validated actions under expected count. A terminal commit replays the stored journal; the screen cannot
 submit its own EXP, damage, tickets or debt numbers. In one transaction settle party progress, five outfit EXP,
 result/evidence, bank, inventory and outbox. Only publish Zustand state after persistence succeeds. The ordinary
-local-first `/api/sync` carries bounded entities and idempotent logs; do not resurrect the RPG's retired Sync/Submit UI.
+local-first `/api/sync` carries bounded **atomic Puzzle operation groups** and canonical receipts as specified in the
+[implementation contract](../technical/uma-puzzles-implementation.md#6-local-first-sync-without-economic-last-write-wins).
+Per-row entity conflict handling alone cannot protect combined EXP, stock, debt and CL changes. Pending operations
+rebase together from canonical evidence; do not resurrect the RPG's retired Sync/Submit UI or call the API per drag.
 
 ### Resume, conflicts and recovery
 
@@ -818,13 +838,14 @@ Reload on the same device must restore the **exact board, HP, foes, cooldowns, t
 party edits elsewhere cannot reroll it. Retain engine version dispatch; an unsupported old journal is a visible restore
 case, not permission to discard it and give a favourable board.
 
-Device journals do not silently sync. Proposed second-device policy: show the persisted open encounter and its origin,
-allow viewing other parties, and require an explicit takeover to restart the **same frozen input/seed from turn zero**
-if its local action journal is unavailable. Supersede the prior device with a new attempt revision without another reward
-identity; two terminal claims cannot both pay. On reconnect a displaced device shows recovery and keeps its archived
-journal for diagnostics. This is an implementation obligation, not something ordinary last-write-wins outfit rows
-magically solve. If this cannot be safely implemented local-first, surface the conflict and pause that encounter rather
-than granting duplicate progress; approval of a stronger takeover boundary may be needed.
+Device journals do not silently sync. The specified second-device policy shows the persisted open encounter and its
+origin, allows viewing other parties, and requires explicit **online acknowledged takeover** to restart the **same
+frozen input/seed from turn zero** if its journal is unavailable. Increment owner epoch without changing battle/reward
+identity; two terminal claims cannot both pay and the prior epoch cannot settle after takeover. This narrow recovery
+boundary may wait online, not normal single-device play or every reward. On reconnect a displaced device shows recovery
+and retains its archived journal. Same-device corrupt/unsupported journals never silently restart. This is an
+implementation obligation, not something ordinary last-write-wins outfit rows magically solve; block recovery rather
+than duplicate progress if safe takeover cannot be acknowledged.
 
 Bank creation is authoritative and one-time; subsequent repayment must retain immutable cohort and prove the movement
 toward zero. Do not copy a `max(level)` entity merge for combined ticket spends: it can keep the level while losing the
@@ -873,21 +894,23 @@ coverage, debt-first earnings and exchanges. Check start/end PL, rewards per min
 13-edge exchange effect. A result that only gets the total 54 right but cannot practically train the roster is not
 closed balance. Pin approved constants in the design, domain pinning test, sim envelope and a **new** decision.
 
-### Suggested delivery sequence — unnumbered until review
+### Specified delivery sequence — M030 / T106–T116
 
-The owner choices are resolved; each unit can now receive a detailed task spec. Re-check free milestone/task numbers on
-latest main; do not consume M030/T106 merely for a draft or reuse completed task numbers.
+The owner's gameplay choices are resolved. [M030](../tasks/M030-uma-puzzles.md) now contains eleven detailed individual
+task specs with dependencies, contracts, synthetic tests, acceptance and safe landing boundaries. The original six
+delivery units map to the numbered sequence below; no task or milestone number is reused.
 
 | Unit | Deliverable and completion boundary |
 |---|---|
-| **A. Progression/material contract** | Approved CL/source-A rules, four scenario/style items, pure spend/exchange/debt functions, legacy conversion plan and synthetic allocation/migration tests. No live cutover until end-to-end replacement is ready. |
-| **B. Party puzzle engine** | Shared board utility extraction where justified; element/Heart/team/target/cooldown/enemy reducer, bounded parsers, fixed-seed hashes and focused combat/progression sim. No rendering in domain. |
-| **C. Private cast and campaign** | Generated map/recipe/reward contracts, verified private PAD import/atlas adapter, real opening pack, missing-pack gate and retained-content strategy. No original rows in git. |
-| **D. Local-first runtime** | Puzzle outfit/preset/checkpoint storage, device journal, replayed reward host, atomic Items/bank/EXP operations, migration rehearsal, conflict/takeover recovery and API validation. No fake production host. |
-| **E. Mobile playable loop** | Home/Hub/roster/party/map, hybrid battle/skills/result, shared guide/practice, exchange/Items, original CL icons and profile/Training spend sheet. Verify real rewards in a save, not only synthetic screenshots. |
-| **F. Cutover and closure** | Reviewed one-time cohort, safe legacy conversion, unfinished Spark refunds/route retirement, global terminology/docs/badges pass, content publication, green PR release, production smoke and owner iPhone feedback. |
+| **A. Progression/material contract — T106** | Pure registration/PL/CL/spend/exchange/debt/legacy rules and parsers |
+| **B. Party puzzle engine — T107** | Board/combat/finite skill kit, replay/hash, bot and combat sim |
+| **C. Campaign and private cast — T108–T109** | Generated maps/scaling/reward allocation, private PAD import/atlas/runtime and real-content gate |
+| **D. Local-first runtime — T110–T111** | Additive records/API atomic operations, real host/journal, reconciliation and explicit takeover |
+| **E. Mobile playable loop — T112–T114** | Hub/roster/parties/maps, touch battle/result/guide, Items/icons/debt/exchange/CL spend |
+| **F. Cutover and closure — T115–T116** | Dormant preservation/retirement, then authorized content/application release and standing owner acceptance |
 
-Code can land behind an explicit unavailable/release gate in smaller PRs. **Do not remove the only working training
+Implement one task to completion/PR/merge before the next, each from latest main. Code can land behind an initially
+off checked-in capability (not an env edit). **Do not remove the only working training
 entry or migrate the real account halfway through.** The full replacement must be playable with published content and
 an accessible spend flow before the cutover becomes active. Each completed task deletes its spec in its merge PR
 (D104), and never pushes directly to main.
@@ -942,6 +965,6 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-The next step is to author fully specified tasks, then implement one task to
+Full task authoring is complete: [start T106](../tasks/T106-puzzle-progression-materials.md), then implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**
