@@ -1,6 +1,6 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106 pure foundations implemented (D269); battle/runtime/content/cutover still planned and not enabled.**
+**Status: T106–T107 pure foundations/battle v1 implemented (D269–D270); runtime/content/cutover planned, not enabled.**
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
@@ -82,6 +82,71 @@ T115 must clear transferred EXP and issue this credit in the same protected migr
 Evidence: synthetic identity, progression, material, bank, legacy and source-boundary tests are co-located here;
 `domain.test.ts` pins candidate coefficients and work limits. No battle hash/simulator, real-content verification,
 account mutation, UI or phone sign-off exists for T106. Those remain the later task gates.
+
+### T107 implemented battle v1 (D270)
+
+The folder's `battle.ts` / `replay.ts` expose `createBattle`, `applyBattleAction`, `replayBattle`, `battleStateHash`
+and `puzzleBattleResult`. To preserve the RPG engine's established root exports, the Puzzle/domain barrel aliases
+the first four as `createPuzzleBattle`, `applyPuzzleBattleAction`, `replayPuzzleBattle`, `puzzleBattleStateHash`.
+No app currently calls them. These are independent of Spark utilities; there is no shared-board replay change.
+
+| Module | Actual responsibility |
+|---|---|
+| `battle-types.ts` / `battle-parse.ts` | Version1 input/action/state/result, strict detached rejecting parsers and derived party totals |
+| `board.ts` / `rng.ts` | Opening, adjacent paths/interpolation, qualified groups, canonical gravity/refill/cascades/conversions and four named RNG cursors |
+| `catalogue.ts` | Finite stable active/leader/pattern/enemy ids, source-A choices, default kit and exact PL5/10 equip gates |
+| `combat.ts` / `enemies.ts` / `battle.ts` | Ordered hits/healing/focus/mitigation, finite intent/phase reducer, charge/status lifecycle and authoritative event transitions |
+| `replay.ts` | Complete bounded replay, diagnostic canonical hashes, terminal result derived from replay state |
+| `bots.ts` | Board-only novice/competent public actions; not a production auto-player |
+
+`PuzzleBattleInputV1` has exact keys: `schemaVersion`, `engineVersion`, `rulesVersion` (all1), `battleId`,
+`partyId` (`puzzle-party-1`…`5`), `checkpointId`, nonnegative `ownerEpoch`, `seed`, registered `scenarioId`,
+`encounterLevel`, `kind`, five ordered `entrants`, `leaderId`, `enemies`, `rewards`, and
+`content:{manifestVersion,recipeHash}`. An entrant freezes `outfitId`, full T106 `source`, positive `level`, eligible
+`element`, `stats` exactly equal to `puzzleStats(source,level)`, and `kit:{activeId,patternId}`. No duplicate outfit
+or formation id is accepted. `rewards` is up to four distinct `{style,quantity}` rows, frozen at entry and untouched
+by phase changes; T108 produces their real quantities, and T111 grants them only after authoritative winning replay.
+The engine never writes Items or calculates a production reward receipt.
+
+Enemy definitions freeze `id`, cosmetic `castId`, semantic `recipeId`, `element`, `maxHp`, `defense`,
+`openingCountdown`, `intents`, `delayImmune` and nullable `phase`. Each cyclic intent has `type`/`countdown` plus
+only its explicit parameters: attack `damage`; heal `amount`; guard/ward `reduction,durationDrags,comboThreshold`;
+convert `from,to,count`. Each foe needs an attack and only specials allowed by its named recipe; unsupported
+hazards/unknown recipes/future versions never fall back to a generic attack. Champion phase is
+`{atHpPercent:50,damageMultiplier,countdown,element}` with optional element represented by null. Ordinary/guardian
+foes admit at most one/two special families (rage counts as one); a champion encounter must contain a phased foe.
+Exact timing, rounding, constraints and published finite ids are in [design §5](../design/uma-puzzles.md#implemented-battle-v1-rules-t107-d270).
+
+State carries detached input/board, four nonzero32-bit RNG cursors, turn/action count, shared HP/maxHP/RCV/guard/
+resilience, five `{charge,usedInGap}` records, formation-ordered enemy HP/element/countdown/intent-index/phase/delay/
+barriers, pending shield and outcome/reason. Enemy barriers use `expiresAfterTurn` (inclusive covered drag, removed
+at its end). Parser verifies derived totals, version/bounds, palette/loadouts, formation identity and terminal
+consistency. A parsed snapshot is **not proof** of legitimate play; reservation restore/commit must replay its
+frozen input/journal, never trust client HP or a result payload.
+
+Actions are exact `drag:{path,elapsedMs,focusId}`, `use-active:{slot,focusId}` (zero-based slot) or `abandon`.
+Null focus chooses the deterministic default; unknown focus rejects, known defeated focus retargets. The parser
+rejects sparse/prototype-bearing/extra-property arrays, NaN, bad adjacency and extra keys. Invalid input/action,
+not-ready/no-effect active, exhausted work bound and terminal mutation throw `PuzzleRuleError` without changing the
+caller state or its RNG. The pure transition contains state plus ordered `drag`, `cascade`, `heal`, `hit`,
+`retarget`, `active`, `conversion`, `shield`, `delay`, `phase`, `enemy-intent`, `barrier`, `charge`, `intents` and
+`terminal` events. Cascade events include before/after board, groups, cleared indices, falls and refills; hit and
+heal events include exact before/after HP. Enemy conversion does not cause an extra cascade until the next drag.
+The screen plays these values; it must not choose targets, rolls, damage, phases or rewards.
+
+Hash v1 is recursively lexicographic key-sorted JSON, preserving array order, over all rule state/frozen input.
+It omits enemy `castId` and manifest art version while retaining them in the snapshot; `recipeHash`, source
+provenance, reward vector and owner epoch remain covered. Hover and animation/elapsed duration are not state.
+Two unsigned FNV-style32-bit lanes emit16 lower-case hex characters (diagnostic, **not a security signature**).
+Seed names are `opening`, `refill`, `player-conversion`, `enemy-conversion`, derived by FNV-1a with a separator;
+xorshift32 draws use rejection over its2³²−1 nonzero-state range for uniform integer buckets. Rejection is bounded,
+not a modulo-biased fallback. Two literal complete journals pin the initial and every action hash and JSON events.
+The 288-battle sim pins its measured envelope too; [design §11](../design/uma-puzzles.md#small-focused-validation-before-pinning)
+records unmet balance targets rather than claiming these fixtures validate production scaling. T108 extends it.
+
+`PuzzleBattleResultV1` contains only engine version, battle/epoch identity, action count, hash, terminal outcome/
+reason, accepted drags and ending HP. EXP/material claims are absent. The eventual commit checks journal identity
+and derives rewards itself. No save/API/Dexie/host/private content/rendering/publication is part of T107.
 
 ## 2. Stable identity and source snapshots
 

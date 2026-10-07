@@ -30,7 +30,8 @@
     "sim:farm": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/farm-progression.ts",
     "sim:rpg:progression": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-progression.ts",
     "sim:rpg:combat": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-combat.ts",
-    "sim:rpg:campaign": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-campaign.ts"
+    "sim:rpg:campaign": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-campaign.ts",
+    "sim:puzzles": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/puzzles-combat.ts"
   },
   "devDependencies": {
     "turbo": "^2.10.13"

@@ -81,6 +81,11 @@ flowchart LR
 
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
+Uma Puzzles' additive pure rules and battle v1 live in `packages/domain/src/minigames/uma-puzzles/` (D269–D270).
+They have no app/save callers yet: [the versioned contract](uma-puzzles-implementation.md#t107-implemented-battle-v1-d270)
+documents independent board/RNG, authoritative events and replay. This is not a new live save or host; Spark remains
+active until M030's protected final cutover.
+
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
 - Save v15 stores mutable profile/Uma state, including the account's Training EXP bank, four distance builds per unlocked
   scenario on the linear Training curve (D211), nullable per-outfit race

@@ -1,4 +1,4 @@
-// T106 foundations only; battle/campaign/save integrations follow (docs/tasks/M030-uma-puzzles.md).
+// Pure Puzzle foundations and v1 battle; campaign/save integrations follow (docs/tasks/M030-uma-puzzles.md).
 export * from './rules'
 export * from './types'
 export * from './identity'
@@ -6,4 +6,16 @@ export * from './progression'
 export * from './materials'
 export * from './bank'
 export * from './legacy'
+export * from './battle-rules'
+export * from './battle-types'
+export * from './battle-parse'
+export * from './catalogue'
+export * from './board'
+export * from './rng'
+export * from './combat'
+export * from './enemies'
+// Root domain also exposes the RPG engine: keep its established names unchanged.
+export { createBattle as createPuzzleBattle, applyBattleAction as applyPuzzleBattleAction } from './battle'
+export { replayBattle as replayPuzzleBattle, battleStateHash as puzzleBattleStateHash, puzzleBattleResult } from './replay'
+export * from './bots'
 export { PuzzleRuleError, type PuzzleErrorCode } from './validation'
