@@ -1128,7 +1128,7 @@ export class GameRuntime {
       }
       setSyncState({ status: 'syncing', error: null })
       const request: SyncRequest = { upserts: [], appends: [], puzzleProtocolVersion: 1 }
-      const { canonicalPuzzleUmaForSync, puzzleOrdinaryProtected, puzzleTransactionTables, PuzzleOperationCoordinator } = await import('./puzzles/operations')
+      const { canonicalPuzzleUmaForSync, puzzleOrdinaryProtected, puzzleTransactionTables, PuzzleOperationCoordinator, adoptPuzzleUmaVersion } = await import('./puzzles/operations')
       for (const item of batch) {
         if (
           !Number.isSafeInteger(item.seq) ||
@@ -1172,7 +1172,8 @@ export class GameRuntime {
             // Permanent global progress merges even when a newer local clear arrived while this request was in flight.
             await putConflict(conflict, legacy, response.serverTime)
           } else if (current?.seq !== originalSequence && conflict.kind !== 'badges') {
-            await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
+            if (conflict.kind === 'umas' && !conflict.deleted) await adoptPuzzleUmaVersion(db, conflict)
+            else await updateEntityVersion(conflict.kind, conflict.id, conflict.version)
           } else if (legacy && await entityRow(conflict.kind, conflict.id)) {
             // The server's copy predates the save schema this app writes, so ours is newer: keep it, take the server's
             // version, and send it again. Adopting the old copy would roll the save back to before the migration (D156).

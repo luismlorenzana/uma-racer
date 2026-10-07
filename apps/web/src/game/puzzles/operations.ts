@@ -131,8 +131,11 @@ export class PuzzleOperationCoordinator {
         if (response.receipt) {
           await this.database.puzzleOperations.put({ id: row.id, data: response.receipt, createdAt: response.receipt.createdAt })
           for (const l of response.receipt.logs) await logTable(this.database, l.kind).put({ id: l.id, data: l.data, createdAt: l.createdAt })
-          const predicted = row.changes.filter(c => c.kind === 'items').map(c => c.after.data.quantity)
-          const accepted = response.receipt.changes.filter(c => c.kind === 'items').map(c => c.after.data.quantity)
+          // Compare evidence, not total stock: another accepted grant can change stock without changing repayment.
+          const movements = (receipt: PuzzleOperationReceiptV1) => receipt.logs.filter(l => l.kind === 'itemLedger').map(l => ({
+            itemId: l.data.itemId, delta: l.data.delta, debtPaid: (l.data.source as { debtPaid: number }).debtPaid,
+          }))
+          const predicted = movements(row.prediction), accepted = movements(response.receipt)
           if (puzzleCanonical(predicted) !== puzzleCanonical(accepted)) adjustment = 'Synced: debt repayment changed the deposited ticket amount. Gross rewards and EXP are unchanged.'
           await this.database.pendingPuzzleOperations.delete(row.id)
         } else {
@@ -221,6 +224,15 @@ export class PuzzleOperationCoordinator {
 export async function canonicalPuzzleUmaForSync(database: RacerDb, id: string, data: Record<string, unknown>) {
   const base = await database.puzzleBases.get(`umas/${id}`)
   return base?.record ? restorePuzzleOwnedFields(base.record, { ...base.record, data }).data : data
+}
+/** A newer local Racing edit keeps its payload, but must still adopt receipt-owned fields from a stale-write reply. */
+export async function adoptPuzzleUmaVersion(database: RacerDb, record: PuzzleStoredEntity): Promise<void> {
+  const row = await database.umas.get(record.id)
+  if (!row) return
+  const active = parseConstellationBankSave((await database.constellationBank.get('main'))?.data)?.phase === 'active'
+  const parsed = active ? parseEntityData('umas', restorePuzzleOwnedFields(record, { ...record, data: row.data as unknown as Record<string, unknown> }).data) : null
+  if (active && !parsed) throw new Error('Canonical CL response is invalid; keep the local build for recovery')
+  await database.umas.put({ ...row, version: record.version, ...(parsed ? { data: parsed as unknown as typeof row.data } : {}) })
 }
 export async function puzzleOrdinaryProtected(database: RacerDb, kind: string, id: string): Promise<boolean> {
   return kind === 'items' && (id.startsWith('constellation:') || id === 'training:level-up-ticket' &&

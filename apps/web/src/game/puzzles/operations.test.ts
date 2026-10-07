@@ -6,7 +6,7 @@ import { createPlayerProfile, createInitialFarmState, parseSaveSnapshot, type Pu
   resolvePuzzleOperations, createPuzzleBattle, applyPuzzleBattleAction, puzzleBattleResult, puzzleBotAction, puzzleData } from '@racer/domain'
 import { puzzleProtocolFixture } from '../../../../../packages/domain/src/minigames/uma-puzzles/protocol-fixtures'
 import { RacerDb, db as appDb } from '../db'
-import { PuzzleOperationCoordinator, canonicalPuzzleUmaForSync, puzzleTransactionTables } from './operations'
+import { PuzzleOperationCoordinator, canonicalPuzzleUmaForSync, puzzleTransactionTables, adoptPuzzleUmaVersion } from './operations'
 import { usePuzzleSync } from './store'
 import { adoptServerSnapshot, readLocalSnapshot, reconcileFarmProjectionsInTransaction } from '../persistence'
 
@@ -92,6 +92,16 @@ describe('durable Puzzle prediction/reconciliation', () => {
     const serverUma = f.entities.get('umas/invented-0')!; serverUma.version++; serverUma.data.level = 2; serverUma.data.exp = 50
     await coordinator.adopt([op], server(f, [op]))
     expect((await database.umas.get('invented-0'))!.data).toMatchObject({ level: 2, exp: 50, activePreset: 'long', scenarios: [{ trainingLevel: 2 }] })
+  })
+  it('adopts canonical CL while preserving a newer queued Racing payload on stale ordinary sync', async () => {
+    const row = (await database.umas.get('invented-0'))!
+    row.data.level = 2; row.data.exp = 91; row.data.activePreset = 'long'
+    await database.umas.put(row)
+    const canonical = structuredClone(f.entities.get('umas/invented-0')!)
+    const units = canonical.data.scenarios as { trainingLevel: number }[]
+    units[0]!.trainingLevel = 3; canonical.version = 2
+    await database.transaction('rw', puzzleTransactionTables(database), async () => { await adoptPuzzleUmaVersion(database, canonical) })
+    expect((await database.umas.get(row.id))!).toMatchObject({ version: 2, data: { level: 2, exp: 91, activePreset: 'long', scenarios: [{ trainingLevel: 3 }] } })
   })
   it('retains local result/ledger predictions for offline summaries without appending cloud evidence', async () => {
     const reserve = await coordinator.enqueue(f.reserve().payload, 'reserve-offline')
