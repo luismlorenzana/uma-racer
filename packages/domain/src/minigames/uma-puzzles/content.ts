@@ -1,7 +1,7 @@
 // Private presentation contracts; no PAD combat data (docs/technical/puzzle-content.md).
 import type { ContentManifestFile } from '../../content'
 import { puzzleCampaign } from './campaign/chapters'
-import { parsePuzzleCast, resolvePuzzleEncounter } from './campaign/encounters'
+import { parsePuzzleCast, resolvePuzzleChapterEncounters } from './campaign/encounters'
 import { PUZZLE_FOE_ROLES, type PuzzleFoeRole } from './campaign/rules'
 import type { PuzzleCastV1 } from './campaign/types'
 import { PUZZLE_ELEMENTS, type PuzzleElement } from './types'
@@ -117,10 +117,9 @@ export function puzzleCastForContent(pack: Pick<PuzzleSource, 'members'> | Pick<
 export function puzzleContentCoverage(cast: PuzzleCastV1) {
   const chapters = puzzleCampaign()
   let encounters = 0
-  for (const chapter of chapters) for (const node of chapter.nodes) {
-    resolvePuzzleEncounter(chapter, node.id, cast, node.kind === 'champion' && node.elements[0] === 'dark' ? 'pace' : null)
-    if (node.kind === 'champion' && node.elements[0] === 'dark') resolvePuzzleEncounter(chapter, node.id, cast, 'late')
-    encounters++
+  for (const chapter of chapters) {
+    resolvePuzzleChapterEncounters(chapter, cast)
+    encounters += chapter.nodes.length
   }
   return { chapters: chapters.length, encounters, cast: cast.members.length,
     elements: Object.fromEntries(PUZZLE_ELEMENTS.map(e => [e, cast.members.filter(m => m.elements.includes(e)).length])),

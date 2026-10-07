@@ -67,13 +67,8 @@ export function puzzleEncounterRewards(node: PuzzleMapNode, variant: PuzzleDarkV
   }
   return STRATEGIES.filter(s => counts.has(s)).map(style => ({ style, quantity: counts.get(style)! }))
 }
-/** Preview and freeze call this ONE resolver. No party strength, save, clock, random source or asset URL enters it. */
-export function resolvePuzzleEncounter(chapter: PuzzleChapter, nodeId: string, valueCast: PuzzleCastV1,
-  variant: PuzzleDarkVariant | null = null, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleEncounter {
-  const map = parsePuzzleChapter(chapter, registry), cast = parsePuzzleCast(valueCast)
-  requirePuzzle(map && cast, 'invalid', 'Invalid chapter/cast contract')
-  const node = map.nodes.find(n => n.id === nodeId)
-  requirePuzzle(node, 'unknown', 'Unknown encounter')
+/** Receives only strictly parsed chapters/casts through the entry points below. */
+function resolveNode(node: PuzzleMapNode, cast: PuzzleCastV1, variant: PuzzleDarkVariant | null): PuzzleEncounter {
   const rewards = puzzleEncounterRewards(node, variant)
   const enemies = node.elements.map((element, slot) => {
     const role = node.roles[slot]!, candidates = cast.members.filter(m => m.elements.includes(element) && m.roles.includes(role))
@@ -81,7 +76,24 @@ export function resolvePuzzleEncounter(chapter: PuzzleChapter, nodeId: string, v
     const castId = candidates[puzzleSeed(node.id, `cast-${slot}`) % candidates.length]!.id
     return foe(node.level, node.kind, role, element, `${node.id}:foe${slot}`, castId)
   })
-  return { nodeId, level: node.level, kind: node.kind, enemies, rewards, darkVariant: variant }
+  return { nodeId: node.id, level: node.level, kind: node.kind, enemies, rewards, darkVariant: variant }
+}
+/** Preview and freeze use this same recipe. No party strength, save, clock, random source or asset URL enters it. */
+export function resolvePuzzleEncounter(chapter: PuzzleChapter, nodeId: string, valueCast: PuzzleCastV1,
+  variant: PuzzleDarkVariant | null = null, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleEncounter {
+  const map = parsePuzzleChapter(chapter, registry), cast = parsePuzzleCast(valueCast)
+  requirePuzzle(map && cast, 'invalid', 'Invalid chapter/cast contract')
+  const node = map.nodes.find(n => n.id === nodeId)
+  requirePuzzle(node, 'unknown', 'Unknown encounter')
+  return resolveNode(node, cast, variant)
+}
+/** Bulk private-content coverage: validate once, resolve every node and both Dark variants with the identical recipe. */
+export function resolvePuzzleChapterEncounters(chapter: PuzzleChapter, valueCast: PuzzleCastV1,
+  registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleEncounter[] {
+  const map = parsePuzzleChapter(chapter, registry), cast = parsePuzzleCast(valueCast)
+  requirePuzzle(map && cast, 'invalid', 'Invalid chapter/cast contract')
+  return map.nodes.flatMap(node => node.kind === 'champion' && node.elements[0] === 'dark'
+    ? PUZZLE_DARK_VARIANTS.map(variant => resolveNode(node, cast, variant)) : [resolveNode(node, cast, null)])
 }
 export interface PuzzleEncounterEntry {
   chapter: PuzzleChapter; checkpoint: PuzzleCheckpointV1; nodeId: string; entrants: PuzzleEntrant[]; leaderId: PuzzleLeaderId;

@@ -56,6 +56,9 @@ Every entry must match its reviewed source member exactly, including selected ar
 missing or unknown evidence. This is a record of human/source verification, not a claim that a URL's shape proves ownership.
 The importer validates all 392 nodes in the fourteen current chapters (including both Dark champion variants), not just
 five colour labels. Future engine/recipe capabilities are refused explicitly.
+Bulk coverage strictly validates each chapter/cast once, then resolves every node and both Dark variants with the same
+private recipe helper used by the single-entry resolver. Full-output comparison tests cover all chapters; no recipe,
+seed, number or replay hash changes. This avoids rebuilding an identical chapter once per node in each importer/client check.
 
 ## Commands and immutable output
 
@@ -137,8 +140,8 @@ five seconds; no workflow, global test limit or validation assertion was weakene
 The browser proof at 390×844 has no horizontal/page overflow; placeholders and both failure controls were inspected.
 Screenshots show invented art only, not a final PAD cast or physical-iPhone acceptance. The code-only acceptance run
 passed lint, all 1,220 tests, production build and `sim:puzzles` (888 synthetic battles plus 86,016 exact route/economy
-variants; unchanged replay and balance output). Startup gzip is 152,235 bytes, the lazy content preflight/loader chunk
-9,370 bytes and Spark's lazy chunk 18,088 bytes. No dependency or private production pack was added. The source pipeline
+variants; unchanged replay and balance output). Startup gzip is 152,238 bytes, the lazy content preflight/loader chunk
+9,356 bytes and Spark's lazy chunk 18,089 bytes. No dependency or private production pack was added. The source pipeline
 also normalizes grayscale-alpha originals to RGBA before transparency inspection and atlas composition.
 
 ![Temporary original five-element placeholders at 390×844](../research/puzzle-content-placeholders.jpg)
