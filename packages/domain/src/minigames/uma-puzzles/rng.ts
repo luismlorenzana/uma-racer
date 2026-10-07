@@ -1,0 +1,35 @@
+// Named independent nonzero xorshift32 streams (docs/technical/uma-puzzles-implementation.md §4).
+import { puzzleId, puzzleInteger, requirePuzzle } from './validation'
+import { PUZZLE_RNG_REJECTION_ATTEMPTS } from './battle-rules'
+export interface PuzzleRng { opening: number; refill: number; playerConversion: number; enemyConversion: number }
+export function puzzleSeed(seed: string, stream: string): number {
+  requirePuzzle(puzzleId(seed) && typeof stream === 'string' && stream.length > 0 && stream.length <= 64, 'invalid', 'Invalid RNG identity')
+  let hash = 0x811c9dc5
+  for (const char of `${seed}\u001f${stream}`) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 0x01000193) }
+  return hash >>> 0 || 0x9e3779b9
+}
+export function createPuzzleRng(seed: string): PuzzleRng {
+  return { opening: puzzleSeed(seed, 'opening'), refill: puzzleSeed(seed, 'refill'),
+    playerConversion: puzzleSeed(seed, 'player-conversion'), enemyConversion: puzzleSeed(seed, 'enemy-conversion') }
+}
+export function puzzleNextInt(state: number, maximum: number): [number, number] {
+  requirePuzzle(puzzleInteger(state, 1, 0xffffffff) && puzzleInteger(maximum, 1, 0xffffffff), 'invalid', 'Invalid RNG range/state')
+  // The generator visits 2^32−1 NONZERO states. Rejection, rather than scaled rounding, makes each bucket uniform.
+  const range = 0xffffffff, limit = Math.floor(range / maximum) * maximum
+  let next = state
+  for (let attempt = 0; attempt < PUZZLE_RNG_REJECTION_ATTEMPTS; attempt++) {
+    next ^= next << 13; next ^= next >>> 17; next ^= next << 5; next >>>= 0
+    const value = next - 1
+    if (value < limit) return [value % maximum, next]
+  }
+  requirePuzzle(false, 'overflow', 'RNG rejection work limit exceeded')
+}
+export function puzzleShuffle<T>(values: readonly T[], state: number): { values: T[]; state: number } {
+  requirePuzzle(puzzleInteger(state, 1, 0xffffffff), 'invalid', 'Invalid shuffle RNG state')
+  const result = [...values]
+  for (let i = result.length - 1; i > 0; i--) {
+    const [j, next] = puzzleNextInt(state, i + 1); state = next
+    const value = result[i]!; result[i] = result[j]!; result[j] = value
+  }
+  return { values: result, state }
+}

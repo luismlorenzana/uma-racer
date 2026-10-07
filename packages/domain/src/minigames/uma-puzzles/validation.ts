@@ -16,6 +16,10 @@ export const puzzleExact = (v: Record<string, unknown>, keys: readonly string[])
   Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k))
 export const puzzleInteger = (v: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max
+/** Reject sparse/prototype-bearing/extra-property arrays before iteration can skip an invalid slot. */
+export const puzzleArray = (v: unknown, maximum: number): v is unknown[] => Array.isArray(v) &&
+  Object.getPrototypeOf(v) === Array.prototype && v.length <= maximum && Reflect.ownKeys(v).length === v.length + 1 &&
+  Array.from({ length: v.length }, (_, i) => Object.hasOwn(v, i)).every(Boolean)
 export const puzzleId = (v: unknown): v is string => typeof v === 'string' &&
   v.length <= PUZZLE_PARSE_LIMITS.id && /^[A-Za-z0-9_.:-]+$/.test(v) &&
   !v.split(/[.:-]/).some(k => ['__proto__', 'prototype', 'constructor'].includes(k))

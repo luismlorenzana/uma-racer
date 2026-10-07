@@ -4,6 +4,12 @@ import {
   PUZZLE_RULES_VERSION, PUZZLE_SCHEMA_VERSION, PUZZLE_STAT_GROWTH, PUZZLE_STAT_BASE,
   PUZZLE_EXP_BASE, PUZZLE_EXP_STEP, PUZZLE_EXP_WEIGHTS, PUZZLE_RELATIVE_EXP,
   PUZZLE_CL_MAX, PUZZLE_EXCHANGE_RATIO, PUZZLE_LEGACY_EXP_PER_TICKET, PUZZLE_PARSE_LIMITS,
+  PUZZLE_ENGINE_VERSION, PUZZLE_BOARD_WIDTH, PUZZLE_BOARD_HEIGHT, PUZZLE_BOARD_SIZE, PUZZLE_PARTY_SIZE,
+  PUZZLE_TURN_LIMIT, PUZZLE_ACTION_LIMIT, PUZZLE_PATH_LIMIT, PUZZLE_MOVEMENT_MS, PUZZLE_CASCADE_LIMIT,
+  PUZZLE_OPENING_ATTEMPTS, PUZZLE_RNG_REJECTION_ATTEMPTS, PUZZLE_MATCH_MIN, PUZZLE_MASS_MIN,
+  PUZZLE_SHAPE_PER_ORB, PUZZLE_COMBO_PER_GROUP, PUZZLE_MATCHUP, PUZZLE_DAMAGE_FLOOR,
+  PUZZLE_SKILL_RULES, PUZZLE_LEADER_RULES, PUZZLE_PATTERN_RULES, PUZZLE_ENEMY_GUARD, PUZZLE_RAGE_THRESHOLD,
+  PUZZLE_BATTLE_LIMITS, PUZZLE_BOT_SEARCH, PUZZLE_ORBS, PUZZLE_ACTIVES, PUZZLE_LEADERS, PUZZLE_PATTERNS, PUZZLE_ENEMY_RECIPES,
 } from './minigames/uma-puzzles'
 
 import {
@@ -715,5 +721,31 @@ describe('Uma Puzzles initial candidates, not balance closure (D269)', () => {
     expect(PUZZLE_EXCHANGE_RATIO).toBe(2)
     expect(PUZZLE_LEGACY_EXP_PER_TICKET).toBe(1250)
     expect(PUZZLE_PARSE_LIMITS).toEqual({ id: 120, scenarios: 256, units: 4096, levelPage: 256 })
+  })
+})
+
+describe('Uma Puzzles battle v1 initial candidates and transport (D270)', () => {
+  it('pins board, action and deterministic work limits', () => {
+    expect(PUZZLE_ENGINE_VERSION).toBe(1)
+    expect([PUZZLE_BOARD_WIDTH, PUZZLE_BOARD_HEIGHT, PUZZLE_BOARD_SIZE, PUZZLE_PARTY_SIZE]).toEqual([6, 5, 30, 5])
+    expect([PUZZLE_TURN_LIMIT, PUZZLE_ACTION_LIMIT, PUZZLE_PATH_LIMIT, PUZZLE_MOVEMENT_MS]).toEqual([30, 181, 256, 7000])
+    expect([PUZZLE_CASCADE_LIMIT, PUZZLE_OPENING_ATTEMPTS, PUZZLE_RNG_REJECTION_ATTEMPTS]).toEqual([64, 2048, 32])
+    expect(PUZZLE_ORBS).toEqual(['fire', 'water', 'wood', 'light', 'dark', 'heart'])
+    expect(PUZZLE_BOT_SEARCH).toEqual({ depth: 6, width: 8 })
+    expect(PUZZLE_BATTLE_LIMITS).toEqual({ enemies: 5, intents: 4, countdown: 30, statusDrags: 3,
+      enemyValue: 1_000_000_000, converterCount: 4, comboThreshold: 30, rageMultiplier: 4 })
+  })
+  it('pins combat, finite skill recipes and unlocks without claiming tuned production balance', () => {
+    expect([PUZZLE_MATCH_MIN, PUZZLE_MASS_MIN, PUZZLE_SHAPE_PER_ORB, PUZZLE_COMBO_PER_GROUP, PUZZLE_DAMAGE_FLOOR]).toEqual([3, 5, 0.25, 0.25, 0.25])
+    expect(PUZZLE_MATCHUP).toEqual({ advantage: 2, disadvantage: 0.5, neutral: 1 })
+    expect(PUZZLE_SKILL_RULES).toEqual({ frontCount: 4, frontCharge: 5, paceShield: 0.35, paceCharge: 6,
+      lateCount: 6, lateCharge: 6, endDelay: 1, endCharge: 7 })
+    expect(PUZZLE_LEADER_RULES).toEqual({ comboThreshold: 4, comboAtk: 1.2, durableHp: 1.15, recoveryRcv: 1.2 })
+    expect(PUZZLE_PATTERN_RULES).toEqual({ fourLevel: 5, fourCount: 4, rowLevel: 10, multiplier: 1.25 })
+    expect([PUZZLE_ENEMY_GUARD, PUZZLE_RAGE_THRESHOLD]).toEqual([0.5, 50])
+    expect(PUZZLE_ACTIVES.map(a => a.id)).toEqual(['puzzle:front-convert', 'puzzle:pace-shield', 'puzzle:late-convert', 'puzzle:end-delay'])
+    expect(PUZZLE_LEADERS.map(l => l.id)).toEqual(['puzzle:combo-leader', 'puzzle:durable-leader', 'puzzle:recovery-leader'])
+    expect(PUZZLE_PATTERNS.map(p => p.id)).toEqual(['puzzle:four', 'puzzle:row'])
+    expect(PUZZLE_ENEMY_RECIPES).toEqual(['puzzle:striker', 'puzzle:ally-healer', 'puzzle:guard', 'puzzle:converter', 'puzzle:combo-ward', 'puzzle:guardian', 'puzzle:champion'])
   })
 })

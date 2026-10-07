@@ -1,10 +1,11 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106 pure foundations implemented (D269). Gameplay not enabled.**
+**Status: approved plan (D267–D268); T106–T107 pure foundations/battle v1 implemented (D269–D270). Gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
-not balance closure. Battle/campaign simulation and tuning remain T107/T108/T116 work.
+not balance closure. T107 records the initial synthetic combat envelope below; campaign scaling and release tuning
+remain T108/T116 work.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -449,7 +450,7 @@ during resolution. Basic skills/Heart restoration do not create another combo. C
 Candidate resolution order:
 
 1. Validate and persist the action; compute all clears/falls/cascades and event steps.
-2. Apply Heart healing up to max HP, then any bounded poison penalty; HP reaching zero ends the battle immediately.
+2. Apply Heart healing up to max HP. Poison and its penalty are deferred, not a partially implemented launch hazard.
 3. Evaluate leader/pattern bonuses; resolve attacks in Fire/Water/Wood/Light/Dark order and party-slot order.
 4. Process each surviving enemy's threshold phase at most once; cancel a defeated foe's pending attack.
 5. Decrement surviving enemies' countdowns; those at zero execute in formation order, with death stopping later intents.
@@ -494,6 +495,60 @@ and the slot-1 leader passive; no stacking unlock at each later ten-level band. 
 higher-band skill rows are expansion scope rather than half-implemented rewards. T107 publishes the exact recipe table,
 duration/charge semantics and tested coefficients. A shield uses the strongest percentage, not an additive stack,
 covering the next damaging enemy phase; one foe cannot be delayed repeatedly before its next intent executes.
+
+### Implemented battle v1 rules (T107, D270)
+
+The coefficients above are now pinned **initial candidates**, not tuned production claims. Exact recipe ids:
+
+| Unlock | Recipe | Effect |
+|---|---|---|
+| PL1, source Front A | `puzzle:front-convert` | Up to4 non-Heart off-colour cells → chosen element; charge5 |
+| PL1, source Pace A | `puzzle:pace-shield` | 35% shield for the next damaging enemy phase; charge6 |
+| PL1, source Late A | `puzzle:late-convert` | Up to6 non-Heart off-colour cells → chosen element; charge6 |
+| PL1, source End A | `puzzle:end-delay` | Focused foe countdown +1 before its next intent; charge7 |
+| PL1, slot1 leader | `puzzle:combo-leader` / `puzzle:durable-leader` / `puzzle:recovery-leader` | Four combos ATK×1.2 / HP×1.15 / RCV×1.2 |
+| PL5 / PL10 | `puzzle:four` / `puzzle:row` | Exactly four single-target / complete six-cell row mass hit ×1.25; one equipped pattern |
+
+Default active is the first eligible source-A style in Front/Pace/Late/End order; default pattern is none. Each
+frozen input explicitly selects a leader, with only slot1 supplying that single passive. HP/RCV leader sums are
+rounded once at battle creation. Every group's combo count includes all Hearts/cascades. In this finite kit the
+formula's other ATK/healing buff terms are1; there is no unseen stat-growth passive or elemental resistance average.
+
+Player damage rounds the complete member/group/target product once, subtracts DEF with minimum1, then applies the
+**strongest** qualifying enemy Guard/Ward reduction and rounds once more with minimum1. Guard/Ward do not stack;
+reaching each barrier's displayed combo threshold bypasses that barrier. The enemy phase applies shared flat party
+guard after shield: `max(ceil(displayedDamage×0.25), round(displayedDamage×(1−shield))−partyGuard)`. Party guard and
+resilience sum the five frozen outfit values; resilience has no hazard effect until hazards are authored.
+Heart healing rounds once, then caps at maxHP. Shared HP starts full each battle.
+
+After board resolution/healing, hits iterate element → slot → cascade/canonical group → formation. Default focus
+and any retarget use lowest countdown, then formation index. Death cancels later intents immediately. At the end
+of every accepted drag (even a zero-match or terminal drag), charge ticks once and used-between-drags flags clear;
+an active/abandon never ticks turns or charge. Equal/stronger pending shield, zero eligible conversion, immune or
+already-delayed foe reject without losing charge. Shield survives empty/support-only phases, covers every attack
+in the next damaging phase, then expires. A foe's delay marker clears on **any** executed intent, not just attacks.
+
+Enemy ids are `puzzle:striker`, `puzzle:ally-healer`, `puzzle:guard`, `puzzle:converter`, `puzzle:combo-ward`,
+`puzzle:guardian`, `puzzle:champion`. Intent parameters are frozen explicitly, not fetched from art or a fallback
+script. Healer picks lowest proportional-HP living ally (formation tie), excluding itself; no ally is a visible
+no-op. Guard is50% for exactly the **following** drag; Ward has explicit reduction≤50%, threshold and1…3-drag
+duration. Barriers expire at the end of their last covered drag. Converter previews distinct ordinary from/to kinds
+and up to4 cells, uses its own stream and never auto-clears. Both conversion families retain canonical changed-cell
+indices. A champion's single rage fires strictly **below**50%, optionally changes to its pre-authored element,
+and publishes a full warned countdown before a future attack. Current tick does not shorten that warning; a pending
+End delay is preserved. Rage damage rounds its explicit multiplier once before mitigation, and its countdown applies
+to subsequent intents. Reward-style vector stays frozen at entry. Poison/jammer/locks/colour ward are rejected.
+
+Transport/work bounds: five entrants,1…5 foes,1…4 cyclic intents/foe; countdown1…30, combo threshold1…30,
+enemy HP/DEF/heal/base-damage≤1,000,000,000, rage multiplier>1 and≤4. Drag path2…256 adjacent cells (including
+diagonal/revisits), elapsed0…7,000ms; battle30 drags; complete journal181 actions; cascades64; match-free opening
+2,048 retries; uniform RNG rejection32 attempts. Work-bound or safe-arithmetic failure is a typed recoverable error,
+never partial state, truncated rewards or a rerolled seed. These transport bounds are not lifetime PL caps.
+
+Named xorshift32 streams independently seed opening, refill, player conversion and enemy conversion. Refill is
+column-left-to-right, bottom-first; groups/clears sort by first cell/cell index. Presentation interpolation is integer
+diagonal-first, and a no-transition release remains cancellation, not an action. Spark utilities are unchanged.
+Two full synthetic journals pin every intermediate hash; one includes Hearts, focus, active conversion/shield and rage.
 
 ### Enemy behavior and counterplay
 
@@ -898,6 +953,29 @@ median **3–6** ordinary drags and **6–12** champion drags; matched-party rem
 full; no essential colour/recipe systematically outside its intended difficulty band. Check neutral teams as well as
 counter-colour teams, and make Hearts/shields matter without creating indefinite stall farming.
 
+**T107 engine-only baseline (D270):** `pnpm sim:puzzles` runs288 battles: four fixed seeds, four invented party
+shapes (basic, Light/Dark, mono, starter-shaped), low/on/high PL2/5/8 against encounter PL5, three encounter kinds
+and two public-action bots. Novice tries one adjacent swap and no actives; competent uses a six-cell, width-eight
+board-only beam and ready meaningful actives, without peeking at refill RNG. Every intermediate replay hash survives
+JSON transport. Exact clears/median drags/median endHP/Heart groups/active counts are regression-pinned in the script.
+
+On-level pooled sample (16 battles per row):
+
+| Bot / encounter | Clears | Median drags | Median ending HP | Heart groups / battle | Actives / battle |
+|---|---|---|---|---|---|
+| Novice ordinary | 12.5% | 6.5 | 0% | 2.00 | 0 |
+| Novice guardian | 37.5% | 12 | 0% | 2.75 | 0 |
+| Novice champion | 0% | 16.5 | 0% | 3.44 | 0 |
+| Competent ordinary | 100% | 4 | 100% | 2.13 | 0.19 |
+| Competent guardian | 100% | 5 | 97% | 2.25 | 0.44 |
+| Competent champion | 100% | 6.5 | 86.2% | 2.81 | 2.06 |
+
+All competent rows clear100%; novice low/on/high clear ranges are ordinary6.3–50%, guardian0–75%, champion0–12.5%.
+Losses in this sample are HP-zero, not abandon/turn-limit. Ending HP above includes losses; these are invented
+fixtures, **not** actual starters, fourteen authored chapters or production skill distributions. Competent clears/HP
+are above the intended bands; novices are often too fragile. This remains an explicit T108/T116 scaling/tuning gap,
+not evidence that pressure/healing is balanced. No approved coefficient was changed to fit this small sample.
+
 Separately project a primary route through at least two ten-level chapters, fifty-four gross tickets, recipient-style
 coverage, debt-first earnings and exchanges. Check start/end PL, rewards per minute, same-style boss farming and the
 13-edge exchange effect. A result that only gets the total 54 right but cannot practically train the roster is not
@@ -974,6 +1052,6 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-T106 pure foundations are complete (D269): [T107 battle](../tasks/T107-puzzle-battle-engine.md) is next. Implement one task to
+T106–T107 pure foundations/battle v1 are complete (D269–D270): [T108 campaign/economy](../tasks/T108-puzzle-campaign-economy.md) is next. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**
