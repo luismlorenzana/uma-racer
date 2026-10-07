@@ -54,7 +54,7 @@ pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
 pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
 pnpm sim:rpg:progression # per-fight two-tier RPG EXP/token rewards, replay/catch-up and tree envelope (T096/T098)
 pnpm sim:rpg:combat # synthetic six-weapon/five-element RPG combat and replay envelope (T091)
-pnpm sim:puzzles    # 288 invented party battles, pinned combat envelope and every replay hash (T107)
+pnpm sim:puzzles    # 888 invented battles + exhaustive campaign/economy; --combat / --economy filters
 pnpm data:rpg:validate --replay # offline private RPG chapter integrity, coverage and bounded replay (T097)
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
@@ -90,7 +90,7 @@ docs/           design, technical, research
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
 | [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: generated twelve-level chapters, replayable maps, five-Uma parties with locked classes and elemental trees, Octopath element/weapon breaks against PriConne teams, carried MP/camps, EXP and Inspiration tokens from every win (D260–D266) |
-| [Uma Puzzles](docs/design/uma-puzzles.md) | **Pure foundations and battle v1 implemented (T106–T107/D269–D270), gameplay unavailable:** enrollment, PL, materials/preservation, deterministic board/combat/skills and replay; [M030](docs/tasks/M030-uma-puzzles.md) continues with T108 campaign/economy. Spark and current saves are unchanged |
+| [Uma Puzzles](docs/design/uma-puzzles.md) | **Pure foundations/battle/campaign implemented (T106–T108/D269–D271), gameplay unavailable:** enrollment, PL, materials/preservation, deterministic combat/replay, generated maps and exact reward projections; [M030](docs/tasks/M030-uma-puzzles.md) continues with T109 private content. Spark and current saves are unchanged |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |

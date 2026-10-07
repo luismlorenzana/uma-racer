@@ -6,7 +6,7 @@ import { eligiblePuzzleStyles } from './identity'
 import { repayPuzzleMaterial, type PuzzleBankV1 } from './bank'
 import { PUZZLE_CL_MAX, PUZZLE_EXCHANGE_RATIO, PUZZLE_PARSE_LIMITS } from './rules'
 import type { PuzzleSourceV1 } from './types'
-import { puzzleId, puzzleInteger, puzzleRecord, puzzleSafe, requirePuzzle } from './validation'
+import { puzzleArray, puzzleId, puzzleInteger, puzzleRecord, puzzleSafe, requirePuzzle } from './validation'
 
 export type PuzzleScenarioRegistry = readonly Pick<ScenarioDef, 'id' | 'tier' | 'name'>[]
 export type PuzzleMaterialId = `constellation:${string}:${Strategy}`
@@ -14,7 +14,7 @@ export interface PuzzleMaterialDefinition { id: PuzzleMaterialId; scenarioId: st
 export interface PuzzleMaterialInput { itemId: PuzzleMaterialId | typeof TRAINING_LEVEL_UP_TICKET_ID; quantity: number }
 const styleNames: Record<Strategy, string> = { front: 'Front', pace: 'Pace', late: 'Late', end: 'End' }
 export function validatePuzzleRegistry(registry: PuzzleScenarioRegistry): void {
-  requirePuzzle(Array.isArray(registry) && registry.length > 0 && registry.length <= PUZZLE_PARSE_LIMITS.scenarios,
+  requirePuzzle(puzzleArray(registry, PUZZLE_PARSE_LIMITS.scenarios) && registry.length > 0,
     'invalid', 'Invalid scenario registry size')
   requirePuzzle(registry.every(s => puzzleRecord(s) && typeof s.id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s.id) &&
     s.id.length <= 64 && puzzleId(s.id) && puzzleInteger(s.tier, 1) && typeof s.name === 'string' && s.name.length > 0 && s.name.length <= 120) &&

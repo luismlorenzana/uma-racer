@@ -1,4 +1,6 @@
 // Pure public v1 reducer; invalid actions never mutate caller state or RNG (implementation §§4–5).
+import { SCENARIOS } from '../../scenarios'
+import type { PuzzleScenarioRegistry } from './materials'
 import { PUZZLE_ACTION_LIMIT, PUZZLE_ENGINE_VERSION, PUZZLE_TURN_LIMIT } from './battle-rules'
 import { parsePuzzleBattleAction, parsePuzzleBattleInput, parsePuzzleBattleState, puzzlePartyStats } from './battle-parse'
 import type { PuzzleBattleAction, PuzzleBattleEvent, PuzzleBattleInputV1, PuzzleBattleStateV1, PuzzleBattleTransition } from './battle-types'
@@ -9,8 +11,8 @@ import { puzzleEnemyIntentViews, resolvePuzzleEnemies } from './enemies'
 import { createPuzzleRng } from './rng'
 import { requirePuzzle } from './validation'
 
-export function createBattle(value: PuzzleBattleInputV1): PuzzleBattleStateV1 {
-  const input = parsePuzzleBattleInput(value)
+export function createBattle(value: PuzzleBattleInputV1, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleBattleStateV1 {
+  const input = parsePuzzleBattleInput(value, registry)
   requirePuzzle(input, 'invalid', 'Invalid or unsupported frozen Puzzle battle input')
   const rng = createPuzzleRng(input.seed), opening = createPuzzleBoard(rng.opening), totals = puzzlePartyStats(input)
   rng.opening = opening.state
@@ -50,8 +52,8 @@ function tick(state: PuzzleBattleStateV1, events: PuzzleBattleEvent[]): void {
     events.push({ type: 'charge', slot, charge: m.charge, ready: m.charge === recipe.charge })
   }
 }
-export function applyBattleAction(value: PuzzleBattleStateV1, actionValue: PuzzleBattleAction): PuzzleBattleTransition {
-  const state = parsePuzzleBattleState(value), action = parsePuzzleBattleAction(actionValue)
+export function applyBattleAction(value: PuzzleBattleStateV1, actionValue: PuzzleBattleAction, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleBattleTransition {
+  const state = parsePuzzleBattleState(value, registry), action = parsePuzzleBattleAction(actionValue)
   requirePuzzle(state && action, 'invalid', 'Invalid Puzzle state/action')
   requirePuzzle(state.outcome === 'active', 'locked', 'Battle is terminal')
   requirePuzzle(state.actionCount < PUZZLE_ACTION_LIMIT, 'overflow', 'Journal action bound exceeded')
@@ -72,6 +74,6 @@ export function applyBattleAction(value: PuzzleBattleStateV1, actionValue: Puzzl
   state.actionCount++
   if (state.outcome === 'active') events.push({ type: 'intents', views: puzzleEnemyIntentViews(state) })
   else events.push({ type: 'terminal', outcome: state.outcome, reason: state.reason! })
-  requirePuzzle(parsePuzzleBattleState(state), 'overflow', 'Transition produced an invalid state; restore the journal')
+  requirePuzzle(parsePuzzleBattleState(state, registry), 'overflow', 'Transition produced an invalid state; restore the journal')
   return { state, events }
 }

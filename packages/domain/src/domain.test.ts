@@ -10,6 +10,10 @@ import {
   PUZZLE_SHAPE_PER_ORB, PUZZLE_COMBO_PER_GROUP, PUZZLE_MATCHUP, PUZZLE_DAMAGE_FLOOR,
   PUZZLE_SKILL_RULES, PUZZLE_LEADER_RULES, PUZZLE_PATTERN_RULES, PUZZLE_ENEMY_GUARD, PUZZLE_RAGE_THRESHOLD,
   PUZZLE_BATTLE_LIMITS, PUZZLE_BOT_SEARCH, PUZZLE_ORBS, PUZZLE_ACTIVES, PUZZLE_LEADERS, PUZZLE_PATTERNS, PUZZLE_ENEMY_RECIPES,
+  PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_REGULAR_LEVELS, PUZZLE_GUARDIAN_LEVELS, PUZZLE_CHAMPION_LEVEL,
+  PUZZLE_MAP_BRANCHES, PUZZLE_MAP_NODES, PUZZLE_DROP_COUNTS, PUZZLE_PRIMARY_WINS, PUZZLE_PRIMARY_GROSS, PUZZLE_FULL_GROSS,
+  PUZZLE_DARK_VARIANTS, PUZZLE_FOE_ROLES, PUZZLE_FOE_REFERENCE, PUZZLE_FOE_SCALING, PUZZLE_FOE_ROLE_MULTIPLIERS,
+  PUZZLE_FOE_MECHANICS, PUZZLE_SQUAD_MIXES, PUZZLE_ALLOCATION_RECIPIENT_LIMIT,
 } from './minigames/uma-puzzles'
 
 import {
@@ -713,7 +717,7 @@ describe('Uma Puzzles initial candidates, not balance closure (D269)', () => {
     expect(PUZZLE_STAT_GROWTH).toEqual({ atk: 12, hp: 36, rcv: 4, guard: 6, resilience: 6 })
     expect(PUZZLE_STAT_BASE).toEqual({ atk: 1, hp: 4, rcv: 0.5, guardDivisor: 20, resilienceDivisor: 20 })
     expect([PUZZLE_EXP_BASE, PUZZLE_EXP_STEP]).toEqual([100, 10])
-    expect(PUZZLE_EXP_WEIGHTS).toEqual({ ordinary: 0.5, guardian: 1, champion: 2 })
+    expect(PUZZLE_EXP_WEIGHTS).toEqual({ ordinary: 0.5, guardian: 1, champion: 1.5 }) // D271 route pacing.
     expect(PUZZLE_RELATIVE_EXP).toEqual({ min: 0.25, max: 2, perLevel: 0.1 })
   })
   it('pins material value, preserved legacy value and distinct work bounds', () => {
@@ -747,5 +751,29 @@ describe('Uma Puzzles battle v1 initial candidates and transport (D270)', () => 
     expect(PUZZLE_LEADERS.map(l => l.id)).toEqual(['puzzle:combo-leader', 'puzzle:durable-leader', 'puzzle:recovery-leader'])
     expect(PUZZLE_PATTERNS.map(p => p.id)).toEqual(['puzzle:four', 'puzzle:row'])
     expect(PUZZLE_ENEMY_RECIPES).toEqual(['puzzle:striker', 'puzzle:ally-healer', 'puzzle:guard', 'puzzle:converter', 'puzzle:combo-ward', 'puzzle:guardian', 'puzzle:champion'])
+  })
+})
+
+describe('Uma Puzzles campaign coefficients and economy (D271)', () => {
+  it('pins generated map bands, vectors, gross budgets and separate report bounds', () => {
+    expect([PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_MAP_BRANCHES, PUZZLE_MAP_NODES]).toEqual([1, 10, 2, 28])
+    expect(PUZZLE_REGULAR_LEVELS).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9, 9]])
+    expect(PUZZLE_GUARDIAN_LEVELS).toEqual([3, 6, 9]); expect(PUZZLE_CHAMPION_LEVEL).toBe(10)
+    expect(PUZZLE_DROP_COUNTS).toEqual({ ordinary: 3, guardian: 4, champion: 12 })
+    expect([PUZZLE_PRIMARY_WINS, PUZZLE_PRIMARY_GROSS, PUZZLE_FULL_GROSS]).toEqual([14, 54, 132])
+    expect(PUZZLE_DARK_VARIANTS).toEqual(['pace', 'late']); expect(PUZZLE_ALLOCATION_RECIPIENT_LIMIT).toBe(6)
+    expect(PUZZLE_SQUAD_MIXES).toEqual([['light', 'fire', 'water'], ['dark', 'fire', 'wood'], ['light', 'water', 'wood'],
+      ['dark', 'fire', 'water'], ['light', 'fire', 'wood'], ['dark', 'water', 'wood']])
+  })
+  it('pins fixed invented reference and level/kind/role coefficients, not entering-party scaling', () => {
+    expect(PUZZLE_FOE_ROLES).toEqual(['striker', 'healer', 'guard', 'converter', 'ward', 'champion'])
+    expect(PUZZLE_FOE_REFERENCE).toEqual({ speed: 110, stamina: 170, power: 90, guts: 70, wit: 90, growth: 0.1, partySize: 5 })
+    expect(PUZZLE_FOE_SCALING).toEqual({ ordinary: { hpAtk: 5.5, damageHp: 0.29, opening: 2, attackCountdown: 2 },
+      guardian: { hpAtk: 28, damageHp: 0.58, opening: 1, attackCountdown: 2 },
+      champion: { hpAtk: 42, damageHp: 0.54, opening: 2, attackCountdown: 2 } })
+    expect(PUZZLE_FOE_ROLE_MULTIPLIERS).toEqual({ striker: { hp: 1, damage: 1 }, healer: { hp: 0.8, damage: 0.8 },
+      guard: { hp: 1.1, damage: 0.95 }, converter: { hp: 0.9, damage: 0.9 }, ward: { hp: 1, damage: 0.9 }, champion: { hp: 1, damage: 1 } })
+    expect(PUZZLE_FOE_MECHANICS).toEqual({ defenseBase: 5, defensePerLevel: 2, healHp: 0.15, supportCountdown: 1,
+      guardCombos: 3, wardCombos: 4, wardDuration: 1, converterCount: 4, rageMultiplier: 1.4, rageCountdown: 1 })
   })
 })

@@ -1,11 +1,11 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106–T107 pure foundations/battle v1 implemented (D269–D270). Gameplay not enabled.**
+**Status: approved plan (D267–D268); T106–T108 pure foundations/battle/campaign implemented (D269–D271). Gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
-not balance closure. T107 records the initial synthetic combat envelope below; campaign scaling and release tuning
-remain T108/T116 work.
+not balance closure. T108 pins generated maps, fixed-reference encounter scaling, reward vectors and modest simulation
+evidence below. Private content, persistence, screens and release tuning remain T109–T116 work.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -369,11 +369,12 @@ unbounded stack of permanent multipliers.
 
 Initial pinned next-level EXP: `100 + 10 × (L − 1)`. Store integer EXP; cross every affordable level and carry surplus.
 An ordinary win grants each of the five frozen entrants `round(0.5 × nextLevelExp(enemyLevel) × relativeFactor)`;
-guardian weight 1.0, champion 2.0. Use the encounter's authored level, never the sum of enemy levels. Proposed
+guardian weight 1.0, champion **1.5** (D271 supersedes D269's 2.0). Use the encounter's authored level, never the sum of enemy levels. Pinned
 `relativeFactor = clamp(0.25, 2, 1 + 0.10 × (enemyLevel − memberLevel))`.
 
-These remain **starting candidates for a small simulation**, not evidence the fourteen-win path below already reaches
-PL10. Tune weights to start a roughly on-level party near the next chapter's band after one primary route. Give all
+T108's accepted-win primary-route projection starts five invented PL1 entrants at 0 EXP, ends chapter1 at
+**PL11 +117 EXP**, then chapter2 at **PL21 +188 EXP**. Nothing clamps to10/20; the final champion multiplier was reduced
+from2 to1.5 to bring the first route near the next band. These are not real-party win-rate promises. Give all
 five entrants the same base award and their own relative adjustment, regardless of how many matching colours they used.
 A win earns EXP, not necessarily a whole level; the result shows progress when no level is crossed. Loss/abandon gives
 no EXP or material in this proposal; repeat wins still pay.
@@ -596,7 +597,7 @@ Proposed primary progression:
 | Final stretch | 4 | 1 | 7–9 |
 | Champion routes | 0 | one selected champion | 10 |
 
-T108's starting recommended levels within these sectors are regular rows **1,2,3 / 4,5,6 / 7,8,9,9**, guardians
+T108's pinned recommended levels within these sectors are regular rows **1,2,3 / 4,5,6 / 7,8,9,9**, guardians
 **3,6,9**, champions **10**, offset by the chapter band. They are named/pinned alongside encounter scaling,
 not inherited from RPG. Both choices at each reached row are previewable/replayable; clearing either advances.
 
@@ -611,9 +612,47 @@ Use all six pair/side combinations across a chapter, not just two examples; avoi
 two styles. Basic starter chapter enemy identities can come from the requested early Monster Book families, with
 their weaker variants in squads and stronger variants as guardians/champions. Exact cast/art authoring stays private.
 
-Proposed guardian is a mono-element boss; it is not forced to share the party's colour. The final five routes are
+A guardian is one mono-element boss; it is not forced to share the party's colour. The final five routes are
 Fire/Water/Wood/Light/Dark champions. A node preview gives recommended PL, foe elements, intent recipes, weaknesses,
 exact ticket families/quantities and the party's estimated strength. It can warn without forbidding a higher chapter.
+
+### Implemented map and encounter coefficients (T108 / D271)
+
+Generation is code-authored in registry order, never save-seeded. The six trios cycle in this order:
+Light/Fire/Water, Dark/Fire/Wood, Light/Water/Wood, Dark/Fire/Water, Light/Fire/Wood, Dark/Water/Wood.
+For ordinary row `r` (1…10), lane `b` (0/1), registry index `i`, mix index is `(r−1 +3b+i) mod6`.
+Both lanes contain all six combinations. The ordinary third role cycles Striker/Healer/Guard/Converter/Ward/Striker
+at `(r−1+b+i) mod6`; the first two are Strikers. Guardians use Guard/Converter/Ward by sector and element index
+`(i+2×sector) mod5` in Fire/Water/Wood/Light/Dark order. Dark ordinary/guardian drops are explicitly **Late**;
+only the one Dark champion node has a pre-entry Pace/Late choice. There is no hidden reward reroll.
+
+Enemy stats use the **fixed invented reference**, not the entering party: base Speed110/Stamina170/Power90/Guts70/Wit90,
+10% Speed/Stamina growth, five reference members. At authored level `L`, define
+`A = round(110 +12×(L−1)×1.1)` and `H =5×round(680 +36×(L−1)×1.1)`.
+Enemy HP is `round(A×kindHP×roleHP)`; displayed attack is `round(H×kindDamage×roleDamage)`;
+DEF is `5 +2×(L−1)`. The engine still applies actual party shield/Guard and its incoming25% floor afterward.
+
+| Kind | HP / A | Attack / H | Opening countdown | Attack countdown |
+|---|---|---|---|---|
+| Ordinary | 5.5 | 0.29 | 2 | 2 |
+| Guardian | 28 | 0.58 | 1 | 2 |
+| Champion | 42 | 0.54 | 2 | 2 |
+
+| Role | HP multiplier | Attack multiplier | Support recipe |
+|---|---|---|---|
+| Striker | 1 | 1 | none |
+| Healer | 0.8 | 0.8 | heal15% of its maxHP to lowest-ratio living other ally |
+| Guard | 1.1 | 0.95 | 50% guard for next drag, bypass at3 combos |
+| Converter | 0.9 | 0.9 | convert4 Fire orbs to own element (Water→Fire for Fire foes) |
+| Ward | 1 | 0.9 | 50% ward for next drag, bypass at4 combos |
+| Champion | 1 | 1 | same ward, plus rage strictly below50% HP: attack×1.4, countdown1 |
+
+Support countdown is1. Ordinary special foes use support then attack; guardians/champions use attack then support,
+so their early pressure is real. Every foe has an attack and no preemptive damage or delay immunity. Champion rage
+is warned, preserves its element in these initial recipes, and retains the normal T107 future-countdown/delay rules.
+The exact preview resolver is also the frozen-input resolver. Cast joins supply verified ids and role/element tags,
+not damage stats. Missing coverage is an explicit error, never a synthetic production fallback. Engine v1 enemy-value
+transport bounds still apply; overflow rejects rather than silently flattening higher-band enemies.
 
 ### Material target and repeat rewards
 
@@ -981,6 +1020,74 @@ coverage, debt-first earnings and exchanges. Check start/end PL, rewards per min
 13-edge exchange effect. A result that only gets the total 54 right but cannot practically train the roster is not
 closed balance. Pin approved constants in the design, domain pinning test, sim envelope and a **new** decision.
 
+### T108 campaign and economy evidence (D271)
+
+`pnpm sim:puzzles` preserves T107's288 engine-fixture battles and adds **600** campaign battles plus exact economy
+projections. Use `--combat` / `--economy` to run only that part. Campaign seeds are `campaign-1`…`campaign-8`;
+eight per on-level mixed/strict-neutral/counter row, first four per low/high/novice and later-band probe.
+Competent/novice bot algorithms are unchanged. The five-colour mixed party includes advantages; **strict-neutral**
+uses only neutral matchups (rare same-colour against ordinary trios; same basic against basic bosses; Fire against
+rare bosses). Counter ordinary parties cover each foe's weakness; mono counter bosses use their weakness colour.
+All parties are small invented Dirt-A sources, not imported outfits or promised starter ownership.
+
+Measured on-level mixed party, eight battles per row (ending HP includes losses):
+
+| Kind / foe colours | Encounter/member PL | Clears | Median drags | Median ending HP |
+|---|---|---|---|---|
+| ordinary · light/fire/water | 1 | 87.5% | 4.5 | 23.1% |
+| ordinary · dark/fire/wood | 2 | 100% | 5 | 74.1% |
+| ordinary · light/water/wood | 3 | 100% | 5 | 64.4% |
+| ordinary · dark/fire/water | 1 | 100% | 4.5 | 79.7% |
+| ordinary · light/fire/wood | 2 | 100% | 5 | 64.8% |
+| ordinary · dark/water/wood | 3 | 100% | 4 | 86.8% |
+| guardian · fire | 3 | 75% | 6 | 26.9% |
+| guardian · water | 13 | 100% | 5.5 | 35.7% |
+| guardian · wood | 6 | 100% | 4.5 | 61.8% |
+| guardian · light | 16 | 100% | 4 | 76.8% |
+| guardian · dark | 9 | 100% | 4.5 | 57.7% |
+| champion · fire | 10 | 75% | 7 | 27.5% |
+| champion · water | 10 | 75% | 8 | 61.6% |
+| champion · wood | 10 | 62.5% | 7.5 | 35.3% |
+| champion · light | 10 | 75% | 7 | 45.1% |
+| champion · dark | 10 | 75% | 7.5 | 35.3% |
+
+This is **not balance closure**. Strict-neutral ordinary clears87.5% with median4 drags, but HP48.1–92.7%; neutral
+guardians still clear100% with24.5–56.4% HP; neutral champions clear62.5–75% with6.4–18.2% HP. Counter ordinary
+clears87.5–100%, guardian100%, champion50–87.5%; mono counter Wood's50% clear and Dark's14.4% HP are visible outliers,
+not evidence that advantage always makes the current bot optimal. Mixed novices clear0% ordinary/champion and0–50%
+guardian; PL−3 champion probes clear25–50%, PL+3 clear75–100%. Four-seed mixed Fire-champion probes atPL50 and140
+clear100%: median9.5 drags,72.4/75.9% HP on-level. Higher-band finite-kit scaling remains a T116 gap.
+The sample records Heart matches, active uses and exact per-kind/colour/PL rows in
+`scripts/sim/puzzles-campaign-envelope.ts`; every intermediate hash in all 600 battles replays identically. A small pressure pass
+settled the above coefficients; no T107 engine formula, bot search or historical hash pin was bent to hit a target.
+
+Economy enumerates **1,024 branch masks ×6 champion reward choices ×14 chapters =86,016** primary routes:
+each54 gross; all full maps132. Each chapter has44 distinct style vectors, SHA-pinned along with full-map vectors.
+The opening route's left branches plus Fire champion yield FR/PC/LS/EC **23/5/19/7**, not54 universals:
+
+| CL1→10 recipients | Immediately usable | Stranded | Extra targeted champion wins |
+|---|---|---|---|
+| Five: FR, PC, LS, EC, PC+LS | 39 | 15 | 2: one Pace and one End |
+| Six: FR, FR, PC, LS, EC, PC+LS | 48 | 6 | 2: one Pace and one End |
+| Six FR-only | 23 | 31 | 3 Fire |
+| Six PC-only | 5 | 49 | 5 Light or Dark(Pace) |
+| Six LS-only | 19 | 35 | 3 Wood or Dark(Late) |
+| Six EC-only | 7 | 47 | 4 Water |
+
+An integral max-flow report respects original-A eligibility, and a bounded four-family search finds minimum extra
+boss wins without cross-style conversion or automatic spending. The report accepts1–6 recipients needing0–9 tickets
+apiece as a work bound, not an account or roster cap. Debt, real losses and live play time are outside these
+accepted-win allocation projections.
+
+Five fresh entrants project PL1→11(+117 EXP)→21(+188 EXP). A separate mixed-level cohort7/10/13/17/22 traversing
+chapters2/3 ends31/31/31/32/32, carrying219/235/297/86/304 EXP: lower entrants catch up, higher entrants gain less,
+none lose progress. A champion10 pays371/285/200 EXP to entrantsPL7/10/13; repeat wins still pay12 materials once.
+Matching debt−7 with gross6/7/12 repays6/7/7, deposits0/0/5 and retains the zero receipt. Preserved universals and
+one-time legacy EXP credit bypass this debt. All13 adjacent same-style edges are checked in both directions;
+missing higher Opening clear rejects each edge. One tier14 ticket still projects8,192 tier1-equivalent tickets,
+so the exchange-gate/debt economy and actual time-to-CL need real release validation, not an assertion of closure.
+No headless row is described as phone rewards/minute. Skill catalogue remains the finite PL1/5/10 T107 kit.
+
 ### Specified delivery sequence — M030 / T106–T116
 
 The owner's gameplay choices are resolved. [M030](../tasks/M030-uma-puzzles.md) now contains eleven detailed individual
@@ -1052,6 +1159,6 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-T106–T107 pure foundations/battle v1 are complete (D269–D270): [T108 campaign/economy](../tasks/T108-puzzle-campaign-economy.md) is next. Implement one task to
+T106–T108 pure foundations/battle/campaign are complete (D269–D271): [T109 private content](../tasks/T109-puzzle-private-content.md) is next. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**

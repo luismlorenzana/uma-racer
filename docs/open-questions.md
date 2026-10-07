@@ -22,8 +22,9 @@ remains open. See [counts and exact predicates](design/uma-puzzles.md#3-element-
 All first-draft recommendations are approved; candidate tuning values still need simulation/pinning, and PAD
 art provenance and device validation remain implementation checks, not a completed import or phone sign-off.
 [M030 / T106–T116](tasks/M030-uma-puzzles.md) now supplies the detailed sequence (D268), with content verification,
-atomic economic sync, explicit online takeover and safe cutover gates. T106's pure rules are implemented (D269);
-T107 battle is next. Do not treat the task breakdown
+atomic economic sync, explicit online takeover and safe cutover gates. T106–T108 pure rules/battle/campaign are
+implemented (D269–D271); T109 private content is next. Simulation outliers in design §11 remain release-balance checks,
+not new owner choices or a claim of closure. Do not treat the task breakdown
 as a request to publish, migrate an account or implement a second RPG system.
 
 ## Needs you (owner actions, not design questions)

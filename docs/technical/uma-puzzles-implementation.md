@@ -1,6 +1,6 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T107 pure foundations/battle v1 implemented (D269–D270); runtime/content/cutover planned, not enabled.**
+**Status: T106–T108 pure foundations/battle/campaign implemented (D269–D271); runtime/content/cutover planned, not enabled.**
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
@@ -142,11 +142,72 @@ Seed names are `opening`, `refill`, `player-conversion`, `enemy-conversion`, der
 xorshift32 draws use rejection over its2³²−1 nonzero-state range for uniform integer buckets. Rejection is bounded,
 not a modulo-biased fallback. Two literal complete journals pin the initial and every action hash and JSON events.
 The 288-battle sim pins its measured envelope too; [design §11](../design/uma-puzzles.md#small-focused-validation-before-pinning)
-records unmet balance targets rather than claiming these fixtures validate production scaling. T108 extends it.
+records unmet balance targets rather than claiming these fixtures validate production scaling. T108 adds its own
+600-battle campaign envelope without changing this historical fixture output.
 
 `PuzzleBattleResultV1` contains only engine version, battle/epoch identity, action count, hash, terminal outcome/
 reason, accepted drags and ending HP. EXP/material claims are absent. The eventual commit checks journal identity
 and derives rewards itself. No save/API/Dexie/host/private content/rendering/publication is part of T107.
+
+### T108 implemented campaign v1 (D271)
+
+`campaign/` exports the following pure contracts through the Puzzle/domain barrel. None is a new persisted save row
+or a trust boundary replacing journal replay. `fixtures.ts` / `test-helpers.ts` contain only invented test/sim inputs
+and are **not** public barrel exports or production cast fallbacks.
+
+| Module | Actual public contracts |
+|---|---|
+| `chapters.ts` | `puzzleChapter`, `puzzleCampaign`: registry-driven canonical28-node DAGs |
+| `identity.ts` | `puzzleCampaignId`, `parsePuzzleCampaignId`: canonical chapter/node/checkpoint/attempt identities |
+| `progress.ts` | `parsePuzzleChapter`, `parsePuzzleCheckpoint`, `createPuzzleCheckpoint`, `puzzleChapterStatus`, `puzzleEntryEligibility`, `parsePuzzleClearFact`, `applyPuzzleTerminal`, `puzzleExchangeOpeningClears` |
+| `encounters.ts` | `parsePuzzleCast`, `resolvePuzzleEncounter`, `puzzleEncounterRewards`, `freezePuzzleEncounter` |
+| `rewards.ts` | `puzzleBattleGrants`: once-account material vector, five frozen-entrant EXP rows and accepted-terminal fact |
+| `allocation.ts` | `allocatePuzzleMaterials`, `planPuzzleTargetedWins`: integral planning reports, never inventory writes |
+
+Maps and checkpoint projections use schema1. Cast input is exact
+`{ schemaVersion:1, manifestVersion, members:[{id,elements,roles}] }`, with1–4,096 unique id/tag rows. Tags are
+validated and ids sorted before deterministic selection; no names, asset URLs or original damage stats enter rules.
+The private content adapter must validate provenance/coverage before supplying this contract. Missing element/role
+coverage throws `unknown`; it is not silently replaced by synthetic rows.
+
+Local node ids are `o1a`…`o10b`, `g1`…`g3`, `c-fire`/`c-water`/`c-wood`/`c-light`/`c-dark`.
+Canonical encodings are `pzc:<scenario>` (chapter), `pzn:<scenario>:<local>` (node),
+`pzp:<party>:<scenario>` (checkpoint), `pzb:<party>:<scenario>:<local>:<attempt>` (battle).
+Scenario ids are registry-validated lowercase kebab-case≤64; party ids1…5 and nonnegative safe-integer ordinals are
+canonical, without signs/leading zeroes. Maximum combined ids fit the120-character bound; no string concatenation
+at a downstream call site invents a competing identity scheme.
+
+`PuzzleCheckpointV1` projects `{schemaVersion,chapterId,partyId,cleared,attempts:[{nodeId,next}]}`. Clears must have
+prerequisite closure in topological order and an accepted attempt. No forged later win can bootstrap itself; unknown,
+duplicate, sparse, prototype-bearing or extra-key rows reject. `requires` is AND-of-OR groups: ordinary rows accept
+either previous branch; Finals require all three individual guardians. Reached alternatives and won nodes remain
+replayable. Any champion marks complete; all28 marks full. Entry requires five valid PLs and a reached node, returning
+only a low-level warning, not a hard PL/racing-ownership/colour quota. The host still checks enrollment/ownership.
+
+`freezePuzzleEncounter` calls that same preview resolver, then validates the complete T107 input with actual source,
+kit and derived stats. Seed is the string `puzzle-seed-<puzzleSeed(accountSeed,'account')>-<puzzleSeed(battleId,'attempt')>`.
+Reopening the same attempt reproduces it; only an accepted win/loss/abandon increments `next`. Dark variant, cast,
+foe coefficients and reward vector freeze together. Recipe provenance is `puzzle-campaign-v1`; full numerical input
+remains in the journal. Cosmetic manifest/cast changes do not change the canonical diagnostic battle hash.
+
+The T107 create/action/parser/hash/replay/result functions now accept an optional **trusted canonical scenario
+registry** (default current `SCENARIOS`). This supports an invented fifteenth scenario end-to-end, with unchanged
+default-engine hashes/versions/math. An extra `registry` in an untrusted input is rejected, not installed from the
+payload. Validate/adapt real registry changes at the host/content boundary.
+
+Commit sequence: reconstruct terminal state from the accepted frozen journal; call `puzzleBattleGrants`; deduplicate
+the battle receipt in the economic transaction **before** `applyPuzzleTerminal`; apply per-entrant awards to current
+progress, not by overwriting it with frozen PL; repay matching debt and credit the single account vector. Loss/abandon
+and partial kills pay0. The pure reducer rejects duplicate/out-of-order terminal ordinals. A structurally valid state
+or `PuzzleClearFact` is not proof of a win. `puzzleExchangeOpeningClears` folds the trusted accepted ledger's higher
+`g1` wins into an account-wide, ordered, immutable edge set; first chapter has no edge. T110–T111 own authenticated
+receipts/storage/sync, preserving these facts independently of later party edits. No client-supplied unlock boolean.
+
+Allocation accepts1–6 recipients needing0–9 tickets each only as a bounded reporting algorithm. Integer max flow
+handles overlapping original-A styles; the four-family champion search returns the minimum extra wins, with
+Front→Pace→Late→End tie-break. It does not select outfits, move Items or implement cross-style exchange. Design §11
+publishes exact route vectors, EXP carry/catch-up, debt/exchange examples and combat outliers; regression envelopes
+are checked by `pnpm sim:puzzles` (`--combat` / `--economy`). The finite skill kit remains PL1/5/10.
 
 ## 2. Stable identity and source snapshots
 
