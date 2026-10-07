@@ -12,7 +12,8 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 ## Current plan
 
 **M030 — Uma Puzzles is fully specified** (D267–D268): [the milestone](M030-uma-puzzles.md) contains eleven sequential
-PR-sized tasks, **T106–T116**, starting with [T106 pure progression/material rules](T106-puzzle-progression-materials.md).
+PR-sized tasks, **T106–T116**. T106 pure progression/material rules are complete (D269);
+[T107 deterministic party battle](T107-puzzle-battle-engine.md) is next.
 [The design](../design/uma-puzzles.md) carries approved gameplay and resolved registration;
 [the implementation contract](../technical/uma-puzzles-implementation.md) fixes save ownership, atomic background
 operations, replay/takeover and cutover boundaries. Authoring is complete; **no implementation or live migration yet**.
@@ -32,7 +33,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T106 → T116**, individually linked in the milestone | **Owner-requested next implementation sequence** · full specs; T106 first |
+| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T107 → T116**, individually linked in the milestone | **In progress** · T106 pure foundations complete; T107 next |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -57,6 +58,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T106 — Puzzle progression and Constellation materials | 2026-10-07 | [Pure contract](../technical/uma-puzzles-implementation.md#t106-implemented-foundations-d269), D269 and `packages/domain/src/minigames/uma-puzzles/` | `e5b17fe` |
 | M029 / T100–T103 — RPG chapter rollout (superseded unbuilt by D262) | 2026-10-05 | [RPG design](../design/uma-rpg.md#chapters-and-the-map-d262), D262 | `9acfb84` |
 | M028 / T099 — First playable RPG | 2026-10-04 | [RPG design](../design/uma-rpg.md), D257 and [release/owner checks](../research/rpg-release-acceptance.md) | `8e1b881` |
 | T105 — Inspiration advance | 2026-10-04 | [Advance](../design/skills-and-inheritance.md#temporary-inspiration-advance-d256), D256 and [phone proof](../research/inspiration-advance-phone-proof.md) | `1ac3b19` |

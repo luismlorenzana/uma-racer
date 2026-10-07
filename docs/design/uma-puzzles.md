@@ -1,9 +1,10 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: owner-approved plan, 2026-10-07 (D267); full task breakdown M030/T106–T116 (D268). Not implemented.**
+**Status: approved plan (D267–D268); T106 pure foundations implemented (D269). Gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
-specification, not unanswered owner choices; candidate balance coefficients still require simulation and pinning.
+specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
+not balance closure. Battle/campaign simulation and tuning remain T107/T108/T116 work.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -20,7 +21,7 @@ until the plan is implemented and safely cut over. Claude's RPG work is outside 
 - [Phone experience and icons](#9-screens-guides-and-visual-identity)
 - [Persistence, content and delivery](#10-implementation-boundaries) · [approval record](#12-owner-review)
 
-Implementation instructions: [M030 and all eleven task specs](../tasks/M030-uma-puzzles.md) and the
+Implementation instructions: [M030 delivery sequence](../tasks/M030-uma-puzzles.md) and the
 [technical contract](../technical/uma-puzzles-implementation.md). Implement one task to completion at a time;
 current training remains active until the verified replacement and protected preservation cutover are ready.
 
@@ -336,7 +337,7 @@ Each `party + scenario` retains revealed/cleared nodes, repeat counts, last view
 No chapter becomes tied to the racing scenario of the party leader. The party may replay earlier chapters or enter
 a harder chapter with a level warning; no forced ten-level prerequisite or hard composition lock is proposed.
 
-### Stats and leveling — candidate baseline, not pinned
+### Stats and leveling — pinned initial candidates (D269), not balance closure
 
 Keep the useful Uma identity without copying RPG's classes. Shared HP removes individual KO bookkeeping.
 Five member contributions are shown on each profile and on the party preview:
@@ -354,7 +355,9 @@ contributions reduce poison/hazard damage, also floored at 25%; they do **not** 
 crit chance. The HUD shows mitigated damage for the actual frozen party. Enemy scaling must account for both ATK and
 HP growth; no claim is made that these coefficients are already balanced.
 
-Party max HP and RCV are sums of its five members. Growth rates are normalized fractions, not raw percentage integers.
+Party max HP and RCV are sums of its five members. Frozen growth rates are finite fractions in 0…1. The enrollment
+adapter accepts fractions by default; an explicit percentage mode accepts only whole 0…100 percentages and divides
+once. It never guesses units or accepts a mixture such as 20 and 0.2 in percentage mode.
 No racing cards, scenario caps or lineage improvements enter these formulas. A leader's bounded passive applies
 after summing; explain it in the party preview.
 
@@ -363,12 +366,12 @@ scenario tier `t` targets PL `10(t − 1) + 1 … 10t`. Today's fourteen chapter
 the band. No class promotion is implied just because RPG has one. Later skills expand by published bands, not an
 unbounded stack of permanent multipliers.
 
-Candidate next-level EXP: `100 + 10 × (L − 1)`. Store integer EXP; greedily cross levels and carry surplus.
+Initial pinned next-level EXP: `100 + 10 × (L − 1)`. Store integer EXP; cross every affordable level and carry surplus.
 An ordinary win grants each of the five frozen entrants `round(0.5 × nextLevelExp(enemyLevel) × relativeFactor)`;
 guardian weight 1.0, champion 2.0. Use the encounter's authored level, never the sum of enemy levels. Proposed
 `relativeFactor = clamp(0.25, 2, 1 + 0.10 × (enemyLevel − memberLevel))`.
 
-These are **starting candidates for a small simulation**, not evidence the fourteen-win path below already reaches
+These remain **starting candidates for a small simulation**, not evidence the fourteen-win path below already reaches
 PL10. Tune weights to start a roughly on-level party near the next chapter's band after one primary route. Give all
 five entrants the same base award and their own relative adjustment, regardless of how many matching colours they used.
 A win earns EXP, not necessarily a whole level; the result shows progress when no level is crossed. Loss/abandon gives
@@ -378,6 +381,12 @@ Show every level crossed with ATK/HP/RCV/guard/resilience deltas. The bounded fi
 PL5 four-orb specialization and PL10 row specialization, as detailed in T107 below. Higher-band choices are an
 expansion through explicitly published finite skill rows, not an automatic empty reward every ten levels or infinite
 stacking bonuses. Lifetime PL/stat progression continues beyond the initial kit. Keep a compact loadout, not the RPG tree.
+
+T106 computes carry by an exact BigInt arithmetic-series search, with safe integer inputs/outputs and explicit
+overflow errors, not a capped level loop. Its receipt represents the complete crossed-level range; the presentation
+can retrieve **every** level/stat delta in pages of at most 256. Ids are bounded to 120 characters, scenario registries
+to 256 definitions and individual cohort/credit payloads to 4,096 units. These are transport/work limits, not a PL
+or roster cap; larger account preservation needs chunked transport in T110/T115. No live save is changed by T106.
 
 ## 5. The puzzle battle
 
@@ -938,9 +947,9 @@ Update Overview, Uma progression, Training, Constellations, Minigames, kit, Econ
 appears, badges, architecture/save contracts, README and in-app guide text together. Preserve historical decisions and
 ledger names through adapters; do not rewrite old rows as if Spark had always been this game.
 
-Current documents already contain older descriptions: Constellations' displayed formula includes `max(baseStat,
-50 × TL)`, but Training and `packages/domain/src/constellation.ts` use fixed template base stats (D152). Preserve the
-shipped projection and SP progression; do not accidentally reintroduce a stat buff through the rename. Some
+T106 corrected Constellations' former `max(baseStat, 50 × TL)` prose to the shipped fixed template base (D152/D269),
+without changing the engine. Preserve that projection and SP progression; do not accidentally reintroduce a stat
+buff through the rename. Some
 training/card prose still says stars are scenario-local, and README/RPG implementation text still references
 Persona/engine v2 despite D265's engine v3. Use D255 for global stars and RPG + D265/D266 for current combat/map
 facts. Record targeted cleanup in the relevant implementation unit; do not overwrite Claude's current RPG changes
@@ -965,6 +974,6 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-Full task authoring is complete: [start T106](../tasks/T106-puzzle-progression-materials.md), then implement one task to
+T106 pure foundations are complete (D269): [T107 battle](../tasks/T107-puzzle-battle-engine.md) is next. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**
