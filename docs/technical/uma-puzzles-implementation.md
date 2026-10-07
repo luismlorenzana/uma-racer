@@ -1,6 +1,8 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T108 pure foundations/battle/campaign implemented (D269–D271); runtime/content/cutover planned, not enabled.**
+**Status: T106–T108 pure rules and T109 content code implemented (D269–D272); gameplay runtime/cutover planned, not enabled.**
+T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
+pinned at the owner's request. DEV proofs use original labelled placeholders; T110 is next and no gameplay/cutover is enabled.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
@@ -383,6 +385,13 @@ material rules. API rejects old progress writes over this cutover; offline old c
 response on reconnect, not a silently adopted downgrade. New outfits/scenarios never join the frozen debt cohort.
 
 ## 9. Content, presentation and activation
+
+**T109 code delivered (D272):** the [standing content contract](puzzle-content.md) documents reviewed source/evidence v1,
+all392 node joins, independent alpha-safe256 px atlases, immutable full-hash pack/catalog retention, aggregate validation,
+pre-publication checks and lazy bearer-authenticated `PuzzleContentLibrary.acquire()` leases. Frozen pure cast tokens are
+`puzzles-<full-pack-sha256>`; T111 must store/re-acquire the exact version/hash, not the next active pack. `/puzzles/content`
+is a read-only lazy preflight, not Home/playable entry. The owner deferred real PAD originals and approved labelled DEV
+SVG placeholders so subsequent work can proceed. T109 remains for real inputs/import/private preview; T116 still gates release.
 
 Code generates semantic maps/enemy recipes for every scenario. Private PAD packs contain only verified original
 identity/art/source variants and the recipe-to-cast joins. Keep all original rows/art/caches ignored; small invented

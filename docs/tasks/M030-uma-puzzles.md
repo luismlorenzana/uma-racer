@@ -1,6 +1,7 @@
 # M030 — Uma Puzzles and material-driven Constellation Levels
 
-**State: T106–T108 pure foundations/battle/campaign complete (D269–D271); T109 next. No runtime/save/cutover change yet.**
+**State: T106–T108 pure foundations/battle/campaign complete (D269–D271); T109 pipeline/client code delivered,
+real PAD inputs pinned for the final pass at the owner's request (D272). T110 save/sync is next. No live cutover.**
 Owner-approved gameplay: [Uma Puzzles](../design/uma-puzzles.md), D267.
 Delivery/transport baseline: [implementation contract](../technical/uma-puzzles-implementation.md), D268.
 
@@ -23,7 +24,7 @@ The old training loop remains usable until that replacement and the preservation
 | 1 | T106 — Progression and material rules · **complete** | [Pure v1 exports](../technical/uma-puzzles-implementation.md#t106-implemented-foundations-d269): registration, PL, CL spend, exchange, frozen debt and legacy credit; no runtime writes |
 | 2 | T107 — Deterministic party battle · **complete** | [Battle v1 exports](../technical/uma-puzzles-implementation.md#t107-implemented-battle-v1-d270), finite kit/intents, two literal journal pins and 288-battle synthetic sim; no runtime writes |
 | 3 | T108 — Campaign and reward economy · **complete** | [Campaign v1](../technical/uma-puzzles-implementation.md#t108-implemented-campaign-v1-d271), fourteen28-node maps, future-registry support,54/132 exact budgets, progression/allocation/debt reports and600-battle envelope; live balance gaps documented |
-| 4 | [T109 — Private PAD content](T109-puzzle-private-content.md) | Import/art/runtime contract works and real cast availability is verified, or an explicit content blocker prevents release |
+| 4 | [T109 — Private PAD content](T109-puzzle-private-content.md) · **code delivered, real content deferred** | [Private content contract](../technical/puzzle-content.md), immutable import/atlas/client, original DEV placeholders; owner-supplied permitted originals/evidence still required before release |
 | 5 | [T110 — Save and sync protocol](T110-puzzle-save-sync.md) | Additive storage, API validation and conditional economic operations cannot duplicate or lose rewards/spends |
 | 6 | [T111 — Journal and real host](T111-puzzle-journal-host.md) | Real enrollment, reservation, replay, settlement, resume and conflict recovery persist correctly |
 | 7 | [T112 — Hub, parties and maps](T112-puzzle-hub-maps.md) | Real saved roster/presets/checkpoints drive a compact phone UI; no production Home entry yet |
@@ -40,6 +41,11 @@ T109 is a real dependency, not a request to leave art to an imaginary other agen
 be verified, report precisely what is missing. Completed pipeline work may be proposed separately, but do not mark
 the private-content acceptance complete or claim production playability. Safe synthetic engine/storage work can
 continue only with the blocker visible; T116 cannot pass without real content.
+
+**Owner sequencing update (D272):** pin the permitted-source/art collection until the final content pass, and use
+explicit original placeholders in development proofs while T110–T115 proceed sequentially. T109's remaining spec
+stays visible; no rewarded production fallback or full-content completion is claimed. The import code is not waiting
+on another agent. Return to verified real content before T116, or obtain a separate explicit change to the release gate.
 
 ## Shared definition of done
 

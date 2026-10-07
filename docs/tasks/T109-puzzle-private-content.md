@@ -1,5 +1,12 @@
 # T109 — Private PAD cast, atlas and verified content runtime
 
+**Code delivered; real-content acceptance pinned by the owner (D272).** See the living
+[content contract](../technical/puzzle-content.md) for implemented parsers, imports, immutable retention, authenticated
+loader and temporary DEV-only SVG placeholders. Remaining: permitted real starter/evolution source files/evidence,
+actual pack/atlas import, aggregate validation and private art preview. The owner requested proceeding with other
+implementation first and returning to this input pass last, before T116. Retain this spec until real content verifies;
+do not treat the code-only merge or placeholder screenshots as full completion.
+
 **Depends on T108's semantic cast/recipe interface.** Read design §10, the implementation contract §§1,9, current
 RPG private content contract and existing data/assets pipeline/runbook. No infrastructure/env/workflow edits or cloud
 credentials are part of ordinary work. One PR, synthetic fixtures only.

@@ -8,7 +8,7 @@ import { puzzleStats, puzzleWinExp } from '../progression'
 import { parsePuzzleMaterialId } from '../materials'
 import type { PuzzleBattleAction, PuzzleBattleInputV1 } from '../battle-types'
 import { puzzleChapter } from './chapters'
-import { parsePuzzleCast, resolvePuzzleEncounter, freezePuzzleEncounter } from './encounters'
+import { parsePuzzleCast, resolvePuzzleEncounter, resolvePuzzleChapterEncounters, freezePuzzleEncounter } from './encounters'
 import { syntheticPuzzleCast, syntheticPuzzleEntrants } from './fixtures'
 import { createPuzzleCheckpoint, applyPuzzleTerminal } from './progress'
 import { puzzleBattleGrants } from './rewards'
@@ -37,9 +37,13 @@ describe('frozen campaign encounters and once-account rewards', () => {
     expect(battleStateHash(createBattle(input))).toBe('27209b7145e3a389')
   })
   it.each(SCENARIOS.map(s => s.id))('resolves every %s node with fixed recipes and per-kind special bounds', id => {
-    const chapter = puzzleChapter(id)
+    const chapter = puzzleChapter(id), bulk = resolvePuzzleChapterEncounters(chapter, syntheticPuzzleCast())
+    expect(bulk).toHaveLength(chapter.nodes.length + 1)
     for (const node of chapter.nodes) {
       const encounter = resolvePuzzleEncounter(chapter, node.id, syntheticPuzzleCast(), node.localId === 'c-dark' ? 'pace' : null)
+      expect(bulk.find(e => e.nodeId === node.id && e.darkVariant === encounter.darkVariant)).toEqual(encounter)
+      if (node.localId === 'c-dark') expect(bulk.find(e => e.nodeId === node.id && e.darkVariant === 'late'))
+        .toEqual(resolvePuzzleEncounter(chapter, node.id, syntheticPuzzleCast(), 'late'))
       expect(encounter.enemies).toHaveLength(node.kind === 'ordinary' ? 3 : 1)
       expect(encounter.rewards.reduce((n, r) => n + r.quantity, 0)).toBe(node.kind === 'ordinary' ? 3 : node.kind === 'guardian' ? 4 : 12)
       for (const foe of encounter.enemies) {
@@ -52,6 +56,9 @@ describe('frozen campaign encounters and once-account rewards', () => {
   it('rejects missing cast coverage rather than fabricating enemies, and parses only exact ID/tag contracts', () => {
     const entry = entered()
     expect(() => freezePuzzleEncounter({ ...entry, cast: { ...entry.cast, members: entry.cast.members.slice(1) } })).toThrow('Missing verified')
+    expect(() => resolvePuzzleChapterEncounters(entry.chapter, { ...entry.cast, members: entry.cast.members.slice(1) })).toThrow('Missing verified')
+    const altered = structuredClone(entry.chapter); altered.nodes[0]!.level++
+    expect(() => resolvePuzzleChapterEncounters(altered, entry.cast)).toThrow('Invalid chapter/cast')
     for (const v of [{ ...entry.cast, images: [] }, { ...entry.cast, members: new Array(1) }, { ...entry.cast, members: [entry.cast.members[0], entry.cast.members[0]] },
       { ...entry.cast, members: [{ ...entry.cast.members[0], roles: ['unknown'] }] }, { ...entry.cast, members: [{ ...entry.cast.members[0], elements: ['fire', 'fire'] }] }])
       expect(parsePuzzleCast(v)).toBeNull()
@@ -105,5 +112,6 @@ describe('frozen campaign encounters and once-account rewards', () => {
     expect(battleStateHash(replayBattle(input, [{ type: 'abandon' }], registry).state, registry)).toBe(battleStateHash(state, registry))
     expect(puzzleBattleGrants(state, registry).exp.every(e => e.amount === 0)).toBe(true)
     expect(input.entrants[0]!.stats).toEqual(puzzleStats(input.entrants[0]!.source, 141))
+    expect(resolvePuzzleChapterEncounters(chapter, syntheticPuzzleCast(), registry)).toHaveLength(29)
   })
 })

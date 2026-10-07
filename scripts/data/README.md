@@ -75,6 +75,14 @@ this gate before the existing publisher contacts storage. A partial RPG-only sta
 the complete production manifest. The first URA chapter's [publication record](../../docs/research/rpg-private-ura-handoff.md)
 records the complete manifest and immutable pack hash (D257).
 
+## Private Uma Puzzles content
+
+After permitted source/evidence collection (currently pinned by the owner): `pnpm assets:puzzles:import`,
+`pnpm data:puzzles:import`, then `pnpm data:puzzles:validate`. The [standing contract](../../docs/technical/puzzle-content.md)
+defines exact reviewed inputs, capability/schema checks, all-chapter joins, immutable retained packs/atlases, aggregate
+output and authenticated client leases. Regular imports preserve Puzzle files/pins alongside RPG. Present Puzzle content
+must validate before publisher storage access. No publication occurs during import; real-source acceptance remains open.
+
 ## Safety and tests
 
 `content/` and `scripts/data/.cache/` contain original-game data and must never be committed, copied into fixtures, or put
