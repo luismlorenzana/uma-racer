@@ -1,8 +1,8 @@
 # M030 — Uma Puzzles and material-driven Constellation Levels
 
 **State: T106–T108 pure foundations/battle/campaign complete (D269–D271); T109 pipeline/client code delivered,
-real PAD inputs pinned for the final pass at the owner's request (D272). T110 save/sync complete (D273), capability-off;
-T111 journal/host is next. No live cutover.**
+real PAD inputs pinned for the final pass at the owner's request (D272). T110 save/sync and T111 real journal/host complete
+(D273–D274), capability-off; T112 Hub/parties/maps is next. No live cutover.**
 Owner-approved gameplay: [Uma Puzzles](../design/uma-puzzles.md), D267.
 Delivery/transport baseline: [implementation contract](../technical/uma-puzzles-implementation.md), D268.
 
@@ -27,7 +27,7 @@ The old training loop remains usable until that replacement and the preservation
 | 3 | T108 — Campaign and reward economy · **complete** | [Campaign v1](../technical/uma-puzzles-implementation.md#t108-implemented-campaign-v1-d271), fourteen28-node maps, future-registry support,54/132 exact budgets, progression/allocation/debt reports and600-battle envelope; live balance gaps documented |
 | 4 | [T109 — Private PAD content](T109-puzzle-private-content.md) · **code delivered, real content deferred** | [Private content contract](../technical/puzzle-content.md), immutable import/atlas/client, original DEV placeholders; owner-supplied permitted originals/evidence still required before release |
 | 5 | T110 — Save and sync protocol · **complete** | [Schema-1/Dexie28/atomic protocol](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273), strict standalone API adapters and local repair; no gameplay or live cutover |
-| 6 | [T111 — Journal and real host](T111-puzzle-journal-host.md) | Real enrollment, reservation, replay, settlement, resume and conflict recovery persist correctly |
+| 6 | T111 — Journal and real host · **complete** | [Real host/journal contract](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274): enrollment, reservation, replay, receipt-owned settlement/materials and explicit recovery; capability-off |
 | 7 | [T112 — Hub, parties and maps](T112-puzzle-hub-maps.md) | Real saved roster/presets/checkpoints drive a compact phone UI; no production Home entry yet |
 | 8 | [T113 — Touch battle and guide](T113-puzzle-touch-battle.md) | Pixi battle, results and isolated practice use the real host with correct phone input and guide behavior |
 | 9 | [T114 — Materials, exchange and CL UI](T114-puzzle-material-surfaces.md) | Real Items/icons, debt/exchange and one reusable CL spend sheet show actual nodes/SP changes |

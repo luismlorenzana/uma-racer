@@ -1,8 +1,8 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T108 pure rules, T109 content code and T110 save/sync implemented (D269–D273); gameplay host/cutover not enabled.**
+**Status: T106–T111 foundations/content code/save/sync/real replay host implemented (D269–D274); gameplay/cutover not enabled.**
 T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
-pinned at the owner's request. DEV proofs use original labelled placeholders; T111's replay host is next. No gameplay/cutover is enabled.
+pinned at the owner's request. DEV proofs use original labelled placeholders; T112's Hub/parties/maps are next. No gameplay/cutover is enabled.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
@@ -34,7 +34,7 @@ synthetic parity tests must catch divergence. Do not make an untested source-TS 
 ### T106 implemented foundations (D269)
 
 The narrow `packages/domain/src/minigames/uma-puzzles/index.ts` barrel is exported by `@racer/domain`. Nothing calls
-these rules from an app yet. Modules have no I/O, clocks, unseeded randomness, rendering or save imports:
+these rules from an app at T106; T111 adds their gated real host. Modules have no I/O, clocks, unseeded randomness, rendering or save imports:
 
 | Module | Actual public contracts |
 |---|---|
@@ -90,7 +90,7 @@ account mutation, UI or phone sign-off exists for T106. Those remain the later t
 The folder's `battle.ts` / `replay.ts` expose `createBattle`, `applyBattleAction`, `replayBattle`, `battleStateHash`
 and `puzzleBattleResult`. To preserve the RPG engine's established root exports, the Puzzle/domain barrel aliases
 the first four as `createPuzzleBattle`, `applyPuzzleBattleAction`, `replayPuzzleBattle`, `puzzleBattleStateHash`.
-No app currently calls them. These are independent of Spark utilities; there is no shared-board replay change.
+T107 landed without app callers; T111 adds its gated replay host. These are independent of Spark utilities; there is no shared-board replay change.
 
 | Module | Actual responsibility |
 |---|---|
@@ -375,7 +375,7 @@ only after acknowledgement. No timeout or disappearance silently grants a new bo
 
 Checked-in API and web capabilities remain **false**. No bank creation, training conversion, Home entry or Spark
 retirement occurs here. Synthetic tests inject enabled banks; production cannot enable this through a query/route.
-The runnable replay host/journal belongs to T111, and real PAD inputs/private preview still belong to deferred T109.
+The real replay host/journal is implemented below (T111); real PAD inputs/private preview still belong to deferred T109.
 
 ## 4. Battle input, action and result contract
 
@@ -405,6 +405,84 @@ expected action count and hash only. A result receipt stores all before/after pr
 to reopen the result after a reload. Loss/abandon closes the attempt with no EXP/items and never erases previous wins.
 
 ## 5. Host port and atomicity
+
+### T111 implemented real host/journal (D274)
+
+`apps/web/src/game/puzzles/host.ts` exports `PuzzleHost`, implemented by `PersistentPuzzleHost`.
+`GameRuntime.puzzleHost()` lazily constructs the real production adapter in `production.ts` after persistent save and
+verified Uma content readiness. It never installs a double or enables the capability. The device id is a UUID retained
+in device-only `puzzlePreferences/device-id`; it is **not** a board seed. The immutable bank cutover id remains the seed source.
+
+| Port | Actual contract |
+|---|---|
+| `account`, `registration` | Five default party views, parsed enrolled outfits/checkpoints, readiness/debt/stock; owned verified source/palette/styles/PL1 preview |
+| `enroll`, `correct`, `equip`, `saveParty`, `transfer` | Semantic operations with stable ids; correction/equip/party/transfer compare the screen's current revision before queueing; source A, uniqueness and open locks are revalidated by the shared resolver |
+| `openChapter` | Creates/reuses only checkpoint/foreground; reopening the same foreground is write-free, including its suspended encounter |
+| `begin` | Party/scenario/node/Dark variant + party/checkpoint revisions + operation id; existing open returns itself, never overwrites a journal or reselects a variant |
+| `loadBattle` | `battle` with replayed state/actions/hash/last event step and held content lease, `result` with canonical/pending receipt, or typed visible `recovery` |
+| `append` | Battle id/owner epoch/expected action count/action → authoritative transition; compare/replay/reduce/write precedes returned events |
+| `commit` | Only battle id/epoch/count/hash → replay-derived stable terminal result; loss/abandon persist zero-reward receipts too |
+| `previewCl`, `previewExchange`, `confirmMaterial` | Write-free exact mixed-input/stock/debt/CL preview, full canonical comparison string, economic revision and receipt; confirmation revalidates inside the same transaction |
+| `takeover` | Explicit online dependency drain, parsed acknowledgement plus complete canonical economic snapshot, immutable-input comparison, then same-seed turn-zero journal under the acknowledged epoch |
+
+Content acquisition is outside IndexedDB. Entry re-reads save/ownership/full party/PL/kits/revisions after verification,
+freezes the exact retained content identity and numeric recipe, and persists reservation/prediction/queue/outbox plus
+the empty journal in one transaction. No daily tickets, profile, racing EXP or other modes are written. `append` does
+not access network content, schedule sync or publish state per pointer sample; only accepted actions reach it.
+
+`journal.ts` strictly parses the existing schema1 row against the181-action engine limit, rejects extra/sparse/prototype
+shapes and unsupported stamps, and replays the complete journal against the descriptor's input hash/epoch. The stored
+state hash must match. Missing/corrupt/future rows produce recovery, **never an empty default**. A canceled gesture,
+pause, target hover or guide opening has no journal action. Same-count stale tabs cannot both append.
+
+The coordinator's new `enqueueInTransaction` has no publication/scheduling; the host composes it with journal or
+archive writes. Its normal `enqueue` remains compatible. `afterCommit` and the runtime publisher run only after
+durability; scheduling never consults a stale pending count. Terminal commit keeps the existing T110 ownership:
+the pending receipt contains offline result/evidence, not raw canonical `puzzleResults`/`itemLedger` appends. Only
+acknowledgement installs those logs. Commit retries read that durable receipt even after the journal is closed; a
+different epoch/count/hash cannot pay it again. Canonical result adoption replaces repayment/net (and current-progress
+before/after if another win intervened), never the frozen award amounts or gross vector. Archives retain the full
+original descriptor/journal for accepted terminal or displaced-owner recovery.
+
+CL results derive actual node ids/labels from `nodesUnlockedBetween(constellationTemplate(tier), before, after)` and
+stat/SP deltas from the real saved builds/cards/Uma content. CL9/10 explicitly report SP-only; configuration is not
+auto-filled. Results carry outfit/scenario and a Constellation link for the later shared spend surface. The universal
+input is independent of new families and does not repay debt. Exchanges expose input, gross/repaid/net, irreversible
+repayment, after-stocks/bank and paired movement evidence, all in the same receipt-backed transaction.
+
+**Completion flair is canonical, not a rejectable prediction.** The spend transaction reconciles existing badge/trainer
+facts against canonical CL and queues any legitimate changes atomically. Accepted CL responses reconcile the newly
+confirmed completion facts inside the same adoption transaction. `canonicalTrainingUma` also protects boot and unrelated
+Training/configuration badge hooks from pending CL. Local CL/power remains immediately usable; a stale rejected spend
+cannot permanently award Fully Trained before rollback. Already-earned historical badges are never removed.
+
+Takeover flushes dependencies/outbox and refuses unresolved/offline work. The response and fresh snapshot must confirm
+the requested owner/epoch or a canonical terminal result, with the entire frozen input equal except epoch. A lost prior
+acknowledgement can recover from that exact online canonical owner, not a timeout. A competing terminal wins and its
+receipt-owned projections are adopted together without paying again. Retained content must verify before an acknowledged
+restart archives/resets local actions; content failure retains the old journal for Retry. A second local mutation during
+the request rejects local adoption. Foreign/superseded journals are archived and never settle from the displaced epoch.
+
+`proof.ts` exports `createIsolatedPuzzleProof`: an explicitly named separate `puzzle-proof-*` database, invented rows
+and injected readiness/cast, using the **same real host/domain API**. It refuses a nonempty proof store and cannot target
+the account database. Production imports neither it nor invented fixtures. Both release flags remain false; no screen,
+Home entry, live bank preparation, migration, Spark retirement or private publication is performed in T111.
+
+Synthetic IndexedDB tests cover enrollment/locks/transfers, reachable/Dark reservations, exact reload/JSON replay,
+stale tabs, invalid/canceled/terminal input, five frozen-level awards added to current PL, zero-reward terminal receipts,
+duplicate commit, actual CL nodes/SP/universals, wrong debt family, −7/gross12 boss and exchange splits, canonical
+adjustment, foreign/missing/corrupt/future journals and acknowledged/lost-ACK/terminal-first takeover. Recovery checks
+also pin missing/corrupt same-device restore, changed-input/unconfirmed acknowledgements, post-ACK unavailable art and
+local archive/journal failure followed by same-owner retry. Failure injection
+after each of five outfit writes, checkpoint, stock/bank, result/movement receipt, pending/outbox, journal/archive and
+CL badge boundary proves all-or-none writes and post-durability scheduling. Initial invented host replay hash is
+`7771941afcb8fc1e`; pure engine hashes/math and `sim:puzzles` envelopes are unchanged. No physical-phone or real-account
+gameplay acceptance is claimed; T112–T116 remain, alongside pinned T109 real content.
+
+T111 verification: lint/test/build pass (1,342 tests, including70 new real-host tests); `sim:puzzles` retains its288
+engine and600 campaign battles plus86,016 exact economic routes. Spark and Friendship Training simulations also pass.
+Startup entry is152.30 KB gzip (limit180); the lazy production host is10.74 KB and the existing Spark screen18.09 KB.
+There is no changed screen to screenshot and no claim of authenticated production play or physical-iPhone acceptance.
 
 The screen-facing host provides:
 

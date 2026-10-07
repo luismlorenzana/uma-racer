@@ -1070,6 +1070,26 @@ export class GameRuntime {
   }
 
   /** T111's host uses this durable lane. The off capability rejects production entry, including guessed routes. */
+  async puzzleHost() {
+    if (!this.content || !useGame.getState().persistent || useGame.getState().status !== 'ready') throw new Error('A persistent, content-ready save is required for Uma Puzzles')
+    const { createPersistentPuzzleHost } = await import('./puzzles/production')
+    const generation = this.generation
+    return createPersistentPuzzleHost(this.content, { schedule: () => this.schedule(), publish: async () => {
+      const snapshot = await readLocalSnapshot()
+      if (snapshot && this.content && generation === this.generation) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
+      await this.refreshPending()
+    }, flush: async () => {
+      // Drain acknowledged dependencies, stopping visibly if connectivity/conflict prevents progress.
+      while (await db.outbox.count()) {
+        const before = (await db.outbox.orderBy('seq').toArray()).map(r => r.seq).join(',')
+        await this.flush()
+        if (generation !== this.generation) throw new Error('Account changed during Puzzle recovery')
+        const after = (await db.outbox.orderBy('seq').toArray()).map(r => r.seq).join(',')
+        if (before === after) throw new Error('Outgoing changes need recovery before takeover')
+      }
+    } })
+  }
+
   async queuePuzzleOperation(payload: PuzzlePayload, operationId: string, dependencies: string[] = []) {
     if (!useGame.getState().persistent || useGame.getState().status !== 'ready') throw new Error('A persistent save is required for Uma Puzzles')
     const { PuzzleOperationCoordinator } = await import('./puzzles/operations')
@@ -1100,7 +1120,11 @@ export class GameRuntime {
           setSyncState({ status: 'syncing', error: null })
           const response = parseSyncResponseOrThrow(await saveApi.sync({ upserts: [], appends: [], puzzleProtocolVersion: 1, puzzleOperations: operations }))
           if (generation !== this.generation) return
-          await coordinator.adopt(operations, response.puzzleOperations, response.serverTime)
+          const { reconcilePuzzleFlairInTransaction } = await import('./puzzles/flair')
+          const content = this.content
+          await coordinator.adopt(operations, response.puzzleOperations, response.serverTime, async () => {
+            if (operations.some(o => o.payload.kind === 'cl-spend')) await reconcilePuzzleFlairInTransaction(db, content, response.serverTime, operations[0]!.operationId)
+          })
           const snapshot = await readLocalSnapshot()
           if (snapshot && this.content) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
           const pending = await db.outbox.count(), rejected = await db.pendingPuzzleOperations.where('status').anyOf(['rejected', 'blocked']).count()
