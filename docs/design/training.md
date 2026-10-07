@@ -10,6 +10,11 @@ Card stars are account-wide (D255): each distance preset's set points to the sam
 stars feed all builds. Training Level, node assignments and era scaling remain scenario-specific; four independent
 distance presets remain under D252. Friendship Training chooses a scenario as play context, not a new card star track.
 
+**Planned replacement, not active (D267–D269):** [Uma Puzzles](uma-puzzles.md) will earn scenario/style tickets that
+raise this shared level directly, renamed Constellation Level (CL). T106 implements pure projections only; the live
+Spark EXP loop, universal-ticket spending, account EXP bank and persisted fields below remain unchanged until the
+protected M030 cutover. CL9/10 preserve baseline SP growth, not an additional level-scaled base-stat floor.
+
 ```
 Play Spark Rival Circuit ──► Training Level rises ──► constellation nodes unlock
                                                       │
@@ -168,7 +173,7 @@ slotted races on base stats alone.
 Each scenario holds its **own set of six cards** for that Uma (D125). The set is per Uma, per scenario, and is
 what the scenario's card nodes may draw from. Six slots everywhere — the old 4/5/6 tier ramp is gone. Era
 gating, ownership, and the no-duplicate-character rule are unchanged
-([Support Cards](support-cards.md#ownership-vs-equipping)).
+([Support Cards](support-cards.md#ownership-vs-the-card-set)).
 
 ## Later additions (not MVP)
 

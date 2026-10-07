@@ -75,13 +75,13 @@ card concentrates its stat and hands you more of its skills.
 |---|---|
 | 1 | the baseline card nodes (see below) |
 | 2–8 | the remaining card nodes, in template order |
-| 9–10 | no further card nodes; baseline stats and SP still rise |
+| 9–10 | no further card nodes; baseline SP still rises (base stats do not scale with level) |
 
 **Inspiration (D250)** opens independently: one scenario Slot Token per parent/grandparent slot (six total), and one
 Skill Token per natural-gold position (two per slot, twelve total). A grandparent needs its parent's slot open.
 Slots provide inherited unique/whites/aptitudes; gold moons are separate. Old TL9/10 unlocks are grandfathered in
 save v14 / Dexie v23 without payment. See [Lineage](skills-and-inheritance.md#lineage) and
-[RPG rewards](uma-rpg.md#inspiration-rewards-d250). No Training Level or Extra stats prerequisite applies.
+[RPG rewards](uma-rpg.md#rewards-d263). No Training Level or Extra stats prerequisite applies.
 
 With `N` = card nodes, the count unlocked at Training Level `TL ≤ 8` is:
 
@@ -235,11 +235,15 @@ Tazuna paid a thin 20% to every stat. A card's type is visible on the card; a sl
 
 ```
 raw(s)     = Σ card nodes ( nodeValue × starPct × eraPct × share[type][s] ) + 40 × active Extra stats of s
-derived(s) = min( capProfile(T)[s], round( max(baseStats[s], 50 × TL) + raw(s) × (1 + growthRates[s]) ) )
+derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthRates[s]) ) )
 ```
 
 Every factor is an integer percentage, so the engine accumulates exact integers and divides once. The
 invariance rule is therefore asserted as exact equality in tests, not within a tolerance.
+
+The fixed template base matches the shipped projection and [Training](training.md#stats-are-derived). D269 corrects
+the former `max(base, 50 × TL)` prose; it does not buff or change the engine. [Uma Puzzles](uma-puzzles.md) will rename
+the level input CL, preserving this formula and baseline SP at CL9/10; T106's pure rules do not activate that cutover.
 
 Caps clamp, never reduce. Because the tree budget is 60% of the cap budget, the clamp only bites on a
 deliberately lopsided build — which is correct: it tells you that stat is full and the points belong elsewhere.

@@ -1,6 +1,12 @@
 // Guards the numbers in docs/design against drift. If a doc changes, change the matching expectation here.
 import { describe, expect, it } from 'vitest'
 import {
+  PUZZLE_RULES_VERSION, PUZZLE_SCHEMA_VERSION, PUZZLE_STAT_GROWTH, PUZZLE_STAT_BASE,
+  PUZZLE_EXP_BASE, PUZZLE_EXP_STEP, PUZZLE_EXP_WEIGHTS, PUZZLE_RELATIVE_EXP,
+  PUZZLE_CL_MAX, PUZZLE_EXCHANGE_RATIO, PUZZLE_LEGACY_EXP_PER_TICKET, PUZZLE_PARSE_LIMITS,
+} from './minigames/uma-puzzles'
+
+import {
   addTrainingExp,
   APTITUDE_REFS,
   CARD_FOCUS_MIN_SHARE,
@@ -691,5 +697,23 @@ describe('cards', () => {
   it('adds the unique bonus at 3★ only', () => {
     expect(cardRaceBonus(template(1, true), 2)).toBeCloseTo(cardRaceBonus(template(1), 2))
     expect(cardRaceBonus(template(1, true), 3)).toBeCloseTo(cardRaceBonus(template(1), 3) * 1.25)
+  })
+})
+
+describe('Uma Puzzles initial candidates, not balance closure (D269)', () => {
+  it('pins the independent stat and EXP formulas', () => {
+    expect(PUZZLE_RULES_VERSION).toBe(1)
+    expect(PUZZLE_SCHEMA_VERSION).toBe(1)
+    expect(PUZZLE_STAT_GROWTH).toEqual({ atk: 12, hp: 36, rcv: 4, guard: 6, resilience: 6 })
+    expect(PUZZLE_STAT_BASE).toEqual({ atk: 1, hp: 4, rcv: 0.5, guardDivisor: 20, resilienceDivisor: 20 })
+    expect([PUZZLE_EXP_BASE, PUZZLE_EXP_STEP]).toEqual([100, 10])
+    expect(PUZZLE_EXP_WEIGHTS).toEqual({ ordinary: 0.5, guardian: 1, champion: 2 })
+    expect(PUZZLE_RELATIVE_EXP).toEqual({ min: 0.25, max: 2, perLevel: 0.1 })
+  })
+  it('pins material value, preserved legacy value and distinct work bounds', () => {
+    expect(PUZZLE_CL_MAX).toBe(10)
+    expect(PUZZLE_EXCHANGE_RATIO).toBe(2)
+    expect(PUZZLE_LEGACY_EXP_PER_TICKET).toBe(1250)
+    expect(PUZZLE_PARSE_LIMITS).toEqual({ id: 120, scenarios: 256, units: 4096, levelPage: 256 })
   })
 })

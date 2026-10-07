@@ -1,6 +1,6 @@
 # M030 — Uma Puzzles and material-driven Constellation Levels
 
-**State: fully specified for sequential implementation; no runtime change yet.**
+**State: T106 pure foundations complete (D269); T107 next. No runtime/save/cutover change yet.**
 Owner-approved gameplay: [Uma Puzzles](../design/uma-puzzles.md), D267.
 Delivery/transport baseline: [implementation contract](../technical/uma-puzzles-implementation.md), D268.
 
@@ -20,7 +20,7 @@ The old training loop remains usable until that replacement and the preservation
 
 | Order | Task | Must be true at completion |
 |---|---|---|
-| 1 | [T106 — Progression and material rules](T106-puzzle-progression-materials.md) | Registration, PL, CL spend, exchange, debt and legacy math are pure, parsed and tested |
+| 1 | T106 — Progression and material rules · **complete** | [Pure v1 exports](../technical/uma-puzzles-implementation.md#t106-implemented-foundations-d269): registration, PL, CL spend, exchange, frozen debt and legacy credit; no runtime writes |
 | 2 | [T107 — Deterministic party battle](T107-puzzle-battle-engine.md) | Board/combat/skills replay through a bounded engine; fixed hashes and a modest combat sim exist |
 | 3 | [T108 — Campaign and reward economy](T108-puzzle-campaign-economy.md) | Fourteen ten-level chapters, 28-node maps, 54/132 gross budgets and allocation/progression reports work |
 | 4 | [T109 — Private PAD content](T109-puzzle-private-content.md) | Import/art/runtime contract works and real cast availability is verified, or an explicit content blocker prevents release |

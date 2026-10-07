@@ -1,6 +1,7 @@
 # Uma Puzzles — implementation contract
 
-**Status: planned, not implemented or enabled.** Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
+**Status: T106 pure foundations implemented (D269); battle/runtime/content/cutover still planned and not enabled.**
+Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
 and EXP candidates remain subject to the small simulations and AGENTS pinning rule.
@@ -27,6 +28,60 @@ from current main **when implementing**, not by reserving today's next integer h
 parser and an explicit version dispatcher. API currently has independent runtime parsers, not a built `@racer/domain`
 dependency; preserve that packaging unless a task separately proves a dependency-free compatible build. Cross-layer
 synthetic parity tests must catch divergence. Do not make an untested source-TS import work only under Vitest.
+
+### T106 implemented foundations (D269)
+
+The narrow `packages/domain/src/minigames/uma-puzzles/index.ts` barrel is exported by `@racer/domain`. Nothing calls
+these rules from an app yet. Modules have no I/O, clocks, unseeded randomness, rendering or save imports:
+
+| Module | Actual public contracts |
+|---|---|
+| `identity.ts` / `types.ts` | `createPuzzleSource`, `parsePuzzleSource`, `eligiblePuzzleStyles`, `eligiblePuzzleElements`, `enrollPuzzleOutfit`, `parsePuzzleEnrollment`, `correctPuzzleElement`, `enterFirstPuzzleBattle` |
+| `progression.ts` | `puzzleStats`, `nextPuzzleLevelExp`, `parsePuzzleProgress`, `puzzleWinExp`, `puzzleBattleExp`, `addPuzzleExp`, `puzzleLevelChanges` |
+| `materials.ts` | `puzzleScenarioIdForTier`, `puzzleMaterialId`, `parsePuzzleMaterialId`, `puzzleMaterialCatalogue`, `validatePuzzleRegistry`, `previewPuzzleClSpend` / `resolvePuzzleClSpend`, `previewPuzzleExchange` / `resolvePuzzleExchange` |
+| `bank.ts` | `parsePuzzleCohort`, `freezePuzzleCohort`, `parsePuzzleBank`, `preparePuzzleBank`, `repayPuzzleMaterial` |
+| `legacy.ts` | `summarizePuzzleLegacyCredit`, `resolvePuzzleLegacyCredit`, `parsePuzzleLegacyCredit` |
+| `rules.ts` / `validation.ts` | Initial pinned constants; `PuzzleRuleError` with `invalid`, `unknown`, `locked`, `stale`, `insufficient`, `overflow` codes |
+
+Source, enrollment, cohort, bank and legacy-credit payloads each use schema **1**. Source/enrollment rules version is
+**1**. Source freezes complete original aptitudes, base stats, fraction growths and catalogue version; enrollment
+also stores the verified palette, chosen element, PL/remaining EXP and nullable first-battle id. This is a domain
+value type, **not a change to Uma/profile/Dexie schema**. No current save field is renamed.
+
+Parsers reject extra/prototype keys, duplicates, future versions, invalid grades, non-finite numbers and unsafe
+integers. Growth units are explicit: fraction 0…1 or whole percent 0…100 normalized once, never auto-detected.
+`parsePuzzleProgress` requires EXP below its next threshold. Stat arithmetic and totals reject overflow, not clamp.
+An exact arithmetic-series binary search carries any safe EXP grant; there is no Lv50/140 cap. `addPuzzleExp` returns
+before/after, total stat deltas and the full crossed-level range. `puzzleLevelChanges(source, gain, offset, limit)`
+returns ordered per-level deltas plus `nextOffset`, at most 256 per call, so even a huge legal grant remains bounded
+without hiding any crossed levels. Transport bounds are 120-character ids, 256 registry definitions and 4,096 units
+per cohort/credit payload; T110/T115 must chunk larger authoritative work rather than reject a large account as a
+gameplay restriction. Scalar safe-integer limits are representational, not level design caps.
+
+CL and exchange previews are aliases of their resolve functions. Re-run them with fresh stocks/revision/source
+inside the eventual transaction. Results contain exact debits or gross/repaid/net, stocks after, before/after CL or
+bank after, and revision after. They create no assignments, nodes, evidence timestamps or persistent operation id;
+receipt deduplication, ownership checks and the account preparing/activation gate belong to T110/T111.
+Stocks at this boundary are the material/universal subset of Items, not the unrelated Farm/RPG inventory.
+Registry order defines exchange adjacency; numeric racing tiers use a lookup, never `tier + 1`.
+
+The cohort freezes one normalized row per outfit/scenario, independent of its four presets. A retry with its same
+receipt id adopts the frozen cohort, excluding later acquisitions. Missing/invalid/no-A sources leave an all-or-none
+`preparing` bank with unresolved outfit ids and no debit. Resume uses that same cohort; active allocations freeze
+source version/rules, eligible styles and chosen debt style. An active retry cannot recalculate even a repaid bank.
+Bank parsing checks exact allocation/row order and debt bounds derived from CL−1, including retained zero rows.
+`repayPuzzleMaterial` validates active state and returns `{gross, debtPaid, net, bankAfter}` without mutating input.
+
+Legacy EXP adapters supply **unapplied** unit EXP, an `alreadyConverted` audit flag, remaining account bank EXP and
+preserved universal stock. Applied levels are not accepted as EXP. Credit pools non-settled rows plus account EXP,
+converts 1,250 chunks and rounds the final positive account fraction once. Its v1 receipt keeps every input, exact
+pool, full chunks, remainder, round-up, compensation EXP and stock after. A same-id retry returns the original
+receipt rather than recomputing later progress; a different receipt id is stale. It never invokes debt repayment.
+T115 must clear transferred EXP and issue this credit in the same protected migration transaction.
+
+Evidence: synthetic identity, progression, material, bank, legacy and source-boundary tests are co-located here;
+`domain.test.ts` pins candidate coefficients and work limits. No battle hash/simulator, real-content verification,
+account mutation, UI or phone sign-off exists for T106. Those remain the later task gates.
 
 ## 2. Stable identity and source snapshots
 
