@@ -10,6 +10,21 @@ sync policy (D223) lets battle actions work offline but holds entry/result rewar
 commit is acknowledged; T090–T092 now implement that boundary, and any later change needs a new decision. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
 
+## Uma Puzzles — owner choices resolved
+
+The owner accepted the [Uma Puzzles plan](design/uma-puzzles.md) on 2026-10-07 (D267), changing registration to
+Front-only/Front+Pace → Light; End-only/Late+End → Dark; pure Pace/Late or Pace+Late choose Fire/Water/Wood;
+**Dirt A overrides first and chooses all five**. No account/gameplay change is implemented yet.
+
+The owner also confirmed **Fire/Water/Wood choice** for the five other non-Dirt-A multi-style combinations
+(three Pace+Late+End, one Pace+End, one Front+Late). All 268 catalogue outfits are covered; no registration choice
+remains open. See [counts and exact predicates](design/uma-puzzles.md#3-element-identity-and-the-catalogue-check).
+All first-draft recommendations are approved; candidate tuning values still need simulation/pinning, and PAD
+art provenance and device validation remain implementation checks, not a completed import or phone sign-off.
+[M030 / T106–T116](tasks/M030-uma-puzzles.md) now supplies the detailed sequence (D268), with content verification,
+atomic economic sync, explicit online takeover and safe cutover gates. Start T106; do not treat the task breakdown
+as a request to publish, migrate an account or implement a second RPG system.
+
 ## Needs you (owner actions, not design questions)
 
 - ✅ Google Cloud and Firebase are set up and deploys are enabled (2026-09-15).
