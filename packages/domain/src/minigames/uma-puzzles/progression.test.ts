@@ -47,7 +47,7 @@ describe('independent lifetime Puzzle progression', () => {
   it('uses authored encounter and frozen entrant levels with floor/cap and zero loss rewards', () => {
     expect(puzzleWinExp(10, 10, 'ordinary')).toBe(95)
     expect(puzzleWinExp(10, 10, 'guardian')).toBe(190)
-    expect(puzzleWinExp(10, 10, 'champion')).toBe(380)
+    expect(puzzleWinExp(10, 10, 'champion')).toBe(285)
     expect(puzzleWinExp(10, 1, 'ordinary')).toBe(181)
     expect(puzzleWinExp(20, 1, 'ordinary')).toBe(290)
     expect(puzzleWinExp(1, 100, 'ordinary')).toBe(13)

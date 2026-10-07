@@ -81,9 +81,11 @@ flowchart LR
 
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
-Uma Puzzles' additive pure rules and battle v1 live in `packages/domain/src/minigames/uma-puzzles/` (D269–D270).
+Uma Puzzles' additive pure rules, battle and campaign v1 live in `packages/domain/src/minigames/uma-puzzles/` (D269–D271).
 They have no app/save callers yet: [the versioned contract](uma-puzzles-implementation.md#t107-implemented-battle-v1-d270)
-documents independent board/RNG, authoritative events and replay. This is not a new live save or host; Spark remains
+documents independent board/RNG, authoritative events, replay, generated maps and once-account reward projections.
+The campaign uses fixed authored level/role scaling, not the entering party; private cast joins are explicit inputs.
+This is not a new live save or host; Spark remains
 active until M030's protected final cutover.
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.

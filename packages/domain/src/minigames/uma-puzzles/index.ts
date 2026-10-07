@@ -1,4 +1,4 @@
-// Pure Puzzle foundations and v1 battle; campaign/save integrations follow (docs/tasks/M030-uma-puzzles.md).
+// Pure Puzzle foundations, battle and campaign v1; save integrations follow (docs/tasks/M030-uma-puzzles.md).
 export * from './rules'
 export * from './types'
 export * from './identity'
@@ -18,4 +18,5 @@ export * from './enemies'
 export { createBattle as createPuzzleBattle, applyBattleAction as applyPuzzleBattleAction } from './battle'
 export { replayBattle as replayPuzzleBattle, battleStateHash as puzzleBattleStateHash, puzzleBattleResult } from './replay'
 export * from './bots'
+export * from './campaign'
 export { PuzzleRuleError, type PuzzleErrorCode } from './validation'

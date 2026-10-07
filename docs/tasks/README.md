@@ -12,8 +12,8 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 ## Current plan
 
 **M030 — Uma Puzzles is fully specified** (D267–D268): [the milestone](M030-uma-puzzles.md) contains eleven sequential
-PR-sized tasks, **T106–T116**. T106 progression/material rules and T107 battle v1 are complete (D269–D270);
-[T108 campaign and reward economy](T108-puzzle-campaign-economy.md) is next.
+PR-sized tasks, **T106–T116**. T106–T108 progression/material/battle/campaign rules are complete (D269–D271);
+[T109 private content](T109-puzzle-private-content.md) is next.
 [The design](../design/uma-puzzles.md) carries approved gameplay and resolved registration;
 [the implementation contract](../technical/uma-puzzles-implementation.md) fixes save ownership, atomic background
 operations, replay/takeover and cutover boundaries. Pure rules/engine exist; **no runtime or live migration yet**.
@@ -33,7 +33,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T108 → T116**, individually linked in the milestone | **In progress** · T106–T107 pure foundations/battle complete; T108 next |
+| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T109 → T116**, individually linked in the milestone | **In progress** · T106–T108 pure foundations/battle/campaign complete; T109 next |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -58,6 +58,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T108 — Generated Puzzle campaign and reward economy | 2026-10-07 | [Campaign v1 contract](../technical/uma-puzzles-implementation.md#t108-implemented-campaign-v1-d271), D271, domain campaign and `sim:puzzles` | `a68da98` |
 | T107 — Deterministic five-Uma puzzle battle | 2026-10-07 | [Battle v1 contract](../technical/uma-puzzles-implementation.md#t107-implemented-battle-v1-d270), D270, domain engine and `sim:puzzles` | `58de801` |
 | T106 — Puzzle progression and Constellation materials | 2026-10-07 | [Pure contract](../technical/uma-puzzles-implementation.md#t106-implemented-foundations-d269), D269 and `packages/domain/src/minigames/uma-puzzles/` | `e5b17fe` |
 | M029 / T100–T103 — RPG chapter rollout (superseded unbuilt by D262) | 2026-10-05 | [RPG design](../design/uma-rpg.md#chapters-and-the-map-d262), D262 | `9acfb84` |

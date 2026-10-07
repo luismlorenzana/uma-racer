@@ -1,5 +1,6 @@
 // Strict, detached v1 transport. Unsupported/future recipes fail closed (implementation §4).
 import { SCENARIOS } from '../../scenarios'
+import { validatePuzzleRegistry, type PuzzleScenarioRegistry } from './materials'
 import { STRATEGIES } from '../../types'
 import { parsePuzzleBoard, parsePuzzlePath, PUZZLE_ORBS, type PuzzleOrb } from './board'
 import { PUZZLE_ACTION_LIMIT, PUZZLE_BATTLE_LIMITS as LIMIT, PUZZLE_ENEMY_GUARD, PUZZLE_ENGINE_VERSION,
@@ -74,12 +75,13 @@ export function puzzlePartyStats(input: PuzzleBattleInputV1): { maxHp: number; r
   return { maxHp: puzzleSafe(Math.round(total('hp') * (leader.stat === 'hp' ? leader.multiplier : 1)), 'HP'),
     rcv: puzzleSafe(Math.round(total('rcv') * (leader.stat === 'rcv' ? leader.multiplier : 1)), 'RCV'), guard: total('guard'), resilience: total('resilience') }
 }
-export function parsePuzzleBattleInput(v: unknown): PuzzleBattleInputV1 | null {
+export function parsePuzzleBattleInput(v: unknown, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleBattleInputV1 | null {
+  validatePuzzleRegistry(registry)
   if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'engineVersion', 'rulesVersion', 'battleId', 'partyId', 'checkpointId', 'ownerEpoch',
     'seed', 'scenarioId', 'encounterLevel', 'kind', 'entrants', 'leaderId', 'enemies', 'rewards', 'content']) ||
     v.schemaVersion !== 1 || v.engineVersion !== PUZZLE_ENGINE_VERSION || v.rulesVersion !== 1 || !puzzleId(v.battleId) ||
     typeof v.partyId !== 'string' || !/^puzzle-party-[1-5]$/.test(v.partyId) || !puzzleId(v.checkpointId) || !puzzleInteger(v.ownerEpoch) ||
-    !puzzleId(v.seed) || !SCENARIOS.some(s => s.id === v.scenarioId) || !puzzleInteger(v.encounterLevel, 1) ||
+    !puzzleId(v.seed) || !registry.some(s => s.id === v.scenarioId) || !puzzleInteger(v.encounterLevel, 1) ||
     !['ordinary', 'guardian', 'champion'].includes(v.kind as string) || !puzzleArray(v.entrants, PUZZLE_PARTY_SIZE) || v.entrants.length !== PUZZLE_PARTY_SIZE ||
     !puzzleArray(v.enemies, LIMIT.enemies) || !v.enemies.length || !PUZZLE_LEADERS.some(l => l.id === v.leaderId) ||
     !puzzleArray(v.rewards, STRATEGIES.length) || !puzzleRecord(v.content) ||
@@ -121,14 +123,14 @@ const barrier = (v: unknown, turn: number): PuzzleEnemyBarrier | null => puzzleR
   puzzleExact(v, ['reduction', 'comboThreshold', 'expiresAfterTurn']) && fraction(v.reduction, PUZZLE_ENEMY_GUARD) &&
   puzzleInteger(v.comboThreshold, 1, LIMIT.comboThreshold) && puzzleInteger(v.expiresAfterTurn, turn + 1, turn + LIMIT.statusDrags)
   ? { reduction: v.reduction, comboThreshold: v.comboThreshold, expiresAfterTurn: v.expiresAfterTurn } : null
-export function parsePuzzleBattleState(v: unknown): PuzzleBattleStateV1 | null {
+export function parsePuzzleBattleState(v: unknown, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleBattleStateV1 | null {
   if (!puzzleRecord(v) || !puzzleExact(v, ['engineVersion', 'input', 'board', 'rng', 'turn', 'actionCount', 'hp', 'maxHp', 'rcv', 'guard', 'resilience',
     'members', 'enemies', 'shield', 'outcome', 'reason']) || v.engineVersion !== 1 || !puzzleInteger(v.turn, 0, PUZZLE_TURN_LIMIT) ||
     !puzzleInteger(v.actionCount, v.turn, PUZZLE_ACTION_LIMIT) || !puzzleRecord(v.rng) ||
     !puzzleExact(v.rng, ['opening', 'refill', 'playerConversion', 'enemyConversion']) ||
     Object.values(v.rng).some(n => !puzzleInteger(n, 1, 0xffffffff)) || !puzzleArray(v.members, PUZZLE_PARTY_SIZE) || v.members.length !== PUZZLE_PARTY_SIZE ||
     !puzzleArray(v.enemies, LIMIT.enemies) || (v.shield !== 0 && v.shield !== PUZZLE_SKILL_RULES.paceShield)) return null
-  const input = parsePuzzleBattleInput(v.input), board = parsePuzzleBoard(v.board)
+  const input = parsePuzzleBattleInput(v.input, registry), board = parsePuzzleBoard(v.board)
   if (!input || !board || v.enemies.length !== input.enemies.length) return null
   const totals = puzzlePartyStats(input)
   if (Object.entries(totals).some(([k, n]) => v[k] !== n) || !puzzleInteger(v.hp, 0, totals.maxHp)) return null

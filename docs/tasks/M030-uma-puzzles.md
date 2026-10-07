@@ -1,6 +1,6 @@
 # M030 — Uma Puzzles and material-driven Constellation Levels
 
-**State: T106–T107 pure foundations/battle complete (D269–D270); T108 next. No runtime/save/cutover change yet.**
+**State: T106–T108 pure foundations/battle/campaign complete (D269–D271); T109 next. No runtime/save/cutover change yet.**
 Owner-approved gameplay: [Uma Puzzles](../design/uma-puzzles.md), D267.
 Delivery/transport baseline: [implementation contract](../technical/uma-puzzles-implementation.md), D268.
 
@@ -22,7 +22,7 @@ The old training loop remains usable until that replacement and the preservation
 |---|---|---|
 | 1 | T106 — Progression and material rules · **complete** | [Pure v1 exports](../technical/uma-puzzles-implementation.md#t106-implemented-foundations-d269): registration, PL, CL spend, exchange, frozen debt and legacy credit; no runtime writes |
 | 2 | T107 — Deterministic party battle · **complete** | [Battle v1 exports](../technical/uma-puzzles-implementation.md#t107-implemented-battle-v1-d270), finite kit/intents, two literal journal pins and 288-battle synthetic sim; no runtime writes |
-| 3 | [T108 — Campaign and reward economy](T108-puzzle-campaign-economy.md) | Fourteen ten-level chapters, 28-node maps, 54/132 gross budgets and allocation/progression reports work |
+| 3 | T108 — Campaign and reward economy · **complete** | [Campaign v1](../technical/uma-puzzles-implementation.md#t108-implemented-campaign-v1-d271), fourteen28-node maps, future-registry support,54/132 exact budgets, progression/allocation/debt reports and600-battle envelope; live balance gaps documented |
 | 4 | [T109 — Private PAD content](T109-puzzle-private-content.md) | Import/art/runtime contract works and real cast availability is verified, or an explicit content blocker prevents release |
 | 5 | [T110 — Save and sync protocol](T110-puzzle-save-sync.md) | Additive storage, API validation and conditional economic operations cannot duplicate or lose rewards/spends |
 | 6 | [T111 — Journal and real host](T111-puzzle-journal-host.md) | Real enrollment, reservation, replay, settlement, resume and conflict recovery persist correctly |

@@ -57,7 +57,7 @@ depositing into Items. Gross rewards, seeds, journals and combat remain unchange
 
 ## 2. The run lifecycle
 
-**Replacement foundations and battle v1 implemented, not enabled:** [Uma Puzzles](uma-puzzles.md) (D267–D270,
+**Replacement foundations/battle/campaign v1 implemented, not enabled:** [Uma Puzzles](uma-puzzles.md) (D267–D271,
 [M030](../tasks/M030-uma-puzzles.md)) is a free global party campaign outside `MinigameHost`, like RPG/Farm.
 It reuses this kit's pure engine, seeded replay, private art, shared shell and guide standards, not the ticketed
 target/reservation/reward port. Its independent [implementation contract](../technical/uma-puzzles-implementation.md)
@@ -66,7 +66,9 @@ shipped Training Level game until the final gated preservation cutover; task spe
 T106 exports pure parsed identity/progression/material/debt/legacy rules. T107 adds an independent pure board/combat
 engine, finite kit, strict transports, authoritative event steps and replay hashes. Its `sim:puzzles` uses only
 invented data and public actions; it is not production balance closure. No new host, Home route, save field or
-account migration is installed; T108 adds campaign/economy. Spark's board and replay are untouched.
+account migration is installed. T108 adds generated28-node chapters, fixed-reference encounters, replay-derived
+reward/progress projections and exact style/debt/exchange reports. Its600-battle campaign sample records remaining
+balance outliers; T109 private content is next. Spark's board and replay are untouched.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):
