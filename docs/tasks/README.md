@@ -13,7 +13,8 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 **M030 — Uma Puzzles is fully specified** (D267–D268): [the milestone](M030-uma-puzzles.md) contains eleven sequential
 PR-sized tasks, **T106–T116**. T106–T108 progression/material/battle/campaign rules are complete (D269–D271);
-[T109 private content](T109-puzzle-private-content.md) is next.
+[T109 private content](T109-puzzle-private-content.md) has pipeline/client code delivered (D272); the owner pinned real
+PAD inputs/art for the final pass, with explicit DEV placeholders. [T110 save/sync](T110-puzzle-save-sync.md) is next.
 [The design](../design/uma-puzzles.md) carries approved gameplay and resolved registration;
 [the implementation contract](../technical/uma-puzzles-implementation.md) fixes save ownership, atomic background
 operations, replay/takeover and cutover boundaries. Pure rules/engine exist; **no runtime or live migration yet**.
@@ -33,7 +34,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T109 → T116**, individually linked in the milestone | **In progress** · T106–T108 pure foundations/battle/campaign complete; T109 next |
+| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T110 → T116**, plus pinned T109 real-content pass | **In progress** · T106–T108 complete; T109 code delivered, permitted PAD originals deferred by owner; T110 next |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |

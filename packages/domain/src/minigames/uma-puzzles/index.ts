@@ -19,4 +19,5 @@ export { createBattle as createPuzzleBattle, applyBattleAction as applyPuzzleBat
 export { replayBattle as replayPuzzleBattle, battleStateHash as puzzleBattleStateHash, puzzleBattleResult } from './replay'
 export * from './bots'
 export * from './campaign'
+export * from './content'
 export { PuzzleRuleError, type PuzzleErrorCode } from './validation'

@@ -68,7 +68,9 @@ engine, finite kit, strict transports, authoritative event steps and replay hash
 invented data and public actions; it is not production balance closure. No new host, Home route, save field or
 account migration is installed. T108 adds generated28-node chapters, fixed-reference encounters, replay-derived
 reward/progress projections and exact style/debt/exchange reports. Its600-battle campaign sample records remaining
-balance outliers; T109 private content is next. Spark's board and replay are untouched.
+balance outliers. T109 now supplies the [private Puzzle pipeline/client](../technical/puzzle-content.md); real PAD
+inputs/art are pinned for the final pass by the owner (D272), with explicitly labelled original DEV placeholders.
+T110 storage/sync is next; placeholders never satisfy verified production content. Spark's board and replay are untouched.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):

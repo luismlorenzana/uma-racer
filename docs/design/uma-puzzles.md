@@ -958,6 +958,14 @@ are part of ordinary engine/UI tasks.
 
 ### Private PAD content
 
+**T109 code status (D272):** [The private content contract](../technical/puzzle-content.md) now implements source/evidence
+validation, immutable packs/catalogs, transparent atlases and exact-hash authenticated leases. Pipeline limits are pinned
+in `domain.test.ts`:512 members,64 retained packs,32 pages,256 px frames/2 px gutters,2048 px pages,2 MiB JSON/8 MiB images,
+16,777,216 input pixels,10-second timeout/two bounded attempts, four cached pack lookups/eight idle pages. These are work/
+presentation bounds, not combat or progression changes. The owner asked to pin real permitted-source collection and use
+temporary original SVG placeholders while other tasks proceed. Placeholders are labelled and DEV-only; they do not prove
+real PAD provenance or satisfy the production gate. T109 stays open for the final real input/art/validation pass before T116.
+
 The requested [Monster Book 001–020](https://pad.fandom.com/wiki/Monster_Book001-020) is the initial research index.
 Direct access was **blocked by robots.txt in this environment**; search indexing alone is not verified image provenance.
 No working art URL, complete monster import or production cast is claimed in this draft. Do not bypass the restriction;

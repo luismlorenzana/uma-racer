@@ -175,6 +175,11 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    // Read-only private-content preflight; no playable Home entry until T116.
+    path: 'puzzles/content',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContentScreen')).PuzzleContentScreen }),
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
@@ -185,6 +190,9 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/puzzles-content-proof',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContentProofScreen')).PuzzleContentProofScreen }),
+  }, {
     path: 'dev/inspiration-advance-proof',
     lazy: async () => ({ Component: (await import('../screens/rpg/InspirationAdvanceProofScreen')).InspirationAdvanceProofScreen }),
   }, {

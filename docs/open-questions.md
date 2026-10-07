@@ -23,7 +23,9 @@ All first-draft recommendations are approved; candidate tuning values still need
 art provenance and device validation remain implementation checks, not a completed import or phone sign-off.
 [M030 / T106–T116](tasks/M030-uma-puzzles.md) now supplies the detailed sequence (D268), with content verification,
 atomic economic sync, explicit online takeover and safe cutover gates. T106–T108 pure rules/battle/campaign are
-implemented (D269–D271); T109 private content is next. Simulation outliers in design §11 remain release-balance checks,
+implemented (D269–D271); T109 pipeline/client code is delivered (D272). At the owner's request, real PAD originals/evidence
+are pinned for the final content pass, with original labelled DEV placeholders; T110 save/sync is next. This is an explicit
+source-input follow-up, not an unanswered mechanics question or real-content sign-off. Simulation outliers in design §11 remain release-balance checks,
 not new owner choices or a claim of closure. Do not treat the task breakdown
 as a request to publish, migrate an account or implement a second RPG system.
 

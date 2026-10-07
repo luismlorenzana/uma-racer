@@ -1,0 +1,200 @@
+// Private presentation contracts; no PAD combat data (docs/technical/puzzle-content.md).
+import type { ContentManifestFile } from '../../content'
+import { puzzleCampaign } from './campaign/chapters'
+import { parsePuzzleCast, resolvePuzzleEncounter } from './campaign/encounters'
+import { PUZZLE_FOE_ROLES, type PuzzleFoeRole } from './campaign/rules'
+import type { PuzzleCastV1 } from './campaign/types'
+import { PUZZLE_ELEMENTS, type PuzzleElement } from './types'
+import { puzzleArray, puzzleExact, puzzleId, puzzleInteger, puzzleRecord } from './validation'
+
+export const PUZZLE_CONTENT_LIMITS = Object.freeze({ members: 512, packs: 64, pages: 32, frame: 256, gutter: 2,
+  page: 2048, jsonBytes: 2_097_152, imageBytes: 8_388_608, inputPixels: 16_777_216, timeoutMs: 10_000, attempts: 2, cachedPacks: 4, cachedPages: 8 })
+export const PUZZLE_PACK_PATH = /^data\/puzzles-cast\.[a-f0-9]{8}\.json$/
+export const PUZZLE_CATALOG_PATH = /^data\/puzzles-catalog\.[a-f0-9]{8}\.json$/
+export const PUZZLE_ATLAS_PATH = /^atlases\/puzzles-monsters\.[a-f0-9]{8}\.json$/
+export const PUZZLE_PAGE_PATH = /^atlases\/puzzles-monsters-[0-9]+\.[a-f0-9]{8}\.webp$/
+export interface PuzzleSourceMember {
+  id: string; name: string; family: string; variant: string; elements: PuzzleElement[]; roles: PuzzleFoeRole[]
+  source: { access: 'public' | 'owner-export'; reference: string; revision: string; verifiedAt: string }
+  art: { location: string; sha256: string; mimeType: 'image/png' | 'image/webp'; variant: string }
+}
+export interface PuzzleSource { schemaVersion: 1; version: string; provenanceRevision: string; members: PuzzleSourceMember[] }
+export interface PuzzleContentPack extends Omit<PuzzleSource, 'members'> {
+  capability: { engineVersion: 1; recipeVersion: 1 }
+  atlas: ContentManifestFile
+  members: (Omit<PuzzleSourceMember, 'art'> & { art: { frameId: string; sourceHash: string; variant: string } })[]
+}
+export interface PuzzleAtlas {
+  schemaVersion: 1; kind: 'puzzles-monsters'; frameSize: 256; gutter: 2
+  pages: (ContentManifestFile & { width: number; height: number })[]
+  frames: { id: string; page: number; x: number; y: number; width: 256; height: 256 }[]
+}
+export interface PuzzlePackIdentity { version: string; contentHash: string }
+export interface PuzzleContentCatalog {
+  schemaVersion: 1; activeHash: string; packs: (ContentManifestFile & { version: string })[]
+}
+function fail(message: string): never { throw new Error(`Uma Puzzles content: ${message}`) }
+function exact(v: unknown, keys: string[]): Record<string, unknown> {
+  if (!puzzleRecord(v) || !puzzleExact(v, keys)) fail('invalid object shape')
+  return v
+}
+function text(v: unknown, max = 200): string {
+  if (typeof v !== 'string' || !v.trim() || v.length > max || /[\u0000-\u001f\u007f]/.test(v)) fail('invalid text')
+  return v
+}
+function id(v: unknown): string { if (!puzzleId(v)) fail('invalid identity'); return v }
+export function puzzleContentHash(v: unknown): string { if (typeof v !== 'string' || !/^[a-f0-9]{64}$/.test(v)) fail('invalid hash'); return v }
+export function puzzleSourceUrl(v: unknown, ownerExportReference = false): string {
+  const raw = text(v, 2048)
+  let u: URL; try { u = new URL(raw) } catch { return fail('invalid source URL') }
+  if (u.protocol !== 'https:' || u.username || u.password || u.port || u.hash || u.search ||
+    !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(u.hostname) || /(^|\.)(localhost|local|internal)$/i.test(u.hostname) ||
+    !ownerExportReference && /(^|\.)(fandom\.com|wikia\.com|sanbon\.me)$/i.test(u.hostname)) fail('unpermitted source URL')
+  return raw
+}
+function source(v: unknown): PuzzleSourceMember['source'] {
+  const r = exact(v, ['access', 'reference', 'revision', 'verifiedAt'])
+  if (r.access !== 'public' && r.access !== 'owner-export') fail('unverified provenance')
+  const date = text(r.verifiedAt, 24)
+  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString() !== date) fail('invalid verification time')
+  return { access: r.access, reference: puzzleSourceUrl(r.reference, r.access === 'owner-export'), revision: id(r.revision), verifiedAt: date }
+}
+function header(v: unknown, keys: string[]) {
+  const r = exact(v, keys)
+  if (r.schemaVersion !== 1) fail('unsupported schema')
+  return { r, version: id(r.version), provenanceRevision: id(r.provenanceRevision) }
+}
+function members(v: unknown, packed: boolean): (PuzzleSourceMember | PuzzleContentPack['members'][number])[] {
+  if (!puzzleArray(v, PUZZLE_CONTENT_LIMITS.members) || !v.length) fail('invalid cast size')
+  const ids = new Set<string>(), variants = new Set<string>()
+  const result = v.map((value): PuzzleSourceMember | PuzzleContentPack['members'][number] => {
+    const m = exact(value, ['id', 'name', 'family', 'variant', 'elements', 'roles', 'source', 'art'])
+    const key = id(m.id), family = id(m.family), variant = id(m.variant), identity = `${family}/${variant}`
+    if (ids.has(key) || variants.has(identity)) fail('duplicate or ambiguous cast variant')
+    ids.add(key); variants.add(identity)
+    const cast = parsePuzzleCast({ schemaVersion: 1, manifestVersion: 'validation', members: [{ id: key, elements: m.elements, roles: m.roles }] })
+    if (!cast) fail('unknown element/recipe join')
+    const tags = cast.members[0]!, base = { id: key, name: text(m.name), family, variant, source: source(m.source),
+      elements: [...tags.elements].sort(), roles: [...tags.roles].sort() }
+    if (packed) {
+      const a = exact(m.art, ['frameId', 'sourceHash', 'variant'])
+      return { ...base, art: { frameId: id(a.frameId), sourceHash: puzzleContentHash(a.sourceHash), variant: id(a.variant) } }
+    }
+    const a = exact(m.art, ['location', 'sha256', 'mimeType', 'variant'])
+    if (a.mimeType !== 'image/png' && a.mimeType !== 'image/webp') fail('unsupported source image')
+    const location = text(a.location, 2048)
+    if (base.source.access === 'public') puzzleSourceUrl(location)
+    else if (!/^originals\/[A-Za-z0-9_-]+\.(png|webp)$/.test(location)) fail('unsafe export path')
+    return { ...base, art: { location, sha256: puzzleContentHash(a.sha256), mimeType: a.mimeType, variant: id(a.variant) } }
+  })
+  return result.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+}
+export function parsePuzzleCastSource(v: unknown): PuzzleSource {
+  const { r, version, provenanceRevision } = header(v, ['schemaVersion', 'version', 'provenanceRevision', 'members'])
+  const parsed = { schemaVersion: 1 as const, version, provenanceRevision, members: members(r.members, false) as PuzzleSourceMember[] }
+  puzzleContentCoverage(puzzleCastForContent(parsed, version))
+  return parsed
+}
+function file(v: unknown, pattern: RegExp): ContentManifestFile {
+  const r = exact(v, ['path', 'sha256', 'bytes'])
+  const hash = puzzleContentHash(r.sha256)
+  if (typeof r.path !== 'string' || !pattern.test(r.path) || !r.path.includes(`.${hash.slice(0, 8)}.`) ||
+    !puzzleInteger(r.bytes, 1, PUZZLE_CONTENT_LIMITS.imageBytes)) fail('invalid addressed object')
+  return { path: r.path, sha256: hash, bytes: r.bytes }
+}
+export function parsePuzzleContentPack(v: unknown): PuzzleContentPack {
+  const { r, version, provenanceRevision } = header(v, ['schemaVersion', 'version', 'provenanceRevision', 'capability', 'atlas', 'members'])
+  const capability = exact(r.capability, ['engineVersion', 'recipeVersion'])
+  if (capability.engineVersion !== 1 || capability.recipeVersion !== 1) fail('incompatible engine/recipe capability')
+  const parsed: PuzzleContentPack = { schemaVersion: 1, version, provenanceRevision, capability: { engineVersion: 1, recipeVersion: 1 },
+    atlas: file(r.atlas, PUZZLE_ATLAS_PATH), members: members(r.members, true) as PuzzleContentPack['members'] }
+  puzzleContentCoverage(puzzleCastForContent(parsed, version))
+  return parsed
+}
+export function puzzleCastForContent(pack: Pick<PuzzleSource, 'members'> | Pick<PuzzleContentPack, 'members'>, identity: string): PuzzleCastV1 {
+  return { schemaVersion: 1, manifestVersion: identity, members: pack.members.map(m => ({ id: m.id, elements: m.elements, roles: m.roles })) }
+}
+export function puzzleContentCoverage(cast: PuzzleCastV1) {
+  const chapters = puzzleCampaign()
+  let encounters = 0
+  for (const chapter of chapters) for (const node of chapter.nodes) {
+    resolvePuzzleEncounter(chapter, node.id, cast, node.kind === 'champion' && node.elements[0] === 'dark' ? 'pace' : null)
+    if (node.kind === 'champion' && node.elements[0] === 'dark') resolvePuzzleEncounter(chapter, node.id, cast, 'late')
+    encounters++
+  }
+  return { chapters: chapters.length, encounters, cast: cast.members.length,
+    elements: Object.fromEntries(PUZZLE_ELEMENTS.map(e => [e, cast.members.filter(m => m.elements.includes(e)).length])),
+    roles: Object.fromEntries(PUZZLE_FOE_ROLES.map(r => [r, cast.members.filter(m => m.roles.includes(r)).length])), unresolvedReferences: 0 }
+}
+export function parsePuzzleAtlas(v: unknown): PuzzleAtlas {
+  const r = exact(v, ['schemaVersion', 'kind', 'frameSize', 'gutter', 'pages', 'frames']), L = PUZZLE_CONTENT_LIMITS
+  if (r.schemaVersion !== 1 || r.kind !== 'puzzles-monsters' || r.frameSize !== L.frame || r.gutter !== L.gutter ||
+    !puzzleArray(r.pages, L.pages) || !r.pages.length || !puzzleArray(r.frames, L.members) || !r.frames.length) fail('invalid atlas header')
+  const pages = r.pages.map(p => {
+    const page = exact(p, ['path', 'bytes', 'sha256', 'width', 'height'])
+    if (!puzzleInteger(page.width, L.frame + 2 * L.gutter, L.page) || !puzzleInteger(page.height, L.frame + 2 * L.gutter, L.page)) fail('invalid atlas dimensions')
+    return { ...file({ path: page.path, bytes: page.bytes, sha256: page.sha256 }, PUZZLE_PAGE_PATH), width: page.width, height: page.height }
+  })
+  if (new Set(pages.map(p => p.path)).size !== pages.length) fail('duplicate atlas pages')
+  const frames: PuzzleAtlas['frames'] = []
+  for (const raw of r.frames) {
+    const f = exact(raw, ['id', 'page', 'x', 'y', 'width', 'height']), key = id(f.id)
+    if (frames.some(f => f.id === key) || !puzzleInteger(f.page, 0, pages.length - 1) || !puzzleInteger(f.x, L.gutter) ||
+      !puzzleInteger(f.y, L.gutter) || f.width !== L.frame || f.height !== L.frame) fail('invalid atlas rectangle')
+    const page = pages[f.page]!
+    if (f.x + L.frame + L.gutter > page.width || f.y + L.frame + L.gutter > page.height || frames.some(other =>
+      other.page === f.page && (f.x as number) < other.x + L.frame + 2 * L.gutter && other.x < (f.x as number) + L.frame + 2 * L.gutter &&
+      (f.y as number) < other.y + L.frame + 2 * L.gutter && other.y < (f.y as number) + L.frame + 2 * L.gutter)) fail('overlapping/out-of-bounds atlas gutter')
+    frames.push({ id: key, page: f.page, x: f.x, y: f.y, width: 256, height: 256 })
+  }
+  if (pages.some((_, index) => !frames.some(f => f.page === index))) fail('unused atlas page')
+  return { schemaVersion: 1, kind: 'puzzles-monsters', frameSize: 256, gutter: 2, pages, frames }
+}
+export function assertPuzzleArtJoin(pack: PuzzleContentPack, atlas: PuzzleAtlas): void {
+  const used = new Set(pack.members.map(m => m.art.frameId))
+  if (used.size !== atlas.frames.length || atlas.frames.some(f => !used.has(f.id))) fail('missing/unknown atlas frame')
+}
+export function parsePuzzleContentCatalog(v: unknown, files: readonly ContentManifestFile[]): PuzzleContentCatalog {
+  const r = exact(v, ['schemaVersion', 'activeHash', 'packs'])
+  if (r.schemaVersion !== 1 || !puzzleArray(r.packs, PUZZLE_CONTENT_LIMITS.packs) || !r.packs.length) fail('invalid retained catalog')
+  const activeHash = puzzleContentHash(r.activeHash), packs = r.packs.map(value => {
+    const p = exact(value, ['path', 'sha256', 'bytes', 'version'])
+    const ref = { ...file({ path: p.path, sha256: p.sha256, bytes: p.bytes }, PUZZLE_PACK_PATH), version: id(p.version) }
+    if (!files.some(f => f.path === ref.path && f.sha256 === ref.sha256 && f.bytes === ref.bytes)) fail('unretained pack')
+    return ref
+  })
+  if (new Set(packs.map(p => p.version)).size !== packs.length || new Set(packs.map(p => p.sha256)).size !== packs.length ||
+    !packs.some(p => p.sha256 === activeHash)) fail('ambiguous/absent active pack')
+  return { schemaVersion: 1, activeHash, packs: packs.sort((a, b) => a.sha256 < b.sha256 ? -1 : 1) }
+}
+export function canonicalPuzzleJson(v: unknown): string {
+  function sort(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(sort)
+    if (puzzleRecord(value)) return Object.fromEntries(Object.keys(value).sort().map(k => [k, sort(value[k])]))
+    return value
+  }
+  return JSON.stringify(sort(v))
+}
+/** Format bounds in every loader/publication gate; native decode is ALSO mandatory at import/client entry. */
+export function puzzleWebpMetadata(bytes: Uint8Array): { width: number; height: number } {
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), ascii = (at: number, n: number) =>
+    Array.from({ length: n }, (_, i) => String.fromCharCode(v.getUint8(at + i))).join('')
+  if (v.byteLength < 26 || ascii(0, 4) !== 'RIFF' || ascii(8, 4) !== 'WEBP' || v.getUint32(4, true) + 8 !== v.byteLength) fail('invalid WebP container')
+  let result: { width: number; height: number } | undefined, alpha = false
+  for (let at = 12; at + 8 <= v.byteLength;) {
+    const kind = ascii(at, 4), size = v.getUint32(at + 4, true), data = at + 8, end = data + size + size % 2
+    if (end > v.byteLength) fail('invalid WebP chunk')
+    if (kind === 'VP8X' && size >= 10) {
+      if (v.getUint8(data) & 2) fail('animated atlas forbidden')
+      const uint24 = (n: number) => v.getUint8(n) | v.getUint8(n + 1) << 8 | v.getUint8(n + 2) << 16
+      result = { width: uint24(data + 4) + 1, height: uint24(data + 7) + 1 }; alpha ||= !!(v.getUint8(data) & 16)
+    }
+    if (kind === 'VP8L' && size >= 5 && v.getUint8(data) === 0x2f) {
+      const bits = v.getUint32(data + 1, true)
+      result ??= { width: (bits & 0x3fff) + 1, height: (bits >>> 14 & 0x3fff) + 1 }; alpha ||= !!(bits & 0x10000000)
+    }
+    at = end
+    if (at === v.byteLength && result && alpha && result.width <= PUZZLE_CONTENT_LIMITS.page && result.height <= PUZZLE_CONTENT_LIMITS.page) return result
+  }
+  return fail('transparent WebP atlas required')
+}

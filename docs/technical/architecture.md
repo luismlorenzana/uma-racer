@@ -276,6 +276,10 @@ active until M030's protected final cutover.
   fallback or source hotlink. GameTora reimports preserve RPG packs/catalog/pins; the publisher checks present RPG
   content before remote access. The [URA publication record](../research/rpg-private-ura-handoff.md) records the complete private manifest and retained pack hash.
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
+- Uma Puzzles has a separate [private content pipeline/client](puzzle-content.md) (D272): reviewed PAD sources, alpha-safe
+  atlases, immutable full-hash packs/catalogs and held authenticated atlas URLs. It never imports PAD combat data, reads
+  unrelated private Spark rows or replaces another art family. Code is delivered but real source/art collection is pinned
+  by the owner; original DEV-only placeholders are not a production content pack. T110 save/sync follows; Spark remains live.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.
 - Protected files are fetched with the Firebase bearer token and verified against their manifest SHA-256 before use. Image
