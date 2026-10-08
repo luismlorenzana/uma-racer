@@ -76,8 +76,11 @@ T110 adds [schema-1 records, additive Dexie28, atomic background operations and 
 materials and explicit recovery (D274), with an isolated proof adapter and no default double. T112 implements
 [guarded setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275): shared
 Shell/Header/PagedGuide, saved owned roster/five parties/maps, held verified previews and a completely separate DEV
-real-host proof (D275). Begin does not reserve a real fight; T113 adds battle/results/practice next. Both flags remain off;
-placeholders never satisfy verified production content. Spark's board and replay are untouched.
+real-host proof (D275). T113 adds [mobile battle/results/guide/practice](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276):
+Begin reserves through the real host, append is durable before animation, and results read saved receipts plus optional
+device replay detail. Account-free synthetic practice does not enroll, persist or reward. Both flags remain off;
+placeholders never satisfy verified production content. Spark shares only pure cell geometry; its traversal and replay
+remain unchanged. T114's material surfaces are next.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):
@@ -228,6 +231,8 @@ or Back/Next, safe-area controls, reduced motion.
 | `formatTickets` | `ui/tickets.ts` | every ticket price |
 | `safeReturnPath`, `friendshipTrainingHref` | `game/bond-links.ts` | entry links and the way back |
 | Spark presentation | `ui/minigames/spark-rival-presentation.ts` | orb faces, glyphs and presentation constants |
+| Grid cell geometry | `scenes/puzzle-input/geometry.ts` | finite bounds/coordinate mapping shared by Spark and Puzzles; each keeps its own traversal/controller |
+| Puzzle battle stage | `screens/puzzles/PuzzleBattleStage.tsx`, `scenes/puzzles/` | real fights and isolated practice share the DOM HUD and lazy Pixi input/effects, never the account reward path |
 
 ## 10. Adding a minigame
 

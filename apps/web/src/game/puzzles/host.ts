@@ -5,7 +5,7 @@ import { PUZZLE_PARTY_IDS, SCENARIOS, STATS, TRAINING_LEVEL_UP_TICKET_ID, applyP
   parsePuzzleCampaignId, parsePuzzleCheckpointSave, parsePuzzleOperationReceipt, parsePuzzleOutfitSave,
   parsePuzzlePresetSave, parsePuzzleResultSave, parsePuzzleTakeoverResponse, parseSaveSnapshot, parseUmaSaveOrThrow,
   puzzleBattleResult, puzzleBattleStateHash, puzzleCampaignId, puzzleCanonical, puzzlePayloadHash,
-  puzzleReadiness, puzzleStats, puzzleChapter, type ConstellationBankSaveV1, type PuzzleBattleAction,
+  puzzleReadiness, puzzleStats, puzzleChapter, replayPuzzleBattle, type ConstellationBankSaveV1, type PuzzleBattleAction,
   type PuzzleBattleStateV1, type PuzzleBattleTransition, type PuzzleCastV1, type PuzzleCheckpointSaveV1,
   type PuzzleDarkVariant, type PuzzleElement, type PuzzleKit, type PuzzleMaterialInput, type PuzzleOpenEncounterV1,
   type PuzzleOperationReceiptV1, type PuzzleOutfitSaveV1, type PuzzlePackIdentity, type PuzzlePayload,
@@ -16,7 +16,8 @@ import type { PuzzlePresentationLease } from '../../content/puzzles'
 import { RacerDb, type PuzzleJournalRow } from '../db'
 import { PUZZLES_RELEASE_ENABLED } from './capability'
 import { PuzzleOperationCoordinator, puzzleTransactionTables } from './operations'
-import { PuzzleRecoveryError, replayPuzzleJournal } from './journal'
+import { PuzzleRecoveryError, replayPuzzleJournal, parsePuzzleJournal } from './journal'
+import { puzzleCombatSummary, type PuzzleCombatSummary } from './battle-presentation'
 import { reconcilePuzzleFlairInTransaction } from './flair'
 
 export interface PuzzleCastLease {
@@ -46,7 +47,7 @@ export interface PuzzleBattleView {
   kind: 'battle'; open: PuzzleOpenEncounterV1; state: PuzzleBattleStateV1; actions: readonly PuzzleBattleAction[]
   stateHash: string; lastStep: PuzzleBattleTransition | null; lease: PuzzleCastLease
 }
-export interface PuzzleResultView { kind: 'result'; receipt: PuzzleResultSaveV1; pending: boolean }
+export interface PuzzleResultView { kind: 'result'; receipt: PuzzleResultSaveV1; pending: boolean; summary?: PuzzleCombatSummary | null }
 export interface PuzzleRecoveryView {
   kind: 'recovery'; code: PuzzleRecoveryError['code']; message: string; open: PuzzleOpenEncounterV1 | null
 }
@@ -199,14 +200,32 @@ export class PersistentPuzzleHost {
   }
   private async result(battleId: string): Promise<PuzzleResultView | null> {
     const row = await this.database.puzzleResults.get(battleId)
-    if (row) return { kind: 'result', receipt: checked(parsePuzzleResultSave(row.data), 'result'), pending: false }
+    if (row) return this.resultView(checked(parsePuzzleResultSave(row.data), 'result'), false)
     for (const p of await this.database.pendingPuzzleOperations.orderBy('order').toArray()) {
       const raw = p.prediction.logs.find(l => l.kind === 'puzzleResults' && l.id === battleId)
       if (!raw) continue
       if (p.status !== 'pending') return failure('conflict', p.reason ?? 'The saved result was rejected; no rewards remain applied.')
-      return { kind: 'result', receipt: checked(parsePuzzleResultSave(raw.data), 'pending result'), pending: true }
+      return this.resultView(checked(parsePuzzleResultSave(raw.data), 'pending result'), true)
     }
     return null
+  }
+  /** Optional device-only combat detail replayed from retained evidence. Never changes a receipt or save schema. */
+  private async resultView(receipt: PuzzleResultSaveV1, pending: boolean): Promise<PuzzleResultView> {
+    let raw: unknown = await this.database.puzzleJournals.get(receipt.battleId)
+    if (!raw) {
+      const archive = await this.database.puzzleArchives.get(`journal:${receipt.battleId}:${receipt.result.ownerEpoch}`)
+      raw = (archive?.data as { journal?: unknown } | undefined)?.journal
+    }
+    let summary: PuzzleCombatSummary | null = null
+    const journal = parsePuzzleJournal(raw)
+    if (journal?.inputHash === receipt.inputHash && journal.ownerEpoch === receipt.result.ownerEpoch &&
+      journal.actions.length === receipt.result.actionCount) {
+      try {
+        const replay = replayPuzzleBattle(receipt.input, journal.actions)
+        if (puzzleBattleStateHash(replay.state) === receipt.result.stateHash) summary = puzzleCombatSummary(replay.steps)
+      } catch { /* Receipt stays usable on another device without compatible local detail. */ }
+    }
+    return { kind: 'result', receipt, pending, summary }
   }
   private async archive(battleId: string, reason: string, open: PuzzleOpenEncounterV1 | null) {
     const journal = await this.database.puzzleJournals.get(battleId)

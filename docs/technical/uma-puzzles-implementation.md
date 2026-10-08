@@ -1,8 +1,9 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T112 foundations/content code/save/sync/real replay host/setup UI implemented (D269–D275); gameplay/cutover not enabled.**
+**Status: T106–T113 foundations/content code/save/sync/real replay host/mobile UI implemented (D269–D276); production gameplay/cutover not enabled.**
 T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
-pinned at the owner's request. DEV proofs use original labelled placeholders; T113's touch battle is next. No gameplay/cutover is enabled.
+pinned at the owner's request. DEV proofs use original labelled placeholders; T114 material surfaces is next.
+No production gameplay/cutover is enabled.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
@@ -477,7 +478,7 @@ local archive/journal failure followed by same-owner retry. Failure injection
 after each of five outfit writes, checkpoint, stock/bank, result/movement receipt, pending/outbox, journal/archive and
 CL badge boundary proves all-or-none writes and post-durability scheduling. Initial invented host replay hash is
 `7771941afcb8fc1e`; pure engine hashes/math and `sim:puzzles` envelopes are unchanged. No physical-phone or real-account
-gameplay acceptance is claimed; T112 now supplies setup navigation, while T113–T116 and pinned T109 real content remain.
+gameplay acceptance is claimed; T112–T113 supply mobile navigation/battles, while T114–T116 and pinned T109 real content remain.
 
 T111 verification: lint/test/build pass (1,342 tests, including70 new real-host tests); `sim:puzzles` retains its288
 engine and600 campaign battles plus86,016 exact economic routes. Spark and Friendship Training simulations also pass.
@@ -626,7 +627,8 @@ All campaign setup routes are lazy children of `PuzzleShell` under `/puzzles`: H
 The shell checks the off capability **before** mounting a component that can construct a host/read an account/acquire
 content. Enabled entry additionally needs a persistent loaded game, active bank and verified presentation lease.
 There is no Home launch yet; T113 supplies fight/result routes and T114 finishes the honest Exchange/Items destinations.
-Begin is disabled in production; DEV Begin shows an explicit no-reservation notice. No guessed route enables a bank,
+T113 replaces the original T112 DEV-only no-reservation notice with real host Begin under the existing parent gate.
+No guessed route enables a bank,
 creates a fight, retires Spark or changes release flags. Existing `/puzzles/content` remains read-only.
 
 `PuzzleContext` owns a per-provider Zustand store subscribed through `liveQuery(host.account)`, separate from other
@@ -657,8 +659,8 @@ that canonical settlement can adjust net. First higher Opening win explains its 
 Shared `MinigameShell/Header`, `PagedGuide`, `createGuideMemory`, Button, AtlasSprite, icons and focus/inert isolation
 are reused. Setup has internal scroll and five-across 44 pt targets at 390×844/375×667; no new global tabs. Element
 glyphs are original SVG (flame/drop/leaf/star/moon), accompanied by semantic orange-red/blue/green/ivory/violet colour
-tokens and accessible names. Motion uses existing `m.*` press/guide transforms/opacity. Full battle scroll/input,
-illustrated pages and free practice remain T113, not claimed as tested here.
+tokens and accessible names. Motion uses existing `m.*` press/guide transforms/opacity. T113 extends the same shell
+with battle input, illustrated pages and account-free practice below.
 
 `/dev/puzzles-ui-proof` shares these components via a different provider and **never** production boot. `main.tsx`
 excludes AuthProvider/ContentProvider/GameProvider/service-worker registration for this DEV root and every nested
@@ -667,7 +669,51 @@ adapter, retains its real local operations/journals across refresh and uses inve
 an in-memory authority for explicit recovery. Reload authority restores pending canonical bases, not optimistic
 projections, before adoption. Its local EXP/materials never touch the owner database/API. The proof is tree-shaken
 from production. [Browser evidence](../research/puzzle-navigation-phone-proof.md) is synthetic, not private-content,
-production gameplay or physical-iPhone acceptance. T109 permitted originals and T113–T116 gates still remain.
+production gameplay or physical-iPhone acceptance. T109 permitted originals and T114–T116 gates still remain.
+
+### T113 implemented mobile battle (D276)
+
+`battle/:battleId` is a lazy child of the same gated shell. Map Begin passes captured party/checkpoint revisions and
+Dark reward choice to the real host, retains the operation id for retry, then releases the returned presentation
+lease and navigates to the canonical battle id. Resume never reserves. `PuzzleBattleSession` reloads/replays before
+unlocking and synchronously locks during append, animation and commit. Accepted actions are durable **before** scene
+playback; terminal claims contain only battle id, owner epoch, count and state hash. Rejection reloads authority and
+keeps input locked for Retry/Return. Queued background restores replay before unlock. Disposal releases held or late
+leases; an accepted action interrupted by navigation is retained for the next resume, never undone by rendering.
+
+`PuzzleBattleStage` shares real fight/practice presentation. DOM owns header/HP/foe targets/intent sheets, five portrait
+active previews/explicit confirm, legend, preference and live region. `scenes/puzzles/load.ts` lazily imports Pixi.
+`PuzzleBattleScene` owns 30 board tokens, 36 particles and eight text labels, decoded texture lifetime, monster
+reactions and delta-time event playback. Verified retained pack frames supply monsters; only isolated proof uses
+original invented graphics. Held private chibi art joins by frozen entrant colour, display-only; Heart stays distinct.
+Plain/chibi and reduced motion never become an engine action or affect RNG.
+
+Only `cellAtPoint` geometry is shared with Spark. Puzzles keeps domain's diagonal-first skipped-cell interpolation;
+Spark keeps its old traversal/controller. One pointer is captured, second fingers ignored, revisits permitted and
+first valid swap starts the monotonic seven-second clock. Late samples cannot extend an expired path; release/expiry
+submits at most once within domain bounds. Capture loss, pointercancel, hidden tab, viewport/rotation, guide and
+navigation discard an unaccepted gesture. Landscape blocks safely; resume replays before enabling. Native-event and
+pure-controller tests pin invented drag hash `f8e3005a8dc47b16`; Spark before/after simulation output is byte-identical.
+
+`PuzzleResultScreen` reads the receipt's five grants, before/after PL and carried EXP, derived stat changes and
+catalogue unlocks, plus each material's gross/repaid/net. Pending versus canonical is visible; adoption re-reads the
+saved receipt. Replay starts a new revision-checked attempt only after settlement, without auto-CL spend.
+`PuzzleResultView.summary` is optional **device-only presentation**, not a new synced/save field: the host strictly
+parses retained live/archive journal, checks input hash/epoch/count/terminal hash and replays it for combos/damage.
+A different device without compatible local detail keeps exact rewards and says that combat detail is unavailable.
+
+The eight-page illustrated `PagedGuide` uses resilient `createGuideMemory` v2 and domain numbers/catalogue. First setup
+opens it once; battle opens drag context immediately. `/puzzles/practice` lives outside the account shell and bypasses
+AuthProvider/ContentProvider/GameProvider/service-worker boot, but its own entry checks the off release capability.
+When enabled it creates standalone invented pure input and uses the real stage/engine, no host/auth/Dexie/rewards.
+Links crossing practice/account boot use full document navigation so the provider tree is recreated, not retained.
+DEV `/dev/puzzles-practice` and `/dev/puzzles-battle-proof/:case` are tree-shaken; the latter shares the real host against
+separate `puzzle-proof-t113-*` databases and synthetic authority. Pending receipts remain resumable on proof refresh.
+
+[Phone browser evidence](../research/puzzle-battle-phone-proof.md) records both viewport sizes, saved win/debt/loss,
+guide/active/phase/legend, pooling/drag profile and lazy chunk sizes. This is synthetic browser proof, not PAD source
+acceptance, owner-account validation, production playability or iPhone60/120Hz/low-power sign-off. Both release flags,
+save/schema/API/engine constants and startup cap are unchanged; T114 is next.
 
 ## 10. Standing evidence
 

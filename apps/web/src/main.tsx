@@ -21,8 +21,10 @@ const queryClient = new QueryClient({
 // Animation features load in a separate chunk; `strict` forbids the heavier `motion.*` components.
 const loadMotionFeatures = () => import('./ui/motionFeatures').then((mod) => mod.default)
 
-// This DEV proof is completely outside auth/content/GameProvider boot, including refresh on its nested routes.
-const isolatedPuzzleProof = import.meta.env.DEV && /^\/dev\/puzzles-ui-proof(?:\/|$)/.test(location.pathname)
+// Synthetic practice and DEV proofs never boot account/auth/content or register the account service worker.
+// Practice still checks the release capability in its own entry component.
+const isolatedPuzzleProof = location.pathname === '/puzzles/practice' ||
+  import.meta.env.DEV && /^\/dev\/puzzles-(?:ui-proof|battle-proof|practice)(?:\/|$)/.test(location.pathname)
 if (!isolatedPuzzleProof) registerAppUpdates()
 const app = <LazyMotion features={loadMotionFeatures} strict><RouterProvider router={router} />{!isolatedPuzzleProof && <UpdateNotice />}</LazyMotion>
 

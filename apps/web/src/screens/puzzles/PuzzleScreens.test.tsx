@@ -24,6 +24,7 @@ function mount(node: ReactNode, path = root, route = root, env: PuzzleEnvironmen
 beforeEach(async () => {
   const values = new Map<string, string>()
   vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, v: string) => { values.set(key, v) } })
+  values.set('puzzle-proof-guide-v2', '1')
   environment = await createPuzzleUiProofEnvironment(`puzzle-proof-ui-test-${++sequence}`)
 })
 afterEach(async () => { cleanup(); await environment?.database.delete(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
@@ -101,7 +102,7 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     fireEvent.change(screen.getByLabelText('Party'), { target: { value: 'puzzle-party-2' } })
     expect(screen.getAllByRole('button', { name: 'Open chapter' }).every(b => (b as HTMLButtonElement).disabled)).toBe(true)
   })
-  it('map shows 28 labelled preview targets; Dark choice, debt vector and DEV Begin never reserve', async () => {
+  it('map shows 28 labelled preview targets; explicit Dark choice and Begin freeze a real journal', async () => {
     const begin = vi.spyOn(environment.host, 'begin')
     mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-1/ura-finale`, `${root}/party/:partyId/:scenarioId`)
     await screen.findByRole('list', { name: 'Chapter path, top to bottom' })
@@ -110,7 +111,9 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     expect((screen.getByRole('button', { name: /Begin battle/ }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: /Pace constellation tickets/ })); await screen.findByText('Repay 0 · Inventory +12')
     await waitFor(() => expect((screen.getByRole('button', { name: /Begin battle/ }) as HTMLButtonElement).disabled).toBe(false))
-    fireEvent.click(screen.getByRole('button', { name: /Begin battle/ })); await screen.findByText(/No fight was reserved/); expect(begin).not.toHaveBeenCalled(); expect(await environment.database.puzzleJournals.count()).toBe(0)
+    fireEvent.click(screen.getByRole('button', { name: /Begin battle/ }))
+    await waitFor(() => expect(begin).toHaveBeenCalledOnce())
+    await waitFor(async () => expect(await environment.database.puzzleJournals.count()).toBe(1))
   })
   it('content failure exposes Retry/Return and releases leases; unavailable Items is honest', async () => {
     const env = { ...environment, acquire: vi.fn(async () => { throw new Error('Invented missing pack') }) }

@@ -1,7 +1,7 @@
 // Accessible 28-node DAG and immutable encounter preview (docs/design/uma-puzzles.md §§6,9).
 import { SCENARIOS, puzzleEncounterRewards, resolvePuzzleEncounter, type PuzzleDarkVariant, type PuzzleEnemy, type PuzzleMapNode } from '@racer/domain'
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { PuzzleEnemyPlaceholder } from '../../content/puzzles/Placeholder'
 import type { PuzzleCastLease, PuzzleLoadedBattle } from '../../game/puzzles/host'
 import { openPuzzleNode, openPuzzleParty, puzzleMapStatus, puzzleNodeName, puzzlePartySummary, puzzleRewardEstimate } from '../../game/puzzles/presentation'
@@ -65,11 +65,11 @@ function EnemyDetails({ enemy }: { enemy: PuzzleEnemy }) {
   </div>
 }
 export function PuzzleNodePreview({ node, partyId, scenarioId, reached, onClose }: { node: PuzzleMapNode; partyId: string; scenarioId: string; reached: boolean; onClose(): void }) {
-  const { acquire, host, isolated, command, busy, notice } = usePuzzles(), account = usePuzzleAccount()
+  const { acquire, host, isolated, command, busy, notice, root } = usePuzzles(), account = usePuzzleAccount(), navigate = useNavigate()
   const checkpoint = account?.checkpoints.find(c => c.progress.partyId === partyId && c.scenarioId === scenarioId)
   const open = checkpoint?.open, sameOpen = Boolean(open && openPuzzleNode(checkpoint!)?.id === node.id)
   const [lease, setLease] = useState<PuzzleCastLease | null>(null), [loaded, setLoaded] = useState<PuzzleLoadedBattle | null>(null)
-  const [error, setError] = useState<string | null>(null), [attempt, setAttempt] = useState(0), [takeover, setTakeover] = useState(false), [entryNotice, setEntryNotice] = useState(false)
+  const [error, setError] = useState<string | null>(null), [attempt, setAttempt] = useState(0), [takeover, setTakeover] = useState(false)
   const [variant, setVariant] = useState<PuzzleDarkVariant | null>(sameOpen && node.localId === 'c-dark' ? open!.input.rewards[0]!.style as PuzzleDarkVariant : null)
   const frozenIdentity = sameOpen ? open!.input.battleId : null, epoch = sameOpen ? open!.ownerEpoch : null
   useEffect(() => {
@@ -106,14 +106,22 @@ export function PuzzleNodePreview({ node, partyId, scenarioId, reached, onClose 
       <PuzzleButton className="mt-3 w-full" secondary disabled={busy || !recovery.open || typeof navigator !== 'undefined' && !navigator.onLine} onClick={() => setTakeover(true)}>Review online takeover</PuzzleButton>
       {takeover && recovery.open && <div className="mt-3 grid gap-2"><p className="text-xs">Confirm takeover of epoch {recovery.open.ownerEpoch}? Same seed, board and frozen entrants; prior local actions are not carried across devices.</p><PuzzleButton disabled={busy} onClick={() => { const o = recovery.open!; void command(`takeover:${o.input.battleId}:${o.ownerEpoch}`, async () => { const v = await host.takeover(o.input.battleId, o.ownerEpoch); if (v.kind === 'battle') v.lease.release() }).then(ok => { if (ok) { setTakeover(false); setAttempt(n => n + 1) } }) }}>Confirm online takeover</PuzzleButton><PuzzleButton secondary disabled={busy} onClick={() => setTakeover(false)}>Keep read-only</PuzzleButton></div>}
     </PuzzleCard>}
-    {loaded?.kind === 'result' && <PuzzleCard><p>This encounter has a {loaded.pending ? 'pending replay-validated' : 'canonical'} result. T113 adds the result view; no second fight is reserved here.</p></PuzzleCard>}
+    {loaded?.kind === 'result' && <PuzzleButton onClick={() => navigate(`${root}/battle/${encodeURIComponent(loaded.receipt.battleId)}`)}>Open saved result</PuzzleButton>}
+    {loaded?.kind === 'battle' && <PuzzleButton onClick={() => navigate(`${root}/battle/${encodeURIComponent(loaded.open.input.battleId)}`)}>Resume accepted board</PuzzleButton>}
     {node.localId === 'c-dark' && <PuzzleCard><p className="text-sm">Dark Champion ticket family</p><p className="mt-1 text-xs text-ink-on-dark-soft">Choose Pace or Late before entry. The choice is frozen for this encounter, including its phase.</p><div className="mt-2 grid grid-cols-2 gap-2">{(['pace', 'late'] as const).map(v => <button key={v} disabled={sameOpen} aria-pressed={variant === v} onClick={() => setVariant(v)} className={`min-h-11 rounded-sm border px-2 ${variant === v ? 'border-accent' : 'border-hairline-dark'}`}><PuzzleMaterialMark style={v} /></button>)}</div></PuzzleCard>}
     {enemies.map(enemy => <PuzzleCard key={enemy.id}><div className="flex gap-3">{lease && <EnemyPortrait enemy={enemy} lease={lease} isolated={isolated} />}<div className="min-w-0"><h3 className="text-sm">{lease?.presentation?.pack.members.find(m => m.id === enemy.castId)?.name ?? (isolated ? 'Invented training sprite' : enemy.castId)}</h3><div className="mt-1 flex items-center gap-1 text-xs"><PuzzleElementMark element={enemy.element} /><span className="capitalize">{enemy.element}</span></div><p className="mt-1 text-xs text-ink-on-dark-soft">{enemy.recipeId.replace('puzzle:', '').replaceAll('-', ' ')}</p></div></div><EnemyDetails enemy={enemy} /></PuzzleCard>)}
     <PuzzleWeaknessLegend />
     <PuzzleCard><h3 className="text-sm">Guaranteed clear drops · current estimate</h3>{requiresChoice ? <p className="mt-2 text-xs">Choose the Dark Champion’s ticket family to view the exact gross, repayment and inventory vector.</p> : rewards.map(r => <div className="mt-2 flex items-center justify-between gap-2 text-xs" key={r.itemId}><PuzzleMaterialMark style={r.style} quantity={r.gross} /><span>Repay {r.repaid} · Inventory +{r.net}</span></div>)}<p className="mt-2 text-[10px] text-ink-on-dark-soft">Estimate uses current negative balances; the committed result applies the canonical balance once. No reward on loss or abandonment.</p></PuzzleCard>
     {node.localId === 'g1' && <PuzzleCard><p className="text-xs">{puzzleMapStatus(account!, partyId, scenarioId).chapter.tier > 1 ? 'Winning this Opening Guardian unlocks the adjacent exchange edge from the previous scenario into this one. Exchange arrives in T114.' : 'This is the first scenario. Win a higher chapter’s Opening Guardian to unlock its adjacent exchange edge.'}</p></PuzzleCard>}
-    <PuzzleButton disabled={!isolated || !lease || Boolean(error || recipeError || recovery || openPuzzleParty(account!, partyId)) || !reached || !summary?.full || requiresChoice} onClick={() => setEntryNotice(true)}>{isolated ? 'Begin battle · DEV notice only' : 'Battle entry unavailable'}</PuzzleButton>
-    <p className="text-xs text-ink-on-dark-soft">T113 supplies the battle screen. Entry is disabled in production; this setup preview cannot reserve an unwinnable fight.</p>
-    {entryNotice && <p role="status" className="rounded-sm border border-accent p-3 text-sm">Isolated preview complete. No fight was reserved, no EXP or materials were granted. The playable board arrives in T113.</p>}
+    <PuzzleButton disabled={busy || !lease || Boolean(error || recipeError || recovery || openPuzzleParty(account!, partyId)) || !reached || !summary?.full || requiresChoice} onClick={() => {
+      void command(`begin:${partyId}:${node.id}:${variant ?? ''}`, async operationId => {
+        const view = await host.begin({ partyId, scenarioId, nodeId: node.id, darkVariant: variant, partyRevision: party!.revision,
+          checkpointRevision: checkpoint?.revision ?? 0 }, operationId)
+        if (view.kind === 'battle') { const id = view.open.input.battleId; view.lease.release(); navigate(`${root}/battle/${encodeURIComponent(id)}`) }
+        else if (view.kind === 'result') navigate(`${root}/battle/${encodeURIComponent(view.receipt.battleId)}`)
+        else throw new Error(view.message)
+      })
+    }}>Begin battle</PuzzleButton>
+    <p className="text-xs text-ink-on-dark-soft">Entry is free and freezes this party, board seed, content and reward choice. Production launch remains gated until the release task.</p>
   </div></PuzzleModal>
 }
