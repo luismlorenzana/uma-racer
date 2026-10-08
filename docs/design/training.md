@@ -15,6 +15,13 @@ raise this shared level directly, renamed Constellation Level (CL). T106 impleme
 Spark EXP loop, universal-ticket spending, account EXP bank and persisted fields below remain unchanged until the
 protected M030 cutover. CL9/10 preserve baseline SP growth, not an additional level-scaled base-stat floor.
 
+T114/D283 supplies the shared, lazy **CL n/10 · Level up** sheet for Profile, Training and Constellation, gated on
+both the release capability and an active preserved bank. It uses the original source-A scenario/style tickets plus
+separate preserved universals, names exact card nodes and stat/SP deltas, and never edits any preset configuration.
+Until T115–T116 cutover, the flag is off: the existing TL chips, Spark launch, EXP bank and old ticket flow below
+remain live. Rejected pending CL spends lose unearned power, not the user's configuration; completion flair only
+follows an accepted receipt. See [material UI contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283).
+
 ```
 Play Spark Rival Circuit ──► Training Level rises ──► constellation nodes unlock
                                                       │

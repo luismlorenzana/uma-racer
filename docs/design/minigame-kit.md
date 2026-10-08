@@ -80,7 +80,11 @@ real-host proof (D275). T113 adds [mobile battle/results/guide/practice](../tech
 Begin reserves through the real host, append is durable before animation, and results read saved receipts plus optional
 device replay detail. Account-free synthetic practice does not enroll, persist or reward. Both flags remain off;
 placeholders never satisfy verified production content. Spark shares only pure cell geometry; its traversal and replay
-remain unchanged. T114's material surfaces are next.
+remain unchanged. T114 adds [global material surfaces](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283)
+(D283): the existing global Item catalogue/view, original star-punched strategy tickets, a separate nonpositive bank,
+adjacent same-style exchanges and one host-backed CL sheet for Profile/Training/Constellation. Confirmation remains
+in a safe-area thumb footer; source-A/mixed universal inputs, actual opened nodes/SP and canonical recovery are visible.
+Neither inventory browsing nor a training deep link creates a bank or enables cutover. T115 is next; flags remain off.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):

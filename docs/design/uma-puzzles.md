@@ -1,13 +1,13 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106–T113 foundations/content code/save/sync/real host/mobile UI implemented (D269–D276). Production gameplay not enabled.**
+**Status: approved plan (D267–D268); T106–T114 foundations/content code/save/sync/real host/mobile and material UI implemented (D269–D276, D283). Production gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
 not balance closure. T108 pins generated maps, fixed-reference encounter scaling, reward vectors and modest simulation
 evidence below. T110–T111 add capability-off persistence and the real replay host; T112 adds saved setup navigation
-and T113 adds touch battles, saved results and illustrated guide/practice. Real private content, material surfaces and
-release tuning remain the pinned T109 and T114–T116 work.
+and T113 adds touch battles, saved results and illustrated guide/practice. T114 adds global materials/debt/exchange
+and shared CL spending. Real private content, preservation/retirement and release tuning remain pinned T109 and T115–T116.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -822,7 +822,7 @@ it must receive an explicit update/recovery message when reconnecting, never ove
 
 ### Own navigation, familiar components
 
-**T112–T113 implemented (D275–D276), release still disabled:** lazy `/puzzles` setup and battle routes use the real host,
+**T112–T114 implemented (D275–D276, D283), release still disabled:** lazy `/puzzles` setup, battle and material routes use the real host,
 not a production double. The gate runs before host/account/content I/O; deep links cannot enable the capability.
 There is no Home card or account cutover yet. `/puzzles/content` remains a separate read-only preflight. The DEV phone
 proof runs only an isolated invented account; [setup](../research/puzzle-navigation-phone-proof.md) and
@@ -864,7 +864,10 @@ Preview uses the engine's actual recipe plus held verified enemy names/art, not 
 intents, phases, delay immunity, element legend, low-level warning and gross/repayment/net. Dark Champion requires
 an explicit Pace/Late choice; an open fight displays its frozen choice and entrants. True Resume names the node,
 loads its real journal or read-only recovery, and offers explicit online same-seed takeover without reserving again.
-Exchange/Items honestly explain their forthcoming T114 implementation. Begin now reserves the complete frozen fight
+Exchange/Items now use global stock, separate debt and the existing host's exact preview/confirm port (T114/D283).
+Same-style adjacent batches show gross/repaid/net and after-stock/bank; interception requires explicit irreversible
+acknowledgement. Stale economics require refresh/reconfirmation; a lost acknowledgement retries the same operation
+receipt. The safe-area confirmation stays fixed while content scrolls. Begin now reserves the complete frozen fight
 through the real host, then opens its accepted journal; production routes remain gated. Resume never calls Begin.
 Saved terminal receipts survive refresh, and Replay reserves a new attempt only after the previous receipt exists.
 
@@ -897,15 +900,15 @@ Proposal palette: Fire red-orange/flame, Water blue/droplet, Wood green/leaf, Li
 Heart pink/heart. In particular, **there is only one green combat colour**. Glyph, accessible name and legend accompany
 colour everywhere. Existing strategy colours remain on **ticket icons**, not as a contradictory combat-advantage legend.
 
-### CL ticket icon brief — future original SVG work
+### CL ticket vectors — implemented, gated (D283)
 
-Extend the established SVG item/icon system; no new bitmap dependency or extracted PAD icon is needed. Four ticket
-silhouettes with a constellation-star punch, a large original FR/PC/LS/EC strategy glyph, existing strategy colour,
-and a scenario crest inset. At small size the scenario label/accessible name carries the tier; do not cram tiny text
-onto the image. Test both 24/32 px inventory marks and 48/64 px rewards. Style must remain legible on dark/light
-surfaces and in grayscale. A distinct silhouette separates it from daily Training Tickets and Inspiration tokens.
-In the implementation PR, author the four reusable base SVGs plus composited scenario variants; this draft does not
-ship placeholder art or claim the icons have already been drawn.
+`ConstellationTicketIcon` extends the established original vector system without new assets/dependencies: four
+style bases, star punch and inset scenario crest. The FR/PC/LS/EC glyph is the existing positional race symbol
+(a large runner among four), not tiny letters. Front orange, Pace blue, Late purple and End slate remain separate
+from combat elements; the ticket-style legend explicitly says this. Named scenarios/accessibility labels carry the
+tier at24/32px;48px result and64px detail variants remain readable on dark/light/grayscale surfaces. Daily Training
+Tickets, preserved Legacy Universal CL Tickets and Inspiration tokens retain distinct silhouettes and names.
+[The synthetic browser proof](../research/puzzle-material-phone-proof.md) is not production or iPhone acceptance.
 
 ### Tutorial and practice
 
@@ -1223,12 +1226,13 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-T106–T113 foundations/content code/save/sync/real replay host/mobile screens are complete (D269–D276), capability-off.
+T106–T114 foundations/content code/save/sync/real replay host/mobile and material screens are complete (D269–D276, D283), capability-off.
 [The implemented host](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) owns deterministic
 device journals, atomic reservation/settlement/materials and explicit online recovery. Completion flair follows accepted
 CL rather than a rejectable offline prediction. [Saved setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275)
 uses that port; [mobile battle/results](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276)
-extend it without save or combat changes. [T114 material surfaces](../tasks/T114-puzzle-material-surfaces.md) is next;
+extend it without save or combat changes. [Global materials/CL spending](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283)
+use the same real host and Item stacks. [T115 preservation/retirement](../tasks/T115-puzzle-legacy-cutover.md) is next;
 [T109 real private content](../tasks/T109-puzzle-private-content.md) remains pinned. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**
