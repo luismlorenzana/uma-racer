@@ -15,12 +15,12 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 PR-sized tasks, **T106–T116**. T106–T108 progression/material/battle/campaign rules are complete (D269–D271);
 [T109 private content](T109-puzzle-private-content.md) has pipeline/client code delivered (D272); the owner pinned real
 PAD inputs/art for the final pass, with explicit DEV placeholders. T110's additive records/atomic save/sync are complete
-(D273); T111's real journal/host and T112's saved Hub/parties/maps are complete (D274–D275), capability-off;
-[T113 touch battle](T113-puzzle-touch-battle.md) is next.
+(D273); T111's real journal/host, T112's saved Hub/parties/maps and T113's mobile battles/results/guide are complete
+(D274–D276), capability-off; [T114 material surfaces](T114-puzzle-material-surfaces.md) is next.
 [The design](../design/uma-puzzles.md) carries approved gameplay and resolved registration;
 [the implementation contract](../technical/uma-puzzles-implementation.md) fixes save ownership, atomic background
-operations, replay/takeover and cutover boundaries. Pure rules, real replay host, durable sync and setup screens exist;
-**no playable battle or live migration yet**.
+operations, replay/takeover and cutover boundaries. Pure rules, real replay host, durable sync and mobile battle screens
+exist; **no enabled production gameplay or live migration yet**.
 Keep current Spark/account progression usable until the verified content, real reward host and CL spend flow are ready.
 Implement one task to completion/PR/merge before the next, from latest main, without changing Claude's RPG mechanics.
 
@@ -37,7 +37,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T113 → T116**, plus pinned T109 real-content pass | **In progress** · T106–T108/T110–T112 complete; T109 code delivered, permitted PAD originals deferred by owner; T113 next |
+| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T114 → T116**, plus pinned T109 real-content pass | **In progress** · T106–T108/T110–T113 complete; T109 code delivered, permitted PAD originals deferred by owner; T114 next |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -62,6 +62,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T113 — Mobile Pixi battle, receipts and contextual guide | 2026-10-08 | [Battle presentation contract](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276), D276 and [synthetic phone proof](../research/puzzle-battle-phone-proof.md); release remains off | `9bc12a4` |
 | T112 — Global Puzzle Hub, roster, five parties and chapter maps | 2026-10-08 | [Setup navigation contract](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275), D275, isolated real-host phone proof; release remains off | `fabfa27` |
 | T111 — Real Puzzle host, local journal and recovery | 2026-10-07 | [Real host/journal contract](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274), D274, isolated IndexedDB replay/rollback and lazy runtime adapter | `bb8c80b` |
 | T110 — Additive Puzzle saves and atomic background sync | 2026-10-07 | [Persistence/protocol v1](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273), D273, pure resolver/API adapters/Dexie coordinator | `0c8b5e7` |

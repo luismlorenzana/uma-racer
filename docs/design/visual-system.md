@@ -151,3 +151,17 @@ Albums carry a **Comfortable / Compact** toggle: 2-up art tiles versus 3-up tile
   180 KB gzip. The two font families ship as latin-only woff2 with `font-display: swap`, precached, at no more than
   96 KB together (D167).
 - Every screen is designed at 390×844 first, with 44 pt targets and safe-area padding.
+
+## Uma Puzzles battle (D276, release gated)
+
+The immersive stage fits 390×844 and 375×667 without fight-page scroll: compact three-monster intent strip, shared
+HP, six-by-five Pixi board, five portrait actives and thumb controls. Decorative enemy height yields first on short
+screens. Safe areas are applied once; non-board actions are at least 44 pt. Intent/active/guide sheets isolate focus
+and cancel unaccepted drags. Colour is paired with original glyphs: Fire orange-red, Water blue, Wood the sole green,
+Light ivory-gold, Dark violet and Heart pink. Held Uma chibis sit inside an element ring; plain orbs are a device-only
+alternative. Verified private monster art is mandatory outside explicitly isolated proofs.
+
+Pixi pools board tokens/effects and animates authoritative engine events with elapsed-time transform/opacity changes;
+DOM never rerenders per pointer sample. Reduced motion keeps state changes and reward timing. Results use the shared
+dark shell, exact five-outfit progression and a gross/repaid/Items table. The illustrated contextual guide and free
+synthetic touch lesson reuse the real stage, but do not claim keyboard dragging or physical-iPhone performance.

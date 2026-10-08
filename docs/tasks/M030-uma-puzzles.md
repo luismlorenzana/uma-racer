@@ -2,7 +2,8 @@
 
 **State: T106–T108 pure foundations/battle/campaign complete (D269–D271); T109 pipeline/client code delivered,
 real PAD inputs pinned for the final pass at the owner's request (D272). T110 save/sync and T111 real journal/host complete
-(D273–D274); T112 Hub/parties/maps complete (D275), capability-off. T113 touch battle is next. No live cutover.**
+(D273–D274); T112 Hub/parties/maps and T113 mobile battle/results/guide complete (D275–D276), capability-off.
+T114 material surfaces is next. No live cutover.**
 Owner-approved gameplay: [Uma Puzzles](../design/uma-puzzles.md), D267.
 Delivery/transport baseline: [implementation contract](../technical/uma-puzzles-implementation.md), D268.
 
@@ -28,8 +29,8 @@ The old training loop remains usable until that replacement and the preservation
 | 4 | [T109 — Private PAD content](T109-puzzle-private-content.md) · **code delivered, real content deferred** | [Private content contract](../technical/puzzle-content.md), immutable import/atlas/client, original DEV placeholders; owner-supplied permitted originals/evidence still required before release |
 | 5 | T110 — Save and sync protocol · **complete** | [Schema-1/Dexie28/atomic protocol](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273), strict standalone API adapters and local repair; no gameplay or live cutover |
 | 6 | T111 — Journal and real host · **complete** | [Real host/journal contract](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274): enrollment, reservation, replay, receipt-owned settlement/materials and explicit recovery; capability-off |
-| 7 | T112 — Hub, parties and maps · **complete** | [Saved setup UI](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275), real host and isolated phone proof; guarded deep links, no real Begin/Home entry yet |
-| 8 | [T113 — Touch battle and guide](T113-puzzle-touch-battle.md) | Pixi battle, results and isolated practice use the real host with correct phone input and guide behavior |
+| 7 | T112 — Hub, parties and maps · **complete** | [Saved setup UI](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275), real host and isolated phone proof; guarded deep links, no Home entry |
+| 8 | T113 — Touch battle and guide · **complete** | [Mobile battle contract](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276): durable-before-animation Pixi fights, receipt results, illustrated guide and account-free practice; release gated |
 | 9 | [T114 — Materials, exchange and CL UI](T114-puzzle-material-surfaces.md) | Real Items/icons, debt/exchange and one reusable CL spend sheet show actual nodes/SP changes |
 | 10 | [T115 — Preservation and retirement](T115-puzzle-legacy-cutover.md) | Rehearsed one-time cutover, old-client protection and Spark retirement code are ready but dormant |
 | 11 | [T116 — Release and acceptance](T116-puzzle-release.md) | Published content, balance evidence, enabled cutover and verified production loop; owner phone checks recorded honestly |

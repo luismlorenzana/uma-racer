@@ -30,6 +30,11 @@ function BondRecallRedirect() {
 // outside it and are code-split so PixiJS only loads when a scene opens.
 export const router = createBrowserRouter([
   {
+    // Standalone synthetic practice bypasses the account shell and stays release-gated.
+    path: 'puzzles/practice',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzlePracticeScreen')).PuzzlePracticeEntry }),
+  },
+  {
     element: <AppShell />,
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Uma Racer" />,
     children: [
@@ -180,7 +185,7 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContentScreen')).PuzzleContentScreen }),
   },
   {
-    // T112 setup only. The parent gate checks the off capability before host/account/content I/O.
+    // Saved setup and battle routes. The parent gate checks capability before host/account/content I/O.
     path: 'puzzles',
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Uma Puzzles" />,
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContext')).PuzzleShell }),
@@ -197,6 +202,12 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/puzzles-battle-proof/:proofCase?',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleBattleProofScreen')).PuzzleBattleProofScreen }),
+  }, {
+    path: 'dev/puzzles-practice',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzlePracticeScreen')).PuzzlePracticeScreen }),
+  }, {
     path: 'dev/puzzles-ui-proof',
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleUiProofScreen')).PuzzleUiProofShell }),
     children: puzzleSetupRoutes(),
@@ -219,6 +230,7 @@ export const router = createBrowserRouter([
 /** Same screens, different providers. No DEV parameter can switch a production account into a proof. */
 function puzzleSetupRoutes() {
   return [
+    { path: 'battle/:battleId', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleBattleScreen')).PuzzleBattleScreen }) },
     { index: true, lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleHubScreen')).PuzzleHubScreen }) },
     { path: 'roster', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleRosterScreen')).PuzzleRosterScreen }) },
     { path: 'roster/:outfitId', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleRosterScreen')).PuzzleProfileScreen }) },

@@ -35,6 +35,7 @@ export interface MinigameHeadline {
 export function MinigameHeader({
   backTo,
   backLabel,
+  backReloadDocument = false,
   eyebrow,
   title,
   onGuide,
@@ -44,6 +45,8 @@ export function MinigameHeader({
 }: {
   backTo: string
   backLabel: string
+  /** Cross a standalone practice/account boot boundary with a fresh provider tree. */
+  backReloadDocument?: boolean
   eyebrow: string
   title: string
   onGuide: () => void
@@ -55,6 +58,7 @@ export function MinigameHeader({
     <header className="flex min-h-14 shrink-0 items-center gap-2 border-b border-hairline-dark bg-stage/95 px-3 py-2">
       <Link
         to={backTo}
+        reloadDocument={backReloadDocument}
         aria-label={backLabel}
         className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-hairline-dark bg-stage-soft text-ink-on-dark"
       >

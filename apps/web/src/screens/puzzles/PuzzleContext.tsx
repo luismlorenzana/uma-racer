@@ -13,7 +13,7 @@ import { createPuzzleNavigation } from '../../game/puzzles/navigation'
 import { useGame } from '../../game/store'
 import { MinigameHeader, MinigameShell } from '../../ui/minigames/MinigameShell'
 import { PuzzleButton, PuzzleTabs } from '../../ui/puzzles/components'
-import { PuzzleGuide } from './PuzzleGuide'
+import { PuzzleGuide, puzzleGuideMemory } from './PuzzleGuide'
 
 export interface PuzzleEnvironment {
   host: PuzzleHost; content: LoadedContent; ownedIds: readonly string[]; root: string; isolated: boolean
@@ -94,7 +94,7 @@ export function PuzzleShell() {
 }
 export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children }: { title: string; eyebrow?: string; back?: string; children: ReactNode }) {
   const value = usePuzzles(), account = usePuzzleAccount(), error = useStore(value.state.store, s => s.error)
-  const [guide, setGuide] = useState(false)
+  const [guide, setGuide] = useState(() => !puzzleGuideMemory(value.isolated).seen())
   if (error) return <PuzzleGate title="Saved state unavailable" retry={() => { void value.host.account().then(value.state.publish).catch(() => {}) }}>{error}</PuzzleGate>
   if (!account) return <PuzzleGate title="Loading Puzzle account">Reading this mode's own saved roster and parties.</PuzzleGate>
   if (puzzleUiGate(true, account, true) !== 'ready') return <PuzzleGate title="Account preparation required">Return to current training. No Puzzle operation is available until preservation is active.</PuzzleGate>
@@ -104,5 +104,5 @@ export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children }: 
     <div className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col px-3 pt-3"><PuzzleTabs root={value.root} />
       {value.notice && <p role="alert" className="mb-2 shrink-0 rounded-sm border border-accent p-2 text-sm">{value.notice}</p>}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">{children}</div>
-    </div><PuzzleGuide open={guide} onClose={() => setGuide(false)} isolated={value.isolated} /></MinigameShell>
+    </div><PuzzleGuide open={guide} onClose={() => setGuide(false)} isolated={value.isolated} practiceTo={value.isolated ? '/dev/puzzles-practice' : '/puzzles/practice'} /></MinigameShell>
 }

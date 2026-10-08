@@ -1,12 +1,13 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106–T112 foundations/content code/save/sync/real host/setup UI implemented (D269–D275). Gameplay not enabled.**
+**Status: approved plan (D267–D268); T106–T113 foundations/content code/save/sync/real host/mobile UI implemented (D269–D276). Production gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
 not balance closure. T108 pins generated maps, fixed-reference encounter scaling, reward vectors and modest simulation
-evidence below. T110–T111 add capability-off persistence and the real replay host; T112 adds saved setup navigation.
-Real private content, touch battles, material surfaces and release tuning remain the pinned T109 and T113–T116 work.
+evidence below. T110–T111 add capability-off persistence and the real replay host; T112 adds saved setup navigation
+and T113 adds touch battles, saved results and illustrated guide/practice. Real private content, material surfaces and
+release tuning remain the pinned T109 and T114–T116 work.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -821,10 +822,11 @@ it must receive an explicit update/recovery message when reconnecting, never ove
 
 ### Own navigation, familiar components
 
-**T112 implemented (D275), still disabled:** lazy `/puzzles` setup routes use the real host, not a production double.
-The gate runs before host/account/content I/O; deep links cannot enable the capability. There is no Home card or real
-Begin until later tasks. `/puzzles/content` remains a separate read-only preflight. The DEV phone proof runs only an
-isolated invented account; screenshots are [recorded separately from device acceptance](../research/puzzle-navigation-phone-proof.md).
+**T112–T113 implemented (D275–D276), release still disabled:** lazy `/puzzles` setup and battle routes use the real host,
+not a production double. The gate runs before host/account/content I/O; deep links cannot enable the capability.
+There is no Home card or account cutover yet. `/puzzles/content` remains a separate read-only preflight. The DEV phone
+proof runs only an isolated invented account; [setup](../research/puzzle-navigation-phone-proof.md) and
+[battle screenshots](../research/puzzle-battle-phone-proof.md) are separate from device acceptance.
 
 Home card shows **Uma Puzzles**, last party/chapter and saved battle/resume state. Open the saved Hub, not an Uma
 picker. Internal destinations: **Parties · Roster · Chapters · Exchange · Items**, with a shared header/back/guide;
@@ -862,13 +864,26 @@ Preview uses the engine's actual recipe plus held verified enemy names/art, not 
 intents, phases, delay immunity, element legend, low-level warning and gross/repayment/net. Dark Champion requires
 an explicit Pace/Late choice; an open fight displays its frozen choice and entrants. True Resume names the node,
 loads its real journal or read-only recovery, and offers explicit online same-seed takeover without reserving again.
-Exchange/Items honestly explain their forthcoming T114 implementation; DEV Begin displays a no-write notice, while
-production Begin stays disabled. Setup guide uses shared PagedGuide; illustrated combat/practice remains T113.
+Exchange/Items honestly explain their forthcoming T114 implementation. Begin now reserves the complete frozen fight
+through the real host, then opens its accepted journal; production routes remain gated. Resume never calls Begin.
+Saved terminal receipts survive refresh, and Replay reserves a new attempt only after the previous receipt exists.
 
 Selected party/chapter and per-party/per-scenario last viewed node are resilient device-only navigation memory,
 not progress or a release switch. Roster/map/editor scroll inside the shared dark safe-area shell; actions are at
 least 44 pt at 390×844 and 375×667. Every element has its own original glyph and name as well as its colour. No private
-content, owner save, engine numbers/hashes, other modes or current Spark launch changed in this setup task.
+content, owner save, engine numbers/hashes, other modes or current Spark launch changed in these UI tasks.
+
+Implemented battle: Pixi owns one captured pointer, lifted orb, displaced neighbours and pooled engine-event effects;
+DOM owns HP, three enemy intent summaries/sheets, five active previews/confirmation, Matchups and one announcement
+per resolved turn. First valid cell transition starts the monotonic clock. Append succeeds before animation and input
+stays locked through save/resolve/commit. Background/resize/rotation/capture loss/guide/navigation cancels unaccepted
+input; resume replays the journal before unlocking. Landscape prompts for portrait without advancing a turn.
+Plain/chibi display preference and reduced motion do not enter the action or engine streams.
+
+Results show all five exact EXP/before-after PL/stat deltas and newly unlocked authored choices; materials show each
+scenario/style's gross, repayment and net Items. Pending receipts explain canonical correction. Optional combo/damage
+detail is replayed from retained device journals, not saved as new schema fields; another device without that journal
+honestly shows detail unavailable while retaining exact reward receipts. Loss/abandon is zero reward, not lost history.
 
 ### Art and colour
 
@@ -894,7 +909,8 @@ ship placeholder art or claim the icons have already been drawn.
 
 ### Tutorial and practice
 
-Reuse `PagedGuide`, `createGuideMemory`, contextual first page, shared shells and reduced-motion handling. Proposed pages:
+The implemented illustrated eight-page guide reuses `PagedGuide`, `createGuideMemory`, contextual first page, shared
+shells and reduced-motion handling:
 
 1. Global loop: earn now, consume later; Puzzle/Uma/CL levels are different.
 2. Continuous drag and seven-second clock, with an isolated interactive board.
@@ -908,6 +924,10 @@ Reuse `PagedGuide`, `createGuideMemory`, contextual first page, shared shells an
 Open once before first registration/battle entry, always reachable from Hub and battle at the relevant page. Practice
 is device-local synthetic state, not an account enrollment or rewarded run. Examples read constants from the engine;
 no copy-only timing/multiplier. Opening a guide pauses unaccepted input, never advances a countdown or expires a turn.
+Guide memory is resilient per-device v2; battle opens directly to drag controls. `/puzzles/practice` bypasses account,
+auth/content and service-worker boot, checks the same off release capability, and uses standalone invented input plus
+the real stage/engine when released. DEV practice is explicitly labelled. It grants no EXP/Items and writes no Dexie
+account rows; it is not a non-drag accessibility assist.
 
 ### Mobile interaction and performance
 
@@ -1203,11 +1223,12 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-T106–T112 foundations/content code/save/sync/real replay host/setup screens are complete (D269–D275), capability-off.
+T106–T113 foundations/content code/save/sync/real replay host/mobile screens are complete (D269–D276), capability-off.
 [The implemented host](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) owns deterministic
 device journals, atomic reservation/settlement/materials and explicit online recovery. Completion flair follows accepted
 CL rather than a rejectable offline prediction. [Saved setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275)
-uses that port; [T113 touch battle](../tasks/T113-puzzle-touch-battle.md) is next;
+uses that port; [mobile battle/results](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276)
+extend it without save or combat changes. [T114 material surfaces](../tasks/T114-puzzle-material-surfaces.md) is next;
 [T109 real private content](../tasks/T109-puzzle-private-content.md) remains pinned. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**
