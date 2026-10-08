@@ -73,7 +73,8 @@ const hash = (value: unknown): value is string => typeof value === 'string' && H
 export const rpgExact = (value: Record<string, unknown>, keys: readonly string[]): boolean =>
   Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key))
 const oneOf = (value: unknown, options: readonly string[]): boolean => typeof value === 'string' && options.includes(value)
-const preset = (value: unknown): value is string => oneOf(value, ['party-1', 'party-2', 'party-3', 'party-4', 'party-5'])
+// Ten saved parties (D284).
+const preset = (value: unknown): value is string => oneOf(value, Array.from({ length: 10 }, (_, i) => `party-${i + 1}`))
 
 function stats(value: unknown, growth = false): boolean {
   return rpgRecord(value) && rpgExact(value, STATS) && STATS.every((key) => growth

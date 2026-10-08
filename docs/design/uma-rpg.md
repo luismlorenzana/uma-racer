@@ -8,7 +8,7 @@
 > (D223, D228, D245–D248 for RPG progress); their history stays in git and the decision log.
 
 The RPG is a self-contained account activity reached from Home. It uses owned Uma **outfits** as a persistent roster,
-five saved parties and turn-based battles against a PriConne cast. Its progression is independent of race Uma Level,
+ten saved parties (D284) and turn-based battles against a PriConne cast. Its progression is independent of race Uma Level,
 Training Level, Farming Level and card stars; its only outward reward is scenario Inspiration tokens in global Items.
 
 ## The loop
@@ -18,7 +18,7 @@ Home → Uma RPG (Parties) → a party → Chapters (launch pad, one per scenari
      → the chapter map → tap a node → preview → Fight → result (saved at once) → back to the map
 ```
 
-- **Parties** lists the five parties; **Roster** lists owned outfits. Every RPG page shares one frame: back, title and
+- **Parties** lists the ten parties; **Roster** lists owned outfits. Every RPG page shares one frame: back, title and
   the guide (?) in the header, content below, no footer links (D260).
 - A party must fill all five slots to enter a chapter. Any party may enter any chapter; the launch pad says when a
   chapter is above the party's level.
@@ -140,10 +140,16 @@ Every won fight pays, first clear or replay:
 
 ## Phone presentation
 
-- **Parties:** five cards (members, level, current chapter progress, Edit). **Roster:** five icons per row, enrolled
-  first. **Profile:** enroll as her class (and weapon set); stats; the tree screen (two tree tabs, three branch tabs,
-  each core skill with its fork of two variants, Learn and Swap out). **Edit party:** slot pickers, skill chips and the
-  Summoner's Familiar form; every change saves.
+- **Parties:** ten cards (members, level, current chapter progress, Edit). **Roster:** five icons per row, enrolled
+  first and highest RPG level first (D284). **Profile:** enroll as her class (and weapon set); class with her weapon
+  icons; stats; the tree screen (two tree tabs, three branch tabs, each core skill with its fork of two variants, Learn
+  and Swap out). Opened from a party, the profile shows that party's members in a strip, one tap apart, and its back
+  button returns to the party. **Edit party:** each slot shows its member (tap for her profile and trees), **Add** or
+  **Swap** opens a sheet of enrolled Umas that no party holds yet (highest level first), and **Remove** empties the
+  slot; skill chips and the Summoner's Familiar form; every change saves.
+- **Weapon icons:** each weapon has its own silhouette, colored by family: Brawler weapons red, Mage Staff and Short
+  Sword green, Arcane Staff yellow, Cleric Staff blue, Summoner Tome purple. A portrait shows both of a pair's weapons
+  side by side.
 - **Chapters:** scenario crest, chapter number, level band and progress for all fourteen.
 - **Map:** party MP bar, then the node graph with branch lines (solid once open), each node showing kind, level and its
   foes' elements; cleared nodes carry a check or win count. A node sheet shows each foe's portrait, element, shield,

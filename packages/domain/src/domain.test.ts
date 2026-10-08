@@ -217,7 +217,7 @@ describe('Global Uma RPG — save wire pins (D282)', () => {
   it('bounds synced account rows and grouped commands', () => {
     expect([RPG_SAVE_SCHEMA_VERSION, RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_MAX_TREE_NODES,
       RPG_MAX_SELECTED_PATH, RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_GROUP_OPERATIONS])
-      .toEqual([3, 5, 5, 40, 64, 16_384, 20])
+      .toEqual([3, 5, 10, 40, 64, 16_384, 20])
   })
 })
 

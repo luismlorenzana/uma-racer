@@ -139,7 +139,7 @@ export function RpgFightScreen() {
         return <button key={unit.id} type="button" onClick={(e) => { e.stopPropagation(); tapUnit(unit) }} disabled={busy}
           aria-label={`${name(unit.id)}, HP ${unit.hp} of ${ally.stats.hp}, MP ${unit.mp} of ${ally.stats.mp}${done ? ', done' : ''}`}
           className={`min-w-0 rounded-sm border p-1 text-left ${selected ? 'border-accent bg-accent/15' : hit ? 'border-[#ff8a5c]' : 'border-hairline-dark'} ${done ? 'opacity-50' : ''}`}>
-          <RpgPortrait content={content} compact artwork="icon" outfitId={ally.id} name={name(ally.id)} weapon={ally.weapons[0]!} element={null} className="aspect-square w-full" />
+          <RpgPortrait content={content} compact artwork="icon" outfitId={ally.id} name={name(ally.id)} weapons={ally.weapons} className="aspect-square w-full" />
           <RpgBar className="mt-1" value={unit.hp} max={ally.stats.hp} />
           <RpgBar className="mt-0.5" value={unit.mp} max={ally.stats.mp} tone="mp" />
           <p className="truncate text-[9px]">{unit.hp <= 0 ? 'KO' : done ? 'Done' : `${unit.mp} MP${rpgHand(ally).actions > 1 ? ` · ${battleActionsLeft(state, unit.id)}×` : ''}`}</p>
@@ -223,7 +223,7 @@ function FightResult({ back, settled, chapterTitle, nodeName, name, onMap, onAga
         const reveal = profile ? rpgLevelReveal(profile, { ...member }) : null
         const up = member.afterLevel > member.beforeLevel
         return <div key={member.outfitId} className="grid grid-cols-[44px_1fr] items-center gap-2 rounded-sm border border-hairline-dark p-2">
-          <RpgPortrait content={content} compact artwork="icon" outfitId={member.outfitId} name={name(member.outfitId)} weapon={profile?.weapons[0] ?? null} element={null} className="aspect-square w-11" />
+          <RpgPortrait content={content} compact artwork="icon" outfitId={member.outfitId} name={name(member.outfitId)} weapons={profile?.weapons ?? []} className="aspect-square w-11" />
           <div className="min-w-0 text-[12px]">
             <p className="flex justify-between gap-2"><span className="truncate font-semibold">{name(member.outfitId)}</span><span className="text-accent">+{member.delta} EXP</span></p>
             <p className={up ? 'font-semibold text-accent' : 'text-ink-on-dark-soft'}>{up ? `Level up! ${formatRpgLevel(rpgMemberLevel({ tier: member.beforeTier, level: member.beforeLevel }))} → ${formatRpgLevel(rpgMemberLevel({ tier: member.afterTier, level: member.afterLevel }))}` : formatRpgLevel(rpgMemberLevel({ tier: member.afterTier, level: member.afterLevel }))}

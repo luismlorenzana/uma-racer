@@ -50,7 +50,7 @@ export function createRpgRun(presetId: string, chapterId: string, now: number): 
 
 export function parseRpgRunSave(value: unknown): RpgRunSaveV2 | null {
   if (!record(value) || !exact(value, ['schemaVersion', 'presetId', 'chapterId', 'wins', 'mp', 'battle', 'battles', 'clearedAt', 'updatedAt']) ||
-    value.schemaVersion !== 2 || typeof value.presetId !== 'string' || !/^party-[1-5]$/.test(value.presetId) ||
+    value.schemaVersion !== 2 || typeof value.presetId !== 'string' || !/^party-([1-9]|10)$/.test(value.presetId) ||
     typeof value.chapterId !== 'string' || !/^[a-z0-9-]{1,24}$/.test(value.chapterId) || !counts(value.wins, 1) ||
     !counts(value.mp, 0) || !int(value.battles) || !(value.clearedAt === null || int(value.clearedAt)) || !int(value.updatedAt)) return null
   const battle = value.battle

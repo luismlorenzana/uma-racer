@@ -10,7 +10,7 @@ import {
 } from '@racer/domain'
 import { liveQuery } from 'dexie'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, Outlet, useNavigate, useParams } from 'react-router'
+import { Link, Outlet, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { getContentAsset, type LoadedContent } from '../../content/runtime'
 import type { RpgRelease } from '../../content/rpg-release'
@@ -21,8 +21,10 @@ import { useGame } from '../../game/store'
 import { AtlasSprite } from '../../ui/AtlasSprite'
 import { ScreenState } from '../../ui/ScreenState'
 import { MinigameHeader, MinigameShell } from '../../ui/minigames/MinigameShell'
-import { RPG_WEAPON_LABELS, RpgPortrait } from '../../ui/rpg/RpgPortrait'
-import { orderRpgRoster } from '../../ui/rpg/roster-options'
+import { RPG_WEAPON_LABELS, RpgPortrait, WeaponPair } from '../../ui/rpg/RpgPortrait'
+import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
+import { ChevronRightIcon } from '../../ui/icons'
+import { orderRpgRoster, rpgPartyCandidates } from '../../ui/rpg/roster-options'
 import { CLASS_LABEL, GhostButton, KindMark, PrimaryButton, RpgBar, RpgCard, RpgSelect, RpgTabs, WEAPON_KIND_LABEL, WeaponKindMark,
   formatRpgBand, formatRpgLevel } from '../../ui/rpg/rpg-ui'
 import { RpgGuide, rpgGuideMemory, type RpgGuidePage } from './RpgGuide'
@@ -120,7 +122,7 @@ export function RpgFrame({ back, backLabel, eyebrow, title: heading, guide = 'pa
 function OutfitIcon({ content, outfitId, name, profile, className = 'aspect-square w-full' }: {
   content: LoadedContent; outfitId: string; name: string; profile?: RpgProfile | null; className?: string
 }) {
-  return <RpgPortrait content={content} compact artwork="icon" outfitId={outfitId} name={name} weapon={profile?.weapons[0] ?? null} element={null} className={className} />
+  return <RpgPortrait content={content} compact artwork="icon" outfitId={outfitId} name={name} weapons={profile?.weapons ?? []} className={className} />
 }
 
 function partyLevel(preset: RpgPresetSave, profiles: ReadonlyMap<string, RpgProfile>): number | null {
@@ -173,7 +175,8 @@ export function RpgRosterScreen() {
   const { content, account } = useRpg()
   const owned = useGame((state) => state.umas)
   const name = (id: string) => content.umas.byId.get(id)?.name ?? id
-  const ids = orderRpgRoster(Object.keys(owned), new Set(account.outfits.keys()), name)
+  const levelOf = (id: string) => { const p = account.outfits.get(id)?.data.profile; return p ? rpgMemberLevel(p) : null }
+  const ids = orderRpgRoster(Object.keys(owned), levelOf, name)
   return <RpgFrame back="/" backLabel="Home" eyebrow="Global Uma RPG" title="Roster" guide="class">
     <RpgTabs />
     {[true, false].map((enrolled) => {
@@ -198,16 +201,32 @@ export function RpgRosterScreen() {
 
 export function RpgProfileScreen() {
   const { outfitId = '' } = useParams()
+  const [search] = useSearchParams()
   const { content, account } = useRpg()
   const owned = useGame((state) => state.umas)
   const template = content.umas.byId.get(outfitId)
   const profile = account.outfits.get(outfitId)?.data.profile ?? null
+  const label = (id: string) => content.umas.byId.get(id)?.name ?? id
+  // Opened from a party: back returns to it, and its members are one tap apart.
+  const partyId = search.get('party')
+  const party = partyId ? account.presets.find((p) => p.id === partyId) : undefined
+  const members = party ? party.data.slots.flatMap((slot) => slot && account.outfits.has(slot.outfitId) ? [slot.outfitId] : []) : []
+  const inParty = !!party && members.includes(outfitId)
   if (!owned[outfitId] || !template) return <ScreenState title="Outfit unavailable" detail="This profile needs an owned outfit." action={{ label: 'Roster', to: '/rpg/roster' }} />
-  return <RpgFrame back="/rpg/roster" backLabel="Roster" eyebrow={template.outfit ?? 'Uma RPG'} title={template.name} guide="class">
+  return <RpgFrame back={inParty ? `/rpg/party/${partyId}/edit` : '/rpg/roster'} backLabel={inParty ? party.data.name : 'Roster'}
+    eyebrow={inParty ? party.data.name : template.outfit ?? 'Uma RPG'} title={template.name} guide="class">
+    {inParty && <nav aria-label={`${party.data.name} members`} className="mb-3 grid grid-cols-5 gap-1.5">{members.map((id) =>
+      <Link key={id} to={`/rpg/roster/${encodeURIComponent(id)}?party=${partyId}`} aria-current={id === outfitId ? 'page' : undefined} aria-label={`${label(id)}'s skill trees`}
+        className={`block rounded-md ${id === outfitId ? 'ring-2 ring-accent' : 'opacity-60'}`}>
+        <OutfitIcon content={content} outfitId={id} name={label(id)} profile={account.outfits.get(id)?.data.profile} />
+      </Link>)}</nav>}
     <div className="grid grid-cols-[96px_1fr] items-center gap-3">
       <OutfitIcon content={content} outfitId={outfitId} name={template.name} profile={profile} className="aspect-square w-24" />
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold">{profile ? `${CLASS_LABEL[profile.classId]} · ${weaponsLabel(profile.weapons)}` : 'Not enrolled'}</p>
+        {profile ? <>
+          <p className="flex items-center gap-1.5 text-[14px] font-semibold">{CLASS_LABEL[profile.classId]}<WeaponPair weapons={profile.weapons} size={20} /></p>
+          <p className="text-[11px] text-ink-on-dark-soft">{weaponsLabel(profile.weapons)}</p>
+        </> : <p className="text-[13px] font-semibold">Not enrolled</p>}
         {profile && <><p className="mt-0.5 text-[12px] text-ink-on-dark-soft">{formatRpgLevel(rpgMemberLevel(profile))}{profile.level < RPG_TIER_MAX_LEVEL ? ` · ${profile.exp}/${rpgExpToNext(profile.level)} EXP` : ` · ${profile.exp} EXP banked`}</p>
           {profile.level < RPG_TIER_MAX_LEVEL && <RpgBar className="mt-1" value={profile.exp} max={rpgExpToNext(profile.level)} tone="exp" />}</>}
         {!profile && <p className="mt-1 text-[11px] text-ink-on-dark-soft">{rpgClassOptions(template.aptitudes).map((c) => CLASS_LABEL[c]).join(' or ') || 'No class: needs an A running style'}</p>}
@@ -319,8 +338,9 @@ export function RpgPartyEditScreen() {
   const owned = useGame((state) => state.umas)
   const row = account.presets.find((p) => p.id === presetId)
   const [name, setName] = useState(row?.data.name ?? '')
+  const [picking, setPicking] = useState<number | null>(null)
   useEffect(() => { setName(row?.data.name ?? '') }, [row?.data.name])
-  if (!row) return <ScreenState title="Party unavailable" detail="Choose one of the five parties." action={{ label: 'Parties', to: '/rpg' }} />
+  if (!row) return <ScreenState title="Party unavailable" detail="Choose one of your parties." action={{ label: 'Parties', to: '/rpg' }} />
   const preset = row.data
   const profiles = rpgOutfitProfiles(account)
   const label = (id: string) => content.umas.byId.get(id)?.name ?? id
@@ -331,8 +351,11 @@ export function RpgPartyEditScreen() {
     slots[index] = profile ? { outfitId, loadout: [], familiar: 'greatsword' } : null
     save({ ...preset, slots })
   }
-  // Every other party gives up a member that moves here; the picker lists all enrolled Umas.
-  const enrolled = [...account.outfits.keys()].filter((id) => owned[id]).sort((a, b) => label(a).localeCompare(label(b)))
+  // The picker offers enrolled Umas that no party holds yet, highest RPG level first.
+  const enrolled = [...account.outfits.keys()].filter((id) => owned[id])
+  const levelOf = (id: string) => rpgMemberLevel(profiles.get(id)!)
+  const available = rpgPartyCandidates(enrolled, account.presets.map((p) => p.data.slots), levelOf, label)
+  const profileLink = (id: string) => `/rpg/roster/${encodeURIComponent(id)}?party=${presetId}`
   return <RpgFrame back={isFull(preset) ? `/rpg/party/${presetId}` : '/rpg'} backLabel="Back" eyebrow="Edit party" title={preset.name} guide="party">
     <label className="block text-[11px] font-semibold text-ink-on-dark-soft">Name
       <input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} onBlur={() => { if (name.trim() && name !== preset.name) save({ ...preset, name: name.trim() }) }}
@@ -341,19 +364,42 @@ export function RpgPartyEditScreen() {
     {enrolled.length === 0 && <RpgCard className="mt-3"><p className="text-sm">Enroll Umas in the Roster first.</p><Link to="/rpg/roster" className="mt-2 flex min-h-11 items-center text-accent">Open Roster</Link></RpgCard>}
     <div className="mt-3 space-y-2">{preset.slots.map((slot, index) => {
       const profile = slot ? profiles.get(slot.outfitId) : null
-      const other = (id: string) => account.presets.find((p) => p.id !== presetId && p.data.slots.some((s) => s?.outfitId === id))?.data.name
-      const options = [{ value: '', label: 'Empty' }, ...enrolled.filter((id) => id === slot?.outfitId || !preset.slots.some((s) => s?.outfitId === id))
-        .map((id) => ({ value: id, label: `${label(id)} · ${formatRpgLevel(rpgMemberLevel(profiles.get(id)!))}${other(id) ? ` · in ${other(id)}` : ''}` }))]
       return <RpgCard key={index}>
-        <div className="grid grid-cols-[56px_1fr] gap-3">
-          {slot && profile ? <OutfitIcon content={content} outfitId={slot.outfitId} name={label(slot.outfitId)} profile={profile} className="aspect-square w-14" />
-            : <span className="flex aspect-square w-14 items-center justify-center rounded-md border border-dashed border-hairline-dark text-lg text-ink-on-dark-soft">{index + 1}</span>}
-          <RpgSelect label={`Slot ${index + 1}`} value={slot?.outfitId ?? ''} options={options} onChange={(id) => setSlot(index, id)} />
+        <div className="flex items-center gap-3">
+          {slot && profile ? <Link to={profileLink(slot.outfitId)} aria-label={`${label(slot.outfitId)}: profile and skill trees`} className="w-14 shrink-0">
+            <OutfitIcon content={content} outfitId={slot.outfitId} name={label(slot.outfitId)} profile={profile} className="aspect-square w-14" /></Link>
+            : <button type="button" onClick={() => setPicking(index)} aria-label={`Add a member to slot ${index + 1}`}
+              className="flex aspect-square w-14 shrink-0 items-center justify-center rounded-md border border-dashed border-hairline-dark text-xl text-ink-on-dark-soft">+</button>}
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold tracking-wide text-ink-on-dark-soft uppercase">Slot {index + 1}</p>
+            {slot && profile ? <>
+              <Link to={profileLink(slot.outfitId)} className="flex min-h-6 items-center gap-1 text-[14px] font-semibold"><span className="truncate">{label(slot.outfitId)}</span><ChevronRightIcon size={16} className="shrink-0 text-accent" /></Link>
+              <p className="text-[11px] text-ink-on-dark-soft">{formatRpgLevel(rpgMemberLevel(profile))} · {CLASS_LABEL[profile.classId]}</p>
+            </> : <p className="text-[13px] text-ink-on-dark-soft">Empty</p>}
+          </div>
+          <div className="flex shrink-0 flex-col gap-1">
+            <GhostButton onClick={() => setPicking(index)}>{slot ? 'Swap' : 'Add'}</GhostButton>
+            {slot && <GhostButton aria-label={`Remove ${label(slot.outfitId)} from the party`} onClick={() => setSlot(index, '')}>Remove</GhostButton>}
+          </div>
         </div>
         {slot && profile && <SlotLoadout presetId={presetId} profile={profile} slot={slot} />}
       </RpgCard>
     })}</div>
     {isFull(preset) && <Link to={`/rpg/party/${presetId}`} className="mt-4 flex min-h-12 items-center justify-center rounded-sm bg-accent text-[15px] font-semibold text-ink">Choose a chapter</Link>}
+    {picking !== null && <RpgModalFocus onClose={() => setPicking(null)}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => setPicking(null)}>
+      <div role="dialog" aria-modal="true" aria-label={`Choose a member for slot ${picking + 1}`} onClick={(e) => e.stopPropagation()}
+        className="pb-safe max-h-[80dvh] w-full overflow-y-auto rounded-t-lg border border-hairline-dark bg-stage-soft p-4">
+        <p className="text-sm font-semibold">Slot {picking + 1}</p>
+        <p className="text-[11px] text-ink-on-dark-soft">Enrolled Umas not in any party, highest level first.</p>
+        {available.length ? <div className="mt-3 grid grid-cols-4 gap-x-2 gap-y-3">{available.map((id) =>
+          <button key={id} type="button" onClick={() => { setSlot(picking, id); setPicking(null) }} aria-label={`${label(id)} · ${formatRpgLevel(levelOf(id))}`} className="min-w-0">
+            <OutfitIcon content={content} outfitId={id} name={label(id)} profile={profiles.get(id)} />
+            <span className="mt-1 block truncate text-center text-[11px] font-semibold">{label(id)}</span>
+            <span className="block text-center text-[10px] text-ink-on-dark-soft">{formatRpgLevel(levelOf(id))}</span>
+          </button>)}</div>
+          : <><p className="mt-3 text-sm">Every enrolled Uma is already in a party. Enroll more in the Roster, or remove one from another party first.</p>
+            <Link to="/rpg/roster" className="mt-2 flex min-h-11 items-center text-accent">Open Roster</Link></>}
+      </div></div></RpgModalFocus>}
   </RpgFrame>
 }
 
@@ -391,7 +437,7 @@ export function RpgLaunchScreen() {
   const { content, account, chapters, release, retryRelease } = useRpg()
   const navigate = useNavigate()
   const row = account.presets.find((p) => p.id === presetId)
-  if (!row) return <ScreenState title="Party unavailable" detail="Choose one of the five parties." action={{ label: 'Parties', to: '/rpg' }} />
+  if (!row) return <ScreenState title="Party unavailable" detail="Choose one of your parties." action={{ label: 'Parties', to: '/rpg' }} />
   const preset = row.data
   const profiles = rpgOutfitProfiles(account)
   const level = partyLevel(preset, profiles)

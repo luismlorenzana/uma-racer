@@ -10,7 +10,8 @@ import { rpgNode } from './catalog'
 /** Class-era RPG rows (D282). Schema 1 and 2 rows still parse and migrate on the way in. */
 export const RPG_SAVE_SCHEMA_VERSION = 3
 export const RPG_PARTY_SIZE = 5
-export const RPG_PRESET_COUNT = 5
+/** Ten saved parties (D284). */
+export const RPG_PRESET_COUNT = 10
 /** Six branches of five core nodes plus six variants fit; the bound leaves headroom. */
 export const RPG_MAX_TREE_NODES = 40
 export const RPG_MAX_SELECTED_PATH = 64
