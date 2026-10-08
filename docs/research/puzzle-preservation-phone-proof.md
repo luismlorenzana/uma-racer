@@ -32,7 +32,7 @@ was observed and all three controls measured48px high. These are viewport captur
 
 ## Automated evidence
 
-`pnpm lint`, `pnpm test` (**1,462 tests across six packages**) and `pnpm build` pass on main's latest RPG changes.
+`pnpm lint`, `pnpm test` (**1,464 tests across six packages**) and `pnpm build` pass on main's latest RPG changes.
 Eight pure preservation, five legacy Spark, fifteen API repository and ten client coordinator tests cover:
 
 - Exact levels, source-A preference/fallback, CL1→0/CL10→9 debt and one unit rather than one debit per preset/style.
@@ -44,6 +44,11 @@ Eight pure preservation, five legacy Spark, fifteen API repository and ten clien
 - Lost freeze/batch/final replies, database reopen, canonical reconciliation without erasing unrelated local work,
   atomic future-outfit schema16 stamping, unchanged Friendship journals and explicit recovery of unknown old runs.
 - Retired cached-client rejection, protected canonical CL on valid new racing edits and strict zero-EXP save16.
+
+Two additional entry-path tests cover every DEV proof route and reject similar-looking account routes. Final harness
+review caught this new route mounting the ordinary providers before its in-memory screen; localhost API requests
+were refused (no local API backend). The entry guard now bypasses auth/content/game providers and service-worker
+registration, and all screenshots were recaptured after that fix. Production release flags never changed.
 
 `pnpm sim:puzzles` passes600 campaign battles with unchanged exact kind/colour/PL/hash envelopes. Existing known
 T116 balance gaps remain. `pnpm sim:spark` passes900 runs:77% clears, mean Drive60, style gap4%, paid TL1→10 median6
