@@ -352,6 +352,20 @@ Sprint, Mile, Medium and Long (D252–D254). Its Training Level, purchased Extra
 are shared; its card set, assignments, active Extra stats and skill loadout belong to each preset. Training edits the
 selected preset, and a race reads the preset of its distance. There is no configuration history within a preset.
 
+**Loading from the scenario before (D288).** Once a page has nothing left to unlock, a small Load button beside its
+progress line brings that page over from the same distance preset one scenario earlier, after a confirmation:
+
+- **Constellation** (every card node open): the card set, and each card node takes the card at the same relative spot
+  of the earlier tree, so every card keeps its share of a tree of any size. Nodes past a card's cap go to the set's
+  card holding the fewest; empty nodes stay empty; lineage is untouched.
+- **Inspiration** (six slots and twelve gold moons bought): the six lineage slots exactly, empty ones included, checked
+  like any pick (owned, or a Legends slot; repeat rules). Card nodes are untouched.
+- **Skills** (both of the above): the loadout in its order, keeping each skill this library has while the SP lasts;
+  the toast counts any skipped.
+
+The button hides on the first scenario, when the earlier preset has nothing on that page, and in read-only previews.
+Loading is one synced write, as free and reversible as any other edit.
+
 Reconfiguration never costs tickets and never touches Training Level or card levels. Card and lineage nodes and which
 Extra stats are on remain free and reversible. Buying an Extra stat node is the one spend: it consumes its crops
 atomically, for good; a stale screen reloads the grid without spending.

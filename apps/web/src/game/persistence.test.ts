@@ -2,7 +2,8 @@ import 'fake-indexeddb/auto'
 import { freezeAdvance, advanceOutfit, BANK_KEY, bankData } from '../../../api/src/save/inspiration-advance'
 import type { EntityRecord as ApiEntityRecord } from '../../../api/src/save/save.types'
 
-import { RPG_CLASS_WEAPONS, TRAINING_LEVEL_UP_TICKET_ID, activeScenario, constellationTemplate, enrollRpgOutfit, legacyProduceNodeIds, rpgClassOptions } from '@racer/domain'
+import { INSPIRATION_SLOTS, RPG_CLASS_WEAPONS, TRAINING_LEVEL_UP_TICKET_ID, activeScenario, cardNodeCap, constellationTemplate, createScenarioTraining, enrollRpgOutfit,
+  inspirationGoldKey, legacyProduceNodeIds, rpgClassOptions, scenarioAt } from '@racer/domain'
 import { badgeSubject } from './badges'
 import { umaFixture, withRun } from './__fixtures__/save'
 import {
@@ -907,6 +908,41 @@ describe('game bootstrap coordinator', () => {
     expect(activeScenario((await db.umas.get('u00'))!.data).loadoutSkillIds).toEqual([paidSkill.id])
     expect(await db.outbox.where('[kind+id]').equals(['umas', 'u00']).count()).toBe(1)
     await expect(runtime.setUmaLoadout('u00', [paidSkill.id, paidSkill.id])).rejects.toThrow(/duplicate/)
+  })
+
+  it('loads a fully unlocked page of a preset from the same preset one scenario earlier, in one queued write (D288)', async () => {
+    const loaded = content(6)
+    vi.spyOn(saveApi, 'load').mockResolvedValue({ entities: [], logs: [], serverTime: 1 })
+    await runtime.start(loaded)
+    const current = useGame.getState().umas.u00!
+    const preset = current.activePreset
+    const cardSetIds = loaded.cards.items.map((item) => item.id)
+    const nodes = constellationTemplate(1).nodes.filter((node) => node.kind === 'card')
+    const ura = createScenarioTraining(1)
+    const build = { cardSetIds, activeExtraStats: [], loadoutSkillIds: [paidSkill.id], assignments: {
+      ...Object.fromEntries(nodes.map((node, i) => [node.id, { kind: 'card' as const, cardId: cardSetIds[i % 6]! }])),
+      parent0: { kind: 'lineage' as const, templateId: 'u01' } } }
+    const inspiration = { slots: [...INSPIRATION_SLOTS], golds: INSPIRATION_SLOTS.flatMap((slot) => [0, 1].map((i) => inspirationGoldKey(slot, i))) }
+    const unity = (trainingLevel: number) => ({ ...createScenarioTraining(2), trainingLevel, inspiration, started: true })
+    const put = async (save: UmaSave) => { const row = await db.umas.get('u00'); await db.umas.put({ ...row!, data: save }); replaceUma(save) }
+    const twoTiers = (trainingLevel: number): UmaSave => ({ ...current, level: 11, exp: 0, unlockedTier: 2, scenarios: [{ ...ura, presets: { ...ura.presets, [preset]: build } }, unity(trainingLevel)] })
+
+    await put(twoTiers(7))
+    await expect(runtime.loadPresetPage('u00', 'constellation')).rejects.toThrow(/Unlock everything/)
+    await put(twoTiers(10))
+    await db.outbox.clear()
+    await runtime.loadPresetPage('u00', 'constellation')
+    await runtime.loadPresetPage('u00', 'inspiration')
+    expect(await runtime.loadPresetPage('u00', 'skills')).toEqual({ skipped: 0 })
+    const run = scenarioAt((await db.umas.get('u00'))!.data, 2)!
+    expect(run.loadoutSkillIds).toEqual([paidSkill.id])
+    expect(run.cardSetIds).toEqual(cardSetIds)
+    const held = Object.values(run.assignments).filter((a) => a.kind === 'card')
+    expect(held).toHaveLength(constellationTemplate(2).cardNodes)
+    expect(Math.max(...cardSetIds.map((id) => held.filter((a) => a.kind === 'card' && a.cardId === id).length))).toBeLessThanOrEqual(cardNodeCap(2))
+    expect(run.assignments.parent0).toEqual({ kind: 'lineage', templateId: 'u01' })
+    expect(scenarioAt(useGame.getState().umas.u00!, 2)!.assignments).toEqual(run.assignments)
+    expect(await db.outbox.where('[kind+id]').equals(['umas', 'u00']).count()).toBe(1)
   })
 
   it('rebases a mutation queued during a stale request without acknowledging or overwriting it', async () => {

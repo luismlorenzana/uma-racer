@@ -28,6 +28,13 @@ export async function setConstellationNode(
   await gameRuntime.setConstellationNode(id, nodeId, assignment, tier)
 }
 
+/** Loads a page of a preset from the same preset one scenario earlier (D288). */
+export async function loadPresetPage(id: string, page: import('@racer/domain').PresetCarryPage, tier?: number,
+  preset?: import('@racer/domain').DistanceCategory): Promise<{ skipped: number }> {
+  const { gameRuntime } = await import('./runtime')
+  return gameRuntime.loadPresetPage(id, page, tier, preset)
+}
+
 export async function unlockExtraStat(input: { umaId: string; tier: number; nodeId: import('@racer/domain').ExtraStatNodeId }) {
   return criticalGameplayAction(async () => {
     const { gameRuntime } = await import('./runtime')

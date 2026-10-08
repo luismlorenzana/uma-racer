@@ -22,6 +22,7 @@ import { setUmaLoadout } from '../game/actions'
 import { safeReturnPath } from '../game/bond-links'
 import { useChosenTier } from '../game/scenario-choice'
 import { PresetBadge } from '../ui/PresetBadge'
+import { PresetLoadButton } from '../ui/PresetLoadButton'
 import { joinUma } from '../game/view'
 import { useGame } from '../game/store'
 import { Chip } from '../ui/Chip'
@@ -280,7 +281,10 @@ export function UmaSkillsScreen() {
       <div className="sticky top-0 z-10 -mx-4 bg-page/90 px-4 pt-1 pb-2 backdrop-blur">
         <div className="flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="font-display flex items-center gap-2 text-2xl font-bold tracking-tight">Skills <PresetBadge preset={uma.run.preset} /></h1>
+            <div className="flex items-center gap-1">
+              <h1 className="font-display flex items-center gap-2 text-2xl font-bold tracking-tight">Skills <PresetBadge preset={uma.run.preset} /></h1>
+              <PresetLoadButton save={save} run={uma.run} page="skills" />
+            </div>
             <p className="truncate text-[12px] text-ink-soft">{uma.template.name}{race ? ` · for ${race.name}, ${race.distance} m ${race.surface}` : ''}</p>
           </div>
           <div className="text-right">

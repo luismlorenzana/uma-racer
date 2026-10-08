@@ -19,6 +19,13 @@ import {
   constellationTemplate,
   isNodeUnlocked,
   lineageSlotEligibility,
+  carryConstellation,
+  carryInspiration,
+  carrySkillLoadout,
+  presetCarrySource,
+  supportDeckIssueMessage,
+  validateSupportDeck,
+  type PresetCarryPage,
   type ExtraStatNodeId,
   type NodeAssignment,
   type UmaSave,
@@ -567,6 +574,59 @@ export class GameRuntime {
     await this.refreshBadges()
     await this.refreshPending()
     this.schedule()
+  }
+
+  /**
+   * Loads one page of a preset from the same preset in the scenario before (D288): the card set and card nodes, the
+   * lineage, or the loadout. Only a page with nothing left to unlock loads; returns the skills a loadout had to skip.
+   */
+  async loadPresetPage(id: string, page: PresetCarryPage, tier?: number, preset?: DistanceCategory): Promise<{ skipped: number }> {
+    const generation = this.generation
+    const content = this.content
+    const state = useGame.getState()
+    const uma = state.umas[id]
+    const template = content?.umas.byId.get(id)
+    if (!content || state.status !== 'ready' || !uma || !template) throw new Error('Preset Uma must be owned')
+    const run = trainedScenario(uma, tier, preset ?? uma.activePreset)
+    const from = presetCarrySource(uma, run, page)
+    if (!from) throw new Error('Unlock everything on this page first, in a scenario after another')
+    let next = run
+    let skipped = 0
+    if (page === 'constellation') {
+      const validation = validateSupportDeck({ tier: run.tier, orderedCardIds: from.cardSetIds, ownedCards: Object.values(state.cards),
+        templates: content.cards.byId, allowEmpty: true })
+      if (!validation.valid) throw new Error(supportDeckIssueMessage(validation.issues[0]!))
+      next = carryConstellation(from, run)
+    } else if (page === 'inspiration') {
+      next = carryInspiration(from, run, { child: template, umas: content.umas.byId, owned: (umaId) => Boolean(state.umas[umaId]) })
+    } else {
+      const derived = deriveUma({ uma, tier: run.tier, preset: run.preset, umaTemplate: template, cardSaves: new Map(Object.entries(state.cards)),
+        cardTemplates: content.cards.byId, umaTemplates: content.umas.byId, skillTemplates: content.skills.byId })
+      const carried = carrySkillLoadout(derived, template, content.skills.byId, from.loadoutSkillIds)
+      next = { ...run, loadoutSkillIds: carried.loadoutSkillIds }
+      skipped = carried.skipped
+    }
+    const nextUma = withScenarioView(uma, next)
+    if (!state.persistent) {
+      replaceUma(nextUma)
+      return { skipped }
+    }
+    const now = Date.now()
+    await db.transaction('rw', [db.umas, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
+      const row = await db.umas.get(id)
+      if (!row) throw new Error('Local Uma is missing')
+      if (JSON.stringify(row.data) !== JSON.stringify(uma)) throw new Error('Uma changed; reopen this page before loading')
+      await db.umas.put({ ...row, data: nextUma })
+      await queueInTransaction('umas', id, 'upsert', now)
+      // A loaded tree can be her Full House (T056).
+      if (page !== 'skills') await updateTrainingBadgeFacts({ content, uma: nextUma, sourceId: `preset-load:${id}:${run.tier}:${page}`, now })
+    })
+    if (generation !== this.generation) return { skipped }
+    replaceUma(nextUma)
+    await this.refreshBadges()
+    await this.refreshPending()
+    this.schedule()
+    return { skipped }
   }
 
   /** Buys a unit's next Extra stat node of one stat with that scenario's crop (D235). Needs local storage. */

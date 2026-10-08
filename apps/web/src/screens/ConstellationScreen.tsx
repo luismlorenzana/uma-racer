@@ -51,6 +51,7 @@ import { useInspiration } from '../game/use-inspiration'
 import { InspirationBankPanel } from '../ui/InspirationBankPanel'
 import { reserveInspirationUnlock } from '../game/inspiration-host'
 import { ClLevelUpButton, useClCutover, useClPreparation } from '../ui/puzzles/ClLevelUp'
+import { PresetLoadButton } from '../ui/PresetLoadButton'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
@@ -254,10 +255,12 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
             {' '}Those nodes pay nothing: move them to another card.
           </p>
         )}
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-center justify-between gap-2">
           <p className="text-[11px] font-semibold">
             {viewMode === 'constellation' ? 'Card constellation' : 'Inspiration'} <span className="text-ink-faint">· {filledCount} filled · {openCount} of {treeNodes} unlocked</span>
           </p>
+          {/* Once nothing is left to unlock here, the same preset one scenario earlier can be loaded (D288). */}
+          {!preview && <PresetLoadButton save={save} run={run} page={viewMode} />}
         </div>
         {viewMode === 'inspiration' && (!preview || previewBank) && <InspirationBankPanel tier={run.tier} preview={previewBank} />}
         {viewMode === 'inspiration' && <div className="mt-1 flex flex-wrap gap-1">
