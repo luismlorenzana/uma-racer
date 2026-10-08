@@ -108,6 +108,11 @@ const oldProfile = (level: number, exp: number) => ({ outfitId: 'u1', sourceCont
   growthRates: template('u1').growthRates, sourceAptitudes: template('u1').aptitudes, affinities: { ice: 'A', light: 'A', fire: 'A', dark: 'A' },
   style: 'front', weapon: 'greatsword', defaultSignature: 'fire', tier: 1, level, exp,
   tree: [{ tier: 1, weapon: 'greatsword', element: 'fire', depth: 1, branch: 'foundation', level: 2 }], legacy: [] })
+/** A class-era Brawler at a level, as schema 3 stores her (D282). */
+const oldProfileClass = (level: number) => {
+  const { affinities: _a, style: _s, weapon: _w, defaultSignature: _d, ...rest } = oldProfile(level, 40)
+  return { ...rest, classId: 'brawler', weapons: ['greatsword', 'spear'], tree: [], legacy: [] }
+}
 const legacyDb = (version: number) => {
   const legacy = new Dexie('uma-racer')
   legacy.version(version).stores(Object.fromEntries(db.tables.filter((t) => (version >= 27 || t.name !== 'rpgFights') && !/^(puzzle|pendingPuzzle|constellationBank)/.test(t.name)).map((table) => [table.name,
@@ -117,25 +122,55 @@ const legacyDb = (version: number) => {
 
 describe('class upgrade (Dexie v29, D282)', () => {
   afterEach(() => db.close())
-  it('gives outfits a class keeping levels, clears loadouts and closes a fight left open under engine v3', async () => {
+  it('gives outfits a class, clears loadouts and closes a fight left open under engine v3', async () => {
     await db.delete()
     const legacy = legacyDb(27)
     await legacy.open()
     await legacy.table('rpgOutfits').put({ id: 'u1', version: 7, data: { schemaVersion: 2, profile: oldProfile(14, 40), projectionRevision: 9 } })
-    await legacy.table('rpgPresets').put({ id: 'party-1', version: 2, data: { schemaVersion: 2, presetId: 'party-1', name: 'Mine',
+    await legacy.table('rpgPresets').put({ id: 'party-2', version: 2, data: { schemaVersion: 2, presetId: 'party-2', name: 'Mine',
       slots: [{ outfitId: 'u1', signature: 'fire', loadout: [{ tier: 1, weapon: 'greatsword', element: 'fire', depth: 1, branch: 'foundation' }] }, null, null, null, null],
       foregroundChapterId: 'ura-finale' } })
-    const battleId = 'rpg-battle:party-1:ura-finale:3'
-    await legacy.table('rpgCheckpoints').put({ id: 'party-1:ura-finale', version: 5, data: { schemaVersion: 2, presetId: 'party-1', chapterId: 'ura-finale',
+    const battleId = 'rpg-battle:party-2:ura-finale:3'
+    await legacy.table('rpgCheckpoints').put({ id: 'party-2:ura-finale', version: 5, data: { schemaVersion: 2, presetId: 'party-2', chapterId: 'ura-finale',
       wins: { start: 1, a1r1c1: 2 }, mp: { u1: 9 }, battle: { battleId, nodeId: 'a1r1c2', startedAt: 1, input: { version: 3, seed: 1 } }, battles: 3, clearedAt: null, updatedAt: 1 } })
     await legacy.table('rpgFights').put({ id: battleId, actions: [], updatedAt: 1 })
     legacy.close()
     await db.open()
-    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 3, projectionRevision: 10,
-      profile: { classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 14, exp: 40, tree: [], legacy: [] } })
-    expect((await db.rpgPresets.get('party-1'))!.data).toEqual({ schemaVersion: 3, presetId: 'party-1', name: 'Mine', foregroundChapterId: 'ura-finale',
+    // Version 30 (D285) then restarts levels; the class migration's level carry is pinned in the domain save tests.
+    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 3,
+      profile: { classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 1, exp: 0, tree: [], legacy: [] } })
+    expect((await db.rpgPresets.get('party-2'))!.data).toEqual({ schemaVersion: 3, presetId: 'party-2', name: 'Mine', foregroundChapterId: 'ura-finale',
       slots: [{ outfitId: 'u1', loadout: [], familiar: 'greatsword' }, null, null, null, null] })
-    expect((await db.rpgCheckpoints.get('party-1:ura-finale'))!.data).toMatchObject({ battle: null, wins: { a1r1c1: 2 }, mp: { u1: 9 } })
+    expect((await db.rpgCheckpoints.get('party-2:ura-finale'))!.data).toMatchObject({ battle: null, wins: { a1r1c1: 2 }, mp: { u1: 9 } })
+    expect(await db.rpgFights.count()).toBe(0)
+    expect((await db.outbox.toArray()).map((r) => `${r.op}:${r.kind}/${r.id}`).sort()).toEqual([
+      'upsert:rpgCheckpoints/party-2:ura-finale', 'upsert:rpgOutfits/u1', 'upsert:rpgPresets/party-2'])
+  })
+})
+
+describe('owner RPG reset (Dexie v30, D285)', () => {
+  afterEach(() => db.close())
+  it("returns every Uma to Lv1 with empty trees, clears loadouts and Party 1's URA Finale run only", async () => {
+    await db.delete()
+    const legacy = legacyDb(29)
+    await legacy.open()
+    const learned = { ...oldProfileClass(14), tree: [{ tier: 1, id: 'greatsword.fire.1' }, { tier: 1, id: 'greatsword.fire.2' }] }
+    await legacy.table('rpgOutfits').put({ id: 'u1', version: 7, data: { schemaVersion: 3, profile: learned, projectionRevision: 9 } })
+    await legacy.table('rpgPresets').put({ id: 'party-1', version: 2, data: { schemaVersion: 3, presetId: 'party-1', name: 'Mine', foregroundChapterId: 'ura-finale',
+      slots: [{ outfitId: 'u1', loadout: [{ tier: 1, id: 'greatsword.fire.2' }], familiar: 'bow' }, null, null, null, null] } })
+    const run = (presetId: string, battle: unknown) => ({ schemaVersion: 2, presetId, chapterId: 'ura-finale', wins: { start: 1, a1r1c1: 3, 'fire-boss': 1 },
+      mp: { u1: 9 }, battle, battles: 12, clearedAt: 5, updatedAt: 1 })
+    const battleId = 'rpg-battle:party-1:ura-finale:12'
+    await legacy.table('rpgCheckpoints').put({ id: 'party-1:ura-finale', version: 5, data: run('party-1', { battleId, nodeId: 'a1r1c2', startedAt: 1, input: { version: 4, seed: 1 } }) })
+    await legacy.table('rpgCheckpoints').put({ id: 'party-2:ura-finale', version: 3, data: run('party-2', null) })
+    await legacy.table('rpgFights').put({ id: battleId, actions: [], updatedAt: 1 })
+    legacy.close()
+    await db.open()
+    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 3, projectionRevision: 10,
+      profile: { classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 1, exp: 0, tree: [], legacy: [] } })
+    expect((await db.rpgPresets.get('party-1'))!.data.slots[0]).toEqual({ outfitId: 'u1', loadout: [], familiar: 'bow' })
+    expect((await db.rpgCheckpoints.get('party-1:ura-finale'))!.data).toMatchObject({ wins: { start: 1 }, mp: {}, battle: null, clearedAt: null, battles: 12 })
+    expect((await db.rpgCheckpoints.get('party-2:ura-finale'))!.data).toMatchObject({ wins: { a1r1c1: 3 }, clearedAt: 5 })
     expect(await db.rpgFights.count()).toBe(0)
     expect((await db.outbox.toArray()).map((r) => `${r.op}:${r.kind}/${r.id}`).sort()).toEqual([
       'upsert:rpgCheckpoints/party-1:ura-finale', 'upsert:rpgOutfits/u1', 'upsert:rpgPresets/party-1'])

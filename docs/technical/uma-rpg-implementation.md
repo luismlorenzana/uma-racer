@@ -30,7 +30,7 @@ portraits); its first-map actor kits are shape-checked, never played.
 | Row | Kind | Notes |
 |---|---|---|
 | Outfit | `rpgOutfits/{outfitId}` schema 3 | Frozen enrollment inputs, class, weapons, tier/level/EXP, learned nodes `{ tier, id }`, legacy |
-| Party | `rpgPresets/party-{1..5}` schema 3 | Five nullable slots (loadout of node refs, Familiar form); `foregroundChapterId` = last opened chapter |
+| Party | `rpgPresets/party-{1..10}` schema 3 (ten parties, D284) | Five nullable slots (loadout of node refs, Familiar form); `foregroundChapterId` = last opened chapter |
 | Run | `rpgCheckpoints/{presetId}:{scenarioId}` schema 2 | `wins` per node, `mp` per outfit, `battle` (id, node, frozen `BattleInput` v4), `battles`, `clearedAt` |
 | Result | `rpgResults/{battleId}` schema 2 log | Per-member EXP before/after, tokens, rounds |
 | Promotion | `rpgPromotions` log | Schema 2 archives node refs; schema 1 archived element-tree skills |
@@ -58,6 +58,10 @@ Conflicts adopt the server copy (`mergeRpgEntity`), never an older schema over a
 
 ## Migrations
 
+- **Dexie v30 (D285):** the owner's one-time restart: every enrolled outfit returns to Tier 1 Lv1 with no EXP, tree
+  or legacy skills (class and weapons stay), parties keep their members with empty loadouts, and the
+  `party-1:ura-finale` run clears its wins, carried MP, open fight (and journal) and clear time while keeping its fight
+  counter, so new battle ids never reuse a result id. Every changed row is queued.
 - **Dexie v29 (D282):** outfits schema 1/2 → 3 take the first class open to their A running styles and its first weapon
   set, keep tier, level and EXP (schema 1 restarts at Lv1 as D263 did) and clear trees and legacy; parties → 3 clear
   loadouts and set every Familiar to Greatsword; a run's fight left open under engine v3 is closed and its journal

@@ -433,6 +433,11 @@ export class RacerDb extends Dexie {
       puzzleOutfits: 'id', puzzlePresets: 'id', puzzleCheckpoints: 'id', constellationBank: 'id', puzzleCohort: 'id',
       puzzleResults: 'id, createdAt', puzzleOperations: 'id, createdAt', pendingPuzzleOperations: 'id, &order, status, queuedAt',
       puzzleJournals: 'id', puzzleArchives: 'id, createdAt', puzzleBases: 'id', puzzlePreferences: 'id' }).upgrade(migrateRpgClasses)
+    // The owner asked to restart the RPG from scratch once (D285): every Uma back to Lv1, Party 1's URA Finale run cleared.
+    this.version(30).stores({ ...storesWithBattleJournal, inspirationBank: 'id', rpgFights: 'id',
+      puzzleOutfits: 'id', puzzlePresets: 'id', puzzleCheckpoints: 'id', constellationBank: 'id', puzzleCohort: 'id',
+      puzzleResults: 'id, createdAt', puzzleOperations: 'id, createdAt', pendingPuzzleOperations: 'id, &order, status, queuedAt',
+      puzzleJournals: 'id', puzzleArchives: 'id, createdAt', puzzleBases: 'id', puzzlePreferences: 'id' }).upgrade(resetRpgProgress)
   }
 }
 
@@ -465,6 +470,42 @@ async function migrateRpgCampaign(tx: Transaction): Promise<void> {
     await tx.table('pendingRpgCommands').delete(row.id)
   }
   await Promise.all(['rpgBattleJournals', 'rpgBattleClaims', 'rpgBattleArchives'].map((name) => tx.table(name).clear()))
+}
+
+/** RPG chapter the owner's reset clears, for its first party (D285). */
+export const RPG_RESET_RUN = 'party-1:ura-finale'
+
+/**
+ * D285: every enrolled Uma returns to Tier 1 Lv1 with no EXP, skills or legacy (class and weapons stay), every party
+ * keeps its members with empty loadouts, and Party 1's URA Finale run starts over. Its fight counter stays, so new
+ * fights never reuse an old result id. Results, promotions and tokens already paid stay as history.
+ */
+async function resetRpgProgress(tx: Transaction): Promise<void> {
+  const outbox = tx.table('outbox')
+  const queuedAt = Date.now()
+  const queue = async (kind: EntityKind, id: string) => {
+    await outbox.where('[kind+id]').equals([kind, id]).delete()
+    await outbox.add({ kind, id, op: 'upsert', queuedAt })
+  }
+  for (const row of await tx.table('rpgOutfits').toArray() as VersionedRow<RpgOutfitSave>[]) {
+    if (row.data?.schemaVersion !== 3) continue
+    const { profile } = row.data
+    if (profile.tier === 1 && profile.level === 1 && profile.exp === 0 && !profile.tree.length && !profile.legacy.length) continue
+    await tx.table('rpgOutfits').put({ ...row, data: { ...row.data, projectionRevision: row.data.projectionRevision + 1,
+      profile: { ...profile, tier: 1, level: 1, exp: 0, tree: [], legacy: [] } } })
+    await queue('rpgOutfits', row.id)
+  }
+  for (const row of await tx.table('rpgPresets').toArray() as VersionedRow<RpgPresetSave>[]) {
+    if (row.data?.schemaVersion !== 3 || row.data.slots.every((slot) => !slot || !slot.loadout.length)) continue
+    await tx.table('rpgPresets').put({ ...row, data: { ...row.data, slots: row.data.slots.map((slot) => slot && { ...slot, loadout: [] }) } })
+    await queue('rpgPresets', row.id)
+  }
+  const run = await tx.table('rpgCheckpoints').get(RPG_RESET_RUN) as VersionedRow<RpgRunSaveV2> | undefined
+  if (run?.data?.schemaVersion === 2) {
+    if (run.data.battle) await tx.table('rpgFights').delete(run.data.battle.battleId)
+    await tx.table('rpgCheckpoints').put({ ...run, data: { ...run.data, wins: { start: 1 }, mp: {}, battle: null, clearedAt: null, updatedAt: queuedAt } })
+    await queue('rpgCheckpoints', run.id)
+  }
 }
 
 async function migrateRpgClasses(tx: Transaction): Promise<void> {
