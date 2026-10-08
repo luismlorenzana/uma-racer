@@ -477,7 +477,7 @@ local archive/journal failure followed by same-owner retry. Failure injection
 after each of five outfit writes, checkpoint, stock/bank, result/movement receipt, pending/outbox, journal/archive and
 CL badge boundary proves all-or-none writes and post-durability scheduling. Initial invented host replay hash is
 `7771941afcb8fc1e`; pure engine hashes/math and `sim:puzzles` envelopes are unchanged. No physical-phone or real-account
-gameplay acceptance is claimed; T112–T116 remain, alongside pinned T109 real content.
+gameplay acceptance is claimed; T112 now supplies setup navigation, while T113–T116 and pinned T109 real content remain.
 
 T111 verification: lint/test/build pass (1,342 tests, including70 new real-host tests); `sim:puzzles` retains its288
 engine and600 campaign battles plus86,016 exact economic routes. Spark and Friendship Training simulations also pass.
