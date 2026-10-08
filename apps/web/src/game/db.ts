@@ -40,26 +40,23 @@ import {
   type LogKind,
   type PlayerProfile,
   type UmaSave,
-  type RpgOutfitSaveV1,
-  type RpgPresetSaveV1,
+  type RpgOutfitSave,
+  type RpgPresetSave,
   type RpgCheckpointSaveV1,
   type RpgResultEvidenceV1,
-  type RpgPromotionEvidenceV1,
+  type RpgPromotionEvidence,
   type RpgCommandReceiptV1,
   type RpgRunSaveV2,
   type RpgBattleResultV2,
   type BattleAction,
-  parseRpgOutfitSave,
-  parseRpgPresetSave,
-  rpgCampaignOutfit,
-  rpgCampaignPreset,
+  migrateRpgOutfitSave,
+  migrateRpgPresetSave,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Table, type Transaction } from 'dexie'
 import type { AlbumPrefs } from './album/prefs'
 import type { MinigameRunSnapshotV1, ReplayJournalV1 } from './minigame-journal'
 import type { RunTarget, StoredRunOutcome, StoredRunReward } from './minigame-host'
 import { localDay } from './store'
-import type { CombatAction } from '@racer/domain'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
 // outbox marker in one transaction before Zustand publishes it.
@@ -133,7 +130,8 @@ export interface RpgBattleJournalRow {
   retryOrdinal: number
   engineVersion: 1
   frozenHash: string
-  actions: CombatAction[]
+  /** First-map combat actions; the table is cleared and kept only for its schema. */
+  actions: unknown[]
   stateHash: string
   terminal: 'open' | 'win' | 'loss' | 'abandoned'
   commitStatus: 'none' | 'pending' | 'accepted' | 'conflict'
@@ -202,12 +200,12 @@ export class RacerDb extends Dexie {
   items!: EntityTable<VersionedRow<InventoryStackData>, 'id'>
   inspirationBank!: EntityTable<VersionedRow<InspirationBank>, 'id'>
   itemLedger!: EntityTable<LogRow<ItemLedgerEntry>, 'id'>
-  rpgOutfits!: EntityTable<VersionedRow<RpgOutfitSaveV1>, 'id'>
-  rpgPresets!: EntityTable<VersionedRow<RpgPresetSaveV1>, 'id'>
+  rpgOutfits!: EntityTable<VersionedRow<RpgOutfitSave>, 'id'>
+  rpgPresets!: EntityTable<VersionedRow<RpgPresetSave>, 'id'>
   /** Campaign runs (schema 2); first-map checkpoints (schema 1) are cleared by version 27. */
   rpgCheckpoints!: EntityTable<VersionedRow<RpgRunSaveV2>, 'id'>
   rpgResults!: EntityTable<LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>, 'id'>
-  rpgPromotions!: EntityTable<LogRow<RpgPromotionEvidenceV1>, 'id'>
+  rpgPromotions!: EntityTable<LogRow<RpgPromotionEvidence>, 'id'>
   rpgReceipts!: EntityTable<LogRow<RpgCommandReceiptV1>, 'id'>
   pendingRpgCommands!: EntityTable<PendingRpgCommandRow, 'id'>
   rpgBattleJournals!: EntityTable<RpgBattleJournalRow, 'id'>
@@ -401,6 +399,9 @@ export class RacerDb extends Dexie {
     // The campaign (D261–D263): RPG rows save locally and sync like the rest. Outfits restart at Lv1 once, parties
     // keep their members, first-map checkpoints and grouped commands retire; a queued Inspiration unlock lands locally.
     this.version(27).stores({ ...storesWithBattleJournal, inspirationBank: 'id', rpgFights: 'id' }).upgrade(migrateRpgCampaign)
+    // Classes (D267–D272): outfits take a class and restart their trees, parties clear loadouts, and a fight left open
+    // under engine v3 closes with no reward.
+    this.version(28).stores({ ...storesWithBattleJournal, inspirationBank: 'id', rpgFights: 'id' }).upgrade(migrateRpgClasses)
   }
 }
 
@@ -411,18 +412,7 @@ async function migrateRpgCampaign(tx: Transaction): Promise<void> {
     await outbox.where('[kind+id]').equals([kind, id]).delete()
     await outbox.add({ kind, id, op, queuedAt })
   }
-  for (const row of await tx.table('rpgOutfits').toArray() as VersionedRow<unknown>[]) {
-    const parsed = parseRpgOutfitSave(row.data)
-    if (!parsed || parsed.schemaVersion === 2) continue
-    await tx.table('rpgOutfits').put({ ...row, data: rpgCampaignOutfit(parsed) })
-    await queue('rpgOutfits', row.id)
-  }
-  for (const row of await tx.table('rpgPresets').toArray() as VersionedRow<unknown>[]) {
-    const parsed = parseRpgPresetSave(row.data)
-    if (!parsed || parsed.schemaVersion === 2) continue
-    await tx.table('rpgPresets').put({ ...row, data: rpgCampaignPreset(parsed) })
-    await queue('rpgPresets', row.id)
-  }
+  // Outfits and parties move straight to the class era in version 28.
   for (const row of await tx.table('rpgCheckpoints').toArray() as VersionedRow<{ schemaVersion?: number }>[]) {
     if (row.data?.schemaVersion !== 2) await tx.table('rpgCheckpoints').delete(row.id)
   }
@@ -444,6 +434,31 @@ async function migrateRpgCampaign(tx: Transaction): Promise<void> {
     await tx.table('pendingRpgCommands').delete(row.id)
   }
   await Promise.all(['rpgBattleJournals', 'rpgBattleClaims', 'rpgBattleArchives'].map((name) => tx.table(name).clear()))
+}
+
+async function migrateRpgClasses(tx: Transaction): Promise<void> {
+  const outbox = tx.table('outbox')
+  const queuedAt = Date.now()
+  const queue = async (kind: EntityKind, id: string) => {
+    await outbox.where('[kind+id]').equals([kind, id]).delete()
+    await outbox.add({ kind, id, op: 'upsert', queuedAt })
+  }
+  for (const [kind, migrate] of [['rpgOutfits', migrateRpgOutfitSave], ['rpgPresets', migrateRpgPresetSave]] as const) {
+    for (const row of await tx.table(kind).toArray() as VersionedRow<{ schemaVersion?: number }>[]) {
+      if (row.data?.schemaVersion === 3) continue
+      const next = migrate(row.data)
+      if (!next) continue
+      await tx.table(kind).put({ ...row, data: next })
+      await queue(kind, row.id)
+    }
+  }
+  for (const row of await tx.table('rpgCheckpoints').toArray() as VersionedRow<RpgRunSaveV2>[]) {
+    const battle = row.data?.battle
+    if (row.data?.schemaVersion !== 2 || !battle || (battle.input as { version?: number }).version === 4) continue
+    await tx.table('rpgFights').delete(battle.battleId)
+    await tx.table('rpgCheckpoints').put({ ...row, data: { ...row.data, battle: null, updatedAt: queuedAt } })
+    await queue('rpgCheckpoints', row.id)
+  }
 }
 
 /** An Uma's save-v13 re-levelling (D241): the levels it reached and the gate, if it reached one. */

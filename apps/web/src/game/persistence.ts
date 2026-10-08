@@ -49,12 +49,12 @@ import {
   deriveUma,
   upgradeGoalPlan,
   type UmaSave,
-  type RpgOutfitSaveV1,
-  type RpgPresetSaveV1,
+  type RpgOutfitSave,
+  type RpgPresetSave,
   type RpgRunSaveV2,
   type RpgBattleResultV2,
   type RpgResultEvidenceV1,
-  type RpgPromotionEvidenceV1,
+  type RpgPromotionEvidence,
   type RpgCommandReceiptV1,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -70,11 +70,11 @@ export interface LocalSnapshot {
   farm: FarmRow | null
   items: VersionedRow<InventoryStackData>[]
   itemLedger: LogRow<ItemLedgerEntry>[]
-  rpgOutfits: VersionedRow<RpgOutfitSaveV1>[]
-  rpgPresets: VersionedRow<RpgPresetSaveV1>[]
+  rpgOutfits: VersionedRow<RpgOutfitSave>[]
+  rpgPresets: VersionedRow<RpgPresetSave>[]
   rpgCheckpoints: VersionedRow<RpgRunSaveV2>[]
   rpgResults: LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>[]
-  rpgPromotions: LogRow<RpgPromotionEvidenceV1>[]
+  rpgPromotions: LogRow<RpgPromotionEvidence>[]
   rpgReceipts: LogRow<RpgCommandReceiptV1>[]
 }
 
@@ -139,11 +139,11 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   const itemLedgerRows = await db.itemLedger.toArray()
   const bankRow = await db.inspirationBank.get('main')
   if (bankRow && (!parseInspirationBank(bankRow.data) || !Number.isSafeInteger(bankRow.version) || bankRow.version < 1)) throw new Error('Invalid local Inspiration bank')
-  const rpgOutfits = validateRpgEntities('rpgOutfits', await db.rpgOutfits.toArray()) as VersionedRow<RpgOutfitSaveV1>[]
-  const rpgPresets = validateRpgEntities('rpgPresets', await db.rpgPresets.toArray()) as VersionedRow<RpgPresetSaveV1>[]
+  const rpgOutfits = validateRpgEntities('rpgOutfits', await db.rpgOutfits.toArray()) as VersionedRow<RpgOutfitSave>[]
+  const rpgPresets = validateRpgEntities('rpgPresets', await db.rpgPresets.toArray()) as VersionedRow<RpgPresetSave>[]
   const rpgCheckpoints = validateRpgEntities('rpgCheckpoints', await db.rpgCheckpoints.toArray()) as VersionedRow<RpgRunSaveV2>[]
   const rpgResults = validateRpgLogs('rpgResults', await db.rpgResults.toArray()) as LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>[]
-  const rpgPromotions = validateRpgLogs('rpgPromotions', await db.rpgPromotions.toArray()) as LogRow<RpgPromotionEvidenceV1>[]
+  const rpgPromotions = validateRpgLogs('rpgPromotions', await db.rpgPromotions.toArray()) as LogRow<RpgPromotionEvidence>[]
   const rpgReceipts = validateRpgLogs('rpgReceipts', await db.rpgReceipts.toArray()) as LogRow<RpgCommandReceiptV1>[]
   const umas = umaRows.map((row) => {
     const data = parseUmaSaveOrThrow(row.data)
@@ -283,9 +283,9 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         !parseCardSave(row.data) && migrateCardSaveToCurrent(row.data)) legacyKeys.add(`cards/${row.id}`)
       if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
         !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
-      // Campaign-era outfits and parties (D263) migrate on the way in; upload the reset rows once.
+      // Pre-class outfits and parties (D272) migrate on the way in; upload the migrated rows once.
       if ((row.kind === 'rpgOutfits' || row.kind === 'rpgPresets') && typeof row.id === 'string' && !row.deleted &&
-        typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion === 1) legacyKeys.add(`${row.kind}/${row.id}`)
+        typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion !== 3) legacyKeys.add(`${row.kind}/${row.id}`)
     }
   }
   const profileRecords = snapshot.entities.filter((record) => record.kind === 'profile' && !record.deleted)

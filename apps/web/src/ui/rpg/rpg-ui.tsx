@@ -1,5 +1,5 @@
 // Shared campaign building blocks on the dark stage (docs/design/uma-rpg.md#phone-presentation).
-import { rpgTierLevel, type BattleWeaknesses, type BattleWeaponKind, type RpgElement, type RpgWeapon } from '@racer/domain'
+import { isRpgElement, isRpgWeaponKind, rpgTierLevel, type BattleWeaknesses, type RpgClass, type RpgDamageKind, type RpgElement, type RpgWeaponKind } from '@racer/domain'
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import { IdentityGlyph, RPG_ELEMENT_LABELS } from './RpgPortrait'
@@ -65,14 +65,21 @@ export function GhostButton({ children, className = '', ...rest }: React.ButtonH
   return <button type="button" className={`flex min-h-11 items-center justify-center rounded-sm border border-hairline-dark px-3 text-[13px] font-semibold text-ink-on-dark disabled:opacity-40 ${className}`} {...rest}>{children}</button>
 }
 
-export const WEAPON_KIND_LABEL: Readonly<Record<BattleWeaponKind, string>> = {
-  greatsword: 'Greatsword', spear: 'Spear', sword: 'Sword', staff: 'Staff', tome: 'Tome',
+export const WEAPON_KIND_LABEL: Readonly<Record<RpgWeaponKind, string>> = {
+  greatsword: 'Greatsword', spear: 'Spear', axe: 'Axe', bow: 'Bow', 'short-sword': 'Short Sword',
 }
-const KIND_GLYPH: Readonly<Record<BattleWeaponKind, RpgWeapon>> = {
-  greatsword: 'greatsword', spear: 'spear', sword: 'sword-shield', staff: 'wizard-staff', tome: 'tome',
+export const CLASS_LABEL: Readonly<Record<RpgClass, string>> = { brawler: 'Brawler', mage: 'Mage', cleric: 'Cleric', summoner: 'Summoner' }
+export function WeaponKindMark({ kind, className = '' }: { kind: RpgWeaponKind; className?: string }) {
+  return <span role="img" aria-label={WEAPON_KIND_LABEL[kind]} className={`inline-flex items-center ${className}`}><IdentityGlyph weapon={kind} /></span>
 }
-export function WeaponKindMark({ kind, className = '' }: { kind: BattleWeaponKind; className?: string }) {
-  return <span role="img" aria-label={WEAPON_KIND_LABEL[kind]} className={`inline-flex items-center ${className}`}><IdentityGlyph weapon={KIND_GLYPH[kind]} /></span>
+export const kindLabel = (kind: RpgDamageKind): string =>
+  isRpgWeaponKind(kind) ? WEAPON_KIND_LABEL[kind] : isRpgElement(kind) ? RPG_ELEMENT_LABELS[kind] : kind === 'ultima' ? 'Ultima' : 'Staff'
+/** Any damage kind: an element, Ultima or a weapon kind. A staff strike has no mark. */
+export function KindMark({ kind, className = '' }: { kind: RpgDamageKind; className?: string }) {
+  if (isRpgWeaponKind(kind)) return <WeaponKindMark kind={kind} className={className} />
+  if (isRpgElement(kind)) return <ElementMark element={kind} className={className} />
+  if (kind === 'ultima') return <span role="img" aria-label="Ultima" className={`inline-flex items-center text-[#f0b8ff] ${className}`}><IdentityGlyph element="ultima" /></span>
+  return null
 }
 
 /** Octopath-style break gauge: the shield count, or BREAK while it is down. */
@@ -85,9 +92,10 @@ export function ShieldBadge({ value, broken = false, className = '' }: { value: 
   </span>
 }
 
-/** Weakness icons: the element first, then weapon kinds. */
+/** Weakness icons: elements first, then weapon kinds (D269). */
 export function WeaknessIcons({ weaknesses, className = '' }: { weaknesses: BattleWeaknesses; className?: string }) {
-  return <span className={`inline-flex items-center gap-1 ${className}`} aria-label={`Weak to ${[weaknesses.element, ...weaknesses.weapons.map((w) => WEAPON_KIND_LABEL[w])].join(', ')}`}>
-    <ElementMark element={weaknesses.element} />{weaknesses.weapons.map((w) => <WeaponKindMark key={w} kind={w} />)}
+  const names = [...weaknesses.elements.map((e) => RPG_ELEMENT_LABELS[e]), ...weaknesses.weapons.map((w) => WEAPON_KIND_LABEL[w])]
+  return <span className={`inline-flex flex-wrap items-center justify-center gap-1 ${className}`} aria-label={`Weak to ${names.join(', ')}`}>
+    {weaknesses.elements.map((e) => <ElementMark key={e} element={e} />)}{weaknesses.weapons.map((w) => <WeaponKindMark key={w} kind={w} />)}
   </span>
 }

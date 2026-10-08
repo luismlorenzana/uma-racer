@@ -1,11 +1,12 @@
-// Uma RPG: parties, roster, profiles and the chapter launch pad (docs/design/uma-rpg.md#phone-presentation, D263).
+// Uma RPG: parties, roster, profiles, class trees and the launch pad (docs/design/uma-rpg-classes.md, D263, D267–D270).
 // Every screen shares one frame: back, title and the guide. Changes save at once; there is no Save or Sync step.
 import {
-  RPG_ELEMENTS, RPG_PARTY_SIZE, RPG_TIER_MAX_LEVEL, STRATEGIES, battleSkillLabel, battleSkillMp, canChangeRpgClass,
-  canUseRpgSignature, eligibleRpgCells, projectRpgStats, rpgActiveSlots, rpgAffinities, rpgCampaign, rpgChapterCleared,
-  rpgExpToNext, rpgMemberLevel, rpgNodeStatus, rpgRunId, rpgSkillKey, rpgTreePointsEarned, rpgTreePointsSpent,
-  rpgWeaponsForStyle, RPG_CHAPTER_LEVELS, RPG_DEPTH_GATES, RPG_B_MAX_DEPTH, RPG_BRANCHES, battleSkillShape,
-  type RpgCampaignChapter, type RpgElement, type RpgPresetSaveV1, type RpgProfile, type RpgSkillRef, type RpgWeapon, type Strategy,
+  RPG_CLASS_WEAPONS, RPG_PARTY_SIZE, RPG_TIER_MAX_LEVEL, RPG_VARIANTS_PER_TREE, RPG_WEAPON_KINDS, canChangeRpgClass, projectRpgStats,
+  rpgActiveSlots, rpgCampaign, rpgChapterCleared, rpgClassOptions, rpgExpToNext, rpgHand, rpgLearnBlock, rpgLearnedSkills, rpgMemberLevel,
+  rpgNode, rpgNodeKey, rpgNodeStatus, rpgProfileTrees, rpgRunId, rpgTreeBranches, rpgTreeNodes, rpgTreePointsEarned, rpgTreePointsSpent,
+  RPG_CHAPTER_LEVELS, RPG_DEPTH_GATES,
+  type RpgCampaignChapter, type RpgClass, type RpgDamageKind, type RpgNode, type RpgNodeRef, type RpgPresetSave, type RpgPresetSlot,
+  type RpgProfile, type RpgSkillDef, type RpgTreeId, type RpgWeapon,
 } from '@racer/domain'
 import { liveQuery } from 'dexie'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
@@ -13,16 +14,17 @@ import { Link, Outlet, useNavigate, useParams } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { getContentAsset, type LoadedContent } from '../../content/runtime'
 import type { RpgRelease } from '../../content/rpg-release'
-import { changeRpgOutfitClass, enrollRpgOutfit, learnRpgSkill, promoteRpgOutfitTier, readRpgAccount, rpgOutfitProfiles,
+import { changeRpgOutfitClass, enrollRpgOutfit, forgetRpgSkill, learnRpgSkill, promoteRpgOutfitTier, readRpgAccount, rpgOutfitProfiles,
   saveRpgParty, equipRpgSkills, type RpgAccount } from '../../game/rpg-local'
 import { gameRuntime } from '../../game/runtime'
 import { useGame } from '../../game/store'
 import { AtlasSprite } from '../../ui/AtlasSprite'
 import { ScreenState } from '../../ui/ScreenState'
 import { MinigameHeader, MinigameShell } from '../../ui/minigames/MinigameShell'
-import { RPG_WEAPON_LABELS, RpgPortrait, IdentityGlyph } from '../../ui/rpg/RpgPortrait'
+import { RPG_WEAPON_LABELS, RpgPortrait } from '../../ui/rpg/RpgPortrait'
 import { orderRpgRoster } from '../../ui/rpg/roster-options'
-import { ElementMark, GhostButton, PrimaryButton, RpgBar, RpgCard, RpgSelect, RpgTabs, formatRpgBand, formatRpgLevel } from '../../ui/rpg/rpg-ui'
+import { CLASS_LABEL, GhostButton, KindMark, PrimaryButton, RpgBar, RpgCard, RpgSelect, RpgTabs, WEAPON_KIND_LABEL, WeaponKindMark,
+  formatRpgBand, formatRpgLevel } from '../../ui/rpg/rpg-ui'
 import { RpgGuide, rpgGuideMemory, type RpgGuidePage } from './RpgGuide'
 import { useRpgRelease } from './useRpgRelease'
 
@@ -43,9 +45,31 @@ export function useRpg(): RpgContextValue {
 
 const title = (value: string) => value[0]!.toUpperCase() + value.slice(1)
 export const pushToast = (message: string) => useGame.getState().pushToast(message)
-const skillReach = (branch: RpgSkillRef['branch']): string => {
-  const { hits, target } = battleSkillShape(branch)
-  return target === 'all' ? 'all foes' : target === 'random' ? `${hits} random hits` : hits > 1 ? `${hits} hits` : 'one foe'
+export const weaponsLabel = (weapons: readonly RpgWeapon[]): string => weapons.map((w) => RPG_WEAPON_LABELS[w]).join(' + ')
+export const CLASS_BLURB: Readonly<Record<RpgClass, string>> = {
+  brawler: 'One heavy action a turn with either weapon: weapon damage with an elemental splash.',
+  mage: 'Pure magic: two staves cast twice a turn, or one staff with a Short Sword that follows every spell.',
+  cleric: 'Light, Dark and Ultima casts that carry buffs, debuffs, barriers and heals.',
+  summoner: 'Two half-strength summons a turn of every damage kind, plus a free Familiar.',
+}
+export const TREE_LABEL: Readonly<Record<RpgTreeId, string>> = {
+  greatsword: 'Greatsword', spear: 'Spear', axe: 'Axe', bow: 'Bow', 'mage-staff': 'Mage Staff', 'arcane-staff': 'Arcane Staff',
+  'short-sword': 'Short Sword', 'cleric-staff': 'Cleric Staff', 'summon-elemental': 'Elemental summons', 'summon-arcane': 'Arcane summons',
+}
+const BRANCH_LABEL: Readonly<Record<string, string>> = {
+  fire: 'Fire', ice: 'Ice', lightning: 'Lightning', light: 'Light', dark: 'Dark', ultima: 'Ultima', duel: 'Duel', melee: 'Melee',
+  tempo: 'Tempo', grace: 'Grace', malice: 'Malice', sanctuary: 'Sanctuary', angels: 'Angels', demons: 'Demons', archons: 'Archons',
+}
+/** Distinct damage kinds a skill lands, in order. */
+export const skillKinds = (skill: RpgSkillDef): RpgDamageKind[] =>
+  [...new Set([...skill.hits, ...skill.focus ?? [], ...(skill.splash ? [skill.splash] : []), ...(skill.sweep ? [skill.sweep] : [])].flatMap((h) => h.parts.map((p) => p.kind)))]
+/** A skill as this Uma casts it: targets, hits, power after her hand, and MP. */
+export function skillLine(profile: Pick<RpgProfile, 'classId' | 'weapons' | 'tier'>, skill: RpgSkillDef): string {
+  const hand = rpgHand(profile)
+  const per = skill.target === 'all' ? 'every foe' : skill.target === 'random' ? 'random foes' : 'one foe'
+  const total = skill.hits.reduce((sum, h) => sum + h.power, 0) * hand.power
+  const mp = Math.max(1, Math.round(skill.mp * hand.mp)) * profile.tier
+  return `${per} · ${skill.hits.length} hit${skill.hits.length === 1 ? '' : 's'} · ${total.toFixed(1)}× · ${mp} MP`
 }
 /** Commits are local; this only nudges the background sync. */
 export async function commit(operation: () => Promise<unknown>): Promise<boolean> {
@@ -93,17 +117,17 @@ export function RpgFrame({ back, backLabel, eyebrow, title: heading, guide = 'pa
   </MinigameShell>
 }
 
-function OutfitIcon({ content, outfitId, name, profile, element, className = 'aspect-square w-full' }: {
-  content: LoadedContent; outfitId: string; name: string; profile?: RpgProfile | null; element?: RpgElement | null; className?: string
+function OutfitIcon({ content, outfitId, name, profile, className = 'aspect-square w-full' }: {
+  content: LoadedContent; outfitId: string; name: string; profile?: RpgProfile | null; className?: string
 }) {
-  return <RpgPortrait content={content} compact artwork="icon" outfitId={outfitId} name={name} weapon={profile?.weapon ?? null} element={element ?? profile?.defaultSignature ?? null} className={className} />
+  return <RpgPortrait content={content} compact artwork="icon" outfitId={outfitId} name={name} weapon={profile?.weapons[0] ?? null} element={null} className={className} />
 }
 
-function partyLevel(preset: RpgPresetSaveV1, profiles: ReadonlyMap<string, RpgProfile>): number | null {
+function partyLevel(preset: RpgPresetSave, profiles: ReadonlyMap<string, RpgProfile>): number | null {
   const levels = preset.slots.flatMap((slot) => { const p = slot && profiles.get(slot.outfitId); return p ? [rpgMemberLevel(p)] : [] })
   return levels.length ? Math.round(levels.reduce((a, b) => a + b, 0) / levels.length) : null
 }
-const isFull = (preset: RpgPresetSaveV1) => preset.slots.every((slot) => slot !== null)
+const isFull = (preset: RpgPresetSave) => preset.slots.every((slot) => slot !== null)
 
 // --- Parties ---------------------------------------------------------------------------------------------------------
 
@@ -135,7 +159,7 @@ export function RpgHubScreen() {
         </div>
         <Link to={ready ? `/rpg/party/${id}` : `/rpg/party/${id}/edit`} className="mt-2 grid grid-cols-5 gap-1.5" aria-label={`${preset.name} members`}>
           {preset.slots.map((slot, i) => slot && owned[slot.outfitId]
-            ? <OutfitIcon key={i} content={content} outfitId={slot.outfitId} name={name(slot.outfitId)} profile={profiles.get(slot.outfitId)} element={slot.signature} />
+            ? <OutfitIcon key={i} content={content} outfitId={slot.outfitId} name={name(slot.outfitId)} profile={profiles.get(slot.outfitId)} />
             : <span key={i} className="flex aspect-square items-center justify-center rounded-md border border-dashed border-hairline-dark text-lg text-ink-on-dark-soft">+</span>)}
         </Link>
       </article>
@@ -159,7 +183,8 @@ export function RpgRosterScreen() {
         <h2 className="mb-2 text-[12px] font-semibold text-ink-on-dark-soft">{enrolled ? 'Enrolled' : 'Not enrolled'} · {group.length}</h2>
         <div className="grid grid-cols-5 gap-x-1.5 gap-y-3">{group.map((id) => {
           const profile = account.outfits.get(id)?.data.profile
-          const eligible = STRATEGIES.some((s) => content.umas.byId.get(id)?.aptitudes.strategy[s] === 'A')
+          const template = content.umas.byId.get(id)
+          const eligible = !!template && rpgClassOptions(template.aptitudes).length > 0
           return <Link key={id} to={`/rpg/roster/${encodeURIComponent(id)}`} className="block min-w-0" aria-label={`${name(id)} · ${profile ? formatRpgLevel(rpgMemberLevel(profile)) : eligible ? 'Enroll' : 'Not eligible'}`}>
             <OutfitIcon content={content} outfitId={id} name={name(id)} profile={profile} />
             <span className="mt-1 block truncate text-center text-[11px] font-semibold">{name(id)}</span>
@@ -182,10 +207,10 @@ export function RpgProfileScreen() {
     <div className="grid grid-cols-[96px_1fr] items-center gap-3">
       <OutfitIcon content={content} outfitId={outfitId} name={template.name} profile={profile} className="aspect-square w-24" />
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold">{profile ? `${title(profile.style)} · ${RPG_WEAPON_LABELS[profile.weapon]}` : 'Not enrolled'}</p>
+        <p className="text-[13px] font-semibold">{profile ? `${CLASS_LABEL[profile.classId]} · ${weaponsLabel(profile.weapons)}` : 'Not enrolled'}</p>
         {profile && <><p className="mt-0.5 text-[12px] text-ink-on-dark-soft">{formatRpgLevel(rpgMemberLevel(profile))}{profile.level < RPG_TIER_MAX_LEVEL ? ` · ${profile.exp}/${rpgExpToNext(profile.level)} EXP` : ` · ${profile.exp} EXP banked`}</p>
           {profile.level < RPG_TIER_MAX_LEVEL && <RpgBar className="mt-1" value={profile.exp} max={rpgExpToNext(profile.level)} tone="exp" />}</>}
-        <p className="mt-1 flex flex-wrap gap-2">{RPG_ELEMENTS.filter((e) => rpgAffinities(template.aptitudes)[e]).map((e) => <span key={e} className="flex items-center gap-0.5 text-[11px]"><ElementMark element={e} />{rpgAffinities(template.aptitudes)[e]}</span>)}</p>
+        {!profile && <p className="mt-1 text-[11px] text-ink-on-dark-soft">{rpgClassOptions(template.aptitudes).map((c) => CLASS_LABEL[c]).join(' or ') || 'No class: needs an A running style'}</p>}
       </div>
     </div>
     {profile ? <ProfileProgress outfitId={outfitId} profile={profile} /> : <Enroll outfitId={outfitId} />}
@@ -195,56 +220,65 @@ export function RpgProfileScreen() {
 function Enroll({ outfitId }: { outfitId: string }) {
   const { content } = useRpg()
   const template = content.umas.byId.get(outfitId)!
-  const styles = STRATEGIES.filter((s) => template.aptitudes.strategy[s] === 'A')
-  const elements = RPG_ELEMENTS.filter((e) => rpgAffinities(template.aptitudes)[e])
-  const [style, setStyle] = useState<Strategy | undefined>(styles[0])
-  const weapons = style ? rpgWeaponsForStyle(style) : []
-  const [weapon, setWeapon] = useState<RpgWeapon | undefined>(weapons[0])
-  const [signature, setSignature] = useState<RpgElement | undefined>(elements.find((e) => rpgAffinities(template.aptitudes)[e] === 'A') ?? elements[0])
+  const classes = rpgClassOptions(template.aptitudes)
+  const [chosen, setChosen] = useState<RpgClass | undefined>(classes[0])
+  const [setIndex, setSetIndex] = useState(0)
   const [busy, setBusy] = useState(false)
-  if (!styles.length) return <RpgCard className="mt-4"><p className="text-sm">No A running style, so this Uma can't join the RPG. She stays usable everywhere else.</p></RpgCard>
-  const chosenWeapon = weapon && weapons.includes(weapon) ? weapon : weapons[0]!
+  if (!chosen) return <RpgCard className="mt-4"><p className="text-sm">No A running style, so this Uma can't join the RPG. She stays usable everywhere else.</p></RpgCard>
+  const classId = classes.includes(chosen) ? chosen : classes[0]!
+  const sets = RPG_CLASS_WEAPONS[classId]
+  const weapons = sets[Math.min(setIndex, sets.length - 1)]!
   return <RpgCard className="mt-4 space-y-3">
-    <p className="text-[12px] text-ink-on-dark-soft">Class and weapon can change freely until she reaches Lv2.</p>
-    <RpgSelect label="Class (A running style)" value={style!} options={styles.map((s) => ({ value: s, label: title(s) }))} onChange={(s) => { setStyle(s); setWeapon(rpgWeaponsForStyle(s)[0]) }} />
-    <RpgSelect label="Weapon" value={chosenWeapon} options={weapons.map((w) => ({ value: w, label: RPG_WEAPON_LABELS[w] }))} onChange={setWeapon} />
-    <RpgSelect label="Signature element" value={signature!} options={elements.map((e) => ({ value: e, label: `${title(e)} · ${rpgAffinities(template.aptitudes)[e]}` }))} onChange={setSignature} />
-    <PrimaryButton disabled={busy} onClick={() => { setBusy(true); void commit(() => enrollRpgOutfit({ template, contentVersion: content.manifest.version, style: style!, weapon: chosenWeapon, signature: signature! })).finally(() => setBusy(false)) }}>Enroll {template.name}</PrimaryButton>
+    <p className="text-[12px] text-ink-on-dark-soft">Her running styles make her a {classes.map((c) => CLASS_LABEL[c]).join(' or ')}. Class and weapons can change freely until she learns a skill.</p>
+    {classes.length > 1 && <RpgSelect label="Class" value={classId} options={classes.map((c) => ({ value: c, label: CLASS_LABEL[c] }))} onChange={(c) => { setChosen(c); setSetIndex(0) }} />}
+    <p className="text-[13px]"><b>{CLASS_LABEL[classId]}</b> · {CLASS_BLURB[classId]}</p>
+    {sets.length > 1 && <RpgSelect label="Weapons" value={String(Math.min(setIndex, sets.length - 1))} options={sets.map((set, i) => ({ value: String(i), label: weaponsLabel(set) }))} onChange={(v) => setSetIndex(Number(v))} />}
+    <PrimaryButton disabled={busy} onClick={() => { setBusy(true); void commit(() => enrollRpgOutfit({ template, contentVersion: content.manifest.version, classId, weapons: [...weapons] })).finally(() => setBusy(false)) }}>Enroll {template.name}</PrimaryButton>
   </RpgCard>
 }
 
-function ProfileProgress({ outfitId, profile }: { outfitId: string; profile: RpgProfile }) {
+export function ProfileProgress({ outfitId, profile }: { outfitId: string; profile: RpgProfile }) {
   const stats = projectRpgStats(profile)
   const points = rpgTreePointsEarned(profile.level) - rpgTreePointsSpent(profile.tree)
+  const trees = rpgProfileTrees(profile)
+  const [treeIndex, setTreeIndex] = useState(0)
+  const tree = trees[Math.min(treeIndex, trees.length - 1)]!
+  const branches = rpgTreeBranches(tree)
+  const [picked, setPicked] = useState<string | null>(null)
+  const branch = picked && branches.includes(picked) ? picked : branches[0]!
   const [busy, setBusy] = useState(false)
   const run = (op: () => Promise<unknown>) => { setBusy(true); void commit(op).finally(() => setBusy(false)) }
-  const cells = eligibleRpgCells(profile)
-  const branches = RPG_BRANCHES.flatMap((list, index) => list.map((branch) => [index + 1, branch] as [number, RpgSkillRef['branch']]))
+  const learned = new Set(profile.tree.map((r) => r.id))
+  const variants = profile.tree.filter((r) => { const n = rpgNode(r.id); return n?.tree === tree && n.variant !== null }).length
+  const nodes = rpgTreeNodes(tree).filter((n) => n.branch === branch)
+  const tab = (on: boolean) => `flex min-h-11 flex-1 items-center justify-center rounded-xs px-2 text-[12px] font-semibold ${on ? 'bg-accent text-ink' : 'text-ink-on-dark-soft'}`
   return <div className="mt-4 space-y-3">
     <RpgCard><div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-      {([['ATK', stats.atk], ['HP', stats.hp], ['MP', stats.mp], ['DEF', stats.pdef], ['M.DEF', stats.mdef], ['Speed', stats.initiative]] as const).map(([label, value]) =>
+      {([['ATK', stats.atk], ['M.ATK', stats.matk], ['HP', stats.hp], ['MP', stats.mp], ['DEF', stats.pdef], ['M.DEF', stats.mdef]] as const).map(([label, value]) =>
         <p key={label}><span className="block text-ink-on-dark-soft">{label}</span><span className="text-[15px] font-semibold">{value}</span></p>)}
     </div></RpgCard>
     {canChangeRpgClass(profile) && <ClassEdit outfitId={outfitId} profile={profile} />}
-    <section aria-label="Skills">
+    <section aria-label="Skill trees">
       <div className="flex items-center justify-between"><h2 className="text-[15px] font-semibold">Skills</h2><span className="text-[12px] text-accent">{points} point{points === 1 ? '' : 's'} to spend</span></div>
-      <p className="mt-0.5 text-[11px] text-ink-on-dark-soft">Two points a level up to Lv45 (90 a tier): learn a skill, then raise any skill to Lv5. Depths open at Lv{RPG_DEPTH_GATES.join('/')}; B elements stop at depth {RPG_B_MAX_DEPTH}. Equip skills from the party screen.</p>
-      <div className="mt-2 space-y-2">{cells.map((cell) => <RpgCard key={cell.element}>
-        <p className="flex items-center gap-1 text-[13px] font-semibold"><ElementMark element={cell.element} label />· {cell.affinity}</p>
-        <div className="mt-2 grid grid-cols-2 gap-1.5">{branches.filter(([depth]) => depth <= cell.maxDepth).map(([depth, branch]) => {
-          const ref: RpgSkillRef = { tier: profile.tier, weapon: profile.weapon, element: cell.element, depth, branch }
-          const learned = profile.tree.find((s) => rpgSkillKey(s) === rpgSkillKey(ref))
-          const gate = profile.level < RPG_DEPTH_GATES[depth - 1]!
-          const prior = depth === 1 || profile.tree.some((s) => s.element === cell.element && s.depth === depth - 1)
-          const canLearn = points > 0 && !gate && prior && (!learned || learned.level < 5)
-          return <button key={branch} type="button" disabled={busy || !canLearn} onClick={() => run(() => learnRpgSkill(outfitId, ref))}
-            className={`min-h-14 rounded-sm border px-2 py-1 text-left text-[11px] disabled:opacity-60 ${learned ? 'border-accent bg-accent/10' : 'border-hairline-dark'}`}>
-            <span className="block font-semibold">{battleSkillLabel(ref)}{learned ? ` · Lv${learned.level}` : ''}</span>
-            <span className="block text-ink-on-dark-soft">{gate ? `Opens Lv${RPG_DEPTH_GATES[depth - 1]}` : !prior ? 'Needs the depth above' : `${battleSkillMp(ref)} MP · ${skillReach(branch)}`}</span>
-            {canLearn && <span className="block text-accent">{learned ? 'Level up · 1 pt' : 'Learn · 1 pt'}</span>}
-          </button>
-        })}</div>
-      </RpgCard>)}</div>
+      <p className="mt-0.5 text-[11px] text-ink-on-dark-soft">A skill costs its depth; depths open at Lv{RPG_DEPTH_GATES.join('/')} and every core skill fits by Lv40. Beside a core skill, a fork offers two variants: take one side, up to {RPG_VARIANTS_PER_TREE} per tree, and swap them any time. Equip skills on the party screen.</p>
+      <div className="mt-2 flex gap-1 rounded-sm bg-stage-soft p-1" role="tablist" aria-label="Trees">
+        {trees.map((t, i) => <button key={t} type="button" role="tab" aria-selected={t === tree} onClick={() => setTreeIndex(i)} className={tab(t === tree)}>{TREE_LABEL[t]}</button>)}
+      </div>
+      <div className="mt-1 flex gap-1 rounded-sm bg-stage-soft p-1" role="tablist" aria-label="Branches">
+        {branches.map((b) => <button key={b} type="button" role="tab" aria-selected={b === branch} onClick={() => setPicked(b)} className={tab(b === branch)}>{BRANCH_LABEL[b] ?? b}</button>)}
+      </div>
+      <p className="mt-1 text-right text-[11px] text-ink-on-dark-soft">{TREE_LABEL[tree]} variants {variants}/{RPG_VARIANTS_PER_TREE}</p>
+      <ol className="mt-1 space-y-2">{[1, 2, 3, 4, 5].map((depth) => {
+        const core = nodes.find((n) => n.depth === depth && n.variant === null)!
+        const forks = nodes.filter((n) => n.depth === depth && n.variant !== null)
+        return <li key={depth} className="space-y-1">
+          <NodeButton profile={profile} node={core} learned={learned.has(core.id)} busy={busy} onLearn={() => run(() => learnRpgSkill(outfitId, core.id))} />
+          {forks.length > 0 && <div className="grid grid-cols-2 gap-1 pl-3" aria-label={`${core.name} variants`}>
+            {forks.map((n) => <NodeButton key={n.id} profile={profile} node={n} learned={learned.has(n.id)} busy={busy} compact
+              onLearn={() => run(() => learnRpgSkill(outfitId, n.id))} onForget={() => run(() => forgetRpgSkill(outfitId, n.id))} />)}
+          </div>}
+        </li>
+      })}</ol>
     </section>
     {profile.level === RPG_TIER_MAX_LEVEL && <RpgCard><p className="text-sm font-semibold">Promote to Tier {profile.tier + 1}</p>
       <p className="mt-1 text-[12px] text-ink-on-dark-soft">Stats and banked EXP carry over; this tier's skills are archived (none kept as legacy here).</p>
@@ -252,12 +286,29 @@ function ProfileProgress({ outfitId, profile }: { outfitId: string; profile: Rpg
   </div>
 }
 
+function NodeButton({ profile, node, learned, busy, compact = false, onLearn, onForget }: {
+  profile: RpgProfile; node: RpgNode; learned: boolean; busy: boolean; compact?: boolean; onLearn: () => void; onForget?: () => void
+}) {
+  const block = learned ? null : rpgLearnBlock(profile, node.id)
+  const detail = node.skill ? skillLine(profile, node.skill) : node.summary
+  const action = learned ? (onForget && node.variant ? 'Swap out · refund' : null) : block ? block : `Learn · ${node.cost} pt${node.cost === 1 ? '' : 's'}`
+  return <button type="button" disabled={busy || (learned ? !onForget || !node.variant : !!block)} onClick={learned ? onForget : onLearn}
+    aria-label={`${node.name}${node.variant ? ' (variant)' : ''}, ${learned ? 'learned' : block ?? 'can learn'}`}
+    className={`flex w-full flex-col rounded-sm border px-2 py-1.5 text-left disabled:opacity-70 ${compact ? 'min-h-16 text-[10px]' : 'min-h-14 text-[11px]'} ${learned ? 'border-accent bg-accent/10' : 'border-hairline-dark'}`}>
+    <span className="flex items-center gap-1 font-semibold">{node.skill && skillKinds(node.skill).map((k) => <KindMark key={k} kind={k} />)}<span className="truncate">{node.name}</span>
+      {!compact && <span className="ml-auto text-[10px] font-normal text-ink-on-dark-soft">D{node.depth}</span>}</span>
+    <span className="block text-ink-on-dark-soft">{detail}</span>
+    {action && <span className={`block ${learned || !block ? 'text-accent' : 'text-ink-on-dark-soft'}`}>{action}</span>}
+  </button>
+}
+
 function ClassEdit({ outfitId, profile }: { outfitId: string; profile: RpgProfile }) {
-  const styles = STRATEGIES.filter((s) => profile.sourceAptitudes.strategy[s] === 'A')
-  const options = styles.flatMap((style) => rpgWeaponsForStyle(style).map((weapon) => ({ value: `${style}:${weapon}`, label: `${title(style)} · ${RPG_WEAPON_LABELS[weapon]}` })))
+  const options = rpgClassOptions(profile.sourceAptitudes).flatMap((classId) => RPG_CLASS_WEAPONS[classId].map((set, i) =>
+    ({ value: `${classId}:${i}`, label: `${CLASS_LABEL[classId]} · ${weaponsLabel(set)}` })))
+  const current = `${profile.classId}:${RPG_CLASS_WEAPONS[profile.classId].findIndex((set) => set.every((w, i) => w === profile.weapons[i]))}`
   if (options.length < 2) return null
-  return <RpgSelect label="Class (free to change until Lv2)" value={`${profile.style}:${profile.weapon}`} options={options}
-    onChange={(value) => { const [style, weapon] = value.split(':') as [Strategy, RpgWeapon]; void commit(() => changeRpgOutfitClass(outfitId, style, weapon)) }} />
+  return <RpgSelect label="Class and weapons (free to change until she learns a skill)" value={current} options={options}
+    onChange={(value) => { const [classId, index] = value.split(':') as [RpgClass, string]; void commit(() => changeRpgOutfitClass(outfitId, classId, [...RPG_CLASS_WEAPONS[classId][Number(index)]!])) }} />
 }
 
 // --- Party editor ----------------------------------------------------------------------------------------------------
@@ -273,11 +324,11 @@ export function RpgPartyEditScreen() {
   const preset = row.data
   const profiles = rpgOutfitProfiles(account)
   const label = (id: string) => content.umas.byId.get(id)?.name ?? id
-  const save = (next: RpgPresetSaveV1) => void commit(() => saveRpgParty(next))
+  const save = (next: RpgPresetSave) => void commit(() => saveRpgParty(next))
   const setSlot = (index: number, outfitId: string) => {
     const profile = profiles.get(outfitId)
-    const slots = [...preset.slots] as RpgPresetSaveV1['slots']
-    slots[index] = profile ? { outfitId, signature: profile.defaultSignature, loadout: [] } : null
+    const slots = [...preset.slots] as RpgPresetSave['slots']
+    slots[index] = profile ? { outfitId, loadout: [], familiar: 'greatsword' } : null
     save({ ...preset, slots })
   }
   // Every other party gives up a member that moves here; the picker lists all enrolled Umas.
@@ -295,39 +346,41 @@ export function RpgPartyEditScreen() {
         .map((id) => ({ value: id, label: `${label(id)} · ${formatRpgLevel(rpgMemberLevel(profiles.get(id)!))}${other(id) ? ` · in ${other(id)}` : ''}` }))]
       return <RpgCard key={index}>
         <div className="grid grid-cols-[56px_1fr] gap-3">
-          {slot && profile ? <OutfitIcon content={content} outfitId={slot.outfitId} name={label(slot.outfitId)} profile={profile} element={slot.signature} className="aspect-square w-14" />
+          {slot && profile ? <OutfitIcon content={content} outfitId={slot.outfitId} name={label(slot.outfitId)} profile={profile} className="aspect-square w-14" />
             : <span className="flex aspect-square w-14 items-center justify-center rounded-md border border-dashed border-hairline-dark text-lg text-ink-on-dark-soft">{index + 1}</span>}
           <RpgSelect label={`Slot ${index + 1}`} value={slot?.outfitId ?? ''} options={options} onChange={(id) => setSlot(index, id)} />
         </div>
-        {slot && profile && <SlotLoadout presetId={presetId} profile={profile} signature={slot.signature} loadout={slot.loadout} />}
+        {slot && profile && <SlotLoadout presetId={presetId} profile={profile} slot={slot} />}
       </RpgCard>
     })}</div>
     {isFull(preset) && <Link to={`/rpg/party/${presetId}`} className="mt-4 flex min-h-12 items-center justify-center rounded-sm bg-accent text-[15px] font-semibold text-ink">Choose a chapter</Link>}
   </RpgFrame>
 }
 
-function SlotLoadout({ presetId, profile, signature, loadout }: { presetId: string; profile: RpgProfile; signature: RpgElement; loadout: readonly RpgSkillRef[] }) {
-  const learned = [...profile.tree, ...profile.legacy]
+function SlotLoadout({ presetId, profile, slot }: { presetId: string; profile: RpgProfile; slot: RpgPresetSlot }) {
+  const learned = rpgLearnedSkills(profile)
   const slots = rpgActiveSlots(profile.level)
-  const keys = new Set(loadout.map(rpgSkillKey))
-  const toggle = (ref: RpgSkillRef) => {
-    const next = keys.has(rpgSkillKey(ref)) ? loadout.filter((r) => rpgSkillKey(r) !== rpgSkillKey(ref)) : [...loadout, ref]
+  const keys = new Set(slot.loadout.map(rpgNodeKey))
+  const toggle = (ref: RpgNodeRef) => {
+    const next = keys.has(rpgNodeKey(ref)) ? slot.loadout.filter((r) => rpgNodeKey(r) !== rpgNodeKey(ref)) : [...slot.loadout, ref]
     if (next.length > slots) { pushToast(`${slots} skill slots at this level`); return }
-    void commit(() => equipRpgSkills(presetId, profile.outfitId, signature, next))
+    void commit(() => equipRpgSkills(presetId, profile.outfitId, next))
   }
   return <div className="mt-2 space-y-2">
-    <div className="flex flex-wrap items-center gap-1.5 text-[11px]"><span className="text-ink-on-dark-soft">Signature</span>
-      {RPG_ELEMENTS.filter((e) => canUseRpgSignature(profile, e)).map((e) => <button key={e} type="button" aria-pressed={e === signature}
-        onClick={() => { if (e !== signature) void commit(() => equipRpgSkills(presetId, profile.outfitId, e, loadout)) }}
-        className={`flex min-h-9 items-center rounded-full border px-2 ${e === signature ? 'border-accent bg-accent/15' : 'border-hairline-dark'}`}><ElementMark element={e} label /></button>)}
-    </div>
+    <p className="text-[11px] text-ink-on-dark-soft">{CLASS_LABEL[profile.classId]} · {weaponsLabel(profile.weapons)}</p>
+    {profile.classId === 'summoner' && <div className="flex flex-wrap items-center gap-1.5 text-[11px]" aria-label="Familiar form"><span className="text-ink-on-dark-soft">Familiar</span>
+      {RPG_WEAPON_KINDS.map((kind) => <button key={kind} type="button" aria-pressed={kind === slot.familiar} aria-label={`Familiar: ${WEAPON_KIND_LABEL[kind]}`}
+        onClick={() => { if (kind !== slot.familiar) void commit(() => equipRpgSkills(presetId, profile.outfitId, slot.loadout, kind)) }}
+        className={`flex min-h-9 min-w-9 items-center justify-center rounded-full border px-2 ${kind === slot.familiar ? 'border-accent bg-accent/15' : 'border-hairline-dark'}`}><WeaponKindMark kind={kind} /></button>)}
+    </div>}
     {learned.length === 0 ? <p className="text-[11px] text-ink-on-dark-soft">No skills learned yet: spend her points on her profile.</p>
-      : <div className="flex flex-wrap gap-1.5" aria-label={`Skills, ${loadout.length} of ${slots} equipped`}>{learned.map((skill) => {
-        const on = keys.has(rpgSkillKey(skill))
-        return <button key={rpgSkillKey(skill)} type="button" aria-pressed={on} onClick={() => toggle(skill)}
+      : <div className="flex flex-wrap gap-1.5" aria-label={`Skills, ${slot.loadout.length} of ${slots} equipped`}>{learned.map((ref) => {
+        const node = rpgNode(ref.id)!
+        const on = keys.has(rpgNodeKey(ref))
+        return <button key={rpgNodeKey(ref)} type="button" aria-pressed={on} onClick={() => toggle(ref)}
           className={`flex min-h-9 items-center gap-1 rounded-full border px-2 text-[11px] ${on ? 'border-accent bg-accent/15 text-ink-on-dark' : 'border-hairline-dark text-ink-on-dark-soft'}`}>
-          <IdentityGlyph element={skill.element} />{battleSkillLabel(skill)} {skill.level > 1 ? `Lv${skill.level}` : ''}</button>
-      })}<span className="self-center text-[10px] text-ink-on-dark-soft">{loadout.length}/{slots}</span></div>}
+          {node.skill && <KindMark kind={node.skill.primary} />}{node.name}{ref.tier < profile.tier ? ` · T${ref.tier}` : ''}</button>
+      })}<span className="self-center text-[10px] text-ink-on-dark-soft">{slot.loadout.length}/{slots}</span></div>}
   </div>
 }
 
@@ -346,7 +399,7 @@ export function RpgLaunchScreen() {
   return <RpgFrame back="/rpg" backLabel="Parties" eyebrow={preset.name} title="Chapters" guide="map"
     trailing={<Link to={`/rpg/party/${presetId}/edit`} className="flex min-h-11 items-center rounded-sm border border-hairline-dark bg-stage-soft px-3 text-[12px] font-semibold">Edit</Link>}>
     <Link to={`/rpg/party/${presetId}/edit`} className="grid grid-cols-5 gap-1.5" aria-label="Party members">
-      {preset.slots.map((slot, i) => slot ? <OutfitIcon key={i} content={content} outfitId={slot.outfitId} name={label(slot.outfitId)} profile={profiles.get(slot.outfitId)} element={slot.signature} />
+      {preset.slots.map((slot, i) => slot ? <OutfitIcon key={i} content={content} outfitId={slot.outfitId} name={label(slot.outfitId)} profile={profiles.get(slot.outfitId)} />
         : <span key={i} className="flex aspect-square items-center justify-center rounded-md border border-dashed border-hairline-dark">+</span>)}
     </Link>
     <p className="mt-1 text-[11px] text-ink-on-dark-soft">{level ? `Party ${formatRpgLevel(level)}` : ''}</p>

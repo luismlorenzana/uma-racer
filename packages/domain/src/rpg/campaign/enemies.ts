@@ -10,8 +10,8 @@ export type RpgFoeRole = typeof RPG_FOE_ROLES[number] | 'captain' | 'champion'
 export const RPG_FOE_TUNING = {
   hpBase: 40, hpPerStat: 4.2, offense: 3, defense: 0.8,
   subBossHp: 4.5, bossHp: 6.5,
-  /** Break shields (D269): regular foes 3 early and 4 from Senior Year, sub-bosses 6, champions 8. */
-  regularShield: 3, lateRegularShield: 4, subBossShield: 6, bossShield: 8,
+  /** Break shields (D269): regular foes 2 early and 3 from Senior Year, sub-bosses 6, champions 8. */
+  regularShield: 2, lateRegularShield: 3, subBossShield: 6, bossShield: 8,
 } as const
 
 interface RoleShape { hp: number; atk: number; matk: number; def: number; mdef: number; speed: number }
@@ -57,11 +57,12 @@ function moves(role: RpgFoeRole, element: RpgElement): { moves: BattleEnemyMove[
 
 /** A foe's full frozen kit at a lifetime level. Stats are code, so a rebalance never needs a content publish. */
 export function rpgFoe(input: { id: string; castId: string; element: RpgElement; role: RpgFoeRole; rank: EnemyRank; level: number;
-  shield: number; weaknesses: BattleWeaknesses }): BattleEnemy {
+  shield: number; weaknesses: BattleWeaknesses; reach?: number }): BattleEnemy {
   const t = RPG_FOE_TUNING
   const s = rpgReferenceStat(input.level)
   const shape = ROLE[input.role]
-  const scale = input.rank === 'boss' ? t.bossHp : input.rank === 'sub-boss' ? t.subBossHp : 1
+  // Sub-bosses and champions also grow with the skill depth the party can reach (D272): that is where its MP goes.
+  const scale = (input.rank === 'boss' ? t.bossHp : input.rank === 'sub-boss' ? t.subBossHp : 1) * (input.rank === 'regular' ? 1 : input.reach ?? 1)
   const kit = moves(input.role, input.element)
   return {
     id: input.id, castId: input.castId, element: input.element, rank: input.rank, level: input.level,

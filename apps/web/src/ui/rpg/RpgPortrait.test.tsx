@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LoadedContent } from '../../content/runtime'
-import { RpgElementLegend, RpgPortrait } from './RpgPortrait'
+import { RpgPortrait } from './RpgPortrait'
 
 afterEach(cleanup)
 
@@ -11,25 +11,15 @@ describe('RPG portrait identity', () => {
     render(<RpgPortrait content={null} outfitId="invented-outfit" name="Invented Uma"
       weapon="cleric-staff" element="light" />)
     expect(screen.getByRole('img', { name: 'Portrait unavailable' })).toBeTruthy()
-    expect(screen.getByText('Cleric staff')).toBeTruthy()
+    expect(screen.getByText('Cleric Staff')).toBeTruthy()
     expect(screen.getByText('Light')).toBeTruthy()
     expect(screen.getAllByText('Invented Uma')).toHaveLength(1)
   })
 
-  it('explains the matchup and B-depth limit in a toggleable text legend', () => {
-    render(<RpgElementLegend />)
-    const toggle = screen.getByRole('button', { name: 'Show element guide' })
-    expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    fireEvent.click(toggle)
-    expect(screen.getByText(/Fire beats Ice/)).toBeTruthy()
-    expect(screen.getByText(/B opens depths 1–3/)).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Hide element guide' }).getAttribute('aria-expanded')).toBe('true')
-  })
-
   it('keeps compact weapon/element identity icon-only but named for assistive technology', () => {
-    render(<RpgPortrait content={null} compact artwork="icon" outfitId="invented-outfit" name="Invented Uma" weapon="tome" element="dark" />)
-    expect(screen.getByRole('img', { name: 'Invented Uma, Magic tome, Dark' }).querySelectorAll('svg')).toHaveLength(2)
-    expect(screen.queryByText('Magic tome')).toBeNull()
+    render(<RpgPortrait content={null} compact artwork="icon" outfitId="invented-outfit" name="Invented Uma" weapon="summoner-tome" element="dark" />)
+    expect(screen.getByRole('img', { name: 'Invented Uma, Summoner Tome, Dark' }).querySelectorAll('svg')).toHaveLength(2)
+    expect(screen.queryByText('Summoner Tome')).toBeNull()
     expect(screen.queryByText('Dark')).toBeNull()
   })
 

@@ -1,8 +1,9 @@
-// Campaign fight (D265): tap an enemy to attack, or pick a skill first. Weak hits chip each foe's shield (its icons
-// show what it is weak to); a Break leaves it open to full damage for two rounds. The result settles itself.
+// Campaign fight (D265, D268): tap an enemy to attack, or pick a skill first. Weak parts chip each foe's shield (its
+// icons show what it is weak to); a Break leaves it open to full damage for two rounds. Two-staff Mages and Summoners
+// act twice; a Cleric's skill carries a blessing. The result settles itself.
 import {
-  battleBroken, rpgLevelReveal, rpgMemberLevel,
-  type BattleAction, type BattleState, type BattleUnit, type RpgSettlement,
+  battleActionsLeft, battleBroken, rpgHand, rpgLevelReveal, rpgMemberLevel,
+  type BattleAction, type BattleState, type BattleUnit, type RpgSettlement, type RpgWeapon,
 } from '@racer/domain'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
@@ -14,10 +15,10 @@ import { ScreenState } from '../../ui/ScreenState'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgEnemyPortrait } from '../../ui/rpg/RpgEnemyPortrait'
 import { RpgPortrait } from '../../ui/rpg/RpgPortrait'
-import { describeCue, previewTarget, skillChoices, type BattleMode } from '../../ui/rpg/battle-view'
+import { actionFor, blessingChoices, describeCue, previewTarget, skillChoices, type BattleMode, type SkillChoice } from '../../ui/rpg/battle-view'
 import { useBattlePlayback } from '../../ui/rpg/useBattlePlayback'
-import { ElementMark, GhostButton, PrimaryButton, RpgBar, ShieldBadge, WeaknessIcons, formatRpgLevel } from '../../ui/rpg/rpg-ui'
-import { RpgFrame, commit, pushToast, useRpg } from './RpgScreen'
+import { ElementMark, GhostButton, KindMark, PrimaryButton, RpgBar, ShieldBadge, WEAPON_KIND_LABEL, WeaknessIcons, WeaponKindMark, formatRpgLevel } from '../../ui/rpg/rpg-ui'
+import { RpgFrame, commit, pushToast, skillKinds, useRpg } from './RpgScreen'
 
 export function RpgFightScreen() {
   const { presetId = '', chapterId = '' } = useParams()
@@ -31,6 +32,8 @@ export function RpgFightScreen() {
   const [actorId, setActorId] = useState<string | null>(null)
   const [mode, setMode] = useState<BattleMode>({ kind: 'attack' })
   const [skills, setSkills] = useState(false)
+  const [blessFor, setBlessFor] = useState<SkillChoice | null>(null)
+  const [lastBlessing, setLastBlessing] = useState<Record<string, string>>({})
   const [menu, setMenu] = useState(false)
   const [busy, setBusy] = useState(false)
   const [settled, setSettled] = useState<RpgSettlement | null>(null)
@@ -47,7 +50,7 @@ export function RpgFightScreen() {
     const enemy = state?.input.enemies.find((e) => e.id === id)
     return enemy ? castName(enemy.castId) : content.umas.byId.get(id)?.name ?? id
   }
-  const living = state?.units.filter((u) => u.side === 'ally' && u.hp > 0 && !state.acted.includes(u.id)) ?? []
+  const living = state?.units.filter((u) => u.side === 'ally' && u.hp > 0 && battleActionsLeft(state, u.id) > 0) ?? []
   const actor = living.find((u) => u.id === actorId) ?? living[0] ?? null
   const choices = useMemo(() => state && actor ? skillChoices(state, actor.id) : [], [state, actor?.id])
   const node = chapter?.nodes.find((n) => n.id === view?.run.battle?.nodeId)
@@ -64,8 +67,7 @@ export function RpgFightScreen() {
     try {
       const step = await actRpgFight(presetId, chapterId, view.run.battle.battleId, count, action)
       setState(step.state); setCount((n) => n + 1); setMode({ kind: 'attack' })
-      if (!step.state.acted.includes(action.actorId)) setActorId(action.actorId)
-      else setActorId(null)
+      setActorId(battleActionsLeft(step.state, action.actorId) > 0 ? action.actorId : null)
       await playback.play(step.cues.filter((c) => c.kind !== 'intent'))
       if (step.state.outcome !== 'active') {
         const result = await finishRpgFight(chapter, presetId, view.run.battle.battleId)
@@ -84,13 +86,26 @@ export function RpgFightScreen() {
       return
     }
     if (unit.hp <= 0 || mode.kind === 'guard') return
-    void act(mode.kind === 'skill' ? { kind: 'skill', actorId: actor.id, targetId: unit.id, skill: mode.ref } : { kind: 'attack', actorId: actor.id, targetId: unit.id })
+    void act(actionFor(mode, actor.id, unit.id))
   }
   const skill = mode.kind === 'skill' ? choices.find((c) => JSON.stringify(c.ref) === JSON.stringify(mode.ref)) : null
+  const actorAlly = actor ? state.input.allies.find((a) => a.id === actor.id)! : null
+  const hand = actorAlly ? rpgHand(actorAlly) : null
+  const left = actor ? battleActionsLeft(state, actor.id) : 0
+  const familiarUsed = !!actor && hand?.free.kind === 'familiar' && state.familiars.includes(actor.id)
+  const attackLabel = hand?.free.kind === 'familiar' ? 'Familiar' : hand?.free.kind === 'short-sword' ? 'Slash' : hand?.free.kind === 'staff' ? 'Strike' : 'Attack'
+  const weapon: RpgWeapon | undefined = mode.kind === 'attack' ? mode.weapon : undefined
+  const turn = hand && hand.actions > 1 ? ` · action ${hand.actions - left + 1} of ${hand.actions}` : ''
+  const blessing = skill && mode.kind === 'skill' && mode.blessing ? blessingChoices(state, actor!.id, skill.skill).find((b) => b.id === mode.blessing) : null
   const hint = playback.cue ? describeCue(playback.cue, name)
     : mode.kind === 'guard' ? `Tap an ally for ${name(actor?.id ?? '')} to guard`
-    : skill ? `Tap an enemy: ${skill.skill.label} · ${skill.skill.mp} MP${skill.skill.target === 'all' ? ' (hits all)' : skill.skill.target === 'random' ? ` (${skill.skill.hits} random hits)` : skill.skill.hits > 1 ? ` (${skill.skill.hits} hits)` : ''}`
-    : actor ? `${name(actor.id)}: tap an enemy to attack` : ''
+    : skill ? `Tap an enemy: ${skill.skill.label} · ${skill.skill.mp} MP${blessing ? ` · ${blessing.name}` : ''}${turn}`
+    : actor ? `${name(actor.id)}: tap an enemy to ${attackLabel.toLowerCase()}${weapon ? ` (${WEAPON_KIND_LABEL[weapon as keyof typeof WEAPON_KIND_LABEL] ?? weapon})` : ''}${turn}` : ''
+  const pickSkill = (choice: SkillChoice) => {
+    const options = blessingChoices(state, actor!.id, choice.skill)
+    if (options.length > 1) { setBlessFor(choice); return }
+    setMode({ kind: 'skill', ref: choice.ref, ...(options[0] ? { blessing: options[0].id } : {}) }); setSkills(false)
+  }
   const enemies = state.units.filter((u) => u.side === 'enemy')
   const allies = state.units.filter((u) => u.side === 'ally')
   return <RpgFrame back={mapPath} backLabel="Map (fight is saved)" eyebrow={chapter.title} title={node?.name ?? 'Fight'} guide="weakness" playing
@@ -118,39 +133,64 @@ export function RpgFightScreen() {
       <p aria-live="polite" className={`min-h-8 text-center font-semibold text-accent ${playback.cue?.kind === 'break' ? 'font-display text-[22px] leading-7 tracking-wide' : 'text-[12px] leading-4'}`}>{hint}</p>
       <div className="grid grid-cols-5 gap-1" aria-label="Party">{allies.map((unit) => {
         const ally = state.input.allies.find((a) => a.id === unit.id)!
-        const done = state.acted.includes(unit.id) || unit.hp <= 0
+        const done = battleActionsLeft(state, unit.id) <= 0 || unit.hp <= 0
         const selected = actor?.id === unit.id
         const hit = playback.cue && 'targetId' in playback.cue && playback.cue.targetId === unit.id
         return <button key={unit.id} type="button" onClick={(e) => { e.stopPropagation(); tapUnit(unit) }} disabled={busy}
           aria-label={`${name(unit.id)}, HP ${unit.hp} of ${ally.stats.hp}, MP ${unit.mp} of ${ally.stats.mp}${done ? ', done' : ''}`}
           className={`min-w-0 rounded-sm border p-1 text-left ${selected ? 'border-accent bg-accent/15' : hit ? 'border-[#ff8a5c]' : 'border-hairline-dark'} ${done ? 'opacity-50' : ''}`}>
-          <RpgPortrait content={content} compact artwork="icon" outfitId={ally.id} name={name(ally.id)} weapon={ally.weapon} element={ally.signature} className="aspect-square w-full" />
+          <RpgPortrait content={content} compact artwork="icon" outfitId={ally.id} name={name(ally.id)} weapon={ally.weapons[0]!} element={null} className="aspect-square w-full" />
           <RpgBar className="mt-1" value={unit.hp} max={ally.stats.hp} />
           <RpgBar className="mt-0.5" value={unit.mp} max={ally.stats.mp} tone="mp" />
-          <p className="truncate text-[9px]">{unit.hp <= 0 ? 'KO' : done ? 'Done' : `${unit.mp} MP`}</p>
+          <p className="truncate text-[9px]">{unit.hp <= 0 ? 'KO' : done ? 'Done' : `${unit.mp} MP${rpgHand(ally).actions > 1 ? ` · ${battleActionsLeft(state, unit.id)}×` : ''}`}</p>
         </button>
       })}</div>
     </section>
     <footer className="shrink-0 border-t border-hairline-dark bg-stage-soft px-3 pt-2 pb-2">
+      {actorAlly && hand?.free.kind === 'weapon' && <div className="mb-2 grid grid-cols-2 gap-2" aria-label="Attack weapon">
+        {actorAlly.weapons.map((w, i) => {
+          const on = mode.kind === 'attack' && (mode.weapon ?? actorAlly.weapons[0]) === w && i >= 0
+          return <button key={w} type="button" aria-pressed={on} disabled={busy || playback.playing} onClick={() => setMode({ kind: 'attack', weapon: w })}
+            className={`flex min-h-11 items-center justify-center gap-1 rounded-sm border text-[12px] font-semibold ${on ? 'border-accent bg-accent/15 text-accent' : 'border-hairline-dark bg-stage'}`}>
+            <WeaponKindMark kind={w as keyof typeof WEAPON_KIND_LABEL} />{WEAPON_KIND_LABEL[w as keyof typeof WEAPON_KIND_LABEL]}</button>
+        })}
+      </div>}
       <div className="grid grid-cols-3 gap-2">
-          {(['attack', 'skill', 'guard'] as const).map((kind) => <button key={kind} type="button" disabled={busy || playback.playing || !actor || (kind === 'skill' && choices.length === 0)}
-            aria-pressed={mode.kind === kind} onClick={() => { if (kind === 'skill') setSkills(true); else setMode({ kind }) }}
+          {(['attack', 'skill', 'guard'] as const).map((kind) => <button key={kind} type="button" disabled={busy || playback.playing || !actor || (kind === 'skill' && choices.length === 0) || (kind === 'attack' && familiarUsed)}
+            aria-pressed={mode.kind === kind} onClick={() => { if (kind === 'skill') setSkills(true); else setMode(kind === 'attack' ? { kind, weapon: mode.kind === 'attack' ? mode.weapon : undefined } : { kind }) }}
             className={`min-h-12 rounded-sm border text-sm font-semibold disabled:opacity-40 ${mode.kind === kind ? 'border-accent bg-accent/15 text-accent' : 'border-hairline-dark bg-stage'}`}>
-            {kind === 'skill' ? `Skill${choices.length ? ` (${choices.length})` : ''}` : kind === 'attack' ? 'Attack' : 'Guard'}</button>)}
+            {kind === 'skill' ? `Skill${choices.length ? ` (${choices.length})` : ''}` : kind === 'attack' ? attackLabel : 'Guard'}</button>)}
       </div>
     </footer>
-    {skills && actor && <RpgModalFocus onClose={() => setSkills(false)}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => setSkills(false)}>
-      <div role="dialog" aria-modal="true" aria-label="Skills" onClick={(e) => e.stopPropagation()} className="pb-safe w-full space-y-2 rounded-t-lg border border-hairline-dark bg-stage-soft p-4">
+    {skills && actor && <RpgModalFocus onClose={() => { setSkills(false); setBlessFor(null) }}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => { setSkills(false); setBlessFor(null) }}>
+      <div role="dialog" aria-modal="true" aria-label={blessFor ? 'Blessing' : 'Skills'} onClick={(e) => e.stopPropagation()} className="pb-safe max-h-[80dvh] w-full space-y-2 overflow-y-auto rounded-t-lg border border-hairline-dark bg-stage-soft p-4">
+        {blessFor ? <>
+          <p className="text-sm">{blessFor.skill.label} carries a blessing: pick one</p>
+          {blessingChoices(state, actor.id, blessFor.skill).map((b) => {
+            const branch = blessFor.skill.def.primary
+            const preferred = lastBlessing[branch] === b.id
+            return <button key={b.id} type="button" onClick={() => { setLastBlessing({ ...lastBlessing, [branch]: b.id }); setMode({ kind: 'skill', ref: blessFor.ref, blessing: b.id }); setBlessFor(null); setSkills(false) }}
+              className={`flex min-h-12 w-full items-center justify-between rounded-sm border p-3 text-left ${preferred ? 'border-accent' : 'border-hairline-dark'} bg-stage`}>
+              <span className="font-semibold">{b.name}</span><span className="text-[11px] text-ink-on-dark-soft">{blessFor.skill.def.target === 'one' ? 'Focused · 3 stacks' : blessFor.skill.def.target === 'all' ? 'Party' : 'Scatter'}</span>
+            </button>
+          })}
+        </> : <>
         <p className="text-sm">{name(actor.id)} · {actor.mp} MP</p>
         {choices.map((choice) => {
-          const weakTargets = enemies.filter((u) => u.hp > 0 && state.input.enemies.find((e) => e.id === u.id)!.weaknesses.element === choice.skill.element)
-          return <button key={JSON.stringify(choice.ref)} type="button" disabled={!choice.affordable} onClick={() => { setMode({ kind: 'skill', ref: choice.ref }); setSkills(false) }}
+          const kinds = skillKinds(choice.skill.def)
+          const weakTargets = enemies.filter((u) => {
+            const w = state.input.enemies.find((e) => e.id === u.id)!.weaknesses
+            return u.hp > 0 && kinds.some((k) => (w.elements as string[]).includes(k) || (w.weapons as string[]).includes(k))
+          })
+          const def = choice.skill.def
+          return <button key={JSON.stringify(choice.ref)} type="button" disabled={!choice.affordable} onClick={() => pickSkill(choice)}
             className="flex min-h-14 w-full items-center justify-between gap-2 rounded-sm border border-hairline-dark bg-stage p-3 text-left disabled:opacity-40">
-            <span><span className="flex items-center gap-1 font-semibold"><ElementMark element={choice.skill.element} />{choice.skill.label}{choice.level > 1 ? ` Lv${choice.level}` : ''}</span>
-              <span className="block text-[11px] text-ink-on-dark-soft">{choice.skill.target === 'all' ? 'All enemies' : choice.skill.target === 'random' ? `${choice.skill.hits} hits on random enemies` : choice.skill.hits > 1 ? `${choice.skill.hits} hits` : 'One enemy'}{choice.skill.support ? ` · party ${choice.skill.support}` : ''}{weakTargets.length ? ` · WEAK: ${weakTargets.map((u) => name(u.id)).join(', ')}` : ''}</span></span>
+            <span><span className="flex items-center gap-1 font-semibold">{kinds.map((k) => <KindMark key={k} kind={k} />)}{choice.skill.label}</span>
+              <span className="block text-[11px] text-ink-on-dark-soft">{def.target === 'all' ? 'All enemies' : def.target === 'random' ? `${def.hits.length} hits on random enemies` : def.hits.length > 1 ? `${def.hits.length} hits` : 'One enemy'}{weakTargets.length ? ` · WEAK: ${weakTargets.map((u) => name(u.id)).join(', ')}` : ''}</span></span>
             <span className="text-sm font-semibold">{choice.skill.mp} MP</span>
           </button>
         })}
+        </>}
       </div></div></RpgModalFocus>}
     {menu && <RpgModalFocus onClose={() => setMenu(false)}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => setMenu(false)}>
       <div role="dialog" aria-modal="true" aria-label="Fight menu" onClick={(e) => e.stopPropagation()} className="pb-safe w-full space-y-2 rounded-t-lg border border-hairline-dark bg-stage-soft p-4">
@@ -183,7 +223,7 @@ function FightResult({ back, settled, chapterTitle, nodeName, name, onMap, onAga
         const reveal = profile ? rpgLevelReveal(profile, { ...member }) : null
         const up = member.afterLevel > member.beforeLevel
         return <div key={member.outfitId} className="grid grid-cols-[44px_1fr] items-center gap-2 rounded-sm border border-hairline-dark p-2">
-          <RpgPortrait content={content} compact artwork="icon" outfitId={member.outfitId} name={name(member.outfitId)} weapon={profile?.weapon ?? null} element={profile?.defaultSignature ?? null} className="aspect-square w-11" />
+          <RpgPortrait content={content} compact artwork="icon" outfitId={member.outfitId} name={name(member.outfitId)} weapon={profile?.weapons[0] ?? null} element={null} className="aspect-square w-11" />
           <div className="min-w-0 text-[12px]">
             <p className="flex justify-between gap-2"><span className="truncate font-semibold">{name(member.outfitId)}</span><span className="text-accent">+{member.delta} EXP</span></p>
             <p className={up ? 'font-semibold text-accent' : 'text-ink-on-dark-soft'}>{up ? `Level up! ${formatRpgLevel(rpgMemberLevel({ tier: member.beforeTier, level: member.beforeLevel }))} → ${formatRpgLevel(rpgMemberLevel({ tier: member.afterTier, level: member.afterLevel }))}` : formatRpgLevel(rpgMemberLevel({ tier: member.afterTier, level: member.afterLevel }))}
@@ -191,7 +231,7 @@ function FightResult({ back, settled, chapterTitle, nodeName, name, onMap, onAga
           </div>
         </div>
       })}</div>
-    </> : <p className="mt-3 text-sm">No reward, no penalty. MP is back to what it was when the fight began. Learn a weakness skill, rest at a camp or bring a different party.</p>}
+    </> : <p className="mt-3 text-sm">No reward, no penalty. MP is back to what it was when the fight began. Equip skills that hit its weaknesses, rest at a camp or bring a different party.</p>}
     <div className="mt-4 grid grid-cols-2 gap-2">
       <GhostButton disabled={busy || !lastNode} onClick={() => void again()}>{win ? 'Fight again' : 'Retry'}</GhostButton>
       <PrimaryButton onClick={onMap}>Back to map</PrimaryButton>

@@ -1,26 +1,26 @@
 // Local-first RPG account and campaign (docs/design/uma-rpg.md, D263). Every change commits to Dexie with its outbox
 // markers in one transaction and syncs in the background like races and the Farm; nothing waits on the server.
 import {
-  RPG_PARTY_SIZE, RPG_PRESET_COUNT, applyBattleAction, canUseRpgSignature, changeRpgClass, createBattle, createRpgRun,
-  enrollRpgOutfit as enrollProfile, inspirationGrantId, inspirationTokenId, parseInspirationBank, promoteRpgOutfit,
-  replayBattle, repayInspiration, rpgBeginRunBattle, rpgPresetId, rpgRestAtCamp, rpgRunId, rpgSettleRunBattle, rpgSkillKey,
-  spendRpgTreePoint, validateRpgLoadout,
-  type BattleAction, type BattleStep, type InspirationMovement, type RpgBattleResultV2, type RpgCampaignChapter,
-  type RpgElement, type RpgOutfitSaveV1, type RpgPresetSaveV1, type RpgPresetSlotV1, type RpgProfile, type RpgRunSaveV2,
-  type RpgSettlement, type RpgSkillRef, type RpgWeapon, type Strategy, type UmaTemplate,
+  RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_WEAPON_KINDS, applyBattleAction, changeRpgClass, createBattle, createRpgRun,
+  enrollRpgOutfit as enrollProfile, forgetRpgVariant, inspirationGrantId, inspirationTokenId, learnRpgNode, parseInspirationBank,
+  promoteRpgOutfit, replayBattle, repayInspiration, rpgBeginRunBattle, rpgNodeKey, rpgPresetId, rpgRestAtCamp, rpgRunId,
+  rpgSettleRunBattle, validateRpgLoadout,
+  type BattleAction, type BattleStep, type InspirationMovement, type RpgBattleResultV2, type RpgCampaignChapter, type RpgClass,
+  type RpgNodeRef, type RpgOutfitSave, type RpgPresetSave, type RpgPresetSlot, type RpgProfile, type RpgRunSaveV2,
+  type RpgSettlement, type RpgWeapon, type RpgWeaponKind, type UmaTemplate,
 } from '@racer/domain'
 import { db, type VersionedRow } from './db'
 import { queueInTransaction } from './persistence'
 
 export interface RpgAccount {
-  outfits: ReadonlyMap<string, VersionedRow<RpgOutfitSaveV1>>
+  outfits: ReadonlyMap<string, VersionedRow<RpgOutfitSave>>
   /** Always five, projected empty until first saved. */
-  presets: readonly VersionedRow<RpgPresetSaveV1>[]
+  presets: readonly VersionedRow<RpgPresetSave>[]
   runs: readonly VersionedRow<RpgRunSaveV2>[]
 }
 
-export function emptyRpgPreset(index: number): RpgPresetSaveV1 {
-  return { schemaVersion: 2, presetId: rpgPresetId(index), name: `Party ${index}`, slots: [null, null, null, null, null], foregroundChapterId: null }
+export function emptyRpgPreset(index: number): RpgPresetSave {
+  return { schemaVersion: 3, presetId: rpgPresetId(index), name: `Party ${index}`, slots: [null, null, null, null, null], foregroundChapterId: null }
 }
 
 export async function readRpgAccount(): Promise<RpgAccount> {
@@ -33,7 +33,7 @@ export async function readRpgAccount(): Promise<RpgAccount> {
   }
 }
 
-export function validateRpgPresetSlots(slots: readonly (RpgPresetSlotV1 | null)[], profiles: ReadonlyMap<string, RpgProfile>): string | null {
+export function validateRpgPresetSlots(slots: readonly (RpgPresetSlot | null)[], profiles: ReadonlyMap<string, RpgProfile>): string | null {
   if (slots.length !== RPG_PARTY_SIZE) return 'A party has exactly five slots.'
   const ids = slots.flatMap((slot) => slot ? [slot.outfitId] : [])
   if (new Set(ids).size !== ids.length) return 'An outfit can fill only one slot.'
@@ -41,34 +41,34 @@ export function validateRpgPresetSlots(slots: readonly (RpgPresetSlotV1 | null)[
     if (!slot) continue
     const profile = profiles.get(slot.outfitId)
     if (!profile) return 'Every slot needs an enrolled outfit.'
-    if (!canUseRpgSignature(profile, slot.signature) || !validateRpgLoadout(profile, slot.signature, slot.loadout)) return 'A slot has an unusable element or skill.'
+    if (!RPG_WEAPON_KINDS.includes(slot.familiar) || !validateRpgLoadout(profile, slot.loadout)) return 'A slot has an unusable skill.'
   }
   return null
 }
 
 const now = () => Date.now()
 
-export async function enrollRpgOutfit(input: { template: UmaTemplate; contentVersion: string; style: Strategy; weapon: RpgWeapon; signature: RpgElement }): Promise<void> {
-  const profile = enrollProfile({ outfit: input.template, contentVersion: input.contentVersion, style: input.style, weapon: input.weapon, defaultSignature: input.signature })
+export async function enrollRpgOutfit(input: { template: UmaTemplate; contentVersion: string; classId: RpgClass; weapons: RpgWeapon[] }): Promise<void> {
+  const profile = enrollProfile({ outfit: input.template, contentVersion: input.contentVersion, classId: input.classId, weapons: input.weapons })
   await db.transaction('rw', [db.umas, db.rpgOutfits, db.pendingRpgCommands, db.outbox], async () => {
     if (!await db.umas.get(input.template.id)) throw new Error('Only owned outfits can enroll')
     if (await db.rpgOutfits.get(input.template.id)) throw new Error('Already enrolled')
-    await db.rpgOutfits.put({ id: input.template.id, version: 0, data: { schemaVersion: 2, profile, projectionRevision: 0 } })
+    await db.rpgOutfits.put({ id: input.template.id, version: 0, data: { schemaVersion: 3, profile, projectionRevision: 0 } })
     await queueInTransaction('rpgOutfits', input.template.id, 'upsert', now())
   })
 }
 
-async function putOutfit(row: VersionedRow<RpgOutfitSaveV1>, profile: RpgProfile, at: number): Promise<void> {
-  await db.rpgOutfits.put({ ...row, data: { schemaVersion: 2, profile, projectionRevision: row.data.projectionRevision + 1 } })
+async function putOutfit(row: VersionedRow<RpgOutfitSave>, profile: RpgProfile, at: number): Promise<void> {
+  await db.rpgOutfits.put({ ...row, data: { schemaVersion: 3, profile, projectionRevision: row.data.projectionRevision + 1 } })
   await queueInTransaction('rpgOutfits', row.id, 'upsert', at)
 }
-async function putPreset(id: string, data: RpgPresetSaveV1, at: number): Promise<void> {
+async function putPreset(id: string, data: RpgPresetSave, at: number): Promise<void> {
   const row = await db.rpgPresets.get(id)
-  await db.rpgPresets.put({ id, version: row?.version ?? 0, data: { ...data, schemaVersion: 2 } })
+  await db.rpgPresets.put({ id, version: row?.version ?? 0, data: { ...data, schemaVersion: 3 } })
   await queueInTransaction('rpgPresets', id, 'upsert', at)
 }
 
-export async function saveRpgParty(preset: RpgPresetSaveV1): Promise<void> {
+export async function saveRpgParty(preset: RpgPresetSave): Promise<void> {
   await db.transaction('rw', [db.rpgOutfits, db.rpgPresets, db.pendingRpgCommands, db.outbox], async () => {
     const outfits = await db.rpgOutfits.toArray()
     const problem = validateRpgPresetSlots(preset.slots, new Map(outfits.map((row) => [row.id, row.data.profile])))
@@ -78,7 +78,7 @@ export async function saveRpgParty(preset: RpgPresetSaveV1): Promise<void> {
     for (const other of await db.rpgPresets.toArray()) {
       if (other.id === preset.presetId) continue
       const slots = other.data.slots.map((slot) => slot && preset.slots.some((s) => s?.outfitId === slot.outfitId) ? null : slot)
-      if (slots.some((slot, i) => slot !== other.data.slots[i])) await putPreset(other.id, { ...other.data, slots: slots as RpgPresetSaveV1['slots'] }, at)
+      if (slots.some((slot, i) => slot !== other.data.slots[i])) await putPreset(other.id, { ...other.data, slots: slots as RpgPresetSave['slots'] }, at)
     }
     await putPreset(preset.presetId, preset, at)
   })
@@ -91,23 +91,39 @@ async function editOutfit(outfitId: string, edit: (profile: RpgProfile) => RpgPr
     await putOutfit(row, edit(row.data.profile), now())
   })
 }
-export const learnRpgSkill = (outfitId: string, ref: RpgSkillRef) => editOutfit(outfitId, (p) => spendRpgTreePoint(p, ref))
-export const changeRpgOutfitClass = (outfitId: string, style: Strategy, weapon: RpgWeapon) => editOutfit(outfitId, (p) => changeRpgClass(p, style, weapon))
+export const learnRpgSkill = (outfitId: string, id: string) => editOutfit(outfitId, (p) => learnRpgNode(p, id))
+export const changeRpgOutfitClass = (outfitId: string, classId: RpgClass, weapons: RpgWeapon[]) => editOutfit(outfitId, (p) => changeRpgClass(p, classId, weapons))
 
-/** Equips skills and the active element for the outfit's slot in one party. */
-export async function equipRpgSkills(presetId: string, outfitId: string, signature: RpgElement, loadout: readonly RpgSkillRef[]): Promise<void> {
-  const refs = loadout.map(({ tier, weapon, element, depth, branch }) => ({ tier, weapon, element, depth, branch }))
+/** Swaps a variant out (D270): the points come back and every party stops equipping it. */
+export async function forgetRpgSkill(outfitId: string, id: string): Promise<void> {
+  await db.transaction('rw', [db.rpgOutfits, db.rpgPresets, db.pendingRpgCommands, db.outbox], async () => {
+    const row = await db.rpgOutfits.get(outfitId)
+    if (!row) throw new Error('Outfit is not enrolled')
+    const next = forgetRpgVariant(row.data.profile, id)
+    const at = now()
+    await putOutfit(row, next, at)
+    for (const preset of await db.rpgPresets.toArray()) {
+      if (!preset.data.slots.some((s) => s?.outfitId === outfitId && s.loadout.some((r) => r.id === id && r.tier === next.tier))) continue
+      const slots = preset.data.slots.map((s) => s?.outfitId === outfitId ? { ...s, loadout: s.loadout.filter((r) => !(r.id === id && r.tier === next.tier)) } : s)
+      await putPreset(preset.id, { ...preset.data, slots: slots as RpgPresetSave['slots'] }, at)
+    }
+  })
+}
+
+/** Equips skills and the Summoner's Familiar form for the outfit's slot in one party. */
+export async function equipRpgSkills(presetId: string, outfitId: string, loadout: readonly RpgNodeRef[], familiar?: RpgWeaponKind): Promise<void> {
+  const refs = loadout.map(({ tier, id }) => ({ tier, id }))
   await db.transaction('rw', [db.rpgOutfits, db.rpgPresets, db.pendingRpgCommands, db.outbox], async () => {
     const outfit = await db.rpgOutfits.get(outfitId)
     const preset = await db.rpgPresets.get(presetId)
     if (!outfit || !preset) throw new Error('Party member unavailable')
-    if (!validateRpgLoadout(outfit.data.profile, signature, refs)) throw new Error('Those skills or that element are not usable')
-    const slots = preset.data.slots.map((s) => s?.outfitId === outfitId ? { ...s, signature, loadout: refs } : s) as RpgPresetSaveV1['slots']
+    if (!validateRpgLoadout(outfit.data.profile, refs)) throw new Error('Those skills are not usable')
+    const slots = preset.data.slots.map((s) => s?.outfitId === outfitId ? { ...s, loadout: refs, familiar: familiar ?? s.familiar } : s) as RpgPresetSave['slots']
     await putPreset(presetId, { ...preset.data, slots }, now())
   })
 }
 
-export async function promoteRpgOutfitTier(outfitId: string, legacy: readonly RpgSkillRef[], discardUnspent: boolean): Promise<void> {
+export async function promoteRpgOutfitTier(outfitId: string, legacy: readonly RpgNodeRef[], discardUnspent: boolean): Promise<void> {
   await db.transaction('rw', [db.rpgOutfits, db.rpgPresets, db.rpgPromotions, db.pendingRpgCommands, db.outbox], async () => {
     const row = await db.rpgOutfits.get(outfitId)
     if (!row) throw new Error('Outfit is not enrolled')
@@ -115,14 +131,14 @@ export async function promoteRpgOutfitTier(outfitId: string, legacy: readonly Rp
     const promoted = promoteRpgOutfit(before, legacy, discardUnspent)
     const at = now()
     await putOutfit(row, promoted.profile, at)
-    const keys = new Set(promoted.profile.legacy.map(rpgSkillKey))
+    const keys = new Set(promoted.profile.legacy.map(rpgNodeKey))
     for (const preset of await db.rpgPresets.toArray()) {
       if (!preset.data.slots.some((s) => s?.outfitId === outfitId)) continue
-      const slots = preset.data.slots.map((s) => s?.outfitId === outfitId ? { ...s, loadout: s.loadout.filter((r) => keys.has(rpgSkillKey(r))) } : s)
-      await putPreset(preset.id, { ...preset.data, slots: slots as RpgPresetSaveV1['slots'] }, at)
+      const slots = preset.data.slots.map((s) => s?.outfitId === outfitId ? { ...s, loadout: s.loadout.filter((r) => keys.has(rpgNodeKey(r))) } : s)
+      await putPreset(preset.id, { ...preset.data, slots: slots as RpgPresetSave['slots'] }, at)
     }
     const promotionId = `rpg-promote:${outfitId}:${before.tier}`
-    await db.rpgPromotions.put({ id: promotionId, createdAt: at, data: { schemaVersion: 1, promotionId, outfitId, fromTier: before.tier,
+    await db.rpgPromotions.put({ id: promotionId, createdAt: at, data: { schemaVersion: 2, promotionId, outfitId, fromTier: before.tier,
       toTier: promoted.profile.tier, archive: promoted.archivedTier.tree, createdAt: at } })
     await queueInTransaction('rpgPromotions', promotionId, 'append', at)
   })
@@ -130,7 +146,7 @@ export async function promoteRpgOutfitTier(outfitId: string, legacy: readonly Rp
 
 // --- Campaign runs -------------------------------------------------------------------------------------------------
 
-async function partyFor(presetId: string): Promise<{ profile: RpgProfile; slot: RpgPresetSlotV1 }[]> {
+async function partyFor(presetId: string): Promise<{ profile: RpgProfile; slot: RpgPresetSlot }[]> {
   const preset = await db.rpgPresets.get(presetId)
   if (!preset || preset.data.slots.some((s) => s === null)) throw new Error('Fill all five party slots first')
   return Promise.all(preset.data.slots.map(async (slot) => {

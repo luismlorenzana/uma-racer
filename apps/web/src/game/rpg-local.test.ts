@@ -1,11 +1,10 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import Dexie from 'dexie'
-import { createInspirationBank, createUmaSave, enrollRpgOutfit as enrollProfile, openBankOutfit, rpgCampaignChapter,
-  rpgRunId, type UmaTemplate } from '@racer/domain'
+import { createInspirationBank, createUmaSave, openBankOutfit, rpgCampaignChapter, rpgRunId, type UmaTemplate } from '@racer/domain'
 import { db } from './db'
-import { abandonRpgFight, actRpgFight, beginRpgFight, enrollRpgOutfit, finishRpgFight, openRpgRun, readRpgAccount,
-  readRpgFight, saveRpgParty, emptyRpgPreset } from './rpg-local'
+import { abandonRpgFight, actRpgFight, beginRpgFight, enrollRpgOutfit, equipRpgSkills, finishRpgFight, forgetRpgSkill, learnRpgSkill,
+  openRpgRun, readRpgAccount, readRpgFight, saveRpgParty, emptyRpgPreset } from './rpg-local'
 
 // Invented outfits and cast only.
 const template = (id: string): UmaTemplate => ({ id, charaId: `character-${id}`, name: `Invented ${id}`, outfit: null, jpRelease: '2000-01-01', globalRelease: null, starter: true,
@@ -19,9 +18,9 @@ const outbox = async () => (await db.outbox.toArray()).map((row) => `${row.op}:$
 async function seedParty() {
   for (const id of ids) {
     await db.umas.put({ id, version: 1, data: createUmaSave(template(id)) })
-    await enrollRpgOutfit({ template: template(id), contentVersion: 'test', style: 'front', weapon: 'greatsword', signature: 'fire' })
+    await enrollRpgOutfit({ template: template(id), contentVersion: 'test', classId: 'brawler', weapons: ['greatsword', 'spear'] })
   }
-  await saveRpgParty({ ...emptyRpgPreset(1), slots: ids.slice(0, 5).map((outfitId) => ({ outfitId, signature: 'fire' as const, loadout: [] })) as never })
+  await saveRpgParty({ ...emptyRpgPreset(1), slots: ids.slice(0, 5).map((outfitId) => ({ outfitId, loadout: [], familiar: 'greatsword' as const })) as never })
 }
 
 describe('local-first RPG (D263)', () => {
@@ -32,12 +31,24 @@ describe('local-first RPG (D263)', () => {
     await seedParty()
     const account = await readRpgAccount()
     expect(account.outfits.size).toBe(6)
-    expect(account.outfits.get('u1')!.data.schemaVersion).toBe(2)
+    expect(account.outfits.get('u1')!.data).toMatchObject({ schemaVersion: 3, profile: { classId: 'brawler' } })
     expect(await outbox()).toEqual([...ids.map((id) => `upsert:rpgOutfits/${id}`), 'upsert:rpgPresets/party-1'].sort())
-    await saveRpgParty({ ...emptyRpgPreset(2), slots: ['u1', null, null, null, null].map((id) => id && { outfitId: id, signature: 'fire', loadout: [] }) as never })
+    await saveRpgParty({ ...emptyRpgPreset(2), slots: ['u1', null, null, null, null].map((id) => id && { outfitId: id, loadout: [], familiar: 'axe' }) as never })
     const parties = (await readRpgAccount()).presets
     expect(parties[0]!.data.slots[0]).toBeNull()
     expect(parties[1]!.data.slots[0]?.outfitId).toBe('u1')
+  })
+
+  it('learns, equips and swaps out a variant; parties stop equipping it', async () => {
+    await seedParty()
+    await db.rpgOutfits.update('u1', (row) => { row.data.profile.level = 10 })
+    for (const id of ['greatsword.fire.1', 'greatsword.fire.2', 'greatsword.fire.2a']) await learnRpgSkill('u1', id)
+    await equipRpgSkills('party-1', 'u1', [{ tier: 1, id: 'greatsword.fire.2a' }, { tier: 1, id: 'greatsword.fire.1' }], 'bow')
+    expect((await readRpgAccount()).presets[0]!.data.slots[0]).toMatchObject({ familiar: 'bow', loadout: [{ id: 'greatsword.fire.2a' }, { id: 'greatsword.fire.1' }] })
+    await forgetRpgSkill('u1', 'greatsword.fire.2a')
+    expect((await readRpgAccount()).presets[0]!.data.slots[0]!.loadout).toEqual([{ tier: 1, id: 'greatsword.fire.1' }])
+    await learnRpgSkill('u1', 'greatsword.fire.2b')
+    await expect(forgetRpgSkill('u1', 'greatsword.fire.1')).rejects.toThrow(/variant/)
   })
 
   it('plays a fight to the end and settles EXP, carried MP and tokens that repay the advance first', async () => {
@@ -93,15 +104,51 @@ describe('local-first RPG (D263)', () => {
   })
 })
 
+const oldProfile = (level: number, exp: number) => ({ outfitId: 'u1', sourceContentVersion: 'test', baseStats: template('u1').baseStats,
+  growthRates: template('u1').growthRates, sourceAptitudes: template('u1').aptitudes, affinities: { ice: 'A', light: 'A', fire: 'A', dark: 'A' },
+  style: 'front', weapon: 'greatsword', defaultSignature: 'fire', tier: 1, level, exp,
+  tree: [{ tier: 1, weapon: 'greatsword', element: 'fire', depth: 1, branch: 'foundation', level: 2 }], legacy: [] })
+const legacyDb = (version: number) => {
+  const legacy = new Dexie('uma-racer')
+  legacy.version(version).stores(Object.fromEntries(db.tables.filter((t) => version >= 27 || t.name !== 'rpgFights').map((table) => [table.name,
+    [table.schema.primKey.src, ...table.schema.indexes.map((index) => index.src)].join(', ')])))
+  return legacy
+}
+
+describe('class upgrade (Dexie v28, D272)', () => {
+  afterEach(() => db.close())
+  it('gives outfits a class keeping levels, clears loadouts and closes a fight left open under engine v3', async () => {
+    await db.delete()
+    const legacy = legacyDb(27)
+    await legacy.open()
+    await legacy.table('rpgOutfits').put({ id: 'u1', version: 7, data: { schemaVersion: 2, profile: oldProfile(14, 40), projectionRevision: 9 } })
+    await legacy.table('rpgPresets').put({ id: 'party-1', version: 2, data: { schemaVersion: 2, presetId: 'party-1', name: 'Mine',
+      slots: [{ outfitId: 'u1', signature: 'fire', loadout: [{ tier: 1, weapon: 'greatsword', element: 'fire', depth: 1, branch: 'foundation' }] }, null, null, null, null],
+      foregroundChapterId: 'ura-finale' } })
+    const battleId = 'rpg-battle:party-1:ura-finale:3'
+    await legacy.table('rpgCheckpoints').put({ id: 'party-1:ura-finale', version: 5, data: { schemaVersion: 2, presetId: 'party-1', chapterId: 'ura-finale',
+      wins: { start: 1, a1r1c1: 2 }, mp: { u1: 9 }, battle: { battleId, nodeId: 'a1r1c2', startedAt: 1, input: { version: 3, seed: 1 } }, battles: 3, clearedAt: null, updatedAt: 1 } })
+    await legacy.table('rpgFights').put({ id: battleId, actions: [], updatedAt: 1 })
+    legacy.close()
+    await db.open()
+    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 3, projectionRevision: 10,
+      profile: { classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 14, exp: 40, tree: [], legacy: [] } })
+    expect((await db.rpgPresets.get('party-1'))!.data).toEqual({ schemaVersion: 3, presetId: 'party-1', name: 'Mine', foregroundChapterId: 'ura-finale',
+      slots: [{ outfitId: 'u1', loadout: [], familiar: 'greatsword' }, null, null, null, null] })
+    expect((await db.rpgCheckpoints.get('party-1:ura-finale'))!.data).toMatchObject({ battle: null, wins: { a1r1c1: 2 }, mp: { u1: 9 } })
+    expect(await db.rpgFights.count()).toBe(0)
+    expect((await db.outbox.toArray()).map((r) => `${r.op}:${r.kind}/${r.id}`).sort()).toEqual([
+      'upsert:rpgCheckpoints/party-1:ura-finale', 'upsert:rpgOutfits/u1', 'upsert:rpgPresets/party-1'])
+  })
+})
+
 describe('campaign upgrade (Dexie v27)', () => {
   afterEach(() => db.close())
   it('restarts outfits at Lv1 once, clears loadouts, retires first-map checkpoints and lands a queued unlock', async () => {
     await db.delete()
-    const legacy = new Dexie('uma-racer')
-    legacy.version(26).stores(Object.fromEntries(db.tables.filter((t) => t.name !== 'rpgFights').map((table) => [table.name,
-      [table.schema.primKey.src, ...table.schema.indexes.map((index) => index.src)].join(', ')])))
+    const legacy = legacyDb(26)
     await legacy.open()
-    const profile = { ...enrollProfile({ outfit: template('u1'), contentVersion: 'test', style: 'front', weapon: 'greatsword', defaultSignature: 'fire' }), level: 12, exp: 40 }
+    const profile = oldProfile(12, 40)
     await legacy.table('rpgOutfits').put({ id: 'u1', version: 3, data: { schemaVersion: 1, profile, projectionRevision: 2 } })
     await legacy.table('rpgPresets').put({ id: 'party-1', version: 2, data: { schemaVersion: 1, presetId: 'party-1', name: 'Old',
       slots: [{ outfitId: 'u1', signature: 'fire', loadout: [{ tier: 1, weapon: 'greatsword', element: 'fire', depth: 1, branch: 'foundation' }] }, null, null, null, null], foregroundChapterId: 'old-map' } })
@@ -119,8 +166,8 @@ describe('campaign upgrade (Dexie v27)', () => {
     await db.open()
     const outfit = (await db.rpgOutfits.get('u1'))!
     expect(outfit.version).toBe(3)
-    expect(outfit.data).toMatchObject({ schemaVersion: 2, projectionRevision: 3, profile: { tier: 1, level: 1, exp: 0, tree: [], style: 'front' } })
-    expect((await db.rpgPresets.get('party-1'))!.data).toMatchObject({ schemaVersion: 2, foregroundChapterId: null, slots: [{ outfitId: 'u1', loadout: [] }, null, null, null, null] })
+    expect(outfit.data).toMatchObject({ schemaVersion: 3, projectionRevision: 3, profile: { tier: 1, level: 1, exp: 0, tree: [], classId: 'brawler' } })
+    expect((await db.rpgPresets.get('party-1'))!.data).toMatchObject({ schemaVersion: 3, foregroundChapterId: null, slots: [{ outfitId: 'u1', loadout: [] }, null, null, null, null] })
     expect(await db.rpgCheckpoints.count()).toBe(0)
     expect(await db.pendingRpgCommands.count()).toBe(0)
     expect((await db.items.get('inspiration:t1:slot'))).toMatchObject({ version: 4, data: { quantity: 2 } })

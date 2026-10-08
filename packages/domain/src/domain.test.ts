@@ -187,7 +187,7 @@ describe('Global Uma RPG — engine v4 pins (D269, D271)', () => {
       BATTLE_BARRIER_PERCENT, BATTLE_BARRIER_CAP, BATTLE_REGEN_PERCENT, BATTLE_CURE_PERCENT, BATTLE_CLARITY_PERCENT,
       BATTLE_REBIRTH_PERCENT, BATTLE_REACTION_SHARE]).toEqual([2, 3, 0.04, 0.1, 0.15, 0.08, 0.3, 0.04, 0.1, 0.04, 0.1, 0.25])
     expect([RPG_FOE_TUNING.regularShield, RPG_FOE_TUNING.lateRegularShield, RPG_FOE_TUNING.subBossShield, RPG_FOE_TUNING.bossShield])
-      .toEqual([3, 4, 6, 8])
+      .toEqual([2, 3, 6, 8])
   })
   it('pins the skill rules and the 330-node catalog (D270)', () => {
     expect([RPG_SKILL_POWER, RPG_SKILL_MP, RPG_AOE_SHARE, RPG_RANDOM_BONUS, RPG_VARIANTS_PER_TREE])

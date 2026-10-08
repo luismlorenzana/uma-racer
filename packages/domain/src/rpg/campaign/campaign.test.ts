@@ -3,7 +3,7 @@ import { SCENARIOS } from '../../scenarios'
 import { RPG_ELEMENTS, enrollRpgOutfit, projectRpgStats, type RpgProfile } from '../rules'
 import { createBattle } from '../battle/engine'
 import { battleWeakness } from '../battle/skills'
-import { rpgCampaign, rpgCampaignChapter, rpgNodeParents, rpgTierLevel } from './chapters'
+import { rpgCampaign, rpgCampaignChapter, rpgChapterReach, rpgNodeParents, rpgTierLevel } from './chapters'
 import { RPG_BATTLE_TOKENS, rpgBattleBaseExp, rpgBattleExp, rpgLevelExpFactor } from './rewards'
 import { createRpgRun, parseRpgRunSave, rpgBeginRunBattle, rpgCarriedMp, rpgChapterCleared, rpgNodeStatus, rpgRestAtCamp,
   rpgSettleRunBattle } from './run'
@@ -80,7 +80,9 @@ describe('foe weaknesses (D269)', () => {
     expect(foes.every((f) => !f.weaknesses.elements.includes(f.element) && f.weaknesses.elements[0] === battleWeakness(f.element))).toBe(true)
     expect(new Set(foes.filter((f) => f.rank === 'boss').map((f) => f.shield))).toEqual(new Set([8]))
     expect(new Set(foes.filter((f) => f.rank === 'sub-boss').map((f) => f.shield))).toEqual(new Set([6]))
-    expect(new Set(foes.filter((f) => f.rank === 'regular').map((f) => f.shield))).toEqual(new Set([3, 4]))
+    expect(new Set(foes.filter((f) => f.rank === 'regular').map((f) => f.shield))).toEqual(new Set([2, 3]))
+    // Boss HP follows the skill depth open at the chapter's start: URA ×1, Unity Cup ×2.2 / 1.6.
+    expect([rpgChapterReach(1), rpgChapterReach(13), rpgChapterReach(25), rpgChapterReach(61)]).toEqual([1, 1.375, 2.9 / 1.6, 1.375])
   })
 })
 

@@ -1,17 +1,17 @@
 // Chapter map: a top-to-bottom route of fights, camps, sub-bosses and five elemental champions (D262, D263).
 // Tap a node to preview it; clear nodes open the ones below, and any cleared fight can be replayed.
 import {
-  RPG_CHAPTER_LEVELS, RPG_STAGE_NAMES, battleWeaponKind, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgMemberLevel,
+  RPG_CHAPTER_LEVELS, RPG_STAGE_NAMES, isRpgElement, isRpgWeaponKind, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgMemberLevel,
   rpgNodeParents, rpgNodeStatus, rpgRunId, inspirationTokenName, type BattleEnemy,
-  type RpgCampaignChapter, type RpgMapNode, type RpgProfile, type RpgRunSaveV2,
+  type RpgCampaignChapter, type RpgMapNode, type RpgPresetSlot, type RpgProfile, type RpgRunSaveV2,
 } from '@racer/domain'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { beginRpgFight, openRpgRun, restRpgRun, rpgOutfitProfiles } from '../../game/rpg-local'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgEnemyPortrait } from '../../ui/rpg/RpgEnemyPortrait'
-import { RPG_ELEMENT_LABELS } from '../../ui/rpg/RpgPortrait'
-import { ELEMENT_RING, ElementMark, GhostButton, PrimaryButton, RpgBar, ShieldBadge, WeaknessIcons, formatRpgBand, formatRpgLevel } from '../../ui/rpg/rpg-ui'
+import { allyKinds } from '../../ui/rpg/battle-view'
+import { ELEMENT_RING, ElementMark, GhostButton, kindLabel, PrimaryButton, RpgBar, ShieldBadge, WeaknessIcons, formatRpgBand, formatRpgLevel } from '../../ui/rpg/rpg-ui'
 import { InspirationTokenIcon } from '../../ui/InspirationTokenIcon'
 import { CheckIcon } from '../../ui/icons'
 import { ScreenState } from '../../ui/ScreenState'
@@ -72,7 +72,7 @@ export function RpgMapScreen() {
       {stageRows.map(({ name, row }) => Number.isFinite(row) && <p key={name} className="absolute left-0 text-[9px] font-bold tracking-[0.16em] text-ink-on-dark-soft uppercase" style={{ top: row * ROW - 14 }}>{name}</p>)}
       {chapter.nodes.map((n) => <MapNode key={n.id} node={n} status={rpgNodeStatus(chapter, run, n.id)} wins={run?.wins[n.id] ?? 0} open={run?.battle?.nodeId === n.id} onOpen={() => setSelected(n.id)} />)}
     </div>
-    {node && <NodeSheet chapter={chapter} node={node} run={run} party={party.map((m) => m.profile)} loadouts={party.map((m) => m.slot.loadout)} presetId={presetId}
+    {node && <NodeSheet chapter={chapter} node={node} run={run} party={party.map((m) => m.profile)} slots={party.map((m) => m.slot)} presetId={presetId}
       onClose={() => setSelected(null)} onFight={() => navigate(`/rpg/party/${presetId}/${chapterId}/fight`)} />}
   </RpgFrame>
 }
@@ -93,8 +93,8 @@ function MapNode({ node, status, wins, open, onOpen }: { node: RpgMapNode; statu
   </button>
 }
 
-function NodeSheet({ chapter, node, run, party, loadouts, presetId, onClose, onFight }: {
-  chapter: RpgCampaignChapter; node: RpgMapNode; run: RpgRunSaveV2 | null; party: RpgProfile[]; loadouts: ReadonlyArray<readonly import('@racer/domain').RpgSkillRef[]>
+function NodeSheet({ chapter, node, run, party, slots, presetId, onClose, onFight }: {
+  chapter: RpgCampaignChapter; node: RpgMapNode; run: RpgRunSaveV2 | null; party: RpgProfile[]; slots: readonly RpgPresetSlot[]
   presetId: string; onClose: () => void; onFight: () => void
 }) {
   const { content, release } = useRpg()
@@ -104,11 +104,13 @@ function NodeSheet({ chapter, node, run, party, loadouts, presetId, onClose, onF
   const castName = (id: string) => release?.status === 'ready' ? release.cast.find((c) => c.id === id)?.name ?? id : id
   const wins = run?.wins[node.id] ?? 0
   const name = (id: string) => content.umas.byId.get(id)?.name ?? id
-  /** Who in the party can chip this foe: by weapon (Attack) or by an equipped skill's element. */
+  /** Who in the party can chip this foe, and with what: her free action's weapon or her equipped skills' kinds. */
   const chippers = (enemy: BattleEnemy) => party.flatMap((p, i) => {
-    const byWeapon = enemy.weaknesses.weapons.includes(battleWeaponKind(p.weapon))
-    const byElement = loadouts[i]!.some((ref) => ref.element === enemy.weaknesses.element)
-    return byWeapon || byElement ? [`${name(p.outfitId)} (${[byWeapon && 'Attack', byElement && `${RPG_ELEMENT_LABELS[enemy.weaknesses.element]} skill`].filter(Boolean).join(', ')})`] : []
+    const slot = slots[i]!
+    const { free, skills } = allyKinds({ ...p, loadout: slot.loadout, familiar: slot.familiar })
+    const weak = (k: string) => (enemy.weaknesses.weapons as string[]).includes(k) || (enemy.weaknesses.elements as string[]).includes(k)
+    const kinds = [...new Set([...free, ...skills])].filter((k) => (isRpgWeaponKind(k) || isRpgElement(k)) && weak(k))
+    return kinds.length ? [`${name(p.outfitId)} (${kinds.map((k) => kindLabel(k)).join(', ')})`] : []
   })
   const fight = async () => {
     setBusy(true)

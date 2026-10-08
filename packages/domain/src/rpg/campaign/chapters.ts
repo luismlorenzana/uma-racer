@@ -2,7 +2,8 @@
 // elemental final bosses (docs/design/uma-rpg.md#chapters, D262). Layout and numbers are code; the private pack only
 // supplies the cast (names and portraits).
 import { SCENARIOS } from '../../scenarios'
-import { RPG_ELEMENTS, RPG_WEAPON_KINDS, rpgElementWeakness, type RpgElement } from '../rules'
+import { RPG_DEPTH_GATES, RPG_ELEMENTS, RPG_WEAPON_KINDS, rpgElementWeakness, type RpgElement } from '../rules'
+import { RPG_SKILL_POWER } from '../catalog'
 import type { BattleEnemy, BattleWeaknesses, EnemyRank } from '../battle/types'
 import { RPG_FOE_ROLES, RPG_FOE_TUNING, rpgFoe, type RpgFoeRole } from './enemies'
 
@@ -99,7 +100,13 @@ function layout(start: number, scenarioTier: number): Layout[] {
   return nodes
 }
 
-function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[]): { enemies: BattleEnemy[]; lead: RpgCastMember | null } {
+/** Skill power open at a chapter's first level, against depth 1: what a party's MP buys in its boss fights (D272). */
+export function rpgChapterReach(levelStart: number): number {
+  const depth = RPG_DEPTH_GATES.filter((gate) => rpgTierLevel(levelStart).level >= gate).length
+  return RPG_SKILL_POWER[depth - 1]! / RPG_SKILL_POWER[0]
+}
+
+function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[], reach: number): { enemies: BattleEnemy[]; lead: RpgCastMember | null } {
   if (node.kind === 'camp') return { enemies: [], lead: null }
   const used = new Set<string>()
   const castFor = (slot: number): RpgCastMember => {
@@ -148,7 +155,7 @@ function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[]): 
   const minions = node.kind === 'boss' ? 2 : node.stage < 2 ? 1 : 2
   const rank = node.kind === 'boss' ? 'boss' : 'sub-boss'
   const enemies = [rpgFoe({ id: 'foe1', castId: boss.id, element, rank, level: node.level, role: node.kind === 'boss' ? 'champion' : 'captain',
-    shield: node.kind === 'boss' ? RPG_FOE_TUNING.bossShield : RPG_FOE_TUNING.subBossShield, weaknesses: weaknesses(0, element, rank) }),
+    shield: node.kind === 'boss' ? RPG_FOE_TUNING.bossShield : RPG_FOE_TUNING.subBossShield, weaknesses: weaknesses(0, element, rank), reach }),
   ...Array.from({ length: minions }, (_, i) => regular(i + 1, others(element, i + 1)))]
   return { enemies, lead: boss }
 }
@@ -169,7 +176,7 @@ export function rpgCampaignChapter(scenarioId: string, cast: readonly RpgCastMem
   const sorted = [...cast].sort((a, b) => a.id.localeCompare(b.id))
   const levelStart = rpgChapterLevelStart(scenario.tier)
   const nodes = layout(levelStart, scenario.tier).map((node) => {
-    const { enemies, lead } = foes(scenario.id, node, sorted)
+    const { enemies, lead } = foes(scenario.id, node, sorted, rpgChapterReach(levelStart))
     return { ...node, name: nodeName(node, lead), enemies }
   })
   return { id: scenario.id, scenarioId: scenario.id, tier: scenario.tier, title: scenario.name, levelStart,

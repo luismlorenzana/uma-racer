@@ -1,6 +1,5 @@
 // Reusable RPG outfit identity for party, map, battle and result (docs/design/uma-rpg.md#phone-presentation).
 import type { RpgElement, RpgWeapon } from '@racer/domain'
-import { useState } from 'react'
 import type { LoadedContent } from '../../content/runtime'
 import { getContentAsset } from '../../content/runtime'
 import { AtlasSprite } from '../AtlasSprite'
@@ -8,20 +7,24 @@ import { Placeholder } from '../Placeholder'
 import { useArt } from '../album/useArt'
 
 export const RPG_WEAPON_LABELS: Record<RpgWeapon, string> = {
-  greatsword: 'Greatsword', spear: 'Spear', 'sword-shield': 'Sword + shield',
-  'wizard-staff': 'Wizard staff', 'cleric-staff': 'Cleric staff', tome: 'Magic tome',
+  greatsword: 'Greatsword', spear: 'Spear', axe: 'Axe', bow: 'Bow', 'short-sword': 'Short Sword',
+  'mage-staff': 'Mage Staff', 'arcane-staff': 'Arcane Staff', 'cleric-staff': 'Cleric Staff', 'summoner-tome': 'Summoner Tome',
 }
 export const RPG_ELEMENT_LABELS: Record<RpgElement, string> = {
   fire: 'Fire', ice: 'Ice', lightning: 'Lightning', light: 'Light', dark: 'Dark',
 }
 
-export function IdentityGlyph({ weapon, element }: { weapon?: RpgWeapon; element?: RpgElement }) {
+export function IdentityGlyph({ weapon, element }: { weapon?: RpgWeapon; element?: RpgElement | 'ultima' }) {
   const path = weapon === 'greatsword' ? 'M3 17 16 4m-2-2 4 0v4M2 13l5 5m-4 0-1 1'
     : weapon === 'spear' ? 'M3 18 15 4m-1-2 4 0-1 4M7 11l3 3'
-    : weapon === 'sword-shield' ? 'M2 17 11 7m-3-2 6-3-2 6M2 12l5 5m7-9 4 1v5l-4 4-4-4V9l4-1Z'
-    : weapon === 'wizard-staff' ? 'M5 18 13 7m1-5 3 3-3 3-3-3 3-3Zm-4 0-1 2m10 4 2 1'
+    : weapon === 'axe' ? 'M4 18 13 9M10 3c4 0 7 3 7 7l-3 1-5-5 1-3Z'
+    : weapon === 'bow' ? 'M4 2c7 1 13 7 14 14M4 2l14 14M2 18l8-8m0 0v3m0-3H7'
+    : weapon === 'short-sword' ? 'M5 15 13 7m-2-1 4-1-1 4M4 11l5 5m-4 0-2 2'
+    : weapon === 'mage-staff' ? 'M5 18 13 7m1-5 3 3-3 3-3-3 3-3Zm-4 0-1 2m10 4 2 1'
+    : weapon === 'arcane-staff' ? 'M5 18 12 9m3-7a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 1.5v3m-1.5-1.5h3'
     : weapon === 'cleric-staff' ? 'M5 18 13 5m-4 0h8m-4-4v8m-3 0 3 2 3-2'
-    : weapon === 'tome' ? 'M2 4c3-1 5 0 8 2 3-2 5-3 8-2v12c-3-1-5 0-8 2-3-2-5-3-8-2V4Zm8 2v12'
+    : weapon === 'summoner-tome' ? 'M2 4c3-1 5 0 8 2 3-2 5-3 8-2v12c-3-1-5 0-8 2-3-2-5-3-8-2V4Zm8 2v12'
+    : element === 'ultima' ? 'M10 2l2.5 5.5L18 10l-5.5 2.5L10 18l-2.5-5.5L2 10l5.5-2.5Z'
     : element === 'fire' ? 'M10 2c1 4-3 5-1 8 1-2 3-2 4-5 6 7 1 13-3 13S2 15 5 10c0 3 2 3 2 3-2-4 0-7 3-11Z'
     : element === 'ice' ? 'M10 1v18M2 5l16 10M18 5 2 15M7 3l3 3 3-3M7 17l3-3 3 3'
     : element === 'lightning' ? 'm11 1-7 10h6l-1 8 7-11h-6l1-7Z'
@@ -59,21 +62,6 @@ export function RpgPortrait({ content, outfitId, name, weapon, element, classNam
         </span>
         {element && <span className="inline-flex min-h-6 items-center gap-0.5 rounded-xs bg-white/15 px-1 text-[10px] leading-3"><IdentityGlyph element={element} />{RPG_ELEMENT_LABELS[element]}</span>}
       </span>
-    </div>}
-  </div>
-}
-
-export function RpgElementLegend() {
-  const [open, setOpen] = useState(false)
-  return <div>
-    <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}
-      className="min-h-11 rounded-sm border border-hairline bg-panel px-3 text-[13px] font-semibold text-ink">
-      {open ? 'Hide' : 'Show'} element guide
-    </button>
-    {open && <div className="mt-2 rounded-md border border-hairline bg-panel p-3 text-[12px] leading-5 text-ink-soft">
-      <p className="font-semibold text-ink">Fire beats Ice · Ice beats Lightning · Lightning beats Fire</p>
-      <p>Light and Dark beat each other. Both are neutral to Fire, Ice and Lightning.</p>
-      <p className="mt-1">A distance affinity opens all five tree depths. B opens depths 1–3. Your active signature gives matching techniques a 10% bonus; it does not lock other elements.</p>
     </div>}
   </div>
 }
