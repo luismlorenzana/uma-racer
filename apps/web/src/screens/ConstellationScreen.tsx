@@ -50,6 +50,7 @@ import { InspirationTokenIcon } from '../ui/InspirationTokenIcon'
 import { useInspiration } from '../game/use-inspiration'
 import { InspirationBankPanel } from '../ui/InspirationBankPanel'
 import { reserveInspirationUnlock } from '../game/inspiration-host'
+import { ClLevelUpButton, useClCutover } from '../ui/puzzles/ClLevelUp'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
@@ -70,6 +71,7 @@ const belongsToView = (node: ConstellationNode, viewMode: NodeView) =>
   viewMode === 'constellation' ? node.kind === 'card' : node.kind === 'parent' || node.kind === 'grandparent'
 
 export function ConstellationScreen({ viewMode = 'constellation', preview, previewBank }: { viewMode?: NodeView; preview?: TrainingContext; previewBank?: import('@racer/domain').InspirationBank }) {
+  const clCutover = useClCutover()
   const training = useTraining()
   const { content, save, uma, cards, umas, tickets } = preview ?? training
   const pushToast = useGame((state) => state.pushToast)
@@ -221,7 +223,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
       </div>
 
       <section className={viewMode === 'inspiration' ? 'px-4 pt-2' : 'px-4 pb-safe pt-2'}>
-        {viewMode === 'constellation' && (canPlaySpark ? (
+        {viewMode === 'constellation' && (clCutover ? <div className="mb-2"><ClLevelUpButton outfitId={save.templateId} tier={run.tier} level={run.trainingLevel} /></div> : canPlaySpark ? (
           <Link
             to={`/minigames/spark-match/${encodeURIComponent(save.templateId)}?return=${encodeURIComponent(here)}`}
             className="mb-2 flex min-h-11 items-center justify-between rounded-sm bg-accent px-4 text-sm font-bold text-ink shadow-2"

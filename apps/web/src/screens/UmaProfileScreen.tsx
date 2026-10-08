@@ -47,6 +47,7 @@ import { CarrotIcon, ChevronLeftIcon, ChevronRightIcon, RaceIcon } from '../ui/i
 import { TypeIcon } from '../ui/TypeIcon'
 import { DISTANCE_ICONS, DistanceTypeIcon, RUNNING_STYLE_ICONS, RunningStyleIcon } from '../ui/CardFocusIcons'
 import { IconChoiceRow } from '../ui/IconChoiceRow'
+import { ClLevelUpButton, useClCutover } from '../ui/puzzles/ClLevelUp'
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 const statLabel = (stat: StatKey) => (stat === 'wit' ? 'Wit' : titleCase(stat))
@@ -67,6 +68,7 @@ const gradeTone = (grade: Grade): string =>
       : 'bg-sunken text-ink-faint'
 
 export function UmaProfileScreen() {
+  const clCutover = useClCutover()
   const navigate = useNavigate()
   const { umaId = '' } = useParams()
   const contentState = useContent()
@@ -263,7 +265,7 @@ export function UmaProfileScreen() {
             <p className="font-display truncate text-[15px] font-semibold">{uma.scenario?.name ?? 'Future scenario'}</p>
             <p className="text-[12px] text-ink-soft">{statusLine}</p>
           </div>
-          <Crest tone="accent" className="shrink-0 whitespace-nowrap">TL {uma.derived.trainingLevel}</Crest>
+          {clCutover ? <ClLevelUpButton outfitId={save.templateId} tier={uma.tier} level={uma.derived.trainingLevel} /> : <Crest tone="accent" className="shrink-0 whitespace-nowrap">TL {uma.derived.trainingLevel}</Crest>}
         </div>
 
         <div className="mt-3 grid gap-2">

@@ -10,7 +10,7 @@ function fixture() {
   const f = puzzleUiProofData()
   const account: PuzzleAccount = { readiness: 'active', bank: parseConstellationBankSave(f.rows.find(r => r.kind === 'constellationBank')!.data),
     parties: f.rows.filter(r => r.kind === 'puzzlePresets').map(r => parsePuzzlePresetSave(r.data)!), outfits: f.rows.filter(r => r.kind === 'puzzleOutfits').map(r => parsePuzzleOutfitSave(r.data)!),
-    checkpoints: f.rows.filter(r => r.kind === 'puzzleCheckpoints').map(r => parsePuzzleCheckpointSave(r.data)!), stocks: {} }
+    checkpoints: f.rows.filter(r => r.kind === 'puzzleCheckpoints').map(r => parsePuzzleCheckpointSave(r.data)!), stocks: {}, umas: [], materialOperations: [] }
   return { ...f, account }
 }
 describe('Puzzle account presentation', () => {

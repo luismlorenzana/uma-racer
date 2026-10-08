@@ -369,6 +369,13 @@ scenario's trained unit, like its card set.
 
 ## The screen
 
+T114/D283 implements one lazy CL spend sheet, shared with Profile and Training. Only after active cutover does the
+Constellation training CTA become **CL n/10 · Level up**; Inspiration/Extra stats never launch a CL spend of their
+own. The sheet uses the selected racing scenario and the outfit's selected distance preset for stat preview, but
+CL remains shared across all four presets. It names actual newly opened template card nodes and baseline SP at9/10,
+never animates lineage or Extra stats unlocking, and links back with the correct `tier` and `node`. The production
+flag remains off, so the current TL/Spark presentation below remains the shipped screen until T115–T116.
+
 The constellation is the one screen that gets the dark **stage** surface, because that is what makes it read
 as a constellation rather than a form. The stage is a lit panel: a soft radial light behind the tree, an inner
 edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143).

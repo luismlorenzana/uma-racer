@@ -5,7 +5,8 @@ import { NavLink } from 'react-router'
 import { getContentAsset, type LoadedContent } from '../../content/runtime'
 import { AtlasSprite } from '../AtlasSprite'
 import { Button } from '../Button'
-import { CrownIcon, StableIcon, StrategyFrontIcon, StrategyPaceIcon, StrategyLateIcon, StrategyEndIcon, TicketIcon } from '../icons'
+import { CrownIcon, StableIcon } from '../icons'
+import { ConstellationTicketIcon, TICKET_STYLE_NAME } from '../ConstellationTicketIcon'
 import { RpgModalFocus } from '../rpg/RpgModalFocus'
 import { PuzzleElementMark } from './ElementMark'
 export const PUZZLE_STYLE_LABEL = { front: 'Front', pace: 'Pace', late: 'Late', end: 'End' } as const
@@ -35,17 +36,17 @@ export function PuzzleOutfitIcon({ id, name, content, outfit, leader = false }: 
     {leader && <span className="absolute left-0 top-0 rounded-br-sm bg-stage/95 p-0.5" aria-label="Leader"><CrownIcon size={16} /></span>}
   </div>
 }
-export function PuzzleMaterialMark({ style, quantity }: { style: Strategy; quantity?: number }) {
-  const Icon = { front: StrategyFrontIcon, pace: StrategyPaceIcon, late: StrategyLateIcon, end: StrategyEndIcon }[style]
+export function PuzzleMaterialMark({ style, quantity, tier, size = 32 }: { style: Strategy; quantity?: number; tier?: number; size?: number }) {
   return <span className="inline-flex items-center gap-0.5 text-xs text-accent" aria-label={`${quantity ?? ''} ${PUZZLE_STYLE_LABEL[style]} constellation tickets`}>
-    <TicketIcon size={16} /><Icon size={16} />{quantity !== undefined && <span>{quantity}</span>}
+    <ConstellationTicketIcon style={style} tier={tier} size={size} /><span>{TICKET_STYLE_NAME[style]}{quantity !== undefined && ` ×${quantity}`}</span>
   </span>
 }
-export function PuzzleModal({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
+export function PuzzleModal({ title, onClose, children, footer }: { title: string; onClose(): void; children: ReactNode; footer?: ReactNode }) {
   return <RpgModalFocus onClose={onClose}><div className="fixed inset-0 z-40 flex items-end justify-center bg-stage/80" onClick={onClose}>
     <section role="dialog" aria-modal="true" aria-label={title} className="flex max-h-[85dvh] w-full max-w-xl flex-col rounded-t-lg border border-hairline-dark bg-stage-soft text-ink-on-dark" onClick={e => e.stopPropagation()}>
       <header className="flex shrink-0 items-center gap-2 border-b border-hairline-dark px-4 py-2"><h2 className="min-w-0 flex-1 text-lg">{title}</h2><PuzzleButton secondary onClick={onClose}>Close</PuzzleButton></header>
       <div className="min-h-0 overflow-y-auto overscroll-contain p-4 pb-safe">{children}</div>
+      {footer && <div className="shrink-0 border-t border-hairline-dark p-3 pb-safe">{footer}</div>}
     </section>
   </div></RpgModalFocus>
 }

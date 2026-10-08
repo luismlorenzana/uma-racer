@@ -1,5 +1,5 @@
 // Five saved presets and true resumes, not a per-Uma launch picker (docs/design/uma-puzzles.md §9).
-import { Link, useLocation } from 'react-router'
+import { Link } from 'react-router'
 import { puzzleChapter } from '@racer/domain'
 import { foregroundPuzzleScenario, openPuzzleNode, openPuzzleParty, puzzlePartySummary } from '../../game/puzzles/presentation'
 import { PuzzleCard, PuzzleOutfitIcon } from '../../ui/puzzles/components'
@@ -7,9 +7,11 @@ import { PuzzleElementMark } from '../../ui/puzzles/ElementMark'
 import { puzzleLeaderLabel } from '../../ui/puzzles/kit'
 import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
 import { puzzleNodeName } from '../../game/puzzles/presentation'
+import { ConstellationBankPanel } from '../../ui/ConstellationMaterials'
 export function PuzzleHubScreen() {
   const { root, content, memory } = usePuzzles(), account = usePuzzleAccount()
   return <PuzzleFrame title="Puzzle parties"><div className="grid gap-3">
+    <ConstellationBankPanel bank={account?.bank ?? null} itemsTo={`${root}/items`} />
     <p className="text-xs text-ink-on-dark-soft">Five independent journeys. All five slots must be filled to enter. No required colour or running-style mix.</p>
     {account?.parties.map(party => {
       const summary = puzzlePartySummary(party, account), open = openPuzzleParty(account, party.partyId), node = open && openPuzzleNode(open)
@@ -25,11 +27,4 @@ export function PuzzleHubScreen() {
       </PuzzleCard>
     })}
   </div></PuzzleFrame>
-}
-export function PuzzleUnavailableSection() {
-  const { root } = usePuzzles(), location = useLocation(), items = location.pathname.endsWith('/items')
-  return <PuzzleFrame title={items ? 'Puzzle items' : 'Puzzle exchange'} back={root}><PuzzleCard><h2 className="text-lg">{items ? 'Your materials, next' : 'Adjacent exchanges, next'}</h2>
-    <p className="mt-3 text-sm text-ink-on-dark-soft">{items ? 'T114 adds the scenario and running-style inventory, repayment balances and constellation spending. This screen does not grant or spend anything.' : 'T114 adds confirmed adjacent-scenario exchanges. Clearing the higher chapter’s Opening Guardian unlocks that edge; nothing is exchanged here yet.'}</p>
-    <Link className="mt-4 flex min-h-11 items-center justify-center rounded-sm border border-hairline-dark" to={`${root}/chapters`}>Explore chapters</Link>
-  </PuzzleCard></PuzzleFrame>
 }

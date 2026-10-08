@@ -1,8 +1,8 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T113 foundations/content code/save/sync/real replay host/mobile UI implemented (D269–D276); production gameplay/cutover not enabled.**
+**Status: T106–T114 foundations/content code/save/sync/real replay host/mobile and material UI implemented (D269–D276, D283); production gameplay/cutover not enabled.**
 T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
-pinned at the owner's request. DEV proofs use original labelled placeholders; T114 material surfaces is next.
+pinned at the owner's request. DEV proofs use original labelled placeholders; T115 preservation/retirement is next.
 No production gameplay/cutover is enabled.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
@@ -713,7 +713,49 @@ separate `puzzle-proof-t113-*` databases and synthetic authority. Pending receip
 [Phone browser evidence](../research/puzzle-battle-phone-proof.md) records both viewport sizes, saved win/debt/loss,
 guide/active/phase/legend, pooling/drag profile and lazy chunk sizes. This is synthetic browser proof, not PAD source
 acceptance, owner-account validation, production playability or iPhone60/120Hz/low-power sign-off. Both release flags,
-save/schema/API/engine constants and startup cap are unchanged; T114 is next.
+save/schema/API/engine constants and startup cap are unchanged; T114 adds the material surfaces below.
+
+### T114 implemented material surfaces (D283)
+
+`game/items/view.ts` extends the existing global inventory join with a registry-driven `constellation` catalogue:
+currently56 definitions, registry then Front/Pace/Late/End order, Owned positive stacks, All zeroes, intersecting
+scenario/style facets and safe read-only orphan details. `ui/ConstellationMaterials` is shared by Farm Global Items
+and the campaign's Items shortcut; there is no second stock table. Details separate matching nonpositive bank
+balance from stock and link to earning chapters, adjacent exchange and eligible owned/unlocked racing recipients.
+The Hub uses the same bank panel. Original SVG star-punched tickets reuse the race-position glyph, inset scenario
+crest and accessible names; dark/light/grayscale phone proof covers24/32/48/64px treatments. Ticket styles are not
+the combat element legend, and the single Wood-green rule remains unchanged.
+
+`PuzzleExchangeScreen` selects one adjacent registry edge and one original style; a positive safe-integer batch
+consumes one higher or two lower tickets. The higher Opening guardian must have an accepted account-wide clear.
+Both directions use `previewExchange`/`confirmMaterial`, showing gross, debt repaid, net, after-stock and bank.
+Intercepted output requires an explicit irreversible acknowledgement. No same-scenario style swap or skipped edge
+is offered; invalid/insufficient/unsafe input disables confirmation. Changed revision/stock requires explicit
+refresh/reconfirmation. Operation ids survive uncertain acknowledgement so an exact retry reads its own receipt.
+
+`ui/puzzles/ClSpendSheet` is the **one** shared host-backed spend UI for Profile, Training and Constellation.
+The thin lazy adapter checks the release capability before host/content/bank I/O and requires an active preserved
+bank before replacing existing TL/Spark intent. Original literal-A scenario/style stocks plus separate preserved
+universals build one explicit mixed spend vector, bounded to `10 − CL`. Ineligible tickets stay inspectable with
+their reason. Actual `nodesUnlockedBetween` ids/labels, crossed levels, selected-preset stat/SP deltas and the
+correct tier/node constellation links come from host previews/receipts. CL9/10 show SP-only; CL10 cannot overspend
+or mint back EXP. Card sets, all four presets, lineage, Inspiration, Extra stats and global stars are never edited.
+Confirmation is a fixed44pt+ safe-area thumb footer, with scrollable details above it.
+
+The read-only account port additionally exposes validated racing units and durable material-operation statuses,
+not a new save field. The same transaction revalidates ownership/source/scenario/revision/stock; no screen writes
+Dexie. Local pending projections are clearly labelled; canonical rejection replaces predicted CL/exchange success
+with a review state and current CL/stock/debt, removes unearned power and retains configuration. Irreversible completion facts
+continue to use T111's accepted-only reconciliation. Retrying an uncertain CL9→10 acknowledgement keeps the same
+operation id even at locally projected CL10. Exchange stock/bank result fields are parsed before display.
+
+The DEV-only `puzzle-proof-t114-ui-v1` account contains invented stock/debt/CL9 examples. It now supplies verified
+synthetic template content to the real host's stat/SP projection. `/dev/puzzles-material-icons` is an original-vector
+proof with no account/content I/O. [Phone evidence](../research/puzzle-material-phone-proof.md) and real isolated-Dexie
+tests cover battle→repayment→Items→exchange→CL, both exchange directions/interception, exact retries, stale economics,
+preserved configuration/frozen inputs and rejected canonical CL. Both flags remain off; no live bank, credit,
+Training EXP conversion, Home launch, Spark retirement, private pack publication or physical-iPhone sign-off occurs
+here. T115–T116 and owner-pinned T109 real content remain.
 
 ## 10. Standing evidence
 
