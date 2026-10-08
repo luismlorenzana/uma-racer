@@ -1,4 +1,4 @@
-// Uma RPG: parties, roster, profiles, class trees and the launch pad (docs/design/uma-rpg-classes.md, D263, D267–D270).
+// Uma RPG: parties, roster, profiles, class trees and the launch pad (docs/design/uma-rpg-classes.md, D263, D277–D280).
 // Every screen shares one frame: back, title and the guide. Changes save at once; there is no Save or Sync step.
 import {
   RPG_CLASS_WEAPONS, RPG_PARTY_SIZE, RPG_TIER_MAX_LEVEL, RPG_VARIANTS_PER_TREE, RPG_WEAPON_KINDS, canChangeRpgClass, projectRpgStats,

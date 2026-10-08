@@ -3,7 +3,7 @@
 This folder holds **only work that is planned or in progress**. A task spec is a delivery instruction, not a record.
 
 - The **design docs are the source of truth** ([Overview](../design/00-overview.md) and the rest of the
-  [documentation map](../../README.md#documentation)). They describe the game as it is meant to be and are updated as
+  [documentation map](../../README.md#documentation-map)). They describe the game as it is meant to be and are updated as
   each task lands.
 - [decisions.md](../decisions.md) is the append-only record of *why*.
 - A task spec is **deleted when its work is merged and the design docs carry the result** (D104). The full spec stays in
@@ -11,8 +11,21 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**Owner detour — the RPG campaign is complete** (D260–D263): local-first RPG saves with no Sync steps, one generated
-chapter per scenario on a launch pad, a replayable top-to-bottom map, weakness/break battles with carried MP and camps,
+**M030 — Uma Puzzles is fully specified** (D267–D268): [the milestone](M030-uma-puzzles.md) contains eleven sequential
+PR-sized tasks, **T106–T116**. T106–T108 progression/material/battle/campaign rules are complete (D269–D271);
+[T109 private content](T109-puzzle-private-content.md) has pipeline/client code delivered (D272); the owner pinned real
+PAD inputs/art for the final pass, with explicit DEV placeholders. T110's additive records/atomic save/sync are complete
+(D273); T111's real journal/host, T112's saved Hub/parties/maps and T113's mobile battles/results/guide are complete
+(D274–D276), capability-off; [T114 material surfaces](T114-puzzle-material-surfaces.md) is next.
+[The design](../design/uma-puzzles.md) carries approved gameplay and resolved registration;
+[the implementation contract](../technical/uma-puzzles-implementation.md) fixes save ownership, atomic background
+operations, replay/takeover and cutover boundaries. Pure rules, real replay host, durable sync and mobile battle screens
+exist; **no enabled production gameplay or live migration yet**.
+Keep current Spark/account progression usable until the verified content, real reward host and CL spend flow are ready.
+Implement one task to completion/PR/merge before the next, from latest main, without changing Claude's RPG mechanics.
+
+**Owner detour — the RPG campaign is complete** (D260–D266): local-first RPG saves with no Sync steps, one generated
+twelve-level chapter per scenario, replayable maps, Octopath element/weapon breaks with carried MP and camps,
 and EXP plus tokens from every win. It supersedes M029's private chapter rollout (T100–T103), deleted unbuilt.
 
 **Owner detour T105 — Inspiration advance is complete** (D256): one-time shared scenario unlocks, a negative token
@@ -24,21 +37,24 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **In progress** · T078–T080 landed; T081 next |
+| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T114 → T116**, plus pinned T109 real-content pass | **In progress** · T106–T108/T110–T113 complete; T109 code delivered, permitted PAD originals deferred by owner; T114 next |
+| [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
 
-**M024 is the current unit of work** (D199–D202, D236): T078 and T079 landed on 2026-09-29 and T080 on 2026-10-02;
-T081 is next. M025–M026's Farm and Produce bridge are complete. T035 stays specified and can be picked up any
-time. **M027 — Training Rebalance** (D211–D214) is complete. Anything new starts with the next free numbers below.
+**M024 remains separately pending** (D199–D202, D236): T078 and T079 landed on 2026-09-29 and T080 on 2026-10-02;
+T081 needs re-authoring for global cards before pickup. M025–M026's Farm and Produce bridge are complete. T035 stays
+specified and can be picked up any time. **M027 — Training Rebalance** (D211–D214) is complete. Anything new starts
+with the next free numbers below.
 
 The owner's device checks (every milestone's, including Spark Rival Circuit's physical-iPhone pass) wait in
 [Open questions](../open-questions.md#needs-you-owner-actions-not-design-questions) and close together in T038 (D189).
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M030 and T106.** Numbers are never reused, so a decision that mentions T014 always means the same
-work. T057 was consumed by the per-scenario limit-break branch and is not reused.
+**Next free numbers: M031 and T117.** M030/T106–T116 are allocated to the specified Puzzle sequence. Numbers are never
+reused, so a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break
+branch and is not reused.
 
 ## Completed and removed
 
@@ -46,21 +62,28 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T113 — Mobile Pixi battle, receipts and contextual guide | 2026-10-08 | [Battle presentation contract](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276), D276 and [synthetic phone proof](../research/puzzle-battle-phone-proof.md); release remains off | `9bc12a4` |
+| T112 — Global Puzzle Hub, roster, five parties and chapter maps | 2026-10-08 | [Setup navigation contract](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275), D275, isolated real-host phone proof; release remains off | `fabfa27` |
+| T111 — Real Puzzle host, local journal and recovery | 2026-10-07 | [Real host/journal contract](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274), D274, isolated IndexedDB replay/rollback and lazy runtime adapter | `bb8c80b` |
+| T110 — Additive Puzzle saves and atomic background sync | 2026-10-07 | [Persistence/protocol v1](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273), D273, pure resolver/API adapters/Dexie coordinator | `0c8b5e7` |
+| T108 — Generated Puzzle campaign and reward economy | 2026-10-07 | [Campaign v1 contract](../technical/uma-puzzles-implementation.md#t108-implemented-campaign-v1-d271), D271, domain campaign and `sim:puzzles` | `a68da98` |
+| T107 — Deterministic five-Uma puzzle battle | 2026-10-07 | [Battle v1 contract](../technical/uma-puzzles-implementation.md#t107-implemented-battle-v1-d270), D270, domain engine and `sim:puzzles` | `58de801` |
+| T106 — Puzzle progression and Constellation materials | 2026-10-07 | [Pure contract](../technical/uma-puzzles-implementation.md#t106-implemented-foundations-d269), D269 and `packages/domain/src/minigames/uma-puzzles/` | `e5b17fe` |
 | M029 / T100–T103 — RPG chapter rollout (superseded unbuilt by D262) | 2026-10-05 | [RPG design](../design/uma-rpg.md#chapters-and-the-map-d262), D262 | `9acfb84` |
 | M028 / T099 — First playable RPG | 2026-10-04 | [RPG design](../design/uma-rpg.md), D257 and [release/owner checks](../research/rpg-release-acceptance.md) | `8e1b881` |
 | T105 — Inspiration advance | 2026-10-04 | [Advance](../design/skills-and-inheritance.md#temporary-inspiration-advance-d256), D256 and [phone proof](../research/inspiration-advance-phone-proof.md) | `1ac3b19` |
 | T104 — Global card stars | 2026-10-03 | [Support Cards](../design/support-cards.md#global-star-cutover-d255), D255 and [phone proof](../research/global-card-stars-phone-proof.md) | `cea441c` |
 | M027 — Training Rebalance (T087 linear levels and EXP bank, T088 spending Level-Up Tickets) | 2026-10-02 | [Training](../design/training.md#the-training-exp-bank-and-level-up-tickets), D211–D214 | git history |
-| T089 — RPG pure progression rules | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#outfit-rpg-profile-and-progression), D227 and `packages/domain/src/rpg/` | `ce2aa37` |
-| T090 — RPG save and grouped commands | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#five-member-combat-proposal), [Architecture](../technical/architecture.md), D228 | git history |
-| T091 — RPG deterministic combat | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#settled-t091-combat-contract-d229), D229 and `packages/domain/src/rpg/combat/` | git history |
+| T089 — RPG pure progression rules | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#progression), D227 and `packages/domain/src/rpg/` | `ce2aa37` |
+| T090 — RPG save and grouped commands | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#saving-and-sync-d260-d263), [Architecture](../technical/architecture.md), D228 | git history |
+| T091 — RPG deterministic combat | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#battles-engine-v3-d265), D229 and `packages/domain/src/rpg/combat/` | git history |
 | T092 — RPG battle journal and host | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md), [Architecture](../technical/architecture.md), D230 and `apps/web/src/game/rpg-battle-host.ts` | git history |
 | T093 — RPG roster and party hub | 2026-10-01 | [Global Uma RPG](../design/uma-rpg.md#phone-presentation), D232 and `apps/web/src/screens/rpg/` | git history |
 | T094 — Phone battle screen | 2026-10-02 | [Global Uma RPG](../design/uma-rpg.md), D243 and [phone proof](../research/rpg-battle-phone-proof.md) | git history |
 | T095 — Chapter maps and checkpoints | 2026-10-02 | [Global Uma RPG](../design/uma-rpg.md), D245, [content handoff](../technical/rpg-chapter-content.md) and [phone proof](../research/rpg-chapter-phone-proof.md) | git history |
 | T096 — Battle EXP, skills and class promotion | 2026-10-03 | [Global Uma RPG](../design/uma-rpg.md), D246 and [phone proof](../research/rpg-progression-phone-proof.md) | git history |
 | T097 — Private PriConne pipeline / URA draft | 2026-10-03 | [Content contract](../technical/rpg-chapter-content.md), D248 and [private publication handoff](../research/rpg-private-ura-handoff.md) | git history |
-| T098 — Inspiration rewards / independent unlocks | 2026-10-03 | [RPG rewards](../design/uma-rpg.md#inspiration-rewards-d250), [Lineage](../design/skills-and-inheritance.md#lineage), D250 | git history |
+| T098 — Inspiration rewards / independent unlocks | 2026-10-03 | [RPG rewards](../design/uma-rpg.md#rewards-d263), [Lineage](../design/skills-and-inheritance.md#lineage), D250 | git history |
 | M026 — Produce nodes (T086) | 2026-09-30 | [Stable Farm](../design/farm.md), [Constellations](../design/constellations.md) and [Architecture](../technical/architecture.md) | `f6dd79a` |
 | M025 — Stable Farm (T082–T085) | 2026-09-30 | [Stable Farm](../design/farm.md) and [Architecture](../technical/architecture.md) | `4ac41d7` |
 | T001–T018 and the Milestone 6 plan | 2026-09-19 | design docs | `463edb8` |

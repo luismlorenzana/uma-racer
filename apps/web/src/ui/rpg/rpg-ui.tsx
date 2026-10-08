@@ -92,7 +92,7 @@ export function ShieldBadge({ value, broken = false, className = '' }: { value: 
   </span>
 }
 
-/** Weakness icons: elements first, then weapon kinds (D269). */
+/** Weakness icons: elements first, then weapon kinds (D279). */
 export function WeaknessIcons({ weaknesses, className = '' }: { weaknesses: BattleWeaknesses; className?: string }) {
   const names = [...weaknesses.elements.map((e) => RPG_ELEMENT_LABELS[e]), ...weaknesses.weapons.map((w) => WEAPON_KIND_LABEL[w])]
   return <span className={`inline-flex flex-wrap items-center justify-center gap-1 ${className}`} aria-label={`Weak to ${names.join(', ')}`}>

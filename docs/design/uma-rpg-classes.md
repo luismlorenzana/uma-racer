@@ -1,6 +1,6 @@
 # Global Uma RPG — classes and skill trees
 
-> **Status: current (D267–D272, approved 2026-10-08).** It replaces the running-style weapons, the distance-affinity
+> **Status: current (D277–D282, approved 2026-10-08).** It replaces the running-style weapons, the distance-affinity
 > element trees, skill levels and the single-element weakness of [uma-rpg.md](uma-rpg.md) (D226, D227, D259, D264,
 > D265 in part) and lifts D261's "no healing" for the Cleric only. Numbers are tuning drafts pinned by
 > `packages/domain/src/domain.test.ts` and checked with `pnpm sim:rpg:campaign`; the code lives in
@@ -413,7 +413,7 @@ URA's champion a loss.
 
 ## 13. Decisions
 
-D267 classes, D268 turns and hands, D269 damage and weaknesses, D270 trees, D271 statuses and blessings, D272 schema 3,
+D277 classes, D278 turns and hands, D279 damage and weaknesses, D280 trees, D281 statuses and blessings, D282 schema 3,
 engine v4 and the migration (see [the decision log](../decisions.md)).
 
 ## 14. Phone presentation

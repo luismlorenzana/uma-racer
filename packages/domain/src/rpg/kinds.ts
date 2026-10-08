@@ -1,4 +1,4 @@
-// RPG vocabulary: elements, weapons, damage kinds, classes and trees (docs/design/uma-rpg-classes.md, D267–D269).
+// RPG vocabulary: elements, weapons, damage kinds, classes and trees (docs/design/uma-rpg-classes.md, D277–D279).
 
 /** Elements that can be weaknesses. Fire > Ice > Lightning > Fire; Light ↔ Dark. */
 export const RPG_ELEMENTS = ['fire', 'ice', 'lightning', 'light', 'dark'] as const

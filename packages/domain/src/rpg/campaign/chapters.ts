@@ -100,7 +100,7 @@ function layout(start: number, scenarioTier: number): Layout[] {
   return nodes
 }
 
-/** Skill power open at a chapter's first level, against depth 1: what a party's MP buys in its boss fights (D272). */
+/** Skill power open at a chapter's first level, against depth 1: what a party's MP buys in its boss fights (D282). */
 export function rpgChapterReach(levelStart: number): number {
   const depth = RPG_DEPTH_GATES.filter((gate) => rpgTierLevel(levelStart).level >= gate).length
   return RPG_SKILL_POWER[depth - 1]! / RPG_SKILL_POWER[0]
@@ -117,7 +117,7 @@ function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[], r
     }
     return cast[offset % cast.length]!
   }
-  // Weaknesses by rank (D269): regulars 3 weapons + 2 elements (or 2 + 3), sub-bosses 2 + 2, champions 2 + 1 (or 1 + 2).
+  // Weaknesses by rank (D279): regulars 3 weapons + 2 elements (or 2 + 3), sub-bosses 2 + 2, champions 2 + 1 (or 1 + 2).
   // The first element is the one that beats the foe's own, so routes still read by element; its own never shows.
   const weaknesses = (slot: number, element: RpgElement, rank: EnemyRank): BattleWeaknesses => {
     const key = `${chapterId}:${node.id}:${slot}`

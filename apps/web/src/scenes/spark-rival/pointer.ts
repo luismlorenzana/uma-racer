@@ -1,5 +1,6 @@
 // Deterministic pointer-to-board traversal for Spark Rival Circuit (docs/design/minigames.md#board-and-movement).
 import { SPARK_RIVAL_BOARD_HEIGHT, SPARK_RIVAL_BOARD_WIDTH, type SparkCell } from '@racer/domain'
+import { cellAtPoint } from '../puzzle-input/geometry'
 
 export interface SparkBoardGeometry {
   left: number
@@ -8,11 +9,7 @@ export interface SparkBoardGeometry {
 }
 
 export function sparkCellAtPoint(x: number, y: number, geometry: SparkBoardGeometry): SparkCell | null {
-  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(geometry.cellSize) || geometry.cellSize <= 0) return null
-  const column = Math.floor((x - geometry.left) / geometry.cellSize)
-  const row = Math.floor((y - geometry.top) / geometry.cellSize)
-  if (column < 0 || column >= SPARK_RIVAL_BOARD_WIDTH || row < 0 || row >= SPARK_RIVAL_BOARD_HEIGHT) return null
-  return { row, column }
+  return cellAtPoint(x, y, geometry, SPARK_RIVAL_BOARD_WIDTH, SPARK_RIVAL_BOARD_HEIGHT)
 }
 
 /**

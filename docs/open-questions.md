@@ -10,6 +10,28 @@ sync policy (D223) lets battle actions work offline but holds entry/result rewar
 commit is acknowledged; T090–T092 now implement that boundary, and any later change needs a new decision. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
 
+## Uma Puzzles — owner choices resolved
+
+The owner accepted the [Uma Puzzles plan](design/uma-puzzles.md) on 2026-10-07 (D267), changing registration to
+Front-only/Front+Pace → Light; End-only/Late+End → Dark; pure Pace/Late or Pace+Late choose Fire/Water/Wood;
+**Dirt A overrides first and chooses all five**. Production gameplay and account cutover remain disabled.
+
+The owner also confirmed **Fire/Water/Wood choice** for the five other non-Dirt-A multi-style combinations
+(three Pace+Late+End, one Pace+End, one Front+Late). All 268 catalogue outfits are covered; no registration choice
+remains open. See [counts and exact predicates](design/uma-puzzles.md#3-element-identity-and-the-catalogue-check).
+All first-draft recommendations are approved; candidate tuning values still need simulation/pinning, and PAD
+art provenance and device validation remain implementation checks, not a completed import or phone sign-off.
+[M030 / T106–T116](tasks/M030-uma-puzzles.md) now supplies the detailed sequence (D268), with content verification,
+atomic economic sync, explicit online takeover and safe cutover gates. T106–T108 pure rules/battle/campaign are
+implemented (D269–D271); T109 pipeline/client code is delivered (D272). At the owner's request, real PAD originals/evidence
+are pinned for the final content pass, with original labelled DEV placeholders. T110 additive save/sync is implemented
+(D273); T111's real replay host/journal and T112's saved Hub/roster/parties/maps are implemented (D274–D275),
+with an isolated synthetic phone-size browser proof. Battle/results/practice screens are T113 next; both release
+flags stay off, with no live cutover. This is an explicit
+source-input follow-up, not an unanswered mechanics question or real-content sign-off. Simulation outliers in design §11 remain release-balance checks,
+not new owner choices or a claim of closure. Do not treat the task breakdown
+as a request to publish, migrate an account or implement a second RPG system.
+
 ## Needs you (owner actions, not design questions)
 
 - ✅ Google Cloud and Firebase are set up and deploys are enabled (2026-09-15).

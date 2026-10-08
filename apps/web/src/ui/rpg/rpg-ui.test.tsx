@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { ShieldBadge, WeaknessIcons } from './rpg-ui'
 
 afterEach(cleanup)
-describe('break-potential icons (D265, D269)', () => {
+describe('break-potential icons (D265, D279)', () => {
   it('shows the shield count, or BREAK while it is down', () => {
     render(<><ShieldBadge value={4} /><ShieldBadge value={0} broken /></>)
     expect(screen.getByRole('img', { name: 'Shield 4' }).textContent).toBe('4')

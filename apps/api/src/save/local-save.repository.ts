@@ -1,11 +1,11 @@
-import { Logger } from '@nestjs/common'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { isDeepStrictEqual } from 'node:util'
 import type { SaveRepository } from './save.repository'
 import { BANK_KEY, freezeAdvance, advanceOutfit, bankData } from './inspiration-advance'
-import { resolveUpserts, type EntityRecord, type LogRecord, type SaveSnapshot, type SyncRequest, type SyncResponse } from './save.types'
+import type { EntityRecord, LogRecord, SaveSnapshot, SyncRequest, SyncResponse } from './save.types'
 import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
+import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
+import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
 
 interface FileShape {
   [uid: string]: { entities: Record<string, EntityRecord>; logs: Record<string, LogRecord> }
@@ -13,10 +13,9 @@ interface FileShape {
 
 // Local dev persistence: one JSON file, written atomically (tmp + rename), with calls serialized in-process.
 export class LocalSaveRepository implements SaveRepository {
-  private readonly logger = new Logger('SaveSync')
   private queue: Promise<unknown> = Promise.resolve()
 
-  constructor(private readonly file: string) {}
+  constructor(private readonly file: string, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED) {}
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {
     const run = this.queue.then(fn, fn)
@@ -69,34 +68,26 @@ export class LocalSaveRepository implements SaveRepository {
   }
 
   sync(uid: string, request: SyncRequest): Promise<SyncResponse> {
+    puzzleSyncReadSet(request)
     return this.serialize(async () => {
       const all = await this.read()
       const user = (all[uid] ??= { entities: {}, logs: {} })
       const now = Date.now()
-      const existing = new Map(Object.entries(user.entities))
-      const { writes, conflicts } = resolveUpserts(existing, request.upserts, now)
-      for (const record of writes) user.entities[`${record.kind}/${record.id}`] = record
-
-      let appended = 0
-      for (const a of request.appends) {
-        const key = `${a.kind}/${a.id}`
-        const current = user.logs[key]
-        if (current) {
-          // The first write wins, as in Firestore (D149).
-          const incoming: LogRecord = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
-          if (!isDeepStrictEqual(current, incoming)) this.logger.warn(`Kept the first copy of ${key}`)
-          continue
-        }
-        user.logs[key] = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
-        appended++
-      }
+      const resolved = resolveSyncWithPuzzles(uid, request, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), now, this.puzzlesEnabled)
+      for (const record of resolved.writes) user.entities[`${record.kind}/${record.id}`] = record
+      for (const record of resolved.appends) user.logs[`${record.kind}/${record.id}`] = record
       await this.write(all)
-      return {
-        applied: writes.map((w) => ({ kind: w.kind, id: w.id, version: w.version })),
-        conflicts,
-        appended,
-        serverTime: now,
-      }
+      return resolved.response
+    })
+  }
+
+  puzzleTakeover(uid: string, request: PuzzleTakeoverRequest): Promise<PuzzleTakeoverResponse> {
+    return this.serialize(async () => {
+      const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }
+      const resolved = resolveTakeover(uid, request, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), Date.now(), this.puzzlesEnabled)
+      for (const row of resolved.writes) user.entities[`${row.kind}/${row.id}`] = row
+      if (resolved.writes.length) await this.write(all)
+      return resolved.response
     })
   }
 

@@ -10,7 +10,9 @@
     "import": "tsx src/import.ts",
     "publish": "tsx src/publish-cli.ts",
     "rpg:import": "tsx src/rpg-cli.ts --import",
-    "rpg:validate": "tsx src/rpg-cli.ts"
+    "rpg:validate": "tsx src/rpg-cli.ts",
+    "puzzles:import": "tsx src/puzzles-cli.ts --import",
+    "puzzles:validate": "tsx src/puzzles-cli.ts"
   },
   "dependencies": {
     "@racer/domain": "workspace:*"

@@ -66,6 +66,14 @@ paths in the manifest for `pnpm data:rpg:import`; no publishing occurs. `--offli
 missing source cache. See [the content contract](../../docs/technical/rpg-chapter-content.md) for browser evidence,
 allowed hosts, custom private paths and owner handoff. Tests use generated pixels and invented characters only.
 
+## Private Uma Puzzles atlases
+
+`pnpm assets:puzzles:import` reads reviewed `content/overrides/puzzles-cast.json` plus exact variant/hash evidence.
+Permitted exports or non-blocked reviewed HTTPS sources decode into separate retained alpha-safe `puzzles-monsters`
+WebP atlases. Original bytes stay private; redirects, opaque art, corrupt cache and unverified variants fail. `--offline`
+never fetches. See [the content contract](../../docs/technical/puzzle-content.md) for bounds, paths and the owner's deferred
+real-source pass. Original labelled SVG placeholders are DEV proofs, not imported PAD content or a publication.
+
 ## Safety and tests
 
 Never commit anything under `content/` or `scripts/assets/.cache/`. Tests generate tiny synthetic SVG inputs with invented

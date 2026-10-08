@@ -40,7 +40,8 @@ import {
   scenarioAt,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
-import { db, type LogRow } from './db'
+import Dexie from 'dexie'
+import { db, type LogRow, type RacerDb } from './db'
 
 /**
  * Badge facts read derived stats and the derived library, so building a state needs content. Without card
@@ -104,7 +105,11 @@ function parseRaceRow(row: LogRow): RaceResultRecord {
 export async function readUmaBadgeState(uma: UmaSave, subject: BadgeSubject, now: number): Promise<{ id: string; version: number; state: UmaBadgeStateV1 }> {
   const id = badgeStateId(uma.templateId)
   const row = await db.badges.get(id)
-  if (!row) return { id, version: 0, state: createUmaBadgeState(uma, subject, now) }
+  if (!row) {
+    const canonical = await canonicalTrainingUma(uma)
+    return { id, version: 0, state: createUmaBadgeState(canonical, { ...subject,
+      trainingLevel: canonical.scenarios.find(s => s.tier === subject.tier)?.trainingLevel ?? subject.trainingLevel }, now) }
+  }
   const parsed = parseBadgeState(row.data)
   if (!parsed || parsed.scope !== 'uma' || parsed.umaId !== uma.templateId) throw new Error(`Invalid local badge state: ${id}`)
   return { id, version: row.version, state: parsed }
@@ -186,13 +191,28 @@ export function trainingSnapshot(uma: UmaSave, runsByTier: ReadonlyMap<number, n
   }
 }
 
+/** Pending CL is playable locally, but cannot create permanent completion facts at boot or from another mode. */
+export async function canonicalTrainingUma(uma: UmaSave, database: RacerDb = db): Promise<UmaSave> {
+  const read = () => database.puzzleBases.get(`umas/${uma.templateId}`)
+  // Existing callers lock Uma writes; preserve their table scope while reading the same canonical base.
+  const base = Dexie.currentTransaction && !Dexie.currentTransaction.storeNames.includes('puzzleBases')
+    ? await Dexie.waitFor(Dexie.ignoreTransaction(read)) : await read()
+  if (!base?.record) return uma
+  const canonical = parseUmaRow(uma.templateId, base.record.data)
+  return { ...uma, scenarios: uma.scenarios.map(s => {
+    const old = canonical.scenarios.find(c => c.tier === s.tier)
+    return old ? { ...s, trainingLevel: old.trainingLevel, trainingExp: old.trainingExp } : s
+  }) }
+}
+
 /**
  * Brings an Uma's training facts up to date and awards what they earn (T056), inside the caller's transaction, which
  * must cover badges, ledger, flair events and the outbox. Does nothing when nothing changed.
  */
 export async function updateTrainingBadgeFacts(input: { content: LoadedContent; uma: UmaSave; sourceId: string; now: number }): Promise<void> {
-  const row = await readUmaBadgeState(input.uma, badgeSubject(input.content, input.uma), input.now)
-  const next = applyTrainingBadgeFacts(row.state, trainingSnapshot(input.uma, await sparkRunsByTier(input.uma.templateId)))
+  const uma = await canonicalTrainingUma(input.uma)
+  const row = await readUmaBadgeState(uma, badgeSubject(input.content, uma), input.now)
+  const next = applyTrainingBadgeFacts(row.state, trainingSnapshot(uma, await sparkRunsByTier(uma.templateId)))
   if (next === row.state && row.version > 0) return
   const evaluation = evaluateUmaBadgeState(input.content, next, {
     source: { kind: 'training', id: input.sourceId, tier: input.uma.unlockedTier },
@@ -205,13 +225,13 @@ export async function updateTrainingBadgeFacts(input: { content: LoadedContent; 
 /** Create every missing per-Uma state from authoritative local history in one resumable transaction. */
 export async function bootstrapBadgeFacts(content: LoadedContent, now: number): Promise<number> {
   if (!Number.isSafeInteger(now) || now < 0) throw new Error('Badge bootstrap time is invalid')
-  return db.transaction('rw', [db.umas, db.badges, db.raceResults, db.ledger, db.outbox], async () => {
+  return db.transaction('rw', [db.umas, db.badges, db.raceResults, db.ledger, db.outbox, db.puzzleBases], async () => {
     const umaRows = await db.umas.toArray()
     const raceRows = await db.raceResults.toArray()
     const histories = raceRows.map(parseRaceRow)
     const states = new Map<string, { version: number; state: UmaBadgeStateV1; created: boolean; dirty: boolean }>()
     for (const row of umaRows) {
-      const uma = parseUmaRow(row.id, row.data)
+      const uma = await canonicalTrainingUma(parseUmaRow(row.id, row.data))
       const id = badgeStateId(row.id)
       const existing = await db.badges.get(id)
       if (existing) {
@@ -251,7 +271,7 @@ export async function bootstrapBadgeFacts(content: LoadedContent, now: number): 
     // Training facts come from the ledger and the saves, so every state with training to count, old or new, is brought
     // up to date (T056); one with none is left alone rather than rewritten and synced for nothing.
     for (const row of umaRows) {
-      const uma = parseUmaRow(row.id, row.data)
+      const uma = await canonicalTrainingUma(parseUmaRow(row.id, row.data))
       const entry = states.get(uma.templateId)!
       const snapshot = trainingSnapshot(uma, await sparkRunsByTier(uma.templateId))
       if (snapshot.runsByTier.size === 0 && snapshot.fullyTrainedTiers.length === 0 && snapshot.fullTreeTiers.length === 0) continue

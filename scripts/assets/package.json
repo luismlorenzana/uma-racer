@@ -9,7 +9,8 @@
     "test": "vitest run",
     "import": "tsx src/import.ts",
     "bust-sheet": "tsx src/bust-sheet.ts",
-    "rpg:import": "tsx src/priconne-cli.ts"
+    "rpg:import": "tsx src/priconne-cli.ts",
+    "puzzles:import": "tsx src/puzzles-cli.ts"
   },
   "dependencies": {
     "@racer/domain": "workspace:*",

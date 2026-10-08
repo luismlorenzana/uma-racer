@@ -1,4 +1,4 @@
-// Battle numbers and skill lookup, engine v4 (docs/design/uma-rpg-classes.md, D268–D271).
+// Battle numbers and skill lookup, engine v4 (docs/design/uma-rpg-classes.md, D278–D281).
 import { rpgNode, type RpgNode, type RpgSkillDef } from '../catalog'
 import { rpgElementWeakness, rpgHand, rpgNodeKey, rpgPhysical, rpgProfileTrees, type RpgDamageKind, type RpgElement, type RpgNodeRef } from '../rules'
 import type { BattleAlly, BattleChannel } from './types'

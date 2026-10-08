@@ -11,7 +11,7 @@ const aptitudes = { surface: { turf: 'A', dirt: 'B' },
 const profile = enrollRpgOutfit({ outfit: { id: 'synthetic-outfit', baseStats, growthRates, aptitudes },
   contentVersion: 'synthetic-v1', classId: 'mage', weapons: ['mage-staff', 'short-sword'] })
 const outfit = { schemaVersion: 3, profile, projectionRevision: 0 }
-/** A campaign-era (schema 2) row as production holds it before D272. */
+/** A campaign-era (schema 2) row as production holds it before D282. */
 const legacyOutfit = { schemaVersion: 2, projectionRevision: 4, profile: { outfitId: 'synthetic-outfit', sourceContentVersion: 'synthetic-v1',
   baseStats, growthRates, sourceAptitudes: aptitudes, affinities: { ice: 'A', light: 'A', fire: 'A', dark: 'A' }, style: 'pace',
   weapon: 'spear', defaultSignature: 'fire', tier: 1, level: 14, exp: 37,
@@ -30,7 +30,7 @@ describe('RPG save wire', () => {
     expect(parseRpgOutfitSave({ ...outfit, profile: learned })?.profile.tree).toEqual([{ tier: 1, id: 'short-sword.duel.1' }])
   })
 
-  it('migrates a schema-2 outfit once: class from running styles, levels kept, trees cleared (D272)', () => {
+  it('migrates a schema-2 outfit once: class from running styles, levels kept, trees cleared (D282)', () => {
     const migrated = migrateRpgOutfitSave(legacyOutfit)!
     expect(migrated).toMatchObject({ schemaVersion: 3, projectionRevision: 5,
       profile: { classId: 'mage', weapons: ['mage-staff', 'arcane-staff'], tier: 1, level: 14, exp: 37, tree: [], legacy: [] } })

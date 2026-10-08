@@ -56,6 +56,8 @@ import {
   type RpgResultEvidenceV1,
   type RpgPromotionEvidence,
   type RpgCommandReceiptV1,
+  PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, puzzleEntityIdMatches,
+  type LogRecord,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import Dexie from 'dexie'
@@ -76,6 +78,8 @@ export interface LocalSnapshot {
   rpgResults: LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>[]
   rpgPromotions: LogRow<RpgPromotionEvidence>[]
   rpgReceipts: LogRow<RpgCommandReceiptV1>[]
+  puzzleEntities: EntityRecord[]
+  puzzleLogs: LogRecord[]
 }
 
 export async function queueInTransaction(
@@ -100,6 +104,12 @@ export async function queueInTransaction(
 
 /** Repairs Farm/item projections from append-only evidence. Call inside a transaction containing these four tables. */
 export async function reconcileFarmProjectionsInTransaction(now: number): Promise<{ farmChanged: boolean; changedItemIds: string[] }> {
+  // This header is immutable once active. Callers need only the existing Farm tables; economic Item changes
+  // remain exclusively owned by Puzzle receipts/predictions, not Farm's ordinary evidence-repair queue.
+  const bank = Dexie.currentTransaction?.storeNames.includes('constellationBank')
+    ? await db.constellationBank.get('main')
+    : await Dexie.waitFor(Dexie.ignoreTransaction(() => db.constellationBank.get('main')))
+  const puzzleActive = bank?.data.phase === 'active'
   const farmRow = await db.farm.get('main')
   const movements = (await db.itemLedger.toArray()).map((row) => {
     const parsed = parseItemLedgerEntry(row.data)
@@ -112,14 +122,15 @@ export async function reconcileFarmProjectionsInTransaction(now: number): Promis
     await db.farm.put({ ...farmRow, data: result.farm, revision: farmRow.revision + 1 })
     await queueInTransaction('farm', 'main', 'upsert', now)
   }
-  for (const itemId of result.changedItemIds) {
+  const changedItemIds = result.changedItemIds.filter(id => !id.startsWith('constellation:') && !(puzzleActive && id === 'training:level-up-ticket'))
+  for (const itemId of changedItemIds) {
     const data = result.stacks.find((stack) => stack.itemId === itemId)
     if (!data) throw new Error(`Reconciled item stack is missing: ${itemId}`)
     const row = await db.items.get(itemId)
     await db.items.put({ id: itemId, data, version: row?.version ?? 0 })
     await queueInTransaction('items', itemId, 'upsert', now)
   }
-  return { farmChanged: result.farmChanged, changedItemIds: result.changedItemIds }
+  return { farmChanged: result.farmChanged, changedItemIds }
 }
 
 export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
@@ -145,6 +156,18 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   const rpgResults = validateRpgLogs('rpgResults', await db.rpgResults.toArray()) as LogRow<RpgResultEvidenceV1 | RpgBattleResultV2>[]
   const rpgPromotions = validateRpgLogs('rpgPromotions', await db.rpgPromotions.toArray()) as LogRow<RpgPromotionEvidence>[]
   const rpgReceipts = validateRpgLogs('rpgReceipts', await db.rpgReceipts.toArray()) as LogRow<RpgCommandReceiptV1>[]
+  const puzzleEntities: EntityRecord[] = [], puzzleLogs: LogRecord[] = []
+  for (const kind of PUZZLE_ENTITY_KINDS) for (const row of await db.table<VersionedRow<unknown>, string>(kind).toArray()) {
+    const data = parseEntityData(kind, row.data)
+    if (!data || !puzzleEntityIdMatches(kind, row.id, data) || !Number.isSafeInteger(row.version) || row.version < 1) throw new Error(`Invalid local Puzzle row ${kind}/${row.id}; keep it for recovery`)
+    puzzleEntities.push({ kind, id: row.id, data, version: row.version, deleted: false, updatedAt: 0 })
+  }
+  for (const kind of PUZZLE_LOG_KINDS) for (const row of await db.table<LogRow<unknown>, string>(kind).toArray()) {
+    const data = parseLogData(kind, row.data)
+    if (!data || data.createdAt !== row.createdAt || (kind === 'puzzleResults' ? data.battleId : (data.operation as { operationId: string }).operationId) !== row.id)
+      throw new Error(`Invalid local Puzzle evidence ${kind}/${row.id}; keep it for recovery`)
+    puzzleLogs.push({ kind, id: row.id, data, createdAt: row.createdAt })
+  }
   const umas = umaRows.map((row) => {
     const data = parseUmaSaveOrThrow(row.data)
     if (data.templateId !== row.id) throw new Error(`Invalid local Uma save: ${row.id}`)
@@ -189,7 +212,7 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   if (cardRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local card row version is invalid')
   if (badgeRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local badge row version is invalid')
   return { profile: { ...profileRow, data: profile }, umas, cards, badges, flairEvents, farm, items, itemLedger,
-    rpgOutfits, rpgPresets, rpgCheckpoints, rpgResults, rpgPromotions, rpgReceipts }
+    rpgOutfits, rpgPresets, rpgCheckpoints, rpgResults, rpgPromotions, rpgReceipts, puzzleEntities, puzzleLogs }
 }
 
 function validateRpgEntities(kind: EntityKind, rows: VersionedRow<unknown>[]): VersionedRow<object>[] {
@@ -241,6 +264,7 @@ export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
     db.itemLedger.count(),
     db.rpgOutfits.count(), db.rpgPresets.count(), db.rpgCheckpoints.count(),
     db.rpgResults.count(), db.rpgPromotions.count(), db.rpgReceipts.count(), db.pendingRpgCommands.count(),
+    ...[...PUZZLE_ENTITY_KINDS, ...PUZZLE_LOG_KINDS, 'pendingPuzzleOperations', 'puzzleJournals', 'puzzleArchives', 'puzzleBases', 'puzzlePreferences'].map(k => db.table(k).count()),
     db.outbox.count(),
   ])
   return counts.every((count) => count === 0)
@@ -283,7 +307,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         !parseCardSave(row.data) && migrateCardSaveToCurrent(row.data)) legacyKeys.add(`cards/${row.id}`)
       if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
         !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
-      // Pre-class outfits and parties (D272) migrate on the way in; upload the migrated rows once.
+      // Pre-class outfits and parties (D282) migrate on the way in; upload the migrated rows once.
       if ((row.kind === 'rpgOutfits' || row.kind === 'rpgPresets') && typeof row.id === 'string' && !row.deleted &&
         typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion !== 3) legacyKeys.add(`${row.kind}/${row.id}`)
     }
@@ -297,9 +321,12 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
   }
   if (profileRecords.length !== 1 || profileRecords[0]!.id !== 'main') throw new Error('Server save has duplicate profiles')
 
-  await db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger,
+  const hasPuzzleState = snapshot.entities.some(r => PUZZLE_ENTITY_KINDS.includes(r.kind as never)) || snapshot.logs.some(r => PUZZLE_LOG_KINDS.includes(r.kind as never)) || await db.pendingPuzzleOperations.count() > 0
+  const puzzles = hasPuzzleState ? await import('./puzzles/operations') : null
+  const coordinator = puzzles ? new puzzles.PuzzleOperationCoordinator(db, '', () => undefined) : null
+  await db.transaction('rw', [...puzzles?.puzzleTransactionTables(db) ?? [], db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger,
     db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.inspirationBank, db.outbox], async () => {
-    await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.farm.clear(), db.items.clear(), db.itemLedger.clear(), db.outbox.clear()])
+    await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.farm.clear(), db.items.clear(), db.itemLedger.clear(), db.outbox.filter(r => r.op !== 'puzzle').delete()])
     for (const record of snapshot.entities) {
       if (record.deleted) continue
       // A server row can be any supported schema. Migrate on the way in, and re-queue whatever moved so the
@@ -349,7 +376,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.flairEvents.put({ id: record.id, data: parseFlairEvent(record.data)!, createdAt: record.createdAt })
       } else if (record.kind === 'rpgResults' || record.kind === 'rpgPromotions' || record.kind === 'rpgReceipts') {
         await mergeRpgLog(record)
-      } else {
+      } else if (!PUZZLE_LOG_KINDS.includes(record.kind as never)) {
         await db.itemLedger.put({ id: record.id, data: parseItemLedgerEntry(record.data)!, createdAt: record.createdAt })
       }
     }
@@ -359,8 +386,11 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
     }
     // After the cloud's ledger is in, so a level another device already paid is skipped (D241).
     await payUmaRelevels({ profile: db.profile, ledger: db.ledger, outbox: db.outbox }, relevels, snapshot.serverTime)
+    if (coordinator) await coordinator.adoptSnapshotInTransaction(snapshot.entities.filter(r => PUZZLE_ENTITY_KINDS.includes(r.kind as never) || r.kind === 'umas' || r.kind === 'items'),
+      snapshot.logs.filter(r => PUZZLE_LOG_KINDS.includes(r.kind as never)), snapshot.serverTime)
     await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })
+  await coordinator?.refreshStatus()
   return 'adopted'
 }
 

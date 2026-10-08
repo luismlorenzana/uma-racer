@@ -1,0 +1,35 @@
+{
+  "source": {
+    "schemaVersion": 1,
+    "rulesVersion": 1,
+    "templateId": "invented-outfit",
+    "contentVersion": "invented-v1",
+    "baseStats": { "speed": 130, "stamina": 180, "power": 100, "guts": 70, "wit": 100 },
+    "growthRates": { "speed": 0.2, "stamina": 0.1, "power": 0, "guts": 0, "wit": 0.1 },
+    "aptitudes": {
+      "surface": { "turf": "A", "dirt": "A" },
+      "distance": { "sprint": "B", "mile": "A", "medium": "B", "long": "C" },
+      "strategy": { "front": "A", "pace": "A", "late": "B", "end": "B" }
+    }
+  },
+  "uma": {
+    "schemaVersion": 15,
+    "templateId": "invented-outfit",
+    "level": 1,
+    "exp": 0,
+    "unlockedTier": 1,
+    "scenarios": [{
+      "tier": 1, "trainingLevel": 1, "trainingExp": 0,
+      "extraStatsUnlocked": { "speed": 0, "stamina": 0, "power": 0, "guts": 0, "wit": 0 },
+      "inspiration": { "slots": [], "golds": [] },
+      "presets": {
+        "sprint": { "cardSetIds": [], "assignments": {}, "activeExtraStats": [], "loadoutSkillIds": [] },
+        "mile": { "cardSetIds": [], "assignments": {}, "activeExtraStats": [], "loadoutSkillIds": [] },
+        "medium": { "cardSetIds": [], "assignments": {}, "activeExtraStats": [], "loadoutSkillIds": [] },
+        "long": { "cardSetIds": [], "assignments": {}, "activeExtraStats": [], "loadoutSkillIds": [] }
+      },
+      "journey": null, "started": false
+    }],
+    "skillHistory": [], "goalPlanVersion": 4, "activePreset": "mile", "racePreferences": null
+  }
+}

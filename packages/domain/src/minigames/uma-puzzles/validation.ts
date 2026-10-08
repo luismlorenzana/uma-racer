@@ -1,0 +1,33 @@
+// Dependency-free validation shared by the Puzzle pure boundary (docs/technical/uma-puzzles-implementation.md).
+import { PUZZLE_PARSE_LIMITS } from './rules'
+
+export type PuzzleErrorCode = 'invalid' | 'unknown' | 'locked' | 'stale' | 'insufficient' | 'overflow'
+export class PuzzleRuleError extends Error {
+  constructor(readonly code: PuzzleErrorCode, message: string) { super(message); this.name = 'PuzzleRuleError' }
+}
+export function requirePuzzle(condition: unknown, code: PuzzleErrorCode, message: string): asserts condition {
+  if (!condition) throw new PuzzleRuleError(code, message)
+}
+export const puzzleRecord = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === 'object' && !Array.isArray(v) &&
+  (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null) &&
+  Reflect.ownKeys(v).every(k => typeof k === 'string' && !['__proto__', 'prototype', 'constructor'].includes(k))
+export const puzzleExact = (v: Record<string, unknown>, keys: readonly string[]): boolean =>
+  Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k))
+export const puzzleInteger = (v: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): v is number =>
+  typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max
+/** Reject sparse/prototype-bearing/extra-property arrays before iteration can skip an invalid slot. */
+export const puzzleArray = (v: unknown, maximum: number): v is unknown[] => Array.isArray(v) &&
+  Object.getPrototypeOf(v) === Array.prototype && v.length <= maximum && Reflect.ownKeys(v).length === v.length + 1 &&
+  Array.from({ length: v.length }, (_, i) => Object.hasOwn(v, i)).every(Boolean)
+export const puzzleId = (v: unknown): v is string => typeof v === 'string' &&
+  v.length <= PUZZLE_PARSE_LIMITS.id && /^[A-Za-z0-9_.:-]+$/.test(v) &&
+  !v.split(/[.:-]/).some(k => ['__proto__', 'prototype', 'constructor'].includes(k))
+export function puzzleSafe(v: number, label: string): number {
+  requirePuzzle(puzzleInteger(v), 'overflow', `${label} exceeds safe integer arithmetic`)
+  return v
+}
+export function puzzleBigSafe(v: bigint, label: string): number {
+  requirePuzzle(v >= 0n && v <= BigInt(Number.MAX_SAFE_INTEGER), 'overflow', `${label} exceeds safe integer arithmetic`)
+  return Number(v)
+}

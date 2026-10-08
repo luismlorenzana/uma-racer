@@ -1,4 +1,4 @@
-// Every class tree, node and number (docs/design/uma-rpg-classes.md, D270). One set of rules builds every skill, so a
+// Every class tree, node and number (docs/design/uma-rpg-classes.md, D280). One set of rules builds every skill, so a
 // rebalance changes a rule here, not a table of cells. Powers are full-turn units (Attack = 1.0) before the hand factor.
 import { rpgElementBeats, type RpgDamageKind, type RpgElement, type RpgStatusKind, type RpgTreeId, type RpgWeaponKind } from './kinds'
 

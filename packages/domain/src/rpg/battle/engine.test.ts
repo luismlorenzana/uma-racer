@@ -44,7 +44,7 @@ const act = (s: BattleState, action: BattleAction): BattleState => {
   return step.state
 }
 
-describe('battle engine v4: classes and multi-part hits (D268, D269)', () => {
+describe('battle engine v4: classes and multi-part hits (D278, D279)', () => {
   it('a weak part removes a shield point; a two-part hit can remove two', () => {
     let s = createBattle(input([foe('f1', 'ice')])).state
     s = act(s, { kind: 'attack', actorId: 'a1', targetId: 'f1', weapon: 'spear' }) // spear: not on the list

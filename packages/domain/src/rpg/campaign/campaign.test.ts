@@ -69,7 +69,7 @@ function member(id: string): RpgProfile {
 const party = ['m1', 'm2', 'm3', 'm4', 'm5'].map(member)
 const slots = party.map((p) => ({ profile: p, slot: { outfitId: p.outfitId, loadout: [], familiar: 'greatsword' as const } }))
 
-describe('foe weaknesses (D269)', () => {
+describe('foe weaknesses (D279)', () => {
   it('shows more weaknesses on weaker foes and bigger shields on stronger ones, never its own element', () => {
     const chapter = rpgCampaignChapter('ura-finale', cast)
     const foes = chapter.nodes.flatMap((n) => n.enemies)
@@ -118,7 +118,7 @@ describe('campaign runs (D263)', () => {
   })
 })
 
-describe('campaign save migration (D265, D272)', () => {
+describe('campaign save migration (D265, D282)', () => {
   it('drops a fight left open under an older engine; the run and its MP stay', () => {
     const run = { ...createRpgRun('party-1', 'ura-finale', 1), mp: { m1: 4 }, battles: 1,
       battle: { battleId: 'rpg-battle:party-1:ura-finale:1', nodeId: 'a1r1c1', startedAt: 1, input: { version: 3, seed: 1 } } }

@@ -94,7 +94,7 @@ async function editOutfit(outfitId: string, edit: (profile: RpgProfile) => RpgPr
 export const learnRpgSkill = (outfitId: string, id: string) => editOutfit(outfitId, (p) => learnRpgNode(p, id))
 export const changeRpgOutfitClass = (outfitId: string, classId: RpgClass, weapons: RpgWeapon[]) => editOutfit(outfitId, (p) => changeRpgClass(p, classId, weapons))
 
-/** Swaps a variant out (D270): the points come back and every party stops equipping it. */
+/** Swaps a variant out (D280): the points come back and every party stops equipping it. */
 export async function forgetRpgSkill(outfitId: string, id: string): Promise<void> {
   await db.transaction('rw', [db.rpgOutfits, db.rpgPresets, db.pendingRpgCommands, db.outbox], async () => {
     const row = await db.rpgOutfits.get(outfitId)

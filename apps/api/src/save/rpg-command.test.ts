@@ -52,7 +52,7 @@ const profile = (outfitId: string) => ({ outfitId, sourceContentVersion: 'invent
     strategy: { front: 'A', pace: 'A', late: 'B', end: 'G' } },
   affinities: { fire: 'A', dark: 'A' }, style: 'front', weapon: 'greatsword', defaultSignature: 'fire',
   tier: 1, level: 1, exp: 0, tree: [], legacy: [] })
-/** Class era (D267–D272): Front + Pace makes a Brawler. */
+/** Class era (D277–D282): Front + Pace makes a Brawler. */
 const classProfile = (outfitId: string, tree: { tier: number; id: string }[] = [{ tier: 1, id: 'greatsword.fire.1' }], level = 1) => {
   const { affinities: _a, style: _s, weapon: _w, defaultSignature: _d, ...rest } = profile(outfitId)
   return { ...rest, classId: 'brawler', weapons: ['greatsword', 'spear'], level, tree }
@@ -97,7 +97,7 @@ for (const backend of ['local', 'firestore'] as const) {
       expect((await repo.load('u1')).entities.find((row) => row.kind === 'rpgOutfits')?.data.schemaVersion).toBe(2)
     })
 
-    it('accepts class-era rows (D272); a schema-2 row cannot overwrite them', async () => {
+    it('accepts class-era rows (D282); a schema-2 row cannot overwrite them', async () => {
       const synced = await repo.sync('u1', { upserts: [
         { kind: 'rpgOutfits', id: 'uma-a', baseVersion: 0, data: { schemaVersion: 3, profile: classProfile('uma-a'), projectionRevision: 1 } },
         { kind: 'rpgPresets', id: 'party-1', baseVersion: 0, data: classParty },

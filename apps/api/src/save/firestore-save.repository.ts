@@ -1,14 +1,13 @@
-import { Logger } from '@nestjs/common'
 import * as admin from 'firebase-admin'
-import { isDeepStrictEqual } from 'node:util'
 import { fromStored, toStored } from './firestore-codec'
 import { freezeAdvance, advanceOutfit, bankData } from './inspiration-advance'
 import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 import type { SaveRepository } from './save.repository'
+import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
+import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
 import {
   ENTITY_KINDS,
   LOG_KINDS,
-  resolveUpserts,
   type EntityRecord,
   type LogRecord,
   type SaveSnapshot,
@@ -20,9 +19,8 @@ import {
 // (docs/technical/architecture.md#firestore-data-model-saves). On Cloud Run, initializeApp() uses
 // Application Default Credentials automatically.
 export class FirestoreSaveRepository implements SaveRepository {
-  private readonly logger = new Logger('SaveSync')
 
-  constructor(private readonly injectedDb?: admin.firestore.Firestore) {}
+  constructor(private readonly injectedDb?: admin.firestore.Firestore, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED) {}
 
   private get db(): admin.firestore.Firestore {
     if (this.injectedDb) return this.injectedDb
@@ -72,11 +70,13 @@ export class FirestoreSaveRepository implements SaveRepository {
   }
 
   async sync(uid: string, request: SyncRequest): Promise<SyncResponse> {
+    const readSet = puzzleSyncReadSet(request)
     const player = this.player(uid)
     const now = Date.now()
     return this.db.runTransaction(async (tx) => {
-      const entityRefs = request.upserts.map((u) => player.collection(u.kind).doc(u.id))
-      const logRefs = request.appends.map((a) => player.collection(a.kind).doc(a.id))
+      const reference = (key: string) => { const [kind, id] = key.split('/'); return player.collection(kind!).doc(id!) }
+      const entityRefs = readSet.entities.map(reference)
+      const logRefs = readSet.logs.map(reference)
       const [entityDocs, logDocs] = await Promise.all([
         entityRefs.length ? tx.getAll(...entityRefs) : Promise.resolve([]),
         logRefs.length ? tx.getAll(...logRefs) : Promise.resolve([]),
@@ -89,28 +89,28 @@ export class FirestoreSaveRepository implements SaveRepository {
           existing.set(`${record.kind}/${record.id}`, record)
         }
       }
-      const { writes, conflicts } = resolveUpserts(existing, request.upserts, now)
-      for (const record of writes) tx.set(player.collection(record.kind).doc(record.id), toStored(record))
+      const logs = new Map<string, LogRecord>()
+      for (const doc of logDocs) if (doc.exists) { const row = fromStored<LogRecord>(doc.data()!); logs.set(`${row.kind}/${row.id}`, row) }
+      const resolved = resolveSyncWithPuzzles(uid, request, existing, logs, now, this.puzzlesEnabled)
+      // All reads have completed. Coalesce intermediate changes when multiple groups share a document.
+      const writes = new Map(resolved.writes.map(row => [`${row.kind}/${row.id}`, row]))
+      for (const row of writes.values()) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+      for (const row of resolved.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+      return resolved.response
+    })
+  }
 
-      let appended = 0
-      request.appends.forEach((a, i) => {
-        const record: LogRecord = { kind: a.kind, id: a.id, data: a.data, createdAt: a.createdAt }
-        if (logDocs[i]?.exists) {
-          // A log id names one event, so the first write wins (D149). Two devices recording the same event, such as
-          // the same day's grant, differ only in when; failing the whole batch over that froze sync for five days.
-          if (!isDeepStrictEqual(fromStored<LogRecord>(logDocs[i]!.data()!), record)) this.logger.warn(`Kept the first copy of ${a.kind}/${a.id}`)
-          return
-        }
-        tx.set(logRefs[i]!, toStored(record))
-        appended++
-      })
-
-      return {
-        applied: writes.map((w) => ({ kind: w.kind, id: w.id, version: w.version })),
-        conflicts,
-        appended,
-        serverTime: now,
-      }
+  async puzzleTakeover(uid: string, request: PuzzleTakeoverRequest): Promise<PuzzleTakeoverResponse> {
+    const player = this.player(uid)
+    return this.db.runTransaction(async tx => {
+      const [checkpoint, result, bank] = await tx.getAll(player.collection('puzzleCheckpoints').doc(request.checkpointId), player.collection('puzzleResults').doc(request.battleId), player.collection('constellationBank').doc('main'))
+      const entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>()
+      if (checkpoint?.exists) { const row = fromStored<EntityRecord>(checkpoint.data()!); entities.set(`${row.kind}/${row.id}`, row) }
+      if (bank?.exists) { const row = fromStored<EntityRecord>(bank.data()!); entities.set(`${row.kind}/${row.id}`, row) }
+      if (result?.exists) { const row = fromStored<LogRecord>(result.data()!); logs.set(`${row.kind}/${row.id}`, row) }
+      const resolved = resolveTakeover(uid, request, entities, logs, Date.now(), this.puzzlesEnabled)
+      for (const row of resolved.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+      return resolved.response
     })
   }
 

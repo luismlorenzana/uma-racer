@@ -57,6 +57,31 @@ depositing into Items. Gross rewards, seeds, journals and combat remain unchange
 
 ## 2. The run lifecycle
 
+**Replacement foundations/battle/campaign v1 implemented, not enabled:** [Uma Puzzles](uma-puzzles.md) (D267–D271,
+[M030](../tasks/M030-uma-puzzles.md)) is a free global party campaign outside `MinigameHost`, like RPG/Farm.
+It reuses this kit's pure engine, seeded replay, private art, shared shell and guide standards, not the ticketed
+target/reservation/reward port. Its independent [implementation contract](../technical/uma-puzzles-implementation.md)
+defines a device journal, atomic background economic operations and explicit same-seed takeover. Spark remains the
+shipped Training Level game until the final gated preservation cutover; task specs must not retire it halfway through.
+T106 exports pure parsed identity/progression/material/debt/legacy rules. T107 adds an independent pure board/combat
+engine, finite kit, strict transports, authoritative event steps and replay hashes. Its `sim:puzzles` uses only
+invented data and public actions; it is not production balance closure. No playable Puzzle fight, Home entry or
+account migration is enabled. T108 adds generated28-node chapters, fixed-reference encounters, replay-derived
+reward/progress projections and exact style/debt/exchange reports. Its600-battle campaign sample records remaining
+balance outliers. T109 now supplies the [private Puzzle pipeline/client](../technical/puzzle-content.md); real PAD
+inputs/art are pinned for the final pass by the owner (D272), with explicitly labelled original DEV placeholders.
+T110 adds [schema-1 records, additive Dexie28, atomic background operations and canonical repair](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273)
+(D273), still capability-off, without creating a bank or retiring Spark. T111 implements the
+[real replay host/journal](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274), receipt-owned
+materials and explicit recovery (D274), with an isolated proof adapter and no default double. T112 implements
+[guarded setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275): shared
+Shell/Header/PagedGuide, saved owned roster/five parties/maps, held verified previews and a completely separate DEV
+real-host proof (D275). T113 adds [mobile battle/results/guide/practice](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276):
+Begin reserves through the real host, append is durable before animation, and results read saved receipts plus optional
+device replay detail. Account-free synthetic practice does not enroll, persist or reward. Both flags remain off;
+placeholders never satisfy verified production content. Spark shares only pure cell geometry; its traversal and replay
+remain unchanged. T114's material surfaces are next.
+
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):
 
@@ -206,6 +231,8 @@ or Back/Next, safe-area controls, reduced motion.
 | `formatTickets` | `ui/tickets.ts` | every ticket price |
 | `safeReturnPath`, `friendshipTrainingHref` | `game/bond-links.ts` | entry links and the way back |
 | Spark presentation | `ui/minigames/spark-rival-presentation.ts` | orb faces, glyphs and presentation constants |
+| Grid cell geometry | `scenes/puzzle-input/geometry.ts` | finite bounds/coordinate mapping shared by Spark and Puzzles; each keeps its own traversal/controller |
+| Puzzle battle stage | `screens/puzzles/PuzzleBattleStage.tsx`, `scenes/puzzles/` | real fights and isolated practice share the DOM HUD and lazy Pixi input/effects, never the account reward path |
 
 ## 10. Adding a minigame
 

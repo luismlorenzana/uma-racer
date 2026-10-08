@@ -1,4 +1,4 @@
-// Synthetic outfit-only tests for docs/design/uma-rpg-classes.md (D267–D270).
+// Synthetic outfit-only tests for docs/design/uma-rpg-classes.md (D277–D280).
 import { describe, expect, it } from 'vitest'
 import type { Aptitudes, Stats } from '../types'
 import { RPG_NODES, rpgNode, rpgTreeNodes } from './catalog'
@@ -18,7 +18,7 @@ const source = (aptitudes = styles('A', 'A', 'B', 'G')) => ({ id: 'invented-outf
 const brawler = () => enrollRpgOutfit({ outfit: source(), contentVersion: 'synthetic-v1', classId: 'brawler', weapons: ['greatsword', 'spear'] })
 const learnAll = (p: RpgProfile, ids: string[]) => ids.reduce(learnRpgNode, p)
 
-describe('RPG classes (D267)', () => {
+describe('RPG classes (D277)', () => {
   it('maps A running styles to a class, and leaves outliers a choice', () => {
     expect(rpgClassOptions(styles('A', 'B', 'C', 'G'))).toEqual(['brawler'])
     expect(rpgClassOptions(styles('A', 'A', 'B', 'G'))).toEqual(['brawler'])
@@ -86,7 +86,7 @@ describe('RPG levels and stats', () => {
   })
 })
 
-describe('RPG class trees (D270)', () => {
+describe('RPG class trees (D280)', () => {
   it('authors ten trees of three branches: five core nodes and three forks of two variants each', () => {
     const trees = new Set(RPG_NODES.map((n) => n.tree))
     expect(trees.size).toBe(10)

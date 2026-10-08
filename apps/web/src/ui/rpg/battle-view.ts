@@ -1,4 +1,4 @@
-// Read-only projections of the engine for the fight screen: legal choices, previews and cue text (D268–D271).
+// Read-only projections of the engine for the fight screen: legal choices, previews and cue text (D278–D281).
 import { applyBattleAction, battleActorSkill, battleBlessings, battleBroken, battleSkillFor, isRpgElement, isRpgWeaponKind, rpgHand,
   type BattleAction, type BattleAlly, type BattleCue, type BattleEnemy, type BattleSkill, type BattleState,
   type RpgDamageKind, type RpgNodeRef, type RpgWeapon, type RpgWeaponKind } from '@racer/domain'
@@ -16,7 +16,7 @@ export function skillChoices(state: BattleState, actorId: string): SkillChoice[]
   })
 }
 
-/** The Cleric's blessings for this skill, if she has any (D271). */
+/** The Cleric's blessings for this skill, if she has any (D281). */
 export const blessingChoices = (state: BattleState, actorId: string, skill: BattleSkill) => {
   const ally = state.input.allies.find((a) => a.id === actorId)
   return ally ? battleBlessings(ally, skill.def.primary) : []

@@ -25,7 +25,7 @@ const party = [
 const foe = rpgFoe({ id: 'f1', castId: 'c1', element: 'ice', role: 'striker', rank: 'regular', level: 4, shield: 3,
   weaknesses: { weapons: ['short-sword', 'bow'], elements: ['fire', 'light'] } })
 
-describe('fight projections (D268–D271)', () => {
+describe('fight projections (D278–D281)', () => {
   it('knows which kinds each Uma lands, and so who can break a foe', () => {
     const state = createBattle({ version: 4, seed: 1, allies: party, enemies: [foe] }).state
     expect(allyKinds(party[0]!)).toEqual({ free: ['axe', 'bow'], skills: ['axe', 'ice'] })

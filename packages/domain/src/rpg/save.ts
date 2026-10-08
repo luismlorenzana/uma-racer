@@ -7,7 +7,7 @@ import {
 } from './rules'
 import { rpgNode } from './catalog'
 
-/** Class-era RPG rows (D272). Schema 1 and 2 rows still parse and migrate on the way in. */
+/** Class-era RPG rows (D282). Schema 1 and 2 rows still parse and migrate on the way in. */
 export const RPG_SAVE_SCHEMA_VERSION = 3
 export const RPG_PARTY_SIZE = 5
 export const RPG_PRESET_COUNT = 5
@@ -71,7 +71,7 @@ export function rpgResultId(entryId: string, retryOrdinal: number): string {
 }
 
 export interface RpgOutfitSave { schemaVersion: 3; profile: RpgProfile; projectionRevision: number }
-/** A party slot: the outfit, its equipped skills and, for a Summoner, her Familiar's weapon form (D268). */
+/** A party slot: the outfit, its equipped skills and, for a Summoner, her Familiar's weapon form (D278). */
 export interface RpgPresetSlot { outfitId: string; loadout: RpgNodeRef[]; familiar: RpgWeaponKind }
 export interface RpgPresetSave {
   /** `foregroundChapterId` is the chapter the party last opened. */
@@ -98,7 +98,7 @@ export interface RpgResultEvidenceV1 {
   memberExp: Array<{ outfitId: string; delta: number; beforeTier: number; beforeLevel: number; beforeExp: number
     afterTier: number; afterLevel: number; afterExp: number }>; createdAt: number
 }
-/** Schema 2 archives learned nodes (D272); schema 1 archived the element-tree skills. */
+/** Schema 2 archives learned nodes (D282); schema 1 archived the element-tree skills. */
 export interface RpgPromotionEvidence {
   schemaVersion: 1 | 2; promotionId: string; outfitId: string; fromTier: number; toTier: number
   archive: Array<RpgNodeRef | Record<string, unknown>>; createdAt: number
@@ -163,7 +163,7 @@ export function parseRpgOutfitSave(value: unknown): RpgOutfitSave | null {
 }
 
 /**
- * D272: an outfit from before classes keeps its tier, level and EXP, takes the first class open to its running styles
+ * D282: an outfit from before classes keeps its tier, level and EXP, takes the first class open to its running styles
  * with that class's first weapon set, and restarts its trees. The empty tree lets the owner re-pick once.
  */
 export function migrateRpgOutfitSave(value: unknown): RpgOutfitSave | null {
@@ -208,7 +208,7 @@ export function parseRpgPresetSave(value: unknown): RpgPresetSave | null {
   return new Set(ids).size === ids.length ? value as unknown as RpgPresetSave : null
 }
 
-/** D272: parties keep their members and current chapter; loadouts clear with the trees and Familiars start as Greatsword. */
+/** D282: parties keep their members and current chapter; loadouts clear with the trees and Familiars start as Greatsword. */
 export function migrateRpgPresetSave(value: unknown): RpgPresetSave | null {
   if (isRecord(value) && value.schemaVersion === 3) return parseRpgPresetSave(value)
   if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !Array.isArray(value.slots) ||

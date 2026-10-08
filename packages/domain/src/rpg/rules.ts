@@ -1,4 +1,4 @@
-// Pure outfit RPG progression: classes, stats, points and class trees (docs/design/uma-rpg-classes.md, D267–D270).
+// Pure outfit RPG progression: classes, stats, points and class trees (docs/design/uma-rpg-classes.md, D277–D280).
 import type { UmaTemplate } from '../content'
 import {
   DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES,
@@ -172,7 +172,7 @@ export function enrollRpgOutfit(input: {
   }
 }
 
-/** D267: class and weapons can change freely while nothing is learned, at any level. */
+/** D277: class and weapons can change freely while nothing is learned, at any level. */
 export function canChangeRpgClass(profile: RpgProfile): boolean {
   return profile.tree.length === 0 && profile.legacy.length === 0
 }
@@ -287,7 +287,7 @@ export function learnRpgNode(profile: RpgProfile, id: string): RpgProfile {
   return { ...profile, tree: [...profile.tree, { tier: profile.tier, id }] }
 }
 
-/** D270: variants swap freely; the points come back. Core nodes are permanent. */
+/** D280: variants swap freely; the points come back. Core nodes are permanent. */
 export function forgetRpgVariant(profile: RpgProfile, id: string): RpgProfile {
   const node = rpgNode(id)
   if (!node || node.variant === null || !profile.tree.some((ref) => ref.id === id)) throw new RangeError('Only a learned variant can be swapped out')

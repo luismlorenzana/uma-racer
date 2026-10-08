@@ -1,4 +1,4 @@
-// Campaign guide (docs/design/uma-rpg.md, docs/design/uma-rpg-classes.md, D261–D272); read-only.
+// Campaign guide (docs/design/uma-rpg.md, docs/design/uma-rpg-classes.md, D261–D282); read-only.
 import { RPG_BATTLE_TOKENS, RPG_CHAPTER_LEVELS, RPG_DEPTH_GATES, RPG_MAX_ACTIVE_SLOTS, RPG_PARTY_SIZE, RPG_PRESET_COUNT,
   RPG_VARIANTS_PER_TREE, RPG_WEAPONS } from '@racer/domain'
 import { PagedGuide, type PagedGuidePage } from '../../ui/PagedGuide'

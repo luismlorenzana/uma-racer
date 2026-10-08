@@ -1,4 +1,4 @@
-// Deterministic campaign battle reducer, engine v4 (docs/design/uma-rpg-classes.md, D268–D271).
+// Deterministic campaign battle reducer, engine v4 (docs/design/uma-rpg-classes.md, D278–D281).
 // Octopath Traveler breaks with class hands: every hit has one to three parts, and each weak part removes one shield
 // point. Mages with two staves and Summoners act twice a round; a Short Sword follows staff spells on its own; a Cleric's
 // Arcane cast carries a blessing chosen from the branch its element points to. Unbroken foes take half damage.
@@ -428,7 +428,7 @@ function cast(s: BattleState, actor: BattleUnit, tapped: BattleUnit, def: RpgSki
   return log
 }
 
-// --- Short Sword follow-ups (D268) -----------------------------------------------------------------------------------
+// --- Short Sword follow-ups (D278) -----------------------------------------------------------------------------------
 
 function swordDepth(ally: BattleAlly, branch: string): number {
   return ally.tree.reduce((best, ref) => {
@@ -491,7 +491,7 @@ function followUp(s: BattleState, actor: BattleUnit, ally: BattleAlly, def: RpgS
   if (branch === 'melee' && has('second-wind')) restoreMp(s, actor, 0.02 * hitFoes.length, actor.id, cues)
 }
 
-// --- Cleric blessings (D271) -----------------------------------------------------------------------------------------
+// --- Cleric blessings (D281) -----------------------------------------------------------------------------------------
 
 const BEST_FIT: Readonly<Record<string, 'atk' | 'matk' | 'mp' | 'hp'>> = {
   brave: 'atk', breaker: 'atk', faith: 'matk', exalt: 'matk', clarity: 'mp',

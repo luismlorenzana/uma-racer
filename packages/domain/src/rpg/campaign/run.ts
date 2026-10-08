@@ -54,7 +54,7 @@ export function parseRpgRunSave(value: unknown): RpgRunSaveV2 | null {
     typeof value.chapterId !== 'string' || !/^[a-z0-9-]{1,24}$/.test(value.chapterId) || !counts(value.wins, 1) ||
     !counts(value.mp, 0) || !int(value.battles) || !(value.clearedAt === null || int(value.clearedAt)) || !int(value.updatedAt)) return null
   const battle = value.battle
-  // A fight left open under an older engine (D265, D272) is dropped: no reward, MP as it was when it began.
+  // A fight left open under an older engine (D265, D282) is dropped: no reward, MP as it was when it began.
   if (record(battle) && record(battle.input) && battle.input.version !== 4) return { ...(value as unknown as RpgRunSaveV2), battle: null }
   if (battle !== null) {
     if (!record(battle) || !exact(battle, ['battleId', 'nodeId', 'startedAt', 'input']) || typeof battle.battleId !== 'string' ||

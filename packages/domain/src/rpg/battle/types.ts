@@ -1,4 +1,4 @@
-// Campaign battle vocabulary, engine v4 (docs/design/uma-rpg-classes.md, D268–D271).
+// Campaign battle vocabulary, engine v4 (docs/design/uma-rpg-classes.md, D278–D281).
 import type { RpgClass, RpgCoreStats, RpgDamageKind, RpgElement, RpgNodeRef, RpgStatusKind, RpgWeapon, RpgWeaponKind } from '../rules'
 
 export type BattleSide = 'ally' | 'enemy'
@@ -34,7 +34,7 @@ export interface BattleEnemyMove {
   status?: 'burn' | 'slow' | 'mark' | 'weaken' | 'ward' | 'power-up'
   label: string
 }
-/** Weapon and element weaknesses (D269); each weak part of a hit removes one shield point. */
+/** Weapon and element weaknesses (D279); each weak part of a hit removes one shield point. */
 export interface BattleWeaknesses { weapons: RpgWeaponKind[]; elements: RpgElement[] }
 export interface BattleEnemy {
   id: string

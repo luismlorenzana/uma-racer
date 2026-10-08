@@ -110,12 +110,12 @@ const oldProfile = (level: number, exp: number) => ({ outfitId: 'u1', sourceCont
   tree: [{ tier: 1, weapon: 'greatsword', element: 'fire', depth: 1, branch: 'foundation', level: 2 }], legacy: [] })
 const legacyDb = (version: number) => {
   const legacy = new Dexie('uma-racer')
-  legacy.version(version).stores(Object.fromEntries(db.tables.filter((t) => version >= 27 || t.name !== 'rpgFights').map((table) => [table.name,
+  legacy.version(version).stores(Object.fromEntries(db.tables.filter((t) => (version >= 27 || t.name !== 'rpgFights') && !/^(puzzle|pendingPuzzle|constellationBank)/.test(t.name)).map((table) => [table.name,
     [table.schema.primKey.src, ...table.schema.indexes.map((index) => index.src)].join(', ')])))
   return legacy
 }
 
-describe('class upgrade (Dexie v28, D272)', () => {
+describe('class upgrade (Dexie v29, D282)', () => {
   afterEach(() => db.close())
   it('gives outfits a class keeping levels, clears loadouts and closes a fight left open under engine v3', async () => {
     await db.delete()

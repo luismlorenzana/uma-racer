@@ -1,6 +1,22 @@
 // Guards the numbers in docs/design against drift. If a doc changes, change the matching expectation here.
 import { describe, expect, it } from 'vitest'
 import {
+  PUZZLE_RULES_VERSION, PUZZLE_SCHEMA_VERSION, PUZZLE_STAT_GROWTH, PUZZLE_STAT_BASE,
+  PUZZLE_EXP_BASE, PUZZLE_EXP_STEP, PUZZLE_EXP_WEIGHTS, PUZZLE_RELATIVE_EXP,
+  PUZZLE_CL_MAX, PUZZLE_EXCHANGE_RATIO, PUZZLE_LEGACY_EXP_PER_TICKET, PUZZLE_PARSE_LIMITS,
+  PUZZLE_ENGINE_VERSION, PUZZLE_BOARD_WIDTH, PUZZLE_BOARD_HEIGHT, PUZZLE_BOARD_SIZE, PUZZLE_PARTY_SIZE,
+  PUZZLE_TURN_LIMIT, PUZZLE_ACTION_LIMIT, PUZZLE_PATH_LIMIT, PUZZLE_MOVEMENT_MS, PUZZLE_CASCADE_LIMIT,
+  PUZZLE_OPENING_ATTEMPTS, PUZZLE_RNG_REJECTION_ATTEMPTS, PUZZLE_MATCH_MIN, PUZZLE_MASS_MIN,
+  PUZZLE_SHAPE_PER_ORB, PUZZLE_COMBO_PER_GROUP, PUZZLE_MATCHUP, PUZZLE_DAMAGE_FLOOR,
+  PUZZLE_SKILL_RULES, PUZZLE_LEADER_RULES, PUZZLE_PATTERN_RULES, PUZZLE_ENEMY_GUARD, PUZZLE_RAGE_THRESHOLD,
+  PUZZLE_BATTLE_LIMITS, PUZZLE_BOT_SEARCH, PUZZLE_ORBS, PUZZLE_ACTIVES, PUZZLE_LEADERS, PUZZLE_PATTERNS, PUZZLE_ENEMY_RECIPES,
+  PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_REGULAR_LEVELS, PUZZLE_GUARDIAN_LEVELS, PUZZLE_CHAMPION_LEVEL,
+  PUZZLE_MAP_BRANCHES, PUZZLE_MAP_NODES, PUZZLE_DROP_COUNTS, PUZZLE_PRIMARY_WINS, PUZZLE_PRIMARY_GROSS, PUZZLE_FULL_GROSS,
+  PUZZLE_DARK_VARIANTS, PUZZLE_FOE_ROLES, PUZZLE_FOE_REFERENCE, PUZZLE_FOE_SCALING, PUZZLE_FOE_ROLE_MULTIPLIERS,
+  PUZZLE_FOE_MECHANICS, PUZZLE_SQUAD_MIXES, PUZZLE_ALLOCATION_RECIPIENT_LIMIT, PUZZLE_CONTENT_LIMITS, PUZZLE_SYNC_LIMITS,
+} from './minigames/uma-puzzles'
+
+import {
   addTrainingExp,
   APTITUDE_REFS,
   CARD_FOCUS_MIN_SHARE,
@@ -179,7 +195,7 @@ describe('Global card stars — D255', () => {
   })
 })
 
-describe('Global Uma RPG — engine v4 pins (D269, D271)', () => {
+describe('Global Uma RPG — engine v4 pins (D279, D281)', () => {
   it('pins damage, breaks and the protection contract', () => {
     expect([BATTLE_WEAK, BATTLE_UNBROKEN_FACTOR, BATTLE_ULTIMA, BATTLE_DEFENSE_SHARE, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS])
       .toEqual([1.3, 0.5, 1.2, 0.5, 0.5, 40])
@@ -189,7 +205,7 @@ describe('Global Uma RPG — engine v4 pins (D269, D271)', () => {
     expect([RPG_FOE_TUNING.regularShield, RPG_FOE_TUNING.lateRegularShield, RPG_FOE_TUNING.subBossShield, RPG_FOE_TUNING.bossShield])
       .toEqual([2, 3, 6, 8])
   })
-  it('pins the skill rules and the 330-node catalog (D270)', () => {
+  it('pins the skill rules and the 330-node catalog (D280)', () => {
     expect([RPG_SKILL_POWER, RPG_SKILL_MP, RPG_AOE_SHARE, RPG_RANDOM_BONUS, RPG_VARIANTS_PER_TREE])
       .toEqual([[1.6, 2.2, 2.9, 3.7, 4.6], [10, 14, 18, 22, 26], 0.55, 1.05, 3])
     // Ten trees × three branches × (five core nodes + three forks of two variants).
@@ -197,7 +213,7 @@ describe('Global Uma RPG — engine v4 pins (D269, D271)', () => {
   })
 })
 
-describe('Global Uma RPG — save wire pins (D272)', () => {
+describe('Global Uma RPG — save wire pins (D282)', () => {
   it('bounds synced account rows and grouped commands', () => {
     expect([RPG_SAVE_SCHEMA_VERSION, RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_MAX_TREE_NODES,
       RPG_MAX_SELECTED_PATH, RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_GROUP_OPERATIONS])
@@ -205,7 +221,7 @@ describe('Global Uma RPG — save wire pins (D272)', () => {
   })
 })
 
-describe('Global Uma RPG — progression pins (D264, D267, D270)', () => {
+describe('Global Uma RPG — progression pins (D264, D277, D280)', () => {
   it('keeps a repeatable 50-level tier with a linear 25,480 EXP climb', () => {
     expect(RPG_TIER_MAX_LEVEL).toBe(50)
     expect([rpgExpToNext(1), rpgExpToNext(10), rpgExpToNext(49)]).toEqual([136, 280, 904])
@@ -641,5 +657,80 @@ describe('cards', () => {
   it('adds the unique bonus at 3★ only', () => {
     expect(cardRaceBonus(template(1, true), 2)).toBeCloseTo(cardRaceBonus(template(1), 2))
     expect(cardRaceBonus(template(1, true), 3)).toBeCloseTo(cardRaceBonus(template(1), 3) * 1.25)
+  })
+})
+
+describe('Uma Puzzles initial candidates, not balance closure (D269)', () => {
+  it('pins atomic transport limits, not gameplay progression caps (D273)', () => {
+    expect(PUZZLE_SYNC_LIMITS).toEqual({ groups: 16, bytes: 262144, documents: 200, receiptBytes: 921600 })
+  })
+  it('pins bounded private content and alpha-safe presentation, not combat numbers', () => {
+    expect(PUZZLE_CONTENT_LIMITS).toEqual({ members: 512, packs: 64, pages: 32, frame: 256, gutter: 2, page: 2048,
+      jsonBytes: 2_097_152, imageBytes: 8_388_608, inputPixels: 16_777_216, timeoutMs: 10_000, attempts: 2, cachedPacks: 4, cachedPages: 8 })
+  })
+  it('pins the independent stat and EXP formulas', () => {
+    expect(PUZZLE_RULES_VERSION).toBe(1)
+    expect(PUZZLE_SCHEMA_VERSION).toBe(1)
+    expect(PUZZLE_STAT_GROWTH).toEqual({ atk: 12, hp: 36, rcv: 4, guard: 6, resilience: 6 })
+    expect(PUZZLE_STAT_BASE).toEqual({ atk: 1, hp: 4, rcv: 0.5, guardDivisor: 20, resilienceDivisor: 20 })
+    expect([PUZZLE_EXP_BASE, PUZZLE_EXP_STEP]).toEqual([100, 10])
+    expect(PUZZLE_EXP_WEIGHTS).toEqual({ ordinary: 0.5, guardian: 1, champion: 1.5 }) // D271 route pacing.
+    expect(PUZZLE_RELATIVE_EXP).toEqual({ min: 0.25, max: 2, perLevel: 0.1 })
+  })
+  it('pins material value, preserved legacy value and distinct work bounds', () => {
+    expect(PUZZLE_CL_MAX).toBe(10)
+    expect(PUZZLE_EXCHANGE_RATIO).toBe(2)
+    expect(PUZZLE_LEGACY_EXP_PER_TICKET).toBe(1250)
+    expect(PUZZLE_PARSE_LIMITS).toEqual({ id: 120, scenarios: 256, units: 4096, levelPage: 256 })
+  })
+})
+
+describe('Uma Puzzles battle v1 initial candidates and transport (D270)', () => {
+  it('pins board, action and deterministic work limits', () => {
+    expect(PUZZLE_ENGINE_VERSION).toBe(1)
+    expect([PUZZLE_BOARD_WIDTH, PUZZLE_BOARD_HEIGHT, PUZZLE_BOARD_SIZE, PUZZLE_PARTY_SIZE]).toEqual([6, 5, 30, 5])
+    expect([PUZZLE_TURN_LIMIT, PUZZLE_ACTION_LIMIT, PUZZLE_PATH_LIMIT, PUZZLE_MOVEMENT_MS]).toEqual([30, 181, 256, 7000])
+    expect([PUZZLE_CASCADE_LIMIT, PUZZLE_OPENING_ATTEMPTS, PUZZLE_RNG_REJECTION_ATTEMPTS]).toEqual([64, 2048, 32])
+    expect(PUZZLE_ORBS).toEqual(['fire', 'water', 'wood', 'light', 'dark', 'heart'])
+    expect(PUZZLE_BOT_SEARCH).toEqual({ depth: 6, width: 8 })
+    expect(PUZZLE_BATTLE_LIMITS).toEqual({ enemies: 5, intents: 4, countdown: 30, statusDrags: 3,
+      enemyValue: 1_000_000_000, converterCount: 4, comboThreshold: 30, rageMultiplier: 4 })
+  })
+  it('pins combat, finite skill recipes and unlocks without claiming tuned production balance', () => {
+    expect([PUZZLE_MATCH_MIN, PUZZLE_MASS_MIN, PUZZLE_SHAPE_PER_ORB, PUZZLE_COMBO_PER_GROUP, PUZZLE_DAMAGE_FLOOR]).toEqual([3, 5, 0.25, 0.25, 0.25])
+    expect(PUZZLE_MATCHUP).toEqual({ advantage: 2, disadvantage: 0.5, neutral: 1 })
+    expect(PUZZLE_SKILL_RULES).toEqual({ frontCount: 4, frontCharge: 5, paceShield: 0.35, paceCharge: 6,
+      lateCount: 6, lateCharge: 6, endDelay: 1, endCharge: 7 })
+    expect(PUZZLE_LEADER_RULES).toEqual({ comboThreshold: 4, comboAtk: 1.2, durableHp: 1.15, recoveryRcv: 1.2 })
+    expect(PUZZLE_PATTERN_RULES).toEqual({ fourLevel: 5, fourCount: 4, rowLevel: 10, multiplier: 1.25 })
+    expect([PUZZLE_ENEMY_GUARD, PUZZLE_RAGE_THRESHOLD]).toEqual([0.5, 50])
+    expect(PUZZLE_ACTIVES.map(a => a.id)).toEqual(['puzzle:front-convert', 'puzzle:pace-shield', 'puzzle:late-convert', 'puzzle:end-delay'])
+    expect(PUZZLE_LEADERS.map(l => l.id)).toEqual(['puzzle:combo-leader', 'puzzle:durable-leader', 'puzzle:recovery-leader'])
+    expect(PUZZLE_PATTERNS.map(p => p.id)).toEqual(['puzzle:four', 'puzzle:row'])
+    expect(PUZZLE_ENEMY_RECIPES).toEqual(['puzzle:striker', 'puzzle:ally-healer', 'puzzle:guard', 'puzzle:converter', 'puzzle:combo-ward', 'puzzle:guardian', 'puzzle:champion'])
+  })
+})
+
+describe('Uma Puzzles campaign coefficients and economy (D271)', () => {
+  it('pins generated map bands, vectors, gross budgets and separate report bounds', () => {
+    expect([PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_MAP_BRANCHES, PUZZLE_MAP_NODES]).toEqual([1, 10, 2, 28])
+    expect(PUZZLE_REGULAR_LEVELS).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9, 9]])
+    expect(PUZZLE_GUARDIAN_LEVELS).toEqual([3, 6, 9]); expect(PUZZLE_CHAMPION_LEVEL).toBe(10)
+    expect(PUZZLE_DROP_COUNTS).toEqual({ ordinary: 3, guardian: 4, champion: 12 })
+    expect([PUZZLE_PRIMARY_WINS, PUZZLE_PRIMARY_GROSS, PUZZLE_FULL_GROSS]).toEqual([14, 54, 132])
+    expect(PUZZLE_DARK_VARIANTS).toEqual(['pace', 'late']); expect(PUZZLE_ALLOCATION_RECIPIENT_LIMIT).toBe(6)
+    expect(PUZZLE_SQUAD_MIXES).toEqual([['light', 'fire', 'water'], ['dark', 'fire', 'wood'], ['light', 'water', 'wood'],
+      ['dark', 'fire', 'water'], ['light', 'fire', 'wood'], ['dark', 'water', 'wood']])
+  })
+  it('pins fixed invented reference and level/kind/role coefficients, not entering-party scaling', () => {
+    expect(PUZZLE_FOE_ROLES).toEqual(['striker', 'healer', 'guard', 'converter', 'ward', 'champion'])
+    expect(PUZZLE_FOE_REFERENCE).toEqual({ speed: 110, stamina: 170, power: 90, guts: 70, wit: 90, growth: 0.1, partySize: 5 })
+    expect(PUZZLE_FOE_SCALING).toEqual({ ordinary: { hpAtk: 5.5, damageHp: 0.29, opening: 2, attackCountdown: 2 },
+      guardian: { hpAtk: 28, damageHp: 0.58, opening: 1, attackCountdown: 2 },
+      champion: { hpAtk: 42, damageHp: 0.54, opening: 2, attackCountdown: 2 } })
+    expect(PUZZLE_FOE_ROLE_MULTIPLIERS).toEqual({ striker: { hp: 1, damage: 1 }, healer: { hp: 0.8, damage: 0.8 },
+      guard: { hp: 1.1, damage: 0.95 }, converter: { hp: 0.9, damage: 0.9 }, ward: { hp: 1, damage: 0.9 }, champion: { hp: 1, damage: 1 } })
+    expect(PUZZLE_FOE_MECHANICS).toEqual({ defenseBase: 5, defensePerLevel: 2, healHp: 0.15, supportCountdown: 1,
+      guardCombos: 3, wardCombos: 4, wardDuration: 1, converterCount: 4, rageMultiplier: 1.4, rageCountdown: 1 })
   })
 })

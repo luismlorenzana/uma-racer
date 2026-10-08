@@ -3,6 +3,7 @@ import { AuthGuard, CurrentUid } from '../auth/auth.guard'
 import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'
 import { parseSyncRequest } from './save.types'
 import { parseRpgCommandRequest } from './rpg-command'
+import { parsePuzzlePrepareRequest, parsePuzzleTakeoverRequest, PUZZLES_RELEASE_ENABLED } from './puzzles'
 
 @UseGuards(AuthGuard)
 @Controller()
@@ -37,5 +38,19 @@ export class SaveController {
     const parsed = parseRpgCommandRequest(body)
     if (typeof parsed === 'string') throw new BadRequestException(parsed)
     return this.saves.rpgCommand(uid, parsed)
+  }
+
+  /** Explicit authenticated account boundary. T115 implements preparation; T116 alone enables release. */
+  @Post('puzzles/prepare')
+  preparePuzzles(@CurrentUid() _uid: string, @Body() body: unknown) {
+    if (!parsePuzzlePrepareRequest(body)) throw new BadRequestException('Invalid Puzzle preparation request')
+    return { status: PUZZLES_RELEASE_ENABLED ? 'not-ready' : 'disabled' }
+  }
+
+  @Post('puzzles/takeover')
+  puzzleTakeover(@CurrentUid() uid: string, @Body() body: unknown) {
+    const request = parsePuzzleTakeoverRequest(body)
+    if (!request) throw new BadRequestException('Invalid Puzzle takeover request')
+    return this.saves.puzzleTakeover(uid, request)
   }
 }

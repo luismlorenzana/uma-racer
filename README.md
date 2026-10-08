@@ -52,7 +52,8 @@ pnpm sim:balance    # headless race balance table
 pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regression gate
 pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
 pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
-pnpm sim:rpg:campaign # class party (Brawler, two Mages, Cleric, Summoner) through generated chapters (D272)
+pnpm sim:rpg:campaign # class party (Brawler, two Mages, Cleric, Summoner) through generated chapters (D282)
+pnpm sim:puzzles    # 888 invented battles + exhaustive campaign/economy; --combat / --economy filters
 pnpm data:rpg:validate # offline private RPG cast pack integrity and art pins (T097)
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
@@ -87,8 +88,9 @@ docs/           design, technical, research
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
-| [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties of four classes, Octopath-style break battles against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D272) |
-| [RPG classes and skill trees](docs/design/uma-rpg-classes.md) | Brawler, Mage, Cleric and Summoner: turns and hands, multi-part hits and weaknesses, every authored tree, node and number, Cleric blessings, summons and the balance check (D267–D272) |
+| [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties of four classes, Octopath-style break battles against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D282) |
+| [RPG classes and skill trees](docs/design/uma-rpg-classes.md) | Brawler, Mage, Cleric and Summoner: turns and hands, multi-part hits and weaknesses, every authored tree, node and number, Cleric blessings, summons and the balance check (D277–D282) |
+| [Uma Puzzles](docs/design/uma-puzzles.md) | **T106–T113 foundations, real host and mobile battle implemented, release unavailable:** saved roster/parties/maps, replay-backed Pixi fights, receipts and isolated practice (D276), capability-off; real PAD input/art pinned with DEV placeholders (D272). [M030](docs/tasks/M030-uma-puzzles.md) continues with T114 material surfaces. Spark/account progression is unchanged |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
@@ -102,6 +104,7 @@ docs/           design, technical, research
 |---|---|
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [RPG implementation](docs/technical/uma-rpg-implementation.md) | Local-first RPG rows and sync, the device fight journal, the generated campaign and the cast-only private pack |
+| [Uma Puzzles implementation contract](docs/technical/uma-puzzles-implementation.md) | **T106–T113 rules, persistence, real host and battle UI exist:** [private pack/atlas/client](docs/technical/puzzle-content.md), schema-1/Dexie28, atomic replay/repair/takeover, lazy Hub/maps/Pixi fights, saved receipts and guide/practice. Material surfaces/cutover, real PAD input/art and device acceptance remain |
 | [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, one-time bootstrap, content privacy, environments |
 | [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
 | [Visual System "Paddock"](docs/design/visual-system.md) | Surfaces, colour, type, shape, components, icons, art treatment, motion, density |

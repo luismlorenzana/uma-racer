@@ -1,4 +1,4 @@
-// Campaign balance (D261–D272): a synthetic five-outfit party — one Brawler, two Mages, a Cleric and a Summoner — plays
+// Campaign balance (D261–D282): a synthetic five-outfit party — one Brawler, two Mages, a Cleric and a Summoner — plays
 // generated chapters with a careful policy and an attack-only policy. No private Uma, cast or chapter content.
 import { RPG_ELEMENTS, enrollRpgOutfit, learnRpgNode, projectRpgStats, rpgActiveSlots, rpgHand, rpgLearnedSkills, rpgProfileTrees,
   rpgTreePointsEarned, rpgTreePointsSpent, type RpgClass, type RpgNodeRef, type RpgProfile, type RpgWeapon,

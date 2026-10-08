@@ -14,7 +14,7 @@ const profile = (): RpgProfile => {
   return ['greatsword.fire.1', 'greatsword.fire.2', 'greatsword.fire.2a'].reduce(learnRpgNode, { ...p, level: 10 })
 }
 
-describe('class tree screen (D270)', () => {
+describe('class tree screen (D280)', () => {
   it('shows both trees, a branch at a time, core skills with their forks and why a node is closed', () => {
     render(<ProfileProgress outfitId="invented" profile={profile()} />)
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Greatsword', 'Spear', 'Fire', 'Ice', 'Lightning'])

@@ -1,0 +1,178 @@
+// Additive storage v1; no training migration (docs/technical/uma-puzzles-implementation.md §3).
+import { SCENARIOS } from '../../scenarios'
+import { STRATEGIES, type Strategy } from '../../types'
+import { parsePuzzleEnrollment, parsePuzzleSource, eligiblePuzzleStyles } from './identity'
+import { parsePuzzleBattleInput, parsePuzzleBattleResult } from './battle-parse'
+import type { PuzzleBattleInputV1, PuzzleBattleResultV1 } from './battle-types'
+import { parsePuzzleKit, PUZZLE_LEADERS, type PuzzleKit, type PuzzleLeaderId } from './catalogue'
+import { addPuzzleExp, puzzleBattleExp } from './progression'
+import { parsePuzzleMaterialId } from './materials'
+import type { PuzzleEnrollmentV1, PuzzleSourceV1, PuzzleProgress } from './types'
+import { puzzleChapter } from './campaign/chapters'
+import { parsePuzzleCampaignId, puzzleCampaignId } from './campaign/identity'
+import { parsePuzzleCheckpoint, parsePuzzleClearFact, puzzleChapterStatus } from './campaign/progress'
+import { puzzleEncounterRewards } from './campaign/encounters'
+import type { PuzzleCheckpointV1, PuzzleClearFact, PuzzleDarkVariant } from './campaign/types'
+import { puzzleArray, puzzleExact, puzzleId, puzzleInteger, puzzleRecord } from './validation'
+
+export const PUZZLE_ENTITY_KINDS = ['puzzleOutfits', 'puzzlePresets', 'puzzleCheckpoints', 'constellationBank', 'puzzleCohort'] as const
+export const PUZZLE_LOG_KINDS = ['puzzleResults', 'puzzleOperations'] as const
+export const PUZZLE_PARTY_IDS = ['puzzle-party-1', 'puzzle-party-2', 'puzzle-party-3', 'puzzle-party-4', 'puzzle-party-5'] as const
+export type PuzzleEntityKind = typeof PUZZLE_ENTITY_KINDS[number]
+export interface PuzzleOutfitSaveV1 { schemaVersion: 1; outfitId: string; enrollment: PuzzleEnrollmentV1; kit: PuzzleKit; revision: number }
+export interface PuzzlePartySlot { outfitId: string; kit: PuzzleKit }
+export interface PuzzlePresetSaveV1 { schemaVersion: 1; partyId: string; name: string; slots: (PuzzlePartySlot | null)[];
+  leaderId: PuzzleLeaderId; foregroundChapter: string | null; revision: number }
+export interface PuzzleOpenEncounterV1 { schemaVersion: 1; deviceId: string; ownerEpoch: number; input: PuzzleBattleInputV1;
+  inputHash: string; content: { version: string; contentHash: string } }
+export interface PuzzleCheckpointSaveV1 { schemaVersion: 1; checkpointId: string; scenarioId: string; progress: PuzzleCheckpointV1;
+  reached: string[]; open: PuzzleOpenEncounterV1 | null; revision: number }
+/** Bounded account header; cohort rows are separate docs, never a roster-sized Firestore record. */
+export interface ConstellationBankSaveV1 { schemaVersion: 1; cutoverVersion: 1; cutoverId: string; phase: 'preparing' | 'active';
+  cohortCount: number; completedCount: number; debitLimits: Record<string, number>; balances: Record<string, number>;
+  openingClears: string[]; revision: number }
+export interface PuzzleCohortSaveV1 { schemaVersion: 1; cutoverId: string; outfitId: string; scenarioId: string; legacyLevel: number;
+  preferredStyle: Strategy | null; source: PuzzleSourceV1 | null; debtStyle: Strategy | null; debit: number; completed: boolean }
+export interface PuzzleMaterialGrant { itemId: string; gross: number; debtPaid: number; net: number }
+export interface PuzzleResultSaveV1 { schemaVersion: 1; battleId: string; input: PuzzleBattleInputV1; inputHash: string;
+  result: PuzzleBattleResultV1; fact: PuzzleClearFact; exp: { outfitId: string; frozenLevel: number; amount: number; before: PuzzleProgress; after: PuzzleProgress }[];
+  materials: PuzzleMaterialGrant[]; createdAt: number }
+/** Structural wire rows shared by the pure resolver and independent storage adapters. */
+export interface PuzzleStoredEntity { kind: string; id: string; version: number; data: Record<string, unknown>; deleted: boolean; updatedAt: number }
+export interface PuzzleStoredLog { kind: string; id: string; data: Record<string, unknown>; createdAt: number }
+
+export function puzzleCanonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(puzzleCanonical).join(',')}]`
+  if (puzzleRecord(v)) return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${puzzleCanonical(v[k])}`).join(',')}}`
+  return JSON.stringify(v)
+}
+/** Diagnostic identity, not a signature. Receipts additionally compare the complete canonical payload. */
+export function puzzlePayloadHash(v: unknown): string {
+  const text = puzzleCanonical(v); let a = 2166136261, b = 0x9e3779b9
+  for (let i = 0; i < text.length; i++) { a = Math.imul(a ^ text.charCodeAt(i), 16777619) >>> 0; b = Math.imul(b ^ text.charCodeAt(i), 2246822519) >>> 0 }
+  return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0')
+}
+export const puzzleHash = (v: unknown): v is string => typeof v === 'string' && /^[a-f0-9]{16}$/.test(v)
+export const puzzleData = (v: object): Record<string, unknown> => v as unknown as Record<string, unknown>
+export const puzzlePartyId = (v: unknown): v is string => typeof v === 'string' && PUZZLE_PARTY_IDS.includes(v as never)
+const scenario = (v: unknown): v is string => typeof v === 'string' && SCENARIOS.some(s => s.id === v)
+export const puzzleCohortId = (outfitId: string, scenarioId: string) => `pcu:${puzzlePayloadHash([outfitId, scenarioId])}`
+
+export function parsePuzzleOutfitSave(v: unknown): PuzzleOutfitSaveV1 | null {
+  if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'outfitId', 'enrollment', 'kit', 'revision']) || v.schemaVersion !== 1 ||
+    !puzzleId(v.outfitId) || !puzzleInteger(v.revision)) return null
+  const enrollment = parsePuzzleEnrollment(v.enrollment), kit = enrollment && parsePuzzleKit(v.kit, enrollment.source, enrollment.level)
+  if (!puzzleRecord(v.enrollment) || !puzzleArray(v.enrollment.eligibleElements, 5)) return null
+  if (!enrollment || !kit || enrollment.source.templateId !== v.outfitId ||
+    enrollment.firstBattleId !== null && parsePuzzleCampaignId(enrollment.firstBattleId)?.kind !== 'battle') return null
+  return { schemaVersion: 1, outfitId: v.outfitId, enrollment, kit, revision: v.revision }
+}
+export function parsePuzzlePresetSave(v: unknown): PuzzlePresetSaveV1 | null {
+  if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'partyId', 'name', 'slots', 'leaderId', 'foregroundChapter', 'revision']) ||
+    v.schemaVersion !== 1 || !puzzlePartyId(v.partyId) || typeof v.name !== 'string' || !v.name.trim() || v.name.length > 80 ||
+    !puzzleArray(v.slots, 5) || v.slots.length !== 5 || !PUZZLE_LEADERS.some(l => l.id === v.leaderId) || !puzzleInteger(v.revision) ||
+    !(v.foregroundChapter === null || parsePuzzleCampaignId(v.foregroundChapter)?.kind === 'chapter')) return null
+  const slots: PuzzlePresetSaveV1['slots'] = []
+  for (const s of v.slots) {
+    if (s === null) { slots.push(null); continue }
+    if (!puzzleRecord(s) || !puzzleExact(s, ['outfitId', 'kit']) || !puzzleId(s.outfitId) || !puzzleRecord(s.kit) ||
+      !puzzleExact(s.kit, ['activeId', 'patternId']) || !['puzzle:front-convert', 'puzzle:pace-shield', 'puzzle:late-convert', 'puzzle:end-delay'].includes(s.kit.activeId as string) ||
+      ![null, 'puzzle:four', 'puzzle:row'].includes(s.kit.patternId as string | null)) return null
+    slots.push({ outfitId: s.outfitId, kit: { activeId: s.kit.activeId as PuzzleKit['activeId'], patternId: s.kit.patternId as PuzzleKit['patternId'] } })
+  }
+  const ids = slots.flatMap(s => s ? [s.outfitId] : [])
+  if (new Set(ids).size !== ids.length) return null
+  return { schemaVersion: 1, partyId: v.partyId, name: v.name, slots, leaderId: v.leaderId as PuzzleLeaderId,
+    foregroundChapter: v.foregroundChapter as string | null, revision: v.revision }
+}
+export function parsePuzzleOpenEncounter(v: unknown): PuzzleOpenEncounterV1 | null {
+  if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'deviceId', 'ownerEpoch', 'input', 'inputHash', 'content']) ||
+    v.schemaVersion !== 1 || !puzzleId(v.deviceId) || !puzzleInteger(v.ownerEpoch) || !puzzleHash(v.inputHash) || !puzzleRecord(v.content) ||
+    !puzzleExact(v.content, ['version', 'contentHash']) || !puzzleId(v.content.version) || typeof v.content.contentHash !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(v.content.contentHash)) return null
+  const input = parsePuzzleBattleInput(v.input)
+  if (!input || input.ownerEpoch !== v.ownerEpoch || puzzlePayloadHash(input) !== v.inputHash ||
+    input.content.manifestVersion !== `puzzles-${v.content.contentHash}` || input.content.recipeHash !== 'puzzle-campaign-v1') return null
+  return { schemaVersion: 1, deviceId: v.deviceId, ownerEpoch: v.ownerEpoch, input, inputHash: v.inputHash,
+    content: { version: v.content.version, contentHash: v.content.contentHash } }
+}
+export function parsePuzzleCheckpointSave(v: unknown): PuzzleCheckpointSaveV1 | null {
+  if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'checkpointId', 'scenarioId', 'progress', 'reached', 'open', 'revision']) ||
+    v.schemaVersion !== 1 || !scenario(v.scenarioId) || !puzzleInteger(v.revision)) return null
+  const chapter = puzzleChapter(v.scenarioId), progress = parsePuzzleCheckpoint(v.progress, chapter), open = v.open === null ? null : parsePuzzleOpenEncounter(v.open)
+  if (!progress || v.checkpointId !== puzzleCampaignId({ kind: 'checkpoint', scenarioId: v.scenarioId, partyId: progress.partyId }) ||
+    !puzzleArray(v.reached, chapter.nodes.length) || puzzleCanonical(v.reached) !== puzzleCanonical(puzzleChapterStatus(chapter, progress).reached) ||
+    v.open !== null && !open) return null
+  if (open) {
+    const id = parsePuzzleCampaignId(open.input.battleId)
+    if (!id || id.kind !== 'battle' || open.input.checkpointId !== v.checkpointId || open.input.scenarioId !== v.scenarioId ||
+      open.input.partyId !== progress.partyId || !v.reached.includes(puzzleCampaignId({ kind: 'node', scenarioId: id.scenarioId, localId: id.localId })) ||
+      id.attempt !== (progress.attempts.find(a => a.nodeId === `pzn:${id.scenarioId}:${id.localId}`)?.next ?? 0)) return null
+  }
+  return { schemaVersion: 1, checkpointId: v.checkpointId as string, scenarioId: v.scenarioId, progress, reached: v.reached as string[], open, revision: v.revision }
+}
+export function parseConstellationBankSave(v: unknown): ConstellationBankSaveV1 | null {
+  if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'cutoverVersion', 'cutoverId', 'phase', 'cohortCount', 'completedCount', 'debitLimits', 'balances', 'openingClears', 'revision']) ||
+    v.schemaVersion !== 1 || v.cutoverVersion !== 1 || !puzzleId(v.cutoverId) || !['preparing', 'active'].includes(v.phase as string) ||
+    !puzzleInteger(v.cohortCount) || !puzzleInteger(v.completedCount, 0, v.cohortCount) || !puzzleInteger(v.revision) ||
+    v.phase === 'active' && v.completedCount !== v.cohortCount || v.phase === 'preparing' && v.completedCount === v.cohortCount ||
+    !puzzleRecord(v.debitLimits) || !puzzleRecord(v.balances) || Object.keys(v.balances).length > SCENARIOS.length * 4 ||
+    !puzzleExact(v.balances, Object.keys(v.debitLimits)) || !puzzleArray(v.openingClears, SCENARIOS.length) ||
+    new Set(v.openingClears).size !== v.openingClears.length || !v.openingClears.every(scenario)) return null
+  for (const [id, limit] of Object.entries(v.debitLimits)) if (!parsePuzzleMaterialId(id) || !puzzleInteger(limit) ||
+    !puzzleInteger(v.balances[id], -limit, 0) || BigInt(limit) > BigInt(v.cohortCount) * 9n) return null
+  if (Object.values(v.debitLimits).reduce<bigint>((n, limit) => n + BigInt(limit as number), 0n) > BigInt(v.cohortCount) * 9n) return null
+  return structuredClone(v) as unknown as ConstellationBankSaveV1
+}
+export function parsePuzzleCohortSave(v: unknown): PuzzleCohortSaveV1 | null {
+  if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'cutoverId', 'outfitId', 'scenarioId', 'legacyLevel', 'preferredStyle', 'source', 'debtStyle', 'debit', 'completed']) ||
+    v.schemaVersion !== 1 || !puzzleId(v.cutoverId) || !puzzleId(v.outfitId) || !scenario(v.scenarioId) || !puzzleInteger(v.legacyLevel, 1, 10) ||
+    !(v.preferredStyle === null || STRATEGIES.includes(v.preferredStyle as never)) || !puzzleInteger(v.debit, 0, 9) || typeof v.completed !== 'boolean') return null
+  const source = v.source === null ? null : parsePuzzleSource(v.source)
+  if (v.source !== null && (!source || source.templateId !== v.outfitId)) return null
+  const styles = source ? eligiblePuzzleStyles(source) : [], style = styles.includes(v.preferredStyle as Strategy) ? v.preferredStyle : styles[0]
+  if (v.completed ? !source || !styles.length || v.debtStyle !== style || v.debit !== v.legacyLevel - 1 :
+    v.source !== null || v.debtStyle !== null || v.debit !== 0) return null
+  return structuredClone(v) as unknown as PuzzleCohortSaveV1
+}
+export function parsePuzzleResultSave(v: unknown): PuzzleResultSaveV1 | null {
+  try { return parseResult(v) } catch { return null }
+}
+function parseResult(v: unknown): PuzzleResultSaveV1 | null {
+  if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'battleId', 'input', 'inputHash', 'result', 'fact', 'exp', 'materials', 'createdAt']) ||
+    v.schemaVersion !== 1 || !puzzleInteger(v.createdAt) || !puzzleArray(v.exp, 5) || v.exp.length !== 5 || !puzzleArray(v.materials, 4)) return null
+  const input = parsePuzzleBattleInput(v.input), result = parsePuzzleBattleResult(v.result), fact = parsePuzzleClearFact(v.fact)
+  if (!input || !result || !fact || input.battleId !== v.battleId || result.battleId !== v.battleId || fact.battleId !== v.battleId ||
+    result.ownerEpoch !== input.ownerEpoch || result.outcome !== fact.outcome || puzzlePayloadHash(input) !== v.inputHash) return null
+  const node = puzzleChapter(input.scenarioId).nodes.find(n => n.id === fact.nodeId)
+  if (!node || node.kind !== input.kind || node.level !== input.encounterLevel) return null
+  const drops = puzzleEncounterRewards(node, node.localId === 'c-dark' ? input.rewards[0]?.style as PuzzleDarkVariant : null)
+  if (puzzleCanonical(drops) !== puzzleCanonical(input.rewards) || v.materials.length !== (result.outcome === 'win' ? drops.length : 0)) return null
+  for (let i = 0; i < 5; i++) {
+    const row = v.exp[i], entrant = input.entrants[i]!
+    if (!puzzleRecord(row) || !puzzleExact(row, ['outfitId', 'frozenLevel', 'amount', 'before', 'after']) || row.outfitId !== entrant.outfitId ||
+      row.frozenLevel !== entrant.level || row.amount !== puzzleBattleExp(result.outcome, input.encounterLevel, entrant.level, input.kind)) return null
+    try { if (puzzleCanonical(addPuzzleExp(entrant.source, row.before as PuzzleProgress, row.amount as number).after) !== puzzleCanonical(row.after)) return null } catch { return null }
+  }
+  for (let i = 0; i < v.materials.length; i++) {
+    const row = v.materials[i], drop = drops[i]!
+    if (!puzzleRecord(row) || !puzzleExact(row, ['itemId', 'gross', 'debtPaid', 'net']) || row.itemId !== `constellation:${input.scenarioId}:${drop.style}` ||
+      row.gross !== drop.quantity || !puzzleInteger(row.debtPaid, 0, drop.quantity) || row.net !== row.gross - row.debtPaid) return null
+  }
+  return structuredClone(v) as unknown as PuzzleResultSaveV1
+}
+export function parsePuzzleEntity(kind: string, v: unknown): Record<string, unknown> | null {
+  const result = kind === 'puzzleOutfits' ? parsePuzzleOutfitSave(v) : kind === 'puzzlePresets' ? parsePuzzlePresetSave(v) :
+    kind === 'puzzleCheckpoints' ? parsePuzzleCheckpointSave(v) : kind === 'constellationBank' ? parseConstellationBankSave(v) :
+    kind === 'puzzleCohort' ? parsePuzzleCohortSave(v) : null
+  return result ? puzzleData(result) : null
+}
+export function puzzleEntityIdMatches(kind: string, id: string, data: Record<string, unknown>): boolean {
+  return kind === 'puzzleOutfits' ? data.outfitId === id : kind === 'puzzlePresets' ? data.partyId === id :
+    kind === 'puzzleCheckpoints' ? data.checkpointId === id : kind === 'constellationBank' ? id === 'main' :
+    kind === 'puzzleCohort' ? id === puzzleCohortId(String(data.outfitId), String(data.scenarioId)) : false
+}
+export type PuzzleReadiness = 'disabled' | 'preparing' | 'active'
+export function puzzleReadiness(enabled: boolean, bank: ConstellationBankSaveV1 | null): PuzzleReadiness {
+  return !enabled ? 'disabled' : bank?.phase === 'active' ? 'active' : 'preparing'
+}

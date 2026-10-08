@@ -1,6 +1,6 @@
 # Global Uma RPG — implementation
 
-**Status:** classes (D267–D272) on the campaign (D260–D266). Product rules live in [the design](../design/uma-rpg.md) and
+**Status:** classes (D277–D282) on the campaign (D260–D266). Product rules live in [the design](../design/uma-rpg.md) and
 [the class trees](../design/uma-rpg-classes.md). This page maps them to code and storage. The first chapter map's
 grouped-command implementation (T090–T099: `/api/rpg/command` for every step, leases, takeovers, pending queues) and its
 engine-v1 combat are retired; their history is in git and decisions D223–D259.
@@ -58,7 +58,7 @@ Conflicts adopt the server copy (`mergeRpgEntity`), never an older schema over a
 
 ## Migrations
 
-- **Dexie v28 (D272):** outfits schema 1/2 → 3 take the first class open to their A running styles and its first weapon
+- **Dexie v29 (D282):** outfits schema 1/2 → 3 take the first class open to their A running styles and its first weapon
   set, keep tier, level and EXP (schema 1 restarts at Lv1 as D263 did) and clear trees and legacy; parties → 3 clear
   loadouts and set every Familiar to Greatsword; a run's fight left open under engine v3 is closed and its journal
   deleted. Every changed row is queued. Snapshot adoption applies the same migration to cloud rows and re-uploads them.

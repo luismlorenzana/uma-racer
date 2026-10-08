@@ -26,7 +26,7 @@ const MAX_SLOTS = 10
 const MAX_TREE_NODES = 40
 const SLOT_GATES = [10, 15, 20, 25, 30, 35, 40]
 
-// Class era (D267–D272). Node ids are `tree.branch.depth` plus `a`/`b` for a variant; a node costs its depth.
+// Class era (D277–D282). Node ids are `tree.branch.depth` plus `a`/`b` for a variant; a node costs its depth.
 const CLASS_WEAPONS: Record<string, string[][]> = {
   brawler: [['greatsword', 'spear'], ['axe', 'bow']],
   mage: [['mage-staff', 'arcane-staff'], ['mage-staff', 'short-sword'], ['arcane-staff', 'short-sword']],
@@ -98,7 +98,7 @@ function skill(value: unknown, learned: boolean): boolean {
 const skillKey = (value: Record<string, unknown>): string =>
   `${value.tier}:${value.weapon}:${value.element}:${value.depth}:${value.branch}`
 
-/** Schema 3 (D272): class, weapons and class-tree nodes, under every learning rule the client enforces. */
+/** Schema 3 (D282): class, weapons and class-tree nodes, under every learning rule the client enforces. */
 function classOutfit(value: Record<string, unknown>): boolean {
   if (!rpgExact(value, ['schemaVersion', 'profile', 'projectionRevision']) || !rpgInt(value.projectionRevision) || !rpgRecord(value.profile)) return false
   const p = value.profile

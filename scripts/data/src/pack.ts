@@ -47,7 +47,7 @@ export async function writeContentPacks(options: WriteContentPacksOptions): Prom
   await mkdir(dataDir, { recursive: true })
 
   const previous = await readExistingManifest(contentDir)
-  const files: ContentManifestFile[] = previous?.files.filter((file) => !file.path.startsWith('data/') || /^data\/rpg-(chapters|catalog)\./.test(file.path)) ?? []
+  const files: ContentManifestFile[] = previous?.files.filter((file) => !file.path.startsWith('data/') || /^data\/(rpg-(chapters|catalog)|puzzles-(cast|catalog))\./.test(file.path)) ?? []
   const stale: string[] = []
   for (const pack of options.packs) {
     const items = [...pack.items].sort((left, right) => left.id.localeCompare(right.id))

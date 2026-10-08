@@ -1,6 +1,6 @@
 # Global Uma RPG — design
 
-> **Status: the campaign (D260–D266) with classes (D267–D272).** One generated chapter per scenario, a top-to-bottom
+> **Status: the campaign (D260–D266) with classes (D277–D282).** One generated chapter per scenario, a top-to-bottom
 > map you can replay, four classes with authored skill trees, Octopath-style break battles, MP carried between fights,
 > and every win paying EXP and Inspiration tokens. RPG progress saves on the phone first and syncs in the background
 > like races and the Farm. Every tree, node and number is in [the class trees](uma-rpg-classes.md).
@@ -26,7 +26,7 @@ Home → Uma RPG (Parties) → a party → Chapters (launch pad, one per scenari
   T4 Lv7–18. Clearing every node (43 battles) ends near the chapter's last level, so four chapters bring a party to
   about Lv48 and the fifth starts with every skill point and slot. One route to a champion is 35 battles.
 
-## Roster and classes (D267)
+## Roster and classes (D277)
 
 - An owned outfit with an **A running style** can enroll. Her A styles pick the class: Front or Front + Pace →
   **Brawler**; Pace or Pace + Late → **Mage**; Late → **Cleric**; End or Late + End → **Summoner**. Any other mix
@@ -46,17 +46,17 @@ Home → Uma RPG (Parties) → a party → Chapters (launch pad, one per scenari
 |---|---|
 | Levels | Tier-local Lv1–50, EXP to next `120 + 16L`; Lv50 banks EXP until a manual **promotion** to the next tier. Lifetime level = `50 × (tier − 1) + level`. |
 | Core stats | `round(base / 5 + n × 1.5 × (1 + growth))`, `n` = lifetime level − 1 |
-| Combat stats | ATK = MATK = Speed; Speed (initiative) = Stamina; DEF = Power; M.DEF = (Power + Wit) / 2; HP = 100 + 6 × Stamina + 2 × Power; **MP = 20 + 1.5 × Wit** (D261); each × the class lean (D267) |
-| Skill points | **Two per level up to Lv45, plus five each time a depth opens: 115 per tier** (D264); no skill levels (D270) |
+| Combat stats | ATK = MATK = Speed; Speed (initiative) = Stamina; DEF = Power; M.DEF = (Power + Wit) / 2; HP = 100 + 6 × Stamina + 2 × Power; **MP = 20 + 1.5 × Wit** (D261); each × the class lean (D277) |
+| Skill points | **Two per level up to Lv45, plus five each time a depth opens: 115 per tier** (D264); no skill levels (D280) |
 | Tree cost | Two trees of three branches per class. A node costs its depth: every core node is 90 points, learned by Lv40. Variant forks (one side, three per tree, swappable) take up to 24 more by Lv45 |
 | Depth gates | Lv 1 / 10 / 20 / 30 / 40; a core node needs the one above it, a variant needs its core node |
 | Skill slots | 3 at Lv1, then one more at Lv 10, 15, 20, 25, 30, 35 and 40: **10 by Lv40** (Attack and Guard are free) |
 | Promotion | Keeps stats and banked EXP; archives the tier's tree; up to two legacy skills |
 
-The campaign restarted every enrolled outfit at **Tier 1 Lv1** once (D263). Classes (D272) kept every tier, level, EXP
+The campaign restarted every enrolled outfit at **Tier 1 Lv1** once (D263). Classes (D282) kept every tier, level, EXP
 and party, gave each Uma her class, and cleared trees and loadouts once; every point came back.
 
-## Battles (engine v4, D268–D271)
+## Battles (engine v4, D278–D281)
 
 `packages/domain/src/rpg/battle/` is a pure, seeded reducer: a frozen input (five allies with their carried MP, one to
 five foes) plus the action list always replays to the same state and hash. No wall clock or `Math.random`. The break
@@ -99,7 +99,7 @@ levels, elements and stats are code, so a rebalance never needs a content publis
   toward one element so a party can steer by its weaknesses. Sub-bosses bring 1–2 regular minions, champions 2.
   Leaders rotate through the cast. Stats scale with level from an average enrolled outfit's stat
   `22 + 1.59 × (level − 1)`: HP `(40 + 4.2s) × role` (× 4.5 sub-boss, × 6.5 champion, both × the chapter's skill reach,
-  D272), offense `3s × role`, defense `0.8s × role`.
+  D282), offense `3s × role`, defense `0.8s × role`.
 - **Map rules:** clearing a node opens the nodes below it; any cleared fight can be **replayed** any number of times.
   A champion win marks the chapter cleared; the other four stay optional.
 
@@ -126,12 +126,12 @@ Every won fight pays, first clear or replay:
   Clearing every node pays 92 Slot + 184 Skill, enough for fifteen units' parents (6 Slot) and skills (12 Skill).
   Gross tokens first repay the matching Inspiration advance debt (D256), then land in Items.
 
-## Saving and sync (D260, D263, D272)
+## Saving and sync (D260, D263, D282)
 
 - Every RPG change commits to Dexie with its outbox markers in one transaction and syncs through the ordinary
   `/api/sync`: enrollment, parties, skills, promotion, runs, results (`rpgResults` schema 2), Items and ledger.
   Inspiration unlocks in Training are ordinary writes too. Nothing waits on the server; there is no Sync or Submit step.
-- Outfits and parties are schema 3 (D272); runs and results stay schema 2. The server checks schema-3 outfits against
+- Outfits and parties are schema 3 (D282); runs and results stay schema 2. The server checks schema-3 outfits against
   the class and tree rules, still accepts schema-2 outfits and parties from an older installed app, refuses schema-1 RPG
   rows and `rpgReceipts` in ordinary sync, and refuses an older RPG schema over a newer one. The Inspiration bank may only move toward zero through sync.
   `/api/rpg/command` now accepts only `spend-inspiration` from older app versions.
@@ -160,7 +160,7 @@ Every won fight pays, first clear or replay:
 
 `pnpm sim:rpg:campaign [scenarioId]` plays a synthetic party (one Brawler, two Mages, a Cleric and a Summoner; invented
 outfits and cast) through one route of a chapter with a careful policy (chip with weak parts, spend big skills on a
-Break, rest below 35% MP) and an attack-only policy. At this pin (D272) careful play reaches the Finals at chapter Lv9
+Break, rest below 35% MP) and an attack-only policy. At this pin (D282) careful play reaches the Finals at chapter Lv9
 and clears URA, Unity Cup and Project L'Arc: regular fights 3–8 rounds, sub-bosses 4–9, champions 7–8 rounds (URA's
 17, at Lv10 against Lv12). Attack-only loses a sub-boss in every chapter. Results by chapter are in
 [the class trees](uma-rpg-classes.md#11-foes-and-the-campaign). Change numbers there and in the tests together.

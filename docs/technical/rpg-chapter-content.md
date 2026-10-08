@@ -142,7 +142,7 @@ publication without RPG remains valid for the current non-RPG game. Publication 
 unchanged and belong to the owner; these importers never publish.
 
 Since D262 the campaign generates its chapters and foes in code, and the pack supplies only the cast (names and
-portraits). The first-map replay probe and its engine-v1 combat were retired with classes (D272); campaign balance
+portraits). The first-map replay probe and its engine-v1 combat were retired with classes (D282); campaign balance
 runs through `pnpm sim:rpg:campaign`. [The initial private handoff](../research/rpg-private-ura-handoff.md) keeps the
 first map's aggregate results.
 
