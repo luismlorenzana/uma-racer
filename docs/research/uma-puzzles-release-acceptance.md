@@ -7,7 +7,7 @@ This record separates code/content/application evidence from owner gameplay and 
 ## Application witness
 
 Latest upstream reviewed: `0879ce5a4a1f1cca84261f07659a7169b9c97dc5`, including D288's preset-loading feature.
-The release PR's final verification and **post-deployment witness comment** identify the exact merge SHA, successful
+[Release PR #102](https://github.com/luismlorenzana/uma-racer/pull/102)'s final verification and **post-deployment witness comment** identify the exact merge SHA, successful
 API/web deployment run, public build stamp and shipped asset sizes. A merge alone is not deployment proof.
 The source commit cannot contain its own future merge SHA; the linked PR witness supplies it after release.
 No workflow, infrastructure, production env, dependency or credential configuration is changed.
