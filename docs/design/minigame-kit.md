@@ -6,15 +6,17 @@ rules stay in [Minigames](minigames.md); this page is what they have in common.
 
 | Minigame | Raises | Rules | Code |
 |---|---|---|---|
-| **Spark Match — Rival Circuit** (M022) | a scenario's Training Level (D190) | [Minigames](minigames.md#spark-match--rival-circuit) | engine `packages/domain/src/minigames/spark-rival/` · screen `screens/minigames/SparkMatchScreen.tsx` · Pixi `scenes/spark-rival/` |
+| **Uma Puzzles** (M030) | independent Puzzle EXP and scenario/style CL materials | [Uma Puzzles](uma-puzzles.md) | engine `packages/domain/src/minigames/uma-puzzles/` · host `game/puzzles/` · screens `screens/puzzles/` |
+| **Spark Match — Rival Circuit** (retired M022) | historical Training EXP only (D190, D287) | [Minigames](minigames.md#spark-match--rival-circuit) | engine `packages/domain/src/minigames/spark-rival/` · screen `screens/minigames/SparkMatchScreen.tsx` · Pixi `scenes/spark-rival/` |
 | **Friendship Training** (M020) | one card by one global star (D255); scenario is the frozen play context | [Minigames](minigames.md#friendship-training--card-stars) | engine `packages/domain/src/minigames/friendship/` · screen `screens/minigames/friendship/` |
 
 ## 1. What a minigame is here
 
-- Minigames are the **third pillar** beside Collection and Racing, and the only way to raise a Training Level or earn a
+- Minigames are the **third pillar** beside Collection and Racing, and the way to earn materials for CL or a
   card's stars (D120). A new minigame raises something the others do not, or replaces one; it never adds a second path
   to the same progress.
-- **A run costs tickets** (one today, D148), spent when the run is reserved. The price lives in the domain's economy
+- **A ticketed run costs tickets** (one for Friendship, D148), spent when reserved. Free global Puzzle battles use
+  their own host below, not this ticket port. Historical Spark prices live in the domain's economy
   module (`SPARK_MATCH_TICKET_COST`, `FRIENDSHIP_TRAINING_TICKET_COST`).
 - **A run pays only its own progress.** It never pays Uma EXP, completes a career goal, writes a race record or moves race
   badges (D170). A loss is real, but may bank bounded partial progress when the game says so.
@@ -57,39 +59,19 @@ depositing into Items. Gross rewards, seeds, journals and combat remain unchange
 
 ## 2. The run lifecycle
 
-**Replacement foundations/battle/campaign v1 implemented, not enabled:** [Uma Puzzles](uma-puzzles.md) (D267–D271,
-[M030](../tasks/M030-uma-puzzles.md)) is a free global party campaign outside `MinigameHost`, like RPG/Farm.
-It reuses this kit's pure engine, seeded replay, private art, shared shell and guide standards, not the ticketed
-target/reservation/reward port. Its independent [implementation contract](../technical/uma-puzzles-implementation.md)
-defines a device journal, atomic background economic operations and explicit same-seed takeover. Spark remains the
-shipped Training Level game until the final gated preservation cutover; task specs must not retire it halfway through.
-T106 exports pure parsed identity/progression/material/debt/legacy rules. T107 adds an independent pure board/combat
-engine, finite kit, strict transports, authoritative event steps and replay hashes. Its `sim:puzzles` uses only
-invented data and public actions; it is not production balance closure. No playable Puzzle fight, Home entry or
-account migration is enabled. T108 adds generated28-node chapters, fixed-reference encounters, replay-derived
-reward/progress projections and exact style/debt/exchange reports. Its600-battle campaign sample records remaining
-balance outliers. T109 now supplies the [private Puzzle pipeline/client](../technical/puzzle-content.md); real PAD
-inputs/art are pinned for the final pass by the owner (D272), with explicitly labelled original DEV placeholders.
-T110 adds [schema-1 records, additive Dexie28, atomic background operations and canonical repair](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273)
-(D273), still capability-off, without creating a bank or retiring Spark. T111 implements the
-[real replay host/journal](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274), receipt-owned
-materials and explicit recovery (D274), with an isolated proof adapter and no default double. T112 implements
-[guarded setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275): shared
-Shell/Header/PagedGuide, saved owned roster/five parties/maps, held verified previews and a completely separate DEV
-real-host proof (D275). T113 adds [mobile battle/results/guide/practice](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276):
-Begin reserves through the real host, append is durable before animation, and results read saved receipts plus optional
-device replay detail. Account-free synthetic practice does not enroll, persist or reward. Both flags remain off;
-placeholders never satisfy verified production content. Spark shares only pure cell geometry; its traversal and replay
-remain unchanged. T114 adds [global material surfaces](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283)
-(D283): the existing global Item catalogue/view, original star-punched strategy tickets, a separate nonpositive bank,
-adjacent same-style exchanges and one host-backed CL sheet for Profile/Training/Constellation. Confirmation remains
-in a safe-area thumb footer; source-A/mixed universal inputs, actual opened nodes/SP and canonical recovery are visible.
-Neither inventory browsing nor a training deep link creates a bank or enables cutover. T115 now implements
-[dormant preservation v2](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287) (D287):
-authoritative freeze/pages/bounded batches/separate final credit, startup recovery, save16 CL adaptation and legacy
-Spark replay/refund receipts. Both flags remain off; T116 and owner-pinned real content are next. An active bank
-retires only Spark, not Friendship/global stars; historical parsers remain. Unknown remote terminal journals cannot
-be discovered before freeze and need explicit forward recovery if brought back afterward.
+**Current global Puzzle contract (D287–D290):** [Uma Puzzles](uma-puzzles.md) is a free five-outfit campaign,
+outside `MinigameHost`, like RPG/Farm. It reuses pure engines, seeded replay, the shared shell and guide standards;
+its [own host/protocol](../technical/uma-puzzles-implementation.md) supplies local journals, exact-once economic
+operations and explicit same-seed takeover. Home is its entry. Verified original placeholders (D289) satisfy the same
+private pack/atlas readiness gates as future permitted PAD art; missing content is never a gameplay fallback.
+
+Protected save16 preservation keeps levels/builds, freezes old material debt, converts unapplied EXP once and
+retires Spark after active receipts. Settings/Hub download the preparing device's private whole-account backup.
+CL spending is shared by Profile/Training/Constellation; Inspiration/Extra stats remain independent. Friendship still
+uses `MinigameHost` for global stars. Historical Spark reducers/journals/refund dispatch remain, not new-run entry.
+See [release evidence and owner checks](../research/uma-puzzles-release-acceptance.md).
+
+The lifecycle below applies to **Friendship and historical Spark**, not Puzzle's independent protocol.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):
@@ -156,8 +138,8 @@ of this tree.
   `content/overrides/`, turned into a hashed pack by `pnpm data:import`, published by `pnpm content:publish`
   ([Infrastructure](../technical/infrastructure.md#release-runbook)). Checked-in fixtures are small and synthetic.
 - A pack is validated at import (ids exist, no impossible encounters); a production publish refuses an incomplete pack.
-- The client survives a missing pack with a deterministic fallback and a visible diagnostic (Spark's "Authored circuit
-  unavailable" banner); it never falls back silently.
+- Missing packs fail visibly. Historical Spark has an explicitly permitted deterministic roster fallback and
+  diagnostic; Puzzles and RPG require verified retained packs and never invent a rewarded fallback.
 
 ## 6. The screen
 
@@ -251,7 +233,7 @@ or Back/Next, safe-area controls, reduced motion.
 2. **Tasks.** Split it the M022 way: engine (and sim), content, runtime and screen, polish. One spec per task in
    `docs/tasks/`, each with acceptance criteria.
 3. **Engine** in `packages/domain/src/minigames/<id>/` (section 4), with its sim and regression gate.
-4. **Content** through the private pipeline, with synthetic fixtures and a visible fallback (section 5).
+4. **Content** through the private pipeline, with synthetic fixtures and visible unavailability (section 5).
 5. **Host and journal:** add its `RunTarget`/`RunOutcome` kinds, reservation checks, frozen inputs and an authoritative
    commit that replays the journal (section 2). Test reserve, resume, conflict, commit, retry and rollback against Dexie.
 6. **Screen and guide** with the kit's shell, layout and identity (sections 6–8). Verify at 390 × 844 and 375 × 667 in the

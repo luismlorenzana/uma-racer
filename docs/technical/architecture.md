@@ -82,14 +82,16 @@ flowchart LR
 Gameplay never waits on the network, because Cloud Run cold starts would ruin the game feel.
 
 Uma Puzzles' additive pure rules, battle and campaign v1 live in `packages/domain/src/minigames/uma-puzzles/` (D269–D271).
-Their capability-off real host now calls them: [the versioned contract](uma-puzzles-implementation.md#t107-implemented-battle-v1-d270)
+Their real local-first host calls them: [the versioned contract](uma-puzzles-implementation.md#t107-implemented-battle-v1-d270)
 documents independent board/RNG, authoritative events, replay, generated maps and once-account reward projections.
 The campaign uses fixed authored level/role scaling, not the entering party; private cast joins are explicit inputs.
-This is not an enabled Puzzle release; Spark remains active until M030's protected final cutover.
+T116 enables the release (D289–D290) with verified original-placeholder content, a whole-account device-local backup
+before protected cutover, free battles and the shared CL material sheet. Spark is retired for active bank2 accounts;
+historical replays and facts remain. Owner gameplay/device acceptance is [tracked separately](../research/uma-puzzles-release-acceptance.md).
 
 - The whole save lives in **IndexedDB** (Dexie) on the device and is loaded into a **Zustand** store at boot.
-- Save v15 stores mutable profile/Uma state, including the account's Training EXP bank, four distance builds per unlocked
-  scenario on the linear Training curve (D211), nullable per-outfit race
+- Save v15 is the pre-cutover schema; protected preservation stamps profile/Uma v16 with zero retired Training EXP,
+  retained CL and four distance builds per unlocked scenario. It preserves nullable per-outfit race
   defaults (null preserves automatic recommendations), global card stars in independent card schema 1
   (following scenario-map, five-star and limit-break migrations), skill history, typed
   Journey slots with frozen series legs, card/lineage assignments and each unit's Extra stats grid (save v12, D235). Derived stats, node values, static names,
@@ -294,9 +296,10 @@ This is not an enabled Puzzle release; Spark remains active until M030's protect
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
 - Uma Puzzles has a separate [private content pipeline/client](puzzle-content.md) (D272): reviewed PAD sources, alpha-safe
   atlases, immutable full-hash packs/catalogs and held authenticated atlas URLs. It never imports PAD combat data, reads
-  unrelated private Spark rows or replaces another art family. Code is delivered but real source/art collection is pinned
-  by the owner; original DEV-only placeholders are not a production content pack. T110 save/sync is implemented but
-  disabled; T111's real journal host is implemented behind that gate and Spark remains live.
+  unrelated private Spark rows or replaces another art family. The owner deferred permitted PAD-source/art collection
+  and authorized the explicit `original-placeholder` production pack (D289). Its original SVG-derived alpha art follows
+  the same immutable verification/retention contract. Both application flags are enabled; verified content and active
+  preservation still gate play, exchange and CL spending.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.
 - Protected files are fetched with the Firebase bearer token and verified against their manifest SHA-256 before use. Image
@@ -322,8 +325,8 @@ commands; the open fight's action journal is device-local (`rpgFights`). Chapter
 pack supplies only the cast's names and verified portraits ([content contract](rpg-chapter-content.md)).
 
 ```text
-players/{uid}/profile/main            currencies, Training EXP bank, daily date, featuredUmaId, starter marker, schemaVersion, version
-players/{uid}/umas/{umaId}            save v15: level/EXP, scenario units (Inspiration unlocks, four distance presets), race defaults, the preset in use, history, version
+players/{uid}/profile/main            save15/16 currencies, retired Training EXP bank (=0 in16), daily date, featuredUmaId, starter marker, version
+players/{uid}/umas/{umaId}            save15/16: racing level/EXP, scenario CL/Inspiration/four presets, race defaults, active preset, history, version
 players/{uid}/cards/{cardId}          card schema 1: templateId, global stars (0–3), maxCouponGranted, version
 players/{uid}/raceResults/{id}        append-only: engine/course, field, rewards, goal/accomplishment facts, flair ids, createdAt
 players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, title, showcase, saved views
@@ -339,7 +342,7 @@ players/{uid}/rpgCheckpoints/{id}     schema-2 campaign run: wins per node, carr
 players/{uid}/rpgResults/{id}         append-only won-fight EXP and token evidence
 players/{uid}/rpgPromotions/{id}      append-only prior-tier mastery evidence
 players/{uid}/rpgReceipts/{commandId} append-only grouped-command receipts (spend-inspiration only)
-players/{uid}/puzzleOutfits/{outfitId} schema-1 enrollment/source, lifetime PL/EXP, kit and revision (capability off)
+players/{uid}/puzzleOutfits/{outfitId} schema-1 enrollment/source, lifetime PL/EXP, kit and revision
 players/{uid}/puzzlePresets/{partyId}  schema-1 five-slot parties, leader and foreground chapter
 players/{uid}/puzzleCheckpoints/{id}  schema-1 derived reached/clear/attempt facts and frozen open encounter
 players/{uid}/constellationBank/main schema-1 legacy / schema-2 protected preservation bank, debt and exchange unlock facts

@@ -27,7 +27,7 @@ function Spend({ id = 'invented-ui-0', tier = 1 }: { id?: string; tier?: number 
 }
 describe('material surfaces using the real isolated host', () => {
   it('off adapters do not construct a host or need providers; all three callers use the same lazy sheet', () => {
-    const { container } = render(<><ClLevelUpButton outfitId="invented" tier={1} level={1} /><GlobalMaterialItems visibility="all" scenarioTier={null} /></>)
+    const { container } = render(<><ClLevelUpButton enabled={false} outfitId="invented" tier={1} level={1} /><GlobalMaterialItems enabled={false} visibility="all" scenarioTier={null} /></>)
     expect(container.childElementCount).toBe(0)
     for (const file of ['UmaProfileScreen.tsx', 'TrainingScene.tsx', 'ConstellationScreen.tsx']) expect(readFileSync(`src/screens/${file}`, 'utf8')).toContain('<ClLevelUpButton outfitId={save.templateId}')
   })

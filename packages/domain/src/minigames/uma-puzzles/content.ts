@@ -15,7 +15,7 @@ export const PUZZLE_ATLAS_PATH = /^atlases\/puzzles-monsters\.[a-f0-9]{8}\.json$
 export const PUZZLE_PAGE_PATH = /^atlases\/puzzles-monsters-[0-9]+\.[a-f0-9]{8}\.webp$/
 export interface PuzzleSourceMember {
   id: string; name: string; family: string; variant: string; elements: PuzzleElement[]; roles: PuzzleFoeRole[]
-  source: { access: 'public' | 'owner-export'; reference: string; revision: string; verifiedAt: string }
+  source: { access: 'public' | 'owner-export' | 'original-placeholder'; reference: string; revision: string; verifiedAt: string }
   art: { location: string; sha256: string; mimeType: 'image/png' | 'image/webp'; variant: string }
 }
 export interface PuzzleSource { schemaVersion: 1; version: string; provenanceRevision: string; members: PuzzleSourceMember[] }
@@ -54,10 +54,12 @@ export function puzzleSourceUrl(v: unknown, ownerExportReference = false): strin
 }
 function source(v: unknown): PuzzleSourceMember['source'] {
   const r = exact(v, ['access', 'reference', 'revision', 'verifiedAt'])
-  if (r.access !== 'public' && r.access !== 'owner-export') fail('unverified provenance')
+  if (r.access !== 'public' && r.access !== 'owner-export' && r.access !== 'original-placeholder') fail('unverified provenance')
   const date = text(r.verifiedAt, 24)
   if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString() !== date) fail('invalid verification time')
-  return { access: r.access, reference: puzzleSourceUrl(r.reference, r.access === 'owner-export'), revision: id(r.revision), verifiedAt: date }
+  const reference = r.access === 'original-placeholder' ? text(r.reference) : puzzleSourceUrl(r.reference, r.access === 'owner-export')
+  if (r.access === 'original-placeholder' && reference !== 'repo:scripts/assets/src/puzzle-placeholder-art.ts') fail('unknown placeholder provenance')
+  return { access: r.access, reference, revision: id(r.revision), verifiedAt: date }
 }
 function header(v: unknown, keys: string[]) {
   const r = exact(v, keys)
@@ -76,6 +78,7 @@ function members(v: unknown, packed: boolean): (PuzzleSourceMember | PuzzleConte
     if (!cast) fail('unknown element/recipe join')
     const tags = cast.members[0]!, base = { id: key, name: text(m.name), family, variant, source: source(m.source),
       elements: [...tags.elements].sort(), roles: [...tags.roles].sort() }
+    if (base.source.access === 'original-placeholder' && !/placeholder/i.test(base.name)) fail('placeholder must be named')
     if (packed) {
       const a = exact(m.art, ['frameId', 'sourceHash', 'variant'])
       return { ...base, art: { frameId: id(a.frameId), sourceHash: puzzleContentHash(a.sourceHash), variant: id(a.variant) } }
@@ -87,7 +90,12 @@ function members(v: unknown, packed: boolean): (PuzzleSourceMember | PuzzleConte
     else if (!/^originals\/[A-Za-z0-9_-]+\.(png|webp)$/.test(location)) fail('unsafe export path')
     return { ...base, art: { location, sha256: puzzleContentHash(a.sha256), mimeType: a.mimeType, variant: id(a.variant) } }
   })
+  if (result.some(m => m.source.access === 'original-placeholder') && result.some(m => m.source.access !== 'original-placeholder')) fail('mixed placeholder/original pack')
   return result.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+}
+/** Presentation only. Explicit original art may launch; a missing or invalid pack is never a fallback. */
+export function puzzleUsesPlaceholderArt(pack: Pick<PuzzleSource, 'members'> | Pick<PuzzleContentPack, 'members'>): boolean {
+  return pack.members.length > 0 && pack.members.every(m => m.source.access === 'original-placeholder')
 }
 export function parsePuzzleCastSource(v: unknown): PuzzleSource {
   const { r, version, provenanceRevision } = header(v, ['schemaVersion', 'version', 'provenanceRevision', 'members'])

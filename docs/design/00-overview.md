@@ -10,7 +10,7 @@ era, and proves herself in races that feed her progression and fill her trophy c
 ## Design pillars
 
 1. **Progress is permanent.** Uma Levels, owned cards, race records, and badges never reset. What deliberately starts
-   over in each scenario is the career: its Training Level, its constellation and its distance-preset card sets
+   over in each scenario is the career: its Constellation Level, its constellation and its distance-preset card sets
    (D121, D252). A card's **global stars** are permanent across them all (D255).
 2. **Races are the payoff.** Races can be lost. Umas slowly outgrow the field as they level.
 3. **History unfolds in order.** Scenarios are eras. A card becomes equippable in the era it was
@@ -22,25 +22,24 @@ era, and proves herself in races that feed her progression and fill her trophy c
 
 ## Core loops
 
-**Release boundary (D287):** the loops below describe today's capability-off Spark game. Uma Puzzles' replacement
-loop is implemented but dormant: free global five-outfit fights → independent Puzzle EXP + scenario/style materials →
-legacy debt first → Items → shared **Constellation Level (CL)1–10**. Protected preservation keeps every earned TL as
-the same CL, all four builds and historical facts; it does not unlock a scenario or raise units to10. T116 enables
-that loop only after real-content/release acceptance. CL opens card nodes, not independent Inspiration/Extra stats.
-See [preservation and recovery](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+**Active Puzzle loop (D287–D290):** free global five-outfit fights → independent Puzzle EXP + scenario/style materials
+→ legacy debt first → global Items → shared **Constellation Level (CL)1–10**. Protected preservation retains all earned
+levels/builds/history, without granting CL10 or a scenario unlock. Production uses verified, explicitly original
+placeholders (D289); permitted PAD art is a later upgrade. CL opens card nodes, not Inspiration/Extra stats.
+See [release acceptance/recovery](../research/uma-puzzles-release-acceptance.md).
 
 ### Uma loop (per Uma)
 
 ```mermaid
 flowchart LR
-    Tix([🎫 Training tickets]) --> Spark
-    Spark["Spark Rival Circuit · 1 ticket<br/>three-wave puzzle battle<br/>Training EXP → TL1–10"] --> Nodes["Constellation nodes open<br/>assign cards · lineage · skills"]
+    Home([Home · Uma Puzzles]) --> Spark
+    Spark["Free five-outfit Puzzle battles<br/>materials → debt → Items<br/>explicit spend → CL1–10"] --> Nodes["Constellation nodes open<br/>assign cards · lineage · skills"]
     Nodes --> Race
     Race["Race<br/>Uma EXP only<br/>goals · badges"] --> LevelUp["Uma Level up<br/>tickets · next scenario"]
     LevelUp --> Race
     Race -.->|"need more nodes or a new build"| Spark
     LevelUp -->|"level 10, 20, 30…"| Gate{"Gate level<br/>+1 Uma Shard"}
-    Gate -->|"promote · 🎫"| Next["Next scenario<br/>Training Level → 1<br/>fresh constellation · career · card era"]
+    Gate -->|"promote · 🎫"| Next["Next scenario<br/>Constellation Level → 1<br/>fresh constellation · career · card era"]
     Next --> Spark
 ```
 
@@ -50,7 +49,6 @@ flowchart LR
 flowchart LR
     Daily([Daily +15]) --> Tickets[("🎫 Training Tickets")]
     UmaLv["Uma Level-ups +1"] --> Tickets
-    Tickets -->|"1 a run"| Spark["Spark Rival Circuit: Training Levels"]
     Tickets -->|"1 a run"| Bond["Card minigame: a card's global stars"]
     Bond -->|"first 3★"| CardCoupon["🎟️ Card Select Coupon"]
     CardCoupon --> Cards
@@ -67,8 +65,8 @@ flowchart LR
 
 | Original game | Uma Racer |
 |---|---|
-| A career run makes a one-off trained Uma instance | Each Uma is permanent, with a permanent **Uma Level** (from races) and a per-scenario **Training Level** (from training) |
-| Training is limited by career turns | Training is a **puzzle-battle and constellation loop**, paced by **15 daily tickets banked to 60** |
+| A career run makes a one-off trained Uma instance | Each Uma is permanent, with a permanent **Uma Level** (from races) and a per-scenario **Constellation Level** (from training) |
+| Training is limited by career turns | Training is a **puzzle-battle and constellation loop**, free to play; card stars/promotions use **15 daily tickets banked to 60** |
 | Scenarios are separate career modes you pick | Scenarios are **progression tiers**, 10 levels each, in release order |
 | R / SR / SSR support cards | **SSR cards only** |
 | Gacha for Umas and cards | Free/event cards to start, then **Select Coupons** earned by maxing cards and leveling Umas |
@@ -87,22 +85,22 @@ flowchart LR
 |---|---|
 | **Uma** | A playable character. It has static template data (base stats, growth rates, aptitudes, unique skill) and a persisted instance with permanent level plus per-scenario constellations and records. Stats, aptitudes, SP and skill library are derived from the active constellation. |
 | **Uma Level** | Permanent level earned **only from racing**. Levels 1–10 are scenario 1, 11–20 are scenario 2, and so on. |
-| **Training Level (TL)** | 1–10, earned **only from Spark Rival Circuit**, and fresh in each scenario. It decides which constellation nodes are open; it does not multiply stats or caps. |
-| **Training Ticket** | **The only currency.** One ticket is one minigame run. Earned from the daily +15 (stored up to 60, four days) and Uma Level-ups. Spent on minigame runs and unlocking the next scenario; cards take a Card Select Coupon (D198). |
+| **Constellation Level (CL)** | 1–10, raised by explicit scenario/style material spends, fresh in each scenario. It decides which constellation nodes are open; it does not multiply stats or caps. |
+| **Training Ticket** | **The only currency.** One ticket is one Friendship Training run; Puzzle entry is free. Earned from the daily +15 (stored up to 60, four days) and Uma Level-ups. Spent on minigame runs and unlocking the next scenario; cards take a Card Select Coupon (D198). |
 | **Scenario / Tier** | A 10-level band named after an original career scenario. It sets stat and SP caps and which card era is available. |
 | **Gate level** | Level 10, 20, 30… Grants an Uma Shard. EXP stops at the maximum until promotion. |
 | **Promotion** | Spending training tickets to move an Uma to the next scenario. |
-| **Stat cap / SP cap** | A scenario's per-stat and skill-point ceilings. The constellation derives values up to them; Training Level controls access to nodes rather than multiplying the caps. |
+| **Stat cap / SP cap** | A scenario's per-stat and skill-point ceilings. The constellation derives values up to them; Constellation Level controls access to nodes rather than multiplying the caps. |
 | **Era** | The scenario window in which a card was originally released. |
 | **Support card** | An SSR card placed in a scenario's card set; it pays stats (or, for a Friend or Group card, SP) and skills on the constellation nodes it fills. It has a type and an era. |
 | **Stars** | An owned card's global power, 0★ to 3★ (D200, D255). Earned one per clear of the card minigame (**Bond** is that act), shared by every Uma, scenario and distance preset. There is no card level. |
 | **Card Select Coupon** | Earned the first time a card reaches 3★ anywhere. The only way to unlock a card (D198). Stackable, never expires. |
 | **Uma Shard / Uma Select Coupon** | 1 shard each time an Uma reaches a gate level. 5 shards make a coupon that redeems for any Uma. |
-| **SP (Skill Points)** | Derived loadout capacity in the active scenario. Training Level and Friend/Group card nodes supply it, up to the scenario cap. |
+| **SP (Skill Points)** | Derived loadout capacity in the active scenario. Constellation Level and Friend/Group card nodes supply it, up to the scenario cap. |
 | **Skill library / loadout** | Skills currently made available by the active constellation, and their ordered equipped subset. Skills race in order while they fit the derived SP; the rest sit out. |
 | **Lineage** | Six constellation slots—two parents and four grandparents—each referencing any owned Uma template. They contribute baseline awakening skills and repeated strong aptitude grades. There are no snapshots. |
-| **Scenario Start** | The confirmation that activates a new per-scenario constellation, card set, career and race record at TL1. Spark Match then opens more nodes. |
-| **Drive / Resolve** | Temporary Spark Rival Circuit battle gauges for trainee and rival. They are not race HP, Stamina stats, currencies or saved progression. |
+| **Scenario Start** | The confirmation that activates a new per-scenario constellation, card set, career and race record at CL1. Spend Puzzle materials to open more card nodes. |
+| **Drive / Resolve** | Historical Spark Rival Circuit battle gauges for trainee and rival. They are not race HP, Stamina stats, currencies or saved progression. |
 | **Career** | Each scenario's per-Uma race plan in three stages — Maiden (a G3), Trials (two G2s), Main goals (a G1 set) — built from her best two distances and her real career. Maiden and Trials hold levels 2 and 5; the whole career gates the advance. Shown as a tracker, race-card icons, ribbons and Honors crests. |
 | **Grade handicap** | How much weaker than a typical trained Uma a race's rivals are: 5% at G1, 15% at G2, 25% at G3, more below. Your Uma races with the stats on her profile. |
 | **Badge / Title** | Tiered per-Uma accomplishment, or a named honor (for example "Triple Crown"). |

@@ -729,10 +729,10 @@ describe('Uma Puzzles campaign coefficients and economy (D271)', () => {
   })
   it('pins fixed invented reference and level/kind/role coefficients, not entering-party scaling', () => {
     expect(PUZZLE_FOE_ROLES).toEqual(['striker', 'healer', 'guard', 'converter', 'ward', 'champion'])
-    expect(PUZZLE_FOE_REFERENCE).toEqual({ speed: 110, stamina: 170, power: 90, guts: 70, wit: 90, growth: 0.1, partySize: 5 })
-    expect(PUZZLE_FOE_SCALING).toEqual({ ordinary: { hpAtk: 5.5, damageHp: 0.29, opening: 2, attackCountdown: 2 },
-      guardian: { hpAtk: 28, damageHp: 0.58, opening: 1, attackCountdown: 2 },
-      champion: { hpAtk: 42, damageHp: 0.54, opening: 2, attackCountdown: 2 } })
+    expect(PUZZLE_FOE_REFERENCE).toEqual({ speed: 110, stamina: 100, power: 110, guts: 110, wit: 110, growth: 0.1, partySize: 5 })
+    expect(PUZZLE_FOE_SCALING).toEqual({ ordinary: { hpAtk: 6, damageHp: 0.30, opening: 1, attackCountdown: 2 },
+      guardian: { hpAtk: 32, damageHp: 0.66, opening: 1, attackCountdown: 2 },
+      champion: { hpAtk: 48, damageHp: 0.58, opening: 2, attackCountdown: 2 } })
     expect(PUZZLE_FOE_ROLE_MULTIPLIERS).toEqual({ striker: { hp: 1, damage: 1 }, healer: { hp: 0.8, damage: 0.8 },
       guard: { hp: 1.1, damage: 0.95 }, converter: { hp: 0.9, damage: 0.9 }, ward: { hp: 1, damage: 0.9 }, champion: { hp: 1, damage: 1 } })
     expect(PUZZLE_FOE_MECHANICS).toEqual({ defenseBase: 5, defensePerLevel: 2, healHp: 0.15, supportCountdown: 1,

@@ -4,9 +4,9 @@
 
 ## Two layers of data
 
-**Dormant CL adaptation (D287):** after protected bank2 activation, save16's existing `trainingLevel` stores
+**Active CL adaptation (D287, D290):** after protected bank2 activation, save16's existing `trainingLevel` stores
 Constellation Level1–10 and `trainingExp` is required zero. Profile EXP bank is also zero. Before activation the
-save15 Spark rules below remain live. All four distance presets, Inspiration/Extra unlocks, racing progression,
+save15 remains readable for guarded preparation. All four distance presets, Inspiration/Extra unlocks, racing progression,
 global card references and histories are preserved; future units start CL1 with no frozen legacy debt. No stat
 formula or scenario gate changes. [Version/receipt contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
 
@@ -49,7 +49,7 @@ racing ([Training](training.md#stats-are-derived), D190), through her selected p
 | Field | Notes |
 |---|---|
 | `tier` | Which scenario this is |
-| `trainingLevel`, `trainingExp` | 1–10, earned by [Spark Rival Circuit](minigames.md#spark-match--rival-circuit). Decides which nodes are open, for every preset |
+| `trainingLevel`, `trainingExp` | CL1–10, raised by [material spend](training.md#spending-materials); retired EXP is zero in16. Nodes are shared across every preset |
 | `extraStatsUnlocked` | Each stat's [Extra stat](constellations.md#extra-stats) nodes bought with crops (0–4), for every preset (D235) |
 | `inspiration` | Which lineage slots and natural golds are open (D250), for every preset |
 | `presets` | Four builds, one per distance (below) |
@@ -58,7 +58,7 @@ racing ([Training](training.md#stats-are-derived), D190), through her selected p
 | `milestones` | This scenario's achievement facts |
 
 A completed scenario's entry is kept in full as a **trained unit** (D190): it still races, reconfigures and trains in its
-own context, without Uma EXP. Its career stays closed. See [Training — trained units](training.md#trained-units).
+own context, without Uma EXP. Its career stays closed. See [Training — scenario career](training.md#a-scenario-is-a-career-run).
 
 ### Distance presets
 
@@ -67,7 +67,7 @@ Mile, Medium and Long, and each preset is a whole build of its own (D252):
 
 | Per preset | Shared by the scenario's four presets |
 |---|---|
-| `cardSetIds`: up to 6 owned, era-eligible cards; no duplicate character | Training Level and its EXP, and so which nodes are open |
+| `cardSetIds`: up to 6 owned, era-eligible cards; no duplicate character | Constellation Level, and so which nodes are open |
 | `assignments`: `nodeId → { card } | { lineage }`, the constellation's cards and the parents and grandparents | Extra stat nodes bought with crops |
 | `activeExtraStats`: at most six of the bought Extra stat nodes | Inspiration's open slots and golds |
 | `loadoutSkillIds`: the equipped skills; the SP budget comes from this preset's constellation | The career, scenario start and card stars |
@@ -89,7 +89,7 @@ when any one preset's tree is.
   ([Scenario Careers](scenario-goals.md#three-stages)).
 - **Every scenario costs the same** (D241): `expToNext(level) = 100 + 25 × levelsIntoScenario(level)`, so a scenario's
   levels cost 100, 125 … 300 and its nine level-ups 1,800 EXP, from URA Finale to the fourteenth. A gate banks the next
-  scenario's first level, 100. Uma Level is race EXP only; it has nothing to do with Training Level or Level-Up Tickets.
+  scenario's first level, 100. Uma Level is race EXP only; it has nothing to do with CL or Puzzle Level/materials.
 
   | Wins a scenario takes | G1 (150) | G1 with +33% Race Bonus (200) | G2 (110) |
   |---|---:|---:|---:|
@@ -114,7 +114,7 @@ when any one preset's tree is.
    **explicit** — the player chooses when.
 3. On advancing:
    - Level becomes gate + 1. Banked overflow EXP applies immediately.
-   - A **new `ScenarioTraining`** is created at Training Level 1 with the baseline nodes open, an empty card
+   - A **new `ScenarioTraining`** is created at Constellation Level 1 with the baseline nodes open, an empty card
      set, a fresh career, and an empty race record.
    - It becomes the **active** scenario at once and drives every race from then on.
    - The previous scenario's entry is kept as a trained unit that can still race (D190); its career is closed.
@@ -140,7 +140,7 @@ keeps racing and refining that scenario's constellation.
 ## Getting stronger in races
 
 Your Uma races with **the stats on her profile**: her base stats and what her constellation pays, with nothing added
-or multiplied at the gate. Training Level makes her stronger by opening nodes, and stars by filling them. Rivals are
+or multiplied at the gate. Constellation Level makes her stronger by opening nodes, and stars by filling them. Rivals are
 a typical trained Uma of her tier made weaker by the race's grade (D159); details in
 [Racing — the grade handicap](racing.md#difficulty-the-grade-handicap).
 

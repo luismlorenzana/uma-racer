@@ -1,5 +1,6 @@
 // Separate account selectors and guarded lazy campaign shell (docs/design/uma-puzzles.md §9).
 import { liveQuery } from 'dexie'
+import { puzzleUsesPlaceholderArt } from '@racer/domain'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Outlet } from 'react-router'
 import { useStore } from 'zustand'
@@ -13,10 +14,12 @@ import { createPuzzleNavigation } from '../../game/puzzles/navigation'
 import { useGame } from '../../game/store'
 import { MinigameHeader, MinigameShell } from '../../ui/minigames/MinigameShell'
 import { PuzzleButton, PuzzleTabs } from '../../ui/puzzles/components'
+import { usePuzzlePreparation } from '../../game/puzzles/preparation-store'
+import { PuzzleBackupButton } from '../../ui/puzzles/PuzzleBackupButton'
 import { PuzzleGuide, puzzleGuideMemory } from './PuzzleGuide'
 
 export interface PuzzleEnvironment {
-  host: PuzzleHost; content: LoadedContent; ownedIds: readonly string[]; root: string; isolated: boolean
+  host: PuzzleHost; content: LoadedContent; ownedIds: readonly string[]; root: string; isolated: boolean; placeholderArt?: boolean
   acquire(identity?: PuzzleCastLease['identity']): Promise<PuzzleCastLease>
 }
 export function createPuzzleAccountStore() {
@@ -64,6 +67,7 @@ export function puzzleUiGate(enabled: boolean, account: PuzzleAccount | null, ve
   return verified ? 'ready' : 'content'
 }
 function ProductionPuzzleShell() {
+  const phase = usePuzzlePreparation(s => s.phase)
   const contentState = useContent(), status = useGame(s => s.status), persistent = useGame(s => s.persistent), owned = useGame(s => s.umas)
   const content = contentState.status === 'ready' ? contentState.content : null
   const [environment, setEnvironment] = useState<PuzzleEnvironment | null>(null), [error, setError] = useState<string | null>(null), [attempt, setAttempt] = useState(0)
@@ -78,19 +82,21 @@ function ProductionPuzzleShell() {
       const acquired = await puzzleContentLibrary(content.manifest).acquire()
       lease = { ...acquired, presentation: acquired }
       if (cancelled) { lease.release(); return }
-      if (!cancelled) setEnvironment({ host, content, ownedIds: Object.keys(owned), root: '/puzzles', isolated: false,
+      if (!cancelled) setEnvironment({ host, content, ownedIds: Object.keys(owned), root: '/puzzles', isolated: false, placeholderArt: puzzleUsesPlaceholderArt(acquired.pack),
         acquire: async identity => { const held = await puzzleContentLibrary(content.manifest).acquire(identity); return { ...held, presentation: held } } })
     })().catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : 'Verified Puzzle content is unavailable.') })
     return () => { cancelled = true; lease?.release() }
-  }, [content, status, persistent, attempt])
+  }, [content, status, persistent, attempt, phase])
   if (!content || status !== 'ready' || !persistent) return <PuzzleGate title="Saved account required">Load your saved game and verified content first. No Puzzle operation is available here.</PuzzleGate>
-  if (error) return <PuzzleGate title="Uma Puzzles unavailable" retry={() => { setEnvironment(null); setError(null); setAttempt(n => n + 1) }}>{error}</PuzzleGate>
+  if (error) return <PuzzleGate title="Uma Puzzles unavailable" retry={() => {
+    void import('../../game/runtime').then(({ gameRuntime }) => gameRuntime.flush()).catch(e => setError(String(e))).finally(() => setAttempt(n => n + 1))
+  }}><p>{error}</p><div className="mt-4"><PuzzleBackupButton /></div></PuzzleGate>
   if (!environment || environment.content !== content) return <PuzzleGate title="Preparing Uma Puzzles">Verified content and an active saved account are required. Current training remains available.</PuzzleGate>
   return <PuzzleProvider environment={{ ...environment, ownedIds: Object.keys(owned) }}><Outlet /></PuzzleProvider>
 }
 /** Off flag is checked before mounting a component capable of host/content/account I/O. */
-export function PuzzleShell() {
-  return PUZZLES_RELEASE_ENABLED ? <ProductionPuzzleShell /> : <PuzzleGate title="Uma Puzzles is not released yet">The setup screens are being prepared. Spark Match and current training remain available; this link cannot enable the new mode.</PuzzleGate>
+export function PuzzleShell({ enabled = PUZZLES_RELEASE_ENABLED }: { enabled?: boolean } = {}) {
+  return enabled ? <ProductionPuzzleShell /> : <PuzzleGate title="Uma Puzzles is not released yet">The setup screens are being prepared. Spark Match and current training remain available; this link cannot enable the new mode.</PuzzleGate>
 }
 export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children, footer }: { title: string; eyebrow?: string; back?: string; children: ReactNode; footer?: ReactNode }) {
   const value = usePuzzles(), account = usePuzzleAccount(), error = useStore(value.state.store, s => s.error)
@@ -103,6 +109,7 @@ export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children, fo
     trailing={value.isolated ? <a href="/" className="flex min-h-11 min-w-11 items-center justify-center text-xs text-ink-on-dark-soft">Exit</a> : undefined} />
     <div className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col px-3 pt-3"><PuzzleTabs root={value.root} />
       {value.notice && <p role="alert" className="mb-2 shrink-0 rounded-sm border border-accent p-2 text-sm">{value.notice}</p>}
+      {value.placeholderArt && <p className="mb-2 shrink-0 text-[11px] text-ink-on-dark-soft">Placeholder enemy art · real progression and rewards</p>}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">{children}</div>
       {footer && <div className="shrink-0 border-t border-hairline-dark pt-2 pb-safe">{footer}</div>}
     </div><PuzzleGuide open={guide} onClose={() => setGuide(false)} isolated={value.isolated} practiceTo={value.isolated ? '/dev/puzzles-practice' : '/puzzles/practice'} /></MinigameShell>

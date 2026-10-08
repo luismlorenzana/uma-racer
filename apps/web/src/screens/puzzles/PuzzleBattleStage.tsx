@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { PUZZLE_ACTIVES, PUZZLE_ELEMENTS, PUZZLE_MOVEMENT_MS, PUZZLE_TURN_LIMIT, puzzleEnemyIntentViews, puzzleFocus,
-  type PuzzleBattleAction, type PuzzleBattleStateV1, type PuzzleBattleTransition } from '@racer/domain'
+  puzzleUsesPlaceholderArt, type PuzzleBattleAction, type PuzzleBattleStateV1, type PuzzleBattleTransition } from '@racer/domain'
 import { getContentAsset, type LoadedContent } from '../../content/runtime'
 import type { PuzzleCastLease } from '../../game/puzzles/host'
 import type { PuzzleBattlePhase } from '../../game/puzzles/battle-session'
@@ -95,7 +95,7 @@ export function PuzzleBattleStage(props: PuzzleBattleStageProps) {
     active.effect === 'convert' && !state.board.some(o => o !== 'heart' && o !== state.input.entrants[activeSlot]!.element)
   const name = (id: string) => content?.umas.byId.get(id)?.name ?? `Practice Uma ${state.input.entrants.findIndex(e => e.outfitId === id) + 1}`
   return <MinigameShell playing><MinigameHeader backTo={backTo} backReloadDocument={practice} backLabel="Suspend and return to map" title={practice ? 'Touch practice' : 'Uma Puzzles'}
-    eyebrow={isolated ? 'Isolated · Original DEV sprites' : `PL ${state.input.encounterLevel} · ${state.input.kind}`}
+    eyebrow={isolated ? 'Isolated · Original DEV sprites' : `${props.lease?.presentation && puzzleUsesPlaceholderArt(props.lease.presentation.pack) ? 'Placeholder art · ' : ''}PL ${state.input.encounterLevel} · ${state.input.kind}`}
     onGuide={() => { scene.current?.cancel(); setGuide(true) }} guideLabel="Uma Puzzles battle guide"
     headline={{ label: 'Drag', value: `${state.turn}/${PUZZLE_TURN_LIMIT}` }} />
     <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-2">

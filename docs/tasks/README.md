@@ -11,18 +11,16 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**M030 — Uma Puzzles is fully specified** (D267–D268): [the milestone](M030-uma-puzzles.md) contains eleven sequential
-PR-sized tasks, **T106–T116**. T106–T108 progression/material/battle/campaign rules are complete (D269–D271);
-[T109 private content](T109-puzzle-private-content.md) has pipeline/client code delivered (D272); the owner pinned real
-PAD inputs/art for the final pass, with explicit DEV placeholders. T110's additive records/atomic save/sync are complete
-(D273); T111's real journal/host, T112's saved Hub/parties/maps and T113's mobile battles/results/guide are complete
-(D274–D276); T114's [material/CL surfaces](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283) and T115's [dormant preservation/retirement](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287) are complete (D283, D287), capability-off. T116 release/acceptance is next.
-[The design](../design/uma-puzzles.md) carries approved gameplay and resolved registration;
-[the implementation contract](../technical/uma-puzzles-implementation.md) fixes save ownership, atomic background
-operations, replay/takeover and cutover boundaries. Pure rules, real replay host, durable sync and mobile battle screens
-exist; **no enabled production gameplay or live migration yet**.
-Keep current Spark/account progression usable until the verified content, real reward host and CL spend flow are ready.
-Implement one task to completion/PR/merge before the next, from latest main, without changing Claude's RPG mechanics.
+**M030 / T116 — Uma Puzzles release is complete** (D289–D290): the owner approved verified
+**original-placeholder art** for production, so permitted PAD portraits no longer block release.
+[The design](../design/uma-puzzles.md) and [implementation contract](../technical/uma-puzzles-implementation.md)
+carry registration, pure battle/campaign rules, the real replay host/atomic sync, mobile Hub/maps/battles,
+global materials/exchange/CL and protected save16 preservation with a device-local whole-account backup.
+Both application gates are enabled. [Release acceptance](../research/uma-puzzles-release-acceptance.md)
+records private publication and application/deployment witnesses separately from still-pending owner gameplay,
+iPhone and second-device checks. Completed specs are removed under D104; the later
+[T109 permitted-art upgrade](T109-puzzle-private-content.md) remains pinned at the owner's request.
+Implement one task to completion/PR/merge before the next, from latest main; do not alter RPG mechanics.
 
 **Owner detour — the RPG campaign is complete** (D260–D266): local-first RPG saves with no Sync steps, one generated
 twelve-level chapter per scenario, replayable maps, Octopath element/weapon breaks with carried MP and camps,
@@ -37,7 +35,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M030 — Uma Puzzles](M030-uma-puzzles.md) | **T116**, plus pinned T109 real-content pass | **In progress** · T106–T108/T110–T115 complete; T109 code delivered, permitted PAD originals deferred by owner; T116 next |
+| [T109 — Puzzle art upgrade](T109-puzzle-private-content.md) | Permitted PAD source/art only | **Pinned by owner** · code delivered; verified original placeholders are production-ready |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -52,7 +50,7 @@ The owner's device checks (every milestone's, including Spark Rival Circuit's ph
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M031 and T117.** M030/T106–T116 are allocated to the specified Puzzle sequence. Numbers are never
+**Next free numbers: M031 and T117.** M030/T106–T116 belong to the completed Puzzle sequence. Numbers are never
 reused, so a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break
 branch and is not reused.
 
@@ -62,6 +60,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| M030 / T116 — Verified-placeholder Puzzle release, tuning, Home and preservation backup | 2026-10-08 | [Uma Puzzles](../design/uma-puzzles.md), D289–D290 and [release/owner checks](../research/uma-puzzles-release-acceptance.md); later T109 art upgrade retained | `77f7d03` |
 | T115 — Rehearsed preservation migration and safe Spark retirement | 2026-10-08 | [Preservation v2 contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287), D287 and [synthetic phone/restore proof](../research/puzzle-preservation-phone-proof.md); release remains off | `ed99e2d` |
 | T114 — Global materials, original vectors, debt/exchange and shared CL spend | 2026-10-08 | [Material surface contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283), D283 and [synthetic phone proof](../research/puzzle-material-phone-proof.md); release remains off | `bf5585b` |
 | T113 — Mobile Pixi battle, receipts and contextual guide | 2026-10-08 | [Battle presentation contract](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276), D276 and [synthetic phone proof](../research/puzzle-battle-phone-proof.md); release remains off | `9bc12a4` |

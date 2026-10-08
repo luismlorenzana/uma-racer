@@ -18,9 +18,9 @@ export function useClPreparation() {
   const phase = usePuzzlePreparation(s => s.phase), busy = usePuzzlePreparation(s => s.busy)
   return PUZZLES_RELEASE_ENABLED && (busy || phase === 'preparing' || phase === 'recoverable-error')
 }
-export function ClLevelUpButton({ outfitId, tier, level }: { outfitId: string; tier: number; level: number }) {
-  return PUZZLES_RELEASE_ENABLED ? <Suspense fallback={<span>CL {level}/10</span>}><Live outfitId={outfitId} tier={tier} level={level} /></Suspense> : null
+export function ClLevelUpButton({ outfitId, tier, level, enabled = PUZZLES_RELEASE_ENABLED }: { outfitId: string; tier: number; level: number; enabled?: boolean }) {
+  return enabled ? <Suspense fallback={<span>CL {level}/10</span>}><Live outfitId={outfitId} tier={tier} level={level} /></Suspense> : null
 }
-export function GlobalMaterialItems({ visibility, scenarioTier }: { visibility: 'owned' | 'all'; scenarioTier: number | null }) {
-  return PUZZLES_RELEASE_ENABLED ? <Suspense fallback={<p>Loading material items…</p>}><Live visibility={visibility} scenarioTier={scenarioTier} /></Suspense> : null
+export function GlobalMaterialItems({ visibility, scenarioTier, enabled = PUZZLES_RELEASE_ENABLED }: { visibility: 'owned' | 'all'; scenarioTier: number | null; enabled?: boolean }) {
+  return enabled ? <Suspense fallback={<p>Loading material items…</p>}><Live visibility={visibility} scenarioTier={scenarioTier} /></Suspense> : null
 }

@@ -6,23 +6,22 @@
 What every minigame shares (the run contract, determinism, where the engine lives, the screen, the look, the guide and
 the reusable pieces) is in the [Minigame kit](minigame-kit.md). This page holds each game's own rules.
 
-Minigames are the **third pillar** of the game, beside Collection and Racing. They are the only way to raise a
-Training Level and the only way to earn a card's stars. There is no other training loop: no turns, no
-facilities, no energy, no per-turn RNG (D120).
+Minigames are a pillar beside Collection and Racing. Free [Uma Puzzles](uma-puzzles.md) fights earn materials
+for CL; Friendship Training earns global card stars. No training turns, facilities, energy or per-turn RNG (D120).
 
-| Minigame | Raises | Board |
+| Game | Raises | Board |
 |---|---|---|
-| **Spark Match — Rival Circuit** | Training Level 1 → 10 of the chosen scenario (D190) | continuous-drag puzzle battle |
-| **Friendship Training** | one card by one star in one scenario | a roguelite deck of support cards |
+| **Uma Puzzles** | independent Puzzle Level; scenario/style materials for CL | five-outfit continuous-drag campaign |
+| **Friendship Training** | one global card star; scenario is frozen context | roguelite support-card deck |
+| **Spark Rival Circuit (retired)** | historical Training EXP | retained continuous-drag replay |
 
-**D255 correction:** Friendship's star belongs to the global owned card; the scenario is frozen play context only.
-**D287 replacement is dormant:** T115 supplies protected preservation and retirement, not activation. Spark remains
-live with flags off. After freeze, old training/EXP spending pauses; after complete bank2 activation, free global
-[Uma Puzzles](uma-puzzles.md) earns scenario/style materials for CL and the old Spark entry redirects with an
-explanation. Completed results remain historical; supported terminal pending runs commit/sync before freeze;
-unfinished paid runs refund original cost once, even above60. Malformed or another-device late terminal journals
-remain for explicit recovery. Old engine/parser dispatch is retained, not silently deleted. Friendship journals and
-global stars are untouched. [Run recovery contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+**Active replacement (D287–D290):** verified original-placeholder Puzzles are available from Home. Preservation
+keeps earned levels/builds, drains supported terminal Spark before freeze and refunds unfinished paid runs once at
+their original cost, even above60. Malformed/late remote terminal journals require explicit recovery. Completed
+results and old parsers remain historical; no new Spark run starts for an active preserved account.
+Friendship journals/global stars are unchanged. The detailed Spark section below is **historical rules**, retained
+for replay/migration/simulation, not today's training entry.
+[Recovery contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
 
 Both are **seeded and replay-stable**. Spark Rival Circuit is a pure replay of its encounter, seed and persisted
 actions; Friendship Training replays its frozen setup and saved choices. Reloading mid-run restores the same state and
@@ -294,8 +293,8 @@ screens are `apps/web/src/screens/minigames/friendship/`.
 - **Target and price:** a run names one card and one scenario, costs **1 ticket** (D148), and a clear gives that card
   **+1★ globally**. There is no partial progress: a loss costs the ticket and nothing else.
 - **Owned cards only.** Runs never show unowned cards; unlocking takes a Card Select Coupon (D198).
-- **Spark Match stays separate** and remains the only way to raise a Training Level. M022 replaces its adjacent-swap
-  rules with Rival Circuit before this milestone begins; Friendship Training does not share combat, rewards or UI with it.
+- **Puzzle progression stays separate**: Friendship grants global stars, not Puzzle EXP, CL materials or CL itself.
+  Historical Spark replay/refund handling remains without a new-run entry.
 - **Length grows with the star being earned**, so the first star is quick and the third is a real run.
 - **Seeded and resumable:** the run is a pure function of its setup and the player's choices, so a reload resumes it
   exactly and cannot reroll a friendlier draw.
@@ -513,7 +512,7 @@ places. Drafts, each with a sim row:
 ### What it never does
 
 - Unowned cards in runs, scouting, or any new unlock path (D146).
-- Training Level progress from runs: Spark Match owns it.
+- CL or Puzzle Level progress from Friendship runs; Puzzles earns materials, not card stars.
 - Meta-progression inside the minigame (permanent run upgrades); the stars are the progression.
 
 ---

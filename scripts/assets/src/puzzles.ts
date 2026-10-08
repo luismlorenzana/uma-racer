@@ -64,7 +64,7 @@ async function original(member: PuzzleSourceMember, options: { contentDir: strin
   try { const bytes = await readFile(cache); return { frame: await decode(bytes, member), cacheHit: true } }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error('Corrupt source cache; restore reviewed original bytes') }
   let bytes: Buffer
-  if (member.source.access === 'owner-export') {
+  if (member.source.access === 'owner-export' || member.source.access === 'original-placeholder') {
     const root = await realpath(resolve(options.contentDir, 'originals')), path = await realpath(resolve(options.contentDir, member.art.location))
     if (!path.startsWith(root + sep)) throw new Error('Source export escapes originals directory')
     bytes = await readFile(path)

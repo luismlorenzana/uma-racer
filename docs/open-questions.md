@@ -14,24 +14,18 @@ until pinned in domain tests and a decision.
 
 The owner accepted the [Uma Puzzles plan](design/uma-puzzles.md) on 2026-10-07 (D267), changing registration to
 Front-only/Front+Pace → Light; End-only/Late+End → Dark; pure Pace/Late or Pace+Late choose Fire/Water/Wood;
-**Dirt A overrides first and chooses all five**. Production gameplay and account cutover remain disabled.
+**Dirt A overrides first and chooses all five**.
 
 The owner also confirmed **Fire/Water/Wood choice** for the five other non-Dirt-A multi-style combinations
 (three Pace+Late+End, one Pace+End, one Front+Late). All 268 catalogue outfits are covered; no registration choice
 remains open. See [counts and exact predicates](design/uma-puzzles.md#3-element-identity-and-the-catalogue-check).
-All first-draft recommendations are approved; candidate tuning values still need simulation/pinning, and PAD
-art provenance and device validation remain implementation checks, not a completed import or phone sign-off.
-[M030 / T106–T116](tasks/M030-uma-puzzles.md) now supplies the detailed sequence (D268), with content verification,
-atomic economic sync, explicit online takeover and safe cutover gates. T106–T108 pure rules/battle/campaign are
-implemented (D269–D271); T109 pipeline/client code is delivered (D272). At the owner's request, real PAD originals/evidence
-are pinned for the final content pass, with original labelled DEV placeholders. T110 additive save/sync is implemented
-(D273); T111–T113's real host, setup and touch battle/results/practice are implemented (D274–D276).
-T114 adds global materials, separate repayment debt, adjacent exchange and the shared CL sheet (D283), with isolated
-synthetic phone-size proofs. T115 preservation/retirement is next; both release
-flags stay off, with no live cutover. This is an explicit
-source-input follow-up, not an unanswered mechanics question or real-content sign-off. Simulation outliers in design §11 remain release-balance checks,
-not new owner choices or a claim of closure. Do not treat the task breakdown
-as a request to publish, migrate an account or implement a second RPG system.
+M030's full sequence is delivered: pure rules/campaign, verified content pipeline, additive saves/atomic sync,
+real replay host, phone navigation/battles, global materials/exchange/CL and protected preservation.
+The owner authorized release with **verified original-placeholder art** (D289–D290); both code gates are enabled.
+Permitted PAD originals/evidence are a later [T109 art upgrade](tasks/T109-puzzle-private-content.md), not a mechanics
+question or current release blocker. Settled small-sample tuning and its counter-policy outliers are in design §11.
+Publication/application witnesses and **pending real-account/iPhone checks** remain distinct in the
+[standing acceptance record](research/uma-puzzles-release-acceptance.md).
 
 ## Needs you (owner actions, not design questions)
 
@@ -71,6 +65,12 @@ as a request to publish, migrate an account or implement a second RPG system.
   Follow the [standing production/device checklist](research/rpg-release-acceptance.md#owner-productioniphone-protocol--post-release-feedback)
   for real-party balance, rewards/debt, Inspiration spends, reload/offline and second-device takeover. Publication and
   deployment evidence are separate from this still-pending physical-iPhone acceptance; no synthetic proof signs it off.
+- **Uma Puzzles (D289–D290):** refresh the installed production app online, retain the private preservation backup,
+  then test Home→five-outfit party→chapter→win→EXP/material/debt→Items/exchange→shared CL spend.
+  Follow the [production/iPhone protocol](research/uma-puzzles-release-acceptance.md#owner-productioniphone-protocol)
+  for physical drags, background/offline restore, real-party balance and second-device recovery. Synthetic replay,
+  browser screenshots and deployment checks do not sign off those owner actions. The historical Spark protocol above
+  remains evidence for the retired mode, not a request to launch a new Spark run.
 
 These device checks now belong to **T038** in [Milestone 11](tasks/M011-game-feel-and-device.md), which closes them as one
 acceptance pass rather than leaving nine separate reminders open.

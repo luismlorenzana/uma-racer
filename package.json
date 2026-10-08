@@ -21,6 +21,7 @@
     "data:rpg:validate": "pnpm --filter @racer/data-pipeline run rpg:validate",
     "assets:rpg:import": "pnpm --filter @racer/asset-pipeline run rpg:import",
     "assets:puzzles:import": "pnpm --filter @racer/asset-pipeline run puzzles:import",
+    "assets:puzzles:placeholders": "pnpm --filter @racer/asset-pipeline run puzzles:placeholders",
     "data:puzzles:import": "pnpm --filter @racer/data-pipeline run puzzles:import",
     "data:puzzles:validate": "pnpm --filter @racer/data-pipeline run puzzles:validate",
     "sim:balance": "pnpm dlx tsx scripts/sim/strategy-balance.ts",

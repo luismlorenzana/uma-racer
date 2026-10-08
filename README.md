@@ -11,13 +11,12 @@ while the stable itself grows into a collection.
 > lineage, pink sparks, Scenario Start and deterministic goals, and the full badge pillar with per-Uma flair, Prestige,
 > showcases, and Trainer achievements.
 >
-> The 2026-09 training redirection is now the source of truth: Training Levels open a per-scenario constellation, cards
-> earn global stars (D255), and races use the resulting scenario/distance-preset build. Races run on
-> [turn-based engine v7](docs/design/racing.md#engine-v7-the-originals-physics-and-field). Training Levels come from
-> [Spark Match — Rival Circuit](docs/design/minigames.md#spark-match--rival-circuit), a three-wave continuous-drag puzzle
-> battle, and cards earn their stars in [Friendship Training](docs/design/minigames.md#friendship-training--card-stars);
-> both share one [Minigame kit](docs/design/minigame-kit.md). The Paddock visual system and original icon set have
-> landed. What comes next is in [Tasks](docs/tasks/README.md).
+> **Current training loop:** free global [Uma Puzzles](docs/design/uma-puzzles.md) battles earn scenario/style
+> materials, which raise shared **Constellation Level (CL)** through an explicit spend. Earned levels and all four
+> distance builds are preserved (D287–D290). Verified original placeholder enemy art is approved for production
+> (D289); permitted PAD art remains a later upgrade, not a launch blocker. [Friendship Training](docs/design/minigames.md#friendship-training--card-stars)
+> earns global card stars. Racing, Farm and RPG retain their independent progression.
+> [Release evidence and owner checks](docs/research/uma-puzzles-release-acceptance.md); remaining work is in [Tasks](docs/tasks/README.md).
 
 ## Ground rules
 
@@ -35,9 +34,10 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone) + api :8080
 ```
 
-Saved-Uma Training: **Home or Stable → Uma profile → Train → Spark Match or Constellation**.
+Global Puzzle training: **Home → Uma Puzzles → enroll five owned outfits → Parties → Chapters → URA Finale**.
+Saved-Uma Training: **Home or Stable → Uma profile → Train → Constellation / Inspiration / Extra stats**.
 Progression racing: **Start a scenario → configure/train as desired → Race → pick a content race, Uma, and strategy**.
-Scenario Start: **Acquire an Uma or reach a non-final gate → start the new per-scenario constellation and career at TL1**.
+Scenario Start: **Acquire an Uma or reach a non-final gate → start the new per-scenario constellation and career at CL1**.
 Scenario goals: **Home or Profile Journey → choose a target race → win its rule during the active tier → preserve the result on promotion**.
 Global RPG: **Home → Uma RPG → enroll five owned outfits → save a party → Chapters → URA Finale**. The real URA
 chapter and portraits are published privately; owner gameplay/device acceptance follows deployment (D257).
@@ -83,14 +83,14 @@ docs/           design, technical, research
 | [Uma Progression](docs/design/uma-progression.md) | Permanent Uma Level, per-scenario training state, derived stats, unlocking the next scenario |
 | [Scenarios](docs/design/scenarios.md) | Scenarios as career runs: cap profiles, constellation shapes, buffs, eras |
 | [Scenario Careers](docs/design/scenario-goals.md) | Each scenario's career per Uma: a G3, two G2s, then a G1 set, gating her levels |
-| [Training](docs/design/training.md) | Uma Level vs. Training Level, derived stats, tickets. The entry point to the two below |
+| [Training](docs/design/training.md) | Uma Level vs. Constellation Level, derived stats, tickets. The entry point to the two below |
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
-| [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
+| [Minigames](docs/design/minigames.md) | Friendship earns global card stars; retired Spark rules remain for history |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
 | [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties of four classes, Octopath-style break battles against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D282) |
 | [RPG classes and skill trees](docs/design/uma-rpg-classes.md) | Brawler, Mage, Cleric and Summoner: turns and hands, multi-part hits and weaknesses, every authored tree, node and number, Cleric blessings, summons and the balance check (D277–D282) |
-| [Uma Puzzles](docs/design/uma-puzzles.md) | **T106–T115 implemented, release unavailable:** saved parties/maps, replay-backed fights, materials/CL and dormant rehearsed preservation (D287). Real PAD input/art remains pinned (D272); [M030](docs/tasks/M030-uma-puzzles.md) continues with T116 release. Spark/account progression is unchanged while flags are off |
+| [Uma Puzzles](docs/design/uma-puzzles.md) | Free global party campaign, replay-backed battles, scenario/style materials, debt/exchange and shared CL spending; protected preservation and verified original-placeholder art (D287–D290) |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
@@ -104,7 +104,7 @@ docs/           design, technical, research
 |---|---|
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [RPG implementation](docs/technical/uma-rpg-implementation.md) | Local-first RPG rows and sync, the device fight journal, the generated campaign and the cast-only private pack |
-| [Uma Puzzles implementation contract](docs/technical/uma-puzzles-implementation.md) | **T106–T115 rules, host, UI and dormant cutover exist:** [private content](docs/technical/puzzle-content.md), atomic replay/repair/takeover and [preservation/recovery](docs/technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287). Production activation, real PAD input/art and device acceptance remain |
+| [Uma Puzzles implementation contract](docs/technical/uma-puzzles-implementation.md) | Verified private content, atomic replay/repair/takeover, protected preservation and [release/owner checks](docs/research/uma-puzzles-release-acceptance.md); permitted PAD originals remain T109 |
 | [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, one-time bootstrap, content privacy, environments |
 | [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
 | [Visual System "Paddock"](docs/design/visual-system.md) | Surfaces, colour, type, shape, components, icons, art treatment, motion, density |

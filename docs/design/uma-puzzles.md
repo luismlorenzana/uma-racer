@@ -1,17 +1,18 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106–T115 rules/content code/save/sync/host/mobile/material UI and dormant preservation implemented (D269–D276, D283, D287). Production gameplay not enabled.**
+**Status: T116 release contract (D289–D290): verified original-placeholder campaign, real host/rewards, Home entry,
+material-driven CL and protected preservation enabled.** [Release evidence/owner checks](../research/uma-puzzles-release-acceptance.md).
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
 not balance closure. T108 pins generated maps, fixed-reference encounter scaling, reward vectors and modest simulation
 evidence below. T110–T111 add capability-off persistence and the real replay host; T112 adds saved setup navigation
 and T113 adds touch battles, saved results and illustrated guide/practice. T114 adds global materials/debt/exchange
-and shared CL spending. T115 adds rehearsed protected preservation/retirement, still dormant. Real private content
-and release tuning/activation remain pinned T109 and T116.
-Historical element alternatives are not active rules. Existing
-[Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
-until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
+and shared CL spending. T115 supplies protected preservation/retirement; T116 adds the backup, release tuning,
+verified original-placeholder publication and capability activation. Permitted PAD portraits remain T109, a later
+cosmetic upgrade, not a launch gate. Historical element alternatives and earlier capability-off evidence are history.
+[Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) carry the active CL loop.
+RPG mechanics are outside this release.
 
 ## Reading guide
 
@@ -25,9 +26,9 @@ until the plan is implemented and safely cut over. Claude's RPG work is outside 
 - [Phone experience and icons](#9-screens-guides-and-visual-identity)
 - [Persistence, content and delivery](#10-implementation-boundaries) · [approval record](#12-owner-review)
 
-Implementation instructions: [M030 delivery sequence](../tasks/M030-uma-puzzles.md) and the
-[technical contract](../technical/uma-puzzles-implementation.md). Implement one task to completion at a time;
-current training remains active until the verified replacement and protected preservation cutover are ready.
+Implementation instructions: [technical contract](../technical/uma-puzzles-implementation.md) and
+[release acceptance](../research/uma-puzzles-release-acceptance.md). Completed M030/T116 specs remain in git history;
+the outstanding permitted-art upgrade is T109.
 
 ## 1. The new loop and fixed brief
 
@@ -75,7 +76,8 @@ make a racing build mandatory for its party.
 - Battles give independent Puzzle EXP. Scenario chapters represent roughly **ten Puzzle levels each**, with regular
   mixed-element squads and mono-element bosses that can be selected for material farming.
 - Target **six Umas' worth of scenario CL tickets per five-Uma party's scenario progression**.
-- Enemy cast/art comes from **Puzzle & Dragons**, privately imported, not from the Uma catalogue or generic monsters.
+- Intended eventual cast/art comes from **Puzzle & Dragons**, privately imported. D289 explicitly approves the
+  verified original-placeholder pack for launch; it is labelled, never claimed to be imported PAD art.
 - Existing earned scenario levels generate a **one-time negative ticket bank**. Later rewards pay matching debt
   before entering spendable inventory. Existing levels are not reset.
 
@@ -629,17 +631,17 @@ at `(r−1+b+i) mod6`; the first two are Strikers. Guardians use Guard/Converter
 `(i+2×sector) mod5` in Fire/Water/Wood/Light/Dark order. Dark ordinary/guardian drops are explicitly **Late**;
 only the one Dark champion node has a pre-entry Pace/Late choice. There is no hidden reward reroll.
 
-Enemy stats use the **fixed invented reference**, not the entering party: base Speed110/Stamina170/Power90/Guts70/Wit90,
+Enemy stats use the **fixed invented release reference** (D290), not the entering party: base Speed110/Stamina100/Power110/Guts110/Wit110,
 10% Speed/Stamina growth, five reference members. At authored level `L`, define
-`A = round(110 +12×(L−1)×1.1)` and `H =5×round(680 +36×(L−1)×1.1)`.
+`A = round(110 +12×(L−1)×1.1)` and `H =5×round(400 +36×(L−1)×1.1)`.
 Enemy HP is `round(A×kindHP×roleHP)`; displayed attack is `round(H×kindDamage×roleDamage)`;
 DEF is `5 +2×(L−1)`. The engine still applies actual party shield/Guard and its incoming25% floor afterward.
 
 | Kind | HP / A | Attack / H | Opening countdown | Attack countdown |
 |---|---|---|---|---|
-| Ordinary | 5.5 | 0.29 | 2 | 2 |
-| Guardian | 28 | 0.58 | 1 | 2 |
-| Champion | 42 | 0.54 | 2 | 2 |
+| Ordinary | 6 | 0.30 | 1 | 2 |
+| Guardian | 32 | 0.66 | 1 | 2 |
+| Champion | 48 | 0.58 | 2 | 2 |
 
 | Role | HP multiplier | Attack multiplier | Support recipe |
 |---|---|---|---|
@@ -1031,8 +1033,9 @@ validation, immutable packs/catalogs, transparent atlases and exact-hash authent
 in `domain.test.ts`:512 members,64 retained packs,32 pages,256 px frames/2 px gutters,2048 px pages,2 MiB JSON/8 MiB images,
 16,777,216 input pixels,10-second timeout/two bounded attempts, four cached pack lookups/eight idle pages. These are work/
 presentation bounds, not combat or progression changes. The owner asked to pin real permitted-source collection and use
-temporary original SVG placeholders while other tasks proceed. Placeholders are labelled and DEV-only; they do not prove
-real PAD provenance or satisfy the production gate. T109 stays open for the final real input/art/validation pass before T116.
+temporary original SVG placeholders while other tasks proceeded. D289 subsequently authorizes their **verified production
+pack**, explicitly labelled original placeholders; it proves its own provenance, not PAD provenance. T109 remains
+open solely for the later permitted-source art upgrade, not a T116 prerequisite.
 
 The requested [Monster Book 001–020](https://pad.fandom.com/wiki/Monster_Book001-020) is the initial research index.
 Direct access was **blocked by robots.txt in this environment**; search indexing alone is not verified image provenance.
@@ -1050,9 +1053,9 @@ WebP, separately hashed monster atlas, immutable cast pack, authenticated runtim
 for open battles. No browser hotlink or request to Fandom during gameplay. The pure engine never depends on portrait
 dimensions or remote names. Keep Uma/PriConne/PAD art families independent when importing or publishing.
 
-A missing/unverified pack shows **Uma Puzzles content unavailable** with a retry/diagnostic; no fake monsters or silently
-reused Uma rivals in production. A synthetic DEV proof is useful but cannot satisfy the private-content launch gate.
-Prepare the complete real opening chapter/cast and all required atlas objects before advertising playable Home entry.
+A missing/unverified pack shows **Uma Puzzles content unavailable** with a retry/diagnostic; no runtime-invented cast
+or silently reused Uma rivals. D289's explicitly original-placeholder pack may satisfy readiness only through the
+same immutable coverage/hash/atlas gates. A DEV proof alone is not publication or authenticated content acceptance.
 Publication and deployment must be verified independently; a green app build alone is not a playable release.
 
 ## 11. Balance, delivery and documentation work
@@ -1096,7 +1099,53 @@ coverage, debt-first earnings and exchanges. Check start/end PL, rewards per min
 13-edge exchange effect. A result that only gets the total 54 right but cannot practically train the roster is not
 closed balance. Pin approved constants in the design, domain pinning test, sim envelope and a **new** decision.
 
-### T108 campaign and economy evidence (D271)
+### T116 release scaling and small-sample closure (D290)
+
+The original reference's Stamina170 was above the catalogue's aggregate middle. Release uses a rounded
+**invented**110/100/110/110/110 reference and the same release-sim base stats, preserving10% growth. Only aggregates
+informed that choice; no real rows become fixtures. Coefficients in §6 and the domain pin change together; engine v1,
+T107's288-fixture math/hash output, rewards and54/132 budgets stay unchanged. Ordinary opening1 gives a visible early
+attack, not preemptive damage. HP6A/32A/48A and damage0.30H/0.66H/0.58H are pinned; support/rage rules are unchanged.
+
+`sim:puzzles` pins640 campaign battles: the original600 strategy/colour/level probes plus40 mixed champions whose
+**routing policy declines active skills**. Every action hash replays. Reports separate median ending and minimum HP,
+including losses: Hearts may restore finishing HP without making pressure decorative. Settled sample envelopes are
+stratified, not real-player success promises: mixed ordinary87.5–100%, guardian87.5–100%, champion75–87.5%;
+ordinary3–4.5 drags, champion7–8.5. Ending HP alone is **not** a20–70% gate after healing.
+
+| Kind / colours | Clears | Median drags | End HP | Lowest HP |
+|---|---|---|---|---|
+| ordinary · light/fire/water | 7/8 | 3.5 | 57.6% | 22.4% |
+| ordinary · dark/fire/wood | 8/8 | 3 | 94.1% | 19.4% |
+| ordinary · light/water/wood | 8/8 | 4.5 | 89.9% | 42.5% |
+| ordinary · dark/fire/water | 8/8 | 3.5 | 95.1% | 18.9% |
+| ordinary · light/fire/wood | 8/8 | 4 | 89.9% | 51.4% |
+| ordinary · dark/water/wood | 8/8 | 3 | 95.3% | 52.3% |
+| guardian · fire | 7/8 | 6.5 | 48.9% | 17.6% |
+| guardian · water | 7/8 | 6.5 | 38.8% | 14.1% |
+| guardian · wood | 8/8 | 5 | 86.9% | 41.8% |
+| guardian · light | 8/8 | 5 | 62.7% | 27.4% |
+| guardian · dark | 8/8 | 6 | 56.2% | 21.2% |
+| champion · fire | 6/8 | 8 | 79.3% | 20.7% |
+| champion · water | 7/8 | 8.5 | 66.7% | 15.0% |
+| champion · wood | 7/8 | 8 | 78.0% | 20.7% |
+| champion · light | 6/8 | 7 | 71.5% | 17.6% |
+| champion · dark | 6/8 | 7.5 | 43.4% | 15.0% |
+
+Neutral ordinary75–87.5%, guardians62.5–100%, champions62.5–87.5% show no compulsory weakness colour. Counters are
+not guaranteed superior to every mixed party: the fixed mono-Fire bot vs Wood champion clears3/8, and the first
+mixed-trio counter clears4/8. These **visible composition-policy outliers** remain owner-feedback follow-ups,
+not hidden pooled wins or a change to mathematical1.5× advantage. No-active champions clear1/8 **each** colour
+versus6–7/8 with skills; boss skills/healing matter. Ordinary active use can be zero if a fight ends before charge,
+intentionally. Mixed minimum HP is18.9–52.3% ordinary,14.1–41.8% guardian and15.0–20.7% champion.
+
+Four-seed Fire champion probes atPL50/140 on-level clear4/4 in ten drags: ending90.3/87.6% but minimum12.1/11.1%
+follows actual recovery. PL−3/+3, novices, counter/neutral rows and Hearts/active counts remain pinned. Economy
+retains86,016 route vectors, two-chapter PL progression, six-recipient allocation, debt/exchanges and explicit
+same-style boss repeats. This is modest release closure with named limitations, not exhaustive phone-skill balance.
+Future numerical edits require matching design/domain/sim/new-decision updates.
+
+### Historical T108 campaign and economy evidence (D271)
 
 `pnpm sim:puzzles` preserves T107's288 engine-fixture battles and adds **600** campaign battles plus exact economy
 projections. Use `--combat` / `--economy` to run only that part. Campaign seeds are `campaign-1`…`campaign-8`;
@@ -1132,7 +1181,7 @@ guardians still clear100% with24.5–56.4% HP; neutral champions clear62.5–75%
 clears87.5–100%, guardian100%, champion50–87.5%; mono counter Wood's50% clear and Dark's14.4% HP are visible outliers,
 not evidence that advantage always makes the current bot optimal. Mixed novices clear0% ordinary/champion and0–50%
 guardian; PL−3 champion probes clear25–50%, PL+3 clear75–100%. Four-seed mixed Fire-champion probes atPL50 and140
-clear100%: median9.5 drags,72.4/75.9% HP on-level. Higher-band finite-kit scaling remains a T116 gap.
+clear100%: median9.5 drags,72.4/75.9% HP on-level. This historical T108 scaling gap is superseded by D290's release probes above.
 The sample records Heart matches, active uses and exact per-kind/colour/PL rows in
 `scripts/sim/puzzles-campaign-envelope.ts`; every intermediate hash in all 600 battles replays identically. A small pressure pass
 settled the above coefficients; no T107 engine formula, bot search or historical hash pin was bent to hit a target.
@@ -1164,10 +1213,11 @@ missing higher Opening clear rejects each edge. One tier14 ticket still projects
 so the exchange-gate/debt economy and actual time-to-CL need real release validation, not an assertion of closure.
 No headless row is described as phone rewards/minute. Skill catalogue remains the finite PL1/5/10 T107 kit.
 
-### Specified delivery sequence — M030 / T106–T116
+### Completed delivery sequence — M030 / T106–T116
 
-The owner's gameplay choices are resolved. [M030](../tasks/M030-uma-puzzles.md) now contains eleven detailed individual
-task specs with dependencies, contracts, synthetic tests, acceptance and safe landing boundaries. The original six
+The owner's gameplay choices are resolved. M030's eleven sequential tasks delivered dependencies, contracts,
+synthetic tests and safe landing boundaries. Its completed specs remain in git history. T109's later permitted-art
+upgrade remains deferred; D289–D290 close the production release with verified original placeholders. The original six
 delivery units map to the numbered sequence below; no task or milestone number is reused.
 
 | Unit | Deliverable and completion boundary |

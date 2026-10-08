@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { syntheticPuzzleSource } from '@racer/domain/puzzles-content-fixtures'
 import { parsePuzzleAtlas, puzzleWebpMetadata, type ContentManifest } from '@racer/domain'
 import { importPuzzleAtlas, verifyPuzzleSources } from './puzzles'
+import { exportPuzzlePlaceholders } from './puzzle-placeholders'
 const dirs: string[] = []
 afterEach(async () => { for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true }) })
 const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex')
@@ -26,6 +27,19 @@ async function fixture(count = 5) {
 }
 // Native multi-page codecs and full chapter checks are bounded integration work, not a five-second unit test.
 describe('private Puzzle atlas import', { timeout: 30_000 }, () => {
+  it('exports original labelled rank/element stand-ins through the same offline, alpha-safe immutable importer', async () => {
+    const f = await fixture(), exported = await exportPuzzlePlaceholders(f.contentDir)
+    expect(exported.members).toBe(15)
+    const raw = JSON.parse(await readFile(exported.input, 'utf8')) as unknown, evidence = JSON.parse(await readFile(exported.evidence, 'utf8')) as unknown
+    const source = verifyPuzzleSources(raw, evidence)
+    expect(source.members.every(m => m.source.access === 'original-placeholder' && m.name.includes('placeholder'))).toBe(true)
+    const report = await importPuzzleAtlas({ ...f, raw, evidence, offline: true, fetcher: async () => { throw new Error('No network allowed') } })
+    expect(report).toMatchObject({ members: 15, frames: 15, pages: 1 })
+    expect(await exportPuzzlePlaceholders(f.contentDir)).toEqual(exported)
+    expect(await importPuzzleAtlas({ ...f, raw, evidence, offline: true })).toMatchObject({ atlasHash: report.atlasHash, cacheHits: 15 })
+    await writeFile(resolve(f.contentDir, source.members[0]!.art.location), 'tampered')
+    await expect(exportPuzzlePlaceholders(f.contentDir)).rejects.toThrow(/Immutable/)
+  })
   it('normalizes grayscale-alpha originals to RGBA before transparency checks and composition', async () => {
     const f = await fixture(), image = await sharp(f.png).toColourspace('b-w').png().toBuffer()
     expect((await sharp(image).metadata()).channels).toBe(2)

@@ -11,6 +11,8 @@ import { Button } from '../ui/Button'
 import { grantDevResources, hastenFarmCrops } from '../game/actions'
 import { Panel } from '../ui/Panel'
 import { readFarmSaveSummary, type FarmSaveSummary } from '../game/farm/diagnostics'
+import { PUZZLES_RELEASE_ENABLED } from '../game/puzzles/capability'
+import { PuzzleBackupButton } from '../ui/puzzles/PuzzleBackupButton'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -156,6 +158,7 @@ export function SettingsScreen() {
         <Row label="Reduced motion" value={reduced ? 'On' : 'Off'} />
       </Panel>
       {gameStatus === 'ready' && <Link to="/trainer" className="flex min-h-11 items-center justify-center rounded-sm bg-panel px-4 font-semibold text-accent-strong shadow-1">Open Trainer profile</Link>}
+      {PUZZLES_RELEASE_ENABLED && persistent && <Panel><PuzzleBackupButton light /></Panel>}
       {auth.authRequired && (
         <Button variant="secondary" onClick={() => (auth.user ? auth.signOut() : auth.signIn())}>
           {auth.user ? 'Sign out' : 'Sign in with Google'}

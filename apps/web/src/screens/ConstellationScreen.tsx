@@ -385,7 +385,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
       {confirmation && <RpgModalFocus onClose={() => setConfirmation(null)}><BottomSheet open onClose={() => setConfirmation(null)}><div className="space-y-3 pb-safe">
         <InspirationTokenIcon kind={confirmation.goldIndex === null ? 'slot' : 'skill'} size={56} />
         <h2 className="font-display text-xl">Unlock {confirmation.name}?</h2><p>{uma.template.name} · {scenarioForTier(run.tier)?.name}</p>
-        <p className="text-sm text-ink-soft">Consumes 1 {inspirationTokenName(run.tier, confirmation.goldIndex === null ? 'slot' : 'skill')}. This position stays open when its ancestor changes. No Training Level required.</p>
+        <p className="text-sm text-ink-soft">Consumes 1 {inspirationTokenName(run.tier, confirmation.goldIndex === null ? 'slot' : 'skill')}. This position stays open when its ancestor changes. No {clCutover ? 'Constellation' : 'Training'} Level required.</p>
         <button type="button" disabled={busy || !persistent} onClick={() => void unlock()} className="min-h-11 w-full rounded-sm bg-accent px-3 font-semibold">Confirm · 1 token</button>
       </div></BottomSheet></RpgModalFocus>}
     </>

@@ -34,7 +34,7 @@ describe('frozen campaign encounters and once-account rewards', () => {
       members: entry.cast.members.map(m => ({ ...m, id: `updated-${m.id}` })).reverse() } })
     expect(battleStateHash(createBattle(cosmetic))).toBe(battleStateHash(createBattle(input)))
     // Literal semantic recipe/seed pin. T107's established two journal fixtures remain untouched.
-    expect(battleStateHash(createBattle(input))).toBe('27209b7145e3a389')
+    expect(battleStateHash(createBattle(input))).toBe('dda881dc9f9aff8c') // D290 release coefficient/input pin; T107 engine is unchanged.
   })
   it.each(SCENARIOS.map(s => s.id))('resolves every %s node with fixed recipes and per-kind special bounds', id => {
     const chapter = puzzleChapter(id), bulk = resolvePuzzleChapterEncounters(chapter, syntheticPuzzleCast())

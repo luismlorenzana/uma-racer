@@ -598,7 +598,7 @@ export function UmaProfileScreen() {
             ))}
           </div>
         ) : (
-          <p className="text-[12px] text-ink-soft">Reach Training Level 9 to open the first lineage slot.</p>
+          <p className="text-[12px] text-ink-soft">Open Inspiration to unlock a parent slot with scenario Slot Tokens. No level requirement.</p>
         )}
       </Collapsible>
 

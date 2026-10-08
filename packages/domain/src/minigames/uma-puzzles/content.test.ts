@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assertPuzzleArtJoin, canonicalPuzzleJson, parsePuzzleAtlas, parsePuzzleCastSource, parsePuzzleContentCatalog,
-  parsePuzzleContentPack, puzzleCastForContent, puzzleContentCoverage, puzzleSourceUrl, PUZZLE_CONTENT_LIMITS } from './content'
+  parsePuzzleContentPack, puzzleCastForContent, puzzleContentCoverage, puzzleSourceUrl, puzzleUsesPlaceholderArt, PUZZLE_CONTENT_LIMITS } from './content'
 import { syntheticPuzzleAtlas, syntheticPuzzlePack, syntheticPuzzleSource } from './content.synthetic'
 import { puzzleChapter } from './campaign/chapters'
 import { createPuzzleCheckpoint } from './campaign/progress'
@@ -10,6 +10,16 @@ import { createBattle } from './battle'
 import { battleStateHash } from './replay'
 // Full generated-chapter coverage is deliberately repeated across source/pack variants; keep all joins on slow CI.
 describe('Puzzle private presentation contract', { timeout: 30_000 }, () => {
+  it('explicitly labels original placeholders; never fabricates PAD provenance or mixes cast modes', () => {
+    const s = syntheticPuzzleSource()
+    s.members.forEach(m => { m.name = 'Invented original placeholder'; m.source.access = 'original-placeholder'; m.source.reference = 'repo:scripts/assets/src/puzzle-placeholder-art.ts'; m.art.location = 'originals/invented.png' })
+    expect(puzzleUsesPlaceholderArt(parsePuzzleCastSource(s))).toBe(true)
+    s.members[0]!.name = 'Unlabelled enemy'; expect(() => parsePuzzleCastSource(s)).toThrow(/placeholder must be named/)
+    s.members[0]!.name = 'Named placeholder'; s.members[0]!.source.reference = 'https://example.org/fake-provenance'
+    expect(() => parsePuzzleCastSource(s)).toThrow(/placeholder provenance/)
+    s.members[0]!.source.access = 'owner-export'; expect(() => parsePuzzleCastSource(s)).toThrow(/mixed/)
+    expect(puzzleUsesPlaceholderArt(parsePuzzleContentPack(syntheticPuzzlePack()))).toBe(false)
+  })
   it('keeps semantic replay hash/seed unchanged when pack names/art identities change', () => {
     const chapter = puzzleChapter('ura-finale'), pack = syntheticPuzzlePack(), changed = structuredClone(pack)
     changed.version = 'invented-v2'; changed.members.forEach(m => { m.name = 'Invented new name'; m.art.sourceHash = 'f'.repeat(64) })

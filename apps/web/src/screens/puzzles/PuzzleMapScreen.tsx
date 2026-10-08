@@ -82,7 +82,7 @@ export function PuzzleNodePreview({ node, partyId, scenarioId, reached, onClose 
         if (!cancelled) { setLoaded(view); setLease(held) }
       } else {
         held = await acquire()
-        if (!isolated && !held.presentation) throw new Error('A verified presentation pack is required. No placeholder production preview is available.')
+        if (!isolated && !held.presentation) throw new Error('A verified presentation pack is required. Missing art cannot launch a fight.')
         if (!cancelled) setLease(held)
       }
       if (cancelled) held?.release()
@@ -112,7 +112,7 @@ export function PuzzleNodePreview({ node, partyId, scenarioId, reached, onClose 
     {enemies.map(enemy => <PuzzleCard key={enemy.id}><div className="flex gap-3">{lease && <EnemyPortrait enemy={enemy} lease={lease} isolated={isolated} />}<div className="min-w-0"><h3 className="text-sm">{lease?.presentation?.pack.members.find(m => m.id === enemy.castId)?.name ?? (isolated ? 'Invented training sprite' : enemy.castId)}</h3><div className="mt-1 flex items-center gap-1 text-xs"><PuzzleElementMark element={enemy.element} /><span className="capitalize">{enemy.element}</span></div><p className="mt-1 text-xs text-ink-on-dark-soft">{enemy.recipeId.replace('puzzle:', '').replaceAll('-', ' ')}</p></div></div><EnemyDetails enemy={enemy} /></PuzzleCard>)}
     <PuzzleWeaknessLegend />
     <PuzzleCard><h3 className="text-sm">Guaranteed clear drops · current estimate</h3>{requiresChoice ? <p className="mt-2 text-xs">Choose the Dark Champion’s ticket family to view the exact gross, repayment and inventory vector.</p> : rewards.map(r => <div className="mt-2 flex items-center justify-between gap-2 text-xs" key={r.itemId}><PuzzleMaterialMark style={r.style} quantity={r.gross} /><span>Repay {r.repaid} · Inventory +{r.net}</span></div>)}<p className="mt-2 text-[10px] text-ink-on-dark-soft">Estimate uses current negative balances; the committed result applies the canonical balance once. No reward on loss or abandonment.</p></PuzzleCard>
-    {node.localId === 'g1' && <PuzzleCard><p className="text-xs">{puzzleMapStatus(account!, partyId, scenarioId).chapter.tier > 1 ? 'Winning this Opening Guardian unlocks the adjacent exchange edge from the previous scenario into this one. Exchange arrives in T114.' : 'This is the first scenario. Win a higher chapter’s Opening Guardian to unlock its adjacent exchange edge.'}</p></PuzzleCard>}
+    {node.localId === 'g1' && <PuzzleCard><p className="text-xs">{puzzleMapStatus(account!, partyId, scenarioId).chapter.tier > 1 ? 'Winning this Opening Guardian unlocks the adjacent exchange edge from the previous scenario into this one.' : 'This is the first scenario. Win a higher chapter’s Opening Guardian to unlock its adjacent exchange edge.'}</p></PuzzleCard>}
     <PuzzleButton disabled={busy || !lease || Boolean(error || recipeError || recovery || openPuzzleParty(account!, partyId)) || !reached || !summary?.full || requiresChoice} onClick={() => {
       void command(`begin:${partyId}:${node.id}:${variant ?? ''}`, async operationId => {
         const view = await host.begin({ partyId, scenarioId, nodeId: node.id, darkVariant: variant, partyRevision: party!.revision,
@@ -122,6 +122,6 @@ export function PuzzleNodePreview({ node, partyId, scenarioId, reached, onClose 
         else throw new Error(view.message)
       })
     }}>Begin battle</PuzzleButton>
-    <p className="text-xs text-ink-on-dark-soft">Entry is free and freezes this party, board seed, content and reward choice. Production launch remains gated until the release task.</p>
+    <p className="text-xs text-ink-on-dark-soft">Entry is free and freezes this party, board seed, content and reward choice. Placeholder portraits do not change combat or rewards.</p>
   </div></PuzzleModal>
 }
