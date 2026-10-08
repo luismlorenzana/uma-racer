@@ -19,22 +19,30 @@ export function puzzleSyncReadSet(request: SyncRequest): { entities: string[]; l
 }
 function protectedUpserts(existing: Map<string, EntityRecord>, request: SyncRequest): EntityUpsert[] {
   const raw = existing.get('constellationBank/main'), bank = raw && parseConstellationBankSave(raw.data)
-  if (!bank || bank.phase !== 'active') return request.upserts
+  if (raw && (raw.deleted || !bank)) throw new ConflictException('Recovery required: preserve the invalid cutover bank; do not resume old training writes')
+  if (!bank) return request.upserts
   return request.upserts.map(row => {
     if (row.kind !== 'umas' && row.kind !== 'profile' && !(row.kind === 'items' && row.id === 'training:level-up-ticket')) return row
     if (request.puzzleProtocolVersion !== 1) throw new ConflictException('Update required: Training has moved to Constellation Levels. Keep the local save and reload before syncing.')
     if (row.kind === 'items') throw new ConflictException('Recovery required: universal ticket quantities are owned by Puzzle receipts after cutover')
     if (row.kind === 'profile') {
-      if (row.data.trainingExpBank !== 0) throw new ConflictException('Recovery required: retired Training EXP cannot be restored')
+      if (bank.phase === 'active' && bank.cutoverVersion === 2 && row.data.schemaVersion !== 16)
+        throw new ConflictException('Update required: the post-cutover profile uses save schema 16')
+      const bankExp = bank.phase === 'active' ? 0 : existing.get('profile/main')?.data.trainingExpBank
+      if (row.data.trainingExpBank !== bankExp) throw new ConflictException('Recovery required: retired Training EXP cannot be restored or changed during preparation')
       return row
     }
     const before = existing.get(`umas/${row.id}`)
-    if (!Array.isArray(row.data.scenarios) || row.data.schemaVersion !== 15 || row.deleted) throw new ConflictException('Update required: post-cutover Uma save is unavailable')
+    if (!Array.isArray(row.data.scenarios) || ![15, 16].includes(row.data.schemaVersion as number) || row.deleted ||
+      bank.phase === 'active' && bank.cutoverVersion === 2 && row.data.schemaVersion !== 16)
+      throw new ConflictException('Update required: post-cutover Uma save is unavailable; keep the local save and reload')
     const old = before?.data.scenarios as Record<string, unknown>[] | undefined
     const scenarios: Record<string, unknown>[] = (row.data.scenarios as Record<string, unknown>[]).map(s => {
-      if (s.trainingExp !== 0) throw new ConflictException('Recovery required: retired unit Training EXP cannot be restored')
       const previous = old?.find(o => o.tier === s.tier)
-      return { ...s, trainingLevel: previous?.trainingLevel ?? 1, trainingExp: 0 }
+      const exp = bank.phase === 'preparing' ? previous?.trainingExp ?? 0 : 0
+      if (s.trainingExp !== exp || bank.phase === 'preparing' && s.trainingLevel !== (previous?.trainingLevel ?? 1))
+        throw new ConflictException('Recovery required: retired unit Training EXP/level cannot change during preparation')
+      return { ...s, trainingLevel: previous?.trainingLevel ?? 1, trainingExp: exp }
     })
     if (old?.some(s => !scenarios.some(next => next.tier === s.tier))) throw new ConflictException('Recovery required: a racing write cannot remove a Constellation unit')
     return { ...row, data: { ...row.data, scenarios } }
@@ -46,7 +54,9 @@ export function resolveSyncWithPuzzles(uid: string, request: SyncRequest, existi
   puzzleSyncReadSet(request) // Validate before either adapter reads; also defend direct repository callers.
   const entities = new Map(existingEntities), logs = new Map(existingLogs)
   const bank = parseConstellationBankSave(entities.get('constellationBank/main')?.data)
-  if (bank?.phase === 'active' && request.appends.some(a => a.kind === 'itemLedger' && a.data.itemId === 'training:level-up-ticket' &&
+  if (bank && request.appends.some(a => a.kind === 'ledger' && a.id.startsWith('spark-match:') &&
+    !logs.has(`ledger/${a.id}`))) throw new ConflictException('Update required: Spark reservations/refunds must use the protected retirement path')
+  if (bank && request.appends.some(a => a.kind === 'itemLedger' && a.data.itemId === 'training:level-up-ticket' &&
     !logs.has(`itemLedger/${a.id}`))) throw new ConflictException('Update required: retired Training EXP/ticket movements cannot be appended after cutover')
   const ordinary = resolveUpserts(entities, protectedUpserts(entities, request), now)
   let appended = 0

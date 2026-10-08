@@ -161,7 +161,7 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} atom
 
 describe('standalone API packaging and parser parity', () => {
   it('checks the generated narrow adapter byte-for-byte; the production build runs only API files', () => {
-    expect(execFileSync(process.execPath, ['scripts/sync-puzzle-adapter.mjs', '--check'], { cwd: process.cwd(), encoding: 'utf8' })).toMatch(/verified: 24/)
+    expect(execFileSync(process.execPath, ['scripts/sync-puzzle-adapter.mjs', '--check'], { cwd: process.cwd(), encoding: 'utf8' })).toMatch(/verified: 70/)
   })
   it('agrees with domain on every synthetic entity/log and malformed operations', async () => {
     const pure: { parsePuzzleOperation: typeof parsePuzzleOperation; parsePuzzleEntity: typeof parsePuzzleEntity; parsePuzzleOperationReceipt: typeof parsePuzzleOperationReceipt } = await import(`${sourcePath}/operations.ts`)

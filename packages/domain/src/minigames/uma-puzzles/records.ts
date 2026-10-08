@@ -14,8 +14,9 @@ import { parsePuzzleCheckpoint, parsePuzzleClearFact, puzzleChapterStatus } from
 import { puzzleEncounterRewards } from './campaign/encounters'
 import type { PuzzleCheckpointV1, PuzzleClearFact, PuzzleDarkVariant } from './campaign/types'
 import { puzzleArray, puzzleExact, puzzleId, puzzleInteger, puzzleRecord } from './validation'
+import { parsePuzzlePreservationRecord, preservationPageId } from './preservation-records'
 
-export const PUZZLE_ENTITY_KINDS = ['puzzleOutfits', 'puzzlePresets', 'puzzleCheckpoints', 'constellationBank', 'puzzleCohort'] as const
+export const PUZZLE_ENTITY_KINDS = ['puzzleOutfits', 'puzzlePresets', 'puzzleCheckpoints', 'constellationBank', 'puzzleCohort', 'puzzlePreservation'] as const
 export const PUZZLE_LOG_KINDS = ['puzzleResults', 'puzzleOperations'] as const
 export const PUZZLE_PARTY_IDS = ['puzzle-party-1', 'puzzle-party-2', 'puzzle-party-3', 'puzzle-party-4', 'puzzle-party-5'] as const
 export type PuzzleEntityKind = typeof PUZZLE_ENTITY_KINDS[number]
@@ -28,7 +29,7 @@ export interface PuzzleOpenEncounterV1 { schemaVersion: 1; deviceId: string; own
 export interface PuzzleCheckpointSaveV1 { schemaVersion: 1; checkpointId: string; scenarioId: string; progress: PuzzleCheckpointV1;
   reached: string[]; open: PuzzleOpenEncounterV1 | null; revision: number }
 /** Bounded account header; cohort rows are separate docs, never a roster-sized Firestore record. */
-export interface ConstellationBankSaveV1 { schemaVersion: 1; cutoverVersion: 1; cutoverId: string; phase: 'preparing' | 'active';
+export interface ConstellationBankSaveV1 { schemaVersion: 1 | 2; cutoverVersion: 1 | 2; cutoverId: string; phase: 'preparing' | 'active';
   cohortCount: number; completedCount: number; debitLimits: Record<string, number>; balances: Record<string, number>;
   openingClears: string[]; revision: number }
 export interface PuzzleCohortSaveV1 { schemaVersion: 1; cutoverId: string; outfitId: string; scenarioId: string; legacyLevel: number;
@@ -113,9 +114,9 @@ export function parsePuzzleCheckpointSave(v: unknown): PuzzleCheckpointSaveV1 | 
 }
 export function parseConstellationBankSave(v: unknown): ConstellationBankSaveV1 | null {
   if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'cutoverVersion', 'cutoverId', 'phase', 'cohortCount', 'completedCount', 'debitLimits', 'balances', 'openingClears', 'revision']) ||
-    v.schemaVersion !== 1 || v.cutoverVersion !== 1 || !puzzleId(v.cutoverId) || !['preparing', 'active'].includes(v.phase as string) ||
+    ![1, 2].includes(v.schemaVersion as number) || v.cutoverVersion !== v.schemaVersion || !puzzleId(v.cutoverId) || !['preparing', 'active'].includes(v.phase as string) ||
     !puzzleInteger(v.cohortCount) || !puzzleInteger(v.completedCount, 0, v.cohortCount) || !puzzleInteger(v.revision) ||
-    v.phase === 'active' && v.completedCount !== v.cohortCount || v.phase === 'preparing' && v.completedCount === v.cohortCount ||
+    v.phase === 'active' && v.completedCount !== v.cohortCount || v.schemaVersion === 1 && v.phase === 'preparing' && v.completedCount === v.cohortCount ||
     !puzzleRecord(v.debitLimits) || !puzzleRecord(v.balances) || Object.keys(v.balances).length > SCENARIOS.length * 4 ||
     !puzzleExact(v.balances, Object.keys(v.debitLimits)) || !puzzleArray(v.openingClears, SCENARIOS.length) ||
     new Set(v.openingClears).size !== v.openingClears.length || !v.openingClears.every(scenario)) return null
@@ -164,13 +165,15 @@ function parseResult(v: unknown): PuzzleResultSaveV1 | null {
 export function parsePuzzleEntity(kind: string, v: unknown): Record<string, unknown> | null {
   const result = kind === 'puzzleOutfits' ? parsePuzzleOutfitSave(v) : kind === 'puzzlePresets' ? parsePuzzlePresetSave(v) :
     kind === 'puzzleCheckpoints' ? parsePuzzleCheckpointSave(v) : kind === 'constellationBank' ? parseConstellationBankSave(v) :
-    kind === 'puzzleCohort' ? parsePuzzleCohortSave(v) : null
+    kind === 'puzzleCohort' ? parsePuzzleCohortSave(v) : kind === 'puzzlePreservation' ? parsePuzzlePreservationRecord(v) : null
   return result ? puzzleData(result) : null
 }
 export function puzzleEntityIdMatches(kind: string, id: string, data: Record<string, unknown>): boolean {
   return kind === 'puzzleOutfits' ? data.outfitId === id : kind === 'puzzlePresets' ? data.partyId === id :
     kind === 'puzzleCheckpoints' ? data.checkpointId === id : kind === 'constellationBank' ? id === 'main' :
-    kind === 'puzzleCohort' ? id === puzzleCohortId(String(data.outfitId), String(data.scenarioId)) : false
+    kind === 'puzzleCohort' ? id === puzzleCohortId(String(data.outfitId), String(data.scenarioId)) :
+    kind === 'puzzlePreservation' ? id === (data.type === 'header' ? 'main' : data.type === 'spark' ?
+      `spark:${puzzlePayloadHash(data.runId)}` : preservationPageId(data.index as number)) : false
 }
 export type PuzzleReadiness = 'disabled' | 'preparing' | 'active'
 export function puzzleReadiness(enabled: boolean, bank: ConstellationBankSaveV1 | null): PuzzleReadiness {

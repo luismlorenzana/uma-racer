@@ -2,6 +2,7 @@ import { createReadStream } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { extname, resolve, sep } from 'node:path'
 import type { Readable } from 'node:stream'
+import { createHash } from 'node:crypto'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Storage } from '@google-cloud/storage'
@@ -86,5 +87,27 @@ export class ContentService {
     } catch {
       throw new NotFoundException('not found')
     }
+  }
+
+  /** Bounded immutable read for preparation. Diagnostics never include private content. */
+  async readVerifiedBytes(file: { path: string; bytes: number; sha256: string }): Promise<Buffer> {
+    if (!Number.isSafeInteger(file.bytes) || file.bytes < 1 || file.bytes > 8388608 || !/^[a-f0-9]{64}$/.test(file.sha256) ||
+      !file.path.includes(`.${file.sha256.slice(0, 8)}.`)) throw new Error('Content read exceeds verified bounds')
+    const { stream } = await this.open(file.path), chunks: Buffer[] = []; let size = 0
+    try {
+      for await (const part of stream) {
+        const chunk = Buffer.isBuffer(part) ? part : Buffer.from(part)
+        size += chunk.length
+        if (size > file.bytes) throw new Error('Immutable content size mismatch')
+        chunks.push(chunk)
+      }
+    } finally { stream.destroy() }
+    const bytes = Buffer.concat(chunks)
+    if (size !== file.bytes || createHash('sha256').update(bytes).digest('hex') !== file.sha256) throw new Error('Immutable content hash mismatch')
+    return bytes
+  }
+  async readVerifiedJson(file: { path: string; bytes: number; sha256: string }): Promise<unknown> {
+    try { return JSON.parse((await this.readVerifiedBytes(file)).toString('utf8')) as unknown }
+    catch { throw new Error('Required private content failed verification; retry or request a compatible publication') }
   }
 }

@@ -208,7 +208,7 @@ function inspirationSpendError(request: RpgCommandRequest, existing: Map<string,
   const movement = request.appends[0]?.data, source = movement?.source
   if (!movement || movement.reason !== 'inspiration-unlock' || !rpgRecord(source)) return 'Inspiration spend evidence required'
   const row = request.upserts.find(u => u.kind === 'umas'), before = row && existing.get(`umas/${row.id}`)
-  if (!row || !before || before.deleted || source.umaId !== row.id || before.data.schemaVersion !== 15 || row.data.schemaVersion !== 15 ||
+  if (!row || !before || before.deleted || source.umaId !== row.id || ![15, 16].includes(before.data.schemaVersion as number) || row.data.schemaVersion !== before.data.schemaVersion ||
     !itemDeltaValid(request, existing, movement)) return 'Inspiration spend needs current owned Uma and sufficient matching tokens'
   const runs = before.data.scenarios as Record<string, unknown>[]
   const run = runs.find(r => r.tier === source.tier)

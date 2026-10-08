@@ -233,6 +233,12 @@ allowed.
 
 ## Global Item inventory
 
+**D287 preservation remains dormant:** active bank2 accounts retain `training:level-up-ticket` as Legacy Universal
+CL stock; save16's retired EXP bank is zero and no ongoing mint remains. Only the final protected account conversion
+adds pooled unapplied EXP once, bypassing material debt. Nonnegative global Items and separate negative balances
+stay distinct. Farm plots/workers/crops and purchases are untouched. Before T116 enables the flag, today's EXP bank
+below remains live. [Versioned migration/receipt](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+
 T114/D283 extends the **same** global catalogue/view with `constellation` materials: four source-style tickets per
 registered scenario (currently56), ordered by registry then Front/Pace/Late/End. The shared view joins ordinary
 nonnegative Item stacks; owned/all and scenario/style facets do not create a Puzzle-local inventory. Unknown saved

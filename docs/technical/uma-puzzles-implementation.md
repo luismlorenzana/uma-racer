@@ -1,8 +1,8 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T114 foundations/content code/save/sync/real replay host/mobile and material UI implemented (D269–D276, D283); production gameplay/cutover not enabled.**
+**Status: T106–T115 foundations/content code/save/sync/real replay host/mobile/material UI and dormant preservation implemented (D269–D276, D283, D287); production gameplay/cutover not enabled.**
 T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
-pinned at the owner's request. DEV proofs use original labelled placeholders; T115 preservation/retirement is next.
+pinned at the owner's request. DEV proofs use original labelled placeholders; T116 release/acceptance is next.
 No production gameplay/cutover is enabled.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
@@ -362,11 +362,11 @@ RPG and Inspiration keep their established unrelated paths, including D149 ordin
 Both adapters use the same semantic resolver. Firestore reads its complete deduplicated set before writes and
 coalesces final projections; local-file requests serialize and atomic-rename their equivalent result. Production API
 packaging remains standalone CommonJS: `node apps/api/scripts/sync-puzzle-adapter.mjs` mechanically mirrors the narrow
-24-module pure dependency closure into `apps/api/src/save/puzzle-domain/`. A test checks byte-for-byte parity. Edit
+70-module pure dependency closure into `apps/api/src/save/puzzle-domain/` (T115 adds preservation/save and old Spark replay validation). A test checks byte-for-byte parity. Edit
 domain sources, regenerate, never hand-edit the adapter; no Docker, infra, dependency or source-TS runtime import change.
 
-Authenticated `POST /api/puzzles/prepare` parses `{schemaVersion:1,cutoverId,expectedBankRevision}` and currently
-returns `{status:'disabled'}` (future enabled scaffold: not-ready); T115 implements its mutation. Authenticated
+Authenticated `POST /api/puzzles/prepare` now parses T115's version2 request below; the earlier version1 scaffold
+dispatches explicitly to version2 `advance`. The off capability returns `disabled` without database/content I/O. Authenticated
 `POST /api/puzzles/takeover` parses `{schemaVersion:1,checkpointId,battleId,expectedEpoch,deviceId}`. It returns
 `{status:'taken-over',checkpoint}`, `{status:'settled',result}` or `{status:'rejected',reason}`; the pure response parser
 checks requested identity/owner. Taken-over increments epoch and changes only owner device/epoch/input hash, preserving
@@ -585,9 +585,115 @@ that will be converted again. Preserve existing universal stock; conversion is n
 
 Already-terminal/committed Spark results resolve before freeze. Unfinished paid runs close/refund original daily
 Training Tickets once; completed histories remain. No result receives both uncommitted EXP and retirement refund.
-Only after all preservation receipts and bank activation succeed does the client retire Spark entry and activate CL
-material rules. API rejects old progress writes over this cutover; offline old clients get an explicit update/recovery
+Once the cohort freezes, conflicting Spark/EXP/universal writes pause; only after all preservation receipts and bank activation succeed does CL
+material spending become available. API rejects old progress writes over this cutover; offline old clients get an explicit update/recovery
 response on reconnect, not a silently adopted downgrade. New outfits/scenarios never join the frozen debt cohort.
+
+### T115 implemented preservation v2 (D287)
+
+**Dormant, not permission to activate.** Both checked-in release flags stay false. `GameRuntime` lazily calls
+`preparePuzzlesOnce` only behind the flag, after ordinary migrations/sync, RPG commands and Puzzle operations have
+drained. It verifies the replacement pack and art, completes any supported terminal pending local Spark through the
+old replay host, then drains its writes before freezing. The cheap startup store/panel exposes unavailable,
+needs-sync, preparing (including read-only preview), active and recoverable-error; Retry never clears storage.
+Racing/configuration, Farm, RPG, Friendship and global card stars remain independent.
+
+**Explicit storage adaptation:** live/pre-cutover Uma/profile creation remains save15; the protected transaction
+stamps preserved Uma/profile rows **save16**. The existing `trainingLevel` field stores CL1–10; `trainingExp` and
+`trainingExpBank` remain required retired fields and must be exactly zero in16. This is a rejecting version dispatcher,
+not dual-name aliases or an automatic local migration. New owned outfits inherit the profile stamp; future units
+created during preparation are excluded from debt and stamped16 once active. Four distance presets, Inspiration,
+Extra stats, sets, assignments, loadouts, race defaults, racing EXP/history, badges/flair, cards, Farm and RPG are kept.
+Dexie **31** adds only `puzzlePreservation:id`; existing main's RPG29/30 migrations are neither changed nor repeated.
+
+Protected requests are exact `{schemaVersion:2,cutoverId,expectedBankRevision,action:'preview'|'advance'}`.
+Responses contain `status`, nullable `message`, nullable aggregate `summary`, canonical `entities` and `logs`.
+Summary reports units/completed, per-material debt, raw unapplied EXP, original stock, credited universals and stock after.
+Client adoption accepts only preservation-owned rows/logs and merges canonical CL/EXP/schema into concurrent physical
+Uma configuration/racing edits. No client-authored cohort, source grades, EXP total or refund amount is accepted.
+Lost freeze, batch or final replies reconcile preservation-owned fields from a parsed canonical save read, never the
+initial full-snapshot replacement that could erase unrelated local work. Future zero-EXP outfits are stamped16 and
+queued in the same adoption transaction, outside the debt cohort. While a reply is uncertain, legacy training remains
+locked until Retry reconciles the receipt; capability-off play is unchanged.
+
+`constellationBank/main` uses explicit **schema2/cutoverVersion2**; prior schema1 synthetic/protocol records remain
+readable. Version2 can be preparing with all units complete (including an empty cohort): finalization is separate.
+`puzzlePreservation/main` is an immutable-identity schema1 header with catalogue/full replacement hash, frozen
+profile/stock versions and amounts, counts/cursor, transferred EXP and nullable final credit receipt. Immutable
+`page-<index>` rows hold the exact original outfit/scenario/tier, Uma version, CL, partial EXP, preference, original
+source and chosen debt style. Existing `puzzleCohort` rows remain the completed per-unit receipts, including zero debits.
+
+Freeze reads authoritative migrated save15 owned rows. Source-A preference is `racePreferences.strategy`; without
+an eligible preference choose Front/Pace/Late/End's first original A, once per unit, never per preset or per A grade.
+Missing source/scenario, malformed rows and unsafe arithmetic stop without writes. Freeze writes bank/header/pages
+atomically. Batches of **16 units** clear only their unapplied EXP and create CL−1 debt/receipts once; retries with an
+old bank revision return canonical state without advancing. Frozen sources are never reread to choose new debts.
+Every retry verifies the **retained frozen Puzzle content hash**, not a newly active pack; missing retention needs
+content repair. Source catalogue changes do not resnapshot the cohort.
+
+Transport preflight is **4,096 units, 32 units/page, 256KiB/record and 8MiB/freeze**, below Firestore document,
+transaction and write-count limits (at most130 freeze writes). These are refusal-with-recovery transport ceilings,
+not gameplay caps: a larger future account requires a reviewed segmented protocol, never truncation or an invented
+cohort. Firestore reads before writes and retries the same pure reducer; local-file calls serialize and atomic-rename.
+Failure before commit installs none of that step. Partial completion is forward-resumable, not rolled back locally.
+
+Finalization checks all frozen unit EXP was transferred, and account bank/original universal stack still match.
+It adds `floor(rawExp/1250)` plus one iff the final account remainder is positive, **once for the account**, on top
+of untouched old universal stock. Profile bank clearing, item credit, bank activation and final receipt are atomic.
+The stable item movement is `puzzle-preservation:<cutoverId>`, old `exp-bank`/`bank-settle` vocabulary retained for
+historical parsing. No remaining spendable EXP survives; earlier converted overflow evidence is not counted again.
+Receipt retains raw EXP, remainder, whole tickets, compensation0/1, credited count and stock after, even for zero.
+
+**Legacy Spark:** protected `POST /api/puzzles/legacy-spark` parses schema1 `{disposition:'committed'|'unfinished',
+localDay,run}`. `run` contains original canonical id/outfit/tier/attempt, save-derived seed, frozen version1 encounter
+and `spark-rival-v1` action journal. Pure parser/replay distinguishes terminal from unfinished. Paid ledger evidence
+determines the actual original cost (including pre-denomination5/10), never today's price. One protected
+`spark:<hash(runId)>` receipt retains the full proof and compares identities to detect a collision or changed seed.
+An unfinished refund uses existing **`<runId>:refund` / `minigame-refund`** evidence, returns original daily tickets
+even above60 (D177), and atomically closes the device row only after acknowledgement. Valid existing refund evidence
+is adopted without paying again. A committed receipt blocks a refund; a refunded receipt blocks terminal EXP.
+Finished histories, outcomes and journals stay; malformed/unsupported rows need explicit recovery, not deletion.
+
+Old Spark journals are **device-local**. Before enabling/freeze, the owner must reconnect/update every known device
+and resolve terminal pending runs; the server cannot discover an unknown remote journal. An unfinished remote run
+can later retire against its same receipt. A previously unknown terminal journal after freeze is kept with an explicit
+**owner-assisted forward recovery** message, never guessed into EXP or a refund. This limitation is not an automatic
+cross-device completion guarantee. A lost acknowledgement retries its stable identity; reopening local storage or
+adopting a complete authoritative snapshot resumes receipts rather than minting another cohort.
+
+While preparing, the server locks old Spark reservations/EXP/TL and universal stock/ledger writes, but accepts valid
+protocol1 unrelated racing/configuration. Active bank2 requires save16/zero retired EXP on ordinary Uma/profile
+writes; cached old clients get **Update required**, never a schema downgrade. Canonical receipt-owned CL is preserved
+on new racing writes. Updated Spark entry checks bank before mounting the old screen and redirects to Hub with an
+explanation; active Profile/Training/Constellation use CL and the shared material sheet. Historical engine/parser
+dispatch remains lazy for retirement/restoration, and old completed results stay readable. Friendship is not retired.
+
+### Synthetic rehearsal and recovery
+
+Run `pnpm sim:puzzles:preservation`: it creates40 invented units in memory, prints aggregate debt/EXP/stock/refunds,
+interrupts a batch, retries the same revision, finalizes once and restores synthetic pre-freeze/post-final snapshots.
+It never reads owner saves or content. Repository tests repeat backup/restore with a temporary JSON file and strict
+Firestore fake, including failed atomic freeze/batch/refund writes. Startup tests cover local reopening, malformed
+acknowledgements/journals, concurrent racing/configuration and terminal-before-freeze ordering.
+
+For an **owner-run rehearsal**, use only a disposable synthetic account/file or the in-memory command above:
+
+1. With the capability off, retain a synthetic pre-freeze snapshot of **all entities and logs**, not just Uma rows.
+2. Inject verified invented content into the test adapter, preview aggregates, then freeze once; retain the header,
+   pages and cohort receipts with the backup. Interrupt after a batch and retry; original pages must not change.
+3. Finish separately and retain a post-finalization snapshot; verify pooled remainder, stock after and stable ledger id.
+4. Restore the synthetic pre-freeze snapshot **as a whole** in the disposable adapter: preview must match. Restore the
+   post-finalization snapshot: Retry must make zero new credits. The tests automate both paths.
+5. No real-account backup/export/restore, migration or credit is performed by T115. Before T116 activation, arrange an
+   explicit owner-authorized backup through existing save tooling. Never put private rows in git, screenshots or logs.
+
+Recovery: reconnect/drain pending sync; restore missing retained content; Retry a failed/lost step with the same id;
+retain malformed rows for repair. An outdated device must update, retain its journal and reconcile canonical state
+before edits; do not force-upload stale progression. Do not clear IndexedDB. Once debt/credit mutated, reverting the
+frontend is **not a safe rollback**. Use forward recovery from receipts, or an explicitly owner-authorized whole-account
+restore with all devices quiescent through existing tooling. Partial field restore can duplicate credit and is forbidden.
+Browser proofs at390×844/375×667 are [recorded separately](../research/puzzle-preservation-phone-proof.md);
+they do not claim production activation, real private pack acceptance or physical-iPhone sign-off.
 
 ## 9. Content, presentation and activation
 

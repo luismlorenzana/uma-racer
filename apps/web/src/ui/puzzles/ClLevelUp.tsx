@@ -3,6 +3,7 @@ import { liveQuery } from 'dexie'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { db } from '../../game/db'
 import { PUZZLES_RELEASE_ENABLED } from '../../game/puzzles/capability'
+import { usePuzzlePreparation } from '../../game/puzzles/preparation-store'
 const Live = lazy(() => import('./ClLevelUpLive'))
 export function useClCutover() {
   const [active, setActive] = useState(false)
@@ -12,6 +13,10 @@ export function useClCutover() {
     return () => sub.unsubscribe()
   }, [])
   return PUZZLES_RELEASE_ENABLED && active
+}
+export function useClPreparation() {
+  const phase = usePuzzlePreparation(s => s.phase), busy = usePuzzlePreparation(s => s.busy)
+  return PUZZLES_RELEASE_ENABLED && (busy || phase === 'preparing' || phase === 'recoverable-error')
 }
 export function ClLevelUpButton({ outfitId, tier, level }: { outfitId: string; tier: number; level: number }) {
   return PUZZLES_RELEASE_ENABLED ? <Suspense fallback={<span>CL {level}/10</span>}><Live outfitId={outfitId} tier={tier} level={level} /></Suspense> : null

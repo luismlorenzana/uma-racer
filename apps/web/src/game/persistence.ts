@@ -471,7 +471,7 @@ export async function completeStarterSeed(content: LoadedContent, now: number): 
   await db.transaction('rw', db.profile, db.umas, db.cards, db.outbox, async () => {
     const addedUmas: UmaSave[] = []
     const addedCards: CardSave[] = []
-    for (const template of starterUmas) if (!(await db.umas.get(template.id))) addedUmas.push(createUmaSave(template))
+    for (const template of starterUmas) if (!(await db.umas.get(template.id))) addedUmas.push(createUmaSave(template, profile.schemaVersion))
     for (const template of starterCards) if (!(await db.cards.get(template.id))) addedCards.push(createCardSave(template))
     if (addedUmas.length) await db.umas.bulkPut(addedUmas.map((data) => ({ id: data.templateId, data, version: 0 })))
     if (addedCards.length) await db.cards.bulkPut(addedCards.map((data) => ({ id: data.templateId, data, version: 0 })))

@@ -200,6 +200,10 @@ Perfect facts that cannot be reconstructed remain untracked.
 
 ### 7. Training, skills, goals, and lineage
 
+**D287:** after active cutover Fully Trained means the same level10, displayed CL10. Existing Spark/Diligent,
+Trainer, badge and flair facts remain historical; retiring a launch control does not reevaluate them away.
+Preservation does not synthesize Spark runs or unearned completion facts. Global card stars remain D255.
+
 | Definition | Criterion | Tiers |
 |---|---|---|
 | Diligent | Spark Match runs with this Uma (D164, D214) | 6 / 15 / 30 / 60 / 84 |

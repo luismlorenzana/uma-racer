@@ -413,7 +413,7 @@ function resolveOne(ctx: PuzzleResolveContext, operation: PuzzleOperationV1): { 
       const enrolled = parsePuzzleOutfitSave(current('puzzleOutfits', p.outfitId)?.data), source = enrolled?.enrollment.source ?? p.source
       requirePuzzle(source && (!p.source || !enrolled || puzzleCanonical(source) === puzzleCanonical(p.source)), 'invalid', 'A verified original source is required for CL spending')
       const uma = owned(p.outfitId), tier = SCENARIOS.find(s => s.id === p.scenarioId)!.tier
-      requirePuzzle(uma.data.schemaVersion === 15 && puzzleArray(uma.data.scenarios, SCENARIOS.length), 'invalid', 'Update the Uma save before spending')
+      requirePuzzle([15, 16].includes(uma.data.schemaVersion as number) && puzzleArray(uma.data.scenarios, SCENARIOS.length), 'invalid', 'Update the Uma save before spending')
       const units = uma.data.scenarios as Record<string, unknown>[], unit = units.find(s => s.tier === tier)
       requirePuzzle(unit, 'locked', 'Unlock the scenario through racing first')
       const stocks = Object.fromEntries(p.inputs.map(i => { expect('items', i.itemId); return [i.itemId, stock(i.itemId)] }))

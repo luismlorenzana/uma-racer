@@ -6,6 +6,12 @@ six-card set, its own [constellation](constellations.md), its own goals, races a
 
 A scenario sets:
 
+**Dormant D287 adaptation:** after verified cutover, its shared1–10 Training Level is called **CL**, raised by
+materials, with no change to gates, caps, node schedules or independent Inspiration/Extra stats. Earned levels and
+all four distance builds survive. Newly unlocked scenarios start CL1 and are outside the immutable old debt cohort;
+global card stars persist, while era eligibility/scenario buffs still use this scenario. Until T116 activation,
+the Spark rules below remain live. [Preservation contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+
 - A **cap profile**: five per-stat caps, shaped to that scenario's character.
 - A **constellation template**: a shape, a slot count, and the node value that follows from it.
 - A **scenario buff**: the one declared way this scenario bends the rules.

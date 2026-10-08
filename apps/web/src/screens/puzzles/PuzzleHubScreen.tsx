@@ -1,5 +1,5 @@
 // Five saved presets and true resumes, not a per-Uma launch picker (docs/design/uma-puzzles.md §9).
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { puzzleChapter } from '@racer/domain'
 import { foregroundPuzzleScenario, openPuzzleNode, openPuzzleParty, puzzlePartySummary } from '../../game/puzzles/presentation'
 import { PuzzleCard, PuzzleOutfitIcon } from '../../ui/puzzles/components'
@@ -9,8 +9,10 @@ import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
 import { puzzleNodeName } from '../../game/puzzles/presentation'
 import { ConstellationBankPanel } from '../../ui/ConstellationMaterials'
 export function PuzzleHubScreen() {
+  const [params] = useSearchParams()
   const { root, content, memory } = usePuzzles(), account = usePuzzleAccount()
   return <PuzzleFrame title="Puzzle parties"><div className="grid gap-3">
+    {params.get('notice') === 'spark-retired' && <p role="status" className="rounded-md border border-accent/35 p-3 text-sm text-ink-on-dark-soft">Spark has retired. Your earned Constellation Levels and saved builds are preserved. Choose and enroll a party here when you’re ready; no outfit was enrolled automatically.</p>}
     <ConstellationBankPanel bank={account?.bank ?? null} itemsTo={`${root}/items`} />
     <p className="text-xs text-ink-on-dark-soft">Five independent journeys. All five slots must be filled to enter. No required colour or running-style mix.</p>
     {account?.parties.map(party => {

@@ -720,7 +720,8 @@ function parseRaceFacts(value: unknown, fieldSize: number, playerPlacement: numb
 
 function parseProfile(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
-  if (value.schemaVersion === 11 || value.schemaVersion === 12 || value.schemaVersion === 13 || value.schemaVersion === 14 || value.schemaVersion === 15
+  if (value.schemaVersion === 16 && value.trainingExpBank !== 0) return null
+  if (value.schemaVersion === 11 || value.schemaVersion === 12 || value.schemaVersion === 13 || value.schemaVersion === 14 || value.schemaVersion === 15 || value.schemaVersion === 16
     ? !exactKeys(value, PROFILE_V11_FIELDS) || !isNonNegativeInt(value.trainingExpBank)
     : !exactKeys(value, PROFILE_FIELDS) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value.schemaVersion as number)) return null
   if (![value.tickets, value.cardCoupons, value.umaCoupons, value.umaShards].every(isNonNegativeInt)) return null
@@ -948,6 +949,7 @@ function parseScenarioUnit(value: unknown, umaLevel: number, schemaVersion: numb
   if (!isPositiveInt(value.tier) || value.tier > MAX_SCENARIO_TIER || value.tier > Math.ceil(umaLevel / 10)) return false
   if (!isPositiveInt(value.trainingLevel) || value.trainingLevel > MAX_TRAINING_LEVEL) return false
   if (!isNonNegativeInt(value.trainingExp) || typeof value.started !== 'boolean') return false
+  if (schemaVersion === 16 && value.trainingExp !== 0) return false
   if (value.trainingLevel === MAX_TRAINING_LEVEL ? value.trainingExp !== 0 : value.trainingExp >= TRAINING_EXP_PER_LEVEL) return false
   if (!isRecord(value.presets) || !exactKeys(value.presets, DISTANCES)) return false
   for (const distance of DISTANCES) {
@@ -984,9 +986,9 @@ function parseScenarioTraining(value: unknown, umaLevel: number, schemaVersion: 
  */
 function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | null {
   const withPreferences = (value.schemaVersion as number) >= 10
-  const fields = value.schemaVersion === 15 ? [...UMA_V10_FIELDS, 'activePreset'] : withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS
-  if (!exactKeys(value, fields) || ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(value.schemaVersion as number)) return null
-  if (value.schemaVersion === 15 && !DISTANCES.includes(value.activePreset as (typeof DISTANCES)[number])) return null
+  const fields = (value.schemaVersion as number) >= 15 ? [...UMA_V10_FIELDS, 'activePreset'] : withPreferences ? UMA_V10_FIELDS : UMA_V6_FIELDS
+  if (!exactKeys(value, fields) || ![5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(value.schemaVersion as number)) return null
+  if ((value.schemaVersion as number) >= 15 && !DISTANCES.includes(value.activePreset as (typeof DISTANCES)[number])) return null
   if (withPreferences && value.racePreferences !== null &&
     (!isRecord(value.racePreferences) || !exactKeys(value.racePreferences, ['strategy', 'distance', 'surface']) ||
       !['front', 'pace', 'late', 'end'].includes(value.racePreferences.strategy as string) ||
@@ -1018,7 +1020,7 @@ function parseUmaV6(value: Record<string, unknown>): Record<string, unknown> | n
 function parseUma(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null
   if (exactKeys(value, LEGACY_UMA_FIELDS)) return parseUmaBase(value) ? value : null
-  if ([5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(value.schemaVersion as number)) return parseUmaV6(value)
+  if ([5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(value.schemaVersion as number)) return parseUmaV6(value)
   const schemaVersion = value.schemaVersion
   const fields = schemaVersion === 4 ? CURRENT_UMA_FIELDS : UMA_FIELDS
   if (!exactKeys(value, fields) || ![2, 3, 4].includes(schemaVersion as number) || !parseUmaBase(value)) return null
@@ -1396,7 +1398,7 @@ export function resolveUpserts(
       continue
     }
     // Global card progress is permanent. A matched stale device must not lower stars or erase a paid coupon (D255).
-    if (current && !current.deleted && upsert.kind === 'umas' && current.data.schemaVersion === 15 &&
+    if (current && !current.deleted && upsert.kind === 'umas' && [15, 16].includes(current.data.schemaVersion as number) &&
       !preservesInspiration(current.data, upsert.data, upsert.deleted === true)) {
       conflicts.push(current)
       continue

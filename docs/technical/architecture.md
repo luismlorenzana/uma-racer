@@ -151,7 +151,7 @@ This is not an enabled Puzzle release; Spark remains active until M030's protect
 - `commitRun` is idempotent by run id. It reloads the engine-tagged snapshot and journal, replays them in the pure engine,
   and requires a terminal state plus the screen's matching action-count/state-hash claim. Spark derives Training EXP from
   that authoritative result, applies it through `addTrainingExp` and reports actual constellation node ids/labels opened;
-  the screen cannot submit score or EXP. Friendship Training applies a replayed clear only to the named scenario's card
+  the screen cannot submit score or EXP. Friendship Training applies a replayed clear to the owned card's global stars (D255), with the named scenario as frozen play context
   stars, appends the one-time 5★ coupon when earned (a star pays no tickets, D148), and treats a loss
   as a closed paid run. The profile, affected Uma/card, ledger, Trainer reconciliation and outbox work commit atomically
   before Zustand publishes.
@@ -342,7 +342,8 @@ players/{uid}/rpgReceipts/{commandId} append-only grouped-command receipts (spen
 players/{uid}/puzzleOutfits/{outfitId} schema-1 enrollment/source, lifetime PL/EXP, kit and revision (capability off)
 players/{uid}/puzzlePresets/{partyId}  schema-1 five-slot parties, leader and foreground chapter
 players/{uid}/puzzleCheckpoints/{id}  schema-1 derived reached/clear/attempt facts and frozen open encounter
-players/{uid}/constellationBank/main schema-1 protected bounded cutover header, debt and exchange unlock facts
+players/{uid}/constellationBank/main schema-1 legacy / schema-2 protected preservation bank, debt and exchange unlock facts
+players/{uid}/puzzlePreservation/{id} schema-1 immutable frozen pages/header/final conversion and Spark retirement receipts
 players/{uid}/puzzleCohort/{id}       schema-1 protected per-outfit/scenario preservation evidence
 players/{uid}/puzzleResults/{battleId} append-only frozen input/result, five EXP awards and gross/debtPaid/net
 players/{uid}/puzzleOperations/{id}   append-only exact typed operation and canonical atomic receipt
@@ -352,12 +353,15 @@ Firestore cannot store an array directly inside another array, and a race record
 A record whose data holds a nested array is written with its data as JSON text (`dataJson`) and decoded on every read;
 all other records keep `data` as a map (D151).
 
-The profile's save-v14 row retains currencies, the Training EXP bank, local daily-grant date, featured Uma id, one-time
-starter-content marker, creation time, and schema version (v12–v14 are stamps on the profile). Uma save v14 has
+The profile's pre-cutover save-v15 row retains currencies, the Training EXP bank, local daily-grant date, featured Uma id, one-time
+starter-content marker, creation time, and schema version. Uma save v15 has four independent distance presets and
 Uma Level EXP on the flat per-scenario curve (D241) and holds one bounded
 run per unlocked scenario on the linear curve (under 1,250 EXP below TL10, 0 at TL10), assignment unions for cards and
 lineage, explicit scenario Inspiration slot/gold-position unlocks (D250), the unit's Extra stats grid (each stat's bought
-count 0–4 and at most six active nodes, D235), and optional race defaults. The API accepts older shapes during rollout
+count 0–4 and at most six active nodes per preset, D235/D252), and optional race defaults. Protected T115 preservation
+stamps save16 only on cutover, adapting `trainingLevel` to CL and requiring unit/profile retired EXP exactly zero;
+flags remain off. [Full version/recovery contract](uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+Dexie31 only adds `puzzlePreservation`, preserving main's RPG29/30 migrations. The API accepts older shapes during rollout
 but schema conflict resolution never lets an older shape replace a newer one. Badge-state v1 is independently migratable and cannot force a
 progression reset.
 

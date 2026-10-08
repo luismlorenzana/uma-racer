@@ -84,7 +84,12 @@ remain unchanged. T114 adds [global material surfaces](../technical/uma-puzzles-
 (D283): the existing global Item catalogue/view, original star-punched strategy tickets, a separate nonpositive bank,
 adjacent same-style exchanges and one host-backed CL sheet for Profile/Training/Constellation. Confirmation remains
 in a safe-area thumb footer; source-A/mixed universal inputs, actual opened nodes/SP and canonical recovery are visible.
-Neither inventory browsing nor a training deep link creates a bank or enables cutover. T115 is next; flags remain off.
+Neither inventory browsing nor a training deep link creates a bank or enables cutover. T115 now implements
+[dormant preservation v2](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287) (D287):
+authoritative freeze/pages/bounded batches/separate final credit, startup recovery, save16 CL adaptation and legacy
+Spark replay/refund receipts. Both flags remain off; T116 and owner-pinned real content are next. An active bank
+retires only Spark, not Friendship/global stars; historical parsers remain. Unknown remote terminal journals cannot
+be discovered before freeze and need explicit forward recovery if brought back afterward.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
 device-local `minigameRuns` table (`apps/web/src/game/db.ts`):

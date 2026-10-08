@@ -1,13 +1,14 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106–T114 foundations/content code/save/sync/real host/mobile and material UI implemented (D269–D276, D283). Production gameplay not enabled.**
+**Status: approved plan (D267–D268); T106–T115 rules/content code/save/sync/host/mobile/material UI and dormant preservation implemented (D269–D276, D283, D287). Production gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
 not balance closure. T108 pins generated maps, fixed-reference encounter scaling, reward vectors and modest simulation
 evidence below. T110–T111 add capability-off persistence and the real replay host; T112 adds saved setup navigation
 and T113 adds touch battles, saved results and illustrated guide/practice. T114 adds global materials/debt/exchange
-and shared CL spending. Real private content, preservation/retirement and release tuning remain pinned T109 and T115–T116.
+and shared CL spending. T115 adds rehearsed protected preservation/retirement, still dormant. Real private content
+and release tuning/activation remain pinned T109 and T116.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -735,6 +736,14 @@ receipts are success; a reused id with a different payload is an error. No delet
 
 ## 8. Preserving existing progress and the negative ticket bank
 
+**Implemented, dormant (D287):** [preservation v2](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287)
+is the standing storage/recovery contract. Save16 adapts existing level fields to CL, requires zero retired EXP,
+and preserves every build/fact; Dexie31 only adds receipt storage. One authoritative cohort uses32-unit immutable
+pages and16-unit batches, then separately activates/credits. Transport preflight refuses unsafe oversized saves
+without truncation. API/file semantics and synthetic backup/retry proofs match. Another device's unknown pending
+terminal Spark journal cannot be discovered remotely: resolve known devices before freeze; late terminal evidence
+is retained for explicit forward recovery, never EXP plus refund. T116 alone enables flags/content acceptance.
+
 ### One-time cohort, no new free unlocks
 
 This is **not** a second Inspiration advance. Preserve each existing outfit's existing scenarios and exact level;
@@ -1226,13 +1235,13 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-T106–T114 foundations/content code/save/sync/real replay host/mobile and material screens are complete (D269–D276, D283), capability-off.
+T106–T115 foundations/content code/save/sync/real replay host/mobile/material screens and dormant preservation are complete (D269–D276, D283, D287), capability-off.
 [The implemented host](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) owns deterministic
 device journals, atomic reservation/settlement/materials and explicit online recovery. Completion flair follows accepted
 CL rather than a rejectable offline prediction. [Saved setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275)
 uses that port; [mobile battle/results](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276)
 extend it without save or combat changes. [Global materials/CL spending](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283)
-use the same real host and Item stacks. [T115 preservation/retirement](../tasks/T115-puzzle-legacy-cutover.md) is next;
+use the same real host and Item stacks. [T115 preservation/retirement](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287) is implemented;
 [T109 real private content](../tasks/T109-puzzle-private-content.md) remains pinned. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**

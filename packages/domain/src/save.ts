@@ -40,6 +40,7 @@ import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt
 
 import { emptyInspiration, grandfatherInspiration, parseInspiration, type InspirationState } from './inspiration'
 import { PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, parsePuzzleEntity, puzzleEntityIdMatches, parsePuzzleResultSave } from './minigames/uma-puzzles/records'
+import { CONSTELLATION_SAVE_SCHEMA_VERSION } from './minigames/uma-puzzles/preservation-records'
 import { parsePuzzleOperationBatch, parsePuzzleOperationReceipt, parsePuzzleOperationResponses, puzzleOperationReferences, PUZZLE_SYNC_LIMITS, type PuzzleOperationV1, type PuzzleOperationResponse } from './minigames/uma-puzzles/operations'
 
 export const SAVE_SCHEMA_VERSION = 15 as const
@@ -61,7 +62,7 @@ export const SAVE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
 const LOCAL_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 export interface PlayerProfile {
-  schemaVersion: typeof SAVE_SCHEMA_VERSION
+  schemaVersion: typeof SAVE_SCHEMA_VERSION | typeof CONSTELLATION_SAVE_SCHEMA_VERSION
   tickets: number
   cardCoupons: number
   umaCoupons: number
@@ -225,7 +226,7 @@ export interface RacePreferences {
 }
 
 export interface UmaSave {
-  schemaVersion: typeof SAVE_SCHEMA_VERSION
+  schemaVersion: typeof SAVE_SCHEMA_VERSION | typeof CONSTELLATION_SAVE_SCHEMA_VERSION
   templateId: string
   /** Permanent, earned by racing only. Unlocks scenarios; does not feed stats. */
   level: number
@@ -612,10 +613,11 @@ function parseProfileFields(value: Record<string, unknown>): LegacyPlayerProfile
 }
 
 export function parsePlayerProfile(value: unknown): PlayerProfile | null {
-  if (!isObject(value) || !exactKeys(value, PROFILE_KEYS) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
+  if (!isObject(value) || !exactKeys(value, PROFILE_KEYS) || ![SAVE_SCHEMA_VERSION, CONSTELLATION_SAVE_SCHEMA_VERSION].includes(value.schemaVersion as never)) return null
+  if (value.schemaVersion === CONSTELLATION_SAVE_SCHEMA_VERSION && value.trainingExpBank !== 0) return null
   if (!isNonNegativeInt(value.trainingExpBank)) return null
   const fields = parseProfileFields(value)
-  return fields ? { schemaVersion: SAVE_SCHEMA_VERSION, ...fields, trainingExpBank: value.trainingExpBank } : null
+  return fields ? { schemaVersion: value.schemaVersion as PlayerProfile['schemaVersion'], ...fields, trainingExpBank: value.trainingExpBank } : null
 }
 
 export function parseLegacyPlayerProfileV11(value: unknown): LegacyPlayerProfileV11 | null {
@@ -753,7 +755,7 @@ export function migratePlayerProfileV6(value: LegacyPlayerProfileV6): PlayerProf
 
 /** Parse a profile at a storage/network boundary without treating an unknown schema as corrupt data. */
 export function parsePlayerProfileOrThrow(value: unknown): PlayerProfile {
-  if (isObject(value) && 'schemaVersion' in value && value.schemaVersion !== SAVE_SCHEMA_VERSION) {
+  if (isObject(value) && 'schemaVersion' in value && ![SAVE_SCHEMA_VERSION, CONSTELLATION_SAVE_SCHEMA_VERSION].includes(value.schemaVersion as never)) {
     throw new Error(`App update required for save schema ${String(value.schemaVersion)}`)
   }
   const profile = parsePlayerProfile(value)
@@ -1569,10 +1571,12 @@ function parseScenarioUnit(value: unknown, umaLevel: number): ScenarioUnit | nul
 }
 
 export function parseUmaSave(value: unknown): UmaSave | null {
-  if (!isObject(value) || value.schemaVersion !== SAVE_SCHEMA_VERSION) return null
+  if (!isObject(value) || ![SAVE_SCHEMA_VERSION, CONSTELLATION_SAVE_SCHEMA_VERSION].includes(value.schemaVersion as never)) return null
+  if (value.schemaVersion === CONSTELLATION_SAVE_SCHEMA_VERSION && (!Array.isArray(value.scenarios) ||
+    value.scenarios.some(s => !isObject(s) || s.trainingExp !== 0))) return null
   if (!DISTANCE_CATEGORIES.includes(value.activePreset as DistanceCategory)) return null
   const body = parseUmaBody(value, (run, level) => parseScenarioUnit(run, level), expToNextUmaLevel, UMA_V15_KEYS)
-  return body ? { schemaVersion: SAVE_SCHEMA_VERSION, ...body, activePreset: value.activePreset as DistanceCategory } : null
+  return body ? { schemaVersion: value.schemaVersion as UmaSave['schemaVersion'], ...body, activePreset: value.activePreset as DistanceCategory } : null
 }
 
 /** A unit seen through one preset: what every view-reading rule and screen works on (D252). */
@@ -1752,7 +1756,7 @@ export const isPastScenario = (uma: Pick<UmaSave, 'unlockedTier'>, tier: number)
 
 /** Parse a current Uma at a storage/network boundary while distinguishing unsupported nested state. */
 export function parseUmaSaveOrThrow(value: unknown): UmaSave {
-  if (isObject(value) && 'schemaVersion' in value && value.schemaVersion !== SAVE_SCHEMA_VERSION) {
+  if (isObject(value) && 'schemaVersion' in value && ![SAVE_SCHEMA_VERSION, CONSTELLATION_SAVE_SCHEMA_VERSION].includes(value.schemaVersion as never)) {
     throw new Error(`App update required for save schema ${String(value.schemaVersion)}`)
   }
   const uma = parseUmaSave(value)
@@ -1997,13 +2001,13 @@ export function bestBaseDistance(template: Pick<UmaTemplate, 'aptitudes'>): Dist
     DISTANCE_CATEGORIES.indexOf(left) - DISTANCE_CATEGORIES.indexOf(right))[0]!
 }
 
-export function createUmaSave(template: UmaTemplate): UmaSave {
+export function createUmaSave(template: UmaTemplate, schemaVersion: UmaSave['schemaVersion'] = SAVE_SCHEMA_VERSION): UmaSave {
   assertSaveUmaTemplate(template)
   const skillHistory: SkillHistoryEntry[] = template.uniqueSkillId
     ? [{ skillId: template.uniqueSkillId, origin: 'own-unique', sourceId: template.id, tier: 1 }]
     : []
   return {
-    schemaVersion: SAVE_SCHEMA_VERSION,
+    schemaVersion,
     templateId: template.id,
     level: 1,
     exp: 0,
@@ -2068,7 +2072,7 @@ export function createInitialSave(
   const daily = applyDailyGrants(base, today, now)
   return {
     profile: daily.profile,
-    umas: starterUmas.map(createUmaSave),
+    umas: starterUmas.map(template => createUmaSave(template)),
     cards: starterCards.map(createCardSave),
     ledger: [
       {
