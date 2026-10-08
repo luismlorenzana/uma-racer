@@ -1,5 +1,6 @@
 // Read-only lazy preflight; no Home/gameplay activation (docs/technical/puzzle-content.md).
 import { useEffect, useState } from 'react'
+import { puzzleUsesPlaceholderArt } from '@racer/domain'
 import { useNavigate } from 'react-router'
 import { useContent } from '../../content/ContentProvider'
 import { puzzleContentLibrary, puzzleContentDiagnostic, type PuzzlePresentationLease } from '../../content/puzzles'
@@ -25,7 +26,7 @@ export function PuzzleContentScreen() {
   }} />
   return <main className="min-h-dvh bg-stage px-5 pt-safe pb-safe text-ink-on-dark">
     <h1 className="pt-5 text-2xl font-display">Enemy content verified</h1>
-    <p className="py-3 text-sm">Read-only preview. Uma Puzzles gameplay is not enabled yet.</p>
+    <p className="py-3 text-sm">Read-only preview. {puzzleUsesPlaceholderArt(lease.pack) ? 'Placeholder enemy art · original stand-ins, not PAD portraits.' : 'Verified private enemy portraits.'}</p>
     <div className="grid grid-cols-2 gap-3">
       {lease.pack.members.map(member => {
         const frame = lease.atlas.frames.find(f => f.id === member.art.frameId)!, page = lease.atlas.pages[frame.page]!

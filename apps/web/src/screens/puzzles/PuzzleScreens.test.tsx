@@ -6,7 +6,6 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import type { ReactNode } from 'react'
-import { PUZZLES_RELEASE_ENABLED } from '../../game/puzzles/capability'
 import { createPuzzleAccountStore, PuzzleProvider, PuzzleShell, puzzleUiGate, type PuzzleEnvironment } from './PuzzleContext'
 import { createPuzzleUiProofEnvironment } from './PuzzleUiProofScreen'
 import { PuzzleHubScreen } from './PuzzleHubScreen'
@@ -31,8 +30,7 @@ beforeEach(async () => {
 afterEach(async () => { cleanup(); await environment?.database.delete(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 describe('Puzzle guarded screens on the real isolated host', () => {
   it('off deep link needs no providers/host/content, and DEV storage never names the owner DB', () => {
-    expect(PUZZLES_RELEASE_ENABLED).toBe(false)
-    render(<MemoryRouter><LazyMotion features={domAnimation} strict><PuzzleShell /></LazyMotion></MemoryRouter>)
+    render(<MemoryRouter><LazyMotion features={domAnimation} strict><PuzzleShell enabled={false} /></LazyMotion></MemoryRouter>)
     expect(screen.getByText('Uma Puzzles is not released yet')).toBeTruthy(); expect(environment.database.name).toMatch(/^puzzle-proof-/)
     const main = readFileSync('src/main.tsx', 'utf8')
     expect(main).toContain('isolatedPuzzleProof ? app :'); expect(main).toContain('if (!isolatedPuzzleProof) registerAppUpdates()')

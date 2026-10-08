@@ -8,17 +8,16 @@ There is no turn-based training, no facility deal, no energy, and no per-turn RN
 
 ## The shape of the system
 
-**D287, dormant cutover:** active preserved accounts call the same1–10 input **Constellation Level (CL)** and raise it
-with source-A scenario/style materials or preserved universals. Save16 adapts the existing `trainingLevel` storage,
-with retired EXP exactly zero. Before T116 enables the flag, Spark/TL below remains live. Preservation changes no
-node schedule, fixed template base, SP formula, four-preset assignments, global stars, era scaling, Inspiration or
-Extra stats. Only the Constellation view's training-game control retires; all three visualizations remain editable.
-See [preservation](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+**Active Puzzle replacement (D287–D290):** the shared 1–10 level is **Constellation Level (CL)**, raised by
+source-A scenario/style materials or explicitly selected preserved universals. Save16 retains `trainingLevel` as
+CL storage, with retired EXP zero. Earned levels, four-preset choices, global stars, era scaling, node schedules,
+SP, Inspiration and Extra stats are preserved. Profile/Training/Constellation share the CL spend sheet;
+Home is the Puzzle entry. See [release/recovery](../research/uma-puzzles-release-acceptance.md).
 
 ```
 Uma  ─ has ─►  one ScenarioTraining per unlocked scenario
                  │
-                 ├── trainingLevel 1–10        ← earned by Spark Rival Circuit
+                 ├── trainingLevel 1–10        ← raised by explicit scenario/style material spend
                  ├── four distance presets    ← each has cardSetIds[6], assignments, active Extra stats and loadout
                  ├── Inspiration unlocks      ← shared by the four presets
                  └── Extra stats purchased    ← grid nodes bought with Farm crops, shared unlocks
@@ -38,7 +37,7 @@ being derived; changing global stars benefits every configured build without cha
 ## A scenario is a career run
 
 Promotion is not a continuation, it is a **restart at a higher ceiling**. The new scenario opens with its own
-Training Level 1, its own small set of unlocked nodes, its own six-card set, and its own goals, races, and
+Constellation Level 1, its own small set of unlocked nodes, its own six-card set, and its own goals, races, and
 milestones. The Uma is temporarily weaker and rebuilds. This is deliberate and matches the original game,
 where each scenario is a separate career.
 
@@ -63,11 +62,10 @@ Consequences, all of which the save must honour:
 Card nodes form **one tree rooted at a single root node**. The root is always unlocked and always empty; it exists to
 anchor the graph. Parent nodes are **detached from that tree**, and each parent node is linked to exactly **two
 grandparent nodes** of its own. Beside the tree, each scenario has its **[Extra stats](#extra-stats) grid**, bought with
-Farm crops and independent of Training Level (D235).
+Farm crops and independent of Constellation Level (D235).
 
 Presentation splits these across three full-screen views: **Constellation** for card nodes and the root, **Inspiration**
-for the parent/grandparent branch, and **Extra stats** for the grid. Only Constellation offers the Spark training entry
-for now. Inspiration arranges the six lineage planets in a compact, square-ish two-row canvas: parents above and
+for the parent/grandparent branch, and **Extra stats** for the grid. Only Constellation offers the CL level-up control. Inspiration arranges the six lineage planets in a compact, square-ish two-row canvas: parents above and
 grandparents below. Selecting a filled planet leaves it focused and places its natural Unique skill above a parent or
 below a grandparent, with up to two natural gold skills at its left and right. Tapping any skill moon opens its detail
 overlay. A persistent skill bank below the canvas groups the natural Unique and gold skills for all six lineage slots,
@@ -78,7 +76,7 @@ card concentrates its stat and hands you more of its skills.
 
 ## Unlock schedule
 
-| Training Level | Unlocks |
+| Constellation Level | Unlocks |
 |---|---|
 | 1 | the baseline card nodes (see below) |
 | 2–8 | the remaining card nodes, in template order |
@@ -88,15 +86,15 @@ card concentrates its stat and hands you more of its skills.
 Skill Token per natural-gold position (two per slot, twelve total). A grandparent needs its parent's slot open.
 Slots provide inherited unique/whites/aptitudes; gold moons are separate. Old TL9/10 unlocks are grandfathered in
 save v14 / Dexie v23 without payment. See [Lineage](skills-and-inheritance.md#lineage) and
-[RPG rewards](uma-rpg.md#rewards-d263). No Training Level or Extra stats prerequisite applies.
+[RPG rewards](uma-rpg.md#rewards-d263). No Constellation Level or Extra stats prerequisite applies.
 
-With `N` = card nodes, the count unlocked at Training Level `TL ≤ 8` is:
+With `N` = card nodes, the count unlocked at Constellation Level `CL ≤ 8` is:
 
 ```
-unlockedNodes(TL) = ceil(N × TL / 8)
+unlockedNodes(CL) = ceil(N × CL / 8)
 ```
 
-so Training Levels 1–8 open only card nodes, spread evenly (tier 1's 18: 3, 5, 7, 9, 12, 14, 16, 18). Training Level
+so Constellation Levels 1–8 open only card nodes, spread evenly (tier 1's 18: 3, 5, 7, 9, 12, 14, 16, 18). Constellation Level
 has no part in Inspiration or Extra stats. Which specific card nodes open is fixed by the template's
 ordering, which is a breadth-first walk from the root: the tree always grows outward and never strands an unreachable
 node.
@@ -221,8 +219,8 @@ is in:
 
 ```
 spNodeValue(T)  = round(0.60 × spCap(T) / fairShare(T))        400 SP a node at tier 1, 500 at tier 14
-SP              = min( spCap(T), baselineSP(T, TL) + Σ SP nodes × starPct × eraPct )
-baselineSP(T, TL) = 0.40 × spCap(T) × TL / 10                  800 at tier 1, TL10
+SP              = min( spCap(T), baselineSP(T, CL) + Σ SP nodes × starPct × eraPct )
+baselineSP(T, CL) = 0.40 × spCap(T) × CL / 10                  800 at tier 1, CL10
 ```
 
 So training alone earns 40% of the cap, and one max-bonded, current-era Friend or Group card on its fair share
@@ -248,9 +246,8 @@ derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthR
 Every factor is an integer percentage, so the engine accumulates exact integers and divides once. The
 invariance rule is therefore asserted as exact equality in tests, not within a tolerance.
 
-The fixed template base matches the shipped projection and [Training](training.md#stats-are-derived). D269 corrects
-the former `max(base, 50 × TL)` prose; it does not buff or change the engine. [Uma Puzzles](uma-puzzles.md) will rename
-the level input CL, preserving this formula and baseline SP at CL9/10; T106's pure rules do not activate that cutover.
+The fixed template base matches the shipped projection and [Training](training.md#stats-are-derived). D269 corrected
+the former level-scaled base prose; Puzzle activation changes the level's name/source, not this formula or SP at CL9/10.
 
 Caps clamp, never reduce. Because the tree budget is 60% of the cap budget, the clamp only bites on a
 deliberately lopsided build — which is correct: it tells you that stat is full and the points belong elsewhere.
@@ -261,7 +258,7 @@ race performance ([Racing](racing.md)).
 ## Balance targets: the stamina ladder
 
 Decks are chosen for a distance (D134). Measured with `pnpm sim:constellation` in 12-runner G1 fields — a pack burns
-about 40% more HP than a solo run, which is what the original game's own stamina charts assume — at TL10 with a full
+about 40% more HP than a solo run, which is what the original game's own stamina charts assume — at CL10 with a full
 tree of max-bond current-era cards, median base stats and no growth, running pace and late:
 
 Stats start at base (D152), so every rung pays for its stamina, and each adds one source:
@@ -348,7 +345,7 @@ collection load-bearing.)*
 ## Reconfiguration
 
 Every unlocked node is editable at any time, outside a race. Each scenario has four persisted distance presets,
-Sprint, Mile, Medium and Long (D252–D254). Its Training Level, purchased Extra stat nodes and Inspiration unlocks
+Sprint, Mile, Medium and Long (D252–D254). Its Constellation Level, purchased Extra stat nodes and Inspiration unlocks
 are shared; its card set, assignments, active Extra stats and skill loadout belong to each preset. Training edits the
 selected preset, and a race reads the preset of its distance. There is no configuration history within a preset.
 
@@ -366,7 +363,7 @@ progress line brings that page over from the same distance preset one scenario e
 The button hides on the first scenario, when the earlier preset has nothing on that page, and in read-only previews.
 Loading is one synced write, as free and reversible as any other edit.
 
-Reconfiguration never costs tickets and never touches Training Level or card levels. Card and lineage nodes and which
+Reconfiguration never costs tickets and never touches Constellation Level or card levels. Card and lineage nodes and which
 Extra stats are on remain free and reversible. Buying an Extra stat node is the one spend: it consumes its crops
 atomically, for good; a stale screen reloads the grid without spending.
 
@@ -377,7 +374,7 @@ scenario's trained unit, like its card set.
 
 - **Buying.** A stat's nodes are bought in order with that stat's crop for the scenario (Carrot buys URA Finale's Speed):
   the first costs **1**, then **2**, **3** and **4**, so **10** for a full row and **50** for the grid. Crops are
-  consumed for good; nothing is refunded. Training Level plays no part: a TL1 unit can buy the whole grid.
+  consumed for good; nothing is refunded. Constellation Level plays no part: a CL1 unit can buy the whole grid.
 - **Turning on.** Any **six** bought nodes can be on at once, each paying **+40** raw to its stat (60 under URA Finale's
   Foundation), so at most 160 to one stat. Switching is free, any time outside a race, so a unit can lean Stamina for a
   Long race and Speed for a Sprint. A newly bought node turns on at once while a slot is free.
@@ -390,12 +387,10 @@ scenario's trained unit, like its card set.
 
 ## The screen
 
-T114/D283 implements one lazy CL spend sheet, shared with Profile and Training. Only after active cutover does the
-Constellation training CTA become **CL n/10 · Level up**; Inspiration/Extra stats never launch a CL spend of their
-own. The sheet uses the selected racing scenario and the outfit's selected distance preset for stat preview, but
-CL remains shared across all four presets. It names actual newly opened template card nodes and baseline SP at9/10,
-never animates lineage or Extra stats unlocking, and links back with the correct `tier` and `node`. The production
-flag remains off, so the current TL/Spark presentation below remains the shipped screen until T115–T116.
+T114/D283 implements one lazy CL spend sheet shared with Profile and Training. Its **CL n/10 · Level up** control
+uses the selected racing scenario and distance preset for preview; CL is shared across four presets. It names
+actual opened card nodes and baseline SP at9/10, never lineage or Extra stats, and returns to the correct tier/node.
+The former Spark training entry is retired after protected preservation.
 
 The constellation is the one screen that gets the dark **stage** surface, because that is what makes it read
 as a constellation rather than a form. The stage is a lit panel: a soft radial light behind the tree, an inner
@@ -409,7 +404,7 @@ edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143)
   | State | Look |
   |---|---|
   | Locked | A dark recessed socket with a faint lock; lineage sockets name their slot-token requirement |
-  | Opens next | A dashed gold socket naming the Training Level that opens it (`TL3`) |
+  | Opens next | A dashed gold socket naming the Constellation Level that opens it (`CL3`) |
   | Open, empty | A lit frame with a **+**, gold on the tree and silver in lineage |
   | Filled | The card icon or Uma bust, framed and glowing in the card type's or lineage colour |
 

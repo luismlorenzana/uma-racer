@@ -79,8 +79,8 @@ describe('real Puzzle host and journal', () => {
       }, snapshot: async () => snapshot() }
   }
 
-  it('is disabled by default, and preparing blocks reservation/materials without touching other modes', async () => {
-    const disabled = new PersistentPuzzleHost({ ...options, enabled: undefined })
+  it('an explicit off gate and preparing bank block gameplay without touching other modes', async () => {
+    const disabled = new PersistentPuzzleHost({ ...options, enabled: false })
     expect((await disabled.account()).readiness).toBe('disabled')
     await expect(disabled.enroll('invented-0', 'fire', 'disabled')).rejects.toMatchObject({ code: 'disabled' })
     const bank = (await database.constellationBank.get('main'))!
@@ -157,7 +157,7 @@ describe('real Puzzle host and journal', () => {
     await expect(begin('unknown')).rejects.toThrow(/Invalid|Unknown/)
     await expect(begin('o1a', 'bad-variant', 'pace')).rejects.toThrow(/variant/)
     const view = await begin()
-    expect(view.stateHash).toBe('7771941afcb8fc1e') // Literal synthetic replay pin; no engine/math changes in this task.
+    expect(view.stateHash).toBe('e7edcd59971f9921') // D290 release recipe input pin; T107 replay math is unchanged.
     const step = await host.append(view.open.input.battleId, 0, 0, puzzleBotAction(view.state, 'competent'))
     database.close(); await database.open(); host = new PersistentPuzzleHost(options)
     const restored = await host.loadBattle(view.open.input.battleId)

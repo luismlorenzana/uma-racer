@@ -233,11 +233,11 @@ allowed.
 
 ## Global Item inventory
 
-**D287 preservation remains dormant:** active bank2 accounts retain `training:level-up-ticket` as Legacy Universal
+**D287–D290 preservation is enabled:** active bank2 accounts retain `training:level-up-ticket` as Legacy Universal
 CL stock; save16's retired EXP bank is zero and no ongoing mint remains. Only the final protected account conversion
 adds pooled unapplied EXP once, bypassing material debt. Nonnegative global Items and separate negative balances
-stay distinct. Farm plots/workers/crops and purchases are untouched. Before T116 enables the flag, today's EXP bank
-below remains live. [Versioned migration/receipt](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+stay distinct. Farm plots/workers/crops and purchases are untouched.
+[Versioned migration/receipt](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
 
 T114/D283 extends the **same** global catalogue/view with `constellation` materials: four source-style tickets per
 registered scenario (currently56), ordered by registry then Front/Pace/Late/End. The shared view joins ordinary
@@ -245,12 +245,12 @@ nonnegative Item stacks; owned/all and scenario/style facets do not create a Puz
 stacks have safe read-only detail links. After active cutover, Farm Items and the Puzzle Items shortcut reuse the
 same material renderer; stock and the nonpositive Constellation repayment bank are shown separately. Ticket details
 link to the earning chapter, exchange and eligible owned recipients. Preserved universals are labelled **Legacy
-Universal CL Ticket**, distinct from daily Training Tickets and Inspiration tokens. These additions remain gated;
-today's Training EXP bank and produce/Inspiration flows below are unchanged until T115–T116.
+Universal CL Ticket**, distinct from daily Training Tickets and Inspiration tokens. Material operations require an
+active preserved bank; produce/Inspiration keep their own unchanged transactions.
 
-The inventory is an account system, not a field bag. Its first category is `produce`. The second is `training`: one item,
-the **Training Level-Up Ticket** (`training:level-up-ticket`), which the Training EXP bank pays (D212,
-[Training](training.md#the-training-exp-bank-and-level-up-tickets)).
+The inventory is an account system, not a field bag. `produce` contains Farm crops; `training` retains one finite
+**Legacy Universal CL Ticket** (`training:level-up-ticket`). Its former Training EXP mint is historical (D212),
+not active farming/training gameplay. `constellation` contains scenario/style Puzzle materials.
 
 ```ts
 interface InventoryStack {

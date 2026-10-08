@@ -1,13 +1,44 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T115 foundations/content code/save/sync/real replay host/mobile/material UI and dormant preservation implemented (D269–D276, D283, D287); production gameplay/cutover not enabled.**
-T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
-pinned at the owner's request. DEV proofs use original labelled placeholders; T116 release/acceptance is next.
-No production gameplay/cutover is enabled.
+**Status: T116 release enabled with verified original-placeholder content (D289–D290).**
+T106–T115 supply the pure rules, additive saves, real replay host, mobile UI, materials and protected preservation.
+T109's permitted PAD-source/art upgrade remains deferred, not a release gate. The same private content pipeline
+verifies the explicit original-placeholder pack; no synthetic host or missing-art fallback enters production.
+See [release acceptance](../research/uma-puzzles-release-acceptance.md) for publication, build/deployment witnesses
+and the separately pending owner gameplay/iPhone checks.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
-[M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
+M030 assigned T106–T116 (completed specs remain in git history). This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
-and EXP candidates remain subject to the small simulations and AGENTS pinning rule.
+and EXP candidates are settled by the small simulations and AGENTS pinning rule.
+
+### T116 release and backup (D289–D290)
+
+Both checked-in API/web capabilities are **true**. The gate still requires verified compatible content **and**
+an active protected account bank; a query parameter cannot bypass it. Home offers the lazy campaign entry.
+Profile/Training/Constellation use the shared CL sheet after preservation, and old Spark entries redirect with
+an explanation. Off-capability paths remain explicitly tested. Earlier task subsections below record what was
+delivered behind a disabled gate at that time; their off-state evidence is historical, not today's release state.
+
+Before the first protected preparation mutation, `backup.ts` parses the canonical **whole-account** save and
+captures old device-local minigame journals in the existing device-only `puzzleArchives` table, under
+`puzzle-preservation-backup-v1`. Pending writes, identity changes, malformed snapshots and archive failures block
+preparation without a freeze/refund. The capture is immutable across retries and recorded as pre-cutover or
+already-preparing. Settings/Hub/recovery offer a private JSON download; another device does not pretend it owns
+this archive. No automatic import or partial restore exists. Forward receipt recovery is the normal path;
+an owner-authorized whole-account restore requires all devices quiescent. Never clear app data for recovery.
+
+The original source discriminator is `original-placeholder`, referencing the checked-in original SVG generator,
+not an alleged PAD export. All 15 members, alpha frames and 392 chapter joins validate through the unchanged
+publisher/client. Both Dark champion reward variants remain covered. A real verified-content→host integration
+resumes the identical journal offline, commits five EXP awards once, repays debt, reconciles authority,
+and spends an earned material on actual CL nodes without touching another mode or preset.
+
+Release scaling is [D290's table](../design/uma-puzzles.md#t116-release-scaling-and-small-sample-closure-d290):
+ordinary HP6A/damage0.30H/open1, guardian32A/0.66H/open1, champion48A/0.58H/open2.
+The countdown remains2. Replay input hashes change with these recipes (`dda881dc9f9aff8c` encounter,
+`e7edcd59971f9921` initial host fixture); the historical T107 engine hashes/formulas remain unchanged.
+640 campaign probes include no-active bosses and minimum HP, beside the unchanged288 engine battles and86,016
+economic routes. Small counter-policy outliers and owner rewards/minute remain explicit acceptance limits.
 
 ## 1. Module and version boundaries
 
@@ -374,8 +405,8 @@ the exact cast, seed, battle and rewards. Settlement winning that race returns i
 T111 must additionally compare the returned input to its previously frozen descriptor, then archive/start the journal
 only after acknowledgement. No timeout or disappearance silently grants a new board.
 
-Checked-in API and web capabilities remain **false**. No bank creation, training conversion, Home entry or Spark
-retirement occurs here. Synthetic tests inject enabled banks; production cannot enable this through a query/route.
+At T110 delivery API/web capabilities were **false**. No bank creation, training conversion, Home entry or Spark
+retirement occurred in that task. T116's enabled state is above; production cannot enable it through a query/route.
 The real replay host/journal is implemented below (T111); real PAD inputs/private preview still belong to deferred T109.
 
 ## 4. Battle input, action and result contract
@@ -466,7 +497,7 @@ the request rejects local adoption. Foreign/superseded journals are archived and
 
 `proof.ts` exports `createIsolatedPuzzleProof`: an explicitly named separate `puzzle-proof-*` database, invented rows
 and injected readiness/cast, using the **same real host/domain API**. It refuses a nonempty proof store and cannot target
-the account database. Production imports neither it nor invented fixtures. Both release flags remain false; no screen,
+the account database. Production imports neither it nor invented fixtures. At T111 delivery both flags were false; no screen,
 Home entry, live bank preparation, migration, Spark retirement or private publication is performed in T111.
 
 Synthetic IndexedDB tests cover enrollment/locks/transfers, reachable/Dark reservations, exact reload/JSON replay,
@@ -478,7 +509,7 @@ local archive/journal failure followed by same-owner retry. Failure injection
 after each of five outfit writes, checkpoint, stock/bank, result/movement receipt, pending/outbox, journal/archive and
 CL badge boundary proves all-or-none writes and post-durability scheduling. Initial invented host replay hash is
 `7771941afcb8fc1e`; pure engine hashes/math and `sim:puzzles` envelopes are unchanged. No physical-phone or real-account
-gameplay acceptance is claimed; T112–T113 supply mobile navigation/battles, while T114–T116 and pinned T109 real content remain.
+gameplay acceptance was claimed by T111. Later delivery and release evidence are recorded above.
 
 T111 verification: lint/test/build pass (1,342 tests, including70 new real-host tests); `sim:puzzles` retains its288
 engine and600 campaign battles plus86,016 exact economic routes. Spark and Friendship Training simulations also pass.
@@ -570,9 +601,9 @@ local journals follow this same explicit restore-from-turn-zero protocol; do not
 
 ## 8. Cutover is one protected, resumable account operation
 
-Before T116 the gate is off; before bank active no Puzzle reward/exchange/CL spend may settle. Preparation requires
+Before bank active no Puzzle reward/exchange/CL spend may settle. Preparation requires
 current authoritative owned rows and resolved outgoing old Spark progress. Provide a dry-run summary and recoverable
-pre-cutover snapshot via existing owner save tooling, without logging private rows or credentials in PR evidence.
+pre-cutover snapshot through the device-local T116 backup, without logging private rows or credentials in PR evidence.
 
 Freeze once: existing owned outfit/scenario cohort, preserved CL, one eligible debt style per unit, catalogue version,
 all unapplied unit EXP + account bank, existing universal stock, and retirement identities. Debt = CL−1 once per unit;
@@ -591,7 +622,7 @@ response on reconnect, not a silently adopted downgrade. New outfits/scenarios n
 
 ### T115 implemented preservation v2 (D287)
 
-**Dormant, not permission to activate.** Both checked-in release flags stay false. `GameRuntime` lazily calls
+**Delivered dormant in T115; activated by T116 only with verified content and backup.** `GameRuntime` lazily calls
 `preparePuzzlesOnce` only behind the flag, after ordinary migrations/sync, RPG commands and Puzzle operations have
 drained. It verifies the replacement pack and art, completes any supported terminal pending local Spark through the
 old replay host, then drains its writes before freezing. The cheap startup store/panel exposes unavailable,
@@ -686,8 +717,8 @@ For an **owner-run rehearsal**, use only a disposable synthetic account/file or 
 3. Finish separately and retain a post-finalization snapshot; verify pooled remainder, stock after and stable ledger id.
 4. Restore the synthetic pre-freeze snapshot **as a whole** in the disposable adapter: preview must match. Restore the
    post-finalization snapshot: Retry must make zero new credits. The tests automate both paths.
-5. No real-account backup/export/restore, migration or credit is performed by T115. Before T116 activation, arrange an
-   explicit owner-authorized backup through existing save tooling. Never put private rows in git, screenshots or logs.
+5. T115 itself performed no real-account mutation. T116's first updated online sync captures a whole-account backup
+   before protected mutation as described above. Never put private rows in git, screenshots or logs.
 
 Recovery: reconnect/drain pending sync; restore missing retained content; Retry a failed/lost step with the same id;
 retain malformed rows for repair. An outdated device must update, retain its journal and reconcile canonical state
@@ -703,8 +734,8 @@ they do not claim production activation, real private pack acceptance or physica
 all392 node joins, independent alpha-safe256 px atlases, immutable full-hash pack/catalog retention, aggregate validation,
 pre-publication checks and lazy bearer-authenticated `PuzzleContentLibrary.acquire()` leases. Frozen pure cast tokens are
 `puzzles-<full-pack-sha256>`; T111 must store/re-acquire the exact version/hash, not the next active pack. `/puzzles/content`
-is a read-only lazy preflight, not Home/playable entry. The owner deferred real PAD originals and approved labelled DEV
-SVG placeholders so subsequent work can proceed. T109 remains for real inputs/import/private preview; T116 still gates release.
+is a read-only lazy preflight, not Home/playable entry. The owner deferred real PAD originals, then approved a verified
+original-placeholder production release (D289). T109 remains solely for the later permitted-source art upgrade.
 
 Code generates semantic maps/enemy recipes for every scenario. Private PAD packs contain only verified original
 identity/art/source variants and the recipe-to-cast joins. Keep all original rows/art/caches ignored; small invented
@@ -777,7 +808,7 @@ adapter, retains its real local operations/journals across refresh and uses inve
 an in-memory authority for explicit recovery. Reload authority restores pending canonical bases, not optimistic
 projections, before adoption. Its local EXP/materials never touch the owner database/API. The proof is tree-shaken
 from production. [Browser evidence](../research/puzzle-navigation-phone-proof.md) is synthetic, not private-content,
-production gameplay or physical-iPhone acceptance. T109 permitted originals and T114–T116 gates still remain.
+production gameplay or physical-iPhone acceptance. Later release evidence is recorded separately above.
 
 ### T113 implemented mobile battle (D276)
 
@@ -861,13 +892,13 @@ The DEV-only `puzzle-proof-t114-ui-v1` account contains invented stock/debt/CL9 
 synthetic template content to the real host's stat/SP projection. `/dev/puzzles-material-icons` is an original-vector
 proof with no account/content I/O. [Phone evidence](../research/puzzle-material-phone-proof.md) and real isolated-Dexie
 tests cover battle→repayment→Items→exchange→CL, both exchange directions/interception, exact retries, stale economics,
-preserved configuration/frozen inputs and rejected canonical CL. Both flags remain off; no live bank, credit,
+preserved configuration/frozen inputs and rejected canonical CL. At T114 delivery both flags were off; no live bank, credit,
 Training EXP conversion, Home launch, Spark retirement, private pack publication or physical-iPhone sign-off occurs
-here. T115–T116 and owner-pinned T109 real content remain.
+in that task. The later T116 release and deferred art upgrade are recorded above.
 
 ## 10. Standing evidence
 
 For every task update the implementation state here without claiming inactive code is live. Record fixed replay
-hashes, simulator command/envelopes, exact parsers/versions and build sizes when they exist. T116 creates a durable
-release acceptance record with production content/build ids, smoke results, migration summary and pending owner
+hashes, simulator command/envelopes, exact parsers/versions and build sizes when they exist. T116's durable
+[release acceptance record](../research/uma-puzzles-release-acceptance.md) carries content/build witnesses, migration/recovery notes and pending owner
 device checks. The task folder is deleted as tasks merge; these contracts and the design remain the reference.

@@ -1,16 +1,16 @@
 # Scenarios
 
 Every 10 Uma levels unlocks one **scenario tier**, named after the original game's career scenarios and ordered
-by their **JP release date**. A scenario is a **complete career run** (D121): its own Training Level, its own
+by their **JP release date**. A scenario is a **complete career run** (D121): its own Constellation Level, its own
 six-card set, its own [constellation](constellations.md), its own goals, races and milestones.
 
 A scenario sets:
 
-**Dormant D287 adaptation:** after verified cutover, its shared1–10 Training Level is called **CL**, raised by
-materials, with no change to gates, caps, node schedules or independent Inspiration/Extra stats. Earned levels and
-all four distance builds survive. Newly unlocked scenarios start CL1 and are outside the immutable old debt cohort;
-global card stars persist, while era eligibility/scenario buffs still use this scenario. Until T116 activation,
-the Spark rules below remain live. [Preservation contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+**Active Puzzle adaptation (D287–D290):** each scenario's shared 1–10 level is **CL**, raised by
+materials. Earned levels and all four builds survive protected preservation; future units start CL1 outside the old
+debt cohort. Global stars persist; era eligibility and scenario buffs still use this scenario. Racing gates, caps,
+node schedules and independent Inspiration/Extra stats are unchanged.
+[Preservation contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
 
 - A **cap profile**: five per-stat caps, shaped to that scenario's character.
 - A **constellation template**: a shape, a slot count, and the node value that follows from it.
@@ -153,7 +153,7 @@ A scenario at tier `T` may take any owned card with `era ≤ T` into its card se
 Reaching the gate Uma Level (10, 20, 30…) grants **1 Uma Shard** and **unlocks the next scenario**. Unlocking
 costs `5 × fromTier` training tickets (D148) and is explicit: the player chooses when to move on.
 
-On unlocking, the new scenario opens at Training Level 1 with the baseline nodes, an empty six-card set, fresh
+On unlocking, the new scenario opens at Constellation Level 1 with the baseline nodes, an empty six-card set, fresh
 goals, and an empty race record. It **immediately becomes the active scenario**: her career, and where Uma EXP
 comes from (D121). The previous scenario stays a **trained unit** with its constellation, card set, races and
 milestones: it can still race, reconfigure and train in its own context, without Uma EXP

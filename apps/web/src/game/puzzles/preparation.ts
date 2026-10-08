@@ -6,6 +6,7 @@ import { RacerDb, type MinigameRunRow, type VersionedRow } from '../db'
 import { restorePuzzleOwnedFields } from './operations'
 import { PUZZLES_RELEASE_ENABLED } from './capability'
 import { usePuzzlePreparation } from './preparation-store'
+import { retainPuzzleBackup } from './backup'
 export interface PuzzlePreparationPorts {
   prepare: (request: PuzzlePreservationRequest) => Promise<unknown>; retire: (request: LegacySparkRequest) => Promise<unknown>;
   verifyReplacement: () => Promise<void>; commitTerminal: (run: MinigameRunRow) => Promise<void>;
@@ -79,6 +80,7 @@ export async function preparePuzzlesOnce(database: RacerDb, ports: PuzzlePrepara
     await ports.verifyReplacement()
     if (!current()) return false
     const bank = parseConstellationBankSave((await database.constellationBank.get('main'))?.data)
+    if (!bank && !await retainPuzzleBackup(database, ports.snapshot, current)) return false
     const runs = (await database.minigameRuns.toArray()).filter(r => r.kind === 'spark-match')
     // A terminal open run is committed through the old replay host, then its ordinary writes drain BEFORE freeze.
     for (const run of runs.filter(r => r.status === 'open')) {

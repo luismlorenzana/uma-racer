@@ -1,9 +1,24 @@
 # Uma Puzzles private content — standing contract
 
-**Code implemented; real PAD input/art acceptance deferred by the owner (D272).** T109 stays open only for the real
-private cast/evidence/import/preview pass. Temporary original SVG placeholders are explicitly labelled and DEV-only;
-they neither satisfy verified content nor enable rewarded production play. T110–T115 may proceed with invented proofs.
-Return to real content before T116's production gate. Spark, Items, saves, tickets and the cutover capability are unchanged.
+**Production-placeholder release (D289–D290).** The owner approved an original, fully verified placeholder pack
+for T116. T109 remains a later permitted PAD-art upgrade. The source research below records why originals are still
+pending, not a readiness waiver: real host, hashes, coverage and retained leases remain mandatory.
+
+### Original-placeholder release path (D289)
+
+Original SVG code in `scripts/assets/src/puzzle-placeholder-art.ts` exports fifteen labelled members: five elements
+times Scout/Guardian/Champion. Rank armour/crown and an element glyph distinguish silhouettes. No PAD names/art,
+external requests, fake original provenance or combat values are generated. `source.access: 'original-placeholder'`
+uses the exact `repo:scripts/assets/src/puzzle-placeholder-art.ts` reference; every name includes “placeholder”.
+A mixed original/placeholder pack is rejected. Existing public/owner-export formats remain readable unchanged.
+
+`pnpm assets:puzzles:placeholders` writes only ignored `content/originals/` PNGs and separate
+`overrides/puzzles-placeholders.json` / `puzzles-placeholder-evidence.json`. Rerunning verifies immutable bytes;
+it never replaces the owner's future real `puzzles-cast.json`. Pass these paths to the existing offline atlas and
+data import commands, then validate/publish the complete content tree through the standing release runbook.
+All native alpha/decode, exact hash/MIME/size, coverage, retention and lease checks still apply. Placeholder content
+can satisfy readiness, but absent/broken content cannot fall back to a freshly invented cast. Cosmetic replacements
+retain the frozen placeholder pack/art for suspended fights. The UI plainly says “Placeholder enemy art”.
 
 ## Source gate and privacy
 
@@ -15,8 +30,8 @@ are not evidence. On 2026-10-07 the owner asked to pin collection and use tempor
 The remaining input is a permitted export or independently verified source for five elemental starter/evolution families,
 including transparent PNG/WebP art and exact provenance/variant/hash evidence. Guardian/champion presentations should
 use stronger evolution variants. One complete opening chapter plus valid joins across every generated chapter is required;
-reusing families is allowed, claiming fourteen separately imported original rosters is not. No real pack, private art preview
-or publication is claimed. No unrelated private Spark roster is read.
+reusing families is allowed, claiming fourteen separately imported original rosters is not. No permitted PAD-original pack or art preview is claimed. The D289 original-placeholder pack is separate;
+publication evidence lives in [release acceptance](../research/uma-puzzles-release-acceptance.md). No unrelated private Spark roster is read.
 
 All extracted rows, original names, evidence, source files, caches, atlases and packs stay in ignored `content/` or
 `scripts/assets/.cache/puzzles/`. Tests use invented creatures/URLs and generated pixels. No original PAD combat stats,
@@ -33,7 +48,7 @@ skills, scripts or rewards are accepted: T108's code-authored role/element recip
     id: string, name: string, family: string, variant: string,
     elements: ('fire' | 'water' | 'wood' | 'light' | 'dark')[],
     roles: ('striker' | 'healer' | 'guard' | 'converter' | 'ward' | 'champion')[],
-    source: { access: 'public' | 'owner-export', reference: string, revision: string, verifiedAt: string },
+    source: { access: 'public' | 'owner-export' | 'original-placeholder', reference: string, revision: string, verifiedAt: string },
     art: { location: string, sha256: string, mimeType: 'image/png' | 'image/webp', variant: string }
   }]
 }

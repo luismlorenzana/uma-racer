@@ -200,14 +200,16 @@ Perfect facts that cannot be reconstructed remain untracked.
 
 ### 7. Training, skills, goals, and lineage
 
-**D287:** after active cutover Fully Trained means the same level10, displayed CL10. Existing Spark/Diligent,
+**D287–D290:** after active cutover Fully Trained means the same level10, displayed CL10. An accepted CL material
+receipt updates current training-level facts and flair through the existing badge reconciliation; pending/rejected
+spends cannot keep irreversible awards. Puzzle wins do not fabricate Spark/Diligent runs. Existing Spark/Diligent,
 Trainer, badge and flair facts remain historical; retiring a launch control does not reevaluate them away.
 Preservation does not synthesize Spark runs or unearned completion facts. Global card stars remain D255.
 
 | Definition | Criterion | Tiers |
 |---|---|---|
 | Diligent | Spark Match runs with this Uma (D164, D214) | 6 / 15 / 30 / 60 / 84 |
-| [Scenario] Fully Trained | Reached TL10 in that scenario | One-off per scenario |
+| [Scenario] Fully Trained | Reached CL10 in that scenario (formerly TL10) | One-off per scenario |
 | Era Loyalist | Completed a scenario using only cards whose era equals that scenario tier | One-off per scenario |
 | Full House | Filled every card node of one constellation (D164, D235) | Hidden one-off |
 | Skill Collector | Distinct skills ever learned, from skill history | Distinct lifetime skills |
@@ -246,7 +248,7 @@ grade/surface/distance/strategy/venue/family, current/longest streak, best stats
 counters, scenario-completion facts, goal/Honors totals, parent-use counts, and evaluation watermarks. Race history remains
 the source log and flair events remain their own append-only log.
 
-**Training in the minigame era (T056, D164).** The facts that once counted training turns now count what replaced
+**Historical training in the minigame era (T056, D164).** The facts that once counted training turns counted what replaced
 them: an Uma's Spark Match runs per scenario, read from the synced ledger (each run's id is `spark-match:<uma>:<tier>:
 <attempt>`, so the history is exact from the first run), her Training Level 10 in each scenario, and each constellation
 whose card nodes are all filled. A Spark Match run and a committed constellation or Extra stats edit update them in the same

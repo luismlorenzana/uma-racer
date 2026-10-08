@@ -1,2 +1,2 @@
-// Release switch, not environment/infrastructure (docs/tasks/M030-uma-puzzles.md).
-export const PUZZLES_RELEASE_ENABLED = false
+// Verified original-placeholder release, not environment/infrastructure (D289–D290; implementation §T116).
+export const PUZZLES_RELEASE_ENABLED = true

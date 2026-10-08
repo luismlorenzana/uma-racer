@@ -6,6 +6,7 @@ import { preservationFixture, preservationSparkProof } from '@racer/domain/puzzl
 import { RacerDb, type MinigameRunRow } from '../db'
 import { preparePuzzlesOnce, type PuzzlePreparationPorts } from './preparation'
 import { locksLegacyTraining, usePuzzlePreparation } from './preparation-store'
+import { parsePuzzleBackup, PUZZLE_BACKUP_ID } from './backup'
 let sequence = 0
 const row = (terminal = false): MinigameRunRow => {
   const proof = preservationSparkProof(terminal)
@@ -47,6 +48,32 @@ describe('idle preparation coordinator', () => {
     await preparePuzzlesOnce(database, ports, true); expect(usePuzzlePreparation.getState().message).toMatch(/Missing replacement/)
     expect(ports.prepare).not.toHaveBeenCalled(); expect(await database.constellationBank.count()).toBe(0)
   })
+  it('retains all canonical entities/logs and local old journals before any retirement or freeze, once across reload', async () => {
+    const run = row(); await database.minigameRuns.put(run)
+    const retire = ports.retire
+    ports.retire = async request => {
+      const saved = (await database.puzzleArchives.get(PUZZLE_BACKUP_ID))!
+      const backup = parsePuzzleBackup(saved.data)
+      expect(backup.stage).toBe('pre-cutover'); expect(backup.snapshot.entities).toHaveLength(f.entities.size)
+      expect(backup.snapshot.logs).toHaveLength(f.logs.size); expect(backup.minigameRuns).toEqual([run])
+      return retire(request)
+    }
+    await preparePuzzlesOnce(database, ports, true)
+    const before = await database.puzzleArchives.get(PUZZLE_BACKUP_ID)
+    database.close(); await database.open(); await preparePuzzlesOnce(database, ports, true)
+    expect(await database.puzzleArchives.get(PUZZLE_BACKUP_ID)).toEqual(before)
+  })
+  it('failed or racing backup capture blocks all protected changes without erasing the save', async () => {
+    ports.snapshot = vi.fn(async () => { throw new Error('Backup unavailable') })
+    await preparePuzzlesOnce(database, ports, true)
+    expect(usePuzzlePreparation.getState().message).toMatch(/Backup/); expect(ports.prepare).not.toHaveBeenCalled(); expect(ports.retire).not.toHaveBeenCalled()
+    ports.snapshot = async () => {
+      await database.outbox.add({ kind: 'umas', id: 'invented-0', op: 'upsert', queuedAt: 1 })
+      return { serverTime: 10, entities: [...f.entities.values()], logs: [...f.logs.values()] }
+    }
+    await preparePuzzlesOnce(database, ports, true); expect(usePuzzlePreparation.getState().message).toMatch(/New progress/)
+    expect(await database.puzzleArchives.count()).toBe(0); expect(await database.umas.count()).toBe(2)
+  })
   it('adopts a lost freeze acknowledgement on retry without another cohort or credit, including reopen', async () => {
     await preparePuzzlesOnce(database, ports, true); expect(usePuzzlePreparation.getState().preview).toBe(true)
     const real = ports.prepare; ports.prepare = async r => { await real(r); throw new Error('Lost reply') }
@@ -56,6 +83,19 @@ describe('idle preparation coordinator', () => {
     expect(usePuzzlePreparation.getState().phase).toBe('active'); expect(await database.puzzleCohort.count()).toBe(2)
     expect((await database.profile.get('main'))!.data.schemaVersion).toBe(16); expect((await database.items.get('training:level-up-ticket'))!.data.quantity).toBe(4)
     expect(await database.itemLedger.count()).toBe(1); expect(ports.retire).not.toHaveBeenCalled()
+  })
+  it('a failed archive write or wrong-account retained backup blocks cutover and retains recovery evidence', async () => {
+    const write = vi.spyOn(database.puzzleArchives, 'add').mockRejectedValueOnce(new Error('Disk full'))
+    await preparePuzzlesOnce(database, ports, true)
+    expect(ports.prepare).not.toHaveBeenCalled(); expect(ports.retire).not.toHaveBeenCalled()
+    expect(usePuzzlePreparation.getState().message).toMatch(/Disk full/); write.mockRestore()
+    await preparePuzzlesOnce(database, ports, true)
+    const saved = (await database.puzzleArchives.get(PUZZLE_BACKUP_ID))!
+    const profile = (await database.profile.get('main'))!; profile.data.createdAt++
+    await database.profile.put(profile); vi.mocked(ports.prepare).mockClear()
+    await preparePuzzlesOnce(database, ports, true)
+    expect(ports.prepare).not.toHaveBeenCalled(); expect(usePuzzlePreparation.getState().message).toMatch(/identity changed/)
+    expect(await database.puzzleArchives.get(PUZZLE_BACKUP_ID)).toEqual(saved)
   })
   it('preserves concurrent racing/config edits while adopting receipt-owned level/schema', async () => {
     await preparePuzzlesOnce(database, ports, true); await preparePuzzlesOnce(database, ports, true)
@@ -80,7 +120,7 @@ describe('idle preparation coordinator', () => {
     const canonical = parseSaveSnapshotOrThrow({ serverTime: 10, entities: [...f.entities.values()], logs: [...f.logs.values()] }).entities.find(r => r.kind === 'umas' && r.id === 'invented-0')!
     expect(canonical.data).toMatchObject({ scenarios: [{ trainingExp: 0 }] })
     expect((await database.umas.get('invented-0'))!.version).toBeLessThanOrEqual(canonical.version)
-    expect(ports.snapshot).toHaveBeenCalledOnce(); expect((await database.umas.get('invented-0'))!.data.scenarios[0]!.trainingExp).toBe(0)
+    expect(ports.snapshot).toHaveBeenCalledTimes(2); expect((await database.umas.get('invented-0'))!.data.scenarios[0]!.trainingExp).toBe(0)
     expect((await database.umas.get('invented-0'))!.data).toMatchObject({ exp: 72, activePreset: 'long' })
     expect((await database.items.get('invented:unrelated'))!.data.quantity).toBe(7)
     ports.prepare = async r => { await real(r); throw new Error('Lost finalization') }; await preparePuzzlesOnce(database, ports, true)
@@ -91,7 +131,7 @@ describe('idle preparation coordinator', () => {
       await database.umas.put(future); return canonical
     }
     await preparePuzzlesOnce(database, ports, true)
-    expect(usePuzzlePreparation.getState().phase).toBe('active'); expect(snapshot).toHaveBeenCalledTimes(2)
+    expect(usePuzzlePreparation.getState().phase).toBe('active'); expect(snapshot).toHaveBeenCalledTimes(3)
     expect(await database.itemLedger.count()).toBe(1); expect((await database.items.get('training:level-up-ticket'))!.data.quantity).toBe(4)
     expect((await database.umas.get('future-outfit'))!.data.schemaVersion).toBe(16)
     expect(await database.puzzleCohort.count()).toBe(2)

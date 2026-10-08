@@ -63,5 +63,5 @@ the host/context/presentation modules. Production contains no isolated-proof nam
 T113 supplies touch gameplay/results/practice; T114 supplies real Exchange/Items destinations. Both release flags
 remain false, Spark stays live and Home has no Puzzle entry. Permitted PAD originals/evidence are still the owner's
 pinned T109 follow-up. T116 must verify the actual iPhone, private content, balance, migration/recovery and release
-protocol before any live cutover. See [M030](../tasks/M030-uma-puzzles.md) and the
+protocol before any live cutover. M030's specs now remain in git history; see the [release record](uma-puzzles-release-acceptance.md) and the
 [implemented navigation contract](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275).

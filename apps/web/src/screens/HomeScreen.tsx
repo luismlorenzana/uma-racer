@@ -21,6 +21,7 @@ import { SaveErrorState } from '../ui/SaveErrorState'
 import { FlairCards } from '../ui/FlairCards'
 import { FarmHomeCard } from '../ui/farm/FarmHomeCard'
 import { RpgHomeCard } from '../ui/rpg/RpgHomeCard'
+import { PuzzleHomeCard } from '../ui/puzzles/PuzzleHomeCard'
 import { CheckIcon, ChevronRightIcon } from '../ui/icons'
 
 export function HomeScreen() {
@@ -119,7 +120,7 @@ export function HomeScreen() {
             <p className="truncate text-[13px] text-ink-on-dark-soft">{featured.template.outfit ?? 'Standard outfit'}</p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <Crest tone="accent">Lv <Numeral>{featured.save.level}</Numeral></Crest>
-              <Crest className="numeral-on-dark">TL {featured.derived.trainingLevel}</Crest>
+              <Crest className="numeral-on-dark">{profile.schemaVersion === 16 ? 'CL' : 'TL'} {featured.derived.trainingLevel}</Crest>
               {flairSummary && flairSummary.frame.label !== 'Plain' && <Crest>{flairSummary.frame.label}</Crest>}
             </div>
           </div>
@@ -221,6 +222,7 @@ export function HomeScreen() {
       </Panel>
 
       <FarmHomeCard />
+      <PuzzleHomeCard content={contentState.content} />
       <RpgHomeCard content={contentState.content} />
 
       {flairSummary && (

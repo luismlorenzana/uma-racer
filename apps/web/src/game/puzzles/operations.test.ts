@@ -167,7 +167,7 @@ describe('durable Puzzle prediction/reconciliation', () => {
     expect(usePuzzleSync.getState().pending).toBe(0); expect(schedule).not.toHaveBeenCalled(); spy.mockRestore()
   })
   it('never enrolls/writes a live account through the off production capability', async () => {
-    const off = new PuzzleOperationCoordinator(database, 'invented-cutover', schedule)
+    const off = new PuzzleOperationCoordinator(database, 'invented-cutover', schedule, false)
     await expect(off.enqueue(spend, 'disabled')).rejects.toThrow(/disabled/)
     expect(await database.pendingPuzzleOperations.count()).toBe(0); expect(schedule).not.toHaveBeenCalled()
   })

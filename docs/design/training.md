@@ -1,194 +1,132 @@
 # Training
 
-> All numbers are **draft values for tuning**. The goal is readable formulas, not a copy of the original game.
+Training is **persisted and deliberate**, not a turn loop. Free account-wide **Uma Puzzles** battles earn
+scenario/style materials; spend them to raise **Constellation Level (CL)**, then choose what fills the opened
+card nodes. Card and lineage choices are freely reversible; Extra stats are bought once with Farm crops and
+switched on/off freely (D120, D235, D267, D287–D290).
 
-Training is **persisted and deliberate**, not a turn loop. You play a minigame to unlock slots, then you decide
-what fills them. Nothing is rolled and nothing is spent per turn. Card and lineage choices are freely reversible;
-Extra stat nodes are bought once with Farm crops and switched on or off freely (D120, D235).
-
-Card stars are account-wide (D255): each distance preset's set points to the same owned cards, so a card's global
-stars feed all builds. Training Level, node assignments and era scaling remain scenario-specific; four independent
-distance presets remain under D252. Friendship Training chooses a scenario as play context, not a new card star track.
-
-**Implemented replacement, not active (D267–D269, D287):** [Uma Puzzles](uma-puzzles.md) earns scenario/style tickets that
-raise this shared level directly, renamed Constellation Level (CL). T115 supplies dormant protected preservation; the live
-Spark EXP loop, universal-ticket spending, account EXP bank and persisted fields below remain unchanged until the
-protected M030 cutover. CL9/10 preserve baseline SP growth, not an additional level-scaled base-stat floor.
-
-T115's save16 explicitly keeps `trainingLevel` as CL storage and requires retired unit/account EXP to be zero.
-It preserves earned levels/configuration, freezes one CL−1 debt per existing outfit/scenario, pools only unapplied
-EXP and rounds the last fraction once/account into preserved universal stock. There is no free CL10 or new unlock.
-Preparation pauses old Spark/EXP/universal spends while racing and other modes remain available; Retry resumes
-receipts. T116, not T115, enables production. [Rehearsal/recovery contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
-
-T114/D283 supplies the shared, lazy **CL n/10 · Level up** sheet for Profile, Training and Constellation, gated on
-both the release capability and an active preserved bank. It uses the original source-A scenario/style tickets plus
-separate preserved universals, names exact card nodes and stat/SP deltas, and never edits any preset configuration.
-Until T116 activates cutover, the flag is off: the existing TL chips, Spark launch, EXP bank and old ticket flow below
-remain live. Rejected pending CL spends lose unearned power, not the user's configuration; completion flair only
-follows an accepted receipt. See [material UI contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283).
+Card stars are **global** (D255). Each distance preset references the same owned cards. CL is shared by four
+distance presets within an outfit/scenario, not across scenarios. Friendship Training chooses a scenario as
+play context, not a new card-star track.
 
 ```
-Play Spark Rival Circuit ──► Training Level rises ──► constellation nodes unlock
-                                                      │
-                          decide what fills them ◄─────┘
-                                                      │
-                                                      ▼
-                                          stats · skills · aptitudes
-                                                      │
-                                                      ▼
-                                                    Race
+Home → Uma Puzzles → five-outfit party → free chapter fights
+                                           │
+                  independent Puzzle EXP + scenario/style materials
+                                           │
+                               legacy debt first → Items
+                                           │
+               Profile / Training / Constellation → CL level-up sheet
+                                           │
+                          card nodes open → configure build → Race
 ```
 
-The two halves have their own docs:
+- **[Uma Puzzles](uma-puzzles.md)** — global roster, five-member parties, chapters, battles, independent Puzzle
+  Levels, materials/debt/exchanges and explicit production-placeholder art.
+- **[Constellations](constellations.md)** — per-scenario card tree, derived stats/SP, Inspiration and Extra stats.
+- **[Minigames](minigames.md)** — Friendship earns global card stars; Spark remains historical rules/replays,
+  not a new-run entry.
 
-- **[Constellations](constellations.md)** — the per-scenario skill tree. What the nodes are, what they pay, the
-  stat budget and its invariance rule, skills, aptitudes, and lineage.
-- **[Minigames](minigames.md)** — Spark Match's Rival Circuit raises Training Levels through a deterministic
-  continuous-drag puzzle battle; the card minigame earns a card's stars.
+## Three independent levels
 
-## Two levels: Uma Level vs. Training Level
+| | Uma Level | Constellation Level (CL) | Puzzle Level (PL) |
+|---|---|---|---|
+| Scope | permanent racing career | 1–10 per outfit/scenario; shared across four presets | permanent per enrolled outfit |
+| Earned by | racing only | explicit material spend | winning Puzzle battles |
+| Controls | unlocked racing scenarios | card nodes at CL1–8; baseline SP through CL10 | Puzzle stats and finite-kit skills |
+| New scenario | permanent level continues | CL1, baseline nodes | unaffected |
 
-| | **Uma Level** | **Training Level (TL)** |
-|---|---|---|
-| Range | 1 → 10 × scenarios, **permanent** | **1–10, per scenario** |
-| Earned by | **Racing only** (Uma EXP) | **Spark Rival Circuit**, 1,250 EXP a level (D211) |
-| Controls | Which scenarios are unlocked | **Card nodes (TL1–8); Inspiration is independently token-unlocked (D250, D256)** |
-| At level 1 of a scenario | — | the baseline node set only |
+CL does **not** scale base stats or caps. The scenario owns the caps and template; CL controls accessible card
+nodes and the existing baseline SP formula. Inspiration and Extra stats have **no CL prerequisite**.
 
-Training Level no longer sets stat caps. Caps belong to the scenario
-([cap profiles](scenarios.md#cap-profiles)); Training Level decides how much of the tree you can reach, and the
-tree is what pays the stats.
+## Spending materials
 
-The minor stats are **[Extra stats](constellations.md#extra-stats)** (D235): a grid of 20 nodes a scenario, four of each
-stat, bought in order with that scenario's crop for the stat (1, 2, 3 and 4 crops), for good. Any six bought nodes can be
-on, each paying 40 raw points to its stat, and switching is free. Training Level does not touch them. Save v12 turned each
-filled Produce node into a bought, active node of its stat.
+Profile, Training and Constellation share the lazy **CL n/10 · Level up** sheet (D283). The selected racing
+scenario supplies the material family; the distance preset supplies the stat preview, but the purchase raises
+CL across all four presets. Each step costs one ticket of this scenario and an **original source-A running
+style** of the outfit. Eligible styles may supply successive steps. Preserved **Legacy Universal CL Tickets**
+may supply steps separately; missing style stock is never silently replaced with universals.
+See [spend/exchange contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283).
+
+Confirmation names quantities, CL before/after, every newly opened **actual template node**, and stat/SP deltas.
+CL9/10 open no further card nodes but still raise baseline SP. Operations are authority-backed and idempotent;
+offline/stale spending cannot keep unearned power. All preset choices survive canonical correction. Materials
+live in global Items; negative legacy debt is separate.
 
 ## Stats are derived
 
-An Uma's stats are recomputed from her active constellation whenever they are read:
-
 ```
-raw(s)     = Σ over assigned card nodes of ( nodeValue × lbPct × eraPct × share[type][s] ) + 40 × active Extra stats of s
-derived(s) = min( capProfile(T)[s], round( baseStats[s] + raw(s) × (1 + growthRates[s]) ) )
+raw(s)     = Σ card nodes (nodeValue × starPct × eraPct × share[type][s]) + 40 × active Extra stats of s
+derived(s) = min(capProfile(T)[s], round(baseStats[s] + raw(s) × (1 + growthRates[s])))
 ```
 
-`baseStats` and `growthRates` come from the Uma template, unchanged. There is no stored, accumulating stat
-number and no gain formula. Remove a card and the stats it was paying for come straight back off.
-
-This is what makes the constellation worth configuring: you set a build for a Medium race, move Card or Lineage nodes
-freely, and switch which six Extra stats are on.
+Template base stats/growth are unchanged. [Scenario buffs](scenarios.md#scenario-buffs) still apply. Removing
+a card removes its contribution. Puzzle wins never directly add racing stats/EXP, stars, crops or Inspiration.
 
 ## A scenario is a career run
 
-Promoting does not continue a run, it starts a new one at a higher ceiling: new Training Level 1, new card set,
-new goals, new milestones, and a temporarily weaker Uma who rebuilds. Races and achievements are
-**scenario-linked** (D122) — the Arima Kinen won in Trackblazer and the Arima Kinen won in Our Grand Concert are
-two separate records. The **active** scenario, always the highest unlocked, is her career: the one that earns
-Uma EXP and has goals (D121). Every earlier scenario stays a trained unit she can still race (below, D190).
+Promotion starts a fresh career at a higher ceiling: **CL1**, new sets/configurations, goals and milestones.
+The highest unlocked scenario earns Uma EXP and settles goals. Each older scenario stays a trained unit with
+its own CL, four distance presets, Extra stats and Inspiration; races remain scenario-linked (D122, D190).
 
-See [Constellations — a scenario is a career run](constellations.md#a-scenario-is-a-career-run).
+- Profile/Race Select remember the selected scenario on-device and return to the current scenario on advancement.
+- Races read that scenario's derived stats/skills/aptitudes, distance build, caps and rival scaling.
+- Earlier races pay **no Uma EXP, tickets or shards**, settle no current goals and never wait on its gate.
+- Older units stay editable and may raise CL with their scenario materials. Future units are outside old debt.
 
-## Trained units
+## Training Tickets and other costs
 
-Every scenario an Uma has unlocked keeps its **trained unit**: that scenario's Training Level, card set,
-constellation and loadout (D190). A Silence Suzuka trained in URA Finale and the same Silence Suzuka rebuilding in
-Unity Cup are two units, and either can race.
-
-- **Choosing.** Her profile and Race Select show one switch per unlocked scenario; the choice is remembered for her on
-  the device and returns to her current scenario when she advances. Her current scenario is the default.
-- **Racing in context.** A race uses the chosen scenario's derived stats, skills and aptitudes under its caps, its card
-  set, and rivals rolled for that scenario. The result is recorded under that scenario (D122), so its wins, records,
-  badges and flair count there.
-- **No Uma EXP from an earlier scenario.** Levels and careers belong to the current scenario: an earlier scenario's
-  race pays no Uma EXP, tickets or shards and settles no goals. A finished build therefore cannot farm the rebuild a
-  new scenario asks for. It also never waits on her gate: an Uma ready to advance can still race her earlier units.
-- **Still trainable.** An earlier unit edits its free Card/Lineage configuration and Extra stats like any other, buys
-  Extra stat nodes with its own scenario's crops, edits its card set within its own era, and
-  plays Spark Match (for a ticket) until it reaches Training Level 10 before cutover; afterward materials raise CL.
-  Friendship Training earns global stars with a scenario as play context (D255).
-- **Advancing is unchanged.** A newly unlocked scenario starts from scratch at Training Level 1 with an empty set.
-
-## Training Tickets
-
-Tickets remain the only currency and the only pacing lever ([Economy](economy.md)):
-
-| Rule | Value |
+| Action | Cost |
 |---|---|
-| Spark Rival Circuit run | **1 ticket** |
-| Card minigame run | **1 ticket** |
-| Card and lineage reconfiguration | **free, always** |
-| Extra stat node | **1–4 matching crops, once; no refund** |
-| Extra stats on or off | **free, always** |
-| Daily grant | **+15 per day**, stored up to **60** (four days) |
-| Scope | account-wide, shared by all Umas |
+| Uma Puzzles entry, retry, chapter play | free |
+| Friendship Training run | 1 Training Ticket |
+| Next racing scenario | 5 × current tier Training Tickets |
+| CL step | 1 matching scenario/source-A style material or explicitly selected preserved universal |
+| Card/lineage reconfiguration | free |
+| Extra stat purchase | 1, 2, 3 or 4 matching crops, once; no refund |
+| Extra stats on/off | free |
 
-Card and lineage reconfiguration is free on purpose. Extra stats are the one deliberate material layer: their cost is
-Farm inventory, not a ticket, and the confirmation always states the spend and no-refund rule.
+Training Tickets retain **+15/day**, daily storage cap **60**, account-wide. The cap affects daily accrual,
+not earned race level-up tickets or stable legacy refunds. See [Economy](economy.md).
 
-## Training Levels are linear
+## Card sets and training views
 
-Every Training Level costs **1,250 Training EXP**, so TL1 → TL10 is **11,250**: what TL1 → TL7 cost on the old
-`1000 + 350 × (n − 1)` curve, about six Spark Rival Circuit runs (D211). Leaving TL1 costs 250 more than it did; every
-later level costs less.
+Every scenario has four distance presets (D252–D254), each with six cards, assignments, active Extra stats
+and loadout. Ownership, era eligibility and no-duplicate-character rules are unchanged. Cards read global stars.
+An empty set is allowed to race but pays no card stats. Training opens **Constellation**, **Inspiration** and
+**Extra stats**; only Constellation offers CL level-up. Inspiration uses scenario Slot/Skill Tokens from RPG,
+including its separate temporary debt. Extra stats use Farm crops: 20 nodes, four/stat, any six active, +40 raw
+each before scenario buffs. Switching is free outside races.
 
-Save v11 moved every unit once through its total earned EXP. It landed on the higher of its old level and what that total
-buys, so nothing was demoted, and kept the remainder. A unit that was TL6 became TL7 · 1,000; anything at TL7 or above
-became TL10.
+## Preserved levels and recovery
 
-## The Training EXP bank and Level-Up Tickets
+Save16 retains the `trainingLevel` field as **CL**, with retired unit/account EXP exactly zero. D287 preserves
+earned levels, all four builds, global cards, lineage, Extra stats, racing facts and other modes. It freezes
+**CL−1 debt once per existing outfit/scenario**, under one original-A style, not per preset. Unapplied unit/account
+EXP is pooled at **1,250 per universal**, with one positive-fraction compensation per account; existing universal
+stock is retained. Migration credit bypasses debt. Nothing new mints universals, grants CL10 or unlocks a scenario.
 
-EXP is never wasted at the top (D212). Whatever a unit earns past TL10 goes into **one account-wide Training EXP bank**,
-and every full 1,250 there becomes a **Training Level-Up Ticket** at once: an item in the global
-[Item inventory](farm.md#global-item-inventory), worth exactly one Training Level.
+Before any protected mutation, the preparing online device retains a **whole-account canonical backup plus old
+local journals** in a device-only archive. Download privately from Settings or the Puzzle Hub; never clear app data
+or partially restore. Failed backup/content verification blocks preparation. Finished pending Spark replays drain
+before freeze; unfinished paid runs refund the original ledger cost once. Retry continues bounded receipts and
+reconciles lost acknowledgements, never re-snapshotting. Other modes remain usable. See
+[release acceptance](../research/uma-puzzles-release-acceptance.md) and
+[recovery contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
 
-| Source | When |
-|---|---|
-| The Spark run that reaches TL10 | its EXP past TL10, in the same commit as the level |
-| The v11 migration | what re-levelling carried past TL10, banked with the profile and settled into tickets at the next startup |
+## Historical Training EXP — not active gameplay
 
-The bank shows on the Items screen as `850 / 1,250`, and a ticket grant is item-ledger evidence (`exp-bank`), so a retried
-commit never pays twice. TL10 still ends Spark for that unit: the bank fills from real progress, not from replaying a
-finished one.
+### Training Levels are linear
+
+Before activation, Spark paid **1,250 EXP per TL step**, 11,250 from TL1→10 (D211). Save11 preserved old earned
+totals under this linear curve.
+
+### The Training EXP bank and Level-Up Tickets
+
+EXP past TL10 minted one `training:level-up-ticket` per 1,250 through the bank (D212).
 
 ### Spending Level-Up Tickets
 
-Tickets are spent on the **Spark Match start screen**, on the unit it was opened for (D213), below TL10 and while no
-Spark run is open for that unit. A **Level-Up Tickets** row shows `Owned 3 · EXP bank 850 / 1,250` and a stepper from 1 to
-`min(owned, 10 − TL)`, previews `2 tickets · TL6 → TL8 · opens 3 nodes`, and **Use 2 tickets** confirms. With none owned
-the row stays, with the hint that they are earned from EXP past TL10.
-
-- **One ticket is one Training Level:** `n` tickets add `n × 1,250` Training EXP, so the unit keeps its progress inside
-  the current level. EXP carried past TL10 goes back to the bank, and if that completes 1,250 a ticket pays straight
-  back. Nothing else is spent: no Training Ticket, and no run is created.
-- **One commit:** the unit, the ticket stack, `training-level-up` evidence `level-up:<umaId>:<tier>:<fromLevel>.<fromExp>`,
-  the bank and any regranted ticket, badge facts (a unit reaching TL10 is Fully Trained, as by a Spark run) and outbox.
-  The id is the starting point the screen saw: a retried tap finds its own receipt, and a stale screen that no longer
-  matches the unit spends nothing and reloads.
-- **The result** is the summary a Spark run shows: TL before and after, every level crossed and every opened node
-  linking to its view, plus `−2 Training Level-Up Tickets` and any EXP banked. **Done** returns to the start screen at
-  the new level, where a Spark run can begin.
-- Tickets need local storage; a memory-only session never holds any.
-
-## Opening a scenario
-
-A newly unlocked scenario starts at Training Level 1 with only the baseline nodes open and an empty six-card set. Scenario
-Start makes it available to train and race; Spark Match is how the player opens more nodes before racing. A loss still banks
-bounded Training EXP, but the battle never creates race facts or Uma EXP. At TL10 no new Spark run may begin for that Uma
-and scenario.
-
-A valid six-card set is not required to race, but an empty constellation pays nothing, so an Uma with no cards
-slotted races on base stats alone.
-
-## Card sets
-
-Each scenario holds its **own set of six cards** for that Uma (D125). The set is per Uma, per scenario, and is
-what the scenario's card nodes may draw from. Six slots everywhere — the old 4/5/6 tier ramp is gone. Era
-gating, ownership, and the no-duplicate-character rule are unchanged
-([Support Cards](support-cards.md#ownership-vs-the-card-set)).
-
-## Later additions (not MVP)
-
-- Further minigames, one per scenario, replacing Spark Match as that scenario's level path.
-- Constellation presets, if reconfiguring by hand ever becomes tedious.
+The old Spark-start spend retained partial EXP (D213). Parsers, ledger reasons and fixtures remain
+for migration/history. New Spark runs, ordinary Training EXP/banking and old universal spends are retired for
+active preserved accounts.

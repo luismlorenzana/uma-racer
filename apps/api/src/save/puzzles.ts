@@ -4,5 +4,5 @@ export * from './puzzle-domain/minigames/uma-puzzles/operations'
 export * from './puzzle-domain/minigames/uma-puzzles/preservation'
 export * from './puzzle-domain/minigames/uma-puzzles/preservation-records'
 export * from './puzzle-domain/minigames/uma-puzzles/legacy-spark'
-/** Only T116 may enable this checked-in release capability. Synthetic repository tests inject true. */
-export const PUZZLES_RELEASE_ENABLED = false
+/** T116/D289 enables the verified-content/protected-preservation release; account guards still apply. */
+export const PUZZLES_RELEASE_ENABLED = true

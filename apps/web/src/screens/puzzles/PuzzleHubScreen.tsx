@@ -8,12 +8,14 @@ import { puzzleLeaderLabel } from '../../ui/puzzles/kit'
 import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
 import { puzzleNodeName } from '../../game/puzzles/presentation'
 import { ConstellationBankPanel } from '../../ui/ConstellationMaterials'
+import { PuzzleBackupButton } from '../../ui/puzzles/PuzzleBackupButton'
 export function PuzzleHubScreen() {
   const [params] = useSearchParams()
-  const { root, content, memory } = usePuzzles(), account = usePuzzleAccount()
+  const { root, content, memory, isolated } = usePuzzles(), account = usePuzzleAccount()
   return <PuzzleFrame title="Puzzle parties"><div className="grid gap-3">
     {params.get('notice') === 'spark-retired' && <p role="status" className="rounded-md border border-accent/35 p-3 text-sm text-ink-on-dark-soft">Spark has retired. Your earned Constellation Levels and saved builds are preserved. Choose and enroll a party here when you’re ready; no outfit was enrolled automatically.</p>}
     <ConstellationBankPanel bank={account?.bank ?? null} itemsTo={`${root}/items`} />
+    {!isolated && <PuzzleBackupButton />}
     <p className="text-xs text-ink-on-dark-soft">Five independent journeys. All five slots must be filled to enter. No required colour or running-style mix.</p>
     {account?.parties.map(party => {
       const summary = puzzlePartySummary(party, account), open = openPuzzleParty(account, party.partyId), node = open && openPuzzleNode(open)
