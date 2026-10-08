@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { freezeAdvance, advanceOutfit, BANK_KEY, bankData } from '../../../api/src/save/inspiration-advance'
 import type { EntityRecord as ApiEntityRecord } from '../../../api/src/save/save.types'
 
-import { TRAINING_LEVEL_UP_TICKET_ID, activeScenario, constellationTemplate, legacyProduceNodeIds } from '@racer/domain'
+import { RPG_CLASS_WEAPONS, TRAINING_LEVEL_UP_TICKET_ID, activeScenario, constellationTemplate, enrollRpgOutfit, legacyProduceNodeIds, rpgClassOptions } from '@racer/domain'
 import { badgeSubject } from './badges'
 import { umaFixture, withRun } from './__fixtures__/save'
 import {
@@ -383,6 +383,23 @@ describe('save persistence', () => {
 
     await expect(readLocalSnapshot()).rejects.toThrow(/App update required/)
     expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 16 } })
+  })
+
+  it('loads class-era RPG rows (D282) and refuses only a newer RPG schema', async () => {
+    const loaded = content()
+    await db.open()
+    await persistInitial(loaded, '2000-01-02', 10)
+    const template = loaded.umas.items[0]!
+    const classId = rpgClassOptions(template.aptitudes)[0]!
+    const profile = enrollRpgOutfit({ outfit: template, contentVersion: loaded.manifest.version, classId, weapons: [...RPG_CLASS_WEAPONS[classId][0]!] })
+    await db.rpgOutfits.put({ id: template.id, version: 3, data: { schemaVersion: 3, profile, projectionRevision: 1 } })
+    await db.rpgPresets.put({ id: 'party-1', version: 2, data: { schemaVersion: 3, presetId: 'party-1', name: 'Mine', foregroundChapterId: 'ura-finale',
+      slots: [{ outfitId: template.id, loadout: [], familiar: 'greatsword' }, null, null, null, null] } })
+    const snapshot = await readLocalSnapshot()
+    expect(snapshot?.rpgOutfits.map((row) => row.id)).toEqual([template.id])
+    expect(snapshot?.rpgPresets).toHaveLength(1)
+    await db.rpgOutfits.put({ id: template.id, version: 3, data: { schemaVersion: 4, profile, projectionRevision: 1 } as never })
+    await expect(readLocalSnapshot()).rejects.toThrow(/App update required for RPG schema 4/)
   })
 
   it('parses a cloud snapshot before replacing any local rows', async () => {

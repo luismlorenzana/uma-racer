@@ -56,7 +56,7 @@ import {
   type RpgResultEvidenceV1,
   type RpgPromotionEvidence,
   type RpgCommandReceiptV1,
-  PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, puzzleEntityIdMatches,
+  PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, RPG_SAVE_SCHEMA_VERSION, puzzleEntityIdMatches,
   type LogRecord,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -218,7 +218,7 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
 function validateRpgEntities(kind: EntityKind, rows: VersionedRow<unknown>[]): VersionedRow<object>[] {
   return rows.map((row) => {
     if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data &&
-      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 2) {
+      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > RPG_SAVE_SCHEMA_VERSION) {
       throw new Error(`App update required for RPG schema ${row.data.schemaVersion}`)
     }
     const parsed = parseEntityData(kind, row.data)
@@ -235,7 +235,7 @@ function validateRpgEntities(kind: EntityKind, rows: VersionedRow<unknown>[]): V
 function validateRpgLogs(kind: LogKind, rows: LogRow<unknown>[]): LogRow<object>[] {
   return rows.map((row) => {
     if (typeof row.data === 'object' && row.data !== null && 'schemaVersion' in row.data &&
-      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > 2) {
+      typeof row.data.schemaVersion === 'number' && row.data.schemaVersion > RPG_SAVE_SCHEMA_VERSION) {
       throw new Error(`App update required for RPG schema ${row.data.schemaVersion}`)
     }
     const parsed = parseLogData(kind, row.data)
