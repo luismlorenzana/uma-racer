@@ -21,21 +21,21 @@ const queryClient = new QueryClient({
 // Animation features load in a separate chunk; `strict` forbids the heavier `motion.*` components.
 const loadMotionFeatures = () => import('./ui/motionFeatures').then((mod) => mod.default)
 
-registerAppUpdates()
+// This DEV proof is completely outside auth/content/GameProvider boot, including refresh on its nested routes.
+const isolatedPuzzleProof = import.meta.env.DEV && /^\/dev\/puzzles-ui-proof(?:\/|$)/.test(location.pathname)
+if (!isolatedPuzzleProof) registerAppUpdates()
+const app = <LazyMotion features={loadMotionFeatures} strict><RouterProvider router={router} />{!isolatedPuzzleProof && <UpdateNotice />}</LazyMotion>
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
+    {isolatedPuzzleProof ? app : <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ContentProvider>
           <GameProvider>
-            <LazyMotion features={loadMotionFeatures} strict>
-              <RouterProvider router={router} />
-              <UpdateNotice />
-            </LazyMotion>
+            {app}
           </GameProvider>
         </ContentProvider>
       </AuthProvider>
-    </QueryClientProvider>
+    </QueryClientProvider>}
   </StrictMode>,
 )

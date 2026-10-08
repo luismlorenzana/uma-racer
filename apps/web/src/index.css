@@ -64,6 +64,13 @@
   --color-warning: #d08a0e;
   --color-info: #2f6fe0;
 
+  /* Five combat elements, glyph-labelled; only Wood is green (Uma Puzzles §9). */
+  --color-puzzle-fire: #ff8a5c;
+  --color-puzzle-water: #80c9ff;
+  --color-puzzle-wood: #a7d77c;
+  --color-puzzle-light: #fff2b0;
+  --color-puzzle-dark: #c79bff;
+
   --color-hairline: rgb(16 26 36 / 0.08);
   --color-hairline-strong: rgb(16 26 36 / 0.16);
   --color-hairline-dark: rgb(255 255 255 / 0.1);

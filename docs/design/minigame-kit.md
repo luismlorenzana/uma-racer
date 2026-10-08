@@ -65,15 +65,18 @@ defines a device journal, atomic background economic operations and explicit sam
 shipped Training Level game until the final gated preservation cutover; task specs must not retire it halfway through.
 T106 exports pure parsed identity/progression/material/debt/legacy rules. T107 adds an independent pure board/combat
 engine, finite kit, strict transports, authoritative event steps and replay hashes. Its `sim:puzzles` uses only
-invented data and public actions; it is not production balance closure. No Puzzle screens, Home route or
-account migration are installed. T108 adds generated28-node chapters, fixed-reference encounters, replay-derived
+invented data and public actions; it is not production balance closure. No playable Puzzle fight, Home entry or
+account migration is enabled. T108 adds generated28-node chapters, fixed-reference encounters, replay-derived
 reward/progress projections and exact style/debt/exchange reports. Its600-battle campaign sample records remaining
 balance outliers. T109 now supplies the [private Puzzle pipeline/client](../technical/puzzle-content.md); real PAD
 inputs/art are pinned for the final pass by the owner (D272), with explicitly labelled original DEV placeholders.
 T110 adds [schema-1 records, additive Dexie28, atomic background operations and canonical repair](../technical/uma-puzzles-implementation.md#t110-implemented-persistenceprotocol-v1-d273)
 (D273), still capability-off, without creating a bank or retiring Spark. T111 implements the
 [real replay host/journal](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274), receipt-owned
-materials and explicit recovery (D274), with an isolated proof adapter and no default double. T112's screens are next;
+materials and explicit recovery (D274), with an isolated proof adapter and no default double. T112 implements
+[guarded setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275): shared
+Shell/Header/PagedGuide, saved owned roster/five parties/maps, held verified previews and a completely separate DEV
+real-host proof (D275). Begin does not reserve a real fight; T113 adds battle/results/practice next. Both flags remain off;
 placeholders never satisfy verified production content. Spark's board and replay are untouched.
 
 Every minigame follows the same six steps, through `MinigameHost` (`apps/web/src/game/minigame-host.ts`) and the
