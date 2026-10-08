@@ -211,8 +211,11 @@ This is not an enabled Puzzle release; Spark remains active until M030's protect
   remain off: no live bank or Training/Spark cutover. T111 implements the lazy `GameRuntime.puzzleHost()` real adapter,
   strict device-only journal replay, compare-and-append, atomic terminal/material operations and acknowledged same-seed
   recovery. Pending results stay in prediction receipts; only accepted CL earns irreversible completion flair, including
-  at boot. [The real port](uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) has no screen/Home entry
-  or production-installed double; T112 is next.
+  at boot. [The real port](uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) has no production-installed
+  double. T112 adds [lazy guarded setup screens](uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275)
+  over a separate per-provider Zustand account selector and Dexie read subscription. Device-only party/chapter/map
+  memory never enables entry; real host operations own all mutations. A DEV proof bypasses auth/content/game boot and
+  uses only its explicitly named synthetic database. Home/Begin are still unavailable; T113 battle is next.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and

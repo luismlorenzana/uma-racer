@@ -180,6 +180,13 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContentScreen')).PuzzleContentScreen }),
   },
   {
+    // T112 setup only. The parent gate checks the off capability before host/account/content I/O.
+    path: 'puzzles',
+    hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Uma Puzzles" />,
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContext')).PuzzleShell }),
+    children: puzzleSetupRoutes(),
+  },
+  {
     path: 'race/run',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Race" />,
     lazy: async () => ({ Component: (await import('../screens/race/RaceRunScreen')).RaceRunScreen }),
@@ -190,6 +197,10 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/puzzles-ui-proof',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleUiProofScreen')).PuzzleUiProofShell }),
+    children: puzzleSetupRoutes(),
+  }, {
     path: 'dev/puzzles-content-proof',
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContentProofScreen')).PuzzleContentProofScreen }),
   }, {
@@ -204,3 +215,17 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/minigames/SparkRivalProofScreen')).SparkRivalProofScreen }),
   }] : []),
 ])
+
+/** Same screens, different providers. No DEV parameter can switch a production account into a proof. */
+function puzzleSetupRoutes() {
+  return [
+    { index: true, lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleHubScreen')).PuzzleHubScreen }) },
+    { path: 'roster', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleRosterScreen')).PuzzleRosterScreen }) },
+    { path: 'roster/:outfitId', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleRosterScreen')).PuzzleProfileScreen }) },
+    { path: 'party/:partyId', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzlePartyScreen')).PuzzlePartyScreen }) },
+    { path: 'chapters', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleChaptersScreen')).PuzzleChaptersScreen }) },
+    { path: 'party/:partyId/:scenarioId', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleMapScreen')).PuzzleMapScreen }) },
+    { path: 'exchange', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleHubScreen')).PuzzleUnavailableSection }) },
+    { path: 'items', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleHubScreen')).PuzzleUnavailableSection }) },
+  ]
+}

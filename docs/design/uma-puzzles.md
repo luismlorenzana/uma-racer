@@ -1,12 +1,12 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: approved plan (D267–D268); T106–T111 foundations/content code/save/sync/real host implemented (D269–D274). Gameplay not enabled.**
+**Status: approved plan (D267–D268); T106–T112 foundations/content code/save/sync/real host/setup UI implemented (D269–D275). Gameplay not enabled.**
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
 specification, not unanswered owner choices; T106 pins the stat/EXP candidates as an initial executable baseline,
 not balance closure. T108 pins generated maps, fixed-reference encounter scaling, reward vectors and modest simulation
-evidence below. T110–T111 add capability-off persistence and the real replay host; real private content, screens and
-release tuning remain the pinned T109 and T112–T116 work.
+evidence below. T110–T111 add capability-off persistence and the real replay host; T112 adds saved setup navigation.
+Real private content, touch battles, material surfaces and release tuning remain the pinned T109 and T113–T116 work.
 Historical element alternatives are not active rules. Existing
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) remain the shipped contract
 until the plan is implemented and safely cut over. Claude's RPG work is outside this change.
@@ -821,6 +821,11 @@ it must receive an explicit update/recovery message when reconnecting, never ove
 
 ### Own navigation, familiar components
 
+**T112 implemented (D275), still disabled:** lazy `/puzzles` setup routes use the real host, not a production double.
+The gate runs before host/account/content I/O; deep links cannot enable the capability. There is no Home card or real
+Begin until later tasks. `/puzzles/content` remains a separate read-only preflight. The DEV phone proof runs only an
+isolated invented account; screenshots are [recorded separately from device acceptance](../research/puzzle-navigation-phone-proof.md).
+
 Home card shows **Uma Puzzles**, last party/chapter and saved battle/resume state. Open the saved Hub, not an Uma
 picker. Internal destinations: **Parties · Roster · Chapters · Exchange · Items**, with a shared header/back/guide;
 do not add five global bottom tabs. Reuse the RPG's compact five-across Uma icon treatment and shared picker, but
@@ -839,6 +844,31 @@ separate its state and labels.
   and the **gross → repaid → inventory** material table. Continue map, Replay and Items; never auto-spend CL tickets.
 - **CL spend result:** separate from battle results. Names actual opened card nodes and stat/SP increases and links
   back to that unit's Constellation. Inspiration/Extra stats display no false new unlock animation.
+
+Implemented setup details: the owned roster has five compact icons per row, enrolled-first name/id ordering,
+original-A/element filters and visible unavailable no-A entries. Registration shows frozen original grades/version,
+PL1 contributions and eligible actives; colour-count advice never selects a colour, even for fixed Light/Dark.
+Confirm enrollment/correction explicitly; first entry permanently locks colour after loss/abandon too. Profiles
+show remaining EXP, next-level five-stat deltas and finite unlocked kits. Roster defaults affect future assignments,
+not existing party-slot kits. Names, slot edits/order/leader and unlocked kit edits save through revision-checked host
+operations. The unassigned-only picker has a deliberate named transfer confirmation retaining both party revisions;
+an open battle on either side blocks it and checkpoints survive. Slot1 is the leader; no required rainbow/style quota.
+
+The launch pad includes all fourteen registered crests/ten-level bands, without racing-scenario ownership gates.
+Five filled slots are required to launch; average/range PL warnings do not gate adventurous parties. Each map is a
+DOM-labelled 28-node branched path: exact enemy colours and ticket quantities, locked/reached/won/replay states,
+three Guardians and five final colour routes. Any Champion completes a chapter; all 28 wins clear its full map.
+Preview uses the engine's actual recipe plus held verified enemy names/art, not invented production rows; it shows
+intents, phases, delay immunity, element legend, low-level warning and gross/repayment/net. Dark Champion requires
+an explicit Pace/Late choice; an open fight displays its frozen choice and entrants. True Resume names the node,
+loads its real journal or read-only recovery, and offers explicit online same-seed takeover without reserving again.
+Exchange/Items honestly explain their forthcoming T114 implementation; DEV Begin displays a no-write notice, while
+production Begin stays disabled. Setup guide uses shared PagedGuide; illustrated combat/practice remains T113.
+
+Selected party/chapter and per-party/per-scenario last viewed node are resilient device-only navigation memory,
+not progress or a release switch. Roster/map/editor scroll inside the shared dark safe-area shell; actions are at
+least 44 pt at 390×844 and 375×667. Every element has its own original glyph and name as well as its colour. No private
+content, owner save, engine numbers/hashes, other modes or current Spark launch changed in this setup task.
 
 ### Art and colour
 
@@ -1173,10 +1203,11 @@ checks, not requests to approve the whole plan again.
 | Old EXP/tickets | Preserve universals; pool all remaining EXP; one final account round-up at most | Preserves existing effort with a small explicit compensation rather than deleting fractional value |
 | First-release battle kit | Shared HP/Heart, one active per Uma, one leader, targeting, simple visible boss counters | Enough PAD depth to feel like a new party game without importing its whole modern complexity |
 
-T106–T111 foundations/content code/save/sync/real replay host are complete (D269–D274), capability-off.
+T106–T112 foundations/content code/save/sync/real replay host/setup screens are complete (D269–D275), capability-off.
 [The implemented host](../technical/uma-puzzles-implementation.md#t111-implemented-real-hostjournal-d274) owns deterministic
 device journals, atomic reservation/settlement/materials and explicit online recovery. Completion flair follows accepted
-CL rather than a rejectable offline prediction. [T112 Hub/parties/maps](../tasks/T112-puzzle-hub-maps.md) is next;
+CL rather than a rejectable offline prediction. [Saved setup navigation](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275)
+uses that port; [T113 touch battle](../tasks/T113-puzzle-touch-battle.md) is next;
 [T109 real private content](../tasks/T109-puzzle-private-content.md) remains pinned. Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**

@@ -1,8 +1,8 @@
 # Uma Puzzles — implementation contract
 
-**Status: T106–T111 foundations/content code/save/sync/real replay host implemented (D269–D274); gameplay/cutover not enabled.**
+**Status: T106–T112 foundations/content code/save/sync/real replay host/setup UI implemented (D269–D275); gameplay/cutover not enabled.**
 T109's [private pipeline/content client](puzzle-content.md) is implemented (D272), but real source/art acceptance is
-pinned at the owner's request. DEV proofs use original labelled placeholders; T112's Hub/parties/maps are next. No gameplay/cutover is enabled.
+pinned at the owner's request. DEV proofs use original labelled placeholders; T113's touch battle is next. No gameplay/cutover is enabled.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
 [M030](../tasks/M030-uma-puzzles.md) assigns T106–T116. This page resolves ownership, transport and delivery boundaries
 so downstream tasks do not each invent a different save or host. D268 records this engineering plan; numerical battle
@@ -477,7 +477,7 @@ local archive/journal failure followed by same-owner retry. Failure injection
 after each of five outfit writes, checkpoint, stock/bank, result/movement receipt, pending/outbox, journal/archive and
 CL badge boundary proves all-or-none writes and post-durability scheduling. Initial invented host replay hash is
 `7771941afcb8fc1e`; pure engine hashes/math and `sim:puzzles` envelopes are unchanged. No physical-phone or real-account
-gameplay acceptance is claimed; T112–T116 remain, alongside pinned T109 real content.
+gameplay acceptance is claimed; T112 now supplies setup navigation, while T113–T116 and pinned T109 real content remain.
 
 T111 verification: lint/test/build pass (1,342 tests, including70 new real-host tests); `sim:puzzles` retains its288
 engine and600 campaign battles plus86,016 exact economic routes. Spark and Friendship Training simulations also pass.
@@ -618,6 +618,56 @@ joins are display-only; chibi versus plain orb changes no replay state. Fire ora
 Light ivory-gold, Dark violet, Heart pink, always glyph + accessible label. Shared shell safe areas once, ≥44 pt
 controls, no fight page scroll, delta-time transform/opacity animation, background gesture cancellation, contextual
 guide and isolated practice. Browser proofs and physical-iPhone tests are separately labelled.
+
+### T112 implemented setup navigation (D275)
+
+All campaign setup routes are lazy children of `PuzzleShell` under `/puzzles`: Hub (index), `roster`,
+`roster/:outfitId`, `party/:partyId`, `chapters`, `party/:partyId/:scenarioId`, `exchange`, `items`.
+The shell checks the off capability **before** mounting a component that can construct a host/read an account/acquire
+content. Enabled entry additionally needs a persistent loaded game, active bank and verified presentation lease.
+There is no Home launch yet; T113 supplies fight/result routes and T114 finishes the honest Exchange/Items destinations.
+Begin is disabled in production; DEV Begin shows an explicit no-reservation notice. No guessed route enables a bank,
+creates a fight, retires Spark or changes release flags. Existing `/puzzles/content` remains read-only.
+
+`PuzzleContext` owns a per-provider Zustand store subscribed through `liveQuery(host.account)`, separate from other
+modes and the future board's per-pointer state. Equal parsed account reads publish nothing; journal appends do not
+change the account projection. All edits call the T111 port, with an operation UUID retained for retry of the same
+input/revision, a synchronous double-press guard and visible failure. The UI never writes gameplay Dexie rows.
+`presentation.ts` supplies pure owned-roster/palette/picker/party/map/reward projections. Partial-party totals mirror
+the engine's catalogue leader rule without fabricating a full battle input. Foreground is parsed from canonical
+`pzc:<scenario>`, not treated as a raw scenario id. `navigation.ts` stores only selected party/chapter and independent
+per-map viewed-node ids, validates each restored id and tolerates inaccessible/malformed localStorage. It stores no
+seed/reward/release setting and never substitutes for synced checkpoints.
+
+Roster/detail/enrollment, ordered party edits/slot 1 leader and confirmed moves, all 14 chapter launch bands and 28-node
+maps follow [design §9](../design/uma-puzzles.md#9-screens-guides-and-visual-identity). Transfers keep both captured
+revisions until confirmation; the port checks both plus open locks. Source becomes empty, destination receives its
+kit and both keep checkpoints. An unsaved empty destination is explicitly saved before presenting a picker, so no
+fabricated revision-zero transfer occurs. A moved or edited confirmation is rejected, not silently refreshed.
+
+`PuzzleNodePreview` resolves the actual campaign recipe with a held verified pack. Its enemy portrait joins the
+pack's name/frame/page by frozen cast id; absence is unavailable, never a production placeholder. Acquires release
+on close/cancel/unmount, including late asynchronous completion. Existing open fights instead load through
+`host.loadBattle`, retain their immutable identity and display their frozen enemies/rewards. Typed recovery remains
+read-only; explicit takeover calls T111's online acknowledgement lane, then reloads the same frozen input/seed under
+the new epoch. Missing pack/coverage has Retry/Return. Dark Champion starts unselected and cannot expose a concrete
+reward vector until Pace/Late is chosen; open choice is frozen. Gross/repayment/net reads the current bank but states
+that canonical settlement can adjust net. First higher Opening win explains its adjacent exchange edge.
+
+Shared `MinigameShell/Header`, `PagedGuide`, `createGuideMemory`, Button, AtlasSprite, icons and focus/inert isolation
+are reused. Setup has internal scroll and five-across 44 pt targets at 390×844/375×667; no new global tabs. Element
+glyphs are original SVG (flame/drop/leaf/star/moon), accompanied by semantic orange-red/blue/green/ivory/violet colour
+tokens and accessible names. Motion uses existing `m.*` press/guide transforms/opacity. Full battle scroll/input,
+illustrated pages and free practice remain T113, not claimed as tested here.
+
+`/dev/puzzles-ui-proof` shares these components via a different provider and **never** production boot. `main.tsx`
+excludes AuthProvider/ContentProvider/GameProvider/service-worker registration for this DEV root and every nested
+refresh. The proof adapter accepts only `puzzle-proof-*` database names, seeds an empty store through T111's isolated
+adapter, retains its real local operations/journals across refresh and uses invented sources/portraits/enemies plus
+an in-memory authority for explicit recovery. Reload authority restores pending canonical bases, not optimistic
+projections, before adoption. Its local EXP/materials never touch the owner database/API. The proof is tree-shaken
+from production. [Browser evidence](../research/puzzle-navigation-phone-proof.md) is synthetic, not private-content,
+production gameplay or physical-iPhone acceptance. T109 permitted originals and T113–T116 gates still remain.
 
 ## 10. Standing evidence
 

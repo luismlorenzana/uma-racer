@@ -14,7 +14,7 @@ until pinned in domain tests and a decision.
 
 The owner accepted the [Uma Puzzles plan](design/uma-puzzles.md) on 2026-10-07 (D267), changing registration to
 Front-only/Front+Pace → Light; End-only/Late+End → Dark; pure Pace/Late or Pace+Late choose Fire/Water/Wood;
-**Dirt A overrides first and chooses all five**. No account/gameplay change is implemented yet.
+**Dirt A overrides first and chooses all five**. Production gameplay and account cutover remain disabled.
 
 The owner also confirmed **Fire/Water/Wood choice** for the five other non-Dirt-A multi-style combinations
 (three Pace+Late+End, one Pace+End, one Front+Late). All 268 catalogue outfits are covered; no registration choice
@@ -25,8 +25,9 @@ art provenance and device validation remain implementation checks, not a complet
 atomic economic sync, explicit online takeover and safe cutover gates. T106–T108 pure rules/battle/campaign are
 implemented (D269–D271); T109 pipeline/client code is delivered (D272). At the owner's request, real PAD originals/evidence
 are pinned for the final content pass, with original labelled DEV placeholders. T110 additive save/sync is implemented
-(D273); T111 real replay host/journal is implemented (D274), disabled without playable screens or live cutover;
-T112 Hub/parties/maps is next. This is an explicit
+(D273); T111's real replay host/journal and T112's saved Hub/roster/parties/maps are implemented (D274–D275),
+with an isolated synthetic phone-size browser proof. Battle/results/practice screens are T113 next; both release
+flags stay off, with no live cutover. This is an explicit
 source-input follow-up, not an unanswered mechanics question or real-content sign-off. Simulation outliers in design §11 remain release-balance checks,
 not new owner choices or a claim of closure. Do not treat the task breakdown
 as a request to publish, migrate an account or implement a second RPG system.
