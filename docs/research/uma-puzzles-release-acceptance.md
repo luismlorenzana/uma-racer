@@ -48,7 +48,8 @@ the verified-content/client→host integration are passed, but they are not an i
 Node22+ / pnpm10. `pnpm lint`, `pnpm test --concurrency=1`, `pnpm build`, `pnpm sim:puzzles`,
 `pnpm sim:puzzles:preservation`, `pnpm sim:spark` and `pnpm sim:training` pass.
 Serial package execution runs the same tests without competing with build/sim CPU; no test thresholds are loosened.
-Final rebased counts/sizes are carried by the release PR witness.
+Final rebased tests: **1,481 passed** (domain700, race61, API82, web558, data44, assets36).
+Lint passes all six packages; web/API builds and the production CommonJS enabled-capability import pass.
 
 - Puzzles:288 historical engine battles,640 campaign probes (40 no-active champions) and86,016 economic routes.
   Every intermediate JSON-roundtrip replay hash matches. Historical T107 formulas/hashes remain unchanged.
@@ -68,9 +69,9 @@ Final rebased counts/sizes are carried by the release PR witness.
 
 ## Bundle and browser evidence
 
-Pre-rebase release entry:154.33 KB gzip (limit180). Lazy individual Hub1.63, map5.58, battle screen4.08,
-battle stage5.15, Pixi battle scene5.09, retained Spark18.15, Pixi core85.30 KB. These are **individual chunks**,
-not total network download or the entire Pixi family. Final rebased/deployed numbers are in the PR witness.
+Rebased release entry: **154,342 bytes gzip** (limit180,000). Lazy individual Hub1,631, map5,574, battle screen4,082,
+battle stage5,145, Pixi battle scene5,087, retained Spark18,150, Pixi core85,298 bytes. These are **individual chunks**,
+not total network download or the entire Pixi family. Deployed numbers/build stamp are in the PR witness.
 Firebase and Pixi remain lazy.
 
 Browser proofs use a web-only local server without the API and explicitly separate `puzzle-proof-*` IndexedDB.

@@ -60,7 +60,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
-| M030 / T116 — Verified-placeholder Puzzle release, tuning, Home and preservation backup | 2026-10-08 | [Uma Puzzles](../design/uma-puzzles.md), D289–D290 and [release/owner checks](../research/uma-puzzles-release-acceptance.md); later T109 art upgrade retained | `77f7d03` |
+| M030 / T116 — Verified-placeholder Puzzle release, tuning, Home and preservation backup | 2026-10-08 | [Uma Puzzles](../design/uma-puzzles.md), D289–D290 and [release/owner checks](../research/uma-puzzles-release-acceptance.md); later T109 art upgrade retained | `0879ce5` |
 | T115 — Rehearsed preservation migration and safe Spark retirement | 2026-10-08 | [Preservation v2 contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287), D287 and [synthetic phone/restore proof](../research/puzzle-preservation-phone-proof.md); release remains off | `ed99e2d` |
 | T114 — Global materials, original vectors, debt/exchange and shared CL spend | 2026-10-08 | [Material surface contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283), D283 and [synthetic phone proof](../research/puzzle-material-phone-proof.md); release remains off | `bf5585b` |
 | T113 — Mobile Pixi battle, receipts and contextual guide | 2026-10-08 | [Battle presentation contract](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276), D276 and [synthetic phone proof](../research/puzzle-battle-phone-proof.md); release remains off | `9bc12a4` |
