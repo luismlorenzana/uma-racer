@@ -49,6 +49,8 @@ Two additional entry-path tests cover every DEV proof route and reject similar-l
 review caught this new route mounting the ordinary providers before its in-memory screen; localhost API requests
 were refused (no local API backend). The entry guard now bypasses auth/content/game providers and service-worker
 registration, and all screenshots were recaptured after that fix. Production release flags never changed.
+The expanded adapter's byte-parity subprocess took6.35s on shared CI CPUs; its isolated test now has a30s timeout
+and the subprocess a20s bound. No parity assertion, gameplay limit or global test timeout was relaxed.
 
 `pnpm sim:puzzles` passes600 campaign battles with unchanged exact kind/colour/PL/hash envelopes. Existing known
 T116 balance gaps remain. `pnpm sim:spark` passes900 runs:77% clears, mean Drive60, style gap4%, paid TL1→10 median6
