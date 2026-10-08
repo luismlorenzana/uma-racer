@@ -52,6 +52,13 @@ const profile = (outfitId: string) => ({ outfitId, sourceContentVersion: 'invent
     strategy: { front: 'A', pace: 'A', late: 'B', end: 'G' } },
   affinities: { fire: 'A', dark: 'A' }, style: 'front', weapon: 'greatsword', defaultSignature: 'fire',
   tier: 1, level: 1, exp: 0, tree: [], legacy: [] })
+/** Class era (D267–D272): Front + Pace makes a Brawler. */
+const classProfile = (outfitId: string, tree: { tier: number; id: string }[] = [{ tier: 1, id: 'greatsword.fire.1' }], level = 1) => {
+  const { affinities: _a, style: _s, weapon: _w, defaultSignature: _d, ...rest } = profile(outfitId)
+  return { ...rest, classId: 'brawler', weapons: ['greatsword', 'spear'], level, tree }
+}
+const classParty = { schemaVersion: 3, presetId: 'party-1', name: 'Invented', foregroundChapterId: 'ura-finale',
+  slots: [{ outfitId: 'uma-a', loadout: [{ tier: 1, id: 'greatsword.fire.1' }], familiar: 'greatsword' }, null, null, null, null] }
 const run = { schemaVersion: 2, presetId: 'party-1', chapterId: 'ura-finale', wins: { start: 1 }, mp: {}, battle: null,
   battles: 0, clearedAt: null, updatedAt: 1 }
 const members = ['uma-a', 'uma-b', 'uma-c', 'uma-d', 'uma-e'].map((outfitId) => ({ outfitId, delta: 19, beforeTier: 1, beforeLevel: 1,
@@ -88,6 +95,18 @@ for (const backend of ['local', 'firestore'] as const) {
         data: { schemaVersion: 1, profile: { ...profile('uma-a'), level: 9 }, projectionRevision: 4 } }], appends: [] })
       expect(stale.applied).toEqual([])
       expect((await repo.load('u1')).entities.find((row) => row.kind === 'rpgOutfits')?.data.schemaVersion).toBe(2)
+    })
+
+    it('accepts class-era rows (D272); a schema-2 row cannot overwrite them', async () => {
+      const synced = await repo.sync('u1', { upserts: [
+        { kind: 'rpgOutfits', id: 'uma-a', baseVersion: 0, data: { schemaVersion: 3, profile: classProfile('uma-a'), projectionRevision: 1 } },
+        { kind: 'rpgPresets', id: 'party-1', baseVersion: 0, data: classParty },
+      ], appends: [] })
+      expect(synced.applied.map((row) => row.kind).sort()).toEqual(['rpgOutfits', 'rpgPresets'])
+      const stale = await repo.sync('u1', { upserts: [{ kind: 'rpgOutfits', id: 'uma-a', baseVersion: 1,
+        data: { schemaVersion: 2, profile: profile('uma-a'), projectionRevision: 4 } }], appends: [] })
+      expect(stale.applied).toEqual([])
+      expect((await repo.load('u1')).entities.find((row) => row.kind === 'rpgOutfits')?.data.schemaVersion).toBe(3)
     })
 
     it('opens precisely one v15 Inspiration position; duplicate and competing versions cannot consume twice', async () => {
@@ -135,6 +154,25 @@ describe('RPG sync and command parsers', () => {
       data: { ...run, battle: { battleId: 'b', nodeId: 'n', startedAt: 1, input: { version: 2, pad: 'x'.repeat(70_000) } } } }] })).toMatch(/invalid rpgCheckpoints/)
     expect(parseSyncRequest({ appends: [{ kind: 'rpgReceipts', id: 'r', data: {}, createdAt: 1 }] })).toMatch(/receipts/)
     expect(parseSyncRequest({ appends: [{ kind: 'rpgResults', id: 'other', data: result, createdAt: result.createdAt }] })).toMatch(/campaign shape and id/)
+  })
+  it('checks class-era outfits against the class and tree rules', () => {
+    const upsert = (data: unknown) => parseSyncRequest({ upserts: [{ kind: 'rpgOutfits', id: 'uma-a', baseVersion: 0, data }] })
+    const outfit = (p: Record<string, unknown>) => ({ schemaVersion: 3, profile: p, projectionRevision: 0 })
+    expect(typeof upsert(outfit(classProfile('uma-a')))).toBe('object')
+    expect(typeof upsert(outfit({ ...classProfile('uma-a', [{ tier: 1, id: 'greatsword.fire.1' }, { tier: 1, id: 'greatsword.fire.2' },
+      { tier: 1, id: 'greatsword.fire.2a' }], 10) }))).toBe('object')
+    for (const bad of [
+      { ...classProfile('uma-a'), classId: 'cleric', weapons: ['arcane-staff', 'cleric-staff'] }, // not open to Front + Pace
+      { ...classProfile('uma-a'), weapons: ['greatsword', 'axe'] }, // not a weapon set
+      classProfile('uma-a', [{ tier: 1, id: 'axe.fire.1' }]), // outside her trees
+      classProfile('uma-a', [{ tier: 1, id: 'greatsword.fire.2' }], 10), // missing the core node above
+      classProfile('uma-a', [{ tier: 1, id: 'greatsword.fire.1' }, { tier: 1, id: 'greatsword.fire.2' }], 9), // depth gate
+      classProfile('uma-a', [{ tier: 1, id: 'greatsword.fire.1' }, { tier: 1, id: 'greatsword.fire.2' }, { tier: 1, id: 'greatsword.fire.2a' },
+        { tier: 1, id: 'greatsword.fire.2b' }], 10), // both sides of a fork
+    ]) expect(upsert(outfit(bad))).toMatch(/invalid rpgOutfits/)
+    expect(typeof parseSyncRequest({ upserts: [{ kind: 'rpgPresets', id: 'party-1', baseVersion: 0, data: classParty }] })).toBe('object')
+    expect(parseSyncRequest({ upserts: [{ kind: 'rpgPresets', id: 'party-1', baseVersion: 0, data: { ...classParty,
+      slots: [{ ...classParty.slots[0], loadout: [{ tier: 1, id: 'short-sword.duel.1' }] }, null, null, null, null] } }] })).toMatch(/invalid rpgPresets/)
   })
   it('refuses retired grouped actions so an old app cannot move a campaign run', () => {
     expect(parseRpgCommandRequest({ schemaVersion: 1, commandId: 'old-begin', action: 'begin-battle', expected: [], upserts: [], appends: [] }))
