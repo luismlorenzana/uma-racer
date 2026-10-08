@@ -88,10 +88,10 @@ rules follow Octopath Traveler; the full rules and numbers are in [the class tre
 levels, elements and stats are code, so a rebalance never needs a content publish; node ids stay stable.
 
 - **Shape (top to bottom, five columns, D266):** a starting camp; three fight stages (Debut, Classic, Senior Year),
-  each with four rows of regular fights alternating three and two lanes, a camp and a **sub-boss** squad; then the
+  each with two rows of three regular fights (one row per level, D286), a camp and a **sub-boss** squad; then the
   **Finals**: a last camp that splits into **five elemental routes** (Ember, Frost, Storm, Dawn, Dusk), each a
   sub-boss vanguard and then a **champion** of that element, with no regular fights. Pick the route whose champion your
-  party can break. 30 regular fights, 8 sub-bosses, 5 champions, 5 camps.
+  party can break. 18 regular fights, 8 sub-bosses, 5 champions, 5 camps.
 - **Levels:** Debut Lv1–3, Classic 4–6, Senior Year 7–9, Finals 10–12 of the chapter: stage `k` fights at
   `start + 3k` and `+1`, its sub-boss at `start + 3k + 2`; the last camp at `start + 9`, Finals sub-bosses at
   `start + 10`, champions at `start + 11`.
@@ -118,12 +118,12 @@ same frozen fight from its first action.
 
 Every won fight pays, first clear or replay:
 
-- **EXP** to all five entrants (KO'd included): a share of one level at the foes' level (fight 0.25, sub-boss 0.28,
-  champion 0.32 of `expToNext`, D266), × `1 − 0.1 × (member level − foe level)` clamped to 0.1–2.0. Outleveled fights
+- **EXP** to all five entrants (KO'd included): a share of one level at the foes' level (fight 0.42, sub-boss 0.28,
+  champion 0.32 of `expToNext`, D266, D286), × `1 − 0.1 × (member level − foe level)` clamped to 0.1–2.0. Outleveled fights
   pay little; fights above you pay up to double. First clears reach the Finals around chapter Lv9, one route ends
   around Lv10 and every node around Lv12 (Lv24, 36 and 48 in the next chapters).
-- **Inspiration tokens** of the chapter's scenario: fight 1 Slot + 2 Skill, sub-boss 4 + 8, champion 6 + 12 (D266).
-  Clearing every node pays 92 Slot + 184 Skill, enough for fifteen units' parents (6 Slot) and skills (12 Skill).
+- **Inspiration tokens** of the chapter's scenario: fight 2 Slot + 4 Skill, sub-boss 4 + 8, champion 6 + 12 (D266,
+  D286). Clearing every node pays 98 Slot + 196 Skill, enough for sixteen units' parents (6 Slot) and skills (12 Skill).
   Gross tokens first repay the matching Inspiration advance debt (D256), then land in Items.
 
 ## Saving and sync (D260, D263, D282)

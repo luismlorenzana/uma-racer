@@ -134,6 +134,14 @@ export interface RpgSettlement {
   result: RpgBattleResultV2 | null
 }
 
+/** A fight opened on a stage row a rebalance retired (D286) still settles as a regular fight at its foes' level. */
+function battleNode(chapter: RpgCampaignChapter, battle: RpgRunBattleV2): Pick<RpgMapNode, 'id' | 'kind' | 'level'> | null {
+  const node = chapter.nodes.find((n) => n.id === battle.nodeId)
+  if (node) return node
+  const level = battle.input.enemies[0]?.level
+  return /^a\dr\dc\d$/.test(battle.nodeId) && level ? { id: battle.nodeId, kind: 'fight', level } : null
+}
+
 /** A win pays every entrant (KO'd included) and carries the party's MP; a loss leaves the run as it was. */
 export function rpgSettleRunBattle(chapter: RpgCampaignChapter, run: RpgRunSaveV2, state: BattleState,
   profiles: readonly RpgProfile[], now: number): RpgSettlement {
@@ -141,7 +149,7 @@ export function rpgSettleRunBattle(chapter: RpgCampaignChapter, run: RpgRunSaveV
   if (!battle) throw new Error('No open fight')
   if (state.input.seed !== battle.input.seed) throw new Error('Battle does not belong to this run')
   if (state.outcome === 'active') throw new Error('The fight is still on')
-  const node = chapter.nodes.find((n) => n.id === battle.nodeId)
+  const node = battleNode(chapter, battle)
   if (!node || node.kind === 'camp') throw new Error('Battle node is unavailable')
   if (state.outcome === 'loss') return { run: { ...run, battle: null, updatedAt: now }, outcome: 'loss', profiles: [...profiles], result: null }
   const members: RpgMemberExp[] = []

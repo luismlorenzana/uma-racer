@@ -386,9 +386,12 @@ spends big skills on a Break, attack-only uses free actions):
 
 | Chapter | Regular fights | Sub-bosses | Champion |
 |---|---|---|---|
-| URA (from Lv1) | 5–8 rounds | 7–9 rounds, 6–26% HP lost | 17 rounds, 77% lost, at Lv10 against Lv12 |
-| Unity Cup (from Lv13) | 4–6 rounds | 5–6 rounds, 0–12% lost | 7 rounds, 0% lost |
-| Project L'Arc (T2 Lv11) | 3–7 rounds | 4–5 rounds, 0–10% lost | 8 rounds, 7% lost |
+| URA (from Lv1) | 5–7 rounds | 7–10 rounds, 0–30% HP lost | 18 rounds, 88% lost, at Lv10 against Lv12 |
+| Unity Cup (from Lv13) | 3–5 rounds | 5–7 rounds, 0–11% lost | 7 rounds, 0% lost |
+| Project L'Arc (T2 Lv11) | 3–5 rounds | 4–5 rounds, 0–7% lost | 8 rounds, 5% lost |
+
+With six fights a stage (D286) the party stands at the same level at every stage as with ten, and a careful URA clear
+takes 23 fights instead of 35 (about 120 sim minutes instead of 180).
 
 Attack-only loses a sub-boss in every chapter. From Unity Cup on, bosses barely hurt a party that spends its whole MP
 pool; boss offense is the next lever if they feel safe in play. Bigger boss shields (7/10) were tried and only made

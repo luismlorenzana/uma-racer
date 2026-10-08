@@ -12,6 +12,9 @@ export const RPG_CAMPAIGN_VERSION = 1
 export const RPG_CHAPTER_LEVELS = 12
 /** Stages with rows of regular fights; the Finals is five elemental sub-bosses and five champions. */
 export const RPG_FIGHT_STAGES = 3
+/** D286: a stage's first two levels are one row of three fights each, then its camp and sub-boss at the third. */
+export const RPG_STAGE_FIGHT_ROWS = 2
+export const RPG_FIGHT_LANES = [1, 2, 3] as const
 export const RPG_MAP_COLUMNS = 5
 export type RpgMapNodeKind = 'camp' | 'fight' | 'sub-boss' | 'boss'
 export interface RpgCastMember { id: string; name: string }
@@ -72,15 +75,13 @@ function layout(start: number, scenarioTier: number): Layout[] {
     }
   }
   for (let stage = 0; stage < RPG_FIGHT_STAGES; stage += 1) {
-    const pattern = stage % 2 === 0 ? [3, 2, 3, 2] : [2, 3, 2, 3]
-    pattern.forEach((count, index) => {
-      const cols = count === 3 ? [1, 2, 3] : [1, 3]
-      const level = start + 3 * stage + (index < 2 ? 0 : 1)
-      const current = cols.map((col) => add({ id: `a${stage + 1}r${index + 1}c${col}`, col, kind: 'fight', level, stage, element: null }))
+    for (let index = 0; index < RPG_STAGE_FIGHT_ROWS; index += 1) {
+      const level = start + 3 * stage + index
+      const current = RPG_FIGHT_LANES.map((col) => add({ id: `a${stage + 1}r${index + 1}c${col}`, col, kind: 'fight', level, stage, element: null }))
       link(previous, current)
       previous = current
       row += 1
-    })
+    }
     const camp = add({ id: `a${stage + 1}camp`, col: 2, kind: 'camp', level: start + 3 * stage + 1, stage, element: null })
     link(previous, [camp]); row += 1
     const element = RPG_ELEMENTS[(scenarioTier + stage * 2) % RPG_ELEMENTS.length]!

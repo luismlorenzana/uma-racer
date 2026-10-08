@@ -78,10 +78,10 @@ describe('local-first RPG (D263)', () => {
     expect(run.wins[nodeId]).toBe(1)
     expect(run.battle).toBeNull()
     expect((await db.rpgOutfits.get('u1'))!.data.profile.exp).toBe(settled.result!.members[0]!.delta)
-    // Two Skill and one Slot token all repay the six/twelve-token advance debt; nothing lands in Items yet.
+    // Four Skill and two Slot tokens (D286) all repay the six/twelve-token advance debt; nothing lands in Items yet.
     expect((await db.items.get('inspiration:t1:skill'))?.data.quantity).toBe(0)
-    expect((await db.inspirationBank.get('main'))!.data.balances['inspiration:t1:skill']).toBe(-10)
-    expect((await db.itemLedger.toArray()).map((r) => [r.data.delta, (r.data as { source: { debtPaid: number } }).source.debtPaid])).toEqual([[2, 2], [1, 1]])
+    expect((await db.inspirationBank.get('main'))!.data.balances['inspiration:t1:skill']).toBe(-8)
+    expect((await db.itemLedger.toArray()).map((r) => [r.data.delta, (r.data as { source: { debtPaid: number } }).source.debtPaid])).toEqual([[4, 4], [2, 2]])
     expect(await outbox()).toEqual([`append:itemLedger/rpg-inspiration:${battleId}:skill`, `append:itemLedger/rpg-inspiration:${battleId}:slot`,
       `append:rpgResults/${battleId}`, 'upsert:inspirationBank/main', 'upsert:items/inspiration:t1:skill', 'upsert:items/inspiration:t1:slot',
       `upsert:rpgCheckpoints/${rpgRunId('party-1', chapter.id)}`, ...ids.slice(0, 5).map((id) => `upsert:rpgOutfits/${id}`)].sort())
