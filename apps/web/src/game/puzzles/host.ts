@@ -42,6 +42,9 @@ export interface PuzzleAccount {
   readiness: ReturnType<typeof puzzleReadiness>; bank: ConstellationBankSaveV1 | null
   outfits: readonly PuzzleOutfitSaveV1[]; parties: readonly PuzzlePresetSaveV1[]
   checkpoints: readonly PuzzleCheckpointSaveV1[]; stocks: Readonly<Record<string, number>>
+  /** Read-only racing units and durable material-operation status; never a second inventory. */
+  umas: readonly UmaSave[]
+  materialOperations: readonly { id: string; status: 'pending' | 'accepted' | 'rejected' | 'blocked'; reason: string | null }[]
 }
 export interface PuzzleBattleView {
   kind: 'battle'; open: PuzzleOpenEncounterV1; state: PuzzleBattleStateV1; actions: readonly PuzzleBattleAction[]
@@ -134,8 +137,13 @@ export class PersistentPuzzleHost {
       const saved = (await this.database.puzzlePresets.toArray()).map(r => checked(parsePuzzlePresetSave(r.data), 'party'))
       const checkpoints = (await this.database.puzzleCheckpoints.toArray()).map(r => checked(parsePuzzleCheckpointSave(r.data), 'checkpoint'))
       const stocks = await this.stocks()
+      const umas = (await this.database.umas.toArray()).map(r => parseUmaSaveOrThrow(r.data))
+      const pending = (await this.database.pendingPuzzleOperations.toArray()).filter(r => ['cl-spend', 'exchange'].includes(r.operation.payload.kind))
+      const accepted = (await this.database.puzzleOperations.toArray()).filter(r => ['cl-spend', 'exchange'].includes(r.data.operation.payload.kind))
+      const materialOperations = [...pending.map(r => ({ id: r.id, status: r.status, reason: r.reason ?? null })),
+        ...accepted.map(r => ({ id: r.id, status: 'accepted' as const, reason: null }))]
       return { readiness: puzzleReadiness(this.enabled, bank), bank, outfits,
-        parties: PUZZLE_PARTY_IDS.map(id => saved.find(p => p.partyId === id) ?? emptyPuzzleParty(id)), checkpoints, stocks }
+        parties: PUZZLE_PARTY_IDS.map(id => saved.find(p => p.partyId === id) ?? emptyPuzzleParty(id)), checkpoints, stocks, umas, materialOperations }
     })
   }
   async registration(outfitId: string) {
@@ -444,8 +452,8 @@ export class PersistentPuzzleHost {
     const movement = checked(receipt.logs.find(l => l.kind === 'itemLedger' && l.data.itemId === payload.to) ?? null, 'exchange grant')
     const gross = Number(movement.data.delta), debtPaid = Number((movement.data.source as { debtPaid: number }).debtPaid)
     return { from: payload.from, to: payload.to, input: payload.quantity, gross, debtPaid, net: gross - debtPaid,
-      irreversible: debtPaid > 0, bankAfter: receipt.changes.find(c => c.kind === 'constellationBank')?.after.data,
-      stocksAfter: receipt.changes.filter(c => c.kind === 'items').map(c => ({ itemId: c.id, quantity: c.after.data.quantity })) }
+      irreversible: debtPaid > 0, bankAfter: checked(parseConstellationBankSave(receipt.changes.find(c => c.kind === 'constellationBank')?.after.data), 'exchange bank'),
+      stocksAfter: receipt.changes.filter(c => c.kind === 'items').map(c => ({ itemId: c.id, quantity: checked(parseInventoryStackData(c.after.data, c.id), 'exchange stock').quantity })) }
   }
 
   /** Online only. Network completes before archiving/restarting a journal; no reroll on failure. */

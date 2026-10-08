@@ -13,6 +13,7 @@ import { ScreenState } from '../ui/ScreenState'
 import { SegmentedControl } from '../ui/SegmentedControl'
 import { ChevronLeftIcon } from '../ui/icons'
 import { TypeIcon } from '../ui/TypeIcon'
+import { ClLevelUpButton, useClCutover } from '../ui/puzzles/ClLevelUp'
 
 export interface TrainingContext {
   content: LoadedContent
@@ -33,6 +34,7 @@ type TrainingTab = 'constellation' | 'cards'
  * constellation and the card set — as tabs (M016). Full screen, like a race, so the tab bar never competes.
  */
 export function TrainingScene() {
+  const clCutover = useClCutover()
   const { umaId = '' } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
@@ -79,7 +81,7 @@ export function TrainingScene() {
           {/* Everything here builds her selected distance preset (D252). */}
           <PresetBadge preset={run.preset} />
           <Crest>{uma.scenario?.name ?? `Tier ${run.tier}`}</Crest>
-          <Crest tone="accent">TL {run.trainingLevel}</Crest>
+          {clCutover ? <ClLevelUpButton outfitId={save.templateId} tier={run.tier} level={run.trainingLevel} /> : <Crest tone="accent">TL {run.trainingLevel}</Crest>}
         </div>
       </header>
 

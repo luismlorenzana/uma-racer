@@ -42,9 +42,11 @@ export function puzzleUiProofData() {
     reached: puzzleChapterStatus(chapter, foreignProgress).reached, open: { schemaVersion: 1, deviceId: 'invented-other-device', ownerEpoch: 1, input, inputHash: puzzlePayloadHash(input), content: proofIdentity } }
   const rows: PuzzleStoredEntity[] = []
   const put = (kind: string, id: string, data: object) => rows.push({ kind, id, data: puzzleData(data), version: 1, deleted: false, updatedAt: 1 })
-  templates.forEach(t => put('umas', t.id, createUmaSave(t))); outfits.forEach(o => put('puzzleOutfits', o.outfitId, o)); parties.forEach(p => put('puzzlePresets', p.partyId, p))
+  templates.forEach((t, i) => { const uma = createUmaSave(t); if (i === 4) uma.scenarios[0]!.trainingLevel = 9; put('umas', t.id, uma) }); outfits.forEach(o => put('puzzleOutfits', o.outfitId, o)); parties.forEach(p => put('puzzlePresets', p.partyId, p))
+  for (const [itemId, quantity] of Object.entries({ 'constellation:ura-finale:front': 5, 'constellation:ura-finale:pace': 6,
+    'constellation:unity-cup:front': 6, 'constellation:unity-cup:pace': 3, 'training:level-up-ticket': 2, 'constellation:invented-future:front': 1 })) put('items', itemId, { itemId, quantity, updatedAt: 1 })
   put('constellationBank', 'main', { schemaVersion: 1, cutoverVersion: 1, cutoverId: 'invented-ui-cutover', phase: 'active', cohortCount: 1, completedCount: 1,
-    debitLimits: { 'constellation:ura-finale:front': 7 }, balances: { 'constellation:ura-finale:front': -7 }, openingClears: [], revision: 1 })
+    debitLimits: { 'constellation:ura-finale:front': 7 }, balances: { 'constellation:ura-finale:front': -7 }, openingClears: ['unity-cup'], revision: 1 })
   put('puzzleCheckpoints', checkpoint.checkpointId, checkpoint); put('puzzleCheckpoints', foreignCheckpoint.checkpointId, foreignCheckpoint)
   const frames = Object.fromEntries(templates.map((t, i) => [t.id, { page: 0, x: i * 128, y: 0, width: 128 as const, height: 128 as const }]))
   const palette = ['#b87564', '#607da2', '#668567', '#b5a46b', '#8a769b']

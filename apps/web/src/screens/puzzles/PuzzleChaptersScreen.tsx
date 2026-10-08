@@ -11,6 +11,7 @@ import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
 export function PuzzleChaptersScreen() {
   const { root, content, host, command, busy, memory } = usePuzzles(), account = usePuzzleAccount(), navigate = useNavigate(), [search] = useSearchParams()
   const [partyId, setPartyId] = useState(() => search.get('party') ?? memory.read().partyId)
+  const focus = SCENARIOS.find(s => s.id === search.get('scenario'))
   const party = account?.parties.find(p => p.partyId === partyId), summary = party && account && puzzlePartySummary(party, account), open = account && party && openPuzzleParty(account, party.partyId)
   const launch = async (scenarioId: string) => {
     if (!party || !summary?.full || busy || open && open.scenarioId !== scenarioId) return
@@ -21,7 +22,8 @@ export function PuzzleChaptersScreen() {
   return <PuzzleFrame title="Puzzle chapters" back={root}><div className="grid gap-3">
     {account && <PuzzleSelect label="Party" value={party?.partyId ?? ''} options={account.parties.map(p => ({ value: p.partyId, label: p.name }))} onChange={id => { setPartyId(id); memory.choose(id, memory.read().scenarioId) }} />}
     <p className="text-xs text-ink-on-dark-soft">{summary?.full ? `Average PL ${summary.average!.toFixed(1)} · range ${summary.min}–${summary.max}. Every chapter is open to this party.` : 'Fill all five party slots before opening a chapter.'} Wins and open encounters are separate for each party.</p>
-    {SCENARIOS.map(s => {
+    {focus && <p className="text-xs">Materials for {focus.name} · <a className="inline-flex min-h-11 items-center text-accent" href={`${root}/chapters?party=${partyId}`}>Show all chapters</a></p>}
+    {(focus ? [focus] : SCENARIOS).map(s => {
       const chapter = puzzleChapter(s.id), status = account && party && puzzleMapStatus(account, party.partyId, s.id), suspended = open?.scenarioId === s.id, node = suspended && open && openPuzzleNode(open)
       return <PuzzleCard key={s.id}><div className="flex gap-3"><div className="h-12 w-12 shrink-0"><AtlasSprite asset={getContentAsset(content, 'scenario-icons', s.id)} alt={`${chapter.name} crest`} fallback={<ScenarioIcon size={32} />} /></div>
         <div className="min-w-0 flex-1"><h2 className="text-base">{chapter.name}</h2><p className="text-xs text-ink-on-dark-soft">PL {chapter.levelStart}–{chapter.levelEnd} · {status?.cleared.length ?? 0}/28 wins{status?.full ? ' · Full map cleared' : status?.complete ? ' · Chapter complete' : ''}</p></div></div>

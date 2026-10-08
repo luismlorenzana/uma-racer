@@ -1,6 +1,6 @@
 // Engine-agnostic Item inventory join and filtering (docs/design/farm.md#global-item-inventory, T085).
 
-import type { FarmCropDefinition, InventoryStackData, StatKey } from '@racer/domain'
+import { SCENARIOS, STRATEGIES, puzzleMaterialCatalogue, type PuzzleScenarioRegistry, type PuzzleMaterialDefinition, type FarmCropDefinition, type InventoryStackData, type StatKey } from '@racer/domain'
 
 export interface ItemCatalogDefinition {
   id: string
@@ -46,6 +46,22 @@ export function resolveItemLink<T extends ItemCatalogDefinition>(
   if (!SAFE_ITEM_LINK.test(raw)) return { status: 'invalid', definition: null }
   const definition = definitions.find((candidate) => candidate.id === raw)
   return definition ? { status: 'ready', definition } : { status: 'invalid', definition: null }
+}
+
+/** Safe orphan links are inspectable only when the stack actually exists. Never manufacture an item. */
+export function savedOrphanItem(raw: string | null, stacks: Readonly<Record<string, number>>, definitions: readonly ItemCatalogDefinition[]): string | null {
+  return raw && SAFE_ITEM_LINK.test(raw) && Object.hasOwn(stacks, raw) && !definitions.some(d => d.id === raw) ? raw : null
+}
+
+export interface ConstellationItemDefinition extends ItemCatalogDefinition {
+  category: 'constellation'
+  material: PuzzleMaterialDefinition
+}
+/** Global catalogue extension: registry order (not a hard-coded count), then original source style. */
+export function constellationItemDefinitions(registry: PuzzleScenarioRegistry = SCENARIOS): ConstellationItemDefinition[] {
+  return puzzleMaterialCatalogue(registry).map(material => ({ id: material.id, name: material.name, category: 'constellation', material,
+    order: [registry.findIndex(s => s.id === material.scenarioId), STRATEGIES.indexOf(material.style)],
+    facets: { scenario: String(material.scenarioTier), scenarioId: material.scenarioId, style: material.style } }))
 }
 
 function compareOrder(left: ItemCatalogDefinition, right: ItemCatalogDefinition): number {
