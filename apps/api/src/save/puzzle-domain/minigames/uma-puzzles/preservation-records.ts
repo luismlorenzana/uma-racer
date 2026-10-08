@@ -28,6 +28,7 @@ export interface PuzzleSparkRetirementReceipt {
 }
 export type PuzzlePreservationRecord = PuzzlePreservationHeader | PuzzlePreservationPage | PuzzleSparkRetirementReceipt
 export const preservationPageId = (index: number) => `page-${index}`
+export const preservationCreditId = (cutoverId: string) => `puzzle-preservation:${cutoverId}`
 export function parseFrozenPuzzleUnit(v: unknown): FrozenPuzzleUnit | null {
   if (!puzzleRecord(v) || !puzzleExact(v, ['outfitId', 'scenarioId', 'tier', 'umaVersion', 'level', 'exp', 'preferredStyle', 'debtStyle', 'source']) ||
     !puzzleId(v.outfitId) || !puzzleInteger(v.tier, 1, SCENARIOS.length) || SCENARIOS.find(s => s.tier === v.tier)?.id !== v.scenarioId ||
@@ -47,7 +48,7 @@ export function parsePuzzlePreservationRecord(v: unknown): PuzzlePreservationRec
       !puzzleInteger(v.refunded) || (v.disposition === 'committed' ? v.refundId !== null || v.refunded !== 0 : v.refundId !== `${v.runId}:refund` || v.refunded < 1)) return null
     return structuredClone(v) as unknown as PuzzleSparkRetirementReceipt
   }
-  if (!puzzleId(v.cutoverId)) return null
+  if (!puzzleId(v.cutoverId) || !puzzleId(preservationCreditId(v.cutoverId))) return null
   if (v.type === 'page') {
     if (!puzzleExact(v, ['schemaVersion', 'type', 'cutoverId', 'index', 'units']) || !puzzleInteger(v.index, 0, 127) ||
       !puzzleArray(v.units, PUZZLE_PRESERVATION_LIMITS.pageUnits) || !v.units.length) return null

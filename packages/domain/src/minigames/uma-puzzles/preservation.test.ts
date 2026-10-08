@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { parsePlayerProfile, parseUmaSave, parseSyncRequest, type UmaSave } from '../../save'
 import { constellationTemplate } from '../../constellation'
-import { resolvePuzzlePreservation, preservationHeader } from './preservation'
+import { resolvePuzzlePreservation, preservationHeader, parsePuzzlePreservationRequest } from './preservation'
 import { parseConstellationBankSave, parsePuzzleCohortSave, puzzleCohortId } from './records'
 import { parsePuzzlePreservationRecord } from './preservation-records'
 import { preservationFixture } from './preservation.synthetic'
@@ -59,6 +59,11 @@ describe('receipt-owned preservation', () => {
     const g = preservationFixture(4097); expect(() => g.apply()).toThrow(/bounds/); expect(g.entities.has('constellationBank/main')).toBe(false)
     const h = preservationFixture(1); h.entities.get('umas/invented-0')!.data.schemaVersion = 14
     expect(() => h.apply()).toThrow(/migrat/); expect(h.entities.has('constellationBank/main')).toBe(false)
+    const i = preservationFixture(1), unchanged = structuredClone(i.entities)
+    expect(parsePuzzlePreservationRequest({ ...i.request(), cutoverId: 'x'.repeat(100) })).not.toBeNull()
+    expect(() => i.apply({ ...i.request(), cutoverId: 'x'.repeat(101) })).toThrow(/Invalid preservation request/)
+    expect(i.entities).toEqual(unchanged)
+    i.apply(); expect(parsePuzzlePreservationRecord({ ...preservationHeader(i.entities)!, cutoverId: 'x'.repeat(101) })).toBeNull()
   })
   it('preserves distinct four-preset cards, lineage, Inspiration, crops, skills and unrelated historical rows byte-for-byte', () => {
     const f = preservationFixture(1), row = f.entities.get('umas/invented-0')!, data = row.data as unknown as UmaSave, unit = data.scenarios[0]!

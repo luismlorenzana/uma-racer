@@ -51,6 +51,8 @@ were refused (no local API backend). The entry guard now bypasses auth/content/g
 registration, and all screenshots were recaptured after that fix. Production release flags never changed.
 The expanded adapter's byte-parity subprocess took6.35s on shared CI CPUs; its isolated test now has a30s timeout
 and the subprocess a20s bound. No parity assertion, gameplay limit or global test timeout was relaxed.
+One loaded local run hit the existing250ms race precompute assertion at267ms; the unchanged test passed on the
+full-suite rerun. No Racing engine or performance threshold was changed.
 
 `pnpm sim:puzzles` passes600 campaign battles with unchanged exact kind/colour/PL/hash envelopes. Existing known
 T116 balance gaps remain. `pnpm sim:spark` passes900 runs:77% clears, mean Drive60, style gap4%, paid TL1→10 median6
@@ -62,9 +64,9 @@ fixture strings are tree-shaken; Firebase and Pixi remain lazy. Startup is below
 
 | Chunk | gzip KB |
 |---|---:|
-| Startup entry | 153.30 |
-| Dormant preparation coordinator | 3.68 |
-| Retained legacy Spark screen | 18.17 |
+| Startup entry | 153.31 |
+| Dormant preparation coordinator | 3.67 |
+| Retained legacy Spark screen | 18.18 |
 | Puzzle battle screen | 8.41 |
 | Shared Pixi entry | 85.30 |
 

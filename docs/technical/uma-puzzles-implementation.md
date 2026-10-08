@@ -607,6 +607,8 @@ Extra stats, sets, assignments, loadouts, race defaults, racing EXP/history, bad
 Dexie **31** adds only `puzzlePreservation:id`; existing main's RPG29/30 migrations are neither changed nor repeated.
 
 Protected requests are exact `{schemaVersion:2,cutoverId,expectedBankRevision,action:'preview'|'advance'}`.
+The cutover identity must fit the standard save-id bound **with** its derived `puzzle-preservation:` ledger prefix;
+request and stored-header parsers refuse an overflow before freeze, not during final credit.
 Responses contain `status`, nullable `message`, nullable aggregate `summary`, canonical `entities` and `logs`.
 Summary reports units/completed, per-material debt, raw unapplied EXP, original stock, credited universals and stock after.
 Client adoption accepts only preservation-owned rows/logs and merges canonical CL/EXP/schema into concurrent physical

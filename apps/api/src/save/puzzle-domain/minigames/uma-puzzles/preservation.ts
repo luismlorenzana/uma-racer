@@ -6,7 +6,7 @@ import { eligiblePuzzleStyles, parsePuzzleSource } from './identity'
 import { parseConstellationBankSave, parsePuzzleCohortSave, puzzleCanonical, puzzleCohortId, puzzleData,
   type ConstellationBankSaveV1, type PuzzleStoredEntity, type PuzzleStoredLog } from './records'
 import { CONSTELLATION_SAVE_SCHEMA_VERSION, PUZZLE_PRESERVATION_LIMITS as L, parseFrozenPuzzleUnit,
-  parsePuzzlePreservationRecord, preservationPageId, type FrozenPuzzleUnit, type PuzzlePreservationHeader, type PuzzlePreservationPage } from './preservation-records'
+  parsePuzzlePreservationRecord, preservationPageId, preservationCreditId, type FrozenPuzzleUnit, type PuzzlePreservationHeader, type PuzzlePreservationPage } from './preservation-records'
 import type { PuzzleSourceV1 } from './types'
 import { puzzleExact, puzzleId, puzzleInteger, puzzleRecord, requirePuzzle } from './validation'
 
@@ -18,7 +18,7 @@ export interface PuzzlePreservationResponse { status: 'disabled' | 'preview' | '
 export interface VerifiedPuzzlePreservationContent { catalogueVersion: string; contentHash: string; sources: ReadonlyMap<string, PuzzleSourceV1> }
 export function parsePuzzlePreservationRequest(v: unknown): PuzzlePreservationRequest | null {
   if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'cutoverId', 'expectedBankRevision', 'action']) || v.schemaVersion !== 2 ||
-    !puzzleId(v.cutoverId) || !puzzleInteger(v.expectedBankRevision) || !['preview', 'advance'].includes(v.action as string)) return null
+    !puzzleId(v.cutoverId) || !puzzleId(preservationCreditId(v.cutoverId)) || !puzzleInteger(v.expectedBankRevision) || !['preview', 'advance'].includes(v.action as string)) return null
   return structuredClone(v) as unknown as PuzzlePreservationRequest
 }
 export function preservationHeader(rows: ReadonlyMap<string, PuzzleStoredEntity>): PuzzlePreservationHeader | null {
@@ -144,7 +144,7 @@ export function resolvePuzzlePreservation(input: { enabled: boolean; now: number
       'invalid', 'Frozen EXP bank or universal stock changed; do not re-credit')
     const rawExp = sum(header.accountExp, header.transferredExp), remainder = rawExp % 1250, wholeTickets = Math.floor(rawExp / 1250),
       compensation = remainder > 0 ? 1 : 0, credited = wholeTickets + compensation, stockAfter = sum(header.originalStock, credited)
-    const movementId = `puzzle-preservation:${header.cutoverId}`
+    const movementId = preservationCreditId(header.cutoverId)
     requirePuzzle(!input.logs.has(`itemLedger/${movementId}`), 'invalid', 'Unexpected legacy-credit evidence needs recovery')
     put('profile', 'main', { ...profile.data, schemaVersion: CONSTELLATION_SAVE_SCHEMA_VERSION, trainingExpBank: 0 })
     if (credited > 0) {
