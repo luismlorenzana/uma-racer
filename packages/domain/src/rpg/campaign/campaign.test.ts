@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { SCENARIOS } from '../../scenarios'
 import { RPG_ELEMENTS, enrollRpgOutfit, projectRpgStats, type RpgProfile } from '../rules'
 import { createBattle } from '../battle/engine'
+import { battleWeakness } from '../battle/skills'
 import { rpgCampaign, rpgCampaignChapter, rpgNodeParents, rpgTierLevel } from './chapters'
 import { RPG_BATTLE_TOKENS, rpgBattleBaseExp, rpgBattleExp, rpgLevelExpFactor } from './rewards'
 import { createRpgRun, parseRpgRunSave, rpgBeginRunBattle, rpgCarriedMp, rpgChapterCleared, rpgNodeStatus, rpgRestAtCamp,
   rpgSettleRunBattle } from './run'
-import { rpgCampaignOutfit, type RpgOutfitSaveV1 } from '../save'
 
 // Invented cast only.
 const cast = Array.from({ length: 7 }, (_, i) => ({ id: `cast${i}`, name: `Rival ${i}` }))
@@ -64,10 +64,25 @@ function member(id: string): RpgProfile {
   return enrollRpgOutfit({ outfit: { id, baseStats: { speed: 110, stamina: 110, power: 110, guts: 110, wit: 110 },
     growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
     aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'G', mile: 'G', medium: 'A', long: 'G' }, strategy: { front: 'A', pace: 'G', late: 'G', end: 'G' } } },
-  contentVersion: 'test', style: 'front', weapon: 'greatsword', defaultSignature: 'fire' })
+  contentVersion: 'test', classId: 'brawler', weapons: ['greatsword', 'spear'] })
 }
 const party = ['m1', 'm2', 'm3', 'm4', 'm5'].map(member)
-const slots = party.map((p) => ({ profile: p, slot: { outfitId: p.outfitId, signature: p.defaultSignature, loadout: [] } }))
+const slots = party.map((p) => ({ profile: p, slot: { outfitId: p.outfitId, loadout: [], familiar: 'greatsword' as const } }))
+
+describe('foe weaknesses (D269)', () => {
+  it('shows more weaknesses on weaker foes and bigger shields on stronger ones, never its own element', () => {
+    const chapter = rpgCampaignChapter('ura-finale', cast)
+    const foes = chapter.nodes.flatMap((n) => n.enemies)
+    const counts = (rank: string) => new Set(foes.filter((f) => f.rank === rank).map((f) => `${f.weaknesses.weapons.length}+${f.weaknesses.elements.length}`))
+    expect([...counts('regular')].sort()).toEqual(['2+3', '3+2'])
+    expect([...counts('sub-boss')]).toEqual(['2+2'])
+    expect([...counts('boss')].sort()).toEqual(['1+2', '2+1'])
+    expect(foes.every((f) => !f.weaknesses.elements.includes(f.element) && f.weaknesses.elements[0] === battleWeakness(f.element))).toBe(true)
+    expect(new Set(foes.filter((f) => f.rank === 'boss').map((f) => f.shield))).toEqual(new Set([8]))
+    expect(new Set(foes.filter((f) => f.rank === 'sub-boss').map((f) => f.shield))).toEqual(new Set([6]))
+    expect(new Set(foes.filter((f) => f.rank === 'regular').map((f) => f.shield))).toEqual(new Set([3, 4]))
+  })
+})
 
 describe('campaign runs (D263)', () => {
   const chapter = rpgCampaignChapter('ura-finale', cast)
@@ -101,18 +116,11 @@ describe('campaign runs (D263)', () => {
   })
 })
 
-describe('campaign save migration (D263, D265)', () => {
-  it('drops a fight left open under engine v2; the run and its MP stay', () => {
+describe('campaign save migration (D265, D272)', () => {
+  it('drops a fight left open under an older engine; the run and its MP stay', () => {
     const run = { ...createRpgRun('party-1', 'ura-finale', 1), mp: { m1: 4 }, battles: 1,
-      battle: { battleId: 'rpg-battle:party-1:ura-finale:1', nodeId: 'a1r1c1', startedAt: 1, input: { version: 2, seed: 1 } } }
+      battle: { battleId: 'rpg-battle:party-1:ura-finale:1', nodeId: 'a1r1c1', startedAt: 1, input: { version: 3, seed: 1 } } }
     expect(parseRpgRunSave(run)).toMatchObject({ battle: null, mp: { m1: 4 }, battles: 1 })
   })
 
-  it('restarts schema-1 outfits at Tier 1 Lv1 once, keeping class and element', () => {
-    const old: RpgOutfitSaveV1 = { schemaVersion: 1, projectionRevision: 4,
-      profile: { ...member('x'), tier: 2, level: 12, exp: 40, tree: [], legacy: [] } }
-    const next = rpgCampaignOutfit(old)
-    expect(next).toMatchObject({ schemaVersion: 2, projectionRevision: 5, profile: { tier: 1, level: 1, exp: 0, style: 'front', defaultSignature: 'fire' } })
-    expect(rpgCampaignOutfit(next)).toBe(next)
-  })
 })

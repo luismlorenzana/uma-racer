@@ -145,48 +145,12 @@ import {
   TYPICAL_CARD_STARS,
   starNodePct,
   RPG_TIER_MAX_LEVEL,
-  RPG_CLASS_EDIT_MAX_LEVEL,
   RPG_TREE_POINTS_PER_LEVEL,
   RPG_TREE_POINT_MAX_LEVEL,
   RPG_TREE_POINTS_PER_DEPTH,
-  RPG_BRANCHES,
-  RPG_SKILL_MAX_LEVEL,
   RPG_DEPTH_GATES,
-  RPG_B_MAX_DEPTH,
   RPG_ACTIVE_SLOT_GATES,
   RPG_MAX_LEGACY_SLOTS,
-  RPG_SIGNATURE_MULTIPLIER,
-  RPG_ADVANTAGE,
-  RPG_RESISTANCE,
-  RPG_DEFENSE_FACTOR,
-  RPG_GUARD_FACTOR,
-  RPG_FOLLOW_UP_FACTOR,
-  RPG_WEAK_FOLLOW_UP_LIMIT,
-  RPG_MAX_ROUNDS,
-  RPG_STATUS_TURNS,
-  RPG_STATUS_STACK_CAP,
-  RPG_BURN_PERCENT,
-  RPG_REGEN_PERCENT,
-  RPG_MARK_PERCENT,
-  RPG_POWER_PERCENT,
-  RPG_WARD_PERCENT,
-  RPG_SLOW_PERCENT,
-  RPG_SKILL_LEVEL_STEP,
-  RPG_BASIC_ATTACK_FACTOR,
-  RPG_SKILL_DEPTH_STEP,
-  RPG_AREA_FACTOR,
-  RPG_MULTI_HIT_FACTOR,
-  RPG_PHYSICAL_BASE_SHARE,
-  RPG_ROLE_HEAL_BASE,
-  RPG_ROLE_HEAL_DEPTH_STEP,
-  RPG_HYBRID_HEAL_FACTOR,
-  RPG_SKILL_MP_BASE,
-  RPG_SKILL_MP_PER_DEPTH,
-  RPG_SKILL_MP_AREA_ADD,
-  RPG_ENEMY_MOVE_DENOMINATOR,
-  RPG_WEAPON_POWER,
-  RPG_SKILL_CATALOG,
-  RPG_BASIC_ACTION_CATALOG,
   RPG_SAVE_SCHEMA_VERSION,
   RPG_PARTY_SIZE,
   RPG_PRESET_COUNT,
@@ -194,13 +158,16 @@ import {
   RPG_MAX_SELECTED_PATH,
   RPG_MAX_ENEMY_KIT_CHARS,
   RPG_MAX_GROUP_OPERATIONS,
+  RPG_SKILL_POWER, RPG_SKILL_MP, RPG_AOE_SHARE, RPG_RANDOM_BONUS, RPG_VARIANTS_PER_TREE, RPG_NODES, RPG_CLASS_WEAPONS,
+  RPG_CLASS_STATS, RPG_FOE_TUNING, rpgClassTrees, rpgTreeNodes,
+  BATTLE_WEAK, BATTLE_UNBROKEN_FACTOR, BATTLE_ULTIMA, BATTLE_DEFENSE_SHARE, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS,
+  BATTLE_STATUS_TURNS, BATTLE_STATUS_STACK_CAP, BATTLE_BURN_PERCENT, BATTLE_STATUS_STEP, BATTLE_FOE_STATUS_STEP,
+  BATTLE_BARRIER_PERCENT, BATTLE_BARRIER_CAP, BATTLE_REGEN_PERCENT, BATTLE_CURE_PERCENT, BATTLE_CLARITY_PERCENT,
+  BATTLE_REBIRTH_PERCENT, BATTLE_REACTION_SHARE,
   rpgExpToNext,
   projectRpgStats,
   rpgTreePointsEarned,
   rpgActiveSlots,
-  rpgSignatureMagnitude,
-  RPG_EXP_RELATIVE_STEP, RPG_EXP_FACTOR_MIN, RPG_EXP_FACTOR_MAX, RPG_CHAPTER_EXP_MARGIN,
-  RPG_ENCOUNTER_EXP_WEIGHTS, RPG_MAX_ENCOUNTER_EXP, rpgEncounterBaseExp, rpgEncounterExp,
 } from './index'
 
 describe('Global card stars — D255', () => {
@@ -212,51 +179,33 @@ describe('Global card stars — D255', () => {
   })
 })
 
-describe('Global Uma RPG — T096 reward pins', () => {
-  it('pins authored schedule, frozen-level taper, rounding and positive floor', () => {
-    expect([RPG_EXP_RELATIVE_STEP, RPG_EXP_FACTOR_MIN, RPG_EXP_FACTOR_MAX, RPG_CHAPTER_EXP_MARGIN]).toEqual([0.025, 0.25, 1.5, 1.1])
-    expect(RPG_ENCOUNTER_EXP_WEIGHTS).toEqual({ encounter: 0.4, elite: 0.25, boss: 0.6 })
-    expect(RPG_MAX_ENCOUNTER_EXP).toBe(1_000_000)
-    expect([1, 11, 21, 31, 41].map((l) => rpgEncounterBaseExp(l, 'encounter'))).toEqual([915, 1619, 2323, 3027, 3326])
-    expect(rpgEncounterBaseExp(10, 'boss')).toBe(2323)
-    expect(rpgEncounterExp({ baseExp: 1619, recommendedTier: 1, recommendedLevel: 11 }, { tier: 2, level: 11 })).toBe(405)
+describe('Global Uma RPG — engine v4 pins (D269, D271)', () => {
+  it('pins damage, breaks and the protection contract', () => {
+    expect([BATTLE_WEAK, BATTLE_UNBROKEN_FACTOR, BATTLE_ULTIMA, BATTLE_DEFENSE_SHARE, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS])
+      .toEqual([1.3, 0.5, 1.2, 0.5, 0.5, 40])
+    expect([BATTLE_STATUS_TURNS, BATTLE_STATUS_STACK_CAP, BATTLE_BURN_PERCENT, BATTLE_STATUS_STEP, BATTLE_FOE_STATUS_STEP,
+      BATTLE_BARRIER_PERCENT, BATTLE_BARRIER_CAP, BATTLE_REGEN_PERCENT, BATTLE_CURE_PERCENT, BATTLE_CLARITY_PERCENT,
+      BATTLE_REBIRTH_PERCENT, BATTLE_REACTION_SHARE]).toEqual([2, 3, 0.04, 0.1, 0.15, 0.08, 0.3, 0.04, 0.1, 0.04, 0.1, 0.25])
+    expect([RPG_FOE_TUNING.regularShield, RPG_FOE_TUNING.lateRegularShield, RPG_FOE_TUNING.subBossShield, RPG_FOE_TUNING.bossShield])
+      .toEqual([3, 4, 6, 8])
+  })
+  it('pins the skill rules and the 330-node catalog (D270)', () => {
+    expect([RPG_SKILL_POWER, RPG_SKILL_MP, RPG_AOE_SHARE, RPG_RANDOM_BONUS, RPG_VARIANTS_PER_TREE])
+      .toEqual([[1.6, 2.2, 2.9, 3.7, 4.6], [10, 14, 18, 22, 26], 0.55, 1.05, 3])
+    // Ten trees × three branches × (five core nodes + three forks of two variants).
+    expect(RPG_NODES.length).toBe(330)
   })
 })
 
-describe('Global Uma RPG — D229 combat pins', () => {
-  it('pins the damage, matchup, protection and bounded round contract', () => {
-    expect([RPG_ADVANTAGE, RPG_RESISTANCE, RPG_DEFENSE_FACTOR, RPG_GUARD_FACTOR,
-      RPG_FOLLOW_UP_FACTOR, RPG_WEAK_FOLLOW_UP_LIMIT, RPG_MAX_ROUNDS])
-      .toEqual([1.5, 0.75, 0.45, 0.5, 0.25, 1, 40])
-    expect([RPG_STATUS_TURNS, RPG_STATUS_STACK_CAP, RPG_BURN_PERCENT, RPG_REGEN_PERCENT,
-      RPG_MARK_PERCENT, RPG_POWER_PERCENT, RPG_WARD_PERCENT, RPG_SLOW_PERCENT])
-      .toEqual([2, 3, 0.02, 0.04, 0.1, 0.15, 0.15, 0.15])
-  })
-
-  it('pins the six-weapon, five-element, eight-branch catalog math', () => {
-    expect(RPG_WEAPON_POWER).toEqual({ greatsword: 1.2, spear: 1.05, 'sword-shield': 0.82,
-      'wizard-staff': 1.12, 'cleric-staff': 0.78, tome: 1.15 })
-    expect([RPG_SKILL_LEVEL_STEP, RPG_BASIC_ATTACK_FACTOR, RPG_SKILL_DEPTH_STEP,
-      RPG_AREA_FACTOR, RPG_MULTI_HIT_FACTOR, RPG_PHYSICAL_BASE_SHARE,
-      RPG_ROLE_HEAL_BASE, RPG_ROLE_HEAL_DEPTH_STEP, RPG_HYBRID_HEAL_FACTOR,
-      RPG_SKILL_MP_BASE, RPG_SKILL_MP_PER_DEPTH, RPG_SKILL_MP_AREA_ADD,
-      RPG_ENEMY_MOVE_DENOMINATOR, RPG_SKILL_CATALOG.length, RPG_BASIC_ACTION_CATALOG.length])
-      .toEqual([0.08, 1.5, 0.16, 0.62, 0.58, 0.72, 1.25, 0.2, 0.45, 4, 3, 3, 100, 240, 12])
-  })
-})
-
-describe('Global Uma RPG — D228 save wire pins', () => {
+describe('Global Uma RPG — save wire pins (D272)', () => {
   it('bounds synced account rows and grouped commands', () => {
     expect([RPG_SAVE_SCHEMA_VERSION, RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_MAX_TREE_NODES,
       RPG_MAX_SELECTED_PATH, RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_GROUP_OPERATIONS])
-      .toEqual([2, 5, 5, 40, 64, 16_384, 20])
+      .toEqual([3, 5, 5, 40, 64, 16_384, 20])
   })
 })
 
-describe('Global Uma RPG — D227 progression pins', () => {
-  it('pins D259 fresh class correction to level 1', () => {
-    expect(RPG_CLASS_EDIT_MAX_LEVEL).toBe(1)
-  })
+describe('Global Uma RPG — progression pins (D264, D267, D270)', () => {
   it('keeps a repeatable 50-level tier with a linear 25,480 EXP climb', () => {
     expect(RPG_TIER_MAX_LEVEL).toBe(50)
     expect([rpgExpToNext(1), rpgExpToNext(10), rpgExpToNext(49)]).toEqual([136, 280, 904])
@@ -264,32 +213,33 @@ describe('Global Uma RPG — D227 progression pins', () => {
       .reduce((sum, value) => sum + value, 0)).toBe(25_480)
   })
 
-  it('pins the frozen-stat conversion, HP/MP and promotion carry-forward', () => {
+  it('pins the frozen-stat conversion and each class lean', () => {
     const baseStats = { speed: 100, stamina: 90, power: 80, guts: 70, wit: 60 }
     const growthRates = { speed: 0.2, stamina: 0.1, power: 0, guts: 0, wit: 0.3 }
-    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1 }))
-      .toMatchObject({ speed: 20, atk: 20, matk: 20, stamina: 18, power: 16,
-        guts: 14, wit: 12, hp: 240, mp: 38, mdef: 14 })
-    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 50 }).speed).toBe(108)
-    expect(projectRpgStats({ baseStats, growthRates, tier: 2, level: 1 }).speed).toBe(110)
+    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1, classId: 'summoner' }))
+      .toMatchObject({ speed: 20, atk: 20, matk: 20, stamina: 18, power: 16, guts: 14, wit: 12, hp: 240, mp: 42, mdef: 14 })
+    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1, classId: 'mage' })).toMatchObject({ hp: 216, atk: 18, matk: 23, mp: 49 })
+    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1, classId: 'brawler' })).toMatchObject({ hp: 276, atk: 22, matk: 18, mp: 30 })
+    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 50, classId: 'summoner' }).speed).toBe(108)
+    expect(projectRpgStats({ baseStats, growthRates, tier: 2, level: 1, classId: 'summoner' }).speed).toBe(110)
+    expect(RPG_CLASS_STATS.cleric).toEqual({ hp: 1, atk: 0.8, matk: 1, pdef: 1, mdef: 1.15, mp: 1.3 })
   })
 
-  it('pins the 115-point, five-depth tree and the ten-slot ladder (D264, D265)', () => {
-    expect([RPG_TREE_POINTS_PER_LEVEL, RPG_TREE_POINT_MAX_LEVEL, RPG_TREE_POINTS_PER_DEPTH, RPG_SKILL_MAX_LEVEL, RPG_B_MAX_DEPTH,
-      RPG_MAX_LEGACY_SLOTS, RPG_SIGNATURE_MULTIPLIER]).toEqual([2, 45, 5, 5, 3, 2, 1.1])
+  it('pins 115 points, every core node by Lv40 and three variants per tree by Lv45', () => {
+    expect([RPG_TREE_POINTS_PER_LEVEL, RPG_TREE_POINT_MAX_LEVEL, RPG_TREE_POINTS_PER_DEPTH, RPG_MAX_LEGACY_SLOTS]).toEqual([2, 45, 5, 2])
     expect(RPG_DEPTH_GATES).toEqual([1, 10, 20, 30, 40])
     expect(RPG_ACTIVE_SLOT_GATES).toEqual([10, 15, 20, 25, 30, 35, 40])
-    expect([rpgTreePointsEarned(1), rpgTreePointsEarned(2), rpgTreePointsEarned(45), rpgTreePointsEarned(50)])
-      .toEqual([7, 9, 115, 115])
-    // Two A trees (11 cells × Lv5 = 55 each) or one A and two B trees (6 cells × Lv5 = 30 each) fit in 115.
-    expect(RPG_BRANCHES.map((d) => d.length)).toEqual([1, 3, 2, 3, 2])
-    expect([2 * 11 * 5, 11 * 5 + 2 * 6 * 5]).toEqual([110, 115])
+    expect([rpgTreePointsEarned(1), rpgTreePointsEarned(40), rpgTreePointsEarned(45), rpgTreePointsEarned(50)]).toEqual([7, 105, 115, 115])
+    for (const [classId, sets] of Object.entries(RPG_CLASS_WEAPONS)) {
+      for (const weapons of sets) {
+        const nodes = rpgClassTrees(classId as keyof typeof RPG_CLASS_WEAPONS, weapons).flatMap(rpgTreeNodes)
+        const core = nodes.filter((n) => n.variant === null).reduce((sum, n) => sum + n.cost, 0)
+        expect(core).toBe(90)
+        // The dearest legal variants: one per fork, three per tree, at depth 4 then 3 → 4 + 4 + 4 per tree.
+        expect(core + 2 * 12).toBeLessThanOrEqual(rpgTreePointsEarned(45))
+      }
+    }
     expect([rpgActiveSlots(1), rpgActiveSlots(10), rpgActiveSlots(39), rpgActiveSlots(40), rpgActiveSlots(50)]).toEqual([3, 4, 9, 10, 10])
-    const profile = { weapon: 'spear' as const, affinities: { fire: 'A' as const, ice: 'B' as const } }
-    expect(rpgSignatureMagnitude(105, profile, { kind: 'damage', weapon: 'spear', element: 'fire' }, 'fire'))
-      .toBe(116)
-    expect(rpgSignatureMagnitude(105, profile, { kind: 'healing', weapon: 'spear', element: 'ice' }, 'fire'))
-      .toBe(105)
   })
 })
 

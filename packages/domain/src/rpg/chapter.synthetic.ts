@@ -1,8 +1,20 @@
 // DEV/TEST ONLY. Small invented chapter, never a production fallback or content import.
-import { parseRpgChapterPack, type RpgChapterPack, type RpgChapterNode } from './chapter'
-import { syntheticEnemy } from './combat/synthetic'
-import { enrollRpgOutfit, type RpgProfile, type RpgWeapon, type RpgElement } from './rules'
-import { rpgEncounterBaseExp } from './rewards'
+import { parseRpgChapterPack, type FrozenEnemy, type RpgChapterPack, type RpgChapterNode } from './chapter'
+
+const stats = (offense: number, hp: number) => ({ speed: offense, stamina: 70, power: 55, guts: 50, wit: 55,
+  atk: offense, matk: offense, initiative: 70, pdef: 55, mdef: 55, dexterity: 50, hp, mp: 140 })
+function syntheticEnemy(id: string, element: string, boss = false): FrozenEnemy {
+  return { id, element, stats: stats(boss ? 100 : 75, boss ? 2_800 : 650),
+    moves: [
+      { id: 'strike', kind: 'damage', channel: 'physical', element: null, power: boss ? 175 : 135, target: 'front', intentText: 'Strike front' },
+      { id: 'hex', kind: 'damage', channel: 'magical', element, power: boss ? 155 : 125, target: 'seeded', status: 'weaken', intentText: 'Hex a marked ally' },
+    ],
+    ...(boss ? { phaseTwo: { thresholdPercent: 50, moves: [
+      { id: 'surge', kind: 'damage', channel: 'magical', element, power: 190, target: 'lowest-hp', status: 'burn', intentText: 'Surge at the weakest ally' },
+      { id: 'mend', kind: 'heal', channel: 'magical', element: null, power: 65, target: 'self', intentText: 'Mend self' },
+    ] } } : {}),
+  }
+}
 
 export const SYNTHETIC_CHAPTER_HASH = 'a'.repeat(64)
 export function syntheticChapterJson() {
@@ -27,7 +39,7 @@ export function syntheticChapterJson() {
     { id: 'join', name: 'Captain approach', kind: 'checkpoint', detail: 'Paths rejoin. Review your five-outfit party before the boss.', enemies: [], exits: ['boss'] },
     { id: 'boss', name: 'Captain finale', kind: 'boss', detail: 'The captain changes intent and heals below half HP.', enemies: [boss.id], exits: [] },
   ]
-  for (const node of nodes) if (node.kind === 'encounter' || node.kind === 'elite' || node.kind === 'boss') node.baseExp = rpgEncounterBaseExp(10, node.kind)
+  for (const node of nodes) if (node.kind === 'encounter' || node.kind === 'elite' || node.kind === 'boss') node.baseExp = node.kind === 'boss' ? 1600 : 1000
   return { schemaVersion: 1, version: 'invented-map-v1', actors, chapters: [
     { id: 'test-chapter', scenarioId: 'ura-finale', title: 'Invented crossroads', contentVersion: 'invented-map-v1',
       recommendedTier: 1, recommendedLevel: 10, surface: 'turf', distance: 'medium', startNodeId: 'opening', bossNodeId: 'boss', nodes },
@@ -35,23 +47,10 @@ export function syntheticChapterJson() {
       recommendedTier: 1, recommendedLevel: 10, surface: 'dirt', distance: 'mile', startNodeId: 'opening', bossNodeId: 'boss', nodes: structuredClone(nodes) },
     { id: 'test-loss', scenarioId: 'ura-finale', title: 'Deliberate defeat probe', contentVersion: 'invented-map-v1',
       recommendedTier: 1, recommendedLevel: 50, surface: 'turf', distance: 'long', startNodeId: 'wall', bossNodeId: 'wall',
-      nodes: [{ id: 'wall', name: 'Defeat rehearsal', kind: 'boss' as const, detail: 'Test only: an impossible fight checks KO, zero-reward loss and same-kit retry.', baseExp: rpgEncounterBaseExp(50, 'boss'), enemies: [wall.id], exits: [] }] },
+      nodes: [{ id: 'wall', name: 'Defeat rehearsal', kind: 'boss' as const, detail: 'Test only: an impossible fight checks KO, zero-reward loss and same-kit retry.', baseExp: 2000, enemies: [wall.id], exits: [] }] },
   ] }
 }
 export function syntheticChapterPack(): RpgChapterPack {
   return parseRpgChapterPack(syntheticChapterJson(), { version: 'invented-map-v1', contentHash: SYNTHETIC_CHAPTER_HASH,
     artKeys: ['test-scout', 'test-elite', 'test-captain', 'test-wall'] })
-}
-export function syntheticChapterProfiles(): RpgProfile[] {
-  const paths: Array<[RpgProfile['style'], RpgWeapon, RpgElement]> = [
-    ['front', 'greatsword', 'fire'], ['pace', 'spear', 'ice'], ['pace', 'sword-shield', 'light'],
-    ['late', 'cleric-staff', 'light'], ['end', 'tome', 'lightning'],
-  ]
-  return paths.map(([style, weapon, signature], index) => ({ ...enrollRpgOutfit({
-    outfit: { id: `test-outfit-${index}`, baseStats: { speed: 400, stamina: 400, power: 400, guts: 400, wit: 400 },
-      growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
-      aptitudes: { surface: { turf: 'A', dirt: 'A' }, distance: { sprint: 'A', mile: 'A', medium: 'A', long: 'A' },
-        strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' } } },
-    contentVersion: 'invented-map-v1', style, weapon, defaultSignature: signature }), level: 10,
-    tree: [{ tier: 1, weapon, element: signature, depth: 1, branch: 'foundation', level: 1 }] }))
 }

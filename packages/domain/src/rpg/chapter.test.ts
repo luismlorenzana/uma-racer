@@ -9,7 +9,7 @@ const cp: RpgCheckpointSaveV1 = { schemaVersion: 1, presetId: 'party-1', chapter
 describe('immutable RPG chapter graphs', () => {
   it('accepts legacy unrewarded nodes and bounded explicit EXP, never rewards a safe node', () => {
     const raw = syntheticChapterJson(), node = raw.chapters[0]!.nodes[0]!
-    expect(parseRpgChapterPack(raw, source).chapters[0]!.nodes[0]!.baseExp).toBe(1549)
+    expect(parseRpgChapterPack(raw, source).chapters[0]!.nodes[0]!.baseExp).toBe(1000)
     delete node.baseExp
     expect(parseRpgChapterPack(raw, source).chapters[0]!.nodes[0]!.baseExp).toBeUndefined()
     for (const invalid of [-1, 1.5, 1_000_001, NaN]) {

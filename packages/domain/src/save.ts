@@ -33,7 +33,7 @@ import { migrateFarmStateToCurrent } from './farm/legacy'
 import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry, type FarmCropId } from './farm/types'
 import { farmCropById } from './farm/catalog'
 import { parseRpgBattleResult, parseRpgRunSave } from './rpg/campaign/run'
-import { rpgCampaignOutfit, rpgCampaignPreset } from './rpg/save'
+import { migrateRpgOutfitSave, migrateRpgPresetSave } from './rpg/save'
 import { RPG_SAVE_SCHEMA_VERSION, parseRpgCheckpointSave, parseRpgCommandReceipt, parseRpgOutfitSave,
   parseRpgPresetSave, parseRpgPromotionEvidence, parseRpgResultEvidence, rpgCheckpointId,
   type RpgCommandAction, type RpgCommandReceiptV1 } from './rpg/save'
@@ -2085,14 +2085,9 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
   if (kind === 'umas') return migrateUmaSaveToCurrent(value) as unknown as Record<string, unknown> | null
   if (kind === 'cards') return migrateCardSaveToCurrent(value) as unknown as Record<string, unknown> | null
   if (kind === 'farm') return migrateFarmStateToCurrent(value) as unknown as Record<string, unknown> | null
-  if (kind === 'rpgOutfits') {
-    const outfit = parseRpgOutfitSave(value)
-    return outfit && rpgCampaignOutfit(outfit) as unknown as Record<string, unknown>
-  }
-  if (kind === 'rpgPresets') {
-    const preset = parseRpgPresetSave(value)
-    return preset && rpgCampaignPreset(preset) as unknown as Record<string, unknown>
-  }
+  // Class-era outfits and parties (D272): older shapes migrate on the way in.
+  if (kind === 'rpgOutfits') return migrateRpgOutfitSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgPresets') return migrateRpgPresetSave(value) as unknown as Record<string, unknown> | null
   return parseEntityData(kind, value)
 }
 
@@ -2104,8 +2099,8 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
   if (kind === 'farm') return parseFarmState(value) as unknown as Record<string, unknown> | null
   if (kind === 'items') return parseInventoryStackData(value) as unknown as Record<string, unknown> | null
   if (kind === 'inspirationBank') return parseInspirationBank(value) as unknown as Record<string, unknown> | null
-  if (kind === 'rpgOutfits') return parseRpgOutfitSave(value) as unknown as Record<string, unknown> | null
-  if (kind === 'rpgPresets') return parseRpgPresetSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgOutfits') return migrateRpgOutfitSave(value) as unknown as Record<string, unknown> | null
+  if (kind === 'rpgPresets') return migrateRpgPresetSave(value) as unknown as Record<string, unknown> | null
   // Schema 2 is a campaign run (D263); schema 1 checkpoints are retired history from the first chapter map.
   if (kind === 'rpgCheckpoints') return (isObject(value) && value.schemaVersion === 2 ? parseRpgRunSave(value)
     : parseRpgCheckpointSave(value)) as unknown as Record<string, unknown> | null

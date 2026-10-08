@@ -1,128 +1,162 @@
 import { describe, expect, it } from 'vitest'
-import { enrollRpgOutfit, projectRpgStats, spendRpgTreePoint, type RpgElement, type RpgProfile, type RpgWeapon } from '../rules'
-import type { Strategy } from '../../types'
+import { enrollRpgOutfit, learnRpgNode, projectRpgStats, type RpgClass, type RpgElement, type RpgProfile, type RpgWeapon, type RpgWeaponKind } from '../rules'
 import { rpgFoe } from '../campaign/enemies'
-import { applyBattleAction, battleBroken, battleStateHash, createBattle, replayBattle } from './engine'
-import { BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK, battleSkill, battleSkillMp, battleWeakness, battleWeaponKind } from './skills'
-import type { BattleAlly, BattleEnemy, BattleInput, BattleState, BattleWeaponKind } from './types'
+import { applyBattleAction, battleActionsLeft, battleBroken, battleStateHash, createBattle, replayBattle, type BattleAction } from './index'
+import { BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK, battleWeakness } from './skills'
+import type { BattleAlly, BattleEnemy, BattleInput, BattleState, BattleStep } from './types'
 
 // Invented outfits only; no private Uma or cast content.
-function profile(id: string, style: Strategy, weapon: RpgWeapon, element: RpgElement, level = 4): RpgProfile {
-  const medium = element === 'fire' || element === 'dark'
-  let p = enrollRpgOutfit({ outfit: { id, baseStats: { speed: 110, stamina: 110, power: 110, guts: 110, wit: 110 },
-    growthRates: { speed: 0.05, stamina: 0.05, power: 0.05, guts: 0.05, wit: 0.05 },
-    aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'G', mile: element === 'ice' ? 'A' : 'G', medium: medium ? 'A' : 'G', long: element === 'lightning' ? 'A' : 'G' },
-      strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' } } }, contentVersion: 'test', style, weapon, defaultSignature: element })
-  p = { ...p, level }
-  return spendRpgTreePoint(p, { tier: 1, weapon, element, depth: 1, branch: 'foundation' })
+const STYLE: Record<RpgClass, { front: string; pace: string; late: string; end: string }> = {
+  brawler: { front: 'A', pace: 'C', late: 'C', end: 'C' }, mage: { front: 'C', pace: 'A', late: 'C', end: 'C' },
+  cleric: { front: 'C', pace: 'C', late: 'A', end: 'C' }, summoner: { front: 'C', pace: 'C', late: 'C', end: 'A' },
 }
-function ally(p: RpgProfile, mp?: number): BattleAlly {
+function profile(id: string, classId: RpgClass, weapons: RpgWeapon[], nodes: string[], level = 4): RpgProfile {
+  const p = enrollRpgOutfit({ outfit: { id, baseStats: { speed: 110, stamina: 110, power: 110, guts: 110, wit: 110 },
+    growthRates: { speed: 0.05, stamina: 0.05, power: 0.05, guts: 0.05, wit: 0.05 },
+    aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'G', mile: 'A', medium: 'A', long: 'G' },
+      strategy: STYLE[classId] as never } }, contentVersion: 'test', classId, weapons })
+  return nodes.reduce(learnRpgNode, { ...p, level })
+}
+function ally(p: RpgProfile, mp?: number, familiar: RpgWeaponKind = 'axe'): BattleAlly {
   const stats = projectRpgStats(p)
-  return { id: p.outfitId, style: p.style, weapon: p.weapon, tier: p.tier, level: p.level, stats, affinities: p.affinities,
-    signature: p.defaultSignature, tree: p.tree, legacy: p.legacy, loadout: p.tree.map(({ level: _l, ...ref }) => ref), mp: mp ?? stats.mp }
+  const loadout = p.tree.filter((r) => !r.id.startsWith('short-sword') && !r.id.startsWith('cleric-staff'))
+  return { id: p.outfitId, classId: p.classId, weapons: p.weapons, tier: p.tier, level: p.level, stats, tree: p.tree, legacy: p.legacy,
+    loadout, familiar, mp: mp ?? stats.mp }
 }
 const party = (mp?: number) => [
-  profile('a1', 'front', 'greatsword', 'fire'), profile('a2', 'pace', 'spear', 'ice'), profile('a3', 'late', 'wizard-staff', 'lightning'),
-  profile('a4', 'end', 'tome', 'dark'), profile('a5', 'pace', 'sword-shield', 'fire'),
+  profile('a1', 'brawler', ['greatsword', 'spear'], ['greatsword.fire.1', 'spear.ice.1']),
+  profile('a2', 'mage', ['mage-staff', 'arcane-staff'], ['mage-staff.fire.1', 'mage-staff.lightning.1', 'arcane-staff.ultima.1']),
+  profile('a3', 'mage', ['mage-staff', 'short-sword'], ['mage-staff.fire.1', 'mage-staff.ice.1', 'short-sword.duel.1', 'short-sword.melee.1']),
+  profile('a4', 'cleric', ['arcane-staff', 'cleric-staff'], ['arcane-staff.light.1', 'arcane-staff.dark.1', 'arcane-staff.ultima.1',
+    'cleric-staff.grace.1', 'cleric-staff.malice.1', 'cleric-staff.sanctuary.1']),
+  profile('a5', 'summoner', ['summoner-tome'], ['summon-elemental.fire.1', 'summon-arcane.demons.1']),
 ].map((p) => ally(p, mp))
-const foe = (id: string, element: RpgElement, rank: BattleEnemy['rank'] = 'regular', weapons: BattleWeaponKind[] = ['spear', 'tome'], shield = 2) =>
-  rpgFoe({ id, castId: `cast-${id}`, element, role: rank === 'regular' ? 'striker' : 'captain', rank, level: 4, shield, weapons })
-const input = (enemies: BattleEnemy[], mp?: number): BattleInput => ({ version: 3, seed: 1234, allies: party(mp), enemies })
-const hits = (step: ReturnType<typeof applyBattleAction>, target: string) => step.cues.filter((c) => c.kind === 'hit' && c.targetId === target)
-const skillOf = (s: BattleState, id: string) => s.input.allies.find((a) => a.id === id)!.loadout[0]!
+const foe = (id: string, element: RpgElement, weapons: RpgWeaponKind[] = ['greatsword', 'axe'], elements: RpgElement[] = ['fire'], shield = 3,
+  rank: BattleEnemy['rank'] = 'regular') =>
+  rpgFoe({ id, castId: `cast-${id}`, element, role: rank === 'regular' ? 'striker' : 'captain', rank, level: 4, shield, weaknesses: { weapons, elements } })
+const input = (enemies: BattleEnemy[], mp?: number): BattleInput => ({ version: 4, seed: 1234, allies: party(mp), enemies })
+const hits = (step: BattleStep, target: string) => step.cues.filter((c) => c.kind === 'hit' && c.targetId === target)
+const shieldOf = (s: BattleState, id: string) => s.units.find((u) => u.id === id)!.shield
+const skill = (id: string) => ({ tier: 1, id })
+const act = (s: BattleState, action: BattleAction): BattleState => {
+  const step = applyBattleAction(s, action)
+  if (step.error) throw new Error(step.error)
+  return step.state
+}
 
-describe('battle engine v3: Octopath breaks (D265)', () => {
-  it('weapon Attacks and elemental skills chip the shield; other hits do not', () => {
+describe('battle engine v4: classes and multi-part hits (D268, D269)', () => {
+  it('a weak part removes a shield point; a two-part hit can remove two', () => {
     let s = createBattle(input([foe('f1', 'ice')])).state
-    const shield = () => s.units.find((u) => u.id === 'f1')!.shield
-    s = applyBattleAction(s, { kind: 'attack', actorId: 'a1', targetId: 'f1' }).state // greatsword: not on the list
-    expect(shield()).toBe(2)
-    s = applyBattleAction(s, { kind: 'attack', actorId: 'a2', targetId: 'f1' }).state // spear: weak
-    expect(shield()).toBe(1)
-    expect(battleWeaponKind('cleric-staff')).toBe('staff')
-    const step = applyBattleAction(s, { kind: 'skill', actorId: 'a5', targetId: 'f1', skill: skillOf(s, 'a5') }) // fire vs ice
-    expect(step.cues.map((c) => c.kind)).toEqual(expect.arrayContaining(['shield', 'break']))
-    expect(battleBroken(step.state.units.find((u) => u.id === 'f1')!)).toBe(true)
-    expect(step.cues.some((c) => c.kind === 'hit' && c.weak)).toBe(true)
+    s = act(s, { kind: 'attack', actorId: 'a1', targetId: 'f1', weapon: 'spear' }) // spear: not on the list
+    expect(shieldOf(s, 'f1')).toBe(3)
+    s = createBattle(input([foe('f1', 'ice')])).state
+    s = act(s, { kind: 'attack', actorId: 'a1', targetId: 'f1' }) // greatsword: weak
+    expect(shieldOf(s, 'f1')).toBe(2)
+    const step = applyBattleAction(createBattle(input([foe('f1', 'ice')])).state,
+      { kind: 'skill', actorId: 'a1', targetId: 'f1', skill: skill('greatsword.fire.1') }) // 75% greatsword + 25% fire, both weak
+    expect(hits(step, 'f1').map((c) => c.kind === 'hit' && c.element)).toEqual(['greatsword', 'fire'])
+    expect(shieldOf(step.state, 'f1')).toBe(1)
   })
 
-  it('unbroken foes take half damage; a Break doubles it back to full and weak hits add 30%', () => {
-    const s = createBattle(input([foe('f1', 'ice', 'regular', ['spear', 'tome'], 1)])).state
-    const before = hits(applyBattleAction(s, { kind: 'attack', actorId: 'a1', targetId: 'f1' }), 'f1')[0]!
-    const broken = applyBattleAction(s, { kind: 'attack', actorId: 'a2', targetId: 'f1' }).state
-    const after = hits(applyBattleAction(broken, { kind: 'attack', actorId: 'a1', targetId: 'f1' }), 'f1')[0]!
+  it('unbroken foes take half damage; a Break doubles it back to full', () => {
+    const s = createBattle(input([foe('f1', 'ice', ['greatsword'], ['fire'], 1)])).state
+    const before = hits(applyBattleAction(s, { kind: 'attack', actorId: 'a1', targetId: 'f1', weapon: 'spear' }), 'f1')[0]!
+    const broken = act(s, { kind: 'attack', actorId: 'a5', targetId: 'f1' }) // Familiar axe: not weak
+    const shattered = act(broken, { kind: 'skill', actorId: 'a2', targetId: 'f1', skill: skill('mage-staff.fire.1') })
+    expect(battleBroken(shattered.units.find((u) => u.id === 'f1')!)).toBe(true)
+    const after = hits(applyBattleAction(shattered, { kind: 'attack', actorId: 'a1', targetId: 'f1', weapon: 'spear' }), 'f1')[0]!
     if (before.kind === 'hit' && after.kind === 'hit') expect(after.amount / before.amount).toBeCloseTo(1 / BATTLE_UNBROKEN_FACTOR, 0)
     expect([BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK]).toEqual([0.5, 1.3])
   })
 
-  it('a Broken foe loses this round and the next, then raises its full shield', () => {
-    let s = createBattle(input([foe('f1', 'ice', 'sub-boss', ['spear', 'tome'], 1)])).state
-    s = applyBattleAction(s, { kind: 'attack', actorId: 'a2', targetId: 'f1' }).state
-    expect(s.units.find((u) => u.id === 'f1')!.brokenAt).toBe(1)
-    const round = (state: BattleState) => {
-      let next = state
-      for (const id of ['a1', 'a2', 'a3', 'a4', 'a5']) if (next.outcome === 'active' && !next.acted.includes(id)) next = applyBattleAction(next, { kind: 'guard', actorId: id, targetId: id === 'a1' ? 'a2' : 'a1' }).state
-      return next
-    }
-    const one = applyBattleAction(s, { kind: 'guard', actorId: 'a1', targetId: 'a2' })
-    s = round(one.state)
+  it('two-staff Mages and Summoners act twice; Guard spends what is left; foes wait for every action', () => {
+    let s = createBattle(input([foe('f1', 'ice', ['bow'], ['light'], 9)])).state
+    expect([1, 2, 1, 1, 2].map((_, i) => battleActionsLeft(s, `a${i + 1}`))).toEqual([1, 2, 1, 1, 2])
+    s = act(s, { kind: 'attack', actorId: 'a2', targetId: 'f1' })
+    s = act(s, { kind: 'attack', actorId: 'a2', targetId: 'f1' })
+    expect(applyBattleAction(s, { kind: 'attack', actorId: 'a2', targetId: 'f1' }).error).toBe('already-acted')
+    s = act(s, { kind: 'attack', actorId: 'a5', targetId: 'f1' })
+    expect(applyBattleAction(s, { kind: 'attack', actorId: 'a5', targetId: 'f1' }).error).toBe('already-acted') // one Familiar a round
+    s = act(s, { kind: 'guard', actorId: 'a5', targetId: 'a1' })
+    for (const id of ['a1', 'a3', 'a4']) s = act(s, { kind: 'attack', actorId: id, targetId: 'f1' })
     expect(s.round).toBe(2)
+    expect(battleActionsLeft(s, 'a2')).toBe(2)
+  })
+
+  it('the Short Sword follows a Mage Staff spell: Flurry after one-foe spells, Arc after every-foe spells', () => {
+    const s = createBattle(input([foe('f1', 'ice', ['short-sword'], ['fire'], 9), foe('f2', 'fire', ['bow'], ['ice'], 9)])).state
+    const fire = applyBattleAction(s, { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: skill('mage-staff.fire.1') })
+    const kinds = fire.cues.filter((c) => c.kind === 'hit').map((c) => c.kind === 'hit' && `${c.targetId}:${c.element}`)
+    expect(kinds).toEqual(['f1:fire', 'f1:short-sword', 'f1:short-sword'])
+    expect(shieldOf(fire.state, 'f1')).toBe(6)
+    const ice = applyBattleAction(s, { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: skill('mage-staff.ice.1') })
+    expect(ice.cues.filter((c) => c.kind === 'hit').map((c) => c.kind === 'hit' && `${c.targetId}:${c.element}`))
+      .toEqual(['f1:ice', 'f2:ice', 'f1:short-sword', 'f2:short-sword'])
+  })
+
+  it("a Cleric's cast carries a blessing from the branch its element points to, shaped by the cast", () => {
+    const s = createBattle(input([foe('f1', 'ice'), foe('f2', 'fire')])).state
+    const light = act(s, { kind: 'skill', actorId: 'a4', targetId: 'f1', skill: skill('arcane-staff.light.1'), blessing: 'cleric-staff.grace.1' })
+    expect(light.units.filter((u) => u.side === 'ally').every((u) => u.statuses.some((x) => x.kind === 'brave' && x.stacks === 1))).toBe(true)
+    const dark = act(s, { kind: 'skill', actorId: 'a4', targetId: 'f1', skill: skill('arcane-staff.dark.1'), blessing: 'cleric-staff.malice.1' })
+    expect(dark.units.filter((u) => u.side === 'enemy').every((u) => u.statuses.some((x) => x.kind === 'armor-break'))).toBe(true)
+    const ultima = act(s, { kind: 'skill', actorId: 'a4', targetId: 'f1', skill: skill('arcane-staff.ultima.1'), blessing: 'cleric-staff.sanctuary.1' })
+    expect(ultima.units.filter((u) => u.side === 'ally').reduce((sum, u) => sum + u.barrier, 0)).toBeGreaterThan(0)
+    expect(applyBattleAction(s, { kind: 'skill', actorId: 'a4', targetId: 'f1', skill: skill('arcane-staff.light.1'), blessing: 'cleric-staff.malice.1' }).error)
+      .toBe('invalid-skill')
+  })
+
+  it('Ultima never removes shield points; Brave lifts weapon damage', () => {
+    const s = createBattle(input([foe('f1', 'ice', ['greatsword'], ['light', 'dark', 'fire'], 5)])).state
+    expect(shieldOf(act(s, { kind: 'skill', actorId: 'a2', targetId: 'f1', skill: skill('arcane-staff.ultima.1') }), 'f1')).toBe(5)
+    const plain = hits(applyBattleAction(s, { kind: 'attack', actorId: 'a1', targetId: 'f1', weapon: 'spear' }), 'f1')[0]!
+    const blessed = act(s, { kind: 'skill', actorId: 'a4', targetId: 'f1', skill: skill('arcane-staff.light.1'), blessing: 'cleric-staff.grace.1' })
+    const brave = hits(applyBattleAction(blessed, { kind: 'attack', actorId: 'a1', targetId: 'f1', weapon: 'spear' }), 'f1')[0]!
+    if (plain.kind === 'hit' && brave.kind === 'hit') expect(brave.amount).toBeGreaterThan(plain.amount)
+  })
+
+  it('scales MP by the hand and refuses a skill it cannot pay for', () => {
+    const s = createBattle(input([foe('f1', 'ice')])).state
+    const cost = (actorId: string, id: string) => s.units.find((u) => u.id === actorId)!.mp -
+      act(s, { kind: 'skill', actorId, targetId: 'f1', skill: skill(id) }).units.find((u) => u.id === actorId)!.mp
+    expect([cost('a1', 'greatsword.fire.1'), cost('a2', 'mage-staff.fire.1'), cost('a3', 'mage-staff.fire.1'),
+      cost('a4', 'arcane-staff.light.1'), cost('a5', 'summon-elemental.fire.1')]).toEqual([10, 6, 8, 10, 7])
+    const dry = createBattle(input([foe('f1', 'ice')], 5)).state
+    expect(applyBattleAction(dry, { kind: 'skill', actorId: 'a1', targetId: 'f1', skill: skill('greatsword.fire.1') }).error).toBe('insufficient-mp')
+  })
+
+  it('a Broken foe loses this round and the next, then raises its shield', () => {
+    let s = createBattle(input([foe('f1', 'ice', ['greatsword'], ['fire'], 1, 'sub-boss')])).state
+    s = act(s, { kind: 'attack', actorId: 'a1', targetId: 'f1' })
     expect(battleBroken(s.units.find((u) => u.id === 'f1')!)).toBe(true)
-    const second = round(s)
-    expect(second.round).toBe(3)
-    const f1 = second.units.find((u) => u.id === 'f1')!
-    expect([battleBroken(f1), f1.shield]).toEqual([false, 1])
-  })
-
-  it('multi-hit skills chip once per hit and Barrage lands six seeded random hits', () => {
-    const p = profile('a3', 'late', 'wizard-staff', 'lightning', 40)
-    let tree = p
-    for (const [depth, branch] of [[2, 'double'], [3, 'multi'], [4, 'quad'], [5, 'barrage']] as const) {
-      tree = spendRpgTreePoint(tree, { tier: 1, weapon: 'wizard-staff', element: 'lightning', depth, branch })
+    const round = (state: BattleState): BattleStep => {
+      let step: BattleStep = { state, cues: [], hash: '' }
+      for (const id of ['a1', 'a2', 'a3', 'a4', 'a5']) {
+        if (battleActionsLeft(step.state, id) <= 0) continue
+        const next = applyBattleAction(step.state, { kind: 'guard', actorId: id, targetId: id === 'a1' ? 'a2' : 'a1' })
+        step = { ...next, cues: [...step.cues, ...next.cues] }
+      }
+      return step
     }
-    const caster = ally(tree)
-    const base = input([foe('f1', 'fire', 'boss', ['spear', 'tome'], 6), foe('f2', 'fire', 'regular', ['spear', 'tome'], 2)])
-    const start = createBattle({ ...base, allies: base.allies.map((a) => a.id === 'a3' ? caster : a) }).state
-    const quad = caster.loadout.find((r) => r.branch === 'quad')!
-    const quadStep = applyBattleAction(start, { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: quad })
-    expect(hits(quadStep, 'f1')).toHaveLength(4)
-    expect(quadStep.state.units.find((u) => u.id === 'f1')!.shield).toBe(2)
-    const barrage = caster.loadout.find((r) => r.branch === 'barrage')!
-    const step = applyBattleAction(start, { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: barrage })
-    expect(step.cues.filter((c) => c.kind === 'hit')).toHaveLength(6)
-    expect(applyBattleAction(start, { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: barrage }).hash).toBe(step.hash)
-    expect([battleSkill(barrage).hits, battleSkill(barrage).target, battleSkill(quad).hits]).toEqual([6, 'random', 4])
-  })
-
-  it('spends carried MP and refuses a skill it cannot pay for', () => {
-    const cost = battleSkillMp({ tier: 1, depth: 1, branch: 'foundation' })
-    let s = createBattle(input([foe('f1', 'ice')], cost)).state
-    s = applyBattleAction(s, { kind: 'skill', actorId: 'a1', targetId: 'f1', skill: skillOf(s, 'a1') }).state
-    expect(s.units.find((u) => u.id === 'a1')!.mp).toBe(0)
-    expect(() => createBattle({ ...input([foe('f1', 'ice')]), allies: party().map((a) => ({ ...a, mp: a.stats.mp + 1 })) })).toThrow(/ally/)
-    expect(() => createBattle({ ...input([foe('f1', 'ice')]), version: 2 } as unknown as BattleInput)).toThrow(/header/)
+    const first = round(s)
+    expect(first.cues.some((c) => c.kind === 'skip')).toBe(true)
+    const second = round(first.state)
+    expect(second.cues.some((c) => c.kind === 'skip')).toBe(true)
+    expect(second.cues.some((c) => c.kind === 'recover')).toBe(true)
+    expect(shieldOf(second.state, 'f1')).toBe(1)
   })
 
   it('replays identically from the frozen input and refuses unlearned skills', () => {
-    const start = input([foe('f1', 'ice'), foe('f2', 'dark'), foe('f3', 'light')])
-    let s = createBattle(start).state
-    const actions = [
-      { kind: 'skill' as const, actorId: 'a1', targetId: 'f1', skill: skillOf(s, 'a1') },
-      { kind: 'attack' as const, actorId: 'a2', targetId: 'f2' },
-      { kind: 'guard' as const, actorId: 'a5', targetId: 'a3' },
+    const start = createBattle(input([foe('f1', 'ice'), foe('f2', 'dark')]))
+    const actions: BattleAction[] = [
+      { kind: 'skill', actorId: 'a2', targetId: 'f1', skill: skill('mage-staff.lightning.1') },
+      { kind: 'skill', actorId: 'a5', targetId: 'f2', skill: skill('summon-arcane.demons.1') },
     ]
-    for (const action of actions) s = applyBattleAction(s, action).state
-    expect(replayBattle(start, actions).hash).toBe(battleStateHash(s))
-    expect(replayBattle(JSON.parse(JSON.stringify(start)) as BattleInput, actions).state).toEqual(s)
-    expect(applyBattleAction(s, { kind: 'skill', actorId: 'a4', targetId: 'f1', skill: { ...skillOf(s, 'a4'), element: 'ice' } }).error).toBe('invalid-skill')
-  })
-
-  it('pins the element wheel, the multi-hit line and tier-scaled costs', () => {
-    expect((['fire', 'ice', 'lightning', 'light', 'dark'] as const).map(battleWeakness)).toEqual(['lightning', 'fire', 'ice', 'dark', 'light'])
-    expect([1, 2, 3, 4, 5].map((depth) => battleSkillMp({ tier: 1, depth, branch: depth === 1 ? 'foundation' : 'focused' }))).toEqual([10, 14, 18, 22, 26])
-    expect(battleSkillMp({ tier: 2, depth: 2, branch: 'area' })).toBe(36)
-    const shape = (depth: number, branch: Parameters<typeof battleSkill>[0]['branch']) => battleSkill({ tier: 1, weapon: 'spear', element: 'ice', depth, branch }).hits
-    expect([shape(2, 'double'), shape(3, 'multi'), shape(4, 'quad'), shape(5, 'barrage')]).toEqual([2, 3, 4, 6])
-    expect(battleSkill({ tier: 1, weapon: 'cleric-staff', element: 'light', depth: 1, branch: 'foundation' }).support).toBe('power-up')
+    const a = replayBattle(start.state.input, actions)
+    const b = replayBattle(start.state.input, actions)
+    expect(a.hash).toBe(b.hash)
+    expect(battleStateHash(a.state)).toMatch(/^rpg-battle-v4:/)
+    expect(applyBattleAction(start.state, { kind: 'skill', actorId: 'a1', targetId: 'f1', skill: skill('greatsword.ice.1') }).error).toBe('invalid-skill')
+    expect(battleWeakness('fire')).toBe('lightning')
   })
 })

@@ -1,6 +1,6 @@
 export * from './rules'
 export * from './save'
-export * from './combat'
+export * from './catalog'
 export * from './chapter'
 export * from './rewards'
 export * from './content'

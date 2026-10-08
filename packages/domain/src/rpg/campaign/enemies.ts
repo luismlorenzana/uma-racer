@@ -1,7 +1,6 @@
 // Campaign foes: roles and level scaling, tuned by `pnpm sim:rpg:campaign` (docs/design/uma-rpg.md#foes, D262).
 import type { RpgElement } from '../rules'
-import type { BattleEnemy, BattleEnemyMove, BattleWeaponKind, EnemyRank } from '../battle/types'
-import { battleWeakness } from '../battle/skills'
+import type { BattleEnemy, BattleEnemyMove, BattleWeaknesses, EnemyRank } from '../battle/types'
 
 /** Average enrolled outfit core stat at a lifetime level: base ≈ 110 / 5 plus 1.5 × (1 + 0.06) per level. */
 export const rpgReferenceStat = (lifetimeLevel: number): number => 22 + 1.59 * (lifetimeLevel - 1)
@@ -11,8 +10,8 @@ export type RpgFoeRole = typeof RPG_FOE_ROLES[number] | 'captain' | 'champion'
 export const RPG_FOE_TUNING = {
   hpBase: 40, hpPerStat: 4.2, offense: 3, defense: 0.8,
   subBossHp: 4.5, bossHp: 6.5,
-  /** Break shields (D265): regular foes 2 early and 3 from the Senior stage, sub-bosses 4, champions 6. */
-  regularShield: 2, lateRegularShield: 3, subBossShield: 4, bossShield: 6,
+  /** Break shields (D269): regular foes 3 early and 4 from Senior Year, sub-bosses 6, champions 8. */
+  regularShield: 3, lateRegularShield: 4, subBossShield: 6, bossShield: 8,
 } as const
 
 interface RoleShape { hp: number; atk: number; matk: number; def: number; mdef: number; speed: number }
@@ -58,7 +57,7 @@ function moves(role: RpgFoeRole, element: RpgElement): { moves: BattleEnemyMove[
 
 /** A foe's full frozen kit at a lifetime level. Stats are code, so a rebalance never needs a content publish. */
 export function rpgFoe(input: { id: string; castId: string; element: RpgElement; role: RpgFoeRole; rank: EnemyRank; level: number;
-  shield: number; weapons: readonly BattleWeaponKind[] }): BattleEnemy {
+  shield: number; weaknesses: BattleWeaknesses }): BattleEnemy {
   const t = RPG_FOE_TUNING
   const s = rpgReferenceStat(input.level)
   const shape = ROLE[input.role]
@@ -73,7 +72,7 @@ export function rpgFoe(input: { id: string; castId: string; element: RpgElement;
       initiative: Math.round(s * shape.speed),
     },
     shield: input.shield,
-    weaknesses: { element: battleWeakness(input.element), weapons: [...input.weapons] },
+    weaknesses: { weapons: [...input.weaknesses.weapons], elements: [...input.weaknesses.elements] },
     ...kit,
   }
 }

@@ -2,10 +2,9 @@
 // elemental final bosses (docs/design/uma-rpg.md#chapters, D262). Layout and numbers are code; the private pack only
 // supplies the cast (names and portraits).
 import { SCENARIOS } from '../../scenarios'
-import { RPG_ELEMENTS, type RpgElement } from '../rules'
-import type { BattleEnemy, BattleWeaponKind } from '../battle/types'
+import { RPG_ELEMENTS, RPG_WEAPON_KINDS, rpgElementWeakness, type RpgElement } from '../rules'
+import type { BattleEnemy, BattleWeaknesses, EnemyRank } from '../battle/types'
 import { RPG_FOE_ROLES, RPG_FOE_TUNING, rpgFoe, type RpgFoeRole } from './enemies'
-import { BATTLE_WEAPON_KINDS } from '../battle/skills'
 
 export const RPG_CAMPAIGN_VERSION = 1
 /** D266: a chapter spans twelve levels (Debut 1–3, Classic 4–6, Senior 7–9, Finals 10–12), so four fill Lv1–48. */
@@ -111,14 +110,22 @@ function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[]): 
     }
     return cast[offset % cast.length]!
   }
-  // Two weapon weaknesses each (three for champions), drawn so a fight's foes rarely share all of them (D265).
-  const weapons = (slot: number, count: number): BattleWeaponKind[] => [...BATTLE_WEAPON_KINDS]
-    .sort((a, b) => hash(`${chapterId}:${node.id}:${slot}:${a}:weak`) - hash(`${chapterId}:${node.id}:${slot}:${b}:weak`)).slice(0, count)
+  // Weaknesses by rank (D269): regulars 3 weapons + 2 elements (or 2 + 3), sub-bosses 2 + 2, champions 2 + 1 (or 1 + 2).
+  // The first element is the one that beats the foe's own, so routes still read by element; its own never shows.
+  const weaknesses = (slot: number, element: RpgElement, rank: EnemyRank): BattleWeaknesses => {
+    const key = `${chapterId}:${node.id}:${slot}`
+    const flip = hash(`${key}:split`) % 2 === 1
+    const [w, e] = rank === 'regular' ? (flip ? [2, 3] : [3, 2]) : rank === 'sub-boss' ? [2, 2] : (flip ? [1, 2] : [2, 1])
+    const shuffled = <T extends string>(list: readonly T[], tag: string): T[] => [...list].sort((a, b) => hash(`${key}:${a}:${tag}`) - hash(`${key}:${b}:${tag}`))
+    const first = rpgElementWeakness(element)
+    return { weapons: shuffled(RPG_WEAPON_KINDS, 'weak').slice(0, w),
+      elements: [first, ...shuffled(RPG_ELEMENTS.filter((x) => x !== element && x !== first), 'el')].slice(0, e) }
+  }
   const shield = node.stage >= 2 ? RPG_FOE_TUNING.lateRegularShield : RPG_FOE_TUNING.regularShield
   const regular = (slot: number, element: RpgElement, role?: RpgFoeRole): BattleEnemy => {
     const member = castFor(slot)
     return rpgFoe({ id: `foe${slot + 1}`, castId: member.id, element, rank: 'regular', level: node.level, shield,
-      weapons: weapons(slot, 2), role: role ?? pick(RPG_FOE_ROLES, `${chapterId}:${node.id}:${slot}:role`) })
+      weaknesses: weaknesses(slot, element, 'regular'), role: role ?? pick(RPG_FOE_ROLES, `${chapterId}:${node.id}:${slot}:role`) })
   }
   const others = (avoid: RpgElement, slot: number) => pick(RPG_ELEMENTS.filter((e) => e !== avoid), `${chapterId}:${node.id}:${slot}:el`)
   if (node.kind === 'fight') {
@@ -139,9 +146,9 @@ function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[]): 
   const boss = cast[leadIndex]!
   used.add(boss.id)
   const minions = node.kind === 'boss' ? 2 : node.stage < 2 ? 1 : 2
-  const enemies = [rpgFoe({ id: 'foe1', castId: boss.id, element, rank: node.kind === 'boss' ? 'boss' : 'sub-boss',
-    level: node.level, role: node.kind === 'boss' ? 'champion' : 'captain',
-    shield: node.kind === 'boss' ? RPG_FOE_TUNING.bossShield : RPG_FOE_TUNING.subBossShield, weapons: weapons(0, node.kind === 'boss' ? 3 : 2) }),
+  const rank = node.kind === 'boss' ? 'boss' : 'sub-boss'
+  const enemies = [rpgFoe({ id: 'foe1', castId: boss.id, element, rank, level: node.level, role: node.kind === 'boss' ? 'champion' : 'captain',
+    shield: node.kind === 'boss' ? RPG_FOE_TUNING.bossShield : RPG_FOE_TUNING.subBossShield, weaknesses: weaknesses(0, element, rank) }),
   ...Array.from({ length: minions }, (_, i) => regular(i + 1, others(element, i + 1)))]
   return { enemies, lead: boss }
 }

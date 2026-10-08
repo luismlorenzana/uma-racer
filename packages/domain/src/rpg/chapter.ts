@@ -1,12 +1,16 @@
 // Immutable chapter graph and receipt-gated map rules (docs/design/uma-rpg.md, T095).
 import { SCENARIOS } from '../scenarios'
 import { DISTANCE_CATEGORIES, SURFACES, type DistanceCategory, type Surface } from '../types'
-import { RPG_ELEMENTS, type RpgElement } from './rules'
-import { RPG_MAX_ENCOUNTER_EXP } from './rewards'
+import { RPG_ELEMENTS } from './rules'
 import { RPG_SLOT_TOKEN_REWARD, RPG_SKILL_TOKEN_BUDGET, type InspirationReward } from '../inspiration'
-import { elementMatchup } from './combat/catalog'
-import type { EnemyMove, FrozenEnemy } from './combat/types'
 import { RPG_MAX_SELECTED_PATH, rpgResultId, type RpgCheckpointSaveV1, type RpgResultEvidenceV1 } from './save'
+
+/** First-map actor kits (T095–T099). The campaign generates its foes; the pack's kits are only shape-checked. */
+export interface EnemyMove { id: string; kind: 'damage' | 'heal' | 'guard' | 'buff'; channel: 'physical' | 'magical'; element: string | null
+  power: number; target: string; intentText: string; status?: string }
+export interface FrozenEnemy { id: string; element: string; stats: Record<string, number>; moves: EnemyMove[]
+  phaseTwo?: { thresholdPercent: number; moves: EnemyMove[] } }
+export const RPG_MAX_ENCOUNTER_EXP = 1_000_000
 
 export type RpgNodeKind = 'encounter' | 'elite' | 'boss' | 'branch' | 'recovery' | 'checkpoint'
 export interface RpgCharacterSource {
@@ -162,8 +166,6 @@ export function rpgAcceptBattleNode(chapter: RpgChapter, checkpoint: RpgCheckpoi
   return { ...checkpoint, revision: checkpoint.revision + 1, status: entry.nodeId === chapter.bossNodeId ? 'cleared' : 'at-checkpoint',
     frozenEntry: null, lastClearedNodeId: entry.nodeId, selectedPath: [...checkpoint.selectedPath, entry.nodeId] }
 }
-
-export function rpgEnemyWeaknesses(element: RpgElement): RpgElement[] { return RPG_ELEMENTS.filter((e) => elementMatchup(e, element) === 'weak') }
 
 /** Route counts are for reward/pacing simulations, never a production length chosen by the renderer. */
 export function rpgChapterFightCounts(chapter: RpgChapter): number[] {

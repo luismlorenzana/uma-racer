@@ -1,16 +1,17 @@
 // Versioned RPG wire rows and deterministic entry identity (docs/technical/uma-rpg-implementation.md, T090).
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type Stats } from '../types'
 import {
-  RPG_BRANCHES, RPG_DEPTH_GATES, RPG_ELEMENTS, RPG_MAX_ACTIVE_SLOTS, RPG_MAX_LEGACY_SLOTS, RPG_SKILL_MAX_LEVEL, RPG_TIER_MAX_LEVEL,
-  RPG_WEAPONS, enrollRpgOutfit, rpgSkillKey, rpgTreePointsEarned, rpgTreePointsSpent,
-  type RpgCoreStats, type RpgElement, type RpgProfile, type RpgSkill, type RpgSkillRef,
+  RPG_CLASS_WEAPONS, RPG_CLASSES, RPG_MAX_ACTIVE_SLOTS, RPG_MAX_LEGACY_SLOTS, RPG_TIER_MAX_LEVEL, RPG_WEAPON_KINDS, RPG_WEAPONS,
+  enrollRpgOutfit, rpgClassOptions, rpgNodeKey, validRpgTree,
+  type RpgClass, type RpgCoreStats, type RpgNodeRef, type RpgProfile, type RpgWeapon, type RpgWeaponKind,
 } from './rules'
+import { rpgNode } from './catalog'
 
-/** Campaign-era RPG rows (D263); schema 1 rows still parse and migrate on the way in. */
-export const RPG_SAVE_SCHEMA_VERSION = 2
+/** Class-era RPG rows (D272). Schema 1 and 2 rows still parse and migrate on the way in. */
+export const RPG_SAVE_SCHEMA_VERSION = 3
 export const RPG_PARTY_SIZE = 5
 export const RPG_PRESET_COUNT = 5
-/** Every cell of all five elements (8 per A element) can be learned in one tier (D264). */
+/** Six branches of five core nodes plus six variants fit; the bound leaves headroom. */
 export const RPG_MAX_TREE_NODES = 40
 export const RPG_MAX_SELECTED_PATH = 64
 export const RPG_MAX_ENEMY_KIT_CHARS = 16_384
@@ -69,17 +70,18 @@ export function rpgResultId(entryId: string, retryOrdinal: number): string {
   return id
 }
 
-/** Schema 2 is the campaign era (D263): the same shape, after the one-time progression reset. */
-export interface RpgOutfitSaveV1 { schemaVersion: 1 | 2; profile: RpgProfile; projectionRevision: number }
-export interface RpgPresetSlotV1 { outfitId: string; signature: RpgElement; loadout: RpgSkillRef[] }
-export interface RpgPresetSaveV1 {
-  /** Schema 2: campaign-era loadouts (D263); `foregroundChapterId` is the chapter the party last opened. */
-  schemaVersion: 1 | 2; presetId: string; name: string; slots: [RpgPresetSlotV1 | null, RpgPresetSlotV1 | null,
-    RpgPresetSlotV1 | null, RpgPresetSlotV1 | null, RpgPresetSlotV1 | null]
+export interface RpgOutfitSave { schemaVersion: 3; profile: RpgProfile; projectionRevision: number }
+/** A party slot: the outfit, its equipped skills and, for a Summoner, her Familiar's weapon form (D268). */
+export interface RpgPresetSlot { outfitId: string; loadout: RpgNodeRef[]; familiar: RpgWeaponKind }
+export interface RpgPresetSave {
+  /** `foregroundChapterId` is the chapter the party last opened. */
+  schemaVersion: 3; presetId: string; name: string; slots: [RpgPresetSlot | null, RpgPresetSlot | null,
+    RpgPresetSlot | null, RpgPresetSlot | null, RpgPresetSlot | null]
   foregroundChapterId: string | null
 }
+/** First-map rows (T095–T099), retired history: kept so old rows still parse. */
 export interface RpgFrozenMemberV1 {
-  outfitId: string; tier: number; level: number; stats: RpgCoreStats; signature: RpgElement; skills: RpgSkillRef[]
+  outfitId: string; tier: number; level: number; stats: RpgCoreStats; signature: string; skills: Record<string, unknown>[]
 }
 export interface RpgFrozenEntryV1 {
   entryId: string; nodeId: string; seed: string; contentHash: string; engineVersion: number
@@ -96,9 +98,10 @@ export interface RpgResultEvidenceV1 {
   memberExp: Array<{ outfitId: string; delta: number; beforeTier: number; beforeLevel: number; beforeExp: number
     afterTier: number; afterLevel: number; afterExp: number }>; createdAt: number
 }
-export interface RpgPromotionEvidenceV1 {
-  schemaVersion: 1; promotionId: string; outfitId: string; fromTier: number; toTier: number
-  archive: RpgSkill[]; createdAt: number
+/** Schema 2 archives learned nodes (D272); schema 1 archived the element-tree skills. */
+export interface RpgPromotionEvidence {
+  schemaVersion: 1 | 2; promotionId: string; outfitId: string; fromTier: number; toTier: number
+  archive: Array<RpgNodeRef | Record<string, unknown>>; createdAt: number
 }
 export interface RpgCommandReceiptV1 {
   schemaVersion: 1; commandId: string; action: RpgCommandAction; payloadHash: string
@@ -128,97 +131,92 @@ function parseAptitudes(value: unknown): Aptitudes | null {
   return value as unknown as Aptitudes
 }
 
-export function parseRpgSkillRef(value: unknown): RpgSkillRef | null {
-  if (!isRecord(value) || !exact(value, ['tier', 'weapon', 'element', 'depth', 'branch']) ||
-    !isInt(value.tier, 1) || !RPG_WEAPONS.includes(value.weapon as RpgSkillRef['weapon']) ||
-    !RPG_ELEMENTS.includes(value.element as RpgElement) || !isInt(value.depth, 1) || value.depth > 5) return null
-  const branches = RPG_BRANCHES
-  if (!(branches[value.depth - 1] as readonly string[] | undefined)?.includes(value.branch as string)) return null
-  return value as unknown as RpgSkillRef
+export function parseRpgNodeRef(value: unknown): RpgNodeRef | null {
+  return isRecord(value) && exact(value, ['tier', 'id']) && isInt(value.tier, 1) && typeof value.id === 'string' && rpgNode(value.id)
+    ? value as unknown as RpgNodeRef : null
 }
 
-function parseRpgSkill(value: unknown): RpgSkill | null {
-  if (!isRecord(value) || !exact(value, ['tier', 'weapon', 'element', 'depth', 'branch', 'level']) ||
-    !isInt(value.level, 1) || value.level > RPG_SKILL_MAX_LEVEL) return null
-  const ref = parseRpgSkillRef({ tier: value.tier, weapon: value.weapon, element: value.element,
-    depth: value.depth, branch: value.branch })
-  return ref ? { ...ref, level: value.level } : null
-}
+const PROFILE_KEYS = ['outfitId', 'sourceContentVersion', 'baseStats', 'growthRates', 'sourceAptitudes',
+  'classId', 'weapons', 'tier', 'level', 'exp', 'tree', 'legacy'] as const
 
-export function parseRpgOutfitSave(value: unknown): RpgOutfitSaveV1 | null {
-  if (!isRecord(value) || !exact(value, ['schemaVersion', 'profile', 'projectionRevision']) ||
-    (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isInt(value.projectionRevision) || !isRecord(value.profile)) return null
+export function parseRpgOutfitSave(value: unknown): RpgOutfitSave | null {
+  if (!isRecord(value) || !exact(value, ['schemaVersion', 'profile', 'projectionRevision']) || value.schemaVersion !== 3 ||
+    !isInt(value.projectionRevision) || !isRecord(value.profile)) return null
   const profile = value.profile
-  if (!exact(profile, ['outfitId', 'sourceContentVersion', 'baseStats', 'growthRates', 'sourceAptitudes',
-    'affinities', 'style', 'weapon', 'defaultSignature', 'tier', 'level', 'exp', 'tree', 'legacy']) ||
-    !isId(profile.outfitId) || !isId(profile.sourceContentVersion) || !parseStats(profile.baseStats) ||
-    !parseStats(profile.growthRates, true) || !parseAptitudes(profile.sourceAptitudes) ||
-    !isInt(profile.tier, 1) || !isInt(profile.level, 1) || profile.level > RPG_TIER_MAX_LEVEL ||
-    !isInt(profile.exp) || !Array.isArray(profile.tree) || profile.tree.length > RPG_MAX_TREE_NODES ||
-    !Array.isArray(profile.legacy) || profile.legacy.length > RPG_MAX_LEGACY_SLOTS || !isRecord(profile.affinities)) return null
-  let enrolled: RpgProfile
+  if (!exact(profile, PROFILE_KEYS) || !isId(profile.outfitId) || !isId(profile.sourceContentVersion) ||
+    !RPG_CLASSES.includes(profile.classId as RpgClass) || !Array.isArray(profile.weapons) ||
+    profile.weapons.some((w) => !RPG_WEAPONS.includes(w as RpgWeapon)) ||
+    !isInt(profile.tier, 1) || !isInt(profile.level, 1) || profile.level > RPG_TIER_MAX_LEVEL || !isInt(profile.exp) ||
+    !Array.isArray(profile.tree) || profile.tree.length > RPG_MAX_TREE_NODES ||
+    !Array.isArray(profile.legacy) || profile.legacy.length > RPG_MAX_LEGACY_SLOTS) return null
   try {
-    enrolled = enrollRpgOutfit({ outfit: { id: profile.outfitId, baseStats: profile.baseStats as Stats,
-      growthRates: profile.growthRates as Stats, aptitudes: profile.sourceAptitudes as Aptitudes },
-    contentVersion: profile.sourceContentVersion as string, style: profile.style as RpgProfile['style'],
-    weapon: profile.weapon as RpgProfile['weapon'], defaultSignature: profile.defaultSignature as RpgElement })
+    enrollRpgOutfit({ outfit: { id: profile.outfitId, baseStats: profile.baseStats as Stats, growthRates: profile.growthRates as Stats,
+      aptitudes: profile.sourceAptitudes as Aptitudes }, contentVersion: profile.sourceContentVersion,
+    classId: profile.classId as RpgClass, weapons: profile.weapons as RpgWeapon[] })
   } catch { return null }
-  const affinities = profile.affinities as Record<string, unknown>
-  if (!exact(affinities, Object.keys(enrolled.affinities)) ||
-    Object.keys(enrolled.affinities).some((key) => affinities[key] !== enrolled.affinities[key as RpgElement])) return null
-  const tree = profile.tree.map(parseRpgSkill)
-  const legacy = profile.legacy.map(parseRpgSkill)
-  if (tree.some((skill) => skill === null) || legacy.some((skill) => skill === null)) return null
-  const typedTree = tree as RpgSkill[]
-  const typedLegacy = legacy as RpgSkill[]
-  if (rpgTreePointsSpent(typedTree) > rpgTreePointsEarned(profile.level as number) ||
-    new Set(typedTree.map(rpgSkillKey)).size !== typedTree.length ||
-    new Set(typedLegacy.map(rpgSkillKey)).size !== typedLegacy.length) return null
-  for (const skill of typedTree) {
-    if (skill.tier !== profile.tier || skill.weapon !== profile.weapon ||
-      !enrolled.affinities[skill.element] ||
-      (enrolled.affinities[skill.element] === 'B' && skill.depth > 3) ||
-      RPG_DEPTH_GATES[skill.depth - 1]! > profile.level ||
-      (skill.depth > 1 && !typedTree.some((previous) => previous.element === skill.element && previous.depth === skill.depth - 1))) return null
-  }
-  if (typedLegacy.some((skill) => skill.tier >= (profile.tier as number) || skill.weapon !== profile.weapon ||
-    !enrolled.affinities[skill.element])) return null
-  return { schemaVersion: value.schemaVersion as 1 | 2, profile: profile as unknown as RpgProfile,
-    projectionRevision: value.projectionRevision as number }
+  if (!parseStats(profile.baseStats) || !parseStats(profile.growthRates, true) || !parseAptitudes(profile.sourceAptitudes) ||
+    profile.tree.some((ref) => !parseRpgNodeRef(ref)) || profile.legacy.some((ref) => !parseRpgNodeRef(ref))) return null
+  const typed = profile as unknown as RpgProfile
+  if (!validRpgTree(typed) || new Set(typed.legacy.map(rpgNodeKey)).size !== typed.legacy.length ||
+    typed.legacy.some((ref) => ref.tier >= typed.tier || !rpgNode(ref.id)?.skill)) return null
+  return { schemaVersion: 3, profile: typed, projectionRevision: value.projectionRevision }
 }
 
-/** D263: every enrolled outfit restarts at Tier 1 Lv1 under the campaign balance; class, weapon and element stay. */
-export function rpgCampaignOutfit(save: RpgOutfitSaveV1): RpgOutfitSaveV1 {
-  if (save.schemaVersion === 2) return save
-  return { schemaVersion: 2, projectionRevision: save.projectionRevision + 1,
-    profile: { ...save.profile, tier: 1, level: 1, exp: 0, tree: [], legacy: [] } }
+/**
+ * D272: an outfit from before classes keeps its tier, level and EXP, takes the first class open to its running styles
+ * with that class's first weapon set, and restarts its trees. The empty tree lets the owner re-pick once.
+ */
+export function migrateRpgOutfitSave(value: unknown): RpgOutfitSave | null {
+  if (isRecord(value) && value.schemaVersion === 3) return parseRpgOutfitSave(value)
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isInt(value.projectionRevision) ||
+    !isRecord(value.profile)) return null
+  const p = value.profile
+  const aptitudes = parseAptitudes(p.sourceAptitudes)
+  if (!isId(p.outfitId) || !isId(p.sourceContentVersion) || !parseStats(p.baseStats) || !parseStats(p.growthRates, true) ||
+    !aptitudes || !isInt(p.tier, 1) || !isInt(p.level, 1) || p.level > RPG_TIER_MAX_LEVEL || !isInt(p.exp)) return null
+  const classId = rpgClassOptions(aptitudes)[0]
+  if (!classId) return null
+  // Schema 1 rows predate the campaign reset (D263): they restart at Tier 1 Lv1 as that migration did.
+  const fresh = value.schemaVersion === 1
+  const profile: RpgProfile = { outfitId: p.outfitId, sourceContentVersion: p.sourceContentVersion, baseStats: p.baseStats as Stats,
+    growthRates: p.growthRates as Stats, sourceAptitudes: aptitudes, classId, weapons: [...RPG_CLASS_WEAPONS[classId][0]!],
+    tier: fresh ? 1 : p.tier, level: fresh ? 1 : p.level, exp: fresh ? 0 : p.exp, tree: [], legacy: [] }
+  return parseRpgOutfitSave({ schemaVersion: 3, profile, projectionRevision: value.projectionRevision + 1 })
 }
 
-/** Parties keep members and signatures; the reset trees leave no skills to equip. */
-export function rpgCampaignPreset(save: RpgPresetSaveV1): RpgPresetSaveV1 {
-  if (save.schemaVersion === 2) return save
-  return { ...save, schemaVersion: 2, foregroundChapterId: null,
-    slots: save.slots.map((slot) => slot ? { ...slot, loadout: [] } : null) as RpgPresetSaveV1['slots'] }
+function parseSlot(slot: unknown): RpgPresetSlot | null {
+  if (!isRecord(slot) || !exact(slot, ['outfitId', 'loadout', 'familiar']) || !isId(slot.outfitId) ||
+    !RPG_WEAPON_KINDS.includes(slot.familiar as RpgWeaponKind) || !Array.isArray(slot.loadout) ||
+    slot.loadout.length > RPG_MAX_ACTIVE_SLOTS || slot.loadout.some((ref) => !parseRpgNodeRef(ref) || !rpgNode((ref as RpgNodeRef).id)?.skill)) return null
+  const keys = (slot.loadout as RpgNodeRef[]).map(rpgNodeKey)
+  return new Set(keys).size === keys.length ? slot as unknown as RpgPresetSlot : null
 }
 
-export function parseRpgPresetSave(value: unknown): RpgPresetSaveV1 | null {
+export function parseRpgPresetSave(value: unknown): RpgPresetSave | null {
   if (!isRecord(value) || !exact(value, ['schemaVersion', 'presetId', 'name', 'slots', 'foregroundChapterId']) ||
-    (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isRpgPresetId(value.presetId) || typeof value.name !== 'string' ||
+    value.schemaVersion !== 3 || !isRpgPresetId(value.presetId) || typeof value.name !== 'string' ||
     value.name.trim().length < 1 || value.name.length > 40 || !Array.isArray(value.slots) ||
     value.slots.length !== RPG_PARTY_SIZE ||
     (value.foregroundChapterId !== null && !isShortId(value.foregroundChapterId))) return null
   const ids: string[] = []
   for (const slot of value.slots) {
     if (slot === null) continue
-    if (!isRecord(slot) || !exact(slot, ['outfitId', 'signature', 'loadout']) || !isId(slot.outfitId) ||
-      !RPG_ELEMENTS.includes(slot.signature as RpgElement) || !Array.isArray(slot.loadout) || slot.loadout.length > RPG_MAX_ACTIVE_SLOTS ||
-      slot.loadout.some((skill) => !parseRpgSkillRef(skill))) return null
-    const keys = slot.loadout.map((skill) => rpgSkillKey(skill as RpgSkillRef))
-    if (new Set(keys).size !== keys.length) return null
-    ids.push(slot.outfitId)
+    const parsed = parseSlot(slot)
+    if (!parsed) return null
+    ids.push(parsed.outfitId)
   }
-  if (new Set(ids).size !== ids.length) return null
-  return value as unknown as RpgPresetSaveV1
+  return new Set(ids).size === ids.length ? value as unknown as RpgPresetSave : null
+}
+
+/** D272: parties keep their members and current chapter; loadouts clear with the trees and Familiars start as Greatsword. */
+export function migrateRpgPresetSave(value: unknown): RpgPresetSave | null {
+  if (isRecord(value) && value.schemaVersion === 3) return parseRpgPresetSave(value)
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !Array.isArray(value.slots) ||
+    value.slots.length !== RPG_PARTY_SIZE) return null
+  const slots = value.slots.map((slot: unknown) => isRecord(slot) && isId(slot.outfitId)
+    ? { outfitId: slot.outfitId, loadout: [], familiar: 'greatsword' } : null)
+  return parseRpgPresetSave({ schemaVersion: 3, presetId: value.presetId, name: value.name, slots,
+    foregroundChapterId: value.schemaVersion === 2 ? value.foregroundChapterId : null })
 }
 
 function parseCoreStats(value: unknown): RpgCoreStats | null {
@@ -255,9 +253,8 @@ export function parseRpgCheckpointSave(value: unknown): RpgCheckpointSaveV1 | nu
   for (const member of frozen.party) {
     if (!isRecord(member) || !exact(member, ['outfitId', 'tier', 'level', 'stats', 'signature', 'skills']) ||
       !isId(member.outfitId) || !isInt(member.tier, 1) || !isInt(member.level, 1) ||
-      member.level > RPG_TIER_MAX_LEVEL || !parseCoreStats(member.stats) ||
-      !RPG_ELEMENTS.includes(member.signature as RpgElement) || !Array.isArray(member.skills) ||
-      member.skills.length > 7 || member.skills.some((skill) => !parseRpgSkillRef(skill))) return null
+      member.level > RPG_TIER_MAX_LEVEL || !parseCoreStats(member.stats) || typeof member.signature !== 'string' ||
+      !Array.isArray(member.skills) || member.skills.length > 7 || member.skills.some((skill) => !isRecord(skill))) return null
     ids.push(member.outfitId)
   }
   if (new Set(ids).size !== ids.length) return null
@@ -286,13 +283,14 @@ export function parseRpgResultEvidence(value: unknown): RpgResultEvidenceV1 | nu
   return new Set(ids).size === ids.length ? value as unknown as RpgResultEvidenceV1 : null
 }
 
-export function parseRpgPromotionEvidence(value: unknown): RpgPromotionEvidenceV1 | null {
+export function parseRpgPromotionEvidence(value: unknown): RpgPromotionEvidence | null {
   if (!isRecord(value) || !exact(value, ['schemaVersion', 'promotionId', 'outfitId', 'fromTier',
-    'toTier', 'archive', 'createdAt']) || value.schemaVersion !== 1 || !isId(value.promotionId) ||
+    'toTier', 'archive', 'createdAt']) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isId(value.promotionId) ||
     !isId(value.outfitId) || !isInt(value.fromTier, 1) || value.toTier !== value.fromTier + 1 ||
     !isInt(value.createdAt) || !Array.isArray(value.archive) || value.archive.length > RPG_MAX_TREE_NODES ||
-    value.archive.some((skill) => !parseRpgSkill(skill) || skill.tier !== value.fromTier)) return null
-  return value as unknown as RpgPromotionEvidenceV1
+    value.archive.some((entry) => !isRecord(entry) || entry.tier !== value.fromTier ||
+      (value.schemaVersion === 2 && !parseRpgNodeRef(entry)))) return null
+  return value as unknown as RpgPromotionEvidence
 }
 
 export function parseRpgCommandReceipt(value: unknown): RpgCommandReceiptV1 | null {
