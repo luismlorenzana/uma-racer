@@ -1,9 +1,10 @@
 # Global Uma RPG — classes and skill trees
 
-> **Status: draft for the owner's review (2026-10-07).** Nothing here ships until it is approved. It replaces the
-> running-style weapons, the distance-affinity element trees, skill levels and the single-element weakness of
-> [uma-rpg.md](uma-rpg.md) (D226, D227, D259, D264, D265 in part) and lifts D261's "no healing" for the Cleric only.
-> Numbers are tuning drafts: on implementation they are pinned by tests and checked with one campaign sim run.
+> **Status: current (D267–D272, approved 2026-10-08).** It replaces the running-style weapons, the distance-affinity
+> element trees, skill levels and the single-element weakness of [uma-rpg.md](uma-rpg.md) (D226, D227, D259, D264,
+> D265 in part) and lifts D261's "no healing" for the Cleric only. Numbers are tuning drafts pinned by
+> `packages/domain/src/domain.test.ts` and checked with `pnpm sim:rpg:campaign`; the code lives in
+> `packages/domain/src/rpg/catalog.ts`.
 
 The owner outlined four classes; this document authors every tree, node and number. Every skill's power and MP come
 from one set of rules (section 5), so a rebalance changes a rule, not 330 cells.
@@ -75,15 +76,16 @@ power (a Greatsword hit is 75% Greatsword + 25% Fire). Each part:
 
 | Rank | Weapon + element weaknesses | Shield |
 |---|---|---|
-| Regular | 3 + 2, or 2 + 3 | 3 (4 from Senior Year) |
+| Regular | 3 + 2, or 2 + 3 | 2 (3 from Senior Year) |
 | Sub-boss | 2 + 2 | 6 |
 | Champion | 2 + 1, or 1 + 2 | 8 |
 
 A foe is never weak to its own element; its first element weakness is the one that beats it (Fire > Ice > Lightning >
 Fire; Light ↔ Dark), so the Finals routes still read by element. Regular foes always show at least two weapon
 weaknesses, so no regular fight needs a particular class. Breaks work as D265: a Broken foe loses that round's and the
-next round's action, takes full damage, then raises its shield again. Shields rise from 2/4/6 because two-action
-classes land more hits a round.
+next round's action, takes full damage, then raises its shield again. Boss shields rise from 4/6 to 6/8 because
+two-action classes land more hits a round; regular shields stay at 2/3 so the thirty regular fights of a chapter stay
+quick (the sim put them at 4–8 rounds with 3/4).
 
 ## 4. Statuses
 
@@ -266,8 +268,8 @@ depends on the companion staff. Reaction power is `0.25 × single-target power` 
 |---|---|---|---|
 | 1 | Riposte | Side Cut | Quickstep |
 | 2 | Counter Cut (A **Keen Edge**: +20% · B **Disarm**: Enfeeble 1) | Crescent Arc (A **Broad Edge**: +20% · B **Rending Arc**: Armor Break 1 on each foe slashed) | Interlude (A **Allegro**: Weave +1 slash · B **Staccato**: +20%) |
-| 3 | Duelist's Flurry (A **Opening**: +1 slash after a weak spell hit · B **Sunder**: Armor Break 1) | Wide Arc (A **Heavy Thrust**: Thrust ×1.3 · B **Wide Stance**: the Mage takes −20% from every-ally attacks until her next turn) | Rhythm Cut (A **Counterpoint**: Finisher also hits a second random foe · B **Rubato**: ×1.3 on Broken foes) |
-| 4 | Fencer's Dance (A **Lunge**: Flurry goes to the lowest-HP foe · B **Parry**: the Mage takes −30% until her next turn) | Full Moon (A **Exploiter**: ×1.3 on Broken foes · B **Second Wind**: restores 2% max MP per foe slashed) | Syncopation (A **Prestissimo**: Weave +1 slash · B **Fortissimo**: +25%) |
+| 3 | Duelist's Flurry (A **Opening**: +1 slash after a weak spell hit · B **Sunder**: Armor Break 1) | Wide Arc (A **Heavy Thrust**: Thrust ×1.3 · B **Wide Stance**: the Mage takes −20% from every-ally attacks this round) | Rhythm Cut (A **Counterpoint**: Finisher also hits a second random foe · B **Rubato**: ×1.3 on Broken foes) |
+| 4 | Fencer's Dance (A **Lunge**: Flurry goes to the lowest-HP foe · B **Parry**: the Mage takes −30% this round) | Full Moon (A **Exploiter**: ×1.3 on Broken foes · B **Second Wind**: restores 2% max MP per foe slashed) | Syncopation (A **Prestissimo**: Weave +1 slash · B **Fortissimo**: +25%) |
 | 5 | **Spellblade:** every slash also carries the spell's element as a 25% part | **Whirlwind:** Arc slashes twice (×0.6 each); Thrust becomes two slashes | **Crescendo:** Weave +1 slash; Finisher ×1.4 |
 
 ## 8. Cleric trees
@@ -295,7 +297,7 @@ Dawn/Dusk hits do not trigger a second blessing.
 |---|---|---|---|
 | 1 | **Brave** | **Armor Break** | **Barrier** |
 | 2 | **Faith** · A **Lasting Grace** (Grace lasts 3 rounds) · B **Abundant Grace** (Party Grace gives 2 stacks) | **Mind Break** · A **Lingering Malice** (3 rounds) · B **Spreading Malice** (Focused Malice also gives every other foe 1 stack) | **Regen** · A **Lasting Sanctuary** (3 rounds) · B **Bulwark** (Barrier absorbs 10% per stack) |
-| 3 | **Clarity** (restores 4% max MP per stack) · A **Second Blessing** (Focused Grace also gives the next-best ally 1 stack) · B **Inspiration** (every Grace stack also restores 1% max MP) | **Enfeeble** · A **Exploit** (+1 stack on a Broken foe) · B **Erosion** (a foe with 2+ Malice stacks raises its shield 1 lower after a Break) | **Aegis** · A **Purify** (also clears one debuff) · B **Overflow** (healing past max HP becomes Barrier) |
+| 3 | **Clarity** (restores 4% max MP per stack) · A **Second Blessing** (Focused Grace also gives the next-best ally 1 stack) · B **Inspiration** (every Grace stack also restores 1% max MP) | **Enfeeble** · A **Exploit** (+1 stack on a Broken foe) · B **Erosion** (a foe with 2+ Malice stacks raises its shield 1 lower after a Break) | **Aegis** · A **Purify** (also clears one debuff) · B **Overflow** (Cure past max HP becomes Barrier) |
 | 4 | **Breaker** · A **Zeal** (Brave and Faith cap at 4) · B **Overcharge** (Breaker holds 5 charges) | **Hex** · A **Deep Hex** (3 rounds) · B **Doom Hex** (Hexed foes take +10% from everything) | **Cure** (heals 10% max HP per stack) · A **Miracle** (15% per stack) · B **Sacred Ground** (Regen also restores 1% max MP per stack) |
 | 5 | **Exalt:** Brave and Faith together | **Shatter:** removes 1 shield point per stack at once (it can Break) | **Rebirth:** a knocked-out ally gets up with 10% max HP per stack, once per Uma per fight (a living ally gets Barrier instead) |
 
@@ -334,7 +336,7 @@ be weak).
 | 2 | **Angel Lancer** · 1 hit · 2.31 · 14 MP | **Hellknight** · 1 hit · 2.2 · 14 MP | **Archangel** · 2 hits · 2.31 · 16 MP |
 | 3 | **Seraph Phalanx** · 1 hit · 3.05 · 18 MP | **Dread Knight** · 1 hit · 2.9 · 18 MP | **Archangel's Rain** · 3 hits · 3.05 · 20 MP |
 | 4 | **Dominion Host** · 2 hits · 3.89 · 22 MP | **Demon Lord** · 2 hits · 3.7 · 22 MP | **Archangel's Judgment** · 3 hits · 3.89 · 24 MP |
-| 5 | **Heaven's Legion** · 2 hits · 4.83 · 26 MP · every ally gains Barrier 1 | **Abyssal Overlord** · 2 hits · 4.6 · 26 MP · Enfeeble 2 | **Armageddon** · 4 hits · 4.83 · 32 MP · then an Archdemon sweep: every foe takes one Ultima + Greatsword/Axe hit at 0.55 |
+| 5 | **Heaven's Legion** · 2 hits · 4.83 · 26 MP · every ally gains Barrier 1 | **Abyssal Overlord** · 2 hits · 4.6 · 26 MP · Enfeeble 2 | **Armageddon** · 4 hits · 4.83 · 32 MP · then an Archdemon sweep: every foe takes one Ultima + Axe hit at 1.15 |
 
 | Fork | Angels | Demons | Archons |
 |---|---|---|---|
@@ -374,7 +376,23 @@ actions and blessings fill the gaps.
 ## 11. Foes and the campaign
 
 Chapters, the map, EXP and tokens (D262–D266) are unchanged. Foes get the weakness counts and shields of section 3;
-their HP, offense and moves stay at D265 until one sim run of the new engine says otherwise.
+regular foes keep D265's HP, offense and moves. **Sub-boss and champion HP also scale with the skill power open at
+the chapter's first level** against depth 1 (`rpgChapterReach`): URA ×1, Unity Cup ×1.375 (depth 2), the third
+chapter ×1.81, then ×2.31 and ×2.875; a Tier 2 chapter starts over with its tier's depths. Boss fights are where a
+party spends its whole MP pool, and that pool's damage grows with depth faster than foe stats grow with level.
+
+`pnpm sim:rpg:campaign` (one Brawler, two Mages, a Cleric and a Summoner; careful policy chips with weak parts and
+spends big skills on a Break, attack-only uses free actions):
+
+| Chapter | Regular fights | Sub-bosses | Champion |
+|---|---|---|---|
+| URA (from Lv1) | 5–8 rounds | 7–9 rounds, 6–26% HP lost | 17 rounds, 77% lost, at Lv10 against Lv12 |
+| Unity Cup (from Lv13) | 4–6 rounds | 5–6 rounds, 0–12% lost | 7 rounds, 0% lost |
+| Project L'Arc (T2 Lv11) | 3–7 rounds | 4–5 rounds, 0–10% lost | 8 rounds, 7% lost |
+
+Attack-only loses a sub-boss in every chapter. From Unity Cup on, bosses barely hurt a party that spends its whole MP
+pool; boss offense is the next lever if they feel safe in play. Bigger boss shields (7/10) were tried and only made
+URA's champion a loss.
 
 ## 12. Saves and migration
 
@@ -389,25 +407,23 @@ their HP, offense and moves stay at D265 until one sim run of the new engine say
   her class (an ambiguous Uma gets the first of Brawler, Mage, Cleric, Summoner), default weapons (Brawler Greatsword
   + Spear; Mage Mage Staff + Arcane Staff), clears trees, legacy skills and loadouts, and sets every Familiar to
   Greatsword. All points come back, and the empty tree lets her re-pick class and weapons once.
-- **The API** validates schema 3 with its own copy of the node table (generated from the domain catalog; a test keeps
-  them equal), and still accepts schema 2 so an older installed app cannot break sync; an older schema never
-  overwrites a newer one.
+- **The API** validates schema 3 on its own (class mapping, weapon sets, and node ids read as tree, branch, depth and
+  side against a tree-branch table), and still accepts schema 2 so an older installed app cannot break sync; an
+  older schema never overwrites a newer one.
 
-## 13. Decisions to log on approval
+## 13. Decisions
 
-- **D267** classes from running styles, enrollment picks, class stats; affinities and signature retired.
-- **D268** turns and hands: action counts, hand factors, off-hand reactions, Familiar.
-- **D269** damage kinds, multi-part hits, ten-kind weakness pool, Ultima, weakness counts and shields 3/4/6/8.
-- **D270** trees: no skill levels, core cost by depth, variant forks (one side, three per tree, free swaps), slots.
-- **D271** statuses, element riders and Cleric blessings; small healing for the Cleric (lifts D261 for her only).
-- **D272** schema 3, engine v4 and the one-time migration.
+D267 classes, D268 turns and hands, D269 damage and weaknesses, D270 trees, D271 statuses and blessings, D272 schema 3,
+engine v4 and the migration (see [the decision log](../decisions.md)).
 
-## 14. Build order (one deploy at the end)
+## 14. Phone presentation
 
-1. Domain: classes, the node catalog generated from these rules, points and variant rules, schema 3 and migration.
-2. Engine v4: actions per class, multi-part hits, reactions, blessings, summons, statuses, Ultima; replay tests.
-3. Campaign: weakness generation and shields; sim policy for the new classes; one balance run.
-4. API validators and Dexie v28.
-5. UI: enrollment and class card, a two-tree skill screen (three branch columns, forks beside the core), party
-   loadouts and Familiar, the fight screen (second action, weapon toggle, blessing row, new icons), map sheet, guide.
-6. Docs: fold this into [uma-rpg.md](uma-rpg.md), log D267–D272, then deploy once.
+- **Enroll:** her class from her running styles (a choice when they allow several), its one-line role and, for a Brawler
+  or a Mage, the weapon set.
+- **Tree screen:** tabs for her two trees, then her three branches; each depth shows the core skill and, below it, the
+  fork's two variants. A node shows its kinds, targets, hits, power after her hand and MP, and why it is closed. A
+  learned variant offers **Swap out** (refund).
+- **Party slot:** class and weapons, the equipped skills (up to her slots) and, for a Summoner, the Familiar form.
+- **Fight:** a Brawler picks the weapon above Attack; two-action Umas show "action 1 of 2"; Attack reads Slash,
+  Strike or Familiar by build; a Cleric with several blessings in a branch picks one after the skill. Weakness icons
+  show elements then weapons.

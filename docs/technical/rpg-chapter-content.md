@@ -115,7 +115,7 @@ From the repository root, with a reviewed private `content/overrides/rpg-chapter
 pnpm assets:rpg:import             # sources + evidence → verified private portraits, manifest pins
 pnpm assets:rpg:import --offline   # repeat without network once every source is cached
 pnpm data:rpg:import               # canonical JSON → immutable pack and retained-version catalog
-pnpm data:rpg:validate --replay    # credential-free integrity, graph/kit/art gate and bounded route probe
+pnpm data:rpg:validate             # credential-free integrity, graph/kit/art gate
 ```
 
 All accept `--content-dir=/absolute/private/path`; importers also accept `--input=/absolute/private/source.json`.
@@ -141,10 +141,10 @@ The existing publisher now rejects invalid present RPG content **before** readin
 publication without RPG remains valid for the current non-RPG game. Publication credentials/infrastructure are
 unchanged and belong to the owner; these importers never publish.
 
-The bounded `--replay` probe uses invented base-100/no-growth five-weapon entrants, three fixed seeds, full
-HP/MP per encounter and the real EXP/skill rules. It measures live-versus-JSON-restored state hashes, clear count,
-phase triggers, mean rounds and ending levels. It is not a production-balance claim for every owned Uma or loadout.
-See [the initial private handoff](../research/rpg-private-ura-handoff.md) for aggregate results and the prepared version.
+Since D262 the campaign generates its chapters and foes in code, and the pack supplies only the cast (names and
+portraits). The first-map replay probe and its engine-v1 combat were retired with classes (D272); campaign balance
+runs through `pnpm sim:rpg:campaign`. [The initial private handoff](../research/rpg-private-ura-handoff.md) keeps the
+first map's aggregate results.
 
 An invented minimal shape (not the production chapter; its art references must still resolve in a private manifest):
 

@@ -52,9 +52,8 @@ pnpm sim:balance    # headless race balance table
 pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regression gate
 pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
 pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
-pnpm sim:rpg:progression # per-fight two-tier RPG EXP/token rewards, replay/catch-up and tree envelope (T096/T098)
-pnpm sim:rpg:combat # synthetic six-weapon/five-element RPG combat and replay envelope (T091)
-pnpm data:rpg:validate --replay # offline private RPG chapter integrity, coverage and bounded replay (T097)
+pnpm sim:rpg:campaign # class party (Brawler, two Mages, Cleric, Summoner) through generated chapters (D272)
+pnpm data:rpg:validate # offline private RPG cast pack integrity and art pins (T097)
 pnpm sim:balance -- --final  # multi-thousand-race Milestone 3 matrix
 pnpm sim:cards -- 300        # synthetic deck, Training, hint, Race Bonus, and G1 follow-up
 pnpm data:import    # GameTora datasets → private, gitignored content packs
@@ -88,7 +87,8 @@ docs/           design, technical, research
 | [Minigames](docs/design/minigames.md) | Spark Rival Circuit raises Training Levels; the card minigame earns a card's stars |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
-| [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties with locked classes and elemental trees, Persona-style weakness breaks against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D263) |
+| [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties of four classes, Octopath-style break battles against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D272) |
+| [RPG classes and skill trees](docs/design/uma-rpg-classes.md) | Brawler, Mage, Cleric and Summoner: turns and hands, multi-part hits and weaknesses, every authored tree, node and number, Cleric blessings, summons and the balance check (D267–D272) |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
