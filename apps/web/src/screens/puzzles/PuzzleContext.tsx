@@ -92,7 +92,7 @@ function ProductionPuzzleShell() {
 export function PuzzleShell() {
   return PUZZLES_RELEASE_ENABLED ? <ProductionPuzzleShell /> : <PuzzleGate title="Uma Puzzles is not released yet">The setup screens are being prepared. Spark Match and current training remain available; this link cannot enable the new mode.</PuzzleGate>
 }
-export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children }: { title: string; eyebrow?: string; back?: string; children: ReactNode }) {
+export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children, footer }: { title: string; eyebrow?: string; back?: string; children: ReactNode; footer?: ReactNode }) {
   const value = usePuzzles(), account = usePuzzleAccount(), error = useStore(value.state.store, s => s.error)
   const [guide, setGuide] = useState(() => !puzzleGuideMemory(value.isolated).seen())
   if (error) return <PuzzleGate title="Saved state unavailable" retry={() => { void value.host.account().then(value.state.publish).catch(() => {}) }}>{error}</PuzzleGate>
@@ -104,5 +104,6 @@ export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children }: 
     <div className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col px-3 pt-3"><PuzzleTabs root={value.root} />
       {value.notice && <p role="alert" className="mb-2 shrink-0 rounded-sm border border-accent p-2 text-sm">{value.notice}</p>}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">{children}</div>
+      {footer && <div className="shrink-0 border-t border-hairline-dark pt-2 pb-safe">{footer}</div>}
     </div><PuzzleGuide open={guide} onClose={() => setGuide(false)} isolated={value.isolated} practiceTo={value.isolated ? '/dev/puzzles-practice' : '/puzzles/practice'} /></MinigameShell>
 }

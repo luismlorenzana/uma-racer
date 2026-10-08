@@ -7,7 +7,7 @@ import { PersistentPuzzleHost, type PuzzleHostOptions } from '../../game/puzzles
 import { createIsolatedPuzzleProof } from '../../game/puzzles/proof'
 import { PuzzleGate, PuzzleProvider, type PuzzleEnvironment } from './PuzzleContext'
 import { proofCast, proofIdentity, puzzleUiProofData } from './ui-proof-data'
-const PROOF_DATABASE = 'puzzle-proof-t112-ui-v1'
+const PROOF_DATABASE = 'puzzle-proof-t114-ui-v1'
 let boot: Promise<PuzzleEnvironment> | null = null
 export async function createPuzzleUiProofEnvironment(name = PROOF_DATABASE): Promise<PuzzleEnvironment & { database: RacerDb }> {
   if (!/^puzzle-proof-[a-zA-Z0-9_-]+$/.test(name)) throw new Error('Proof storage must be isolated')
@@ -19,7 +19,7 @@ export async function createPuzzleUiProofEnvironment(name = PROOF_DATABASE): Pro
   }
   const options: Omit<PuzzleHostOptions, 'database' | 'enabled'> = { deviceId: 'invented-ui-device', source: id => {
     const source = fixture.sources.find(s => s.templateId === id); if (!source) throw new Error('Outfit unavailable'); return source
-  }, acquire, schedule: () => {} }
+  }, acquire, content: fixture.content, schedule: () => {} }
   if (!await probe.constellationBank.count()) {
     if ((await Promise.all(probe.tables.map(t => t.count()))).some(Boolean)) { probe.close(); throw new Error('Incomplete proof store retained; use a new isolated namespace') }
     probe.close(); const created = await createIsolatedPuzzleProof(name, fixture.rows, options); database = created.database; host = created.host

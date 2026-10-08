@@ -4,7 +4,7 @@ import { SCENARIOS, STATS, TRAINING_EXP_PER_LEVEL, TRAINING_LEVEL_UP_TICKET_ID, 
 import { FARM_CROPS } from '@racer/domain/farm'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { buildItemInventory, produceItemDefinitions, resolveItemLink } from '../../game/items/view'
+import { buildItemInventory, produceItemDefinitions, resolveItemLink, savedOrphanItem } from '../../game/items/view'
 import {
   loadItemInventoryPreferences,
   saveItemInventoryPreferences,
@@ -24,6 +24,7 @@ import { LevelUpIcon } from '../../ui/icons'
 import { useFarmScreen } from './FarmScreen'
 import { InspirationTokenIcon } from '../../ui/InspirationTokenIcon'
 import { InspirationBankPanel } from '../../ui/InspirationBankPanel'
+import { GlobalMaterialItems, useClCutover } from '../../ui/puzzles/ClLevelUp'
 
 const DEFAULTS: ItemInventoryPreferences = {
   visibility: 'owned', stat: null, scenarioTier: null, density: 'comfortable',
@@ -36,10 +37,10 @@ function ItemTile({ item, density, open }: {
   open: () => void
 }) {
   const crop = item.definition?.crop
-  if (!crop) return <Panel className="p-3" aria-label={`Unknown saved item, quantity ${item.quantity}`}>
+  if (!crop) return <button type="button" onClick={open} className="min-h-16 w-full rounded-md border border-hairline bg-panel p-3 text-left" aria-label={`Unknown saved item ${item.itemId}, quantity ${item.quantity}`}>
     <p className="text-[13px] font-semibold">Unknown saved item</p>
     <p className="text-[11px] text-ink-soft">Quantity {item.quantity} · preserved as a diagnostic</p>
-  </Panel>
+  </button>
   const label = `${crop.name}, ${crop.stat}, ${scenarioForTier(crop.scenarioTier)?.name ?? `scenario ${crop.scenarioTier}`}, quantity ${item.quantity}`
   return <button type="button" onClick={open} aria-label={label} className={`rounded-md border border-hairline bg-panel text-left shadow-1 ${density === 'compact' ? 'flex min-h-16 items-center gap-3 p-2' : 'min-h-40 p-3'}`}>
     <span className={density === 'compact' ? '' : 'flex items-start justify-between'}>
@@ -55,6 +56,7 @@ function ItemTile({ item, density, open }: {
 }
 
 export function ItemInventoryScreen() {
+  const clCutover = useClCutover()
   const farm = useFarmScreen()
   const umas = useGame(s => s.umas)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -73,8 +75,8 @@ export function ItemInventoryScreen() {
   }
   // Training items have their own section; the grid below is the produce catalog.
   const stacks = useMemo(() => Object.entries(farm.view.inventory)
-    .filter(([itemId]) => itemId !== TRAINING_LEVEL_UP_TICKET_ID && !inspirationToken(itemId))
-    .map(([itemId, quantity]) => ({ itemId, quantity, updatedAt: 0 })), [farm.view.inventory])
+    .filter(([itemId]) => itemId !== TRAINING_LEVEL_UP_TICKET_ID && !inspirationToken(itemId) && (!clCutover || !itemId.startsWith('constellation:')))
+    .map(([itemId, quantity]) => ({ itemId, quantity, updatedAt: 0 })), [farm.view.inventory, clCutover])
   const levelUpTickets = farm.view.inventory[TRAINING_LEVEL_UP_TICKET_ID] ?? 0
   const ownedStacks = Object.values(farm.view.inventory).filter(q => q > 0)
   const trainingExpBank = useGame((state) => state.profile?.trainingExpBank ?? 0)
@@ -86,7 +88,8 @@ export function ItemInventoryScreen() {
   const token = itemParam ? inspirationToken(itemParam) : null
   const link = resolveItemLink(itemParam, DEFINITIONS)
   const selected = link.status === 'ready' ? link.definition.crop : null
-  const invalidLink = link.status === 'invalid' && !token
+  const orphan = savedOrphanItem(itemParam, farm.view.inventory, DEFINITIONS)
+  const invalidLink = link.status === 'invalid' && !token && !orphan && !(clCutover && itemParam?.startsWith('constellation:'))
   const selectedQuantity = selected ? farm.view.inventory[selected.id] ?? 0 : 0
   const closeDetail = () => {
     const next = new URLSearchParams(searchParams)
@@ -106,18 +109,18 @@ export function ItemInventoryScreen() {
       {inventory.orphanedStacks > 0 && <p className="mt-2 rounded-sm bg-warning/10 p-2 text-[11px] text-warning">{inventory.orphanedStacks} future or missing item stack{inventory.orphanedStacks === 1 ? '' : 's'} preserved.</p>}
     </div>
 
-    <Panel className="mb-3" aria-label={`Training Level-Up Tickets, ${levelUpTickets} owned; Training EXP bank ${trainingExpBank} of ${TRAINING_EXP_PER_LEVEL}`}>
+    <Panel className="mb-3" aria-label={clCutover ? `Legacy Universal CL Tickets, ${levelUpTickets} owned` : `Training Level-Up Tickets, ${levelUpTickets} owned; Training EXP bank ${trainingExpBank} of ${TRAINING_EXP_PER_LEVEL}`}>
       <p className="text-micro">Training</p>
       <div className="mt-2 flex items-center gap-3">
         <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-sm bg-accent/15 text-accent-strong ${levelUpTickets === 0 ? 'opacity-45' : ''}`}><LevelUpIcon size={24} /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold">Training Level-Up Ticket</p>
-          <p className="text-[11px] text-ink-soft">One Training Level for the Uma you train. Earned from EXP past TL10.</p>
+          <p className="text-[14px] font-semibold">{clCutover ? 'Legacy Universal CL Ticket' : 'Training Level-Up Ticket'}</p>
+          <p className="text-[11px] text-ink-soft">{clCutover ? 'Preserved global stock. One CL in any eligible unlocked scenario; no new universal tickets are minted.' : 'One Training Level for the Uma you train. Earned from EXP past TL10.'}</p>
         </div>
         <Crest tone={levelUpTickets > 0 ? 'accent' : 'neutral'}>×{levelUpTickets}</Crest>
       </div>
-      <div className="mt-3 flex items-center justify-between text-[11px] text-ink-soft"><span>Training EXP bank</span><span className="font-semibold text-ink">{trainingExpBank.toLocaleString()} / {TRAINING_EXP_PER_LEVEL.toLocaleString()}</span></div>
-      <div className="mt-1"><Meter value={trainingExpBank / TRAINING_EXP_PER_LEVEL} color="var(--color-accent)" /></div>
+      {!clCutover && <><div className="mt-3 flex items-center justify-between text-[11px] text-ink-soft"><span>Training EXP bank</span><span className="font-semibold text-ink">{trainingExpBank.toLocaleString()} / {TRAINING_EXP_PER_LEVEL.toLocaleString()}</span></div>
+      <div className="mt-1"><Meter value={trainingExpBank / TRAINING_EXP_PER_LEVEL} color="var(--color-accent)" /></div></>}
     </Panel>
 
     <SegmentedControl label="Item visibility" value={preferences.visibility} onChange={(visibility) => update({ ...preferences, visibility })} options={[
@@ -131,6 +134,7 @@ export function ItemInventoryScreen() {
       </button>
     </div>
     <p role="status" className="mt-2 px-1 text-[11px] text-ink-soft">Produce: showing {inventory.items.length} of {preferences.visibility === 'owned' ? inventory.ownedUnique : inventory.catalogTotal + inventory.orphanedStacks}</p>
+    {clCutover && <GlobalMaterialItems visibility={preferences.visibility} scenarioTier={preferences.scenarioTier} />}
     <section className="mt-3 space-y-2" aria-label="Inspiration tokens"><h3 className="font-display text-lg">Inspiration</h3><p className="text-xs text-ink-soft">RPG regular battles earn skill tokens; bosses earn slot tokens. Each opens one position for one Uma in its scenario.</p>
       {SCENARIOS.filter(s => preferences.scenarioTier === null || s.tier === preferences.scenarioTier).flatMap(s => (['slot', 'skill'] as const).map(kind => ({ tier: s.tier, kind, id: inspirationTokenId(s.tier, kind) })))
         .filter(t => preferences.visibility === 'all' || (farm.view.inventory[t.id] ?? 0) > 0).map(t => <button key={t.id} onClick={() => openDetail(t.id)} className="flex min-h-16 w-full items-center gap-3 rounded-md border border-hairline bg-panel p-3 text-left"><InspirationTokenIcon kind={t.kind} /><span className="min-w-0 flex-1 text-sm font-semibold">{inspirationTokenName(t.tier, t.kind)}</span><Crest>×{farm.view.inventory[t.id] ?? 0}</Crest></button>)}
@@ -138,7 +142,9 @@ export function ItemInventoryScreen() {
 
     {invalidLink && <Panel className="mt-3 border-warning/40 bg-warning/10"><p className="text-[13px] font-semibold">Item link unavailable</p><p className="mt-1 text-[11px] text-ink-soft">This item id is unsafe, unknown, or no longer in the catalog. Saved stacks remain untouched.</p><button type="button" onClick={closeDetail} className="mt-2 min-h-11 font-semibold text-accent-strong">Clear item link</button></Panel>}
     {inventory.items.length === 0 ? <Panel className="mt-3 text-center"><p className="font-semibold">No produce here yet</p><p className="mt-1 text-[12px] text-ink-soft">Harvest a ready crop, or choose All items to browse the catalog.</p></Panel>
-      : <div className={`mt-3 grid gap-2 ${preferences.density === 'comfortable' ? 'grid-cols-2' : 'grid-cols-1'}`}>{inventory.items.map((item) => <ItemTile key={item.itemId} item={item} density={preferences.density} open={() => { if (item.definition) openDetail(item.itemId) }} />)}</div>}
+      : <div className={`mt-3 grid gap-2 ${preferences.density === 'comfortable' ? 'grid-cols-2' : 'grid-cols-1'}`}>{inventory.items.map((item) => <ItemTile key={item.itemId} item={item} density={preferences.density} open={() => openDetail(item.itemId)} />)}</div>}
+
+    <BottomSheet open={Boolean(orphan && !(clCutover && orphan.startsWith('constellation:')))} onClose={closeDetail}>{orphan && <div className="space-y-3"><h2 className="text-xl">Unknown saved item</h2><p className="break-all">{orphan}</p><p>Quantity {farm.view.inventory[orphan]} · preserved until its definition is available. Cannot spend an unknown item.</p></div>}</BottomSheet>
 
     <BottomSheet open={token !== null} onClose={closeDetail}>{token && <div className="space-y-3 pb-safe"><InspirationTokenIcon kind={token.kind} size={64} /><h2 className="font-display text-xl">{inspirationTokenName(token.tier, token.kind)}</h2><p className="font-semibold">{farm.view.inventory[itemParam!] ?? 0} in global inventory</p><p className="text-sm text-ink-soft">{token.kind === 'slot' ? 'Earned from an accepted RPG boss clear. Opens one parent or grandparent slot and its inherited unique.' : 'Earned from accepted RPG regular/elite battles. Opens one natural-gold position on a filled lineage slot; equipping still uses SP.'} Choose a trained Uma:</p>{Object.values(umas).filter(u => u.scenarios.some(r => r.tier === token.tier)).map(u => <Link key={u.templateId} to={`/constellation/${u.templateId}/inspiration?tier=${token.tier}`} className="flex min-h-11 items-center rounded-sm bg-sunken px-3 font-semibold text-accent-strong">{farm.templates.get(u.templateId)?.name ?? 'Owned Uma'}</Link>)}</div>}</BottomSheet>
     <BottomSheet open={selected !== null} onClose={closeDetail}>

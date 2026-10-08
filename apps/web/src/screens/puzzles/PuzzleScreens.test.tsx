@@ -9,7 +9,8 @@ import type { ReactNode } from 'react'
 import { PUZZLES_RELEASE_ENABLED } from '../../game/puzzles/capability'
 import { createPuzzleAccountStore, PuzzleProvider, PuzzleShell, puzzleUiGate, type PuzzleEnvironment } from './PuzzleContext'
 import { createPuzzleUiProofEnvironment } from './PuzzleUiProofScreen'
-import { PuzzleHubScreen, PuzzleUnavailableSection } from './PuzzleHubScreen'
+import { PuzzleHubScreen } from './PuzzleHubScreen'
+import { PuzzleItemsScreen } from './PuzzleMaterialsScreen'
 import { PuzzleRosterScreen, PuzzleProfileScreen } from './PuzzleRosterScreen'
 import { PuzzlePartyScreen } from './PuzzlePartyScreen'
 import { PuzzleChaptersScreen } from './PuzzleChaptersScreen'
@@ -120,7 +121,7 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-1/ura-finale`, `${root}/party/:partyId/:scenarioId`, env)
     fireEvent.click(await screen.findByRole('button', { name: /Squad 1A, PL 1/ })); await screen.findByText('Invented missing pack')
     expect(screen.getByRole('button', { name: 'Retry content' })).toBeTruthy(); expect(screen.getByRole('button', { name: 'Return to map' })).toBeTruthy()
-    cleanup(); mount(<PuzzleUnavailableSection />, `${root}/items`, `${root}/items`); await screen.findByText(/T114 adds the scenario/)
+    cleanup(); mount(<PuzzleItemsScreen />, `${root}/items`, `${root}/items`); await screen.findByText('Constellation Tickets')
   })
   it('foreign journal is read-only with explicit online takeover, same seed and no new reservation', async () => {
     const initial = (await environment.host.account()).checkpoints[1]!.open!, begin = vi.spyOn(environment.host, 'begin')

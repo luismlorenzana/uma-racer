@@ -202,6 +202,9 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/puzzles-material-icons',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleMaterialIconProofScreen')).PuzzleMaterialIconProofScreen }),
+  }, {
     path: 'dev/puzzles-battle-proof/:proofCase?',
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleBattleProofScreen')).PuzzleBattleProofScreen }),
   }, {
@@ -237,7 +240,7 @@ function puzzleSetupRoutes() {
     { path: 'party/:partyId', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzlePartyScreen')).PuzzlePartyScreen }) },
     { path: 'chapters', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleChaptersScreen')).PuzzleChaptersScreen }) },
     { path: 'party/:partyId/:scenarioId', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleMapScreen')).PuzzleMapScreen }) },
-    { path: 'exchange', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleHubScreen')).PuzzleUnavailableSection }) },
-    { path: 'items', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleHubScreen')).PuzzleUnavailableSection }) },
+    { path: 'exchange', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleMaterialsScreen')).PuzzleExchangeScreen }) },
+    { path: 'items', lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleMaterialsScreen')).PuzzleItemsScreen }) },
   ]
 }

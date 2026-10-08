@@ -25,8 +25,9 @@ art provenance and device validation remain implementation checks, not a complet
 atomic economic sync, explicit online takeover and safe cutover gates. T106–T108 pure rules/battle/campaign are
 implemented (D269–D271); T109 pipeline/client code is delivered (D272). At the owner's request, real PAD originals/evidence
 are pinned for the final content pass, with original labelled DEV placeholders. T110 additive save/sync is implemented
-(D273); T111's real replay host/journal and T112's saved Hub/roster/parties/maps are implemented (D274–D275),
-with an isolated synthetic phone-size browser proof. Battle/results/practice screens are T113 next; both release
+(D273); T111–T113's real host, setup and touch battle/results/practice are implemented (D274–D276).
+T114 adds global materials, separate repayment debt, adjacent exchange and the shared CL sheet (D283), with isolated
+synthetic phone-size proofs. T115 preservation/retirement is next; both release
 flags stay off, with no live cutover. This is an explicit
 source-input follow-up, not an unanswered mechanics question or real-content sign-off. Simulation outliers in design §11 remain release-balance checks,
 not new owner choices or a claim of closure. Do not treat the task breakdown

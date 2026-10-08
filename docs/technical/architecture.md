@@ -215,7 +215,11 @@ This is not an enabled Puzzle release; Spark remains active until M030's protect
   double. T112 adds [lazy guarded setup screens](uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275)
   over a separate per-provider Zustand account selector and Dexie read subscription. Device-only party/chapter/map
   memory never enables entry; real host operations own all mutations. A DEV proof bypasses auth/content/game boot and
-  uses only its explicitly named synthetic database. Home/Begin are still unavailable; T113 battle is next.
+  uses only its explicitly named synthetic database. T113 adds durable-before-animation touch battles, exact saved
+  results and account-free practice. T114 reuses global Items and the same material host for debt-aware exchanges
+  and one lazy CL sheet across Profile/Training/Constellation. Read selectors include racing units and durable
+  material-operation status, never a second item store. Home/production Begin and account cutover remain unavailable;
+  both flags stay off. T115 preservation/retirement is next.
 - On a new device, or with an empty local save, `GET /api/save` pulls everything.
 - Conflicts: single player, so the server keeps a per-entity `version`. A stale write gets back the server copy, and the
   client adopts it. If a newer local mutation was queued while that request was in flight, its payload is preserved and
