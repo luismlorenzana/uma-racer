@@ -18,7 +18,9 @@ import {
 } from '@racer/domain'
 import { useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router'
+import { useClCutover } from '../../ui/puzzles/ClLevelUp'
+import { usePuzzlePreparation } from '../../game/puzzles/preparation-store'
 import { useContent } from '../../content/ContentProvider'
 import { getContentAsset } from '../../content/runtime'
 import { readLevelUpTickets, spendLevelUpTickets } from '../../game/actions'
@@ -50,6 +52,12 @@ import {
 type Phase = 'loading' | 'ready' | 'reserving' | 'playing' | 'committing' | 'complete' | 'leveled'
 
 export function SparkMatchScreen() {
+  const active = useClCutover(), preparing = usePuzzlePreparation(s => s.busy || s.phase === 'preparing')
+  if (active || preparing) return <Navigate to="/puzzles?notice=spark-retired" replace />
+  return <LegacySparkMatchScreen />
+}
+
+function LegacySparkMatchScreen() {
   const { umaId = '' } = useParams()
   const [params] = useSearchParams()
   const reducedMotion = Boolean(useReducedMotion())

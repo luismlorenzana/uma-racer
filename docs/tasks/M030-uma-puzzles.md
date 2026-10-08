@@ -3,7 +3,7 @@
 **State: T106–T108 pure foundations/battle/campaign complete (D269–D271); T109 pipeline/client code delivered,
 real PAD inputs pinned for the final pass at the owner's request (D272). T110 save/sync and T111 real journal/host complete
 (D273–D274); T112 Hub/parties/maps and T113 mobile battle/results/guide complete (D275–D276), capability-off.
-T114 global material/debt/exchange and shared CL surfaces complete (D283). T115 preservation/retirement is next. No live cutover.**
+T114 global material/debt/exchange and shared CL surfaces complete (D283). T115 dormant preservation/retirement complete (D287). T116 release/acceptance is next. No live cutover.**
 Owner-approved gameplay: [Uma Puzzles](../design/uma-puzzles.md), D267.
 Delivery/transport baseline: [implementation contract](../technical/uma-puzzles-implementation.md), D268.
 
@@ -32,7 +32,7 @@ The old training loop remains usable until that replacement and the preservation
 | 7 | T112 — Hub, parties and maps · **complete** | [Saved setup UI](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275), real host and isolated phone proof; guarded deep links, no Home entry |
 | 8 | T113 — Touch battle and guide · **complete** | [Mobile battle contract](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276): durable-before-animation Pixi fights, receipt results, illustrated guide and account-free practice; release gated |
 | 9 | T114 — Materials, exchange and CL UI · **complete** | [Material surface contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283): global Items/icons, separate debt, exact adjacent exchange and one real-host CL sheet; release gated |
-| 10 | [T115 — Preservation and retirement](T115-puzzle-legacy-cutover.md) | Rehearsed one-time cutover, old-client protection and Spark retirement code are ready but dormant |
+| 10 | T115 — Preservation and retirement · **complete** | [Protected preservation v2 and recovery](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287), save16 CL adaptation, Dexie31, bounded receipts and exact refunds; code rehearsed and dormant |
 | 11 | [T116 — Release and acceptance](T116-puzzle-release.md) | Published content, balance evidence, enabled cutover and verified production loop; owner phone checks recorded honestly |
 
 Rebase each task from the then-current main; do not run several task branches in parallel or overwrite Claude's RPG

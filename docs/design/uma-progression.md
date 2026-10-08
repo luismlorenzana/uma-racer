@@ -4,6 +4,12 @@
 
 ## Two layers of data
 
+**Dormant CL adaptation (D287):** after protected bank2 activation, save16's existing `trainingLevel` stores
+Constellation Level1–10 and `trainingExp` is required zero. Profile EXP bank is also zero. Before activation the
+save15 Spark rules below remain live. All four distance presets, Inspiration/Extra unlocks, racing progression,
+global card references and histories are preserved; future units start CL1 with no frozen legacy debt. No stat
+formula or scenario gate changes. [Version/receipt contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+
 ### Uma template (static, sourced from the original game)
 
 | Field | Notes |

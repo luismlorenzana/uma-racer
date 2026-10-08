@@ -124,7 +124,7 @@ export const router = createBrowserRouter([
   {
     path: 'minigames/spark-match/:umaId',
     hydrateFallbackElement: <div className="h-dvh bg-stage" aria-label="Loading Spark Match" />,
-    lazy: async () => ({ Component: (await import('../screens/minigames/SparkMatchScreen')).SparkMatchScreen }),
+    lazy: async () => ({ Component: (await import('../screens/minigames/SparkEntry')).SparkEntry }),
   },
   {
     path: 'minigames/friendship-training/:cardId',
@@ -202,6 +202,9 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/puzzles-preservation-proof',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzlePreservationProofScreen')).PuzzlePreservationProofScreen }),
+  }, {
     path: 'dev/puzzles-material-icons',
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleMaterialIconProofScreen')).PuzzleMaterialIconProofScreen }),
   }, {

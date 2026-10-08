@@ -362,7 +362,7 @@ export function UmaProfileScreen() {
       <SectionHeading label="Training" hint={`build the ${DISTANCE_ICONS[save.activePreset].label} preset`} />
       <div className="grid gap-2">
         {([
-          ['Constellation', 'Cards and Training Level · enter Spark Match here', `/constellation/${encodeURIComponent(save.templateId)}`],
+          ['Constellation', clCutover ? 'Cards and Constellation Level · spend materials here' : 'Cards and Training Level · enter Spark Match here', `/constellation/${encodeURIComponent(save.templateId)}`],
           ['Inspiration', 'Parents, grandparents, aptitudes and inherited skills', `/constellation/${encodeURIComponent(save.templateId)}/inspiration`],
           ['Extra stats', 'Buy stat nodes with Farm crops and turn on any six', `/constellation/${encodeURIComponent(save.templateId)}/extra-stats`],
           ['Skills', 'Equip skills within the SP this preset earns', `/stable/${encodeURIComponent(save.templateId)}/skills`],

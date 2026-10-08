@@ -5,6 +5,10 @@ import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } fr
 import type { SaveRepository } from './save.repository'
 import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
 import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
+import { preservationHeader, preservationPageIndexes, preservationPageId, preservationBatch, puzzleCohortId,
+  type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
+import { disabledPreservation, unavailablePreservation, resolvePreservation } from './puzzle-preservation'
+import { resolveLegacySpark, legacySparkReceiptId, type LegacySparkRequest, type LegacySparkResponse } from './puzzles'
 import {
   ENTITY_KINDS,
   LOG_KINDS,
@@ -20,7 +24,8 @@ import {
 // Application Default Credentials automatically.
 export class FirestoreSaveRepository implements SaveRepository {
 
-  constructor(private readonly injectedDb?: admin.firestore.Firestore, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED) {}
+  constructor(private readonly injectedDb?: admin.firestore.Firestore, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED,
+    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>) {}
 
   private get db(): admin.firestore.Firestore {
     if (this.injectedDb) return this.injectedDb
@@ -112,6 +117,70 @@ export class FirestoreSaveRepository implements SaveRepository {
       for (const row of resolved.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
       return resolved.response
     })
+  }
+
+  async preparePuzzles(uid: string, request: PuzzlePreservationRequest): Promise<PuzzlePreservationResponse> {
+    if (!this.puzzlesEnabled) return disabledPreservation()
+    try {
+      if (!this.preservationContent) return unavailablePreservation('Compatible replacement content is unavailable; no progression was changed')
+      const player = this.player(uid), saved = await player.collection('puzzlePreservation').doc('main').get()
+      const initial = new Map<string, EntityRecord>()
+      if (saved.exists) initial.set('puzzlePreservation/main', fromStored<EntityRecord>(saved.data()!))
+      const content = await this.preservationContent(preservationHeader(initial)?.contentHash)
+      return await this.db.runTransaction(async tx => {
+        const entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>()
+        const read = async (keys: string[]) => {
+          if (!keys.length) return
+          const docs = await tx.getAll(...keys.map(k => { const [kind, id] = k.split('/'); return player.collection(kind!).doc(id!) }))
+          for (const doc of docs) if (doc.exists) {
+            const row = fromStored<EntityRecord>(doc.data()!); entities.set(`${row.kind}/${row.id}`, row)
+          }
+        }
+        await read(['constellationBank/main', 'puzzlePreservation/main', 'profile/main', 'items/training:level-up-ticket'])
+        const header = preservationHeader(entities)
+        if (!header) {
+          const owned = await tx.get(player.collection('umas'))
+          for (const doc of owned.docs) { const row = fromStored<EntityRecord>(doc.data()); entities.set(`${row.kind}/${row.id}`, row) }
+        } else if (header.phase !== 'active') {
+          await read(preservationPageIndexes(header).map(i => `puzzlePreservation/${preservationPageId(i)}`))
+          const batch = preservationBatch(entities, header)
+          await read([...new Set(batch.flatMap(u => [`umas/${u.outfitId}`, `puzzleCohort/${puzzleCohortId(u.outfitId, u.scenarioId)}`]))])
+          const [credit] = await tx.getAll(player.collection('itemLedger').doc(`puzzle-preservation:${header.cutoverId}`))
+          if (credit?.exists) { const row = fromStored<LogRecord>(credit.data()!); logs.set(`${row.kind}/${row.id}`, row) }
+        }
+        const result = resolvePreservation(entities, logs, content, request, Date.now())
+        // No read is possible below this line. Freeze pages and each subsequent batch are indivisible.
+        for (const row of result.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+        for (const row of result.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+        return result.response
+      })
+    } catch (error) { return unavailablePreservation(error instanceof Error ? error.message : 'Preparation failed; retry with preserved receipts') }
+  }
+
+  async retireSpark(uid: string, request: LegacySparkRequest): Promise<LegacySparkResponse> {
+    if (!this.puzzlesEnabled) return { status: 'disabled', message: null, entities: [], logs: [] }
+    try {
+      const player = this.player(uid)
+      if (!this.preservationContent) throw new Error('Compatible replacement content is unavailable; keep the journal')
+      const saved = await player.collection('puzzlePreservation').doc('main').get(), initial = new Map<string, EntityRecord>()
+      if (saved.exists) initial.set('puzzlePreservation/main', fromStored<EntityRecord>(saved.data()!))
+      await this.preservationContent(preservationHeader(initial)?.contentHash)
+      return await this.db.runTransaction(async tx => {
+        const entityKeys = ['profile/main', 'constellationBank/main', `puzzlePreservation/${legacySparkReceiptId(request.run.id)}`],
+          logKeys = [`ledger/${request.run.id}`, `ledger/${request.run.id}:refund`], refs = [...entityKeys, ...logKeys].map(k => {
+            const [kind, id] = k.split('/'); return player.collection(kind!).doc(id!) })
+        const docs = await tx.getAll(...refs), entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>()
+        docs.forEach((doc, i) => {
+          if (!doc.exists) return
+          if (i < entityKeys.length) { const row = fromStored<EntityRecord>(doc.data()!); entities.set(`${row.kind}/${row.id}`, row) }
+          else { const row = fromStored<LogRecord>(doc.data()!); logs.set(`${row.kind}/${row.id}`, row) }
+        })
+        const result = resolveLegacySpark(request, entities, logs, Date.now())
+        for (const row of result.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+        for (const row of result.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+        return result.response
+      })
+    } catch (error) { return { status: 'recoverable-error', message: error instanceof Error ? error.message : 'Keep the journal and retry retirement', entities: [], logs: [] } }
   }
 
   async rpgCommand(uid: string, request: RpgCommandRequest): Promise<RpgCommandResponse> {

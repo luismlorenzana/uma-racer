@@ -22,6 +22,13 @@ era, and proves herself in races that feed her progression and fill her trophy c
 
 ## Core loops
 
+**Release boundary (D287):** the loops below describe today's capability-off Spark game. Uma Puzzles' replacement
+loop is implemented but dormant: free global five-outfit fights → independent Puzzle EXP + scenario/style materials →
+legacy debt first → Items → shared **Constellation Level (CL)1–10**. Protected preservation keeps every earned TL as
+the same CL, all four builds and historical facts; it does not unlock a scenario or raise units to10. T116 enables
+that loop only after real-content/release acceptance. CL opens card nodes, not independent Inspiration/Extra stats.
+See [preservation and recovery](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+
 ### Uma loop (per Uma)
 
 ```mermaid

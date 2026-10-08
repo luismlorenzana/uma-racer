@@ -10,15 +10,21 @@ Card stars are account-wide (D255): each distance preset's set points to the sam
 stars feed all builds. Training Level, node assignments and era scaling remain scenario-specific; four independent
 distance presets remain under D252. Friendship Training chooses a scenario as play context, not a new card star track.
 
-**Planned replacement, not active (D267–D269):** [Uma Puzzles](uma-puzzles.md) will earn scenario/style tickets that
-raise this shared level directly, renamed Constellation Level (CL). T106 implements pure projections only; the live
+**Implemented replacement, not active (D267–D269, D287):** [Uma Puzzles](uma-puzzles.md) earns scenario/style tickets that
+raise this shared level directly, renamed Constellation Level (CL). T115 supplies dormant protected preservation; the live
 Spark EXP loop, universal-ticket spending, account EXP bank and persisted fields below remain unchanged until the
 protected M030 cutover. CL9/10 preserve baseline SP growth, not an additional level-scaled base-stat floor.
+
+T115's save16 explicitly keeps `trainingLevel` as CL storage and requires retired unit/account EXP to be zero.
+It preserves earned levels/configuration, freezes one CL−1 debt per existing outfit/scenario, pools only unapplied
+EXP and rounds the last fraction once/account into preserved universal stock. There is no free CL10 or new unlock.
+Preparation pauses old Spark/EXP/universal spends while racing and other modes remain available; Retry resumes
+receipts. T116, not T115, enables production. [Rehearsal/recovery contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
 
 T114/D283 supplies the shared, lazy **CL n/10 · Level up** sheet for Profile, Training and Constellation, gated on
 both the release capability and an active preserved bank. It uses the original source-A scenario/style tickets plus
 separate preserved universals, names exact card nodes and stat/SP deltas, and never edits any preset configuration.
-Until T115–T116 cutover, the flag is off: the existing TL chips, Spark launch, EXP bank and old ticket flow below
+Until T116 activates cutover, the flag is off: the existing TL chips, Spark launch, EXP bank and old ticket flow below
 remain live. Rejected pending CL spends lose unearned power, not the user's configuration; completion flair only
 follows an accepted receipt. See [material UI contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283).
 
@@ -100,8 +106,8 @@ Unity Cup are two units, and either can race.
   new scenario asks for. It also never waits on her gate: an Uma ready to advance can still race her earlier units.
 - **Still trainable.** An earlier unit edits its free Card/Lineage configuration and Extra stats like any other, buys
   Extra stat nodes with its own scenario's crops, edits its card set within its own era, and
-  plays Spark Match (for a ticket) until it reaches Training Level 10. Friendship Training already earns stars per
-  scenario.
+  plays Spark Match (for a ticket) until it reaches Training Level 10 before cutover; afterward materials raise CL.
+  Friendship Training earns global stars with a scenario as play context (D255).
 - **Advancing is unchanged.** A newly unlocked scenario starts from scratch at Training Level 1 with an empty set.
 
 ## Training Tickets

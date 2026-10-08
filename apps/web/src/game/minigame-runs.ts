@@ -29,6 +29,7 @@ import {
   parseSparkRivalActions,
   parseSparkRivalEncounter,
   parseUmaSave,
+  parseConstellationBankSave,
   replaySparkRival,
   selectSparkEncounter,
   sparkRivalStateHash,
@@ -70,6 +71,7 @@ import { updateTrainingBadgeFacts } from './badges'
 import { queueInTransaction } from './persistence'
 import { bankTrainingExpInTransaction } from './training-bank'
 import { reconcileTrainerInTransaction } from './trainer'
+import { locksLegacyTraining } from './puzzles/preparation-store'
 
 const cloneReward = (reward: StoredRunReward): RunReward => ({
   ...reward,
@@ -238,7 +240,7 @@ function adapterFor(run: MinigameRunRow): MinigameEngineAdapter {
   return adapter
 }
 
-function minigameRunView(run: MinigameRunRow): MinigameRunView {
+export function minigameRunView(run: MinigameRunRow): MinigameRunView {
   return adapterFor(run).view(run)
 }
 
@@ -477,6 +479,8 @@ export interface PersistentMinigameHostOptions {
   today?: () => string
   publish?: (mutation: MinigameHostMutation) => void
   afterMutation?: () => void | Promise<void>
+  /** Only the startup coordinator may finish a terminal legacy journal before freezing. */
+  allowPreparationCommit?: boolean
 }
 
 interface ValidTarget {
@@ -489,6 +493,7 @@ export class PersistentMinigameHost implements MinigameHost {
   private readonly today: () => string
   private readonly publish: (mutation: MinigameHostMutation) => void
   private readonly afterMutation: () => void | Promise<void>
+  private readonly allowPreparationCommit: boolean
 
   constructor(private readonly content: LoadedContent, options: PersistentMinigameHostOptions = {}) {
     this.now = options.now ?? (() => Date.now())
@@ -498,10 +503,13 @@ export class PersistentMinigameHost implements MinigameHost {
     })
     this.publish = options.publish ?? (() => undefined)
     this.afterMutation = options.afterMutation ?? (() => undefined)
+    this.allowPreparationCommit = options.allowPreparationCommit ?? false
   }
 
   private async validateTarget(target: RunTarget): Promise<ValidTarget> {
     if (target.kind === 'spark-match') {
+      if (locksLegacyTraining() || parseConstellationBankSave((await db.constellationBank.get('main'))?.data))
+        throw new Error('Spark is retired while Constellation Levels prepare. Open Uma Puzzles; keep this journal for recovery.')
       const row = await db.umas.get(target.umaId)
       if (!row) throw new Error('Spark Match Uma is not owned')
       const uma = parsedUma(target.umaId, row.data)
@@ -587,7 +595,7 @@ export class PersistentMinigameHost implements MinigameHost {
     const now = this.now()
     const today = this.today()
     let nextProfile: PlayerProfile | null = null
-    const ticket = await db.transaction('rw', [db.profile, db.umas, db.cards, db.ledger, db.outbox, db.minigameRuns], async () => {
+    const ticket = await db.transaction('rw', [db.profile, db.umas, db.cards, db.ledger, db.outbox, db.minigameRuns, db.constellationBank], async () => {
       const profileRow = await db.profile.get('main')
       if (!profileRow) throw new Error('Local profile is missing')
       const profile = parsePlayerProfileOrThrow(profileRow.data)
@@ -664,7 +672,7 @@ export class PersistentMinigameHost implements MinigameHost {
     let mutation: MinigameHostMutation | null = null
     const reward = await db.transaction(
       'rw',
-      [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.items, db.itemLedger, db.outbox, db.minigameRuns],
+      [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.items, db.itemLedger, db.outbox, db.minigameRuns, db.constellationBank],
       async () => {
         const run = await db.minigameRuns.get(id)
         if (!run) throw new Error('Unknown or expired minigame run')
@@ -672,6 +680,9 @@ export class PersistentMinigameHost implements MinigameHost {
           if (!run.reward) throw new Error('Completed minigame run is missing its reward')
           return cloneReward(run.reward)
         }
+        if (run.kind === 'spark-match' && (!this.allowPreparationCommit && locksLegacyTraining() ||
+          parseConstellationBankSave((await db.constellationBank.get('main'))?.data)))
+          throw new Error('This Spark journal needs explicit recovery: the account has frozen its Constellation Levels. No EXP or refund was guessed.')
         validateMinigameOutcome(asTicket(run), run.target, outcome)
         if (outcome.kind === 'bond-recall') throw new Error('Bond Recall is retired: Bond opens Friendship Training')
         const view = minigameRunView(run)

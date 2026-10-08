@@ -195,8 +195,8 @@ describe('save parsing', () => {
     // v5 held one break with no scenario; it becomes tier 1's, then v7 stars (LB3 → 4★), then three stars (4★ → 3★).
     expect(migrateCardSaveV5({ templateId: 'c1', limitBreak: 3, maxCouponGranted: false }))
       .toEqual({ schemaVersion: 1, templateId: 'c1', stars: 3, maxCouponGranted: false })
-    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 16 })).toBeNull()
-    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 16 })).toThrow(/App update required/)
+    expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), schemaVersion: 17 })).toBeNull()
+    expect(() => parsePlayerProfileOrThrow({ ...createPlayerProfile('v1', 1), schemaVersion: 17 })).toThrow(/App update required/)
     expect(parsePlayerProfile({ ...createPlayerProfile('v1', 1), trainingExpBank: -1 })).toBeNull()
   })
 
@@ -360,7 +360,7 @@ describe('save parsing', () => {
     }
     expect(parseSaveSnapshot({ entities: [duplicate, duplicate], logs: [], serverTime: 1 })).toBeNull()
     expect(() => parseSaveSnapshotOrThrow({
-      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 16 } }],
+      entities: [{ ...duplicate, data: { ...profile, schemaVersion: 17 } }],
       logs: [],
       serverTime: 1,
     })).toThrow(/App update required/)

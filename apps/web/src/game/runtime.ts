@@ -116,6 +116,7 @@ import {
 } from './badge-preferences'
 import { reconcileTrainerMemory, reconcileTrainerPersistent, trainerAllowedAwardRefs } from './trainer'
 import { installMinigameHost } from './minigame-host'
+import { PUZZLES_RELEASE_ENABLED } from './puzzles/capability'
 import { settleTrainingExpBank } from './training-bank'
 import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
@@ -1137,6 +1138,28 @@ export class GameRuntime {
       const batch = await db.outbox.orderBy('seq').limit(MAX_SYNC_OPERATIONS).toArray()
       if (batch.length === 0) {
         if (generation !== this.generation) return
+        if (PUZZLES_RELEASE_ENABLED) {
+          const { preparePuzzlesOnce } = await import('./puzzles/preparation'), content = this.content
+          const changed = await preparePuzzlesOnce(db, {
+            prepare: saveApi.puzzlePrepare, retire: saveApi.retireSpark, snapshot: saveApi.load, today: localDay, current: () => generation === this.generation,
+            schedule: () => this.schedule(0),
+            verifyReplacement: async () => {
+              const { puzzleContentLibrary } = await import('../content/puzzles'), library = puzzleContentLibrary(content.manifest)
+              const saved = (await db.puzzlePreservation.get('main'))?.data
+              const lease = saved?.type === 'header' ? await library.acquireHash(saved.contentHash) : await library.acquire()
+              lease.release()
+            },
+            commitTerminal: async run => {
+              const { minigameRunView } = await import('./minigame-runs'), { sparkRivalStateHash } = await import('@racer/domain')
+              const view = minigameRunView(run)
+              if (view.engine !== 'spark-rival-v1') throw new Error('Saved Spark engine is unsupported; keep the journal')
+              await new PersistentMinigameHost(content, { allowPreparationCommit: true }).commitRun(run.id, { kind: 'spark-match', engine: 'spark-rival-v1',
+                actionCount: view.actions.length, stateHash: sparkRivalStateHash(view.replay.state) })
+            },
+            publish: async () => { const local = await readLocalSnapshot(); if (local && generation === this.generation) adoptGameState(stateFromSnapshot(local, content, true)) },
+          })
+          if (changed) return
+        }
         const { advanceInspirationOnce } = await import('./inspiration-advance')
         const advanced = await advanceInspirationOnce(db, saveApi, () => generation === this.generation)
         if (advanced) {

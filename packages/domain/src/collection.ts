@@ -136,7 +136,7 @@ export function redeemUmaSelectCoupon(
   assertGeneratedId(id)
   return {
     profile: { ...profile, umaCoupons: profile.umaCoupons - 1 },
-    uma: createUmaSave(template),
+    uma: createUmaSave(template, profile.schemaVersion),
     ledger: [{
       id,
       data: { resource: 'uma-coupons', delta: -1, reason: 'uma-coupon-redeem', localDay: today, createdAt: now },

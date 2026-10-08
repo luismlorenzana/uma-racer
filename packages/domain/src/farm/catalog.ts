@@ -64,4 +64,3 @@ export function assertFarmCropCatalog(catalog: readonly FarmCropDefinition[] = F
     }
   }
 }
-

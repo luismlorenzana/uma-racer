@@ -32,6 +32,8 @@ export async function bankTrainingExpInTransaction(
   const profileRow = await db.profile.get('main')
   if (!profileRow) throw new Error('Local profile is missing')
   const profile = parsePlayerProfileOrThrow(profileRow.data)
+  if (profile.schemaVersion === 16 || await db.constellationBank.get('main'))
+    throw new Error('Training EXP is frozen or retired. Keep the save and open Constellation Levels.')
   const deposit = depositTrainingExp(profile.trainingExpBank, exp)
   const next: PlayerProfile = { ...profile, trainingExpBank: deposit.bank }
   await db.profile.put({ ...profileRow, data: next })
@@ -66,9 +68,10 @@ export async function bankTrainingExpInTransaction(
  * full level waiting (D212); this runs once at startup, where every path meets. Returns the tickets paid.
  */
 export async function settleTrainingExpBank(now: number): Promise<TrainingExpBanked | null> {
-  return db.transaction('rw', [db.profile, db.items, db.itemLedger, db.outbox], async () => {
+  return db.transaction('rw', [db.profile, db.items, db.itemLedger, db.outbox, db.constellationBank], async () => {
     const profileRow = await db.profile.get('main')
     if (!profileRow) return null
+    if (profileRow.data.schemaVersion === 16 || await db.constellationBank.get('main')) return null
     if (parsePlayerProfileOrThrow(profileRow.data).trainingExpBank < TRAINING_EXP_PER_LEVEL) return null
     return bankTrainingExpInTransaction(0, `exp-bank:settle:${now}`, { kind: 'bank-settle' }, now)
   })

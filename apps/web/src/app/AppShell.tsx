@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigationType } from 'react-router'
 import { TabBar } from './TabBar'
 import { TopBar } from './TopBar'
 import { Toasts } from '../ui/Toasts'
+import { PuzzlePreparationNotice } from '../ui/puzzles/PuzzlePreparation'
 
 /**
  * The shell's content area scrolls, not the window, so it keeps its own memory: a page opened by a link starts at the
@@ -36,6 +37,7 @@ export function AppShell() {
     <div className="flex h-dvh flex-col">
       <TopBar />
       <main ref={main} onScroll={onScroll} className="flex-1 overflow-y-auto overscroll-contain px-4 pb-28">
+        <PuzzlePreparationNotice />
         <Outlet />
       </main>
       <TabBar />

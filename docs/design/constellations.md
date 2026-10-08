@@ -8,6 +8,13 @@ There is no turn-based training, no facility deal, no energy, and no per-turn RN
 
 ## The shape of the system
 
+**D287, dormant cutover:** active preserved accounts call the same1–10 input **Constellation Level (CL)** and raise it
+with source-A scenario/style materials or preserved universals. Save16 adapts the existing `trainingLevel` storage,
+with retired EXP exactly zero. Before T116 enables the flag, Spark/TL below remains live. Preservation changes no
+node schedule, fixed template base, SP formula, four-preset assignments, global stars, era scaling, Inspiration or
+Extra stats. Only the Constellation view's training-game control retires; all three visualizations remain editable.
+See [preservation](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+
 ```
 Uma  ─ has ─►  one ScenarioTraining per unlocked scenario
                  │

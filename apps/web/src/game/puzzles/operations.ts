@@ -21,7 +21,7 @@ async function readEntity(database: RacerDb, kind: string, id: string): Promise<
 export function restorePuzzleOwnedFields(canonical: PuzzleStoredEntity, physical: PuzzleStoredEntity | null): PuzzleStoredEntity {
   if (canonical.kind !== 'umas' || !physical || !Array.isArray(canonical.data.scenarios) || !Array.isArray(physical.data.scenarios)) return canonical
   const units = canonical.data.scenarios as Record<string, unknown>[]
-  return { ...canonical, data: { ...physical.data, scenarios: (physical.data.scenarios as Record<string, unknown>[]).map(s => {
+  return { ...canonical, data: { ...physical.data, schemaVersion: canonical.data.schemaVersion, scenarios: (physical.data.scenarios as Record<string, unknown>[]).map(s => {
     const unit = units.find(u => u.tier === s.tier)
     return unit ? { ...s, trainingLevel: unit.trainingLevel, trainingExp: unit.trainingExp } : s
   }) } }

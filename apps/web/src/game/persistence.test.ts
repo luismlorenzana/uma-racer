@@ -378,11 +378,11 @@ describe('save persistence', () => {
 
   it('reports an unsupported local profile schema without replacing it', async () => {
     await db.open()
-    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 16 }
+    const unsupported = { ...createPlayerProfile('synthetic-v1', 1), schemaVersion: 17 }
     await db.table('profile').put({ id: 'main', data: unsupported, version: 7 })
 
     await expect(readLocalSnapshot()).rejects.toThrow(/App update required/)
-    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 16 } })
+    expect(await db.table('profile').get('main')).toMatchObject({ version: 7, data: { schemaVersion: 17 } })
   })
 
   it('loads class-era RPG rows (D282) and refuses only a newer RPG schema', async () => {

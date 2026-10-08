@@ -123,6 +123,12 @@ export class PuzzleContentLibrary {
         pageUrls: settled.map(p => (p as PromiseFulfilledResult<string>).value), release }
     } catch (error) { release(); throw error }
   }
+
+  async acquireHash(contentHash: string): Promise<PuzzlePresentationLease> {
+    const catalog = await this.index(), ref = catalog.packs.find(p => p.sha256 === contentHash)
+    if (!ref) throw new PuzzleContentError('missing', 'The frozen replacement pack is not retained')
+    return this.acquire({ version: ref.version, contentHash })
+  }
   /** Explicit teardown may drop unheld pages, never art another visible scene leases. */
   clear(): void {
     this.packs.clear(); this.catalog = undefined

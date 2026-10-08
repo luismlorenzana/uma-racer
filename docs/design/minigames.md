@@ -15,6 +15,15 @@ facilities, no energy, no per-turn RNG (D120).
 | **Spark Match — Rival Circuit** | Training Level 1 → 10 of the chosen scenario (D190) | continuous-drag puzzle battle |
 | **Friendship Training** | one card by one star in one scenario | a roguelite deck of support cards |
 
+**D255 correction:** Friendship's star belongs to the global owned card; the scenario is frozen play context only.
+**D287 replacement is dormant:** T115 supplies protected preservation and retirement, not activation. Spark remains
+live with flags off. After freeze, old training/EXP spending pauses; after complete bank2 activation, free global
+[Uma Puzzles](uma-puzzles.md) earns scenario/style materials for CL and the old Spark entry redirects with an
+explanation. Completed results remain historical; supported terminal pending runs commit/sync before freeze;
+unfinished paid runs refund original cost once, even above60. Malformed or another-device late terminal journals
+remain for explicit recovery. Old engine/parser dispatch is retained, not silently deleted. Friendship journals and
+global stars are untouched. [Run recovery contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287).
+
 Both are **seeded and replay-stable**. Spark Rival Circuit is a pure replay of its encounter, seed and persisted
 actions; Friendship Training replays its frozen setup and saved choices. Reloading mid-run restores the same state and
 cannot reroll a friendlier one. Neither uses `Math.random`.

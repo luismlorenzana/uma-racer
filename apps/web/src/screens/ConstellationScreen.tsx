@@ -50,7 +50,7 @@ import { InspirationTokenIcon } from '../ui/InspirationTokenIcon'
 import { useInspiration } from '../game/use-inspiration'
 import { InspirationBankPanel } from '../ui/InspirationBankPanel'
 import { reserveInspirationUnlock } from '../game/inspiration-host'
-import { ClLevelUpButton, useClCutover } from '../ui/puzzles/ClLevelUp'
+import { ClLevelUpButton, useClCutover, useClPreparation } from '../ui/puzzles/ClLevelUp'
 
 const titleCase = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1)
 
@@ -72,6 +72,7 @@ const belongsToView = (node: ConstellationNode, viewMode: NodeView) =>
 
 export function ConstellationScreen({ viewMode = 'constellation', preview, previewBank }: { viewMode?: NodeView; preview?: TrainingContext; previewBank?: import('@racer/domain').InspirationBank }) {
   const clCutover = useClCutover()
+  const preparing = useClPreparation()
   const training = useTraining()
   const { content, save, uma, cards, umas, tickets } = preview ?? training
   const pushToast = useGame((state) => state.pushToast)
@@ -202,7 +203,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
   const treeNodes = visibleNodes.length
   // An earlier trained unit keeps training toward TL10 (D190); her current scenario trains once started.
   const trainable = run.started || uma.past
-  const canPlaySpark = trainable && run.trainingLevel < MAX_TRAINING_LEVEL &&
+  const canPlaySpark = !preparing && trainable && run.trainingLevel < MAX_TRAINING_LEVEL &&
     tickets >= SPARK_MATCH_TICKET_COST
 
   return (
@@ -233,7 +234,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
           </Link>
         ) : (
           <div className="mb-2 flex min-h-11 items-center justify-between rounded-sm bg-sunken px-4 text-sm font-bold text-ink-faint" aria-disabled="true">
-            <span>{run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !trainable ? 'Start scenario first' : 'Raise Training Level'}</span>
+            <span>{preparing ? 'Preparation paused · Retry from Home' : run.trainingLevel >= MAX_TRAINING_LEVEL ? 'Training Level maxed' : !trainable ? 'Start scenario first' : 'Raise Training Level'}</span>
             <span>{formatTickets(SPARK_MATCH_TICKET_COST)}</span>
           </div>
         ))}
@@ -356,7 +357,7 @@ export function ConstellationScreen({ viewMode = 'constellation', preview, previ
             )}
 
             {!openNodeUnlocked && openNode.kind !== 'card' && <><p className="text-sm text-ink-soft">{openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id)) ? 'Open this side’s parent slot first.' : 'One scenario slot token opens this position permanently.'}</p><button type="button" disabled={busy || !persistent || tokenView.slot < 1 || openNode.kind === 'grandparent' && !run.inspiration.slots.includes(inspirationParent(openNode.id))} className="min-h-11 rounded-sm bg-accent px-3 font-semibold" onClick={() => requestUnlock(openNode.id, null, lineageSkillGroups.find(group => group.id === openNode.id)?.label ?? titleCase(openNode.kind))}>Unlock {openNode.kind} · 1 slot token</button></>}
-            {openNode.kind === 'card' && <LockedNote node={openNode} template={template} trainingLevel={run.trainingLevel} />}
+            {openNode.kind === 'card' && <LockedNote node={openNode} template={template} trainingLevel={run.trainingLevel} cl={clCutover} />}
           </div>
         )}
       </BottomSheet>
@@ -481,16 +482,18 @@ function LockedNote({
   node,
   template,
   trainingLevel,
+  cl,
 }: {
   node: ConstellationNode
   template: ConstellationTemplate
   trainingLevel: number
+  cl: boolean
 }) {
   const open = node.order < unlockedNodeCount(template.tier, trainingLevel)
   if (open) return null
   return (
     <p className="pt-1 text-[11px] text-ink-soft">
-      {`Locked — Training Levels 1–8 open the card nodes, and ${unlockedNodeCount(template.tier, trainingLevel)} of ${template.cardNodes} are open at TL ${trainingLevel}.`}
+      {`Locked — ${cl ? 'Constellation' : 'Training'} Levels 1–8 open the card nodes, and ${unlockedNodeCount(template.tier, trainingLevel)} of ${template.cardNodes} are open at ${cl ? 'CL' : 'TL'} ${trainingLevel}.`}
     </p>
   )
 }

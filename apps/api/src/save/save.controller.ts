@@ -3,7 +3,7 @@ import { AuthGuard, CurrentUid } from '../auth/auth.guard'
 import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'
 import { parseSyncRequest } from './save.types'
 import { parseRpgCommandRequest } from './rpg-command'
-import { parsePuzzlePrepareRequest, parsePuzzleTakeoverRequest, PUZZLES_RELEASE_ENABLED } from './puzzles'
+import { parsePuzzlePrepareRequest, parsePuzzlePreservationRequest, parsePuzzleTakeoverRequest, parseLegacySparkRequest } from './puzzles'
 
 @UseGuards(AuthGuard)
 @Controller()
@@ -42,9 +42,11 @@ export class SaveController {
 
   /** Explicit authenticated account boundary. T115 implements preparation; T116 alone enables release. */
   @Post('puzzles/prepare')
-  preparePuzzles(@CurrentUid() _uid: string, @Body() body: unknown) {
-    if (!parsePuzzlePrepareRequest(body)) throw new BadRequestException('Invalid Puzzle preparation request')
-    return { status: PUZZLES_RELEASE_ENABLED ? 'not-ready' : 'disabled' }
+  preparePuzzles(@CurrentUid() uid: string, @Body() body: unknown) {
+    const legacy = parsePuzzlePrepareRequest(body), request = parsePuzzlePreservationRequest(body) ??
+      (legacy ? { ...legacy, schemaVersion: 2 as const, action: 'advance' as const } : null)
+    if (!request) throw new BadRequestException('Invalid Puzzle preparation request')
+    return this.saves.preparePuzzles(uid, request)
   }
 
   @Post('puzzles/takeover')
@@ -52,5 +54,12 @@ export class SaveController {
     const request = parsePuzzleTakeoverRequest(body)
     if (!request) throw new BadRequestException('Invalid Puzzle takeover request')
     return this.saves.puzzleTakeover(uid, request)
+  }
+
+  @Post('puzzles/legacy-spark')
+  retireSpark(@CurrentUid() uid: string, @Body() body: unknown) {
+    const request = parseLegacySparkRequest(body)
+    if (!request) throw new BadRequestException('Malformed legacy Spark evidence. Keep the journal for recovery.')
+    return this.saves.retireSpark(uid, request)
   }
 }

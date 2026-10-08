@@ -53,7 +53,7 @@ import {
   migrateRpgPresetSave,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Table, type Transaction } from 'dexie'
-import type { PuzzleOutfitSaveV1, PuzzlePresetSaveV1, PuzzleCheckpointSaveV1, ConstellationBankSaveV1, PuzzleCohortSaveV1,
+import type { PuzzleOutfitSaveV1, PuzzlePreservationRecord, PuzzlePresetSaveV1, PuzzleCheckpointSaveV1, ConstellationBankSaveV1, PuzzleCohortSaveV1,
   PuzzleResultSaveV1, PuzzleOperationReceiptV1, PuzzleOperationV1, PuzzleChange, PuzzleStoredEntity, PuzzleBattleAction } from '@racer/domain'
 import type { AlbumPrefs } from './album/prefs'
 import type { MinigameRunSnapshotV1, ReplayJournalV1 } from './minigame-journal'
@@ -205,6 +205,7 @@ export class RacerDb extends Dexie {
   puzzleCheckpoints!: EntityTable<VersionedRow<PuzzleCheckpointSaveV1>, 'id'>
   constellationBank!: EntityTable<VersionedRow<ConstellationBankSaveV1>, 'id'>
   puzzleCohort!: EntityTable<VersionedRow<PuzzleCohortSaveV1>, 'id'>
+  puzzlePreservation!: EntityTable<VersionedRow<PuzzlePreservationRecord>, 'id'>
   puzzleResults!: EntityTable<LogRow<PuzzleResultSaveV1>, 'id'>
   puzzleOperations!: EntityTable<LogRow<PuzzleOperationReceiptV1>, 'id'>
   pendingPuzzleOperations!: EntityTable<PendingPuzzleOperationRow, 'id'>
@@ -438,6 +439,8 @@ export class RacerDb extends Dexie {
       puzzleOutfits: 'id', puzzlePresets: 'id', puzzleCheckpoints: 'id', constellationBank: 'id', puzzleCohort: 'id',
       puzzleResults: 'id, createdAt', puzzleOperations: 'id, createdAt', pendingPuzzleOperations: 'id, &order, status, queuedAt',
       puzzleJournals: 'id', puzzleArchives: 'id, createdAt', puzzleBases: 'id', puzzlePreferences: 'id' }).upgrade(resetRpgProgress)
+    // Dormant preservation evidence only: no automatic conversion or account activation.
+    this.version(31).stores({ puzzlePreservation: 'id' })
   }
 }
 

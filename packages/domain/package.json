@@ -9,7 +9,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./farm": "./src/farm/index.ts",
-    "./puzzles-content-fixtures": "./src/minigames/uma-puzzles/content.synthetic.ts"
+    "./puzzles-content-fixtures": "./src/minigames/uma-puzzles/content.synthetic.ts",
+    "./puzzles-preservation-fixtures": "./src/minigames/uma-puzzles/preservation.synthetic.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",

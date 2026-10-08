@@ -23,6 +23,7 @@ import { minigameNodeLabel } from './minigame-runs'
 import { queueInTransaction } from './persistence'
 import { bankTrainingExpInTransaction } from './training-bank'
 import { reconcileTrainerInTransaction } from './trainer'
+import { locksLegacyTraining } from './puzzles/preparation-store'
 
 export interface SpendLevelUpTicketsInput {
   umaId: string
@@ -84,7 +85,7 @@ export async function spendPersistentLevelUpTickets(
   const afterWrite = options.afterWrite ?? (() => undefined)
   return db.transaction(
     'rw',
-    [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.items, db.itemLedger, db.outbox, db.minigameRuns],
+    [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.items, db.itemLedger, db.outbox, db.minigameRuns, db.constellationBank],
     async () => {
       const umaRow = await db.umas.get(input.umaId)
       if (!umaRow) throw new Error('This Uma is not owned')
@@ -94,6 +95,8 @@ export async function spendPersistentLevelUpTickets(
       const profileRow = await db.profile.get('main')
       if (!profileRow) throw new Error('Local profile is missing')
       const profile = parsePlayerProfileOrThrow(profileRow.data)
+      if (locksLegacyTraining() || profile.schemaVersion === 16 || await db.constellationBank.get('main'))
+        throw new Error('Training EXP is frozen or retired. Spend preserved universals through Constellation Levels instead.')
 
       // A retried tap finds the evidence of the spend it already made from the starting point it saw.
       const evidenceId = trainingLevelUpMovementId(input.umaId, input.tier, input.fromLevel, input.fromExp)

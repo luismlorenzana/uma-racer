@@ -8,7 +8,7 @@ export function freezeAdvance(rows: EntityRecord[], now: number): EntityRecord |
   const owned = rows.filter(r => r.kind === 'umas' && !r.deleted)
   if (!owned.length) return null
   const cohort = owned.map(r => {
-    if (r.data.schemaVersion !== 15 || r.data.templateId !== r.id || !parseEntityData('umas', r.data)) throw new Error('Sync all owned outfits to the current save before advancing Inspiration')
+    if (![15, 16].includes(r.data.schemaVersion as number) || r.data.templateId !== r.id || !parseEntityData('umas', r.data)) throw new Error('Sync all owned outfits to the current save before advancing Inspiration')
     return { id: r.id, scenarios: r.data.scenarios as { tier: number; inspiration: { slots: string[]; golds: string[] } }[] }
   })
   return { kind: 'inspirationBank', id: 'main', version: 1, deleted: false, updatedAt: now,
@@ -22,7 +22,7 @@ export function bankData(row: EntityRecord): InspirationBank {
 export function advanceOutfit(bankRow: EntityRecord, uma: EntityRecord | undefined, id: string, now: number): EntityRecord[] {
   const bank = bankData(bankRow)
   if (bank.opened.includes(id)) return []
-  if (!uma || uma.deleted || uma.kind !== 'umas' || uma.id !== id || uma.data.schemaVersion !== 15 || !parseEntityData('umas', uma.data)) {
+  if (!uma || uma.deleted || uma.kind !== 'umas' || uma.id !== id || ![15, 16].includes(uma.data.schemaVersion as number) || !parseEntityData('umas', uma.data)) {
     throw new Error('Frozen Inspiration outfit unavailable; resume after syncing its current save')
   }
   const tiers = bank.cohort[id]?.tiers
