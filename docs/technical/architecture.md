@@ -13,7 +13,11 @@ T120/D307 adds an authenticated, dormant preparation endpoint, immutable freeze/
 receipts and a separate SHA-256 whole-account archive in device-only `farmRecovery`. Per-outfit reset steps patch
 current non-Farm fields, not frozen whole objects; legacy deadlines/stock/history remain. Archive/cutover adapters
 are lazy; no Dexie reset callback or normal startup request. Full pulls merge the retired Extra whitelist without
-resurrecting historical bonuses. T121–T124 still own the real host, screens/stat joins and enablement. Both Farm gates are false;
+resurrecting historical bonuses. T121/D308 implements the lazy real host, acknowledged/pending views, bounded
+target/dependency reads, durable Collect/retry and private recovery export. Separate Zustand/Dexie subscriptions
+derive readiness read-only; a new control always blocks legacy writers. Normal flag-off boot initializes no kitchen
+rows. Serialized round-robin sync lanes avoid ordinary/Puzzle/Farm starvation. T122–T124 still own screens/stat joins
+and enablement. Both Farm gates are false;
 the existing Farm described below stays live until T124 and no account reset is executed by intermediate work.
 
 ## Global card progression (D255)

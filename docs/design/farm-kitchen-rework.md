@@ -7,7 +7,8 @@
 > [The implementation contract](../technical/farm-kitchen-implementation.md) and
 > [measured balance record](../research/farm-kitchen-balance.md) carry the implemented pure layer.
 > T119's additive persistence/sync keeps the existing trusted-device clock. T120's protected cutover/recovery
-> is implemented and rehearsed (D307); T121–T124 still cover real host, screens/stat joins and release.
+> is implemented and rehearsed (D307); T121's real host/selectors and exact recovery are implemented (D308).
+> T122–T124 still cover screens/stat joins and release; both capabilities remain off.
 > No live Farm rule or owner save has changed.
 
 > **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
@@ -791,7 +792,7 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 1. T118 **complete**: [pure original catalogue/progression and recipe/map contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), with [measured balance proofs](../research/farm-kitchen-balance.md).
 2. T119 **complete**: [additive records, semantic commands, strict API mirror and bounded atomic sync](../technical/farm-kitchen-implementation.md#3-records-and-ownership), with [synthetic verification](../research/farm-kitchen-sync.md).
 3. T120 **complete**: [dormant protected reset/recovery contract](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307), with [legacy claim and second-device rehearsals](../research/farm-kitchen-cutover-rehearsal.md).
-4. [T121](../tasks/T121-farm-kitchen-host.md): real save-backed host, canonical/pending projections, runtime and recovery.
+4. T121 **complete**: [real host/selectors and exact retry/recovery](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308), with [real-storage verification](../research/farm-kitchen-host.md). Pending stock/maps remain previews, never racing stats.
 5. [T122](../tasks/T122-farm-kitchen-screens.md): five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy.
 6. [T123](../tasks/T123-farm-kitchen-extra-stats.md): shared block purchases, four independent distance builds, cap-aware map/list and real race integration.
 7. [T124](../tasks/T124-farm-kitchen-release.md): end-to-end balance, compatibility/deployment/PWA checks, guarded cutover activation and owner acceptance.

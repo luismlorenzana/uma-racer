@@ -134,7 +134,8 @@ export function SettingsScreen() {
         <Row label="Signed in as" value={auth.user?.email ?? auth.user?.name ?? '—'} />
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />
         <Row label="Save state" value={gameStatus} />
-        <Row label="Farm save" value={farmSummary?.farmPresent ? `Lv${farmSummary.farmLevel} · ${farmSummary.unlockedPlots}/${MAX_FARM_PLOTS} plots · ${farmSummary.readyPlots} ready` : 'Not opened'} />
+        <Row label="Farm save" value={farmSummary?.kitchen ? `${farmSummary.kitchen.phase} · ${farmSummary.unlockedPlots} stations · ${farmSummary.readyPlots} ready` : farmSummary?.farmPresent ? `Lv${farmSummary.farmLevel} · ${farmSummary.unlockedPlots}/${MAX_FARM_PLOTS} plots · ${farmSummary.readyPlots} ready` : 'Not opened'} />
+        {farmSummary?.kitchen && <Row label="Farm records" value={`${farmSummary.kitchen.workers} workers · ${farmSummary.kitchen.pending} pending · ${farmSummary.kitchen.recovery} need review`} />}
         <Row label="Global Items" value={farmSummary ? `${farmSummary.itemStacks} stacks · ${farmSummary.totalItems} items · ${farmSummary.itemMovements} movements` : '—'} />
         <Row label="Cloud sync" value={`${sync.status}${sync.pending ? ` · ${sync.pending} pending` : ''}`} />
         <Row label="Last synced" value={sync.lastSuccessAt ? new Date(sync.lastSuccessAt).toLocaleString() : '—'} />
@@ -159,6 +160,15 @@ export function SettingsScreen() {
       </Panel>
       {gameStatus === 'ready' && <Link to="/trainer" className="flex min-h-11 items-center justify-center rounded-sm bg-panel px-4 font-semibold text-accent-strong shadow-1">Open Trainer profile</Link>}
       {PUZZLES_RELEASE_ENABLED && persistent && <Panel><PuzzleBackupButton light /></Panel>}
+      {farmSummary?.kitchen && persistent && <Panel>
+        <Button variant="secondary" disabled={granting} onClick={() => {
+          setGranting(true)
+          void import('../game/runtime').then(async ({ gameRuntime }) => (await gameRuntime.farmKitchenHost()).exportRecovery())
+            .then(() => setFarmNote('Private Farm recovery exported. Keep it off public repositories.'))
+            .catch(error => setFarmNote(error instanceof Error ? error.message : 'Recovery export failed; keep this device'))
+            .finally(() => setGranting(false))
+        }}>Export private Farm recovery</Button>
+      </Panel>}
       {auth.authRequired && (
         <Button variant="secondary" onClick={() => (auth.user ? auth.signOut() : auth.signIn())}>
           {auth.user ? 'Sign out' : 'Sign in with Google'}

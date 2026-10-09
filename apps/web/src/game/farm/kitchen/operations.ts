@@ -2,7 +2,7 @@
 import { createFarmOperation, parseFarmOperationResponses, parseFarmOperationReceipt, parseFarmOperationLog, farmLogIdMatches,
   farmOperationReferences, partitionFarmOperations, resolveFarmOperations, farmSafeOperationId, farmCanonical, farmData, farmKey,
   parseFarmStoredEntity, FARM_ENTITY_KINDS, FARM_SYNC_LIMITS, farmBytes, type FarmPayloadV1, type FarmOperationV1,
-  type FarmStoredEntity, type FarmStoredLog, type FarmOperationResponse } from '@racer/domain/farm/kitchen'
+  parseFarmOperation, type FarmStoredEntity, type FarmStoredLog, type FarmOperationResponse } from '@racer/domain/farm/kitchen'
 import { parseEntityData, parseLogData, type EntityKind, type LogKind, type EntityRecord, type LogRecord } from '@racer/domain'
 import { RacerDb, type FarmPendingRow, type FarmCanonicalRow, type LogRow } from '../../db'
 import { FARM_KITCHEN_RELEASE_ENABLED } from './capability'
@@ -10,24 +10,67 @@ const entityKinds = ['farm', ...FARM_ENTITY_KINDS, 'umas', 'items', 'constellati
 export const farmTransactionTables = (db: RacerDb) => [...entityKinds, 'itemLedger', 'farmOperations', 'farmPending', 'farmRecovery', 'farmPreferences', 'outbox'].map(k => db.table(k))
 const table = (db: RacerDb, kind: string) => db.table<FarmCanonicalRow, string>(kind)
 const logTable = (db: RacerDb, kind: string) => db.table<LogRow<Record<string, unknown>>, string>(kind)
-async function readState(db: RacerDb) {
+export interface FarmReadReferences { entities: string[]; logs: string[] }
+/** Minimal declared writer frontier for a confirmed aggregate action. Never invent an implicit stock source. */
+export function farmWriterDependencies(rows: readonly FarmPendingRow[], refs: FarmReadReferences): string[] {
+  const pending = rows.filter(r => r.status === 'pending'), required = pending.filter(r => r.prediction.changes.some(c => refs.entities.includes(farmKey(c))))
+  const ancestors = (row: FarmPendingRow) => {
+    const result = new Set<string>(), visit = [...row.operation.dependencies]
+    while (visit.length) { const id = visit.pop()!; if (result.has(id)) continue; result.add(id); visit.push(...(pending.find(r => r.id === id)?.operation.dependencies ?? [])) }
+    return result
+  }
+  const dependencies = required.filter(r => !required.some(other => other.id !== r.id && ancestors(other).has(r.id))).map(r => r.id)
+  if (dependencies.length > 16) throw new Error('Sync the independent Farm inputs before confirming this aggregate action')
+  return dependencies
+}
+export async function readFarmPending(db: RacerDb): Promise<FarmPendingRow[]> {
+  const rows = await db.farmPending.orderBy('order').toArray()
+  const orders = new Set<number>()
+  for (const row of rows) {
+    const operation = parseFarmOperation(row.operation), prediction = parseFarmOperationReceipt(row.prediction)
+    if (!operation || !prediction || row.id !== operation.operationId || farmCanonical(operation) !== farmCanonical(prediction.operation) ||
+      !Number.isSafeInteger(row.order) || row.order < 1 || orders.has(row.order) || !Number.isSafeInteger(row.queuedAt) || row.queuedAt < 0 ||
+      !['pending', 'rejected', 'blocked'].includes(row.status) || !(row.reason === null || typeof row.reason === 'string'))
+      throw new Error('Invalid Farm intent; retain storage and export recovery')
+    orders.add(row.order)
+  }
+  return rows
+}
+/** Exact target/dependency reads: a command never scans the owned roster or lifetime evidence. */
+export async function readFarmCanonical(db: RacerDb, refs: FarmReadReferences) {
   const entities = new Map<string, FarmStoredEntity>(), logs = new Map<string, FarmStoredLog>()
-  for (const kind of entityKinds) for (const row of await table(db, kind).toArray()) {
+  for (const key of new Set(refs.entities)) {
+    const [kind, id] = key.split('/'), row = await table(db, kind!).get(id!)
+    if (!row) continue
+    // Ordinary acquired outfits/global Items can still be unsynced. They aren't acknowledged Farm authority yet.
+    if (row.version === 0 && (kind === 'umas' || kind === 'items')) continue
     // The unchanged live v2 Farm is not a v3 production view.
-    if (kind === 'farm' && row.data.schemaVersion !== 3) continue
-    const record = { kind, id: row.id, data: row.data, version: row.version, deleted: row.deleted ?? false, updatedAt: row.updatedAt ?? 0 }
-    if (!parseFarmStoredEntity(record) || !parseEntityData(kind as EntityKind, record.data)) throw new Error(`Invalid canonical Farm read ${farmKey(record)}; preserve for recovery`)
+    if (kind === 'farm' && row.data.schemaVersion === 2) continue
+    const record = { kind: kind!, id: row.id, data: row.data, version: row.version, deleted: row.deleted ?? false, updatedAt: row.updatedAt ?? 0 }
+    if (!parseFarmStoredEntity(record) || !parseEntityData(kind as EntityKind, record.data)) throw new Error('Invalid canonical Farm row; preserve for recovery')
     entities.set(farmKey(record), record)
   }
-  for (const kind of ['farmOperations', 'itemLedger']) for (const row of await logTable(db, kind).toArray()) {
-    if (!parseLogData(kind as LogKind, row.data)) throw new Error(`Invalid canonical evidence ${kind}/${row.id}; preserve for recovery`)
-    logs.set(`${kind}/${row.id}`, { kind, ...row })
+  for (const key of new Set(refs.logs)) {
+    const [kind, id] = key.split('/'), row = await logTable(db, kind!).get(id!)
+    if (!row) continue
+    const parsed = parseLogData(kind as LogKind, row.data)
+    if (!parsed || parsed.createdAt !== row.createdAt || (kind === 'farmOperations' ? !farmLogIdMatches(row.id, parseFarmOperationLog(parsed)!) : parsed.id !== row.id))
+      throw new Error('Invalid canonical Farm evidence; preserve for recovery')
+    logs.set(`${kind}/${row.id}`, { kind: kind!, ...row })
   }
   return { entities, logs }
 }
 async function putCanonical(db: RacerDb, record: FarmStoredEntity, afterWrite: (key: string) => void) {
   if (!parseFarmStoredEntity(record) || !parseEntityData(record.kind as EntityKind, record.data)) throw new Error(`Invalid Farm acknowledgement ${farmKey(record)}`)
-  if (record.kind === 'umas' || record.kind === 'constellationBank') return // Farm owns neither: never replace an unrelated edit from an ack.
+  if (record.kind === 'constellationBank') return // Farm owns neither: never replace an unrelated edit from an ack.
+  if (record.kind === 'umas') {
+    const local = await db.umas.get(record.id)
+    if (local && record.version > local.version) {
+      // Ownership checks can see a newer server revision. Adopt metadata only, not a stale deck/RPG/racing object.
+      await db.umas.put({ ...local, version: record.version }); afterWrite('umas-version')
+    }
+    return
+  }
   const previous = await table(db, record.kind).get(record.id)
   if (previous && previous.version > record.version) return // Lost/stale reply, including a response overtaken on another device.
   if (previous && previous.version === record.version) {
@@ -57,7 +100,9 @@ export class FarmOperationCoordinator {
   /** Reserve from persisted device identity + sequence; callers retain this identity across retries, not Date/Math.random. */
   async reserveOperationId(deviceId: string): Promise<string> {
     return await this.db.transaction('rw', this.db.farmPreferences, async () => {
-      const key = `sequence:${deviceId}`, prior = await this.db.farmPreferences.get(key), n = Number(prior?.value ?? 0) + 1
+      const key = `sequence:${deviceId}`, prior = await this.db.farmPreferences.get(key)
+      if (prior && (typeof prior.value !== 'number' || !Number.isSafeInteger(prior.value) || prior.value < 0)) throw new Error('Farm sequence needs recovery; never restart it')
+      const n = Number(prior?.value ?? 0) + 1
       const id = farmSafeOperationId(deviceId, n); await this.db.farmPreferences.put({ id: key, value: n }); return id
     })
   }
@@ -73,10 +118,12 @@ export class FarmOperationCoordinator {
       if (pending && pending.status !== 'pending') throw new Error(pending.reason ?? 'Farm input needs recovery')
       return prior
     }
-    const state = await this.overlayInTransaction(), control = state.entities.get('farmCutover/main')
+    const controlRow = await this.db.farmCutover.get('main')
+    if (!controlRow || typeof controlRow.data.generation !== 'string') throw new Error('Farm generation is not prepared')
+    const provisional = createFarmOperation({ schemaVersion: 1, generation: controlRow.data.generation, now, operationId, dependencies, expected: [], payload })
+    const refs = farmOperationReferences(provisional), state = await this.overlayInTransaction(refs), control = state.entities.get('farmCutover/main')
     if (!control || typeof control.data.generation !== 'string') throw new Error('Farm generation is not prepared')
-    const provisional = createFarmOperation({ schemaVersion: 1, generation: control.data.generation, now, operationId, dependencies, expected: [], payload })
-    const refs = farmOperationReferences(provisional), rows = await this.db.farmPending.orderBy('order').toArray()
+    const rows = await readFarmPending(this.db)
     const ancestry = new Set(dependencies), visit = [...dependencies]
     while (visit.length) {
       const id = visit.pop()!, parent = rows.find(r => r.id === id)?.operation ??
@@ -89,7 +136,9 @@ export class FarmOperationCoordinator {
     const expected = refs.entities.map(k => { const [kind, id] = k.split('/'); return { kind: kind!, id: id!, version: state.entities.get(k)?.version ?? 0 } })
     const operation = createFarmOperation({ ...provisional, expected }), response = resolveFarmOperations({ ...state, enabled: this.enabled, allowEnergyGrant: true, now }, [operation]).responses[0]!
     if (!response.receipt || response.status !== 'applied') throw new Error(response.reason ?? 'Farm prediction failed')
-    const order = Number((await this.db.farmPreferences.get('order'))?.value ?? 0) + 1
+    const previousOrder = await this.db.farmPreferences.get('order')
+    if (previousOrder && (typeof previousOrder.value !== 'number' || !Number.isSafeInteger(previousOrder.value) || previousOrder.value < 0)) throw new Error('Farm queue order needs recovery')
+    const order = Number(previousOrder?.value ?? 0) + 1
     if (!Number.isSafeInteger(order)) throw new Error('Farm queue order overflow')
     await this.db.farmPreferences.put({ id: 'order', value: order }); this.afterWrite('order')
     await this.db.farmPending.put({ id: operationId, order, operation, prediction: response.receipt, status: 'pending', reason: null, queuedAt: now }); this.afterWrite('pending')
@@ -97,9 +146,10 @@ export class FarmOperationCoordinator {
     return operation
   }
   /** View-only replay. This never writes an Item, station, worker, milestone or evidence projection. */
-  async overlayInTransaction() {
-    let state = await readState(this.db)
-    for (const row of await this.db.farmPending.orderBy('order').toArray()) {
+  async overlayInTransaction(extra: FarmReadReferences = { entities: ['farmCutover/main', 'farm/main'], logs: [] }) {
+    const rows = await readFarmPending(this.db), refs = rows.filter(r => r.status === 'pending').map(r => farmOperationReferences(r.operation))
+    let state = await readFarmCanonical(this.db, { entities: [...extra.entities, ...refs.flatMap(r => r.entities)], logs: [...extra.logs, ...refs.flatMap(r => r.logs)] })
+    for (const row of rows) {
       if (row.status !== 'pending') continue
       const resolved = resolveFarmOperations({ ...state, enabled: this.enabled, allowEnergyGrant: true, now: row.operation.now }, [row.operation])
       if (resolved.responses[0]!.status !== 'applied' && resolved.responses[0]!.status !== 'duplicate') throw new Error(resolved.responses[0]!.reason ?? 'Farm queue requires recovery')
@@ -108,9 +158,9 @@ export class FarmOperationCoordinator {
     return state
   }
   async nextBatch() {
-    const rows = (await this.db.farmPending.orderBy('order').toArray()).filter(r => r.status === 'pending')
+    const rows = (await readFarmPending(this.db)).filter(r => r.status === 'pending')
     const batch = partitionFarmOperations(rows.map(r => r.operation))[0] ?? []
-    const state = await readState(this.db)
+    const refs = batch.map(farmOperationReferences), state = await readFarmCanonical(this.db, { entities: refs.flatMap(r => r.entities), logs: refs.flatMap(r => r.logs) })
     const responseEstimate = () => {
       const final = new Map(state.entities)
       for (const op of batch) for (const c of rows.find(r => r.id === op.operationId)!.prediction.changes) final.set(farmKey(c), c.after)
@@ -146,14 +196,16 @@ export class FarmOperationCoordinator {
       await this.db.farmPending.delete(response.operationId); this.afterWrite('pending')
     } else if (pending) {
       await this.db.farmPending.put({ ...pending, status: response.status === 'blocked' ? 'blocked' : 'rejected', reason: response.reason }); this.afterWrite('pending')
-      await this.db.farmRecovery.put({ id: pending.id, reason: response.reason!, data: pending.operation, createdAt: now }); this.afterWrite('recovery')
+      // Explicit server nonacceptance is the only permission for Discard; local prediction rejection isn't proof.
+      await this.db.farmRecovery.put({ id: pending.id, reason: response.reason!, data: { operation: pending.operation, nonaccepted: true }, createdAt: now }); this.afterWrite('recovery')
     }
     await this.db.outbox.where('[kind+id]').equals(['farmOperations', response.operationId]).delete(); this.afterWrite('outbox')
   }
   async revalidatePendingInTransaction(now: number) {
     if (!this.enabled) return // A dormant capability is not a rejected economic input; keep restored intents intact.
-    let state = await readState(this.db)
-    for (const pending of await this.db.farmPending.orderBy('order').toArray()) {
+    const rows = await readFarmPending(this.db), refs = rows.map(r => farmOperationReferences(r.operation))
+    let state = await readFarmCanonical(this.db, { entities: refs.flatMap(r => r.entities), logs: refs.flatMap(r => r.logs) })
+    for (const pending of rows) {
       if (pending.status !== 'pending') continue
       const result = resolveFarmOperations({ ...state, enabled: this.enabled, allowEnergyGrant: true, now: pending.operation.now }, [pending.operation])
       const r = result.responses[0]!

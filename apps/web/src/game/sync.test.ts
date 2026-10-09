@@ -1,7 +1,7 @@
 import type { SyncRequest, SyncResponse } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
 import type { OutboxRow } from './db'
-import { acknowledgedSequences } from './sync'
+import { acknowledgedSequences, nextEconomicLane, type EconomicLane } from './sync'
 
 const batch: OutboxRow[] = [
   { seq: 4, kind: 'profile', id: 'main', op: 'upsert', queuedAt: 1 },
@@ -13,6 +13,15 @@ const request: SyncRequest = {
 }
 
 describe('sync acknowledgement validation', () => {
+  it('serves ordinary/Puzzle/Farm lanes fairly even with continuously replenished queues', () => {
+    let previous: EconomicLane | null = null
+    const served: EconomicLane[] = []
+    for (let n = 0; n < 12; n++) { previous = nextEconomicLane(['farm', 'puzzle', 'ordinary'], previous); served.push(previous!) }
+    expect(served).toEqual(Array.from({ length: 4 }, () => ['ordinary', 'puzzle', 'farm']).flat())
+    expect(nextEconomicLane(['farm', 'ordinary'], 'ordinary')).toBe('farm')
+    expect(nextEconomicLane(['ordinary'], 'farm')).toBe('ordinary')
+    expect(nextEconomicLane([], 'puzzle')).toBeNull()
+  })
   it('acknowledges only the exact captured queue sequences', () => {
     const response: SyncResponse = {
       applied: [{ kind: 'profile', id: 'main', version: 1 }],

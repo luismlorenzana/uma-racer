@@ -4,8 +4,8 @@ import { createFarmKitchen, createFarmKitchenWorker } from './production'
 import { createFarmOperation, farmOperationReferences, type FarmPayloadV1 } from './operations'
 import { farmData, type FarmStoredEntity, type FarmStoredLog } from './wire'
 import { resolveFarmOperations } from './resolver'
-export function farmProtocolFixture(totalExp = 0) {
-  const generation = 'invented-farm-generation', entities = new Map<string, FarmStoredEntity>(), logs = new Map<string, FarmStoredLog>()
+export function farmProtocolFixture(totalExp = 0, generation = 'invented-farm-generation') {
+  const entities = new Map<string, FarmStoredEntity>(), logs = new Map<string, FarmStoredLog>()
   const put = (kind: string, id: string, data: object, version = 1) => entities.set(`${kind}/${id}`, { kind, id, data: farmData(data), version, deleted: false, updatedAt: 1 })
   put('farmCutover', 'main', { schemaVersion: 1, generation, phase: 'active', cohortDigest: 'a'.repeat(64), archiveDigest: 'b'.repeat(64),
     outfitCount: 2, pageCount: 1, nextOutfitIndex: 2, createdAt: 0, activatedAt: 1 })
