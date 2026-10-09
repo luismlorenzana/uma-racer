@@ -18,8 +18,9 @@ carry registration, pure battle/campaign rules, the real replay host/atomic sync
 global materials/exchange/CL and protected save16 preservation with a device-local whole-account backup.
 Both application gates are enabled. [Release acceptance](../research/uma-puzzles-release-acceptance.md)
 records private publication and application/deployment witnesses separately from still-pending owner gameplay,
-iPhone and second-device checks. Completed specs are removed under D104; the later
-[T109 permitted-art upgrade](T109-puzzle-private-content.md) remains pinned at the owner's request.
+iPhone and second-device checks. Completed specs are removed under D104. T109's owner-export art upgrade is now
+complete (D292); [art acceptance](../research/puzzle-art-release-acceptance.md) records private derivatives, full
+coverage and placeholder retention without changing mechanics.
 Implement one task to completion/PR/merge before the next, from latest main; do not alter RPG mechanics.
 
 **Next: [T117 — Puzzle setup parity with the RPG](T117-puzzle-setup-parity.md).** Claude's post-release review found
@@ -40,7 +41,6 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 | Milestone | Tasks | State |
 |---|---|---|
 | [T117 — Puzzle setup parity](T117-puzzle-setup-parity.md) | Ten parties · free-Uma picker · Swap · level-first roster · profile strip · no dropdowns | **Next** · specified, delegable |
-| [T109 — Puzzle art upgrade](T109-puzzle-private-content.md) | Permitted PAD source/art only | **Pinned by owner** · code delivered; verified original placeholders are production-ready |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -65,6 +65,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T109 — Private owner-export Puzzle art upgrade | 2026-10-08 | [Content contract](../technical/puzzle-content.md), D292 and [aggregate art acceptance](../research/puzzle-art-release-acceptance.md); old placeholder packs retained | `4951830` |
 | M030 / T116 — Verified-placeholder Puzzle release, tuning, Home and preservation backup | 2026-10-08 | [Uma Puzzles](../design/uma-puzzles.md), D289–D290 and [release/owner checks](../research/uma-puzzles-release-acceptance.md); later T109 art upgrade retained | `0879ce5` |
 | T115 — Rehearsed preservation migration and safe Spark retirement | 2026-10-08 | [Preservation v2 contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287), D287 and [synthetic phone/restore proof](../research/puzzle-preservation-phone-proof.md); release remains off | `ed99e2d` |
 | T114 — Global materials, original vectors, debt/exchange and shared CL spend | 2026-10-08 | [Material surface contract](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283), D283 and [synthetic phone proof](../research/puzzle-material-phone-proof.md); release remains off | `bf5585b` |

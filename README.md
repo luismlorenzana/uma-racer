@@ -13,8 +13,8 @@ while the stable itself grows into a collection.
 >
 > **Current training loop:** free global [Uma Puzzles](docs/design/uma-puzzles.md) battles earn scenario/style
 > materials, which raise shared **Constellation Level (CL)** through an explicit spend. Earned levels and all four
-> distance builds are preserved (D287–D290). Verified original placeholder enemy art is approved for production
-> (D289); permitted PAD art remains a later upgrade, not a launch blocker. [Friendship Training](docs/design/minigames.md#friendship-training--card-stars)
+> distance builds are preserved (D287–D290). Owner-provided PAD-derived transparent art is now privately imported
+> (D292); frozen placeholder packs remain available for open fights. [Friendship Training](docs/design/minigames.md#friendship-training--card-stars)
 > earns global card stars. Racing, Farm and RPG retain their independent progression.
 > [Release evidence and owner checks](docs/research/uma-puzzles-release-acceptance.md); remaining work is in [Tasks](docs/tasks/README.md).
 
@@ -90,7 +90,7 @@ docs/           design, technical, research
 | [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
 | [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties of four classes, Octopath-style break battles against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D282) |
 | [RPG classes and skill trees](docs/design/uma-rpg-classes.md) | Brawler, Mage, Cleric and Summoner: turns and hands, multi-part hits and weaknesses, every authored tree, node and number, Cleric blessings, summons and the balance check (D277–D282) |
-| [Uma Puzzles](docs/design/uma-puzzles.md) | Free global party campaign, replay-backed battles, scenario/style materials, debt/exchange and shared CL spending; protected preservation and verified original-placeholder art (D287–D290) |
+| [Uma Puzzles](docs/design/uma-puzzles.md) | Free global party campaign, replay-backed battles, scenario/style materials, debt/exchange and shared CL spending; protected preservation and private owner-export art (D287–D292) |
 | [Support Cards](docs/design/support-cards.md) | SSR-only cards, per-scenario six-card sets, era gating, tilt, stars |
 | [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, six lineage slots and aptitude upgrades |
 | [Racing](docs/design/racing.md) | Race loop, catalog, grade handicap, generated rivals, straight-track view |
@@ -104,7 +104,7 @@ docs/           design, technical, research
 |---|---|
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [RPG implementation](docs/technical/uma-rpg-implementation.md) | Local-first RPG rows and sync, the device fight journal, the generated campaign and the cast-only private pack |
-| [Uma Puzzles implementation contract](docs/technical/uma-puzzles-implementation.md) | Verified private content, atomic replay/repair/takeover, protected preservation and [release/owner checks](docs/research/uma-puzzles-release-acceptance.md); permitted PAD originals remain T109 |
+| [Uma Puzzles implementation contract](docs/technical/uma-puzzles-implementation.md) | Verified private content, atomic replay/repair/takeover, protected preservation, [release/owner checks](docs/research/uma-puzzles-release-acceptance.md) and [owner-export art acceptance](docs/research/puzzle-art-release-acceptance.md) |
 | [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, one-time bootstrap, content privacy, environments |
 | [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
 | [Visual System "Paddock"](docs/design/visual-system.md) | Surfaces, colour, type, shape, components, icons, art treatment, motion, density |
