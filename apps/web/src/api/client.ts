@@ -1,6 +1,7 @@
 // Fetch client with a pluggable token provider (same pattern as uma-planner's api/client.ts).
 
 import type { RpgCommandRequest, SyncRequest, PuzzleTakeoverRequest, PuzzlePrepareRequest, PuzzlePreservationRequest, LegacySparkRequest } from '@racer/domain'
+import type { FarmCutoverRequest } from '@racer/domain/farm/kitchen'
 
 // Base URL: empty in dev (relative /api, proxied by Vite) or the Cloud Run URL in prod.
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -56,4 +57,5 @@ export const saveApi = {
   puzzlePrepare: (body: PuzzlePrepareRequest | PuzzlePreservationRequest) => request<unknown>('/api/puzzles/prepare', { method: 'POST', body: JSON.stringify(body) }),
   retireSpark: (body: LegacySparkRequest) => request<unknown>('/api/puzzles/legacy-spark', { method: 'POST', body: JSON.stringify(body) }),
   puzzleTakeover: (body: PuzzleTakeoverRequest) => request<unknown>('/api/puzzles/takeover', { method: 'POST', body: JSON.stringify(body) }),
+  farmPrepare: (body: FarmCutoverRequest) => request<unknown>('/api/farm/prepare', { method: 'POST', body: JSON.stringify(body) }),
 }

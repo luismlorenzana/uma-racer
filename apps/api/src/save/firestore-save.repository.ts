@@ -6,6 +6,9 @@ import type { SaveRepository } from './save.repository'
 import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
 import { protectFarmSync } from './farm-sync'
 import { FARM_KITCHEN_RELEASE_ENABLED } from './farms'
+import { farmCutoverControl, farmCutoverReferences, farmCutoverSourceLogKeys, farmCohortPageId, FARM_CUTOVER_LIMITS,
+  farmCutoverDisabled, farmCutoverUnavailable, type FarmCutoverRequest, type FarmCutoverResponse } from './farms'
+import { resolveProtectedFarm } from './farm-cutover'
 import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
 import { preservationHeader, preservationPageIndexes, preservationPageId, preservationBatch, puzzleCohortId,
   type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
@@ -183,6 +186,44 @@ export class FirestoreSaveRepository implements SaveRepository {
         return result.response
       })
     } catch (error) { return { status: 'recoverable-error', message: error instanceof Error ? error.message : 'Keep the journal and retry retirement', entities: [], logs: [] } }
+  }
+
+  async prepareFarm(uid: string, request: FarmCutoverRequest): Promise<FarmCutoverResponse> {
+    if (!this.farmEnabled) return farmCutoverDisabled() // Before db access/admin initialization, including status.
+    try {
+      const player = this.player(uid)
+      return await this.db.runTransaction(async tx => {
+        const entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>(), read = new Set<string>()
+        const fetch = async (keys: string[], log = false) => {
+          const fresh = keys.filter(k => !read.has(k)); fresh.forEach(k => read.add(k))
+          if (!fresh.length) return
+          const docs = await tx.getAll(...fresh.map(k => { const [kind, id] = k.split('/'); return player.collection(kind!).doc(id!) }))
+          for (const doc of docs) if (doc.exists) {
+            if (log) { const row = fromStored<LogRecord>(doc.data()!); logs.set(`${row.kind}/${row.id}`, row) }
+            else { const row = fromStored<EntityRecord>(doc.data()!); entities.set(`${row.kind}/${row.id}`, row) }
+          }
+        }
+        await fetch(['farmCutover/main', 'constellationBank/main', 'inspirationBank/main'])
+        const c = farmCutoverControl(entities)
+        if (!c) {
+          if (request.action !== 'prepare') return farmCutoverUnavailable('Verified whole-account archive required before preparing')
+          await fetch(['profile/main', 'farm/main'])
+          // Only the initial freeze reads a roster. A sentinel row detects overflow without an unbounded query.
+          const owned = await tx.get(player.collection('umas').where('deleted', '==', false).limit(FARM_CUTOVER_LIMITS.outfits + 1))
+          for (const doc of owned.docs) { const row = fromStored<EntityRecord>(doc.data()); entities.set(`${row.kind}/${row.id}`, row) }
+          await fetch(farmCutoverSourceLogKeys(entities), true)
+        } else {
+          if (request.action === 'advance') await fetch([`farmCutoverPages/${farmCohortPageId(c.generation, Math.floor(request.index / 32))}`])
+          const refs = farmCutoverReferences(entities, request)
+          await fetch(refs.entities); await fetch(refs.logs, true)
+        }
+        const result = resolveProtectedFarm(uid, entities, logs, request, Date.now())
+        // No reads after this point; progress + projections + immutable evidence commit together.
+        for (const row of result.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+        for (const row of result.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+        return result.response
+      })
+    } catch (error) { return farmCutoverUnavailable(error instanceof Error ? error.message : 'Farm reset failed; keep archive and Retry/Export') }
   }
 
   async rpgCommand(uid: string, request: RpgCommandRequest): Promise<RpgCommandResponse> {

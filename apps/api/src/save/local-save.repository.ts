@@ -11,6 +11,8 @@ import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeove
 import { type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
 import { disabledPreservation, unavailablePreservation, resolvePreservation } from './puzzle-preservation'
 import { preservationHeader, resolveLegacySpark, type LegacySparkRequest, type LegacySparkResponse } from './puzzles'
+import { farmCutoverDisabled, farmCutoverUnavailable, type FarmCutoverRequest, type FarmCutoverResponse } from './farms'
+import { resolveProtectedFarm } from './farm-cutover'
 
 interface FileShape {
   [uid: string]: { entities: Record<string, EntityRecord>; logs: Record<string, LogRecord> }
@@ -126,6 +128,20 @@ export class LocalSaveRepository implements SaveRepository {
         if (result.writes.length) await this.write(all)
         return result.response
       } catch (error) { return { status: 'recoverable-error', message: error instanceof Error ? error.message : 'Keep the journal and retry retirement', entities: [], logs: [] } }
+    })
+  }
+
+  prepareFarm(uid: string, request: FarmCutoverRequest): Promise<FarmCutoverResponse> {
+    if (!this.farmEnabled) return Promise.resolve(farmCutoverDisabled())
+    return this.serialize(async () => {
+      try {
+        const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }
+        const result = resolveProtectedFarm(uid, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), request, Date.now())
+        for (const row of result.writes) user.entities[`${row.kind}/${row.id}`] = row
+        for (const row of result.appends) user.logs[`${row.kind}/${row.id}`] = row
+        if (result.writes.length || result.appends.length) await this.write(all)
+        return result.response
+      } catch (error) { return farmCutoverUnavailable(error instanceof Error ? error.message : 'Farm reset failed; keep archive and Retry/Export') }
     })
   }
 

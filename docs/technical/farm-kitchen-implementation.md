@@ -1,6 +1,6 @@
 # Farm production/cooking — implementation contract
 
-**T118 pure layer and T119 dormant persistence implemented · M031 · 2026-10-09.** Read
+**T118 pure layer, T119 dormant persistence and T120 rehearsed cutover implemented · M031 · 2026-10-09.** Read
 [the design](../design/farm-kitchen-rework.md), [AGENTS.md](../../AGENTS.md) and the current task first.
 This standing contract must survive task deletion under D104. It specifies the new path; existing
 [Farm](../design/farm.md) stays live until T124. Do not describe a capability-off merge as a playable release.
@@ -111,7 +111,7 @@ views, not permission to write on route opening. Only accepted semantic commands
 | `farmRecipes/b<block>` | Schema 1, generation, processing/cooking milestone evidence, sixteen first-preparation/meal-count records |
 | `farmExtra/<outfitId>:b<block>` | Schema 1, generation, template/rules version, up to 65 bought IDs and active IDs keyed by registered scenario and four distances |
 | `farmOperations/<operationId>` | Immutable accepted command/receipt; changes and economic evidence are stored once, never an aggregate history field; terminal/purchase guards use `ftg:<type>:<hash>` in the same collection |
-| `farmCutover/main` | Schema1: generation, phase `preparing|resetting|active`, 64-hex `cohortDigest`/`archiveDigest`, `outfitCount`, `pageCount`, `nextOutfitIndex`, `createdAt`, nullable `activatedAt`; shapes only, T120 owns execution |
+| `farmCutover/main` | Schema1: generation, phase `preparing|resetting|active`, 64-hex `cohortDigest`/`archiveDigest`, `outfitCount`, `pageCount`, `nextOutfitIndex`, `createdAt`, nullable `activatedAt`; T120's dormant protected protocol owns execution |
 | `farmCutoverPages/<generation>:<index or legacy>` | Schema1 union: cohort `{index,outfits:[{outfitId,sourceVersion,tiers}]}` (sorted, ≤32/page, ≤128 pages); legacy `{stations:[{stationId,outfitId,attempt,cycle}]}` (≤18 original raw slots/cycles); both include generation/type |
 | `items/<itemId>` | Existing nonnegative global stacks; Farm-owned IDs require Farm commands |
 | `itemLedger/<movementId>` | Existing ledger plus an explicit Farm-command source/version; legacy reason unions remain parsable |
@@ -269,7 +269,7 @@ limits are not permission to make lifetime history finite or to delete it.
 
 ## 6. Protected cutover and recovery
 
-T120 implements this **dormant**; T124 activates it. API and web have matching code-owned Farm rework capabilities,
+T120/D307 implements this **dormant**, with [synthetic rehearsal evidence](../research/farm-kitchen-cutover-rehearsal.md); T124 activates it. API and web have matching code-owned Farm rework capabilities,
 false through T123. No environment/workflow/infra change. With capabilities off, existing Farm/Extra UI/host and
 sync behave exactly as before; browser proofs opt into isolated synthetic repositories only.
 
@@ -308,6 +308,65 @@ Do not rerun startup Inspiration advances or Puzzle preservation as part of Farm
 owner documents. After an active reset, rollback means a compatible read/recovery build or targeted forward
 repair. Never redeploy a pre-v3 writer over active accounts or automatically restore old bonuses/account data.
 Restoration from the archive needs a separately explicit owner request and a compatible reviewed protocol.
+
+### T120 implemented protocol (D307)
+
+`POST /api/farm/prepare` is guarded by the existing AuthGuard. `SaveRepository.prepareFarm` uses the same pure
+`resolveFarmCutover` in both adapters. The disabled path returns before reading a file, opening Firestore or
+capturing an archive. No runtime installer calls it yet; T121 connects the lazy ports and T122 renders recovery.
+The fixed generation is `farm-kitchen-v1`, control/page/receipt schema1, Farm3 and Dexie32; no save schema bump.
+
+Requests have schema1/generation and exactly one action: `prepare` with archive proof, `advance` with outfit index,
+`verify` with page index, `finalize`, or read-only `status`. Proof is authenticated account ID, profile creation
+time, whole-archive SHA-256 and affected-source SHA-256. Source includes profile/Farm versions, owned-outfit
+versions and sorted scenario tiers, original Farm facts and accepted evidence for current legacy cycles. Unrelated
+account fields are archived but not later replaced; they can progress independently. A changed source before
+freeze requires a fresh archive, retaining the previous one. Retry after freeze never rereads the roster.
+
+The initial authoritative query is live outfits only, with a4,097-row sentinel: maximum4,096 owned outfits,
+8 MiB of outfit records and32/page. This is a separately bounded protected freeze, not an ordinary200-reference
+sync batch. Each frozen page is ≤128 KiB; legitimate shared Uma reads/steps remain ≤900 KiB under T119. At the
+maximum, the initial transaction writes130 entities plus one receipt. Each later transaction has ≤200 combined
+references and writes, and complete acknowledgements obey the unchanged14,745,600-byte response ceiling.
+
+`farmOperations/fcr:<generation>:<action>[:<index>]` stores immutable cutover receipts. Each binds archive/cohort
+digests, action/index and time; prepare retains checksum proofs for every frozen page and the legacy page;
+advance retains outfit ID, frozen/applied versions and the exact before-reset Extra fields (not a frozen whole
+Uma); verify covers the32 matching step receipts on its page; finalization requires all page verifications.
+Checksums are identity/corruption checks, not authentication; archive/source integrity uses SHA-256 at the I/O
+boundaries. Missing/changed pages or receipts block forward progress without guessed replacement evidence.
+Lost responses return the same original receipt. Active status verifies its terminal receipt and projections.
+
+Each outfit step patches the **current** Uma and clears every current scenario's old counts and all four lists,
+including a newly opened scenario; scenario array order and all non-reset fields stay unchanged. It writes zero
+worker EXP and blank maps for all three registered blocks. Post-freeze acquisitions are outside the cohort and
+use ordinary zero defaults. Finalization maps all used old stations, including unassigned attempt floors; jobs
+stay frozen on the legacy page with original cycles/deadlines. An accepted pre-freeze harvest removes its pending
+cycle, never its evidence/stock. New recipes/cookbook are empty; all30 stations are available through normal views.
+
+The device-only archive is a separate `farmRecovery` record `farm-archive:<SHA-256>`, with archive schema1,
+authenticated account/profile identity, app build, Dexie32, timestamp, the raw canonical whole-account snapshot
+and every local save/intent/journal table. Earlier Farm archives are retained separately rather than recursively
+embedded; Puzzle archives are included and never replaced. The64 MiB export ceiling, supported local/cloud
+schemas, write/readback identity, both in-memory and JSON-round-trip SHA-256, and Blob exportability must verify
+before prepare. No archive JSON/IDs/content are logged or committed. Quota, future schema, corruption, new local
+progress or identity changes block the request. The archive is never uploaded by normal sync.
+
+`prepareFarmCutoverOnce` requires persistent/online/current-account/safe-idle ports and all economic queues
+drained. It stores the exact next request/failure in `farm-cutover-recovery-v1` for Retry and exports through
+`exportFarmCutoverRecovery`. Preparing/resetting/active/needs-sync/recoverable-error are available to future UI.
+It never discards unresolved intents. A fresh device resumes server control or pulls active state with `status`,
+without preparing/resetting again; the original archive remains on its capturing device. A conflicting/malformed
+local recovery archive is retained for explicit forward recovery, not silently replaced after freeze.
+
+Acknowledgements atomically install canonical Farm fields and receipts, merging only reset-owned Extra fields
+into a newer queued Uma edit. Delayed full pulls likewise clear accepted reset fields without replacing newer
+racing/preset edits or downgrading generation. Existing evidence reconciliation stops as soon as control exists.
+Legacy Claim uses the original cycle evidence plus cycle/station target guards, pays one old crop and zero new
+EXP, and cannot open recipes/cookbook. The original trusted-device timing policy is unchanged.
+
+Both capabilities remain false; this task neither executes an owner migration nor changes the shipped screens.
+Physical iPhone/quota/export and real-account/second-device acceptance remain T124 owner checks.
 
 ## 7. Real host, views and navigation
 

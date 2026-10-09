@@ -351,6 +351,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
     await db.farmCutover.count() > 0 || await db.farmPending.count() > 0
   const farms = hasFarmState ? await import('./farm/kitchen/operations') : null
   const farmCoordinator = farms ? new farms.FarmOperationCoordinator(db, () => undefined) : null
+  const farmCutover = hasFarmState ? await import('./farm/kitchen/cutover') : null
   await db.transaction('rw', [...farms?.farmTransactionTables(db) ?? [], ...puzzles?.puzzleTransactionTables(db) ?? [], db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger,
     db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.inspirationBank, db.outbox], async () => {
     const newerUmaIds = new Set<string>()
@@ -428,6 +429,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       await coordinator.adoptSnapshotInTransaction(views, snapshot.logs.filter(r => PUZZLE_LOG_KINDS.includes(r.kind as never)), snapshot.serverTime)
     }
     if (farmCoordinator) await farmCoordinator.adoptSnapshotInTransaction(snapshot.entities, snapshot.logs, snapshot.serverTime)
+    if (farmCutover) await farmCutover.adoptFarmResetSnapshotInTransaction(db, snapshot)
     await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })
   await coordinator?.refreshStatus()

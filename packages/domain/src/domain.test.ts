@@ -192,6 +192,8 @@ import {
 describe('Farm kitchen additive baseline — D304', () => {
   it('pins additive protocol bounds without raising shared economic sync limits', () => {
     expect(Kitchen.FARM_SYNC_LIMITS).toEqual({ groups: 16, bytes: 262144, documents: 200, documentBytes: 131072, receiptBytes: 921600, responseBytes: 14745600 })
+    expect(Kitchen.FARM_CUTOVER_LIMITS).toEqual({ outfits: 4096, page: 32, freezeBytes: 8388608, archiveBytes: 67108864 })
+    expect(Kitchen.FARM_CUTOVER_GENERATION).toBe('farm-kitchen-v1')
   })
   it('pins versions, jobs, gates, stations, Energy and the bounded map without changing live Farm', () => {
     expect([Kitchen.FARM_KITCHEN_RULES_VERSION, Kitchen.FARM_KITCHEN_SCHEMA_VERSION,

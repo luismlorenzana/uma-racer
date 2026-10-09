@@ -15,6 +15,7 @@ import { farmExactKeys, farmRecord, farmSafeId, farmSafeInteger, isFarmStationId
 import { farmBytes, farmCanonical, farmData, farmDigest, farmExpectedKind, farmHash, farmKey, farmPlain, farmRowId, FARM_SYNC_LIMITS,
   type FarmStoredEntity, type FarmStoredLog } from './wire'
 import type { FarmClaimReceipt, FarmKitchenJob } from './types'
+import { parseFarmCutoverReceipt, farmCutoverReceiptId, type FarmCutoverReceipt } from './cutover-records'
 
 export type FarmPayloadV1 =
   | { kind: 'assign'; stationId: FarmStationId; outfitId: string }
@@ -286,11 +287,13 @@ export function parseFarmOperationReceipt(value: unknown): FarmOperationReceiptV
     return { schemaVersion: 1, type: 'operation', operation, createdAt: value.createdAt, changes, logs, result, reusedTarget: value.reusedTarget }
   } catch { return null }
 }
-export function parseFarmOperationLog(value: unknown): FarmOperationReceiptV1 | FarmTargetGuardV1 | null {
-  return farmRecord(value) && value.type === 'operation' ? parseFarmOperationReceipt(value) : parseFarmTargetGuard(value)
+export function parseFarmOperationLog(value: unknown): FarmOperationReceiptV1 | FarmTargetGuardV1 | FarmCutoverReceipt | null {
+  return farmRecord(value) && value.type === 'cutover' ? parseFarmCutoverReceipt(value)
+    : farmRecord(value) && value.type === 'operation' ? parseFarmOperationReceipt(value) : parseFarmTargetGuard(value)
 }
-export function farmLogIdMatches(id: string, data: FarmOperationReceiptV1 | FarmTargetGuardV1): boolean {
-  return id === (data.type === 'operation' ? data.operation.operationId : farmTargetGuardId(data.generation, data.type, data.targetId))
+export function farmLogIdMatches(id: string, data: FarmOperationReceiptV1 | FarmTargetGuardV1 | FarmCutoverReceipt): boolean {
+  return id === (data.type === 'cutover' ? farmCutoverReceiptId(data.generation, data.action, data.index) :
+    data.type === 'operation' ? data.operation.operationId : farmTargetGuardId(data.generation, data.type, data.targetId))
 }
 export function parseFarmOperationResponses(value: unknown, operations?: readonly FarmOperationV1[]): FarmOperationResponse[] | null {
   try {
