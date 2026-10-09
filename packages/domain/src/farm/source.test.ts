@@ -20,8 +20,8 @@ describe('Farm domain source boundary', () => {
     for (const path of productionSources(root)) {
       const source = readFileSync(path, 'utf8')
       for (const dependency of dependencies) expect(source, path).not.toContain(`from '${dependency}`)
-      for (const global of globals) expect(source, path).not.toContain(global)
+      // Whole identifiers: transport properties such as `documents` are not the browser's `document` global.
+      for (const global of globals) expect(source, path).not.toMatch(new RegExp(`\\b${global.replaceAll('.', '\\.')}\\b`))
     }
   })
 })
-

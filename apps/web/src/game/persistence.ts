@@ -61,6 +61,7 @@ import {
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import Dexie from 'dexie'
+import { FARM_ENTITY_KINDS, parseFarmStoredEntity, parseFarmOperationLog, farmLogIdMatches } from '@racer/domain/farm/kitchen'
 import { db, payUmaRelevels, type FarmRow, type LogRow, type OutboxRow, type UmaRelevelPayout, type VersionedRow } from './db'
 
 export interface LocalSnapshot {
@@ -80,6 +81,8 @@ export interface LocalSnapshot {
   rpgReceipts: LogRow<RpgCommandReceiptV1>[]
   puzzleEntities: EntityRecord[]
   puzzleLogs: LogRecord[]
+  farmEntities: EntityRecord[]
+  farmLogs: LogRecord[]
 }
 
 export async function queueInTransaction(
@@ -88,6 +91,8 @@ export async function queueInTransaction(
   op: OutboxRow['op'],
   queuedAt: number,
 ): Promise<void> {
+  if (op === 'upsert' && (FARM_ENTITY_KINDS.includes(kind as never) || kind === 'items' && id.startsWith('farm:')) ||
+    op === 'append' && kind === 'farmOperations') throw new Error('Farm projections/evidence must use semantic commands')
   if (op === 'upsert' && (kind === 'umas' || kind === 'items')) {
     // The grouped reservation locks the same entity tables. Read its queue outside the caller's table scope,
     // so ordinary transactions cannot change a reserved row before the acknowledged group is installed.
@@ -111,13 +116,17 @@ export async function reconcileFarmProjectionsInTransaction(now: number): Promis
     : await Dexie.waitFor(Dexie.ignoreTransaction(() => db.constellationBank.get('main')))
   const puzzleActive = bank?.data.phase === 'active'
   const farmRow = await db.farm.get('main')
+  // v3 and prepared generations are not projections of the retired per-harvest EXP ledger.
+  const farmControl = Dexie.currentTransaction?.storeNames.includes('farmCutover') ? await db.farmCutover.get('main')
+    : await Dexie.waitFor(Dexie.ignoreTransaction(() => db.farmCutover.get('main')))
+  if (Number(farmRow?.data.schemaVersion) >= 3 || farmControl) return { farmChanged: false, changedItemIds: [] }
   const movements = (await db.itemLedger.toArray()).map((row) => {
     const parsed = parseItemLedgerEntry(row.data)
     if (!parsed || parsed.id !== row.id || parsed.createdAt !== row.createdAt) throw new Error(`Invalid local item ledger: ${row.id}`)
     return parsed
   })
   const itemRows = await db.items.toArray()
-  const result = reconcileFarmEvidence(farmRow?.data ?? createInitialFarmState(), itemRows.map((row) => row.data), movements)
+  const result = reconcileFarmEvidence(farmRow?.data ?? createInitialFarmState(), itemRows.map((row) => row.data), movements.filter(entry => entry.reason !== 'farm-command'))
   if (result.farmChanged && farmRow) {
     await db.farm.put({ ...farmRow, data: result.farm, revision: farmRow.revision + 1 })
     await queueInTransaction('farm', 'main', 'upsert', now)
@@ -157,6 +166,19 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   const rpgPromotions = validateRpgLogs('rpgPromotions', await db.rpgPromotions.toArray()) as LogRow<RpgPromotionEvidence>[]
   const rpgReceipts = validateRpgLogs('rpgReceipts', await db.rpgReceipts.toArray()) as LogRow<RpgCommandReceiptV1>[]
   const puzzleEntities: EntityRecord[] = [], puzzleLogs: LogRecord[] = []
+  const farmEntities: EntityRecord[] = [], farmLogs: LogRecord[] = []
+  for (const kind of [...FARM_ENTITY_KINDS, ...(Number(farmRow?.data.schemaVersion) >= 3 ? ['farm' as const] : [])])
+    for (const row of await db.table<VersionedRow<unknown> & { updatedAt?: number; deleted?: boolean }, string>(kind).toArray()) {
+      const record = { kind, id: row.id, data: row.data, version: row.version, deleted: row.deleted ?? false, updatedAt: row.updatedAt ?? 0 }
+      const parsed = parseFarmStoredEntity(record)
+      if (!parsed) throw new Error(`Invalid/future local Farm row ${kind}/${row.id}; preserve for recovery`)
+      farmEntities.push(parsed as EntityRecord)
+    }
+  for (const row of await db.farmOperations.toArray()) {
+    const data = parseFarmOperationLog(row.data)
+    if (!data || !farmLogIdMatches(row.id, data) || data.createdAt !== row.createdAt) throw new Error(`Invalid local Farm evidence ${row.id}; preserve for recovery`)
+    farmLogs.push({ kind: 'farmOperations', id: row.id, data: data as unknown as Record<string, unknown>, createdAt: row.createdAt })
+  }
   for (const kind of PUZZLE_ENTITY_KINDS) for (const row of await db.table<VersionedRow<unknown>, string>(kind).toArray()) {
     const data = parseEntityData(kind, row.data)
     if (!data || !puzzleEntityIdMatches(kind, row.id, data) || !Number.isSafeInteger(row.version) || row.version < 1) throw new Error(`Invalid local Puzzle row ${kind}/${row.id}; keep it for recovery`)
@@ -190,7 +212,7 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
     if (!data || data.earnedAt !== row.createdAt) throw new Error(`Invalid local flair event: ${row.id}`)
     return { ...row, data }
   })
-  const farm = farmRow ? (() => {
+  const farm = farmRow && Number(farmRow.data.schemaVersion) < 3 ? (() => {
     const data = parseFarmState(farmRow.data)
     if (!data || farmRow.id !== 'main' || !Number.isSafeInteger(farmRow.version) || farmRow.version < 0 ||
       !Number.isSafeInteger(farmRow.revision) || farmRow.revision < 0) {
@@ -212,7 +234,7 @@ export async function readLocalSnapshot(): Promise<LocalSnapshot | null> {
   if (cardRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local card row version is invalid')
   if (badgeRows.some((row) => !Number.isSafeInteger(row.version) || row.version < 0)) throw new Error('Local badge row version is invalid')
   return { profile: { ...profileRow, data: profile }, umas, cards, badges, flairEvents, farm, items, itemLedger,
-    rpgOutfits, rpgPresets, rpgCheckpoints, rpgResults, rpgPromotions, rpgReceipts, puzzleEntities, puzzleLogs }
+    rpgOutfits, rpgPresets, rpgCheckpoints, rpgResults, rpgPromotions, rpgReceipts, puzzleEntities, puzzleLogs, farmEntities, farmLogs }
 }
 
 function validateRpgEntities(kind: EntityKind, rows: VersionedRow<unknown>[]): VersionedRow<object>[] {
@@ -265,6 +287,7 @@ export async function isDatabaseSemanticallyEmpty(): Promise<boolean> {
     db.rpgOutfits.count(), db.rpgPresets.count(), db.rpgCheckpoints.count(),
     db.rpgResults.count(), db.rpgPromotions.count(), db.rpgReceipts.count(), db.pendingRpgCommands.count(),
     ...[...PUZZLE_ENTITY_KINDS, ...PUZZLE_LOG_KINDS, 'pendingPuzzleOperations', 'puzzleJournals', 'puzzleArchives', 'puzzleBases', 'puzzlePreferences'].map(k => db.table(k).count()),
+    ...[...FARM_ENTITY_KINDS, 'farmOperations', 'farmPending', 'farmRecovery', 'farmPreferences'].map(k => db.table(k).count()),
     db.outbox.count(),
   ])
   return counts.every((count) => count === 0)
@@ -306,7 +329,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       if (row.kind === 'cards' && typeof row.id === 'string' && !row.deleted &&
         !parseCardSave(row.data) && migrateCardSaveToCurrent(row.data)) legacyKeys.add(`cards/${row.id}`)
       if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
-        !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
+        Number((row.data as Record<string, unknown>).schemaVersion) < 3 && !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
       // Pre-class outfits and parties (D282) migrate on the way in; upload the migrated rows once.
       if ((row.kind === 'rpgOutfits' || row.kind === 'rpgPresets') && typeof row.id === 'string' && !row.deleted &&
         typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion !== 3) legacyKeys.add(`${row.kind}/${row.id}`)
@@ -324,9 +347,17 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
   const hasPuzzleState = snapshot.entities.some(r => PUZZLE_ENTITY_KINDS.includes(r.kind as never)) || snapshot.logs.some(r => PUZZLE_LOG_KINDS.includes(r.kind as never)) || await db.pendingPuzzleOperations.count() > 0
   const puzzles = hasPuzzleState ? await import('./puzzles/operations') : null
   const coordinator = puzzles ? new puzzles.PuzzleOperationCoordinator(db, '', () => undefined) : null
-  await db.transaction('rw', [...puzzles?.puzzleTransactionTables(db) ?? [], db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger,
+  const hasFarmState = snapshot.entities.some(r => FARM_ENTITY_KINDS.includes(r.kind as never) || r.kind === 'farm' && r.data.schemaVersion === 3) ||
+    await db.farmCutover.count() > 0 || await db.farmPending.count() > 0
+  const farms = hasFarmState ? await import('./farm/kitchen/operations') : null
+  const farmCoordinator = farms ? new farms.FarmOperationCoordinator(db, () => undefined) : null
+  await db.transaction('rw', [...farms?.farmTransactionTables(db) ?? [], ...puzzles?.puzzleTransactionTables(db) ?? [], db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.farm, db.items, db.itemLedger,
     db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, db.rpgResults, db.rpgPromotions, db.rpgReceipts, db.inspirationBank, db.outbox], async () => {
-    await Promise.all([db.profile.clear(), db.umas.clear(), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(), db.farm.clear(), db.items.clear(), db.itemLedger.clear(), db.outbox.filter(r => r.op !== 'puzzle').delete()])
+    const newerUmaIds = new Set<string>()
+    if (hasFarmState) for (const row of await db.umas.toArray()) if ((snapshot.entities.find(r => r.kind === 'umas' && r.id === row.id)?.version ?? 0) < row.version ||
+      await db.outbox.where('[kind+id]').equals(['umas', row.id]).count()) newerUmaIds.add(row.id)
+    await Promise.all([db.profile.clear(), ...(hasFarmState ? [] : [db.umas.clear(), db.farm.clear(), db.items.clear(), db.itemLedger.clear()]), db.cards.clear(), db.badges.clear(), db.raceResults.clear(), db.ledger.clear(), db.flairEvents.clear(),
+      db.outbox.filter(r => r.op !== 'puzzle' && r.op !== 'farm' && !(hasFarmState && r.kind === 'umas' && newerUmaIds.has(r.id))).delete()])
     for (const record of snapshot.entities) {
       if (record.deleted) continue
       // A server row can be any supported schema. Migrate on the way in, and re-queue whatever moved so the
@@ -343,6 +374,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.profile.put({ id: record.id, data: profile, version: record.version })
       }
       if (record.kind === 'umas') {
+        if (newerUmaIds.has(record.id)) continue
         const migrated = migrateUmaSaveWithSurplus(record.data)
         if (!migrated) throw new Error(`Server Uma ${record.id} cannot be migrated`)
         if (!parseUmaSave(record.data) || trainingSurplus.legacyUmaIds.has(record.id)) legacyKeys.add(`umas/${record.id}`)
@@ -357,11 +389,12 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
       }
       if (record.kind === 'badges') await db.badges.put({ id: record.id, data: parseBadgeState(record.data)!, version: record.version })
       if (record.kind === 'farm') {
+        if (record.data.schemaVersion === 3 || hasFarmState && await db.farmCutover.count()) continue
         const farm = migrateFarmStateToCurrent(record.data)
         if (!farm) throw new Error(`Server Farm ${record.id} cannot be migrated`)
         await db.farm.put({ id: record.id, data: farm, version: record.version, revision: record.version })
       }
-      if (record.kind === 'items') await db.items.put({ id: record.id, data: parseInventoryStackData(record.data, record.id)!, version: record.version })
+      if (record.kind === 'items' && !(hasFarmState && (record.id.startsWith('farm:') || record.id.startsWith('produce:')))) await db.items.put({ id: record.id, data: parseInventoryStackData(record.data, record.id)!, version: record.version })
       if (record.kind === 'inspirationBank') await db.inspirationBank.put({ id: record.id, data: parseInspirationBank(record.data)!, version: record.version })
       if (record.kind === 'rpgOutfits' || record.kind === 'rpgPresets' || record.kind === 'rpgCheckpoints') {
         await mergeRpgEntity(record)
@@ -376,7 +409,7 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         await db.flairEvents.put({ id: record.id, data: parseFlairEvent(record.data)!, createdAt: record.createdAt })
       } else if (record.kind === 'rpgResults' || record.kind === 'rpgPromotions' || record.kind === 'rpgReceipts') {
         await mergeRpgLog(record)
-      } else if (!PUZZLE_LOG_KINDS.includes(record.kind as never)) {
+      } else if (record.kind === 'itemLedger' && record.data.reason !== 'farm-command') {
         await db.itemLedger.put({ id: record.id, data: parseItemLedgerEntry(record.data)!, createdAt: record.createdAt })
       }
     }
@@ -386,8 +419,15 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
     }
     // After the cloud's ledger is in, so a level another device already paid is skipped (D241).
     await payUmaRelevels({ profile: db.profile, ledger: db.ledger, outbox: db.outbox }, relevels, snapshot.serverTime)
-    if (coordinator) await coordinator.adoptSnapshotInTransaction(snapshot.entities.filter(r => PUZZLE_ENTITY_KINDS.includes(r.kind as never) || r.kind === 'umas' || r.kind === 'items'),
-      snapshot.logs.filter(r => PUZZLE_LOG_KINDS.includes(r.kind as never)), snapshot.serverTime)
+    if (coordinator) {
+      const puzzleEntities = snapshot.entities.filter(r => PUZZLE_ENTITY_KINDS.includes(r.kind as never) || r.kind === 'umas' ||
+        r.kind === 'items' && !(hasFarmState && (r.id.startsWith('farm:') || r.id.startsWith('produce:'))))
+      // Keep the existing Puzzle-owned CL merge, but not a delayed pull's older shared Uma revision.
+      const views = await Promise.all(puzzleEntities.map(async r => r.kind === 'umas' && newerUmaIds.has(r.id)
+        ? { ...r, version: Math.max(r.version, (await db.umas.get(r.id))!.version) } : r))
+      await coordinator.adoptSnapshotInTransaction(views, snapshot.logs.filter(r => PUZZLE_LOG_KINDS.includes(r.kind as never)), snapshot.serverTime)
+    }
+    if (farmCoordinator) await farmCoordinator.adoptSnapshotInTransaction(snapshot.entities, snapshot.logs, snapshot.serverTime)
     await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })
   await coordinator?.refreshStatus()
@@ -564,7 +604,7 @@ export function stateFromSnapshot(snapshot: LocalSnapshot, content: LoadedConten
 }
 
 export async function entityRow(kind: EntityKind, id: string): Promise<VersionedRow<object> | null> {
-  const row = kind === 'profile'
+  const row = FARM_ENTITY_KINDS.includes(kind as never) || PUZZLE_ENTITY_KINDS.includes(kind as never) ? await db.table<VersionedRow<object>, string>(kind).get(id) : kind === 'profile'
     ? await db.profile.get(id)
     : kind === 'umas'
       ? await db.umas.get(id)
@@ -596,7 +636,7 @@ export async function entityRow(kind: EntityKind, id: string): Promise<Versioned
 }
 
 export async function logRow(kind: LogKind, id: string): Promise<LogRow<object> | null> {
-  const row = kind === 'ledger'
+  const row = kind === 'farmOperations' || PUZZLE_LOG_KINDS.includes(kind as never) ? await db.table<LogRow<object>, string>(kind).get(id) : kind === 'ledger'
     ? await db.ledger.get(id)
     : kind === 'raceResults'
       ? await db.raceResults.get(id)

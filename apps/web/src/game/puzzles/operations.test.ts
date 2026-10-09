@@ -180,7 +180,8 @@ describe('additive Puzzle storage and snapshots', () => {
     const old = new Dexie(name)
     // Create exactly the old table/index set; it is all preserved by additive v28.
     const schema: Record<string, string> = {}
-    for (const t of current.tables) if (!t.name.startsWith('puzzle') && t.name !== 'constellationBank' && t.name !== 'pendingPuzzleOperations')
+    for (const t of current.tables) if (!t.name.startsWith('puzzle') && t.name !== 'constellationBank' && t.name !== 'pendingPuzzleOperations' &&
+      !['farmWorkers', 'farmRecipes', 'farmExtra', 'farmCutover', 'farmCutoverPages', 'farmOperations', 'farmPending', 'farmRecovery', 'farmPreferences'].includes(t.name))
       schema[t.name] = t.name === 'outbox' ? '++seq, [kind+id]' : 'id'
     current.close(); old.version(27).stores(schema); await old.open()
     for (const kind of Object.keys(schema)) await old.table(kind).add(kind === 'outbox' ? { kind: 'umas', id: 'invented-0', op: 'upsert', queuedAt: 1 } : { id: 'sentinel', value: kind })

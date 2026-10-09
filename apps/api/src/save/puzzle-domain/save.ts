@@ -2,6 +2,10 @@
 // Typed local-first save vocabulary and initialization (docs/technical/architecture.md).
 
 import { MAX_STARS } from './cards'
+import { FARM_ENTITY_KINDS, FARM_LOG_KINDS, FARM_SYNC_LIMITS, farmRowId, farmData } from './farm/kitchen/wire'
+import { parseFarmEntity, farmEntityIdMatches, parseFarmStoredEntity } from './farm/kitchen/records'
+import { parseFarmOperationBatch, parseFarmOperationLog, parseFarmOperationResponses, farmOperationReferences, farmLogIdMatches,
+  type FarmOperationV1, type FarmOperationResponse } from './farm/kitchen/operations'
 import { parseInspirationBank } from './inspiration-bank'
 import {
   badgeStateId,
@@ -31,7 +35,8 @@ import { EXP_TO_NEXT_TRAINING_LEVEL, fitsTrainingCurve, relevelLegacyTraining } 
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type DistanceCategory, type Grade, type StatKey, type Stats, type Strategy, type Surface } from './types'
 import { FARM_SCHEMA_VERSION } from './farm/constants'
 import { migrateFarmStateToCurrent } from './farm/legacy'
-import { parseFarmState, parseInventoryStackData, parseItemLedgerEntry, type FarmCropId } from './farm/types'
+import { parseFarmState, parseInventoryStackData, type FarmCropId } from './farm/types'
+import { parseItemLedgerEntry } from './inventory-ledger'
 import { farmCropById } from './farm/catalog'
 import { parseRpgBattleResult, parseRpgRunSave } from './rpg/campaign/run'
 import { migrateRpgOutfitSave, migrateRpgPresetSave } from './rpg/save'
@@ -420,9 +425,9 @@ export interface InitialSave {
   ledger: { id: string; data: LedgerEntry }[]
 }
 
-export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank', ...PUZZLE_ENTITY_KINDS] as const
+export const ENTITY_KINDS = ['profile', 'umas', 'cards', 'badges', 'farm', 'items', 'rpgOutfits', 'rpgPresets', 'rpgCheckpoints', 'inspirationBank', ...PUZZLE_ENTITY_KINDS, ...FARM_ENTITY_KINDS] as const
 export type EntityKind = (typeof ENTITY_KINDS)[number]
-export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts', ...PUZZLE_LOG_KINDS] as const
+export const LOG_KINDS = ['raceResults', 'ledger', 'flairEvents', 'itemLedger', 'rpgResults', 'rpgPromotions', 'rpgReceipts', ...PUZZLE_LOG_KINDS, ...FARM_LOG_KINDS] as const
 export type LogKind = (typeof LOG_KINDS)[number]
 export const MAX_SYNC_OPERATIONS = 400
 
@@ -462,6 +467,8 @@ export interface SyncRequest {
   appends: LogAppend[]
   puzzleOperations?: PuzzleOperationV1[]
   puzzleProtocolVersion?: 1
+  farmOperations?: FarmOperationV1[]
+  farmProtocolVersion?: 1
 }
 
 export interface SyncResponse {
@@ -470,6 +477,7 @@ export interface SyncResponse {
   appended: number
   serverTime: number
   puzzleOperations?: PuzzleOperationResponse[]
+  farmOperations?: FarmOperationResponse[]
 }
 
 /** RPG mutations are never placed on the ordinary sync outbox. */
@@ -2094,7 +2102,7 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
   if (kind === 'profile') return migratePlayerProfileToCurrent(value) as unknown as Record<string, unknown> | null
   if (kind === 'umas') return migrateUmaSaveToCurrent(value) as unknown as Record<string, unknown> | null
   if (kind === 'cards') return migrateCardSaveToCurrent(value) as unknown as Record<string, unknown> | null
-  if (kind === 'farm') return migrateFarmStateToCurrent(value) as unknown as Record<string, unknown> | null
+  if (kind === 'farm') return parseFarmEntity(kind, value) ?? migrateFarmStateToCurrent(value) as unknown as Record<string, unknown> | null
   // Class-era outfits and parties (D282): older shapes migrate on the way in.
   if (kind === 'rpgOutfits') return migrateRpgOutfitSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'rpgPresets') return migrateRpgPresetSave(value) as unknown as Record<string, unknown> | null
@@ -2102,12 +2110,13 @@ function parseStoredEntityData(kind: EntityKind, value: unknown): Record<string,
 }
 
 export function parseEntityData(kind: EntityKind, value: unknown): Record<string, unknown> | null {
+  if (FARM_ENTITY_KINDS.includes(kind as never)) return parseFarmEntity(kind, value)
   if (PUZZLE_ENTITY_KINDS.includes(kind as never)) return parsePuzzleEntity(kind, value)
   if (kind === 'profile') return parsePlayerProfile(value) as unknown as Record<string, unknown> | null
   if (kind === 'umas') return parseUmaSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'cards') return parseCardSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'badges') return parseBadgeState(value) as unknown as Record<string, unknown> | null
-  if (kind === 'farm') return parseFarmState(value) as unknown as Record<string, unknown> | null
+  if (kind === 'farm') return parseFarmEntity(kind, value) ?? parseFarmState(value) as unknown as Record<string, unknown> | null
   if (kind === 'items') return parseInventoryStackData(value) as unknown as Record<string, unknown> | null
   if (kind === 'inspirationBank') return parseInspirationBank(value) as unknown as Record<string, unknown> | null
   if (kind === 'rpgOutfits') return migrateRpgOutfitSave(value) as unknown as Record<string, unknown> | null
@@ -2119,6 +2128,7 @@ export function parseEntityData(kind: EntityKind, value: unknown): Record<string
 }
 
 export function parseLogData(kind: LogKind, value: unknown): Record<string, unknown> | null {
+  if (kind === 'farmOperations') { const parsed = parseFarmOperationLog(value); return parsed ? farmData(parsed) : null }
   if (kind === 'puzzleResults') return parsePuzzleResultSave(value) as unknown as Record<string, unknown> | null
   if (kind === 'puzzleOperations') return parsePuzzleOperationReceipt(value) as unknown as Record<string, unknown> | null
   if (kind === 'ledger') return parseLedgerEntry(value) as unknown as Record<string, unknown> | null
@@ -2140,13 +2150,23 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
   if (!isObject(body)) return 'body must be an object'
   const upserts = body.upserts ?? []
   const appends = body.appends ?? []
+  const farmOperations = body.farmOperations === undefined ? undefined : parseFarmOperationBatch(body.farmOperations)
+  if (body.farmOperations !== undefined && (!farmOperations || body.farmProtocolVersion !== 1)) return 'invalid Farm operations or protocol'
+  if (body.farmProtocolVersion !== undefined && body.farmProtocolVersion !== 1) return 'unsupported Farm protocol'
   const puzzleOperations = body.puzzleOperations === undefined ? undefined : parsePuzzleOperationBatch(body.puzzleOperations)
   if (body.puzzleOperations !== undefined && !puzzleOperations) return 'invalid Puzzle operations or transport bounds'
   if (body.puzzleProtocolVersion !== undefined && body.puzzleProtocolVersion !== 1) return 'unsupported Puzzle protocol'
   if (!Array.isArray(upserts) || !Array.isArray(appends)) return 'upserts and appends must be arrays'
-  if (upserts.length + appends.length + (puzzleOperations?.length ?? 0) > MAX_SYNC_OPERATIONS) return `at most ${MAX_SYNC_OPERATIONS} operations per sync`
+  if (farmOperations?.length && puzzleOperations?.length) return 'Farm and Puzzle operations use separate batches'
+  if (upserts.length + appends.length + (puzzleOperations?.length ?? 0) + (farmOperations?.length ?? 0) > MAX_SYNC_OPERATIONS) return `at most ${MAX_SYNC_OPERATIONS} operations per sync`
+  if (farmOperations?.length) {
+    const refs = new Set(['farmCutover/main', 'constellationBank/main', ...upserts.map(u => isObject(u) ? `${String(u.kind)}/${String(u.id)}` : ''),
+      ...appends.map(a => isObject(a) ? `${String(a.kind)}/${String(a.id)}` : '')])
+    for (const op of farmOperations) { const r = farmOperationReferences(op); r.entities.forEach(k => refs.add(k)); r.logs.forEach(k => refs.add(k)) }
+    if (refs.size > FARM_SYNC_LIMITS.documents || new TextEncoder().encode(JSON.stringify(body)).length > FARM_SYNC_LIMITS.bytes) return 'Farm transport bounds exceeded'
+  }
   if (puzzleOperations?.length) {
-    const refs = new Set(['constellationBank/main', ...upserts.map(u => isObject(u) ? `${String(u.kind)}/${String(u.id)}` : ''),
+    const refs = new Set(['farmCutover/main', 'constellationBank/main', ...upserts.map(u => isObject(u) ? `${String(u.kind)}/${String(u.id)}` : ''),
       ...appends.map(a => isObject(a) ? `${String(a.kind)}/${String(a.id)}` : '')])
     for (const op of puzzleOperations) { const r = puzzleOperationReferences(op); r.entities.forEach(k => refs.add(k)); r.logs.forEach(k => refs.add(k)) }
     if (refs.size > PUZZLE_SYNC_LIMITS.documents) return 'Puzzle transaction references too many documents'
@@ -2157,6 +2177,8 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isObject(value)) return 'upsert must be an object'
     if (!ENTITY_KINDS.includes(value.kind as EntityKind)) return `unknown entity kind ${String(value.kind)}`
     const kind = value.kind as EntityKind
+    if (FARM_ENTITY_KINDS.includes(kind as never) || kind === 'farm' && isObject(value.data) && value.data.schemaVersion === 3 ||
+      kind === 'items' && typeof value.id === 'string' && value.id.startsWith('farm:')) return 'Farm projections require semantic operations'
     if (PUZZLE_ENTITY_KINDS.includes(kind as never)) return 'Puzzle projections require semantic operations'
     if (kind === 'items' && typeof value.id === 'string' && value.id.startsWith('constellation:')) return 'Puzzle inventory requires semantic operations'
     if (kind.startsWith('rpg') || kind === 'inspirationBank') return 'Server-owned rows require their grouped command endpoint'
@@ -2179,6 +2201,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     if (!isObject(value)) return 'append must be an object'
     if (!LOG_KINDS.includes(value.kind as LogKind)) return `unknown log kind ${String(value.kind)}`
     const kind = value.kind as LogKind
+    if (kind === 'farmOperations' || kind === 'itemLedger' && isObject(value.data) && value.data.reason === 'farm-command') return 'Farm evidence requires semantic operations'
     if (PUZZLE_LOG_KINDS.includes(kind as never) || kind === 'itemLedger' && isObject(value.data) && value.data.reason === 'puzzle-material') return 'Puzzle evidence requires semantic operations'
     if (kind.startsWith('rpg')) return 'RPG logs require the grouped command endpoint'
     if (!isId(value.id)) return 'invalid log id'
@@ -2200,15 +2223,18 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
     return 'duplicate operation id'
   }
   return { upserts: parsedUpserts, appends: parsedAppends, ...(puzzleOperations ? { puzzleOperations } : {}),
-    ...(body.puzzleProtocolVersion === 1 ? { puzzleProtocolVersion: 1 as const } : {}) }
+    ...(body.puzzleProtocolVersion === 1 ? { puzzleProtocolVersion: 1 as const } : {}), ...(farmOperations ? { farmOperations } : {}),
+    ...(body.farmProtocolVersion === 1 ? { farmProtocolVersion: 1 as const } : {}) }
 }
 
 function parseEntityRecord(value: unknown): EntityRecord | null {
-  if (!isObject(value) || !ENTITY_KINDS.includes(value.kind as EntityKind) || !isId(value.id)) return null
+  if (!isObject(value) || !ENTITY_KINDS.includes(value.kind as EntityKind) || typeof value.id !== 'string' || !(value.kind === 'farmExtra' ? farmRowId(value.id) : isId(value.id))) return null
   const kind = value.kind as EntityKind
   if (!isPositiveInt(value.version) || typeof value.deleted !== 'boolean' || !isTimestamp(value.updatedAt)) return null
   const data = parseStoredEntityData(kind, value.data)
+  if (data && (FARM_ENTITY_KINDS.includes(kind as never) || kind === 'farm' && data.schemaVersion === 3) && !parseFarmStoredEntity(value)) return null
   if (data && PUZZLE_ENTITY_KINDS.includes(kind as never) && !puzzleEntityIdMatches(kind, value.id, data)) return null
+  if (data && (FARM_ENTITY_KINDS.includes(kind as never) || kind === 'farm' && data.schemaVersion === 3) && !farmEntityIdMatches(kind, value.id, data)) return null
   if (!data) return null
   if (((kind === 'profile' || kind === 'farm' || kind === 'inspirationBank') && value.id !== 'main') ||
     ((kind === 'umas' || kind === 'cards') && data.templateId !== value.id) ||
@@ -2224,6 +2250,7 @@ function parseLogRecord(value: unknown): LogRecord | null {
   if (!isObject(value) || !LOG_KINDS.includes(value.kind as LogKind) || !isId(value.id) || !isTimestamp(value.createdAt)) return null
   const kind = value.kind as LogKind
   const data = parseLogData(kind, value.data)
+  if (kind === 'farmOperations' && data) { const parsed = parseFarmOperationLog(data); if (!parsed || !farmLogIdMatches(value.id, parsed) || value.createdAt !== parsed.createdAt) return null }
   if (kind === 'puzzleResults' && data && (value.id !== data.battleId || value.createdAt !== data.createdAt)) return null
   if (kind === 'puzzleOperations' && data && (value.id !== (data.operation as PuzzleOperationV1).operationId || value.createdAt !== data.createdAt)) return null
   if (kind === 'raceResults' && data && (value.id !== `race:${String(data.umaId)}:${String(data.sequence)}` || value.createdAt !== data.createdAt)) return null
@@ -2259,9 +2286,11 @@ function assertSupportedProfileRecords(records: unknown): void {
       }
     }
     if (isObject(record) && record.kind === 'farm' && isObject(record.data) &&
-      typeof record.data.schemaVersion === 'number' && record.data.schemaVersion > FARM_SCHEMA_VERSION) {
+      typeof record.data.schemaVersion === 'number' && record.data.schemaVersion > 3) {
       throw new Error(`App update required for Farm schema ${String(record.data.schemaVersion)}`)
     }
+    if (isObject(record) && FARM_ENTITY_KINDS.includes(record.kind as never) && isObject(record.data) && record.data.schemaVersion !== 1)
+      throw new Error(`App update required for Farm row schema ${String(record.data.schemaVersion)}; preserve it for recovery`)
     if (isObject(record) && typeof record.kind === 'string' && record.kind.startsWith('rpg') &&
       isObject(record.data) && typeof record.data.schemaVersion === 'number' && record.data.schemaVersion > RPG_SAVE_SCHEMA_VERSION) {
       throw new Error(`App update required for RPG schema ${String(record.data.schemaVersion)}`)
@@ -2291,9 +2320,12 @@ export function parseSyncResponse(value: unknown): SyncResponse | null {
   const conflicts = value.conflicts.map(parseEntityRecord)
   if (applied.some((item) => item === null) || conflicts.some((item) => item === null)) return null
   const puzzles = value.puzzleOperations === undefined ? undefined : parsePuzzleOperationResponses(value.puzzleOperations)
+  const farm = value.farmOperations === undefined ? undefined : parseFarmOperationResponses(value.farmOperations)
+  if (value.farmOperations !== undefined && !farm) return null
+  if (farm && farm.some(response => response.authoritative.some(row => row.record && !parseEntityRecord(row.record)))) return null
   if (value.puzzleOperations !== undefined && !puzzles) return null
   return { applied: applied as SyncResponse['applied'], conflicts: conflicts as EntityRecord[], appended: value.appended, serverTime: value.serverTime,
-    ...(puzzles ? { puzzleOperations: puzzles } : {}) }
+    ...(puzzles ? { puzzleOperations: puzzles } : {}), ...(farm ? { farmOperations: farm } : {}) }
 }
 
 export function parseSyncResponseOrThrow(value: unknown): SyncResponse {

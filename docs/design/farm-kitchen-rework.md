@@ -1,12 +1,13 @@
 # Uma Farm — production and cooking rework
 
-> **Implementation definition · 2026-10-09 · pure rules complete, not live.** T118 implements and pins the
+> **Implementation definition · 2026-10-09 · pure rules and dormant sync complete, not live.** T118 implements and pins the
 > original catalogue, production/map rules and deterministic balance witnesses (D304). The owner authorized
 > [M031](../tasks/M031-farm-kitchen-rework.md). This is the planned replacement for
 > [Stable Farm](farm.md) and its [Extra Stats grid](constellations.md#extra-stats), not a description of production.
 > [The implementation contract](../technical/farm-kitchen-implementation.md) and
 > [measured balance record](../research/farm-kitchen-balance.md) carry the implemented pure layer.
-> T119–T124 still cover persistence through production release. No live Farm rule or owner save has changed.
+> T119's additive persistence/sync is implemented with the existing trusted-device clock; T120–T124 still
+> cover protected cutover through production release. No live Farm rule or owner save has changed.
 
 > **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
 > real-world nutrition rules or special Guts tax. The earlier 60-point/node proposal is replaced by a smaller
@@ -690,6 +691,13 @@ but derived XP from old evidence must not resurrect reset progress. New ingredie
 independent last-write-wins stock/Farm writes. The implementation needs an explicit **versioned Farm command
 lane**, integrated with existing `/api/sync`, before enabling input-consuming jobs in production.
 
+T119/D306 implements that lane additively with both Farm application capabilities false: independent Farm3,
+worker/recipe/map1 records, immutable operation/job/node evidence, additive Dexie32 and a separate pending
+queue. It does not execute the reset, install a new production host, alter stat derivation or expose new screens.
+The [technical contract](../technical/farm-kitchen-implementation.md#5-api-mirror-protection-and-transport)
+records strict bounds, exact read sets and generated worst-case witnesses. As the owner requested, it keeps
+today's trusted device time for offline job deadlines; server timestamps record acknowledgement, not a new start.
+
 Command responsibilities:
 
 | Command | All-or-nothing effects |
@@ -774,7 +782,7 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 [M031](../tasks/M031-farm-kitchen-rework.md) sequences seven individually deliverable tasks, one PR/merge at a time:
 
 1. T118 **complete**: [pure original catalogue/progression and recipe/map contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), with [measured balance proofs](../research/farm-kitchen-balance.md).
-2. [T119](../tasks/T119-farm-kitchen-save-sync.md): additive records, semantic commands, strict API mirror and bounded atomic sync.
+2. T119 **complete**: [additive records, semantic commands, strict API mirror and bounded atomic sync](../technical/farm-kitchen-implementation.md#3-records-and-ownership), with [synthetic verification](../research/farm-kitchen-sync.md).
 3. [T120](../tasks/T120-farm-kitchen-cutover.md): dormant protected reset, private backup, legacy claim and second-device rehearsals.
 4. [T121](../tasks/T121-farm-kitchen-host.md): real save-backed host, canonical/pending projections, runtime and recovery.
 5. [T122](../tasks/T122-farm-kitchen-screens.md): five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy.

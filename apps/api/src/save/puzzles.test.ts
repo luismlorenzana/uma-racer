@@ -161,9 +161,9 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} atom
 
 describe('standalone API packaging and parser parity', () => {
   it('checks the generated dependency closure byte-for-byte; the production build runs only API files', () => {
-    // The 70-module TypeScript AST subprocess shares CI CPUs with five other suites; bound it without weakening parity.
+    // The shared save parser now includes additive Farm transport. Bound the AST subprocess without weakening parity.
     expect(execFileSync(process.execPath, ['scripts/sync-puzzle-adapter.mjs', '--check'],
-      { cwd: process.cwd(), encoding: 'utf8', timeout: 20000 })).toMatch(/verified: 70/)
+      { cwd: process.cwd(), encoding: 'utf8', timeout: 20000 })).toMatch(/verified: 83/)
   }, 30000)
   it('agrees with domain on every synthetic entity/log and malformed operations', async () => {
     const pure: { parsePuzzleOperation: typeof parsePuzzleOperation; parsePuzzleEntity: typeof parsePuzzleEntity; parsePuzzleOperationReceipt: typeof parsePuzzleOperationReceipt } = await import(`${sourcePath}/operations.ts`)

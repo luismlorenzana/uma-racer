@@ -20,8 +20,8 @@ describe('Farm save vocabulary', () => {
 
   it('reports a newer Farm schema as an app-update error', () => {
     expect(() => parseSaveSnapshotOrThrow({ entities: [{
-      kind: 'farm', id: 'main', version: 1, data: { ...createInitialFarmState(), schemaVersion: 3 }, deleted: false, updatedAt: 1,
-    }], logs: [], serverTime: 1 })).toThrow('App update required for Farm schema 3')
+      kind: 'farm', id: 'main', version: 1, data: { ...createInitialFarmState(), schemaVersion: 4 }, deleted: false, updatedAt: 1,
+    }], logs: [], serverTime: 1 })).toThrow('App update required for Farm schema 4')
   })
 
   it('reads a v1 Farm from the server as v2 (D234)', () => {

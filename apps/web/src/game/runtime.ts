@@ -1173,7 +1173,22 @@ export class GameRuntime {
     this.flushing = true
     const generation = this.generation
     try {
-      if (await db.pendingPuzzleOperations.where('status').equals('pending').count()) {
+      const firstSemantic = await db.outbox.orderBy('seq').first()
+      if (firstSemantic?.op === 'farm') {
+        const { FarmOperationCoordinator } = await import('./farm/kitchen/operations')
+        const coordinator = new FarmOperationCoordinator(db, () => this.schedule())
+        const operations = await coordinator.nextBatch()
+        if (!operations.length) throw new Error('Farm queue marker has no pending intent; preserve for recovery')
+        setSyncState({ status: 'syncing', error: null })
+        const response = parseSyncResponseOrThrow(await saveApi.sync({ upserts: [], appends: [], farmProtocolVersion: 1, farmOperations: operations }))
+        if (generation !== this.generation) return
+        await coordinator.adopt(operations, response.farmOperations, response.serverTime)
+        const pending = await db.outbox.count(), rejected = await db.farmPending.where('status').anyOf(['rejected', 'blocked']).count()
+        setSyncState({ pending, status: rejected ? 'error' : pending ? 'pending' : 'idle', error: rejected ? 'A Farm input needs recovery. Its original choices are saved; no rejected reward was applied.' : null })
+        if (pending) this.schedule(0)
+        return
+      }
+      if (firstSemantic?.op === 'puzzle' && await db.pendingPuzzleOperations.where('status').equals('pending').count()) {
         const { PuzzleOperationCoordinator } = await import('./puzzles/operations')
         const coordinator = new PuzzleOperationCoordinator(db, '', () => this.schedule())
         const operations = await coordinator.nextBatch()
@@ -1195,7 +1210,7 @@ export class GameRuntime {
           return
         }
       }
-      const batch = await db.outbox.orderBy('seq').limit(MAX_SYNC_OPERATIONS).toArray()
+      const batch = await db.outbox.orderBy('seq').filter(row => row.op === 'upsert' || row.op === 'append').limit(MAX_SYNC_OPERATIONS).toArray()
       if (batch.length === 0) {
         if (generation !== this.generation) return
         if (PUZZLES_RELEASE_ENABLED) {
@@ -1234,7 +1249,7 @@ export class GameRuntime {
         return
       }
       setSyncState({ status: 'syncing', error: null })
-      const request: SyncRequest = { upserts: [], appends: [], puzzleProtocolVersion: 1 }
+      const request: SyncRequest = { upserts: [], appends: [], puzzleProtocolVersion: 1, farmProtocolVersion: 1 }
       const { canonicalPuzzleUmaForSync, puzzleOrdinaryProtected, puzzleTransactionTables, PuzzleOperationCoordinator, adoptPuzzleUmaVersion } = await import('./puzzles/operations')
       for (const item of batch) {
         if (

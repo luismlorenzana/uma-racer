@@ -1,0 +1,319 @@
+// Versioned semantic transport, exact locks and immutable receipts (implementation §§4–5).
+import { SCENARIOS } from '../../scenarios'
+import { DISTANCE_CATEGORIES, type DistanceCategory } from '../../types'
+import { FARM_KITCHEN_CATALOGUE, farmMealId } from './catalogue'
+import { farmExtraNode } from './extra-map'
+import { farmIngredientBlock } from './progression'
+import { farmWorkerProgress } from './progression'
+import { resolveFarmInputs } from './inputs'
+import { isFarmGeneration, parseFarmKitchenJob } from './parsers'
+import { farmExtraRowId, farmLegacyPageId, parseFarmStoredEntity } from './records'
+import { parseFarmCommandMovement, farmMovementId, type FarmMovementRole } from './movement'
+import { farmExactKeys, farmRecord, farmSafeId, farmSafeInteger, isFarmStationId, FARM_STATION_IDS, FARM_KITCHEN_ENERGY_ID,
+  FARM_KITCHEN_ENERGY_GRANT, FARM_KITCHEN_ENERGY_MS, type FarmStationId } from './rules'
+import { farmBytes, farmCanonical, farmData, farmDigest, farmExpectedKind, farmHash, farmKey, farmPlain, farmRowId, FARM_SYNC_LIMITS,
+  type FarmStoredEntity, type FarmStoredLog } from './wire'
+import type { FarmClaimReceipt, FarmKitchenJob } from './types'
+
+export type FarmPayloadV1 =
+  | { kind: 'assign'; stationId: FarmStationId; outfitId: string }
+  | { kind: 'remove'; stationId: FarmStationId }
+  | { kind: 'start'; stationId: FarmStationId; outfitId: string; recipeId: string; quantity: number; choices: Record<string, string> }
+  | { kind: 'claim'; stationId: FarmStationId; outfitId: string; jobId: string; recipeId: string }
+  | { kind: 'energy'; stationId: FarmStationId; outfitId: string; jobId: string }
+  | { kind: 'buy-node'; outfitId: string; scenarioId: string; distance: DistanceCategory; nodeId: string; autoactivate: boolean }
+  | { kind: 'set-active'; outfitId: string; scenarioId: string; distance: DistanceCategory; nodeIds: string[] }
+  | { kind: 'grant-energy' }
+  | { kind: 'claim-legacy'; stationId: FarmStationId; outfitId: string; cycleId: string; cropId: string }
+export interface FarmExpected { kind: string; id: string; version: number }
+export interface FarmOperationV1 { schemaVersion: 1; operationId: string; generation: string; now: number; payloadDigest: string;
+  dependencies: string[]; expected: FarmExpected[]; payload: FarmPayloadV1 }
+export interface FarmChange { kind: string; id: string; before: FarmStoredEntity | null; after: FarmStoredEntity }
+export type FarmOperationResult =
+  | { kind: 'assign' | 'remove'; stationId: FarmStationId; outfitId: string | null }
+  | { kind: 'start'; job: FarmKitchenJob }
+  | ({ kind: 'claim' } & FarmClaimReceipt)
+  | { kind: 'energy'; jobId: string; usedMs: number; wastedMs: number; readyAt: number }
+  | { kind: 'buy-node'; purchaseId: string; nodeId: string; nodeName: string; scenarioId: string; distance: DistanceCategory; activated: boolean }
+  | { kind: 'set-active'; scenarioId: string; distance: DistanceCategory; nodeIds: string[] }
+  | { kind: 'grant-energy'; amount: 50 }
+  | { kind: 'claim-legacy'; cycleId: string; outfitId: string; output: { itemId: string; amount: 1 }; expAward: 0 }
+export interface FarmOperationReceiptV1 { schemaVersion: 1; type: 'operation'; operation: FarmOperationV1; createdAt: number;
+  changes: FarmChange[]; logs: FarmStoredLog[]; result: FarmOperationResult; reusedTarget: string | null }
+export interface FarmTargetGuardV1 { schemaVersion: 1; type: 'terminal' | 'purchase'; generation: string; targetId: string;
+  operationId: string; createdAt: number; result: FarmOperationResult }
+export interface FarmAuthoritative { kind: string; id: string; record: FarmStoredEntity | null }
+export interface FarmOperationResponse { operationId: string; status: 'applied' | 'duplicate' | 'rejected' | 'blocked';
+  receipt: FarmOperationReceiptV1 | null; reason: string | null; authoritative: FarmAuthoritative[] }
+export const farmTargetGuardId = (generation: string, type: 'terminal' | 'purchase', targetId: string): string =>
+  `ftg:${type}:${farmHash([generation, targetId])}`
+export const farmPurchaseIdentity = (generation: string, outfitId: string, block: number, nodeId: string): string =>
+  `farm-buy:${generation}:${outfitId}:b${block}:${nodeId}`
+export const farmOperationDigest = (value: Omit<FarmOperationV1, 'payloadDigest'>): string => farmHash(value)
+export function createFarmOperation(value: Omit<FarmOperationV1, 'payloadDigest'>): FarmOperationV1 {
+  const { schemaVersion, operationId, generation, now, dependencies, expected, payload } = value
+  const body = { schemaVersion, operationId, generation, now, dependencies, expected, payload }
+  const operation = parseFarmOperation({ ...body, payloadDigest: farmOperationDigest(body) })
+  if (!operation) throw new Error('Invalid Farm operation')
+  return operation
+}
+export function parseFarmPayload(value: unknown): FarmPayloadV1 | null {
+  if (!farmRecord(value) || !farmPlain(value)) return null
+  const fields: Record<string, string[]> = { assign: ['stationId', 'outfitId'], remove: ['stationId'],
+    start: ['stationId', 'outfitId', 'recipeId', 'quantity', 'choices'], claim: ['stationId', 'outfitId', 'jobId', 'recipeId'],
+    energy: ['stationId', 'outfitId', 'jobId'], 'buy-node': ['outfitId', 'scenarioId', 'distance', 'nodeId', 'autoactivate'],
+    'set-active': ['outfitId', 'scenarioId', 'distance', 'nodeIds'], 'grant-energy': [],
+    'claim-legacy': ['stationId', 'outfitId', 'cycleId', 'cropId'] }
+  if (typeof value.kind !== 'string' || !Object.hasOwn(fields, value.kind) || !farmExactKeys(value, ['kind', ...fields[value.kind]!])) return null
+  if (Object.hasOwn(value, 'stationId') && !isFarmStationId(value.stationId) || Object.hasOwn(value, 'outfitId') && !farmSafeId(value.outfitId)) return null
+  if (value.kind === 'start') {
+    const recipe = typeof value.recipeId === 'string' && FARM_KITCHEN_CATALOGUE.recipesById.get(value.recipeId)
+    if (!recipe || !farmSafeInteger(value.quantity, 1) || value.quantity > recipe.maxQuantity || !farmRecord(value.choices) ||
+      !farmExactKeys(value.choices, recipe.inputs.map(s => s.id)) || Object.values(value.choices).some(id => !farmSafeId(id))) return null
+    if (!resolveFarmInputs(FARM_KITCHEN_CATALOGUE, recipe.id, value.quantity, value.choices as Record<string, string>).ok) return null
+  } else if (value.kind === 'claim' && (typeof value.recipeId !== 'string' || !FARM_KITCHEN_CATALOGUE.recipesById.has(value.recipeId))) return null
+  if ((value.kind === 'claim' || value.kind === 'energy') && !farmSafeId(value.jobId)) return null
+  if (value.kind === 'buy-node' || value.kind === 'set-active') {
+    if (!SCENARIOS.some(s => s.id === value.scenarioId) || !DISTANCE_CATEGORIES.includes(value.distance as DistanceCategory)) return null
+    if (value.kind === 'buy-node' ? typeof value.nodeId !== 'string' || !farmExtraNode(value.nodeId) || typeof value.autoactivate !== 'boolean'
+      : !Array.isArray(value.nodeIds) || value.nodeIds.length > 65 || new Set(value.nodeIds).size !== value.nodeIds.length ||
+        value.nodeIds.some(id => typeof id !== 'string' || !farmExtraNode(id))) return null
+  }
+  if (value.kind === 'claim-legacy' && (!farmSafeId(value.cycleId) || typeof value.cropId !== 'string' ||
+    !/^produce:t([1-9]|1[0-4]):(speed|stamina|power|guts|wit)$/.test(value.cropId))) return null
+  return structuredClone(value) as unknown as FarmPayloadV1
+}
+export function parseFarmOperation(value: unknown): FarmOperationV1 | null {
+  try {
+    if (!farmRecord(value) || !farmExactKeys(value, ['schemaVersion', 'operationId', 'generation', 'now', 'payloadDigest', 'dependencies', 'expected', 'payload']) ||
+      value.schemaVersion !== 1 || !farmSafeId(value.operationId) || !isFarmGeneration(value.generation) || !farmSafeInteger(value.now) ||
+      !farmDigest(value.payloadDigest) || !Array.isArray(value.dependencies) || value.dependencies.length > 16 || !value.dependencies.every(farmSafeId) ||
+      value.dependencies.includes(value.operationId) || new Set(value.dependencies).size !== value.dependencies.length ||
+      !Array.isArray(value.expected) || value.expected.length > FARM_SYNC_LIMITS.documents || !farmPlain(value) || farmBytes(value) > FARM_SYNC_LIMITS.bytes) return null
+    for (const e of value.expected) if (!farmRecord(e) || !farmExactKeys(e, ['kind', 'id', 'version']) || !farmExpectedKind(e.kind) ||
+      !farmRowId(e.id) || !farmSafeInteger(e.version)) return null
+    if (new Set((value.expected as FarmExpected[]).map(farmKey)).size !== value.expected.length) return null
+    const payload = parseFarmPayload(value.payload)
+    if (!payload) return null
+    const body = { schemaVersion: 1 as const, operationId: value.operationId, generation: value.generation, now: value.now,
+      dependencies: [...value.dependencies] as string[], expected: structuredClone(value.expected) as FarmExpected[], payload }
+    return farmOperationDigest(body) === value.payloadDigest ? { ...body, payloadDigest: value.payloadDigest } : null
+  } catch { return null }
+}
+/** Static exact set. Expected revisions cannot expand authority to arbitrary other documents. */
+export function farmOperationReferences(operation: FarmOperationV1): { entities: string[]; logs: string[] } {
+  const entities = new Set(['farmCutover/main', 'constellationBank/main']), logs = new Set([`farmOperations/${operation.operationId}`,
+    ...operation.dependencies.map(id => `farmOperations/${id}`)])
+  const p = operation.payload
+  const item = (id: string, role: FarmMovementRole) => { entities.add(`items/${id}`); logs.add(`itemLedger/${farmMovementId(operation.operationId, id, role)}`) }
+  const worker = (id: string) => { entities.add(`umas/${id}`); entities.add(`farmWorkers/${id}`) }
+  if ('stationId' in p) { entities.add('farm/main'); entities.add(`farmCutoverPages/${farmLegacyPageId(operation.generation)}`) }
+  if ('outfitId' in p && p.kind !== 'buy-node' && p.kind !== 'set-active') worker(p.outfitId)
+  if (p.kind === 'start') {
+    const recipe = FARM_KITCHEN_CATALOGUE.recipesById.get(p.recipeId)!
+    entities.add(`farmRecipes/b${recipe.block}`); Object.values(p.choices).forEach(id => item(id, 'input'))
+  } else if (p.kind === 'claim') {
+    FARM_KITCHEN_CATALOGUE.blocks.forEach(block => entities.add(`farmRecipes/b${block}`)); item(p.recipeId, 'output')
+    logs.add(`farmOperations/${farmTargetGuardId(operation.generation, 'terminal', p.jobId)}`)
+  } else if (p.kind === 'energy') item(FARM_KITCHEN_ENERGY_ID, 'energy')
+  else if (p.kind === 'buy-node' || p.kind === 'set-active') {
+    const block = farmIngredientBlock(SCENARIOS.find(s => s.id === p.scenarioId)!.tier)
+    entities.add(`umas/${p.outfitId}`); entities.add(`farmExtra/${farmExtraRowId(p.outfitId, block)}`)
+    if (p.kind === 'buy-node') {
+      item(farmMealId(block, farmExtraNode(p.nodeId)!.signature), 'purchase')
+      logs.add(`farmOperations/${farmTargetGuardId(operation.generation, 'purchase', farmPurchaseIdentity(operation.generation, p.outfitId, block, p.nodeId))}`)
+    }
+  } else if (p.kind === 'grant-energy') item(FARM_KITCHEN_ENERGY_ID, 'grant')
+  else if (p.kind === 'claim-legacy') {
+    item(p.cropId, 'legacy'); logs.add(`itemLedger/${p.cycleId}`)
+    logs.add(`farmOperations/${farmTargetGuardId(operation.generation, 'terminal', p.cycleId)}`)
+    logs.add(`farmOperations/${farmTargetGuardId(operation.generation, 'terminal', `station:${p.stationId}`)}`)
+  }
+  // Assign/remove/start must know if a frozen legacy job is still unpaid, without reading lifetime history.
+  if (p.kind === 'assign') FARM_STATION_IDS.filter(s => /^(garden|orchard|barn)-/.test(s)).forEach(s =>
+    logs.add(`farmOperations/${farmTargetGuardId(operation.generation, 'terminal', `station:${s}`)}`))
+  else if (p.kind === 'remove' || p.kind === 'start' || p.kind === 'claim' || p.kind === 'energy')
+    logs.add(`farmOperations/${farmTargetGuardId(operation.generation, 'terminal', `station:${p.stationId}`)}`)
+  return { entities: [...entities].sort(), logs: [...logs].sort() }
+}
+export function parseFarmOperationBatch(value: unknown): FarmOperationV1[] | null {
+  try {
+    if (!Array.isArray(value) || value.length > FARM_SYNC_LIMITS.groups || farmBytes(value) > FARM_SYNC_LIMITS.bytes) return null
+    const operations = value.map(parseFarmOperation)
+    if (operations.some(o => !o) || new Set(operations.map(o => o!.operationId)).size !== operations.length) return null
+    const refs = new Set(operations.flatMap(o => { const r = farmOperationReferences(o!); return [...r.entities, ...r.logs] }))
+    return refs.size <= FARM_SYNC_LIMITS.documents ? operations as FarmOperationV1[] : null
+  } catch { return null }
+}
+export function partitionFarmOperations(operations: readonly FarmOperationV1[]): FarmOperationV1[][] {
+  const result: FarmOperationV1[][] = []; let batch: FarmOperationV1[] = []
+  for (const op of operations) {
+    if (!parseFarmOperationBatch([op])) throw new Error('A single Farm operation exceeds transport bounds')
+    if (!parseFarmOperationBatch([...batch, op])) { result.push(batch); batch = [] }
+    batch.push(op)
+  }
+  if (batch.length) result.push(batch)
+  return result
+}
+function parseResult(value: unknown, payload?: FarmPayloadV1): FarmOperationResult | null {
+  if (!farmRecord(value) || !farmPlain(value) || payload && value.kind !== payload.kind) return null
+  const fields: Record<string, string[]> = { assign: ['stationId', 'outfitId'], remove: ['stationId', 'outfitId'], start: ['job'],
+    claim: ['jobId', 'outfitId', 'output', 'expAward', 'beforeLevel', 'afterLevel', 'levelsCrossed', 'milestones', 'firstPrepared'],
+    energy: ['jobId', 'usedMs', 'wastedMs', 'readyAt'], 'buy-node': ['purchaseId', 'nodeId', 'nodeName', 'scenarioId', 'distance', 'activated'],
+    'set-active': ['scenarioId', 'distance', 'nodeIds'], 'grant-energy': ['amount'], 'claim-legacy': ['cycleId', 'outfitId', 'output', 'expAward'] }
+  if (typeof value.kind !== 'string' || !Object.hasOwn(fields, value.kind) || !farmExactKeys(value, ['kind', ...fields[value.kind]!])) return null
+  if (value.kind === 'assign' || value.kind === 'remove') {
+    if (!isFarmStationId(value.stationId) || !(value.outfitId === null || farmSafeId(value.outfitId))) return null
+  } else if (value.kind === 'start') { if (!parseFarmKitchenJob(value.job)) return null
+  } else if (value.kind === 'claim') {
+    if (!farmSafeId(value.jobId) || !farmSafeId(value.outfitId) || !farmRecord(value.output) || !farmExactKeys(value.output, ['itemId', 'amount']) ||
+      typeof value.output.itemId !== 'string' || !FARM_KITCHEN_CATALOGUE.foodsById.has(value.output.itemId) || !farmSafeInteger(value.output.amount, 1) ||
+      value.expAward !== 12 || !farmSafeInteger(value.beforeLevel, 1) || !farmSafeInteger(value.afterLevel, 1) ||
+      value.afterLevel - value.beforeLevel > 1 || value.afterLevel < value.beforeLevel || !Array.isArray(value.levelsCrossed) ||
+      farmCanonical(value.levelsCrossed) !== farmCanonical(Array.from({ length: value.afterLevel - value.beforeLevel }, (_, i) => value.beforeLevel as number + i + 1)) ||
+      !Array.isArray(value.milestones) || value.milestones.length > 2 * FARM_KITCHEN_CATALOGUE.blocks.length ||
+      value.milestones.some(m => !farmRecord(m) || !farmExactKeys(m, ['block', 'kind']) || !FARM_KITCHEN_CATALOGUE.blocks.includes(Number(m.block)) || !['processing', 'cooking'].includes(String(m.kind))) ||
+      new Set(value.milestones.map(m => farmCanonical(m))).size !== value.milestones.length || !Array.isArray(value.firstPrepared) || value.firstPrepared.length > 1 ||
+      value.firstPrepared.some(id => typeof id !== 'string' || FARM_KITCHEN_CATALOGUE.recipesById.get(id)?.kind !== 'cooking')) return null
+  } else if (value.kind === 'energy') {
+    if (!farmSafeId(value.jobId) || !farmSafeInteger(value.usedMs, 1) || !farmSafeInteger(value.wastedMs) ||
+      value.usedMs + value.wastedMs !== FARM_KITCHEN_ENERGY_MS || !farmSafeInteger(value.readyAt)) return null
+  } else if (value.kind === 'buy-node') {
+    const node = typeof value.nodeId === 'string' && farmExtraNode(value.nodeId)
+    if (!node || value.nodeName !== node.name || typeof value.purchaseId !== 'string' || value.purchaseId.length > 240 ||
+      !SCENARIOS.some(s => s.id === value.scenarioId) || !DISTANCE_CATEGORIES.includes(value.distance as DistanceCategory) || typeof value.activated !== 'boolean') return null
+  } else if (value.kind === 'set-active') {
+    if (!SCENARIOS.some(s => s.id === value.scenarioId) || !DISTANCE_CATEGORIES.includes(value.distance as DistanceCategory) ||
+      !Array.isArray(value.nodeIds) || value.nodeIds.length > 65 || new Set(value.nodeIds).size !== value.nodeIds.length || value.nodeIds.some(id => typeof id !== 'string' || !farmExtraNode(id))) return null
+  } else if (value.kind === 'grant-energy') { if (value.amount !== FARM_KITCHEN_ENERGY_GRANT) return null
+  } else if (!farmSafeId(value.cycleId) || !farmSafeId(value.outfitId) || value.expAward !== 0 || !farmRecord(value.output) ||
+    !farmExactKeys(value.output, ['itemId', 'amount']) || value.output.amount !== 1 || !/^produce:t([1-9]|1[0-4]):(speed|stamina|power|guts|wit)$/.test(String(value.output.itemId))) return null
+  return structuredClone(value) as unknown as FarmOperationResult
+}
+export function parseFarmTargetGuard(value: unknown): FarmTargetGuardV1 | null {
+  if (!farmRecord(value) || !farmExactKeys(value, ['schemaVersion', 'type', 'generation', 'targetId', 'operationId', 'createdAt', 'result']) ||
+    value.schemaVersion !== 1 || !['terminal', 'purchase'].includes(String(value.type)) || !isFarmGeneration(value.generation) ||
+    typeof value.targetId !== 'string' || value.targetId.length > 240 || !farmSafeId(value.operationId) || !farmSafeInteger(value.createdAt)) return null
+  const result = parseResult(value.result)
+  if (!result || (value.type === 'purchase' ? result.kind !== 'buy-node' || result.purchaseId !== value.targetId
+    : !['claim', 'claim-legacy'].includes(result.kind))) return null
+  if (result.kind === 'claim' && (value.targetId !== result.jobId || !result.jobId.startsWith(`farm-job:${value.generation}:`))) return null
+  if (result.kind === 'claim-legacy' && value.targetId !== result.cycleId) {
+    const match = /^farm:plot-(\d+):[1-9]\d*$/.exec(result.cycleId), plot = Number(match?.[1])
+    const station = plot <= 6 ? `garden-${plot}` : plot <= 12 ? `orchard-${plot - 6}` : `barn-${plot - 12}`
+    if (!match || plot < 1 || plot > 18 || value.targetId !== `station:${station}`) return null
+  }
+  return structuredClone(value) as unknown as FarmTargetGuardV1
+}
+export function parseFarmReceiptLog(value: unknown): FarmStoredLog | null {
+  if (!farmRecord(value) || !farmExactKeys(value, ['kind', 'id', 'data', 'createdAt']) || !farmRowId(value.id) || !farmSafeInteger(value.createdAt)) return null
+  const data = value.kind === 'itemLedger' ? parseFarmCommandMovement(value.data) : value.kind === 'farmOperations' ? parseFarmTargetGuard(value.data) : null
+  if (!data || value.createdAt !== data.createdAt || value.id !== ('id' in data ? data.id : farmTargetGuardId(data.generation, data.type, data.targetId))) return null
+  return { kind: value.kind as string, id: value.id, data: farmData(data), createdAt: value.createdAt }
+}
+export function parseFarmOperationReceipt(value: unknown): FarmOperationReceiptV1 | null {
+  try {
+    if (!farmRecord(value) || !farmExactKeys(value, ['schemaVersion', 'type', 'operation', 'createdAt', 'changes', 'logs', 'result', 'reusedTarget']) ||
+      value.schemaVersion !== 1 || value.type !== 'operation' || !farmSafeInteger(value.createdAt) || !Array.isArray(value.changes) ||
+      value.changes.length > FARM_SYNC_LIMITS.documents || !Array.isArray(value.logs) || value.logs.length > 12 ||
+      !(value.reusedTarget === null || typeof value.reusedTarget === 'string' && value.reusedTarget.length <= 240) ||
+      !farmPlain(value) || farmBytes(value) > FARM_SYNC_LIMITS.receiptBytes) return null
+    const operation = parseFarmOperation(value.operation), result = operation && parseResult(value.result, operation.payload)
+    if (!operation || !result) return null
+    const refs = farmOperationReferences(operation), changes: FarmChange[] = [], logs: FarmStoredLog[] = []
+    for (const c of value.changes) {
+      if (!farmRecord(c) || !farmExactKeys(c, ['kind', 'id', 'before', 'after'])) return null
+      const before = c.before === null ? null : parseFarmStoredEntity(c.before), after = parseFarmStoredEntity(c.after)
+      if (!after || c.before !== null && !before || after.kind !== c.kind || after.id !== c.id || !refs.entities.includes(farmKey(after)) ||
+        before && (farmKey(before) !== farmKey(after) || after.version !== before.version + 1) || !before && after.version !== 1 ||
+        ['umas', 'constellationBank', 'farmCutover', 'farmCutoverPages'].includes(after.kind) || after.updatedAt !== value.createdAt ||
+        after.deleted || after.kind.startsWith('farm') && after.data.generation !== operation.generation) return null
+      changes.push({ kind: after.kind, id: after.id, before, after })
+    }
+    for (const raw of value.logs) {
+      const log = parseFarmReceiptLog(raw)
+      if (!log || !refs.logs.includes(farmKey(log)) || log.createdAt !== value.createdAt ||
+        log.data.generation !== undefined && log.data.generation !== operation.generation ||
+        farmRecord(log.data.source) && (log.data.source.operationId !== operation.operationId || log.data.source.generation !== operation.generation)) return null
+      logs.push(log)
+    }
+    if (new Set(changes.map(farmKey)).size !== changes.length || new Set(logs.map(farmKey)).size !== logs.length ||
+      value.reusedTarget !== null && (changes.length || logs.length)) return null
+    const p = operation.payload
+    if (result.kind === 'assign' && p.kind === 'assign' && (result.stationId !== p.stationId || result.outfitId !== p.outfitId) ||
+      result.kind === 'remove' && p.kind === 'remove' && (result.stationId !== p.stationId || result.outfitId !== null) ||
+      result.kind === 'energy' && p.kind === 'energy' && result.jobId !== p.jobId ||
+      result.kind === 'claim' && p.kind === 'claim' && (result.jobId !== p.jobId || result.outfitId !== p.outfitId || result.output.itemId !== p.recipeId) ||
+      result.kind === 'claim-legacy' && p.kind === 'claim-legacy' && (result.cycleId !== p.cycleId || result.outfitId !== p.outfitId || result.output.itemId !== p.cropId)) return null
+    if (result.kind === 'start' && p.kind === 'start') {
+      const resolved = resolveFarmInputs(FARM_KITCHEN_CATALOGUE, p.recipeId, p.quantity, p.choices)
+      if (!resolved.ok || result.job.stationId !== p.stationId || result.job.outfitId !== p.outfitId || result.job.recipeId !== p.recipeId ||
+        result.job.generation !== operation.generation || result.job.quantity !== p.quantity || farmCanonical(resolved.value) !== farmCanonical(result.job.inputs)) return null
+    }
+    if (result.kind === 'buy-node' && p.kind === 'buy-node') {
+      const target = farmPurchaseIdentity(operation.generation, p.outfitId, farmIngredientBlock(SCENARIOS.find(s => s.id === p.scenarioId)!.tier), p.nodeId)
+      if (result.nodeId !== p.nodeId || result.purchaseId !== target || value.reusedTarget === null && (result.scenarioId !== p.scenarioId || result.distance !== p.distance)) return null
+    }
+    if (result.kind === 'set-active' && p.kind === 'set-active' && (result.scenarioId !== p.scenarioId || result.distance !== p.distance ||
+      farmCanonical([...result.nodeIds].sort()) !== farmCanonical([...p.nodeIds].sort()))) return null
+    if (value.reusedTarget !== null) {
+      const target = p.kind === 'claim' ? p.jobId : p.kind === 'claim-legacy' ? p.cycleId : result.kind === 'buy-node' ? result.purchaseId : null
+      if (!target || value.reusedTarget !== target) return null
+    } else {
+      const movements = logs.filter(l => l.kind === 'itemLedger').map(l => parseFarmCommandMovement(l.data)!)
+      const items = changes.filter(c => c.kind === 'items')
+      if (items.length !== movements.length || movements.some(m => !items.some(c => c.id === m.itemId &&
+        Number(c.after.data.quantity) - Number(c.before?.data.quantity ?? 0) === m.delta))) return null
+      if (logs.some(l => l.kind === 'farmOperations' && (l.data.operationId !== operation.operationId || farmCanonical(l.data.result) !== farmCanonical(result)))) return null
+      if (result.kind === 'claim') {
+        const worker = changes.find(c => c.kind === 'farmWorkers' && c.id === result.outfitId), recipe = FARM_KITCHEN_CATALOGUE.recipesById.get(result.output.itemId)!
+        if (!worker?.before || Number(worker.after.data.totalExp) - Number(worker.before.data.totalExp) !== 12 ||
+          farmWorkerProgress(Number(worker.before.data.totalExp)).level !== result.beforeLevel || farmWorkerProgress(Number(worker.after.data.totalExp)).level !== result.afterLevel ||
+          !recipe || result.output.amount % recipe.outputPerQuantity !== 0 || result.output.amount > recipe.outputPerQuantity * recipe.maxQuantity ||
+          movements.length !== 1 || movements[0]!.itemId !== result.output.itemId || movements[0]!.delta !== result.output.amount || movements[0]!.source.jobId !== result.jobId ||
+          !logs.some(l => l.id === farmTargetGuardId(operation.generation, 'terminal', result.jobId))) return null
+      }
+      if (result.kind === 'start' && (movements.length !== result.job.inputs.length || result.job.inputs.some(input =>
+        !movements.some(m => m.itemId === input.itemId && m.delta === -input.amount && m.source.jobId === result.job.id)))) return null
+      if (result.kind === 'energy' && (movements.length !== 1 || movements[0]!.source.role !== 'energy' || movements[0]!.source.jobId !== result.jobId)) return null
+      if (result.kind === 'grant-energy' && (movements.length !== 1 || movements[0]!.source.role !== 'grant')) return null
+      if (result.kind === 'buy-node' && (movements.length !== 1 || movements[0]!.source.role !== 'purchase' ||
+        movements[0]!.itemId !== farmMealId(farmIngredientBlock(SCENARIOS.find(s => s.id === result.scenarioId)!.tier), farmExtraNode(result.nodeId)!.signature) ||
+        !logs.some(l => l.id === farmTargetGuardId(operation.generation, 'purchase', result.purchaseId)))) return null
+      if (['assign', 'remove', 'set-active'].includes(result.kind) && logs.length !== 0) return null
+    }
+    return { schemaVersion: 1, type: 'operation', operation, createdAt: value.createdAt, changes, logs, result, reusedTarget: value.reusedTarget }
+  } catch { return null }
+}
+export function parseFarmOperationLog(value: unknown): FarmOperationReceiptV1 | FarmTargetGuardV1 | null {
+  return farmRecord(value) && value.type === 'operation' ? parseFarmOperationReceipt(value) : parseFarmTargetGuard(value)
+}
+export function farmLogIdMatches(id: string, data: FarmOperationReceiptV1 | FarmTargetGuardV1): boolean {
+  return id === (data.type === 'operation' ? data.operation.operationId : farmTargetGuardId(data.generation, data.type, data.targetId))
+}
+export function parseFarmOperationResponses(value: unknown, operations?: readonly FarmOperationV1[]): FarmOperationResponse[] | null {
+  try {
+    if (!Array.isArray(value) || value.length > FARM_SYNC_LIMITS.groups || farmBytes(value) > FARM_SYNC_LIMITS.responseBytes) return null
+    const result: FarmOperationResponse[] = []
+    for (const r of value) {
+      if (!farmRecord(r) || !farmExactKeys(r, ['operationId', 'status', 'receipt', 'reason', 'authoritative']) || !farmSafeId(r.operationId) ||
+        !['applied', 'duplicate', 'rejected', 'blocked'].includes(String(r.status)) || !Array.isArray(r.authoritative) || r.authoritative.length > FARM_SYNC_LIMITS.documents) return null
+      const accepted = r.status === 'applied' || r.status === 'duplicate', receipt = accepted ? parseFarmOperationReceipt(r.receipt) : null
+      if (accepted ? !receipt || receipt.operation.operationId !== r.operationId || r.reason !== null
+        : r.receipt !== null || typeof r.reason !== 'string' || !r.reason.length || r.reason.length > 240) return null
+      const authoritative: FarmAuthoritative[] = []
+      for (const a of r.authoritative) {
+        if (!farmRecord(a) || !farmExactKeys(a, ['kind', 'id', 'record']) || !farmExpectedKind(a.kind) || !farmRowId(a.id)) return null
+        const record = a.record === null ? null : parseFarmStoredEntity(a.record)
+        if (a.record !== null && (!record || farmKey(record) !== farmKey(a as unknown as FarmAuthoritative))) return null
+        authoritative.push({ kind: a.kind, id: a.id, record })
+      }
+      if (new Set(authoritative.map(farmKey)).size !== authoritative.length) return null
+      const operation = operations?.find(o => o.operationId === r.operationId)
+      if (operations && (!operation || receipt && farmCanonical(receipt.operation) !== farmCanonical(operation))) return null
+      if (operation && farmCanonical(authoritative.map(farmKey).sort()) !== farmCanonical(farmOperationReferences(operation).entities)) return null
+      result.push({ operationId: r.operationId, status: r.status as FarmOperationResponse['status'], receipt, reason: r.reason as string | null, authoritative })
+    }
+    return new Set(result.map(r => r.operationId)).size === result.length && (!operations || operations.length === result.length) ? result : null
+  } catch { return null }
+}
