@@ -41,6 +41,12 @@ export function PuzzleMaterialMark({ style, quantity, tier, size = 32 }: { style
     <ConstellationTicketIcon style={style} tier={tier} size={size} /><span>{TICKET_STYLE_NAME[style]}{quantity !== undefined && ` ×${quantity}`}</span>
   </span>
 }
+/** A map row's small drop: the ticket and its count, no family name (D301). */
+export function PuzzleTicketChip({ style, quantity }: { style: Strategy; quantity: number }) {
+  return <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums text-ink-on-dark" aria-label={`${quantity} ${PUZZLE_STYLE_LABEL[style]} tickets`}>
+    <span aria-hidden className="inline-flex"><ConstellationTicketIcon style={style} size={18} /></span>×{quantity}
+  </span>
+}
 export function PuzzleModal({ title, onClose, children, footer }: { title: string; onClose(): void; children: ReactNode; footer?: ReactNode }) {
   return <RpgModalFocus onClose={onClose}><div className="fixed inset-0 z-40 flex items-end justify-center bg-stage/80" onClick={onClose}>
     <section role="dialog" aria-modal="true" aria-label={title} className="flex max-h-[85dvh] w-full max-w-xl flex-col rounded-t-lg border border-hairline-dark bg-stage-soft text-ink-on-dark" onClick={e => e.stopPropagation()}>

@@ -1,16 +1,17 @@
-// Accessible 28-node DAG and immutable encounter preview (docs/design/uma-puzzles.md §§6,9).
-import { SCENARIOS, puzzleEncounterRewards, resolvePuzzleEncounter, type PuzzleDarkVariant, type PuzzleEnemy, type PuzzleMapNode } from '@racer/domain'
+// The chapter's stage line by section and immutable encounter preview (docs/design/uma-puzzles.md §§6,9; D301).
+import { PUZZLE_SECTION_NAMES, SCENARIOS, puzzleEncounterRewards, resolvePuzzleEncounter, type PuzzleDarkVariant, type PuzzleEnemy, type PuzzleMapNode } from '@racer/domain'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { PuzzleEnemyPlaceholder } from '../../content/puzzles/Placeholder'
 import type { PuzzleCastLease, PuzzleLoadedBattle } from '../../game/puzzles/host'
-import { openPuzzleNode, openPuzzleParty, puzzleMapStatus, puzzleNodeName, puzzlePartySummary, puzzleRewardEstimate } from '../../game/puzzles/presentation'
-import { PuzzleButton, PuzzleCard, PuzzleMaterialMark, PuzzleModal, PUZZLE_STYLE_LABEL } from '../../ui/puzzles/components'
+import { openPuzzleNode, openPuzzleParty, puzzleMapStatus, puzzleNodeName, puzzlePartySummary, puzzleRewardEstimate, puzzleStageNumber } from '../../game/puzzles/presentation'
+import { CheckIcon, LockedIcon } from '../../ui/icons'
+import { PuzzleButton, PuzzleCard, PuzzleMaterialMark, PuzzleModal, PuzzleTicketChip, PUZZLE_STYLE_LABEL } from '../../ui/puzzles/components'
 import { PuzzleElementMark } from '../../ui/puzzles/ElementMark'
 import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
 import { PuzzleWeaknessLegend } from './PuzzleGuide'
 export function PuzzleMapScreen() {
-  const { partyId = '', scenarioId = '' } = useParams(), { root, memory } = usePuzzles(), account = usePuzzleAccount()
+  const { partyId = '', scenarioId = '' } = useParams(), { root, memory } = usePuzzles(), account = usePuzzleAccount(), navigate = useNavigate()
   const party = account?.parties.find(p => p.partyId === partyId), valid = Boolean(party && SCENARIOS.some(s => s.id === scenarioId))
   const status = valid && account ? puzzleMapStatus(account, partyId, scenarioId) : null
   const open = status?.checkpoint?.open, frozenNode = status?.checkpoint && open && openPuzzleNode(status.checkpoint)
@@ -25,29 +26,48 @@ export function PuzzleMapScreen() {
   }, [partyId, scenarioId, valid, memory])
   const node = status?.chapter.nodes.find(n => n.id === preview)
   const otherOpen = account && openPuzzleParty(account, partyId)
+  const total = status?.chapter.nodes.length ?? 0
+  // A v1 fight left open on a stage the v2 line retired has no row; it resumes straight from its saved board (D301).
+  const resume = () => { if (!frozenNode || !open) return; if (status?.chapter.nodes.some(n => n.id === frozenNode.id)) setPreview(frozenNode.id); else navigate(`${root}/battle/${encodeURIComponent(open.input.battleId)}`) }
   return <PuzzleFrame title={status?.chapter.name ?? 'Chapter unavailable'} back={`${root}/chapters?party=${partyId}`} backLabel="Back to party chapters"><div className="grid gap-3">
     {!status || !party || !account ? <PuzzleCard>Unknown party or chapter. Return to Parties and choose a registered chapter.</PuzzleCard> : <>
-      <PuzzleCard><h2 className="text-sm">{party.name} · PL {status.chapter.levelStart}–{status.chapter.levelEnd}</h2><p className="mt-1 text-xs text-ink-on-dark-soft">{status.cleared.length}/28 won · {status.full ? 'Full map cleared' : status.complete ? 'Chapter complete; more routes remain' : 'Clear any Champion to complete the chapter'}</p>
-        <p className="mt-2 text-xs text-ink-on-dark-soft">Clear either squad at each row. All three Guardians unlock the five colour Champions. Won nodes remain replayable.</p>
-        {open && frozenNode && <PuzzleButton className="mt-3 w-full" onClick={() => setPreview(frozenNode.id)}>Resume {puzzleNodeName(frozenNode)}</PuzzleButton>}
+      <PuzzleCard><div className="flex items-baseline justify-between gap-2"><h2 className="text-sm">{party.name} · PL {status.chapter.levelStart}–{status.chapter.levelEnd}</h2><span className="text-xs tabular-nums text-ink-on-dark-soft">{status.cleared.length}/{total} won</span></div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stage"><div className="h-full rounded-full bg-accent" style={{ width: `${total ? (100 * status.cleared.length) / total : 0}%` }} /></div>
+        <p className="mt-2 text-xs text-ink-on-dark-soft">{status.full ? 'Every stage cleared. Replay any of them for more tickets.' : status.complete ? 'Chapter complete; Champions left to beat.' : 'Six stages and a Guardian per section, then the Finals. Any Champion completes the chapter.'}</p>
+        {open && frozenNode && <PuzzleButton className="mt-3 w-full" onClick={resume}>Resume {puzzleNodeName(frozenNode)}</PuzzleButton>}
         {otherOpen && otherOpen.scenarioId !== scenarioId && <p className="mt-2 text-xs text-accent">This party has an open encounter in another chapter. Return to Parties to resume it.</p>}
       </PuzzleCard>
-      <ol className="grid gap-1" aria-label="Chapter path, top to bottom">{[...new Set(status.chapter.nodes.map(n => n.row))].map((row, index, rows) => {
-        const nodes = status.chapter.nodes.filter(n => n.row === row)
-        return <li key={row}><div className={`grid gap-2 ${nodes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {nodes.map(n => {
-            const won = status.cleared.includes(n.id), reached = status.reached.includes(n.id), isOpen = frozenNode?.id === n.id
+      {PUZZLE_SECTION_NAMES.map((section, sector) => {
+        const nodes = status.chapter.nodes.filter(n => n.sector === sector), levels = nodes.map(n => n.level)
+        const won = nodes.filter(n => status.cleared.includes(n.id)).length
+        return <section key={section} aria-label={`${section} section`} className="grid gap-1">
+          <h3 className="flex items-baseline justify-between px-1 text-xs font-semibold uppercase tracking-wide text-ink-on-dark-soft">
+            <span>{section} <span className="normal-case tracking-normal">· PL {Math.min(...levels)}{Math.max(...levels) > Math.min(...levels) ? `–${Math.max(...levels)}` : ''}</span></span>
+            <span className={`tabular-nums normal-case tracking-normal ${won === nodes.length ? 'text-accent' : ''}`}>{won}/{nodes.length}</span>
+          </h3>
+          <ol className="grid gap-1">{nodes.map(n => {
+            const isWon = status.cleared.includes(n.id), reached = status.reached.includes(n.id), isOpen = frozenNode?.id === n.id
+            const state = isOpen ? 'open' : isWon ? 'won' : reached ? 'next' : 'locked'
             // Dark champion is chosen in its preview. Its two possible families are shown honestly here.
             const drops = n.localId === 'c-dark' ? [...puzzleEncounterRewards(n, 'pace'), ...puzzleEncounterRewards(n, 'late')] : puzzleEncounterRewards(n)
-            return <button key={n.id} ref={el => { if (el) rowRefs.current.set(n.id, el); else rowRefs.current.delete(n.id) }} onClick={() => { setSelected(n.id); memory.position(partyId, scenarioId, n.id); setPreview(n.id) }}
-              aria-label={`${puzzleNodeName(n)}, PL ${n.level}, ${n.elements.join(', ')}, ${isOpen ? 'open encounter, resume' : won ? 'won, replayable' : reached ? 'reached' : 'locked'}, ${drops.map(d => `${d.quantity} ${PUZZLE_STYLE_LABEL[d.style]} tickets`).join(n.localId === 'c-dark' ? ' or ' : ', ')}`}
-              aria-pressed={selected === n.id} className={`min-h-11 rounded-md border p-2 text-left ${selected === n.id ? 'border-accent bg-stage-soft' : won ? 'border-accent/50 bg-stage-soft' : 'border-hairline-dark bg-stage-soft'} ${!reached ? 'opacity-55' : ''}`}>
-              <span className="flex items-center justify-between gap-1"><span className="text-xs font-semibold">{puzzleNodeName(n)}</span><span className="text-[10px] text-ink-on-dark-soft">PL {n.level}</span></span>
-              <span className="mt-2 flex flex-wrap gap-1">{n.elements.map((e, i) => <PuzzleElementMark key={i} element={e} size={18} />)}<span className="ml-auto flex flex-wrap gap-1">{drops.map(d => <PuzzleMaterialMark key={d.style} style={d.style} quantity={d.quantity} />)}</span></span>
-              <span className="mt-1 block text-[10px] text-ink-on-dark-soft">{isOpen ? 'Resume' : won ? 'Won · replay' : reached ? 'Reached' : 'Locked'}{n.localId === 'c-dark' ? ' · choose ticket style' : ''}</span>
-            </button>
-          })}</div>{index < rows.length - 1 && <div aria-hidden className="mx-auto h-4 w-px bg-hairline-dark" />}</li>
-      })}</ol>
+            const label = n.kind === 'ordinary' ? `Stage ${puzzleStageNumber(n)}` : puzzleNodeName(n)
+            return <li key={n.id}><button ref={el => { if (el) rowRefs.current.set(n.id, el); else rowRefs.current.delete(n.id) }} onClick={() => { setSelected(n.id); memory.position(partyId, scenarioId, n.id); setPreview(n.id) }}
+              aria-label={`${puzzleNodeName(n)}, PL ${n.level}, ${n.elements.join(', ')}, ${isOpen ? 'open encounter, resume' : isWon ? 'won, replayable' : reached ? 'next' : 'locked'}, ${drops.map(d => `${d.quantity} ${PUZZLE_STYLE_LABEL[d.style]} tickets`).join(n.localId === 'c-dark' ? ' or ' : ', ')}`}
+              aria-pressed={selected === n.id} data-state={state}
+              className={`flex min-h-12 w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left ${state === 'won' ? 'border-accent/30 bg-accent/10' : state === 'locked' ? 'border-hairline-dark bg-stage-soft opacity-45' : 'border-accent bg-stage-soft shadow-[0_0_0_1px_var(--color-accent)]'} ${selected === n.id ? 'ring-2 ring-ink-on-dark/60' : ''}`}>
+              <span aria-hidden className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${state === 'won' ? 'bg-accent text-ink' : state === 'locked' ? 'bg-stage text-ink-on-dark-soft' : 'border-2 border-accent text-accent'}`}>
+                {state === 'won' ? <CheckIcon size={16} /> : state === 'locked' ? <LockedIcon size={16} /> : n.kind === 'ordinary' ? puzzleStageNumber(n) : n.kind === 'guardian' ? 'G' : 'C'}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-baseline gap-1.5"><span className={`truncate text-[13px] font-semibold ${n.kind === 'ordinary' ? '' : 'text-accent'}`}>{label}</span><span className="text-[10px] text-ink-on-dark-soft">PL {n.level}</span></span>
+                <span className="mt-0.5 flex items-center gap-1">{n.elements.map((e, i) => <PuzzleElementMark key={i} element={e} size={14} />)}
+                  <span className="ml-1 text-[10px] text-ink-on-dark-soft">{isOpen ? 'In progress · resume' : isWon ? 'Won · replay' : reached ? 'Next' : 'Locked'}{n.localId === 'c-dark' ? ' · pick Pace or Late' : ''}</span></span>
+              </span>
+              <span className="flex shrink-0 flex-col items-end gap-0.5">{drops.map(d => <PuzzleTicketChip key={d.style} style={d.style} quantity={d.quantity} />)}</span>
+            </button></li>
+          })}</ol>
+        </section>
+      })}
     </>}
   </div>{node && status && party && <PuzzleNodePreview key={`${node.id}:${open?.ownerEpoch ?? -1}`} node={node} partyId={partyId} scenarioId={scenarioId} reached={status.reached.includes(node.id)} onClose={() => setPreview(null)} />}</PuzzleFrame>
 }
@@ -112,7 +132,7 @@ export function PuzzleNodePreview({ node, partyId, scenarioId, reached, onClose 
     {enemies.map(enemy => <PuzzleCard key={enemy.id}><div className="flex gap-3">{lease && <EnemyPortrait enemy={enemy} lease={lease} isolated={isolated} />}<div className="min-w-0"><h3 className="text-sm">{lease?.presentation?.pack.members.find(m => m.id === enemy.castId)?.name ?? (isolated ? 'Invented training sprite' : enemy.castId)}</h3><div className="mt-1 flex items-center gap-1 text-xs"><PuzzleElementMark element={enemy.element} /><span className="capitalize">{enemy.element}</span></div><p className="mt-1 text-xs text-ink-on-dark-soft">{enemy.recipeId.replace('puzzle:', '').replaceAll('-', ' ')}</p></div></div><EnemyDetails enemy={enemy} /></PuzzleCard>)}
     <PuzzleWeaknessLegend />
     <PuzzleCard><h3 className="text-sm">Clear rewards</h3>{requiresChoice ? <p className="mt-2 text-xs">Choose the Dark Champion’s ticket family to view the exact gross, repayment and inventory vector.</p> : rewards.map(r => <div className="mt-2 flex items-center justify-between gap-2 text-xs" key={r.itemId}><PuzzleMaterialMark style={r.style} quantity={r.gross} /><span>Repay {r.repaid} · Inventory +{r.net}</span></div>)}<p className="mt-2 text-[10px] text-ink-on-dark-soft">Repayment uses your balance when the fight ends. No reward for a loss or for leaving.</p></PuzzleCard>
-    {node.localId === 'g1' && <PuzzleCard><p className="text-xs">{puzzleMapStatus(account!, partyId, scenarioId).chapter.tier > 1 ? 'Winning this Opening Guardian unlocks the adjacent exchange edge from the previous scenario into this one.' : 'This is the first scenario. Win a higher chapter’s Opening Guardian to unlock its adjacent exchange edge.'}</p></PuzzleCard>}
+    {node.localId === 'g1' && <PuzzleCard><p className="text-xs">{puzzleMapStatus(account!, partyId, scenarioId).chapter.tier > 1 ? 'Winning this Debut Guardian unlocks ticket exchange between the previous scenario and this one.' : 'This is the first scenario. A later chapter’s Debut Guardian unlocks exchange with this one.'}</p></PuzzleCard>}
     <PuzzleButton disabled={busy || !lease || Boolean(error || recipeError || recovery || openPuzzleParty(account!, partyId)) || !reached || !summary?.full || requiresChoice} onClick={() => {
       void command(`begin:${partyId}:${node.id}:${variant ?? ''}`, async operationId => {
         const view = await host.begin({ partyId, scenarioId, nodeId: node.id, darkVariant: variant, partyRevision: party!.revision,

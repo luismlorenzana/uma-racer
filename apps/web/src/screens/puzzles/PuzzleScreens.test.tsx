@@ -79,7 +79,7 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     expect(screen.getAllByRole('link', { name: 'Edit party' })).toHaveLength(10)
     expect(screen.getAllByRole('link', { name: 'Fill party' })).toHaveLength(8)
     expect(screen.getAllByRole('link', { name: 'Fill party' })[0]!.getAttribute('href')).toBe(`${root}/party/puzzle-party-2`)
-    expect(screen.getByRole('link', { name: 'Resume Squad 1A' }).getAttribute('href')).toBe(`${root}/party/puzzle-party-3/ura-finale`)
+    expect(screen.getByRole('link', { name: 'Resume Debut · Stage 1' }).getAttribute('href')).toBe(`${root}/party/puzzle-party-3/ura-finale`)
     expect(screen.getByRole('navigation', { name: 'Puzzle sections' }).textContent).toContain('ExchangeItems')
     fireEvent.click(screen.getByRole('button', { name: 'Uma Puzzles guide' })); expect(await screen.findByRole('dialog')).toBeTruthy()
   })
@@ -146,11 +146,14 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     fireEvent.click(screen.getByRole('button', { name: /Next Horizons/ }))
     expect(screen.getAllByRole('button', { name: 'Open chapter' }).every(b => (b as HTMLButtonElement).disabled)).toBe(true)
   })
-  it('map shows 28 labelled preview targets; explicit Dark choice and Begin freeze a real journal', async () => {
+  it('map shows 26 labelled stages in four sections; explicit Dark choice and Begin freeze a real journal', async () => {
     const begin = vi.spyOn(environment.host, 'begin')
     mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-1/ura-finale`, `${root}/party/:partyId/:scenarioId`)
-    await screen.findByRole('list', { name: 'Chapter path, top to bottom' })
-    expect(within(screen.getByRole('list')).getAllByRole('button')).toHaveLength(28)
+    await screen.findByRole('region', { name: 'Debut section' })
+    // D301: Debut, Classic and Senior run six stages and a Guardian each, then the Finals' five Champions.
+    expect(['Debut', 'Classic', 'Senior', 'Finals'].map(s => within(screen.getByRole('region', { name: `${s} section` })).getAllByRole('button').length)).toEqual([7, 7, 7, 5])
+    const states = [...document.querySelectorAll('[data-state]')].map(b => b.getAttribute('data-state'))
+    expect(states.filter(s => s === 'won')).toHaveLength(21); expect(states.filter(s => s === 'next')).toHaveLength(5)
     fireEvent.click(screen.getByRole('button', { name: /Dark Champion, PL 10/ })); await screen.findByText(/Choose the Dark Champion’s ticket family to view/)
     expect((screen.getByRole('button', { name: /Begin battle/ }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: /Pace constellation tickets/ })); await screen.findByText('Repay 0 · Inventory +12')
@@ -162,13 +165,13 @@ describe('Puzzle guarded screens on the real isolated host', () => {
   it('content failure exposes Retry/Return and releases leases; unavailable Items is honest', async () => {
     const env = { ...environment, acquire: vi.fn(async () => { throw new Error('Invented missing pack') }) }
     mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-1/ura-finale`, `${root}/party/:partyId/:scenarioId`, env)
-    fireEvent.click(await screen.findByRole('button', { name: /Squad 1A, PL 1/ })); await screen.findByText('Invented missing pack')
+    fireEvent.click(await screen.findByRole('button', { name: /Debut · Stage 1, PL 1/ })); await screen.findByText('Invented missing pack')
     expect(screen.getByRole('button', { name: 'Retry content' })).toBeTruthy(); expect(screen.getByRole('button', { name: 'Return to map' })).toBeTruthy()
     cleanup(); mount(<PuzzleItemsScreen />, `${root}/items`, `${root}/items`); await screen.findByText('Constellation Tickets')
   })
   it('foreign journal is read-only with explicit online takeover, same seed and no new reservation', async () => {
     const initial = (await environment.host.account()).checkpoints[1]!.open!, begin = vi.spyOn(environment.host, 'begin')
-    mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-3/ura-finale`, `${root}/party/:partyId/:scenarioId`); fireEvent.click(await screen.findByRole('button', { name: 'Resume Squad 1A' }))
+    mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-3/ura-finale`, `${root}/party/:partyId/:scenarioId`); fireEvent.click(await screen.findByRole('button', { name: 'Resume Debut · Stage 1' }))
     await screen.findByRole('button', { name: 'Review online takeover' }); expect(await environment.database.puzzleJournals.count()).toBe(0)
     fireEvent.click(screen.getByRole('button', { name: 'Review online takeover' })); fireEvent.click(screen.getByRole('button', { name: 'Confirm online takeover' }))
     await screen.findByText(/Journal restored/)
@@ -181,7 +184,7 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     store.publish(a); store.publish(structuredClone(a)); expect(subscriber).toHaveBeenCalledOnce()
     const release = vi.fn(), acquire = vi.fn(async () => ({ ...await environment.acquire(), release }))
     mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-1/ura-finale`, `${root}/party/:partyId/:scenarioId`, { ...environment, acquire })
-    fireEvent.click(await screen.findByRole('button', { name: /Squad 1A, PL 1/ })); await screen.findAllByText('Invented training sprite')
+    fireEvent.click(await screen.findByRole('button', { name: /Debut · Stage 1, PL 1/ })); await screen.findAllByText('Invented training sprite')
     fireEvent.click(screen.getByRole('button', { name: 'Close' })); expect(release).toHaveBeenCalledOnce(); expect(subscriber).toHaveBeenCalledOnce()
   })
   it('actual journal append does not publish a different account or change the frozen board on reload', async () => {
