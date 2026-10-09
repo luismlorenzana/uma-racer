@@ -24,14 +24,24 @@ export async function verifiedPreservationContent(content: ContentService, froze
     const dimensions = puzzleWebpMetadata(await content.readVerifiedBytes(page))
     if (dimensions.width !== page.width || dimensions.height !== page.height) throw new Error('Required art dimensions failed verification')
   }
-  const umas = await read(umaFiles[0]!)
-  if (!puzzleRecord(umas) || !puzzleId(umas.version) || !puzzleArray(umas.items, 8192)) throw new Error('Uma catalogue failed verification')
+  return { ...verifiedUmaSources(umaFiles[0]!, await read(umaFiles[0]!)), contentHash: ref.sha256 }
+}
+
+/**
+ * The frozen original sources from the verified Uma pack. The importer's pack version joins source hashes with '+',
+ * which is not id-safe, so the verified file's own SHA-256 names the exact catalogue instead (D291).
+ */
+export function verifiedUmaSources(file: { sha256: string }, umas: unknown): Omit<VerifiedPuzzlePreservationContent, 'contentHash'> {
+  const catalogueVersion = file.sha256
+  if (!puzzleRecord(umas) || typeof umas.version !== 'string' || !puzzleArray(umas.items, 8192) || !puzzleId(catalogueVersion)) {
+    throw new Error('Uma catalogue failed verification')
+  }
   const sources = new Map<string, ReturnType<typeof createPuzzleSource>>()
   for (const row of umas.items) {
     if (!puzzleRecord(row)) throw new Error('Uma source is malformed')
-    const source = createPuzzleSource(row as unknown as Parameters<typeof createPuzzleSource>[0], umas.version)
+    const source = createPuzzleSource(row as unknown as Parameters<typeof createPuzzleSource>[0], catalogueVersion)
     if (sources.has(source.templateId)) throw new Error('Ambiguous original outfit source')
     sources.set(source.templateId, source)
   }
-  return { catalogueVersion: umas.version, contentHash: ref.sha256, sources }
+  return { catalogueVersion, sources }
 }

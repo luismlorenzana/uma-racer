@@ -608,6 +608,8 @@ pre-cutover snapshot through the device-local T116 backup, without logging priva
 Freeze once: existing owned outfit/scenario cohort, preserved CL, one eligible debt style per unit, catalogue version,
 all unapplied unit EXP + account bank, existing universal stock, and retirement identities. Debt = CL−1 once per unit;
 saved preferred source-A style first, else Front/Pace/Late/End first-A. Unknown source/row stops preparation visibly.
+The frozen catalogue version is the verified Uma pack file's SHA-256 (D291): the importer's own pack version joins
+source hashes with `+`, which is not id-safe, so the content address names the exact catalogue instead.
 
 Use bounded resumable batches under an immutable cutover id. Each unit has an exact applied receipt; account final
 legacy credit is issued only after all partial EXP is pooled. Full 1,250 chunks convert, final positive remainder

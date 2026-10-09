@@ -150,7 +150,7 @@ These items are smaller, in the same files:
 - `docs/design/uma-puzzles.md`: §4 Parties (ten parties; free-only picker; Swap; no cross-party move in the UI) and
   §9 (roster order and sections, chip filters, party editor cards, profile strip, Hub first-use card, no dropdowns).
 - `docs/technical/uma-puzzles-implementation.md`: party ids and regex, sync-limit evidence, transfer UI removal.
-- `docs/decisions.md`: append the next free decision (**D291** unless taken by then): "Puzzle setup follows the
+- `docs/decisions.md`: append the next free decision (**D292** unless taken by then): "Puzzle setup follows the
   RPG's D284…". Give the reason: the owner's D284 requests apply to both modes.
 - Delete this spec and update `docs/tasks/README.md` (D104).
 
