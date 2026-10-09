@@ -9,15 +9,15 @@
 > real-world nutrition rules or special Guts tax. The earlier 60-point/node proposal is replaced by a smaller
 > 20-point/node candidate. See §10 for the old/new budget comparison and §11 for exact Lv1→50 timing.
 
-> **Capacity/pacing revision:** start Garden/Orchard/Barnyard with one open spot each, Workshop/Kitchen with
-> three each; expand every district independently to six. Two jobs now earn one outfit level. Removing expertise,
+> **Capacity/pacing revision:** keep **6/6/6/6/6**, with all thirty spots open from the start and no slot expansion.
+> Two jobs now earn one outfit level. Removing expertise,
 > a fixed six-hour timer, larger production batches and shared recipe access are the recommended rebalance,
 > not implemented or owner-approved constants. §3 and §11 separate personal levels from account throughput.
 
 ## 1. Intent and boundaries
 
 Farm becomes the third independent, global activity beside Uma RPG and Uma Puzzles. Its enjoyment comes from
-managing a persistent outfit crew, growing each district, planning ingredients and completing a cookbook.
+managing a persistent outfit crew, raising outfit Farm Levels, planning ingredients and completing a cookbook.
 Its practical reward is enough configurable Extra Stats to support a balanced racing build when the available
 card set does not cover every stat. It must not become another mandatory turn-based training session.
 
@@ -28,9 +28,9 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
 
 ### Requirements already specified by the owner
 
-- Five districts, at most six stations each. Start Garden/Orchard/Barnyard with one spot each and Workshop/Kitchen
-  with three each: **nine open spots initially**, thirty eventually. Use soft, independent district unlocks rather
-  than the old sequential, steep aggregate Farm Level ladder; keep permanent worker assignments.
+- Five districts with six stations each: **thirty open spots from the start**. Following the owner's latest
+  simplification, remove slot expansion entirely rather than replacing the old aggregate ladder with district
+  counters. Keep permanent worker assignments; outfit levels, ingredient tiers and recipes provide progression.
 - Ingredients should be equally distributed across stats, not constrained by real-world food logic. The
   revised interpretation gives each raw district all five stat lanes, replacing the initial three-lane lists;
   milk/cheese and other flavour families have an equal variant for every stat. Factories consume ingredients;
@@ -57,7 +57,6 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
 | Farm level gates | Personal block eligibility at Lv1/51/101…; the first eligible worker at local Lv6/9 unlocks processing/cooking recipes for that block account-wide | New workers can specialize without all repeating raw-work prerequisites |
 | Ingredient symmetry | All five stat lanes in each raw district; identical costs/yields and mirrored recipes | No missing Guts source or stat-specific ingredient tax; food flavour is presentation |
 | Processing's double value | One processed unit has two ingredient-potency units; not a direct racing-stat buff | Ingredients are only inputs, and activating a purchased node is not another meal consumption |
-| District expansion | Local completed-job thresholds 4/12/24/40/60 for spots 2–6; Workshop/Kitchen already have the first three | All sections can expand in parallel, each through its own work |
 | Expertise | Remove it; use a fixed six-hour job duration | No rotation tax or five extra XP tracks; three daily check-ins become practical |
 | Production batches | Raw 6; workshop 6 raw → 6 processed; kitchen makes a chosen 1–4 meals | Increase downstream throughput instead of multiplying physical station count |
 | Proposed progression | 24 EXP/level; 12 EXP/job, regardless of batch size | 98 jobs to Lv50: 49 days at two/day or about 33 at three/day |
@@ -69,7 +68,7 @@ These choices, including every new balance number, are **proposals**, not additi
 
 | Current implementation | Rework |
 |---|---|
-| Eighteen plots; aggregate levels unlock them sequentially | Five independently expanding districts, nine spots initially, thirty eventually |
+| Eighteen plots; aggregate levels unlock them sequentially | Five six-station districts, all thirty spots immediately open; no expansion ladder |
 | Every plot grows any stat's scenario crop | District-specific raw goods, recipes and input-consuming jobs |
 | 24 EXP/level; raw harvest pays 12 EXP and one crop | Keep two jobs/level; all job kinds pay 12 EXP, with larger yields |
 | Crop access every ten levels, older rows faster | Five-scenario ingredient blocks; personal block eligibility, shared recipe access, fixed candidate timer |
@@ -92,8 +91,8 @@ than carrying those instructions into the rework. Do not use its stale copy as a
 | Kitchen | `kitchen-1` … `kitchen-6` | Cook single/dual/all-stat meals | Recipe-defined unlock signatures |
 
 A station has zero or one owned outfit. One outfit can hold at most one station across all five districts.
-Open stations may be assigned from day one; assignment is not enrollment or a purchase. Recipe access is a
-separate gate, shown on an idle station before eligible work exists. Locked spots cannot hold new jobs. Workers stay
+All stations may be assigned from day one; assignment is not enrollment or a purchase. Recipe access is a
+separate gate, shown on an idle station before eligible work exists. Workers stay
 assigned after collection, reload, navigation and sync. A worker picker shows Available and Working sections,
 Farm Level and an explicit destination for a move. Moving an idle worker is free. Moving a busy
 worker is blocked until the job is claimed; the UI offers a jump to that station, not silent cancellation.
@@ -106,33 +105,15 @@ watering, animal feeding, disease, withering, spoilage or random crop quality in
 Barn jobs represent a stylized supply activity, not a combat/animal-slaughter animation. A station can change
 between milk/eggs/meat jobs while idle; livestock ownership and feed production are out of scope.
 
-### Independent, soft district expansion
+### Open capacity, chosen crew
 
-Each district counts **its own completed v2 jobs**, contributed by any worker. A claim increments its count
-exactly once; outputs, batch size and Energy do not multiply the increment. Starting/assigning/waiting gives
-no progress. Unlocks are permanent, cost no Items or EXP, and remain open across ingredient/scenario blocks.
+All **6/6/6/6/6** spots exist and are available from a new/reset account. There are no district job counters,
+spot thresholds, unlock costs or aggregate Farm Level gates. Opening capacity is not another progression track.
 
-| Spot | Garden / Orchard / Barnyard: jobs completed in that district | Workshop / Kitchen: jobs completed in that district |
-|---|---|---|
-| 1 | Open initially | Open initially |
-| 2 | 4 | Open initially |
-| 3 | 12 | Open initially |
-| 4 | 24 | 24 |
-| 5 | 40 | 40 |
-| 6 | 60 | 60 |
-
-These thresholds are a **candidate**, not a new aggregate Farm Level. All three raw districts use the same
-curve; one never needs to finish Garden before starting Orchard/Barnyard. Workshop and Kitchen have a head
-start, then use the same thresholds. "In parallel" does not mean a Garden claim automatically unlocks an
-Orchard slot: every section has its own counter, and different usage can give different unlock dates.
-
-With every open spot staffed and two completions/worker/day, a raw district reaches six spots in about ten
-active days: roughly two days at each size. A production district starting with three reaches six in about
-eight active days once supplied/staffed. Recipe access, available outfits, stock and staggered assignments
-add startup time. Do not promise every new account has thirty productive workers on calendar day ten.
-
-Show `3/6 spots · 18/24 jobs toward Spot 4` rather than an aggregate Farm Level. A result names its district's
-new spots. Threshold progress is shared by the account, personal EXP stays with the actual worker.
+The player need not own or assign thirty outfits immediately. A smaller crew can leave spots empty or move idle
+workers between districts. Show assigned/idle/busy/ready counts, not locked tiles or progress toward a new slot.
+Personal Farm EXP, ingredient-block eligibility, shared recipe milestones and cookbook records remain meaningful
+progress. An open kitchen spot does not bypass the recipe gate or create free ingredients.
 
 ## 4. Ingredient blocks and Farm Level
 
@@ -181,7 +162,7 @@ assignment, but that role is not a locked class or permanent efficiency penalty.
 
 **Candidate timer: six hours for every raw, processing and cooking job**, with no rank-based reduction or
 outfit-specific speed multiplier. Farm Level opens ingredient blocks, not a second timer curve. Shared recipe
-milestones open job options; completed jobs grow their own district. Removing expertise simplifies assignment
+milestones open job options; completed jobs grow the worker's personal Farm Level. Removing expertise simplifies assignment
 but does **not** solve throughput by itself: the batches in §6–8 do that.
 
 A recipe's block, job kind, worker, concrete inputs, batch quantity, rules version and deadline are frozen when
@@ -317,7 +298,7 @@ new original names/art can enrich them after balance, without multiplying the re
 - Pin up to three desired meals. A shopping list recursively counts raw and processed shortages and subtracts
   outputs of known running jobs separately from stock; never pretend unclaimed stock can be spent.
 - A missing input links to its district and eligible workers. Recipe sheets show batch size, readiness, Farm
-  EXP, batch quantity, district-unlock progress and the exact node signature before confirmation.
+  EXP, batch quantity and the exact node signature before confirmation.
 - A cookbook records first successful preparation and total claims as modest collection goals. Every recipe
   is readable before its gate; first cooking does not randomly discover recipes or consume failed experiments.
 - After collection, show **Repeat**, **Choose recipe**, or **View Items**. No default automatic spend.
@@ -495,19 +476,17 @@ makes 36 processed while consuming 36 raw. Three raw districts can supply the ro
 Batch outputs, not eighteen physical production spots, match the usual demand. These average rates require a
 stock buffer and do not mean every arbitrary six-job combination is continuously supplied.
 
-At startup, three raw stations make only 18 raw per round. Filling all three workshops and kitchens would
-need more: the initial bottleneck is **raw supply**, not too few processing spots. Two spots per raw district
-make 36 raw in total, but the cheese-first mix still needs more than Barnyard's 12 milk: aggregate volume alone
-is not enough. At **three raw spots per district**, Barnyard supplies the 18 milk needed by three workshop
-jobs, while Garden/Orchard cover direct ingredients. Those raw spots open after twelve local jobs, about four
-active days at two completions/worker/day. Alternative processed families can distribute inputs differently;
-the shopping planner must check the actual family supply, not only total raw units.
+At full staffing, Barnyard's six milk jobs supply the 36 inputs needed by six cheese-first workshop jobs;
+Garden/Orchard supply direct ingredients. A smaller crew or different raw-family choices can still create a
+shortage even with every spot open. Alternative processed families distribute inputs differently; the shopping
+planner must check actual family supply, not only total raw units. Open capacity removes expansion waits, not
+recipe startup, ingredient preparation or the need to choose a workable crew distribution.
 
 Banquet-only bursts need five processed items per meal, so they require advance preparation. The cookbook
 should surface that stock requirement; do not claim the average covers every recipe. A permanent ×3 station
 multiplier would also multiply the roster, taps and layout without guaranteeing every extreme mix is balanced.
 
-For an **already expanded/staffed** farm, one map needs 27 cooking completions: about 2.25 active days at twelve
+For an **already supplied/staffed** farm, one map needs 27 cooking completions: about 2.25 active days at twelve
 kitchen completions/day, **after inputs are available**. Raw preparation, recipe gates and cold-start pipeline
 fill add time. This is the useful "few days of account food for one Uma" concept, not a few-day personal Lv50.
 
@@ -522,8 +501,8 @@ stock, fits inside thirty workers' Lv1→50 workload at the full 6/6/6/6/6 distr
 | Workshop | 475 | 588 |
 | Kitchen | 493 | 588 |
 
-This is a **capacity/material witness**, not a fresh-account calendar simulation: fewer starting spots,
-workers entering at different times, ingredient substitutions and choosing other maps change actual dates.
+This is a **capacity/material witness**, not a fresh-account calendar simulation: initially empty spots,
+workers entering at different times, recipe access, ingredient substitutions and choosing other maps change actual dates.
 The intended loop is a cooperative crew with specialists, not a requirement that every worker personally
 completes all five job kinds. Solo production remains feasible as the 87-job witness above shows.
 
@@ -531,8 +510,8 @@ completes all five job kinds. Solo production remains feasible as the 87-job wit
 
 - A small deterministic Farm progression sim: self-sufficient outfit; fixed multi-outfit specialists; two
   daily check-ins; perfect-readiness lower bound; input shortages; block 1 → 2 → 3; reset cohort; no Energy and
-  fixed Energy budgets. Trace every consumed/produced unit, district unlock, recipe milestone and personal
-  level, not just aggregate yield. Separate fresh 1/1/1/3/3 expansion from steady-state 6/6/6/6/6 throughput;
+  fixed Energy budgets. Trace every consumed/produced unit, recipe milestone and personal
+  level, not just aggregate yield. Separate a fresh smaller crew from supplied/staffed 6/6/6/6/6 throughput;
   verify same-stat worker groups, kitchen partial batches and banquet-only supply stress.
 - Verify every raw/processed/meal definition and dependency graph: no missing source, cycles, cross-block
   substitution, wrong stat pair, unbounded crafting or recipes impossible under their worker gates.
@@ -557,7 +536,7 @@ remaining and after-state; it changes that job's deadline, not all jobs owned by
 - Reduce remaining time to a minimum of zero. If less than thirty minutes remains, show the lost portion and
   require confirmation. No item spend on an idle/already-ready job.
 - Atomically spend one item and record one adjustment receipt. Retry reuses that receipt; repeated genuine
-  uses have distinct operation IDs. No free harvest, Farm EXP, district progress or output until claim.
+  uses have distinct operation IDs. No free harvest, Farm EXP or output until claim.
 - Record cumulative acceleration separately from the original frozen duration for replay/audit. Do not move
   an immutable start time backwards or make the timer inconsistent with its frozen duration/acceleration.
 - The existing debug affordance becomes **Grant 50 Energy**; every deliberate press adds fifty to global
@@ -570,7 +549,7 @@ remaining and after-state; it changes that job's deadline, not all jobs owned by
 ### Home and Farm hub
 
 Home opens Farm directly. The Farm hub shows the five districts, ready/busy counts, next completion, global
-stock shortcuts, cookbook wishlist, each district's next spot and the worker list. No featured-Uma gate or
+stock shortcuts, cookbook wishlist and the worker list. No featured-Uma gate, slot-unlock meter or
 aggregate Farm Level meter.
 Remember the last district locally; provide a consistent Hub/Back path. Do not replace the existing Home's
 RPG/Puzzle/racing entry points as part of this work.
@@ -582,8 +561,8 @@ grid**, a compact district title and a horizontal five-district switch. Target r
 card and ≤ 500 px for the grid with gaps; verify actual available height, not six cards each 224 px tall.
 
 Each station shows the outfit's small existing portrait, item icon, idle/growing/ready state, remaining time,
-Farm Level and **one primary action**: Assign / Choose / Collect. Locked tiles show the local job requirement
-and cannot assign a worker. Keep every tap
+Farm Level and **one primary action**: Assign / Choose / Collect. All six tiles are open; empty ones offer Assign.
+An unavailable recipe explains its own gate, not a locked station. Keep every tap
 target ≥ 44 pt. Put worker move/remove, alternate recipe, stock detail and Energy in a sheet opened from the
 card/menu; do not cram three inline action rows into each tile. Long names truncate visually, not accessibly.
 
@@ -598,10 +577,10 @@ PWA bars separately from emulated browser height.
 - Worker picker: portraits, own Farm Level, ingredient-block eligibility and Working destination.
   A new assignment persists. No unrelated race/RPG/Puzzle level in the primary farming row.
 - Recipe sheet: personal block/shared recipe gate explanation, quantity chips for kitchen batches, exact
-  output/inputs and available stock, duration, worker EXP and local spot progress. Disabled Start has an
-  actionable reason, not only gray styling. A larger batch must not secretly change EXP or unlock counts.
+  output/inputs and available stock, duration and worker EXP. Disabled Start has an
+  actionable reason, not only gray styling. A larger batch must not secretly change EXP or recipe milestones.
 - Claim result: output icon/count, worker EXP before/after, every level crossed, new shared recipe milestones
-  and district spots opened. Links to Items or the pinned meal; never imply a race-stat gain before spending.
+  and first cookbook preparations. Links to Items or the pinned meal; never imply a race-stat gain before spending.
 - Cookbook: sixteen signatures, stock, ready/running counts and shopping plans. One reasonable default
   substitution avoids forcing a picker on every Repeat; revalidate the concrete inputs before spending.
 
@@ -620,7 +599,7 @@ No full-page pan gesture that prevents vertical navigation; zoom/details must us
 
 Use the shared `PagedGuide` and guide-memory pattern, with a new guide version so the old Farm tour does not
 count as having explained recipes. First-use guide: global districts/crew; ingredient blocks; raw → processed
-→ cooked; personal levels vs district expansion; shared recipe gates/batches/timers; meal purchases vs free
+→ cooked; personal levels vs global stock; all thirty spots available; shared recipe gates/batches/timers; meal purchases vs free
 activation; presets/capacity; Energy and debug distinction.
 Reopen from a visible Help button. Teach equal stat-family costs, substitutions and why the sun is not a stronger node.
 
@@ -636,7 +615,7 @@ Asset brief for implementation:
   nine processed presentations; each has five readable stat variants. Reuse categories, not 80 bespoke paintings.
 - Five single meals, ten visibly paired meals, one sun banquet, one Energy icon. Pair symbols cannot overlap
   into an unreadable five-colour blob. Reuse silhouettes across blocks with an explicit numbered crest.
-- Worker portrait with a small Farm Level badge; local spot-progress marker, no expertise stars or costume art required.
+- Worker portrait with a small Farm Level badge; no spot-progress marker, expertise stars or costume art required.
 
 Use shared `MinigameShell`/headers, sheets, stat glyphs and `m.*` under `LazyMotion strict`. Animate transform and
 opacity only; reduce motion disables flourishes but not progress labels. Deadline progress is derived from
@@ -654,9 +633,9 @@ Command responsibilities:
 | Command | All-or-nothing effects |
 |---|---|
 | Assign/move idle worker | Station ownership and one-station-per-outfit check |
-| Start raw job | Worker/gate/slot checks; frozen job; next attempt index |
+| Start raw job | Worker/recipe/ownership checks; frozen job; next attempt index |
 | Start processing/cooking | Above plus shared recipe/personal block checks, exact batch-sized multi-input spend, ledger evidence and frozen recipe/quantity |
-| Claim job | Output stock, personal XP, exactly one district-progress increment, recipe/spot milestones and terminal receipt; station becomes idle |
+| Claim job | Output stock, personal XP, shared recipe milestones, cookbook records and terminal receipt; station becomes idle |
 | Spend Energy | One stock decrement, one deadline adjustment and receipt |
 | Buy Extra node | One meal decrement, shared block purchase and receipt; optional selected-preset activation |
 | Set active nodes | Owned-node/capacity validation for exactly one scenario/preset |
@@ -678,7 +657,7 @@ entities actually read, not all outfits and every historical job. Test transport
 sync ceilings; **do not raise limits to make the Farm fit**. Keep per-job receipts/evidence separately from a
 large aggregate projection, and avoid loading all historical jobs into a single unbounded save document.
 Shared recipe milestones derive from checked level-crossing receipts, not an unbounded read of every worker
-on every Start. Section counts and unlock milestones include this reset generation; legacy claims do not count.
+on every Start. Recipe milestone evidence includes this reset generation; legacy claims do not count.
 
 When a second device opens the account, it adopts the acknowledged job with its original recipe/worker/deadline
 and does not restart time or choose new ingredients. Stale assignment or claim attempts reconcile without
@@ -698,8 +677,8 @@ pick concrete schema/Dexie versions from latest main at implementation, not stal
 Reset scope:
 
 - Every outfit's Farm Level to 1 and Farm EXP to 0, including idle workers not currently assigned to a plot.
-  No expertise fields in the recommended version. New district counters start at zero, with spots 1/1/1/3/3
-  open and only Block 1 raw recipes available. Old aggregate Farm Level no longer exists as progression.
+  No expertise fields or district expansion counters in the recommended version. All thirty spots start open,
+  with only Block 1 raw recipes available. Old aggregate Farm Level no longer exists as progression.
 - Every old Extra Stats purchase and active configuration for every outfit/scenario/distance preset to empty.
   New block maps start unbought. No free replacement meal, purchased node, inherited Produce bonus or Farm EXP.
 - Old harvest/Extra purchase receipts remain historical evidence, namespaced away from the new generation.
@@ -711,11 +690,10 @@ Extra Stats intentionally changes racing stats; it does not reset racing progres
 
 **Recommended treatment of unrequested reset targets:** retain existing crop inventory as clearly labeled legacy
 Items with no v2 node purchasing or automatic meal conversion. Retain old raw jobs through their original
-deadline and allow one final legacy claim, paying only their old crop output and **no new Farm EXP, district
-progress or recipe unlocks**. Map old slots 1–6 to Garden, 7–12 to Orchard, 13–18 to Barnyard. Keep assignments
-only where a new spot starts open; workers from the other old plots return to the Available crew after their
-legacy claim (or immediately if idle). Running jobs on now-locked spots appear in an explicit legacy-jobs list,
-so they never become inaccessible or grant a free unlocked spot. Workshop/Kitchen start unassigned. This layout
+deadline and allow one final legacy claim, paying only their old crop output and **no new Farm EXP or recipe
+unlocks**. Map old slots 1–6 to Garden, 7–12 to Orchard, 13–18 to Barnyard and retain those worker assignments.
+An ongoing legacy job remains claimable once on its mapped station before a new recipe starts there.
+Workshop/Kitchen start unassigned. This layout
 mapping is a reviewable migration policy; do not silently discard jobs, owned outfits or inventory.
 
 Before any release mutation, keep a device-local/exportable pre-cutover recovery archive through the existing
@@ -729,8 +707,8 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 These are proposed delivery units, **not yet numbered task specs**. Each will need a full contract, fixtures,
 acceptance tests and a PR; recheck the next free milestone/task numbers after owner review.
 
-1. **Pure catalogue/progression and balance.** Original ingredient/recipe definitions, personal levels, local
-   expansion/shared recipe gates, batches/deadlines, dependency arithmetic and modest Farm/stat sims. Settle
+1. **Pure catalogue/progression and balance.** Original ingredient/recipe definitions, personal levels,
+   shared recipe gates, batches/deadlines, dependency arithmetic and modest Farm/stat sims. Settle
    and pin constants before consuming saves.
 2. **Versioned Farm persistence/commands.** Strict domain/API formats, atomic raw/craft/claim/Energy receipts,
    offline reconciliation, bounded sync references and synthetic migration rehearsals. Keep release dormant.
@@ -756,8 +734,8 @@ Before implementation closes:
 
 - An outfit can stay assigned, generate ingredients, process, cook, receive global Items, buy a named node
   and configure the correct distance preset. Stats change only where that scenario/preset reads them.
-- Every district shows six tiles at both phone sizes, 1/1/1/3/3 open from a new/reset account, independently
-  growing to 6/6/6/6/6 with no inaccessible jobs or cross-district unlock dependency; every
+- Every district shows six immediately available tiles at both phone sizes: 6/6/6/6/6 from a new/reset account,
+  with no expansion counters, inaccessible jobs or station-unlock dependency; every
   touch action ≥ 44 pt, safe areas intact and VoiceOver/list/reduced-motion alternatives usable.
 - Every job restores exact inputs/worker/deadline after refresh/background/offline. Duplicate claims/spends,
   stale stock, same-ID mismatches and second-device races cannot create free items or double rewards.

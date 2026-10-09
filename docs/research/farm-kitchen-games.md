@@ -36,18 +36,18 @@ play thirty short gesture games whenever the farm is ready. Stardew is useful fo
 completing a collection, but its day-to-day chores are not needed here. These are design inferences from the
 sources, not claims that those games implement the Uma outfit/Extra Stats system.
 
-For this app, the interesting decisions are where to station each persistent worker, which district to expand,
+For this app, the interesting decisions are where to station each persistent worker, which ingredients to stock,
 which recipes support a weak racing stat, and whether to specialize or broaden the active Extra Stats map.
 Better timers and clear shopping tools offer more value than random crop rarity, equipment durability or loss
-on absence. The revised farm supplies expansion through **independent district activity and crew development**,
-not an aggregate account Farm Level or a sequential first-section-before-second-section gate.
+on absence. All **6/6/6/6/6** spots are open from the start. Progress comes through **crew levels, ingredient
+tiers, cookbook records and meal-funded builds**, not station expansion or an aggregate account Farm Level.
 
 ## Small additions worth carrying into the draft
 
 1. **Meal wishlist and shopping plan.** Pin meals, show exactly which inputs are short, and link to the right
    district. Running outputs are shown separately from spendable stock.
-2. **Persistent crew roles and local expansion.** Let workers stay growers/processors/cooks, with one personal
-   Farm level and each district's shared spot progress; no five-track expertise grind or random innate aptitude.
+2. **Persistent crew roles.** Let workers stay growers/processors/cooks, with one personal Farm level;
+   no five-track expertise grind, slot-unlock ladder or random innate aptitude.
 3. **Recipe identity and permitted substitutions.** Same-stat raw/processed variants can add variety without
    doubling the recipe tree. The owner's revision gives every stat the same raw and processed options, including
    milk/cheese variants and direct Guts ingredients; do not impose nutritional logic or exceptional recipes.
@@ -55,6 +55,12 @@ not an aggregate account Farm Level or a sequential first-section-before-second-
    without a new currency or hidden recipe lottery.
 5. **Optional preparation flourish.** Short plating/chopping/stirring visuals and reduced-motion equivalents;
    a future hands-on practice can be cosmetic, never compulsory for yield or timing.
+6. **A rewarding short check-in.** Ready jobs wait without spoiling. Collect all, a clear level/item reveal and
+   deliberate Repeat make a large crew manageable; no automatic ingredient spending or absence penalty.
+
+These are proposed Uma Farm features inspired by the references, not claims that each source game has the
+same rules. The baseline remains an asynchronous planning/collection loop, not thirty mandatory Cooking Mama
+gesture challenges. Its concrete payoff is a prepared meal buying a named Extra Stats node for a chosen outfit.
 
 Defer seasons/weather, feed/fertilizer, cooking grades, restaurants/customers, decoration purchases, breeding,
 multi-step automatic queues and a separate farm inventory. Each would create another balance/sync surface
@@ -103,25 +109,22 @@ automatically restart while the owner is away. No Energy or helper-to-beneficiar
 Thirty workers completing two jobs/day provide sixty **account** jobs/day, not sixty jobs' personal EXP to one
 outfit. Account items can progress another outfit's Extra Stats in days while personal levels take weeks.
 
-## Independent expansion and pipeline capacity
+## Fixed capacity and pipeline balance
 
-Start at **1/1/1/3/3** spots and grow each district toward six from its own completed-job count. The proposed
-thresholds for spots 2–6 are **4/12/24/40/60**, with production's first three already open. At two completions
-per staffed spot/day, raw expansion takes about ten active days; production's three→six about eight active
-days. Worker supply, input stock and recipe gates delay calendar dates. No section must finish before another
-can start; no cross-section job credit or steep sum-of-outfit-levels ladder is proposed.
+Keep **6/6/6/6/6** spots open from the start. Remove the prior draft's nine-spot start, local expansion counters
+and thresholds. Available outfits, input stock and shared recipe milestones still determine how much of that
+capacity is productive; every slot being open does not require thirty assignments or bypass recipe access.
 
 At full capacity a production round is **108 raw → up to 36 processed → up to 24 meals**. The canonical mix needs
 about 35 processed plus 35 direct raw per 24 meals, so six workshops and kitchens fit average demand with a
-stock buffer. Raw supply is the initial restriction: three raw spots make 18 raw/round. Two spots per raw
-district give 36 total, but only 12 milk, insufficient for three cheese-first workshop jobs. Three per district
-give 18 milk plus Garden/Orchard stock and cover that typical production mix. Total volume must not hide a
-family-specific shortage. Banquet-only bursts need advance stock.
+stock buffer. Six Barnyard milk jobs supply the 36 inputs for six cheese-first workshop jobs, while Garden/
+Orchard cover direct ingredients. A smaller crew or different ingredient families can still leave a shortage;
+total volume must not hide a family-specific shortage. Banquet-only bursts need advance stock.
 
 With **thirty maps** pooled and exact partial kitchen batches, the job bill is Garden 250, Orchard 225,
 Barnyard 475, Workshop 475, Kitchen 493. Each district's six workers would complete 588 jobs on their own road
 to Lv50; the static material capacity fits without eighteen workshops/kitchens. This does not prove the
-starter farm's calendar schedule. Expansion, recipe startup, staggered workers and supply timing need a small
+starter farm's calendar schedule. Recipe startup, staggered workers and supply timing need a small
 simulation before release. Removing expertise alone cannot fix a yield/capacity mismatch.
 
 Recommendation: remove expertise, keep thirty physical spots, and increase production per job. Also propose

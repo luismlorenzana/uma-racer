@@ -13,22 +13,21 @@ until pinned in domain tests and a decision.
 ## Farm production and cooking — definition review
 
 The owner requested planning before implementation. The [full draft](design/farm-kitchen-rework.md) incorporates
-five expanding districts, batched recipes, independent outfit levels, Energy and the eventual Farm/Extra Stats reset. No reset or gameplay
+five fully open districts, batched recipes, independent outfit levels, Energy and the eventual Farm/Extra Stats reset. No reset or gameplay
 change has been executed. The remaining choices are interpretations/new balance proposals, not questions that
 reopen the owner's stated requirements:
 
 | Review point | Recommendation |
 |---|---|
 | Is one bought map shared across each five-scenario block, and should recipe access be shared? | Share purchases per outfit/block, keep scenario/distance activations. Recommended: each outfit needs the block's starting Farm level, but the first eligible outfit at local Lv6/9 unlocks processing/cooking recipes account-wide, so new workers can specialize |
-| How should independent slots expand? | Owner chose 1/1/1/3/3 initially and six per section eventually. Candidate local job thresholds 4/12/24/40/60 for spots 2–6; production already has 1–3. Same soft curve, independent counters; parallel does not promise matching calendar dates |
 | How do levels and production stay rewarding without bottlenecks? | Owner chose two jobs/level: 24 EXP/level, 12/job. Recommend no expertise, fixed 6h, raw 6 / processing 6 / kitchen 1–4 meals. Full-map bill 87 jobs fits the 98-job personal Lv50 path; 49 days at two/day, about 33 at three. Full 6/6/6/6/6 throughput fits the canonical mix; validate fresh-account/timed sims before pinning |
 | How large should Farm's independent stat contribution be, and how should Foundation apply? | Owner flagged the first budget as too large. Revised candidate: 65 nodes, 20 total raw/node, capacity 18 + 2 per scenario, giving 360→520 over scenarios 1–5; preserve card-node values, add Farm once after growth/before caps, no extra Foundation bonus. Approve only after synthetic stat/race checks |
-| What happens to old stock/ongoing jobs at the requested reset? | Keep legacy crop stock and one final legacy-output-only claim, no new EXP/slot progress. Keep workers only on initially open mapped spots; others return to Available after claim. Legacy jobs on locked spots stay accessible. One-time generation/recovery archive preserves unrelated progression |
+| What happens to old stock/ongoing jobs at the requested reset? | Keep legacy crop stock and one final legacy-output-only claim, no new EXP/recipe progress. Map old eighteen assignments/jobs onto the three raw districts; all thirty stations are open, Workshop/Kitchen initially empty. One-time generation/recovery archive preserves unrelated progression |
 
 Ingredient symmetry is now explicit: all five stats have equal family counts, recipe costs and canonical full-map
 demand, including milk/cheese variants and a direct Guts lane; no real-world nutrition rules (D295). This replaces
-the original restricted raw-lane interpretation. D296 records the owner's nine starting spots/two-job levels
-and the recommended no-expertise/batched capacity plan. Remaining numbers are candidates; the definition PR stays unmerged for
+the original restricted raw-lane interpretation. D297 supersedes D296's nine-spot start/expansion with all
+6/6/6/6/6 spots open. Two-job levels and the recommended no-expertise/batched capacity plan remain. Remaining numbers are candidates; the definition PR stays unmerged for
 owner review. Formal task numbers follow approval.
 
 ## Uma Puzzles — owner choices resolved

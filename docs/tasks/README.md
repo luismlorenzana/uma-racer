@@ -13,7 +13,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 **Owner Farm rework — definition in review, implementation not started.** The
 [production/cooking draft](../design/farm-kitchen-rework.md) and [research](../research/farm-kitchen-games.md)
-cover five independently expanding six-station districts, two jobs per outfit level, original batched recipes, shared-block Extra Stats,
+cover five fully open six-station districts, two jobs per outfit level, original batched recipes, shared-block Extra Stats,
 candidate balance and a future narrowly scoped reset. Existing Farm remains live. Review the definition before
 assigning numbered specs or executing any cutover; the proposed delivery units do not consume task numbers yet.
 
