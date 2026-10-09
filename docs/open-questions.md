@@ -14,22 +14,24 @@ until pinned in domain tests and a decision.
 
 The owner accepted the direction and requested full task authoring through production release.
 [M031](tasks/M031-farm-kitchen-rework.md) / T118–T124 and the [implementation contract](technical/farm-kitchen-implementation.md)
-now carry the [definition](design/farm-kitchen-rework.md). No reset/gameplay/deployment has been executed.
+now carry the [definition](design/farm-kitchen-rework.md). T118's dormant pure rules are complete/pinned (D304);
+no live Farm gameplay/reset has changed. [Measured balance](research/farm-kitchen-balance.md) separates the
+implemented layer from pending integration/release and the known legacy stamina-sim failure.
 These are remaining implementation/evidence checks, not questions reopening the fixed direction:
 
 | Review point | Recommendation |
 |---|---|
-| Production cadence / bottlenecks | T118 runs a modest actual-time/material sim for solo, smaller crew and 6/6/6/6/6 specialists. Baseline 24 EXP/level, 12/job, 6 h, raw 6/process 6/kitchen 1–4; 87 canonical jobs versus 98 to Lv50. Account items and personal level dates remain separate |
-| Scenario ingredient variety / gates | T118 validates 14 distinct 35 raw/45 processed rows, equal stat/family costs and optional raw gates 1+10×(index−1). Same-block foods feed 16 meal recipes and one bought map; shared local 6/9 processing/cooking milestones avoid forcing every newcomer through raw rotation |
-| Farm allowance / racing gaps | Baseline 65 nodes, 20 total/node, capacity 18+2 per scenario: 360→520 over 1–5. Preserve cards, add Farm once after growth/before caps, no extra Foundation multiplier. T118/T123/T124 report stat/race checks and remaining directional gaps before pinning/release |
+| Production cadence / bottlenecks | T118 verified and pinned 87 canonical jobs versus 98 to Lv50; solo/five/thirty/staggered actual-time policies and banquet stock-buffer limitation are recorded. Owner check-in pacing remains a release check; helpers never transfer personal EXP |
+| Scenario ingredient variety / gates | T118 validates all 14 distinct 35 raw/45 processed rows, equal costs and optional raw gates. Same-block shared recipes/lower-level specialists are tested; actual inventory/sync and cookbook presentation follow in T119–T122 |
+| Farm allowance / racing gaps | D304 pins 65 nodes/20 total each, capacity18+2, flat post-growth/before-cap Farm without Foundation scaling. Exact card-only equality/all-tier mixed-deck matrix pass; T123/T124 still verify real acknowledged race joins. Existing tier1 stamina-ladder failure remains separate |
 | Reset and legacy safety | T120 rehearses generation/archive/whitelist/retry/second-device guards, retain old stock/jobs once for 0 new EXP, map 18 workers to raw districts. T124 alone activates the fully integrated replacement; no manual save edit or unrelated reset |
 | Real pacing / iPhone / second device | Owner checks after production release, with exact Home→Farm→meal→Extra→race paths. Synthetic browser proof and deployment checks cannot sign off owner play or installed PWA behaviour |
 
 Ingredient symmetry is now explicit: all five stats have equal family counts, recipe costs and canonical full-map
 demand, including milk/cheese variants and a direct Guts lane; no real-world nutrition rules (D295). This replaces
 the original restricted raw-lane interpretation. D297 removes the nine-spot start/expansion; D298–D299 authorize
-the seven-task plan and scenario flavour contract. New balance values are implementation baselines until
-verified/pinned; existing Farm still runs its old rules. No unanswered owner choice blocks T118.
+the seven-task plan and scenario flavour contract. D304 verifies/pins the new pure values; existing Farm still
+runs its old rules. No unanswered owner choice blocks T119.
 
 ## Uma Puzzles — owner choices resolved
 

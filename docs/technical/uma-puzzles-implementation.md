@@ -775,7 +775,7 @@ reads a frozen fight's `content.recipeHash` (`puzzle-campaign-v1` | `puzzle-camp
 node in that version's chapter. Reward, EXP (`puzzleBattleExp(…, version)`), recipe and receipt checks all use the
 frozen version; `reserve` accepts only v2. `parsePuzzleCheckpointSave` keeps the strict v2 path (stored `reached` must
 equal the derived one) and otherwise reads a valid v1 checkpoint through `upgradePuzzleCheckpoint`: retired ids
-dropped from wins and attempts, `reached` derived. v2 keeps v1's opening rule for the other stages (D304), so every
+dropped from wins and attempts, `reached` derived. v2 keeps v1's opening rule for the other stages (D305), so every
 valid v1 history, including old receipts' checkpoint copies, stays valid. An open fight on a retired stage skips the reach/attempt check and settles without changing
 progress. The next write of the row stores the v2 form. The API mirror is regenerated from the same source.
 

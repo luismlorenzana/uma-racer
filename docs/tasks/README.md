@@ -11,15 +11,17 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**[M031 — Farm production/cooking rework](M031-farm-kitchen-rework.md) — specified, implementation not started.**
+**[M031 — Farm production/cooking rework](M031-farm-kitchen-rework.md) — T118 complete, T119 next.**
 The owner authorized full task authoring through production release (D298–D299).
 [Design](../design/farm-kitchen-rework.md), [technical contract](../technical/farm-kitchen-implementation.md)
 and [research](../research/farm-kitchen-games.md) cover thirty fully open spots, independent outfit levels,
 scenario-specific symmetric ingredients, batched recipes, shared-block Extra Stats and the guarded future reset.
-Work one task/green PR/merge at a time: T118 rules/balance → T119 save/sync → T120 dormant cutover → T121 real
+T118's [pure contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304) and
+[measured witnesses](../research/farm-kitchen-balance.md) are implemented/pinned (D304).
+Work one task/green PR/merge at a time: T119 save/sync → T120 dormant cutover → T121 real
 host → T122 Farm/cookbook screens → T123 Extra/race wiring → T124 complete production release. T118–T123 keep
 normal capabilities off; existing Farm remains live until the whole loop and backup/reset are ready. No reset
-or deployment is executed by this documentation plan. Fixed choices are settled; measured balance/device checks remain.
+is performed by T118. Fixed choices and pure baselines are pinned; integration and owner-device checks remain.
 
 **M030 / T116 — Uma Puzzles release is complete** (D289–D290): the owner approved verified
 **original-placeholder art** for production, so permitted PAD portraits no longer block release.
@@ -51,7 +53,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M031 — Farm production and cooking](M031-farm-kitchen-rework.md) | [T118 rules](T118-farm-kitchen-rules.md) · [T119 sync](T119-farm-kitchen-save-sync.md) · [T120 cutover](T120-farm-kitchen-cutover.md) · [T121 host](T121-farm-kitchen-host.md) · [T122 screens](T122-farm-kitchen-screens.md) · [T123 Extra Stats](T123-farm-kitchen-extra-stats.md) · [T124 release](T124-farm-kitchen-release.md) | Specified; pick up T118 first, one PR/merge at a time |
+| [M031 — Farm production and cooking](M031-farm-kitchen-rework.md) | T118 complete · [T119 sync](T119-farm-kitchen-save-sync.md) · [T120 cutover](T120-farm-kitchen-cutover.md) · [T121 host](T121-farm-kitchen-host.md) · [T122 screens](T122-farm-kitchen-screens.md) · [T123 Extra Stats](T123-farm-kitchen-extra-stats.md) · [T124 release](T124-farm-kitchen-release.md) | T119 next, one PR/merge at a time; old Farm stays live |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -77,6 +79,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T118 — Pure Farm catalogue, production/map rules and balance | 2026-10-09 | [Pure contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), D304 and [balance witnesses](../research/farm-kitchen-balance.md); no live Farm change | `adaca2b` |
 | T117 — Puzzle setup parity with the RPG | 2026-10-08 | [Setup contract](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275), D293 and [synthetic phone proof](../research/puzzle-setup-parity/README.md); ten parties, unchanged sync limits | `8665513` |
 | T109 — Private owner-export Puzzle art upgrade | 2026-10-08 | [Content contract](../technical/puzzle-content.md), D292 and [aggregate art acceptance](../research/puzzle-art-release-acceptance.md); old placeholder packs retained | `4951830` |
 | M030 / T116 — Verified-placeholder Puzzle release, tuning, Home and preservation backup | 2026-10-08 | [Uma Puzzles](../design/uma-puzzles.md), D289–D290 and [release/owner checks](../research/uma-puzzles-release-acceptance.md); later T109 art upgrade retained | `0879ce5` |

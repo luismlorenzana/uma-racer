@@ -32,6 +32,8 @@
     "sim:training": "pnpm dlx tsx scripts/sim/training-balance.ts",
     "sim:spark": "pnpm dlx tsx scripts/sim/spark-balance.ts",
     "sim:farm": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/farm-progression.ts",
+    "sim:farm:kitchen": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/farm-kitchen.ts",
+    "sim:farm:stats": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/farm-kitchen-stats.ts",
     "sim:rpg:campaign": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-campaign.ts",
     "sim:puzzles": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/puzzles.ts",
     "sim:puzzles:preservation": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/puzzle-preservation.ts"

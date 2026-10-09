@@ -36,7 +36,7 @@ describe('code-authored Puzzle campaign', () => {
       '1:4', '1:4', '1:5', '1:5', '1:6', '1:6', '1:G', '2:7', '2:7', '2:8', '2:8', '2:9', '2:9', '2:G'])
     expect(c.nodes.filter(n => n.kind === 'guardian').map(n => n.level)).toEqual([3, 6, 9])
     for (const lane of ['a', 'b']) expect(new Set(c.nodes.filter(n => n.kind === 'ordinary' && n.localId.endsWith(lane)).map(n => n.elements.join('/'))).size).toBe(6)
-    // A level's two stages open together once either stage of the level before is won (v1's lanes, D304).
+    // A level's two stages open together once either stage of the level before is won (v1's lanes, D305).
     expect(c.nodes.find(n => n.localId === 'o2b')!.requires).toEqual([[`pzn:${c.scenarioId}:o1a`, `pzn:${c.scenarioId}:o1b`]])
     expect(c.nodes.find(n => n.localId === 'g3')!.requires).toEqual([[`pzn:${c.scenarioId}:o9a`, `pzn:${c.scenarioId}:o9b`]])
   })
@@ -92,7 +92,7 @@ describe('code-authored Puzzle campaign', () => {
     const start = createPuzzleCheckpoint(v1, 'puzzle-party-1'), second = applyPuzzleTerminal(v1, start, acceptedFact(v1, start, 'o1b'))
     expect(puzzleChapterStatus(v1, second).reached).toEqual(v1.nodes.slice(0, 4).map(n => n.id))
   })
-  it('reads a v1 checkpoint on the v2 line by dropping only the retired tenth pair (D304)', () => {
+  it('reads a v1 checkpoint on the v2 line by dropping only the retired tenth pair (D305)', () => {
     const v1 = puzzleChapter(SCENARIOS[0]!.id, SCENARIOS, 1), v2 = puzzleChapter(SCENARIOS[0]!.id)
     const play = (ids: [string, 'win' | 'loss'][]) => ids.reduce((p, [localId, outcome]) => applyPuzzleTerminal(v1, p, acceptedFact(v1, p, localId, outcome)),
       createPuzzleCheckpoint(v1, 'puzzle-party-3'))

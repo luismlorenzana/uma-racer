@@ -54,7 +54,7 @@ export function parsePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, regist
   } catch { return null }
 }
 /**
- * A checkpoint saved on D271's two-lane map, read on the v2 stage line (D301, D304). The line keeps v1's opening rule,
+ * A checkpoint saved on D271's two-lane map, read on the v2 stage line (D301, D305). The line keeps v1's opening rule,
  * so the only change is dropping wins and attempts on the retired tenth pair; the Senior Guardian they opened needs
  * the ninth pair, which any v1 Guardian win or attempt already had. Null unless it was a valid v1 checkpoint.
  */

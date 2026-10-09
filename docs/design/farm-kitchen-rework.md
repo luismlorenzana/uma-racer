@@ -1,20 +1,21 @@
 # Uma Farm — production and cooking rework
 
-> **Implementation definition · 2026-10-08 · not implemented.** The owner authorized full task authoring for
+> **Implementation definition · 2026-10-09 · pure rules complete, not live.** T118 implements and pins the
+> original catalogue, production/map rules and deterministic balance witnesses (D304). The owner authorized
 > [M031](../tasks/M031-farm-kitchen-rework.md). This is the planned replacement for
 > [Stable Farm](farm.md) and its [Extra Stats grid](constellations.md#extra-stats), not a description of production.
-> The owner's requirements are distinguished from recommendations below. Candidate numbers do not change the
-> running game or its domain pins. [The implementation contract](../technical/farm-kitchen-implementation.md)
-> and T118–T124 cover rules through production release. This documentation does not execute the reset or deploy code.
+> [The implementation contract](../technical/farm-kitchen-implementation.md) and
+> [measured balance record](../research/farm-kitchen-balance.md) carry the implemented pure layer.
+> T119–T124 still cover persistence through production release. No live Farm rule or owner save has changed.
 
 > **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
 > real-world nutrition rules or special Guts tax. The earlier 60-point/node proposal is replaced by a smaller
-> 20-point/node candidate. See §10 for the old/new budget comparison and §11 for exact Lv1→50 timing.
+> pinned 20-point/node baseline. See §10 for the old/new budget comparison and §11 for exact Lv1→50 timing.
 
 > **Capacity/pacing revision:** keep **6/6/6/6/6**, with all thirty spots open from the start and no slot expansion.
 > Two jobs now earn one outfit level. Removing expertise,
-> a fixed six-hour timer, larger production batches and shared recipe access are the recommended rebalance,
-> the implementation baseline pending T118's bounded balance proof, not shipped/pinned constants.
+> a fixed six-hour timer, larger production batches and shared recipe access are now verified/pinned in the
+> dormant pure layer, not shipped live Farm behaviour.
 > §3 and §11 separate personal levels from account throughput. Every registered scenario has its own ingredient
 > variants (§6), while meals and bought maps remain shared within five-scenario blocks.
 
@@ -53,9 +54,9 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
   Level. Do not migrate those bonuses or levels into equivalent new progress.
 - Compact district screens: all six stations visible without page scrolling at 390 × 844.
 
-### Implementation baseline and balance candidates
+### Verified implementation baseline (T118, D304)
 
-| Topic | Draft choice | Why |
+| Topic | Pinned choice | Why |
 |---|---|---|
 | Five-scenario map | Unlocks shared by outfit across scenarios 1–5; a new map for 6–10, then 11–15 | One purchase is not paid five times; each scenario still has its own active builds |
 | Farm level gates | Personal block eligibility at Lv1/51/101…; optional raw scenario variants at Lv1 + 10 × (index − 1); first eligible worker at block-local Lv6/9 unlocks processing/cooking account-wide | New workers can specialize without all repeating raw-work prerequisites; new flavours do not gate the shared map |
@@ -63,11 +64,12 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
 | Processing's double value | One processed unit has two ingredient-potency units; not a direct racing-stat buff | Ingredients are only inputs, and activating a purchased node is not another meal consumption |
 | Expertise | Remove it; use a fixed six-hour job duration | No rotation tax or five extra XP tracks; three daily check-ins become practical |
 | Production batches | Raw 6; workshop 6 raw → 6 processed; kitchen makes a chosen 1–4 meals | Increase downstream throughput instead of multiplying physical station count |
-| Proposed progression | 24 EXP/level; 12 EXP/job, regardless of batch size | 98 jobs to Lv50: 49 days at two/day or about 33 at three/day |
-| Proposed Extra Stats | 65 nodes; each active node distributes 20 raw points; capacity 18 + 2 × (scenario index − 1) | Starts at 360 total, rather than jumping from the old 240/360 to 960 |
+| Progression | 24 EXP/level; 12 EXP/job, regardless of batch size | 98 jobs to Lv50: 49 days at two/day or about 33 at three/day |
+| Extra Stats | 65 nodes; each active node distributes 20 raw points; capacity 18 + 2 × (scenario index − 1) | Starts at 360 total, rather than jumping from the old 240/360 to 960 |
 
-These are the task-authoring baseline. T118 verifies and pins the new numbers with a decision; changes must update
-this definition, domain pins and sim envelopes together. Do not reopen fixed scope choices or treat arithmetic as
+These are verified in T118's [actual-time/material/stat witnesses](../research/farm-kitchen-balance.md) and pinned
+in the new pure modules/domain tests. Later changes must update this definition, pins and sim envelopes together.
+Do not reopen fixed scope choices or treat arithmetic as
 measured gameplay. A failed balance witness is reported explicitly, not hidden by grants or a larger stat budget.
 
 ## 2. What changes from production
@@ -77,8 +79,8 @@ measured gameplay. A failed balance witness is reported explicitly, not hidden b
 | Eighteen plots; aggregate levels unlock them sequentially | Five six-station districts, all thirty spots immediately open; no expansion ladder |
 | Every plot grows any stat's scenario crop | District-specific raw goods, recipes and input-consuming jobs |
 | 24 EXP/level; raw harvest pays 12 EXP and one crop | Keep two jobs/level; all job kinds pay 12 EXP, with larger yields |
-| Crop access every ten levels, older rows faster | Five-scenario ingredient blocks; personal block eligibility, shared recipe access, fixed candidate timer |
-| Per-scenario 20-node grid, six active, +40 each | Per-block 65-node map, scenario-specific active capacity, candidate +20 total/node |
+| Crop access every ten levels, older rows faster | Five-scenario ingredient blocks; personal block eligibility, shared recipe access, fixed six-hour timer |
+| Per-scenario 20-node grid, six active, +40 each | Per-block 65-node map, scenario-specific active capacity, +20 total/node |
 | Direct crop purchases costing 1/2/3/4 | One matching cooked meal per physical node, no sequential purchase costs |
 | Existing 240-point Extra Stats allowance subtracted from the card pool | Preserve current card-node values; add an independently budgeted Farm contribution |
 | Debug action shifts all running jobs | Debug grants Energy; a deliberate spend advances one job |
@@ -166,7 +168,7 @@ Drop the five expertise XP/rank tracks. They encourage cycling every outfit thro
 timer, precisely the repetition the owner wants to avoid. A worker can remain a grower, processor or cook by
 assignment, but that role is not a locked class or permanent efficiency penalty. Moving idle workers is free.
 
-**Candidate timer: six hours for every raw, processing and cooking job**, with no rank-based reduction or
+**Pinned timer: six hours for every raw, processing and cooking job**, with no rank-based reduction or
 outfit-specific speed multiplier. Farm Level opens ingredient blocks, not a second timer curve. Shared recipe
 milestones open job options; completed jobs grow the worker's personal Farm Level. Removing expertise simplifies assignment
 but does **not** solve throughput by itself: the batches in §6–8 do that.
@@ -408,7 +410,7 @@ proposed 960 raw in Scenario 1 and 1,440 in Scenario 5, plus separate Foundation
 increase, not merely more build choices. The owner questioned it; this revision reduces node power and removes
 the extra Foundation allowance. **A bigger map must not silently become a bigger order-of-magnitude budget.**
 
-Revised candidate capacity is **`18 + 2 × (scenarioIndex − 1)`** for the present registry:
+Verified capacity is **`18 + 2 × (scenarioIndex − 1)`** for the present registry:
 
 | Scenario range | Active capacities | Maximum total raw Farm contribution |
 |---|---|---|
@@ -437,13 +439,13 @@ would reduce card-node value, undoing the reason for this rework. The implementa
 1. Preserve current card-node values and their global-star/era/preset calculations. Name their historical
    240-point normalization explicitly; do not subtract the new Farm pool or quietly redistribute card nodes.
 2. Calculate the purchased/active Farm vector separately, with no card-type, star or release-era scaling.
-3. **Candidate:** add Farm as a flat contribution after the existing base/card growth calculation and before
+3. Add Farm as a flat contribution after the existing base/card growth calculation and before
    final stat caps. This makes its per-scenario progression genuinely linear and visible, without growth
    multiplying Farm again. Other pre-existing base/card/buff paths stay unchanged.
-4. **Revised candidate:** Foundation, growth and other existing multipliers do not scale this separate Farm
+4. Foundation, growth and other existing multipliers do not scale this separate Farm
    vector again. No flat +120 Foundation replacement is added. Its Scenario 1 Farm ceiling is already 360,
    matching the old Foundation raw ceiling; later ceilings rise linearly instead of dropping when Foundation
-   disappears. Retain Foundation's existing non-Farm effects. T118 verifies this boundary against actual
+   disappears. Retain Foundation's existing non-Farm effects. T118 verified this boundary against actual
    source-specific stat matrices and pins the settled baseline with matching docs and a decision; T123 wires it.
 5. Keep the existing final stat caps, race engine, skill SP, aptitudes and Inspiration calculations. Document
    the old combined-budget invariance as superseded only for Farm; card-only invariance must still hold.
@@ -453,7 +455,7 @@ Use those example builds as **later-scenario directional targets**, not permissi
 Check the displayed result by source: base/cards, growth/buffs, Farm, then cap. The Farm page should explain
 which missing stats a build can repair and which desired gains are already capped.
 
-This conservative candidate **does not promise** that Farm alone raises a 200-stat cardless build to 900.
+This conservative baseline **does not promise** that Farm alone raises a 200-stat cardless build to 900.
 Measure the real stat-source arithmetic with synthetic decks before committing to the owner's directional
 targets. If the gap remains, report it and consider a separate card/base-stat distribution proposal; do not
 hide a thousand-point Farm increase or change card values/race rules under a recipe task.
@@ -557,7 +559,7 @@ workers entering at different times, recipe access, ingredient substitutions and
 The intended loop is a cooperative crew with specialists, not a requirement that every worker personally
 completes all five job kinds. Solo production remains feasible as the 87-job witness above shows.
 
-### Required balance work before constants ship
+### Balance proof and remaining integration checks
 
 - A small deterministic Farm progression sim: self-sufficient outfit; fixed multi-outfit specialists; two
   daily check-ins; perfect-readiness lower bound; input shortages; block 1 → 2 → 3; reset cohort; no Energy and
@@ -572,11 +574,20 @@ completes all five job kinds. Solo production remains feasible as the 87-job wit
 - Check current racing stamina/finish envelopes with repaired builds. Preserve card progression as a
   meaningful advantage; reject a Farm configuration that makes deck differences irrelevant. Report weak-stat
   floors and attainable balanced builds separately from universal max-stat builds, which are not the goal.
-- Decide the candidate node values/capacity, Farm curve/yields and Foundation treatment together. Update the
+- Keep node values/capacity, Farm curve/yields and Foundation treatment together. Update the
   living design, `packages/domain/src/domain.test.ts` pins, affected sim envelopes and a new decision row.
 
-The arithmetic above was recomputed while authoring; **these timed and race-stat sims have not been implemented
-or run**. Existing `sim:farm` measures the shipped old model and cannot validate this proposed production chain.
+T118 implements `sim:farm:kitchen` and `sim:farm:stats`; [the measured record](../research/farm-kitchen-balance.md)
+pins actual schedule/stock and stat reports. Solo full-map elapsed times are43.5/29/21.75 days at two/three/four
+checks per day; a five-worker cold start takes21.5 days, thirty workers fund thirty maps in49.5 days and a
+staggered cohort takes63 days. These are declared policies, not optimal play promises. A continuous solo
+three-block run preserves stock/EXP and finishes287 jobs atLv144; an earned-Lv9 banquet-only cohort needs
+66 jobs/3 days to prepare24 meals from zero stock. All fourteen tiers preserve exact card-only values; the new
+Farm vector never gains Foundation/growth multipliers. Baseline constants needed no tuning.
+
+The shipped `sim:farm` and career envelopes pass. The legacy constellation sim retains its already documented
+tier1 one-Stamina-card/1,400m failure, not a Farm regression; no racing rules are retuned here. T123/T124 still
+verify real stat/race wiring and device/release behaviour. Existing `sim:farm` alone cannot validate the new chain.
 
 ## 12. Energy
 
@@ -762,7 +773,7 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 
 [M031](../tasks/M031-farm-kitchen-rework.md) sequences seven individually deliverable tasks, one PR/merge at a time:
 
-1. [T118](../tasks/T118-farm-kitchen-rules.md): pure original catalogue/progression, recipe/Extra map rules and modest balance proofs.
+1. T118 **complete**: [pure original catalogue/progression and recipe/map contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), with [measured balance proofs](../research/farm-kitchen-balance.md).
 2. [T119](../tasks/T119-farm-kitchen-save-sync.md): additive records, semantic commands, strict API mirror and bounded atomic sync.
 3. [T120](../tasks/T120-farm-kitchen-cutover.md): dormant protected reset, private backup, legacy claim and second-device rehearsals.
 4. [T121](../tasks/T121-farm-kitchen-host.md): real save-backed host, canonical/pending projections, runtime and recovery.
@@ -782,7 +793,7 @@ publication is required for the baseline. The already-owned Uma art can be reuse
 
 The remaining checks are measured cadence, stock timing, the independent Farm stat budget and physical-device
 behaviour, not a request to reopen the fixed direction. [Open questions](../open-questions.md#farm-production-and-cooking--definition-review)
-tracks them without pretending baseline numbers are already pinned or release acceptance has happened.
+tracks them without confusing pinned pure rules with release acceptance.
 
 Before implementation closes:
 

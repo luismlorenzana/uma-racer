@@ -12,7 +12,7 @@ import type { PuzzleChapter, PuzzleMapNode } from './types'
 /**
  * Stage `o{pair}{a|b}` has the same level, trio, roles and opening rule in both versions, so any v1 progress is v2
  * progress. v2 lists the stages in one line, a level's two stages opening together once either stage of the level
- * before is won (v1's lanes), and drops v1's tenth pair (D301, D304).
+ * before is won (v1's lanes), and drops v1's tenth pair (D301, D305).
  */
 export function puzzleChapter(scenarioId: string, registry: PuzzleScenarioRegistry = SCENARIOS,
   version: PuzzleCampaignVersion = PUZZLE_CAMPAIGN_VERSION): PuzzleChapter {
