@@ -68,7 +68,7 @@ make a racing build mandatory for its party.
   Any of an outfit's **A running-style aptitudes** can qualify a ticket.
 - Tickets live in global Items and can be saved before the racing Uma reaches their destination scenario.
 - Add a shop exchanging **one ticket of the immediately higher scenario for two of the lower**, and the reverse.
-- Home opens the global mode. It has its own roster, navigation and **five parties of five Umas**; all five slots
+- Home opens the global mode. It has its own roster, navigation and **ten parties of five Umas**; all five slots
   are filled before entering a battle. Each party can retain its own chapter progress.
 - Choose and lock an outfit's Puzzle element during roster registration: non-Dirt-A Front-only/Front+Pace → Light;
   End-only/Late+End → Dark; Pace-only/Late-only/Pace+Late choose Fire/Water/Wood. **Dirt A chooses any of all five**,
@@ -319,7 +319,7 @@ teams before approving it; do not copy PAD's third-attribute coefficient into ou
 ### Independent outfit identity
 
 **Proposal: Puzzle Level is global per outfit**, as Farming/RPG progression is, not per party, character or scenario.
-Five saved party maps are separate; moving an outfit to another party does not reset or duplicate its level.
+Ten saved party maps are separate; reassignment to another party does not reset or duplicate its level.
 This interprets the brief's independent Uma leveling; an account-wide single PL would be a materially different choice.
 
 Enroll an owned outfit through the shared Uma picker. Preview eligible elements, original grades, starting Puzzle
@@ -332,11 +332,15 @@ without using reloads/edits to counterpick an open encounter. A future respec sy
 
 ### Parties
 
-Five named presets; five distinct owned, enrolled outfit ids in a fixed order. Slot 1 is the leader. No borrowed sixth
+Ten named presets (D293); five distinct owned, enrolled outfit ids in a fixed order. Slot 1 is the leader. No borrowed sixth
 member, helper dependency or compulsory class/colour quota. Multiple elements and one defensive utility are recommended.
 
-**Proposal:** an outfit is assigned to one preset at a time, using an explicit Move confirmation like the current RPG.
-Moving it preserves both presets' map wins. A party with an open battle cannot change members, leader or equipped
+An outfit is assigned to one preset at a time. The UI picker offers only enrolled Umas held by no party, highest
+Puzzle Level first, then name and id. Remove her from her other party before adding her here; there is no cross-party
+Move mode. Add fills an empty slot; Swap replaces a filled slot in place with the incoming outfit's default kit,
+retaining its slot/leader position. Remove empties the slot. Reassignment preserves both presets' map wins.
+The revision-checked transfer protocol remains supported for stored operations, but has no UI entry.
+A party with an open battle cannot change members, leader or equipped
 skills until that battle is finished or explicitly abandoned. An outfit's progression elsewhere never mutates frozen
 battle inputs. Same-character alternate outfits may coexist initially, as separate outfits; review this if undesirable.
 
@@ -834,9 +838,9 @@ it must receive an explicit update/recovery message when reconnecting, never ove
 
 ### Own navigation, familiar components
 
-**T112–T114 implemented (D275–D276, D283), release still disabled:** lazy `/puzzles` setup, battle and material routes use the real host,
-not a production double. The gate runs before host/account/content I/O; deep links cannot enable the capability.
-There is no Home card or account cutover yet. `/puzzles/content` remains a separate read-only preflight. The DEV phone
+**T112–T117 implemented (D275–D276, D283, D289–D293):** lazy `/puzzles` setup, battle and material routes use the real host,
+not a production double. T116 enabled matching release gates and Home entry; account readiness and verified content
+still guard gameplay. Deep links cannot bypass preparation. `/puzzles/content` remains a separate read-only preflight. The DEV phone
 proof runs only an isolated invented account; [setup](../research/puzzle-navigation-phone-proof.md) and
 [battle screenshots](../research/puzzle-battle-phone-proof.md) are separate from device acceptance.
 
@@ -845,11 +849,18 @@ picker. Internal destinations: **Parties · Roster · Chapters · Exchange · It
 do not add five global bottom tabs. Reuse the RPG's compact five-across Uma icon treatment and shared picker, but
 separate its state and labels.
 
-- **Roster:** enrolled before unenrolled, source filter/element filter, PL and element overlay on each portrait.
-  Detail shows stats, next-level deltas, eligible/frozen identity, active kit and leader skill.
-- **Parties:** five cards, five member icons each, leader mark, colour coverage, average/range PL and per-chapter resume.
-  The picker excludes other draft slots, explains an explicit transfer and never edits an open battle's party.
-- **Chapter launch pad:** scenario crests, target PL band, selected party, clear/resume badges and material preview.
+- **Roster:** Enrolled · N / Not enrolled · N sections; highest PL first, then name/id, unavailable last within Not
+  enrolled. One horizontal scrolling filter row: All, five element marks and four original-A styles. Captions give
+  name and PL n / Enroll / Unavailable. Detail shows an EXP bar, capitalized element, party name, stats, next-level
+  deltas, eligible/frozen identity, active kit and leader skill. From a party, five member links retain `?party=`,
+  ring the current member and dim the rest; named Back returns to that party. From Roster, Back returns to Roster.
+- **Parties:** ten Hub cards, five member icons each, leader mark, colour coverage, average/range PL and true resume.
+  Partial parties open their editor with **Fill party**. Without enrollment, a first-use card invites **Open Roster**;
+  nothing is auto-enrolled. Bank/backup follow parties. Each editor has five vertical slot cards: portrait/name
+  profile links, PL/element, Add or Swap/Remove, inline full-label kit chips and move-left/right controls. Slot 1 leads.
+  The free-only picker shows name/PL and links its empty state to Roster; no cross-party move UI or silent transfer.
+- **Chapter launch pad:** scrolling ten-party chips (name, filled/5), scenario crests, target PL band,
+  clear/resume badges and material preview. Chips retain the same device navigation memory.
 - **Map:** branches, readable node levels, enemy element triplets, boss-route colour plus reward-style glyph. The
   preview shows combat modifiers, exact stock/debt effects and Begin/Resume. No gameplay-blocking Sync button.
 - **Battle:** monsters and intents above, team HP/status, five Uma portraits with active-charge rings, then the 6×5
@@ -859,14 +870,18 @@ separate its state and labels.
 - **CL spend result:** separate from battle results. Names actual opened card nodes and stat/SP increases and links
   back to that unit's Constellation. Inspiration/Extra stats display no false new unlock animation.
 
-Implemented setup details: the owned roster has five compact icons per row, enrolled-first name/id ordering,
+Implemented setup details: the owned roster has five compact icons per row, enrolled-first PL/name/id ordering,
 original-A/element filters and visible unavailable no-A entries. Registration shows frozen original grades/version,
 PL1 contributions and eligible actives; colour-count advice never selects a colour, even for fixed Light/Dark.
 Confirm enrollment/correction explicitly; first entry permanently locks colour after loss/abandon too. Profiles
 show remaining EXP, next-level five-stat deltas and finite unlocked kits. Roster defaults affect future assignments,
 not existing party-slot kits. Names, slot edits/order/leader and unlocked kit edits save through revision-checked host
-operations. The unassigned-only picker has a deliberate named transfer confirmation retaining both party revisions;
-an open battle on either side blocks it and checkpoints survive. Slot1 is the leader; no required rainbow/style quota.
+operations. The unassigned-only Add/Swap sheet captures the destination revision on open; stale edits reject instead
+of silently replacing another member. Open battles lock members, loadouts and leader. Slot1 is the leader; no required
+rainbow/style quota. All Puzzle choices use 44 pt chips/option rows, never native dropdowns, including presentation-only
+Items/Exchange controls; economic preview, acknowledgement and retry rules are unchanged. Map Back returns to that
+party's Chapters. [T117 phone proof](../research/puzzle-setup-parity/README.md) uses invented portraits/accounts at
+390×844 and 375×667; owner iPhone acceptance remains separate.
 
 The launch pad includes all fourteen registered crests/ten-level bands, without racing-scenario ownership gates.
 Five filled slots are required to launch; average/range PL warnings do not gate adventurous parties. Each map is a

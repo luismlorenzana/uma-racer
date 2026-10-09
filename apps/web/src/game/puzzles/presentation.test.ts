@@ -3,7 +3,7 @@ import { PUZZLE_LEADERS, SCENARIOS, createPuzzleBattle, puzzlePartyStats, resolv
 import { puzzleUiProofData, proofCast } from '../../screens/puzzles/ui-proof-data'
 import { parsePuzzleCheckpointSave, parsePuzzleOutfitSave, parsePuzzlePresetSave, parseConstellationBankSave } from '@racer/domain'
 import { createPuzzleNavigation } from './navigation'
-import { openPuzzleNode, puzzleMapStatus, puzzleNodeName, puzzlePartyMembers, puzzlePartySummary, puzzlePicker, puzzleRewardEstimate,
+import { openPuzzleNode, puzzleMapStatus, puzzleNodeName, puzzlePartyMembers, puzzlePartySummary, puzzlePartyCandidates, puzzleRewardEstimate,
   puzzleRoster, replacePuzzleSlot, suggestedPuzzleElement } from './presentation'
 import type { PuzzleAccount } from './host'
 function fixture() {
@@ -45,12 +45,33 @@ describe('Puzzle account presentation', () => {
     const moved = { ...party, slots: [party.slots[1]!, party.slots[0]!, ...party.slots.slice(2)] }
     expect(puzzlePartySummary(moved, f.account).leader).toBe(party.slots[1]!.outfitId)
   })
-  it('picker excludes draft duplicates and assignments normally; explicit moves show idle/blocked source', () => {
-    const f = fixture(), target = f.account.parties[1]!
-    expect(puzzlePicker(f.account, target)).toEqual([])
-    const transfers = puzzlePicker(f.account, target, true)
-    expect(transfers).toHaveLength(10); expect(transfers.slice(0, 5).every(p => !p.blocked)).toBe(true); expect(transfers.slice(5).every(p => p.blocked)).toBe(true)
-    expect(puzzlePicker(f.account, f.account.parties[0]!, true)).toHaveLength(5)
+  it('picker excludes every party, including its own slots and party 10, then sorts level/name/id', () => {
+    const f = fixture(), name = (id: string) => f.content.umas.byId.get(id)?.name ?? id
+    expect(puzzlePartyCandidates(f.account, name)).toEqual([])
+    f.account.parties[0]!.slots[0] = null; f.account.parties[0]!.slots[1] = null
+    f.account.parties[2]!.slots[0] = null
+    expect(puzzlePartyCandidates(f.account, name).map(o => o.outfitId)).toEqual(['invented-ui-0', 'invented-ui-1', 'invented-ui-5'])
+    f.account.parties[9]!.slots[0] = { outfitId: 'invented-ui-0', kit: f.account.outfits[0]!.kit }
+    f.account.outfits[5]!.enrollment.level = 20
+    expect(puzzlePartyCandidates(f.account, name).map(o => o.outfitId)).toEqual(['invented-ui-5', 'invented-ui-1'])
+    expect(puzzlePartyCandidates(f.account, name, ['invented-ui-1']).map(o => o.outfitId)).toEqual(['invented-ui-1'])
+    expect(puzzlePartyCandidates(f.account, () => 'Same name').map(o => o.outfitId)).toEqual(['invented-ui-5', 'invented-ui-1'])
+    f.account.outfits[1]!.enrollment.level = 20
+    expect(puzzlePartyCandidates(f.account, () => 'Same name').map(o => o.outfitId)).toEqual(['invented-ui-1', 'invented-ui-5'])
+    const swapped = replacePuzzleSlot(f.account.parties[0]!, 0, f.account.outfits[5]!)
+    expect(swapped.slots[0]).toEqual({ outfitId: 'invented-ui-5', kit: f.account.outfits[5]!.kit })
+    expect(swapped.slots.slice(1)).toEqual(f.account.parties[0]!.slots.slice(1))
+  })
+  it('roster groups enrollment, sorts PL before name, uses stable name/id ties and puts unavailable last', () => {
+    const f = fixture(), owned = f.sources.map(s => s.templateId)
+    f.account.outfits[9]!.enrollment.level = 30
+    const entries = puzzleRoster(owned, f.content.umas.byId, f.account, 'invented-v1')
+    expect(entries[0]!.id).toBe('invented-ui-9')
+    expect(entries.slice(1, 6).map(e => e.name)).toEqual(['Amber Ribbon', 'Blue Bell', 'Cedar Step', 'Dawn Runner', 'Evening Star'])
+    expect(entries.slice(-2).map(e => e.id)).toEqual(['invented-ui-10', 'invented-ui-11'])
+    const sameName = new Map(f.content.umas.byId)
+    sameName.set('invented-ui-1', { ...sameName.get('invented-ui-1')!, name: 'Amber Ribbon' })
+    expect(puzzleRoster(['invented-ui-1', 'invented-ui-0'], sameName, f.account, 'v1').map(e => e.id)).toEqual(['invented-ui-0', 'invented-ui-1'])
   })
   it('all 14 scenario bands are independent and all three guardians precede Finals', () => {
     const f = fixture()
@@ -78,9 +99,9 @@ describe('device-only navigation memory', () => {
   it('keeps selected party/chapter and independent per-map position without release control', () => {
     let data = ''; const storage = { getItem: () => data, setItem: (_: string, value: string) => { data = value } }
     const memory = createPuzzleNavigation('invented-nav', storage), node = 'pzn:ura-finale:g1'
-    memory.choose('puzzle-party-2', 'unity-cup'); memory.position('puzzle-party-1', 'ura-finale', node)
+    memory.choose('puzzle-party-10', 'unity-cup'); memory.position('puzzle-party-1', 'ura-finale', node)
     const fresh = createPuzzleNavigation('invented-nav', storage).read()
-    expect(fresh).toMatchObject({ partyId: 'puzzle-party-2', scenarioId: 'unity-cup', positions: { 'puzzle-party-1/ura-finale': node } })
+    expect(fresh).toMatchObject({ partyId: 'puzzle-party-10', scenarioId: 'unity-cup', positions: { 'puzzle-party-1/ura-finale': node } })
     memory.choose('unknown', 'unknown'); memory.position('puzzle-party-1', 'ura-finale', 'bad'); expect(memory.read()).toEqual(fresh)
     expect(data).not.toMatch(/enabled|seed|reward/)
   })

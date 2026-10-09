@@ -25,7 +25,7 @@ export function PuzzleMapScreen() {
   }, [partyId, scenarioId, valid, memory])
   const node = status?.chapter.nodes.find(n => n.id === preview)
   const otherOpen = account && openPuzzleParty(account, partyId)
-  return <PuzzleFrame title={status?.chapter.name ?? 'Chapter unavailable'} back={root}><div className="grid gap-3">
+  return <PuzzleFrame title={status?.chapter.name ?? 'Chapter unavailable'} back={`${root}/chapters?party=${partyId}`} backLabel="Back to party chapters"><div className="grid gap-3">
     {!status || !party || !account ? <PuzzleCard>Unknown party or chapter. Return to Parties and choose a registered chapter.</PuzzleCard> : <>
       <PuzzleCard><h2 className="text-sm">{party.name} · PL {status.chapter.levelStart}–{status.chapter.levelEnd}</h2><p className="mt-1 text-xs text-ink-on-dark-soft">{status.cleared.length}/28 won · {status.full ? 'Full map cleared' : status.complete ? 'Chapter complete; more routes remain' : 'Clear any Champion to complete the chapter'}</p>
         <p className="mt-2 text-xs text-ink-on-dark-soft">Clear either squad at each row. All three Guardians unlock the five colour Champions. Won nodes remain replayable.</p>

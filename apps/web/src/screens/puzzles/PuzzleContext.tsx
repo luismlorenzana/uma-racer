@@ -98,13 +98,13 @@ function ProductionPuzzleShell() {
 export function PuzzleShell({ enabled = PUZZLES_RELEASE_ENABLED }: { enabled?: boolean } = {}) {
   return enabled ? <ProductionPuzzleShell /> : <PuzzleGate title="Uma Puzzles is not released yet">The setup screens are being prepared. Spark Match and current training remain available; this link cannot enable the new mode.</PuzzleGate>
 }
-export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, children, footer }: { title: string; eyebrow?: string; back?: string; children: ReactNode; footer?: ReactNode }) {
+export function PuzzleFrame({ title, eyebrow = 'Uma Puzzles', back, backLabel, children, footer }: { title: string; eyebrow?: string; back?: string; backLabel?: string; children: ReactNode; footer?: ReactNode }) {
   const value = usePuzzles(), account = usePuzzleAccount(), error = useStore(value.state.store, s => s.error)
   const [guide, setGuide] = useState(() => !puzzleGuideMemory(value.isolated).seen())
   if (error) return <PuzzleGate title="Saved state unavailable" retry={() => { void value.host.account().then(value.state.publish).catch(() => {}) }}>{error}</PuzzleGate>
   if (!account) return <PuzzleGate title="Loading Puzzle account">Reading this mode's own saved roster and parties.</PuzzleGate>
   if (puzzleUiGate(true, account, true) !== 'ready') return <PuzzleGate title="Account preparation required">Return to current training. No Puzzle operation is available until preservation is active.</PuzzleGate>
-  return <MinigameShell playing><MinigameHeader backTo={back ?? (value.isolated ? value.root : '/')} backLabel={back?.endsWith('/roster') ? 'Back to Puzzle roster' : back ? 'Back to Puzzle parties' : value.isolated ? 'Back to isolated proof' : 'Return home'} title={title}
+  return <MinigameShell playing><MinigameHeader backTo={back ?? (value.isolated ? value.root : '/')} backLabel={backLabel ?? (back?.endsWith('/roster') ? 'Back to Puzzle roster' : back ? 'Back to Puzzle parties' : value.isolated ? 'Back to isolated proof' : 'Return home')} title={title}
     eyebrow={value.isolated ? 'Isolated DEV proof · original placeholders' : eyebrow} onGuide={() => setGuide(true)} guideLabel="Uma Puzzles guide"
     trailing={value.isolated ? <a href="/" className="flex min-h-11 min-w-11 items-center justify-center text-xs text-ink-on-dark-soft">Exit</a> : undefined} />
     <div className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col px-3 pt-3"><PuzzleTabs root={value.root} />

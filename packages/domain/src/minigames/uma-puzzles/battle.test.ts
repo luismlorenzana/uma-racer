@@ -51,7 +51,7 @@ describe('v1 Puzzle battle lifecycle and strict boundary', () => {
     expect(parsePuzzleBattleAction({ ...loop, path, elapsedMs: 7000 })).not.toBeNull()
     const input = syntheticPuzzleBattle()
     for (const v of [{ ...input, engineVersion: 2 }, { ...input, rulesVersion: 2 }, { ...input, entrants: input.entrants.slice(1) },
-      { ...input, enemies: Array(6).fill(input.enemies[0]) }, { ...input, partyId: 'puzzle-party-6' }, { ...input, ownerEpoch: Infinity },
+      { ...input, enemies: Array(6).fill(input.enemies[0]) }, { ...input, partyId: 'puzzle-party-11' }, { ...input, ownerEpoch: Infinity },
       { ...input, surprise: 1 }, Object.assign(Object.create({}), input), JSON.parse('{"__proto__":{},"engineVersion":1}')]) expect(parsePuzzleBattleInput(v)).toBeNull()
     const duplicate = syntheticPuzzleBattle(); duplicate.entrants[1] = duplicate.entrants[0]!
     expect(parsePuzzleBattleInput(duplicate)).toBeNull()

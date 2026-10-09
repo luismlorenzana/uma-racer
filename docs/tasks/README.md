@@ -23,9 +23,10 @@ complete (D292); [art acceptance](../research/puzzle-art-release-acceptance.md) 
 coverage and placeholder retention without changing mechanics.
 Implement one task to completion/PR/merge before the next, from latest main; do not alter RPG mechanics.
 
-**Next: [T117 — Puzzle setup parity with the RPG](T117-puzzle-setup-parity.md).** Claude's post-release review found
-the Puzzle Hub, Roster, Profile, Party editor and Chapters missing the owner's D284 corrections to the RPG: ten
-parties, a free-Uma picker without cross-party moves, Swap, level-first roster, party→profile hops and no dropdowns.
+**T117 — Puzzle setup parity is complete** (D293): ten parties, free-only highest-PL pickers, Add/Swap/Remove,
+party→profile member strips, enrolled/unenrolled roster sections and no Puzzle dropdowns. The narrowed authoritative
+lock read set stays within the existing sync limits. [Setup phone proof](../research/puzzle-setup-parity/README.md)
+records synthetic browser checks separately from pending owner iPhone acceptance. No next Puzzle task is specified.
 
 **Owner detour — the RPG campaign is complete** (D260–D266): local-first RPG saves with no Sync steps, one generated
 twelve-level chapter per scenario, replayable maps, Octopath element/weapon breaks with carried MP and camps,
@@ -40,7 +41,6 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [T117 — Puzzle setup parity](T117-puzzle-setup-parity.md) | Ten parties · free-Uma picker · Swap · level-first roster · profile strip · no dropdowns | **Next** · specified, delegable |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -55,7 +55,7 @@ The owner's device checks (every milestone's, including Spark Rival Circuit's ph
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M031 and T118.** M030/T106–T116 belong to the completed Puzzle sequence. Numbers are never
+**Next free numbers: M031 and T118.** M030/T106–T117 belong to the completed Puzzle sequence. Numbers are never
 reused, so a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break
 branch and is not reused.
 
@@ -65,6 +65,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T117 — Puzzle setup parity with the RPG | 2026-10-08 | [Setup contract](../technical/uma-puzzles-implementation.md#t112-implemented-setup-navigation-d275), D293 and [synthetic phone proof](../research/puzzle-setup-parity/README.md); ten parties, unchanged sync limits | `8665513` |
 | T109 — Private owner-export Puzzle art upgrade | 2026-10-08 | [Content contract](../technical/puzzle-content.md), D292 and [aggregate art acceptance](../research/puzzle-art-release-acceptance.md); old placeholder packs retained | `4951830` |
 | M030 / T116 — Verified-placeholder Puzzle release, tuning, Home and preservation backup | 2026-10-08 | [Uma Puzzles](../design/uma-puzzles.md), D289–D290 and [release/owner checks](../research/uma-puzzles-release-acceptance.md); later T109 art upgrade retained | `0879ce5` |
 | T115 — Rehearsed preservation migration and safe Spark retirement | 2026-10-08 | [Preservation v2 contract](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287), D287 and [synthetic phone/restore proof](../research/puzzle-preservation-phone-proof.md); release remains off | `ed99e2d` |

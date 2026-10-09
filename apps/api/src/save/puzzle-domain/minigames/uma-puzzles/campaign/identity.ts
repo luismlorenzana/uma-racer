@@ -12,7 +12,7 @@ export type PuzzleCampaignIdentity =
 export function puzzleCampaignId(identity: PuzzleCampaignIdentity, registry: PuzzleScenarioRegistry = SCENARIOS): string {
   validatePuzzleRegistry(registry)
   requirePuzzle(registry.some(s => s.id === identity.scenarioId), 'unknown', 'Unknown campaign scenario')
-  if ('partyId' in identity) requirePuzzle(/^puzzle-party-[1-5]$/.test(identity.partyId), 'invalid', 'Invalid Puzzle party')
+  if ('partyId' in identity) requirePuzzle(/^puzzle-party-([1-9]|10)$/.test(identity.partyId), 'invalid', 'Invalid Puzzle party')
   if ('localId' in identity) requirePuzzle(/^(?:o(?:[1-9]|10)[ab]|g[1-3]|c-(?:fire|water|wood|light|dark))$/.test(identity.localId), 'invalid', 'Invalid local map node')
   if ('attempt' in identity) requirePuzzle(puzzleInteger(identity.attempt), 'invalid', 'Invalid attempt ordinal')
   const id = identity.kind === 'chapter' ? `pzc:${identity.scenarioId}` : identity.kind === 'node' ? `pzn:${identity.scenarioId}:${identity.localId}` :

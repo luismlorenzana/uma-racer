@@ -16,11 +16,11 @@ export function PuzzleCard({ children, className = '' }: { children: ReactNode; 
 export function PuzzleButton({ children, secondary = false, ...props }: Omit<Parameters<typeof Button>[0], 'variant'> & { secondary?: boolean }) {
   return <Button {...props} size="sm" variant={secondary ? 'secondary' : 'primary'} className={`${secondary ? '!border-hairline-dark !bg-stage-soft !text-ink-on-dark' : ''} ${props.className ?? ''}`}>{children}</Button>
 }
-export function PuzzleSelect<T extends string>({ label, value, options, onChange, disabled }: { label: string; value: T; options: readonly { value: T; label: string }[]; onChange(value: T): void; disabled?: boolean }) {
-  return <label className="block text-xs text-ink-on-dark-soft">{label}<select value={value} onChange={e => onChange(e.target.value as T)} disabled={disabled}
-    className="mt-1 min-h-11 w-full rounded-sm border border-hairline-dark bg-stage px-2 text-sm text-ink-on-dark disabled:opacity-45">
-    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-  </select></label>
+export function PuzzleOptions<T extends string>({ label, value, options, onChange, disabled }: { label: string; value: T; options: readonly { value: T; label: string }[]; onChange(value: T): void; disabled?: boolean }) {
+  return <fieldset disabled={disabled} className="min-w-0 text-xs text-ink-on-dark-soft"><legend className="mb-1">{label}</legend>
+    <div className="flex flex-wrap gap-1">{options.map(o => <button key={o.value} type="button" aria-pressed={value === o.value} onClick={() => onChange(o.value)}
+      className={`min-h-11 min-w-11 rounded-sm border px-2 py-1 text-left text-xs disabled:opacity-45 ${value === o.value ? 'border-accent bg-accent/10 text-accent' : 'border-hairline-dark bg-stage text-ink-on-dark'}`}>{o.label}</button>)}</div>
+  </fieldset>
 }
 export function PuzzleTabs({ root }: { root: string }) {
   return <nav aria-label="Puzzle sections" className="mb-3 flex gap-1 overflow-x-auto rounded-sm bg-stage-soft p-1">

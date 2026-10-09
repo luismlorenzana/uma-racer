@@ -6,7 +6,7 @@ import { getContentAsset } from '../../content/runtime'
 import { openPuzzleNode, openPuzzleParty, puzzleMapStatus, puzzleNodeName, puzzlePartySummary } from '../../game/puzzles/presentation'
 import { AtlasSprite } from '../../ui/AtlasSprite'
 import { ScenarioIcon } from '../../ui/icons'
-import { PuzzleButton, PuzzleCard, PuzzleMaterialMark, PuzzleSelect } from '../../ui/puzzles/components'
+import { PuzzleButton, PuzzleCard, PuzzleMaterialMark } from '../../ui/puzzles/components'
 import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
 export function PuzzleChaptersScreen() {
   const { root, content, host, command, busy, memory } = usePuzzles(), account = usePuzzleAccount(), navigate = useNavigate(), [search] = useSearchParams()
@@ -20,7 +20,9 @@ export function PuzzleChaptersScreen() {
     if (await command(`chapter:${partyId}:${scenarioId}`, id => host.openChapter(partyId, scenarioId, id))) navigate(`${root}/party/${partyId}/${scenarioId}`)
   }
   return <PuzzleFrame title="Puzzle chapters" back={root}><div className="grid gap-3">
-    {account && <PuzzleSelect label="Party" value={party?.partyId ?? ''} options={account.parties.map(p => ({ value: p.partyId, label: p.name }))} onChange={id => { setPartyId(id); memory.choose(id, memory.read().scenarioId) }} />}
+    {account && <div role="group" aria-label="Party" className="flex gap-2 overflow-x-auto pb-1">{account.parties.map(p => <button key={p.partyId} aria-pressed={partyId === p.partyId}
+      className={`min-h-11 min-w-11 shrink-0 rounded-sm border px-3 text-left text-xs ${partyId === p.partyId ? 'border-accent text-accent bg-accent/10' : 'border-hairline-dark text-ink-on-dark-soft'}`}
+      onClick={() => { setPartyId(p.partyId); memory.choose(p.partyId, memory.read().scenarioId) }}><span className="block">{p.name}</span><span className="block text-[10px]">{p.slots.filter(Boolean).length}/5</span></button>)}</div>}
     <p className="text-xs text-ink-on-dark-soft">{summary?.full ? `Average PL ${summary.average!.toFixed(1)} · range ${summary.min}–${summary.max}. Every chapter is open to this party.` : 'Fill all five party slots before opening a chapter.'} Wins and open encounters are separate for each party.</p>
     {focus && <p className="text-xs">Materials for {focus.name} · <a className="inline-flex min-h-11 items-center text-accent" href={`${root}/chapters?party=${partyId}`}>Show all chapters</a></p>}
     {(focus ? [focus] : SCENARIOS).map(s => {

@@ -27,7 +27,7 @@ export function parsePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, regist
   try {
     const map = parsePuzzleChapter(chapter, registry)
     if (!map || !puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'chapterId', 'partyId', 'cleared', 'attempts']) ||
-      v.schemaVersion !== 1 || v.chapterId !== map.id || typeof v.partyId !== 'string' || !/^puzzle-party-[1-5]$/.test(v.partyId) ||
+      v.schemaVersion !== 1 || v.chapterId !== map.id || typeof v.partyId !== 'string' || !/^puzzle-party-([1-9]|10)$/.test(v.partyId) ||
       !puzzleArray(v.cleared, PUZZLE_MAP_NODES) || !puzzleArray(v.attempts, PUZZLE_MAP_NODES)) return null
     const ids = new Set(map.nodes.map(n => n.id)), cleared = new Set<string>(), attempts = new Map<string, number>()
     for (const id of v.cleared) { if (typeof id !== 'string' || !ids.has(id) || cleared.has(id)) return null; cleared.add(id) }

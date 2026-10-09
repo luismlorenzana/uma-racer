@@ -8,16 +8,17 @@ import { ConstellationMaterials } from '../../ui/ConstellationMaterials'
 import { ConstellationTicketIcon, TICKET_STYLE_NAME } from '../../ui/ConstellationTicketIcon'
 import { LevelUpIcon } from '../../ui/icons'
 import { ClSpendSheet, MaterialOperationStatus } from '../../ui/puzzles/ClSpendSheet'
-import { PuzzleButton, PuzzleCard, PuzzleSelect } from '../../ui/puzzles/components'
+import { PuzzleButton, PuzzleCard, PuzzleOptions } from '../../ui/puzzles/components'
 import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
 
 export function PuzzleItemsScreen() {
   const { host, root, content, state } = usePuzzles(), account = usePuzzleAccount()
   const [visibility, setVisibility] = useState<'owned' | 'all'>('owned'), [scenario, setScenario] = useState('all'), [spend, setSpend] = useState<{ id: string; tier: number } | null>(null)
   return <PuzzleFrame title="Global Items" back={root}>{account && <>
-    <div className="grid grid-cols-2 gap-2"><PuzzleSelect<'owned' | 'all'> label="Item visibility" value={visibility} onChange={setVisibility} options={[{ value: 'owned', label: 'Owned' }, { value: 'all', label: 'All items' }]} /><PuzzleSelect label="Destination scenario" value={scenario} onChange={setScenario} options={[{ value: 'all', label: 'All scenarios' }, ...SCENARIOS.map(s => ({ value: String(s.tier), label: s.name }))]} /></div>
+    <div className="grid gap-2"><PuzzleOptions<'owned' | 'all'> label="Item visibility" value={visibility} onChange={setVisibility} options={[{ value: 'owned', label: 'Owned' }, { value: 'all', label: 'All items' }]} /><PuzzleOptions label="Destination scenario" value={scenario} onChange={setScenario} options={[{ value: 'all', label: 'All scenarios' }, ...SCENARIOS.map(s => ({ value: String(s.tier), label: s.name }))]} /></div>
     <PuzzleCard className="mt-3"><div className="flex items-center gap-2"><LevelUpIcon size={32} /><span className="text-sm">Legacy Universal CL Ticket · ×{account.stocks[TRAINING_LEVEL_UP_TICKET_ID] ?? 0}</span></div><p className="mt-2 text-xs text-ink-on-dark-soft">Preserved stock can raise any eligible outfit’s unlocked scenario. No new universal tickets are minted by this mode.</p></PuzzleCard>
-    <ConstellationMaterials stocks={account.stocks} bank={account.bank} visibility={visibility} scenarioTier={scenario === 'all' ? null : Number(scenario)} itemsTo={`${root}/items`} exchangeTo={`${root}/exchange`} recipients={id => {
+    <ConstellationMaterials stocks={account.stocks} bank={account.bank} visibility={visibility} scenarioTier={scenario === 'all' ? null : Number(scenario)} itemsTo={`${root}/items`} exchangeTo={`${root}/exchange`}
+      stylePicker={(style, onChange) => <PuzzleOptions label="Ticket source style" value={style ?? 'all'} options={[{ value: 'all', label: 'All styles' }, ...STRATEGIES.map(s => ({ value: s, label: TICKET_STYLE_NAME[s] }))]} onChange={s => onChange(s === 'all' ? null : s as typeof style)} />} recipients={id => {
       const material = parsePuzzleMaterialId(id), tier = SCENARIOS.find(s => s.id === material?.scenarioId)?.tier
       if (!material || !tier) return []
       return account.umas.filter(u => u.scenarios.some(s => s.tier === tier) && content.umas.byId.get(u.templateId)?.aptitudes.strategy[material.style] === 'A').map(u => ({ id: u.templateId, name: content.umas.byId.get(u.templateId)?.name ?? u.templateId,
@@ -63,9 +64,9 @@ export function PuzzleExchangeScreen() {
     {!saved && <PuzzleButton className="w-full" disabled={!preview || (changed && !operation.current) || stale || busy || (preview.exchange.irreversible && !ack)} onClick={() => { void confirm() }}>{busy ? 'Saving locally…' : operation.current ? 'Retry same exchange' : 'Confirm exchange'}</PuzzleButton>}
   </> : undefined}><div className="space-y-3">
     <p className="text-xs text-ink-on-dark-soft">Same style, adjacent scenarios only. Exchange one higher ticket for two lower tickets, or two lower for one higher. Output repays its matching bank first; repaid output cannot be exchanged back.</p>
-    <PuzzleSelect label="Adjacent scenario edge" value={edge} disabled={busy} onChange={setEdge} options={SCENARIOS.slice(0, -1).map((s, i) => ({ value: String(i), label: `${s.name} / ${SCENARIOS[i + 1]!.name}` }))} />
-    <PuzzleSelect<typeof style> label="Exchange ticket style" value={style} disabled={busy} onChange={setStyle} options={STRATEGIES.map(s => ({ value: s, label: TICKET_STYLE_NAME[s] }))} />
-    <PuzzleSelect label="Exchange direction" value={direction} disabled={busy} onChange={setDirection} options={[{ value: 'up', label: `2 ${low.name} → 1 ${high.name}` }, { value: 'down', label: `1 ${high.name} → 2 ${low.name}` }]} />
+    <PuzzleOptions label="Adjacent scenario edge" value={edge} disabled={busy} onChange={setEdge} options={SCENARIOS.slice(0, -1).map((s, i) => ({ value: String(i), label: `${s.name} / ${SCENARIOS[i + 1]!.name}` }))} />
+    <PuzzleOptions<typeof style> label="Exchange ticket style" value={style} disabled={busy} onChange={setStyle} options={STRATEGIES.map(s => ({ value: s, label: TICKET_STYLE_NAME[s] }))} />
+    <PuzzleOptions label="Exchange direction" value={direction} disabled={busy} onChange={setDirection} options={[{ value: 'up', label: `2 ${low.name} → 1 ${high.name}` }, { value: 'down', label: `1 ${high.name} → 2 ${low.name}` }]} />
     <div className="grid grid-cols-2 gap-2">{[down ? high : low, down ? low : high].map((s, i) => <PuzzleCard key={s.id}><ConstellationTicketIcon style={style} tier={s.tier} /><h2 className="mt-2 text-sm">{i === 0 ? 'Input' : 'Output'} · {s.name}</h2><p className="mt-1 text-xs">Owned {account?.stocks[i === 0 ? from : to] ?? 0} · Bank {account?.bank?.balances[i === 0 ? from : to] ?? 0}</p></PuzzleCard>)}</div>
     {!unlocked ? <PuzzleCard><h2 className="font-semibold">Exchange edge locked</h2><p className="mt-2 text-xs">Clear {high.name}’s Opening Guardian with any party and sync the accepted clear to unlock both directions account-wide.</p><Link to={`${root}/chapters?scenario=${high.id}`} className="mt-2 flex min-h-11 items-center text-accent">Open {high.name} chapter</Link></PuzzleCard> : <>
       <label className="block text-xs">Exchange batches<input aria-label="Exchange batches" type="number" inputMode="numeric" min="1" step="1" disabled={busy} value={batch} onChange={e => setBatch(e.target.value)} className="mt-1 h-11 w-full rounded-sm border border-hairline-dark bg-stage px-3" /></label>

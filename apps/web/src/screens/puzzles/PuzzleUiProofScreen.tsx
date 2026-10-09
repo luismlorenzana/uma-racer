@@ -1,17 +1,17 @@
 // DEV route only; one resumable synthetic store, no auth/provider/runtime or real rewards (T112).
 import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import { PUZZLE_ENTITY_KINDS, resolvePuzzleOperations, resolvePuzzleTakeover, type PuzzleStoredEntity, type PuzzleStoredLog } from '@racer/domain'
 import { RacerDb } from '../../game/db'
 import { PersistentPuzzleHost, type PuzzleHostOptions } from '../../game/puzzles/host'
 import { createIsolatedPuzzleProof } from '../../game/puzzles/proof'
 import { PuzzleGate, PuzzleProvider, type PuzzleEnvironment } from './PuzzleContext'
 import { proofCast, proofIdentity, puzzleUiProofData } from './ui-proof-data'
-const PROOF_DATABASE = 'puzzle-proof-t114-ui-v1'
-let boot: Promise<PuzzleEnvironment> | null = null
-export async function createPuzzleUiProofEnvironment(name = PROOF_DATABASE): Promise<PuzzleEnvironment & { database: RacerDb }> {
+const PROOF_DATABASE = 'puzzle-proof-t117-empty-picker-v1'
+const boots = new Map<string, Promise<PuzzleEnvironment>>()
+export async function createPuzzleUiProofEnvironment(name = PROOF_DATABASE, variant: 'default' | 'setup' | 'first-use' = 'default', root = '/dev/puzzles-ui-proof'): Promise<PuzzleEnvironment & { database: RacerDb }> {
   if (!/^puzzle-proof-[a-zA-Z0-9_-]+$/.test(name)) throw new Error('Proof storage must be isolated')
-  const fixture = puzzleUiProofData(), probe = new RacerDb(name); await probe.open()
+  const fixture = puzzleUiProofData(variant), probe = new RacerDb(name); await probe.open()
   let database = probe, host: PersistentPuzzleHost
   const acquire: PuzzleHostOptions['acquire'] = async identity => {
     if (identity && JSON.stringify(identity) !== JSON.stringify(proofIdentity)) throw new Error('Invented retained pack unavailable')
@@ -49,11 +49,17 @@ export async function createPuzzleUiProofEnvironment(name = PROOF_DATABASE): Pro
     result.writes.forEach(r => entities.set(`${r.kind}/${r.id}`, r)); return result.response
   }, snapshot: async () => ({ serverTime: 12, entities: [...entities.values()], logs: [...logs.values()] }) }
   host = new PersistentPuzzleHost({ ...options, database, enabled: true, online })
-  return { host, database, content: fixture.content, ownedIds: fixture.sources.map(s => s.templateId), root: '/dev/puzzles-ui-proof', isolated: true, acquire }
+  return { host, database, content: fixture.content, ownedIds: fixture.sources.map(s => s.templateId), root, isolated: true, acquire }
 }
 export function PuzzleUiProofShell() {
+  const { pathname } = useLocation()
+  const variant = pathname.startsWith('/dev/puzzles-ui-proof/first-use') ? 'first-use' : pathname.startsWith('/dev/puzzles-ui-proof/setup') ? 'setup' : 'default'
+  const root = variant === 'default' ? '/dev/puzzles-ui-proof' : `/dev/puzzles-ui-proof/${variant}`
+  const name = variant === 'default' ? PROOF_DATABASE : `puzzle-proof-t117-${variant}-v1`
   const [environment, setEnvironment] = useState<PuzzleEnvironment | null>(null), [error, setError] = useState<string | null>(null)
-  useEffect(() => { let cancelled = false; boot ??= createPuzzleUiProofEnvironment(); void boot.then(v => { if (!cancelled) setEnvironment(v) }).catch(e => { if (!cancelled) setError(String(e)) }); return () => { cancelled = true } }, [])
+  useEffect(() => { let cancelled = false; const boot = boots.get(name) ?? createPuzzleUiProofEnvironment(name, variant, root); boots.set(name, boot)
+    void boot.then(v => { if (!cancelled) setEnvironment(v) }).catch(e => { if (!cancelled) setError(String(e)) }); return () => { cancelled = true }
+  }, [name, variant, root])
   if (!environment) return <PuzzleGate title={error ? 'Isolated proof unavailable' : 'Preparing isolated proof'}>{error ?? 'Original invented portraits, enemies and account only. No sign-in, real save, tickets or rewards.'}</PuzzleGate>
   return <PuzzleProvider environment={environment}><Outlet /></PuzzleProvider>
 }

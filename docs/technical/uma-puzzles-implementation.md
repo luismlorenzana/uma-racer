@@ -134,7 +134,7 @@ T107 landed without app callers; T111 adds its gated replay host. These are inde
 | `bots.ts` | Board-only novice/competent public actions; not a production auto-player |
 
 `PuzzleBattleInputV1` has exact keys: `schemaVersion`, `engineVersion`, `rulesVersion` (all1), `battleId`,
-`partyId` (`puzzle-party-1`…`5`), `checkpointId`, nonnegative `ownerEpoch`, `seed`, registered `scenarioId`,
+`partyId` (`puzzle-party-1`…`10`, D293), `checkpointId`, nonnegative `ownerEpoch`, `seed`, registered `scenarioId`,
 `encounterLevel`, `kind`, five ordered `entrants`, `leaderId`, `enemies`, `rewards`, and
 `content:{manifestVersion,recipeHash}`. An entrant freezes `outfitId`, full T106 `source`, positive `level`, eligible
 `element`, `stats` exactly equal to `puzzleStats(source,level)`, and `kit:{activeId,patternId}`. No duplicate outfit
@@ -251,7 +251,7 @@ Use stable registered scenario ids and registry order; resolve today's numeric r
 adapter. Never parse a label or assume a future scenario can be reached with `tier + 1`.
 
 `constellation:<scenarioId>:<style>` is the new material identity. Preserve `training:level-up-ticket` as the legacy
-universal id; change its display name, not its historical ledger id. Party ids are `puzzle-party-1`…`puzzle-party-5`.
+universal id; change its display name, not its historical ledger id. Party ids are `puzzle-party-1`…`puzzle-party-10`.
 Chapter/checkpoint/node ids use one documented canonical encoder, with delimiter-safe validation and no ambiguous
 string concatenation. Battle identity comprises preset + scenario + node + **persisted** attempt ordinal. Owner epoch
 is separate from identity; takeover never changes the battle id or seed. Retry after terminal increments the ordinal.
@@ -270,7 +270,7 @@ T110 implements the following additive schema-1 records. Exact exported interfac
 | Record | Identity / minimum fields | Sync |
 |---|---|---|
 | `puzzleOutfits` | outfit id; frozen enrollment; lifetime PL/remaining EXP; selected kit; first-entry fact; projection revision | Yes |
-| `puzzlePresets` | five stable party ids; name; ordered five nullable outfit slots; slot loadouts; slot-1 leader passive; foreground chapter; revision | Yes |
+| `puzzlePresets` | ten stable party ids; name; ordered five nullable outfit slots; slot loadouts; slot-1 leader passive; foreground chapter; revision | Yes |
 | `puzzleCheckpoints` | party/scenario; reached/cleared nodes; first-clear facts; per-node next attempt; open encounter descriptor; revision | Yes |
 | `puzzleResults` | one terminal receipt per battle id; input/hash/epoch identity; outcome; five exact EXP deltas; gross/repaid/net vector | Append-only |
 | `puzzleOperations` | operation id + payload digest; typed operation; dependency ids; expected economic revision; resolved receipt/status | Append-only canonical receipts |
@@ -295,7 +295,7 @@ duplicate ids, non-safe numeric values and inconsistent derived fields reject wi
 | Kind / exact data fields | Id and local indexes |
 |---|---|
 | `PuzzleOutfitSaveV1`: `schemaVersion,outfitId,enrollment,kit,revision`; enrollment is T106's source/element/eligibleElements/level/exp/firstBattleId; kit is `{activeId,patternId}` | `puzzleOutfits/{outfitId}`, `id` |
-| `PuzzlePresetSaveV1`: `schemaVersion,partyId,name,slots,leaderId,foregroundChapter,revision`; name is nonblank≤80 characters, exactly five nullable `{outfitId,kit}` slots; chapter is nullable canonical chapter id | `puzzlePresets/puzzle-party-{1..5}`, `id` |
+| `PuzzlePresetSaveV1`: `schemaVersion,partyId,name,slots,leaderId,foregroundChapter,revision`; name is nonblank≤80 characters, exactly five nullable `{outfitId,kit}` slots; chapter is nullable canonical chapter id | `puzzlePresets/puzzle-party-{1..10}`, `id` |
 | `PuzzleCheckpointSaveV1`: `schemaVersion,checkpointId,scenarioId,progress,reached,open,revision`; progress is T108's checkpoint, reached is its exact derived ordered node list | `puzzleCheckpoints/pzp:{partyId}:{scenarioId}`, `id` |
 | `PuzzleOpenEncounterV1`: `schemaVersion,deviceId,ownerEpoch,input,inputHash,content`; `content:{version,contentHash}` freezes T109's immutable pack id and full64-hex hash | Nested on checkpoint; no separate synced journal |
 | `ConstellationBankSaveV1`: `schemaVersion,cutoverVersion:1,cutoverId,phase,cohortCount,completedCount,debitLimits,balances,openingClears,revision` | `constellationBank/main`, `id` |
@@ -370,7 +370,12 @@ referenced records** including mixed ordinary references, **921,600 encoded byte
 total-operation request bound and HTTP5MiB bound also apply. Dependencies≤16, unique declared refs≤200, receipt
 logs≤8. `partitionPuzzleOperations` keeps whole ordered groups; an oversized single group is a recoverable error.
 References include bank, owned/source/party/checkpoint rows, affected stock/result/movement records, operation receipt
-and dependencies. All five parties and their relevant scenario checkpoints are read to enforce uniqueness and locks.
+and dependencies. All ten presets are read for authoritative membership/uniqueness. Party edits reference their own
+fourteen checkpoints; transfers reference both parties' checkpoints. Correct/default-kit edits declare checkpoints
+only for holders (`puzzleOutfitCheckpointReferences`); the resolver derives holders from authoritative presets and
+rejects missing lock reads before testing open encounters. If membership moved offline, refresh the operation;
+an omitted checkpoint never means idle. Old all-five-checkpoint expected sets remain readable and idempotent.
+No protocol shape or sync limit changes (D293).
 Every write must lie within that read set; preflight bounds run before repository reads. Receipt-size preflight rejects
 the whole group before any adapter writes.
 
@@ -447,7 +452,7 @@ in device-only `puzzlePreferences/device-id`; it is **not** a board seed. The im
 
 | Port | Actual contract |
 |---|---|
-| `account`, `registration` | Five default party views, parsed enrolled outfits/checkpoints, readiness/debt/stock; owned verified source/palette/styles/PL1 preview |
+| `account`, `registration` | Ten default party views, parsed enrolled outfits/checkpoints, readiness/debt/stock; owned verified source/palette/styles/PL1 preview |
 | `enroll`, `correct`, `equip`, `saveParty`, `transfer` | Semantic operations with stable ids; correction/equip/party/transfer compare the screen's current revision before queueing; source A, uniqueness and open locks are revalidated by the shared resolver |
 | `openChapter` | Creates/reuses only checkpoint/foreground; reopening the same foreground is write-free, including its suspended encounter |
 | `begin` | Party/scenario/node/Dark variant + party/checkpoint revisions + operation id; existing open returns itself, never overwrites a journal or reselects a variant |
@@ -769,7 +774,7 @@ All campaign setup routes are lazy children of `PuzzleShell` under `/puzzles`: H
 `roster/:outfitId`, `party/:partyId`, `chapters`, `party/:partyId/:scenarioId`, `exchange`, `items`.
 The shell checks the off capability **before** mounting a component that can construct a host/read an account/acquire
 content. Enabled entry additionally needs a persistent loaded game, active bank and verified presentation lease.
-There is no Home launch yet; T113 supplies fight/result routes and T114 finishes the honest Exchange/Items destinations.
+T116 supplies Home launch; T113 supplies fight/result routes and T114 finishes the honest Exchange/Items destinations.
 T113 replaces the original T112 DEV-only no-reservation notice with real host Begin under the existing parent gate.
 No guessed route enables a bank,
 creates a fight, retires Spark or changes release flags. Existing `/puzzles/content` remains read-only.
@@ -784,11 +789,24 @@ the engine's catalogue leader rule without fabricating a full battle input. Fore
 per-map viewed-node ids, validates each restored id and tolerates inaccessible/malformed localStorage. It stores no
 seed/reward/release setting and never substitutes for synced checkpoints.
 
-Roster/detail/enrollment, ordered party edits/slot 1 leader and confirmed moves, all 14 chapter launch bands and 28-node
-maps follow [design §9](../design/uma-puzzles.md#9-screens-guides-and-visual-identity). Transfers keep both captured
-revisions until confirmation; the port checks both plus open locks. Source becomes empty, destination receives its
-kit and both keep checkpoints. An unsaved empty destination is explicitly saved before presenting a picker, so no
-fabricated revision-zero transfer occurs. A moved or edited confirmation is rejected, not silently refreshed.
+Roster/detail/enrollment, ordered party edits/slot 1 leader, all 14 chapter launch bands and 28-node maps follow
+[design §9](../design/uma-puzzles.md#9-screens-guides-and-visual-identity). T117/D293 brings D284 setup parity:
+ten presets, free-only PL/name/id ordered candidates, inline Add/Swap/Remove cards, party-aware profiles/strip,
+PL-first roster sections, EXP bar, explicit header `backLabel`, and chip-based choices throughout Puzzles.
+Add/Swap captures the destination revision when opening the picker; a changed revision rejects. Empty revision-zero
+parties need no disk write merely to open a picker. Incoming kits copy defaults, retaining the slot/leader index.
+The transfer port/operation and tests remain unchanged; only its UI entry/confirmation are removed.
+
+`PUZZLE_PARTY_IDS` and all party regexes (`/^puzzle-party-([1-9]|10)$/`) are shared with the regenerated standalone
+API mirror. No save schema bump/migration. Five-party saves retain their rows unchanged; the host synthesizes empty
+named Party 6…10 without writes until edited. Navigation validates all ten ids. Hub puts first-use enrollment above
+ten journeys, routes partial parties to Fill party, and puts bank/backup below. Chapters chips preserve memory;
+map Back returns to `chapters?party=…`.
+
+With ten full parties/fifty synthetic outfits and all 140 checkpoints, correct/equip-outfit beside save-party
+references **53 distinct records**, transfer **42**, against the unchanged **200** limit. Domain/API assert these
+counts, parser 0/11 rejection, missing holder-lock rejection and old receipts; IndexedDB tests round-trip party 10,
+preserve five-party saves and retain open-battle guards. Whole-group client partitioning remains intact.
 
 `PuzzleNodePreview` resolves the actual campaign recipe with a held verified pack. Its enemy portrait joins the
 pack's name/frame/page by frozen cast id; absence is unavailable, never a production placeholder. Acquires release
@@ -811,7 +829,10 @@ refresh. The proof adapter accepts only `puzzle-proof-*` database names, seeds a
 adapter, retains its real local operations/journals across refresh and uses invented sources/portraits/enemies plus
 an in-memory authority for explicit recovery. Reload authority restores pending canonical bases, not optimistic
 projections, before adoption. Its local EXP/materials never touch the owner database/API. The proof is tree-shaken
-from production. [Browser evidence](../research/puzzle-navigation-phone-proof.md) is synthetic, not private-content,
+from production. T117 adds nested isolated `/dev/puzzles-ui-proof/setup` (a free enrolled candidate) and
+`/dev/puzzles-ui-proof/first-use` (no enrollment) namespaces for repeatable phone evidence; the original proof shows
+the all-assigned empty picker. Each has its own `puzzle-proof-*` store, never the owner database/API.
+[Current setup proof](../research/puzzle-setup-parity/README.md) and [earlier browser evidence](../research/puzzle-navigation-phone-proof.md) are synthetic, not private-content,
 production gameplay or physical-iPhone acceptance. Later release evidence is recorded separately above.
 
 ### T113 implemented mobile battle (D276)

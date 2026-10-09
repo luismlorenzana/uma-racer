@@ -1,6 +1,7 @@
 // Global Items category reused by Farm Items and Uma Puzzles; quantities are ordinary Item stacks (§7–8).
 import { SCENARIOS, STRATEGIES, type ConstellationBankSaveV1, type Strategy } from '@racer/domain'
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { buildItemInventory, constellationItemDefinitions, savedOrphanItem } from '../game/items/view'
 import { BottomSheet } from './BottomSheet'
@@ -14,10 +15,11 @@ export function ConstellationBankPanel({ bank, itemsTo }: { bank: ConstellationB
     <details><summary className="flex min-h-11 cursor-pointer items-center font-semibold">Scenario/style balances</summary>{constellationItemDefinitions().filter(d => Object.hasOwn(bank.balances, d.id)).map(d => <Link key={d.id} to={`${itemsTo}?item=${encodeURIComponent(d.id)}`} className="flex min-h-11 items-center gap-2"><ConstellationTicketIcon style={d.material.style} tier={d.material.scenarioTier} size={24} /><span className="flex-1">{d.name}</span><span>{bank.balances[d.id]}</span></Link>)}</details>
   </section>
 }
-export function ConstellationMaterials({ stocks, bank, visibility = 'owned', scenarioTier = null, recipients, exchangeTo, itemsTo, chaptersTo }: {
+export function ConstellationMaterials({ stocks, bank, visibility = 'owned', scenarioTier = null, recipients, exchangeTo, itemsTo, chaptersTo, stylePicker }: {
   stocks: Readonly<Record<string, number>>; bank: ConstellationBankSaveV1 | null; visibility?: 'owned' | 'all'; scenarioTier?: number | null
   recipients(itemId: string): readonly { id: string; name: string; href: string; select?: () => void }[]
   exchangeTo?: string; itemsTo: string; chaptersTo?: string
+  stylePicker?(style: Strategy | null, onChange: (style: Strategy | null) => void): ReactNode
 }) {
   const [style, setStyle] = useState<Strategy | null>(null), [params, setParams] = useSearchParams()
   const definitions = constellationItemDefinitions(), materialStocks = Object.entries(stocks).filter(([id]) => id.startsWith('constellation:'))
@@ -29,7 +31,7 @@ export function ConstellationMaterials({ stocks, bank, visibility = 'owned', sce
     <div className="flex items-center justify-between gap-2"><h3 className="text-lg font-display">Constellation Tickets</h3><span className="text-xs">{inventory.catalogTotal} kinds</span></div>
     <p className="text-xs">One ticket raises one eligible outfit’s scenario CL by one. Daily Training Tickets pay for minigame entry, not CL.</p>
     <ConstellationBankPanel bank={bank} itemsTo={itemsTo} /><TicketStyleLegend />
-    <label className="block text-xs">Source style<select aria-label="Ticket source style" value={style ?? 'all'} onChange={e => setStyle(e.target.value === 'all' ? null : e.target.value as Strategy)} className="mt-1 min-h-11 w-full rounded-sm border border-current/20 bg-transparent px-2"><option value="all">All styles</option>{STRATEGIES.map(s => <option key={s} value={s}>{TICKET_STYLE_NAME[s]}</option>)}</select></label>
+    {stylePicker ? stylePicker(style, setStyle) : <label className="block text-xs">Source style<select aria-label="Ticket source style" value={style ?? 'all'} onChange={e => setStyle(e.target.value === 'all' ? null : e.target.value as Strategy)} className="mt-1 min-h-11 w-full rounded-sm border border-current/20 bg-transparent px-2"><option value="all">All styles</option>{STRATEGIES.map(s => <option key={s} value={s}>{TICKET_STYLE_NAME[s]}</option>)}</select></label>}
     <p role="status" className="text-xs">{inventory.items.length} materials shown · {inventory.ownedUnique} owned kinds</p>
     {id?.startsWith('constellation:') && !selected && !orphan && <p role="alert" className="text-xs">This Constellation item link is unavailable. Saved stock is unchanged.</p>}
     {inventory.items.length === 0 && <p className="text-xs">No matching tickets yet. Choose All items to browse every scenario/style.</p>}

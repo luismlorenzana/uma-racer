@@ -1,5 +1,5 @@
 // Ordered durable prediction/reconciliation. Gesture journals stay device-only (implementation §§5–6).
-import { createPuzzleOperation, parsePuzzleOperationResponses, partitionPuzzleOperations, puzzleOperationReferences,
+import { createPuzzleOperation, parsePuzzleOperationResponses, partitionPuzzleOperations, puzzleOperationReferences, puzzleOutfitCheckpointReferences, parsePuzzlePresetSave,
   resolvePuzzleOperations, puzzleCanonical, puzzleData, PUZZLE_ENTITY_KINDS, parseConstellationBankSave,
   parsePuzzleCheckpointSave, type PuzzlePayload, type PuzzleOperationV1, type PuzzleOperationResponse, type PuzzleStoredEntity,
   type PuzzleStoredLog, type PuzzleOperationReceiptV1, type PuzzleAuthoritative, parseEntityData, parseLogData, type EntityKind, type LogKind } from '@racer/domain'
@@ -99,7 +99,11 @@ export class PuzzleOperationCoordinator {
       const provisional = createPuzzleOperation({ schemaVersion: 1, operationId, dependencies, expected: [], payload })
       const refs = puzzleOperationReferences(provisional), extra = payload.kind === 'settle'
         ? parsePuzzleCheckpointSave(state.entities.get(`puzzleCheckpoints/${payload.checkpointId}`)?.data)!.open!.input.entrants.flatMap(e => [`puzzleOutfits/${e.outfitId}`, `umas/${e.outfitId}`]) : []
-      const expected = [...new Set([...refs.entities, ...extra])].map(k => { const [kind, id] = k.split('/'); return { kind: kind!, id: id!, version: state.entities.get(k)?.version ?? 0 } })
+      const locks = puzzleOutfitCheckpointReferences(payload, [...state.entities.values()].flatMap(row => {
+        const party = row.kind === 'puzzlePresets' && !row.deleted ? parsePuzzlePresetSave(row.data) : null
+        return party ? [party] : []
+      }))
+      const expected = [...new Set([...refs.entities, ...extra, ...locks])].map(k => { const [kind, id] = k.split('/'); return { kind: kind!, id: id!, version: state.entities.get(k)?.version ?? 0 } })
       const op = createPuzzleOperation({ schemaVersion: 1, operationId, dependencies, expected, payload })
       const virtualLogs = new Map(state.logs)
       for (const row of pending.filter(p => p.status === 'pending')) virtualLogs.set(`puzzleOperations/${row.id}`, { kind: 'puzzleOperations', id: row.id, data: {}, createdAt: row.queuedAt })

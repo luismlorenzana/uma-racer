@@ -9,7 +9,7 @@ const names = ['Amber Ribbon', 'Blue Bell', 'Cedar Step', 'Dawn Runner', 'Evenin
 export const proofIdentity = { version: 'invented-ui-cast-v1', contentHash: 'c'.repeat(64) }
 export const proofCast = { schemaVersion: 1 as const, manifestVersion: `puzzles-${proofIdentity.contentHash}`,
   members: [{ id: 'invented-ui-sprite', elements: [...PUZZLE_ELEMENTS], roles: [...PUZZLE_FOE_ROLES] }] }
-export function puzzleUiProofData() {
+export function puzzleUiProofData(variant: 'default' | 'setup' | 'first-use' = 'default') {
   const templates: UmaTemplate[] = names.map((name, i) => ({ id: `invented-ui-${i}`, charaId: `invented-character-${Math.floor(i / 2)}`, name,
     outfit: 'Original DEV placeholder', jpRelease: '2000-01-01', globalRelease: null, starter: true,
     baseStats: { speed: 100 + i * 3, stamina: 150 + i * 4, power: 90, guts: 75, wit: 90 },
@@ -56,5 +56,12 @@ export function puzzleUiProofData() {
   const content: LoadedContent = { manifest: { version: 'invented-ui-source-v1', generatedAt: '', source: {}, files: [] }, origin: 'network', sparkRivals: null,
     umas: { items: templates, byId: new Map(templates.map(t => [t.id, t])) }, cards: { items: [], byId: new Map() }, skills: { items: [], byId: new Map() }, races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },
     atlases: { 'uma-icons': atlas, 'card-icons': { ...atlas, descriptor: { ...atlas.descriptor, kind: 'card-icons' } } }, art: { has: () => false, load: async () => null } }
-  return { rows, content, sources }
+  if (variant === 'setup') {
+    const source = sources[10]!
+    put('puzzleOutfits', source.templateId, { schemaVersion: 1, outfitId: source.templateId,
+      enrollment: { ...enrollPuzzleOutfit(source, 'fire'), level: 15, exp: 30 }, kit: defaultPuzzleKit(source)!, revision: 1 })
+  }
+  const proofRows = variant === 'first-use' ? rows.filter(r => r.kind !== 'puzzleOutfits' && r.kind !== 'puzzleCheckpoints').map(r =>
+    r.kind === 'puzzlePresets' ? { ...r, data: puzzleData(emptyPuzzleParty(r.id)) } : r) : rows
+  return { rows: proofRows, content, sources }
 }
