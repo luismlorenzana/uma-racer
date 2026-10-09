@@ -53,29 +53,19 @@ export function parsePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, regist
   } catch { return null }
 }
 /**
- * A checkpoint saved on D271's two-lane map, read on the v2 stage line (D301). Wins on retired stages are dropped, and
- * every stage before a won stage or the open fight's stage counts as won, since v2 is one line and v1 let a lane be
- * skipped. Nothing is paid for that: won stages replay for the same rewards. Null unless it was a valid v1 checkpoint.
+ * A checkpoint saved on D271's two-lane map, read on the v2 stage line (D301, D304). The line keeps v1's opening rule,
+ * so the only change is dropping wins and attempts on the retired tenth pair; the Senior Guardian they opened needs
+ * the ninth pair, which any v1 Guardian win or attempt already had. Null unless it was a valid v1 checkpoint.
  */
-export function upgradePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, openNodeId: string | null,
-  registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleCheckpointV1 | null {
+export function upgradePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleCheckpointV1 | null {
   try {
     const map = parsePuzzleChapter(chapter, registry)
     if (!map) return null
     const legacy = parsePuzzleCheckpoint(v, puzzleChapter(map.scenarioId, registry, 1), registry)
     if (!legacy) return null
     const retired = new Set(PUZZLE_RETIRED_NODES.map(localId => puzzleCampaignId({ kind: 'node', scenarioId: map.scenarioId, localId }, registry)))
-    const known = (id: string) => !retired.has(id) && map.nodes.some(n => n.id === id)
-    const line = map.nodes.filter(n => n.kind !== 'champion').map(n => n.id)
-    const won = new Set(legacy.cleared.filter(known))
-    // Furthest point on the line reached by a win (inclusive) or by the open fight (exclusive).
-    let through = -1
-    for (const id of won) through = Math.max(through, line.includes(id) ? line.indexOf(id) : line.length - 1)
-    if (openNodeId && known(openNodeId)) through = Math.max(through, line.includes(openNodeId) ? line.indexOf(openNodeId) - 1 : line.length - 1)
-    for (const id of line.slice(0, through + 1)) won.add(id)
-    const attempts = legacy.attempts.filter(a => known(a.nodeId))
-    for (const id of won) if (!attempts.some(a => a.nodeId === id)) attempts.push({ nodeId: id, next: 1 })
-    return parsePuzzleCheckpoint({ schemaVersion: 1, chapterId: map.id, partyId: legacy.partyId, cleared: [...won], attempts }, map, registry)
+    return parsePuzzleCheckpoint({ schemaVersion: 1, chapterId: map.id, partyId: legacy.partyId,
+      cleared: legacy.cleared.filter(id => !retired.has(id)), attempts: legacy.attempts.filter(a => !retired.has(a.nodeId)) }, map, registry)
   } catch { return null }
 }
 export function createPuzzleCheckpoint(chapter: PuzzleChapter, partyId: string, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleCheckpointV1 {

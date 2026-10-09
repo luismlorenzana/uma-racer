@@ -78,7 +78,7 @@ describe('Puzzle account presentation', () => {
     for (const s of SCENARIOS) {
       const status = puzzleMapStatus(f.account, 'puzzle-party-2', s.id)
       expect(status.chapter.levelStart).toBe((s.tier - 1) * 10 + 1); expect(status.chapter.levelEnd).toBe(s.tier * 10)
-      expect(status.chapter.nodes).toHaveLength(26); expect(status.reached).toHaveLength(1); expect(status.complete).toBe(false)
+      expect(status.chapter.nodes).toHaveLength(26); expect(status.reached).toHaveLength(2); expect(status.complete).toBe(false)
       expect(status.chapter.nodes.filter(n => n.kind === 'champion').every(n => n.requires.length === 3)).toBe(true)
     }
     const visited = puzzleMapStatus(f.account, 'puzzle-party-1', 'ura-finale')

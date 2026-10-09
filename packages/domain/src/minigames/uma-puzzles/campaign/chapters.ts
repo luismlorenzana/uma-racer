@@ -10,8 +10,9 @@ import { PUZZLE_CAMPAIGN_V1, PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZ
 import type { PuzzleChapter, PuzzleMapNode } from './types'
 
 /**
- * Stage `o{pair}{a|b}` has the same level, trio and roles in both versions, so a v1 win on it is a v2 win. v2 lines the
- * stages up (each needs the one before) and drops v1's tenth pair; v1 lets either lane of a row open the next row.
+ * Stage `o{pair}{a|b}` has the same level, trio, roles and opening rule in both versions, so any v1 progress is v2
+ * progress. v2 lists the stages in one line, a level's two stages opening together once either stage of the level
+ * before is won (v1's lanes), and drops v1's tenth pair (D301, D304).
  */
 export function puzzleChapter(scenarioId: string, registry: PuzzleScenarioRegistry = SCENARIOS,
   version: PuzzleCampaignVersion = PUZZLE_CAMPAIGN_VERSION): PuzzleChapter {
@@ -43,8 +44,10 @@ export function puzzleChapter(scenarioId: string, registry: PuzzleScenarioRegist
   for (let sector = 0; sector < pairs.length; sector++) {
     for (const recommended of pairs[sector]!) {
       pair++
-      if (version === 1) { link([0, 1].map(branch => stage(sector, recommended, branch))); row++ }
-      else for (const branch of [0, 1]) { link([stage(sector, recommended, branch)]); row++ }
+      const current = [0, 1].map(branch => stage(sector, recommended, branch))
+      // v2 lists the pair as two rows of one column; both still open together.
+      if (version === 2) current[1] = { ...current[1]!, row: row + 1 }
+      link(current); row += version === 1 ? 1 : 2
     }
     const localId = `g${sector + 1}`, id = nodeId(localId)
     const guardian: PuzzleMapNode = { id, localId, row, column: 0, sector, kind: 'guardian',

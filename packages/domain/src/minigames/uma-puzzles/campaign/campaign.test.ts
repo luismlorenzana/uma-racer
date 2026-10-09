@@ -5,6 +5,7 @@ import { parsePuzzleCampaignId, puzzleCampaignId } from './identity'
 import { applyPuzzleTerminal, createPuzzleCheckpoint, parsePuzzleChapter, parsePuzzleCheckpoint, parsePuzzleClearFact,
   puzzleChapterStatus, puzzleEntryEligibility, puzzleExchangeOpeningClears, upgradePuzzleCheckpoint } from './progress'
 import { PUZZLE_SQUAD_MIXES } from './rules'
+import { parsePuzzleCheckpointSave } from '../records'
 import { acceptedFact, reachedFinals } from './test-helpers'
 
 describe('code-authored Puzzle campaign', () => {
@@ -35,19 +36,20 @@ describe('code-authored Puzzle campaign', () => {
       '1:4', '1:4', '1:5', '1:5', '1:6', '1:6', '1:G', '2:7', '2:7', '2:8', '2:8', '2:9', '2:9', '2:G'])
     expect(c.nodes.filter(n => n.kind === 'guardian').map(n => n.level)).toEqual([3, 6, 9])
     for (const lane of ['a', 'b']) expect(new Set(c.nodes.filter(n => n.kind === 'ordinary' && n.localId.endsWith(lane)).map(n => n.elements.join('/'))).size).toBe(6)
-    // Each stage needs the one before it; the Champions need every Guardian.
-    line.slice(1).forEach((n, i) => expect(n.requires).toEqual([[line[i]!.id]]))
+    // A level's two stages open together once either stage of the level before is won (v1's lanes, D304).
+    expect(c.nodes.find(n => n.localId === 'o2b')!.requires).toEqual([[`pzn:${c.scenarioId}:o1a`, `pzn:${c.scenarioId}:o1b`]])
+    expect(c.nodes.find(n => n.localId === 'g3')!.requires).toEqual([[`pzn:${c.scenarioId}:o9a`, `pzn:${c.scenarioId}:o9b`]])
   })
-  it('opens stages in order with no level/racing/composition lock; won stages stay replayable', () => {
+  it('opens a level two stages at a time with no level/racing/composition lock; won stages stay replayable', () => {
     const c = puzzleChapter(SCENARIOS[0]!.id), start = createPuzzleCheckpoint(c, 'puzzle-party-1')
-    expect(puzzleChapterStatus(c, start).reached).toEqual([c.nodes[0]!.id])
-    const second = applyPuzzleTerminal(c, start, acceptedFact(c, start, 'o1a'))
-    expect(puzzleChapterStatus(c, second).reached).toEqual(c.nodes.slice(0, 2).map(n => n.id))
-    expect(puzzleEntryEligibility(c, second, c.nodes[1]!.id, [1, 1, 1, 1, 1]).warning).toBe(null)
+    expect(puzzleChapterStatus(c, start).reached).toEqual(c.nodes.slice(0, 2).map(n => n.id))
+    const second = applyPuzzleTerminal(c, start, acceptedFact(c, start, 'o1b'))
+    expect(puzzleChapterStatus(c, second).reached).toEqual(c.nodes.slice(0, 4).map(n => n.id))
+    expect(puzzleEntryEligibility(c, second, c.nodes[2]!.id, [1, 1, 1, 1, 1]).warning).toBe('low-level')
     expect(puzzleEntryEligibility(c, second, c.nodes[0]!.id, [200, 200, 200, 200, 200]).warning).toBe(null)
-    expect(() => puzzleEntryEligibility(c, second, c.nodes[1]!.id, [1, 1, 1, 1])).toThrow('Five')
+    expect(() => puzzleEntryEligibility(c, second, c.nodes[2]!.id, [1, 1, 1, 1])).toThrow('Five')
     expect(() => puzzleEntryEligibility(c, second, 'invented-missing', [1, 1, 1, 1, 1])).toThrow('Unknown')
-    expect(() => puzzleEntryEligibility(c, second, c.nodes[2]!.id, [200, 200, 200, 200, 200])).toThrow('not reached')
+    expect(() => puzzleEntryEligibility(c, second, c.nodes[4]!.id, [200, 200, 200, 200, 200])).toThrow('not reached')
   })
   it('preserves clears, increments every terminal attempt and rejects duplicate/out-of-order terminals', () => {
     const c = puzzleChapter(SCENARIOS[0]!.id), start = createPuzzleCheckpoint(c, 'puzzle-party-1'), fact = acceptedFact(c, start, 'o1a')
@@ -90,29 +92,46 @@ describe('code-authored Puzzle campaign', () => {
     const start = createPuzzleCheckpoint(v1, 'puzzle-party-1'), second = applyPuzzleTerminal(v1, start, acceptedFact(v1, start, 'o1b'))
     expect(puzzleChapterStatus(v1, second).reached).toEqual(v1.nodes.slice(0, 4).map(n => n.id))
   })
-  it('reads a v1 checkpoint on the v2 line: retired stages dropped, skipped lanes counted as won, nothing else changed', () => {
+  it('reads a v1 checkpoint on the v2 line by dropping only the retired tenth pair (D304)', () => {
     const v1 = puzzleChapter(SCENARIOS[0]!.id, SCENARIOS, 1), v2 = puzzleChapter(SCENARIOS[0]!.id)
-    const play = (ids: string[]) => ids.reduce((p, localId) => applyPuzzleTerminal(v1, p, acceptedFact(v1, p, localId)), createPuzzleCheckpoint(v1, 'puzzle-party-3'))
-    const debutClassic = ['o1a', 'o1b', 'o2a', 'o2b', 'o3a', 'o3b', 'g1', 'o4a', 'o4b', 'o5a', 'o5b', 'o6a', 'o6b', 'g2']
+    const play = (ids: [string, 'win' | 'loss'][]) => ids.reduce((p, [localId, outcome]) => applyPuzzleTerminal(v1, p, acceptedFact(v1, p, localId, outcome)),
+      createPuzzleCheckpoint(v1, 'puzzle-party-3'))
     const id = (localId: string) => `pzn:${v2.scenarioId}:${localId}`
-    // Halfway through Senior having skipped o7a: o7a now counts as won (no attempt yet), o8b is next.
-    const midSenior = play([...debutClassic, 'o7b', 'o8a'])
-    expect(parsePuzzleCheckpoint(midSenior, v2)).toBeNull()
-    const up = upgradePuzzleCheckpoint(midSenior, v2, null)!
-    expect(up.cleared).toEqual([...debutClassic, 'o7a', 'o7b', 'o8a'].map(id))
-    expect(up.attempts.find(a => a.nodeId === id('o7a'))).toEqual({ nodeId: id('o7a'), next: 1 })
-    expect(up.attempts.find(a => a.nodeId === id('o8a'))).toEqual({ nodeId: id('o8a'), next: 1 })
-    expect(puzzleChapterStatus(v2, up).reached.at(-1)).toBe(id('o8b'))
-    // A win on a retired tenth-pair stage is dropped; the Guardian it opened stays won.
-    const done = play([...debutClassic, 'o7a', 'o8a', 'o9b', 'o10a', 'g3', 'c-fire'])
-    const upDone = upgradePuzzleCheckpoint(done, v2, null)!
-    expect(upDone.cleared).not.toContain(id('o10a')); expect(upDone.cleared).toContain(id('g3'))
-    expect(upDone.cleared).toHaveLength(22); expect(puzzleChapterStatus(v2, upDone).complete).toBe(true)
-    // A fight left open on o7b counts every stage before it as won, so it can still settle.
-    const open = upgradePuzzleCheckpoint(play(debutClassic), v2, id('o7b'))!
-    expect(open.cleared.at(-1)).toBe(id('o7a')); expect(puzzleChapterStatus(v2, open).reached).toContain(id('o7b'))
-    expect(upgradePuzzleCheckpoint({ ...midSenior, cleared: [id('g3')] }, v2, null)).toBeNull()
+    const debutClassic = ['o1a', 'o1b', 'o2a', 'o2b', 'o3a', 'o3b', 'g1', 'o4a', 'o4b', 'o5a', 'o5b', 'o6a', 'o6b', 'g2'].map(l => [l, 'win'] as [string, 'win'])
+    // Skipped o7a, lost o8b before winning o8a: valid on the line as it stands.
+    const midSenior = play([...debutClassic, ['o7b', 'win'], ['o8b', 'loss'], ['o8a', 'win']])
+    expect(upgradePuzzleCheckpoint(midSenior, v2)).toEqual(parsePuzzleCheckpoint(midSenior, v2))
+    expect(puzzleChapterStatus(v2, upgradePuzzleCheckpoint(midSenior, v2)!).reached).toContain(id('o9b'))
+    // Wins and attempts on the tenth pair go; the Senior Guardian and Champion stay won.
+    const done = play([...debutClassic, ['o7a', 'win'], ['o8a', 'win'], ['o9b', 'win'], ['o10b', 'loss'], ['o10a', 'win'], ['g3', 'win'], ['c-fire', 'win']])
+    expect(parsePuzzleCheckpoint(done, v2)).toBeNull()
+    const upDone = upgradePuzzleCheckpoint(done, v2)!
+    expect(upDone.cleared).not.toContain(id('o10a')); expect(upDone.attempts.map(a => a.nodeId)).not.toContain(id('o10b'))
+    expect(upDone.cleared).toContain(id('g3')); expect(puzzleChapterStatus(v2, upDone).complete).toBe(true)
+    expect(upgradePuzzleCheckpoint({ ...midSenior, cleared: [id('g3')] }, v2)).toBeNull()
   })
+  it('reads every reachable v1 history onto the v2 line (randomised wins and losses)', () => {
+    const v1 = puzzleChapter(SCENARIOS[2]!.id, SCENARIOS, 1), v2 = puzzleChapter(SCENARIOS[2]!.id)
+    let seed = 7
+    const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296
+    for (let run = 0; run < 80; run++) {
+      let progress = createPuzzleCheckpoint(v1, 'puzzle-party-2')
+      for (let step = 0, steps = 8 + Math.floor(random() * 30); step < steps; step++) {
+        const reached = puzzleChapterStatus(v1, progress).reached
+        const pick = reached[Math.floor(random() * reached.length)], node = v1.nodes.find(n => n.id === pick)!
+        progress = applyPuzzleTerminal(v1, progress, acceptedFact(v1, progress, node.localId, random() < 0.7 ? 'win' : 'loss'))
+      }
+      const up = upgradePuzzleCheckpoint(progress, v2)
+      expect(up, JSON.stringify(progress.cleared)).not.toBeNull()
+      // The stored row, as a load or an old receipt holds it, parses too.
+      const row = { schemaVersion: 1, checkpointId: `pzp:puzzle-party-2:${v2.scenarioId}`, scenarioId: v2.scenarioId, progress,
+        reached: puzzleChapterStatus(v1, progress).reached, open: null, revision: 3 }
+      expect(parsePuzzleCheckpointSave(row)?.progress).toEqual(up)
+      // Every stage the v1 map had open (bar the retired pair) is still open.
+      const open = puzzleChapterStatus(v1, progress).reached.filter(id => !/:o10[ab]$/.test(id))
+      for (const id of open) expect(puzzleChapterStatus(v2, up!).reached).toContain(id)
+    }
+  }, 30_000)
   it('rejects forged maps, future clears, sparse/prototype arrays, duplicate rows and extra fields', () => {
     expect(() => puzzleCampaign(new Array(1))).toThrow('registry')
     const c = puzzleChapter(SCENARIOS[0]!.id), p = createPuzzleCheckpoint(c, 'puzzle-party-1')

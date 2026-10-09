@@ -602,9 +602,10 @@ The owner runs every stage of a chapter, so the map is one line of stages named 
 | Senior | 6 (7, 7, 8, 8, 9, 9) | Senior Guardian (9) | 7–9 |
 | Finals | five colour Champions (10) | any Champion completes the chapter | 10 |
 
-Each stage needs the one before it; the Champions need all three Guardians. **26 nodes**: 18 stages, 3 Guardians,
-5 Champions. Stage ids keep v1's `o{pair}{a|b}` and their level, trio and roles are unchanged, so earlier wins carry
-over; v1's tenth pair (`o10a`, `o10b`, two extra level-9 Senior stages) is retired.
+A level's two stages open together once a stage of the level before is won (v1's lanes, kept so saved progress
+stays valid as it is, D304); a Guardian opens with either stage of its last level; the Champions need all three
+Guardians. **26 nodes**: 18 stages, 3 Guardians, 5 Champions. Stage ids keep v1's `o{pair}{a|b}` with the same level,
+trio and roles, so earlier wins carry over; v1's tenth pair (`o10a`, `o10b`, two extra level-9 Senior stages) is retired.
 
 - **EXP** weights are 0.28 stage / 0.8 Guardian / 0.5 Champion of a level at the encounter's level (was 0.5 / 1 /
   1.5, tuned for one lane). A party that starts on the chapter's level finishes Debut near its third level, Classic
@@ -612,9 +613,8 @@ over; v1's tenth pair (`o10a`, `o10b`, two extra level-9 Senior stages) is retir
   PL 1 → 11 in URA Finale, 11 → 22 in Unity Cup).
 - **Tickets**: stages pay one per foe (3), Guardians **6** (was 4), Champions 12. A full clear still pays **132**
   (18 × 3 + 3 × 6 + 5 × 12), as D271's full map did; the line plus one Champion pays 84.
-- **Saved progress** (campaign v1 checkpoints) reads onto the line on load, client and server alike: wins on retired
-  stages are dropped, and every stage before a won stage (or before an open fight's stage) counts as won, since v1
-  let a lane be skipped. No reward is attached; won stages replay for the same drops.
+- **Saved progress** (campaign v1 checkpoints) reads onto the line on load, client and server alike, by dropping wins
+  and attempts on the two retired stages; nothing else changes (D304).
 - **Fights frozen under v1** name `puzzle-campaign-v1` and keep its rules everywhere they are checked: the v1 map,
   Guardian 4, D271 EXP. One left open on a retired stage still settles and pays, without a place on the line. Past
   receipts stay valid. Only new fights freeze under v2.

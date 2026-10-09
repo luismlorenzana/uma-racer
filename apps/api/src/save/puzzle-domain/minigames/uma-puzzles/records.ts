@@ -110,7 +110,7 @@ export function parsePuzzleCheckpointSave(v: unknown): PuzzleCheckpointSaveV1 | 
   // A row saved on D271's two-lane map reads as the v2 stage line (D301); a v2 row must match its derived reach exactly.
   const strict = parsePuzzleCheckpoint(v.progress, chapter)
   const exact = strict && puzzleCanonical(v.reached) === puzzleCanonical(puzzleChapterStatus(chapter, strict).reached)
-  const progress = exact ? strict : upgradePuzzleCheckpoint(v.progress, chapter, openNode)
+  const progress = exact ? strict : upgradePuzzleCheckpoint(v.progress, chapter)
   if (!progress || v.checkpointId !== puzzleCampaignId({ kind: 'checkpoint', scenarioId: v.scenarioId, partyId: progress.partyId })) return null
   const reached = puzzleChapterStatus(chapter, progress).reached
   if (open) {

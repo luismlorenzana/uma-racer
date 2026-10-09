@@ -163,8 +163,8 @@ describe('Puzzle atomic protocol v1', () => {
     f.put('puzzleCheckpoints', checkpointId, { schemaVersion: 1, checkpointId, scenarioId: 'ura-finale', progress,
       reached: puzzleChapterStatus(v1, progress).reached, open, revision: 4 }, 4)
     const loaded = parsePuzzleCheckpointSave(f.entities.get(`puzzleCheckpoints/${checkpointId}`)!.data)!
-    expect(loaded.progress.cleared).toContain('pzn:ura-finale:o8a'); expect(loaded.open?.input.battleId).toBe(battleId)
-    expect(loaded.reached.at(-1)).toBe('pzn:ura-finale:o9b')
+    expect(loaded.progress.cleared).not.toContain('pzn:ura-finale:o8a'); expect(loaded.open?.input.battleId).toBe(battleId)
+    expect(loaded.reached).toContain('pzn:ura-finale:o9b'); expect(loaded.reached).toContain('pzn:ura-finale:g3')
     let state = createBattle(input)
     for (let n = 0; n < 181 && state.outcome === 'active'; n++) state = applyBattleAction(state, puzzleBotAction(state, 'competent')).state
     expect(state.outcome).toBe('win')

@@ -33,7 +33,7 @@ export function PuzzleMapScreen() {
     {!status || !party || !account ? <PuzzleCard>Unknown party or chapter. Return to Parties and choose a registered chapter.</PuzzleCard> : <>
       <PuzzleCard><div className="flex items-baseline justify-between gap-2"><h2 className="text-sm">{party.name} · PL {status.chapter.levelStart}–{status.chapter.levelEnd}</h2><span className="text-xs tabular-nums text-ink-on-dark-soft">{status.cleared.length}/{total} won</span></div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stage"><div className="h-full rounded-full bg-accent" style={{ width: `${total ? (100 * status.cleared.length) / total : 0}%` }} /></div>
-        <p className="mt-2 text-xs text-ink-on-dark-soft">{status.full ? 'Every stage cleared. Replay any of them for more tickets.' : status.complete ? 'Chapter complete; Champions left to beat.' : 'Six stages and a Guardian per section, then the Finals. Any Champion completes the chapter.'}</p>
+        <p className="mt-2 text-xs text-ink-on-dark-soft">{status.full ? 'Every stage cleared. Replay any of them for more tickets.' : status.complete ? 'Chapter complete; Champions left to beat.' : 'Six stages and a Guardian per section, two stages opening at a time, then the Finals. Any Champion completes the chapter.'}</p>
         {open && frozenNode && <PuzzleButton className="mt-3 w-full" onClick={resume}>Resume {puzzleNodeName(frozenNode)}</PuzzleButton>}
         {otherOpen && otherOpen.scenarioId !== scenarioId && <p className="mt-2 text-xs text-accent">This party has an open encounter in another chapter. Return to Parties to resume it.</p>}
       </PuzzleCard>
