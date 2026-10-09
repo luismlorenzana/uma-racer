@@ -27,19 +27,33 @@ const MAX_TREE_NODES = 40
 const SLOT_GATES = [10, 15, 20, 25, 30, 35, 40]
 
 // Class era (D277–D282). Node ids are `tree.branch.depth` plus `a`/`b` for a variant; a node costs its depth.
-const CLASS_WEAPONS: Record<string, string[][]> = {
-  brawler: [['greatsword', 'spear'], ['axe', 'bow']],
-  mage: [['mage-staff', 'arcane-staff'], ['mage-staff', 'short-sword'], ['arcane-staff', 'short-sword']],
-  cleric: [['arcane-staff', 'cleric-staff']],
-  summoner: [['summoner-tome']],
+// Schema 4 (D310): the Mage is two staves and Pace Umas may be Spell Blades; schema 3 rows are read by the old rules.
+const CLASS_WEAPONS: Record<3 | 4, Record<string, string[][]>> = {
+  3: {
+    brawler: [['greatsword', 'spear'], ['axe', 'bow']],
+    mage: [['mage-staff', 'arcane-staff'], ['mage-staff', 'short-sword'], ['arcane-staff', 'short-sword']],
+    cleric: [['arcane-staff', 'cleric-staff']],
+    summoner: [['summoner-tome']],
+  },
+  4: {
+    brawler: [['greatsword', 'spear'], ['axe', 'bow']],
+    mage: [['mage-staff', 'arcane-staff']],
+    spellblade: [['short-sword']],
+    cleric: [['arcane-staff', 'cleric-staff']],
+    summoner: [['summoner-tome']],
+  },
 }
-const CLASS_OF_STYLES: Record<string, string> = { front: 'brawler', 'front+pace': 'brawler', pace: 'mage', 'pace+late': 'mage',
-  late: 'cleric', end: 'summoner', 'late+end': 'summoner' }
-const CLASS_OF_STYLE: Record<string, string> = { front: 'brawler', pace: 'mage', late: 'cleric', end: 'summoner' }
+const CLASS_ORDER = ['brawler', 'mage', 'spellblade', 'cleric', 'summoner']
+const PACE: Record<3 | 4, string[]> = { 3: ['mage'], 4: ['mage', 'spellblade'] }
+const classesOfStyles = (styles: string, version: 3 | 4): string[] | undefined => ({ front: ['brawler'], 'front+pace': ['brawler'],
+  pace: PACE[version], 'pace+late': PACE[version], late: ['cleric'], end: ['summoner'], 'late+end': ['summoner'] } as Record<string, string[]>)[styles]
+const classesOfStyle = (style: string, version: 3 | 4): string[] =>
+  ({ front: ['brawler'], pace: PACE[version], late: ['cleric'], end: ['summoner'] } as Record<string, string[]>)[style] ?? []
 const TREE_BRANCHES: Record<string, string[]> = {
   greatsword: ['fire', 'ice', 'lightning'], spear: ['fire', 'ice', 'lightning'], axe: ['fire', 'ice', 'lightning'], bow: ['fire', 'ice', 'lightning'],
   'mage-staff': ['fire', 'ice', 'lightning'], 'arcane-staff': ['light', 'dark', 'ultima'], 'short-sword': ['duel', 'melee', 'tempo'],
   'cleric-staff': ['grace', 'malice', 'sanctuary'], 'summon-elemental': ['fire', 'ice', 'lightning'], 'summon-arcane': ['angels', 'demons', 'archons'],
+  'blade-elemental': ['fire', 'ice', 'lightning'], 'blade-arcane': ['light', 'dark', 'ultima'],
 }
 const PASSIVE_TREES = ['short-sword', 'cleric-staff']
 const VARIANTS_PER_TREE = 3
@@ -53,13 +67,14 @@ export function rpgNodeId(id: unknown): NodeId | null {
   if (variant && (depth < 2 || depth > 4)) return null
   return { tree: match[1]!, branch: match[2]!, depth, variant }
 }
-export function rpgClassOptions(strategy: Record<string, unknown>): string[] {
+export function rpgClassOptions(strategy: Record<string, unknown>, version: 3 | 4 = 4): string[] {
   const styles = STYLES.filter((s) => strategy[s] === 'A' || strategy[s] === 'S')
   if (!styles.length) return []
-  const exact = CLASS_OF_STYLES[styles.join('+')]
-  return exact ? [exact] : ['brawler', 'mage', 'cleric', 'summoner'].filter((c) => styles.some((s) => CLASS_OF_STYLE[s] === c))
+  const exact = classesOfStyles(styles.join('+'), version)
+  return exact ? [...exact] : CLASS_ORDER.filter((c) => styles.some((s) => classesOfStyle(s, version).includes(c)))
 }
-const classTrees = (classId: string, weapons: string[]): string[] => classId === 'summoner' ? ['summon-elemental', 'summon-arcane'] : weapons
+const classTrees = (classId: string, weapons: string[]): string[] => classId === 'summoner' ? ['summon-elemental', 'summon-arcane']
+  : classId === 'spellblade' ? ['blade-elemental', 'blade-arcane'] : weapons
 const nodeRef = (value: unknown): value is { tier: number; id: string } =>
   rpgRecord(value) && rpgExact(value, ['tier', 'id']) && rpgInt(value.tier, 1) && rpgNodeId(value.id) !== null
 const activeRef = (value: unknown): boolean => nodeRef(value) && !PASSIVE_TREES.includes(rpgNodeId(value.id)!.tree)
@@ -99,8 +114,8 @@ function skill(value: unknown, learned: boolean): boolean {
 const skillKey = (value: Record<string, unknown>): string =>
   `${value.tier}:${value.weapon}:${value.element}:${value.depth}:${value.branch}`
 
-/** Schema 3 (D282): class, weapons and class-tree nodes, under every learning rule the client enforces. */
-function classOutfit(value: Record<string, unknown>): boolean {
+/** Schema 3 (D282) and 4 (D310): class, weapons and class-tree nodes, under every learning rule the client enforces. */
+function classOutfit(value: Record<string, unknown>, version: 3 | 4): boolean {
   if (!rpgExact(value, ['schemaVersion', 'profile', 'projectionRevision']) || !rpgInt(value.projectionRevision) || !rpgRecord(value.profile)) return false
   const p = value.profile
   if (!rpgExact(p, ['outfitId', 'sourceContentVersion', 'baseStats', 'growthRates', 'sourceAptitudes', 'classId', 'weapons',
@@ -109,8 +124,8 @@ function classOutfit(value: Record<string, unknown>): boolean {
     !rpgInt(p.tier, 1) || !rpgInt(p.level, 1) || (p.level as number) > 50 || !rpgInt(p.exp) ||
     !Array.isArray(p.tree) || p.tree.length > MAX_TREE_NODES || !Array.isArray(p.legacy) || p.legacy.length > 2) return false
   const weapons = p.weapons as string[]
-  if (!rpgClassOptions(p.sourceAptitudes.strategy!).includes(p.classId) ||
-    !CLASS_WEAPONS[p.classId]?.some((set) => set.length === weapons.length && set.every((w, i) => w === weapons[i]))) return false
+  if (!rpgClassOptions(p.sourceAptitudes.strategy!, version).includes(p.classId) ||
+    !CLASS_WEAPONS[version][p.classId]?.some((set) => set.length === weapons.length && set.every((w, i) => w === weapons[i]))) return false
   if (!p.tree.every(nodeRef) || !p.legacy.every(activeRef)) return false
   const level = p.level as number
   const trees = classTrees(p.classId, weapons)
@@ -129,7 +144,7 @@ function classOutfit(value: Record<string, unknown>): boolean {
 }
 
 function outfit(value: unknown): boolean {
-  if (rpgRecord(value) && value.schemaVersion === 3) return classOutfit(value)
+  if (rpgRecord(value) && (value.schemaVersion === 3 || value.schemaVersion === 4)) return classOutfit(value, value.schemaVersion)
   if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'profile', 'projectionRevision']) ||
     (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !rpgInt(value.projectionRevision) || !rpgRecord(value.profile)) return false
   const p = value.profile
@@ -168,7 +183,7 @@ function outfit(value: unknown): boolean {
 }
 
 function presetRow(value: unknown): boolean {
-  if (rpgRecord(value) && value.schemaVersion === 3) return classPreset(value)
+  if (rpgRecord(value) && (value.schemaVersion === 3 || value.schemaVersion === 4)) return classPreset(value)
   if (!rpgRecord(value) || !rpgExact(value, ['schemaVersion', 'presetId', 'name', 'slots', 'foregroundChapterId']) ||
     (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !preset(value.presetId) || typeof value.name !== 'string' ||
     value.name.trim().length < 1 || value.name.length > 40 || !Array.isArray(value.slots) || value.slots.length !== 5 ||
@@ -186,7 +201,7 @@ function presetRow(value: unknown): boolean {
   return new Set(ids).size === ids.length
 }
 
-/** Schema 3 parties: equipped class skills and the Summoner's Familiar form. */
+/** Schema 3 and 4 parties: equipped class skills and the Summoner's Familiar form. */
 function classPreset(value: Record<string, unknown>): boolean {
   if (!rpgExact(value, ['schemaVersion', 'presetId', 'name', 'slots', 'foregroundChapterId']) || !preset(value.presetId) ||
     typeof value.name !== 'string' || value.name.trim().length < 1 || value.name.length > 40 || !Array.isArray(value.slots) ||
@@ -218,7 +233,7 @@ function run(value: unknown): boolean {
   const battle = value.battle
   if (battle === null) return true
   return rpgRecord(battle) && rpgExact(battle, ['battleId', 'nodeId', 'startedAt', 'input']) && rpgId(battle.battleId) &&
-    rpgId(battle.nodeId) && rpgInt(battle.startedAt) && rpgRecord(battle.input) && [2, 3, 4].includes(battle.input.version as number) &&
+    rpgId(battle.nodeId) && rpgInt(battle.startedAt) && rpgRecord(battle.input) && [2, 3, 4, 5].includes(battle.input.version as number) &&
     JSON.stringify(battle.input).length <= MAX_RUN_BATTLE_CHARS
 }
 
@@ -328,7 +343,7 @@ export function rpgEntityIdMatches(kind: EntityKind, id: string, data: Record<st
 
 /** Rows the campaign client writes through ordinary sync (D263); older shapes stay command-only history. */
 export function rpgOrdinaryRow(kind: EntityKind | LogKind, data: Record<string, unknown>): boolean {
-  if (kind === 'rpgOutfits' || kind === 'rpgPresets') return data.schemaVersion === 2 || data.schemaVersion === 3
+  if (kind === 'rpgOutfits' || kind === 'rpgPresets') return data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4
   if (kind === 'rpgCheckpoints' || kind === 'rpgResults') return data.schemaVersion === 2
   return kind === 'rpgPromotions'
 }

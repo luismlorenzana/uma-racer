@@ -182,7 +182,7 @@ import {
   BATTLE_WEAK, BATTLE_UNBROKEN_FACTOR, BATTLE_ULTIMA, BATTLE_DEFENSE_SHARE, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS,
   BATTLE_STATUS_TURNS, BATTLE_STATUS_STACK_CAP, BATTLE_BURN_PERCENT, BATTLE_STATUS_STEP, BATTLE_FOE_STATUS_STEP,
   BATTLE_BARRIER_PERCENT, BATTLE_BARRIER_CAP, BATTLE_REGEN_PERCENT, BATTLE_CURE_PERCENT, BATTLE_CLARITY_PERCENT,
-  BATTLE_REBIRTH_PERCENT, BATTLE_REACTION_SHARE,
+  BATTLE_REBIRTH_PERCENT,
   rpgExpToNext,
   projectRpgStats,
   rpgTreePointsEarned,
@@ -228,29 +228,29 @@ describe('Global card stars — D255', () => {
   })
 })
 
-describe('Global Uma RPG — engine v4 pins (D279, D281)', () => {
+describe('Global Uma RPG — engine v5 pins (D279, D281, D310)', () => {
   it('pins damage, breaks and the protection contract', () => {
     expect([BATTLE_WEAK, BATTLE_UNBROKEN_FACTOR, BATTLE_ULTIMA, BATTLE_DEFENSE_SHARE, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS])
       .toEqual([1.3, 0.5, 1.2, 0.5, 0.5, 40])
     expect([BATTLE_STATUS_TURNS, BATTLE_STATUS_STACK_CAP, BATTLE_BURN_PERCENT, BATTLE_STATUS_STEP, BATTLE_FOE_STATUS_STEP,
       BATTLE_BARRIER_PERCENT, BATTLE_BARRIER_CAP, BATTLE_REGEN_PERCENT, BATTLE_CURE_PERCENT, BATTLE_CLARITY_PERCENT,
-      BATTLE_REBIRTH_PERCENT, BATTLE_REACTION_SHARE]).toEqual([2, 3, 0.04, 0.1, 0.15, 0.08, 0.3, 0.04, 0.1, 0.04, 0.1, 0.25])
+      BATTLE_REBIRTH_PERCENT]).toEqual([2, 3, 0.04, 0.1, 0.15, 0.08, 0.3, 0.04, 0.1, 0.04, 0.1])
     expect([RPG_FOE_TUNING.regularShield, RPG_FOE_TUNING.lateRegularShield, RPG_FOE_TUNING.subBossShield, RPG_FOE_TUNING.bossShield])
       .toEqual([2, 3, 6, 8])
   })
-  it('pins the skill rules and the 330-node catalog (D280)', () => {
+  it('pins the skill rules and the 396-node catalog (D280, D310)', () => {
     expect([RPG_SKILL_POWER, RPG_SKILL_MP, RPG_AOE_SHARE, RPG_RANDOM_BONUS, RPG_VARIANTS_PER_TREE])
       .toEqual([[1.6, 2.2, 2.9, 3.7, 4.6], [10, 14, 18, 22, 26], 0.55, 1.05, 3])
-    // Ten trees × three branches × (five core nodes + three forks of two variants).
-    expect(RPG_NODES.length).toBe(330)
+    // Twelve trees (the retired Short Sword follow-ups still read) × three branches × (five core nodes + three forks of two).
+    expect(RPG_NODES.length).toBe(396)
   })
 })
 
-describe('Global Uma RPG — save wire pins (D282)', () => {
+describe('Global Uma RPG — save wire pins (D282, D310)', () => {
   it('bounds synced account rows and grouped commands', () => {
     expect([RPG_SAVE_SCHEMA_VERSION, RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_MAX_TREE_NODES,
       RPG_MAX_SELECTED_PATH, RPG_MAX_ENEMY_KIT_CHARS, RPG_MAX_GROUP_OPERATIONS])
-      .toEqual([3, 5, 10, 40, 64, 16_384, 20])
+      .toEqual([4, 5, 10, 40, 64, 16_384, 20])
   })
 })
 
@@ -269,6 +269,9 @@ describe('Global Uma RPG — progression pins (D264, D277, D280)', () => {
       .toMatchObject({ speed: 20, atk: 20, matk: 20, stamina: 18, power: 16, guts: 14, wit: 12, hp: 240, mp: 42, mdef: 14 })
     expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1, classId: 'mage' })).toMatchObject({ hp: 216, atk: 18, matk: 23, mp: 49 })
     expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1, classId: 'brawler' })).toMatchObject({ hp: 276, atk: 22, matk: 18, mp: 30 })
+    expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 1, classId: 'spellblade' })).toMatchObject({ hp: 240, atk: 21, matk: 21, mp: 38 })
+    expect(RPG_CLASS_WEAPONS.mage).toEqual([['mage-staff', 'arcane-staff']])
+    expect(RPG_CLASS_WEAPONS.spellblade).toEqual([['short-sword']])
     expect(projectRpgStats({ baseStats, growthRates, tier: 1, level: 50, classId: 'summoner' }).speed).toBe(108)
     expect(projectRpgStats({ baseStats, growthRates, tier: 2, level: 1, classId: 'summoner' }).speed).toBe(110)
     expect(RPG_CLASS_STATS.cleric).toEqual({ hp: 1, atk: 0.8, matk: 1, pdef: 1, mdef: 1.15, mp: 1.3 })

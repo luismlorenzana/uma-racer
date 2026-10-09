@@ -31,7 +31,7 @@ describe('local-first RPG (D263)', () => {
     await seedParty()
     const account = await readRpgAccount()
     expect(account.outfits.size).toBe(6)
-    expect(account.outfits.get('u1')!.data).toMatchObject({ schemaVersion: 3, profile: { classId: 'brawler' } })
+    expect(account.outfits.get('u1')!.data).toMatchObject({ schemaVersion: 4, profile: { classId: 'brawler' } })
     expect(await outbox()).toEqual([...ids.map((id) => `upsert:rpgOutfits/${id}`), 'upsert:rpgPresets/party-1'].sort())
     await saveRpgParty({ ...emptyRpgPreset(2), slots: ['u1', null, null, null, null].map((id) => id && { outfitId: id, loadout: [], familiar: 'axe' }) as never })
     const parties = (await readRpgAccount()).presets
@@ -152,14 +152,53 @@ describe('class upgrade (Dexie v29, D282)', () => {
     legacy.close()
     await db.open()
     // Version 30 (D285) then restarts levels; the class migration's level carry is pinned in the domain save tests.
-    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 3,
+    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 4,
       profile: { classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 1, exp: 0, tree: [], legacy: [] } })
-    expect((await db.rpgPresets.get('party-2'))!.data).toEqual({ schemaVersion: 3, presetId: 'party-2', name: 'Mine', foregroundChapterId: 'ura-finale',
+    expect((await db.rpgPresets.get('party-2'))!.data).toEqual({ schemaVersion: 4, presetId: 'party-2', name: 'Mine', foregroundChapterId: 'ura-finale',
       slots: [{ outfitId: 'u1', loadout: [], familiar: 'greatsword' }, null, null, null, null] })
     expect((await db.rpgCheckpoints.get('party-2:ura-finale'))!.data).toMatchObject({ battle: null, wins: { a1r1c1: 2 }, mp: { u1: 9 } })
     expect(await db.rpgFights.count()).toBe(0)
     expect((await db.outbox.toArray()).map((r) => `${r.op}:${r.kind}/${r.id}`).sort()).toEqual([
       'upsert:rpgCheckpoints/party-2:ura-finale', 'upsert:rpgOutfits/u1', 'upsert:rpgPresets/party-2'])
+  })
+})
+
+describe('Spell Blade upgrade (Dexie v33, D310)', () => {
+  afterEach(() => db.close())
+  it('turns a Mage with a Short Sword into a Spell Blade, clears her party skills and closes an engine v4 fight', async () => {
+    await db.delete()
+    const legacy = legacyDb(32)
+    await legacy.open()
+    const pace = { ...template('u2').aptitudes, strategy: { front: 'G', pace: 'A', late: 'G', end: 'G' } }
+    const mage = (outfitId: string, weapons: string[], tree: string[]) => ({ ...oldProfileClass(12), outfitId, sourceAptitudes: pace, classId: 'mage',
+      weapons, tree: tree.map((id) => ({ tier: 1, id })) })
+    const brawler = { ...oldProfileClass(12), tree: [{ tier: 1, id: 'greatsword.fire.1' }, { tier: 1, id: 'greatsword.fire.2' }] }
+    await legacy.table('rpgOutfits').bulkPut([
+      { id: 'u1', version: 3, data: { schemaVersion: 3, profile: brawler, projectionRevision: 2 } },
+      { id: 'u2', version: 5, data: { schemaVersion: 3, profile: mage('u2', ['mage-staff', 'short-sword'], ['mage-staff.fire.1', 'mage-staff.fire.2', 'short-sword.duel.1']), projectionRevision: 4 } },
+      { id: 'u3', version: 2, data: { schemaVersion: 3, profile: mage('u3', ['mage-staff', 'arcane-staff'], ['mage-staff.fire.1']), projectionRevision: 1 } },
+    ])
+    await legacy.table('rpgPresets').put({ id: 'party-1', version: 2, data: { schemaVersion: 3, presetId: 'party-1', name: 'Mine', foregroundChapterId: 'ura-finale',
+      slots: [{ outfitId: 'u1', loadout: [{ tier: 1, id: 'greatsword.fire.2' }], familiar: 'bow' }, { outfitId: 'u2', loadout: [{ tier: 1, id: 'mage-staff.fire.2' }], familiar: 'axe' },
+        { outfitId: 'u3', loadout: [{ tier: 1, id: 'mage-staff.fire.1' }], familiar: 'axe' }, null, null] } })
+    const battleId = 'rpg-battle:party-1:ura-finale:4'
+    await legacy.table('rpgCheckpoints').put({ id: 'party-1:ura-finale', version: 5, data: { schemaVersion: 2, presetId: 'party-1', chapterId: 'ura-finale',
+      wins: { start: 1, a1r1c1: 2 }, mp: { u2: 9 }, battle: { battleId, nodeId: 'a1r1c2', startedAt: 1, input: { version: 4, seed: 1 } }, battles: 4, clearedAt: null, updatedAt: 1 } })
+    await legacy.table('rpgFights').put({ id: battleId, actions: [], updatedAt: 1 })
+    legacy.close()
+    await db.open()
+    expect((await db.rpgOutfits.get('u2'))!).toMatchObject({ version: 5, data: { schemaVersion: 4, projectionRevision: 5,
+      profile: { classId: 'spellblade', weapons: ['short-sword'], level: 12, exp: 40, tree: [], legacy: [] } } })
+    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 4, projectionRevision: 2, profile: { classId: 'brawler', tree: brawler.tree } })
+    expect((await db.rpgOutfits.get('u3'))!.data).toMatchObject({ schemaVersion: 4, profile: { classId: 'mage', weapons: ['mage-staff', 'arcane-staff'] } })
+    expect((await db.rpgPresets.get('party-1'))!.data).toMatchObject({ schemaVersion: 4, slots: [{ loadout: [{ id: 'greatsword.fire.2' }] },
+      { outfitId: 'u2', loadout: [] }, { loadout: [{ id: 'mage-staff.fire.1' }] }, null, null] })
+    expect((await db.rpgCheckpoints.get('party-1:ura-finale'))!.data).toMatchObject({ battle: null, wins: { a1r1c1: 2 }, mp: { u2: 9 } })
+    expect(await db.rpgFights.count()).toBe(0)
+    expect((await db.outbox.toArray()).map((r) => `${r.op}:${r.kind}/${r.id}`).sort()).toEqual([
+      'upsert:rpgCheckpoints/party-1:ura-finale', 'upsert:rpgOutfits/u1', 'upsert:rpgOutfits/u2', 'upsert:rpgOutfits/u3', 'upsert:rpgPresets/party-1'])
+    // A Spell Blade's party slot keeps nothing she no longer has, and saving the party works.
+    expect((await readRpgAccount()).outfits.get('u2')!.data.profile.classId).toBe('spellblade')
   })
 })
 
@@ -181,7 +220,7 @@ describe('owner RPG reset (Dexie v30, D285)', () => {
     await legacy.table('rpgFights').put({ id: battleId, actions: [], updatedAt: 1 })
     legacy.close()
     await db.open()
-    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 3, projectionRevision: 10,
+    expect((await db.rpgOutfits.get('u1'))!.data).toMatchObject({ schemaVersion: 4, projectionRevision: 10,
       profile: { classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 1, exp: 0, tree: [], legacy: [] } })
     expect((await db.rpgPresets.get('party-1'))!.data.slots[0]).toEqual({ outfitId: 'u1', loadout: [], familiar: 'bow' })
     expect((await db.rpgCheckpoints.get('party-1:ura-finale'))!.data).toMatchObject({ wins: { start: 1 }, mp: {}, battle: null, clearedAt: null, battles: 12 })
@@ -216,8 +255,8 @@ describe('campaign upgrade (Dexie v27)', () => {
     await db.open()
     const outfit = (await db.rpgOutfits.get('u1'))!
     expect(outfit.version).toBe(3)
-    expect(outfit.data).toMatchObject({ schemaVersion: 3, projectionRevision: 3, profile: { tier: 1, level: 1, exp: 0, tree: [], classId: 'brawler' } })
-    expect((await db.rpgPresets.get('party-1'))!.data).toMatchObject({ schemaVersion: 3, foregroundChapterId: null, slots: [{ outfitId: 'u1', loadout: [] }, null, null, null, null] })
+    expect(outfit.data).toMatchObject({ schemaVersion: 4, projectionRevision: 3, profile: { tier: 1, level: 1, exp: 0, tree: [], classId: 'brawler' } })
+    expect((await db.rpgPresets.get('party-1'))!.data).toMatchObject({ schemaVersion: 4, foregroundChapterId: null, slots: [{ outfitId: 'u1', loadout: [] }, null, null, null, null] })
     expect(await db.rpgCheckpoints.count()).toBe(0)
     expect(await db.pendingRpgCommands.count()).toBe(0)
     expect((await db.items.get('inspiration:t1:slot'))).toMatchObject({ version: 4, data: { quantity: 2 } })

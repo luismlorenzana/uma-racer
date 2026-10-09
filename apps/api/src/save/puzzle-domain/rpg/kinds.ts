@@ -11,10 +11,12 @@ export const RPG_WEAPONS = ['greatsword', 'spear', 'axe', 'bow', 'short-sword', 
 export type RpgWeapon = typeof RPG_WEAPONS[number]
 /** Ultima is never a weakness and hits ×1.2; a staff strike is magic with no kind at all. */
 export type RpgDamageKind = RpgWeaponKind | RpgElement | 'ultima' | 'staff'
-export const RPG_CLASSES = ['brawler', 'mage', 'cleric', 'summoner'] as const
+/** D310: the Mage's Short Sword sets became the Spell Blade, a class of their own. */
+export const RPG_CLASSES = ['brawler', 'mage', 'spellblade', 'cleric', 'summoner'] as const
 export type RpgClass = typeof RPG_CLASSES[number]
+/** `short-sword` is the retired follow-up tree (D278, D310): kept so old node ids still read, open to no class. */
 export const RPG_TREES = ['greatsword', 'spear', 'axe', 'bow', 'mage-staff', 'arcane-staff', 'short-sword', 'cleric-staff',
-  'summon-elemental', 'summon-arcane'] as const
+  'summon-elemental', 'summon-arcane', 'blade-elemental', 'blade-arcane'] as const
 export type RpgTreeId = typeof RPG_TREES[number]
 
 export const isRpgWeaponKind = (kind: unknown): kind is RpgWeaponKind => RPG_WEAPON_KINDS.includes(kind as RpgWeaponKind)

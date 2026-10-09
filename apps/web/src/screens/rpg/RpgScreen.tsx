@@ -3,7 +3,7 @@
 import {
   RPG_CLASS_WEAPONS, RPG_PARTY_SIZE, RPG_TIER_MAX_LEVEL, RPG_VARIANTS_PER_TREE, RPG_WEAPON_KINDS, canChangeRpgClass, projectRpgStats,
   rpgActiveSlots, rpgCampaign, rpgChapterCleared, rpgClassOptions, rpgExpToNext, rpgHand, rpgLearnBlock, rpgLearnedSkills, rpgMemberLevel,
-  rpgNode, rpgNodeKey, rpgNodeStatus, rpgProfileTrees, rpgRunId, rpgTreeBranches, rpgTreeNodes, rpgTreePointsEarned, rpgTreePointsSpent,
+  rpgNode, rpgNodeKey, rpgNodeStatus, rpgProfileTrees, rpgRunId, rpgTreeBranches, rpgTreeNodes, rpgTreePointsEarned, rpgTreePointsSpent, rpgUsableLoadout,
   RPG_CHAPTER_LEVELS, RPG_DEPTH_GATES,
   type RpgCampaignChapter, type RpgClass, type RpgDamageKind, type RpgNode, type RpgNodeRef, type RpgPresetSave, type RpgPresetSlot,
   type RpgProfile, type RpgSkillDef, type RpgTreeId, type RpgWeapon,
@@ -51,13 +51,15 @@ export const pushToast = (message: string) => useGame.getState().pushToast(messa
 export const weaponsLabel = (weapons: readonly RpgWeapon[]): string => weapons.map((w) => RPG_WEAPON_LABELS[w]).join(' + ')
 export const CLASS_BLURB: Readonly<Record<RpgClass, string>> = {
   brawler: 'One heavy action a turn with either weapon: weapon damage with an elemental splash.',
-  mage: 'Pure magic: two staves cast twice a turn, or one staff with a Short Sword that follows every spell.',
+  mage: 'Pure magic: a Mage Staff and an Arcane Staff, two casts a turn of every element and Light, Dark and Ultima.',
+  spellblade: 'Half magic, half blade: two half-strength actions a turn, every skill a Short Sword cut with an element or arcane magic.',
   cleric: 'Light, Dark and Ultima casts that carry buffs, debuffs, barriers and heals.',
   summoner: 'Two half-strength summons a turn of every damage kind, plus a free Familiar.',
 }
 export const TREE_LABEL: Readonly<Record<RpgTreeId, string>> = {
   greatsword: 'Greatsword', spear: 'Spear', axe: 'Axe', bow: 'Bow', 'mage-staff': 'Mage Staff', 'arcane-staff': 'Arcane Staff',
   'short-sword': 'Short Sword', 'cleric-staff': 'Cleric Staff', 'summon-elemental': 'Elemental summons', 'summon-arcane': 'Arcane summons',
+  'blade-elemental': 'Elemental Blade', 'blade-arcane': 'Arcane Blade',
 }
 const BRANCH_LABEL: Readonly<Record<string, string>> = {
   fire: 'Fire', ice: 'Ice', lightning: 'Lightning', light: 'Light', dark: 'Dark', ultima: 'Ultima', duel: 'Duel', melee: 'Melee',
@@ -407,9 +409,11 @@ export function RpgPartyEditScreen() {
 function SlotLoadout({ presetId, profile, slot }: { presetId: string; profile: RpgProfile; slot: RpgPresetSlot }) {
   const learned = rpgLearnedSkills(profile)
   const slots = rpgActiveSlots(profile.level)
-  const keys = new Set(slot.loadout.map(rpgNodeKey))
+  // Skills she no longer has (a class change, D310) are not shown or kept.
+  const loadout = rpgUsableLoadout(profile, slot.loadout)
+  const keys = new Set(loadout.map(rpgNodeKey))
   const toggle = (ref: RpgNodeRef) => {
-    const next = keys.has(rpgNodeKey(ref)) ? slot.loadout.filter((r) => rpgNodeKey(r) !== rpgNodeKey(ref)) : [...slot.loadout, ref]
+    const next = keys.has(rpgNodeKey(ref)) ? loadout.filter((r) => rpgNodeKey(r) !== rpgNodeKey(ref)) : [...loadout, ref]
     if (next.length > slots) { pushToast(`${slots} skill slots at this level`); return }
     void commit(() => equipRpgSkills(presetId, profile.outfitId, next))
   }
@@ -417,17 +421,17 @@ function SlotLoadout({ presetId, profile, slot }: { presetId: string; profile: R
     <p className="text-[11px] text-ink-on-dark-soft">{CLASS_LABEL[profile.classId]} · {weaponsLabel(profile.weapons)}</p>
     {profile.classId === 'summoner' && <div className="flex flex-wrap items-center gap-1.5 text-[11px]" aria-label="Familiar form"><span className="text-ink-on-dark-soft">Familiar</span>
       {RPG_WEAPON_KINDS.map((kind) => <button key={kind} type="button" aria-pressed={kind === slot.familiar} aria-label={`Familiar: ${WEAPON_KIND_LABEL[kind]}`}
-        onClick={() => { if (kind !== slot.familiar) void commit(() => equipRpgSkills(presetId, profile.outfitId, slot.loadout, kind)) }}
+        onClick={() => { if (kind !== slot.familiar) void commit(() => equipRpgSkills(presetId, profile.outfitId, loadout, kind)) }}
         className={`flex min-h-9 min-w-9 items-center justify-center rounded-full border px-2 ${kind === slot.familiar ? 'border-accent bg-accent/15' : 'border-hairline-dark'}`}><WeaponKindMark kind={kind} /></button>)}
     </div>}
     {learned.length === 0 ? <p className="text-[11px] text-ink-on-dark-soft">No skills learned yet: spend her points on her profile.</p>
-      : <div className="flex flex-wrap gap-1.5" aria-label={`Skills, ${slot.loadout.length} of ${slots} equipped`}>{learned.map((ref) => {
+      : <div className="flex flex-wrap gap-1.5" aria-label={`Skills, ${loadout.length} of ${slots} equipped`}>{learned.map((ref) => {
         const node = rpgNode(ref.id)!
         const on = keys.has(rpgNodeKey(ref))
         return <button key={rpgNodeKey(ref)} type="button" aria-pressed={on} onClick={() => toggle(ref)}
           className={`flex min-h-9 items-center gap-1 rounded-full border px-2 text-[11px] ${on ? 'border-accent bg-accent/15 text-ink-on-dark' : 'border-hairline-dark text-ink-on-dark-soft'}`}>
           {node.skill && <KindMark kind={node.skill.primary} />}{node.name}{ref.tier < profile.tier ? ` · T${ref.tier}` : ''}</button>
-      })}<span className="self-center text-[10px] text-ink-on-dark-soft">{slot.loadout.length}/{slots}</span></div>}
+      })}<span className="self-center text-[10px] text-ink-on-dark-soft">{loadout.length}/{slots}</span></div>}
   </div>
 }
 

@@ -15,19 +15,19 @@ export function RpgGuide({ onClose, startAt = 'party' }: { onClose: () => void; 
       <p>Enroll owned Umas in the Roster, then fill a party's {RPG_PARTY_SIZE} slots. You have {RPG_PRESET_COUNT} parties; RPG levels belong to each Uma and are shared by every party.</p>
       <p>Pick a party, then a chapter. Each chapter is one scenario and spans {RPG_CHAPTER_LEVELS} levels: URA Finale Lv1–{RPG_CHAPTER_LEVELS}, Unity Cup Lv{RPG_CHAPTER_LEVELS + 1}–{RPG_CHAPTER_LEVELS * 2}, and onward.</p>
     </> },
-    { id: 'class', title: 'Four classes', body: <>
-      <p className={card}>Her A running styles pick the class: Front or Front + Pace → <b>Brawler</b>; Pace or Pace + Late → <b>Mage</b>; Late → <b>Cleric</b>; End or Late + End → <b>Summoner</b>. Anything else chooses.</p>
-      <p>Brawlers take Greatsword + Spear or Axe + Bow; Mages any two of Mage Staff, Arcane Staff and Short Sword. Class and weapons change freely until she learns a skill. Skills open at Lv{RPG_DEPTH_GATES.join(' / ')}.</p>
+    { id: 'class', title: 'Five classes', body: <>
+      <p className={card}>Her A running styles pick the class: Front or Front + Pace → <b>Brawler</b>; Pace or Pace + Late → <b>Mage</b> or <b>Spell Blade</b>; Late → <b>Cleric</b>; End or Late + End → <b>Summoner</b>. Anything else chooses.</p>
+      <p>Brawlers take Greatsword + Spear or Axe + Bow; Mages a Mage Staff + Arcane Staff; Spell Blades a Short Sword. Class and weapons change freely until she learns a skill. Skills open at Lv{RPG_DEPTH_GATES.join(' / ')}.</p>
       <div className="grid grid-cols-3 gap-1.5">{RPG_WEAPONS.map((weapon) => <div key={weapon} className="flex items-center gap-1 rounded-sm border border-hairline-dark bg-stage-soft p-1.5 text-[11px]"><IdentityGlyph weapon={weapon} />{RPG_WEAPON_LABELS[weapon]}</div>)}</div>
     </> },
     { id: 'turn', title: 'Taking a turn', body: <>
-      <p>A <b>Brawler</b> acts once with either weapon. A Mage with <b>two staves</b> casts twice; with a <b>Short Sword</b> she casts once and the sword follows every spell. A <b>Cleric</b>'s cast carries a blessing. A <b>Summoner</b> summons twice, and her Familiar attacks free once a round.</p>
+      <p>A <b>Brawler</b> acts once with either weapon. A <b>Mage</b> casts twice. A <b>Spell Blade</b> acts twice at half strength: every skill is a Short Sword cut with an element in the same hit, or arcane and sword hits in turn. A <b>Cleric</b>'s cast carries a blessing. A <b>Summoner</b> summons twice, and her Familiar attacks free once a round.</p>
       <p className={card}>Tap an enemy to attack, or pick a skill first. <b>Guard</b> ends her turn and takes half of one hit for an ally. Enemies act after your last action, and every enemy shows its next move.</p>
     </> },
     { id: 'trees', title: 'Skill trees', body: <>
       <p>Each class has two trees of three branches. A skill costs its depth in points, and every core skill fits by Lv40.</p>
       <p className={card}>Beside most core skills, a <b>fork</b> offers two variants: more hits, every foe, a second element and so on. Take one side of each fork, up to {RPG_VARIANTS_PER_TREE} per tree, and swap them any time.</p>
-      <p>Equip up to {RPG_MAX_ACTIVE_SLOTS} skills per party slot. Short Sword follow-ups and Cleric blessings never need a slot.</p>
+      <p>Equip up to {RPG_MAX_ACTIVE_SLOTS} skills per party slot. Cleric blessings never need a slot.</p>
     </> },
     { id: 'weakness', title: 'Shields and weaknesses', body: <>
       <p>Every enemy carries a <b>shield</b> number and icons for what it is weak to: elements first, then weapons.</p>

@@ -55,21 +55,27 @@ export interface RpgCoreStats extends Stats {
 
 // --- Classes -----------------------------------------------------------------------------------------------------------
 
-const CLASS_BY_STYLES: Readonly<Record<string, RpgClass>> = {
-  front: 'brawler', 'front+pace': 'brawler', pace: 'mage', 'pace+late': 'mage', late: 'cleric', end: 'summoner', 'late+end': 'summoner',
+/** Pace Umas choose between the Mage and the Spell Blade (D310). */
+const CLASS_BY_STYLES: Readonly<Record<string, readonly RpgClass[]>> = {
+  front: ['brawler'], 'front+pace': ['brawler'], pace: ['mage', 'spellblade'], 'pace+late': ['mage', 'spellblade'], late: ['cleric'],
+  end: ['summoner'], 'late+end': ['summoner'],
 }
-const CLASS_OF_STYLE: Readonly<Record<Strategy, RpgClass>> = { front: 'brawler', pace: 'mage', late: 'cleric', end: 'summoner' }
-/** Weapon sets a class may enroll with; Mages pick any two of their three. */
+const CLASS_OF_STYLE: Readonly<Record<Strategy, readonly RpgClass[]>> = { front: ['brawler'], pace: ['mage', 'spellblade'], late: ['cleric'], end: ['summoner'] }
+/** Weapon sets a class may enroll with (D310: the Mage is two staves; the Spell Blade carries a Short Sword). */
 export const RPG_CLASS_WEAPONS: Readonly<Record<RpgClass, readonly (readonly RpgWeapon[])[]>> = {
   brawler: [['greatsword', 'spear'], ['axe', 'bow']],
-  mage: [['mage-staff', 'arcane-staff'], ['mage-staff', 'short-sword'], ['arcane-staff', 'short-sword']],
+  mage: [['mage-staff', 'arcane-staff']],
+  spellblade: [['short-sword']],
   cleric: [['arcane-staff', 'cleric-staff']],
   summoner: [['summoner-tome']],
 }
-/** Each class leans the shared projection (section 1). */
+/** The Mage's three weapon sets before D310; schema-3 outfits are read against them. */
+export const RPG_LEGACY_MAGE_WEAPONS: readonly (readonly RpgWeapon[])[] = [['mage-staff', 'arcane-staff'], ['mage-staff', 'short-sword'], ['arcane-staff', 'short-sword']]
+/** Each class leans the shared projection (section 1). The Spell Blade's hits are half physical, half magic. */
 export const RPG_CLASS_STATS: Readonly<Record<RpgClass, { hp: number; atk: number; matk: number; pdef: number; mdef: number; mp: number }>> = {
   brawler: { hp: 1.15, atk: 1.1, matk: 0.9, pdef: 1.1, mdef: 0.9, mp: 0.8 },
   mage: { hp: 0.9, atk: 0.9, matk: 1.15, pdef: 0.9, mdef: 1.1, mp: 1.3 },
+  spellblade: { hp: 1, atk: 1.05, matk: 1.05, pdef: 1, mdef: 1, mp: 1 },
   cleric: { hp: 1, atk: 0.8, matk: 1, pdef: 1, mdef: 1.15, mp: 1.3 },
   summoner: { hp: 1, atk: 1, matk: 1, pdef: 1, mdef: 1, mp: 1.1 },
 }
@@ -81,8 +87,8 @@ export function rpgClassOptions(aptitudes: Aptitudes): RpgClass[] {
   const styles = aStyles(aptitudes)
   if (!styles.length) return []
   const exact = CLASS_BY_STYLES[styles.join('+')]
-  if (exact) return [exact]
-  return RPG_CLASSES.filter((c) => styles.some((s) => CLASS_OF_STYLE[s] === c))
+  if (exact) return [...exact]
+  return RPG_CLASSES.filter((c) => styles.some((s) => CLASS_OF_STYLE[s].includes(c)))
 }
 
 export const sameRpgWeapons = (a: readonly RpgWeapon[], b: readonly RpgWeapon[]): boolean => a.length === b.length && a.every((w, i) => w === b[i])
@@ -93,6 +99,7 @@ export function validRpgWeapons(classId: RpgClass, weapons: readonly RpgWeapon[]
 /** The class's two trees for its weapons. */
 export function rpgClassTrees(classId: RpgClass, weapons: readonly RpgWeapon[]): RpgTreeId[] {
   if (classId === 'summoner') return ['summon-elemental', 'summon-arcane']
+  if (classId === 'spellblade') return ['blade-elemental', 'blade-arcane']
   return weapons as RpgTreeId[]
 }
 export const rpgProfileTrees = (p: Pick<RpgProfile, 'classId' | 'weapons'>): RpgTreeId[] => rpgClassTrees(p.classId, p.weapons)
@@ -103,9 +110,9 @@ export function rpgHand(p: Pick<RpgProfile, 'classId' | 'weapons'>): RpgHand {
   if (p.classId === 'brawler') return { actions: 1, power: 1, mp: 1, free: { power: 1, kind: 'weapon' } }
   if (p.classId === 'cleric') return { actions: 1, power: 0.5, mp: 0.7, free: { power: 0.5, kind: 'staff' } }
   if (p.classId === 'summoner') return { actions: 2, power: 0.5, mp: 0.5, free: { power: 0.5, kind: 'familiar' } }
-  return p.weapons.includes('short-sword')
-    ? { actions: 1, power: 0.75, mp: 0.75, free: { power: 0.9, kind: 'short-sword' } }
-    : { actions: 2, power: 0.6, mp: 0.6, free: { power: 0.4, kind: 'staff' } }
+  // D310: two half-strength blade actions a turn, so a turn is worth one Brawler action.
+  if (p.classId === 'spellblade') return { actions: 2, power: 0.5, mp: 0.5, free: { power: 0.5, kind: 'short-sword' } }
+  return { actions: 2, power: 0.6, mp: 0.6, free: { power: 0.4, kind: 'staff' } }
 }
 
 // --- Enrollment --------------------------------------------------------------------------------------------------------
@@ -311,6 +318,23 @@ export function validRpgTree(profile: Pick<RpgProfile, 'classId' | 'weapons' | '
 /** Active skills she may equip: this tier's learned skills and her legacy ones. */
 export function rpgLearnedSkills(profile: Pick<RpgProfile, 'tree' | 'legacy'>): RpgNodeRef[] {
   return [...profile.tree, ...profile.legacy].filter((ref) => rpgNode(ref.id)?.skill)
+}
+
+/**
+ * The slot's skills she can still use, in order: learned, in her trees, unique, within her slots and the legacy cap.
+ * A class change (D310) or a synced older party can leave others behind; they are dropped wherever the party is used.
+ */
+export function rpgUsableLoadout(profile: RpgProfile, refs: readonly RpgNodeRef[]): RpgNodeRef[] {
+  const learned = new Set(rpgLearnedSkills(profile).map(rpgNodeKey))
+  const trees = rpgProfileTrees(profile)
+  const kept: RpgNodeRef[] = []
+  for (const ref of refs) {
+    const key = rpgNodeKey(ref), node = rpgNode(ref.id)
+    if (!learned.has(key) || !node || !trees.includes(node.tree) || kept.some((r) => rpgNodeKey(r) === key)) continue
+    if (ref.tier < profile.tier && kept.filter((r) => r.tier < profile.tier).length >= RPG_MAX_LEGACY_SLOTS) continue
+    kept.push({ tier: ref.tier, id: ref.id })
+  }
+  return kept.slice(0, rpgActiveSlots(profile.level))
 }
 
 export function validateRpgLoadout(profile: RpgProfile, refs: readonly RpgNodeRef[]): boolean {

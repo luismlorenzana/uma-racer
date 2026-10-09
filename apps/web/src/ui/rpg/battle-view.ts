@@ -55,7 +55,6 @@ export function allyKinds(ally: Pick<BattleAlly, 'classId' | 'weapons' | 'tier' 
       for (const part of hit.parts) skills.add(part.kind)
     }
   }
-  if (ally.weapons.includes('short-sword')) skills.add('short-sword')
   return { free: free as RpgWeaponKind[], skills: [...skills] }
 }
 

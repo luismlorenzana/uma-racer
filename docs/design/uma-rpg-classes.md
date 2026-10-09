@@ -1,12 +1,13 @@
 # Global Uma RPG — classes and skill trees
 
-> **Status: current (D277–D282, approved 2026-10-08).** It replaces the running-style weapons, the distance-affinity
+> **Status: current (D277–D282, approved 2026-10-08; the Spell Blade split from the Mage, D310, 2026-10-09).** It replaces the running-style weapons, the distance-affinity
 > element trees, skill levels and the single-element weakness of [uma-rpg.md](uma-rpg.md) (D226, D227, D259, D264,
 > D265 in part) and lifts D261's "no healing" for the Cleric only. Numbers are tuning drafts pinned by
 > `packages/domain/src/domain.test.ts` and checked with `pnpm sim:rpg:campaign`; the code lives in
 > `packages/domain/src/rpg/catalog.ts`.
 
-The owner outlined four classes; this document authors every tree, node and number. Every skill's power and MP come
+The owner outlined four classes, then split the Mage's Short Sword sets into a fifth, the Spell Blade (D310); this
+document authors every tree, node and number. Every skill's power and MP come
 from one set of rules (section 5), so a rebalance changes a rule, not 330 cells.
 
 ## 1. Classes
@@ -16,18 +17,19 @@ An Uma's class comes from her **A running styles**:
 | Class | Running styles (A) | Catalog outfits | Weapons | Actions a turn | Role |
 |---|---|---|---|---|---|
 | **Brawler** | Front, or Front + Pace | 46 | Greatsword + Spear, **or** Axe + Bow (chosen at enrollment) | 1 | Weapon damage with an elemental splash; best free shield chips |
-| **Mage** | Pace, or Pace + Late | 138 | Any two of Mage Staff, Arcane Staff, Short Sword (chosen at enrollment) | 2 casts, or 1 cast + a Short Sword follow-up | Magic burst; the deepest MP pool |
+| **Mage** | Pace, or Pace + Late (her choice, or Spell Blade) | 138 | Mage Staff + Arcane Staff, fixed | 2 casts | Pure magic burst; the deepest MP pool |
+| **Spell Blade** | Pace, or Pace + Late (her choice, or Mage) | (the same 138) | Short Sword, fixed | 2 half-strength actions | Half magic, half blade: every skill cuts with the sword and an element or arcane magic; the hardest shield breaker |
 | **Cleric** | Late only | 46 | Arcane Staff (main) + Cleric Staff (off), fixed | 1 cast + a blessing | Buffs, debuffs, barriers and heals, with Light/Dark/Ultima damage |
 | **Summoner** | End, or Late + End | 33 | Summoner Tome, fixed | 2 summons | True hybrid: every damage kind at half strength |
 
 - An outfit whose A styles match none of the rows (5 of 268: Pace+Late+End, Pace+End, Front+Late) **chooses** among
-  the classes of its single A styles (Front → Brawler, Pace → Mage, Late → Cleric, End → Summoner).
+  the classes of its single A styles (Front → Brawler, Pace → Mage or Spell Blade, Late → Cleric, End → Summoner).
 - Class and weapon picks can change freely while the Uma has **no learned skills**, at any level (replaces D259's
   Tier 1 Lv1 window). After the migration every Uma qualifies once.
 - Distance aptitudes, element affinities (A/B depth limits) and the +10% signature element are **retired**: the class
   decides everything.
-- The owner's party plan, 1 Brawler + 2 Mages + 1 Cleric + 1 Summoner, matches the catalog's split. Parties are not
-  forced into it.
+- The owner's party plan, 1 Brawler + 2 Pace Umas (Mage or Spell Blade) + 1 Cleric + 1 Summoner, matches the
+  catalog's split. Parties are not forced into it.
 
 **Class stats.** The shared projection stays (ATK = MATK = Speed, DEF = Power, HP and MP as today); each class leans it:
 
@@ -35,6 +37,7 @@ An Uma's class comes from her **A running styles**:
 |---|---|---|---|---|---|---|
 | Brawler | ×1.15 | ×1.1 | ×0.9 | ×1.1 | ×0.9 | ×0.8 |
 | Mage | ×0.9 | ×0.9 | ×1.15 | ×0.9 | ×1.1 | ×1.3 |
+| Spell Blade | ×1.0 | ×1.05 | ×1.05 | ×1.0 | ×1.0 | ×1.0 |
 | Cleric | ×1.0 | ×0.8 | ×1.0 | ×1.0 | ×1.15 | ×1.3 |
 | Summoner | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.1 |
 
@@ -46,12 +49,12 @@ other Umas' turns. **Guard** ends her turn (all remaining actions).
 | Build | Each turn | Skill power (hand factor) | Skill MP | Free action (0 MP) |
 |---|---|---|---|---|
 | Brawler | 1 action: Attack with **either** weapon, or a skill from either tree (two skill menus) | ×1.0 | ×1.0 | Attack 1.0, one weapon hit |
-| Mage, two staves | 2 casts, any trees | ×0.6 each | ×0.6 each | Staff strike 0.4 each, no element |
-| Mage, staff + Short Sword | 1 cast; the sword follows automatically | ×0.75, + sword 0.25 | ×0.75 | Slash 0.9, one Short Sword hit |
+| Mage | 2 casts, any trees | ×0.6 each | ×0.6 each | Staff strike 0.4 each, no element |
+| Spell Blade | 2 actions: Slash or a skill from either tree | ×0.5 each | ×0.5 each | Slash 0.5 each, one Short Sword hit |
 | Cleric | 1 Arcane cast + one blessing from the matching Cleric Staff branch | ×0.5 | ×0.7 | Staff strike 0.5, no element |
 | Summoner | 2 summons | ×0.5 each | ×0.5 each | **Familiar** 0.5 (once a round), one hit of her chosen weapon form |
 
-- Off-hand reactions (Short Sword follow-ups, Cleric blessings) ride **skills only**, never free actions.
+- Cleric blessings ride **skills only**, never free actions. (The Mage's Short Sword follow-ups retired with D310.)
 - The Familiar's form (Greatsword skeleton, Spear lancer, Axe reaver, Bow ranger or Short Sword duelist) is chosen
   per party slot, like the old signature element.
 - Every action, skill and follow-up is one command: the off-hand needs no extra taps. A Cleric with more than one
@@ -122,7 +125,7 @@ mark, weaken).
   The full build (90 + at most 24) fits in 115 by Lv45.
 - **Variants can be swapped freely outside a fight** (points refund). Core nodes are permanent.
 - **Slots stay at ten** (three at Lv1, one more at Lv 10, 15, 20, 25, 30, 35, 40) and hold active skills from either
-  tree. Short Sword reactions and Cleric blessings are passive and never use a slot.
+  tree. Cleric blessings are passive and never use a slot.
 - Promotion is unchanged: each tier re-learns the class trees, MP costs scale with the tier, two legacy skills carry.
 
 **Reading the tables below.** Powers are in full-turn units (Attack = 1.0) before the hand factor of section 2.
@@ -212,7 +215,7 @@ The splash is an element hit on each other foe (it can remove a shield point).
 | 4 | Inferno Volley (A Sun Lance Shot · B Napalm Volley) | Blizzard Volley (A Comet Shot · B Hail Volley) | Thunder Volley (A Thunderbolt Shot · B Storm Volley) |
 | 5 | **Sunfall Barrage** | **Diamond Dust Barrage** | **Thunderhead Barrage** |
 
-## 7. Mage trees
+## 7. Mage and Spell Blade trees
 
 ### Mage Staff — Fire hits one foe, Ice hits every foe, Lightning rains random hits
 
@@ -252,25 +255,58 @@ Shared by the Mage and the Cleric (at the Cleric's ×0.5). Light and Dark have t
 
 Ultima never removes shield points; its Dawn/Dusk variants add one Light or Dark hit that can.
 
-### Short Sword — automatic follow-ups (passive, no slots)
+### Short Sword follow-ups — retired (D310)
 
-The sword reacts to every **staff skill** the Mage casts. Which branch reacts depends on the cast's shape; how it strikes
-depends on the companion staff. Reaction power is `0.25 × single-target power` at the branch's highest learned depth:
-0.4 / 0.55 / 0.73 / 0.93 / 1.15. An unlearned branch does not react.
+The Mage no longer carries a Short Sword, so its passive follow-up tree (Duel, Melee, Tempo) is open to no class and
+the engine no longer runs follow-ups. Its node ids still read, so old rows parse; D278 records how it worked.
 
-| Branch (trigger) | With a Mage Staff (mirrors the spell) | With an Arcane Staff (inverts the spell) |
-|---|---|---|
-| **Duel** (one-foe casts) | **Flurry:** 2 / 2 / 2 / 3 / 3 slashes on the same foe | **Arc:** one slash on every foe, 55% each |
-| **Melee** (every-foe casts) | **Arc:** one slash on each foe the spell struck, 55% each | **Thrust:** one heavy slash (×1.1) on a random foe |
-| **Tempo** (random multi-hit casts) | **Weave:** a slash after each of the spell's first 1 / 1 / 2 / 2 / 2 hits, on that hit's foe | **Finisher:** one heavy slash (×1.1) on the last hit's foe |
+### Spell Blade — Elemental Blade: one foe, the sword and an element in the same hit
 
-| Depth | Duel | Melee | Tempo |
+The Greatsword's tree for a two-action hand: every hit is **50% Short Sword + 50% element** in one hit (two parts, so a
+foe weak to both loses two shield points a hit), at ×0.5 a cast, twice a turn. Fire, Ice and Lightning have the same
+numbers; the capstone carries its element's rider.
+
+| Depth | Core | Variant A · Heavy (one bigger hit) | Variant B · Rapid (one more hit) |
 |---|---|---|---|
-| 1 | Riposte | Side Cut | Quickstep |
-| 2 | Counter Cut (A **Keen Edge**: +20% · B **Disarm**: Enfeeble 1) | Crescent Arc (A **Broad Edge**: +20% · B **Rending Arc**: Armor Break 1 on each foe slashed) | Interlude (A **Allegro**: Weave +1 slash · B **Staccato**: +20%) |
-| 3 | Duelist's Flurry (A **Opening**: +1 slash after a weak spell hit · B **Sunder**: Armor Break 1) | Wide Arc (A **Heavy Thrust**: Thrust ×1.3 · B **Wide Stance**: the Mage takes −20% from every-ally attacks this round) | Rhythm Cut (A **Counterpoint**: Finisher also hits a second random foe · B **Rubato**: ×1.3 on Broken foes) |
-| 4 | Fencer's Dance (A **Lunge**: Flurry goes to the lowest-HP foe · B **Parry**: the Mage takes −30% this round) | Full Moon (A **Exploiter**: ×1.3 on Broken foes · B **Second Wind**: restores 2% max MP per foe slashed) | Syncopation (A **Prestissimo**: Weave +1 slash · B **Fortissimo**: +25%) |
-| 5 | **Spellblade:** every slash also carries the spell's element as a 25% part | **Whirlwind:** Arc slashes twice (×0.6 each); Thrust becomes two slashes | **Crescendo:** Weave +1 slash; Finisher ×1.4 |
+| 1 | one · 1 hit · 1.6 · 10 MP | — | — |
+| 2 | one · 1 hit · 2.2 · 14 MP | one · 1 hit · 2.53 · 16 MP | one · 2 hits · 2.02 · 14 MP |
+| 3 | one · 2 hits · 2.9 · 18 MP | one · 1 hit · 3.34 · 20 MP | one · 3 hits · 2.67 · 18 MP |
+| 4 | one · 2 hits · 3.7 · 22 MP | one · 1 hit · 4.26 · 24 MP | one · 3 hits · 3.4 · 22 MP |
+| 5 | one · 3 hits · 4.6 · 26 MP · rider ×2 | — | — |
+
+| Depth | Fire | Ice | Lightning |
+|---|---|---|---|
+| 1 | Fire Blade | Frost Blade | Thunder Blade |
+| 2 | Flame Brand (A Searing Strike · B Twin Flames) | Ice Brand (A Shatter Strike · B Twin Frost) | Volt Brand (A Bolt Strike · B Twin Volts) |
+| 3 | Blazing Saber (A Magma Strike · B Flame Dance) | Rime Saber (A Permafrost Strike · B Frost Dance) | Storm Saber (A Thunderclap Strike · B Spark Dance) |
+| 4 | Inferno Saber (A Solar Strike · B Wildfire Dance) | Glacial Saber (A Avalanche Strike · B Blizzard Dance) | Tempest Saber (A Judgment Strike · B Storm Dance) |
+| 5 | **Phoenix Blade** · Burn 2 | **Diamond Blade** · Chill 2 | **Thunderlord Blade** · Shock 2 |
+
+### Spell Blade — Arcane Blade: an arcane hit, then a Short Sword hit, again and again
+
+Hits alternate **arcane, sword, arcane, sword…** (2 / 2 / 4 / 4 / 6 hits by depth), each half carrying half the power.
+Light and Dark cut the tapped foe; Ultima's hits land on random foes (×1.05, +2 MP) and, as ever, never break a shield,
+so its sword hits do. Capstones share the Arcane Staff's: Holy Blade hits Broken foes +30%, Abyss Blade foes under half
+HP +30%, Ultima Blade deals full damage before a Break. Both variants keep the core and add **two hits at the end**,
+worth 0.3 of the depth's power, for 4 MP more:
+
+| Depth | Core (Light / Dark) | Variant A · Coda (+2 arcane hits) | Variant B · Riposte (+2 Short Sword hits) |
+|---|---|---|---|
+| 1 | one · 2 hits · 1.6 · 10 MP | — | — |
+| 2 | one · 2 hits · 2.2 · 14 MP | one · 4 hits · 2.86 · 18 MP | one · 4 hits · 2.86 · 18 MP |
+| 3 | one · 4 hits · 2.9 · 18 MP | one · 6 hits · 3.77 · 22 MP | one · 6 hits · 3.77 · 22 MP |
+| 4 | one · 4 hits · 3.7 · 22 MP | one · 6 hits · 4.81 · 26 MP | one · 6 hits · 4.81 · 26 MP |
+| 5 | one · 6 hits · 4.6 · 26 MP · capstone | — | — |
+
+Ultima's Coda adds a **Light and a Dark** hit (so it can break a shield) instead of two more Ultima hits.
+
+| Depth | Light | Dark | Ultima |
+|---|---|---|---|
+| 1 | Gleam Cut | Shade Cut | Arcane Cut |
+| 2 | Radiant Flurry (A Radiant Coda · B Radiant Riposte) | Umbral Flurry (A Umbral Coda · B Umbral Riposte) | Arcane Flurry (A Arcane Twilight · B Arcane Riposte) |
+| 3 | Dawn Waltz (A Dawn Coda · B Dawn Riposte) | Dusk Waltz (A Dusk Coda · B Dusk Riposte) | Mystic Waltz (A Mystic Twilight · B Mystic Riposte) |
+| 4 | Sunburst Waltz (A Sunburst Coda · B Sunburst Riposte) | Eclipse Waltz (A Eclipse Coda · B Eclipse Riposte) | Astral Waltz (A Astral Twilight · B Astral Riposte) |
+| 5 | **Holy Blade** | **Abyss Blade** | **Ultima Blade** |
 
 ## 8. Cleric trees
 
@@ -352,21 +388,22 @@ One Uma, one turn, a lone foe, before defense, weaknesses and breaks. Full-turn 
 |---|---|---|---|---|---|---|---|
 | Brawler · Greatsword | 1 × 1.0 | 1.6 | 2.9 | 4.6 | 1.0 × M | Attack 1.0, 1 point | 2 / 4 / 6 |
 | Brawler · Spear | 1 × 1.0 | 1.68 | 3.05 | 4.83 | 1.0 × M | Attack 1.0, 1 point | 2 / 4 / 6 |
-| Mage · two staves | 2 × 0.6 | 1.92 | 3.48 | 5.52 | 1.2 × M | 0.8, no points | 4 / 6 / 8 (Lightning twice) |
-| Mage · staff + Short Sword | 0.75 + 0.25 | 1.6 | 2.9 | 4.6 | 0.75 × M | Slash 0.9, 1 point | 3 / 5 / 7 |
+| Mage | 2 × 0.6 | 1.92 | 3.48 | 5.52 | 1.2 × M | 0.8, no points | 4 / 6 / 8 (Lightning twice) |
+| Spell Blade | 2 × 0.5 | 1.6 | 2.9 | 4.6 | 1.0 × M | Slash 2 × 0.5, 2 points | 4 / 8 / 12 (Elemental Blade twice, both parts weak) |
 | Cleric | 0.5 + a blessing | 0.8 | 1.45 | 2.3 | 0.7 × M | 0.5, no points | 1 / 1 / 4 (with Shatter) |
 | Summoner · two summons | 2 × 0.5 | 1.6 | 2.9 | 4.6 | 1.0 × M | Familiar 0.5, 1 point | 4 / 6 / 8 (Archons twice) |
 
-- Every build lands near the same damage a turn. Two staves trade MP for the most burst and shield damage; staff +
-  sword is the cheapest per turn; the Brawler has the strongest free turn; the Cleric's blessing is worth roughly the
+- Every build lands near the same damage a turn. The Mage trades MP for the most burst; the Spell Blade breaks shields
+  fastest against foes weak to the Short Sword and her element, two parts a hit, twice a turn; the Brawler has the
+  strongest free turn; the Cleric's blessing is worth roughly the
   half of her damage she gives up (one Party Brave lifts four Umas by 10% for two rounds).
 - MP pools against the depth's cost, at chapter ends (MP refills at any reached camp, so this is per fight):
 
 | Class | Lv12 pool → skills | Lv24 pool → skills | Lv48 pool → skills |
 |---|---|---|---|
 | Brawler | 59 → 4 | 83 → 4–5 | 130 → 5 |
-| Mage, two staves | 96 → 11 casts | 135 → 12 | 212 → 13 |
-| Mage, staff + sword | 96 → 9 | 135 → 10 | 212 → 11 |
+| Mage | 96 → 11 casts | 135 → 12 | 212 → 13 |
+| Spell Blade | 74 → 10 casts | 104 → 11 | 163 → 12 |
 | Cleric | 96 → 10 | 135 → 10–11 | 212 → 11–12 |
 | Summoner | 81 → 9 summons | 114 → 10 | 179 → 12 |
 
@@ -381,14 +418,17 @@ the chapter's first level** against depth 1 (`rpgChapterReach`): URA ×1, Unity 
 chapter ×1.81, then ×2.31 and ×2.875; a Tier 2 chapter starts over with its tier's depths. Boss fights are where a
 party spends its whole MP pool, and that pool's damage grows with depth faster than foe stats grow with level.
 
-`pnpm sim:rpg:campaign` (one Brawler, two Mages, a Cleric and a Summoner; careful policy chips with weak parts and
-spends big skills on a Break, attack-only uses free actions):
+`pnpm sim:rpg:campaign` (a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner, D310; careful policy chips with
+weak parts and spends big skills on a Break, attack-only uses free actions):
 
 | Chapter | Regular fights | Sub-bosses | Champion |
 |---|---|---|---|
-| URA (from Lv1) | 5–7 rounds | 7–10 rounds, 0–30% HP lost | 18 rounds, 88% lost, at Lv10 against Lv12 |
-| Unity Cup (from Lv13) | 3–5 rounds | 5–7 rounds, 0–11% lost | 7 rounds, 0% lost |
-| Project L'Arc (T2 Lv11) | 3–5 rounds | 4–5 rounds, 0–7% lost | 8 rounds, 5% lost |
+| URA (from Lv1) | 5–7 rounds | 7–11 rounds, 5–28% HP lost | 18 rounds, 67% lost, at Lv10 against Lv12 |
+| Unity Cup (from Lv13) | 3–5 rounds | 5–7 rounds, 0–8% lost | 9 rounds, 22% lost |
+| Project L'Arc (T2 Lv11) | 3–4 rounds | 5–6 rounds, 0–7% lost | 8 rounds, 5% lost |
+
+The Spell Blade replaced the old staff-and-sword Mage in the sim party; the chapters play as before (with the old Mage
+the champions took 18 / 7 / 8 rounds).
 
 With six fights a stage (D286) the party stands at the same level at every stage as with ten, and a careful URA clear
 takes 23 fights instead of 35 (about 120 sim minutes instead of 180).
@@ -413,20 +453,26 @@ URA's champion a loss.
 - **The API** validates schema 3 on its own (class mapping, weapon sets, and node ids read as tree, branch, depth and
   side against a tree-branch table), and still accepts schema 2 so an older installed app cannot break sync; an
   older schema never overwrites a newer one.
+- **The Spell Blade (D310): outfits and parties move to schema 4.** A schema-3 Mage who carried a Short Sword becomes a
+  Spell Blade with an empty tree and no legacy (every point back, class free to change again, tier, level and EXP
+  kept); every party stops equipping her old skills; every other outfit and party only changes its schema number.
+  Skills a member no longer has are also dropped wherever a party is used or saved, so a party synced from an older
+  copy still plays. Battles move to engine v5: a fight left open under v4 closes with no reward and MP as it was.
+  The API reads schema 3 by the old class rules and schema 4 by the new ones.
 
 ## 13. Decisions
 
 D277 classes, D278 turns and hands, D279 damage and weaknesses, D280 trees, D281 statuses and blessings, D282 schema 3,
-engine v4 and the migration (see [the decision log](../decisions.md)).
+engine v4 and the migration, D310 the Spell Blade and schema 4 (see [the decision log](../decisions.md)).
 
 ## 14. Phone presentation
 
-- **Enroll:** her class from her running styles (a choice when they allow several), its one-line role and, for a Brawler
-  or a Mage, the weapon set.
+- **Enroll:** her class from her running styles (a choice when they allow several, so a Pace Uma picks Mage or Spell
+  Blade), its one-line role and, for a Brawler, the weapon set.
 - **Tree screen:** tabs for her two trees, then her three branches; each depth shows the core skill and, below it, the
   fork's two variants. A node shows its kinds, targets, hits, power after her hand and MP, and why it is closed. A
   learned variant offers **Swap out** (refund).
 - **Party slot:** class and weapons, the equipped skills (up to her slots) and, for a Summoner, the Familiar form.
-- **Fight:** a Brawler picks the weapon above Attack; two-action Umas show "action 1 of 2"; Attack reads Slash,
-  Strike or Familiar by build; a Cleric with several blessings in a branch picks one after the skill. Weakness icons
+- **Fight:** a Brawler picks the weapon above Attack; two-action Umas show "action 1 of 2"; Attack reads Slash (Spell
+  Blade), Strike or Familiar by build; a Cleric with several blessings in a branch picks one after the skill. Weakness icons
   show elements then weapons.

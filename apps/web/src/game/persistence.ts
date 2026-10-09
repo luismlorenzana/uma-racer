@@ -330,9 +330,9 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         !parseCardSave(row.data) && migrateCardSaveToCurrent(row.data)) legacyKeys.add(`cards/${row.id}`)
       if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
         Number((row.data as Record<string, unknown>).schemaVersion) < 3 && !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
-      // Pre-class outfits and parties (D282) migrate on the way in; upload the migrated rows once.
+      // Older outfits and parties (D282, D310) migrate on the way in; upload the migrated rows once.
       if ((row.kind === 'rpgOutfits' || row.kind === 'rpgPresets') && typeof row.id === 'string' && !row.deleted &&
-        typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion !== 3) legacyKeys.add(`${row.kind}/${row.id}`)
+        typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion !== RPG_SAVE_SCHEMA_VERSION) legacyKeys.add(`${row.kind}/${row.id}`)
     }
   }
   const profileRecords = snapshot.entities.filter((record) => record.kind === 'profile' && !record.deleted)

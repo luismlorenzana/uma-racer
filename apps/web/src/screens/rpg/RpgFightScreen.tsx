@@ -1,5 +1,5 @@
 // Campaign fight (D265, D278): tap an enemy to attack, or pick a skill first. Weak parts chip each foe's shield (its
-// icons show what it is weak to); a Break leaves it open to full damage for two rounds. Two-staff Mages and Summoners
+// icons show what it is weak to); a Break leaves it open to full damage for two rounds. Mages, Spell Blades and Summoners
 // act twice; a Cleric's skill carries a blessing. The result settles itself.
 import {
   battleActionsLeft, battleBroken, rpgHand, rpgLevelReveal, rpgMemberLevel,

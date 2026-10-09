@@ -125,7 +125,7 @@ export function RpgConvertScreen() {
     <label className="mt-2 block text-[11px] font-semibold text-ink-on-dark-soft">Scenarios
       <select value={lowerTier} onChange={(e) => { setLowerTier(Number(e.target.value)); setBatches(1) }}
         className="mt-1 min-h-11 w-full rounded-sm border border-hairline-dark bg-stage px-3 text-[14px] text-ink-on-dark">
-        {SCENARIOS.slice(0, -1).map((s) => <option key={s.tier} value={s.tier}>{s.name} ↔ {scenarioName(s.tier + 1)}</option>)}
+        {SCENARIOS.slice(0, -1).map((s) => <option key={s.tier} value={s.tier}>{s.name} / {scenarioName(s.tier + 1)}</option>)}
       </select>
     </label>
     <div className="mt-2 flex gap-1 rounded-sm bg-stage-soft p-1" role="group" aria-label="Direction">

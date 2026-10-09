@@ -1,4 +1,4 @@
-// Campaign battle vocabulary, engine v4 (docs/design/uma-rpg-classes.md, D278–D281).
+// Campaign battle vocabulary, engine v5 (docs/design/uma-rpg-classes.md, D278–D281, D310).
 import type { RpgClass, RpgCoreStats, RpgDamageKind, RpgElement, RpgNodeRef, RpgStatusKind, RpgWeapon, RpgWeaponKind } from '../rules'
 
 export type BattleSide = 'ally' | 'enemy'
@@ -51,7 +51,7 @@ export interface BattleEnemy {
   moves: BattleEnemyMove[]
   phaseTwo?: { thresholdPercent: number; moves: BattleEnemyMove[] }
 }
-export interface BattleInput { version: 4; seed: number; allies: BattleAlly[]; enemies: BattleEnemy[] }
+export interface BattleInput { version: 5; seed: number; allies: BattleAlly[]; enemies: BattleEnemy[] }
 
 export interface BattleUnit {
   id: string
@@ -72,7 +72,7 @@ export interface BattleUnit {
 }
 export interface BattleIntent { enemyId: string; moveId: string; targetId: string }
 export interface BattleState {
-  engineVersion: 4
+  engineVersion: 5
   input: BattleInput
   round: number
   units: BattleUnit[]

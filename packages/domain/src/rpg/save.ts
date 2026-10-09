@@ -1,14 +1,14 @@
 // Versioned RPG wire rows and deterministic entry identity (docs/technical/uma-rpg-implementation.md, T090).
 import { DISTANCE_CATEGORIES, GRADES, STATS, STRATEGIES, SURFACES, type Aptitudes, type Stats } from '../types'
 import {
-  RPG_CLASS_WEAPONS, RPG_CLASSES, RPG_MAX_ACTIVE_SLOTS, RPG_MAX_LEGACY_SLOTS, RPG_TIER_MAX_LEVEL, RPG_WEAPON_KINDS, RPG_WEAPONS,
-  enrollRpgOutfit, rpgClassOptions, rpgNodeKey, validRpgTree,
+  RPG_CLASS_WEAPONS, RPG_CLASSES, RPG_LEGACY_MAGE_WEAPONS, RPG_MAX_ACTIVE_SLOTS, RPG_MAX_LEGACY_SLOTS, RPG_TIER_MAX_LEVEL, RPG_WEAPON_KINDS, RPG_WEAPONS,
+  enrollRpgOutfit, rpgClassOptions, rpgNodeKey, sameRpgWeapons, validRpgTree,
   type RpgClass, type RpgCoreStats, type RpgNodeRef, type RpgProfile, type RpgWeapon, type RpgWeaponKind,
 } from './rules'
 import { rpgNode } from './catalog'
 
-/** Class-era RPG rows (D282). Schema 1 and 2 rows still parse and migrate on the way in. */
-export const RPG_SAVE_SCHEMA_VERSION = 3
+/** Spell Blade era outfits and parties (D310). Schema 1–3 rows still parse and migrate on the way in. */
+export const RPG_SAVE_SCHEMA_VERSION = 4
 export const RPG_PARTY_SIZE = 5
 /** Ten saved parties (D284). */
 export const RPG_PRESET_COUNT = 10
@@ -71,12 +71,12 @@ export function rpgResultId(entryId: string, retryOrdinal: number): string {
   return id
 }
 
-export interface RpgOutfitSave { schemaVersion: 3; profile: RpgProfile; projectionRevision: number }
+export interface RpgOutfitSave { schemaVersion: 4; profile: RpgProfile; projectionRevision: number }
 /** A party slot: the outfit, its equipped skills and, for a Summoner, her Familiar's weapon form (D278). */
 export interface RpgPresetSlot { outfitId: string; loadout: RpgNodeRef[]; familiar: RpgWeaponKind }
 export interface RpgPresetSave {
   /** `foregroundChapterId` is the chapter the party last opened. */
-  schemaVersion: 3; presetId: string; name: string; slots: [RpgPresetSlot | null, RpgPresetSlot | null,
+  schemaVersion: 4; presetId: string; name: string; slots: [RpgPresetSlot | null, RpgPresetSlot | null,
     RpgPresetSlot | null, RpgPresetSlot | null, RpgPresetSlot | null]
   foregroundChapterId: string | null
 }
@@ -141,7 +141,7 @@ const PROFILE_KEYS = ['outfitId', 'sourceContentVersion', 'baseStats', 'growthRa
   'classId', 'weapons', 'tier', 'level', 'exp', 'tree', 'legacy'] as const
 
 export function parseRpgOutfitSave(value: unknown): RpgOutfitSave | null {
-  if (!isRecord(value) || !exact(value, ['schemaVersion', 'profile', 'projectionRevision']) || value.schemaVersion !== 3 ||
+  if (!isRecord(value) || !exact(value, ['schemaVersion', 'profile', 'projectionRevision']) || value.schemaVersion !== 4 ||
     !isInt(value.projectionRevision) || !isRecord(value.profile)) return null
   const profile = value.profile
   if (!exact(profile, PROFILE_KEYS) || !isId(profile.outfitId) || !isId(profile.sourceContentVersion) ||
@@ -160,15 +160,29 @@ export function parseRpgOutfitSave(value: unknown): RpgOutfitSave | null {
   const typed = profile as unknown as RpgProfile
   if (!validRpgTree(typed) || new Set(typed.legacy.map(rpgNodeKey)).size !== typed.legacy.length ||
     typed.legacy.some((ref) => ref.tier >= typed.tier || !rpgNode(ref.id)?.skill)) return null
-  return { schemaVersion: 3, profile: typed, projectionRevision: value.projectionRevision }
+  return { schemaVersion: 4, profile: typed, projectionRevision: value.projectionRevision }
+}
+
+/** A schema-3 Mage who carried a Short Sword (D310). */
+export function rpgLegacySwordMage(profile: unknown): boolean {
+  return isRecord(profile) && profile.classId === 'mage' && Array.isArray(profile.weapons) && profile.weapons.includes('short-sword') &&
+    RPG_LEGACY_MAGE_WEAPONS.some((set) => sameRpgWeapons(set, profile.weapons as RpgWeapon[]))
 }
 
 /**
  * D282: an outfit from before classes keeps its tier, level and EXP, takes the first class open to its running styles
  * with that class's first weapon set, and restarts its trees. The empty tree lets the owner re-pick once.
+ * D310: a schema-3 Mage with a Short Sword becomes a Spell Blade with an empty tree (every point back, class free to
+ * change again); every other schema-3 outfit only moves to schema 4.
  */
 export function migrateRpgOutfitSave(value: unknown): RpgOutfitSave | null {
-  if (isRecord(value) && value.schemaVersion === 3) return parseRpgOutfitSave(value)
+  if (isRecord(value) && value.schemaVersion === 4) return parseRpgOutfitSave(value)
+  if (isRecord(value) && value.schemaVersion === 3) {
+    if (!isInt(value.projectionRevision) || !isRecord(value.profile)) return null
+    const sword = rpgLegacySwordMage(value.profile)
+    const profile = sword ? { ...value.profile, classId: 'spellblade', weapons: [...RPG_CLASS_WEAPONS.spellblade[0]!], tree: [], legacy: [] } : value.profile
+    return parseRpgOutfitSave({ ...value, schemaVersion: 4, profile, projectionRevision: value.projectionRevision + (sword ? 1 : 0) })
+  }
   if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isInt(value.projectionRevision) ||
     !isRecord(value.profile)) return null
   const p = value.profile
@@ -182,7 +196,7 @@ export function migrateRpgOutfitSave(value: unknown): RpgOutfitSave | null {
   const profile: RpgProfile = { outfitId: p.outfitId, sourceContentVersion: p.sourceContentVersion, baseStats: p.baseStats as Stats,
     growthRates: p.growthRates as Stats, sourceAptitudes: aptitudes, classId, weapons: [...RPG_CLASS_WEAPONS[classId][0]!],
     tier: fresh ? 1 : p.tier, level: fresh ? 1 : p.level, exp: fresh ? 0 : p.exp, tree: [], legacy: [] }
-  return parseRpgOutfitSave({ schemaVersion: 3, profile, projectionRevision: value.projectionRevision + 1 })
+  return parseRpgOutfitSave({ schemaVersion: 4, profile, projectionRevision: value.projectionRevision + 1 })
 }
 
 function parseSlot(slot: unknown): RpgPresetSlot | null {
@@ -195,7 +209,7 @@ function parseSlot(slot: unknown): RpgPresetSlot | null {
 
 export function parseRpgPresetSave(value: unknown): RpgPresetSave | null {
   if (!isRecord(value) || !exact(value, ['schemaVersion', 'presetId', 'name', 'slots', 'foregroundChapterId']) ||
-    value.schemaVersion !== 3 || !isRpgPresetId(value.presetId) || typeof value.name !== 'string' ||
+    value.schemaVersion !== 4 || !isRpgPresetId(value.presetId) || typeof value.name !== 'string' ||
     value.name.trim().length < 1 || value.name.length > 40 || !Array.isArray(value.slots) ||
     value.slots.length !== RPG_PARTY_SIZE ||
     (value.foregroundChapterId !== null && !isShortId(value.foregroundChapterId))) return null
@@ -209,14 +223,18 @@ export function parseRpgPresetSave(value: unknown): RpgPresetSave | null {
   return new Set(ids).size === ids.length ? value as unknown as RpgPresetSave : null
 }
 
-/** D282: parties keep their members and current chapter; loadouts clear with the trees and Familiars start as Greatsword. */
+/**
+ * D282: parties keep their members and current chapter; loadouts clear with the trees and Familiars start as Greatsword.
+ * D310: schema 3 moves to 4 as it is; a skill a migrated outfit no longer has is dropped where the party is used.
+ */
 export function migrateRpgPresetSave(value: unknown): RpgPresetSave | null {
-  if (isRecord(value) && value.schemaVersion === 3) return parseRpgPresetSave(value)
+  if (isRecord(value) && value.schemaVersion === 4) return parseRpgPresetSave(value)
+  if (isRecord(value) && value.schemaVersion === 3) return parseRpgPresetSave({ ...value, schemaVersion: 4 })
   if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !Array.isArray(value.slots) ||
     value.slots.length !== RPG_PARTY_SIZE) return null
   const slots = value.slots.map((slot: unknown) => isRecord(slot) && isId(slot.outfitId)
     ? { outfitId: slot.outfitId, loadout: [], familiar: 'greatsword' } : null)
-  return parseRpgPresetSave({ schemaVersion: 3, presetId: value.presetId, name: value.name, slots,
+  return parseRpgPresetSave({ schemaVersion: 4, presetId: value.presetId, name: value.name, slots,
     foregroundChapterId: value.schemaVersion === 2 ? value.foregroundChapterId : null })
 }
 

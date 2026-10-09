@@ -1,7 +1,7 @@
 # Global Uma RPG — design
 
-> **Status: the campaign (D260–D266) with classes (D277–D282).** One generated chapter per scenario, a top-to-bottom
-> map you can replay, four classes with authored skill trees, Octopath-style break battles, MP carried between fights,
+> **Status: the campaign (D260–D266) with classes (D277–D282, D310).** One generated chapter per scenario, a top-to-bottom
+> map you can replay, five classes with authored skill trees, Octopath-style break battles, MP carried between fights,
 > and every win paying EXP and Inspiration tokens. RPG progress saves on the phone first and syncs in the background
 > like races and the Farm. Every tree, node and number is in [the class trees](uma-rpg-classes.md).
 > This replaces the first chapter map (T095–T099), its server-acknowledged commands and its URA-only content
@@ -29,12 +29,13 @@ Home → Uma RPG (Parties) → a party → Chapters (launch pad, one per scenari
 ## Roster and classes (D277)
 
 - An owned outfit with an **A running style** can enroll. Her A styles pick the class: Front or Front + Pace →
-  **Brawler**; Pace or Pace + Late → **Mage**; Late → **Cleric**; End or Late + End → **Summoner**. Any other mix
-  chooses among its single styles' classes.
-- Brawlers enroll with Greatsword + Spear or Axe + Bow; Mages with any two of Mage Staff, Arcane Staff and Short
-  Sword; Clerics carry Arcane + Cleric Staff; Summoners a Summoner Tome. Class and weapons change freely while she has
-  no learned skills.
-- Each class leans the shared stats (Brawler HP and ATK up, Mage M.ATK and MP up, Cleric M.DEF and MP up). Distance
+  **Brawler**; Pace or Pace + Late → **Mage** or **Spell Blade** (her choice, D310); Late → **Cleric**; End or Late +
+  End → **Summoner**. Any other mix chooses among its single styles' classes.
+- Brawlers enroll with Greatsword + Spear or Axe + Bow; Mages carry a Mage Staff + Arcane Staff; Spell Blades a Short
+  Sword; Clerics Arcane + Cleric Staff; Summoners a Summoner Tome. Class and weapons change freely while she has no
+  learned skills.
+- Each class leans the shared stats (Brawler HP and ATK up, Mage M.ATK and MP up, Spell Blade both offenses a little
+  up, Cleric M.DEF and MP up). Distance
   aptitudes, element affinities and the +10% signature element are retired.
 - Enrollment freezes the outfit's base stats, growths and aptitudes. RPG stats never read Training or races.
 - A party slot equips learned skills up to the slot count and, for a Summoner, picks the Familiar's weapon form. An
@@ -56,15 +57,15 @@ Home → Uma RPG (Parties) → a party → Chapters (launch pad, one per scenari
 The campaign restarted every enrolled outfit at **Tier 1 Lv1** once (D263). Classes (D282) kept every tier, level, EXP
 and party, gave each Uma her class, and cleared trees and loadouts once; every point came back.
 
-## Battles (engine v4, D278–D281)
+## Battles (engine v5, D278–D281, D310, D311)
 
 `packages/domain/src/rpg/battle/` is a pure, seeded reducer: a frozen input (five allies with their carried MP, one to
 five foes) plus the action list always replays to the same state and hash. No wall clock or `Math.random`. The break
 rules follow Octopath Traveler; the full rules and numbers are in [the class trees](uma-rpg-classes.md).
 
-- **Turn:** a Brawler acts once (Attack with either weapon, a skill or Guard); a Mage with two staves casts twice; a
-  Mage with a Short Sword casts once and the sword follows every spell; a Cleric's cast carries a blessing; a Summoner
-  summons twice and her Familiar attacks free once a round. Guard ends her turn. Foes act after the last action, in
+- **Turn:** a Brawler acts once (Attack with either weapon, a skill or Guard); a Mage casts twice; a Spell Blade acts
+  twice at half strength (Slash or a blade skill); a Cleric's cast carries a blessing; a Summoner summons twice and her
+  Familiar attacks free once a round. Guard ends her turn. Foes act after the last action, in
   initiative order, and show their next move. HP is full at the start of every fight; only the Cleric heals, a little.
 - **Hits and weaknesses:** a hit has one to three parts (a Greatsword hit is 75% Greatsword + 25% element). Foes are
   weak to some of five weapon kinds (Greatsword, Spear, Axe, Bow, Short Sword) and five elements (Fire, Ice, Lightning,
@@ -74,8 +75,8 @@ rules follow Octopath Traveler; the full rules and numbers are in [the class tre
 - **Break:** until its shield breaks a foe takes **half damage**. At zero it is **Broken**: it loses that round's and
   the next round's action and takes **full damage**; after the second enemy phase its shield returns. Bosses change to
   stronger moves at 50% HP.
-- **Skills:** single-target power 1.6 / 2.2 / 2.9 / 3.7 / 4.6 by depth, × the hand (Brawler 1.0, two staves 0.6 each,
-  staff + sword 0.75, Cleric 0.5, Summoner 0.5 each); every-foe skills 55% per foe; random multi-hits ×1.05. MP is
+- **Skills:** single-target power 1.6 / 2.2 / 2.9 / 3.7 / 4.6 by depth, × the hand (Brawler 1.0, Mage 0.6 each,
+  Spell Blade 0.5 each, Cleric 0.5, Summoner 0.5 each); every-foe skills 55% per foe; random multi-hits ×1.05. MP is
   `(6 + 4 × depth, +4 for every foe) × hand × tier`.
 - **Statuses:** Brave, Faith, Breaker, Barrier, Regen, Aegis on allies; Armor Break, Mind Break, Enfeeble, Shock, Burn,
   Hex on foes; capstones and some variants carry Fire → Burn, Ice → Chill, Lightning → Shock.
@@ -181,7 +182,7 @@ Two more tabs beside Parties and Roster, borrowed from Uma Puzzles' Items and Ex
 
 ## Tuning
 
-`pnpm sim:rpg:campaign [scenarioId]` plays a synthetic party (one Brawler, two Mages, a Cleric and a Summoner; invented
+`pnpm sim:rpg:campaign [scenarioId]` plays a synthetic party (a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner; invented
 outfits and cast) through one route of a chapter with a careful policy (chip with weak parts, spend big skills on a
 Break, rest below 35% MP) and an attack-only policy. At this pin (D282) careful play reaches the Finals at chapter Lv9
 and clears URA, Unity Cup and Project L'Arc: regular fights 3–8 rounds, sub-bosses 4–9, champions 7–8 rounds (URA's

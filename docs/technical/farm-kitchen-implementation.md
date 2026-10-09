@@ -345,7 +345,7 @@ stay frozen on the legacy page with original cycles/deadlines. An accepted pre-f
 cycle, never its evidence/stock. New recipes/cookbook are empty; all30 stations are available through normal views.
 
 The device-only archive is a separate `farmRecovery` record `farm-archive:<SHA-256>`, with archive schema1,
-authenticated account/profile identity, app build, Dexie32, timestamp, the raw canonical whole-account snapshot
+authenticated account/profile identity, app build, Dexie 32 or 33 (D310's v33 only rewrites RPG rows), timestamp, the raw canonical whole-account snapshot
 and every local save/intent/journal table. Earlier Farm archives are retained separately rather than recursively
 embedded; Puzzle archives are included and never replaced. The64 MiB export ceiling, supported local/cloud
 schemas, write/readback identity, both in-memory and JSON-round-trip SHA-256, and Blob exportability must verify

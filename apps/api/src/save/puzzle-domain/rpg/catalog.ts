@@ -279,7 +279,55 @@ b: (b, d) => b === 'angels' ? { target: 'one', hits: fused(1, 1.15 * power(d), '
   : { target: 'random', hits: fused(at(AR, d), RPG_RANDOM_BONUS * power(d), 'ultima', ['light', 'dark']), mp: mp(d) + 2, primary: 'ultima' },
 })
 
-// --- Passive trees: Short Sword follow-ups and Cleric blessings --------------------------------------------------------
+// --- Spell Blade (D310) -------------------------------------------------------------------------------------------------
+// Half magic, half blade, acting twice a turn at half strength (the hand), so every number reads like a Brawler's.
+/** Blade hits: half Short Sword, half the element, in the same hit. */
+function blade(n: number, total: number, kind: RpgDamageKind): RpgHit[] {
+  return Array.from({ length: n }, () => ({ power: round(total / n), parts: [{ kind: 'short-sword', share: 0.5 }, { kind, share: 0.5 }] }))
+}
+/** An arcane hit then a Short Sword hit, repeated; each half carries half the total. */
+function weave(n: number, total: number, kind: RpgDamageKind): RpgHit[] {
+  const pairs = n / 2
+  return Array.from({ length: n }, (_, i) => ({ power: round(0.5 * total / pairs), parts: [{ kind: i % 2 === 0 ? kind : 'short-sword', share: 1 }] }))
+}
+/** Variants keep the core and add two hits worth 0.3 of the depth's power at the end, for 4 MP more. */
+const CODA = 0.3
+addActive({ tree: 'blade-elemental', summary: describe, branches: [
+  { branch: 'fire', names: ['Fire Blade', 'Flame Brand', 'Blazing Saber', 'Inferno Saber', 'Phoenix Blade'],
+    a: ['Searing Strike', 'Magma Strike', 'Solar Strike'], b: ['Twin Flames', 'Flame Dance', 'Wildfire Dance'] },
+  { branch: 'ice', names: ['Frost Blade', 'Ice Brand', 'Rime Saber', 'Glacial Saber', 'Diamond Blade'],
+    a: ['Shatter Strike', 'Permafrost Strike', 'Avalanche Strike'], b: ['Twin Frost', 'Frost Dance', 'Blizzard Dance'] },
+  { branch: 'lightning', names: ['Thunder Blade', 'Volt Brand', 'Storm Saber', 'Tempest Saber', 'Thunderlord Blade'],
+    a: ['Bolt Strike', 'Thunderclap Strike', 'Judgment Strike'], b: ['Twin Volts', 'Spark Dance', 'Storm Dance'] },
+],
+core: (b, d) => ({ target: 'one', hits: blade(at(GH, d), power(d), el(b)), mp: mp(d), primary: el(b),
+  ...(d === 5 ? { rider: { status: RIDER[el(b)], stacks: 2, per: 'foe' as const } } : {}) }),
+a: (b, d) => ({ target: 'one', hits: blade(1, 1.15 * power(d), el(b)), mp: mp(d) + 2, primary: el(b) }),
+b: (b, d) => ({ target: 'one', hits: blade(at(GH, d) + 1, 0.92 * power(d), el(b)), mp: mp(d), primary: el(b) }),
+})
+const arcaneBlade = (b: string, d: number): RpgSkillDef => {
+  const kind = b as 'light' | 'dark' | 'ultima', random = kind === 'ultima'
+  return { target: random ? 'random' : 'one', hits: weave(at(SH, d), (random ? RPG_RANDOM_BONUS : 1) * power(d), kind),
+    mp: mp(d) + (random ? 2 : 0), primary: kind }
+}
+addActive({ tree: 'blade-arcane', summary: describe, branches: [
+  { branch: 'light', names: ['Gleam Cut', 'Radiant Flurry', 'Dawn Waltz', 'Sunburst Waltz', 'Holy Blade'],
+    a: ['Radiant Coda', 'Dawn Coda', 'Sunburst Coda'], b: ['Radiant Riposte', 'Dawn Riposte', 'Sunburst Riposte'] },
+  { branch: 'dark', names: ['Shade Cut', 'Umbral Flurry', 'Dusk Waltz', 'Eclipse Waltz', 'Abyss Blade'],
+    a: ['Umbral Coda', 'Dusk Coda', 'Eclipse Coda'], b: ['Umbral Riposte', 'Dusk Riposte', 'Eclipse Riposte'] },
+  { branch: 'ultima', names: ['Arcane Cut', 'Arcane Flurry', 'Mystic Waltz', 'Astral Waltz', 'Ultima Blade'],
+    a: ['Arcane Twilight', 'Mystic Twilight', 'Astral Twilight'], b: ['Arcane Riposte', 'Mystic Riposte', 'Astral Riposte'] },
+],
+core: (b, d) => d < 5 ? arcaneBlade(b, d)
+  : { ...arcaneBlade(b, 5), special: b === 'light' ? 'vs-broken' : b === 'dark' ? 'vs-wounded' : 'pierce' },
+// A: two more arcane hits (Ultima's are a Light and a Dark hit, which can break a shield). B: two more Short Sword hits.
+a: (b, d) => { const core = arcaneBlade(b, d)
+  return { ...core, hits: [...core.hits, ...pure(2, CODA * power(d), b === 'ultima' ? ['light', 'dark'] : (b as RpgDamageKind))], mp: core.mp + 4 } },
+b: (b, d) => { const core = arcaneBlade(b, d)
+  return { ...core, hits: [...core.hits, ...pure(2, CODA * power(d), 'short-sword')], mp: core.mp + 4 } },
+})
+
+// --- Passive trees: Short Sword follow-ups (retired, D310) and Cleric blessings ------------------------------------------
 export const PASSIVE_TEXT: Readonly<Record<string, string>> = {
   'keen-edge': 'Duel follow-ups +20%', disarm: 'Duel follow-ups add Enfeeble 1',
   opening: '+1 slash after a weak spell hit', sunder: 'Duel follow-ups add Armor Break 1',

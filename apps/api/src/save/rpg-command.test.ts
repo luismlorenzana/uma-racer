@@ -174,6 +174,21 @@ describe('RPG sync and command parsers', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'rpgPresets', id: 'party-1', baseVersion: 0, data: { ...classParty,
       slots: [{ ...classParty.slots[0], loadout: [{ tier: 1, id: 'short-sword.duel.1' }] }, null, null, null, null] } }] })).toMatch(/invalid rpgPresets/)
   })
+  it('reads schema-3 outfits by the old rules and schema 4 with the Spell Blade (D310)', () => {
+    const upsert = (data: unknown, kind = 'rpgOutfits', id = 'uma-p') => parseSyncRequest({ upserts: [{ kind, id, baseVersion: 0, data }] })
+    const pace = (classId: string, weapons: string[], tree: { tier: number; id: string }[] = []) => ({ ...classProfile('uma-p', tree),
+      sourceAptitudes: { ...classProfile('uma-p').sourceAptitudes, strategy: { front: 'G', pace: 'A', late: 'B', end: 'G' } }, classId, weapons })
+    const row = (schemaVersion: number, p: Record<string, unknown>) => ({ schemaVersion, profile: p, projectionRevision: 0 })
+    expect(typeof upsert(row(4, pace('spellblade', ['short-sword'], [{ tier: 1, id: 'blade-arcane.light.1' }])))).toBe('object')
+    expect(typeof upsert(row(4, pace('mage', ['mage-staff', 'arcane-staff'])))).toBe('object')
+    expect(typeof upsert(row(3, pace('mage', ['mage-staff', 'short-sword'], [{ tier: 1, id: 'short-sword.duel.1' }])))).toBe('object')
+    for (const bad of [row(4, pace('mage', ['mage-staff', 'short-sword'])), row(3, pace('spellblade', ['short-sword'])),
+      row(4, pace('spellblade', ['short-sword'], [{ tier: 1, id: 'short-sword.duel.1' }])),
+      row(4, { ...classProfile('uma-p'), classId: 'spellblade', weapons: ['short-sword'] })]) expect(upsert(bad)).toMatch(/invalid rpgOutfits/)
+    expect(typeof upsert({ ...classParty, schemaVersion: 4, slots: [{ ...classParty.slots[0], outfitId: 'uma-p',
+      loadout: [{ tier: 1, id: 'blade-elemental.fire.1' }] }, null, null, null, null] }, 'rpgPresets', 'party-1')).toBe('object')
+    expect(typeof upsert({ ...run, battle: { battleId: 'b', nodeId: 'n', startedAt: 1, input: { version: 5 } } }, 'rpgCheckpoints', 'party-1:ura-finale')).toBe('object')
+  })
   it('accepts self-consistent token exchange rows (D309)', () => {
     const side = (side: 'in' | 'out', itemId: string, delta: number, extra: Record<string, unknown> = {}) => ({
       id: `inspiration-exchange:x1:${side}`, itemId, delta, createdAt: 1, reason: 'inspiration-exchange',

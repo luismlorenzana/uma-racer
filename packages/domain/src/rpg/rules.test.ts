@@ -5,7 +5,7 @@ import { RPG_NODES, rpgNode, rpgTreeNodes } from './catalog'
 import {
   canChangeRpgClass, changeRpgClass, enrollRpgOutfit, forgetRpgVariant, grantRpgExp, learnRpgNode, promoteRpgOutfit, projectRpgStats,
   rpgActiveSlots, rpgClassOptions, rpgClassTrees, rpgExpToNext, rpgHand, rpgLearnBlock, rpgLifetimeLevels, rpgTreePointsEarned,
-  rpgTreePointsSpent, validRpgTree, validateRpgLoadout, type RpgProfile,
+  rpgTreePointsSpent, rpgUsableLoadout, validRpgTree, validateRpgLoadout, type RpgProfile,
 } from './rules'
 
 const base: Stats = { speed: 100, stamina: 90, power: 80, guts: 70, wit: 60 }
@@ -22,13 +22,14 @@ describe('RPG classes (D277)', () => {
   it('maps A running styles to a class, and leaves outliers a choice', () => {
     expect(rpgClassOptions(styles('A', 'B', 'C', 'G'))).toEqual(['brawler'])
     expect(rpgClassOptions(styles('A', 'A', 'B', 'G'))).toEqual(['brawler'])
-    expect(rpgClassOptions(styles('G', 'A', 'B', 'C'))).toEqual(['mage'])
-    expect(rpgClassOptions(styles('G', 'A', 'A', 'C'))).toEqual(['mage'])
+    // D310: Pace Umas choose between the Mage and the Spell Blade.
+    expect(rpgClassOptions(styles('G', 'A', 'B', 'C'))).toEqual(['mage', 'spellblade'])
+    expect(rpgClassOptions(styles('G', 'A', 'A', 'C'))).toEqual(['mage', 'spellblade'])
     expect(rpgClassOptions(styles('G', 'C', 'A', 'C'))).toEqual(['cleric'])
     expect(rpgClassOptions(styles('G', 'C', 'B', 'A'))).toEqual(['summoner'])
     expect(rpgClassOptions(styles('G', 'C', 'A', 'A'))).toEqual(['summoner'])
     expect(rpgClassOptions(styles('A', 'C', 'A', 'C'))).toEqual(['brawler', 'cleric'])
-    expect(rpgClassOptions(styles('G', 'A', 'A', 'A'))).toEqual(['mage', 'cleric', 'summoner'])
+    expect(rpgClassOptions(styles('G', 'A', 'A', 'A'))).toEqual(['mage', 'spellblade', 'cleric', 'summoner'])
     expect(rpgClassOptions(styles('B', 'B', 'B', 'B'))).toEqual([])
   })
 
@@ -39,6 +40,11 @@ describe('RPG classes (D277)', () => {
     expect(profile).toMatchObject({ classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 1, tree: [], legacy: [] })
     expect(rpgClassTrees('brawler', ['axe', 'bow'])).toEqual(['axe', 'bow'])
     expect(rpgClassTrees('summoner', ['summoner-tome'])).toEqual(['summon-elemental', 'summon-arcane'])
+    expect(rpgClassTrees('spellblade', ['short-sword'])).toEqual(['blade-elemental', 'blade-arcane'])
+    const pace = source(styles('G', 'A', 'B', 'C'))
+    expect(enrollRpgOutfit({ outfit: pace, contentVersion: 'v', classId: 'spellblade', weapons: ['short-sword'] }).classId).toBe('spellblade')
+    // D310: the Mage is two staves; her old Short Sword sets are gone.
+    expect(() => enrollRpgOutfit({ outfit: pace, contentVersion: 'v', classId: 'mage', weapons: ['mage-staff', 'short-sword'] })).toThrow(/set/)
     expect(() => enrollRpgOutfit({ outfit: source(), contentVersion: 'v', classId: 'mage', weapons: ['mage-staff', 'short-sword'] })).toThrow(/not open/)
     expect(() => enrollRpgOutfit({ outfit: source(), contentVersion: 'v', classId: 'brawler', weapons: ['greatsword', 'axe'] })).toThrow(/set/)
     expect(() => enrollRpgOutfit({ outfit: source(styles('B', 'B', 'B', 'B')), contentVersion: 'v', classId: 'brawler', weapons: ['greatsword', 'spear'] })).toThrow(/no A/)
@@ -58,7 +64,7 @@ describe('RPG classes (D277)', () => {
   it('gives each build its hand: actions, power and MP shares, and the free action', () => {
     expect(rpgHand({ classId: 'brawler', weapons: ['greatsword', 'spear'] })).toMatchObject({ actions: 1, power: 1, mp: 1 })
     expect(rpgHand({ classId: 'mage', weapons: ['mage-staff', 'arcane-staff'] })).toMatchObject({ actions: 2, power: 0.6, mp: 0.6 })
-    expect(rpgHand({ classId: 'mage', weapons: ['mage-staff', 'short-sword'] })).toMatchObject({ actions: 1, power: 0.75, mp: 0.75, free: { kind: 'short-sword' } })
+    expect(rpgHand({ classId: 'spellblade', weapons: ['short-sword'] })).toMatchObject({ actions: 2, power: 0.5, mp: 0.5, free: { power: 0.5, kind: 'short-sword' } })
     expect(rpgHand({ classId: 'cleric', weapons: ['arcane-staff', 'cleric-staff'] })).toMatchObject({ actions: 1, power: 0.5, mp: 0.7 })
     expect(rpgHand({ classId: 'summoner', weapons: ['summoner-tome'] })).toMatchObject({ actions: 2, power: 0.5, mp: 0.5, free: { kind: 'familiar' } })
   })
@@ -87,9 +93,9 @@ describe('RPG levels and stats', () => {
 })
 
 describe('RPG class trees (D280)', () => {
-  it('authors ten trees of three branches: five core nodes and three forks of two variants each', () => {
+  it('authors twelve trees of three branches: five core nodes and three forks of two variants each', () => {
     const trees = new Set(RPG_NODES.map((n) => n.tree))
-    expect(trees.size).toBe(10)
+    expect(trees.size).toBe(12)
     for (const tree of trees) {
       const nodes = rpgTreeNodes(tree)
       expect(nodes).toHaveLength(33)
@@ -101,6 +107,22 @@ describe('RPG class trees (D280)', () => {
     expect(rpgNode('mage-staff.fire.4')?.name).toBe('Firaja')
     expect(rpgNode('mage-staff.fire.2a')?.skill?.target).toBe('all')
     expect(rpgNode('cleric-staff.malice.5')?.passive).toBe('shatter')
+  })
+
+  it('authors the Spell Blade trees like a Greatsword and a woven Bow, half the hand (D310)', () => {
+    const parts = (id: string) => rpgNode(id)!.skill!.hits.map((h) => h.parts.map((p) => `${p.kind}:${p.share}`).join('+'))
+    const total = (id: string) => Math.round(rpgNode(id)!.skill!.hits.reduce((s, h) => s + h.power, 0) * 100) / 100
+    expect(parts('blade-elemental.fire.1')).toEqual(['short-sword:0.5+fire:0.5'])
+    expect(rpgNode('blade-elemental.ice.5')).toMatchObject({ name: 'Diamond Blade', skill: { target: 'one', mp: 26, rider: { status: 'enfeeble', stacks: 2 } } })
+    expect([total('blade-elemental.fire.3'), total('blade-elemental.fire.3a'), total('blade-elemental.fire.3b')]).toEqual([2.9, 3.34, 2.67])
+    expect([rpgNode('blade-elemental.fire.3a')!.skill!.hits.length, rpgNode('blade-elemental.fire.3b')!.skill!.hits.length]).toEqual([1, 3])
+    expect(parts('blade-arcane.light.3')).toEqual(['light:1', 'short-sword:1', 'light:1', 'short-sword:1'])
+    expect(parts('blade-arcane.light.3a').slice(4)).toEqual(['light:1', 'light:1'])
+    expect(parts('blade-arcane.dark.3b').slice(4)).toEqual(['short-sword:1', 'short-sword:1'])
+    expect(parts('blade-arcane.ultima.2a').slice(2)).toEqual(['light:1', 'dark:1'])
+    expect([total('blade-arcane.light.3'), total('blade-arcane.light.3a'), total('blade-arcane.ultima.3')]).toEqual([2.9, 3.77, 3.04])
+    expect([rpgNode('blade-arcane.light.3a')!.skill!.mp, rpgNode('blade-arcane.ultima.3')!.skill!.target]).toEqual([22, 'random'])
+    expect(rpgNode('blade-arcane.ultima.5')!.skill!.special).toBe('pierce')
   })
 
   it('learns core nodes in order, costs their depth and gates depths by level', () => {
@@ -154,5 +176,8 @@ describe('RPG class trees (D280)', () => {
     expect(promoted.legacy).toEqual(refs.slice(0, 2))
     expect(validateRpgLoadout(promoted, refs.slice(0, 2))).toBe(true)
     expect(() => promoteRpgOutfit(p, refs.slice(0, 3), true)).toThrow(/legacy/)
+    // Skills she no longer has drop out of a slot in order (D310).
+    expect(rpgUsableLoadout(p, [{ tier: 1, id: 'spear.fire.1' }, refs[1]!, refs[1]!, refs[0]!])).toEqual([refs[1], refs[0]])
+    expect(rpgUsableLoadout({ ...p, level: 1 }, refs)).toHaveLength(3)
   })
 })

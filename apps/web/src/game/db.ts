@@ -51,6 +51,7 @@ import {
   type BattleAction,
   migrateRpgOutfitSave,
   migrateRpgPresetSave,
+  rpgLegacySwordMage,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Table, type Transaction } from 'dexie'
 import type { PuzzleOutfitSaveV1, PuzzlePreservationRecord, PuzzlePresetSaveV1, PuzzleCheckpointSaveV1, ConstellationBankSaveV1, PuzzleCohortSaveV1,
@@ -460,6 +461,9 @@ export class RacerDb extends Dexie {
     // Additive only. T120's protected server cutover owns resets, never an IndexedDB upgrade callback.
     this.version(32).stores({ farmWorkers: 'id', farmRecipes: 'id', farmExtra: 'id', farmCutover: 'id', farmCutoverPages: 'id',
       farmOperations: 'id', farmPending: 'id, order, status', farmRecovery: 'id, createdAt', farmPreferences: 'id' })
+    // The Spell Blade (D310): RPG outfits and parties move to schema 4, a Mage with a Short Sword becomes a Spell Blade
+    // with every point back, and a fight left open under engine v4 closes with no reward.
+    this.version(33).stores({}).upgrade(migrateRpgSpellBlades)
   }
 }
 
@@ -510,7 +514,7 @@ async function resetRpgProgress(tx: Transaction): Promise<void> {
     await outbox.add({ kind, id, op: 'upsert', queuedAt })
   }
   for (const row of await tx.table('rpgOutfits').toArray() as VersionedRow<RpgOutfitSave>[]) {
-    if (row.data?.schemaVersion !== 3) continue
+    if (!(Number(row.data?.schemaVersion) >= 3)) continue
     const { profile } = row.data
     if (profile.tier === 1 && profile.level === 1 && profile.exp === 0 && !profile.tree.length && !profile.legacy.length) continue
     await tx.table('rpgOutfits').put({ ...row, data: { ...row.data, projectionRevision: row.data.projectionRevision + 1,
@@ -518,7 +522,7 @@ async function resetRpgProgress(tx: Transaction): Promise<void> {
     await queue('rpgOutfits', row.id)
   }
   for (const row of await tx.table('rpgPresets').toArray() as VersionedRow<RpgPresetSave>[]) {
-    if (row.data?.schemaVersion !== 3 || row.data.slots.every((slot) => !slot || !slot.loadout.length)) continue
+    if (!(Number(row.data?.schemaVersion) >= 3) || row.data.slots.every((slot) => !slot || !slot.loadout.length)) continue
     await tx.table('rpgPresets').put({ ...row, data: { ...row.data, slots: row.data.slots.map((slot) => slot && { ...slot, loadout: [] }) } })
     await queue('rpgPresets', row.id)
   }
@@ -539,7 +543,7 @@ async function migrateRpgClasses(tx: Transaction): Promise<void> {
   }
   for (const [kind, migrate] of [['rpgOutfits', migrateRpgOutfitSave], ['rpgPresets', migrateRpgPresetSave]] as const) {
     for (const row of await tx.table(kind).toArray() as VersionedRow<{ schemaVersion?: number }>[]) {
-      if (row.data?.schemaVersion === 3) continue
+      if (Number(row.data?.schemaVersion) >= 3) continue
       const next = migrate(row.data)
       if (!next) continue
       await tx.table(kind).put({ ...row, data: next })
@@ -549,6 +553,44 @@ async function migrateRpgClasses(tx: Transaction): Promise<void> {
   for (const row of await tx.table('rpgCheckpoints').toArray() as VersionedRow<RpgRunSaveV2>[]) {
     const battle = row.data?.battle
     if (row.data?.schemaVersion !== 2 || !battle || (battle.input as { version?: number }).version === 4) continue
+    await tx.table('rpgFights').delete(battle.battleId)
+    await tx.table('rpgCheckpoints').put({ ...row, data: { ...row.data, battle: null, updatedAt: queuedAt } })
+    await queue('rpgCheckpoints', row.id)
+  }
+}
+
+/**
+ * D310: outfits and parties move to schema 4. A Mage who carried a Short Sword becomes a Spell Blade with an empty tree
+ * (every point back, class and weapons free to change again) and every party stops equipping her old skills. A fight
+ * left open under engine v4 closes: no reward, MP as it was when it began. Every changed row is queued.
+ */
+async function migrateRpgSpellBlades(tx: Transaction): Promise<void> {
+  const outbox = tx.table('outbox')
+  const queuedAt = Date.now()
+  const queue = async (kind: EntityKind, id: string) => {
+    await outbox.where('[kind+id]').equals([kind, id]).delete()
+    await outbox.add({ kind, id, op: 'upsert', queuedAt })
+  }
+  const swords = new Set<string>()
+  for (const row of await tx.table('rpgOutfits').toArray() as VersionedRow<{ schemaVersion?: number; profile?: unknown }>[]) {
+    if (row.data?.schemaVersion !== 3) continue
+    const next = migrateRpgOutfitSave(row.data)
+    if (!next) continue
+    if (rpgLegacySwordMage(row.data.profile)) swords.add(row.id)
+    await tx.table('rpgOutfits').put({ ...row, data: next })
+    await queue('rpgOutfits', row.id)
+  }
+  for (const row of await tx.table('rpgPresets').toArray() as VersionedRow<RpgPresetSave | { schemaVersion?: number }>[]) {
+    if (row.data?.schemaVersion !== 3) continue
+    const data = row.data as unknown as RpgPresetSave
+    const next = migrateRpgPresetSave({ ...data, slots: data.slots.map((slot) => slot && swords.has(slot.outfitId) ? { ...slot, loadout: [] } : slot) })
+    if (!next) continue
+    await tx.table('rpgPresets').put({ ...row, data: next })
+    await queue('rpgPresets', row.id)
+  }
+  for (const row of await tx.table('rpgCheckpoints').toArray() as VersionedRow<RpgRunSaveV2>[]) {
+    const battle = row.data?.battle
+    if (row.data?.schemaVersion !== 2 || !battle || (battle.input as { version?: number }).version === 5) continue
     await tx.table('rpgFights').delete(battle.battleId)
     await tx.table('rpgCheckpoints').put({ ...row, data: { ...row.data, battle: null, updatedAt: queuedAt } })
     await queue('rpgCheckpoints', row.id)

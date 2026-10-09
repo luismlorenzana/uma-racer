@@ -4,6 +4,8 @@ import { FARM_CUTOVER_LIMITS, farmCanonical, farmBytes, farmCutoverSource, farmA
   type FarmArchiveProof } from '@racer/domain/farm/kitchen'
 import type { RacerDb } from '../../db'
 export const FARM_ARCHIVE_REASON = 'farm-cutover-archive'
+/** Local databases whose tables an archive can hold: v33 (D310) only rewrites RPG rows, no table shapes. */
+export const FARM_ARCHIVE_DATABASE_VERSIONS: readonly number[] = [32, 33]
 export interface FarmRecoveryArchive {
   schemaVersion: 1; accountId: string; profileCreatedAt: number; build: string; databaseVersion: number; createdAt: number;
   /** Raw canonical rows are retained, even when their supported reader normalizes a legacy schema. */
@@ -17,7 +19,7 @@ const body = (a: FarmRecoveryArchive) => { const { digest: _digest, ...rest } = 
 export async function verifyFarmArchive(raw: unknown, accountId: string, profileCreatedAt: number): Promise<FarmRecoveryArchive> {
   if (!farmRecord(raw) || Object.keys(raw).sort().join() !== 'accountId,build,createdAt,databaseVersion,digest,localTables,profileCreatedAt,schemaVersion,snapshot' ||
     raw.schemaVersion !== 1 || raw.accountId !== accountId || raw.profileCreatedAt !== profileCreatedAt ||
-    typeof raw.build !== 'string' || !raw.build.length || raw.build.length > 128 || raw.databaseVersion !== 32 ||
+    typeof raw.build !== 'string' || !raw.build.length || raw.build.length > 128 || !FARM_ARCHIVE_DATABASE_VERSIONS.includes(raw.databaseVersion as number) ||
     !Number.isSafeInteger(raw.createdAt) || Number(raw.createdAt) < 0 || !farmArchiveDigest(raw.digest) ||
     !farmRecord(raw.localTables) || Object.values(raw.localTables).some(v => !Array.isArray(v)) || farmBytes(raw) > FARM_CUTOVER_LIMITS.archiveBytes)
     throw new Error('Farm archive identity/schema/size is invalid; keep it for Export, never reset')

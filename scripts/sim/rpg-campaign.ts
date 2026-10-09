@@ -1,4 +1,4 @@
-// Campaign balance (D261–D282): a synthetic five-outfit party — one Brawler, two Mages, a Cleric and a Summoner — plays
+// Campaign balance (D261–D282, D310): a synthetic five-outfit party — a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner — plays
 // generated chapters with a careful policy and an attack-only policy. No private Uma, cast or chapter content.
 import { RPG_ELEMENTS, enrollRpgOutfit, learnRpgNode, projectRpgStats, rpgActiveSlots, rpgHand, rpgLearnedSkills, rpgProfileTrees,
   rpgTreePointsEarned, rpgTreePointsSpent, type RpgClass, type RpgNodeRef, type RpgProfile, type RpgWeapon,
@@ -15,6 +15,7 @@ import { SCENARIOS } from '../../packages/domain/src/scenarios'
 const cast = Array.from({ length: 7 }, (_, i) => ({ id: `cast${i + 1}`, name: `Rival ${i + 1}` }))
 const STYLE: Record<RpgClass, Aptitudes['strategy']> = {
   brawler: { front: 'A', pace: 'C', late: 'C', end: 'C' }, mage: { front: 'C', pace: 'A', late: 'C', end: 'C' },
+  spellblade: { front: 'C', pace: 'A', late: 'C', end: 'C' },
   cleric: { front: 'C', pace: 'C', late: 'A', end: 'C' }, summoner: { front: 'C', pace: 'C', late: 'C', end: 'A' },
 }
 function outfit(id: string, classId: RpgClass, weapons: RpgWeapon[]): RpgProfile {
@@ -26,7 +27,7 @@ function outfit(id: string, classId: RpgClass, weapons: RpgWeapon[]): RpgProfile
 const PARTY: RpgProfile[] = [
   outfit('o1', 'brawler', ['greatsword', 'spear']),
   outfit('o2', 'mage', ['mage-staff', 'arcane-staff']),
-  outfit('o3', 'mage', ['mage-staff', 'short-sword']),
+  outfit('o3', 'spellblade', ['short-sword']),
   outfit('o4', 'cleric', ['arcane-staff', 'cleric-staff']),
   outfit('o5', 'summoner', ['summoner-tome']),
 ]

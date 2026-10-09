@@ -1,7 +1,7 @@
-// Deterministic campaign battle reducer, engine v4 (docs/design/uma-rpg-classes.md, D278–D281).
+// Deterministic campaign battle reducer, engine v5 (docs/design/uma-rpg-classes.md, D278–D281, D310).
 // Octopath Traveler breaks with class hands: every hit has one to three parts, and each weak part removes one shield
-// point. Mages with two staves and Summoners act twice a round; a Short Sword follows staff spells on its own; a Cleric's
-// Arcane cast carries a blessing chosen from the branch its element points to. Unbroken foes take half damage.
+// point. Mages, Spell Blades and Summoners act twice a round; a Cleric's Arcane cast carries a blessing chosen from the
+// branch its element points to. Unbroken foes take half damage.
 import { RPG_SKILL_POWER, rpgBlessingBranch, rpgNode, type RpgHit, type RpgSkillDef } from '../catalog'
 import {
   RPG_CLASSES, RPG_ELEMENTS, RPG_MAX_LEGACY_SLOTS, RPG_WEAPON_KINDS, rpgActiveSlots, rpgHand, rpgNodeKey, validRpgTree, validRpgWeapons,
@@ -9,9 +9,9 @@ import {
 } from '../rules'
 import {
   BATTLE_BARRIER_CAP, BATTLE_BARRIER_PERCENT, BATTLE_BREAK_ROUNDS, BATTLE_BURN_PERCENT, BATTLE_CLARITY_PERCENT, BATTLE_CURE_PERCENT,
-  BATTLE_DEFENSE_SHARE, BATTLE_FLURRY_SLASHES, BATTLE_FOE_STATUS_STEP, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS, BATTLE_MIN_OFFENSE_SHARE,
-  BATTLE_REACTION_SHARE, BATTLE_REBIRTH_PERCENT, BATTLE_REGEN_PERCENT, BATTLE_STATUS_STACK_CAP, BATTLE_STATUS_STEP, BATTLE_STATUS_TURNS,
-  BATTLE_ULTIMA, BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK, BATTLE_WEAVE_SLASHES, battleChannel, battleSkillFor, type BattleSkill,
+  BATTLE_DEFENSE_SHARE, BATTLE_FOE_STATUS_STEP, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS, BATTLE_MIN_OFFENSE_SHARE,
+  BATTLE_REBIRTH_PERCENT, BATTLE_REGEN_PERCENT, BATTLE_STATUS_STACK_CAP, BATTLE_STATUS_STEP, BATTLE_STATUS_TURNS,
+  BATTLE_ULTIMA, BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK, battleChannel, battleSkillFor, type BattleSkill,
 } from './skills'
 import { RPG_MAX_TREE_NODES } from '../save'
 import type { BattleAction, BattleAlly, BattleChannel, BattleCue, BattleEnemy, BattleEnemyMove, BattleError,
@@ -36,7 +36,7 @@ function stable(value: unknown): string {
   return JSON.stringify(value)
 }
 export function battleStateHash(state: BattleState): string {
-  return `rpg-battle-v4:${hashNumber(stable(state)).toString(16).padStart(8, '0')}`
+  return `rpg-battle-v5:${hashNumber(stable(state)).toString(16).padStart(8, '0')}`
 }
 
 const unit = (s: BattleState, id: string) => s.units.find((u) => u.id === id)
@@ -104,7 +104,7 @@ function validEnemy(e: BattleEnemy): boolean {
       e.phaseTwo.moves.length <= 8 && e.phaseTwo.moves.every(validMove)))
 }
 function validateInput(input: BattleInput): void {
-  if (!input || input.version !== 4 || !safeInt(input.seed, 0, 0xffff_ffff) || !Array.isArray(input.allies) ||
+  if (!input || input.version !== 5 || !safeInt(input.seed, 0, 0xffff_ffff) || !Array.isArray(input.allies) ||
     input.allies.length !== 5 || !Array.isArray(input.enemies) || input.enemies.length < 1 || input.enemies.length > 5) {
     throw new RangeError('Invalid battle header')
   }
@@ -157,7 +157,7 @@ export function createBattle(source: BattleInput): BattleStep {
     ...input.allies.map((a) => ({ ...base, id: a.id, side: 'ally' as const, hp: a.stats.hp, mp: a.mp, shield: 0 })),
     ...input.enemies.map((e) => ({ ...base, id: e.id, side: 'enemy' as const, hp: e.stats.hp, mp: 0, shield: e.shield })),
   ]
-  const state: BattleState = { engineVersion: 4, input, round: 1, units, acted: [], familiars: [], intents: [], outcome: 'active' }
+  const state: BattleState = { engineVersion: 5, input, round: 1, units, acted: [], familiars: [], intents: [], outcome: 'active' }
   state.intents = intentsFor(state)
   return { state, cues: reveal(state), hash: battleStateHash(state) }
 }
@@ -191,8 +191,6 @@ export function battleDamage(s: BattleState, attacker: BattleUnit, defender: Bat
   amount *= 1 - stacks(defender, 'ward') * BATTLE_FOE_STATUS_STEP
   amount *= 1 - stacks(defender, 'aegis') * BATTLE_STATUS_STEP
   if (stacks(defender, 'hex') > 1) amount *= 1 + BATTLE_STATUS_STEP
-  if (stacks(defender, 'parry')) amount *= 0.7
-  if (options.area && stacks(defender, 'stance')) amount *= 0.8
   if (foe && options.special === 'vs-broken' && battleBroken(defender)) amount *= 1.3
   if (foe && options.special === 'vs-wounded' && defender.hp * 2 < foe.stats.hp) amount *= 1.3
   if (foe && !battleBroken(defender) && options.special !== 'pierce') amount *= BATTLE_UNBROKEN_FACTOR
@@ -428,69 +426,6 @@ function cast(s: BattleState, actor: BattleUnit, tapped: BattleUnit, def: RpgSki
   return log
 }
 
-// --- Short Sword follow-ups (D278) -----------------------------------------------------------------------------------
-
-function swordDepth(ally: BattleAlly, branch: string): number {
-  return ally.tree.reduce((best, ref) => {
-    const n = rpgNode(ref.id)
-    return n && n.tree === 'short-sword' && n.branch === branch && n.variant === null ? Math.max(best, n.depth) : best
-  }, 0)
-}
-function followUp(s: BattleState, actor: BattleUnit, ally: BattleAlly, def: RpgSkillDef, log: CastLog, cues: BattleCue[]): void {
-  if (!ally.weapons.includes('short-sword')) return
-  const branch = def.target === 'one' ? 'duel' : def.target === 'all' ? 'melee' : 'tempo'
-  const depth = swordDepth(ally, branch)
-  if (!depth) return
-  const has = (key: string) => learnedPassive(ally, key)
-  const mirror = ally.weapons.includes('mage-staff')
-  let r = BATTLE_REACTION_SHARE * RPG_SKILL_POWER[depth - 1]!
-  if (branch === 'duel' && has('keen-edge')) r *= 1.2
-  if (branch === 'melee' && has('broad-edge')) r *= 1.2
-  if (branch === 'tempo') r *= (has('staccato') ? 1.2 : 1) * (has('fortissimo') ? 1.25 : 1)
-  const element = def.primary
-  const slash = (power: number): RpgHit => ({ power, parts: branch === 'duel' && has('spellblade') && element !== 'ultima' && element !== 'staff'
-    ? [{ kind: 'short-sword', share: 0.75 }, { kind: element, share: 0.25 }] : [{ kind: 'short-sword', share: 1 }] })
-  const hitFoes: BattleUnit[] = []
-  const swing = (foe: BattleUnit | undefined, power: number) => {
-    if (!foe || foe.hp <= 0) return
-    const bonus = battleBroken(foe) && ((branch === 'melee' && has('exploiter')) || (branch === 'tempo' && has('rubato'))) ? 1.3 : 1
-    strike(s, actor, foe, slash(power * bonus), 1, cues, false)
-    if (!hitFoes.includes(foe)) hitFoes.push(foe)
-  }
-  const whirl = branch === 'melee' && has('whirlwind')
-  const arc = (foes: BattleUnit[]) => {
-    for (const foe of foes) for (let i = 0; i < (whirl ? 2 : 1); i += 1) swing(foe, r * 0.55 * (whirl ? 0.6 : 1))
-  }
-  const thrust = (foe: BattleUnit | undefined, power: number) => { for (let i = 0; i < (whirl ? 2 : 1); i += 1) swing(foe, power * (whirl ? 0.6 : 1)) }
-  if (branch === 'duel') {
-    if (mirror) {
-      const target = has('lunge') ? [...living(s, 'enemy')].sort(byHpShare(s))[0] : log.tapped.hp > 0 ? log.tapped : randomFoe(s, actor.id, 0, 'flurry')
-      const n = BATTLE_FLURRY_SLASHES[depth - 1]! + (has('opening') && log.weak ? 1 : 0)
-      for (let i = 0; i < n; i += 1) swing(target, r / BATTLE_FLURRY_SLASHES[depth - 1]!)
-    } else arc(living(s, 'enemy'))
-  } else if (branch === 'melee') {
-    if (mirror) arc(log.struck.filter((u) => u.hp > 0))
-    else thrust(randomFoe(s, actor.id, 0, 'thrust'), r * 1.1 * (has('heavy-thrust') ? 1.3 : 1))
-  } else if (mirror) {
-    const cap = BATTLE_WEAVE_SLASHES[depth - 1]! + ['allegro', 'prestissimo', 'crescendo'].filter(has).length
-    const targets = log.hitFoes.slice(0, cap)
-    for (const foe of targets) swing(foe, r / Math.max(1, targets.length))
-  } else {
-    const last = log.hitFoes.at(-1)
-    const power = r * 1.1 * (has('crescendo') ? 1.4 : 1)
-    swing(last && last.hp > 0 ? last : randomFoe(s, actor.id, 0, 'finisher'), power)
-    if (has('counterpoint')) swing(randomFoe(s, actor.id, 1, 'counterpoint'), power)
-  }
-  for (const foe of hitFoes) {
-    if (foe.hp <= 0) continue
-    if (branch === 'duel' && has('disarm')) addStatus(foe, 'enfeeble')
-    if ((branch === 'duel' && has('sunder')) || (branch === 'melee' && has('rending-arc'))) addStatus(foe, 'armor-break')
-  }
-  if (branch === 'duel' && has('parry')) addStatus(actor, 'parry', 1, 1)
-  if (branch === 'melee' && has('wide-stance')) addStatus(actor, 'stance', 1, 1)
-  if (branch === 'melee' && has('second-wind')) restoreMp(s, actor, 0.02 * hitFoes.length, actor.id, cues)
-}
-
 // --- Cleric blessings (D281) -----------------------------------------------------------------------------------------
 
 const BEST_FIT: Readonly<Record<string, 'atk' | 'matk' | 'mp' | 'hp'>> = {
@@ -596,7 +531,7 @@ export function battleBlessings(ally: BattleAlly, primary: RpgDamageKind): { id:
 }
 
 export function applyBattleAction(previous: BattleState, action: BattleAction): BattleStep {
-  if (previous.engineVersion !== 4 || !previous.input || !Array.isArray(previous.units)) return invalid(previous, 'invalid-state')
+  if (previous.engineVersion !== 5 || !previous.input || !Array.isArray(previous.units)) return invalid(previous, 'invalid-state')
   if (previous.outcome !== 'active') return invalid(previous, 'terminal')
   if (!action || !['attack', 'guard', 'skill'].includes(action.kind)) return invalid(previous, 'invalid-state')
   const actorUnit = unit(previous, action.actorId)
@@ -644,7 +579,6 @@ export function applyBattleAction(previous: BattleState, action: BattleAction): 
     if (actor.mp < legal.mp) return invalid(previous, 'insufficient-mp')
     actor.mp -= legal.mp
     const log = cast(s, actor, target, legal.def, legal.power, cues)
-    if (actor.hp > 0) followUp(s, actor, ally, legal.def, log, cues)
     if (key) blessing(s, actor, ally, key, legal.def, log, cues)
   }
   for (let i = 0; i < spent; i += 1) s.acted.push(actor.id)

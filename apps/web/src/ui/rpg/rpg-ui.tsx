@@ -69,7 +69,7 @@ export function GhostButton({ children, className = '', ...rest }: React.ButtonH
 export const WEAPON_KIND_LABEL: Readonly<Record<RpgWeaponKind, string>> = {
   greatsword: 'Greatsword', spear: 'Spear', axe: 'Axe', bow: 'Bow', 'short-sword': 'Short Sword',
 }
-export const CLASS_LABEL: Readonly<Record<RpgClass, string>> = { brawler: 'Brawler', mage: 'Mage', cleric: 'Cleric', summoner: 'Summoner' }
+export const CLASS_LABEL: Readonly<Record<RpgClass, string>> = { brawler: 'Brawler', mage: 'Mage', spellblade: 'Spell Blade', cleric: 'Cleric', summoner: 'Summoner' }
 export function WeaponKindMark({ kind, className = '' }: { kind: RpgWeaponKind; className?: string }) {
   return <span role="img" aria-label={WEAPON_KIND_LABEL[kind]} className={`inline-flex items-center ${className}`}><IdentityGlyph weapon={kind} /></span>
 }
