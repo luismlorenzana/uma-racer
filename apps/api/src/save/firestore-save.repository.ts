@@ -4,6 +4,7 @@ import { freezeAdvance, advanceOutfit, bankData } from './inspiration-advance'
 import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 import type { SaveRepository } from './save.repository'
 import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
+import { protectFarmSync } from './farm-sync'
 import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
 import { preservationHeader, preservationPageIndexes, preservationPageId, preservationBatch, puzzleCohortId,
   type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
@@ -25,7 +26,7 @@ import {
 export class FirestoreSaveRepository implements SaveRepository {
 
   constructor(private readonly injectedDb?: admin.firestore.Firestore, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED,
-    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>) {}
+    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled = false) {}
 
   private get db(): admin.firestore.Firestore {
     if (this.injectedDb) return this.injectedDb
@@ -96,7 +97,7 @@ export class FirestoreSaveRepository implements SaveRepository {
       }
       const logs = new Map<string, LogRecord>()
       for (const doc of logDocs) if (doc.exists) { const row = fromStored<LogRecord>(doc.data()!); logs.set(`${row.kind}/${row.id}`, row) }
-      const resolved = resolveSyncWithPuzzles(uid, request, existing, logs, now, this.puzzlesEnabled)
+      const resolved = resolveSyncWithPuzzles(uid, request, existing, logs, now, this.puzzlesEnabled, this.farmEnabled)
       // All reads have completed. Coalesce intermediate changes when multiple groups share a document.
       const writes = new Map(resolved.writes.map(row => [`${row.kind}/${row.id}`, row]))
       for (const row of writes.values()) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
@@ -189,6 +190,7 @@ export class FirestoreSaveRepository implements SaveRepository {
     return this.db.runTransaction(async (tx) => {
       const entityKeys = new Map<string, { kind: EntityRecord['kind']; id: string }>(request.expected.map((row) => [`${row.kind}/${row.id}`, row]))
       for (const row of request.upserts) entityKeys.set(`${row.kind}/${row.id}`, row)
+      entityKeys.set('farmCutover/main', { kind: 'farmCutover', id: 'main' })
       // Read independently of client dependencies: older clients must not bypass an account's advance.
       if (request.action === 'choose-node' || request.action === 'clear-chapter') entityKeys.set('inspirationBank/main', { kind: 'inspirationBank', id: 'main' })
       const entityRefs = [...entityKeys.values()].map((row) => player.collection(row.kind).doc(row.id))
@@ -227,6 +229,7 @@ export class FirestoreSaveRepository implements SaveRepository {
       })
       const resolved = resolveRpgCommand(uid, request, entities, logs, now)
       if (resolved.response.status !== 'applied') return resolved.response
+      protectFarmSync({ upserts: resolved.writes.map(row => ({ ...row, baseVersion: row.version - 1 })), appends: [], farmProtocolVersion: 1 }, entities, logs)
       for (const row of resolved.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
       for (const row of resolved.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
       return resolved.response

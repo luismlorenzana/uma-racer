@@ -5,6 +5,7 @@ import { BANK_KEY, freezeAdvance, advanceOutfit, bankData } from './inspiration-
 import type { EntityRecord, LogRecord, SaveSnapshot, SyncRequest, SyncResponse } from './save.types'
 import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
+import { protectFarmSync } from './farm-sync'
 import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
 import { type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
 import { disabledPreservation, unavailablePreservation, resolvePreservation } from './puzzle-preservation'
@@ -19,7 +20,7 @@ export class LocalSaveRepository implements SaveRepository {
   private queue: Promise<unknown> = Promise.resolve()
 
   constructor(private readonly file: string, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED,
-    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>) {}
+    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled = false) {}
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {
     const run = this.queue.then(fn, fn)
@@ -77,7 +78,7 @@ export class LocalSaveRepository implements SaveRepository {
       const all = await this.read()
       const user = (all[uid] ??= { entities: {}, logs: {} })
       const now = Date.now()
-      const resolved = resolveSyncWithPuzzles(uid, request, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), now, this.puzzlesEnabled)
+      const resolved = resolveSyncWithPuzzles(uid, request, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), now, this.puzzlesEnabled, this.farmEnabled)
       for (const record of resolved.writes) user.entities[`${record.kind}/${record.id}`] = record
       for (const record of resolved.appends) user.logs[`${record.kind}/${record.id}`] = record
       await this.write(all)
@@ -134,6 +135,7 @@ export class LocalSaveRepository implements SaveRepository {
       const resolved = resolveRpgCommand(uid, request, new Map(Object.entries(user.entities)),
         new Map(Object.entries(user.logs)), Date.now())
       if (resolved.response.status !== 'applied') return resolved.response
+      protectFarmSync({ upserts: resolved.writes.map(row => ({ ...row, baseVersion: row.version - 1 })), appends: [], farmProtocolVersion: 1 }, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)))
       for (const row of resolved.writes) user.entities[`${row.kind}/${row.id}`] = row
       for (const row of resolved.appends) user.logs[`${row.kind}/${row.id}`] = row
       await this.write(all)

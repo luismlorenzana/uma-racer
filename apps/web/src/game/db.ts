@@ -59,6 +59,7 @@ import type { AlbumPrefs } from './album/prefs'
 import type { MinigameRunSnapshotV1, ReplayJournalV1 } from './minigame-journal'
 import type { RunTarget, StoredRunOutcome, StoredRunReward } from './minigame-host'
 import { localDay } from './store'
+import type { FarmOperationV1, FarmOperationReceiptV1 } from '@racer/domain/farm/kitchen'
 
 // Typed local-first save (docs/technical/architecture.md). Every mutation persists its entity and
 // outbox marker in one transaction before Zustand publishes it.
@@ -84,7 +85,7 @@ export interface OutboxRow {
   seq?: number
   kind: EntityKind | LogKind
   id: string
-  op: 'upsert' | 'append' | 'puzzle'
+  op: 'upsert' | 'append' | 'puzzle' | 'farm'
   queuedAt: number
 }
 
@@ -161,6 +162,12 @@ export interface PuzzleJournalRow { id: string; schemaVersion: 1; ownerEpoch: nu
 export interface PuzzleArchiveRow { id: string; reason: string; data: unknown; createdAt: number }
 export interface PuzzleBaseRow { id: string; record: PuzzleStoredEntity | null }
 export interface PuzzlePreferenceRow { id: string; value: unknown }
+/** Canonical Farm rows and immutable intent are separate: predictions never change inventory. */
+export interface FarmCanonicalRow extends VersionedRow<Record<string, unknown>> { updatedAt: number; deleted: boolean }
+export interface FarmPendingRow { id: string; order: number; operation: FarmOperationV1; prediction: FarmOperationReceiptV1;
+  status: 'pending' | 'rejected' | 'blocked'; reason: string | null; queuedAt: number }
+export interface FarmRecoveryRow { id: string; reason: string; data: unknown; createdAt: number }
+export interface FarmPreferenceRow { id: string; value: unknown }
 
 interface LegacyMinigameRunRow extends Omit<MinigameRunRow, 'journal' | 'snapshot'> {
   setup?: unknown
@@ -200,6 +207,15 @@ function migrateLegacyProfile(row: LegacyProfileRow | VersionedRow<unknown>): Ve
 }
 
 export class RacerDb extends Dexie {
+  farmWorkers!: EntityTable<FarmCanonicalRow, 'id'>
+  farmRecipes!: EntityTable<FarmCanonicalRow, 'id'>
+  farmExtra!: EntityTable<FarmCanonicalRow, 'id'>
+  farmCutover!: EntityTable<FarmCanonicalRow, 'id'>
+  farmCutoverPages!: EntityTable<FarmCanonicalRow, 'id'>
+  farmOperations!: EntityTable<LogRow<Record<string, unknown>>, 'id'>
+  farmPending!: EntityTable<FarmPendingRow, 'id'>
+  farmRecovery!: EntityTable<FarmRecoveryRow, 'id'>
+  farmPreferences!: EntityTable<FarmPreferenceRow, 'id'>
   puzzleOutfits!: EntityTable<VersionedRow<PuzzleOutfitSaveV1>, 'id'>
   puzzlePresets!: EntityTable<VersionedRow<PuzzlePresetSaveV1>, 'id'>
   puzzleCheckpoints!: EntityTable<VersionedRow<PuzzleCheckpointSaveV1>, 'id'>
@@ -441,6 +457,9 @@ export class RacerDb extends Dexie {
       puzzleJournals: 'id', puzzleArchives: 'id, createdAt', puzzleBases: 'id', puzzlePreferences: 'id' }).upgrade(resetRpgProgress)
     // Dormant preservation evidence only: no automatic conversion or account activation.
     this.version(31).stores({ puzzlePreservation: 'id' })
+    // Additive only. T120's protected server cutover owns resets, never an IndexedDB upgrade callback.
+    this.version(32).stores({ farmWorkers: 'id', farmRecipes: 'id', farmExtra: 'id', farmCutover: 'id', farmCutoverPages: 'id',
+      farmOperations: 'id', farmPending: 'id, order, status', farmRecovery: 'id, createdAt', farmPreferences: 'id' })
   }
 }
 

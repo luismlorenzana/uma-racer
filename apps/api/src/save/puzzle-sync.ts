@@ -1,20 +1,25 @@
 // Repository integration: one transaction/read set, semantic Puzzle lane, unchanged unrelated sync (implementation §5).
 import { ConflictException, Logger } from '@nestjs/common'
 import { isDeepStrictEqual } from 'node:util'
+import { farmSyncReadSet, protectFarmSync } from './farm-sync'
+import { FARM_KITCHEN_RELEASE_ENABLED, FARM_SYNC_LIMITS, farmOperationReferences, parseFarmStoredEntity, resolveFarmOperations } from './farms'
 import { parseConstellationBankSave, parsePuzzleOperationBatch, puzzleOperationReferences, resolvePuzzleOperations,
   resolvePuzzleTakeover, PUZZLE_SYNC_LIMITS, type PuzzleStoredEntity, type PuzzleStoredLog, type PuzzleTakeoverRequest } from './puzzles'
-import { MAX_SYNC_OPERATIONS, resolveUpserts, type EntityRecord, type EntityUpsert, type LogRecord, type SyncRequest, type SyncResponse } from './save.types'
+import { MAX_SYNC_OPERATIONS, parseEntityData, resolveUpserts, type EntityRecord, type EntityUpsert, type LogRecord, type SyncRequest, type SyncResponse } from './save.types'
 const logger = new Logger('SaveSync')
 
 export function puzzleSyncReadSet(request: SyncRequest): { entities: string[]; logs: string[] } {
-  if (request.upserts.length + request.appends.length + (request.puzzleOperations?.length ?? 0) > MAX_SYNC_OPERATIONS) throw new Error('Sync operation bounds exceeded')
+  if (request.upserts.length + request.appends.length + (request.puzzleOperations?.length ?? 0) + (request.farmOperations?.length ?? 0) > MAX_SYNC_OPERATIONS) throw new Error('Sync operation bounds exceeded')
   if (request.puzzleOperations && !parsePuzzleOperationBatch(request.puzzleOperations)) throw new Error('Invalid Puzzle operations or transport bounds')
   const entities = new Set(['constellationBank/main', ...request.upserts.map(r => `${r.kind}/${r.id}`)]), logs = new Set(request.appends.map(r => `${r.kind}/${r.id}`))
+  const farmRefs = farmSyncReadSet(request)
+  farmRefs.entities.forEach(k => entities.add(k)); farmRefs.logs.forEach(k => logs.add(k))
   for (const operation of request.puzzleOperations ?? []) {
     const refs = puzzleOperationReferences(operation)
     refs.entities.forEach(k => entities.add(k)); refs.logs.forEach(k => logs.add(k))
   }
   if (request.puzzleOperations?.length && entities.size + logs.size > PUZZLE_SYNC_LIMITS.documents) throw new Error('Puzzle transaction references too many documents')
+  if (request.farmOperations?.length && entities.size + logs.size > FARM_SYNC_LIMITS.documents) throw new Error('Farm transaction references too many documents')
   return { entities: [...entities], logs: [...logs] }
 }
 function protectedUpserts(existing: Map<string, EntityRecord>, request: SyncRequest): EntityUpsert[] {
@@ -50,15 +55,25 @@ function protectedUpserts(existing: Map<string, EntityRecord>, request: SyncRequ
 }
 const entity = (row: PuzzleStoredEntity): EntityRecord => ({ ...row, kind: row.kind as EntityRecord['kind'] })
 const log = (row: PuzzleStoredLog): LogRecord => ({ ...row, kind: row.kind as LogRecord['kind'] })
-export function resolveSyncWithPuzzles(uid: string, request: SyncRequest, existingEntities: Map<string, EntityRecord>, existingLogs: Map<string, LogRecord>, now: number, enabled: boolean) {
+export function resolveSyncWithPuzzles(uid: string, request: SyncRequest, existingEntities: Map<string, EntityRecord>, existingLogs: Map<string, LogRecord>, now: number, enabled: boolean, farmEnabled: boolean = FARM_KITCHEN_RELEASE_ENABLED) {
   puzzleSyncReadSet(request) // Validate before either adapter reads; also defend direct repository callers.
   const entities = new Map(existingEntities), logs = new Map(existingLogs)
+  request = protectFarmSync(request, entities, logs)
+  for (const op of request.farmOperations ?? []) for (const key of farmOperationReferences(op).entities) {
+    const row = entities.get(key)
+    if (row && (!parseFarmStoredEntity(row) || !parseEntityData(row.kind, row.data))) throw new ConflictException(`Recovery required: preserve invalid Farm read ${key}`)
+  }
   const bank = parseConstellationBankSave(entities.get('constellationBank/main')?.data)
   if (bank && request.appends.some(a => a.kind === 'ledger' && a.id.startsWith('spark-match:') &&
     !logs.has(`ledger/${a.id}`))) throw new ConflictException('Update required: Spark reservations/refunds must use the protected retirement path')
   if (bank && request.appends.some(a => a.kind === 'itemLedger' && a.data.itemId === 'training:level-up-ticket' &&
     !logs.has(`itemLedger/${a.id}`))) throw new ConflictException('Update required: retired Training EXP/ticket movements cannot be appended after cutover')
-  const ordinary = resolveUpserts(entities, protectedUpserts(entities, request), now)
+  // Identical historic projections acknowledge the original version, never become fresh economic writes.
+  const historic = entities.has('farmCutover/main') ? request.upserts.filter(row =>
+    (row.kind === 'farm' || row.kind === 'items' && row.id.startsWith('produce:')) &&
+    isDeepStrictEqual(entities.get(`${row.kind}/${row.id}`)?.data, row.data)) : []
+  const historicKeys = new Set(historic.map(row => `${row.kind}/${row.id}`))
+  const ordinary = resolveUpserts(entities, protectedUpserts(entities, { ...request, upserts: request.upserts.filter(row => !historicKeys.has(`${row.kind}/${row.id}`)) }), now)
   let appended = 0
   const ordinaryLogs: LogRecord[] = []
   for (const row of request.appends) {
@@ -74,10 +89,12 @@ export function resolveSyncWithPuzzles(uid: string, request: SyncRequest, existi
   const operations = request.puzzleOperations ?? []
   if (operations.length && !parsePuzzleOperationBatch(operations)) throw new Error('Puzzle operation bounds invalid')
   const resolved = resolvePuzzleOperations({ accountSeed: uid, enabled, now, entities, logs }, operations)
-  const writes = [...ordinary.writes, ...resolved.writes.map(entity)], appends = [...ordinaryLogs, ...resolved.appends.map(log)]
-  const response: SyncResponse = { applied: ordinary.writes.map(w => ({ kind: w.kind, id: w.id, version: w.version })),
+  const farm = resolveFarmOperations({ enabled: farmEnabled, allowEnergyGrant: true, now, entities: resolved.entities, logs: resolved.logs }, request.farmOperations ?? [])
+  const writes = [...ordinary.writes, ...resolved.writes.map(entity), ...farm.writes.map(entity)], appends = [...ordinaryLogs, ...resolved.appends.map(log), ...farm.appends.map(log)]
+  const response: SyncResponse = { applied: [...ordinary.writes.map(w => ({ kind: w.kind, id: w.id, version: w.version })),
+    ...historic.map(row => ({ kind: row.kind, id: row.id, version: entities.get(`${row.kind}/${row.id}`)!.version }))],
     conflicts: ordinary.conflicts, appended, serverTime: now,
-    ...(request.puzzleOperations ? { puzzleOperations: resolved.responses } : {}) }
+    ...(request.puzzleOperations ? { puzzleOperations: resolved.responses } : {}), ...(request.farmOperations ? { farmOperations: farm.responses } : {}) }
   return { writes, appends, response }
 }
 export function resolveTakeover(uid: string, request: PuzzleTakeoverRequest, entities: Map<string, EntityRecord>, logs: Map<string, LogRecord>, now: number, enabled: boolean) {
