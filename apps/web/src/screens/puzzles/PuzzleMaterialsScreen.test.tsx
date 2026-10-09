@@ -101,7 +101,8 @@ describe('material surfaces using the real isolated host', () => {
     expect((screen.getByLabelText('Spend Unity Cup · Front Constellation Ticket') as HTMLInputElement).disabled).toBe(true)
     fireEvent.change(front, { target: { value: '2' } }); fireEvent.change(screen.getByLabelText('Spend Legacy Universal CL Ticket'), { target: { value: '1' } })
     await screen.findByText('Total cost 3 tickets'); await screen.findByText('CL 1 → 4')
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm CL spend' })); await screen.findByText('Saved locally · pending sync. A canonical rejection can undo this projection.')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm CL spend' })); await screen.findByRole('button', { name: 'Done' })
+    expect(screen.queryByText(/sync/i)).toBeNull()
     const after = (await env.database.umas.get('invented-ui-0'))!.data
     expect(after.scenarios[0]!.trainingLevel).toBe(4); expect(after.scenarios[0]!.presets).toEqual(before.scenarios[0]!.presets); expect(after.scenarios[0]!.inspiration).toEqual(before.scenarios[0]!.inspiration)
     expect(screen.getAllByRole('link', { name: /Card node/ }).length).toBeGreaterThan(0); expect(screen.getByRole('link', { name: 'Open this constellation' }).getAttribute('href')).toContain('tier=1')

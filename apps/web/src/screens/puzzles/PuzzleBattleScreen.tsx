@@ -20,7 +20,7 @@ export function PuzzleBattleScreen({ battleIdOverride }: { battleIdOverride?: st
   useEffect(() => { if (session?.view?.kind === 'result') void session.restore() }, [account, session])
   if (!session) return <PuzzleGate title="Restoring saved fight">Reading the accepted journal.</PuzzleGate>
   const view = session.view
-  if (view?.kind === 'result') return <PuzzleResultScreen view={view} retry={() => session.restore()} />
+  if (view?.kind === 'result') return <PuzzleResultScreen view={view} />
   if (view?.kind === 'battle') return <PuzzleBattleStage state={view.state} phase={session.phase} error={session.error} content={environment.content}
     lease={view.lease} isolated={environment.isolated} backTo={`${environment.root}/party/${view.open.input.partyId}/${view.open.input.scenarioId}`}
     practiceTo={environment.isolated ? '/dev/puzzles-practice' : '/puzzles/practice'} act={(a, animate) => session.act(a, animate)} restore={() => session.restore()} />

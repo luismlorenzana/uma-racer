@@ -86,7 +86,9 @@ describe('battle DOM, guide and receipt surfaces', () => {
       materials: [{ itemId: 'constellation:ura-finale:front', gross: 12, debtPaid: 7, net: 5 }], createdAt: 1 }
     // Presentation fixture is deliberately partial to verify zero rows never disappear; never submitted as a receipt.
     expect(puzzleResultEntrants(receipt)[0]!.unlocked).toEqual(['puzzle:four'])
-    mount(<PuzzleResultScreen view={{ kind: 'result', receipt, pending: true, summary: { combos: 8, bestCombos: 5, damage: 1234, healed: 25, massHits: 2 } }} retry={async () => {}} />, true)
+    mount(<PuzzleResultScreen view={{ kind: 'result', receipt, pending: true, summary: { combos: 8, bestCombos: 5, damage: 1234, healed: 25, massHits: 2 } }} />, true)
+    // Local-first like every other mode (D300): a pending reward never talks about sync.
+    expect(screen.queryByText(/sync|canonical/i)).toBeNull()
     await screen.findByRole('region', { name: 'Exact entrant EXP and level changes' })
     expect(screen.getByRole('region', { name: 'Exact entrant EXP and level changes' }).children).toHaveLength(5)
     expect(screen.getByText('+40 EXP · PL 4 → 5')).toBeTruthy(); expect(screen.getByText(/New equip choices: Four-orb/)).toBeTruthy()

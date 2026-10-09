@@ -10,7 +10,9 @@ import { PuzzleButton, PuzzleModal } from './components'
 
 export function MaterialOperationStatus({ account, id }: { account: PuzzleAccount; id: string | null }) {
   const status = account.materialOperations.find(o => o.id === id)
-  return id ? <p role={status?.status === 'rejected' || status?.status === 'blocked' ? 'alert' : 'status'} className="mt-3 rounded-sm border border-current/20 p-2 text-xs">{status?.status === 'accepted' ? 'Synced · accepted receipt' : status?.status === 'rejected' || status?.status === 'blocked' ? `Sync needs review: ${status.reason ?? status.status}. This change was not accepted. Stock and CL follow the canonical save; your configuration is retained for review.` : 'Saved locally · pending sync. A canonical rejection can undo this projection.'}</p> : null
+  // Saves are local-first and sync on their own, as everywhere else (D300); only a change the server refuses is news.
+  if (!id || (status?.status !== 'rejected' && status?.status !== 'blocked')) return null
+  return <p role="alert" className="mt-3 rounded-sm border border-current/20 p-2 text-xs">This change wasn't accepted: {status.reason ?? status.status}. Your tickets and Constellation Level are as they were before it.</p>
 }
 function ClDelta({ result }: { result: PuzzleClResult }) {
   return <section className="space-y-2 text-sm"><p className="text-lg font-semibold">CL {result.before} → {result.after}</p>
@@ -60,7 +62,7 @@ export function ClSpendSheet({ host, account, outfitId, tier, onClose, refresh }
   }
   return <PuzzleModal title="Constellation Level" onClose={() => { if (!busy) onClose() }} footer={!result && scenario && unit && (unit.trainingLevel < 10 || operation.current) ? <>
     {(changed || stale) && <PuzzleButton secondary className="mb-2 w-full" disabled={busy} onClick={() => { void review() }}>Refresh preview</PuzzleButton>}
-    <PuzzleButton className="w-full" disabled={!preview || (changed && !operation.current) || stale || busy} onClick={() => { void confirm() }}>{busy ? 'Saving locally…' : operation.current ? 'Retry same CL spend' : 'Confirm CL spend'}</PuzzleButton>
+    <PuzzleButton className="w-full" disabled={!preview || (changed && !operation.current) || stale || busy} onClick={() => { void confirm() }}>{busy ? 'Saving…' : operation.current ? 'Retry same CL spend' : 'Confirm CL spend'}</PuzzleButton>
   </> : undefined}>
     <p className="mb-3 text-xs">{scenario?.name ?? 'Unknown scenario'} · {uma?.activePreset ?? 'distance'} preset · CL {unit?.trainingLevel ?? '—'}/10</p>
     {error && <p role="alert" className="my-2 text-sm">{error}</p>}

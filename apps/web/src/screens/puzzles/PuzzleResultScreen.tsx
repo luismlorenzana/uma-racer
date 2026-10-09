@@ -6,7 +6,7 @@ import { puzzleResultEntrants } from '../../game/puzzles/battle-presentation'
 import { PuzzleButton, PuzzleCard, PuzzleMaterialMark, PuzzleOutfitIcon } from '../../ui/puzzles/components'
 import { puzzleActiveLabel, puzzlePatternLabel } from '../../ui/puzzles/kit'
 import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
-export function PuzzleResultScreen({ view, retry }: { view: PuzzleResultView; retry(): Promise<unknown> }) {
+export function PuzzleResultScreen({ view }: { view: PuzzleResultView }) {
   const { receipt: r, summary } = view, env = usePuzzles(), account = usePuzzleAccount(), navigate = useNavigate()
   const map = `${env.root}/party/${r.input.partyId}/${r.input.scenarioId}`, scenario = SCENARIOS.find(s => s.id === r.input.scenarioId)!.name
   const replay = () => {
@@ -24,9 +24,7 @@ export function PuzzleResultScreen({ view, retry }: { view: PuzzleResultView; re
   return <PuzzleFrame title={r.result.outcome === 'win' ? 'Encounter cleared' : r.result.outcome === 'loss' ? 'Fight lost' : 'Fight abandoned'} back={map}>
     <div className="grid gap-3"><PuzzleCard><p className="text-micro text-accent">{scenario} · {r.input.kind}</p><h2 className="mt-1 text-xl">{r.result.outcome === 'win' ? 'Your party moved forward' : 'Previous progress is safe'}</h2>
       <p className="mt-2 text-sm">{r.result.drags} drags · {r.result.hpRemaining} HP remaining</p>
-      {summary ? <p className="mt-1 text-sm">{summary.combos} combos · Best {summary.bestCombos} · {summary.damage} damage · {summary.healed} HP healed</p> : <p className="mt-2 text-xs text-ink-on-dark-soft">Local combat detail is unavailable on this device. Exact rewards below are from the saved receipt.</p>}
-      <p role="status" className="mt-3 text-xs text-accent">{view.pending ? 'Pending sync · replay-validated locally. Canonical totals may be corrected.' : 'Synced · canonical reward receipt'}</p>
-      <PuzzleButton secondary className="mt-2" onClick={() => { void retry() }}>Refresh saved receipt</PuzzleButton>
+      {summary ? <p className="mt-1 text-sm">{summary.combos} combos · Best {summary.bestCombos} · {summary.damage} damage · {summary.healed} HP healed</p> : <p className="mt-2 text-xs text-ink-on-dark-soft">Combo details aren't available for this fight. Its rewards below are exact.</p>}
       {r.result.outcome !== 'win' && <p className="mt-3 text-sm">Zero new EXP and materials. {r.result.reason === 'hp-zero' ? 'Party HP reached zero.' : r.result.reason === 'turn-limit' ? 'The drag limit was reached.' : 'You chose to abandon.'} Earlier levels, Items and map wins were not removed.</p>}
     </PuzzleCard>
     <section aria-label="Exact entrant EXP and level changes" className="grid gap-2">{puzzleResultEntrants(r).map(row => <PuzzleCard key={row.entrant.outfitId}>
