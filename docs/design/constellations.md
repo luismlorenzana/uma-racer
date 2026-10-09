@@ -369,6 +369,12 @@ atomically, for good; a stale screen reloads the grid without spending.
 
 ## Extra stats
 
+**Planned replacement, not shipped:** [M031](../tasks/M031-farm-kitchen-rework.md) / T123–T124 introduces
+[meal-funded shared block maps](farm-kitchen-rework.md#9-extra-stats-map-and-ownership), 65 nodes and four
+independent active distance builds through a separate Farm allowance. The existing rules below stay live
+until guarded release. Old Farm/Extra progress will reset once with an archive; cards, CL and Inspiration
+stay untouched. [Integration contract](../technical/farm-kitchen-implementation.md#8-extra-stats-and-racing).
+
 Each scenario has a grid of **20 Extra stat nodes**, four of each stat, beside its tree (D235). It belongs to that
 scenario's trained unit, like its card set.
 

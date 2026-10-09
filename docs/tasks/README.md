@@ -11,11 +11,15 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**Owner Farm rework — definition in review, implementation not started.** The
-[production/cooking draft](../design/farm-kitchen-rework.md) and [research](../research/farm-kitchen-games.md)
-cover five fully open six-station districts, two jobs per outfit level, original batched recipes, shared-block Extra Stats,
-candidate balance and a future narrowly scoped reset. Existing Farm remains live. Review the definition before
-assigning numbered specs or executing any cutover; the proposed delivery units do not consume task numbers yet.
+**[M031 — Farm production/cooking rework](M031-farm-kitchen-rework.md) — specified, implementation not started.**
+The owner authorized full task authoring through production release (D298–D299).
+[Design](../design/farm-kitchen-rework.md), [technical contract](../technical/farm-kitchen-implementation.md)
+and [research](../research/farm-kitchen-games.md) cover thirty fully open spots, independent outfit levels,
+scenario-specific symmetric ingredients, batched recipes, shared-block Extra Stats and the guarded future reset.
+Work one task/green PR/merge at a time: T118 rules/balance → T119 save/sync → T120 dormant cutover → T121 real
+host → T122 Farm/cookbook screens → T123 Extra/race wiring → T124 complete production release. T118–T123 keep
+normal capabilities off; existing Farm remains live until the whole loop and backup/reset are ready. No reset
+or deployment is executed by this documentation plan. Fixed choices are settled; measured balance/device checks remain.
 
 **M030 / T116 — Uma Puzzles release is complete** (D289–D290): the owner approved verified
 **original-placeholder art** for production, so permitted PAD portraits no longer block release.
@@ -47,6 +51,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
+| [M031 — Farm production and cooking](M031-farm-kitchen-rework.md) | [T118 rules](T118-farm-kitchen-rules.md) · [T119 sync](T119-farm-kitchen-save-sync.md) · [T120 cutover](T120-farm-kitchen-cutover.md) · [T121 host](T121-farm-kitchen-host.md) · [T122 screens](T122-farm-kitchen-screens.md) · [T123 Extra Stats](T123-farm-kitchen-extra-stats.md) · [T124 release](T124-farm-kitchen-release.md) | Specified; pick up T118 first, one PR/merge at a time |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -61,7 +66,8 @@ The owner's device checks (every milestone's, including Spark Rival Circuit's ph
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M031 and T118.** M030/T106–T117 belong to the completed Puzzle sequence. Numbers are never
+**Next free numbers: M032 and T125.** M031/T118–T124 belong to the planned Farm rework;
+M030/T106–T117 belong to the completed Puzzle sequence. Numbers are never
 reused, so a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break
 branch and is not reused.
 

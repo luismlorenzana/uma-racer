@@ -23,8 +23,10 @@ rules stay in [Minigames](minigames.md); this page is what they have in common.
 - **No per-turn luck the player cannot see.** Every roll comes from the run's seed; anything that will happen next is
   shown before the player commits (a rival's intent, a facility's target).
 
-[Stable Farm](farm.md) is deliberately outside this kit. Its [production/cooking rework draft](farm-kitchen-rework.md)
-is in owner review (D294), not implemented, and keeps that asynchronous boundary. The shipped Farm is a synced
+[Stable Farm](farm.md) is deliberately outside this kit. Its [production/cooking rework](farm-kitchen-rework.md)
+is specified as [M031](../tasks/M031-farm-kitchen-rework.md) / T118–T124 (D298–D299), not implemented, and keeps
+that asynchronous boundary. The [planned contract](../technical/farm-kitchen-implementation.md) uses its own
+economic commands, not `MinigameHost`. The shipped Farm is a synced
 account activity with a persistent
 outfit crew, a field that grows plot by plot in Sections of six and persisted deadlines, not a ticketed run with a seed, action
 journal, terminal result or win/loss. It may reuse visual primitives and `PagedGuide`, but it must not be forced through

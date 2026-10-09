@@ -1,5 +1,12 @@
 # Architecture
 
+## Planned Farm production/cooking replacement
+
+[M031](../tasks/M031-farm-kitchen-rework.md) / T118–T124 is specified, not implemented (D298–D299).
+[The planned contract](farm-kitchen-implementation.md) adds versioned Farm commands/rows, shared block Extra
+maps, canonical/pending stock and an archived once-only Farm/Extra reset. Existing Farm described below remains
+live until T124; additive intermediate tasks do not execute that reset or change other modes.
+
 ## Global card progression (D255)
 
 Card rows have independent schema 1: `{ schemaVersion: 1, templateId, stars: 0..3, maxCouponGranted }`.

@@ -12,23 +12,24 @@ until pinned in domain tests and a decision.
 
 ## Farm production and cooking — definition review
 
-The owner requested planning before implementation. The [full draft](design/farm-kitchen-rework.md) incorporates
-five fully open districts, batched recipes, independent outfit levels, Energy and the eventual Farm/Extra Stats reset. No reset or gameplay
-change has been executed. The remaining choices are interpretations/new balance proposals, not questions that
-reopen the owner's stated requirements:
+The owner accepted the direction and requested full task authoring through production release.
+[M031](tasks/M031-farm-kitchen-rework.md) / T118–T124 and the [implementation contract](technical/farm-kitchen-implementation.md)
+now carry the [definition](design/farm-kitchen-rework.md). No reset/gameplay/deployment has been executed.
+These are remaining implementation/evidence checks, not questions reopening the fixed direction:
 
 | Review point | Recommendation |
 |---|---|
-| Is one bought map shared across each five-scenario block, and should recipe access be shared? | Share purchases per outfit/block, keep scenario/distance activations. Recommended: each outfit needs the block's starting Farm level, but the first eligible outfit at local Lv6/9 unlocks processing/cooking recipes account-wide, so new workers can specialize |
-| How do levels and production stay rewarding without bottlenecks? | Owner chose two jobs/level: 24 EXP/level, 12/job. Recommend no expertise, fixed 6h, raw 6 / processing 6 / kitchen 1–4 meals. Full-map bill 87 jobs fits the 98-job personal Lv50 path; 49 days at two/day, about 33 at three. Full 6/6/6/6/6 throughput fits the canonical mix; validate fresh-account/timed sims before pinning |
-| How large should Farm's independent stat contribution be, and how should Foundation apply? | Owner flagged the first budget as too large. Revised candidate: 65 nodes, 20 total raw/node, capacity 18 + 2 per scenario, giving 360→520 over scenarios 1–5; preserve card-node values, add Farm once after growth/before caps, no extra Foundation bonus. Approve only after synthetic stat/race checks |
-| What happens to old stock/ongoing jobs at the requested reset? | Keep legacy crop stock and one final legacy-output-only claim, no new EXP/recipe progress. Map old eighteen assignments/jobs onto the three raw districts; all thirty stations are open, Workshop/Kitchen initially empty. One-time generation/recovery archive preserves unrelated progression |
+| Production cadence / bottlenecks | T118 runs a modest actual-time/material sim for solo, smaller crew and 6/6/6/6/6 specialists. Baseline 24 EXP/level, 12/job, 6 h, raw 6/process 6/kitchen 1–4; 87 canonical jobs versus 98 to Lv50. Account items and personal level dates remain separate |
+| Scenario ingredient variety / gates | T118 validates 14 distinct 35 raw/45 processed rows, equal stat/family costs and optional raw gates 1+10×(index−1). Same-block foods feed 16 meal recipes and one bought map; shared local 6/9 processing/cooking milestones avoid forcing every newcomer through raw rotation |
+| Farm allowance / racing gaps | Baseline 65 nodes, 20 total/node, capacity 18+2 per scenario: 360→520 over 1–5. Preserve cards, add Farm once after growth/before caps, no extra Foundation multiplier. T118/T123/T124 report stat/race checks and remaining directional gaps before pinning/release |
+| Reset and legacy safety | T120 rehearses generation/archive/whitelist/retry/second-device guards, retain old stock/jobs once for 0 new EXP, map 18 workers to raw districts. T124 alone activates the fully integrated replacement; no manual save edit or unrelated reset |
+| Real pacing / iPhone / second device | Owner checks after production release, with exact Home→Farm→meal→Extra→race paths. Synthetic browser proof and deployment checks cannot sign off owner play or installed PWA behaviour |
 
 Ingredient symmetry is now explicit: all five stats have equal family counts, recipe costs and canonical full-map
 demand, including milk/cheese variants and a direct Guts lane; no real-world nutrition rules (D295). This replaces
-the original restricted raw-lane interpretation. D297 supersedes D296's nine-spot start/expansion with all
-6/6/6/6/6 spots open. Two-job levels and the recommended no-expertise/batched capacity plan remain. Remaining numbers are candidates; the definition PR stays unmerged for
-owner review. Formal task numbers follow approval.
+the original restricted raw-lane interpretation. D297 removes the nine-spot start/expansion; D298–D299 authorize
+the seven-task plan and scenario flavour contract. New balance values are implementation baselines until
+verified/pinned; existing Farm still runs its old rules. No unanswered owner choice blocks T118.
 
 ## Uma Puzzles — owner choices resolved
 

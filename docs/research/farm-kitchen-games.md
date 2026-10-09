@@ -1,6 +1,7 @@
 # Farm production and cooking — research notes
 
-**Researched 2026-10-08.** Planning for the owner's new [Farm/cooking definition](../design/farm-kitchen-rework.md).
+**Researched 2026-10-08.** Planning for the owner's new [Farm/cooking definition](../design/farm-kitchen-rework.md),
+now specified in [M031](../tasks/M031-farm-kitchen-rework.md). Implementation has not started.
 This supplements the earlier [farming comparison](farming-games.md); it does not change shipped rules.
 Only primary/developer sources are used below. No source art, extracted rows or recipe dataset was imported.
 
@@ -58,7 +59,7 @@ tiers, cookbook records and meal-funded builds**, not station expansion or an ag
 6. **A rewarding short check-in.** Ready jobs wait without spoiling. Collect all, a clear level/item reveal and
    deliberate Repeat make a large crew manageable; no automatic ingredient spending or absence penalty.
 
-These are proposed Uma Farm features inspired by the references, not claims that each source game has the
+These are Uma Farm's planned adaptations inspired by the references, not claims that each source game has the
 same rules. The baseline remains an asynchronous planning/collection loop, not thirty mandatory Cooking Mama
 gesture challenges. Its concrete payoff is a prepared meal buying a named Extra Stats node for a chosen outfit.
 
@@ -130,7 +131,7 @@ simulation before release. Removing expertise alone cannot fix a yield/capacity 
 Recommendation: remove expertise, keep thirty physical spots, and increase production per job. Also propose
 shared recipe milestones at the first worker's local Lv6/9, retaining each outfit's personal ingredient-block
 eligibility. Otherwise every new cook still has to do sixteen early jobs before her personal Lv9. These are
-explicit reviewable changes, not assumptions that the owner already approved them.
+implementation baselines to verify/pin in T118, not claims that measured sims or a production release already exist.
 
 ## Reduced stat budget retained
 

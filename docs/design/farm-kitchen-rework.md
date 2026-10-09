@@ -1,9 +1,11 @@
 # Uma Farm — production and cooking rework
 
-> **Owner-review draft · 2026-10-08 · not implemented.** This is the proposed replacement for
+> **Implementation definition · 2026-10-08 · not implemented.** The owner authorized full task authoring for
+> [M031](../tasks/M031-farm-kitchen-rework.md). This is the planned replacement for
 > [Stable Farm](farm.md) and its [Extra Stats grid](constellations.md#extra-stats), not a description of production.
 > The owner's requirements are distinguished from recommendations below. Candidate numbers do not change the
-> running game or its domain pins. Approve/revise this definition before assigning implementation task numbers.
+> running game or its domain pins. [The implementation contract](../technical/farm-kitchen-implementation.md)
+> and T118–T124 cover rules through production release. This documentation does not execute the reset or deploy code.
 
 > **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
 > real-world nutrition rules or special Guts tax. The earlier 60-point/node proposal is replaced by a smaller
@@ -12,7 +14,9 @@
 > **Capacity/pacing revision:** keep **6/6/6/6/6**, with all thirty spots open from the start and no slot expansion.
 > Two jobs now earn one outfit level. Removing expertise,
 > a fixed six-hour timer, larger production batches and shared recipe access are the recommended rebalance,
-> not implemented or owner-approved constants. §3 and §11 separate personal levels from account throughput.
+> the implementation baseline pending T118's bounded balance proof, not shipped/pinned constants.
+> §3 and §11 separate personal levels from account throughput. Every registered scenario has its own ingredient
+> variants (§6), while meals and bought maps remain shared within five-scenario blocks.
 
 ## 1. Intent and boundaries
 
@@ -37,8 +41,8 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
   kitchens make the final unlock consumables. Only final meals unlock nodes.
 - Processing preserves an ingredient's stat identity and doubles its contribution to a recipe.
 - Each outfit retains independent Farm EXP/levels. **Two completed jobs per level-up**, as in the shipped curve.
-  The owner is considering dropping expertise so workers can remain in a chosen job instead of rotating through
-  every district; the recommended no-expertise design is below. No compulsory return at the deadline.
+  Remove expertise so workers can remain in a chosen job instead of rotating through every district.
+  No compulsory return at the deadline.
 - A larger Extra Stats map with five stat clusters, single-stat and dual-stat nodes, and five central all-stat
   nodes. Five successive scenarios allow more active nodes; the next block uses new items and a new map.
 - Meals buy permanent unlocks. Which unlocked nodes are active remains freely configurable within capacity.
@@ -49,12 +53,12 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
   Level. Do not migrate those bonuses or levels into equivalent new progress.
 - Compact district screens: all six stations visible without page scrolling at 390 × 844.
 
-### Recommended interpretations to review
+### Implementation baseline and balance candidates
 
 | Topic | Draft choice | Why |
 |---|---|---|
 | Five-scenario map | Unlocks shared by outfit across scenarios 1–5; a new map for 6–10, then 11–15 | One purchase is not paid five times; each scenario still has its own active builds |
-| Farm level gates | Personal block eligibility at Lv1/51/101…; the first eligible worker at local Lv6/9 unlocks processing/cooking recipes for that block account-wide | New workers can specialize without all repeating raw-work prerequisites |
+| Farm level gates | Personal block eligibility at Lv1/51/101…; optional raw scenario variants at Lv1 + 10 × (index − 1); first eligible worker at block-local Lv6/9 unlocks processing/cooking account-wide | New workers can specialize without all repeating raw-work prerequisites; new flavours do not gate the shared map |
 | Ingredient symmetry | All five stat lanes in each raw district; identical costs/yields and mirrored recipes | No missing Guts source or stat-specific ingredient tax; food flavour is presentation |
 | Processing's double value | One processed unit has two ingredient-potency units; not a direct racing-stat buff | Ingredients are only inputs, and activating a purchased node is not another meal consumption |
 | Expertise | Remove it; use a fixed six-hour job duration | No rotation tax or five extra XP tracks; three daily check-ins become practical |
@@ -62,7 +66,9 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
 | Proposed progression | 24 EXP/level; 12 EXP/job, regardless of batch size | 98 jobs to Lv50: 49 days at two/day or about 33 at three/day |
 | Proposed Extra Stats | 65 nodes; each active node distributes 20 raw points; capacity 18 + 2 × (scenario index − 1) | Starts at 360 total, rather than jumping from the old 240/360 to 960 |
 
-These choices, including every new balance number, are **proposals**, not additional owner approvals.
+These are the task-authoring baseline. T118 verifies and pins the new numbers with a decision; changes must update
+this definition, domain pins and sim envelopes together. Do not reopen fixed scope choices or treat arithmetic as
+measured gameplay. A failed balance witness is reported explicitly, not hidden by grants or a larger stat budget.
 
 ## 2. What changes from production
 
@@ -134,15 +140,15 @@ recipes for the account permanently. Other workers only need that block's starti
 Thus a new Lv1 outfit can work in Block 1's kitchen once the recipe milestone is earned, gaining her own EXP
 without rotating through Garden first. A Lv1 outfit still cannot cook Block 2 food; she needs personal Lv51.
 
-This shared recipe gate is a proposal to address specialization, not merely renaming the former personal gate.
+This shared recipe gate addresses specialization, rather than merely renaming the former personal gate.
 Without it, removing expertise would still force every new kitchen worker through sixteen early raw/other jobs
-to reach Lv9. Record the approved eligibility rule explicitly before implementation. At two completions/day,
+to reach Lv9. At two completions/day,
 the first outfit reaches Lv6 after five days and Lv9 after eight; open station spots may wait for those milestones.
 
-**This is a deliberate recommendation:** do not repeat the same processing/cooking unlock every ten levels
-inside a shared block. Doing so would contradict the idea that Scenario 1 can buy the full shared map, unless
-later scenarios merely add optional flavours. If the owner wants five separate ten-level recipe ladders,
-rewrite both access gates and the full-map production proof before implementation.
+Do not repeat the same processing/cooking unlock every ten levels inside a shared block. Later scenarios add
+optional raw flavours, not required ingredients or a second processing/cooking ladder. The first scenario's
+ingredients can fund the whole block map. Raw gathering requires that variant's personal gate; a processor/cook
+only needs personal block eligibility plus the shared job-kind milestone, even when using later same-block stock.
 
 An outfit may farm unlocked ingredient blocks before reaching their racing scenario. Consumption requires a
 real scenario unit in that block; Farm never creates scenarios or raises racing/CL. Display block labels as
@@ -154,7 +160,7 @@ Batch output does not multiply EXP: one kitchen job making four meals is still o
 There is no diminishing EXP for old blocks: old ingredients remain useful for newly acquired outfits. A
 max-level worker cooking for another outfit still gains her own EXP; the consumer does not inherit it.
 
-## 5. Specialization and deadlines — recommended no-expertise version
+## 5. Specialization and deadlines — no-expertise baseline
 
 Drop the five expertise XP/rank tracks. They encourage cycling every outfit through every job to get its best
 timer, precisely the repetition the owner wants to avoid. A worker can remain a grower, processor or cook by
@@ -179,17 +185,18 @@ actual four check-ins, including overnight for uninterrupted six-hour slots; nev
 
 ## 6. Raw catalogue
 
-Names are original recipe definitions, not extracted game content. The same family catalogue is namespaced by
-ingredient block; a Block 1 carrot is not a Block 2 carrot. The icon can reuse its original silhouette with a
-clear block badge. Raw harvests cost no inventory and yield **six units** per completed job.
+Names are original recipe definitions, not extracted game content. Each registered scenario has a distinct
+raw/processed catalogue, grouped into its five-scenario ingredient block. The icon can reuse an original
+silhouette with a clear stat glyph and scenario/block badge. Raw harvests cost no inventory and yield **six
+units** per completed job. The following is the first scenario's canonical row:
 
 | Stat | Garden vegetable | Orchard fruit | Barn milk variant |
 |---|---|---|---|
-| Speed | Carrot | Apple | Swift Milk |
-| Stamina | Potato | Banana | Steady Milk |
-| Power | Turnip | Pear | Strong Milk |
-| Guts | Pumpkin | Peach | Brave Milk |
-| Wit | Spinach | Berry | Bright Milk |
+| Speed | Carrot | Apple | Meadow Swift Milk |
+| Stamina | Potato | Banana | Meadow Steady Milk |
+| Power | Turnip | Pear | Meadow Strong Milk |
+| Guts | Pumpkin | Peach | Meadow Brave Milk |
+| Wit | Spinach | Berry | Meadow Bright Milk |
 
 The labels are fantasy ingredient identities, **not nutrition claims**. Guts is as straightforward to source as
 Speed; no recipe has to borrow Stamina/Power ingredients to make a Guts output. Each vegetable/fruit has the same
@@ -197,12 +204,53 @@ availability, yield, timer, EXP and processed options as its counterparts in the
 
 Barnyard also offers **Egg, Chicken, Beef and Pork**, each in the same five Swift/Steady/Strong/Brave/Bright variants.
 Milk is the canonical first choice, not the only useful animal produce. Each stat therefore has seven raw
-definitions per block: one vegetable, one fruit, and five barn families. The full catalogue has **35 raw
+definitions per scenario: one vegetable, one fruit, and five barn families. Each scenario has **35 raw
 definitions**, equal counts for every stat. Use category silhouettes with explicit stat glyphs rather than
-thirty-five bespoke animal portraits. All families open at the block's raw gate; no unequal flavour gates.
+thirty-five bespoke animal portraits. All families in one scenario open at the same personal gate; no unequal
+stat/family gates.
 
 Symmetry means equal catalogue coverage and cost for equivalent stat roles. It does not mean the player must
 produce every optional flavour in equal quantities: choosing milk instead of eggs is a preference, not a tax.
+
+### Scenario-by-scenario variety
+
+Resolve indices through the registered scenario order; never parse English names or create a fifteenth scenario.
+The column order in both lists is **Speed / Stamina / Power / Guts / Wit**. These are authored Uma Racer food
+names, not borrowed game rows. Barn names combine the row's theme + Swift/Steady/Strong/Brave/Bright + family
+(Milk, Egg, Chicken, Beef or Pork); e.g. Meadow Swift Milk becomes Meadow Swift Cheese.
+
+| Index | Garden variants | Orchard variants | Barn theme | Raw Farm Level |
+|---:|---|---|---|---:|
+| 1 | Carrot / Potato / Turnip / Pumpkin / Spinach | Apple / Banana / Pear / Peach / Berry | Meadow | 1 |
+| 2 | Radish / Sweet Potato / Corn / Bell Pepper / Broccoli | Strawberry / Orange / Plum / Cherry / Grape | Sunrise | 11 |
+| 3 | Cucumber / Yam / Beet / Ginger / Leek | Apricot / Mango / Kiwi / Pineapple / Raspberry | Brook | 21 |
+| 4 | Asparagus / Taro / Garlic / Chili Pepper / Celery | Melon / Papaya / Fig / Persimmon / Blackberry | Hilltop | 31 |
+| 5 | Snap Pea / Parsnip / Onion / Horseradish / Kale | Nectarine / Guava / Lychee / Pomegranate / Blueberry | Festival | 41 |
+| 6 | Golden Carrot / Eggplant / Daikon / Butternut Squash / Cabbage | Golden Apple / Plantain / Asian Pear / White Peach / Mulberry | Horizon | 51 |
+| 7 | Green Bean / Cassava / Fennel / Shishito Pepper / Chard | Redcurrant / Clementine / Damson / Sour Cherry / Muscat Grape | Harvest | 61 |
+| 8 | Zucchini / Lotus Root / Artichoke / Red Pepper / Romanesco | Loquat / Passion Fruit / Green Kiwi / Dragon Fruit / Cranberry | Blossom | 71 |
+| 9 | Okra / Acorn Squash / Bamboo Shoot / Mustard Greens / Scallion | Honeydew / Starfruit / Date / Quince / Gooseberry | Amber | 81 |
+| 10 | Snow Pea / White Beet / Kohlrabi / Radicchio / Watercress | Blood Orange / Jackfruit / Longan / Tangerine / Blackcurrant | Twilight | 91 |
+| 11 | Heirloom Carrot / Purple Potato / Red Turnip / Sugar Pumpkin / Baby Spinach | Honey Apple / Red Banana / Bosc Pear / Yellow Peach / Golden Berry | Starlight | 101 |
+| 12 | Cherry Radish / Honey Yam / Rainbow Corn / Sweet Pepper / Tender Broccoli | Alpine Strawberry / Mandarin / Greengage / Rainier Cherry / Concord Grape | Cloud | 111 |
+| 13 | Persian Cucumber / Golden Taro / Ruby Beet / Fresh Ginger / Young Leek | Blush Apricot / Honey Mango / Gold Kiwi / Sweet Pineapple / White Raspberry | Jubilee | 121 |
+| 14 | White Asparagus / Water Chestnut / Pearl Onion / Wasabi Root / Savoy Cabbage | Cantaloupe / Red Papaya / Purple Fig / Fuyu Persimmon / Boysenberry | Aurora | 131 |
+
+For index `s`, raw eligibility is `1 + 10 × (s − 1)`. Later variants are optional variety, not stronger yields,
+faster timers or bigger node rewards. A new scenario adds one equally distributed row at the same formula.
+Display actual scenario names through the existing registry and the original food names through this catalogue.
+
+The current fourteen scenarios supply **490 raw** definitions. Processing retains the input's scenario variant,
+so there are **630 processed** definitions. Kitchen recipes accept any same-stat candidate in the **same block**,
+including mixed scenario variants. Their outputs deliberately collapse to **16 meal signatures per block**
+(48 currently), not 224 separate required meal sinks. Including one Energy definition, there are 1,169 new Item
+definitions, lazy-loaded; legacy produce and unrelated global Items remain separately supported.
+
+No conversion/exchange is needed to combine same-block stock. Each ingredient slot chooses one concrete item ID;
+one slot's batch cost cannot silently split among several short stacks. The shopping plan may suggest another
+legal variant, but the confirmation freezes the exact IDs and quantities. Never substitute across a block
+boundary. Cookbook records track the 16 recipes; variant discovery is a view of actual claimed Items, not another
+reward currency or permanent stat multiplier.
 
 ## 7. Workshop catalogue and processing value
 
@@ -222,15 +270,16 @@ for a raw unit. Processing adds value through work; it does not spend racing sta
 | Beef stock | Beef of the stat | Speed / Stamina / Power / Guts / Wit |
 | Cured ham | Pork of the stat | Speed / Stamina / Power / Guts / Wit |
 
-This is **45 explicit processed definitions** (nine families × five stats), materialized from bounded family/stat
+This is **45 explicit processed definitions per scenario** (nine families × five stats), materialized from bounded family/stat
 templates rather than a free-form ingredient editor. Cheese is no longer reserved for Wit or ham for Power.
 Every stat has the same nine processed choices, and every choice has the same batch cost, potency and timer.
 Swift Milk → Swift Cheese and Brave Milk → Brave Cheese are mechanically identical apart from the stat label.
 
 Recipes use a processed **slot** for each required stat and allow any of its nine listed processed choices in
-the same block. Cheese is the canonical default for all five stats and the arithmetic below; the player may
+the same block, with the selected scenario variant shown. Cheese from the block's first scenario is the
+canonical default for all five stats and the arithmetic below; the player may
 choose other flavours without changing output signature, yield, timer, EXP or node reward. A raw slot similarly
-accepts the seven listed raw definitions of its stat; canonical choices keep shopping plans predictable.
+accepts the seven raw families of its stat from any registered scenario in the block; canonical choices keep shopping plans predictable.
 
 No replacing a processed slot with raw food in v1: the workshop must remain part of the loop. No substitutions
 between blocks or stat lanes. Display the chosen input item and exact quantity before starting and freeze them
@@ -290,8 +339,9 @@ stats. It buys one of the five central Sun nodes; Guts needs no exceptional comb
 The player needs five banquets for all five Sun nodes, not five different compulsory rare recipes.
 
 The catalogue has **sixteen meal families** per block. Single-stat nodes share their stat's meal; the ten dual
-recipes each match their pair. Later blocks initially reuse these readable recipes with tiered ingredients;
-new original names/art can enrich them after balance, without multiplying the required shopping list.
+recipes each match their pair. Each block uses its own ingredient variants and meal IDs with these readable
+recipe names. Scenario variety is required at launch (§6), not deferred until after release; it does not multiply
+the required meal shopping list.
 
 ### Planning tools, not chores
 
@@ -375,8 +425,9 @@ the template or deliberately re-author the capacity curve. This is not an infini
 Switching bought nodes on/off is free outside a race, changes no Items, and never raises CL. Display capacity,
 each affected stat, marginal capped gain and cap waste before selecting. A purchase can auto-activate only in
 the selected preset while capacity remains, with the resulting delta shown; otherwise it stays bought/idle.
-New scenario units may copy valid active IDs from the previous scenario's matching preset **within the same
-block** once at creation, then keep independent selections. New-block units start empty; no old IDs are remapped.
+New scenario units start with empty active selections, including within a block. Shared bought nodes are already
+available to select; opening a scenario never automatically copies a distance build or changes another unit.
+New-block maps start unbought; no old IDs are remapped.
 
 ### Stat derivation: protect cards while adding a real Farm budget
 
@@ -392,8 +443,8 @@ would reduce card-node value, undoing the reason for this rework. The implementa
 4. **Revised candidate:** Foundation, growth and other existing multipliers do not scale this separate Farm
    vector again. No flat +120 Foundation replacement is added. Its Scenario 1 Farm ceiling is already 360,
    matching the old Foundation raw ceiling; later ceilings rise linearly instead of dropping when Foundation
-   disappears. Retain Foundation's existing non-Farm effects. This new boundary needs explicit balance
-   approval, matching docs/pins and a decision before implementation.
+   disappears. Retain Foundation's existing non-Farm effects. T118 verifies this boundary against actual
+   source-specific stat matrices and pins the settled baseline with matching docs and a decision; T123 wires it.
 5. Keep the existing final stat caps, race engine, skill SP, aptitudes and Inspiration calculations. Document
    the old combined-budget invariance as superseded only for Farm; card-only invariance must still hold.
 
@@ -646,18 +697,23 @@ and attempt. An identical retry returns the original receipt; same ID/different 
 for gameplay or ID generation. Pure domain modules do no I/O; explicit API parsers and their mirror validate
 the same recipes, bounds and invariants. API routes remain authenticated. No new production infrastructure.
 
-Local starts/spends commit the job, Items, XP/unlocks, receipt and outbox in one Dexie transaction. Sync validates
-authoritative revisions and applies the whole command or rejects it, with no partial debit/output. Offline
-predictions must remain marked pending until canonical acceptance; if a competing device spent the ingredients,
-show rejected/pending jobs honestly instead of continuing a free canonical craft. Do not build descendants from
-unacknowledged stock on another device. A lost acknowledgement retries the original command, not another job.
+Local starts/spends atomically persist the immutable intent, pending job/Item/EXP/build deltas and outbox in
+Dexie. Acknowledged tables stay canonical: pending deltas are not ordinary Item uploads or permanent race stats.
+Sync validates authoritative revisions and applies the whole command or rejects it, with no partial debit/output.
+Accepted receipts atomically install canonical entities/evidence and settle pending markers. If a competing
+device spent the ingredients, show rejected/pending jobs honestly instead of continuing a free craft. Same-device
+offline descendants require explicit dependency receipts and replay; another device cannot consume unacknowledged
+stock. A lost acknowledgement retries the original command, not another job. See the standing technical contract.
 
 Different stations can progress concurrently; command references must be bounded to the economic/worker/build
 entities actually read, not all outfits and every historical job. Test transport worst cases against current
 sync ceilings; **do not raise limits to make the Farm fit**. Keep per-job receipts/evidence separately from a
 large aggregate projection, and avoid loading all historical jobs into a single unbounded save document.
-Shared recipe milestones derive from checked level-crossing receipts, not an unbounded read of every worker
-on every Start. Recipe milestone evidence includes this reset generation; legacy claims do not count.
+Shared recipe milestones derive from a checked Claim's resulting worker level, not an unbounded read of every
+worker on every Start. A Claim opens every registered block milestone that level qualifies for, even if the
+claimed job used an older block's recipe; a worker who already passed the threshold cannot deadlock a new block.
+Reference all registered recipe-block rows for this bounded effect (three today), and test the actual union.
+Evidence includes this reset generation; legacy claims do not count.
 
 When a second device opens the account, it adopts the acknowledged job with its original recipe/worker/deadline
 and does not restart time or choose new ingredients. Stale assignment or claim attempts reconcile without
@@ -677,7 +733,7 @@ pick concrete schema/Dexie versions from latest main at implementation, not stal
 Reset scope:
 
 - Every outfit's Farm Level to 1 and Farm EXP to 0, including idle workers not currently assigned to a plot.
-  No expertise fields or district expansion counters in the recommended version. All thirty spots start open,
+  No expertise fields or district expansion counters in the baseline. All thirty spots start open,
   with only Block 1 raw recipes available. Old aggregate Farm Level no longer exists as progression.
 - Every old Extra Stats purchase and active configuration for every outfit/scenario/distance preset to empty.
   New block maps start unbought. No free replacement meal, purchased node, inherited Produce bonus or Farm EXP.
@@ -694,7 +750,7 @@ deadline and allow one final legacy claim, paying only their old crop output and
 unlocks**. Map old slots 1–6 to Garden, 7–12 to Orchard, 13–18 to Barnyard and retain those worker assignments.
 An ongoing legacy job remains claimable once on its mapped station before a new recipe starts there.
 Workshop/Kitchen start unassigned. This layout
-mapping is a reviewable migration policy; do not silently discard jobs, owned outfits or inventory.
+mapping is the migration baseline T120 rehearses; do not silently discard jobs, owned outfits or inventory.
 
 Before any release mutation, keep a device-local/exportable pre-cutover recovery archive through the existing
 backup pattern. This is a safety archive, **not** normal preservation that restores old bonuses into the new
@@ -702,33 +758,31 @@ system. Interrupted migration must resume the same frozen reset cohort and recei
 snapshot blocks release cutover with an actionable error; no partial account clear. Test both cloud adoption
 and local upgrade, old-client rejection, retries, offline boot and second-device adoption with synthetic saves.
 
-## 17. Delivery sequence after approval
+## 17. Implementation sequence
 
-These are proposed delivery units, **not yet numbered task specs**. Each will need a full contract, fixtures,
-acceptance tests and a PR; recheck the next free milestone/task numbers after owner review.
+[M031](../tasks/M031-farm-kitchen-rework.md) sequences seven individually deliverable tasks, one PR/merge at a time:
 
-1. **Pure catalogue/progression and balance.** Original ingredient/recipe definitions, personal levels,
-   shared recipe gates, batches/deadlines, dependency arithmetic and modest Farm/stat sims. Settle
-   and pin constants before consuming saves.
-2. **Versioned Farm persistence/commands.** Strict domain/API formats, atomic raw/craft/claim/Energy receipts,
-   offline reconciliation, bounded sync references and synthetic migration rehearsals. Keep release dormant.
-3. **Thirty-station production UI.** Hub, five compact district screens, worker/recipe/cookbook/stock sheets,
-   original SVGs, reusable guide, claim results and Energy/debug item flow on the real host.
-4. **Shared-block Extra Stats.** Versioned 65-node template and bought sets, per-scenario/preset active selection,
-   real meal purchases, readable map/list/details, cap-aware stat derivation and card-only regression fixtures.
-5. **Cutover, release and owner device pass.** Verify exact reset/archive/legacy policies, all old entry points,
-   lazy bundle and current regressions; deploy only the complete integrated loop. Owner verifies physical iPhone,
-   real pacing, stats and second-device behaviour after release; record limitations and tune by evidence.
+1. [T118](../tasks/T118-farm-kitchen-rules.md): pure original catalogue/progression, recipe/Extra map rules and modest balance proofs.
+2. [T119](../tasks/T119-farm-kitchen-save-sync.md): additive records, semantic commands, strict API mirror and bounded atomic sync.
+3. [T120](../tasks/T120-farm-kitchen-cutover.md): dormant protected reset, private backup, legacy claim and second-device rehearsals.
+4. [T121](../tasks/T121-farm-kitchen-host.md): real save-backed host, canonical/pending projections, runtime and recovery.
+5. [T122](../tasks/T122-farm-kitchen-screens.md): five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy.
+6. [T123](../tasks/T123-farm-kitchen-extra-stats.md): shared block purchases, four independent distance builds, cap-aware map/list and real race integration.
+7. [T124](../tasks/T124-farm-kitchen-release.md): end-to-end balance, compatibility/deployment/PWA checks, guarded cutover activation and owner acceptance.
+
+The [technical contract](../technical/farm-kitchen-implementation.md) fixes record/command ownership and acceptance
+boundaries. T118–T123 remain capability-off on normal accounts; an isolated synthetic proof is not a release.
+T124 changes application capabilities only after integration/rehearsal, through the existing production workflow.
 
 Do not ship the new Farm detached from its Extra Stats consumer, or reset the account while its replacement UI
 is unavailable. No unrelated RPG/Puzzle rework, racing engine rebalance, Inspiration mechanics or private content
 publication is required for the baseline. The already-owned Uma art can be reused without another import.
 
-## 18. Definition review and eventual acceptance
+## 18. Implementation and release acceptance
 
-The most important owner review points are shared block ownership/gates, the proposed production cadence, and
-the independent Farm stat budget/Foundation treatment. [Open questions](../open-questions.md#farm-production-and-cooking--definition-review)
-tracks them without pretending the draft numbers are settled.
+The remaining checks are measured cadence, stock timing, the independent Farm stat budget and physical-device
+behaviour, not a request to reopen the fixed direction. [Open questions](../open-questions.md#farm-production-and-cooking--definition-review)
+tracks them without pretending baseline numbers are already pinned or release acceptance has happened.
 
 Before implementation closes:
 
