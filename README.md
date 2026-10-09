@@ -87,7 +87,8 @@ docs/           design, technical, research
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
 | [Minigames](docs/design/minigames.md) | Friendship earns global card stars; retired Spark rules remain for history |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
-| [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and constellation Produce consumption |
+| [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and crop-funded Extra Stats |
+| [Farm production/cooking draft](docs/design/farm-kitchen-rework.md) | Owner-review proposal, not shipped: five open districts, raw → processed → meals, outfit expertise, shared five-scenario Extra Stats maps and an explicitly scoped future reset |
 | [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties of four classes, Octopath-style break battles against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D282) |
 | [RPG classes and skill trees](docs/design/uma-rpg-classes.md) | Brawler, Mage, Cleric and Summoner: turns and hands, multi-part hits and weaknesses, every authored tree, node and number, Cleric blessings, summons and the balance check (D277–D282) |
 | [Uma Puzzles](docs/design/uma-puzzles.md) | Free global party campaign, replay-backed battles, scenario/style materials, debt/exchange and shared CL spending; protected preservation and private owner-export art (D287–D292) |
@@ -120,6 +121,7 @@ docs/           design, technical, research
 | [Spark Rival Circuit Research](docs/research/spark-rival-circuit.md) | Puzzle-battle adaptation, strategy advantage, deterministic touch architecture, and rejected scope |
 | [World Expeditions Research](docs/research/world-expeditions.md) | International Dirt and Turf specialist race pools, a unified eight-win completion rule, and source risks |
 | [Farming Game Research](docs/research/farming-games.md) | Popular farming loops compared against Stable Farm's plots, workers, offline clock, crop progression and inventory |
+| [Farm and Cooking Research](docs/research/farm-kitchen-games.md) | Primary-source production/cookbook comparisons, recommended mechanics and the draft's full-map ingredient arithmetic |
 | [Uma RPG Research](docs/research/uma-rpg.md) | Persona/Fire Emblem/Octopath comparisons, actual A-aptitude overlap and playable PriConne character-team/content direction |
 | [Race Mechanics Review](docs/research/race-mechanics-review.md) | Engine v7 against the original: target vs current speed, each phase, five departures with evidence, and what every stat buys |
 | [Race Engine R1 Findings](docs/research/race-engine-r1-findings.md) | First balance measurements of the race engine |

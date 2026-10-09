@@ -3,6 +3,10 @@
 > **Status: complete through M026, rebalanced by D234 and D237.** The rules/catalog, synced Farm and item-ledger runtime,
 > Home/Sections/field/worker/crop screens, global Item inventory and the Extra stats bridge (D235) are implemented.
 
+> **New definition in review (2026-10-08):** the [Farm production/cooking rework](farm-kitchen-rework.md) proposes
+> five fully open districts, per-outfit expertise, recipes and shared-block Extra Stats. It is not implemented;
+> the shipped rules below remain current until that definition is approved and its cutover releases.
+
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows, plot by plot,
 into three **Farm Sections** of six as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting
 adds produce to the global Item inventory, and the worker earns an outfit-specific Farming Level that opens the next

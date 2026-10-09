@@ -10,6 +10,22 @@ sync policy (D223) lets battle actions work offline but holds entry/result rewar
 commit is acknowledged; T090–T092 now implement that boundary, and any later change needs a new decision. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
 
+## Farm production and cooking — definition review
+
+The owner requested planning before implementation. The [full draft](design/farm-kitchen-rework.md) incorporates
+five open districts, recipes, expertise, Energy and the eventual Farm/Extra Stats reset. No reset or gameplay
+change has been executed. The remaining choices are interpretations/new balance proposals, not questions that
+reopen the owner's stated requirements:
+
+| Review point | Recommendation |
+|---|---|
+| Is one bought map shared across each five-scenario block, and does its full production chain open at local Farm Lv1/6/9? | Yes: unlock once per outfit/block, keep independent scenario/distance activations; do not gate the final recipes until Lv49 |
+| Are the proposed cadence and expertise rewarding? | Start with 48 EXP/level, 12 EXP/job, 4 raw / 2 processed / 1 meal; five expertise tracks per outfit/block. Canonical full-map bill is 149 jobs versus 196 to Lv50; validate modest timed sims before pinning |
+| How large should Farm's independent stat contribution be, and how should Foundation apply? | Draft 65 nodes, 60 total raw/node, capacity 16 + 2 per scenario; preserve card-node values, add Farm after growth/before caps, replace Foundation's oversized multiplier with bounded help. Approve only after synthetic stat/race checks |
+| What happens to old stock/ongoing jobs at the requested reset? | Keep legacy crop stock and one final legacy-output-only claim, no new EXP; retain mapped workers. Reset only the requested Farm levels and Extra Stats, with a one-time generation and recovery archive |
+
+Numbers are candidates; the definition PR stays unmerged for owner review. Formal task numbers follow approval.
+
 ## Uma Puzzles — owner choices resolved
 
 The owner accepted the [Uma Puzzles plan](design/uma-puzzles.md) on 2026-10-07 (D267), changing registration to

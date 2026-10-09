@@ -11,6 +11,12 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
+**Owner Farm rework — definition in review, implementation not started.** The
+[production/cooking draft](../design/farm-kitchen-rework.md) and [research](../research/farm-kitchen-games.md)
+cover five open six-station districts, outfit work/expertise, original recipes, shared-block Extra Stats,
+candidate balance and a future narrowly scoped reset. Existing Farm remains live. Review the definition before
+assigning numbered specs or executing any cutover; the proposed delivery units do not consume task numbers yet.
+
 **M030 / T116 — Uma Puzzles release is complete** (D289–D290): the owner approved verified
 **original-placeholder art** for production, so permitted PAD portraits no longer block release.
 [The design](../design/uma-puzzles.md) and [implementation contract](../technical/uma-puzzles-implementation.md)
