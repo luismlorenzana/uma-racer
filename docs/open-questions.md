@@ -10,6 +10,27 @@ sync policy (D223) lets battle actions work offline but holds entry/result rewar
 commit is acknowledged; T090–T092 now implement that boundary, and any later change needs a new decision. Draft numbers across the design docs are tuning values
 until pinned in domain tests and a decision.
 
+## Farm production and cooking — definition review
+
+The owner accepted the direction and requested full task authoring through production release.
+[M031](tasks/M031-farm-kitchen-rework.md) / T118–T124 and the [implementation contract](technical/farm-kitchen-implementation.md)
+now carry the [definition](design/farm-kitchen-rework.md). No reset/gameplay/deployment has been executed.
+These are remaining implementation/evidence checks, not questions reopening the fixed direction:
+
+| Review point | Recommendation |
+|---|---|
+| Production cadence / bottlenecks | T118 runs a modest actual-time/material sim for solo, smaller crew and 6/6/6/6/6 specialists. Baseline 24 EXP/level, 12/job, 6 h, raw 6/process 6/kitchen 1–4; 87 canonical jobs versus 98 to Lv50. Account items and personal level dates remain separate |
+| Scenario ingredient variety / gates | T118 validates 14 distinct 35 raw/45 processed rows, equal stat/family costs and optional raw gates 1+10×(index−1). Same-block foods feed 16 meal recipes and one bought map; shared local 6/9 processing/cooking milestones avoid forcing every newcomer through raw rotation |
+| Farm allowance / racing gaps | Baseline 65 nodes, 20 total/node, capacity 18+2 per scenario: 360→520 over 1–5. Preserve cards, add Farm once after growth/before caps, no extra Foundation multiplier. T118/T123/T124 report stat/race checks and remaining directional gaps before pinning/release |
+| Reset and legacy safety | T120 rehearses generation/archive/whitelist/retry/second-device guards, retain old stock/jobs once for 0 new EXP, map 18 workers to raw districts. T124 alone activates the fully integrated replacement; no manual save edit or unrelated reset |
+| Real pacing / iPhone / second device | Owner checks after production release, with exact Home→Farm→meal→Extra→race paths. Synthetic browser proof and deployment checks cannot sign off owner play or installed PWA behaviour |
+
+Ingredient symmetry is now explicit: all five stats have equal family counts, recipe costs and canonical full-map
+demand, including milk/cheese variants and a direct Guts lane; no real-world nutrition rules (D295). This replaces
+the original restricted raw-lane interpretation. D297 removes the nine-spot start/expansion; D298–D299 authorize
+the seven-task plan and scenario flavour contract. New balance values are implementation baselines until
+verified/pinned; existing Farm still runs its old rules. No unanswered owner choice blocks T118.
+
 ## Uma Puzzles — owner choices resolved
 
 The owner accepted the [Uma Puzzles plan](design/uma-puzzles.md) on 2026-10-07 (D267), changing registration to
