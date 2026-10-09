@@ -18,7 +18,8 @@ import { parsePuzzlePreservationRecord, preservationPageId } from './preservatio
 
 export const PUZZLE_ENTITY_KINDS = ['puzzleOutfits', 'puzzlePresets', 'puzzleCheckpoints', 'constellationBank', 'puzzleCohort', 'puzzlePreservation'] as const
 export const PUZZLE_LOG_KINDS = ['puzzleResults', 'puzzleOperations'] as const
-export const PUZZLE_PARTY_IDS = ['puzzle-party-1', 'puzzle-party-2', 'puzzle-party-3', 'puzzle-party-4', 'puzzle-party-5'] as const
+export const PUZZLE_PARTY_IDS = ['puzzle-party-1', 'puzzle-party-2', 'puzzle-party-3', 'puzzle-party-4', 'puzzle-party-5',
+  'puzzle-party-6', 'puzzle-party-7', 'puzzle-party-8', 'puzzle-party-9', 'puzzle-party-10'] as const
 export type PuzzleEntityKind = typeof PUZZLE_ENTITY_KINDS[number]
 export interface PuzzleOutfitSaveV1 { schemaVersion: 1; outfitId: string; enrollment: PuzzleEnrollmentV1; kit: PuzzleKit; revision: number }
 export interface PuzzlePartySlot { outfitId: string; kit: PuzzleKit }

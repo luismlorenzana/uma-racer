@@ -218,6 +218,14 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleUiProofScreen')).PuzzleUiProofShell }),
     children: puzzleSetupRoutes(),
   }, {
+    path: 'dev/puzzles-ui-proof/setup',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleUiProofScreen')).PuzzleUiProofShell }),
+    children: puzzleSetupRoutes(),
+  }, {
+    path: 'dev/puzzles-ui-proof/first-use',
+    lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleUiProofScreen')).PuzzleUiProofShell }),
+    children: puzzleSetupRoutes(),
+  }, {
     path: 'dev/puzzles-content-proof',
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzleContentProofScreen')).PuzzleContentProofScreen }),
   }, {

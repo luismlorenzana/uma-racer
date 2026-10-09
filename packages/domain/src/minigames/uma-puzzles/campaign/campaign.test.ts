@@ -101,6 +101,6 @@ describe('code-authored Puzzle campaign', () => {
       { kind: 'battle', scenarioId, partyId: 'puzzle-party-5', localId: 'c-dark', attempt: Number.MAX_SAFE_INTEGER }] as const)
       expect(parsePuzzleCampaignId(puzzleCampaignId(identity))).toEqual(identity)
     for (const id of ['pzb:puzzle-party-1:ura-finale:o1a:01', 'pzb:puzzle-party-1:ura-finale:o1a:-1', 'pzn:ura-finale:c-sixth',
-      'pzp:puzzle-party-6:ura-finale', 'pzc:missing', 'pzc:ura-finale:extra']) expect(parsePuzzleCampaignId(id)).toBeNull()
+      'pzp:puzzle-party-11:ura-finale', 'pzc:missing', 'pzc:ura-finale:extra']) expect(parsePuzzleCampaignId(id)).toBeNull()
   })
 })

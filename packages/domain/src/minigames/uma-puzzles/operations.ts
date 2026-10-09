@@ -175,6 +175,12 @@ export function parsePuzzleOperationResponses(v: unknown, operations?: readonly 
   return parsed
 }
 /** Static upper bound, including implicit protection reads and newly written receipts/evidence. */
+/** Outfit edits declare locks only for their current holders. The resolver checks this against all authoritative presets. */
+export function puzzleOutfitCheckpointReferences(payload: PuzzlePayload, parties: readonly PuzzlePresetSaveV1[]): string[] {
+  if (payload.kind !== 'correct' && payload.kind !== 'equip-outfit') return []
+  return parties.filter(p => p.slots.some(s => s?.outfitId === payload.outfitId))
+    .flatMap(p => SCENARIOS.map(s => `puzzleCheckpoints/pzp:${p.partyId}:${s.id}`)).sort()
+}
 export function puzzleOperationReferences(op: PuzzleOperationV1): { entities: string[]; logs: string[] } {
   const entities = new Set(['constellationBank/main', ...op.expected.map(key)]), logs = new Set([`puzzleOperations/${op.operationId}`, ...op.dependencies.map(d => `puzzleOperations/${d}`)])
   const p = op.payload
@@ -185,7 +191,7 @@ export function puzzleOperationReferences(op: PuzzleOperationV1): { entities: st
   }
   const item = (id: string) => { entities.add(`items/${id}`); logs.add(`itemLedger/${puzzleMovementId(op.operationId, id)}`) }
   if (p.kind === 'enroll') outfit(p.source.templateId)
-  if (p.kind === 'correct' || p.kind === 'equip-outfit') { outfit(p.outfitId); PUZZLE_PARTY_IDS.forEach(party) }
+  if (p.kind === 'correct' || p.kind === 'equip-outfit') { outfit(p.outfitId); PUZZLE_PARTY_IDS.forEach(id => entities.add(`puzzlePresets/${id}`)) }
   if (p.kind === 'save-party' || p.kind === 'equip-party') { party(p.party.partyId); p.party.slots.forEach(s => { if (s) outfit(s.outfitId) }) }
   if (p.kind === 'transfer') { party(p.fromPartyId); party(p.toPartyId); outfit(p.outfitId) }
   if (p.kind === 'open-chapter') { party(p.partyId); entities.add(`puzzleCheckpoints/pzp:${p.partyId}:${p.scenarioId}`) }
@@ -325,8 +331,15 @@ function resolveOne(ctx: PuzzleResolveContext, operation: PuzzleOperationV1): { 
       put('puzzleOutfits', id, { schemaVersion: 1, outfitId: id, enrollment: enrollPuzzleOutfit(p.source, p.element), kit, revision: 1 })
     } else if (p.kind === 'correct' || p.kind === 'equip-outfit') {
       expect('puzzleOutfits', p.outfitId); const o = outfit(p.outfitId)
-      requirePuzzle(!PUZZLE_PARTY_IDS.some(id => locked(id) && current('puzzlePresets', id) &&
-        parsePuzzlePresetSave(current('puzzlePresets', id)!.data)?.slots.some(s => s?.outfitId === p.outfitId)), 'locked', 'Outfit is in an open battle')
+      const holders = PUZZLE_PARTY_IDS.flatMap(id => {
+        const party = parsePuzzlePresetSave(current('puzzlePresets', id)?.data)
+        return party ? [party] : []
+      })
+      // Missing lock rows are not evidence of an idle party. A concurrent move requires a refreshed operation.
+      requirePuzzle(puzzleOutfitCheckpointReferences(p, holders).every(k => refs.entities.includes(k)),
+        'stale', 'Party membership changed; refresh the outfit edit')
+      requirePuzzle(!holders.some(party => party.slots.some(s => s?.outfitId === p.outfitId) && locked(party.partyId)),
+        'locked', 'Outfit is in an open battle')
       if (p.kind === 'correct') put('puzzleOutfits', p.outfitId, { ...o, enrollment: correctPuzzleElement(o.enrollment, p.element), revision: o.revision + 1 })
       else {
         const kit = parsePuzzleKit(p.kit, o.enrollment.source, o.enrollment.level)

@@ -64,6 +64,8 @@ outside `MinigameHost`, like RPG/Farm. It reuses pure engines, seeded replay, th
 its [own host/protocol](../technical/uma-puzzles-implementation.md) supplies local journals, exact-once economic
 operations and explicit same-seed takeover. Home is its entry. Owner-export PAD-derived cutouts (D292) satisfy the same
 private pack/atlas readiness gates as retained original placeholders (D289); missing content is never a gameplay fallback.
+Setup now follows D284/D293 in both global RPGs: ten parties, free-only level-first pickers, inline Swap/Remove,
+party-aware profile hops and 44 pt chip choices. Puzzle transfer remains a protocol operation, not a UI action.
 
 Protected save16 preservation keeps levels/builds, freezes old material debt, converts unapplied EXP once and
 retires Spark after active receipts. Settings/Hub download the preparing device's private whole-account backup.

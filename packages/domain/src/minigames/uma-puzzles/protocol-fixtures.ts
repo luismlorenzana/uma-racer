@@ -11,8 +11,11 @@ import { PUZZLE_FOE_ROLES } from './campaign/rules'
 import { createBattle, applyBattleAction } from './battle'
 import { puzzleBotAction } from './bots'
 import { puzzleBattleResult } from './replay'
-import { createPuzzleOperation, puzzleOperationReferences, resolvePuzzleOperations, type PuzzlePayload } from './operations'
+import { createPuzzleOperation, puzzleOperationReferences, puzzleOutfitCheckpointReferences, resolvePuzzleOperations, type PuzzlePayload } from './operations'
 import { puzzleData, puzzlePayloadHash, parsePuzzleOutfitSave, parsePuzzleCheckpointSave, parsePuzzlePresetSave, type PuzzleStoredEntity, type PuzzleStoredLog, type PuzzleOutfitSaveV1, type PuzzlePresetSaveV1 } from './records'
+import { SCENARIOS } from '../../scenarios'
+import { PUZZLE_PARTY_IDS } from './records'
+import { puzzleChapterStatus } from './campaign/progress'
 
 export function puzzleProtocolFixture(stock = 2, debt = 0) {
   const entities = new Map<string, PuzzleStoredEntity>(), logs = new Map<string, PuzzleStoredLog>()
@@ -34,6 +37,10 @@ export function puzzleProtocolFixture(stock = 2, debt = 0) {
   const operation = (payload: PuzzlePayload, id = 'invented-operation', dependencies: string[] = []) => {
     const provisional = createPuzzleOperation({ schemaVersion: 1, operationId: id, dependencies, expected: [], payload })
     const refs = puzzleOperationReferences(provisional).entities
+    refs.push(...puzzleOutfitCheckpointReferences(payload, [...entities.values()].flatMap(row => {
+      const party = row.kind === 'puzzlePresets' && !row.deleted ? parsePuzzlePresetSave(row.data) : null
+      return party ? [party] : []
+    })))
     if (payload.kind === 'settle') for (const s of sources) refs.push(`puzzleOutfits/${s.templateId}`, `umas/${s.templateId}`)
     return createPuzzleOperation({ schemaVersion: 1, operationId: id, dependencies,
       expected: [...new Set(refs)].map(k => { const [kind, rowId] = k.split('/'); return { kind: kind!, id: rowId!, version: entities.get(k)?.version ?? 0 } }), payload })
@@ -61,4 +68,26 @@ export function puzzleProtocolFixture(stock = 2, debt = 0) {
     return { kind: 'settle', checkpointId: state.input.checkpointId, inputHash: op.payload.encounter.inputHash, result: puzzleBattleResult(state) }
   }
   return { entities, logs, sources, party, chapter, operation, reserve, apply, put, win }
+}
+
+/** Worst-case setup test only: ten full parties and every chapter checkpoint, all invented. */
+export function puzzleTenPartyFixture() {
+  const f = puzzleProtocolFixture()
+  for (const [i, partyId] of PUZZLE_PARTY_IDS.entries()) {
+    const slots = f.sources.map((base, slot) => {
+      const outfitId = `invented-${i * 5 + slot}`, source = { ...base, templateId: outfitId }
+      f.put('umas', outfitId, { ...structuredClone(fixture.uma), templateId: outfitId })
+      const outfit: PuzzleOutfitSaveV1 = { schemaVersion: 1, outfitId, enrollment: enrollPuzzleOutfit(source, 'fire'), kit: defaultPuzzleKit(source)!, revision: 1 }
+      f.put('puzzleOutfits', outfitId, outfit)
+      return { outfitId, kit: outfit.kit }
+    })
+    f.put('puzzlePresets', partyId, { ...f.party, partyId, name: `Invented party ${i + 1}`, slots })
+    for (const scenario of SCENARIOS) {
+      const chapter = puzzleChapter(scenario.id), progress = createPuzzleCheckpoint(chapter, partyId)
+      const checkpointId = `pzp:${partyId}:${scenario.id}`
+      f.put('puzzleCheckpoints', checkpointId, { schemaVersion: 1, checkpointId, scenarioId: scenario.id, progress,
+        reached: puzzleChapterStatus(chapter, progress).reached, open: null, revision: 1 })
+    }
+  }
+  return f
 }

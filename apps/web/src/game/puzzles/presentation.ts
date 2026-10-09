@@ -24,7 +24,13 @@ export function puzzleRoster(owned: readonly string[], templates: ReadonlyMap<st
       return [{ id, name: template.name, template, outfit, source, elements,
         unavailable: styles.length ? null : 'No original A running style. She stays available in every other mode.' }]
     } catch { return [{ id, name: template.name, template, outfit, source: null, elements: [], unavailable: 'Original source needs verification.' }] }
-  }).sort((a, b) => Number(Boolean(b.outfit)) - Number(Boolean(a.outfit)) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+  }).sort(puzzleRosterOrder)
+}
+export function puzzleRosterOrder(a: PuzzleRosterEntry, b: PuzzleRosterEntry): number {
+  return Number(Boolean(b.outfit)) - Number(Boolean(a.outfit)) ||
+    (!a.outfit && !b.outfit ? Number(Boolean(a.unavailable)) - Number(Boolean(b.unavailable)) : 0) ||
+    (b.outfit?.enrollment.level ?? 0) - (a.outfit?.enrollment.level ?? 0) ||
+    a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
 }
 export function puzzleColourCounts(account: PuzzleAccount) {
   const counts: Record<PuzzleElement, number> = { fire: 0, water: 0, wood: 0, light: 0, dark: 0 }
@@ -62,13 +68,11 @@ export function puzzlePartySummary(party: PuzzlePresetSaveV1, account: PuzzleAcc
       rcv: Math.round(total('rcv') * (leader.stat === 'rcv' ? leader.multiplier : 1)), guard: total('guard'), resilience: total('resilience') },
     coverage: [...new Set(members.map(m => m.element))], leader: party.slots[0]?.outfitId ?? null }
 }
-export function puzzlePicker(account: PuzzleAccount, party: PuzzlePresetSaveV1, transfer = false) {
-  const draftIds = new Set(party.slots.flatMap(s => s ? [s.outfitId] : []))
-  return account.outfits.flatMap(outfit => {
-    if (draftIds.has(outfit.outfitId)) return []
-    const source = account.parties.find(p => p.partyId !== party.partyId && p.slots.some(s => s?.outfitId === outfit.outfitId)) ?? null
-    return Boolean(source) === transfer ? [{ outfit, source, blocked: Boolean(openPuzzleParty(account, party.partyId) || source && openPuzzleParty(account, source.partyId)) }] : []
-  })
+export function puzzlePartyCandidates(account: PuzzleAccount, name: (id: string) => string, owned: readonly string[] = account.outfits.map(o => o.outfitId)) {
+  const available = new Set(owned)
+  const assigned = new Set(account.parties.flatMap(p => p.slots.flatMap(s => s ? [s.outfitId] : [])))
+  return account.outfits.filter(o => available.has(o.outfitId) && !assigned.has(o.outfitId)).sort((a, b) =>
+    b.enrollment.level - a.enrollment.level || name(a.outfitId).localeCompare(name(b.outfitId)) || a.outfitId.localeCompare(b.outfitId))
 }
 export function puzzleCheckpoint(account: PuzzleAccount, partyId: string, scenarioId: string) {
   return account.checkpoints.find(c => c.progress.partyId === partyId && c.scenarioId === scenarioId) ?? null

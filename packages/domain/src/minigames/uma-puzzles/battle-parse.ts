@@ -80,7 +80,7 @@ export function parsePuzzleBattleInput(v: unknown, registry: PuzzleScenarioRegis
   if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'engineVersion', 'rulesVersion', 'battleId', 'partyId', 'checkpointId', 'ownerEpoch',
     'seed', 'scenarioId', 'encounterLevel', 'kind', 'entrants', 'leaderId', 'enemies', 'rewards', 'content']) ||
     v.schemaVersion !== 1 || v.engineVersion !== PUZZLE_ENGINE_VERSION || v.rulesVersion !== 1 || !puzzleId(v.battleId) ||
-    typeof v.partyId !== 'string' || !/^puzzle-party-[1-5]$/.test(v.partyId) || !puzzleId(v.checkpointId) || !puzzleInteger(v.ownerEpoch) ||
+    typeof v.partyId !== 'string' || !/^puzzle-party-([1-9]|10)$/.test(v.partyId) || !puzzleId(v.checkpointId) || !puzzleInteger(v.ownerEpoch) ||
     !puzzleId(v.seed) || !registry.some(s => s.id === v.scenarioId) || !puzzleInteger(v.encounterLevel, 1) ||
     !['ordinary', 'guardian', 'champion'].includes(v.kind as string) || !puzzleArray(v.entrants, PUZZLE_PARTY_SIZE) || v.entrants.length !== PUZZLE_PARTY_SIZE ||
     !puzzleArray(v.enemies, LIMIT.enemies) || !v.enemies.length || !PUZZLE_LEADERS.some(l => l.id === v.leaderId) ||

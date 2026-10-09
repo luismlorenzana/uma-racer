@@ -126,8 +126,8 @@ describe('real Puzzle host and journal', () => {
     await expect(host.enroll('invented-1', 'light', 'no-source-a')).rejects.toThrow()
     expect(await database.puzzleOutfits.get('invented-1')).toBeUndefined()
   })
-  it('saves five default parties, transfers atomically with explicit revisions and preserves map wins', async () => {
-    expect((await host.account()).parties).toHaveLength(5)
+  it('saves ten default parties, transfers atomically with explicit revisions and preserves map wins', async () => {
+    expect((await host.account()).parties).toHaveLength(10)
     await host.saveParty(emptyPuzzleParty('puzzle-party-2'), 'empty')
     await host.openChapter('puzzle-party-1', 'ura-finale', 'map')
     const before = (await host.account()).parties
@@ -140,6 +140,44 @@ describe('real Puzzle host and journal', () => {
     await expect(host.saveParty(f.party, 'stale-party')).rejects.toMatchObject({ code: 'stale' })
     const updated = (await host.account()).parties[0]!
     await expect(host.saveParty({ ...updated, slots: f.party.slots }, 'duplicate')).rejects.toThrow(/explicit party transfer/)
+  })
+  it('loads five-party saves unchanged, synthesizes 6–10 without writes, and round-trips party 10', async () => {
+    for (let i = 2; i <= 5; i++) {
+      const party = { ...emptyPuzzleParty(`puzzle-party-${i}`), name: `Invented original ${i}`, revision: 1 }
+      const row = { kind: 'puzzlePresets', id: party.partyId, data: puzzleData(party), version: 1, updatedAt: 1, deleted: false }
+      await put(database, row); f.entities.set(`puzzlePresets/${row.id}`, row)
+    }
+    const before = await database.puzzlePresets.toArray()
+    const loaded = await host.account()
+    expect(loaded.parties).toHaveLength(10)
+    expect(loaded.parties.slice(5).map(p => [p.name, p.revision, p.slots])).toEqual(
+      Array.from({ length: 5 }, (_, i) => [`Party ${i + 6}`, 0, [null, null, null, null, null]]))
+    expect(await database.puzzlePresets.toArray()).toEqual(before)
+    await host.saveParty({ ...loaded.parties[9]!, name: 'Invented tenth journey' }, 'tenth')
+    await sync()
+    const fresh = new PersistentPuzzleHost(options), tenth = (await fresh.account()).parties[9]!
+    expect(tenth).toMatchObject({ partyId: 'puzzle-party-10', name: 'Invented tenth journey', revision: 1 })
+    expect(await database.puzzlePresets.count()).toBe(6)
+    expect((await database.puzzlePresets.get('puzzle-party-10'))!.data).toEqual(tenth)
+  })
+  it('edits and reserves party 10 through the coordinator, declares only its locks and syncs the same fight', async () => {
+    const loaded = await host.account()
+    await host.saveParty({ ...loaded.parties[0]!, slots: [null, null, null, null, null] }, 'clear-first')
+    await host.saveParty({ ...loaded.parties[9]!, slots: f.party.slots }, 'fill-tenth')
+    await host.correct('invented-0', 'water', 1, 'tenth-correction')
+    const edit = (await database.pendingPuzzleOperations.get('tenth-correction'))!.operation
+    expect(edit.expected.filter(e => e.kind === 'puzzlePresets')).toHaveLength(10)
+    const locks = edit.expected.filter(e => e.kind === 'puzzleCheckpoints')
+    expect(locks).toHaveLength(14); expect(locks.every(e => e.id.startsWith('pzp:puzzle-party-10:'))).toBe(true)
+    const party = (await host.account()).parties[9]!
+    const view = await host.begin({ partyId: party.partyId, scenarioId: 'ura-finale', nodeId: 'pzn:ura-finale:o1a',
+      darkVariant: null, partyRevision: party.revision, checkpointRevision: 0 }, 'tenth-begin')
+    if (view.kind !== 'battle') throw new Error('Expected party 10 fight')
+    view.lease.release()
+    await expect(host.equip('invented-0', f.party.slots[0]!.kit, 3, 'locked-tenth-kit')).rejects.toThrow(/open battle/)
+    await sync()
+    expect((await host.account()).checkpoints.find(c => c.progress.partyId === 'puzzle-party-10')!.open!.input).toEqual(view.open.input)
+    expect(await database.pendingPuzzleOperations.count()).toBe(0)
   })
   it('blocks editing/transferring an open party and opening another chapter, but resumes its current map', async () => {
     await host.saveParty(emptyPuzzleParty('puzzle-party-2'), 'empty')

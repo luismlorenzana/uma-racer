@@ -33,8 +33,8 @@ describe('material surfaces using the real isolated host', () => {
   })
   it('All lists 56 definitions and preserved orphan, intersects facets; details separate debt from stock and link eligible recipients', async () => {
     mount(<PuzzleItemsScreen />); await screen.findByText('Constellation Tickets')
-    fireEvent.change(screen.getByLabelText('Item visibility'), { target: { value: 'all' } }); await screen.findByText('57 materials shown · 5 owned kinds')
-    fireEvent.change(screen.getByLabelText('Destination scenario'), { target: { value: '1' } }); fireEvent.change(screen.getByLabelText('Ticket source style'), { target: { value: 'front' } })
+    fireEvent.click(within(screen.getByRole('group', { name: 'Item visibility' })).getByRole('button', { name: 'All items' })); await screen.findByText('57 materials shown · 5 owned kinds')
+    fireEvent.click(within(screen.getByRole('group', { name: 'Destination scenario' })).getByRole('button', { name: 'URA Finale' })); fireEvent.click(within(screen.getByRole('group', { name: 'Ticket source style' })).getByRole('button', { name: 'Front' }))
     expect(await screen.findByText('1 materials shown · 5 owned kinds')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'URA Finale · Front Constellation Ticket, quantity 5' }))
     await screen.findByText('5 in global inventory · Bank -7')
@@ -57,7 +57,7 @@ describe('material surfaces using the real isolated host', () => {
     fireEvent.change(screen.getByLabelText('Exchange batches'), { target: { value: '1' } }); await screen.findByText('Gross 1 → Repaid 0 → Items +1')
     fireEvent.click(screen.getByRole('button', { name: 'Confirm exchange' })); await screen.findByText('Exchange saved'); expect(confirm).toHaveBeenCalledOnce()
     expect((await env.host.account()).stocks['constellation:ura-finale:front']).toBe(3)
-    fireEvent.change(screen.getByLabelText('Adjacent scenario edge'), { target: { value: '1' } }); await screen.findByText('Exchange edge locked'); expect(screen.queryByRole('button', { name: 'Confirm exchange' })).toBeNull()
+    fireEvent.click(within(screen.getByRole('group', { name: 'Adjacent scenario edge' })).getByRole('button', { name: 'Unity Cup / Trackblazer' })); await screen.findByText('Exchange edge locked'); expect(screen.queryByRole('button', { name: 'Confirm exchange' })).toBeNull()
   })
   it('full interception requires explicit irreversible acknowledgement; exact operation double tap pays only once', async () => {
     const confirm = vi.spyOn(env.host, 'confirmMaterial'); mount(<PuzzleExchangeScreen />, `${env.root}/exchange?from=constellation:unity-cup:front`)

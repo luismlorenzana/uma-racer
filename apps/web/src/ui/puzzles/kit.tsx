@@ -1,6 +1,6 @@
 // Finite choices read from the domain catalogue, never RPG skill trees (docs/design/uma-puzzles.md §5).
 import { PUZZLE_ACTIVES, PUZZLE_LEADERS, PUZZLE_PATTERNS, puzzleKitChoices, type PuzzleKit, type PuzzleOutfitSaveV1 } from '@racer/domain'
-import { PuzzleSelect, PUZZLE_STYLE_LABEL } from './components'
+import { PuzzleOptions, PUZZLE_STYLE_LABEL } from './components'
 export function puzzleActiveLabel(id: string) {
   const a = PUZZLE_ACTIVES.find(a => a.id === id)
   if (!a) return 'Unavailable active'
@@ -18,8 +18,8 @@ export function puzzlePatternLabel(id: string | null) {
 }
 export function PuzzleKitEditor({ outfit, kit, onChange, disabled }: { outfit: PuzzleOutfitSaveV1; kit: PuzzleKit; onChange(kit: PuzzleKit): void; disabled?: boolean }) {
   const choices = puzzleKitChoices(outfit.enrollment.source, outfit.enrollment.level)
-  return <div className="grid gap-2"><PuzzleSelect label="Active" value={kit.activeId} disabled={disabled} options={choices.actives.map(value => ({ value, label: puzzleActiveLabel(value) }))}
-    onChange={activeId => onChange({ ...kit, activeId })} /><PuzzleSelect label="Pattern" value={kit.patternId ?? ''} disabled={disabled}
+  return <div className="grid gap-2"><PuzzleOptions label="Active" value={kit.activeId} disabled={disabled} options={choices.actives.map(value => ({ value, label: puzzleActiveLabel(value) }))}
+    onChange={activeId => onChange({ ...kit, activeId })} /><PuzzleOptions label="Pattern" value={kit.patternId ?? ''} disabled={disabled}
       options={[{ value: '', label: 'No pattern' }, ...choices.patterns.map(value => ({ value, label: puzzlePatternLabel(value) }))]}
       onChange={patternId => onChange({ ...kit, patternId: patternId === '' ? null : patternId as NonNullable<PuzzleKit['patternId']> })} /></div>
 }

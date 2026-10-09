@@ -1,9 +1,9 @@
 // Owned compact roster, explicit registration and frozen-source profile (docs/design/uma-puzzles.md §§3–4,9).
 import { PUZZLE_ACTIVES, PUZZLE_ELEMENTS, PUZZLE_LEADERS, STRATEGIES, nextPuzzleLevelExp, puzzleKitChoices, puzzleStats, type PuzzleElement } from '@racer/domain'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { openPuzzleParty, puzzleColourCounts, puzzleRoster, suggestedPuzzleElement, type PuzzleRosterEntry } from '../../game/puzzles/presentation'
-import { PuzzleButton, PuzzleCard, PuzzleOutfitIcon, PuzzleSelect, PUZZLE_STYLE_LABEL } from '../../ui/puzzles/components'
+import { PuzzleButton, PuzzleCard, PuzzleOutfitIcon, PUZZLE_STYLE_LABEL } from '../../ui/puzzles/components'
 import { PuzzleElementMark } from '../../ui/puzzles/ElementMark'
 import { PuzzleKitEditor, puzzleActiveLabel, puzzleLeaderLabel } from '../../ui/puzzles/kit'
 import { PuzzleFrame, usePuzzleAccount, usePuzzles } from './PuzzleContext'
@@ -11,14 +11,18 @@ export function PuzzleRosterScreen() {
   const { ownedIds, content, root } = usePuzzles(), account = usePuzzleAccount()
   const [element, setElement] = useState<PuzzleElement | 'all'>('all'), [style, setStyle] = useState('all')
   const roster = account ? puzzleRoster(ownedIds, content.umas.byId, account, content.manifest.version, element, style) : []
-  return <PuzzleFrame title="Puzzle roster" back={root}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">
-    <PuzzleSelect<PuzzleElement | 'all'> label="Element" value={element} onChange={setElement} options={[{ value: 'all', label: 'All elements' }, ...PUZZLE_ELEMENTS.map(value => ({ value, label: value[0]!.toUpperCase() + value.slice(1) }))]} />
-    <PuzzleSelect label="Original A style" value={style} onChange={setStyle} options={[{ value: 'all', label: 'All styles' }, ...STRATEGIES.map(value => ({ value, label: PUZZLE_STYLE_LABEL[value] }))]} />
-  </div><p className="text-xs text-ink-on-dark-soft">{account?.outfits.length ?? 0} enrolled · {ownedIds.length} owned. Enrolled first; original aptitudes only.</p>
-    <div className="grid grid-cols-5 gap-x-2 gap-y-4">{roster.map(entry => <Link key={entry.id} to={`${root}/roster/${encodeURIComponent(entry.id)}`} className="min-h-11 rounded-sm focus-visible:outline-2 focus-visible:outline-accent" aria-label={`${entry.name}, ${entry.outfit ? `${entry.outfit.enrollment.element}, Puzzle Level ${entry.outfit.enrollment.level}` : entry.unavailable ?? 'not enrolled'}`}>
+  const chip = (active: boolean) => `flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-sm border px-2 text-xs ${active ? 'border-accent bg-accent/10 text-accent' : 'border-hairline-dark text-ink-on-dark-soft'}`
+  return <PuzzleFrame title="Puzzle roster" back={root}><div className="grid gap-3"><div role="group" aria-label="Roster filters" className="flex gap-1 overflow-x-auto pb-1">
+    <button className={chip(element === 'all' && style === 'all')} aria-pressed={element === 'all' && style === 'all'} onClick={() => { setElement('all'); setStyle('all') }}>All</button>
+    {PUZZLE_ELEMENTS.map(e => <button key={e} aria-label={`Element: ${e}`} aria-pressed={element === e} className={chip(element === e)} onClick={() => setElement(element === e ? 'all' : e)}><PuzzleElementMark element={e} /></button>)}
+    {STRATEGIES.map(s => <button key={s} aria-label={`Original A style: ${PUZZLE_STYLE_LABEL[s]}`} aria-pressed={style === s} className={chip(style === s)} onClick={() => setStyle(style === s ? 'all' : s)}>{PUZZLE_STYLE_LABEL[s]}</button>)}
+  </div><p className="text-xs text-ink-on-dark-soft">Highest Puzzle Level first; filters use original aptitudes only.</p>
+    {[true, false].map(enrolled => { const entries = roster.filter(e => Boolean(e.outfit) === enrolled)
+      return <section key={String(enrolled)} aria-label={enrolled ? 'Enrolled' : 'Not enrolled'}><h2 className="mb-2 text-sm">{enrolled ? 'Enrolled' : 'Not enrolled'} · {entries.length}</h2>
+    <div className="grid grid-cols-5 gap-x-2 gap-y-4">{entries.map(entry => <Link key={entry.id} to={`${root}/roster/${encodeURIComponent(entry.id)}`} className="min-h-11 rounded-sm focus-visible:outline-2 focus-visible:outline-accent" aria-label={`${entry.name}, ${entry.outfit ? `${entry.outfit.enrollment.element}, Puzzle Level ${entry.outfit.enrollment.level}` : entry.unavailable ?? 'not enrolled'}`}>
       <PuzzleOutfitIcon id={entry.id} name={entry.name} content={content} outfit={entry.outfit} /><p className="mt-1 truncate text-[10px] text-center">{entry.name}</p>
-      {!entry.outfit && <p className="text-center text-[9px] text-ink-on-dark-soft">{entry.unavailable ? 'Unavailable' : 'Enroll'}</p>}
-    </Link>)}</div>{!roster.length && <PuzzleCard>No owned outfits match these filters.</PuzzleCard>}
+      <p className="text-center text-[10px] text-ink-on-dark-soft">{entry.outfit ? `PL ${entry.outfit.enrollment.level}` : entry.unavailable ? 'Unavailable' : 'Enroll'}</p>
+    </Link>)}</div></section>})}{!roster.length && <PuzzleCard>No owned outfits match these filters.</PuzzleCard>}
   </div></PuzzleFrame>
 }
 function SourceDetails({ entry }: { entry: PuzzleRosterEntry }) {
@@ -29,6 +33,7 @@ function SourceDetails({ entry }: { entry: PuzzleRosterEntry }) {
 }
 export function PuzzleProfileScreen() {
   const { outfitId = '' } = useParams(), { root, ownedIds, content, host, command, busy } = usePuzzles(), account = usePuzzleAccount()
+  const [search] = useSearchParams()
   const [selected, setSelected] = useState<PuzzleElement | null>(null)
   useEffect(() => { setSelected(null) }, [outfitId])
   const entry = account ? puzzleRoster(ownedIds, content.umas.byId, account, content.manifest.version).find(e => e.id === outfitId) : null
@@ -37,9 +42,16 @@ export function PuzzleProfileScreen() {
   const assigned = account?.parties.find(p => p.slots.some(s => s?.outfitId === outfitId)), open = account && assigned && openPuzzleParty(account, assigned.partyId)
   const locked = Boolean(outfit?.enrollment.firstBattleId), counts = account && puzzleColourCounts(account), suggested = entry && account && suggestedPuzzleElement(entry.elements, account)
   const choices = source && puzzleKitChoices(source, level)
-  return <PuzzleFrame title={entry?.name ?? 'Outfit unavailable'} back={`${root}/roster`}><div className="grid gap-3">
+  const fromParty = account?.parties.find(p => p.partyId === search.get('party') && p.slots.some(s => s?.outfitId === outfitId))
+  const exp = outfit?.enrollment.exp ?? 0, expNeeded = nextPuzzleLevelExp(level)
+  return <PuzzleFrame title={entry?.name ?? 'Outfit unavailable'} back={fromParty ? `${root}/party/${fromParty.partyId}` : `${root}/roster`} backLabel={fromParty?.name}><div className="grid gap-3">
+    {fromParty && <nav aria-label={`${fromParty.name} members`} className="grid grid-cols-5 gap-2">{fromParty.slots.map((slot, index) => slot ? <Link key={index} to={`${root}/roster/${encodeURIComponent(slot.outfitId)}?party=${fromParty.partyId}`}
+      aria-label={`Profile: ${content.umas.byId.get(slot.outfitId)?.name ?? slot.outfitId}`} aria-current={slot.outfitId === outfitId ? 'page' : undefined}
+      className={`min-h-11 rounded-md ${slot.outfitId === outfitId ? 'ring-2 ring-accent' : 'opacity-55'}`}><PuzzleOutfitIcon id={slot.outfitId} name={content.umas.byId.get(slot.outfitId)?.name ?? slot.outfitId} content={content} outfit={account?.outfits.find(o => o.outfitId === slot.outfitId)} leader={index === 0} /></Link> : <span key={index} aria-label={`Empty slot ${index + 1}`} className="aspect-square rounded-md border border-dashed border-hairline-dark" />)}</nav>}
     {!entry ? <PuzzleCard>This outfit is not owned. Return to your roster.</PuzzleCard> : <>
-      <div className="flex items-center gap-3"><div className="w-20 shrink-0"><PuzzleOutfitIcon id={entry.id} name={entry.name} content={content} outfit={outfit} /></div><div><p className="text-lg">Puzzle Level {level}</p><p className="text-xs text-ink-on-dark-soft">{outfit ? `${outfit.enrollment.exp}/${nextPuzzleLevelExp(level)} EXP` : 'Enrollment starts at PL 1 · 0 EXP'}</p><p className="mt-1 text-xs">{outfit ? `${outfit.enrollment.element} · ${locked ? 'Element locked at first entry' : 'Element correctable before entry'}` : 'Choose an element to enroll'}</p></div></div>
+      <div className="flex items-center gap-3"><div className="w-20 shrink-0"><PuzzleOutfitIcon id={entry.id} name={entry.name} content={content} outfit={outfit} /></div><div className="min-w-0 flex-1"><p className="text-lg">Puzzle Level {level}</p><p className="text-xs text-ink-on-dark-soft">{outfit ? `${exp}/${expNeeded} EXP` : 'Enrollment starts at PL 1 · 0 EXP'}</p>
+        <div role="progressbar" aria-label="Puzzle EXP" aria-valuemin={0} aria-valuemax={expNeeded} aria-valuenow={exp} className="mt-1 h-2 overflow-hidden rounded-full bg-stage-soft"><div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, exp / expNeeded * 100)}%` }} /></div>
+        <p className="mt-1 text-xs">{outfit ? <><span className="capitalize">{outfit.enrollment.element}</span> · {locked ? 'Element locked at first entry' : 'Element correctable before entry'}</> : 'Choose an element to enroll'}</p>{assigned && <p className="mt-1 text-xs text-ink-on-dark-soft">In {assigned.name}</p>}</div></div>
       <SourceDetails entry={entry} />
       {entry.unavailable && <PuzzleCard><p role="status">{entry.unavailable}</p></PuzzleCard>}
       {stats && next && <PuzzleCard><h2 className="text-sm font-semibold">Party contributions · next-level gains</h2><dl className="mt-2 grid grid-cols-3 gap-3">{Object.entries(stats).map(([key, value]) => <div key={key}><dt className="text-[10px] uppercase text-ink-on-dark-soft">{key}</dt><dd className="text-base">{value}<span className="ml-1 text-xs text-accent">+{next[key as keyof typeof next] - value}</span></dd></div>)}</dl></PuzzleCard>}
