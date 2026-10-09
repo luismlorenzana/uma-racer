@@ -1,7 +1,7 @@
 # M031 — Farm production, cooking and Extra Stats
 
-**State: specified, implementation not started.** Owner-authorized task authoring on 2026-10-08; code and the
-owner account are unchanged. [Design](../design/farm-kitchen-rework.md),
+**State: T118 pure rules/balance complete; T119 next.** Original catalogue, production/map rules and deterministic
+witnesses are implemented additively (D304); the live Farm and owner account are unchanged. [Design](../design/farm-kitchen-rework.md),
 [technical contract](../technical/farm-kitchen-implementation.md), [research](../research/farm-kitchen-games.md).
 
 ## Outcome
@@ -28,7 +28,7 @@ old Farm EXP/levels and Extra purchases/actives once, safely, without discarding
 
 | Task | Complete deliverable | Prerequisites | Normal-account effect when its PR merges |
 |---|---|---|---|
-| [T118 — Pure rules/catalogue/balance](T118-farm-kitchen-rules.md) | Original scenario foods, production/Extra rules and modest deterministic sims | This approved definition | Additive pure modules; old game untouched |
+| T118 — **Complete** ([rules](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), [balance](../research/farm-kitchen-balance.md)) | Original scenario foods, production/Extra rules and modest deterministic sims | This approved definition | Additive pure modules; old game untouched |
 | [T119 — Save and semantic sync](T119-farm-kitchen-save-sync.md) | Records/parsers/API mirror, atomic operations, bounded sync and protection | T118 | Dormant backend/DB support, no reset |
 | [T120 — Protected cutover](T120-farm-kitchen-cutover.md) | Private recovery archive, exact resumable reset and legacy claim rehearsal | T119 | Capability off, no real-account migration |
 | [T121 — Real host/runtime](T121-farm-kitchen-host.md) | Save-backed port, pending/canonical views, offline replay/retry and bootstrap | T120 | Old Farm host stays selected |
@@ -36,7 +36,7 @@ old Farm EXP/levels and Extra purchases/actives once, safely, without discarding
 | [T123 — Extra map and race wiring](T123-farm-kitchen-extra-stats.md) | Meal purchases, shared map/list, preset-specific stats and real race joins | T122 | Active-generation path dormant, legacy stats unchanged |
 | [T124 — Full production release](T124-farm-kitchen-release.md) | Integrated checks/tuning, matching capabilities, deployment/PWA proof and owner protocol | T118–T123 merged | Complete new loop plus guarded one-time reset |
 
-T118/T119/T120 choose concrete version numbers from then-current main. They document them in the standing
+T118 fixes pure Farm3, worker/recipe/Extra1, rules/template1; T119/T120 choose transport/DB/cutover versions from then-current main. They document them in the standing
 technical contract; later tasks use those exact shapes. No task delegates an unresolved economic shape to UI.
 If baseline balance fails, the rules task fixes/docs/pins it before persistence consumes it; do not ship a known
 unfundable recipe or turn an owner directional example into permission to change race mechanics.
