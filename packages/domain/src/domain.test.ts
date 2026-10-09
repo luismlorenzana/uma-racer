@@ -1,5 +1,6 @@
 // Guards the numbers in docs/design against drift. If a doc changes, change the matching expectation here.
 import { describe, expect, it } from 'vitest'
+import * as Kitchen from './farm/kitchen'
 import {
   PUZZLE_RULES_VERSION, PUZZLE_SCHEMA_VERSION, PUZZLE_STAT_GROWTH, PUZZLE_STAT_BASE,
   PUZZLE_EXP_BASE, PUZZLE_EXP_STEP, PUZZLE_EXP_WEIGHTS, PUZZLE_EXP_WEIGHTS_V1, PUZZLE_RELATIVE_EXP,
@@ -41,6 +42,7 @@ import {
   capBudget,
   treeBudget,
   nodeValue,
+  STAT_NODE_POOL,
   SPARK_MATCH_TICKET_COST,
   FRIENDSHIP_TRAINING_TICKET_COST,
   DAILY_TICKETS,
@@ -186,6 +188,31 @@ import {
   rpgTreePointsEarned,
   rpgActiveSlots,
 } from './index'
+
+describe('Farm kitchen additive baseline — D304', () => {
+  it('pins versions, jobs, gates, stations, Energy and the bounded map without changing live Farm', () => {
+    expect([Kitchen.FARM_KITCHEN_RULES_VERSION, Kitchen.FARM_KITCHEN_SCHEMA_VERSION,
+      Kitchen.FARM_KITCHEN_ROW_VERSION, Kitchen.FARM_EXTRA_TEMPLATE_VERSION]).toEqual([1, 3, 1, 1])
+    expect([Kitchen.FARM_KITCHEN_EXP_PER_LEVEL, Kitchen.FARM_KITCHEN_EXP_PER_JOB,
+      Kitchen.FARM_KITCHEN_JOB_MS, Kitchen.FARM_KITCHEN_RAW_YIELD, Kitchen.FARM_KITCHEN_PROCESS_BATCH,
+      Kitchen.FARM_KITCHEN_MAX_MEALS, Kitchen.FARM_KITCHEN_ENERGY_MS, Kitchen.FARM_KITCHEN_ENERGY_GRANT])
+      .toEqual([24, 12, 21_600_000, 6, 6, 4, 1_800_000, 50])
+    expect([Kitchen.FARM_KITCHEN_SCENARIOS_PER_BLOCK, Kitchen.FARM_KITCHEN_LEVELS_PER_BLOCK,
+      Kitchen.FARM_KITCHEN_LEVELS_PER_FLAVOUR, Kitchen.FARM_KITCHEN_PROCESS_LEVEL, Kitchen.FARM_KITCHEN_COOK_LEVEL,
+      Kitchen.FARM_KITCHEN_STATIONS_PER_DISTRICT, Kitchen.FARM_KITCHEN_MAX_INPUTS]).toEqual([5, 50, 10, 6, 9, 6, 10])
+    expect([Kitchen.FARM_EXTRA_PURE_PER_STAT, Kitchen.FARM_EXTRA_SUNS, Kitchen.FARM_EXTRA_NODE_TOTAL,
+      Kitchen.FARM_EXTRA_INITIAL_CAPACITY, Kitchen.FARM_EXTRA_CAPACITY_STEP, Kitchen.FARM_EXTRA_NODE_COUNT]).toEqual([10, 5, 20, 18, 2, 65])
+    expect(Kitchen.FARM_KITCHEN_ENERGY_ID).toBe('farm:energy')
+    expect(Kitchen.FARM_DISTRICTS).toEqual(['garden', 'orchard', 'barn', 'workshop', 'kitchen'])
+    expect(Kitchen.FARM_STATION_IDS).toHaveLength(30)
+    expect(Kitchen.FARM_RAW_FAMILIES).toEqual(['vegetable', 'fruit', 'milk', 'egg', 'chicken', 'beef', 'pork'])
+    expect(Kitchen.FARM_PROCESSES.map(p => p.id)).toEqual(['canned-vegetable', 'vegetable-juice', 'canned-fruit',
+      'fruit-juice', 'cheese', 'mayonnaise', 'chicken-stock', 'beef-stock', 'cured-ham'])
+    expect(SCENARIOS.map(s => Kitchen.farmExtraCapacity(s.tier))).toEqual([18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44])
+    expect(Kitchen.FARM_KITCHEN_CATALOGUE.foods).toHaveLength(1_169)
+    expect(STAT_NODE_POOL).toBe(240)
+  })
+})
 
 describe('Global card stars — D255', () => {
   it('pins the independent schema, maximum-not-sum policy and unchanged three-star cap', () => {

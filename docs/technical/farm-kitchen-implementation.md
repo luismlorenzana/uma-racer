@@ -1,6 +1,6 @@
 # Farm production/cooking — implementation contract
 
-**Planned, not implemented · M031 / T118–T124 · 2026-10-08.** Read
+**T118 pure layer implemented; persistence/release planned · M031 · 2026-10-09.** Read
 [the design](../design/farm-kitchen-rework.md), [AGENTS.md](../../AGENTS.md) and the current task first.
 This standing contract must survive task deletion under D104. It specifies the new path; existing
 [Farm](../design/farm.md) stays live until T124. Do not describe a capability-off merge as a playable release.
@@ -53,7 +53,7 @@ Identifiers/objects are parsed with exact key sets, known registries, safe integ
 Operational IDs use a device identity plus a persisted monotonic sequence, never `Math.random` or an unreserved
 wall-clock-only ID. Hashing has one canonical key/array order; same ID/different payload is an error.
 
-T118 pins the baseline: 24 EXP/level, 12 EXP/completion, six-hour duration, six raw units, processing six→six,
+T118/D304 pins the baseline: 24 EXP/level, 12 EXP/completion, six-hour duration, six raw units, processing six→six,
 kitchen quantity 1–4, thirty-minute Energy and debug grant fifty. All job kinds give one EXP award regardless
 of output quantity. Raw is free; processing/cooking spend concrete inputs at Start, not Claim. Every kitchen
 input slot chooses one legal item, with quantity multiplied by batch size; coalesce identical IDs before debit.
@@ -64,6 +64,40 @@ Extra map: stable ordered 65 IDs (50 pure, ten bridges, five Suns). Pure 20, dua
 block meal buys one arbitrary node. Capacity is `min(65, 18 + 2 × (s − 1))` for defensive rendering, but validation
 must **refuse an unreviewed registry extension whose formula exceeds 65**, rather than silently ship a clamped
 new scenario. Current fourteen indices are valid. Four distance presets have independent active selections.
+
+### T118 implemented pure layer (D304)
+
+`@racer/domain/farm/kitchen` is the sole explicit entry; root/domain and legacy Farm barrels do not re-export it.
+`catalogue.ts` materializes all1,169 original item definitions/1,168 recipes from the registered scenario order
+and fourteen authored flavour rows. Appended scenarios need an explicit new row; unreviewed scenario25 capacity
+fails rather than silently clamping. `progression.ts` derives lifetime levels/remainders and block/raw gates.
+
+Concrete pure schemas: Farm3; worker1; recipe-block1; Extra-block1; frozen job rules1; node template1. These
+are **not** a global Uma/save/Dexie bump. T119 wraps them in entity versions/update timestamps and economic
+operations; transport/recovery objects below remain planned. No new record is installed in a real account yet.
+
+- `createFarmKitchen` creates sparse ordered assignments; `farmStation` projects any of the thirty spots.
+  `assignFarmWorker`/`removeFarmWorker` check ownership and Busy/Ready locks, retaining per-station attempts.
+- `startFarmJob` returns frozen job, exact debits, new Farm/inventory; no output/EXP. `claimFarmJob` returns
+  new Farm, worker, inventory, all block recipe rows and a receipt with output/EXP/levels/milestones/first meals.
+  Cookbook counts are **meals produced**, not cooking job count. Claims preserve assignment/attempt; applying
+  the returned state leaves no job to claim again. Durable job/operation receipt idempotency belongs to T119.
+- `farmJobRemaining` takes an explicit safe integer clock; backward time extends waiting, not a new start.
+  `spendFarmEnergy` returns one deadline adjustment, exact item debit and used/wasted milliseconds. It never
+  clears the job, changes another station or awards EXP. No cancel/automatic repeat/grant is installed.
+- `resolveFarmInputs` validates known item IDs/stat/stage/block/exact slots and produces ASCII-ID-sorted debit
+  entries. One concrete stack per slot; processing binds its source variant, cooking accepts any legal same-block
+  item. Strict parsers re-derive frozen costs/output/deadline and reject future/corrupt shapes and overflow.
+- `FARM_EXTRA_NODES` owns65 stable IDs/names/positions. `buyFarmExtraNode` returns stable target identity,
+  actual node and item/map effects; an existing purchase never spends again or opportunistically activates.
+  `setFarmActiveNodes` changes only one real owned scenario/distance list. `parseFarmExtraBlock` validates and
+  canonicalizes bought/active IDs in template order; newly created maps/units have no active nodes.
+- `farmExtraVector` sums unique known IDs. `previewFarmStats(uncappedPostGrowth, farm, caps)` returns before-cap,
+  capped/base-capped, marginal gain and Farm-only waste. It does not call or mutate shipped `deriveStats`.
+
+[Balance evidence](../research/farm-kitchen-balance.md) carries policies, hashes, material conservation and
+remaining limitations; new domain/source tests and `domain.test.ts` pin the same contract. No React/I/O/RNG,
+private rows, dependency, API/DB/UI/release-flag/infrastructure or live-stat change is part of this task.
 
 ## 3. Records and ownership
 
@@ -267,13 +301,16 @@ Existing saved race inputs/replays/results never change. A new race freezes ackn
 normal input builder; no race-engine version/coefficient change. Mid-race build edits follow existing locks and
 must not rewrite frozen input. Current caps stay; 1,600-Speed examples are later-scenario direction, not tier 1 targets.
 Run card-only exact-equality fixtures across every tier and 0–3 stars/eras/buffs, then the small mixed-deck stat matrix.
+T118's fixtures and matrix already verify the pure post-growth boundary, including Foundation/Shared Light;
+T123 still owns the actual acknowledged-map join and explicitly named historical240 normalization.
 
 ## 9. Delivery and evidence
 
 Task PRs run lint/test/build and the relevant synthetic sims. New script names: `sim:farm:kitchen` (time/material
-conservation) and `sim:farm:stats` (base/cards/Farm/cap matrix); T118 adds them. Keep old `sim:farm` through dormant
+conservation) and `sim:farm:stats` (base/cards/Farm/cap matrix) are implemented by T118. Keep old `sim:farm` through dormant
 merges, move its live-envelope assertions to the new model only at T124 while retaining legacy rule fixtures.
-Do not run or claim unimplemented scripts in this planning PR.
+Their complete deterministic regression hashes/policies are in [the balance record](../research/farm-kitchen-balance.md).
+The legacy constellation sim's previously recorded tier1 stamina failure remains explicit, not hidden by Farm tuning.
 
 Each task carries its rules into this page/design, appends an actual next-free decision and deletes its own
 spec in the same completing PR. Until T124, assertions are additive/capability-off and do not replace shipped
