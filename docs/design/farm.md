@@ -4,7 +4,7 @@
 > Home/Sections/field/worker/crop screens, global Item inventory and the Extra stats bridge (D235) are implemented.
 
 > **New definition in review (2026-10-08):** the [Farm production/cooking rework](farm-kitchen-rework.md) proposes
-> five fully open districts, per-outfit expertise, recipes and shared-block Extra Stats. It is not implemented;
+> five independently expanding districts, faster outfit levels, batched recipes and shared-block Extra Stats. It is not implemented;
 > the shipped rules below remain current until that definition is approved and its cutover releases.
 
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows, plot by plot,

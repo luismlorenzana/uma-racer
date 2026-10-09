@@ -8,7 +8,7 @@ Only primary/developer sources are used below. No source art, extracted rows or 
 
 | Reference | Verified mechanics | What fits Uma Farm | What not to carry over |
 |---|---|---|---|
-| Hay Day | Production buildings have queue slots and earn building mastery through operating time | Legible raw → processed → finished chain; visible mastery/time improvements | Coins/building purchases, paid queue expansion; our mastery belongs to outfits, not buildings |
+| Hay Day | Production buildings have queue slots and earn building mastery through operating time | Legible raw → processed → finished chain, clear queues/output | Coins/building purchases, paid queue expansion and a mandatory mastery rotation loop |
 | Story of Seasons: Grand Bazaar | Windmills process materials through timed production lines; kitchen uses a recipe book and permits recipe adjustments | Clear processing stations, explicit recipe inputs, a cookbook and bounded substitutions | Mandatory seasonal scheduling, daily animal/plant care, added ingredient quality as a stat multiplier |
 | Farm Together 2 | Crops, trees and animals; time advances while absent; house activities include cooking recipes | Three distinct raw districts, cozy persistent assignments and offline deadlines | Terraforming/expansion economy and extra decoration systems before the reward loop works |
 | Stardew Valley | Farming, orchards, animals, processing machines, skill progress and cooking recipes | Long-lived crew progress, planning raw stock versus processed stock, collection goals | A chores/energy tax, temporary food buffs replacing the owner's permanent Extra Stats purchases |
@@ -17,7 +17,7 @@ Only primary/developer sources are used below. No source art, extracted rows or 
 Sources:
 
 - [Supercell: Hay Day production buildings](https://support.supercell.com/hay-day/en/articles/production-building.html).
-  The building's three mastery stars are distinct from Uma Farm's proposed five per-outfit district ranks.
+  Building mastery is a reference mechanic, not a requirement; the revised Uma Farm proposal drops expertise.
 - [Marvelous: Grand Bazaar official Farm Life manual](https://www.storyofseasons.com/grandbazaar/manuals/xbox/01/).
   Its cooking and processing sections support the recipe-book/ingredient-adjustment distinction.
 - [Milkstone Studios: Farm Together 2](https://www.milkstonestudios.com/games/farm-together-2/).
@@ -36,18 +36,18 @@ play thirty short gesture games whenever the farm is ready. Stardew is useful fo
 completing a collection, but its day-to-day chores are not needed here. These are design inferences from the
 sources, not claims that those games implement the Uma outfit/Extra Stats system.
 
-For this app, the interesting decisions are where to station each persistent worker, which expertise to grow,
+For this app, the interesting decisions are where to station each persistent worker, which district to expand,
 which recipes support a weak racing stat, and whether to specialize or broaden the active Extra Stats map.
 Better timers and clear shopping tools offer more value than random crop rarity, equipment durability or loss
-on absence. The owner's entirely open farm already supplies the expansion fantasy through **crew development**,
-so an aggregate account Farm Level is unnecessary.
+on absence. The revised farm supplies expansion through **independent district activity and crew development**,
+not an aggregate account Farm Level or a sequential first-section-before-second-section gate.
 
 ## Small additions worth carrying into the draft
 
 1. **Meal wishlist and shopping plan.** Pin meals, show exactly which inputs are short, and link to the right
    district. Running outputs are shown separately from spendable stock.
-2. **Visible outfit specialization.** Five expertise meters, recorded per ingredient block, with exact next-rank
-   progress and resulting duration. Do not randomly assign an innate farming aptitude.
+2. **Persistent crew roles and local expansion.** Let workers stay growers/processors/cooks, with one personal
+   Farm level and each district's shared spot progress; no five-track expertise grind or random innate aptitude.
 3. **Recipe identity and permitted substitutions.** Same-stat raw/processed variants can add variety without
    doubling the recipe tree. The owner's revision gives every stat the same raw and processed options, including
    milk/cheese variants and direct Guts ingredients; do not impose nutritional logic or exceptional recipes.
@@ -69,42 +69,67 @@ for banquets. Including cheese for pure meals, that is **19 cheese per stat**.
 
 | Stat | Vegetables needed | Fruit needed | Milk for rounded cheese batches | Cheese used / made |
 |---|---|---|---|---|
-| Speed | 10 | 9 | 20 | 19 / 20 |
-| Stamina | 10 | 9 | 20 | 19 / 20 |
-| Power | 10 | 9 | 20 | 19 / 20 |
-| Guts | 10 | 9 | 20 | 19 / 20 |
-| Wit | 10 | 9 | 20 | 19 / 20 |
+| Speed | 10 | 9 | 24 | 19 / 24 |
+| Stamina | 10 | 9 | 24 | 19 / 24 |
+| Power | 10 | 9 | 24 | 19 / 24 |
+| Guts | 10 | 9 | 24 | 19 / 24 |
+| Wit | 10 | 9 | 24 | 19 / 24 |
 
 | Work | Jobs per stat | Jobs total | Output / consumed units |
 |---|---|---|---|
-| Vegetables | 3 | 15 | 60 / 50 |
-| Fruit | 3 | 15 | 60 / 45 |
-| Milk | 5 | 25 | 100 / 100 |
-| Cheese processing | 10 | 50 | 100 / 95 |
-| Cooking | — | 65 | 65 / 65 |
+| Vegetables (6/job) | 2 | 10 | 60 / 50 |
+| Fruit (6/job) | 2 | 10 | 60 / 45 |
+| Milk (6/job) | 4 | 20 | 120 / 120 |
+| Cheese processing (6/job) | 4 | 20 | 120 / 95 |
+| Cooking (chosen 1–4/job) | — | 27 | 65 / 65 |
 
-Thus 55 raw + 50 processing + 65 cooking = **170 claims**, versus 196 claims for Lv1 → Lv50 at 48 EXP/level and
-12 EXP/claim. This reaches Lv43 with 24 EXP banked, leaving **26 claims** of slack. The new symmetry changes the
-old 149-job witness; it is not legitimate to keep citing that earlier bill for these recipes. There are 25 raw
-and 5 processed units left from rounding, distributed identically across stats.
+Thus 40 raw + 20 processing + 27 cooking = **87 claims**, versus 98 claims for Lv1 → Lv50 at 24 EXP/level and
+12 EXP/claim. This reaches Lv44 with 12 EXP banked, leaving **11 claims** of slack. Kitchen claims are 15 for
+pure meals (4+4+2 of each), 10 for one of each pair, 2 for banquets (4+1). Forcing full four-meal batches would
+change the bill: partial quantities are necessary for this exact witness. There are 25 raw and 25 processed
+units left from rounding, equally distributed across stats. Earlier 149/170-job witnesses do not apply here.
 
 This checks ingredient conservation and batch rounding for one canonical bill only. It is not a simulator,
-a real-account probe or evidence that the racing stat balance is settled. Applying the candidate expertise
-schedule to Garden 15, Orchard 15, Barnyard 25, Workshop 50 and Kitchen 65 yields a no-idle duration sum of
-**1,079 hours**. Raw work can be front-loaded to meet all input/gate requirements, but actual check-ins add idle time.
+a real-account probe or evidence that racing stat balance is settled. Fixed six-hour jobs give a no-idle
+duration sum of 522 hours. Raw work can be front-loaded to meet input/recipe gates, but check-ins add idle time.
 
 ## Level timing and reduced stat budget
 
-Lv1→50 needs 49 × 48 = 2,352 EXP, or **196 completed jobs**. A fixed two-completion/day routine takes **98 days**;
-three takes 65⅓ days (finishes during day 66); one takes 196 days. Expertise reduces timers, not the number of
-claims, and helpers earn their own EXP. A ready job does not automatically restart while the owner is away.
+Lv1→50 needs 49 × 24 = 1,176 EXP, or **98 completed jobs**. A fixed two-completion/day routine takes **49 days**;
+three takes 32⅔ days (finishes during day 33); one takes 98 days. No expertise remains in the recommendation.
+The mathematical six-hour no-idle floor is 588 hours / 24.5 days, requiring overnight check-ins. Jobs do not
+automatically restart while the owner is away. No Energy or helper-to-beneficiary EXP is assumed.
 
-The duration formula for job index `i`, starting at zero within one district, is
-`8 − 0.5 × min(5, floor(i / 4))` hours. Summing 196 jobs in one district gives **1,108 hours / 46.2 days** at
-instant round-the-clock collection, but does not produce the entire cookbook. The 170-job full bill plus
-26 jobs in an already-mastered district totals **1,222 hours / 50.9 days** with no idle time; getting all five
-districts to rank 5 instead yields **1,228 hours / 51.2 days**. These are arithmetic schedules/lower bounds,
-not demonstrated calendar sims or reasonable phone check-in promises. No Energy is included.
+Thirty workers completing two jobs/day provide sixty **account** jobs/day, not sixty jobs' personal EXP to one
+outfit. Account items can progress another outfit's Extra Stats in days while personal levels take weeks.
+
+## Independent expansion and pipeline capacity
+
+Start at **1/1/1/3/3** spots and grow each district toward six from its own completed-job count. The proposed
+thresholds for spots 2–6 are **4/12/24/40/60**, with production's first three already open. At two completions
+per staffed spot/day, raw expansion takes about ten active days; production's three→six about eight active
+days. Worker supply, input stock and recipe gates delay calendar dates. No section must finish before another
+can start; no cross-section job credit or steep sum-of-outfit-levels ladder is proposed.
+
+At full capacity a production round is **108 raw → up to 36 processed → up to 24 meals**. The canonical mix needs
+about 35 processed plus 35 direct raw per 24 meals, so six workshops and kitchens fit average demand with a
+stock buffer. Raw supply is the initial restriction: three raw spots make 18 raw/round. Two spots per raw
+district give 36 total, but only 12 milk, insufficient for three cheese-first workshop jobs. Three per district
+give 18 milk plus Garden/Orchard stock and cover that typical production mix. Total volume must not hide a
+family-specific shortage. Banquet-only bursts need advance stock.
+
+With **thirty maps** pooled and exact partial kitchen batches, the job bill is Garden 250, Orchard 225,
+Barnyard 475, Workshop 475, Kitchen 493. Each district's six workers would complete 588 jobs on their own road
+to Lv50; the static material capacity fits without eighteen workshops/kitchens. This does not prove the
+starter farm's calendar schedule. Expansion, recipe startup, staggered workers and supply timing need a small
+simulation before release. Removing expertise alone cannot fix a yield/capacity mismatch.
+
+Recommendation: remove expertise, keep thirty physical spots, and increase production per job. Also propose
+shared recipe milestones at the first worker's local Lv6/9, retaining each outfit's personal ingredient-block
+eligibility. Otherwise every new cook still has to do sixteen early jobs before her personal Lv9. These are
+explicit reviewable changes, not assumptions that the owner already approved them.
+
+## Reduced stat budget retained
 
 The owner also questioned the first draft's 960→1,440 raw Farm budget over scenarios 1–5. The revised candidate
 is **20 total points/node** and **18 + 2 × (scenario index − 1)** active nodes: **360→520**, with no extra growth/
