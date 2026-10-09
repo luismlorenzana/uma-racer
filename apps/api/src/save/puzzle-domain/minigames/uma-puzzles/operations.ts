@@ -10,7 +10,8 @@ import { puzzleSeed } from './rng'
 import { puzzleChapter } from './campaign/chapters'
 import { parsePuzzleCampaignId, puzzleCampaignId } from './campaign/identity'
 import { applyPuzzleTerminal, createPuzzleCheckpoint, puzzleChapterStatus, puzzleEntryEligibility } from './campaign/progress'
-import { puzzleEncounterRewards, validatePuzzleEncounterRecipe } from './campaign/encounters'
+import { puzzleEncounterRewards, puzzleFrozenNode, validatePuzzleEncounterRecipe } from './campaign/encounters'
+import { PUZZLE_CAMPAIGN_VERSION, puzzleRecipeVersion } from './campaign/rules'
 import type { PuzzleDarkVariant } from './campaign/types'
 import { puzzleArray, puzzleExact, puzzleId, puzzleInteger, puzzleRecord, puzzleSafe, requirePuzzle, PuzzleRuleError } from './validation'
 import { parseConstellationBankSave, parsePuzzleCheckpointSave, parsePuzzleEntity, parsePuzzleOpenEncounter, parsePuzzleOutfitSave,
@@ -389,7 +390,9 @@ function resolveOne(ctx: PuzzleResolveContext, operation: PuzzleOperationV1): { 
       requirePuzzle(party.leaderId === input.leaderId && input.ownerEpoch === 0 &&
         input.seed === `puzzle-seed-${puzzleSeed(bank.cutoverId, 'account')}-${puzzleSeed(input.battleId, 'attempt')}`, 'invalid', 'Frozen seed/leader/epoch changed')
       const chapter = puzzleChapter(input.scenarioId), progress = checkpoint?.progress ?? createPuzzleCheckpoint(chapter, input.partyId)
-      requirePuzzle(puzzleEntryEligibility(chapter, progress, `pzn:${id.scenarioId}:${id.localId}`, input.entrants.map(e => e.level)).attempt === id.attempt &&
+      // New fights freeze under the current campaign only (D301); v1 inputs exist only as fights already open.
+      requirePuzzle(puzzleRecipeVersion(input.content.recipeHash) === PUZZLE_CAMPAIGN_VERSION &&
+        puzzleEntryEligibility(chapter, progress, `pzn:${id.scenarioId}:${id.localId}`, input.entrants.map(e => e.level)).attempt === id.attempt &&
         validatePuzzleEncounterRecipe(input), 'invalid', 'Encounter recipe or attempt changed')
       put('puzzleCheckpoints', input.checkpointId, { schemaVersion: 1, checkpointId: input.checkpointId, scenarioId: input.scenarioId,
         progress, reached: puzzleChapterStatus(chapter, progress).reached, open: p.encounter, revision: (checkpoint?.revision ?? 0) + 1 })
@@ -402,20 +405,21 @@ function resolveOne(ctx: PuzzleResolveContext, operation: PuzzleOperationV1): { 
       const input = open.input, id = parsePuzzleCampaignId(input.battleId)
       requirePuzzle(p.result.hpRemaining <= puzzlePartyStats(input).maxHp, 'invalid', 'Terminal party HP exceeds frozen maximum')
       requirePuzzle(id?.kind === 'battle' && validatePuzzleEncounterRecipe(input), 'invalid', 'Invalid frozen campaign')
-      const chapter = puzzleChapter(input.scenarioId), node = chapter.nodes.find(n => n.localId === id.localId)!
+      // Settled under the campaign version it was frozen with; a v1 stage the v2 line retired still pays (D301).
+      const chapter = puzzleChapter(input.scenarioId), { node, version } = puzzleFrozenNode(input)!
       const exp = input.entrants.map(e => {
         expect('puzzleOutfits', e.outfitId, false); const o = outfit(e.outfitId)
         requirePuzzle(puzzleCanonical(o.enrollment.source) === puzzleCanonical(e.source), 'invalid', 'Frozen source changed')
-        const amount = puzzleBattleExp(p.result.outcome, input.encounterLevel, e.level, input.kind), before = { level: o.enrollment.level, exp: o.enrollment.exp }
+        const amount = puzzleBattleExp(p.result.outcome, input.encounterLevel, e.level, input.kind, version), before = { level: o.enrollment.level, exp: o.enrollment.exp }
         const after = addPuzzleExp(e.source, before, amount).after
         put('puzzleOutfits', e.outfitId, { ...o, enrollment: { ...o.enrollment, ...after }, revision: o.revision + 1 })
         return { outfitId: e.outfitId, frozenLevel: e.level, amount, before, after }
       })
-      const materials = p.result.outcome === 'win' ? puzzleEncounterRewards(node, node.localId === 'c-dark' ? input.rewards[0]!.style as PuzzleDarkVariant : null)
+      const materials = p.result.outcome === 'win' ? puzzleEncounterRewards(node, node.localId === 'c-dark' ? input.rewards[0]!.style as PuzzleDarkVariant : null, version)
         .map(r => grant(`constellation:${input.scenarioId}:${r.style}`, r.quantity)) : []
       const fact = { schemaVersion: 1 as const, battleId: input.battleId, partyId: input.partyId, scenarioId: input.scenarioId,
         nodeId: node.id, attempt: id.attempt, outcome: p.result.outcome }
-      const progress = applyPuzzleTerminal(chapter, checkpoint.progress, fact)
+      const progress = chapter.nodes.some(n => n.id === node.id) ? applyPuzzleTerminal(chapter, checkpoint.progress, fact) : checkpoint.progress
       put('puzzleCheckpoints', p.checkpointId, { ...checkpoint, progress, reached: puzzleChapterStatus(chapter, progress).reached, open: null, revision: checkpoint.revision + 1 })
       if (p.result.outcome === 'win' && node.localId === 'g1') bankAfter.openingClears = [...new Set([...bankAfter.openingClears, input.scenarioId])]
       const result: PuzzleResultSaveV1 = { schemaVersion: 1, battleId: input.battleId, input, inputHash: open.inputHash, result: p.result, fact, exp, materials, createdAt: ctx.now }

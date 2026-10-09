@@ -7,6 +7,14 @@ import { parseEntityData, parseSaveSnapshot, parseUmaSave } from '../../save'
 import { createBattle, applyBattleAction } from './battle'
 import { puzzleBattleResult } from './replay'
 import { puzzleBotAction } from './bots'
+import { parsePuzzleResultSave, puzzleData } from './records'
+import { puzzleChapter } from './campaign/chapters'
+import { applyPuzzleTerminal, createPuzzleCheckpoint, puzzleChapterStatus } from './campaign/progress'
+import { resolvePuzzleEncounter } from './campaign/encounters'
+import { acceptedFact } from './campaign/test-helpers'
+import { puzzleSeed } from './rng'
+import { puzzleStats, puzzleWinExp } from './progression'
+import type { PuzzleBattleInputV1 } from './battle-types'
 
 const spend = { kind: 'cl-spend' as const, outfitId: 'invented-0', scenarioId: 'ura-finale', inputs: [{ itemId: 'constellation:ura-finale:front' as const, quantity: 1 }] }
 describe('Puzzle atomic protocol v1', () => {
@@ -136,6 +144,38 @@ describe('Puzzle atomic protocol v1', () => {
     expect(f.entities.get('constellationBank/main')!.data.balances).toEqual({ 'constellation:ura-finale:front': 0 })
     expect(f.apply(op).responses[0]?.status).toBe('duplicate')
     expect(f.apply(f.operation(op.payload, 'other-claim')).responses[0]?.status).toBe('rejected')
+  }, 15000)
+  it('keeps a v1-era account working: its checkpoint reads on the v2 line and its open v1 fight on a retired stage settles by v1 rules (D301)', () => {
+    const f = puzzleProtocolFixture(), v1 = puzzleChapter('ura-finale', undefined, 1), reserve = f.reserve()
+    if (reserve.payload.kind !== 'reserve') throw new Error('Fixture')
+    // A v1 checkpoint halfway into Senior that skipped o8a, with a fight open on the retired tenth pair.
+    const played = ['o1a', 'o1b', 'o2a', 'o2b', 'o3a', 'o3b', 'g1', 'o4a', 'o4b', 'o5a', 'o5b', 'o6a', 'o6b', 'g2', 'o7a', 'o7b', 'o8b', 'o9a']
+    const progress = played.reduce((p, localId) => applyPuzzleTerminal(v1, p, acceptedFact(v1, p, localId)), createPuzzleCheckpoint(v1, 'puzzle-party-1'))
+    const node = v1.nodes.find(n => n.localId === 'o10a')!, encounter = resolvePuzzleEncounter(v1, node.id, { schemaVersion: 1,
+      manifestVersion: reserve.payload.encounter.input.content.manifestVersion, members: [{ id: 'invented-foe', elements: ['fire', 'water', 'wood', 'light', 'dark'],
+        roles: ['striker', 'healer', 'guard', 'converter', 'ward', 'champion'] }] })
+    const battleId = 'pzb:puzzle-party-1:ura-finale:o10a:0', base = reserve.payload.encounter.input
+    const input: PuzzleBattleInputV1 = { ...base, battleId, seed: `puzzle-seed-${puzzleSeed('invented-cutover', 'account')}-${puzzleSeed(battleId, 'attempt')}`,
+      encounterLevel: node.level, kind: 'ordinary', enemies: encounter.enemies, rewards: encounter.rewards,
+      entrants: base.entrants.map(e => ({ ...e, level: 30, stats: puzzleStats(e.source, 30) })), content: { ...base.content, recipeHash: 'puzzle-campaign-v1' } }
+    const open = { ...reserve.payload.encounter, input, inputHash: puzzlePayloadHash(input) }
+    const checkpointId = 'pzp:puzzle-party-1:ura-finale'
+    f.put('puzzleCheckpoints', checkpointId, { schemaVersion: 1, checkpointId, scenarioId: 'ura-finale', progress,
+      reached: puzzleChapterStatus(v1, progress).reached, open, revision: 4 }, 4)
+    const loaded = parsePuzzleCheckpointSave(f.entities.get(`puzzleCheckpoints/${checkpointId}`)!.data)!
+    expect(loaded.progress.cleared).toContain('pzn:ura-finale:o8a'); expect(loaded.open?.input.battleId).toBe(battleId)
+    expect(loaded.reached.at(-1)).toBe('pzn:ura-finale:o9b')
+    let state = createBattle(input)
+    for (let n = 0; n < 181 && state.outcome === 'active'; n++) state = applyBattleAction(state, puzzleBotAction(state, 'competent')).state
+    expect(state.outcome).toBe('win')
+    const result = puzzleBattleResult(state), r = f.apply(f.operation({ kind: 'settle', checkpointId, inputHash: open.inputHash, result }, 'settle-v1'))
+    expect(r.responses[0]?.status, r.responses[0]?.reason ?? '').toBe('applied')
+    const receipt = parsePuzzleResultSave(f.logs.get(`puzzleResults/${battleId}`)!.data)!
+    expect(receipt.materials.reduce((n, m) => n + m.gross, 0)).toBe(3)
+    expect(receipt.exp[0]!.amount).toBe(puzzleWinExp(9, 30, 'ordinary', 1))
+    const after = parsePuzzleCheckpointSave(f.entities.get(`puzzleCheckpoints/${checkpointId}`)!.data)!
+    expect(after.open).toBeNull(); expect(after.progress).toEqual(loaded.progress)
+    expect(parsePuzzleCheckpointSave(puzzleData(after))).toEqual(after)
   }, 15000)
   it('compares takeover/settlement epoch and preserves everything except explicit ownership metadata', () => {
     const f = puzzleProtocolFixture(), reserve = f.reserve(); f.apply(reserve)

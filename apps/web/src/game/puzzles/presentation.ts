@@ -1,6 +1,6 @@
 // Read-only account/party/map projections (docs/design/uma-puzzles.md §§3–4,6,9).
 import { createPuzzleCheckpoint, createPuzzleSource, eligiblePuzzleElements, eligiblePuzzleStyles, parsePuzzleCampaignId,
-  puzzleChapter, puzzleChapterStatus, puzzleEncounterRewards, puzzleMaterialId, PUZZLE_LEADERS, puzzleStats,
+  puzzleChapter, puzzleChapterStatus, puzzleEncounterRewards, puzzleFrozenNode, puzzleMaterialId, PUZZLE_LEADERS, PUZZLE_SECTION_NAMES, puzzleStats,
   type PuzzleCheckpointSaveV1, type PuzzleElement, type PuzzleMapNode, type PuzzleOutfitSaveV1,
   type PuzzlePresetSaveV1, type UmaTemplate } from '@racer/domain'
 import type { PuzzleAccount } from './host'
@@ -81,14 +81,20 @@ export function puzzleMapStatus(account: PuzzleAccount, partyId: string, scenari
   const chapter = puzzleChapter(scenarioId), checkpoint = puzzleCheckpoint(account, partyId, scenarioId)
   return { chapter, checkpoint, ...puzzleChapterStatus(chapter, checkpoint?.progress ?? createPuzzleCheckpoint(chapter, partyId)) }
 }
+/** A stage's place in its section, 1–6 (D301); v1's retired tenth pair reads as Senior's extra stages. */
+export function puzzleStageNumber(node: Pick<PuzzleMapNode, 'localId'>) {
+  const pair = Number(node.localId.slice(1, -1)), lane = node.localId.endsWith('b') ? 1 : 0
+  return pair > 9 ? 7 + lane : ((pair - 1) % 3) * 2 + lane + 1
+}
+/** Debut · Stage 3, Classic Guardian, Fire Champion: the RPG's section names (D301). */
 export function puzzleNodeName(node: PuzzleMapNode) {
   if (node.kind === 'champion') return `${node.elements[0]![0]!.toUpperCase()}${node.elements[0]!.slice(1)} Champion`
-  if (node.kind === 'guardian') return `${['Opening', 'Middle', 'Final stretch'][node.sector]} Guardian`
-  return `Squad ${node.localId.slice(1, -1)}${node.column === 0 ? 'A' : 'B'}`
+  if (node.kind === 'guardian') return `${PUZZLE_SECTION_NAMES[node.sector]} Guardian`
+  return `${PUZZLE_SECTION_NAMES[node.sector]} · Stage ${puzzleStageNumber(node)}`
 }
+/** The node an open fight was frozen on, from the campaign version it names (D301). */
 export function openPuzzleNode(checkpoint: PuzzleCheckpointSaveV1) {
-  const id = parsePuzzleCampaignId(checkpoint.open?.input.battleId)
-  return id?.kind === 'battle' ? puzzleChapter(id.scenarioId).nodes.find(n => n.localId === id.localId) ?? null : null
+  return checkpoint.open ? puzzleFrozenNode(checkpoint.open.input)?.node ?? null : null
 }
 export function puzzleRewardEstimate(node: PuzzleMapNode, scenarioId: string, account: PuzzleAccount, variant: 'pace' | 'late' | null) {
   return puzzleEncounterRewards(node, variant).map(r => {

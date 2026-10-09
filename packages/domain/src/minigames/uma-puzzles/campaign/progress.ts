@@ -4,7 +4,7 @@ import { validatePuzzleRegistry, type PuzzleScenarioRegistry } from '../material
 import { puzzleArray, puzzleExact, puzzleInteger, puzzleRecord, puzzleSafe, requirePuzzle } from '../validation'
 import { puzzleChapter } from './chapters'
 import { parsePuzzleCampaignId, puzzleCampaignId } from './identity'
-import { PUZZLE_MAP_NODES } from './rules'
+import { PUZZLE_CAMPAIGN_VERSION, PUZZLE_RETIRED_NODES } from './rules'
 import type { PuzzleChapter, PuzzleCheckpointV1, PuzzleClearFact, PuzzleMapNode } from './types'
 
 // Recursive comparison follows the trusted generated shape, rejecting extra keys, sparse arrays and prototypes.
@@ -15,11 +15,15 @@ function sameShape(actual: unknown, expected: unknown): boolean {
     Object.keys(expected).every(k => sameShape(actual[k], expected[k]))
   return actual === expected
 }
+/** A generated chapter of the current campaign, or of v1 for frozen v1 fights (D301). */
 export function parsePuzzleChapter(v: unknown, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleChapter | null {
   try {
     if (!puzzleRecord(v) || typeof v.scenarioId !== 'string') return null
-    const expected = puzzleChapter(v.scenarioId, registry)
-    return sameShape(v, expected) ? expected : null
+    for (const version of [PUZZLE_CAMPAIGN_VERSION, 1] as const) {
+      const expected = puzzleChapter(v.scenarioId, registry, version)
+      if (sameShape(v, expected)) return expected
+    }
+    return null
   } catch { return null }
 }
 const reachable = (node: PuzzleMapNode, cleared: ReadonlySet<string>) => node.requires.every(group => group.some(id => cleared.has(id)))
@@ -28,7 +32,7 @@ export function parsePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, regist
     const map = parsePuzzleChapter(chapter, registry)
     if (!map || !puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'chapterId', 'partyId', 'cleared', 'attempts']) ||
       v.schemaVersion !== 1 || v.chapterId !== map.id || typeof v.partyId !== 'string' || !/^puzzle-party-([1-9]|10)$/.test(v.partyId) ||
-      !puzzleArray(v.cleared, PUZZLE_MAP_NODES) || !puzzleArray(v.attempts, PUZZLE_MAP_NODES)) return null
+      !puzzleArray(v.cleared, map.nodes.length) || !puzzleArray(v.attempts, map.nodes.length)) return null
     const ids = new Set(map.nodes.map(n => n.id)), cleared = new Set<string>(), attempts = new Map<string, number>()
     for (const id of v.cleared) { if (typeof id !== 'string' || !ids.has(id) || cleared.has(id)) return null; cleared.add(id) }
     for (const a of v.attempts) {
@@ -46,6 +50,32 @@ export function parsePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, regist
     return { schemaVersion: 1, chapterId: map.id, partyId: v.partyId,
       cleared: map.nodes.filter(n => cleared.has(n.id)).map(n => n.id),
       attempts: map.nodes.filter(n => attempts.has(n.id)).map(n => ({ nodeId: n.id, next: attempts.get(n.id)! })) }
+  } catch { return null }
+}
+/**
+ * A checkpoint saved on D271's two-lane map, read on the v2 stage line (D301). Wins on retired stages are dropped, and
+ * every stage before a won stage or the open fight's stage counts as won, since v2 is one line and v1 let a lane be
+ * skipped. Nothing is paid for that: won stages replay for the same rewards. Null unless it was a valid v1 checkpoint.
+ */
+export function upgradePuzzleCheckpoint(v: unknown, chapter: PuzzleChapter, openNodeId: string | null,
+  registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleCheckpointV1 | null {
+  try {
+    const map = parsePuzzleChapter(chapter, registry)
+    if (!map) return null
+    const legacy = parsePuzzleCheckpoint(v, puzzleChapter(map.scenarioId, registry, 1), registry)
+    if (!legacy) return null
+    const retired = new Set(PUZZLE_RETIRED_NODES.map(localId => puzzleCampaignId({ kind: 'node', scenarioId: map.scenarioId, localId }, registry)))
+    const known = (id: string) => !retired.has(id) && map.nodes.some(n => n.id === id)
+    const line = map.nodes.filter(n => n.kind !== 'champion').map(n => n.id)
+    const won = new Set(legacy.cleared.filter(known))
+    // Furthest point on the line reached by a win (inclusive) or by the open fight (exclusive).
+    let through = -1
+    for (const id of won) through = Math.max(through, line.includes(id) ? line.indexOf(id) : line.length - 1)
+    if (openNodeId && known(openNodeId)) through = Math.max(through, line.includes(openNodeId) ? line.indexOf(openNodeId) - 1 : line.length - 1)
+    for (const id of line.slice(0, through + 1)) won.add(id)
+    const attempts = legacy.attempts.filter(a => known(a.nodeId))
+    for (const id of won) if (!attempts.some(a => a.nodeId === id)) attempts.push({ nodeId: id, next: 1 })
+    return parsePuzzleCheckpoint({ schemaVersion: 1, chapterId: map.id, partyId: legacy.partyId, cleared: [...won], attempts }, map, registry)
   } catch { return null }
 }
 export function createPuzzleCheckpoint(chapter: PuzzleChapter, partyId: string, registry: PuzzleScenarioRegistry = SCENARIOS): PuzzleCheckpointV1 {

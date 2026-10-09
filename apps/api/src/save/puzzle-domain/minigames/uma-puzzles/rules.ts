@@ -6,7 +6,13 @@ export const PUZZLE_STAT_GROWTH = { atk: 12, hp: 36, rcv: 4, guard: 6, resilienc
 export const PUZZLE_STAT_BASE = { atk: 1, hp: 4, rcv: 0.5, guardDivisor: 20, resilienceDivisor: 20 } as const
 export const PUZZLE_EXP_BASE = 100
 export const PUZZLE_EXP_STEP = 10
-export const PUZZLE_EXP_WEIGHTS = { ordinary: 0.5, guardian: 1, champion: 1.5 } as const
+/**
+ * D301: a full clear of the standard stage line paces a chapter (finals near its last level, about PL 11 after all
+ * five Champions), not one lane of the old branching map.
+ */
+export const PUZZLE_EXP_WEIGHTS = { ordinary: 0.28, guardian: 0.8, champion: 0.5 } as const
+/** D271's one-lane route pacing; fights frozen under campaign v1 still settle and verify with it. */
+export const PUZZLE_EXP_WEIGHTS_V1 = { ordinary: 0.5, guardian: 1, champion: 1.5 } as const
 export const PUZZLE_RELATIVE_EXP = { min: 0.25, max: 2, perLevel: 0.1 } as const
 export const PUZZLE_CL_MAX = 10
 export const PUZZLE_EXCHANGE_RATIO = 2

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   PUZZLE_RULES_VERSION, PUZZLE_SCHEMA_VERSION, PUZZLE_STAT_GROWTH, PUZZLE_STAT_BASE,
-  PUZZLE_EXP_BASE, PUZZLE_EXP_STEP, PUZZLE_EXP_WEIGHTS, PUZZLE_RELATIVE_EXP,
+  PUZZLE_EXP_BASE, PUZZLE_EXP_STEP, PUZZLE_EXP_WEIGHTS, PUZZLE_EXP_WEIGHTS_V1, PUZZLE_RELATIVE_EXP,
   PUZZLE_CL_MAX, PUZZLE_EXCHANGE_RATIO, PUZZLE_LEGACY_EXP_PER_TICKET, PUZZLE_PARSE_LIMITS,
   PUZZLE_ENGINE_VERSION, PUZZLE_BOARD_WIDTH, PUZZLE_BOARD_HEIGHT, PUZZLE_BOARD_SIZE, PUZZLE_PARTY_SIZE, PUZZLE_PARTY_IDS,
   PUZZLE_TURN_LIMIT, PUZZLE_ACTION_LIMIT, PUZZLE_PATH_LIMIT, PUZZLE_MOVEMENT_MS, PUZZLE_CASCADE_LIMIT,
@@ -11,7 +11,7 @@ import {
   PUZZLE_SKILL_RULES, PUZZLE_LEADER_RULES, PUZZLE_PATTERN_RULES, PUZZLE_ENEMY_GUARD, PUZZLE_RAGE_THRESHOLD,
   PUZZLE_BATTLE_LIMITS, PUZZLE_BOT_SEARCH, PUZZLE_ORBS, PUZZLE_ACTIVES, PUZZLE_LEADERS, PUZZLE_PATTERNS, PUZZLE_ENEMY_RECIPES,
   PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_REGULAR_LEVELS, PUZZLE_GUARDIAN_LEVELS, PUZZLE_CHAMPION_LEVEL,
-  PUZZLE_MAP_BRANCHES, PUZZLE_MAP_NODES, PUZZLE_DROP_COUNTS, PUZZLE_PRIMARY_WINS, PUZZLE_PRIMARY_GROSS, PUZZLE_FULL_GROSS,
+  PUZZLE_MAP_NODES, PUZZLE_DROP_COUNTS, PUZZLE_FULL_GROSS, PUZZLE_CAMPAIGN_V1, PUZZLE_RETIRED_NODES, PUZZLE_SECTION_NAMES,
   PUZZLE_DARK_VARIANTS, PUZZLE_FOE_ROLES, PUZZLE_FOE_REFERENCE, PUZZLE_FOE_SCALING, PUZZLE_FOE_ROLE_MULTIPLIERS,
   PUZZLE_FOE_MECHANICS, PUZZLE_SQUAD_MIXES, PUZZLE_ALLOCATION_RECIPIENT_LIMIT, PUZZLE_CONTENT_LIMITS, PUZZLE_SYNC_LIMITS,
   PUZZLE_PRESERVATION_LIMITS, CONSTELLATION_SAVE_SCHEMA_VERSION,
@@ -683,7 +683,8 @@ describe('Uma Puzzles initial candidates, not balance closure (D269)', () => {
     expect(PUZZLE_STAT_GROWTH).toEqual({ atk: 12, hp: 36, rcv: 4, guard: 6, resilience: 6 })
     expect(PUZZLE_STAT_BASE).toEqual({ atk: 1, hp: 4, rcv: 0.5, guardDivisor: 20, resilienceDivisor: 20 })
     expect([PUZZLE_EXP_BASE, PUZZLE_EXP_STEP]).toEqual([100, 10])
-    expect(PUZZLE_EXP_WEIGHTS).toEqual({ ordinary: 0.5, guardian: 1, champion: 1.5 }) // D271 route pacing.
+    expect(PUZZLE_EXP_WEIGHTS).toEqual({ ordinary: 0.28, guardian: 0.8, champion: 0.5 }) // D301 full-clear pacing.
+    expect(PUZZLE_EXP_WEIGHTS_V1).toEqual({ ordinary: 0.5, guardian: 1, champion: 1.5 }) // D271, frozen v1 fights.
     expect(PUZZLE_RELATIVE_EXP).toEqual({ min: 0.25, max: 2, perLevel: 0.1 })
   })
   it('pins material value, preserved legacy value and distinct work bounds', () => {
@@ -722,11 +723,18 @@ describe('Uma Puzzles battle v1 initial candidates and transport (D270)', () => 
 
 describe('Uma Puzzles campaign coefficients and economy (D271)', () => {
   it('pins generated map bands, vectors, gross budgets and separate report bounds', () => {
-    expect([PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_MAP_BRANCHES, PUZZLE_MAP_NODES]).toEqual([1, 10, 2, 28])
-    expect(PUZZLE_REGULAR_LEVELS).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9, 9]])
+    // D301: one line of six stages per section, each closed by its Guardian, then five Champions; a full clear pays 132.
+    expect([PUZZLE_CAMPAIGN_VERSION, PUZZLE_CHAPTER_LEVELS, PUZZLE_MAP_NODES]).toEqual([2, 10, 26])
+    expect(PUZZLE_SECTION_NAMES).toEqual(['Debut', 'Classic', 'Senior', 'Finals'])
+    expect(PUZZLE_REGULAR_LEVELS).toEqual([[1, 1, 2, 2, 3, 3], [4, 4, 5, 5, 6, 6], [7, 7, 8, 8, 9, 9]])
     expect(PUZZLE_GUARDIAN_LEVELS).toEqual([3, 6, 9]); expect(PUZZLE_CHAMPION_LEVEL).toBe(10)
-    expect(PUZZLE_DROP_COUNTS).toEqual({ ordinary: 3, guardian: 4, champion: 12 })
-    expect([PUZZLE_PRIMARY_WINS, PUZZLE_PRIMARY_GROSS, PUZZLE_FULL_GROSS]).toEqual([14, 54, 132])
+    expect(PUZZLE_DROP_COUNTS).toEqual({ ordinary: 3, guardian: 6, champion: 12 })
+    expect(18 * PUZZLE_DROP_COUNTS.ordinary + 3 * PUZZLE_DROP_COUNTS.guardian + 5 * PUZZLE_DROP_COUNTS.champion).toBe(PUZZLE_FULL_GROSS)
+    expect(PUZZLE_FULL_GROSS).toBe(132)
+    // D271's map, kept for fights frozen under it: 28 nodes, Guardians 4; its tenth pair is retired.
+    expect(PUZZLE_CAMPAIGN_V1).toEqual({ regularLevels: [[1, 2, 3], [4, 5, 6], [7, 8, 9, 9]], branches: 2, nodes: 28,
+      drops: { ordinary: 3, guardian: 4, champion: 12 } })
+    expect(PUZZLE_RETIRED_NODES).toEqual(['o10a', 'o10b'])
     expect(PUZZLE_DARK_VARIANTS).toEqual(['pace', 'late']); expect(PUZZLE_ALLOCATION_RECIPIENT_LIMIT).toBe(6)
     expect(PUZZLE_SQUAD_MIXES).toEqual([['light', 'fire', 'water'], ['dark', 'fire', 'wood'], ['light', 'water', 'wood'],
       ['dark', 'fire', 'water'], ['light', 'fire', 'wood'], ['dark', 'water', 'wood']])

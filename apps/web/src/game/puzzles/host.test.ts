@@ -2,7 +2,7 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPlayerProfile, nodesUnlockedBetween, constellationTemplate, parsePuzzlePresetSave, puzzleBotAction,
-  puzzleBattleStateHash, puzzleCampaignId, puzzleData, puzzlePayloadHash, resolvePuzzleOperations, resolvePuzzleTakeover,
+  puzzleBattleStateHash, puzzleCampaignId, puzzleChapter, puzzleData, puzzleEncounterRewards, puzzlePayloadHash, resolvePuzzleOperations, resolvePuzzleTakeover,
   PUZZLE_ELEMENTS, PUZZLE_FOE_ROLES, type PuzzleBattleAction, type PuzzleCheckpointSaveV1, type PuzzleOperationV1, type PuzzleStoredEntity, type UmaTemplate } from '@racer/domain'
 import { puzzleProtocolFixture } from '../../../../../packages/domain/src/minigames/uma-puzzles/protocol-fixtures'
 import type { LoadedContent } from '../../content/runtime'
@@ -195,7 +195,7 @@ describe('real Puzzle host and journal', () => {
     await expect(begin('unknown')).rejects.toThrow(/Invalid|Unknown/)
     await expect(begin('o1a', 'bad-variant', 'pace')).rejects.toThrow(/variant/)
     const view = await begin()
-    expect(view.stateHash).toBe('e7edcd59971f9921') // D290 release recipe input pin; T107 replay math is unchanged.
+    expect(view.stateHash).toBe('54b8700e4d24d666') // D290 recipe input under the campaign-v2 name (D301); T107 replay math is unchanged.
     const step = await host.append(view.open.input.battleId, 0, 0, puzzleBotAction(view.state, 'competent'))
     database.close(); await database.open(); host = new PersistentPuzzleHost(options)
     const restored = await host.loadBattle(view.open.input.battleId)
@@ -322,17 +322,20 @@ describe('real Puzzle host and journal', () => {
     const view = await begin(); await sync()
     for (const row of await database.puzzleOutfits.toArray()) { row.data.enrollment.level = 5; row.data.enrollment.exp = 30; row.data.revision++; await database.puzzleOutfits.put(row) }
     const result = await host.commit(await play(view))
-    for (const e of result.receipt.exp) expect(e).toMatchObject({ frozenLevel: 1, amount: 50, before: { level: 5, exp: 30 }, after: { level: 5, exp: 80 } })
+    for (const e of result.receipt.exp) expect(e).toMatchObject({ frozenLevel: 1, amount: 28, before: { level: 5, exp: 30 }, after: { level: 5, exp: 58 } })
   })
   it('freezes the Dark boss variant/reachable node, without putting future nodes on the map by guessing ids', async () => {
     await expect(begin('c-dark', 'unreached', 'pace')).rejects.toThrow(/reached/)
     const bank = (await database.constellationBank.get('main'))!
-    bank.data.cohortCount = bank.data.completedCount = 2; bank.data.debitLimits = { 'constellation:ura-finale:front': 18 }; bank.data.balances = { 'constellation:ura-finale:front': -18 }
+    // Debt sized so the whole stage line's Front drops leave 7 for the Champion to repay.
+    const front = puzzleChapter('ura-finale').nodes.filter(n => n.kind !== 'champion').flatMap(n => puzzleEncounterRewards(n))
+      .filter(r => r.style === 'front').reduce((sum, r) => sum + r.quantity, 0) + 7
+    bank.data.cohortCount = bank.data.completedCount = 10; bank.data.debitLimits = { 'constellation:ura-finale:front': front }; bank.data.balances = { 'constellation:ura-finale:front': -front }
     await database.constellationBank.put(bank)
     // Deliberately over-levelled synthetic crew: this test covers persistence/variant reachability, not balance.
     for (const row of await database.puzzleOutfits.toArray()) { row.data.enrollment.level = 30; await database.puzzleOutfits.put(row) }
     // Reach guardians through actual wins, not forged later clear flags.
-    const locals = ['o1a', 'o2a', 'o3a', 'g1', 'o4a', 'o5a', 'o6a', 'g2', 'o7a', 'o8a', 'o9a', 'o10a', 'g3']
+    const locals = puzzleChapter('ura-finale').nodes.filter(n => n.kind !== 'champion').map(n => n.localId)
     for (const local of locals) {
       const view = await begin(local, `route-${local}`)
       const result = await host.commit(await play(view)); expect(result.receipt.result.outcome).toBe('win')

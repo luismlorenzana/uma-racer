@@ -33,7 +33,7 @@ describe('Puzzle private presentation contract', { timeout: 30_000 }, () => {
   it('normalizes order and verifies all chapter/element/recipe joins without source combat data', () => {
     const source = syntheticPuzzleSource(), reversed = structuredClone(source); reversed.members.reverse(); reversed.members.forEach(m => m.roles.reverse())
     expect(canonicalPuzzleJson(parsePuzzleCastSource(source))).toBe(canonicalPuzzleJson(parsePuzzleCastSource(reversed)))
-    expect(puzzleContentCoverage(puzzleCastForContent(parsePuzzleContentPack(syntheticPuzzlePack()), 'invented'))).toMatchObject({ chapters: 14, encounters: 392, unresolvedReferences: 0 })
+    expect(puzzleContentCoverage(puzzleCastForContent(parsePuzzleContentPack(syntheticPuzzlePack()), 'invented'))).toMatchObject({ chapters: 14, encounters: 364, unresolvedReferences: 0 })
     expect(() => parsePuzzleCastSource({ ...source, stats: [] })).toThrow()
   })
   it.each(['duplicate', 'variant', 'colour', 'role', 'future', 'overflow', 'provenance'] as const)('rejects %s source', kind => {

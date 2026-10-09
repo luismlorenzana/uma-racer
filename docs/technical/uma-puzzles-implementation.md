@@ -768,6 +768,17 @@ Light ivory-gold, Dark violet, Heart pink, always glyph + accessible label. Shar
 controls, no fight page scroll, delta-time transform/opacity animation, background gesture cancellation, contextual
 guide and isolated practice. Browser proofs and physical-iPhone tests are separately labelled.
 
+### Campaign v2 — the stage line (D301)
+
+`PUZZLE_CAMPAIGN_VERSION` is 2. `puzzleChapter(scenarioId, registry, version)` builds either line; `puzzleRecipeVersion`
+reads a frozen fight's `content.recipeHash` (`puzzle-campaign-v1` | `puzzle-campaign-v2`) and `puzzleFrozenNode` finds its
+node in that version's chapter. Reward, EXP (`puzzleBattleExp(…, version)`), recipe and receipt checks all use the
+frozen version; `reserve` accepts only v2. `parsePuzzleCheckpointSave` keeps the strict v2 path (stored `reached` must
+equal the derived one) and otherwise reads a valid v1 checkpoint through `upgradePuzzleCheckpoint`: retired ids
+dropped, the line closed up to the furthest win or the open fight's stage, `attempts.next = 1` for stages it closes,
+`reached` derived. An open fight on a retired stage skips the reach/attempt check and settles without changing
+progress. The next write of the row stores the v2 form. The API mirror is regenerated from the same source.
+
 ### T112 implemented setup navigation (D275)
 
 All campaign setup routes are lazy children of `PuzzleShell` under `/puzzles`: Hub (index), `roster`,

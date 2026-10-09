@@ -11,7 +11,8 @@ export const acceptedFact = (chapter: PuzzleChapter, progress: PuzzleCheckpointV
 }
 export function reachedFinals(chapter: PuzzleChapter) {
   let progress = createPuzzleCheckpoint(chapter, 'puzzle-party-1')
-  for (const n of chapter.nodes.filter(n => n.kind === 'guardian' || n.localId.endsWith('a')))
+  // v2 is one line (D301): every stage and Guardian before the Finals.
+  for (const n of chapter.nodes.filter(n => n.kind !== 'champion'))
     progress = applyPuzzleTerminal(chapter, progress, acceptedFact(chapter, progress, n.localId))
   return progress
 }

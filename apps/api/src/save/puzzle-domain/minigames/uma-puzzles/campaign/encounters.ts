@@ -14,8 +14,9 @@ import { puzzleArray, puzzleExact, puzzleId, puzzleInteger, puzzleRecord, puzzle
 import { parsePuzzleCampaignId, puzzleCampaignId } from './identity'
 import { puzzleChapter } from './chapters'
 import { parsePuzzleChapter, puzzleEntryEligibility } from './progress'
-import { PUZZLE_CAMPAIGN_VERSION, PUZZLE_DARK_VARIANTS, PUZZLE_DROP_COUNTS, PUZZLE_FOE_MECHANICS as M,
-  PUZZLE_FOE_REFERENCE as R, PUZZLE_FOE_ROLES, PUZZLE_FOE_ROLE_MULTIPLIERS, PUZZLE_FOE_SCALING, type PuzzleFoeRole } from './rules'
+import { PUZZLE_CAMPAIGN_V1, PUZZLE_CAMPAIGN_VERSION, PUZZLE_DARK_VARIANTS, PUZZLE_DROP_COUNTS, PUZZLE_FOE_MECHANICS as M,
+  PUZZLE_FOE_REFERENCE as R, PUZZLE_FOE_ROLES, PUZZLE_FOE_ROLE_MULTIPLIERS, PUZZLE_FOE_SCALING, puzzleRecipeVersion,
+  type PuzzleCampaignVersion, type PuzzleFoeRole } from './rules'
 import type { PuzzleCastV1, PuzzleChapter, PuzzleCheckpointV1, PuzzleDarkVariant, PuzzleEncounter, PuzzleMapNode } from './types'
 
 export function parsePuzzleCast(v: unknown): PuzzleCastV1 | null {
@@ -58,13 +59,16 @@ function foe(level: number, kind: PuzzleBattleKind, role: PuzzleFoeRole, element
       countdown: M.rageCountdown, element: null } : null })
   requirePuzzle(enemy, 'overflow', 'Enemy exceeds v1 engine bounds'); return enemy
 }
-export function puzzleEncounterRewards(node: PuzzleMapNode, variant: PuzzleDarkVariant | null = null): PuzzleEncounter['rewards'] {
+/** `version` is the campaign the fight is frozen under (D301): v1 Guardians paid 4, v2 Guardians pay 6. */
+export function puzzleEncounterRewards(node: PuzzleMapNode, variant: PuzzleDarkVariant | null = null,
+  version: PuzzleCampaignVersion = PUZZLE_CAMPAIGN_VERSION): PuzzleEncounter['rewards'] {
+  const drops = version === 1 ? PUZZLE_CAMPAIGN_V1.drops : PUZZLE_DROP_COUNTS
   const choice = node.kind === 'champion' && node.elements[0] === 'dark'
   requirePuzzle(choice ? PUZZLE_DARK_VARIANTS.includes(variant as never) : variant === null, 'invalid', 'Invalid Dark champion variant')
   const mapping: Record<PuzzleElement, Strategy> = { fire: 'front', water: 'end', wood: 'late', light: 'pace', dark: variant ?? node.darkStyle ?? 'late' }
   const counts = new Map<Strategy, number>()
   for (const element of node.elements) {
-    const quantity = node.kind === 'ordinary' ? 1 : PUZZLE_DROP_COUNTS[node.kind], style = mapping[element]
+    const quantity = node.kind === 'ordinary' ? 1 : drops[node.kind], style = mapping[element]
     counts.set(style, (counts.get(style) ?? 0) + quantity)
   }
   return STRATEGIES.filter(s => counts.has(s)).map(style => ({ style, quantity: counts.get(style)! }))
@@ -97,16 +101,25 @@ export function resolvePuzzleChapterEncounters(chapter: PuzzleChapter, valueCast
   return map.nodes.flatMap(node => node.kind === 'champion' && node.elements[0] === 'dark'
     ? PUZZLE_DARK_VARIANTS.map(variant => resolveNode(node, cast, variant)) : [resolveNode(node, cast, null)])
 }
+/** The authored node a frozen fight was reserved on, under the campaign version it names (D301), or null. */
+export function puzzleFrozenNode(input: PuzzleBattleInputV1, registry: PuzzleScenarioRegistry = SCENARIOS): { node: PuzzleMapNode; version: PuzzleCampaignVersion } | null {
+  const identity = parsePuzzleCampaignId(input.battleId, registry), version = puzzleRecipeVersion(input.content.recipeHash)
+  if (!identity || identity.kind !== 'battle' || !version) return null
+  const node = puzzleChapter(input.scenarioId, registry, version).nodes.find(n => n.localId === identity.localId)
+  return node ? { node, version } : null
+}
 /** API semantic check: cast ids are cosmetic, while every fight coefficient and drop comes from this recipe. */
 export function validatePuzzleEncounterRecipe(input: PuzzleBattleInputV1): boolean {
   try {
     const identity = parsePuzzleCampaignId(input.battleId)
     if (!identity || identity.kind !== 'battle' || identity.partyId !== input.partyId || identity.scenarioId !== input.scenarioId ||
       input.checkpointId !== puzzleCampaignId({ kind: 'checkpoint', partyId: identity.partyId, scenarioId: identity.scenarioId })) return false
-    const node = puzzleChapter(input.scenarioId).nodes.find(n => n.localId === identity.localId)
-    if (!node || input.kind !== node.kind || input.encounterLevel !== node.level || input.enemies.length !== node.elements.length) return false
+    const frozen = puzzleFrozenNode(input)
+    if (!frozen) return false
+    const { node, version } = frozen
+    if (input.kind !== node.kind || input.encounterLevel !== node.level || input.enemies.length !== node.elements.length) return false
     const variant = node.localId === 'c-dark' ? input.rewards[0]?.style as PuzzleDarkVariant : null
-    if (JSON.stringify(input.rewards) !== JSON.stringify(puzzleEncounterRewards(node, variant))) return false
+    if (JSON.stringify(input.rewards) !== JSON.stringify(puzzleEncounterRewards(node, variant, version))) return false
     return input.enemies.every((enemy, i) => JSON.stringify(enemy) === JSON.stringify(foe(node.level, node.kind, node.roles[i]!, node.elements[i]!, `${node.id}:foe${i}`, enemy.castId)))
   } catch { return false }
 }

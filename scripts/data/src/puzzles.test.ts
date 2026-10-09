@@ -36,11 +36,11 @@ async function fixture() {
   await pin(raw)
   return { dir, raw, manifest, pin }
 }
-// Repeated full 392-node compilation plus disk round-trips competes with all packages on the two-core CI runner.
+// Repeated full 364-node compilation plus disk round-trips competes with all packages on the two-core CI runner.
 describe('immutable private Puzzle content compilation', { timeout: 30_000 }, () => {
   it('reruns deterministically, validates joins, retains old versions and survives normal data reimport', async () => {
     const f = await fixture(), first = await importPuzzlePack(f.dir, f.raw, '2026-10-07T00:00:00.000Z')
-    expect(first.packs[0]).toMatchObject({ chapters: 14, encounters: 392, cast: 5, frames: 1, pages: 1 })
+    expect(first.packs[0]).toMatchObject({ chapters: 14, encounters: 364, cast: 5, frames: 1, pages: 1 })
     const before = await readFile(resolve(f.dir, 'manifest.json'), 'utf8')
     const again = await importPuzzlePack(f.dir, f.raw, '2026-10-07T00:00:00.000Z')
     expect(again.activeHash).toBe(first.activeHash); expect(await readFile(resolve(f.dir, 'manifest.json'), 'utf8')).toBe(before)

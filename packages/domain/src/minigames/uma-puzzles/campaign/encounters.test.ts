@@ -34,7 +34,8 @@ describe('frozen campaign encounters and once-account rewards', () => {
       members: entry.cast.members.map(m => ({ ...m, id: `updated-${m.id}` })).reverse() } })
     expect(battleStateHash(createBattle(cosmetic))).toBe(battleStateHash(createBattle(input)))
     // Literal semantic recipe/seed pin. T107's established two journal fixtures remain untouched.
-    expect(battleStateHash(createBattle(input))).toBe('dda881dc9f9aff8c') // D290 release coefficient/input pin; T107 engine is unchanged.
+    // D290 coefficient/input pin under the campaign-v2 recipe (D301 changes only the recipe name in the hash); T107 engine is unchanged.
+    expect(battleStateHash(createBattle(input))).toBe('05bbdc21163a0735')
   })
   it.each(SCENARIOS.map(s => s.id))('resolves every %s node with fixed recipes and per-kind special bounds', id => {
     const chapter = puzzleChapter(id), bulk = resolvePuzzleChapterEncounters(chapter, syntheticPuzzleCast())
@@ -45,7 +46,7 @@ describe('frozen campaign encounters and once-account rewards', () => {
       if (node.localId === 'c-dark') expect(bulk.find(e => e.nodeId === node.id && e.darkVariant === 'late'))
         .toEqual(resolvePuzzleEncounter(chapter, node.id, syntheticPuzzleCast(), 'late'))
       expect(encounter.enemies).toHaveLength(node.kind === 'ordinary' ? 3 : 1)
-      expect(encounter.rewards.reduce((n, r) => n + r.quantity, 0)).toBe(node.kind === 'ordinary' ? 3 : node.kind === 'guardian' ? 4 : 12)
+      expect(encounter.rewards.reduce((n, r) => n + r.quantity, 0)).toBe(node.kind === 'ordinary' ? 3 : node.kind === 'guardian' ? 6 : 12)
       for (const foe of encounter.enemies) {
         expect(foe.openingCountdown).toBeGreaterThanOrEqual(1); expect(foe.delayImmune).toBe(false)
         expect(foe.intents.filter(i => i.type !== 'attack').length + Number(foe.phase !== null)).toBeLessThanOrEqual(node.kind === 'ordinary' ? 1 : 2)
@@ -112,6 +113,26 @@ describe('frozen campaign encounters and once-account rewards', () => {
     expect(battleStateHash(replayBattle(input, [{ type: 'abandon' }], registry).state, registry)).toBe(battleStateHash(state, registry))
     expect(puzzleBattleGrants(state, registry).exp.every(e => e.amount === 0)).toBe(true)
     expect(input.entrants[0]!.stats).toEqual(puzzleStats(input.entrants[0]!.source, 141))
-    expect(resolvePuzzleChapterEncounters(chapter, syntheticPuzzleCast(), registry)).toHaveLength(29)
+    expect(resolvePuzzleChapterEncounters(chapter, syntheticPuzzleCast(), registry)).toHaveLength(27)
+  })
+  it('settles a fight frozen under campaign v1 by v1 rules: Guardian 4 tickets, D271 EXP, retired stages included (D301)', () => {
+    const v1 = (input: PuzzleBattleInputV1, localId: string, quantity: number): PuzzleBattleInputV1 => ({ ...input,
+      battleId: input.battleId.replace(/:[a-z0-9-]+:(\d+)$/, `:${localId}:$1`), content: { ...input.content, recipeHash: 'puzzle-campaign-v1' },
+      rewards: input.rewards.map(r => ({ ...r, quantity })) })
+    const guardian = freezePuzzleEncounter({ ...entered(), checkpoint: reachedFinals(puzzleChapter(SCENARIOS[0]!.id)),
+      nodeId: puzzleChapter(SCENARIOS[0]!.id).nodes.find(n => n.localId === 'g1')!.id })
+    expect(guardian.rewards.reduce((n, r) => n + r.quantity, 0)).toBe(6)
+    const old = puzzleBattleGrants(played(v1(guardian, 'g1', 4)))
+    expect(old.materials.reduce((n, r) => n + r.quantity, 0)).toBe(4)
+    expect(old.exp[0]!.amount).toBe(puzzleWinExp(3, 30, 'guardian', 1))
+    // v1's retired tenth pair (level 9 in URA) still pays its trio.
+    const ninth = freezePuzzleEncounter({ ...entered(), checkpoint: reachedFinals(puzzleChapter(SCENARIOS[0]!.id)),
+      nodeId: puzzleChapter(SCENARIOS[0]!.id).nodes.find(n => n.localId === 'o9b')!.id })
+    const v1Node = puzzleChapter(SCENARIOS[0]!.id, SCENARIOS, 1).nodes.find(n => n.localId === 'o10a')!
+    const retired = { ...v1(ninth, 'o10a', 1), enemies: resolvePuzzleEncounter(puzzleChapter(SCENARIOS[0]!.id, SCENARIOS, 1), v1Node.id, syntheticPuzzleCast()).enemies,
+      rewards: resolvePuzzleEncounter(puzzleChapter(SCENARIOS[0]!.id, SCENARIOS, 1), v1Node.id, syntheticPuzzleCast()).rewards }
+    expect(puzzleBattleGrants(played(retired)).materials.reduce((n, r) => n + r.quantity, 0)).toBe(3)
+    // A v1 Guardian claiming v2's six is refused.
+    expect(() => puzzleBattleGrants(played(v1(guardian, 'g1', 6)))).toThrow('reward vector')
   })
 })

@@ -27,7 +27,8 @@ export function puzzleUiProofData(variant: 'default' | 'setup' | 'first-use' = '
   parties[2] = { ...parties[2]!, name: 'Distant Stars', slots: outfits.slice(5, 10).map(o => ({ outfitId: o.outfitId, kit: o.kit })), foregroundChapter: puzzleCampaignId({ kind: 'chapter', scenarioId: 'ura-finale' }), revision: 1 }
   const chapter = puzzleChapter('ura-finale'), party = parties[0]!
   let progress = createPuzzleCheckpoint(chapter, party.partyId)
-  for (const node of chapter.nodes.filter(n => n.kind !== 'champion' && (n.kind === 'guardian' || n.column === 0))) {
+  // The whole v2 stage line to the Finals (D301).
+  for (const node of chapter.nodes.filter(n => n.kind !== 'champion')) {
     progress = applyPuzzleTerminal(chapter, progress, { schemaVersion: 1, scenarioId: chapter.scenarioId, partyId: party.partyId, nodeId: node.id,
       battleId: puzzleCampaignId({ kind: 'battle', partyId: party.partyId, scenarioId: chapter.scenarioId, localId: node.localId, attempt: 0 }), attempt: 0, outcome: 'win' })
   }

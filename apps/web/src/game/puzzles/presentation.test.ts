@@ -78,7 +78,7 @@ describe('Puzzle account presentation', () => {
     for (const s of SCENARIOS) {
       const status = puzzleMapStatus(f.account, 'puzzle-party-2', s.id)
       expect(status.chapter.levelStart).toBe((s.tier - 1) * 10 + 1); expect(status.chapter.levelEnd).toBe(s.tier * 10)
-      expect(status.chapter.nodes).toHaveLength(28); expect(status.reached).toHaveLength(2); expect(status.complete).toBe(false)
+      expect(status.chapter.nodes).toHaveLength(26); expect(status.reached).toHaveLength(1); expect(status.complete).toBe(false)
       expect(status.chapter.nodes.filter(n => n.kind === 'champion').every(n => n.requires.length === 3)).toBe(true)
     }
     const visited = puzzleMapStatus(f.account, 'puzzle-party-1', 'ura-finale')
@@ -91,7 +91,7 @@ describe('Puzzle account presentation', () => {
     expect(puzzleRewardEstimate(dark, 'ura-finale', f.account, 'late')).toMatchObject([{ style: 'late', gross: 12 }])
     const fire = status.chapter.nodes.find(n => n.localId === 'c-fire')!
     expect(puzzleRewardEstimate(fire, 'ura-finale', f.account, null)).toMatchObject([{ style: 'front', gross: 12, repaid: 7, net: 5 }])
-    expect(puzzleNodeName(openPuzzleNode(f.account.checkpoints[1]!)!)).toBe('Squad 1A')
+    expect(puzzleNodeName(openPuzzleNode(f.account.checkpoints[1]!)!)).toBe('Debut · Stage 1')
     expect(createPuzzleBattle(f.account.checkpoints[1]!.open!.input).input.rewards).toEqual(f.account.checkpoints[1]!.open!.input.rewards)
   })
 })

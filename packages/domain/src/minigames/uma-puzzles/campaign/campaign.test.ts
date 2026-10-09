@@ -3,16 +3,16 @@ import { SCENARIOS } from '../../../scenarios'
 import { puzzleCampaign, puzzleChapter } from './chapters'
 import { parsePuzzleCampaignId, puzzleCampaignId } from './identity'
 import { applyPuzzleTerminal, createPuzzleCheckpoint, parsePuzzleChapter, parsePuzzleCheckpoint, parsePuzzleClearFact,
-  puzzleChapterStatus, puzzleEntryEligibility, puzzleExchangeOpeningClears } from './progress'
+  puzzleChapterStatus, puzzleEntryEligibility, puzzleExchangeOpeningClears, upgradePuzzleCheckpoint } from './progress'
 import { PUZZLE_SQUAD_MIXES } from './rules'
 import { acceptedFact, reachedFinals } from './test-helpers'
 
 describe('code-authored Puzzle campaign', () => {
-  it.each(SCENARIOS.map(s => [s.id, s.tier] as const))('generates %s at tier%s with a reachable 28-node DAG', (id, tier) => {
+  it.each(SCENARIOS.map(s => [s.id, s.tier] as const))('generates %s at tier%s as a reachable 26-node stage line (D301)', (id, tier) => {
     const chapter = puzzleChapter(id), ids = new Set(chapter.nodes.map(n => n.id))
     expect(chapter.levelStart).toBe(10 * (tier - 1) + 1); expect(chapter.levelEnd).toBe(10 * tier)
-    expect(chapter.nodes).toHaveLength(28); expect(ids.size).toBe(28)
-    expect(chapter.nodes.filter(n => n.kind === 'ordinary')).toHaveLength(20)
+    expect(chapter.nodes).toHaveLength(26); expect(ids.size).toBe(26)
+    expect(chapter.nodes.filter(n => n.kind === 'ordinary')).toHaveLength(18)
     expect(chapter.nodes.filter(n => n.kind === 'guardian')).toHaveLength(3)
     expect(chapter.nodes.filter(n => n.kind === 'champion')).toHaveLength(5)
     expect(new Set(chapter.nodes.filter(n => n.kind === 'ordinary').map(n => n.elements.join('/')))).toEqual(new Set(PUZZLE_SQUAD_MIXES.map(m => m.join('/'))))
@@ -29,20 +29,25 @@ describe('code-authored Puzzle campaign', () => {
     expect(puzzleChapterStatus(chapter, progress)).toMatchObject({ full: true, complete: true })
     expect(parsePuzzleCheckpoint(JSON.parse(JSON.stringify(progress)), chapter)).toEqual(progress)
   })
-  it('uses local level pins and balances six trio combinations over both branches', () => {
-    const c = puzzleChapter(SCENARIOS[0]!.id)
-    expect(c.nodes.filter(n => n.kind === 'ordinary' && n.column === 0).map(n => n.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 9])
+  it('runs six stages per section, two per level, each section closed by its Guardian', () => {
+    const c = puzzleChapter(SCENARIOS[0]!.id), line = c.nodes.filter(n => n.kind !== 'champion')
+    expect(line.map(n => `${n.sector}:${n.kind === 'guardian' ? 'G' : n.level}`)).toEqual(['0:1', '0:1', '0:2', '0:2', '0:3', '0:3', '0:G',
+      '1:4', '1:4', '1:5', '1:5', '1:6', '1:6', '1:G', '2:7', '2:7', '2:8', '2:8', '2:9', '2:9', '2:G'])
     expect(c.nodes.filter(n => n.kind === 'guardian').map(n => n.level)).toEqual([3, 6, 9])
-    for (const lane of [0, 1]) expect(new Set(c.nodes.filter(n => n.kind === 'ordinary' && n.column === lane).map(n => n.elements.join('/'))).size).toBe(6)
+    for (const lane of ['a', 'b']) expect(new Set(c.nodes.filter(n => n.kind === 'ordinary' && n.localId.endsWith(lane)).map(n => n.elements.join('/'))).size).toBe(6)
+    // Each stage needs the one before it; the Champions need every Guardian.
+    line.slice(1).forEach((n, i) => expect(n.requires).toEqual([[line[i]!.id]]))
   })
-  it('has no hard level/racing/composition lock; both branches remain replayable', () => {
+  it('opens stages in order with no level/racing/composition lock; won stages stay replayable', () => {
     const c = puzzleChapter(SCENARIOS[0]!.id), start = createPuzzleCheckpoint(c, 'puzzle-party-1')
-    const second = applyPuzzleTerminal(c, start, acceptedFact(c, start, 'o1b'))
-    expect(puzzleChapterStatus(c, second).reached).toEqual(c.nodes.slice(0, 4).map(n => n.id))
-    expect(puzzleEntryEligibility(c, second, c.nodes[2]!.id, [1, 1, 1, 1, 1]).warning).toBe('low-level')
-    expect(() => puzzleEntryEligibility(c, second, c.nodes[2]!.id, [1, 1, 1, 1])).toThrow('Five')
+    expect(puzzleChapterStatus(c, start).reached).toEqual([c.nodes[0]!.id])
+    const second = applyPuzzleTerminal(c, start, acceptedFact(c, start, 'o1a'))
+    expect(puzzleChapterStatus(c, second).reached).toEqual(c.nodes.slice(0, 2).map(n => n.id))
+    expect(puzzleEntryEligibility(c, second, c.nodes[1]!.id, [1, 1, 1, 1, 1]).warning).toBe(null)
+    expect(puzzleEntryEligibility(c, second, c.nodes[0]!.id, [200, 200, 200, 200, 200]).warning).toBe(null)
+    expect(() => puzzleEntryEligibility(c, second, c.nodes[1]!.id, [1, 1, 1, 1])).toThrow('Five')
     expect(() => puzzleEntryEligibility(c, second, 'invented-missing', [1, 1, 1, 1, 1])).toThrow('Unknown')
-    expect(() => puzzleEntryEligibility(c, second, c.nodes[4]!.id, [200, 200, 200, 200, 200])).toThrow('not reached')
+    expect(() => puzzleEntryEligibility(c, second, c.nodes[2]!.id, [200, 200, 200, 200, 200])).toThrow('not reached')
   })
   it('preserves clears, increments every terminal attempt and rejects duplicate/out-of-order terminals', () => {
     const c = puzzleChapter(SCENARIOS[0]!.id), start = createPuzzleCheckpoint(c, 'puzzle-party-1'), fact = acceptedFact(c, start, 'o1a')
@@ -56,10 +61,10 @@ describe('code-authored Puzzle campaign', () => {
   })
   it('requires all guardians, distinguishes primary/full completion and keeps Dark as one node', () => {
     const c = puzzleChapter(SCENARIOS[0]!.id), finals = reachedFinals(c)
-    expect(finals.cleared).toHaveLength(13); expect(puzzleChapterStatus(c, finals).complete).toBe(false)
-    expect(puzzleChapterStatus(c, finals).reached).toHaveLength(28)
+    expect(finals.cleared).toHaveLength(21); expect(puzzleChapterStatus(c, finals).complete).toBe(false)
+    expect(puzzleChapterStatus(c, finals).reached).toHaveLength(26)
     const won = applyPuzzleTerminal(c, finals, acceptedFact(c, finals, 'c-dark'))
-    expect(won.cleared).toHaveLength(14); expect(puzzleChapterStatus(c, won)).toMatchObject({ complete: true, full: false })
+    expect(won.cleared).toHaveLength(22); expect(puzzleChapterStatus(c, won)).toMatchObject({ complete: true, full: false })
   })
   it('supports the invented fifteenth registry entry and cosmetic chapter renaming without new IDs', () => {
     const registry = [...SCENARIOS, { id: 'invented-next', tier: 15, name: 'Invented Next' }]
@@ -77,6 +82,36 @@ describe('code-authored Puzzle campaign', () => {
     facts.push(acceptedFact(higher, p, 'g1'))
     expect(puzzleExchangeOpeningClears([...facts, ...facts])).toEqual([higher.scenarioId])
     expect(() => puzzleExchangeOpeningClears([{ ...facts[0]!, nodeId: 'claimed-ui-edge' }])).toThrow()
+  })
+  it("keeps D271's two-lane v1 map for fights frozen under it", () => {
+    const v1 = puzzleChapter(SCENARIOS[0]!.id, SCENARIOS, 1)
+    expect(v1.nodes).toHaveLength(28); expect(parsePuzzleChapter(v1)).toEqual(v1)
+    expect(v1.nodes.filter(n => n.kind === 'ordinary' && n.column === 0).map(n => n.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 9])
+    const start = createPuzzleCheckpoint(v1, 'puzzle-party-1'), second = applyPuzzleTerminal(v1, start, acceptedFact(v1, start, 'o1b'))
+    expect(puzzleChapterStatus(v1, second).reached).toEqual(v1.nodes.slice(0, 4).map(n => n.id))
+  })
+  it('reads a v1 checkpoint on the v2 line: retired stages dropped, skipped lanes counted as won, nothing else changed', () => {
+    const v1 = puzzleChapter(SCENARIOS[0]!.id, SCENARIOS, 1), v2 = puzzleChapter(SCENARIOS[0]!.id)
+    const play = (ids: string[]) => ids.reduce((p, localId) => applyPuzzleTerminal(v1, p, acceptedFact(v1, p, localId)), createPuzzleCheckpoint(v1, 'puzzle-party-3'))
+    const debutClassic = ['o1a', 'o1b', 'o2a', 'o2b', 'o3a', 'o3b', 'g1', 'o4a', 'o4b', 'o5a', 'o5b', 'o6a', 'o6b', 'g2']
+    const id = (localId: string) => `pzn:${v2.scenarioId}:${localId}`
+    // Halfway through Senior having skipped o7a: o7a now counts as won (no attempt yet), o8b is next.
+    const midSenior = play([...debutClassic, 'o7b', 'o8a'])
+    expect(parsePuzzleCheckpoint(midSenior, v2)).toBeNull()
+    const up = upgradePuzzleCheckpoint(midSenior, v2, null)!
+    expect(up.cleared).toEqual([...debutClassic, 'o7a', 'o7b', 'o8a'].map(id))
+    expect(up.attempts.find(a => a.nodeId === id('o7a'))).toEqual({ nodeId: id('o7a'), next: 1 })
+    expect(up.attempts.find(a => a.nodeId === id('o8a'))).toEqual({ nodeId: id('o8a'), next: 1 })
+    expect(puzzleChapterStatus(v2, up).reached.at(-1)).toBe(id('o8b'))
+    // A win on a retired tenth-pair stage is dropped; the Guardian it opened stays won.
+    const done = play([...debutClassic, 'o7a', 'o8a', 'o9b', 'o10a', 'g3', 'c-fire'])
+    const upDone = upgradePuzzleCheckpoint(done, v2, null)!
+    expect(upDone.cleared).not.toContain(id('o10a')); expect(upDone.cleared).toContain(id('g3'))
+    expect(upDone.cleared).toHaveLength(22); expect(puzzleChapterStatus(v2, upDone).complete).toBe(true)
+    // A fight left open on o7b counts every stage before it as won, so it can still settle.
+    const open = upgradePuzzleCheckpoint(play(debutClassic), v2, id('o7b'))!
+    expect(open.cleared.at(-1)).toBe(id('o7a')); expect(puzzleChapterStatus(v2, open).reached).toContain(id('o7b'))
+    expect(upgradePuzzleCheckpoint({ ...midSenior, cleared: [id('g3')] }, v2, null)).toBeNull()
   })
   it('rejects forged maps, future clears, sparse/prototype arrays, duplicate rows and extra fields', () => {
     expect(() => puzzleCampaign(new Array(1))).toThrow('registry')

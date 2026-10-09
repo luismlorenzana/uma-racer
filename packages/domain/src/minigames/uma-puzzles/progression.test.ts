@@ -45,16 +45,20 @@ describe('independent lifetime Puzzle progression', () => {
     puzzleError(() => puzzleLevelChanges(source, gain, gain.levelsGained + 1), 'invalid')
   })
   it('uses authored encounter and frozen entrant levels with floor/cap and zero loss rewards', () => {
-    expect(puzzleWinExp(10, 10, 'ordinary')).toBe(95)
-    expect(puzzleWinExp(10, 10, 'guardian')).toBe(190)
-    expect(puzzleWinExp(10, 10, 'champion')).toBe(285)
-    expect(puzzleWinExp(10, 1, 'ordinary')).toBe(181)
-    expect(puzzleWinExp(20, 1, 'ordinary')).toBe(290)
-    expect(puzzleWinExp(1, 100, 'ordinary')).toBe(13)
+    // D301 full-clear weights: 0.28 / 0.8 / 0.5 of a level at the encounter's level.
+    expect(puzzleWinExp(10, 10, 'ordinary')).toBe(53)
+    expect(puzzleWinExp(10, 10, 'guardian')).toBe(152)
+    expect(puzzleWinExp(10, 10, 'champion')).toBe(95)
+    expect(puzzleWinExp(10, 1, 'ordinary')).toBe(101)
+    expect(puzzleWinExp(20, 1, 'ordinary')).toBe(162)
+    expect(puzzleWinExp(1, 100, 'ordinary')).toBe(7)
+    // Fights frozen under campaign v1 keep D271's weights.
+    expect([puzzleWinExp(10, 10, 'ordinary', 1), puzzleWinExp(10, 10, 'guardian', 1), puzzleWinExp(10, 10, 'champion', 1)]).toEqual([95, 190, 285])
+    expect(puzzleBattleExp('win', 10, 1, 'ordinary', 1)).toBe(181)
     expect(puzzleBattleExp('loss', 10, 10, 'champion')).toBe(0)
     expect(puzzleBattleExp('abandon', 10, 10, 'champion')).toBe(0)
     const frozenLevel = 10, current = { level: 12, exp: 0 }
-    expect(addPuzzleExp(syntheticPuzzleSource(), current, puzzleWinExp(10, frozenLevel, 'ordinary')).gainedExp).toBe(95)
+    expect(addPuzzleExp(syntheticPuzzleSource(), current, puzzleWinExp(10, frozenLevel, 'ordinary')).gainedExp).toBe(53)
   })
   it('rejects unsafe arithmetic, malformed progress, invalid source and NaN', () => {
     const source = syntheticPuzzleSource()
@@ -65,6 +69,7 @@ describe('independent lifetime Puzzle progression', () => {
     puzzleError(() => nextPuzzleLevelExp(Number.MAX_SAFE_INTEGER), 'overflow')
     puzzleError(() => puzzleStats({ ...source, baseStats: { ...source.baseStats, stamina: Number.MAX_SAFE_INTEGER } }, 1), 'overflow')
     puzzleError(() => puzzleStats({ ...source, baseStats: { ...source.baseStats, power: Number.MAX_SAFE_INTEGER } }, 2), 'overflow')
-    puzzleError(() => puzzleWinExp(500_000_000_000_000, 1, 'champion'), 'overflow')
+    puzzleError(() => puzzleWinExp(800_000_000_000_000, 1, 'guardian'), 'overflow')
+    puzzleError(() => puzzleWinExp(500_000_000_000_000, 1, 'champion', 1), 'overflow')
   })
 })

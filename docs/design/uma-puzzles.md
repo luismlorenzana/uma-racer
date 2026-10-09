@@ -591,7 +591,37 @@ rules glossary containing every PAD hazard.
 
 ## 6. Chapters and the farming loop
 
-### Map shape — proposed, intentionally not an RPG clone
+### The stage line — campaign v2 (D301)
+
+The owner runs every stage of a chapter, so the map is one line of stages named like the RPG's, not two lanes:
+
+| Section | Stages (level each) | Closed by | Levels in the chapter |
+|---|---|---|---|
+| Debut | 6 (1, 1, 2, 2, 3, 3) | Debut Guardian (3) | 1–3 |
+| Classic | 6 (4, 4, 5, 5, 6, 6) | Classic Guardian (6) | 4–6 |
+| Senior | 6 (7, 7, 8, 8, 9, 9) | Senior Guardian (9) | 7–9 |
+| Finals | five colour Champions (10) | any Champion completes the chapter | 10 |
+
+Each stage needs the one before it; the Champions need all three Guardians. **26 nodes**: 18 stages, 3 Guardians,
+5 Champions. Stage ids keep v1's `o{pair}{a|b}` and their level, trio and roles are unchanged, so earlier wins carry
+over; v1's tenth pair (`o10a`, `o10b`, two extra level-9 Senior stages) is retired.
+
+- **EXP** weights are 0.28 stage / 0.8 Guardian / 0.5 Champion of a level at the encounter's level (was 0.5 / 1 /
+  1.5, tuned for one lane). A party that starts on the chapter's level finishes Debut near its third level, Classic
+  near its sixth, Senior near its ninth, and the five Champions at about the next chapter's first (`sim:puzzles`:
+  PL 1 → 11 in URA Finale, 11 → 22 in Unity Cup).
+- **Tickets**: stages pay one per foe (3), Guardians **6** (was 4), Champions 12. A full clear still pays **132**
+  (18 × 3 + 3 × 6 + 5 × 12), as D271's full map did; the line plus one Champion pays 84.
+- **Saved progress** (campaign v1 checkpoints) reads onto the line on load, client and server alike: wins on retired
+  stages are dropped, and every stage before a won stage (or before an open fight's stage) counts as won, since v1
+  let a lane be skipped. No reward is attached; won stages replay for the same drops.
+- **Fights frozen under v1** name `puzzle-campaign-v1` and keep its rules everywhere they are checked: the v1 map,
+  Guardian 4, D271 EXP. One left open on a retired stage still settles and pays, without a place on the line. Past
+  receipts stay valid. Only new fights freeze under v2.
+
+The two-lane design below is D271's v1, kept as the record of those rules.
+
+### Map shape — v1, superseded by the stage line (D301)
 
 Reuse the current RPG's **launch pad, top-to-bottom branch map, node preview and per-party resume**, not its exact
 node count, twelve-level bands, Octopath shields, carried MP or save structs. D266 changed RPG to twelve levels;
@@ -861,8 +891,10 @@ separate its state and labels.
   The free-only picker shows name/PL and links its empty state to Roster; no cross-party move UI or silent transfer.
 - **Chapter launch pad:** scrolling ten-party chips (name, filled/5), scenario crests, target PL band,
   clear/resume badges and material preview. Chips retain the same device navigation memory.
-- **Map:** branches, readable node levels, enemy element triplets, boss-route colour plus reward-style glyph. The
-  preview shows combat modifiers, exact stock/debt effects and Begin/Resume. No gameplay-blocking Sync button.
+- **Map (D302):** a progress bar, then Debut, Classic, Senior and Finals sections with their won count. One compact
+  row per stage: a status disc (a filled check when won, a numbered ring when next or open, a lock when locked), name
+  and PL, small element marks and small ticket chips. Won rows are tinted, the next rows outlined, locked rows dimmed.
+  The preview shows combat modifiers, exact stock/debt effects and Begin/Resume. No sync wording or button (D300).
 - **Battle:** monsters and intents above, team HP/status, five Uma portraits with active-charge rings, then the 6×5
   board and thumb-zone actions. Portrait taps open/activate a ready skill with a clear preview, not an accidental use.
 - **Result:** clear/loss first, combo/damage summary, each entrant's PL/EXP/stat changes, newly unlocked skill choices,
@@ -885,8 +917,8 @@ party's Chapters. [T117 phone proof](../research/puzzle-setup-parity/README.md) 
 
 The launch pad includes all fourteen registered crests/ten-level bands, without racing-scenario ownership gates.
 Five filled slots are required to launch; average/range PL warnings do not gate adventurous parties. Each map is a
-DOM-labelled 28-node branched path: exact enemy colours and ticket quantities, locked/reached/won/replay states,
-three Guardians and five final colour routes. Any Champion completes a chapter; all 28 wins clear its full map.
+DOM-labelled 26-node stage line (D301): exact enemy colours and ticket quantities, locked/next/won/replay states,
+three Guardians and five final colour Champions. Any Champion completes a chapter; all 26 wins clear its full map.
 Preview uses the engine's actual recipe plus held verified enemy names/art, not invented production rows; it shows
 intents, phases, delay immunity, element legend, low-level warning and gross/repayment/net. Dark Champion requires
 an explicit Pace/Late choice; an open fight displays its frozen choice and entrants. True Resume names the node,

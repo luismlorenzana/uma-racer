@@ -9,9 +9,10 @@ import { addPuzzleExp, puzzleBattleExp } from './progression'
 import { parsePuzzleMaterialId } from './materials'
 import type { PuzzleEnrollmentV1, PuzzleSourceV1, PuzzleProgress } from './types'
 import { puzzleChapter } from './campaign/chapters'
+import { PUZZLE_CAMPAIGN_V1, PUZZLE_RETIRED_NODES, puzzleRecipeVersion } from './campaign/rules'
 import { parsePuzzleCampaignId, puzzleCampaignId } from './campaign/identity'
-import { parsePuzzleCheckpoint, parsePuzzleClearFact, puzzleChapterStatus } from './campaign/progress'
-import { puzzleEncounterRewards } from './campaign/encounters'
+import { parsePuzzleCheckpoint, parsePuzzleClearFact, puzzleChapterStatus, upgradePuzzleCheckpoint } from './campaign/progress'
+import { puzzleEncounterRewards, puzzleFrozenNode } from './campaign/encounters'
 import type { PuzzleCheckpointV1, PuzzleClearFact, PuzzleDarkVariant } from './campaign/types'
 import { puzzleArray, puzzleExact, puzzleId, puzzleInteger, puzzleRecord } from './validation'
 import { parsePuzzlePreservationRecord, preservationPageId } from './preservation-records'
@@ -94,24 +95,31 @@ export function parsePuzzleOpenEncounter(v: unknown): PuzzleOpenEncounterV1 | nu
     !/^[a-f0-9]{64}$/.test(v.content.contentHash)) return null
   const input = parsePuzzleBattleInput(v.input)
   if (!input || input.ownerEpoch !== v.ownerEpoch || puzzlePayloadHash(input) !== v.inputHash ||
-    input.content.manifestVersion !== `puzzles-${v.content.contentHash}` || input.content.recipeHash !== 'puzzle-campaign-v1') return null
+    input.content.manifestVersion !== `puzzles-${v.content.contentHash}` || !puzzleRecipeVersion(input.content.recipeHash)) return null
   return { schemaVersion: 1, deviceId: v.deviceId, ownerEpoch: v.ownerEpoch, input, inputHash: v.inputHash,
     content: { version: v.content.version, contentHash: v.content.contentHash } }
 }
 export function parsePuzzleCheckpointSave(v: unknown): PuzzleCheckpointSaveV1 | null {
   if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'checkpointId', 'scenarioId', 'progress', 'reached', 'open', 'revision']) ||
     v.schemaVersion !== 1 || !scenario(v.scenarioId) || !puzzleInteger(v.revision)) return null
-  const chapter = puzzleChapter(v.scenarioId), progress = parsePuzzleCheckpoint(v.progress, chapter), open = v.open === null ? null : parsePuzzleOpenEncounter(v.open)
-  if (!progress || v.checkpointId !== puzzleCampaignId({ kind: 'checkpoint', scenarioId: v.scenarioId, partyId: progress.partyId }) ||
-    !puzzleArray(v.reached, chapter.nodes.length) || puzzleCanonical(v.reached) !== puzzleCanonical(puzzleChapterStatus(chapter, progress).reached) ||
-    v.open !== null && !open) return null
+  const chapter = puzzleChapter(v.scenarioId), open = v.open === null ? null : parsePuzzleOpenEncounter(v.open)
+  if (v.open !== null && !open || !puzzleArray(v.reached, PUZZLE_CAMPAIGN_V1.nodes)) return null
+  const openId = open ? parsePuzzleCampaignId(open.input.battleId) : null
+  const openNode = openId?.kind === 'battle' ? puzzleCampaignId({ kind: 'node', scenarioId: openId.scenarioId, localId: openId.localId }) : null
+  // A row saved on D271's two-lane map reads as the v2 stage line (D301); a v2 row must match its derived reach exactly.
+  const strict = parsePuzzleCheckpoint(v.progress, chapter)
+  const exact = strict && puzzleCanonical(v.reached) === puzzleCanonical(puzzleChapterStatus(chapter, strict).reached)
+  const progress = exact ? strict : upgradePuzzleCheckpoint(v.progress, chapter, openNode)
+  if (!progress || v.checkpointId !== puzzleCampaignId({ kind: 'checkpoint', scenarioId: v.scenarioId, partyId: progress.partyId })) return null
+  const reached = puzzleChapterStatus(chapter, progress).reached
   if (open) {
-    const id = parsePuzzleCampaignId(open.input.battleId)
-    if (!id || id.kind !== 'battle' || open.input.checkpointId !== v.checkpointId || open.input.scenarioId !== v.scenarioId ||
-      open.input.partyId !== progress.partyId || !v.reached.includes(puzzleCampaignId({ kind: 'node', scenarioId: id.scenarioId, localId: id.localId })) ||
-      id.attempt !== (progress.attempts.find(a => a.nodeId === `pzn:${id.scenarioId}:${id.localId}`)?.next ?? 0)) return null
+    // A v1 fight left open on a retired stage still settles; it just has no place on the new line.
+    const retired = PUZZLE_RETIRED_NODES.includes(openId?.kind === 'battle' ? openId.localId as never : '' as never)
+    if (!openId || openId.kind !== 'battle' || open.input.checkpointId !== v.checkpointId || open.input.scenarioId !== v.scenarioId ||
+      open.input.partyId !== progress.partyId || !puzzleFrozenNode(open.input) || !retired && (!reached.includes(openNode!) ||
+      openId.attempt !== (progress.attempts.find(a => a.nodeId === openNode)?.next ?? 0))) return null
   }
-  return { schemaVersion: 1, checkpointId: v.checkpointId as string, scenarioId: v.scenarioId, progress, reached: v.reached as string[], open, revision: v.revision }
+  return { schemaVersion: 1, checkpointId: v.checkpointId as string, scenarioId: v.scenarioId, progress, reached, open, revision: v.revision }
 }
 export function parseConstellationBankSave(v: unknown): ConstellationBankSaveV1 | null {
   if (!puzzleRecord(v) || !puzzleExact(v, ['schemaVersion', 'cutoverVersion', 'cutoverId', 'phase', 'cohortCount', 'completedCount', 'debitLimits', 'balances', 'openingClears', 'revision']) ||
@@ -146,14 +154,15 @@ function parseResult(v: unknown): PuzzleResultSaveV1 | null {
   const input = parsePuzzleBattleInput(v.input), result = parsePuzzleBattleResult(v.result), fact = parsePuzzleClearFact(v.fact)
   if (!input || !result || !fact || input.battleId !== v.battleId || result.battleId !== v.battleId || fact.battleId !== v.battleId ||
     result.ownerEpoch !== input.ownerEpoch || result.outcome !== fact.outcome || puzzlePayloadHash(input) !== v.inputHash) return null
-  const node = puzzleChapter(input.scenarioId).nodes.find(n => n.id === fact.nodeId)
-  if (!node || node.kind !== input.kind || node.level !== input.encounterLevel) return null
-  const drops = puzzleEncounterRewards(node, node.localId === 'c-dark' ? input.rewards[0]?.style as PuzzleDarkVariant : null)
+  // A receipt is checked against the campaign version its fight was frozen under (D301).
+  const frozen = puzzleFrozenNode(input), node = frozen?.node
+  if (!frozen || !node || node.id !== fact.nodeId || node.kind !== input.kind || node.level !== input.encounterLevel) return null
+  const drops = puzzleEncounterRewards(node, node.localId === 'c-dark' ? input.rewards[0]?.style as PuzzleDarkVariant : null, frozen.version)
   if (puzzleCanonical(drops) !== puzzleCanonical(input.rewards) || v.materials.length !== (result.outcome === 'win' ? drops.length : 0)) return null
   for (let i = 0; i < 5; i++) {
     const row = v.exp[i], entrant = input.entrants[i]!
     if (!puzzleRecord(row) || !puzzleExact(row, ['outfitId', 'frozenLevel', 'amount', 'before', 'after']) || row.outfitId !== entrant.outfitId ||
-      row.frozenLevel !== entrant.level || row.amount !== puzzleBattleExp(result.outcome, input.encounterLevel, entrant.level, input.kind)) return null
+      row.frozenLevel !== entrant.level || row.amount !== puzzleBattleExp(result.outcome, input.encounterLevel, entrant.level, input.kind, frozen.version)) return null
     try { if (puzzleCanonical(addPuzzleExp(entrant.source, row.before as PuzzleProgress, row.amount as number).after) !== puzzleCanonical(row.after)) return null } catch { return null }
   }
   for (let i = 0; i < v.materials.length; i++) {
