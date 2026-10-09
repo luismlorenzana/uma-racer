@@ -20,11 +20,14 @@ reopen the owner's stated requirements:
 | Review point | Recommendation |
 |---|---|
 | Is one bought map shared across each five-scenario block, and does its full production chain open at local Farm Lv1/6/9? | Yes: unlock once per outfit/block, keep independent scenario/distance activations; do not gate the final recipes until Lv49 |
-| Are the proposed cadence and expertise rewarding? | Start with 48 EXP/level, 12 EXP/job, 4 raw / 2 processed / 1 meal; five expertise tracks per outfit/block. Canonical full-map bill is 149 jobs versus 196 to Lv50; validate modest timed sims before pinning |
-| How large should Farm's independent stat contribution be, and how should Foundation apply? | Draft 65 nodes, 60 total raw/node, capacity 16 + 2 per scenario; preserve card-node values, add Farm after growth/before caps, replace Foundation's oversized multiplier with bounded help. Approve only after synthetic stat/race checks |
+| Are the proposed cadence and expertise rewarding? | Start with 48 EXP/level, 12 EXP/job, 4 raw / 2 processed / 1 meal; five expertise tracks per outfit/block. Revised symmetric full-map bill is 170 jobs versus 196 to Lv50. Two completions/day takes 98 days; three takes about 66. Validate modest timed sims before pinning |
+| How large should Farm's independent stat contribution be, and how should Foundation apply? | Owner flagged the first budget as too large. Revised candidate: 65 nodes, 20 total raw/node, capacity 18 + 2 per scenario, giving 360→520 over scenarios 1–5; preserve card-node values, add Farm once after growth/before caps, no extra Foundation bonus. Approve only after synthetic stat/race checks |
 | What happens to old stock/ongoing jobs at the requested reset? | Keep legacy crop stock and one final legacy-output-only claim, no new EXP; retain mapped workers. Reset only the requested Farm levels and Extra Stats, with a one-time generation and recovery archive |
 
-Numbers are candidates; the definition PR stays unmerged for owner review. Formal task numbers follow approval.
+Ingredient symmetry is now explicit: all five stats have equal family counts, recipe costs and canonical full-map
+demand, including milk/cheese variants and a direct Guts lane; no real-world nutrition rules (D295). This replaces
+the original restricted raw-lane interpretation. Numbers are candidates; the definition PR stays unmerged for
+owner review. Formal task numbers follow approval.
 
 ## Uma Puzzles — owner choices resolved
 

@@ -49,7 +49,8 @@ so an aggregate account Farm Level is unnecessary.
 2. **Visible outfit specialization.** Five expertise meters, recorded per ingredient block, with exact next-rank
    progress and resulting duration. Do not randomly assign an innate farming aptitude.
 3. **Recipe identity and permitted substitutions.** Same-stat raw/processed variants can add variety without
-   doubling the recipe tree. Explain Guts meals through hearty Stamina/Power combinations.
+   doubling the recipe tree. The owner's revision gives every stat the same raw and processed options, including
+   milk/cheese variants and direct Guts ingredients; do not impose nutritional logic or exceptional recipes.
 4. **Cookbook completion.** First-preparation records and clear finished-item art give collection satisfaction
    without a new currency or hidden recipe lottery.
 5. **Optional preparation flourish.** Short plating/chopping/stirring visuals and reduced-motion equivalents;
@@ -61,39 +62,55 @@ before the ingredient → meal → Extra Stats chain is proven.
 
 ## Catalogue arithmetic witness
 
-The draft's **own original recipes**, not any source game's recipes, were totaled with a small in-memory
-JavaScript calculation. For 10 of each pure meal, 1 of each pair meal and 5 banquets:
+The revised draft's **own original recipes**, not any source game's recipes, were totaled with a small
+in-memory JavaScript calculation. For 10 of each pure meal, 1 of each pair meal and 5 banquets, every stat has
+identical demand: 10 vegetables for its pure meals; 4 fruit and cheese for its pair meals; 5 fruit and cheese
+for banquets. Including cheese for pure meals, that is **19 cheese per stat**.
 
-| Processed family | Meal demand | Processing jobs (2 output/job) |
-|---|---|---|
-| Mayonnaise | 10 | 5 |
-| Canned banana | 11 | 6 |
-| Ham | 31 | 16 |
-| Cheese | 19 | 10 |
-| Canned potato | 2 | 1 |
-| Canned spinach | 5 | 3 |
-| Total | 78 | **41** |
+| Stat | Vegetables needed | Fruit needed | Milk for rounded cheese batches | Cheese used / made |
+|---|---|---|---|---|
+| Speed | 10 | 9 | 20 | 19 / 20 |
+| Stamina | 10 | 9 | 20 | 19 / 20 |
+| Power | 10 | 9 | 20 | 19 / 20 |
+| Guts | 10 | 9 | 20 | 19 / 20 |
+| Wit | 10 | 9 | 20 | 19 / 20 |
 
-| Raw family | Direct food + rounded processing inputs | Harvest jobs (4 output/job) |
-|---|---|---|
-| Carrot | 17 | 5 |
-| Potato | 26 | 7 |
-| Chicken | 11 | 3 |
-| Berry | 10 | 3 |
-| Egg | 11 | 3 |
-| Apple | 1 | 1 |
-| Banana | 18 | 5 |
-| Beef | 1 | 1 |
-| Pork | 32 | 8 |
-| Milk | 20 | 5 |
-| Spinach | 6 | 2 |
-| Total | 153 | **43** |
+| Work | Jobs per stat | Jobs total | Output / consumed units |
+|---|---|---|---|
+| Vegetables | 3 | 15 | 60 / 50 |
+| Fruit | 3 | 15 | 60 / 45 |
+| Milk | 5 | 25 | 100 / 100 |
+| Cheese processing | 10 | 50 | 100 / 95 |
+| Cooking | — | 65 | 65 / 65 |
 
-Thus 43 raw + 41 processing + 65 cooking = **149 claims**, versus 196 claims for Lv1 → Lv50 at 48 EXP/level and
-12 EXP/claim. This checks ingredient conservation and batch rounding for one canonical bill only. It is not
-a simulator, a real-account probe or evidence that the racing stat balance is settled. District raw counts
-are Garden 14, Orchard 9 and Barnyard 20. Applying the candidate expertise schedule to those counts, Workshop 41
-and Kitchen 65 yields a no-idle duration sum of **955 hours**; dependencies/gates/check-in cadence still matter.
+Thus 55 raw + 50 processing + 65 cooking = **170 claims**, versus 196 claims for Lv1 → Lv50 at 48 EXP/level and
+12 EXP/claim. This reaches Lv43 with 24 EXP banked, leaving **26 claims** of slack. The new symmetry changes the
+old 149-job witness; it is not legitimate to keep citing that earlier bill for these recipes. There are 25 raw
+and 5 processed units left from rounding, distributed identically across stats.
+
+This checks ingredient conservation and batch rounding for one canonical bill only. It is not a simulator,
+a real-account probe or evidence that the racing stat balance is settled. Applying the candidate expertise
+schedule to Garden 15, Orchard 15, Barnyard 25, Workshop 50 and Kitchen 65 yields a no-idle duration sum of
+**1,079 hours**. Raw work can be front-loaded to meet all input/gate requirements, but actual check-ins add idle time.
+
+## Level timing and reduced stat budget
+
+Lv1→50 needs 49 × 48 = 2,352 EXP, or **196 completed jobs**. A fixed two-completion/day routine takes **98 days**;
+three takes 65⅓ days (finishes during day 66); one takes 196 days. Expertise reduces timers, not the number of
+claims, and helpers earn their own EXP. A ready job does not automatically restart while the owner is away.
+
+The duration formula for job index `i`, starting at zero within one district, is
+`8 − 0.5 × min(5, floor(i / 4))` hours. Summing 196 jobs in one district gives **1,108 hours / 46.2 days** at
+instant round-the-clock collection, but does not produce the entire cookbook. The 170-job full bill plus
+26 jobs in an already-mastered district totals **1,222 hours / 50.9 days** with no idle time; getting all five
+districts to rank 5 instead yields **1,228 hours / 51.2 days**. These are arithmetic schedules/lower bounds,
+not demonstrated calendar sims or reasonable phone check-in promises. No Energy is included.
+
+The owner also questioned the first draft's 960→1,440 raw Farm budget over scenarios 1–5. The revised candidate
+is **20 total points/node** and **18 + 2 × (scenario index − 1)** active nodes: **360→520**, with no extra growth/
+Foundation multiplier. Shipped Extra Stats give 240 raw normally, or 360 with Foundation before outfit growth.
+Those baseline values were checked in `packages/domain/src/extra-stats.ts` and `constellation.ts`; no owner data
+was read. The reduced candidate still needs synthetic stat-source/racing checks before pinning.
 
 ## Assets and evidence boundaries
 

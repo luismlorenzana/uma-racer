@@ -5,6 +5,10 @@
 > The owner's requirements are distinguished from recommendations below. Candidate numbers do not change the
 > running game or its domain pins. Approve/revise this definition before assigning implementation task numbers.
 
+> **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
+> real-world nutrition rules or special Guts tax. The earlier 60-point/node proposal is replaced by a smaller
+> 20-point/node candidate. See §10 for the old/new budget comparison and §11 for exact Lv1→50 timing.
+
 ## 1. Intent and boundaries
 
 Farm becomes the third independent, global activity beside Uma RPG and Uma Puzzles. Its enjoyment comes from
@@ -21,8 +25,10 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
 
 - Five districts, six stations each, all thirty stations available immediately. Remove aggregate Farm Level
   and plot-unlock progression; keep permanent worker assignments.
-- Vegetables and orchards provide Speed/Stamina/Wit ingredients. Barns provide Speed/Power/Wit ingredients.
-  Factories consume ingredients; kitchens make the final unlock consumables. Only final meals unlock nodes.
+- Ingredients should be equally distributed across stats, not constrained by real-world food logic. The
+  revised interpretation gives each raw district all five stat lanes, replacing the initial three-lane lists;
+  milk/cheese and other flavour families have an equal variant for every stat. Factories consume ingredients;
+  kitchens make the final unlock consumables. Only final meals unlock nodes.
 - Processing preserves an ingredient's stat identity and doubles its contribution to a recipe.
 - One outfit Farm Level gates work. Five separate district expertise tracks, each with five ranks; a rank
   takes one Farm level's worth of work and permanently removes thirty minutes from that tier's jobs.
@@ -43,11 +49,11 @@ CL, card stars, RPG or Puzzle Level. Assigning an outfit to Farm does not make h
 |---|---|---|
 | Five-scenario map | Unlocks shared by outfit across scenarios 1–5; a new map for 6–10, then 11–15 | One purchase is not paid five times; each scenario still has its own active builds |
 | Farm level gates | One 50-level ingredient block: raw work at local Lv1, factories at Lv6, kitchens at Lv9 | Makes early cooking possible; avoids unlocking the last scenario's kitchen only at Lv49 |
-| Guts ingredients | No sixth raw lane; hearty recipes combine Stamina and Power ingredients to make Guts meals | Respects the owner's three stat types per raw district |
+| Ingredient symmetry | All five stat lanes in each raw district; identical costs/yields and mirrored recipes | No missing Guts source or stat-specific ingredient tax; food flavour is presentation |
 | Processing's double value | One processed unit has two ingredient-potency units; not a direct racing-stat buff | Ingredients are only inputs, and activating a purchased node is not another meal consumption |
 | Expertise scope | Per outfit × district × five-scenario block; completed work earns Farm EXP and expertise together | A new tier offers mastery again, without erasing older mastery or spending level EXP |
 | Proposed progression | 48 EXP/level; 12 EXP/job; raw yield 4, processed batch 2, meal yield 1 | Around two days/level at two claims/day; full-map production fits before Lv50 |
-| Proposed Extra Stats | 65 nodes; each active node distributes 60 raw points; capacity 16 + 2 × (scenario index − 1) | Equal total value for single/dual/all nodes, with linear capacity growth |
+| Proposed Extra Stats | 65 nodes; each active node distributes 20 raw points; capacity 18 + 2 × (scenario index − 1) | Starts at 360 total, rather than jumping from the old 240/360 to 960 |
 
 These choices, including every new balance number, are **proposals**, not additional owner approvals.
 
@@ -59,7 +65,7 @@ These choices, including every new balance number, are **proposals**, not additi
 | Every plot grows any stat's scenario crop | District-specific raw goods, recipes and input-consuming jobs |
 | 24 EXP/level; raw harvest pays 12 EXP and one crop | Candidate 48 EXP/level; every completed job pays 12 EXP, with batch yields |
 | Crop access every ten levels, older rows faster | Five-scenario ingredient blocks; local action gates and explicit expertise |
-| Per-scenario 20-node grid, six active, +40 each | Per-block 65-node map, scenario-specific active capacity, candidate +60 total/node |
+| Per-scenario 20-node grid, six active, +40 each | Per-block 65-node map, scenario-specific active capacity, candidate +20 total/node |
 | Direct crop purchases costing 1/2/3/4 | One matching cooked meal per physical node, no sequential purchase costs |
 | Existing 240-point Extra Stats allowance subtracted from the card pool | Preserve current card-node values; add an independently budgeted Farm contribution |
 | Debug action shifts all running jobs | Debug grants Energy; a deliberate spend advances one job |
@@ -71,9 +77,9 @@ than carrying those instructions into the rework. Do not use its stale copy as a
 
 | District | Six station IDs | Jobs | Raw stat lanes |
 |---|---|---|---|
-| Vegetable Garden | `garden-1` … `garden-6` | Plant/harvest vegetables | Speed, Stamina, Wit |
-| Orchard | `orchard-1` … `orchard-6` | Tend/collect fruit and berries | Speed, Stamina, Wit |
-| Barnyard | `barn-1` … `barn-6` | Gather animal produce | Speed, Power, Wit |
+| Vegetable Garden | `garden-1` … `garden-6` | Plant/harvest vegetables | All five, equally represented |
+| Orchard | `orchard-1` … `orchard-6` | Tend/collect fruit and berries | All five, equally represented |
+| Barnyard | `barn-1` … `barn-6` | Gather animal produce | All five, equally represented |
 | Workshop | `workshop-1` … `workshop-6` | Can, juice and process raw goods | Preserves the raw ingredient's stat |
 | Kitchen | `kitchen-1` … `kitchen-6` | Cook single/dual/all-stat meals | Recipe-defined unlock signatures |
 
@@ -156,23 +162,26 @@ Names are original recipe definitions, not extracted game content. The same fami
 ingredient block; a Block 1 carrot is not a Block 2 carrot. The icon can reuse its original silhouette with a
 clear block badge. Raw harvests cost no inventory and yield **four units** per completed job.
 
-| District | Raw family | Ingredient stat | Job label |
+| Stat | Garden vegetable | Orchard fruit | Barn milk variant |
 |---|---|---|---|
-| Garden | Carrot | Speed | Grow carrots |
-| Garden | Potato | Stamina | Grow potatoes |
-| Garden | Spinach | Wit | Grow spinach |
-| Orchard | Apple | Speed | Pick apples |
-| Orchard | Banana | Stamina | Pick bananas |
-| Orchard | Berry | Wit | Gather berries |
-| Barnyard | Egg | Speed | Gather eggs |
-| Barnyard | Chicken | Power | Gather chicken portions |
-| Barnyard | Beef | Power | Gather beef portions |
-| Barnyard | Pork | Power | Gather pork portions |
-| Barnyard | Milk | Wit | Gather milk |
+| Speed | Carrot | Apple | Swift Milk |
+| Stamina | Potato | Banana | Steady Milk |
+| Power | Turnip | Pear | Strong Milk |
+| Guts | Pumpkin | Peach | Brave Milk |
+| Wit | Spinach | Berry | Bright Milk |
 
-No raw Guts ingredient is added. Its food identity is **hearty nourishment**, produced by combinations containing
-Stamina and Power ingredients. These are recipe rules, not another invisible Farm aptitude or a sixth district.
-All raw families in a block open together at its raw gate; choosing additional flavours is not another stat gate.
+The labels are fantasy ingredient identities, **not nutrition claims**. Guts is as straightforward to source as
+Speed; no recipe has to borrow Stamina/Power ingredients to make a Guts output. Each vegetable/fruit has the same
+availability, yield, timer, EXP and processed options as its counterparts in the other four stats.
+
+Barnyard also offers **Egg, Chicken, Beef and Pork**, each in the same five Swift/Steady/Strong/Brave/Bright variants.
+Milk is the canonical first choice, not the only useful animal produce. Each stat therefore has seven raw
+definitions per block: one vegetable, one fruit, and five barn families. The full catalogue has **35 raw
+definitions**, equal counts for every stat. Use category silhouettes with explicit stat glyphs rather than
+thirty-five bespoke animal portraits. All families open at the block's raw gate; no unequal flavour gates.
+
+Symmetry means equal catalogue coverage and cost for equivalent stat roles. It does not mean the player must
+produce every optional flavour in equal quantities: choosing milk instead of eggs is a preference, not a tax.
 
 ## 7. Workshop catalogue and processing value
 
@@ -180,20 +189,27 @@ A workshop job consumes **two units of one raw family at start**, then produces 
 processed ingredient at claim**. Each processed unit has **two potency units** of its ingredient stat, versus one
 for a raw unit. Processing adds value through work; it does not spend racing stats or double an active node.
 
-| Process | Raw families accepted | Output identity |
+| Process | Input family | Five equal output variants |
 |---|---|---|
-| Canned vegetables | Carrot / Potato / Spinach | Canned carrot / potato / spinach; same stat |
-| Canned fruit | Apple / Banana / Berry | Canned apple / banana / berry; same stat |
-| Vegetable juice | Carrot / Spinach | Carrot juice (Speed) / green juice (Wit) |
-| Fruit juice | Apple / Banana / Berry | Apple / banana / berry juice; same stat |
-| Cheese | Milk | Cheese (Wit) |
-| Mayonnaise | Egg | Mayonnaise (Speed) |
-| Cured ham | Pork | Ham (Power) |
+| Canned vegetables | Vegetable of the stat | Speed / Stamina / Power / Guts / Wit |
+| Vegetable juice | Vegetable of the stat | Speed / Stamina / Power / Guts / Wit |
+| Canned fruit | Fruit of the stat | Speed / Stamina / Power / Guts / Wit |
+| Fruit juice | Fruit of the stat | Speed / Stamina / Power / Guts / Wit |
+| Cheese | Milk of the stat | Swift / Steady / Strong / Brave / Bright Cheese |
+| Mayonnaise | Egg of the stat | Speed / Stamina / Power / Guts / Wit |
+| Chicken stock | Chicken of the stat | Speed / Stamina / Power / Guts / Wit |
+| Beef stock | Beef of the stat | Speed / Stamina / Power / Guts / Wit |
+| Cured ham | Pork of the stat | Speed / Stamina / Power / Guts / Wit |
 
-Use fourteen explicit processed definitions, not a free-form ingredient editor. The recipes below identify a
-processed **slot** by stat and allow a bounded substitution list within that stat: e.g. canned banana and banana
-juice both fill a Stamina processed slot. The canonical version is what the cookbook shows first and what the
-production arithmetic uses. Substitution never changes the meal's signature, yield, timer, EXP or node reward.
+This is **45 explicit processed definitions** (nine families × five stats), materialized from bounded family/stat
+templates rather than a free-form ingredient editor. Cheese is no longer reserved for Wit or ham for Power.
+Every stat has the same nine processed choices, and every choice has the same batch cost, potency and timer.
+Swift Milk → Swift Cheese and Brave Milk → Brave Cheese are mechanically identical apart from the stat label.
+
+Recipes use a processed **slot** for each required stat and allow any of its nine listed processed choices in
+the same block. Cheese is the canonical default for all five stats and the arithmetic below; the player may
+choose other flavours without changing output signature, yield, timer, EXP or node reward. A raw slot similarly
+accepts the seven listed raw definitions of its stat; canonical choices keep shopping plans predictable.
 
 No replacing a processed slot with raw food in v1: the workshop must remain part of the loop. No substitutions
 between blocks or stat lanes. Display the chosen input item and exact quantity before starting and freeze them
@@ -212,14 +228,14 @@ Each single-stat meal has ten purchases to fund on the map.
 
 | Meal | Unlock signature | Canonical raw + processed ingredients |
 |---|---|---|
-| Quick-Step Salad | Speed | Carrot + Mayonnaise |
-| Endurance Mash | Stamina | Potato + Canned banana |
-| Power Roast | Power | Chicken + Ham |
-| Hearty Curry | Guts | Potato + Ham |
-| Clear-Mind Parfait | Wit | Berry + Cheese |
+| Swift Bowl | Speed | Carrot + Swift Cheese |
+| Steady Bowl | Stamina | Potato + Steady Cheese |
+| Strong Bowl | Power | Turnip + Strong Cheese |
+| Brave Bowl | Guts | Pumpkin + Brave Cheese |
+| Bright Bowl | Wit | Spinach + Bright Cheese |
 
-Power Roast and Hearty Curry have different raw inputs and preparation; their names/recipes are not inferred
-from a generic sum of stat tags. Meals express a build choice, not real-world nutrition claims.
+All five follow **one raw + one processed of the same stat**. No food-health logic, extra Guts ingredients,
+rarer Power source or cheaper Speed alternative changes the cost. Preparation names express a build choice.
 
 ### Ten dual-stat meals
 
@@ -227,24 +243,26 @@ Each unordered stat pair has one bridge node on the map.
 
 | Meal | Unlock signature | Canonical ingredients |
 |---|---|---|
-| Trail Bento | Speed + Stamina | Carrot + Canned banana |
-| Dash Omelette | Speed + Power | Egg + Ham |
-| Courage Skillet | Speed + Guts | Carrot + Potato + Ham |
-| Orchard Tart | Speed + Wit | Apple + Cheese |
-| Protein Tray | Stamina + Power | Potato + Ham |
-| Steady Stew | Stamina + Guts | Banana + Canned potato + Ham |
-| Garden Gratin | Stamina + Wit | Potato + Cheese |
-| Brave Roast | Power + Guts | Beef + Canned potato + Ham |
-| Scholar's Bake | Power + Wit | Chicken + Cheese |
-| Comfort Casserole | Guts + Wit | Potato + Ham + Cheese |
+| Trail Bento | Speed + Stamina | Apple + Banana + Swift Cheese + Steady Cheese |
+| Dash Bento | Speed + Power | Apple + Pear + Swift Cheese + Strong Cheese |
+| Courage Bento | Speed + Guts | Apple + Peach + Swift Cheese + Brave Cheese |
+| Orchard Bento | Speed + Wit | Apple + Berry + Swift Cheese + Bright Cheese |
+| Protein Bento | Stamina + Power | Banana + Pear + Steady Cheese + Strong Cheese |
+| Steady Bento | Stamina + Guts | Banana + Peach + Steady Cheese + Brave Cheese |
+| Garden Bento | Stamina + Wit | Banana + Berry + Steady Cheese + Bright Cheese |
+| Brave Bento | Power + Guts | Pear + Peach + Strong Cheese + Brave Cheese |
+| Scholar's Bento | Power + Wit | Pear + Berry + Strong Cheese + Bright Cheese |
+| Comfort Bento | Guts + Wit | Peach + Berry + Brave Cheese + Bright Cheese |
 
-Protein Tray and Hearty Curry deliberately share ingredients, but are separate named preparations and outputs.
-There is no ambiguity because a job starts from a selected recipe ID, never automatic ingredient inference.
+Every pair follows **one raw + one processed for each of its two stats**. Both stats pay the same quantities;
+the ten-pair catalogue includes every stat exactly four times. Select the named recipe, never infer a different
+meal from loose ingredient tags. More flexibility costs more ingredients, but not more active capacity/stat power.
 
 ### All-stat meal
 
-**Sunrise Banquet**: Carrot + Banana + Ham + Cheese + Canned spinach. It buys one of the five central Sun nodes.
-Its ingredients combine Speed, Stamina, Power and Wit; the hearty Stamina/Power combination supplies Guts identity.
+**Sunrise Banquet**: one raw fruit and one cheese for **each** of Speed, Stamina, Power, Guts and Wit: Apple,
+Banana, Pear, Peach, Berry + Swift, Steady, Strong, Brave and Bright Cheese. Ten units, equal cost for all five
+stats. It buys one of the five central Sun nodes; Guts needs no exceptional combination or extra input.
 The player needs five banquets for all five Sun nodes, not five different compulsory rare recipes.
 
 The catalogue has **sixteen meal families** per block. Single-stat nodes share their stat's meal; the ten dual
@@ -301,27 +319,33 @@ Race derivation must use the actual race-distance preset, not whichever tab was 
 
 | Node kind | Contribution before caps | Active capacity cost |
 |---|---|---|
-| Single | +60 to its stat | 1 node |
-| Dual | +30 to each of two stats | 1 node |
-| Sun | +12 to each of all five stats | 1 node |
+| Single | +20 to its stat | 1 node |
+| Dual | +10 to each of two stats | 1 node |
+| Sun | +4 to each of all five stats | 1 node |
 
-Every node contributes **60 total raw points**, so all-stat nodes are flexible rather than strictly stronger.
-Ten pure nodes give +600 to one weak stat; its four pair bridges add up to +120 and the five Suns add +60, a
-maximum +780 from the full map to one stat before other modifiers/caps. That does not guarantee every weak stat
-can be maximized simultaneously: those purchases still compete for active capacity.
+Every node contributes **20 total raw points**, so all-stat nodes are flexible rather than strictly stronger.
+Ten pure nodes give +200 to one stat; its four pair bridges add up to +40 and the five Suns add +20, a maximum
++260 from the full map to one stat. That requires nineteen active nodes; the first scenario's eighteen-node
+capacity yields a maximum +256 instead. These are targeted complements, not +600 boosts to every weak stat.
 
-Candidate capacity is **`16 + 2 × (scenarioIndex − 1)`** for the present registry:
+The old code pays **6 × 40 = 240 raw total**, or **360 with Foundation** before outfit growth. Depending on the
+activated stats' growth, the visible Foundation contribution can be around 360–400 or higher. The first draft
+proposed 960 raw in Scenario 1 and 1,440 in Scenario 5, plus separate Foundation help: that was a much larger
+increase, not merely more build choices. The owner questioned it; this revision reduces node power and removes
+the extra Foundation allowance. **A bigger map must not silently become a bigger order-of-magnitude budget.**
+
+Revised candidate capacity is **`18 + 2 × (scenarioIndex − 1)`** for the present registry:
 
 | Scenario range | Active capacities | Maximum total raw Farm contribution |
 |---|---|---|
-| 1–5 | 16 / 18 / 20 / 22 / 24 | 960 / 1,080 / 1,200 / 1,320 / 1,440 |
-| 6–10 | 26 / 28 / 30 / 32 / 34 | 1,560 / 1,680 / 1,800 / 1,920 / 2,040 |
-| 11–15 | 36 / 38 / 40 / 42 / 44 | 2,160 / 2,280 / 2,400 / 2,520 / 2,640 |
+| 1–5 | 18 / 20 / 22 / 24 / 26 | 360 / 400 / 440 / 480 / 520 |
+| 6–10 | 28 / 30 / 32 / 34 / 36 | 560 / 600 / 640 / 680 / 720 |
+| 11–15 | 38 / 40 / 42 / 44 / 46 | 760 / 800 / 840 / 880 / 920 |
 
 The block resets **purchases**, not the scenario progression slope. Capacity continues to grow by two nodes
 per scenario. The new map can eventually use more nodes than the old map, but still needs its own production.
 Only indices 1–14 exist today; Scenario 15 is an extension example, not a new authored scenario. The formula
-must not silently exceed the physical template; before a future Scenario 26 would need 66 active nodes, extend
+must not silently exceed the physical template; before a future Scenario 25 would need 66 active nodes, extend
 the template or deliberately re-author the capacity curve. This is not an infinite stat-growth promise.
 
 Switching bought nodes on/off is free outside a race, changes no Items, and never raises CL. Display capacity,
@@ -341,10 +365,11 @@ would reduce card-node value, undoing the reason for this rework. The implementa
 3. **Candidate:** add Farm as a flat contribution after the existing base/card growth calculation and before
    final stat caps. This makes its per-scenario progression genuinely linear and visible, without growth
    multiplying Farm again. Other pre-existing base/card/buff paths stay unchanged.
-4. Foundation currently multiplies Extra Stats by 1.5. Do not apply that multiplier to the new 960-point pool
-   unnoticed. **Candidate:** retain its maximum historical 120-point extra help as a bounded flat +24 to each
-   stat in Scenario 1, gated on at least one active Farm node, outside growth scaling. This changes its shape
-   and needs explicit balance approval, docs, pins and a decision before implementation.
+4. **Revised candidate:** Foundation, growth and other existing multipliers do not scale this separate Farm
+   vector again. No flat +120 Foundation replacement is added. Its Scenario 1 Farm ceiling is already 360,
+   matching the old Foundation raw ceiling; later ceilings rise linearly instead of dropping when Foundation
+   disappears. Retain Foundation's existing non-Farm effects. This new boundary needs explicit balance
+   approval, matching docs/pins and a decision before implementation.
 5. Keep the existing final stat caps, race engine, skill SP, aptitudes and Inspiration calculations. Document
    the old combined-budget invariance as superseded only for Farm; card-only invariance must still hold.
 
@@ -353,6 +378,11 @@ Use those example builds as **later-scenario directional targets**, not permissi
 Check the displayed result by source: base/cards, growth/buffs, Farm, then cap. The Farm page should explain
 which missing stats a build can repair and which desired gains are already capped.
 
+This conservative candidate **does not promise** that Farm alone raises a 200-stat cardless build to 900.
+Measure the real stat-source arithmetic with synthetic decks before committing to the owner's directional
+targets. If the gap remains, report it and consider a separate card/base-stat distribution proposal; do not
+hide a thousand-point Farm increase or change card values/race rules under a recipe task.
+
 ## 11. Production arithmetic and pacing
 
 For one full shared map the bill is **50 single meals + 10 dual meals + 5 Sunrise Banquets = 65 meals**.
@@ -360,16 +390,18 @@ Using the canonical recipes above and exact batch rounding:
 
 | Work | Needed jobs | Output/detail |
 |---|---|---|
-| Raw gathering | 43 | 172 raw units; covers direct ingredients and processing inputs |
-| Workshop | 41 | 82 processed units; 78 consumed by meals, 4 surplus from batch rounding |
+| Raw gathering | 55 | 220 raw units; covers direct ingredients and processing inputs |
+| Workshop | 50 | 100 processed units; 95 consumed by meals, 5 surplus from batch rounding |
 | Kitchen | 65 | Exactly the 65 unlock meals |
-| Total | **149** | **1,788 Farm EXP**, reaching Lv38 with 12 EXP banked |
-| Road to Lv50 | **196** | 2,352 EXP; **47 jobs** of slack beyond the full-map bill |
+| Total | **170** | **2,040 Farm EXP**, reaching Lv43 with 24 EXP banked |
+| Road to Lv50 | **196** | 2,352 EXP; **26 jobs** of slack beyond the full-map bill |
 
-The bill needs 153 raw units including rounded processing inputs, leaving 19 raw units from harvest rounding.
+The bill needs 195 raw units including rounded processing inputs, leaving 25 raw units from harvest rounding.
+For **each stat**, the canonical bill needs 10 vegetables, 9 fruit and 20 milk; 19 cheese are used and 20 made.
+Each stat therefore has exactly the same demand and batch rounding, not merely the same number of food names.
 Cookbook substitutions may alter the per-family rounding; the actual selection must be simulated, not assumed
 to have precisely this bill. Thirty-two raw claims reach Lv9, so a solo producer can front-load necessary
-ingredients and unlock both processing and cooking without deadlock. The canonical bill includes 43 raw claims.
+ingredients and unlock both processing and cooking without deadlock. The canonical bill includes 55 raw claims.
 
 This proves **material/work sufficiency**, not that every possible player's order spends the stock correctly.
 The promise assumes production is directed to the map instead of repeated wasteful recipes, giving items away,
@@ -377,10 +409,32 @@ or spending the same meals on other outfits. It is an account production chain: 
 but no hidden EXP credit is assigned to the beneficiary. One outfit can also rotate among districts and make
 the entire bill herself. A long-term player can leave specialists permanently assigned for a faster crew loop.
 
-At two claimed jobs per day, 149 claims take roughly 75 days for a solo outfit, and Lv50 about 98 days. The
-continuous/no-idle expertise lower bound for this bill is about 955 hours (40 days); real life, gate ordering
+At two claimed jobs per day, 170 claims take roughly 85 days for a solo outfit, and Lv50 about 98 days. The
+continuous/no-idle expertise lower bound for this bill is about 1,079 hours (45 days); real life, gate ordering
 and station competition make it slower. Helpers reduce elapsed time, not the count of necessary jobs. Treat
 these as reviewable pacing, not a reason to add unlimited automatic production or mandatory Energy use.
+
+### How long does one outfit take from Lv1 to Lv50?
+
+Exactly **49 level-ups × 48 EXP = 2,352 EXP**, at **12 EXP per completed job = 196 jobs**, regardless of job kind.
+Without Energy, stock/helper credit, automatic restarts or skipped collection time:
+
+| Consistent completion rate for this outfit | Lv1→50 time |
+|---|---|
+| One job/day | 196 days |
+| Two jobs/day, e.g. morning/evening | 98 days, about fourteen weeks |
+| Three jobs/day | 65⅓ days, reaching Lv50 during day 66 |
+
+Expertise lowers a job's duration, **not its EXP requirement**. If check-ins remain every twelve hours, shortening
+an eight-hour job to 5h30 does not automatically add a third claim; the ready job still waits. Multiple assigned
+outfits level in parallel, but their work does not accelerate this outfit's personal level.
+
+For comparison, immediate collection/restart twenty-four hours a day in one district has a mathematical floor
+of **1,108 hours ≈ 46.2 days**, including its mastery ramp. That path can stay raw-only and does **not** make the
+full cookbook. A canonical full-map path plus the remaining level jobs takes roughly **51 no-idle days**, with
+district switching and a valid input schedule; this is a duration lower bound, not a calendar simulation or a
+normal play promise. The practical baseline remains **98 days at two completions/day**. The curve is still a
+proposal, so the owner can choose a shorter target before implementation; do not silently tune EXP now.
 
 ### Required balance work before constants ship
 
@@ -471,7 +525,7 @@ No full-page pan gesture that prevents vertical navigation; zoom/details must us
 Use the shared `PagedGuide` and guide-memory pattern, with a new guide version so the old Farm tour does not
 count as having explained recipes. First-use guide: global districts/crew; ingredient blocks; raw → processed
 → cooked; expertise/timers; meal purchases vs free activation; presets/capacity; Energy and debug distinction.
-Reopen from a visible Help button. Teach Guts' hearty recipe identity and why the sun is not a stronger node.
+Reopen from a visible Help button. Teach equal stat-family costs, substitutions and why the sun is not a stronger node.
 
 Reuse private owned Uma portraits/chibis through the verified existing asset pipeline. All new ingredient,
 meal, district and Energy icons should be **original repo-native SVGs** in the existing icon style, not copied
@@ -481,7 +535,8 @@ readable at item/portrait size; do not rely on two similar greens to distinguish
 Asset brief for implementation:
 
 - Five district signs and empty/busy/ready station presentations; simple gardens, trees, barn, workshop, stove.
-- Eleven raw-family icons; processed category silhouettes (can/bottle/cheese/mayo/ham) with source accents.
+- Seven raw-family silhouettes (vegetable/fruit/milk/egg/chicken/beef/pork), vegetable/fruit shape accents and
+  nine processed presentations; each has five readable stat variants. Reuse categories, not 80 bespoke paintings.
 - Five single meals, ten visibly paired meals, one sun banquet, one Energy icon. Pair symbols cannot overlap
   into an unreadable five-colour blob. Reuse silhouettes across blocks with an explicit numbered crest.
 - Worker portrait with a small Farm Level badge, five-rank expertise marker and no extra costume art required.
