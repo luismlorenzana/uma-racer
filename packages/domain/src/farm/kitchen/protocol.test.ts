@@ -68,11 +68,13 @@ describe('Farm semantic protocol', () => {
     expect(f.entities.get(`items/${FARM_KITCHEN_ENERGY_ID}`)!.data.quantity).toBe(1)
     expect(f.apply(f.operation({ kind: 'energy', stationId: 'garden-1', outfitId: 'invented-0', jobId: 'invented-wrong' }, 'wrong')).responses[0]!.status).toBe('rejected')
   })
-  it('uses the authoritative clock, not a forged future client timestamp', () => {
-    const f = farmProtocolFixture(); f.apply(f.operation(start))
+  it('preserves existing trusted-device timing through delayed offline Start and Claim acknowledgements', () => {
+    const f = farmProtocolFixture(); f.apply(f.operation(start), 1000 + FARM_KITCHEN_JOB_MS)
+    expect(f.entities.get('farm/main')!.data.stations).toMatchObject([{ job: { startedAt: 1000, readyAt: 1000 + FARM_KITCHEN_JOB_MS } }])
     const claim = f.operation({ kind: 'claim', stationId: 'garden-1', outfitId: 'invented-0', jobId: `farm-job:${f.generation}:garden-1:1`, recipeId: start.recipeId }, 'future', 1000 + FARM_KITCHEN_JOB_MS)
-    expect(f.apply(claim, 1000).responses[0]!.status).toBe('rejected')
-    expect(f.entities.get('farmWorkers/invented-0')!.data.totalExp).toBe(0)
+    const accepted = f.apply(claim, 1000 + 2 * FARM_KITCHEN_JOB_MS).responses[0]!
+    expect(accepted.status).toBe('applied'); expect(accepted.receipt!.createdAt).toBe(1000 + 2 * FARM_KITCHEN_JOB_MS)
+    expect(f.entities.get('farmWorkers/invented-0')!.data.totalExp).toBe(12)
   })
   it('purchases one named target across distances once, never autoactivating its retry', () => {
     const f = farmProtocolFixture(), itemId = 'farm:meal:b1:speed'

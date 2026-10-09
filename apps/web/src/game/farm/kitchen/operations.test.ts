@@ -2,7 +2,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { farmProtocolFixture } from '../../../../../../packages/domain/src/farm/kitchen/protocol-fixtures'
-import { farmCanonical, FARM_KITCHEN_JOB_MS, type FarmStoredEntity } from '@racer/domain/farm/kitchen'
+import { farmCanonical, parseFarmKitchenState, FARM_KITCHEN_JOB_MS, type FarmStoredEntity } from '@racer/domain/farm/kitchen'
 import { RacerDb } from '../../db'
 import { FarmOperationCoordinator, farmTransactionTables } from './operations'
 let seq = 0
@@ -89,9 +89,24 @@ describe('acknowledged-only Farm coordinator', () => {
     db.close(); await db.open(); expect(await coordinator.reserveOperationId('invented-device')).toBe('fop:invented-device:2')
     await expect(new FarmOperationCoordinator(db, schedule).enqueue(start, 'disabled')).rejects.toThrow(/disabled/)
   })
+  it('rolls back every map-purchase acknowledgement boundary without losing the meal or creating a paid node', async () => {
+    const id = 'farm:meal:b1:speed'; f.put('items', id, { itemId: id, quantity: 1, updatedAt: 1 }); await put(db, f.entities.get(`items/${id}`)!)
+    const op = await coordinator.enqueue({ kind: 'buy-node', outfitId: 'invented-0', scenarioId: 'ura-finale', distance: 'sprint', nodeId: 'speed-01', autoactivate: true }, 'buy', [], 1000)
+    const responses = f.apply(op).responses, writes: string[] = []
+    const clone = new RacerDb(`farm-map-fault-clone-${++seq}`); await clone.open()
+    for (const t of farmTransactionTables(db)) for (const row of await t.toArray()) await clone.table(t.name).put(row)
+    await new FarmOperationCoordinator(clone, () => undefined, true, key => writes.push(key)).adopt([op], responses, 1000); await clone.delete()
+    expect(writes).toContain('farmExtra/invented-0:b1')
+    for (let stop = 0; stop < writes.length; stop++) {
+      let n = 0
+      await expect(new FarmOperationCoordinator(db, schedule, true, () => { if (n++ === stop) throw new Error('Synthetic map failure') }).adopt([op], responses, 1000)).rejects.toThrow(/Synthetic map/)
+      expect((await db.items.get(id))!.data.quantity).toBe(1); expect(await db.farmExtra.count()).toBe(0)
+      expect(await db.farmOperations.count()).toBe(0); expect(await db.itemLedger.count()).toBe(0); expect(await db.farmPending.count()).toBe(1); expect(await db.outbox.count()).toBe(1)
+    }
+  })
   it('accepts transitive pending dependencies beyond sixteen offline commands without widening per-command locks', async () => {
     for (let i = 0; i < 20; i++) await coordinator.enqueue({ kind: 'assign', stationId: i % 2 ? 'garden-1' : 'garden-2', outfitId: 'invented-0' }, `move-${i}`, i ? [`move-${i - 1}`] : [], 1000)
     expect((await coordinator.nextBatch()).length).toBe(16)
-    expect(await db.farmPending.count()).toBe(20); expect((await db.farm.get('main'))!.data.stations[0]!.id).toBe('garden-1')
+    expect(await db.farmPending.count()).toBe(20); expect(parseFarmKitchenState((await db.farm.get('main'))!.data)!.stations[0]!.id).toBe('garden-1')
   })
 })

@@ -12,7 +12,7 @@ import { FARM_KITCHEN_ENERGY_GRANT, FARM_KITCHEN_ENERGY_ID, farmSafeInteger, typ
 import { farmCanonical, farmData, farmKey, type FarmStoredEntity, type FarmStoredLog } from './wire'
 import { farmMovementId, type FarmMovementRole } from './movement'
 import { farmOperationReferences, farmPurchaseIdentity, farmTargetGuardId, parseFarmOperationBatch, parseFarmOperationReceipt, parseFarmTargetGuard,
-  type FarmChange, type FarmOperationV1, type FarmOperationResponse, type FarmOperationReceiptV1, type FarmOperationResult } from './operations'
+  parseFarmOperationResponses, type FarmChange, type FarmOperationV1, type FarmOperationResponse, type FarmOperationReceiptV1, type FarmOperationResult } from './operations'
 
 export interface FarmResolveContext { enabled: boolean; allowEnergyGrant?: boolean; now: number;
   entities: ReadonlyMap<string, FarmStoredEntity>; logs: ReadonlyMap<string, FarmStoredLog> }
@@ -31,6 +31,8 @@ export function resolveFarmOperations(context: FarmResolveContext, operations: r
     logs.set(farmKey(receipt), receipt); appends.push(receipt)
   }
   for (const response of responses) for (const row of response.authoritative) row.record = entities.get(farmKey(row)) ?? null
+  // Both adapters call this before any write. An unreadable reply must never commit economic effects.
+  need(parseFarmOperationResponses(responses, operations), 'Farm response exceeds bounds; retry unchanged commands in a smaller batch')
   return { responses, entities, logs, writes, appends }
 }
 function resolveOne(context: FarmResolveContext, operation: FarmOperationV1): FarmOperationResponse {
@@ -76,6 +78,7 @@ function resolveOne(context: FarmResolveContext, operation: FarmOperationV1): Fa
     }
     const target = p.kind === 'claim' ? p.jobId : p.kind === 'claim-legacy' ? p.cycleId : p.kind === 'buy-node'
       ? farmPurchaseIdentity(operation.generation, p.outfitId, farmIngredientBlock(SCENARIOS.find(s => s.id === p.scenarioId)!.tier), p.nodeId) : null
+    need(farmCanonical(operation.expected.map(farmKey).sort()) === farmCanonical(refs.entities), 'Missing or excessive expected read references')
     if (target) {
       const previous = guard(p.kind === 'buy-node' ? 'purchase' : 'terminal', target)
       if (previous) {
@@ -84,7 +87,6 @@ function resolveOne(context: FarmResolveContext, operation: FarmOperationV1): Fa
         return accepted() // Existing target result, no extra spend, XP or selected-preset activation.
       }
     }
-    need(farmCanonical(operation.expected.map(farmKey).sort()) === farmCanonical(refs.entities), 'Missing or excessive expected read references')
     for (const expected of operation.expected) need(expected.version === (current(expected.kind, expected.id)?.version ?? 0),
       `${farmKey(expected)} changed; review the frozen input and retry`)
     const put = (kind: string, id: string, data: object) => {
@@ -164,7 +166,7 @@ function resolveOne(context: FarmResolveContext, operation: FarmOperationV1): Fa
       } else if (p.kind === 'claim-legacy') {
         owned(p.outfitId)
         const station = legacy.find(s => s.stationId === p.stationId), job = station?.cycle
-        need(station?.outfitId === p.outfitId && job?.id === p.cycleId && job.cropId === p.cropId && context.now >= job.readyAt,
+        need(station?.outfitId === p.outfitId && job?.id === p.cycleId && job.cropId === p.cropId && operation.now >= job.readyAt,
           'Legacy job/worker/deadline does not match the frozen cycle')
         const historical = context.logs.get(`itemLedger/${p.cycleId}`)
         if (historical) {
@@ -185,7 +187,9 @@ function resolveOne(context: FarmResolveContext, operation: FarmOperationV1): Fa
           const state = row ? !row.deleted && parseFarmBlockRecipes(row.data) : emptyFarmRecipes(operation.generation, block)
           need(state && state.generation === operation.generation, 'Invalid recipe milestone row'); return state!
         })
-        const input = { farm: farm!, stationId: p.stationId, worker: worker!, ownedOutfits: new Set([p.outfitId]), recipeStates, inventory, now: context.now }
+        // Owner chose existing Farm timing: PersistentFarmHost uses device time for Start/Claim (technical §4).
+        // Preserve that clock in offline intent; server time stamps acknowledgement, not a new job deadline.
+        const input = { farm: farm!, stationId: p.stationId, worker: worker!, ownedOutfits: new Set([p.outfitId]), recipeStates, inventory, now: operation.now }
         if (p.kind === 'start') {
           const started = value(startFarmJob({ ...input, recipeId: p.recipeId, quantity: p.quantity, choices: p.choices }))
           put('farm', 'main', started.farm); started.debits.forEach(d => movement(d.itemId, -d.amount, 'input', started.job.id))

@@ -398,7 +398,7 @@ RPG and Inspiration keep their established unrelated paths, including D149 ordin
 Both adapters use the same semantic resolver. Firestore reads its complete deduplicated set before writes and
 coalesces final projections; local-file requests serialize and atomic-rename their equivalent result. Production API
 packaging remains standalone CommonJS: `node apps/api/scripts/sync-puzzle-adapter.mjs` mechanically mirrors the narrow
-70-module pure dependency closure into `apps/api/src/save/puzzle-domain/` (T115 adds preservation/save and old Spark replay validation). A test checks byte-for-byte parity. Edit
+83-module pure dependency closure into `apps/api/src/save/puzzle-domain/` (T115 adds preservation/save and old Spark replay validation; T119's additive shared snapshot parser adds Farm record validation). A test checks byte-for-byte parity. Edit
 domain sources, regenerate, never hand-edit the adapter; no Docker, infra, dependency or source-TS runtime import change.
 
 Authenticated `POST /api/puzzles/prepare` now parses T115's version2 request below; the earlier version1 scaffold

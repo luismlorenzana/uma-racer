@@ -6,6 +6,7 @@ import type { EntityRecord, LogRecord, SaveSnapshot, SyncRequest, SyncResponse }
 import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
 import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
 import { protectFarmSync } from './farm-sync'
+import { FARM_KITCHEN_RELEASE_ENABLED } from './farms'
 import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
 import { type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
 import { disabledPreservation, unavailablePreservation, resolvePreservation } from './puzzle-preservation'
@@ -20,7 +21,7 @@ export class LocalSaveRepository implements SaveRepository {
   private queue: Promise<unknown> = Promise.resolve()
 
   constructor(private readonly file: string, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED,
-    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled = false) {}
+    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled: boolean = FARM_KITCHEN_RELEASE_ENABLED) {}
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {
     const run = this.queue.then(fn, fn)

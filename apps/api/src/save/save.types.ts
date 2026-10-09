@@ -2,7 +2,7 @@
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
 import { parseRpgEntity, parseRpgLog, rpgEntityIdMatches, rpgLogIdMatches, rpgOrdinaryRow } from './rpg-save.types'
 import { parseInspirationBank } from './inspiration-bank'
-import { FARM_ENTITY_KINDS, FARM_LOG_KINDS, FARM_SYNC_LIMITS, farmBytes, farmRowId, parseFarmEntity, farmEntityIdMatches,
+import { FARM_ENTITY_KINDS, FARM_LOG_KINDS, FARM_SYNC_LIMITS, farmBytes, parseFarmEntity, farmEntityIdMatches,
   parseFarmCommandMovement, parseFarmOperationLog, farmLogIdMatches, parseFarmOperationBatch, farmOperationReferences,
   type FarmOperationV1, type FarmOperationResponse } from './farms'
 import { PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, parsePuzzleEntity, puzzleEntityIdMatches, parsePuzzleResultSave,
@@ -1308,7 +1308,7 @@ export function parseSyncRequest(body: unknown): SyncRequest | string {
   const appends = body.appends ?? []
   const puzzleOperations = body.puzzleOperations === undefined ? undefined : parsePuzzleOperationBatch(body.puzzleOperations)
   const farmOperations = body.farmOperations === undefined ? undefined : parseFarmOperationBatch(body.farmOperations)
-  if (body.farmOperations !== undefined && !farmOperations) return 'invalid Farm operations or transport bounds'
+  if (body.farmOperations !== undefined && (!farmOperations || body.farmProtocolVersion !== 1)) return 'invalid Farm operations or protocol'
   if (body.farmProtocolVersion !== undefined && body.farmProtocolVersion !== 1) return 'unsupported Farm protocol'
   if (farmOperations?.length && body.farmProtocolVersion !== 1) return 'Farm operations require protocol 1'
   if (farmOperations?.length && puzzleOperations?.length) return 'Farm and Puzzle operations require separate batches'

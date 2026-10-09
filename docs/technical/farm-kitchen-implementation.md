@@ -1,6 +1,6 @@
 # Farm production/cooking — implementation contract
 
-**T118 pure layer implemented; persistence/release planned · M031 · 2026-10-09.** Read
+**T118 pure layer and T119 dormant persistence implemented · M031 · 2026-10-09.** Read
 [the design](../design/farm-kitchen-rework.md), [AGENTS.md](../../AGENTS.md) and the current task first.
 This standing contract must survive task deletion under D104. It specifies the new path; existing
 [Farm](../design/farm.md) stays live until T124. Do not describe a capability-off merge as a playable release.
@@ -18,7 +18,7 @@ This standing contract must survive task deletion under D104. It specifies the n
   `screens/ExtraStatsScreen.tsx`, Home, the global Item inventory and scenario/preset/race projections.
 - Current API: `save.types.ts`, `save.repository.ts`, local/Firestore repositories, `puzzle-sync.ts` and the
   standalone `puzzle-domain/` mirror. Reuse the semantic-sync transaction pattern, not Puzzle's game rules.
-- Read latest main before each task. Main currently uses Uma/profile save 16 and Dexie 31. **Do not reserve a
+- Read latest main before each task. Uma/profile save 16 is unchanged; T119 adds Dexie 32. **Do not reserve a
   guessed next global save/Dexie version now.** Independent Farm records below avoid a new Uma shape; additive
   Dexie migrations use the next actual free version when written and never rerun an RPG/Puzzle migration.
 
@@ -74,7 +74,7 @@ fails rather than silently clamping. `progression.ts` derives lifetime levels/re
 
 Concrete pure schemas: Farm3; worker1; recipe-block1; Extra-block1; frozen job rules1; node template1. These
 are **not** a global Uma/save/Dexie bump. T119 wraps them in entity versions/update timestamps and economic
-operations; transport/recovery objects below remain planned. No new record is installed in a real account yet.
+operations; its transport/storage implementation is described below. No new record is installed in a real account yet.
 
 - `createFarmKitchen` creates sparse ordered assignments; `farmStation` projects any of the thirty spots.
   `assignFarmWorker`/`removeFarmWorker` check ownership and Busy/Ready locks, retaining per-station attempts.
@@ -104,27 +104,34 @@ private rows, dependency, API/DB/UI/release-flag/infrastructure or live-stat cha
 Use independently versioned synced rows. Normal projection creation is lazy; missing canonical rows are empty
 views, not permission to write on route opening. Only accepted semantic commands/cutover create them.
 
-| Collection / ID | Planned data and authority |
+| Collection / ID | Implemented data and authority (dormant T119) |
 |---|---|
 | `farm/main` | Schema 3, generation, ordered/sparse thirty station assignments, attempt floors and current frozen jobs; no lifetime worker/history arrays |
 | `farmWorkers/<outfitId>` | Schema 1, generation, outfit ID and lifetime Farm EXP; level/remainder derived, ownership checked |
 | `farmRecipes/b<block>` | Schema 1, generation, processing/cooking milestone evidence, sixteen first-preparation/meal-count records |
 | `farmExtra/<outfitId>:b<block>` | Schema 1, generation, template/rules version, up to 65 bought IDs and active IDs keyed by registered scenario and four distances |
-| `farmOperations/<operationId>` | Immutable accepted command/receipt; changes and economic evidence are stored once, never an aggregate history field |
-| `farmCutover/main` | Server-owned generation, phase `preparing|resetting|active`, frozen cohort digest/counts and completion evidence |
-| `farmCutoverPages/<generation>:<page>` | Server-owned bounded immutable reset cohort/legacy station input pages; no private rows in checked-in evidence |
+| `farmOperations/<operationId>` | Immutable accepted command/receipt; changes and economic evidence are stored once, never an aggregate history field; terminal/purchase guards use `ftg:<type>:<hash>` in the same collection |
+| `farmCutover/main` | Schema1: generation, phase `preparing|resetting|active`, 64-hex `cohortDigest`/`archiveDigest`, `outfitCount`, `pageCount`, `nextOutfitIndex`, `createdAt`, nullable `activatedAt`; shapes only, T120 owns execution |
+| `farmCutoverPages/<generation>:<index or legacy>` | Schema1 union: cohort `{index,outfits:[{outfitId,sourceVersion,tiers}]}` (sorted, ≤32/page, ≤128 pages); legacy `{stations:[{stationId,outfitId,attempt,cycle}]}` (≤18 original raw slots/cycles); both include generation/type |
 | `items/<itemId>` | Existing nonnegative global stacks; Farm-owned IDs require Farm commands |
 | `itemLedger/<movementId>` | Existing ledger plus an explicit Farm-command source/version; legacy reason unions remain parsable |
 
 Device-only tables: `farmPending` (immutable commands, dependencies, projected changes/status), `farmRecovery`
-(pre-cutover whole-account archive plus unfinished operation recovery), and local sequence/guide/preferences.
+(unfinished operation recovery; T120 adds the private whole-account archive), and `farmPreferences` (local
+sequence/order and future guide preferences).
 Do not reuse or overwrite Puzzle preservation backups, RPG fights or `minigameRuns`.
+
+Dexie32 adds these nine stores without an `upgrade` callback: workers, recipes, Extra, cutover, pages,
+operations, pending, recovery and preferences. Existing v31 rows, journals and outbox remain byte-identical.
+Synced projections use `{id,data,version,updatedAt,deleted}` locally; tombstones retain their metadata.
+Pending rows hold `{id,order,operation,prediction,status,reason,queuedAt}` with `pending|rejected|blocked` status;
+recovery rows retain `{id,reason,data,createdAt}`. Preferences are device-only `{id,value}`.
 
 All rows include the normal entity version and update timestamp. Worker EXP, job attempts, recipe quantities and
 cookbook totals are safe integers. Arrays bound to thirty stations, 65 nodes, four presets and registered block
 scenarios. Worker rows are separate so a large owned roster does not enlarge every command. A current job holds
 at most ten concrete input entries and one output definition; farm/main holds no claimed jobs or ledger history.
-Keep documents below the existing transport limit; T119 measures worst serialized rows/receipts.
+The ceilings and generated stress witnesses below are enforced independently of roster size.
 
 **No Uma/profile schema bump is required for this choice.** The new map owns bought/active state separately.
 After cutover, every old `extraStatsUnlocked` count and preset `activeExtraStats` array in every scenario unit is
@@ -141,6 +148,11 @@ No extra unauthenticated endpoint, infrastructure setting or domain I/O is intro
 Envelope fields: `schemaVersion:1`, `operationId`, `generation`, canonical `payloadDigest`, ordered dependency
 IDs, exact expected entity versions, validated integer `now` and a discriminated payload. The trusted client
 clock determines readiness; the API verifies frozen deadline arithmetic, not a new anti-cheat clock policy.
+The owner explicitly chose to retain today's Farm behaviour on2026-10-09: `PersistentFarmHost` already uses
+device time for planting/harvesting/acceleration. Start, Claim, Energy and legacy Claim therefore use the frozen
+operation `now`; server `now` timestamps entity/movement/receipt acknowledgement only. A delayed offline upload
+does not restart a job or invalidate an already-waited deadline. This personal-game trust model is not protection
+against modified client clocks; neither the new host nor a live account generation is enabled by T119.
 
 | Payload | Reads / atomic effects |
 |---|---|
@@ -174,16 +186,30 @@ commands. No whole-save rollback and no automatic retry under a fresh spending I
 canonical stock/jobs. A lost reply resends unchanged operations; adoption never replaces newer local unrelated
 RPG/Puzzle/racing edits with an old whole-account snapshot.
 
+`FarmOperationCoordinator` reserves `fop:<deviceId>:<sequence>` in a persisted transaction. It writes only
+pending intent/receipt predictions and an `op:'farm'` outbox marker when enqueuing; canonical tables are unchanged.
+Declared dependency ancestry is followed transitively, so a long offline chain does not need every ancestor in
+one command's sixteen dependency slots. Predictions are replay views, not canonical ledger/Item writes.
+Acknowledgements validate complete response accounting before a transaction, re-read current versions, install
+canonical Farm facts/evidence once, settle markers and revalidate descendants. Rejected intent remains recoverable.
+GET/JSON/cloud adoption uses the same strict record/log parsers, retains unknown/future errors and never feeds
+v3 through legacy harvest-derived EXP. Delayed pulls preserve newer Farm stock and unrelated Uma edits even
+when the existing Puzzle coordinator is also present. T121 still owns the real host, user-facing views and retry UI.
+
 Farm-purchased/activated **pending** stats are previews only. Racing and historical/frozen parent snapshots
 use acknowledged Farm configuration; UI explains when a pending purchase needs sync before it affects racing.
 An existing acknowledged build remains usable offline. There is no second inventory or server-only Farm UI.
 
 ## 5. API mirror, protection and transport
 
-Implement explicit parsers under API `save/farm-domain/` (or equivalently isolated mirror modules), with a parity
-test against pure domain outputs. Existing `puzzle-domain/farm/` remains a legacy dependency of the Puzzle parser;
+T119 implements explicit parsers under API `save/farm-domain/`, with parity tests against pure domain outputs.
+`node apps/api/scripts/sync-farm-adapter.mjs --check` verifies all15 production kitchen modules byte-for-byte;
+four small facades use the unchanged shared scenario/types/legacy-cycle vocabulary. No fixtures enter the mirror.
+Existing `puzzle-domain/farm/` remains a legacy dependency of the Puzzle parser;
 do not replace it with incompatible v3 records or change Puzzle preservation content. Update root SaveSnapshot,
 entity/log kinds, local file repository, Firestore repository, Dexie adoption/export and outbox acknowledgement.
+The shared snapshot parser now understands additive Farm records, expanding the mechanically checked Puzzle
+dependency closure from70 to83 modules; legacy Farm helpers and Puzzle preservation rules remain unchanged.
 
 Farm requests do not mix semantic Puzzle operations in one transport batch. Ordinary/Puzzle/Farm queues flush
 in a coordinated order without starvation. Apply protection guards to ordinary upserts/appends as well: active
@@ -202,6 +228,38 @@ Partition a30-claim Collect all by **all three limits**, not only operation coun
 intact; if it alone is too large, fail visibly. Dependencies accepted in an earlier batch remain referenced by
 receipt. Read all Firestore references before writing; all effects and receipt commit in one transaction.
 The local file adapter uses the same pure resolve result and durable all-or-nothing replacement.
+
+Concrete static reads always include `farmCutover/main` and `constellationBank/main`, the operation receipt and
+direct dependency receipts. Station operations also read `farm/main` and the frozen legacy page. Ownership/worker
+reads are bounded to the targeted outfit, never all workers. Start adds its block row, concrete debit stacks and
+movement IDs; Claim adds allthree recipe rows, output stack/movement and terminal guard; Energy adds its one
+stack/movement. Buy adds the outfit's block map, matching meal/movement and purchase guard; activation has no
+item movement. Legacy Claim adds original-cycle evidence, old output/movement and cycle/station guards. Assign
+reads the bounded eighteen legacy station guards to detect a held legacy job before moving a worker.
+
+The combined ordinary/semantic read/write union is ≤200, including implicit controls. The **complete request**,
+not just the operations array, is ≤262,144 UTF-8 JSON bytes and ≤16 Farm groups. Farm projections/pages/reference
+Items/bank wrappers are ≤131,072 bytes; the already-large shared Uma read wrapper and immutable receipt are
+≤921,600 bytes. Full response arrays are ≤14,745,600 bytes. These lower Farm-local ceilings are pinned without
+raising generic/Puzzle limits. Greedy sender partitioning also reserves full-request overhead and estimates
+response size; a single oversized command is kept intact for visible recovery. Both adapters validate the final
+full response before any write, so a reply too large to adopt cannot commit a hidden economic effect.
+
+Generated synthetic stress maxima (UTF-8 JSON; witnesses, not permission to exceed any ceiling):
+
+| Witness | Observed size / references |
+|---|---|
+| Four disjoint ten-input, quantity4 banquet Starts | 7,850-byte complete request;101 refs |
+| Thirty ready, legally populated stations (including six ten-input banquets) | 16+14 commands; largest complete request14,078 bytes,106 refs, full response781,378 bytes |
+| Farm projection with all30 frozen jobs | 18,373 bytes |
+| Largest Start / Claim receipt in that full-station fixture | 47,742 /40,656 bytes |
+| Four configured distance builds in every one of14 scenario units | Shared Uma reference290,445 bytes; proves a128 KiB Uma limit would reject a legitimate save |
+| Exact/over request/reference/group boundaries |262,144 bytes accepted, next byte rejected;200 refs accepted,201 rejected;16 groups accepted,17 rejected |
+
+Generated near-900 KiB valid shared Uma reads also prove oversized repeated authoritative responses reject
+before commit. Two-device, lost-reply, distinct-ID terminal/purchase and all-write fault tests cover local-file,
+strict fake Firestore and isolated IndexedDB. AuthGuard still guards the existing `/api/sync`; no endpoint,
+credential, dependency, infrastructure or owner-account operation is added. Both Farm capabilities are false.
 
 Required bounds tests: max-input four-banquet Start (ten distinct stacks), combined Energy/Claim retry, thirty
 ready stations, two-device same-node purchase, all fourteen scenarios/four presets, many worker rows without

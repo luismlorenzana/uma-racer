@@ -50,7 +50,7 @@ async function putLog(db: RacerDb, log: FarmStoredLog, afterWrite: (key: string)
   }
   await logTable(db, log.kind).put({ id: log.id, data, createdAt: log.createdAt }); afterWrite(farmKey(log))
 }
-/** No host installation here. Capability injection exists only for isolated tests until T123's coordinated release. */
+/** No host installation here. Capability injection exists only for isolated tests until T124's coordinated release. */
 export class FarmOperationCoordinator {
   constructor(private readonly db: RacerDb, private readonly schedule: () => void, private readonly enabled = FARM_KITCHEN_RELEASE_ENABLED,
     private readonly afterWrite: (key: string) => void = () => {}) {}
@@ -110,7 +110,15 @@ export class FarmOperationCoordinator {
   async nextBatch() {
     const rows = (await this.db.farmPending.orderBy('order').toArray()).filter(r => r.status === 'pending')
     const batch = partitionFarmOperations(rows.map(r => r.operation))[0] ?? []
-    while (batch.length && farmBytes({ upserts: [], appends: [], farmProtocolVersion: 1, farmOperations: batch }) > FARM_SYNC_LIMITS.bytes) batch.pop()
+    const state = await readState(this.db)
+    const responseEstimate = () => {
+      const final = new Map(state.entities)
+      for (const op of batch) for (const c of rows.find(r => r.id === op.operationId)!.prediction.changes) final.set(farmKey(c), c.after)
+      return batch.reduce((sum, op) => sum + farmBytes(rows.find(r => r.id === op.operationId)!.prediction) + 2048 +
+        farmOperationReferences(op).entities.reduce((bytes, key) => bytes + farmBytes(final.get(key) ?? null), 0), 0)
+    }
+    while (batch.length && (farmBytes({ upserts: [], appends: [], farmProtocolVersion: 1, farmOperations: batch }) > FARM_SYNC_LIMITS.bytes ||
+      responseEstimate() > FARM_SYNC_LIMITS.responseBytes)) batch.pop()
     if (rows.length && !batch.length) throw new Error('One Farm command exceeds complete request bounds; preserve it for recovery')
     return batch
   }

@@ -4,6 +4,7 @@ import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createPlayerProfile, parseSaveSnapshotOrThrow, type EntityRecord } from '@racer/domain'
 import { farmProtocolFixture } from '../../../../../../packages/domain/src/farm/kitchen/protocol-fixtures'
+import { puzzleProtocolFixture } from '../../../../../../packages/domain/src/minigames/uma-puzzles/protocol-fixtures'
 import { db, RacerDb } from '../../db'
 import { adoptServerSnapshot, readLocalSnapshot, isDatabaseSemanticallyEmpty, reconcileFarmProjectionsInTransaction } from '../../persistence'
 import { FarmOperationCoordinator, farmTransactionTables } from './operations'
@@ -39,13 +40,16 @@ describe('additive v32 and canonical Farm snapshots', () => {
     expect(await isDatabaseSemanticallyEmpty()).toBe(false)
   })
   it('preserves a newer local ordinary Uma edit and Farm stock during a delayed full pull', async () => {
-    const f = farmProtocolFixture(), snapshot = { entities: [profile, ...f.entities.values()] as EntityRecord[], logs: [], serverTime: 1000 }
+    const f = farmProtocolFixture(), bank = puzzleProtocolFixture().entities.get('constellationBank/main')!
+    const snapshot = { entities: [profile, ...f.entities.values(), bank] as EntityRecord[], logs: [], serverTime: 1000 }
     await adoptServerSnapshot(snapshot)
     const uma = (await db.umas.get('invented-0'))!; uma.data.exp = 77; uma.version++
     await db.umas.put(uma); await db.outbox.add({ kind: 'umas', id: uma.id, op: 'upsert', queuedAt: 1200 })
     await db.items.put({ id: 'farm:energy', version: 2, data: { itemId: 'farm:energy', quantity: 80, updatedAt: 1200 } })
+    snapshot.entities.push({ kind: 'items', id: 'farm:energy', version: 1, deleted: false, updatedAt: 1000, data: { itemId: 'farm:energy', quantity: 50, updatedAt: 1000 } })
     await adoptServerSnapshot(snapshot)
-    expect((await db.umas.get(uma.id))!.data.exp).toBe(77); expect((await db.items.get('farm:energy'))!.data.quantity).toBe(80)
+    expect((await db.umas.get(uma.id))!.data.exp).toBe(77); expect((await db.umas.get(uma.id))!.version).toBe(uma.version)
+    expect((await db.items.get('farm:energy'))!.data.quantity).toBe(80)
     expect(await db.outbox.count()).toBe(1)
   })
   it('retains an unacknowledged command through dormant bootstrap and clears it when its receipt is pulled', async () => {

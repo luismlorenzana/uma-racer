@@ -5,6 +5,7 @@ import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } fr
 import type { SaveRepository } from './save.repository'
 import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
 import { protectFarmSync } from './farm-sync'
+import { FARM_KITCHEN_RELEASE_ENABLED } from './farms'
 import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
 import { preservationHeader, preservationPageIndexes, preservationPageId, preservationBatch, puzzleCohortId,
   type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
@@ -26,7 +27,7 @@ import {
 export class FirestoreSaveRepository implements SaveRepository {
 
   constructor(private readonly injectedDb?: admin.firestore.Firestore, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED,
-    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled = false) {}
+    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled: boolean = FARM_KITCHEN_RELEASE_ENABLED) {}
 
   private get db(): admin.firestore.Firestore {
     if (this.injectedDb) return this.injectedDb

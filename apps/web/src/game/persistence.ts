@@ -419,8 +419,14 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
     }
     // After the cloud's ledger is in, so a level another device already paid is skipped (D241).
     await payUmaRelevels({ profile: db.profile, ledger: db.ledger, outbox: db.outbox }, relevels, snapshot.serverTime)
-    if (coordinator) await coordinator.adoptSnapshotInTransaction(snapshot.entities.filter(r => PUZZLE_ENTITY_KINDS.includes(r.kind as never) || r.kind === 'umas' || r.kind === 'items'),
-      snapshot.logs.filter(r => PUZZLE_LOG_KINDS.includes(r.kind as never)), snapshot.serverTime)
+    if (coordinator) {
+      const puzzleEntities = snapshot.entities.filter(r => PUZZLE_ENTITY_KINDS.includes(r.kind as never) || r.kind === 'umas' ||
+        r.kind === 'items' && !(hasFarmState && (r.id.startsWith('farm:') || r.id.startsWith('produce:'))))
+      // Keep the existing Puzzle-owned CL merge, but not a delayed pull's older shared Uma revision.
+      const views = await Promise.all(puzzleEntities.map(async r => r.kind === 'umas' && newerUmaIds.has(r.id)
+        ? { ...r, version: Math.max(r.version, (await db.umas.get(r.id))!.version) } : r))
+      await coordinator.adoptSnapshotInTransaction(views, snapshot.logs.filter(r => PUZZLE_LOG_KINDS.includes(r.kind as never)), snapshot.serverTime)
+    }
     if (farmCoordinator) await farmCoordinator.adoptSnapshotInTransaction(snapshot.entities, snapshot.logs, snapshot.serverTime)
     await reconcileFarmProjectionsInTransaction(snapshot.serverTime)
   })

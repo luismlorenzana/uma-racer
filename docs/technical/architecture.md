@@ -2,10 +2,15 @@
 
 ## Planned Farm production/cooking replacement
 
-[M031](../tasks/M031-farm-kitchen-rework.md) / T118–T124 is specified, not implemented (D298–D299).
-[The planned contract](farm-kitchen-implementation.md) adds versioned Farm commands/rows, shared block Extra
-maps, canonical/pending stock and an archived once-only Farm/Extra reset. Existing Farm described below remains
-live until T124; additive intermediate tasks do not execute that reset or change other modes.
+[M031](../tasks/M031-farm-kitchen-rework.md) has completed T118's pure rules (D304) and T119's dormant
+save/sync implementation (D306). [The contract](farm-kitchen-implementation.md)
+implements Farm3 and separate worker/recipe/Extra records, atomic semantic commands in the authenticated sync
+endpoint, an exact-source standalone API mirror, additive Dexie32 and an acknowledged-only inventory with
+device-local intent/predictions. Local-file and Firestore adapters share the pure resolver; ordinary Farm-owned
+writes and retired Extra resurrection are guarded by an implicit cutover read. The owner chose the existing Farm's
+trusted-device deadline model, preserving offline intent; server time stamps acknowledgements. No global Uma/profile schema bump.
+T120–T124 still own the archived reset, real host, screens/stat joins and enablement. Both Farm gates are false;
+the existing Farm described below stays live until T124 and no account reset is executed by intermediate work.
 
 ## Global card progression (D255)
 

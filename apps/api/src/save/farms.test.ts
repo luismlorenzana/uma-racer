@@ -4,11 +4,13 @@ import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve, join } from 'node:path'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { GUARDS_METADATA } from '@nestjs/common/constants'
+import { AuthGuard } from '../auth/auth.guard'
 import { LocalSaveRepository } from './local-save.repository'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { toStored } from './firestore-codec'
 import { parseEntityData, parseLogData, parseSyncRequest, type EntityRecord, type SyncRequest } from './save.types'
-import { farmCanonical, parseFarmOperation, resolveFarmOperations, parseFarmOperationResponses,
+import { farmCanonical, farmBytes, FARM_SYNC_LIMITS, farmOperationReferences, parseFarmOperation, resolveFarmOperations, parseFarmOperationResponses,
   type FarmOperationV1, type FarmPayloadV1, type FarmStoredEntity, type FarmStoredLog } from './farms'
 import { puzzleSyncReadSet, resolveSyncWithPuzzles } from './puzzle-sync'
 import { SaveController } from './save.controller'
@@ -95,6 +97,18 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} Farm
   })
 })
 describe('Farm wire and standalone mirror', () => {
+  it('enforces exact combined-reference and complete-request byte boundaries at the authenticated API parser', async () => {
+    const f = await fixture(), op = f.operation({ kind: 'grant-energy' }), refs = farmOperationReferences(op)
+    const count = new Set([...refs.entities, ...refs.logs]).size
+    const upserts = Array.from({ length: 200 - count }, (_, i) => ({ kind: 'items' as const, id: `invented:${i}`, baseVersion: 0, data: { itemId: `invented:${i}`, quantity: 1, updatedAt: 1 } }))
+    const body = { ...req([op]), upserts, padding: '' }
+    expect(typeof parseSyncRequest(body)).toBe('object')
+    expect(puzzleSyncReadSet(body).entities.length + puzzleSyncReadSet(body).logs.length).toBe(200)
+    expect(parseSyncRequest({ ...body, upserts: [...upserts, { ...upserts[0]!, id: 'invented:extra', data: { itemId: 'invented:extra', quantity: 1, updatedAt: 1 } }] })).toMatch(/bounds/)
+    body.padding = 'x'.repeat(FARM_SYNC_LIMITS.bytes - farmBytes(body)); expect(farmBytes(body)).toBe(FARM_SYNC_LIMITS.bytes)
+    expect(typeof parseSyncRequest(body)).toBe('object'); expect(parseSyncRequest({ ...body, padding: body.padding + 'x' })).toMatch(/bounds/)
+    expect(typeof parseSyncRequest({ upserts: [], appends: [], farmOperations: [] })).toBe('string')
+  })
   it('checks all pure source modules and the retained legacy Puzzle dependency separately', () => {
     expect(execFileSync(process.execPath, ['scripts/sync-farm-adapter.mjs', '--check'], { encoding: 'utf8' })).toMatch(/verified: 15/)
   })
@@ -106,10 +120,26 @@ describe('Farm wire and standalone mirror', () => {
     expect(parseSyncRequest(req([op]))).toEqual(req([op])); expect(typeof parseSyncRequest({ ...req([op]), farmProtocolVersion: 2 })).toBe('string')
     expect(puzzleSyncReadSet({ upserts: [], appends: [] }).entities).toContain('farmCutover/main')
     const mock = { sync: vi.fn().mockResolvedValue(result.responses) }, controller = new SaveController(mock as unknown as ConstructorParameters<typeof SaveController>[0])
+    expect(Reflect.getMetadata(GUARDS_METADATA, SaveController)).toContain(AuthGuard)
     await controller.sync('invented-authenticated-id', req([op])); expect(mock.sync).toHaveBeenCalledWith('invented-authenticated-id', req([op]))
     const domain: { resolveFarmOperations: typeof resolveFarmOperations } = await import(`${source}/resolver.ts`)
     const g = await fixture(), context = { enabled: true, now: 1000, entities: g.entities, logs: g.logs }
     expect(farmCanonical(resolveFarmOperations(context, [op]))).toBe(farmCanonical(domain.resolveFarmOperations(context, [op])))
     expect(resolveSyncWithPuzzles('owner', req([op]), g.entities as Map<string, EntityRecord>, new Map(), 1000, false).response.farmOperations![0]!.status).toBe('rejected')
+  })
+  it.each(['preparing', 'resetting'] as const)('protects %s even without client opt-in; historic projections keep their original versions', async phase => {
+    const f = await fixture(), legacy: { createInitialFarmState(): object } = await import(`${source}/../rules.ts`)
+    const control = f.entities.get('farmCutover/main')!, old = f.entities.get('farm/main')!
+    f.entities.set('farmCutover/main', { ...control, data: { ...control.data, phase, nextOutfitIndex: 0, activatedAt: null } })
+    f.entities.set('farm/main', { ...old, data: legacy.createInitialFarmState() as Record<string, unknown> })
+    const item: EntityRecord = { kind: 'items', id: 'produce:t1:speed', version: 7, updatedAt: 1, deleted: false, data: { itemId: 'produce:t1:speed', quantity: 3, updatedAt: 1 } }
+    f.entities.set(`items/${item.id}`, item)
+    const request: SyncRequest = { upserts: [{ kind: 'items', id: item.id, baseVersion: 0, data: item.data }], appends: [] }
+    const result = resolveSyncWithPuzzles('owner', request, f.entities as Map<string, EntityRecord>, new Map(), 1000, false)
+    expect(result.writes).toEqual([]); expect(result.response.applied).toEqual([{ kind: 'items', id: item.id, version: 7 }])
+    expect(() => resolveSyncWithPuzzles('owner', { ...request, upserts: [{ ...request.upserts[0]!, data: { ...item.data, quantity: 4 } }] }, f.entities as Map<string, EntityRecord>, new Map(), 1000, false)).toThrow(/retired/)
+    const uma = f.entities.get('umas/invented-0')!, changed = structuredClone(uma.data)
+    ;(changed.scenarios as { extraStatsUnlocked: { speed: number } }[])[0]!.extraStatsUnlocked.speed = 1
+    expect(() => resolveSyncWithPuzzles('owner', { upserts: [{ kind: 'umas', id: uma.id, baseVersion: 1, data: changed }], appends: [], farmProtocolVersion: 1 }, f.entities as Map<string, EntityRecord>, new Map(), 1000, false)).toThrow(/Extra Stats/)
   })
 })
