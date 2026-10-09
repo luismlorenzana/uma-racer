@@ -1,5 +1,5 @@
 // Pixi presentation only. Combat events are durable before playback (Uma Puzzles §5, implementation §5).
-import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
+import { Application, CanvasSource, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import { PUZZLE_BOARD_SIZE, PUZZLE_BOARD_WIDTH, PUZZLE_BOARD_HEIGHT, PUZZLE_MOVEMENT_MS, PUZZLE_MASS_MIN, puzzleCellIndex,
   puzzleFocus, type PuzzleBattleAction, type PuzzleBattleStateV1, type PuzzleBattleTransition, type PuzzleOrb } from '@racer/domain'
 import type { ContentAsset } from '../../content/runtime'
@@ -16,6 +16,26 @@ export interface PuzzleSceneOptions {
   hud(value: PuzzleSceneHud): void
 }
 /** Owns decoded textures, never the content library's held URLs. No engine RNG is read here. */
+/**
+ * The square of a whole picture an orb shows (D303): as wide as its visible figure, from the figure's top, so a standing
+ * chibi shows head and shoulders; a wide figure is centred. Unreadable pixels fall back to the whole picture's bounds.
+ */
+export function puzzleArtSquare(image: Pick<HTMLImageElement, 'naturalWidth' | 'naturalHeight'> & CanvasImageSource): [number, number, number, number] {
+  const w = image.naturalWidth, h = image.naturalHeight
+  let left = 0, top = 0, right = w, bottom = h
+  try {
+    const n = 64, probe = document.createElement('canvas'); probe.width = n; probe.height = n
+    const c = probe.getContext('2d', { willReadFrequently: true })!; c.drawImage(image, 0, 0, n, n)
+    const data = c.getImageData(0, 0, n, n).data
+    let minX = n, minY = n, maxX = -1, maxY = -1
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (data[(y * n + x) * 4 + 3]! > 24) {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y)
+    }
+    if (maxX >= 0) { left = minX * w / n; right = (maxX + 1) * w / n; top = minY * h / n; bottom = (maxY + 1) * h / n }
+  } catch { /* No canvas reads here: the picture's own bounds. */ }
+  const side = Math.min(right - left, bottom - top)
+  return [left + (right - left - side) / 2, top, side, side]
+}
 export class PuzzleBattleScene {
   readonly pointer = new PuzzlePointerController()
   private app = new Application()
@@ -59,9 +79,14 @@ export class PuzzleBattleScene {
     if (this.destroyed) throw new Error('Renderer disposed')
     const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256
     const context = canvas.getContext('2d')!
-    if (typeof source === 'string') context.drawImage(image, 0, 0, 256, 256)
-    else context.drawImage(image, source.frame.x, source.frame.y, source.frame.width, source.frame.height, 0, 0, 256, 256)
-    const texture = Texture.from(canvas); this.owned.push(texture); return texture
+    context.imageSmoothingQuality = 'high'
+    // An atlas frame is inset a pixel so smoothing never pulls in its neighbour's edge. A whole image (a standing chibi)
+    // keeps its shape: the square where its figure starts, never a stretch into the orb.
+    const [sx, sy, sw, sh] = typeof source === 'string' ? puzzleArtSquare(image)
+      : [source.frame.x + 1, source.frame.y + 1, source.frame.width - 2, source.frame.height - 2]
+    context.drawImage(image, sx, sy, sw, sh, 0, 0, 256, 256)
+    // Mipmaps keep thin outlines steady while an orb slides at a fraction of this 256 px source.
+    const texture = new Texture({ source: new CanvasSource({ resource: canvas, autoGenerateMipmaps: true }) }); this.owned.push(texture); return texture
   }
   private async init() {
     await this.app.init({ resizeTo: this.options.host, backgroundAlpha: 0, antialias: true, autoDensity: true,
@@ -139,7 +164,8 @@ export class PuzzleBattleScene {
         .stroke({ color: i === held ? 0xffffff : colour, width: i === held ? 4 : 2.5 })
       t.art.visible = !!texture; if (texture) t.art.texture = texture
       t.art.width = radius * 1.65; t.art.height = radius * 1.65
-      t.mask.clear().circle(0, 0, radius * 0.83).fill(0xffffff)
+      // Inside the art's own square (half-width 0.825r), so its straight edges never peek past the circle.
+      t.mask.clear().circle(0, 0, radius * 0.8).fill(0xffffff)
       this.glyph(t.glyph, orb, colour)
       t.glyph.scale.set(texture ? radius / 38 : radius / 20)
       t.glyph.position.set(texture ? radius * 0.62 : 0, texture ? radius * 0.55 : 0)

@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPuzzleBattle } from '@racer/domain'
 import { puzzlePracticeInput } from '../../game/puzzles/practice-input'
-import { PuzzleBattleScene, type PuzzleSceneOptions } from './PuzzleBattleScene'
+import { PuzzleBattleScene, puzzleArtSquare, type PuzzleSceneOptions } from './PuzzleBattleScene'
 const runtime = vi.hoisted(() => ({ tick: null as ((ticker: { deltaMS: number }) => void) | null,
   resize: null as (() => void) | null, stopped: vi.fn(), destroyed: vi.fn() }))
 vi.mock('pixi.js', () => {
@@ -65,5 +65,16 @@ describe('native captured board events', () => {
     else if (boundary === 'destroy') scene.destroy()
     else pointer(boundary, 1, 94, 160)
     expect(scene.pointer.current).toBeNull(); expect(act).not.toHaveBeenCalled()
+  })
+})
+
+describe('orb art framing (D303)', () => {
+  it('takes a square of a whole picture instead of stretching it: top of a tall figure, centre of a wide one', () => {
+    const image = (naturalWidth: number, naturalHeight: number) => ({ naturalWidth, naturalHeight }) as unknown as HTMLImageElement
+    // No canvas reads here, so these use the picture's own bounds.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    expect(puzzleArtSquare(image(100, 300))).toEqual([0, 0, 100, 100])
+    expect(puzzleArtSquare(image(300, 100))).toEqual([100, 0, 100, 100])
+    expect(puzzleArtSquare(image(128, 128))).toEqual([0, 0, 128, 128])
   })
 })
