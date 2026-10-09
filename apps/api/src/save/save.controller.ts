@@ -4,6 +4,7 @@ import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'
 import { parseSyncRequest } from './save.types'
 import { parseRpgCommandRequest } from './rpg-command'
 import { parsePuzzlePrepareRequest, parsePuzzlePreservationRequest, parsePuzzleTakeoverRequest, parseLegacySparkRequest } from './puzzles'
+import { parseFarmCutoverRequest } from './farms'
 
 @UseGuards(AuthGuard)
 @Controller()
@@ -61,5 +62,13 @@ export class SaveController {
     const request = parseLegacySparkRequest(body)
     if (!request) throw new BadRequestException('Malformed legacy Spark evidence. Keep the journal for recovery.')
     return this.saves.retireSpark(uid, request)
+  }
+
+  /** Disabled in production until T124; archive proof is mandatory before any destructive step. */
+  @Post('farm/prepare')
+  prepareFarm(@CurrentUid() uid: string, @Body() body: unknown) {
+    const request = parseFarmCutoverRequest(body)
+    if (!request) throw new BadRequestException('Invalid Farm preparation request; keep the recovery archive')
+    return this.saves.prepareFarm(uid, request)
   }
 }

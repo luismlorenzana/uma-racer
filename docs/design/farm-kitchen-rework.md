@@ -1,13 +1,14 @@
 # Uma Farm — production and cooking rework
 
-> **Implementation definition · 2026-10-09 · pure rules and dormant sync complete, not live.** T118 implements and pins the
+> **Implementation definition · 2026-10-09 · pure rules, dormant sync and rehearsed cutover complete, not live.** T118 implements and pins the
 > original catalogue, production/map rules and deterministic balance witnesses (D304). The owner authorized
 > [M031](../tasks/M031-farm-kitchen-rework.md). This is the planned replacement for
 > [Stable Farm](farm.md) and its [Extra Stats grid](constellations.md#extra-stats), not a description of production.
 > [The implementation contract](../technical/farm-kitchen-implementation.md) and
 > [measured balance record](../research/farm-kitchen-balance.md) carry the implemented pure layer.
-> T119's additive persistence/sync is implemented with the existing trusted-device clock; T120–T124 still
-> cover protected cutover through production release. No live Farm rule or owner save has changed.
+> T119's additive persistence/sync keeps the existing trusted-device clock. T120's protected cutover/recovery
+> is implemented and rehearsed (D307); T121–T124 still cover real host, screens/stat joins and release.
+> No live Farm rule or owner save has changed.
 
 > **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
 > real-world nutrition rules or special Guts tax. The earlier 60-point/node proposal is replaced by a smaller
@@ -744,6 +745,12 @@ There is no ticketed run journal, combat seed, `MinigameHost`, battle engine or 
 **Do not execute this reset while authoring the plan.** The requested reset is a future application migration,
 not permission to edit the owner save manually, grant meals or remove other progression now.
 
+T120/D307 has implemented and [synthetically rehearsed](../research/farm-kitchen-cutover-rehearsal.md) this path
+with both capabilities false. [Technical§6](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307)
+fixes its archive/protocol shapes,4,096-outfit/32-per-page/8 MiB freeze and64 MiB archive limits, bounded verification,
+Retry/Export and legacy claim policy. Those are safety limits, not gameplay progression caps. Normal startup
+does not request preparation; T124 alone activates the complete replacement.
+
 At the eventual release, one server-acknowledged account generation performs the reset exactly once. Reinstall,
 retry and a second device must adopt it, not reset progress again. Old clients/evidence cannot overwrite a new
 generation or rederive new Farm EXP from old harvests. Use an explicit schema/generation marker and replay guard;
@@ -783,7 +790,7 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 
 1. T118 **complete**: [pure original catalogue/progression and recipe/map contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), with [measured balance proofs](../research/farm-kitchen-balance.md).
 2. T119 **complete**: [additive records, semantic commands, strict API mirror and bounded atomic sync](../technical/farm-kitchen-implementation.md#3-records-and-ownership), with [synthetic verification](../research/farm-kitchen-sync.md).
-3. [T120](../tasks/T120-farm-kitchen-cutover.md): dormant protected reset, private backup, legacy claim and second-device rehearsals.
+3. T120 **complete**: [dormant protected reset/recovery contract](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307), with [legacy claim and second-device rehearsals](../research/farm-kitchen-cutover-rehearsal.md).
 4. [T121](../tasks/T121-farm-kitchen-host.md): real save-backed host, canonical/pending projections, runtime and recovery.
 5. [T122](../tasks/T122-farm-kitchen-screens.md): five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy.
 6. [T123](../tasks/T123-farm-kitchen-extra-stats.md): shared block purchases, four independent distance builds, cap-aware map/list and real race integration.

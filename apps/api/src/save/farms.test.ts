@@ -110,7 +110,7 @@ describe('Farm wire and standalone mirror', () => {
     expect(typeof parseSyncRequest({ upserts: [], appends: [], farmOperations: [] })).toBe('string')
   })
   it('checks all pure source modules and the retained legacy Puzzle dependency separately', () => {
-    expect(execFileSync(process.execPath, ['scripts/sync-farm-adapter.mjs', '--check'], { encoding: 'utf8' })).toMatch(/verified: 15/)
+    expect(execFileSync(process.execPath, ['scripts/sync-farm-adapter.mjs', '--check'], { encoding: 'utf8' })).toMatch(/verified: 18/)
   })
   it('agrees on every synthetic record, receipt and malformed request; uses the authenticated sync route', async () => {
     const f = await fixture(), op = f.operation(start), result = f.apply(op)

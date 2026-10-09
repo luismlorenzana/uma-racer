@@ -11,7 +11,7 @@ export interface FarmCutoverControlV1 {
   cohortDigest: string; archiveDigest: string; outfitCount: number; pageCount: number; nextOutfitIndex: number;
   createdAt: number; activatedAt: number | null
 }
-export interface FarmLegacyStationV1 { stationId: FarmStationId; outfitId: string; attempt: number; cycle: FarmCycle | null }
+export interface FarmLegacyStationV1 { stationId: FarmStationId; outfitId: string | null; attempt: number; cycle: FarmCycle | null }
 export type FarmCutoverPageV1 =
   | { schemaVersion: 1; generation: string; type: 'cohort'; index: number; outfits: { outfitId: string; sourceVersion: number; tiers: number[] }[] }
   | { schemaVersion: 1; generation: string; type: 'legacy'; stations: FarmLegacyStationV1[] }
@@ -39,7 +39,7 @@ export function parseFarmCutoverPage(value: unknown): FarmCutoverPageV1 | null {
     let last = ''
     for (const row of value.outfits) {
       if (!farmRecord(row) || !farmExactKeys(row, ['outfitId', 'sourceVersion', 'tiers']) || !farmSafeId(row.outfitId) || row.outfitId <= last ||
-        !farmSafeInteger(row.sourceVersion, 1) || !Array.isArray(row.tiers) || !row.tiers.length || row.tiers.length > SCENARIOS.length ||
+        !farmSafeInteger(row.sourceVersion, 1) || !Array.isArray(row.tiers) || row.tiers.length > SCENARIOS.length ||
         row.tiers.some((tier, i) => !farmSafeInteger(tier, 1) || tier > SCENARIOS.length || i > 0 && tier <= Number((row.tiers as unknown[])[i - 1]))) return null
       last = row.outfitId
     }
@@ -48,11 +48,12 @@ export function parseFarmCutoverPage(value: unknown): FarmCutoverPageV1 | null {
     const workers = new Set<string>(), stations = new Set<string>()
     for (const row of value.stations) {
       if (!farmRecord(row) || !farmExactKeys(row, ['stationId', 'outfitId', 'attempt', 'cycle']) || !isFarmStationId(row.stationId) ||
-        !/^(garden|orchard|barn)-/.test(row.stationId) || !farmSafeId(row.outfitId) || !farmSafeInteger(row.attempt) ||
-        workers.has(row.outfitId) || stations.has(row.stationId)) return null
+        !/^(garden|orchard|barn)-/.test(row.stationId) || !(row.outfitId === null || farmSafeId(row.outfitId)) || !farmSafeInteger(row.attempt) ||
+        row.outfitId !== null && workers.has(row.outfitId) || stations.has(row.stationId) || row.outfitId === null && row.cycle !== null) return null
       const [district, number] = row.stationId.split('-'), plot = `plot-${Number(number) + (district === 'garden' ? 0 : district === 'orchard' ? 6 : 12)}`
       if (row.cycle !== null && !parseFarmCycle(row.cycle, plot as import('../constants').FarmPlotId, row.attempt)) return null
-      workers.add(row.outfitId); stations.add(row.stationId)
+      if (row.outfitId !== null) workers.add(row.outfitId)
+      stations.add(row.stationId)
     }
   } else return null
   return structuredClone(value) as unknown as FarmCutoverPageV1

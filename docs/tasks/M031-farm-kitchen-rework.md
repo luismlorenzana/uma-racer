@@ -1,6 +1,6 @@
 # M031 — Farm production, cooking and Extra Stats
 
-**State: T118–T119 complete; T120 next.** Original catalogue, production/map rules and deterministic
+**State: T118–T120 complete; T121 next.** Original catalogue, production/map rules and deterministic
 witnesses are implemented additively (D304); the live Farm and owner account are unchanged. [Design](../design/farm-kitchen-rework.md),
 [technical contract](../technical/farm-kitchen-implementation.md), [research](../research/farm-kitchen-games.md).
 
@@ -30,7 +30,7 @@ old Farm EXP/levels and Extra purchases/actives once, safely, without discarding
 |---|---|---|---|
 | T118 — **Complete** ([rules](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), [balance](../research/farm-kitchen-balance.md)) | Original scenario foods, production/Extra rules and modest deterministic sims | This approved definition | Additive pure modules; old game untouched |
 | T119 — **Complete** ([contract](../technical/farm-kitchen-implementation.md#3-records-and-ownership), [verification](../research/farm-kitchen-sync.md)) | Records/parsers/API mirror, atomic operations, bounded sync and protection (D306); existing Farm timing retained | T118 | Dormant backend/DB support, no reset |
-| [T120 — Protected cutover](T120-farm-kitchen-cutover.md) | Private recovery archive, exact resumable reset and legacy claim rehearsal | T119 | Capability off, no real-account migration |
+| T120 — **Complete** ([contract](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307), [rehearsal](../research/farm-kitchen-cutover-rehearsal.md)) | Private whole-account archive, exact resumable reset, bounded verification and legacy claims (D307) | T119 | Both capabilities off, no real-account migration |
 | [T121 — Real host/runtime](T121-farm-kitchen-host.md) | Save-backed port, pending/canonical views, offline replay/retry and bootstrap | T120 | Old Farm host stays selected |
 | [T122 — Farm screens/cookbook](T122-farm-kitchen-screens.md) | Five phone districts, crew, recipes/shopping/Items, original glyphs, guide/Energy | T121 | Isolated proof only; legacy Home unchanged |
 | [T123 — Extra map and race wiring](T123-farm-kitchen-extra-stats.md) | Meal purchases, shared map/list, preset-specific stats and real race joins | T122 | Active-generation path dormant, legacy stats unchanged |

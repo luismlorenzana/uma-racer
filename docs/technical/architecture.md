@@ -9,7 +9,11 @@ endpoint, an exact-source standalone API mirror, additive Dexie32 and an acknowl
 device-local intent/predictions. Local-file and Firestore adapters share the pure resolver; ordinary Farm-owned
 writes and retired Extra resurrection are guarded by an implicit cutover read. The owner chose the existing Farm's
 trusted-device deadline model, preserving offline intent; server time stamps acknowledgements. No global Uma/profile schema bump.
-T120–T124 still own the archived reset, real host, screens/stat joins and enablement. Both Farm gates are false;
+T120/D307 adds an authenticated, dormant preparation endpoint, immutable freeze/step/page-verification/final
+receipts and a separate SHA-256 whole-account archive in device-only `farmRecovery`. Per-outfit reset steps patch
+current non-Farm fields, not frozen whole objects; legacy deadlines/stock/history remain. Archive/cutover adapters
+are lazy; no Dexie reset callback or normal startup request. Full pulls merge the retired Extra whitelist without
+resurrecting historical bonuses. T121–T124 still own the real host, screens/stat joins and enablement. Both Farm gates are false;
 the existing Farm described below stays live until T124 and no account reset is executed by intermediate work.
 
 ## Global card progression (D255)
