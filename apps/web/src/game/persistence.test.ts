@@ -44,6 +44,8 @@ import type { LoadedContent } from '../content/runtime'
 import { db } from './db'
 import { appendFlairEvents, bootstrapBadgeFacts, bootstrapUmaFlair, sparkRunsByTier } from './badges'
 import { GameRuntime } from './runtime'
+import { getFarmKitchenHost } from './farm/kitchen/host'
+import { farmProtocolFixture } from '../../../../packages/domain/src/farm/kitchen/protocol-fixtures'
 import { settleTrainingExpBank } from './training-bank'
 import { clearGameState, localDay, replaceUma, useGame } from './store'
 import {
@@ -818,6 +820,10 @@ describe('game bootstrap coordinator', () => {
     expect(useGame.getState()).toMatchObject({ status: 'ready', persistent: true, profile: { tickets: 15 } })
     expect(Object.keys(useGame.getState().umas)).toHaveLength(25)
     expect(load).toHaveBeenCalledTimes(1)
+    expect(() => getFarmKitchenHost()).toThrow(/not ready/)
+    expect(await db.farm.count()).toBe(0)
+    expect(await db.farmPreferences.count()).toBe(0)
+    await expect(runtime.farmKitchenHost()).rejects.toThrow(/not ready/)
 
     runtime.stop()
     await resetDatabase()
@@ -825,6 +831,25 @@ describe('game bootstrap coordinator', () => {
     await runtime.start(loaded)
     expect(useGame.getState().status).toBe('ready')
     expect(Object.keys(useGame.getState().umas)).toHaveLength(25)
+  })
+
+  it('keeps a rejected Farm recovery visible after ordinary acknowledgements and an empty flush', async () => {
+    vi.spyOn(saveApi, 'load').mockResolvedValue({ entities: [], logs: [], serverTime: 1 })
+    vi.spyOn(saveApi, 'sync').mockImplementation(async request => ({
+      applied: request.upserts.map(r => ({ kind: r.kind, id: r.id, version: r.baseVersion + 1 })),
+      conflicts: [], appended: request.appends.length, serverTime: 2,
+    }))
+    vi.spyOn(saveApi, 'advanceInspiration').mockRejectedValue(new Error('synthetic deferred advance'))
+    await runtime.start(content())
+    const fixture = farmProtocolFixture(), operation = fixture.operation({ kind: 'assign', stationId: 'garden-2', outfitId: 'invented-1' })
+    const prediction = fixture.apply(operation).responses[0]!.receipt!
+    await db.farmPending.put({ id: operation.operationId, operation, prediction, status: 'rejected', reason: 'Invented conflict', order: 1, queuedAt: 1 })
+    vi.stubGlobal('navigator', { onLine: true })
+    await runtime.flush()
+    expect(useGame.getState().sync).toMatchObject({ status: 'error', pending: 0, error: expect.stringContaining('Farm') })
+    await runtime.flush()
+    expect(useGame.getState().sync).toMatchObject({ status: 'error', pending: 0, error: expect.stringContaining('Farm') })
+    expect(await db.farmPending.count()).toBe(1)
   })
 
   it('adopts a complete cloud save before publishing ready state', async () => {

@@ -142,7 +142,10 @@ export async function prepareFarmCutoverOnce(db: RacerDb, ports: FarmCutoverPort
     })
     await ports.publish(); return true
   } catch (error) {
-    if (validRecovery && ports.current()) { state = { ...state, phase: 'recoverable-error', message: error instanceof Error ? error.message : 'Keep the Farm archive and Retry/Export' }; await save() }
+    if (validRecovery && ports.current()) {
+      state = { ...state, phase: 'recoverable-error', message: error instanceof Error ? error.message : 'Keep the Farm archive and Retry/Export' }
+      try { await save() } catch { throw new Error('Farm recovery status could not be stored. Keep this device; no unverified reset was requested. Export recovery and free storage.') }
+    }
     return false
   } finally { inFlight.delete(db) }
 }

@@ -1,6 +1,6 @@
 # Farm production/cooking — implementation contract
 
-**T118 pure layer, T119 dormant persistence and T120 rehearsed cutover implemented · M031 · 2026-10-09.** Read
+**T118–T121 pure rules, dormant persistence/cutover and real host implemented · M031 · 2026-10-09.** Read
 [the design](../design/farm-kitchen-rework.md), [AGENTS.md](../../AGENTS.md) and the current task first.
 This standing contract must survive task deletion under D104. It specifies the new path; existing
 [Farm](../design/farm.md) stays live until T124. Do not describe a capability-off merge as a playable release.
@@ -194,7 +194,7 @@ Acknowledgements validate complete response accounting before a transaction, re-
 canonical Farm facts/evidence once, settle markers and revalidate descendants. Rejected intent remains recoverable.
 GET/JSON/cloud adoption uses the same strict record/log parsers, retains unknown/future errors and never feeds
 v3 through legacy harvest-derived EXP. Delayed pulls preserve newer Farm stock and unrelated Uma edits even
-when the existing Puzzle coordinator is also present. T121 still owns the real host, user-facing views and retry UI.
+when the existing Puzzle coordinator is also present. T121 supplies the real host/views; T122 renders them.
 
 Farm-purchased/activated **pending** stats are previews only. Racing and historical/frozen parent snapshots
 use acknowledged Farm configuration; UI explains when a pending purchase needs sync before it affects racing.
@@ -370,7 +370,7 @@ Physical iPhone/quota/export and real-account/second-device acceptance remain T1
 
 ## 7. Real host, views and navigation
 
-T121 installs a separate `FarmKitchenHost` through `GameRuntime`, not a test double. Extend the runtime lazily;
+T121/D308 implements a separate `FarmKitchenHost` through `GameRuntime`, not a test double. The runtime extends lazily;
 legacy `FarmHost` remains selected until the release capability and active generation both agree.
 
 Port: `read`, `assign`, `remove`, `start`, `claim`, `collectAll`, `spendEnergy`, `grantEnergy`, `buyNode`,
@@ -382,6 +382,65 @@ or isolated DEV demo, never an apparent production craft with lost input/output.
 Views join worker progress, scenario food labels, stock and verified art. Ready derives from the frozen deadline
 plus cumulative Energy using an injected clock. One visibility-aware minute tick/focus refresh updates labels;
 no Dexie/network writes on ticks. Sync/Error/Pending lives beside the affected job, not as false success copy.
+
+### T121 implemented real port (D308)
+
+`PersistentFarmKitchenHost` is the only production adapter. `GameRuntime.farmKitchenHost()` lazily returns the
+ready installed instance; `getFarmKitchenHost()` throws before installation/after stop. Flag-off accounts with no
+new control keep the existing Farm writer and create no kitchen/preferences rows. Any control blocks that writer,
+even while preparing or corrupt. A disabled/unknown active generation is maintenance/read-only; preparing is upgrade,
+never an empty pretend farm. Both capabilities remain false. Installation and read subscriptions never prepare an account.
+
+Public asynchronous signatures:
+
+- `read({outfitId?,scenarioId?,operationIds?})` returns mode/message, control, all30 station views, owned worker
+  defaults, recipes, stock, optional selected map, pending intents and explicitly requested accepted receipts.
+- `createIntent()` explicitly reserves `fop:<persisted-device-id>:<monotonic-sequence>` before confirmation; it
+  refuses disabled/preparing/incompatible generations. Device UUID is an identity, never gameplay randomness.
+- Every action carries `{intentId,expectedRevision,dependencies?}` plus its existing T119 payload fields.
+  `assign`, `remove`, `start`, `claim` (new or frozen legacy), `buyNode`, `setActive` never accept an EXP/output award.
+  Revision carries canonical target versions and the exact ordered pending fingerprint, independent of the clock.
+  Same intent reuses the original payload/dependencies/clock even after refresh; changed choices require a new confirmation.
+- `spendEnergy` additionally confirms `confirmedWastedMs`; the re-read checks the same displayed rounded-up waste
+  minutes, so a few milliseconds between preview/press do not reject an unchanged confirmation. Receipt reports exact
+  used/wasted milliseconds. `grantEnergy` requires explicit `ownerDebugConfirmed:true` and the existing owner playtest
+  boundary. Neither read nor grant spends Energy or time-shifts any other job.
+- Action result is `{operationId,status,reason,receipt,prediction,celebrate,view}`. Pending uses only `prediction`;
+  accepted history uses only the real immutable receipt and does not celebrate again. Domain/prequeue stale or invalid
+  choices throw without queuing an economic command; a reserved unused sequence is harmless, not a reward.
+- `collectAll` persists one ready-job snapshot with names and independently reserved claim IDs in `farmRecovery`.
+  Queue each claim against its exact authority; compute a minimal explicit pending-writer dependency frontier, not the
+  newest unrelated queue row. Return each named job/status/reason and succeeded/pending/failed counts. Retry resumes
+  that manifest, never a newer job or automatic repeat. Transport remains16/256KiB/200 exact-union refs.
+- `retry({operationId,action?:'retry'|'discard'})` retains immutable bytes. Pending reschedules its original marker;
+  rejected/blocked Retry explicitly probes the same semantic repository without a new spending ID. Discard requires
+  durable server nonacceptance of exactly that payload, canonical absence and no retained dependent intent. Local
+  prediction failure alone is insufficient proof; accepted jobs cannot be discarded. Keep recovery evidence after Discard.
+- `prepareUpgrade()` invokes T120's safe persistent/online/drained/current-account port only on an explicit action.
+  `exportRecovery()` exports the original verified archive when present, plus a separate opaque private device export
+  with current intents/journals. Raw future/corrupt rows can be retained without becoming a migration proof/reward.
+  Neither export uploads/restores/deletes anything. Quota/export failure is visible; no memory-only production craft.
+
+`readFarmCanonical` reads the exact command + queued dependency union by key, not every outfit/card/checkpoint or
+lifetime receipt. A display roster read is separate, after commit; newly acquired unsynced outfits have Lv1/0 views
+but cannot supply acknowledged ownership until ordinary sync. Farm acknowledgements advance newer ownership revision
+metadata only, never replacing an unrelated local Uma build. Canonical Items remain nonnegative and unchanged while
+queued; views expose `canonical`, gross `reserved`/`incoming` and `projected` independently. Rejection rebuilds from
+canonical facts and valid pending intents, with descendants retained as blocked.
+
+`createFarmKitchenStore`/`observeFarmKitchen` give separate Zustand slices for control, stations, workers, recipes,
+Items and selected map. Equal slices retain identity; no React per-frame updates. Dexie live reads plus one visible
+minute-boundary clock/focus reload publish only after complete reads. Hidden/foreground transitions disable input
+until reload; stop cancels listeners/timers and late publications. These subscriptions write nothing and call no network.
+
+Runtime flushes ordinary/Puzzle/Farm in serialized round-robin lanes without changing any sync ceiling. Ordinary
+acknowledgement revalidates active Farm pending authority in its same transaction. Disabled Farm intent is retained
+read-only, not sent as a guessed production spend. Settings diagnostics include aggregate worker/recipe/map/evidence/
+pending/recovery counts and a private recovery export for new generations; no private names/IDs/account JSON in logs.
+
+[Host verification](../research/farm-kitchen-host.md) records real IndexedDB, synthetic repository, lost-ack,
+dependency-chain, thirty-job partial failure, two-device spend, rollback, clock/subscription and flag-off proofs.
+T122 still owns visible Farm controls/recipe/art joins; T123 alone joins acknowledged maps into Training/race stats.
 
 | Route | Screen / back behaviour |
 |---|---|

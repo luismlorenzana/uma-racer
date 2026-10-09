@@ -69,7 +69,7 @@ import {
 } from './persistence'
 import { adoptGameState, clearGameState, localDay, mergeBadgeAndFlairState, rememberLastSync, replaceBadgeState, replaceProfile, replaceRaceState, replaceTrainingState, replaceUma, setGameLifecycle, setSyncState, useGame } from './store'
 import { replaceCardState } from './store'
-import { acknowledgedSequences } from './sync'
+import { acknowledgedSequences, nextEconomicLane, type EconomicLane } from './sync'
 import {
   completeMemoryRace,
   completePersistentRace,
@@ -128,6 +128,8 @@ import { settleTrainingExpBank } from './training-bank'
 import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
 import { installFarmHost, MemoryFarmHost, PersistentFarmHost } from './farm/host'
+import { FARM_KITCHEN_RELEASE_ENABLED } from './farm/kitchen/capability'
+import type { FarmKitchenHost } from './farm/kitchen/host'
 import { ExtraStatConflictError, unlockPersistentExtraStat, type UnlockExtraStatReceipt } from './extra-stats'
 import {
   LevelUpTicketsStaleError,
@@ -157,6 +159,9 @@ export class GameRuntime {
   private uninstallMinigameHost: (() => void) | null = null
   private uninstallMinigameJournal: (() => void) | null = null
   private uninstallFarmHost: (() => void) | null = null
+  private uninstallFarmKitchenHost: (() => void) | null = null
+  private kitchenHost: FarmKitchenHost | null = null
+  private lastEconomicLane: EconomicLane | null = null
   private flushing = false
   private inFlight: Promise<void> | null = null
   private trainingLocks = new Set<string>()
@@ -264,7 +269,8 @@ export class GameRuntime {
       },
     }))
     this.uninstallMinigameJournal = installMinigameJournal(new PersistentMinigameJournal(content))
-    this.uninstallFarmHost = installFarmHost(new PersistentFarmHost({
+    const farmControlAtBoot = await db.farmCutover.get('main')
+    if (!farmControlAtBoot && !(Number((await db.farm.get('main'))?.data.schemaVersion) >= 3)) this.uninstallFarmHost = installFarmHost(new PersistentFarmHost({
       afterMutation: async () => {
         if (generation !== this.generation) return
         await this.refreshPending()
@@ -313,6 +319,7 @@ export class GameRuntime {
       if (!local) throw new Error('Save initialization did not produce a profile')
       if (generation !== this.generation) return
       adoptGameState(stateFromSnapshot(local, content, true))
+      await this.installReadyFarmKitchen(generation)
       if (granted > 0) useGame.getState().pushToast(`+${granted} Daily tickets`, 'ticket')
       if (refunded > 0) useGame.getState().pushToast(`+${refunded} back from an unfinished Bond Recall run`, 'ticket')
       if (refundedRuns > 0) useGame.getState().pushToast(`+${refundedRuns} back from unfinished card training: cards now max at 3★`, 'ticket')
@@ -344,6 +351,10 @@ export class GameRuntime {
     this.uninstallMinigameJournal = null
     this.uninstallFarmHost?.()
     this.uninstallFarmHost = null
+    this.uninstallFarmKitchenHost?.()
+    this.uninstallFarmKitchenHost = null
+    this.kitchenHost = null
+    this.lastEconomicLane = null
     this.content = null
     this.memoryRaceHistory = []
     this.memoryCardRedemptions.clear()
@@ -1098,12 +1109,12 @@ export class GameRuntime {
   }
 
   private async refreshPending(): Promise<void> {
-    const [ordinary, rpg, conflicts] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
-      db.pendingRpgCommands.where('status').equals('conflict').count()])
+    const [ordinary, rpg, conflicts, farmRecovery] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
+      db.pendingRpgCommands.where('status').equals('conflict').count(), db.farmPending.where('status').anyOf(['rejected', 'blocked']).count()])
     const pending = ordinary + rpg
     const online = typeof navigator === 'undefined' || navigator.onLine
-    setSyncState({ status: !online && pending ? 'offline' : conflicts ? 'error' : pending ? 'pending' : 'idle', pending,
-      error: conflicts ? 'RPG command conflicted; progress was not applied' : null })
+    setSyncState({ status: !online && pending ? 'offline' : conflicts || farmRecovery ? 'error' : pending ? 'pending' : 'idle', pending,
+      error: farmRecovery ? 'Farm input needs recovery; frozen choices are retained and no rejected reward was applied.' : conflicts ? 'RPG command conflicted; progress was not applied' : null })
   }
 
   private async refreshBadges(): Promise<void> {
@@ -1162,6 +1173,31 @@ export class GameRuntime {
     return operation
   }
 
+  /** Lazy, read-only selection until both generation and capability agree. No normal flag-off import/reset. */
+  private async installReadyFarmKitchen(generation = this.generation): Promise<void> {
+    if (generation !== this.generation || !useGame.getState().persistent || useGame.getState().status !== 'ready') return
+    const control = await db.farmCutover.get('main'), farm = await db.farm.get('main')
+    if (!FARM_KITCHEN_RELEASE_ENABLED && !control && !(Number(farm?.data.schemaVersion) >= 3)) return
+    // Any control, including corrupt/future, blocks the legacy writer before loading/parsing the new path.
+    this.uninstallFarmHost?.(); this.uninstallFarmHost = null
+    if (this.kitchenHost) return
+    const { createProductionFarmKitchenHost } = await import('./farm/kitchen/production')
+    const { installFarmKitchenHost } = await import('./farm/kitchen/host')
+    const host = await createProductionFarmKitchenHost(db, { current: () => generation === this.generation,
+      persistent: () => useGame.getState().persistent,
+      safeToPrepare: () => !this.flushing && !this.trainingLocks.size && !this.raceLocks.size && !this.promotionLocks.size && !this.deckLocks.size &&
+        !this.cardRedemptionLocks.size && !this.umaRedemptionLocks.size && !this.unitLocks.size && !this.exchangeLocked,
+      schedule: () => this.schedule(), publish: async () => { if (generation === this.generation) await this.refreshPending() } })
+    if (generation !== this.generation) return
+    this.kitchenHost = host; this.uninstallFarmKitchenHost = installFarmKitchenHost(host)
+  }
+
+  async farmKitchenHost(): Promise<FarmKitchenHost> {
+    await this.installReadyFarmKitchen()
+    if (!this.kitchenHost) throw new Error('Farm kitchen release is not ready; the existing Farm is unchanged')
+    return this.kitchenHost
+  }
+
   private async flushOnce(): Promise<void> {
     if (this.flushing || !this.content || !useGame.getState().persistent) return
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -1173,8 +1209,18 @@ export class GameRuntime {
     this.flushing = true
     const generation = this.generation
     try {
-      const firstSemantic = await db.outbox.orderBy('seq').first()
-      if (firstSemantic?.op === 'farm') {
+      const available: EconomicLane[] = []
+      if (await db.outbox.filter(r => r.op === 'upsert' || r.op === 'append').count()) available.push('ordinary')
+      if (await db.outbox.filter(r => r.op === 'puzzle').count()) available.push('puzzle')
+      if (await db.outbox.filter(r => r.op === 'farm').count()) available.push('farm')
+      const lane = nextEconomicLane(available, this.lastEconomicLane)
+      if (lane) this.lastEconomicLane = lane
+      if (lane === 'farm') {
+        if (!FARM_KITCHEN_RELEASE_ENABLED) {
+          setSyncState({ status: 'error', error: 'Farm intents are retained in read-only recovery until a compatible kitchen release.' })
+          if (available.some(l => l !== 'farm')) this.schedule(0)
+          return
+        }
         const { FarmOperationCoordinator } = await import('./farm/kitchen/operations')
         const coordinator = new FarmOperationCoordinator(db, () => this.schedule())
         const operations = await coordinator.nextBatch()
@@ -1188,7 +1234,7 @@ export class GameRuntime {
         if (pending) this.schedule(0)
         return
       }
-      if (firstSemantic?.op === 'puzzle' && await db.pendingPuzzleOperations.where('status').equals('pending').count()) {
+      if (lane === 'puzzle' && await db.pendingPuzzleOperations.where('status').equals('pending').count()) {
         const { PuzzleOperationCoordinator } = await import('./puzzles/operations')
         const coordinator = new PuzzleOperationCoordinator(db, '', () => this.schedule())
         const operations = await coordinator.nextBatch()
@@ -1204,8 +1250,9 @@ export class GameRuntime {
           const snapshot = await readLocalSnapshot()
           if (snapshot && this.content) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
           const pending = await db.outbox.count(), rejected = await db.pendingPuzzleOperations.where('status').anyOf(['rejected', 'blocked']).count()
-          setSyncState({ pending, status: rejected ? 'error' : pending ? 'pending' : 'idle',
-            error: rejected ? 'A Puzzle change needs review. Its input and builds are saved; no conflicting reward or spend was kept.' : null })
+          const farmRecovery = await db.farmPending.where('status').anyOf(['rejected', 'blocked']).count()
+          setSyncState({ pending, status: rejected || farmRecovery ? 'error' : pending ? 'pending' : 'idle',
+            error: farmRecovery ? 'A Farm input needs recovery; its frozen choices are retained.' : rejected ? 'A Puzzle change needs review. Its input and builds are saved; no conflicting reward or spend was kept.' : null })
           if (pending) this.schedule(0)
           return
         }
@@ -1241,10 +1288,10 @@ export class GameRuntime {
           const local = await readLocalSnapshot()
           if (local && this.content) adoptGameState(stateFromSnapshot(local, this.content, true))
         }
-        const [ordinary, rpg, actionable] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
-          db.pendingRpgCommands.where('status').equals('pending').count()])
-        setSyncState({ status: rpg > actionable ? 'error' : ordinary + rpg ? 'pending' : 'idle',
-          pending: ordinary + rpg, error: rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
+        const [ordinary, rpg, actionable, farmRecovery] = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count(),
+          db.pendingRpgCommands.where('status').equals('pending').count(), db.farmPending.where('status').anyOf(['rejected', 'blocked']).count()])
+        setSyncState({ status: farmRecovery || rpg > actionable ? 'error' : ordinary + rpg ? 'pending' : 'idle',
+          pending: ordinary + rpg, error: farmRecovery ? 'A Farm input needs recovery; its frozen choices are retained.' : rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
         if (actionable > 0) this.schedule(0)
         return
       }
@@ -1283,8 +1330,9 @@ export class GameRuntime {
       const sentSequence = new Map(batch.map((item) => [`${item.kind}/${item.id}`, item.seq]))
 
       const coordinator = new PuzzleOperationCoordinator(db, '', () => this.schedule())
+      const farmRepair = FARM_KITCHEN_RELEASE_ENABLED && await db.farmPending.count() ? await import('./farm/kitchen/operations') : null
       await db.transaction('rw', [...puzzleTransactionTables(db), db.profile, db.cards, db.badges, db.farm, db.inspirationBank,
-        db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints], async () => { await coordinator.reconcileOrdinaryInTransaction(async () => {
+        db.rpgOutfits, db.rpgPresets, db.rpgCheckpoints, ...(farmRepair?.farmTransactionTables(db) ?? [])], async () => { await coordinator.reconcileOrdinaryInTransaction(async () => {
         for (const applied of response.applied) await updateEntityVersion(applied.kind, applied.id, applied.version)
         for (const conflict of response.conflicts) {
           const current = await db.outbox.where('[kind+id]').equals([conflict.kind, conflict.id]).first()
@@ -1308,6 +1356,7 @@ export class GameRuntime {
         }
         await db.outbox.bulkDelete(acknowledged)
         await reconcileFarmProjectionsInTransaction(response.serverTime)
+        if (farmRepair) await new farmRepair.FarmOperationCoordinator(db, () => this.schedule()).revalidatePendingInTransaction(response.serverTime)
       }, response.serverTime) })
       await coordinator.refreshStatus()
       if (generation !== this.generation) return
@@ -1319,10 +1368,11 @@ export class GameRuntime {
         db.pendingRpgCommands.where('status').equals('pending').count()])
       const pending = ordinary + rpg
       const puzzleRecovery = await db.pendingPuzzleOperations.where('status').anyOf(['rejected', 'blocked']).count()
+      const farmRecovery = await db.farmPending.where('status').anyOf(['rejected', 'blocked']).count()
       const syncedAt = Date.now()
       rememberLastSync(syncedAt)
-      setSyncState({ status: puzzleRecovery || rpg > actionable ? 'error' : pending ? 'pending' : 'idle', pending,
-        lastSuccessAt: syncedAt, error: puzzleRecovery ? 'A Puzzle change needs review; its input and builds are saved for recovery.' : rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
+      setSyncState({ status: farmRecovery || puzzleRecovery || rpg > actionable ? 'error' : pending ? 'pending' : 'idle', pending,
+        lastSuccessAt: syncedAt, error: farmRecovery ? 'A Farm input needs recovery; its frozen choices are retained.' : puzzleRecovery ? 'A Puzzle change needs review; its input and builds are saved for recovery.' : rpg > actionable ? 'RPG command conflicted; progress was not applied' : null })
       if (ordinary + actionable > 0) this.schedule(0)
     } catch (error) {
       const pending = await Promise.all([db.outbox.count(), db.pendingRpgCommands.count()])

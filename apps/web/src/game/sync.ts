@@ -6,6 +6,13 @@ import { parsePuzzleOperationResponses } from '@racer/domain'
 import { parseFarmOperationResponses } from '@racer/domain/farm/kitchen'
 
 const key = (kind: EntityKind, id: string) => `${kind}/${id}`
+export type EconomicLane = 'ordinary' | 'puzzle' | 'farm'
+/** Serialized round-robin: a continuously growing semantic queue cannot starve ordinary/Puzzle changes. */
+export function nextEconomicLane(available: readonly EconomicLane[], previous: EconomicLane | null): EconomicLane | null {
+  const order: EconomicLane[] = ['ordinary', 'puzzle', 'farm'], start = previous === null ? 0 : (order.indexOf(previous) + 1) % order.length
+  for (let i = 0; i < order.length; i++) { const lane = order[(start + i) % order.length]!; if (available.includes(lane)) return lane }
+  return null
+}
 
 /**
  * The server must account for every mutable entity exactly once. Append replies report only newly-created logs,

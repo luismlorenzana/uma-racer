@@ -20,6 +20,7 @@ export interface FarmSaveSummary {
   itemStacks: number
   totalItems: number
   itemMovements: number
+  kitchen?: { phase: string; workers: number; recipes: number; maps: number; operations: number; pending: number; recovery: number }
 }
 
 export async function readFarmSaveSummary(now = Date.now()): Promise<FarmSaveSummary> {
@@ -27,6 +28,10 @@ export async function readFarmSaveSummary(now = Date.now()): Promise<FarmSaveSum
   const [farmRow, itemRows, ledgerRows] = await Promise.all([
     db.farm.get('main'), db.items.toArray(), db.itemLedger.toArray(),
   ])
+  if (Number(farmRow?.data.schemaVersion) === 3 || await db.farmCutover.count()) {
+    const { readFarmKitchenSummary } = await import('./kitchen/diagnostics')
+    return readFarmKitchenSummary(db, now)
+  }
   const farm = farmRow ? parseFarmState(farmRow.data) : null
   if (farmRow && (!farm || farmRow.id !== 'main')) throw new Error('Farm diagnostic state is invalid')
   const items = itemRows.map((row) => {
