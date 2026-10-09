@@ -35,7 +35,7 @@ Checked-in fixtures are small generators/invented values; no large account fixtu
 - `pnpm lint`: PASS (all6 packages).
 - `pnpm test`: PASS;1,660 tests,209 files, all6 packages (49 new cutover tests). The uncached run also passed
   serialized with `pnpm test --concurrency=1` to avoid the known unchanged race wall-clock threshold under
-  concurrent local package load. No threshold relaxed.
+  concurrent local package load. No existing race-performance threshold relaxed.
 - The first PR CI run hit Vitest's default five-second timeout in the new local-file all-35-step rollback
   case (no failed state assertion). The four full-account adapter rehearsal cases now have explicit30-second
   timeouts for shared-runner I/O; no production or existing race-performance limit changed.
