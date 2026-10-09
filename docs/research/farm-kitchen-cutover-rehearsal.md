@@ -36,6 +36,9 @@ Checked-in fixtures are small generators/invented values; no large account fixtu
 - `pnpm test`: PASS;1,660 tests,209 files, all6 packages (49 new cutover tests). The uncached run also passed
   serialized with `pnpm test --concurrency=1` to avoid the known unchanged race wall-clock threshold under
   concurrent local package load. No threshold relaxed.
+- The first PR CI run hit Vitest's default five-second timeout in the new local-file all-35-step rollback
+  case (no failed state assertion). The four full-account adapter rehearsal cases now have explicit30-second
+  timeouts for shared-runner I/O; no production or existing race-performance limit changed.
 - `pnpm build`: PASS, including API standalone compilation and PWA service worker.
 - Startup154,402 bytes gzip (154.40 KB, below180 KB); lazy cutover/recovery module5,135 bytes gzip (5.14 KB).
 - API mirror checks:18 Farm modules;84 Puzzle dependency modules. The latter adds only the shared cutover-log

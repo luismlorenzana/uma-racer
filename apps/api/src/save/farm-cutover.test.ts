@@ -41,6 +41,9 @@ class StrictDb {
     }); this.queue = run.catch(() => undefined); return run
   }
 }
+// Each case replays a whole 35-outfit/two-page account, with dozens of real local-file commits.
+// This is a durability rehearsal, not a five-second performance contract on a shared CI runner.
+const REHEARSAL_TIMEOUT = 30_000
 for (const backend of ['local', 'firestore'] as const) describe(`${backend} Farm cutover`, () => {
   let repo: SaveRepository, folder: string, file: string, fake: StrictDb
   const generation = 'invented-cutover'
@@ -92,7 +95,7 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} Farm
     expect(await rows()).toEqual(after)
     if (backend === 'firestore') { expect(fake.queries).toBe(1); expect(fake.maxBoundedReads).toBeLessThanOrEqual(200) }
     console.info('Farm adapter witness', JSON.stringify({ backend, outfits: 35, pages: 2, digest: farmHash(after), maxBoundedReads: fake.maxBoundedReads }))
-  })
+  }, REHEARSAL_TIMEOUT)
   it('rolls back a failure at every outfit and finalization, then resumes the original frozen cohort', async () => {
     await repo.prepareFarm('invented', await prepare())
     const failCall = async (req: FarmCutoverRequest) => {
@@ -107,7 +110,7 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} Farm
     await failCall(request('verify', 0)); await failCall(request('verify', 1))
     await failCall({ schemaVersion: 1, generation, action: 'finalize' })
     expect((await rows()).logs.filter(l => l.kind === 'farmOperations' && l.data.action === 'advance')).toHaveLength(35)
-  })
+  }, REHEARSAL_TIMEOUT)
   it('rejects stale/archive-account proof before freeze and old v2 writers after prepare/active', async () => {
     const req = await prepare(), before = await rows()
     const bad = structuredClone(req); if (bad.action === 'prepare') bad.archive.accountId = 'another-account'
@@ -123,7 +126,7 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} Farm
     await expect(repo.sync('invented', { upserts: [{ kind: 'farm', id: 'main', baseVersion: oldFarm.version, data: oldFarm.data }], appends: [] })).rejects.toThrow(/legacy Farm/)
     await expect(repo.sync('invented', { farmProtocolVersion: 1, upserts: [{ kind: 'umas', id: old.id, baseVersion: current.version, data: old.data }], appends: [] })).rejects.toThrow(/retired Extra/)
     expect((await rows()).entities.find(r => r.kind === 'umas' && r.id === old.id)!.data.exp).toBe(1)
-  })
+  }, REHEARSAL_TIMEOUT)
   it('allows a zero-default new acquisition after freeze without adding it to the cohort', async () => {
     await repo.prepareFarm('invented', await prepare())
     const u = (await rows()).entities.find(r => r.kind === 'umas')!, data = structuredClone(u.data)
@@ -137,7 +140,7 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} Farm
     expect((await rows()).entities.find(r => r.kind === 'umas' && r.id === 'invented-new')!.data).toEqual(data)
     expect((await rows()).entities.some(r => r.kind === 'farmWorkers' && r.id === 'invented-new')).toBe(false)
     expect((await rows()).logs.some(l => l.id === farmCutoverReceiptId(generation, 'advance', 35))).toBe(false)
-  })
+  }, REHEARSAL_TIMEOUT)
 })
 it('the normal disabled endpoint returns before any local file or Firestore access', async () => {
   const req: FarmCutoverRequest = { schemaVersion: 1, generation: 'invented', action: 'status' }, fake = new StrictDb()
