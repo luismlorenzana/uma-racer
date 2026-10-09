@@ -1,7 +1,7 @@
 import { battleActorSkill, createBattle, enrollRpgOutfit, learnRpgNode, projectRpgStats, rpgFoe, type BattleAlly, type RpgClass,
   type RpgProfile, type RpgWeapon } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
-import { actionFor, allyKinds, blessingChoices, canChip } from './battle-view'
+import { actionFor, allyKinds, blessingChoices, canChip, describeCue, limitMode, limitNow, limitOptions, limitReady } from './battle-view'
 
 // Invented outfits only.
 const STYLE = { brawler: { front: 'A', pace: 'C', late: 'C', end: 'C' }, mage: { front: 'C', pace: 'A', late: 'C', end: 'C' },
@@ -44,5 +44,26 @@ describe('fight projections (D278–D281)', () => {
     expect(actionFor({ kind: 'skill', ref: light.ref, blessing: 'cleric-staff.grace.2' }, 'a3', 'f1'))
       .toEqual({ kind: 'skill', actorId: 'a3', targetId: 'f1', skill: light.ref, blessing: 'cleric-staff.grace.2' })
     expect(actionFor({ kind: 'attack', weapon: 'bow' }, 'a1', 'f1')).toEqual({ kind: 'attack', actorId: 'a1', targetId: 'f1', weapon: 'bow' })
+  })
+
+  it('offers each class its Limit Break once her bar is full, before she acts (D311)', () => {
+    const state = createBattle({ version: 5, seed: 1, allies: party, enemies: [foe] }).state
+    expect(limitReady(state, 'a1')).toBe(false)
+    for (const u of state.units) if (u.side === 'ally') u.limit = 12
+    expect(['a1', 'a2', 'a3', 'a4', 'a5'].map((id) => limitNow(state, id))).toEqual([true, true, true, true, true])
+    expect(limitOptions(state, 'a1').options.map((o) => [o.name, o.detail])).toEqual([['Frost Sweep', 'Cast twice in a row']])
+    expect(limitOptions(state, 'a2').options.map((o) => [o.name, o.detail])).toEqual([['Shade Cut', 'Twice the hits, arcane and sword']])
+    expect(limitOptions(state, 'a3').options.map((o) => o.name)).toEqual(['Divine Patrons'])
+    expect(limitOptions(state, 'a4')).toMatchObject({ pick: 2, options: [{ name: 'Cherub' }] })
+    expect(limitOptions(state, 'a5').options.map((o) => o.name)).toEqual(['Prismatic Nova'])
+    const twin = limitMode(state, 'a4', { skills: [{ tier: 1, id: 'summon-arcane.angels.1' }, { tier: 1, id: 'summon-arcane.angels.1' }] })!
+    expect(twin).toMatchObject({ kind: 'limit', name: 'Cherub' })
+    expect(actionFor(twin, 'a4', 'f1')).toEqual({ kind: 'limit', actorId: 'a4', targetId: 'f1',
+      skills: [{ tier: 1, id: 'summon-arcane.angels.1' }, { tier: 1, id: 'summon-arcane.angels.1' }] })
+    expect(limitMode(state, 'a4', { skills: [{ tier: 1, id: 'summon-arcane.angels.1' }] })).toBeNull()
+    expect(describeCue({ kind: 'limit', actorId: 'a5', targetId: 'f1', label: 'Prismatic Nova' }, (id) => id)).toBe('a5: LIMIT BREAK · Prismatic Nova!')
+    // A Brawler with nothing equipped strikes twice with a weapon of her choice.
+    const bare = createBattle({ version: 5, seed: 1, allies: party.map((a) => a.id === 'a1' ? { ...a, loadout: [] } : a), enemies: [foe] }).state
+    expect(limitOptions(bare, 'a1').options.map((o) => o.name)).toEqual(['Twin Strike · Axe', 'Twin Strike · Bow'])
   })
 })

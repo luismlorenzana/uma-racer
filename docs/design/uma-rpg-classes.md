@@ -1,6 +1,6 @@
 # Global Uma RPG — classes and skill trees
 
-> **Status: current (D277–D282, approved 2026-10-08; the Spell Blade split from the Mage, D310, 2026-10-09).** It replaces the running-style weapons, the distance-affinity
+> **Status: current (D277–D282, approved 2026-10-08; the Spell Blade, D310, and Limit Breaks, D311, 2026-10-09).** It replaces the running-style weapons, the distance-affinity
 > element trees, skill levels and the single-element weakness of [uma-rpg.md](uma-rpg.md) (D226, D227, D259, D264,
 > D265 in part) and lifts D261's "no healing" for the Cleric only. Numbers are tuning drafts pinned by
 > `packages/domain/src/domain.test.ts` and checked with `pnpm sim:rpg:campaign`; the code lives in
@@ -419,7 +419,8 @@ chapter ×1.81, then ×2.31 and ×2.875; a Tier 2 chapter starts over with its t
 party spends its whole MP pool, and that pool's damage grows with depth faster than foe stats grow with level.
 
 `pnpm sim:rpg:campaign` (a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner, D310; careful policy chips with
-weak parts and spends big skills on a Break, attack-only uses free actions):
+weak parts and spends big skills on a Break, attack-only uses free actions; these rows hold Limit Breaks, and
+section 15 has the same chapters with them):
 
 | Chapter | Regular fights | Sub-bosses | Champion |
 |---|---|---|---|
@@ -463,7 +464,7 @@ URA's champion a loss.
 ## 13. Decisions
 
 D277 classes, D278 turns and hands, D279 damage and weaknesses, D280 trees, D281 statuses and blessings, D282 schema 3,
-engine v4 and the migration, D310 the Spell Blade and schema 4 (see [the decision log](../decisions.md)).
+engine v4 and the migration, D310 the Spell Blade and schema 4, D311 Limit Breaks (see [the decision log](../decisions.md)).
 
 ## 14. Phone presentation
 
@@ -473,6 +474,43 @@ engine v4 and the migration, D310 the Spell Blade and schema 4 (see [the decisio
   fork's two variants. A node shows its kinds, targets, hits, power after her hand and MP, and why it is closed. A
   learned variant offers **Swap out** (refund).
 - **Party slot:** class and weapons, the equipped skills (up to her slots) and, for a Summoner, the Familiar form.
+- **Limit Break:** no bar on screen; a full charge puts an **LB** badge on her portrait in the party row, and tapping
+  it opens her Limit Break menu (section 15). A Summoner picks two summons there, then any Limit Break taps a foe.
 - **Fight:** a Brawler picks the weapon above Attack; two-action Umas show "action 1 of 2"; Attack reads Slash (Spell
   Blade), Strike or Familiar by build; a Cleric with several blessings in a branch picks one after the skill. Weakness icons
   show elements then weapons.
+
+## 15. Limit Breaks
+
+After Final Fantasy's Limit Breaks and Octopath Traveler's Boost (D311): every Uma fills a hidden bar as she fights and,
+when it is full, spends it on one big turn.
+
+- **Charge:** an attack (Attack, Slash, Strike or the Familiar) adds 1, a skill 2, to a bar of **12**. Umas who act once
+  a turn (Brawler, Cleric) charge double, so every class fills at the same pace a round: three rounds of skills, or six
+  of attacks. Guard adds nothing. The bar starts empty each fight, stops at full and waits there until she uses it; it
+  starts charging again only after.
+- **Use:** before her first action of a round, she spends the full bar on her **whole turn** at **0 MP**, worth about
+  twice her usual turn. A foe must be the target.
+
+| Class | Limit Break | Power |
+|---|---|---|
+| Brawler | Any equipped skill, cast twice in a row (with none equipped: Twin Strike, two full Attacks) | 2 × her skill |
+| Mage | **Prismatic Nova**: one foe takes Fire, Ice, Lightning, Light, Dark and Ultima, a hit each | 2.4 × the depth open at her level (four of her casts) |
+| Spell Blade | An Elemental Blade skill as **three great hits** of sword and its element; an Arcane Blade skill with **twice the hits**; with none equipped, **Triad Blade** (sword with Fire, Ice and Lightning, a hit each) | 2 × her turn (4 × a cast) |
+| Cleric | **Divine Patrons**: her patrons of Light and Dark strike one foe twice, both elements in each hit (no blessing) | 1.5 × the depth open at her level (three of her casts) |
+| Summoner | Two summons she picks (the same one twice is fine), each summoned twice | 2 × her turn (four summons) |
+
+- Riders, capstone specials and weaknesses work as in the skills; each Light/Dark part of Divine Patrons can remove a
+  shield point. If the foe falls mid-Limit Break, the rest lands on the living foe with the least HP left.
+- The Cleric's is the one below 2 × her turn in damage because her blessing is half her turn's value: 1.5 × the
+  depth's power is three of her casts, a single-target hit close to a damage class's turn.
+- Foes are unchanged (the owner asked for no difficulty rebalance yet). `pnpm sim:rpg:campaign` plays careful (Limit
+  Breaks on a Broken foe, or on any foe outside boss fights) beside the same policy holding them:
+
+| Chapter | Champion with / without Limit Breaks | Sub-bosses with / without |
+|---|---|---|
+| URA (from Lv1) | 10 / 18 rounds, 33% / 67% HP lost | 6–8 / 7–11 rounds |
+| Unity Cup (from Lv13) | 6 / 9 rounds | 4–5 / 5–7 rounds |
+| Project L'Arc (T2 Lv11) | 6 / 8 rounds | 4–5 / 5–6 rounds |
+
+  A champion fight sees about ten Limit Breaks (two per Uma); regular fights rarely last long enough to fill one.

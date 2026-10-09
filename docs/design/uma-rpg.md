@@ -78,6 +78,10 @@ rules follow Octopath Traveler; the full rules and numbers are in [the class tre
 - **Skills:** single-target power 1.6 / 2.2 / 2.9 / 3.7 / 4.6 by depth, × the hand (Brawler 1.0, Mage 0.6 each,
   Spell Blade 0.5 each, Cleric 0.5, Summoner 0.5 each); every-foe skills 55% per foe; random multi-hits ×1.05. MP is
   `(6 + 4 × depth, +4 for every foe) × hand × tier`.
+- **Limit Break (D311):** an attack charges 1 and a skill 2 (doubled for one-action classes) toward a bar of 12; when
+  full, an LB badge on her portrait opens her Limit Break, her whole turn at about twice the damage and 0 MP: a
+  Brawler's skill twice, a Mage's Prismatic Nova (five elements and Ultima), a Spell Blade's skill made big, a Cleric's
+  Divine Patrons (Light and Dark), a Summoner's two summons twice each. It waits until used and resets each fight.
 - **Statuses:** Brave, Faith, Breaker, Barrier, Regen, Aegis on allies; Armor Break, Mind Break, Enfeeble, Shock, Burn,
   Hex on foes; capstones and some variants carry Fire → Burn, Ice → Chill, Lightning → Shock.
 - A fight lasting 40 rounds is a loss; a simultaneous wipe is a loss. A fight left open under an older engine is
@@ -177,7 +181,7 @@ Two more tabs beside Parties and Roster, borrowed from Uma Puzzles' Items and Ex
   kinds) and its intent; the selected action's projected damage on every foe, marked WEAK and with the shield points it
   removes or BREAK; five party cards with HP, MP and actions left. Tap a foe to attack, or pick a skill first; a
   Brawler picks her weapon above Attack, and a Cleric picks the blessing after the skill. BREAK is called out large.
-  The result settles itself: EXP, level-ups, skill points and tokens.
+  A full Limit Break shows an LB badge on her portrait. The result settles itself: EXP, level-ups, skill points and tokens.
 - Main JS stays ≤ 180 KB gzip; every RPG screen is a lazy chunk.
 
 ## Tuning

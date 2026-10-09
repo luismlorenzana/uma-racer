@@ -1,9 +1,10 @@
 // Campaign fight (D265, D278): tap an enemy to attack, or pick a skill first. Weak parts chip each foe's shield (its
 // icons show what it is weak to); a Break leaves it open to full damage for two rounds. Mages, Spell Blades and Summoners
-// act twice; a Cleric's skill carries a blessing. The result settles itself.
+// act twice; a Cleric's skill carries a blessing. A full Limit Break bar puts a badge on her portrait (D311). The result
+// settles itself.
 import {
   battleActionsLeft, battleBroken, rpgHand, rpgLevelReveal, rpgMemberLevel,
-  type BattleAction, type BattleState, type BattleUnit, type RpgSettlement, type RpgWeapon,
+  type BattleAction, type BattleState, type BattleUnit, type RpgNodeRef, type RpgSettlement, type RpgWeapon,
 } from '@racer/domain'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
@@ -15,7 +16,9 @@ import { ScreenState } from '../../ui/ScreenState'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { RpgEnemyPortrait } from '../../ui/rpg/RpgEnemyPortrait'
 import { RpgPortrait } from '../../ui/rpg/RpgPortrait'
-import { actionFor, blessingChoices, describeCue, previewTarget, skillChoices, type BattleMode, type SkillChoice } from '../../ui/rpg/battle-view'
+import { actionFor, blessingChoices, describeCue, limitMode, limitNow, limitOptions, limitReady, previewTarget, skillChoices,
+  type BattleMode, type SkillChoice } from '../../ui/rpg/battle-view'
+import { BurstIcon } from '../../ui/icons'
 import { useBattlePlayback } from '../../ui/rpg/useBattlePlayback'
 import { ElementMark, GhostButton, KindMark, PrimaryButton, RpgBar, ShieldBadge, WEAPON_KIND_LABEL, WeaknessIcons, WeaponKindMark, formatRpgLevel } from '../../ui/rpg/rpg-ui'
 import { RpgFrame, commit, pushToast, skillKinds, useRpg } from './RpgScreen'
@@ -35,6 +38,8 @@ export function RpgFightScreen() {
   const [blessFor, setBlessFor] = useState<SkillChoice | null>(null)
   const [lastBlessing, setLastBlessing] = useState<Record<string, string>>({})
   const [menu, setMenu] = useState(false)
+  const [limitFor, setLimitFor] = useState<string | null>(null)
+  const [limitPicks, setLimitPicks] = useState<RpgNodeRef[]>([])
   const [busy, setBusy] = useState(false)
   const [settled, setSettled] = useState<RpgSettlement | null>(null)
   const lock = useRef(false)
@@ -99,6 +104,7 @@ export function RpgFightScreen() {
   const blessing = skill && mode.kind === 'skill' && mode.blessing ? blessingChoices(state, actor!.id, skill.skill).find((b) => b.id === mode.blessing) : null
   const hint = playback.cue ? describeCue(playback.cue, name)
     : mode.kind === 'guard' ? `Tap an ally for ${name(actor?.id ?? '')} to guard`
+    : mode.kind === 'limit' ? `Tap an enemy: LIMIT BREAK · ${mode.name}`
     : skill ? `Tap an enemy: ${skill.skill.label} · ${skill.skill.mp} MP${blessing ? ` · ${blessing.name}` : ''}${turn}`
     : actor ? `${name(actor.id)}: tap an enemy to ${attackLabel.toLowerCase()}${weapon ? ` (${WEAPON_KIND_LABEL[weapon as keyof typeof WEAPON_KIND_LABEL] ?? weapon})` : ''}${turn}` : ''
   const pickSkill = (choice: SkillChoice) => {
@@ -130,20 +136,27 @@ export function RpgFightScreen() {
           {move && unit.hp > 0 && <p className="mt-1 line-clamp-2 text-[10px] leading-3 text-ink-on-dark-soft">{battleBroken(unit) ? 'Broken: loses its turn' : `${move.label} → ${intent!.targetId === 'all' ? 'all' : name(intent!.targetId)}`}</p>}
         </button>
       })}</div>
-      <p aria-live="polite" className={`min-h-8 text-center font-semibold text-accent ${playback.cue?.kind === 'break' ? 'font-display text-[22px] leading-7 tracking-wide' : 'text-[12px] leading-4'}`}>{hint}</p>
+      <p aria-live="polite" className={`min-h-8 text-center font-semibold text-accent ${playback.cue?.kind === 'break' || playback.cue?.kind === 'limit' ? 'font-display text-[22px] leading-7 tracking-wide' : 'text-[12px] leading-4'}`}>{hint}</p>
       <div className="grid grid-cols-5 gap-1" aria-label="Party">{allies.map((unit) => {
         const ally = state.input.allies.find((a) => a.id === unit.id)!
         const done = battleActionsLeft(state, unit.id) <= 0 || unit.hp <= 0
         const selected = actor?.id === unit.id
         const hit = playback.cue && 'targetId' in playback.cue && playback.cue.targetId === unit.id
-        return <button key={unit.id} type="button" onClick={(e) => { e.stopPropagation(); tapUnit(unit) }} disabled={busy}
-          aria-label={`${name(unit.id)}, HP ${unit.hp} of ${ally.stats.hp}, MP ${unit.mp} of ${ally.stats.mp}${done ? ', done' : ''}`}
-          className={`min-w-0 rounded-sm border p-1 text-left ${selected ? 'border-accent bg-accent/15' : hit ? 'border-[#ff8a5c]' : 'border-hairline-dark'} ${done ? 'opacity-50' : ''}`}>
-          <RpgPortrait content={content} compact artwork="icon" outfitId={ally.id} name={name(ally.id)} weapons={ally.weapons} className="aspect-square w-full" />
-          <RpgBar className="mt-1" value={unit.hp} max={ally.stats.hp} />
-          <RpgBar className="mt-0.5" value={unit.mp} max={ally.stats.mp} tone="mp" />
-          <p className="truncate text-[9px]">{unit.hp <= 0 ? 'KO' : done ? 'Done' : `${unit.mp} MP${rpgHand(ally).actions > 1 ? ` · ${battleActionsLeft(state, unit.id)}×` : ''}`}</p>
-        </button>
+        const limit = unit.hp > 0 && limitReady(state, unit.id)
+        return <div key={unit.id} className="relative min-w-0">
+          <button type="button" onClick={(e) => { e.stopPropagation(); tapUnit(unit) }} disabled={busy}
+            aria-label={`${name(unit.id)}, HP ${unit.hp} of ${ally.stats.hp}, MP ${unit.mp} of ${ally.stats.mp}${done ? ', done' : ''}`}
+            className={`w-full min-w-0 rounded-sm border p-1 text-left ${selected ? 'border-accent bg-accent/15' : hit ? 'border-[#ff8a5c]' : 'border-hairline-dark'} ${done ? 'opacity-50' : ''}`}>
+            <RpgPortrait content={content} compact artwork="icon" outfitId={ally.id} name={name(ally.id)} weapons={ally.weapons} className="aspect-square w-full" />
+            <RpgBar className="mt-1" value={unit.hp} max={ally.stats.hp} />
+            <RpgBar className="mt-0.5" value={unit.mp} max={ally.stats.mp} tone="mp" />
+            <p className="truncate text-[9px]">{unit.hp <= 0 ? 'KO' : done ? 'Done' : `${unit.mp} MP${rpgHand(ally).actions > 1 ? ` · ${battleActionsLeft(state, unit.id)}×` : ''}`}</p>
+          </button>
+          {limit && <button type="button" aria-label={`${name(unit.id)}: Limit Break ready`} disabled={busy || playback.playing}
+            onClick={(e) => { e.stopPropagation(); setLimitPicks([]); setLimitFor(unit.id) }}
+            className="absolute -top-2 left-1/2 flex h-7 min-w-11 -translate-x-1/2 items-center justify-center gap-0.5 rounded-full border border-[#ffd84d] bg-stage px-1.5 text-[10px] font-bold text-[#ffd84d] shadow-[0_0_10px_rgba(255,216,77,0.55)]">
+            <BurstIcon size={16} />LB</button>}
+        </div>
       })}</div>
     </section>
     <footer className="shrink-0 border-t border-hairline-dark bg-stage-soft px-3 pt-2 pb-2">
@@ -192,6 +205,37 @@ export function RpgFightScreen() {
         })}
         </>}
       </div></div></RpgModalFocus>}
+    {limitFor && (() => {
+      const close = () => { setLimitFor(null); setLimitPicks([]) }
+      const { pick, options } = limitOptions(state, limitFor)
+      const now = limitNow(state, limitFor)
+      const choose = (choice: Parameters<typeof limitMode>[2]) => {
+        const next = limitMode(state, limitFor, choice)
+        if (!next) { pushToast('That Limit Break is not available'); return }
+        setActorId(limitFor); setMode(next); close()
+      }
+      return <RpgModalFocus onClose={close}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={close}>
+        <div role="dialog" aria-modal="true" aria-label="Limit Break" onClick={(e) => e.stopPropagation()} className="pb-safe max-h-[80dvh] w-full space-y-2 overflow-y-auto rounded-t-lg border border-[#ffd84d]/60 bg-stage-soft p-4">
+          <p className="flex items-center gap-1.5 font-display text-[18px] text-[#ffd84d]"><BurstIcon size={20} />Limit Break · {name(limitFor)}</p>
+          {!now ? <p className="text-sm">Ready from her next turn: a Limit Break takes her whole turn, so use it before she acts.</p>
+            : options.length === 0 ? <p className="text-sm">Equip a summon in the party to use her Limit Break.</p> : <>
+            <p className="text-[12px] text-ink-on-dark-soft">{pick === 2 ? `Pick two summons (the same one twice is fine): each is summoned twice, at 0 MP. ${limitPicks.length}/2 picked.` : 'Her whole turn, at 0 MP. Pick one, then tap an enemy.'}</p>
+            {options.map((o) => {
+              const count = limitPicks.filter((r) => `${r.tier}:${r.id}` === o.key).length
+              return <button key={o.key} type="button" onClick={() => {
+                if (pick === 1) { choose(o.choice); return }
+                const picks = [...limitPicks, o.choice.skills![0]!]
+                if (picks.length < 2) { setLimitPicks(picks); return }
+                choose({ skills: picks })
+              }} className={`flex min-h-14 w-full items-center justify-between gap-2 rounded-sm border p-3 text-left ${count ? 'border-[#ffd84d]' : 'border-hairline-dark'} bg-stage`}>
+                <span><span className="block font-semibold">{o.name}</span><span className="block text-[11px] text-ink-on-dark-soft">{o.detail}</span></span>
+                <span className="text-sm font-semibold">{count ? `×${count}` : '0 MP'}</span>
+              </button>
+            })}
+            {pick === 2 && limitPicks.length > 0 && <GhostButton className="w-full" onClick={() => setLimitPicks([])}>Clear picks</GhostButton>}
+          </>}
+        </div></div></RpgModalFocus>
+    })()}
     {menu && <RpgModalFocus onClose={() => setMenu(false)}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => setMenu(false)}>
       <div role="dialog" aria-modal="true" aria-label="Fight menu" onClick={(e) => e.stopPropagation()} className="pb-safe w-full space-y-2 rounded-t-lg border border-hairline-dark bg-stage-soft p-4">
         <Link to={mapPath} className="flex min-h-12 items-center justify-center rounded-sm border border-hairline-dark">Back to map · the fight stays open</Link>

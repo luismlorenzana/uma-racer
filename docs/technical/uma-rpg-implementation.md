@@ -12,13 +12,13 @@ engine-v1 combat are retired; their history is in git and decisions D223–D259.
 | Vocabulary: elements, weapons, damage kinds, classes, trees, statuses | `packages/domain/src/rpg/kinds.ts` |
 | Every tree, node and number (396 nodes from one set of rules; the Short Sword follow-up tree is retired, read-only) | `packages/domain/src/rpg/catalog.ts` |
 | Classes from running styles, class stats, hands, points, learning, loadouts, promotion | `packages/domain/src/rpg/rules.ts` |
-| Battle engine v5 (pure, seeded, replayable): multi-part hits, two-action hands, Cleric blessings, summons | `packages/domain/src/rpg/battle/` — `types.ts`, `skills.ts`, `engine.ts` |
+| Battle engine v5 (pure, seeded, replayable): multi-part hits, two-action hands, Cleric blessings, summons, Limit Breaks (D311: `limit` on each unit, `limit` action) | `packages/domain/src/rpg/battle/` — `types.ts`, `skills.ts`, `engine.ts`, `limit.ts` (charge, `battleLimitPlan`) |
 | Generated chapters, foes (weaknesses by rank, boss HP by reach), runs, rewards | `packages/domain/src/rpg/campaign/` — `chapters.ts`, `enemies.ts`, `run.ts`, `rewards.ts` |
 | Row parsers and the class migrations | `packages/domain/src/rpg/save.ts` (`migrateRpgOutfitSave`, `migrateRpgPresetSave`, `rpgLegacySwordMage`), `save.ts` dispatch; `rpgUsableLoadout` in `rules.ts` drops skills a member no longer has |
 | Local-first host | `apps/web/src/game/rpg-local.ts` (`exchangeInspirationTokens` for Convert) |
 | Token exchange and the advance's repaid share (D309) | `packages/domain/src/inspiration-exchange.ts`, `inspirationAdvanceDebts` in `inspiration-bank.ts` |
 | Screens | `apps/web/src/screens/rpg/` — `RpgScreen.tsx` (shell, parties, roster, profile and tree screen, party editor, launch pad), `RpgItemsScreen.tsx` (Inventory, Convert), `RpgMapScreen.tsx`, `RpgFightScreen.tsx`, `RpgGuide.tsx` |
-| Fight projections | `apps/web/src/ui/rpg/battle-view.ts` (choices, blessings, previews, who can break a foe) |
+| Fight projections | `apps/web/src/ui/rpg/battle-view.ts` (choices, blessings, Limit Break menu and mode, previews, who can break a foe) |
 | Cast gate | `apps/web/src/content/rpg-release.ts` (one cast member per portrait key, every portrait verified) |
 | Server shapes | `apps/api/src/save/rpg-save.types.ts` (its own class mapping and weapon sets for schema 3 and 4, and tree-branch table), `save.types.ts` (`rpgOrdinaryRow`, bank repayment rule) |
 | Balance | `scripts/sim/rpg-campaign.ts` (`pnpm sim:rpg:campaign`): a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner |

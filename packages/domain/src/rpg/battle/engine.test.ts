@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { enrollRpgOutfit, learnRpgNode, projectRpgStats, type RpgClass, type RpgElement, type RpgProfile, type RpgWeapon, type RpgWeaponKind } from '../rules'
 import { rpgFoe } from '../campaign/enemies'
-import { applyBattleAction, battleActionsLeft, battleBroken, battleStateHash, createBattle, replayBattle, type BattleAction } from './index'
+import { BATTLE_LIMIT_MAX, applyBattleAction, battleActionsLeft, battleBroken, battleLimitGain, battleStateHash, createBattle, replayBattle,
+  type BattleAction } from './index'
 import { BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK, battleWeakness } from './skills'
 import type { BattleAlly, BattleEnemy, BattleInput, BattleState, BattleStep } from './types'
 
@@ -162,5 +163,70 @@ describe('battle engine v5: classes and multi-part hits (D278, D279, D310)', () 
     expect(battleStateHash(a.state)).toMatch(/^rpg-battle-v5:/)
     expect(applyBattleAction(start.state, { kind: 'skill', actorId: 'a1', targetId: 'f1', skill: skill('greatsword.ice.1') }).error).toBe('invalid-skill')
     expect(battleWeakness('fire')).toBe('lightning')
+  })
+})
+
+describe('Limit Break (D311)', () => {
+  const ready = (s: BattleState, ...ids: string[]) => { for (const id of ids) s.units.find((u) => u.id === id)!.limit = BATTLE_LIMIT_MAX; return s }
+  const limitOf = (s: BattleState, id: string) => s.units.find((u) => u.id === id)!.limit
+  const kinds = (step: BattleStep, target: string) => hits(step, target).map((c) => c.kind === 'hit' && c.element)
+  const dealt = (step: BattleStep) => step.cues.reduce((sum, c) => sum + (c.kind === 'hit' && c.actorId !== c.targetId ? c.amount : 0), 0)
+
+  it('charges 1 an attack and 2 a skill, doubled for one-action hands, and stays full until used', () => {
+    let s = createBattle(input([foe('f1', 'ice', ['bow'], ['light'], 9)])).state
+    s = act(s, { kind: 'skill', actorId: 'a1', targetId: 'f1', skill: skill('greatsword.fire.1') })
+    s = act(s, { kind: 'attack', actorId: 'a2', targetId: 'f1' })
+    s = act(s, { kind: 'skill', actorId: 'a2', targetId: 'f1', skill: skill('mage-staff.fire.1') })
+    s = act(s, { kind: 'attack', actorId: 'a4', targetId: 'f1' })
+    s = act(s, { kind: 'guard', actorId: 'a5', targetId: 'a1' })
+    expect(['a1', 'a2', 'a4', 'a5'].map((id) => limitOf(s, id))).toEqual([4, 3, 2, 0])
+    expect([battleLimitGain({ actions: 1 }, 'skill'), battleLimitGain({ actions: 2 }, 'attack')]).toEqual([4, 1])
+    s.units.find((u) => u.id === 'a3')!.limit = BATTLE_LIMIT_MAX - 1
+    s = act(act(s, { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: skill('blade-elemental.fire.1') }), { kind: 'attack', actorId: 'a3', targetId: 'f1' })
+    expect(limitOf(s, 'a3')).toBe(BATTLE_LIMIT_MAX)
+  })
+
+  it('needs a full bar and a fresh turn, takes the whole turn at 0 MP and empties the bar', () => {
+    const s = createBattle(input([foe('f1', 'ice', ['bow'], ['light'], 9)])).state
+    expect(applyBattleAction(s, { kind: 'limit', actorId: 'a2', targetId: 'f1' }).error).toBe('limit-not-ready')
+    const half = act(ready(s, 'a2'), { kind: 'attack', actorId: 'a2', targetId: 'f1' })
+    expect(applyBattleAction(half, { kind: 'limit', actorId: 'a2', targetId: 'f1' }).error).toBe('limit-not-ready')
+    const nova = applyBattleAction(ready(createBattle(input([foe('f1', 'ice', ['bow'], ['light'], 9)])).state, 'a2'), { kind: 'limit', actorId: 'a2', targetId: 'f1' })
+    expect(nova.cues[0]).toMatchObject({ kind: 'limit', actorId: 'a2', label: 'Prismatic Nova' })
+    expect(kinds(nova, 'f1')).toEqual(['fire', 'ice', 'lightning', 'light', 'dark', 'ultima'])
+    expect([battleActionsLeft(nova.state, 'a2'), limitOf(nova.state, 'a2')]).toEqual([0, 0])
+    expect(nova.state.units.find((u) => u.id === 'a2')!.mp).toBe(nova.state.input.allies[1]!.mp)
+    expect(applyBattleAction(ready(s, 'a1'), { kind: 'limit', actorId: 'a1', targetId: 'a2' }).error).toBe('invalid-target')
+  })
+
+  it('casts a Brawler’s skill twice, a Summoner’s two summons twice each and a Cleric’s patrons', () => {
+    const big = () => ready(createBattle(input([foe('f1', 'ice', ['bow'], ['ice'], 9)])).state, 'a1', 'a4', 'a5')
+    const once = dealt(applyBattleAction(big(), { kind: 'skill', actorId: 'a1', targetId: 'f1', skill: skill('greatsword.fire.1') }))
+    const twice = applyBattleAction(big(), { kind: 'limit', actorId: 'a1', targetId: 'f1', skill: skill('greatsword.fire.1') })
+    expect(kinds(twice, 'f1')).toEqual(['greatsword', 'fire', 'greatsword', 'fire'])
+    expect(dealt(twice)).toBe(2 * once)
+    expect(applyBattleAction(big(), { kind: 'limit', actorId: 'a1', targetId: 'f1', skill: skill('axe.fire.1') }).error).toBe('invalid-skill')
+    expect(kinds(applyBattleAction(big(), { kind: 'limit', actorId: 'a1', targetId: 'f1', weapon: 'spear' }), 'f1')).toEqual(['spear', 'spear'])
+    const summons = applyBattleAction(big(), { kind: 'limit', actorId: 'a5', targetId: 'f1',
+      skills: [skill('summon-elemental.fire.1'), skill('summon-arcane.demons.1')] })
+    expect(kinds(summons, 'f1')).toEqual(['fire', 'fire', 'dark', 'greatsword', 'dark', 'greatsword'])
+    expect(applyBattleAction(big(), { kind: 'limit', actorId: 'a5', targetId: 'f1', skills: [skill('summon-elemental.fire.1')] }).error).toBe('invalid-skill')
+    const patrons = applyBattleAction(big(), { kind: 'limit', actorId: 'a4', targetId: 'f1' })
+    expect(patrons.cues[0]).toMatchObject({ label: 'Divine Patrons' })
+    expect(kinds(patrons, 'f1')).toEqual(['light', 'dark', 'light', 'dark'])
+  })
+
+  it('makes a Spell Blade’s skill big: three sword-and-element hits, or twice the arcane weave, or Triad Blade', () => {
+    const big = () => ready(createBattle(input([foe('f1', 'ice', ['bow'], ['ice'], 9)])).state, 'a3')
+    const turn = (id: string) => { const one = applyBattleAction(big(), { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: skill(id) })
+      return dealt(one) + dealt(applyBattleAction(one.state, { kind: 'skill', actorId: 'a3', targetId: 'f1', skill: skill(id) })) }
+    const fire = applyBattleAction(big(), { kind: 'limit', actorId: 'a3', targetId: 'f1', skill: skill('blade-elemental.fire.1') })
+    expect(kinds(fire, 'f1')).toEqual(['short-sword', 'fire', 'short-sword', 'fire', 'short-sword', 'fire'])
+    expect(Math.abs(dealt(fire) / turn('blade-elemental.fire.1') - 2)).toBeLessThan(0.2) // whole-number damage rounds at Lv4
+    const light = applyBattleAction(big(), { kind: 'limit', actorId: 'a3', targetId: 'f1', skill: skill('blade-arcane.light.1') })
+    expect(kinds(light, 'f1')).toEqual(['light', 'short-sword', 'light', 'short-sword'])
+    expect(Math.abs(dealt(light) / turn('blade-arcane.light.1') - 2)).toBeLessThan(0.2) // whole-number damage rounds at Lv4
+    expect(kinds(applyBattleAction(big(), { kind: 'limit', actorId: 'a3', targetId: 'f1' }), 'f1'))
+      .toEqual(['short-sword', 'fire', 'short-sword', 'ice', 'short-sword', 'lightning'])
   })
 })

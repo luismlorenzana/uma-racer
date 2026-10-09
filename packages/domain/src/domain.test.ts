@@ -182,7 +182,7 @@ import {
   BATTLE_WEAK, BATTLE_UNBROKEN_FACTOR, BATTLE_ULTIMA, BATTLE_DEFENSE_SHARE, BATTLE_GUARD_FACTOR, BATTLE_MAX_ROUNDS,
   BATTLE_STATUS_TURNS, BATTLE_STATUS_STACK_CAP, BATTLE_BURN_PERCENT, BATTLE_STATUS_STEP, BATTLE_FOE_STATUS_STEP,
   BATTLE_BARRIER_PERCENT, BATTLE_BARRIER_CAP, BATTLE_REGEN_PERCENT, BATTLE_CURE_PERCENT, BATTLE_CLARITY_PERCENT,
-  BATTLE_REBIRTH_PERCENT,
+  BATTLE_REBIRTH_PERCENT, BATTLE_LIMIT_MAX, BATTLE_LIMIT_CHARGE, BATTLE_LIMIT_POWER,
   rpgExpToNext,
   projectRpgStats,
   rpgTreePointsEarned,
@@ -237,6 +237,9 @@ describe('Global Uma RPG — engine v5 pins (D279, D281, D310)', () => {
       BATTLE_REBIRTH_PERCENT]).toEqual([2, 3, 0.04, 0.1, 0.15, 0.08, 0.3, 0.04, 0.1, 0.04, 0.1])
     expect([RPG_FOE_TUNING.regularShield, RPG_FOE_TUNING.lateRegularShield, RPG_FOE_TUNING.subBossShield, RPG_FOE_TUNING.bossShield])
       .toEqual([2, 3, 6, 8])
+  })
+  it('pins the Limit Break: a 12-point bar, 1 an attack and 2 a skill (×2 for one action), about twice a turn (D311)', () => {
+    expect([BATTLE_LIMIT_MAX, BATTLE_LIMIT_CHARGE, BATTLE_LIMIT_POWER]).toEqual([12, { attack: 1, skill: 2 }, { turn: 2, mage: 2.4, cleric: 1.5, triad: 2 }])
   })
   it('pins the skill rules and the 396-node catalog (D280, D310)', () => {
     expect([RPG_SKILL_POWER, RPG_SKILL_MP, RPG_AOE_SHARE, RPG_RANDOM_BONUS, RPG_VARIANTS_PER_TREE])

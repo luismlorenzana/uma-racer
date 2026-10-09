@@ -1,8 +1,8 @@
-// Deterministic campaign battle reducer, engine v5 (docs/design/uma-rpg-classes.md, D278–D281, D310).
+// Deterministic campaign battle reducer, engine v5 (docs/design/uma-rpg-classes.md, D278–D281, D310, D311).
 // Octopath Traveler breaks with class hands: every hit has one to three parts, and each weak part removes one shield
 // point. Mages, Spell Blades and Summoners act twice a round; a Cleric's Arcane cast carries a blessing chosen from the
-// branch its element points to. Unbroken foes take half damage.
-import { RPG_SKILL_POWER, rpgBlessingBranch, rpgNode, type RpgHit, type RpgSkillDef } from '../catalog'
+// branch its element points to. Unbroken foes take half damage. Attacks and skills charge a Limit Break.
+import { rpgBlessingBranch, rpgNode, type RpgHit, type RpgSkillDef } from '../catalog'
 import {
   RPG_CLASSES, RPG_ELEMENTS, RPG_MAX_LEGACY_SLOTS, RPG_WEAPON_KINDS, rpgActiveSlots, rpgHand, rpgNodeKey, validRpgTree, validRpgWeapons,
   type RpgDamageKind, type RpgStatusKind,
@@ -14,6 +14,7 @@ import {
   BATTLE_ULTIMA, BATTLE_UNBROKEN_FACTOR, BATTLE_WEAK, battleChannel, battleSkillFor, type BattleSkill,
 } from './skills'
 import { RPG_MAX_TREE_NODES } from '../save'
+import { BATTLE_LIMIT_MAX, battleLimitGain, battleLimitPlan } from './limit'
 import type { BattleAction, BattleAlly, BattleChannel, BattleCue, BattleEnemy, BattleEnemyMove, BattleError,
   BattleInput, BattleIntent, BattleSide, BattleState, BattleStep, BattleUnit } from './types'
 
@@ -152,7 +153,7 @@ function reveal(s: BattleState): BattleCue[] {
 export function createBattle(source: BattleInput): BattleStep {
   validateInput(source)
   const input = JSON.parse(JSON.stringify(source)) as BattleInput
-  const base = { statuses: [], barrier: 0, phase: 1 as const, guardingFor: null, brokenAt: 0, revived: false }
+  const base = { statuses: [], barrier: 0, phase: 1 as const, guardingFor: null, brokenAt: 0, revived: false, limit: 0 }
   const units: BattleUnit[] = [
     ...input.allies.map((a) => ({ ...base, id: a.id, side: 'ally' as const, hp: a.stats.hp, mp: a.mp, shield: 0 })),
     ...input.enemies.map((e) => ({ ...base, id: e.id, side: 'enemy' as const, hp: e.stats.hp, mp: 0, shield: e.shield })),
@@ -373,7 +374,7 @@ export function battleActorSkill(s: BattleState, actorId: string, ref: { tier: n
   return a ? battleSkillFor(a, ref) : null
 }
 
-/** Random-target hits are seeded by the fight, round, actor, action and hit, so a replay lands the same hits. */
+/** Random-target hits are seeded by the fight, round, actor, action and hit (and a Limit Break's cast), so a replay lands the same hits. */
 function randomFoe(s: BattleState, actorId: string, hit: number, salt = 'random'): BattleUnit | undefined {
   const foes = living(s, 'enemy')
   return foes[hashNumber(`${s.input.seed}:${s.round}:${actorId}:${s.acted.length}:${hit}:${salt}`) % Math.max(1, foes.length)]
@@ -382,7 +383,7 @@ function randomFoe(s: BattleState, actorId: string, hit: number, salt = 'random'
 interface CastLog { tapped: BattleUnit; struck: BattleUnit[]; hitFoes: BattleUnit[]; weak: boolean }
 
 /** Resolves a skill's hits, extras and riders. */
-function cast(s: BattleState, actor: BattleUnit, tapped: BattleUnit, def: RpgSkillDef, scale: number, cues: BattleCue[]): CastLog {
+function cast(s: BattleState, actor: BattleUnit, tapped: BattleUnit, def: RpgSkillDef, scale: number, cues: BattleCue[], salt = 'random'): CastLog {
   const log: CastLog = { tapped, struck: [], hitFoes: [], weak: false }
   const options: HitOptions = { special: def.special }
   const note = (foe: BattleUnit, hit: RpgHit, weak: boolean) => {
@@ -401,7 +402,7 @@ function cast(s: BattleState, actor: BattleUnit, tapped: BattleUnit, def: RpgSki
     }
   } else if (def.target === 'random') {
     def.hits.forEach((hit, i) => {
-      const foe = randomFoe(s, actor.id, i)
+      const foe = randomFoe(s, actor.id, i, salt)
       if (!foe) return
       const r = strike(s, actor, foe, hit, scale, cues, false, options)
       note(r.receiver, hit, r.weak)
@@ -533,7 +534,7 @@ export function battleBlessings(ally: BattleAlly, primary: RpgDamageKind): { id:
 export function applyBattleAction(previous: BattleState, action: BattleAction): BattleStep {
   if (previous.engineVersion !== 5 || !previous.input || !Array.isArray(previous.units)) return invalid(previous, 'invalid-state')
   if (previous.outcome !== 'active') return invalid(previous, 'terminal')
-  if (!action || !['attack', 'guard', 'skill'].includes(action.kind)) return invalid(previous, 'invalid-state')
+  if (!action || !['attack', 'guard', 'skill', 'limit'].includes(action.kind)) return invalid(previous, 'invalid-state')
   const actorUnit = unit(previous, action.actorId)
   if (!actorUnit || actorUnit.side !== 'ally' || actorUnit.hp <= 0) return invalid(previous, 'invalid-actor')
   if (battleActionsLeft(previous, actorUnit.id) <= 0) return invalid(previous, 'already-acted')
@@ -565,6 +566,20 @@ export function applyBattleAction(previous: BattleState, action: BattleAction): 
       kind = ally.familiar
     }
     strike(s, actor, target, { power: hand.free.power, parts: [{ kind, share: 1 }] }, 1, cues, true)
+  } else if (action.kind === 'limit') {
+    // A full charge and her whole turn, at 0 MP (D311).
+    if (target.side !== 'enemy') return invalid(previous, 'invalid-target')
+    if (actor.limit < BATTLE_LIMIT_MAX || battleActionsUsed(s, actor.id) > 0) return invalid(previous, 'limit-not-ready')
+    const plan = battleLimitPlan(ally, { skill: action.skill, skills: action.skills, weapon: action.weapon })
+    if (!plan) return invalid(previous, 'invalid-skill')
+    actor.limit = 0
+    spent = hand.actions
+    cues.push({ kind: 'limit', actorId: actor.id, targetId: target.id, label: plan.name })
+    plan.casts.forEach((c, i) => {
+      const foes = living(s, 'enemy')
+      if (!foes.length || actor.hp <= 0) return
+      cast(s, actor, target.hp > 0 ? target : [...foes].sort(byHpShare(s))[0]!, c.def, c.scale, cues, i ? `limit${i}` : 'random')
+    })
   } else {
     if (!action.skill || typeof action.skill !== 'object') return invalid(previous, 'invalid-skill')
     const legal = battleActorSkill(s, actor.id, action.skill)
@@ -581,6 +596,7 @@ export function applyBattleAction(previous: BattleState, action: BattleAction): 
     const log = cast(s, actor, target, legal.def, legal.power, cues)
     if (key) blessing(s, actor, ally, key, legal.def, log, cues)
   }
+  if (action.kind === 'attack' || action.kind === 'skill') actor.limit = Math.min(BATTLE_LIMIT_MAX, actor.limit + battleLimitGain(hand, action.kind))
   for (let i = 0; i < spent; i += 1) s.acted.push(actor.id)
   if (!terminal(s, cues)) {
     updatePhases(s, cues)

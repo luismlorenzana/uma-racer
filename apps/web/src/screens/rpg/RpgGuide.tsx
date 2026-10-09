@@ -36,6 +36,7 @@ export function RpgGuide({ onClose, startAt = 'party' }: { onClose: () => void; 
     </> },
     { id: 'bosses', title: 'Break!', body: <>
       <p>At zero the enemy <b>Breaks</b>: it loses this round's and the next round's turn and takes full damage. Then its shield returns. Chip with attacks and cheap skills, then spend your big skills on the Break.</p>
+      <p className={card}>Every attack and skill charges an Uma's <b>Limit Break</b>. When it is full, an <b>LB</b> badge sits on her portrait: tap it for her Limit Break, her whole turn at about twice the damage and 0 MP. Keep it for a Break if you like; it waits until you use it.</p>
       <p>Regular foes show five weaknesses and a 3–4 shield, sub-bosses four and 6, champions three and 8. The Finals has five routes, one per element; pick the one your party can break.</p>
     </> },
     { id: 'mp', title: 'MP, blessings and camps', body: <>

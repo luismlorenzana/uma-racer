@@ -6,6 +6,7 @@ import { RPG_ELEMENTS, enrollRpgOutfit, learnRpgNode, projectRpgStats, rpgActive
 import { rpgNode, rpgTreeNodes } from '../../packages/domain/src/rpg/catalog'
 import type { Aptitudes } from '../../packages/domain/src/types'
 import { applyBattleAction, battleActionsLeft, battleActorSkill, battleBlessings, battleBroken, battleHitIsWeak, createBattle } from '../../packages/domain/src/rpg/battle/engine'
+import { BATTLE_LIMIT_MAX, type BattleLimitChoice } from '../../packages/domain/src/rpg/battle/limit'
 import type { BattleAction, BattleState, BattleUnit } from '../../packages/domain/src/rpg/battle/types'
 import { rpgCampaignChapter, rpgTierLevel, type RpgCampaignChapter, type RpgMapNode } from '../../packages/domain/src/rpg/campaign/chapters'
 import { createRpgRun, rpgBeginRunBattle, rpgCarriedMp, rpgRestAtCamp, rpgSettleRunBattle,
@@ -51,7 +52,8 @@ function loadout(p: RpgProfile): RpgNodeRef[] {
   return [...first, ...skills.filter((s) => !first.includes(s))].slice(0, rpgActiveSlots(p.level)).map(({ ref }) => ref)
 }
 
-type Policy = 'careful' | 'attack-only'
+/** Careful play uses Limit Breaks on a Broken foe (or any foe outside boss fights, D311); its twin holds them. */
+type Policy = 'careful' | 'careful-no-limit' | 'attack-only'
 function chooseAction(state: BattleState, policy: Policy, boss: boolean): BattleAction {
   const actor = state.units.find((u) => u.side === 'ally' && u.hp > 0 && battleActionsLeft(state, u.id) > 0)!
   const ally = state.input.allies.find((a) => a.id === actor.id)!
@@ -68,7 +70,17 @@ function chooseAction(state: BattleState, policy: Policy, boss: boolean): Battle
     const weapon = freeKinds.find((k) => battleHitIsWeak(enemy(target), target, k)) ?? freeKinds[0]
     return { kind: 'attack', actorId: actor.id, targetId: target.id, ...(hand.free.kind === 'weapon' && weapon ? { weapon: weapon as RpgWeapon } : {}) }
   }
-  if (policy === 'careful') {
+  if (policy === 'careful' && actor.limit >= BATTLE_LIMIT_MAX && battleActionsLeft(state, actor.id) === hand.actions) {
+    const broken = foes.filter((f) => battleBroken(f))
+    const target = broken.length ? lowest(broken) : boss ? null : lowest(foes)
+    const owned = ally.loadout.flatMap((ref) => { const s = battleActorSkill(state, actor.id, ref); return s ? [s] : [] })
+      .sort((a, b) => b.def.hits.reduce((n, h) => n + h.power, 0) - a.def.hits.reduce((n, h) => n + h.power, 0))
+    const choice: BattleLimitChoice | null = ally.classId === 'mage' || ally.classId === 'cleric' ? {}
+      : ally.classId === 'summoner' ? owned.length ? { skills: [owned[0]!.ref, (owned[1] ?? owned[0])!.ref] } : null
+      : owned.length ? { skill: owned[0]!.ref } : ally.classId === 'brawler' ? { weapon: ally.weapons[0] } : {}
+    if (target && choice) return { kind: 'limit', actorId: actor.id, targetId: target.id, ...choice }
+  }
+  if (policy !== 'attack-only') {
     const skills = ally.loadout.flatMap((ref) => { const s = battleActorSkill(state, actor.id, ref); return s && actor.mp >= s.mp ? [s] : [] })
     const spare = (cost: number) => boss || actor.mp - cost >= 0.35 * ally.stats.mp
     const blessing = (primary: Parameters<typeof battleBlessings>[1]) => battleBlessings(ally, primary).at(-1)?.id
@@ -94,22 +106,25 @@ function chooseAction(state: BattleState, policy: Policy, boss: boolean): Battle
   return familiarSpent ? guard() : attack(lowest(foes))
 }
 
-interface Fight { node: RpgMapNode; win: boolean; rounds: number; actions: number; kos: number; mpBefore: number; mpAfter: number; hpLost: number; level: number }
+interface Fight { node: RpgMapNode; win: boolean; rounds: number; actions: number; limits: number; kos: number; mpBefore: number; mpAfter: number; hpLost: number; level: number }
 function play(chapter: RpgCampaignChapter, run: RpgRunSaveV2, party: RpgProfile[], nodeId: string, policy: Policy, now: number) {
   const members: RpgPartyMember[] = party.map((profile) => ({ profile, slot: { outfitId: profile.outfitId, loadout: loadout(profile), familiar: 'axe' } }))
   const begun = rpgBeginRunBattle(chapter, run, nodeId, members, now)
   const node = chapter.nodes.find((n) => n.id === nodeId)!
   let state = createBattle(begun.battle!.input).state
   let actions = 0
+  let limits = 0
   const mpBefore = state.units.filter((u) => u.side === 'ally').reduce((s, u) => s + u.mp, 0)
   while (state.outcome === 'active') {
-    const step = applyBattleAction(state, chooseAction(state, policy, node.kind !== 'fight'))
+    const action = chooseAction(state, policy, node.kind !== 'fight')
+    if (action.kind === 'limit') limits += 1
+    const step = applyBattleAction(state, action)
     if (step.error) throw new Error(`${node.id}: ${step.error}`)
     state = step.state
     actions += 1
   }
   const settled = rpgSettleRunBattle(chapter, begun, state, party, now)
-  const fight: Fight = { node, win: settled.outcome === 'win', rounds: state.round, actions,
+  const fight: Fight = { node, win: settled.outcome === 'win', rounds: state.round, actions, limits,
     kos: state.units.filter((u) => u.side === 'ally' && u.hp === 0).length, mpBefore,
     mpAfter: state.units.filter((u) => u.side === 'ally').reduce((s, u) => s + u.mp, 0),
     hpLost: 1 - state.units.filter((u) => u.side === 'ally').reduce((s, u) => s + u.hp, 0) /
@@ -148,7 +163,7 @@ function report(scenarioId: string, start: RpgProfile[], policy: Policy, route: 
   const { chapter, fights, party } = campaign(scenarioId, start, policy, route)
   const minutes = fights.reduce((s, f) => s + f.actions * 7 + 15, 0) / 60
   console.log(`\n${chapter.title} · ${policy} · start ${start.map((p) => `T${p.tier}L${p.level}`)[0]} · route ${route}`)
-  console.log('stage  kind      fights  losses  rounds  KOs   HP lost  MP used/fight  foe Lv → party Lv')
+  console.log('stage  kind      fights  losses  rounds  KOs   HP lost  MP used/fight  LB/fight  foe Lv → party Lv')
   for (let stage = 0; stage <= 3; stage += 1) {
     for (const kind of ['fight', 'sub-boss', 'boss'] as const) {
       const rows = fights.filter((f) => f.node.stage === stage && f.node.kind === kind)
@@ -156,7 +171,7 @@ function report(scenarioId: string, start: RpgProfile[], policy: Policy, route: 
       const wins = rows.filter((f) => f.win)
       const lastWin = wins.at(-1)
       const avg = (k: (f: Fight) => number) => (rows.reduce((s, f) => s + k(f), 0) / rows.length).toFixed(1)
-      console.log(`${String(stage).padEnd(6)} ${kind.padEnd(9)} ${String(rows.length).padStart(6)} ${String(rows.length - wins.length).padStart(7)} ${avg((f) => f.rounds).padStart(7)} ${avg((f) => f.kos).padStart(5)} ${avg((f) => f.hpLost * 100).padStart(7)}% ${avg((f) => f.mpBefore - f.mpAfter).padStart(14)}   ${lastWin ? `${lastWin.node.level} → ${lastWin.level}` : '-'}`)
+      console.log(`${String(stage).padEnd(6)} ${kind.padEnd(9)} ${String(rows.length).padStart(6)} ${String(rows.length - wins.length).padStart(7)} ${avg((f) => f.rounds).padStart(7)} ${avg((f) => f.kos).padStart(5)} ${avg((f) => f.hpLost * 100).padStart(7)}% ${avg((f) => f.mpBefore - f.mpAfter).padStart(14)} ${avg((f) => f.limits).padStart(9)}   ${lastWin ? `${lastWin.node.level} → ${lastWin.level}` : '-'}`)
     }
   }
   const won = fights.filter((f) => f.win).length
@@ -171,5 +186,6 @@ for (const id of scenarios) {
   const { tier: classTier, level } = rpgTierLevel((tier - 1) * 12 + 1)
   const start = PARTY.map((p) => ({ ...p, tier: classTier, level, exp: 0, tree: [], legacy: [] }))
   report(id, start, 'careful', 'fire')
+  report(id, start, 'careful-no-limit', 'fire')
   report(id, start, 'attack-only', 'fire')
 }
