@@ -1,8 +1,23 @@
 # Uma Puzzles private content — standing contract
 
-**Production-placeholder release (D289–D290).** The owner approved an original, fully verified placeholder pack
-for T116. T109 remains a later permitted PAD-art upgrade. The source research below records why originals are still
-pending, not a readiness waiver: real host, hashes, coverage and retained leases remain mandatory.
+**Owner-export art upgrade complete (D292).** T109 imports a verified private PAD-derived cutout pack for new fights.
+The D289–D290 placeholder release remains retained for frozen fights. Real host, hashes, coverage and retained leases
+remain mandatory; no content update changes an open encounter.
+
+### Owner-export cutouts (D292)
+
+The owner supplied twenty static WebP files locally. All originals remain unchanged and private. They were opaque
+portraits with scene backgrounds, so the owner authorized removal using the built-in image-editing tool. Seventeen
+transparent PNG derivatives passed native alpha/decode/hash checks and private visual review; three editing-service
+rejections remain explicitly excluded, with their originals retained. These are **AI-edited derivatives**, not
+pixel-exact transparent original exports. Exact input/output hashes, method and full edit prompt are recorded in
+ignored `content/acceptance/t109/cutout-transform-evidence.json`; art variants explicitly mark the cutout revision.
+
+The verified pack reuses five starter/evolution families: Fire 4, Water 3, Wood 3, Light 4, Dark 3. Stronger available forms
+cover guardians and champions; both Dark champion variants and all 392 encounter nodes across 14 chapters resolve.
+The missing optional forms are not impersonated by other images. No original combat data or new encounter rules are
+imported. See [aggregate publication and preview evidence](../research/puzzle-art-release-acceptance.md).
+Actual portraits, source rows and screenshots remain private; checked-in evidence contains aggregates only.
 
 ### Original-placeholder release path (D289)
 
@@ -14,11 +29,12 @@ A mixed original/placeholder pack is rejected. Existing public/owner-export form
 
 `pnpm assets:puzzles:placeholders` writes only ignored `content/originals/` PNGs and separate
 `overrides/puzzles-placeholders.json` / `puzzles-placeholder-evidence.json`. Rerunning verifies immutable bytes;
-it never replaces the owner's future real `puzzles-cast.json`. Pass these paths to the existing offline atlas and
+it never replaces the owner's real `puzzles-cast.json`. Pass these paths to the existing offline atlas and
 data import commands, then validate/publish the complete content tree through the standing release runbook.
 All native alpha/decode, exact hash/MIME/size, coverage, retention and lease checks still apply. Placeholder content
 can satisfy readiness, but absent/broken content cannot fall back to a freshly invented cast. Cosmetic replacements
-retain the frozen placeholder pack/art for suspended fights. The UI plainly says “Placeholder enemy art”.
+retain the frozen placeholder pack/art for suspended fights. Verified placeholder leases plainly say “Placeholder
+enemy art”; owner-export leases do not. Home stays art-neutral because it performs only cheap manifest discovery.
 
 ## Source gate and privacy
 
@@ -27,11 +43,13 @@ by this adapter, including redirects or mirror/proxy workarounds. Ilmina's curre
 its database, and the independent entry pages checked did not expose verified portraits. Search snippets and old URLs
 are not evidence. On 2026-10-07 the owner asked to pin collection and use temporary placeholders while other work proceeds.
 
-The remaining input is a permitted export or independently verified source for five elemental starter/evolution families,
+The input contract requires a permitted export or independently verified source for five elemental starter/evolution families,
 including transparent PNG/WebP art and exact provenance/variant/hash evidence. Guardian/champion presentations should
 use stronger evolution variants. One complete opening chapter plus valid joins across every generated chapter is required;
-reusing families is allowed, claiming fourteen separately imported original rosters is not. No permitted PAD-original pack or art preview is claimed. The D289 original-placeholder pack is separate;
-publication evidence lives in [release acceptance](../research/uma-puzzles-release-acceptance.md). No unrelated private Spark roster is read.
+reusing families is allowed, claiming fourteen separately imported original rosters is not. D292's owner-supplied local
+files now meet this contract through explicitly recorded cutout derivatives, without fetching the restricted pages.
+The D289 original-placeholder pack is separate; its historical publication evidence lives in
+[release acceptance](../research/uma-puzzles-release-acceptance.md). No unrelated private Spark roster is read.
 
 All extracted rows, original names, evidence, source files, caches, atlases and packs stay in ignored `content/` or
 `scripts/assets/.cache/puzzles/`. Tests use invented creatures/URLs and generated pixels. No original PAD combat stats,
@@ -141,9 +159,9 @@ missing cache is an explicit network/content failure, never a placeholder succes
 The read-only lazy `/puzzles/content` preflight previews verified private art or **Uma Puzzles content unavailable** with
 Retry/Return and a safe missing/integrity/incompatible/network diagnostic. It creates no run/reward/save mutation and has
 no Home entry. `/dev/puzzles-content-proof` shows the original five-colour SVG stand-ins and unavailable UI without account
-reads/writes. Placeholders are clearly named; they are not part of a production content pack or release-readiness predicate.
+reads/writes. These DEV stand-ins alone never satisfy readiness; D289's separate verified private placeholder pack does.
 
-## Verification and outstanding acceptance
+## Verification and acceptance history
 
 Synthetic tests cover strict parsers, unknown/future joins, deterministic canonical order/hash, cosmetic replay invariance,
 native alpha/decode/multi-page gutters, dedup/offline/corrupt cache, permitted local exports/symlink refusal, MIME/size/retry,
@@ -163,7 +181,7 @@ also normalizes grayscale-alpha originals to RGBA before transparency inspection
 
 ![Missing-content Retry/Return proof at 390×844](../research/puzzle-content-unavailable.jpg)
 
-**Pinned for later:** obtain permitted originals/evidence, run both imports, record timestamp + aggregate cast/element/role/
-chapter/object/hash counts in ignored validation output, privately preview actual portraits, and publish/verify the complete
-retained tree in T116. Delete T109's remaining spec only after that real-content acceptance. No source or device result is
-fabricated by the code-only merge.
+**T109 complete (D292):** owner exports, edit provenance, native-alpha atlas, complete chapter joins, retained pack
+validation and private portrait preview now verify. The [art acceptance record](../research/puzzle-art-release-acceptance.md)
+carries aggregate publication/build evidence. Historical code-only screenshots above are not the final cast or an
+owner phone sign-off. The completed spec is removed under D104.

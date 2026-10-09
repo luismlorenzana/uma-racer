@@ -36,7 +36,7 @@ export function PuzzleHomeCard({ content, verifyContent = verify, enabled = PUZZ
   return <Panel label="Uma Puzzles">
     <h2 className="font-display text-lg font-bold">Your five-Uma puzzle campaign</h2>
     <p className="mt-1 text-xs leading-5 text-ink-soft">Independent Puzzle Levels, free battles and scenario materials for Constellation Levels.</p>
-    <p className="mt-1 text-xs text-ink-soft">Placeholder enemy art · real progression and rewards</p>
+    <p className="mt-1 text-xs text-ink-soft">Free battles · real progression and rewards</p>
     {!published && <p role="status" className="mt-2 text-xs text-ink-soft">Puzzle content is not published. Your existing progress stays available.</p>}
     {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
     <Button disabled={!published || busy || preparing} className="mt-3 w-full" onClick={() => { void open() }}>{busy ? 'Checking saved campaign…' : preparing ? 'Preserving your progress…' : error ? 'Retry Uma Puzzles' : 'Open Uma Puzzles'}</Button>

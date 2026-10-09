@@ -1,9 +1,9 @@
 # Uma Puzzles — implementation contract
 
-**Status: T116 release enabled with verified original-placeholder content (D289–D290).**
+**Status: T116 release enabled (D289–D290), with private owner-export cutout art (D292).**
 T106–T115 supply the pure rules, additive saves, real replay host, mobile UI, materials and protected preservation.
-T109's permitted PAD-source/art upgrade remains deferred, not a release gate. The same private content pipeline
-verifies the explicit original-placeholder pack; no synthetic host or missing-art fallback enters production.
+T109's owner-export upgrade is complete; the same private content pipeline verifies both the active edited-derivative
+pack and retained original-placeholder pack. No synthetic host or missing-art fallback enters production.
 See [release acceptance](../research/uma-puzzles-release-acceptance.md) for publication, build/deployment witnesses
 and the separately pending owner gameplay/iPhone checks.
 Gameplay is [Uma Puzzles](../design/uma-puzzles.md) (D267).
@@ -407,7 +407,7 @@ only after acknowledgement. No timeout or disappearance silently grants a new bo
 
 At T110 delivery API/web capabilities were **false**. No bank creation, training conversion, Home entry or Spark
 retirement occurred in that task. T116's enabled state is above; production cannot enable it through a query/route.
-The real replay host/journal is implemented below (T111); real PAD inputs/private preview still belong to deferred T109.
+The real replay host/journal is implemented below (T111); T109's owner-export inputs/private preview now verify (D292).
 
 ## 4. Battle input, action and result contract
 
@@ -732,12 +732,14 @@ they do not claim production activation, real private pack acceptance or physica
 
 ## 9. Content, presentation and activation
 
-**T109 code delivered (D272):** the [standing content contract](puzzle-content.md) documents reviewed source/evidence v1,
+**T109 complete (D272, D292):** the [standing content contract](puzzle-content.md) documents reviewed source/evidence v1,
 all392 node joins, independent alpha-safe256 px atlases, immutable full-hash pack/catalog retention, aggregate validation,
 pre-publication checks and lazy bearer-authenticated `PuzzleContentLibrary.acquire()` leases. Frozen pure cast tokens are
 `puzzles-<full-pack-sha256>`; T111 must store/re-acquire the exact version/hash, not the next active pack. `/puzzles/content`
-is a read-only lazy preflight, not Home/playable entry. The owner deferred real PAD originals, then approved a verified
-original-placeholder production release (D289). T109 remains solely for the later permitted-source art upgrade.
+is a read-only lazy preflight, not Home/playable entry. Following D289's original-placeholder release, twenty owner
+exports are retained privately and seventeen transparent AI-edited derivatives now cover all fourteen chapters;
+three rejected optional forms are excluded. Exact derivative provenance and private previews are retained, with
+aggregate [art acceptance](../research/puzzle-art-release-acceptance.md). Open fights keep their original pack/art.
 
 Code generates semantic maps/enemy recipes for every scenario. Private PAD packs contain only verified original
 identity/art/source variants and the recipe-to-cast joins. Keep all original rows/art/caches ignored; small invented
@@ -896,7 +898,7 @@ proof with no account/content I/O. [Phone evidence](../research/puzzle-material-
 tests cover battle→repayment→Items→exchange→CL, both exchange directions/interception, exact retries, stale economics,
 preserved configuration/frozen inputs and rejected canonical CL. At T114 delivery both flags were off; no live bank, credit,
 Training EXP conversion, Home launch, Spark retirement, private pack publication or physical-iPhone sign-off occurs
-in that task. The later T116 release and deferred art upgrade are recorded above.
+in that task. The later T116 release and completed owner-export art upgrade are recorded above.
 
 ## 10. Standing evidence
 

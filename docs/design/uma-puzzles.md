@@ -1,6 +1,6 @@
 # Uma Puzzles — global campaign and Constellation progression
 
-**Status: T116 release contract (D289–D290): verified original-placeholder campaign, real host/rewards, Home entry,
+**Status: T116 release contract (D289–D290) plus private owner-export art (D292): real host/rewards, Home entry,
 material-driven CL and protected preservation enabled.** [Release evidence/owner checks](../research/uma-puzzles-release-acceptance.md).
 Prepared against `main` at `892fd37` (D266). The owner approved the first draft's recommendations, replacing its
 registration recommendation with the rules below. **Proposal** labels elsewhere now identify the accepted starting
@@ -9,8 +9,9 @@ not balance closure. T108 pins generated maps, fixed-reference encounter scaling
 evidence below. T110–T111 add capability-off persistence and the real replay host; T112 adds saved setup navigation
 and T113 adds touch battles, saved results and illustrated guide/practice. T114 adds global materials/debt/exchange
 and shared CL spending. T115 supplies protected preservation/retirement; T116 adds the backup, release tuning,
-verified original-placeholder publication and capability activation. Permitted PAD portraits remain T109, a later
-cosmetic upgrade, not a launch gate. Historical element alternatives and earlier capability-off evidence are history.
+verified original-placeholder publication and capability activation. T109 now supplies privately verified owner-export
+cutout derivatives (D292), retaining placeholder packs for open fights. Historical element alternatives and earlier
+capability-off evidence are history.
 [Training](training.md), [Minigames](minigames.md) and [Constellations](constellations.md) carry the active CL loop.
 RPG mechanics are outside this release.
 
@@ -28,7 +29,7 @@ RPG mechanics are outside this release.
 
 Implementation instructions: [technical contract](../technical/uma-puzzles-implementation.md) and
 [release acceptance](../research/uma-puzzles-release-acceptance.md). Completed M030/T116 specs remain in git history;
-the outstanding permitted-art upgrade is T109.
+the completed T109 art upgrade is recorded in [art acceptance](../research/puzzle-art-release-acceptance.md).
 
 ## 1. The new loop and fixed brief
 
@@ -1034,13 +1035,15 @@ in `domain.test.ts`:512 members,64 retained packs,32 pages,256 px frames/2 px gu
 16,777,216 input pixels,10-second timeout/two bounded attempts, four cached pack lookups/eight idle pages. These are work/
 presentation bounds, not combat or progression changes. The owner asked to pin real permitted-source collection and use
 temporary original SVG placeholders while other tasks proceeded. D289 subsequently authorizes their **verified production
-pack**, explicitly labelled original placeholders; it proves its own provenance, not PAD provenance. T109 remains
-open solely for the later permitted-source art upgrade, not a T116 prerequisite.
+pack**, explicitly labelled original placeholders; it proves its own provenance, not PAD provenance. T109's owner-export
+upgrade is now complete (D292): twenty original files retained, seventeen AI-edited transparent derivatives validated,
+three service-rejected optional forms excluded, all five families and all 392 node joins covered. Derivative variants,
+input/output hashes and edit prompt stay private. Existing placeholder packs/art remain immutable for open fights.
 
 The requested [Monster Book 001–020](https://pad.fandom.com/wiki/Monster_Book001-020) is the initial research index.
 Direct access was **blocked by robots.txt in this environment**; search indexing alone is not verified image provenance.
-No working art URL, complete monster import or production cast is claimed in this draft. Do not bypass the restriction;
-use owner-supplied/exported permitted source material or another verifiable source before building the private pack.
+No working remote art URL is inferred from that index. D292 uses owner-supplied local files, not an automated fetch of
+those pages. Never bypass the restriction; future packs also require permitted source material and exact provenance.
 
 Plan five elemental starter/evolution families for the opening chapter, then a wider cast with distinct silhouettes for
 later chapters. Author enemy role/level/behavior/phase/reward variants in checked-in **semantic recipes**, joining cast
@@ -1216,8 +1219,8 @@ No headless row is described as phone rewards/minute. Skill catalogue remains th
 ### Completed delivery sequence — M030 / T106–T116
 
 The owner's gameplay choices are resolved. M030's eleven sequential tasks delivered dependencies, contracts,
-synthetic tests and safe landing boundaries. Its completed specs remain in git history. T109's later permitted-art
-upgrade remains deferred; D289–D290 close the production release with verified original placeholders. The original six
+synthetic tests and safe landing boundaries. Its completed specs remain in git history. T109's owner-export art upgrade
+is complete (D292); D289–D290 supplied the original-placeholder production release. The original six
 delivery units map to the numbered sequence below; no task or milestone number is reused.
 
 | Unit | Deliverable and completion boundary |
@@ -1292,6 +1295,6 @@ CL rather than a rejectable offline prediction. [Saved setup navigation](../tech
 uses that port; [mobile battle/results](../technical/uma-puzzles-implementation.md#t113-implemented-mobile-battle-d276)
 extend it without save or combat changes. [Global materials/CL spending](../technical/uma-puzzles-implementation.md#t114-implemented-material-surfaces-d283)
 use the same real host and Item stacks. [T115 preservation/retirement](../technical/uma-puzzles-implementation.md#t115-implemented-preservation-v2-d287) is implemented;
-[T109 real private content](../tasks/T109-puzzle-private-content.md) remains pinned. Implement one task to
+T109's [real private content upgrade](../technical/puzzle-content.md) is complete (D292). Implement one task to
 completion at a time. **This document does not change the deployed app, grant/debit the account, retire Spark, publish
 PAD content or claim a phone test has passed.**

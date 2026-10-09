@@ -1,5 +1,8 @@
 # Uma Puzzles — release acceptance
 
+Follow-up: [T109 owner-export art acceptance](puzzle-art-release-acceptance.md) records the subsequent private cutout
+upgrade (D292). The T116 placeholder-release evidence below remains a historical snapshot.
+
 T116 / M030, 2026-10-08. D289 authorizes verified **original-placeholder enemy art** for production; D290 closes
 release tuning, Home entry, backup and protected activation. Permitted PAD art remains the later T109 upgrade.
 This record separates code/content/application evidence from owner gameplay and physical-device acceptance.

@@ -22,8 +22,8 @@ remains open. See [counts and exact predicates](design/uma-puzzles.md#3-element-
 M030's full sequence is delivered: pure rules/campaign, verified content pipeline, additive saves/atomic sync,
 real replay host, phone navigation/battles, global materials/exchange/CL and protected preservation.
 The owner authorized release with **verified original-placeholder art** (D289–D290); both code gates are enabled.
-Permitted PAD originals/evidence are a later [T109 art upgrade](tasks/T109-puzzle-private-content.md), not a mechanics
-question or current release blocker. Settled small-sample tuning and its counter-policy outliers are in design §11.
+The owner-export art upgrade is complete (D292); [art acceptance](research/puzzle-art-release-acceptance.md) distinguishes
+verified private publication from pending phone review. Settled small-sample tuning and its counter-policy outliers are in design §11.
 Publication/application witnesses and **pending real-account/iPhone checks** remain distinct in the
 [standing acceptance record](research/uma-puzzles-release-acceptance.md).
 

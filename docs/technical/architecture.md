@@ -296,9 +296,10 @@ historical replays and facts remain. Owner gameplay/device acceptance is [tracke
 - Packs and atlases go to a **private Cloud Storage bucket**. They are never committed to git or put on a public host.
 - Uma Puzzles has a separate [private content pipeline/client](puzzle-content.md) (D272): reviewed PAD sources, alpha-safe
   atlases, immutable full-hash packs/catalogs and held authenticated atlas URLs. It never imports PAD combat data, reads
-  unrelated private Spark rows or replaces another art family. The owner deferred permitted PAD-source/art collection
-  and authorized the explicit `original-placeholder` production pack (D289). Its original SVG-derived alpha art follows
-  the same immutable verification/retention contract. Both application flags are enabled; verified content and active
+  unrelated private Spark rows or replaces another art family. Owner-provided images now supply a private AI-edited
+  transparent derivative pack (D292), with original/export/edit provenance retained privately. The explicit
+  `original-placeholder` pack (D289) and its art remain available for frozen fights under the same immutable
+  verification/retention contract. Both application flags are enabled; verified content and active
   preservation still gate play, exchange and CL spending.
 - The app fetches `GET /api/content/manifest` (auth required) and downloads changed packs through the API. The service worker
   caches them by content hash, so after the first download everything loads offline and instantly.

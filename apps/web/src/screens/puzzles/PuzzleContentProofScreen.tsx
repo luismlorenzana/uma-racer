@@ -21,7 +21,7 @@ export function PuzzleContentProofScreen() {
   if (unavailable) return <PuzzleContentUnavailable retry={() => setUnavailable(false)} back={() => setUnavailable(false)} />
   return <main className="flex min-h-dvh flex-col gap-5 bg-stage px-5 pt-safe pb-safe text-ink-on-dark">
     <header className="pt-5"><p className="text-micro">Development proof · no save changes</p><h1 className="mt-2 text-2xl font-display">Original placeholder cast</h1></header>
-    <p className="text-sm">Same original SVG source as the verified production atlas. Permitted PAD art remains a later upgrade.</p>
+    <p className="text-sm">Same original SVG source as the retained placeholder atlas. This development preview does not load private PAD art.</p>
     <button type="button" className="min-h-11 rounded-sm border border-hairline-dark px-3" onClick={() => setHome(true)}>Preview Home entry</button>
     <div className="flex gap-2">{(['scout', 'guardian', 'champion'] as const).map(r => <button key={r} type="button" aria-pressed={rank === r} onClick={() => setRank(r)} className="min-h-11 flex-1 rounded-sm border border-hairline-dark px-2 capitalize">{r}</button>)}</div>
     <div className="grid grid-cols-2 gap-4">{PUZZLE_ELEMENTS.map(element => <figure key={element}>

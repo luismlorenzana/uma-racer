@@ -18,10 +18,11 @@ describe('released Puzzle Home entry', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Open Uma Puzzles' }).disabled).toBe(true)
     expect(verify).not.toHaveBeenCalled()
   })
-  it('enters only after one verified saved-account check and labels placeholders', async () => {
+  it('enters only after one verified saved-account check without guessing art provenance', async () => {
     let done!: () => void
     const verify = vi.fn(() => new Promise<void>(resolve => { done = resolve }))
-    mount(verify); expect(screen.getByText(/Placeholder enemy art/)).toBeTruthy()
+    mount(verify); expect(screen.getByText(/Free battles · real progression and rewards/)).toBeTruthy()
+    expect(screen.queryByText(/Placeholder enemy art/)).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Open Uma Puzzles' })); fireEvent.click(screen.getByRole('button', { name: /Checking/ }))
     expect(verify).toHaveBeenCalledOnce(); expect(screen.getByTestId('location').textContent).toBe('/')
     await act(async () => done()); await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/puzzles'))
