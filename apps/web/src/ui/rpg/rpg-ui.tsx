@@ -32,8 +32,9 @@ export function RpgCard({ children, className = '' }: { children: ReactNode; cla
 }
 
 export function RpgTabs() {
-  const tabs = [{ to: '/rpg', label: 'Parties', end: true }, { to: '/rpg/roster', label: 'Roster', end: false }]
-  return <nav aria-label="RPG sections" className="grid grid-cols-2 gap-1 rounded-sm bg-stage-soft p-1">
+  const tabs = [{ to: '/rpg', label: 'Parties', end: true }, { to: '/rpg/roster', label: 'Roster', end: false },
+    { to: '/rpg/inventory', label: 'Inventory', end: false }, { to: '/rpg/convert', label: 'Convert', end: false }]
+  return <nav aria-label="RPG sections" className="grid grid-cols-4 gap-1 rounded-sm bg-stage-soft p-1">
     {tabs.map(({ to, label, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) =>
       `flex min-h-11 items-center justify-center rounded-xs text-[13px] font-semibold ${isActive ? 'bg-accent text-ink' : 'text-ink-on-dark-soft'}`}>{label}</NavLink>)}
   </nav>

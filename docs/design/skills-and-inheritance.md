@@ -202,6 +202,9 @@ The account has a separate, nonpositive balance for each scenario and token fami
 Existing Item stock stays untouched. Future RPG awards repay only the matching balance first; overflow becomes normal
 inventory. A zero balance stays as the permanent one-time receipt. Later outfits and scenario units are not included.
 Items and Inspiration show outstanding debt; chapter results show gross earned, repaid and deposited amounts.
+The RPG's Inventory tab also shows how much of each family has been repaid while any is owed, and its Convert tab
+trades tokens between neighbouring scenarios at 2:1 (one higher for two lower, two lower for one higher); converted
+output repays its own scenario's balance first, exactly like an award ([Inventory and Convert](uma-rpg.md#inventory-and-convert-d309), D309).
 
 The first updated online sync runs a protected, resumable server operation after queued work drains. Its frozen cohort
 and per-outfit completion records prevent double charging on refresh, another device or an interrupted request.

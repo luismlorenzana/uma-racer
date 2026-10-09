@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import Dexie from 'dexie'
 import { createInspirationBank, createUmaSave, openBankOutfit, rpgCampaignChapter, rpgRunId, type UmaTemplate } from '@racer/domain'
 import { db } from './db'
-import { abandonRpgFight, actRpgFight, beginRpgFight, enrollRpgOutfit, equipRpgSkills, finishRpgFight, forgetRpgSkill, learnRpgSkill,
+import { abandonRpgFight, actRpgFight, beginRpgFight, enrollRpgOutfit, equipRpgSkills, exchangeInspirationTokens, finishRpgFight, forgetRpgSkill, learnRpgSkill,
   openRpgRun, readRpgAccount, readRpgFight, saveRpgParty, emptyRpgPreset } from './rpg-local'
 
 // Invented outfits and cast only.
@@ -101,6 +101,21 @@ describe('local-first RPG (D263)', () => {
     expect(run.wins[nodeId]).toBeUndefined()
     expect(run.mp).toEqual({})
     expect(await readRpgFight('party-1', chapter.id)).toBeNull()
+  })
+
+  it('converts tokens between neighbouring scenarios, repaying the output advance first (D309)', async () => {
+    const bank = openBankOutfit(createInspirationBank([{ id: 'u1', scenarios: [{ tier: 1, inspiration: { slots: [], golds: [] } }] }], 1), 'u1')
+    await db.inspirationBank.put({ id: 'main', version: 2, data: bank })
+    await db.items.put({ id: 'inspiration:t2:skill', version: 1, data: { itemId: 'inspiration:t2:skill', quantity: 9, updatedAt: 1 } })
+    const plan = await exchangeInspirationTokens({ kind: 'skill', lowerTier: 1, direction: 'down', batches: 8 })
+    expect(plan).toMatchObject({ gross: 16, debtPaid: 12, net: 4 })
+    const account = await readRpgAccount()
+    expect(account.tokens).toEqual({ 'inspiration:t1:skill': 4, 'inspiration:t2:skill': 1 })
+    expect(account.bank!.balances['inspiration:t1:skill']).toBe(0)
+    expect((await outbox()).filter((row) => !row.includes('rpg'))).toEqual([...plan.movements.map((m) => `append:itemLedger/${m.id}`),
+      'upsert:inspirationBank/main', 'upsert:items/inspiration:t1:skill', 'upsert:items/inspiration:t2:skill'].sort())
+    await expect(exchangeInspirationTokens({ kind: 'skill', lowerTier: 1, direction: 'down', batches: 2 })).rejects.toThrow(/Needs 2/)
+    expect((await readRpgAccount()).tokens['inspiration:t2:skill']).toBe(1)
   })
 })
 

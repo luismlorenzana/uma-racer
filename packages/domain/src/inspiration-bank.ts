@@ -63,6 +63,19 @@ export function openBankOutfit(bank: InspirationBank, outfitId: string): Inspira
   const opened = [...bank.opened, outfitId]
   return { ...bank, balances, opened, phase: opened.length === Object.keys(bank.cohort).length ? 'active' : 'opening' }
 }
+export interface InspirationAdvanceDebt { itemId: string; lent: number; owed: number; repaid: number }
+/** Each token's advance: what the opened cohort was lent, what it still owes and what it has repaid (D256, D309). */
+export function inspirationAdvanceDebts(bank: InspirationBank): InspirationAdvanceDebt[] {
+  const lent: Record<string, number> = {}
+  for (const id of bank.opened) for (const tier of bank.cohort[id]?.tiers ?? []) {
+    lent[`inspiration:t${tier}:slot`] = (lent[`inspiration:t${tier}:slot`] ?? 0) + INSPIRATION_ADVANCE_SLOTS
+    lent[`inspiration:t${tier}:skill`] = (lent[`inspiration:t${tier}:skill`] ?? 0) + INSPIRATION_ADVANCE_SKILLS
+  }
+  return Object.entries(lent).map(([itemId, total]) => {
+    const owed = Math.max(0, -(bank.balances[itemId] ?? 0))
+    return { itemId, lent: total, owed, repaid: total - owed }
+  })
+}
 export function repayInspiration(bank: InspirationBank | null, itemId: string, gross: number): { bank: InspirationBank | null; debtPaid: number; net: number } {
   if (!Number.isSafeInteger(gross) || gross < 0) throw new Error('Invalid Inspiration reward')
   if (bank?.phase === 'opening') throw new Error('Resume the Inspiration advance before collecting tokens')

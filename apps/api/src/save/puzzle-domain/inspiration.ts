@@ -19,13 +19,30 @@ export function validInspirationReward(value: unknown): value is InspirationRewa
     (v.tier as number) >= 1 && (v.tier as number) <= SCENARIOS.length && [0, RPG_SLOT_TOKEN_REWARD].includes(v.slot as number) &&
     Number.isSafeInteger(v.skill) && (v.skill as number) >= 0 && (v.skill as number) <= RPG_SKILL_TOKEN_BUDGET
 }
+/** D309: two tokens of a scenario make one of the next scenario's, and one makes two of the scenario before. */
+export const INSPIRATION_EXCHANGE_MAX_BATCHES = 999
+export type InspirationExchangeDirection = 'up' | 'down'
+/** One side of an exchange. Each row carries the whole exchange, so it checks its own amount. */
+export interface InspirationExchangeSource {
+  kind: 'inspiration-exchange'; exchangeId: string; tier: number; tokenKind: InspirationTokenKind
+  direction: InspirationExchangeDirection; batches: number; side: 'in' | 'out'; debtPaid?: number
+}
 export interface InspirationMovement {
   id: string; itemId: string; delta: number; createdAt: number
-  reason: 'rpg-inspiration' | 'inspiration-unlock'
+  reason: 'rpg-inspiration' | 'inspiration-unlock' | 'inspiration-exchange'
   source: { kind: 'rpg-inspiration'; entryId: string; attemptId: string; tier: number; tokenKind: InspirationTokenKind; debtPaid?: number } |
-    { kind: 'inspiration-unlock'; umaId: string; tier: number; nodeId: InspirationSlot; goldIndex: number | null }
+    { kind: 'inspiration-unlock'; umaId: string; tier: number; nodeId: InspirationSlot; goldIndex: number | null } |
+    InspirationExchangeSource
 }
 export const inspirationGrantId = (entryId: string, kind: InspirationTokenKind): string => `rpg-inspiration:${entryId}:${kind}`
+export const inspirationExchangeMovementId = (exchangeId: string, side: 'in' | 'out'): string => `inspiration-exchange:${exchangeId}:${side}`
+/** Up spends two lower tokens a batch for one higher; down spends one higher for two lower. */
+export function inspirationExchangeDelta(direction: InspirationExchangeDirection, side: 'in' | 'out', batches: number): number {
+  const amount = (direction === 'up') === (side === 'in') ? 2 * batches : batches
+  return side === 'in' ? -amount : amount
+}
+/** The side's token is the lower scenario when it is up's input or down's output. */
+const exchangeSideIsLower = (direction: InspirationExchangeDirection, side: 'in' | 'out') => (direction === 'up') === (side === 'in')
 export const inspirationSpendId = (umaId: string, tier: number, slot: string, goldIndex: number | null): string =>
   `inspiration:${umaId}:${tier}:${slot}:${goldIndex === null ? 'slot' : `gold${goldIndex}`}`
 export function parseInspirationMovement(value: unknown): InspirationMovement | null {
@@ -46,6 +63,15 @@ export function parseInspirationMovement(value: unknown): InspirationMovement | 
       !INSPIRATION_SLOTS.includes(s.nodeId as InspirationSlot) || !(s.goldIndex === null || [0, 1].includes(s.goldIndex as number)) ||
       token.kind !== (s.goldIndex === null ? 'slot' : 'skill') || v.delta !== -INSPIRATION_UNLOCK_COST ||
       v.id !== inspirationSpendId(s.umaId, token.tier, s.nodeId as string, s.goldIndex as number | null)) return null
+  } else if (v.reason === 'inspiration-exchange') {
+    const out = s.side === 'out', keys = 'batches,direction,exchangeId,kind,side,tier,tokenKind'
+    if (Object.keys(s).sort().join(',') !== (out && s.debtPaid !== undefined ? 'batches,debtPaid,direction,exchangeId,kind,side,tier,tokenKind' : keys) ||
+      !safeId(s.exchangeId) || !['up', 'down'].includes(s.direction as string) || !['in', 'out'].includes(s.side as string) ||
+      s.tokenKind !== token.kind || !Number.isSafeInteger(s.batches) || (s.batches as number) < 1 || (s.batches as number) > INSPIRATION_EXCHANGE_MAX_BATCHES ||
+      v.id !== inspirationExchangeMovementId(s.exchangeId, s.side as 'in' | 'out') ||
+      v.delta !== inspirationExchangeDelta(s.direction as InspirationExchangeDirection, s.side as 'in' | 'out', s.batches as number) ||
+      (exchangeSideIsLower(s.direction as InspirationExchangeDirection, s.side as 'in' | 'out') ? token.tier >= SCENARIOS.length : token.tier < 2) ||
+      (s.debtPaid !== undefined && (!Number.isSafeInteger(s.debtPaid) || (s.debtPaid as number) < 0 || (s.debtPaid as number) > (v.delta as number)))) return null
   } else return null
   return value as InspirationMovement
 }

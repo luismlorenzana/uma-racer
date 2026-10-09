@@ -174,6 +174,18 @@ describe('RPG sync and command parsers', () => {
     expect(parseSyncRequest({ upserts: [{ kind: 'rpgPresets', id: 'party-1', baseVersion: 0, data: { ...classParty,
       slots: [{ ...classParty.slots[0], loadout: [{ tier: 1, id: 'short-sword.duel.1' }] }, null, null, null, null] } }] })).toMatch(/invalid rpgPresets/)
   })
+  it('accepts self-consistent token exchange rows (D309)', () => {
+    const side = (side: 'in' | 'out', itemId: string, delta: number, extra: Record<string, unknown> = {}) => ({
+      id: `inspiration-exchange:x1:${side}`, itemId, delta, createdAt: 1, reason: 'inspiration-exchange',
+      source: { kind: 'inspiration-exchange', exchangeId: 'x1', tier: Number(itemId.split(':t')[1]!.split(':')[0]), tokenKind: 'skill',
+        direction: 'up', batches: 3, side, ...extra } })
+    const append = (data: Record<string, unknown>) => parseSyncRequest({ appends: [{ kind: 'itemLedger', id: data.id as string, data, createdAt: 1 }] })
+    expect(typeof append(side('in', 'inspiration:t2:skill', -6))).toBe('object')
+    expect(typeof append(side('out', 'inspiration:t3:skill', 3, { debtPaid: 2 }))).toBe('object')
+    for (const bad of [side('in', 'inspiration:t2:skill', -3), side('out', 'inspiration:t3:skill', 6), side('in', 'inspiration:t14:skill', -6),
+      side('out', 'inspiration:t3:skill', 3, { debtPaid: 4 }), side('in', 'inspiration:t2:skill', -6, { debtPaid: 0 }),
+      { ...side('in', 'inspiration:t2:skill', -6), id: 'inspiration-exchange:x2:in' }]) expect(append(bad)).toMatch(/invalid itemLedger/)
+  })
   it('refuses retired grouped actions so an old app cannot move a campaign run', () => {
     expect(parseRpgCommandRequest({ schemaVersion: 1, commandId: 'old-begin', action: 'begin-battle', expected: [], upserts: [], appends: [] }))
       .toMatch(/syncs directly/)

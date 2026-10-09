@@ -30,7 +30,7 @@ import { CLASS_LABEL, GhostButton, KindMark, PrimaryButton, RpgBar, RpgCard, Rpg
 import { RpgGuide, rpgGuideMemory, type RpgGuidePage } from './RpgGuide'
 import { useRpgRelease } from './useRpgRelease'
 
-interface RpgContextValue {
+export interface RpgContextValue {
   content: LoadedContent
   account: RpgAccount
   release: RpgRelease | null
@@ -38,7 +38,8 @@ interface RpgContextValue {
   chapters: RpgCampaignChapter[] | null
   openGuide: (page?: RpgGuidePage) => void
 }
-const RpgContext = createContext<RpgContextValue | null>(null)
+/** Exported for screen tests; the shell provides it. */
+export const RpgContext = createContext<RpgContextValue | null>(null)
 export function useRpg(): RpgContextValue {
   const value = useContext(RpgContext)
   if (!value) throw new Error('RPG screen must be inside its shell')

@@ -126,6 +126,22 @@ Every won fight pays, first clear or replay:
   D286). Clearing every node pays 98 Slot + 196 Skill, enough for sixteen units' parents (6 Slot) and skills (12 Skill).
   Gross tokens first repay the matching Inspiration advance debt (D256), then land in Items.
 
+## Inventory and Convert (D309)
+
+Two more tabs beside Parties and Roster, borrowed from Uma Puzzles' Items and Exchange:
+
+- **Inventory** lists every scenario's Inspiration tokens (Slot and Skill) in Items, owned scenarios first (or all
+  fourteen). While the Inspiration advance (D256) is still owed, a card above shows how much of it each kind has repaid
+  (`repaid of lent`, summed over scenarios), and each scenario row names what it still owes. Tapping a row opens Convert
+  on that scenario.
+- **Convert** trades tokens of one kind between neighbouring scenarios: **two of a scenario make one of the next**, and
+  **one makes two of the scenario before**, in batches. The input must be in Items. The output repays its own
+  scenario's advance first, like an RPG reward, and only the rest lands in Items (repaid output can't be converted
+  back); the screen shows the split before you confirm. Conversions wait while the advance is still opening.
+- Each conversion writes two `itemLedger` rows, `inspiration-exchange:{id}:in` and `:out`, whose source carries the
+  whole exchange (direction, batches, side, kind and tier, and the output's `debtPaid`), so the server checks each row
+  on its own; the two stacks and the bank change in the same Dexie transaction and sync like any other Items change.
+
 ## Saving and sync (D260, D263, D282)
 
 - Every RPG change commits to Dexie with its outbox markers in one transaction and syncs through the ordinary
@@ -140,6 +156,7 @@ Every won fight pays, first clear or replay:
 
 ## Phone presentation
 
+- **Tabs:** Parties, Roster, Inventory and Convert (D309).
 - **Parties:** ten cards (members, level, current chapter progress, Edit). **Roster:** five icons per row, enrolled
   first and highest RPG level first (D284). **Profile:** enroll as her class (and weapon set); class with her weapon
   icons; stats; the tree screen (two tree tabs, three branch tabs, each core skill with its fork of two variants, Learn

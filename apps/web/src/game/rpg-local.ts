@@ -3,9 +3,10 @@
 import {
   RPG_PARTY_SIZE, RPG_PRESET_COUNT, RPG_WEAPON_KINDS, applyBattleAction, changeRpgClass, createBattle, createRpgRun,
   enrollRpgOutfit as enrollProfile, forgetRpgVariant, inspirationGrantId, inspirationTokenId, learnRpgNode, parseInspirationBank,
-  promoteRpgOutfit, replayBattle, repayInspiration, rpgBeginRunBattle, rpgNodeKey, rpgPresetId, rpgRestAtCamp, rpgRunId,
-  rpgSettleRunBattle, validateRpgLoadout,
-  type BattleAction, type BattleStep, type InspirationMovement, type RpgBattleResultV2, type RpgCampaignChapter, type RpgClass,
+  planInspirationExchange, promoteRpgOutfit, replayBattle, repayInspiration, rpgBeginRunBattle, rpgNodeKey, rpgPresetId, rpgRestAtCamp, rpgRunId,
+  rpgSettleRunBattle, validateRpgLoadout, inspirationToken,
+  type BattleAction, type BattleStep, type InspirationBank, type InspirationExchangePlan, type InspirationExchangeRequest,
+  type InspirationMovement, type RpgBattleResultV2, type RpgCampaignChapter, type RpgClass,
   type RpgNodeRef, type RpgOutfitSave, type RpgPresetSave, type RpgPresetSlot, type RpgProfile, type RpgRunSaveV2,
   type RpgSettlement, type RpgWeapon, type RpgWeaponKind, type UmaTemplate,
 } from '@racer/domain'
@@ -17,6 +18,9 @@ export interface RpgAccount {
   /** Always five, projected empty until first saved. */
   presets: readonly VersionedRow<RpgPresetSave>[]
   runs: readonly VersionedRow<RpgRunSaveV2>[]
+  /** Inspiration tokens in Items by token id, and the advance they repay first (D309). */
+  tokens: Readonly<Record<string, number>>
+  bank: InspirationBank | null
 }
 
 export function emptyRpgPreset(index: number): RpgPresetSave {
@@ -24,12 +28,15 @@ export function emptyRpgPreset(index: number): RpgPresetSave {
 }
 
 export async function readRpgAccount(): Promise<RpgAccount> {
-  const [outfits, saved, runs] = await Promise.all([db.rpgOutfits.toArray(), db.rpgPresets.toArray(), db.rpgCheckpoints.toArray()])
+  const [outfits, saved, runs, items, bank] = await Promise.all([db.rpgOutfits.toArray(), db.rpgPresets.toArray(), db.rpgCheckpoints.toArray(),
+    db.items.where('id').startsWith('inspiration:').toArray(), db.inspirationBank.get('main')])
   const byId = new Map(saved.map((row) => [row.id, row]))
   return {
     outfits: new Map(outfits.map((row) => [row.id, row])),
     presets: Array.from({ length: RPG_PRESET_COUNT }, (_, i) => byId.get(rpgPresetId(i + 1)) ?? { id: rpgPresetId(i + 1), version: 0, data: emptyRpgPreset(i + 1) }),
     runs: runs.filter((row) => row.data.schemaVersion === 2),
+    tokens: Object.fromEntries(items.filter((row) => inspirationToken(row.id)).map((row) => [row.id, row.data.quantity])),
+    bank: bank?.data ?? null,
   }
 }
 
@@ -251,6 +258,37 @@ async function grantTokens(result: RpgBattleResultV2, runId: string, at: number)
     await db.inspirationBank.put({ ...bankRow, data: bank })
     await queueInTransaction('inspirationBank', 'main', 'upsert', at)
   }
+}
+
+/**
+ * Exchanges tokens between adjacent scenarios (D309): the input leaves Items, the output repays its own advance first
+ * and the rest lands in Items, with both ledger rows and the bank in one transaction.
+ */
+export async function exchangeInspirationTokens(request: InspirationExchangeRequest): Promise<InspirationExchangePlan> {
+  return db.transaction('rw', [db.items, db.itemLedger, db.inspirationBank, db.pendingRpgCommands, db.outbox], async () => {
+    const at = now()
+    const bankRow = await db.inspirationBank.get('main')
+    const ids = [request.direction === 'up' ? request.lowerTier : request.lowerTier + 1, request.direction === 'up' ? request.lowerTier + 1 : request.lowerTier]
+      .map((tier) => `inspiration:t${tier}:${request.kind}`)
+    const stacks = await Promise.all(ids.map((id) => db.items.get(id)))
+    const plan = planInspirationExchange(request, Object.fromEntries(stacks.flatMap((row) => row ? [[row.id, row.data.quantity]] : [])),
+      bankRow ? parseInspirationBank(bankRow.data) : null, crypto.randomUUID(), at)
+    for (const [itemId, quantity] of [[plan.from, plan.after.from], [plan.to, plan.after.to]] as const) {
+      const stack = await db.items.get(itemId)
+      if ((stack?.data.quantity ?? 0) === quantity) continue
+      await db.items.put({ id: itemId, version: stack?.version ?? 0, data: { itemId, quantity, updatedAt: at } })
+      await queueInTransaction('items', itemId, 'upsert', at)
+    }
+    for (const movement of plan.movements) {
+      await db.itemLedger.put({ id: movement.id, data: movement, createdAt: at })
+      await queueInTransaction('itemLedger', movement.id, 'append', at)
+    }
+    if (bankRow && plan.bank && plan.debtPaid) {
+      await db.inspirationBank.put({ ...bankRow, data: plan.bank })
+      await queueInTransaction('inspirationBank', 'main', 'upsert', at)
+    }
+    return plan
+  })
 }
 
 /** Settles a finished fight: EXP, tokens and carried MP on a win; a loss just closes it for a free retry. */

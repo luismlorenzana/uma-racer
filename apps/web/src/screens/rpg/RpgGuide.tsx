@@ -45,7 +45,7 @@ export function RpgGuide({ onClose, startAt = 'party' }: { onClose: () => void; 
     { id: 'map', title: 'The map and rewards', body: <>
       <p>Clear a node to open the nodes below it. Every fight can be replayed any time.</p>
       <p>Every win pays EXP and the chapter's Inspiration tokens: {RPG_BATTLE_TOKENS.fight.slot} Slot + {RPG_BATTLE_TOKENS.fight.skill} Skill per fight, more from sub-bosses and champions. EXP grows when the enemies outlevel you and shrinks when you outlevel them.</p>
-      <p>Tokens first repay your Inspiration advance, then land in Items.</p>
+      <p>Tokens first repay your Inspiration advance, then land in Items. <b>Inventory</b> lists them and how much of the advance is repaid; <b>Convert</b> trades two of a scenario's tokens for one of the next, or one for two of the scenario before.</p>
     </> },
   ]
   return <RpgModalFocus onClose={onClose}><PagedGuide open pages={pages} startAt={startAt} titleId="rpg-campaign-guide" finishLabel="Got it" onClose={onClose} /></RpgModalFocus>

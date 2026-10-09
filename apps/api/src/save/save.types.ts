@@ -402,6 +402,16 @@ function parseInspirationMovement(value: Record<string, unknown>): Record<string
       !['parent0', 'parent1', 'parent0-gp0', 'parent0-gp1', 'parent1-gp0', 'parent1-gp1'].includes(s.nodeId as string) ||
       !(s.goldIndex === null || [0, 1].includes(s.goldIndex as number)) || kind !== (s.goldIndex === null ? 'slot' : 'skill') ||
       value.delta !== -1 || value.id !== `inspiration:${s.umaId}:${tier}:${s.nodeId}:${s.goldIndex === null ? 'slot' : `gold${s.goldIndex}`}`) return null
+  } else if (value.reason === 'inspiration-exchange') {
+    // D309: each side carries the whole exchange, so its amount and tier range check on their own.
+    const keys = ['kind', 'exchangeId', 'tier', 'tokenKind', 'direction', 'batches', 'side']
+    const out = s.side === 'out', up = s.direction === 'up', batches = s.batches as number
+    const lower = up === !out, amount = lower ? 2 * batches : batches
+    if (!exactKeys(s, out && s.debtPaid !== undefined ? [...keys, 'debtPaid'] : keys) || !isId(s.exchangeId) ||
+      !['up', 'down'].includes(s.direction as string) || !['in', 'out'].includes(s.side as string) || s.tokenKind !== kind ||
+      !isPositiveInt(s.batches) || batches > 999 || value.delta !== (out ? amount : -amount) ||
+      (lower ? tier >= MAX_SCENARIO_TIER : tier < 2) || value.id !== `inspiration-exchange:${s.exchangeId}:${s.side}` ||
+      (s.debtPaid !== undefined && (!isNonNegativeInt(s.debtPaid) || s.debtPaid > Number(value.delta)))) return null
   } else return null
   return value
 }

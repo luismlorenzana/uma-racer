@@ -15,8 +15,9 @@ engine-v1 combat are retired; their history is in git and decisions D223–D259.
 | Battle engine v4 (pure, seeded, replayable): multi-part hits, two-action hands, Short Sword follow-ups, Cleric blessings, summons | `packages/domain/src/rpg/battle/` — `types.ts`, `skills.ts`, `engine.ts` |
 | Generated chapters, foes (weaknesses by rank, boss HP by reach), runs, rewards | `packages/domain/src/rpg/campaign/` — `chapters.ts`, `enemies.ts`, `run.ts`, `rewards.ts` |
 | Row parsers and the class migration | `packages/domain/src/rpg/save.ts` (`migrateRpgOutfitSave`, `migrateRpgPresetSave`), `save.ts` dispatch |
-| Local-first host | `apps/web/src/game/rpg-local.ts` |
-| Screens | `apps/web/src/screens/rpg/` — `RpgScreen.tsx` (shell, parties, roster, profile and tree screen, party editor, launch pad), `RpgMapScreen.tsx`, `RpgFightScreen.tsx`, `RpgGuide.tsx` |
+| Local-first host | `apps/web/src/game/rpg-local.ts` (`exchangeInspirationTokens` for Convert) |
+| Token exchange and the advance's repaid share (D309) | `packages/domain/src/inspiration-exchange.ts`, `inspirationAdvanceDebts` in `inspiration-bank.ts` |
+| Screens | `apps/web/src/screens/rpg/` — `RpgScreen.tsx` (shell, parties, roster, profile and tree screen, party editor, launch pad), `RpgItemsScreen.tsx` (Inventory, Convert), `RpgMapScreen.tsx`, `RpgFightScreen.tsx`, `RpgGuide.tsx` |
 | Fight projections | `apps/web/src/ui/rpg/battle-view.ts` (choices, blessings, previews, who can break a foe) |
 | Cast gate | `apps/web/src/content/rpg-release.ts` (one cast member per portrait key, every portrait verified) |
 | Server shapes | `apps/api/src/save/rpg-save.types.ts` (its own class mapping, weapon sets and tree-branch table), `save.types.ts` (`rpgOrdinaryRow`, bank repayment rule) |
@@ -35,6 +36,7 @@ portraits); its first-map actor kits are shape-checked, never played.
 | Result | `rpgResults/{battleId}` schema 2 log | Per-member EXP before/after, tokens, rounds |
 | Promotion | `rpgPromotions` log | Schema 2 archives node refs; schema 1 archived element-tree skills |
 | Tokens | `items` + `itemLedger` (`rpg-inspiration`, `debtPaid`) + `inspirationBank` | Gross grant, debt repaid first |
+| Conversions | `itemLedger` `inspiration-exchange:{id}:in` / `:out` (D309) | Each row carries direction, batches, side, kind and tier; the output's `debtPaid` repaid the advance |
 | Fight journal | Dexie `rpgFights` (device only) | Action list for the open fight; missing → replay from the first action |
 
 Node ids are `tree.branch.depth`, plus `a` or `b` for a variant (`greatsword.fire.3`, `mage-staff.ice.2b`); a node costs
