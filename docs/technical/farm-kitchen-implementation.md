@@ -1,6 +1,6 @@
 # Farm production/cooking — implementation contract
 
-**T118–T121 pure rules, dormant persistence/cutover and real host implemented · M031 · 2026-10-09.** Read
+**T118–T123 pure rules, dormant persistence/cutover, real host, screens and stat joins implemented · M031 · 2026-10-09.** Read
 [the design](../design/farm-kitchen-rework.md), [AGENTS.md](../../AGENTS.md) and the current task first.
 This standing contract must survive task deletion under D104. It specifies the new path; existing
 [Farm](../design/farm.md) stays live until T124. Do not describe a capability-off merge as a playable release.
@@ -440,7 +440,7 @@ pending/recovery counts and a private recovery export for new generations; no pr
 
 [Host verification](../research/farm-kitchen-host.md) records real IndexedDB, synthetic repository, lost-ack,
 dependency-chain, thirty-job partial failure, two-device spend, rollback, clock/subscription and flag-off proofs.
-T123 alone joins acknowledged maps into Training/race stats.
+T123/D314 joins acknowledged maps into Training/race stats, as described in §8.
 
 ### T122 implemented phone presentation (D313)
 
@@ -489,7 +489,7 @@ The new map is not a card constellation or Inspiration tree. Purchase one meal a
 in that block; all scenarios/distances of that outfit share bought IDs, not active IDs. Newly opened units have
 empty active lists. No CL/Farm worker-level requirement for consumption and no scenario creation side effect.
 
-Route/profile/training/racing/parent-snapshot projections join the same acknowledged map by **actual scenario
+Route/profile/training/racing projections join the same acknowledged map by **actual scenario
 and distance**, not active UI tab. New-block maps are empty; existing older blocks remain valid. Pending stats
 are preview-labelled; acknowledged configurations work offline. A corrupted/missing-template purchased row
 is recovery, not silently ignored progress; missing row is legitimately empty.
@@ -505,7 +505,46 @@ normal input builder; no race-engine version/coefficient change. Mid-race build 
 must not rewrite frozen input. Current caps stay; 1,600-Speed examples are later-scenario direction, not tier 1 targets.
 Run card-only exact-equality fixtures across every tier and 0–3 stars/eras/buffs, then the small mixed-deck stat matrix.
 T118's fixtures and matrix already verify the pure post-growth boundary, including Foundation/Shared Light;
-T123 still owns the actual acknowledged-map join and explicitly named historical240 normalization.
+T123 implements the actual acknowledged-map join and explicitly named historical240 normalization.
+
+### T123 implemented map and stat join (D314)
+
+- Domain `projectFarmExtraStats` strictly validates map identity/generation/template and selects actual
+  scenario/distance. A missing row/build returns zero; a corrupt/future row returns recovery, never legacy
+  bonuses. `deriveStats({ farmStats })` disables retired Extra, keeps `HISTORICAL_CARD_NORMALIZATION = 240`,
+  computes base/card/buff/growth first, adds the flat vector once and rounds/caps once. `deriveUma` carries
+  optional `farmSources` (base/cards, Farm, beforeCap, marginal, waste). Without the input, output shape and
+  values remain exact; card-only equality tests include all14 tiers,0–3 stars, eras and growth/buffs.
+- Lazy web `game/farm/kitchen/stats.ts` reads canonical `farmCutover`/`farm`/`farmExtra` together. Its Dexie
+  observer publishes `FarmStatState` into `useGame.farmStats`; `game/farm-stats.ts` is the small catalogue-free
+  lookup bridge. Boot resolves it before publishing ready Uma stats; cloud adoption/reactive row changes
+  update it without touching Uma's retired Extra fields. Active capability-off, malformed control or map
+  becomes visible recovery. Flag-off/no-control boot still imports no kitchen catalogue or seeds rows.
+- `joinUma` routes Training, Profile, Skills, Home and Stable/stat comparisons through that same state;
+  Race Select joins each actual distance preset. Extra tab navigation is local/contextual, not a write to
+  `activePreset`. Badge/skill/promotion consumers that need only card/lineage/aptitude facts stay unchanged.
+  Current main has **no parent-stat snapshot at scenario start/promotion**: it freezes goals against aptitudes
+  and records journey facts. There is no Farm-dependent parent snapshot to rebuild or new schema to invent.
+- `preparePersistentRace`/`completePersistentRace` preload the lazy reader, then read the target's canonical
+  rows in the same transaction as Uma/cards/history. Actual race distance selects the vector, regardless
+  of the last tab. Pending rows are excluded. RaceRun holds a local outfit/scenario edit lock until commit;
+  the host refuses map edits while locked. A second-device canonical change makes completion stale rather
+  than silently changing frozen input. Replay/record builders keep historical stats/hash/version unchanged.
+- `FarmExtraStatsScreen` is shared by the lazy production adapter and isolated DEV proof. DOM/SVG cluster
+  navigation, named list/groups/search and labelled modal details expose65 arbitrary nodes with44 px
+  actions, safe-area scrolling and no prerequisite edges. The sheet freezes its confirmed revision; stale
+  stock/map/capacity requires a refreshed confirmation. Purchase and activation are distinct host calls;
+  pending previews never replace canonical source totals. Details show exact matching block meal, stock,
+  reservations, capped delta/waste and recipe/wishlist return context, without changing workers/featured Uma.
+- Legacy crop purchase/set-active transactions additionally read control/Farm schema and reject any new
+  generation; old evidence/debug hooks cannot refill the retired allowance. `sim:farm:stats` now projects
+  the actual map and runs live `deriveStats`, retaining672 exact checks,2,016 builds and its pinned hash.
+  Real IndexedDB tests cover raw→process→cook→Item→purchase→activate→race, receipt matching/retry, offline
+  acknowledgement, cloud-style adoption, in-flight locks/staleness and future-template recovery.
+
+[The synthetic phone proof](../research/farm-kitchen-phone-proof/README.md#t123-extra-map-and-race-proof) covers
+both required sizes, all four builds, map/list/pure/pair/Sun, insufficient meals, full capacity/+0 waste,
+free on/off, recipe return and real pre-race deltas. T124 alone enables release and owns physical-device acceptance.
 
 ## 9. Delivery and evidence
 

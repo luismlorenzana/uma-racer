@@ -35,6 +35,7 @@ import { buildRacePlan, scenarioLevel, type CareerTracker, type PlannedRace, typ
 import type { PreparedRace } from '../game/racing'
 import { raceStatFit, type StatFit, type StatFitVerdict } from '../game/race-fit'
 import { useGame } from '../game/store'
+import { farmStatsFor } from '../game/farm-stats'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
 import { Panel } from '../ui/Panel'
@@ -236,6 +237,7 @@ export function RaceSelectScreen() {
   const profile = useGame((state) => state.profile)
   const owned = useGame((state) => state.umas)
   const cards = useGame((state) => state.cards)
+  const farmStats = useGame((state) => state.farmStats)
   const persistent = useGame((state) => state.persistent)
   const [picked, setPicked] = useState<RaceTemplate | null>(null)
   const [strategy, setStrategy] = useState<Strategy>('pace')
@@ -322,7 +324,7 @@ export function RaceSelectScreen() {
       if (!cancelled) setPreviewError(reason instanceof Error ? reason.message : 'Could not build field preview')
     })
     return () => { cancelled = true }
-  }, [contentState, loadoutKey, picked, selectedUmaId, status, strategy, tier])
+  }, [contentState, loadoutKey, picked, selectedUmaId, status, strategy, tier, farmStats])
 
   if (contentState.status === 'signed-out' || status === 'signed-out') {
     return <ScreenState title="Sign in to race" detail="Progression races use your private Stable and content." action={{ label: 'Open Settings', to: '/settings' }} />
@@ -334,6 +336,7 @@ export function RaceSelectScreen() {
   if (!selectedUma || !selectedUmaId) return <ScreenState title="No owned Uma" detail="Add an Uma to your Stable before entering a race." action={{ label: 'Open Stable', to: '/stable' }} />
 
   const content = contentState.content
+  if (farmStats.mode === 'recovery') return <ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} />
   const umaTemplate = content.umas.byId.get(selectedUmaId)
   if (!umaTemplate) return <ScreenState title="Content reference missing" detail={`The save is preserving ${selectedUmaId} until its template is restored.`} />
   const past = isPastScenario(selectedUma, tier)
@@ -348,6 +351,7 @@ export function RaceSelectScreen() {
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
     skillTemplates: content.skills.byId,
+    farmStats: farmStatsFor(farmStats, selectedUmaId, tier ?? selectedUma.unlockedTier, preset),
   })])) as Record<DistanceCategory, ReturnType<typeof deriveUma>>
   const derivedUma = presetDerived[pickedPreset]
   const plan = buildRacePlan({

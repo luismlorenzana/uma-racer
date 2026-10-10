@@ -77,6 +77,7 @@ export function UmaProfileScreen() {
   const profile = useGame((state) => state.profile)
   const save = useGame((state) => state.umas[umaId])
   const cards = useGame((state) => state.cards)
+  const farmStats = useGame((state) => state.farmStats)
   const badges = useGame((state) => state.badges)
   const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
@@ -127,7 +128,8 @@ export function UmaProfileScreen() {
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening profile…" detail="Loading private content and save data." />
   if (!save) return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
 
-  const joined = joinUma(save, contentState.content, cards, chosenTier ?? undefined)
+  if (farmStats.mode === 'recovery') return <ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} />
+  const joined = joinUma(save, contentState.content, cards, chosenTier ?? undefined, undefined, farmStats)
   if (joined.status !== 'ready') {
     return <ScreenState title="Content reference missing" detail={`The save is preserving ${joined.templateId} until its template is restored.`} action={{ label: 'Back to Stable', to: '/stable' }} />
   }

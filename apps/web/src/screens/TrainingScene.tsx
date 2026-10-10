@@ -1,6 +1,6 @@
-import { STATS, type CardSave, type Stats, type UmaSave } from '@racer/domain'
+import { DISTANCE_CATEGORIES, STATS, type DistanceCategory, type CardSave, type Stats, type UmaSave } from '@racer/domain'
 import { useMemo, useRef } from 'react'
-import { Link, Outlet, useLocation, useNavigate, useOutletContext, useParams } from 'react-router'
+import { Link, Outlet, useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router'
 import { useContent } from '../content/ContentProvider'
 import type { LoadedContent } from '../content/runtime'
 import { useGame } from '../game/store'
@@ -42,6 +42,11 @@ export function TrainingScene() {
   const status = useGame((state) => state.status)
   const umas = useGame((state) => state.umas)
   const cards = useGame((state) => state.cards)
+  const farmStats = useGame((state) => state.farmStats)
+  const [params] = useSearchParams()
+  const requestedDistance = params.get('distance')
+  const extraPreset = location.pathname.endsWith('/extra-stats') && DISTANCE_CATEGORIES.includes(requestedDistance as DistanceCategory)
+    ? requestedDistance as DistanceCategory : undefined
   const tickets = useGame((state) => state.profile?.tickets ?? 0)
   /** Stats as they were when the scene opened, so every delta reads against one stable reference across tabs. */
   const baseline = useRef<Stats | null>(null)
@@ -50,13 +55,14 @@ export function TrainingScene() {
   // The scenario chosen for her on her profile or Race Select (D190).
   const tier = useChosenTier(save) ?? undefined
   const joined = useMemo(
-    () => (contentState.status === 'ready' && save ? joinUma(save, contentState.content, cards, tier) : null),
-    [cards, contentState, save, tier],
+    () => (contentState.status === 'ready' && save && farmStats.mode !== 'recovery' ? joinUma(save, contentState.content, cards, tier, extraPreset, farmStats) : null),
+    [cards, contentState, save, tier, farmStats, extraPreset],
   )
 
   if (contentState.status !== 'ready' || status !== 'ready') {
     return <ScreenState title="Opening training…" detail="Loading private content and your local save." />
   }
+  if (farmStats.mode === 'recovery') return <ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} />
   if (!save || !joined || joined.status !== 'ready') {
     return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
   }

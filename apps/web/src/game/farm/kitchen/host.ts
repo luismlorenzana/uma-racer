@@ -41,6 +41,7 @@ export interface FarmKitchenHostOptions {
   database: RacerDb; enabled?: boolean; clock?: () => number; current?: () => boolean; persistent?: () => boolean
   schedule?: () => void; publish?: (view: FarmKitchenView) => void | Promise<void>; afterWrite?: (boundary: string) => void
   ownerDebugAllowed?: () => boolean; cutover?: FarmCutoverPorts | (() => Promise<FarmCutoverPorts>)
+  canEditExtra?: (outfitId: string, scenarioId: string) => boolean
   /** Explicit recovery only. Sends the immutable command to the same semantic repository; never a fresh ID. */
   recover?: (operations: FarmOperationV1[]) => Promise<unknown>
 }
@@ -118,6 +119,8 @@ export class PersistentFarmKitchenHost implements FarmKitchenHost {
         return !!accepted // Keep the old clock/version/bytes even when the screen has changed.
       }
       if (!this.enabled) throw new Error('Farm kitchen release is disabled')
+      if ((choice.kind === 'buy-node' || choice.kind === 'set-active') && this.options.canEditExtra?.(choice.outfitId, choice.scenarioId) === false)
+        throw new Error('Finish this Uma’s race before changing her meal map')
       const device = (await db.farmPreferences.get('device-id'))?.value
       const sequence = (await db.farmPreferences.get(`sequence:${String(device)}`))?.value
       const prefix = `fop:${String(device)}:`, n = Number(input.intentId.slice(prefix.length))

@@ -1,7 +1,11 @@
 // Real adapter/IndexedDB + invented semantic repository, never a production save or content pack.
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createInitialFarmState } from '@racer/domain'
+import { createInitialFarmState, createPlayerProfile, parseUmaSaveOrThrow } from '@racer/domain'
+import { readFarmStatState } from './stats'
+import { farmStatsFor } from '../../farm-stats'
+import { farmProofContent, farmProofCards } from './proof-content'
+import { buildPreparedRace } from '../../racing'
 import { FARM_CUTOVER_GENERATION, FARM_KITCHEN_JOB_MS, FARM_KITCHEN_ENERGY_MS, FARM_KITCHEN_CATALOGUE, farmCanonical,
   FARM_STATION_IDS, farmBytes, farmOperationReferences, FARM_SYNC_LIMITS, createFarmKitchenWorker, emptyFarmRecipes,
   type FarmPayloadV1, type FarmStoredEntity, type FarmOperationV1 } from '@racer/domain/farm/kitchen'
@@ -130,6 +134,26 @@ describe('real Farm kitchen host', () => {
       expect(final.workers['invented-0']!.canonical.totalExp).toBe(240)
       expect(final.recipes.b1!.canonical.cookbook['farm:meal:b1:speed']).toMatchObject({ count: 2 })
       expect(await db.farmPending.count()).toBe(0)
+      // Continue the real production chain into Items -> buy -> activate -> the actual race builder.
+      const purchase = await command({ kind: 'buy-node', outfitId: 'invented-0', scenarioId: 'ura-finale', distance: 'sprint', nodeId: 'speed-01', autoactivate: false })
+      expect(farmStatsFor(await readFarmStatState(db, true), 'invented-0', 1, 'sprint')?.speed).toBe(0)
+      await flush()
+      expect((await host.read({ outfitId: 'invented-0', scenarioId: 'ura-finale', operationIds: [purchase] })).receipts[purchase]?.result).toMatchObject({ nodeName: 'Speed Seed', activated: false })
+      const activation = await command({ kind: 'set-active', outfitId: 'invented-0', scenarioId: 'ura-finale', distance: 'long', nodeIds: ['speed-01'] })
+      expect(farmStatsFor(await readFarmStatState(db, true), 'invented-0', 1, 'long')?.speed).toBe(0)
+      await flush()
+      const joined = await readFarmStatState(db, true), content = farmProofContent(), saved = parseUmaSaveOrThrow((await db.umas.get('invented-0'))!.data)
+      const uma = { ...saved, activePreset: 'sprint' as const, scenarios: saved.scenarios.map(run => ({ ...run, started: true,
+        presets: Object.fromEntries(Object.entries(run.presets).map(([d, preset]) => [d, { ...preset, cardSetIds: ['invented-support'] }])) as typeof run.presets })) }
+      const build = (distance: 'sprint' | 'long') => buildPreparedRace({ content, profile: createPlayerProfile('2000-01-01', 0), uma, cardsById: farmProofCards(), raceId: `invented-race-${distance}`,
+        strategy: 'pace', sequence: 0, farmStats: farmStatsFor(joined, uma.templateId, 1, distance) })
+      expect(build('long').startStats.speed).toBe(1200); expect(build('sprint').startStats.speed).toBe(1195)
+      expect((await db.items.get('farm:meal:b1:speed'))!.data.quantity).toBe(1)
+      expect((await host.retry({ operationId: activation }))?.status).toBe('duplicate')
+      const repeated = await command({ kind: 'buy-node', outfitId: 'invented-0', scenarioId: 'ura-finale', distance: 'mile', nodeId: 'speed-01', autoactivate: true })
+      await flush(); expect((await host.retry({ operationId: repeated }))?.receipt?.reusedTarget).toBeTruthy()
+      expect((await db.items.get('farm:meal:b1:speed'))!.data.quantity).toBe(1)
+      expect(farmStatsFor(await readFarmStatState(db, true), 'invented-0', 1, 'mile')?.speed).toBe(0)
     }
   })
   it.each([108, 180])('reports actual shared milestone crossings from EXP %s, not inventory guesses', async exp => {

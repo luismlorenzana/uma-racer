@@ -161,6 +161,7 @@ export class GameRuntime {
   private uninstallFarmHost: (() => void) | null = null
   private uninstallFarmKitchenHost: (() => void) | null = null
   private kitchenHost: FarmKitchenHost | null = null
+  private stopFarmStats: (() => void) | null = null
   private lastEconomicLane: EconomicLane | null = null
   private flushing = false
   private inFlight: Promise<void> | null = null
@@ -318,6 +319,9 @@ export class GameRuntime {
       local = await readLocalSnapshot()
       if (!local) throw new Error('Save initialization did not produce a profile')
       if (generation !== this.generation) return
+      // Resolve independent Farm rows before publishing ready Uma stats (no legacy flash on reload).
+      await this.installFarmStatProjection(generation)
+      if (generation !== this.generation) return
       adoptGameState(stateFromSnapshot(local, content, true))
       await this.installReadyFarmKitchen(generation)
       if (granted > 0) useGame.getState().pushToast(`+${granted} Daily tickets`, 'ticket')
@@ -354,6 +358,8 @@ export class GameRuntime {
     this.uninstallFarmKitchenHost?.()
     this.uninstallFarmKitchenHost = null
     this.kitchenHost = null
+    this.stopFarmStats?.(); this.stopFarmStats = null
+    useGame.setState({ farmStats: { mode: 'legacy' } })
     this.lastEconomicLane = null
     this.content = null
     this.memoryRaceHistory = []
@@ -717,13 +723,16 @@ export class GameRuntime {
     const extraStats = toggleExtraStat(run.extraStats, nodeId, on)
     // Which bought nodes are on belongs to the preset being edited (D252).
     const next: UmaSave = withScenarioView(uma, { ...run, extraStats })
+    if (state.farmStats.mode !== 'legacy') throw new Error('Open the meal-funded Extra stats map for this Farm generation')
     if (!state.persistent) {
       replaceUma(next)
       return
     }
     const now = Date.now()
     const content = this.content
-    await db.transaction('rw', [db.umas, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
+    await db.transaction('rw', [db.umas, db.badges, db.ledger, db.flairEvents, db.outbox, db.farmCutover, db.farm], async () => {
+      if (await db.farmCutover.get('main') || Number((await db.farm.get('main'))?.data.schemaVersion) >= 3)
+        throw new Error('Legacy Extra stats are retired for this Farm generation; open the meal-funded map')
       const row = await db.umas.get(id)
       if (!row) throw new Error('Local Uma is missing')
       await db.umas.put({ ...row, data: next })
@@ -1180,6 +1189,7 @@ export class GameRuntime {
     if (!FARM_KITCHEN_RELEASE_ENABLED && !control && !(Number(farm?.data.schemaVersion) >= 3)) return
     // Any control, including corrupt/future, blocks the legacy writer before loading/parsing the new path.
     this.uninstallFarmHost?.(); this.uninstallFarmHost = null
+    await this.installFarmStatProjection(generation)
     if (this.kitchenHost) return
     const { createProductionFarmKitchenHost } = await import('./farm/kitchen/production')
     const { installFarmKitchenHost } = await import('./farm/kitchen/host')
@@ -1190,6 +1200,19 @@ export class GameRuntime {
       schedule: () => this.schedule(), publish: async () => { if (generation === this.generation) await this.refreshPending() } })
     if (generation !== this.generation) return
     this.kitchenHost = host; this.uninstallFarmKitchenHost = installFarmKitchenHost(host)
+  }
+
+  private async installFarmStatProjection(generation: number): Promise<void> {
+    if (generation !== this.generation || this.stopFarmStats) return
+    const control = await db.farmCutover.get('main'), farm = await db.farm.get('main')
+    if (!FARM_KITCHEN_RELEASE_ENABLED && !control && !(Number(farm?.data.schemaVersion) >= 3)) return
+    const { readFarmStatState, observeFarmStats, farmStatTables } = await import('./farm/kitchen/stats')
+    const state = await db.transaction('r', farmStatTables(db), () => readFarmStatState(db, FARM_KITCHEN_RELEASE_ENABLED))
+    if (generation !== this.generation || this.stopFarmStats) return
+    useGame.setState({ farmStats: state })
+    this.stopFarmStats = observeFarmStats(db, FARM_KITCHEN_RELEASE_ENABLED, farmStats => {
+      if (generation === this.generation) useGame.setState({ farmStats })
+    })
   }
 
   async farmKitchenHost(): Promise<FarmKitchenHost> {
@@ -1380,6 +1403,9 @@ export class GameRuntime {
       setSyncState({ status: typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'error', pending, error: error instanceof Error ? error.message : String(error) })
     } finally {
       this.flushing = false
+      // A generation can arrive through cloud adoption while this tab is already open.
+      try { await this.installReadyFarmKitchen(generation) }
+      catch (error) { if (generation === this.generation) setSyncState({ status: 'error', error: String(error) }) }
     }
   }
 }

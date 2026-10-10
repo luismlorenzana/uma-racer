@@ -68,6 +68,21 @@ import { updateRaceBadgeFacts, updateScenarioBadgeFacts } from './badges'
 import { reconcileTrainerInTransaction } from './trainer'
 import { queueInTransaction } from './persistence'
 import { accomplishmentFactsFromTimeline } from './race-facts'
+import { farmStatsFor, LEGACY_FARM_STATS } from './farm-stats'
+import { FARM_KITCHEN_RELEASE_ENABLED } from './farm/kitchen/capability'
+import type { readFarmStatState } from './farm/kitchen/stats'
+
+/** Import before the race transaction, never suspend Dexie on module loading. */
+async function loadFarmStatsReader(): Promise<typeof readFarmStatState> {
+  if (!FARM_KITCHEN_RELEASE_ENABLED && !await db.farmCutover.get('main') && (Number((await db.farm.get('main'))?.data.schemaVersion) || 0) < 3)
+    return async database => {
+      // Recheck inside the race transaction: a cloud generation can arrive after the import preflight.
+      if (await database.farmCutover.get('main') || Number((await database.farm.get('main'))?.data.schemaVersion) >= 3)
+        return { mode: 'recovery', error: 'Farm generation changed before this race; reload a compatible app and keep the save.' }
+      return LEGACY_FARM_STATS
+    }
+  return (await import('./farm/kitchen/stats')).readFarmStatState
+}
 
 export interface PreparedRaceRunner {
   templateId: string
@@ -127,6 +142,7 @@ interface BuildRaceInput {
   sequence: number
   /** Which of her scenarios races (D190); her current one when omitted. */
   tier?: number
+  farmStats?: Stats
 }
 
 const parsedUma = (id: string, value: unknown): UmaSave => {
@@ -245,6 +261,7 @@ export function buildPreparedRace(input: BuildRaceInput): PreparedRace {
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
     skillTemplates: content.skills.byId,
+    farmStats: input.farmStats,
   })
   const race = content.races.byId.get(raceId)
   if (!race) throw new Error(`Race content is missing race ${raceId}`)
@@ -541,7 +558,7 @@ export async function readLatestRaceTimes(): Promise<Record<string, number>> {
   return latest
 }
 
-async function savedRaceInputs(content: LoadedContent, umaId: string, raceId: string, tier?: number) {
+async function savedRaceInputs(content: LoadedContent, umaId: string, raceId: string, tier: number | undefined, farmReader: typeof readFarmStatState) {
   const profileRow = await db.profile.get('main')
   const umaRow = await db.umas.get(umaId)
   if (!profileRow) throw new Error('Local profile is missing')
@@ -555,7 +572,8 @@ async function savedRaceInputs(content: LoadedContent, umaId: string, raceId: st
     if (!row) throw new Error(`Card set card is not owned: ${id}`)
     return [id, parsedCard(id, row.data)]
   }))
-  return { profile, uma, cardsById }
+  const farmState = await farmReader(db, FARM_KITCHEN_RELEASE_ENABLED, { outfitId: umaId, tier: tier ?? uma.unlockedTier })
+  return { profile, uma, cardsById, farmStats: farmStatsFor(farmState, umaId, tier ?? uma.unlockedTier, racePreset(content, raceId)) }
 }
 
 export async function preparePersistentRace(
@@ -566,16 +584,19 @@ export async function preparePersistentRace(
   requestedSequence?: number,
   requestedTier?: number,
 ): Promise<RacePreparation> {
-  const { profile, uma, cardsById } = await savedRaceInputs(content, umaId, raceId, requestedTier)
-  const history = validateUmaSequence((await db.raceResults.toArray()).map(parseHistoryRow), umaId)
-  const sequence = requestedSequence ?? history.length
-  if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > history.length) throw new Error('Race attempt is stale')
-  if (sequence < history.length) {
-    const record = history[sequence]!
-    if (record.raceId !== raceId || record.strategy !== strategy) throw new Error('Race attempt no longer matches history')
-    return { status: 'completed', record }
-  }
-  return { status: 'prepared', attempt: buildPreparedRace({ content, profile, uma, cardsById, raceId, strategy, sequence, tier: requestedTier }) }
+  const farmReader = await loadFarmStatsReader()
+  return db.transaction('r', [db.profile, db.umas, db.cards, db.raceResults, db.farmCutover, db.farmExtra, db.farm], async () => {
+    const { profile, uma, cardsById, farmStats } = await savedRaceInputs(content, umaId, raceId, requestedTier, farmReader)
+    const history = validateUmaSequence((await db.raceResults.toArray()).map(parseHistoryRow), umaId)
+    const sequence = requestedSequence ?? history.length
+    if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > history.length) throw new Error('Race attempt is stale')
+    if (sequence < history.length) {
+      const record = history[sequence]!
+      if (record.raceId !== raceId || record.strategy !== strategy) throw new Error('Race attempt no longer matches history')
+      return { status: 'completed', record }
+    }
+    return { status: 'prepared', attempt: buildPreparedRace({ content, profile, uma, cardsById, farmStats, raceId, strategy, sequence, tier: requestedTier }) }
+  })
 }
 
 export function prepareMemoryRace(
@@ -656,12 +677,13 @@ export async function completePersistentRace(
   now: number,
 ): Promise<RaceCompletion> {
   if (!isLocalDay(today) || !Number.isSafeInteger(now) || now < 0) throw new Error('Invalid race completion time')
-  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox], async () => {
+  const farmReader = await loadFarmStatsReader()
+  return db.transaction('rw', [db.profile, db.umas, db.cards, db.badges, db.raceResults, db.ledger, db.flairEvents, db.outbox, db.farmCutover, db.farmExtra, db.farm], async () => {
     const existingRow = await db.raceResults.get(attempt.id)
     if (existingRow) {
       const record = parseHistoryRow(existingRow)
       if (!recordMatchesAttempt(record, attempt)) throw new Error('Race result id collision')
-      const saved = await savedRaceInputs(content, attempt.umaId, attempt.raceId, attempt.tier)
+      const saved = await savedRaceInputs(content, attempt.umaId, attempt.raceId, attempt.tier, farmReader)
       const timeline = simulatePreparedRace(attempt)
       const race = content.races.byId.get(attempt.raceId)
       if (!race || !record.accomplishmentFacts || JSON.stringify(record.accomplishmentFacts) !== JSON.stringify(factsForAttempt(content, attempt, race, timeline))) {
@@ -677,13 +699,14 @@ export async function completePersistentRace(
       }
     }
 
-    const { profile, uma, cardsById } = await savedRaceInputs(content, attempt.umaId, attempt.raceId, attempt.tier)
+    const { profile, uma, cardsById, farmStats } = await savedRaceInputs(content, attempt.umaId, attempt.raceId, attempt.tier, farmReader)
     const history = validateUmaSequence((await db.raceResults.toArray()).map(parseHistoryRow), attempt.umaId)
     const current = buildPreparedRace({
       content,
       profile,
       uma,
       cardsById,
+      farmStats,
       raceId: attempt.raceId,
       strategy: attempt.strategy,
       sequence: history.length,

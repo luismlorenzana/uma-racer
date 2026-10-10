@@ -19,6 +19,7 @@ import {
 } from '@racer/domain'
 import { getContentAsset, type ContentAsset, type LoadedContent } from '../../content/runtime'
 import { joinUma, type UmaViewModel } from '../view'
+import type { FarmStatState } from '../farm-stats'
 import type { AlbumQuery, AlbumRow, FacetDef, SortDef } from './query'
 
 export const STABLE_ALBUM_ID = 'stable'
@@ -51,6 +52,7 @@ export interface StableAlbumInput {
   saves: Readonly<Record<string, UmaSave>>
   /** Owned card saves: stats are derived from the constellation, so the album needs them (D121). */
   cards: Readonly<Record<string, CardSave>>
+  farmStats?: FarmStatState
   profile: PlayerProfile
   /** Latest race time per Uma id, for the "recently raced" sort. */
   lastRacedAt: Readonly<Record<string, number>>
@@ -87,7 +89,7 @@ function journeyState(save: UmaSave | null): StableEntry['journeyState'] {
 
 function entryFor(input: StableAlbumInput, template: UmaTemplate, seen: ReadonlySet<string>): StableEntry {
   const save = input.saves[template.id] ?? null
-  const joined = save ? joinUma(save, input.content, input.cards) : null
+  const joined = save ? joinUma(save, input.content, input.cards, undefined, undefined, input.farmStats) : null
   const view = joined?.status === 'ready' ? joined.value : null
   const aptitudes = view?.derived.aptitudes ?? template.aptitudes
   const facts = input.flair[template.id] ?? NO_FLAIR

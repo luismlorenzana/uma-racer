@@ -369,11 +369,26 @@ atomically, for good; a stale screen reloads the grid without spending.
 
 ## Extra stats
 
-**Planned replacement, not shipped:** [M031](../tasks/M031-farm-kitchen-rework.md) / T123–T124 introduces
+**Implemented replacement, release off:** [M031](../tasks/M031-farm-kitchen-rework.md) / T123 (D314) implements
 [meal-funded shared block maps](farm-kitchen-rework.md#9-extra-stats-map-and-ownership), 65 nodes and four
 independent active distance builds through a separate Farm allowance. The existing rules below stay live
 until guarded release. Old Farm/Extra progress will reset once with an archive; cards, CL and Inspiration
 stay untouched. [Integration contract](../technical/farm-kitchen-implementation.md#8-extra-stats-and-racing).
+
+For an acknowledged active Farm generation, `deriveStats` preserves historical card normalization240 and
+all existing base/card growth/buffs, disables the retired crop Extra allowance, adds the selected build's
+flat Farm vector, then rounds and caps once. Foundation, growth and Shared Light never multiply/rank Farm.
+Farm does not count as an assigned card node or change SP, skills, aptitudes or Inspiration. The optional
+`farmSources` breakdown reports post-growth base/cards, flat Farm, pre-cap total, marginal gain and waste.
+Omitting the Farm input retains the complete old derivation/output shape. Tier1 allows18 nodes (+360 total);
+each later scenario adds two slots, up to44 (+880) at tier14. Pure/dual/Sun nodes each total20, one matching
+block meal per purchase. Purchases are outfit/block-shared; activation is free and independent for each
+actual scenario and Sprint/Mile/Medium/Long. New scenarios start empty. Race distance, not the viewed tab,
+selects the acknowledged build; pending edits affect previews only and old saved race inputs stay frozen.
+
+The new map/list names every node, shows capped +0 honestly, and links a missing meal to its contextual Farm
+recipe. Legacy purchases/time-shift bonuses are rejected once the new generation exists. Until T124 enables
+the matching capabilities and protected cutover, the following **legacy live rules** remain unchanged.
 
 Each scenario has a grid of **20 Extra stat nodes**, four of each stat, beside its tree (D235). It belongs to that
 scenario's trained unit, like its card set.

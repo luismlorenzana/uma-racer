@@ -1,6 +1,7 @@
 // Lazy production factory. Capability-off/absent control keeps the legacy host; no read installs a fake writer.
 import type { RacerDb } from '../../db'
-import { parseSyncResponseOrThrow } from '@racer/domain'
+import { SCENARIOS, parseSyncResponseOrThrow } from '@racer/domain'
+import { farmRaceLocked } from '../../farm-stats'
 import { saveApi } from '../../../api/client'
 import { APP_BUILD_ID } from '../../../app/build'
 import { appUpdateLifecycle } from '../../../app/update-lifecycle'
@@ -12,6 +13,7 @@ export async function createProductionFarmKitchenHost(db: RacerDb, hooks: {
   current(): boolean; persistent(): boolean; safeToPrepare(): boolean; schedule(): void; publish(view: FarmKitchenView): Promise<void>
 }): Promise<PersistentFarmKitchenHost> {
   const host: PersistentFarmKitchenHost = new PersistentFarmKitchenHost({ database: db, enabled: FARM_KITCHEN_RELEASE_ENABLED, ...hooks,
+    canEditExtra: (outfitId, scenarioId) => !farmRaceLocked(outfitId, SCENARIOS.find(s => s.id === scenarioId)!.tier),
     // As with Settings' dev grants, the whole production API is owner-allowlisted; only a deliberate debug press calls this method.
     ownerDebugAllowed: () => hooks.current() && hooks.persistent(),
     recover: async operations => {

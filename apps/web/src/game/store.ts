@@ -1,5 +1,6 @@
 import type { BadgeStateV1, CardSave, FlairEventRecord, FlairEventV1, PlayerProfile, UmaSave } from '@racer/domain'
 import { create } from 'zustand'
+import { LEGACY_FARM_STATS, type FarmStatState } from './farm-stats'
 
 export type GameStatus = 'booting' | 'signed-out' | 'waiting-content' | 'ready' | 'error'
 export type SyncStatus = 'idle' | 'pending' | 'syncing' | 'offline' | 'error'
@@ -25,6 +26,7 @@ interface GameState {
   profile: PlayerProfile | null
   umas: Readonly<Record<string, UmaSave>>
   cards: Readonly<Record<string, CardSave>>
+  farmStats: FarmStatState
   badges: Readonly<Record<string, BadgeStateV1>>
   flairEvents: readonly (FlairEventV1 & { id: string })[]
   orphanedUmaIds: readonly string[]
@@ -68,6 +70,7 @@ export const useGame = create<GameState>()((set) => ({
   profile: null,
   umas: {},
   cards: {},
+  farmStats: LEGACY_FARM_STATS,
   badges: {},
   flairEvents: [],
   orphanedUmaIds: [],
@@ -173,6 +176,7 @@ export function clearGameState(status: GameStatus = 'signed-out'): void {
     profile: null,
     umas: {},
     cards: {},
+    farmStats: LEGACY_FARM_STATS,
     badges: {},
     flairEvents: [],
     orphanedUmaIds: [],

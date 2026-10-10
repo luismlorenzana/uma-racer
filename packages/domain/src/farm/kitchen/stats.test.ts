@@ -24,12 +24,34 @@ it('retains exact card-only stats/SP through all 14 buffs, all star ranks, eras 
       expect(noFarm.ok).toBe(true)
       if (!noFarm.ok) throw new Error(noFarm.error.detail)
       expect(noFarm.value.stats).toEqual(card.stats)
+      const joined = deriveStats({ tier: scenario.tier, trainingLevel: 10, template, assignments, cardSetIds: ids, cards,
+        umaTemplate: { baseStats, growthRates }, farmStats: zeroStats() })
+      const { farmSources: _sources, ...cardOnly } = joined
+      expect(cardOnly).toEqual(card)
       const snapshot = structuredClone(card)
       const farm = previewFarmStats(before, { speed: 20, stamina: 20, power: 20, guts: 20, wit: 20 }, capProfile(scenario.tier))
       expect(farm.ok).toBe(true)
       if (!farm.ok) throw new Error(farm.error.detail)
       for (const stat of STATS) expect(farm.value.beforeCap[stat]).toBe(before[stat] + 20)
+      const live = deriveStats({ tier: scenario.tier, trainingLevel: 10, template, assignments, cardSetIds: ids, cards,
+        umaTemplate: { baseStats, growthRates }, farmStats: { speed: 20, stamina: 20, power: 20, guts: 20, wit: 20 },
+        extraStats: { unlocked: { speed: 4, stamina: 2, power: 0, guts: 0, wit: 0 }, active: ['speed-1', 'stamina-1'] } })
+      expect(live.stats).toEqual(farm.value.stats)
+      expect(live.raw).toEqual(card.raw) // Foundation/Shared Light never read Farm or retired crop evidence.
+      expect(live.assignedNodes).toBe(card.assignedNodes)
+      expect(live.farmSources?.beforeCap).toEqual(farm.value.beforeCap)
       expect(card).toEqual(snapshot)
     }
   }
+})
+
+it('adds flat Farm before the single rounding/cap boundary and exposes honest +0/marginal waste', () => {
+  const input = { tier: 1, trainingLevel: 1, template: constellationTemplate(1), assignments: {}, cardSetIds: [], cards: new Map(),
+    umaTemplate: { baseStats: { speed: 1199.49, stamina: 1200, power: 100.49, guts: 100.5, wit: 100 }, growthRates: zeroStats() } }
+  const result = deriveStats({ ...input, farmStats: { speed: 20, stamina: 20, power: 4, guts: 4, wit: 4 } })
+  expect(result.stats).toEqual({ speed: 1200, stamina: 1200, power: 104, guts: 105, wit: 104 })
+  expect(result.farmSources?.marginal).toEqual({ speed: 1, stamina: 0, power: 4, guts: 4, wit: 4 })
+  expect(result.farmSources?.waste).toEqual({ speed: 19, stamina: 20, power: 0, guts: 0, wit: 0 })
+  expect(result.raw).toEqual(zeroStats())
+  expect(() => deriveStats({ ...input, farmStats: { ...zeroStats(), speed: NaN } })).toThrow(/vector/)
 })
