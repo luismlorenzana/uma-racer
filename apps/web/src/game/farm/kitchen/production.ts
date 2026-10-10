@@ -11,6 +11,7 @@ import type { FarmKitchenView } from './view'
 
 export async function createProductionFarmKitchenHost(db: RacerDb, hooks: {
   current(): boolean; persistent(): boolean; safeToPrepare(): boolean; schedule(): void; publish(view: FarmKitchenView): Promise<void>; drainBeforeUpgrade?: () => Promise<void>
+  withPreparation?: (prepare: () => Promise<boolean>) => Promise<boolean>
 }): Promise<PersistentFarmKitchenHost> {
   const host: PersistentFarmKitchenHost = new PersistentFarmKitchenHost({ database: db, enabled: FARM_KITCHEN_RELEASE_ENABLED, ...hooks,
     canEditExtra: (outfitId, scenarioId) => !farmRaceLocked(outfitId, SCENARIOS.find(s => s.id === scenarioId)!.tier),

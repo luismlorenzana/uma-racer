@@ -784,6 +784,11 @@ does not request preparation. A confirmed press drains pending writes, archives 
 performs bounded durable steps until active or an uncertain reply. Reload/Retry resumes the same request;
 Export retains evidence without restoring bonuses. Updating the PWA waits for these protected actions.
 
+D318 serializes the confirmed preparation with this device's background sync. It first waits for an
+already-running sync (even with an empty outbox), drains queued changes, then defers timer/reconnect/visibility
+flushes until the archive and protected steps finish or stop safely. Deferred sync resumes on success or failure;
+no intent is discarded, safety check relaxed, archive replaced after freeze or reset run by opening a page.
+
 One server-acknowledged account generation performs the reset exactly once. Reinstall,
 retry and a second device must adopt it, not reset progress again. Old clients/evidence cannot overwrite a new
 generation or rederive new Farm EXP from old harvests. Use an explicit schema/generation marker and replay guard;

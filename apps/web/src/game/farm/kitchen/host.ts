@@ -44,6 +44,8 @@ export interface FarmKitchenHostOptions {
   canEditExtra?: (outfitId: string, scenarioId: string) => boolean
   /** Release preparation drains normal economic writes before taking its restart guard. */
   drainBeforeUpgrade?: () => Promise<void>
+  /** Serialize a confirmed upgrade against the runtime's timers/reconnect sync, including an empty flush. */
+  withPreparation?: (prepare: () => Promise<boolean>) => Promise<boolean>
   /** Explicit recovery only. Sends the immutable command to the same semantic repository; never a fresh ID. */
   recover?: (operations: FarmOperationV1[]) => Promise<unknown>
 }
@@ -300,17 +302,20 @@ export class PersistentFarmKitchenHost implements FarmKitchenHost {
     if (!this.enabled) return false
     // A caller confirms the whole narrowly-scoped upgrade once, not once per outfit. The existing
     // protocol still commits one durable bounded step at a time and stops on any uncertain reply.
-    await this.options.drainBeforeUpgrade?.()
-    if (appUpdateLifecycle.getSnapshot().activeActions !== 0) return false
-    return criticalGameplayAction(async () => {
-      const ports = typeof this.options.cutover === 'function' ? await this.options.cutover() : this.options.cutover!
-      const maxSteps = FARM_CUTOVER_LIMITS.outfits + Math.ceil(FARM_CUTOVER_LIMITS.outfits / FARM_CUTOVER_LIMITS.page) + 3
-      for (let step = 0; step < maxSteps; step++) {
-        if (!await prepareFarmCutoverOnce(this.options.database, ports, this.enabled, this.now())) return false
-        if ((await this.read()).mode === 'active') return true
-      }
-      throw new Error('Farm preparation exceeded its bounded cohort; retain the archive and request forward recovery')
-    })
+    const prepare = async () => {
+      await this.options.drainBeforeUpgrade?.()
+      if (appUpdateLifecycle.getSnapshot().activeActions !== 0) return false
+      return criticalGameplayAction(async () => {
+        const ports = typeof this.options.cutover === 'function' ? await this.options.cutover() : this.options.cutover!
+        const maxSteps = FARM_CUTOVER_LIMITS.outfits + Math.ceil(FARM_CUTOVER_LIMITS.outfits / FARM_CUTOVER_LIMITS.page) + 3
+        for (let step = 0; step < maxSteps; step++) {
+          if (!await prepareFarmCutoverOnce(this.options.database, ports, this.enabled, this.now())) return false
+          if ((await this.read()).mode === 'active') return true
+        }
+        throw new Error('Farm preparation exceeded its bounded cohort; retain the archive and request forward recovery')
+      })
+    }
+    return this.options.withPreparation ? this.options.withPreparation(prepare) : prepare()
   }
   async exportRecovery(): Promise<void> {
     this.available()

@@ -587,6 +587,15 @@ The default `sim:farm` now runs the kitchen production envelope; `sim:farm:legac
   The loop is bounded by maximum outfits/pages plus prepare/final/status, not a timed spin. Any uncertain reply
   stops with its exact request and durable recovery; Retry resumes, never captures a replacement cohort/archive.
   A disabled build, unavailable storage, unsynced intent or unsafe action cannot reset.
+- D318 gives that confirmed sequence a runtime preparation scope. Await the current `inFlight` promise even
+  when the outbox is empty, cancel the armed timer, and defer public `flush`/schedule calls from reconnect,
+  visibility or timers. Only preparation's own drain uses `flushPending`; its last acknowledgement finishes
+  before the archive starts. A generation-scoped token releases the pause and schedules normal sync in
+  `finally`, including failure/lost reply, without letting a stopped account release a newer account's scope.
+  This fixes the reproduced overlap in which an empty sync started Puzzle/Inspiration work during archive
+  capture and caused `safeToPrepare` to stop the Farm. The host's optional `withPreparation` hook wraps the
+  unchanged restart guard/one-step protocol; the API, archive checks, queue requirements and reset whitelist
+  are unchanged. Runtime tests cover overlap, already-running sync and lost acknowledgement through active.
 - The complete confirmed sequence holds the app-update critical-action guard. The factory permits its own
   guard but rejects another concurrent critical action. Collect all, Retry and Farm network acknowledgement
   adoption are guarded too. Persistent jobs/intents survive a deliberate later restart. Vite's existing PWA
