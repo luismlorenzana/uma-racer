@@ -141,7 +141,7 @@ describe('Farm archive and local cutover', () => {
   })
   it('normal capability-off path performs no storage or network access and leaves malformed recovery untouched', async () => {
     db.close()
-    expect(await prepareFarmCutoverOnce(db, ports)).toBe(false); expect(ports.snapshot).not.toHaveBeenCalled(); expect(ports.prepare).not.toHaveBeenCalled()
+    expect(await prepareFarmCutoverOnce(db, ports, false)).toBe(false); expect(ports.snapshot).not.toHaveBeenCalled(); expect(ports.prepare).not.toHaveBeenCalled()
     await db.open(); const data = { schemaVersion: 99, keep: true }
     await db.farmRecovery.put({ id: 'farm-cutover-recovery-v1', reason: 'future', data, createdAt: 1 })
     expect(await prepareFarmCutoverOnce(db, ports, true)).toBe(false)

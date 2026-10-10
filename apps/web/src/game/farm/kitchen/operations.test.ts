@@ -87,7 +87,7 @@ describe('acknowledged-only Farm coordinator', () => {
   it('reserves monotonically across reloads and does not install a production host', async () => {
     expect(await coordinator.reserveOperationId('invented-device')).toBe('fop:invented-device:1')
     db.close(); await db.open(); expect(await coordinator.reserveOperationId('invented-device')).toBe('fop:invented-device:2')
-    await expect(new FarmOperationCoordinator(db, schedule).enqueue(start, 'disabled')).rejects.toThrow(/disabled/)
+    await expect(new FarmOperationCoordinator(db, schedule, false).enqueue(start, 'disabled')).rejects.toThrow(/disabled/)
   })
   it('rolls back every map-purchase acknowledgement boundary without losing the meal or creating a paid node', async () => {
     const id = 'farm:meal:b1:speed'; f.put('items', id, { itemId: id, quantity: 1, updatedAt: 1 }); await put(db, f.entities.get(`items/${id}`)!)

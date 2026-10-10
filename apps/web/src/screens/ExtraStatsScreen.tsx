@@ -26,12 +26,15 @@ import { CropMark } from '../ui/farm/CropMark'
 import { LockedIcon } from '../ui/icons'
 import { TYPE_ICON_COLORS, TypeIcon, typeLabel } from '../ui/TypeIcon'
 import { useTraining } from './TrainingScene'
+import { FARM_KITCHEN_RELEASE_ENABLED } from '../game/farm/kitchen/capability'
+import { ScreenState } from '../ui/ScreenState'
 
 export type NodeState = 'on' | 'off' | 'next' | 'locked'
 
 const FarmExtraStats = lazy(() => import('./farm/FarmExtraStatsProduction'))
 export function ExtraStatsScreen() {
   const farm = useGame(state => state.farmStats)
+  if (FARM_KITCHEN_RELEASE_ENABLED && farm.mode === 'legacy') return <ScreenState title="Meal-funded Extra Stats" detail="Prepare the protected Farm upgrade before buying or configuring the new meal map. Your old Extra Stats remain archived, not converted to free nodes." action={{ label: 'Prepare Farm', to: '/farm' }} />
   return farm.mode === 'legacy' ? <LegacyExtraStatsScreen /> : <Suspense fallback={<p className="p-4 text-sm">Opening meal map…</p>}><FarmExtraStats /></Suspense>
 }
 

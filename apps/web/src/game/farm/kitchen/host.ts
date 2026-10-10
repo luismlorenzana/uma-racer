@@ -1,12 +1,12 @@
 // Real durable Farm kitchen port, outside MinigameHost. See implementation §§4,6–7.
-import { createFarmOperation, farmOperationReferences, parseFarmOperationReceipt, farmCanonical, farmSafeId, parseFarmPayload, FARM_CUTOVER_GENERATION, FARM_KITCHEN_ENERGY_MS, FARM_KITCHEN_CATALOGUE,
+import { createFarmOperation, farmOperationReferences, parseFarmOperationReceipt, farmCanonical, farmSafeId, parseFarmPayload, FARM_CUTOVER_GENERATION, FARM_CUTOVER_LIMITS, FARM_KITCHEN_ENERGY_MS, FARM_KITCHEN_CATALOGUE,
   type FarmPayloadV1, type FarmOperationReceiptV1, type FarmOperationV1 } from '@racer/domain/farm/kitchen'
 import type { RacerDb } from '../../db'
 import { FarmOperationCoordinator, farmTransactionTables, readFarmPending, readFarmCanonical, farmWriterDependencies } from './operations'
 import { assertFarmViewRevision, readFarmKitchenView, type FarmKitchenReadInput, type FarmKitchenView, type FarmViewRevision } from './view'
 import { prepareFarmCutoverOnce, exportFarmCutoverRecovery, type FarmCutoverPorts } from './cutover'
 import { FARM_KITCHEN_RELEASE_ENABLED } from './capability'
-import { criticalGameplayAction } from '../../../app/update-lifecycle'
+import { appUpdateLifecycle, criticalGameplayAction } from '../../../app/update-lifecycle'
 import { exportFarmDeviceRecovery } from './recovery'
 
 export interface FarmIntent { intentId: string; expectedRevision: FarmViewRevision; dependencies?: string[] }
@@ -42,6 +42,8 @@ export interface FarmKitchenHostOptions {
   schedule?: () => void; publish?: (view: FarmKitchenView) => void | Promise<void>; afterWrite?: (boundary: string) => void
   ownerDebugAllowed?: () => boolean; cutover?: FarmCutoverPorts | (() => Promise<FarmCutoverPorts>)
   canEditExtra?: (outfitId: string, scenarioId: string) => boolean
+  /** Release preparation drains normal economic writes before taking its restart guard. */
+  drainBeforeUpgrade?: () => Promise<void>
   /** Explicit recovery only. Sends the immutable command to the same semantic repository; never a fresh ID. */
   recover?: (operations: FarmOperationV1[]) => Promise<unknown>
 }
@@ -199,6 +201,9 @@ export class PersistentFarmKitchenHost implements FarmKitchenHost {
   async buyNode(input: Input<'buy-node'>) { return this.mutate(input, payload('buy-node', input)) }
   async setActive(input: Input<'set-active'>) { return this.mutate(input, payload('set-active', input)) }
   async retry({ operationId, action = 'retry' }: { operationId: string; action?: 'retry' | 'discard' }): Promise<FarmMutation | null> {
+    return criticalGameplayAction(() => this.retryInAction(operationId, action))
+  }
+  private async retryInAction(operationId: string, action: 'retry' | 'discard'): Promise<FarmMutation | null> {
     this.available()
     const db = this.options.database, accepted = await db.farmOperations.get(operationId)
     if (accepted) {
@@ -236,6 +241,9 @@ export class PersistentFarmKitchenHost implements FarmKitchenHost {
     return this.result(operationId, true)
   }
   async collectAll(input: FarmIntent): Promise<FarmCollectResult> {
+    return criticalGameplayAction(() => this.collectAllInAction(input))
+  }
+  private async collectAllInAction(input: FarmIntent): Promise<FarmCollectResult> {
     this.available()
     const db = this.options.database, key = `collect:${input.intentId}`
     if (!this.enabled) throw new Error('This Farm generation is read-only until a compatible release')
@@ -290,8 +298,19 @@ export class PersistentFarmKitchenHost implements FarmKitchenHost {
     this.available()
     if (!this.options.cutover) throw new Error('Farm upgrade is unavailable; retain recovery')
     if (!this.enabled) return false
-    const ports = typeof this.options.cutover === 'function' ? await this.options.cutover() : this.options.cutover
-    return prepareFarmCutoverOnce(this.options.database, ports, this.enabled, this.now())
+    // A caller confirms the whole narrowly-scoped upgrade once, not once per outfit. The existing
+    // protocol still commits one durable bounded step at a time and stops on any uncertain reply.
+    await this.options.drainBeforeUpgrade?.()
+    if (appUpdateLifecycle.getSnapshot().activeActions !== 0) return false
+    return criticalGameplayAction(async () => {
+      const ports = typeof this.options.cutover === 'function' ? await this.options.cutover() : this.options.cutover!
+      const maxSteps = FARM_CUTOVER_LIMITS.outfits + Math.ceil(FARM_CUTOVER_LIMITS.outfits / FARM_CUTOVER_LIMITS.page) + 3
+      for (let step = 0; step < maxSteps; step++) {
+        if (!await prepareFarmCutoverOnce(this.options.database, ports, this.enabled, this.now())) return false
+        if ((await this.read()).mode === 'active') return true
+      }
+      throw new Error('Farm preparation exceeded its bounded cohort; retain the archive and request forward recovery')
+    })
   }
   async exportRecovery(): Promise<void> {
     this.available()

@@ -1,9 +1,10 @@
 # Farm production/cooking — implementation contract
 
-**T118–T123 pure rules, dormant persistence/cutover, real host, screens and stat joins implemented · M031 · 2026-10-09.** Read
+**T118–T124 complete loop and paired release gates · M031 · D315 · 2026-10-10.** Read
 [the design](../design/farm-kitchen-rework.md), [AGENTS.md](../../AGENTS.md) and the current task first.
-This standing contract must survive task deletion under D104. It specifies the new path; existing
-[Farm](../design/farm.md) stays live until T124. Do not describe a capability-off merge as a playable release.
+This standing contract survives task deletion under D104. It specifies the current path; [farm.md](../design/farm.md)
+retains archived legacy rules only. [Release evidence](../research/farm-kitchen-release-acceptance.md) distinguishes
+code/browser/deployment from pending owner account and installed-PWA checks.
 
 ## 1. Fixed boundaries and current integration points
 
@@ -74,7 +75,8 @@ fails rather than silently clamping. `progression.ts` derives lifetime levels/re
 
 Concrete pure schemas: Farm3; worker1; recipe-block1; Extra-block1; frozen job rules1; node template1. These
 are **not** a global Uma/save/Dexie bump. T119 wraps them in entity versions/update timestamps and economic
-operations; its transport/storage implementation is described below. No new record is installed in a real account yet.
+operations; its transport/storage implementation is described below. Reads install no new account records;
+an explicit verified preparation action owns generation creation and the narrow reset.
 
 - `createFarmKitchen` creates sparse ordered assignments; `farmStation` projects any of the thirty spots.
   `assignFarmWorker`/`removeFarmWorker` check ownership and Busy/Ready locks, retaining per-station attempts.
@@ -259,7 +261,7 @@ Generated synthetic stress maxima (UTF-8 JSON; witnesses, not permission to exce
 Generated near-900 KiB valid shared Uma reads also prove oversized repeated authoritative responses reject
 before commit. Two-device, lost-reply, distinct-ID terminal/purchase and all-write fault tests cover local-file,
 strict fake Firestore and isolated IndexedDB. AuthGuard still guards the existing `/api/sync`; no endpoint,
-credential, dependency, infrastructure or owner-account operation is added. Both Farm capabilities are false.
+credential, dependency, infrastructure or owner-account operation was added by T119, which merged dormant.
 
 Required bounds tests: max-input four-banquet Start (ten distinct stacks), combined Energy/Claim retry, thirty
 ready stations, two-device same-node purchase, all fourteen scenarios/four presets, many worker rows without
@@ -269,8 +271,9 @@ limits are not permission to make lifetime history finite or to delete it.
 
 ## 6. Protected cutover and recovery
 
-T120/D307 implements this **dormant**, with [synthetic rehearsal evidence](../research/farm-kitchen-cutover-rehearsal.md); T124 activates it. API and web have matching code-owned Farm rework capabilities,
-false through T123. No environment/workflow/infra change. With capabilities off, existing Farm/Extra UI/host and
+T120/D307 merged this dormant, with [synthetic rehearsal evidence](../research/farm-kitchen-cutover-rehearsal.md);
+T124/D315 activates it. API and web have matching code-owned capabilities, false through T123 and true at release.
+No environment/workflow/infra change. With capabilities off, existing Farm/Extra UI/host and
 sync behave exactly as before; browser proofs opt into isolated synthetic repositories only.
 
 1. New client, online persistent storage, drains legacy Farm/Extra and other economic queues. Wait for in-flight
@@ -365,13 +368,14 @@ racing/preset edits or downgrading generation. Existing evidence reconciliation 
 Legacy Claim uses the original cycle evidence plus cycle/station target guards, pays one old crop and zero new
 EXP, and cannot open recipes/cookbook. The original trusted-device timing policy is unchanged.
 
-Both capabilities remain false; this task neither executes an owner migration nor changes the shipped screens.
-Physical iPhone/quota/export and real-account/second-device acceptance remain T124 owner checks.
+T120 merged with both capabilities false and no owner execution. Physical iPhone/quota/export and
+real-account/second-device acceptance remain pending owner checks after the T124 code release.
 
 ## 7. Real host, views and navigation
 
 T121/D308 implements a separate `FarmKitchenHost` through `GameRuntime`, not a test double. The runtime extends lazily;
-legacy `FarmHost` remains selected until the release capability and active generation both agree.
+legacy `FarmHost` remains selected only in disabled builds with no new control. Enabled builds install the real
+kitchen port read-only in preparation mode before generation activation; no page opens the old writer.
 
 Port: `read`, `assign`, `remove`, `start`, `claim`, `collectAll`, `spendEnergy`, `grantEnergy`, `buyNode`,
 `setActive`, `retry`, `prepareUpgrade`, `exportRecovery`; each mutation returns durable canonical/pending status
@@ -389,7 +393,7 @@ no Dexie/network writes on ticks. Sync/Error/Pending lives beside the affected j
 ready installed instance; `getFarmKitchenHost()` throws before installation/after stop. Flag-off accounts with no
 new control keep the existing Farm writer and create no kitchen/preferences rows. Any control blocks that writer,
 even while preparing or corrupt. A disabled/unknown active generation is maintenance/read-only; preparing is upgrade,
-never an empty pretend farm. Both capabilities remain false. Installation and read subscriptions never prepare an account.
+never an empty pretend farm. T121 merged dormant; T124 enables the port. Installation and reads never prepare an account.
 
 Public asynchronous signatures:
 
@@ -448,8 +452,8 @@ T123/D314 joins acknowledged maps into Training/race stats, as described in §8.
 proof. Production alone imports `GameRuntime`, verified content and owned-outfit labels. The proof boots a unique
 `farm-kitchen-proof-*` Dexie database with invented outfits, calls `PersistentFarmKitchenHost`, and uses the same
 semantic resolver for acknowledgements; auth, account providers, service workers, owner storage and private art never
-start. `main.tsx` recognizes that route before normal boot. The production route stays behind the unchanged false
-kitchen capability, so the current Farm remains the only normal `/farm` writer until T124.
+start. `main.tsx` recognizes that route before normal boot. T122 merged behind the disabled capability;
+T124 enables the lazy production route, keeping the synthetic route DEV-only.
 
 All gameplay buttons call `FarmKitchenHost`; screen opening and subscriptions remain write-free. Claims retain their
 completed frozen job only in React long enough to offer explicit exact Repeat, Choose recipe and Items actions.
@@ -544,20 +548,19 @@ T123 implements the actual acknowledged-map join and explicitly named historical
 
 [The synthetic phone proof](../research/farm-kitchen-phone-proof/README.md#t123-extra-map-and-race-proof) covers
 both required sizes, all four builds, map/list/pure/pair/Sun, insufficient meals, full capacity/+0 waste,
-free on/off, recipe return and real pre-race deltas. T124 alone enables release and owns physical-device acceptance.
+free on/off, recipe return and real pre-race deltas. T124 enables release; physical-device acceptance remains owner-only.
 
 ## 9. Delivery and evidence
 
 Task PRs run lint/test/build and the relevant synthetic sims. New script names: `sim:farm:kitchen` (time/material
-conservation) and `sim:farm:stats` (base/cards/Farm/cap matrix) are implemented by T118. Keep old `sim:farm` through dormant
-merges, move its live-envelope assertions to the new model only at T124 while retaining legacy rule fixtures.
+conservation) and `sim:farm:stats` (base/cards/Farm/cap matrix) are implemented by T118. T124 makes `sim:farm`
+the current production envelope; `sim:farm:legacy` preserves the frozen plot/timer model and fixtures.
 Their complete deterministic regression hashes/policies are in [the balance record](../research/farm-kitchen-balance.md).
 The legacy constellation sim's previously recorded tier1 stamina failure remains explicit, not hidden by Farm tuning.
 
 Each task carries its rules into this page/design, appends an actual next-free decision and deletes its own
-spec in the same completing PR. Until T124, assertions are additive/capability-off and do not replace shipped
-Farm documentation. At release update Farm/Constellations/architecture/minigame-kit/README together, remove
-contradictory old live descriptions and retain versioned legacy parsers and historical decisions.
+spec in the same completing PR. T118–T123 merged dormant; T124 updates Farm/Constellations/architecture/minigame-kit/README
+together and retains versioned legacy parsers and historical decisions.
 
 Synthetic browser evidence lives in `docs/research/farm-kitchen-phone-proof/`, no owner save/art in git. Verify
 390 × 844 and 375 × 667,44 pt actions/safe areas, all six district tiles without page scroll, accessible sheet/list
@@ -572,3 +575,35 @@ Hosting success. No content republish is expected; do not rewrite existing priva
 Physical iPhone, real-account reset visibility, actual check-in pacing and second-device play require the owner.
 Those checks follow the completed production release, not a demand that the owner validate an inaccessible DEV
 screen. Missing owner results remain explicitly pending; do not label the full device acceptance passed.
+
+## 10. T124 complete release (D315)
+
+Matching `game/farm/kitchen/capability.ts` and API `save/farms.ts` gates are enabled in code; a parity test pins
+their agreement. No environment, infrastructure, dependency, content pack or RPG/Puzzle capability changes.
+The default `sim:farm` now runs the kitchen production envelope; `sim:farm:legacy` retains the old ladder.
+
+- One explicit **Archive and prepare Farm** press drains existing outbox writes, waits for other commits,
+  captures/verifies the private whole-account archive, then repeats the existing one-step protocol until active.
+  The loop is bounded by maximum outfits/pages plus prepare/final/status, not a timed spin. Any uncertain reply
+  stops with its exact request and durable recovery; Retry resumes, never captures a replacement cohort/archive.
+  A disabled build, unavailable storage, unsynced intent or unsafe action cannot reset.
+- The complete confirmed sequence holds the app-update critical-action guard. The factory permits its own
+  guard but rejects another concurrent critical action. Collect all, Retry and Farm network acknowledgement
+  adoption are guarded too. Persistent jobs/intents survive a deliberate later restart. Vite's existing PWA
+  precache contains the Farm/Extra/Home/guide chunks; no new service-worker/config rules are required.
+- Runtime publishes reset Uma rows after adopted cutover data, not just the Farm vectors. Reads never prepare.
+  Home lazily reads actual ready/assigned/next-finish counts, showing upgrade/recovery instead of fake zero.
+  Preparation failures and incompatible data expose Retry/Export; other account activities remain navigable.
+- The common screen does not build a crew in legacy/upgrade mode. Read errors precede loading UI, so recovery
+  cannot hang on Opening. Actions wait for focus/visibility restoration. Fields flex around status messages
+  so all six44 px actions remain visible at both phone sizes, including after a mutation.
+- Old Section1/2/3 aliases map to Garden/Orchard/Barn; Workers/Crops map to Crew/Recipes. Extra points to
+  preparation until ready. Legacy crop jobs have an explicit detail/claim path, retaining deadline and paying
+  old stock once for0 newEXP. Settings exposes preparation/export and a deliberate50 Energy grant, not the
+  retired global timer shift. No owner grants or manual migration were executed by this release.
+- `release.test.ts` exercises empty/legacy→archive→35-outfit interrupted upgrade and exact whitelist equality,
+  then zero new stock→raw→processing→pure/pair/Sun meals→selected-build activation. Other host/transport tests
+  verify30 Collect all, stock races, input replay, Energy and unknown acknowledgements. DOM tests cover initial
+  legacy crew, explicit preparation and corrupt/future recovery. [Acceptance](../research/farm-kitchen-release-acceptance.md)
+  records actual results, balance limitations and owner protocol; [phone screenshots](../research/farm-kitchen-release-proof/README.md)
+  use unique isolated invented accounts and the real host/resolver only.

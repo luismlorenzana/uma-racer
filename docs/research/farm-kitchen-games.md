@@ -1,7 +1,7 @@
 # Farm production and cooking — research notes
 
 **Researched 2026-10-08.** Planning for the owner's new [Farm/cooking definition](../design/farm-kitchen-rework.md),
-now specified in [M031](../tasks/M031-farm-kitchen-rework.md). Implementation has not started.
+now implemented by M031/T118–T124; see [release evidence](farm-kitchen-release-acceptance.md).
 This supplements the earlier [farming comparison](farming-games.md); it does not change shipped rules.
 Only primary/developer sources are used below. No source art, extracted rows or recipe dataset was imported.
 

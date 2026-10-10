@@ -13,6 +13,7 @@ import { Panel } from '../ui/Panel'
 import { readFarmSaveSummary, type FarmSaveSummary } from '../game/farm/diagnostics'
 import { PUZZLES_RELEASE_ENABLED } from '../game/puzzles/capability'
 import { PuzzleBackupButton } from '../ui/puzzles/PuzzleBackupButton'
+import { FARM_KITCHEN_RELEASE_ENABLED } from '../game/farm/kitchen/capability'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -36,10 +37,11 @@ export function SettingsScreen() {
   const content = useContent()
   const update = useAppUpdate()
   const [farmSummary, setFarmSummary] = useState<FarmSaveSummary | null>(null)
+  const [farmReadError, setFarmReadError] = useState<string | null>(null)
   useEffect(() => {
     if (gameStatus !== 'ready') { setFarmSummary(null); return }
     let active = true
-    void readFarmSaveSummary().then((summary) => { if (active) setFarmSummary(summary) }).catch(() => { if (active) setFarmSummary(null) })
+    void readFarmSaveSummary().then((summary) => { if (active) { setFarmSummary(summary); setFarmReadError(null) } }).catch(() => { if (active) { setFarmSummary(null); setFarmReadError('Recovery needed · open Farm') } })
     return () => { active = false }
   }, [gameStatus, sync.pending])
   const contentLabel =
@@ -84,7 +86,7 @@ export function SettingsScreen() {
         <p className="mt-1 text-[12px] text-ink-soft">
           Tops up the account so a loop can be exercised without waiting on the daily grant. Every grant is
           recorded in the ledger as <code>dev-grant</code>, so balance work can filter it out — nothing in
-          ordinary play ever produces one. The Farm button brings every crop still growing 30 minutes closer.
+          ordinary play ever produces one. {FARM_KITCHEN_RELEASE_ENABLED ? 'Farm Energy advances only one explicitly selected job; it gives no EXP or output before collection.' : 'The Farm button brings every crop still growing 30 minutes closer.'}
         </p>
         <div className="mt-3 grid gap-2">
           <Button
@@ -115,15 +117,17 @@ export function SettingsScreen() {
             onClick={() => {
               setGranting(true)
               setFarmNote(null)
-              void hastenFarmCrops(30)
-                .then((plots) => setFarmNote(plots === 0
-                  ? 'No Farm crops are growing.'
-                  : `${plots} growing ${plots === 1 ? 'crop is' : 'crops are'} now due 30 minutes sooner.`))
-                .catch(() => setFarmNote('The Farm could not be changed. Open it once, then try again.'))
+              void (FARM_KITCHEN_RELEASE_ENABLED ? import('../game/runtime').then(async ({ gameRuntime }) => {
+                const host = await gameRuntime.farmKitchenHost(), view = await host.read()
+                const result = await host.grantEnergy({ intentId: await host.createIntent(), expectedRevision: view.revision, ownerDebugConfirmed: true })
+                return result.status === 'pending' ? '50 Energy saved locally · pending sync. No job was accelerated.' : '50 Energy acknowledged. Spend on a chosen job in Farm.'
+              }) : hastenFarmCrops(30).then(plots => plots === 0 ? 'No Farm crops are growing.' : `${plots} growing ${plots === 1 ? 'crop is' : 'crops are'} now due 30 minutes sooner.`))
+                .then(setFarmNote)
+                .catch(error => setFarmNote(error instanceof Error ? error.message : 'The Farm could not be changed. Prepare it first.'))
                 .finally(() => setGranting(false))
             }}
           >
-            {granting ? 'Working…' : 'Farm: growing crops −30 min'}
+            {granting ? 'Working…' : FARM_KITCHEN_RELEASE_ENABLED ? 'Debug · Grant 50 Farm Energy' : 'Farm: growing crops −30 min'}
           </Button>
           {farmNote && <p role="status" className="px-1 text-[12px] text-ink-soft">{farmNote}</p>}
         </div>
@@ -134,7 +138,7 @@ export function SettingsScreen() {
         <Row label="Signed in as" value={auth.user?.email ?? auth.user?.name ?? '—'} />
         <Row label="Local save" value={persistent ? 'IndexedDB' : 'Memory only'} />
         <Row label="Save state" value={gameStatus} />
-        <Row label="Farm save" value={farmSummary?.kitchen ? `${farmSummary.kitchen.phase} · ${farmSummary.unlockedPlots} stations · ${farmSummary.readyPlots} ready` : farmSummary?.farmPresent ? `Lv${farmSummary.farmLevel} · ${farmSummary.unlockedPlots}/${MAX_FARM_PLOTS} plots · ${farmSummary.readyPlots} ready` : 'Not opened'} />
+        <Row label="Farm save" value={farmReadError ?? (farmSummary?.kitchen ? `${farmSummary.kitchen.phase} · ${farmSummary.unlockedPlots} stations · ${farmSummary.readyPlots} ready` : farmSummary?.farmPresent ? `Lv${farmSummary.farmLevel} · ${farmSummary.unlockedPlots}/${MAX_FARM_PLOTS} plots · ${farmSummary.readyPlots} ready` : FARM_KITCHEN_RELEASE_ENABLED ? 'Preparation needed · open Farm' : 'Not opened')} />
         {farmSummary?.kitchen && <Row label="Farm records" value={`${farmSummary.kitchen.workers} workers · ${farmSummary.kitchen.pending} pending · ${farmSummary.kitchen.recovery} need review`} />}
         <Row label="Global Items" value={farmSummary ? `${farmSummary.itemStacks} stacks · ${farmSummary.totalItems} items · ${farmSummary.itemMovements} movements` : '—'} />
         <Row label="Cloud sync" value={`${sync.status}${sync.pending ? ` · ${sync.pending} pending` : ''}`} />
@@ -160,7 +164,8 @@ export function SettingsScreen() {
       </Panel>
       {gameStatus === 'ready' && <Link to="/trainer" className="flex min-h-11 items-center justify-center rounded-sm bg-panel px-4 font-semibold text-accent-strong shadow-1">Open Trainer profile</Link>}
       {PUZZLES_RELEASE_ENABLED && persistent && <Panel><PuzzleBackupButton light /></Panel>}
-      {farmSummary?.kitchen && persistent && <Panel>
+      {(FARM_KITCHEN_RELEASE_ENABLED || farmSummary?.kitchen) && persistent && <Panel>
+        <Link to="/farm" className="flex min-h-11 items-center font-semibold text-accent-strong">Open Farm · preparation and recovery</Link>
         <Button variant="secondary" disabled={granting} onClick={() => {
           setGranting(true)
           void import('../game/runtime').then(async ({ gameRuntime }) => (await gameRuntime.farmKitchenHost()).exportRecovery())

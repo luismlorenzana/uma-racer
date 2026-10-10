@@ -51,7 +51,8 @@ pnpm build          # production builds, including the PWA service worker
 pnpm sim:balance    # headless race balance table
 pnpm sim:spark      # synthetic Spark Rival Circuit balance matrix and regression gate
 pnpm sim:spark -- --full  # 1,000 fixed seeds for all 14 tiers × TL1–9
-pnpm sim:farm       # synthetic Farm plot, crop-row and outfit-level progression gate
+pnpm sim:farm       # current Farm production/check-in/material envelope
+pnpm sim:farm:legacy # frozen v1/v2 plot/crop progression regression
 pnpm sim:rpg:campaign # class party (Brawler, two Mages, Cleric, Summoner) through generated chapters (D282)
 pnpm sim:puzzles    # 888 invented battles + exhaustive campaign/economy; --combat / --economy filters
 pnpm data:rpg:validate # offline private RPG cast pack integrity and art pins (T097)
@@ -87,8 +88,8 @@ docs/           design, technical, research
 | [Constellations](docs/design/constellations.md) | The per-scenario skill tree: node kinds, stat budget and its invariance rule, skills, lineage |
 | [Minigames](docs/design/minigames.md) | Friendship earns global card stars; retired Spark rules remain for history |
 | [Minigame kit](docs/design/minigame-kit.md) | What every minigame shares: the run contract, determinism, engine home, screen layout, look, guide and reusable pieces |
-| [Stable Farm](docs/design/farm.md) | Account farm that grows in Sections of six plots: persistent outfit workers with linear Farming Levels, a steepening Farm Level ladder, scenario crops, synced harvests, global Items and crop-funded Extra Stats |
-| [Farm production/cooking definition](docs/design/farm-kitchen-rework.md) | M031: T118–T123 rules, dormant sync/reset, real host, phone screens and canonical Extra/race joins complete, not live; five six-station districts, symmetric scenario foods, raw → processed → meals and shared-block maps; T124 owns release |
+| [Stable Farm](docs/design/farm.md) | Current Farm entry and archived v1/v2 rules for legacy stock/jobs/history |
+| [Farm production/cooking](docs/design/farm-kitchen-rework.md) | Complete M031/T118–T124: five open six-station districts, independent outfit levels, symmetric scenario foods, raw → processed → meals and canonical shared-block Extra maps; explicit archived one-time preparation. [Release evidence](docs/research/farm-kitchen-release-acceptance.md) separates production checks from pending owner iPhone acceptance |
 | [Global Uma RPG](docs/design/uma-rpg.md) | Account-wide campaign: one generated chapter per scenario on a launch pad, a replayable top-to-bottom map, five-Uma parties of four classes, Octopath-style break battles against PriConne teams, carried MP and camps, and EXP plus scenario Inspiration tokens from every win (D260–D282) |
 | [RPG classes and skill trees](docs/design/uma-rpg-classes.md) | Brawler, Mage, Cleric and Summoner: turns and hands, multi-part hits and weaknesses, every authored tree, node and number, Cleric blessings, summons and the balance check (D277–D282) |
 | [Uma Puzzles](docs/design/uma-puzzles.md) | Free global party campaign, replay-backed battles, scenario/style materials, debt/exchange and shared CL spending; protected preservation and private owner-export art (D287–D292) |

@@ -10,6 +10,8 @@ const farmKitchenChildren = () => [
   { path: 'wishlist', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenWishlistScreen }) },
   { path: 'items', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenItemsScreen }) },
   { path: 'section/:section', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenLegacySectionRedirect }) },
+  { path: 'workers', element: <Navigate to="/farm/crew" replace /> },
+  { path: 'crops', element: <Navigate to="/farm/recipes" replace /> },
   { path: '*', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenRetryScreen }) },
 ]
 
@@ -221,6 +223,10 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/farm-kitchen-proof/release',
+    lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenReleaseProof')).FarmKitchenReleaseProof }),
+    children: farmKitchenChildren(),
+  }, {
     path: 'dev/farm-kitchen-proof',
     lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenProofScreen')).FarmKitchenProofShell }),
     children: [...farmKitchenChildren().filter(route => route.path !== '*'), { path: 'extra', lazy: async () => ({ Component: (await import('../screens/farm/FarmExtraStatsProof')).FarmExtraStatsProof }) }],

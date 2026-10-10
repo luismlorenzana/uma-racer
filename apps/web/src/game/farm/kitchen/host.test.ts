@@ -17,6 +17,9 @@ import { createFarmKitchenStore, publishFarmKitchenView, observeFarmKitchen, typ
 import { readFarmKitchenSummary } from './diagnostics'
 import { exportFarmDeviceRecovery } from './recovery'
 
+// Preserve explicit disabled-build coverage independently of the shipping release capability.
+vi.mock('./capability', () => ({ FARM_KITCHEN_RELEASE_ENABLED: false }))
+
 const raw = 'farm:raw:ura-finale:vegetable:speed'
 const processed = 'farm:processed:ura-finale:canned-vegetable:speed'
 let sequence = 0

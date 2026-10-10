@@ -820,10 +820,11 @@ describe('game bootstrap coordinator', () => {
     expect(useGame.getState()).toMatchObject({ status: 'ready', persistent: true, profile: { tickets: 15 } })
     expect(Object.keys(useGame.getState().umas)).toHaveLength(25)
     expect(load).toHaveBeenCalledTimes(1)
-    expect(() => getFarmKitchenHost()).toThrow(/not ready/)
+    expect((await getFarmKitchenHost().read()).mode).toBe('legacy')
+    expect(await db.farmRecovery.count()).toBe(0)
     expect(await db.farm.count()).toBe(0)
     expect(await db.farmPreferences.count()).toBe(0)
-    await expect(runtime.farmKitchenHost()).rejects.toThrow(/not ready/)
+    expect(await runtime.farmKitchenHost() === getFarmKitchenHost()).toBe(true)
 
     runtime.stop()
     await resetDatabase()

@@ -144,7 +144,7 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} Farm
 })
 it('the normal disabled endpoint returns before any local file or Firestore access', async () => {
   const req: FarmCutoverRequest = { schemaVersion: 1, generation: 'invented', action: 'status' }, fake = new StrictDb()
-  const repo = new FirestoreSaveRepository(fake as unknown as ConstructorParameters<typeof FirestoreSaveRepository>[0])
+  const repo = new FirestoreSaveRepository(fake as unknown as ConstructorParameters<typeof FirestoreSaveRepository>[0], false, undefined, false)
   expect((await repo.prepareFarm('invented', req)).status).toBe('disabled'); expect(fake.readCount).toBe(0); expect(fake.queries).toBe(0)
-  expect((await new LocalSaveRepository('/nonexistent/do-not-open.json').prepareFarm('invented', req)).status).toBe('disabled')
+  expect((await new LocalSaveRepository('/nonexistent/do-not-open.json', false, undefined, false).prepareFarm('invented', req)).status).toBe('disabled')
 })
