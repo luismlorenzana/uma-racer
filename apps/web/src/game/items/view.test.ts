@@ -1,6 +1,6 @@
 import { farmCropById, type InventoryStackData } from '@racer/domain/farm'
 import { describe, expect, it } from 'vitest'
-import { buildItemInventory, produceItemDefinitions, resolveItemLink } from './view'
+import { buildItemInventory, farmKitchenItemDefinitions, produceItemDefinitions, resolveItemLink } from './view'
 
 const crops = [
   farmCropById('produce:t2:power')!,
@@ -11,6 +11,12 @@ const definitions = produceItemDefinitions(crops)
 const stack = (itemId: string, quantity: number): InventoryStackData => ({ itemId, quantity, updatedAt: 10 })
 
 describe('global Item inventory view', () => {
+  it('exposes the bounded Farm kitchen catalogue with useful facets', () => {
+    const kitchen = farmKitchenItemDefinitions()
+    expect(kitchen).toHaveLength(1169)
+    expect(new Set(kitchen.map(d => d.id)).size).toBe(1169)
+    expect(kitchen.find(d => d.food.stage === 'energy')?.facets.stage).toBe('energy')
+  })
   it('joins 0, 1 and large stacks and uses scenario, stat, name order', () => {
     const view = buildItemInventory(definitions, [
       stack('produce:t1:wit', 1),

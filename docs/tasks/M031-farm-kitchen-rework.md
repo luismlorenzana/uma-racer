@@ -1,6 +1,6 @@
 # M031 — Farm production, cooking and Extra Stats
 
-**State: T118–T121 complete; T122 next.** Original catalogue, production/map rules and deterministic
+**State: T118–T122 complete; T123 next.** Original catalogue, production/map rules and deterministic
 witnesses are implemented additively (D304); the live Farm and owner account are unchanged. [Design](../design/farm-kitchen-rework.md),
 [technical contract](../technical/farm-kitchen-implementation.md), [research](../research/farm-kitchen-games.md).
 
@@ -32,7 +32,7 @@ old Farm EXP/levels and Extra purchases/actives once, safely, without discarding
 | T119 — **Complete** ([contract](../technical/farm-kitchen-implementation.md#3-records-and-ownership), [verification](../research/farm-kitchen-sync.md)) | Records/parsers/API mirror, atomic operations, bounded sync and protection (D306); existing Farm timing retained | T118 | Dormant backend/DB support, no reset |
 | T120 — **Complete** ([contract](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307), [rehearsal](../research/farm-kitchen-cutover-rehearsal.md)) | Private whole-account archive, exact resumable reset, bounded verification and legacy claims (D307) | T119 | Both capabilities off, no real-account migration |
 | T121 — **Complete** ([host contract](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308), [verification](../research/farm-kitchen-host.md)) | Real save-backed host, bounded target reads, canonical/pending selectors, exact retry/Collect and recovery (D308) | T120 | Both gates off; normal old Farm unchanged |
-| [T122 — Farm screens/cookbook](T122-farm-kitchen-screens.md) | Five phone districts, crew, recipes/shopping/Items, original glyphs, guide/Energy | T121 | Isolated proof only; legacy Home unchanged |
+| T122 — **Complete** ([presentation contract](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313), [phone proof](../research/farm-kitchen-phone-proof/README.md)) | Five phone districts, crew, recipes/shopping/Items, original glyphs, guide/Energy (D313) | T121 | Capability off; isolated real-host proof only; legacy Home unchanged |
 | [T123 — Extra map and race wiring](T123-farm-kitchen-extra-stats.md) | Meal purchases, shared map/list, preset-specific stats and real race joins | T122 | Active-generation path dormant, legacy stats unchanged |
 | [T124 — Full production release](T124-farm-kitchen-release.md) | Integrated checks/tuning, matching capabilities, deployment/PWA proof and owner protocol | T118–T123 merged | Complete new loop plus guarded one-time reset |
 
