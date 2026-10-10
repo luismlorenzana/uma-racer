@@ -4,8 +4,8 @@ import { FARM_CUTOVER_LIMITS, farmCanonical, farmBytes, farmCutoverSource, farmA
   type FarmArchiveProof } from '@racer/domain/farm/kitchen'
 import type { RacerDb } from '../../db'
 export const FARM_ARCHIVE_REASON = 'farm-cutover-archive'
-/** Local databases whose tables an archive can hold: v33 (D310) only rewrites RPG rows, no table shapes. */
-export const FARM_ARCHIVE_DATABASE_VERSIONS: readonly number[] = [32, 33]
+/** Local databases whose tables an archive can hold: v33 (D310) and v34 (D312) only rewrite RPG rows, no table shapes. */
+export const FARM_ARCHIVE_DATABASE_VERSIONS: readonly number[] = [32, 33, 34]
 export interface FarmRecoveryArchive {
   schemaVersion: 1; accountId: string; profileCreatedAt: number; build: string; databaseVersion: number; createdAt: number;
   /** Raw canonical rows are retained, even when their supported reader normalizes a legacy schema. */

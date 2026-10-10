@@ -163,6 +163,36 @@ describe('class upgrade (Dexie v29, D282)', () => {
   })
 })
 
+describe('Finals rebalance (Dexie v34, D312)', () => {
+  afterEach(() => db.close())
+  it("marks the owner's URA Finale run complete, carries other runs by count and closes a fight on a retired route", async () => {
+    await db.delete()
+    const legacy = legacyDb(33)
+    await legacy.open()
+    const run = (presetId: string, chapterId: string, wins: Record<string, number>, battle: unknown = null) => ({ schemaVersion: 2, presetId, chapterId,
+      wins: { start: 1, ...wins }, mp: { u1: 4 }, battle, battles: 30, clearedAt: 7, updatedAt: 1 })
+    const battleId = 'rpg-battle:party-1:ura-finale:30'
+    await legacy.table('rpgCheckpoints').bulkPut([
+      { id: 'party-1:ura-finale', version: 9, data: run('party-1', 'ura-finale', { 'final-camp': 1, 'fire-sub': 1, 'fire-boss': 1, 'ice-sub': 1,
+        'ice-boss': 2, 'dark-sub': 1, 'dark-boss': 1 }, { battleId, nodeId: 'light-sub', startedAt: 1, input: { version: 5, seed: 1 } }) },
+      { id: 'party-2:unity-cup', version: 3, data: run('party-2', 'unity-cup', { 'light-sub': 1, 'light-boss': 1, 'fire-sub': 1 }) },
+      { id: 'party-3:ura-finale', version: 2, data: { ...run('party-3', 'ura-finale', { a1r1c1: 1 }), clearedAt: null } },
+    ])
+    await legacy.table('rpgFights').put({ id: battleId, actions: [], updatedAt: 1 })
+    legacy.close()
+    await db.open()
+    const all = ['route1-sub', 'route1-boss', 'route2-sub', 'route2-boss', 'route3-sub', 'route3-boss']
+    const ura = (await db.rpgCheckpoints.get('party-1:ura-finale'))!.data
+    expect(Object.keys(ura.wins).sort()).toEqual(['final-camp', ...all, 'start'].sort())
+    expect(ura).toMatchObject({ battle: null, clearedAt: 7, mp: { u1: 4 } })
+    expect(await db.rpgFights.count()).toBe(0)
+    expect((await db.rpgCheckpoints.get('party-2:unity-cup'))!.data.wins).toEqual({ start: 1, 'route1-sub': 1, 'route1-boss': 1, 'route2-sub': 1 })
+    expect((await db.rpgCheckpoints.get('party-3:ura-finale'))!.data.wins).toEqual({ start: 1, a1r1c1: 1 })
+    expect((await db.outbox.toArray()).map((r) => `${r.op}:${r.kind}/${r.id}`).sort()).toEqual([
+      'upsert:rpgCheckpoints/party-1:ura-finale', 'upsert:rpgCheckpoints/party-2:unity-cup'])
+  })
+})
+
 describe('Spell Blade upgrade (Dexie v33, D310)', () => {
   afterEach(() => db.close())
   it('turns a Mage with a Short Sword into a Spell Blade, clears her party skills and closes an engine v4 fight', async () => {
@@ -224,10 +254,11 @@ describe('owner RPG reset (Dexie v30, D285)', () => {
       profile: { classId: 'brawler', weapons: ['greatsword', 'spear'], tier: 1, level: 1, exp: 0, tree: [], legacy: [] } })
     expect((await db.rpgPresets.get('party-1'))!.data.slots[0]).toEqual({ outfitId: 'u1', loadout: [], familiar: 'bow' })
     expect((await db.rpgCheckpoints.get('party-1:ura-finale'))!.data).toMatchObject({ wins: { start: 1 }, mp: {}, battle: null, clearedAt: null, battles: 12 })
-    expect((await db.rpgCheckpoints.get('party-2:ura-finale'))!.data).toMatchObject({ wins: { a1r1c1: 3 }, clearedAt: 5 })
+    // Version 34 (D312) then carries Party 2's beaten champion onto the three Finals routes (a URA run: all of them).
+    expect((await db.rpgCheckpoints.get('party-2:ura-finale'))!.data).toMatchObject({ wins: { a1r1c1: 3, 'route3-boss': 1 }, clearedAt: 5 })
     expect(await db.rpgFights.count()).toBe(0)
     expect((await db.outbox.toArray()).map((r) => `${r.op}:${r.kind}/${r.id}`).sort()).toEqual([
-      'upsert:rpgCheckpoints/party-1:ura-finale', 'upsert:rpgOutfits/u1', 'upsert:rpgPresets/party-1'])
+      'upsert:rpgCheckpoints/party-1:ura-finale', 'upsert:rpgCheckpoints/party-2:ura-finale', 'upsert:rpgOutfits/u1', 'upsert:rpgPresets/party-1'])
   })
 })
 

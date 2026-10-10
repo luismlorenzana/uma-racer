@@ -1,16 +1,17 @@
-// One generated campaign chapter per scenario: a top-to-bottom map of fights, camps, sub-bosses and five
-// elemental final bosses (docs/design/uma-rpg.md#chapters, D262). Layout and numbers are code; the private pack only
+// One generated campaign chapter per scenario: a top-to-bottom map of fights, camps, sub-bosses and three authored
+// Finals routes (docs/design/uma-rpg.md#chapters, D262, D312). Layout and numbers are code; the private pack only
 // supplies the cast (names and portraits).
 import { SCENARIOS } from '../../scenarios'
 import { RPG_DEPTH_GATES, RPG_ELEMENTS, RPG_WEAPON_KINDS, rpgElementWeakness, type RpgElement } from '../rules'
 import { RPG_SKILL_POWER } from '../catalog'
 import type { BattleEnemy, BattleWeaknesses, EnemyRank } from '../battle/types'
 import { RPG_FOE_ROLES, RPG_FOE_TUNING, rpgFoe, type RpgFoeRole } from './enemies'
+import { RPG_FINALS, type RpgFinalsRoute } from './finals'
 
 export const RPG_CAMPAIGN_VERSION = 1
 /** D266: a chapter spans twelve levels (Debut 1–3, Classic 4–6, Senior 7–9, Finals 10–12), so four fill Lv1–48. */
 export const RPG_CHAPTER_LEVELS = 12
-/** Stages with rows of regular fights; the Finals is five elemental sub-bosses and five champions. */
+/** Stages with rows of regular fights; the Finals is three routes of a vanguard and a champion (D312). */
 export const RPG_FIGHT_STAGES = 3
 /** D286: a stage's first two levels are one row of three fights each, then its camp and sub-boss at the third. */
 export const RPG_STAGE_FIGHT_ROWS = 2
@@ -29,6 +30,8 @@ export interface RpgMapNode {
   name: string
   /** The route's or boss's element, when the node has one. */
   element: RpgElement | null
+  /** A Finals route's one-line flavor (D312). */
+  note: string | null
   enemies: BattleEnemy[]
   exits: string[]
 }
@@ -45,7 +48,14 @@ export interface RpgCampaignChapter {
 
 export const RPG_STAGE_NAMES = ['Debut', 'Classic', 'Senior', 'Finals'] as const
 const FIGHT_NAMES = ['Skirmish', 'Rival team', 'Ambush', 'Patrol', 'Sparring match', 'Practice bout', 'Road block', 'Challenge']
-const ROUTE_NAME: Readonly<Record<RpgElement, string>> = { fire: 'Ember', ice: 'Frost', lightning: 'Storm', light: 'Dawn', dark: 'Dusk' }
+/** Finals node ids: route 1–3's vanguard and champion. */
+export const rpgFinalsNodeIds = (route: number): { vanguard: string; champion: string } => ({ vanguard: `route${route}-sub`, champion: `route${route}-boss` })
+/** The authored Finals of a scenario. */
+export function rpgFinals(scenarioId: string) {
+  const finals = RPG_FINALS[scenarioId]
+  if (!finals) throw new RangeError(`No Finals authored for ${scenarioId}`)
+  return finals
+}
 
 function hash(text: string): number {
   let h = 0x811c9dc5
@@ -60,12 +70,15 @@ export function rpgTierLevel(lifetime: number): { tier: number; level: number } 
 }
 export const rpgChapterLevelStart = (tier: number): number => (tier - 1) * RPG_CHAPTER_LEVELS + 1
 
-interface Layout { id: string; row: number; col: number; kind: RpgMapNodeKind; level: number; stage: number; element: RpgElement | null; exits: string[] }
+interface Layout { id: string; row: number; col: number; kind: RpgMapNodeKind; level: number; stage: number; element: RpgElement | null
+  exits: string[]; route: { index: number; spec: RpgFinalsRoute } | null }
 
-function layout(start: number, scenarioTier: number): Layout[] {
+function layout(start: number, scenarioId: string, scenarioTier: number): Layout[] {
   const nodes: Layout[] = []
   let row = 0
-  const add = (n: Omit<Layout, 'exits' | 'row'>): Layout => { const node = { ...n, row, exits: [] }; nodes.push(node); return node }
+  const add = (n: Omit<Layout, 'exits' | 'row' | 'route'> & { route?: Layout['route'] }): Layout => {
+    const node = { route: null, ...n, row, exits: [] }; nodes.push(node); return node
+  }
   let previous: Layout[] = [add({ id: 'start', col: 2, kind: 'camp', level: start, stage: 0, element: null })]
   row += 1
   const link = (from: Layout[], to: Layout[]) => {
@@ -89,14 +102,16 @@ function layout(start: number, scenarioTier: number): Layout[] {
     link([camp], [boss]); row += 1
     previous = [boss]
   }
-  // Finals (D266): the last camp opens five elemental routes, each a sub-boss then its champion.
+  // Finals (D266, D312): the last camp opens the scenario's three authored routes, each a vanguard then its champion.
   const finals = RPG_FIGHT_STAGES
   const last = add({ id: 'final-camp', col: 2, kind: 'camp', level: start + 9, stage: finals, element: null })
   link(previous, [last]); row += 1
-  const routes = RPG_ELEMENTS.map((element, col) => ({ element, col }))
-  const guards = routes.map(({ element, col }) => add({ id: `${element}-sub`, col, kind: 'sub-boss', level: start + 10, stage: finals, element }))
+  const routes = rpgFinals(scenarioId).routes.map((spec, index) => ({ index, spec, col: index * 2 }))
+  const guards = routes.map((r) => add({ id: rpgFinalsNodeIds(r.index + 1).vanguard, col: r.col, kind: 'sub-boss', level: start + 10,
+    stage: finals, element: r.spec.vanguard.element, route: r }))
   last.exits.push(...guards.map((n) => n.id)); row += 1
-  const bosses = routes.map(({ element, col }) => add({ id: `${element}-boss`, col, kind: 'boss', level: start + RPG_CHAPTER_LEVELS - 1, stage: finals, element }))
+  const bosses = routes.map((r) => add({ id: rpgFinalsNodeIds(r.index + 1).champion, col: r.col, kind: 'boss', level: start + RPG_CHAPTER_LEVELS - 1,
+    stage: finals, element: r.spec.champion.element, route: r }))
   guards.forEach((n, i) => n.exits.push(bosses[i]!.id))
   return nodes
 }
@@ -148,24 +163,25 @@ function foes(chapterId: string, node: Layout, cast: readonly RpgCastMember[], r
     return { enemies, lead: null }
   }
   const element = node.element!
-  // Leaders rotate through the cast: each stage and each champion route shows a different face where possible.
-  const route = RPG_ELEMENTS.indexOf(element)
+  // Leaders rotate through the cast: each stage and each Finals route shows a different face where possible.
+  const route = node.route?.index ?? 0
   const leadIndex = (hash(`${chapterId}:leads`) + (node.kind === 'boss' ? 4 + route : node.stage >= RPG_FIGHT_STAGES ? 9 + route : node.stage)) % cast.length
   const boss = cast[leadIndex]!
   used.add(boss.id)
   const minions = node.kind === 'boss' ? 2 : node.stage < 2 ? 1 : 2
   const rank = node.kind === 'boss' ? 'boss' : 'sub-boss'
+  // A Finals route's escorts are authored (D312); a stage sub-boss's are drawn from the seed.
+  const authored = node.route ? (node.kind === 'boss' ? node.route.spec.champion : node.route.spec.vanguard).escorts : null
   const enemies = [rpgFoe({ id: 'foe1', castId: boss.id, element, rank, level: node.level, role: node.kind === 'boss' ? 'champion' : 'captain',
     shield: node.kind === 'boss' ? RPG_FOE_TUNING.bossShield : RPG_FOE_TUNING.subBossShield, weaknesses: weaknesses(0, element, rank), reach }),
-  ...Array.from({ length: minions }, (_, i) => regular(i + 1, others(element, i + 1)))]
+  ...Array.from({ length: minions }, (_, i) => authored ? regular(i + 1, authored[i]![1], authored[i]![0]) : regular(i + 1, others(element, i + 1)))]
   return { enemies, lead: boss }
 }
 
 function nodeName(node: Layout, lead: RpgCastMember | null): string {
   if (node.kind === 'camp') return node.id === 'start' ? 'Starting camp' : node.id === 'final-camp' ? 'Last camp' : `${RPG_STAGE_NAMES[node.stage]} camp`
-  if (node.kind === 'sub-boss') return node.stage >= RPG_FIGHT_STAGES ? `${ROUTE_NAME[node.element!]} vanguard · ${lead!.name}` : `${lead!.name}'s squad`
-  if (node.kind === 'boss') return `${ROUTE_NAME[node.element!]} champion · ${lead!.name}`
-  if (node.element) return `${ROUTE_NAME[node.element]} road`
+  if (node.kind === 'sub-boss') return node.route ? `${node.route.spec.name} vanguard · ${lead!.name}` : `${lead!.name}'s squad`
+  if (node.kind === 'boss') return `${node.route!.spec.name} champion · ${lead!.name}`
   return pick(FIGHT_NAMES, `${node.id}:name`)
 }
 
@@ -176,9 +192,9 @@ export function rpgCampaignChapter(scenarioId: string, cast: readonly RpgCastMem
   if (!cast.length) throw new RangeError('The campaign needs a cast')
   const sorted = [...cast].sort((a, b) => a.id.localeCompare(b.id))
   const levelStart = rpgChapterLevelStart(scenario.tier)
-  const nodes = layout(levelStart, scenario.tier).map((node) => {
-    const { enemies, lead } = foes(scenario.id, node, sorted, rpgChapterReach(levelStart))
-    return { ...node, name: nodeName(node, lead), enemies }
+  const nodes = layout(levelStart, scenario.id, scenario.tier).map(({ route, ...node }) => {
+    const { enemies, lead } = foes(scenario.id, { ...node, route }, sorted, rpgChapterReach(levelStart))
+    return { ...node, name: nodeName({ ...node, route }, lead), note: route?.spec.line ?? null, enemies }
   })
   return { id: scenario.id, scenarioId: scenario.id, tier: scenario.tier, title: scenario.name, levelStart,
     rows: Math.max(...nodes.map((n) => n.row)) + 1, nodes }

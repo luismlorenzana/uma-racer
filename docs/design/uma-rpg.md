@@ -1,6 +1,6 @@
 # Global Uma RPG — design
 
-> **Status: the campaign (D260–D266) with classes (D277–D282, D310).** One generated chapter per scenario, a top-to-bottom
+> **Status: the campaign (D260–D266, Finals D312) with classes (D277–D282, D310).** One generated chapter per scenario, a top-to-bottom
 > map you can replay, five classes with authored skill trees, Octopath-style break battles, MP carried between fights,
 > and every win paying EXP and Inspiration tokens. RPG progress saves on the phone first and syncs in the background
 > like races and the Farm. Every tree, node and number is in [the class trees](uma-rpg-classes.md).
@@ -23,8 +23,8 @@ Home → Uma RPG (Parties) → a party → Chapters (launch pad, one per scenari
 - A party must fill all five slots to enter a chapter. Any party may enter any chapter; the launch pad says when a
   chapter is above the party's level.
 - Each chapter is one scenario and covers twelve levels (D266): URA Finale Lv1–12, Unity Cup Lv13–24 … Tracen Diner
-  T4 Lv7–18. Clearing every node (43 battles) ends near the chapter's last level, so four chapters bring a party to
-  about Lv48 and the fifth starts with every skill point and slot. One route to a champion is 35 battles.
+  T4 Lv7–18. Clearing every node (27 battles, D312) ends near the chapter's last level, so four chapters bring a party
+  to about Lv48 and the fifth starts with every skill point and slot.
 
 ## Roster and classes (D277)
 
@@ -94,9 +94,9 @@ levels, elements and stats are code, so a rebalance never needs a content publis
 
 - **Shape (top to bottom, five columns, D266):** a starting camp; three fight stages (Debut, Classic, Senior Year),
   each with two rows of three regular fights (one row per level, D286), a camp and a **sub-boss** squad; then the
-  **Finals**: a last camp that splits into **five elemental routes** (Ember, Frost, Storm, Dawn, Dusk), each a
-  sub-boss vanguard and then a **champion** of that element, with no regular fights. Pick the route whose champion your
-  party can break. 18 regular fights, 8 sub-bosses, 5 champions, 5 camps.
+  **Finals**: a last camp that splits into the scenario's **three authored routes** (D312), each a **vanguard** (a
+  sub-boss) and then a **champion**, with no regular fights. 18 regular fights, 6 sub-bosses (3 stage, 3 vanguards),
+  3 champions, 5 camps; see [The Finals](#the-finals-d312).
 - **Levels:** Debut Lv1–3, Classic 4–6, Senior Year 7–9, Finals 10–12 of the chapter: stage `k` fights at
   `start + 3k` and `+1`, its sub-boss at `start + 3k + 2`; the last camp at `start + 9`, Finals sub-bosses at
   `start + 10`, champions at `start + 11`.
@@ -106,7 +106,39 @@ levels, elements and stats are code, so a rebalance never needs a content publis
   `22 + 1.59 × (level − 1)`: HP `(40 + 4.2s) × role` (× 4.5 sub-boss, × 6.5 champion, both × the chapter's skill reach,
   D282), offense `3s × role`, defense `0.8s × role`.
 - **Map rules:** clearing a node opens the nodes below it; any cleared fight can be **replayed** any number of times.
-  A champion win marks the chapter cleared; the other four stay optional.
+  A champion win marks the chapter cleared; the other two routes stay optional but pay as much.
+
+## The Finals (D312)
+
+Every scenario's Finals is authored: a title, three named routes with a one-line flavor shown on the node sheet, and
+for each route a vanguard and a champion with their elements and their two escorts (role and element). The three
+champions of a scenario always differ in element, and across the fourteen scenarios each element leads seven to ten
+of the forty-two routes. A vanguard may share her champion's element, so one answer clears the route, or not, so it
+needs two. Weaknesses still come from the seed (a champion's first element weakness is the one that beats her own),
+and leaders still rotate through the private cast. Node ids are `route1-sub` … `route3-boss`; the code is
+`packages/domain/src/rpg/campaign/finals.ts`.
+
+| Scenario | Finals | Routes: vanguard → champion (escorts) |
+|---|---|---|
+| URA Finale | URA Finals | **Sprint Final**: Lightning (Lightning skirmisher, Fire striker) → Fire (Fire skirmisher, Lightning striker)<br>**Mile Final**: Ice (Ice caster, Light guard) → Light (Light caster, Ice striker)<br>**Long-Distance Final**: Dark (Dark guard, Ice caster) → Ice (Ice guard, Dark caster) |
+| Unity Cup | Unity Cup Final | **Team Blaze**: Fire (Fire striker, Lightning striker) → Fire (Fire striker, Lightning caster)<br>**Team Glacier**: Ice (Ice guard, Ice caster) → Ice (Dark guard, Ice caster)<br>**Team Eclipse**: Light (Light caster, Dark skirmisher) → Dark (Dark skirmisher, Light caster) |
+| Trackblazer | Climax Races | **Spring Climax**: Light (Light skirmisher, Lightning striker) → Lightning (Lightning skirmisher, Light skirmisher)<br>**Summer Climax**: Lightning (Lightning striker, Fire caster) → Fire (Fire striker, Ice guard)<br>**Winter Climax**: Ice (Ice guard, Dark caster) → Dark (Dark caster, Ice guard) |
+| Our Grand Concert | Grand Live | **Opening Act**: Lightning (Lightning skirmisher, Fire caster) → Lightning (Lightning skirmisher, Light striker)<br>**Encore Stage**: Light (Light caster, Lightning caster) → Light (Light caster, Dark guard)<br>**Midnight Live**: Dark (Dark skirmisher, Fire striker) → Dark (Dark striker, Ice caster) |
+| Grand Masters | Trials of the Masters | **Trial of Radiance**: Light (Light guard, Ice caster) → Light (Light caster, Fire guard)<br>**Trial of Shadow**: Dark (Dark skirmisher, Lightning skirmisher) → Dark (Dark skirmisher, Dark caster)<br>**Trial of Flame**: Ice (Ice striker, Fire caster) → Fire (Fire striker, Fire striker) |
+| Project L'Arc | Arc Weekend | **Longchamp Straight**: Lightning (Lightning skirmisher, Light striker) → Light (Light striker, Lightning skirmisher)<br>**Paris by Night**: Dark (Dark caster, Ice skirmisher) → Dark (Dark caster, Light guard)<br>**Autumn Rain**: Ice (Ice guard, Lightning caster) → Ice (Ice guard, Dark striker) |
+| U.A.F. Ready GO! | U.A.F. Finals | **Red Division**: Fire (Fire striker, Fire skirmisher) → Fire (Fire striker, Lightning guard)<br>**Blue Division**: Ice (Ice skirmisher, Ice caster) → Ice (Ice skirmisher, Light caster)<br>**Yellow Division**: Lightning (Lightning caster, Lightning guard) → Lightning (Lightning caster, Fire skirmisher) |
+| Great Food Festival | Festival Showdown | **Grill Masters**: Fire (Fire striker, Lightning caster) → Fire (Fire striker, Fire caster)<br>**Frozen Dessert Bar**: Ice (Ice caster, Light guard) → Ice (Ice caster, Light caster)<br>**Midnight Feast**: Dark (Dark skirmisher, Fire striker) → Dark (Dark guard, Fire striker) |
+| Run! Mecha Umamusume | Mecha Grand Prix | **Reactor Core**: Fire (Lightning guard, Fire caster) → Lightning (Lightning caster, Lightning guard)<br>**Thruster Bay**: Lightning (Fire skirmisher, Lightning skirmisher) → Fire (Fire skirmisher, Lightning striker)<br>**Coolant Plant**: Dark (Ice guard, Dark caster) → Ice (Ice guard, Ice caster) |
+| The Twinkle Legends | Legends' Night | **Shooting Star**: Lightning (Light skirmisher, Lightning skirmisher) → Light (Light skirmisher, Lightning caster)<br>**Eclipse**: Light (Light caster, Dark guard) → Dark (Dark caster, Light caster)<br>**Thunderhead**: Ice (Ice striker, Lightning guard) → Lightning (Lightning striker, Ice striker) |
+| Design Your Island | Island Trials | **Volcano Peak**: Fire (Fire striker, Fire guard) → Fire (Fire striker, Dark caster)<br>**Coral Caves**: Ice (Ice caster, Lightning skirmisher) → Ice (Ice caster, Light caster)<br>**Monsoon Coast**: Lightning (Lightning skirmisher, Ice striker) → Lightning (Lightning skirmisher, Ice guard) |
+| Yukoma Hot Springs | Hot Springs Festival | **Steam Baths**: Fire (Fire caster, Ice guard) → Fire (Fire caster, Fire striker)<br>**Snow Garden**: Ice (Ice guard, Ice striker) → Ice (Ice guard, Light caster)<br>**Lantern Path**: Dark (Dark skirmisher, Light caster) → Light (Light caster, Dark skirmisher) |
+| Beyond Dreams | Beyond the Dream | **Toward the Light**: Dark (Dark guard, Dark caster) → Light (Light caster, Light striker)<br>**Shadow of Doubt**: Light (Light skirmisher, Dark striker) → Dark (Dark skirmisher, Dark guard)<br>**Forward Together**: Fire (Fire striker, Lightning skirmisher) → Lightning (Lightning striker, Fire caster) |
+| Tracen Diner | Diner Rush | **Kitchen Fire**: Fire (Fire striker, Fire caster) → Fire (Fire striker, Lightning guard)<br>**Cold Noodle Counter**: Ice (Ice caster, Light skirmisher) → Ice (Ice caster, Ice caster)<br>**Morning Prep**: Lightning (Light guard, Lightning skirmisher) → Light (Light guard, Lightning striker) |
+
+- **Carry-over:** wins on the five retired elemental routes (`fire-sub` … `dark-boss`) carry by count: as many routes
+  won as champions beaten (up to three), with their vanguards, plus any extra vanguards; nothing new is paid. The
+  owner's URA Finale run, whose three champions were beaten, is marked complete (every vanguard and champion won).
+  A fight left open on a retired route closes with no reward (or, from an older copy, settles at its foes' level).
 
 ## Runs, MP and camps (D263)
 
@@ -123,12 +155,15 @@ same frozen fight from its first action.
 
 Every won fight pays, first clear or replay:
 
-- **EXP** to all five entrants (KO'd included): a share of one level at the foes' level (fight 0.42, sub-boss 0.28,
-  champion 0.32 of `expToNext`, D266, D286), × `1 − 0.1 × (member level − foe level)` clamped to 0.1–2.0. Outleveled fights
-  pay little; fights above you pay up to double. First clears reach the Finals around chapter Lv9, one route ends
-  around Lv10 and every node around Lv12 (Lv24, 36 and 48 in the next chapters).
-- **Inspiration tokens** of the chapter's scenario: fight 2 Slot + 4 Skill, sub-boss 4 + 8, champion 6 + 12 (D266,
-  D286). Clearing every node pays 98 Slot + 196 Skill, enough for sixteen units' parents (6 Slot) and skills (12 Skill).
+- **EXP** to all five entrants (KO'd included): a share of one level at the foes' level (fight 0.42, stage sub-boss
+  0.28, Finals vanguard 0.47, champion 0.53 of `expToNext`, D266, D286, D312), × `1 − 0.1 × (member level − foe level)`
+  clamped to 0.1–2.0. Outleveled fights pay little; fights above you pay up to double. Three routes pay what five did
+  (5/3 each), so first clears reach the Finals around chapter Lv9 and every node ends around Lv12 (Lv24, 36 and 48 in
+  the next chapters), as before.
+- **Inspiration tokens** of the chapter's scenario: fight 2 Slot + 4 Skill, stage sub-boss 4 + 8, vanguard 7 + 14,
+  champion 10 + 20 (D266, D286, D312). Clearing every node pays 99 Slot + 198 Skill (the five routes' 50 + 100 can't
+  split evenly over three, so one Slot and two Skill more), enough for sixteen units' parents (6 Slot) and skills
+  (12 Skill).
   Gross tokens first repay the matching Inspiration advance debt (D256), then land in Items.
 
 ## Inventory and Convert (D309)
@@ -187,11 +222,12 @@ Two more tabs beside Parties and Roster, borrowed from Uma Puzzles' Items and Ex
 ## Tuning
 
 `pnpm sim:rpg:campaign [scenarioId]` plays a synthetic party (a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner; invented
-outfits and cast) through one route of a chapter with a careful policy (chip with weak parts, spend big skills on a
-Break, rest below 35% MP) and an attack-only policy. At this pin (D282) careful play reaches the Finals at chapter Lv9
-and clears URA, Unity Cup and Project L'Arc: regular fights 3–8 rounds, sub-bosses 4–9, champions 7–8 rounds (URA's
-17, at Lv10 against Lv12). Attack-only loses a sub-boss in every chapter. Results by chapter are in
-[the class trees](uma-rpg-classes.md#11-foes-and-the-campaign). Change numbers there and in the tests together.
+outfits and cast) through every node of a chapter, all three Finals routes included (D312), with a careful policy
+(chip with weak parts, spend big skills on a Break, Limit Breaks on a Broken foe, rest below 35% MP), the same policy
+holding Limit Breaks, and an attack-only policy. Careful play reaches the Finals at chapter Lv9, beats all three
+champions in URA, Unity Cup and Project L'Arc and ends at Lv12, Lv24 and T2 Lv22. Attack-only loses a sub-boss in
+every chapter. Results by chapter are in [the class trees](uma-rpg-classes.md#11-foes-and-the-campaign). Change
+numbers there and in the tests together.
 
 ## Relationship to other systems
 

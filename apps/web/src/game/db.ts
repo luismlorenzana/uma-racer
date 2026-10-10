@@ -52,6 +52,8 @@ import {
   migrateRpgOutfitSave,
   migrateRpgPresetSave,
   rpgLegacySwordMage,
+  rpgCarryFinals,
+  rpgRetiredFinalsNode,
 } from '@racer/domain'
 import Dexie, { type EntityTable, type Table, type Transaction } from 'dexie'
 import type { PuzzleOutfitSaveV1, PuzzlePreservationRecord, PuzzlePresetSaveV1, PuzzleCheckpointSaveV1, ConstellationBankSaveV1, PuzzleCohortSaveV1,
@@ -464,6 +466,9 @@ export class RacerDb extends Dexie {
     // The Spell Blade (D310): RPG outfits and parties move to schema 4, a Mage with a Short Sword becomes a Spell Blade
     // with every point back, and a fight left open under engine v4 closes with no reward.
     this.version(33).stores({}).upgrade(migrateRpgSpellBlades)
+    // Three Finals routes (D312): wins on the five retired routes carry by count, and the owner's URA Finale run, whose
+    // three champions are beaten, is marked complete.
+    this.version(34).stores({}).upgrade(migrateRpgFinals)
   }
 }
 
@@ -594,6 +599,38 @@ async function migrateRpgSpellBlades(tx: Transaction): Promise<void> {
     await tx.table('rpgFights').delete(battle.battleId)
     await tx.table('rpgCheckpoints').put({ ...row, data: { ...row.data, battle: null, updatedAt: queuedAt } })
     await queue('rpgCheckpoints', row.id)
+  }
+}
+
+/** The chapter whose run the owner asked to mark complete after the Finals rebalance (D312). */
+export const RPG_FINALS_COMPLETE_CHAPTER = 'ura-finale'
+
+/**
+ * D312: runs move to the three authored Finals routes. Wins on the five retired elemental routes carry by count
+ * (`rpgCarryFinals`); a URA Finale run with a champion beaten is marked complete, every vanguard and champion won, as the
+ * owner asked (no reward is paid for it). A fight left open on a retired route closes with no reward. Changed rows queue.
+ */
+async function migrateRpgFinals(tx: Transaction): Promise<void> {
+  const outbox = tx.table('outbox')
+  const queuedAt = Date.now()
+  for (const row of await tx.table('rpgCheckpoints').toArray() as VersionedRow<RpgRunSaveV2>[]) {
+    if (row.data?.schemaVersion !== 2 || !row.data.wins) continue
+    const before = row.data
+    const champion = Object.keys(before.wins).some((id) => id.endsWith('-boss') && (before.wins[id] ?? 0) > 0)
+    let run = rpgCarryFinals(before)
+    if (run.chapterId === RPG_FINALS_COMPLETE_CHAPTER && champion) {
+      const wins = { ...run.wins }
+      for (const route of [1, 2, 3]) for (const id of [`route${route}-sub`, `route${route}-boss`]) wins[id] = Math.max(1, wins[id] ?? 0)
+      run = { ...run, wins, clearedAt: run.clearedAt ?? queuedAt }
+    }
+    if (run.battle && rpgRetiredFinalsNode(run.battle.nodeId)) {
+      await tx.table('rpgFights').delete(run.battle.battleId)
+      run = { ...run, battle: null }
+    }
+    if (run === before) continue
+    await tx.table('rpgCheckpoints').put({ ...row, data: { ...run, updatedAt: queuedAt } })
+    await outbox.where('[kind+id]').equals(['rpgCheckpoints', row.id]).delete()
+    await outbox.add({ kind: 'rpgCheckpoints', id: row.id, op: 'upsert', queuedAt })
   }
 }
 

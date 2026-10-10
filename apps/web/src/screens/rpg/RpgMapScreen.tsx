@@ -1,7 +1,8 @@
-// Chapter map: a top-to-bottom route of fights, camps, sub-bosses and five elemental champions (D262, D263).
+// Chapter map: a top-to-bottom route of fights, camps, sub-bosses and the scenario's three Finals routes (D262, D263, D312).
 // Tap a node to preview it; clear nodes open the ones below, and any cleared fight can be replayed.
 import {
-  RPG_CHAPTER_LEVELS, RPG_STAGE_NAMES, isRpgElement, isRpgWeaponKind, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgMemberLevel,
+  RPG_CHAPTER_LEVELS, RPG_STAGE_NAMES, isRpgElement, isRpgWeaponKind, projectRpgStats, rpgBattleExp, rpgBattleTokens, rpgCarriedMp, rpgFinals, rpgMemberLevel,
+  rpgRewardKind,
   rpgNodeParents, rpgNodeStatus, rpgRunId, inspirationTokenName, type BattleEnemy,
   type RpgCampaignChapter, type RpgMapNode, type RpgPresetSlot, type RpgProfile, type RpgRunSaveV2,
 } from '@racer/domain'
@@ -54,7 +55,8 @@ export function RpgMapScreen() {
   const mpNow = party.reduce((sum, m) => sum + (run ? rpgCarriedMp(run, m.profile) : projectRpgStats(m.profile).mp), 0)
   const mpMax = party.reduce((sum, m) => sum + projectRpgStats(m.profile).mp, 0)
   const node = selected ? chapter.nodes.find((n) => n.id === selected) ?? null : null
-  const stageRows = RPG_STAGE_NAMES.map((name, stage) => ({ name, row: Math.min(...chapter.nodes.filter((n) => n.stage === stage && n.kind !== 'camp').map((n) => n.row)) }))
+  const stageRows = RPG_STAGE_NAMES.map((name, stage) => ({ name: stage === RPG_STAGE_NAMES.length - 1 ? `${name} · ${rpgFinals(chapter.scenarioId).title}` : name,
+    row: Math.min(...chapter.nodes.filter((n) => n.stage === stage && n.kind !== 'camp').map((n) => n.row)) }))
   return <RpgFrame back={`/rpg/party/${presetId}`} backLabel="Chapters" eyebrow={`${preset.name} · ${formatRpgBand(chapter.levelStart, chapter.levelStart + RPG_CHAPTER_LEVELS - 1)}`} title={chapter.title} guide="map">
     <div className="sticky top-0 z-10 -mx-4 border-b border-hairline-dark bg-stage/95 px-4 py-2 backdrop-blur">
       <div className="flex items-center gap-2 text-[11px]"><span className="w-16 text-ink-on-dark-soft">Party MP</span><RpgBar className="flex-1" value={mpNow} max={mpMax} tone="mp" /><span className="w-16 text-right">{Math.round(100 * mpNow / Math.max(1, mpMax))}%</span></div>
@@ -122,14 +124,15 @@ function NodeSheet({ chapter, node, run, party, slots, presetId, onClose, onFigh
     if (await commit(() => restRpgRun(chapter, presetId, node.id))) { pushToast('Rested: MP restored'); onClose() }
     setBusy(false)
   }
-  const exp = node.kind === 'camp' ? [] : party.map((p) => rpgBattleExp(node.kind as 'fight', node.level, rpgMemberLevel(p)))
-  const tokens = node.kind === 'camp' ? null : rpgBattleTokens(node.kind)
+  const exp = node.kind === 'camp' ? [] : party.map((p) => rpgBattleExp(rpgRewardKind(node), node.level, rpgMemberLevel(p)))
+  const tokens = node.kind === 'camp' ? null : rpgBattleTokens(rpgRewardKind(node))
   return <RpgModalFocus onClose={onClose}><div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={onClose}>
     <div role="dialog" aria-modal="true" aria-label={node.name} onClick={(e) => e.stopPropagation()}
       className="pb-safe max-h-[85dvh] w-full overflow-y-auto overscroll-contain rounded-t-lg border border-hairline-dark bg-stage-soft p-4 text-ink-on-dark">
       <div className="flex items-start justify-between gap-2">
         <div><p className="text-[10px] font-bold tracking-[0.14em] text-accent uppercase">{KIND_LABEL[node.kind]}{node.kind === 'camp' ? '' : ` · ${formatRpgLevel(node.level)}`}{wins > 0 && node.kind !== 'camp' ? ` · won ×${wins}` : ''}</p>
-          <h2 className="text-xl">{node.name}</h2></div>
+          <h2 className="text-xl">{node.name}</h2>
+          {node.note && <p className="mt-0.5 text-[12px] italic text-ink-on-dark-soft">{node.note}</p>}</div>
         <GhostButton onClick={onClose}>Close</GhostButton>
       </div>
       {node.kind === 'camp' ? <div className="mt-3 space-y-3">

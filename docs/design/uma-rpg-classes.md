@@ -418,18 +418,18 @@ the chapter's first level** against depth 1 (`rpgChapterReach`): URA ×1, Unity 
 chapter ×1.81, then ×2.31 and ×2.875; a Tier 2 chapter starts over with its tier's depths. Boss fights are where a
 party spends its whole MP pool, and that pool's damage grows with depth faster than foe stats grow with level.
 
-`pnpm sim:rpg:campaign` (a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner, D310; careful policy chips with
-weak parts and spends big skills on a Break, attack-only uses free actions; these rows hold Limit Breaks, and
-section 15 has the same chapters with them):
+`pnpm sim:rpg:campaign` (a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner, D310; every node, all three Finals
+routes, D312; careful policy chips with weak parts and spends big skills on a Break, attack-only uses free actions;
+these rows hold Limit Breaks, and section 15 has the same chapters with them):
 
-| Chapter | Regular fights | Sub-bosses | Champion |
-|---|---|---|---|
-| URA (from Lv1) | 5–7 rounds | 7–11 rounds, 5–28% HP lost | 18 rounds, 67% lost, at Lv10 against Lv12 |
-| Unity Cup (from Lv13) | 3–5 rounds | 5–7 rounds, 0–8% lost | 9 rounds, 22% lost |
-| Project L'Arc (T2 Lv11) | 3–4 rounds | 5–6 rounds, 0–7% lost | 8 rounds, 5% lost |
+| Chapter | Regular fights | Stage sub-bosses | Finals vanguards | Champions (all three) |
+|---|---|---|---|---|
+| URA (from Lv1) | 5–7 rounds | 7–9 rounds, 5–11% HP lost | 6.7 rounds, 10% lost | 11.3 rounds, 40% lost, at Lv12 |
+| Unity Cup (from Lv13) | 3–5 rounds | 5–7 rounds, 0–6% lost | 5 rounds, 4% lost | 8.3 rounds, 23% lost |
+| Project L'Arc (T2 Lv11) | 3–4 rounds | 5–6 rounds, 1–7% lost | 4.3 rounds, 2% lost | 7.3 rounds, 15% lost |
 
-The Spell Blade replaced the old staff-and-sword Mage in the sim party; the chapters play as before (with the old Mage
-the champions took 18 / 7 / 8 rounds).
+A full clear ends at Lv12, Lv24 and T2 Lv22, as the five-route Finals did. With one route (before D312) the party met
+its champion two levels lower: URA's took 18 rounds at Lv10.
 
 With six fights a stage (D286) the party stands at the same level at every stage as with ten, and a careful URA clear
 takes 23 fights instead of 35 (about 120 sim minutes instead of 180).
@@ -507,10 +507,12 @@ when it is full, spends it on one big turn.
 - Foes are unchanged (the owner asked for no difficulty rebalance yet). `pnpm sim:rpg:campaign` plays careful (Limit
   Breaks on a Broken foe, or on any foe outside boss fights) beside the same policy holding them:
 
-| Chapter | Champion with / without Limit Breaks | Sub-bosses with / without |
+| Chapter | Champions with / without Limit Breaks | Sub-bosses with / without |
 |---|---|---|
-| URA (from Lv1) | 10 / 18 rounds, 33% / 67% HP lost | 6–8 / 7–11 rounds |
-| Unity Cup (from Lv13) | 6 / 9 rounds | 4–5 / 5–7 rounds |
-| Project L'Arc (T2 Lv11) | 6 / 8 rounds | 4–5 / 5–6 rounds |
+| URA (from Lv1) | 6.7 / 11.3 rounds, 15% / 40% HP lost | 6–7 / 7–9 rounds |
+| Unity Cup (from Lv13) | 5 / 8.3 rounds | 4–5 / 5–7 rounds |
+| Project L'Arc (T2 Lv11) | 5 / 7.3 rounds | 4–5 / 4–6 rounds |
 
-  A champion fight sees about ten Limit Breaks (two per Uma); regular fights rarely last long enough to fill one.
+  Every node is played, all three Finals routes included (D312). A champion fight sees about five Limit Breaks
+  (one per Uma); regular fights rarely last long enough to fill one. (On the one-route sim before D312, URA's champion
+  went from 18 to 10 rounds.)

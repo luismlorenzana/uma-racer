@@ -56,7 +56,7 @@ import {
   type RpgResultEvidenceV1,
   type RpgPromotionEvidence,
   type RpgCommandReceiptV1,
-  PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, RPG_SAVE_SCHEMA_VERSION, puzzleEntityIdMatches,
+  PUZZLE_ENTITY_KINDS, PUZZLE_LOG_KINDS, RPG_SAVE_SCHEMA_VERSION, puzzleEntityIdMatches, rpgRetiredFinalsNode,
   type LogRecord,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
@@ -330,6 +330,9 @@ export async function adoptServerSnapshot(raw: unknown): Promise<'empty' | 'adop
         !parseCardSave(row.data) && migrateCardSaveToCurrent(row.data)) legacyKeys.add(`cards/${row.id}`)
       if (row.kind === 'farm' && typeof row.id === 'string' && typeof row.data === 'object' && row.data !== null &&
         Number((row.data as Record<string, unknown>).schemaVersion) < 3 && !parseFarmState(row.data)) legacyKeys.add(`farm/${row.id}`)
+      // A run with wins on the retired Finals routes reads onto the three (D312); upload it once.
+      if (row.kind === 'rpgCheckpoints' && typeof row.id === 'string' && !row.deleted && typeof row.data === 'object' && row.data !== null &&
+        Object.keys((row.data as { wins?: object }).wins ?? {}).some(rpgRetiredFinalsNode)) legacyKeys.add(`${row.kind}/${row.id}`)
       // Older outfits and parties (D282, D310) migrate on the way in; upload the migrated rows once.
       if ((row.kind === 'rpgOutfits' || row.kind === 'rpgPresets') && typeof row.id === 'string' && !row.deleted &&
         typeof row.data === 'object' && row.data !== null && (row.data as Record<string, unknown>).schemaVersion !== RPG_SAVE_SCHEMA_VERSION) legacyKeys.add(`${row.kind}/${row.id}`)

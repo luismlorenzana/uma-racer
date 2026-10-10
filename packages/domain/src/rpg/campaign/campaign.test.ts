@@ -4,15 +4,16 @@ import { RPG_ELEMENTS, enrollRpgOutfit, projectRpgStats, type RpgProfile } from 
 import { createBattle } from '../battle/engine'
 import { battleWeakness } from '../battle/skills'
 import { rpgCampaign, rpgCampaignChapter, rpgChapterReach, rpgNodeParents, rpgTierLevel } from './chapters'
-import { RPG_BATTLE_TOKENS, rpgBattleBaseExp, rpgBattleExp, rpgLevelExpFactor } from './rewards'
-import { createRpgRun, parseRpgRunSave, rpgBeginRunBattle, rpgCarriedMp, rpgChapterCleared, rpgNodeStatus, rpgRestAtCamp,
+import { RPG_FINALS } from './finals'
+import { RPG_BATTLE_TOKENS, rpgBattleBaseExp, rpgBattleExp, rpgLevelExpFactor, rpgRewardKind } from './rewards'
+import { createRpgRun, parseRpgRunSave, rpgBeginRunBattle, rpgCarriedMp, rpgCarryFinals, rpgChapterCleared, rpgNodeStatus, rpgRestAtCamp,
   rpgSettleRunBattle } from './run'
 
 // Invented cast only.
 const cast = Array.from({ length: 7 }, (_, i) => ({ id: `cast${i}`, name: `Rival ${i}` }))
 
 describe('generated campaign chapters (D262)', () => {
-  it('builds one twelve-level chapter per scenario: three fight stages, then five elemental sub-bosses and champions (D266)', () => {
+  it('builds one twelve-level chapter per scenario: three fight stages, then three authored Finals routes (D266, D312)', () => {
     const chapters = rpgCampaign(cast)
     expect(chapters.map((c) => c.scenarioId)).toEqual(SCENARIOS.map((s) => s.id))
     expect(chapters.map((c) => c.levelStart)).toEqual(SCENARIOS.map((s) => (s.tier - 1) * 12 + 1))
@@ -21,12 +22,24 @@ describe('generated campaign chapters (D262)', () => {
       expect(ids.size).toBe(chapter.nodes.length)
       expect(chapter.nodes.every((n) => n.exits.every((e) => ids.has(e)))).toBe(true)
       expect(chapter.nodes.filter((n) => n.id !== 'start').every((n) => rpgNodeParents(chapter, n.id).length > 0)).toBe(true)
+      const finals = RPG_FINALS[chapter.scenarioId]!
       const bosses = chapter.nodes.filter((n) => n.kind === 'boss')
-      expect(bosses.map((n) => n.element)).toEqual([...RPG_ELEMENTS])
+      expect(bosses.map((n) => n.id)).toEqual(['route1-boss', 'route2-boss', 'route3-boss'])
+      expect(bosses.map((n) => n.element)).toEqual(finals.routes.map((r) => r.champion.element))
       expect(bosses.every((n) => n.level === chapter.levelStart + 11 && n.exits.length === 0)).toBe(true)
       const subs = chapter.nodes.filter((n) => n.kind === 'sub-boss')
-      expect(subs.map((n) => n.level - chapter.levelStart)).toEqual([2, 5, 8, 10, 10, 10, 10, 10])
-      expect(bosses.every((n) => rpgNodeParents(chapter, n.id).join() === `${n.element}-sub`)).toBe(true)
+      expect(subs.map((n) => n.level - chapter.levelStart)).toEqual([2, 5, 8, 10, 10, 10])
+      expect(bosses.every((n, i) => rpgNodeParents(chapter, n.id).join() === `route${i + 1}-sub`)).toBe(true)
+      expect(rpgNodeParents(chapter, 'route2-sub')).toEqual(['final-camp'])
+      // Authored escorts and lines (D312): the champion and vanguard lead, then their two escorts as written.
+      finals.routes.forEach((route, i) => {
+        for (const [id, foe] of [[`route${i + 1}-sub`, route.vanguard], [`route${i + 1}-boss`, route.champion]] as const) {
+          const node = chapter.nodes.find((n) => n.id === id)!
+          expect(node.enemies.map((e) => e.element)).toEqual([foe.element, ...foe.escorts.map((x) => x[1])])
+          expect(node.note).toBe(route.line)
+          expect(node.name.startsWith(route.name)).toBe(true)
+        }
+      })
       const fights = chapter.nodes.filter((n) => n.kind === 'fight')
       // D286: each stage is a row of three fights at its first level and three at its second.
       expect(fights).toHaveLength(18)
@@ -46,18 +59,21 @@ describe('generated campaign chapters (D262)', () => {
 
 describe('campaign rewards (D263)', () => {
   it('pays a share of a level, scaled ±10% per level of gap within 10%–200%', () => {
-    expect([rpgBattleBaseExp('fight', 5), rpgBattleBaseExp('sub-boss', 5), rpgBattleBaseExp('boss', 5)]).toEqual([84, 56, 64])
+    expect([rpgBattleBaseExp('fight', 5), rpgBattleBaseExp('sub-boss', 5), rpgBattleBaseExp('vanguard', 5), rpgBattleBaseExp('boss', 5)])
+      .toEqual([84, 56, 94, 106])
     expect([rpgLevelExpFactor(8, 5), rpgLevelExpFactor(5, 8), rpgLevelExpFactor(20, 5), rpgLevelExpFactor(1, 30)]).toEqual([0.7, 1.3, 0.1, 2])
     expect(rpgBattleExp('fight', 5, 8)).toBe(59)
-    expect(RPG_BATTLE_TOKENS).toEqual({ fight: { slot: 2, skill: 4 }, 'sub-boss': { slot: 4, skill: 8 }, boss: { slot: 6, skill: 12 } })
-    // A full clear: 18 fights, 8 sub-bosses, 5 champions → 98 Slot and 196 Skill tokens (D286), at least six units' 6 + 12.
+    expect(RPG_BATTLE_TOKENS).toEqual({ fight: { slot: 2, skill: 4 }, 'sub-boss': { slot: 4, skill: 8 }, vanguard: { slot: 7, skill: 14 },
+      boss: { slot: 10, skill: 20 } })
+    // A full clear: 18 fights, 3 stage sub-bosses, 3 vanguards, 3 champions → 99 Slot and 198 Skill tokens (D312; 98 + 196
+    // with five routes), at least six units' 6 + 12.
     const chapter = rpgCampaignChapter('ura-finale', cast)
     const total = chapter.nodes.filter((n) => n.kind !== 'camp').reduce((sum, n) => {
-      const t = RPG_BATTLE_TOKENS[n.kind as 'fight' | 'sub-boss' | 'boss']
+      const t = RPG_BATTLE_TOKENS[rpgRewardKind(n)]
       return { slot: sum.slot + t.slot, skill: sum.skill + t.skill }
     }, { slot: 0, skill: 0 })
-    expect(total).toEqual({ slot: 98, skill: 196 })
-    expect(total.slot >= 6 * 6 && total.skill >= 6 * 12).toBe(true)
+    expect(total).toEqual({ slot: 99, skill: 198 })
+    expect(chapter.nodes.filter((n) => n.kind === 'sub-boss').map(rpgRewardKind)).toEqual(['sub-boss', 'sub-boss', 'sub-boss', 'vanguard', 'vanguard', 'vanguard'])
   })
 })
 
@@ -116,6 +132,45 @@ describe('campaign runs (D263)', () => {
     run = rpgRestAtCamp(chapter, lost.run, 'start', 6)
     expect(rpgCarriedMp(run, party[0]!)).toBe(projectRpgStats(party[0]!).mp)
     expect(rpgChapterCleared(chapter, run)).toBe(false)
+  })
+})
+
+describe('authored Finals (D312)', () => {
+  it('gives every scenario three named routes with three different champions, escorts and a line', () => {
+    expect(Object.keys(RPG_FINALS)).toEqual(SCENARIOS.map((s) => s.id))
+    const champions = new Map<string, number>()
+    for (const finals of Object.values(RPG_FINALS)) {
+      expect(finals.routes).toHaveLength(3)
+      expect(new Set(finals.routes.map((r) => r.champion.element)).size).toBe(3)
+      expect(new Set(finals.routes.map((r) => r.name)).size).toBe(3)
+      for (const r of finals.routes) {
+        champions.set(r.champion.element, (champions.get(r.champion.element) ?? 0) + 1)
+        expect(r.line.length).toBeLessThanOrEqual(70)
+      }
+    }
+    // Each element leads seven to ten of the forty-two routes.
+    expect([...champions.values()].every((n) => n >= 7 && n <= 10)).toBe(true)
+    expect(champions.size).toBe(RPG_ELEMENTS.length)
+  })
+  it('carries wins on the five retired routes onto the three by count, paying nothing new', () => {
+    const run = { ...createRpgRun('party-1', 'unity-cup', 1), wins: { start: 1, a1boss: 2, 'fire-sub': 1, 'fire-boss': 3, 'ice-sub': 1, 'dark-sub': 1 } }
+    expect(rpgCarryFinals(run).wins).toEqual({ start: 1, a1boss: 2, 'route1-sub': 1, 'route1-boss': 1, 'route2-sub': 1, 'route3-sub': 1 })
+    expect(parseRpgRunSave(run)!.wins).toEqual(rpgCarryFinals(run).wins)
+    const five = { ...run, wins: Object.fromEntries(RPG_ELEMENTS.flatMap((e) => [[`${e}-sub`, 1], [`${e}-boss`, 1]])) }
+    expect(Object.keys(rpgCarryFinals(five).wins).sort()).toEqual(['route1-boss', 'route1-sub', 'route2-boss', 'route2-sub', 'route3-boss', 'route3-sub'])
+    expect(rpgCarryFinals(rpgCarryFinals(run))).toEqual(rpgCarryFinals(run))
+    const chapter = rpgCampaignChapter('unity-cup', cast)
+    expect(rpgChapterCleared(chapter, parseRpgRunSave(run))).toBe(true)
+  })
+  it('settles a fight left open on a retired Finals route as a vanguard or champion', () => {
+    const chapter = rpgCampaignChapter('ura-finale', cast)
+    const open = rpgBeginRunBattle(chapter, { ...createRpgRun('party-1', chapter.id, 1), wins: { start: 1, 'route1-sub': 1 } }, 'route1-boss', slots, 2)
+    const run = { ...open, battle: { ...open.battle!, nodeId: 'ice-boss' } }
+    const won = { ...createBattle(run.battle.input).state, outcome: 'victory' as const }
+    const settled = rpgSettleRunBattle(chapter, run, won, party, 3)
+    expect(settled.result).toMatchObject({ nodeId: 'ice-boss', tokens: { tier: 1, ...RPG_BATTLE_TOKENS.boss } })
+    expect(settled.result!.members[0]!.delta).toBe(rpgBattleExp('boss', 12, 1))
+    expect(parseRpgRunSave(settled.run)!.wins).toMatchObject({ 'route1-sub': 1, 'route1-boss': 1 })
   })
 })
 

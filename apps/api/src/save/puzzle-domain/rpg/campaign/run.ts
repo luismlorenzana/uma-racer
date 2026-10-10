@@ -5,8 +5,9 @@ import { grantRpgExp, projectRpgStats, rpgLifetimeLevels, rpgUsableLoadout, type
 import { createBattle } from '../battle/engine'
 import type { BattleInput, BattleState } from '../battle/types'
 import type { RpgPresetSlot } from '../save'
-import { rpgNodeParents, type RpgCampaignChapter, type RpgMapNode } from './chapters'
-import { rpgBattleExp, rpgBattleTokens } from './rewards'
+import { RPG_FIGHT_STAGES, rpgFinalsNodeIds, rpgNodeParents, type RpgCampaignChapter, type RpgMapNode } from './chapters'
+import { RPG_FINALS_ROUTES } from './finals'
+import { rpgBattleExp, rpgBattleTokens, rpgRewardKind } from './rewards'
 
 export const RPG_RUN_SCHEMA_VERSION = 2
 export interface RpgRunBattleV2 { battleId: string; nodeId: string; startedAt: number; input: BattleInput }
@@ -49,6 +50,29 @@ export function createRpgRun(presetId: string, chapterId: string, now: number): 
   return { schemaVersion: 2, presetId, chapterId, wins: { start: 1 }, mp: {}, battle: null, battles: 0, clearedAt: null, updatedAt: now }
 }
 
+/** The five elemental Finals routes before D312. */
+const RETIRED_FINALS = /^(fire|ice|lightning|light|dark)-(sub|boss)$/
+export const rpgRetiredFinalsNode = (id: string): boolean => RETIRED_FINALS.test(id)
+
+/**
+ * D312: Finals wins on the five retired elemental routes carry onto the three authored routes by count: as many routes
+ * won as champions beaten (at most three), their vanguards too, and any extra vanguards beaten after that. Rewards were
+ * paid when they were won; nothing new is granted.
+ */
+export function rpgCarryFinals(run: RpgRunSaveV2): RpgRunSaveV2 {
+  const retired = Object.keys(run.wins).filter(rpgRetiredFinalsNode)
+  if (!retired.length) return run
+  const champions = Math.min(RPG_FINALS_ROUTES, retired.filter((id) => id.endsWith('-boss')).length)
+  const vanguards = Math.max(champions, Math.min(RPG_FINALS_ROUTES, retired.filter((id) => id.endsWith('-sub')).length))
+  const wins = Object.fromEntries(Object.entries(run.wins).filter(([id]) => !rpgRetiredFinalsNode(id)))
+  for (let route = 1; route <= vanguards; route += 1) {
+    const ids = rpgFinalsNodeIds(route)
+    wins[ids.vanguard] = Math.max(1, wins[ids.vanguard] ?? 0)
+    if (route <= champions) wins[ids.champion] = Math.max(1, wins[ids.champion] ?? 0)
+  }
+  return { ...run, wins }
+}
+
 export function parseRpgRunSave(value: unknown): RpgRunSaveV2 | null {
   if (!record(value) || !exact(value, ['schemaVersion', 'presetId', 'chapterId', 'wins', 'mp', 'battle', 'battles', 'clearedAt', 'updatedAt']) ||
     value.schemaVersion !== 2 || typeof value.presetId !== 'string' || !/^party-([1-9]|10)$/.test(value.presetId) ||
@@ -56,13 +80,13 @@ export function parseRpgRunSave(value: unknown): RpgRunSaveV2 | null {
     !counts(value.mp, 0) || !int(value.battles) || !(value.clearedAt === null || int(value.clearedAt)) || !int(value.updatedAt)) return null
   const battle = value.battle
   // A fight left open under an older engine (D265, D282, D310) is dropped: no reward, MP as it was when it began.
-  if (record(battle) && record(battle.input) && battle.input.version !== 5) return { ...(value as unknown as RpgRunSaveV2), battle: null }
+  if (record(battle) && record(battle.input) && battle.input.version !== 5) return rpgCarryFinals({ ...(value as unknown as RpgRunSaveV2), battle: null })
   if (battle !== null) {
     if (!record(battle) || !exact(battle, ['battleId', 'nodeId', 'startedAt', 'input']) || typeof battle.battleId !== 'string' ||
       !ID.test(battle.battleId) || typeof battle.nodeId !== 'string' || !ID.test(battle.nodeId) || !int(battle.startedAt)) return null
     try { createBattle(battle.input as BattleInput) } catch { return null }
   }
-  return value as unknown as RpgRunSaveV2
+  return rpgCarryFinals(value as unknown as RpgRunSaveV2)
 }
 
 export function parseRpgBattleResult(value: unknown): RpgBattleResultV2 | null {
@@ -135,12 +159,18 @@ export interface RpgSettlement {
   result: RpgBattleResultV2 | null
 }
 
-/** A fight opened on a stage row a rebalance retired (D286) still settles as a regular fight at its foes' level. */
-function battleNode(chapter: RpgCampaignChapter, battle: RpgRunBattleV2): Pick<RpgMapNode, 'id' | 'kind' | 'level'> | null {
+/**
+ * A fight opened on a node a rebalance retired still settles: a stage row (D286) as a regular fight, and a retired
+ * elemental Finals route (D312) as a vanguard or champion, at its foes' level.
+ */
+function battleNode(chapter: RpgCampaignChapter, battle: RpgRunBattleV2): Pick<RpgMapNode, 'id' | 'kind' | 'level' | 'stage'> | null {
   const node = chapter.nodes.find((n) => n.id === battle.nodeId)
   if (node) return node
   const level = battle.input.enemies[0]?.level
-  return /^a\dr\dc\d$/.test(battle.nodeId) && level ? { id: battle.nodeId, kind: 'fight', level } : null
+  if (!level) return null
+  if (/^a\dr\dc\d$/.test(battle.nodeId)) return { id: battle.nodeId, kind: 'fight', level, stage: 0 }
+  return rpgRetiredFinalsNode(battle.nodeId)
+    ? { id: battle.nodeId, kind: battle.nodeId.endsWith('-boss') ? 'boss' : 'sub-boss', level, stage: RPG_FIGHT_STAGES } : null
 }
 
 /** A win pays every entrant (KO'd included) and carries the party's MP; a loss leaves the run as it was. */
@@ -157,7 +187,7 @@ export function rpgSettleRunBattle(chapter: RpgCampaignChapter, run: RpgRunSaveV
   const next = battle.input.allies.map((ally) => {
     const profile = profiles.find((p) => p.outfitId === ally.id)
     if (!profile) throw new Error('Party member is unavailable')
-    const delta = rpgBattleExp(node.kind as Exclude<RpgMapNode['kind'], 'camp'>, node.level, rpgMemberLevel({ tier: ally.tier, level: ally.level }))
+    const delta = rpgBattleExp(rpgRewardKind(node), node.level, rpgMemberLevel({ tier: ally.tier, level: ally.level }))
     const after = grantRpgExp(profile, delta).profile
     members.push({ outfitId: profile.outfitId, delta, beforeTier: profile.tier, beforeLevel: profile.level, beforeExp: profile.exp,
       afterTier: after.tier, afterLevel: after.level, afterExp: after.exp })
@@ -166,7 +196,7 @@ export function rpgSettleRunBattle(chapter: RpgCampaignChapter, run: RpgRunSaveV
   const mp = { ...run.mp }
   for (const unit of state.units) if (unit.side === 'ally') mp[unit.id] = unit.mp
   const result: RpgBattleResultV2 = { schemaVersion: 2, resultId: battle.battleId, presetId: run.presetId, chapterId: run.chapterId,
-    nodeId: node.id, rounds: state.round, members, tokens: { tier: chapter.tier, ...rpgBattleTokens(node.kind as Exclude<RpgMapNode['kind'], 'camp'>) },
+    nodeId: node.id, rounds: state.round, members, tokens: { tier: chapter.tier, ...rpgBattleTokens(rpgRewardKind(node)) },
     createdAt: now }
   const wins = { ...run.wins, [node.id]: (run.wins[node.id] ?? 0) + 1 }
   return { outcome: 'win', profiles: next, result,

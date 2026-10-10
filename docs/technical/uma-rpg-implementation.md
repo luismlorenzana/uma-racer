@@ -13,7 +13,7 @@ engine-v1 combat are retired; their history is in git and decisions D223–D259.
 | Every tree, node and number (396 nodes from one set of rules; the Short Sword follow-up tree is retired, read-only) | `packages/domain/src/rpg/catalog.ts` |
 | Classes from running styles, class stats, hands, points, learning, loadouts, promotion | `packages/domain/src/rpg/rules.ts` |
 | Battle engine v5 (pure, seeded, replayable): multi-part hits, two-action hands, Cleric blessings, summons, Limit Breaks (D311: `limit` on each unit, `limit` action) | `packages/domain/src/rpg/battle/` — `types.ts`, `skills.ts`, `engine.ts`, `limit.ts` (charge, `battleLimitPlan`) |
-| Generated chapters, foes (weaknesses by rank, boss HP by reach), runs, rewards | `packages/domain/src/rpg/campaign/` — `chapters.ts`, `enemies.ts`, `run.ts`, `rewards.ts` |
+| Generated chapters, authored Finals (D312), foes (weaknesses by rank, boss HP by reach), runs, rewards | `packages/domain/src/rpg/campaign/` — `chapters.ts`, `finals.ts`, `enemies.ts`, `run.ts` (`rpgCarryFinals`), `rewards.ts` (`rpgRewardKind`) |
 | Row parsers and the class migrations | `packages/domain/src/rpg/save.ts` (`migrateRpgOutfitSave`, `migrateRpgPresetSave`, `rpgLegacySwordMage`), `save.ts` dispatch; `rpgUsableLoadout` in `rules.ts` drops skills a member no longer has |
 | Local-first host | `apps/web/src/game/rpg-local.ts` (`exchangeInspirationTokens` for Convert) |
 | Token exchange and the advance's repaid share (D309) | `packages/domain/src/inspiration-exchange.ts`, `inspirationAdvanceDebts` in `inspiration-bank.ts` |
@@ -60,6 +60,12 @@ Conflicts adopt the server copy (`mergeRpgEntity`), never an older schema over a
   `/api/rpg/command` accepts only `spend-inspiration` (older apps).
 
 ## Migrations
+
+- **Dexie v34 (D312):** runs carry wins on the five retired elemental Finals routes onto `route1`–`route3` by count
+  (`rpgCarryFinals`, also applied when any run row is parsed, so cloud copies follow); every URA Finale run with a
+  champion beaten is marked complete (`RPG_FINALS_COMPLETE_CHAPTER`, the owner's request); a fight left open on a
+  retired route closes and its journal is deleted. Changed runs are queued. The dormant Farm archive accepts database
+  32, 33 or 34.
 
 - **Dexie v33 (D310):** RPG outfits and parties move to schema 4. A Mage with a Short Sword becomes a Spell Blade with an
   empty tree and no legacy (tier, level and EXP kept), every party clears her loadout, and a fight left open under

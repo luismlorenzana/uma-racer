@@ -1,6 +1,6 @@
 // Campaign balance (D261–D282, D310): a synthetic five-outfit party — a Brawler, a Mage, a Spell Blade, a Cleric and a Summoner — plays
 // generated chapters with a careful policy and an attack-only policy. No private Uma, cast or chapter content.
-import { RPG_ELEMENTS, enrollRpgOutfit, learnRpgNode, projectRpgStats, rpgActiveSlots, rpgHand, rpgLearnedSkills, rpgProfileTrees,
+import { enrollRpgOutfit, learnRpgNode, projectRpgStats, rpgActiveSlots, rpgHand, rpgLearnedSkills, rpgProfileTrees,
   rpgTreePointsEarned, rpgTreePointsSpent, type RpgClass, type RpgNodeRef, type RpgProfile, type RpgWeapon,
   type RpgWeaponKind } from '../../packages/domain/src/rpg/rules'
 import { rpgNode, rpgTreeNodes } from '../../packages/domain/src/rpg/catalog'
@@ -135,14 +135,15 @@ function play(chapter: RpgCampaignChapter, run: RpgRunSaveV2, party: RpgProfile[
 const poolMp = (run: RpgRunSaveV2, party: RpgProfile[]) => party.reduce((s, p) => s + rpgCarriedMp(run, p), 0) /
   party.reduce((s, p) => s + projectRpgStats(p).mp, 0)
 
-function campaign(scenarioId: string, start: RpgProfile[], policy: Policy, route: (typeof RPG_ELEMENTS)[number]) {
+/** Every node of the chapter, the owner's way (D312): all three Finals routes, vanguards then champions. */
+function campaign(scenarioId: string, start: RpgProfile[], policy: Policy) {
   const chapter = rpgCampaignChapter(scenarioId, cast)
   let run = createRpgRun('party-1', chapter.id, 0)
   let party = start.map(learn)
   const fights: Fight[] = []
   let now = 1
   let lastCamp = 'start'
-  const order = chapter.nodes.filter((n) => n.kind !== 'boss' && !(n.stage === 3 && n.element && n.element !== route) || n.id === `${route}-boss`)
+  const order = chapter.nodes
     .sort((a, b) => a.row - b.row || a.col - b.col)
   for (const node of order) {
     if (node.kind === 'camp') { run = rpgRestAtCamp(chapter, run, node.id, now++); lastCamp = node.id; continue }
@@ -159,10 +160,10 @@ function campaign(scenarioId: string, start: RpgProfile[], policy: Policy, route
   return { chapter, fights, party }
 }
 
-function report(scenarioId: string, start: RpgProfile[], policy: Policy, route: (typeof RPG_ELEMENTS)[number]) {
-  const { chapter, fights, party } = campaign(scenarioId, start, policy, route)
+function report(scenarioId: string, start: RpgProfile[], policy: Policy) {
+  const { chapter, fights, party } = campaign(scenarioId, start, policy)
   const minutes = fights.reduce((s, f) => s + f.actions * 7 + 15, 0) / 60
-  console.log(`\n${chapter.title} · ${policy} · start ${start.map((p) => `T${p.tier}L${p.level}`)[0]} · route ${route}`)
+  console.log(`\n${chapter.title} · ${policy} · start ${start.map((p) => `T${p.tier}L${p.level}`)[0]} · every node`)
   console.log('stage  kind      fights  losses  rounds  KOs   HP lost  MP used/fight  LB/fight  foe Lv → party Lv')
   for (let stage = 0; stage <= 3; stage += 1) {
     for (const kind of ['fight', 'sub-boss', 'boss'] as const) {
@@ -185,7 +186,7 @@ for (const id of scenarios) {
   const tier = SCENARIOS.find((s) => s.id === id)!.tier
   const { tier: classTier, level } = rpgTierLevel((tier - 1) * 12 + 1)
   const start = PARTY.map((p) => ({ ...p, tier: classTier, level, exp: 0, tree: [], legacy: [] }))
-  report(id, start, 'careful', 'fire')
-  report(id, start, 'careful-no-limit', 'fire')
-  report(id, start, 'attack-only', 'fire')
+  report(id, start, 'careful')
+  report(id, start, 'careful-no-limit')
+  report(id, start, 'attack-only')
 }
