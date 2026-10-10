@@ -1,6 +1,6 @@
 # Farm kitchen — T124 release acceptance
 
-2026-10-10 · D315–D316 · source baseline `f6c4dcf` (T123/PR111). This is code-owned release work, not a private
+2026-10-10 · D315–D317 · source baseline `f6c4dcf` (T123/PR111). This is code-owned release work, not a private
 content publish or a manual owner-account migration. [Design](../design/farm-kitchen-rework.md) and
 [contract](../technical/farm-kitchen-implementation.md#10-t124-complete-release-d315) own the rules.
 Only invented isolated saves/art are in checked-in tests/screenshots; exported account JSON is never committed.
@@ -8,7 +8,7 @@ Only invented isolated saves/art are in checked-in tests/screenshots; exported a
 ## Code and CI
 
 - **Passed locally:** `pnpm lint && pnpm test && pnpm build` after paired capability enablement.
-  Six packages; domain 903, web 658, API 112, race 61, data 44, assets 36 tests: **1,814 total**.
+  Six packages; domain 903, web 659, API 112, race 61, data 44, assets 36 tests: **1,815 total**.
 - **Passed:** `node apps/api/scripts/sync-farm-adapter.mjs --check` (18 exact modules) and
   `node apps/api/scripts/sync-puzzle-adapter.mjs --check` (86 unchanged modules).
 - No new dependencies, design numbers, global save schema, infrastructure/env/workflow edits, private content
@@ -21,7 +21,8 @@ Only invented isolated saves/art are in checked-in tests/screenshots; exported a
 ## Synthetic integration and reset/backup
 
 **Passed:** new `game/farm/kitchen/release.test.ts` (6) and `screens/farm/FarmKitchenRelease.test.tsx` (3),
-`screens/farm/FarmKitchenProduction.test.tsx` (3), plus existing real-host 23, coordinator 11, local cutover 8,
+`screens/farm/FarmKitchenProduction.test.tsx` (3) and `ui/farm/FarmKitchenSheet.test.tsx` (1),
+plus existing real-host 23, coordinator 11, local cutover 8,
 pure cutover 32, transport 5 and API cutover 9 tests.
 
 - Empty0,2 and35-outfit accounts prepare from absent/legacy state to30 stations, all idle worker levels1/0,
@@ -77,13 +78,16 @@ and persisted pre-race delta at390×844/375×667. All six44px actions fit; last 
 main scroll equals client735/558. Extra Speed Seed raises only Sprint1195→1200, flat20/marginal5/waste15;
 other three race distances remain1195. Fixture milestones/meals are labelled, not claimed as earned production.
 
-Local build gzip (decimal KB, Node gzip; no static entry imports): startup **154.89 KB** (`154,891` bytes ≤180 KB).
+Local build gzip (decimal KB, Node gzip; no static entry imports): startup **154.90 KB** (`154,898` bytes ≤180 KB).
 Lazy Farm screen **12.90 KB** including its guide; production adapter 1.71 KB, Home card 1.63 KB, marks 2.61 KB,
 Extra adapter/screen **5.67 KB**. Catalogue is coalesced into the existing lazy domain/setup chunk **129.46 KB**,
 not the startup entry; no separate guide chunk. Firebase/Pixi stay lazy. Existing PWA precaches194 entries;
-Farm/Extra/Home/guide chunks are included (3,227.37 KiB total), DEV proof chunks excluded. Critical guards wrap the full confirmed
+Farm/Extra/Home/guide chunks are included (3,227.38 KiB total), DEV proof chunks excluded. Critical guards wrap the full confirmed
 upgrade, Collect/Retry and Farm acknowledgement adoption; saved jobs survive deliberate later restart.
 Focus/Close and contextual Back were exercised in DOM, but browser resizing is not installed iOS acceptance.
+The focus boundary encloses the entire Farm sheet, not only its content: Close/backdrop stay interactive,
+background actions become inert, Tab/Shift-Tab include Close and Escape dismisses. A regression test pins this;
+new `energy-focus` captures show the reachable 44px Close button at both phone sizes.
 
 ## Production deployment receipt
 

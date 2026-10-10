@@ -15,6 +15,8 @@ For each suffix `390` / `375`: `reset`, `recovery`, `active-reset`; all five `ga
 `race-delta`. Additional `export-390` / `export-375` show explicit download requests without restore, and
 `energy-after-375` shows the selected deadline after the spend. Exported JSON is private even for the witness
 and is not committed.
+`energy-focus-390` / `energy-focus-375` additionally record the corrected whole-sheet focus boundary, with
+the 44px Close button exposed alongside the Energy action and the background isolated.
 
 ## Observed interactions and dimensions
 

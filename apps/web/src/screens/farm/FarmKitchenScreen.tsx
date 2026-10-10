@@ -11,7 +11,7 @@ import {
   type FarmRecipe,
   type FarmStationId,
 } from '@racer/domain/farm/kitchen'
-import { useEffect, useMemo, useState, createContext, useContext, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, createContext, useContext } from 'react'
 import { Link, Navigate, Outlet, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useStore } from 'zustand'
 import type { LoadedContent } from '../../content/runtime'
@@ -40,7 +40,7 @@ import {
 import { createFarmKitchenStore, observeFarmKitchen, publishFarmKitchenView, type FarmKitchenStore } from '../../game/farm/kitchen/store'
 import type { FarmKitchenView } from '../../game/farm/kitchen/view'
 import { farmKitchenItemDefinitions } from '../../game/items/view'
-import { BottomSheet } from '../../ui/BottomSheet'
+import { FarmKitchenSheet } from '../../ui/farm/FarmKitchenSheet'
 import { Button } from '../../ui/Button'
 import { Crest } from '../../ui/Crest'
 import { Meter } from '../../ui/Meter'
@@ -51,7 +51,6 @@ import { SegmentedControl } from '../../ui/SegmentedControl'
 import { useArt } from '../../ui/album/useArt'
 import { FarmDistrictSign, FarmFoodMark } from '../../ui/farm/FarmKitchenMarks'
 import { ChevronLeftIcon, ChevronRightIcon, QuestionIcon, RetryIcon, StopwatchIcon } from '../../ui/icons'
-import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { FarmKitchenGuide, farmKitchenGuideMemory, type FarmGuidePage } from './FarmKitchenGuide'
 import { FarmKitchenRecovery, FarmResetNotice } from './FarmKitchenRecovery'
 
@@ -265,9 +264,7 @@ export function FarmKitchenDistrictScreen() {
   </div>
 }
 
-function Sheet({ open, close, children }: { open: boolean; close: () => void; children: ReactNode }) {
-  return open ? <BottomSheet open onClose={close} label="Farm details"><RpgModalFocus onClose={close}>{children}</RpgModalFocus></BottomSheet> : null
-}
+const Sheet = FarmKitchenSheet
 
 function WorkerPicker({ open, stationId, close }: { open: boolean; stationId: FarmStationId; close: () => void }) {
   const farm = useKitchen(), station = farm.view.stations.find(row => row.id === stationId)!, current = farm.crew.find(row => row.id === station.outfitId)
