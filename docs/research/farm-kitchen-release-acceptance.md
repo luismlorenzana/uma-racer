@@ -88,7 +88,8 @@ Focus/Close and contextual Back were exercised in DOM, but browser resizing is n
 ## Production deployment receipt
 
 At authoring, local release acceptance is complete; hosted CI, merge and deployment are **not yet observed**.
-The release PR's final description records these **after** completion, independently: CI/head SHA, actual
+The [release PR #112](https://github.com/luismlorenzana/uma-racer/pull/112) final description records these
+**after** completion, independently: CI/head SHA, actual
 main merge SHA, deployment run URL, API health build/revision, hosted web Settings build ID/entry hash,
 `/api/health`200, unauthenticated `/api/save`401, SPA/deep-link and asset/SW cache responses. Do not infer
 deployment from merge. No credentials/content publish are needed. Without an owner authenticated session,
