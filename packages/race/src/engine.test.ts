@@ -335,7 +335,7 @@ describe('simulateRace', () => {
         expect(new Set(first.results.map((result) => result.placement)).size).toBe(fieldSize)
       }
     }
-  }, 20_000)
+  }, 60_000) // ~10 s on CI, but a slow runner has passed 20 s
 })
 
 describe('playback', () => {
