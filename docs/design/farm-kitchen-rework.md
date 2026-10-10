@@ -1,16 +1,12 @@
 # Uma Farm — production and cooking rework
 
-> **Implementation definition · 2026-10-09 · pure rules, dormant sync and rehearsed cutover complete, not live.** T118 implements and pins the
-> original catalogue, production/map rules and deterministic balance witnesses (D304). The owner authorized
-> [M031](../tasks/M031-farm-kitchen-rework.md). This is the planned replacement for
-> [Stable Farm](farm.md) and its [Extra Stats grid](constellations.md#extra-stats), not a description of production.
-> [The implementation contract](../technical/farm-kitchen-implementation.md) and
-> [measured balance record](../research/farm-kitchen-balance.md) carry the implemented pure layer.
-> T119's additive persistence/sync keeps the existing trusted-device clock. T120's protected cutover/recovery
-> is implemented and rehearsed (D307); T121's real host/selectors and exact recovery are implemented (D308).
-> T122's phone screens (D313) and T123's acknowledged Extra/race joins (D314) are implemented.
-> T124 owns full release; both capabilities remain off.
-> No live Farm rule or owner save has changed.
+> **Implemented M031/T118–T124 · 2026-10-10 · D315.** Matching code-owned API/web capabilities enable
+> the complete save-backed Farm/cooking/Extra loop. T118 pins the catalogue/rules/balance (D304); T119–T123
+> supply atomic sync, protected reset, real host, phone screens and canonical race joins. The
+> [implementation contract](../technical/farm-kitchen-implementation.md), [measured balance](../research/farm-kitchen-balance.md)
+> and [release evidence](../research/farm-kitchen-release-acceptance.md) distinguish code/browser/deployment checks
+> from pending owner iPhone/PWA/account checks. Existing accounts explicitly **Archive and prepare Farm**;
+> startup/page reads never reset, and no manual owner save/resource mutation is part of release.
 
 > **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
 > real-world nutrition rules or special Guts tax. The earlier 60-point/node proposal is replaced by a smaller
@@ -19,7 +15,7 @@
 > **Capacity/pacing revision:** keep **6/6/6/6/6**, with all thirty spots open from the start and no slot expansion.
 > Two jobs now earn one outfit level. Removing expertise,
 > a fixed six-hour timer, larger production batches and shared recipe access are now verified/pinned in the
-> dormant pure layer, not shipped live Farm behaviour.
+> implemented loop (no expertise or slot expansion).
 > §3 and §11 separate personal levels from account throughput. Every registered scenario has its own ingredient
 > variants (§6), while meals and bought maps remain shared within five-scenario blocks.
 
@@ -76,9 +72,9 @@ in the new pure modules/domain tests. Later changes must update this definition,
 Do not reopen fixed scope choices or treat arithmetic as
 measured gameplay. A failed balance witness is reported explicitly, not hidden by grants or a larger stat budget.
 
-## 2. What changes from production
+## 2. What changed from the archived v2 Farm
 
-| Current implementation | Rework |
+| Archived implementation | Current Farm |
 |---|---|
 | Eighteen plots; aggregate levels unlock them sequentially | Five six-station districts, all thirty spots immediately open; no expansion ladder |
 | Every plot grows any stat's scenario crop | District-specific raw goods, recipes and input-consuming jobs |
@@ -89,8 +85,8 @@ measured gameplay. A failed balance witness is reported explicitly, not hidden b
 | Existing 240-point Extra Stats allowance subtracted from the card pool | Preserve current card-node values; add an independently budgeted Farm contribution |
 | Debug action shifts all running jobs | Debug grants Energy; a deliberate spend advances one job |
 
-The current guide also still describes older timer/Produce rules. Replace it as part of the new Farm UI rather
-than carrying those instructions into the rework. Do not use its stale copy as a rules source.
+The current guide describes raw→process→cook, shared recipe gates, Energy and meals→Extra. Legacy timer/Produce
+rules below the historical header in [farm.md](farm.md) are compatibility documentation, not current instructions.
 
 ## 3. Districts and station ownership
 
@@ -446,8 +442,8 @@ Buy and set-active use the real semantic host with the confirmed revision. A cha
 requires another confirmation; it never chooses substitute spending or silently trims another build. Pending
 maps are labelled previews, not race-ready stats. Only acknowledged IDs feed Training/Profile/Stable and
 new races. Missing map/build means zero Farm; incompatible identity/generation/template shows recovery rather
-than stale bonuses. Opening any page creates neither purchases nor active selections. The production path
-remains dormant until T124; the old crop grid still serves accounts without a new generation.
+than stale bonuses. Opening any page creates neither purchases nor active selections. Unprepared accounts
+see a preparation link, not the retired crop purchasing UI; corrupt/future generations expose Retry/Export.
 
 ### Stat derivation: protect cards while adding a real Farm budget
 
@@ -605,11 +601,11 @@ three-block run preserves stock/EXP and finishes287 jobs atLv144; an earned-Lv9 
 66 jobs/3 days to prepare24 meals from zero stock. All fourteen tiers preserve exact card-only values; the new
 Farm vector never gains Foundation/growth multipliers. Baseline constants needed no tuning.
 
-The shipped `sim:farm` and career envelopes pass. The legacy constellation sim retains its already documented
+The current `sim:farm`/`sim:farm:kitchen`, frozen `sim:farm:legacy` and career envelopes pass. The legacy constellation sim retains its already documented
 tier1 one-Stamina-card/1,400m failure, not a Farm regression; no racing rules are retuned here. T123 verifies the
 live joined derivation with the same672 exact card-only checks/2,016 builds and unchanged report hash; its real-host
-proof covers meal purchase/activation/pre-race deltas. T124 still owns release/device behaviour. Existing
-`sim:farm` alone cannot validate the new chain.
+proof covers meal purchase/activation/pre-race deltas. T124/D315 verifies the integrated host chain and switches
+the default Farm sim to production/cooking; owner cadence/device behaviour remains separately pending.
 
 ## 12. Energy
 
@@ -777,16 +773,18 @@ There is no ticketed run journal, combat seed, `MinigameHost`, battle engine or 
 
 ## 16. One-time cutover: intentionally reset, narrowly scoped
 
-**Do not execute this reset while authoring the plan.** The requested reset is a future application migration,
-not permission to edit the owner save manually, grant meals or remove other progression now.
+**Only explicit guarded application preparation may execute this reset.** It is not permission to edit the
+owner save manually, grant meals or remove other progression. Normal reads do not prepare.
 
 T120/D307 has implemented and [synthetically rehearsed](../research/farm-kitchen-cutover-rehearsal.md) this path
-with both capabilities false. [Technical§6](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307)
+before enablement. T124/D315 enables both capabilities after integrated tests. [Technical§6](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307)
 fixes its archive/protocol shapes,4,096-outfit/32-per-page/8 MiB freeze and64 MiB archive limits, bounded verification,
 Retry/Export and legacy claim policy. Those are safety limits, not gameplay progression caps. Normal startup
-does not request preparation; T124 alone activates the complete replacement.
+does not request preparation. A confirmed press drains pending writes, archives and verifies the account, then
+performs bounded durable steps until active or an uncertain reply. Reload/Retry resumes the same request;
+Export retains evidence without restoring bonuses. Updating the PWA waits for these protected actions.
 
-At the eventual release, one server-acknowledged account generation performs the reset exactly once. Reinstall,
+One server-acknowledged account generation performs the reset exactly once. Reinstall,
 retry and a second device must adopt it, not reset progress again. Old clients/evidence cannot overwrite a new
 generation or rederive new Farm EXP from old harvests. Use an explicit schema/generation marker and replay guard;
 pick concrete schema/Dexie versions from latest main at implementation, not stale version numbers in this draft.
@@ -821,7 +819,7 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 
 ## 17. Implementation sequence
 
-[M031](../tasks/M031-farm-kitchen-rework.md) sequences seven individually deliverable tasks, one PR/merge at a time:
+M031 completed seven tasks, one PR/merge at a time (specs retained in git history under D104):
 
 1. T118 **complete**: [pure original catalogue/progression and recipe/map contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304), with [measured balance proofs](../research/farm-kitchen-balance.md).
 2. T119 **complete**: [additive records, semantic commands, strict API mirror and bounded atomic sync](../technical/farm-kitchen-implementation.md#3-records-and-ownership), with [synthetic verification](../research/farm-kitchen-sync.md).
@@ -829,11 +827,12 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 4. T121 **complete**: [real host/selectors and exact retry/recovery](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308), with [real-storage verification](../research/farm-kitchen-host.md). Pending stock/maps remain previews, never racing stats.
 5. T122 **complete** (D313): [five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313).
 6. T123 **complete** (D314): [canonical shared map, four independent distance builds, cap-aware map/list and real race integration](../technical/farm-kitchen-implementation.md#t123-implemented-map-and-stat-join-d314), with [synthetic phone/host proof](../research/farm-kitchen-phone-proof/README.md#t123-extra-map-and-race-proof).
-7. [T124](../tasks/T124-farm-kitchen-release.md): end-to-end balance, compatibility/deployment/PWA checks, guarded cutover activation and owner acceptance.
+7. T124 **complete** (D315): integrated host/reset checks, paired capabilities, production entry/recovery and
+   [release acceptance](../research/farm-kitchen-release-acceptance.md). Owner physical-device/account checks remain pending.
 
 The [technical contract](../technical/farm-kitchen-implementation.md) fixes record/command ownership and acceptance
-boundaries. T118–T123 remain capability-off on normal accounts; an isolated synthetic proof is not a release.
-T124 changes application capabilities only after integration/rehearsal, through the existing production workflow.
+boundaries. T118–T123 merged dormant; T124 enables the complete application through the existing production
+workflow. Synthetic proofs remain separate from production and physical-device evidence.
 
 Do not ship the new Farm detached from its Extra Stats consumer, or reset the account while its replacement UI
 is unavailable. No unrelated RPG/Puzzle rework, racing engine rebalance, Inspiration mechanics or private content

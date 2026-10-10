@@ -125,7 +125,7 @@ describe('Farm wire and standalone mirror', () => {
     const domain: { resolveFarmOperations: typeof resolveFarmOperations } = await import(`${source}/resolver.ts`)
     const g = await fixture(), context = { enabled: true, now: 1000, entities: g.entities, logs: g.logs }
     expect(farmCanonical(resolveFarmOperations(context, [op]))).toBe(farmCanonical(domain.resolveFarmOperations(context, [op])))
-    expect(resolveSyncWithPuzzles('owner', req([op]), g.entities as Map<string, EntityRecord>, new Map(), 1000, false).response.farmOperations![0]!.status).toBe('rejected')
+    expect(resolveSyncWithPuzzles('owner', req([op]), g.entities as Map<string, EntityRecord>, new Map(), 1000, false, false).response.farmOperations![0]!.status).toBe('rejected')
   })
   it.each(['preparing', 'resetting'] as const)('protects %s even without client opt-in; historic projections keep their original versions', async phase => {
     const f = await fixture(), legacy: { createInitialFarmState(): object } = await import(`${source}/../rules.ts`)

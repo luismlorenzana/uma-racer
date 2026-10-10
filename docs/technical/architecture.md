@@ -1,15 +1,15 @@
 # Architecture
 
-## Planned Farm production/cooking replacement
+## Farm production/cooking (D315)
 
-[M031](../tasks/M031-farm-kitchen-rework.md) has completed T118's pure rules (D304) and T119's dormant
-save/sync implementation (D306). [The contract](farm-kitchen-implementation.md)
+M031/T118–T124 completes the [Farm loop](../design/farm-kitchen-rework.md).
+[The contract](farm-kitchen-implementation.md)
 implements Farm3 and separate worker/recipe/Extra records, atomic semantic commands in the authenticated sync
 endpoint, an exact-source standalone API mirror, additive Dexie32 and an acknowledged-only inventory with
 device-local intent/predictions. Local-file and Firestore adapters share the pure resolver; ordinary Farm-owned
 writes and retired Extra resurrection are guarded by an implicit cutover read. The owner chose the existing Farm's
 trusted-device deadline model, preserving offline intent; server time stamps acknowledgements. No global Uma/profile schema bump.
-T120/D307 adds an authenticated, dormant preparation endpoint, immutable freeze/step/page-verification/final
+T120/D307 adds an authenticated preparation endpoint, immutable freeze/step/page-verification/final
 receipts and a separate SHA-256 whole-account archive in device-only `farmRecovery`. Per-outfit reset steps patch
 current non-Farm fields, not frozen whole objects; legacy deadlines/stock/history remain. Archive/cutover adapters
 are lazy; no Dexie reset callback or normal startup request. Full pulls merge the retired Extra whitelist without
@@ -22,9 +22,15 @@ publishes reactive vectors through a narrow Zustand selector, and adds them post
 derivation. Pending maps remain explicit UI previews. Race preparation and completion re-read the canonical
 target in their Dexie transaction; frozen historical input is unchanged and stale in-flight edits are rejected.
 The meal map/list remains lazy, with real semantic purchases/free activations and contextual recipe return.
-Legacy crop writers are blocked on any new control, including malformed/future generations. T124 owns
-enablement. Both Farm gates are false;
-the existing Farm described below stays live until T124 and no account reset is executed by intermediate work.
+Legacy crop writers are blocked on any new control, including malformed/future generations. T124/D315 enables
+matching API/web code gates. Readiness, Home and startup remain read-only. An explicit Archive and prepare press
+drains existing writes, verifies a retained whole-account archive, then resumes bounded reset steps to active.
+Upgrade, Collect, Retry and network acknowledgement adoption block service-worker restart while in progress.
+Offline/unknown acknowledgements retain intents and recovery for Retry/Export; no automatic rollback or reset.
+Home shows actual ready/assigned/next-finish counts; old route aliases redirect to new districts/Crew/Recipes.
+Settings replaces the global timer shift with a deliberate50 Energy grant. [Release evidence](../research/farm-kitchen-release-acceptance.md)
+separates synthetic/browser/deployment verification from pending owner installed-PWA checks.
+Legacy sections below are retained compatibility history, not the new-generation writer.
 
 ## Global card progression (D255)
 
@@ -129,14 +135,15 @@ historical replays and facts remain. Owner gameplay/device acceptance is [tracke
   deterministic starter seeding; an unavailable cloud may seed offline and reconcile through the normal outbox.
 - Every action (a deck edit, minigame result, race, or promotion) runs **on the device** through `@racer/domain` and `@racer/race`,
   updates the store, writes to IndexedDB, and appends changed entities to an **outbox**.
-- Stable Farm uses an independent `FarmHost`, not `MinigameHost`. Dexie v14 adds one lazy `farm/main` entity, versioned
+- Legacy Farm used an independent `FarmHost`, not `MinigameHost`. Dexie v14 added one lazy `farm/main` entity, versioned
   `items/{itemId}` stacks and append-only `itemLedger/{cycleId}` evidence. Assignment and planting update Farm plus its
   coalesced outbox marker; harvest commits Farm, stack, evidence and all three outbox markers atomically. A device-local
   command revision rejects stale screens without changing the server entity version used by sync.
-- Farm/item conflict adoption is followed by evidence reconciliation inside the same Dexie transaction. Unique movement
+- Legacy Farm/item conflict adoption is followed by evidence reconciliation inside the same Dexie transaction. Unique movement
   ids rebuild stack quantity and harvest XP, advance plot attempt floors and clear a harvested cycle resurrected by a
   stale Farm copy. Matching projections are a write-free no-op; IndexedDB-unavailable play uses the same port in memory.
-- Home reads an aggregate Farm projection and `/farm` lazy-loads the full-screen Field / Workers / Crops / Items shell.
+- The legacy Home read an aggregate Farm projection and `/farm` loaded Field / Workers / Crops / Items.
+  The current generation uses the lazy Stable Kitchen host and Farm / Crew / Recipes / Items shell described above.
   One visibility-aware minute clock derives readiness without persistence writes. The Item view joins synced stacks to
   the checked-in catalog; owned/all, stat, scenario and density preferences reuse device-local `albumPrefs` and never sync.
   Settings diagnostics expose aggregate Farm/item/ledger counts only, never private item names or ids.
@@ -265,11 +272,11 @@ historical replays and facts remain. Owner gameplay/device acceptance is [tracke
 
 ### 2. Deterministic simulation, then playback
 
-- Stable Farm keeps its clock outside the domain: pure rules receive an integer `now`, persist each cycle's deadline once
-  (10h down to 7h 30m by the worker's level, older rows 7h 30m), and derive Locked/Growing/Ready plus every plot and crop-row unlock. Its
-  synthetic `sim:farm` harness pins the Section-by-Section expansion envelope without reading a save, browser API or
-  private content. Presentation recomputes on
-  a shared minute boundary plus focus/visibility, while planting and harvesting alone cross the save boundary.
+- Farm keeps its clock outside the domain: pure rules receive integer `now`, persist each six-hour job deadline once
+  and derive Busy/Ready without writes. Trusted-device timing preserves offline intent; accepted receipts own output/EXP.
+  `sim:farm`/`sim:farm:kitchen` pin current production/check-ins, `sim:farm:stats` pins actual stat joins;
+  `sim:farm:legacy` retains the retired Section/timer envelope. Presentation recomputes on a shared minute boundary
+  plus focus/visibility; semantic commands alone cross the save boundary.
 - `simulateRace(input) → RaceTimeline` runs the **whole race up front** in a few milliseconds: 18 runners × about 2,250 ticks at 1/15 s.
 - The renderer **plays the timeline back** and interpolates between ticks at the display's refresh rate (60 Hz, or 120 Hz where Safari allows).
 - This gives free **skip** (jump to results), **replay** (store `seed` + inputs, re-simulate), and **headless batch balance runs** in Node or a Web Worker.
@@ -360,7 +367,12 @@ players/{uid}/badges/uma:{umaId}      badge-state v1: bounded facts, awards, tit
 players/{uid}/badges/trainer          badge-state v1: account aggregates/records, awards and preferences
 players/{uid}/ledger/{id}             append-only ticket, coupon, and shard movements
 players/{uid}/flairEvents/{id}        append-only per-Uma/Trainer award evidence and source refs
-players/{uid}/farm/main               Farm schema v2: used plots (sparse), outfit assignments/progress and attempt counters
+players/{uid}/farm/main               Farm schema3: sparse stations, generation, assignments, frozen jobs/attempts; v2 history retained
+players/{uid}/farmWorkers/{outfitId}  generation-scoped lifetime Farm EXP
+players/{uid}/farmRecipes/b{block}   shared processing/cooking gates and cookbook counts
+players/{uid}/farmExtra/{outfit:block} bought65-node map and scenario/distance active builds
+players/{uid}/farmCutover/main       frozen reset generation and bounded verification progress
+players/{uid}/farmCutoverPages/{id}  frozen cohorts; immutable farmOperations receipts guard each step/spend
 players/{uid}/items/{itemId}          current global item-stack quantity and update time
 players/{uid}/itemLedger/{id}         append-only Farm/Extra stat/Ticket movements and scenario Inspiration grants/spends
 players/{uid}/rpgOutfits/{outfitId}    schema-2 locked class, frozen enrollment inputs, tier EXP/tree, revision

@@ -1,6 +1,8 @@
 // Compact, read-only Home entry for Stable Farm (docs/design/farm.md#screen-contract, T084, D234).
 
 import { Link } from 'react-router'
+import { lazy, Suspense } from 'react'
+import { FARM_KITCHEN_RELEASE_ENABLED } from '../../game/farm/kitchen/capability'
 import { useFarmPresentationNow } from '../../game/farm/presentation-clock'
 import { useFarmView } from '../../game/farm/useFarmView'
 import { buildFarmHomeSummary } from '../../game/farm/view'
@@ -9,7 +11,14 @@ import { Crest } from '../Crest'
 import { Panel } from '../Panel'
 import { ChevronRightIcon, StableIcon, StopwatchIcon } from '../icons'
 
+const KitchenCard = lazy(() => import('./FarmKitchenHomeCard'))
 export function FarmHomeCard() {
+  const mode = useGame(state => state.farmStats.mode)
+  return FARM_KITCHEN_RELEASE_ENABLED || mode !== 'legacy'
+    ? <Suspense fallback={<Link to="/farm" className="flex min-h-11 items-center">Open Farm · reading protected generation…</Link>}><KitchenCard /></Suspense>
+    : <LegacyFarmHomeCard />
+}
+function LegacyFarmHomeCard() {
   const enabled = useGame((state) => state.status === 'ready')
   const { state } = useFarmView(enabled)
   const now = useFarmPresentationNow()

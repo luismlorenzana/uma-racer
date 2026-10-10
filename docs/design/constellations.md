@@ -364,16 +364,16 @@ The button hides on the first scenario, when the earlier preset has nothing on t
 Loading is one synced write, as free and reversible as any other edit.
 
 Reconfiguration never costs tickets and never touches Constellation Level or card levels. Card and lineage nodes and which
-Extra stats are on remain free and reversible. Buying an Extra stat node is the one spend: it consumes its crops
-atomically, for good; a stale screen reloads the grid without spending.
+Extra stats are on remain free and reversible. Buying an Extra stat node is the one spend: it consumes one matching
+block meal atomically, for good; a stale screen reloads without spending.
 
 ## Extra stats
 
-**Implemented replacement, release off:** [M031](../tasks/M031-farm-kitchen-rework.md) / T123 (D314) implements
+**Current meal-funded Farm allowance (D314–D315):** M031 / T123–T124 implements
 [meal-funded shared block maps](farm-kitchen-rework.md#9-extra-stats-map-and-ownership), 65 nodes and four
-independent active distance builds through a separate Farm allowance. The existing rules below stay live
-until guarded release. Old Farm/Extra progress will reset once with an archive; cards, CL and Inspiration
-stay untouched. [Integration contract](../technical/farm-kitchen-implementation.md#8-extra-stats-and-racing).
+independent active distance builds through a separate Farm allowance. Old Farm/Extra progress resets once
+through explicit archived preparation; cards, CL and Inspiration stay untouched. An unprepared account's
+Extra screen links to Farm preparation, never allows retired purchases. [Integration contract](../technical/farm-kitchen-implementation.md#8-extra-stats-and-racing).
 
 For an acknowledged active Farm generation, `deriveStats` preserves historical card normalization240 and
 all existing base/card growth/buffs, disables the retired crop Extra allowance, adds the selected build's
@@ -387,8 +387,9 @@ actual scenario and Sprint/Mile/Medium/Long. New scenarios start empty. Race dis
 selects the acknowledged build; pending edits affect previews only and old saved race inputs stay frozen.
 
 The new map/list names every node, shows capped +0 honestly, and links a missing meal to its contextual Farm
-recipe. Legacy purchases/time-shift bonuses are rejected once the new generation exists. Until T124 enables
-the matching capabilities and protected cutover, the following **legacy live rules** remain unchanged.
+recipe. Legacy purchases/time-shift bonuses are rejected once the new generation exists.
+
+### Archived crop grid — history and old save compatibility only
 
 Each scenario has a grid of **20 Extra stat nodes**, four of each stat, beside its tree (D235). It belongs to that
 scenario's trained unit, like its card set.
@@ -436,10 +437,10 @@ edge and shadow, and the tree drawn on it like a tech tree in a game menu (D143)
 - **A stat strip** above the graph carries the five derived stats and SP, each with a delta against the
   configuration as it was when the screen opened.
 - **The aptitude line** below it names every grade lineage has moved, with the step count that produced it.
-- **The Extra stats view** is a grid, not a graph: a row per stat with its crop and stock, four node buttons a row (on
-  in the stat's colour with `+40`, off, the next to buy with its cost, or locked), and a `Slots on · 4 / 6` meter. Tapping
-  a bought node switches it; tapping the next opens a sheet that names the crop, the cost, the stock before and after,
-  and the no-refund rule. Every state is in its accessible name, never colour alone.
+- **The Extra stats view** has a five-cluster map and equivalent searchable list, ten pair bridges and five Suns.
+  It names outfit/block/scenario/distance, bought/active capacity, flat Farm/marginal/cap waste and exact meal cost.
+  Arbitrary purchases are permanent; free activation changes only the selected scenario/distance. Every state
+  is in its accessible name, never colour alone; missing meals link to the matching contextual Farm recipe.
 - **Pan and pinch-zoom.** A **Fit** control appears once the view has moved; at fit it would only cover a
   corner node. The view refits when the host resizes.
 

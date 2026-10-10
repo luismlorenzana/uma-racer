@@ -53,6 +53,7 @@ import { FarmDistrictSign, FarmFoodMark } from '../../ui/farm/FarmKitchenMarks'
 import { ChevronLeftIcon, ChevronRightIcon, QuestionIcon, RetryIcon, StopwatchIcon } from '../../ui/icons'
 import { RpgModalFocus } from '../../ui/rpg/RpgModalFocus'
 import { FarmKitchenGuide, farmKitchenGuideMemory, type FarmGuidePage } from './FarmKitchenGuide'
+import { FarmKitchenRecovery, FarmResetNotice } from './FarmKitchenRecovery'
 
 export interface FarmKitchenEnvironment {
   database: RacerDb
@@ -60,6 +61,7 @@ export interface FarmKitchenEnvironment {
   workers: readonly FarmWorkerLabel[]
   content: LoadedContent | null
   isolated: boolean
+  showResetNotice?: boolean
   root: string
   ownerDebugAllowed: boolean
   advanceProofClock?: (ms: number) => void
@@ -130,9 +132,9 @@ export function FarmKitchenCommonShell({ environment }: { environment: FarmKitch
     }).catch(reason => { if (live) setMessage(reason instanceof Error ? reason.message : 'Could not read the claim result') })
     return () => { live = false }
   }, [environment, claim?.mutation.operationId, claim?.mutation.status, view?.revision.pending])
-  const crew = useMemo(() => view ? buildFarmCrew(view, environment.workers) : [], [environment.workers, view])
+  const crew = useMemo(() => view?.mode === 'active' ? buildFarmCrew(view, environment.workers) : [], [environment.workers, view])
   const action: KitchenContextValue['action'] = async (key, run) => {
-    if (!view || busy) return null
+    if (!view || busy || !state.controlsReady) return null
     setBusy(key); setMessage(null)
     try {
       const intentId = await environment.host.createIntent()
@@ -144,16 +146,17 @@ export function FarmKitchenCommonShell({ environment }: { environment: FarmKitch
         const job = view.stations.find(station => station.job?.id === jobId)?.job
         if (job) setClaim({ mutation: result, job })
       }
-      setMessage(result.status === 'pending' ? 'Saved locally · pending sync' : result.status === 'rejected' ? result.reason ?? 'Farm request rejected' : 'Farm updated')
+      setMessage(result.status === 'pending' ? 'Saved locally · pending sync' : result.status === 'rejected' ? result.reason ?? 'Farm request rejected' : outcome?.kind === 'claim-legacy' ? 'Legacy crop collected once · 0 new Farm EXP · saved in global Items' : 'Farm updated')
       return result
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Farm action could not be completed')
       return null
     } finally { setBusy(null) }
   }
+  if (state.status === 'error' || view && view.mode !== 'active') return <FarmKitchenRecovery environment={environment} view={view} error={state.status === 'error' ? state.error : null}
+    reload={async () => publishFarmKitchenView(store, await environment.host.read())} />
   if (state.status === 'loading' || !view) return <div className="flex h-dvh items-center justify-center bg-page px-4"><ScreenState title="Opening the Farm…" detail="Reading crew, stations and Items." /></div>
-  if (state.status === 'error') return <div className="flex h-dvh items-center justify-center bg-page px-4"><ScreenState title="Farm needs attention" detail={state.error ?? 'Reload and retry the compatible Farm generation.'} action={{ label: 'Back Home', to: '/' }} /></div>
-  const context: KitchenContextValue = { environment, store, view, crew, preferences, setPreferences, busy, message, claim, clearClaim: () => setClaim(null), action,
+  const context: KitchenContextValue = { environment, store, view, crew, preferences, setPreferences, busy: busy ?? (state.controlsReady ? null : 'refreshing'), message, claim, clearClaim: () => setClaim(null), action,
     showGuide: (page = 'crew') => setGuide({ open: true, page }) }
   return <KitchenContext.Provider value={context}>
     <div className="flex h-dvh flex-col overflow-hidden bg-page text-ink">
@@ -168,9 +171,9 @@ export function FarmKitchenCommonShell({ environment }: { environment: FarmKitch
           {[{ to: environment.root, label: 'Farm' }, { to: path(environment, '/crew'), label: 'Crew' }, { to: path(environment, '/recipes'), label: 'Recipes' }, { to: path(environment, '/items'), label: 'Items' }].map(({ to, label }) => <Link key={to} to={to} className={`flex min-h-11 items-center justify-center rounded-xs text-[12px] font-semibold ${location.pathname === to || to.endsWith('/recipes') && location.pathname.includes('/wishlist') ? 'bg-panel text-ink shadow-1' : 'text-ink-soft'}`}>{label}</Link>)}
         </nav>
       </header>
-      <main className={`min-h-0 flex-1 ${fixedField ? 'overflow-hidden' : 'overflow-y-auto overscroll-contain'} px-3 pt-3 pb-safe`}>
-        {message && <p role="status" aria-live="polite" className="mb-2 rounded-sm border border-accent/30 bg-accent/10 p-2 text-[12px]">{message}</p>}
-        <Outlet />
+      <main className={`min-h-0 flex-1 ${fixedField ? 'flex flex-col overflow-hidden' : 'overflow-y-auto overscroll-contain'} px-3 pt-3 pb-safe`}>
+        {message && <p role="status" aria-live="polite" className="mb-2 shrink-0 rounded-sm border border-accent/30 bg-accent/10 p-2 text-[12px]">{message}</p>}
+        <div className={fixedField ? 'min-h-0 flex-1' : ''}><Outlet /></div>
       </main>
       <ClaimSheet />
       <FarmKitchenGuide open={guide.open} startAt={guide.page} isolated={environment.isolated} close={() => setGuide(current => ({ ...current, open: false }))} />
@@ -184,7 +187,12 @@ export function FarmKitchenHubScreen() {
   const ready = summaries.reduce((sum, item) => sum + item.ready, 0)
   const [collecting, setCollecting] = useState(false), [collection, setCollection] = useState<Awaited<ReturnType<FarmKitchenHost['collectAll']>> | null>(null), [collectionError, setCollectionError] = useState<string | null>(null)
   return <div className="space-y-3 pb-4">
-    {farm.environment.isolated && <Link to={path(farm.environment, '/extra')} className="flex min-h-11 items-center rounded-sm bg-accent-wash px-3 text-sm font-semibold text-accent-strong">Aster’s Extra Stats · real-host proof</Link>}
+    {(!farm.environment.isolated || farm.environment.showResetNotice) && <FarmResetNotice environment={farm.environment} />}
+    {farm.view.pending.length > 0 && <Panel className="space-y-2"><p className="text-micro">Saved Farm intents</p>{farm.view.pending.map(row => <div key={row.id} className="border-t border-hairline pt-2"><p className="text-[12px]">{row.operation.payload.kind} · {row.status}</p><p className="text-[11px] text-ink-soft">{row.reason ?? 'Exact choices are durable. Pending stock and EXP are not acknowledged yet.'}</p><Button size="sm" variant="secondary" disabled={farm.busy !== null} onClick={async () => {
+      try { await farm.environment.host.retry({ operationId: row.id }); publishFarmKitchenView(farm.store, await farm.environment.host.read()) }
+      catch (reason) { setCollectionError(reason instanceof Error ? reason.message : 'Keep the intent and export recovery') }
+    }}>Retry unchanged intent</Button></div>)}</Panel>}
+    {farm.environment.isolated && farm.environment.prepareFullMapProof && <Link to={path(farm.environment, '/extra')} className="flex min-h-11 items-center rounded-sm bg-accent-wash px-3 text-sm font-semibold text-accent-strong">Aster’s Extra Stats · real-host proof</Link>}
     {farm.environment.advanceProofClock && <Panel className="flex items-center justify-between border-info/30 bg-info/10"><div><p className="text-micro">Isolated proof clock</p><p className="text-[11px] text-ink-soft">Invented DB only · never appears in production</p></div><Button size="sm" variant="secondary" onClick={async () => { farm.environment.advanceProofClock?.(FARM_KITCHEN_JOB_MS); publishFarmKitchenView(farm.store, await farm.environment.host.read()) }}>Advance 6h</Button></Panel>}
     <section className="grid grid-cols-2 gap-2" aria-label="Farm districts">
       {summaries.map((summary, index) => <Link key={summary.id} to={path(farm.environment, `/district/${summary.id}`)} onClick={() => farm.setPreferences({ ...farm.preferences, lastDistrict: summary.id })} className={index === 4 ? 'col-span-2' : ''}>
@@ -223,6 +231,7 @@ function StationTile({ stationId }: { stationId: FarmStationId }) {
   const act = () => {
     if (station.status === 'empty') setPicker(true)
     else if (station.status === 'idle') setRecipes(true)
+    else if (station.status === 'ready' && station.legacy?.cycle) void farm.action(`legacy:${station.id}`, (intentId, view) => farm.environment.host.claim({ intentId, expectedRevision: view.revision, stationId: station.id, outfitId: station.legacy!.outfitId!, cycleId: station.legacy!.cycle!.id, cropId: station.legacy!.cycle!.cropId }))
     else if (station.status === 'ready' && station.job) void farm.action(`claim:${station.id}`, (intentId, view) => farm.environment.host.claim({ intentId, expectedRevision: view.revision, stationId: station.id, outfitId: station.job!.outfitId, jobId: station.job!.id, recipeId: station.job!.recipeId }))
     else setDetail(true)
   }
@@ -232,7 +241,7 @@ function StationTile({ stationId }: { stationId: FarmStationId }) {
         {worker ? <WorkerPortrait worker={worker} size="h-12 w-12" /> : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-sunken text-micro text-ink-faint">{number}</div>}
         <div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold" title={worker ? `${worker.name} · ${worker.outfit ?? 'Standard'}` : undefined}>{worker?.name ?? `Open station ${number}`}</p>
           <p className="text-[9px] text-ink-soft">{worker ? `Farm Lv${worker.level}` : 'No worker assigned'}</p>
-          <div className="mt-1 flex items-center gap-1">{food && <FarmFoodMark food={food} size={28} />}<span className="line-clamp-2 text-[9px] leading-3 text-ink-soft">{food?.name ?? (worker ? 'Ready for a recipe' : 'Assign any owned outfit')}</span></div>
+          <div className="mt-1 flex items-center gap-1">{food && <FarmFoodMark food={food} size={28} />}<span className="line-clamp-2 text-[9px] leading-3 text-ink-soft">{station.legacy?.cycle ? 'Legacy crop · 0 new EXP' : food?.name ?? (worker ? 'Ready for a recipe' : 'Assign any owned outfit')}</span></div>
         </div>
       </div>
       <p className={`mt-1 truncate text-center text-[9px] font-semibold ${station.status === 'ready' ? 'text-success' : station.pending ? 'text-warning' : 'text-ink-soft'}`}>{station.pending ? 'Pending sync' : station.status === 'busy' ? formatFarmTime(station.remainingMs) : station.status === 'ready' ? 'Ready to collect' : station.status === 'idle' ? 'Idle' : 'Open'}</p>
@@ -257,7 +266,7 @@ export function FarmKitchenDistrictScreen() {
 }
 
 function Sheet({ open, close, children }: { open: boolean; close: () => void; children: ReactNode }) {
-  return open ? <RpgModalFocus onClose={close}><BottomSheet open onClose={close}>{children}</BottomSheet></RpgModalFocus> : null
+  return open ? <BottomSheet open onClose={close} label="Farm details"><RpgModalFocus onClose={close}>{children}</RpgModalFocus></BottomSheet> : null
 }
 
 function WorkerPicker({ open, stationId, close }: { open: boolean; stationId: FarmStationId; close: () => void }) {
@@ -303,6 +312,7 @@ function RecipePicker({ open, stationId, close }: { open: boolean; stationId: Fa
 
 function StationDetail({ open, stationId, close }: { open: boolean; stationId: FarmStationId; close: () => void }) {
   const farm = useKitchen(), station = farm.view.stations.find(row => row.id === stationId), energy = farm.view.items[FARM_KITCHEN_ENERGY_ID]?.canonical ?? 0
+  if (station?.legacy?.cycle) return <Sheet open={open} close={close}><h2 className="font-display text-xl font-bold">Legacy crop</h2><p className="mt-3 text-sm">Original deadline retained · {formatFarmTime(station.remainingMs)} remaining. Collect once for the old crop and 0 new Farm EXP. Energy applies only to new-generation jobs.</p><Button className="mt-3 w-full" onClick={close}>Done</Button></Sheet>
   if (!station?.job) return null
   const used = Math.min(station.remainingMs, FARM_KITCHEN_ENERGY_MS), wasted = FARM_KITCHEN_ENERGY_MS - used
   return <Sheet open={open} close={close}><h2 className="font-display text-xl font-bold">Running job</h2><p className="mt-1 text-sm">{FARM_KITCHEN_CATALOGUE.recipesById.get(station.job.recipeId)?.name}</p><p className="mt-3 flex items-center gap-2 text-[13px]"><StopwatchIcon size={20} /> {formatFarmTime(station.remainingMs)} remaining</p>

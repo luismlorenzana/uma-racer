@@ -11,28 +11,14 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**[M031 — Farm production/cooking rework](M031-farm-kitchen-rework.md) — T118–T123 complete; T124 next.**
-The owner authorized full task authoring through production release (D298–D299).
-[Design](../design/farm-kitchen-rework.md), [technical contract](../technical/farm-kitchen-implementation.md)
-and [research](../research/farm-kitchen-games.md) cover thirty fully open spots, independent outfit levels,
-scenario-specific symmetric ingredients, batched recipes, shared-block Extra Stats and the guarded future reset.
-T118's [pure contract](../technical/farm-kitchen-implementation.md#t118-implemented-pure-layer-d304) and
-[measured witnesses](../research/farm-kitchen-balance.md) are implemented/pinned (D304).
-T119's records/atomic sync, strict mirror, additive Dexie32 and pending/canonical coordinator are implemented
-with both capabilities false (D306). [Verification](../research/farm-kitchen-sync.md) records the tests, bounds and
-existing trusted-device timing retained at the owner's request.
-T120's protected archive/reset, bounded verification and legacy claims are implemented/rehearsed (D307), still
-disabled with no owner execution. [Evidence](../research/farm-kitchen-cutover-rehearsal.md) records failures/retries,
-strict adapter parity, delayed device adoption and unchanged progression sims.
-T121's [real host/selectors](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308) and
-[offline/recovery verification](../research/farm-kitchen-host.md) are implemented (D308), still capability-off.
-T122's [five-district phone presentation](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313),
-original marks, cookbook/wishlist/Items and [isolated real-host proof](../research/farm-kitchen-phone-proof/README.md)
-are implemented (D313), still capability-off. T123's [canonical meal map and race join](../technical/farm-kitchen-implementation.md#t123-implemented-map-and-stat-join-d314)
-and [phone/real-host proof](../research/farm-kitchen-phone-proof/README.md#t123-extra-map-and-race-proof) are complete (D314), also capability-off.
-Work one task/green PR/merge at a time: T124 complete production release is next. T118–T123 keep
-normal capabilities off; existing Farm remains live until the whole loop and backup/reset are ready. No reset
-is performed by T118–T123. Fixed choices and pure baselines are pinned; integration and owner-device checks remain.
+**M031 — Farm production/cooking is complete (T118–T124, D315).**
+[Design](../design/farm-kitchen-rework.md) and [technical contract](../technical/farm-kitchen-implementation.md)
+carry thirty open stations, independent outfit levels, scenario-specific symmetric foods, batched recipes,
+shared-block Extra maps and guarded explicit preparation. T118–T123 merged dormant; T124 enables matching
+code-owned gates with read-only Home/startup, resumable archived reset, legacy claims and PWA commit guards.
+[Release acceptance](../research/farm-kitchen-release-acceptance.md) records actual commands, synthetic host/browser
+proofs, deployment and the still-pending owner iPhone/PWA/account pacing checks. No manual owner save edit or grant.
+Completed specs are removed under D104; their last-spec commit is below. No next Farm implementation task is specified.
 
 **M030 / T116 — Uma Puzzles release is complete** (D289–D290): the owner approved verified
 **original-placeholder art** for production, so permitted PAD portraits no longer block release.
@@ -64,7 +50,6 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M031 — Farm production and cooking](M031-farm-kitchen-rework.md) | T118–T123 complete · [T124 release](T124-farm-kitchen-release.md) | T124 next; one PR/merge at a time; old Farm stays live |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -79,7 +64,7 @@ The owner's device checks (every milestone's, including Spark Rival Circuit's ph
 Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
 task.
 
-**Next free numbers: M032 and T125.** M031/T118–T124 belong to the planned Farm rework;
+**Next free numbers: M032 and T125.** M031/T118–T124 belong to the completed Farm rework;
 M030/T106–T117 belong to the completed Puzzle sequence. Numbers are never
 reused, so a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break
 branch and is not reused.
@@ -90,6 +75,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| M031 / T124 — Complete Farm release and guarded preparation | 2026-10-10 | [Release contract](../technical/farm-kitchen-implementation.md#10-t124-complete-release-d315), D315 and [acceptance evidence](../research/farm-kitchen-release-acceptance.md); owner iPhone/account/PWA checks pending | `f6c4dcf` |
 | T123 — Shared meal map, four builds and canonical race stats | 2026-10-09 | [Joined contract](../technical/farm-kitchen-implementation.md#t123-implemented-map-and-stat-join-d314), D314 and [synthetic phone proof](../research/farm-kitchen-phone-proof/README.md#t123-extra-map-and-race-proof); capability off, no owner execution | `064b7e1` |
 | T122 — Five Farm districts, crew, cookbook, Items and Energy | 2026-10-09 | [Presentation contract](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313), D313 and [synthetic phone proof](../research/farm-kitchen-phone-proof/README.md); capability off, no owner execution | `6734e58` |
 | T121 — Real Farm host, local-first runtime and recovery | 2026-10-09 | [Host contract](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308), D308 and [real-storage verification](../research/farm-kitchen-host.md); capability off, no owner execution | `05ce684` |

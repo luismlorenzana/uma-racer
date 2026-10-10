@@ -70,8 +70,8 @@ export function HomeScreen() {
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish the private content packs to begin." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
   if (status === 'error') return <SaveErrorState detail={error} />
-  if (farmStats.mode === 'recovery') return <ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Uma Racer…" detail="Loading private content and your local save." />
+  if (farmStats.mode === 'recovery') return <div className="flex flex-col gap-3"><ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} /><RpgHomeCard content={contentState.content} /><PuzzleHomeCard content={contentState.content} /></div>
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
 
   const setupPending = !featured.run.started

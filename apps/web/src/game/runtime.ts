@@ -129,6 +129,7 @@ import { installMinigameJournal } from './minigame-journal'
 import { PersistentMinigameHost, PersistentMinigameJournal, retireBondRecallRuns, retireFiveStarFriendshipRuns } from './minigame-runs'
 import { installFarmHost, MemoryFarmHost, PersistentFarmHost } from './farm/host'
 import { FARM_KITCHEN_RELEASE_ENABLED } from './farm/kitchen/capability'
+import { criticalGameplayAction } from '../app/update-lifecycle'
 import type { FarmKitchenHost } from './farm/kitchen/host'
 import { ExtraStatConflictError, unlockPersistentExtraStat, type UnlockExtraStatReceipt } from './extra-stats'
 import {
@@ -1197,7 +1198,21 @@ export class GameRuntime {
       persistent: () => useGame.getState().persistent,
       safeToPrepare: () => !this.flushing && !this.trainingLocks.size && !this.raceLocks.size && !this.promotionLocks.size && !this.deckLocks.size &&
         !this.cardRedemptionLocks.size && !this.umaRedemptionLocks.size && !this.unitLocks.size && !this.exchangeLocked,
-      schedule: () => this.schedule(), publish: async () => { if (generation === this.generation) await this.refreshPending() } })
+      drainBeforeUpgrade: async () => {
+        while (await db.outbox.count()) {
+          const before = (await db.outbox.orderBy('seq').toArray()).map(row => row.seq).join(',')
+          await this.flush()
+          if (generation !== this.generation) throw new Error('Account changed during Farm preparation')
+          const after = (await db.outbox.orderBy('seq').toArray()).map(row => row.seq).join(',')
+          if (before === after) throw new Error('Pending changes must sync before Farm preparation. Reconnect and Retry; no intent was discarded.')
+        }
+      },
+      schedule: () => this.schedule(), publish: async () => {
+        if (generation !== this.generation) return
+        const snapshot = await readLocalSnapshot()
+        if (snapshot && this.content && generation === this.generation) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
+        await this.refreshPending()
+      } })
     if (generation !== this.generation) return
     this.kitchenHost = host; this.uninstallFarmKitchenHost = installFarmKitchenHost(host)
   }
@@ -1244,17 +1259,19 @@ export class GameRuntime {
           if (available.some(l => l !== 'farm')) this.schedule(0)
           return
         }
-        const { FarmOperationCoordinator } = await import('./farm/kitchen/operations')
-        const coordinator = new FarmOperationCoordinator(db, () => this.schedule())
-        const operations = await coordinator.nextBatch()
-        if (!operations.length) throw new Error('Farm queue marker has no pending intent; preserve for recovery')
-        setSyncState({ status: 'syncing', error: null })
-        const response = parseSyncResponseOrThrow(await saveApi.sync({ upserts: [], appends: [], farmProtocolVersion: 1, farmOperations: operations }))
-        if (generation !== this.generation) return
-        await coordinator.adopt(operations, response.farmOperations, response.serverTime)
-        const pending = await db.outbox.count(), rejected = await db.farmPending.where('status').anyOf(['rejected', 'blocked']).count()
-        setSyncState({ pending, status: rejected ? 'error' : pending ? 'pending' : 'idle', error: rejected ? 'A Farm input needs recovery. Its original choices are saved; no rejected reward was applied.' : null })
-        if (pending) this.schedule(0)
+        await criticalGameplayAction(async () => {
+          const { FarmOperationCoordinator } = await import('./farm/kitchen/operations')
+          const coordinator = new FarmOperationCoordinator(db, () => this.schedule())
+          const operations = await coordinator.nextBatch()
+          if (!operations.length) throw new Error('Farm queue marker has no pending intent; preserve for recovery')
+          setSyncState({ status: 'syncing', error: null })
+          const response = parseSyncResponseOrThrow(await saveApi.sync({ upserts: [], appends: [], farmProtocolVersion: 1, farmOperations: operations }))
+          if (generation !== this.generation) return
+          await coordinator.adopt(operations, response.farmOperations, response.serverTime)
+          const pending = await db.outbox.count(), rejected = await db.farmPending.where('status').anyOf(['rejected', 'blocked']).count()
+          setSyncState({ pending, status: rejected ? 'error' : pending ? 'pending' : 'idle', error: rejected ? 'A Farm input needs recovery. Its original choices are saved; no rejected reward was applied.' : null })
+          if (pending) this.schedule(0)
+        })
         return
       }
       if (lane === 'puzzle' && await db.pendingPuzzleOperations.where('status').equals('pending').count()) {

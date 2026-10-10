@@ -1,2 +1,2 @@
-// Paired with the API capability. Storage/protocol can ship before protected cutover and user-facing hosts.
-export const FARM_KITCHEN_RELEASE_ENABLED = false
+// T124/D315: paired API/web release. Opening is read-only; explicit verified preparation owns reset.
+export const FARM_KITCHEN_RELEASE_ENABLED = true

@@ -44,7 +44,7 @@ export async function readFarmKitchenView(db: RacerDb, coordinator: FarmOperatio
       ? 'maintenance' : control.phase !== 'active' ? 'upgrade' : 'active'
     const message = mode === 'maintenance' ? 'This Farm generation requires a compatible app. Keep the save and export recovery.'
       : mode === 'upgrade' ? 'Farm preparation is unfinished. Retry the protected upgrade or export recovery.'
-        : mode === 'legacy' ? 'The existing Farm remains active until the kitchen release.' : null
+        : mode === 'legacy' ? enabled ? 'Archive and prepare the one-time Farm/Extra upgrade before using Stable Kitchen.' : 'The existing Farm remains active until the kitchen release.' : null
     const owned = await db.umas.toArray()
     if (owned.some(r => !parseUmaSave(r.data))) throw new Error('Owned Farm worker data needs recovery')
     const workerKeys = owned.map(r => `farmWorkers/${r.id}`), itemRows = await db.items.toArray()

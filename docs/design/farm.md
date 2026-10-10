@@ -1,13 +1,18 @@
 # Stable Farm
 
-> **Status: complete through M026, rebalanced by D234 and D237.** The rules/catalog, synced Farm and item-ledger runtime,
-> Home/Sections/field/worker/crop screens, global Item inventory and the Extra stats bridge (D235) are implemented.
+The current Farm is [Stable Kitchen](farm-kitchen-rework.md), implemented by M031/T118–T124 (D315): five
+districts with six open stations each, persistent outfit workers, independent two-job Farm levels, six-hour
+raw/processing/cooking jobs, global Items and meal-funded Extra Stats. No aggregate level, slot ladder or expertise.
+Home opens `/farm` directly. Existing accounts explicitly **Archive and prepare Farm** before the new loop;
+normal page reads never reset. Preparation preserves other progression/Items and retains a private device-local
+whole-account archive. Old jobs keep their deadline and can pay their original crop once for **0 new EXP**.
+[Technical contract](../technical/farm-kitchen-implementation.md) and [release evidence](../research/farm-kitchen-release-acceptance.md)
+separate tested implementation/deployment from pending owner device acceptance.
 
-> **Replacement specified (2026-10-08), not implemented:** [M031](../tasks/M031-farm-kitchen-rework.md) / T118–T124
-> implement the [production/cooking definition](farm-kitchen-rework.md): five fully open six-station districts,
-> faster outfit levels, symmetric scenario ingredient varieties, batched recipes and shared-block Extra Stats.
-> [The technical contract](../technical/farm-kitchen-implementation.md) covers the guarded future reset and release.
-> The shipped rules below stay current until T124 enables the complete replacement.
+## Archived v1/v2 rules — retained stock, jobs and replay compatibility only
+
+Everything below records the retired M025/M026/D234/D237 model. It is not new-generation gameplay or a current
+guide. New accounts also use protected preparation; unsupported generations expose recovery, not this writer.
 
 Stable Farm is a global, asynchronous account activity reached from Home. It begins with one plot and grows, plot by plot,
 into three **Farm Sections** of six as owned Uma **outfits** learn to farm. A crop grows while the app is closed, harvesting
@@ -409,7 +414,7 @@ API accepts both shapes, so an older build can still sync, and the newer schema 
 - An outfit reaches Farming Lv10 after 18 harvests and opens scenario 14's row at Lv130 after 258. Plots open at
   1 / 3 / 11 / 29 / 61 / 111, then 183 for Section 2, and stop at plot 18 (Farm Lv3,571). A newest row steps from 10h
   in 15-minute steps over the ten levels after it opens, and an older row is 7h 30m. All of this is pinned by tests, and
-  the pacing envelope by `pnpm sim:farm`.
+  the frozen pacing envelope by `pnpm sim:farm:legacy`.
 - Farm state syncs to another device through the existing save flow; a running crop is not rerolled or shortened.
 - An Extra stat purchase spends exactly its 1–4 crops and writes one movement; retry is idempotent and stale screens do
   not spend. Switching nodes spends nothing.

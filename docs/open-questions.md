@@ -13,11 +13,10 @@ until pinned in domain tests and a decision.
 ## Farm production and cooking — definition review
 
 The owner accepted the direction and requested full task authoring through production release.
-[M031](tasks/M031-farm-kitchen-rework.md) / T118–T124 and the [implementation contract](technical/farm-kitchen-implementation.md)
-now carry the [definition](design/farm-kitchen-rework.md). T118–T123's dormant rules, host, screens and canonical
-race integration are complete (D304–D314);
-no live Farm gameplay/reset has changed. [Measured balance](research/farm-kitchen-balance.md) separates the
-implemented layer from pending release/owner checks and the known legacy stamina-sim failure.
+M031 / T118–T124 and the [implementation contract](technical/farm-kitchen-implementation.md)
+carry the [implemented definition](design/farm-kitchen-rework.md). D315 enables the complete loop and protected
+explicit preparation. [Release evidence](research/farm-kitchen-release-acceptance.md) separates deployment/code
+checks from still-pending owner account migration/PWA/pacing checks and the known legacy stamina-sim failure.
 These are remaining implementation/evidence checks, not questions reopening the fixed direction:
 
 | Review point | Recommendation |
@@ -31,8 +30,8 @@ These are remaining implementation/evidence checks, not questions reopening the 
 Ingredient symmetry is now explicit: all five stats have equal family counts, recipe costs and canonical full-map
 demand, including milk/cheese variants and a direct Guts lane; no real-world nutrition rules (D295). This replaces
 the original restricted raw-lane interpretation. D297 removes the nine-spot start/expansion; D298–D299 authorize
-the seven-task plan and scenario flavour contract. D304 verifies/pins the new pure values; existing Farm still
-runs its old rules. No unanswered mechanics choice blocks T124; release/device evidence remains pending.
+the seven-task plan and scenario flavour contract. D304 verifies/pins the values; D315 completes release wiring
+without retuning them. No unanswered mechanics choice blocks the Farm; owner-device evidence remains pending.
 
 ## Uma Puzzles — owner choices resolved
 
