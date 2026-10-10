@@ -223,7 +223,7 @@ export const router = createBrowserRouter([
   ...(import.meta.env.DEV ? [{
     path: 'dev/farm-kitchen-proof',
     lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenProofScreen')).FarmKitchenProofShell }),
-    children: farmKitchenChildren(),
+    children: [...farmKitchenChildren().filter(route => route.path !== '*'), { path: 'extra', lazy: async () => ({ Component: (await import('../screens/farm/FarmExtraStatsProof')).FarmExtraStatsProof }) }],
   }, {
     path: 'dev/puzzles-preservation-proof',
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzlePreservationProofScreen')).PuzzlePreservationProofScreen }),

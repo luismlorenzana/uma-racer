@@ -29,6 +29,18 @@ export const FARM_EXTRA_NODES: readonly FarmExtraNode[] = [
 const NODES = new Map(FARM_EXTRA_NODES.map(node => [node.id, node]))
 export const farmExtraNode = (id: string): FarmExtraNode | undefined => NODES.get(id)
 
+/** Exact outfit/block/unit/distance projection. Missing rows are empty, never corrupt rows. */
+export function projectFarmExtraStats(input: { map?: unknown; generation: string; outfitId: string; scenarioId: string;
+  distance: DistanceCategory }): FarmResult<Stats> {
+  const scenario = FARM_KITCHEN_CATALOGUE.scenarios.find(s => s.id === input.scenarioId)
+  if (!scenario || !DISTANCE_CATEGORIES.includes(input.distance)) return farmFailure('invalid', 'Unknown Farm scenario or distance')
+  if (input.map === undefined) return farmSuccess(zeroStats())
+  const map = parseFarmExtraBlock(input.map)
+  if (!map || map.generation !== input.generation || map.outfitId !== input.outfitId || map.block !== farmIngredientBlock(scenario.tier))
+    return farmFailure('invalid', 'Farm map identity or template requires recovery')
+  return farmExtraVector(map.activeByScenario[input.scenarioId]?.[input.distance] ?? [])
+}
+
 export function farmExtraCapacity(scenarioIndex: number): number {
   if (!farmSafeInteger(scenarioIndex, 1)) throw new RangeError('Invalid Farm scenario index')
   const capacity = FARM_EXTRA_INITIAL_CAPACITY + FARM_EXTRA_CAPACITY_STEP * (scenarioIndex - 1)

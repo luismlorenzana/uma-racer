@@ -12,7 +12,7 @@ import {
   type FarmStationId,
 } from '@racer/domain/farm/kitchen'
 import { useEffect, useMemo, useState, createContext, useContext, type ReactNode } from 'react'
-import { Link, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, Outlet, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useStore } from 'zustand'
 import type { LoadedContent } from '../../content/runtime'
 import type { RacerDb } from '../../game/db'
@@ -63,6 +63,7 @@ export interface FarmKitchenEnvironment {
   root: string
   ownerDebugAllowed: boolean
   advanceProofClock?: (ms: number) => void
+  prepareFullMapProof?: () => Promise<void>
 }
 interface KitchenContextValue {
   environment: FarmKitchenEnvironment
@@ -79,7 +80,7 @@ interface KitchenContextValue {
   showGuide: (page?: FarmGuidePage) => void
 }
 const KitchenContext = createContext<KitchenContextValue | null>(null)
-const useKitchen = () => {
+export const useKitchen = () => {
   const value = useContext(KitchenContext)
   if (!value) throw new Error('Farm kitchen screen must be inside its shell')
   return value
@@ -183,6 +184,7 @@ export function FarmKitchenHubScreen() {
   const ready = summaries.reduce((sum, item) => sum + item.ready, 0)
   const [collecting, setCollecting] = useState(false), [collection, setCollection] = useState<Awaited<ReturnType<FarmKitchenHost['collectAll']>> | null>(null), [collectionError, setCollectionError] = useState<string | null>(null)
   return <div className="space-y-3 pb-4">
+    {farm.environment.isolated && <Link to={path(farm.environment, '/extra')} className="flex min-h-11 items-center rounded-sm bg-accent-wash px-3 text-sm font-semibold text-accent-strong">Aster’s Extra Stats · real-host proof</Link>}
     {farm.environment.advanceProofClock && <Panel className="flex items-center justify-between border-info/30 bg-info/10"><div><p className="text-micro">Isolated proof clock</p><p className="text-[11px] text-ink-soft">Invented DB only · never appears in production</p></div><Button size="sm" variant="secondary" onClick={async () => { farm.environment.advanceProofClock?.(FARM_KITCHEN_JOB_MS); publishFarmKitchenView(farm.store, await farm.environment.host.read()) }}>Advance 6h</Button></Panel>}
     <section className="grid grid-cols-2 gap-2" aria-label="Farm districts">
       {summaries.map((summary, index) => <Link key={summary.id} to={path(farm.environment, `/district/${summary.id}`)} onClick={() => farm.setPreferences({ ...farm.preferences, lastDistrict: summary.id })} className={index === 4 ? 'col-span-2' : ''}>
@@ -315,8 +317,13 @@ export function FarmKitchenCrewScreen() {
 }
 
 export function FarmKitchenRecipesScreen() {
-  const farm = useKitchen(), [block, setBlock] = useState(1), [limit, setLimit] = useState(32)
+  const farm = useKitchen(), [params] = useSearchParams()
+  const requestedBlock = Number(params.get('block'))
+  const [block, setBlock] = useState(FARM_KITCHEN_CATALOGUE.blocks.includes(requestedBlock) ? requestedBlock : 1), [limit, setLimit] = useState(32)
+  const requestedRecipe = params.get('recipe'), returnPath = params.get('returnTo')
+  const safeReturn = returnPath && /^(?:\/constellation\/[^/?#]+\/extra-stats|\/dev\/farm-kitchen-proof\/extra)\?distance=(sprint|mile|medium|long)$/.test(returnPath) ? returnPath : null
   const meals = FARM_KITCHEN_CATALOGUE.recipes.filter(recipe => recipe.kind === 'cooking' && recipe.block === block)
+    .sort((a, b) => Number(b.id === requestedRecipe) - Number(a.id === requestedRecipe))
   const cookbook = farm.view.recipes[`b${block}`]
   const pin = (recipe: FarmRecipe) => {
     if (farm.preferences.goals.some(goal => goal.recipeId === recipe.id)) return
@@ -324,6 +331,8 @@ export function FarmKitchenRecipesScreen() {
     farm.setPreferences({ ...farm.preferences, goals: [...farm.preferences.goals, { id: `wish-${recipe.id}`, recipeId: recipe.id, quantity: 4, choices: ingredientChoices(recipe, farm.view.items) }] })
   }
   return <div className="pb-4"><div className="flex items-center justify-between"><div><h2 className="font-display text-xl font-bold">Cookbook</h2><p className="text-[12px] text-ink-soft">16 meals per block · first claims become recipes made</p></div><Link to={path(farm.environment, '/wishlist')} className="flex min-h-11 items-center font-semibold text-accent-strong">Wishlist</Link></div>
+    {safeReturn && <Link to={safeReturn} className="mt-2 flex min-h-11 items-center rounded-sm bg-accent-wash px-3 text-sm font-semibold text-accent-strong">Return to this Uma’s meal map</Link>}
+    {requestedRecipe && <p className="mt-2 text-[12px]">Matching meal: {FARM_KITCHEN_CATALOGUE.foodsById.get(requestedRecipe)?.name ?? 'Unknown recipe'}. Pin its shopping list below, then choose it at a Kitchen station. Your workers and featured Uma are unchanged.</p>}
     <div className="mt-3 flex gap-1 overflow-x-auto">{FARM_KITCHEN_CATALOGUE.blocks.map(value => <button key={value} onClick={() => { setBlock(value); setLimit(32) }} className={`min-h-11 min-w-16 rounded-full border px-3 text-[12px] font-semibold ${value === block ? 'border-accent bg-accent/10' : 'border-hairline bg-panel'}`}>Block {value}</button>)}</div>
     <div className="mt-3 grid grid-cols-2 gap-2">{meals.slice(0, limit).map(recipe => { const made = cookbook?.canonical.cookbook[recipe.id]?.count ?? 0, pending = !made && !!cookbook?.projected.cookbook[recipe.id]
       return <Panel key={recipe.id} className="p-2"><div className="flex items-center gap-2"><FarmFoodMark food={FARM_KITCHEN_CATALOGUE.foodsById.get(recipe.outputItemId)!} size={42} /><div className="min-w-0"><strong className="line-clamp-2 text-[11px]">{recipe.name}</strong><span className="block text-[9px] text-ink-soft">{made ? `${made} claimed` : pending ? 'First prep pending' : 'Not prepared'}</span></div></div><button type="button" disabled={farm.preferences.goals.length >= 3 || farm.preferences.goals.some(goal => goal.recipeId === recipe.id)} onClick={() => pin(recipe)} className="mt-2 min-h-11 w-full rounded-sm border border-hairline text-[11px] font-semibold text-accent-strong disabled:opacity-45">{farm.preferences.goals.some(goal => goal.recipeId === recipe.id) ? 'Pinned' : 'Pin ×4'}</button></Panel>})}</div>

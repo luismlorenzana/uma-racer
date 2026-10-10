@@ -43,6 +43,7 @@ import {
   treeBudget,
   nodeValue,
   STAT_NODE_POOL,
+  HISTORICAL_CARD_NORMALIZATION,
   SPARK_MATCH_TICKET_COST,
   FRIENDSHIP_TRAINING_TICKET_COST,
   DAILY_TICKETS,
@@ -216,6 +217,7 @@ describe('Farm kitchen additive baseline — D304', () => {
     expect(SCENARIOS.map(s => Kitchen.farmExtraCapacity(s.tier))).toEqual([18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44])
     expect(Kitchen.FARM_KITCHEN_CATALOGUE.foods).toHaveLength(1_169)
     expect(STAT_NODE_POOL).toBe(240)
+    expect(HISTORICAL_CARD_NORMALIZATION).toBe(240)
   })
 })
 

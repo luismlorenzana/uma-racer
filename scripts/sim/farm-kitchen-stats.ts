@@ -7,7 +7,7 @@ import { extraStatsFromProduce } from '../../packages/domain/src/extra-stats'
 import { SCENARIOS } from '../../packages/domain/src/scenarios'
 import { DISTANCE_CATEGORIES, STATS, zeroStats, type DistanceCategory, type Stats, type StatKey } from '../../packages/domain/src/types'
 import { FARM_EXTRA_NODES, createFarmExtraBlock, farmExtraCapacity, farmExtraVector, farmIngredientBlock,
-  previewFarmStats, setFarmActiveNodes, type FarmResult } from '../../packages/domain/src/farm/kitchen'
+  previewFarmStats, projectFarmExtraStats, setFarmActiveNodes, type FarmResult } from '../../packages/domain/src/farm/kitchen'
 
 function take<T>(result: FarmResult<T>): T { if (!result.ok) throw new Error(JSON.stringify(result.error)); return result.value }
 const baseStats: Stats = { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 }
@@ -61,6 +61,8 @@ for (const scenario of SCENARIOS) for (const flex of ['stamina', 'power', 'guts'
     const input = inputFor(scenario.tier, flex, stars, era, growthRates), card = deriveStats(input)
     const before = grown(input, card.raw), caps = capProfile(scenario.tier)
     assert.deepEqual(take(previewFarmStats(before, zeroStats(), caps)).stats, card.stats); cardOnlyChecks++
+    const { farmSources: _sources, ...unchanged } = deriveStats({ ...input, farmStats: zeroStats() })
+    assert.deepEqual(unchanged, card)
     // All four star ranks are invariance-tested; low/mid/max rows are the reported balance matrix.
     if (stars === 2) continue
     const capacity = farmExtraCapacity(scenario.tier), outfitId = 'invented-outfit'
@@ -70,8 +72,11 @@ for (const scenario of SCENARIOS) for (const flex of ['stamina', 'power', 'guts'
       map = take(setFarmActiveNodes({ map, outfitId, scenarioId: scenario.id, distance,
         unlockedScenarioIds: new Set([scenario.id]), nodeIds: active }))
       const partialFarm = take(farmExtraVector(active.slice(0, Math.ceil(capacity / 2))))
-      const fullFarm = take(farmExtraVector(map.activeByScenario[scenario.id]![distance]))
+      const fullFarm = take(projectFarmExtraStats({ map, generation: 'matrix', outfitId, scenarioId: scenario.id, distance }))
       const partial = take(previewFarmStats(before, partialFarm, caps)), full = take(previewFarmStats(before, fullFarm, caps))
+      const live = deriveStats({ ...input, farmStats: fullFarm }), half = deriveStats({ ...input, farmStats: partialFarm })
+      assert.deepEqual(live.stats, full.stats); assert.deepEqual(half.stats, partial.stats)
+      assert.deepEqual(live.farmSources!.beforeCap, full.beforeCap); assert.deepEqual(live.raw, card.raw)
       assert.equal(STATS.reduce((n, stat) => n + fullFarm[stat], 0), capacity * 20)
       for (const stat of STATS) {
         assert.ok(full.stats[stat] >= partial.stats[stat] && partial.stats[stat] >= card.stats[stat])

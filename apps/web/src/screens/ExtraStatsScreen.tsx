@@ -16,7 +16,7 @@ import {
   type InventoryStackData,
   type StatKey,
 } from '@racer/domain'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { Link } from 'react-router'
 import { listProduceInventory, setExtraStatActive, unlockExtraStat } from '../game/actions'
 import { useGame } from '../game/store'
@@ -29,7 +29,13 @@ import { useTraining } from './TrainingScene'
 
 export type NodeState = 'on' | 'off' | 'next' | 'locked'
 
+const FarmExtraStats = lazy(() => import('./farm/FarmExtraStatsProduction'))
 export function ExtraStatsScreen() {
+  const farm = useGame(state => state.farmStats)
+  return farm.mode === 'legacy' ? <LegacyExtraStatsScreen /> : <Suspense fallback={<p className="p-4 text-sm">Opening meal map…</p>}><FarmExtraStats /></Suspense>
+}
+
+function LegacyExtraStatsScreen() {
   const { save, uma } = useTraining()
   const pushToast = useGame((state) => state.pushToast)
   const persistent = useGame((state) => state.persistent)

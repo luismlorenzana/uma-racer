@@ -31,20 +31,22 @@ export function HomeScreen() {
   const error = useGame((state) => state.error)
   const profile = useGame((state) => state.profile)
   const owned = useGame((state) => state.umas)
+  const cards = useGame((state) => state.cards)
+  const farmStats = useGame((state) => state.farmStats)
   const persistent = useGame((state) => state.persistent)
   const badges = useGame((state) => state.badges)
   const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
 
   const featured = useMemo(() => {
-    if (contentState.status !== 'ready') return null
+    if (contentState.status !== 'ready' || farmStats.mode === 'recovery') return null
     const valid = Object.values(owned)
-      .map((save) => joinUma(save, contentState.content))
+      .map((save) => joinUma(save, contentState.content, cards, undefined, undefined, farmStats))
       .flatMap((joined) => (joined.status === 'ready' ? [joined.value] : []))
       // Without a featured Uma, the one furthest along (D181).
       .sort((left, right) => right.save.level - left.save.level || left.template.name.localeCompare(right.template.name))
     return valid.find((uma) => uma.save.templateId === profile?.featuredUmaId) ?? valid[0] ?? null
-  }, [contentState, owned, profile?.featuredUmaId])
+  }, [contentState, owned, profile?.featuredUmaId, cards, farmStats])
 
   const flairSummary = useMemo(() => {
     if (contentState.status !== 'ready' || !featured) return null
@@ -68,6 +70,7 @@ export function HomeScreen() {
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish the private content packs to begin." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
   if (status === 'error') return <SaveErrorState detail={error} />
+  if (farmStats.mode === 'recovery') return <ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile) return <ScreenState title="Opening Uma Racer…" detail="Loading private content and your local save." />
   if (!featured) return <ScreenState title="No playable Uma found" detail="Owned save records are preserved, but their content templates are unavailable." action={{ label: 'Open Stable', to: '/stable' }} />
 

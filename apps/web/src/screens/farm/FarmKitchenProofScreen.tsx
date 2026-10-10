@@ -5,6 +5,8 @@ import {
   FARM_KITCHEN_CATALOGUE,
   FARM_KITCHEN_ENERGY_ID,
   FARM_KITCHEN_JOB_MS,
+  FARM_EXTRA_NODES,
+  farmMealId,
   createFarmKitchenWorker,
   emptyFarmRecipes,
   farmData,
@@ -17,12 +19,13 @@ import {
 import { farmProtocolFixture } from '../../../../../packages/domain/src/farm/kitchen/protocol-fixtures'
 import { RacerDb } from '../../game/db'
 import { PersistentFarmKitchenHost } from '../../game/farm/kitchen/host'
+import { farmProofCards, farmProofUma } from '../../game/farm/kitchen/proof-content'
 import { FarmKitchenCommonShell, type FarmKitchenEnvironment } from './FarmKitchenScreen'
 
 const ROOT = '/dev/farm-kitchen-proof'
 const booting = new Map<string, Promise<FarmKitchenEnvironment>>()
 function proofDatabaseName(): string {
-  const key = 'farm-kitchen-proof-database-v1'
+  const key = 'farm-kitchen-proof-database-v3'
   try {
     const retained = sessionStorage.getItem(key)
     if (retained && /^farm-kitchen-proof-[A-Za-z0-9-]+$/.test(retained)) return retained
@@ -41,6 +44,10 @@ export async function createFarmKitchenProofEnvironment(name = proofDatabaseName
   if (!await database.farmCutover.count()) {
     if ((await Promise.all(database.tables.map(table => table.count()))).some(Boolean)) throw new Error('Incomplete isolated Farm proof retained; clear only its named proof database')
     const baseUma = fixture.entities.get('umas/invented-0')!
+    for (const id of ['invented-0', 'invented-1']) {
+      const row = fixture.entities.get(`umas/${id}`)!
+      row.data = farmData(farmProofUma(id))
+    }
     for (let index = 2; index < 12; index += 1) {
       const id = `invented-${index}`
       fixture.put('umas', id, { ...structuredClone(baseUma.data), templateId: id })
@@ -73,6 +80,7 @@ export async function createFarmKitchenProofEnvironment(name = proofDatabaseName
       await putEntity(database, row)
     }
     for (const row of fixture.logs.values()) await database.table(row.kind).put({ id: row.id, data: row.data, createdAt: row.createdAt })
+    for (const [id, data] of Object.entries(farmProofCards())) await database.cards.put({ id, data, version: 1 })
   } else {
     fixture.entities.clear(); fixture.logs.clear()
     for (const kind of ['farm', 'farmWorkers', 'farmRecipes', 'farmExtra', 'farmCutover', 'farmCutoverPages', 'umas', 'items']) for (const row of await database.table(kind).toArray()) {
@@ -100,7 +108,26 @@ export async function createFarmKitchenProofEnvironment(name = proofDatabaseName
   host = new PersistentFarmKitchenHost({ database, enabled: true, clock: () => now, persistent: () => true, current: () => true,
     ownerDebugAllowed: () => true, schedule: () => { queueMicrotask(() => { void flush() }) }, recover: async operations => resolve(operations) })
   const workers = Array.from({ length: 12 }, (_, index) => ({ id: `invented-${index}`, name: ['Aster', 'Birch', 'Clover', 'Dahlia', 'Elm', 'Fern', 'Ginger', 'Hazel', 'Iris', 'Juniper', 'Kestrel', 'Lilac'][index]!, outfit: `Proof Outfit ${index + 1}` }))
-  return { database, host, workers, content: null, isolated: true, root: ROOT, ownerDebugAllowed: true, advanceProofClock: ms => { now += ms } }
+  const prepareFullMapProof = async () => {
+    if (await database.farmPending.count()) throw new Error('Resolve proof pending commands before preparing a full-map witness')
+    const map = fixture.entities.get('farmExtra/invented-0:b1')?.data as { boughtNodeIds: string[] } | undefined
+    for (const node of FARM_EXTRA_NODES) {
+      if (map?.boughtNodeIds.includes(node.id)) continue
+      const itemId = farmMealId(1, node.signature), old = fixture.entities.get(`items/${itemId}`)
+      fixture.put('items', itemId, { itemId, quantity: Number(old?.data.quantity ?? 0) + 1, updatedAt: now }, (old?.version ?? 0) + 1)
+      const result = fixture.apply(fixture.operation({ kind: 'buy-node', outfitId: 'invented-0', scenarioId: 'ura-finale', distance: 'sprint', nodeId: node.id, autoactivate: false }, `witness-buy-${node.id}`, now))
+      if (result.responses[0]?.status === 'rejected') throw new Error('Invented full-map fixture rejected')
+    }
+    const result = fixture.apply(fixture.operation({ kind: 'set-active', outfitId: 'invented-0', scenarioId: 'ura-finale', distance: 'sprint',
+      nodeIds: FARM_EXTRA_NODES.slice(0, 18).map(n => n.id) }, `witness-full-sprint-${fixture.logs.size}`, now))
+    if (result.responses[0]?.status === 'rejected') throw new Error('Invented full build rejected')
+    await database.transaction('rw', database.tables, async () => {
+      for (const row of fixture.entities.values()) await putEntity(database, row)
+      for (const row of fixture.logs.values()) await database.table(row.kind).put({ id: row.id, data: row.data, createdAt: row.createdAt })
+    })
+  }
+  return { database, host, workers, content: null, isolated: true, root: ROOT, ownerDebugAllowed: true,
+    advanceProofClock: ms => { now += ms }, prepareFullMapProof }
 }
 
 export function FarmKitchenProofShell() {

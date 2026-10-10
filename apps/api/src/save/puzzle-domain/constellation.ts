@@ -19,7 +19,9 @@ export const CARD_SET_SIZE = 6
  * Raw points the six active Extra stat nodes pay between them (D134, D235). Small on purpose: they are for tweaks — the
  * stamina a mile needs, one more point of Speed — and cards carry the build.
  */
-export const STAT_NODE_POOL = EXTRA_STAT_NODE_VALUE * EXTRA_STAT_SLOTS
+export const HISTORICAL_CARD_NORMALIZATION = 240
+/** Legacy pool name retained for old saves/sims; new Farm capacity never changes card pricing. */
+export const STAT_NODE_POOL = HISTORICAL_CARD_NORMALIZATION
 /** A max-bonded Friend or Group card on its fair share of nodes pays this share of the SP cap (D133). */
 export const SP_CARD_SHARE = 0.6
 /** A full constellation pays this share of the scenario's cap budget, so no build reaches every cap. */
@@ -97,7 +99,7 @@ export const slotCount = (tier: number): number => shapeDef(tier).cardNodes
  * be asserted exactly rather than within a tolerance.
  */
 export const nodeValue = (tier: number): number =>
-  Math.round((TREE_BUDGET_SHARE * capBudget(tier) - STAT_NODE_POOL) / shapeDef(tier).cardNodes)
+  Math.round((TREE_BUDGET_SHARE * capBudget(tier) - HISTORICAL_CARD_NORMALIZATION) / shapeDef(tier).cardNodes)
 
 /** Total raw points a fully-filled constellation of current-era, maxed stat cards and six Extra stats pays. */
 export const treeBudget = (tier: number): number => shapeDef(tier).cardNodes * nodeValue(tier) + STAT_NODE_POOL
@@ -466,6 +468,8 @@ export interface DeriveInput {
   cards: ReadonlyMap<string, CardNodeState>
   /** The unit's Extra stats grid; its active nodes pay (D235). None when omitted. */
   extraStats?: ExtraStats
+  /** Acknowledged active-generation Farm vector. Even zero selects the new path, disabling retired Extra. */
+  farmStats?: Stats
   inspiration?: { slots: readonly string[] }
   /** Career goals won in this scenario, for Trackblazer's Climax (D165). */
   goalsWon?: number
@@ -484,6 +488,16 @@ export interface DerivedStats {
   cardSkillIds: string[]
   assignedNodes: number
   filledNodes: number
+  /** Present only on the new path; raw/rawTotal remain card-only, never a Farm invariance claim. */
+  farmSources?: FarmStatSources
+}
+
+export interface FarmStatSources {
+  baseAndCards: Stats
+  farm: Stats
+  beforeCap: Stats
+  marginal: Stats
+  waste: Stats
 }
 
 /** Values accumulate as integers in units of 1/SCALE: four percentages (star, era, share, buff), so 100⁴. */
@@ -549,7 +563,7 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   const statPct = buff === 'foundation' ? BUFF_VALUES.foundationStatPct : 100
 
   // The active Extra stat nodes, whatever the Training Level (D235).
-  const extraCounts = input.extraStats ? extraStatCounts(input.extraStats) : null
+  const extraCounts = input.farmStats === undefined && input.extraStats ? extraStatCounts(input.extraStats) : null
   let extraActive = 0
   for (const stat of STATS) {
     const count = extraCounts?.[stat] ?? 0
@@ -603,9 +617,20 @@ export function deriveStats(input: DeriveInput): DerivedStats {
   // Her base stats plus the tree's gains, grown by her growth rates: the number shown is the number raced (D152).
   const caps = capProfile(input.tier)
   const stats = zeroStats()
+  const farmSources: FarmStatSources | undefined = input.farmStats === undefined ? undefined : {
+    baseAndCards: zeroStats(), farm: { ...input.farmStats }, beforeCap: zeroStats(), marginal: zeroStats(), waste: zeroStats(),
+  }
   for (const stat of STATS) {
     const grown = umaTemplate.baseStats[stat] + raw[stat] * (1 + (umaTemplate.growthRates[stat] ?? 0))
-    stats[stat] = Math.min(caps[stat], Math.round(grown))
+    const farm = input.farmStats?.[stat] ?? 0
+    if (!Number.isFinite(farm) || farm < 0) throw new RangeError('Invalid Farm stat vector')
+    stats[stat] = Math.min(caps[stat], Math.round(grown + farm))
+    if (farmSources) {
+      farmSources.baseAndCards[stat] = grown
+      farmSources.beforeCap[stat] = grown + farm
+      farmSources.marginal[stat] = stats[stat] - Math.min(caps[stat], Math.round(grown))
+      farmSources.waste[stat] = farm - farmSources.marginal[stat]
+    }
   }
 
   return {
@@ -619,5 +644,6 @@ export function deriveStats(input: DeriveInput): DerivedStats {
     cardSkillIds,
     assignedNodes: assigned,
     filledNodes: filled,
+    ...(farmSources ? { farmSources } : {}),
   }
 }

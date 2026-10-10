@@ -148,6 +148,7 @@ export function UmaSkillsScreen() {
   const error = useGame((state) => state.error)
   const save = useGame((state) => state.umas[umaId])
   const cards = useGame((state) => state.cards)
+  const farmStats = useGame((state) => state.farmStats)
   const pushToast = useGame((state) => state.pushToast)
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
@@ -159,7 +160,7 @@ export function UmaSkillsScreen() {
   const race: RaceTemplate | undefined = raceId && content ? content.races.byId.get(raceId) : undefined
   // Opened for a race, the page edits that distance's preset, the one the race runs on (D252).
   const preset = race?.distanceCategory
-  const joined = useMemo(() => content && save ? joinUma(save, content, cards, tier, preset) : null, [cards, content, save, tier, preset])
+  const joined = useMemo(() => content && save && farmStats.mode !== 'recovery' ? joinUma(save, content, cards, tier, preset, farmStats) : null, [cards, content, save, tier, preset, farmStats])
 
   const rows = useMemo((): SkillRowModel[] => {
     if (!content || joined?.status !== 'ready') return []
@@ -193,6 +194,7 @@ export function UmaSkillsScreen() {
   }
   if (status === 'error') return <SaveErrorState detail={error} />
   if (!content || status !== 'ready') return <ScreenState title="Opening skills…" detail="Loading private content and save data." />
+  if (farmStats.mode === 'recovery') return <ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} />
   if (!save || joined?.status !== 'ready') return <ScreenState title="Uma not found" detail="This Uma is not owned in your Stable." action={{ label: 'Back to Stable', to: '/stable' }} />
 
   const uma = joined.value

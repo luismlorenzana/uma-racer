@@ -81,7 +81,9 @@ export async function unlockPersistentExtraStat(
   const evidenceId = extraStatUnlockMovementId(input.umaId, input.tier, input.nodeId)
   const afterWrite = options.afterWrite ?? (() => undefined)
 
-  return db.transaction('rw', [db.umas, db.items, db.itemLedger, db.badges, db.ledger, db.flairEvents, db.outbox], async () => {
+  return db.transaction('rw', [db.umas, db.items, db.itemLedger, db.badges, db.ledger, db.flairEvents, db.outbox, db.farmCutover, db.farm], async () => {
+    if (await db.farmCutover.get('main') || Number((await db.farm.get('main'))?.data.schemaVersion) >= 3)
+      throw new Error('Legacy Extra stats are retired for this Farm generation; open the meal-funded map')
     const umaRow = await db.umas.get(input.umaId)
     if (!umaRow) throw new Error('Local Uma is missing')
     const uma = parseUmaSaveOrThrow(umaRow.data)

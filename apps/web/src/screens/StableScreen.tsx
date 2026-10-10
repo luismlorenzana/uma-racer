@@ -221,6 +221,7 @@ export function StableScreen() {
   const profile = useGame((state) => state.profile)
   const owned = useGame((state) => state.umas)
   const cards = useGame((state) => state.cards)
+  const farmStats = useGame((state) => state.farmStats)
   const badges = useGame((state) => state.badges)
   const flairEvents = useGame((state) => state.flairEvents)
   const pushToast = useGame((state) => state.pushToast)
@@ -302,10 +303,10 @@ export function StableScreen() {
   }, [badges, contentState, flairEvents, owned])
 
   const mode = (prefs.query.mode ?? 'outfit') as StableMode
-  const album = useMemo(() => contentState.status === 'ready' && profile
-    ? buildStableAlbum({ content: contentState.content, saves: owned, cards, profile, lastRacedAt, flair, seen: prefs.seen, mode })
+  const album = useMemo(() => contentState.status === 'ready' && profile && farmStats.mode !== 'recovery'
+    ? buildStableAlbum({ content: contentState.content, saves: owned, cards, farmStats, profile, lastRacedAt, flair, seen: prefs.seen, mode })
     : null,
-  [cards, contentState, flair, lastRacedAt, mode, owned, prefs.seen, profile])
+  [cards, contentState, flair, lastRacedAt, mode, owned, prefs.seen, profile, farmStats])
 
   // "Best aptitude for…" sorts by the chosen parameter key, so the parameter is part of the sort.
   const effectiveQuery = useMemo(() => (
@@ -338,6 +339,7 @@ export function StableScreen() {
   if (contentState.status === 'empty') return <ScreenState title="Content is not imported" detail="Publish a private content version before creating a save." />
   if (contentState.status === 'error') return <ScreenState title="Content unavailable" detail={contentState.error.message} />
   if (status === 'error') return <SaveErrorState detail={lifecycleError} />
+  if (farmStats.mode === 'recovery') return <ScreenState title="Farm stats need recovery" detail={farmStats.error} action={{ label: 'Open Farm', to: '/farm' }} />
   if (contentState.status !== 'ready' || status !== 'ready' || !profile || !album || !result) return <ScreenState title="Opening your Stable…" detail="Loading private content and your local save." />
 
   const entries = result.rows.flatMap((row) => album.entries.get(row.id) ?? [])

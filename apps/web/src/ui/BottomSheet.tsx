@@ -7,7 +7,7 @@ import { CloseIcon } from './icons'
  * handle, so taps on buttons inside the sheet are never swallowed by the drag gesture. The sheet never grows past the
  * screen: its content scrolls under a fixed header whose close button and handle are always in reach.
  */
-export function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+export function BottomSheet({ open, onClose, children, label }: { open: boolean; onClose: () => void; children: ReactNode; label?: string }) {
   const dragControls = useDragControls()
   const reducedMotion = useReducedMotion()
 
@@ -24,6 +24,8 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
           />
           <m.div
             role="dialog"
+            aria-label={label}
+            aria-modal={label ? true : undefined}
             className="pb-safe fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-lg border-t border-hairline bg-panel text-ink shadow-3"
             initial={reducedMotion ? false : { y: '100%' }}
             animate={{ y: 0 }}

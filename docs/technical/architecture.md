@@ -16,8 +16,14 @@ are lazy; no Dexie reset callback or normal startup request. Full pulls merge th
 resurrecting historical bonuses. T121/D308 implements the lazy real host, acknowledged/pending views, bounded
 target/dependency reads, durable Collect/retry and private recovery export. Separate Zustand/Dexie subscriptions
 derive readiness read-only; a new control always blocks legacy writers. Normal flag-off boot initializes no kitchen
-rows. Serialized round-robin sync lanes avoid ordinary/Puzzle/Farm starvation. T122–T124 still own screens/stat joins
-and enablement. Both Farm gates are false;
+rows. Serialized round-robin sync lanes avoid ordinary/Puzzle/Farm starvation. T122/D313 adds the lazy phone
+districts, recipes and Items. T123/D314 joins canonical `farmExtra` rows by outfit/block/actual scenario/distance,
+publishes reactive vectors through a narrow Zustand selector, and adds them post-growth/pre-cap in domain
+derivation. Pending maps remain explicit UI previews. Race preparation and completion re-read the canonical
+target in their Dexie transaction; frozen historical input is unchanged and stale in-flight edits are rejected.
+The meal map/list remains lazy, with real semantic purchases/free activations and contextual recipe return.
+Legacy crop writers are blocked on any new control, including malformed/future generations. T124 owns
+enablement. Both Farm gates are false;
 the existing Farm described below stays live until T124 and no account reset is executed by intermediate work.
 
 ## Global card progression (D255)

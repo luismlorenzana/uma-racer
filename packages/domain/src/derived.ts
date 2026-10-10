@@ -9,6 +9,7 @@ import {
   type CardNodeState,
   type ConstellationTemplate,
   type DerivedStats,
+  type FarmStatSources,
 } from './constellation'
 import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import { lineageAptitudes, lineageInheritedUniques, lineageSlotEligibility } from './lineage'
@@ -57,6 +58,7 @@ export interface DerivedUma {
   loadoutSkillIds: string[]
   assignedNodes: number
   filledNodes: number
+  farmSources?: FarmStatSources
 }
 
 export interface DeriveUmaInput {
@@ -71,6 +73,8 @@ export interface DeriveUmaInput {
   tier?: number
   /** Which distance preset to derive (D252); her selected one when omitted. */
   preset?: DistanceCategory
+  /** Caller joins a validated, acknowledged Farm map for this exact scenario/distance. */
+  farmStats?: Stats
 }
 
 /**
@@ -104,6 +108,7 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     umaTemplate: input.umaTemplate,
     cards,
     extraStats: scenario.extraStats,
+    ...(input.farmStats !== undefined ? { farmStats: input.farmStats } : {}),
     inspiration: scenario.inspiration,
     // Trackblazer's Climax counts the career goals she has won in this scenario (D165).
     goalsWon: scenario.journey?.goals.filter((goal) => goal.status === 'completed').length ?? 0,
@@ -186,5 +191,6 @@ export function deriveUma(input: DeriveUmaInput): DerivedUma {
     loadoutSkillIds: scenario.loadoutSkillIds.filter((id) => seen.has(id)),
     assignedNodes: derived.assignedNodes,
     filledNodes: derived.filledNodes,
+    ...(derived.farmSources ? { farmSources: derived.farmSources } : {}),
   }
 }

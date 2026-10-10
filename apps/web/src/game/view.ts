@@ -24,6 +24,7 @@ import {
   type Grade,
 } from '@racer/domain'
 import type { ContentAsset, LoadedContent } from '../content/runtime'
+import { farmStatsFor, LEGACY_FARM_STATS, type FarmStatState } from './farm-stats'
 
 function umaAsset(content: LoadedContent, id: string): ContentAsset | null {
   const atlas = content.atlases['uma-icons']
@@ -88,6 +89,7 @@ export function joinUma(
   requestedTier?: number,
   /** A distance preset to join instead of her selected one (D252), such as a race's. */
   requestedPreset?: DistanceCategory,
+  farmStats: FarmStatState = LEGACY_FARM_STATS,
 ): UmaJoinResult {
   const template = content.umas.byId.get(save.templateId)
   if (!template) return { status: 'missing-content', templateId: save.templateId }
@@ -103,6 +105,7 @@ export function joinUma(
     cardTemplates: content.cards.byId,
     umaTemplates: content.umas.byId,
     skillTemplates: content.skills.byId,
+    farmStats: farmStatsFor(farmStats, save.templateId, tier, preset),
   })
   return {
     status: 'ready',

@@ -8,7 +8,8 @@
 > [measured balance record](../research/farm-kitchen-balance.md) carry the implemented pure layer.
 > T119's additive persistence/sync keeps the existing trusted-device clock. T120's protected cutover/recovery
 > is implemented and rehearsed (D307); T121's real host/selectors and exact recovery are implemented (D308).
-> T122–T124 still cover screens/stat joins and release; both capabilities remain off.
+> T122's phone screens (D313) and T123's acknowledged Extra/race joins (D314) are implemented.
+> T124 owns full release; both capabilities remain off.
 > No live Farm rule or owner save has changed.
 
 > **Owner-review revision:** ingredients and recipe costs are now symmetric across all five stats, with no
@@ -390,7 +391,7 @@ Opening Scenario 6 does not clear Scenario 1–5's map: it creates a **new block
 units remain usable with their older configurations. New-block unlocks need the new-block meals. Farm can
 prepare these ingredients ahead of promotion once its outfit reaches the level gate.
 
-## 10. Activation and proposed stat values
+## 10. Activation and implemented stat values
 
 Bought nodes belong to the outfit/block; **active node IDs belong to each scenario's distance preset**. Sprint,
 Mile, Medium and Long can therefore configure different builds without paying for the same node four times.
@@ -434,6 +435,20 @@ New scenario units start with empty active selections, including within a block.
 available to select; opening a scenario never automatically copies a distance build or changes another unit.
 New-block maps start unbought; no old IDs are remapped.
 
+T123/D314 implements this on the existing Extra route. A five-cluster DOM/SVG overview links to named node
+lists, pair bridges and Suns; it never implies an unlock path. List mode, group filters and name search offer
+the same controls. The header names outfit/scenario/distance/block and bought/active counts. Sources, caps,
+marginal gains and wasted points are explicit, including +0 at a cap. A node's sheet shows canonical meal
+stock/reservations, its exact block recipe and separate Buy/Activate/Turn off actions. The recipe link returns
+to this same outfit/scenario/distance without changing featured Uma or Farm workers.
+
+Buy and set-active use the real semantic host with the confirmed revision. A changed preview reloads and
+requires another confirmation; it never chooses substitute spending or silently trims another build. Pending
+maps are labelled previews, not race-ready stats. Only acknowledged IDs feed Training/Profile/Stable and
+new races. Missing map/build means zero Farm; incompatible identity/generation/template shows recovery rather
+than stale bonuses. Opening any page creates neither purchases nor active selections. The production path
+remains dormant until T124; the old crop grid still serves accounts without a new generation.
+
 ### Stat derivation: protect cards while adding a real Farm budget
 
 The current code subtracts a 240-point Extra Stats allowance from the card pool. Simply increasing that constant
@@ -449,7 +464,9 @@ would reduce card-node value, undoing the reason for this rework. The implementa
    vector again. No flat +120 Foundation replacement is added. Its Scenario 1 Farm ceiling is already 360,
    matching the old Foundation raw ceiling; later ceilings rise linearly instead of dropping when Foundation
    disappears. Retain Foundation's existing non-Farm effects. T118 verified this boundary against actual
-   source-specific stat matrices and pins the settled baseline with matching docs and a decision; T123 wires it.
+   source-specific stat matrices and pins the settled baseline with matching docs and a decision; T123 wires it
+   into `deriveStats`/`deriveUma` through the optional flat `farmStats` input. `farmSources` exposes post-growth
+   base/cards, Farm, pre-cap total, marginal gain and waste without changing legacy `rawTotal`/card-node facts.
 5. Keep the existing final stat caps, race engine, skill SP, aptitudes and Inspiration calculations. Document
    the old combined-budget invariance as superseded only for Farm; card-only invariance must still hold.
 
@@ -589,8 +606,10 @@ three-block run preserves stock/EXP and finishes287 jobs atLv144; an earned-Lv9 
 Farm vector never gains Foundation/growth multipliers. Baseline constants needed no tuning.
 
 The shipped `sim:farm` and career envelopes pass. The legacy constellation sim retains its already documented
-tier1 one-Stamina-card/1,400m failure, not a Farm regression; no racing rules are retuned here. T123/T124 still
-verify real stat/race wiring and device/release behaviour. Existing `sim:farm` alone cannot validate the new chain.
+tier1 one-Stamina-card/1,400m failure, not a Farm regression; no racing rules are retuned here. T123 verifies the
+live joined derivation with the same672 exact card-only checks/2,016 builds and unchanged report hash; its real-host
+proof covers meal purchase/activation/pre-race deltas. T124 still owns release/device behaviour. Existing
+`sim:farm` alone cannot validate the new chain.
 
 ## 12. Energy
 
@@ -809,7 +828,7 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 3. T120 **complete**: [dormant protected reset/recovery contract](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307), with [legacy claim and second-device rehearsals](../research/farm-kitchen-cutover-rehearsal.md).
 4. T121 **complete**: [real host/selectors and exact retry/recovery](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308), with [real-storage verification](../research/farm-kitchen-host.md). Pending stock/maps remain previews, never racing stats.
 5. T122 **complete** (D313): [five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313).
-6. [T123](../tasks/T123-farm-kitchen-extra-stats.md): shared block purchases, four independent distance builds, cap-aware map/list and real race integration.
+6. T123 **complete** (D314): [canonical shared map, four independent distance builds, cap-aware map/list and real race integration](../technical/farm-kitchen-implementation.md#t123-implemented-map-and-stat-join-d314), with [synthetic phone/host proof](../research/farm-kitchen-phone-proof/README.md#t123-extra-map-and-race-proof).
 7. [T124](../tasks/T124-farm-kitchen-release.md): end-to-end balance, compatibility/deployment/PWA checks, guarded cutover activation and owner acceptance.
 
 The [technical contract](../technical/farm-kitchen-implementation.md) fixes record/command ownership and acceptance

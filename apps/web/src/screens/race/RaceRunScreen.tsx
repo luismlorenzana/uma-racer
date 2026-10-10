@@ -9,6 +9,7 @@ import { buildResultGoalView } from '../../game/goals-view'
 import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../game/flair-view'
 import { preparedRaceFromRecord, simulatePreparedRace, type PreparedRace } from '../../game/racing'
 import { useGame } from '../../game/store'
+import { lockFarmRace } from '../../game/farm-stats'
 import { RaceScene, type RaceHudState, type SceneRunner } from '../../scenes/race/RaceScene'
 import { TURN_RACE_RATE, staminaStory, summarizePlayerActivations, type RacePresentationStage, type StaminaStory } from '../../scenes/race/presentation'
 import { Button } from '../../ui/Button'
@@ -129,6 +130,10 @@ export function RaceRunScreen() {
   useEffect(() => {
     recordRef.current = record
   }, [record])
+  useEffect(() => {
+    if (!attempt || record) return
+    return lockFarmRace(attempt.umaId, attempt.tier)
+  }, [attempt?.id, record])
 
   useEffect(() => {
     if (contentState.status !== 'ready' || gameStatus !== 'ready') return
