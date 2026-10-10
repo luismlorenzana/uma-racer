@@ -11,7 +11,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**[M031 — Farm production/cooking rework](M031-farm-kitchen-rework.md) — T118–T121 complete; T122 next.**
+**[M031 — Farm production/cooking rework](M031-farm-kitchen-rework.md) — T118–T122 complete; T123 next.**
 The owner authorized full task authoring through production release (D298–D299).
 [Design](../design/farm-kitchen-rework.md), [technical contract](../technical/farm-kitchen-implementation.md)
 and [research](../research/farm-kitchen-games.md) cover thirty fully open spots, independent outfit levels,
@@ -26,7 +26,9 @@ disabled with no owner execution. [Evidence](../research/farm-kitchen-cutover-re
 strict adapter parity, delayed device adoption and unchanged progression sims.
 T121's [real host/selectors](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308) and
 [offline/recovery verification](../research/farm-kitchen-host.md) are implemented (D308), still capability-off.
-Work one task/green PR/merge at a time: T122 Farm/cookbook screens → T123 Extra/race wiring → T124 complete production release. T118–T123 keep
+T122's [five-district phone presentation](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313),
+original marks, cookbook/wishlist/Items and [isolated real-host proof](../research/farm-kitchen-phone-proof/README.md)
+are implemented (D313), still capability-off. Work one task/green PR/merge at a time: T123 Extra/race wiring → T124 complete production release. T118–T123 keep
 normal capabilities off; existing Farm remains live until the whole loop and backup/reset are ready. No reset
 is performed by T118–T123. Fixed choices and pure baselines are pinned; integration and owner-device checks remain.
 
@@ -60,7 +62,7 @@ T081's old scenario-occurrence definitions need separate re-authoring before imp
 
 | Milestone | Tasks | State |
 |---|---|---|
-| [M031 — Farm production and cooking](M031-farm-kitchen-rework.md) | T118–T121 complete · [T122 screens](T122-farm-kitchen-screens.md) · [T123 Extra Stats](T123-farm-kitchen-extra-stats.md) · [T124 release](T124-farm-kitchen-release.md) | T122 next; one PR/merge at a time; old Farm stays live |
+| [M031 — Farm production and cooking](M031-farm-kitchen-rework.md) | T118–T122 complete · [T123 Extra Stats](T123-farm-kitchen-extra-stats.md) · [T124 release](T124-farm-kitchen-release.md) | T123 next; one PR/merge at a time; old Farm stays live |
 | [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
 | [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
 | [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
@@ -86,6 +88,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T122 — Five Farm districts, crew, cookbook, Items and Energy | 2026-10-09 | [Presentation contract](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313), D313 and [synthetic phone proof](../research/farm-kitchen-phone-proof/README.md); capability off, no owner execution | `6734e58` |
 | T121 — Real Farm host, local-first runtime and recovery | 2026-10-09 | [Host contract](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308), D308 and [real-storage verification](../research/farm-kitchen-host.md); capability off, no owner execution | `05ce684` |
 | T120 — Protected Farm/Extra reset and recovery | 2026-10-09 | [Cutover contract](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307), D307 and [synthetic rehearsal](../research/farm-kitchen-cutover-rehearsal.md); disabled, no owner execution | `998d8b0` |
 | T119 — Additive Farm records and atomic semantic sync | 2026-10-09 | [Persistence contract](../technical/farm-kitchen-implementation.md#3-records-and-ownership), D306 and [synthetic verification](../research/farm-kitchen-sync.md); both capabilities off, no reset | `3ea02b2` |

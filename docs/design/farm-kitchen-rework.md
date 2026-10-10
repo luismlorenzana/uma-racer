@@ -649,6 +649,15 @@ PWA bars separately from emulated browser height.
 - Cookbook: sixteen signatures, stock, ready/running counts and shopping plans. One reasonable default
   substitution avoids forcing a picker on every Repeat; revalidate the concrete inputs before spending.
 
+T122/D313 implements this surface behind the dormant kitchen capability. `/farm` owns Hub, Crew, Recipes,
+Wishlist and the global Items view; every district uses the same fixed-height 2 × 3 station field, while pickers
+and recipe detail use internally scrolling focus-trapped sheets. Outfit assignment is explicit and stable-sorted;
+busy/ready workers cannot move. A recipe freezes the selected batch and concrete same-block substitutions, and
+Repeat reconstructs those exact substitutions from the completed job before the host revalidates them. Wishlist
+planning allocates canonical spendable stock once in saved order and reports queued/running and ready-but-unclaimed
+outputs separately. Device-only preferences remember the last explicitly chosen district, Items stage/block/stat
+filters, density and up to three meal goals; reading or navigating a page creates no gameplay row.
+
 ### Extra Stats
 
 Keep the existing separation of Constellation / Inspiration / Extra Stats and selected distance preset. Show
@@ -667,6 +676,12 @@ count as having explained recipes. First-use guide: global districts/crew; ingre
 → cooked; personal levels vs global stock; all thirty spots available; shared recipe gates/batches/timers; meal purchases vs free
 activation; presets/capacity; Energy and debug distinction.
 Reopen from a visible Help button. Teach equal stat-family costs, substitutions and why the sun is not a stronger node.
+
+The implemented guide has seven rules-linked pages: global outfit crew, scenario flavours, raw→processed→meal,
+explicit batches, Extra Stats hand-off, one-job Energy and canonical-versus-pending recovery. It appears before the
+first confirmed job and remains available from Help. Original code-native district, raw-family, processed-family,
+meal, stat/block and Energy SVG marks accompany text labels; private verified Uma art is optional presentation and
+the isolated proof uses labelled invented silhouettes only.
 
 Reuse private owned Uma portraits/chibis through the verified existing asset pipeline. All new ingredient,
 meal, district and Energy icons should be **original repo-native SVGs** in the existing icon style, not copied
@@ -793,7 +808,7 @@ and local upgrade, old-client rejection, retries, offline boot and second-device
 2. T119 **complete**: [additive records, semantic commands, strict API mirror and bounded atomic sync](../technical/farm-kitchen-implementation.md#3-records-and-ownership), with [synthetic verification](../research/farm-kitchen-sync.md).
 3. T120 **complete**: [dormant protected reset/recovery contract](../technical/farm-kitchen-implementation.md#t120-implemented-protocol-d307), with [legacy claim and second-device rehearsals](../research/farm-kitchen-cutover-rehearsal.md).
 4. T121 **complete**: [real host/selectors and exact retry/recovery](../technical/farm-kitchen-implementation.md#t121-implemented-real-port-d308), with [real-storage verification](../research/farm-kitchen-host.md). Pending stock/maps remain previews, never racing stats.
-5. [T122](../tasks/T122-farm-kitchen-screens.md): five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy.
+5. T122 **complete** (D313): [five district screens, crew, cookbook/shopping/Items, original icons, guide and Energy](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313).
 6. [T123](../tasks/T123-farm-kitchen-extra-stats.md): shared block purchases, four independent distance builds, cap-aware map/list and real race integration.
 7. [T124](../tasks/T124-farm-kitchen-release.md): end-to-end balance, compatibility/deployment/PWA checks, guarded cutover activation and owner acceptance.
 

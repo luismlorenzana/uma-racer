@@ -440,14 +440,41 @@ pending/recovery counts and a private recovery export for new generations; no pr
 
 [Host verification](../research/farm-kitchen-host.md) records real IndexedDB, synthetic repository, lost-ack,
 dependency-chain, thirty-job partial failure, two-device spend, rollback, clock/subscription and flag-off proofs.
-T122 still owns visible Farm controls/recipe/art joins; T123 alone joins acknowledged maps into Training/race stats.
+T123 alone joins acknowledged maps into Training/race stats.
+
+### T122 implemented phone presentation (D313)
+
+`FarmKitchenCommonShell` is one host-backed screen tree shared by the lazy production adapter and an isolated DEV
+proof. Production alone imports `GameRuntime`, verified content and owned-outfit labels. The proof boots a unique
+`farm-kitchen-proof-*` Dexie database with invented outfits, calls `PersistentFarmKitchenHost`, and uses the same
+semantic resolver for acknowledgements; auth, account providers, service workers, owner storage and private art never
+start. `main.tsx` recognizes that route before normal boot. The production route stays behind the unchanged false
+kitchen capability, so the current Farm remains the only normal `/farm` writer until T124.
+
+All gameplay buttons call `FarmKitchenHost`; screen opening and subscriptions remain write-free. Claims retain their
+completed frozen job only in React long enough to offer explicit exact Repeat, Choose recipe and Items actions.
+Collect all shows each frozen target and succeeded/pending/failed totals. Station readiness and worker state come from
+the T121 projection. `presentation.ts` owns deterministic crew ordering, concrete substitution defaults, eligibility,
+batch supply and a wishlist planner that allocates canonical stock only once; pending/running and ready output never
+become spendable. `preferences.ts` stores only navigation/filter/density/wishlist choices in the device-local existing
+`farmPreferences` table. The lazy global Item extension contributes all1,169 definitions with stage/block/scenario/stat
+facets while retaining unknown/legacy stacks separately and rendering at most60 rows at a time.
+
+Districts use a non-scrolling 2 × 3 CSS grid with 44 px actions. At390×844 the field measured735/735 px client/scroll
+height; at375×667 it measured558/558 px. The smaller target keeps all six cards and every final
+action at44 px and the bottom row at y663 inside a667 px viewport. Sheets and catalogues scroll internally; increased
+system text may use that accessible scrolling fallback rather than clip. Original SVG marks contain no imported food
+or outside-game asset. The seven-page versioned guide imports numeric rule constants and performs no host calls.
+[Phone proof](../research/farm-kitchen-phone-proof/README.md) records fixtures, persisted receipt checks and pending
+owner-device acceptance.
 
 | Route | Screen / back behaviour |
 |---|---|
 | `/farm` | Global Hub, five district cards, counts/next completion/wishlist; Back→Home |
 | `/farm/district/:districtId` | Six tiles, district switch; Back→Hub |
-| `/farm/workers` | Working/Available outfit roster, Farm-level-first/name/id; destinations link to stations |
+| `/farm/crew` | Working/Available outfit roster, Farm-level-first/name/id; destinations link to stations |
 | `/farm/recipes` | Sixteen recipes per block, scenario ingredient catalogue, wishlist and shopping sheets |
+| `/farm/wishlist` | Up to three saved meal targets with shared-stock, pending/ready and rounded raw-job planning |
 | `/farm/items` | Existing global inventory with Farm categories/legacy labels; no local duplicate |
 | Existing Extra Stats route | Current outfit/scenario/distance, shared block map/list; Back uses existing Training context |
 

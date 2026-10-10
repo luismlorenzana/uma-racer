@@ -12,6 +12,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import { ContentProvider } from './content/ContentProvider'
 import { GameProvider } from './game/GameProvider'
 import { isDevPuzzleProofPath } from './app/puzzle-proof-routes'
+import { isDevFarmKitchenProofPath } from './app/farm-proof-routes'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,8 +25,8 @@ const loadMotionFeatures = () => import('./ui/motionFeatures').then((mod) => mod
 
 // Synthetic practice and DEV proofs never boot account/auth/content or register the account service worker.
 // Practice still checks the release capability in its own entry component.
-const isolatedPuzzleProof = location.pathname === '/puzzles/practice' ||
-  import.meta.env.DEV && isDevPuzzleProofPath(location.pathname)
+const isolatedPuzzleProof = location.pathname === '/puzzles/practice' || import.meta.env.DEV &&
+  (isDevPuzzleProofPath(location.pathname) || isDevFarmKitchenProofPath(location.pathname))
 if (!isolatedPuzzleProof) registerAppUpdates()
 const app = <LazyMotion features={loadMotionFeatures} strict><RouterProvider router={router} />{!isolatedPuzzleProof && <UpdateNotice />}</LazyMotion>
 

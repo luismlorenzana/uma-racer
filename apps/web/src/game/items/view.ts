@@ -1,6 +1,7 @@
 // Engine-agnostic Item inventory join and filtering (docs/design/farm.md#global-item-inventory, T085).
 
 import { SCENARIOS, STRATEGIES, puzzleMaterialCatalogue, type PuzzleScenarioRegistry, type PuzzleMaterialDefinition, type FarmCropDefinition, type InventoryStackData, type StatKey } from '@racer/domain'
+import { FARM_KITCHEN_CATALOGUE, type FarmFood } from '@racer/domain/farm/kitchen'
 
 export interface ItemCatalogDefinition {
   id: string
@@ -142,4 +143,16 @@ export const produceItemDefinitions = (crops: readonly FarmCropDefinition[]): Pr
   order: [crop.scenarioTier, STAT_ORDER[crop.stat], crop.name],
   facets: { stat: crop.stat, scenario: String(crop.scenarioTier) },
   crop,
+}))
+
+export interface FarmKitchenItemDefinition extends ItemCatalogDefinition {
+  category: 'farm-kitchen'
+  food: FarmFood
+}
+const FARM_STAGE_ORDER = { raw: 0, processed: 1, meal: 2, energy: 3 } as const
+/** Lazy consumers opt into the bounded 1,169-definition catalogue; no startup screen imports it. */
+export const farmKitchenItemDefinitions = (): FarmKitchenItemDefinition[] => FARM_KITCHEN_CATALOGUE.foods.map(food => ({
+  id: food.id, name: food.name, category: 'farm-kitchen', food,
+  order: [FARM_STAGE_ORDER[food.stage], food.block ?? 0, food.scenarioIndex ?? 0, food.stat ?? '', food.name, food.id],
+  facets: { stage: food.stage, block: food.block === null ? '' : String(food.block), scenario: food.scenarioId ?? '', stat: food.stat ?? '' },
 }))

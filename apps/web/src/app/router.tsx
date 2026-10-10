@@ -1,5 +1,17 @@
 import { Navigate, createBrowserRouter, useLocation, useParams } from 'react-router'
 import { AppShell } from './AppShell'
+import { FARM_KITCHEN_RELEASE_ENABLED } from '../game/farm/kitchen/capability'
+
+const farmKitchenChildren = () => [
+  { index: true, lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenHubScreen }) },
+  { path: 'district/:districtId', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenDistrictScreen }) },
+  { path: 'crew', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenCrewScreen }) },
+  { path: 'recipes', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenRecipesScreen }) },
+  { path: 'wishlist', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenWishlistScreen }) },
+  { path: 'items', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenItemsScreen }) },
+  { path: 'section/:section', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenLegacySectionRedirect }) },
+  { path: '*', lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenScreen')).FarmKitchenRetryScreen }) },
+]
 
 /** The card set moved into the Training scene (M016); old links still land there. */
 function CardSetRedirect() {
@@ -135,7 +147,12 @@ export const router = createBrowserRouter([
     path: 'minigames/bond-recall/:cardId?',
     element: <BondRecallRedirect />,
   },
-  {
+  ...(FARM_KITCHEN_RELEASE_ENABLED ? [{
+    path: 'farm',
+    hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Stable Kitchen" />,
+    lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenProduction')).FarmKitchenProductionShell }),
+    children: farmKitchenChildren(),
+  }] : [{
     // A lazy full-screen account activity: no sixth tab and no Farm screen code in the startup bundle (T084).
     path: 'farm',
     hydrateFallbackElement: <div className="h-dvh bg-page" aria-label="Loading Stable Farm" />,
@@ -163,7 +180,7 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('../screens/farm/ItemInventoryScreen')).ItemInventoryScreen }),
       },
     ],
-  },
+  }]),
   {
     // Route-split campaign (D263): parties, roster, chapter launch pad, map and fights share one shell.
     path: 'rpg',
@@ -204,6 +221,10 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('../screens/CollectionRevealScreen')).CollectionRevealScreen }),
   },
   ...(import.meta.env.DEV ? [{
+    path: 'dev/farm-kitchen-proof',
+    lazy: async () => ({ Component: (await import('../screens/farm/FarmKitchenProofScreen')).FarmKitchenProofShell }),
+    children: farmKitchenChildren(),
+  }, {
     path: 'dev/puzzles-preservation-proof',
     lazy: async () => ({ Component: (await import('../screens/puzzles/PuzzlePreservationProofScreen')).PuzzlePreservationProofScreen }),
   }, {
