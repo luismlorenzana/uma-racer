@@ -88,7 +88,7 @@ export function FarmExtraStatsScreen(props: FarmExtraScreenProps) {
       const intentId = await host.createIntent(), fields = { intentId, expectedRevision: detail.confirmed.revision, outfitId: uma.templateId, scenarioId: scenario.id, distance }
       const result = kind === 'buy' ? await host.buyNode({ ...fields, nodeId: detail.node.id, autoactivate })
         : await host.setActive({ ...fields, nodeIds: active.includes(detail.node.id) ? active.filter(id => id !== detail.node.id) : [...active, detail.node.id] })
-      setLast(result); setMessage(result.status === 'pending' ? 'Preview only · pending sync; racing stats are unchanged' : result.reason ?? 'Build saved')
+      setLast(result); setMessage(result.status === 'pending' ? 'Saved' : result.reason ?? 'Build saved')
       setDetail(null)
     } catch (error) {
       setMessage(`${error instanceof Error ? error.message : String(error)}. Review and confirm again.`)

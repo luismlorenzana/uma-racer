@@ -64,6 +64,13 @@ describe('real Farm kitchen host', () => {
     const stop = installFarmKitchenHost(host); expect(getFarmKitchenHost()).toBe(host); stop()
     expect(() => getFarmKitchenHost()).toThrow(/not ready/)
   })
+  it('acts on an account whose Puzzles ticket bank exists (D320)', async () => {
+    // The owner's account has an active Puzzles bank; every Farm action reads it, so the screen's revision must too.
+    await db.constellationBank.put({ id: 'main', version: 3, data: { schemaVersion: 2, cutoverVersion: 2, cutoverId: 'invented-cutover', phase: 'active',
+      cohortCount: 0, completedCount: 0, debitLimits: {}, balances: {}, openingClears: [], revision: 4 } })
+    await command({ kind: 'assign', stationId: 'garden-2', outfitId: 'invented-1' })
+    expect((await host.read()).pending.map(r => r.operation.payload.kind)).toEqual(['assign'])
+  })
   it('assigns, starts, restores the same frozen job, waits, claims once and retains assignment', async () => {
     await command({ kind: 'assign', stationId: 'garden-2', outfitId: 'invented-1' }); await flush()
     const startId = await command({ kind: 'start', stationId: 'garden-2', outfitId: 'invented-1', recipeId: raw, quantity: 1, choices: {} })

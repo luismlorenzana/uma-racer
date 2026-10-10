@@ -26,11 +26,13 @@ export interface FarmKitchenView {
 export function farmPendingRevision(rows: readonly FarmPendingRow[]): string {
   return farmHash(rows.map(r => [r.id, r.operation.payloadDigest, r.status]))
 }
+/** Rows an operation reads only as a server-side guard, never shown on a Farm screen: the Puzzles bank (D320). */
+const FARM_GUARD_ONLY_KEYS: ReadonlySet<string> = new Set(['constellationBank/main'])
 /** Authority does not depend on a clock tick; readiness is derived, not a new save revision. */
 export function assertFarmViewRevision(expected: FarmViewRevision, generation: string, entities: ReadonlyMap<string, FarmStoredEntity>,
   rows: readonly FarmPendingRow[], keys: readonly string[]): void {
   if (!expected || expected.generation !== generation || expected.pending !== farmPendingRevision(rows) ||
-    keys.some(key => (expected.versions[key] ?? 0) !== (entities.get(key)?.version ?? 0)))
+    keys.some(key => !FARM_GUARD_ONLY_KEYS.has(key) && (expected.versions[key] ?? 0) !== (entities.get(key)?.version ?? 0)))
     throw new Error('Farm changed; reload and review the current choices before confirming')
 }
 export async function readFarmKitchenView(db: RacerDb, coordinator: FarmOperationCoordinator, enabled: boolean, now: number,

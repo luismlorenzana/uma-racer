@@ -145,10 +145,14 @@ export function FarmKitchenCommonShell({ environment }: { environment: FarmKitch
         const job = view.stations.find(station => station.job?.id === jobId)?.job
         if (job) setClaim({ mutation: result, job })
       }
-      setMessage(result.status === 'pending' ? 'Saved locally · pending sync' : result.status === 'rejected' ? result.reason ?? 'Farm request rejected' : outcome?.kind === 'claim-legacy' ? 'Legacy crop collected once · 0 new Farm EXP · saved in global Items' : 'Farm updated')
+      setMessage(result.status === 'pending' ? 'Saved' : result.status === 'rejected' ? result.reason ?? 'That didn’t go through' : outcome?.kind === 'claim-legacy' ? 'Old crop collected' : 'Done')
       return result
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Farm action could not be completed')
+      // The screen was a moment behind the save: show the current Farm and let the owner tap again (D320).
+      if (error instanceof Error && /^Farm changed/.test(error.message)) {
+        publishFarmKitchenView(store, await environment.host.read())
+        setMessage('The Farm just updated. Check it and tap again.')
+      } else setMessage(error instanceof Error ? error.message : 'That didn’t go through')
       return null
     } finally { setBusy(null) }
   }
@@ -186,8 +190,8 @@ export function FarmKitchenHubScreen() {
   const ready = summaries.reduce((sum, item) => sum + item.ready, 0)
   const [collecting, setCollecting] = useState(false), [collection, setCollection] = useState<Awaited<ReturnType<FarmKitchenHost['collectAll']>> | null>(null), [collectionError, setCollectionError] = useState<string | null>(null)
   return <div className="space-y-3 pb-4">
-    {(!farm.environment.isolated || farm.environment.showResetNotice) && <FarmResetNotice environment={farm.environment} />}
-    {farm.view.pending.length > 0 && <Panel className="space-y-2"><p className="text-micro">Saved Farm intents</p>{farm.view.pending.map(row => <div key={row.id} className="border-t border-hairline pt-2"><p className="text-[12px]">{row.operation.payload.kind} · {row.status}</p><p className="text-[11px] text-ink-soft">{row.reason ?? 'Exact choices are durable. Pending stock and EXP are not acknowledged yet.'}</p><Button size="sm" variant="secondary" disabled={farm.busy !== null} onClick={async () => {
+    {farm.environment.isolated && farm.environment.showResetNotice && <FarmResetNotice environment={farm.environment} />}
+    {farm.view.pending.length > 0 && <Panel className="space-y-2"><p className="text-micro">Waiting to save</p>{farm.view.pending.map(row => <div key={row.id} className="border-t border-hairline pt-2"><p className="text-[12px]">{row.operation.payload.kind} · {row.status}</p><p className="text-[11px] text-ink-soft">{row.reason ?? 'Saved on this phone; it finishes when the app next syncs.'}</p><Button size="sm" variant="secondary" disabled={farm.busy !== null} onClick={async () => {
       try { await farm.environment.host.retry({ operationId: row.id }); publishFarmKitchenView(farm.store, await farm.environment.host.read()) }
       catch (reason) { setCollectionError(reason instanceof Error ? reason.message : 'Keep the intent and export recovery') }
     }}>Retry unchanged intent</Button></div>)}</Panel>}
@@ -269,7 +273,7 @@ const Sheet = FarmKitchenSheet
 function WorkerPicker({ open, stationId, close }: { open: boolean; stationId: FarmStationId; close: () => void }) {
   const farm = useKitchen(), station = farm.view.stations.find(row => row.id === stationId)!, current = farm.crew.find(row => row.id === station.outfitId)
   const assign = (worker: FarmCrewRow) => void farm.action(`assign:${stationId}`, (intentId, view) => farm.environment.host.assign({ intentId, expectedRevision: view.revision, stationId, outfitId: worker.id })).then(result => { if (result) close() })
-  return <Sheet open={open} close={close}><h2 className="font-display text-xl font-bold">Crew for {FARM_DISTRICT_PRESENTATION[stationId.split('-')[0] as FarmDistrict].name} {stationId.split('-')[1]}</h2><p className="mt-1 text-[12px] text-ink-soft">Choose an available outfit or explicitly move an idle one here. Busy and Ready workers must finish first.</p>
+  return <Sheet open={open} close={close}><h2 className="font-display text-xl font-bold">Crew for {FARM_DISTRICT_PRESENTATION[stationId.split('-')[0] as FarmDistrict].name} {stationId.split('-')[1]}</h2><p className="mt-1 text-[12px] text-ink-soft">Pick a free Uma, or move an idle one here. Busy and ready Umas finish their job first.</p>
     {current && <Button variant="destructive" size="sm" className="mt-3 w-full" onClick={() => void farm.action(`remove:${stationId}`, (intentId, view) => farm.environment.host.remove({ intentId, expectedRevision: view.revision, stationId })).then(result => { if (result) close() })}>Remove {current.name}</Button>}
     {(['available', 'working'] as const).map(section => <section key={section} className="mt-4"><p className="text-micro">{section === 'available' ? 'Available' : 'Working'}</p><div className="mt-2 space-y-2">{farm.crew.filter(worker => section === 'available' ? worker.status === 'available' : worker.status !== 'available').map(worker => {
       const locked = worker.status === 'busy' || worker.status === 'ready'
