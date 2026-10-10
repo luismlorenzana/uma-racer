@@ -5,6 +5,23 @@ content publish or a manual owner-account migration. [Design](../design/farm-kit
 [contract](../technical/farm-kitchen-implementation.md#10-t124-complete-release-d315) own the rules.
 Only invented isolated saves/art are in checked-in tests/screenshots; exported account JSON is never committed.
 
+## Post-release preparation fix (D318)
+
+The owner reported a failed **Prepare Stable Kitchen** action. With no signed-in owner browser session or
+specific error available, the real account's failure is not asserted to have a proven cause. A synthetic
+actual-runtime regression did reproduce one definite bug: an empty background sync requested during the
+archive kept `flushing` true and made protected preparation return false. D318 serializes that window without
+bypassing any safety check. Three regressions verify overlap, waiting for an already-running empty sync and
+lost-reply recovery; each ends with 25 workers, 30 stations and exactly one original archive. Existing cutover
+tests retain exact non-reset equality. Production owner migration and physical-iPhone acceptance remain pending;
+deployment is distinct from account migration. No raw owner save, credential, gift or manual reset was accessed.
+
+Fix verification: `pnpm lint && pnpm test && pnpm build` passed (1,818 tests: web662, other packages unchanged).
+Startup gzip154.90 KB (154,899 bytes); lazy Farm screen12.90 KB, runtime15.86 KB. No visual/layout change, so
+the existing isolated phone proof still applies. `sim:farm`, `sim:farm:stats`, `sim:farm:legacy`, `sim:puzzles`
+and `sim:rpg:campaign` passed; no rule or balance constant changed. Merge/deployment evidence is recorded on
+the fix PR after it actually completes; owner-account/iPhone checks are not substituted with these tests.
+
 ## Code and CI
 
 - **Passed locally:** `pnpm lint && pnpm test && pnpm build` after paired capability enablement.

@@ -166,6 +166,7 @@ export class GameRuntime {
   private lastEconomicLane: EconomicLane | null = null
   private flushing = false
   private inFlight: Promise<void> | null = null
+  private farmPreparation: object | null = null
   private trainingLocks = new Set<string>()
   private raceLocks = new Set<string>()
   private promotionLocks = new Set<string>()
@@ -359,6 +360,7 @@ export class GameRuntime {
     this.uninstallFarmKitchenHost?.()
     this.uninstallFarmKitchenHost = null
     this.kitchenHost = null
+    this.farmPreparation = null
     this.stopFarmStats?.(); this.stopFarmStats = null
     useGame.setState({ farmStats: { mode: 'legacy' } })
     this.lastEconomicLane = null
@@ -379,7 +381,7 @@ export class GameRuntime {
   /** Arms one flush. The outbox is the truth: a write committed outside the store must still sync (D263). */
   schedule(delay = 750): void {
     const state = useGame.getState()
-    if (!state.persistent || this.timer) return
+    if (!state.persistent || this.timer || this.farmPreparation) return
     this.timer = setTimeout(() => {
       this.timer = null
       void this.flush()
@@ -1146,6 +1148,13 @@ export class GameRuntime {
 
   /** One sync at a time; a caller during a sync awaits that sync rather than returning early. */
   flush(): Promise<void> {
+    // Farm preparation owns this device's archive/reset window. Reconnect, visibility and timer
+    // flushes (even empty ones) must not start unrelated migration/adoption inside that window.
+    if (this.farmPreparation) return Promise.resolve()
+    return this.flushPending()
+  }
+
+  private flushPending(): Promise<void> {
     if (this.inFlight) return this.inFlight
     this.inFlight = this.flushOnce().finally(() => { this.inFlight = null })
     return this.inFlight
@@ -1198,10 +1207,25 @@ export class GameRuntime {
       persistent: () => useGame.getState().persistent,
       safeToPrepare: () => !this.flushing && !this.trainingLocks.size && !this.raceLocks.size && !this.promotionLocks.size && !this.deckLocks.size &&
         !this.cardRedemptionLocks.size && !this.umaRedemptionLocks.size && !this.unitLocks.size && !this.exchangeLocked,
+      withPreparation: async prepare => {
+        if (this.farmPreparation) return false
+        const token = {}; this.farmPreparation = token
+        if (this.timer) clearTimeout(this.timer)
+        this.timer = null
+        try {
+          // Drained outbox does not imply idle: an empty flush may still be awaiting protected
+          // Puzzle/Inspiration work. Await it before archiving, then keep new automatic flushes out.
+          await this.inFlight
+          if (generation !== this.generation) throw new Error('Account changed during Farm preparation')
+          return await prepare()
+        } finally {
+          if (this.farmPreparation === token) { this.farmPreparation = null; this.schedule(0) }
+        }
+      },
       drainBeforeUpgrade: async () => {
         while (await db.outbox.count()) {
           const before = (await db.outbox.orderBy('seq').toArray()).map(row => row.seq).join(',')
-          await this.flush()
+          await this.flushPending()
           if (generation !== this.generation) throw new Error('Account changed during Farm preparation')
           const after = (await db.outbox.orderBy('seq').toArray()).map(row => row.seq).join(',')
           if (before === after) throw new Error('Pending changes must sync before Farm preparation. Reconnect and Retry; no intent was discarded.')

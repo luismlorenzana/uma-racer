@@ -46,6 +46,8 @@ import { appendFlairEvents, bootstrapBadgeFacts, bootstrapUmaFlair, sparkRunsByT
 import { GameRuntime } from './runtime'
 import { getFarmKitchenHost } from './farm/kitchen/host'
 import { farmProtocolFixture } from '../../../../packages/domain/src/farm/kitchen/protocol-fixtures'
+import { farmCutoverControl, farmCutoverSource, resolveFarmCutover } from '@racer/domain/farm/kitchen'
+import { farmSha256 } from './farm/kitchen/backup'
 import { settleTrainingExpBank } from './training-bank'
 import { clearGameState, localDay, replaceUma, useGame } from './store'
 import {
@@ -852,6 +854,75 @@ describe('game bootstrap coordinator', () => {
     expect(useGame.getState().sync).toMatchObject({ status: 'error', pending: 0, error: expect.stringContaining('Farm') })
     expect(await db.farmPending.count()).toBe(1)
   })
+
+  it.each(['during archive', 'already in flight', 'lost reply'] as const)('serializes protected Farm preparation: %s', async mode => {
+    const server = new Map<string, ApiEntityRecord>(), logs = new Map<string, import('@racer/domain').LogRecord>()
+    let requestBackgroundSync = false
+    vi.spyOn(saveApi, 'load').mockImplementation(async () => {
+      if (requestBackgroundSync) {
+        requestBackgroundSync = false
+        // Reconnection/visibility or an already-armed timer can request an empty flush here.
+        void runtime.flush()
+      }
+      return { entities: structuredClone([...server.values()]), logs: structuredClone([...logs.values()]), serverTime: 1 }
+    })
+    vi.spyOn(saveApi, 'sync').mockImplementation(async request => {
+      const writes = request.upserts.map(r => ({ kind: r.kind, id: r.id, version: r.baseVersion + 1, data: r.data, deleted: false, updatedAt: 1 }))
+      writes.forEach(r => server.set(`${r.kind}/${r.id}`, r))
+      request.appends.forEach(r => logs.set(`${r.kind}/${r.id}`, r))
+      return { applied: writes.map(r => ({ kind: r.kind, id: r.id, version: r.version })), conflicts: [], appended: request.appends.length, serverTime: 1 }
+    })
+    let holdBackgroundSync = false
+    let releaseBackgroundSync!: () => void
+    let enteredBackgroundSync!: () => void
+    const gate = new Promise<void>(resolve => { releaseBackgroundSync = resolve })
+    const entered = new Promise<void>(resolve => { enteredBackgroundSync = resolve })
+    const advance = vi.spyOn(saveApi, 'advanceInspiration').mockImplementation(async () => {
+      if (holdBackgroundSync) { enteredBackgroundSync(); await gate }
+      throw new Error('synthetic deferred advance')
+    })
+    let loseReply = mode === 'lost reply'
+    const farmPrepare = vi.spyOn(saveApi, 'farmPrepare').mockImplementation(async request => {
+      const sourceDigest = !farmCutoverControl(server) ? await farmSha256(farmCutoverSource('local-dev', server, logs)) : undefined
+      const result = resolveFarmCutover({ enabled: true, accountId: 'local-dev', now: 1, entities: server, logs, sourceDigest }, request)
+      result.writes.forEach(r => server.set(`${r.kind}/${r.id}`, r as ApiEntityRecord))
+      result.appends.forEach(r => logs.set(`${r.kind}/${r.id}`, r as import('@racer/domain').LogRecord))
+      if (loseReply) { loseReply = false; throw new Error('synthetic lost Farm acknowledgement') }
+      return result.response
+    })
+    await runtime.start(content())
+    vi.stubGlobal('navigator', { onLine: true })
+    while (await db.outbox.count()) await runtime.flush()
+    const calls = advance.mock.calls.length
+    holdBackgroundSync = true
+    const host = await runtime.farmKitchenHost()
+    try {
+      if (mode === 'already in flight') {
+        const background = runtime.flush(); await entered
+        const preparation = host.prepareUpgrade()
+        // It must wait for the currently running sync even though the outbox is empty.
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        expect(farmPrepare).not.toHaveBeenCalled()
+        releaseBackgroundSync(); holdBackgroundSync = false; await background
+        expect(await preparation).toBe(true)
+        expect(advance).toHaveBeenCalledTimes(calls + 1)
+      } else {
+        requestBackgroundSync = true
+        if (mode === 'lost reply') {
+          expect(await host.prepareUpgrade()).toBe(false)
+          expect(farmCutoverControl(server)?.phase).toBe('preparing')
+          // Failure releases the pause without throwing away the exact reset request/archive.
+          releaseBackgroundSync(); holdBackgroundSync = false; await runtime.flush()
+          expect(advance).toHaveBeenCalledTimes(calls + 1)
+        }
+        expect(await host.prepareUpgrade()).toBe(true)
+        expect(advance).toHaveBeenCalledTimes(calls + (mode === 'lost reply' ? 1 : 0))
+      }
+      expect((await getFarmKitchenHost().read()).mode).toBe('active')
+      expect(await db.farmWorkers.count()).toBe(25)
+      expect((await db.farmRecovery.toArray()).filter(row => row.reason === 'farm-cutover-archive')).toHaveLength(1)
+    } finally { releaseBackgroundSync(); holdBackgroundSync = false; await runtime.flush() }
+  }, 30_000)
 
   it('adopts a complete cloud save before publishing ready state', async () => {
     const loaded = content()
