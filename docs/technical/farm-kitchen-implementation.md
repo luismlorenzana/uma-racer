@@ -301,7 +301,11 @@ small header plus pages, not every unit/owner row in one huge JSON document. Lim
 over-bound accounts fail before reset, not partial migration. Single-outfit steps must stay below the document
 cap even with every currently registered scenario. An error keeps phase/evidence/backup for Retry/Export.
 
-Keep all old Items, ledger/race/history, owned outfits/cards, card stars/sets, levels/CL/aptitudes/goals,
+D319: once the generation is active, the client clears every old Produce stack to zero (`clearLegacyProduce`, at
+startup and after each Farm refresh, while no Farm command is pending), and the API accepts that one change to a
+retired `produce:` stack. A legacy claim's crop is cleared the same way. Every other old Item stays.
+
+Keep all old Items (but Produce, D319), ledger/race/history, owned outfits/cards, card stars/sets, levels/CL/aptitudes/goals,
 Inspiration/debts/tokens, RPG/Puzzles parties/progress and their backups. Old Produce/Extra/Farm evidence is
 history only, never XP/unlock input for a new generation. A legacy job can be claimed once for its old output,
 **zero new EXP**; it blocks a new job on that mapped station until claimed. Different IDs cannot double-pay
@@ -348,10 +352,11 @@ stay frozen on the legacy page with original cycles/deadlines. An accepted pre-f
 cycle, never its evidence/stock. New recipes/cookbook are empty; all30 stations are available through normal views.
 
 The device-only archive is a separate `farmRecovery` record `farm-archive:<SHA-256>`, with archive schema1,
-authenticated account/profile identity, app build, Dexie 32 or 33 (D310's v33 only rewrites RPG rows), timestamp, the raw canonical whole-account snapshot
+authenticated account/profile identity, app build, Dexie 32–34 (D310's v33 and D312's v34 only rewrite RPG rows), timestamp, the raw canonical whole-account snapshot
 and every local save/intent/journal table. Earlier Farm archives are retained separately rather than recursively
 embedded; Puzzle archives are included and never replaced. The64 MiB export ceiling, supported local/cloud
-schemas, write/readback identity, both in-memory and JSON-round-trip SHA-256, and Blob exportability must verify
+schemas, write/readback identity, both in-memory and JSON-round-trip SHA-256 (D319: rows and snapshot are captured
+as their JSON export holds them, since IndexedDB keeps `undefined` fields JSON drops), and Blob exportability must verify
 before prepare. No archive JSON/IDs/content are logged or committed. Quota, future schema, corruption, new local
 progress or identity changes block the request. The archive is never uploaded by normal sync.
 

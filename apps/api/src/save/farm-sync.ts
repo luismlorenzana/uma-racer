@@ -36,7 +36,10 @@ export function protectFarmSync(request: SyncRequest, entities: ReadonlyMap<stri
     if (!control) continue
     if (row.kind === 'farm' || row.kind === 'items' && row.id.startsWith('produce:')) {
       const before = entities.get(`${row.kind}/${row.id}`)
-      if (!before || row.deleted || !isDeepStrictEqual(before.data, row.data)) fail('legacy Farm/Produce writes are retired during and after upgrade')
+      // D319: once the new Farm is active an old Produce stack may be cleared to zero, never raised or restored.
+      const cleared = row.kind === 'items' && control.phase === 'active' && !!before && !before.deleted && !row.deleted &&
+        row.data.itemId === row.id && row.data.quantity === 0
+      if (!cleared && (!before || row.deleted || !isDeepStrictEqual(before.data, row.data))) fail('legacy Farm/Produce writes are retired during and after upgrade')
     }
     if (row.kind === 'umas') {
       if (request.farmProtocolVersion !== 1 || row.deleted) fail('refresh before writing post-upgrade Uma builds')

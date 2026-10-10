@@ -808,8 +808,11 @@ Preserve owned outfits/cards and global card stars, card sets, all racing levels
 CL, Inspiration slots/golds/debt/tokens, RPG/Puzzle parties/progress/backups and unrelated global Items. Clearing
 Extra Stats intentionally changes racing stats; it does not reset racing progression or alter goal completion.
 
-**Recommended treatment of unrequested reset targets:** retain existing crop inventory as clearly labeled legacy
-Items with no v2 node purchasing or automatic meal conversion. Retain old raw jobs through their original
+- **Old Produce (D319, the owner's request):** once the new Farm is active, every old crop stack is cleared from
+  Items (to zero, so no view shows it), including a crop a legacy claim pays later.
+
+**Recommended treatment of unrequested reset targets** (superseded for crop inventory by D319): retain existing crop
+inventory as clearly labeled legacy Items with no v2 node purchasing or automatic meal conversion. Retain old raw jobs through their original
 deadline and allow one final legacy claim, paying only their old crop output and **no new Farm EXP or recipe
 unlocks**. Map old slots 1–6 to Garden, 7–12 to Orchard, 13–18 to Barnyard and retain those worker assignments.
 An ongoing legacy job remains claimable once on its mapped station before a new recipe starts there.

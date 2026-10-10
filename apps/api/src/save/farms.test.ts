@@ -127,6 +127,17 @@ describe('Farm wire and standalone mirror', () => {
     expect(farmCanonical(resolveFarmOperations(context, [op]))).toBe(farmCanonical(domain.resolveFarmOperations(context, [op])))
     expect(resolveSyncWithPuzzles('owner', req([op]), g.entities as Map<string, EntityRecord>, new Map(), 1000, false, false).response.farmOperations![0]!.status).toBe('rejected')
   })
+  it('lets an active Farm clear an old Produce stack to zero, and nothing more (D319)', async () => {
+    const f = await fixture()
+    expect(f.entities.get('farmCutover/main')!.data.phase).toBe('active')
+    const item: EntityRecord = { kind: 'items', id: 'produce:t2:wit', version: 4, updatedAt: 1, deleted: false, data: { itemId: 'produce:t2:wit', quantity: 5, updatedAt: 1 } }
+    f.entities.set(`items/${item.id}`, item)
+    const upsert = (data: Record<string, unknown>) => ({ upserts: [{ kind: 'items' as const, id: item.id, baseVersion: 4, data }], appends: [] })
+    const cleared = resolveSyncWithPuzzles('owner', upsert({ ...item.data, quantity: 0, updatedAt: 9 }), f.entities as Map<string, EntityRecord>, new Map(), 1000, false)
+    expect(cleared.writes).toMatchObject([{ kind: 'items', id: item.id, version: 5, data: { quantity: 0 } }])
+    for (const data of [{ ...item.data, quantity: 6 }, { ...item.data, quantity: 1 }, { itemId: 'produce:t3:wit', quantity: 0, updatedAt: 9 }])
+      expect(() => resolveSyncWithPuzzles('owner', upsert(data), f.entities as Map<string, EntityRecord>, new Map(), 1000, false)).toThrow(/retired|identity|match/)
+  })
   it.each(['preparing', 'resetting'] as const)('protects %s even without client opt-in; historic projections keep their original versions', async phase => {
     const f = await fixture(), legacy: { createInitialFarmState(): object } = await import(`${source}/../rules.ts`)
     const control = f.entities.get('farmCutover/main')!, old = f.entities.get('farm/main')!
@@ -138,6 +149,9 @@ describe('Farm wire and standalone mirror', () => {
     const result = resolveSyncWithPuzzles('owner', request, f.entities as Map<string, EntityRecord>, new Map(), 1000, false)
     expect(result.writes).toEqual([]); expect(result.response.applied).toEqual([{ kind: 'items', id: item.id, version: 7 }])
     expect(() => resolveSyncWithPuzzles('owner', { ...request, upserts: [{ ...request.upserts[0]!, data: { ...item.data, quantity: 4 } }] }, f.entities as Map<string, EntityRecord>, new Map(), 1000, false)).toThrow(/retired/)
+    // Clearing old Produce waits for the active Farm (D319).
+    expect(() => resolveSyncWithPuzzles('owner', { ...request, upserts: [{ ...request.upserts[0]!, baseVersion: 7, data: { ...item.data, quantity: 0 } }] },
+      f.entities as Map<string, EntityRecord>, new Map(), 1000, false)).toThrow(/retired/)
     const uma = f.entities.get('umas/invented-0')!, changed = structuredClone(uma.data)
     ;(changed.scenarios as { extraStatsUnlocked: { speed: number } }[])[0]!.extraStatsUnlocked.speed = 1
     expect(() => resolveSyncWithPuzzles('owner', { upserts: [{ kind: 'umas', id: uma.id, baseVersion: 1, data: changed }], appends: [], farmProtocolVersion: 1 }, f.entities as Map<string, EntityRecord>, new Map(), 1000, false)).toThrow(/Extra Stats/)

@@ -31,7 +31,7 @@ export function FarmKitchenRecovery({ environment, view, error, reload }: {
       <p className="text-sm text-ink-soft">{error ?? recovery?.message ?? view?.message ?? 'Retain this save. No unsupported generation will reopen the old writer.'}</p>
       {upgrade && <>
         <p className="text-sm">This one-time upgrade resets every outfit’s Farm Level to 1 and clears old Extra Stats purchases and active builds. All 30 stations open.</p>
-        <p className="text-sm text-ink-soft">Cards, racing, CL, Inspiration, RPG, Puzzles and Items stay. Existing crop jobs keep their deadlines and can be collected once for their old crop, with 0 new Farm EXP.</p>
+        <p className="text-sm text-ink-soft">Old Produce is cleared from Items once the new Farm opens. Cards, racing, CL, Inspiration, RPG, Puzzles and other Items stay. Existing crop jobs keep their deadlines and can be collected once, with 0 new Farm EXP.</p>
         <p className="text-sm text-ink-soft">A verified private whole-account archive is kept on this device before any reset. Download it here or in Settings; never publish it. Connect and let pending changes sync first.</p>
       </>}
       <p role="status" aria-live="polite" className="text-sm font-semibold">{working ? 'Saving protected steps… keep this device open' : control ? `${control.phase} · ${control.nextOutfitIndex}/${control.outfitCount} outfits prepared` : 'No reset has been acknowledged'}</p>

@@ -1233,12 +1233,21 @@ export class GameRuntime {
       },
       schedule: () => this.schedule(), publish: async () => {
         if (generation !== this.generation) return
+        // The reset just finished, or a legacy claim paid an old crop: clear old Produce (D319).
+        if ((await this.clearLegacyProduce()).length) this.schedule()
         const snapshot = await readLocalSnapshot()
         if (snapshot && this.content && generation === this.generation) adoptGameState(stateFromSnapshot(snapshot, this.content, true))
         await this.refreshPending()
       } })
     if (generation !== this.generation) return
     this.kitchenHost = host; this.uninstallFarmKitchenHost = installFarmKitchenHost(host)
+    if ((await this.clearLegacyProduce()).length && generation === this.generation) this.schedule()
+  }
+
+  /** D319: zeroes old Produce stacks once the new Farm is active; a no-op before or while a Farm command is pending. */
+  private async clearLegacyProduce(): Promise<string[]> {
+    const { clearLegacyProduce } = await import('./farm/kitchen/legacy-produce')
+    return clearLegacyProduce(db)
   }
 
   private async installFarmStatProjection(generation: number): Promise<void> {

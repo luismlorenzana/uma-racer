@@ -9,6 +9,7 @@ import { adoptServerSnapshot, reconcileFarmProjectionsInTransaction } from '../.
 import { farmTransactionTables } from './operations'
 import { farmSha256, retainFarmArchive, verifyFarmArchive, farmArchiveProof, FARM_ARCHIVE_REASON } from './backup'
 import { prepareFarmCutoverOnce, adoptFarmCutoverInTransaction, readFarmCutoverRecovery, type FarmCutoverPorts } from './cutover'
+import { clearLegacyProduce } from './legacy-produce'
 let sequence = 0
 describe('Farm archive and local cutover', () => {
   let db: RacerDb, f: ReturnType<typeof farmCutoverFixture>, ports: FarmCutoverPorts, lost: boolean
@@ -42,6 +43,13 @@ describe('Farm archive and local cutover', () => {
     await expect(verifyFarmArchive(saved.archive, 'different-account', 1)).rejects.toThrow(/identity/)
     await expect(verifyFarmArchive({ ...saved.archive, build: 'tampered' }, ports.accountId, 1)).rejects.toThrow(/digest/)
     await expect(verifyFarmArchive({ ...saved.archive, schemaVersion: 2 }, ports.accountId, 1)).rejects.toThrow(/schema/)
+  })
+  it('archives a local row holding an undefined field as its JSON export holds it (D319)', async () => {
+    await db.rpgFights.put({ id: 'invented-fight', actions: [{ kind: 'attack', actorId: 'a', targetId: 'b', weapon: undefined } as never], updatedAt: 1 })
+    const saved = await retainFarmArchive(db, snapshot(), ports.accountId, ports.build, () => true, 100)
+    expect(saved.archive.localTables.rpgFights).toEqual([{ id: 'invented-fight', actions: [{ kind: 'attack', actorId: 'a', targetId: 'b' }], updatedAt: 1 }])
+    expect(await verifyFarmArchive(JSON.parse(JSON.stringify(saved.archive)), ports.accountId, 1)).toEqual(saved.archive)
+    expect(await prepareFarmCutoverOnce(db, ports, true, 101)).toBe(true)
   })
   it('blocks failed storage, readback, exportability, unknown local/server saves and oversize archives before any protected call', async () => {
     const spy = vi.spyOn(db.farmRecovery, 'add').mockRejectedValueOnce(new Error('Injected quota failure'))
@@ -138,6 +146,18 @@ describe('Farm archive and local cutover', () => {
     const workers = await singletonDb.farmWorkers.toArray()
     await singletonDb.transaction('rw', farmTransactionTables(singletonDb), () => reconcileFarmProjectionsInTransaction(300))
     expect(await singletonDb.farmWorkers.toArray()).toEqual(workers)
+  })
+  it('clears old Produce stacks only once the new Farm is active (D319)', async () => {
+    await db.items.put({ id: 'produce:t1:speed', version: 3, data: { itemId: 'produce:t1:speed', quantity: 4, updatedAt: 1 } })
+    await db.items.put({ id: 'inspiration:t1:slot', version: 2, data: { itemId: 'inspiration:t1:slot', quantity: 6, updatedAt: 1 } })
+    expect(await clearLegacyProduce(db, 50)).toEqual([])
+    for (let i = 0; i < 5; i++) expect(await prepareFarmCutoverOnce(db, ports, true, 100 + i)).toBe(true)
+    expect((await db.farmCutover.get('main'))!.data).toMatchObject({ phase: 'active' })
+    expect(await clearLegacyProduce(db, 200)).toEqual(['produce:t1:speed'])
+    expect((await db.items.get('produce:t1:speed'))).toMatchObject({ version: 3, data: { itemId: 'produce:t1:speed', quantity: 0, updatedAt: 200 } })
+    expect((await db.items.get('inspiration:t1:slot'))!.data.quantity).toBe(6)
+    expect((await db.outbox.toArray()).map(r => `${r.op}:${r.kind}/${r.id}`)).toEqual(['upsert:items/produce:t1:speed'])
+    expect(await clearLegacyProduce(db, 201)).toEqual([])
   })
   it('normal capability-off path performs no storage or network access and leaves malformed recovery untouched', async () => {
     db.close()

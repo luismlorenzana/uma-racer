@@ -46,10 +46,15 @@ export async function farmArchiveProof(archive: FarmRecoveryArchive): Promise<Fa
     sourceDigest: await farmSha256(farmCutoverSource(archive.accountId,
       new Map(snapshot.entities.map(r => [`${r.kind}/${r.id}`, r])), new Map(snapshot.logs.map(r => [`${r.kind}/${r.id}`, r])))) }
 }
+/**
+ * An archive holds rows exactly as its JSON export does (D319). IndexedDB keeps fields whose value is `undefined`, which a
+ * JSON round trip drops, so a raw copy made the in-memory and exported digests differ and blocked every preparation.
+ */
+const asExported = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 async function captureLocal(database: RacerDb): Promise<Record<string, unknown[]>> {
   const rows: Record<string, unknown[]> = {}
-  for (const table of database.tables) rows[table.name] = table.name === 'farmRecovery'
-    ? await database.farmRecovery.filter(r => r.reason !== FARM_ARCHIVE_REASON).toArray() : await table.toArray()
+  for (const table of database.tables) rows[table.name] = asExported(table.name === 'farmRecovery'
+    ? await database.farmRecovery.filter(r => r.reason !== FARM_ARCHIVE_REASON).toArray() : await table.toArray())
   return rows
 }
 export async function retainFarmArchive(database: RacerDb, rawSnapshot: unknown, accountId: string, build: string,
@@ -61,7 +66,7 @@ export async function retainFarmArchive(database: RacerDb, rawSnapshot: unknown,
     return captureLocal(database)
   })
   const unsigned = { schemaVersion: 1 as const, accountId, profileCreatedAt, build, databaseVersion: database.verno, createdAt: now,
-    snapshot: structuredClone(rawSnapshot) as SaveSnapshot, localTables }
+    snapshot: asExported(rawSnapshot) as SaveSnapshot, localTables }
   if (farmBytes(unsigned) > FARM_CUTOVER_LIMITS.archiveBytes) throw new Error('Farm archive exceeds 64 MiB; export/recover before migration')
   const archive = await verifyFarmArchive({ ...unsigned, digest: await farmSha256(unsigned) }, accountId, profileCreatedAt), id = `farm-archive:${archive.digest}`
   await database.transaction('rw', database.tables, async () => {
