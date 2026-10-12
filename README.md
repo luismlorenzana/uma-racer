@@ -104,6 +104,7 @@ docs/           design, technical, research
 
 | Doc | What it covers |
 |---|---|
+| [Re-architecture plan](docs/rearchitecture/README.md) | The planned rebuild (D321–D325): target architecture, uma-platform and shared packages, Phaser rendering and textures, the Hub, the Farm, the RPG's removal, the data wipe with 20 Uma Tickets, and the phases |
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [Farm production/cooking implementation](docs/technical/farm-kitchen-implementation.md) | Pure layer/[balance](docs/research/farm-kitchen-balance.md), atomic sync/Dexie32/[verification](docs/research/farm-kitchen-sync.md), dormant archive/reset/[rehearsal](docs/research/farm-kitchen-cutover-rehearsal.md), real host/[recovery tests](docs/research/farm-kitchen-host.md), phone screens/canonical race joins/[proof](docs/research/farm-kitchen-phone-proof/README.md); T124 owns release |
 | [RPG implementation](docs/technical/uma-rpg-implementation.md) | Local-first RPG rows and sync, the device fight journal, the generated campaign and the cast-only private pack |

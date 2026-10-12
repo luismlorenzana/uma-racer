@@ -11,6 +11,12 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
+**Next: the uma-racer re-architecture (D321–D325), planned 2026-10-12.** [The plan](../rearchitecture/README.md)
+rebuilds the repo on uma-platform's shared foundation in eight phases: a sound base, a clean slate (save generation 2,
+a full wipe, 20 Uma Tickets, the RPG deleted), platform master data, the Hub, the Farm, the race on Phaser, then the
+owner's feature and rebalancing docs. Each phase's pull requests are in [08-phases.md](../rearchitecture/08-phases.md);
+task specs are written here as each phase becomes next.
+
 **M031 — Farm production/cooking is complete (T118–T124, D315).**
 [Design](../design/farm-kitchen-rework.md) and [technical contract](../technical/farm-kitchen-implementation.md)
 carry thirty open stations, independent outfit levels, scenario-specific symmetric foods, batched recipes,
