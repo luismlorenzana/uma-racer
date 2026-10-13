@@ -11,6 +11,12 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
+**Under owner review: the game rework (D326–D335), 2026-10-13.** [The design](../rework/README.md) turns Uma Racer
+into Race, Farm, Train: three tiers of five scenarios, one Training Hub unlock model paid with cooked dishes, every
+card open and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, and World Expeditions. It
+revises the re-architecture's phases ([rework/13](../rework/13-removals-and-plan-changes.md) §4): phase 1 goes
+ahead, then the rework's rules and `sim:loop`, then the generation-2 cutover into the new game.
+
 **Next: the uma-racer re-architecture (D321–D325), planned 2026-10-12.** [The plan](../rearchitecture/README.md)
 rebuilds the repo on uma-platform's shared foundation in eight phases: a sound base, a clean slate (save generation 2,
 a full wipe, 20 Uma Tickets, the RPG deleted), platform master data, the Hub, the Farm, the race on Phaser, then the

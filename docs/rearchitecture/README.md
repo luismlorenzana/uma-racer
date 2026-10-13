@@ -1,5 +1,12 @@
 # uma-racer re-architecture
 
+> **Revised 2026-10-13 by the game rework (D326–D335).** The owner's feature docs have arrived as
+> [`docs/rework/`](../rework/README.md): Race, Farm, Train, three tiers and World Expeditions. They delete the Uma
+> Puzzles, Constellation Level, Friendship Training, card stars and tokens too. They replace this plan's Hub place list
+> ([04](04-hub.md)) and Farm rules ([05](05-farm.md)), and reorder the phases so the rework's rules are built and
+> simulated before the wipe. The changes to every page and decision here are listed in
+> [rework/13](../rework/13-removals-and-plan-changes.md). Where the two disagree, the rework wins.
+
 > **Status: plan, 2026-10-12 (D321–D325).** Nothing here is built yet. This folder describes how uma-racer is rebuilt
 > on uma-platform's shared foundation, with the RPG removed and every player's data started over. It is uma-platform
 > roadmap **Phase 3** made concrete. The owner's own documents on new features and rebalancing come next and plug in
