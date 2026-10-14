@@ -327,11 +327,13 @@ extraBudget(t, s) = nodesThatCanPay(s) × 40 × tierMultiplier(t)          (the 
 nodeValue(t, s)   = round((0.60 × capBudget − extraBudget(t, s)) / cardNodes(s))
 ```
 
+<!-- live:tier-extra-budget -->
 | Scenario of the tier | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
 | Tier 1 | 200 | 360 | 440 | 520 | 600 |
 | Tier 2 | 250 | 450 | 550 | 650 | 750 |
 | Tier 3 | 300 | 540 | 660 | 780 | 900 |
+<!-- /live -->
 
 Why:
 - **One ceiling.** A finished build stays at 60% of the cap budget, so no build reaches every cap, rivals and sims

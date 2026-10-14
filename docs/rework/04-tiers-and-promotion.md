@@ -11,6 +11,7 @@ Expedition that ends a tier is on [10](10-expeditions.md); this page only uses i
 
 Scenarios keep today's order, by JP release. Scenario *s* of tier *t* is the game's scenario **T = 5(*t* − 1) + *s***.
 
+<!-- live:tier-map -->
 | Tier | *s* | T | Scenario | JP release | Racing Levels | Cap budget | SP cap |
 |---|---|---|---|---|---|---|---|
 | **1** | 1 | 1 | URA Finale | 2021-02-24 | 1–10 | 6,000 | 2,000 |
@@ -27,8 +28,10 @@ Scenarios keep today's order, by JP release. Scenario *s* of tier *t* is the gam
 | | 2 | 12 | Yukoma Hot Springs | 2025-10-29 | 11–20 | 8,750 | 4,600 |
 | | 3 | 13 | Beyond Dreams | 2026-02-24 | 21–30 | 9,000 | 4,800 |
 | | 4 | 14 | Tracen Diner | 2026-06-29 | 31–40 | 9,250 | 5,000 |
-| | 5 | 15 | **Japan's next** (expected late October 2026) | — | 41–50 | 9,500 | 5,200 |
+| | 5 | 15 | Japan's next | — | 41–50 | 9,500 | 5,200 |
+<!-- /live -->
 
+- **The 15th is Japan's next scenario**, expected late October 2026, with no date until the platform publishes it (§2).
 - **Each tier ends in a World Expedition** (D332). An Uma who completes it is **promoted** (§3).
 - **Each Uma is in exactly one tier.** Only promoted Umas exist in tiers 2 and 3 (§6).
 - **A tier is about 20 weeks** for a roster of 25, with its Expeditions about 22 ([12](12-economy-and-pacing.md) §10).
@@ -174,13 +177,19 @@ a grade she can no longer start. Waiting a few hours at most, or one tap of Reca
 **Only tier 1 has an unlock concept.** An Uma Ticket unlocks any Uma not yet owned, and every new Uma starts at tier 1,
 scenario 1 ([03](03-uma-progression.md)). Tiers 2 and 3 fill only by promotion.
 
-| Source of Uma Tickets | Amount |
-|---|---|
-| A new account | **20** (D323), ledger `initial-uma-tickets` |
-| **Uma Shards, the normal unlock** (D336) | Each scenario gate an Uma reaches pays **1 Uma Shard**, once per Uma per gate per tier: Racing Level 10, 20, 30, 40 and 50 of her tier. **5 Shards make 1 Uma Ticket**, an explicit exchange in the Stable as today (ledger `uma-shard-exchange:{n}`) |
-| A promotion | **1**, ledger `promotion-uma-ticket:{umaId}:{tier}` |
-| Entering the Hall of Fame (§10) | **1**, under the same ledger id with tier 3 |
+<!-- live:uma-tickets -->
+| Source | Amount | Ledger id |
+|---|---|---|
+| A new account | 20 Uma Tickets | `initial-uma-tickets` |
+| Each scenario gate an Uma reaches, once per Uma per gate per tier: Racing Lv 10, 20, 30, 40 and 50 | 1 Uma Shard | `uma-gate-shard:{umaId}:{lifetime gate}` |
+| Exchanging Uma Shards in the Stable | 5 Uma Shards make 1 Uma Ticket | `uma-shard-exchange:{n}:shards` and `uma-shard-exchange:{n}:coupon` |
+| A promotion | 1 Uma Ticket | `promotion-uma-ticket:{umaId}:{tier}` |
+| Entering the Hall of Fame | 1 Uma Ticket | `promotion-uma-ticket:{umaId}:3` |
+<!-- /live -->
 
+- **The 20 are D323's start; Shards are the normal unlock** (D336). The exchange is an explicit one in the Stable, one
+  ticket at a time, numbered as today. A gate's Shard is keyed by her lifetime gate (10 … 150), so each tier's gates pay
+  again. An unlock spends 1 ticket under `unlock-uma:{outfitId}` (D340).
 - **Uma Tickets are never sold** (D336). The roster grows as Umas progress through the scenarios, which is the game's
   normal unlock. Uma Select Coupons are Uma Tickets under their new name ([13](13-removals-and-plan-changes.md)).
 - **Shards come from every tier.** A tier-2 or tier-3 Uma's gates pay Shards too, but the tickets they make only ever
@@ -228,6 +237,7 @@ Farm time doesn't change ([12](12-economy-and-pacing.md) §9).
 Today's table (D244): URA Finale at 1,200 a stat, then +250 a scenario, 100 to Speed and 150 rotating through the
 others. The 15th continues the rotation.
 
+<!-- live:tier-caps -->
 | T | Scenario | Speed | Stamina | Power | Guts | Wit | Budget |
 |---|---|---|---|---|---|---|---|
 | 1 | URA Finale | 1200 | 1200 | 1200 | 1200 | 1200 | 6000 |
@@ -245,17 +255,20 @@ others. The 15th continues the rotation.
 | 13 | Beyond Dreams | 2400 | 1650 | 1650 | 1650 | 1650 | 9000 |
 | 14 | Tracen Diner | 2500 | 1750 | 1700 | 1650 | 1650 | 9250 |
 | 15 | Japan's next | 2600 | 1750 | 1800 | 1700 | 1650 | 9500 |
+<!-- /live -->
 
 ### Extra Stats node values
 
 The README's tier-1 values (D338), ×1.25 in tier 2 and ×1.5 in tier 3. Every node totals 40 × the tier multiplier.
 The map and capacities are [05](05-training-hub.md)'s.
 
+<!-- live:tier-extra-values -->
 | Tier | Single | Duo | Sun | Full active Extra Stats, scenarios 1 · 2 · 3 · 4 · 5 |
 |---|---|---|---|---|
 | 1 | +40 | +20 / +20 | +8 to all five | 200 · 360 · 440 · 520 · 600 |
 | 2 | +50 | +25 / +25 | +10 to all five | 250 · 450 · 550 · 650 · 750 |
 | 3 | +60 | +30 / +30 | +12 to all five | 300 · 540 · 660 · 780 · 900 |
+<!-- /live -->
 
 - **The full active value** is the scenario's capacity × node total, but scenario 1's layer offers only 5 nodes
   against a capacity of 7, so it counts 5.
@@ -289,6 +302,7 @@ Why:
 - **Card nodes give up what the Gym adds.** Extra Stats are about a third of all unlocks (37 of 107, D338), and E
   shifts the build's weight toward them as the layers grow.
 
+<!-- live:tier-node-values -->
 | T | Scenario | *N* | Per-card cap | Node, 240 term | E | **Node (decided)** | Full build *N* × node + E | 60% of budget |
 |---|---|---|---|---|---|---|---|---|
 | 1 | URA Finale | 12 | 3 | 280 | 200 | **283** | 3,596 | 3,600 |
@@ -306,6 +320,7 @@ Why:
 | 13 | Beyond Dreams | 20 | 5 | 258 | 660 | **237** | 5,400 | 5,400 |
 | 14 | Tracen Diner | 24 | 5 | 221 | 780 | **199** | 5,556 | 5,550 |
 | 15 | Japan's next | 28 | 6 | 195 | 900 | **171** | 5,688 | 5,700 |
+<!-- /live -->
 
 - **Per-card cap** is `ceil(N / 6) + 1` (D134), and never falls inside a tier, which lets the advance carry every card
   ([03](03-uma-progression.md) §6).

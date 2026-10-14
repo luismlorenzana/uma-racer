@@ -41,20 +41,24 @@ Racing Level runs **1–50 per tier**, ten levels per scenario. It replaces toda
 Within each scenario the levels cost the same as today: `expToNext = 100 + 25 × levelsIntoScenario`, where
 `levelsIntoScenario = (Racing Level − 1) mod 10`.
 
+<!-- live:racing-curve -->
 | Level into the scenario | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | **Total** |
 |---|---|---|---|---|---|---|---|---|---|---|
 | EXP to the next | 100 | 125 | 150 | 175 | 200 | 225 | 250 | 275 | 300 | **1,800** |
+<!-- /live -->
 
 Nine paid steps take her from the scenario's first level to its gate (level 10*s*). The tenth step, from 10*s* to
 10*s* + 1, is **the advance itself** (§5). The README's "180 a level" is this curve's average, not a flat cost.
 
 ### EXP per finish (as today)
 
+<!-- live:racing-exp -->
 | Finish | Debut / Maiden | Pre-OP / OP | G3 | G2 | G1 |
 |---|---|---|---|---|---|
 | 1st | 40 | 60 | 80 | 110 | 150 |
 | 2nd or 3rd | 10 | 15 | 20 | 28 | 38 |
 | 4th or worse | 0 | 0 | 0 | 0 | 0 |
+<!-- /live -->
 
 - A win pays `winExp × (1 + Σ Race Bonus)` over the cards in the race's preset. Every card now pays its **full Race
   Bonus** (today's 3★ value, D329), so a set can add up to about +33%.
