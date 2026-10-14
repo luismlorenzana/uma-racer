@@ -20,7 +20,6 @@ feature flag, dormant code or compatibility reader stays behind (the D322 standa
 | **Permanent Uma Level 1–140** | One level across all fourteen scenarios, 10 per scenario (D121) | Tiers reset (D327) | Racing Level 1–50 per tier ([03](03-uma-progression.md)) |
 | **Trained units** | Every unlocked scenario stayed a raceable build of its own (D190); the load-from-previous button (D288) | Unlocks last for the tier (D328), so one build per tier is enough | One build per Uma per tier, carried automatically between scenarios ([03](03-uma-progression.md)) |
 | **Training Tickets** | +15 a day, cap 60; paid Friendship runs and scenario unlocks (`5 × tier`, D148) | Nothing left to buy | Advancing a scenario is free; Speed Tickets are bought with Prize Money |
-| **Uma Shards** | One per gate level; five made an Uma Ticket | Tier 1 is the only place tickets matter (D327) | 20 starting Uma Tickets, the Exchange (tier 1) and one per promotion ([04](04-tiers-and-promotion.md)) |
 | **Today's Farm** (the Stable Kitchen, M031) | Five districts × six stations, 1,169 items, 6-hour batch jobs, 12/24 Farm EXP, ingredient blocks of five scenarios, the 65-node meal-funded Extra map per block (D314, D315) | uma-rpg's farming half and uma-art's art replace it (D330) | Eight family sites, Pantry and Kitchen ([07](07-farm.md)); 253 items ([08](08-item-catalogue-and-recipes.md)); the Gym's Extra Stats map ([05](05-training-hub.md)) |
 | **Energy** | A global item: 30 minutes off one running job | Renamed and bought, not granted | The Speed Ticket ([09](09-racing-rewards-and-exchange.md)) |
 | **The Home list** | A scrolling column of cards | The Hub (D333) | Four Hub pages ([11](11-hub-and-places.md)) |
@@ -46,11 +45,12 @@ titles. Past achievement rows don't survive the wipe, so nothing is migrated.
 | Scenario careers and goals | G3, two G2s, three G1s, the holds and the gate (D137) |
 | Cap profiles and scenario buffs | Revised where a buff named a removed system ([04](04-tiers-and-promotion.md)) |
 | Constellation mechanics | Card nodes, the per-card cap, the node value formula, breadth-first unlock order, card-type splits (D180). Trees re-authored to 12–28 nodes ([05](05-training-hub.md)) |
-| Inspiration's pick rules | Parents, grandparents, mirrors, aptitudes and gold skills (D250's rules, without its tokens) |
+| Inspiration's pick rules | Parents, grandparents, mirrors, aptitudes, inherited uniques and gold skills (D250's rules, without its tokens; the uniques become their own 6 unlocks, D336) |
 | Card types, eras, skills, focus, Race Bonus | Every card at today's 3★ value |
 | Four distance presets | Per tier now, not per scenario (D252's shape) |
 | Badges, titles, flair, trophies | Scenario-linked records (D122); D107's flair overrides |
 | The collection reveal | Unlocking an Uma with an Uma Ticket |
+| **Uma Shards** | The normal unlock (D336): each scenario gate an Uma reaches pays 1 Shard, 5 make an Uma Ticket. Gates come once per scenario per tier now, and tickets unlock into tier 1 only ([04](04-tiers-and-promotion.md) §6) |
 
 ## 3. Changes to the re-architecture decisions
 
@@ -83,7 +83,7 @@ they're deleted. The order becomes:
 | **1** | A sound base: the API on the workspace domain, budgets enforced, the live manual | Unchanged. **Can start now** (D335) |
 | **2** | **The rework's rules in the domain**, pure and tested, plus `sim:loop` passing [12](12-economy-and-pacing.md)'s checks. No UI, no save change, so the live game is untouched | **New.** Tiers, layers, sessions, bonds, the Farm catalogue, recipes, Prize Money, the Exchange |
 | **3** | **Clean slate and the new game.** Generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new screens as plain DOM pages: Stable, Training Hub places, Farm places, Warehouse, Exchange, Card Library, Racecourse with Prize Money, Scenario Gate. Collect all, Repeat, queues and the planner ship here | Was phase 2; now carries the new game. **The owner starts playing here** |
-| **4** | Push notifications for check-ins ([02](02-check-ins-and-notifications.md)): a `push/{uid}` Firestore collection, `/api/push/*` routes, one Cloud Scheduler job and one Secret Manager secret for the signing key, copied from uma-rpg's setup | **New.** Small; right after the new game so check-ins are comfortable early. Cloud Scheduler and Secret Manager are new to the racer's project: an iPhone Home Screen app can't schedule its own notices. Cost about $0 (a few cents at most). `docs/technical/infrastructure.md` lists them when it lands |
+| **4** | **Optional:** push notifications, a port of uma-rpg's D63/D65 setup with the racer's few changes ([02](02-check-ins-and-notifications.md) §7) | **New, and only if the owner asks** after playing the new game (D336). Nothing outside what uma-rpg already runs: the same Firestore collection, routes, Cloud Scheduler job and Secret Manager secret, set up with uma-rpg's script. About $0 |
 | **5** | Platform master data and the first shared packages | Was phase 3 |
 | **6** | The Hub: four pages, the place registry, art ([11](11-hub-and-places.md)) | Was phase 4, with the new place list |
 | **7** | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Was phase 5, now also the Training page |
@@ -110,6 +110,7 @@ large: about 89 foreign course layouts, so it should start as soon as phase 3 sh
 | Field | Value | Re-architecture plan said |
 |---|---|---|
 | Uma Tickets | **20** | 20 |
+| Uma Shards | 0; each scenario gate pays 1, and 5 make a ticket (D336) | Today's rule, renamed coupons |
 | Umas | None; the owner picks 20 | Same |
 | Cards | **No per-account card state.** Every SSR is open, and bonds live on each Uma | The starter set (94 cards) |
 | Card Coupons | **Gone** | 3 |
@@ -129,8 +130,8 @@ logs and operations in one sync lane. The kinds change:
 
 | Kind | Holds |
 |---|---|
-| `profile/main` | Prize Money, Uma Tickets, Uma Tickets bought from the Exchange so far, featured Uma, the planner's targets (up to five, in order), check-in times (up to four; default 08:00, 13:00, 22:30), Repeat's sizing setting, created at, `generation: 2` ([02](02-check-ins-and-notifications.md)) |
-| `umas/{outfitId}` | Tier, scenario, Racing Level and EXP, Farm Level and EXP, career, unlocks (constellation count, Inspiration slots and golds, Extra Stats nodes, active Extra nodes per preset), bonds, four presets (card set, assignments, loadout), lineage picks, her Expedition state (runs, each run's frozen pool, wins by race family; [10](10-expeditions.md)), promotion history |
+| `profile/main` | Prize Money, Uma Tickets, Uma Shards, featured Uma, the planner's targets (up to five, in order), check-in times (up to four; default 08:00, 13:00, 22:30), Repeat's sizing setting, created at, `generation: 2` ([02](02-check-ins-and-notifications.md)) |
+| `umas/{outfitId}` | Tier, scenario, Racing Level and EXP, Farm Level and EXP, career, unlocks (constellation count, Inspiration slots, uniques and golds, Extra Stats nodes, active Extra nodes per preset), bonds, four presets (card set, assignments, loadout), lineage picks, her Expedition state (runs, each run's frozen pool, wins by race family; [10](10-expeditions.md)), promotion history |
 | `buildings/{id}` | Each Farm building's and Training facility's level and slots |
 | `work/{outfitId}` | Her running job or session and its queue: kind, place, recipe or unlocks, batch size, reserved inputs, start time, Speed Tickets applied, her last job for Repeat, and a dropped queue with its reason until the owner acts on it |
 | `items/{itemId}`, `itemLedger` | The Warehouse |
@@ -165,7 +166,7 @@ materials and Energy.
 |---|---|
 | The rework's rules land in the domain before the wipe (new phase 2) | One wipe, into a save shape whose pacing the sim has already proved |
 | The new game ships on plain DOM screens first | The owner plays the new game sooner; the canvas Hub and scenes follow without a reset |
-| Push notifications right after the new game (phase 4) | Check-ins are the core rhythm; reminders matter more than art |
+| Push notifications are an optional port of uma-rpg's (phase 4) | The owner's rule (D336): nothing outside what uma-rpg already set up |
 | Expeditions get their own phase with a deadline | The first Umas reach them about 20 weeks after the new game starts |
 | PixiJS leaves in the cutover | The Puzzles are deleted with it, so D324's exception closes |
 | No per-account card state | Every card is open; bonds belong to Umas |
@@ -173,7 +174,7 @@ materials and Energy.
 ## 9. Done when
 
 - The phase table in `docs/rearchitecture/08-phases.md` matches §4, and that folder's README points here.
-- After phase 3, `git grep -i -E "puzzle|friendship|constellation level|training ticket|card coupon|shard|inspiration token"`
+- After phase 3, `git grep -i -E "puzzle|friendship|constellation level|training ticket|card coupon|inspiration token"`
   over `apps`, `packages` and `scripts` finds only the decisions log and this folder.
 - The new account on the owner's iPhone matches §5, and the save holds only §6's kinds.
 - `pixi.js` is not in any `package.json`.

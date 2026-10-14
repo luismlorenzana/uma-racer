@@ -35,9 +35,9 @@ This page tells the story and owns the **activity rule** (D328). The pages it li
 | **2 Craft** | Pantry | Same rule | 22.5 min an item (33.75) | 1 raw → 1 crafted item |
 | **3 Cook** | Kitchen | Same rule | 240 min a dish (330) | 4 crafted of the dish's family + 1 crafted side → 1 dish ([08](08-item-catalogue-and-recipes.md)) |
 | **4 Session** | The Training Hub facility the dish's family goes to ([05](05-training-hub.md)) | **The Uma who gets the unlock**, and only her | 180 min an unlock (315) | 1 dish → 1 unlock |
-| **5 Unlock** | Her build, for the rest of the tier (D328) | — | At Collect | A constellation node, an Inspiration slot or gold, an Extra Stats node, or a card bond |
+| **5 Unlock** | Her build, for the rest of the tier (D328) | — | At Collect | A constellation node, an Inspiration slot, inherited unique or gold, an Extra Stats node, or a card bond |
 | **6 Race** | The Racing page | Any Uma, at any time | ~1–2 minutes of the owner's time with skip | Racing EXP and Prize Money ([09](09-racing-rewards-and-exchange.md)) |
-| **7–8 Spend** | The Exchange | The owner | — | Prize Money → Speed Tickets (30 each), raw items, upgrades, Uma Tickets in tier 1 |
+| **7–8 Spend** | The Exchange | The owner | — | Prize Money → Speed Tickets (30 each), raw items, upgrades |
 
 - **A job or session runs 1–10 items or unlocks one after another**, so one tap can cover the gap to the next
   check-in or the night ([02](02-check-ins-and-notifications.md) §3).
@@ -85,74 +85,64 @@ always works.**
 
 ## 3. One Uma, one scenario
 
-A worked example with the draft numbers. Kitasan Black is in tier 1, scenario 1, on an account whose roster is
-already at 25 and working at the target pace: three check-ins a day at 08:00, 13:00 and 22:30
-([12](12-economy-and-pacing.md) §12), about 12–13 races a day across the roster, and no Speed Tickets.
+A worked example with the draft numbers. Kitasan Black is in tier 1, scenario 1, on an account working at the target
+pace: three check-ins a day and no Speed Tickets ([12](12-economy-and-pacing.md)). She's played the way the owner
+plays (D336): **train the layer first, then race the career.** Timings are rough on purpose; nothing in the game
+needs the owner to play at set times.
 
 ### Her layer
 
-Scenario 1's layer is **30 unlocks** (README). About half use grade-1 dishes and half grade-2
-([12](12-economy-and-pacing.md) §6):
+Scenario 1's layer is **32 unlocks** (README), roughly half at grade 1 and half at grade 2:
 
 | Unlock | Count | Facility | Dish family |
 |---|---|---|---|
 | Constellation nodes (tree of 12) | 12 | Observatory | Vegetables |
-| Inspiration parent slots | 2 | Lineage Hall | Mushrooms |
+| Inspiration: both parent slots, then both parents' inherited uniques | 4 | Lineage Hall | Mushrooms |
 | Extra Stats singles | 10 | Gym, one room per stat | One single per stat at grade 1 and at grade 2 (README map): two dishes from each of Sweets, Fruits, Fish, Nuts & Seeds and Herbs & Spices |
 | Card bonds | 6 | Dojo | Each card's family: e.g. 2 Speed (Sweets), 2 Stamina (Fruits), 1 Wit (Herbs & Spices), 1 Friend (Grains) |
 
-Her layer needs 30 dishes: 150 crafted items from 150 raw. That's about **504 Uma-hours** of somebody's work: 410
-hours of Farm work and **94 hours of her own sessions** ([12](12-economy-and-pacing.md) §5). The sessions are 15 at
-180 minutes (grade 1) and 15 at 195 (grade 2).
+Her layer needs 32 dishes: 160 crafted items from 160 raw. That's about **537 Uma-hours** of somebody's work: about
+437 hours of Farm work and **100 hours of her own sessions** ([12](12-economy-and-pacing.md) §5).
 
-### Her four weeks
+### Her month
 
-She works about 18 hours a day (75%). Over 28 days, that's about the 504 hours her own layer costs. She spends about
-**19% of it in her own sessions** and **81% on the Farm**, mostly on dishes for other Umas. Her own dishes come from
-whoever is free.
+She works about 18 hours a day (75%), so the 537 hours her layer costs take about four weeks. She spends about a fifth
+of it in her own sessions and the rest on the Farm, mostly on dishes for other Umas. Her own dishes come from whoever
+is free.
 
-| Days | Unlocks (of 30) | Her sessions | Races | Racing Level | Farm Level |
-|---|---|---|---|---|---|
-| 1–7 | 7: 3 nodes, 2 bonds, 1 parent slot, 1 Extra | ~21 h | 3: two EXP races, then her **Maiden G3** (won day 6) | 1 → 3; held at 2 until the G3 win | 1 → 3.5 |
-| 8–14 | 15: +3 nodes, 1 bond, 1 parent slot, 3 Extra | ~24 h | 3: two EXP races and the first **Trials G2** | 3 → 5; held at 5 | 3.5 → 6: **grade 2 opens** |
-| 15–21 | 22: +3 nodes, 2 bonds, 2 Extra | ~23 h | 4: the second G2 releases the hold; her first **Main G1** | 5 → 7 | 6 → 8.5 |
-| 22–28 | **30**: +3 nodes, 1 bond, 4 Extra | ~26 h | 4: G1s two and three | 7 → **10**, career complete | 8.5 → **11**: grade 3 opens |
-
-- **Racing EXP:** 1,800 a scenario, from about 14 races. Her six goal races are among them; the rest lift her level
-  ([03](03-uma-progression.md)). She races when her unlocks make her a favourite for the next goal, which is the
-  sim's racing policy.
-- **Farm EXP:** 1 a minute of Farm work and 2,400 a level, so her ~410 hours make about **10 levels**: Lv 1 → 11.
-  Grade 3 opens just as scenario 2 starts, by design ([12](12-economy-and-pacing.md) §6).
-- **Grades:** her grade-1 unlocks come first. Grade-2 dishes follow from about day 14, when grade 2 opens for the
-  average Uma; until then, Umas with a higher Farm Level cook them.
-- **The order of unlocks is the owner's choice.** This example front-loads nodes and bonds because they raise race
-  strength fastest, and leaves most Extra Stats singles for the second half. The planner suggests an order
-  ([02](02-check-ins-and-notifications.md) §6); nothing forces one.
-
-### A typical day: day 10
-
-Day 10: Farm Lv 4, 10 of 30 unlocks done, Racing Level 3, her first G2 not yet won.
-
-| Time | What happens |
+| Roughly | What happens |
 |---|---|
-| 22:30 the night before | Started **Gather Vegetables G1 ×6** at the Vegetable Garden: 6 × 90 min = 9 h, done 07:30 |
-| 08:00 check-in | **Collect all** takes her 6 Vegetables and 540 Farm EXP. Gold Ship cooked a Vegetable dish G1 overnight, so the summary lists her under "Dish ready". One tap starts **Observatory ×1** (3 h, done 11:00). The size picker showed ×2 ending 14:00, which would leave her free until 22:30, so ×1 was the better fit |
-| 11:00 | Session done; she is Ready (node 11 waits to be collected) |
-| 12:30, lunch | The owner races her in her **Trials G2**. The race collects node 11 first, so she runs with it. She wins: Prize Money 200 (draft) and Racing EXP. Her level can't pass 5 until her second G2 is won |
-| 13:00 check-in | Free. The planner's top suggestion for her is Fruits G1 for a Stamina dish. **Gather ×6** ends 22:00, which fits 22:30 |
-| 22:30 check-in | Collect 6 Fruits. **Cook Fruit dish G1 ×2** at the Kitchen (8 h, done 06:30). Its 8 crafted Fruits and 2 sides are reserved from the Warehouse at the start |
+| Week 1 | Farm work from the first hour. Her **Farm Level climbs fast**: 2–3 levels a day working without a break, 4–5 on a family that suits her running aptitudes ([07](07-farm.md) §3). Grade 2 opens in two or three days. Her first nodes, bonds and both parent slots land |
+| Weeks 2–3 | The bulk of the layer: the rest of her nodes and bonds, her parents' uniques, her Extra Stats. By the end of the month she's past Farm Lv 30, so she can make any grade the tier will ask of her for weeks |
+| Week 4 | The last unlocks. Her layer is done |
+| Then | The owner races her career: Maiden G3, both Trials G2s, then three G1s, plus the races that lift her Racing Level, about 14 in all. Fully trained, she's favoured in every one ([03](03-uma-progression.md) §9), so it's a racing session or two, not weeks |
 
-Her day: 20 hours working, 4 waiting for a check-in (83%), one race, one unlock, 2 dishes started for whoever needs
-them next. Her other ~14 races of the scenario fit around days like this one.
+- **Racing EXP:** 1,800 a scenario, from about 14 races ([03](03-uma-progression.md)). Racing is never blocked, so the
+  owner can also race her as unlocks land; she just wins less until her layer fills.
+- **Farm Level** is a quick climb, not a gate she waits on: every grade is open within about a month of a tier
+  ([12](12-economy-and-pacing.md) §6).
+- **The order of unlocks is the owner's choice.** The planner suggests one ([02](02-check-ins-and-notifications.md)
+  §6); nothing forces it.
+
+### A typical check-in day
+
+| When | What happens |
+|---|---|
+| The night before | She started **Gather Vegetables ×6** at the Vegetable Garden: about 9 hours, done by morning |
+| Morning check-in | **Collect all** takes her 6 Vegetables and her Farm EXP. Another Uma cooked a Vegetable dish overnight, so the summary lists her under "Dish ready". One tap starts an **Observatory** session sized to end before the next check-in |
+| Midday check-in | Collect the node. The planner's top suggestion for her is Fruits for a Stamina dish, so **Gather ×6**, sized to end by the evening |
+| Evening check-in | Collect the Fruits. **Cook ×2** at the Kitchen overnight, inputs reserved from the Warehouse at the start |
+
+Her day: working most of it, waiting a little for check-ins, one unlock and two dishes started for whoever needs them.
 
 ### Advancing
 
-On day 28 she reaches Level 10 with every career goal won, so her card shows **Ready to advance**. Advancing is free
+When her career is complete she sits at Racing Level 10, and her card shows **Ready to advance**. Advancing is free
 and explicit ([03](03-uma-progression.md), [13](13-removals-and-plan-changes.md)): she becomes Racing Level 11 in
-scenario 2, and its layer (26 unlocks, grades 3–4) opens. Her 30 scenario-1 unlocks stay for the whole tier (D328).
+scenario 2, and its layer (28 unlocks, grades 3–4) opens. Her scenario-1 unlocks stay for the whole tier (D328).
 
-- **Advancing needs her career, not her full layer.** If she wins her G1s with 26 of 30 unlocks, she can advance, and
-  the last 4 stay open. The planner keeps listing them under "from scenario 1" until they're done.
+- **Advancing needs her career, not her full layer.** If she wins her G1s before every unlock is done, she can
+  advance, and the rest stay open. The planner keeps listing them under "from scenario 1" until they're done.
 - **A layer doesn't expire.** Advancing early costs her nothing but strength in the next scenario's goal races.
 
 ## 4. The roster in rotation
@@ -168,7 +158,7 @@ On an average moment at the target ([12](12-economy-and-pacing.md) §3, §7):
 | Crafting at the Pantry | ~2 | Short items; batches of 10 and queues bridge the gaps |
 | Cooking at the Kitchen | ~4.5 | The Kitchen is the game's bottleneck building |
 | In her own session | ~4 | 20% of roster time |
-| Free until the next check-in | ~6 | The 25% that queues, Repeat and push notifications shrink |
+| Free until the next check-in | ~6 | The 25% that queues and Repeat shrink (and push, if the owner adopts it) |
 | **Racing** | any of them | About 12–13 races a day, none of which takes an Uma off her work |
 
 Per day that's **450 Uma-hours** of work and about **22 unlocks** finished roster-wide (more in scenario 1's cheap
@@ -187,9 +177,9 @@ The owner chooses; the planner suggests ([02](02-check-ins-and-notifications.md)
 
 | Uma | What changes |
 |---|---|
-| **Bought mid-tier** (tier 1, an Uma Ticket from the Exchange) | She starts at scenario 1, Racing Level 1, Farm Level 1. She can only work grade 1 until Lv 6, but the shared Warehouse often already holds her grade 1–2 dishes. Her floor is her own sessions: ~94 hours, about 5 days at 18 a day. A late Uma catches up fast while the roster cooks for her |
+| **Unlocked mid-tier** (tier 1, an Uma Ticket from Uma Shards) | She starts at scenario 1, Racing Level 1, Farm Level 1. Her Farm Level climbs fast (grade 2 in two or three days), and the shared Warehouse often already holds her grade 1–2 dishes. Her floor is her own sessions: ~100 hours, about 6 days at 18 a day. A late Uma catches up fast while the roster cooks for her |
 | **Promoted to tier 2** | She starts over at Racing Level 1 and Farm Level 1, grade 1 again ([04](04-tiers-and-promotion.md)). The Farm, the Warehouse and the buildings carry, and grades are the same in every tier, so tier-1 Umas' cooking feeds her too ([12](12-economy-and-pacing.md) §9) |
-| **Far ahead** | She can advance early (§3). Her next layer needs grades she may not have opened, so others cook for her, or she keeps farming the grades she has |
+| **Far ahead** | She can advance early (§3). Her next layer's grades are usually open already, since Farm Levels come fast; if not, others cook for her |
 | **Far behind** | The planner's automatic targets put her first (above), so the roster's free hands drift toward her dishes |
 | **On an empty Warehouse** (a fresh account) | All twenty Umas gather at once. The first grade-1 dish is ready about six hours in, and **the first unlock lands on the first evening** ([12](12-economy-and-pacing.md) §5). Racing is open from minute one |
 
@@ -229,9 +219,10 @@ the last session of a layer ([02](02-check-ins-and-notifications.md) §4). **Spe
 | **Week** | **21** | **~92 (about 13 a day)** | **~13,800** | **~460** | **~230 h (~7% of 3,150)** |
 
 - **The target holds without Speed Tickets** ([12](12-economy-and-pacing.md) §1). Tickets bought from target racing
-  bring a tier from ~20 weeks to ~18.8; heavy racing every day would bring it to ~16.5.
-- **Early in tier 1, Prize Money goes to Uma Tickets first.** Five of them, at the draft price, are about two weeks of
-  normal racing ([12](12-economy-and-pacing.md) §8). The roster grows from 20 to 25 by about week three.
+  bring a tier from ~21 weeks to ~19.6; heavy racing every day would bring it to ~17.2.
+- **Early in tier 1, Prize Money goes to upgrades first**: the Kitchen, Pantry and Vegetable Garden at Lv 2. Umas
+  aren't for sale (D336): the roster grows from Uma Shards as Umas reach their scenario gates, about 20 → 24 at the end
+  of scenario 1 ([12](12-economy-and-pacing.md) §9).
 - **A missed day costs time, never progress.** Work simply waits as Ready until the owner is back.
 
 ## 6. The tier arc
@@ -241,13 +232,13 @@ A tier is five scenarios, a World Expedition and a promotion. For a roster of 25
 
 | Roster weeks | Stage | Grades | Layer (unlocks) | How it feels |
 |---|---|---|---|---|
-| 0–4 | **Scenario 1** | 1–2 | 30 | Quick wins: the first unlock on the first evening, cheap nodes and bonds, the roster growing 20 → 25 |
-| 4–8 | **Scenario 2** | 3–4 | 26 | Parent golds. The first **Duo** nodes (grade 3) and a **Sun** node from a grade-4 Feast |
-| 8–12 | **Scenario 3** | 5–6 | 26 | Grandparent slots; more Duos (grade 5) and a Sun (grade 6). The build takes its shape |
-| 12–16 | **Scenario 4** | 7–8 | 22 | Fewer, dearer unlocks; Extra Stats capacity 26 |
-| 16–20 | **Scenario 5** | 9–10 | 22 | The full tier build: 126 unlocks, 28 nodes, 18 Inspiration, 62 Extra Stats nodes, 18 bonds |
-| 20–22 | **World Expedition** | — | — | Abroad: **8 distinct wins** from one region's race pool, about 15–25 races per Uma ([10](10-expeditions.md)). The Farm keeps running at home |
-| ~22 on | **Promotion** | 1 again | 30 | She moves to tier 2 and starts over. In tier 1, each promotion pays one Uma Ticket ([04](04-tiers-and-promotion.md)) |
+| 0–4 | **Scenario 1** | 1–2 | 32 | Quick wins: the first unlock on the first evening, cheap nodes and bonds, both parents and their uniques, Farm Levels climbing fast |
+| 4–8 | **Scenario 2** | 3–4 | 28 | Parent golds and the first grandparents. The first **Duo** nodes (grade 3) and a **Sun** node from a grade-4 Feast. The first Shards make the roster 24 |
+| 8–13 | **Scenario 3** | 5–6 | 26 | The last grandparents and two of their uniques; more Duos (grade 5) and a Sun (grade 6). The build takes its shape |
+| 13–17 | **Scenario 4** | 7–8 | 24 | Fewer, dearer unlocks; the last uniques and the first grandparent golds; Extra Stats capacity 26 |
+| 17–21 | **Scenario 5** | 9–10 | 22 | The full tier build: 132 unlocks, 28 nodes, 24 Inspiration, 62 Extra Stats nodes, 18 bonds |
+| ~18–22 | **World Expedition** | — | — | Abroad: **8 distinct wins** from one region's race pool, about 15–25 races per Uma ([10](10-expeditions.md)). The Farm keeps running at home |
+| ~21 on | **Promotion** | 1 again | 32 | She moves to tier 2 and starts over. In tier 1, each promotion pays one Uma Ticket ([04](04-tiers-and-promotion.md)) |
 
 **Tier 2 is the same loop in a stronger world.** Node values are ×1.25 (×1.5 in tier 3), fields are stronger and
 Expeditions add mechanics ([04](04-tiers-and-promotion.md), [10](10-expeditions.md)). The Farm takes the same time in
@@ -266,9 +257,9 @@ one time factor to change if it feels too long.
 | Which unlock a session makes: which node, which Inspiration pick, which Extra Stats node, **which card to bond** | **Collect all**: one tap claims every finished item and unlock |
 | Card sets, presets, active Extra Stats nodes ([05](05-training-hub.md), [06](06-cards-and-bonds.md)) | **Repeat**: one tap restarts every finished job and session with the same recipe and size, where the inputs allow |
 | Which races to run, and when | The **planner**: what each target still needs, cascaded to dishes, crafted and raw items, with stock and running work counted first |
-| How to spend Prize Money: Speed Tickets, Uma Tickets, raw items, upgrades | **Suggestions** for free Umas, which the owner starts with one tap |
+| How to spend Prize Money: Speed Tickets, raw items, upgrades | **Suggestions** for free Umas, which the owner starts with one tap |
 | What to sell | Collecting an Uma's finished unlocks before she races, or before she's moved |
-| When to advance a scenario, which Expedition to run, when to promote | **Push notifications** when Umas fall free ([02](02-check-ins-and-notifications.md) §7) |
+| When to advance a scenario, which Expedition to run, when to promote | **Push notifications** when Umas fall free, if the owner adopts uma-rpg's ([02](02-check-ins-and-notifications.md) §7) |
 
 **The game never spends for the owner.** It never buys or sells, never uses a Speed Ticket, and never advances or
 promotes an Uma by itself. Repeat and suggestions start work only on the owner's tap. A queue starting its next entry
@@ -294,7 +285,7 @@ is the one automatic start, and the owner set that up.
 - `pnpm sim:loop` passes [12](12-economy-and-pacing.md) §12's checks, and its report reproduces §4's rotation shares
   (sessions about 20% of roster time, about 22 unlocks a day) within its tolerances.
 - A domain test replays §3's Kitasan Black: a synthetic roster of 25 at three check-ins a day takes her through
-  scenario 1 in 24–32 days, with about 14 races, Racing Level 10, Farm Level 10–12 and all 30 unlocks.
+  scenario 1 in 24–32 days, with all 32 unlocks, then about 14 races to Racing Level 10, her Farm Level past 30.
 - Domain tests pin §2's table:
   - an Uma Free, Working or Ready can start a race;
   - a race collects her finished unlocks first;

@@ -15,15 +15,15 @@ family they take. Nothing here needs tokens, Constellation Level or a minigame, 
 | Facility | Unlocks | Dish family | Rooms and slots at Lv 1 | Unlocks per Uma per tier |
 |---|---|---|---|---|
 | **Observatory** | Constellation card nodes | Vegetables | 2 slots | 28 |
-| **Lineage Hall** | Inspiration: 2 parent slots, 4 grandparent slots, 12 gold skills | Mushrooms | 2 slots | 18 |
+| **Lineage Hall** | Inspiration: 2 parent slots, 4 grandparent slots, 6 inherited unique skills, 12 gold skills | Mushrooms | 2 slots | 24 |
 | **Gym** | Extra Stats nodes | Sweets (Speed), Fruits (Stamina), Fish (Power), Nuts & Seeds (Guts), Herbs & Spices (Wit); Duos; Feasts | 5 rooms, one per stat, 1 slot each | 62 |
 | **Dojo** | Card bonds ([06](06-cards-and-bonds.md) owns the rules) | By card type: the five stat families, and Grains for Friend and Group | 6 rooms, one per card type, 1 slot each | 18 (a pacing assumption, not a cap) |
-| **Tier** | | | | **126** |
+| **Tier** | | | | **132** |
 
 - **Observatory.** Opens the next card node of the Uma's constellation in breadth-first order (§4). It is the only
   place a node opens; there is no level-up sheet.
-- **Lineage Hall.** Opens Inspiration slots and the natural gold skills of whoever fills them (§5). Choosing who
-  fills a slot stays free and instant.
+- **Lineage Hall.** Opens Inspiration slots, then the inherited unique skill and the natural gold skills of whoever
+  fills them (§5). Choosing who fills a slot stays free and instant.
 - **Gym.** One room per stat, in ring order: Stamina, Wit, Power, Speed, Guts. A room takes its own stat's single
   nodes, any Duo that includes its stat, and any Sun (§6). So the Power–Speed Duo can go in the Power room or the Speed
   room, and a Feast can go in any room.
@@ -93,10 +93,11 @@ applied two Speed Tickets at 23:00, the three finishes would move to 00:30, 03:4
 - **A layer opens when she enters its scenario.** She can unlock anything in her current layer or any earlier layer of
   her tier, never a later one. An Uma in scenario 2 who skipped node 11 can still open it; she cannot open node 17.
   A later layer shows its items locked with "Opens in scenario 3 · Trackblazer".
-- **Each unlock has a fixed grade.** Scenario *s* of the tier uses grades **2*s*−1 and 2*s*** (README): its first half
-  at the lower grade, its second half at the higher, because an average Uma's Farm Level opens the higher grade
-  halfway through the scenario ([12](12-economy-and-pacing.md) §6). Bonds are the one exception: their grade follows the
-  card's era ([06](06-cards-and-bonds.md)).
+- **Each unlock has a fixed grade.** Scenario *s* of the tier uses grades **2*s*−1 and 2*s*** (README): roughly its
+  first half at the lower grade and its second half at the higher. Farm Levels come fast (all ten grades open within
+  about a month of a tier, [07](07-farm.md) §4), so the grade isn't waiting on Farm Level: it's the layer's rule, which
+  makes each scenario ask for its own two grades and spreads demand over the Farm. Bonds are the one exception: their
+  grade follows the card's era ([06](06-cards-and-bonds.md)).
 - **The grade is the dish's grade**, and it decides the session time. A higher-grade dish never stands in for a lower
   one: each unlock names one dish.
 
@@ -104,12 +105,12 @@ applied two Speed Tickets at 23:00, the three finishes would move to 00:30, 03:4
 
 | Scenario of the tier | Grades | Observatory | Lineage Hall | Gym | Dojo (pacing) | Total |
 |---|---|---|---|---|---|---|
-| 1 | 1–2 | 12 nodes: 6 at g1, 6 at g2 | 2 parent slots: 1 at g1, 1 at g2 | 10 singles: 5 at g1, 5 at g2 | 6 bonds | **30** |
-| 2 | 3–4 | 4 nodes: 2 at g3, 2 at g4 | 4 parent golds: 2 at g3, 2 at g4 | 10 singles (5 at g3, 5 at g4), 4 Duos at g3, 1 Sun at g4 | 3 bonds | **26** |
-| 3 | 5–6 | 4 nodes: 2 at g5, 2 at g6 | 4 grandparent slots: 2 at g5, 2 at g6 | 10 singles (5 at g5, 5 at g6), 4 Duos at g5, 1 Sun at g6 | 3 bonds | **26** |
-| 4 | 7–8 | 4 nodes: 2 at g7, 2 at g8 | 4 grandparent golds: 2 at g7, 2 at g8 | 10 singles (5 at g7, 5 at g8), 1 Sun at g8 | 3 bonds | **22** |
+| 1 | 1–2 | 12 nodes: 6 at g1, 6 at g2 | 2 parent slots at g1, 2 parent uniques at g2 | 10 singles: 5 at g1, 5 at g2 | 6 bonds | **32** |
+| 2 | 3–4 | 4 nodes: 2 at g3, 2 at g4 | 4 parent golds at g3, 2 grandparent slots at g4 | 10 singles (5 at g3, 5 at g4), 4 Duos at g3, 1 Sun at g4 | 3 bonds | **28** |
+| 3 | 5–6 | 4 nodes: 2 at g5, 2 at g6 | 2 grandparent slots at g5, 2 grandparent uniques at g6 | 10 singles (5 at g5, 5 at g6), 4 Duos at g5, 1 Sun at g6 | 3 bonds | **26** |
+| 4 | 7–8 | 4 nodes: 2 at g7, 2 at g8 | 2 grandparent uniques and 1 gold at g7, 3 grandparent golds at g8 | 10 singles (5 at g7, 5 at g8), 1 Sun at g8 | 3 bonds | **24** |
 | 5 | 9–10 | 4 nodes: 2 at g9, 2 at g10 | 4 grandparent golds: 2 at g9, 2 at g10 | 10 singles (5 at g9, 5 at g10), 1 Sun at g10 | 3 bonds | **22** |
-| **Tier** | | **28** | **18** (6 slots, 12 golds) | **62** (50 singles, 8 Duos, 4 Suns) | **18** | **126** |
+| **Tier** | | **28** | **24** (6 slots, 6 uniques, 12 golds) | **62** (50 singles, 8 Duos, 4 Suns) | **18** | **132** |
 
 ### Constellation nodes: grade per node
 
@@ -133,15 +134,19 @@ Each slot has two natural-gold positions, **gold 1** and **gold 2**, in awakenin
 
 | Scenario | Lower grade | Higher grade |
 |---|---|---|
-| 1 | Slot A at **g1** (`dish-mushrooms-1`) | Slot B at **g2** (`dish-mushrooms-2`) |
-| 2 | A gold 1, B gold 1 at **g3** | A gold 2, B gold 2 at **g4** |
-| 3 | Slots A1, B1 at **g5** | Slots A2, B2 at **g6** |
-| 4 | A1 gold 1, B1 gold 1 at **g7** | A2 gold 1, B2 gold 1 at **g8** |
+| 1 | Slots A and B at **g1** (`dish-mushrooms-1`) | A's and B's uniques at **g2** (`dish-mushrooms-2`) |
+| 2 | A gold 1, A gold 2, B gold 1, B gold 2 at **g3** | Slots A1 and B1 at **g4** |
+| 3 | Slots A2 and B2 at **g5** | A1's and B1's uniques at **g6** |
+| 4 | A2's and B2's uniques, A1 gold 1 at **g7** | B1 gold 1, A2 gold 1, B2 gold 1 at **g8** |
 | 5 | A1 gold 2, B1 gold 2 at **g9** | A2 gold 2, B2 gold 2 at **g10** |
+
+That's **24 unlocks**: 6 slots, 6 inherited uniques (one per slot) and 12 gold positions (two per slot). The split
+across scenarios (4, 6, 4, 6, 4) is the one that keeps every scenario at about the same time
+([12](12-economy-and-pacing.md) §5).
 
 **Order:**
 - A grandparent slot needs its **parent's slot open** (D250). It need not be filled.
-- A gold position needs **its own slot open**. It need not be filled either: the position pays the gold of whoever
+- A **unique** needs **its own slot open**, and so does a gold position. Neither needs the slot filled: the position pays the gold of whoever
   fills the slot, now or later. The sheet warns when the Uma in the slot has no such gold ("this parent has one
   natural gold; gold 2 pays nothing until a parent with two fills slot A").
 - Gold 2 does not need gold 1, and B does not need A. Both sides grow at the same pace, so a single-side grandparent's
@@ -241,15 +246,17 @@ The pick rules stay exactly as D250 left them; only the **tokens are replaced by
   as runners, but every tier-1 Uma can still be a parent there. The Uma herself is never eligible.
 - **Repeat rules (D250):** the parents are different characters; a grandparent cannot be either parent or repeat a
   character on its own side; the same exact grandparent outfit may mirror once across sides.
-- **What a filled open slot pays:** her baseline whites and her unique in its inherited form. Her natural golds come
-  only through opened gold positions. A single-side grandparent's inherited unique and golds cost 2× SP; a mirror pays
+- **What a filled open slot pays:** her aptitudes and her baseline whites. Her **unique** comes, in its inherited form,
+  only once that slot's unique is opened, and her natural golds only through opened gold positions. So a lineage is
+  built in three steps: the slot, its unique, its two golds. A single-side grandparent's inherited unique and golds cost 2× SP; a mirror pays
   normal SP and counts twice for aptitudes.
 - **Aptitudes** use today's formula: steps = filled A/S slots − 1, capped at A, S never granted.
 - **Changing who fills a slot is free and instant** outside a race, and opened slots and gold positions stay open
   through any change.
-- **The layer order** (§3): s1 parent slots, s2 parent golds, s3 grandparent slots, s4 and s5 grandparent golds. So
-  aptitudes start moving in scenario 1 (two slots), and a full six-slot lineage arrives in scenario 3, when races start
-  asking for B-or-better aptitudes in more places.
+- **The layer order** (§3): scenario 1 opens the parents and their uniques, scenario 2 the parents' golds and the
+  first two grandparents, scenario 3 the last two grandparents and two grandparent uniques, scenario 4 the other two
+  uniques and the first golds, and scenario 5 the last golds. So aptitudes start moving in scenario 1, and a full
+  six-slot lineage arrives in scenario 3, when races start asking for B-or-better aptitudes in more places.
 
 The Twinkle Legends' **Legends** buff (a slot may hold any Uma, owned or not) is [04](04-tiers-and-promotion.md)'s.
 
@@ -364,9 +371,10 @@ lower grade, as [12](12-economy-and-pacing.md) does; most are grade 1, so it is 
 - **The Observatory is the one facility that needs Lv 2 for 25 Umas.** Scenario 1 is front-loaded with 12 nodes, and on
   a new account the whole roster is in scenario 1 together. At 2 slots, 25 Umas would hold it at 93% for the first four
   weeks, past the sim's 90% ceiling ([12](12-economy-and-pacing.md) §12). Its Lv 2 costs grade-1 items, so it is
-  buyable on day one, alongside the Uma Tickets that grow the roster. Tiers 2 and 3 fill one promotion at a time, so
+  buyable on day one, as the roster grows from its first Uma Shards. Tiers 2 and 3 fill one promotion at a time, so
   this peak happens once.
-- **The Lineage Hall's 2 slots** stay under half use; one slot would sit at the limit in scenarios 4 and 5.
+- **The Lineage Hall's 2 slots** stay under about two-thirds use with Inspiration's 24 unlocks a tier (D336); one
+  slot would bottleneck in scenarios 2 and 4, which carry six each.
 - **The Gym's rooms** carry 50–78% in its busiest scenarios: the room's own singles plus its share of Duos and Suns.
 - **The Dojo's rooms** are almost idle on average. Six rooms exist for theme and so that several Umas bond at once at
   the start of a tier, when everyone needs six bonds.

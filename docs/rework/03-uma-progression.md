@@ -104,10 +104,10 @@ Racing Levels **10(*s* − 1) + 1 … 10*s*** of the tier. The full map, with th
 
 | *s* | Racing Levels | Tier 1 (T) | Tier 2 (T) | Tier 3 (T) | Layer adds ([05](05-training-hub.md)) |
 |---|---|---|---|---|---|
-| 1 | 1–10 | URA Finale (1) | Project L'Arc (6) | Design Your Island (11) | 30 unlocks, tree of 12 |
-| 2 | 11–20 | Unity Cup (2) | U.A.F. Ready GO! (7) | Yukoma Hot Springs (12) | 26, tree of 16 |
+| 1 | 1–10 | URA Finale (1) | Project L'Arc (6) | Design Your Island (11) | 32 unlocks, tree of 12 |
+| 2 | 11–20 | Unity Cup (2) | U.A.F. Ready GO! (7) | Yukoma Hot Springs (12) | 28, tree of 16 |
 | 3 | 21–30 | Trackblazer (3) | Great Food Festival (8) | Beyond Dreams (13) | 26, tree of 20 |
-| 4 | 31–40 | Our Grand Concert (4) | Run! Mecha Umamusume (9) | Tracen Diner (14) | 22, tree of 24 |
+| 4 | 31–40 | Our Grand Concert (4) | Run! Mecha Umamusume (9) | Tracen Diner (14) | 24, tree of 24 |
 | 5 | 41–50 | Grand Masters (5) | The Twinkle Legends (10) | Japan's 15th (15) | 22, tree of 28 |
 
 **What the scenario she is in decides:**
@@ -198,8 +198,8 @@ ten Extra Stats singles are two per stat.
 | **Unity Cup on arrival** (12 of 16 nodes, node 212, cards one era old at 95%, Team Spirit +4%) | 693 | 601 | 643 | 517 | 433 | 577 | 1,632 |
 | Unity Cup, layer 2 done (four nodes to the stat cards, 18 Extra Stats active) | 963 | 871 | 892 | 600 | 600 | 785 | 1,872 |
 
-On arrival she beats Unity Cup's Debut, OP and G3 fields (about 418, 454 and 484 a stat) but not its G1 field (about
-616). Layer 2 makes her a G1 favourite again. Fields are in §9.
+On arrival she's ahead of Unity Cup's lower grades but not yet ready for its G1s. Layer 2 makes her a G1 favourite
+again. Fields are today's (§9).
 
 ### The Advance sheet
 
@@ -207,7 +207,7 @@ Opened from her profile or the Scenario Gate. It shows:
 - **The move:** "URA Finale → Unity Cup", with both crests and "Racing Lv 10 → 11".
 - **Stats before and after** for the selected preset: the five stats, SP and the new caps. A tab per preset.
 - **The new layer** as counts: "4 constellation nodes · 4 Inspiration golds · 15 Extra Stats nodes · 3 bonds".
-- **Unfinished earlier unlocks**, if any: "Layer 1: 26 of 30. The rest stay open."
+- **Unfinished earlier unlocks**, if any: "Layer 1: 28 of 32. The rest stay open."
 - **The new buff**, in one line, and **the new career**: her G3, two G2s and three G1s, by name.
 - **Free.** Nothing is spent.
 - **Buttons:** Advance, or Not yet.
@@ -361,80 +361,32 @@ nodes never changes a total (D126).
 `pnpm sim:constellation` re-runs the stamina ladder on the new trees: every distance's deck must still hold a full
 spurt at every T. The Extra Stats now carry 200–900 points instead of 240, which is more room for stamina.
 
-## 9. Racing difficulty in the layered model
+## 9. Racing difficulty: unchanged
 
-Today rivals are **a typical trained Uma of her scenario**, handicapped by the race's grade (D152, D159, D191). That
-stays, restated for layers.
+The owner's rule (D336): **don't touch the handicaps.** Rivals are built exactly as today (D152, D159, D191): **a
+typical trained Uma of her scenario**, handicapped by the race's grade.
 
-**The typical trained Uma of scenario T** is what every rival preset builds on: the grade fields here and the
-Expedition fields of [10](10-expeditions.md). She has every layer of her tier up to *s* done:
-- all *N* card nodes open, filled by six bonded **current-era cards at full value** (no stars exist), one of them a
-  Friend card on its fair share, whose nodes pay SP;
-- the scenario's full active Extra Stats, E(*t*, *s*);
-- the median base stat (110) and no growth;
-- the scenario's typical buff ([04](04-tiers-and-promotion.md) §8).
+| Grade | Handicap | Rivals race at |
+|---|---|---|
+| Debut, Maiden | 35% | 65% of a trained Uma |
+| Pre-OP, OP | 30% | 70% |
+| G3 | 25% | 75% |
+| G2 | 15% | 85% |
+| G1 | 5% | 95% |
 
-```
-trainedStat(T) = (110 + ((N − ceil(N/6)) × nodeValue(T) + E(t, s)) / 5) × (1 + typical buff)
-fieldStat(T)   = min(trainedStat(T′) for T′ = T … 15)                            D191, now over 15 scenarios
-```
-
-**The rebase.** Today's rivals carry a 2★ set at 84% a node (`TYPICAL_CARD_STARS = 2`, D200). Stars are gone, so the
-typical Uma now pays 100%, and `trainedStat` rises about 12%:
-- **Before the buff,** it is 716 a stat in URA Finale, rising to 1,077 in the 15th
-  ([04](04-tiers-and-promotion.md) §7). Today's run 650 to about 925.
-- **The grade handicaps absorb the rise** so the field on the track stays as strong as today's. Starting values, each
-  today's share × 0.88:
-
-| Grade | Handicap today | **Starting handicap** | Rivals race at |
-|---|---|---|---|
-| Debut, Maiden | 35% | **43%** | 57% of the typical Uma |
-| Pre-OP, OP | 30% | **38%** | 62% |
-| G3 | 25% | **34%** | 66% |
-| G2 | 15% | **25%** | 75% |
-| G1 | 5% | **16%** | 84% |
-
-The handicaps stay the owner's lever (D159): a harder G1 is still a one-line change. Unity Cup's fields, for example,
-come out at about 418 (Debut), 454 (OP), 484 (G3), 550 (G2) and 616 (G1) a stat.
-
-### Rookie fields: a tier's first scenario
-
-In scenario 1 of a tier the Uma arrives with nothing: new to the game, or just promoted. Against a full-layer Debut
-field (about 408 a stat) her base stats of about 110 could not win for her first week or so. Racing would be open but
-pointless, and the owner's first day with the new game would have no wins.
-
-**So in a tier's first scenario, Debut and Maiden races field newcomers:**
-- rivals use `fieldStat` = the median base stat (110);
-- with no handicap;
-- every other grade uses the full-layer field.
-
-What that does:
-- A brand-new Uma is at par on day one and wins some debuts.
-- Her first bonds and nodes make her the favourite.
-- She can't run ahead of her training on them: the Maiden hold at Racing Level 2 waits for a G3, and that needs about a
-  half of her layer.
-
-From scenario 2 on she arrives with 73–88% of the full build, which already beats Debut, Maiden and OP fields, so no
-exception is needed.
-
-### The target, and what the sim re-tunes
-
-| Build, in scenario *s* | Debut/Maiden | OP | G3 | G2 | G1 |
-|---|---|---|---|---|---|
-| Fresh, scenario 1 of a tier (rookie fields) | Contests | Loses | Loses | Loses | Loses |
-| Arrival build (layers 1 … *s* − 1 done) | Wins | Wins | Mostly wins | Contests | Loses |
-| Full layer *s* | Wins | Wins | Wins | 90%+ | A real contest it is favoured in: **60–100%** best case across strategies |
-
-`pnpm sim:careers` and `pnpm sim:balance` re-tune, in this order:
-1. **`trainedStat`:** the rebased typical Uma above: the new tree sizes, node values with the E term
-   ([04](04-tiers-and-promotion.md) §7), Extra Stats at capacity instead of 240, cards at 100%, full Race Bonus, and
-   the typical buff re-measured for every revised buff.
-2. **The grade handicaps**, from the starting values above, until a full-layer build meets the table. The G1 handicap
-   is set last, as the owner's lever (D159).
-3. **Rookie fields:** a base-stat Uma wins 5–25% of rookie Debuts. A rookie with three bonds and three nodes wins
-   more than half.
-4. **The stamina ladder** (§8) and **the Expedition shares** ([10](10-expeditions.md)), which apply to the same
-   rebased typical Uma of the tier's last scenario.
+- **The rival formula doesn't change either**, including its card factor. Today's typical Uma carries cards at 84% a
+  node (`TYPICAL_CARD_STARS = 2`, D200). The constant stays at 84% even though stars are gone for the owner: it's the
+  rivals' build, not a star. A fully trained Uma, whose cards now always pay 100%, keeps **exactly today's edge**: a
+  real contest at G1 that she's favoured in, and favoured below it.
+- **The typical Uma reads the new trees.** Her nodes come from the re-authored sizes (12–28) and their node values
+  ([04](04-tiers-and-promotion.md) §7), and her Extra Stats are the scenario's capacity. So rivals stay matched to
+  each scenario's budget, as today.
+- **Difficulty assumes a fully trained Uma.** The owner finishes the passive layer first and then races the career,
+  so the game is tuned for that and not for any timetable. An Uma can race at any point with whatever she has
+  unlocked. A brand-new or just-promoted Uma mostly loses until her first unlocks land, and that's expected.
+- `pnpm sim:careers` re-measures the typical Uma on the new trees and checks today's target: a fully trained build
+  wins the Maiden G3 and Trials G2s and is favoured in her G1s. The handicaps stay the owner's one-line lever (D159),
+  as today.
 
 ## 10. Edge cases
 
@@ -443,7 +395,7 @@ exception is needed.
    - Her first layer is the tier's cheapest (grade 1–2 dishes, [12](12-economy-and-pacing.md) §5), and the shared
      Warehouse often already holds them.
    - Her Inspiration slots take any Uma ever owned, so her parents are strong from the start.
-   - She races rookie fields at first (§9).
+   - She can race at once, though she mostly loses until her first unlocks land (§9).
    - Her Farm Level 1 limits only the jobs she runs herself. Other Umas cook her higher grades.
 
    With a 0-stock Warehouse she gathers grade 1 herself. Her first unlock then lands within about a day.
@@ -501,9 +453,8 @@ exception is needed.
 | Lineage picks stay per preset | A sprint preset's parents lift sprint aptitudes (D253) |
 | New Extra Stats capacity fills with bought-but-off nodes, oldest first | The advance never leaves capacity idle; switching stays free |
 | Baseline SP = 40% of the SP cap × open nodes ÷ tree nodes | Replaces CL's baseline; the Observatory pays SP as CL did |
-| Rivals rebased on the full-layer typical Uma with every card at 100%; D191's minimum over 15 scenarios | Stars are gone; the same definition serves grade fields and Expeditions ([10](10-expeditions.md)) |
-| Starting grade handicaps 43 / 38 / 34 / 25 / 16% (today's shares × 0.88) | The rebase lifts `trainedStat` about 12%; these keep the track as hard as today until the sim sets them |
-| Rookie fields (base stats, no handicap) for Debut and Maiden in a tier's first scenario | A fresh or promoted Uma can race meaningfully from day one; the Maiden hold stops her running ahead |
+| Rivals and grade handicaps exactly as today, including the rivals' 84% card factor; D191's minimum over 15 scenarios | The owner's rule (D336); a fully trained Uma keeps today's edge, and the same typical Uma serves the Expeditions ([10](10-expeditions.md)) |
+| Difficulty assumes a fully trained Uma; no special fields for new Umas | The owner trains first, then races (D336) |
 
 ## 12. Done when
 
@@ -519,5 +470,5 @@ exception is needed.
 - `deriveStats` has no star or CL input. A domain test pins §8's worked example, URA Finale's 800 + 1,200 SP, and the
   exact invariance (moving a card between nodes never changes a total).
 - `pnpm sim:careers` generates every career at all 15 scenarios. With full-layer builds, every Maiden G3 is won, the
-  Trials G2s at 90% or more, the Main G1s at 60–100% best case; and a base-stat Uma wins 5–25% of rookie Debuts.
+  Trials G2s at 90% or more, the Main G1s at 60–100% best case, with today's handicaps unchanged.
 - `pnpm sim:constellation`'s stamina ladder holds at every T on the new trees.

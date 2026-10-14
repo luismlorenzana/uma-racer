@@ -53,7 +53,7 @@ Two clarifications of the old plan:
 | Trainer button | The trainer's initial | Account | Never |
 | **Prize Money** | Balance, with its coin icon | Exchange | Never |
 | **Speed Tickets** | Count, with the ticket icon | Exchange, at the Speed Tickets row | Never (shows 0) |
-| **Uma Tickets** | Count | Stable, Locked tab | The balance is 0 **and** the Exchange's five are sold out ([09](09-racing-rewards-and-exchange.md) §5.4) |
+| **Uma Tickets** | Count, with the Uma Shards toward the next one ("2 · 3/5") | Stable, Locked tab | Never ([04](04-tiers-and-promotion.md) §6: Shards keep coming from every tier) |
 | **Sync** | Offline, Sync paused, or **Sync** in amber or red (D157) | Account, at the sync row | Synced |
 
 Numbers move with a CSS transition when they change (continuous HUD values never use springs). A race's prize flies
@@ -106,7 +106,7 @@ Page ids, routes and the order of swiping: `town`, `training`, `racing`, `farm`.
 |---|---|---|---|---|---|
 | **Stable** (`stable`) | The roster: Owned and Locked tabs with counts, tier badges (T1, T2, T3) on every tile, a tier filter, the shared picker's sorts and filters (D181). An Uma's profile: tier, scenario, Racing Level, Farm Level, what she's doing, her build per facility, **Needs** ([02](02-check-ins-and-notifications.md) §6), Skills, Racing. A locked Uma: **Unlock · 1 Uma Ticket** (tier 1, [04](04-tiers-and-promotion.md)), then the collection reveal | The featured Uma; "23 Umas · T1 21 · T2 2"; Umas ready to advance or promote; Uma Tickets in hand | Uma Tickets in hand | Open | `/stable`, Uma profile, skills; Home's featured hero |
 | **Warehouse** (`warehouse`) | Every item: Raw, Crafted, Dishes and Tickets shelves; family and grade filters; each row's reserved, coming and needed counts; the stock sheet with **Make more** and **Sell** ([07](07-farm.md) §10, [09](09-racing-rewards-and-exchange.md) §6) | The biggest stacks; what the planner is short of; "Surplus worth 1,240" | — | Open | `/farm/items` |
-| **Exchange** (`exchange`) | Speed Tickets, raw ingredients, Uma Tickets ([09](09-racing-rewards-and-exchange.md) §5) | Prize Money, Speed Tickets held, the next Uma Ticket's price, the planner's top shortage with its price | — (its currencies are in the account bar) | Open | Nothing (new) |
+| **Exchange** (`exchange`) | Speed Tickets and raw ingredients ([09](09-racing-rewards-and-exchange.md) §5) | Prize Money, Speed Tickets held, the planner's top shortage with its price | — (its currencies are in the account bar) | Open | Nothing (new) |
 | **Card Library** (`card-library`) | Every SSR, open (D329): lens and Uma controls, sorts, filters, the card page with its bond cost and bonded Umas, **Bond** into the Dojo's session sheet ([06](06-cards-and-bonds.md) §6) | The newest cards; bonds made this tier; cards the featured Uma could bond now | — | Open | `/cards`, `/cards/:cardId` |
 | **Account** (`account`, hidden) | Trainer name; check-in times and Notifications ([02](02-check-ins-and-notifications.md)); sync status and Sync now (D157); reduced motion and default race speed; build id and content version; sign-out; dev mode in dev builds only | — | — | Open; reached from the trainer button and the menu, not drawn on the map | `/settings` |
 
@@ -414,7 +414,7 @@ Shipping the routes and registry in phase 3, not 6, means links change once.
 | The floating pill (Collect all, or Check-in) on every page | A check-in works wherever the app opens |
 | `/` opens the Farm page when anything needs a tap, else the last page | Most visits are check-ins, and the Farm page's pips are the glance |
 | Counters on name pills and menu rows; currencies in the account bar | Clarifies the old plan's "Counter" |
-| The Uma Tickets chip hides at 0 once the Exchange's five are sold | Tier-1-only currency; frees space later |
+| The Uma Tickets chip always shows, with the Shards toward the next ticket | Umas come from progress (D336); the chip says how close the next one is |
 | The Expedition Map is open from day one | [10](10-expeditions.md)'s rule: it shows each Uma's distance to entry |
 | Per-Uma build views live at their facility (`/training/:facility/:umaId`) | Today's four Training-scene tabs map one to one onto the four facilities |
 | The planner's routes are `/town/stable/needs` and each profile's `/needs` | The planner is about Umas, so it lives with the Stable |

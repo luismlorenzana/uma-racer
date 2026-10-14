@@ -87,8 +87,8 @@ finished but not collected do not count as stock. So two devices, or a reload, a
 | Craft (refine) one | a quarter: 15–82.5 min | 6 → 6 in 6 hours | a quarter: 22.5–33.75 min |
 | Cook one | twice a raw: 120–660 min | 1–4 meals in 6 hours | 240 + 10(*g*−1): 240–330 min |
 | Grade 10 ÷ grade 1 | 5.5× | no grades (blocks of five scenarios) | 1.5× |
-| EXP | 2 a base minute; 1,440 → 2,160 a level | 12 a job; 24 a level | 1 a minute; 2,400 a level, flat |
-| Lv 1 → 50 | 735 hours of work | 98 jobs | 1,960 hours of work |
+| EXP | 2 a base minute; 1,440 → 2,160 a level | 12 a job; 24 a level | 1 a minute × aptitude; 480 → 720 a level |
+| Lv 1 → 50 | 735 hours of work | 98 jobs | 490 hours of work at C, 306 at A |
 
 - **uma-rpg's steep curve** fits a world map that gets harder continent by continent. Here every scenario should take
   about four weeks (D334). A grade-10 dish at 5.5× the cost of grade 1 would make scenario 5 three times slower than
@@ -97,18 +97,42 @@ finished but not collected do not count as stock. So two devices, or a reload, a
   every 90 minutes means every check-in collects something, and a 1–10 job can be sized to the next check-in or to the
   night ([02](02-check-ins-and-notifications.md)).
 
-## 3. Aptitudes don't change Farm speed
+## 3. Aptitudes speed Farm Levels, not jobs
 
-uma-rpg speeds farming by the Uma's Turf aptitude (S/A work at 50% of base time, G at 100%). **This game doesn't: every
-Uma works at the same speed.**
+The owner's rule (D336), as uma-rpg landed on it: **an Uma levels 2–3 Farm Levels a day, and 4–5 when her running
+aptitudes suit what she's making.** Each family is matched to one running aptitude, the four distances and the four
+running styles, so every Uma is good at something:
 
-| Option | For | Against |
+| Family | Aptitude that suits it | Why the pair |
 |---|---|---|
-| Turf aptitude speeds the Farm (uma-rpg) | A reason to pick who farms | Every Uma farms anyway (25 Umas × 80% of their time), so there is no choice to make, only a hidden ×2 that favours Turf rosters. It breaks the grade timing (§4): a Turf-A Uma would open grade 2*s* a week early and a Dirt Uma a week late |
-| A per-building aptitude (distance, style) | Flavour | Ten new rules to learn for a passive screen; the planner would have to route Umas by aptitude |
-| **No aptitude effect (chosen)** | The timer on screen is the timer for everyone; pacing and Farm Level timing hold for every Uma; aptitudes stay about racing | The roster choice has no Farm angle |
+| Sweets (Speed) | Sprint | Speed for the shortest races |
+| Fish (Power) | Mile | Power for the mile's push |
+| Herbs & Spices (Wit) | Medium | Wit for the tactical middle distances |
+| Fruits (Stamina) | Long | Stamina for the long races |
+| Nuts & Seeds (Guts) | End Closer | Guts to come from the back |
+| Grains (Skill: Friend and Group) | Pace Chaser | Runs with the pack, like a team card |
+| Vegetables (Constellation) | Front Runner | Leads the way, as the tree grows out from its root |
+| Mushrooms (Inspiration) | Late Surger | Grows in the shade and comes late, like a lineage |
 
-Roster choice already matters where the owner plays: races, careers and Expeditions. The Farm should be predictable.
+**Which aptitude counts:**
+- **Gathering** uses the site's family. The Pantry uses the family of the item being crafted.
+- **The Kitchen** uses the dish's family. A Duo or a Feast uses the best of its families.
+- Surface aptitudes (Turf, Dirt) aren't used. Most Umas are strong on one surface, which would split the roster in two
+  rather than give each Uma her own specialty.
+
+**What it changes: Farm EXP, not the job's time.** The aptitude multiplies the Farm EXP a job pays:
+
+| Her aptitude for the family | S | A | B | C | D | E, F, G |
+|---|---|---|---|---|---|---|
+| Farm EXP × | **1.8** | **1.6** | 1.2 | 1.0 | 0.9 | 0.8 |
+| Levels a day, working without a break, at Lv 1 → Lv 49 | 5.4 → 3.6 | 4.8 → 3.2 | 3.6 → 2.4 | 3.0 → 2.0 | 2.7 → 1.8 | 2.4 → 1.6 |
+
+"Working without a break" is how uma-rpg states its rates. A real Uma with check-in gaps does about 60% of it.
+
+uma-rpg speeds the job itself instead (S/A work at half time). The racer doesn't, for one reason: the four-week pace
+([12](12-economy-and-pacing.md)) then holds whoever is assigned where, and the timer on screen is the same for every
+Uma. The aptitude still gives the owner a reason to put the right Uma on the right site: she levels nearly twice as
+fast. The job sheet shows it beside each Uma ("Sprint A · Farm EXP ×1.6"), and the picker sorts suited Umas first.
 
 ## 4. Farm Level
 
@@ -116,8 +140,8 @@ Roster choice already matters where the owner plays: races, careers and Expediti
 |---|---|
 | **Range** | Lv 1–50 per Uma **per tier** (D327) |
 | **Source** | Farm work only: gathering, crafting and cooking. Training Hub sessions, races and Speed Tickets pay none |
-| **Rate** | **1 Farm EXP per listed minute** of each finished output (the §2 minutes, before building speed). Paid at collection |
-| **Curve** | **2,400 EXP per level, flat** (40 hours of work). Lv 50 is 117,600 EXP |
+| **Rate** | **1 Farm EXP per listed minute** of each finished output (the §2 minutes, before building speed) **× her aptitude for the family** (§3). Paid at collection |
+| **Curve** | Level *L* → *L*+1 costs **480 + 5(*L*−1)** EXP: 8 hours of work at Lv 1, 12 at Lv 49. Lv 50 is 29,400 EXP |
 | **Grade gate** | Grade *g* opens at **Lv 5*g* − 4**: 1, 6, 11 … 46. It gates every step: gathering and crafting grade *g*, and cooking a dish of grade *g* (the dish's grade, not its side's) |
 | **After Lv 46** | Lv 47–50 open nothing new; they complete the tier's Farm track. EXP stops counting at Lv 50 |
 | **Promotion** | Farm Level resets to 1 in the new tier ([04](04-tiers-and-promotion.md)). Items are not tied to a tier |
@@ -128,41 +152,30 @@ exactly 22.5; the screen shows whole numbers.
 
 ### When an average Uma opens each grade
 
-An average Uma works 75% of the day and puts 80% of that into the Farm: 14.4 hours, 864 EXP a day, a level every
-2.8 days ([12](12-economy-and-pacing.md) §6).
+An average Uma works 75% of the day and puts 80% of that into the Farm: 864 minutes a day
+([12](12-economy-and-pacing.md) §6). The day she reaches each grade:
 
-| Grade | Farm Lv | EXP | Day reached | Scenario of the tier using it ([12](12-economy-and-pacing.md) §5) |
-|---|---|---|---|---|
-| 1 | 1 | 0 | 0 | 1 (days 0–28), first half |
-| 2 | 6 | 12,000 | 14 | 1, second half |
-| 3 | 11 | 24,000 | 28 | 2 (28–55), first half |
-| 4 | 16 | 36,000 | 42 | 2, second half |
-| 5 | 21 | 48,000 | 56 | 3 (55–84), first half |
-| 6 | 26 | 60,000 | 69 | 3, second half |
-| 7 | 31 | 72,000 | 83 | 4 (84–111), first half |
-| 8 | 36 | 84,000 | 97 | 4, second half |
-| 9 | 41 | 96,000 | 111 | 5 (111–141), first half |
-| 10 | 46 | 108,000 | 125 | 5, second half |
-| (Lv 50) | 50 | 117,600 | 136 | end of the tier |
+| Grade | Farm Lv | EXP | At C (×1.0) | Mixed, well assigned (×1.3) | Always suited (×1.6) |
+|---|---|---|---|---|---|
+| 1 | 1 | 0 | day 0 | day 0 | day 0 |
+| 2 | 6 | 2,450 | 3 | 2 | 2 |
+| 3 | 11 | 5,025 | 6 | 4 | 4 |
+| 4 | 16 | 7,725 | 9 | 7 | 6 |
+| 5 | 21 | 10,550 | 12 | 9 | 8 |
+| 6 | 26 | 13,500 | 16 | 12 | 10 |
+| 7 | 31 | 16,575 | 19 | 15 | 12 |
+| 8 | 36 | 19,775 | 23 | 18 | 14 |
+| 9 | 41 | 23,100 | 27 | 21 | 17 |
+| 10 | 46 | 26,550 | 31 | 24 | 19 |
+| (Lv 50) | 50 | 29,400 | 34 | 26 | 21 |
 
-**It lines up with "scenario *s* uses grades 2*s*−1 and 2*s*" for a structural reason, not by luck.** The Farm work in
-one Uma's own layer is about 24,000 minutes, which is exactly ten levels:
+**Every grade is open within about a month of a tier**, while the tier's scenarios run about 21 weeks. So Farm Level
+is a fast climb at the start of each tier, and for an Uma who joins mid-tier, and never what holds a scenario back.
+Which grade each unlock asks for is a rule of the layers ([05](05-training-hub.md) §3), not of Farm Level.
 
-| Scenario | Unlocks | Farm work in her own dishes (min = EXP) | Levels | Farm Lv at its end |
-|---|---|---|---|---|
-| 1 | 30 | 24,600 | 10.3 | 11.2 |
-| 2 | 26 | 23,270 | 9.7 | 20.9 |
-| 3 | 26 | 25,469 | 10.6 | 31.6 |
-| 4 | 22 | 23,435 | 9.8 | 41.3 |
-| 5 | 22 | 25,304 | 10.5 | 50 (51.9 uncapped) |
-
-Computed with [08](08-item-catalogue-and-recipes.md)'s recipes and its representative deck. An Uma who does her own
-share of the roster's work lands on Lv 11, 21, 31 and 41 as scenarios 2–5 begin. The sim pins this: grade 2*s*−1
-reachable by an average Uma within ±5 days of scenario *s*'s start ([12](12-economy-and-pacing.md) §12).
-
-**Umas who drift.** An Uma who spends more of her time in sessions, or joined late, lags. She can still use
-higher-grade items: the Warehouse is shared, and anyone at a higher Farm Level can cook her dishes. An Uma bought
-mid-tier starts at Lv 1 in scenario 1, so her own unlocks need the grade-1 and grade-2 dishes she can make herself.
+**Umas who join late.** An Uma unlocked mid-tier starts at Farm Lv 1 in scenario 1, and her own first unlocks need the
+grade-1 and grade-2 dishes she can make at once. She reaches the top grades in three to five weeks, and meanwhile the
+shared Warehouse and higher-level Umas cover anything she can't make yet.
 
 ## 5. Workers
 
@@ -198,28 +211,31 @@ buildings: cooking is 30% of all Farm work, and Vegetables feed every constellat
 
 | Building | Hours a day, tier average | Slots needed, average | Peak (scenario) | Slots needed at peak | Use at peak, Lv 1 / Lv 2 |
 |---|---|---|---|---|---|
-| Kitchen | 105 | 5.8 | 109 (1) | 6.1 | 101% / **76%** |
-| Pantry | 51 | 2.8 | 51 (all) | 2.8 | 95% / **71%** |
+| Kitchen | 110 | 6.1 | 116 (1) | 6.4 | 108% / **81%** |
+| Pantry | 53 | 2.9 | 54 (all) | 3.0 | 100% / **75%** |
 | Vegetable Garden | 35 | 2.0 | 66 (1) | 3.7 | 92% / **73%** |
-| Fields | 23 | 1.3 | 34 (5) | 1.9 | 94% / 62% |
+| Fields | 25 | 1.4 | 36 (5) | 2.0 | 100% / 67% |
 | Sugar Grove | 24 | 1.3 | 31 (2) | 1.7 | 87% / 58% |
 | Orchard | 24 | 1.3 | 31 (4) | 1.7 | 86% / 57% |
 | Fishery | 24 | 1.3 | 30 (2) | 1.7 | 83% / 56% |
-| Mushroom Cave | 24 | 1.3 | 30 (4, 5) | 1.7 | 83% / 55% |
+| Mushroom Cave | 32 | 1.8 | 40 (2, 4) | 2.2 | 111% / **74%** |
 | Herb Garden | 25 | 1.4 | 29 (3) | 1.6 | 79% / 53% |
 | Nut Grove | 24 | 1.3 | 28 (3) | 1.6 | 78% / 52% |
-| **Farm** | **359** | **20.0** | | | |
+| **Farm** | **374** | **20.8** | | | |
+
+Re-estimated for D336's 24 Inspiration unlocks a tier (was 18): six more Mushrooms dishes per Uma per tier, each
+with a Grains side. The sim recomputes the whole table.
 
 How to read it:
 - **About 20 Umas farm at once** (25 × 80%), and 27 slots hold them from the first day.
 - **The Kitchen is the game's bottleneck building.** At 2 slots it would cap the whole game at a third of the target.
   Six slots carry a 20-Uma roster (81% at peak); the 25-Uma roster needs Kitchen Lv 2.
 - **The Vegetable Garden is the hot site.** Over a tier it carries 17% of all gathering against 11–12% for the
-  others; in scenario 1, where 12 of the 30 unlocks are constellation nodes, it carries 32%. Four slots carry a 20-Uma
-  start (73%); Lv 2 carries 25. [12](12-economy-and-pacing.md) §7 estimated 22% and 3 slots before 08 routed every
-  dish's side away from Vegetables; this table supersedes those two rows.
+  others; in scenario 1, where 12 of the 32 unlocks are constellation nodes, it carries about 30%. Four slots carry
+  a 20-Uma start (73%); Lv 2 carries 25.
 - **Fields is no longer cold.** 08's side rotation sends 62 of a tier's sides to Grains, so it is as busy as a stat site.
-- **Lv 1 fits a 20-Uma roster; Lv 2 everywhere fits 25** with every building under the sim's 90% check. Growing the
+- **Lv 1 fits a 20-Uma roster; Lv 2 everywhere fits 25** with every building at or under about 81% at peak, under
+  the sim's 90% check. Growing the
   roster and upgrading the Kitchen and Pantry go together in tier 1's first weeks.
 - Decks change site demand a little: a Speed-heavy deck adds about 3 Sweets dishes a tier. Lv 2's headroom covers it.
 
@@ -237,7 +253,7 @@ family, so they take one or two of each.
 | **All ten** | **14,100 PM** | **37,200 PM** |
 
 - **Lv 2 is buyable on day one** (grade-1 items), so the owner can keep up as the roster grows from 20 to 25.
-- **Lv 3 opens once someone reaches Farm Lv 11** (grade 3, about day 28). It pays back in six to ten days of the time
+- **Lv 3 opens once someone reaches Farm Lv 11** (grade 3, about day 4–6 of a tier). It pays back in six to ten days of the time
   it saves: ×1.25 saves a fifth of a building's work, which is ~21 Uma-hours a day at the Kitchen (~1,260 PM a day),
   ~10 at the Pantry, ~7 at the Vegetable Garden and ~5 at a stat site.
 - **All twenty upgrades cost 51,300 PM**, about four weeks of the target's racing (~1,900 PM a day, [12](12-economy-and-pacing.md) §3),
@@ -358,7 +374,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | Workers: an outfit holds one station until moved; a busy one waits for her claim | A slot is held by a job; Recall moves a busy Uma (§5) |
 | 6-hour jobs; raw yields 6; Workshop 6 → 6; Kitchen 1–4 meals | 1–10 outputs one after another, 22.5 to 330 minutes each (§2) |
 | Inputs frozen and spent at Start; a ready job waits for its claim | Inputs reserved at the start; finished outputs wait for Collect; Recall returns unused inputs |
-| 12 Farm EXP a claim, 24 a level, uncapped and never reset | 1 EXP a listed minute, 2,400 a level, Lv 1–50 per tier, reset at promotion (§4) |
+| 12 Farm EXP a claim, 24 a level, uncapped and never reset | 1 EXP a listed minute × aptitude, 480 + 5(*L*−1) a level, Lv 1–50 per tier, reset at promotion (§4) |
 | Ingredient blocks of five scenarios; personal Lv 1/51/101 | Grades 1–10 per tier, open at Lv 5*g* − 4 |
 | Account milestones: first worker at block Lv 6 opens processing, Lv 9 cooking | Gone: the Pantry and Kitchen are open from day one, gated by grade only |
 | 1,169 item definitions: 7 raw × 5 stats and 9 processed × 5 per scenario, 14 flavour rows | 160 items, 92 dishes and the Speed Ticket ([08](08-item-catalogue-and-recipes.md)) |
@@ -379,7 +395,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 
 | Choice | Why |
 |---|---|
-| **Aptitudes don't change Farm speed** | Every Uma farms anyway; a hidden ×2 would favour Turf rosters and break grade timing (§3) |
+| **Running aptitudes speed Farm Levels, not jobs** (§3): S ×1.8 … E–G ×0.8, one distance or style per family | The owner's 2–3 levels a day, 4–5 when suited (D336), while every job's timer stays the same for every Uma |
 | **Farm EXP per listed minute, paid at collection, in quarter points** | Farm Level measures work done; building speed and tickets bring it sooner without changing its meaning |
 | **Grade gate on every step; a dish gated by its own grade** | One rule; sides of lower grade never block a cook |
 | **Lv 47–50 open nothing; EXP stops at Lv 50** | Grade 10 opens at 46 by the README's formula; the last levels close the tier's track |
@@ -397,7 +413,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 
 - The domain's Farm rules have tests for: per-output timers at every grade and speed; reserve, collect and recall
   arithmetic (finished outputs paid, unmade inputs returned); queue start and drop in time order; Speed Ticket and
-  Finish; Farm EXP per listed minute and the 2,400 curve; the grade gate on each step.
+  Finish; Farm EXP per listed minute × aptitude and the 480 + 5(*L*−1) curve; the grade gate on each step.
 - A synthetic fresh account can assign, start, queue, speed up, recall, collect and upgrade through operations, and a
   second device shows the same jobs, stock and Farm Levels after one sync.
 - Closing the app for 12 hours and reopening shows every output and queue start exactly where the timestamps put them.

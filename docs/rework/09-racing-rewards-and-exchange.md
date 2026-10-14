@@ -194,10 +194,9 @@ Money; it doesn't buy (selling happens in the Warehouse, §6).
 |---|---|---|
 | **Speed Ticket** | 30 | None |
 | **Raw ingredient**, grade *g*, any family | 90 + 5(*g*−1): its gathering minutes | Grades up to the stock rule (§5.3); up to 99 a purchase |
-| **Uma Ticket** (brings an Uma into tier 1) | 3,000, rising 1,000 a ticket to a ceiling of 10,000 | None; hidden once every outfit is owned (§5.4) |
 | Building and facility upgrades | Bought at each building, priced in Prize Money (and items) by [05](05-training-hub.md) and [07](07-farm.md) | — |
 
-**Not sold, by decision:** crafted items, dishes, Racing EXP, bonds and unlocks. The Farm makes crafted items and
+**Not sold, by decision:** Uma Tickets (§5.4), crafted items, dishes, Racing EXP, bonds and unlocks. The Farm makes crafted items and
 dishes, and selling them would let racing skip the whole Farm chain, not just speed it up. Raw ingredients buy back
 gathering time only; crafting and cooking still take an Uma, and still pay her Farm EXP.
 
@@ -252,33 +251,13 @@ reaches Farm Lv 6.
   the hottest site, and buying its raw items is the relief valve when it falls behind
   ([08](08-item-catalogue-and-recipes.md) §7, [07](07-farm.md) §6).
 
-### 5.4 Uma Tickets (tier 1)
+### 5.4 Uma Tickets are not sold
 
-The roster starts at 20 and the target is 25 ([12](12-economy-and-pacing.md) §9). Each Uma Ticket the Exchange sells
-costs **1,000 more than the last, from 3,000, up to a ceiling of 10,000**. [04](04-tiers-and-promotion.md) §6 owns
-the tickets' rules: they only ever bring an Uma into tier 1 (what "tier 1 only" means), the Exchange always sells
-them, there is no roster cap, and promotions pay one each.
-
-| Ticket | Price | Spent so far | Days of target racing at 1,520 a day (20 Umas) | At 1,900 a day | Spending half on tickets, at 1,900 |
-|---|---:|---:|---:|---:|---:|
-| 1st (21st Uma) | 3,000 | 3,000 | 2.0 | 1.6 | 3.2 |
-| 2nd | 4,000 | 7,000 | 4.6 | 3.7 | 7.4 |
-| 3rd | 5,000 | 12,000 | 7.9 | 6.3 | 12.6 |
-| 4th | 6,000 | 18,000 | 11.8 | 9.5 | 18.9 |
-| **5th (25th Uma)** | 7,000 | **25,000** | 16.4 | **13.2** | 26.3 |
-| 6th, 7th | 8,000, 9,000 | 42,000 | | 22.1 | |
-| 8th and every later one | 10,000 | +10,000 each | | +5.3 each | |
-
-- **Five cost 25,000: about two weeks of normal racing**, or one week with a few heavy evenings. Spending half the
-  money on Speed Tickets meanwhile puts the 25th Uma near the end of week 4, as scenario 1 ends.
-- **No count cap, a price ceiling.** A cap of five (the target's 25) was considered, but 04 decided the Exchange always
-  sells and the roster has no cap, since slots are the real limit. So the cap is on the price: the climb makes a sixth or seventh
-  Uma a real choice in tier 1, and the 10,000 ceiling (about five days of target racing) keeps new outfits from later
-  platform releases affordable for good.
-- **The count is the account's for good**; it doesn't reset at promotion. Tickets a promotion pays don't move the price.
-- **When every outfit is owned**, the row hides ([04](04-tiers-and-promotion.md) §6).
-- **Buying asks once** ("Buy your 3rd Uma Ticket for 5,000?") and lands the ticket in the account bar; the Stable's
-  Locked tab spends it ([11](11-hub-and-places.md)).
+The owner's rule (D336): **Prize Money doesn't buy Umas.** The roster grows the normal way, as Umas progress through
+the scenarios: each scenario gate an Uma reaches pays 1 Uma Shard, 5 Shards make 1 Uma Ticket, and a promotion pays
+1 ([04](04-tiers-and-promotion.md) §6 owns the rules; [12](12-economy-and-pacing.md) §9 shows the roster over time).
+So racing's money goes to Speed Tickets, raw ingredients and upgrades, and the roster is a reward for progress, not a
+purchase.
 
 ### 5.5 The Exchange screen
 
@@ -286,7 +265,6 @@ them, there is no roster cap, and promotions pay one each.
 - **Speed Tickets:** ×1, ×10, ×50, or a typed amount; the total; Buy.
 - **Raw ingredients:** eight family tabs; one row per stocked grade with its icon (uma-art `items`), price, Warehouse
   count and planner badge; a quantity sheet (1–99).
-- **Uma Tickets:** the next price, and "2 bought · 18 outfits not yet owned".
 - **Links:** "Sell surplus → Warehouse" and "Upgrades are bought at each building".
 - **Buy** is disabled with "Need 120 more" when the balance is short. Any purchase of 1,000 or more asks once.
 
@@ -296,18 +274,17 @@ The one-off sinks, all bought with Prize Money (upgrades also take crafted items
 
 | Sink | Prize Money | Owner |
 |---|---:|---|
-| Five Uma Tickets (20 → 25 Umas) | 25,000 | §5.4 |
 | Farm upgrades to Lv 2 (ten buildings) | 14,100 | [07](07-farm.md) §7 |
-| Training Hub upgrades to Lv 2 (four facilities) | 7,500 | [05](05-training-hub.md) §7 |
-| Farm upgrades to Lv 3 (from grade 3, about day 28) | 37,200 | [07](07-farm.md) §7 |
-| Training Hub upgrades to Lv 3 | 18,000 | [05](05-training-hub.md) §7 |
-| **All of them** | **101,800** | |
+| Training Hub upgrades to Lv 2 (four facilities) | 6,100 | [05](05-training-hub.md) §7 |
+| Farm upgrades to Lv 3 (from grade 3, about day 4–6) | 37,200 | [07](07-farm.md) §7 |
+| Training Hub upgrades to Lv 3 | 10,700 | [05](05-training-hub.md) §7 |
+| **All of them** | **68,100** | |
 
-- **At target racing** (~1,900 a day) that's about **54 days**, nearly eight weeks. With two heavy evenings a week
-  (5 × 1,900 + 2 × 6,000 = 21,500 a week) it's under five weeks.
-- **So tier 1's first weeks spend racing on growth, not skips.** A sensible order: Uma Tickets with the Kitchen,
-  Pantry and Vegetable Garden at Lv 2 (07 notes a 25-Uma roster needs them), then the other Lv 2s, then Lv 3s once
-  grade 3 opens. The game suggests nothing here and never spends for the owner ([01](01-game-loop.md) §7).
+- **At target racing** (~1,900 a day) that's about **36 days**, about five weeks. With two heavy evenings a week
+  (5 × 1,900 + 2 × 6,000 = 21,500 a week) it's about three weeks.
+- **So tier 1's first weeks spend racing on growth, not skips.** A sensible order: the Kitchen, Pantry and
+  Vegetable Garden at Lv 2 (07 notes a 25-Uma roster needs them), then the other Lv 2s, then Lv 3s once grade 3
+  opens. The game suggests nothing here and never spends for the owner ([01](01-game-loop.md) §7).
 - **After that, Prize Money is mostly Speed Tickets and raw ingredients**, and buildings carry through promotion
   (D327), so tiers 2 and 3 start with every upgrade already bought.
 - [12](12-economy-and-pacing.md)'s target holds without Speed Tickets, so a month of money going into upgrades
@@ -387,7 +364,7 @@ A reload shows the stored result, its prize and band from the saved row, without
 |---|---|
 | **Offline** | Races, purchases, sales and Speed Tickets all work offline against the local save and sync later. The server re-runs each operation in commit order. With one device (the owner's case) its numbers equal the screen's |
 | **Two devices offline on the same day** | The server's commit order decides the purse; the second device's prize is recomputed at sync and the ledger shows the server's amount. Rare, and never more than the band difference |
-| **A stale Exchange screen** | A `buy` carries the unit price the screen showed (and, for an Uma Ticket, which ticket). If the price has changed (another device bought the 3rd ticket), the server refuses it with "Price changed", charges nothing, and the screen refreshes |
+| **A stale Exchange screen** | A `buy` carries the unit price the screen showed. If the price has changed, the server refuses it with "Price changed", charges nothing, and the screen refreshes |
 | **Short of money at the server** | Refused with nothing charged; the local purchase rolls back with a notice |
 | **A retried operation** | Returns its first receipt; nothing is charged or paid twice (§9) |
 | **Closing the app mid-race** | The result is settled when the race starts, as today, so quitting the playback can't change the prize or the purse. Reopening shows the result |
@@ -405,12 +382,12 @@ Generation 2's kinds ([13](13-removals-and-plan-changes.md) §6), with what this
 | Where | Field | Notes |
 |---|---|---|
 | `profile/main` | `prizeMoney` | Integer ≥ 0 |
-| `profile/main` | `umaTickets`, `umaTicketsBought` | The second sets the next Uma Ticket's price |
+| `profile/main` | `umaTickets`, `umaShards` | [04](04-tiers-and-promotion.md)'s; the Exchange never touches them |
 | `profile/main` | `purse: { day, gross, featuredPaid }` | `day` is `YYYY-MM-DD`; `gross` the day's gross prizes; `featuredPaid` the race ids whose bonus was paid today |
 | `profile/main` | `exchangeGrade` (1–10) | The stock rule's high-water mark |
 | `items/speed-ticket` | count | Speed Tickets are an item |
 | `raceResults` row | `prize: { gross, paid, band, expedition, featuredBonus }` | What the result screen shows on reload |
-| `ledger` (log) | `{ id, at, currency, delta, balanceAfter, reason, ref }` | Prize Money and Uma Ticket movements |
+| `ledger` (log) | `{ id, at, currency, delta, balanceAfter, reason, ref }` | Prize Money movements (and [04](04-tiers-and-promotion.md)'s Uma Ticket and Shard movements) |
 | `itemLedger` (log) | as today | Speed Tickets and items bought, sold and used |
 
 **Ledger reasons:** `race-prize`, `featured-bonus`, `buy`, `sell`, `upgrade` (with the building id), `promotion`
@@ -422,7 +399,7 @@ race result id, the operation id, the building.
 | Event | Ledger ids |
 |---|---|
 | A race's prize | `race:<resultId>:prize`, and `race:<resultId>:featured` for a bonus |
-| `buy { opId, sku, qty, unitPrice, ticket? }` | `buy:<opId>:pay` (Prize Money) and `buy:<opId>:get` (the item or Uma Ticket) |
+| `buy { opId, sku, qty, unitPrice }` | `buy:<opId>:pay` (Prize Money) and `buy:<opId>:get` (the item) |
 | `sell { opId, itemId, qty, unitPrice }` | `sell:<opId>:give` (the item) and `sell:<opId>:pay` (Prize Money) |
 | `speed-up { opId, outfitId, workStartedAt, tickets }` | `speed-up:<opId>` (the tickets). `workStartedAt` names the job, so a ticket meant for a finished job can't land on the next one |
 
@@ -446,9 +423,8 @@ race result id, the operation id, the building.
 | **Anti-grind is an account-wide Daily Purse in Prize Money**: full to 6,000, a quarter to 12,000, a twentieth beyond | Hits 7% / 22% / flat; robust to G1-only days; never zero; one bar to read. Per-Uma, per-race and first-win rules either punish career bursts or don't bound |
 | The purse touches Prize Money only, and sales don't fill it | EXP and goals are progression, never taxed; sales are already time-bounded |
 | Featured races ship in v1: 3 a day, first win pays the prize again, outside the purse | A daily goal for the racing mode, cheap to build, bounded at 600 |
-| The Exchange sells Speed Tickets, raw ingredients and Uma Tickets; not crafted items or dishes | Racing speeds the Farm up but never skips it |
+| The Exchange sells Speed Tickets and raw ingredients; not Uma Tickets, crafted items or dishes | Racing speeds the Farm up but never skips it; Umas come from progress (D336) |
 | Raw stock: grades up to the highest any Uma has ever opened | Never sells the unusable; never shrinks at promotion |
-| Uma Tickets: 3,000 rising by 1,000, price ceiling 10,000, no count cap | Five (to the target's 25) cost 25,000, about two weeks of normal racing; 04 rules out a roster cap, so the ceiling is on price and keeps later outfits affordable |
 | Speed Tickets: running timers only; Finish rounds up; skipped minutes still pay Farm EXP | uma-rpg's rules, which the owner already knows; a skip buys time, not less progress |
 | "Buy and finish" in one tap, with one confirmation | A free evening's money should reach the jobs without a trip to the Exchange |
 | Selling: a third of work value, rounded down; reserved stock never offered; dishes, needed stock and sales of 1,000+ confirm | No money pump; the planner protects what the roster still needs |
@@ -459,7 +435,7 @@ race result id, the operation id, the building.
 - `@racer/domain/economy` holds the prize table, the place shares, the Expedition rate, the purse bands, the
   featured draw, the Exchange prices, the stock rule and the sell rule, and tests pin each: a G3 5th pays 7; a G1 win
   at 5,900 gross pays 150; an Expedition win pays 450, and a second win of the same family on that run 300; the
-  2026-10-13 board is the same on every run; the 4th Uma Ticket costs 6,000 and the 12th 10,000; a grade-5 crafted
+  2026-10-13 board is the same on every run; a grade-5 crafted
   item sells for 45.
 - `pnpm sim:loop` with this page's rules passes [12](12-economy-and-pacing.md)'s checks: target racing saves 5–10%
   of the roster's time and heavy racing 18–25%.

@@ -21,7 +21,7 @@ This page fixes the structure now so that the large authoring job can happen lat
 | Choice | Any of the 13, in every tier. One active Expedition per Uma; any number of Umas on one Expedition |
 | Success | **8 distinct race families won** by this Uma from the Expedition's pool while she is on it |
 | Cost | None. No items, tickets or fees. Losing costs only the race |
-| Difficulty | Rivals race at **88% / 91% / 94%** of a trained Uma of the tier's last scenario (a home G1 at scenario 5: about 84%, [04](04-tiers-and-promotion.md) §7) |
+| Difficulty | Rivals race at **100% / 103% / 106%** of a trained Uma of the tier's last scenario (a home G1: 95%, today's handicap) |
 | Tier mechanics | Tier 2: home advantage, fuller fields, finals. Tier 3: adds the going and travel (engine v10) |
 | Rewards | Prize Money at 1.5× the G1 rate, an Expedition title, promotion (and one Uma Ticket from tier 1) |
 | Target | A fully trained Uma on an Expedition that suits her finishes in about **15–25 races**, about a week of her racing |
@@ -172,7 +172,7 @@ going, the time zone. So the owner learns three rule sets and seven flavours, no
 
 | | Tier 1 | Tier 2 | Tier 3 |
 |---|---|---|---|
-| Field strength (share of a trained Uma of the tier's last scenario) | **88%** | **91%** | **94%** |
+| Field strength (share of a trained Uma of the tier's last scenario) | **100%** | **103%** | **106%** |
 | Runners | 12 | 14 | The race's real field, up to 18 (Hong Kong 14) |
 | Local champions | One per race, at field strength | **Home advantage**; two in finals | As tier 2 |
 | Finals | Open | **Open after 4 wins** in the run | As tier 2 |
@@ -288,7 +288,7 @@ An Expedition changes three things: the **preset**, the **field size** and the *
 
 ```
 expeditionPreset(tier, distance, style) = rivalPreset(lastScenario(tier), EXPEDITION_SHARE[tier], distance, style)
-EXPEDITION_SHARE  = tier 1: 0.88 · tier 2: 0.91 · tier 3: 0.94       (a home G1 at scenario 5 is 1 − 0.16 = 0.84)
+EXPEDITION_SHARE  = tier 1: 1.00 · tier 2: 1.03 · tier 3: 1.06       (a G1's share is 1 − 0.05 = 0.95)
 localChampion     = expeditionPreset × (1 + HOME_ADVANTAGE[tier]), every stat rolled 90–100%
 HOME_ADVANTAGE    = tier 1: 0 · tiers 2–3: 0.05
 lastScenario(t)   = 5, 10, 15 (14 in tier 3 until the 15th ships)
@@ -301,14 +301,12 @@ the trained Uma it is built on for the rework, and each scenario's caps still bo
 no softer here: every Expedition race uses the Expedition share. The local grade reaches the engine only as its
 `grade` skill condition, with Listed read as OP.
 
-**Why these shares.** A fully bonded build wins 80–100% of today's G1s
-([difficulty target](../design/racing.md#difficulty-target)). The rework rebases the typical trained Uma to every card
-at full value (D329), and [04](04-tiers-and-promotion.md) §7's starting handicaps put a home G1 field at scenario 5 at
-about **84%** of her. The Expedition shares sit a step above that: 88% (+4 points), 91% (+7) and 94% (+10). With one
-local champion in 12 runners, tier 1 aims at about 45% a race; tiers 2 and 3 add strength, runners and mechanics for
-about 40% and 35%. A first draft here used 100 / 103 / 106% against the old 95% G1, which after the rebase would have
-been about 19 points above a home G1. The sim sets the shares, and each is a one-line change, like the grade
-handicaps.
+**Why these shares.** A fully bonded build wins 80–100% of today's G1s against fields at 95%
+([difficulty target](../design/racing.md#difficulty-target)). Rivals and handicaps stay exactly as today (D336,
+[03](03-uma-progression.md) §9), and a fully trained Uma in the rework carries every card at today's maximum (D329), so
+at 95% an Expedition would be a formality. At 100%, with one local champion in 12 runners, the draft aims at about 45%
+a race. Tiers 2 and 3 add strength, runners and mechanics for about 40% and 35%. The sim sets the shares, and each is a
+one-line change, like the grade handicaps.
 
 ### Targets
 
@@ -551,7 +549,7 @@ place. **Seven region crests**, for the Map pins and the champions' face rings, 
    **Rejected:** handicap weights, back-to-back fatigue, real-time season windows, per-final qualifier ladders.
 9. **Engine v10** adds optional going, weather and mood-shift inputs. Without them it is identical to v9. Only tier 3
    needs it.
-10. **Field strength** is 88 / 91 / 94% of a trained Uma of the tier's last scenario, one class for every Expedition
+10. **Field strength** is 100 / 103 / 106% of a trained Uma of the tier's last scenario, one class for every Expedition
     race. Local champions get +5% and a 90–100% roll at tiers 2–3, and one gold plus 3–7 whites.
 11. **Prize Money is 1.5× the G1 row** (450 / 180 / 90 at the README's drafts; [09](09-racing-rewards-and-exchange.md)
     owns it). **No Racing EXP** abroad, and no completion purse.
@@ -573,7 +571,7 @@ place. **Seven region crests**, for the Map pins and the champions' face rings, 
    page shows her fit, suits and best fit for every Expedition.
 3. Domain tests on synthetic Expeditions pin: the eight-win threshold; once per family; counting only for the run
    active at race start; frozen pools with additions merged in; switching that keeps wins; finals locked until four
-   wins at tiers 2–3; fields of 12 / 14 / real up to 18; shares 0.88 / 0.91 / 0.94; home advantage +5% with a 90–100%
+   wins at tiers 2–3; fields of 12 / 14 / real up to 18; shares 1.00 / 1.03 / 1.06; home advantage +5% with a 90–100%
    roll; and no Racing EXP.
 4. The eighth win completes the run in the same transaction as the result. A retried commit returns the stored ids
    with no second fanfare. Two devices' wins merge by family.

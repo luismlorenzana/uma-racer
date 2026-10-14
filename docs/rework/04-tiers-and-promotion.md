@@ -177,40 +177,41 @@ scenario 1 ([03](03-uma-progression.md)). Tiers 2 and 3 fill only by promotion.
 | Source of Uma Tickets | Amount |
 |---|---|
 | A new account | **20** (D323), ledger `initial-uma-tickets` |
-| The Exchange | Bought with Prize Money; the price ladder is [09](09-racing-rewards-and-exchange.md)'s (draft: 3,000, rising 1,000 a ticket) |
+| **Uma Shards, the normal unlock** (D336) | Each scenario gate an Uma reaches pays **1 Uma Shard**, once per Uma per gate per tier: Racing Level 10, 20, 30, 40 and 50 of her tier. **5 Shards make 1 Uma Ticket**, an explicit exchange in the Stable as today (ledger `uma-shard-exchange:{n}`) |
 | A promotion | **1**, ledger `promotion-uma-ticket:{umaId}:{tier}` |
 | Entering the Hall of Fame (§10) | **1**, under the same ledger id with tier 3 |
 
-- **Uma Shards are removed**, and so are gate-level shards. Uma Select Coupons are Uma Tickets under their new name
-  ([13](13-removals-and-plan-changes.md)).
-- **The Exchange always sells tickets.** They only ever bring an Uma into tier 1, which is what "tier 1 only" means.
+- **Uma Tickets are never sold** (D336). The roster grows as Umas progress through the scenarios, which is the game's
+  normal unlock. Uma Select Coupons are Uma Tickets under their new name ([13](13-removals-and-plan-changes.md)).
+- **Shards come from every tier.** A tier-2 or tier-3 Uma's gates pay Shards too, but the tickets they make only ever
+  bring an Uma into tier 1, which is what "tier 1 only" means. Every Uma pays about one ticket per tier she completes.
 - **No roster cap.** Building and facility slots are the real limit ([07](07-farm.md), [05](05-training-hub.md),
-  [12](12-economy-and-pacing.md) §7). An Uma beyond what the slots keep busy just waits for work.
+  [12](12-economy-and-pacing.md) §7). An Uma beyond what the slots keep busy just waits for work, and tickets never
+  expire, so the owner can hold them.
 - **Refilling is the owner's choice.** A promoted Uma pays the ticket that can replace her in tier 1. The planner shows
   idle Umas, and an idle Uma is the sign that the account has enough hands ([02](02-check-ins-and-notifications.md)).
-- **When every outfit is owned**, the Exchange hides the ticket, and a promotion's ticket waits for new outfits.
+- **When every outfit is owned**, tickets and Shards keep counting and wait for new outfits.
 
 ### The roster over time
 
 [12](12-economy-and-pacing.md)'s model: 25 Umas travel together, three check-ins a day, target racing.
 
-| Week of the new game | Tier 1 | Tier 2 | Tier 3 | Hall of Fame | Tickets earned so far |
+| Week of the new game | Tier 1 | Tier 2 | Tier 3 | Hall of Fame | Tickets so far |
 |---|---|---|---|---|---|
 | 0 | 20 | — | — | — | 20 at the start, all spent |
-| ~3 | **25** | — | — | — | +5 bought at the Exchange |
-| ~20 | 25, at scenario 5 | — | — | — | |
-| ~20–22 | 25 on Expeditions | — | — | — | |
-| ~22 | 0 (+ refills) | **25** | — | — | +25 from promotions |
-| ~42–44 | (refills) | 25 on Expeditions | — | — | |
-| ~44 | (refills) | 0 | **25** | — | +25 |
-| ~66 | (refills) | — | 0 | **25** | +25 |
+| ~4–5 | **24** | — | — | — | +4 from the first scenario gates' 20 Shards |
+| ~9 | ~28 | — | — | — | +4–5 a month from gates after that |
+| ~21 | 35–40 if every ticket is spent; the first 20 at scenario 5 | — | — | — | |
+| ~21–23 | The first 20 on Expeditions | — | — | — | |
+| ~23 on | The rest of tier 1, plus refills | The promoted, about 20 at first | — | — | +1 per promotion |
 
-- **Without refills** this is the sim's model and its ~66-week game.
-- **With refills** the account grows: 25 new tier-1 Umas at week 22 make 50, on the same Farm and Training Hub. The
-  refills speed the account up only as far as slots allow. Otherwise they share the slots with the promoted 25 and
-  stretch tier 2.
-- `pnpm sim:loop`'s 30-Uma variant measures the trade. The recommended practice is to refill as long as the planner
-  shows no idle Umas.
+Later tiers follow the same shape about 17–21 weeks apart ([12](12-economy-and-pacing.md) §10).
+
+- **Roster size doesn't change an Uma's four weeks** ([12](12-economy-and-pacing.md) §9): each Uma brings her own work
+  time. It changes how many Umas finish, as long as slots keep up. Lv 2 buildings carry about 25 Umas and Lv 3 about
+  30–32.
+- **Past that the Kitchen is the limit**, so the owner can hold spare tickets. `pnpm sim:loop`'s growing-roster
+  variant measures the trade. The recommended practice is to unlock as long as the planner shows no idle Umas.
 
 ## 7. Tier scaling
 
@@ -284,7 +285,7 @@ Why:
   every cap (D134), the stamina ladder holds, rival fields are set.
 - **Keeping 240 would drift.** The full build would grow to 64% of the budget by tier 1's scenario 5 and 67% by tier
   3's, and the drift grows with the tier. The fields, caps and ladder would all need retuning to follow it.
-- **Card nodes give up what the Gym adds.** Extra Stats are half of all unlocks (62 of 126), and E shifts the build's
+- **Card nodes give up what the Gym adds.** Extra Stats are nearly half of all unlocks (62 of 132), and E shifts the build's
   weight toward them as the layers grow.
 
 | T | Scenario | *N* | Per-card cap | Node, 240 term | E | **Node (decided)** | Full build *N* × node + E | 60% of budget |
@@ -315,39 +316,29 @@ Why:
 
 ### Rival strength
 
-Rivals build on **the typical trained Uma** of the scenario: her full layer, every card at 100% (rebased from today's
-2★, 84%), Extra Stats at capacity ([03](03-uma-progression.md) §9). `trainedStat` before the typical buff:
-
-| Tier | Scenario 1 | 2 | 3 | 4 | 5 | G1 field at scenario 5 (starting handicap 16%) |
-|---|---|---|---|---|---|---|
-| 1 | 716 | 733 | 752 | 802 | 823 | 691 |
-| 2 | 844 | 858 | 876 | 932 | 950 | 798 |
-| 3 | 970 | 982 | 1,000 | 1,062 | 1,077 | 905 |
-
-- **The ladder keeps its shape.** Today's `trainedStat` runs 650 (scenario 1) to about 925 (14). The rebase lifts it
-  about 12%, and [03](03-uma-progression.md) §9's starting handicaps (43 / 38 / 34 / 25 / 16%) bring the fields on the
-  track back to today's strength.
-- **A promoted Uma** meets a field (844) a little above the one she just left (823), with none of her build. Rookie
-  fields carry her first debuts ([03](03-uma-progression.md) §9).
-- `pnpm sim:careers` re-measures every cell once the buffs' typical values are known.
+Rivals are today's, unchanged (D336, [03](03-uma-progression.md) §9): **the typical trained Uma** of the scenario,
+with today's 84% card factor and Extra Stats at the scenario's capacity, handicapped by today's grade table (G1 at
+95%).
+- **The ladder keeps its shape.** Today's `trainedStat` runs 650 (scenario 1) to about 925 (14). The new trees keep
+  each scenario's budget at 60% of its caps, so the typical Uma stays near that range and extends to the 15th.
+  `pnpm sim:careers` re-measures every cell once the buffs' typical values are known.
+- **A promoted Uma** meets a field a little above the one she just left, with none of her build. She loses at first
+  and wins again as her new layer fills, the reset the owner asked for.
 
 ### Expedition difficulty
 
-Each tier's Expedition builds its fields on **the typical trained Uma of the tier's last scenario**, at
-[10](10-expeditions.md)'s share instead of a grade handicap:
+Each tier's Expedition builds its fields on **the typical trained Uma of the tier's last scenario** (today's
+`rivalPreset`), at [10](10-expeditions.md)'s share instead of a grade handicap:
 
-| Tier | Base (`trainedStat`) | Share ([10](10-expeditions.md)) | Field | A G1 field at home, for comparison |
-|---|---|---|---|---|
-| 1 | 823 (Grand Masters) | 88% | 724 | 691 |
-| 2 | 950 (The Twinkle Legends) | 91% | 865 | 798 |
-| 3 | 1,077 (the 15th); 1,062 (Tracen Diner) while tier 3 has four scenarios | 94% | 1,012; 998 | 905 |
+| Tier | Base | Share ([10](10-expeditions.md)) | Compared with a home G1 (95%) |
+|---|---|---|---|
+| 1 | Grand Masters' typical Uma | **100%** | 5 points harder |
+| 2 | The Twinkle Legends' | **103%** | 8 points harder |
+| 3 | The 15th's (Tracen Diner's while tier 3 has four scenarios) | **106%** | 11 points harder |
 
 The tier's mechanics, regional fields and local champions come on top, all [10](10-expeditions.md)'s.
-- **The shares sit a step above a home G1.** After the rebase, a G1 field at scenario 5 is about 84% of the base
-  (handicap 16%), so 88 / 91 / 94% is 4, 7 and 10 points above it. That's the step 10 intends. 10's first draft
-  (100 / 103 / 106% against the old 95% G1) was corrected to these.
-- **`pnpm sim:expeditions` tunes the shares** to 10's win-rate targets.
-- **This page fixes only the base**, so an Uma with her whole tier built is the Expedition's intended contender.
+`pnpm sim:expeditions` tunes the shares to 10's win-rate targets. This page fixes only the base, so an Uma with her
+whole tier built is the Expedition's intended contender.
 
 ## 8. Scenario buffs, reviewed
 
@@ -472,7 +463,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
    - In the new tier she bonds again, with the new tier's Dojo costs.
 3. **Promoting the last tier-1 Uma.** Allowed. Tier 1 is then empty, and nothing in the game needs a tier-1 Uma:
    - the Farm and Training Hub serve every tier;
-   - the Exchange still sells Uma Tickets;
+   - Shards from the other tiers keep making Uma Tickets;
    - the account always holds at least the ticket her promotion paid, so tier 1 can be restarted at once.
 4. **Promoting the featured Uma** keeps her featured. **Promoting a parent** changes nothing for the Umas whose lineage
    holds her, since slots reference her template.
@@ -499,9 +490,9 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 | Promotion is a separate, confirmed action with no deadline; Hall of Fame induction is automatic | A reset is the biggest event for an Uma; induction resets nothing |
 | Promotion needs her free: no running or queued job or session, nothing to collect. The sheet offers Collect, Recall or −30m | No job or session spans two tiers; nothing is reserved at promotion, so no inputs need rules ([07](07-farm.md) agrees) |
 | An open tier-3 Expedition stays open when the 15th lands, with fields built on the scenario she races as | Nobody is pushed back or loses a win |
-| Uma Tickets: 20 at start, the Exchange, 1 per promotion, 1 per Hall of Fame induction; no roster cap | Tier 1 is the only door; slots are the real limit |
+| Uma Tickets: 20 at start, Uma Shards (1 per gate, 5 per ticket), 1 per promotion, 1 per Hall of Fame induction; never sold; no roster cap | The owner's normal unlock (D336); tier 1 is the only door; slots are the real limit |
 | The node formula's 240 becomes the scenario's full active Extra Stats, E(*t*, *s*), [05](05-training-hub.md)'s extraBudget | Keeps the whole build at 60% of the cap budget, the basis of every balance target |
-| Rival strength tabled on the rebased typical Uma (every card at 100%); Expedition fields use the same base | One definition for grade fields and Expeditions ([03](03-uma-progression.md) §9, [10](10-expeditions.md)) |
+| Rivals and Expedition fields use today's typical Uma and today's handicaps, unchanged | The owner's rule (D336); a fully trained Uma keeps today's edge at home, and Expeditions sit a step above a home G1 |
 | Team Spirit +2% per filled Inspiration slot | A full Unity Cup build has only two slots |
 | Fragments: cards from era 4 or older pay +8% | Replaces a star rule; a real choice between old bonds and the newest era, with no new save field |
 | "Expedition" renamed **New Wave**, "Cooking" renamed **Full Course** | No collision with World Expeditions or the Kitchen |
@@ -522,7 +513,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 - `promote` resets exactly §4's left column and keeps the middle and right columns. It writes her tier history with
   every Expedition run's summary, clears her Expedition state, and pays one Uma Ticket once (a retry pays nothing). It
   starts her at the next tier's scenario 1 with a frozen career.
-- An Uma Ticket can only unlock an unowned Uma into tier 1, scenario 1. There are no Uma Shards anywhere.
+- An Uma Ticket can only unlock an unowned Uma into tier 1, scenario 1. Each scenario gate pays 1 Uma Shard once per Uma per tier, 5 Shards make a ticket, and no Prize Money path makes one.
 - The buff table in the domain matches §8 (names, rules, Encore), and every buff stays placement-invariant in tests.
   `pnpm sim:careers` reports each one's typical value, and rivals carry it.
 - A tier-3 Expedition success inducts the Uma in the same commit, pays a ticket, never resets her, keeps her

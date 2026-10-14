@@ -302,7 +302,7 @@ demand counts below: a scenario layer's first half takes grade 2*s*−1 and its 
 | Unlock | Dish |
 |---|---|
 | A constellation node | Vegetables planet dish of the layer's grade |
-| An Inspiration slot or gold skill | Mushrooms planet dish |
+| An Inspiration slot, inherited unique or gold skill | Mushrooms planet dish, at the grade [05](05-training-hub.md) §3 lists |
 | An Extra Stats single node (stat, grade *g*) | That stat's family planet dish at *g* |
 | A Duo node | Its Duo at grade 3 or 5 |
 | A Sun node | The Feast of its grade (4, 6, 8, 10) |
@@ -310,7 +310,7 @@ demand counts below: a scenario layer's first half takes grade 2*s*−1 and its 
 
 ## 7. Demand over a tier
 
-One Uma's tier is **126 unlocks** (README): 28 constellation nodes, 18 Inspiration, 50 Extra Stats singles, 8 Duos, 4
+One Uma's tier is **132 unlocks** (README): 28 constellation nodes, 24 Inspiration, 50 Extra Stats singles, 8 Duos, 4
 Suns and 18 bonds. Bonds depend on her deck; the **representative deck** here has 3 bonds of each type (Speed,
 Stamina, Power, Guts, Wit, Friend/Group).
 
@@ -319,7 +319,7 @@ Stamina, Power, Guts, Wit, Friend/Group).
 | Family | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Total |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Vegetables | 6 | 6 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | **28** |
-| Mushrooms | 1 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | **18** |
+| Mushrooms | 2 | 2 | 4 | 2 | 2 | 2 | 3 | 3 | 2 | 2 | **24** |
 | Sweets | 2 | 1 | 2 | 1 | 1 | 1 | 2 | 1 | 1 | 1 | **13** |
 | Fruits | 2 | 1 | 2 | 1 | 1 | 1 | 2 | 1 | 1 | 1 | **13** |
 | Fish | 2 | 1 | 1 | 2 | 1 | 1 | 1 | 2 | 1 | 1 | **13** |
@@ -328,7 +328,7 @@ Stamina, Power, Guts, Wit, Friend/Group).
 | Grains | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | **3** |
 | Duos | | | 4 | | 4 | | | | | | **8** |
 | Feasts | | | | 1 | | 1 | | 1 | | 1 | **4** |
-| **All** | | | | | | | | | | | **126** |
+| **All** | | | | | | | | | | | **132** |
 
 ### Crafted items, per Uma per tier
 
@@ -340,16 +340,17 @@ Stamina, Power, Guts, Wit, Friend/Group).
 | Fruits | 13 | 5 | 12 | 7 | 8 | 7 | 9 | 5 | 4 | 5 | **75** | 60 | 15 |
 | Fish | 11 | 5 | 8 | 11 | 10 | 6 | 5 | 9 | 4 | 5 | **74** | 64 | 10 |
 | Nuts & Seeds | 10 | 9 | 8 | 6 | 11 | 6 | 5 | 6 | 8 | 5 | **74** | 60 | 14 |
-| Grains | 18 | 9 | 10 | 5 | 4 | 9 | 4 | 11 | 0 | 4 | **74** | 12 | 62 |
-| Mushrooms | 4 | 4 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | **72** | 72 | 0 |
-| **All** | | | | | | | | | | | **634** | 508 | 126 |
+| Grains | 22 | 9 | 10 | 5 | 5 | 10 | 4 | 11 | 0 | 4 | **80** | 12 | 68 |
+| Mushrooms | 8 | 8 | 16 | 8 | 8 | 8 | 12 | 12 | 8 | 8 | **96** | 96 | 0 |
+| **All** | | | | | | | | | | | **664** | 532 | 132 |
 
 **What the rotation does.** With the obvious rule, "the side is the next family on the ring", Mushrooms would need
-100 a tier and Grains 37: a 3× spread between the busiest and the idlest site. With §4.2's rotation, seven families
-land between 72 and 77. Grains goes from the coldest family to an ordinary one: 62 of the tier's 126 sides are bread.
+a lot more than Grains: a 3× spread between the busiest and the idlest site. With §4.2's rotation, the five stat
+families land between 74 and 77 and Grains at 80: it goes from the coldest family to an ordinary one, since 68 of the
+tier's 132 sides are bread. Mushrooms is 96, because Inspiration is 24 unlocks a tier (D336).
 
-**The flag: Vegetables.** At 112 a tier Vegetables is 1.5× any other family, and in scenario 1, where 12 of 30
-unlocks are constellation nodes, it is **32% of all crafted demand** (48 of 150). Sides can't fix it: they only add
+**The flag: Vegetables.** At 112 a tier Vegetables is the busiest family, and in scenario 1, where 12 of 32 unlocks
+are constellation nodes, it is **30% of all crafted demand** (48 of 160). Sides can't fix it: they only add
 demand, and none goes to Vegetables. It is handled where it lands:
 - the **Vegetable Garden has more slots** than the other sites (4 → 5, [07](07-farm.md) §6);
 - the **Exchange sells raw Vegetables** for Prize Money ([09](09-racing-rewards-and-exchange.md)), a relief valve in a
@@ -361,14 +362,14 @@ demand, and none goes to Vegetables. It is handled where it lands:
 
 | Scenario | Crafted items | Vegetables | Mushrooms | Grains | Each stat family |
 |---|---|---|---|---|---|
-| 1 | 150 | 32% | 5% | 12% | 9–11% |
-| 2 | 131 | 12% | 12% | 7% | 11–15% |
+| 1 | 160 | 30% | 10% | 13% | 8–10% |
+| 2 | 141 | 11% | 17% | 8% | 10–14% |
 | 3 | 131 | 12% | 12% | 15% | 11–14% |
-| 4 | 111 | 14% | 14% | 8% | 10–15% |
+| 4 | 121 | 13% | 20% | 9% | 9–14% |
 | 5 | 111 | 14% | 14% | 17% | 9–14% |
 
 **Other decks.** A Speed-heavy deck (6 Speed, 1 Guts, 2 Friend/Group bonds) moves about 12 crafted items a tier from
-Nuts & Seeds and Grains to Sweets: 2% of the tier's 634. A grade-9 Grains item (Moonrice Flour) is needed only when a
+Nuts & Seeds and Grains to Sweets: 2% of the tier's 664. A grade-9 Grains item (Moonrice Flour) is needed only when a
 Friend or Group bond falls at grade 9; the Warehouse simply holds none until then.
 
 ## 8. Work values, for selling
@@ -396,7 +397,7 @@ The value is the same for every family at a grade. Building speed and Speed Tick
 | Thing | Kind | Rules |
 |---|---|---|
 | **Speed Ticket** (`speed-ticket`) | An item in the Warehouse | Bought at the Exchange for 30 Prize Money; takes 30 minutes off one running job or session ([07](07-farm.md) §8, [09](09-racing-rewards-and-exchange.md)). Today's Energy, renamed. uma-art has no ticket icon: a new one is on [11](11-hub-and-places.md)'s art list |
-| **Uma Ticket** | A profile currency, not an item | Tier 1 only: 20 at the start, the Exchange, one per promotion ([04](04-tiers-and-promotion.md)) |
+| **Uma Ticket** | A profile currency, not an item | Unlocks into tier 1 only: 20 at the start, 5 Uma Shards each (1 per scenario gate), one per promotion; never sold ([04](04-tiers-and-promotion.md) §6) |
 | **Prize Money** | A profile currency | Races and sales ([09](09-racing-rewards-and-exchange.md)) |
 
 There are **no** tokens of any kind, no Energy, no Puzzle materials, no Training Tickets, no Card Coupons and no RPG
@@ -427,7 +428,7 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 |---|---|
 | **Feast = one crafted of each stat family at *g* + a Grains side** | A Sun feeds the five stats; six inputs keep it within 14% of a planet dish; it adds nothing to the busiest families |
 | **Duo = 2 + 2 of its families at *g* + one side** | The same chain as a planet dish for the same 20 points |
-| **Side rotation** (§4.2): Grains for salads, soups and Feasts; stat dishes around the stat cycle with Grains at grades 5 and 10; Duo sides to Fruits and Nuts & Seeds | Seven families within 72–77 a tier, instead of a 3× spread |
+| **Side rotation** (§4.2): Grains for salads, soups and Feasts; stat dishes around the stat cycle with Grains at grades 5 and 10; Duo sides to Fruits and Nuts & Seeds | The stat families within 74–77 a tier and Grains at 80, instead of a 3× spread |
 | **No side is ever Vegetables or Mushrooms** | They are the destination-heavy families |
 | **Every dish uses the same cook formula** | One rule; the Feast's extra input is its only premium |
 | **Exact recipes, exact dishes**: no substitutions, no higher grade for a lower | The planner's counts stay exact, and every Repeat is predictable |

@@ -20,7 +20,7 @@ This page owns the screens and conveniences. The pages it links to own the rules
 
 | Step | Taps | Seconds |
 |---|---|---|
-| Open the Home Screen app. The app badge already says how many Umas need a tap | — | 3 |
+| Open the Home Screen app (with push on, its badge already says how many Umas need a tap) | — | 3 |
 | **Collect all · 14 ready** on the Hub | 1 | 2 |
 | Read the summary (§4): what came in, who is free, what's blocked | — | 10 |
 | **Repeat all (11)** | 1 | 2 |
@@ -94,7 +94,7 @@ free until 22:30". Overshooting the next visit usually costs more idle time than
   that needed them at 06:00 found them missing, even if the owner collects them at 08:00.
 - **An entry that can't be covered drops the rest of the queue** ([07](07-farm.md) §2, as in uma-rpg). The Uma is
   Free from that moment. The summary lists it under **Queue stopped** with what was short and a one-tap way to put it
-  back (§4), and the push counts her as free (§7).
+  back (§4), and, if push is on, it counts her as free (§7).
 - **Edit freely:** add, remove and reorder queued entries at any time. **Recall** stops the current entry and drops the
   whole queue ([07](07-farm.md)).
 
@@ -240,122 +240,55 @@ For each free Uma, in order ([01](01-game-loop.md) §4):
 **Start suggestions** starts them all after a one-line preview each. The planner itself writes nothing: it is derived
 on read from the save.
 
-## 7. Push notifications
+## 7. Push notifications: optional, and only uma-rpg's
 
-Push lands in phase 4, right after the new game ([13](13-removals-and-plan-changes.md) §4). Everything above works
-without it.
+**The owner's rule (D336):** push notifications are optional, and nothing outside what uma-rpg already set up. If they
+come, they are **a port of uma-rpg's push** with the racer's few changes below. They aren't built unless the owner
+asks for them after playing the new game ([13](13-removals-and-plan-changes.md) §4, phase 4). Everything else on this
+page works without them: the check-in summary, Collect all, Repeat and the planner.
 
-### What fires
+### What uma-rpg already has (ported as is)
 
-| Notice | Fires when | Example | Default |
-|---|---|---|---|
-| **Work done** | An Uma's Farm work ended with nothing queued after it, or her queue dropped on missing inputs: she is free | "Gold Ship is free" · "Orchard: Fruits ×6 done" · "Pantry queue stopped: short 2 raw Vegetables G2" | On |
-| **Training done** | An Uma's session ended with nothing queued after it. When it was her layer's last unlock, it says so | "Kitasan Black: scenario 2 training complete" · "Ready for her goal races" | On |
-| **All done** | The last running job or session on the account ended: nothing is running | "Everything's finished" · "25 Umas are free" | On |
-| **Reminder** | Umas have been free for 2 hours outside quiet hours, and the app hasn't been opened since | "4 Umas have nothing to do" · "Tap to Repeat" | On; at most one between app opens |
+uma-rpg's D63 and D65 ([decisions](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/decisions.md),
+[sections, Global UI](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/game/sections.md#global-ui)):
+- **A switch in Account** turns them on. Web Push works on iOS 16.4+ only in the Home Screen app, which is how the
+  owner plays.
+- **The API keeps subscriptions** in Firestore `push/{uid}`, outside the save, so a wipe never touches it.
+- **Cloud Scheduler POSTs `/api/push/tick` every five minutes** with an OIDC token (uma-rpg's `scheduler.guard.ts`).
+- **The tick reads the save** and announces what ended since the last check, judged by the real collect rules
+  (uma-rpg's `save/notify.ts`), so a stopped queue stays quiet.
+- **One notification** at a time: "Work done", or one that lists several ("N jobs done"). Tapping it opens the place.
+- **The app badge** counts what's ready to collect; opening the app clears it.
+- **VAPID keys** live in one Secret Manager secret. `infra/push/setup.sh` is copied and run once with the scoped
+  gcloud configuration, never changing the active account.
+- **The device side:** `push-sw.js` imported by the Workbox service worker, and the `NotificationsCard` in Settings.
 
-**What never notifies:** a queued entry starting, each item or unlock inside a batch, races and Prize Money. This
-follows uma-rpg's lesson that only a slot going idle is news
-([uma-rpg D65](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/decisions.md)).
+**No new kind of infrastructure.** Cloud Scheduler and Secret Manager are the same pair uma-rpg runs for the same job,
+set up the same way in the racer's project. They're needed because an iPhone Home Screen app can't schedule its own
+notifications. Every piece sits in a free tier, as uma-rpg found: about $0, at most $0.10 a month for the scheduler
+job if the billing account's free jobs are used up.
 
-### Batching, so it isn't noisy
+### The racer's changes
 
-- **One notice at a time.** Everything that became news in a window goes into one notification: up to four lines,
-  then "and 3 more". The title names the most important item: All done, then Training done, then "6 Umas are free".
-- **Hold for neighbours.** If another Uma will go free within 15 minutes, the notice waits for her, at most 15 minutes.
-  Jobs sized to the same check-in tend to end together.
-- **At least 30 minutes between notices.** News in between rolls into the next one.
-- **Quiet hours,** by default 23:00–07:30 in the owner's time zone: nothing is sent. At the end, one "Overnight"
-  notice lists what is still waiting, if anything is.
-- **True at send time.** Each notice is checked against the latest synced save with the same rules Collect uses.
-  Work collected, recalled or restarted since is dropped, and an empty notice isn't sent.
-- **Not while playing.** No notice is sent while the app is open on either device.
-- **Tapping** opens the app on the check-in summary, or on the place itself when the notice names one Uma.
-- **The app badge** counts Umas that need a tap: Ready or Free ([01](01-game-loop.md) §2). Each push sets it, and the
-  app updates it whenever it goes to the background.
+Only what the racer's rules need:
 
-**Settings → Notifications** holds the master switch, the four notices, quiet hours and **Send a test**. The card
-explains its state in one line, as uma-rpg's does. For example: "Add Uma Racer to your Home Screen, then turn them on
-from there", or "Notifications are blocked. Allow them in Settings → Notifications".
-
-### iOS requirements
-
-- **iOS 16.4 or later**, and only for the app **added to the Home Screen**. Safari tabs on iPhone don't get web push.
-  The racer is already played this way, and its manifest's `standalone` display is what makes it eligible.
-- **Permission comes from a tap** inside the installed app. The switch asks; nothing asks on launch.
-- **Every push must show a notification** (`userVisibleOnly`). Silent pushes aren't allowed, so the server sends a
-  push only when there's something to say.
-- **Nothing on the phone can schedule a notification.** A Home Screen app gets no local timed notifications and no
-  background timers; its service worker wakes only when a push arrives. So **a server must send them**.
-- **The app badge** (`navigator.setAppBadge`) works for Home Screen apps with notification permission.
-- **Each installed copy has its own subscription** (iPhone and iPad are two). Removing the app from the Home Screen
-  ends it; the server drops endpoints that answer "gone". Reinstalling means turning notifications on again.
-- **No Apple developer account is needed.** Web push uses VAPID keys and Apple's push service.
-- Focus modes and the per-app notification settings in iOS apply as for any app.
-
-### How uma-rpg does it
-
-uma-rpg shipped this in its D63, and its D65 tuned it to idle-only notices
-([sections, Global UI](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/game/sections.md#global-ui)):
-- the device subscribes from an Account switch (`apps/web/src/push/`);
-- the API keeps subscriptions in Firestore `push/{uid}`;
-- Cloud Scheduler POSTs `/api/push/tick` every five minutes with an OIDC token;
-- the tick reads the save, works out what ended since the last check with the real collect rules (`save/notify.ts`),
-  and sends one notification listing it;
-- the app badge counts ready slots;
-- VAPID keys live in Secret Manager. Every piece sits in a free tier.
-
-The racer copies it, with three changes:
-- It counts Umas, not slots, and Training Hub sessions alongside Farm jobs.
-- The hold, the 30-minute gap, quiet hours and the Reminder are added.
-- The tick reads the racer's per-entity save.
-
-### What the server needs
-
-The racer's NestJS API on Cloud Run and its Firestore, plus the two pieces uma-rpg's push added:
-
-| Piece | Holds or does |
-|---|---|
-| Firestore `push/{uid}` (outside `saves/{uid}`, so a wipe never touches it) | Up to 5 subscriptions; the switches, quiet hours and time zone; `checkedAt`; `lastSentAt`; held news; the open/closed state the app last reported |
-| `GET /api/push/key`, `PUT`/`DELETE /api/push/subscription`, `PUT /api/push/settings`, `POST /api/push/seen`, `POST /api/push/test` | The owner's routes, behind the usual `AuthGuard` |
-| `POST /api/push/tick` | Accepts only the scheduler's OIDC identity, not the owner's token (uma-rpg's `scheduler.guard.ts`) |
-| The tick | For each subscribed account, read its `work/*` rows ([13](13-removals-and-plan-changes.md) §6). Read the Warehouse stacks a queued entry needs only when one of its start times fell in the window. Run `@racer/domain`'s pure "what ended between" rule, the same code Collect runs. Apply quiet hours, the hold and the gap. Send with `web-push`, then save the record |
-| One Cloud Scheduler job | Every 5 minutes |
-| One Secret Manager secret | The VAPID key pair, read by Cloud Run as an environment variable |
-| `infra/push/setup.sh` | Copied from uma-rpg, run once with the scoped gcloud configuration (never changing the active account) |
-
-**New to this project, not to the owner's setup.** Cloud Scheduler and Secret Manager are the only services the racer
-doesn't use today. They're unavoidable for iOS (above), and uma-rpg runs the same pair for the same job.
-
-**Cost: about $0.** Verify the free tiers on the pricing pages when bootstrapping, as
-[infrastructure](../technical/infrastructure.md) asks.
-
-| Service | Use | Cost |
+| uma-rpg | Uma Racer | Why |
 |---|---|---|
-| Cloud Scheduler | 1 job | Free within the billing account's free jobs; $0.10 a month otherwise |
-| Secret Manager | 1 secret, read at instance start | Free tier |
-| Cloud Run | ~8,640 ticks a month, well under a second each | Free tier |
-| Firestore | ~7,500 reads a day (25 work rows × 288 ticks) and ~300 writes | Free tier: about 15% of the 50,000 reads a day |
-| Apple's push service | — | Free |
+| Announces Farm jobs | Also announces **Training Hub sessions** ("Training done") | Sessions are the racer's other timer |
+| The badge counts ready slots | It counts **Umas** that need a tap: Ready or Free ([01](01-game-loop.md) §2) | The check-in thinks in Umas |
+| The tick reads uma-rpg's single save document | It reads the racer's `work/*` rows ([13](13-removals-and-plan-changes.md) §6) and runs `@racer/domain`'s "what ended between" rule, the same code Collect runs | The racer's save is per entity |
+| — | **Quiet hours** (default 23:00–07:30), with one morning notice if anything is still waiting | Overnight jobs end at night |
+| — | Nothing is sent while the app is open | The owner is already looking |
 
-If reads ever matter, the tick can cache the account's next finish time and skip the rows until then.
-
-### What the device needs
-
-- A `push-sw.js` imported by the Workbox service worker (`importScripts`, as uma-rpg's Vite config does):
-  - on a push, it shows the notification and sets the badge;
-  - on a tap, it focuses or opens the app at the notice's URL.
-- `POST /api/push/seen` when the app comes to the foreground or goes to the background, only while notifications are
-  on. This is how "not while playing" and the Reminder know about app opens.
-- The Notifications card in Settings, ported from uma-rpg's `NotificationsCard`.
+That's the whole list. No reminders, no hold window and no extra notice types beyond uma-rpg's "Work done" and its
+"N done" summary. If the owner later wants one of those, it's a small change to the same tick.
 
 ### Limits, said plainly
 
 - **Work started offline is announced only after it syncs.** The device syncs on reconnect and on foreground.
-- **Push timing uses the server's clock against device-saved start times.** A phone clock that is 10 minutes off
-  shifts its notices by 10 minutes (§8).
-- **A notice can arrive up to about 20 minutes after the work ends:** the 5-minute tick plus the 15-minute hold. Quiet
-  hours and the 30-minute gap can delay it further.
+- **A notice can arrive up to about five minutes after the work ends**, the scheduler's interval, as in uma-rpg.
+- **Each installed copy subscribes separately** (iPhone and iPad are two). Removing the app from the Home Screen ends
+  its subscription.
 
 ## 8. Offline and the clock
 
@@ -453,11 +386,8 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Planner targets: up to 5, in order; automatic (five furthest behind) until the owner marks one | uma-rpg's D100 limit; the automatic choice matches the sim |
 | Unchosen bonds aren't cascaded; the planner asks for cards | A bond's dish depends on its card |
 | Stock and outputs coming are allocated once, in target order; finished-but-uncollected output counts as coming | Never promise one dish twice, or spend what isn't collected |
-| Four notices: Work done, Training done, All done, Reminder; queue moves and single items never notify | Only an Uma falling idle is news (uma-rpg D65) |
-| One notice at a time, a 15-minute hold, at least 30 minutes apart, quiet hours 23:00–07:30 with a morning notice | Jobs sized to a check-in end together; one buzz says it all |
-| No notice while the app is open | The summary is already on screen |
-| The badge counts Umas that need a tap | One number the owner can act on |
-| Push copies uma-rpg's D63 setup: one Cloud Scheduler job, one Secret Manager secret, Firestore `push/{uid}` | iOS can't schedule notifications on the phone; this is the proven, free path |
+| Push is optional and only a port of uma-rpg's D63/D65, built if the owner asks after playing (D336) | The owner's rule: nothing outside what uma-rpg already set up |
+| The racer's changes are limited to sessions, counting Umas, reading per-entity rows, quiet hours and silence while the app is open | What the racer's rules need, and no more |
 | A stale screen re-checks and runs, shows the earlier result, or re-asks with new numbers; never an error | D320 |
 
 ## 12. Done when
@@ -478,17 +408,9 @@ The planner, suggestions, finish times and the badge count are **derived on read
   fix when empty; takes the next unlocks for a session; asks for cards at the Dojo; never repeats a recalled Uma.
 - **Planner:** for synthetic targets, the need lines equal a brute-force recount, layer by dish by crafted by raw,
   less stock and outputs coming. No dish is allocated twice across five targets.
-- **Push:**
-  - **Send a test** arrives on the Home Screen app;
-  - one Uma's queue ending with the app closed gives one notice within 20 minutes;
-  - ten Umas ending within 15 minutes give one notice;
-  - a queue moving on gives none;
-  - nothing arrives in quiet hours, then one Overnight notice;
-  - nothing arrives while the app is open;
-  - work collected before the tick gives none;
-  - the badge matches the summary's count.
-- **Cost:** after a month, the billing report shows the push pieces at $0, or Cloud Scheduler's $0.10 at most, and
-  Firestore reads stay under 20% of the free tier.
+- **Push, if the owner asks for it:** uma-rpg's tests pass on the ported code; a session ending with the app closed
+  gives one notice within about five minutes; nothing arrives in quiet hours or while the app is open; the badge
+  matches the summary's count; and the billing report shows the push pieces at $0, or $0.10 at most.
 - **Clock:** moving the phone's clock forward makes work Ready and its Collect is accepted by the API. Moving it back
   lengthens the wait and never shows negative progress.
 - **Plain words:** a test fails if any player-facing string contains a banned word (§9), and the stale-screen cases of
