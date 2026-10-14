@@ -64,12 +64,14 @@ for the morning (**Overnight**). It never picks for the owner. It preselects the
 
 Gaps at the default times, at grade 1 ([12](12-economy-and-pacing.md) §4 times):
 
+<!-- live:check-in-fits -->
 | Work at grade 1 | 08:00 → 13:00 (5 h) | 13:00 → 22:30 (9.5 h) | 22:30 → 08:00 (9.5 h) |
 |---|---|---|---|
 | Gather (90 min each) | ×3, ends 12:30 | ×6, ends 22:00 | ×6, ends 07:30 |
 | Craft (22.5 min each) | ×10 then ×3 queued, ends 12:52 | ×10, ×10, ×5 queued, ends 22:22 | ×10, ×10, ×5 queued, ends 07:52 |
 | Cook (240 min each) | ×1, ends 12:00 | ×2, ends 21:00 | ×2, ends 06:30 |
 | Session (180 min each) | ×1, ends 11:00 | ×3, ends 22:00 | ×3, ends 07:30 |
+<!-- /live -->
 
 A chip that runs past the next check-in says so. For example, a ×2 session started at 08:00 shows "ends 14:00 · then
 free until 22:30". Overshooting the next visit usually costs more idle time than stopping short of it.
@@ -390,6 +392,32 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Push is optional and only a port of uma-rpg's D63/D65, built if the owner asks after playing (D336) | The owner's rule: nothing outside what uma-rpg already set up |
 | The racer's changes are limited to sessions, counting Umas, reading per-entity rows, quiet hours and silence while the app is open | What the racer's rules need, and no more |
 | A stale screen re-checks and runs, shows the earlier result, or re-asks with new numbers; never an error | D320 |
+| **Bond picks are an input:** the planner and its suggestions take the cards the owner has chosen to bond next, per Uma (T131) | §6 cascades only chosen bonds, and [13](13-removals-and-plan-changes.md) §6 saves no picks; phase 3 decides whether the Dojo sheet's picks persist |
+| If ×1 already overruns the next check-in, the picker fits the one after | §3 is silent; marking ×1 idles her until the following visit anyway |
+| Local time comes from the device's UTC offset, passed in; the sim passes 0. An operation that fits a size (Repeat's fit, Speed up all to the next check-in) carries it in its input | The rules stay pure, and a re-run sees the same local time; a DST night is off by an hour at most, once |
+| There are 1–4 check-in times, never none | "Up to four" (§3), and fitting needs at least one |
+| **Overnight** marks the day's earliest check-in | §3: "after the last check-in of the day it marks the one for the morning" |
+| Clock times are cut to the minute, so §3's 12:52:30 reads 12:52 | The same table shows 22:22:30 and 07:52:30 as 22:22 and 07:52 |
+| Repeat with no Umas named takes every Free Uma with a last job or session, in her last slot's order, each at the lowest free slot there | §5 says "collected in this check-in", [07](07-farm.md) §9 says "each free Uma", and the screen passes the Umas it collected |
+| Repeat skips an Uma with a stopped queue | Queue stopped's fixes put back what she was meant to do next |
+| A repeated session takes the next unlocks in order and stops at the first missing dish | An unlock may depend on the one before ([05](05-training-hub.md) §2) |
+| **Switch** is offered for raw, crafted and planet-dish jobs; a Duo or a Feast keeps its node's grade | Duos and Feasts exist only at their nodes' grades |
+| A stopped queue clears on its restart, on Dismiss, or on any other start for her. A restart takes her old slot, or the lowest free one at the same place | §10 keeps it "until the owner restarts or dismisses it", and a new start is acting on it; the slot may have been taken since |
+| Make them is sized to the shortfall, 10 at most, by the first Free Uma in suggestion order who can start it | §4's example is "Garden ×2" for 2 short |
+| **Buy and restart** prices the shortfall at today's stock with the Exchange's own prices and stock rule ([09](09-racing-rewards-and-exchange.md) §5), and is offered only when every short item is a stocked raw item | The Exchange landed first (T130), so its prices are read where they live, not passed in |
+| Speed up all: "to the next check-in" is the time until it, each entry is clamped to Finish, and short tickets refuse it all | One confirmation shows one count (§4), with nothing half applied |
+| Best use counts an unlock or a dish as 1 and a crafted or raw item as ⅕, only for outputs still to finish, and marks three | A dish takes five crafted items ([08](08-item-catalogue-and-recipes.md) §4); speeding a finished output gains nothing |
+| Automatic targets need unlocks left; ties go by outfit | It's deterministic and matches "furthest behind" ([12](12-economy-and-pacing.md) §12) |
+| Suggestions go by Farm Level, highest first; "scarcest" is the largest shortfall that can start now; the size is capped by stock, not need | [01](01-game-loop.md) §4 gives higher grades to higher levels, and idle time costs more than surplus |
+| Projected drops count neither as takes nor as coming | The planner and the queue warnings agree with settle |
+| A line names its grade gate only when some Uma is Free | With nobody Free nothing can start, so no level is in the way |
+| The Needs estimate uses today's building speeds and leaves out bonds still waiting for a card; its "three jobs" are her first three startable lines, dishes first | §6 names both without a rule, and an unchosen bond has no dish yet |
+| Training done lists an Uma whose current layer is complete and who isn't ready to advance; one who is shows under Ready to advance only | One line per Uma |
+| **Repeat all (N)** counts the Umas Repeat takes by default, those with a stopped queue included | They show under Couldn't repeat with Queue stopped's fixes |
+| Collect all raises the Exchange's stock mark to the highest grade a Farm Level now opens | D345: the collect raises it, so the sim and phase 3 get it from one operation |
+| A slot whose collect fails keeps "That didn't work. Try again." and the others are collected | §2: one slot never blocks the others; §9's words for the unexpected |
+| A refused operation changes nothing and stores nothing in the `operations` log; only a receipt is kept | A refused tap applied nothing, so a retry may run once the rule allows it |
+| The new operation inputs: `start` from a stopped queue, `queue` dismiss, `speed-up` all, `set-targets`, `set-check-in-times`, `set-repeat-sizing` | §10 saves and syncs these ([13](13-removals-and-plan-changes.md) §6) |
 
 ## 12. Done when
 
