@@ -96,7 +96,8 @@ export interface LedgerEntry {
 
 /**
  * One distance preset (03 §6, 05 §9): who is in the card set, which card fills each open node, who sits in each open
- * Inspiration slot, which bought Extra Stats nodes are on, and the equipped skills. T128 owns its rules.
+ * Inspiration slot, which bought Extra Stats nodes are on, and the equipped skills (her unique first). `rework/training`
+ * owns its rules.
  */
 export interface Preset {
   readonly cardSetIds: readonly string[]
@@ -111,7 +112,8 @@ export interface Preset {
 
 /**
  * Her one build for the tier (03 §6, 05 §9): what her four presets share, and the presets. Everything here resets at
- * promotion (04 §4). T128 completes it in place.
+ * promotion (04 §4). Its rules are `rework/training`'s: commits, the advance's carry and the preset edits. Inspiration
+ * lists keep slot order; `extraNodes` keeps opening order.
  */
 export interface UmaBuild {
   /** Card nodes open, 0–28: a count, since the unlock order is fixed (05 §4). */
@@ -120,10 +122,10 @@ export interface UmaBuild {
     readonly slots: readonly InspirationSlot[]
     /** Slots whose inherited unique is open (D336). */
     readonly uniques: readonly InspirationSlot[]
-    /** `slot:gold1` / `slot:gold2` keys. */
+    /** Gold positions, today's `inspirationGoldKey(slot, 0 | 1)`: `parent0:gold0` is A's gold 1 (D344). */
     readonly golds: readonly string[]
   }
-  /** Extra Stats node ids bought, oldest first (05 §6). */
+  /** Extra Stats node ids bought (`speed-03`, `duo-power-speed-3`, `sun-4`), oldest first (05 §6, §9). */
   readonly extraNodes: readonly string[]
   /** Card ids bonded to her in this tier (06). */
   readonly bonds: readonly string[]
