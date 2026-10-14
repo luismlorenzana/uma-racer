@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { fieldTrainedStat, rivalPreset, rollRivalField, type RivalRng } from '../../opponents'
 import { DISTANCE_CATEGORIES, RACE_GRADES, STRATEGIES } from '../../types'
 import { scenarioCatalogue } from './map'
-import { rivalFieldStat, rivalPresetAt, rivalTrainedStat, rollRivalFieldAt } from './rivals'
+import { REWORK_BUFF_TYPICAL, rivalFieldStat, rivalPresetAt, rivalTrainedStat, rollRivalFieldAt } from './rivals'
 
 /** A small seeded RNG for the parity rolls (mulberry32). */
 function seeded(seed: number): RivalRng {
@@ -23,15 +23,16 @@ function seeded(seed: number): RivalRng {
 const TODAY_T = Array.from({ length: 14 }, (_, i) => i + 1)
 
 describe('the typical trained Uma on the new trees', () => {
-  it('is 646.06 at T = 1, 728.46 at 5 and 979.17 at 14', () => {
-    expect(rivalTrainedStat(1)).toBeCloseTo(646.06, 2)
+  it('is 642.45 at T = 1, 728.46 at 5 and 969.27 at 14', () => {
+    expect(rivalTrainedStat(1)).toBeCloseTo(642.45, 2)
     expect(rivalTrainedStat(5)).toBeCloseTo(728.46, 2)
-    expect(rivalTrainedStat(14)).toBeCloseTo(979.17, 2)
+    expect(rivalTrainedStat(14)).toBeCloseTo(969.27, 2)
   })
 
-  it('pins every scenario with a typical buff value', () => {
+  it('pins every scenario with a typical buff value, re-measured on rework builds (T133, D349)', () => {
+    expect(REWORK_BUFF_TYPICAL).toHaveLength(14)
     expect(TODAY_T.map((T) => Math.round(rivalTrainedStat(T) * 100) / 100)).toEqual([
-      646.06, 664.8, 683.49, 721.67, 728.46, 763.29, 766.69, 784.26, 860.4, 839.6, 869.08, 881.1, 893.67, 979.17,
+      642.45, 664.8, 683.49, 707.92, 728.46, 763.29, 777.61, 815.33, 854.71, 839.6, 852.98, 881.1, 885.98, 969.27,
     ])
   })
 
