@@ -68,6 +68,7 @@
     "docs:update": "UPDATE_DOCS=1 vitest run src/docs"
   },
   "devDependencies": {
+    "@luismlorenzana/uma-art": "2.4.0",
     "typescript": "~5.9.3",
     "vitest": "^3.2.7"
   },

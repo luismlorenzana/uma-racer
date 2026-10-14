@@ -117,6 +117,7 @@ image build receives the token as a BuildKit secret, so it never lands in a laye
 | @racer/api | typescript | ~5.9.3 | dev |
 | @racer/api | vitest | ^3.2.7 | dev |
 | @racer/domain | @luismlorenzana/uma-data | 1.0.0 | runtime |
+| @racer/domain | @luismlorenzana/uma-art | 2.4.0 | dev |
 | @racer/domain | typescript | ~5.9.3 | dev |
 | @racer/domain | vitest | ^3.2.7 | dev |
 | @racer/race | @racer/domain | workspace:* | runtime |
