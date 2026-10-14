@@ -73,6 +73,7 @@ export type LedgerResource = 'uma-tickets' | 'uma-shards' | 'prize-money'
 export type LedgerReason =
   | 'initial-uma-tickets' | 'unlock-uma' | 'uma-gate-shard' | 'uma-shard-exchange' | 'promotion-uma-ticket'
   | 'race-prize' | 'featured-bonus' | 'buy' | 'sell'
+  | 'upgrade'
 
 type ProfileBalance = { readonly [K in keyof AccountProfile]: AccountProfile[K] extends number ? K : never }[keyof AccountProfile]
 

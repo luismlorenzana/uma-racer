@@ -11,9 +11,9 @@ import {
 } from '../farm/buildings'
 import { SPEED_TICKET_ID } from '../items/catalogue'
 import type { RecipeInput } from '../items/recipes'
-import { assertNow } from '../tiers/ledger'
+import { assertNow, writeLedger } from '../tiers/ledger'
 import { tierRefusal } from '../tiers/refusals'
-import { isRefusal, type OpResult, type Refusal } from '../types'
+import { isRefusal, type LedgerEntry, type OpResult, type Refusal } from '../types'
 import { chainEnd, statusOf } from './activity'
 import { payWork, type CollectReceipt, type PaidWork } from './collect'
 import { kindRules, type PlannedItem, type WorkEnv } from './kinds'
@@ -306,12 +306,17 @@ export const finish = <S extends WorkState>(state: S, input: { readonly outfitId
 
 // --- upgrade --------------------------------------------------------------------------------------------------------
 
+/** An upgrade's Prize Money row (09 §9, reason `upgrade`): a building reaches each level once, so the id is once-only. */
+export const upgradeLedgerId = (building: BuildingId, level: BuildingLevel): string => `upgrade:${building}:${level}`
+
 export interface UpgradeReceipt {
   readonly building: BuildingId
   readonly from: BuildingLevel
   readonly to: BuildingLevel
   /** Prize Money charged. */
   readonly prizeMoney: number
+  /** Its `prize-money` row, also appended to the state's ledger (T130's audit: deltas sum to the balance). */
+  readonly ledger: readonly LedgerEntry[]
   /** Slots per room, and in all, at the new level: they apply at once. */
   readonly slotsPerRoom: number
   readonly totalSlots: number
@@ -323,8 +328,8 @@ export interface UpgradeReceipt {
 
 /**
  * `upgrade` (07 §7, 05 §7): the account's building goes up one level, up to Lv 3, for its Prize Money and crafted
- * items, charged once. New slots apply at once; the new speed only to entries started after it. Its only gate is its
- * cost (07 §14).
+ * items, charged once. The Prize Money is a ledger row (09 §9). New slots apply at once; the new speed only to entries
+ * started after it. Its only gate is its cost (07 §14).
  */
 export function upgrade<S extends WorkState>(state: S, input: { readonly building: BuildingId }, now: number, env: WorkEnv): OpResult<UpgradeReceipt, S> {
   const { building } = input
@@ -337,16 +342,13 @@ export function upgrade<S extends WorkState>(state: S, input: { readonly buildin
     if (current.profile.prizeMoney < cost.prizeMoney) return workRefusal('prize-money', { n: cost.prizeMoney, have: current.profile.prizeMoney })
     const short = shortfall(current.items, cost.items)
     if (short.length > 0) return workRefusal('short', { n: short[0]!.qty, item: short[0]!.item })
+    const row = { id: upgradeLedgerId(building, to), resource: 'prize-money' as const, delta: -cost.prizeMoney, reason: 'upgrade' as const }
+    const paid = writeLedger(current, row, now)
     return {
-      state: {
-        ...current,
-        profile: { ...current.profile, prizeMoney: current.profile.prizeMoney - cost.prizeMoney },
-        items: moveStock(current.items, cost.items, -1),
-        buildings: { ...current.buildings, [building]: { level: to } },
-      },
+      state: { ...paid, items: moveStock(paid.items, cost.items, -1), buildings: { ...paid.buildings, [building]: { level: to } } },
       receipt: {
-        building, from, to, prizeMoney: cost.prizeMoney, slotsPerRoom: slotsPerRoom(building, to), totalSlots: totalSlots(building, to),
-        speed: buildingSpeed(to), movements: movements('cost', cost.items, null, now),
+        building, from, to, prizeMoney: cost.prizeMoney, ledger: [{ ...row, at: now }], slotsPerRoom: slotsPerRoom(building, to),
+        totalSlots: totalSlots(building, to), speed: buildingSpeed(to), movements: movements('cost', cost.items, null, now),
       },
     }
   })

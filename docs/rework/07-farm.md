@@ -456,6 +456,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | **There is no `assign` operation:** work rows hold slots, and building rows hold levels only | §5 has no standing assignment, and a slot read from the job in it can never disagree with that job |
 | **Collect never refuses, and Recall with nothing running acts as Collect** | [02](02-check-ins-and-notifications.md) §9: an action already done shows its result |
 | **An upgrade's only gate is its cost** | Its grade-3 items are §7's "from Farm Lv 11" |
+| **An upgrade's Prize Money is a ledger row** `upgrade:<building>:<level>`, reason `upgrade` | [09](09-racing-rewards-and-exchange.md) §9's reasons and audit; a building reaches each level once, so the id is once-only |
 | **Promotion clears her idle work row** (her last job and any dropped queue) | [02](02-check-ins-and-notifications.md) §5 never repeats a promoted Uma, and her last job's grade may be above her new Farm Level |
 
 ## 15. Done when

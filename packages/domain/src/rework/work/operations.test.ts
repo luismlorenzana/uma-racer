@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   atFarmLevel, clock, ENV, farmAccount, HELPER, minutes, ok, PLAIN, STRONG, withLevel, withPrizeMoney, withStock,
 } from '../../__fixtures__/rework-work'
+import { ledgerTotal } from '../exchange/ledger'
 import { farmItemSeconds } from '../farm/jobs'
 import { isRefusal } from '../types'
 import { collect, finish, MAX_ITEMS_PER_ENTRY, MAX_QUEUE, queue, recall, slotsOf, speedUp, start, upgrade } from './operations'
@@ -267,13 +268,19 @@ describe('upgrade (07 §7, 05 §7)', () => {
     const { state, receipt } = ok(upgrade(rich(farmAccount()), { building: 'vegetable-garden' }, T0, ENV))
     expect(receipt).toMatchObject({ building: 'vegetable-garden', from: 1, to: 2, prizeMoney: 1_200, slotsPerRoom: 5, totalSlots: 5, speed: 1 })
     expect(receipt.movements).toEqual([{ kind: 'cost', item: 'chopped-carrot', qty: 4, outfitId: null, at: T0 }])
+    const row = { id: 'upgrade:vegetable-garden:2', resource: 'prize-money', delta: -1_200, reason: 'upgrade', at: T0 }
+    expect(receipt.ledger).toEqual([row])
+    expect(state.ledger[state.ledger.length - 1]).toEqual(row)
     expect(state.profile.prizeMoney).toBe(3_800)
     expect(state.items).toEqual({ 'chopped-carrot': 6, 'shredded-cabbage': 4 })
     expect(state.buildings['vegetable-garden']).toEqual({ level: 2 })
     expect(slotsOf(state, 'vegetable-garden')).toHaveLength(5)
     expect(isRefusal(start(state, { outfitId: PLAIN.id, slot: { building: 'vegetable-garden', slot: 4 }, request: carrots(1) }, T0, ENV))).toBe(false)
     const top = ok(upgrade(state, { building: 'vegetable-garden' }, T0, ENV))
-    expect(top.receipt).toMatchObject({ to: 3, prizeMoney: 2_400, speed: 1.25 })
+    expect(top.receipt).toMatchObject({ to: 3, prizeMoney: 2_400, speed: 1.25, ledger: [{ id: 'upgrade:vegetable-garden:3', delta: -2_400 }] })
+    // 09 §9's audit: the Prize Money rows move the balance by exactly what they say.
+    expect(ledgerTotal(top.state.ledger, 'prize-money') - ledgerTotal(rich(farmAccount()).ledger, 'prize-money'))
+      .toBe(top.state.profile.prizeMoney - rich(farmAccount()).profile.prizeMoney)
     expect(upgrade(top.state, { building: 'vegetable-garden' }, T0, ENV)).toMatchObject({ code: 'top-level', reason: 'Already at the top level.' })
   })
 

@@ -10,10 +10,13 @@ import {
 import type { PlannedItem } from './kinds'
 import type { Entry, ItemMovement, ItemStock, SlotRef, WorkRow, WorkState } from './types'
 
-/** The account's Farm and Training Hub on day one: every building at Lv 1, an empty Warehouse, no work (13 §5). */
+/**
+ * The account's Farm and Training Hub on day one: every building at Lv 1 and no work (13 §5). The Warehouse keeps
+ * whatever the account already holds (T130's optional `items`), else starts empty.
+ */
 export function newWorkState<S extends ReworkState>(account: S): S & WorkState {
   if (Object.keys(account.work).length > 0) throw new RangeError('A new Farm starts with no work rows')
-  return { ...account, items: {}, buildings: INITIAL_BUILDINGS, work: {} } as S & WorkState
+  return { ...account, items: account.items ?? {}, buildings: INITIAL_BUILDINGS, work: {} } as S & WorkState
 }
 
 // --- Buildings and slots --------------------------------------------------------------------------------------------
