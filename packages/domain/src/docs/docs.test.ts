@@ -10,7 +10,7 @@ const ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
 const DOCS = join(ROOT, 'docs', 'game')
 // The rework's pages carry live blocks for the rules it builds (M033) until phase 3 moves them into the manual.
 const REWORK = join(ROOT, 'docs', 'rework')
-const BLOCK = /<!-- live:([a-z-]+) -->\n[\s\S]*?<!-- \/live -->/g
+const BLOCK = /<!-- live:([a-z0-9-]+) -->\n[\s\S]*?<!-- \/live -->/g
 const PACKAGES = ['package.json', 'apps/web/package.json', 'apps/api/package.json', 'packages/domain/package.json', 'packages/race/package.json']
 const packages = PACKAGES.map((path) => ({ path, json: JSON.parse(readFileSync(join(ROOT, path), 'utf8')) as PackageJson }))
 

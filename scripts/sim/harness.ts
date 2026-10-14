@@ -1,8 +1,12 @@
 // Shared synthetic builds and skill kits for the balance scripts. Every id and number here is synthetic; nothing reads
 // private or original-game content.
 import {
+  CARD_EFFECTS,
   CARD_SET_SIZE,
+  INSPIRATION_SLOTS,
   MAX_STARS,
+  SCENARIO_BUFFS,
+  STATS,
   constellationTemplate,
   deriveStats,
   extraStatsFromProduce,
@@ -11,16 +15,25 @@ import {
   rollRivalSkills,
   shapeDef,
   unlockedNodeCount,
+  type Aptitudes,
+  type CardEffect,
   type CardNodeState,
   type CompiledRaceSkill,
   type DistanceCategory,
+  type InspirationSlot,
   type NodeAssignment,
   type RaceGrade,
   type RaceSkillEffectKind,
   type StatKey,
   type Stats,
   type Strategy,
+  type SupportCardTemplate,
+  type UmaTemplate,
 } from '../../packages/domain/src/index'
+import { cardNodeId, fairShare as treeFairShare, perCardCap, treeCardNodesAt } from '../../packages/domain/src/rework/constellation/index'
+import type { TypicalRow } from '../../packages/domain/src/rework/builds/types'
+import { EXTRA_NODE_VALUES_TIER_1, REWORK_BUFF_TYPICAL, rollRivalFieldAt, tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/rework/tiers/index'
+import { EXTRA_NODES, LAYERS, deriveBuild, extraCapacity, layerUnlocks, reworkBuff, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/rework/training/index'
 import { V8_TUNING, createRng } from '../../packages/race/src/index'
 
 // Every sim can try an engine v8 tuning change without editing the engine: V8='{"railDrift":0.5}' pnpm sim:…
@@ -122,6 +135,43 @@ export const buildExtraStats = (stat: StatKey) =>
   extraStatsFromProduce([stat, stat, stat, stat, EXTRA_BACKUP[stat], EXTRA_BACKUP[stat]])
 
 /**
+ * How many of `cardNodes` each deck card fills: the Friend card its fair share first (unless last), the card at
+ * `leanIndex` `lean` nodes, any `first` cards to the per-card cap, then Speed, Wit, Guts, Power, Stamina and Friend to
+ * the cap in turn, until the nodes run out.
+ */
+export function allocateNodes(cardNodes: number, share: number, cap: number, deck: CardType[], leanIndex: number, lean: number,
+  options: Pick<BuildOptions, 'friend' | 'first'> = {}): number[] {
+  const want = deck.map(() => 0)
+  let left = cardNodes
+  const give = (index: number, count: number) => {
+    const granted = Math.min(count, cap - want[index]!, left)
+    want[index] = want[index]! + granted
+    left -= granted
+  }
+  if (options.friend !== 'last') give(deck.indexOf('friend'), share)
+  give(leanIndex, lean)
+  for (const index of options.first ?? []) give(index, cap)
+  for (const type of ['speed', 'wit', 'guts', 'power', 'stamina', 'friend'] as CardType[]) {
+    deck.forEach((card, index) => { if (card === type) give(index, cap) })
+  }
+  return want
+}
+
+/**
+ * The node queue for an allocation: nodes open a few at a time, so it deals round the cards (the Friend card last when
+ * asked) the way a player spreads a set; with every node open, the order changes nothing.
+ */
+export function dealNodes(ids: string[], want: number[], deck: CardType[], options: Pick<BuildOptions, 'friend'> = {}): string[] {
+  const order = deck.map((_, index) => index).sort((a, b) =>
+    Number(options.friend === 'last' && deck[a] === 'friend') - Number(options.friend === 'last' && deck[b] === 'friend'))
+  const queue: string[] = []
+  for (let round = 0; queue.length < want.reduce((sum, count) => sum + count, 0); round += 1) {
+    for (const index of order) if (want[index]! > round) queue.push(ids[index]!)
+  }
+  return queue
+}
+
+/**
  * Race stats for a six-card set, current era, maxed unless `stars` says otherwise. The card at `leanIndex` takes `lean`
  * nodes, any `first` cards fill to their cap, Speed then Wit fill what is left up to the per-card cap, and the Friend
  * card takes its fair share first or last. Six Extra stats lean on `statNodesTo` at any Training Level.
@@ -134,27 +184,7 @@ export function buildStats(tier: number, deck: CardType[], leanIndex: number, le
     template: { id, type: deck[index]!, era: tier, effectProfile: flatProfile, hintSkillIds: [] },
     stars: options.stars ?? MAX_STARS,
   }]))
-  const want = deck.map(() => 0)
-  let left = shapeDef(tier).cardNodes
-  const give = (index: number, count: number) => {
-    const granted = Math.min(count, cardCap(tier) - want[index]!, left)
-    want[index] = want[index]! + granted
-    left -= granted
-  }
-  if (options.friend !== 'last') give(deck.indexOf('friend'), fairShare(tier))
-  give(leanIndex, lean)
-  for (const index of options.first ?? []) give(index, cardCap(tier))
-  for (const type of ['speed', 'wit', 'guts', 'power', 'stamina', 'friend'] as CardType[]) {
-    deck.forEach((card, index) => { if (card === type) give(index, cardCap(tier)) })
-  }
-  // Nodes open a few at a time, so the queue deals round the cards (the Friend card last when asked) the way a player
-  // spreads a set; with every node open, as at TL10, the order changes nothing.
-  const order = deck.map((_, index) => index).sort((a, b) =>
-    Number(options.friend === 'last' && deck[a] === 'friend') - Number(options.friend === 'last' && deck[b] === 'friend'))
-  const queue: string[] = []
-  for (let round = 0; queue.length < want.reduce((sum, count) => sum + count, 0); round += 1) {
-    for (const index of order) if (want[index]! > round) queue.push(ids[index]!)
-  }
+  const queue = dealNodes(ids, allocateNodes(shapeDef(tier).cardNodes, fairShare(tier), cardCap(tier), deck, leanIndex, lean, options), deck, options)
   const open = unlockedNodeCount(tier, trainingLevel)
   const assignments: Record<string, NodeAssignment> = {}
   for (const node of [...template.nodes].sort((a, b) => a.order - b.order)) {
@@ -176,6 +206,166 @@ export function rivalRunners(tier: number, grade: RaceGrade, distance: number, s
     return { id: `rival-${gate}`, label: String(gate + 1), stats: slot.stats, strategy: slot.strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
       skills: rivalKit(slot.strategy, distance, seed * 131 + gate) }
   })
+}
+
+// --- The rework's builds (docs/rework/03-uma-progression.md §8–§9, 04 §7–§8, 05 §4 and §6; T133) ---------------------
+// A full-layer build at the game's scenario T on T128's `deriveBuild`: the re-authored tree of N card nodes all open,
+// every card of the current era at 100% (no stars), the Inspiration slots her layers open filled, and the scenario's
+// Extra Stats capacity active. Rivals are T125's `rollRivalFieldAt`. Every Uma, parent and card here is invented.
+
+const APTITUDE_A = {
+  surface: { turf: 'A', dirt: 'A' },
+  distance: { sprint: 'A', mile: 'A', medium: 'A', long: 'A' },
+  strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' },
+} as Aptitudes
+const synthetic = (id: string): UmaTemplate => ({
+  id, charaId: `chara-${id}`, name: `Synthetic ${id}`, outfit: null, jpRelease: '2000-01-01', globalRelease: null, starter: true,
+  baseStats: { ...BASE }, growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, aptitudes: APTITUDE_A,
+  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: '',
+})
+/** The sims' Uma: the median base stats above, zero growth, A everywhere. */
+export const REWORK_UMA = synthetic('sim-uma')
+/** One invented parent per Inspiration slot, each her own character, so every open slot can be filled. */
+const REWORK_PARENTS: Readonly<Record<InspirationSlot, UmaTemplate>> = Object.fromEntries(
+  INSPIRATION_SLOTS.map((slot, index) => [slot, synthetic(`sim-parent-${index}`)])) as Record<InspirationSlot, UmaTemplate>
+const NO_EFFECTS = Object.fromEntries(CARD_EFFECTS.map((key) => [key, 0])) as Record<CardEffect, number>
+
+/** An invented card of a type and era, its own character, with no skills or effects: only its node value matters. */
+export const reworkCard = (type: CardType, era: number, index: number): SupportCardTemplate => ({
+  id: `${type}-${index}`, charaId: `chara-${type}-${index}`, charName: `Synthetic ${type} ${index}`, title: `${type}-${index}`, type,
+  jpRelease: '2000-01-01', era, obtain: 'free', starter: true, hintSkillIds: [], eventSkillIds: [], effectProfile: NO_EFFECTS,
+  uniqueEffect: null, imageSource: '',
+})
+
+/** A card's fair share and the per-card cap on scenario T's re-authored tree (D134): 2/3, 3/4, 4/5, 4/5, 5/6. */
+export const reworkFairShare = (T: number) => treeFairShare(treeCardNodesAt(T))
+export const reworkCardCap = (T: number) => perCardCap(treeCardNodesAt(T))
+
+/**
+ * The active Extra Stats a preset leaning on `stat` turns on in scenario s of a tier: every opened node that pays the
+ * stat, most first (singles, then Duos, then Suns), then the nodes that pay its backup (Guts behind Stamina, Power
+ * behind Speed, as today's six), up to the capacity (05 §6). Map order breaks ties.
+ */
+export function leanExtraNodes(scenario: ScenarioOfTier, stat: StatKey): string[] {
+  const backup = EXTRA_BACKUP[stat]
+  const pays = (node: (typeof EXTRA_NODES)[number], paid: StatKey) => (node.stats.includes(paid) ? EXTRA_NODE_VALUES_TIER_1[node.kind] : 0)
+  return EXTRA_NODES.map((node, index) => ({ node, index }))
+    .filter(({ node }) => node.layer <= scenario)
+    .sort((a, b) => pays(b.node, stat) - pays(a.node, stat) || pays(b.node, backup) - pays(a.node, backup) || a.index - b.index)
+    .slice(0, extraCapacity(scenario))
+    .map(({ node }) => node.id)
+}
+
+export interface ReworkBuildOptions extends Pick<BuildOptions, 'friend' | 'first'> {
+  /** Career goals won in the scenario, for Climax (04 §8). Defaults to 2, the typical Uma's when she races her G1s. */
+  goalsWon?: number
+  /** The scenario's buff; off only to measure what it adds. */
+  buffs?: boolean
+}
+
+/**
+ * One preset of a full-layer build at scenario T: today's `buildStats` allocation on the re-authored tree (the lean,
+ * `first` cards to the cap, Speed then Wit, the Friend card first or last), every Inspiration slot her layers open
+ * filled, and Extra Stats leaning on `statNodesTo` at the scenario's capacity. Derived by T128's `deriveBuild`.
+ */
+export function reworkBuild(T: number, deck: CardType[], leanIndex: number, lean: number, statNodesTo: StatKey,
+  options: ReworkBuildOptions = {}): DerivedBuild {
+  const at = tierAndScenario(T)
+  const N = treeCardNodesAt(T)
+  const cards = deck.map((type, index) => reworkCard(type, T, index))
+  const ids = cards.map((card) => card.id)
+  const queue = dealNodes(ids, allocateNodes(N, reworkFairShare(T), reworkCardCap(T), deck, leanIndex, lean, options), deck, options)
+  const unlocks = LAYERS.filter((s) => s <= at.scenario).flatMap((s) => layerUnlocks(s))
+  const targets = (...kinds: string[]) => unlocks.filter((entry) => kinds.includes(entry.kind)).map((entry) => entry.target)
+  const slots = targets('slot') as InspirationSlot[]
+  const preset: Preset = {
+    cardSetIds: ids,
+    assignments: Object.fromEntries(queue.map((cardId, index) => [cardNodeId(index + 1), cardId])),
+    lineage: Object.fromEntries(slots.map((slot) => [slot, REWORK_PARENTS[slot].id])),
+    activeExtraNodes: leanExtraNodes(at.scenario, statNodesTo),
+    loadoutSkillIds: [],
+  }
+  const build: UmaBuild = {
+    constellationOpened: N,
+    inspiration: { slots, uniques: targets('unique') as InspirationSlot[], golds: targets('gold') },
+    extraNodes: targets('single', 'duo', 'sun'),
+    bonds: ids,
+    presets: { sprint: preset, mile: preset, medium: preset, long: preset },
+  }
+  const content: TrainingContent = {
+    umas: new Map([REWORK_UMA, ...Object.values(REWORK_PARENTS)].map((uma) => [uma.id, uma])),
+    cards: new Map(cards.map((card) => [card.id, card])),
+    skills: new Map(),
+  }
+  return deriveBuild({ at, build, preset: 'mile', template: REWORK_UMA, content, goalsWon: options.goalsWon ?? 2, buffs: options.buffs })
+}
+
+/** A rework build's race stats. */
+export const reworkStats = (...args: Parameters<typeof reworkBuild>): Stats => reworkBuild(...args).stats
+
+/** `rivalRunners` on T125's fields: scenario T's typical trained Uma at today's handicaps, seeded the same way. */
+export function rivalRunnersAt(T: number, grade: RaceGrade, distance: number, size: number, playerGate: number, seed: number) {
+  const slots = rollRivalFieldAt({ T, grade, distance: categoryOf(distance), meters: distance, count: size - 1, rng: createRng(seed ^ 0x5bd1e995) })
+  return slots.map((slot, index) => {
+    const gate = index < playerGate ? index : index + 1
+    return { id: `rival-${gate}`, label: String(gate + 1), stats: slot.stats, strategy: slot.strategy, gate, aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
+      skills: rivalKit(slot.strategy, distance, seed * 131 + gate) }
+  })
+}
+
+/**
+ * The rework's typical build (04 §8, 06 §2 "What a typical build needs"): the stamina ladder's set for each distance,
+ * full layer, every card current-era at 100%, Extra Stats at capacity, the Friend card on its fair share, her open
+ * Inspiration slots filled and two career goals won.
+ */
+export const REWORK_TYPICAL_SETS: readonly { distance: DistanceCategory; build: (T: number, options?: ReworkBuildOptions) => DerivedBuild }[] = [
+  { distance: 'sprint', build: (T, options) => reworkBuild(T, STAYER, 2, reworkFairShare(T), 'speed', options) },
+  { distance: 'mile', build: (T, options) => reworkBuild(T, STAYER, 2, reworkFairShare(T), 'stamina', options) },
+  { distance: 'medium', build: (T, options) => reworkBuild(T, STAYER_POWER, 2, reworkFairShare(T) + 1, 'stamina', { ...options, first: [3] }) },
+  { distance: 'long', build: (T, options) => reworkBuild(T, LONG, 2, reworkFairShare(T) + 1, 'stamina', { ...options, first: [3] }) },
+]
+
+/** A build's tree in raw points: card points and Extra Stats, before growth and caps (what a buff's share is of). */
+const treePoints = (build: DerivedBuild) => build.cardRawTotal + STATS.reduce((sum, stat) => sum + build.extra[stat], 0)
+
+/**
+ * What scenario T's buff adds to the rework's typical build, as a share of her tree (today's measure, D165): each
+ * distance's set with the buff over the same set without it, averaged over the four sets.
+ */
+export function reworkBuffTypical(T: number): { typical: number; bySet: Record<DistanceCategory, number> } {
+  const bySet = Object.fromEntries(REWORK_TYPICAL_SETS.map(({ distance, build }) =>
+    [distance, treePoints(build(T)) / treePoints(build(T, { buffs: false })) - 1])) as Record<DistanceCategory, number>
+  const values = Object.values(bySet)
+  return { typical: values.reduce((sum, value) => sum + value, 0) / values.length, bySet }
+}
+
+/** Each buff's typical value at the given T, rounded to a hundredth of a point: what the reports keep (04 §8). */
+export function reworkTypicalRows(Ts: readonly number[]): TypicalRow[] {
+  const round = (value: number) => Math.round(value * 10_000) / 10_000
+  return Ts.map((T) => {
+    const { typical, bySet } = reworkBuffTypical(T)
+    return { T, measured: round(typical), bySet: Object.fromEntries(Object.entries(bySet).map(([set, value]) => [set, round(value)])) as TypicalRow['bySet'] }
+  })
+}
+
+/**
+ * The typical values as both rework sims print them: today's, measured and what rivals carry (`REWORK_BUFF_TYPICAL`).
+ * A measurement more than half a point from today's is re-pinned to it (T133); a row whose pin disagrees says so.
+ */
+export function typicalLines(rows: readonly TypicalRow[]): string[] {
+  const pct = (value: number) => `${(100 * value).toFixed(1)}%`
+  return [
+    "Scenario buffs' typical gain on the rework's typical build (the ladder's four sets, full layer, two goals won), as a share of her tree",
+    'T    buff            today   measured   rivals carry   by set: sprint · mile · medium · long',
+    ...rows.map((row) => {
+      const today = SCENARIO_BUFFS[row.T - 1]!.typical
+      const carried = REWORK_BUFF_TYPICAL[row.T - 1]!
+      const expected = Math.abs(row.measured - today) > 0.005 ? Math.round(row.measured * 1000) / 1000 : today
+      const flag = carried !== expected ? `  ← rivals should carry ${pct(expected)}: re-pin` : expected !== today ? '  (re-pinned)' : ''
+      const sets = (['sprint', 'mile', 'medium', 'long'] as const).map((set) => pct(row.bySet[set])).join(' · ')
+      return `T${String(row.T).padStart(2)}  ${reworkBuff(row.T).name.padEnd(14)}  ${pct(today).padStart(5)}   ${pct(row.measured).padStart(7)}    ${pct(carried).padStart(7)}       ${sets}${flag}`
+    }),
+  ]
 }
 
 export const categoryOf = (distance: number): DistanceCategory =>

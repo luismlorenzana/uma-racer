@@ -1,8 +1,8 @@
 # Open Questions
 
-**None.** The game rework is approved (D336, and D338 for the Gym), and the plan is in [tasks](tasks/README.md). New
-questions land here with a recommendation, get resolved in the same session where possible, and then move to the
-[decisions log](decisions.md).
+**None.** The game rework is approved (D336, and D338 for the Gym), and the plan is in [tasks](tasks/README.md). The
+last one, the stamina ladder at a tier's first scenario, took its recommendation (D350). New questions land here with a recommendation, get resolved in the
+same session where possible, and then move to the [decisions log](decisions.md).
 
 Draft numbers across the design and rework docs are tuning values until they are pinned in domain tests and a
 decision. The rework's numbers are tuned by `pnpm sim:loop` in phase 2 ([M033](tasks/M033-rework-rules.md)).

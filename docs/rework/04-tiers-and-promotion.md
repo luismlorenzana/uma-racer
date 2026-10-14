@@ -336,8 +336,9 @@ Rivals are today's, unchanged (D336, [03](03-uma-progression.md) §9): **the typ
 with today's 84% card factor and Extra Stats at the scenario's capacity, handicapped by today's grade table (G1 at
 95%).
 - **The ladder keeps its shape.** Today's `trainedStat` runs 650 (scenario 1) to about 925 (14). The new trees keep
-  each scenario's budget at 60% of its caps, so the typical Uma stays near that range and extends to the 15th.
-  `pnpm sim:careers` re-measures every cell once the buffs' typical values are known.
+  each scenario's budget at 60% of its caps, so the typical Uma stays near that range and extends to the 15th. With
+  the buffs' typical values re-measured (§8), she runs 642 at T = 1 to 969 at 14. `pnpm sim:rework-careers` races
+  every career stage against these fields, and each meets its target ([03](03-uma-progression.md) §9).
 - **A promoted Uma** meets a field a little above the one she just left, with none of her build. She loses at first
   and wins again as her new layer fills, the reset the owner asked for.
 
@@ -414,10 +415,43 @@ changed from today's buffs:
 - **It mirrors New Wave**, the next tier's first buff, which favours the newest cards.
 - It is placement-free: moving a card between nodes changes nothing.
 
-**Every typical value is re-measured.** Today's run 0–5.5% of a tree. The layered model changes the typical build
-(full layer, every card at 100%, Extra Stats at capacity), and Team Spirit, Fragments and Encore are new rules.
-`pnpm sim:careers` computes each one, and rivals carry it. The aim is today's range, about 2–5%. Legends stays at 0,
-since it pays aptitudes and skills, not stats.
+**Every typical value is re-measured** (T133, D349). Today's run 0–5.5% of a tree. The layered model changes the
+typical build, and Team Spirit, Fragments and Encore are new rules. `pnpm sim:rework-builds` measures each buff on the
+rework's typical build: the stamina ladder's four distance sets ([06](06-cards-and-bonds.md) §2) at full layer, every
+card current-era at 100%, Extra Stats at capacity, her open Inspiration slots filled and two career goals won. The value
+is what the buff adds as a share of her tree (card points and Extra Stats), averaged over the four sets. A value that
+moved more than half a point from today's is re-pinned, and rivals carry it (`REWORK_BUFF_TYPICAL` in
+`@racer/domain/rework/tiers`); the rest keep today's. The 15th's waits for its content (§2). A bold value is re-pinned:
+
+<!-- live:rework-buff-typical -->
+| T | Scenario | Buff | Today | Measured on the rework's typical build | Rivals carry |
+|---|---|---|---|---|---|
+| 1 | URA Finale | Foundation | 4.0% | 3.3% | **3.3%** |
+| 2 | Unity Cup | Team Spirit | 3.7% | 3.5% | 3.7% |
+| 3 | Trackblazer | Climax | 3.7% | 3.5% | 3.7% |
+| 4 | Our Grand Concert | Performance | 2.3% | 0.0% | **0.0%** |
+| 5 | Grand Masters | Fragments | 0.0% | 0.0% | 0.0% |
+| 6 | Project L'Arc | New Wave | 4.6% | 4.7% | 4.6% |
+| 7 | U.A.F. Ready GO! | Genres | 2.2% | 3.9% | **3.9%** |
+| 8 | Great Food Festival | Full Course | 2.0% | 6.7% | **6.7%** |
+| 9 | Run! Mecha Umamusume | Research | 5.5% | 4.7% | **4.7%** |
+| 10 | The Twinkle Legends | Legends | 0.0% | 0.0% | 0.0% |
+| 11 | Design Your Island | Construction | 3.7% | 1.5% | **1.5%** |
+| 12 | Yukoma Hot Springs | Soak | 2.8% | 3.0% | 2.8% |
+| 13 | Beyond Dreams | Shared Light | 1.9% | 0.9% | **0.9%** |
+| 14 | Tracen Diner | Orders | 5.4% | 4.2% | **4.2%** |
+<!-- /live -->
+
+- **Why they moved.** Foundation's ×1.5 lifts five Extra Stats nodes, a smaller share of the fatter tree. Performance
+  and Fragments pay nothing to the ladder's sets: none holds a Guts card, and every card is of the current era.
+  Genres pays each set's pairs (two Speed cards, and two Wit or two Stamina cards), Full Course every card the ladder
+  fills to its cap, Research the two Speed cards and the medium set's Power card. Construction pays only the sets whose
+  stamina card sits on its fair share, Shared Light only the two lowest stats' card points, and Orders the Friend
+  card's fair share at a quarter.
+- **The aim was today's range, about 2–5%.** Full Course measures above it and Performance, Fragments, Construction and
+  Shared Light below. Rivals carry each value, so none moves a field's difficulty: a buff only sets how far a build that
+  leans into it gets ahead (D165). The rules stay this section's.
+- Legends stays at 0, since it pays aptitudes and skills, not stats.
 
 ## 9. What the owner sees at promotion, and the awards
 
@@ -528,6 +562,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 | The node formula's 240 becomes the scenario's full active Extra Stats, E(*t*, *s*), [05](05-training-hub.md)'s extraBudget | Keeps the whole build at 60% of the cap budget, the basis of every balance target |
 | Rivals and Expedition fields use today's typical Uma and today's handicaps, unchanged | The owner's rule (D336); a fully trained Uma keeps today's edge at home, and Expeditions sit a step above a home G1 |
 | Team Spirit +1% per filled Inspiration slot (D346) | A full Unity Cup build has four slots since D336, so +4% |
+| Rivals carry the buffs' typical values re-measured on the rework's typical build, the ladder's four distance sets at full layer; a value that moved more than half a point is re-pinned (D349) | §8's review; today's were measured on today's 3★ sets, and rivals must carry what a full-layer build gains |
 | Fragments: cards from era 4 or older pay +8% | Replaces a star rule; a real choice between old bonds and the newest era, with no new save field |
 | "Expedition" renamed **New Wave**, "Cooking" renamed **Full Course** | No collision with World Expeditions or the Kitchen |
 | The 15th's placeholder buff: **Encore**, Wit cards +10% | The one stat type no buff favours |
@@ -557,7 +592,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
   starts her at the next tier's scenario 1 with a frozen career.
 - An Uma Ticket can only unlock an unowned Uma into tier 1, scenario 1. Each scenario gate pays 1 Uma Shard once per Uma per tier, 5 Shards make a ticket, and no Prize Money path makes one.
 - The buff table in the domain matches §8 (names, rules, Encore), and every buff stays placement-invariant in tests.
-  `pnpm sim:careers` reports each one's typical value, and rivals carry it.
+  `pnpm sim:rework-builds` reports each one's typical value, and rivals carry it.
 - A tier-3 Expedition success inducts the Uma in the same commit, pays a ticket, never resets her, keeps her
   Expedition runs, and shows her in the Hall of Fame.
 - The promotion ceremony plays once per promotion, after the sheet, and skips to the profile on Skip or reduced motion.

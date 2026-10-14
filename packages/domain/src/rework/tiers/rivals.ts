@@ -8,22 +8,32 @@ import {
   STYLE_PROFILE, TYPICAL_BASE_STAT, TYPICAL_CARD_STARS, fullSpurtStamina, rollRivalStats, rollStyleCounts,
   type RivalRng, type RivalSlot, type SpreadStat,
 } from '../../opponents'
-import { SCENARIO_BUFFS, scenarioBuff } from '../../scenario-buffs'
 import { STATS, STRATEGIES, type DistanceCategory, type RaceGrade, type Stats, type Strategy } from '../../types'
 import { fairShare, treeCardNodesAt } from '../constellation/sizes'
 import { TODAY_CATALOGUE, type ScenarioCatalogue } from './map'
 import { capBudgetAt, capProfileAt, extraBudgetAt, nodeValue } from './scaling'
 
 /**
+ * What each scenario's buff adds to the typical trained Uma, T = 1–14, as a share of her tree (04 §8): rivals carry it
+ * (D165). Re-measured on the rework's typical build by `pnpm sim:rework-builds` (T133, D349): the ladder's four
+ * distance sets at full layer, every card current-era at 100%, Extra Stats at capacity, her open Inspiration slots
+ * filled and two career goals won. A value the measurement moved by more than half a point is re-pinned to it; the
+ * rest keep today's (`SCENARIO_BUFFS[*].typical`). The 15th has none until it ships (04 §2).
+ */
+export const REWORK_BUFF_TYPICAL: readonly number[] = Object.freeze([
+  0.033, 0.037, 0.037, 0, 0, 0.046, 0.039, 0.067, 0.047, 0, 0.015, 0.028, 0.009, 0.042,
+])
+
+/**
  * The typical trained Uma's average stat at scenario T: today's `trainedStat` on the new trees. Her base, plus a fifth
- * of her stat cards' nodes at 84% and the scenario's full active Extra Stats, with the buff's typical value. The
- * typical values are today's drafts until `sim:careers` re-measures them (04 §8, T133); the 15th has none yet.
+ * of her stat cards' nodes at 84% and the scenario's full active Extra Stats, with the buff's typical value.
  */
 export function rivalTrainedStat(T: number): number {
-  if (!Number.isInteger(T) || T < 1 || T > SCENARIO_BUFFS.length) throw new RangeError(`Scenario ${T} has no typical buff value yet`)
+  const typical = Number.isInteger(T) && T >= 1 ? REWORK_BUFF_TYPICAL[T - 1] : undefined
+  if (typical === undefined) throw new RangeError(`Scenario ${T} has no typical buff value yet`)
   const N = treeCardNodesAt(T)
   const tree = ((N - fairShare(N)) * nodeValue(T) * starNodePct(TYPICAL_CARD_STARS)) / 100 + extraBudgetAt(T)
-  return TYPICAL_BASE_STAT + (tree * (1 + scenarioBuff(T).typical)) / STATS.length
+  return TYPICAL_BASE_STAT + (tree * (1 + typical)) / STATS.length
 }
 
 /** D191 over the catalogue: the lowest typical build from T to the catalogue's last scenario. */

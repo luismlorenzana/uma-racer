@@ -27,6 +27,8 @@
     "sim:balance": "pnpm dlx tsx scripts/sim/strategy-balance.ts",
     "sim:constellation": "pnpm dlx tsx scripts/sim/constellation-balance.ts",
     "sim:careers": "pnpm dlx tsx scripts/sim/career-balance.ts",
+    "sim:rework-builds": "pnpm dlx tsx scripts/sim/rework-builds.ts",
+    "sim:rework-careers": "pnpm dlx tsx scripts/sim/rework-careers.ts",
     "sim:turns": "pnpm dlx tsx scripts/sim/turn-balance.ts",
     "assets:bust-sheet": "pnpm --filter @racer/asset-pipeline run bust-sheet",
     "sim:training": "pnpm dlx tsx scripts/sim/training-balance.ts",

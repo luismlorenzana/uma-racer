@@ -1,7 +1,7 @@
 // The scenario buffs, reviewed (docs/rework/04-tiers-and-promotion.md §8): one per scenario, deterministic, a whole
 // percentage on card nodes in the derivation (D165), never paid by which node a card sits on. Foundation alone touches
 // Extra Stats. The unchanged rules keep today's values (`BUFF_VALUES`); Team Spirit, Fragments and Encore are new, and
-// two are renamed. Rivals' typical values stay with the tier rules until they are re-measured (T133).
+// two are renamed. Rivals' typical values stay with the tier rules (`REWORK_BUFF_TYPICAL`), re-measured in T133.
 import { BUFF_VALUES } from '../../scenario-buffs'
 import { LAST_SCENARIO_NUMBER, scenarioRow } from '../tiers/map'
 import { EXTRA_NODE_VALUES_TIER_1 } from '../tiers/scaling'
