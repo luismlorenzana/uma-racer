@@ -307,6 +307,15 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | Card Collector, Maxed Out and Coupon Clipper retire; Card Partners and [Era]/[Type] Bonded replace them | Collection becomes bonding, so its achievements count bonds |
 | Era Loyalist reads the sets of every race in the scenario | Four presets mean several sets per scenario |
 | No per-account card entity | Every card is open; bonds live on Umas ([13](13-removals-and-plan-changes.md)) |
+| `remainingUnlocks` takes the cards the owner has chosen to bond; the rest of each layer's pacing count shows as "pick cards", oldest layer first, with bonds made or pending counted toward it (D344) | [02](02-check-ins-and-notifications.md) §6 cascades only chosen bonds; the caller (a screen, or the loop simulation's deck) supplies the choice |
+| The card buff applies to a Friend or Group card's SP, as today (D344) | 03 §8 and §1 omit it from the SP formula, but 03 §8 calls Friend and Group "unchanged" and D165 buffs every card node |
+| A bond's layer is its card's first eligible scenario *p*; a card past her scenario refuses with the scenario that opens it, a card past her tier with its own tier's scenario (D344) | One rule for the grade and the lock; 18 a tier stays a count, not a cap |
+| A Dojo session reads each bonded card's type and era from the content (`cards`), never from the request (D344) | The dish and grade follow the card; a request can't name a cheaper one |
+| A card set refuses an unbonded card, a card twice, a character twice, a card past her scenario and a seventh card; replacing a card in its slot hands its nodes over, removing one empties them, exactly as today's `withCardSet` (D129, D344) | §3's rules; the hand-over is today's, proven by a parity test |
+| Lineage picks go only in open slots, from Umas the account owns, never herself, under D250's repeat rules and Legends (D344) | [05](05-training-hub.md) §5 pays "a filled open slot" |
+| A loadout keeps her unique first and checks the rest against the preset's derived library and SP; one over her SP is refused unless it costs no more than the one it replaces (D196, D344) | Today's rules; the unique is always equipped and costs nothing |
+| Cross-task acceptance #2 (demand equals [08](08-item-catalogue-and-recipes.md) §7) belongs to the loop simulation (D344) | 08 §7 puts 9 of 18 bonds at even grades, which the era rule can't produce; the simulation rewrites 08 §7 |
+| §2's "Cards" column leaves the live block for a sentence (D344) | It counts the private pack, which code may not render |
 
 ## 12. Done when
 

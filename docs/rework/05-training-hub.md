@@ -759,7 +759,7 @@ A locked item is never a dead end: it says what it needs and links to the step t
 
 | Where ([13](13-removals-and-plan-changes.md) §6) | What |
 |---|---|
-| `umas/{outfitId}` unlocks | `constellationOpened` (0–28: the count, since order is fixed); Inspiration `slots` (up to six ids), `uniques` (up to six slot ids, D336) and `golds` (up to twelve `slot:gold1/2` keys); Extra Stats `nodes` (ids such as `speed-03`, `duo-power-speed-3`, `sun-4`); `active` Extra ids per preset; bonds ([06](06-cards-and-bonds.md)) |
+| `umas/{outfitId}` unlocks | `constellationOpened` (0–28: the count, since order is fixed); Inspiration `slots` (up to six ids), `uniques` (up to six slot ids, D336) and `golds` (up to twelve keys, `<slot>:gold0` for gold 1 and `<slot>:gold1` for gold 2, today's `inspirationGoldKey`); Extra Stats `nodes` (ids such as `speed-03`, `duo-power-speed-3`, `sun-4`); `active` Extra ids per preset; bonds ([06](06-cards-and-bonds.md)) |
 | `work/{outfitId}` | Her session: facility, room, slot, start time, the ordered unlocks (kind, target id, grade, dish id, minutes), reserved dish ids, Speed Ticket minutes applied, the facility speed it started at |
 | `buildings/{id}` | Each facility's level |
 | `itemLedger` | Reserve, return and consume rows for every dish, keyed by the session's operation id |
@@ -821,6 +821,22 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | **A queued session takes the facility's speed and its dishes when it starts**, and is checked when it's added, counting her earlier entries as made | §7 applies speed to sessions started after an upgrade; an unlock may depend on one queued ahead of it |
 | **Ties between queued starts go by [07](07-farm.md) §1's buildings, then the Observatory, Lineage Hall, Gym and Dojo, then room and slot** | [07](07-farm.md) §2 orders only the Farm buildings, but sessions queue too |
 | **Collect never refuses, and Recall with nothing running acts as Collect** | [02](02-check-ins-and-notifications.md) §9: an action already done shows its result |
+| The Training Hub's rules own [04](04-tiers-and-promotion.md) §8's reviewed buffs (D344) | They apply only in the derivation; rivals' typical values stay with the tier rules until the builds are re-measured against the field |
+| Facility slots, levels, speed and prices are the Farm's buildings' (`rework/farm`); node value, E and Extra Stats values per tier are the tier rules' (D344) | One owner per number |
+| Canonical unlock order: the Observatory by node; the Lineage Hall as §3's table; a Gym room by layer, grade, single, Duos in ring order, then the Sun; the Dojo has none, since a bond names its card (D344) | Repeat and the planner need a "next *N*"; a bond needs a chosen card ([02](02-check-ins-and-notifications.md) §6) |
+| "Next *N*" passes over an item still waiting on something, so a Gym room's next may skip a Duo or Sun for its stat's next single (D344) | The room still gives a full session; the skipped item opens once its singles are done |
+| Her work ahead of an unlock meets its dependency: every unlock of her started entries, made or not, and of her queued sessions ahead of it (D344) | A queued entry starts when the one before ends, finished but uncollected |
+| A later layer refuses with "Opens in scenario *s* · *Name*", checked before what an unlock waits on; a bond's card past her scenario refuses the same way (D344) | The locked item names what opens it; one sentence for both |
+| Reuse today's slot ids and gold keys (`parent0` … `parent1-gp1`; gold 1 is `inspirationGoldKey(slot, 0)`) (D344) | One id scheme with `lineage.ts` and `inspiration.ts`; §9's `slot:gold1/2` meant the same two positions |
+| Inspiration lists stay in slot order; Extra Stats nodes stay in opening order (D344) | Opening order is what "oldest first" reads when an advance raises the capacity; slot order is today's |
+| A session request names its unlocks only; its slot names the facility and room. One facility (`mixed-facility`), the slot's facility (`not-here`), and a room that takes every unlock (`wrong-room`) (D344) | The engine's slot already says where; a Duo may go in either of its rooms and a Sun in any |
+| A session earns no Farm EXP; its seconds are `workSeconds(180 + 15(g − 1), speed)` at the facility's speed when it starts (D344) | Farm EXP is for Farm work (D336); speed is frozen into the entry as for jobs |
+| Collect commits finished unlocks in order, and the collect receipt's `paid` lists every opening and newly bonded card (D344) | One receipted write; "ever bonded" is recorded from it ([06](06-cards-and-bonds.md) §7) |
+| A new node joins every preset with the set's card holding the fewest nodes under its cap, ties to the earlier slot, or stays empty; a new Extra Stats node turns on in every preset with room (D344) | [03](03-uma-progression.md) §6's rule; no visit to the constellation after a session |
+| `advanceScenario` is the tier rules' advance followed by the carry: sets, assignments, lineage and loadouts stay; raised capacity fills with opened nodes that were off, oldest first (D344) | The tier rules land first and can't import the Training Hub's |
+| `layerDone(s)` is layer *s*'s fixed unlocks open and bonds at the pacing count by its end (6, 9, 12, 15, 18) (D344) | "Fully Trained" for that scenario; earlier layers' Duos, Suns and golds don't block it |
+| The derivation counts cards that are in the set, bonded and of an era her scenario allows; anything else pays nothing (D344) | Pure and total, as today's `deriveStats`: a stale id never breaks a read |
+| Team Spirit counts the filled open slots whose pick passes D250's repeat rules (D344) | The same slots that pay aptitudes |
 
 ## 12. Done when
 
