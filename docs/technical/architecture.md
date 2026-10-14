@@ -1,5 +1,9 @@
 # Architecture
 
+> **Packaging since D337:** the API imports `@racer/domain` (a CommonJS build) instead of generated mirrors, and the
+> startup budget is enforced. The current shape is in [the manual](../game/architecture.md); the rebuild is
+> [docs/rearchitecture/](../rearchitecture/README.md).
+
 ## Farm production/cooking (D315)
 
 M031/T118–T124 completes the [Farm loop](../design/farm-kitchen-rework.md).

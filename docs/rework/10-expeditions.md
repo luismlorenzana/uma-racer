@@ -1,6 +1,6 @@
 # World Expeditions
 
-> **Status: design for owner review, 2026-10-13 (D327, D332).** Nothing here is built. Every number is a **draft** that
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D327, D332).** Nothing here is built. Every number is a **draft** that
 > `pnpm sim:expeditions` and the loop simulation ([12](12-economy-and-pacing.md) §12) tune, then pin in tests. The race
 > pools are the [World Expeditions research](../research/world-expeditions.md)'s.
 

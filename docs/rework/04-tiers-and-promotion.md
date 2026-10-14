@@ -1,6 +1,6 @@
 # 04 · Tiers and promotion
 
-> **Status: design for owner review, 2026-10-13 (D327, D331, D332).** Three tiers of five scenarios, the 15th
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D327, D331, D332).** Three tiers of five scenarios, the 15th
 > scenario, promotion, what resets and what carries, Uma Tickets and the roster, tier scaling, and the scenario buffs
 > reviewed for the rework. Every number is a **draft**; the sims named in each section pin it.
 
@@ -248,19 +248,20 @@ others. The 15th continues the rotation.
 
 ### Extra Stats node values
 
-The README's tier-1 values, ×1.25 in tier 2 and ×1.5 in tier 3. Every node totals 20 × the tier multiplier. The map
-and capacities are [05](05-training-hub.md)'s.
+The README's tier-1 values (D338), ×1.25 in tier 2 and ×1.5 in tier 3. Every node totals 40 × the tier multiplier.
+The map and capacities are [05](05-training-hub.md)'s.
 
 | Tier | Single | Duo | Sun | Full active Extra Stats, scenarios 1 · 2 · 3 · 4 · 5 |
 |---|---|---|---|---|
-| 1 | +20 | +10 / +10 | +4 to all five | 200 · 360 · 440 · 520 · 600 |
-| 2 | +25 | +12.5 / +12.5 | +5 to all five | 250 · 450 · 550 · 650 · 750 |
-| 3 | +30 | +15 / +15 | +6 to all five | 300 · 540 · 660 · 780 · 900 |
+| 1 | +40 | +20 / +20 | +8 to all five | 200 · 360 · 440 · 520 · 600 |
+| 2 | +50 | +25 / +25 | +10 to all five | 250 · 450 · 550 · 650 · 750 |
+| 3 | +60 | +30 / +30 | +12 to all five | 300 · 540 · 660 · 780 · 900 |
 
-- **The full active value** is the scenario's capacity × node total, but scenario 1's layer offers only 10 nodes
-  against a capacity of 14, so it counts 10.
-- **Halves.** The tier-2 Duo's half point is held exactly ([03](03-uma-progression.md) §8). Its node shows "+12.5".
-- **Foundation** (URA Finale) shows tier-1 nodes at +30, +15/+15 and +6 (§8).
+- **The full active value** is the scenario's capacity × node total, but scenario 1's layer offers only 5 nodes
+  against a capacity of 7, so it counts 5.
+- **Whole numbers.** At double strength every node value is a whole number in every tier, so the first draft's
+  tier-2 half point is gone.
+- **Foundation** (URA Finale) shows tier-1 nodes at +60, +30/+30 and +12 (§8).
 
 ### Constellation node values, and the 240 term
 
@@ -285,8 +286,8 @@ Why:
   every cap (D134), the stamina ladder holds, rival fields are set.
 - **Keeping 240 would drift.** The full build would grow to 64% of the budget by tier 1's scenario 5 and 67% by tier
   3's, and the drift grows with the tier. The fields, caps and ladder would all need retuning to follow it.
-- **Card nodes give up what the Gym adds.** Extra Stats are nearly half of all unlocks (62 of 132), and E shifts the build's
-  weight toward them as the layers grow.
+- **Card nodes give up what the Gym adds.** Extra Stats are about a third of all unlocks (37 of 107, D338), and E
+  shifts the build's weight toward them as the layers grow.
 
 | T | Scenario | *N* | Per-card cap | Node, 240 term | E | **Node (decided)** | Full build *N* × node + E | 60% of budget |
 |---|---|---|---|---|---|---|---|---|
@@ -353,7 +354,7 @@ With one build per tier, the buff changes at each advance, and the Advance sheet
 
 | T | Scenario | Buff | Rule after the rework | Change |
 |---|---|---|---|---|
-| 1 | URA Finale | **Foundation** | Extra Stats nodes pay ×1.5 (single +30, Duo +15/+15, Sun +6) | Wording: Extra Stats are now flat Gym nodes. Its 10 reachable nodes gain +100 |
+| 1 | URA Finale | **Foundation** | Extra Stats nodes pay ×1.5 (single +60, Duo +30/+30, Sun +12) | Wording: Extra Stats are now flat Gym nodes. Its 5 reachable nodes gain +100 |
 | 2 | Unity Cup | **Team Spirit** | Each filled Inspiration slot adds **+2%** to every card node | Was +1% per lineage slot. In Unity Cup a full build has only the two parent slots (grandparents open in layer 3), so +1% capped at +2% |
 | 3 | Trackblazer | **Climax** | Each career goal won in this scenario adds +2% to every card node, up to +8% | None |
 | 4 | Our Grand Concert | **Performance** | A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5% | None (the cards are bonded ones) |

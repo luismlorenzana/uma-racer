@@ -135,6 +135,10 @@ Two sources, one client ([02](02-platform-and-packages.md)):
 
 ## 5. The save, generation 2
 
+> **Revised by [rework/13](../rework/13-removals-and-plan-changes.md) §6.** The generation-2 save holds the rework's
+> kinds: no `cards/{cardId}`, no Puzzle kinds and no today's-Farm kinds, plus `work/{outfitId}`, `buildings/{id}` and
+> the rework's profile. The table below is the first draft's.
+
 Rewritten from scratch in `@racer/domain/save`. One schema version (1) per entity kind, no migrations, no legacy
 constants. Version bumps after launch follow uma-rpg's rule: a migration only when real data must survive.
 

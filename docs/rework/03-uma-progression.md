@@ -1,6 +1,6 @@
 # 03 · Uma progression
 
-> **Status: design for owner review, 2026-10-13 (D327, D328).** How one Uma progresses inside a tier: her Racing Level,
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D327, D328).** How one Uma progresses inside a tier: her Racing Level,
 > the five scenarios she climbs, her career in each, advancing, her one build per tier, and the stats she races with.
 > Every number is a **draft**; the sims named in each section pin it.
 
@@ -104,11 +104,11 @@ Racing Levels **10(*s* − 1) + 1 … 10*s*** of the tier. The full map, with th
 
 | *s* | Racing Levels | Tier 1 (T) | Tier 2 (T) | Tier 3 (T) | Layer adds ([05](05-training-hub.md)) |
 |---|---|---|---|---|---|
-| 1 | 1–10 | URA Finale (1) | Project L'Arc (6) | Design Your Island (11) | 32 unlocks, tree of 12 |
-| 2 | 11–20 | Unity Cup (2) | U.A.F. Ready GO! (7) | Yukoma Hot Springs (12) | 28, tree of 16 |
-| 3 | 21–30 | Trackblazer (3) | Great Food Festival (8) | Beyond Dreams (13) | 26, tree of 20 |
-| 4 | 31–40 | Our Grand Concert (4) | Run! Mecha Umamusume (9) | Tracen Diner (14) | 24, tree of 24 |
-| 5 | 41–50 | Grand Masters (5) | The Twinkle Legends (10) | Japan's 15th (15) | 22, tree of 28 |
+| 1 | 1–10 | URA Finale (1) | Project L'Arc (6) | Design Your Island (11) | 27 unlocks, tree of 12 |
+| 2 | 11–20 | Unity Cup (2) | U.A.F. Ready GO! (7) | Yukoma Hot Springs (12) | 23, tree of 16 |
+| 3 | 21–30 | Trackblazer (3) | Great Food Festival (8) | Beyond Dreams (13) | 21, tree of 20 |
+| 4 | 31–40 | Our Grand Concert (4) | Run! Mecha Umamusume (9) | Tracen Diner (14) | 19, tree of 24 |
+| 5 | 41–50 | Grand Masters (5) | The Twinkle Legends (10) | Japan's 15th (15) | 17, tree of 28 |
 
 **What the scenario she is in decides:**
 
@@ -190,13 +190,13 @@ arrives with 73–88% of the new scenario's full build instead of a fresh CL1 tr
 
 **Worked example (draft numbers).** Base 100 in every stat, growth +10% Speed and Stamina. A Medium preset with a
 Speed, Stamina, Power, Guts and Wit card and one Friend card, two nodes each. Her two parent slots are filled, and her
-ten Extra Stats singles are two per stat.
+five Extra Stats singles are one per stat (+40 each, D338).
 
 | | Speed | Stamina | Power | Guts | Wit | Average | SP |
 |---|---|---|---|---|---|---|---|
 | URA Finale, layer 1 done (node 283, Foundation ×1.5 on Extra) | 907 | 783 | 839 | 669 | 556 | 751 | 2,000 |
 | **Unity Cup on arrival** (12 of 16 nodes, node 212, cards one era old at 95%, Team Spirit +4%) | 693 | 601 | 643 | 517 | 433 | 577 | 1,632 |
-| Unity Cup, layer 2 done (four nodes to the stat cards, 18 Extra Stats active) | 963 | 871 | 892 | 600 | 600 | 785 | 1,872 |
+| Unity Cup, layer 2 done (four nodes to the stat cards, 9 Extra Stats active) | 963 | 871 | 892 | 600 | 600 | 785 | 1,872 |
 
 On arrival she's ahead of Unity Cup's lower grades but not yet ready for its G1s. Layer 2 makes her a G1 favourite
 again. Fields are today's (§9).
@@ -206,8 +206,8 @@ again. Fields are today's (§9).
 Opened from her profile or the Scenario Gate. It shows:
 - **The move:** "URA Finale → Unity Cup", with both crests and "Racing Lv 10 → 11".
 - **Stats before and after** for the selected preset: the five stats, SP and the new caps. A tab per preset.
-- **The new layer** as counts: "4 constellation nodes · 4 Inspiration golds · 15 Extra Stats nodes · 3 bonds".
-- **Unfinished earlier unlocks**, if any: "Layer 1: 28 of 32. The rest stay open."
+- **The new layer** as counts: "4 constellation nodes · 4 Inspiration golds · 2 grandparent slots · 10 Extra Stats nodes · 3 bonds".
+- **Unfinished earlier unlocks**, if any: "Layer 1: 23 of 27. The rest stay open."
 - **The new buff**, in one line, and **the new career**: her G3, two G2s and three G1s, by name.
 - **Free.** Nothing is spent.
 - **Buttons:** Advance, or Not yet.
@@ -261,7 +261,7 @@ Today's Load button (D288) becomes an automatic step of the advance, for all fou
     ends of the branches.
 - **Card set:** unchanged. The era window only widens (era ≤ T + 1), so every card stays eligible.
 - **Lineage picks:** unchanged. The six slots are the same in every scenario.
-- **Active Extra Stats:** unchanged. The capacity rises (14, 18, 22, 26, 30), and the new room fills with bought nodes
+- **Active Extra Stats:** unchanged. The capacity rises (7, 9, 11, 13, 15), and the new room fills with bought nodes
   that were off, oldest purchase first. The owner can switch any of them, free.
 - **Loadout:** unchanged, in its order. The library is the same, since the cards hold the same counts. If the new SP
   doesn't cover it, the equipped skills race in equip order while they fit (D132, D196), and the profile says so.
@@ -337,7 +337,7 @@ eraPct        = max(40, 100 − 5 × (T − era(card)))                    as to
 | **Card nodes** | Full value × era × buff, split by card type (Speed 0.70/0.30 and the rest, D180) | No star percentage; node values from the new tree sizes |
 | **Friend and Group cards** | Pay SP instead of stats (D132); Orders adds a quarter as stats | Unchanged |
 | **Growth rates** | Multiply card points only | Unchanged |
-| **Extra Stats** | Flat values per active node: tier 1 single +20, Duo +10/+10, Sun +4 to all five; ×1.25 in tier 2, ×1.5 in tier 3 | Was 6 × 40 from crops. Not multiplied by growth or any buff except Foundation (as D314 did for Farm Extra) |
+| **Extra Stats** | Flat values per active node: tier 1 single +40, Duo +20/+20, Sun +8 to all five (D338); ×1.25 in tier 2, ×1.5 in tier 3 | Was 6 × 40 from crops. Not multiplied by growth or any buff except Foundation (as D314 did for Farm Extra) |
 | **Scenario buff** | One whole percentage on card nodes, as today (D165) | Rules reviewed on [04](04-tiers-and-promotion.md) §8 |
 | **Caps** | Clamp each stat; never reduce one | Unchanged |
 | **Per-card cap** | `ceil(N / 6) + 1`: 3, 4, 5, 5, 6 (D134) | New tree sizes |
@@ -354,7 +354,7 @@ SP            = min( spCap(T), baselineSP(T) + Σ Friend/Group nodes × spNodeVa
 So the Observatory still pays SP as CL did, and a Friend or Group card on its fair share pays the other 60% (D133).
 In URA Finale, 12 open nodes give 800 SP, and a Friend card on two nodes adds 1,200, reaching the 2,000 cap.
 
-**Exact integers.** Every factor stays a whole percentage. The tier-2 Duo's +12.5 is held in hundredths like the
+**Exact integers.** Every factor stays a whole percentage. Every Extra Stats node value is a whole number (D338), held like the
 percentages, and the stat rounds once at the end, so the invariance rule still holds exactly: moving a card between
 nodes never changes a total (D126).
 

@@ -1,6 +1,6 @@
 # 13 · Removals and plan changes
 
-> **Status: design for owner review, 2026-10-13 (D326–D335).** What leaves Uma Racer with the rework, what stays, and
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326–D335).** What leaves Uma Racer with the rework, what stays, and
 > how the re-architecture plan ([docs/rearchitecture/](../rearchitecture/README.md), D321–D325) changes so the rework
 > and the rebuild ship as one game, wiped once.
 

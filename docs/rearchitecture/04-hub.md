@@ -1,5 +1,9 @@
 # 04 · Hub rework
 
+> **Superseded by [rework/11](../rework/11-hub-and-places.md) (D333).** The rework's four pages (Town Hall, Training,
+> Racing, Farm) replace this page's place list. The pattern here (registry, Peek and Page, routes, the DOM hit layer)
+> still stands, and rework/11 keeps it.
+
 The Home screen's scrolling list of cards becomes a **Hub**: pixel-art pages of places, each place opening its
 screen. It's the pattern uma-rpg runs today (its `docs/game/sections.md`), built on the shared `uma-scene` hub
 ([02](02-platform-and-packages.md) §4) and `uma-art`'s tiles and buildings ([03](03-rendering-and-textures.md)). The

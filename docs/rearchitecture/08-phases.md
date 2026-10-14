@@ -6,29 +6,39 @@ session first, and the racer then pins the released version.
 
 ## Overview
 
-| Phase | Goal | Repos | Needs | Size |
-|---|---|---|---|---|
-| **1** | A sound base: API on the workspace domain, budgets enforced, the live manual | uma-racer | — | M |
-| **2** | **Clean slate:** generation 2, the wipe, 20 Uma Tickets, the RPG and retired systems deleted | uma-racer | Phase 1 | L |
-| **3** | Platform master data and the first shared packages | uma-platform, then uma-racer | Phase 2 | L |
-| **4** | The Hub | uma-platform (scene kit, art), then uma-racer | Phase 3 | L |
-| **5** | The Farm on the new architecture | uma-platform (idle kit, art), then uma-racer | Phase 4 | M |
-| **6** | The race on Phaser; PixiJS confined to the Puzzles | uma-racer | Phase 4 | M |
-| **7** | The owner's feature and rebalancing docs | uma-racer | The owner's docs; any phase from 2 | — |
-| **8** | The Puzzles' future: port to Phaser, or move to uma-puzzle | uma-racer, maybe uma-puzzle | The owner's decision | M |
+> **Revised 2026-10-13 by the game rework (D335) and kept current here (D339).** The rework's rules are built and
+> simulated before the wipe, so the owner starts the new game once. This table is the order of work. The sections below
+> keep their first-draft numbers, given in the last column, and [rework/13](../rework/13-removals-and-plan-changes.md)
+> §4 explains every change.
 
-**Why the wipe comes early (phase 2).** Later phases change how things are drawn and loaded, not what is saved:
-- Master-data ids stay the same strings (P19).
-- The Hub, the Farm scene and the race port are presentation.
+| Phase | Goal | Status | Sections below |
+|---|---|---|---|
+| **1** | A sound base: the API on the workspace domain, the startup budget enforced, GitHub Packages, the live manual | **Done, 2026-10-14 (D337)** | Phase 1 |
+| **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [rework/12](../rework/12-economy-and-pacing.md) §12. No UI and no save change | **Next:** [M033](../tasks/M033-rework-rules.md) | — (new) |
+| **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | Specified after phase 2 | Phase 2 |
+| 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | Waits on the owner | — (new) |
+| 5 | Platform master data and the first shared packages | Planned | Phase 3 |
+| 6 | The Hub: four pages, the place registry, art ([rework/11](../rework/11-hub-and-places.md)) | Planned | Phase 4 |
+| 7 | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Planned | Phase 5 |
+| 8 | The race on Phaser (PixiJS is already gone) | Planned | Phase 6 |
+| **9** | **World Expeditions:** 13 pools, about 89 course layouts, local champions, the Expedition Map, `sim:expeditions`. **Deadline:** before the first Uma finishes tier 1's last career, about 16–20 weeks after phase 3 | Starts as soon as phase 3 ships | — (new) |
+| 9b | Race engine v10 inputs for tier 3's Expedition mechanics | About a year in | — (new) |
 
-So the owner can start the fresh game after phase 2 and keep playing through phases 3–6 without another reset. Save
-changes the owner's rebalancing docs require (phase 7) come with ordinary migrations then, or another wipe if the
-owner chooses.
+The first draft's phase 7 ("the owner's docs") is the rework itself, and its phase 8 ("the Puzzles' future") is
+decided: they are deleted in phase 3 (D326).
+
+**Why the rules come before the wipe.** The wipe should happen once, into the final save shape. Building and simulating
+the rules first proves the pacing before the owner's fresh start depends on it. The domain modules don't touch the live
+game, so they land on `main` piece by piece.
+
+**Why plain screens before the Hub.** The canvas Hub and pixel-art scenes are presentation over the same places and
+routes. Master-data ids stay the same strings (P19), so the owner keeps playing through phases 5–8 without another
+reset.
 
 **Cost.** No new cloud resources. The only new grant is read access to the platform bucket for `racer-api`'s service
 account. Firestore use drops with the wipe. The monthly bill stays about $0.
 
-## Phase 1: a sound base
+## Phase 1: a sound base (done, D337)
 
 | Step | Change | Exit |
 |---|---|---|
@@ -37,7 +47,7 @@ account. Firestore use drops with the wipe. The monthly bill stays about $0.
 | 1.3 | CI installs `@luismlorenzana/*` with `NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` and `packages: read`; `.npmrc` as in uma-rpg; the Docker build takes the token as a secret | A throwaway import of `@luismlorenzana/uma-data` builds in CI |
 | 1.4 | The live manual: `docs/game/` with uma-rpg's renderer and `pnpm docs:update`; first pages for scenarios, the race catalogue, the Farm catalogue and caps | `docs.test.ts` fails on a stale page |
 
-## Phase 2: clean slate
+## Phase 2: clean slate (now phase 3)
 
 One integration branch, `cutover/g2`, receives the steps below as reviewed pull requests and merges into `main` once,
 as a single release. The steps can't ship apart: each depends on the new save. `main` stays on today's game until the
@@ -64,7 +74,7 @@ merge.
 - Browser checks at 390×844.
 - A second-device simulation: an old-protocol request gets 426.
 
-## Phase 3: platform master data
+## Phase 3: platform master data (now phase 5)
 
 | Step | Repo | Change |
 |---|---|---|
@@ -79,7 +89,7 @@ merge.
 - The racer deploys on the platform release with no GameTora code.
 - A new Uma published by uma-platform appears in the Stable without a racer change.
 
-## Phase 4: the Hub
+## Phase 4: the Hub (now phase 6)
 
 | Step | Repo | Change |
 |---|---|---|
@@ -91,7 +101,7 @@ merge.
 
 **Exit:** [04](04-hub.md) §7.
 
-## Phase 5: the Farm
+## Phase 5: the Farm (now phase 7)
 
 | Step | Repo | Change |
 |---|---|---|
@@ -101,7 +111,7 @@ merge.
 
 **Exit:** [05](05-farm.md) §8.
 
-## Phase 6: the race on Phaser
+## Phase 6: the race on Phaser (now phase 8)
 
 | Step | Change |
 |---|---|
@@ -111,7 +121,7 @@ merge.
 
 **Exit:** [03](03-rendering-and-textures.md) §6.
 
-## Phase 7: the owner's docs
+## Phase 7: the owner's docs (became the rework)
 
 The owner writes what the racer should become: new features and rebalancing. Each doc becomes tasks in
 `docs/tasks/` with their own numbers, on top of whatever phase is done. The architecture is meant to absorb them
@@ -121,7 +131,7 @@ without structural change:
 - new art goes through `uma-art`;
 - new rules live in the domain and are rendered into the manual.
 
-## Phase 8: the Puzzles
+## Phase 8: the Puzzles (decided: deleted in phase 3)
 
 When the owner decides:
 - **If they stay,** `PuzzleBattleScene` moves to Phaser and PixiJS leaves the repo.

@@ -1,6 +1,6 @@
 # 01 · Game loop
 
-> **Status: design for owner review, 2026-10-13 (D326–D328, D331, D334).** How the new game plays from minute to
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326–D328, D331, D334).** How the new game plays from minute to
 > month: the loop, one Uma's scenario, the roster in rotation and a week in both modes. Every number is a **draft**
 > from the README's time model and [12](12-economy-and-pacing.md)'s first-pass model. `pnpm sim:loop`
 > ([12](12-economy-and-pacing.md) §12) replaces them and pins them in tests.
@@ -43,8 +43,8 @@ This page tells the story and owns the **activity rule** (D328). The pages it li
   check-in or the night ([02](02-check-ins-and-notifications.md) §3).
 - **Steps 1–3 are anybody's work and step 4 is hers.** Dishes go to the account's one Warehouse, and any Uma's
   session can use any dish of the right family and grade. Her own sessions are the only work nobody else can do for her.
-- **One unlock costs about 16 Uma-hours at grade 1 and 25 at grade 10**: five raw gathered, five crafted, one dish
-  cooked and one session ([12](12-economy-and-pacing.md) §4).
+- **One unlock costs about 20 Uma-hours at grade 1 and 30 at grade 10** (*k* = 1.2, D338): five raw gathered, five
+  crafted, one dish cooked and one session ([12](12-economy-and-pacing.md) §4).
 - **Which facility a dish feeds** follows its family (README table): Vegetables → Observatory, Mushrooms → Lineage
   Hall, the five stat families → that stat's Gym room and card bonds, Grains → Friend and Group bonds.
 
@@ -92,21 +92,21 @@ needs the owner to play at set times.
 
 ### Her layer
 
-Scenario 1's layer is **32 unlocks** (README), roughly half at grade 1 and half at grade 2:
+Scenario 1's layer is **27 unlocks** (README), 19 at grade 1 and 8 at grade 2:
 
 | Unlock | Count | Facility | Dish family |
 |---|---|---|---|
 | Constellation nodes (tree of 12) | 12 | Observatory | Vegetables |
 | Inspiration: both parent slots, then both parents' inherited uniques | 4 | Lineage Hall | Mushrooms |
-| Extra Stats singles | 10 | Gym, one room per stat | One single per stat at grade 1 and at grade 2 (README map): two dishes from each of Sweets, Fruits, Fish, Nuts & Seeds and Herbs & Spices |
+| Extra Stats singles | 5 | Gym, one room per stat | One single per stat at grade 1 (README map, D338): one dish from each of Sweets, Fruits, Fish, Nuts & Seeds and Herbs & Spices |
 | Card bonds | 6 | Dojo | Each card's family: e.g. 2 Speed (Sweets), 2 Stamina (Fruits), 1 Wit (Herbs & Spices), 1 Friend (Grains) |
 
-Her layer needs 32 dishes: 160 crafted items from 160 raw. That's about **537 Uma-hours** of somebody's work: about
-437 hours of Farm work and **100 hours of her own sessions** ([12](12-economy-and-pacing.md) §5).
+Her layer needs 27 dishes: 135 crafted items from 135 raw. That's about **539 Uma-hours** of somebody's work at
+*k* = 1.2: about 439 hours of Farm work and **100 hours of her own sessions** ([12](12-economy-and-pacing.md) §5).
 
 ### Her month
 
-She works about 18 hours a day (75%), so the 537 hours her layer costs take about four weeks. She spends about a fifth
+She works about 18 hours a day (75%), so the 539 hours her layer costs take about four weeks. She spends about a fifth
 of it in her own sessions and the rest on the Farm, mostly on dishes for other Umas. Her own dishes come from whoever
 is free.
 
@@ -161,7 +161,7 @@ On an average moment at the target ([12](12-economy-and-pacing.md) §3, §7):
 | Free until the next check-in | ~6 | The 25% that queues and Repeat shrink (and push, if the owner adopts it) |
 | **Racing** | any of them | About 12–13 races a day, none of which takes an Uma off her work |
 
-Per day that's **450 Uma-hours** of work and about **22 unlocks** finished roster-wide (more in scenario 1's cheap
+Per day that's **450 Uma-hours** of work and about **19 unlocks** finished roster-wide (more in scenario 1's cheap
 layer, fewer in scenario 5's) ([12](12-economy-and-pacing.md) §3, §5).
 
 ### How an Uma's next job is chosen
@@ -232,13 +232,13 @@ A tier is five scenarios, a World Expedition and a promotion. For a roster of 25
 
 | Roster weeks | Stage | Grades | Layer (unlocks) | How it feels |
 |---|---|---|---|---|
-| 0–4 | **Scenario 1** | 1–2 | 32 | Quick wins: the first unlock on the first evening, cheap nodes and bonds, both parents and their uniques, Farm Levels climbing fast |
-| 4–8 | **Scenario 2** | 3–4 | 28 | Parent golds and the first grandparents. The first **Duo** nodes (grade 3) and a **Sun** node from a grade-4 Feast. The first Shards make the roster 24 |
-| 8–13 | **Scenario 3** | 5–6 | 26 | The last grandparents and two of their uniques; more Duos (grade 5) and a Sun (grade 6). The build takes its shape |
-| 13–17 | **Scenario 4** | 7–8 | 24 | Fewer, dearer unlocks; the last uniques and the first grandparent golds; Extra Stats capacity 26 |
-| 17–21 | **Scenario 5** | 9–10 | 22 | The full tier build: 132 unlocks, 28 nodes, 24 Inspiration, 62 Extra Stats nodes, 18 bonds |
-| ~18–22 | **World Expedition** | — | — | Abroad: **8 distinct wins** from one region's race pool, about 15–25 races per Uma ([10](10-expeditions.md)). The Farm keeps running at home |
-| ~21 on | **Promotion** | 1 again | 32 | She moves to tier 2 and starts over. In tier 1, each promotion pays one Uma Ticket ([04](04-tiers-and-promotion.md)) |
+| 0–4 | **Scenario 1** | 1–2 | 27 | Quick wins: the first unlock on the first evening, cheap nodes and bonds, both parents and their uniques, Farm Levels climbing fast |
+| 4–8 | **Scenario 2** | 3–4 | 23 | Parent golds and the first grandparents. The first **Duo** nodes (grade 3) and a **Sun** node from a grade-4 Feast. The first Shards make the roster 24 |
+| 8–12 | **Scenario 3** | 5–6 | 21 | The last grandparents and two of their uniques; more Duos (grade 5) and a Sun (grade 6). The build takes its shape |
+| 12–16 | **Scenario 4** | 7–8 | 19 | Fewer, dearer unlocks; the last uniques and the first grandparent golds; Extra Stats capacity 13 |
+| 16–20 | **Scenario 5** | 9–10 | 17 | The full tier build: 107 unlocks, 28 nodes, 24 Inspiration, 37 Extra Stats nodes, 18 bonds |
+| ~17–21 | **World Expedition** | — | — | Abroad: **8 distinct wins** from one region's race pool, about 15–25 races per Uma ([10](10-expeditions.md)). The Farm keeps running at home |
+| ~20 on | **Promotion** | 1 again | 27 | She moves to tier 2 and starts over. In tier 1, each promotion pays one Uma Ticket ([04](04-tiers-and-promotion.md)) |
 
 **Tier 2 is the same loop in a stronger world.** Node values are ×1.25 (×1.5 in tier 3), fields are stronger and
 Expeditions add mechanics ([04](04-tiers-and-promotion.md), [10](10-expeditions.md)). The Farm takes the same time in
@@ -283,9 +283,9 @@ is the one automatic start, and the owner set that up.
 ## 9. Done when
 
 - `pnpm sim:loop` passes [12](12-economy-and-pacing.md) §12's checks, and its report reproduces §4's rotation shares
-  (sessions about 20% of roster time, about 22 unlocks a day) within its tolerances.
+  (sessions about 20% of roster time, about 19 unlocks a day) within its tolerances.
 - A domain test replays §3's Kitasan Black: a synthetic roster of 25 at three check-ins a day takes her through
-  scenario 1 in 24–32 days, with all 32 unlocks, then about 14 races to Racing Level 10, her Farm Level past 30.
+  scenario 1 in 24–32 days, with all 27 unlocks, then about 14 races to Racing Level 10, her Farm Level past 30.
 - Domain tests pin §2's table:
   - an Uma Free, Working or Ready can start a race;
   - a race collects her finished unlocks first;

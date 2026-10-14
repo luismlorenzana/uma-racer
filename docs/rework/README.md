@@ -1,7 +1,8 @@
 # Uma Racer rework: Race, Farm, Train
 
-> **Status: design for owner review, 2026-10-13 (D326–D336).** The owner's requirements, with Claude's suggestions
-> accepted by the owner on 2026-10-13. Nothing here is built. Every number is a **draft** that the loop simulation
+> **Status: approved design, 2026-10-14 (D326–D336, D338).** The owner's requirements, with Claude's suggestions
+> accepted by the owner on 2026-10-13 and the Gym change of 2026-10-14. Nothing here is built yet: phase 2 builds the
+> rules ([tasks](../tasks/README.md)). Every number is a **draft** that the loop simulation
 > ([12](12-economy-and-pacing.md) §12) tunes and then pins in tests. When a page here disagrees with an older design
 > doc, this folder wins. Older docs are rewritten "as built" when each part lands.
 
@@ -82,6 +83,7 @@ Logged in [decisions.md](../decisions.md). Each page explains its own.
 | D334 | **Pacing target:** a roster of **25 Umas** working in parallel maxes **one scenario in about 4 weeks**, so a tier takes the roster about 20 weeks. A loop simulation enforces it in CI |
 | D335 | **Order of work:** the re-architecture's Phase 1 goes ahead. Phase 2's generation-2 save and wipe wait for this design and ship its save shape, so the owner starts the new game once |
 | D336 | **The owner's review, 2026-10-13.** Inspiration is 24 unlocks a tier: 2 parent slots, 4 grandparent slots, 6 inherited unique skills and 12 gold skills (132 unlocks a tier). Farm Levels come at 2–3 a day, 4–5 when the Uma's running aptitude suits the family. Push notifications are optional and only a port of uma-rpg's. The grade handicaps stay as today, and difficulty assumes a fully trained Uma. Uma Tickets aren't sold: Uma Shards stay the normal unlock |
+| D338 | **The Gym halves, at double strength (owner, 2026-10-14).** One Extra Stats single per stat per scenario at +40, Duos +20/+20 and Suns +8 to all five, so every Gym node pays 40 at tier 1; active capacity halves to 7–15 and the Extra Stats budget is unchanged. A tier is **107 unlocks**, not 132. The time factor *k* becomes **1.2**, so a scenario still takes about four weeks |
 
 ## Shared numbers (drafts)
 
@@ -130,27 +132,30 @@ Guts–Stamina has no Duo.
 
 | Scenario of the tier | Constellation nodes | Inspiration | Extra Stats nodes | Card bonds | Total |
 |---|---|---|---|---|---|
-| 1 | 12 (tree of 12) | 2 parent slots, 2 parent uniques | 10 singles | 6 | **32** |
-| 2 | 4 (tree of 16) | 4 parent golds, 2 grandparent slots | 10 singles + 4 Duo + 1 Sun | 3 | **28** |
-| 3 | 4 (tree of 20) | 2 grandparent slots, 2 grandparent uniques | 10 singles + 4 Duo + 1 Sun | 3 | **26** |
-| 4 | 4 (tree of 24) | 2 grandparent uniques, 4 grandparent golds | 10 singles + 1 Sun | 3 | **24** |
-| 5 | 4 (tree of 28) | 4 grandparent golds | 10 singles + 1 Sun | 3 | **22** |
-| **Tier** | **28** | **24** (6 slots, 6 uniques, 12 golds) | **62** (50 + 8 + 4) | **18** | **132** |
+| 1 | 12 (tree of 12) | 2 parent slots, 2 parent uniques | 5 singles | 6 | **27** |
+| 2 | 4 (tree of 16) | 4 parent golds, 2 grandparent slots | 5 singles + 4 Duo + 1 Sun | 3 | **23** |
+| 3 | 4 (tree of 20) | 2 grandparent slots, 2 grandparent uniques | 5 singles + 4 Duo + 1 Sun | 3 | **21** |
+| 4 | 4 (tree of 24) | 2 grandparent uniques, 4 grandparent golds | 5 singles + 1 Sun | 3 | **19** |
+| 5 | 4 (tree of 28) | 4 grandparent golds | 5 singles + 1 Sun | 3 | **17** |
+| **Tier** | **28** | **24** (6 slots, 6 uniques, 12 golds) | **37** (25 + 8 + 4) | **18** | **107** |
 
 - **Constellation trees are re-authored** to 12, 16, 20, 24 and 28 card nodes for a tier's scenarios 1–5. Each
   scenario keeps its silhouette motif.
-- **Extra Stats map per tier:**
-  - a single node per stat and grade (5 × 10);
+- **Extra Stats map per tier (D338):**
+  - a single node per stat and scenario, at the scenario's first grade (5 × 5: grades 1, 3, 5, 7, 9);
   - Duos at grades 3 and 5 (4 × 2);
   - a Sun node from each Feast at grades 4, 6, 8 and 10.
-- **Active Extra Stats capacity** is 14, 18, 22, 26 and 30 nodes in scenarios 1–5. Scenario 1 has only 10 Extra
+- **Active Extra Stats capacity** is 7, 9, 11, 13 and 15 nodes in scenarios 1–5. Scenario 1 has only 5 Extra
   Stats nodes, so all of them are on.
-- **Node values at tier 1:** single +20, Duo +10/+10, Sun +4 to all five stats. Tier 2 multiplies them by 1.25 and
-  tier 3 by 1.5.
+- **Node values at tier 1:** single +40, Duo +20/+20, Sun +8 to all five stats, so every node pays 40. Tier 2
+  multiplies them by 1.25 and tier 3 by 1.5.
 
 ### Time model
 
-| Step | Minutes for grade *g* | Grade 1 | Grade 10 |
+Every duration is a base formula below **× the time factor *k* = 1.2** (D338). The domain holds *k* as one constant
+and the loop simulation tunes it; pages that quote minutes quote the base formula.
+
+| Step | Base minutes for grade *g* | Grade 1 | Grade 10 |
 |---|---|---|---|
 | Gather one raw ingredient | 90 + 5(*g*−1) | 90 | 135 |
 | Craft one (Pantry) | a quarter of gathering | 22.5 | 33.75 |
@@ -158,8 +163,8 @@ Guts–Stamina has no Duo.
 | One Training Hub session (one unlock) | 180 + 15(*g*−1) | 180 | 315 |
 | A planet dish's inputs | 4 crafted of its family at *g*, 1 crafted side of another family at max(1, *g*−2) | | |
 
-One unlock is about 16 Uma-hours at grade 1 and 25 at grade 10: its dish chain plus its session. With 25 Umas each
-working 75% of the day, every scenario takes the roster **29–30 days** ([12](12-economy-and-pacing.md) §5).
+One unlock is about 20 Uma-hours at grade 1 and 30 at grade 10 at *k* = 1.2: its dish chain plus its session. With
+25 Umas each working 75% of the day, every scenario takes the roster **27–30 days** ([12](12-economy-and-pacing.md) §5).
 
 ### Money
 

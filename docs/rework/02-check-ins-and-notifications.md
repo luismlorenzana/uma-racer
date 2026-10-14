@@ -1,6 +1,6 @@
 # 02 · Check-ins, queues and notifications
 
-> **Status: design for owner review, 2026-10-13 (D328, D334).** How the owner keeps 25 Umas working in visits of under
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D328, D334).** How the owner keeps 25 Umas working in visits of under
 > a minute: Collect all, batch sizes, queues, Repeat, the check-in summary, the "what she still needs" planner, push
 > notifications, offline time, retries and plain words. Numbers are drafts. `pnpm sim:loop`
 > ([12](12-economy-and-pacing.md) §12) measures how much they raise utilisation.

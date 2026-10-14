@@ -68,6 +68,10 @@ A second device, or the installed app on the same phone, can still run old code 
 
 ## 5. The new account
 
+> **Revised by [rework/13](../rework/13-removals-and-plan-changes.md) §5.** A new account has 20 Uma Tickets, 0 Uma
+> Shards, no per-account card state, no Card Coupons or Training Tickets, 0 Prize Money and 0 Speed Tickets, and every
+> building at level 1. The table below is the first draft's.
+
 `createInitialSave` in `@racer/domain/save`:
 
 | Field | Value | Today |

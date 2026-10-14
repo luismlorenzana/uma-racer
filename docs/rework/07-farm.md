@@ -1,6 +1,6 @@
 # 07 · Farm
 
-> **Status: design for owner review, 2026-10-13 (D326, D327, D328, D330, D331, D334).** Nothing here is built. Every
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D327, D328, D330, D331, D334).** Nothing here is built. Every
 > number is a **draft**: the loop simulation ([12](12-economy-and-pacing.md) §12) tunes it and its checks pin it.
 
 The Farm is where the roster spends most of its time. Umas gather ingredients at eight family sites, the **Pantry**
@@ -48,7 +48,7 @@ A **job** is one Uma making 1–10 outputs of one thing at one building, **one a
 | **Speed Ticket** | Takes 30 minutes off the running job ([09](09-racing-rewards-and-exchange.md) owns the price) (§8) |
 | **Timers** | Derived from the start timestamp, never a running count: closed and offline time counts |
 
-**Per-output times** come from the README's time model ([12](12-economy-and-pacing.md) §4), for grade *g*:
+**Per-output times** come from the README's time model ([12](12-economy-and-pacing.md) §4), for grade *g*, in base minutes; in play each is × *k* = 1.2 (D338):
 
 | Job | Minutes per output | Grade 1 | Grade 10 |
 |---|---|---|---|
@@ -381,7 +381,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | Same-block substitutions; processed items worth double | Gone: each recipe names exact items |
 | 16 meals a block (5 pure, 10 pair bentos, Sunrise Banquet) | 80 planet dishes, 4 stat Duos at grades 3 and 5, 4 Feasts ([08](08-item-catalogue-and-recipes.md)) |
 | A meal buys any node on the outfit's 65-node Extra map per block | A dish pays one Training Hub session; the Extra Stats map per tier is the Gym's ([05](05-training-hub.md)) |
-| Extra capacity 18 + 2 × (scenario − 1); active nodes per distance preset | Capacity 14–30 (README); presets in [05](05-training-hub.md) |
+| Extra capacity 18 + 2 × (scenario − 1); active nodes per distance preset | Capacity 7–15 (README, D338); presets in [05](05-training-hub.md) |
 | Energy: 30 minutes off one job, granted by a debug button | The Speed Ticket, bought with Prize Money (§8); dev builds may grant tickets |
 | Collect all; explicit Repeat; no queues or auto-repeat | Collect all, Repeat and queues of three (§9, [02](02-check-ins-and-notifications.md)) |
 | Wishlist of three meals; shopping list | The planner: what every Uma still needs ([02](02-check-ins-and-notifications.md)) |

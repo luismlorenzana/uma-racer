@@ -75,7 +75,7 @@ Rule of thumb: most React projects start with Motion and add GSAP only for heavy
 |---|---|
 | Sustained frame rate in race and training scenes | 60 fps (120 fps with the flag), no long frames over 50 ms |
 | Tap → visual response | < 100 ms (instant press state, then the result) |
-| Initial JS (app shell, gzip) | ≤ 180 KB. PixiJS and scenes lazy-loaded |
+| Initial JS (app shell, gzip) | ≤ 180 KB. PixiJS and scenes lazy-loaded. Enforced by `scripts/check-size.mjs` in the web build since D337 (155.10 KB on 2026-10-14) |
 | Warm start from the Home Screen | < 1.5 s to interactive (everything served from cache and IndexedDB) |
 | GPU textures in memory | < 150 MB, atlases ≤ 4096² |
 

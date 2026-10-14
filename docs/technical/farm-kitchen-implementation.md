@@ -204,6 +204,10 @@ An existing acknowledged build remains usable offline. There is no second invent
 
 ## 5. API mirror, protection and transport
 
+> **Since D337 there is no mirror.** The API imports `@racer/domain/farm/kitchen` from the domain's CommonJS build;
+> `save/farm-domain/`, `sync-farm-adapter.mjs` and its byte-parity check are deleted. The protection and transport
+> rules below are unchanged.
+
 T119 implements explicit parsers under API `save/farm-domain/`, with parity tests against pure domain outputs.
 `node apps/api/scripts/sync-farm-adapter.mjs --check` verifies all15 production kitchen modules byte-for-byte;
 four small facades use the unchanged shared scenario/types/legacy-cycle vocabulary. No fixtures enter the mirror.

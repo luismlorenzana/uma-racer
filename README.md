@@ -5,18 +5,16 @@ Umas are permanent RPG characters. They level up by winning races, train through
 SSR support cards, learn skills and inherit from their parents, and collect a lot of badges and flair,
 while the stable itself grows into a collection.
 
-> **Status:** playable and deployed. Milestones 1–6 are complete: the private content pipeline, a typed local-first save
-> with the real 25-Uma launch Stable, the Train → Race loop, race depth (compiled skills, course geometry, position
-> keeping, lanes, staged starts, photo finishes), Card and Uma albums with decks, coupons and shards, save v3 with frozen
-> lineage, pink sparks, Scenario Start and deterministic goals, and the full badge pillar with per-Uma flair, Prestige,
-> showcases, and Trainer achievements.
+> **Status:** playable and deployed. Today's game holds the racer, the Global Uma RPG and Uma Puzzles: the private
+> content pipeline, a local-first cloud-synced save, the deterministic race engine, careers, constellations trained
+> through Uma Puzzles' Constellation Level, Friendship Training's card stars, the Stable Kitchen Farm, and the badge
+> and collection pillars.
 >
-> **Current training loop:** free global [Uma Puzzles](docs/design/uma-puzzles.md) battles earn scenario/style
-> materials, which raise shared **Constellation Level (CL)** through an explicit spend. Earned levels and all four
-> distance builds are preserved (D287–D290). Owner-provided PAD-derived transparent art is now privately imported
-> (D292); frozen placeholder packs remain available for open fights. [Friendship Training](docs/design/minigames.md#friendship-training--card-stars)
-> earns global card stars. Racing, Farm and RPG retain their independent progression.
-> [Release evidence and owner checks](docs/research/uma-puzzles-release-acceptance.md); remaining work is in [Tasks](docs/tasks/README.md).
+> **In progress: the rework.** The owner's [game rework](docs/rework/README.md) (D326–D336, D338) turns Uma Racer into
+> Race, Farm, Train, and the [re-architecture](docs/rearchitecture/README.md) (D321–D325) rebuilds the code on
+> uma-platform underneath it. Phase 1 (a sound base) landed on 2026-10-14 (D337); phase 2 builds the rework's rules
+> ([tasks](docs/tasks/README.md)). Phase 3 wipes every save once and starts the new game. [The manual](docs/game/README.md)
+> describes the code as it runs today.
 
 ## Ground rules
 
@@ -100,11 +98,18 @@ docs/           design, technical, research
 | [Economy](docs/design/economy.md) | Training Tickets as the one currency, costs, coupons and shards, pacing |
 | [Badges & Achievements](docs/design/badges.md) | Badge taxonomy, tiers, titles, the Badge page (pins, classification, filters) |
 
+### The rework and the rebuild
+
+| Doc | What it covers |
+|---|---|
+| [Game manual](docs/game/README.md) | The game as it runs today: architecture, scenarios, racing. Lists are generated from the code (D337) |
+| [Game rework](docs/rework/README.md) | What Uma Racer becomes (D326–D336, D338): tiers, the Training Hub, cards and bonds, the Farm, items and recipes, Prize Money and the Exchange, World Expeditions, the Hub, pacing |
+| [Re-architecture plan](docs/rearchitecture/README.md) | How the code is rebuilt (D321–D325): target architecture, uma-platform and shared packages, Phaser, the RPG's removal, the data wipe, and [the phases](docs/rearchitecture/08-phases.md) |
+
 ### Technical
 
 | Doc | What it covers |
 |---|---|
-| [Re-architecture plan](docs/rearchitecture/README.md) | The planned rebuild (D321–D325): target architecture, uma-platform and shared packages, Phaser rendering and textures, the Hub, the Farm, the RPG's removal, the data wipe with 20 Uma Tickets, and the phases |
 | [Architecture](docs/technical/architecture.md) | What's reused from uma-planner, monorepo layout, local-first state, simulation, content, auth, data model |
 | [Farm production/cooking implementation](docs/technical/farm-kitchen-implementation.md) | Pure layer/[balance](docs/research/farm-kitchen-balance.md), atomic sync/Dexie32/[verification](docs/research/farm-kitchen-sync.md), dormant archive/reset/[rehearsal](docs/research/farm-kitchen-cutover-rehearsal.md), real host/[recovery tests](docs/research/farm-kitchen-host.md), phone screens/canonical race joins/[proof](docs/research/farm-kitchen-phone-proof/README.md); T124 owns release |
 | [RPG implementation](docs/technical/uma-rpg-implementation.md) | Local-first RPG rows and sync, the device fight journal, the generated campaign and the cast-only private pack |

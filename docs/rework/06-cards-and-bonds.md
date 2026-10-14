@@ -1,6 +1,6 @@
 # 06 · Cards and bonds
 
-> **Status: design for owner review, 2026-10-13 (D329).** Every SSR open from the start, no stars and no card levels,
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D329).** Every SSR open from the start, no stars and no card levels,
 > bonding a card to an Uma at the Dojo, what a bond costs by era, card sets and presets, Race Bonus, and the Card
 > Library. Every number is a **draft** that the loop simulation ([12](12-economy-and-pacing.md) §12) tunes and then
 > pins in tests.
@@ -44,7 +44,7 @@ A **bond** is one card unlocked for one Uma. The rules:
 - **A card goes in an Uma's card set only once it is bonded to her** (D329). Unbonded cards can be browsed, compared
   and planned with, never slotted.
 - **One Dojo session unlock per bond.** The Dojo, its rooms and how sessions run are [05](05-training-hub.md)'s.
-  A bond is one unlock in a session: one exact dish, 180 + 15(*g*−1) minutes. No substitutions: a higher-grade dish
+  A bond is one unlock in a session: one exact dish, (180 + 15(*g*−1)) × *k* minutes. No substitutions: a higher-grade dish
   never pays for a lower-grade bond ([08](08-item-catalogue-and-recipes.md)).
 - **The bond lasts her whole tier** and **resets at promotion** with everything else on the Uma (D327).
 - **Per Uma.** Bonding a card to five Umas takes five sessions.

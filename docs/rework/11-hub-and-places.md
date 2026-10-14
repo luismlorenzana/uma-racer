@@ -1,6 +1,6 @@
 # 11 · Hub and places
 
-> **Status: design for owner review, 2026-10-13 (D333).** The Hub's four pages, every place on them, the routes, the
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D333).** The Hub's four pages, every place on them, the routes, the
 > two play modes as tap-by-tap flows, and the art: what uma-art already draws and what a uma-platform session draws
 > new. Nothing here is built.
 

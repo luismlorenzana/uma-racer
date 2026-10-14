@@ -1,7 +1,8 @@
 # 12 · Economy and pacing
 
-> **Status: design for owner review, 2026-10-13 (D326, D331, D334, D336).** Every number here is a draft from a first-pass
-> model (§4–§9). The loop simulation (§11) replaces the model, and the sim's checks become the tests that pin the
+> **Status: approved design, 2026-10-14 (D326, D331, D334, D336, D338).** Every number here is a draft from a first-pass
+> model (§4–§9). D338 halved the Gym's singles and set the time factor *k* = 1.2: §5, §10 and §11 are recomputed for it;
+> the Farm building tables in §7 are still the first draft's, and the loop simulation recomputes them in phase 2. The loop simulation (§11) replaces the model, and the sim's checks become the tests that pin the
 > numbers. If a page elsewhere quotes a number from here and the sim later moves it, this page and the sim win.
 
 This page answers: how long things take, what the currencies are, where they come from and go, and how we know the
@@ -86,10 +87,11 @@ mints time from nothing.
 
 ## 4. The time model
 
-**Every step takes real time from start timestamps**, so closed and offline time counts. Formulas per grade *g*
-(README "Time model"):
+**Every step takes real time from start timestamps**, so closed and offline time counts. Base formulas per grade *g*
+(README "Time model"); every one is multiplied by the time factor ***k* = 1.2** (§10, D338), so the real "one unlock"
+is 19.7 hours at grade 1 and 29.5 at grade 10:
 
-| *g* | Gather (min) | Craft (min) | One crafted item (min) | Cook (min) | A planet dish's chain (min) | Session (min) | **One unlock (h)** |
+| *g* | Gather (min) | Craft (min) | One crafted item (min) | Cook (min) | A planet dish's chain (min) | Session (min) | **One unlock at *k* = 1 (h)** |
 |---|---|---|---|---|---|---|---|
 | 1 | 90 | 22.5 | 112.5 | 240 | 802 | 180 | **16.4** |
 | 2 | 95 | 23.8 | 118.8 | 250 | 838 | 195 | **17.2** |
@@ -124,23 +126,29 @@ Per Uma, per scenario layer ([05](05-training-hub.md)):
 
 | Scenario of the tier | Grades | Unlocks | Uma-hours | Farm work | Sessions | **Days for 25 Umas** |
 |---|---|---|---|---|---|---|
-| 1 | 1–2 | 32 | 537 | 437 (81%) | 100 | **29.9** |
-| 2 | 3–4 | 28 | 518 | 417 (80%) | 102 | **28.8** |
-| 3 | 5–6 | 26 | 530 | 423 (80%) | 107 | **29.4** |
-| 4 | 7–8 | 24 | 534 | 423 (79%) | 111 | **29.7** |
-| 5 | 9–10 | 22 | 531 | 418 (79%) | 113 | **29.5** |
-| **Tier** | | **132** | **2,651** | | | **147 days ≈ 21 weeks** |
+| 1 | 1–2 | 27 | 539 | 439 (82%) | 100 | **29.9** |
+| 2 | 3–4 | 23 | 504 | 405 (81%) | 98 | **28.0** |
+| 3 | 5–6 | 21 | 508 | 405 (80%) | 102 | **28.2** |
+| 4 | 7–8 | 19 | 504 | 399 (79%) | 104 | **28.0** |
+| 5 | 9–10 | 17 | 488 | 385 (79%) | 104 | **27.1** |
+| **Tier** | | **107** | **2,542** | | | **141 days ≈ 20 weeks** |
 
-D336's 24 Inspiration unlocks (6 slots, 6 inherited uniques, 12 golds) are spread 4, 6, 4, 6, 4 across the
-scenarios, the split that keeps every scenario within a day of the others.
+At *k* = 1.2 (D338). D336's 24 Inspiration unlocks (6 slots, 6 inherited uniques, 12 golds) are spread 4, 6, 4, 6, 4
+across the scenarios. Each scenario's five Gym singles sit at its first grade (D338). Duos and Feasts are priced like a
+planet dish of their grade.
+
+**Why *k* = 1.2.** The first draft had 132 unlocks a tier at *k* = 1 (147 days). D338's 107 unlocks at *k* = 1 would
+take 118 days, about 23–25 a scenario, below four weeks. Raising every duration by a fifth brings each scenario back to
+27–30 days and the tier to about 20 weeks, D334's target. Each remaining unlock is worth more, so the time is spent
+better.
 
 How to read it:
 - An Uma's own layer takes about 500 hours of somebody's work.
-- With 25 Umas each working 75% of the day (18 hours), the roster finishes about 22 unlocks a day.
+- With 25 Umas each working 75% of the day (18 hours), the roster finishes about 19 unlocks a day.
 - So 25 layers of 22–32 unlocks take about four weeks.
 - The roster shares the work: one Uma's dishes are often cooked by others.
 
-**Layers are front-loaded on purpose.** Scenario 1 has 32 cheap unlocks (12 nodes, 6 bonds), and scenario 5 has 22
+**Layers are front-loaded on purpose.** Scenario 1 has 27 cheap unlocks (12 nodes, 6 bonds), and scenario 5 has 17
 dear ones. Each scenario then costs about the same time, and a new tier starts with many quick wins.
 
 **The first day of a new account.** All twenty Umas can gather at once, so the first grade-1 dish is ready about six
@@ -161,7 +169,7 @@ suited** (D336). An average Uma farms 864 minutes a day (80% of her 75%), so:
 | Grade 10 (Lv 46) | day 31 | day 24 | day 19 |
 | Lv 50 | day 34 | day 26 | day 21 |
 
-**Every grade is open within about a month of a tier**, while the tier runs about 21 weeks. So Farm Level is a quick
+**Every grade is open within about a month of a tier**, while the tier runs about 20 weeks. So Farm Level is a quick
 climb at the start of each tier (and for an Uma who joins mid-tier), never what holds a scenario back. **Which grade
 each unlock asks for is a rule of the layers** ([05](05-training-hub.md) §3): scenario *s* asks for grades 2*s*−1 and
 2*s*, so each scenario's demand lands on its own two grades and the Farm's mix moves up the ladder with the roster.
@@ -187,8 +195,13 @@ side rotation) and [05](05-training-hub.md) (Training Hub). In summary:
 | Mushroom Cave (Inspiration, 24 unlocks a tier) | 32 | 40 (2, 4) | 2 / 3 / 3 + speed |
 | Vegetable Garden (Constellation) | 35 | 66 (1) | 4 / 5 / 5 + speed |
 | Each other site (Grains included: 08 sends it most sides) | 23–25 | 28–34 | 2 / 3 / 3 + speed |
-| Observatory | ~20 | 33.5 (1) | 2, then a slot more at Lv 2 |
-| Gym, Lineage Hall, Dojo | ~13–44 across their rooms | — | per [05](05-training-hub.md) |
+| Observatory | ~23 | 37.6 (1) | 2, then a slot more at Lv 2 |
+| Gym, Lineage Hall, Dojo | ~15–31 across their rooms | — | per [05](05-training-hub.md) |
+
+The Farm rows are the first draft's (before D338). D338 sends a fifth fewer dishes to the five stat sites and makes
+every job a fifth longer, so the stat sites end up about as busy as here and the Vegetable Garden, Mushroom Cave,
+Pantry and Kitchen about a fifth busier. The Vegetable Garden's scenario-1 peak then passes its four Lv 1 slots, so its
+Lv 2 joins the day-one upgrades. `sim:loop` recomputes this table in phase 2.
 
 - **The Kitchen is the game's bottleneck building.** At two slots it would cap the whole game at a third of the
   target pace.
@@ -257,19 +270,20 @@ in Farm time.
 | | Roster time (draft) |
 |---|---|
 | One scenario | ~4 weeks |
-| One tier, with its Expeditions | ~21 weeks at Lv 1–2 buildings, ~17 at Lv 3 (Expeditions overlap scenario 5) |
+| One tier, with its Expeditions | ~20 weeks at Lv 1–2 buildings, ~17 at Lv 3 (Expeditions overlap scenario 5) |
 | Three tiers | **~55–63 weeks (13–15 months)** for the first Umas to clear tier 3: the lower figure with Lv 3 buildings from tier 2 |
 
 That's long by design: an idle game the owner checks two or three times a day and races in when free. It's also one
-number to change. **Every duration** (gather, craft, cook, session) **scales with one time factor *k*** (1.0 here):
+number to change. **Every duration** (gather, craft, cook, session) **scales with one time factor *k***, **1.2** since
+D338:
 
 | *k* | Scenario | Tier | Game |
 |---|---|---|---|
-| 1.0 | ~4 weeks | ~21 weeks | 13–15 months |
-| 0.5 | ~2 weeks | ~10 weeks | ~7 months |
-| 0.2 | ~6 days | ~4 weeks | ~3 months: the "4 weeks a tier" reading |
+| **1.2** | ~4 weeks | ~20 weeks | 13–15 months |
+| 0.6 | ~2 weeks | ~10 weeks | ~7 months |
+| 0.25 | ~6 days | ~4 weeks | ~3 months: the "4 weeks a tier" reading |
 
-Expedition racing is the owner's time, not Uma time, so *k* doesn't shorten it. At *k* = 0.2 the ~500 Expedition
+Expedition racing is the owner's time, not Uma time, so *k* doesn't shorten it. At *k* = 0.25 the ~500 Expedition
 races of a tier would take about as long as the tier's training, which matters if the owner picks that reading.
 
 ## 11. Levers, in the order to try them
@@ -277,38 +291,28 @@ races of a tier would take about as long as the tier's training, which matters i
 If the sim or the owner's play says it's too slow or too fast:
 
 1. **The time factor *k*** (§10): moves everything at once, keeps every ratio.
-2. **Layer sizes** ([05](05-training-hub.md)): fewer Extra Stats singles per layer (they are 47% of unlocks) shorten
-   every scenario without touching the build's structure.
+2. **Layer sizes** ([05](05-training-hub.md)): fewer unlocks per layer shorten every scenario. D338 already halved
+   the Gym's singles; the next candidate is the bonds' pacing assumption ([06](06-cards-and-bonds.md)).
 3. **Crafted items per dish** (4 + 1 now): fewer makes cooking dominate; more makes gathering dominate.
 4. **Utilisation**: queues and Repeat raise it, and so would push notifications if the owner adopts them ([02](02-check-ins-and-notifications.md) §7).
 
 | Utilisation | Tier, no Speed Tickets | Target racing | Heavy racing every day |
 |---|---|---|---|
-| 50% (one check-in a day) | 31.6 weeks | 29.5 | 25.8 |
-| 60% | 26.3 | 24.6 | 21.5 |
-| **75% (three check-ins, queues)** | **21.0** | **19.6** | **17.2** |
-| 90% (Repeat, very attentive) | 17.6 | 16.4 | 14.3 |
+| 50% (one check-in a day) | 30.3 weeks | 28.3 | 24.7 |
+| 60% | 25.2 | 23.6 | 20.6 |
+| **75% (three check-ins, queues)** | **20.2** | **18.8** | **16.5** |
+| 90% (Repeat, very attentive) | 16.9 | 15.7 | 13.7 |
 
 5. **Prize Money per race** ([09](09-racing-rewards-and-exchange.md)): changes how much racing speeds things up, not
    the passive pace.
 
-### A known balance risk: Gym sessions feel small
+### Resolved: Gym sessions felt small (D338)
 
-Extra Stats are **47% of all unlocks** (62 of 132), and each costs as much time as any other unlock. But a single
-Extra Stats node pays **+20** to one stat, where an Observatory node pays a card node: about 130–280 raw points spread
-by the card's type ([05](05-training-hub.md), [04](04-tiers-and-promotion.md)). Half the owner's sessions would then
-feel like the least rewarding half. The sim can't measure feel, so this is flagged for the owner's review now.
-
-**Recommendation, not yet adopted:** halve the Gym's track with nodes twice as strong. That means one single per stat
-for each *pair* of grades (25 a tier at +40), with the Duos and Suns kept. The Extra Stats budget stays the same
-([05](05-training-hub.md)'s `extraBudget`), and layers shrink from 132 to 107 unlocks a tier:
-- The Gym's sessions double in value.
-- The Farm needs a fifth fewer dishes.
-- The time factor *k* goes up by about a quarter to keep four weeks a scenario. Equivalently, each remaining unlock
-  takes about a quarter longer.
-
-The layer table, the Extra Stats map in [05](05-training-hub.md) and [08](08-item-catalogue-and-recipes.md)'s demand
-counts would change together. Until the owner decides, the docs keep the 132-unlock layers.
+The first draft made Extra Stats 47% of all unlocks (62 of 132), each paying +20 to one stat, while an Observatory node
+pays a card node: about 130–280 raw points spread by the card's type. Half the owner's sessions would have felt like the
+least rewarding half. **The owner adopted the recommendation on 2026-10-14:** one single per stat per scenario at +40,
+Duos +20/+20 and Suns +8 to all five, active capacity halved to 7–15, so the Extra Stats budget is unchanged
+([05](05-training-hub.md) §6). Layers shrink from 132 to 107 unlocks a tier, and *k* = 1.2 keeps the four weeks (§5).
 
 ## 12. The loop simulation
 
@@ -362,7 +366,8 @@ sim reads its median race count to schedule Expedition racing in the roster's la
 | One anchor: 1 Prize Money ≈ 1 minute of Uma work | Every price follows from it, and no trade mints time |
 | Grades barely change times (×1.5 from grade 1 to 10) | Keeps every scenario at about four weeks; grades mark which layer an unlock belongs to |
 | No Farm Level cap | Farm Level is a short ramp at the owner's 2–3 levels a day (4–5 suited); the layers do the pacing |
-| Front-loaded layers (32 → 22 unlocks) | Equal time per scenario, and quick wins at the start of each tier |
+| Front-loaded layers (27 → 17 unlocks) | Equal time per scenario, and quick wins at the start of each tier |
+| Half the Gym's singles at twice the value, *k* = 1.2 (D338) | Every session is worth having; the four weeks hold |
 | Tier 2 and 3 cost the same Farm time | Higher tiers are harder in races and Expeditions; Farm time stays predictable |
 | Speed Tickets are not counted in the target | The target holds without them; racing is a bonus the owner earns |
 | The Kitchen is sized as the busiest building | Cooking is 30% of all Farm work |

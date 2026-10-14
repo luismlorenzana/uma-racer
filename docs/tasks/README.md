@@ -11,75 +11,29 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**Under owner review: the game rework (D326–D336), 2026-10-13.** [The design](../rework/README.md) turns Uma Racer
-into Race, Farm, Train: three tiers of five scenarios, one Training Hub unlock model paid with cooked dishes, every
-card open and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, and World Expeditions. It
-revises the re-architecture's phases ([rework/13](../rework/13-removals-and-plan-changes.md) §4): phase 1 goes
-ahead, then the rework's rules and `sim:loop`, then the generation-2 cutover into the new game.
+**The game rework (D326–D336, D338) on the re-architecture's revised phases** ([08](../rearchitecture/08-phases.md),
+[rework/13](../rework/13-removals-and-plan-changes.md) §4). [The rework](../rework/README.md) turns Uma Racer into
+Race, Farm, Train: three tiers of five scenarios, one Training Hub unlock model paid with cooked dishes, every card open
+and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, and World Expeditions.
+[The re-architecture](../rearchitecture/README.md) rebuilds the code underneath it on uma-platform's shared foundation.
 
-**Next: the uma-racer re-architecture (D321–D325), planned 2026-10-12.** [The plan](../rearchitecture/README.md)
-rebuilds the repo on uma-platform's shared foundation in eight phases: a sound base, a clean slate (save generation 2,
-a full wipe, 20 Uma Tickets, the RPG deleted), platform master data, the Hub, the Farm, the race on Phaser, then the
-owner's feature and rebalancing docs. Each phase's pull requests are in [08-phases.md](../rearchitecture/08-phases.md);
-task specs are written here as each phase becomes next.
-
-**M031 — Farm production/cooking is complete (T118–T124, D315).**
-[Design](../design/farm-kitchen-rework.md) and [technical contract](../technical/farm-kitchen-implementation.md)
-carry thirty open stations, independent outfit levels, scenario-specific symmetric foods, batched recipes,
-shared-block Extra maps and guarded explicit preparation. T118–T123 merged dormant; T124 enables matching
-code-owned gates with read-only Home/startup, resumable archived reset, legacy claims and PWA commit guards.
-[Release acceptance](../research/farm-kitchen-release-acceptance.md) records actual commands, synthetic host/browser
-proofs, deployment and the still-pending owner iPhone/PWA/account pacing checks. No manual owner save edit or grant.
-Completed specs are removed under D104; their last-spec commit is below. No next Farm implementation task is specified.
-
-**M030 / T116 — Uma Puzzles release is complete** (D289–D290): the owner approved verified
-**original-placeholder art** for production, so permitted PAD portraits no longer block release.
-[The design](../design/uma-puzzles.md) and [implementation contract](../technical/uma-puzzles-implementation.md)
-carry registration, pure battle/campaign rules, the real replay host/atomic sync, mobile Hub/maps/battles,
-global materials/exchange/CL and protected save16 preservation with a device-local whole-account backup.
-Both application gates are enabled. [Release acceptance](../research/uma-puzzles-release-acceptance.md)
-records private publication and application/deployment witnesses separately from still-pending owner gameplay,
-iPhone and second-device checks. Completed specs are removed under D104. T109's owner-export art upgrade is now
-complete (D292); [art acceptance](../research/puzzle-art-release-acceptance.md) records private derivatives, full
-coverage and placeholder retention without changing mechanics.
-Implement one task to completion/PR/merge before the next, from latest main; do not alter RPG mechanics.
-
-**T117 — Puzzle setup parity is complete** (D293): ten parties, free-only highest-PL pickers, Add/Swap/Remove,
-party→profile member strips, enrolled/unenrolled roster sections and no Puzzle dropdowns. The narrowed authoritative
-lock read set stays within the existing sync limits. [Setup phone proof](../research/puzzle-setup-parity/README.md)
-records synthetic browser checks separately from pending owner iPhone acceptance. No next Puzzle task is specified.
-
-**Owner detour — the RPG campaign is complete** (D260–D266): local-first RPG saves with no Sync steps, one generated
-twelve-level chapter per scenario, replayable maps, Octopath element/weapon breaks with carried MP and camps,
-and EXP plus tokens from every win. It supersedes M029's private chapter rollout (T100–T103), deleted unbuilt.
-
-**Owner detour T105 — Inspiration advance is complete** (D256): one-time shared scenario unlocks, a negative token
-bank, and receipt-gated RPG repayment. Its first updated online sync applies the server-owned frozen-cohort advance.
-T099's production-first acceptance sequencing is D257.
-
-**Owner detour T104 — Global card stars is complete** (D255). It preserves all four distance presets from D252–D254;
-T081's old scenario-occurrence definitions need separate re-authoring before implementation.
-
-| Milestone | Tasks | State |
+| Phase | Milestone | State |
 |---|---|---|
-| [M024 — Card Training Loop](M024-card-training-loop.md) | T078 three stars ✅ · T079 card training on its own ✅ · T080 card focus ✅ · [T081 Bond achievements](T081-card-bond-achievements.md) | **Pending** · T078–T080 landed; re-author T081 for global cards before implementation |
-| [M010 — Collection depth](M010-collection-depth.md) | **[T035 — Race Select on the album engine](T035-race-select-browsing.md)**; T033 and T034 complete | Specified, delegable |
-| [M011 — Game feel and device readiness](M011-game-feel-and-device.md) | T036 – T039 | Outlined: each spec is written when its task becomes next |
+| 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
+| 2 | [M033 — the rework's rules and `sim:loop`](M033-rework-rules.md) | **Next.** T125–T132 specified; T125, T126 and T129 can start in parallel |
+| 3 | The generation-2 cutover and the new game on plain screens | Specified when phase 2 lands. **The owner starts the new game here** |
+| 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
+| 5–8 | Platform master data · the Hub · the Farm and Training scenes · the race on Phaser | Specified in turn |
+| 9 | World Expeditions | Starts when phase 3 ships; must land within about 16–20 weeks of it |
 
-**M024 remains separately pending** (D199–D202, D236): T078 and T079 landed on 2026-09-29 and T080 on 2026-10-02;
-T081 needs re-authoring for global cards before pickup. M025–M026's Farm and Produce bridge are complete. T035 stays
-specified and can be picked up any time. **M027 — Training Rebalance** (D211–D214) is complete. Anything new starts
-with the next free numbers below.
+The live game stays as it is until phase 3's single cutover. Until then, owner playability notes on today's systems are
+fixed only when they block play, since phase 3 deletes most of those systems.
 
-The owner's device checks (every milestone's, including Spark Rival Circuit's physical-iPhone pass) wait in
-[Open questions](../open-questions.md#needs-you-owner-actions-not-design-questions) and close together in T038 (D189).
-Owner playability notes are fixed as they arrive, each under its own decision (D178 onward), rather than gathered into a
-task.
+**Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
+Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M032 and T125.** M031/T118–T124 belong to the completed Farm rework;
-M030/T106–T117 belong to the completed Puzzle sequence. Numbers are never
-reused, so a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break
-branch and is not reused.
+**Next free numbers: M034 and T133.** Numbers are never reused, so a decision that mentions T014 always means the same
+work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed
 
@@ -87,6 +41,8 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| M032 — Re-architecture phase 1: a sound base | 2026-10-14 | [rearchitecture/08](../rearchitecture/08-phases.md) phase 1, D337, [the manual](../game/README.md) | No spec file: the phase table was the spec |
+| M024 / T081, M010 / T035, M011 / T036–T039 — **retired unbuilt** (D339) | 2026-10-14 | — | `afe4696` |
 | M031 / T124 — Complete Farm release and guarded preparation | 2026-10-10 | [Release contract](../technical/farm-kitchen-implementation.md#10-t124-complete-release-d315), D315 and [acceptance evidence](../research/farm-kitchen-release-acceptance.md); owner iPhone/account/PWA checks pending | `f6c4dcf` |
 | T123 — Shared meal map, four builds and canonical race stats | 2026-10-09 | [Joined contract](../technical/farm-kitchen-implementation.md#t123-implemented-map-and-stat-join-d314), D314 and [synthetic phone proof](../research/farm-kitchen-phone-proof/README.md#t123-extra-map-and-race-proof); capability off, no owner execution | `064b7e1` |
 | T122 — Five Farm districts, crew, cookbook, Items and Energy | 2026-10-09 | [Presentation contract](../technical/farm-kitchen-implementation.md#t122-implemented-phone-presentation-d313), D313 and [synthetic phone proof](../research/farm-kitchen-phone-proof/README.md); capability off, no owner execution | `6734e58` |

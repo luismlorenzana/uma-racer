@@ -1,5 +1,9 @@
 # 05 · Farm mechanics
 
+> **Superseded by [rework/07](../rework/07-farm.md) and [rework/08](../rework/08-item-catalogue-and-recipes.md)
+> (D330).** Today's Farm (M031) is deleted in phase 3 rather than carried through the rebuild. This page still
+> describes the Farm as built until then.
+
 The Farm (the "Stable Kitchen", M031, live since D315) keeps its rules through the rebuild. What changes is everything
 around them:
 - the legacy rules and every one-time reset and recovery machine are deleted;

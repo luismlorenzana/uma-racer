@@ -1,6 +1,6 @@
 # 05 · Training Hub
 
-> **Status: design for owner review, 2026-10-13 (D326, D328).** The Observatory, Lineage Hall, Gym and Dojo: how a
+> **Status: approved design, 2026-10-14 (D326, D328, D338).** The Observatory, Lineage Hall, Gym and Dojo: how a
 > session works, which dish each unlock needs, the layer each scenario adds, the re-authored constellations, the
 > Inspiration and Extra Stats maps, and facility slots and upgrades. Every number is a **draft** that the loop
 > simulation ([12](12-economy-and-pacing.md) §12) tunes and then pins in tests.
@@ -16,9 +16,9 @@ family they take. Nothing here needs tokens, Constellation Level or a minigame, 
 |---|---|---|---|---|
 | **Observatory** | Constellation card nodes | Vegetables | 2 slots | 28 |
 | **Lineage Hall** | Inspiration: 2 parent slots, 4 grandparent slots, 6 inherited unique skills, 12 gold skills | Mushrooms | 2 slots | 24 |
-| **Gym** | Extra Stats nodes | Sweets (Speed), Fruits (Stamina), Fish (Power), Nuts & Seeds (Guts), Herbs & Spices (Wit); Duos; Feasts | 5 rooms, one per stat, 1 slot each | 62 |
+| **Gym** | Extra Stats nodes | Sweets (Speed), Fruits (Stamina), Fish (Power), Nuts & Seeds (Guts), Herbs & Spices (Wit); Duos; Feasts | 5 rooms, one per stat, 1 slot each | 37 |
 | **Dojo** | Card bonds ([06](06-cards-and-bonds.md) owns the rules) | By card type: the five stat families, and Grains for Friend and Group | 6 rooms, one per card type, 1 slot each | 18 (a pacing assumption, not a cap) |
-| **Tier** | | | | **132** |
+| **Tier** | | | | **107** |
 
 - **Observatory.** Opens the next card node of the Uma's constellation in breadth-first order (§4). It is the only
   place a node opens; there is no level-up sheet.
@@ -43,7 +43,7 @@ Hub's version of a Farm job ([07](07-farm.md)).
 |---|---|
 | Unlocks in a session | 1–10, all at the same facility (and, at the Gym and Dojo, in the same room) |
 | Dishes | **One exact dish per unlock** (family or kind, and grade), all of them **reserved when the session starts**. No substitutions: a higher-grade dish never pays for a lower-grade unlock |
-| Time for one unlock of grade *g* | **180 + 15(*g*−1) minutes** (README), divided by the facility's speed |
+| Time for one unlock of grade *g* | **180 + 15(*g*−1) minutes × *k*** (README; *k* = 1.2, D338), divided by the facility's speed |
 | Order | The order shown on the sheet. An unlock may depend on an earlier one in the same session |
 | Sessions per Uma | **One at a time.** While in a session she can race, but cannot take a Farm job (D328) |
 | An Uma with Farm work | A **finished** job is collected in the same tap that starts her session ([07](07-farm.md)). A **running** job refuses the session until it is collected or recalled, with Recall on the sheet ([01](01-game-loop.md)) |
@@ -53,8 +53,11 @@ Hub's version of a Farm job ([07](07-farm.md)).
 
 | Grade | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Minutes, Lv 1–2 facility | 180 | 195 | 210 | 225 | 240 | 255 | 270 | 285 | 300 | 315 |
-| Minutes, Lv 3 facility (×1.25 speed) | 144 | 156 | 168 | 180 | 192 | 204 | 216 | 228 | 240 | 252 |
+| Base minutes, Lv 1–2 facility | 180 | 195 | 210 | 225 | 240 | 255 | 270 | 285 | 300 | 315 |
+| Base minutes, Lv 3 facility (×1.25 speed) | 144 | 156 | 168 | 180 | 192 | 204 | 216 | 228 | 240 | 252 |
+| Real minutes at *k* = 1.2, Lv 1–2 | 216 | 234 | 252 | 270 | 288 | 306 | 324 | 342 | 360 | 378 |
+
+The worked examples on these pages use the base minutes; the game multiplies every duration by *k*.
 
 **Finishing.** Each unlock has its own finish time, computed from the session's start, the unlock times and any Speed
 Tickets applied. Time runs offline. A finished unlock is **committed by Collect**: one operation with a receipt that
@@ -105,12 +108,12 @@ applied two Speed Tickets at 23:00, the three finishes would move to 00:30, 03:4
 
 | Scenario of the tier | Grades | Observatory | Lineage Hall | Gym | Dojo (pacing) | Total |
 |---|---|---|---|---|---|---|
-| 1 | 1–2 | 12 nodes: 6 at g1, 6 at g2 | 2 parent slots at g1, 2 parent uniques at g2 | 10 singles: 5 at g1, 5 at g2 | 6 bonds | **32** |
-| 2 | 3–4 | 4 nodes: 2 at g3, 2 at g4 | 4 parent golds at g3, 2 grandparent slots at g4 | 10 singles (5 at g3, 5 at g4), 4 Duos at g3, 1 Sun at g4 | 3 bonds | **28** |
-| 3 | 5–6 | 4 nodes: 2 at g5, 2 at g6 | 2 grandparent slots at g5, 2 grandparent uniques at g6 | 10 singles (5 at g5, 5 at g6), 4 Duos at g5, 1 Sun at g6 | 3 bonds | **26** |
-| 4 | 7–8 | 4 nodes: 2 at g7, 2 at g8 | 2 grandparent uniques and 1 gold at g7, 3 grandparent golds at g8 | 10 singles (5 at g7, 5 at g8), 1 Sun at g8 | 3 bonds | **24** |
-| 5 | 9–10 | 4 nodes: 2 at g9, 2 at g10 | 4 grandparent golds: 2 at g9, 2 at g10 | 10 singles (5 at g9, 5 at g10), 1 Sun at g10 | 3 bonds | **22** |
-| **Tier** | | **28** | **24** (6 slots, 6 uniques, 12 golds) | **62** (50 singles, 8 Duos, 4 Suns) | **18** | **132** |
+| 1 | 1–2 | 12 nodes: 6 at g1, 6 at g2 | 2 parent slots at g1, 2 parent uniques at g2 | 5 singles at g1 | 6 bonds | **27** |
+| 2 | 3–4 | 4 nodes: 2 at g3, 2 at g4 | 4 parent golds at g3, 2 grandparent slots at g4 | 5 singles and 4 Duos at g3, 1 Sun at g4 | 3 bonds | **23** |
+| 3 | 5–6 | 4 nodes: 2 at g5, 2 at g6 | 2 grandparent slots at g5, 2 grandparent uniques at g6 | 5 singles and 4 Duos at g5, 1 Sun at g6 | 3 bonds | **21** |
+| 4 | 7–8 | 4 nodes: 2 at g7, 2 at g8 | 2 grandparent uniques and 1 gold at g7, 3 grandparent golds at g8 | 5 singles at g7, 1 Sun at g8 | 3 bonds | **19** |
+| 5 | 9–10 | 4 nodes: 2 at g9, 2 at g10 | 4 grandparent golds: 2 at g9, 2 at g10 | 5 singles at g9, 1 Sun at g10 | 3 bonds | **17** |
+| **Tier** | | **28** | **24** (6 slots, 6 uniques, 12 golds) | **37** (25 singles, 8 Duos, 4 Suns) | **18** | **107** |
 
 ### Constellation nodes: grade per node
 
@@ -156,26 +159,29 @@ across scenarios (4, 6, 4, 6, 4) is the one that keeps every scenario at about t
 
 | Scenario | Singles | Duos | Sun |
 |---|---|---|---|
-| 1 | Each stat at **g1** and **g2** | — | — |
-| 2 | Each stat at **g3** and **g4** | Stamina–Wit, Wit–Power, Power–Speed, Speed–Guts at **g3** | `feast-4` at **g4** |
-| 3 | Each stat at **g5** and **g6** | The same four at **g5** | Summer Feast at **g6** |
-| 4 | Each stat at **g7** and **g8** | — | Harvest Feast at **g8** |
-| 5 | Each stat at **g9** and **g10** | — | Grand Feast at **g10** |
+| 1 | Each stat at **g1** | — | — |
+| 2 | Each stat at **g3** | Stamina–Wit, Wit–Power, Power–Speed, Speed–Guts at **g3** | `feast-4` at **g4** |
+| 3 | Each stat at **g5** | The same four at **g5** | Summer Feast at **g6** |
+| 4 | Each stat at **g7** | — | Harvest Feast at **g8** |
+| 5 | Each stat at **g9** | — | Grand Feast at **g10** |
+
+Each stat has **one single per scenario, at the scenario's first grade** (D338): half of the first draft's track, each
+node twice as strong (§6).
 
 A single takes its stat's family dish at that grade: Speed grade 3 takes `dish-sweets-3`. A Duo takes its pair's Duo
 dish at its grade (`duo-stamina-wit-3`, `duo-wit-power-5` …); a Sun takes that grade's Feast (`feast-4` … `feast-10`).
-So scenario 2's layer is 9 unlocks at grade 3 (five singles, four Duos) and 6 at grade 4 (five singles, the Sun).
+So scenario 2's Gym layer is 9 unlocks at grade 3 (five singles, four Duos) and 1 at grade 4 (the Sun).
 
 **Order:**
-- **Singles open grade by grade per stat.** Speed grade 3 needs Speed grade 2. Each stat is a track of ten, and a
-  session in the Speed room is "the next *N* Speed nodes".
+- **Singles open scenario by scenario per stat.** Speed grade 3 needs Speed grade 1. Each stat is a track of five,
+  and a session in the Speed room is "the next *N* Speed nodes".
 - **A Duo needs both its stats' singles of the same grade.** The Power–Speed Duo at grade 3 needs Power grade 3 and
   Speed grade 3.
-- **A Sun needs all five singles of its grade.** The Spring Feast's Sun at grade 4 needs Speed, Stamina, Power, Guts
-  and Wit grade 4.
+- **A Sun needs its scenario's five singles.** The Spring Feast's Sun at grade 4 needs Speed, Stamina, Power, Guts
+  and Wit grade 3.
 
 Why Suns come last: a Sun is the most flexible node (+4 to every stat fits any build), so it caps a finished grade
-rather than standing in for the stat choices; it gives the planner a clear "grade 4 complete" goal; and the five
+rather than standing in for the stat choices; it gives the planner a clear "scenario 2's Gym complete" goal; and the five
 singles it needs are in its own layer anyway, so it never waits on a later scenario. Why singles go in order: the
 grade already follows the scenario, so the order costs nothing, and one "next node" per stat keeps the session sheet
 and the planner simple (uma-rpg's D119 does the same).
@@ -262,48 +268,53 @@ The Twinkle Legends' **Legends** buff (a slot may hold any Uma, owned or not) is
 
 ## 6. The Extra Stats map
 
-One map per Uma per tier: **62 nodes**, fresh at each promotion. Columns follow the ring, so every Duo joins two
-neighbouring columns and Guts–Stamina, the ends, has none:
+One map per Uma per tier: **37 nodes**, fresh at each promotion (D338). Columns follow the ring, so every Duo joins
+two neighbouring columns and Guts–Stamina, the ends, has none:
 
 ```
-grade   Stamina      Wit        Power      Speed      Guts       Suns
-  1        o          o           o          o          o
-  2        o          o           o          o          o
-  3        o ── D ─── o ── D ──── o ── D ─── o ── D ─── o
-  4        o          o           o          o          o        Spring Feast
-  5        o ── D ─── o ── D ──── o ── D ─── o ── D ─── o
-  6        o          o           o          o          o        Summer Feast
-  7        o          o           o          o          o
-  8        o          o           o          o          o        Harvest Feast
-  9        o          o           o          o          o
- 10        o          o           o          o          o        Grand Feast
+scenario  grade   Stamina      Wit        Power      Speed      Guts       Sun
+   1        1        o          o           o          o          o
+   2        3        o ── D ─── o ── D ──── o ── D ─── o ── D ─── o
+            4                                                             Spring Feast
+   3        5        o ── D ─── o ── D ──── o ── D ─── o ── D ─── o
+            6                                                             Summer Feast
+   4        7        o          o           o          o          o
+            8                                                             Harvest Feast
+   5        9        o          o           o          o          o
+           10                                                             Grand Feast
 ```
 
 | Node | Count | Pays at tier 1 | Tier 2 (×1.25) | Tier 3 (×1.5) |
 |---|---|---|---|---|
-| Single | 50 (5 stats × grades 1–10) | +20 to its stat | +25 | +30 |
-| Duo | 8 (4 pairs × grades 3 and 5) | +10 to each of its two stats | +12.5 each | +15 each |
-| Sun | 4 (Feasts at grades 4, 6, 8, 10) | +4 to all five stats | +5 | +6 |
+| Single | 25 (5 stats × one per scenario, grades 1, 3, 5, 7, 9) | +40 to its stat | +50 | +60 |
+| Duo | 8 (4 pairs × grades 3 and 5) | +20 to each of its two stats | +25 each | +30 each |
+| Sun | 4 (Feasts at grades 4, 6, 8, 10) | +8 to all five stats | +10 | +12 |
 
-Every node pays **20 raw points at tier 1** whichever kind it is, so a Sun is flexible, not stronger. The derivation adds
-exact values and rounds once at the end, as D314 does, and adds them **flat after growth**, so "+20 Speed" on the node
-is +20 on the profile.
+Every node pays **40 raw points at tier 1** whichever kind it is, so a Sun is flexible, not stronger. The derivation adds
+exact values and rounds once at the end, as D314 does, and adds them **flat after growth**, so "+40 Speed" on the node
+is +40 on the profile.
+
+**Why half as many, twice as strong (D338).** In the first draft Extra Stats were 47% of all unlocks, each costing a
+whole dish and session for +20 to one stat, while an Observatory node pays a card node: about 130–280 raw points. Half
+the owner's sessions would have felt like the least rewarding half. Halving the singles and doubling every node keeps
+the Extra Stats a build can have (the budget below is unchanged), makes each Gym session worth twice as much, and cuts
+a tier from 132 unlocks to 107. The time factor *k* = 1.2 keeps each scenario at about four weeks.
 
 **Active capacity** limits how many opened nodes pay at once:
 
 | Scenario of the tier | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
-| Nodes the layers so far hold | 10 | 25 | 40 | 51 | 62 |
-| Active capacity (README) | 14 | 18 | 22 | 26 | 30 |
-| Nodes that can pay | 10 | 18 | 22 | 26 | 30 |
+| Nodes the layers so far hold | 5 | 15 | 25 | 31 | 37 |
+| Active capacity (README) | 7 | 9 | 11 | 13 | 15 |
+| Nodes that can pay | 5 | 9 | 11 | 13 | 15 |
 
 - **Active nodes belong to each distance preset** ([03](03-uma-progression.md)): Sprint can lean Speed while Long leans
   Stamina. Switching is free and instant outside a race. A race reads the preset of its distance (D254).
 - **A newly opened node turns on in every preset with free capacity**, so in scenario 1 everything is on and nothing
-  needs choosing. Choice starts in scenario 2, when 25 nodes compete for 18 places. When an advance raises the
+  needs choosing. Choice starts in scenario 2, when 15 nodes compete for 9 places. When an advance raises the
   capacity, the new places fill with opened nodes that were off, oldest first ([03](03-uma-progression.md) §6).
 - **No per-stat limit** beyond the map itself. D235's "four per stat" goes: at tier 1, scenario 5, a full Speed lean is
-  10 singles, 4 Duos and 4 Suns, +256 Speed from 18 of 30 places. The cap profile clamps, and the stamina ladder
+  5 singles, 4 Duos and 4 Suns, +312 Speed from 13 of 15 places. The cap profile clamps, and the stamina ladder
   ([Constellations](../design/constellations.md#balance-targets-the-stamina-ladder)) is re-measured with it.
 
 ### The stat formula: the 240-point pool goes
@@ -312,7 +323,7 @@ is +20 on the profile.
 formula. In its place goes the Extra Stats an Uma can have paying in that scenario:
 
 ```
-extraBudget(t, s) = nodesThatCanPay(s) × 20 × tierMultiplier(t)          (the table above × 1, 1.25 or 1.5)
+extraBudget(t, s) = nodesThatCanPay(s) × 40 × tierMultiplier(t)          (the table above × 1, 1.25 or 1.5)
 nodeValue(t, s)   = round((0.60 × capBudget − extraBudget(t, s)) / cardNodes(s))
 ```
 
@@ -334,18 +345,19 @@ Why:
 
 | | Today's Farm Extra map (D314, D315) | uma-rpg's Sun and planets | **This map** |
 |---|---|---|---|
-| Nodes | 65 per five-scenario block: 50 singles, 10 bridges (every pair), 5 Suns | 100 per tier: 80 moons (8 stats × 10), 16 bridges (8 × grades 3, 7), 4 Suns | **62 per tier**: 50 singles, 8 Duos (4 ring pairs × grades 3, 5), 4 Suns |
-| Order | Any node first | In order per track (D119) | In order per stat; Duos after both singles; Suns after all five |
+| Nodes | 65 per five-scenario block: 50 singles, 10 bridges (every pair), 5 Suns | 100 per tier: 80 moons (8 stats × 10), 16 bridges (8 × grades 3, 7), 4 Suns | **37 per tier**: 25 singles, 8 Duos (4 ring pairs × grades 3, 5), 4 Suns |
+| Order | Any node first | In order per track (D119) | In order per stat; Duos after both singles; Suns after their scenario's five |
 | Paid by | One meal, instant, permanent | Eating a dish, instant | **One dish and a Gym session** |
-| Capacity | 18 + 2 per scenario, absolute (18–46) | 5 + ⌊Uma Level ÷ 2⌋ | **14–30 by scenario of the tier**, values scaled by tier |
-| Value | 20 a node, flat after growth | 1 point a moon | 20 a node at tier 1, ×1.25, ×1.5 |
+| Capacity | 18 + 2 per scenario, absolute (18–46) | 5 + ⌊Uma Level ÷ 2⌋ | **7–15 by scenario of the tier**, values scaled by tier |
+| Value | 20 a node, flat after growth | 1 point a moon | 40 a node at tier 1, ×1.25, ×1.5 |
 
 What changed and why:
 - **Ten bridges become four Duo pairs at two grades.** uma-art's Duo dishes join ring neighbours only, and the five
   stats sit next to each other on the ring, so four pairs have art (README).
 - **Five Suns become four,** one per Feast grade, as in uma-rpg.
-- **"Any node first" becomes grade order,** because grade now tracks the scenario; a free order would let a grade-1
+- **"Any node first" becomes scenario order,** because grade now tracks the scenario; a free order would let a grade-1
   dish open any node and break the layer.
+- **Fifty singles become twenty-five, each twice as strong** (D338), so a Gym session is worth an Observatory one.
 - **Capacity restarts each tier,** because the map does; the tier multiplier carries the growth that today's absolute
   capacity carried.
 - **uma-rpg's eight stats become racing's five.** Its three other families go to the Observatory, the Lineage Hall and
@@ -359,30 +371,32 @@ What changed and why:
 
 | Facility | Tier average ([12](12-economy-and-pacing.md) §7) | Scenario 1 | Scenario 2 | Scenario 3 | Scenario 4 | Scenario 5 | Peak use: 20 Umas at Lv 1 · 25 at Lv 1 · 25 at Lv 2 |
 |---|---|---|---|---|---|---|---|
-| Observatory (2 slots, Lv 2: 3) | ~20 h · 1.1 slots | **33.5 h · 1.9** | 13.6 h · 0.8 | 14.0 h · 0.8 | 17.0 h · 0.9 | 17.4 h · 1.0 | 74% · **93%** · 62% |
-| Lineage Hall (2, Lv 2: 3) | ~13 h · 0.7 | 5.6 h · 0.3 | 13.6 h · 0.8 | 14.0 h · 0.8 | 17.0 h · 0.9 | 17.4 h · 1.0 | 39% · 48% · 32% |
-| Gym (5 rooms × 1, Lv 2: × 2) | ~44 h · 2.5 | 27.9 h · 1.6 | 50.6 h · 2.8 | **52.3 h · 2.9** | 46.9 h · 2.6 | 47.9 h · 2.7 | 46% · 58% (busiest room ~78%) · 29% |
-| Dojo (6 rooms × 1, Lv 2: × 2) | ~13 h · 0.7 | 16.1 h · 0.9 | 9.8 h · 0.5 | 10.2 h · 0.6 | 12.4 h · 0.7 | 12.7 h · 0.7 | 12% · 15% (Speed room ~30%) · 7% |
+| Observatory (2 slots, Lv 2: 3) | ~23 h · 1.3 slots | **37.6 h · 2.1** | 15.5 h · 0.9 | 17.6 h · 1.0 | 19.8 h · 1.1 | 22.7 h · 1.3 | 84% · **105%** · 70% |
+| Lineage Hall (2, Lv 2: 3) | ~21 h · 1.2 | 12.5 h · 0.7 | 23.0 h · 1.3 | 17.6 h · 1.0 | **29.7 h · 1.7** | 22.7 h · 1.3 | 66% · 83% · 55% |
+| Gym (5 rooms × 1, Lv 2: × 2) | ~31 h · 1.7 | 15.1 h · 0.8 | 37.8 h · 2.1 | **42.8 h · 2.4** | 29.2 h · 1.6 | 33.5 h · 1.9 | 38% · 48% · 24% |
+| Dojo (6 rooms × 1, Lv 2: × 2) | ~15 h · 0.8 | 18.1 h · 1.0 | 11.2 h · 0.6 | 12.8 h · 0.7 | 14.5 h · 0.8 | 16.6 h · 0.9 | 13% · 17% (Speed room ~30%) · 8% |
 
-Hours a day for the roster of 25, with slots needed in each cell. The Dojo column prices every bond at its layer's
-lower grade, as [12](12-economy-and-pacing.md) does; most are grade 1, so it is an upper bound.
+Hours a day for the roster of 25 at *k* = 1.2 (D338), with slots needed in each cell, over [12](12-economy-and-pacing.md)
+§5's days per scenario. The Dojo column prices every bond at its layer's lower grade, as [12](12-economy-and-pacing.md)
+does; most are grade 1, so it is an upper bound.
 
 - **Lv 1 carries a 20-Uma roster and Lv 2 carries 25**, the same rule as the Farm's buildings ([07](07-farm.md) §6).
 - **The Observatory is the one facility that needs Lv 2 for 25 Umas.** Scenario 1 is front-loaded with 12 nodes, and on
-  a new account the whole roster is in scenario 1 together. At 2 slots, 25 Umas would hold it at 93% for the first four
+  a new account the whole roster is in scenario 1 together. At 2 slots, 25 Umas would need 105% of it for the first four
   weeks, past the sim's 90% ceiling ([12](12-economy-and-pacing.md) §12). Its Lv 2 costs grade-1 items, so it is
   buyable on day one, as the roster grows from its first Uma Shards. Tiers 2 and 3 fill one promotion at a time, so
   this peak happens once.
-- **The Lineage Hall's 2 slots** stay under about two-thirds use with Inspiration's 24 unlocks a tier (D336); one
-  slot would bottleneck in scenarios 2 and 4, which carry six each.
-- **The Gym's rooms** carry 50–78% in its busiest scenarios: the room's own singles plus its share of Duos and Suns.
+- **The Lineage Hall's 2 slots** peak at 83% in scenario 4, which carries six of Inspiration's 24 unlocks a tier
+  (D336); one slot would bottleneck in scenarios 2 and 4. The sim watches it against the 90% ceiling.
+- **The Gym's rooms** carry under half their time even in scenario 3: each room takes its own stat's single, either
+  room of a Duo and any room for a Sun, so the load spreads.
 - **The Dojo's rooms** are almost idle on average. Six rooms exist for theme and so that several Umas bond at once at
   the start of a tier, when everyone needs six bonds.
 
 **Upgrades** follow uma-rpg's facility upgrades and [07](07-farm.md) §7's pattern: Lv 1–3, one more slot per room at Lv 2,
 speed ×1.25 at Lv 3, paid in Prize Money and crafted items of the facility's families. Prices follow the anchor
-(1 Prize Money ≈ 1 Uma-minute, D331). Lv 3 saves a fifth of the facility's session time, about 240 PM a day at the
-Observatory, 156 at the Lineage Hall, 528 at the Gym and 156 at the Dojo, so it repays in **9–13 days**.
+(1 Prize Money ≈ 1 Uma-minute, D331). Lv 3 saves a fifth of the facility's session time, about 274 PM a day at the
+Observatory, 252 at the Lineage Hall, 377 at the Gym and 176 at the Dojo, so it repays in **6–13 days**.
 
 | Facility | Lv 1 | Lv 2 | Lv 3 | To Lv 2 | To Lv 3 |
 |---|---|---|---|---|---|
@@ -423,7 +437,7 @@ The Training page of the Hub holds the four facilities as places ([11](11-hub-an
    A busy Uma is listed as "Busy until 14:20" and offers **Queue** where [02](02-check-ins-and-notifications.md)'s
    queues allow it.
 2. **Pick unlocks.** Her unlockable items here, in unlock order, each with its dish, stock and minutes. Items that wait
-   on another unlock name it ("needs Speed grade 2 first"). Items with no dish in stock are greyed with "0 in Warehouse
+   on another unlock name it ("needs Speed grade 1 first"). Items with no dish in stock are greyed with "0 in Warehouse
    · Cook". The sheet pre-selects as many as fit before the next check-in ([02](02-check-ins-and-notifications.md)).
 3. **Confirm.** The dishes to be reserved, total minutes and each finish time, then **Start**.
 
@@ -487,7 +501,8 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | Inspiration order: A then B; parent golds; A1, B1 then A2, B2; grandparents' gold 1 in s4, gold 2 in s5 | Both sides grow together, so the 2× single-side price is rarely forced |
 | A gold position needs its slot open, not filled | A session takes hours; refilling a slot must never waste it |
 | Gym rooms: own stat's singles, Duos with its stat, any Sun | Five rooms by stat, without stranding Duos and Feasts |
-| Duos need both same-grade singles; Suns need all five | Suns cap a finished grade; the planner gets a clear goal |
+| Duos need both same-grade singles; Suns need their scenario's five | Suns cap a finished scenario's Gym; the planner gets a clear goal |
+| Half the singles at twice the value (D338) | Every Gym session is worth one at the Observatory; 107 unlocks a tier |
 | A new Extra node turns on in every preset with room; no per-stat limit | No chores in scenario 1; the map itself bounds a lean |
 | **The 240-point Extra pool is replaced by extraBudget** (§6) | One ceiling at 60% of the cap budget; [04](04-tiers-and-promotion.md) computes node values with it |
 | Baseline SP = 0.40 × spCap × opened nodes ÷ *N* | Replaces CL's 40% with the thing CL used to open |
@@ -502,14 +517,14 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 
 - The domain defines the four facilities, the layer tables in §3 and the unlock-order rules, and tests pin every
   unlock's grade, its dish and its dependencies.
-- A session of *N* unlocks reserves *N* dishes at Start, finishes each at 180 + 15(*g*−1) minutes ÷ facility speed in
+- A session of *N* unlocks reserves *N* dishes at Start, finishes each at (180 + 15(*g*−1)) × *k* minutes ÷ facility speed in
   order, and Collect commits exactly the finished ones. Recall returns the rest. A retried operation returns its first
   receipt.
 - An Uma in a session can start a race and cannot start a Farm job.
 - An Uma cannot unlock an item of a later layer; the locked item says which scenario opens it.
 - All 15 constellation templates (14 until the 15th ships) validate at 12/16/20/24/28 nodes with breadth-first ids, one
   tree, no crossings and 40 pt spacing; advancing keeps every assignment on its node id.
-- The Extra Stats map has 62 nodes per tier, pays 20 a node at tier 1 (×1.25, ×1.5), respects 14/18/22/26/30 per preset,
+- The Extra Stats map has 37 nodes per tier, pays 40 a node at tier 1 (×1.25, ×1.5), respects 7/9/11/13/15 per preset,
   and `deriveStats` uses extraBudget in place of the 240 pool.
 - The Observatory, Lineage Hall, Gym and Dojo start at 2, 2, 5 × 1 and 6 × 1 slots; upgrades charge §7's prices once
   and survive promotion.
