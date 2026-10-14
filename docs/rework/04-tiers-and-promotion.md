@@ -515,6 +515,14 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 | The 15th's placeholder buff: **Encore**, Wit cards +10% | The one stat type no buff favours |
 | Tier awards: Promoted badges, Hall of Fame (badge and title), two Trainer achievements; the Expedition awards stay [10](10-expeditions.md)'s | [13](13-removals-and-plan-changes.md) asks this page for the tier awards |
 | Tier-3 completion is the Hall of Fame: no reset, keeps racing, working and her Expedition runs, may take other Expeditions' titles, pays a ticket | An endgame per Uma that keeps her useful, as [10](10-expeditions.md) recommends |
+| Ledger ids: a gate's Shard under today's `uma-gate-shard:{umaId}:{gate}` with her lifetime gate (10 … 150); the Shard exchange is its own operation, one ticket at a time as today; an unlock spends under `unlock-uma:{outfitId}` (D340) | Unique per gate per tier; §6 makes the exchange explicit, which 13 §6's operation list leaves out |
+| A promotion's ticket id names the tier she leaves (1 or 2), and the Hall of Fame's names tier 3 (D340) | So a promotion into tier 3 and an induction never share an id |
+| Promotion history's stats and SP come from the caller, the Training Hub's derivation (D340) | The tier rules can't derive stats; card sets, bonds and runs they write themselves |
+| Shared numbers: a full build's active Extra Stats count 5, 9, 11, 13, 15 (`FULL_ACTIVE_EXTRA_NODES`), which the Extra Stats map and capacity must reproduce; tree sizes and the per-card cap live in one leaf beside the trees (D340) | One owner per number |
+| Owners: the Extra Stats capacity fill at the advance ([03](03-uma-progression.md) §6) and §8's reviewed buffs belong to the Training Hub's rules; re-measuring the buffs' typical values for rivals comes with the builds against the field, and until then rivals use today's (D340) | One owner per rule (M033) |
+| Rival fields restate today's `rivalPreset` and `rollRivalField` on the new trees, held to today's by parity tests fed today's trained stat; the 15th has no typical buff value yet (D340) | Today's read today's trees; the formula and handicaps are unchanged (D336) |
+| A career at T = 15 waits for the catalogue: advancing into the 15th refuses until today's planner knows it (phase 5); the rule from 14 to 15 is in place up to the advance's readiness (D340) | Today's planner knows 14 scenarios |
+| Until phase 9 a stand-in Expedition counts races and wins: 8 wins complete a run, an open run keeps counting after the 15th lands, and inducting outside tier 3 refuses with its own reason (D340) | §2 lets an open run finish from scenario 14; promotion needs a trigger before phase 9 |
 
 ## 13. Done when
 
