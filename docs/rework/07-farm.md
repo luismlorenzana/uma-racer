@@ -147,7 +147,7 @@ fast. The job sheet shows it beside each Uma ("Sprint A · Farm EXP ×1.6"), and
 |---|---|
 | **Range** | Lv 1–50 per Uma **per tier** (D327) |
 | **Source** | Farm work only: gathering, crafting and cooking. Training Hub sessions, races and Speed Tickets pay none |
-| **Rate** | **1 Farm EXP per listed minute** of each finished output (the §2 minutes, before building speed) **× her aptitude for the family** (§3). Paid at collection |
+| **Rate** | **1 Farm EXP per listed minute** of each finished output (the §2 minutes × *k*, before building speed) **× her aptitude for the family** (§3). Paid at collection |
 | **Curve** | Level *L* → *L*+1 costs **480 + 5(*L*−1)** EXP: 8 hours of work at Lv 1, 12 at Lv 49. Lv 50 is 29,400 EXP |
 | **Grade gate** | Grade *g* opens at **Lv 5*g* − 4**: 1, 6, 11 … 46. It gates every step: gathering and crafting grade *g*, and cooking a dish of grade *g* (the dish's grade, not its side's) |
 | **After Lv 46** | Lv 47–50 open nothing new; they complete the tier's Farm track. EXP stops counting at Lv 50 |
@@ -391,7 +391,7 @@ The Warehouse is in Town Hall ([11](11-hub-and-places.md)). It is the one invent
 
 | Row ([13](13-removals-and-plan-changes.md) §6) | Farm fields |
 |---|---|
-| `buildings/{id}` | Level; each slot's current job id, or empty |
+| `buildings/{id}` | Level. Which job holds a slot is read from the work rows (§14) |
 | `work/{outfitId}` | Her running job (building, slot, kind, item or recipe, count, listed minutes, speed, reserved inputs, `startedAt`, acceleration, outputs collected so far), her queue of up to three, her last job for Repeat, and a dropped queue with its reason until the owner acts on it ([02](02-check-ins-and-notifications.md)) |
 | `umas/{outfitId}` | Farm EXP for her current tier, in quarter points; the level is derived |
 | `items/{itemId}`, `itemLedger` | Stock and every movement: reserve, return, output, sale, upgrade cost |
@@ -445,6 +445,18 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | **Sending a done Uma to a session collects her first** | Saves a tap on the most common move |
 | **Promotion needs her free** (decided in [04](04-tiers-and-promotion.md) §5) | No job spans two tiers' Farm Levels, and no job runs at a grade her new Farm Level can't start |
 | **No Farmhouse, cookbook or account recipe milestones** | Their jobs move to the planner, the job sheet and the Warehouse |
+| **Farm EXP is per real listed minute:** base × `TIME_FACTOR`, before building speed (T127) | It's the only reading that keeps §4's "8 hours of work at Lv 1", §3's levels a day, [12](12-economy-and-pacing.md) §6's day table and [08](08-item-catalogue-and-recipes.md) §5's "× *k*" true at *k* = 1.2. §2's "285 Farm EXP" is a base-minute example |
+| **Farm EXP is rounded to quarter points once per item**, then multiplied by the items collected | ×0.9 and ×1.8 aren't exact in quarter points, and split collects must pay the same as one |
+| **Ticket time is kept in whole milliseconds and clamped to the time remaining** | Finish then ends exactly when it's used, so nothing starts in the past |
+| **A Speed Ticket count above what finishes the job spends only what finishes it** | A screen that is a minute old still does what the owner meant ([02](02-check-ins-and-notifications.md) §9) |
+| **A queued job takes its speed and inputs when it starts, and its grade gate when it's added** | [05](05-training-hub.md) §7 applies speed to work "started after it", and Farm Level never drops within a tier |
+| **A queue edit is refused if any queued job would no longer start in order** (its place, its grade, a session's unlock order) | Nothing in a queue is left to fail at night for a reason the sheet could have said |
+| **Ties go by §1's order, then the facilities, rooms and slot** | §2 orders only the Farm buildings, but sessions queue too |
+| **A Duo or Feast earns Farm EXP by its main families, not its side** | A planet dish's family excludes its side (§3, [08](08-item-catalogue-and-recipes.md) §4) |
+| **There is no `assign` operation:** work rows hold slots, and building rows hold levels only | §5 has no standing assignment, and a slot read from the job in it can never disagree with that job |
+| **Collect never refuses, and Recall with nothing running acts as Collect** | [02](02-check-ins-and-notifications.md) §9: an action already done shows its result |
+| **An upgrade's only gate is its cost** | Its grade-3 items are §7's "from Farm Lv 11" |
+| **Promotion clears her idle work row** (her last job and any dropped queue) | [02](02-check-ins-and-notifications.md) §5 never repeats a promoted Uma, and her last job's grade may be above her new Farm Level |
 
 ## 15. Done when
 
