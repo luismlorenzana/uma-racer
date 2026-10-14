@@ -8,6 +8,7 @@ import { expToNextUmaLevel, GATE_SHARD_REWARD, raceExp } from '../progression'
 import { SCENARIO_BUFFS } from '../scenario-buffs'
 import { LEVELS_PER_SCENARIO, MAX_UMA_LEVEL, SCENARIOS, skillPointCap } from '../scenarios'
 import { RACE_GRADES, STATS } from '../types'
+import { REWORK_BLOCKS } from './rework'
 
 type Cell = string | number
 /** A Markdown table; pipes in cells are escaped. */
@@ -86,6 +87,6 @@ export function renderBlock(key: string, context: { packages: readonly { path: s
     case 'race-rewards': return raceRewards()
     case 'rivals': return rivals()
     case 'dependencies': return dependencies(context.packages)
-    default: return null
+    default: return REWORK_BLOCKS[key]?.() ?? null
   }
 }

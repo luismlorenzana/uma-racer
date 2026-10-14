@@ -48,6 +48,16 @@
         "default": "./src/minigames/uma-puzzles/*.ts"
       }
     },
+    "./rework/*": {
+      "require": {
+        "types": "./dist/cjs/rework/*/index.d.ts",
+        "default": "./dist/cjs/rework/*/index.js"
+      },
+      "default": {
+        "types": "./src/rework/*/index.ts",
+        "default": "./src/rework/*/index.ts"
+      }
+    },
     "./puzzles-content-fixtures": "./src/minigames/uma-puzzles/content.synthetic.ts",
     "./puzzles-preservation-fixtures": "./src/minigames/uma-puzzles/preservation.synthetic.ts"
   },

@@ -8,6 +8,8 @@ import { renderBlock, type PackageJson } from './render'
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
 const DOCS = join(ROOT, 'docs', 'game')
+// The rework's pages carry live blocks for the rules it builds (M033) until phase 3 moves them into the manual.
+const REWORK = join(ROOT, 'docs', 'rework')
 const BLOCK = /<!-- live:([a-z-]+) -->\n[\s\S]*?<!-- \/live -->/g
 const PACKAGES = ['package.json', 'apps/web/package.json', 'apps/api/package.json', 'packages/domain/package.json', 'packages/race/package.json']
 const packages = PACKAGES.map((path) => ({ path, json: JSON.parse(readFileSync(join(ROOT, path), 'utf8')) as PackageJson }))
@@ -22,7 +24,8 @@ function refresh(text: string, unknown: string[]): string {
 }
 
 describe('live manual (D337)', () => {
-  const files = readdirSync(DOCS).filter((f) => f.endsWith('.md')).map((f) => join(DOCS, f))
+  const pages = (dir: string) => readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => join(dir, f))
+  const files = [...pages(DOCS), ...pages(REWORK)]
 
   it('has a game manual with live blocks', () => {
     expect(files.length).toBeGreaterThan(2)
