@@ -4,7 +4,7 @@
 // with up to three requests queued behind. Only timestamps are stored. T127 widens T125's `ReworkState` with the three
 // parts it needs (the Warehouse's free stock, building levels and the work rows) rather than editing it, so T125's
 // operations and tests carry these parts through untouched.
-import type { UmaTemplate } from '../../content'
+import type { SupportCardTemplate, UmaTemplate } from '../../content'
 import type { ItemId } from '../items/catalogue'
 import type { RecipeInput } from '../items/recipes'
 import type { Refusal, ReworkState } from '../types'
@@ -119,9 +119,14 @@ export interface WorkState extends ReworkState {
   readonly work: Readonly<Record<string, WorkRow>>
 }
 
-/** What the engine reads of the content: her running aptitudes for Farm EXP (07 §3). T125's `TierContent` fits. */
+/**
+ * What the engine reads of the content: her running aptitudes for Farm EXP (07 §3), and the support cards a Dojo
+ * session's bonds name (T128: a card's type and era decide its dish). T125's `TierContent` fits; a session that bonds
+ * needs `cards`.
+ */
 export interface WorkContent {
   readonly umas: ReadonlyMap<string, Pick<UmaTemplate, 'aptitudes'>>
+  readonly cards?: ReadonlyMap<string, Pick<SupportCardTemplate, 'id' | 'type' | 'era'>>
 }
 
 /** One movement of Warehouse stock, so phase 3 can write `itemLedger` from a receipt (07 §12, 09 §9). */

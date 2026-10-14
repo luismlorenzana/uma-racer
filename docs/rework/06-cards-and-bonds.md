@@ -54,6 +54,7 @@ A **bond** is one card unlocked for one Uma. The rules:
 
 ### The dish: family by card type
 
+<!-- live:bond-dishes -->
 | Card type | Dojo room | Dish family | Dish id at grade *g* (grade 1 name) |
 |---|---|---|---|
 | Speed | Speed | Sweets | `dish-sweets-<g>` (Honeycomb Cake) |
@@ -62,6 +63,7 @@ A **bond** is one card unlocked for one Uma. The rules:
 | Guts | Guts | Nuts & Seeds | `dish-nuts-seeds-<g>` (Peanut Cookies) |
 | Wit | Wit | Herbs & Spices | `dish-herbs-spices-<g>` (Basil Curry) |
 | Friend, Group | Friend & Group | Grains | `dish-grains-<g>` (Wheat Bread) |
+<!-- /live -->
 
 ### The dish: grade by era
 
@@ -72,28 +74,32 @@ p     = max(1, era − 5 × (tier − 1))
 grade = 2p − 1                       (1, 3, 5, 7 or 9)
 ```
 
-So the newest cards of each scenario cost the most, and every older card costs grade 1. The cards column counts today's
-pack (2026-10-02, aggregates only).
+So the newest cards of each scenario cost the most, and every older card costs grade 1. The table is the Training Hub's
+rules (`bondGrade` in `@racer/domain/rework/training`, D344).
 
-| Card era (JP scenario) | Tier 1 grade | Tier 2 grade | Tier 3 grade | Cards |
-|---|---|---|---|---|
-| 1 · URA Finale | **1** | 1 | 1 | 52 |
-| 2 · Unity Cup | **3** | 1 | 1 | 24 |
-| 3 · Trackblazer | **5** | 1 | 1 | 27 |
-| 4 · Our Grand Concert | **7** | 1 | 1 | 27 |
-| 5 · Grand Masters | **9** | 1 | 1 | 24 |
-| 6 · Project L'Arc | — | **1** | 1 | 28 |
-| 7 · U.A.F. Ready GO! | — | **3** | 1 | 19 |
-| 8 · Great Food Festival | — | **5** | 1 | 19 |
-| 9 · Run! Mecha Umamusume | — | **7** | 1 | 15 |
-| 10 · The Twinkle Legends | — | **9** | 1 | 16 |
-| 11 · Design Your Island | — | — | **1** | 18 |
-| 12 · Yukoma Hot Springs | — | — | **3** | 14 |
-| 13 · Beyond Dreams | — | — | **5** | 15 |
-| 14 · Tracen Diner | — | — | **7** | 14 |
-| 15 · Japan's next | — | — | **9** | 0 today |
+<!-- live:bond-grades -->
+| Card era (JP scenario) | Tier 1 grade | Tier 2 grade | Tier 3 grade |
+|---|---|---|---|
+| 1 · URA Finale | **1** | 1 | 1 |
+| 2 · Unity Cup | **3** | 1 | 1 |
+| 3 · Trackblazer | **5** | 1 | 1 |
+| 4 · Our Grand Concert | **7** | 1 | 1 |
+| 5 · Grand Masters | **9** | 1 | 1 |
+| 6 · Project L'Arc | — | **1** | 1 |
+| 7 · U.A.F. Ready GO! | — | **3** | 1 |
+| 8 · Great Food Festival | — | **5** | 1 |
+| 9 · Run! Mecha Umamusume | — | **7** | 1 |
+| 10 · The Twinkle Legends | — | **9** | 1 |
+| 11 · Design Your Island | — | — | **1** |
+| 12 · Yukoma Hot Springs | — | — | **3** |
+| 13 · Beyond Dreams | — | — | **5** |
+| 14 · Tracen Diner | — | — | **7** |
+| 15 · Japan's next | — | — | **9** |
+<!-- /live -->
 
-"—" means the card is not eligible anywhere in that tier. The odd grade is the scenario's lower one, which an average
+"—" means the card is not eligible anywhere in that tier. Today's pack (2026-10-02, aggregates only) holds 52, 24, 27,
+27 and 24 cards of eras 1–5, then 28, 19, 19, 15 and 16 of eras 6–10, and 18, 14, 15 and 14 of eras 11–14; none is era 15
+yet. The code may not read the private pack, so the counts stay in this sentence. The odd grade is the scenario's lower one, which an average
 Uma's Farm Level opens as that scenario starts ([12](12-economy-and-pacing.md) §6), so a new era's cards are bondable
 from the scenario's first day. Session time follows the grade: 180, 210, 240, 270 or 300 minutes.
 
@@ -103,10 +109,12 @@ era 3) takes `dish-herbs-spices-5` and 4 hours. In tier 2 all three are grade 1.
 
 ### How many bonds
 
+<!-- live:bond-counts -->
 | Scenario of the tier | 1 | 2 | 3 | 4 | 5 | Tier |
 |---|---|---|---|---|---|---|
 | Bonds in the layer (README) | 6 | 3 | 3 | 3 | 3 | **18** |
 | Bonded by the end of the scenario | 6 | 9 | 12 | 15 | 18 | |
+<!-- /live -->
 
 - **The 18 is the pacing assumption, not a cap.** The owner may bond **any number** of cards to an Uma. The planner and
   [12](12-economy-and-pacing.md)'s model count 18, and "[Scenario] Fully Trained" counts 6, 9, 12, 15 and 18
@@ -299,6 +307,15 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | Card Collector, Maxed Out and Coupon Clipper retire; Card Partners and [Era]/[Type] Bonded replace them | Collection becomes bonding, so its achievements count bonds |
 | Era Loyalist reads the sets of every race in the scenario | Four presets mean several sets per scenario |
 | No per-account card entity | Every card is open; bonds live on Umas ([13](13-removals-and-plan-changes.md)) |
+| `remainingUnlocks` takes the cards the owner has chosen to bond; the rest of each layer's pacing count shows as "pick cards", oldest layer first, with bonds made or pending counted toward it (D344) | [02](02-check-ins-and-notifications.md) §6 cascades only chosen bonds; the caller (a screen, or the loop simulation's deck) supplies the choice |
+| The card buff applies to a Friend or Group card's SP, as today (D344) | 03 §8 and §1 omit it from the SP formula, but 03 §8 calls Friend and Group "unchanged" and D165 buffs every card node |
+| A bond's layer is its card's first eligible scenario *p*; a card past her scenario refuses with the scenario that opens it, a card past her tier with its own tier's scenario (D344) | One rule for the grade and the lock; 18 a tier stays a count, not a cap |
+| A Dojo session reads each bonded card's type and era from the content (`cards`), never from the request (D344) | The dish and grade follow the card; a request can't name a cheaper one |
+| A card set refuses an unbonded card, a card twice, a character twice, a card past her scenario and a seventh card; replacing a card in its slot hands its nodes over, removing one empties them, exactly as today's `withCardSet` (D129, D344) | §3's rules; the hand-over is today's, proven by a parity test |
+| Lineage picks go only in open slots, from Umas the account owns, never herself, under D250's repeat rules and Legends (D344) | [05](05-training-hub.md) §5 pays "a filled open slot" |
+| A loadout keeps her unique first and checks the rest against the preset's derived library and SP; one over her SP is refused unless it costs no more than the one it replaces (D196, D344) | Today's rules; the unique is always equipped and costs nothing |
+| Cross-task acceptance #2 (demand equals [08](08-item-catalogue-and-recipes.md) §7) belongs to the loop simulation (D344) | 08 §7 puts 9 of 18 bonds at even grades, which the era rule can't produce; the simulation rewrites 08 §7 |
+| §2's "Cards" column leaves the live block for a sentence (D344) | It counts the private pack, which code may not render |
 
 ## 12. Done when
 

@@ -1,0 +1,71 @@
+// Bonds (docs/rework/06-cards-and-bonds.md §2, D329): a card enters an Uma's sets only once it is bonded to her, by one
+// Dojo unlock. Its dish family follows the card type and its grade the card's era within her tier: a card first eligible
+// in the tier's scenario p takes grade 2p − 1, older eras counting as p = 1. Bondable when era ≤ T; any number; never
+// undone; reset at promotion (T125's).
+import type { SupportCardTemplate, SupportCardType } from '../../content'
+import { STATS } from '../../types'
+import { planetDish, type ItemGrade, type ItemId } from '../items/catalogue'
+import { familyFor, type FamilyId } from '../items/families'
+import { LAST_SCENARIO_NUMBER, SCENARIOS_PER_TIER, scenarioRow } from '../tiers/map'
+import type { Refusal, ScenarioOfTier, Tier, UmaBuild } from '../types'
+import { trainingRefusal } from './refusals'
+import type { DojoRoomId } from './facilities'
+
+/** What a bond reads of a card. */
+export type BondCard = Pick<SupportCardTemplate, 'id' | 'type' | 'era'>
+
+/** The dish family by card type (06 §2): each stat type its stat's family, Friend and Group Grains (the Skill family). */
+export const BOND_FAMILY: Readonly<Record<SupportCardType, FamilyId>> = Object.freeze({
+  ...Object.fromEntries(STATS.map((stat) => [stat, familyFor(stat)])) as Record<(typeof STATS)[number], FamilyId>,
+  friend: familyFor('skill'),
+  group: familyFor('skill'),
+})
+
+/** The Dojo room by card type (05 §1): Friend and Group share one. */
+export const dojoRoomOf = (type: SupportCardType): DojoRoomId => (type === 'friend' || type === 'group' ? 'friend-group' : type)
+
+/** The scenario of `tier` in which a card of `era` is first eligible: max(1, era − 5(tier − 1)) (06 §2). */
+export const bondLayer = (era: number, tier: Tier): number => Math.max(1, era - SCENARIOS_PER_TIER * (tier - 1))
+
+/** The grade a bond with a card of `era` takes in `tier`: 2p − 1, or null when no scenario of the tier allows it. */
+export function bondGrade(era: number, tier: Tier): ItemGrade | null {
+  if (!Number.isInteger(era) || era < 1) throw new RangeError(`A card's era is a whole number ≥ 1: ${era}`)
+  const p = bondLayer(era, tier)
+  return p > SCENARIOS_PER_TIER ? null : ((2 * p - 1) as ItemGrade)
+}
+
+/** The exact dish a bond with `card` takes in `tier`, or null when the tier never allows it. */
+export function bondDishId(card: Pick<BondCard, 'type' | 'era'>, tier: Tier): ItemId | null {
+  const grade = bondGrade(card.era, tier)
+  return grade === null ? null : planetDish(BOND_FAMILY[card.type], grade).id
+}
+
+/** Refused for a card whose era is past the game's scenario T: it names the scenario that opens it (06 §2). */
+export function cardEraRefusal(card: BondCard): Refusal {
+  const row = scenarioRow(Math.min(card.era, LAST_SCENARIO_NUMBER))
+  return trainingRefusal('card-era', { card: card.id, era: card.era, tier: row.tier, scenario: row.scenario, name: row.name })
+}
+
+export type BondStatus = { readonly status: 'bonded' | 'pending' | 'available' } | Refusal
+
+/**
+ * Whether `card` can be bonded to her at the game's scenario T: bonded already, in her work ahead, available, or
+ * refused because its era is past T. `pending` is her work ahead, as unlock refs.
+ */
+export function bondStatus(
+  build: Pick<UmaBuild, 'bonds'>,
+  card: BondCard,
+  T: number,
+  pending: readonly { readonly kind: string; readonly target: string }[] = [],
+): BondStatus {
+  if (build.bonds.includes(card.id)) return { status: 'bonded' }
+  if (pending.some((ref) => ref.kind === 'bond' && ref.target === card.id)) return { status: 'pending' }
+  if (card.era > T) return cardEraRefusal(card)
+  return { status: 'available' }
+}
+
+/** The scenario of the tier as a layer number, or null past the tier. */
+export const bondLayerOfTier = (era: number, tier: Tier): ScenarioOfTier | null => {
+  const p = bondLayer(era, tier)
+  return p > SCENARIOS_PER_TIER ? null : (p as ScenarioOfTier)
+}

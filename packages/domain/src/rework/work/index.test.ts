@@ -12,7 +12,7 @@ describe('the work and farm entries', () => {
     ] as const) expect(typeof work[name], name).toBe('function')
     expect(work.SPEED_TICKET_MS).toBe(1_800_000)
     expect(work.SESSION_KIND).toBe('session')
-    expect(Object.keys(work.WORK_KINDS)).toEqual(['gather', 'craft', 'cook'])
+    expect(Object.keys(work.WORK_KINDS)).toEqual(['gather', 'craft', 'cook', 'session'])
     expect(Object.keys(work.WORK_REFUSALS)).toHaveLength(12)
   })
 

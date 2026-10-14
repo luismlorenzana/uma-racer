@@ -1,9 +1,10 @@
 // The kinds of work the engine runs (docs/tasks/M033-rework-rules.md; docs/rework/07-farm.md §2; docs/rework/05-training-hub.md
 // §2). A kind plans a request into items (seconds, inputs, output and Farm EXP each) and pays finished outputs. The
 // engine owns everything else: slots, reserving, the clock, queues, collect, recall and Speed Tickets. T127 registers
-// gather, craft and cook; T128's `session` is registered by whichever of the two lands second, and a caller may pass
-// its own table in `env.kinds` (the tests' synthetic session kind does).
+// gather, craft and cook, and T128's `session` (rework/training) joins them; a caller may pass its own table in
+// `env.kinds` (the tests' synthetic session kind does).
 import { cookKind, craftKind, gatherKind } from '../farm/jobs'
+import { sessionKind } from '../training/sessions'
 import type { RecipeInput } from '../items/recipes'
 import type { Refusal } from '../types'
 import type { SlotRef, WorkContent, WorkKind, WorkOutput, WorkRequest, WorkState } from './types'
@@ -50,8 +51,8 @@ export interface WorkKindRules {
 
 export type WorkKinds = Readonly<Partial<Record<WorkKind, WorkKindRules>>>
 
-/** The registered kinds. T128's `sessionKind` joins as `session` when both tasks have landed. */
-export const WORK_KINDS: WorkKinds = Object.freeze({ gather: gatherKind, craft: craftKind, cook: cookKind })
+/** The registered kinds: the Farm's three and T128's Training Hub sessions. */
+export const WORK_KINDS: WorkKinds = Object.freeze({ gather: gatherKind, craft: craftKind, cook: cookKind, session: sessionKind })
 
 /** What every operation and settle read beyond the state: the content, and the kinds if not `WORK_KINDS`. */
 export interface WorkEnv {
