@@ -25,7 +25,7 @@ describe('a new account', () => {
     expect(newAccount(42)).toEqual({
       profile: {
         generation: 2, createdAt: 42, umaTickets: 20, umaShards: 0, prizeMoney: 0, featuredUmaId: null,
-        purse: { day: '1970-01-01', gross: 0, featuredPaid: [] }, exchangeGrade: 1,
+        purse: { day: '1970-01-01', gross: 0, featuredPaid: [] }, exchangeGrade: 1, targets: [], checkIns: [480, 780, 1350], repeatSizing: 'same',
       },
       umas: {},
       work: {},

@@ -65,7 +65,16 @@ export interface AccountProfile {
   readonly purse: DailyPurse
   /** The Exchange's stock rule: the highest raw grade it has ever stocked, a mark that never drops (09 §5.3, §9; T130). */
   readonly exchangeGrade: ItemGrade
+  /** The planner's targets: up to five owned Umas, in allocation order; empty means automatic (02 §6, §10; T131). */
+  readonly targets: readonly string[]
+  /** The owner's check-in times: one to four, in minutes after local midnight, ascending (02 §3, §10; T131). */
+  readonly checkIns: readonly number[]
+  /** Repeat's size: the last one, or the one that fits the next check-in (02 §5, §10; T131). */
+  readonly repeatSizing: RepeatSizing
 }
+
+/** Repeat's remembered toggle (02 §5): the same size, or fit to the next check-in. */
+export type RepeatSizing = 'same' | 'fit'
 
 /** What a ledger row moves. Other tasks widen it with their own resources. */
 export type LedgerResource = 'uma-tickets' | 'uma-shards' | 'prize-money'
@@ -211,4 +220,16 @@ export interface ReworkState {
    * means empty: it is optional until phase 3's save, so the tasks that add it (T127, T130) merge cleanly.
    */
   readonly items?: Readonly<Record<string, number>>
+  /**
+   * The `operations` log (13 §6, 02 §9–§10): each operation's first receipt under the id its tap chose, so a retry
+   * returns it and applies nothing twice (T131's `runOnce`). Absent means empty, as `items` does, until phase 3's save.
+   */
+  readonly operations?: Readonly<Record<string, OperationRecord>>
+}
+
+/** One entry of the `operations` log: which operation ran, when, and the receipt it gave. */
+export interface OperationRecord {
+  readonly name: string
+  readonly at: number
+  readonly receipt: unknown
 }

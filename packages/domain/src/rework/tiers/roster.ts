@@ -6,6 +6,7 @@ import { UMA_SHARDS_PER_COUPON } from '../../economy'
 import { bestBaseDistance } from '../../save'
 import { FIRST_EXCHANGE_GRADE } from '../exchange/exchange'
 import { emptyPurse } from '../exchange/purse'
+import { DEFAULT_CHECK_INS } from '../check-in/schedule'
 import { emptyBuild, type OpResult, type ReworkState, type UmaState } from '../types'
 import { freezeCareer, umaTemplate, type TierContent } from './career'
 import { assertNow, hasLedgerEntry, withUma, writeLedger } from './ledger'
@@ -25,14 +26,15 @@ export const unlockUmaLedgerId = (outfitId: string): string => `unlock-uma:${out
 
 /**
  * A generation-2 account on day one (13 §5): 20 Uma Tickets, no Umas, no work, nothing else. Its Daily Purse is empty
- * and the Exchange stocks grade 1 (T130, 09 §5.3).
+ * and the Exchange stocks grade 1 (T130, 09 §5.3). The planner's targets are automatic, the check-ins are 08:00, 13:00
+ * and 22:30, and Repeat keeps the size (T131, 02 §3, §5, §6).
  */
 export function newAccount(now: number): ReworkState {
   assertNow(now)
   return {
     profile: {
       generation: 2, createdAt: now, umaTickets: INITIAL_UMA_TICKETS, umaShards: 0, prizeMoney: 0, featuredUmaId: null,
-      purse: emptyPurse(), exchangeGrade: FIRST_EXCHANGE_GRADE,
+      purse: emptyPurse(), exchangeGrade: FIRST_EXCHANGE_GRADE, targets: [], checkIns: DEFAULT_CHECK_INS, repeatSizing: 'same',
     },
     umas: {},
     work: {},
