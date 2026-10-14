@@ -64,12 +64,14 @@ for the morning (**Overnight**). It never picks for the owner. It preselects the
 
 Gaps at the default times, at grade 1 ([12](12-economy-and-pacing.md) §4 times):
 
+<!-- live:check-in-fits -->
 | Work at grade 1 | 08:00 → 13:00 (5 h) | 13:00 → 22:30 (9.5 h) | 22:30 → 08:00 (9.5 h) |
 |---|---|---|---|
 | Gather (90 min each) | ×3, ends 12:30 | ×6, ends 22:00 | ×6, ends 07:30 |
 | Craft (22.5 min each) | ×10 then ×3 queued, ends 12:52 | ×10, ×10, ×5 queued, ends 22:22 | ×10, ×10, ×5 queued, ends 07:52 |
 | Cook (240 min each) | ×1, ends 12:00 | ×2, ends 21:00 | ×2, ends 06:30 |
 | Session (180 min each) | ×1, ends 11:00 | ×3, ends 22:00 | ×3, ends 07:30 |
+<!-- /live -->
 
 A chip that runs past the next check-in says so. For example, a ×2 session started at 08:00 shows "ends 14:00 · then
 free until 22:30". Overshooting the next visit usually costs more idle time than stopping short of it.
