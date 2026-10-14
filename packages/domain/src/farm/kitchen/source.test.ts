@@ -6,5 +6,6 @@ it('exposes kitchen only through its explicit package entry, not the root or liv
   const source = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
   expect(source('../../index.ts')).not.toMatch(/from ['"].*farm\/kitchen/)
   expect(source('../index.ts')).not.toMatch(/from ['"].*kitchen/)
-  expect(source('../../../package.json')).toContain('"./farm/kitchen": "./src/farm/kitchen/index.ts"')
+  const exports = JSON.parse(source('../../../package.json')).exports as Record<string, { default: { default: string } }>
+  expect(exports['./farm/kitchen']?.default.default).toBe('./src/farm/kitchen/index.ts')
 })
