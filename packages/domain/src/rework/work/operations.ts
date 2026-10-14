@@ -92,7 +92,8 @@ export interface StartReceipt {
 /**
  * `start` (07 §2, 05 §2): reserves every item's inputs and starts the entry now. In order: the slot exists and is free;
  * she is Free, or Ready (collected in the same receipt); 1–10 items; this building makes it; her Farm Level opens the
- * grade (or the kind's own rules); the free stock covers it, else `short` with `largestCoverable`.
+ * grade (or the kind's own rules); the free stock covers it, else `short` with `largestCoverable`. Starting clears any
+ * dropped queue she kept (T131: a new start acts on it).
  */
 export function start<S extends WorkState>(state: S, input: StartInput, now: number, env: WorkEnv): OpResult<StartReceipt, S> {
   assertNow(now)
@@ -119,7 +120,8 @@ export function start<S extends WorkState>(state: S, input: StartInput, now: num
     if (short.length > 0) return workRefusal('short', { n: short[0]!.qty, item: short[0]!.item, largestCoverable: largestCoverable(next.items, items) })
     const entry = entryFrom(request, items, now, speedAt(next, slot.building), false)
     const mine = next.work[outfitId] ?? emptyRow(outfitId)
-    next = withRow({ ...next, items: moveStock(next.items, inputs, -1) }, { ...mine, slot, entries: [entry], queue: [] })
+    // A new start acts on a stopped queue, so it clears it, as a restart or Dismiss would (T131, 02 §10).
+    next = withRow({ ...next, items: moveStock(next.items, inputs, -1) }, { ...mine, slot, entries: [entry], queue: [], dropped: null })
     return {
       state: next,
       receipt: {
