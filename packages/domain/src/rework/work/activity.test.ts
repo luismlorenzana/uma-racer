@@ -1,5 +1,6 @@
 // The activity rule (docs/rework/01-game-loop.md §2, docs/rework/07-farm.md §5, D328): Free, Working or Ready, racing
-// in all three, every row of 01 §2's table, and the tier rules' use of it (advancing leaves work alone).
+// in all three, every row of 01 §2's table, and the tier rules' use of it (advancing leaves work alone, promotion needs
+// her Free).
 import { describe, expect, it } from 'vitest'
 import { placeUma } from '../../__fixtures__/rework-tiers'
 import {
@@ -8,6 +9,7 @@ import {
 import { farmItemSeconds } from '../farm/jobs'
 import { advanceScenario } from '../tiers/advance'
 import { recordExpeditionRace } from '../tiers/expedition'
+import { promote, promotionReadiness } from '../tiers/promotion'
 import { isRefusal } from '../types'
 import { collectBeforeRace, freeAt, isFree, workState } from './activity'
 import { collect, queue, recall, start } from './operations'
@@ -117,5 +119,39 @@ describe("01 §2's table", () => {
     const working = ok(start(farmAccount(), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(2) }, T0, ENV)).state
     const state = { ...working, umas: { ...working.umas, [PLAIN.id]: placeUma(working.umas[PLAIN.id]!, { tier: 1, scenario: 5, level: 50, careerWon: true }, WORK_CONTENT) } }
     expect(isRefusal(recordExpeditionRace(state, { umaId: PLAIN.id, expeditionId: 'europe', won: true }, T0 + 1))).toBe(false)
+  })
+})
+
+describe('promotion needs her Free (04 §5)', () => {
+  const STATS = { stats: { speed: 1, stamina: 1, power: 1, guts: 1, wit: 1 }, skillPoints: 1 }
+  const PRESETS = { sprint: STATS, mile: STATS, medium: STATS, long: STATS }
+
+  function ready(): WorkState {
+    let state = atExpeditionEnd(farmAccount())
+    for (let i = 0; i < 8; i += 1) state = ok(recordExpeditionRace(state, { umaId: PLAIN.id, expeditionId: 'europe', won: true }, T0 + i)).state
+    return state
+  }
+  function atExpeditionEnd(state: WorkState): WorkState {
+    return { ...state, umas: { ...state.umas, [PLAIN.id]: placeUma(state.umas[PLAIN.id]!, { tier: 1, scenario: 5, level: 50, careerWon: true }, WORK_CONTENT) } }
+  }
+
+  it('is refused while she works or waits for Collect, and allowed once collected', () => {
+    const working = ok(start(ready(), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(1) }, T0, ENV)).state
+    expect(promotionReadiness(working, PLAIN.id)).toMatchObject({ code: 'busy' })
+    expect(promote(working, { umaId: PLAIN.id, presets: PRESETS }, T0 + 2 * G, { content: WORK_CONTENT })).toMatchObject({ code: 'busy' })
+    const collected = collect(working, { outfitId: PLAIN.id }, T0 + 2 * G, ENV).state
+    expect(promotionReadiness(collected, PLAIN.id)).toMatchObject({ ready: true })
+  })
+
+  it('starts her at Farm Lv 1 with no last work to repeat', () => {
+    const working = ok(start(ready(), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(1) }, T0, ENV)).state
+    const collected = collect(working, { outfitId: PLAIN.id }, T0 + G, ENV).state
+    const promoted = ok(promote({ ...collected, umas: { ...collected.umas, [PLAIN.id]: { ...collected.umas[PLAIN.id]!, farm: { level: 30, exp: 60_000 } } } },
+      { umaId: PLAIN.id, presets: PRESETS }, T0 + G, { content: WORK_CONTENT })).state
+    expect(promoted.umas[PLAIN.id]!.farm).toEqual({ level: 1, exp: 0 })
+    expect(promoted.work[PLAIN.id]).toBeUndefined()
+    expect(promoted.items).toBe(collected.items)
+    expect(promoted.buildings).toBe(collected.buildings)
+    expect(start(promoted, { outfitId: PLAIN.id, slot: GARDEN, request: { kind: 'gather', item: 'potato', count: 1 } }, T0 + G, ENV)).toMatchObject({ code: 'grade' })
   })
 })
