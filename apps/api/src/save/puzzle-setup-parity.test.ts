@@ -1,13 +1,13 @@
-// Same synthetic setup boundaries through the standalone API mirror, never cloud/private data.
+// Same synthetic setup boundaries through the API's domain imports, never cloud/private data.
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseSyncRequest } from './save.types'
 import { parsePuzzlePresetSave, parsePuzzleCheckpointSave, parsePuzzleOutfitSave, puzzleOperationReferences, resolvePuzzleOperations,
   createPuzzleOperation, parsePuzzleOperationBatch, type PuzzlePayload, type PuzzleOperationV1, type PuzzleStoredEntity, type PuzzleStoredLog } from './puzzles'
-import { parsePuzzleBattleInput } from './puzzle-domain/minigames/uma-puzzles/battle-parse'
-import { createPuzzleCheckpoint, parsePuzzleCheckpoint, puzzleChapterStatus } from './puzzle-domain/minigames/uma-puzzles/campaign/progress'
-import { parsePuzzleCampaignId } from './puzzle-domain/minigames/uma-puzzles/campaign/identity'
-import { puzzleChapter } from './puzzle-domain/minigames/uma-puzzles/campaign/chapters'
+import { parsePuzzleBattleInput } from '@racer/domain/puzzles/battle-parse'
+import { createPuzzleCheckpoint, parsePuzzleCheckpoint, puzzleChapterStatus } from '@racer/domain/puzzles/campaign/progress'
+import { parsePuzzleCampaignId } from '@racer/domain/puzzles/campaign/identity'
+import { puzzleChapter } from '@racer/domain/puzzles/campaign/chapters'
 interface Fixture {
   entities: Map<string, PuzzleStoredEntity>; logs: Map<string, PuzzleStoredLog>
   operation(payload: PuzzlePayload, id?: string): PuzzleOperationV1

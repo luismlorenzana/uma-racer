@@ -1,8 +1,8 @@
-// Self-contained CommonJS adapter, checked byte-for-byte against pure rules; see implementation §3.
-export * from './puzzle-domain/minigames/uma-puzzles/records'
-export * from './puzzle-domain/minigames/uma-puzzles/operations'
-export * from './puzzle-domain/minigames/uma-puzzles/preservation'
-export * from './puzzle-domain/minigames/uma-puzzles/preservation-records'
-export * from './puzzle-domain/minigames/uma-puzzles/legacy-spark'
+// The Puzzle rules, straight from the domain package (built CJS; rearchitecture/08 step 1.1).
+export * from '@racer/domain/puzzles/records'
+export * from '@racer/domain/puzzles/operations'
+export * from '@racer/domain/puzzles/preservation'
+export * from '@racer/domain/puzzles/preservation-records'
+export * from '@racer/domain/puzzles/legacy-spark'
 /** T116/D289 enables the verified-content/protected-preservation release; account guards still apply. */
 export const PUZZLES_RELEASE_ENABLED = true

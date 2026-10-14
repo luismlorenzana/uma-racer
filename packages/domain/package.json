@@ -3,17 +3,32 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "description": "Uma Racer game rules: shared types and pure progression formulas (see docs/design).",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./farm": "./src/farm/index.ts",
-    "./farm/kitchen": "./src/farm/kitchen/index.ts",
+    ".": {
+      "require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" },
+      "default": { "types": "./src/index.ts", "default": "./src/index.ts" }
+    },
+    "./farm": {
+      "require": { "types": "./dist/cjs/farm/index.d.ts", "default": "./dist/cjs/farm/index.js" },
+      "default": { "types": "./src/farm/index.ts", "default": "./src/farm/index.ts" }
+    },
+    "./farm/kitchen": {
+      "require": { "types": "./dist/cjs/farm/kitchen/index.d.ts", "default": "./dist/cjs/farm/kitchen/index.js" },
+      "default": { "types": "./src/farm/kitchen/index.ts", "default": "./src/farm/kitchen/index.ts" }
+    },
+    "./puzzles/*": {
+      "require": { "types": "./dist/cjs/minigames/uma-puzzles/*.d.ts", "default": "./dist/cjs/minigames/uma-puzzles/*.js" },
+      "default": { "types": "./src/minigames/uma-puzzles/*.ts", "default": "./src/minigames/uma-puzzles/*.ts" }
+    },
     "./puzzles-content-fixtures": "./src/minigames/uma-puzzles/content.synthetic.ts",
     "./puzzles-preservation-fixtures": "./src/minigames/uma-puzzles/preservation.synthetic.ts"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.cjs.json && node -e \"require('fs').writeFileSync('dist/cjs/package.json', JSON.stringify({ type: 'commonjs' }))\"",
     "lint": "tsc --noEmit",
     "test": "vitest run"
   },

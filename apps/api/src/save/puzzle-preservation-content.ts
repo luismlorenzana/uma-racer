@@ -1,9 +1,9 @@
 // Server-side verified private content. Never log source rows, paths or extracted assets (implementation §8).
 import { ContentService } from '../content/content.service'
-import { createPuzzleSource } from './puzzle-domain/minigames/uma-puzzles/identity'
+import { createPuzzleSource } from '@racer/domain/puzzles/identity'
 import { assertPuzzleArtJoin, parsePuzzleAtlas, parsePuzzleContentCatalog, parsePuzzleContentPack, puzzleWebpMetadata,
-  PUZZLE_CATALOG_PATH } from './puzzle-domain/minigames/uma-puzzles/content'
-import { puzzleArray, puzzleId, puzzleRecord } from './puzzle-domain/minigames/uma-puzzles/validation'
+  PUZZLE_CATALOG_PATH } from '@racer/domain/puzzles/content'
+import { puzzleArray, puzzleId, puzzleRecord } from '@racer/domain/puzzles/validation'
 import type { VerifiedPuzzlePreservationContent } from './puzzles'
 
 export async function verifiedPreservationContent(content: ContentService, frozenHash?: string): Promise<VerifiedPuzzlePreservationContent> {

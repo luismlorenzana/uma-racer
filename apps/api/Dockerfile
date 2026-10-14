@@ -1,5 +1,6 @@
 # Build from the repo root:  docker build -f apps/api/Dockerfile -t racer-api .
-# Multi-stage: install + build in the pnpm workspace, then ship a self-contained image (same approach as uma-planner).
+# Multi-stage, as in uma-rpg: install the workspace, build the domain package (CJS) and the API, then ship a
+# self-contained image. The API imports @racer/domain directly (rearchitecture/08 step 1.1), so there are no copies.
 
 FROM node:22-slim AS builder
 RUN corepack enable
@@ -15,9 +16,10 @@ COPY packages/race/package.json packages/race/package.json
 
 RUN pnpm install --filter @racer/api... --frozen-lockfile
 
+COPY packages/domain packages/domain
 COPY apps/api apps/api
-RUN pnpm --filter @racer/api build
-# Standalone deploy dir (package files + pruned prod node_modules).
+RUN pnpm --filter @racer/domain build && pnpm --filter @racer/api build
+# Standalone deploy dir: package files + pruned production node_modules (the domain package comes along built).
 RUN pnpm --filter @racer/api --prod deploy --legacy /out
 
 FROM node:22-slim AS runtime

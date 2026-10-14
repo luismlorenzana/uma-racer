@@ -6,7 +6,7 @@ import { ENTITY_KINDS, LOG_KINDS, parseEntityData, parseLogData, saveEntityIdMat
 import { RPG_ACTIONS, RPG_MAX_GROUP_OPERATIONS, rpgExact, rpgId, rpgInt, rpgRecord,
   type RpgAction } from './rpg-save.types'
 import { frozenReward, legalLoadout, levelOneClassChange, oneTreePoint, progression, skillKey } from './rpg-progression'
-import { parseInspirationBank, repayInspiration } from './inspiration-bank'
+import { parseInspirationBank, repayInspiration } from '@racer/domain'
 
 export interface RpgExpected { kind: EntityKind; id: string; version: number }
 export interface RpgUpsert { kind: EntityKind; id: string; data: Record<string, unknown> }

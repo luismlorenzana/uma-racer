@@ -1,5 +1,5 @@
 // Protected, resumable account cutover. Never changes presets (docs/design/skills-and-inheritance.md, D256).
-import { createInspirationBank, openBankOutfit, parseInspirationBank, type InspirationBank } from './inspiration-bank'
+import { createInspirationBank, openBankOutfit, parseInspirationBank, type InspirationBank } from '@racer/domain'
 import { parseEntityData, type EntityRecord } from './save.types'
 
 export const BANK_KEY = 'inspirationBank/main'

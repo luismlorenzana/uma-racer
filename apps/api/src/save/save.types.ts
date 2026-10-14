@@ -1,7 +1,7 @@
 // API-side validation for the @racer/domain save wire contract (docs/technical/architecture.md).
 // This stays self-contained because the production API is a CommonJS deploy and does not ship workspace TS sources.
 import { parseRpgEntity, parseRpgLog, rpgEntityIdMatches, rpgLogIdMatches, rpgOrdinaryRow } from './rpg-save.types'
-import { parseInspirationBank } from './inspiration-bank'
+import { parseInspirationBank } from '@racer/domain'
 import { FARM_ENTITY_KINDS, FARM_LOG_KINDS, FARM_SYNC_LIMITS, farmBytes, parseFarmEntity, farmEntityIdMatches,
   parseFarmCommandMovement, parseFarmOperationLog, farmLogIdMatches, parseFarmOperationBatch, farmOperationReferences,
   type FarmOperationV1, type FarmOperationResponse } from './farms'

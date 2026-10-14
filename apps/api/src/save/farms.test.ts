@@ -1,5 +1,4 @@
 // Private/cloud-free adapter parity and atomicity: invented fixtures, tmp files and strict fake Firestore.
-import { execFileSync } from 'node:child_process'
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve, join } from 'node:path'
@@ -108,9 +107,6 @@ describe('Farm wire and standalone mirror', () => {
     body.padding = 'x'.repeat(FARM_SYNC_LIMITS.bytes - farmBytes(body)); expect(farmBytes(body)).toBe(FARM_SYNC_LIMITS.bytes)
     expect(typeof parseSyncRequest(body)).toBe('object'); expect(parseSyncRequest({ ...body, padding: body.padding + 'x' })).toMatch(/bounds/)
     expect(typeof parseSyncRequest({ upserts: [], appends: [], farmOperations: [] })).toBe('string')
-  })
-  it('checks all pure source modules and the retained legacy Puzzle dependency separately', () => {
-    expect(execFileSync(process.execPath, ['scripts/sync-farm-adapter.mjs', '--check'], { encoding: 'utf8' })).toMatch(/verified: 18/)
   })
   it('agrees on every synthetic record, receipt and malformed request; uses the authenticated sync route', async () => {
     const f = await fixture(), op = f.operation(start), result = f.apply(op)

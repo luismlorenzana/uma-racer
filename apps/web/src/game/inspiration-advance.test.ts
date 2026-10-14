@@ -4,8 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createUmaSave, createScenarioTraining, parseSaveSnapshotOrThrow, parseInspirationBank, type UmaTemplate, type UmaSave } from '@racer/domain'
-import { parseInspirationBank as parseApiBank } from '../../../api/src/save/inspiration-bank'
+import { createUmaSave, createScenarioTraining, parseSaveSnapshotOrThrow, type UmaTemplate, type UmaSave } from '@racer/domain'
 import { bankData, freezeAdvance, advanceOutfit } from '../../../api/src/save/inspiration-advance'
 import { LocalSaveRepository } from '../../../api/src/save/local-save.repository'
 import { FirestoreSaveRepository } from '../../../api/src/save/firestore-save.repository'
@@ -67,7 +66,6 @@ for (const backend of ['local', 'firestore'] as const) describe(`${backend} acco
     expect(parseSaveSnapshotOrThrow(snapshot).entities).toHaveLength(3)
     const bank = bankData(snapshot.entities.find(r => r.kind === 'inspirationBank')!)
     expect(bank.balances).toEqual({ 'inspiration:t1:slot': -12, 'inspiration:t1:skill': -24 })
-    expect(parseApiBank(bank)).toEqual(parseInspirationBank(bank))
     for (const r of snapshot.entities.filter(r => r.kind === 'umas')) {
       const after = r.data as unknown as UmaSave, before = uma(r.id)
       expect(after.scenarios[0]!.inspiration.slots).toHaveLength(6); expect(after.scenarios[0]!.inspiration.golds).toHaveLength(12)
