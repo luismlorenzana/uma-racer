@@ -676,6 +676,7 @@ speed ×1.25 at Lv 3, paid in Prize Money and crafted items of the facility's fa
 (1 Prize Money ≈ 1 Uma-minute, D331). Lv 3 saves a fifth of the facility's session time, about 274 PM a day at the
 Observatory, 252 at the Lineage Hall, 377 at the Gym and 176 at the Dojo, so it repays in **6–13 days**.
 
+<!-- live:facility-slots-upgrades -->
 | Facility | Lv 1 | Lv 2 | Lv 3 | To Lv 2 | To Lv 3 |
 |---|---|---|---|---|---|
 | Observatory | 2 slots | 3 slots | 3 slots, speed ×1.25 | 1,200 PM + 4 Vegetables crafted, grade 1 | 2,400 PM + 4 Vegetables crafted, grade 3 |
@@ -683,6 +684,7 @@ Observatory, 252 at the Lineage Hall, 377 at the Gym and 176 at the Dojo, so it 
 | Gym | 5 rooms × 1 | 5 rooms × 2 | 5 × 2, speed ×1.25 | 2,400 PM + 1 crafted of each stat family, grade 1 | 4,800 PM + 2 crafted of each stat family, grade 3 |
 | Dojo | 6 rooms × 1 | 6 rooms × 2 | 6 × 2, speed ×1.25 | 1,500 PM + 1 crafted of each of its six families, grade 1 | 2,000 PM + 1 crafted of each of its six families, grade 3 |
 | **All four** | | | | **6,100 PM** | **10,700 PM** |
+<!-- /live -->
 
 - An upgrade is **instant** and applies to the whole facility. New slots appear at once. A speed upgrade applies to
   sessions started after it; running sessions keep their finish times, so a timeline never moves under the owner.
@@ -797,6 +799,10 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | The breadth-first walk and placement, fair share and the per-card cap are restated by drawing and by *N* in `rework/constellation`, each proven equal to today's by a parity test; the parser, tree box, card set size and shape ids are imported | Today's builder reads today's drawings and prunes six tips, and today's cap reads today's sizes by scenario (M033: reuse, don't copy) |
 | Tree sizes and the per-card cap live in the leaf `rework/constellation/sizes.ts` | Tier rules need them before the Training Hub's module exists; it re-exports `perCardCap` rather than restating it |
 | "[Scenario] Fully Trained" now means every unlock of that layer done (bonds counted at 6, 9, 12, 15, 18) | CL10 no longer exists; it matches [12](12-economy-and-pacing.md)'s "max a scenario" |
+| **Sessions run on the Farm's work engine** ([07](07-farm.md) §2, T127): per-unlock timers, Collect (also part-way), Recall, queues of up to 3 at the same facility and room, and Speed Tickets, with ticket time clamped to the time remaining | One engine for every timed thing an Uma does; a Finish ends exactly when it's used, so nothing starts in the past |
+| **A queued session takes the facility's speed and its dishes when it starts**, and is checked when it's added, counting her earlier entries as made | §7 applies speed to sessions started after an upgrade; an unlock may depend on one queued ahead of it |
+| **Ties between queued starts go by [07](07-farm.md) §1's buildings, then the Observatory, Lineage Hall, Gym and Dojo, then room and slot** | [07](07-farm.md) §2 orders only the Farm buildings, but sessions queue too |
+| **Collect never refuses, and Recall with nothing running acts as Collect** | [02](02-check-ins-and-notifications.md) §9: an action already done shows its result |
 
 ## 12. Done when
 

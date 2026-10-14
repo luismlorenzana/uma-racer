@@ -50,11 +50,13 @@ A **job** is one Uma making 1–10 outputs of one thing at one building, **one a
 
 **Per-output times** come from the README's time model ([12](12-economy-and-pacing.md) §4), for grade *g*, in base minutes; in play each is × *k* = 1.2 (D338):
 
+<!-- live:farm-job-times -->
 | Job | Minutes per output | Grade 1 | Grade 10 |
 |---|---|---|---|
 | Gather one raw item (eight sites) | 90 + 5(*g*−1) | 90 | 135 |
 | Craft one item (Pantry) | a quarter of gathering | 22.5 | 33.75 |
 | Cook one dish (Kitchen, every kind) | 240 + 10(*g*−1) | 240 | 330 |
+<!-- /live -->
 
 A building at Lv 3 divides these by 1.25 (§7). The speed is frozen into the job when it starts.
 
@@ -104,6 +106,7 @@ The owner's rule (D336), as uma-rpg landed on it: **an Uma levels 2–3 Farm Lev
 aptitudes suit what she's making.** Each family is matched to one running aptitude, the four distances and the four
 running styles, so every Uma is good at something:
 
+<!-- live:farm-aptitudes -->
 | Family | Aptitude that suits it | Why the pair |
 |---|---|---|
 | Sweets (Speed) | Sprint | Speed for the shortest races |
@@ -114,6 +117,7 @@ running styles, so every Uma is good at something:
 | Grains (Skill: Friend and Group) | Pace Chaser | Runs with the pack, like a team card |
 | Vegetables (Constellation) | Front Runner | Leads the way, as the tree grows out from its root |
 | Mushrooms (Inspiration) | Late Surger | Grows in the shade and comes late, like a lineage |
+<!-- /live -->
 
 **Which aptitude counts:**
 - **Gathering** uses the site's family. The Pantry uses the family of the item being crafted.
@@ -123,10 +127,12 @@ running styles, so every Uma is good at something:
 
 **What it changes: Farm EXP, not the job's time.** The aptitude multiplies the Farm EXP a job pays:
 
+<!-- live:farm-exp-multipliers -->
 | Her aptitude for the family | S | A | B | C | D | E, F, G |
 |---|---|---|---|---|---|---|
 | Farm EXP × | **1.8** | **1.6** | 1.2 | 1.0 | 0.9 | 0.8 |
 | Levels a day, working without a break, at Lv 1 → Lv 49 | 5.4 → 3.6 | 4.8 → 3.2 | 3.6 → 2.4 | 3.0 → 2.0 | 2.7 → 1.8 | 2.4 → 1.6 |
+<!-- /live -->
 
 "Working without a break" is how uma-rpg states its rates. A real Uma with check-in gaps does about 60% of it.
 
@@ -141,7 +147,7 @@ fast. The job sheet shows it beside each Uma ("Sprint A · Farm EXP ×1.6"), and
 |---|---|
 | **Range** | Lv 1–50 per Uma **per tier** (D327) |
 | **Source** | Farm work only: gathering, crafting and cooking. Training Hub sessions, races and Speed Tickets pay none |
-| **Rate** | **1 Farm EXP per listed minute** of each finished output (the §2 minutes, before building speed) **× her aptitude for the family** (§3). Paid at collection |
+| **Rate** | **1 Farm EXP per listed minute** of each finished output (the §2 minutes × *k*, before building speed) **× her aptitude for the family** (§3). Paid at collection |
 | **Curve** | Level *L* → *L*+1 costs **480 + 5(*L*−1)** EXP: 8 hours of work at Lv 1, 12 at Lv 49. Lv 50 is 29,400 EXP |
 | **Grade gate** | Grade *g* opens at **Lv 5*g* − 4**: 1, 6, 11 … 46. It gates every step: gathering and crafting grade *g*, and cooking a dish of grade *g* (the dish's grade, not its side's) |
 | **After Lv 46** | Lv 47–50 open nothing new; they complete the tier's Farm track. EXP stops counting at Lv 50 |
@@ -153,22 +159,40 @@ exactly 22.5; the screen shows whole numbers.
 
 ### When an average Uma opens each grade
 
-An average Uma works 75% of the day and puts 80% of that into the Farm: 864 minutes a day
-([12](12-economy-and-pacing.md) §6). The day she reaches each grade:
+Each grade opens at its Farm Level, after this much Farm EXP:
 
-| Grade | Farm Lv | EXP | At C (×1.0) | Mixed, well assigned (×1.3) | Always suited (×1.6) |
-|---|---|---|---|---|---|
-| 1 | 1 | 0 | day 0 | day 0 | day 0 |
-| 2 | 6 | 2,450 | 3 | 2 | 2 |
-| 3 | 11 | 5,025 | 6 | 4 | 4 |
-| 4 | 16 | 7,725 | 9 | 7 | 6 |
-| 5 | 21 | 10,550 | 12 | 9 | 8 |
-| 6 | 26 | 13,500 | 16 | 12 | 10 |
-| 7 | 31 | 16,575 | 19 | 15 | 12 |
-| 8 | 36 | 19,775 | 23 | 18 | 14 |
-| 9 | 41 | 23,100 | 27 | 21 | 17 |
-| 10 | 46 | 26,550 | 31 | 24 | 19 |
-| (Lv 50) | 50 | 29,400 | 34 | 26 | 21 |
+<!-- live:farm-level-grades -->
+| Grade | Farm Lv | EXP |
+|---|---|---|
+| 1 | 1 | 0 |
+| 2 | 6 | 2,450 |
+| 3 | 11 | 5,025 |
+| 4 | 16 | 7,725 |
+| 5 | 21 | 10,550 |
+| 6 | 26 | 13,500 |
+| 7 | 31 | 16,575 |
+| 8 | 36 | 19,775 |
+| 9 | 41 | 23,100 |
+| 10 | 46 | 26,550 |
+| (Lv 50) | 50 | 29,400 |
+<!-- /live -->
+
+An average Uma works 75% of the day and puts 80% of that into the Farm: 864 minutes a day
+([12](12-economy-and-pacing.md) §6). The day she reaches each grade (the loop simulation renders these columns, T132):
+
+| Grade | At C (×1.0) | Mixed, well assigned (×1.3) | Always suited (×1.6) |
+|---|---|---|---|
+| 1 | day 0 | day 0 | day 0 |
+| 2 | 3 | 2 | 2 |
+| 3 | 6 | 4 | 4 |
+| 4 | 9 | 7 | 6 |
+| 5 | 12 | 9 | 8 |
+| 6 | 16 | 12 | 10 |
+| 7 | 19 | 15 | 12 |
+| 8 | 23 | 18 | 14 |
+| 9 | 27 | 21 | 17 |
+| 10 | 31 | 24 | 19 |
+| (Lv 50) | 34 | 26 | 21 |
 
 **Every grade is open within about a month of a tier**, while the tier's scenarios run about 20 weeks. So Farm Level
 is a fast climb at the start of each tier, and for an Uma who joins mid-tier, and never what holds a scenario back.
@@ -197,6 +221,7 @@ A slot sits idle between an Uma's last output and the next check-in, just as she
 are its hours a day ÷ (24 × 0.75) ([12](12-economy-and-pacing.md) §7). Work isn't spread evenly over the ten
 buildings: cooking is 30% of all Farm work, and Vegetables feed every constellation node. So slots aren't uniform.
 
+<!-- live:farm-slots -->
 | Building | Lv 1 | Lv 2 | Lv 3 |
 |---|---|---|---|
 | **Kitchen** | 6 | 8 | 8, speed ×1.25 |
@@ -204,6 +229,7 @@ buildings: cooking is 30% of all Farm work, and Vegetables feed every constellat
 | **Vegetable Garden** | 4 | 5 | 5, speed ×1.25 |
 | **Each of the other seven sites** | 2 | 3 | 3, speed ×1.25 |
 | **All ten** | **27** | **38** | 38 (47.5 slot-equivalents) |
+<!-- /live -->
 
 ### Slot demand at the target
 
@@ -253,12 +279,14 @@ Upgrades are the account's, and buildings carry through promotion (D327). Prices
 minute of Uma work** (D331), plus crafted items of the building's own family. The Pantry and Kitchen serve every
 family, so they take one or two of each.
 
+<!-- live:farm-upgrades -->
 | Building | To Lv 2 (one more slot; two for the Kitchen) | To Lv 3 (speed ×1.25) |
 |---|---|---|
 | Each site | 1,200 PM + 4 crafted grade 1 of its family | 2,400 PM + 4 crafted grade 3 of its family |
 | Pantry | 1,500 PM + 1 crafted grade 1 of each of the eight families | 6,000 PM + 1 crafted grade 3 of each family |
 | Kitchen | 3,000 PM + 2 crafted grade 1 of each of the eight families | 12,000 PM + 2 crafted grade 3 of each family |
 | **All ten** | **14,100 PM** | **37,200 PM** |
+<!-- /live -->
 
 - **Lv 2 needs only grade-1 items and Prize Money**, so it comes with tier 1's first weeks of racing, and the owner
   keeps up as the roster grows from 20 to 25. Lv 1 carries the 20-Uma start.
@@ -363,7 +391,7 @@ The Warehouse is in Town Hall ([11](11-hub-and-places.md)). It is the one invent
 
 | Row ([13](13-removals-and-plan-changes.md) §6) | Farm fields |
 |---|---|
-| `buildings/{id}` | Level; each slot's current job id, or empty |
+| `buildings/{id}` | Level. Which job holds a slot is read from the work rows (§14) |
 | `work/{outfitId}` | Her running job (building, slot, kind, item or recipe, count, listed minutes, speed, reserved inputs, `startedAt`, acceleration, outputs collected so far), her queue of up to three, her last job for Repeat, and a dropped queue with its reason until the owner acts on it ([02](02-check-ins-and-notifications.md)) |
 | `umas/{outfitId}` | Farm EXP for her current tier, in quarter points; the level is derived |
 | `items/{itemId}`, `itemLedger` | Stock and every movement: reserve, return, output, sale, upgrade cost |
@@ -417,6 +445,19 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | **Sending a done Uma to a session collects her first** | Saves a tap on the most common move |
 | **Promotion needs her free** (decided in [04](04-tiers-and-promotion.md) §5) | No job spans two tiers' Farm Levels, and no job runs at a grade her new Farm Level can't start |
 | **No Farmhouse, cookbook or account recipe milestones** | Their jobs move to the planner, the job sheet and the Warehouse |
+| **Farm EXP is per real listed minute:** base × `TIME_FACTOR`, before building speed (T127) | It's the only reading that keeps §4's "8 hours of work at Lv 1", §3's levels a day, [12](12-economy-and-pacing.md) §6's day table and [08](08-item-catalogue-and-recipes.md) §5's "× *k*" true at *k* = 1.2. §2's "285 Farm EXP" is a base-minute example |
+| **Farm EXP is rounded to quarter points once per item**, then multiplied by the items collected | ×0.9 and ×1.8 aren't exact in quarter points, and split collects must pay the same as one |
+| **Ticket time is kept in whole milliseconds and clamped to the time remaining** | Finish then ends exactly when it's used, so nothing starts in the past |
+| **A Speed Ticket count above what finishes the job spends only what finishes it** | A screen that is a minute old still does what the owner meant ([02](02-check-ins-and-notifications.md) §9) |
+| **A queued job takes its speed and inputs when it starts, and its grade gate when it's added** | [05](05-training-hub.md) §7 applies speed to work "started after it", and Farm Level never drops within a tier |
+| **A queue edit is refused if any queued job would no longer start in order** (its place, its grade, a session's unlock order) | Nothing in a queue is left to fail at night for a reason the sheet could have said |
+| **Ties go by §1's order, then the facilities, rooms and slot** | §2 orders only the Farm buildings, but sessions queue too |
+| **A Duo or Feast earns Farm EXP by its main families, not its side** | A planet dish's family excludes its side (§3, [08](08-item-catalogue-and-recipes.md) §4) |
+| **There is no `assign` operation:** work rows hold slots, and building rows hold levels only | §5 has no standing assignment, and a slot read from the job in it can never disagree with that job |
+| **Collect never refuses, and Recall with nothing running acts as Collect** | [02](02-check-ins-and-notifications.md) §9: an action already done shows its result |
+| **An upgrade's only gate is its cost** | Its grade-3 items are §7's "from Farm Lv 11" |
+| **An upgrade's Prize Money is a ledger row** `upgrade:<building>:<level>`, reason `upgrade` | [09](09-racing-rewards-and-exchange.md) §9's reasons and audit; a building reaches each level once, so the id is once-only |
+| **Promotion clears her idle work row** (her last job and any dropped queue) | [02](02-check-ins-and-notifications.md) §5 never repeats a promoted Uma, and her last job's grade may be above her new Farm Level |
 
 ## 15. Done when
 

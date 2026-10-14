@@ -9,6 +9,7 @@ import { emptyBuild, isRefusal, type OpResult, type Refusal, type ReworkState, t
 import { freezeCareer, umaTemplate, type TierContent } from './career'
 import { assertNow, payOnce, withUma } from './ledger'
 import { TODAY_CATALOGUE, isLastScenario, lastGate, scenarioNumber, type ScenarioCatalogue } from './map'
+import { isFree } from '../work/activity'
 import { tierRefusal } from './refusals'
 
 /** A promotion pays one Uma Ticket, and so does entering the Hall of Fame (04 §3, §6, §10). */
@@ -29,15 +30,15 @@ export const canStartExpedition = (uma: UmaState, catalogue: ScenarioCatalogue =
 const hasCompletedRun = (uma: UmaState): boolean => uma.expedition.runs.some((run) => run.completed)
 
 /**
- * Whether she can be promoted now (04 §3, §5): tiers 1 and 2 only, a completed Expedition run, and free. "Free" is a
- * stand-in until T127's `isFree`: no work row at all.
+ * Whether she can be promoted now (04 §3, §5): tiers 1 and 2 only, a completed Expedition run, and Free by T127's
+ * activity rule (01 §2): no running entry, no queue, nothing waiting for Collect.
  */
 export function promotionReadiness(state: ReworkState, umaId: string): { readonly ready: true; readonly uma: UmaState } | Refusal {
   const uma = state.umas[umaId]
   if (!uma) return tierRefusal('unknown-uma', { uma: umaId })
   if (uma.tier === HALL_OF_FAME_TIER) return tierRefusal('use-hall-of-fame', { uma: umaId })
   if (!hasCompletedRun(uma)) return tierRefusal('no-expedition', { uma: umaId })
-  if (state.work[umaId] !== undefined) return tierRefusal('busy', { uma: umaId })
+  if (!isFree(state, umaId)) return tierRefusal('busy', { uma: umaId })
   return { ready: true, uma }
 }
 
@@ -66,7 +67,8 @@ function assertPresetStats(presets: PromotionPresetStats): void {
 /**
  * `promote` (04 §3): closes her tier into a history entry, resets her into tier t + 1, scenario 1, Racing Lv 1, Farm
  * Lv 1 with an empty build and a fresh career, clears her Expedition into the entry, and pays one Uma Ticket once.
- * Every other part of the state stays as it is.
+ * Her idle work row (her last work and any dropped queue) goes too, so Repeat never restarts a promoted Uma's last
+ * job at a grade her new Farm Level can't start (02 §5). Every other part of the state stays as it is.
  */
 export function promote<S extends ReworkState>(
   state: S,
@@ -106,13 +108,21 @@ export function promote<S extends ReworkState>(
     tierHistory: [...uma.tierHistory, history],
   }
   const promoted: UmaState = { ...reset, career: freezeCareer(reset, scenarioNumber({ tier: to, scenario: 1 }), env.content) }
-  const paid = payOnce(withUma(state, promoted), {
+  const paid = payOnce(withUma(withoutWorkRow(state, uma.outfitId), promoted), {
     id: promotionTicketLedgerId(uma.outfitId, uma.tier), resource: 'uma-tickets', delta: PROMOTION_UMA_TICKETS, reason: 'promotion-uma-ticket',
   }, now)
   return {
     state: paid.state,
     receipt: { umaId: uma.outfitId, from: uma.tier, to, history, ticketsPaid: paid.paid, awards: [to === 2 ? 'promoted-tier-2' : 'promoted-tier-3'] },
   }
+}
+
+/** The state without her (idle) work row; the same state when she has none. */
+function withoutWorkRow<S extends ReworkState>(state: S, umaId: string): S {
+  if (state.work[umaId] === undefined) return state
+  const work = { ...state.work }
+  delete work[umaId]
+  return { ...state, work }
 }
 
 export interface InductReceipt {
