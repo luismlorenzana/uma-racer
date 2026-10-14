@@ -3,6 +3,7 @@
 import type { InspirationSlot } from '../inspiration'
 import type { RacePreferences, ScenarioJourney } from '../save'
 import { DISTANCE_CATEGORIES, type DistanceCategory, type Stats } from '../types'
+import type { ItemGrade } from './items/catalogue'
 
 /** A refused operation: a stable code and plain words the screen shows, with `{name}` placeholders filled from data. */
 export interface Refusal {
@@ -39,6 +40,19 @@ export interface ScenarioAt {
 /** What one operation gives back: the new state and its receipt, or a refusal. `S` keeps a caller's wider state. */
 export type OpResult<R, S extends ReworkState = ReworkState> = { readonly state: S; readonly receipt: R } | Refusal
 
+/**
+ * The Daily Purse (docs/rework/09-racing-rewards-and-exchange.md §3.3, §9): the day's gross prizes and the featured
+ * bonuses paid that day. T130's `rework/exchange` owns its rules.
+ */
+export interface DailyPurse {
+  /** The device's local date, `YYYY-MM-DD`, of the purse's day. It only moves forward. */
+  readonly day: string
+  /** The day's gross prizes so far, featured bonuses excluded. */
+  readonly gross: number
+  /** The featured race ids whose bonus was paid that day. */
+  readonly featuredPaid: readonly string[]
+}
+
 /** The account: `profile/main` (13 §6). T130 and T131 add their fields. */
 export interface AccountProfile {
   readonly generation: 2
@@ -47,12 +61,27 @@ export interface AccountProfile {
   readonly umaShards: number
   readonly prizeMoney: number
   readonly featuredUmaId: string | null
+  /** The Daily Purse (09 §3.3, §9; T130). */
+  readonly purse: DailyPurse
+  /** The Exchange's stock rule: the highest raw grade it has ever stocked, a mark that never drops (09 §5.3, §9; T130). */
+  readonly exchangeGrade: ItemGrade
 }
 
 /** What a ledger row moves. Other tasks widen it with their own resources. */
-export type LedgerResource = 'uma-tickets' | 'uma-shards'
+export type LedgerResource = 'uma-tickets' | 'uma-shards' | 'prize-money'
 /** Why a ledger row moved it. Other tasks widen it with their own reasons. */
-export type LedgerReason = 'initial-uma-tickets' | 'unlock-uma' | 'uma-gate-shard' | 'uma-shard-exchange' | 'promotion-uma-ticket'
+export type LedgerReason =
+  | 'initial-uma-tickets' | 'unlock-uma' | 'uma-gate-shard' | 'uma-shard-exchange' | 'promotion-uma-ticket'
+  | 'race-prize' | 'featured-bonus' | 'buy' | 'sell'
+
+type ProfileBalance = { readonly [K in keyof AccountProfile]: AccountProfile[K] extends number ? K : never }[keyof AccountProfile]
+
+/** The profile balance each ledger resource moves. A task that widens `LedgerResource` names its balance here. */
+export const LEDGER_BALANCE = Object.freeze({
+  'uma-tickets': 'umaTickets',
+  'uma-shards': 'umaShards',
+  'prize-money': 'prizeMoney',
+} as const satisfies Record<LedgerResource, ProfileBalance>)
 
 /** One append-only ledger row. Its id makes a payment once-only (04 §3, §6). */
 export interface LedgerEntry {
@@ -174,4 +203,9 @@ export interface ReworkState {
   readonly umas: Readonly<Record<string, UmaState>>
   readonly work: Readonly<Record<string, unknown>>
   readonly ledger: readonly LedgerEntry[]
+  /**
+   * The Warehouse, `items/{itemId}` (13 §6): item id → count held. Reserved inputs have left it (07 §2, §12). Absent
+   * means empty: it is optional until phase 3's save, so the tasks that add it (T127, T130) merge cleanly.
+   */
+  readonly items?: Readonly<Record<string, number>>
 }
