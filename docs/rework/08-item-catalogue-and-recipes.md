@@ -1,8 +1,10 @@
 # 08 · Item catalogue and recipes
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D330, D331).** Nothing here is built. Recipes, times and the
-> side rotation are **drafts**: the loop simulation ([12](12-economy-and-pacing.md) §12) checks demand per family and
-> per building, and its checks pin them.
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D330, D331).** The catalogue, recipes, grade
+> gate, step times and work values are built as rules in `@racer/domain/rework/items` (T126, D341), and the tables
+> marked live are rendered from them; nothing is in the game yet. Recipes, times and the side rotation are **drafts**:
+> the loop simulation ([12](12-economy-and-pacing.md) §12) checks demand per family and per building, and its checks
+> pin them.
 
 Every item the Farm makes, every recipe, and where each dish goes. The catalogue is **uma-rpg's farming half** (D330):
 its eight farming families, ten grades each, raw and crafted, and its dishes, with uma-art's icons and names. uma-rpg's
@@ -475,6 +477,10 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 | **Keep uma-rpg's names; "crafted" on screen, `refined` in data** | No renaming drift from the art package |
 | **Representative deck: 3 bonds of each type** | A neutral basis for the balance; other decks move ~2% |
 | **Work value = real minutes (base × *k*, D338); selling a third** | One number per item for [09](09-racing-rewards-and-exchange.md), independent of building speed |
+| **Durations go through `rework/time.ts`'s one conversion** (T126) | M033 gave the items no dependency on T125, which owns `TIME_FACTOR` and the docs check over `docs/rework/`. Phase 2's groundwork landed both first, so the item rules import `workSeconds` and add neither |
+| **§7 is checked here and owned by `sim:loop`** (T126) | §7's dish counts come from the layers and the deck, which the item rules don't hold, and T132 rewrites this page's Farm tables from its run (T128's draft found §7's bond grades can't all come from [06](06-cards-and-bonds.md)'s era rule). So the items export no demand constant and render no §7 block; their test checks only that the recipes turn §7's dish table into §7's crafted table. §13's "from the layer definitions" lands with T132 |
+| **Step times and the grade gate live with the items** (T126) | [07](07-farm.md) §2, §4 and §3 here all state them, work values need them and the items are upstream, so the Farm's jobs (T127) import them, rather than keeping their own copies, and divide by building speed |
+| **§8's "A third" column renders as work value ÷ 3** (T126) | D331's sell rule, until the Exchange (T130) owns it and replaces the literal with its constant |
 
 ## 13. Done when
 
