@@ -199,8 +199,10 @@ Each tier's trees are **re-authored to 12, 16, 20, 24 and 28 card nodes** for it
 its silhouette motif ([Scenarios](../design/scenarios.md#constellation-shapes)) and the drawing rules
 ([Constellations](../design/constellations.md#silhouettes)): nodes on an even grid, straight uncrossed edges, ids and
 unlock order numbered breadth-first, at least 40 pt between node centres on a 375 pt phone. The old rule that pruned the
-last six tips (the former Produce nodes) goes: a drawing has exactly its card count.
+last six tips (the former Produce nodes) goes: a drawing has exactly its card count. The trees are static content in
+`@racer/domain/rework/constellation` (D342), and the table and drawings below are rendered from it.
 
+<!-- live:constellation-trees -->
 | # | Scenario | Tier · scenario | Nodes | Per-card cap | How the motif adapts |
 |---|---|---|---|---|---|
 | 1 | URA Finale | 1 · 1 | 12 | 3 | The fern: a trunk of 6 from the root, one leaflet on alternating sides at each trunk node |
@@ -208,22 +210,296 @@ last six tips (the former Produce nodes) goes: a drawing has exactly its card co
 | 3 | Trackblazer | 1 · 3 | 20 | 5 | The track's two halves, 8 nodes each, climb from the root at the open foot; four short spurs point outward |
 | 4 | Our Grand Concert | 1 · 4 | 24 | 5 | The five-arm star: four arms of 5 and a foot arm of 4, the stage |
 | 5 | Grand Masters | 1 · 5 | 28 | 6 | A bar of 6 through the root, two arcs of 9 hanging from its ends, a pendant of 4 between them |
-| 6 | Project L'Arc | 2 · 1 | 12 | 3 | The arch: a lintel of 4 either side of the keystone root, two legs of 4 |
+| 6 | Project L'Arc | 2 · 1 | 12 | 3 | The arch: a lintel of 2 either side of the keystone root, two legs of 4 |
 | 7 | U.A.F. Ready GO! | 2 · 2 | 16 | 4 | A stem of 1, three branches of 3, each with two feathers |
 | 8 | Great Food Festival | 2 · 3 | 20 | 5 | A short trunk of 2 under a canopy of six boughs of 3 |
 | 9 | Run! Mecha Umamusume | 2 · 4 | 24 | 5 | A spine of 6 with six ribs of 3, three a side, their ends dropping |
 | 10 | The Twinkle Legends | 2 · 5 | 28 | 6 | A band of 7 rooted below its centre, seven crown points of 3 |
 | 11 | Design Your Island | 3 · 1 | 12 | 3 | Four spokes of 1 from the island root, each carrying a ring arc of 2; the ring stays open at the foot |
-| 12 | Yukoma Hot Springs | 3 · 2 | 16 | 4 | The square spiral from the root, cut to its first 16 nodes (about two and a half turns) |
+| 12 | Yukoma Hot Springs | 3 · 2 | 16 | 4 | The square spiral from the root, cut to its first 16 nodes (seven legs, about one and a half turns) |
 | 13 | Beyond Dreams | 3 · 3 | 20 | 5 | Twin trunks of 10 from the root, their tips almost touching at the foot |
-| 14 | Tracen Diner | 3 · 4 | 24 | 5 | A counter of 8 through the root, eight pendants alternating 1 and 3 long |
+| 14 | Tracen Diner | 3 · 4 | 24 | 5 | A counter of 8 under the root, eight pendants alternating 1 and 3 long |
 | 15 | Japan's 15th scenario | 3 · 5 | 28 | 6 | Drawn when it ships; until then [04](04-tiers-and-promotion.md) says what tier 3 does |
+<!-- /live -->
+
+Every drawing, as the code holds it (`R` the root, `o` a card node; ids are numbered from the drawing, so none is
+written in it):
+
+<!-- live:constellation-art -->
+**1 · URA Finale** · 12 card nodes
+
+```text
+  R
+  |
+o-o
+  |
+  o-o
+  |
+o-o
+  |
+  o-o
+  |
+o-o
+  |
+  o-o
+```
+
+**2 · Unity Cup** · 16 card nodes
+
+```text
+      R
+      |
+      o
+     /|\
+    o o o
+   /  |  \
+  o   o   o
+ /    |    \
+o     o     o
+|     |     |
+o     o     o
+|     |     |
+o     o     o
+```
+
+**3 · Trackblazer** · 20 card nodes
+
+```text
+    o   o
+   /     \
+  o       o
+  |       |
+o-o       o-o
+  |       |
+  o       o
+  |       |
+  o       o
+  |       |
+o-o       o-o
+  |       |
+  o       o
+   \     /
+    o   o
+     \ /
+      R
+```
+
+**4 · Our Grand Concert** · 24 card nodes
+
+```text
+o           o
+|           |
+o           o
+|           |
+o-o       o-o
+   \     /
+    o   o
+     \ /
+      R
+     /|\
+    o o o
+   /  |  \
+o-o   o   o-o
+|     |     |
+o     o     o
+|     |     |
+o     o     o
+```
+
+**5 · Grand Masters** · 28 card nodes
+
+```text
+o-o-o-R-o-o-o
+|     |     |
+o     o     o
+|     |     |
+o     o     o
+|     |     |
+o     o     o
+|     |     |
+o     o     o
+|           |
+o           o
+|           |
+o           o
+|           |
+o           o
+ \         /
+  o-o   o-o
+```
+
+**6 · Project L'Arc** · 12 card nodes
+
+```text
+o-o-R-o-o
+|       |
+o       o
+|       |
+o       o
+|       |
+o       o
+|       |
+o       o
+```
+
+**7 · U.A.F. Ready GO!** · 16 card nodes
+
+```text
+      R
+      |
+  o---o---o
+ /|   |   |\
+o |   |   | o
+  |   |   |
+  o   o   o
+  |\  |  /|
+  | o | o |
+  |   |   |
+  o   o   o
+     /|\
+    o | o
+      |
+      o
+```
+
+**8 · Great Food Festival** · 20 card nodes
+
+```text
+    o   o
+    |   |
+  o o   o o
+  | |   | |
+o o o   o o o
+| |  \ /  | |
+o o---o---o o
+|     |     |
+o-----o-----o
+      |
+      R
+```
+
+**9 · Run! Mecha Umamusume** · 24 card nodes
+
+```text
+      R
+      |
+  o-o-o-o-o
+ /    |    \
+o     o     o
+      |
+  o-o-o-o-o
+ /    |    \
+o     o     o
+      |
+  o-o-o-o-o
+ /    |    \
+o     o     o
+```
+
+**10 · The Twinkle Legends** · 28 card nodes
+
+```text
+  o   o   o
+  |   |   |
+  o   o   o
+  |   |   |
+  o   o   o
+  |   |   |
+o | o | o | o
+| | | | | | |
+o | o | o | o
+| | | | | | |
+o | o | o | o
+| | | | | | |
+o-o-o-o-o-o-o
+      |
+      R
+```
+
+**11 · Design Your Island** · 12 card nodes
+
+```text
+o-o   o-o
+|\     /|
+o \   / o
+   \ /
+o---R---o
+|       |
+o       o
+|       |
+o       o
+```
+
+**12 · Yukoma Hot Springs** · 16 card nodes
+
+```text
+  o-o-o-o
+  |     |
+  o R-o o
+  |   | |
+  o-o-o o
+        |
+o-o-o-o-o
+```
+
+**13 · Beyond Dreams** · 20 card nodes
+
+```text
+  o-o   o-o
+ /   \ /   \
+o     R     o
+|           |
+o           o
+|           |
+o           o
+|           |
+o           o
+ \         /
+  o       o
+  |       |
+  o       o
+   \     /
+    o   o
+    |   |
+    o   o
+```
+
+**14 · Tracen Diner** · 24 card nodes
+
+```text
+      R
+      |
+o-o-o-o-o-o-o-o
+| | | | | | | |
+o o o o o o o o
+  |   |   |   |
+  o   o   o   o
+  |   |   |   |
+  o   o   o   o
+```
+<!-- /live -->
 
 - **Per-card cap** stays `ceil(N / 6) + 1` (D134).
 - **Node value** keeps today's cap-budget formula; [04](04-tiers-and-promotion.md) owns the computed table. The one
   change this page asks for is the Extra Stats term (§6).
 - **What a node pays, skills per node, the invariance rule and card-type splits** are unchanged
   ([Constellations](../design/constellations.md#stat-budget)); every card is at full value now ([06](06-cards-and-bonds.md)).
+
+**The drawing rules, checked.** The root is `n0` and the card nodes are `n1` … `n`*N*, numbered breadth-first from the
+root with today's tie rule (nearer rows, then columns), so the number is the unlock order. A validator refuses, with a
+reason naming the nodes, any tree that breaks a rule: one root `n0`; exactly *N* card nodes; ids `n1` … `n`*N*, each
+`n` + its order; every node hanging from the root or a node that opens before it, which makes one tree and keeps every
+prefix `n0` … `n`*k* connected; ids equal to a breadth-first walk of the tree's own edges; every node inside today's tree
+box (x 2–98, y 2–74 of the 100-unit canvas); 40 pt between every pair of nodes once the canvas stretches to the
+351 × 525 pt graph box of a 375 × 812 phone; and no crossing edges. That allows at most 8 node columns and 9 node rows, so
+long runs bend: Trackblazer's halves, Grand Masters' arcs and Beyond Dreams' trunks. The tree carries no lineage band:
+Inspiration is the Lineage Hall's own map (§5), so today's parent and grandparent checks leave the validator.
+
+Two readings of the table's words are fixed by the drawing rules. **Project L'Arc's** lintel is two nodes either side of
+the keystone root, since four a side would make 16 nodes. **Tracen Diner's** root sits above its counter of 8, as in
+today's drawing, since a counter of 8 through the root is nine nodes in a row, 37 pt apart. The 15th's drawing is
+authored with its own decision entry when the platform publishes it ([04](04-tiers-and-promotion.md) §2); its size (28)
+and cap (6) are known now.
 
 **Advancing a scenario.** Her opened count carries: with *k* nodes open she has the first *k* nodes of the new, larger
 tree. Node ids are fixed by breadth-first order, so every card assignment stays on the same id, and a breadth-first
@@ -511,7 +787,13 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | Upgrades Lv 2 (+slots, grade-1 items) and Lv 3 (×1.25 session speed, grade-3 items), instant, priced in §7 | uma-rpg's and [07](07-farm.md)'s pattern; Lv 3 repays in 6–13 days and shortens a scenario by ~4%, mostly helping late Umas |
 | Each unlock names one exact dish id; no substitutions; a finished Farm job is collected when her session starts | Agrees with [07](07-farm.md) and [08](08-item-catalogue-and-recipes.md) |
 | A running session must be recalled or finished before promotion ([04](04-tiers-and-promotion.md) §5) | Dishes carry; unlocks don't |
-| Constellation motifs adapted as in §4's table; the 15th drawn when it ships | Keeps each scenario recognisable at its new size |
+| Constellation motifs adapted as in §4's table: fourteen drawings now, every size and cap for fifteen; the 15th drawn when it ships, with its own decision entry | Keeps each scenario recognisable at its new size; the 15th's motif isn't known until it ships |
+| Tree ids: the root `n0`, card nodes `n1` … `n`*N*, as §3 and [03](03-uma-progression.md) §6 write them | The number is the unlock order. Today's trees name the root `root` and number cards from `n0`; generation 2 starts empty, so no save maps between the two |
+| Project L'Arc's lintel is two nodes either side of the keystone root | Four a side would make 16 nodes, not 12 |
+| Tracen Diner's root sits above its counter of 8, as today | A counter of 8 through the root is nine nodes in a row, 37 pt apart; the 40 pt rule wins over the wording |
+| No lineage band on the tree; today's tree box and the 351 × 525 pt graph box stay | Inspiration is the Lineage Hall's own map (§5); the 40 pt results compare with today's |
+| The breadth-first walk and placement, fair share and the per-card cap are restated by drawing and by *N* in `rework/constellation`, each proven equal to today's by a parity test; the parser, tree box, card set size and shape ids are imported | Today's builder reads today's drawings and prunes six tips, and today's cap reads today's sizes by scenario (M033: reuse, don't copy) |
+| Tree sizes and the per-card cap live in the leaf `rework/constellation/sizes.ts` | Tier rules need them before the Training Hub's module exists; it re-exports `perCardCap` rather than restating it |
 | "[Scenario] Fully Trained" now means every unlock of that layer done (bonds counted at 6, 9, 12, 15, 18) | CL10 no longer exists; it matches [12](12-economy-and-pacing.md)'s "max a scenario" |
 
 ## 12. Done when
