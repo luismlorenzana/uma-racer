@@ -37,11 +37,12 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 ## Commands
 
 ```bash
-pnpm install
+NODE_AUTH_TOKEN=$(gh auth token) pnpm install   # @luismlorenzana/* (uma-platform) come from GitHub Packages
 pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, local JSON save
 pnpm lint           # type-check every package
 pnpm test           # domain + race + api tests
-pnpm build          # production builds (web includes the PWA service worker)
+pnpm build          # production builds (web includes the PWA service worker and the 180 KB startup check)
+pnpm docs:update    # regenerate the live blocks in docs/game/ (the manual generated from code)
 pnpm sim:balance    # race balance table
 pnpm data:import    # GameTora datasets → private, gitignored content packs
 pnpm assets:import  # T001 image sources → private WebP atlases; run after data:import

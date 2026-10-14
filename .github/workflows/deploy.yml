@@ -15,6 +15,8 @@ on:
 
 permissions:
   contents: read
+  # @luismlorenzana/* packages (uma-platform) install from GitHub Packages with the workflow's own token.
+  packages: read
 
 concurrency:
   group: uma-racer-${{ github.ref }}
@@ -30,6 +32,8 @@ env:
   RUNTIME_SERVICE_ACCOUNT: racer-api-runtime@${{ vars.GCP_PROJECT_ID || 'uma-racer' }}.iam.gserviceaccount.com
   CONTENT_BUCKET: ${{ vars.CONTENT_BUCKET || format('{0}-content', vars.GCP_PROJECT_ID || 'uma-racer') }}
   HOSTING_URL: https://${{ vars.GCP_PROJECT_ID || 'uma-racer' }}.web.app
+  # Read by .npmrc for @luismlorenzana/* on GitHub Packages; passed to the API image build as a secret, never a layer.
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   verify:
@@ -70,6 +74,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      packages: read
       id-token: write
     steps:
       - name: Check out repository
@@ -102,7 +107,7 @@ jobs:
         run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
 
       - name: Build API image
-        run: docker build -f apps/api/Dockerfile -t "${API_IMAGE}" .
+        run: docker build --secret id=npm_token,env=NODE_AUTH_TOKEN -f apps/api/Dockerfile -t "${API_IMAGE}" .
 
       - name: Push API image
         run: docker push "${API_IMAGE}"

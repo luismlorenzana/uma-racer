@@ -31,12 +31,15 @@ the Claude session that runs production; when the two differ, **this file govern
 
 ## Setup and commands
 
-Requirements: Node 22+, pnpm 10 (`corepack enable`).
+Requirements: Node 22+, pnpm 10 (`corepack enable`), and a GitHub token that can read the owner's private
+`@luismlorenzana/*` packages (uma-platform's master data and art, from GitHub Packages; `.npmrc` reads it from
+`NODE_AUTH_TOKEN`). With the GitHub CLI: `gh auth refresh -s read:packages` once.
 
-    pnpm install --frozen-lockfile
+    NODE_AUTH_TOKEN=$(gh auth token) pnpm install --frozen-lockfile
     pnpm lint           # type-check every package (tsc --noEmit)
     pnpm test           # vitest: domain rules, race engine, API
-    pnpm build          # production builds (web includes the PWA service worker)
+    pnpm build          # production builds (web includes the PWA service worker and the 180 KB startup check)
+    pnpm docs:update    # regenerate the live blocks in docs/game/ after changing what they list
     pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, local JSON save
     pnpm sim:balance    # headless race balance table
     pnpm data:import    # GameTora datasets → private, gitignored content packs

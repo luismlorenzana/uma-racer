@@ -9,20 +9,44 @@
   "types": "./dist/cjs/index.d.ts",
   "exports": {
     ".": {
-      "require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" },
-      "default": { "types": "./src/index.ts", "default": "./src/index.ts" }
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      },
+      "default": {
+        "types": "./src/index.ts",
+        "default": "./src/index.ts"
+      }
     },
     "./farm": {
-      "require": { "types": "./dist/cjs/farm/index.d.ts", "default": "./dist/cjs/farm/index.js" },
-      "default": { "types": "./src/farm/index.ts", "default": "./src/farm/index.ts" }
+      "require": {
+        "types": "./dist/cjs/farm/index.d.ts",
+        "default": "./dist/cjs/farm/index.js"
+      },
+      "default": {
+        "types": "./src/farm/index.ts",
+        "default": "./src/farm/index.ts"
+      }
     },
     "./farm/kitchen": {
-      "require": { "types": "./dist/cjs/farm/kitchen/index.d.ts", "default": "./dist/cjs/farm/kitchen/index.js" },
-      "default": { "types": "./src/farm/kitchen/index.ts", "default": "./src/farm/kitchen/index.ts" }
+      "require": {
+        "types": "./dist/cjs/farm/kitchen/index.d.ts",
+        "default": "./dist/cjs/farm/kitchen/index.js"
+      },
+      "default": {
+        "types": "./src/farm/kitchen/index.ts",
+        "default": "./src/farm/kitchen/index.ts"
+      }
     },
     "./puzzles/*": {
-      "require": { "types": "./dist/cjs/minigames/uma-puzzles/*.d.ts", "default": "./dist/cjs/minigames/uma-puzzles/*.js" },
-      "default": { "types": "./src/minigames/uma-puzzles/*.ts", "default": "./src/minigames/uma-puzzles/*.ts" }
+      "require": {
+        "types": "./dist/cjs/minigames/uma-puzzles/*.d.ts",
+        "default": "./dist/cjs/minigames/uma-puzzles/*.js"
+      },
+      "default": {
+        "types": "./src/minigames/uma-puzzles/*.ts",
+        "default": "./src/minigames/uma-puzzles/*.ts"
+      }
     },
     "./puzzles-content-fixtures": "./src/minigames/uma-puzzles/content.synthetic.ts",
     "./puzzles-preservation-fixtures": "./src/minigames/uma-puzzles/preservation.synthetic.ts"
@@ -35,5 +59,8 @@
   "devDependencies": {
     "typescript": "~5.9.3",
     "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@luismlorenzana/uma-data": "1.0.0"
   }
 }

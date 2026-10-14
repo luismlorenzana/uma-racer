@@ -29,7 +29,7 @@ while the stable itself grows into a collection.
 ## Run locally
 
 ```bash
-pnpm install
+NODE_AUTH_TOKEN=$(gh auth token) pnpm install   # @luismlorenzana/* come from GitHub Packages (read:packages)
 cp apps/api/.env.example apps/api/.env
 pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone) + api :8080
 ```
