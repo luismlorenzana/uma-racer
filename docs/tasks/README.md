@@ -20,7 +20,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 | Phase | Milestone | State |
 |---|---|---|
 | 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
-| 2 | [M033 — the rework's rules and `sim:loop`](M033-rework-rules.md) | **Next.** T125–T132 specified, T133 outlined; T125, T126 and T129 can start in parallel |
+| 2 | [M033 — the rework's rules and `sim:loop`](M033-rework-rules.md) | **In progress** on `feat/rework-rules`: T125, T126, T127, T129 and T130 landed; T128 next, then T131, T132 and T133 |
 | 3 | The generation-2 cutover and the new game on plain screens | Specified when phase 2 lands. **The owner starts the new game here** |
 | 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
 | 5–8 | Platform master data · the Hub · the Farm and Training scenes · the race on Phaser | Specified in turn |
