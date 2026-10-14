@@ -137,10 +137,10 @@ describe('the reviewed buffs (04 §8)', () => {
     return Math.round((on.cardRaw[main] / off.cardRaw[main] - 1) * 1000) / 10
   }
 
-  it('Team Spirit: +2% per filled open slot', () => {
+  it('Team Spirit: +1% per filled open slot (D346)', () => {
     const base: Setup = { T: 2, cards: ['speed-e2'], nodes: ['speed-e2'], slots: ['parent0', 'parent1', 'parent0-gp0'] }
-    expect(lift({ ...base, lineage: { parent0: MOM.id, parent1: DAD.id, 'parent0-gp0': GRAN.id } })).toBe(6)
-    expect(lift({ ...base, lineage: { parent0: MOM.id, 'parent1-gp1': DAD.id } })).toBe(2)
+    expect(lift({ ...base, lineage: { parent0: MOM.id, parent1: DAD.id, 'parent0-gp0': GRAN.id } })).toBe(3)
+    expect(lift({ ...base, lineage: { parent0: MOM.id, 'parent1-gp1': DAD.id } })).toBe(1)
   })
 
   it('Climax: +2% per goal won, up to +8%', () => {
@@ -220,9 +220,9 @@ describe('skill points', () => {
     expect(derive({ T: 1, cards: ['friend-e1'], nodes: ['friend-e1', 'friend-e1'] }).skillPoints).toBe(2000)
     expect(derive({ T: 1, cards: ['friend-e1'], nodes: ['friend-e1', 'friend-e1', 'friend-e1'] }).skillPoints).toBe(spCapAt(1))
     expect(derive({ T: 1, cards: ['speed-e1'], nodes: [], opened: 6 }).skillPoints).toBe(400)
-    // An era-1 Friend card in Unity Cup pays 95%, and Team Spirit's +2% a slot reaches its SP too (D165).
+    // An era-1 Friend card in Unity Cup pays 95%, and Team Spirit's +1% a slot reaches its SP too (D165).
     const at2 = derive({ T: 2, cards: ['friend-e1'], nodes: ['friend-e1'], opened: 16, slots: ['parent0'], lineage: { parent0: MOM.id } })
-    expect(at2.skillPoints).toBe(960 + Math.round(reworkSpNodeValue(2) * 0.95 * 1.02))
+    expect(at2.skillPoints).toBe(960 + Math.round(reworkSpNodeValue(2) * 0.95 * 1.01))
   })
 })
 

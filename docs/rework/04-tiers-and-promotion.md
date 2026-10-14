@@ -371,7 +371,7 @@ With one build per tier, the buff changes at each advance, and the Advance sheet
 | T | Scenario | Buff | Rule after the rework |
 |---|---|---|---|
 | 1 | URA Finale | **Foundation** | Extra Stats nodes pay ×1.5 (single +60, Duo +30/+30, Sun +12) |
-| 2 | Unity Cup | **Team Spirit** | Each filled Inspiration slot adds +2% to every card node |
+| 2 | Unity Cup | **Team Spirit** | Each filled Inspiration slot adds +1% to every card node |
 | 3 | Trackblazer | **Climax** | Each career goal won in this scenario adds +2% to every card node, up to +8% |
 | 4 | Our Grand Concert | **Performance** | A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5% |
 | 5 | Grand Masters | **Fragments** | Cards from era 4 or older pay +8% |
@@ -390,8 +390,8 @@ With one build per tier, the buff changes at each advance, and the Advance sheet
 The table is the Training Hub's rules (`REWORK_BUFFS` in `@racer/domain/rework/training`, D344). What the review
 changed from today's buffs:
 - **Foundation**, wording: Extra Stats are now flat Gym nodes. Its 5 reachable nodes gain +100.
-- **Team Spirit** was +1% per lineage slot. In Unity Cup a full build has only the two parent slots (grandparents open
-  in layer 3), so +1% capped at +2%.
+- **Team Spirit** stays +1% a slot, now per filled Inspiration slot (D346). Unity Cup's layer opens the two parents
+  and, since D336, the first two grandparents, so a full build there gets +4%, inside the other buffs' 2–5%.
 - **Fragments** replaces "cards at 3★ pay +8%", which means nothing without stars.
 - **New Wave** is renamed from "Expedition", which collides with World Expeditions. Rule unchanged; in L'Arc's window
   (era ≤ 6) it means its own era.
@@ -527,7 +527,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 | Uma Tickets: 20 at start, Uma Shards (1 per gate, 5 per ticket), 1 per promotion, 1 per Hall of Fame induction; never sold; no roster cap | The owner's normal unlock (D336); tier 1 is the only door; slots are the real limit |
 | The node formula's 240 becomes the scenario's full active Extra Stats, E(*t*, *s*), [05](05-training-hub.md)'s extraBudget | Keeps the whole build at 60% of the cap budget, the basis of every balance target |
 | Rivals and Expedition fields use today's typical Uma and today's handicaps, unchanged | The owner's rule (D336); a fully trained Uma keeps today's edge at home, and Expeditions sit a step above a home G1 |
-| Team Spirit +2% per filled Inspiration slot | A full Unity Cup build has only two slots |
+| Team Spirit +1% per filled Inspiration slot (D346) | A full Unity Cup build has four slots since D336, so +4% |
 | Fragments: cards from era 4 or older pay +8% | Replaces a star rule; a real choice between old bonds and the newest era, with no new save field |
 | "Expedition" renamed **New Wave**, "Cooking" renamed **Full Course** | No collision with World Expeditions or the Kitchen |
 | The 15th's placeholder buff: **Encore**, Wit cards +10% | The one stat type no buff favours |

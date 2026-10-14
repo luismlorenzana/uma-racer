@@ -14,8 +14,8 @@ export type ReworkBuffId =
 export const REWORK_BUFF_VALUES = Object.freeze({
   /** Foundation: Extra Stats nodes pay ×1.5 (today's). */
   foundationStatPct: BUFF_VALUES.foundationStatPct,
-  /** Team Spirit: +2% to every card node per filled Inspiration slot (04 §8, was +1%). */
-  teamSpiritPerSlot: 2,
+  /** Team Spirit: +1% to every card node per filled Inspiration slot (04 §8, D346): four slots in Unity Cup, +4%. */
+  teamSpiritPerSlot: 1,
   climaxPerGoal: BUFF_VALUES.climaxPerGoal,
   climaxGoals: BUFF_VALUES.climaxGoals,
   performance: BUFF_VALUES.performance,
