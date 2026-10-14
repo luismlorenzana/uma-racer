@@ -27,9 +27,9 @@ describe('live manual (D337)', () => {
   const pages = (dir: string) => readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => join(dir, f))
   const files = [...pages(DOCS), ...pages(REWORK)]
 
-  it('has a game manual with live blocks', () => {
-    expect(files.length).toBeGreaterThan(2)
-    expect(files.some((f) => readFileSync(f, 'utf8').includes('<!-- live:'))).toBe(true)
+  it.each([['docs/game', DOCS], ['docs/rework', REWORK]])('%s has pages with live blocks', (_, dir) => {
+    expect(pages(dir).length).toBeGreaterThan(2)
+    expect(pages(dir).some((f) => readFileSync(f, 'utf8').includes('<!-- live:'))).toBe(true)
   })
 
   it.each(files.map((f) => [relative(ROOT, f), f]))('%s matches the rules (run `pnpm docs:update` to update)', (_, file) => {

@@ -63,7 +63,7 @@ screens on these modules, and wipes into them once (D335).
 
 | Task | Builds | Needs | Parallel with |
 |---|---|---|---|
-| [T125 — Tiers and progression](T125-tiers-and-progression.md) | The tier map, Racing Level per tier, careers per scenario, advancing, promotion with its resets and carries, Uma Tickets and Shards, tier scaling. Also `rework/types.ts`, `rework/time.ts`, the `./rework/*` export and the docs check over `docs/rework/` | — | T126, T129 |
+| T125 — Tiers and progression ✅ (D340) | The tier map, Racing Level per tier, careers per scenario, advancing, promotion with its resets and carries, Uma Tickets and Shards, tier scaling. Also `rework/types.ts`, `rework/time.ts`, the `./rework/*` export and the docs check over `docs/rework/` | — | T126, T129 |
 | T126 — Items and recipes ✅ (D341) | The 8 × 10 catalogue, crafted items, planet dishes, Duos and Feasts, the side rotation, grade gates and work values, checked against uma-art | — | T125, T129 |
 | [T127 — Jobs, sessions and the Farm](T127-jobs-sessions-farm.md) | One-after-another work with queues, collect, recall and Speed Tickets; buildings, slots, levels and speed; Farm Level and Farm EXP; the activity rule | T125, T126 | T128, T129 |
 | [T128 — The Training Hub and the build](T128-training-hub.md) | The four facilities, the layers, unlock order, dish per unlock, the Extra Stats map and its capacity, bonds and card sets, presets, the reviewed scenario buffs ([04](../rework/04-tiers-and-promotion.md) §8), and stats derived after the rework | T125, T126, T129 | T127 |

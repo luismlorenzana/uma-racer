@@ -41,20 +41,24 @@ Racing Level runs **1–50 per tier**, ten levels per scenario. It replaces toda
 Within each scenario the levels cost the same as today: `expToNext = 100 + 25 × levelsIntoScenario`, where
 `levelsIntoScenario = (Racing Level − 1) mod 10`.
 
+<!-- live:racing-curve -->
 | Level into the scenario | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | **Total** |
 |---|---|---|---|---|---|---|---|---|---|---|
 | EXP to the next | 100 | 125 | 150 | 175 | 200 | 225 | 250 | 275 | 300 | **1,800** |
+<!-- /live -->
 
 Nine paid steps take her from the scenario's first level to its gate (level 10*s*). The tenth step, from 10*s* to
 10*s* + 1, is **the advance itself** (§5). The README's "180 a level" is this curve's average, not a flat cost.
 
 ### EXP per finish (as today)
 
+<!-- live:racing-exp -->
 | Finish | Debut / Maiden | Pre-OP / OP | G3 | G2 | G1 |
 |---|---|---|---|---|---|
 | 1st | 40 | 60 | 80 | 110 | 150 |
 | 2nd or 3rd | 10 | 15 | 20 | 28 | 38 |
 | 4th or worse | 0 | 0 | 0 | 0 | 0 |
+<!-- /live -->
 
 - A win pays `winExp × (1 + Σ Race Bonus)` over the cards in the race's preset. Every card now pays its **full Race
   Bonus** (today's 3★ value, D329), so a set can add up to about +33%.
@@ -456,6 +460,11 @@ typical trained Uma of her scenario**, handicapped by the race's grade.
 | Baseline SP = 40% of the SP cap × open nodes ÷ tree nodes | Replaces CL's baseline; the Observatory pays SP as CL did |
 | Rivals and grade handicaps exactly as today, including the rivals' 84% card factor; D191's minimum over 15 scenarios | The owner's rule (D336); a fully trained Uma keeps today's edge, and the same typical Uma serves the Expeditions ([10](10-expeditions.md)) |
 | Difficulty assumes a fully trained Uma; no special fields for new Umas | The owner trains first, then races (D336) |
+| Each gate pays 1 Uma Shard, once per Uma per gate per tier (D340) | D336, [04](04-tiers-and-promotion.md) §6 and [13](13-removals-and-plan-changes.md) §2 over the first draft, which removed it |
+| The gate's bank applies at the advance, through the new career's holds (D340) | Today's advance sets EXP to 0; the rework's gate banks the next scenario's first step for this |
+| The rules are ports, each held to today's by a parity test: Racing EXP restates `addUmaRaceExp`, goal settlement `evaluateScenarioGoals`; career generation and every constant are imported (D340) | Today's functions take today's whole save and stop at Uma Level 140, not at each tier's last gate |
+| A career's aptitudes come from the selected preset's lineage, its filled open slots (D340) | As from today's active preset (D252): lineage carried from the scenario before shapes her next career |
+| Lifetime level equals today's Uma Level at the same T, so today's level helpers (holds, the planner) take it unchanged (D340) | 50(*t* − 1) + Racing Level is 10(T − 1) + level into the scenario |
 
 ## 12. Done when
 

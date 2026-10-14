@@ -2,6 +2,7 @@
 // tables into the rework pages. An area exports `LIVE_BLOCKS: Record<key, () => string>` from its `docs.ts`, and one
 // import plus one argument below joins it. A key used twice fails at load, so two areas can't fight over a block.
 import { LIVE_BLOCKS as ITEM_BLOCKS } from '../rework/items/docs'
+import { LIVE_BLOCKS as TIER_BLOCKS } from '../rework/tiers/docs'
 
 export type LiveBlocks = Readonly<Record<string, () => string>>
 
@@ -16,4 +17,4 @@ export function joinBlocks(...tables: readonly LiveBlocks[]): LiveBlocks {
   return joined
 }
 
-export const REWORK_BLOCKS: LiveBlocks = joinBlocks(ITEM_BLOCKS)
+export const REWORK_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS, ITEM_BLOCKS)
