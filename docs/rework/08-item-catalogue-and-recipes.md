@@ -10,6 +10,7 @@ gathering half, gear and the Forge are not used. How jobs, timers and Farm Level
 
 ## 1. What's in the catalogue
 
+<!-- live:item-catalogue -->
 | Kind | Count | Ids |
 |---|---|---|
 | Raw ingredients | 80 (8 families × 10 grades) | uma-art `items` frames with `refined: false`, e.g. `honeycomb` |
@@ -19,6 +20,7 @@ gathering half, gear and the Forge are not used. How jobs, timers and Farm Level
 | Feasts | 4 (grades 4, 6, 8, 10) | uma-art `feast-4` … `feast-10` |
 | Speed Ticket | 1 | `speed-ticket` (§9) |
 | **Total** | **253 definitions** | |
+<!-- /live -->
 
 uma-rpg calls the middle step "refined". This game says **crafted** on screen and keeps uma-art's ids and its
 `refined` flag in the data.
@@ -55,6 +57,7 @@ Guts–Stamina are not neighbours and have none. The ring's other four bridges (
 Every family has the same ladder. Times are the README's ([12](12-economy-and-pacing.md) §4); the Farm Level gate is
 Lv 5*g* − 4 ([07](07-farm.md) §4).
 
+<!-- live:item-ladder -->
 | *g* | Farm Lv | Gather (min) | Craft (min) | Work in one crafted item | Cook (min) | Planet or Duo dish, whole chain | Feast, whole chain |
 |---|---|---|---|---|---|---|---|
 | 1 | 1 | 90 | 22.5 | 112.5 | 240 | 802.5 | |
@@ -67,6 +70,7 @@ Lv 5*g* − 4 ([07](07-farm.md) §4).
 | 8 | 36 | 125 | 31.25 | 156.25 | 310 | 1,078.75 | 1,235 |
 | 9 | 41 | 130 | 32.5 | 162.5 | 320 | 1,120 | |
 | 10 | 46 | 135 | 33.75 | 168.75 | 330 | 1,161.25 | 1,330 |
+<!-- /live -->
 
 **A dish's whole chain is also its Farm EXP**, split among the Umas who gathered, crafted and cooked it (1 EXP a listed
 minute, [07](07-farm.md) §4). Grades 9 and 10 are uma-art's legendary tier and carry its glints.
@@ -77,6 +81,7 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 
 #### Sweets (`sweets`) → Speed
 
+<!-- live:items-sweets -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Honeycomb `honeycomb` | Honey `honey` | Honeycomb Cake `dish-sweets-1` | Peanut Butter (Nuts & Seeds 1) |
@@ -89,9 +94,11 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Palm Sap `palm-sap` | Palm Sugar `palm-sugar` | Palm Sap Cake `dish-sweets-8` | Ground Pepper (Herbs & Spices 6) |
 | 9 | Fairy Honeycomb `fairy-honeycomb` | Fairy Honey `fairy-honey` | Fairy Honeycomb Cake `dish-sweets-9` | Eel Fillet (Fish 7) |
 | 10 | Ambrosia Blossom `ambrosia-blossom` | Ambrosia `ambrosia` | Ambrosia Blossom Cake `dish-sweets-10` | Hulled Wild Rice (Grains 8) |
+<!-- /live -->
 
 #### Fruits (`fruits`) → Stamina
 
+<!-- live:items-fruits -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Apple `apple` | Apple Preserve `apple-preserve` | Apple Tart `dish-fruits-1` | Dried Basil (Herbs & Spices 1) |
@@ -104,9 +111,11 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Pomegranate `pomegranate` | Pomegranate Molasses `pomegranate-molasses` | Pomegranate Tart `dish-fruits-8` | Vanilla Extract (Sweets 6) |
 | 9 | Starpeach `starpeach` | Starpeach Nectar `starpeach-nectar` | Starpeach Tart `dish-fruits-9` | Pistachio Paste (Nuts & Seeds 7) |
 | 10 | Golden Apple `golden-apple` | Golden Apple Preserve `golden-apple-preserve` | Golden Apple Tart `dish-fruits-10` | Hulled Wild Rice (Grains 8) |
+<!-- /live -->
 
 #### Fish (`fish`) → Power
 
+<!-- live:items-fish -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Carp `carp` | Carp Fillet `carp-fillet` | Carp Grill `dish-fish-1` | Honey (Sweets 1) |
@@ -119,9 +128,11 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Tuna `tuna` | Tuna Fillet `tuna-fillet` | Tuna Grill `dish-fish-8` | Grape Jelly (Fruits 6) |
 | 9 | Silverfin `silverfin` | Silverfin Fillet `silverfin-fillet` | Silverfin Grill `dish-fish-9` | Ground Cinnamon (Herbs & Spices 7) |
 | 10 | Rainbow Koi `rainbow-koi` | Rainbow Koi Fillet `rainbow-koi-fillet` | Rainbow Koi Grill `dish-fish-10` | Hulled Wild Rice (Grains 8) |
+<!-- /live -->
 
 #### Nuts & Seeds (`nuts-seeds`) → Guts
 
+<!-- live:items-nuts-seeds -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Peanut `peanut` | Peanut Butter `peanut-butter` | Peanut Cookies `dish-nuts-seeds-1` | Apple Preserve (Fruits 1) |
@@ -134,9 +145,11 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Macadamia `macadamia` | Macadamia Butter `macadamia-butter` | Macadamia Cookies `dish-nuts-seeds-8` | Sea Bream Fillet (Fish 6) |
 | 9 | Thundernut `thundernut` | Thundernut Oil `thundernut-oil` | Thundernut Cookies `dish-nuts-seeds-9` | Agave Syrup (Sweets 7) |
 | 10 | Worldseed `worldseed` | Worldseed Oil `worldseed-oil` | Worldseed Cookies `dish-nuts-seeds-10` | Hulled Wild Rice (Grains 8) |
+<!-- /live -->
 
 #### Herbs & Spices (`herbs-spices`) → Wit
 
+<!-- live:items-herbs-spices -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Basil `basil` | Dried Basil `dried-basil` | Basil Curry `dish-herbs-spices-1` | Carp Fillet (Fish 1) |
@@ -149,9 +162,11 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Saffron `saffron` | Saffron Threads `saffron-threads` | Saffron Curry `dish-herbs-spices-8` | Almond Paste (Nuts & Seeds 6) |
 | 9 | Mandrake `mandrake` | Mandrake Powder `mandrake-powder` | Mandrake Curry `dish-herbs-spices-9` | Mango Pulp (Fruits 7) |
 | 10 | Phoenix Pepper `phoenix-pepper` | Phoenix Spice `phoenix-spice` | Phoenix Pepper Curry `dish-herbs-spices-10` | Hulled Wild Rice (Grains 8) |
+<!-- /live -->
 
 #### Grains (`grains`) → Skill (Friend and Group bonds)
 
+<!-- live:items-grains -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Wheat `wheat` | Wheat Flour `wheat-flour` | Wheat Bread `dish-grains-1` | Apple Preserve (Fruits 1) |
@@ -164,9 +179,11 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Wild Rice `wild-rice` | Hulled Wild Rice `hulled-wild-rice` | Wild Rice Bread `dish-grains-8` | Sea Bream Fillet (Fish 6) |
 | 9 | Moonrice `moonrice` | Moonrice Flour `moonrice-flour` | Moonrice Bread `dish-grains-9` | Agave Syrup (Sweets 7) |
 | 10 | Sunwheat `sunwheat` | Sunwheat Flour `sunwheat-flour` | Sunwheat Bread `dish-grains-10` | Macadamia Butter (Nuts & Seeds 8) |
+<!-- /live -->
 
 #### Vegetables (`vegetables`) → Constellation
 
+<!-- live:items-vegetables -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Carrot `carrot` | Chopped Carrot `chopped-carrot` | Carrot Salad `dish-vegetables-1` | Wheat Flour (Grains 1) |
@@ -179,9 +196,11 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Asparagus `asparagus` | Trimmed Asparagus `trimmed-asparagus` | Asparagus Salad `dish-vegetables-8` | Rye Flour (Grains 6) |
 | 9 | Golden Carrot `golden-carrot` | Golden Carrot Purée `golden-carrot-puree` | Golden Carrot Salad `dish-vegetables-9` | Buckwheat Flour (Grains 7) |
 | 10 | Emperor Pumpkin `emperor-pumpkin` | Pumpkin Purée `pumpkin-puree` | Emperor Pumpkin Salad `dish-vegetables-10` | Hulled Wild Rice (Grains 8) |
+<!-- /live -->
 
 #### Mushrooms (`mushrooms`) → Inspiration
 
+<!-- live:items-mushrooms -->
 | *g* | Raw | Crafted | Planet dish | Its side (crafted) |
 |---|---|---|---|---|
 | 1 | Button Mushroom `button-mushroom` | Dried Button Mushroom `dried-button-mushroom` | Button Mushroom Soup `dish-mushrooms-1` | Wheat Flour (Grains 1) |
@@ -194,6 +213,7 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 8 | Truffle `truffle` | Shaved Truffle `shaved-truffle` | Truffle Soup `dish-mushrooms-8` | Rye Flour (Grains 6) |
 | 9 | Glowcap `glowcap` | Glowcap Powder `glowcap-powder` | Glowcap Soup `dish-mushrooms-9` | Buckwheat Flour (Grains 7) |
 | 10 | King Reishi `king-reishi` | Reishi Powder `reishi-powder` | King Reishi Soup `dish-mushrooms-10` | Hulled Wild Rice (Grains 8) |
+<!-- /live -->
 
 ## 4. Recipes
 
@@ -231,6 +251,7 @@ is missing:
 
 All 80 planet dishes' side families (the side's grade in brackets):
 
+<!-- live:dish-sides -->
 | *g* (side *g*) | Sweets | Fruits | Fish | Nuts & Seeds | Herbs & Spices | Grains | Vegetables | Mushrooms |
 |---|---|---|---|---|---|---|---|---|
 | 1 (1) | Nuts | Herbs | Sweets | Fruits | Fish | Fruits | Grains | Grains |
@@ -243,6 +264,7 @@ All 80 planet dishes' side families (the side's grade in brackets):
 | 8 (6) | Herbs | Sweets | Fruits | Fish | Nuts | Fish | Grains | Grains |
 | 9 (7) | Fish | Nuts | Herbs | Sweets | Fruits | Sweets | Grains | Grains |
 | 10 (8) | Grains | Grains | Grains | Grains | Grains | Nuts | Grains | Grains |
+<!-- /live -->
 
 The exact side item is in each family's table in §3.
 
@@ -251,6 +273,7 @@ The exact side item is in each family's table in §3.
 Four stat Duos, each at grade 3 (scenario 2) and grade 5 (scenario 3), for the Gym's Duo nodes ([05](05-training-hub.md)).
 Grade 3 uses uma-art's grade-3 frame and name; grade 5 uses its grade-7 **Deluxe** frame and name.
 
+<!-- live:duo-recipes -->
 | Id | Stats | Recipe | uma-art frame | Name |
 |---|---|---|---|---|
 | `duo-stamina-wit-3` | Stamina + Wit | 2 Peach Preserve + 2 Dried Rosemary + 1 Peanut Butter | `duo-mp-matk-3` | Fruit & Herb Platter |
@@ -261,6 +284,7 @@ Grade 3 uses uma-art's grade-3 frame and name; grade 5 uses its grade-7 **Deluxe
 | `duo-power-speed-5` | Power + Speed | 2 Salmon Fillet + 2 Chocolate + 1 Peach Preserve | `duo-atk-speed-7` | Fish & Honey Platter Deluxe |
 | `duo-speed-guts-3` | Speed + Guts | 2 Beet Sugar + 2 Sesame Paste + 1 Apple Preserve | `duo-speed-limit-3` | Honey & Nut Platter |
 | `duo-speed-guts-5` | Speed + Guts | 2 Chocolate + 2 Chestnut Paste + 1 Peach Preserve | `duo-speed-limit-7` | Honey & Nut Platter Deluxe |
+<!-- /live -->
 
 Duo ids are this game's own because a grade-5 dish drawn with a `-7` frame would mislead anyone reading the id. Every
 other dish id is uma-art's frame id.
@@ -270,12 +294,14 @@ other dish id is uma-art's frame id.
 One per scenario from scenario 2, for the Gym's Sun nodes. A Sun gives all five stats, so a Feast takes one of each
 stat family, with bread.
 
+<!-- live:feast-recipes -->
 | Id | Name | Grade | Recipe |
 |---|---|---|---|
 | `feast-4` | Spring Feast | 4 | Maple Syrup, Plum Preserve, Mackerel Fillet, Walnut Paste, Dried Thyme + Rolled Oats |
 | `feast-6` | Summer Feast | 6 | Vanilla Extract, Grape Jelly, Sea Bream Fillet, Almond Paste, Ground Pepper + Polished Rice |
 | `feast-8` | Harvest Feast | 8 | Palm Sugar, Pomegranate Molasses, Tuna Fillet, Macadamia Butter, Saffron Threads + Rye Flour |
 | `feast-10` | Grand Feast | 10 | Ambrosia, Golden Apple Preserve, Rainbow Koi Fillet, Worldseed Oil, Phoenix Spice + Hulled Wild Rice |
+<!-- /live -->
 
 ## 5. Work and Farm EXP per dish
 
@@ -388,6 +414,7 @@ An item's **work value** is the real minutes of the work in it: the base minutes
 "1 Prize Money ≈ 1 minute of Uma work" holds whatever *k* is. Selling pays **a third** of it in Prize Money (D331);
 [09](09-racing-rewards-and-exchange.md) owns rounding and the Exchange's buy prices.
 
+<!-- live:work-values -->
 | *g* | Raw | Crafted | Planet or Duo dish | Feast | A third: raw / crafted / dish |
 |---|---|---|---|---|---|
 | 1 | 108 | 135 | 963 | | 36 / 45 / 321 |
@@ -400,6 +427,7 @@ An item's **work value** is the real minutes of the work in it: the base minutes
 | 8 | 150 | 187.5 | 1,294.5 | 1,482 | 50 / 62.5 / 431.5 (Feast 494) |
 | 9 | 156 | 195 | 1,344 | | 52 / 65 / 448 |
 | 10 | 162 | 202.5 | 1,393.5 | 1,596 | 54 / 67.5 / 464.5 (Feast 532) |
+<!-- /live -->
 
 The value is the same for every family at a grade. Building speed and Speed Tickets don't change it.
 
