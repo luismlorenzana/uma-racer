@@ -609,7 +609,7 @@ a tier from 132 unlocks to 107. The time factor *k* = 1.2 keeps each scenario at
   capacity, the new places fill with opened nodes that were off, oldest first ([03](03-uma-progression.md) §6).
 - **No per-stat limit** beyond the map itself. D235's "four per stat" goes: at tier 1, scenario 5, a full Speed lean is
   5 singles, 4 Duos and 4 Suns, +312 Speed from 13 of 15 places. The cap profile clamps, and the stamina ladder
-  ([Constellations](../design/constellations.md#balance-targets-the-stamina-ladder)) is re-measured with it.
+  ([Constellations](../design/constellations.md#balance-targets-the-stamina-ladder)) is re-measured with it (§12).
 
 ### The stat formula: the 240-point pool goes
 
@@ -837,6 +837,7 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | `layerDone(s)` is layer *s*'s fixed unlocks open and bonds at the pacing count by its end (6, 9, 12, 15, 18) (D344) | "Fully Trained" for that scenario; earlier layers' Duos, Suns and golds don't block it |
 | The derivation counts cards that are in the set, bonded and of an era her scenario allows; anything else pays nothing (D344) | Pure and total, as today's `deriveStats`: a stale id never breaks a read |
 | Team Spirit counts the filled open slots whose pick passes D250's repeat rules (D344) | The same slots that pay aptitudes |
+| The stamina ladder runs full-layer builds whose active Extra Stats lean on the rung's stat, most first, then on its backup (Guts behind Stamina, Power behind Speed), up to the capacity (D349) | Today's six leaned four and two; the capacity takes every opened node that pays the stat before any other |
 
 ## 12. Done when
 
@@ -857,3 +858,36 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
   a fresh account once the roster passes 20 and the Observatory is at Lv 2.
 - Every locked item on the build screens names its dish, facility and blocker, and its Unlock button opens the session
   sheet pre-filled.
+- `pnpm sim:rework-builds`' stamina ladder holds at every T on the re-authored trees with these Extra Stats, each rung
+  as today's ladder defines it ([Constellations](../design/constellations.md#balance-targets-the-stamina-ladder)),
+  and the command exits 0.
+
+**The ladder, measured** (T133, D349). 30 races a check in 12-runner G1 fields at pace and late, on full-layer builds:
+every card node open with current-era cards at 100%, the median Uma's base stats and no growth, Extra Stats at the
+scenario's capacity leaning on the rung's stat. The rungs add a stamina source each, as today's: no stamina card, a
+stamina card, Extra Stats on Stamina, the stamina card leaned a node, a Power card beside the lean, a second stamina card.
+
+<!-- live:rework-ladder -->
+| T | Scenario | Stamina, rung by rung | Hard checks | Soft checks that miss |
+|---|---|---|---|---|
+| 1 | URA Finale | 165 · 561 · 561 · 759 · 1,014 · 1,200 | **Open:** Extra Stats into stamina run 1,800 m; **Open:** a Power card runs 2,400 m | a lean alone runs 2,200 m |
+| 2 | Unity Cup | 213 · 616 · 676 · 830 · 1,095 · 1,300 | hold | a lean alone runs 2,200 m; a Power card cannot run 3,000 m |
+| 3 | Trackblazer | 281 · 625 · 785 · 911 · 1,181 · 1,300 | hold | a Power card cannot run 3,000 m |
+| 4 | Our Grand Concert | 329 · 541 · 741 · 844 · 1,064 · 1,300 | hold | a lean alone runs 2,200 m |
+| 5 | Grand Masters | 377 · 589 · 829 · 919 · 1,151 · 1,350 | hold | no stamina card cannot run 1,400 m; a Power card cannot run 3,000 m |
+| 6 | Project L'Arc | 155 · 658 · 658 · 909 · 1,232 · 1,450 | **Open:** Extra Stats into stamina run 1,800 m | a lean alone runs 2,200 m; a Power card cannot run 3,000 m |
+| 7 | U.A.F. Ready GO! | 240 · 696 · 771 · 948 · 1,252 · 1,450 | hold | a sprint set cannot run 1,800 m; a Power card cannot run 3,000 m |
+| 8 | Great Food Festival | 325 · 699 · 899 · 1,114 · 1,450 · 1,450 | hold | a sprint set cannot run 1,800 m; a lean alone cannot run 2,400 m; a Power card cannot run 3,000 m |
+| 9 | Run! Mecha Umamusume | 385 · 619 · 869 · 991 · 1,276 · 1,500 | hold | no stamina card cannot run 1,400 m; a Power card cannot run 3,000 m |
+| 10 | The Twinkle Legends | 445 · 670 · 970 · 1,075 · 1,345 · 1,600 | hold | no stamina card cannot run 1,400 m; a lean alone cannot run 2,400 m; a Power card cannot run 3,000 m |
+| 11 | Design Your Island | 165 · 770 · 770 · 1,005 · 1,365 · 1,600 | hold | a sprint set cannot run 1,800 m; a Power card cannot run 3,000 m |
+| 12 | Yukoma Hot Springs | 267 · 856 · 946 · 1,173 · 1,525 · 1,600 | hold | a sprint set cannot run 1,800 m; a lean alone cannot run 2,400 m; a Power card cannot run 3,000 m |
+| 13 | Beyond Dreams | 369 · 793 · 1,033 · 1,199 · 1,554 · 1,650 | hold | no stamina card cannot run 1,400 m; a sprint set cannot run 1,800 m; a lean alone cannot run 2,400 m; a Power card cannot run 3,000 m |
+| 14 | Tracen Diner | 481 · 738 · 1,038 · 1,177 · 1,476 · 1,750 | hold | no stamina card cannot run 1,400 m; a sprint set cannot run 1,800 m; a lean alone cannot run 2,400 m; a Power card cannot run 3,000 m |
+<!-- /live -->
+
+A tier's first Gym layer holds one single per stat, so its Extra Stats can't lean. At T = 1 and 6 the mile set is
+therefore the sprint set and misses 1,800 m, and at T = 1 the Power card set misses 2,400 m: today's carried 240 Stamina
+and 120 Guts from its Extra stats, the rework's first layer 60 of each. Design Your Island's fatter nodes hold. The
+three wait for the owner's decision ([open questions](../open-questions.md#needs-your-decision)); the sim reports them as
+open and fails on any other miss.

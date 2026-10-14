@@ -152,8 +152,8 @@ her a fresh career written for her profile:
   superseded by D326 ([13](13-removals-and-plan-changes.md)).
 - **Closed on leaving.** Advancing closes the career. Its goals are complete by then, because the advance requires it.
   At the tier's last scenario the career closes when she is promoted ([04](04-tiers-and-promotion.md)).
-- `pnpm sim:careers` keeps generating a career for every Uma at every T (15 now) and checks every stage is winnable
-  by a build with that scenario's full layer (§9).
+- `pnpm sim:rework-careers` keeps generating a career for every Uma at every T (14 until the 15th ships) and checks
+  every stage is winnable by a build with that scenario's full layer (§9).
 
 ## 5. Advancing to the next scenario
 
@@ -363,8 +363,10 @@ In URA Finale, 12 open nodes give 800 SP, and a Friend card on two nodes adds 1,
 percentages, and the stat rounds once at the end, so the invariance rule still holds exactly: moving a card between
 nodes never changes a total (D126).
 
-`pnpm sim:constellation` re-runs the stamina ladder on the new trees: every distance's deck must still hold a full
-spurt at every T. The Extra Stats now carry 200–900 points instead of 240, which is more room for stamina.
+`pnpm sim:rework-builds` re-runs the stamina ladder on the new trees: every distance's deck must still hold a full
+spurt at every T ([05](05-training-hub.md) §12). The Extra Stats now carry 200–900 points instead of 240, which is more
+room for stamina from a tier's second scenario on. A tier's first Gym layer holds one single per stat, so there they
+can't lean.
 
 ## 9. Racing difficulty: unchanged
 
@@ -389,9 +391,60 @@ typical trained Uma of her scenario**, handicapped by the race's grade.
 - **Difficulty assumes a fully trained Uma.** The owner finishes the passive layer first and then races the career,
   so the game is tuned for that and not for any timetable. An Uma can race at any point with whatever she has
   unlocked. A brand-new or just-promoted Uma mostly loses until her first unlocks land, and that's expected.
-- `pnpm sim:careers` re-measures the typical Uma on the new trees and checks today's target: a fully trained build
-  wins the Maiden G3 and Trials G2s and is favoured in her G1s. The handicaps stay the owner's one-line lever (D159),
-  as today.
+- `pnpm sim:rework-careers` re-measures the typical Uma on the new trees and checks today's target: a fully trained
+  build wins the Maiden G3 and Trials G2s and is favoured in her G1s. The handicaps stay the owner's one-line lever
+  (D159), as today.
+
+**Measured** (T133, D349). Each stage's race on a full-layer build: every card node of the tree open with current-era
+cards at 100%, her open Inspiration slots filled and Extra Stats at capacity. Best case of the distance's sets and the
+four running styles, 20 races a cell in 12-runner fields, in % (sprint · mile · medium · long). A bold rate misses §12's
+target:
+
+<!-- live:rework-career-rates -->
+| T | Scenario | Maiden G3 (won) | Trials G2 (90% or more) | Main G1 (60–100%) | Targets |
+|---|---|---|---|---|---|
+| 1 | URA Finale | 100 · 100 · 100 · 100 | 100 · 100 · 100 · 100 | 95 · 95 · 100 · 100 | met |
+| 2 | Unity Cup | 100 · 100 · 100 · 100 | 95 · 95 · 100 · 100 | 80 · 85 · 100 · 100 | met |
+| 3 | Trackblazer | 100 · 100 · 100 · 100 | 100 · 95 · 100 · 100 | 95 · 85 · 100 · 100 | met |
+| 4 | Our Grand Concert | 100 · 100 · 100 · 100 | 100 · 100 · 100 · 100 | 100 · 95 · 100 · 100 | met |
+| 5 | Grand Masters | 100 · 100 · 100 · 100 | 95 · 100 · 100 · 100 | 95 · 90 · 100 · 100 | met |
+| 6 | Project L'Arc | 100 · 100 · 100 · 100 | 95 · 95 · 100 · 100 | 85 · 90 · 100 · 100 | met |
+| 7 | U.A.F. Ready GO! | 100 · 100 · 100 · 100 | 95 · 100 · 100 · 100 | 90 · 90 · 100 · 100 | met |
+| 8 | Great Food Festival | 100 · 100 · 100 · 100 | 95 · 100 · 100 · 100 | 95 · 95 · 100 · 100 | met |
+| 9 | Run! Mecha Umamusume | 100 · 100 · 100 · 100 | 95 · 90 · 100 · 100 | 95 · 85 · 100 · 100 | met |
+| 10 | The Twinkle Legends | 100 · 100 · 100 · 100 | 100 · 100 · 100 · 100 | 95 · 95 · 100 · 100 | met |
+| 11 | Design Your Island | 100 · 100 · 100 · 100 | 100 · 100 · 100 · 100 | 85 · 95 · 100 · 100 | met |
+| 12 | Yukoma Hot Springs | 100 · 100 · 100 · 100 | 100 · 100 · 100 · 100 | 100 · 95 · 100 · 95 | met |
+| 13 | Beyond Dreams | 100 · 100 · 100 · 100 | 95 · 95 · 100 · 100 | 95 · 95 · 100 · 95 | met |
+| 14 | Tracen Diner | 100 · 100 · 100 · 100 | 100 · 100 · 100 · 100 | 95 · 80 · 95 · 95 | met |
+<!-- /live -->
+
+**The rivals' Extra Stats.** The typical Uma's Extra Stats are the scenario's full capacity, not discounted by her 84%
+card factor, so her trained stat grows faster late in each tier than today's: 642 → 728 across tier 1, against today's
+650 → 689. It doesn't cost a fully trained Uma her edge. Her G1s at scenarios 4 and 5 of each tier are won 80–100% of
+the time, best case, as everywhere else, so the formula stays as it is (D336).
+
+The G1 grid of the stamina ladder's sets (`pnpm sim:rework-builds`, 200 races a cell), the pace rate and the best
+running style's:
+
+<!-- live:rework-g1-rates -->
+| T | Scenario | Sprint 1,400 m | Mile 1,600 m | Medium 2,400 m | Long 3,000 m |
+|---|---|---|---|---|---|
+| 1 | URA Finale | 66% / 68% | 56% / 64% | 90% / 96% | 99% / 99% |
+| 2 | Unity Cup | 66% / 67% | 65% / 70% | 88% / 95% | 96% / 98% |
+| 3 | Trackblazer | 66% / 66% | 59% / 68% | 83% / 89% | 88% / 89% |
+| 4 | Our Grand Concert | 66% / 66% | 60% / 61% | 91% / 95% | 100% / 100% |
+| 5 | Grand Masters | 69% / 69% | 66% / 66% | 95% / 96% | 99% / 100% |
+| 6 | Project L'Arc | 71% / 71% | 67% / 73% | 88% / 92% | 97% / 97% |
+| 7 | U.A.F. Ready GO! | 71% / 71% | 66% / 71% | 76% / 82% | 90% / 95% |
+| 8 | Great Food Festival | 64% / 66% | 64% / 69% | 84% / 85% | 79% / 88% |
+| 9 | Run! Mecha Umamusume | 69% / 74% | 64% / 65% | 89% / 97% | 98% / 100% |
+| 10 | The Twinkle Legends | 69% / 69% | 53% / 58% | 87% / 92% | 96% / 98% |
+| 11 | Design Your Island | 73% / 75% | 72% / 77% | 86% / 89% | 91% / 97% |
+| 12 | Yukoma Hot Springs | 71% / 72% | 65% / 70% | 77% / 84% | 78% / 92% |
+| 13 | Beyond Dreams | 74% / 80% | 62% / 66% | 72% / 77% | 72% / 86% |
+| 14 | Tracen Diner | 73% / 73% | 58% / 58% | 82% / 85% | 91% / 96% |
+<!-- /live -->
 
 ## 10. Edge cases
 
@@ -460,6 +513,7 @@ typical trained Uma of her scenario**, handicapped by the race's grade.
 | Baseline SP = 40% of the SP cap × open nodes ÷ tree nodes | Replaces CL's baseline; the Observatory pays SP as CL did |
 | Rivals and grade handicaps exactly as today, including the rivals' 84% card factor; D191's minimum over 15 scenarios | The owner's rule (D336); a fully trained Uma keeps today's edge, and the same typical Uma serves the Expeditions ([10](10-expeditions.md)) |
 | Difficulty assumes a fully trained Uma; no special fields for new Umas | The owner trains first, then races (D336) |
+| The rivals' Extra Stats stay the scenario's full capacity, not discounted by their 84% card factor (D349) | Measured on full-layer builds, every career cell meets §12's targets at T = 1–14, scenarios 4 and 5 included; D336 fixes the formula |
 | Each gate pays 1 Uma Shard, once per Uma per gate per tier (D340) | D336, [04](04-tiers-and-promotion.md) §6 and [13](13-removals-and-plan-changes.md) §2 over the first draft, which removed it |
 | The gate's bank applies at the advance, through the new career's holds (D340) | Today's advance sets EXP to 0; the rework's gate banks the next scenario's first step for this |
 | The rules are ports, each held to today's by a parity test: Racing EXP restates `addUmaRaceExp`, goal settlement `evaluateScenarioGoals`; career generation and every constant are imported (D340) | Today's functions take today's whole save and stop at Uma Level 140, not at each tier's last gate |
@@ -479,6 +533,7 @@ typical trained Uma of her scenario**, handicapped by the race's grade.
 - There is no scenario picker anywhere, and a new race result records her current scenario.
 - `deriveStats` has no star or CL input. A domain test pins §8's worked example, URA Finale's 800 + 1,200 SP, and the
   exact invariance (moving a card between nodes never changes a total).
-- `pnpm sim:careers` generates every career at all 15 scenarios. With full-layer builds, every Maiden G3 is won, the
-  Trials G2s at 90% or more, the Main G1s at 60–100% best case, with today's handicaps unchanged.
-- `pnpm sim:constellation`'s stamina ladder holds at every T on the new trees.
+- `pnpm sim:rework-careers` generates every career at all 15 scenarios (14 until the 15th ships). With full-layer
+  builds, every Maiden G3 is won, the Trials G2s at 90% or more, the Main G1s at 60–100% best case, with today's
+  handicaps unchanged (§9).
+- `pnpm sim:rework-builds`' stamina ladder holds at every T on the new trees ([05](05-training-hub.md) §12).
