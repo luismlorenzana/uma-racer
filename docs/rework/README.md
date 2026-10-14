@@ -130,14 +130,16 @@ Guts–Stamina has no Duo.
 
 ### Unlocks per scenario layer (per Uma, per tier)
 
+<!-- live:training-layers -->
 | Scenario of the tier | Constellation nodes | Inspiration | Extra Stats nodes | Card bonds | Total |
 |---|---|---|---|---|---|
 | 1 | 12 (tree of 12) | 2 parent slots, 2 parent uniques | 5 singles | 6 | **27** |
-| 2 | 4 (tree of 16) | 4 parent golds, 2 grandparent slots | 5 singles + 4 Duo + 1 Sun | 3 | **23** |
-| 3 | 4 (tree of 20) | 2 grandparent slots, 2 grandparent uniques | 5 singles + 4 Duo + 1 Sun | 3 | **21** |
+| 2 | 4 (tree of 16) | 4 parent golds, 2 grandparent slots | 5 singles + 4 Duos + 1 Sun | 3 | **23** |
+| 3 | 4 (tree of 20) | 2 grandparent slots, 2 grandparent uniques | 5 singles + 4 Duos + 1 Sun | 3 | **21** |
 | 4 | 4 (tree of 24) | 2 grandparent uniques, 4 grandparent golds | 5 singles + 1 Sun | 3 | **19** |
 | 5 | 4 (tree of 28) | 4 grandparent golds | 5 singles + 1 Sun | 3 | **17** |
 | **Tier** | **28** | **24** (6 slots, 6 uniques, 12 golds) | **37** (25 + 8 + 4) | **18** | **107** |
+<!-- /live -->
 
 - **Constellation trees are re-authored** to 12, 16, 20, 24 and 28 card nodes for a tier's scenarios 1–5. Each
   scenario keeps its silhouette motif.

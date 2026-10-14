@@ -367,23 +367,41 @@ Buffs keep D165's rules:
 With one build per tier, the buff changes at each advance, and the Advance sheet shows the new one
 ([03](03-uma-progression.md) §5).
 
-| T | Scenario | Buff | Rule after the rework | Change |
-|---|---|---|---|---|
-| 1 | URA Finale | **Foundation** | Extra Stats nodes pay ×1.5 (single +60, Duo +30/+30, Sun +12) | Wording: Extra Stats are now flat Gym nodes. Its 5 reachable nodes gain +100 |
-| 2 | Unity Cup | **Team Spirit** | Each filled Inspiration slot adds **+2%** to every card node | Was +1% per lineage slot. In Unity Cup a full build has only the two parent slots (grandparents open in layer 3), so +1% capped at +2% |
-| 3 | Trackblazer | **Climax** | Each career goal won in this scenario adds +2% to every card node, up to +8% | None |
-| 4 | Our Grand Concert | **Performance** | A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5% | None (the cards are bonded ones) |
-| 5 | Grand Masters | **Fragments** | **Cards from era 4 or older pay +8%** | Replaces "cards at 3★ pay +8%", which means nothing without stars |
-| 6 | Project L'Arc | **New Wave** | Cards from era 6 or newer pay +5% | **Renamed** from "Expedition", which collides with World Expeditions. Rule unchanged; in L'Arc's window (era ≤ 6) it means its own era |
-| 7 | U.A.F. Ready GO! | **Genres** | A card type with two or more cards in the set pays +6% on those cards | None |
-| 8 | Great Food Festival | **Full Course** | A card on its full node cap pays +10% on all its nodes | **Renamed** from "Cooking", which would read as a Kitchen rule. Rule unchanged |
-| 9 | Run! Mecha Umamusume | **Research** | Speed and Power cards pay +10% | None |
-| 10 | The Twinkle Legends | **Legends** | The first parent slot may hold any Uma in the game, never owned included | Wording: other slots now take any Uma ever owned, so "owned or not" still adds the unowned |
-| 11 | Design Your Island | **Construction** | A card on exactly its fair share of nodes pays +8% on all of them | None |
-| 12 | Yukoma Hot Springs | **Soak** | Stamina and Guts cards pay +10% | None |
-| 13 | Beyond Dreams | **Shared Light** | The two lowest stats from card nodes each gain +8% | Wording: Extra Stats are neither ranked nor lifted, as D314 already did |
-| 14 | Tracen Diner | **Orders** | Friend and Group cards also pay a quarter of a node's value as stats, beside their SP | None: Friend and Group cards stay, bonded with Grains dishes |
-| 15 | Japan's next | **Encore** (placeholder) | Wit cards pay +10% | New. Wit is the one stat card type no buff favours. Replaced if the real scenario's theme suggests a better rule |
+<!-- live:rework-buffs -->
+| T | Scenario | Buff | Rule after the rework |
+|---|---|---|---|
+| 1 | URA Finale | **Foundation** | Extra Stats nodes pay ×1.5 (single +60, Duo +30/+30, Sun +12) |
+| 2 | Unity Cup | **Team Spirit** | Each filled Inspiration slot adds +2% to every card node |
+| 3 | Trackblazer | **Climax** | Each career goal won in this scenario adds +2% to every card node, up to +8% |
+| 4 | Our Grand Concert | **Performance** | A set with a Speed, Stamina, Power, Guts and Wit card: every card node pays +5% |
+| 5 | Grand Masters | **Fragments** | Cards from era 4 or older pay +8% |
+| 6 | Project L'Arc | **New Wave** | Cards from era 6 or newer pay +5% |
+| 7 | U.A.F. Ready GO! | **Genres** | A card type with two or more cards in the set pays +6% on those cards |
+| 8 | Great Food Festival | **Full Course** | A card on its full node cap pays +10% on all its nodes |
+| 9 | Run! Mecha Umamusume | **Research** | Speed and Power cards pay +10% |
+| 10 | The Twinkle Legends | **Legends** | The first parent slot may hold any Uma in the game, never owned included |
+| 11 | Design Your Island | **Construction** | A card on exactly its fair share of nodes pays +8% on all of them |
+| 12 | Yukoma Hot Springs | **Soak** | Stamina and Guts cards pay +10% |
+| 13 | Beyond Dreams | **Shared Light** | The two lowest stats from card nodes each gain +8% |
+| 14 | Tracen Diner | **Orders** | Friend and Group cards also pay a quarter of a node's value as stats, beside their SP |
+| 15 | Japan's next | **Encore** | Wit cards pay +10% |
+<!-- /live -->
+
+The table is the Training Hub's rules (`REWORK_BUFFS` in `@racer/domain/rework/training`, D344). What the review
+changed from today's buffs:
+- **Foundation**, wording: Extra Stats are now flat Gym nodes. Its 5 reachable nodes gain +100.
+- **Team Spirit** was +1% per lineage slot. In Unity Cup a full build has only the two parent slots (grandparents open
+  in layer 3), so +1% capped at +2%.
+- **Fragments** replaces "cards at 3★ pay +8%", which means nothing without stars.
+- **New Wave** is renamed from "Expedition", which collides with World Expeditions. Rule unchanged; in L'Arc's window
+  (era ≤ 6) it means its own era.
+- **Full Course** is renamed from "Cooking", which would read as a Kitchen rule. Rule unchanged.
+- **Legends**, wording: other slots now take any Uma ever owned, so "owned or not" still adds the unowned.
+- **Shared Light**, wording: Extra Stats are neither ranked nor lifted, as D314 already did.
+- **Encore** is new, a placeholder for the 15th: Wit is the one stat card type no buff favours. Replaced if the real
+  scenario's theme suggests a better rule.
+- The rest are unchanged: Climax, Genres, Research, Construction and Soak; Performance (the cards are bonded ones); and
+  Orders (Friend and Group cards stay, bonded with Grains dishes).
 
 **Fragments in detail.** Grand Masters is tier 1's last scenario, about the pieces gathered along the way:
 - **It rewards the cards she has carried through the tier.** A card bonds only in a scenario its era allows

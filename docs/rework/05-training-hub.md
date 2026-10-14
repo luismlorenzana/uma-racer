@@ -12,13 +12,17 @@ family they take. Nothing here needs tokens, Constellation Level or a minigame, 
 
 ## 1. The four facilities
 
-| Facility | Unlocks | Dish family | Rooms and slots at Lv 1 | Unlocks per Uma per tier |
+<!-- live:training-facilities -->
+| Facility | Unlocks | Dish family | Rooms | Unlocks per Uma per tier |
 |---|---|---|---|---|
-| **Observatory** | Constellation card nodes | Vegetables | 2 slots | 28 |
-| **Lineage Hall** | Inspiration: 2 parent slots, 4 grandparent slots, 6 inherited unique skills, 12 gold skills | Mushrooms | 2 slots | 24 |
-| **Gym** | Extra Stats nodes | Sweets (Speed), Fruits (Stamina), Fish (Power), Nuts & Seeds (Guts), Herbs & Spices (Wit); Duos; Feasts | 5 rooms, one per stat, 1 slot each | 37 |
-| **Dojo** | Card bonds ([06](06-cards-and-bonds.md) owns the rules) | By card type: the five stat families, and Grains for Friend and Group | 6 rooms, one per card type, 1 slot each | 18 (a pacing assumption, not a cap) |
+| **Observatory** | Constellation card nodes | Vegetables | None | 28 |
+| **Lineage Hall** | Inspiration: 2 parent slots, 4 grandparent slots, 6 inherited unique skills, 12 gold skills | Mushrooms | None | 24 |
+| **Gym** | Extra Stats nodes | Fruits (Stamina), Herbs & Spices (Wit), Fish (Power), Sweets (Speed), Nuts & Seeds (Guts); Duos; Feasts | 5, one per stat: Stamina, Wit, Power, Speed, Guts | 37 |
+| **Dojo** | Card bonds ([06](06-cards-and-bonds.md) owns the rules) | By card type: the five stat families, and Grains for Friend and Group | 6, one per card type: Speed, Stamina, Power, Guts, Wit, Friend & Group | 18 (a pacing assumption, not a cap) |
 | **Tier** | | | | **107** |
+<!-- /live -->
+
+Each facility's slots per room, levels, speed and upgrades are §7's.
 
 - **Observatory.** Opens the next card node of the Uma's constellation in breadth-first order (§4). It is the only
   place a node opens; there is no level-up sheet.
@@ -51,11 +55,13 @@ Hub's version of a Farm job ([07](07-farm.md)).
 | Speed Ticket | Takes 30 minutes off the session's remaining time ([09](09-racing-rewards-and-exchange.md)) |
 | Recall | Pays every finished unlock, returns the dishes of every unfinished one (including the one in progress). Only time and any Speed Tickets spent are lost |
 
+<!-- live:training-session-times -->
 | Grade | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Base minutes, Lv 1–2 facility | 180 | 195 | 210 | 225 | 240 | 255 | 270 | 285 | 300 | 315 |
 | Base minutes, Lv 3 facility (×1.25 speed) | 144 | 156 | 168 | 180 | 192 | 204 | 216 | 228 | 240 | 252 |
 | Real minutes at *k* = 1.2, Lv 1–2 | 216 | 234 | 252 | 270 | 288 | 306 | 324 | 342 | 360 | 378 |
+<!-- /live -->
 
 The worked examples on these pages use the base minutes; the game multiplies every duration by *k*.
 
@@ -106,26 +112,30 @@ applied two Speed Tickets at 23:00, the three finishes would move to 00:30, 03:4
 
 ### The layer table, per facility
 
+<!-- live:training-layer-grades -->
 | Scenario of the tier | Grades | Observatory | Lineage Hall | Gym | Dojo (pacing) | Total |
 |---|---|---|---|---|---|---|
 | 1 | 1–2 | 12 nodes: 6 at g1, 6 at g2 | 2 parent slots at g1, 2 parent uniques at g2 | 5 singles at g1 | 6 bonds | **27** |
 | 2 | 3–4 | 4 nodes: 2 at g3, 2 at g4 | 4 parent golds at g3, 2 grandparent slots at g4 | 5 singles and 4 Duos at g3, 1 Sun at g4 | 3 bonds | **23** |
 | 3 | 5–6 | 4 nodes: 2 at g5, 2 at g6 | 2 grandparent slots at g5, 2 grandparent uniques at g6 | 5 singles and 4 Duos at g5, 1 Sun at g6 | 3 bonds | **21** |
-| 4 | 7–8 | 4 nodes: 2 at g7, 2 at g8 | 2 grandparent uniques and 1 gold at g7, 3 grandparent golds at g8 | 5 singles at g7, 1 Sun at g8 | 3 bonds | **19** |
-| 5 | 9–10 | 4 nodes: 2 at g9, 2 at g10 | 4 grandparent golds: 2 at g9, 2 at g10 | 5 singles at g9, 1 Sun at g10 | 3 bonds | **17** |
+| 4 | 7–8 | 4 nodes: 2 at g7, 2 at g8 | 2 grandparent uniques and 1 grandparent gold at g7, 3 grandparent golds at g8 | 5 singles at g7, 1 Sun at g8 | 3 bonds | **19** |
+| 5 | 9–10 | 4 nodes: 2 at g9, 2 at g10 | 2 grandparent golds at g9, 2 grandparent golds at g10 | 5 singles at g9, 1 Sun at g10 | 3 bonds | **17** |
 | **Tier** | | **28** | **24** (6 slots, 6 uniques, 12 golds) | **37** (25 singles, 8 Duos, 4 Suns) | **18** | **107** |
+<!-- /live -->
 
 ### Constellation nodes: grade per node
 
 Nodes are numbered breadth-first from the root, `n1` … `n28` (the root `n0` is always open and always empty, as today).
 
+<!-- live:training-node-grades -->
 | Scenario | Nodes | Lower grade | Higher grade |
 |---|---|---|---|
 | 1 | n1–n12 | n1–n6 at **g1** (`dish-vegetables-1`) | n7–n12 at **g2** (`dish-vegetables-2`) |
-| 2 | n13–n16 | n13–n14 at **g3** | n15–n16 at **g4** |
-| 3 | n17–n20 | n17–n18 at **g5** | n19–n20 at **g6** |
-| 4 | n21–n24 | n21–n22 at **g7** | n23–n24 at **g8** |
-| 5 | n25–n28 | n25–n26 at **g9** | n27–n28 at **g10** |
+| 2 | n13–n16 | n13–n14 at **g3** (`dish-vegetables-3`) | n15–n16 at **g4** (`dish-vegetables-4`) |
+| 3 | n17–n20 | n17–n18 at **g5** (`dish-vegetables-5`) | n19–n20 at **g6** (`dish-vegetables-6`) |
+| 4 | n21–n24 | n21–n22 at **g7** (`dish-vegetables-7`) | n23–n24 at **g8** (`dish-vegetables-8`) |
+| 5 | n25–n28 | n25–n26 at **g9** (`dish-vegetables-9`) | n27–n28 at **g10** (`dish-vegetables-10`) |
+<!-- /live -->
 
 **Order:** strictly breadth-first. The next node is always the lowest-numbered locked one, so an Observatory session
 is "the next *N* nodes". The tree grows outward and never strands a node, as today.
@@ -135,13 +145,15 @@ is "the next *N* nodes". The tree grows outward and never strands a node, as tod
 The two parents are **A** (left) and **B** (right). A's grandparents are **A1** and **A2**, B's are **B1** and **B2**.
 Each slot has two natural-gold positions, **gold 1** and **gold 2**, in awakening-gold order (D250).
 
+<!-- live:training-inspiration-grades -->
 | Scenario | Lower grade | Higher grade |
 |---|---|---|
 | 1 | Slots A and B at **g1** (`dish-mushrooms-1`) | A's and B's uniques at **g2** (`dish-mushrooms-2`) |
-| 2 | A gold 1, A gold 2, B gold 1, B gold 2 at **g3** | Slots A1 and B1 at **g4** |
-| 3 | Slots A2 and B2 at **g5** | A1's and B1's uniques at **g6** |
-| 4 | A2's and B2's uniques, A1 gold 1 at **g7** | B1 gold 1, A2 gold 1, B2 gold 1 at **g8** |
-| 5 | A1 gold 2, B1 gold 2 at **g9** | A2 gold 2, B2 gold 2 at **g10** |
+| 2 | A gold 1, A gold 2, B gold 1, B gold 2 at **g3** (`dish-mushrooms-3`) | Slots A1 and B1 at **g4** (`dish-mushrooms-4`) |
+| 3 | Slots A2 and B2 at **g5** (`dish-mushrooms-5`) | A1's and B1's uniques at **g6** (`dish-mushrooms-6`) |
+| 4 | A2's and B2's uniques, A1 gold 1 at **g7** (`dish-mushrooms-7`) | B1 gold 1, A2 gold 1, B2 gold 1 at **g8** (`dish-mushrooms-8`) |
+| 5 | A1 gold 2, B1 gold 2 at **g9** (`dish-mushrooms-9`) | A2 gold 2, B2 gold 2 at **g10** (`dish-mushrooms-10`) |
+<!-- /live -->
 
 That's **24 unlocks**: 6 slots, 6 inherited uniques (one per slot) and 12 gold positions (two per slot). The split
 across scenarios (4, 6, 4, 6, 4) is the one that keeps every scenario at about the same time
@@ -157,13 +169,15 @@ across scenarios (4, 6, 4, 6, 4) is the one that keeps every scenario at about t
 
 ### Extra Stats: grade per node
 
+<!-- live:training-extra-grades -->
 | Scenario | Singles | Duos | Sun |
 |---|---|---|---|
 | 1 | Each stat at **g1** | — | — |
-| 2 | Each stat at **g3** | Stamina–Wit, Wit–Power, Power–Speed, Speed–Guts at **g3** | `feast-4` at **g4** |
-| 3 | Each stat at **g5** | The same four at **g5** | Summer Feast at **g6** |
-| 4 | Each stat at **g7** | — | Harvest Feast at **g8** |
-| 5 | Each stat at **g9** | — | Grand Feast at **g10** |
+| 2 | Each stat at **g3** | Stamina–Wit, Wit–Power, Power–Speed, Speed–Guts at **g3** | Spring Feast (`feast-4`) at **g4** |
+| 3 | Each stat at **g5** | Stamina–Wit, Wit–Power, Power–Speed, Speed–Guts at **g5** | Summer Feast (`feast-6`) at **g6** |
+| 4 | Each stat at **g7** | — | Harvest Feast (`feast-8`) at **g8** |
+| 5 | Each stat at **g9** | — | Grand Feast (`feast-10`) at **g10** |
+<!-- /live -->
 
 Each stat has **one single per scenario, at the scenario's first grade** (D338): half of the first draft's track, each
 node twice as strong (§6).
@@ -560,11 +574,13 @@ scenario  grade   Stamina      Wit        Power      Speed      Guts       Sun
            10                                                             Grand Feast
 ```
 
+<!-- live:training-extra-nodes -->
 | Node | Count | Pays at tier 1 | Tier 2 (×1.25) | Tier 3 (×1.5) |
 |---|---|---|---|---|
 | Single | 25 (5 stats × one per scenario, grades 1, 3, 5, 7, 9) | +40 to its stat | +50 | +60 |
 | Duo | 8 (4 pairs × grades 3 and 5) | +20 to each of its two stats | +25 each | +30 each |
 | Sun | 4 (Feasts at grades 4, 6, 8, 10) | +8 to all five stats | +10 | +12 |
+<!-- /live -->
 
 Every node pays **40 raw points at tier 1** whichever kind it is, so a Sun is flexible, not stronger. The derivation adds
 exact values and rounds once at the end, as D314 does, and adds them **flat after growth**, so "+40 Speed" on the node
@@ -578,11 +594,13 @@ a tier from 132 unlocks to 107. The time factor *k* = 1.2 keeps each scenario at
 
 **Active capacity** limits how many opened nodes pay at once:
 
+<!-- live:training-extra-capacity -->
 | Scenario of the tier | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
 | Nodes the layers so far hold | 5 | 15 | 25 | 31 | 37 |
 | Active capacity (README) | 7 | 9 | 11 | 13 | 15 |
 | Nodes that can pay | 5 | 9 | 11 | 13 | 15 |
+<!-- /live -->
 
 - **Active nodes belong to each distance preset** ([03](03-uma-progression.md)): Sprint can lean Speed while Long leans
   Stamina. Switching is free and instant outside a race. A race reads the preset of its distance (D254).
