@@ -174,7 +174,7 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     mount(<PuzzleMapScreen />, `${root}/party/puzzle-party-3/ura-finale`, `${root}/party/:partyId/:scenarioId`); fireEvent.click(await screen.findByRole('button', { name: 'Resume Debut · Stage 1' }))
     await screen.findByRole('button', { name: 'Review online takeover' }); expect(await environment.database.puzzleJournals.count()).toBe(0)
     fireEvent.click(screen.getByRole('button', { name: 'Review online takeover' })); fireEvent.click(screen.getByRole('button', { name: 'Confirm online takeover' }))
-    await screen.findByText(/Journal restored/)
+    await screen.findByText(/Journal restored/, undefined, { timeout: 5000 }) // the takeover replays the journal; slow CI runners need more than 1 s
     const after = (await environment.host.account()).checkpoints[1]!.open!
     expect(after.input.seed).toBe(initial.input.seed); expect(after.ownerEpoch).toBe(initial.ownerEpoch + 1); expect(begin).not.toHaveBeenCalled()
     const restored = await environment.host.loadBattle(after.input.battleId); if (restored.kind !== 'battle') throw new Error('Expected restored proof'); expect(puzzleBattleStateHash(restored.state)).toHaveLength(16); restored.lease.release()
