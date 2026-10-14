@@ -8,7 +8,7 @@ Read:
   [08](../rework/08-item-catalogue-and-recipes.md) §8–§9, [12](../rework/12-economy-and-pacing.md) §2, §3, §8,
   [07](../rework/07-farm.md) §2, §12, [13](../rework/13-removals-and-plan-changes.md) §6 and
   [02](../rework/02-check-ins-and-notifications.md) §9 (plain words).
-- Decisions D328, D331, D336 and D338, and [T126](T126-items-and-recipes.md) for the catalogue and work values.
+- Decisions D328, D331, D336 and D338, and T126's `rework/items` (landed, D341) for the catalogue and work values.
 
 ## Goal and fixed scope
 
