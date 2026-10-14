@@ -54,7 +54,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.cjs.json && node -e \"require('fs').writeFileSync('dist/cjs/package.json', JSON.stringify({ type: 'commonjs' }))\"",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docs:update": "UPDATE_DOCS=1 vitest run src/docs"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

@@ -37,7 +37,8 @@
     "sim:farm:stats": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/farm-kitchen-stats.ts",
     "sim:rpg:campaign": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/rpg-campaign.ts",
     "sim:puzzles": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/puzzles.ts",
-    "sim:puzzles:preservation": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/puzzle-preservation.ts"
+    "sim:puzzles:preservation": "pnpm --filter @racer/data-pipeline exec node --import tsx ../sim/puzzle-preservation.ts",
+    "docs:update": "pnpm --filter @racer/domain run docs:update"
   },
   "devDependencies": {
     "turbo": "^2.10.13"
