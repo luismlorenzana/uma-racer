@@ -1,6 +1,8 @@
 // The item rules' live blocks in docs/rework/08-item-catalogue-and-recipes.md (M033): the catalogue counts (§1), the
 // grade ladder and each family's table (§3), the side rotation, Duos and Feasts (§4.2–§4.4) and the work values (§8),
-// rendered from the code so the page can't drift. Joined into `docs/render.ts` through `docs/rework.ts`. Pure.
+// rendered from the code so the page can't drift. §8's third is the Exchange's `SELL_DIVISOR` (T130, D331), unrounded:
+// 09 §6 owns the rounding. Joined into `docs/render.ts` through `docs/rework.ts`. Pure.
+import { SELL_DIVISOR } from '../exchange/selling'
 import {
   craftedItem, DUO_GRADES, DUO_PAIRS, DUOS, FEAST_GRADES, FEASTS, ITEM_GRADE_LIST, ITEM_GRADES, itemById, ITEMS, planetDish,
   rawItem, SPEED_TICKET_ID, type DishDef, type ItemDef, type ItemGrade, type ItemId,
@@ -25,8 +27,6 @@ const nameOf = (id: ItemId) => itemById(id)!.name
 const baseMinutes = (id: ItemId) => workValueBaseMinutes(id)!
 /** Real minutes of work in an item: whole seconds ÷ 60. */
 const realMinutes = (id: ItemId) => workValueSeconds(id)! / 60
-/** Selling pays a third of the work value (D331). T130 replaces this literal with its `SELL_DIVISOR`. */
-const A_THIRD = 3
 
 /** The §4.2 matrix's short family names. */
 const SHORT_NAME: Readonly<Record<FamilyId, string>> = {
@@ -113,9 +113,9 @@ function workValues(): string {
   return table(['*g*', 'Raw', 'Crafted', 'Planet or Duo dish', 'Feast', 'A third: raw / crafted / dish'], ITEM_GRADE_LIST.map((g) => {
     const raw = realMinutes(rawItem(FAMILY_IDS[0], g).id), crafted = realMinutes(craftedItem(FAMILY_IDS[0], g).id)
     const dish = realMinutes(anyPlanet(g).id), feast = feastAt(g)
-    const third = [raw, crafted, dish].map((value) => num(value / A_THIRD)).join(' / ')
+    const third = [raw, crafted, dish].map((value) => num(value / SELL_DIVISOR)).join(' / ')
     return [g, num(raw), num(crafted), num(dish), feast ? num(realMinutes(feast.id)) : '',
-      feast ? `${third} (Feast ${num(realMinutes(feast.id) / A_THIRD)})` : third]
+      feast ? `${third} (Feast ${num(realMinutes(feast.id) / SELL_DIVISOR)})` : third]
   }))
 }
 

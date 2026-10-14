@@ -50,6 +50,7 @@ A race pays its grade's prize times its place's share. Each place below 2nd pays
 README's 40% and 20% and continues the halving down to 5th; the real JRA split (100 / 40 / 25 / 15 / 10) is a little
 richer, but halving is easier to read and pays less for a bad race.
 
+<!-- live:prize-table -->
 | Grade | 1st | 2nd (40%) | 3rd (20%) | 4th (10%) | 5th (5%) | 6th and below |
 |---|---:|---:|---:|---:|---:|---:|
 | Debut, Maiden | 60 | 24 | 12 | 6 | 3 | 0 |
@@ -58,6 +59,7 @@ richer, but halving is easier to read and pays less for a bad race.
 | G3 | 150 | 60 | 30 | 15 | 7 | 0 |
 | G2 | 200 | 80 | 40 | 20 | 10 | 0 |
 | G1 | 300 | 120 | 60 | 30 | 15 | 0 |
+<!-- /live -->
 
 - **Rounding:** down to a whole Prize Money, after every multiplier.
 - **No entry fee and no appearance money.** 6th and below pays nothing, so sending a weak Uma into G1s for the field
@@ -120,11 +122,13 @@ should be the dearest one. A Prize Money purse bounds the same whatever the owne
 Every race's **gross prize** (§2.1, at the Expedition rate for an Expedition race) goes into the day's purse, in
 order:
 
+<!-- live:purse-bands -->
 | Band | Gross Prize Money that day | Paid |
 |---|---|---|
 | Full | 0 – 6,000 | 100% |
 | Tired | 6,000 – 12,000 | 25% |
 | Spent | above 12,000 | 5% |
+<!-- /live -->
 
 - **A race that crosses a band edge is split**: a G1 win at 5,900 pays 100 in full and 200 at a quarter, so 150.
 - **The day** is the device's local calendar date when the race starts (today's rule: a day is the device's date,
@@ -231,9 +235,11 @@ through promotion ([12](12-economy-and-pacing.md) §2).
 
 ### 5.3 Raw ingredients and the stock rule
 
+<!-- live:exchange-prices -->
 | Grade | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Price | 108 | 114 | 120 | 126 | 132 | 138 | 144 | 150 | 156 | 162 |
+<!-- /live -->
 
 **Stock rule:** the Exchange stocks raw grades **1 up to the highest grade any of the owner's Umas has ever opened**,
 in all eight families. Grade *g* opens at Farm Lv 5*g* − 4 (README), so the stock grows to grade 2 when the first Uma
@@ -297,6 +303,7 @@ Any Warehouse item sells for **a third of its work value**, rounded down, at lea
 real Uma minutes in it at *k* = 1.2, inputs included, whatever the building speed or Speed Tickets
 ([08](08-item-catalogue-and-recipes.md) §8):
 
+<!-- live:sell-values -->
 | Grade | Raw: work | Raw: sells for | Crafted: work | Crafted: sells for | Planet dish: work | Planet dish: sells for |
 |---|---:|---:|---:|---:|---:|---:|
 | 1 | 108 | 36 | 135 | 45 | 963 | 321 |
@@ -309,6 +316,7 @@ real Uma minutes in it at *k* = 1.2, inputs included, whatever the building spee
 | 8 | 150 | 50 | 187.5 | 62 | 1,294.5 | 431 |
 | 9 | 156 | 52 | 195 | 65 | 1,344 | 448 |
 | 10 | 162 | 54 | 202.5 | 67 | 1,393.5 | 464 |
+<!-- /live -->
 
 A crafted item is its raw item plus a quarter of the gathering time. A planet dish is four crafted items of its grade,
 one crafted side at max(1, *g*−2) and the cook. A Duo sells like a planet dish of its grade; Feasts sell for 418, 456,
