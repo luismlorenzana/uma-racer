@@ -11,7 +11,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test",
+    "test": "node --test scripts/check-size.test.mjs && turbo run test",
     "web": "pnpm --filter @racer/web dev",
     "api": "pnpm --filter @racer/api start:dev",
     "data:import": "pnpm --filter @racer/data-pipeline run import",

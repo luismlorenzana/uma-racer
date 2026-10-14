@@ -60,5 +60,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
+    // scripts/check-size.mjs reads the manifest to find the entry's static imports (D337).
+    manifest: true,
   },
 })

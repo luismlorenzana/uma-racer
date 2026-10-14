@@ -6,7 +6,7 @@
   "description": "Uma Racer frontend — mobile-first game SPA (React + Vite + PixiJS), installable as a Home Screen web app.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node ../../scripts/check-size.mjs",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test": "vitest run",
