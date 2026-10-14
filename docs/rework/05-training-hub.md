@@ -676,6 +676,7 @@ speed ×1.25 at Lv 3, paid in Prize Money and crafted items of the facility's fa
 (1 Prize Money ≈ 1 Uma-minute, D331). Lv 3 saves a fifth of the facility's session time, about 274 PM a day at the
 Observatory, 252 at the Lineage Hall, 377 at the Gym and 176 at the Dojo, so it repays in **6–13 days**.
 
+<!-- live:facility-slots-upgrades -->
 | Facility | Lv 1 | Lv 2 | Lv 3 | To Lv 2 | To Lv 3 |
 |---|---|---|---|---|---|
 | Observatory | 2 slots | 3 slots | 3 slots, speed ×1.25 | 1,200 PM + 4 Vegetables crafted, grade 1 | 2,400 PM + 4 Vegetables crafted, grade 3 |
@@ -683,6 +684,7 @@ Observatory, 252 at the Lineage Hall, 377 at the Gym and 176 at the Dojo, so it 
 | Gym | 5 rooms × 1 | 5 rooms × 2 | 5 × 2, speed ×1.25 | 2,400 PM + 1 crafted of each stat family, grade 1 | 4,800 PM + 2 crafted of each stat family, grade 3 |
 | Dojo | 6 rooms × 1 | 6 rooms × 2 | 6 × 2, speed ×1.25 | 1,500 PM + 1 crafted of each of its six families, grade 1 | 2,000 PM + 1 crafted of each of its six families, grade 3 |
 | **All four** | | | | **6,100 PM** | **10,700 PM** |
+<!-- /live -->
 
 - An upgrade is **instant** and applies to the whole facility. New slots appear at once. A speed upgrade applies to
   sessions started after it; running sessions keep their finish times, so a timeline never moves under the owner.
