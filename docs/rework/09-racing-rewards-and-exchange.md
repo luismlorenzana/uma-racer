@@ -1,9 +1,11 @@
 # 09 · Racing rewards and the Exchange
 
 > **Status: approved design, 2026-10-14; first written 2026-10-13 (D328, D331).** What a race pays, the Daily Purse that keeps racing
-> from replacing the timers, the daily featured races, the Exchange, Speed Tickets and selling surplus. Every number
-> is a **draft**. The loop simulation ([12](12-economy-and-pacing.md) §12) tunes them, and its checks become the tests
-> that pin them.
+> from replacing the timers, the daily featured races, the Exchange, Speed Tickets and selling surplus. The prize
+> table, the purse, the featured draw, the Exchange's goods and stock rule and selling are built as rules in
+> `@racer/domain/rework/exchange` (T130, D345), and the tables marked live are rendered from them; nothing is in the
+> game yet. Every number is a **draft**. The loop simulation ([12](12-economy-and-pacing.md) §12) tunes them, and its
+> checks become the tests that pin them.
 
 Races are the free-time half of the game. They cost nothing, are never blocked by Farm work or sessions (D328), and
 pay two things:
@@ -437,6 +439,14 @@ race result id, the operation id, the building.
 | "Buy and finish" in one tap, with one confirmation | A free evening's money should reach the jobs without a trip to the Exchange |
 | Selling: a third of work value, rounded down; reserved stock never offered; dishes, needed stock and sales of 1,000+ confirm | No money pump; the planner protects what the roster still needs |
 | The purse day is the device's local date at race start, and never goes backwards | Today's day rule; a time-zone hop can't reopen a spent purse |
+| The rules live in `@racer/domain/rework/exchange`, not §9 and §11's `@racer/domain/economy` (D345) | [M033](../tasks/M033-rework-rules.md) keeps every rework area under `rework/` until phase 3 moves them, when today's `economy.ts` goes |
+| The profile carries §9's `purse` and `exchangeGrade` (listed in [13](13-removals-and-plan-changes.md) §6), and phase 3's save carries them. A new account's purse is empty on 1970-01-01, which every race day is later than, and the Exchange stocks grade 1 (D345) | Grade 1 is stocked before the first Uma exists (D323); the first race starts a fresh purse |
+| The day comes in as `localDay`, the device's `YYYY-MM-DD` at race start (D345) | A pure rule can't know the time zone |
+| "Never two days running" keeps each slot's pool sorted by id and only the indices with the parity of the day's number (days since 1970-01-01). A one-race pool shows its race every other day. Each slot draws once a day, even from an empty pool, and prefers a distance category not yet on the board, slot by slot (D345) | Exact, with no stored history; a slot's draw never depends on an earlier slot's pool |
+| The stock counts every current Uma's open grade as well as the stored mark; `sim:loop` raises the mark after each collect, and phase 3 puts that in the collect commit (D345) | Only the Farm's collect raises Farm Level, and the Farm's rules don't depend on the Exchange; so a promotion can't lower the stock |
+| Each race rounds down once, after the purse share; §3.4 models day totals, so it is pinned on totals, and race by race it matches exactly at 200 a race and within 1 a race at 150 (D345) | §2.1's "after every multiplier" |
+| Surplus is the Free count; "All free" is every unreserved item, which dips into needed and so asks first; a needed-stock confirmation names the planner's whole shortfall after the sale (D345) | §6.1 defines Free as "the rest", then offers "Surplus (free minus needed)"; reserved inputs leave the Warehouse count when work starts ([07](07-farm.md) §2, §12), so the count is what can be sold |
+| A race result's `expedition` says the Expedition rate applied: a family not yet won on her run (D345) | It is what the result's "Expedition rate" line shows (§7); a family already won pays the home G1 row |
 
 ## 11. Done when
 
