@@ -1,0 +1,5 @@
+// `@racer/domain/rework/farm`: the Farm's buildings and the Training Hub's facilities, the three Farm jobs, Farm EXP and
+// Farm Level (docs/rework/07-farm.md, docs/rework/05-training-hub.md §1, §7). The jobs run on `rework/work`'s engine.
+export * from './buildings'
+export * from './level'
+export * from './jobs'
