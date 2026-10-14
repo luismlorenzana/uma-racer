@@ -2,7 +2,7 @@
 
 > **Status: approved design, 2026-10-14 (D326, D331, D334, D336, D338).** Every number here is a draft from a first-pass
 > model (§4–§9). D338 halved the Gym's singles and set the time factor *k* = 1.2: §5, §10 and §11 are recomputed for it;
-> the Farm building tables in §7 are still the first draft's, and the loop simulation recomputes them in phase 2. The loop simulation (§11) replaces the model, and the sim's checks become the tests that pin the
+> the Farm building tables in §7 are still the first draft's, and the loop simulation recomputes them in phase 2. The loop simulation (§12) replaces the model, and the sim's checks become the tests that pin the
 > numbers. If a page elsewhere quotes a number from here and the sim later moves it, this page and the sim win.
 
 This page answers: how long things take, what the currencies are, where they come from and go, and how we know the
@@ -55,7 +55,7 @@ After the rework the account has **three currencies and one inventory**. Everyth
 
 Every price in Prize Money is set from one rule: **one Prize Money is worth about one minute of an Uma's work**.
 - A Speed Ticket skips 30 minutes and costs 30.
-- A raw grade-1 ingredient (90 minutes to gather) costs 90 at the Exchange.
+- A raw grade-1 ingredient (108 minutes to gather at *k* = 1.2) costs 108 at the Exchange.
 - Selling pays a third of an item's work value, so the Exchange can't be used to launder time.
 - Upgrades are priced as the Uma-time they save.
 
@@ -145,7 +145,7 @@ better.
 How to read it:
 - An Uma's own layer takes about 500 hours of somebody's work.
 - With 25 Umas each working 75% of the day (18 hours), the roster finishes about 19 unlocks a day.
-- So 25 layers of 22–32 unlocks take about four weeks.
+- So 25 layers of 17–27 unlocks take about four weeks.
 - The roster shares the work: one Uma's dishes are often cooked by others.
 
 **Layers are front-loaded on purpose.** Scenario 1 has 27 cheap unlocks (12 nodes, 6 bonds), and scenario 5 has 17
@@ -184,7 +184,7 @@ each unlock asks for is a rule of the layers** ([05](05-training-hub.md) §3): s
 A slot sits idle between an Uma's last item and the next check-in, just as the Uma does. So the slots needed for an
 activity are its hours per day ÷ (24 × 0.75).
 
-The averages hide peaks. The Vegetable Garden and the Observatory peak in scenario 1, where 12 of the 32 unlocks are
+The averages hide peaks. The Vegetable Garden and the Observatory peak in scenario 1, where 12 of the 27 unlocks are
 constellation nodes. The full tables are in [07](07-farm.md) §6 (Farm, after [08](08-item-catalogue-and-recipes.md)'s
 side rotation) and [05](05-training-hub.md) (Training Hub). In summary:
 
@@ -201,13 +201,13 @@ side rotation) and [05](05-training-hub.md) (Training Hub). In summary:
 The Farm rows are the first draft's (before D338). D338 sends a fifth fewer dishes to the five stat sites and makes
 every job a fifth longer, so the stat sites end up about as busy as here and the Vegetable Garden, Mushroom Cave,
 Pantry and Kitchen about a fifth busier. The Vegetable Garden's scenario-1 peak then passes its four Lv 1 slots, so its
-Lv 2 joins the day-one upgrades. `sim:loop` recomputes this table in phase 2.
+Lv 2 joins the first upgrades. `sim:loop` recomputes this table in phase 2.
 
 - **The Kitchen is the game's bottleneck building.** At two slots it would cap the whole game at a third of the
   target pace.
 - **Lv 1 carries the 20-Uma start; Lv 2 carries 25.** Every building stays at or under about 81% at peak once it's at Lv 2.
   Growing the roster and buying the Kitchen, Pantry and Observatory's Lv 2 go together in tier 1's first weeks.
-  Lv 2 needs grade-1 items, so it can be bought on day one.
+  Lv 2 needs grade-1 items and Prize Money, so it comes with the first weeks of racing, before the roster passes 20.
 - Upgrades buy headroom above these averages, so the owner can catch up after a missed day.
 
 ### Upgrades and the pace
@@ -303,8 +303,9 @@ If the sim or the owner's play says it's too slow or too fast:
 | **75% (three check-ins, queues)** | **20.2** | **18.8** | **16.5** |
 | 90% (Repeat, very attentive) | 16.9 | 15.7 | 13.7 |
 
-5. **Prize Money per race** ([09](09-racing-rewards-and-exchange.md)): changes how much racing speeds things up, not
-   the passive pace.
+5. **Prize Money per race and the Daily Purse's edge** ([09](09-racing-rewards-and-exchange.md) §2, §3.4): change how
+   much racing speeds things up, not the passive pace. The purse edge is the lever if racing that bunches at the end of
+   each layer (D336) leaves racing's share under the target.
 
 ### Resolved: Gym sessions felt small (D338)
 
@@ -379,7 +380,7 @@ sim reads its median race count to schedule Expedition racing in the roster's la
 
 - `pnpm sim:loop` runs on a fresh synthetic account with the domain's real rules and reports §12's metrics.
 - CI fails if any §12 check leaves its range.
-- `docs/game/` (the live manual) renders this page's tables from the domain constants, so the numbers here can't
-  drift from the code.
+- This page's tables are live blocks rendered from the domain constants (in this page until phase 3 moves it into the
+  manual, `docs/game/`), so the numbers here can't drift from the code.
 - After four weeks of the owner's real play on the new game, the measured pace (scenario 1's completion across the
   roster) is within 25% of the sim. If it isn't, the time factor is retuned and logged as a decision.

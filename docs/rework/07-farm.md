@@ -65,7 +65,8 @@ wait longer, never negative.
 
 **Worked example.** At 08:00 Special Week (Farm Lv 7) starts **Gather Potato × 10** at the Vegetable Garden: 95 minutes
 each, so outputs land at 09:35, 11:10 … and the last at 23:50. Behind it the owner queues **Gather Carrot × 6**.
-- 13:00 check-in: three Potatoes are done. Collect pays 3 Potatoes and 285 Farm EXP. The owner spends one Speed Ticket:
+- 13:00 check-in: three Potatoes are done. Collect pays 3 Potatoes and 285 Farm EXP (base minutes, as every worked
+  example; in play each Potato takes 114 minutes and pays 114 EXP at *k* = 1.2). The owner spends one Speed Ticket:
   the job now ends at 23:20.
 - 23:20: the tenth Potato finishes and the Carrot job starts at once (gathering needs no inputs), ending 08:20.
 - If the owner had recalled her at 22:30 instead: nine Potatoes paid, the tenth's 45 minutes of progress lost, the
@@ -169,7 +170,7 @@ An average Uma works 75% of the day and puts 80% of that into the Farm: 864 minu
 | 10 | 46 | 26,550 | 31 | 24 | 19 |
 | (Lv 50) | 50 | 29,400 | 34 | 26 | 21 |
 
-**Every grade is open within about a month of a tier**, while the tier's scenarios run about 21 weeks. So Farm Level
+**Every grade is open within about a month of a tier**, while the tier's scenarios run about 20 weeks. So Farm Level
 is a fast climb at the start of each tier, and for an Uma who joins mid-tier, and never what holds a scenario back.
 Which grade each unlock asks for is a rule of the layers ([05](05-training-hub.md) §3), not of Farm Level.
 
@@ -206,6 +207,11 @@ buildings: cooking is 30% of all Farm work, and Vegetables feed every constellat
 
 ### Slot demand at the target
 
+> **First draft, before D338.** These hours were computed with 132 unlocks at *k* = 1. D338 sends a fifth fewer
+> dishes to the five stat sites and makes every job a fifth longer: the stat sites stay about as busy, while the
+> Vegetable Garden, Mushroom Cave, Pantry and Kitchen get about a fifth busier, so the Vegetable Garden's Lv 2 joins
+> the first upgrades. `pnpm sim:loop` recomputes this section in phase 2 (T132).
+
 25 Umas, 75% utilisation, base speed, using [08](08-item-catalogue-and-recipes.md)'s recipes and representative deck.
 "Slots needed" is hours a day ÷ 18. The peak is the busiest scenario of the tier for that building.
 
@@ -230,10 +236,12 @@ How to read it:
 - **About 20 Umas farm at once** (25 × 80%), and 27 slots hold them from the first day.
 - **The Kitchen is the game's bottleneck building.** At 2 slots it would cap the whole game at a third of the target.
   Six slots carry a 20-Uma roster (81% at peak); the 25-Uma roster needs Kitchen Lv 2.
-- **The Vegetable Garden is the hot site.** Over a tier it carries 17% of all gathering against 11–12% for the
-  others; in scenario 1, where 12 of the 32 unlocks are constellation nodes, it carries about 30%. Four slots carry
+- **The Vegetable Garden is the hot site.** Over a tier it carries about 21% of all gathering against 9–10% for each
+  stat site since D338 ([08](08-item-catalogue-and-recipes.md) §7); in scenario 1, where 12 of the 27 unlocks are
+  constellation nodes, it carries about 36%. Four slots carry
   a 20-Uma start (73%); Lv 2 carries 25.
-- **Fields is no longer cold.** 08's side rotation sends 62 of a tier's sides to Grains, so it is as busy as a stat site.
+- **Fields is no longer cold.** 08's side rotation sends 63 of a tier's 107 sides to Grains, so it is busier than a
+  stat site since D338.
 - **Lv 1 fits a 20-Uma roster; Lv 2 everywhere fits 25** with every building at or under about 81% at peak, under
   the sim's 90% check. Growing the
   roster and upgrading the Kitchen and Pantry go together in tier 1's first weeks.
@@ -252,7 +260,8 @@ family, so they take one or two of each.
 | Kitchen | 3,000 PM + 2 crafted grade 1 of each of the eight families | 12,000 PM + 2 crafted grade 3 of each family |
 | **All ten** | **14,100 PM** | **37,200 PM** |
 
-- **Lv 2 is buyable on day one** (grade-1 items), so the owner can keep up as the roster grows from 20 to 25.
+- **Lv 2 needs only grade-1 items and Prize Money**, so it comes with tier 1's first weeks of racing, and the owner
+  keeps up as the roster grows from 20 to 25. Lv 1 carries the 20-Uma start.
 - **Lv 3 opens once someone reaches Farm Lv 11** (grade 3, about day 4–6 of a tier). It pays back in six to ten days of the time
   it saves: ×1.25 saves a fifth of a building's work, which is ~21 Uma-hours a day at the Kitchen (~1,260 PM a day),
   ~10 at the Pantry, ~7 at the Vegetable Garden and ~5 at a stat site.
@@ -358,7 +367,7 @@ The Warehouse is in Town Hall ([11](11-hub-and-places.md)). It is the one invent
 | `work/{outfitId}` | Her running job (building, slot, kind, item or recipe, count, listed minutes, speed, reserved inputs, `startedAt`, acceleration, outputs collected so far), her queue of up to three, her last job for Repeat, and a dropped queue with its reason until the owner acts on it ([02](02-check-ins-and-notifications.md)) |
 | `umas/{outfitId}` | Farm EXP for her current tier, in quarter points; the level is derived |
 | `items/{itemId}`, `itemLedger` | Stock and every movement: reserve, return, output, sale, upgrade cost |
-| `operations` | One receipt per `assign`, `start`, `queue`, `collect`, `collect-all`, `repeat`, `recall`, `speed-up` and `upgrade` |
+| `operations` | One receipt per `start`, `queue`, `collect`, `collect-all`, `repeat`, `recall`, `speed-up` and `upgrade` (no `assign`: a slot is held by a job, §5) |
 
 The server re-runs each operation with the domain package before committing it, as in [rearchitecture/05](../rearchitecture/05-farm.md) §6.
 
@@ -400,7 +409,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | **Grade gate on every step; a dish gated by its own grade** | One rule; sides of lower grade never block a cook |
 | **Lv 47–50 open nothing; EXP stops at Lv 50** | Grade 10 opens at 46 by the README's formula; the last levels close the tier's track |
 | **Slots: Kitchen 6/8, Pantry 3/4, Vegetable Garden 4/5, other sites 2/3; Lv 3 ×1.25** | Sized to the slot demand (§6): Lv 1 carries 20 Umas, Lv 2 carries 25 under 90% |
-| **Upgrade prices** (§7): sites 1,200 / 2,400, Pantry 1,500 / 6,000, Kitchen 3,000 / 12,000 PM, plus items | Six to ten days' payback on the Uma-time saved; Lv 2 on day one, Lv 3 from grade 3 |
+| **Upgrade prices** (§7): sites 1,200 / 2,400, Pantry 1,500 / 6,000, Kitchen 3,000 / 12,000 PM, plus items | Six to ten days' payback on the Uma-time saved; Lv 2 with the first racing, Lv 3 from grade 3 |
 | **A slot is held by a job, not an Uma** | One passive thing at a time stays simple, and sessions never fight a standing Farm seat |
 | **Repeat restarts each free Uma's last job** | Matches "Repeat to restart every job and session"; no hidden reservations |
 | **A queue checks collected free stock, in time order** | Deterministic offline and across devices |
@@ -414,7 +423,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 - The domain's Farm rules have tests for: per-output timers at every grade and speed; reserve, collect and recall
   arithmetic (finished outputs paid, unmade inputs returned); queue start and drop in time order; Speed Ticket and
   Finish; Farm EXP per listed minute × aptitude and the 480 + 5(*L*−1) curve; the grade gate on each step.
-- A synthetic fresh account can assign, start, queue, speed up, recall, collect and upgrade through operations, and a
+- A synthetic fresh account can start, queue, speed up, recall, collect and upgrade through operations, and a
   second device shows the same jobs, stock and Farm Levels after one sync.
 - Closing the app for 12 hours and reopening shows every output and queue start exactly where the timestamps put them.
 - `pnpm sim:loop` reports every building's slot use per scenario; none averages above 90% with Lv 2 buildings and 25

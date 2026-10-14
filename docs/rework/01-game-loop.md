@@ -139,7 +139,7 @@ Her day: working most of it, waiting a little for check-ins, one unlock and two 
 
 When her career is complete she sits at Racing Level 10, and her card shows **Ready to advance**. Advancing is free
 and explicit ([03](03-uma-progression.md), [13](13-removals-and-plan-changes.md)): she becomes Racing Level 11 in
-scenario 2, and its layer (28 unlocks, grades 3–4) opens. Her scenario-1 unlocks stay for the whole tier (D328).
+scenario 2, and its layer (23 unlocks, grades 3–4) opens. Her scenario-1 unlocks stay for the whole tier (D328).
 
 - **Advancing needs her career, not her full layer.** If she wins her G1s before every unlock is done, she can
   advance, and the rest stay open. The planner keeps listing them under "from scenario 1" until they're done.

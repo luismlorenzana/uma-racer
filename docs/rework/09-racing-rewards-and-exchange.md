@@ -210,7 +210,7 @@ through promotion ([12](12-economy-and-pacing.md) §2).
 | What it does | Takes **30 minutes** off one **running** Farm job or Training Hub session, or any other running timer its owning doc gives one (for example a building upgrade, if [05](05-training-hub.md) or [07](07-farm.md) make upgrades take time) |
 | A job of several items | The job's whole remaining schedule moves 30 minutes earlier. An item whose end passes becomes ready; leftover minutes run on into the next item. A ticket on an item with 10 minutes left finishes it and takes 20 off the next |
 | **Finish** | Spends ⌈remaining minutes ÷ 30⌉ tickets and finishes the whole job or session. The last ticket's unused minutes are lost |
-| Not on | A queued job (it isn't running yet), a ready job or session, a race, or a job waiting for inputs |
+| Not on | A queued job (it isn't running yet), a ready job or session, or a race |
 | Farm EXP | Skipped minutes still count as work: the job pays its full Farm EXP on collect, as in uma-rpg ([07](07-farm.md) owns Farm EXP) |
 | Queues | When a job finishes early, the next queued job starts at that moment ([02](02-check-ins-and-notifications.md)) |
 | Selling | Speed Tickets can't be sold |
@@ -218,7 +218,7 @@ through promotion ([12](12-economy-and-pacing.md) §2).
 - **On a job or session card:** "−30m" and "Finish · 4". With too few tickets, Finish reads "Buy 3 and finish · 90"
   and asks once; the buy and the speed-up go through as two operations in order (§9).
 - **Worked example.** A Kitchen job of three grade-3 dishes (260 minutes each) started at 08:00, and it's 12:00. The
-  first dish ended at 12:20, so it has 20 minutes left and 540 in all. One ticket makes the first dish ready now and
+  first dish ends at 12:20, so it has 20 minutes left and 540 in all. One ticket makes the first dish ready now and
   moves the other two to 16:10 and 20:30. Finish would cost ⌈540 ÷ 30⌉ = 18 tickets, 540 Prize Money.
 
 ### 5.2 What a day of racing buys
@@ -436,7 +436,7 @@ race result id, the operation id, the building.
   featured draw, the Exchange prices, the stock rule and the sell rule, and tests pin each: a G3 5th pays 7; a G1 win
   at 5,900 gross pays 150; an Expedition win pays 450, and a second win of the same family on that run 300; the
   2026-10-13 board is the same on every run; a grade-5 crafted
-  item sells for 45.
+  item sells for 55 (D338).
 - `pnpm sim:loop` with this page's rules passes [12](12-economy-and-pacing.md)'s checks: target racing saves 5–10%
   of the roster's time and heavy racing 18–25%.
 - On the owner's iPhone, a race's result shows its Prize Money line with any Expedition rate, bonus and band, and the

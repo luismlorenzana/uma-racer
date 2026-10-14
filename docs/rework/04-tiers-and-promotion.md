@@ -43,7 +43,7 @@ Japan has released a scenario about every four months (February, June, October).
 
 **Decided:** while the platform's master data has no 15th scenario, tier 3 is scenarios 11–14:
 - Racing Level 1–40, with the gate at 40;
-- layers 1–4 only ([05](05-training-hub.md)): a tree of up to 24 nodes, Extra Stats capacity 26, six Inspiration
+- layers 1–4 only ([05](05-training-hub.md)): a tree of up to 24 nodes, Extra Stats capacity 13 (D338), six Inspiration
   slots with eight golds, and 15 bonds;
 - **the tier-3 Expedition opens at the scenario-14 gate**, once her Tracen Diner career is complete;
 - its fields build on Tracen Diner's (§7).

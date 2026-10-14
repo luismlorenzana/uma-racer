@@ -84,8 +84,9 @@ Her career ([§4](#4-her-career-in-each-scenario)) holds two levels of each scen
   race EXP is not counted.
 - **At Racing Level 50** (the tier's last gate) there is no next scenario. EXP stops and nothing banks. Her next step
   is the World Expedition ([10](10-expeditions.md)).
-- **Level-ups pay nothing of their own.** D148's Training Ticket per level and the gate's Uma Shard are gone
-  ([13](13-removals-and-plan-changes.md)). Races pay Prize Money ([09](09-racing-rewards-and-exchange.md)).
+- **Level-ups pay nothing of their own,** except the gate: D148's Training Ticket per level is gone
+  ([13](13-removals-and-plan-changes.md)), and each scenario gate an Uma reaches still pays 1 Uma Shard (D336,
+  [04](04-tiers-and-promotion.md) §6). Races pay Prize Money ([09](09-racing-rewards-and-exchange.md)).
 
 ### Lifetime level, for lists and badges
 
@@ -444,7 +445,7 @@ typical trained Uma of her scenario**, handicapped by the race's grade.
 |---|---|
 | Racing EXP curve and EXP per finish unchanged (100 … 300 a level, 1,800 a scenario) | The owner asked for "as today"; it already gives about 14 races a scenario, which [12](12-economy-and-pacing.md) assumes |
 | The advance supplies the scenario's tenth level; the gate banks 100 | Today's rule; README's "180 a level" is the average |
-| Level-ups pay nothing of their own | Training Tickets and Shards are gone; races pay Prize Money |
+| Level-ups pay nothing of their own, except the gate's Uma Shard (D336) | Training Tickets are gone; races pay Prize Money; Shards stay the normal unlock |
 | Lifetime level = 50 × (tier − 1) + Racing Level for lists and level badges | Keeps D181's "highest first" and the level badges meaningful across tiers |
 | Scenario *s* + 1's layer opens only on advancing | Its tree and dish grades belong to that scenario |
 | Advancing is explicit and free, and allowed with an incomplete layer | D328; nothing is lost, and the career already proves her strength |

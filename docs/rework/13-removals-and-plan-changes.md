@@ -130,7 +130,7 @@ logs and operations in one sync lane. The kinds change:
 
 | Kind | Holds |
 |---|---|
-| `profile/main` | Prize Money, Uma Tickets, Uma Shards, featured Uma, the planner's targets (up to five, in order), check-in times (up to four; default 08:00, 13:00, 22:30), Repeat's sizing setting, created at, `generation: 2` ([02](02-check-ins-and-notifications.md)) |
+| `profile/main` | Prize Money, Uma Tickets, Uma Shards, the Daily Purse (`purse`) and the Exchange's stock grade (`exchangeGrade`, [09](09-racing-rewards-and-exchange.md) §9), featured Uma, the planner's targets (up to five, in order), check-in times (up to four; default 08:00, 13:00, 22:30), Repeat's sizing setting, created at, `generation: 2` ([02](02-check-ins-and-notifications.md)) |
 | `umas/{outfitId}` | Tier, scenario, Racing Level and EXP, Farm Level and EXP, career, unlocks (constellation count, Inspiration slots, uniques and golds, Extra Stats nodes, active Extra nodes per preset), bonds, four presets (card set, assignments, loadout), lineage picks, her Expedition state (runs, each run's frozen pool, wins by race family; [10](10-expeditions.md)), promotion history |
 | `buildings/{id}` | Each Farm building's and Training facility's level and slots |
 | `work/{outfitId}` | Her running job or session and its queue: kind, place, recipe or unlocks, batch size, reserved inputs, start time, Speed Tickets applied, her last job for Repeat, and a dropped queue with its reason until the owner acts on it |
@@ -139,7 +139,9 @@ logs and operations in one sync lane. The kinds change:
 | Logs: `raceResults`, `ledger`, `flairEvents`, `operations` | Append-only, as today. An Expedition race's result carries a snapshot of the run (Expedition, tier, mechanics in effect) |
 
 Every change is an **operation** re-run by the API with the domain package:
-- `assign`, `start`, `queue`, `collect`, `collect-all`, `repeat`, `recall`, `speed-up`, `finish`, `upgrade`, `advance-scenario`;
+- `start` (also restarting a dropped queue), `queue` (add, remove, move, dismiss a dropped queue), `collect`,
+  `collect-all`, `repeat`, `recall`, `speed-up` (one entry or all), `finish`, `upgrade`, `advance-scenario`;
+- `set-targets`, `set-check-in-times` and `set-repeat-sizing` ([02](02-check-ins-and-notifications.md) §10);
 - `set-active-nodes`, `set-lineage` and the preset edits (card set, assignments, loadout); a bond is an ordinary Dojo session, so it needs no operation of its own;
 - `buy`, `sell`;
 - `unlock-uma`, `promote`.

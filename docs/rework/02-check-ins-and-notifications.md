@@ -67,7 +67,7 @@ Gaps at the default times, at grade 1 ([12](12-economy-and-pacing.md) §4 times)
 | Work at grade 1 | 08:00 → 13:00 (5 h) | 13:00 → 22:30 (9.5 h) | 22:30 → 08:00 (9.5 h) |
 |---|---|---|---|
 | Gather (90 min each) | ×3, ends 12:30 | ×6, ends 22:00 | ×6, ends 07:30 |
-| Craft (22.5 min each) | ×10 then ×3 queued, ends 12:53 | ×10, ×10, ×5 queued, ends 22:22 | ×10, ×10, ×5 queued, ends 07:52 |
+| Craft (22.5 min each) | ×10 then ×3 queued, ends 12:52 | ×10, ×10, ×5 queued, ends 22:22 | ×10, ×10, ×5 queued, ends 07:52 |
 | Cook (240 min each) | ×1, ends 12:00 | ×2, ends 21:00 | ×2, ends 06:30 |
 | Session (180 min each) | ×1, ends 11:00 | ×3, ends 22:00 | ×3, ends 07:30 |
 
@@ -108,7 +108,7 @@ collecting. At 390 × 844 it reads top to bottom, with the primary action in the
  ─────────────────────────────────────────────
  Collected     41 items · 6 dishes · 5 unlocks
    Kitasan Black   Observatory node 11
-   Gold Ship       Farm Lv 8 → 9 · grade 2 open
+   Gold Ship       Farm Lv 5 → 6 · grade 2 open
    3 queues moved on
  ─────────────────────────────────────────────
  Needs you
@@ -153,7 +153,8 @@ to spend them:
 ## 5. Repeat
 
 **Repeat restarts a finished job or session with the same recipe and size, where the inputs allow.** It is on every
-collected card, and the summary's **Repeat all** applies it to every Uma collected in this check-in.
+collected card, and the summary's **Repeat all** applies it to every free Uma with a last job or session
+([07](07-farm.md) §9).
 
 | Case | What Repeat does |
 |---|---|

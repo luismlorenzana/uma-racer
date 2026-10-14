@@ -383,8 +383,8 @@ does; most are grade 1, so it is an upper bound.
 - **Lv 1 carries a 20-Uma roster and Lv 2 carries 25**, the same rule as the Farm's buildings ([07](07-farm.md) §6).
 - **The Observatory is the one facility that needs Lv 2 for 25 Umas.** Scenario 1 is front-loaded with 12 nodes, and on
   a new account the whole roster is in scenario 1 together. At 2 slots, 25 Umas would need 105% of it for the first four
-  weeks, past the sim's 90% ceiling ([12](12-economy-and-pacing.md) §12). Its Lv 2 costs grade-1 items, so it is
-  buyable on day one, as the roster grows from its first Uma Shards. Tiers 2 and 3 fill one promotion at a time, so
+  weeks, past the sim's 90% ceiling ([12](12-economy-and-pacing.md) §12). The account starts with 20 Umas, which Lv 1
+  carries, and its Lv 2 needs only grade-1 items and Prize Money, so it is bought in tier 1's first weeks of racing, before the roster passes 20 with its first Uma Shards. Tiers 2 and 3 fill one promotion at a time, so
   this peak happens once.
 - **The Lineage Hall's 2 slots** peak at 83% in scenario 4, which carries six of Inspiration's 24 unlocks a tier
   (D336); one slot would bottleneck in scenarios 2 and 4. The sim watches it against the 90% ceiling.
@@ -409,7 +409,8 @@ Observatory, 252 at the Lineage Hall, 377 at the Gym and 176 at the Dojo, so it 
 - An upgrade is **instant** and applies to the whole facility. New slots appear at once. A speed upgrade applies to
   sessions started after it; running sessions keep their finish times, so a timeline never moves under the owner.
 - Facilities are account buildings: they **carry at promotion** (D327) and serve every tier's Umas together.
-- Lv 2 is buyable on day one; Lv 3 once someone reaches Farm Lv 11 (grade 3, about day 28), as at the Farm.
+- Lv 2 can be bought as soon as the Prize Money is there (grade-1 items); Lv 3 once someone reaches Farm Lv 11
+  (grade 3, about day 4–6 of a tier, [07](07-farm.md) §7), as at the Farm.
 - **Lv 3 keeps ×1.25 session speed**, the same rule as every Farm building. Sessions are about 20% of the roster's
   time ([12](12-economy-and-pacing.md) §3), so all four facilities at Lv 3 shorten a scenario by about 4%, roughly one
   day, on top of the Farm's Lv 3 ([07](07-farm.md) §7). That compounding is small, and it lands where it helps most:
@@ -460,7 +461,7 @@ A locked item is never a dead end: it says what it needs and links to the step t
 
 | Where ([13](13-removals-and-plan-changes.md) §6) | What |
 |---|---|
-| `umas/{outfitId}` unlocks | `constellationOpened` (0–28: the count, since order is fixed); Inspiration `slots` (up to six ids) and `golds` (up to twelve `slot:gold1/2` keys); Extra Stats `nodes` (ids such as `speed-03`, `duo-power-speed-3`, `sun-4`); `active` Extra ids per preset; bonds ([06](06-cards-and-bonds.md)) |
+| `umas/{outfitId}` unlocks | `constellationOpened` (0–28: the count, since order is fixed); Inspiration `slots` (up to six ids), `uniques` (up to six slot ids, D336) and `golds` (up to twelve `slot:gold1/2` keys); Extra Stats `nodes` (ids such as `speed-03`, `duo-power-speed-3`, `sun-4`); `active` Extra ids per preset; bonds ([06](06-cards-and-bonds.md)) |
 | `work/{outfitId}` | Her session: facility, room, slot, start time, the ordered unlocks (kind, target id, grade, dish id, minutes), reserved dish ids, Speed Ticket minutes applied, the facility speed it started at |
 | `buildings/{id}` | Each facility's level |
 | `itemLedger` | Reserve, return and consume rows for every dish, keyed by the session's operation id |
@@ -506,8 +507,8 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | A new Extra node turns on in every preset with room; no per-stat limit | No chores in scenario 1; the map itself bounds a lean |
 | **The 240-point Extra pool is replaced by extraBudget** (§6) | One ceiling at 60% of the cap budget; [04](04-tiers-and-promotion.md) computes node values with it |
 | Baseline SP = 0.40 × spCap × opened nodes ÷ *N* | Replaces CL's 40% with the thing CL used to open |
-| Lv 1: Observatory 2, Lineage Hall 2, Gym 5 × 1, Dojo 6 × 1; Lv 2 adds a slot per room | Lv 1 carries 20 Umas, Lv 2 carries 25, as at the Farm; only the Observatory needs its Lv 2 for 25 (scenario 1 at 93%) |
-| Upgrades Lv 2 (+slots, grade-1 items, day one) and Lv 3 (×1.25 session speed, grade-3 items), instant, priced in §7 | uma-rpg's and [07](07-farm.md)'s pattern; Lv 3 repays in 9–13 days and shortens a scenario by ~4%, mostly helping late Umas |
+| Lv 1: Observatory 2, Lineage Hall 2, Gym 5 × 1, Dojo 6 × 1; Lv 2 adds a slot per room | Lv 1 carries 20 Umas, Lv 2 carries 25, as at the Farm; only the Observatory needs its Lv 2 for 25 (scenario 1 at 105%) |
+| Upgrades Lv 2 (+slots, grade-1 items) and Lv 3 (×1.25 session speed, grade-3 items), instant, priced in §7 | uma-rpg's and [07](07-farm.md)'s pattern; Lv 3 repays in 6–13 days and shortens a scenario by ~4%, mostly helping late Umas |
 | Each unlock names one exact dish id; no substitutions; a finished Farm job is collected when her session starts | Agrees with [07](07-farm.md) and [08](08-item-catalogue-and-recipes.md) |
 | A running session must be recalled or finished before promotion ([04](04-tiers-and-promotion.md) §5) | Dishes carry; unlocks don't |
 | Constellation motifs adapted as in §4's table; the 15th drawn when it ships | Keeps each scenario recognisable at its new size |

@@ -317,6 +317,10 @@ Stamina, Power, Guts, Wit, Friend/Group).
 
 ### Planet dishes, per Uma per tier
 
+The bond dishes here sit at mixed grades, while [06](06-cards-and-bonds.md) §2's era rule gives odd grades only and
+[12](12-economy-and-pacing.md) §5 prices a bond at its layer's lower grade. `pnpm sim:loop` (T132) rewrites both tables
+below with bonds at the layer's lower grade. Each family keeps its dish count; only the sides in the crafted table shift.
+
 | Family | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Total |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Vegetables | 6 | 6 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | **28** |
@@ -435,14 +439,14 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 |---|---|
 | **Feast = one crafted of each stat family at *g* + a Grains side** | A Sun feeds the five stats; six inputs keep it within 14% of a planet dish; it adds nothing to the busiest families |
 | **Duo = 2 + 2 of its families at *g* + one side** | The same chain as a planet dish for the same 40 points |
-| **Side rotation** (§4.2): Grains for salads, soups and Feasts; stat dishes around the stat cycle with Grains at grades 5 and 10; Duo sides to Fruits and Nuts & Seeds | The stat families within 74–77 a tier and Grains at 80, instead of a 3× spread |
+| **Side rotation** (§4.2): Grains for salads, soups and Feasts; stat dishes around the stat cycle with Grains at grades 5 and 10; Duo sides to Fruits and Nuts & Seeds | Grains at 75 a tier instead of the coldest family; since D338 the stat families sit at 50–53 (§7) |
 | **No side is ever Vegetables or Mushrooms** | They are the destination-heavy families |
 | **Every dish uses the same cook formula** | One rule; the Feast's extra input is its only premium |
 | **Exact recipes, exact dishes**: no substitutions, no higher grade for a lower | The planner's counts stay exact, and every Repeat is predictable |
 | **Duo ids `duo-<stat>-<stat>-<g>`**, drawn with uma-art's grade-3 and grade-7 frames | A grade-5 dish should not carry a `-7` id |
 | **Keep uma-rpg's names; "crafted" on screen, `refined` in data** | No renaming drift from the art package |
 | **Representative deck: 3 bonds of each type** | A neutral basis for the balance; other decks move ~2% |
-| **Work value = listed minutes; selling a third** | One number per item for [09](09-racing-rewards-and-exchange.md), independent of speed |
+| **Work value = real minutes (base × *k*, D338); selling a third** | One number per item for [09](09-racing-rewards-and-exchange.md), independent of building speed |
 
 ## 13. Done when
 
@@ -451,10 +455,11 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
   map) and that no gathering-side id appears.
 - A test pins every recipe: four of the family plus the §4.2 side for each planet dish, the §4.3 Duos and §4.4 Feasts,
   no side from Vegetables or Mushrooms, no side of the dish's own family.
-- A test computes §7's tables from the layer definitions and the representative deck, and fails if any family other
-  than Vegetables leaves 70–80 crafted items a tier.
+- A test computes §7's tables from the layer definitions and the representative deck and pins them: 107 dishes and
+  539 crafted items a tier, the stat families at 50–53, Grains 75, Mushrooms 96 and Vegetables 112 (D338).
 - `pnpm sim:loop` reports Warehouse stock by family and grade over a tier, and no site is the bottleneck for more than
   [12](12-economy-and-pacing.md) §12's tolerance.
-- The live manual (`docs/game/`) renders §3's family tables and §4's matrix from the domain constants.
+- §3's family tables and §4's matrix are live blocks rendered from the domain constants, in this page until phase 3
+  moves it into the manual (`docs/game/`, [M033](../tasks/M033-rework-rules.md)).
 - In the app, every item, dish and the Speed Ticket shows its icon, name, grade and destination, at 32 × 32 and its
   whole-number scales.
