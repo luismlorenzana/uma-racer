@@ -4,6 +4,8 @@
 import { nextUmaShardExchangeSequence } from '../../collection'
 import { UMA_SHARDS_PER_COUPON } from '../../economy'
 import { bestBaseDistance } from '../../save'
+import { FIRST_EXCHANGE_GRADE } from '../exchange/exchange'
+import { emptyPurse } from '../exchange/purse'
 import { emptyBuild, type OpResult, type ReworkState, type UmaState } from '../types'
 import { freezeCareer, umaTemplate, type TierContent } from './career'
 import { assertNow, hasLedgerEntry, withUma, writeLedger } from './ledger'
@@ -21,11 +23,17 @@ export const TICKETS_PER_EXCHANGE = 1
 
 export const unlockUmaLedgerId = (outfitId: string): string => `unlock-uma:${outfitId}`
 
-/** A generation-2 account on day one (13 §5): 20 Uma Tickets, no Umas, no work, nothing else. */
+/**
+ * A generation-2 account on day one (13 §5): 20 Uma Tickets, no Umas, no work, nothing else. Its Daily Purse is empty
+ * and the Exchange stocks grade 1 (T130, 09 §5.3).
+ */
 export function newAccount(now: number): ReworkState {
   assertNow(now)
   return {
-    profile: { generation: 2, createdAt: now, umaTickets: INITIAL_UMA_TICKETS, umaShards: 0, prizeMoney: 0, featuredUmaId: null },
+    profile: {
+      generation: 2, createdAt: now, umaTickets: INITIAL_UMA_TICKETS, umaShards: 0, prizeMoney: 0, featuredUmaId: null,
+      purse: emptyPurse(), exchangeGrade: FIRST_EXCHANGE_GRADE,
+    },
     umas: {},
     work: {},
     ledger: [{ id: INITIAL_UMA_TICKETS_LEDGER_ID, resource: 'uma-tickets', delta: INITIAL_UMA_TICKETS, reason: 'initial-uma-tickets', at: now }],

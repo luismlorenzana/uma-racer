@@ -23,7 +23,10 @@ describe('the numbers', () => {
 describe('a new account', () => {
   it('holds 20 Uma Tickets and one ledger row', () => {
     expect(newAccount(42)).toEqual({
-      profile: { generation: 2, createdAt: 42, umaTickets: 20, umaShards: 0, prizeMoney: 0, featuredUmaId: null },
+      profile: {
+        generation: 2, createdAt: 42, umaTickets: 20, umaShards: 0, prizeMoney: 0, featuredUmaId: null,
+        purse: { day: '1970-01-01', gross: 0, featuredPaid: [] }, exchangeGrade: 1,
+      },
       umas: {},
       work: {},
       ledger: [{ id: 'initial-uma-tickets', resource: 'uma-tickets', delta: 20, reason: 'initial-uma-tickets', at: 42 }],

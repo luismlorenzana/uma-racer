@@ -480,7 +480,7 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 | **Durations go through `rework/time.ts`'s one conversion** (T126) | M033 gave the items no dependency on T125, which owns `TIME_FACTOR` and the docs check over `docs/rework/`. Phase 2's groundwork landed both first, so the item rules import `workSeconds` and add neither |
 | **§7 is checked here and owned by `sim:loop`** (T126) | §7's dish counts come from the layers and the deck, which the item rules don't hold, and T132 rewrites this page's Farm tables from its run (T128's draft found §7's bond grades can't all come from [06](06-cards-and-bonds.md)'s era rule). So the items export no demand constant and render no §7 block; their test checks only that the recipes turn §7's dish table into §7's crafted table. §13's "from the layer definitions" lands with T132 |
 | **Step times and the grade gate live with the items** (T126) | [07](07-farm.md) §2, §4 and §3 here all state them, work values need them and the items are upstream, so the Farm's jobs (T127) import them, rather than keeping their own copies, and divide by building speed |
-| **§8's "A third" column renders as work value ÷ 3** (T126) | D331's sell rule, until the Exchange (T130) owns it and replaces the literal with its constant |
+| **§8's "A third" column renders as work value ÷ the Exchange's `SELL_DIVISOR`** (T126, T130) | D331's sell rule, owned by the Exchange; shown unrounded here, since [09](09-racing-rewards-and-exchange.md) §6 owns the rounding |
 
 ## 13. Done when
 

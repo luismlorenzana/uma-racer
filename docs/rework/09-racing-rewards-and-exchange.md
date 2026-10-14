@@ -1,9 +1,11 @@
 # 09 · Racing rewards and the Exchange
 
 > **Status: approved design, 2026-10-14; first written 2026-10-13 (D328, D331).** What a race pays, the Daily Purse that keeps racing
-> from replacing the timers, the daily featured races, the Exchange, Speed Tickets and selling surplus. Every number
-> is a **draft**. The loop simulation ([12](12-economy-and-pacing.md) §12) tunes them, and its checks become the tests
-> that pin them.
+> from replacing the timers, the daily featured races, the Exchange, Speed Tickets and selling surplus. The prize
+> table, the purse, the featured draw, the Exchange's goods and stock rule and selling are built as rules in
+> `@racer/domain/rework/exchange` (T130, D345), and the tables marked live are rendered from them; nothing is in the
+> game yet. Every number is a **draft**. The loop simulation ([12](12-economy-and-pacing.md) §12) tunes them, and its
+> checks become the tests that pin them.
 
 Races are the free-time half of the game. They cost nothing, are never blocked by Farm work or sessions (D328), and
 pay two things:
@@ -50,6 +52,7 @@ A race pays its grade's prize times its place's share. Each place below 2nd pays
 README's 40% and 20% and continues the halving down to 5th; the real JRA split (100 / 40 / 25 / 15 / 10) is a little
 richer, but halving is easier to read and pays less for a bad race.
 
+<!-- live:prize-table -->
 | Grade | 1st | 2nd (40%) | 3rd (20%) | 4th (10%) | 5th (5%) | 6th and below |
 |---|---:|---:|---:|---:|---:|---:|
 | Debut, Maiden | 60 | 24 | 12 | 6 | 3 | 0 |
@@ -58,6 +61,7 @@ richer, but halving is easier to read and pays less for a bad race.
 | G3 | 150 | 60 | 30 | 15 | 7 | 0 |
 | G2 | 200 | 80 | 40 | 20 | 10 | 0 |
 | G1 | 300 | 120 | 60 | 30 | 15 | 0 |
+<!-- /live -->
 
 - **Rounding:** down to a whole Prize Money, after every multiplier.
 - **No entry fee and no appearance money.** 6th and below pays nothing, so sending a weak Uma into G1s for the field
@@ -120,11 +124,13 @@ should be the dearest one. A Prize Money purse bounds the same whatever the owne
 Every race's **gross prize** (§2.1, at the Expedition rate for an Expedition race) goes into the day's purse, in
 order:
 
+<!-- live:purse-bands -->
 | Band | Gross Prize Money that day | Paid |
 |---|---|---|
 | Full | 0 – 6,000 | 100% |
 | Tired | 6,000 – 12,000 | 25% |
 | Spent | above 12,000 | 5% |
+<!-- /live -->
 
 - **A race that crosses a band edge is split**: a G1 win at 5,900 pays 100 in full and 200 at a quarter, so 150.
 - **The day** is the device's local calendar date when the race starts (today's rule: a day is the device's date,
@@ -231,9 +237,11 @@ through promotion ([12](12-economy-and-pacing.md) §2).
 
 ### 5.3 Raw ingredients and the stock rule
 
+<!-- live:exchange-prices -->
 | Grade | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Price | 108 | 114 | 120 | 126 | 132 | 138 | 144 | 150 | 156 | 162 |
+<!-- /live -->
 
 **Stock rule:** the Exchange stocks raw grades **1 up to the highest grade any of the owner's Umas has ever opened**,
 in all eight families. Grade *g* opens at Farm Lv 5*g* − 4 (README), so the stock grows to grade 2 when the first Uma
@@ -297,6 +305,7 @@ Any Warehouse item sells for **a third of its work value**, rounded down, at lea
 real Uma minutes in it at *k* = 1.2, inputs included, whatever the building speed or Speed Tickets
 ([08](08-item-catalogue-and-recipes.md) §8):
 
+<!-- live:sell-values -->
 | Grade | Raw: work | Raw: sells for | Crafted: work | Crafted: sells for | Planet dish: work | Planet dish: sells for |
 |---|---:|---:|---:|---:|---:|---:|
 | 1 | 108 | 36 | 135 | 45 | 963 | 321 |
@@ -309,6 +318,7 @@ real Uma minutes in it at *k* = 1.2, inputs included, whatever the building spee
 | 8 | 150 | 50 | 187.5 | 62 | 1,294.5 | 431 |
 | 9 | 156 | 52 | 195 | 65 | 1,344 | 448 |
 | 10 | 162 | 54 | 202.5 | 67 | 1,393.5 | 464 |
+<!-- /live -->
 
 A crafted item is its raw item plus a quarter of the gathering time. A planet dish is four crafted items of its grade,
 one crafted side at max(1, *g*−2) and the cook. A Duo sells like a planet dish of its grade; Feasts sell for 418, 456,
@@ -429,6 +439,14 @@ race result id, the operation id, the building.
 | "Buy and finish" in one tap, with one confirmation | A free evening's money should reach the jobs without a trip to the Exchange |
 | Selling: a third of work value, rounded down; reserved stock never offered; dishes, needed stock and sales of 1,000+ confirm | No money pump; the planner protects what the roster still needs |
 | The purse day is the device's local date at race start, and never goes backwards | Today's day rule; a time-zone hop can't reopen a spent purse |
+| The rules live in `@racer/domain/rework/exchange`, not §9 and §11's `@racer/domain/economy` (D345) | [M033](../tasks/M033-rework-rules.md) keeps every rework area under `rework/` until phase 3 moves them, when today's `economy.ts` goes |
+| The profile carries §9's `purse` and `exchangeGrade` (listed in [13](13-removals-and-plan-changes.md) §6), and phase 3's save carries them. A new account's purse is empty on 1970-01-01, which every race day is later than, and the Exchange stocks grade 1 (D345) | Grade 1 is stocked before the first Uma exists (D323); the first race starts a fresh purse |
+| The day comes in as `localDay`, the device's `YYYY-MM-DD` at race start (D345) | A pure rule can't know the time zone |
+| "Never two days running" keeps each slot's pool sorted by id and only the indices with the parity of the day's number (days since 1970-01-01). A one-race pool shows its race every other day. Each slot draws once a day, even from an empty pool, and prefers a distance category not yet on the board, slot by slot (D345) | Exact, with no stored history; a slot's draw never depends on an earlier slot's pool |
+| The stock counts every current Uma's open grade as well as the stored mark; `sim:loop` raises the mark after each collect, and phase 3 puts that in the collect commit (D345) | Only the Farm's collect raises Farm Level, and the Farm's rules don't depend on the Exchange; so a promotion can't lower the stock |
+| Each race rounds down once, after the purse share; §3.4 models day totals, so it is pinned on totals, and race by race it matches exactly at 200 a race and within 1 a race at 150 (D345) | §2.1's "after every multiplier" |
+| Surplus is the Free count; "All free" is every unreserved item, which dips into needed and so asks first; a needed-stock confirmation names the planner's whole shortfall after the sale (D345) | §6.1 defines Free as "the rest", then offers "Surplus (free minus needed)"; reserved inputs leave the Warehouse count when work starts ([07](07-farm.md) §2, §12), so the count is what can be sold |
+| A race result's `expedition` says the Expedition rate applied: a family not yet won on her run (D345) | It is what the result's "Expedition rate" line shows (§7); a family already won pays the home G1 row |
 
 ## 11. Done when
 

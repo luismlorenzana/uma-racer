@@ -16,9 +16,11 @@ it('imports nothing impure and never the art package outside tests', () => {
     for (const global of ['window', 'document', 'localStorage', 'Date.now', 'Math.random']) {
       expect(source, path).not.toMatch(new RegExp(`\\b${global.replaceAll('.', '\\.')}\\b`))
     }
-    // Imports stay inside rework/items, plus the time conversion and today's stat types.
+    // Imports stay inside rework/items, plus the time conversion and today's stat types. Only the page renderer reads
+    // the Exchange, for 08 §8's "A third" (T130's `SELL_DIVISOR`); the rules never depend on what is downstream.
+    const allowed = path.endsWith('/docs.ts') ? ['../time', '../../types', '../exchange/selling'] : ['../time', '../../types']
     for (const [, from] of source.matchAll(/from '([^']+)'/g)) {
-      expect(['../time', '../../types'].includes(from!) || from!.startsWith('./'), `${path}: ${from}`).toBe(true)
+      expect(allowed.includes(from!) || from!.startsWith('./'), `${path}: ${from}`).toBe(true)
     }
   }
 })

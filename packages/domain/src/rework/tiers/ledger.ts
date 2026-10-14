@@ -1,6 +1,6 @@
 // Once-only payments (docs/rework/04-tiers-and-promotion.md §3, §6): every ticket and Shard the tier rules pay is a
 // ledger row whose id names it, so a second payment under the same id pays nothing.
-import type { AccountProfile, LedgerEntry, LedgerReason, ReworkState, UmaState } from '../types'
+import { LEDGER_BALANCE, type AccountProfile, type LedgerEntry, type LedgerReason, type ReworkState, type UmaState } from '../types'
 
 export const hasLedgerEntry = (state: Pick<ReworkState, 'ledger'>, id: string): boolean => state.ledger.some((entry) => entry.id === id)
 
@@ -10,9 +10,8 @@ export function writeLedger<S extends ReworkState>(
   row: { id: string; resource: LedgerEntry['resource']; delta: number; reason: LedgerReason },
   at: number,
 ): S {
-  const profile: AccountProfile = row.resource === 'uma-tickets'
-    ? { ...state.profile, umaTickets: state.profile.umaTickets + row.delta }
-    : { ...state.profile, umaShards: state.profile.umaShards + row.delta }
+  const balance = LEDGER_BALANCE[row.resource]
+  const profile: AccountProfile = { ...state.profile, [balance]: state.profile[balance] + row.delta }
   return { ...state, profile, ledger: [...state.ledger, { ...row, at }] }
 }
 
