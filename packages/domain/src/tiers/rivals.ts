@@ -15,7 +15,7 @@ import { capBudgetAt, capProfileAt, extraBudgetAt, nodeValue } from './scaling'
 
 /**
  * What each scenario's buff adds to the typical trained Uma, T = 1–14, as a share of her tree (04 §8): rivals carry it
- * (D165). Re-measured on the rework's typical build by `pnpm sim:rework-builds` (T133, D349): the ladder's four
+ * (D165). Re-measured on the rework's typical build by `pnpm sim:builds` (T133, D349): the ladder's four
  * distance sets at full layer, every card current-era at 100%, Extra Stats at capacity, her open Inspiration slots
  * filled and two career goals won. A value the measurement moved by more than half a point is re-pinned to it; the
  * rest keep today's (`SCENARIO_BUFFS[*].typical`). The 15th has none until it ships (04 §2).

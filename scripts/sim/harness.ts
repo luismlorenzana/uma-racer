@@ -58,12 +58,12 @@ export const NPC_KIT = [
   skill('npc-acceleration', 'phase_random==2', 'acceleration', 0.2, 3),
 ]
 /** A Lv5 unique of the common shape (D158): late-race speed for 5 s, guaranteed, as the original's uniques are. */
-export const unique = (id: string) => skill(id, 'phase_random==2', 'target-speed', 0.35 * 1.1, 5, 'guaranteed')
+const unique = (id: string) => skill(id, 'phase_random==2', 'target-speed', 0.35 * 1.1, 5, 'guaranteed')
 /**
  * The rival white pool (D163), shaped like the real one (about 480 whites): mostly speed, then passives, acceleration,
  * heals and straight-line speed, at the originals' typical white values, some tied to a running style.
  */
-export const RIVAL_POOL: CompiledRaceSkill[] = [
+const RIVAL_POOL: CompiledRaceSkill[] = [
   ...['phase_random==0', 'phase_random==1', 'phase_random==1', 'phase_random==2', 'phase_random==2', 'phase_random==3',
     'is_finalcorner==1', 'is_last_straight==1', 'corner_random==1', 'straight_random==1', 'phase==1&order_rate<=50',
     'phase_random==2&order_rate>50'].map((condition, index) => skill(`w-speed-${index}`, condition, 'target-speed', 0.15, 2.4)),
@@ -78,7 +78,7 @@ export const RIVAL_POOL: CompiledRaceSkill[] = [
 ]
 
 /** A rival's kit: her own unique and her rolled whites (D163), from a stream of her own. */
-export function rivalKit(strategy: Strategy, distance: number, seed: number): CompiledRaceSkill[] {
+function rivalKit(strategy: Strategy, distance: number, seed: number): CompiledRaceSkill[] {
   const rng = createRng((seed ^ 0x2545f491) >>> 0)
   return [unique('npc-unique'), ...rollRivalSkills(RIVAL_POOL, { strategy, course: { distance, surface: 'turf' }, rng })]
 }
@@ -271,7 +271,7 @@ export function rivalRunnersAt(T: number, grade: RaceGrade, distance: number, si
  * full layer, every card current-era at 100%, Extra Stats at capacity, the Friend card on its fair share, her open
  * Inspiration slots filled and two career goals won.
  */
-export const REWORK_TYPICAL_SETS: readonly { distance: DistanceCategory; build: (T: number, options?: ReworkBuildOptions) => DerivedBuild }[] = [
+const REWORK_TYPICAL_SETS: readonly { distance: DistanceCategory; build: (T: number, options?: ReworkBuildOptions) => DerivedBuild }[] = [
   { distance: 'sprint', build: (T, options) => reworkBuild(T, STAYER, 2, reworkFairShare(T), 'speed', options) },
   { distance: 'mile', build: (T, options) => reworkBuild(T, STAYER, 2, reworkFairShare(T), 'stamina', options) },
   { distance: 'medium', build: (T, options) => reworkBuild(T, STAYER_POWER, 2, reworkFairShare(T) + 1, 'stamina', { ...options, first: [3] }) },
@@ -285,7 +285,7 @@ const treePoints = (build: DerivedBuild) => build.cardRawTotal + STATS.reduce((s
  * What scenario T's buff adds to the rework's typical build, as a share of her tree (today's measure, D165): each
  * distance's set with the buff over the same set without it, averaged over the four sets.
  */
-export function reworkBuffTypical(T: number): { typical: number; bySet: Record<DistanceCategory, number> } {
+function reworkBuffTypical(T: number): { typical: number; bySet: Record<DistanceCategory, number> } {
   const bySet = Object.fromEntries(REWORK_TYPICAL_SETS.map(({ distance, build }) =>
     [distance, treePoints(build(T)) / treePoints(build(T, { buffs: false })) - 1])) as Record<DistanceCategory, number>
   const values = Object.values(bySet)
@@ -321,7 +321,7 @@ export function typicalLines(rows: readonly TypicalRow[]): string[] {
   ]
 }
 
-export const categoryOf = (distance: number): DistanceCategory =>
+const categoryOf = (distance: number): DistanceCategory =>
   distance <= 1400 ? 'sprint' : distance <= 1800 ? 'mile' : distance <= 2400 ? 'medium' : 'long'
 export const FIELD_STRATEGIES: Strategy[] = ['front', 'pace', 'late', 'end']
 

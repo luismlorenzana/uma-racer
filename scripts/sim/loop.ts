@@ -8,7 +8,7 @@
 //   pnpm sim:loop -- --refresh-wins       regenerate the committed win table (about 12 minutes; build the domain first)
 //
 // Exit code 1 when a check fails, except a check the loop test marks as a known miss (D348). Synthetic only, seeded with
-// the race engine's createRng, never Math.random. Run as `sim:farm` is, with tsx under the data pipeline.
+// the race engine's createRng, never Math.random. Runs with tsx under the data pipeline.
 import { createRng } from '../../packages/race/src/rng'
 import {
   BASELINE, LOOP_VARIANTS, evaluateChecks, farmLevelProbes, firstUnlockProbe, formatChecks, formatMatrix, formatReport, loopRng,

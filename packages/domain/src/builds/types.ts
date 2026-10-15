@@ -1,5 +1,5 @@
 // The rework's balance reports (docs/rework/03-uma-progression.md §9, §12, 04 §8, 05 §12; T133): what
-// `pnpm sim:rework-builds` and `pnpm sim:rework-careers` write with `--write-report`, committed so the rework pages'
+// `pnpm sim:builds` and `pnpm sim:careers` write with `--write-report`, committed so the rework pages'
 // live blocks render without the race engine. Rates are whole percents; typical values are fractions of a tree.
 import type { CareerStage } from '../career-stages'
 import type { DistanceCategory, Strategy } from '../types'
@@ -32,7 +32,7 @@ export interface TypicalRow {
   readonly bySet: Readonly<Record<DistanceCategory, number>>
 }
 
-/** `pnpm sim:rework-builds -- --write-report`. */
+/** `pnpm sim:builds -- --write-report`. */
 export interface BuildsReport {
   readonly racesPerCell: number
   readonly ladderRaces: number
@@ -49,7 +49,7 @@ export interface CareerRow {
   readonly stages: Readonly<Record<CareerStage, Readonly<Record<DistanceCategory, RateCell>>>>
 }
 
-/** `pnpm sim:rework-careers -- --write-report`. Only rates and synthetic labels: nothing from the private packs. */
+/** `pnpm sim:careers -- --write-report`. Only rates and synthetic labels: nothing from the private packs. */
 export interface CareersReport {
   readonly racesPerCell: number
   readonly rates: readonly CareerRow[]
